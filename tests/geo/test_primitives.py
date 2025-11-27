@@ -1,11 +1,260 @@
 import pytest
+import math
 
 from rayforge.core.geo.primitives import (
     is_point_in_polygon,
     line_segment_intersection,
     get_segment_region_intersections,
     line_intersection,
+    is_angle_between,
+    get_arc_bounding_box,
 )
+
+
+@pytest.mark.parametrize(
+    "target, start, end, clockwise, expected",
+    [
+        # Counter-Clockwise (CCW), No Wrap
+        (math.pi / 2, math.pi / 4, 3 * math.pi / 4, False, True),  # Inside
+        (0, math.pi / 4, 3 * math.pi / 4, False, False),  # Outside (before)
+        (
+            math.pi,
+            math.pi / 4,
+            3 * math.pi / 4,
+            False,
+            False,
+        ),  # Outside (after)
+        (
+            math.pi / 4,
+            math.pi / 4,
+            3 * math.pi / 4,
+            False,
+            True,
+        ),  # On start boundary
+        (
+            3 * math.pi / 4,
+            math.pi / 4,
+            3 * math.pi / 4,
+            False,
+            True,
+        ),  # On end boundary
+        # CCW, With Wrap (e.g., 315 deg to 45 deg)
+        (0, 7 * math.pi / 4, math.pi / 4, False, True),  # Inside (on axis)
+        (
+            2 * math.pi - 0.1,
+            7 * math.pi / 4,
+            math.pi / 4,
+            False,
+            True,
+        ),  # Inside
+        (math.pi, 7 * math.pi / 4, math.pi / 4, False, False),  # Outside
+        (
+            7 * math.pi / 4,
+            7 * math.pi / 4,
+            math.pi / 4,
+            False,
+            True,
+        ),  # On start
+        (math.pi / 4, 7 * math.pi / 4, math.pi / 4, False, True),  # On end
+        # Clockwise (CW), No Wrap
+        (math.pi / 2, 3 * math.pi / 4, math.pi / 4, True, True),  # Inside
+        (
+            math.pi,
+            3 * math.pi / 4,
+            math.pi / 4,
+            True,
+            False,
+        ),  # Outside (before)
+        (0, 3 * math.pi / 4, math.pi / 4, True, False),  # Outside (after)
+        (
+            3 * math.pi / 4,
+            3 * math.pi / 4,
+            math.pi / 4,
+            True,
+            True,
+        ),  # On start
+        (math.pi / 4, 3 * math.pi / 4, math.pi / 4, True, True),  # On end
+        # CW, With Wrap (e.g., 45 deg to 315 deg)
+        (0, math.pi / 4, 7 * math.pi / 4, True, True),  # Inside (on axis)
+        (math.pi, math.pi / 4, 7 * math.pi / 4, True, False),  # Outside
+        (math.pi / 4, math.pi / 4, 7 * math.pi / 4, True, True),  # On start
+        (7 * math.pi / 4, math.pi / 4, 7 * math.pi / 4, True, True),  # On end
+        # Angle Normalization Tests (should behave identically to above)
+        (math.pi / 2, math.pi / 4 + 2 * math.pi, 3 * math.pi / 4, False, True),
+        (math.pi / 2, math.pi / 4, 3 * math.pi / 4 - 4 * math.pi, False, True),
+        (math.pi / 2 + 6 * math.pi, math.pi / 4, 3 * math.pi / 4, False, True),
+        # Zero-length arc
+        (math.pi / 4, math.pi / 4, math.pi / 4, False, True),  # On point
+        (math.pi / 2, math.pi / 4, math.pi / 4, False, False),  # Off point
+        (math.pi / 4, math.pi / 4, math.pi / 4, True, True),  # On point
+        (math.pi / 2, math.pi / 4, math.pi / 4, True, False),  # Off point
+    ],
+)
+def test_is_angle_between(target, start, end, clockwise, expected):
+    assert is_angle_between(target, start, end, clockwise) is expected
+
+
+def get_arc_params(center, radius, start_angle, end_angle):
+    """Helper to generate arc parameters for testing."""
+    start_pos = (
+        center[0] + radius * math.cos(start_angle),
+        center[1] + radius * math.sin(start_angle),
+    )
+    end_pos = (
+        center[0] + radius * math.cos(end_angle),
+        center[1] + radius * math.sin(end_angle),
+    )
+    center_offset = (center[0] - start_pos[0], center[1] - start_pos[1])
+    return start_pos, end_pos, center_offset
+
+
+def test_get_arc_bounding_box_within_quadrant():
+    """Test arc that does not cross any cardinal axes."""
+    center, radius = (100, 200), 50
+    start_angle, end_angle = math.pi / 6, math.pi / 3  # Both in Q1
+    start_pos, end_pos, center_offset = get_arc_params(
+        center, radius, start_angle, end_angle
+    )
+
+    # CCW
+    bbox = get_arc_bounding_box(start_pos, end_pos, center_offset, False)
+    expected_bbox = (
+        min(start_pos[0], end_pos[0]),
+        min(start_pos[1], end_pos[1]),
+        max(start_pos[0], end_pos[0]),
+        max(start_pos[1], end_pos[1]),
+    )
+    assert bbox == pytest.approx(expected_bbox)
+
+    # CW (swap start and end)
+    bbox_cw = get_arc_bounding_box(end_pos, start_pos, center_offset, True)
+    assert bbox_cw == pytest.approx(expected_bbox)
+
+
+def test_get_arc_bounding_box_crosses_east():
+    """Test arc crossing the 0 radian axis."""
+    center, radius = (100, 200), 50
+    start_angle, end_angle = -math.pi / 4, math.pi / 4
+    start_pos, end_pos, center_offset = get_arc_params(
+        center, radius, start_angle, end_angle
+    )
+
+    bbox = get_arc_bounding_box(start_pos, end_pos, center_offset, False)
+    expected_max_x = center[0] + radius
+    assert bbox[2] == pytest.approx(expected_max_x)
+    assert bbox[0] == pytest.approx(min(start_pos[0], end_pos[0]))
+    assert bbox[1] == pytest.approx(min(start_pos[1], end_pos[1]))
+    assert bbox[3] == pytest.approx(max(start_pos[1], end_pos[1]))
+
+
+def test_get_arc_bounding_box_crosses_north_y_up():
+    """Test arc crossing the PI/2 radian axis."""
+    center, radius = (100, 200), 50
+    start_angle, end_angle = math.pi / 4, 3 * math.pi / 4
+    start_pos, end_pos, center_offset = get_arc_params(
+        center, radius, start_angle, end_angle
+    )
+
+    bbox = get_arc_bounding_box(start_pos, end_pos, center_offset, False)
+    expected_max_y = center[1] + radius
+    assert bbox[3] == pytest.approx(expected_max_y)
+    assert bbox[0] == pytest.approx(min(start_pos[0], end_pos[0]))
+    assert bbox[1] == pytest.approx(min(start_pos[1], end_pos[1]))
+    assert bbox[2] == pytest.approx(max(start_pos[0], end_pos[0]))
+
+
+def test_get_arc_bounding_box_crosses_west():
+    """Test arc crossing the PI radian axis."""
+    center, radius = (100, 200), 50
+    start_angle, end_angle = 3 * math.pi / 4, 5 * math.pi / 4
+    start_pos, end_pos, center_offset = get_arc_params(
+        center, radius, start_angle, end_angle
+    )
+
+    bbox = get_arc_bounding_box(start_pos, end_pos, center_offset, False)
+    expected_min_x = center[0] - radius
+    assert bbox[0] == pytest.approx(expected_min_x)
+    assert bbox[1] == pytest.approx(min(start_pos[1], end_pos[1]))
+    assert bbox[2] == pytest.approx(max(start_pos[0], end_pos[0]))
+    assert bbox[3] == pytest.approx(max(start_pos[1], end_pos[1]))
+
+
+def test_get_arc_bounding_box_crosses_south_y_up():
+    """Test arc crossing the 3*PI/2 radian axis."""
+    center, radius = (100, 200), 50
+    start_angle, end_angle = 5 * math.pi / 4, 7 * math.pi / 4
+    start_pos, end_pos, center_offset = get_arc_params(
+        center, radius, start_angle, end_angle
+    )
+
+    bbox = get_arc_bounding_box(start_pos, end_pos, center_offset, False)
+    expected_min_y = center[1] - radius
+    assert bbox[1] == pytest.approx(expected_min_y)
+    assert bbox[0] == pytest.approx(min(start_pos[0], end_pos[0]))
+    assert bbox[2] == pytest.approx(max(start_pos[0], end_pos[0]))
+    assert bbox[3] == pytest.approx(max(start_pos[1], end_pos[1]))
+
+
+def test_get_arc_bounding_box_semicircle():
+    """Test a 180-degree arc."""
+    center, radius = (100, 200), 50
+    start_angle, end_angle = math.pi, 0
+    start_pos, end_pos, center_offset = get_arc_params(
+        center, radius, start_angle, end_angle
+    )
+
+    # A CCW arc from pi to 0 traces the BOTTOM semicircle, crossing 3*pi/2.
+    bbox_ccw = get_arc_bounding_box(start_pos, end_pos, center_offset, False)
+    expected_bbox_bottom = (
+        center[0] - radius,
+        center[1] - radius,
+        center[0] + radius,
+        center[1],
+    )
+    assert bbox_ccw == pytest.approx(expected_bbox_bottom)
+
+    # A CW arc from pi to 0 traces the TOP semicircle, crossing pi/2.
+    bbox_cw = get_arc_bounding_box(start_pos, end_pos, center_offset, True)
+    expected_bbox_top = (
+        center[0] - radius,
+        center[1],
+        center[0] + radius,
+        center[1] + radius,
+    )
+    assert bbox_cw == pytest.approx(expected_bbox_top)
+
+
+def test_get_arc_bounding_box_large_arc_crossing_three_axes():
+    """Test a large arc that spans multiple quadrants."""
+    center, radius = (100, 200), 50
+    # CCW from 45 degrees to 315 degrees
+    start_angle, end_angle = math.pi / 4, 7 * math.pi / 4
+    start_pos, end_pos, center_offset = get_arc_params(
+        center, radius, start_angle, end_angle
+    )
+
+    # Crosses North (PI/2), West (PI), and South (3*PI/2)
+    bbox = get_arc_bounding_box(start_pos, end_pos, center_offset, False)
+    expected_bbox = (
+        center[0] - radius,  # From crossing West
+        center[1] - radius,  # From crossing South
+        start_pos[0],  # Max x is from start/end points
+        center[1] + radius,  # From crossing North
+    )
+    assert bbox == pytest.approx(expected_bbox)
+
+
+def test_get_arc_bounding_box_zero_length_arc():
+    """Test a zero-length arc."""
+    center, radius = (100, 200), 50
+    start_angle, end_angle = math.pi / 4, math.pi / 4
+    start_pos, end_pos, center_offset = get_arc_params(
+        center, radius, start_angle, end_angle
+    )
+
+    bbox = get_arc_bounding_box(start_pos, end_pos, center_offset, False)
+    expected_bbox = (start_pos[0], start_pos[1], end_pos[0], end_pos[1])
+    assert bbox == pytest.approx(expected_bbox)
 
 
 @pytest.fixture

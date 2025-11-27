@@ -3,6 +3,73 @@ from typing import List, Tuple, Optional, Any
 from .linearize import linearize_arc
 
 
+def is_angle_between(
+    target: float, start: float, end: float, clockwise: bool
+) -> bool:
+    """
+    Checks if a target angle is within the sweep of an arc defined by start
+    and end angles. Handles wrapping around 2*PI.
+    """
+    # Normalize all angles to be in the range [0, 2*PI)
+    target = (target + 2 * math.pi) % (2 * math.pi)
+    start = (start + 2 * math.pi) % (2 * math.pi)
+    end = (end + 2 * math.pi) % (2 * math.pi)
+
+    if clockwise:
+        # For a clockwise arc, the sweep is from start down to end.
+        # This can wrap around 0.
+        if start < end:  # Wraps around 2pi (e.g., from 30 deg down to 330 deg)
+            return target <= start or target >= end
+        # Does not wrap (e.g., from 180 deg down to 90 deg)
+        return end <= target <= start
+    else:
+        # For a counter-clockwise arc, the sweep is from start up to end.
+        # This can wrap around 0.
+        if start > end:  # Wraps around 2pi (e.g., from 330 deg up to 30 deg)
+            return target >= start or target <= end
+        # Does not wrap (e.g., from 90 deg up to 180 deg)
+        return start <= target <= end
+
+
+def get_arc_bounding_box(
+    start_pos: Tuple[float, float],
+    end_pos: Tuple[float, float],
+    center_offset: Tuple[float, float],
+    clockwise: bool,
+) -> Tuple[float, float, float, float]:
+    """
+    Calculates the tight bounding box (min_x, min_y, max_x, max_y) for an arc.
+    """
+    center_x = start_pos[0] + center_offset[0]
+    center_y = start_pos[1] + center_offset[1]
+    radius = math.hypot(center_offset[0], center_offset[1])
+
+    # Initialize bounds with the start and end points of the arc.
+    min_x = min(start_pos[0], end_pos[0])
+    min_y = min(start_pos[1], end_pos[1])
+    max_x = max(start_pos[0], end_pos[0])
+    max_y = max(start_pos[1], end_pos[1])
+
+    start_angle = math.atan2(start_pos[1] - center_y, start_pos[0] - center_x)
+    end_angle = math.atan2(end_pos[1] - center_y, end_pos[0] - center_x)
+
+    # Check if the arc sweep crosses the cardinal axes (0, 90, 180, 270 deg)
+    # 0 radians (East)
+    if is_angle_between(0, start_angle, end_angle, clockwise):
+        max_x = max(max_x, center_x + radius)
+    # PI/2 radians (South, in a Y-down coord system) or (North, Y-up)
+    if is_angle_between(math.pi / 2, start_angle, end_angle, clockwise):
+        max_y = max(max_y, center_y + radius)
+    # PI radians (West)
+    if is_angle_between(math.pi, start_angle, end_angle, clockwise):
+        min_x = min(min_x, center_x - radius)
+    # 3*PI/2 radians (North, in a Y-down coord system) or (South, Y-up)
+    if is_angle_between(3 * math.pi / 2, start_angle, end_angle, clockwise):
+        min_y = min(min_y, center_y - radius)
+
+    return min_x, min_y, max_x, max_y
+
+
 def is_point_in_polygon(
     point: Tuple[float, float], polygon: List[Tuple[float, float]]
 ) -> bool:
