@@ -41,6 +41,7 @@ class SketchCanvas(Canvas):
         self.pie_menu.tool_selected.connect(self.on_tool_selected)
         self.pie_menu.constraint_selected.connect(self.on_constraint_selected)
         self.pie_menu.action_triggered.connect(self.on_action_triggered)
+        self.pie_menu.right_clicked.connect(self.on_pie_menu_right_click)
 
         # 3. Right Click Gesture for Pie Menu
         right_click = Gtk.GestureClick()
@@ -48,8 +49,25 @@ class SketchCanvas(Canvas):
         right_click.connect("pressed", self.on_right_click)
         self.add_controller(right_click)
 
+    def on_pie_menu_right_click(self, sender, gesture, n_press, x, y):
+        """
+        Handles a right-click that happened on the PieMenu's drawing area.
+        Translates coordinates and forwards to the main right-click handler.
+        """
+        child = self.pie_menu.get_child()
+        if not child:
+            return
+
+        canvas_coords = child.translate_coordinates(self, x, y)
+        if canvas_coords:
+            canvas_x, canvas_y = canvas_coords
+            self.on_right_click(gesture, n_press, canvas_x, canvas_y)
+
     def on_right_click(self, gesture, n_press, x, y):
         """Open the pie menu at the cursor location with resolved context."""
+        if self.pie_menu.is_visible():
+            self.pie_menu.popdown()
+
         world_x, world_y = self._get_world_coords(x, y)
 
         target: Optional[Union[Point, Entity, Constraint]] = None
@@ -175,7 +193,11 @@ class SketchCanvas(Canvas):
         return False
 
     def on_button_press(self, gesture, n_press: int, x: float, y: float):
-        # Ignore right clicks for the standard canvas logic
+        if self.pie_menu.is_visible() and gesture.get_current_button() != 3:
+            self.pie_menu.popdown()
+            gesture.set_state(Gtk.EventSequenceState.CLAIMED)
+            return
+
         if gesture.get_current_button() == 3:
             return
 
