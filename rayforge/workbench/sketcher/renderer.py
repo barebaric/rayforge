@@ -15,7 +15,6 @@ from rayforge.core.sketcher.constraints import (
     EqualLengthConstraint,
     SymmetryConstraint,
 )
-from rayforge.core.geo.primitives import get_arc_midpoint
 
 
 class SketchRenderer:
@@ -291,64 +290,18 @@ class SketchRenderer:
         if not entity:
             return
 
-        # 1. Get anchor point (mid_x, mid_y) and normal_angle in MODEL space
-        mid_x, mid_y, normal_angle = 0.0, 0.0, 0.0
+        # Use the constraint's own logic to find the anchor point
+        temp_constr = EqualLengthConstraint([entity.id])
+        pos = temp_constr._get_symbol_pos(
+            entity,
+            self.element.sketch.registry,
+            to_screen.transform_point,
+            self.element,
+        )
+        if not pos:
+            return
 
-        if isinstance(entity, Line):
-            p1 = self._safe_get_point(entity.p1_idx)
-            p2 = self._safe_get_point(entity.p2_idx)
-            if not (p1 and p2):
-                return
-            mid_x = (p1.x + p2.x) / 2.0
-            mid_y = (p1.y + p2.y) / 2.0
-            tangent_angle = math.atan2(p2.y - p1.y, p2.x - p1.x)
-            normal_angle = tangent_angle - (math.pi / 2.0)
-
-        elif isinstance(entity, Arc):
-            center = self._safe_get_point(entity.center_idx)
-            start = self._safe_get_point(entity.start_idx)
-            end = self._safe_get_point(entity.end_idx)
-            if not (center and start and end):
-                return
-
-            mid_x, mid_y = get_arc_midpoint(
-                (start.x, start.y),
-                (end.x, end.y),
-                (center.x, center.y),
-                entity.clockwise,
-            )
-            normal_angle = math.atan2(mid_y - center.y, mid_x - center.x)
-
-        elif isinstance(entity, Circle):
-            center = self._safe_get_point(entity.center_idx)
-            radius_pt = self._safe_get_point(entity.radius_pt_idx)
-            if not (center and radius_pt):
-                return
-
-            radius = math.hypot(radius_pt.x - center.x, radius_pt.y - center.y)
-            # Use angle to radius point as the normal for the offset
-            normal_angle = math.atan2(
-                radius_pt.y - center.y, radius_pt.x - center.x
-            )
-            # The anchor point is on the circle's circumference
-            mid_x = center.x + radius * math.cos(normal_angle)
-            mid_y = center.y + radius * math.sin(normal_angle)
-
-        # 2. Calculate offset in MODEL space based on a fixed pixel amount
-        scale = 1.0
-        if self.element.canvas and hasattr(
-            self.element.canvas, "get_view_scale"
-        ):
-            scale, _ = self.element.canvas.get_view_scale()
-            scale = max(scale, 1e-9)
-        offset_dist_model = 15.0 / scale  # 15px offset
-
-        # 3. Apply offset to get final icon position
-        final_x = mid_x + offset_dist_model * math.cos(normal_angle)
-        final_y = mid_y + offset_dist_model * math.sin(normal_angle)
-
-        # 4. Convert to SCREEN space and draw (always horizontal)
-        sx, sy = to_screen.transform_point((final_x, final_y))
+        sx, sy = pos
         ctx.save()
         ctx.set_font_size(16)  # Larger font
         ext = ctx.text_extents("=")
@@ -422,8 +375,10 @@ class SketchRenderer:
     def _draw_circular_constraint(
         self, ctx, constr, is_selected, is_hovered, to_screen
     ):
-        pos_data = self.element.hittester.get_circular_label_pos(
-            constr, to_screen, self.element
+        pos_data = constr.get_label_pos(
+            self.element.sketch.registry,
+            to_screen.transform_point,
+            self.element,
         )
         if not pos_data:
             return
@@ -547,8 +502,8 @@ class SketchRenderer:
     def _draw_perp_constraint(
         self, ctx, constr, is_selected, is_hovered, to_screen
     ):
-        data = self.element.hittester.get_perp_visuals_screen(
-            constr, to_screen, self.element
+        data = constr.get_visuals(
+            self.element.sketch.registry, to_screen.transform_point
         )
         if not data:
             return

@@ -25,6 +25,29 @@ def setup_env():
     return reg, params
 
 
+@pytest.fixture
+def setup_ui_env(setup_env):
+    """Extends setup_env with mock UI elements."""
+    reg, params = setup_env
+
+    # Mock to_screen: identity function (model coords == screen coords)
+    def to_screen(pos):
+        return pos
+
+    # Mock element with a canvas that has a scale
+    class MockCanvas:
+        def get_view_scale(self):
+            return 1.0, 1.0
+
+    class MockElement:
+        def __init__(self):
+            self.canvas = MockCanvas()
+            self.sketch = type("sketch", (), {})()  # Dummy object
+
+    element = MockElement()
+    return reg, params, to_screen, element
+
+
 def test_distance_constraint(setup_env):
     reg, params = setup_env
     p1 = reg.add_point(0, 0)
@@ -163,12 +186,34 @@ def test_point_on_line_constraint(setup_env):
     assert c.error(reg, params) == pytest.approx(0.0)
 
 
+def test_point_on_arc_circle_constraint(setup_env):
+    """Tests PointOnLine constraint for Arc and Circle types."""
+    reg, params = setup_env
+
+    # Circle at (0,0) with radius 10
+    center = reg.add_point(0, 0)
+    radius_pt = reg.add_point(10, 0)
+    circ_id = reg.add_circle(center, radius_pt)
+
+    # Point on the circle circumference
+    pt_on = reg.add_point(0, 10)
+    c1 = PointOnLineConstraint(pt_on, circ_id)
+    # Error: (0^2+10^2) - 10^2 = 0
+    assert c1.error(reg, params) == pytest.approx(0.0)
+
+    # Point outside the circle
+    pt_off = reg.add_point(0, 12)
+    c2 = PointOnLineConstraint(pt_off, circ_id)
+    # Error: (0^2+12^2) - 10^2 = 144 - 100 = 44
+    assert c2.error(reg, params) == pytest.approx(44.0)
+
+
 def test_point_on_line_invalid_entity(setup_env):
     """Ensure it doesn't crash if passed a non-line ID."""
     reg, params = setup_env
     p1 = reg.add_point(0, 0)
     p2 = reg.add_point(10, 0)
-    # Pass a Point ID instead of Line ID
+    # Pass a Point ID instead of a shape ID
     c = PointOnLineConstraint(p2, p1)
     assert c.error(reg, params) == 0.0
 
@@ -254,6 +299,57 @@ def test_perpendicular_constraint(setup_env):
 
     # Dot product: (10, 0) . (10, 10) = 100
     assert c.error(reg, params) == pytest.approx(100.0)
+
+
+def test_perpendicular_constraint_extended(setup_env):
+    """Tests perpendicular constraint for Line-Circle and Circle-Circle."""
+    reg, params = setup_env
+
+    # --- Line-Circle Test ---
+    # Circle at (10,10), radius 5
+    c1_p = reg.add_point(10, 10)
+    c1_r = reg.add_point(15, 10)
+    circ1 = reg.add_circle(c1_p, c1_r)
+
+    # Line passing through center (0,10) -> (20,10)
+    l1_p1 = reg.add_point(0, 10)
+    l1_p2 = reg.add_point(20, 10)
+    line1 = reg.add_line(l1_p1, l1_p2)
+
+    # Error is cross product of (L2-L1) and (C-L1)
+    # (20,0) x (10-0, 10-10) = 20*0 - 10*0 = 0
+    lc_constraint = PerpendicularConstraint(line1, circ1)
+    assert lc_constraint.error(reg, params) == pytest.approx(0.0)
+
+    # Move line so it doesn't pass through center
+    reg.get_point(l1_p1).y = 0
+    reg.get_point(l1_p2).y = 0
+    # Line is now (0,0)->(20,0). Center is (10,10).
+    # Vector L2-L1: (20, 0)
+    # Vector C-L1: (10, 10)
+    # Cross product: (20 * 10) - (10 * 0) = 200
+    assert lc_constraint.error(reg, params) == pytest.approx(200.0)
+
+    # --- Circle-Circle Test ---
+    # C1 at (0,0), radius 3 (r^2=9)
+    c2_p = reg.add_point(0, 0)
+    c2_r = reg.add_point(3, 0)
+    circ2 = reg.add_circle(c2_p, c2_r)
+
+    # C2 at (5,0), radius 4 (r^2=16), distance between centers = 5 (d^2=25)
+    c3_p = reg.add_point(5, 0)
+    c3_r = reg.add_point(9, 0)  # 5+4
+    circ3 = reg.add_circle(c3_p, c3_r)
+
+    # Error is r1^2 + r2^2 - d^2 = 9 + 16 - 25 = 0
+    cc_constraint = PerpendicularConstraint(circ2, circ3)
+    assert cc_constraint.error(reg, params) == pytest.approx(0.0)
+
+    # Move C2 center to (6,0), d^2 = 36
+    reg.get_point(c3_p).x = 6.0
+    # Radius of circ3 changes! New radius is (9-6)=3, so r2^2=9.
+    # Error = r1^2 + new_r2^2 - d^2 = 9 + 9 - 36 = -18
+    assert cc_constraint.error(reg, params) == pytest.approx(-18.0)
 
 
 def test_perpendicular_constraint_invalid_type(setup_env):
@@ -413,8 +509,10 @@ def test_constraint_zero_length_protection(setup_env):
     arc_id = reg.add_arc(start, end, center)
 
     c_tan = TangentConstraint(line_id, arc_id)
-    # Error is dist_to_pt^2 - radius^2. Here dist is 0, radius is 10.
-    # Error = 0^2 - 10^2 = -100
+    # Error is dist_to_pt^2 - radius^2.
+    # Line point is at (0,0), center is at (0,0) -> dist^2 = 0.
+    # Arc radius is 10 -> radius^2 = 100.
+    # Error = 0 - 100 = -100.0
     assert c_tan.error(reg, params) == pytest.approx(-100.0)
 
 
@@ -453,15 +551,62 @@ def test_constraint_serialization_round_trip():
     assert drag.to_dict() == {}
 
 
-def test_equal_length_constraint_serialization_legacy():
+def test_constraint_serialization_legacy_extended():
     """
-    Tests backward compatibility for EqualLengthConstraint deserialization.
+    Tests backward compatibility for deserialization of several constraints.
     """
-    legacy_data = {
-        "type": "EqualLengthConstraint",
-        "e1_id": 10,
-        "e2_id": 12,
-    }
-    constr = EqualLengthConstraint.from_dict(legacy_data)
-    assert isinstance(constr, EqualLengthConstraint)
-    assert constr.entity_ids == [10, 12]
+    # EqualLengthConstraint
+    legacy_el = {"type": "EqualLengthConstraint", "e1_id": 10, "e2_id": 12}
+    el = EqualLengthConstraint.from_dict(legacy_el)
+    assert el.entity_ids == [10, 12]
+
+    # RadiusConstraint
+    legacy_r = {"type": "RadiusConstraint", "arc_id": 5, "value": 10.0}
+    r = RadiusConstraint.from_dict(legacy_r)
+    assert r.entity_id == 5
+
+    # PointOnLineConstraint
+    legacy_pol = {"type": "PointOnLineConstraint", "point_id": 1, "line_id": 2}
+    pol = PointOnLineConstraint.from_dict(legacy_pol)
+    assert pol.shape_id == 2
+
+    # PerpendicularConstraint
+    legacy_perp = {"type": "PerpendicularConstraint", "l1_id": 3, "l2_id": 4}
+    perp = PerpendicularConstraint.from_dict(legacy_perp)
+    assert perp.e1_id == 3 and perp.e2_id == 4
+
+    # TangentConstraint
+    legacy_tan = {"type": "TangentConstraint", "line_id": 5, "arc_id": 6}
+    tan = TangentConstraint.from_dict(legacy_tan)
+    assert tan.shape_id == 6
+
+
+def test_constraint_visuals_and_is_hit(setup_ui_env):
+    """Tests the is_hit and label position methods of constraints."""
+    reg, params, to_screen, element = setup_ui_env
+    threshold = 15.0
+
+    # --- DistanceConstraint ---
+    p1 = reg.add_point(0, 0)
+    p2 = reg.add_point(100, 0)
+    dist_c = DistanceConstraint(p1, p2, 100)
+    # Midpoint is (50, 0)
+    assert dist_c.is_hit(50, 0, reg, to_screen, element, threshold) is True
+    assert dist_c.is_hit(50, 20, reg, to_screen, element, threshold) is False
+
+    # --- RadiusConstraint ---
+    center = reg.add_point(200, 200)
+    radius_pt = reg.add_point(250, 200)  # radius=50
+    circ = reg.add_circle(center, radius_pt)
+    rad_c = RadiusConstraint(circ, 50)
+    pos_data = rad_c.get_label_pos(reg, to_screen, element)
+    assert pos_data is not None
+    label_x, label_y, _, _ = pos_data
+    # Label should be at center_x + radius + offset
+    assert label_x == pytest.approx(200 + 50 + 20)
+    assert label_y == pytest.approx(200)
+    assert (
+        rad_c.is_hit(label_x, label_y, reg, to_screen, element, threshold)
+        is True
+    )
+    assert rad_c.is_hit(0, 0, reg, to_screen, element, threshold) is False

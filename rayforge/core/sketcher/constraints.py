@@ -1,19 +1,55 @@
-from typing import Protocol, Union, Tuple, Dict, Any, List, Optional
-from .entities import EntityRegistry, Line, Arc, Circle
+from __future__ import annotations
+import math
+from typing import (
+    Union,
+    Tuple,
+    Dict,
+    Any,
+    List,
+    Optional,
+    Callable,
+    TYPE_CHECKING,
+)
+from .entities import Line, Arc, Circle
 from .params import ParameterContext
+from rayforge.core.geo.primitives import (
+    line_intersection,
+    circle_circle_intersection,
+    is_point_on_segment,
+)
 
 
-class Constraint(Protocol):
-    """Interface for all geometric constraints."""
+if TYPE_CHECKING:
+    from .entities import EntityRegistry
+
+
+class Constraint:
+    """Base class for all geometric constraints."""
 
     def error(
-        self, reg: EntityRegistry, params: ParameterContext
-    ) -> Union[float, Tuple[float, ...], List[float]]: ...
+        self, reg: "EntityRegistry", params: ParameterContext
+    ) -> Union[float, Tuple[float, ...], List[float]]:
+        """Calculates the error of the constraint."""
+        return 0.0
 
-    def to_dict(self) -> Dict[str, Any]: ...
+    def to_dict(self) -> Dict[str, Any]:
+        """Serializes the constraint to a dictionary."""
+        return {}  # Default for non-serializable constraints like Drag
+
+    def is_hit(
+        self,
+        sx: float,
+        sy: float,
+        reg: "EntityRegistry",
+        to_screen: Callable[[Tuple[float, float]], Tuple[float, float]],
+        element: Any,
+        threshold: float,
+    ) -> bool:
+        """Checks if the constraint's visual representation is hit."""
+        return False
 
 
-class DistanceConstraint:
+class DistanceConstraint(Constraint):
     """Enforces distance between two points."""
 
     def __init__(self, p1: int, p2: int, value: Union[str, float]):
@@ -33,7 +69,7 @@ class DistanceConstraint:
     def from_dict(cls, data: Dict[str, Any]) -> "DistanceConstraint":
         return cls(p1=data["p1"], p2=data["p2"], value=data["value"])
 
-    def error(self, reg: EntityRegistry, params: ParameterContext) -> float:
+    def error(self, reg: "EntityRegistry", params: ParameterContext) -> float:
         pt1 = reg.get_point(self.p1)
         pt2 = reg.get_point(self.p2)
         target = params.evaluate(self.value)
@@ -42,8 +78,26 @@ class DistanceConstraint:
         dist_sq = (pt2.x - pt1.x) ** 2 + (pt2.y - pt1.y) ** 2
         return dist_sq - target**2
 
+    def is_hit(
+        self,
+        sx: float,
+        sy: float,
+        reg: "EntityRegistry",
+        to_screen: Callable[[Tuple[float, float]], Tuple[float, float]],
+        element: Any,
+        threshold: float,
+    ) -> bool:
+        p1 = reg.get_point(self.p1)
+        p2 = reg.get_point(self.p2)
+        if p1 and p2:
+            s1 = to_screen((p1.x, p1.y))
+            s2 = to_screen((p2.x, p2.y))
+            mx, my = (s1[0] + s2[0]) / 2, (s1[1] + s2[1]) / 2
+            return math.hypot(sx - mx, sy - my) < 15
+        return False
 
-class EqualDistanceConstraint:
+
+class EqualDistanceConstraint(Constraint):
     """Enforces that distance(p1, p2) equals distance(p3, p4)."""
 
     def __init__(self, p1: int, p2: int, p3: int, p4: int):
@@ -65,7 +119,7 @@ class EqualDistanceConstraint:
     def from_dict(cls, data: Dict[str, Any]) -> "EqualDistanceConstraint":
         return cls(p1=data["p1"], p2=data["p2"], p3=data["p3"], p4=data["p4"])
 
-    def error(self, reg: EntityRegistry, params: ParameterContext) -> float:
+    def error(self, reg: "EntityRegistry", params: ParameterContext) -> float:
         pt1 = reg.get_point(self.p1)
         pt2 = reg.get_point(self.p2)
         dist1_sq = (pt2.x - pt1.x) ** 2 + (pt2.y - pt1.y) ** 2
@@ -77,7 +131,7 @@ class EqualDistanceConstraint:
         return dist1_sq - dist2_sq
 
 
-class HorizontalConstraint:
+class HorizontalConstraint(Constraint):
     """Enforces two points have the same Y coordinate."""
 
     def __init__(self, p1: int, p2: int):
@@ -91,11 +145,34 @@ class HorizontalConstraint:
     def from_dict(cls, data: Dict[str, Any]) -> "HorizontalConstraint":
         return cls(p1=data["p1"], p2=data["p2"])
 
-    def error(self, reg: EntityRegistry, params: ParameterContext) -> float:
+    def error(self, reg: "EntityRegistry", params: ParameterContext) -> float:
         return reg.get_point(self.p1).y - reg.get_point(self.p2).y
 
+    def is_hit(
+        self,
+        sx: float,
+        sy: float,
+        reg: "EntityRegistry",
+        to_screen: Callable[[Tuple[float, float]], Tuple[float, float]],
+        element: Any,
+        threshold: float,
+    ) -> bool:
+        p1 = reg.get_point(self.p1)
+        p2 = reg.get_point(self.p2)
+        if p1 and p2:
+            s1 = to_screen((p1.x, p1.y))
+            s2 = to_screen((p2.x, p2.y))
 
-class VerticalConstraint:
+            t = 0.2
+            mx = s1[0] + (s2[0] - s1[0]) * t
+            my = s1[1] + (s2[1] - s1[1]) * t
+            cx = mx
+            cy = my - 10
+            return math.hypot(sx - cx, sy - cy) < threshold
+        return False
+
+
+class VerticalConstraint(Constraint):
     """Enforces two points have the same X coordinate."""
 
     def __init__(self, p1: int, p2: int):
@@ -109,11 +186,34 @@ class VerticalConstraint:
     def from_dict(cls, data: Dict[str, Any]) -> "VerticalConstraint":
         return cls(p1=data["p1"], p2=data["p2"])
 
-    def error(self, reg: EntityRegistry, params: ParameterContext) -> float:
+    def error(self, reg: "EntityRegistry", params: ParameterContext) -> float:
         return reg.get_point(self.p1).x - reg.get_point(self.p2).x
 
+    def is_hit(
+        self,
+        sx: float,
+        sy: float,
+        reg: "EntityRegistry",
+        to_screen: Callable[[Tuple[float, float]], Tuple[float, float]],
+        element: Any,
+        threshold: float,
+    ) -> bool:
+        p1 = reg.get_point(self.p1)
+        p2 = reg.get_point(self.p2)
+        if p1 and p2:
+            s1 = to_screen((p1.x, p1.y))
+            s2 = to_screen((p2.x, p2.y))
 
-class CoincidentConstraint:
+            t = 0.2
+            mx = s1[0] + (s2[0] - s1[0]) * t
+            my = s1[1] + (s2[1] - s1[1]) * t
+            cx = mx + 10
+            cy = my
+            return math.hypot(sx - cx, sy - cy) < threshold
+        return False
+
+
+class CoincidentConstraint(Constraint):
     """Enforces two points are at the same location."""
 
     def __init__(self, p1: int, p2: int):
@@ -128,15 +228,35 @@ class CoincidentConstraint:
         return cls(p1=data["p1"], p2=data["p2"])
 
     def error(
-        self, reg: EntityRegistry, params: ParameterContext
+        self, reg: "EntityRegistry", params: ParameterContext
     ) -> Tuple[float, float]:
         pt1 = reg.get_point(self.p1)
         pt2 = reg.get_point(self.p2)
         # Return separate X and Y errors for a solver-friendly quadratic form
         return (pt1.x - pt2.x, pt1.y - pt2.y)
 
+    def is_hit(
+        self,
+        sx: float,
+        sy: float,
+        reg: "EntityRegistry",
+        to_screen: Callable[[Tuple[float, float]], Tuple[float, float]],
+        element: Any,
+        threshold: float,
+    ) -> bool:
+        origin_id = getattr(element.sketch, "origin_id", -1)
+        pid_to_check = self.p1
+        if self.p1 == origin_id and origin_id != -1:
+            pid_to_check = self.p2
 
-class PointOnLineConstraint:
+        pt_to_check = reg.get_point(pid_to_check)
+        if pt_to_check:
+            s_pt = to_screen((pt_to_check.x, pt_to_check.y))
+            return math.hypot(sx - s_pt[0], sy - s_pt[1]) < threshold
+        return False
+
+
+class PointOnLineConstraint(Constraint):
     """Enforces a point lies on the infinite geometry of a shape."""
 
     def __init__(self, point_id: int, shape_id: int):
@@ -160,7 +280,7 @@ class PointOnLineConstraint:
             )
         return cls(point_id=data["point_id"], shape_id=shape_id)
 
-    def error(self, reg: EntityRegistry, params: ParameterContext) -> float:
+    def error(self, reg: "EntityRegistry", params: ParameterContext) -> float:
         pt = reg.get_point(self.point_id)
         shape = reg.get_entity(self.shape_id)
 
@@ -194,8 +314,23 @@ class PointOnLineConstraint:
 
         return 0.0
 
+    def is_hit(
+        self,
+        sx: float,
+        sy: float,
+        reg: "EntityRegistry",
+        to_screen: Callable[[Tuple[float, float]], Tuple[float, float]],
+        element: Any,
+        threshold: float,
+    ) -> bool:
+        pt = reg.get_point(self.point_id)
+        if pt:
+            s_pt = to_screen((pt.x, pt.y))
+            return math.hypot(sx - s_pt[0], sy - s_pt[1]) < threshold
+        return False
 
-class RadiusConstraint:
+
+class RadiusConstraint(Constraint):
     """Enforces radius of an Arc or Circle."""
 
     def __init__(self, entity_id: int, radius: Union[str, float]):
@@ -219,7 +354,7 @@ class RadiusConstraint:
             )
         return cls(entity_id=entity_id, radius=data["value"])
 
-    def error(self, reg: EntityRegistry, params: ParameterContext) -> float:
+    def error(self, reg: "EntityRegistry", params: ParameterContext) -> float:
         entity = reg.get_entity(self.entity_id)
         target = params.evaluate(self.value)
         curr_r_sq = 0.0
@@ -239,8 +374,81 @@ class RadiusConstraint:
 
         return curr_r_sq - target**2
 
+    def get_label_pos(
+        self,
+        reg: "EntityRegistry",
+        to_screen: Callable[[Tuple[float, float]], Tuple[float, float]],
+        element: Any,
+    ):
+        """Calculates screen position for Radius/Diameter constraint labels."""
+        entity = reg.get_entity(self.entity_id)
+        if not isinstance(entity, (Arc, Circle)):
+            return None
 
-class DiameterConstraint:
+        center = reg.get_point(entity.center_idx)
+        if not center:
+            return None
+
+        radius, mid_angle = 0.0, 0.0
+
+        if isinstance(entity, Arc):
+            start = reg.get_point(entity.start_idx)
+            if not start:
+                return None
+            radius = math.hypot(start.x - center.x, start.y - center.y)
+            midpoint = entity.get_midpoint(reg)
+            if not midpoint:
+                return None
+            mid_angle = math.atan2(
+                midpoint[1] - center.y, midpoint[0] - center.x
+            )
+
+        elif isinstance(entity, Circle):
+            radius_pt = reg.get_point(entity.radius_pt_idx)
+            if not radius_pt:
+                return None
+            radius = math.hypot(radius_pt.x - center.x, radius_pt.y - center.y)
+            mid_angle = math.atan2(
+                radius_pt.y - center.y, radius_pt.x - center.x
+            )
+
+        if radius == 0.0:
+            return None
+
+        scale = 1.0
+        if element.canvas and hasattr(element.canvas, "get_view_scale"):
+            scale_x, _ = element.canvas.get_view_scale()
+            scale = scale_x if scale_x > 1e-9 else 1.0
+
+        label_dist = radius + 20 / scale
+        label_mx = center.x + label_dist * math.cos(mid_angle)
+        label_my = center.y + label_dist * math.sin(mid_angle)
+        label_sx, label_sy = to_screen((label_mx, label_my))
+
+        # Position on the arc for the leader line
+        arc_mid_mx = center.x + radius * math.cos(mid_angle)
+        arc_mid_my = center.y + radius * math.sin(mid_angle)
+        arc_mid_sx, arc_mid_sy = to_screen((arc_mid_mx, arc_mid_my))
+
+        return label_sx, label_sy, arc_mid_sx, arc_mid_sy
+
+    def is_hit(
+        self,
+        sx: float,
+        sy: float,
+        reg: "EntityRegistry",
+        to_screen: Callable[[Tuple[float, float]], Tuple[float, float]],
+        element: Any,
+        threshold: float,
+    ) -> bool:
+        pos_data = self.get_label_pos(reg, to_screen, element)
+        if pos_data:
+            label_sx, label_sy, _, _ = pos_data
+            return math.hypot(sx - label_sx, sy - label_sy) < 15
+        return False
+
+
+class DiameterConstraint(Constraint):
     """Enforces the diameter of a Circle."""
 
     def __init__(self, circle_id: int, diameter: Union[str, float]):
@@ -258,7 +466,7 @@ class DiameterConstraint:
     def from_dict(cls, data: Dict[str, Any]) -> "DiameterConstraint":
         return cls(circle_id=data["circle_id"], diameter=data["value"])
 
-    def error(self, reg: EntityRegistry, params: ParameterContext) -> float:
+    def error(self, reg: "EntityRegistry", params: ParameterContext) -> float:
         circle_entity = reg.get_entity(self.circle_id)
 
         if not isinstance(circle_entity, Circle):
@@ -274,8 +482,33 @@ class DiameterConstraint:
         ) ** 2
         return 4 * curr_r_sq - target_diameter**2
 
+    def get_label_pos(
+        self,
+        reg: "EntityRegistry",
+        to_screen: Callable[[Tuple[float, float]], Tuple[float, float]],
+        element: Any,
+    ):
+        # Delegate to RadiusConstraint's logic as it is identical
+        temp_radius_constr = RadiusConstraint(self.circle_id, 0)
+        return temp_radius_constr.get_label_pos(reg, to_screen, element)
 
-class PerpendicularConstraint:
+    def is_hit(
+        self,
+        sx: float,
+        sy: float,
+        reg: "EntityRegistry",
+        to_screen: Callable[[Tuple[float, float]], Tuple[float, float]],
+        element: Any,
+        threshold: float,
+    ) -> bool:
+        pos_data = self.get_label_pos(reg, to_screen, element)
+        if pos_data:
+            label_sx, label_sy, _, _ = pos_data
+            return math.hypot(sx - label_sx, sy - label_sy) < 15
+        return False
+
+
+class PerpendicularConstraint(Constraint):
     """
     Enforces perpendicularity between two entities.
     - Line/Line: Vectors are at 90 degrees.
@@ -304,7 +537,7 @@ class PerpendicularConstraint:
         return cls(e1_id=e1_id, e2_id=e2_id)
 
     def _get_radius_sq(
-        self, shape: Union[Arc, Circle], reg: EntityRegistry
+        self, shape: Union[Arc, Circle], reg: "EntityRegistry"
     ) -> float:
         """Helper to get squared radius of an Arc or Circle."""
         center = reg.get_point(shape.center_idx)
@@ -318,7 +551,7 @@ class PerpendicularConstraint:
             ) ** 2
         return 0.0
 
-    def error(self, reg: EntityRegistry, params: ParameterContext) -> float:
+    def error(self, reg: "EntityRegistry", params: ParameterContext) -> float:
         e1 = reg.get_entity(self.e1_id)
         e2 = reg.get_entity(self.e2_id)
 
@@ -378,8 +611,196 @@ class PerpendicularConstraint:
 
         return 0.0
 
+    def get_visuals(
+        self,
+        reg: "EntityRegistry",
+        to_screen: Callable[[Tuple[float, float]], Tuple[float, float]],
+    ) -> Optional[Tuple[float, float, Optional[float], Optional[float]]]:
+        """Calculates screen position and angles for visualization."""
+        e1 = reg.get_entity(self.e1_id)
+        e2 = reg.get_entity(self.e2_id)
+        if not (e1 and e2):
+            return None
 
-class TangentConstraint:
+        # --- Case 1: Line-Line ---
+        if isinstance(e1, Line) and isinstance(e2, Line):
+            return self._get_line_line_visuals(e1, e2, reg, to_screen)
+
+        # --- Case 2: Line-Shape ---
+        line, shape = (e1, e2) if isinstance(e1, Line) else (e2, e1)
+        if isinstance(line, Line) and isinstance(shape, (Arc, Circle)):
+            return self._get_line_shape_visuals(line, shape, reg, to_screen)
+
+        # --- Case 3: Shape-Shape ---
+        if isinstance(e1, (Arc, Circle)) and isinstance(e2, (Arc, Circle)):
+            return self._get_shape_shape_visuals(e1, e2, reg, to_screen)
+
+        return None
+
+    def _get_line_line_visuals(self, l1, l2, reg, to_screen):
+        p1 = reg.get_point(l1.p1_idx)
+        p2 = reg.get_point(l1.p2_idx)
+        p3 = reg.get_point(l2.p1_idx)
+        p4 = reg.get_point(l2.p2_idx)
+        pt = line_intersection(
+            (p1.x, p1.y), (p2.x, p2.y), (p3.x, p3.y), (p4.x, p4.y)
+        )
+        if not pt:
+            m1x, m1y = (p1.x + p2.x) / 2, (p1.y + p2.y) / 2
+            m2x, m2y = (p3.x + p4.x) / 2, (p3.y + p4.y) / 2
+            pt = ((m1x + m2x) / 2, (m1y + m2y) / 2)
+
+        ix, iy = pt
+        sx, sy = to_screen((ix, iy))
+        s_p1, s_p2 = to_screen((p1.x, p1.y)), to_screen((p2.x, p2.y))
+        s_p3, s_p4 = to_screen((p3.x, p3.y)), to_screen((p4.x, p4.y))
+
+        def dist_sq(a, b):
+            return (a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2
+
+        v1p = (
+            s_p1 if dist_sq(s_p1, (sx, sy)) > dist_sq(s_p2, (sx, sy)) else s_p2
+        )
+        v2p = (
+            s_p3 if dist_sq(s_p3, (sx, sy)) > dist_sq(s_p4, (sx, sy)) else s_p4
+        )
+        ang1 = math.atan2(v1p[1] - sy, v1p[0] - sx)
+        ang2 = math.atan2(v2p[1] - sy, v2p[0] - sx)
+        return sx, sy, ang1, ang2
+
+    def _get_line_shape_visuals(self, line, shape, reg, to_screen):
+        center = reg.get_point(shape.center_idx)
+        lp1, lp2 = reg.get_point(line.p1_idx), reg.get_point(line.p2_idx)
+        dxL, dyL = lp2.x - lp1.x, lp2.y - lp1.y
+        if math.hypot(dxL, dyL) < 1e-9:
+            return None
+        ux, uy = dxL / math.hypot(dxL, dyL), dyL / math.hypot(dxL, dyL)
+
+        if isinstance(shape, Arc):
+            sp = reg.get_point(shape.start_idx)
+        else:
+            sp = reg.get_point(shape.radius_pt_idx)
+        radius = math.hypot(sp.x - center.x, sp.y - center.y)
+
+        ix1, iy1 = center.x + radius * ux, center.y + radius * uy
+        ix2, iy2 = center.x - radius * ux, center.y - radius * uy
+
+        valid_points = []
+        for ix, iy in [(ix1, iy1), (ix2, iy2)]:
+            on_line = is_point_on_segment(
+                (ix, iy), (lp1.x, lp1.y), (lp2.x, lp2.y)
+            )
+            on_arc = True
+            if isinstance(shape, Arc):
+                angle = math.atan2(iy - center.y, ix - center.x)
+                on_arc = shape.is_angle_within_sweep(angle, reg)
+            if on_line and on_arc:
+                valid_points.append((ix, iy))
+
+        if valid_points:
+            best_pt = valid_points[0]
+            if len(valid_points) > 1:
+                lmx, lmy = (lp1.x + lp2.x) / 2, (lp1.y + lp2.y) / 2
+                d1 = (best_pt[0] - lmx) ** 2 + (best_pt[1] - lmy) ** 2
+                d2 = (valid_points[1][0] - lmx) ** 2 + (
+                    valid_points[1][1] - lmy
+                ) ** 2
+                if d2 < d1:
+                    best_pt = valid_points[1]
+            sx, sy = to_screen(best_pt)
+            return sx, sy, None, None
+
+        sx, sy = to_screen((center.x, center.y))
+        return sx, sy, None, None
+
+    def _get_shape_shape_visuals(self, s1, s2, reg, to_screen):
+        c1, c2 = reg.get_point(s1.center_idx), reg.get_point(s2.center_idx)
+        r1 = math.hypot(
+            reg.get_point(
+                s1.start_idx if isinstance(s1, Arc) else s1.radius_pt_idx
+            ).x
+            - c1.x,
+            reg.get_point(
+                s1.start_idx if isinstance(s1, Arc) else s1.radius_pt_idx
+            ).y
+            - c1.y,
+        )
+        r2 = math.hypot(
+            reg.get_point(
+                s2.start_idx if isinstance(s2, Arc) else s2.radius_pt_idx
+            ).x
+            - c2.x,
+            reg.get_point(
+                s2.start_idx if isinstance(s2, Arc) else s2.radius_pt_idx
+            ).y
+            - c2.y,
+        )
+
+        intersections = circle_circle_intersection(
+            (c1.x, c1.y), r1, (c2.x, c2.y), r2
+        )
+        if not intersections:
+            return None
+
+        valid_points = []
+        for ix, iy in intersections:
+            on_s1 = (
+                s1.is_angle_within_sweep(math.atan2(iy - c1.y, ix - c1.x), reg)
+                if isinstance(s1, Arc)
+                else True
+            )
+            on_s2 = (
+                s2.is_angle_within_sweep(math.atan2(iy - c2.y, ix - c2.x), reg)
+                if isinstance(s2, Arc)
+                else True
+            )
+            if on_s1 and on_s2:
+                valid_points.append((ix, iy))
+
+        if not valid_points:
+            sx, sy = to_screen(intersections[0])
+            return sx, sy, None, None
+
+        best_pt = valid_points[0]
+        if len(valid_points) > 1:
+            m1 = s1.get_midpoint(reg) if isinstance(s1, Arc) else None
+            m2 = s2.get_midpoint(reg) if isinstance(s2, Arc) else None
+            if m1 and m2:
+                d1 = (
+                    (valid_points[0][0] - m1[0]) ** 2
+                    + (valid_points[0][1] - m1[1]) ** 2
+                    + (valid_points[0][0] - m2[0]) ** 2
+                    + (valid_points[0][1] - m2[1]) ** 2
+                )
+                d2 = (
+                    (valid_points[1][0] - m1[0]) ** 2
+                    + (valid_points[1][1] - m1[1]) ** 2
+                    + (valid_points[1][0] - m2[0]) ** 2
+                    + (valid_points[1][1] - m2[1]) ** 2
+                )
+                if d2 < d1:
+                    best_pt = valid_points[1]
+
+        sx, sy = to_screen(best_pt)
+        return sx, sy, None, None
+
+    def is_hit(
+        self,
+        sx: float,
+        sy: float,
+        reg: "EntityRegistry",
+        to_screen: Callable[[Tuple[float, float]], Tuple[float, float]],
+        element: Any,
+        threshold: float,
+    ) -> bool:
+        data = self.get_visuals(reg, to_screen)
+        if data:
+            vx, vy, _, _ = data
+            return math.hypot(sx - vx, sy - vy) < 20
+        return False
+
+
+class TangentConstraint(Constraint):
     """
     Enforces tangency between a Line and an Arc/Circle.
     Logic: Distance from shape center to Line equals shape Radius.
@@ -406,7 +827,7 @@ class TangentConstraint:
             )
         return cls(line_id=data["line_id"], shape_id=shape_id)
 
-    def error(self, reg: EntityRegistry, params: ParameterContext) -> float:
+    def error(self, reg: "EntityRegistry", params: ParameterContext) -> float:
         line = reg.get_entity(self.line_id)
         shape = reg.get_entity(self.shape_id)
 
@@ -449,7 +870,7 @@ class TangentConstraint:
         return dist_to_line_sq - radius_sq
 
 
-class EqualLengthConstraint:
+class EqualLengthConstraint(Constraint):
     """
     Enforces that all entities in a set have the same characteristic length.
     - Line: Length
@@ -474,7 +895,7 @@ class EqualLengthConstraint:
             return cls(entity_ids=[e1, e2])
         return cls(entity_ids=data["entity_ids"])
 
-    def _get_length_sq(self, entity, reg: EntityRegistry) -> float:
+    def _get_length_sq(self, entity, reg: "EntityRegistry") -> float:
         if isinstance(entity, Line):
             p1 = reg.get_point(entity.p1_idx)
             p2 = reg.get_point(entity.p2_idx)
@@ -490,7 +911,7 @@ class EqualLengthConstraint:
         return 0.0
 
     def error(
-        self, reg: EntityRegistry, params: ParameterContext
+        self, reg: "EntityRegistry", params: ParameterContext
     ) -> List[float]:
         if len(self.entity_ids) < 2:
             return []
@@ -507,8 +928,63 @@ class EqualLengthConstraint:
             errors.append(other_len_sq - base_len_sq)
         return errors
 
+    def _get_symbol_pos(
+        self,
+        entity,
+        reg: "EntityRegistry",
+        to_screen: Callable[[Tuple[float, float]], Tuple[float, float]],
+        element: Any,
+    ):
+        """Calculates screen pos for an equality symbol on an entity."""
+        # 1. Get anchor point (mid_x, mid_y) and normal_angle in MODEL space
+        mid_x, mid_y, normal_angle = 0.0, 0.0, 0.0
 
-class SymmetryConstraint:
+        if isinstance(entity, Line):
+            p1 = reg.get_point(entity.p1_idx)
+            p2 = reg.get_point(entity.p2_idx)
+            mid_x = (p1.x + p2.x) / 2.0
+            mid_y = (p1.y + p2.y) / 2.0
+            tangent_angle = math.atan2(p2.y - p1.y, p2.x - p1.x)
+            normal_angle = tangent_angle - (math.pi / 2.0)
+        elif isinstance(entity, (Arc, Circle)):
+            midpoint = entity.get_midpoint(reg)
+            if not midpoint:
+                return None
+            mid_x, mid_y = midpoint
+            center = reg.get_point(entity.center_idx)
+            normal_angle = math.atan2(mid_y - center.y, mid_x - center.x)
+
+        scale = 1.0
+        if element.canvas and hasattr(element.canvas, "get_view_scale"):
+            scale, _ = element.canvas.get_view_scale()
+            scale = max(scale, 1e-9)
+        offset_dist_model = 15.0 / scale
+        final_x = mid_x + offset_dist_model * math.cos(normal_angle)
+        final_y = mid_y + offset_dist_model * math.sin(normal_angle)
+        return to_screen((final_x, final_y))
+
+    def is_hit(
+        self,
+        sx: float,
+        sy: float,
+        reg: "EntityRegistry",
+        to_screen: Callable[[Tuple[float, float]], Tuple[float, float]],
+        element: Any,
+        threshold: float,
+    ) -> bool:
+        for entity_id in self.entity_ids:
+            entity = reg.get_entity(entity_id)
+            if not entity:
+                continue
+            pos = self._get_symbol_pos(entity, reg, to_screen, element)
+            if pos:
+                esx, esy = pos
+                if math.hypot(sx - esx, sy - esy) < 15:
+                    return True
+        return False
+
+
+class SymmetryConstraint(Constraint):
     """
     Enforces symmetry between two points (p1, p2) with respect to:
     1. A Center Point (Point Symmetry)
@@ -546,7 +1022,7 @@ class SymmetryConstraint:
         )
 
     def error(
-        self, reg: EntityRegistry, params: ParameterContext
+        self, reg: "EntityRegistry", params: ParameterContext
     ) -> List[float]:
         pt1 = reg.get_point(self.p1)
         pt2 = reg.get_point(self.p2)
@@ -590,8 +1066,37 @@ class SymmetryConstraint:
 
         return [0.0, 0.0]
 
+    def is_hit(
+        self,
+        sx: float,
+        sy: float,
+        reg: "EntityRegistry",
+        to_screen: Callable[[Tuple[float, float]], Tuple[float, float]],
+        element: Any,
+        threshold: float,
+    ) -> bool:
+        p1 = reg.get_point(self.p1)
+        p2 = reg.get_point(self.p2)
+        if not (p1 and p2):
+            return False
+        s1 = to_screen((p1.x, p1.y))
+        s2 = to_screen((p2.x, p2.y))
+        mx = (s1[0] + s2[0]) / 2.0
+        my = (s1[1] + s2[1]) / 2.0
+        angle = math.atan2(s2[1] - s1[1], s2[0] - s1[0])
+        offset = 12.0
+        lx = mx - offset * math.cos(angle)
+        ly = my - offset * math.sin(angle)
+        rx = mx + offset * math.cos(angle)
+        ry = my + offset * math.sin(angle)
+        if math.hypot(sx - lx, sy - ly) < threshold:
+            return True
+        if math.hypot(sx - rx, sy - ry) < threshold:
+            return True
+        return False
 
-class DragConstraint:
+
+class DragConstraint(Constraint):
     """
     A transient constraint used only during interaction.
     It pulls a point toward a target (mouse) coordinate.
@@ -612,12 +1117,8 @@ class DragConstraint:
         # as geometric constraints have an implicit weight of 1.0.
         self.weight = weight
 
-    def to_dict(self) -> Dict[str, Any]:
-        """Drag constraints are transient and should not be serialized."""
-        return {}
-
     def error(
-        self, reg: EntityRegistry, params: ParameterContext
+        self, reg: "EntityRegistry", params: ParameterContext
     ) -> Tuple[float, float]:
         p = reg.get_point(self.point_id)
         # Return separate errors for X and Y components. This creates a
