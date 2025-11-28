@@ -1,6 +1,6 @@
 import logging
 from typing import Union, Optional, TYPE_CHECKING
-from gi.repository import Gtk, Gdk
+from gi.repository import Gtk, Gdk, GLib
 from ...core.sketcher.entities import Point, Entity
 from ...core.sketcher.constraints import Constraint
 from ...undo import HistoryManager
@@ -23,6 +23,8 @@ class SketchEditor:
     SketchElement. It can be used by any canvas-like widget.
     """
 
+    KEY_SEQUENCE_TIMEOUT_MS = 1500  # 1.5 seconds
+
     def __init__(self, parent_window: Gtk.Window):
         self.parent_window = parent_window
         self.sketch_element: Optional["SketchElement"] = None
@@ -31,14 +33,49 @@ class SketchEditor:
         # the main document editor.
         self.history_manager = HistoryManager()
 
-        # 1. Pie Menu Setup
-        self.pie_menu = SketchPieMenu(self.parent_window)
+        # 1. Key Press Handling State
+        self.key_sequence = []
+        self.key_sequence_timer_id: Optional[int] = None
+        self._init_shortcuts()
+
+        # 2. Pie Menu Setup
+        # Pass the shortcuts dict to the pie menu for label generation
+        self.pie_menu = SketchPieMenu(self.parent_window, self.shortcuts)
 
         # Connect signals
         self.pie_menu.tool_selected.connect(self.on_tool_selected)
         self.pie_menu.constraint_selected.connect(self.on_constraint_selected)
         self.pie_menu.action_triggered.connect(self.on_action_triggered)
         self.pie_menu.right_clicked.connect(self.on_pie_menu_right_click)
+
+    def _init_shortcuts(self):
+        """Initializes the keyboard shortcut mappings."""
+        # This can only be called once we have a sketch_element, so we map
+        # to function names and resolve them at runtime.
+        self.shortcuts = {
+            # Tools
+            " ": "set_tool:select",
+            "gl": "set_tool:line",
+            "ga": "set_tool:arc",
+            "gc": "set_tool:circle",
+            "gn": "toggle_construction_on_selection",
+            # Constraints (Single Key)
+            "h": "add_horizontal_constraint",
+            "v": "add_vertical_constraint",
+            "n": "add_perpendicular",
+            "t": "add_tangent",
+            "e": "add_equal_constraint",
+            "o": "add_alignment_constraint",
+            "c": "add_alignment_constraint",  # FreeCAD alias
+            # Constraints (K prefix)
+            "kd": "add_distance_constraint",
+            "kr": "add_radius_constraint",
+            "ko": "add_diameter_constraint",
+        }
+        # A set of all prefixes for quick checking (e.g., "g", "k")
+        self.shortcut_prefixes = {
+            s[:i] for s in self.shortcuts for i in range(1, len(s))
+        }
 
     def activate(self, sketch_element: "SketchElement"):
         """Begins an editing session on the given SketchElement."""
@@ -49,6 +86,7 @@ class SketchEditor:
     def deactivate(self):
         """Ends the current editing session."""
         logger.debug("Deactivating SketchEditor")
+        self._reset_key_sequence()
         if self.sketch_element:
             # Clean up any in-progress tool state
             self.sketch_element.current_tool.on_deactivate()
@@ -250,6 +288,20 @@ class SketchEditor:
         elif action == "delete":
             ctx.delete_selection()
 
+    def _on_key_sequence_timeout(self) -> bool:
+        """Callback to reset the key sequence after a delay."""
+        logger.debug("Key sequence timed out.")
+        self.key_sequence_timer_id = None
+        self._reset_key_sequence()
+        return GLib.SOURCE_REMOVE
+
+    def _reset_key_sequence(self):
+        """Clears the key sequence and cancels any pending timeout."""
+        self.key_sequence.clear()
+        if self.key_sequence_timer_id:
+            GLib.source_remove(self.key_sequence_timer_id)
+            self.key_sequence_timer_id = None
+
     def handle_key_press(
         self, keyval: int, keycode: int, state: Gdk.ModifierType
     ) -> bool:
@@ -259,23 +311,79 @@ class SketchEditor:
 
         is_ctrl = state & Gdk.ModifierType.CONTROL_MASK
 
-        # Undo / Redo
+        # Priority 1: Immediate actions (Undo/Redo, Delete)
         if is_ctrl:
             if keyval == Gdk.KEY_z:
                 self.history_manager.undo()
+                self._reset_key_sequence()
                 return True
             if keyval == Gdk.KEY_y:
                 self.history_manager.redo()
+                self._reset_key_sequence()
                 return True
 
-        # Handle sketcher-specific keys
         if keyval == Gdk.KEY_Delete:
             self.sketch_element.delete_selection()
+            self._reset_key_sequence()
             return True
-        elif keyval == Gdk.KEY_Escape:
-            # If any elements are selected, unselect them.
+
+        # Priority 2: Escape key logic
+        if keyval == Gdk.KEY_Escape:
+            self._reset_key_sequence()
+            # If a tool is active, switch to select tool
+            if self.sketch_element.active_tool_name != "select":
+                self.sketch_element.set_tool("select")
+                return True
+            # If elements are selected, unselect them
             if self.sketch_element.get_selected_elements():
                 self.sketch_element.unselect_all()
                 return True
+            return False  # Propagate up if nothing else to do
 
+        # Priority 3: Shortcut sequence handling for normal keys
+        key_unicode = Gdk.keyval_to_unicode(keyval)
+        if key_unicode == 0:
+            # Not a printable character, ignore for sequences.
+            return False
+
+        char = chr(key_unicode).lower()
+        self.key_sequence.append(char)
+        current_sequence = "".join(self.key_sequence)
+
+        logger.debug(f"Key sequence: {current_sequence}")
+
+        # Check for a complete shortcut match
+        if current_sequence in self.shortcuts:
+            action_str = self.shortcuts[current_sequence]
+            logger.info(
+                f"Shortcut '{current_sequence}' triggered: {action_str}"
+            )
+
+            # Special handling for methods with arguments (e.g., set_tool:line)
+            if ":" in action_str:
+                method_name, arg = action_str.split(":", 1)
+                method = getattr(self.sketch_element, method_name, None)
+                if method and callable(method):
+                    method(arg)
+            else:
+                method = getattr(self.sketch_element, action_str, None)
+                if method and callable(method):
+                    method()
+
+            self._reset_key_sequence()
+            return True
+
+        # If it's not a full match, check if it's a prefix of another shortcut
+        if current_sequence in self.shortcut_prefixes:
+            # It's a valid start, so reset the timeout timer and wait for the
+            # next key.
+            if self.key_sequence_timer_id:
+                GLib.source_remove(self.key_sequence_timer_id)
+            self.key_sequence_timer_id = GLib.timeout_add(
+                self.KEY_SEQUENCE_TIMEOUT_MS, self._on_key_sequence_timeout
+            )
+            return True
+
+        # If the sequence is not a match and not a prefix, it's invalid.
+        self._reset_key_sequence()
         return False
