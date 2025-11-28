@@ -2,7 +2,7 @@ import logging
 import math
 import cairo
 from blinker import Signal
-from typing import Tuple, List, Optional, TYPE_CHECKING
+from typing import Tuple, List, Optional, TYPE_CHECKING, cast
 from rayforge.workbench.canvas import CanvasElement
 from rayforge.core.matrix import Matrix
 
@@ -35,6 +35,7 @@ from .sketch_cmd import (
 )
 
 if TYPE_CHECKING:
+    from .sketchcanvas import SketchCanvas
     from .editor import SketchEditor
 
 logger = logging.getLogger(__name__)
@@ -51,10 +52,16 @@ class SketchElement(CanvasElement):
         height: float = 1.0,
         **kwargs,
     ):
-        kwargs["is_editable"] = True
-        kwargs["clip"] = False
         # Pass the required positional arguments to the parent class.
-        super().__init__(x=x, y=y, width=width, height=height, **kwargs)
+        super().__init__(
+            x=x,
+            y=y,
+            width=width,
+            height=height,
+            is_editable=True,
+            clip=False,
+            **kwargs,
+        )
 
         # Model
         self.sketch = Sketch()
@@ -63,7 +70,7 @@ class SketchElement(CanvasElement):
         self.selection = SketchSelection()
         self.hittester = SketchHitTester()
         self.renderer = SketchRenderer(self)
-        self.editor: Optional["SketchEditor"] = None
+        self.editor: Optional["SketchEditor"]
 
         # Tools
         self.tools = {
@@ -201,8 +208,8 @@ class SketchElement(CanvasElement):
         self.current_tool.on_release(world_x, world_y)
 
     def on_hover_motion(self, world_x: float, world_y: float):
-        if hasattr(self.current_tool, "on_hover_motion"):
-            self.current_tool.on_hover_motion(world_x, world_y)
+        """Dispatches hover events to the currently active tool."""
+        self.current_tool.on_hover_motion(world_x, world_y)
 
     # =========================================================================
     # Capabilities Querying
@@ -250,6 +257,9 @@ class SketchElement(CanvasElement):
             self.current_tool.on_deactivate()
             self.active_tool_name = tool_name
             self.mark_dirty()
+            if self.canvas:
+                canvas = cast("SketchCanvas", self.canvas)
+                canvas.update_sketch_cursor()
 
     def toggle_construction_on_selection(self):
         """
