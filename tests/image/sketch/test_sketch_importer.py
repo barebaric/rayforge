@@ -1,8 +1,10 @@
 import pytest
 import json
+from pathlib import Path
 
 # Sketcher components
 from rayforge.core.sketcher import Sketch
+from rayforge.core.workpiece import WorkPiece
 
 # Importer to test
 from rayforge.image.sketch.importer import SketchImporter
@@ -62,16 +64,26 @@ def test_sketch_importer_round_trip(complex_sketch: Sketch):
     ).encode("utf-8")
 
     # 2. Instantiate the importer with the serialized data
-    importer = SketchImporter(data=sketch_bytes)
-
-    # 3. Call the simplified get_doc_items()
-    # For this step, we expect it to return None but populate
-    # self.parsed_sketch
-    payload = importer.get_doc_items()
-    assert payload is None, "Importer should not return a payload in Step 2"
-    assert importer.parsed_sketch is not None, (
-        "Importer failed to parse sketch"
+    # Explicitly provide a source file to ensure deterministic naming
+    importer = SketchImporter(
+        data=sketch_bytes, source_file=Path("MyTestSketch.rfs")
     )
+
+    # 3. Call get_doc_items()
+    # Now we expect a full payload with a WorkPiece
+    payload = importer.get_doc_items()
+    assert payload is not None, "Importer failed to return payload"
+    assert importer.parsed_sketch is not None
+
+    # Check payload contents
+    assert len(payload.items) == 1
+    item = payload.items[0]
+
+    assert isinstance(item, WorkPiece)
+    assert item.name == "MyTestSketch"
+    assert item.source_segment is not None
+    assert item.source_segment.segment_mask_geometry is not None
+    assert not item.source_segment.segment_mask_geometry.is_empty()
 
     # 4. Get the dictionary representation of the deserialized sketch
     parsed_sketch_dict = importer.parsed_sketch.to_dict()
