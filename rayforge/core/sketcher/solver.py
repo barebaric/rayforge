@@ -30,6 +30,9 @@ class Solver:
             p for p in self.registry.points if not p.fixed
         ]
 
+        # Map point_id -> index in state vector (0, 2, 4...)
+        point_indices = {p.id: i * 2 for i, p in enumerate(mutable_points)}
+
         # Only reset if we are doing a full DOF update
         if update_dof:
             for p in self.registry.points:
@@ -47,14 +50,17 @@ class Solver:
 
         x0 = np.array(x0_list)
 
-        # 3. Define the objective function (residuals)
-        def objective(x_state):
-            # Update registry points directly from vector
+        def update_registry(x_state):
+            """Updates registry points directly from vector."""
             ptr = 0
             for p in mutable_points:
                 p.x = x_state[ptr]
                 p.y = x_state[ptr + 1]
                 ptr += 2
+
+        # 3. Define the objective function (residuals)
+        def objective(x_state):
+            update_registry(x_state)
 
             # Calculate errors
             residuals = []
@@ -73,16 +79,70 @@ class Solver:
 
             return np.array(residuals)
 
-        # 4. Solve
-        # 'trf' is robust for under-constrained problems (m < n)
-        result = least_squares(objective, x0, method="trf", ftol=tolerance)
+        # 4. Define the Jacobian function
+        def jacobian(x_state):
+            # Ensure registry is up-to-date (least_squares might call jac with
+            # the same x as obj, or different)
+            update_registry(x_state)
 
-        # 5. Final Update to ensure registry matches result
-        objective(result.x)
+            n_vars = len(x0)
+            rows = []
+
+            for const in self.constraints:
+                grad_map = const.gradient(self.registry, self.params)
+
+                # Determine how many residuals this constraint produces
+                # We can infer this from the gradient map lists
+                num_residuals = 0
+                if grad_map:
+                    first_val = next(iter(grad_map.values()))
+                    num_residuals = len(first_val)
+                else:
+                    # Fallback check if gradient not implemented but error
+                    # exists
+                    err = const.error(self.registry, self.params)
+                    if isinstance(err, (tuple, list)):
+                        num_residuals = len(err)
+                    else:
+                        num_residuals = 1
+
+                # Create zero rows for these residuals
+                for _ in range(num_residuals):
+                    rows.append(np.zeros(n_vars))
+
+                start_row = len(rows) - num_residuals
+
+                # Fill in the gradients
+                for pid, grads in grad_map.items():
+                    if pid in point_indices:
+                        idx = point_indices[pid]
+                        for i, (dx, dy) in enumerate(grads):
+                            current_row = rows[start_row + i]
+                            current_row[idx] = dx
+                            current_row[idx + 1] = dy
+
+            if not rows:
+                return np.zeros((1, n_vars))
+
+            return np.vstack(rows)
+
+        # 5. Solve
+        # 'trf' is robust for under-constrained problems (m < n)
+        # We pass the analytical jacobian
+        result = least_squares(
+            objective,
+            x0,
+            jac=jacobian,  # type: ignore
+            method="trf",
+            ftol=tolerance,
+        )
+
+        # 6. Final Update to ensure registry matches result
+        update_registry(result.x)
 
         success = bool(result.success and result.cost < tolerance)
 
-        # 6. Analyze Degrees of Freedom (DOF) - CONDITIONALLY
+        # 7. Analyze Degrees of Freedom (DOF) - CONDITIONALLY
         if success and update_dof:
             self._analyze_dof(result.jac, mutable_points)
             self._update_entity_constraints()
