@@ -385,7 +385,9 @@ def test_tangent_constraint(setup_env):
     reg.get_point(lp1).y = 20
     reg.get_point(lp2).y = 20
 
-    assert c.error(reg, params) == pytest.approx(300.0)
+    # Normalized error was 300.0. Line length is 10, so line_len_sq is 100.
+    # Scaled Error = 300 * 100 = 30000.
+    assert c.error(reg, params) == pytest.approx(30000.0)
 
 
 def test_tangent_constraint_on_circle(setup_env):
@@ -410,7 +412,9 @@ def test_tangent_constraint_on_circle(setup_env):
     reg.get_point(lp1).y = 20
     reg.get_point(lp2).y = 20
 
-    assert c.error(reg, params) == pytest.approx(300.0)
+    # Normalized error was 300.0. Line length is 10, so line_len_sq is 100.
+    # Scaled Error = 300 * 100 = 30000.
+    assert c.error(reg, params) == pytest.approx(30000.0)
 
 
 def test_symmetry_constraint_point(setup_env):
