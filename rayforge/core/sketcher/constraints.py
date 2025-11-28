@@ -9,6 +9,7 @@ from typing import (
     Optional,
     Callable,
     TYPE_CHECKING,
+    cast,
 )
 from .entities import Line, Arc, Circle
 from .params import ParameterContext
@@ -31,6 +32,17 @@ class Constraint:
     ) -> Union[float, Tuple[float, ...], List[float]]:
         """Calculates the error of the constraint."""
         return 0.0
+
+    def gradient(
+        self, reg: "EntityRegistry", params: ParameterContext
+    ) -> Dict[int, List[Tuple[float, float]]]:
+        """
+        Calculates the partial derivatives (Jacobian entries) of the error.
+        Returns a map: point_id -> list of (d_error/dx, d_error/dy).
+        The list length matches the number of scalar errors returned by
+        error().
+        """
+        return {}
 
     def to_dict(self) -> Dict[str, Any]:
         """Serializes the constraint to a dictionary."""
@@ -77,6 +89,21 @@ class DistanceConstraint(Constraint):
         # Use squared distances to avoid sqrt, which is better for the solver
         dist_sq = (pt2.x - pt1.x) ** 2 + (pt2.y - pt1.y) ** 2
         return dist_sq - target**2
+
+    def gradient(
+        self, reg: "EntityRegistry", params: ParameterContext
+    ) -> Dict[int, List[Tuple[float, float]]]:
+        pt1 = reg.get_point(self.p1)
+        pt2 = reg.get_point(self.p2)
+        dx = pt2.x - pt1.x
+        dy = pt2.y - pt1.y
+
+        # d/dx1 = -2(x2-x1), d/dy1 = -2(y2-y1)
+        # d/dx2 = 2(x2-x1),  d/dy2 = 2(y2-y1)
+        return {
+            self.p1: [(-2 * dx, -2 * dy)],
+            self.p2: [(2 * dx, 2 * dy)],
+        }
 
     def is_hit(
         self,
@@ -130,6 +157,36 @@ class EqualDistanceConstraint(Constraint):
 
         return dist1_sq - dist2_sq
 
+    def gradient(
+        self, reg: "EntityRegistry", params: ParameterContext
+    ) -> Dict[int, List[Tuple[float, float]]]:
+        pt1 = reg.get_point(self.p1)
+        pt2 = reg.get_point(self.p2)
+        pt3 = reg.get_point(self.p3)
+        pt4 = reg.get_point(self.p4)
+
+        dx1 = pt2.x - pt1.x
+        dy1 = pt2.y - pt1.y
+        dx2 = pt4.x - pt3.x
+        dy2 = pt4.y - pt3.y
+
+        # Error = D1^2 - D2^2
+        # Derivatives for p1, p2 are like DistanceConstraint
+        # Derivatives for p3, p4 are negative DistanceConstraint
+        grad: Dict[int, List[Tuple[float, float]]] = {}
+        # Accumulate gradients (points might be repeated)
+        for pid, (gx, gy) in [
+            (self.p1, (-2 * dx1, -2 * dy1)),
+            (self.p2, (2 * dx1, 2 * dy1)),
+            (self.p3, (2 * dx2, 2 * dy2)),  # -(-2*dx) = +2*dx
+            (self.p4, (-2 * dx2, -2 * dy2)),  # -(2*dx)  = -2*dx
+        ]:
+            if pid not in grad:
+                grad[pid] = [(0.0, 0.0)]
+            cx, cy = grad[pid][0]
+            grad[pid][0] = (cx + gx, cy + gy)
+        return grad
+
 
 class HorizontalConstraint(Constraint):
     """Enforces two points have the same Y coordinate."""
@@ -147,6 +204,14 @@ class HorizontalConstraint(Constraint):
 
     def error(self, reg: "EntityRegistry", params: ParameterContext) -> float:
         return reg.get_point(self.p1).y - reg.get_point(self.p2).y
+
+    def gradient(
+        self, reg: "EntityRegistry", params: ParameterContext
+    ) -> Dict[int, List[Tuple[float, float]]]:
+        return {
+            self.p1: [(0.0, 1.0)],
+            self.p2: [(0.0, -1.0)],
+        }
 
     def is_hit(
         self,
@@ -188,6 +253,14 @@ class VerticalConstraint(Constraint):
 
     def error(self, reg: "EntityRegistry", params: ParameterContext) -> float:
         return reg.get_point(self.p1).x - reg.get_point(self.p2).x
+
+    def gradient(
+        self, reg: "EntityRegistry", params: ParameterContext
+    ) -> Dict[int, List[Tuple[float, float]]]:
+        return {
+            self.p1: [(1.0, 0.0)],
+            self.p2: [(-1.0, 0.0)],
+        }
 
     def is_hit(
         self,
@@ -234,6 +307,17 @@ class CoincidentConstraint(Constraint):
         pt2 = reg.get_point(self.p2)
         # Return separate X and Y errors for a solver-friendly quadratic form
         return (pt1.x - pt2.x, pt1.y - pt2.y)
+
+    def gradient(
+        self, reg: "EntityRegistry", params: ParameterContext
+    ) -> Dict[int, List[Tuple[float, float]]]:
+        # Returns 2 rows of gradients
+        # Row 0 (X error): p1.x=1, p2.x=-1
+        # Row 1 (Y error): p1.y=1, p2.y=-1
+        return {
+            self.p1: [(1.0, 0.0), (0.0, 1.0)],
+            self.p2: [(-1.0, 0.0), (0.0, -1.0)],
+        }
 
     def is_hit(
         self,
@@ -308,6 +392,63 @@ class PointOnLineConstraint(Constraint):
 
         return 0.0
 
+    def gradient(
+        self, reg: "EntityRegistry", params: ParameterContext
+    ) -> Dict[int, List[Tuple[float, float]]]:
+        pt = reg.get_point(self.point_id)
+        shape = reg.get_entity(self.shape_id)
+        grad: Dict[int, List[Tuple[float, float]]] = {}
+
+        if isinstance(shape, Line):
+            l1 = reg.get_point(shape.p1_idx)
+            l2 = reg.get_point(shape.p2_idx)
+            dx = l2.x - l1.x
+            dy = l2.y - l1.y
+
+            # Error E = dx*(py - y1) - (px - x1)*dy
+            # dE/dpx = -dy
+            # dE/dpy = dx
+            grad[self.point_id] = [(-dy, dx)]
+
+            # dE/dx1 = dx * 0 + (-1)(py - y1) - [ (-1)dy + (px - x1)(0) ]
+            #        = -(py - y1) + dy = dy - (py - y1)
+            # dE/dy1 = dx * (-1) - [ 0 - (px - x1) ]
+            #        = -dx + px - x1
+            grad[shape.p1_idx] = [(dy - (pt.y - l1.y), -dx + (pt.x - l1.x))]
+
+            # dE/dx2 = 1*(py - y1) - 0 = py - y1
+            # dE/dy2 = 0 - (px - x1)*1 = -(px - x1)
+            grad[shape.p2_idx] = [(pt.y - l1.y, -(pt.x - l1.x))]
+
+        elif isinstance(shape, (Arc, Circle)):
+            center = reg.get_point(shape.center_idx)
+            # dist_to_pt^2 - radius^2
+            # For Pt: 2(px - cx), 2(py - cy)
+            # For Center: -2(px - cx) - d(radius^2)/dcx, ...
+            dpx = 2 * (pt.x - center.x)
+            dpy = 2 * (pt.y - center.y)
+            grad[self.point_id] = [(dpx, dpy)]
+
+            # Radius part
+            if isinstance(shape, Arc):
+                rad_pt = reg.get_point(shape.start_idx)
+                # d(radius^2)/dx_rad = 2(xr - xc)
+                # d(radius^2)/dx_c   = -2(xr - xc)
+                drx = 2 * (rad_pt.x - center.x)
+                dry = 2 * (rad_pt.y - center.y)
+                grad[shape.start_idx] = [(-drx, -dry)]
+            else:
+                rad_pt = reg.get_point(shape.radius_pt_idx)
+                drx = 2 * (rad_pt.x - center.x)
+                dry = 2 * (rad_pt.y - center.y)
+                grad[shape.radius_pt_idx] = [(-drx, -dry)]
+
+            # For center: term from dist_to_pt is -dpx, -dpy
+            # term from radius is -(-drx) = drx
+            grad[shape.center_idx] = [(-dpx + drx, -dpy + dry)]
+
+        return grad
+
     def is_hit(
         self,
         sx: float,
@@ -361,6 +502,28 @@ class RadiusConstraint(Constraint):
             return 0.0
 
         return curr_r_sq - target**2
+
+    def gradient(
+        self, reg: "EntityRegistry", params: ParameterContext
+    ) -> Dict[int, List[Tuple[float, float]]]:
+        entity = reg.get_entity(self.entity_id)
+        if isinstance(entity, Arc):
+            c = reg.get_point(entity.center_idx)
+            p = reg.get_point(entity.start_idx)
+            dx, dy = p.x - c.x, p.y - c.y
+            return {
+                entity.start_idx: [(2 * dx, 2 * dy)],
+                entity.center_idx: [(-2 * dx, -2 * dy)],
+            }
+        elif isinstance(entity, Circle):
+            c = reg.get_point(entity.center_idx)
+            p = reg.get_point(entity.radius_pt_idx)
+            dx, dy = p.x - c.x, p.y - c.y
+            return {
+                entity.radius_pt_idx: [(2 * dx, 2 * dy)],
+                entity.center_idx: [(-2 * dx, -2 * dy)],
+            }
+        return {}
 
     def get_label_pos(
         self,
@@ -470,6 +633,21 @@ class DiameterConstraint(Constraint):
         ) ** 2
         return 4 * curr_r_sq - target_diameter**2
 
+    def gradient(
+        self, reg: "EntityRegistry", params: ParameterContext
+    ) -> Dict[int, List[Tuple[float, float]]]:
+        entity = reg.get_entity(self.circle_id)
+        if isinstance(entity, Circle):
+            c = reg.get_point(entity.center_idx)
+            p = reg.get_point(entity.radius_pt_idx)
+            dx, dy = p.x - c.x, p.y - c.y
+            # 4 * r^2. Deriv is 4 * 2 * dx = 8dx
+            return {
+                entity.radius_pt_idx: [(8 * dx, 8 * dy)],
+                entity.center_idx: [(-8 * dx, -8 * dy)],
+            }
+        return {}
+
     def get_label_pos(
         self,
         reg: "EntityRegistry",
@@ -566,9 +744,7 @@ class PerpendicularConstraint(Constraint):
             lp1 = reg.get_point(line.p1_idx)
             lp2 = reg.get_point(line.p2_idx)
             center = reg.get_point(shape.center_idx)
-
-            # Use the 2D cross-product of vectors
-            #   (lp2 - lp1) and (center - lp1).
+            # Cross product (lp2-lp1) x (center-lp1)
             return (lp2.x - lp1.x) * (center.y - lp1.y) - (
                 center.x - lp1.x
             ) * (lp2.y - lp1.y)
@@ -593,6 +769,92 @@ class PerpendicularConstraint(Constraint):
             return r1_sq + r2_sq - dist_centers_sq
 
         return 0.0
+
+    def gradient(
+        self, reg: "EntityRegistry", params: ParameterContext
+    ) -> Dict[int, List[Tuple[float, float]]]:
+        e1 = reg.get_entity(self.e1_id)
+        e2 = reg.get_entity(self.e2_id)
+        grad: Dict[int, List[Tuple[float, float]]] = {}
+
+        if isinstance(e1, Line) and isinstance(e2, Line):
+            p1 = reg.get_point(e1.p1_idx)
+            p2 = reg.get_point(e1.p2_idx)
+            p3 = reg.get_point(e2.p1_idx)
+            p4 = reg.get_point(e2.p2_idx)
+            dx1, dy1 = p2.x - p1.x, p2.y - p1.y
+            dx2, dy2 = p4.x - p3.x, p4.y - p3.y
+            # E = dx1*dx2 + dy1*dy2
+            grad[e1.p1_idx] = [(-dx2, -dy2)]
+            grad[e1.p2_idx] = [(dx2, dy2)]
+            grad[e2.p1_idx] = [(-dx1, -dy1)]
+            grad[e2.p2_idx] = [(dx1, dy1)]
+
+        elif (isinstance(e1, Line) and isinstance(e2, (Arc, Circle))) or (
+            isinstance(e2, Line) and isinstance(e1, (Arc, Circle))
+        ):
+            line, shape = (e1, e2) if isinstance(e1, Line) else (e2, e1)
+            # Ensure type safety
+            if isinstance(line, Line) and isinstance(shape, (Arc, Circle)):
+                l1 = reg.get_point(line.p1_idx)
+                l2 = reg.get_point(line.p2_idx)
+                c = reg.get_point(shape.center_idx)
+                dx = l2.x - l1.x
+                dy = l2.y - l1.y
+                # E = dx*(c.y - l1.y) - (c.x - l1.x)*dy
+                grad[shape.center_idx] = [(-dy, dx)]
+                grad[line.p1_idx] = [(dy - (c.y - l1.y), -dx + (c.x - l1.x))]
+                grad[line.p2_idx] = [(c.y - l1.y, -(c.x - l1.x))]
+
+        elif isinstance(e1, (Arc, Circle)) and isinstance(e2, (Arc, Circle)):
+            # r1^2 + r2^2 - dist_sq
+            s1, s2 = e1, e2
+            c1 = reg.get_point(s1.center_idx)
+            c2 = reg.get_point(s2.center_idx)
+
+            # Center 1 part:
+            # -d(dist)/dc1 + d(r1)/dc1 (if arc/circle)
+            d_dist_x = 2 * (c2.x - c1.x)
+            d_dist_y = 2 * (c2.y - c1.y)
+
+            # R1 derivs
+            dr1_c_x = 0
+            dr1_c_y = 0
+            if isinstance(s1, Arc):
+                p1 = reg.get_point(s1.start_idx)
+                dr1_c_x = -2 * (p1.x - c1.x)
+                dr1_c_y = -2 * (p1.y - c1.y)
+                grad[s1.start_idx] = [(2 * (p1.x - c1.x), 2 * (p1.y - c1.y))]
+            else:
+                p1 = reg.get_point(s1.radius_pt_idx)
+                dr1_c_x = -2 * (p1.x - c1.x)
+                dr1_c_y = -2 * (p1.y - c1.y)
+                grad[s1.radius_pt_idx] = [
+                    (2 * (p1.x - c1.x), 2 * (p1.y - c1.y))
+                ]
+
+            # R2 derivs
+            dr2_c_x = 0
+            dr2_c_y = 0
+            if isinstance(s2, Arc):
+                p2 = reg.get_point(s2.start_idx)
+                dr2_c_x = -2 * (p2.x - c2.x)
+                dr2_c_y = -2 * (p2.y - c2.y)
+                grad[s2.start_idx] = [(2 * (p2.x - c2.x), 2 * (p2.y - c2.y))]
+            else:
+                p2 = reg.get_point(s2.radius_pt_idx)
+                dr2_c_x = -2 * (p2.x - c2.x)
+                dr2_c_y = -2 * (p2.y - c2.y)
+                grad[s2.radius_pt_idx] = [
+                    (2 * (p2.x - c2.x), 2 * (p2.y - c2.y))
+                ]
+
+            # Dist term for C1: -(-2(c2-c1)) = 2(c2-c1) = d_dist_x
+            grad[s1.center_idx] = [(d_dist_x + dr1_c_x, d_dist_y + dr1_c_y)]
+            # Dist term for C2: -(2(c2-c1)) = -d_dist_x
+            grad[s2.center_idx] = [(-d_dist_x + dr2_c_x, -d_dist_y + dr2_c_y)]
+
+        return grad
 
     def get_visuals(
         self,
@@ -844,13 +1106,110 @@ class TangentConstraint(Constraint):
             line_dx * (lp1.y - center.y) - (lp1.x - center.x) * line_dy
         )
 
-        # We want dist_from_center_to_line^2 == radius^2.
-        # (cross_product / line_len)^2 == radius_sq
-        # cross_product^2 / line_len_sq == radius_sq
-        #
-        # To avoid division by line_len_sq which causes instability:
-        # cross_product^2 - radius_sq * line_len_sq = 0
-        return cross_product**2 - (radius_sq * line_len_sq)
+        return (cross_product**2 / line_len_sq) - radius_sq
+
+    def gradient(
+        self, reg: "EntityRegistry", params: ParameterContext
+    ) -> Dict[int, List[Tuple[float, float]]]:
+        line = reg.get_entity(self.line_id)
+        shape = reg.get_entity(self.shape_id)
+        grad: Dict[int, List[Tuple[float, float]]] = {}
+
+        if not isinstance(line, Line) or not isinstance(shape, (Arc, Circle)):
+            return grad
+
+        lp1 = reg.get_point(line.p1_idx)
+        lp2 = reg.get_point(line.p2_idx)
+        center = reg.get_point(shape.center_idx)
+
+        dx = lp2.x - lp1.x
+        dy = lp2.y - lp1.y
+        lensq = dx**2 + dy**2
+        if lensq < 1e-18:
+            # Fallback
+            return grad
+
+        # CP = dx(y1 - yc) - dy(x1 - xc)
+        cp = dx * (lp1.y - center.y) - dy * (lp1.x - center.x)
+
+        # Partial derivatives of CP
+        # dCP/dxc = dy, dCP/dyc = -dx
+        dcp_dxc = dy
+        dcp_dyc = -dx
+
+        # dCP/dx1 = -1*(y1-yc) + dx*0 - dy*1 - (x1-xc)*0 = -(y1-yc) - dy
+        dcp_dx1 = -(lp1.y - center.y) - dy
+        # dCP/dy1 = dx*1 + 0 - (x1-xc)*(-1) - 0 = dx + (x1-xc)
+        dcp_dy1 = dx + (lp1.x - center.x)
+
+        # dCP/dx2 = 1*(y1-yc) - 0 = y1-yc
+        dcp_dx2 = lp1.y - center.y
+        # dCP/dy2 = 0 - 1*(x1-xc) = -(x1-xc)
+        dcp_dy2 = -(lp1.x - center.x)
+
+        # Derivatives of LenSq = dx^2 + dy^2
+        dlsq_dx1 = -2 * dx
+        dlsq_dy1 = -2 * dy
+        dlsq_dx2 = 2 * dx
+        dlsq_dy2 = 2 * dy
+
+        # R^2 deriv
+        sp = None
+        if isinstance(shape, Arc):
+            sp = reg.get_point(shape.start_idx)
+        else:
+            sp = reg.get_point(shape.radius_pt_idx)
+
+        drsq_dxc = -2 * (sp.x - center.x)
+        drsq_dyc = -2 * (sp.y - center.y)
+        drsq_dxs = 2 * (sp.x - center.x)
+        drsq_dys = 2 * (sp.y - center.y)
+
+        # Error E = (CP^2 / LenSq) - Rsq
+        # dE/dv = (2*CP*dCP * LenSq - CP^2 * dLenSq) / (LenSq^2) - dRsq
+
+        lensq_sq = lensq * lensq
+
+        def term(dcp, dlsq, drsq):
+            term1 = (2 * cp * dcp * lensq - cp**2 * dlsq) / lensq_sq
+            return term1 - drsq
+
+        # Center
+        grad[shape.center_idx] = [
+            (
+                term(dcp_dxc, 0, drsq_dxc),
+                term(dcp_dyc, 0, drsq_dyc),
+            )
+        ]
+
+        # Radius Point
+        s_idx = (
+            shape.start_idx if isinstance(shape, Arc) else shape.radius_pt_idx
+        )
+        grad[s_idx] = [
+            (
+                term(0, 0, drsq_dxs),
+                term(0, 0, drsq_dys),
+            )
+        ]
+
+        # Line P1
+        grad[line.p1_idx] = [
+            (
+                term(dcp_dx1, dlsq_dx1, 0),
+                term(dcp_dy1, dlsq_dy1, 0),
+            )
+        ]
+
+        # Line P2
+        grad[line.p2_idx] = [
+            (
+                term(dcp_dx2, dlsq_dx2, 0),
+                term(dcp_dy2, dlsq_dy2, 0),
+            )
+        ]
+
+        return grad
 
 
 class EqualLengthConstraint(Constraint):
@@ -905,6 +1264,62 @@ class EqualLengthConstraint(Constraint):
             other_len_sq = self._get_length_sq(entities[i], reg)
             errors.append(other_len_sq - base_len_sq)
         return errors
+
+    def gradient(
+        self, reg: "EntityRegistry", params: ParameterContext
+    ) -> Dict[int, List[Tuple[float, float]]]:
+        if len(self.entity_ids) < 2:
+            return {}
+
+        entities = [
+            cast(Union[Line, Arc, Circle], reg.get_entity(eid))
+            for eid in self.entity_ids
+        ]
+        grad: Dict[int, List[Tuple[float, float]]] = {}
+        num_residuals = len(entities) - 1
+
+        # Helper to get points defining length
+        def get_pts(ent):
+            if isinstance(ent, Line):
+                return ent.p1_idx, ent.p2_idx
+            elif isinstance(ent, Arc):
+                return ent.center_idx, ent.start_idx
+            elif isinstance(ent, Circle):
+                return ent.center_idx, ent.radius_pt_idx
+            return -1, -1
+
+        # Base entity properties (index 0)
+        p0a, p0b = get_pts(entities[0])
+        pt0a = reg.get_point(p0a)
+        pt0b = reg.get_point(p0b)
+        dx0 = pt0b.x - pt0a.x
+        dy0 = pt0b.y - pt0a.y
+
+        def add_grad(pid, r_idx, gx, gy):
+            if pid not in grad:
+                grad[pid] = [(0.0, 0.0)] * num_residuals
+            # Copy list to modify specific row
+            curr = list(grad[pid])
+            ox, oy = curr[r_idx]
+            curr[r_idx] = (ox + gx, oy + gy)
+            grad[pid] = curr
+
+        for row in range(num_residuals):
+            # Base entity derivs (negative)
+            # L_i^2 - L_0^2
+            # d/dP0 = -2 * (dLo/dP0)
+            add_grad(p0a, row, 2 * dx0, 2 * dy0)  # - (-2dx)
+            add_grad(p0b, row, -2 * dx0, -2 * dy0)  # - (2dx)
+
+            # Current entity derivs (positive)
+            ent = entities[row + 1]
+            pa, pb = get_pts(ent)
+            pta, ptb = reg.get_point(pa), reg.get_point(pb)
+            dx, dy = ptb.x - pta.x, ptb.y - pta.y
+            add_grad(pa, row, -2 * dx, -2 * dy)
+            add_grad(pb, row, 2 * dx, 2 * dy)
+
+        return grad
 
     def _get_symbol_pos(
         self,
@@ -1044,6 +1459,65 @@ class SymmetryConstraint(Constraint):
 
         return [0.0, 0.0]
 
+    def gradient(
+        self, reg: "EntityRegistry", params: ParameterContext
+    ) -> Dict[int, List[Tuple[float, float]]]:
+        if self.center is not None:
+            # P1+P2 - 2C = 0
+            return {
+                self.p1: [(1, 0), (0, 1)],
+                self.p2: [(1, 0), (0, 1)],
+                self.center: [(-2, 0), (0, -2)],
+            }
+        elif self.axis is not None:
+            line = reg.get_entity(self.axis)
+            if not isinstance(line, Line):
+                return {}
+
+            l1 = reg.get_point(line.p1_idx)
+            l2 = reg.get_point(line.p2_idx)
+            dxl = l2.x - l1.x
+            dyl = l2.y - l1.y
+            pt1 = reg.get_point(self.p1)
+            pt2 = reg.get_point(self.p2)
+            dxp = pt2.x - pt1.x
+            dyp = pt2.y - pt1.y
+            # mx = (pt1.x + pt2.x) * 0.5
+
+            grad: Dict[int, List[Tuple[float, float]]] = {}
+
+            # Row 0: Perp: dxp*dxl + dyp*dyl
+            grad[self.p1] = [(-dxl, -dyl)]
+            grad[self.p2] = [(dxl, dyl)]
+            grad[line.p1_idx] = [(-dxp, -dyp)]
+            grad[line.p2_idx] = [(dxp, dyp)]
+
+            # Row 1: Collinear: (mx - l1x)*dyl - (my - l1y)*dxl
+            def append(pid, gx, gy):
+                if pid not in grad:
+                    grad[pid] = [(0.0, 0.0)]
+                grad[pid].append((gx, gy))
+
+            p1x, p1y = pt1.x, pt1.y
+            p2x, p2y = pt2.x, pt2.y
+            l1x, l1y = l1.x, l1.y
+
+            append(self.p1, 0.5 * dyl, -0.5 * dxl)
+            append(self.p2, 0.5 * dyl, -0.5 * dxl)
+            append(
+                line.p1_idx,
+                -dyl + (p1y + p2y) * 0.5 - l1y,
+                -((p1x + p2x) * 0.5 - l1x) + dxl,
+            )
+            append(
+                line.p2_idx,
+                -((p1y + p2y) * 0.5 - l1y),
+                (p1x + p2x) * 0.5 - l1x,
+            )
+            return grad
+
+        return {}
+
     def is_hit(
         self,
         sx: float,
@@ -1090,18 +1564,19 @@ class DragConstraint(Constraint):
         self.point_id = point_id
         self.target_x = target_x
         self.target_y = target_y
-        # Weight controls how strongly this constraint pulls vs geometric
-        # constraints. It should be << 1.0 to prevent breaking geometry,
-        # as geometric constraints have an implicit weight of 1.0.
         self.weight = weight
 
     def error(
         self, reg: "EntityRegistry", params: ParameterContext
     ) -> Tuple[float, float]:
         p = reg.get_point(self.point_id)
-        # Return separate errors for X and Y components. This creates a
-        # quadratic objective function (sum of squares) which is much
-        # friendlier to the solver than one based on hypot().
         err_x = (p.x - self.target_x) * self.weight
         err_y = (p.y - self.target_y) * self.weight
         return err_x, err_y
+
+    def gradient(
+        self, reg: "EntityRegistry", params: ParameterContext
+    ) -> Dict[int, List[Tuple[float, float]]]:
+        return {
+            self.point_id: [(self.weight, 0.0), (0.0, self.weight)],
+        }
