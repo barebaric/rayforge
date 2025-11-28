@@ -17,7 +17,7 @@ gettext.install("canvas", base_path / "rayforge" / "locale")
 
 gi.require_version("Adw", "1")
 gi.require_version("Gtk", "4.0")
-from gi.repository import Gtk
+from gi.repository import Gtk, Gdk
 
 from rayforge.workbench.sketcher.sketchcanvas import SketchCanvas
 from rayforge.workbench.sketcher.sketchelement import SketchElement
@@ -28,6 +28,7 @@ class SketcherApp(Gtk.Application):
         super().__init__(application_id="com.example.SketcherApp")
         self.sketch_elem: Optional[SketchElement] = None
         self.canvas: Optional[SketchCanvas] = None
+        self.window: Optional[Gtk.ApplicationWindow] = None
 
     def do_activate(self):
         self.window = Gtk.ApplicationWindow(application=self)
@@ -68,7 +69,32 @@ class SketcherApp(Gtk.Application):
         # Setup initial Element
         self.add_initial_sketch()
 
+        # Add key controller for application-level shortcuts
+        controller = Gtk.EventControllerKey()
+        controller.connect("key-pressed", self.on_key_pressed)
+        self.window.add_controller(controller)
+
         self.window.present()
+
+    def on_key_pressed(
+        self,
+        controller: Gtk.EventControllerKey,
+        keyval: int,
+        keycode: int,
+        state: Gdk.ModifierType,
+    ) -> bool:
+        """Handles key presses at the window level for app shortcuts."""
+        # Check for Ctrl modifier
+        is_ctrl = state & Gdk.ModifierType.CONTROL_MASK
+
+        if is_ctrl:
+            # Check for 'Q' or 'W' key
+            if keyval == Gdk.KEY_q or keyval == Gdk.KEY_w:
+                logger.info("Close shortcut detected. Shutting down.")
+                self.quit()
+                return True  # Mark event as handled
+
+        return False  # Event not handled, allow propagation
 
     def add_initial_sketch(self):
         """Creates and adds the first sketch with demo geometry."""
