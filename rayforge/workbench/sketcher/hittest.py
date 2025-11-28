@@ -18,6 +18,10 @@ from rayforge.core.sketcher.constraints import (
 from rayforge.core.geo.primitives import (
     find_closest_point_on_line_segment,
     line_intersection,
+    circle_circle_intersection,
+    is_point_on_segment,
+    get_arc_midpoint,
+    is_angle_between,
 )
 
 
@@ -190,21 +194,13 @@ class SketchHitTester:
             if not (center and start and end):
                 return None
 
-            start_a = math.atan2(start.y - center.y, start.x - center.x)
-            end_a = math.atan2(end.y - center.y, end.x - center.x)
-            angle_range = end_a - start_a
-            if entity.clockwise:
-                if angle_range > 0:
-                    angle_range -= 2 * math.pi
-            else:
-                if angle_range < 0:
-                    angle_range += 2 * math.pi
-
-            mid_angle = start_a + angle_range / 2.0
-            radius = math.hypot(start.x - center.x, start.y - center.y)
-            mid_x = center.x + radius * math.cos(mid_angle)
-            mid_y = center.y + radius * math.sin(mid_angle)
-            normal_angle = mid_angle
+            mid_x, mid_y = get_arc_midpoint(
+                (start.x, start.y),
+                (end.x, end.y),
+                (center.x, center.y),
+                entity.clockwise,
+            )
+            normal_angle = math.atan2(mid_y - center.y, mid_x - center.x)
 
         elif isinstance(entity, Circle):
             center = safe_get(entity.center_idx)
@@ -407,26 +403,9 @@ class SketchHitTester:
         """Checks if a target angle lies on the arc segment."""
         angle_start = math.atan2(start.y - center.y, start.x - center.x)
         angle_end = math.atan2(end.y - center.y, end.x - center.x)
-
-        # Normalize all angles to [0, 2*pi)
-        target = (target_angle + 2 * math.pi) % (2 * math.pi)
-        start_norm = (angle_start + 2 * math.pi) % (2 * math.pi)
-        end_norm = (angle_end + 2 * math.pi) % (2 * math.pi)
-
-        if clockwise:
-            # If start < end, it wraps around 0. e.g., start at 330 deg, end
-            # at 30 deg.
-            if start_norm > end_norm:
-                return target >= start_norm or target <= end_norm
-            # Normal case where start > end.
-            return target >= start_norm and target <= end_norm
-        else:  # Counter-clockwise
-            # If start > end, it wraps around 0. e.g., start at 330 deg, end
-            # at 30 deg.
-            if start_norm > end_norm:
-                return target >= start_norm or target <= end_norm
-            # Normal case where start < end.
-            return target >= start_norm and target <= end_norm
+        return is_angle_between(
+            target_angle, angle_start, angle_end, clockwise
+        )
 
     def get_circular_label_pos(self, constr, to_screen, element):
         """Calculates screen position for Radius/Diameter constraint labels."""
@@ -453,17 +432,13 @@ class SketchHitTester:
                 return None
 
             radius = math.hypot(start.x - center.x, start.y - center.y)
-            start_a = math.atan2(start.y - center.y, start.x - center.x)
-            end_a = math.atan2(end.y - center.y, end.x - center.x)
-
-            angle_range = end_a - start_a
-            if entity.clockwise:
-                if angle_range > 0:
-                    angle_range -= 2 * math.pi
-            else:
-                if angle_range < 0:
-                    angle_range += 2 * math.pi
-            mid_angle = start_a + angle_range / 2.0
+            mid_x, mid_y = get_arc_midpoint(
+                (start.x, start.y),
+                (end.x, end.y),
+                (center.x, center.y),
+                entity.clockwise,
+            )
+            mid_angle = math.atan2(mid_y - center.y, mid_x - center.x)
 
         elif isinstance(entity, Circle):
             radius_pt = element.sketch.registry.get_point(entity.radius_pt_idx)
@@ -576,20 +551,6 @@ class SketchHitTester:
             except Exception:
                 return None
 
-        def is_on_line_segment(pt, p1, p2):
-            # Check if point pt is on segment p1-p2 using dot products
-            dot1 = (pt[0] - p1.x) * (p2.x - p1.x) + (pt[1] - p1.y) * (
-                p2.y - p1.y
-            )
-            if dot1 < 0:
-                return False
-            dot2 = (pt[0] - p2.x) * (p1.x - p2.x) + (pt[1] - p2.y) * (
-                p1.y - p2.y
-            )
-            if dot2 < 0:
-                return False
-            return True
-
         center = safe_get(shape.center_idx)
         lp1 = safe_get(line.p1_idx)
         lp2 = safe_get(line.p2_idx)
@@ -616,7 +577,10 @@ class SketchHitTester:
 
         valid_points = []
         for ix, iy in [(ix1, iy1), (ix2, iy2)]:
-            on_line = is_on_line_segment((ix, iy), lp1, lp2)
+            # Use primitives helper to check segment overlap
+            on_line = is_point_on_segment(
+                (ix, iy), (lp1.x, lp1.y), (lp2.x, lp2.y)
+            )
             on_arc = True
             if isinstance(shape, Arc):
                 start, end = safe_get(shape.start_idx), safe_get(shape.end_idx)
@@ -672,29 +636,14 @@ class SketchHitTester:
         r1 = get_radius(s1, c1)
         r2 = get_radius(s2, c2)
 
-        d_sq = (c2.x - c1.x) ** 2 + (c2.y - c1.y) ** 2
-        d = math.sqrt(d_sq) if d_sq > 1e-9 else 0
-        if d == 0:
-            return None  # Concentric circles can't be perpendicular
-
-        # Intersection point formula
-        a = (r1**2 - r2**2 + d_sq) / (2 * d)
-        try:
-            h = math.sqrt(max(0, r1**2 - a**2))
-        except ValueError:
-            return None  # No real intersection
-
-        x2 = c1.x + a * (c2.x - c1.x) / d
-        y2 = c1.y + a * (c2.y - c1.y) / d
-
-        # Two possible intersection points
-        ix1 = x2 + h * (c2.y - c1.y) / d
-        iy1 = y2 - h * (c2.x - c1.x) / d
-        ix2 = x2 - h * (c2.y - c1.y) / d
-        iy2 = y2 + h * (c2.x - c1.x) / d
+        intersections = circle_circle_intersection(
+            (c1.x, c1.y), r1, (c2.x, c2.y), r2
+        )
+        if not intersections:
+            return None
 
         valid_points = []
-        for ix, iy in [(ix1, iy1), (ix2, iy2)]:
+        for ix, iy in intersections:
             on_s1 = True
             if isinstance(s1, Arc):
                 start, end = safe_get(s1.start_idx), safe_get(s1.end_idx)
@@ -718,36 +667,29 @@ class SketchHitTester:
 
         if not valid_points:
             # Fallback: one of the infinite intersection points
-            sx, sy = to_screen.transform_point((ix1, iy1))
+            sx, sy = to_screen.transform_point(intersections[0])
             return sx, sy, None, None
 
         best_pt = valid_points[0]
         if len(valid_points) > 1:
+            # Choose point furthest from the midpoints of the arcs to allow
+            # visualization in uncrowded space, or closest to centers.
+            # Original logic used arc midpoints. Let's replicate that.
 
-            def get_midpoint(arc, center):
+            def get_mp(arc, center):
                 if not isinstance(arc, Arc):
                     return None
                 s = safe_get(arc.start_idx)
                 e = safe_get(arc.end_idx)
                 if not (s and e and center):
                     return None
-                sa = math.atan2(s.y - center.y, s.x - center.x)
-                ea = math.atan2(e.y - center.y, e.x - center.x)
-                ar = ea - sa
-                if arc.clockwise:
-                    if ar > 0:
-                        ar -= 2 * math.pi
-                else:
-                    if ar < 0:
-                        ar += 2 * math.pi
-                mid_a = sa + ar / 2.0
-                r = math.hypot(s.x - center.x, s.y - center.y)
-                return center.x + r * math.cos(mid_a), center.y + r * math.sin(
-                    mid_a
+                mid_x, mid_y = get_arc_midpoint(
+                    (s.x, s.y), (e.x, e.y), (center.x, center.y), arc.clockwise
                 )
+                return mid_x, mid_y
 
-            m1 = get_midpoint(s1, c1)
-            m2 = get_midpoint(s2, c2)
+            m1 = get_mp(s1, c1)
+            m2 = get_mp(s2, c2)
 
             if m1 and m2:
                 d1_sq = (

@@ -3,6 +3,53 @@ from typing import List, Tuple, Optional, Any
 from .linearize import linearize_arc
 
 
+def normalize_angle(angle: float) -> float:
+    """Normalizes an angle to the [0, 2*pi) range."""
+    return (angle + 2 * math.pi) % (2 * math.pi)
+
+
+def get_arc_angles(
+    start_pos: Tuple[float, float],
+    end_pos: Tuple[float, float],
+    center: Tuple[float, float],
+    clockwise: bool,
+) -> Tuple[float, float, float]:
+    """
+    Returns (start_angle, end_angle, sweep_angle) for an arc.
+    Handles the clockwise/counter-clockwise logic and wrapping.
+    """
+    start_angle = math.atan2(
+        start_pos[1] - center[1], start_pos[0] - center[0]
+    )
+    end_angle = math.atan2(end_pos[1] - center[1], end_pos[0] - center[0])
+
+    sweep = end_angle - start_angle
+    if clockwise:
+        if sweep > 0:
+            sweep -= 2 * math.pi
+    else:
+        if sweep < 0:
+            sweep += 2 * math.pi
+
+    return start_angle, end_angle, sweep
+
+
+def get_arc_midpoint(
+    start_pos: Tuple[float, float],
+    end_pos: Tuple[float, float],
+    center: Tuple[float, float],
+    clockwise: bool,
+) -> Tuple[float, float]:
+    """Calculates the midpoint coordinates along the arc's circumference."""
+    start_a, _, sweep = get_arc_angles(start_pos, end_pos, center, clockwise)
+    mid_angle = start_a + sweep / 2.0
+    radius = math.hypot(start_pos[0] - center[0], start_pos[1] - center[1])
+    return (
+        center[0] + radius * math.cos(mid_angle),
+        center[1] + radius * math.sin(mid_angle),
+    )
+
+
 def is_angle_between(
     target: float, start: float, end: float, clockwise: bool
 ) -> bool:
@@ -11,9 +58,9 @@ def is_angle_between(
     and end angles. Handles wrapping around 2*PI.
     """
     # Normalize all angles to be in the range [0, 2*PI)
-    target = (target + 2 * math.pi) % (2 * math.pi)
-    start = (start + 2 * math.pi) % (2 * math.pi)
-    end = (end + 2 * math.pi) % (2 * math.pi)
+    target = normalize_angle(target)
+    start = normalize_angle(start)
+    end = normalize_angle(end)
 
     if clockwise:
         # For a clockwise arc, the sweep is from start down to end.
@@ -29,6 +76,58 @@ def is_angle_between(
             return target >= start or target <= end
         # Does not wrap (e.g., from 90 deg up to 180 deg)
         return start <= target <= end
+
+
+def circle_circle_intersection(
+    c1: Tuple[float, float], r1: float, c2: Tuple[float, float], r2: float
+) -> List[Tuple[float, float]]:
+    """
+    Calculates the intersection points of two circles.
+    Returns a list of 0, 1, or 2 points.
+    """
+    dx, dy = c2[0] - c1[0], c2[1] - c1[1]
+    d_sq = dx**2 + dy**2
+    d = math.sqrt(d_sq)
+
+    # Check for no intersection or concentric circles/containment
+    if d < 1e-9 or d > r1 + r2 or d < abs(r1 - r2):
+        return []
+
+    a = (r1**2 - r2**2 + d_sq) / (2 * d)
+    h_sq = max(0, r1**2 - a**2)
+    h = math.sqrt(h_sq)
+
+    x2 = c1[0] + a * dx / d
+    y2 = c1[1] + a * dy / d
+
+    x3_1 = x2 + h * dy / d
+    y3_1 = y2 - h * dx / d
+    x3_2 = x2 - h * dy / d
+    y3_2 = y2 + h * dx / d
+
+    return [(x3_1, y3_1), (x3_2, y3_2)]
+
+
+def is_point_on_segment(
+    pt: Tuple[float, float], p1: Tuple[float, float], p2: Tuple[float, float]
+) -> bool:
+    """
+    Checks if a point is strictly on a line segment defined by two endpoints.
+    Assumes the point is collinear with the segment.
+    """
+    # Vector P1->Pt dot P1->P2 >= 0
+    dot1 = (pt[0] - p1[0]) * (p2[0] - p1[0]) + (pt[1] - p1[1]) * (
+        p2[1] - p1[1]
+    )
+    if dot1 < 0:
+        return False
+    # Vector P2->Pt dot P2->P1 >= 0
+    dot2 = (pt[0] - p2[0]) * (p1[0] - p2[0]) + (pt[1] - p2[1]) * (
+        p1[1] - p2[1]
+    )
+    if dot2 < 0:
+        return False
+    return True
 
 
 def get_arc_bounding_box(

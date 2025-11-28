@@ -1,5 +1,6 @@
 import pytest
 import math
+from collections import namedtuple
 
 from rayforge.core.geo.primitives import (
     is_point_in_polygon,
@@ -8,6 +9,13 @@ from rayforge.core.geo.primitives import (
     line_intersection,
     is_angle_between,
     get_arc_bounding_box,
+    normalize_angle,
+    get_arc_angles,
+    get_arc_midpoint,
+    circle_circle_intersection,
+    is_point_on_segment,
+    find_closest_point_on_line_segment,
+    find_closest_point_on_arc,
 )
 
 
@@ -344,3 +352,219 @@ def test_line_intersection():
     p3, p4 = (0, 1), (0, 2)
     # x-axis and y-axis intersect at 0,0
     assert line_intersection(p1, p2, p3, p4) == pytest.approx((0, 0))
+
+
+# --- NEW TESTS START HERE ---
+
+
+@pytest.mark.parametrize(
+    "angle, expected",
+    [
+        (math.pi / 2, math.pi / 2),
+        (-math.pi / 2, 3 * math.pi / 2),
+        (3 * math.pi, math.pi),
+        (2 * math.pi, 0),
+        (0, 0),
+    ],
+)
+def test_normalize_angle(angle, expected):
+    assert normalize_angle(angle) == pytest.approx(expected)
+
+
+def test_get_arc_angles():
+    center = (0, 0)
+    # 90 degree CCW arc
+    start_pos, end_pos = (1, 0), (0, 1)
+    start_a, end_a, sweep = get_arc_angles(
+        start_pos, end_pos, center, clockwise=False
+    )
+    assert start_a == pytest.approx(0)
+    assert end_a == pytest.approx(math.pi / 2)
+    assert sweep == pytest.approx(math.pi / 2)
+
+    # 90 degree CW arc
+    start_a_cw, end_a_cw, sweep_cw = get_arc_angles(
+        start_pos, end_pos, center, clockwise=True
+    )
+    assert start_a_cw == pytest.approx(0)
+    assert end_a_cw == pytest.approx(math.pi / 2)
+    assert sweep_cw == pytest.approx(-3 * math.pi / 2)
+
+    # CCW wrap-around
+    start_pos, end_pos = (-1, -1), (1, -1)
+    start_a, end_a, sweep = get_arc_angles(
+        start_pos, end_pos, center, clockwise=False
+    )
+    # atan2 returns angles in [-pi, pi]. The test must match this range.
+    assert start_a == pytest.approx(-3 * math.pi / 4)
+    assert end_a == pytest.approx(-math.pi / 4)
+    assert sweep == pytest.approx(math.pi / 2)
+
+
+def test_get_arc_midpoint():
+    center = (10, 20)
+    radius = 5
+    # 90 degree CCW arc from East to North
+    start_pos = (center[0] + radius, center[1])
+    end_pos = (center[0], center[1] + radius)
+    midpoint = get_arc_midpoint(start_pos, end_pos, center, clockwise=False)
+    expected_mid_angle = math.pi / 4
+    expected_midpoint = (
+        center[0] + radius * math.cos(expected_mid_angle),
+        center[1] + radius * math.sin(expected_mid_angle),
+    )
+    assert midpoint == pytest.approx(expected_midpoint)
+
+    # 180 degree CW arc from West to East (top semi-circle)
+    start_pos = (center[0] - radius, center[1])
+    end_pos = (center[0] + radius, center[1])
+    midpoint_cw = get_arc_midpoint(start_pos, end_pos, center, clockwise=True)
+    # Midpoint should be at the North point
+    expected_midpoint_cw = (center[0], center[1] + radius)
+    assert midpoint_cw == pytest.approx(expected_midpoint_cw)
+
+
+def test_circle_circle_intersection():
+    # Two intersection points
+    c1, r1 = (0, 0), 5
+    c2, r2 = (8, 0), 5
+    intersections = circle_circle_intersection(c1, r1, c2, r2)
+    assert len(intersections) == 2
+
+    # Sort both actual and expected results for a stable, order-independent
+    # comparison
+    sorted_intersections = sorted(intersections)
+    expected_intersections = sorted([(4.0, 3.0), (4.0, -3.0)])
+    assert sorted_intersections == pytest.approx(expected_intersections)
+
+    # One intersection point (tangent)
+    c1, r1 = (0, 0), 5
+    c2, r2 = (10, 0), 5
+    intersections = circle_circle_intersection(c1, r1, c2, r2)
+    assert (
+        len(intersections) == 2
+    )  # Due to float precision, may return two very close points
+    assert intersections[0] == pytest.approx((5, 0))
+    assert intersections[1] == pytest.approx((5, 0))
+
+    # No intersection (separate)
+    c1, r1 = (0, 0), 5
+    c2, r2 = (11, 0), 5
+    assert circle_circle_intersection(c1, r1, c2, r2) == []
+
+    # No intersection (one inside other)
+    c1, r1 = (0, 0), 10
+    c2, r2 = (1, 0), 1
+    assert circle_circle_intersection(c1, r1, c2, r2) == []
+
+    # Coincident circles
+    c1, r1 = (0, 0), 5
+    c2, r2 = (0, 0), 5
+    assert circle_circle_intersection(c1, r1, c2, r2) == []
+
+
+def test_is_point_on_segment():
+    p1, p2 = (0, 0), (10, 10)
+    # Point in the middle
+    assert is_point_on_segment((5, 5), p1, p2) is True
+    # Endpoints
+    assert is_point_on_segment((0, 0), p1, p2) is True
+    assert is_point_on_segment((10, 10), p1, p2) is True
+    # Point on the line, but outside segment
+    assert is_point_on_segment((11, 11), p1, p2) is False
+    assert is_point_on_segment((-1, -1), p1, p2) is False
+
+
+def test_find_closest_point_on_line_segment():
+    p1, p2 = (0, 0), (10, 0)
+
+    # Closest point is projection
+    t, pt, dist_sq = find_closest_point_on_line_segment(p1, p2, 5, 5)
+    assert t == pytest.approx(0.5)
+    assert pt == pytest.approx((5, 0))
+    assert dist_sq == pytest.approx(25)
+
+    # Closest point is p1
+    t, pt, dist_sq = find_closest_point_on_line_segment(p1, p2, -5, 5)
+    assert t == pytest.approx(0.0)
+    assert pt == pytest.approx((0, 0))
+    assert dist_sq == pytest.approx(50)
+
+    # Closest point is p2
+    t, pt, dist_sq = find_closest_point_on_line_segment(p1, p2, 15, 5)
+    assert t == pytest.approx(1.0)
+    assert pt == pytest.approx((10, 0))
+    assert dist_sq == pytest.approx(50)
+
+    # Point is on the segment
+    t, pt, dist_sq = find_closest_point_on_line_segment(p1, p2, 7, 0)
+    assert t == pytest.approx(0.7)
+    assert pt == pytest.approx((7, 0))
+    assert dist_sq == pytest.approx(0)
+
+
+# Mock object for arc commands used in find_closest_point_on_arc
+MockArc = namedtuple("MockArc", ["end", "center_offset", "clockwise"])
+
+
+def test_find_closest_point_on_arc():
+    start_pos = (10, 0, 0)  # (x, y, z)
+    center = (0, 0)
+
+    # Test 1: Closest point is projection onto arc
+    # 180 degree CCW arc from (10,0) to (-10,0)
+    end_pos = (-10, 0, 0)
+    center_offset = (center[0] - start_pos[0], center[1] - start_pos[1])
+    arc_cmd = MockArc(
+        end=end_pos, center_offset=center_offset, clockwise=False
+    )
+    x, y = 0, 20  # Point to check
+    result = find_closest_point_on_arc(arc_cmd, start_pos, x, y)
+    assert result is not None
+    t, pt, dist_sq = result
+    assert t == pytest.approx(0.5)
+    assert pt == pytest.approx((0, 10))  # Closest point is top of the arc
+    assert dist_sq == pytest.approx(100)  # (20-10)^2
+
+    # Test 2: Closest point is start of arc
+    x, y = 20, 0
+    result = find_closest_point_on_arc(arc_cmd, start_pos, x, y)
+    assert result is not None
+    t, pt, dist_sq = result
+    assert t == pytest.approx(0.0)
+    assert pt == pytest.approx((10, 0))
+    assert dist_sq == pytest.approx(100)  # (20-10)^2
+
+    # Test 3: Closest point is end of arc
+    x, y = -20, 0
+    result = find_closest_point_on_arc(arc_cmd, start_pos, x, y)
+    assert result is not None
+    t, pt, dist_sq = result
+    assert t == pytest.approx(1.0)
+    assert pt == pytest.approx((-10, 0))
+    assert dist_sq == pytest.approx(100)  # (-20 - -10)^2
+
+    # Test 4: Point is the center (should default to start point)
+    x, y = 0, 0
+    result = find_closest_point_on_arc(arc_cmd, start_pos, x, y)
+    assert result is not None
+    t, pt, dist_sq = result
+    assert pt == pytest.approx((10, 0))
+    assert dist_sq == pytest.approx(100)
+
+    # Test 5: Spiral (different start/end radius), should trigger linearization
+    # This is an approximation, so we can't be too strict on the assertions
+    # Make a spiral from radius 10 to radius 5
+    end_pos_spiral = (-5, 0, 0)
+    center_offset = (center[0] - start_pos[0], center[1] - start_pos[1])
+    arc_cmd_spiral = MockArc(
+        end=end_pos_spiral, center_offset=center_offset, clockwise=False
+    )
+    x, y = 0, 20  # Point to check
+    result = find_closest_point_on_arc(arc_cmd_spiral, start_pos, x, y)
+    assert result is not None  # Just check it returns a result
+    t, pt, dist_sq = result
+    assert 0.0 <= t <= 1.0
+    # The closest point should be near the top of the arc, around (0, 7.5)
+    assert pt[0] == pytest.approx(0, abs=2)
+    assert pt[1] == pytest.approx(7.5, abs=2)
