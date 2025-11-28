@@ -267,6 +267,20 @@ class EntityRegistry:
         self._id_counter += 1
         return eid
 
+    def is_point_used(self, pid: int) -> bool:
+        """Checks if a point is used by any entity in the sketch."""
+        for e in self.entities:
+            p_ids = []
+            if isinstance(e, Line):
+                p_ids = [e.p1_idx, e.p2_idx]
+            elif isinstance(e, Arc):
+                p_ids = [e.start_idx, e.end_idx, e.center_idx]
+            elif isinstance(e, Circle):
+                p_ids = [e.center_idx, e.radius_pt_idx]
+            if pid in p_ids:
+                return True
+        return False
+
     def get_point(self, idx: int) -> Point:
         """Retrieves a point by its ID."""
         if 0 <= idx < len(self.points) and self.points[idx].id == idx:

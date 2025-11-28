@@ -22,3 +22,10 @@ class SketchTool(ABC):
     def on_hover_motion(self, world_x: float, world_y: float):
         """Optional hook for hover effects."""
         pass
+
+    def on_deactivate(self):
+        """
+        Called when the tool is about to be switched or deactivated.
+        Subclasses can implement this to clean up their state.
+        """
+        pass

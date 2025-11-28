@@ -211,7 +211,9 @@ class SketchElement(CanvasElement):
     # =========================================================================
 
     def set_tool(self, tool_name: str):
-        if tool_name in self.tools:
+        if tool_name in self.tools and self.active_tool_name != tool_name:
+            # Deactivate the old tool before switching to the new one.
+            self.current_tool.on_deactivate()
             self.active_tool_name = tool_name
             self.mark_dirty()
 
