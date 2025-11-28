@@ -1,5 +1,5 @@
 import logging
-from typing import Optional, cast
+from typing import Optional, cast, TYPE_CHECKING
 from gi.repository import Gtk, Gdk, Adw
 from ..canvas import WorldSurface
 from .sketchelement import SketchElement
@@ -7,15 +7,25 @@ from .editor import SketchEditor
 from .sketch_cmd import ModifyConstraintValueCommand
 from rayforge.core.sketcher.constraints import Constraint
 
+if TYPE_CHECKING:
+    from rayforge.core.sketcher import Sketch
+
 logger = logging.getLogger(__name__)
 
 
 class SketchCanvas(WorldSurface):
-    def __init__(self, parent_window: Gtk.Window, **kwargs):
+    def __init__(
+        self, parent_window: Gtk.Window, single_mode: bool = False, **kwargs
+    ):
+        # In single_mode, we hide the axes and labels for a cleaner look
+        show_axis = not single_mode
         # A Sketcher doesn't have a fixed machine size. We initialize the
         # WorldSurface with a large default area to provide an "infinite" feel.
-        super().__init__(width_mm=2000, height_mm=2000, **kwargs)
+        super().__init__(
+            width_mm=2000, height_mm=2000, show_axis=show_axis, **kwargs
+        )
         self.parent_window = parent_window
+        self.single_mode = single_mode
 
         # This will hold a reference to the active dialog to prevent it from
         # being garbage-collected prematurely.
@@ -35,12 +45,11 @@ class SketchCanvas(WorldSurface):
         self.edit_context = self.sketch_element
         self.sketch_editor.activate(self.sketch_element)
 
-    def reset_sketch(self) -> SketchElement:
+    def set_sketch(self, sketch: "Sketch"):
         """
-        Removes the current sketch element and replaces it with a new, empty
-        one, ensuring all internal references are updated correctly.
-
-        :return: The new SketchElement instance.
+        Replaces the current sketch element with a new one wrapping the
+        provided Sketch model. This preserves the existing editor/canvas
+        setup but switches the data being edited.
         """
         old_sketch = self.sketch_element
 
@@ -52,19 +61,49 @@ class SketchCanvas(WorldSurface):
         if old_sketch:
             old_sketch.remove()
 
-        # Create and configure the new element
-        new_sketch = SketchElement()
-        new_sketch.constraint_edit_requested.connect(
+        # Create and configure the new element with the injected sketch
+        new_sketch_elem = SketchElement(sketch=sketch)
+        new_sketch_elem.constraint_edit_requested.connect(
             self._on_constraint_edit_requested
         )
-        self.root.add(new_sketch)
+        self.root.add(new_sketch_elem)
 
         # Update all internal references
-        self.sketch_element = new_sketch
-        self.edit_context = new_sketch
-        self.sketch_editor.activate(new_sketch)
+        self.sketch_element = new_sketch_elem
+        self.edit_context = new_sketch_elem
+        self.sketch_editor.activate(new_sketch_elem)
 
-        return new_sketch
+        # Reset view to center on new sketch content
+        self.reset_view()
+
+    def leave_edit_mode(self):
+        """
+        Overrides the base Canvas method.
+        If in single_mode, prevents leaving edit mode via Escape or background
+        clicks.
+        """
+        if self.single_mode:
+            logger.debug(
+                "SketchCanvas in single_mode: preventing exit from edit mode."
+            )
+            return
+        super().leave_edit_mode()
+
+    def reset_sketch(self) -> SketchElement:
+        """
+        Removes the current sketch element and replaces it with a new, empty
+        one, ensuring all internal references are updated correctly.
+
+        :return: The new SketchElement instance.
+        """
+        # This just delegates to set_sketch with a None (new) sketch,
+        # but for compatibility with existing tests/code, we implement it
+        # explicitly or just reuse the logic.
+        from rayforge.core.sketcher import Sketch
+
+        new_sketch = Sketch()
+        self.set_sketch(new_sketch)
+        return self.sketch_element
 
     def reset_view(self) -> None:
         """
