@@ -51,6 +51,7 @@ class SketchElement(CanvasElement):
         y: float = 0,
         width: float = 1.0,
         height: float = 1.0,
+        sketch: Optional[Sketch] = None,
         **kwargs,
     ):
         # Pass the required positional arguments to the parent class.
@@ -65,7 +66,7 @@ class SketchElement(CanvasElement):
         )
 
         # Model
-        self.sketch = Sketch()
+        self.sketch = sketch if sketch is not None else Sketch()
 
         # State Managers
         self.selection = SketchSelection()

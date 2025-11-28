@@ -21,6 +21,7 @@ from gi.repository import Gtk, Adw
 
 from rayforge.workbench.sketcher.sketchcanvas import SketchCanvas
 from rayforge.workbench.sketcher.sketchelement import SketchElement
+from rayforge.core.sketcher import Sketch
 
 
 class SketcherApp(Adw.Application):
@@ -29,14 +30,15 @@ class SketcherApp(Adw.Application):
         self.sketch_elem: Optional[SketchElement] = None
         self.canvas: Optional[SketchCanvas] = None
         self.window: Optional[Gtk.ApplicationWindow] = None
+        self.vbox: Optional[Gtk.Box] = None
 
     def do_activate(self):
         self.window = Gtk.ApplicationWindow(application=self)
         self.window.set_default_size(1200, 800)
 
         # Main layout
-        vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
-        self.window.set_child(vbox)
+        self.vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        self.window.set_child(self.vbox)
 
         # Header with button and label
         header_box = Gtk.Box(
@@ -46,11 +48,15 @@ class SketcherApp(Adw.Application):
         header_box.set_margin_bottom(10)
         header_box.set_margin_start(10)
         header_box.set_margin_end(10)
-        vbox.append(header_box)
+        self.vbox.append(header_box)
 
         reset_button = Gtk.Button(label="Reset Sketch")
         reset_button.connect("clicked", self.on_reset_clicked)
         header_box.append(reset_button)
+
+        toggle_single_button = Gtk.Button(label="Toggle Single Mode")
+        toggle_single_button.connect("clicked", self.on_toggle_single_clicked)
+        header_box.append(toggle_single_button)
 
         header_label = Gtk.Label(
             label="Right-click for Tools/Constraints | Scroll to Zoom | Middle-click to Pan"
@@ -58,16 +64,20 @@ class SketcherApp(Adw.Application):
         header_label.add_css_class("dim-label")
         header_box.append(header_label)
 
-        # Canvas
-        self.canvas = SketchCanvas(parent_window=self.window)
-        self.canvas.set_vexpand(True)
-        vbox.append(self.canvas)
+        # Canvas initialized in single_mode for testing
+        # Ensure window is valid for type checker
+        if self.window:
+            self.canvas = SketchCanvas(
+                parent_window=self.window, single_mode=True
+            )
+            self.canvas.set_vexpand(True)
+            self.vbox.append(self.canvas)
 
-        # Get the element that the canvas created for itself
-        self.sketch_elem = self.canvas.sketch_element
+            # Get the element that the canvas created for itself
+            self.sketch_elem = self.canvas.sketch_element
 
-        # Setup initial Element
-        self.add_initial_sketch()
+            # Setup initial Element
+            self.add_initial_sketch()
 
         self.window.present()
 
@@ -119,25 +129,41 @@ class SketcherApp(Adw.Application):
 
     def on_reset_clicked(self, button: Gtk.Button):
         """Clears the sketch and resets the view."""
-        if not self.canvas or not self.sketch_elem:
+        if not self.canvas:
             return
 
-        # Tell the canvas to perform a full, safe reset
-        new_sketch = self.canvas.reset_sketch()
+        # Create a new empty sketch
+        new_sketch = Sketch()
+        self.canvas.set_sketch(new_sketch)
+        self.sketch_elem = self.canvas.sketch_element
 
-        # The new sketch is created empty; update its bounds to get a size.
-        new_sketch.update_bounds_from_sketch()
-
-        # Center the new element on the canvas before resetting the view
-        canvas_w, canvas_h = self.canvas.get_size_mm()
-        elem_w, elem_h = new_sketch.width, new_sketch.height
-        new_sketch.set_pos(
-            (canvas_w - elem_w) / 2.0, (canvas_h - elem_h) / 2.0
-        )
-
-        # Update the app's reference and reset the view to center it
-        self.sketch_elem = new_sketch
+        # We need to manually add something to bounds otherwise it's tiny
+        self.sketch_elem.update_bounds_from_sketch()
         self.canvas.reset_view()
+
+    def on_toggle_single_clicked(self, button: Gtk.Button):
+        """Recreates the canvas with toggled single_mode."""
+        if not self.canvas or not self.vbox or not self.window:
+            return
+
+        # Capture current sketch to preserve it
+        current_sketch = self.canvas.sketch_element.sketch
+        current_mode = self.canvas.single_mode
+        new_mode = not current_mode
+
+        # We have to destroy and recreate the canvas to change show_axis
+        # because it is passed to AxisRenderer in __init__
+        self.vbox.remove(self.canvas)
+
+        self.canvas = SketchCanvas(
+            parent_window=self.window, single_mode=new_mode
+        )
+        self.canvas.set_vexpand(True)
+        self.canvas.set_sketch(current_sketch)
+        self.vbox.append(self.canvas)
+        self.sketch_elem = self.canvas.sketch_element
+
+        logger.info(f"Switched to single_mode={new_mode}")
 
 
 if __name__ == "__main__":
