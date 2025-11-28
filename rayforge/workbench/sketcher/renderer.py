@@ -255,24 +255,32 @@ class SketchRenderer:
         self._draw_junctions(ctx, to_screen)
 
     def _draw_equality_symbol(self, ctx, entity, to_screen):
-        """Draws an '=' symbol on a single entity."""
+        """
+        Draws a larger, always-horizontal '=' symbol offset from the entity.
+        """
         if not entity:
             return
-        mid_x, mid_y, angle = 0.0, 0.0, 0.0
+
+        # 1. Get anchor point (mid_x, mid_y) and normal_angle in MODEL space
+        mid_x, mid_y, normal_angle = 0.0, 0.0, 0.0
 
         if isinstance(entity, Line):
             p1 = self._safe_get_point(entity.p1_idx)
             p2 = self._safe_get_point(entity.p2_idx)
             if not (p1 and p2):
                 return
-            mid_x, mid_y = (p1.x + p2.x) / 2, (p1.y + p2.y) / 2
-            angle = math.atan2(p2.y - p1.y, p2.x - p1.x)
+            mid_x = (p1.x + p2.x) / 2.0
+            mid_y = (p1.y + p2.y) / 2.0
+            tangent_angle = math.atan2(p2.y - p1.y, p2.x - p1.x)
+            normal_angle = tangent_angle - (math.pi / 2.0)
+
         elif isinstance(entity, Arc):
             center = self._safe_get_point(entity.center_idx)
             start = self._safe_get_point(entity.start_idx)
             end = self._safe_get_point(entity.end_idx)
             if not (center and start and end):
                 return
+
             start_a = math.atan2(start.y - center.y, start.x - center.x)
             end_a = math.atan2(end.y - center.y, end.x - center.x)
             angle_range = end_a - start_a
@@ -282,29 +290,48 @@ class SketchRenderer:
             else:
                 if angle_range < 0:
                     angle_range += 2 * math.pi
+
             mid_angle = start_a + angle_range / 2.0
             radius = math.hypot(start.x - center.x, start.y - center.y)
             mid_x = center.x + radius * math.cos(mid_angle)
             mid_y = center.y + radius * math.sin(mid_angle)
-            angle = mid_angle + math.pi / 2
+            normal_angle = mid_angle  # For arc/circle, normal is radial
+
         elif isinstance(entity, Circle):
             center = self._safe_get_point(entity.center_idx)
             radius_pt = self._safe_get_point(entity.radius_pt_idx)
             if not (center and radius_pt):
                 return
-            radius = math.hypot(radius_pt.x - center.x, radius_pt.y - center.y)
-            angle = math.atan2(radius_pt.y - center.y, radius_pt.x - center.x)
-            mid_x = center.x + radius * math.cos(angle)
-            mid_y = center.y + radius * math.sin(angle)
-            angle += math.pi / 2
 
-        sx, sy = to_screen.transform_point((mid_x, mid_y))
+            radius = math.hypot(radius_pt.x - center.x, radius_pt.y - center.y)
+            # Use angle to radius point as the normal for the offset
+            normal_angle = math.atan2(
+                radius_pt.y - center.y, radius_pt.x - center.x
+            )
+            # The anchor point is on the circle's circumference
+            mid_x = center.x + radius * math.cos(normal_angle)
+            mid_y = center.y + radius * math.sin(normal_angle)
+
+        # 2. Calculate offset in MODEL space based on a fixed pixel amount
+        scale = 1.0
+        if self.element.canvas and hasattr(
+            self.element.canvas, "get_view_scale"
+        ):
+            scale, _ = self.element.canvas.get_view_scale()
+            scale = max(scale, 1e-9)
+        offset_dist_model = 15.0 / scale  # 15px offset
+
+        # 3. Apply offset to get final icon position
+        final_x = mid_x + offset_dist_model * math.cos(normal_angle)
+        final_y = mid_y + offset_dist_model * math.sin(normal_angle)
+
+        # 4. Convert to SCREEN space and draw (always horizontal)
+        sx, sy = to_screen.transform_point((final_x, final_y))
         ctx.save()
-        ctx.translate(sx, sy)
-        ctx.rotate(angle)
-        ctx.set_font_size(14)
+        ctx.set_font_size(16)  # Larger font
         ext = ctx.text_extents("=")
-        ctx.move_to(-ext.width / 2, ext.height / 2)
+        # Center the text on the calculated screen point
+        ctx.move_to(sx - ext.width / 2, sy + ext.height / 2)
         ctx.show_text("=")
         ctx.restore()
         ctx.new_path()
