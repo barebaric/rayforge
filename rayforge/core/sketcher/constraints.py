@@ -272,13 +272,7 @@ class PointOnLineConstraint(Constraint):
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "PointOnLineConstraint":
-        # Handle legacy "line_id" key for backward compatibility
-        shape_id = data.get("shape_id", data.get("line_id"))
-        if shape_id is None:
-            raise KeyError(
-                "PointOnLineConstraint data missing 'shape_id' or 'line_id'"
-            )
-        return cls(point_id=data["point_id"], shape_id=shape_id)
+        return cls(point_id=data["point_id"], shape_id=data["shape_id"])
 
     def error(self, reg: "EntityRegistry", params: ParameterContext) -> float:
         pt = reg.get_point(self.point_id)
@@ -346,13 +340,7 @@ class RadiusConstraint(Constraint):
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "RadiusConstraint":
-        # Handle legacy "arc_id" key for backward compatibility
-        entity_id = data.get("entity_id", data.get("arc_id"))
-        if entity_id is None:
-            raise KeyError(
-                "RadiusConstraint data missing 'entity_id' or 'arc_id'"
-            )
-        return cls(entity_id=entity_id, radius=data["value"])
+        return cls(entity_id=data["entity_id"], radius=data["value"])
 
     def error(self, reg: "EntityRegistry", params: ParameterContext) -> float:
         entity = reg.get_entity(self.entity_id)
@@ -529,12 +517,7 @@ class PerpendicularConstraint(Constraint):
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "PerpendicularConstraint":
-        # Handle new and legacy keys for backward compatibility
-        e1_id = data.get("e1_id", data.get("l1_id"))
-        e2_id = data.get("e2_id", data.get("l2_id"))
-        if e1_id is None or e2_id is None:
-            raise KeyError("PerpendicularConstraint data missing entity IDs")
-        return cls(e1_id=e1_id, e2_id=e2_id)
+        return cls(e1_id=data["e1_id"], e2_id=data["e2_id"])
 
     def _get_radius_sq(
         self, shape: Union[Arc, Circle], reg: "EntityRegistry"
@@ -819,13 +802,7 @@ class TangentConstraint(Constraint):
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "TangentConstraint":
-        # Handle legacy "arc_id" key for backward compatibility
-        shape_id = data.get("shape_id", data.get("arc_id"))
-        if shape_id is None:
-            raise KeyError(
-                "TangentConstraint data missing 'shape_id' or 'arc_id'"
-            )
-        return cls(line_id=data["line_id"], shape_id=shape_id)
+        return cls(line_id=data["line_id"], shape_id=data["shape_id"])
 
     def error(self, reg: "EntityRegistry", params: ParameterContext) -> float:
         line = reg.get_entity(self.line_id)
@@ -888,11 +865,6 @@ class EqualLengthConstraint(Constraint):
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "EqualLengthConstraint":
-        # Handle legacy binary constraint for backward compatibility
-        e1 = data.get("e1_id")
-        e2 = data.get("e2_id")
-        if e1 is not None and e2 is not None:
-            return cls(entity_ids=[e1, e2])
         return cls(entity_ids=data["entity_ids"])
 
     def _get_length_sq(self, entity, reg: "EntityRegistry") -> float:
