@@ -559,6 +559,7 @@ class SketchRenderer:
             sx, sy = to_screen.transform_point((p.x, p.y))
             ctx.move_to(sx + 10, sy + 10)
             ctx.show_text("⦸")
+            ctx.new_path()
 
     def _draw_symmetry_constraint(
         self, ctx, constr, is_selected, is_hovered, to_screen
