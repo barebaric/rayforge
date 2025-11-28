@@ -336,13 +336,8 @@ class WorldSurface(Canvas):
             self.reset_view()
             return True  # Event handled
 
-        elif keyval == Gdk.KEY_Escape:
-            # If any elements are selected, unselect them.
-            if self.get_selected_elements():
-                self.unselect_all()
-                return True
-
-        # Propagate to parent Canvas for its default behavior
+        # Propagate to parent Canvas for its default behavior. The base Canvas
+        # handles leaving edit mode on Escape.
         return super().on_key_pressed(controller, keyval, keycode, state)
 
     def on_pan_begin(

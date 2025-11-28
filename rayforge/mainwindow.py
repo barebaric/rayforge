@@ -218,6 +218,7 @@ class MainWindow(Adw.ApplicationWindow):
 
         self.surface = WorkSurface(
             editor=self.doc_editor,
+            parent_window=self,
             machine=config.machine,
             cam_visible=True,  # Will be set by action state
         )

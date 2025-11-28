@@ -1,12 +1,8 @@
 import logging
-from typing import Union, Optional
 from gi.repository import Gtk, Gdk
-from ...core.sketcher.entities import Point, Entity
-from ...core.sketcher.constraints import Constraint
-from ...undo import HistoryManager
 from ..worldsurface import WorldSurface
-from .piemenu import SketchPieMenu
 from .sketchelement import SketchElement
+from .editor import SketchEditor
 
 logger = logging.getLogger(__name__)
 
@@ -18,179 +14,108 @@ class SketchCanvas(WorldSurface):
         super().__init__(width_mm=2000, height_mm=2000, **kwargs)
         self.parent_window = parent_window
 
-        # The SketchCanvas manages its own undo/redo history, separate from
-        # the main document editor.
-        self.history_manager = HistoryManager()
+        # The SketchCanvas owns a SketchEditor to manage the session.
+        self.sketch_editor = SketchEditor(self.parent_window)
 
-        # 1. Pie Menu Setup
-        self.pie_menu = SketchPieMenu(self.parent_window)
+        # It creates a single, primary sketch element that is always active.
+        self.sketch_element = SketchElement()
+        self.root.add(self.sketch_element)
 
-        # Connect signals
-        self.pie_menu.tool_selected.connect(self.on_tool_selected)
-        self.pie_menu.constraint_selected.connect(self.on_constraint_selected)
-        self.pie_menu.action_triggered.connect(self.on_action_triggered)
-        self.pie_menu.right_clicked.connect(self.on_pie_menu_right_click)
+        # Permanently enter edit mode on the primary sketch element.
+        self.edit_context = self.sketch_element
+        self.sketch_editor.activate(self.sketch_element)
 
-        # Note: The right-click gesture is already handled by the base
-        # WorldSurface class. We just need to override the handler.
-
-    def on_pie_menu_right_click(self, sender, gesture, n_press, x, y):
+    def reset_sketch(self) -> SketchElement:
         """
-        Handles a right-click that happened on the PieMenu's drawing area.
-        Translates coordinates and forwards to the main right-click handler.
+        Removes the current sketch element and replaces it with a new, empty
+        one, ensuring all internal references are updated correctly.
+
+        :return: The new SketchElement instance.
         """
-        child = self.pie_menu.get_child()
-        if not child:
+        old_sketch = self.sketch_element
+
+        # Deactivate the editor from the old element
+        self.sketch_editor.deactivate()
+        # Clear the edit context
+        self.edit_context = None
+        # Remove the old element from the scene graph
+        if old_sketch:
+            old_sketch.remove()
+
+        # Create and configure the new element
+        new_sketch = SketchElement()
+        self.root.add(new_sketch)
+
+        # Update all internal references
+        self.sketch_element = new_sketch
+        self.edit_context = new_sketch
+        self.sketch_editor.activate(new_sketch)
+
+        return new_sketch
+
+    def reset_view(self) -> None:
+        """
+        Overrides the base implementation to center the view on the geometric
+        center of the sketch's contents.
+        """
+        logger.debug("Resetting SketchCanvas view to center sketch geometry.")
+        if not self.sketch_element:
+            super().reset_view()
             return
 
-        canvas_coords = child.translate_coordinates(self, x, y)
-        if canvas_coords:
-            canvas_x, canvas_y = canvas_coords
-            self.on_right_click_pressed(gesture, n_press, canvas_x, canvas_y)
+        sketch = self.sketch_element.sketch
+        min_x, max_x, min_y, max_y = 0.0, 0.0, 0.0, 0.0
+        has_bounds = False
+
+        # 1. Calculate bounding box of all sketch geometry in Model
+        # coordinates.
+        geometry = sketch.to_geometry()
+        if not geometry.is_empty():
+            min_x, min_y, max_x, max_y = geometry.rect()
+            has_bounds = True
+        elif sketch.registry.points:
+            # This case handles sketches with only points.
+            xs = [p.x for p in sketch.registry.points]
+            ys = [p.y for p in sketch.registry.points]
+            if xs and ys:
+                min_x, max_x = min(xs), max(xs)
+                min_y, max_y = min(ys), max(ys)
+                has_bounds = True
+
+        # If there is a bounding box, calculate its center.
+        # Otherwise, the target is the model origin (0,0).
+        if has_bounds:
+            model_center_x = (min_x + max_x) / 2.0
+            model_center_y = (min_y + max_y) / 2.0
+        else:
+            model_center_x = 0.0
+            model_center_y = 0.0
+
+        # 2. Transform the model center to world coordinates.
+        model_to_world = (
+            self.sketch_element.get_world_transform()
+            @ self.sketch_element.content_transform
+        )
+        target_center_x, target_center_y = model_to_world.transform_point(
+            (model_center_x, model_center_y)
+        )
+
+        # 3. Calculate pan to move this point to the view center.
+        # The pan value is the coordinate of the world's top-left corner that
+        # will be displayed in the view's top-left.
+        pan_x = target_center_x - (self.width_mm / 2.0)
+        pan_y = target_center_y - (self.height_mm / 2.0)
+
+        self.set_pan(pan_x, pan_y)
+        self.set_zoom(1.0)
 
     def on_right_click_pressed(
         self, gesture: Gtk.GestureClick, n_press: int, x: float, y: float
     ):
         """
-        Overrides the base class to open the pie menu at the cursor location
-        with resolved context.
+        Overrides the base class to unconditionally delegate to the editor.
         """
-        if self.pie_menu.is_visible():
-            self.pie_menu.popdown()
-
-        # Use the inherited method to convert from widget to world coordinates
-        world_x, world_y = self._get_world_coords(x, y)
-
-        target: Optional[Union[Point, Entity, Constraint]] = None
-        target_type: Optional[str] = None
-
-        # Determine context if we are editing a sketch
-        if self.edit_context and isinstance(self.edit_context, SketchElement):
-            sketch_elem = self.edit_context
-            # Before showing the menu, we deactivate the current tool to clean
-            # up any in-progress state.
-            sketch_elem.current_tool.on_deactivate()
-
-            selection = sketch_elem.selection
-            selection_changed = False
-
-            # 1. Hit Test
-            hit_type, hit_obj = sketch_elem.hittester.get_hit_data(
-                world_x, world_y, sketch_elem
-            )
-            target_type = hit_type
-
-            # 2. Resolve Hit Object to Concrete Type AND Update Selection
-            # If the clicked object is not already selected, select it.
-
-            if hit_type == "point":
-                assert isinstance(hit_obj, int)
-                pid = hit_obj
-                target = sketch_elem.sketch.registry.get_point(pid)
-
-                if pid not in selection.point_ids:
-                    selection.select_point(pid, is_multi=False)
-                    selection_changed = True
-
-            elif hit_type == "junction":
-                # Junctions are essentially points in the registry
-                assert isinstance(hit_obj, int)
-                pid = hit_obj
-                target = sketch_elem.sketch.registry.get_point(pid)
-
-                if selection.junction_pid != pid:
-                    selection.select_junction(pid, is_multi=False)
-                    selection_changed = True
-
-            elif hit_type == "entity":
-                assert isinstance(hit_obj, Entity)
-                entity = hit_obj
-                target = entity
-
-                if entity.id not in selection.entity_ids:
-                    selection.select_entity(entity, is_multi=False)
-                    selection_changed = True
-
-            elif hit_type == "constraint":
-                assert isinstance(hit_obj, int)
-                idx = hit_obj
-                # hit_obj is index in constraints list
-                if 0 <= idx < len(sketch_elem.sketch.constraints):
-                    target = sketch_elem.sketch.constraints[idx]
-
-                    if selection.constraint_idx != idx:
-                        selection.select_constraint(idx, is_multi=False)
-                        selection_changed = True
-
-            # If nothing was hit, clear selection
-            elif hit_type is None:
-                if (
-                    selection.point_ids
-                    or selection.entity_ids
-                    or selection.constraint_idx is not None
-                    or selection.junction_pid is not None
-                ):
-                    selection.clear()
-                    selection_changed = True
-
-            if selection_changed:
-                sketch_elem.mark_dirty()
-
-            # 3. Pass Context (Sketch, Target, Type)
-            self.pie_menu.set_context(sketch_elem, target, target_type)
-
-        # Translate coordinates from canvas-local to window-local
-        # for the popover, which is parented to the window.
-        win_coords = self.translate_coordinates(self.parent_window, x, y)
-        if win_coords:
-            win_x, win_y = win_coords
-            logger.info(
-                f"Opening Pie Menu at {win_x}, {win_y} (Type: {target_type})"
-            )
-            self.pie_menu.popup_at_location(win_x, win_y)
-
-        gesture.set_state(Gtk.EventSequenceState.CLAIMED)
-
-    def on_tool_selected(self, sender, tool: str):
-        logger.info(f"Tool activated: {tool}")
-        if self.edit_context and isinstance(self.edit_context, SketchElement):
-            self.edit_context.set_tool(tool)
-
-    def on_constraint_selected(self, sender, constraint_type: str):
-        logger.info(f"Constraint activated: {constraint_type}")
-        ctx = self.edit_context
-        if not (ctx and isinstance(ctx, SketchElement)):
-            return
-
-        if constraint_type == "dist":
-            ctx.add_distance_constraint()
-        elif constraint_type == "horiz":
-            ctx.add_horizontal_constraint()
-        elif constraint_type == "vert":
-            ctx.add_vertical_constraint()
-        elif constraint_type == "radius":
-            ctx.add_radius_constraint()
-        elif constraint_type == "diameter":
-            ctx.add_diameter_constraint()
-        elif constraint_type == "perp":
-            ctx.add_perpendicular()
-        elif constraint_type == "tangent":
-            ctx.add_tangent()
-        elif constraint_type == "align":
-            ctx.add_alignment_constraint()
-        elif constraint_type == "equal":
-            ctx.add_equal_constraint()
-
-    def on_action_triggered(self, sender, action: str):
-        logger.info(f"Action activated: {action}")
-        ctx = self.edit_context
-        if not (ctx and isinstance(ctx, SketchElement)):
-            return
-
-        if action == "construction":
-            ctx.toggle_construction_on_selection()
-        elif action == "delete":
-            ctx.delete_selection()
+        self.sketch_editor.handle_right_click(gesture, n_press, x, y)
 
     def on_key_pressed(
         self,
@@ -199,27 +124,17 @@ class SketchCanvas(WorldSurface):
         keycode: int,
         state: Gdk.ModifierType,
     ) -> bool:
-        """Overrides base to handle sketcher-specific key presses."""
-        is_ctrl = state & Gdk.ModifierType.CONTROL_MASK
-
-        # Undo / Redo
-        if is_ctrl:
-            if keyval == Gdk.KEY_z:
-                self.history_manager.undo()
-                return True
-            if keyval == Gdk.KEY_y:
-                self.history_manager.redo()
-                return True
-
-        # First, let the base class handle its keys (e.g., '1' for reset view)
-        if super().on_key_pressed(controller, keyval, keycode, state):
+        """
+        Overrides base to delegate sketcher-specific key presses to the
+        editor before falling back to the WorldSurface's handlers.
+        """
+        # First, let the sketch editor handle its keys (Undo/Redo, Delete)
+        if self.sketch_editor.handle_key_press(keyval, keycode, state):
             return True
 
-        # Then, handle sketcher-specific keys
-        if self.edit_context and isinstance(self.edit_context, SketchElement):
-            if keyval == Gdk.KEY_Delete:
-                self.edit_context.delete_selection()
-                return True
+        # Then, let the base class handle its keys (e.g., '1' for reset view)
+        if super().on_key_pressed(controller, keyval, keycode, state):
+            return True
 
         return False
 
@@ -231,9 +146,11 @@ class SketchCanvas(WorldSurface):
         delegate to the active tool.
         """
         # If the pie menu is visible, a left click should dismiss it.
-        # A right click is handled by on_right_click_pressed.
-        if self.pie_menu.is_visible() and gesture.get_current_button() != 3:
-            self.pie_menu.popdown()
+        if (
+            self.sketch_editor.pie_menu.is_visible()
+            and gesture.get_current_button() != 3
+        ):
+            self.sketch_editor.pie_menu.popdown()
             gesture.set_state(Gtk.EventSequenceState.CLAIMED)
             return
 

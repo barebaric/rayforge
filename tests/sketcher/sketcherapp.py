@@ -20,7 +20,7 @@ gi.require_version("Gtk", "4.0")
 from gi.repository import Gtk
 
 from rayforge.workbench.sketcher.sketchcanvas import SketchCanvas
-from rayforge.workbench.sketcher import SketchElement
+from rayforge.workbench.sketcher.sketchelement import SketchElement
 
 
 class SketcherApp(Gtk.Application):
@@ -62,6 +62,9 @@ class SketcherApp(Gtk.Application):
         self.canvas.set_vexpand(True)
         vbox.append(self.canvas)
 
+        # Get the element that the canvas created for itself
+        self.sketch_elem = self.canvas.sketch_element
+
         # Setup initial Element
         self.add_initial_sketch()
 
@@ -69,14 +72,10 @@ class SketcherApp(Gtk.Application):
 
     def add_initial_sketch(self):
         """Creates and adds the first sketch with demo geometry."""
-        if not self.canvas:
+        if not self.canvas or not self.sketch_elem:
             return
 
-        # The SketchElement is now placed at (0,0) in the world coordinate
-        # system. The WorldSurface will center its view on this area.
-        self.sketch_elem = SketchElement(x=0, y=0, width=1, height=1)
-
-        # Initialize demo geometry
+        # Initialize demo geometry on the canvas's internal sketch element
         sketch = self.sketch_elem.sketch
         origin_id = sketch.origin_id
 
@@ -107,53 +106,52 @@ class SketcherApp(Gtk.Application):
         sketch.solve()
         self.sketch_elem.update_bounds_from_sketch()
 
+        # Center the new element on the canvas
+        canvas_w, canvas_h = self.canvas.get_size_mm()
+        elem_w, elem_h = self.sketch_elem.width, self.sketch_elem.height
+        self.sketch_elem.set_pos(
+            (canvas_w - elem_w) / 2.0, (canvas_h - elem_h) / 2.0
+        )
+
         # Connect the constraint edit signal
         self.sketch_elem.constraint_edit_requested.connect(
             self.on_edit_constraint_val
         )
-        self.canvas.add(self.sketch_elem)
 
-        # Center the view on the new sketch element
-        self.canvas.set_pan(
-            -self.sketch_elem.x - self.sketch_elem.width / 2,
-            -self.sketch_elem.y - self.sketch_elem.height / 2,
-        )
-
-        # Set the active edit context so the pie menu has a target
-        self.canvas.enter_edit_mode(self.sketch_elem)
+        # Center the view on the geometry
+        self.canvas.reset_view()
 
     def on_reset_clicked(self, button: Gtk.Button):
-        """Removes the old sketch and creates a new, empty one."""
+        """Clears the sketch and resets the view."""
         if not self.canvas or not self.sketch_elem:
             return
 
-        # Cleanly exit edit mode for the old sketch
-        if self.canvas.edit_context is self.sketch_elem:
-            self.canvas.leave_edit_mode()
+        # Disconnect the signal from the old sketch object before it's destroyed
+        self.sketch_elem.constraint_edit_requested.disconnect(
+            self.on_edit_constraint_val
+        )  # type: ignore
 
-        # Remove the old element from the canvas
-        self.canvas.remove(self.sketch_elem)
+        # Tell the canvas to perform a full, safe reset
+        new_sketch = self.canvas.reset_sketch()
 
-        # Create a new, empty sketch element at the world origin
-        new_sketch = SketchElement(x=0, y=0)
-
-        # The new sketch already has an origin. Just update its bounds.
+        # The new sketch is created empty; update its bounds to get a size.
         new_sketch.update_bounds_from_sketch()
+
+        # Center the new element on the canvas before resetting the view
+        canvas_w, canvas_h = self.canvas.get_size_mm()
+        elem_w, elem_h = new_sketch.width, new_sketch.height
+        new_sketch.set_pos(
+            (canvas_w - elem_w) / 2.0, (canvas_h - elem_h) / 2.0
+        )
 
         # Re-connect signals for the new sketch
         new_sketch.constraint_edit_requested.connect(
             self.on_edit_constraint_val
         )
 
-        # Add to canvas and set as the active context for interaction
-        self.canvas.add(new_sketch)
-        self.canvas.enter_edit_mode(new_sketch)
-
-        # Reset the view to center on the new empty sketch
-        self.canvas.reset_view()
-
-        # Update the app's reference to the current sketch element
+        # Update the app's reference and reset the view to center it
         self.sketch_elem = new_sketch
+        self.canvas.reset_view()
 
     def on_edit_constraint_val(self, sender, constraint):
         """Opens a dialog to edit a constraint value."""

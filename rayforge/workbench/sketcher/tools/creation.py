@@ -93,8 +93,8 @@ class LineTool(SketchTool):
                     points=points_to_add,
                     entities=[new_line],
                 )
-                if self.element.sketch_canvas:
-                    self.element.sketch_canvas.history_manager.execute(cmd)
+                if self.element.editor:
+                    self.element.editor.history_manager.execute(cmd)
 
             # Start a new line segment from this point
             self.line_start_id = pid_hit
@@ -218,8 +218,8 @@ class ArcTool(SketchTool):
                     entities=[new_arc],
                     constraints=[geom_constr],
                 )
-                if self.element.sketch_canvas:
-                    self.element.sketch_canvas.history_manager.execute(cmd)
+                if self.element.editor:
+                    self.element.editor.history_manager.execute(cmd)
 
                 # Reset tool state
                 self.center_id = None
@@ -301,8 +301,8 @@ class CircleTool(SketchTool):
                     points=[new_point] if new_point else [],
                     entities=[new_circle],
                 )
-                if self.element.sketch_canvas:
-                    self.element.sketch_canvas.history_manager.execute(cmd)
+                if self.element.editor:
+                    self.element.editor.history_manager.execute(cmd)
 
                 # Reset for next circle
                 self.center_id = None
