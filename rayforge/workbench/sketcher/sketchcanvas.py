@@ -138,6 +138,34 @@ class SketchCanvas(WorldSurface):
 
         return False
 
+    def update_sketch_cursor(self):
+        """Forces an update of the cursor based on the editor's state."""
+        if self.sketch_editor:
+            cursor = self.sketch_editor.get_current_cursor()
+            self.set_cursor(cursor)
+
+    def on_motion(self, gesture: Gtk.Gesture, x: float, y: float):
+        """
+        Overrides the base canvas motion handler to implement sketcher-
+        specific cursor logic, bypassing the default handle-based system.
+        """
+        # Store raw pixel coordinates for other uses (like scroll-to-zoom)
+        self._mouse_pos = (x, y)
+
+        world_x, world_y = self._get_world_coords(x, y)
+
+        # Let the active tool update its hover state (e.g., for snapping)
+        if self.sketch_element:
+            self.sketch_element.on_hover_motion(world_x, world_y)
+
+        # Set the cursor based on the complete state from the editor
+        self.update_sketch_cursor()
+
+    def on_motion_leave(self, controller: Gtk.EventControllerMotion):
+        """Resets hover state and cursor when the mouse leaves the canvas."""
+        super().on_motion_leave(controller)
+        self.set_cursor(None)  # Reset to default cursor
+
     def on_button_press(
         self, gesture: Gtk.GestureClick, n_press: int, x: float, y: float
     ):

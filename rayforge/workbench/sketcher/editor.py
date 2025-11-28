@@ -4,7 +4,9 @@ from gi.repository import Gtk, Gdk
 from ...core.sketcher.entities import Point, Entity
 from ...core.sketcher.constraints import Constraint
 from ...undo import HistoryManager
+from ..canvas.cursor import get_tool_cursor
 from .piemenu import SketchPieMenu
+from .tools import SelectTool
 
 if TYPE_CHECKING:
     from .sketchelement import SketchElement
@@ -50,17 +52,50 @@ class SketchEditor:
         if self.sketch_element:
             # Clean up any in-progress tool state
             self.sketch_element.current_tool.on_deactivate()
+            if self.sketch_element.canvas:
+                # Reset cursor to default
+                self.sketch_element.canvas.set_cursor(None)
             self.sketch_element.editor = None
         self.sketch_element = None
         if self.pie_menu.is_visible():
             self.pie_menu.popdown()
+
+    def get_current_cursor(self) -> Optional[Gdk.Cursor]:
+        """
+        Determines the appropriate cursor based on the current tool and
+        context (e.g., hovering over a point).
+        """
+        if not self.sketch_element:
+            return None
+
+        # Priority 1: Check for specific hover states in the 'select' tool.
+        select_tool = self.sketch_element.tools.get("select")
+        if (
+            self.sketch_element.active_tool_name == "select"
+            and isinstance(select_tool, SelectTool)
+            and select_tool.hovered_point_id is not None
+        ):
+            return Gdk.Cursor.new_from_name("move")
+
+        # Priority 2: Return a tool-specific cursor.
+        tool = self.sketch_element.active_tool_name
+        if tool == "line":
+            return get_tool_cursor("sketch-line-symbolic")
+        if tool == "arc":
+            return get_tool_cursor("sketch-arc-symbolic")
+        if tool == "circle":
+            return get_tool_cursor("sketch-circle-symbolic")
+
+        # Default cursor for 'select' tool or any other case.
+        return Gdk.Cursor.new_from_name("default")
 
     def on_pie_menu_right_click(self, sender, gesture, n_press, x, y):
         """
         Handles a right-click that happened on the PieMenu's drawing area.
         Translates coordinates and forwards to the main right-click handler.
         """
-        if not self.sketch_element or not self.sketch_element.canvas:
+        sketch_element = self.sketch_element
+        if not sketch_element or not sketch_element.canvas:
             return
 
         child = self.pie_menu.get_child()
@@ -68,7 +103,7 @@ class SketchEditor:
             return
 
         canvas_coords = child.translate_coordinates(
-            self.sketch_element.canvas, x, y
+            sketch_element.canvas, x, y
         )
         if canvas_coords:
             canvas_x, canvas_y = canvas_coords
@@ -81,28 +116,29 @@ class SketchEditor:
         Opens the pie menu at the cursor location with resolved context.
         This is the primary entry point for right-click handling.
         """
-        if not self.sketch_element or not self.sketch_element.canvas:
+        sketch_element = self.sketch_element
+        if not sketch_element or not sketch_element.canvas:
             return
 
         if self.pie_menu.is_visible():
             self.pie_menu.popdown()
 
         # Use the element's canvas to convert from widget to world coordinates
-        world_x, world_y = self.sketch_element.canvas._get_world_coords(x, y)
+        world_x, world_y = sketch_element.canvas._get_world_coords(x, y)
 
         target: Optional[Union[Point, Entity, Constraint]] = None
         target_type: Optional[str] = None
 
         # Before showing the menu, we deactivate the current tool to clean
         # up any in-progress state.
-        self.sketch_element.current_tool.on_deactivate()
+        sketch_element.current_tool.on_deactivate()
 
-        selection = self.sketch_element.selection
+        selection = sketch_element.selection
         selection_changed = False
 
         # 1. Hit Test
-        hit_type, hit_obj = self.sketch_element.hittester.get_hit_data(
-            world_x, world_y, self.sketch_element
+        hit_type, hit_obj = sketch_element.hittester.get_hit_data(
+            world_x, world_y, sketch_element
         )
         target_type = hit_type
 
@@ -111,7 +147,7 @@ class SketchEditor:
         if hit_type == "point":
             assert isinstance(hit_obj, int)
             pid = hit_obj
-            target = self.sketch_element.sketch.registry.get_point(pid)
+            target = sketch_element.sketch.registry.get_point(pid)
 
             if pid not in selection.point_ids:
                 selection.select_point(pid, is_multi=False)
@@ -120,7 +156,7 @@ class SketchEditor:
         elif hit_type == "junction":
             assert isinstance(hit_obj, int)
             pid = hit_obj
-            target = self.sketch_element.sketch.registry.get_point(pid)
+            target = sketch_element.sketch.registry.get_point(pid)
 
             if selection.junction_pid != pid:
                 selection.select_junction(pid, is_multi=False)
@@ -138,8 +174,8 @@ class SketchEditor:
         elif hit_type == "constraint":
             assert isinstance(hit_obj, int)
             idx = hit_obj
-            if 0 <= idx < len(self.sketch_element.sketch.constraints):
-                target = self.sketch_element.sketch.constraints[idx]
+            if 0 <= idx < len(sketch_element.sketch.constraints):
+                target = sketch_element.sketch.constraints[idx]
 
                 if selection.constraint_idx != idx:
                     selection.select_constraint(idx, is_multi=False)
@@ -156,12 +192,12 @@ class SketchEditor:
                 selection_changed = True
 
         if selection_changed:
-            self.sketch_element.mark_dirty()
+            sketch_element.mark_dirty()
 
         # 3. Pass Context (Sketch, Target, Type)
-        self.pie_menu.set_context(self.sketch_element, target, target_type)
+        self.pie_menu.set_context(sketch_element, target, target_type)
 
-        win_coords = self.sketch_element.canvas.translate_coordinates(
+        win_coords = sketch_element.canvas.translate_coordinates(
             self.parent_window, x, y
         )
         if win_coords:

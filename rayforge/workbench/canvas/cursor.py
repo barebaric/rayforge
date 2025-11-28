@@ -1,12 +1,17 @@
 import math
+import logging
 from typing import Dict, Optional
 import cairo
 from gi.repository import Gdk, GLib
+from ...icons import get_icon_pixbuf
 from .region import ElementRegion, ROTATE_HANDLES
+
+logger = logging.getLogger(__name__)
 
 # Module-level caches for custom-rendered cursors to avoid recreating them.
 _cursor_cache: Dict[int, Gdk.Cursor] = {}
 _arc_cursor_cache: Dict[int, Gdk.Cursor] = {}
+_tool_cursor_cache: Dict[str, Gdk.Cursor] = {}
 
 # This map defines the base angle for each resize handle, using a standard
 # counter-clockwise (CCW) convention where 0 degrees is to the right.
@@ -30,6 +35,81 @@ _region_angles = {
     ElementRegion.SHEAR_LEFT: 90,
     ElementRegion.SHEAR_RIGHT: 90,
 }
+
+
+def get_tool_cursor(
+    icon_name: str, fallback_cursor_name: str = "crosshair"
+) -> Optional[Gdk.Cursor]:
+    """
+    Creates or retrieves from cache a custom cursor with a tool icon.
+    The cursor consists of a crosshair with the specified icon at the
+    bottom-right.
+
+    Args:
+        icon_name: The symbolic name of the icon to use.
+        fallback_cursor_name: The name of the GDK cursor to use if the
+                              icon cannot be loaded.
+
+    Returns:
+        A Gdk.Cursor object, or None if the fallback cursor fails.
+    """
+    if icon_name in _tool_cursor_cache:
+        return _tool_cursor_cache[icon_name]
+
+    size = 32
+    hotspot = 16  # Center of the crosshair
+
+    try:
+        # Load the icon from the current theme using the modern GTK4 API
+        pixbuf = get_icon_pixbuf(icon_name, size / 2)
+    except GLib.Error:
+        # If icon not found, return a standard GDK cursor
+        logger.error(f"failed loading icon for cursor {icon_name}")
+        pixbuf = None
+
+    if not pixbuf:
+        return Gdk.Cursor.new_from_name(fallback_cursor_name)
+
+    # 1. Draw the cursor shape using Cairo
+    surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, size, size)
+    ctx = cairo.Context(surface)
+
+    # Draw crosshair with outline for visibility
+    ctx.set_source_rgb(0, 0, 0)  # Black outline
+    ctx.set_line_width(3)
+    ctx.move_to(hotspot, 4)
+    ctx.line_to(hotspot, size - 4)
+    ctx.move_to(4, hotspot)
+    ctx.line_to(size - 4, hotspot)
+    ctx.stroke()
+
+    ctx.set_source_rgb(1, 1, 1)  # White inner
+    ctx.set_line_width(1)
+    ctx.move_to(hotspot, 4)
+    ctx.line_to(hotspot, size - 4)
+    ctx.move_to(4, hotspot)
+    ctx.line_to(size - 4, hotspot)
+    ctx.stroke()
+
+    # Draw the icon onto the surface
+    Gdk.cairo_set_source_pixbuf(ctx, pixbuf, hotspot + 2, hotspot + 2)
+    ctx.paint()
+
+    # 2. Convert Cairo surface to Gdk.Texture
+    data = surface.get_data()
+    bytes_data = GLib.Bytes.new(data)
+    texture = Gdk.MemoryTexture.new(
+        size,
+        size,
+        Gdk.MemoryFormat.B8G8R8A8_PREMULTIPLIED,
+        bytes_data,
+        surface.get_stride(),
+    )
+
+    # 3. Create Gdk.Cursor from the texture and cache it
+    cursor = Gdk.Cursor.new_from_texture(texture, hotspot, hotspot)
+    _tool_cursor_cache[icon_name] = cursor
+    return cursor
 
 
 def get_rotated_cursor(angle_deg: float) -> Gdk.Cursor:
