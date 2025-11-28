@@ -20,8 +20,6 @@ from rayforge.core.geo.primitives import (
     line_intersection,
     circle_circle_intersection,
     is_point_on_segment,
-    get_arc_midpoint,
-    is_angle_between,
 )
 
 
@@ -187,32 +185,15 @@ class SketchHitTester:
             tangent_angle = math.atan2(p2.y - p1.y, p2.x - p1.x)
             normal_angle = tangent_angle - (math.pi / 2.0)
 
-        elif isinstance(entity, Arc):
-            center = safe_get(entity.center_idx)
-            start = safe_get(entity.start_idx)
-            end = safe_get(entity.end_idx)
-            if not (center and start and end):
+        elif isinstance(entity, (Arc, Circle)):
+            midpoint = entity.get_midpoint(element.sketch.registry)
+            if not midpoint:
                 return None
-
-            mid_x, mid_y = get_arc_midpoint(
-                (start.x, start.y),
-                (end.x, end.y),
-                (center.x, center.y),
-                entity.clockwise,
-            )
+            mid_x, mid_y = midpoint
+            center = safe_get(entity.center_idx)
+            if not center:
+                return None
             normal_angle = math.atan2(mid_y - center.y, mid_x - center.x)
-
-        elif isinstance(entity, Circle):
-            center = safe_get(entity.center_idx)
-            radius_pt = safe_get(entity.radius_pt_idx)
-            if not (center and radius_pt):
-                return None
-            radius = math.hypot(radius_pt.x - center.x, radius_pt.y - center.y)
-            normal_angle = math.atan2(
-                radius_pt.y - center.y, radius_pt.x - center.x
-            )
-            mid_x = center.x + radius * math.cos(normal_angle)
-            mid_y = center.y + radius * math.sin(normal_angle)
 
         scale = 1.0
         if element.canvas and hasattr(element.canvas, "get_view_scale"):
@@ -383,29 +364,12 @@ class SketchHitTester:
                         return entity
 
                     if isinstance(entity, Arc):
-                        start = safe_get(entity.start_idx)
-                        end = safe_get(entity.end_idx)
-                        if start and end:
-                            angle_mouse = math.atan2(
-                                my - center.y, mx - center.x
-                            )
-                            if self._is_angle_on_arc(
-                                angle_mouse,
-                                center,
-                                start,
-                                end,
-                                entity.clockwise,
-                            ):
-                                return entity
+                        angle_mouse = math.atan2(my - center.y, mx - center.x)
+                        if entity.is_angle_within_sweep(
+                            angle_mouse, element.sketch.registry
+                        ):
+                            return entity
         return None
-
-    def _is_angle_on_arc(self, target_angle, center, start, end, clockwise):
-        """Checks if a target angle lies on the arc segment."""
-        angle_start = math.atan2(start.y - center.y, start.x - center.x)
-        angle_end = math.atan2(end.y - center.y, end.x - center.x)
-        return is_angle_between(
-            target_angle, angle_start, angle_end, clockwise
-        )
 
     def get_circular_label_pos(self, constr, to_screen, element):
         """Calculates screen position for Radius/Diameter constraint labels."""
@@ -427,18 +391,15 @@ class SketchHitTester:
 
         if isinstance(entity, Arc):
             start = element.sketch.registry.get_point(entity.start_idx)
-            end = element.sketch.registry.get_point(entity.end_idx)
-            if not (start and end):
+            if not start:
                 return None
-
             radius = math.hypot(start.x - center.x, start.y - center.y)
-            mid_x, mid_y = get_arc_midpoint(
-                (start.x, start.y),
-                (end.x, end.y),
-                (center.x, center.y),
-                entity.clockwise,
+            midpoint = entity.get_midpoint(element.sketch.registry)
+            if not midpoint:
+                return None
+            mid_angle = math.atan2(
+                midpoint[1] - center.y, midpoint[0] - center.x
             )
-            mid_angle = math.atan2(mid_y - center.y, mid_x - center.x)
 
         elif isinstance(entity, Circle):
             radius_pt = element.sketch.registry.get_point(entity.radius_pt_idx)
@@ -577,18 +538,14 @@ class SketchHitTester:
 
         valid_points = []
         for ix, iy in [(ix1, iy1), (ix2, iy2)]:
-            # Use primitives helper to check segment overlap
             on_line = is_point_on_segment(
                 (ix, iy), (lp1.x, lp1.y), (lp2.x, lp2.y)
             )
             on_arc = True
             if isinstance(shape, Arc):
-                start, end = safe_get(shape.start_idx), safe_get(shape.end_idx)
-                if not (start and end):
-                    continue
                 angle = math.atan2(iy - center.y, ix - center.x)
-                on_arc = self._is_angle_on_arc(
-                    angle, center, start, end, shape.clockwise
+                on_arc = shape.is_angle_within_sweep(
+                    angle, element.sketch.registry
                 )
 
             if on_line and on_arc:
@@ -646,21 +603,17 @@ class SketchHitTester:
         for ix, iy in intersections:
             on_s1 = True
             if isinstance(s1, Arc):
-                start, end = safe_get(s1.start_idx), safe_get(s1.end_idx)
-                if start and end:
-                    angle = math.atan2(iy - c1.y, ix - c1.x)
-                    on_s1 = self._is_angle_on_arc(
-                        angle, c1, start, end, s1.clockwise
-                    )
+                angle = math.atan2(iy - c1.y, ix - c1.x)
+                on_s1 = s1.is_angle_within_sweep(
+                    angle, element.sketch.registry
+                )
 
             on_s2 = True
             if isinstance(s2, Arc):
-                start, end = safe_get(s2.start_idx), safe_get(s2.end_idx)
-                if start and end:
-                    angle = math.atan2(iy - c2.y, ix - c2.x)
-                    on_s2 = self._is_angle_on_arc(
-                        angle, c2, start, end, s2.clockwise
-                    )
+                angle = math.atan2(iy - c2.y, ix - c2.x)
+                on_s2 = s2.is_angle_within_sweep(
+                    angle, element.sketch.registry
+                )
 
             if on_s1 and on_s2:
                 valid_points.append((ix, iy))
@@ -672,24 +625,14 @@ class SketchHitTester:
 
         best_pt = valid_points[0]
         if len(valid_points) > 1:
-            # Choose point furthest from the midpoints of the arcs to allow
-            # visualization in uncrowded space, or closest to centers.
-            # Original logic used arc midpoints. Let's replicate that.
 
-            def get_mp(arc, center):
+            def get_midpoint(arc, center):
                 if not isinstance(arc, Arc):
                     return None
-                s = safe_get(arc.start_idx)
-                e = safe_get(arc.end_idx)
-                if not (s and e and center):
-                    return None
-                mid_x, mid_y = get_arc_midpoint(
-                    (s.x, s.y), (e.x, e.y), (center.x, center.y), arc.clockwise
-                )
-                return mid_x, mid_y
+                return arc.get_midpoint(element.sketch.registry)
 
-            m1 = get_mp(s1, c1)
-            m2 = get_mp(s2, c2)
+            m1 = get_midpoint(s1, c1)
+            m2 = get_midpoint(s2, c2)
 
             if m1 and m2:
                 d1_sq = (

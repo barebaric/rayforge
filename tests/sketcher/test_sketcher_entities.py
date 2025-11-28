@@ -1,4 +1,5 @@
 import pytest
+import math
 from rayforge.core.sketcher.entities import (
     EntityRegistry,
     Point,
@@ -153,3 +154,106 @@ def test_entity_registry_serialization_round_trip():
     assert isinstance(new_circ, Circle)
     assert new_circ.center_idx == p1
     assert new_circ.radius_pt_idx == p2
+
+
+def test_arc_get_midpoint(registry):
+    """Test calculation of the arc's midpoint."""
+    center = registry.add_point(0, 0)
+    start = registry.add_point(10, 0)
+    end = registry.add_point(-10, 0)
+
+    # Counter-clockwise arc (upper semi-circle)
+    aid_ccw = registry.add_arc(start, end, center, cw=False)
+    arc_ccw = registry.get_entity(aid_ccw)
+    mid_ccw = arc_ccw.get_midpoint(registry)
+    assert mid_ccw[0] == pytest.approx(0)
+    assert mid_ccw[1] == pytest.approx(10)
+
+    # Clockwise arc (lower semi-circle)
+    aid_cw = registry.add_arc(start, end, center, cw=True)
+    arc_cw = registry.get_entity(aid_cw)
+    mid_cw = arc_cw.get_midpoint(registry)
+    assert mid_cw[0] == pytest.approx(0)
+    assert mid_cw[1] == pytest.approx(-10)
+
+
+def test_arc_is_angle_within_sweep(registry):
+    """Test checking if an angle is within the arc's sweep."""
+    center = registry.add_point(0, 0)
+    start = registry.add_point(10, 0)  # 0 degrees
+    end = registry.add_point(0, 10)  # 90 degrees (pi/2)
+
+    # Counter-clockwise from 0 to 90 degrees
+    arc_ccw = registry.get_entity(
+        registry.add_arc(start, end, center, cw=False)
+    )
+
+    assert (
+        arc_ccw.is_angle_within_sweep(math.pi / 4, registry) is True
+    )  # 45 deg
+    assert arc_ccw.is_angle_within_sweep(math.pi, registry) is False  # 180 deg
+    assert (
+        arc_ccw.is_angle_within_sweep(0, registry) is True
+    )  # on start boundary
+    assert (
+        arc_ccw.is_angle_within_sweep(math.pi / 2, registry) is True
+    )  # on end boundary
+
+    # Clockwise from 0 to 90 (sweep is the long way around)
+    arc_cw = registry.get_entity(registry.add_arc(start, end, center, cw=True))
+
+    assert (
+        arc_cw.is_angle_within_sweep(math.pi / 4, registry) is False
+    )  # 45 deg
+    assert arc_cw.is_angle_within_sweep(math.pi, registry) is True  # 180 deg
+    assert (
+        arc_cw.is_angle_within_sweep(-math.pi / 2, registry) is True
+    )  # -90 deg
+
+
+def test_circle_get_midpoint(registry):
+    """Test getting a point on the circle's circumference."""
+    center = registry.add_point(5, 5)
+    radius_pt_idx = registry.add_point(15, 5)
+
+    cid = registry.add_circle(center, radius_pt_idx)
+    circle = registry.get_entity(cid)
+
+    midpoint = circle.get_midpoint(registry)
+    radius_pt = registry.get_point(radius_pt_idx)
+
+    assert midpoint is not None
+    assert midpoint == radius_pt.pos()
+    assert midpoint == (15.0, 5.0)
+
+
+def test_registry_is_point_used(registry):
+    """Test checking if a point is referenced by any entity."""
+    p1 = registry.add_point(0, 0)
+    p2 = registry.add_point(10, 0)
+    p3 = registry.add_point(10, 10)
+    p4 = registry.add_point(0, 10)
+    p_unused = registry.add_point(100, 100)
+
+    # Initially, no points are used
+    assert registry.is_point_used(p1) is False
+    assert registry.is_point_used(p_unused) is False
+
+    # Add a line and check
+    registry.add_line(p1, p2)
+    assert registry.is_point_used(p1) is True
+    assert registry.is_point_used(p2) is True
+    assert registry.is_point_used(p3) is False
+    assert registry.is_point_used(p_unused) is False
+
+    # Add an arc and check
+    registry.add_arc(p2, p3, p4)
+    assert registry.is_point_used(p2) is True
+    assert registry.is_point_used(p3) is True
+    assert registry.is_point_used(p4) is True
+
+    # Add a circle and check
+    registry.add_circle(p1, p4)
+    assert registry.is_point_used(p1) is True
+    assert registry.is_point_used(p4) is True
+    assert registry.is_point_used(p_unused) is False
