@@ -1,6 +1,7 @@
 import cairo
 import math
 from collections import defaultdict
+from rayforge.core.geo.primitives import find_closest_point_on_line
 from rayforge.core.sketcher.entities import Line, Arc, Circle
 from rayforge.core.sketcher.constraints import (
     DistanceConstraint,
@@ -552,14 +553,64 @@ class SketchRenderer:
     def _draw_tangent_constraint(self, ctx, constr, to_screen):
         line = self.element.sketch.registry.get_entity(constr.line_id)
         shape = self.element.sketch.registry.get_entity(constr.shape_id)
+
+        if not (line and shape):
+            return
         if not (isinstance(line, Line) and isinstance(shape, (Arc, Circle))):
             return
-        p = self._safe_get_point(line.p1_idx)
-        if p:
-            sx, sy = to_screen.transform_point((p.x, p.y))
-            ctx.move_to(sx + 10, sy + 10)
-            ctx.show_text("⦸")
-            ctx.new_path()
+
+        p1 = self._safe_get_point(line.p1_idx)
+        p2 = self._safe_get_point(line.p2_idx)
+        center = self._safe_get_point(shape.center_idx)
+
+        if not (p1 and p2 and center):
+            return
+
+        tangent_mx, tangent_my = find_closest_point_on_line(
+            (p1.x, p1.y), (p2.x, p2.y), center.x, center.y
+        )
+
+        # Find the angle from the circle center to the tangency point. This
+        # defines the orientation of our symbol.
+        angle = math.atan2(tangent_my - center.y, tangent_mx - center.x)
+
+        # We place the symbol offset from the tangency point along the normal
+        offset = 12.0
+        symbol_mx = tangent_mx + offset * math.cos(angle)
+        symbol_my = tangent_my + offset * math.sin(angle)
+
+        # Transform anchor to screen coordinates
+        sx, sy = to_screen.transform_point((symbol_mx, symbol_my))
+
+        # Draw the symbol
+        ctx.save()
+        ctx.set_line_width(1.5)
+
+        ctx.translate(sx, sy)
+        # We need to rotate the symbol so the 'line' part is parallel to the
+        # tangent line in the sketch. The tangent line is perpendicular to our
+        # 'angle' vector. So rotate by angle + 90deg.
+        ctx.rotate(angle + math.pi / 2.0)
+
+        radius = 6.0
+
+        # Draw arc part (a 120 degree arc segment)
+        # In our rotated space, center is "below" (negative y).
+        ctx.new_sub_path()
+        ctx.arc(
+            0,
+            -radius,
+            radius,
+            math.pi / 2 - math.pi / 3,
+            math.pi / 2 + math.pi / 3,
+        )
+
+        # Draw line part (a horizontal line at y=0)
+        ctx.move_to(-radius * 1.2, 0)
+        ctx.line_to(radius * 1.2, 0)
+
+        ctx.stroke()
+        ctx.restore()
 
     def _draw_symmetry_constraint(
         self, ctx, constr, is_selected, is_hovered, to_screen

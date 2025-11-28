@@ -16,6 +16,7 @@ from rayforge.core.geo.primitives import (
     is_point_on_segment,
     find_closest_point_on_line_segment,
     find_closest_point_on_arc,
+    find_closest_point_on_line,
 )
 
 
@@ -473,6 +474,40 @@ def test_is_point_on_segment():
     # Point on the line, but outside segment
     assert is_point_on_segment((11, 11), p1, p2) is False
     assert is_point_on_segment((-1, -1), p1, p2) is False
+
+
+def test_find_closest_point_on_line():
+    # Case 1: Simple horizontal line
+    p1, p2 = (0, 0), (10, 0)
+    x, y = 5, 5
+    assert find_closest_point_on_line(p1, p2, x, y) == pytest.approx((5, 0))
+
+    # Case 2: Simple vertical line
+    p1, p2 = (0, 0), (0, 10)
+    x, y = 5, 5
+    assert find_closest_point_on_line(p1, p2, x, y) == pytest.approx((0, 5))
+
+    # Case 3: Diagonal line y=x
+    p1, p2 = (0, 0), (10, 10)
+    x, y = 0, 10
+    assert find_closest_point_on_line(p1, p2, x, y) == pytest.approx((5, 5))
+
+    # Case 4: Point is already on the line
+    p1, p2 = (0, 0), (10, 10)
+    x, y = 3, 3
+    assert find_closest_point_on_line(p1, p2, x, y) == pytest.approx((3, 3))
+
+    # Case 5: Line where projection is outside the segment p1-p2
+    # The function is for an *infinite* line, so it should still work
+    p1, p2 = (0, 0), (10, 0)
+    x, y = 20, 5
+    assert find_closest_point_on_line(p1, p2, x, y) == pytest.approx((20, 0))
+
+    # Case 6: Edge case - p1 and p2 are the same point
+    p1, p2 = (5, 5), (5, 5)
+    x, y = 10, 10
+    # The function should return p1 in this case
+    assert find_closest_point_on_line(p1, p2, x, y) == pytest.approx((5, 5))
 
 
 def test_find_closest_point_on_line_segment():
