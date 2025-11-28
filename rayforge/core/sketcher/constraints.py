@@ -276,40 +276,107 @@ class DiameterConstraint:
 
 
 class PerpendicularConstraint:
-    """Enforces two lines are perpendicular (dot product is 0)."""
+    """
+    Enforces perpendicularity between two entities.
+    - Line/Line: Vectors are at 90 degrees.
+    - Line/Arc, Line/Circle: Line passes through the shape's center.
+    - Arc/Arc, Arc/Circle, Circle/Circle: Shapes intersect at a right angle.
+    """
 
-    def __init__(self, l1_id: int, l2_id: int):
-        self.l1_id = l1_id
-        self.l2_id = l2_id
+    def __init__(self, e1_id: int, e2_id: int):
+        self.e1_id = e1_id
+        self.e2_id = e2_id
 
     def to_dict(self) -> Dict[str, Any]:
         return {
             "type": "PerpendicularConstraint",
-            "l1_id": self.l1_id,
-            "l2_id": self.l2_id,
+            "e1_id": self.e1_id,
+            "e2_id": self.e2_id,
         }
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "PerpendicularConstraint":
-        return cls(l1_id=data["l1_id"], l2_id=data["l2_id"])
+        # Handle new and legacy keys for backward compatibility
+        e1_id = data.get("e1_id", data.get("l1_id"))
+        e2_id = data.get("e2_id", data.get("l2_id"))
+        if e1_id is None or e2_id is None:
+            raise KeyError("PerpendicularConstraint data missing entity IDs")
+        return cls(e1_id=e1_id, e2_id=e2_id)
+
+    def _get_radius_sq(
+        self, shape: Union[Arc, Circle], reg: EntityRegistry
+    ) -> float:
+        """Helper to get squared radius of an Arc or Circle."""
+        center = reg.get_point(shape.center_idx)
+        if isinstance(shape, Arc):
+            start = reg.get_point(shape.start_idx)
+            return (start.x - center.x) ** 2 + (start.y - center.y) ** 2
+        elif isinstance(shape, Circle):
+            radius_pt = reg.get_point(shape.radius_pt_idx)
+            return (radius_pt.x - center.x) ** 2 + (
+                radius_pt.y - center.y
+            ) ** 2
+        return 0.0
 
     def error(self, reg: EntityRegistry, params: ParameterContext) -> float:
-        l1 = reg.get_entity(self.l1_id)
-        l2 = reg.get_entity(self.l2_id)
+        e1 = reg.get_entity(self.e1_id)
+        e2 = reg.get_entity(self.e2_id)
 
-        if not isinstance(l1, Line) or not isinstance(l2, Line):
+        if e1 is None or e2 is None:
             return 0.0
 
-        p1 = reg.get_point(l1.p1_idx)
-        p2 = reg.get_point(l1.p2_idx)
-        p3 = reg.get_point(l2.p1_idx)
-        p4 = reg.get_point(l2.p2_idx)
+        # Case 1: Line-Line
+        if isinstance(e1, Line) and isinstance(e2, Line):
+            p1 = reg.get_point(e1.p1_idx)
+            p2 = reg.get_point(e1.p2_idx)
+            p3 = reg.get_point(e2.p1_idx)
+            p4 = reg.get_point(e2.p2_idx)
 
-        dx1, dy1 = p2.x - p1.x, p2.y - p1.y
-        dx2, dy2 = p4.x - p3.x, p4.y - p3.y
+            dx1, dy1 = p2.x - p1.x, p2.y - p1.y
+            dx2, dy2 = p4.x - p3.x, p4.y - p3.y
+            # Dot product
+            return dx1 * dx2 + dy1 * dy2
 
-        # Dot product
-        return dx1 * dx2 + dy1 * dy2
+        # Case 2: Line-Arc/Circle
+        line, shape = None, None
+        if isinstance(e1, Line) and isinstance(e2, (Arc, Circle)):
+            line, shape = e1, e2
+        elif isinstance(e2, Line) and isinstance(e1, (Arc, Circle)):
+            line, shape = e2, e1
+
+        if line and shape:
+            # Constraint: Line must pass through the shape's center
+            # (i.e., line points and center are collinear)
+            lp1 = reg.get_point(line.p1_idx)
+            lp2 = reg.get_point(line.p2_idx)
+            center = reg.get_point(shape.center_idx)
+
+            # Use the 2D cross-product of vectors
+            #   (lp2 - lp1) and (center - lp1).
+            return (lp2.x - lp1.x) * (center.y - lp1.y) - (
+                center.x - lp1.x
+            ) * (lp2.y - lp1.y)
+
+        # Case 3: Arc/Circle - Arc/Circle
+        shape1, shape2 = None, None
+        if isinstance(e1, (Arc, Circle)) and isinstance(e2, (Arc, Circle)):
+            shape1, shape2 = e1, e2
+
+        if shape1 and shape2:
+            # Constraint: The circles intersect at a right angle.
+            # Geometric property: r1^2 + r2^2 = d^2, where d is distance
+            # between centers.
+            c1 = reg.get_point(shape1.center_idx)
+            c2 = reg.get_point(shape2.center_idx)
+
+            r1_sq = self._get_radius_sq(shape1, reg)
+            r2_sq = self._get_radius_sq(shape2, reg)
+
+            dist_centers_sq = (c2.x - c1.x) ** 2 + (c2.y - c1.y) ** 2
+
+            return r1_sq + r2_sq - dist_centers_sq
+
+        return 0.0
 
 
 class TangentConstraint:

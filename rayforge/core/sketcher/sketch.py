@@ -173,8 +173,27 @@ class Sketch:
 
         # 3. Perpendicular
         if constraint_type == "perp":
-            # Exactly two Lines
-            return n_lines == 2 and n_ents == 2 and n_pts == 0
+            # Valid combinations:
+            # - 2 Lines
+            # - 1 Line and 1 Arc/Circle
+            # - 2 Arcs/Circles
+            def is_shape(e):
+                return isinstance(e, (Arc, Circle))
+
+            shapes = [e for e in entities if is_shape(e)]
+            n_shapes = len(shapes)
+
+            if n_ents != 2 or n_pts != 0:
+                return False
+
+            if n_lines == 2:
+                return True
+            if n_lines == 1 and n_shapes == 1:
+                return True
+            if n_shapes == 2:
+                return True
+
+            return False
 
         # 4. Tangent
         if constraint_type == "tangent":
