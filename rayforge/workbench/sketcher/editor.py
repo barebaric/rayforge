@@ -67,6 +67,7 @@ class SketchEditor:
             "e": "add_equal_constraint",
             "o": "add_alignment_constraint",
             "c": "add_alignment_constraint",  # FreeCAD alias
+            "s": "add_symmetry_constraint",
             # Constraints (K prefix)
             "kd": "add_distance_constraint",
             "kr": "add_radius_constraint",
@@ -276,6 +277,8 @@ class SketchEditor:
             ctx.add_alignment_constraint()
         elif constraint_type == "equal":
             ctx.add_equal_constraint()
+        elif constraint_type == "symmetry":
+            ctx.add_symmetry_constraint()
 
     def on_action_triggered(self, sender, action: str):
         logger.info(f"Action activated: {action}")

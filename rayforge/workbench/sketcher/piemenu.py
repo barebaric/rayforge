@@ -49,6 +49,7 @@ class SketchPieMenu(PieMenu):
             "tangent": "add_tangent",
             "equal": "add_equal_constraint",
             "align": "add_alignment_constraint",
+            "symmetry": "add_symmetry_constraint",
             # Constraints (K prefix)
             "dist": "add_distance_constraint",
             "radius": "add_radius_constraint",
@@ -174,6 +175,13 @@ class SketchPieMenu(PieMenu):
         label = f"Equal{get_shortcut_label('equal')}"
         item = PieMenuItem(
             "sketch-constrain-equal-symbolic", label, data="equal"
+        )
+        item.on_click.connect(self._on_constraint_clicked, weak=False)
+        self.add_item(item)
+
+        label = f"Symmetry{get_shortcut_label('symmetry')}"
+        item = PieMenuItem(
+            "sketch-constrain-symmetric-symbolic", label, data="symmetry"
         )
         item.on_click.connect(self._on_constraint_clicked, weak=False)
         self.add_item(item)
