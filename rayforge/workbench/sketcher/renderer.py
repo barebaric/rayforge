@@ -554,11 +554,12 @@ class SketchRenderer:
     def _draw_perp_constraint(
         self, ctx, constr, is_selected, is_hovered, to_screen
     ):
-        data = self.element.hittester.get_perp_intersection_screen(
+        data = self.element.hittester.get_perp_visuals_screen(
             constr, to_screen, self.element
         )
         if not data:
             return
+
         sx, sy, ang1, ang2 = data
 
         ctx.save()
@@ -570,26 +571,34 @@ class SketchRenderer:
             ctx.set_source_rgb(0.0, 0.6, 0.0)
         ctx.set_line_width(1.5)
 
-        radius = 16.0
-        diff = ang2 - ang1
-        while diff <= -math.pi:
-            diff += 2 * math.pi
-        while diff > math.pi:
-            diff -= 2 * math.pi
+        # If we have angles, it's the classic line-line perpendicular case
+        if ang1 is not None and ang2 is not None:
+            radius = 16.0
+            diff = ang2 - ang1
+            while diff <= -math.pi:
+                diff += 2 * math.pi
+            while diff > math.pi:
+                diff -= 2 * math.pi
 
-        if diff > 0:
-            ctx.arc(sx, sy, radius, ang1, ang2)
+            if diff > 0:
+                ctx.arc(sx, sy, radius, ang1, ang2)
+            else:
+                ctx.arc_negative(sx, sy, radius, ang1, ang2)
+            ctx.stroke()
+
+            # Dot
+            mid = ang1 + diff / 2
+            dx = sx + math.cos(mid) * radius * 0.6
+            dy = sy + math.sin(mid) * radius * 0.6
+            ctx.new_sub_path()
+            ctx.arc(dx, dy, 2.0, 0, 2 * math.pi)
+            ctx.fill()
         else:
-            ctx.arc_negative(sx, sy, radius, ang1, ang2)
-        ctx.stroke()
+            # For all other cases (line-arc, arc-arc), draw a box at anchor
+            sz = 8.0
+            ctx.rectangle(sx - sz, sy - sz, sz * 2, sz * 2)
+            ctx.stroke()
 
-        # Dot
-        mid = ang1 + diff / 2
-        dx = sx + math.cos(mid) * radius * 0.6
-        dy = sy + math.sin(mid) * radius * 0.6
-        ctx.new_sub_path()
-        ctx.arc(dx, dy, 2.0, 0, 2 * math.pi)
-        ctx.fill()
         ctx.restore()
 
     def _draw_tangent_constraint(self, ctx, constr, to_screen):

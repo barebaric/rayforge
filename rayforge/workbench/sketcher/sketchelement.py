@@ -406,7 +406,7 @@ class SketchElement(CanvasElement):
             if not should_remove:
                 entities_in_constraint = []
                 if isinstance(constr, PerpendicularConstraint):
-                    entities_in_constraint = [constr.l1_id, constr.l2_id]
+                    entities_in_constraint = [constr.e1_id, constr.e2_id]
                 elif isinstance(constr, TangentConstraint):
                     entities_in_constraint = [constr.line_id, constr.shape_id]
                 elif isinstance(constr, RadiusConstraint):
@@ -629,20 +629,23 @@ class SketchElement(CanvasElement):
 
     def add_perpendicular(self):
         if not self.is_constraint_supported("perp"):
-            logger.warning("Perpendicular constraint requires 2 Lines.")
+            logger.warning(
+                "Perpendicular constraint requires 2 compatible entities "
+                "(lines, arcs, or circles)."
+            )
+            return
+
+        if not self.editor:
             return
 
         e1_id = self.selection.entity_ids[0]
         e2_id = self.selection.entity_ids[1]
 
-        if e1_id and e2_id and self.editor:
-            constr = PerpendicularConstraint(e1_id, e2_id)
-            cmd = AddItemsCommand(
-                self, "Add Perpendicular Constraint", constraints=[constr]
-            )
-            self.editor.history_manager.execute(cmd)
-        else:
-            logger.warning("Perpendicular constraint requires 2 Lines.")
+        constr = PerpendicularConstraint(e1_id, e2_id)
+        cmd = AddItemsCommand(
+            self, "Add Perpendicular Constraint", constraints=[constr]
+        )
+        self.editor.history_manager.execute(cmd)
 
     def add_tangent(self):
         if not self.is_constraint_supported("tangent"):

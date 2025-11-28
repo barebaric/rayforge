@@ -272,12 +272,11 @@ class SketchHitTester:
                 return math.hypot(sx - mx, sy - my) < 15
 
         elif isinstance(constr, PerpendicularConstraint):
-            data = self.get_perp_intersection_screen(
-                constr, to_screen, element
-            )
+            data = self.get_perp_visuals_screen(constr, to_screen, element)
             if data:
-                vx, vy = data[0], data[1]
+                vx, vy, _, _ = data
                 return math.hypot(sx - vx, sy - vy) < 20
+            return False
 
         elif isinstance(constr, CoincidentConstraint):
             # Prefer hit-testing the non-origin point for discoverability
@@ -394,43 +393,40 @@ class SketchHitTester:
                             angle_mouse = math.atan2(
                                 my - center.y, mx - center.x
                             )
-                            angle_start = math.atan2(
-                                start.y - center.y, start.x - center.x
-                            )
-                            angle_end = math.atan2(
-                                end.y - center.y, end.x - center.x
-                            )
-
-                            if self._is_angle_between(
+                            if self._is_angle_on_arc(
                                 angle_mouse,
-                                angle_start,
-                                angle_end,
+                                center,
+                                start,
+                                end,
                                 entity.clockwise,
                             ):
                                 return entity
         return None
 
-    def _is_angle_between(self, target, start, end, clockwise):
-        """Checks if target angle is between start and end angles."""
-        # Normalize to [0, 2PI)
-        target %= 2 * math.pi
-        start %= 2 * math.pi
-        end %= 2 * math.pi
+    def _is_angle_on_arc(self, target_angle, center, start, end, clockwise):
+        """Checks if a target angle lies on the arc segment."""
+        angle_start = math.atan2(start.y - center.y, start.x - center.x)
+        angle_end = math.atan2(end.y - center.y, end.x - center.x)
+
+        # Normalize all angles to [0, 2*pi)
+        target = (target_angle + 2 * math.pi) % (2 * math.pi)
+        start_norm = (angle_start + 2 * math.pi) % (2 * math.pi)
+        end_norm = (angle_end + 2 * math.pi) % (2 * math.pi)
 
         if clockwise:
-            # Clockwise: Start > End (visually, usually means start > end)
-            if start < end:
-                start += 2 * math.pi
-            if target > start:
-                target -= 2 * math.pi
-            return end <= target <= start
-        else:
-            # Counter-Clockwise: Start < End
-            if end < start:
-                end += 2 * math.pi
-            if target < start:
-                target += 2 * math.pi
-            return start <= target <= end
+            # If start < end, it wraps around 0. e.g., start at 330 deg, end
+            # at 30 deg.
+            if start_norm > end_norm:
+                return target >= start_norm or target <= end_norm
+            # Normal case where start > end.
+            return target >= start_norm and target <= end_norm
+        else:  # Counter-clockwise
+            # If start > end, it wraps around 0. e.g., start at 330 deg, end
+            # at 30 deg.
+            if start_norm > end_norm:
+                return target >= start_norm or target <= end_norm
+            # Normal case where start < end.
+            return target >= start_norm and target <= end_norm
 
     def get_circular_label_pos(self, constr, to_screen, element):
         """Calculates screen position for Radius/Diameter constraint labels."""
@@ -500,52 +496,274 @@ class SketchHitTester:
 
         return label_sx, label_sy, arc_mid_sx, arc_mid_sy
 
-    def get_perp_intersection_screen(self, constr, to_screen, element):
-        """Calculates intersection point and angles for perp visualization."""
-        l1 = element.sketch.registry.get_entity(constr.l1_id)
-        l2 = element.sketch.registry.get_entity(constr.l2_id)
-
-        if not (isinstance(l1, Line) and isinstance(l2, Line)):
+    def get_perp_visuals_screen(
+        self, constr, to_screen, element
+    ) -> Optional[Tuple[float, float, Optional[float], Optional[float]]]:
+        """
+        Calculates screen position and angles for perpendicular visualization.
+        Returns (sx, sy, angle1, angle2). Angles are only for Line-Line case.
+        """
+        registry = element.sketch.registry
+        e1 = registry.get_entity(constr.e1_id)
+        e2 = registry.get_entity(constr.e2_id)
+        if not (e1 and e2):
             return None
 
+        # --- Case 1: Line-Line ---
+        if isinstance(e1, Line) and isinstance(e2, Line):
+            return self._get_perp_line_line_visuals(e1, e2, to_screen, element)
+
+        # --- Case 2: Line-Shape ---
+        line, shape = (e1, e2) if isinstance(e1, Line) else (e2, e1)
+        if isinstance(line, Line) and isinstance(shape, (Arc, Circle)):
+            return self._get_perp_line_shape_visuals(
+                line, shape, to_screen, element
+            )
+
+        # --- Case 3: Shape-Shape ---
+        if isinstance(e1, (Arc, Circle)) and isinstance(e2, (Arc, Circle)):
+            return self._get_perp_shape_shape_visuals(
+                e1, e2, to_screen, element
+            )
+
+        return None
+
+    def _get_perp_line_line_visuals(self, l1, l2, to_screen, element):
         def safe_get(pid):
             try:
                 return element.sketch.registry.get_point(pid)
             except Exception:
                 return None
 
-        p1, p2 = safe_get(l1.p1_idx), safe_get(l1.p2_idx)
-        p3, p4 = safe_get(l2.p1_idx), safe_get(l2.p2_idx)
-
+        p1 = safe_get(l1.p1_idx)
+        p2 = safe_get(l1.p2_idx)
+        p3 = safe_get(l2.p1_idx)
+        p4 = safe_get(l2.p2_idx)
         if not (p1 and p2 and p3 and p4):
             return None
-
         pt = line_intersection(
             (p1.x, p1.y), (p2.x, p2.y), (p3.x, p3.y), (p4.x, p4.y)
         )
-        if not pt:
-            return None
+        if not pt:  # Fallback for parallel lines
+            m1x, m1y = (p1.x + p2.x) / 2, (p1.y + p2.y) / 2
+            m2x, m2y = (p3.x + p4.x) / 2, (p3.y + p4.y) / 2
+            pt = ((m1x + m2x) / 2, (m1y + m2y) / 2)
 
         ix, iy = pt
         sx, sy = to_screen.transform_point((ix, iy))
-
-        def get_screen_pt(p):
-            return to_screen.transform_point((p.x, p.y))
-
-        s_p1, s_p2 = get_screen_pt(p1), get_screen_pt(p2)
-        s_p3, s_p4 = get_screen_pt(p3), get_screen_pt(p4)
+        s_p1 = to_screen.transform_point((p1.x, p1.y))
+        s_p2 = to_screen.transform_point((p2.x, p2.y))
+        s_p3 = to_screen.transform_point((p3.x, p3.y))
+        s_p4 = to_screen.transform_point((p4.x, p4.y))
 
         def dist_sq(a, b):
             return (a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2
 
-        vec1_p = (
+        v1p = (
             s_p1 if dist_sq(s_p1, (sx, sy)) > dist_sq(s_p2, (sx, sy)) else s_p2
         )
-        vec2_p = (
+        v2p = (
             s_p3 if dist_sq(s_p3, (sx, sy)) > dist_sq(s_p4, (sx, sy)) else s_p4
         )
-
-        ang1 = math.atan2(vec1_p[1] - sy, vec1_p[0] - sx)
-        ang2 = math.atan2(vec2_p[1] - sy, vec2_p[0] - sx)
-
+        ang1 = math.atan2(v1p[1] - sy, v1p[0] - sx)
+        ang2 = math.atan2(v2p[1] - sy, v2p[0] - sx)
         return sx, sy, ang1, ang2
+
+    def _get_perp_line_shape_visuals(self, line, shape, to_screen, element):
+        def safe_get(pid):
+            try:
+                return element.sketch.registry.get_point(pid)
+            except Exception:
+                return None
+
+        def is_on_line_segment(pt, p1, p2):
+            # Check if point pt is on segment p1-p2 using dot products
+            dot1 = (pt[0] - p1.x) * (p2.x - p1.x) + (pt[1] - p1.y) * (
+                p2.y - p1.y
+            )
+            if dot1 < 0:
+                return False
+            dot2 = (pt[0] - p2.x) * (p1.x - p2.x) + (pt[1] - p2.y) * (
+                p1.y - p2.y
+            )
+            if dot2 < 0:
+                return False
+            return True
+
+        center = safe_get(shape.center_idx)
+        lp1 = safe_get(line.p1_idx)
+        lp2 = safe_get(line.p2_idx)
+        if not (center and lp1 and lp2):
+            return None
+
+        dxL, dyL = lp2.x - lp1.x, lp2.y - lp1.y
+        lenL = math.hypot(dxL, dyL)
+        if lenL < 1e-9:
+            return None
+        ux, uy = dxL / lenL, dyL / lenL
+
+        if isinstance(shape, Arc):
+            sp = safe_get(shape.start_idx)
+        else:
+            sp = safe_get(shape.radius_pt_idx)
+        if not sp:
+            return None
+        radius = math.hypot(sp.x - center.x, sp.y - center.y)
+
+        # Intersection points of line (through center) and circle
+        ix1, iy1 = center.x + radius * ux, center.y + radius * uy
+        ix2, iy2 = center.x - radius * ux, center.y - radius * uy
+
+        valid_points = []
+        for ix, iy in [(ix1, iy1), (ix2, iy2)]:
+            on_line = is_on_line_segment((ix, iy), lp1, lp2)
+            on_arc = True
+            if isinstance(shape, Arc):
+                start, end = safe_get(shape.start_idx), safe_get(shape.end_idx)
+                if not (start and end):
+                    continue
+                angle = math.atan2(iy - center.y, ix - center.x)
+                on_arc = self._is_angle_on_arc(
+                    angle, center, start, end, shape.clockwise
+                )
+
+            if on_line and on_arc:
+                valid_points.append((ix, iy))
+
+        if valid_points:
+            best_pt = valid_points[0]
+            # If two valid points, choose closer to line midpoint
+            if len(valid_points) > 1:
+                lmx, lmy = (lp1.x + lp2.x) / 2, (lp1.y + lp2.y) / 2
+                d1_sq = (best_pt[0] - lmx) ** 2 + (best_pt[1] - lmy) ** 2
+                d2_sq = (valid_points[1][0] - lmx) ** 2 + (
+                    valid_points[1][1] - lmy
+                ) ** 2
+                if d2_sq < d1_sq:
+                    best_pt = valid_points[1]
+            sx, sy = to_screen.transform_point(best_pt)
+            return sx, sy, None, None
+
+        # Fallback: projection of center on line (is the center itself)
+        sx, sy = to_screen.transform_point((center.x, center.y))
+        return sx, sy, None, None
+
+    def _get_perp_shape_shape_visuals(self, s1, s2, to_screen, element):
+        def safe_get(pid):
+            try:
+                return element.sketch.registry.get_point(pid)
+            except Exception:
+                return None
+
+        c1 = safe_get(s1.center_idx)
+        c2 = safe_get(s2.center_idx)
+        if not (c1 and c2):
+            return None
+
+        def get_radius(s, c):
+            if isinstance(s, Arc):
+                sp = safe_get(s.start_idx)
+            else:
+                sp = safe_get(s.radius_pt_idx)
+            if not sp or not c:
+                return 0
+            return math.hypot(sp.x - c.x, sp.y - c.y)
+
+        r1 = get_radius(s1, c1)
+        r2 = get_radius(s2, c2)
+
+        d_sq = (c2.x - c1.x) ** 2 + (c2.y - c1.y) ** 2
+        d = math.sqrt(d_sq) if d_sq > 1e-9 else 0
+        if d == 0:
+            return None  # Concentric circles can't be perpendicular
+
+        # Intersection point formula
+        a = (r1**2 - r2**2 + d_sq) / (2 * d)
+        try:
+            h = math.sqrt(max(0, r1**2 - a**2))
+        except ValueError:
+            return None  # No real intersection
+
+        x2 = c1.x + a * (c2.x - c1.x) / d
+        y2 = c1.y + a * (c2.y - c1.y) / d
+
+        # Two possible intersection points
+        ix1 = x2 + h * (c2.y - c1.y) / d
+        iy1 = y2 - h * (c2.x - c1.x) / d
+        ix2 = x2 - h * (c2.y - c1.y) / d
+        iy2 = y2 + h * (c2.x - c1.x) / d
+
+        valid_points = []
+        for ix, iy in [(ix1, iy1), (ix2, iy2)]:
+            on_s1 = True
+            if isinstance(s1, Arc):
+                start, end = safe_get(s1.start_idx), safe_get(s1.end_idx)
+                if start and end:
+                    angle = math.atan2(iy - c1.y, ix - c1.x)
+                    on_s1 = self._is_angle_on_arc(
+                        angle, c1, start, end, s1.clockwise
+                    )
+
+            on_s2 = True
+            if isinstance(s2, Arc):
+                start, end = safe_get(s2.start_idx), safe_get(s2.end_idx)
+                if start and end:
+                    angle = math.atan2(iy - c2.y, ix - c2.x)
+                    on_s2 = self._is_angle_on_arc(
+                        angle, c2, start, end, s2.clockwise
+                    )
+
+            if on_s1 and on_s2:
+                valid_points.append((ix, iy))
+
+        if not valid_points:
+            # Fallback: one of the infinite intersection points
+            sx, sy = to_screen.transform_point((ix1, iy1))
+            return sx, sy, None, None
+
+        best_pt = valid_points[0]
+        if len(valid_points) > 1:
+
+            def get_midpoint(arc, center):
+                if not isinstance(arc, Arc):
+                    return None
+                s = safe_get(arc.start_idx)
+                e = safe_get(arc.end_idx)
+                if not (s and e and center):
+                    return None
+                sa = math.atan2(s.y - center.y, s.x - center.x)
+                ea = math.atan2(e.y - center.y, e.x - center.x)
+                ar = ea - sa
+                if arc.clockwise:
+                    if ar > 0:
+                        ar -= 2 * math.pi
+                else:
+                    if ar < 0:
+                        ar += 2 * math.pi
+                mid_a = sa + ar / 2.0
+                r = math.hypot(s.x - center.x, s.y - center.y)
+                return center.x + r * math.cos(mid_a), center.y + r * math.sin(
+                    mid_a
+                )
+
+            m1 = get_midpoint(s1, c1)
+            m2 = get_midpoint(s2, c2)
+
+            if m1 and m2:
+                d1_sq = (
+                    (valid_points[0][0] - m1[0]) ** 2
+                    + (valid_points[0][1] - m1[1]) ** 2
+                    + (valid_points[0][0] - m2[0]) ** 2
+                    + (valid_points[0][1] - m2[1]) ** 2
+                )
+                d2_sq = (
+                    (valid_points[1][0] - m1[0]) ** 2
+                    + (valid_points[1][1] - m1[1]) ** 2
+                    + (valid_points[1][0] - m2[0]) ** 2
+                    + (valid_points[1][1] - m2[1]) ** 2
+                )
+                if d2_sq < d1_sq:
+                    best_pt = valid_points[1]
+
+        sx, sy = to_screen.transform_point(best_pt)
+        return sx, sy, None, None
