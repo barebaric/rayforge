@@ -35,10 +35,17 @@ class SketchRenderer:
         ctx.set_line_join(cairo.LINE_JOIN_ROUND)
         ctx.set_line_width(self.element.line_width)
 
-        # Draw the Origin Icon (Underneath geometry)
-        self._draw_origin(ctx)
+        # Check if the element is the active edit context on the canvas.
+        is_editing = (
+            self.element.canvas
+            and self.element.canvas.edit_context is self.element
+        )
 
-        self._draw_entities(ctx)
+        # Draw the Origin Icon (Underneath geometry) only when in edit mode.
+        if is_editing:
+            self._draw_origin(ctx)
+
+        self._draw_entities(ctx, is_editing)
         ctx.restore()
 
     def draw_edit_overlay(self, ctx: cairo.Context):
@@ -84,11 +91,14 @@ class SketchRenderer:
 
     # --- Entities ---
 
-    def _draw_entities(self, ctx: cairo.Context):
+    def _draw_entities(self, ctx: cairo.Context, is_editing: bool):
         entities = self.element.sketch.registry.entities or []
         for entity in entities:
-            is_sel = entity.id in self.element.selection.entity_ids
+            # If not in edit mode, skip drawing construction geometry.
+            if not is_editing and entity.construction:
+                continue
 
+            is_sel = entity.id in self.element.selection.entity_ids
             ctx.save()
 
             if entity.construction:
