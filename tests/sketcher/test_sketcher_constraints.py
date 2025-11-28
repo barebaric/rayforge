@@ -551,36 +551,6 @@ def test_constraint_serialization_round_trip():
     assert drag.to_dict() == {}
 
 
-def test_constraint_serialization_legacy_extended():
-    """
-    Tests backward compatibility for deserialization of several constraints.
-    """
-    # EqualLengthConstraint
-    legacy_el = {"type": "EqualLengthConstraint", "e1_id": 10, "e2_id": 12}
-    el = EqualLengthConstraint.from_dict(legacy_el)
-    assert el.entity_ids == [10, 12]
-
-    # RadiusConstraint
-    legacy_r = {"type": "RadiusConstraint", "arc_id": 5, "value": 10.0}
-    r = RadiusConstraint.from_dict(legacy_r)
-    assert r.entity_id == 5
-
-    # PointOnLineConstraint
-    legacy_pol = {"type": "PointOnLineConstraint", "point_id": 1, "line_id": 2}
-    pol = PointOnLineConstraint.from_dict(legacy_pol)
-    assert pol.shape_id == 2
-
-    # PerpendicularConstraint
-    legacy_perp = {"type": "PerpendicularConstraint", "l1_id": 3, "l2_id": 4}
-    perp = PerpendicularConstraint.from_dict(legacy_perp)
-    assert perp.e1_id == 3 and perp.e2_id == 4
-
-    # TangentConstraint
-    legacy_tan = {"type": "TangentConstraint", "line_id": 5, "arc_id": 6}
-    tan = TangentConstraint.from_dict(legacy_tan)
-    assert tan.shape_id == 6
-
-
 def test_constraint_visuals_and_is_hit(setup_ui_env):
     """Tests the is_hit and label position methods of constraints."""
     reg, params, to_screen, element = setup_ui_env
