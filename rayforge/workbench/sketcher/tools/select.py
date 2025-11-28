@@ -77,10 +77,8 @@ class SelectTool(SketchTool):
                             "Add Radius",
                             constraints=[new_constr],
                         )
-                        if self.element.sketch_canvas:
-                            self.element.sketch_canvas.history_manager.execute(
-                                cmd
-                            )
+                        if self.element.editor:
+                            self.element.editor.history_manager.execute(cmd)
                         self.element.constraint_edit_requested.send(
                             self.element, constraint=new_constr
                         )
@@ -112,10 +110,8 @@ class SelectTool(SketchTool):
                             "Add Distance",
                             constraints=[new_constr],
                         )
-                        if self.element.sketch_canvas:
-                            self.element.sketch_canvas.history_manager.execute(
-                                cmd
-                            )
+                        if self.element.editor:
+                            self.element.editor.history_manager.execute(cmd)
                         self.element.constraint_edit_requested.send(
                             self.element, constraint=new_constr
                         )
@@ -147,10 +143,8 @@ class SelectTool(SketchTool):
                             "Add Diameter",
                             constraints=[new_constr],
                         )
-                        if self.element.sketch_canvas:
-                            self.element.sketch_canvas.history_manager.execute(
-                                cmd
-                            )
+                        if self.element.editor:
+                            self.element.editor.history_manager.execute(cmd)
                         self.element.constraint_edit_requested.send(
                             self.element, constraint=new_constr
                         )
@@ -253,8 +247,8 @@ class SelectTool(SketchTool):
                         (start_x, start_y),
                         (end_x, end_y),
                     )
-                    if self.element.sketch_canvas:
-                        self.element.sketch_canvas.history_manager.execute(cmd)
+                    if self.element.editor:
+                        self.element.editor.history_manager.execute(cmd)
 
         # Clear all drag-related state
         self.dragged_point_id = None

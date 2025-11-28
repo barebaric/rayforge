@@ -20,6 +20,8 @@ from .elements.tab_handle import TabHandleElement
 from .elements.dot import DotElement
 from . import context_menu
 from ..context import get_context
+from .sketcher.editor import SketchEditor
+from .sketcher.sketchelement import SketchElement
 
 if TYPE_CHECKING:
     from ..doceditor.editor import DocEditor
@@ -38,6 +40,7 @@ class WorkSurface(WorldSurface):
     def __init__(
         self,
         editor: "DocEditor",
+        parent_window: Gtk.Window,
         machine: Optional[Machine],
         cam_visible: bool = False,
         **kwargs,
@@ -65,6 +68,10 @@ class WorkSurface(WorldSurface):
             y_axis_down=y_axis_down,
             **kwargs,
         )
+
+        # The SketchEditor manages sketch editing sessions. It is activated
+        # when a SketchElement becomes the edit_context.
+        self.sketch_editor = SketchEditor(parent_window)
 
         # DotElement size is in world units (mm) and is dynamically
         # updated to maintain a constant pixel size on screen.
@@ -149,7 +156,14 @@ class WorkSurface(WorldSurface):
     def on_right_click_pressed(
         self, gesture: Gtk.GestureClick, n_press: int, x: float, y: float
     ):
-        """Handles right-clicks to show the context menu."""
+        """
+        Handles right-clicks. Dispatches to the SketchEditor if a sketch is
+        being edited, otherwise shows the standard WorkSurface context menu.
+        """
+        if isinstance(self.edit_context, SketchElement):
+            self.sketch_editor.handle_right_click(gesture, n_press, x, y)
+            return
+
         self.right_click_context = None  # Reset context on each click
         world_x, world_y = self._get_world_coords(x, y)
         hit_elem = self.root.get_elem_hit(world_x, world_y, selectable=True)
@@ -333,24 +347,36 @@ class WorkSurface(WorldSurface):
             self.editor.pipeline.resume()
 
     def on_button_press(self, gesture, n_press: int, x: float, y: float):
-        """Overrides base to add application-specific layer selection logic."""
+        """
+        Overrides base to add application-specific layer selection logic and
+        manage the SketchEditor lifecycle.
+        """
         # A left-click should clear any lingering right-click context.
         if gesture.get_button() == Gdk.BUTTON_PRIMARY:
             if self.right_click_context:
                 self.right_click_context = None
                 self.context_changed.send(self)
 
-        # The base Canvas class handles the conversion from widget (pixel)
-        # coordinates to world coordinates. We pass them on directly.
         logger.debug(
             f"Button press: n_press={n_press}, pos=({x:.2f}, {y:.2f})"
         )
+
+        old_context = self.edit_context
+        # The base class method handles hit testing and updates
+        # self.edit_context
         super().on_button_press(gesture, n_press, x, y)
+        new_context = self.edit_context
+
+        # Manage SketchEditor activation based on context changes.
+        if old_context is not new_context:
+            if isinstance(old_context, SketchElement):
+                self.sketch_editor.deactivate()
+            if isinstance(new_context, SketchElement):
+                self.sketch_editor.activate(new_context)
 
         # After the click, check if the active element dictates a layer change.
-        active_elem = self.get_active_element()
-        if active_elem and isinstance(active_elem.data, WorkPiece):
-            active_layer = active_elem.data.layer
+        if new_context and isinstance(new_context.data, WorkPiece):
+            active_layer = new_context.data.layer
             # If the workpiece's layer is not the document's active layer,
             # create an undoable command to change it.
             if active_layer and active_layer != self.doc.active_layer:
@@ -689,7 +715,12 @@ class WorkSurface(WorldSurface):
         state: Gdk.ModifierType,
     ) -> bool:
         """Handles key press events for the work surface."""
-        # Let the base class handle generic keys first
+        # First, dispatch to sketch editor if a sketch is active
+        if isinstance(self.edit_context, SketchElement):
+            if self.sketch_editor.handle_key_press(keyval, keycode, state):
+                return True  # Event handled by sketch editor
+
+        # Let the base WorldSurface class handle generic keys (e.g., '1')
         if super().on_key_pressed(controller, keyval, keycode, state):
             return True
 

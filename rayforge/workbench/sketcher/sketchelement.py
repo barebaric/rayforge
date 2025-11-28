@@ -35,7 +35,7 @@ from .sketch_cmd import (
 )
 
 if TYPE_CHECKING:
-    from .sketchcanvas import SketchCanvas
+    from .editor import SketchEditor
 
 logger = logging.getLogger(__name__)
 
@@ -63,6 +63,7 @@ class SketchElement(CanvasElement):
         self.selection = SketchSelection()
         self.hittester = SketchHitTester()
         self.renderer = SketchRenderer(self)
+        self.editor: Optional["SketchEditor"] = None
 
         # Tools
         self.tools = {
@@ -81,15 +82,23 @@ class SketchElement(CanvasElement):
     def current_tool(self):
         return self.tools.get(self.active_tool_name, self.tools["select"])
 
-    @property
-    def sketch_canvas(self) -> Optional["SketchCanvas"]:
-        """Provides a typed reference to the canvas if it's a SketchCanvas."""
-        # Local import to avoid circular dependency at runtime
-        from .sketchcanvas import SketchCanvas
+    def get_selected_elements(self) -> bool:
+        """
+        Helper method to check if any internal items (points, entities, etc.)
+        are selected. Returns a boolean, not a list of elements.
+        """
+        sel = self.selection
+        return bool(
+            sel.point_ids
+            or sel.entity_ids
+            or sel.constraint_idx is not None
+            or sel.junction_pid is not None
+        )
 
-        if self.canvas and isinstance(self.canvas, SketchCanvas):
-            return self.canvas
-        return None
+    def unselect_all(self):
+        """Clears the internal sketch selection."""
+        self.selection.clear()
+        self.mark_dirty()
 
     def update_bounds_from_sketch(self):
         """
@@ -248,13 +257,13 @@ class SketchElement(CanvasElement):
         If any selected entity is non-construction, all become construction.
         Otherwise, all become normal geometry.
         """
-        if not self.selection.entity_ids or not self.sketch_canvas:
+        if not self.selection.entity_ids or not self.editor:
             return
 
         cmd = ToggleConstructionCommand(
             self, "Toggle Construction", self.selection.entity_ids
         )
-        self.sketch_canvas.history_manager.execute(cmd)
+        self.editor.history_manager.execute(cmd)
 
     def _get_items_to_delete(
         self,
@@ -418,13 +427,13 @@ class SketchElement(CanvasElement):
         """
         Robust deletion logic.
         """
-        if not self.sketch_canvas:
+        if not self.editor:
             return False
 
         # Handle "un-sticking" a junction point
         if self.selection.junction_pid is not None:
             cmd = UnstickJunctionCommand(self, self.selection.junction_pid)
-            self.sketch_canvas.history_manager.execute(cmd)
+            self.editor.history_manager.execute(cmd)
             self.selection.clear()
             return True
 
@@ -443,7 +452,7 @@ class SketchElement(CanvasElement):
                 entities=entities_to_del,
                 constraints=constraints_to_del,
             )
-            self.sketch_canvas.history_manager.execute(cmd)
+            self.editor.history_manager.execute(cmd)
             self.selection.clear()
 
         return did_work
@@ -475,13 +484,13 @@ class SketchElement(CanvasElement):
             return
 
         points = self._get_two_points_from_selection()
-        if points and self.sketch_canvas:
+        if points and self.editor:
             p1, p2 = points
             constr = HorizontalConstraint(p1.id, p2.id)
             cmd = AddItemsCommand(
                 self, "Add Horizontal Constraint", constraints=[constr]
             )
-            self.sketch_canvas.history_manager.execute(cmd)
+            self.editor.history_manager.execute(cmd)
 
     def add_vertical_constraint(self):
         if not self.is_constraint_supported("vert"):
@@ -489,13 +498,13 @@ class SketchElement(CanvasElement):
             return
 
         points = self._get_two_points_from_selection()
-        if points and self.sketch_canvas:
+        if points and self.editor:
             p1, p2 = points
             constr = VerticalConstraint(p1.id, p2.id)
             cmd = AddItemsCommand(
                 self, "Add Vertical Constraint", constraints=[constr]
             )
-            self.sketch_canvas.history_manager.execute(cmd)
+            self.editor.history_manager.execute(cmd)
 
     def add_distance_constraint(self):
         if not self.is_constraint_supported("dist"):
@@ -503,14 +512,14 @@ class SketchElement(CanvasElement):
             return
 
         points = self._get_two_points_from_selection()
-        if points and self.sketch_canvas:
+        if points and self.editor:
             p1, p2 = points
             dist = math.hypot(p1.x - p2.x, p1.y - p2.y)
             constr = DistanceConstraint(p1.id, p2.id, dist)
             cmd = AddItemsCommand(
                 self, "Add Distance Constraint", constraints=[constr]
             )
-            self.sketch_canvas.history_manager.execute(cmd)
+            self.editor.history_manager.execute(cmd)
         else:
             logger.warning("Select 2 Points or 1 Line for Distance.")
 
@@ -535,12 +544,12 @@ class SketchElement(CanvasElement):
             if r_pt and c:
                 radius = math.hypot(r_pt.x - c.x, r_pt.y - c.y)
 
-        if radius > 0 and e and self.sketch_canvas:
+        if radius > 0 and e and self.editor:
             constr = RadiusConstraint(e.id, radius)
             cmd = AddItemsCommand(
                 self, "Add Radius Constraint", constraints=[constr]
             )
-            self.sketch_canvas.history_manager.execute(cmd)
+            self.editor.history_manager.execute(cmd)
         else:
             logger.warning("Could not add radius constraint.")
 
@@ -553,7 +562,7 @@ class SketchElement(CanvasElement):
         eid = self.selection.entity_ids[0]
         e = self._get_entity_by_id(eid)
 
-        if isinstance(e, Circle) and self.sketch_canvas:
+        if isinstance(e, Circle) and self.editor:
             c = self.sketch.registry.get_point(e.center_idx)
             r_pt = self.sketch.registry.get_point(e.radius_pt_idx)
             if c and r_pt:
@@ -562,7 +571,7 @@ class SketchElement(CanvasElement):
                 cmd = AddItemsCommand(
                     self, "Add Diameter Constraint", constraints=[constr]
                 )
-                self.sketch_canvas.history_manager.execute(cmd)
+                self.editor.history_manager.execute(cmd)
         else:
             logger.warning("Selected entity is not a Circle.")
 
@@ -571,7 +580,7 @@ class SketchElement(CanvasElement):
         Adds a Coincident (Point-Point) or PointOnLine constraint based on
         the current selection.
         """
-        if not self.sketch_canvas:
+        if not self.editor:
             return
 
         if self.is_constraint_supported("coincident"):
@@ -580,7 +589,7 @@ class SketchElement(CanvasElement):
             cmd = AddItemsCommand(
                 self, "Add Coincident Constraint", constraints=[constr]
             )
-            self.sketch_canvas.history_manager.execute(cmd)
+            self.editor.history_manager.execute(cmd)
             return
 
         if self.is_constraint_supported("point_on_line"):
@@ -592,7 +601,7 @@ class SketchElement(CanvasElement):
             cmd = AddItemsCommand(
                 self, "Add Point On Shape", constraints=[constr]
             )
-            self.sketch_canvas.history_manager.execute(cmd)
+            self.editor.history_manager.execute(cmd)
             return
 
         logger.warning(
@@ -608,12 +617,12 @@ class SketchElement(CanvasElement):
         e1_id = self.selection.entity_ids[0]
         e2_id = self.selection.entity_ids[1]
 
-        if e1_id and e2_id and self.sketch_canvas:
+        if e1_id and e2_id and self.editor:
             constr = PerpendicularConstraint(e1_id, e2_id)
             cmd = AddItemsCommand(
                 self, "Add Perpendicular Constraint", constraints=[constr]
             )
-            self.sketch_canvas.history_manager.execute(cmd)
+            self.editor.history_manager.execute(cmd)
         else:
             logger.warning("Perpendicular constraint requires 2 Lines.")
 
@@ -632,12 +641,12 @@ class SketchElement(CanvasElement):
             elif isinstance(e, (Arc, Circle)):
                 sel_shape = e
 
-        if sel_line and sel_shape and self.sketch_canvas:
+        if sel_line and sel_shape and self.editor:
             constr = TangentConstraint(sel_line.id, sel_shape.id)
             cmd = AddItemsCommand(
                 self, "Add Tangent Constraint", constraints=[constr]
             )
-            self.sketch_canvas.history_manager.execute(cmd)
+            self.editor.history_manager.execute(cmd)
         else:
             logger.warning("Select 1 Line and 1 Arc/Circle for Tangent.")
 
@@ -646,7 +655,7 @@ class SketchElement(CanvasElement):
         Adds or merges an equal length/radius constraint for the selected
         entities.
         """
-        if not self.is_constraint_supported("equal") or not self.sketch_canvas:
+        if not self.is_constraint_supported("equal") or not self.editor:
             logger.warning("Equal constraint requires 2+ Lines/Arcs/Circles.")
             return
 
@@ -683,7 +692,7 @@ class SketchElement(CanvasElement):
             remove_cmd._do_undo()
 
         add_cmd._do_undo = composite_undo
-        self.sketch_canvas.history_manager.execute(add_cmd)
+        self.editor.history_manager.execute(add_cmd)
 
     def _get_entity_by_id(self, eid: int) -> Optional[Entity]:
         return self.sketch.registry.get_entity(eid)
