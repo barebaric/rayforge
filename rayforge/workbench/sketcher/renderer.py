@@ -15,6 +15,7 @@ from rayforge.core.sketcher.constraints import (
     EqualLengthConstraint,
     SymmetryConstraint,
 )
+from rayforge.core.geo.primitives import get_arc_midpoint
 
 
 class SketchRenderer:
@@ -310,21 +311,13 @@ class SketchRenderer:
             if not (center and start and end):
                 return
 
-            start_a = math.atan2(start.y - center.y, start.x - center.x)
-            end_a = math.atan2(end.y - center.y, end.x - center.x)
-            angle_range = end_a - start_a
-            if entity.clockwise:
-                if angle_range > 0:
-                    angle_range -= 2 * math.pi
-            else:
-                if angle_range < 0:
-                    angle_range += 2 * math.pi
-
-            mid_angle = start_a + angle_range / 2.0
-            radius = math.hypot(start.x - center.x, start.y - center.y)
-            mid_x = center.x + radius * math.cos(mid_angle)
-            mid_y = center.y + radius * math.sin(mid_angle)
-            normal_angle = mid_angle  # For arc/circle, normal is radial
+            mid_x, mid_y = get_arc_midpoint(
+                (start.x, start.y),
+                (end.x, end.y),
+                (center.x, center.y),
+                entity.clockwise,
+            )
+            normal_angle = math.atan2(mid_y - center.y, mid_x - center.x)
 
         elif isinstance(entity, Circle):
             center = self._safe_get_point(entity.center_idx)
