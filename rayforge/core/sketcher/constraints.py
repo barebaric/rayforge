@@ -827,24 +827,30 @@ class TangentConstraint(Constraint):
         lp1 = reg.get_point(line.p1_idx)
         lp2 = reg.get_point(line.p2_idx)
 
-        # We want dist_from_center_to_line^2 == radius^2.
-        # This avoids sqrt() and abs() for better solver performance.
+        # Vector of the line
         line_dx = lp2.x - lp1.x
         line_dy = lp2.y - lp1.y
         line_len_sq = line_dx**2 + line_dy**2
 
         if line_len_sq < 1e-18:  # line has zero length
-            # Error is distance from center to one of the line's points
+            # Fallback to error as distance from center to one of the line's
+            # points
             dist_to_pt_sq = (lp1.x - center.x) ** 2 + (lp1.y - center.y) ** 2
             return dist_to_pt_sq - radius_sq
 
-        # This is the squared numerator of the point-to-line distance formula
+        # 2D Cross Product (Area of parallelogram)
+        # magnitude = |line_len| * |dist_to_line|
         cross_product = (
             line_dx * (lp1.y - center.y) - (lp1.x - center.x) * line_dy
         )
 
-        dist_to_line_sq = cross_product**2 / line_len_sq
-        return dist_to_line_sq - radius_sq
+        # We want dist_from_center_to_line^2 == radius^2.
+        # (cross_product / line_len)^2 == radius_sq
+        # cross_product^2 / line_len_sq == radius_sq
+        #
+        # To avoid division by line_len_sq which causes instability:
+        # cross_product^2 - radius_sq * line_len_sq = 0
+        return cross_product**2 - (radius_sq * line_len_sq)
 
 
 class EqualLengthConstraint(Constraint):
