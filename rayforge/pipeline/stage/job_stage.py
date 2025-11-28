@@ -84,18 +84,10 @@ class JobPipelineStage(PipelineStage):
             and (handle := self._artifact_cache.get_step_ops_handle(step.uid))
         }
 
-        if not step_handles:
-            logger.warning("No step artifacts to assemble for the job.")
-            # Fire general signal for other listeners
-            self.generation_finished.send(
-                self, handle=None, task_status="completed"
-            )
-            # Fire one-shot callback for the async future
-            if on_done:
-                on_done(None, None)
-            return
-
+        # Allow job generation to continue even with no steps. The runner will
+        # produce a job with only a preamble and postscript.
         logger.info(f"Starting job generation with {len(step_handles)} steps.")
+
         self._artifact_cache.invalidate_for_job()
 
         job_desc = JobDescription(

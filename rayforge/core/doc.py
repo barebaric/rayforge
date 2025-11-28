@@ -317,10 +317,12 @@ class Doc(DocItem):
 
     def has_result(self):
         # A result is possible if there's a workpiece and at least one
-        # workflow (in any layer) has steps.
+        # workflow (in any layer) has at least one visible step.
         return self.has_workpiece() and any(
-            layer.workflow and layer.workflow.has_steps()
+            step.visible
             for layer in self.layers
+            if layer.workflow
+            for step in layer.workflow.steps
         )
 
     def update_stock_visibility(self):

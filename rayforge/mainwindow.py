@@ -1049,14 +1049,18 @@ class MainWindow(Adw.ApplicationWindow):
             state = active_machine.device_state
             active_driver = active_machine.driver
 
-            can_export = doc.has_workpiece() and not task_mgr.has_tasks()
+            can_export = doc.has_result() and not task_mgr.has_tasks()
             am.get_action("export").set_enabled(can_export)
             export_tooltip = _("Generate G-code")
-            if not doc.has_workpiece():
-                export_tooltip = _("Add a workpiece to enable export")
-            elif task_mgr.has_tasks():
+            if task_mgr.has_tasks():
                 export_tooltip = _(
                     "Cannot export while other tasks are running"
+                )
+            elif not doc.has_workpiece():
+                export_tooltip = _("Add a workpiece to enable export")
+            elif not doc.has_result():
+                export_tooltip = _(
+                    "Add or enable a processing step to enable export"
                 )
             self.toolbar.export_button.set_tooltip_text(export_tooltip)
 
