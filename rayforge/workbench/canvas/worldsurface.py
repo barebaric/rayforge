@@ -1,7 +1,7 @@
 import logging
 from typing import Tuple
 from gi.repository import Graphene, Gdk, Gtk
-from ..core.matrix import Matrix
+from ...core.matrix import Matrix
 from .canvas import Canvas
 from .axis import AxisRenderer
 

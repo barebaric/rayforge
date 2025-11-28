@@ -2,7 +2,7 @@ import math
 import logging
 from typing import Tuple
 import cairo
-from ..core.matrix import Matrix
+from ...core.matrix import Matrix
 
 
 logger = logging.getLogger(__name__)

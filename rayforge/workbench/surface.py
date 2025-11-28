@@ -3,14 +3,14 @@ from blinker import Signal
 from typing import TYPE_CHECKING, Optional, cast, Dict, List, Sequence
 from gi.repository import Gdk, Gtk
 from ..camera.controller import CameraController
+from ..context import get_context
 from ..core.group import Group
-from ..core.layer import Layer
-from ..core.workpiece import WorkPiece
 from ..core.item import DocItem
-from ..machine.models.machine import Machine
+from ..core.layer import Layer
 from ..core.stock import StockItem
-from .worldsurface import WorldSurface
-from .canvas import CanvasElement
+from ..core.workpiece import WorkPiece
+from ..machine.models.machine import Machine
+from .canvas import WorldSurface, CanvasElement
 from .elements.stock import StockElement
 from .elements.workpiece import WorkPieceElement
 from .elements.group import GroupElement
@@ -19,7 +19,6 @@ from .elements.layer import LayerElement
 from .elements.tab_handle import TabHandleElement
 from .elements.dot import DotElement
 from . import context_menu
-from ..context import get_context
 from .sketcher.editor import SketchEditor
 from .sketcher.sketchelement import SketchElement
 
