@@ -1,11 +1,11 @@
 import logging
 from typing import cast, Union, Optional
 from gi.repository import Gtk, Gdk
-from rayforge.workbench.canvas import Canvas
-from .sketchelement import SketchElement
+from ...core.sketcher.entities import Point, Entity
+from ...core.sketcher.constraints import Constraint
+from ..canvas import Canvas
 from .piemenu import SketchPieMenu
-from rayforge.core.sketcher.entities import Point, Entity
-from rayforge.core.sketcher.constraints import Constraint
+from .sketchelement import SketchElement
 
 logger = logging.getLogger(__name__)
 
@@ -63,6 +63,10 @@ class SketchCanvas(Canvas):
         # Determine context if we are editing a sketch
         if self.edit_context and isinstance(self.edit_context, SketchElement):
             sketch_elem = self.edit_context
+            # Before showing the menu, we deactivate the current tool to clean
+            # up any in-progress state.
+            sketch_elem.current_tool.on_deactivate()
+
             selection = sketch_elem.selection
             selection_changed = False
 

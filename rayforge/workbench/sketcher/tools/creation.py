@@ -3,12 +3,30 @@ from typing import Optional, cast
 from .base import SketchTool
 
 
+def _remove_point_if_unused(element, pid: Optional[int]):
+    """Removes a point from the registry if it's not part of any entity."""
+    if pid is None:
+        return
+    # Call the new backend method
+    if not element.sketch.registry.is_point_used(pid):
+        # Directly manipulate the list to remove the point
+        element.sketch.registry.points = [
+            p for p in element.sketch.registry.points if p.id != pid
+        ]
+        element.mark_dirty()
+
+
 class LineTool(SketchTool):
     """Handles creating lines between points."""
 
     def __init__(self, element):
         super().__init__(element)
         self.line_start_id: Optional[int] = None
+
+    def on_deactivate(self):
+        """Clean up the starting point if a line was not finished."""
+        _remove_point_if_unused(self.element, self.line_start_id)
+        self.line_start_id = None
 
     def on_press(self, world_x: float, world_y: float, n_press: int) -> bool:
         # Use screen_to_model for coordinate entry
@@ -68,6 +86,13 @@ class ArcTool(SketchTool):
         super().__init__(element)
         self.center_id: Optional[int] = None
         self.start_id: Optional[int] = None
+
+    def on_deactivate(self):
+        """Clean up any intermediate points if the arc was not finished."""
+        _remove_point_if_unused(self.element, self.start_id)
+        _remove_point_if_unused(self.element, self.center_id)
+        self.center_id = None
+        self.start_id = None
 
     def on_press(self, world_x: float, world_y: float, n_press: int) -> bool:
         mx, my = self.element.hittester.screen_to_model(
@@ -175,6 +200,11 @@ class CircleTool(SketchTool):
     def __init__(self, element):
         super().__init__(element)
         self.center_id: Optional[int] = None
+
+    def on_deactivate(self):
+        """Clean up the center point if a circle was not finished."""
+        _remove_point_if_unused(self.element, self.center_id)
+        self.center_id = None
 
     def on_press(self, world_x: float, world_y: float, n_press: int) -> bool:
         mx, my = self.element.hittester.screen_to_model(
