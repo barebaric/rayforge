@@ -313,3 +313,44 @@ def test_doc_from_dict_with_default_active_layer_index():
                 "type": "layer",
             }
         )
+
+
+def test_has_result_logic(doc):
+    """
+    Tests the logic of the `has_result` method based on workpieces and
+    the visibility of steps.
+    """
+    # 1. A new doc has no workpieces, so no result.
+    assert not doc.has_result()
+
+    # To test the step logic, we'll assume a workpiece exists.
+    with patch.object(doc, "has_workpiece", return_value=True):
+        # 2. With a workpiece but no steps, there's no result.
+        assert not doc.has_result()
+
+        # 3. Add an invisible step. Still no result.
+        layer = doc.active_layer
+        step = Step(typelabel="test")
+        step.visible = False
+        layer.workflow.add_step(step)
+        assert not doc.has_result()
+
+        # 4. Make the step visible. Now there is a result.
+        step.visible = True
+        assert doc.has_result()
+
+        # 5. Add a second, invisible step. Still has a result because one is
+        # visible.
+        step2 = Step(typelabel="test2")
+        step2.visible = False
+        layer.workflow.add_step(step2)
+        assert doc.has_result()
+
+        # 6. Make the first step invisible. No result, as the only other step
+        # is also invisible.
+        step.visible = False
+        assert not doc.has_result()
+
+        # 7. Make the second step visible again. Result is back.
+        step2.visible = True
+        assert doc.has_result()

@@ -88,11 +88,13 @@ def make_job_artifact_in_subprocess(
 
     final_ops.job_end()
 
+    # If the final ops are empty, still proceed to encoding to generate a file
+    # with the necessary preamble and postscript.
     if final_ops.is_empty():
-        logger.info("Final ops are empty. No job artifact will be created.")
-        proxy.set_progress(1.0)
-        proxy.set_message(_("Job finalization complete"))
-        return
+        logger.info(
+            "Final ops are empty. "
+            "Generating G-code with preamble/postscript only."
+        )
 
     proxy.set_message(_("Calculating final time and distance estimates..."))
     final_time = final_ops.estimate_time(
