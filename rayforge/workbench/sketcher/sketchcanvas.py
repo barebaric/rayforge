@@ -1,27 +1,28 @@
 import logging
-from typing import cast, Union, Optional
+from typing import Union, Optional
 from gi.repository import Gtk, Gdk
 from ...core.sketcher.entities import Point, Entity
 from ...core.sketcher.constraints import Constraint
-from ..canvas import Canvas
+from ...undo import HistoryManager
+from ..worldsurface import WorldSurface
 from .piemenu import SketchPieMenu
 from .sketchelement import SketchElement
 
 logger = logging.getLogger(__name__)
 
 
-class SketchCanvas(Canvas):
+class SketchCanvas(WorldSurface):
     def __init__(self, parent_window: Gtk.Window, **kwargs):
-        super().__init__(**kwargs)
+        # A Sketcher doesn't have a fixed machine size. We initialize the
+        # WorldSurface with a large default area to provide an "infinite" feel.
+        super().__init__(width_mm=2000, height_mm=2000, **kwargs)
         self.parent_window = parent_window
 
-        # 1. Edit Key Controller (Delete key)
-        self._edit_key_ctrl = Gtk.EventControllerKey.new()
-        self._edit_key_ctrl.set_propagation_phase(Gtk.PropagationPhase.CAPTURE)
-        self._edit_key_ctrl.connect("key-pressed", self.on_edit_key_pressed)
-        self.add_controller(self._edit_key_ctrl)
+        # The SketchCanvas manages its own undo/redo history, separate from
+        # the main document editor.
+        self.history_manager = HistoryManager()
 
-        # 2. Pie Menu Setup
+        # 1. Pie Menu Setup
         self.pie_menu = SketchPieMenu(self.parent_window)
 
         # Connect signals
@@ -30,11 +31,8 @@ class SketchCanvas(Canvas):
         self.pie_menu.action_triggered.connect(self.on_action_triggered)
         self.pie_menu.right_clicked.connect(self.on_pie_menu_right_click)
 
-        # 3. Right Click Gesture for Pie Menu
-        right_click = Gtk.GestureClick()
-        right_click.set_button(3)  # Right Mouse Button
-        right_click.connect("pressed", self.on_right_click)
-        self.add_controller(right_click)
+        # Note: The right-click gesture is already handled by the base
+        # WorldSurface class. We just need to override the handler.
 
     def on_pie_menu_right_click(self, sender, gesture, n_press, x, y):
         """
@@ -48,13 +46,19 @@ class SketchCanvas(Canvas):
         canvas_coords = child.translate_coordinates(self, x, y)
         if canvas_coords:
             canvas_x, canvas_y = canvas_coords
-            self.on_right_click(gesture, n_press, canvas_x, canvas_y)
+            self.on_right_click_pressed(gesture, n_press, canvas_x, canvas_y)
 
-    def on_right_click(self, gesture, n_press, x, y):
-        """Open the pie menu at the cursor location with resolved context."""
+    def on_right_click_pressed(
+        self, gesture: Gtk.GestureClick, n_press: int, x: float, y: float
+    ):
+        """
+        Overrides the base class to open the pie menu at the cursor location
+        with resolved context.
+        """
         if self.pie_menu.is_visible():
             self.pie_menu.popdown()
 
+        # Use the inherited method to convert from widget to world coordinates
         world_x, world_y = self._get_world_coords(x, y)
 
         target: Optional[Union[Point, Entity, Constraint]] = None
@@ -147,17 +151,19 @@ class SketchCanvas(Canvas):
 
         gesture.set_state(Gtk.EventSequenceState.CLAIMED)
 
-    def on_tool_selected(self, sender, tool):
+    def on_tool_selected(self, sender, tool: str):
         logger.info(f"Tool activated: {tool}")
         if self.edit_context and isinstance(self.edit_context, SketchElement):
             self.edit_context.set_tool(tool)
 
-    def on_constraint_selected(self, sender, constraint_type):
+    def on_constraint_selected(self, sender, constraint_type: str):
         logger.info(f"Constraint activated: {constraint_type}")
         ctx = self.edit_context
         if not (ctx and isinstance(ctx, SketchElement)):
             return
 
+        # TODO: Refactor these calls to use the command pattern with the
+        # self.history_manager for undo/redo.
         if constraint_type == "dist":
             ctx.add_distance_constraint()
         elif constraint_type == "horiz":
@@ -177,47 +183,56 @@ class SketchCanvas(Canvas):
         elif constraint_type == "equal":
             ctx.add_equal_constraint()
 
-    def on_action_triggered(self, sender, action):
+    def on_action_triggered(self, sender, action: str):
         logger.info(f"Action activated: {action}")
         ctx = self.edit_context
         if not (ctx and isinstance(ctx, SketchElement)):
             return
 
+        # TODO: Refactor these calls to use the command pattern for undo/redo.
         if action == "construction":
             ctx.toggle_construction_on_selection()
         elif action == "delete":
             ctx.delete_selection()
 
-    def on_edit_key_pressed(self, controller, keyval, keycode, state):
+    def on_key_pressed(
+        self,
+        controller: Gtk.EventControllerKey,
+        keyval: int,
+        keycode: int,
+        state: Gdk.ModifierType,
+    ) -> bool:
+        """Overrides base to handle sketcher-specific key presses."""
+        # First, let the base class handle its keys (e.g., '1' for reset view)
+        if super().on_key_pressed(controller, keyval, keycode, state):
+            return True
+
+        # Then, handle sketcher-specific keys
         if self.edit_context and isinstance(self.edit_context, SketchElement):
             if keyval == Gdk.KEY_Delete:
+                # TODO: This should create and execute a command
                 self.edit_context.delete_selection()
                 return True
+
         return False
 
-    def on_button_press(self, gesture, n_press: int, x: float, y: float):
+    def on_button_press(
+        self, gesture: Gtk.GestureClick, n_press: int, x: float, y: float
+    ):
+        """
+        Overrides the base Canvas handler to manage pie menu visibility and
+        delegate to the active tool.
+        """
+        # If the pie menu is visible, a left click should dismiss it.
+        # A right click is handled by on_right_click_pressed.
         if self.pie_menu.is_visible() and gesture.get_current_button() != 3:
             self.pie_menu.popdown()
             gesture.set_state(Gtk.EventSequenceState.CLAIMED)
             return
 
         if gesture.get_current_button() == 3:
-            return
+            return  # Already handled by the right-click gesture
 
-        if self.edit_context:
-            self.grab_focus()
-            self._was_dragging = False
-            world_x, world_y = self._get_world_coords(x, y)
-
-            if isinstance(self.edit_context, SketchElement):
-                ctx = cast(SketchElement, self.edit_context)
-                handled = ctx.handle_edit_press(world_x, world_y, n_press)
-            else:
-                handled = self.edit_context.handle_edit_press(world_x, world_y)
-
-            if not handled and self._hovered_elem is None:
-                self.leave_edit_mode()
-            self.queue_draw()
-            return
-
+        # Delegate to the standard Canvas implementation, which handles
+        # focus and calls the edit_context's handlers.
         super().on_button_press(gesture, n_press, x, y)

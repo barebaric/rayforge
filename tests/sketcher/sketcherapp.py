@@ -27,6 +27,7 @@ class SketcherApp(Gtk.Application):
     def __init__(self):
         super().__init__(application_id="com.example.SketcherApp")
         self.sketch_elem: Optional[SketchElement] = None
+        self.canvas: Optional[SketchCanvas] = None
 
     def do_activate(self):
         self.window = Gtk.ApplicationWindow(application=self)
@@ -51,7 +52,7 @@ class SketcherApp(Gtk.Application):
         header_box.append(reset_button)
 
         header_label = Gtk.Label(
-            label="Right-click on canvas for Tools & Constraints"
+            label="Right-click for Tools/Constraints | Scroll to Zoom | Middle-click to Pan"
         )
         header_label.add_css_class("dim-label")
         header_box.append(header_label)
@@ -68,7 +69,12 @@ class SketcherApp(Gtk.Application):
 
     def add_initial_sketch(self):
         """Creates and adds the first sketch with demo geometry."""
-        self.sketch_elem = SketchElement(x=100, y=100, width=1, height=1)
+        if not self.canvas:
+            return
+
+        # The SketchElement is now placed at (0,0) in the world coordinate
+        # system. The WorldSurface will center its view on this area.
+        self.sketch_elem = SketchElement(x=0, y=0, width=1, height=1)
 
         # Initialize demo geometry
         sketch = self.sketch_elem.sketch
@@ -107,6 +113,12 @@ class SketcherApp(Gtk.Application):
         )
         self.canvas.add(self.sketch_elem)
 
+        # Center the view on the new sketch element
+        self.canvas.set_pan(
+            -self.sketch_elem.x - self.sketch_elem.width / 2,
+            -self.sketch_elem.y - self.sketch_elem.height / 2,
+        )
+
         # Set the active edit context so the pie menu has a target
         self.canvas.enter_edit_mode(self.sketch_elem)
 
@@ -122,9 +134,8 @@ class SketcherApp(Gtk.Application):
         # Remove the old element from the canvas
         self.canvas.remove(self.sketch_elem)
 
-        # Create a new, empty sketch element at the center of the canvas
-        canvas_width, canvas_height = self.canvas.size()
-        new_sketch = SketchElement(x=canvas_width / 2, y=canvas_height / 2)
+        # Create a new, empty sketch element at the world origin
+        new_sketch = SketchElement(x=0, y=0)
 
         # The new sketch already has an origin. Just update its bounds.
         new_sketch.update_bounds_from_sketch()
@@ -137,6 +148,9 @@ class SketcherApp(Gtk.Application):
         # Add to canvas and set as the active context for interaction
         self.canvas.add(new_sketch)
         self.canvas.enter_edit_mode(new_sketch)
+
+        # Reset the view to center on the new empty sketch
+        self.canvas.reset_view()
 
         # Update the app's reference to the current sketch element
         self.sketch_elem = new_sketch
@@ -162,6 +176,7 @@ class SketcherApp(Gtk.Application):
                 val = float(entry.get_text())
                 constraint.value = val
                 if self.sketch_elem:
+                    # TODO: This should create and execute a command
                     self.sketch_elem.sketch.solve()
                     self.sketch_elem.update_bounds_from_sketch()
                     if self.canvas:
