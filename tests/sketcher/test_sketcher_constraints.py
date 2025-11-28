@@ -14,6 +14,7 @@ from rayforge.core.sketcher.constraints import (
     EqualDistanceConstraint,
     PointOnLineConstraint,
     EqualLengthConstraint,
+    SymmetryConstraint,
 )
 
 
@@ -316,6 +317,67 @@ def test_tangent_constraint_on_circle(setup_env):
     assert c.error(reg, params) == pytest.approx(300.0)
 
 
+def test_symmetry_constraint_point(setup_env):
+    """Test symmetry between two points with respect to a center point."""
+    reg, params = setup_env
+    # Center at (0,0)
+    pc = reg.add_point(0, 0)
+    # P1 at (-5, -2)
+    p1 = reg.add_point(-5, -2)
+    # P2 at (5, 2) (perfectly symmetric)
+    p2 = reg.add_point(5, 2)
+
+    c = SymmetryConstraint(p1, p2, center=pc)
+
+    # Error vector: [(x1+x2) - 2xc, (y1+y2) - 2yc]
+    # x: (-5 + 5) - 0 = 0
+    # y: (-2 + 2) - 0 = 0
+    assert c.error(reg, params) == [0.0, 0.0]
+
+    # Move P2 to (6, 2)
+    # x: (-5 + 6) - 0 = 1
+    reg.get_point(p2).x = 6.0
+    assert c.error(reg, params) == [1.0, 0.0]
+
+
+def test_symmetry_constraint_line(setup_env):
+    """Test symmetry between two points with respect to an axis line."""
+    reg, params = setup_env
+    # Axis on Y-axis: (0, -10) -> (0, 10)
+    l1 = reg.add_point(0, -10)
+    l2 = reg.add_point(0, 10)
+    axis_id = reg.add_line(l1, l2)
+
+    # P1 at (-5, 5), P2 at (5, 5) (perfectly symmetric)
+    p1 = reg.add_point(-5, 5)
+    p2 = reg.add_point(5, 5)
+
+    c = SymmetryConstraint(p1, p2, axis=axis_id)
+    assert c.error(reg, params) == [0.0, 0.0]
+
+    # Move P2 up by 1 -> (5, 6)
+    reg.get_point(p2).y = 6.0
+
+    # 1. Perpendicularity check (Dot product)
+    # Axis Vector: (0, 20)
+    # Point Vector P1->P2: (10, 1)
+    # Dot: 0*10 + 20*1 = 20
+    expected_perp_err = 20.0
+
+    # 2. Midpoint on line check (Cross product logic)
+    # Midpoint of P1(-5, 5) and P2(5, 6) is (0, 5.5)
+    # Line Start L1(0, -10). Vector L1->Mid is (0, 15.5)
+    # Axis Vector L1->L2 is (0, 20)
+    # Cross product 2D: (0 * 20) - (15.5 * 0) = 0
+    # (The midpoint is technically still on the Y-axis line, so
+    # collinearity holds)
+    expected_coll_err = 0.0
+
+    err = c.error(reg, params)
+    assert err[0] == pytest.approx(expected_perp_err)
+    assert err[1] == pytest.approx(expected_coll_err)
+
+
 def test_drag_constraint(setup_env):
     reg, params = setup_env
     p1 = reg.add_point(0, 0)
@@ -372,6 +434,8 @@ def test_constraint_serialization_round_trip():
         PerpendicularConstraint(l1_id=4, l2_id=6),
         TangentConstraint(line_id=4, shape_id=5),
         EqualLengthConstraint(entity_ids=[4, 5, 6]),
+        SymmetryConstraint(p1=0, p2=1, center=2),
+        SymmetryConstraint(p1=3, p2=4, axis=5),
     ]
 
     for constr in constraints_to_test:

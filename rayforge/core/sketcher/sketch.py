@@ -15,6 +15,7 @@ from .constraints import (
     PerpendicularConstraint,
     TangentConstraint,
     EqualLengthConstraint,
+    SymmetryConstraint,
 )
 from .solver import Solver
 
@@ -31,6 +32,7 @@ _CONSTRAINT_CLASSES = {
     "PerpendicularConstraint": PerpendicularConstraint,
     "TangentConstraint": TangentConstraint,
     "EqualLengthConstraint": EqualLengthConstraint,
+    "SymmetryConstraint": SymmetryConstraint,
 }
 
 
@@ -237,6 +239,16 @@ class Sketch:
                     return True
             return False
 
+        # 8. Symmetry
+        if constraint_type == "symmetry":
+            # Case A: Three points (1 center + 2 symmetric)
+            if n_pts == 3 and n_ents == 0:
+                return True
+            # Case B: Two points + One Line (Axis)
+            if n_pts == 2 and n_lines == 1 and n_ents == 1:
+                return True
+            return False
+
         return False
 
     # --- Constraint Shortcuts ---
@@ -326,6 +338,28 @@ class Sketch:
         if len(entity_ids) < 2:
             return
         self.constraints.append(EqualLengthConstraint(entity_ids))
+
+    def constrain_symmetry(
+        self, point_ids: List[int], entity_ids: List[int]
+    ) -> None:
+        """
+        Enforces symmetry.
+        - If 3 points: The first in point_ids is treated as the center.
+        - If 2 points + 1 Line: The line is the axis.
+        """
+        if len(point_ids) == 3 and not entity_ids:
+            # 3 Points: First is Center, other two are symmetric
+            center = point_ids[0]
+            p1 = point_ids[1]
+            p2 = point_ids[2]
+            self.constraints.append(SymmetryConstraint(p1, p2, center=center))
+
+        elif len(point_ids) == 2 and len(entity_ids) == 1:
+            # 2 Points + 1 Line: Line is Axis
+            p1 = point_ids[0]
+            p2 = point_ids[1]
+            axis = entity_ids[0]
+            self.constraints.append(SymmetryConstraint(p1, p2, axis=axis))
 
     # --- Manipulation & Processing ---
 

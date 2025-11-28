@@ -1,4 +1,4 @@
-from typing import Protocol, Union, Tuple, Dict, Any, List
+from typing import Protocol, Union, Tuple, Dict, Any, List, Optional
 from .entities import EntityRegistry, Line, Arc, Circle
 from .params import ParameterContext
 
@@ -439,6 +439,89 @@ class EqualLengthConstraint:
             other_len_sq = self._get_length_sq(entities[i], reg)
             errors.append(other_len_sq - base_len_sq)
         return errors
+
+
+class SymmetryConstraint:
+    """
+    Enforces symmetry between two points (p1, p2) with respect to:
+    1. A Center Point (Point Symmetry)
+    2. An Axis Line (Line Symmetry)
+    """
+
+    def __init__(
+        self,
+        p1: int,
+        p2: int,
+        center: Optional[int] = None,
+        axis: Optional[int] = None,
+    ):
+        self.p1 = p1
+        self.p2 = p2
+        self.center = center
+        self.axis = axis
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "type": "SymmetryConstraint",
+            "p1": self.p1,
+            "p2": self.p2,
+            "center": self.center,
+            "axis": self.axis,
+        }
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> "SymmetryConstraint":
+        return cls(
+            p1=data["p1"],
+            p2=data["p2"],
+            center=data.get("center"),
+            axis=data.get("axis"),
+        )
+
+    def error(
+        self, reg: EntityRegistry, params: ParameterContext
+    ) -> List[float]:
+        pt1 = reg.get_point(self.p1)
+        pt2 = reg.get_point(self.p2)
+
+        if self.center is not None:
+            # Case 1: Point Symmetry
+            # Constraint: Center is the midpoint of P1 and P2
+            # (P1 + P2) / 2 = Center  =>  P1 + P2 - 2*Center = 0
+            s = reg.get_point(self.center)
+            return [
+                (pt1.x + pt2.x) - 2 * s.x,
+                (pt1.y + pt2.y) - 2 * s.y,
+            ]
+
+        elif self.axis is not None:
+            # Case 2: Line Symmetry
+            # Constraint A: The segment P1-P2 is perpendicular to the Axis Line
+            # Constraint B: The midpoint of P1-P2 lies on the Axis Line
+            line = reg.get_entity(self.axis)
+            if not isinstance(line, Line):
+                return [0.0, 0.0]
+
+            l1 = reg.get_point(line.p1_idx)
+            l2 = reg.get_point(line.p2_idx)
+
+            # Vector of the Axis Line
+            dx_l = l2.x - l1.x
+            dy_l = l2.y - l1.y
+
+            # 1. Perpendicularity: Dot product (P2 - P1) . (L2 - L1) = 0
+            dx_p = pt2.x - pt1.x
+            dy_p = pt2.y - pt1.y
+            err_perp = dx_p * dx_l + dy_p * dy_l
+
+            # 2. Midpoint on Line: Cross product (Mid - L1) x (L2 - L1) = 0
+            mx = (pt1.x + pt2.x) * 0.5
+            my = (pt1.y + pt2.y) * 0.5
+            err_collinear = (mx - l1.x) * dy_l - (my - l1.y) * dx_l
+
+            return [err_perp, err_collinear]
+
+        return [0.0, 0.0]
 
 
 class DragConstraint:
