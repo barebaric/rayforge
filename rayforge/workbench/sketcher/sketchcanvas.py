@@ -1,6 +1,6 @@
 import logging
 from gi.repository import Gtk, Gdk
-from ..worldsurface import WorldSurface
+from ..canvas import WorldSurface
 from .sketchelement import SketchElement
 from .editor import SketchEditor
 
