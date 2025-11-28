@@ -32,9 +32,20 @@ class SketchRenderer:
         )
         ctx.transform(content_matrix)
 
+        # Calculate the inverse scale to maintain constant line width on
+        # screen.
+        scale = 1.0
+        if self.element.canvas and hasattr(
+            self.element.canvas, "get_view_scale"
+        ):
+            scale_x, _ = self.element.canvas.get_view_scale()
+            scale = scale_x if scale_x > 1e-9 else 1.0
+
+        scaled_line_width = self.element.line_width / scale
+
         ctx.set_line_cap(cairo.LINE_CAP_ROUND)
         ctx.set_line_join(cairo.LINE_JOIN_ROUND)
-        ctx.set_line_width(self.element.line_width)
+        ctx.set_line_width(scaled_line_width)
 
         # Check if the element is the active edit context on the canvas.
         is_editing = (
@@ -104,7 +115,9 @@ class SketchRenderer:
 
             if entity.construction:
                 ctx.set_dash([5, 5])
-                ctx.set_line_width(self.element.line_width * 0.8)
+                # Get the already-scaled line width from the context and
+                # reduce it for construction lines.
+                ctx.set_line_width(ctx.get_line_width() * 0.8)
                 if is_sel:
                     ctx.set_source_rgb(1.0, 0.6, 0.0)  # Orange
                 elif entity.constrained:
