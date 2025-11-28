@@ -344,7 +344,7 @@ def test_sketch_supports_constraint(setup_sketch_for_validation):
     # Test "perp"
     assert s.supports_constraint("perp", [], [l1, l2]) is True
     assert s.supports_constraint("perp", [], [l1]) is False
-    assert s.supports_constraint("perp", [], [l1, a1]) is False
+    assert s.supports_constraint("perp", [], [l1, a1]) is True
     assert s.supports_constraint("perp", [], [l1, l2, l1]) is False
 
     # Test "tangent"

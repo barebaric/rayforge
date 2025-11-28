@@ -431,7 +431,7 @@ def test_constraint_serialization_round_trip():
         PointOnLineConstraint(point_id=2, shape_id=4),
         RadiusConstraint(entity_id=5, radius=20.0),
         DiameterConstraint(circle_id=7, diameter=40.0),
-        PerpendicularConstraint(l1_id=4, l2_id=6),
+        PerpendicularConstraint(e1_id=4, e2_id=6),
         TangentConstraint(line_id=4, shape_id=5),
         EqualLengthConstraint(entity_ids=[4, 5, 6]),
         SymmetryConstraint(p1=0, p2=1, center=2),
