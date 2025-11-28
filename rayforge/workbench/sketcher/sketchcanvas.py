@@ -1,8 +1,11 @@
 import logging
-from gi.repository import Gtk, Gdk
+from typing import Optional, cast
+from gi.repository import Gtk, Gdk, Adw
 from ..canvas import WorldSurface
 from .sketchelement import SketchElement
 from .editor import SketchEditor
+from .sketch_cmd import ModifyConstraintValueCommand
+from rayforge.core.sketcher.constraints import Constraint
 
 logger = logging.getLogger(__name__)
 
@@ -14,11 +17,18 @@ class SketchCanvas(WorldSurface):
         super().__init__(width_mm=2000, height_mm=2000, **kwargs)
         self.parent_window = parent_window
 
+        # This will hold a reference to the active dialog to prevent it from
+        # being garbage-collected prematurely.
+        self._active_dialog: Optional[Adw.MessageDialog] = None
+
         # The SketchCanvas owns a SketchEditor to manage the session.
         self.sketch_editor = SketchEditor(self.parent_window)
 
         # It creates a single, primary sketch element that is always active.
         self.sketch_element = SketchElement()
+        self.sketch_element.constraint_edit_requested.connect(
+            self._on_constraint_edit_requested
+        )
         self.root.add(self.sketch_element)
 
         # Permanently enter edit mode on the primary sketch element.
@@ -44,6 +54,9 @@ class SketchCanvas(WorldSurface):
 
         # Create and configure the new element
         new_sketch = SketchElement()
+        new_sketch.constraint_edit_requested.connect(
+            self._on_constraint_edit_requested
+        )
         self.root.add(new_sketch)
 
         # Update all internal references
@@ -109,6 +122,63 @@ class SketchCanvas(WorldSurface):
         self.set_pan(pan_x, pan_y)
         self.set_zoom(1.0)
 
+    def _on_constraint_edit_requested(self, sender, constraint: Constraint):
+        """
+        Opens a dialog to edit the value of a constraint. This is triggered
+        by a double-click on a constraint label.
+        """
+        # If a dialog is already open, do nothing.
+        if self._active_dialog:
+            return
+
+        # Ensure the constraint has a 'value' attribute we can edit.
+        if not hasattr(constraint, "value"):
+            logger.warning(
+                "Constraint edit requested for a constraint with no "
+                f"'value' attribute: {type(constraint).__name__}"
+            )
+            return
+
+        entry = Gtk.Entry()
+        entry.set_text(str(float(getattr(constraint, "value", 0))))
+        entry.set_activates_default(True)
+
+        dialog = Adw.MessageDialog(
+            transient_for=self.parent_window,
+            modal=True,
+            destroy_with_parent=True,
+            heading="Edit Constraint",
+            body=f"Enter the new value for the {type(constraint).__name__}.",
+        )
+        dialog.set_extra_child(entry)
+        dialog.add_response("cancel", "Cancel")
+        dialog.add_response("ok", "OK")
+        dialog.set_default_response("ok")
+        dialog.set_close_response("cancel")
+
+        def on_response(source, response_id):
+            if response_id == "ok":
+                try:
+                    new_value = float(entry.get_text())
+                    if new_value > 0:
+                        cmd = ModifyConstraintValueCommand(
+                            element=self.sketch_element,
+                            constraint=constraint,
+                            new_value=new_value,
+                        )
+                        self.sketch_editor.history_manager.execute(cmd)
+                    else:
+                        logger.warning("Constraint value must be positive.")
+                except (ValueError, TypeError):
+                    logger.warning("Invalid input for constraint value.")
+            # Clear the reference to allow the dialog to be destroyed
+            self._active_dialog = None
+
+        # Store a reference to the dialog to prevent garbage collection
+        self._active_dialog = dialog
+        self._active_dialog.connect("response", on_response)
+        self._active_dialog.present()
+
     def on_right_click_pressed(
         self, gesture: Gtk.GestureClick, n_press: int, x: float, y: float
     ):
@@ -170,8 +240,9 @@ class SketchCanvas(WorldSurface):
         self, gesture: Gtk.GestureClick, n_press: int, x: float, y: float
     ):
         """
-        Overrides the base Canvas handler to manage pie menu visibility and
-        delegate to the active tool.
+        Overrides the base Canvas handler to manage pie menu visibility,
+        delegate to the active tool, and correctly handle gesture state for
+        double-clicks.
         """
         # If the pie menu is visible, a left click should dismiss it.
         if (
@@ -185,6 +256,27 @@ class SketchCanvas(WorldSurface):
         if gesture.get_current_button() == 3:
             return  # Already handled by the right-click gesture
 
-        # Delegate to the standard Canvas implementation, which handles
-        # focus and calls the edit_context's handlers.
-        super().on_button_press(gesture, n_press, x, y)
+        # Replicate the logic from the base Canvas.on_button_press but with
+        # conditional gesture claiming.
+        self.grab_focus()
+
+        handled = False
+        if self.edit_context:
+            world_x, world_y = self._get_world_coords(x, y)
+            # Delegate to the tool. The tool's return value determines if
+            # the gesture sequence should be terminated.
+            sketch_element = cast(SketchElement, self.edit_context)
+            handled = sketch_element.handle_edit_press(
+                world_x, world_y, n_press
+            )
+
+        # Only claim the gesture if the tool has fully handled the event
+        # (e.g., a completed double-click). A single click should not
+        # claim the gesture, allowing the second click to be detected.
+        if handled:
+            logger.debug(
+                "Tool handled the press event, claiming gesture state."
+            )
+            gesture.set_state(Gtk.EventSequenceState.CLAIMED)
+        else:
+            logger.debug("Tool did not handle press event, gesture continues.")
