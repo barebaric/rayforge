@@ -6,6 +6,7 @@ from rayforge.core.sketcher.constraints import (
     PointOnLineConstraint,
     PerpendicularConstraint,
     EqualLengthConstraint,
+    SymmetryConstraint,
 )
 
 
@@ -131,6 +132,56 @@ def test_sketch_equal_length_workflow():
     assert pt4.y == pytest.approx(0.0)
 
 
+def test_sketch_symmetry_workflow():
+    """Test full workflow for adding symmetry constraints."""
+    s = Sketch()
+
+    # --- Test Point Symmetry ---
+    # Center at (0,0), P1 at (-10, 0), P2 at (10, 5) [wrong y]
+    c = s.add_point(0, 0, fixed=True)
+    p1 = s.add_point(-10, 0)
+    p2 = s.add_point(10, 5)
+
+    # Constrain P1, P2 symmetric to C
+    s.constrain_symmetry([c, p1, p2], [])
+
+    s.solve()
+
+    pt1 = s.registry.get_point(p1)
+    pt2 = s.registry.get_point(p2)
+
+    # Assert X symmetry (sum of x relative to center should be 0)
+    # They started at -10 and 10, so they should stay there or move
+    # symmetrically.
+    assert (pt1.x + pt2.x) == pytest.approx(0.0, abs=1e-4)
+
+    # Assert Y symmetry
+    # Since center Y is 0, P1.y + P2.y should equal 0.
+    # Initial: 0 and 5. Solver will move them to approx -2.5 and 2.5
+    assert (pt1.y + pt2.y) == pytest.approx(0.0, abs=1e-4)
+    # Check they are actually separated and symmetric, not just both at 0
+    assert pt2.y == pytest.approx(2.5, abs=1.0)
+    assert pt1.y == pytest.approx(-2.5, abs=1.0)
+
+    # --- Test Line Symmetry ---
+    s2 = Sketch()
+    # Axis on Y-axis
+    l1 = s2.add_point(0, 10, fixed=True)
+    l2 = s2.add_point(0, 20, fixed=True)
+    axis = s2.add_line(l1, l2)
+
+    # P3 at (-5, 15), P4 at (5, 16) [wrong y]
+    p3 = s2.add_point(-5, 15)
+    p4 = s2.add_point(5, 16)
+
+    s2.constrain_symmetry([p3, p4], [axis])
+    s2.solve()
+
+    pt3 = s2.registry.get_point(p3)
+    pt4 = s2.registry.get_point(p4)
+    assert pt4.y == pytest.approx(pt3.y, abs=1e-4)
+
+
 def test_sketch_parameter_updates():
     """Test that changing a parameter and re-solving updates geometry."""
     s = Sketch()
@@ -169,12 +220,16 @@ def test_sketch_constraint_shortcuts():
     s.constrain_perpendicular(l1, l2)
     s.constrain_diameter(circ, 20.0)
     s.constrain_equal_length([l1, circ])
+    s.constrain_symmetry([p1, p2, p3], [])  # Point symmetry
+    s.constrain_symmetry([p3, p4], [l1])  # Line symmetry
 
-    assert len(s.constraints) == 6
+    assert len(s.constraints) == 8
     assert isinstance(s.constraints[0], EqualDistanceConstraint)
     assert isinstance(s.constraints[2], PointOnLineConstraint)
     assert isinstance(s.constraints[3], PerpendicularConstraint)
     assert isinstance(s.constraints[5], EqualLengthConstraint)
+    assert isinstance(s.constraints[6], SymmetryConstraint)
+    assert isinstance(s.constraints[7], SymmetryConstraint)
 
 
 def test_sketch_serialization_round_trip():
@@ -342,3 +397,13 @@ def test_sketch_supports_constraint(setup_sketch_for_validation):
     # Invalid: wrong number of items
     assert s.supports_constraint("point_on_line", [p1, p_ext], [l1]) is False
     assert s.supports_constraint("point_on_line", [p_ext], [l1, l2]) is False
+
+    # Test "symmetry"
+    # Case A: 3 Points
+    assert s.supports_constraint("symmetry", [p1, p2, p3], []) is True
+    # Case B: 2 Points + 1 Line
+    assert s.supports_constraint("symmetry", [p1, p2], [l1]) is True
+    # Invalid
+    assert s.supports_constraint("symmetry", [p1, p2], []) is False
+    assert s.supports_constraint("symmetry", [p1], [l1]) is False
+    assert s.supports_constraint("symmetry", [p1, p2], [l1, l2]) is False
