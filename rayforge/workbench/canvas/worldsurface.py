@@ -29,6 +29,8 @@ class WorldSurface(Canvas):
         width_mm: float = 100.0,
         height_mm: float = 100.0,
         y_axis_down: bool = False,
+        show_grid: bool = True,
+        show_axis: bool = True,
         **kwargs,
     ):
         logger.debug("WorldSurface.__init__ called")
@@ -50,6 +52,8 @@ class WorldSurface(Canvas):
             width_mm=self.width_mm,
             height_mm=self.height_mm,
             y_axis_down=y_axis_down,
+            show_grid=show_grid,
+            show_axis=show_axis,
         )
         self.root.background = 0.8, 0.8, 0.8, 0.1
 
@@ -85,6 +89,16 @@ class WorldSurface(Canvas):
         # get the mouse position in Gtk4. So I have to store it here and
         # track the motion event...
         self._mouse_pos = (0.0, 0.0)
+
+    def set_show_grid(self, show: bool):
+        """Sets the visibility of the inner grid lines."""
+        self._axis_renderer.show_grid = show
+        self.queue_draw()
+
+    def set_show_axis(self, show: bool):
+        """Sets the visibility of the outer axis lines and labels."""
+        self._axis_renderer.show_axis = show
+        self.queue_draw()
 
     def on_right_click_pressed(
         self, gesture: Gtk.GestureClick, n_press: int, x: float, y: float

@@ -24,6 +24,8 @@ class AxisRenderer:
         y_axis_down: bool = False,
         fg_color: Tuple[float, float, float, float] = (0.0, 0.0, 0.0, 1.0),
         grid_color: Tuple[float, float, float, float] = (0.9, 0.9, 0.9, 1.0),
+        show_grid: bool = True,
+        show_axis: bool = True,
     ):
         self.grid_size_mm: float = grid_size_mm
         self.width_mm: float = width_mm
@@ -31,6 +33,8 @@ class AxisRenderer:
         self.y_axis_down: bool = y_axis_down
         self.fg_color: Tuple[float, float, float, float] = fg_color
         self.grid_color: Tuple[float, float, float, float] = grid_color
+        self.show_grid: bool = show_grid
+        self.show_axis: bool = show_axis
         # Minimum pixel spacing for grid lines to avoid clutter
         self.min_grid_spacing_px = 50.0
 
@@ -151,6 +155,9 @@ class AxisRenderer:
         Draws the grid, axes, and labels onto the Cairo context using the
         provided world-to-view transform and widget dimensions.
         """
+        if not self.show_grid and not self.show_axis:
+            return
+
         ctx.save()
 
         try:
@@ -159,19 +166,13 @@ class AxisRenderer:
             ctx.restore()
             return
 
-        # --- Calculate adaptive grid spacing ---
+        # --- Shared Calculations ---
+        # Calculate adaptive grid spacing
         scale_x, scale_y = view_transform.get_scale()
         pixels_per_mm = (abs(scale_x) + abs(scale_y)) / 2.0
         adaptive_grid_size_mm = self._get_adaptive_grid_size(pixels_per_mm)
 
-        # --- Determine required precision for labels ---
-        if adaptive_grid_size_mm < 1:
-            # Calculate precision needed to display fractional grid sizes
-            # e.g., grid_size of 0.2 needs 1 decimal place.
-            precision = int(math.ceil(-math.log10(adaptive_grid_size_mm)))
-        else:
-            precision = 0
-
+        # Calculate visible bounds in mm for culling/optimizing grid lines
         tl_mm = inv_view.transform_point((0, 0))
         br_mm = inv_view.transform_point((widget_w, widget_h))
         visible_min_x, visible_max_x = (
@@ -183,47 +184,93 @@ class AxisRenderer:
             max(tl_mm[1], br_mm[1]),
         )
 
+        # --- Draw Grid ---
+        if self.show_grid:
+            self._draw_grid(
+                ctx,
+                view_transform,
+                adaptive_grid_size_mm,
+                visible_min_x,
+                visible_max_x,
+                visible_min_y,
+                visible_max_y,
+            )
+
+        # --- Draw Axes and Labels ---
+        if self.show_axis:
+            self._draw_axis_and_labels(
+                ctx, view_transform, adaptive_grid_size_mm
+            )
+
+        ctx.restore()
+
+    def _draw_grid(
+        self,
+        ctx: cairo.Context,
+        view_transform: Matrix,
+        grid_size_mm: float,
+        min_x: float,
+        max_x: float,
+        min_y: float,
+        max_y: float,
+    ):
+        """Internal helper to draw the infinite grid lines."""
         ctx.set_source_rgba(*self.grid_color)
         ctx.set_hairline(True)
 
-        k_start_x = math.ceil(visible_min_x / adaptive_grid_size_mm)
-        k_end_x = math.floor(visible_max_x / adaptive_grid_size_mm)
+        # Vertical lines (along X)
+        k_start_x = math.ceil(min_x / grid_size_mm)
+        k_end_x = math.floor(max_x / grid_size_mm)
         for k in range(k_start_x, k_end_x + 1):
-            x_mm = k * adaptive_grid_size_mm
-            p1_px = view_transform.transform_point((x_mm, visible_min_y))
-            p2_px = view_transform.transform_point((x_mm, visible_max_y))
+            x_mm = k * grid_size_mm
+            p1_px = view_transform.transform_point((x_mm, min_y))
+            p2_px = view_transform.transform_point((x_mm, max_y))
             ctx.move_to(p1_px[0], p1_px[1])
             ctx.line_to(p2_px[0], p2_px[1])
             ctx.stroke()
 
-        k_start_y = math.ceil(visible_min_y / adaptive_grid_size_mm)
-        k_end_y = math.floor(visible_max_y / adaptive_grid_size_mm)
+        # Horizontal lines (along Y)
+        k_start_y = math.ceil(min_y / grid_size_mm)
+        k_end_y = math.floor(max_y / grid_size_mm)
         for k in range(k_start_y, k_end_y + 1):
-            y_mm = k * adaptive_grid_size_mm
-            p1_px = view_transform.transform_point((visible_min_x, y_mm))
-            p2_px = view_transform.transform_point((visible_max_x, y_mm))
+            y_mm = k * grid_size_mm
+            p1_px = view_transform.transform_point((min_x, y_mm))
+            p2_px = view_transform.transform_point((max_x, y_mm))
             ctx.move_to(p1_px[0], p1_px[1])
             ctx.line_to(p2_px[0], p2_px[1])
             ctx.stroke()
+
+    def _draw_axis_and_labels(
+        self,
+        ctx: cairo.Context,
+        view_transform: Matrix,
+        grid_size_mm: float,
+    ):
+        """Internal helper to draw the main XY axes and text labels."""
+        # Calculate precision needed to display fractional grid sizes
+        if grid_size_mm < 1:
+            precision = int(math.ceil(-math.log10(grid_size_mm)))
+        else:
+            precision = 0
 
         ctx.set_source_rgba(*self.fg_color)
         ctx.set_line_width(1)
 
+        # Determine axis positions based on Y orientation
         if self.y_axis_down:
-            # Y-down view: Origin is top-left.
-            # X-axis is at the top of the world area (y = height_mm)
+            # Y-down view: Origin top-left.
+            # X-axis at top (y = height), Y-axis goes down.
             x_axis_y = self.height_mm
-            # Y-axis starts at the top-left and goes down to the bottom-left.
             y_axis_start_mm = (0, self.height_mm)
             y_axis_end_mm = (0, 0)
         else:
-            # Y-up view: Origin is bottom-left.
-            # X-axis is at the bottom of the world area (y = 0)
+            # Y-up view: Origin bottom-left.
+            # X-axis at bottom (y = 0), Y-axis goes up.
             x_axis_y = 0.0
-            # Y-axis starts at the bottom-left and goes up.
             y_axis_start_mm = (0, 0)
             y_axis_end_mm = (0, self.height_mm)
 
+        # Draw Axis Lines
         x_axis_start_mm = (0, x_axis_y)
         x_axis_end_mm = (self.width_mm, x_axis_y)
 
@@ -239,41 +286,37 @@ class AxisRenderer:
         ctx.line_to(y_end_px[0], y_end_px[1])
         ctx.stroke()
 
-        # --- Labels (also adaptive) ---
+        # Draw X Labels
         k = 1
         while True:
-            x_mm = k * adaptive_grid_size_mm
-            # Use a small tolerance for the boundary check
+            x_mm = k * grid_size_mm
             if x_mm >= self.width_mm - 1e-6:
                 break
 
-            # Round the value to the determined precision to avoid FP noise
             label_val = round(x_mm, precision)
-            # Use 'g' format specifier to drop trailing .0 but keep .5 etc.
             label = f"{label_val:g}"
-
             extents = ctx.text_extents(label)
             label_pos_px = view_transform.transform_point((x_mm, x_axis_y))
 
             if self.y_axis_down:
-                y_offset = -4  # Labels above axis
+                y_offset = -4
             else:
-                y_offset = extents.height + 4  # Labels below axis
+                y_offset = extents.height + 4
 
             ctx.move_to(
-                label_pos_px[0] - extents.width / 2, label_pos_px[1] + y_offset
+                label_pos_px[0] - extents.width / 2,
+                label_pos_px[1] + y_offset,
             )
             ctx.show_text(label)
             k += 1
 
+        # Draw Y Labels
         k = 1
         while True:
-            y_mm = k * adaptive_grid_size_mm
-            # Use a small tolerance for the boundary check
+            y_mm = k * grid_size_mm
             if y_mm >= self.height_mm - 1e-6:
                 break
 
-            # Round the value to the determined precision
             label_val = round(y_mm, precision)
             label = f"{label_val:g}"
 
@@ -281,14 +324,13 @@ class AxisRenderer:
             # For y-down, a label of "10" means 10mm down from the top.
             world_y = self.height_mm - y_mm if self.y_axis_down else y_mm
             label_pos_px = view_transform.transform_point((0, world_y))
+
             ctx.move_to(
                 label_pos_px[0] - extents.width - 4,
                 label_pos_px[1] + extents.height / 2,
             )
             ctx.show_text(label)
             k += 1
-
-        ctx.restore()
 
     def get_x_axis_height(self) -> int:
         """Calculates the maximum height of the X-axis labels."""
