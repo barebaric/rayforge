@@ -715,7 +715,7 @@ class SketchRenderer:
                 r = self.element.point_radius
             elif is_explicit_sel or is_implicit_sel:
                 ctx.set_source_rgba(1.0, 0.6, 0.0, 1.0)  # Orange
-                r = self.element.point_radius * 1.2
+                r = self.element.point_radius
             elif p.constrained:
                 ctx.set_source_rgba(0.2, 0.8, 0.2, 1.0)  # Light Green
                 r = self.element.point_radius
