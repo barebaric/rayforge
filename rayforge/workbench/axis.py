@@ -31,6 +31,8 @@ class AxisRenderer:
         self.y_axis_down: bool = y_axis_down
         self.fg_color: Tuple[float, float, float, float] = fg_color
         self.grid_color: Tuple[float, float, float, float] = grid_color
+        # Minimum pixel spacing for grid lines to avoid clutter
+        self.min_grid_spacing_px = 50.0
 
     def get_content_layout(
         self, widget_w: int, widget_h: int
@@ -111,6 +113,33 @@ class AxisRenderer:
         base_ppm_y = content_h / self.height_mm
         return min(base_ppm_x, base_ppm_y)
 
+    def _get_adaptive_grid_size(self, pixels_per_mm: float) -> float:
+        """
+        Calculates an appropriate grid spacing in mm based on the current
+        zoom level (pixels per mm).
+        """
+        if pixels_per_mm <= 1e-6:
+            return self.grid_size_mm
+
+        # Calculate the grid size in mm that would correspond to our desired
+        # minimum pixel spacing.
+        target_grid_size_mm = self.min_grid_spacing_px / pixels_per_mm
+
+        # Find the next "nice" number (1, 2, 5, 10, 20, 50, 100...) that is
+        # greater than or equal to the target size.
+        power_of_10 = 10 ** math.floor(math.log10(target_grid_size_mm))
+
+        # Use more balanced thresholds for selecting the multiplier
+        relative_size = target_grid_size_mm / power_of_10
+        if relative_size <= 1.5:
+            return power_of_10
+        elif relative_size <= 3.5:
+            return 2 * power_of_10
+        elif relative_size <= 7.5:
+            return 5 * power_of_10
+        else:
+            return 10 * power_of_10
+
     def draw_grid_and_labels(
         self,
         ctx: cairo.Context,
@@ -130,6 +159,19 @@ class AxisRenderer:
             ctx.restore()
             return
 
+        # --- Calculate adaptive grid spacing ---
+        scale_x, scale_y = view_transform.get_scale()
+        pixels_per_mm = (abs(scale_x) + abs(scale_y)) / 2.0
+        adaptive_grid_size_mm = self._get_adaptive_grid_size(pixels_per_mm)
+
+        # --- Determine required precision for labels ---
+        if adaptive_grid_size_mm < 1:
+            # Calculate precision needed to display fractional grid sizes
+            # e.g., grid_size of 0.2 needs 1 decimal place.
+            precision = int(math.ceil(-math.log10(adaptive_grid_size_mm)))
+        else:
+            precision = 0
+
         tl_mm = inv_view.transform_point((0, 0))
         br_mm = inv_view.transform_point((widget_w, widget_h))
         visible_min_x, visible_max_x = (
@@ -144,20 +186,20 @@ class AxisRenderer:
         ctx.set_source_rgba(*self.grid_color)
         ctx.set_hairline(True)
 
-        k_start_x = math.ceil(visible_min_x / self.grid_size_mm)
-        k_end_x = math.floor(visible_max_x / self.grid_size_mm)
+        k_start_x = math.ceil(visible_min_x / adaptive_grid_size_mm)
+        k_end_x = math.floor(visible_max_x / adaptive_grid_size_mm)
         for k in range(k_start_x, k_end_x + 1):
-            x_mm = k * self.grid_size_mm
+            x_mm = k * adaptive_grid_size_mm
             p1_px = view_transform.transform_point((x_mm, visible_min_y))
             p2_px = view_transform.transform_point((x_mm, visible_max_y))
             ctx.move_to(p1_px[0], p1_px[1])
             ctx.line_to(p2_px[0], p2_px[1])
             ctx.stroke()
 
-        k_start_y = math.ceil(visible_min_y / self.grid_size_mm)
-        k_end_y = math.floor(visible_max_y / self.grid_size_mm)
+        k_start_y = math.ceil(visible_min_y / adaptive_grid_size_mm)
+        k_end_y = math.floor(visible_max_y / adaptive_grid_size_mm)
         for k in range(k_start_y, k_end_y + 1):
-            y_mm = k * self.grid_size_mm
+            y_mm = k * adaptive_grid_size_mm
             p1_px = view_transform.transform_point((visible_min_x, y_mm))
             p2_px = view_transform.transform_point((visible_max_x, y_mm))
             ctx.move_to(p1_px[0], p1_px[1])
@@ -197,30 +239,44 @@ class AxisRenderer:
         ctx.line_to(y_end_px[0], y_end_px[1])
         ctx.stroke()
 
-        # X-axis labels
-        for k in range(1, int(self.width_mm / self.grid_size_mm) + 1):
-            x_mm = k * self.grid_size_mm
-            if x_mm >= self.width_mm:
+        # --- Labels (also adaptive) ---
+        k = 1
+        while True:
+            x_mm = k * adaptive_grid_size_mm
+            # Use a small tolerance for the boundary check
+            if x_mm >= self.width_mm - 1e-6:
                 break
-            label = f"{x_mm:.0f}"
+
+            # Round the value to the determined precision to avoid FP noise
+            label_val = round(x_mm, precision)
+            # Use 'g' format specifier to drop trailing .0 but keep .5 etc.
+            label = f"{label_val:g}"
+
             extents = ctx.text_extents(label)
             label_pos_px = view_transform.transform_point((x_mm, x_axis_y))
+
             if self.y_axis_down:
-                # Y-down: axis is at the top, labels go above it
-                y_offset = -4
+                y_offset = -4  # Labels above axis
             else:
-                # Y-up: axis is at the bottom, labels go below it
-                y_offset = extents.height + 4
+                y_offset = extents.height + 4  # Labels below axis
+
             ctx.move_to(
                 label_pos_px[0] - extents.width / 2, label_pos_px[1] + y_offset
             )
             ctx.show_text(label)
+            k += 1
 
-        for k in range(1, int(self.height_mm / self.grid_size_mm) + 1):
-            y_mm = k * self.grid_size_mm
-            if y_mm >= self.height_mm:
+        k = 1
+        while True:
+            y_mm = k * adaptive_grid_size_mm
+            # Use a small tolerance for the boundary check
+            if y_mm >= self.height_mm - 1e-6:
                 break
-            label = f"{y_mm:.0f}"
+
+            # Round the value to the determined precision
+            label_val = round(y_mm, precision)
+            label = f"{label_val:g}"
+
             extents = ctx.text_extents(label)
             # For y-down, a label of "10" means 10mm down from the top.
             world_y = self.height_mm - y_mm if self.y_axis_down else y_mm
@@ -230,6 +286,7 @@ class AxisRenderer:
                 label_pos_px[1] + extents.height / 2,
             )
             ctx.show_text(label)
+            k += 1
 
         ctx.restore()
 
