@@ -1,4 +1,6 @@
 from typing import List, Tuple, Dict, Optional, Any
+import math
+from ..geo import primitives
 
 
 class Point:
@@ -134,6 +136,38 @@ class Arc(Entity):
             construction=data.get("construction", False),
         )
 
+    def get_midpoint(
+        self, registry: "EntityRegistry"
+    ) -> Optional[Tuple[float, float]]:
+        """
+        Calculates the midpoint coordinates along the arc's circumference.
+        """
+        start = registry.get_point(self.start_idx)
+        end = registry.get_point(self.end_idx)
+        center = registry.get_point(self.center_idx)
+        if not (start and end and center):
+            return None
+        return primitives.get_arc_midpoint(
+            start.pos(), end.pos(), center.pos(), self.clockwise
+        )
+
+    def is_angle_within_sweep(
+        self, angle: float, registry: "EntityRegistry"
+    ) -> bool:
+        """Checks if a given angle is within the arc's sweep."""
+        start = registry.get_point(self.start_idx)
+        end = registry.get_point(self.end_idx)
+        center = registry.get_point(self.center_idx)
+        if not (start and end and center):
+            return False
+
+        start_angle = math.atan2(start.y - center.y, start.x - center.x)
+        end_angle = math.atan2(end.y - center.y, end.x - center.x)
+
+        return primitives.is_angle_between(
+            angle, start_angle, end_angle, self.clockwise
+        )
+
     def __repr__(self) -> str:
         return (
             f"Arc(id={self.id}, start={self.start_idx}, end={self.end_idx}, "
@@ -174,6 +208,15 @@ class Circle(Entity):
             radius_pt_idx=data["radius_pt_idx"],
             construction=data.get("construction", False),
         )
+
+    def get_midpoint(
+        self, registry: "EntityRegistry"
+    ) -> Optional[Tuple[float, float]]:
+        """Returns a point on the circumference (the radius point)."""
+        radius_pt = registry.get_point(self.radius_pt_idx)
+        if not radius_pt:
+            return None
+        return radius_pt.pos()
 
     def __repr__(self) -> str:
         return (
