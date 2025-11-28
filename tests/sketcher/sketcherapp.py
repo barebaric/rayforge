@@ -17,13 +17,13 @@ gettext.install("canvas", base_path / "rayforge" / "locale")
 
 gi.require_version("Adw", "1")
 gi.require_version("Gtk", "4.0")
-from gi.repository import Gtk, Gdk
+from gi.repository import Gtk, Adw
 
 from rayforge.workbench.sketcher.sketchcanvas import SketchCanvas
 from rayforge.workbench.sketcher.sketchelement import SketchElement
 
 
-class SketcherApp(Gtk.Application):
+class SketcherApp(Adw.Application):
     def __init__(self):
         super().__init__(application_id="com.example.SketcherApp")
         self.sketch_elem: Optional[SketchElement] = None
@@ -69,32 +69,7 @@ class SketcherApp(Gtk.Application):
         # Setup initial Element
         self.add_initial_sketch()
 
-        # Add key controller for application-level shortcuts
-        controller = Gtk.EventControllerKey()
-        controller.connect("key-pressed", self.on_key_pressed)
-        self.window.add_controller(controller)
-
         self.window.present()
-
-    def on_key_pressed(
-        self,
-        controller: Gtk.EventControllerKey,
-        keyval: int,
-        keycode: int,
-        state: Gdk.ModifierType,
-    ) -> bool:
-        """Handles key presses at the window level for app shortcuts."""
-        # Check for Ctrl modifier
-        is_ctrl = state & Gdk.ModifierType.CONTROL_MASK
-
-        if is_ctrl:
-            # Check for 'Q' or 'W' key
-            if keyval == Gdk.KEY_q or keyval == Gdk.KEY_w:
-                logger.info("Close shortcut detected. Shutting down.")
-                self.quit()
-                return True  # Mark event as handled
-
-        return False  # Event not handled, allow propagation
 
     def add_initial_sketch(self):
         """Creates and adds the first sketch with demo geometry."""
@@ -139,11 +114,6 @@ class SketcherApp(Gtk.Application):
             (canvas_w - elem_w) / 2.0, (canvas_h - elem_h) / 2.0
         )
 
-        # Connect the constraint edit signal
-        self.sketch_elem.constraint_edit_requested.connect(
-            self.on_edit_constraint_val
-        )
-
         # Center the view on the geometry
         self.canvas.reset_view()
 
@@ -151,11 +121,6 @@ class SketcherApp(Gtk.Application):
         """Clears the sketch and resets the view."""
         if not self.canvas or not self.sketch_elem:
             return
-
-        # Disconnect the signal from the old sketch object before it's destroyed
-        self.sketch_elem.constraint_edit_requested.disconnect(
-            self.on_edit_constraint_val
-        )  # type: ignore
 
         # Tell the canvas to perform a full, safe reset
         new_sketch = self.canvas.reset_sketch()
@@ -170,47 +135,9 @@ class SketcherApp(Gtk.Application):
             (canvas_w - elem_w) / 2.0, (canvas_h - elem_h) / 2.0
         )
 
-        # Re-connect signals for the new sketch
-        new_sketch.constraint_edit_requested.connect(
-            self.on_edit_constraint_val
-        )
-
         # Update the app's reference and reset the view to center it
         self.sketch_elem = new_sketch
         self.canvas.reset_view()
-
-    def on_edit_constraint_val(self, sender, constraint):
-        """Opens a dialog to edit a constraint value."""
-        dialog = Gtk.Window(
-            transient_for=self.window, modal=True, title="Edit Constraint"
-        )
-        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
-        box.set_margin_top(10)
-        box.set_margin_start(10)
-        box.set_margin_end(10)
-        box.set_margin_bottom(10)
-        dialog.set_child(box)
-
-        entry = Gtk.Entry()
-        entry.set_text(str(constraint.value))
-        box.append(entry)
-
-        def on_confirm(*args):
-            try:
-                val = float(entry.get_text())
-                constraint.value = val
-                if self.sketch_elem:
-                    # TODO: This should create and execute a command
-                    self.sketch_elem.sketch.solve()
-                    self.sketch_elem.update_bounds_from_sketch()
-                    if self.canvas:
-                        self.canvas.queue_draw()
-                dialog.close()
-            except ValueError:
-                pass
-
-        entry.connect("activate", on_confirm)
-        dialog.present()
 
 
 if __name__ == "__main__":

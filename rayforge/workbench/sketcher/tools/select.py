@@ -1,3 +1,4 @@
+import logging
 import math
 from typing import Optional, Tuple, Dict, cast
 from rayforge.core.sketcher.entities import Entity, Line, Arc, Circle
@@ -12,6 +13,8 @@ from rayforge.core.sketcher.constraints import (
 )
 from ..sketch_cmd import AddItemsCommand, MovePointCommand
 from .base import SketchTool
+
+logger = logging.getLogger(__name__)
 
 
 class SelectTool(SketchTool):
@@ -40,9 +43,14 @@ class SelectTool(SketchTool):
         hit_type, hit_obj = self.element.hittester.get_hit_data(
             world_x, world_y, self.element
         )
+        logger.debug(
+            f"SelectTool.on_press: n_press={n_press}, hit_type='{hit_type}'"
+        )
 
-        # Double click on entity to add/edit constraints
+        # Double click on entity to add/edit constraints. This is a terminal
+        # action, so returning True is correct.
         if n_press == 2 and hit_type == "entity":
+            logger.debug("Double-click on entity detected.")
             entity = cast(Entity, hit_obj)
             if isinstance(entity, Arc):
                 # Find an existing RadiusConstraint for this arc
@@ -58,6 +66,10 @@ class SelectTool(SketchTool):
 
                 # If a constraint exists, edit it.
                 if found_constr:
+                    logger.debug(
+                        f"Found existing constraint, emitting signal: "
+                        f"{found_constr}"
+                    )
                     self.element.constraint_edit_requested.send(
                         self.element, constraint=found_constr
                     )
@@ -79,6 +91,10 @@ class SelectTool(SketchTool):
                         )
                         if self.element.editor:
                             self.element.editor.history_manager.execute(cmd)
+                        logger.debug(
+                            f"Created new constraint, emitting signal: "
+                            f"{new_constr}"
+                        )
                         self.element.constraint_edit_requested.send(
                             self.element, constraint=new_constr
                         )
@@ -96,6 +112,10 @@ class SelectTool(SketchTool):
                             break
 
                 if found_constr:
+                    logger.debug(
+                        f"Found existing constraint, emitting signal: "
+                        f"{found_constr}"
+                    )
                     self.element.constraint_edit_requested.send(
                         self.element, constraint=found_constr
                     )
@@ -112,6 +132,10 @@ class SelectTool(SketchTool):
                         )
                         if self.element.editor:
                             self.element.editor.history_manager.execute(cmd)
+                        logger.debug(
+                            f"Created new constraint, emitting signal: "
+                            f"{new_constr}"
+                        )
                         self.element.constraint_edit_requested.send(
                             self.element, constraint=new_constr
                         )
@@ -129,6 +153,10 @@ class SelectTool(SketchTool):
                         break
 
                 if found_constr:
+                    logger.debug(
+                        f"Found existing constraint, emitting signal: "
+                        f"{found_constr}"
+                    )
                     self.element.constraint_edit_requested.send(
                         self.element, constraint=found_constr
                     )
@@ -145,6 +173,10 @@ class SelectTool(SketchTool):
                         )
                         if self.element.editor:
                             self.element.editor.history_manager.execute(cmd)
+                        logger.debug(
+                            f"Created new constraint, emitting signal: "
+                            f"{new_constr}"
+                        )
                         self.element.constraint_edit_requested.send(
                             self.element, constraint=new_constr
                         )
@@ -152,6 +184,7 @@ class SelectTool(SketchTool):
 
         # Double click edits constraint value
         if n_press == 2 and hit_type == "constraint":
+            logger.debug("Double-click on constraint detected.")
             idx = cast(int, hit_obj)
             constraints = self.element.sketch.constraints
             if constraints and idx < len(constraints):
@@ -160,10 +193,18 @@ class SelectTool(SketchTool):
                     constr,
                     (DistanceConstraint, RadiusConstraint, DiameterConstraint),
                 ):
+                    logger.debug(
+                        f"Emitting signal for constraint edit: {constr}"
+                    )
                     self.element.constraint_edit_requested.send(
                         self.element, constraint=constr
                     )
                     return True
+
+        # --- SINGLE CLICK LOGIC ---
+        # For single-clicks (n_press == 1), we must return False to allow the
+        # GTK gesture to continue listening for a potential second click.
+        # Returning True here would terminate the gesture recognition.
 
         is_multi = False
         if self.element.canvas:
@@ -190,14 +231,14 @@ class SelectTool(SketchTool):
                     self._prepare_point_drag(pid_to_drag)
 
             self.element.mark_dirty()
-            return True
+            return False
 
         if hit_type == "junction":
             pid = cast(int, hit_obj)
             self.element.selection.select_junction(pid, is_multi)
             self._prepare_point_drag(pid)
             self.element.mark_dirty()
-            return True
+            return False
 
         if not is_multi:
             self.element.selection.clear()
@@ -207,7 +248,7 @@ class SelectTool(SketchTool):
             self.element.selection.select_point(pid, is_multi)
             self._prepare_point_drag(pid)
             self.element.mark_dirty()
-            return True
+            return False
 
         elif hit_type == "entity":
             entity = cast(Entity, hit_obj)
@@ -217,12 +258,12 @@ class SelectTool(SketchTool):
             )
             self._prepare_entity_drag(entity, mx, my)
             self.element.mark_dirty()
-            return True
+            return False
 
         else:
             # Click on empty space
             self.element.mark_dirty()
-            return True
+            return False
 
     def on_drag(self, world_dx: float, world_dy: float):
         # Route to the correct drag handler based on what was pressed
