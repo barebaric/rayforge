@@ -294,10 +294,42 @@ def line_segment_intersection(
     return None
 
 
+def find_closest_point_on_line(
+    p1: Tuple[float, float], p2: Tuple[float, float], x: float, y: float
+) -> Tuple[float, float]:
+    """
+    Finds the closest point on an infinite 2D line defined by p1 and p2
+    to the point (x, y).
+
+    Args:
+        p1: First point defining the line (x, y).
+        p2: Second point defining the line (x, y).
+        x: The x-coordinate of the point to project.
+        y: The y-coordinate of the point to project.
+
+    Returns:
+        The (x, y) coordinates of the closest point on the line.
+    """
+    # Vector from p1 to p2
+    dx, dy = p2[0] - p1[0], p2[1] - p1[1]
+    # Vector from p1 to point (x,y)
+    px, py = x - p1[0], y - p1[1]
+
+    len_sq = dx * dx + dy * dy
+    if len_sq < 1e-12:
+        # p1 and p2 are practically the same point
+        return p1
+
+    # Project vector p onto vector d
+    t = (px * dx + py * dy) / len_sq
+    return p1[0] + t * dx, p1[1] + t * dy
+
+
 def find_closest_point_on_line_segment(
     p1: Tuple[float, float], p2: Tuple[float, float], x: float, y: float
 ) -> Tuple[float, Tuple[float, float], float]:
-    """Finds the closest point on a 2D line segment.
+    """
+    Finds the closest point on a 2D line segment.
 
     Returns:
         A tuple containing:

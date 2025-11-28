@@ -17,6 +17,7 @@ from rayforge.core.geo.primitives import (
     line_intersection,
     circle_circle_intersection,
     is_point_on_segment,
+    find_closest_point_on_line,
 )
 
 
@@ -1210,6 +1211,47 @@ class TangentConstraint(Constraint):
         ]
 
         return grad
+
+    def is_hit(
+        self,
+        sx: float,
+        sy: float,
+        reg: "EntityRegistry",
+        to_screen: Callable[[Tuple[float, float]], Tuple[float, float]],
+        element: Any,
+        threshold: float,
+    ) -> bool:
+        line = reg.get_entity(self.line_id)
+        shape = reg.get_entity(self.shape_id)
+
+        if not (
+            line
+            and shape
+            and isinstance(line, Line)
+            and isinstance(shape, (Arc, Circle))
+        ):
+            return False
+
+        p1 = reg.get_point(line.p1_idx)
+        p2 = reg.get_point(line.p2_idx)
+        center = reg.get_point(shape.center_idx)
+
+        if not (p1 and p2 and center):
+            return False
+
+        # Find closest point on infinite line from center
+        tangent_mx, tangent_my = find_closest_point_on_line(
+            (p1.x, p1.y), (p2.x, p2.y), center.x, center.y
+        )
+
+        # The visual symbol is offset from the tangency point along the normal
+        angle = math.atan2(tangent_my - center.y, tangent_mx - center.x)
+        offset = 12.0
+        symbol_mx = tangent_mx + offset * math.cos(angle)
+        symbol_my = tangent_my + offset * math.sin(angle)
+
+        symbol_sx, symbol_sy = to_screen((symbol_mx, symbol_my))
+        return math.hypot(sx - symbol_sx, sy - symbol_sy) < threshold
 
 
 class EqualLengthConstraint(Constraint):
