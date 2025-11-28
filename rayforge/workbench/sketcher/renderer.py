@@ -71,8 +71,9 @@ class SketchRenderer:
         )
         ctx.set_font_size(12)
 
-        self._draw_overlays(ctx, to_screen)
+        # Draw points first, so that constraint overlays are drawn on top.
         self._draw_points(ctx, to_screen)
+        self._draw_overlays(ctx, to_screen)
 
     def _draw_origin(self, ctx: cairo.Context):
         """Draws a fixed symbol at (0,0)."""
@@ -192,6 +193,12 @@ class SketchRenderer:
         ctx.stroke()
 
     def _draw_overlays(self, ctx: cairo.Context, to_screen):
+        # --- Stage 0: Get Hover State ---
+        select_tool = self.element.tools.get("select")
+        hovered_constraint_idx = (
+            select_tool.hovered_constraint_idx if select_tool else None
+        )
+
         # --- Stage 1: Collect Grouped Constraints (like Equality) ---
         equality_groups = {}  # Map entity_id -> group_id
         constraints = self.element.sketch.constraints or []
@@ -207,23 +214,37 @@ class SketchRenderer:
                 continue
 
             is_sel = idx == self.element.selection.constraint_idx
-
-            if is_sel:
-                ctx.set_source_rgb(1.0, 0.2, 0.2)
-            else:
-                ctx.set_source_rgb(0.0, 0.6, 0.0)
+            is_hovered = idx == hovered_constraint_idx
 
             if isinstance(constr, DistanceConstraint):
-                self._draw_distance_constraint(ctx, constr, is_sel, to_screen)
+                self._draw_distance_constraint(
+                    ctx, constr, is_sel, is_hovered, to_screen
+                )
             elif isinstance(constr, (RadiusConstraint, DiameterConstraint)):
-                self._draw_circular_constraint(ctx, constr, is_sel, to_screen)
+                self._draw_circular_constraint(
+                    ctx, constr, is_sel, is_hovered, to_screen
+                )
             elif isinstance(
                 constr, (HorizontalConstraint, VerticalConstraint)
             ):
+                if is_sel:
+                    ctx.set_source_rgb(1.0, 0.2, 0.2)
+                elif is_hovered:
+                    ctx.set_source_rgb(1.0, 0.6, 0.0)
+                else:
+                    ctx.set_source_rgb(0.0, 0.6, 0.0)
                 self._draw_hv_constraint(ctx, constr, to_screen)
             elif isinstance(constr, PerpendicularConstraint):
-                self._draw_perp_constraint(ctx, constr, is_sel, to_screen)
+                self._draw_perp_constraint(
+                    ctx, constr, is_sel, is_hovered, to_screen
+                )
             elif isinstance(constr, TangentConstraint):
+                if is_sel:
+                    ctx.set_source_rgb(1.0, 0.2, 0.2)
+                elif is_hovered:
+                    ctx.set_source_rgb(1.0, 0.6, 0.0)
+                else:
+                    ctx.set_source_rgb(0.0, 0.6, 0.0)
                 self._draw_tangent_constraint(ctx, constr, to_screen)
             elif isinstance(constr, CoincidentConstraint):
                 origin_id = getattr(self.element.sketch, "origin_id", -1)
@@ -231,14 +252,16 @@ class SketchRenderer:
                 if constr.p1 == origin_id and origin_id != -1:
                     pid_to_draw = constr.p2
                 self._draw_point_constraint(
-                    ctx, pid_to_draw, to_screen, is_sel
+                    ctx, pid_to_draw, to_screen, is_sel, is_hovered
                 )
             elif isinstance(constr, PointOnLineConstraint):
                 self._draw_point_constraint(
-                    ctx, constr.point_id, to_screen, is_sel
+                    ctx, constr.point_id, to_screen, is_sel, is_hovered
                 )
             elif isinstance(constr, SymmetryConstraint):
-                self._draw_symmetry_constraint(ctx, constr, is_sel, to_screen)
+                self._draw_symmetry_constraint(
+                    ctx, constr, is_sel, is_hovered, to_screen
+                )
 
         # --- Stage 3: Draw Symbols on Entities from Collected Groups ---
         if equality_groups:
@@ -248,8 +271,11 @@ class SketchRenderer:
                     continue
 
                 is_sel = group_id == self.element.selection.constraint_idx
+                is_hovered = group_id == hovered_constraint_idx
                 if is_sel:
                     ctx.set_source_rgb(1.0, 0.2, 0.2)
+                elif is_hovered:
+                    ctx.set_source_rgb(1.0, 0.6, 0.0)
                 else:
                     ctx.set_source_rgb(0.0, 0.6, 0.0)
                 self._draw_equality_symbol(ctx, entity, to_screen)
@@ -341,6 +367,11 @@ class SketchRenderer:
 
     def _draw_junctions(self, ctx, to_screen):
         registry = self.element.sketch.registry
+        select_tool = self.element.tools.get("select")
+        hovered_junction_pid = (
+            select_tool.hovered_junction_pid if select_tool else None
+        )
+
         point_counts = defaultdict(int)
         for entity in registry.entities:
             if isinstance(entity, Line):
@@ -357,6 +388,7 @@ class SketchRenderer:
         for pid, count in point_counts.items():
             if count > 1:
                 is_sel = pid == self.element.selection.junction_pid
+                is_hovered = pid == hovered_junction_pid
                 p = self._safe_get_point(pid)
                 if p:
                     sx, sy = to_screen.transform_point((p.x, p.y))
@@ -364,6 +396,8 @@ class SketchRenderer:
                     ctx.set_line_width(1.5)
                     if is_sel:
                         ctx.set_source_rgba(1.0, 0.2, 0.2, 0.9)
+                    elif is_hovered:
+                        ctx.set_source_rgba(1.0, 0.6, 0.0, 0.9)  # Orange
                     else:
                         ctx.set_source_rgba(0.0, 0.6, 0.0, 0.8)
                     radius = self.element.point_radius + 4
@@ -371,7 +405,9 @@ class SketchRenderer:
                     ctx.stroke()
                     ctx.restore()
 
-    def _draw_point_constraint(self, ctx, pid, to_screen, is_selected):
+    def _draw_point_constraint(
+        self, ctx, pid, to_screen, is_selected, is_hovered
+    ):
         p = self._safe_get_point(pid)
         if not p:
             return
@@ -380,6 +416,8 @@ class SketchRenderer:
         ctx.set_line_width(1.5)
         if is_selected:
             ctx.set_source_rgba(1.0, 0.2, 0.2, 0.9)
+        elif is_hovered:
+            ctx.set_source_rgba(1.0, 0.6, 0.0, 0.9)  # Orange
         else:
             ctx.set_source_rgba(0.0, 0.6, 0.0, 0.8)
 
@@ -388,7 +426,9 @@ class SketchRenderer:
         ctx.stroke()
         ctx.restore()
 
-    def _draw_circular_constraint(self, ctx, constr, is_selected, to_screen):
+    def _draw_circular_constraint(
+        self, ctx, constr, is_selected, is_hovered, to_screen
+    ):
         pos_data = self.element.hittester.get_circular_label_pos(
             constr, to_screen, self.element
         )
@@ -408,6 +448,8 @@ class SketchRenderer:
         ctx.save()
         if is_selected:
             ctx.set_source_rgba(1, 0.9, 0.9, 0.9)
+        elif is_hovered:
+            ctx.set_source_rgba(1.0, 0.95, 0.85, 0.9)  # Light Orange
         else:
             ctx.set_source_rgba(1, 1, 1, 0.8)
 
@@ -429,7 +471,9 @@ class SketchRenderer:
         ctx.stroke()
         ctx.restore()
 
-    def _draw_distance_constraint(self, ctx, constr, is_selected, to_screen):
+    def _draw_distance_constraint(
+        self, ctx, constr, is_selected, is_hovered, to_screen
+    ):
         p1 = self._safe_get_point(constr.p1)
         p2 = self._safe_get_point(constr.p2)
         if not (p1 and p2):
@@ -445,6 +489,8 @@ class SketchRenderer:
         ctx.save()
         if is_selected:
             ctx.set_source_rgba(1, 0.9, 0.9, 0.9)
+        elif is_hovered:
+            ctx.set_source_rgba(1.0, 0.95, 0.85, 0.9)  # Light orange
         else:
             ctx.set_source_rgba(1, 1, 1, 0.8)
 
@@ -505,7 +551,9 @@ class SketchRenderer:
         ctx.stroke()
         ctx.restore()
 
-    def _draw_perp_constraint(self, ctx, constr, is_selected, to_screen):
+    def _draw_perp_constraint(
+        self, ctx, constr, is_selected, is_hovered, to_screen
+    ):
         data = self.element.hittester.get_perp_intersection_screen(
             constr, to_screen, self.element
         )
@@ -516,6 +564,8 @@ class SketchRenderer:
         ctx.save()
         if is_selected:
             ctx.set_source_rgb(1.0, 0.2, 0.2)
+        elif is_hovered:
+            ctx.set_source_rgb(1.0, 0.6, 0.0)
         else:
             ctx.set_source_rgb(0.0, 0.6, 0.0)
         ctx.set_line_width(1.5)
@@ -553,7 +603,9 @@ class SketchRenderer:
             ctx.move_to(sx + 10, sy + 10)
             ctx.show_text("⦸")
 
-    def _draw_symmetry_constraint(self, ctx, constr, is_selected, to_screen):
+    def _draw_symmetry_constraint(
+        self, ctx, constr, is_selected, is_hovered, to_screen
+    ):
         p1 = self._safe_get_point(constr.p1)
         p2 = self._safe_get_point(constr.p2)
         if not (p1 and p2):
@@ -573,6 +625,8 @@ class SketchRenderer:
         ctx.save()
         if is_selected:
             ctx.set_source_rgb(1.0, 0.2, 0.2)
+        elif is_hovered:
+            ctx.set_source_rgb(1.0, 0.6, 0.0)
         else:
             ctx.set_source_rgb(0.0, 0.6, 0.0)
         ctx.set_line_width(1.5)
@@ -658,7 +712,7 @@ class SketchRenderer:
 
             if is_hovered:
                 ctx.set_source_rgba(1.0, 0.2, 0.2, 1.0)
-                r = self.element.point_radius * 1.5
+                r = self.element.point_radius
             elif is_explicit_sel or is_implicit_sel:
                 ctx.set_source_rgba(1.0, 0.6, 0.0, 1.0)  # Orange
                 r = self.element.point_radius * 1.2

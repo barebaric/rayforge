@@ -12,6 +12,8 @@ from rayforge.core.sketcher.constraints import (
     PerpendicularConstraint,
     CoincidentConstraint,
     PointOnLineConstraint,
+    EqualLengthConstraint,
+    SymmetryConstraint,
 )
 from rayforge.core.geo.primitives import (
     find_closest_point_on_line_segment,
@@ -159,6 +161,72 @@ class SketchHitTester:
                     continue
         return None
 
+    def _get_equality_symbol_pos(self, entity, to_screen, element):
+        """Calculates screen pos for an equality symbol on an entity."""
+
+        def safe_get(pid):
+            try:
+                return element.sketch.registry.get_point(pid)
+            except Exception:
+                return None
+
+        # 1. Get anchor point (mid_x, mid_y) and normal_angle in MODEL space
+        mid_x, mid_y, normal_angle = 0.0, 0.0, 0.0
+
+        if isinstance(entity, Line):
+            p1 = safe_get(entity.p1_idx)
+            p2 = safe_get(entity.p2_idx)
+            if not (p1 and p2):
+                return None
+            mid_x = (p1.x + p2.x) / 2.0
+            mid_y = (p1.y + p2.y) / 2.0
+            tangent_angle = math.atan2(p2.y - p1.y, p2.x - p1.x)
+            normal_angle = tangent_angle - (math.pi / 2.0)
+
+        elif isinstance(entity, Arc):
+            center = safe_get(entity.center_idx)
+            start = safe_get(entity.start_idx)
+            end = safe_get(entity.end_idx)
+            if not (center and start and end):
+                return None
+
+            start_a = math.atan2(start.y - center.y, start.x - center.x)
+            end_a = math.atan2(end.y - center.y, end.x - center.x)
+            angle_range = end_a - start_a
+            if entity.clockwise:
+                if angle_range > 0:
+                    angle_range -= 2 * math.pi
+            else:
+                if angle_range < 0:
+                    angle_range += 2 * math.pi
+
+            mid_angle = start_a + angle_range / 2.0
+            radius = math.hypot(start.x - center.x, start.y - center.y)
+            mid_x = center.x + radius * math.cos(mid_angle)
+            mid_y = center.y + radius * math.sin(mid_angle)
+            normal_angle = mid_angle
+
+        elif isinstance(entity, Circle):
+            center = safe_get(entity.center_idx)
+            radius_pt = safe_get(entity.radius_pt_idx)
+            if not (center and radius_pt):
+                return None
+            radius = math.hypot(radius_pt.x - center.x, radius_pt.y - center.y)
+            normal_angle = math.atan2(
+                radius_pt.y - center.y, radius_pt.x - center.x
+            )
+            mid_x = center.x + radius * math.cos(normal_angle)
+            mid_y = center.y + radius * math.sin(normal_angle)
+
+        scale = 1.0
+        if element.canvas and hasattr(element.canvas, "get_view_scale"):
+            scale, _ = element.canvas.get_view_scale()
+            scale = max(scale, 1e-9)
+        offset_dist_model = 15.0 / scale
+        final_x = mid_x + offset_dist_model * math.cos(normal_angle)
+        final_y = mid_y + offset_dist_model * math.sin(normal_angle)
+        return to_screen.transform_point((final_x, final_y))
+
     def _is_constraint_hit(self, constr, sx, sy, to_screen, element) -> bool:
         registry = element.sketch.registry
         click_radius = 13.0
@@ -230,6 +298,37 @@ class SketchHitTester:
             if pt:
                 s_pt = to_screen.transform_point((pt.x, pt.y))
                 return math.hypot(sx - s_pt[0], sy - s_pt[1]) < click_radius
+
+        elif isinstance(constr, SymmetryConstraint):
+            p1 = safe_get(constr.p1)
+            p2 = safe_get(constr.p2)
+            if not (p1 and p2):
+                return False
+            s1 = to_screen.transform_point((p1.x, p1.y))
+            s2 = to_screen.transform_point((p2.x, p2.y))
+            mx = (s1[0] + s2[0]) / 2.0
+            my = (s1[1] + s2[1]) / 2.0
+            angle = math.atan2(s2[1] - s1[1], s2[0] - s1[0])
+            offset = 12.0
+            lx = mx - offset * math.cos(angle)
+            ly = my - offset * math.sin(angle)
+            rx = mx + offset * math.cos(angle)
+            ry = my + offset * math.sin(angle)
+            if math.hypot(sx - lx, sy - ly) < click_radius:
+                return True
+            if math.hypot(sx - rx, sy - ry) < click_radius:
+                return True
+
+        elif isinstance(constr, EqualLengthConstraint):
+            for entity_id in constr.entity_ids:
+                entity = registry.get_entity(entity_id)
+                if not entity:
+                    continue
+                pos = self._get_equality_symbol_pos(entity, to_screen, element)
+                if pos:
+                    esx, esy = pos
+                    if math.hypot(sx - esx, sy - esy) < 15:
+                        return True
 
         return False
 
