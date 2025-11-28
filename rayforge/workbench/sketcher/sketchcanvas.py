@@ -174,6 +174,8 @@ class SketchCanvas(Canvas):
             ctx.add_tangent()
         elif constraint_type == "align":
             ctx.add_alignment_constraint()
+        elif constraint_type == "equal":
+            ctx.add_equal_constraint()
 
     def on_action_triggered(self, sender, action):
         logger.info(f"Action activated: {action}")

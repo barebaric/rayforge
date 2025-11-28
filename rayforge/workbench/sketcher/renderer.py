@@ -12,6 +12,7 @@ from rayforge.core.sketcher.constraints import (
     TangentConstraint,
     CoincidentConstraint,
     PointOnLineConstraint,
+    EqualLengthConstraint,
 )
 
 
@@ -177,9 +178,20 @@ class SketchRenderer:
         ctx.stroke()
 
     def _draw_overlays(self, ctx: cairo.Context, to_screen):
-        # Draw explicit constraints
+        # --- Stage 1: Collect Grouped Constraints (like Equality) ---
+        equality_groups = {}  # Map entity_id -> group_id
         constraints = self.element.sketch.constraints or []
         for idx, constr in enumerate(constraints):
+            if isinstance(constr, EqualLengthConstraint):
+                for eid in constr.entity_ids:
+                    equality_groups[eid] = idx
+
+        # --- Stage 2: Draw Individual Constraints ---
+        for idx, constr in enumerate(constraints):
+            # Skip drawing EqualLengthConstraint here, it's handled below.
+            if isinstance(constr, EqualLengthConstraint):
+                continue
+
             is_sel = idx == self.element.selection.constraint_idx
 
             if is_sel:
@@ -200,7 +212,6 @@ class SketchRenderer:
             elif isinstance(constr, TangentConstraint):
                 self._draw_tangent_constraint(ctx, constr, to_screen)
             elif isinstance(constr, CoincidentConstraint):
-                # Prefer drawing on the non-origin point for discoverability
                 origin_id = getattr(self.element.sketch, "origin_id", -1)
                 pid_to_draw = constr.p1
                 if constr.p1 == origin_id and origin_id != -1:
@@ -213,8 +224,77 @@ class SketchRenderer:
                     ctx, constr.point_id, to_screen, is_sel
                 )
 
+        # --- Stage 3: Draw Symbols on Entities from Collected Groups ---
+        if equality_groups:
+            for entity_id, group_id in equality_groups.items():
+                entity = self.element.sketch.registry.get_entity(entity_id)
+                if not entity:
+                    continue
+
+                is_sel = group_id == self.element.selection.constraint_idx
+                if is_sel:
+                    ctx.set_source_rgb(1.0, 0.2, 0.2)
+                else:
+                    ctx.set_source_rgb(0.0, 0.6, 0.0)
+                self._draw_equality_symbol(ctx, entity, to_screen)
+
         # Draw implicit junction constraints
         self._draw_junctions(ctx, to_screen)
+
+    def _draw_equality_symbol(self, ctx, entity, to_screen):
+        """Draws an '=' symbol on a single entity."""
+        if not entity:
+            return
+        mid_x, mid_y, angle = 0.0, 0.0, 0.0
+
+        if isinstance(entity, Line):
+            p1 = self._safe_get_point(entity.p1_idx)
+            p2 = self._safe_get_point(entity.p2_idx)
+            if not (p1 and p2):
+                return
+            mid_x, mid_y = (p1.x + p2.x) / 2, (p1.y + p2.y) / 2
+            angle = math.atan2(p2.y - p1.y, p2.x - p1.x)
+        elif isinstance(entity, Arc):
+            center = self._safe_get_point(entity.center_idx)
+            start = self._safe_get_point(entity.start_idx)
+            end = self._safe_get_point(entity.end_idx)
+            if not (center and start and end):
+                return
+            start_a = math.atan2(start.y - center.y, start.x - center.x)
+            end_a = math.atan2(end.y - center.y, end.x - center.x)
+            angle_range = end_a - start_a
+            if entity.clockwise:
+                if angle_range > 0:
+                    angle_range -= 2 * math.pi
+            else:
+                if angle_range < 0:
+                    angle_range += 2 * math.pi
+            mid_angle = start_a + angle_range / 2.0
+            radius = math.hypot(start.x - center.x, start.y - center.y)
+            mid_x = center.x + radius * math.cos(mid_angle)
+            mid_y = center.y + radius * math.sin(mid_angle)
+            angle = mid_angle + math.pi / 2
+        elif isinstance(entity, Circle):
+            center = self._safe_get_point(entity.center_idx)
+            radius_pt = self._safe_get_point(entity.radius_pt_idx)
+            if not (center and radius_pt):
+                return
+            radius = math.hypot(radius_pt.x - center.x, radius_pt.y - center.y)
+            angle = math.atan2(radius_pt.y - center.y, radius_pt.x - center.x)
+            mid_x = center.x + radius * math.cos(angle)
+            mid_y = center.y + radius * math.sin(angle)
+            angle += math.pi / 2
+
+        sx, sy = to_screen.transform_point((mid_x, mid_y))
+        ctx.save()
+        ctx.translate(sx, sy)
+        ctx.rotate(angle)
+        ctx.set_font_size(14)
+        ext = ctx.text_extents("=")
+        ctx.move_to(-ext.width / 2, ext.height / 2)
+        ctx.show_text("=")
+        ctx.restore()
+        ctx.new_path()
 
     def _draw_junctions(self, ctx, to_screen):
         registry = self.element.sketch.registry

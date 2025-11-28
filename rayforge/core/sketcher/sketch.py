@@ -14,6 +14,7 @@ from .constraints import (
     PointOnLineConstraint,
     PerpendicularConstraint,
     TangentConstraint,
+    EqualLengthConstraint,
 )
 from .solver import Solver
 
@@ -29,6 +30,7 @@ _CONSTRAINT_CLASSES = {
     "PointOnLineConstraint": PointOnLineConstraint,
     "PerpendicularConstraint": PerpendicularConstraint,
     "TangentConstraint": TangentConstraint,
+    "EqualLengthConstraint": EqualLengthConstraint,
 }
 
 
@@ -181,7 +183,16 @@ class Sketch:
                 and n_pts == 0
             )
 
-        # 5. Align (Coincident or Point-on-Line)
+        # 5. Equal
+        if constraint_type == "equal":
+            # Two or more entities that have a length/radius property
+            return (
+                n_ents >= 2
+                and n_pts == 0
+                and all(isinstance(e, (Line, Arc, Circle)) for e in entities)
+            )
+
+        # 6. Align (Coincident or Point-on-Line)
         if constraint_type == "align":
             # Coincident: Two points
             supports_coincident = n_pts == 2 and n_ents == 0
@@ -199,7 +210,7 @@ class Sketch:
             # Two points
             return n_pts == 2 and n_ents == 0
 
-        # 6. Point On Line (now Point On Shape)
+        # 7. Point On Line (now Point On Shape)
         if constraint_type == "point_on_line":
             # One Point and One Shape (Line, Arc, or Circle)
             if n_pts == 1 and n_ents == 1:
@@ -309,6 +320,12 @@ class Sketch:
 
     def constrain_tangent(self, line: int, shape: int) -> None:
         self.constraints.append(TangentConstraint(line, shape))
+
+    def constrain_equal_length(self, entity_ids: List[int]) -> None:
+        """Enforces equal length/radius between two or more entities."""
+        if len(entity_ids) < 2:
+            return
+        self.constraints.append(EqualLengthConstraint(entity_ids))
 
     # --- Manipulation & Processing ---
 

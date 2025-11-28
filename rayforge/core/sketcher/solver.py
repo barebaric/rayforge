@@ -60,7 +60,8 @@ class Solver:
             residuals = []
             for const in self.constraints:
                 err = const.error(self.registry, self.params)
-                if isinstance(err, tuple):
+                # Flatten the error result into the residuals list
+                if isinstance(err, (tuple, list)):
                     residuals.extend(err)
                 else:
                     residuals.append(err)
