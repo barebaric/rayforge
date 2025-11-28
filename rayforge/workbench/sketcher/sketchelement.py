@@ -18,6 +18,7 @@ from rayforge.core.sketcher.constraints import (
     EqualDistanceConstraint,
     CoincidentConstraint,
     PointOnLineConstraint,
+    EqualLengthConstraint,
 )
 
 from .selection import SketchSelection
@@ -436,6 +437,8 @@ class SketchElement(CanvasElement):
                     entities_in_constraint = [constr.circle_id]
                 elif isinstance(constr, PointOnLineConstraint):
                     entities_in_constraint = [constr.shape_id]
+                elif isinstance(constr, EqualLengthConstraint):
+                    entities_in_constraint = constr.entity_ids
 
                 if any(
                     e in to_delete_entities for e in entities_in_constraint
@@ -654,6 +657,38 @@ class SketchElement(CanvasElement):
             self.mark_dirty()
         else:
             logger.warning("Select 1 Line and 1 Arc/Circle for Tangent.")
+
+    def add_equal_constraint(self):
+        """
+        Adds or merges an equal length/radius constraint for the selected
+        entities.
+        """
+        if not self.is_constraint_supported("equal"):
+            logger.warning("Equal constraint requires 2+ Lines/Arcs/Circles.")
+            return
+
+        selected_ids = set(self.selection.entity_ids)
+        existing_constraints_to_merge = []
+        final_ids = set(selected_ids)
+
+        # Find any existing equality constraints involving the selected
+        # entities
+        for constr in self.sketch.constraints:
+            if isinstance(constr, EqualLengthConstraint):
+                # If there's any overlap, this constraint needs to be merged
+                if not selected_ids.isdisjoint(constr.entity_ids):
+                    existing_constraints_to_merge.append(constr)
+                    final_ids.update(constr.entity_ids)
+
+        # Remove the old constraints that will be replaced
+        for constr in existing_constraints_to_merge:
+            self.sketch.constraints.remove(constr)
+
+        # Add the new, merged constraint
+        self.sketch.constrain_equal_length(list(final_ids))
+
+        self.sketch.solve()
+        self.mark_dirty()
 
     def _get_entity_by_id(self, eid):
         return self.sketch.registry.get_entity(eid)

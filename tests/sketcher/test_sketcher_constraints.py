@@ -13,6 +13,7 @@ from rayforge.core.sketcher.constraints import (
     DragConstraint,
     EqualDistanceConstraint,
     PointOnLineConstraint,
+    EqualLengthConstraint,
 )
 
 
@@ -62,6 +63,52 @@ def test_equal_distance_constraint(setup_env):
 
     # Error should be 100 - 16 = 84
     assert c.error(reg, params) == pytest.approx(84.0)
+
+
+def test_equal_length_constraint(setup_env):
+    """Tests the error calculation for EqualLengthConstraint."""
+    reg, params = setup_env
+    # Line 1: length 10 -> len^2 = 100
+    p1 = reg.add_point(0, 0)
+    p2 = reg.add_point(10, 0)
+    l1 = reg.add_line(p1, p2)
+
+    # Line 2: length 5 -> len^2 = 25
+    p3 = reg.add_point(0, 10)
+    p4 = reg.add_point(5, 10)
+    l2 = reg.add_line(p3, p4)
+
+    # Arc 1: radius 4 -> rad^2 = 16
+    c1_p = reg.add_point(20, 0)
+    s1 = reg.add_point(24, 0)
+    e1 = reg.add_point(20, 4)
+    a1 = reg.add_arc(s1, e1, c1_p)
+
+    # Circle 1: radius 3 -> rad^2 = 9
+    c2_p = reg.add_point(30, 0)
+    r2 = reg.add_point(33, 0)
+    circ1 = reg.add_circle(c2_p, r2)
+
+    # Test Line-Line (error is [len2^2 - len1^2])
+    c = EqualLengthConstraint([l1, l2])
+    assert c.error(reg, params) == pytest.approx([-75.0])
+
+    # Test Line-Arc (error is [rad1^2 - len1^2])
+    c2 = EqualLengthConstraint([l1, a1])
+    assert c2.error(reg, params) == pytest.approx([-84.0])
+
+    # Test Arc-Circle (error is [rad_circ^2 - rad_arc^2])
+    c3 = EqualLengthConstraint([a1, circ1])
+    assert c3.error(reg, params) == pytest.approx([-7.0])
+
+    # Test multi-entity constraint
+    c_multi = EqualLengthConstraint([l1, l2, a1, circ1])
+    # Errors are [len2^2-len1^2, rad_arc^2-len1^2, rad_circ^2-len1^2]
+    assert c_multi.error(reg, params) == pytest.approx([-75.0, -84.0, -91.0])
+
+    # Test edge cases (no error for < 2 entities)
+    assert EqualLengthConstraint([]).error(reg, params) == []
+    assert EqualLengthConstraint([l1]).error(reg, params) == []
 
 
 def test_horizontal_constraint(setup_env):
@@ -324,6 +371,7 @@ def test_constraint_serialization_round_trip():
         DiameterConstraint(circle_id=7, diameter=40.0),
         PerpendicularConstraint(l1_id=4, l2_id=6),
         TangentConstraint(line_id=4, shape_id=5),
+        EqualLengthConstraint(entity_ids=[4, 5, 6]),
     ]
 
     for constr in constraints_to_test:
@@ -339,3 +387,17 @@ def test_constraint_serialization_round_trip():
     # DragConstraint is not serializable
     drag = DragConstraint(0, 1, 2)
     assert drag.to_dict() == {}
+
+
+def test_equal_length_constraint_serialization_legacy():
+    """
+    Tests backward compatibility for EqualLengthConstraint deserialization.
+    """
+    legacy_data = {
+        "type": "EqualLengthConstraint",
+        "e1_id": 10,
+        "e2_id": 12,
+    }
+    constr = EqualLengthConstraint.from_dict(legacy_data)
+    assert isinstance(constr, EqualLengthConstraint)
+    assert constr.entity_ids == [10, 12]

@@ -5,6 +5,7 @@ from rayforge.core.sketcher.constraints import (
     EqualDistanceConstraint,
     PointOnLineConstraint,
     PerpendicularConstraint,
+    EqualLengthConstraint,
 )
 
 
@@ -99,6 +100,37 @@ def test_sketch_circle_workflow():
     assert len(arcs) == 2
 
 
+def test_sketch_equal_length_workflow():
+    """Test a full workflow using an equal length constraint."""
+    s = Sketch()
+
+    # Line 1 will be fixed at length 10
+    p1 = s.add_point(0, 0, fixed=True)
+    p2 = s.add_point(10, 0)
+    l1 = s.add_line(p1, p2)
+    s.constrain_horizontal(p1, p2)
+    s.constrain_distance(p1, p2, 10.0)
+
+    # Line 2 will start at length 5 and should be solved to 10
+    p3 = s.add_point(20, 0, fixed=True)
+    p4 = s.add_point(25, 0)
+    l2 = s.add_line(p3, p4)
+    s.constrain_horizontal(p3, p4)
+
+    # Apply the Equal Length constraint
+    s.constrain_equal_length([l1, l2])
+
+    assert s.solve() is True
+
+    # Check that p4 has moved to make line 2 have length 10
+    pt4 = s.registry.get_point(p4)
+    pt3 = s.registry.get_point(p3)
+    dist = ((pt4.x - pt3.x) ** 2 + (pt4.y - pt3.y) ** 2) ** 0.5
+    assert dist == pytest.approx(10.0)
+    assert pt4.x == pytest.approx(30.0)
+    assert pt4.y == pytest.approx(0.0)
+
+
 def test_sketch_parameter_updates():
     """Test that changing a parameter and re-solving updates geometry."""
     s = Sketch()
@@ -136,11 +168,13 @@ def test_sketch_constraint_shortcuts():
     s.constrain_point_on_line(p3, l1)
     s.constrain_perpendicular(l1, l2)
     s.constrain_diameter(circ, 20.0)
+    s.constrain_equal_length([l1, circ])
 
-    assert len(s.constraints) == 5
+    assert len(s.constraints) == 6
     assert isinstance(s.constraints[0], EqualDistanceConstraint)
     assert isinstance(s.constraints[2], PointOnLineConstraint)
     assert isinstance(s.constraints[3], PerpendicularConstraint)
+    assert isinstance(s.constraints[5], EqualLengthConstraint)
 
 
 def test_sketch_serialization_round_trip():
@@ -265,6 +299,14 @@ def test_sketch_supports_constraint(setup_sketch_for_validation):
     assert s.supports_constraint("tangent", [], [a1, c1]) is False
     assert s.supports_constraint("tangent", [], [l1]) is False
     assert s.supports_constraint("tangent", [], [a1]) is False
+
+    # Test "equal"
+    assert s.supports_constraint("equal", [], [l1, l2]) is True
+    assert s.supports_constraint("equal", [], [l1, a1]) is True
+    assert s.supports_constraint("equal", [], [l1, c1, a1]) is True
+    assert s.supports_constraint("equal", [], [l1]) is False  # Needs >= 2
+    assert s.supports_constraint("equal", [p1], [l1, l2]) is False
+    assert s.supports_constraint("equal", [], []) is False
 
     # Test "align" (covers coincident and point-on-line)
     # Coincident (2 points)

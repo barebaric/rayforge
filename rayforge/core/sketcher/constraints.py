@@ -1,4 +1,4 @@
-from typing import Protocol, Union, Tuple, Dict, Any
+from typing import Protocol, Union, Tuple, Dict, Any, List
 from .entities import EntityRegistry, Line, Arc, Circle
 from .params import ParameterContext
 
@@ -8,7 +8,7 @@ class Constraint(Protocol):
 
     def error(
         self, reg: EntityRegistry, params: ParameterContext
-    ) -> Union[float, Tuple[float, float]]: ...
+    ) -> Union[float, Tuple[float, ...], List[float]]: ...
 
     def to_dict(self) -> Dict[str, Any]: ...
 
@@ -217,7 +217,6 @@ class RadiusConstraint:
             raise KeyError(
                 "RadiusConstraint data missing 'entity_id' or 'arc_id'"
             )
-        # FIX: The __init__ parameter is 'radius', not 'value'.
         return cls(entity_id=entity_id, radius=data["value"])
 
     def error(self, reg: EntityRegistry, params: ParameterContext) -> float:
@@ -334,7 +333,6 @@ class TangentConstraint:
     def from_dict(cls, data: Dict[str, Any]) -> "TangentConstraint":
         # Handle legacy "arc_id" key for backward compatibility
         shape_id = data.get("shape_id", data.get("arc_id"))
-        # FIX: Ensure shape_id is not None before passing to constructor
         if shape_id is None:
             raise KeyError(
                 "TangentConstraint data missing 'shape_id' or 'arc_id'"
@@ -382,6 +380,65 @@ class TangentConstraint:
 
         dist_to_line_sq = cross_product**2 / line_len_sq
         return dist_to_line_sq - radius_sq
+
+
+class EqualLengthConstraint:
+    """
+    Enforces that all entities in a set have the same characteristic length.
+    - Line: Length
+    - Arc/Circle: Radius
+    """
+
+    def __init__(self, entity_ids: List[int]):
+        self.entity_ids = entity_ids
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "type": "EqualLengthConstraint",
+            "entity_ids": self.entity_ids,
+        }
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> "EqualLengthConstraint":
+        # Handle legacy binary constraint for backward compatibility
+        e1 = data.get("e1_id")
+        e2 = data.get("e2_id")
+        if e1 is not None and e2 is not None:
+            return cls(entity_ids=[e1, e2])
+        return cls(entity_ids=data["entity_ids"])
+
+    def _get_length_sq(self, entity, reg: EntityRegistry) -> float:
+        if isinstance(entity, Line):
+            p1 = reg.get_point(entity.p1_idx)
+            p2 = reg.get_point(entity.p2_idx)
+            return (p2.x - p1.x) ** 2 + (p2.y - p1.y) ** 2
+        elif isinstance(entity, Arc):
+            c = reg.get_point(entity.center_idx)
+            s = reg.get_point(entity.start_idx)
+            return (s.x - c.x) ** 2 + (s.y - c.y) ** 2
+        elif isinstance(entity, Circle):
+            c = reg.get_point(entity.center_idx)
+            r = reg.get_point(entity.radius_pt_idx)
+            return (r.x - c.x) ** 2 + (r.y - c.y) ** 2
+        return 0.0
+
+    def error(
+        self, reg: EntityRegistry, params: ParameterContext
+    ) -> List[float]:
+        if len(self.entity_ids) < 2:
+            return []
+
+        entities = [reg.get_entity(eid) for eid in self.entity_ids]
+        if any(e is None for e in entities):
+            return []
+
+        # All lengths should equal the length of the first entity.
+        base_len_sq = self._get_length_sq(entities[0], reg)
+        errors = []
+        for i in range(1, len(entities)):
+            other_len_sq = self._get_length_sq(entities[i], reg)
+            errors.append(other_len_sq - base_len_sq)
+        return errors
 
 
 class DragConstraint:

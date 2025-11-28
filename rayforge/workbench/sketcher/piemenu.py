@@ -107,6 +107,12 @@ class SketchPieMenu(PieMenu):
         item.on_click.connect(self._on_constraint_clicked, weak=False)
         self.add_item(item)
 
+        item = PieMenuItem(
+            "sketch-constrain-equal-symbolic", "Equal", data="equal"
+        )
+        item.on_click.connect(self._on_constraint_clicked, weak=False)
+        self.add_item(item)
+
     def set_context(
         self,
         sketch_element: "SketchElement",
