@@ -273,7 +273,7 @@ class SketchElement(CanvasElement):
             return
 
         cmd = ToggleConstructionCommand(
-            self, "Toggle Construction", self.selection.entity_ids
+            self, _("Toggle Construction"), self.selection.entity_ids
         )
         self.editor.history_manager.execute(cmd)
 
@@ -466,7 +466,7 @@ class SketchElement(CanvasElement):
         if did_work:
             cmd = RemoveItemsCommand(
                 self,
-                "Delete Selection",
+                _("Delete Selection"),
                 points=points_to_del,
                 entities=entities_to_del,
                 constraints=constraints_to_del,
@@ -507,7 +507,7 @@ class SketchElement(CanvasElement):
             p1, p2 = points
             constr = HorizontalConstraint(p1.id, p2.id)
             cmd = AddItemsCommand(
-                self, "Add Horizontal Constraint", constraints=[constr]
+                self, _("Add Horizontal Constraint"), constraints=[constr]
             )
             self.editor.history_manager.execute(cmd)
 
@@ -521,7 +521,7 @@ class SketchElement(CanvasElement):
             p1, p2 = points
             constr = VerticalConstraint(p1.id, p2.id)
             cmd = AddItemsCommand(
-                self, "Add Vertical Constraint", constraints=[constr]
+                self, _("Add Vertical Constraint"), constraints=[constr]
             )
             self.editor.history_manager.execute(cmd)
 
@@ -536,7 +536,7 @@ class SketchElement(CanvasElement):
             dist = math.hypot(p1.x - p2.x, p1.y - p2.y)
             constr = DistanceConstraint(p1.id, p2.id, dist)
             cmd = AddItemsCommand(
-                self, "Add Distance Constraint", constraints=[constr]
+                self, _("Add Distance Constraint"), constraints=[constr]
             )
             self.editor.history_manager.execute(cmd)
         else:
@@ -566,7 +566,7 @@ class SketchElement(CanvasElement):
         if radius > 0 and e and self.editor:
             constr = RadiusConstraint(e.id, radius)
             cmd = AddItemsCommand(
-                self, "Add Radius Constraint", constraints=[constr]
+                self, _("Add Radius Constraint"), constraints=[constr]
             )
             self.editor.history_manager.execute(cmd)
         else:
@@ -588,7 +588,7 @@ class SketchElement(CanvasElement):
                 radius = math.hypot(r_pt.x - c.x, r_pt.y - c.y)
                 constr = DiameterConstraint(e.id, radius * 2.0)
                 cmd = AddItemsCommand(
-                    self, "Add Diameter Constraint", constraints=[constr]
+                    self, _("Add Diameter Constraint"), constraints=[constr]
                 )
                 self.editor.history_manager.execute(cmd)
         else:
@@ -606,7 +606,7 @@ class SketchElement(CanvasElement):
             p1_id, p2_id = self.selection.point_ids
             constr = CoincidentConstraint(p1_id, p2_id)
             cmd = AddItemsCommand(
-                self, "Add Coincident Constraint", constraints=[constr]
+                self, _("Add Coincident Constraint"), constraints=[constr]
             )
             self.editor.history_manager.execute(cmd)
             return
@@ -618,7 +618,7 @@ class SketchElement(CanvasElement):
 
             constr = PointOnLineConstraint(target_pid, sel_entity_id)
             cmd = AddItemsCommand(
-                self, "Add Point On Shape", constraints=[constr]
+                self, _("Add Point On Shape"), constraints=[constr]
             )
             self.editor.history_manager.execute(cmd)
             return
@@ -644,7 +644,7 @@ class SketchElement(CanvasElement):
 
         constr = PerpendicularConstraint(e1_id, e2_id)
         cmd = AddItemsCommand(
-            self, "Add Perpendicular Constraint", constraints=[constr]
+            self, _("Add Perpendicular Constraint"), constraints=[constr]
         )
         self.editor.history_manager.execute(cmd)
 
@@ -666,7 +666,7 @@ class SketchElement(CanvasElement):
         if sel_line and sel_shape and self.editor:
             constr = TangentConstraint(sel_line.id, sel_shape.id)
             cmd = AddItemsCommand(
-                self, "Add Tangent Constraint", constraints=[constr]
+                self, _("Add Tangent Constraint"), constraints=[constr]
             )
             self.editor.history_manager.execute(cmd)
         else:
@@ -700,7 +700,7 @@ class SketchElement(CanvasElement):
         )
         new_constr = EqualLengthConstraint(list(final_ids))
         add_cmd = AddItemsCommand(
-            self, "Add Equal Constraint", constraints=[new_constr]
+            self, _("Add Equal Constraint"), constraints=[new_constr]
         )
 
         # Execute as a single undoable action. This is a simplified composite.
@@ -747,7 +747,7 @@ class SketchElement(CanvasElement):
 
         if constr:
             cmd = AddItemsCommand(
-                self, "Add Symmetry Constraint", constraints=[constr]
+                self, _("Add Symmetry Constraint"), constraints=[constr]
             )
             self.editor.history_manager.execute(cmd)
 

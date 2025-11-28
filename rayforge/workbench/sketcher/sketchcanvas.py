@@ -186,12 +186,14 @@ class SketchCanvas(WorldSurface):
             transient_for=self.parent_window,
             modal=True,
             destroy_with_parent=True,
-            heading="Edit Constraint",
-            body=f"Enter the new value for the {type(constraint).__name__}.",
+            heading=_("Edit Constraint"),
+            body=_("Enter the new value for the {constraint_type}.").format(
+                constraint_type=type(constraint).__name__
+            ),
         )
         dialog.set_extra_child(entry)
-        dialog.add_response("cancel", "Cancel")
-        dialog.add_response("ok", "OK")
+        dialog.add_response("cancel", _("Cancel"))
+        dialog.add_response("ok", _("OK"))
         dialog.set_default_response("ok")
         dialog.set_close_response("cancel")
 

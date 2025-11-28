@@ -145,7 +145,7 @@ class MovePointCommand(SketchChangeCommand):
         start_pos: Tuple[float, float],
         end_pos: Tuple[float, float],
     ):
-        super().__init__(element, "Move Point")
+        super().__init__(element, _("Move Point"))
         self.point_id = point_id
         self.start_pos = start_pos
         self.end_pos = end_pos
@@ -199,7 +199,7 @@ class ModifyConstraintValueCommand(SketchChangeCommand):
         element: "SketchElement",
         constraint: "Constraint",
         new_value: float,
-        name: str = "Edit Constraint",
+        name: str = _("Edit Constraint"),
     ):
         super().__init__(element, name)
         # We wrap a ChangePropertyCommand to handle the value change
@@ -258,7 +258,7 @@ class UnstickJunctionCommand(SketchChangeCommand):
     """Command to separate entities at a shared point."""
 
     def __init__(self, element: "SketchElement", junction_pid: int):
-        super().__init__(element, "Unstick Junction")
+        super().__init__(element, _("Unstick Junction"))
         self.junction_pid = junction_pid
         self.new_point: Optional[Point] = None
         # Stores {entity_id: (attribute_name, old_pid)}
