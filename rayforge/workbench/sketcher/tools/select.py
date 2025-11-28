@@ -88,7 +88,7 @@ class SelectTool(SketchTool):
                         new_constr = RadiusConstraint(entity.id, radius)
                         cmd = AddItemsCommand(
                             self.element,
-                            "Add Radius",
+                            _("Add Radius"),
                             constraints=[new_constr],
                         )
                         if self.element.editor:
@@ -129,7 +129,7 @@ class SelectTool(SketchTool):
                         new_constr = DistanceConstraint(p1_id, p2_id, dist)
                         cmd = AddItemsCommand(
                             self.element,
-                            "Add Distance",
+                            _("Add Distance"),
                             constraints=[new_constr],
                         )
                         if self.element.editor:
@@ -170,7 +170,7 @@ class SelectTool(SketchTool):
                         new_constr = DiameterConstraint(entity.id, radius * 2)
                         cmd = AddItemsCommand(
                             self.element,
-                            "Add Diameter",
+                            _("Add Diameter"),
                             constraints=[new_constr],
                         )
                         if self.element.editor:

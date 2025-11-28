@@ -89,7 +89,7 @@ class LineTool(SketchTool):
                 points_to_add = [new_point] if new_point else []
                 cmd = AddItemsCommand(
                     self.element,
-                    "Add Line",
+                    _("Add Line"),
                     points=points_to_add,
                     entities=[new_line],
                 )
@@ -213,7 +213,7 @@ class ArcTool(SketchTool):
 
                 cmd = AddItemsCommand(
                     self.element,
-                    "Add Arc",
+                    _("Add Arc"),
                     points=[new_point] if new_point else [],
                     entities=[new_arc],
                     constraints=[geom_constr],
@@ -297,7 +297,7 @@ class CircleTool(SketchTool):
                 new_circle = Circle(temp_circle_id, self.center_id, pid_hit)
                 cmd = AddItemsCommand(
                     self.element,
-                    "Add Circle",
+                    _("Add Circle"),
                     points=[new_point] if new_point else [],
                     entities=[new_circle],
                 )

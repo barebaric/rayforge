@@ -386,9 +386,9 @@ class SketchRenderer:
         sx, sy, arc_mid_sx, arc_mid_sy = pos_data
 
         if isinstance(constr, RadiusConstraint):
-            label = f"R{float(constr.value):.1f}"
+            label = _("R{value:.1f}").format(value=float(constr.value))
         elif isinstance(constr, DiameterConstraint):
-            label = f"Ø{float(constr.value):.1f}"
+            label = _("Ø{value:.1f}").format(value=float(constr.value))
         else:
             return
 

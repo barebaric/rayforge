@@ -87,69 +87,69 @@ class SketchPieMenu(PieMenu):
             return f" ({', '.join(formatted_keys)})"
 
         # Tools
-        label = f"Select{get_shortcut_label('select')}"
+        label = f"{_('Select')}{get_shortcut_label('select')}"
         item = PieMenuItem("sketch-select-symbolic", label, data="select")
         item.on_click.connect(self._on_tool_clicked, weak=False)
         self.add_item(item)
 
-        label = f"Line{get_shortcut_label('line')}"
+        label = f"{_('Line')}{get_shortcut_label('line')}"
         item = PieMenuItem("sketch-line-symbolic", label, data="line")
         item.on_click.connect(self._on_tool_clicked, weak=False)
         self.add_item(item)
 
-        label = f"Arc{get_shortcut_label('arc')}"
+        label = f"{_('Arc')}{get_shortcut_label('arc')}"
         item = PieMenuItem("sketch-arc-symbolic", label, data="arc")
         item.on_click.connect(self._on_tool_clicked, weak=False)
         self.add_item(item)
 
-        label = f"Circle{get_shortcut_label('circle')}"
+        label = f"{_('Circle')}{get_shortcut_label('circle')}"
         item = PieMenuItem("sketch-circle-symbolic", label, data="circle")
         item.on_click.connect(self._on_tool_clicked, weak=False)
         self.add_item(item)
 
         # Actions
-        label = f"Construction{get_shortcut_label('construction')}"
+        label = f"{_('Construction')}{get_shortcut_label('construction')}"
         item = PieMenuItem(
             "sketch-construction-symbolic", label, data="construction"
         )
         item.on_click.connect(self._on_action_clicked, weak=False)
         self.add_item(item)
 
-        item = PieMenuItem("delete-symbolic", "Delete", data="delete")
+        item = PieMenuItem("delete-symbolic", _("Delete"), data="delete")
         item.on_click.connect(self._on_action_clicked, weak=False)
         self.add_item(item)
 
         # Constraints
-        label = f"Distance{get_shortcut_label('dist')}"
+        label = f"{_('Distance')}{get_shortcut_label('dist')}"
         item = PieMenuItem("sketch-distance-symbolic", label, data="dist")
         item.on_click.connect(self._on_constraint_clicked, weak=False)
         self.add_item(item)
 
-        label = f"Horizontal{get_shortcut_label('horiz')}"
+        label = f"{_('Horizontal')}{get_shortcut_label('horiz')}"
         item = PieMenuItem(
             "sketch-constrain-horizontal-symbolic", label, data="horiz"
         )
         item.on_click.connect(self._on_constraint_clicked, weak=False)
         self.add_item(item)
 
-        label = f"Vertical{get_shortcut_label('vert')}"
+        label = f"{_('Vertical')}{get_shortcut_label('vert')}"
         item = PieMenuItem(
             "sketch-constrain-vertical-symbolic", label, data="vert"
         )
         item.on_click.connect(self._on_constraint_clicked, weak=False)
         self.add_item(item)
 
-        label = f"Radius{get_shortcut_label('radius')}"
+        label = f"{_('Radius')}{get_shortcut_label('radius')}"
         item = PieMenuItem("sketch-radius-symbolic", label, data="radius")
         item.on_click.connect(self._on_constraint_clicked, weak=False)
         self.add_item(item)
 
-        label = f"Diameter{get_shortcut_label('diameter')}"
+        label = f"{_('Diameter')}{get_shortcut_label('diameter')}"
         item = PieMenuItem("sketch-diameter-symbolic", label, data="diameter")
         item.on_click.connect(self._on_constraint_clicked, weak=False)
         self.add_item(item)
 
-        label = f"Perpendicular{get_shortcut_label('perp')}"
+        label = f"{_('Perpendicular')}{get_shortcut_label('perp')}"
         item = PieMenuItem(
             "sketch-constrain-perpendicular-symbolic",
             label,
@@ -158,28 +158,28 @@ class SketchPieMenu(PieMenu):
         item.on_click.connect(self._on_constraint_clicked, weak=False)
         self.add_item(item)
 
-        label = f"Tangent{get_shortcut_label('tangent')}"
+        label = f"{_('Tangent')}{get_shortcut_label('tangent')}"
         item = PieMenuItem(
             "sketch-constrain-tangential-symbolic", label, data="tangent"
         )
         item.on_click.connect(self._on_constraint_clicked, weak=False)
         self.add_item(item)
 
-        label = f"Align{get_shortcut_label('align')}"
+        label = f"{_('Align')}{get_shortcut_label('align')}"
         item = PieMenuItem(
             "sketch-constrain-point-symbolic", label, data="align"
         )
         item.on_click.connect(self._on_constraint_clicked, weak=False)
         self.add_item(item)
 
-        label = f"Equal{get_shortcut_label('equal')}"
+        label = f"{_('Equal')}{get_shortcut_label('equal')}"
         item = PieMenuItem(
             "sketch-constrain-equal-symbolic", label, data="equal"
         )
         item.on_click.connect(self._on_constraint_clicked, weak=False)
         self.add_item(item)
 
-        label = f"Symmetry{get_shortcut_label('symmetry')}"
+        label = f"{_('Symmetry')}{get_shortcut_label('symmetry')}"
         item = PieMenuItem(
             "sketch-constrain-symmetric-symbolic", label, data="symmetry"
         )
