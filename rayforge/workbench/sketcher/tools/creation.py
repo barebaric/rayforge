@@ -1,5 +1,8 @@
 import math
-from typing import Optional, cast
+from typing import Optional
+from rayforge.core.sketcher.entities import Point, Line, Arc, Circle
+from rayforge.core.sketcher.constraints import EqualDistanceConstraint
+from ..sketch_cmd import AddItemsCommand
 from .base import SketchTool
 
 
@@ -56,19 +59,42 @@ class LineTool(SketchTool):
                 # Start point was deleted, reset the tool
                 self.line_start_id = None
 
+        new_point = None
         if pid_hit is None:
-            pid_hit = self.element.sketch.add_point(mx, my)
-            self.element.update_bounds_from_sketch()
+            # Create a point temporarily, but don't add to registry yet.
+            # Give it a temporary ID that the AddItemsCommand will replace.
+            temp_id = self.element.sketch.registry._id_counter
+            pid_hit = temp_id
+            new_point = Point(temp_id, mx, my)
 
         if self.line_start_id is None:
-            self.line_start_id = pid_hit
+            if new_point:
+                # This is the first point of a new line, add it for preview.
+                # This is not undoable, but is cleaned up by on_deactivate.
+                self.line_start_id = self.element.sketch.add_point(mx, my)
+                self.element.update_bounds_from_sketch()
+            else:
+                self.line_start_id = pid_hit
             self.element.selection.clear()
-            self.element.selection.select_point(pid_hit, False)
+            self.element.selection.select_point(self.line_start_id, False)
         else:
             if self.line_start_id != pid_hit:
-                self.element.sketch.add_line(
-                    self.line_start_id, cast(int, pid_hit)
+                # Create the line entity with a temporary ID.
+                temp_line_id = self.element.sketch.registry._id_counter + (
+                    1 if new_point else 0
                 )
+                new_line = Line(temp_line_id, self.line_start_id, pid_hit)
+
+                # Create command
+                points_to_add = [new_point] if new_point else []
+                cmd = AddItemsCommand(
+                    self.element,
+                    "Add Line",
+                    points=points_to_add,
+                    entities=[new_line],
+                )
+                if self.element.sketch_canvas:
+                    self.element.sketch_canvas.history_manager.execute(cmd)
 
             # Start a new line segment from this point
             self.line_start_id = pid_hit
@@ -151,6 +177,7 @@ class ArcTool(SketchTool):
 
         else:
             # Step 3: End Point
+            new_point = None
             if pid_hit is None:
                 c = self.element.sketch.registry.get_point(self.center_id)
                 s = self.element.sketch.registry.get_point(self.start_id)
@@ -166,21 +193,33 @@ class ArcTool(SketchTool):
                 else:
                     final_x, final_y = mx, my
 
-                pid_hit = self.element.sketch.add_point(final_x, final_y)
-                self.element.update_bounds_from_sketch()
+                temp_id = self.element.sketch.registry._id_counter
+                pid_hit = temp_id
+                new_point = Point(temp_id, final_x, final_y)
 
             # Cannot end at start or center
             if pid_hit != self.start_id and pid_hit != self.center_id:
-                self.element.sketch.add_arc(
-                    start=self.start_id, end=pid_hit, center=self.center_id
+                temp_arc_id = self.element.sketch.registry._id_counter + (
+                    1 if new_point else 0
+                )
+                new_arc = Arc(
+                    temp_arc_id, self.start_id, pid_hit, self.center_id
                 )
 
                 # ENFORCE ARC GEOMETRY: dist(C, S) == dist(C, E)
-                self.element.sketch.constrain_equal_distance(
+                geom_constr = EqualDistanceConstraint(
                     self.center_id, self.start_id, self.center_id, pid_hit
                 )
 
-                self.element.sketch.solve()
+                cmd = AddItemsCommand(
+                    self.element,
+                    "Add Arc",
+                    points=[new_point] if new_point else [],
+                    entities=[new_arc],
+                    constraints=[geom_constr],
+                )
+                if self.element.sketch_canvas:
+                    self.element.sketch_canvas.history_manager.execute(cmd)
 
                 # Reset tool state
                 self.center_id = None
@@ -244,14 +283,26 @@ class CircleTool(SketchTool):
 
         else:
             # Step 2: Radius Point
+            new_point = None
             if pid_hit is None:
-                pid_hit = self.element.sketch.add_point(mx, my)
-                self.element.update_bounds_from_sketch()
+                temp_id = self.element.sketch.registry._id_counter
+                pid_hit = temp_id
+                new_point = Point(temp_id, mx, my)
 
             # Cannot have radius point at center
             if pid_hit != self.center_id:
-                self.element.sketch.add_circle(self.center_id, pid_hit)
-                self.element.sketch.solve()
+                temp_circle_id = self.element.sketch.registry._id_counter + (
+                    1 if new_point else 0
+                )
+                new_circle = Circle(temp_circle_id, self.center_id, pid_hit)
+                cmd = AddItemsCommand(
+                    self.element,
+                    "Add Circle",
+                    points=[new_point] if new_point else [],
+                    entities=[new_circle],
+                )
+                if self.element.sketch_canvas:
+                    self.element.sketch_canvas.history_manager.execute(cmd)
 
                 # Reset for next circle
                 self.center_id = None

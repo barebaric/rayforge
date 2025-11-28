@@ -162,8 +162,6 @@ class SketchCanvas(WorldSurface):
         if not (ctx and isinstance(ctx, SketchElement)):
             return
 
-        # TODO: Refactor these calls to use the command pattern with the
-        # self.history_manager for undo/redo.
         if constraint_type == "dist":
             ctx.add_distance_constraint()
         elif constraint_type == "horiz":
@@ -189,7 +187,6 @@ class SketchCanvas(WorldSurface):
         if not (ctx and isinstance(ctx, SketchElement)):
             return
 
-        # TODO: Refactor these calls to use the command pattern for undo/redo.
         if action == "construction":
             ctx.toggle_construction_on_selection()
         elif action == "delete":
@@ -203,6 +200,17 @@ class SketchCanvas(WorldSurface):
         state: Gdk.ModifierType,
     ) -> bool:
         """Overrides base to handle sketcher-specific key presses."""
+        is_ctrl = state & Gdk.ModifierType.CONTROL_MASK
+
+        # Undo / Redo
+        if is_ctrl:
+            if keyval == Gdk.KEY_z:
+                self.history_manager.undo()
+                return True
+            if keyval == Gdk.KEY_y:
+                self.history_manager.redo()
+                return True
+
         # First, let the base class handle its keys (e.g., '1' for reset view)
         if super().on_key_pressed(controller, keyval, keycode, state):
             return True
@@ -210,7 +218,6 @@ class SketchCanvas(WorldSurface):
         # Then, handle sketcher-specific keys
         if self.edit_context and isinstance(self.edit_context, SketchElement):
             if keyval == Gdk.KEY_Delete:
-                # TODO: This should create and execute a command
                 self.edit_context.delete_selection()
                 return True
 

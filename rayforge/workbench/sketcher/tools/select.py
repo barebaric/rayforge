@@ -10,6 +10,7 @@ from rayforge.core.sketcher.constraints import (
     CoincidentConstraint,
     PointOnLineConstraint,
 )
+from ..sketch_cmd import AddItemsCommand, MovePointCommand
 from .base import SketchTool
 
 
@@ -70,11 +71,16 @@ class SelectTool(SketchTool):
                     )
                     if s and c:
                         radius = math.hypot(s.x - c.x, s.y - c.y)
-                        new_constr = self.element.sketch.constrain_radius(
-                            entity.id, radius
+                        new_constr = RadiusConstraint(entity.id, radius)
+                        cmd = AddItemsCommand(
+                            self.element,
+                            "Add Radius",
+                            constraints=[new_constr],
                         )
-                        self.element.sketch.solve()
-                        self.element.mark_dirty()
+                        if self.element.sketch_canvas:
+                            self.element.sketch_canvas.history_manager.execute(
+                                cmd
+                            )
                         self.element.constraint_edit_requested.send(
                             self.element, constraint=new_constr
                         )
@@ -100,11 +106,16 @@ class SelectTool(SketchTool):
                     p2 = self.element.sketch.registry.get_point(p2_id)
                     if p1 and p2:
                         dist = math.hypot(p1.x - p2.x, p1.y - p2.y)
-                        new_constr = self.element.sketch.constrain_distance(
-                            p1_id, p2_id, dist
+                        new_constr = DistanceConstraint(p1_id, p2_id, dist)
+                        cmd = AddItemsCommand(
+                            self.element,
+                            "Add Distance",
+                            constraints=[new_constr],
                         )
-                        self.element.sketch.solve()
-                        self.element.mark_dirty()
+                        if self.element.sketch_canvas:
+                            self.element.sketch_canvas.history_manager.execute(
+                                cmd
+                            )
                         self.element.constraint_edit_requested.send(
                             self.element, constraint=new_constr
                         )
@@ -130,11 +141,16 @@ class SelectTool(SketchTool):
                     r_pt = self._safe_get_point(entity.radius_pt_idx)
                     if c and r_pt:
                         radius = math.hypot(r_pt.x - c.x, r_pt.y - c.y)
-                        new_constr = self.element.sketch.constrain_diameter(
-                            entity.id, radius * 2
+                        new_constr = DiameterConstraint(entity.id, radius * 2)
+                        cmd = AddItemsCommand(
+                            self.element,
+                            "Add Diameter",
+                            constraints=[new_constr],
                         )
-                        self.element.sketch.solve()
-                        self.element.mark_dirty()
+                        if self.element.sketch_canvas:
+                            self.element.sketch_canvas.history_manager.execute(
+                                cmd
+                            )
                         self.element.constraint_edit_requested.send(
                             self.element, constraint=new_constr
                         )
@@ -222,8 +238,27 @@ class SelectTool(SketchTool):
             self._handle_entity_drag(world_dx, world_dy)
 
     def on_release(self, world_x: float, world_y: float):
+        # If a point was dragged, create an undoable command
+        if self.dragged_point_id is not None and self.drag_point_start_pos:
+            p = self._safe_get_point(self.dragged_point_id)
+            if p:
+                start_x, start_y = self.drag_point_start_pos
+                end_x, end_y = p.x, p.y
+
+                # Only create a command if the point actually moved
+                if abs(start_x - end_x) > 1e-6 or abs(start_y - end_y) > 1e-6:
+                    cmd = MovePointCommand(
+                        self.element,
+                        self.dragged_point_id,
+                        (start_x, start_y),
+                        (end_x, end_y),
+                    )
+                    if self.element.sketch_canvas:
+                        self.element.sketch_canvas.history_manager.execute(cmd)
+
         # Clear all drag-related state
         self.dragged_point_id = None
+        self.drag_point_start_pos = None
         self.dragged_entity = None
         self.drag_start_model_pos = None
         self.drag_initial_positions.clear()
@@ -232,6 +267,8 @@ class SelectTool(SketchTool):
         self.drag_start_ct_inv = None
 
         # Final solve, now allowing constraint status to be updated.
+        # Note: The command execution will have already triggered a solve.
+        # This solve is for the final state after releasing the mouse.
         self.element.sketch.solve()
         # Perform a final, guaranteed update to settle the bounds.
         self.element.update_bounds_from_sketch()
