@@ -20,6 +20,7 @@ from rayforge.core.sketcher.constraints import (
     CoincidentConstraint,
     PointOnLineConstraint,
     EqualLengthConstraint,
+    SymmetryConstraint,
     Constraint,
 )
 
@@ -393,6 +394,10 @@ class SketchElement(CanvasElement):
                 ]
             elif isinstance(constr, PointOnLineConstraint):
                 points_in_constraint = [constr.point_id]
+            elif isinstance(constr, SymmetryConstraint):
+                points_in_constraint = [constr.p1, constr.p2]
+                if constr.center is not None:
+                    points_in_constraint.append(constr.center)
 
             if any(p in to_delete_point_ids for p in points_in_constraint):
                 should_remove = True
@@ -412,6 +417,9 @@ class SketchElement(CanvasElement):
                     entities_in_constraint = [constr.shape_id]
                 elif isinstance(constr, EqualLengthConstraint):
                     entities_in_constraint = constr.entity_ids
+                elif isinstance(constr, SymmetryConstraint):
+                    if constr.axis is not None:
+                        entities_in_constraint = [constr.axis]
 
                 if any(
                     e in to_delete_entity_ids for e in entities_in_constraint
@@ -703,6 +711,41 @@ class SketchElement(CanvasElement):
 
         add_cmd._do_undo = composite_undo
         self.editor.history_manager.execute(add_cmd)
+
+    def add_symmetry_constraint(self):
+        """
+        Adds a symmetry constraint.
+        Supported modes:
+        1. 3 Points: The first point in selection is considered the Center.
+        2. 2 Points + 1 Line: The line is the Axis.
+        """
+        if not self.is_constraint_supported("symmetry") or not self.editor:
+            logger.warning(
+                "Symmetry: Select 3 Points (1st is center) OR 2 Points + 1 "
+                "Line."
+            )
+            return
+
+        point_ids = self.selection.point_ids
+        entity_ids = self.selection.entity_ids
+        constr = None
+
+        if len(point_ids) == 3 and not entity_ids:
+            center = point_ids[0]
+            p1 = point_ids[1]
+            p2 = point_ids[2]
+            constr = SymmetryConstraint(p1, p2, center=center)
+        elif len(point_ids) == 2 and len(entity_ids) == 1:
+            p1 = point_ids[0]
+            p2 = point_ids[1]
+            axis = entity_ids[0]
+            constr = SymmetryConstraint(p1, p2, axis=axis)
+
+        if constr:
+            cmd = AddItemsCommand(
+                self, "Add Symmetry Constraint", constraints=[constr]
+            )
+            self.editor.history_manager.execute(cmd)
 
     def _get_entity_by_id(self, eid: int) -> Optional[Entity]:
         return self.sketch.registry.get_entity(eid)

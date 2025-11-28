@@ -13,6 +13,7 @@ from rayforge.core.sketcher.constraints import (
     CoincidentConstraint,
     PointOnLineConstraint,
     EqualLengthConstraint,
+    SymmetryConstraint,
 )
 
 
@@ -236,6 +237,8 @@ class SketchRenderer:
                 self._draw_point_constraint(
                     ctx, constr.point_id, to_screen, is_sel
                 )
+            elif isinstance(constr, SymmetryConstraint):
+                self._draw_symmetry_constraint(ctx, constr, is_sel, to_screen)
 
         # --- Stage 3: Draw Symbols on Entities from Collected Groups ---
         if equality_groups:
@@ -549,6 +552,64 @@ class SketchRenderer:
             sx, sy = to_screen.transform_point((p.x, p.y))
             ctx.move_to(sx + 10, sy + 10)
             ctx.show_text("⦸")
+
+    def _draw_symmetry_constraint(self, ctx, constr, is_selected, to_screen):
+        p1 = self._safe_get_point(constr.p1)
+        p2 = self._safe_get_point(constr.p2)
+        if not (p1 and p2):
+            return
+
+        s1 = to_screen.transform_point((p1.x, p1.y))
+        s2 = to_screen.transform_point((p2.x, p2.y))
+
+        mx = (s1[0] + s2[0]) / 2.0
+        my = (s1[1] + s2[1]) / 2.0
+
+        angle = math.atan2(s2[1] - s1[1], s2[0] - s1[0])
+
+        # Determine offset for the icons from the center
+        offset = 12.0
+
+        ctx.save()
+        if is_selected:
+            ctx.set_source_rgb(1.0, 0.2, 0.2)
+        else:
+            ctx.set_source_rgb(0.0, 0.6, 0.0)
+        ctx.set_line_width(1.5)
+
+        # Draw left marker ">"
+        # Position: move back from midpoint along the line
+        lx = mx - offset * math.cos(angle)
+        ly = my - offset * math.sin(angle)
+
+        ctx.save()
+        ctx.translate(lx, ly)
+        ctx.rotate(angle)
+        # Draw ">" shape centered at 0,0
+        # coords: (-3, -4) -> (3, 0) -> (-3, 4)
+        ctx.move_to(-3, -4)
+        ctx.line_to(3, 0)
+        ctx.line_to(-3, 4)
+        ctx.stroke()
+        ctx.restore()
+
+        # Draw right marker "<"
+        # Position: move forward from midpoint along the line
+        rx = mx + offset * math.cos(angle)
+        ry = my + offset * math.sin(angle)
+
+        ctx.save()
+        ctx.translate(rx, ry)
+        ctx.rotate(angle)
+        # Draw "<" shape centered at 0,0
+        # coords: (3, -4) -> (-3, 0) -> (3, 4)
+        ctx.move_to(3, -4)
+        ctx.line_to(-3, 0)
+        ctx.line_to(3, 4)
+        ctx.stroke()
+        ctx.restore()
+
+        ctx.restore()
 
     # --- Points ---
 
