@@ -23,6 +23,8 @@ class SelectTool(SketchTool):
     def __init__(self, element):
         super().__init__(element)
         self.hovered_point_id: Optional[int] = None
+        self.hovered_constraint_idx: Optional[int] = None
+        self.hovered_junction_pid: Optional[int] = None
 
         # --- Drag State ---
         # For dragging a single point
@@ -313,9 +315,26 @@ class SelectTool(SketchTool):
         hit_type, hit_obj = self.element.hittester.get_hit_data(
             world_x, world_y, self.element
         )
-        new_hover_pid = hit_obj if hit_type == "point" else None
-        if self.hovered_point_id != new_hover_pid:
+
+        new_hover_pid = None
+        new_hover_constraint_idx = None
+        new_hover_junction_pid = None
+
+        if hit_type == "point":
+            new_hover_pid = hit_obj
+        elif hit_type == "constraint":
+            new_hover_constraint_idx = hit_obj
+        elif hit_type == "junction":
+            new_hover_junction_pid = hit_obj
+
+        if (
+            self.hovered_point_id != new_hover_pid
+            or self.hovered_constraint_idx != new_hover_constraint_idx
+            or self.hovered_junction_pid != new_hover_junction_pid
+        ):
             self.hovered_point_id = new_hover_pid
+            self.hovered_constraint_idx = new_hover_constraint_idx
+            self.hovered_junction_pid = new_hover_junction_pid
             self.element.mark_dirty()
 
     # --- Drag Logic Handlers ---
