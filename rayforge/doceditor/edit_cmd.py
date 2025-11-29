@@ -1,6 +1,6 @@
 import uuid
 import logging
-from typing import TYPE_CHECKING, List, Dict, Tuple, Sequence
+from typing import TYPE_CHECKING, List, Dict, Tuple, Sequence, Optional
 from ..core.item import DocItem
 from ..core.group import Group
 from ..core.workpiece import WorkPiece
@@ -9,6 +9,7 @@ from ..undo import ListItemCommand, ReorderListCommand
 
 if TYPE_CHECKING:
     from .editor import DocEditor
+    from ..core.source_asset import SourceAsset
 
 logger = logging.getLogger(__name__)
 
@@ -188,6 +189,39 @@ class EditCmd:
                 t.execute(command)
 
         return newly_duplicated_items
+
+    def add_items(
+        self,
+        items: List[DocItem],
+        source_assets: Optional[List["SourceAsset"]] = None,
+        name: str = "Add item(s)",
+    ):
+        """
+        Adds a list of items and their associated source assets to the
+        document.
+        """
+        if not items:
+            return
+
+        history = self._editor.history_manager
+        target_layer = self._editor.default_workpiece_layer
+
+        with history.transaction(_(name)) as t:
+            # Add source assets. This is not currently undoable in this simple
+            # command, but matches the import logic.
+            if source_assets:
+                for asset in source_assets:
+                    self._editor.doc.add_source_asset(asset)
+
+            for item in items:
+                command = ListItemCommand(
+                    owner_obj=target_layer,
+                    item=item,
+                    undo_command="remove_child",
+                    redo_command="add_child",
+                    name=_("Add item"),
+                )
+                t.execute(command)
 
     def remove_items(
         self,
