@@ -87,6 +87,9 @@ class WorkSurface(WorldSurface):
         self.context_changed = Signal()
         self.transform_initiated = Signal()
 
+        # Signal to request editing a sketch (handled by MainWindow)
+        self.edit_sketch_requested = Signal()
+
         # Connect to generic signals from the base Canvas class
         self.move_begin.connect(self._on_any_transform_begin)
         self.resize_begin.connect(self._on_resize_begin)
@@ -184,6 +187,17 @@ class WorkSurface(WorldSurface):
         # Case 2: Clicked on a WorkPieceElement, check for path proximity
         elif isinstance(hit_elem, WorkPieceElement):
             wp_view = cast(WorkPieceElement, hit_elem)
+
+            # Check if this is a sketch workpiece
+            is_sketch = False
+            source = wp_view.data.source
+            if (
+                source
+                and source.renderer.__class__.__name__ == "SketchRenderer"
+            ):
+                is_sketch = True
+
+            # Check path proximity
             location = wp_view.get_closest_point_on_path(
                 world_x, world_y, threshold_px=5.0
             )
@@ -194,7 +208,10 @@ class WorkSurface(WorldSurface):
                     "location": location,
                 }
             else:
-                self.right_click_context = {"type": "item"}
+                if is_sketch:
+                    self.right_click_context = {"type": "sketch-item"}
+                else:
+                    self.right_click_context = {"type": "item"}
         # Case 3: Clicked on another selectable item (e.g., a Group)
         elif hit_elem.selectable:
             self.right_click_context = {"type": "item"}
@@ -202,7 +219,7 @@ class WorkSurface(WorldSurface):
         # Notify listeners to update action states *before* showing the menu
         self.context_changed.send(self)
 
-        # Now, call the specific function to show the correct menu
+        # Now, call the specific function to show the menu.
         if self.right_click_context:
             context_type = self.right_click_context["type"]
             if context_type == "item":
@@ -211,6 +228,12 @@ class WorkSurface(WorldSurface):
                     hit_elem.selected = True
                     self._finalize_selection_state()
                 context_menu.show_item_context_menu(self, gesture)
+            elif context_type == "sketch-item":
+                if not hit_elem.selected:
+                    self.unselect_all()
+                    hit_elem.selected = True
+                    self._finalize_selection_state()
+                context_menu.show_sketch_item_context_menu(self, gesture)
             elif context_type == "geometry":
                 context_menu.show_geometry_context_menu(self, gesture)
             elif context_type == "tab":
@@ -347,8 +370,8 @@ class WorkSurface(WorldSurface):
 
     def on_button_press(self, gesture, n_press: int, x: float, y: float):
         """
-        Overrides base to add application-specific layer selection logic and
-        manage the SketchEditor lifecycle.
+        Overrides base to add application-specific layer selection logic,
+        handle double-click editing, and manage the SketchEditor lifecycle.
         """
         # A left-click should clear any lingering right-click context.
         if gesture.get_button() == Gdk.BUTTON_PRIMARY:
@@ -365,6 +388,26 @@ class WorkSurface(WorldSurface):
         # self.edit_context
         super().on_button_press(gesture, n_press, x, y)
         new_context = self.edit_context
+
+        # Check for double-click to edit sketches.
+        # We perform an explicit hit test because 'new_context'
+        # (aka edit_context) might not be set to the workpiece if
+        # we are just selecting it.
+        if n_press == 2:
+            world_x, world_y = self._get_world_coords(x, y)
+            hit_elem = self.root.get_elem_hit(
+                world_x, world_y, selectable=True
+            )
+
+            if isinstance(hit_elem, WorkPieceElement):
+                wp = hit_elem.data
+                source = wp.source
+                if (
+                    source
+                    and source.renderer.__class__.__name__ == "SketchRenderer"
+                ):
+                    self.edit_sketch_requested.send(self, workpiece=wp)
+                    return
 
         # Manage SketchEditor activation based on context changes.
         if old_context is not new_context:

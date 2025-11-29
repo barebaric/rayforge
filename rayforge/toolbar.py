@@ -28,7 +28,7 @@ class MainToolbar(Gtk.Box):
         self.set_margin_start(12)
         self.set_margin_end(12)
 
-        # Import and export buttons
+        # File related buttons (import, export)
         open_button = Gtk.Button(child=get_icon("open-symbolic"))
         open_button.set_tooltip_text(_("Import image"))
         open_button.set_action_name("win.import")
@@ -38,6 +38,20 @@ class MainToolbar(Gtk.Box):
         self.export_button.set_tooltip_text(_("Generate G-code"))
         self.export_button.set_action_name("win.export")
         self.append(self.export_button)
+
+        # Sketch related buttons
+        sep = Gtk.Separator(orientation=Gtk.Orientation.VERTICAL)
+        self.append(sep)
+
+        new_sketch_button = Gtk.Button(child=get_icon("sketch-add-symbolic"))
+        new_sketch_button.set_tooltip_text(_("New Sketch"))
+        new_sketch_button.set_action_name("win.new_sketch")
+        self.append(new_sketch_button)
+
+        edit_sketch_button = Gtk.Button(child=get_icon("sketch-edit-symbolic"))
+        edit_sketch_button.set_tooltip_text(_("Edit Sketch"))
+        edit_sketch_button.set_action_name("win.edit_sketch")
+        self.append(edit_sketch_button)
 
         # Undo/Redo Buttons
         sep = Gtk.Separator(orientation=Gtk.Orientation.VERTICAL)
