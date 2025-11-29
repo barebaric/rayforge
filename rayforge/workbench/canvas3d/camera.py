@@ -196,9 +196,7 @@ class Camera:
         self.target = pivot + rot_matrix @ (self.target - pivot)
         self.up = rot_matrix @ self.up
 
-    def set_top_view(
-        self, world_width: float, world_depth: float, y_down: bool = False
-    ):
+    def set_top_view(self, world_width: float, world_depth: float):
         """Configures the camera for a top-down, orthographic view (Z-up)."""
         center_x, center_y = world_width / 2.0, world_depth / 2.0
         max_dim = max(world_width, world_depth)
@@ -209,13 +207,8 @@ class Camera:
         )
         self.target = np.array([center_x, center_y, 0.0], dtype=np.float64)
 
-        # For a Y-down view, the camera's "up" must point along the world's
-        # negative Y axis so that the view is not upside-down.
-        self.up = (
-            np.array([0.0, -1.0, 0.0], dtype=np.float64)
-            if y_down
-            else np.array([0.0, 1.0, 0.0], dtype=np.float64)
-        )
+        # Standard orientation: Up vector points along positive Y.
+        self.up = np.array([0.0, 1.0, 0.0], dtype=np.float64)
         # A top-down view should be orthographic, not perspective.
 
     def set_front_view(self, world_width: float, world_depth: float):

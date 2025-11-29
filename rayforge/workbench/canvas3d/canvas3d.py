@@ -341,9 +341,7 @@ class Canvas3D(Gtk.GLArea):
             return
         logger.info("Resetting to top view.")
         # The camera class now handles all orientation logic internally.
-        self.camera.set_top_view(
-            self.width_mm, self.depth_mm, y_down=self.y_down
-        )
+        self.camera.set_top_view(self.width_mm, self.depth_mm)
 
         # A view reset can interrupt a drag operation, leaving stale state.
         self._clear_drag_state()
