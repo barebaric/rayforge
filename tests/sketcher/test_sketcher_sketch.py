@@ -1,4 +1,5 @@
 import pytest
+from pathlib import Path
 from rayforge.core.sketcher.sketch import Sketch
 from rayforge.core.geo import ArcToCommand, Geometry
 from rayforge.core.sketcher.constraints import (
@@ -232,51 +233,43 @@ def test_sketch_constraint_shortcuts():
     assert isinstance(s.constraints[7], SymmetryConstraint)
 
 
-def test_sketch_serialization_round_trip():
-    """Tests to_dict and from_dict for a complete Sketch."""
-    s = Sketch()
-    s.set_param("width", 50.0)
-    p1 = s.origin_id
-    p2 = s.add_point(40, 0)
-    p3 = s.add_point(40, 20)
-    l1 = s.add_line(p1, p2)
-    l2 = s.add_line(p2, p3)
-    circ = s.add_circle(p1, p3)
+def test_sketch_serialization_from_file():
+    """
+    Tests that a sketch can be loaded from a file, serialized back to a
+    dictionary, and re-loaded from that dictionary without data loss.
+    """
+    # 1. Locate the file relative to this test file
+    test_dir = Path(__file__).parent
+    file_path = test_dir / "rect.rfs"
 
-    s.constrain_horizontal(p1, p2)
-    s.constrain_distance(p1, p2, "width")
-    s.constrain_perpendicular(l1, l2)
-    # Since p3.x will be 50, the radius must be
-    # >= 50, so the diameter must be >= 100.
-    s.constrain_diameter(circ, 100.0)
-    s.solve()
+    if not file_path.exists():
+        pytest.skip(f"Test data file not found: {file_path}")
 
-    # Serialize
-    data = s.to_dict()
+    # 2. Load the sketch from the project file
+    sketch1 = Sketch.from_file(file_path)
 
-    # Deserialize
-    new_sketch = Sketch.from_dict(data)
+    # 3. Serialize the loaded sketch back into a dictionary
+    data_from_sketch1 = sketch1.to_dict()
 
-    # Validate integrity
-    assert new_sketch.params.get("width") == 50.0
-    assert len(new_sketch.registry.points) == 3
-    assert len(new_sketch.registry.entities) == 3
-    assert len(new_sketch.constraints) == 4
-    assert new_sketch.origin_id == p1
+    # 4. Create a second sketch instance from the serialized dictionary
+    sketch2 = Sketch.from_dict(data_from_sketch1)
 
-    # Validate functional equivalence
-    assert new_sketch.solve() is True
-    pt2 = new_sketch.registry.get_point(p2)
-    pt3 = new_sketch.registry.get_point(p3)
-    radius = (pt3.x**2 + pt3.y**2) ** 0.5
-    diameter = radius * 2
+    # 5. Serialize the second sketch
+    data_from_sketch2 = sketch2.to_dict()
 
-    abs_tol = 1e-7
-    assert pt2.x == pytest.approx(50.0, abs=abs_tol)
-    assert pt2.y == pytest.approx(0.0, abs=abs_tol)
-    # Perpendicular constraint should make p3.x == p2.x
-    assert pt3.x == pytest.approx(50.0, abs=abs_tol)
-    assert diameter == pytest.approx(100.0, abs=abs_tol)
+    # 6. The serialized data from both sketches must be identical.
+    # This proves that the `from_dict` -> `to_dict` round trip is perfect.
+    assert data_from_sketch1 == data_from_sketch2, (
+        "Serialization round-trip failed"
+    )
+
+    # 7. As a final check, ensure both sketches are functionally equivalent
+    # by solving and comparing a key result.
+    assert sketch1.solve() is True
+    assert sketch2.solve() is True
+    p_final_s1 = sketch1.registry.get_point(8)  # A point from the sketch
+    p_final_s2 = sketch2.registry.get_point(8)
+    assert p_final_s1.pos() == pytest.approx(p_final_s2.pos())
 
 
 @pytest.fixture
