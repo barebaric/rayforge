@@ -1,7 +1,14 @@
 import logging
 from typing import Optional, cast, TYPE_CHECKING
-from gi.repository import Gtk, Gdk, Adw
-from ...core.sketcher.constraints import Constraint
+from gi.repository import Gtk, Gdk, Adw, GLib
+from ...core.sketcher.constraints import (
+    Constraint,
+    RadiusConstraint,
+    DiameterConstraint,
+    DistanceConstraint,
+    HorizontalConstraint,
+    VerticalConstraint,
+)
 from ...core.matrix import Matrix
 from ..canvas import WorldSurface
 from .editor import SketchEditor
@@ -201,40 +208,91 @@ class SketchCanvas(WorldSurface):
             )
             return
 
-        entry = Gtk.Entry()
-        entry.set_text(str(float(getattr(constraint, "value", 0))))
-        entry.set_activates_default(True)
+        current_value = float(getattr(constraint, "value", 0))
+
+        # Determine the user-friendly label and description based on type
+        if isinstance(constraint, RadiusConstraint):
+            row_title = _("Radius")
+            row_subtitle = _("Enter the new radius.")
+        elif isinstance(constraint, DiameterConstraint):
+            row_title = _("Diameter")
+            row_subtitle = _("Enter the new diameter.")
+        elif isinstance(
+            constraint,
+            (DistanceConstraint, HorizontalConstraint, VerticalConstraint),
+        ):
+            row_title = _("Length")
+            row_subtitle = _("Enter the new length.")
+        else:
+            row_title = _("Value")
+            row_subtitle = _("Enter the new value for the constraint.")
+
+        # Create Adjustment for the SpinRow
+        # We use a small lower bound > 0 because dimension constraints
+        # usually cannot be zero or negative.
+        adjustment = Gtk.Adjustment(
+            value=current_value,
+            lower=0.0001,
+            upper=100000.0,
+            step_increment=1.0,
+            page_increment=10.0,
+        )
+
+        spin_row = Adw.SpinRow(
+            title=row_title,
+            subtitle=row_subtitle,
+            adjustment=adjustment,
+            digits=3,
+            snap_to_ticks=False,
+        )
+
+        # Adw.SpinRow looks best inside a boxed list when inside a dialog
+        list_box = Gtk.ListBox()
+        list_box.add_css_class("boxed-list")
+        list_box.append(spin_row)
+        # Ensure the dialog is wide enough
+        list_box.set_size_request(500, -1)
 
         dialog = Adw.MessageDialog(
             transient_for=self.parent_window,
             modal=True,
             destroy_with_parent=True,
             heading=_("Edit Constraint"),
-            body=_("Enter the new value for the {constraint_type}.").format(
-                constraint_type=type(constraint).__name__
-            ),
         )
-        dialog.set_extra_child(entry)
+        dialog.set_extra_child(list_box)
         dialog.add_response("cancel", _("Cancel"))
         dialog.add_response("ok", _("OK"))
         dialog.set_default_response("ok")
         dialog.set_close_response("cancel")
 
+        # Handle Enter key to confirm dialog.
+        key_controller = Gtk.EventControllerKey()
+        key_controller.set_propagation_phase(Gtk.PropagationPhase.CAPTURE)
+
+        def on_key_pressed(controller, keyval, keycode, state):
+            if keyval in (Gdk.KEY_Return, Gdk.KEY_KP_Enter):
+                GLib.idle_add(lambda: dialog.response("ok"))
+                return (
+                    False  # Let event propagate to SpinButton to update value
+                )
+            return False
+
+        key_controller.connect("key-pressed", on_key_pressed)
+        spin_row.add_controller(key_controller)
+
         def on_response(source, response_id):
             if response_id == "ok":
-                try:
-                    new_value = float(entry.get_text())
-                    if new_value > 0:
-                        cmd = ModifyConstraintValueCommand(
-                            element=self.sketch_element,
-                            constraint=constraint,
-                            new_value=new_value,
-                        )
-                        self.sketch_editor.history_manager.execute(cmd)
-                    else:
-                        logger.warning("Constraint value must be positive.")
-                except (ValueError, TypeError):
-                    logger.warning("Invalid input for constraint value.")
+                # Get the value directly from the SpinRow
+                new_value = spin_row.get_value()
+                cmd = ModifyConstraintValueCommand(
+                    element=self.sketch_element,
+                    constraint=constraint,
+                    new_value=new_value,
+                )
+                self.sketch_editor.history_manager.execute(cmd)
+
+            # Explicitly close the dialog
+            dialog.close()
             # Clear the reference to allow the dialog to be destroyed
             self._active_dialog = None
 
