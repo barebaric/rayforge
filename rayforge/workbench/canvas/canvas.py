@@ -1259,10 +1259,10 @@ class Canvas(Gtk.DrawingArea):
             return True
         if keyval in (Gdk.KEY_Shift_L, Gdk.KEY_Shift_R):
             self._shift_pressed = True
-            return True
+            # Allow propagation for accelerators
         elif keyval in (Gdk.KEY_Control_L, Gdk.KEY_Control_R):
             self._ctrl_pressed = True
-            return True
+            # Allow propagation for accelerators
         elif keyval == Gdk.KEY_Delete:
             selected_elements = list(self.root.get_selected())
             if selected_elements:
