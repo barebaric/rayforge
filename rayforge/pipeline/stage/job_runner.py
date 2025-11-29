@@ -106,7 +106,22 @@ def make_job_artifact_in_subprocess(
 
     proxy.set_message(_("Generating G-code..."))
     encoder = GcodeEncoder.for_machine(machine)
-    gcode_str, op_map_obj = encoder.encode(final_ops, machine, doc)
+
+    # If the machine is Y-down, we must transform the ops coordinate system
+    # (Y-Up Internal -> Y-Down Machine) before generating G-code.
+    # The transform is Y_new = Height - Y_old.
+    ops_for_gcode = final_ops
+    if machine.y_axis_down:
+        ops_for_gcode = final_ops.copy()
+        height = machine.dimensions[1]
+        # Create transform matrix: Translate(0, H) @ Scale(1, -1)
+        # Result: y -> -y -> -y + H
+        transform = np.identity(4)
+        transform[1, 1] = -1.0
+        transform[1, 3] = height
+        ops_for_gcode.transform(transform)
+
+    gcode_str, op_map_obj = encoder.encode(ops_for_gcode, machine, doc)
 
     # Encode G-code and map to byte arrays for storage in the artifact
     gcode_bytes = np.frombuffer(gcode_str.encode("utf-8"), dtype=np.uint8)
@@ -114,6 +129,8 @@ def make_job_artifact_in_subprocess(
     op_map_bytes = np.frombuffer(op_map_str.encode("utf-8"), dtype=np.uint8)
 
     # Generate vertex data for UI preview/simulation
+    # NOTE: The preview uses the original Y-Up final_ops. The 3D view camera
+    # handles the visual orientation for Y-down machines.
     proxy.set_message(_("Encoding paths for preview..."))
     vertex_encoder = VertexEncoder()
     vertex_data = vertex_encoder.encode(final_ops)
