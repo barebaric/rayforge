@@ -25,11 +25,14 @@ class LineTool(SketchTool):
     def __init__(self, element):
         super().__init__(element)
         self.line_start_id: Optional[int] = None
+        self.start_point_temp: bool = False
 
     def on_deactivate(self):
         """Clean up the starting point if a line was not finished."""
-        _remove_point_if_unused(self.element, self.line_start_id)
+        if self.start_point_temp:
+            _remove_point_if_unused(self.element, self.line_start_id)
         self.line_start_id = None
+        self.start_point_temp = False
 
     def on_press(self, world_x: float, world_y: float, n_press: int) -> bool:
         # Use screen_to_model for coordinate entry
@@ -58,6 +61,7 @@ class LineTool(SketchTool):
             except IndexError:
                 # Start point was deleted, reset the tool
                 self.line_start_id = None
+                self.start_point_temp = False
 
         new_point = None
         if pid_hit is None:
@@ -72,9 +76,12 @@ class LineTool(SketchTool):
                 # This is the first point of a new line, add it for preview.
                 # This is not undoable, but is cleaned up by on_deactivate.
                 self.line_start_id = self.element.sketch.add_point(mx, my)
+                self.start_point_temp = True
                 self.element.update_bounds_from_sketch()
             else:
                 self.line_start_id = pid_hit
+                self.start_point_temp = False
+
             self.element.selection.clear()
             self.element.selection.select_point(self.line_start_id, False)
         else:
@@ -87,6 +94,19 @@ class LineTool(SketchTool):
 
                 # Create command
                 points_to_add = [new_point] if new_point else []
+
+                # Adopt start point if it was temp
+                if self.start_point_temp:
+                    try:
+                        p_start = self.element.sketch.registry.get_point(
+                            self.line_start_id
+                        )
+                        # Remove from registry so Command can add it properly
+                        self.element.sketch.registry.points.remove(p_start)
+                        points_to_add.insert(0, p_start)
+                    except (IndexError, ValueError):
+                        pass
+
                 cmd = AddItemsCommand(
                     self.element,
                     _("Add Line"),
@@ -98,6 +118,9 @@ class LineTool(SketchTool):
 
             # Start a new line segment from this point
             self.line_start_id = pid_hit
+            # The new start point is either existing or just committed,
+            # so it's not temp
+            self.start_point_temp = False
             self.element.selection.clear()
             self.element.selection.select_point(pid_hit, False)
 
@@ -112,13 +135,19 @@ class ArcTool(SketchTool):
         super().__init__(element)
         self.center_id: Optional[int] = None
         self.start_id: Optional[int] = None
+        self.center_temp: bool = False
+        self.start_temp: bool = False
 
     def on_deactivate(self):
         """Clean up any intermediate points if the arc was not finished."""
-        _remove_point_if_unused(self.element, self.start_id)
-        _remove_point_if_unused(self.element, self.center_id)
+        if self.start_temp:
+            _remove_point_if_unused(self.element, self.start_id)
+        if self.center_temp:
+            _remove_point_if_unused(self.element, self.center_id)
         self.center_id = None
         self.start_id = None
+        self.center_temp = False
+        self.start_temp = False
 
     def on_press(self, world_x: float, world_y: float, n_press: int) -> bool:
         mx, my = self.element.hittester.screen_to_model(
@@ -146,6 +175,8 @@ class ArcTool(SketchTool):
                 # Center point was deleted, reset the tool completely
                 self.center_id = None
                 self.start_id = None
+                self.center_temp = False
+                self.start_temp = False
 
         if self.start_id is not None:
             try:
@@ -153,12 +184,16 @@ class ArcTool(SketchTool):
             except IndexError:
                 # Start point was deleted, reset to expecting start point
                 self.start_id = None
+                self.start_temp = False
 
         if self.center_id is None:
             # Step 1: Center Point
             if pid_hit is None:
                 pid_hit = self.element.sketch.add_point(mx, my)
+                self.center_temp = True
                 self.element.update_bounds_from_sketch()
+            else:
+                self.center_temp = False
 
             self.center_id = pid_hit
             self.element.selection.clear()
@@ -168,7 +203,10 @@ class ArcTool(SketchTool):
             # Step 2: Start Point
             if pid_hit is None:
                 pid_hit = self.element.sketch.add_point(mx, my)
+                self.start_temp = True
                 self.element.update_bounds_from_sketch()
+            else:
+                self.start_temp = False
 
             # Cannot start where center is
             if pid_hit != self.center_id:
@@ -211,10 +249,33 @@ class ArcTool(SketchTool):
                     self.center_id, self.start_id, self.center_id, pid_hit
                 )
 
+                points_to_add = [new_point] if new_point else []
+
+                # Adopt temp points
+                if self.center_temp:
+                    try:
+                        p = self.element.sketch.registry.get_point(
+                            self.center_id
+                        )
+                        self.element.sketch.registry.points.remove(p)
+                        points_to_add.append(p)
+                    except (IndexError, ValueError):
+                        pass
+
+                if self.start_temp:
+                    try:
+                        p = self.element.sketch.registry.get_point(
+                            self.start_id
+                        )
+                        self.element.sketch.registry.points.remove(p)
+                        points_to_add.append(p)
+                    except (IndexError, ValueError):
+                        pass
+
                 cmd = AddItemsCommand(
                     self.element,
                     _("Add Arc"),
-                    points=[new_point] if new_point else [],
+                    points=points_to_add,
                     entities=[new_arc],
                     constraints=[geom_constr],
                 )
@@ -224,6 +285,8 @@ class ArcTool(SketchTool):
                 # Reset tool state
                 self.center_id = None
                 self.start_id = None
+                self.center_temp = False
+                self.start_temp = False
 
                 # Select the last point
                 self.element.selection.clear()
@@ -239,11 +302,14 @@ class CircleTool(SketchTool):
     def __init__(self, element):
         super().__init__(element)
         self.center_id: Optional[int] = None
+        self.center_temp: bool = False
 
     def on_deactivate(self):
         """Clean up the center point if a circle was not finished."""
-        _remove_point_if_unused(self.element, self.center_id)
+        if self.center_temp:
+            _remove_point_if_unused(self.element, self.center_id)
         self.center_id = None
+        self.center_temp = False
 
     def on_press(self, world_x: float, world_y: float, n_press: int) -> bool:
         mx, my = self.element.hittester.screen_to_model(
@@ -270,12 +336,16 @@ class CircleTool(SketchTool):
             except IndexError:
                 # Center point was deleted, reset the tool
                 self.center_id = None
+                self.center_temp = False
 
         if self.center_id is None:
             # Step 1: Center Point
             if pid_hit is None:
                 pid_hit = self.element.sketch.add_point(mx, my)
+                self.center_temp = True
                 self.element.update_bounds_from_sketch()
+            else:
+                self.center_temp = False
 
             self.center_id = pid_hit
             self.element.selection.clear()
@@ -295,10 +365,23 @@ class CircleTool(SketchTool):
                     1 if new_point else 0
                 )
                 new_circle = Circle(temp_circle_id, self.center_id, pid_hit)
+
+                points_to_add = [new_point] if new_point else []
+
+                if self.center_temp:
+                    try:
+                        p = self.element.sketch.registry.get_point(
+                            self.center_id
+                        )
+                        self.element.sketch.registry.points.remove(p)
+                        points_to_add.append(p)
+                    except (IndexError, ValueError):
+                        pass
+
                 cmd = AddItemsCommand(
                     self.element,
                     _("Add Circle"),
-                    points=[new_point] if new_point else [],
+                    points=points_to_add,
                     entities=[new_circle],
                 )
                 if self.element.editor:
@@ -306,6 +389,7 @@ class CircleTool(SketchTool):
 
                 # Reset for next circle
                 self.center_id = None
+                self.center_temp = False
                 self.element.selection.clear()
                 self.element.selection.select_point(pid_hit, False)
 
