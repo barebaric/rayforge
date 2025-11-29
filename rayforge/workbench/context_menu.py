@@ -9,20 +9,49 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-def _create_item_context_menu() -> Gio.Menu:
-    """Builds the standard context menu for DocItems."""
-    menu = Gio.Menu.new()
+def _populate_standard_items(menu: Gio.Menu):
+    """
+    Helper to append standard items to a menu using flat structure with
+    separators.
+    """
     menu.append_item(
         Gio.MenuItem.new(_("Move Up a Layer"), "win.layer-move-up")
     )
     menu.append_item(
         Gio.MenuItem.new(_("Move Down a Layer"), "win.layer-move-down")
     )
+
+    # Separator
     menu.append_section(None, Gio.Menu.new())
+
     menu.append_item(Gio.MenuItem.new(_("Group"), "win.group"))
     menu.append_item(Gio.MenuItem.new(_("Ungroup"), "win.ungroup"))
+
+    # Separator
     menu.append_section(None, Gio.Menu.new())
+
     menu.append_item(Gio.MenuItem.new(_("Remove"), "win.remove"))
+
+
+def _create_item_context_menu() -> Gio.Menu:
+    """Builds the standard context menu for DocItems."""
+    menu = Gio.Menu.new()
+    _populate_standard_items(menu)
+    return menu
+
+
+def _create_sketch_item_context_menu() -> Gio.Menu:
+    """Builds the context menu for Sketch WorkPieces."""
+    menu = Gio.Menu.new()
+    menu.append_item(Gio.MenuItem.new(_("Edit Sketch"), "win.edit_sketch"))
+    menu.append_item(
+        Gio.MenuItem.new(_("Export Sketch..."), "win.export_sketch")
+    )
+
+    # Separator before standard items
+    menu.append_section(None, Gio.Menu.new())
+
+    _populate_standard_items(menu)
     return menu
 
 
@@ -43,6 +72,7 @@ def _create_tab_context_menu() -> Gio.Menu:
 # Pre-build and cache the menu models once when the module is loaded.
 _MENU_MODELS = {
     "item": _create_item_context_menu(),
+    "sketch-item": _create_sketch_item_context_menu(),
     "geometry": _create_geometry_context_menu(),
     "tab": _create_tab_context_menu(),
 }
@@ -55,6 +85,9 @@ def _show_popover(
     popover = Gtk.PopoverMenu.new_from_model(menu_model)
     popover.set_parent(surface)
     popover.set_has_arrow(False)
+
+    # Position usually defaults to bottom/right, rely on set_pointing_to for
+    # exact placement.
     popover.set_position(Gtk.PositionType.RIGHT)
 
     ok, rect = gesture.get_bounding_box()
@@ -69,6 +102,15 @@ def show_item_context_menu(surface: "WorkSurface", gesture: Gtk.Gesture):
     Displays the context menu for general items like WorkPieces or Groups.
     """
     _show_popover(surface, gesture, _MENU_MODELS["item"])
+
+
+def show_sketch_item_context_menu(
+    surface: "WorkSurface", gesture: Gtk.Gesture
+):
+    """
+    Displays the context menu for Sketch items.
+    """
+    _show_popover(surface, gesture, _MENU_MODELS["sketch-item"])
 
 
 def show_geometry_context_menu(surface: "WorkSurface", gesture: Gtk.Gesture):

@@ -77,3 +77,29 @@ def show_export_gcode_dialog(win: "MainWindow", callback: Callable):
 
     # Show the dialog and handle the response
     dialog.save(win, None, callback, win)
+
+
+def show_export_sketch_dialog(win: "MainWindow", callback: Callable):
+    """
+    Shows the save file dialog for exporting a Rayforge Sketch (.rfs).
+
+    Args:
+        win: The parent Gtk.Window.
+        callback: The function to call with (dialog, result, user_data) upon
+                  response.
+    """
+    dialog = Gtk.FileDialog.new()
+    dialog.set_title(_("Export Sketch"))
+    dialog.set_initial_name("sketch.rfs")
+
+    filter_list = Gio.ListStore.new(Gtk.FileFilter)
+    sketch_filter = Gtk.FileFilter()
+    sketch_filter.set_name(_("Rayforge Sketch"))
+    sketch_filter.add_pattern("*.rfs")
+    sketch_filter.add_mime_type("application/vnd.rayforge-sketch")
+    filter_list.append(sketch_filter)
+
+    dialog.set_filters(filter_list)
+    dialog.set_default_filter(sketch_filter)
+
+    dialog.save(win, None, callback, win)

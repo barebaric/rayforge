@@ -103,6 +103,11 @@ class ActionManager:
         self._add_action("remove", self.win.on_menu_remove)
         self._add_action("clear", self.win.on_clear_clicked)
 
+        # Item Actions
+        self._add_action("new_sketch", self.win.on_new_sketch)
+        self._add_action("edit_sketch", self.win.on_edit_sketch)
+        self._add_action("export_sketch", self.win.on_export_sketch)
+
         # Layer Management Actions
         self._add_action("layer-move-up", self.on_layer_move_up)
         self._add_action("layer-move-down", self.on_layer_move_down)
@@ -176,6 +181,7 @@ class ActionManager:
     def update_action_states(self, *args, **kwargs):
         """Updates the enabled state of actions based on document state."""
         self.actions["add_stock"].set_enabled(True)
+        self.actions["new_sketch"].set_enabled(True)
 
         target_workpieces = self._get_workpieces_for_tabbing()
         can_add_tabs = any(wp.boundaries for wp in target_workpieces)
@@ -198,8 +204,24 @@ class ActionManager:
         self.actions["layout-pixel-perfect"].set_enabled(has_workpieces)
 
         # Update split action state
-        selected_items = self.win.surface.get_selected_workpieces()
-        self.actions["split"].set_enabled(bool(selected_items))
+        selected_wps = self.win.surface.get_selected_workpieces()
+        self.actions["split"].set_enabled(bool(selected_wps))
+
+        # Update export_sketch action state
+        # Only enable if exactly one workpiece is selected and it is a sketch
+        can_export_sketch = False
+        if len(selected_wps) == 1:
+            source = selected_wps[0].source
+            # We check the renderer name to avoid circular imports of
+            # SKETCH_RENDERER
+            if (
+                source
+                and source.renderer.__class__.__name__ == "SketchRenderer"
+            ):
+                can_export_sketch = True
+
+        if "export_sketch" in self.actions:
+            self.actions["export_sketch"].set_enabled(can_export_sketch)
 
     def on_add_stock(self, action, param):
         """Handler for the 'add_stock' action."""

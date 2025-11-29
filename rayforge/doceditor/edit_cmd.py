@@ -195,13 +195,13 @@ class EditCmd:
         items: List[DocItem],
         source_assets: Optional[List["SourceAsset"]] = None,
         name: str = "Add item(s)",
-    ):
+    ) -> List[DocItem]:
         """
         Adds a list of items and their associated source assets to the
         document.
         """
         if not items:
-            return
+            return []
 
         history = self._editor.history_manager
         target_layer = self._editor.default_workpiece_layer
@@ -222,6 +222,7 @@ class EditCmd:
                     name=_("Add item"),
                 )
                 t.execute(command)
+        return items
 
     def remove_items(
         self,
