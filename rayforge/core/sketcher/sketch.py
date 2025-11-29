@@ -157,12 +157,16 @@ class Sketch:
 
         # 1. Linear/Distance Constraints (Horizontal, Vertical, Distance)
         if constraint_type in ("dist", "horiz", "vert"):
-            # Case A: Two Points
+            # Case A: Two Points (valid for all)
             if n_pts == 2 and n_ents == 0:
                 return True
-            # Case B: One Line
-            if n_pts == 0 and n_lines == 1 and n_ents == 1:
-                return True
+
+            # Case B: Line(s) (check if all entities are lines)
+            if n_pts == 0 and n_lines > 0 and n_ents == n_lines:
+                if constraint_type == "dist":
+                    return n_lines == 1  # Distance is only for a single line
+                else:  # horiz, vert
+                    return n_lines >= 1  # 1 or more lines are valid
             return False
 
         # 2. Radius / Diameter

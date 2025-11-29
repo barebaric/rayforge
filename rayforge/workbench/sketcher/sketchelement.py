@@ -501,13 +501,35 @@ class SketchElement(CanvasElement):
         if not self.is_constraint_supported("horiz"):
             logger.warning("Horizontal constraint not valid for selection.")
             return
+        if not self.editor:
+            return
 
-        points = self._get_two_points_from_selection()
-        if points and self.editor:
-            p1, p2 = points
-            constr = HorizontalConstraint(p1.id, p2.id)
+        constraints_to_add = []
+
+        # Case 1: Two points selected
+        if (
+            len(self.selection.point_ids) == 2
+            and not self.selection.entity_ids
+        ):
+            p1_id, p2_id = self.selection.point_ids
+            constraints_to_add.append(HorizontalConstraint(p1_id, p2_id))
+
+        # Case 2: One or more lines selected
+        elif (
+            len(self.selection.entity_ids) > 0 and not self.selection.point_ids
+        ):
+            for eid in self.selection.entity_ids:
+                e = self._get_entity_by_id(eid)
+                if isinstance(e, Line):
+                    constraints_to_add.append(
+                        HorizontalConstraint(e.p1_idx, e.p2_idx)
+                    )
+
+        if constraints_to_add:
             cmd = AddItemsCommand(
-                self, _("Add Horizontal Constraint"), constraints=[constr]
+                self,
+                _("Add Horizontal Constraint"),
+                constraints=constraints_to_add,
             )
             self.editor.history_manager.execute(cmd)
 
@@ -515,13 +537,35 @@ class SketchElement(CanvasElement):
         if not self.is_constraint_supported("vert"):
             logger.warning("Vertical constraint not valid for selection.")
             return
+        if not self.editor:
+            return
 
-        points = self._get_two_points_from_selection()
-        if points and self.editor:
-            p1, p2 = points
-            constr = VerticalConstraint(p1.id, p2.id)
+        constraints_to_add = []
+
+        # Case 1: Two points selected
+        if (
+            len(self.selection.point_ids) == 2
+            and not self.selection.entity_ids
+        ):
+            p1_id, p2_id = self.selection.point_ids
+            constraints_to_add.append(VerticalConstraint(p1_id, p2_id))
+
+        # Case 2: One or more lines selected
+        elif (
+            len(self.selection.entity_ids) > 0 and not self.selection.point_ids
+        ):
+            for eid in self.selection.entity_ids:
+                e = self._get_entity_by_id(eid)
+                if isinstance(e, Line):
+                    constraints_to_add.append(
+                        VerticalConstraint(e.p1_idx, e.p2_idx)
+                    )
+
+        if constraints_to_add:
             cmd = AddItemsCommand(
-                self, _("Add Vertical Constraint"), constraints=[constr]
+                self,
+                _("Add Vertical Constraint"),
+                constraints=constraints_to_add,
             )
             self.editor.history_manager.execute(cmd)
 
