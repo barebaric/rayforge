@@ -194,12 +194,12 @@ def test_perpendicular_constraint_serialization_round_trip(setup_env):
 
     # Create original constraint
     original = PerpendicularConstraint(l1, l2)
-    
+
     # Serialize to dict
     serialized = original.to_dict()
-    
+
     # Deserialize from dict
     restored = PerpendicularConstraint.from_dict(serialized)
-    
+
     # Check that the restored constraint has the same error
     assert original.error(reg, params) == restored.error(reg, params)

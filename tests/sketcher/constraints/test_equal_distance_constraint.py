@@ -40,12 +40,12 @@ def test_equal_distance_constraint_serialization_round_trip(setup_env):
 
     # Create original constraint
     original = EqualDistanceConstraint(p1, p2, p3, p4)
-    
+
     # Serialize to dict
     serialized = original.to_dict()
-    
+
     # Deserialize from dict
     restored = EqualDistanceConstraint.from_dict(serialized)
-    
+
     # Check that the restored constraint has the same error
     assert original.error(reg, params) == restored.error(reg, params)
