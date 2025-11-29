@@ -66,9 +66,24 @@ class SketchStudio(Gtk.Box):
         spacer_l.set_hexpand(True)
         self.session_bar.append(spacer_l)
 
+        # We need a vertical box to stack Title and Subtitle
+        title_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
+        title_box.set_valign(Gtk.Align.CENTER)
+
         self.lbl_title = Gtk.Label(label=_("Sketch Studio"))
         self.lbl_title.add_css_class("title-3")
-        self.session_bar.append(self.lbl_title)
+        title_box.append(self.lbl_title)
+
+        self.lbl_subtitle = Gtk.Label(
+            label=_(
+                "Right-click background to draw, objects to edit. "
+                "Double-click dimensions to edit values."
+            )
+        )
+        self.lbl_subtitle.add_css_class("caption")
+        title_box.append(self.lbl_subtitle)
+
+        self.session_bar.append(title_box)
 
         spacer_r = Gtk.Box()
         spacer_r.set_hexpand(True)
