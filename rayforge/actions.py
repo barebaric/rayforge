@@ -207,9 +207,9 @@ class ActionManager:
         selected_wps = self.win.surface.get_selected_workpieces()
         self.actions["split"].set_enabled(bool(selected_wps))
 
-        # Update export_sketch action state
+        # Update edit_sketch and export_sketch action states
         # Only enable if exactly one workpiece is selected and it is a sketch
-        can_export_sketch = False
+        can_edit_or_export_sketch = False
         if len(selected_wps) == 1:
             source = selected_wps[0].source
             # We check the renderer name to avoid circular imports of
@@ -218,10 +218,14 @@ class ActionManager:
                 source
                 and source.renderer.__class__.__name__ == "SketchRenderer"
             ):
-                can_export_sketch = True
+                can_edit_or_export_sketch = True
 
         if "export_sketch" in self.actions:
-            self.actions["export_sketch"].set_enabled(can_export_sketch)
+            self.actions["export_sketch"].set_enabled(
+                can_edit_or_export_sketch
+            )
+        if "edit_sketch" in self.actions:
+            self.actions["edit_sketch"].set_enabled(can_edit_or_export_sketch)
 
     def on_add_stock(self, action, param):
         """Handler for the 'add_stock' action."""
