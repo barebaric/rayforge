@@ -1,7 +1,8 @@
 import logging
-from gi.repository import Gtk
+from gi.repository import Gtk, Gio
 from blinker import Signal
 from ...core.sketcher import Sketch
+from .menu import SketchMenu
 from .sketchcanvas import SketchCanvas
 
 logger = logging.getLogger(__name__)
@@ -106,6 +107,73 @@ class SketchStudio(Gtk.Box):
         self.canvas.set_vexpand(True)
         self.append(self.canvas)
 
+        # 3. Initialize Actions and Menus
+        self._init_menu()
+        self._init_actions()
+
+    def _init_menu(self):
+        """Initializes the menu model."""
+        self.menu_model = SketchMenu()
+
+    def _init_actions(self):
+        """Initializes the action group and shortcut controller."""
+        self.action_group = Gio.SimpleActionGroup()
+
+        # Define actions mapping: (name, callback)
+        actions = [
+            ("finish", self._on_finish_clicked),
+            ("cancel", self._on_cancel_clicked),
+            ("undo", self._on_undo),
+            ("redo", self._on_redo),
+            ("delete", self._on_delete),
+            ("view_fit", self._on_view_fit),
+            ("toggle_construction", self._on_toggle_construction),
+        ]
+
+        for name, cb in actions:
+            action = Gio.SimpleAction.new(name, None)
+            action.connect("activate", cb)
+            self.action_group.add_action(action)
+
+        # Tool selection actions
+        tool_map = {
+            "tool_select": "select",
+            "tool_line": "line",
+            "tool_circle": "circle",
+            "tool_arc": "arc",
+        }
+        for action_name, tool_id in tool_map.items():
+            action = Gio.SimpleAction.new(action_name, None)
+            action.connect(
+                "activate",
+                lambda a, p, t=tool_id: self.canvas.sketch_element.set_tool(t),
+            )
+            self.action_group.add_action(action)
+
+        # Create shortcut controller
+        self.shortcut_controller = Gtk.ShortcutController()
+        self.shortcut_controller.set_scope(Gtk.ShortcutScope.MANAGED)
+
+        shortcuts = {
+            "sketch.undo": ["<Primary>z"],
+            "sketch.redo": ["<Primary>y", "<Primary><Shift>z"],
+            "sketch.delete": ["Delete"],
+            "sketch.view_fit": ["f"],
+            "sketch.tool_select": ["s"],
+            "sketch.tool_line": ["l"],
+            "sketch.tool_circle": ["c"],
+            "sketch.tool_arc": ["a"],
+            "sketch.finish": ["<Primary>Return"],
+        }
+
+        for action_name, accels in shortcuts.items():
+            for accel in accels:
+                shortcut = Gtk.Shortcut.new(
+                    Gtk.ShortcutTrigger.parse_string(accel),
+                    Gtk.NamedAction.new(action_name),
+                )
+                self.shortcut_controller.add_shortcut(shortcut)
+
     def set_sketch(self, sketch: Sketch):
         """Loads a sketch model into the studio."""
         logger.debug("Loading sketch into studio.")
@@ -115,11 +183,32 @@ class SketchStudio(Gtk.Box):
         # Reset view to center content
         self.canvas.reset_view()
 
-    def _on_cancel_clicked(self, btn):
+    # --- Action Handlers ---
+
+    def _on_undo(self, action, param):
+        if self.canvas.sketch_editor:
+            self.canvas.sketch_editor.history_manager.undo()
+
+    def _on_redo(self, action, param):
+        if self.canvas.sketch_editor:
+            self.canvas.sketch_editor.history_manager.redo()
+
+    def _on_delete(self, action, param):
+        if self.canvas.sketch_element:
+            self.canvas.sketch_element.delete_selection()
+
+    def _on_view_fit(self, action, param):
+        self.canvas.reset_view()
+
+    def _on_toggle_construction(self, action, param):
+        if self.canvas.sketch_element:
+            self.canvas.sketch_element.toggle_construction_on_selection()
+
+    def _on_cancel_clicked(self, btn, *args):
         logger.info("SketchStudio: Cancel clicked")
         self.cancelled.send(self)
 
-    def _on_finish_clicked(self, btn):
+    def _on_finish_clicked(self, btn, *args):
         logger.info("SketchStudio: Finish clicked")
         # Retrieve the modified sketch from the canvas element
         if self.canvas.sketch_element:
