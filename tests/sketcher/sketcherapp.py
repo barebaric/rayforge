@@ -17,7 +17,7 @@ gettext.install("canvas", base_path / "rayforge" / "locale")
 
 gi.require_version("Adw", "1")
 gi.require_version("Gtk", "4.0")
-from gi.repository import Gtk, Adw
+from gi.repository import Gtk, Adw, Gio
 
 from rayforge.workbench.sketcher.studio import SketchStudio
 from rayforge.core.sketcher import Sketch
@@ -28,6 +28,18 @@ class SketcherApp(Adw.Application):
         super().__init__(application_id="com.example.SketcherApp")
         self.studio: Optional[SketchStudio] = None
         self.window: Optional[Gtk.ApplicationWindow] = None
+
+        # Create and register the "quit" action
+        quit_action = Gio.SimpleAction.new("quit", None)
+        quit_action.connect("activate", self.on_quit_action)
+        self.add_action(quit_action)
+
+        # Now, bind the accelerator to the action we just created.
+        self.set_accels_for_action("app.quit", ["<Control>q"])
+
+    def on_quit_action(self, action, param):
+        """Handler for the 'quit' action."""
+        self.quit()
 
     def do_activate(self):
         self.window = Gtk.ApplicationWindow(application=self)
@@ -45,6 +57,10 @@ class SketcherApp(Adw.Application):
         self.add_initial_sketch()
 
         self.window.present()
+
+        # Ensure the canvas has focus to receive key events immediately.
+        if self.studio and self.studio.canvas:
+            self.studio.canvas.grab_focus()
 
     def add_initial_sketch(self):
         """Creates and adds the first sketch with demo geometry."""
