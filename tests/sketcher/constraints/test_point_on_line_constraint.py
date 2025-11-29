@@ -155,3 +155,27 @@ def test_point_on_circle_gradient(setup_env):
     x0 = np.array([10, 12, 5, 5, 15, 5], dtype=float)
     diff = check_grad(func_wrapper, grad_wrapper, x0, epsilon=1e-6)
     assert diff < 1e-5
+
+
+def test_point_on_line_constraint_serialization_round_trip(setup_env):
+    reg, params = setup_env
+
+    # Line along X-axis: (0,0) -> (10,0)
+    p1 = reg.add_point(0, 0)
+    p2 = reg.add_point(10, 0)
+    line_id = reg.add_line(p1, p2)
+
+    # Point at (5, 5)
+    p3 = reg.add_point(5, 5)
+
+    # Create original constraint
+    original = PointOnLineConstraint(p3, line_id)
+    
+    # Serialize to dict
+    serialized = original.to_dict()
+    
+    # Deserialize from dict
+    restored = PointOnLineConstraint.from_dict(serialized)
+    
+    # Check that the restored constraint has the same error
+    assert original.error(reg, params) == restored.error(reg, params)

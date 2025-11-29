@@ -92,3 +92,22 @@ def test_radius_constraint_gradient(setup_env):
     x0 = np.array([5, 5, 15, 5], dtype=float)
     diff = check_grad(func_wrapper, grad_wrapper, x0, epsilon=1e-6)
     assert diff < 1e-5
+
+
+def test_radius_constraint_serialization_round_trip(setup_env):
+    reg, params = setup_env
+    center = reg.add_point(0, 0)
+    radius_pt = reg.add_point(10, 0)
+    circ_id = reg.add_circle(center, radius_pt)
+
+    # Create original constraint
+    original = RadiusConstraint(circ_id, 10.0)
+    
+    # Serialize to dict
+    serialized = original.to_dict()
+    
+    # Deserialize from dict
+    restored = RadiusConstraint.from_dict(serialized)
+    
+    # Check that the restored constraint has the same error
+    assert original.error(reg, params) == restored.error(reg, params)

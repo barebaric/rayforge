@@ -158,3 +158,25 @@ def test_symmetry_constraint_line_gradient(setup_env):
         grad = partial(grad_wrapper, error_index=i)
         diff = check_grad(func, grad, x0, epsilon=1e-6)
         assert diff < 1e-5
+
+
+def test_symmetry_constraint_serialization_round_trip(setup_env):
+    reg, params = setup_env
+    # Center at (0,0)
+    pc = reg.add_point(0, 0)
+    # P1 at (-5, -2)
+    p1 = reg.add_point(-5, -2)
+    # P2 at (5, 2)
+    p2 = reg.add_point(5, 2)
+
+    # Create original constraint
+    original = SymmetryConstraint(p1, p2, center=pc)
+
+    # Serialize to dict
+    serialized = original.to_dict()
+
+    # Deserialize from dict
+    restored = SymmetryConstraint.from_dict(serialized)
+
+    # Check that the restored constraint has the same error
+    assert original.error(reg, params) == restored.error(reg, params)

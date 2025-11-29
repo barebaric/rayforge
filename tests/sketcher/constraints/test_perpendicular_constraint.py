@@ -177,3 +177,29 @@ def test_perpendicular_gradient_with_shared_points(setup_env):
     x0 = np.array([0, 0, 3, 0, 5, 0], dtype=float)
     diff = check_grad(func_wrapper, grad_wrapper, x0, epsilon=1e-6)
     assert diff < 1e-5
+
+
+def test_perpendicular_constraint_serialization_round_trip(setup_env):
+    reg, params = setup_env
+
+    # Line 1: Horizontal (0,0) -> (10,0)
+    p1 = reg.add_point(0, 0)
+    p2 = reg.add_point(10, 0)
+    l1 = reg.add_line(p1, p2)
+
+    # Line 2: Vertical (5,5) -> (5,15)
+    p3 = reg.add_point(5, 5)
+    p4 = reg.add_point(5, 15)
+    l2 = reg.add_line(p3, p4)
+
+    # Create original constraint
+    original = PerpendicularConstraint(l1, l2)
+    
+    # Serialize to dict
+    serialized = original.to_dict()
+    
+    # Deserialize from dict
+    restored = PerpendicularConstraint.from_dict(serialized)
+    
+    # Check that the restored constraint has the same error
+    assert original.error(reg, params) == restored.error(reg, params)

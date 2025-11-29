@@ -106,3 +106,28 @@ def test_equal_length_constraint_gradient(setup_env):
     grad = partial(grad_wrapper, error_index=0)
     diff = check_grad(func, grad, x0, epsilon=1e-6)
     assert diff < 1e-5
+
+
+def test_equal_length_constraint_serialization_round_trip(setup_env):
+    reg, params = setup_env
+    # Line 1: length 10
+    p1 = reg.add_point(0, 0)
+    p2 = reg.add_point(10, 0)
+    l1 = reg.add_line(p1, p2)
+
+    # Line 2: length 5
+    p3 = reg.add_point(0, 10)
+    p4 = reg.add_point(5, 10)
+    l2 = reg.add_line(p3, p4)
+
+    # Create original constraint
+    original = EqualLengthConstraint([l1, l2])
+    
+    # Serialize to dict
+    serialized = original.to_dict()
+    
+    # Deserialize from dict
+    restored = EqualLengthConstraint.from_dict(serialized)
+    
+    # Check that the restored constraint has the same error
+    assert original.error(reg, params) == restored.error(reg, params)

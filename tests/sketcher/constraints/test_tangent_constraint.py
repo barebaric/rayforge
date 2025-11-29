@@ -155,3 +155,29 @@ def test_tangent_gradient_with_shared_points(setup_env):
     x0 = np.array([5, 0, 0, 10, 10, 10], dtype=float)
     diff = check_grad(func_wrapper, grad_wrapper, x0, epsilon=1e-6)
     assert diff < 1e-5
+
+
+def test_tangent_constraint_serialization_round_trip(setup_env):
+    reg, params = setup_env
+
+    # Circle: Center at (0,0), Radius 10
+    center = reg.add_point(0, 0)
+    radius_pt = reg.add_point(10, 0)
+    circ_id = reg.add_circle(center, radius_pt)
+
+    # Line: Horizontal at y=10
+    lp1 = reg.add_point(-5, 10)
+    lp2 = reg.add_point(5, 10)
+    line_id = reg.add_line(lp1, lp2)
+
+    # Create original constraint
+    original = TangentConstraint(line_id, circ_id)
+    
+    # Serialize to dict
+    serialized = original.to_dict()
+    
+    # Deserialize from dict
+    restored = TangentConstraint.from_dict(serialized)
+    
+    # Check that the restored constraint has the same error
+    assert original.error(reg, params) == restored.error(reg, params)
