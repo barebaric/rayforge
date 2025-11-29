@@ -16,11 +16,33 @@ logger = logging.getLogger(__name__)
 class SketchChangeCommand(Command):
     """
     Base class for commands that modify a sketch and need to trigger a solve.
+    Includes functionality to snapshot geometry state for precise undo.
     """
 
     def __init__(self, element: "SketchElement", name: str):
         super().__init__(name)
         self.element = element
+        # Stores {point_id: (x, y)} for all points in the sketch
+        self._state_snapshot: Dict[int, Tuple[float, float]] = {}
+
+    def capture_snapshot(self):
+        """Captures the current coordinates of all points."""
+        self._state_snapshot = {
+            p.id: (p.x, p.y) for p in self.element.sketch.registry.points
+        }
+
+    def restore_snapshot(self):
+        """Restores coordinates from the snapshot."""
+        registry = self.element.sketch.registry
+        for pid, (x, y) in self._state_snapshot.items():
+            try:
+                p = registry.get_point(pid)
+                p.x = x
+                p.y = y
+            except IndexError:
+                # Point might not exist if _do_undo didn't restore it,
+                # but typically this shouldn't happen.
+                pass
 
     def _solve_and_update(self):
         """Helper to run the solver and update element bounds."""
@@ -29,11 +51,20 @@ class SketchChangeCommand(Command):
         self.element.mark_dirty()
 
     def execute(self) -> None:
+        # If a snapshot wasn't provided during initialization (e.g. by a tool
+        # that moved points before creating the command), capture it now.
+        if not self._state_snapshot:
+            self.capture_snapshot()
+
         self._do_execute()
         self._solve_and_update()
 
     def undo(self) -> None:
         self._do_undo()
+        # Restore the exact geometric positions from before the command.
+        # This prevents the solver from jumping to an alternative solution
+        # (e.g., triangle flip) when constraints are reapplied.
+        self.restore_snapshot()
         self._solve_and_update()
 
     def _do_execute(self) -> None:
@@ -144,12 +175,19 @@ class MovePointCommand(SketchChangeCommand):
         point_id: int,
         start_pos: Tuple[float, float],
         end_pos: Tuple[float, float],
+        snapshot: Optional[Dict[int, Tuple[float, float]]] = None,
     ):
         super().__init__(element, _("Move Point"))
         self.point_id = point_id
         self.start_pos = start_pos
         self.end_pos = end_pos
         self._point_ref: Optional[Point] = None
+
+        # If we are provided a snapshot (from the tool), use it.
+        # This is critical because the drag operation changes coordinates
+        # *before* the command is executed.
+        if snapshot:
+            self._state_snapshot = snapshot
 
     def _get_point(self) -> Optional["Point"]:
         """Gets a live reference to the point object."""
@@ -166,11 +204,15 @@ class MovePointCommand(SketchChangeCommand):
             return None
 
     def _do_execute(self) -> None:
+        # Just ensure the specific point ends up where intended.
+        # The base class's capture_snapshot logic handles the rest if needed.
         p = self._get_point()
         if p:
             p.x, p.y = self.end_pos
 
     def _do_undo(self) -> None:
+        # Revert the specific point (though restore_snapshot does this for
+        # all).
         p = self._get_point()
         if p:
             p.x, p.y = self.start_pos
@@ -188,6 +230,8 @@ class MovePointCommand(SketchChangeCommand):
         # Update our end position to the newest position
         self.end_pos = next_command.end_pos  # type: ignore
         self.timestamp = next_command.timestamp
+        # Note: We do NOT update self._state_snapshot, because we want to
+        # preserve the state from before the *first* move in the sequence.
         return True
 
 

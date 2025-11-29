@@ -284,11 +284,16 @@ class SelectTool(SketchTool):
 
                 # Only create a command if the point actually moved
                 if abs(start_x - end_x) > 1e-6 or abs(start_y - end_y) > 1e-6:
+                    # Pass the full snapshot of initial positions to the
+                    # command. This ensures that when undo is pressed, ALL
+                    # points return to their pre-drag state, not just the
+                    # single dragged point.
                     cmd = MovePointCommand(
                         self.element,
                         self.dragged_point_id,
                         (start_x, start_y),
                         (end_x, end_y),
+                        snapshot=self.drag_initial_positions,
                     )
                     if self.element.editor:
                         self.element.editor.history_manager.execute(cmd)
