@@ -86,18 +86,20 @@ def test_distance_constraint_serialization_round_trip(setup_env):
 
     # Create original constraint
     original = DistanceConstraint(p1, p2, 5.0)
-    
+
     # Serialize to dict
     serialized = original.to_dict()
-    
+
     # Deserialize from dict
     restored = DistanceConstraint.from_dict(serialized)
-    
+
     # Check that the restored constraint has the same error
     assert original.error(reg, params) == restored.error(reg, params)
 
 
-def test_distance_constraint_serialization_round_trip_with_expression(setup_env):
+def test_distance_constraint_serialization_round_trip_with_expression(
+    setup_env,
+):
     reg, params = setup_env
     params.set("width", 20.0)
     p1 = reg.add_point(0, 0)
@@ -105,12 +107,12 @@ def test_distance_constraint_serialization_round_trip_with_expression(setup_env)
 
     # Create original constraint with expression
     original = DistanceConstraint(p1, p2, "width")
-    
+
     # Serialize to dict
     serialized = original.to_dict()
-    
+
     # Deserialize from dict
     restored = DistanceConstraint.from_dict(serialized)
-    
+
     # Check that the restored constraint has the same error
     assert original.error(reg, params) == restored.error(reg, params)

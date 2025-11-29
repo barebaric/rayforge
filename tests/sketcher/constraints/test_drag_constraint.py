@@ -31,10 +31,10 @@ def test_drag_constraint_serialization_round_trip(setup_env):
 
     # Create original constraint
     original = DragConstraint(p1, 100.0, 0.0, weight=0.1)
-    
+
     # Serialize to dict
     serialized = original.to_dict()
-    
-    # DragConstraint returns empty dict from to_dict() as it's not meant to be serialized
-    # This test verifies that behavior
+
+    # DragConstraint returns empty dict from to_dict() as it's not meant to be
+    # serialized
     assert serialized == {}

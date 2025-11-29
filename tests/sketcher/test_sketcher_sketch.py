@@ -309,17 +309,26 @@ def test_sketch_supports_constraint(setup_sketch_for_validation):
     p1, p2, p3, p_ext = ids["p1"], ids["p2"], ids["p3"], ids["p_ext"]
     l1, l2, a1, c1 = ids["l1"], ids["l2"], ids["a1"], ids["c1"]
 
-    # Test "dist", "horiz", "vert"
-    for c_type in ("dist", "horiz", "vert"):
+    # Test "dist"
+    assert s.supports_constraint("dist", [p1, p2], []) is True
+    assert s.supports_constraint("dist", [], [l1]) is True
+    assert s.supports_constraint("dist", [p1], []) is False
+    assert s.supports_constraint("dist", [p1, p2, p3], []) is False
+    assert s.supports_constraint("dist", [p1], [l1]) is False
+    assert s.supports_constraint("dist", [], [a1]) is False
+    assert s.supports_constraint("dist", [], [l1, l2]) is False
+
+    # Test "horiz" and "vert"
+    for c_type in ("horiz", "vert"):
         # Valid cases
         assert s.supports_constraint(c_type, [p1, p2], []) is True
         assert s.supports_constraint(c_type, [], [l1]) is True
+        assert s.supports_constraint(c_type, [], [l1, l2]) is True  # FIXED
         # Invalid cases
         assert s.supports_constraint(c_type, [p1], []) is False
         assert s.supports_constraint(c_type, [p1, p2, p3], []) is False
         assert s.supports_constraint(c_type, [p1], [l1]) is False
         assert s.supports_constraint(c_type, [], [a1]) is False
-        assert s.supports_constraint(c_type, [], [l1, l2]) is False
 
     # Test "radius"
     assert s.supports_constraint("radius", [], [a1]) is True
