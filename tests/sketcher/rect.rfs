@@ -1,0 +1,292 @@
+{
+  "params": {
+    "expressions": {}
+  },
+  "origin_id": 0,
+  "registry": {
+    "points": [
+      {
+        "id": 0,
+        "x": 0.0,
+        "y": 0.0,
+        "fixed": true
+      },
+      {
+        "id": 5,
+        "x": -74.4709769824693,
+        "y": 56.38868431176161,
+        "fixed": false
+      },
+      {
+        "id": 1,
+        "x": -76.45199850838114,
+        "y": 51.12466965180646,
+        "fixed": false
+      },
+      {
+        "id": 2,
+        "x": -81.6390054077376,
+        "y": 49.3292149271764,
+        "fixed": false
+      },
+      {
+        "id": 11,
+        "x": 75.58028114973598,
+        "y": 56.30125672864073,
+        "fixed": false
+      },
+      {
+        "id": 7,
+        "x": 77.3052779401727,
+        "y": 51.048900562901295,
+        "fixed": false
+      },
+      {
+        "id": 8,
+        "x": 82.36417100730175,
+        "y": 49.33842064380969,
+        "fixed": false
+      },
+      {
+        "id": 17,
+        "x": 75.54260236237923,
+        "y": -56.97765193673694,
+        "fixed": false
+      },
+      {
+        "id": 13,
+        "x": 76.50526204819532,
+        "y": -51.24792022219775,
+        "fixed": false
+      },
+      {
+        "id": 14,
+        "x": 82.19623782136516,
+        "y": -50.678221205646,
+        "fixed": false
+      },
+      {
+        "id": 23,
+        "x": -81.55557132066197,
+        "y": -50.69649510712281,
+        "fixed": false
+      },
+      {
+        "id": 19,
+        "x": -76.05833023533832,
+        "y": -51.788364533460935,
+        "fixed": false
+      },
+      {
+        "id": 20,
+        "x": -74.51389061853754,
+        "y": -57.10277601746375,
+        "fixed": false
+      }
+    ],
+    "entities": [
+      {
+        "id": 6,
+        "type": "arc",
+        "construction": false,
+        "start_idx": 2,
+        "end_idx": 5,
+        "center_idx": 1,
+        "clockwise": true
+      },
+      {
+        "id": 12,
+        "type": "arc",
+        "construction": false,
+        "start_idx": 8,
+        "end_idx": 11,
+        "center_idx": 7,
+        "clockwise": false
+      },
+      {
+        "id": 18,
+        "type": "arc",
+        "construction": false,
+        "start_idx": 14,
+        "end_idx": 17,
+        "center_idx": 13,
+        "clockwise": true
+      },
+      {
+        "id": 24,
+        "type": "arc",
+        "construction": false,
+        "start_idx": 20,
+        "end_idx": 23,
+        "center_idx": 19,
+        "clockwise": true
+      },
+      {
+        "id": 25,
+        "type": "line",
+        "construction": false,
+        "p1_idx": 23,
+        "p2_idx": 2
+      },
+      {
+        "id": 27,
+        "type": "line",
+        "construction": false,
+        "p1_idx": 5,
+        "p2_idx": 11
+      },
+      {
+        "id": 28,
+        "type": "line",
+        "construction": false,
+        "p1_idx": 8,
+        "p2_idx": 14
+      },
+      {
+        "id": 29,
+        "type": "line",
+        "construction": false,
+        "p1_idx": 17,
+        "p2_idx": 20
+      }
+    ],
+    "id_counter": 30
+  },
+  "constraints": [
+    {
+      "type": "EqualDistanceConstraint",
+      "p1": 1,
+      "p2": 2,
+      "p3": 1,
+      "p4": 5
+    },
+    {
+      "type": "EqualDistanceConstraint",
+      "p1": 7,
+      "p2": 8,
+      "p3": 7,
+      "p4": 11
+    },
+    {
+      "type": "EqualDistanceConstraint",
+      "p1": 13,
+      "p2": 14,
+      "p3": 13,
+      "p4": 17
+    },
+    {
+      "type": "EqualDistanceConstraint",
+      "p1": 19,
+      "p2": 20,
+      "p3": 19,
+      "p4": 23
+    },
+    {
+      "type": "HorizontalConstraint",
+      "p1": 5,
+      "p2": 11
+    },
+    {
+      "type": "HorizontalConstraint",
+      "p1": 17,
+      "p2": 20
+    },
+    {
+      "type": "VerticalConstraint",
+      "p1": 8,
+      "p2": 14
+    },
+    {
+      "type": "VerticalConstraint",
+      "p1": 23,
+      "p2": 2
+    },
+    {
+      "type": "EqualLengthConstraint",
+      "entity_ids": [
+        25,
+        28
+      ]
+    },
+    {
+      "type": "EqualLengthConstraint",
+      "entity_ids": [
+        27,
+        29
+      ]
+    },
+    {
+      "type": "EqualLengthConstraint",
+      "entity_ids": [
+        24,
+        18,
+        12,
+        6
+      ]
+    },
+    {
+      "type": "TangentConstraint",
+      "line_id": 27,
+      "shape_id": 12
+    },
+    {
+      "type": "TangentConstraint",
+      "line_id": 27,
+      "shape_id": 6
+    },
+    {
+      "type": "TangentConstraint",
+      "line_id": 25,
+      "shape_id": 6
+    },
+    {
+      "type": "TangentConstraint",
+      "line_id": 28,
+      "shape_id": 12
+    },
+    {
+      "type": "TangentConstraint",
+      "line_id": 28,
+      "shape_id": 18
+    },
+    {
+      "type": "TangentConstraint",
+      "line_id": 25,
+      "shape_id": 24
+    },
+    {
+      "type": "TangentConstraint",
+      "line_id": 29,
+      "shape_id": 24
+    },
+    {
+      "type": "TangentConstraint",
+      "line_id": 29,
+      "shape_id": 18
+    },
+    {
+      "type": "RadiusConstraint",
+      "entity_id": 12,
+      "value": 5.0
+    },
+    {
+      "type": "SymmetryConstraint",
+      "p1": 13,
+      "p2": 1,
+      "center": 0,
+      "axis": null
+    },
+    {
+      "type": "DistanceConstraint",
+      "p1": 5,
+      "p2": 11,
+      "value": 150.0
+    },
+    {
+      "type": "DistanceConstraint",
+      "p1": 8,
+      "p2": 14,
+      "value": 100.0
+    }
+  ]
+}

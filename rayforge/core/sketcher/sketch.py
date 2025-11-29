@@ -1,3 +1,5 @@
+import json
+from pathlib import Path
 from typing import Union, List, Optional, Set, Dict, Any, Sequence
 from ..geo import Geometry
 from .params import ParameterContext
@@ -56,19 +58,17 @@ class Sketch:
             "params": self.params.to_dict(),
             "registry": self.registry.to_dict(),
             "constraints": [c.to_dict() for c in self.constraints],
+            "origin_id": self.origin_id,
         }
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "Sketch":
         """Deserializes a dictionary into a Sketch instance."""
-        # Check for required keys to prevent creating an empty sketch from
-        # invalid data.
-        if not all(
-            key in data for key in ["params", "registry", "constraints"]
-        ):
+        required_keys = ["params", "registry", "constraints", "origin_id"]
+        if not all(key in data for key in required_keys):
             raise KeyError(
                 "Sketch data is missing one of the required keys: "
-                "'params', 'registry', 'constraints'."
+                f"{required_keys}."
             )
 
         new_sketch = cls.__new__(
@@ -77,13 +77,8 @@ class Sketch:
 
         new_sketch.params = ParameterContext.from_dict(data["params"])
         new_sketch.registry = EntityRegistry.from_dict(data["registry"])
+        new_sketch.origin_id = data["origin_id"]
         new_sketch.constraints = []
-
-        # Find the origin_id from the loaded registry points
-        origin_point = next(
-            (p for p in new_sketch.registry.points if p.fixed), None
-        )
-        new_sketch.origin_id = origin_point.id if origin_point else -1
 
         for c_data in data["constraints"]:
             c_type = c_data.get("type")
@@ -92,6 +87,13 @@ class Sketch:
                 new_sketch.constraints.append(c_cls.from_dict(c_data))
 
         return new_sketch
+
+    @classmethod
+    def from_file(cls, file_path: Union[str, Path]) -> "Sketch":
+        """Deserializes a sketch from a JSON file (.rfs)."""
+        with open(file_path, "r") as f:
+            data = json.load(f)
+        return cls.from_dict(data)
 
     def set_param(self, name: str, value: Union[str, float]) -> None:
         """Define a parameter like 'width'=100 or 'height'='width/2'."""
