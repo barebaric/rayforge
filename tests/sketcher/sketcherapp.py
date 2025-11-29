@@ -3,6 +3,7 @@
 import gi
 import logging
 import gettext
+import json
 from pathlib import Path
 from typing import Optional
 
@@ -17,7 +18,7 @@ gettext.install("canvas", base_path / "rayforge" / "locale")
 
 gi.require_version("Adw", "1")
 gi.require_version("Gtk", "4.0")
-from gi.repository import Gtk, Adw, Gio
+from gi.repository import Gtk, Adw, Gio, GLib
 
 from rayforge.workbench.sketcher.studio import SketchStudio
 from rayforge.core.sketcher import Sketch
@@ -49,6 +50,22 @@ class SketcherApp(Adw.Application):
         self.studio = SketchStudio(parent_window=self.window)
         self.window.set_child(self.studio)
 
+        # --- Add Open/Save Buttons ---
+        btn_open = Gtk.Button(label=_("Open..."))
+        btn_open.set_tooltip_text(_("Open Sketch from File"))
+        btn_open.connect("clicked", self.on_open_clicked)
+        # Insert after the Cancel button
+        self.studio.session_bar.insert_child_after(
+            btn_open, self.studio.btn_cancel
+        )
+
+        btn_save = Gtk.Button(label=_("Save..."))
+        btn_save.set_tooltip_text(_("Save Sketch to File"))
+        btn_save.connect("clicked", self.on_save_clicked)
+        # Insert after the Open button
+        self.studio.session_bar.insert_child_after(btn_save, btn_open)
+        # --- End of added buttons ---
+
         # Connect signals for testing
         self.studio.finished.connect(self.on_studio_finished)
         self.studio.cancelled.connect(self.on_studio_cancelled)
@@ -61,6 +78,83 @@ class SketcherApp(Adw.Application):
         # Ensure the canvas has focus to receive key events immediately.
         if self.studio and self.studio.canvas:
             self.studio.canvas.grab_focus()
+
+    def on_open_clicked(self, widget):
+        """Handles opening a sketch from a file using Gtk.FileDialog."""
+        dialog = Gtk.FileDialog.new()
+        dialog.set_title(_("Open Sketch"))
+
+        filter_rfs = Gtk.FileFilter.new()
+        filter_rfs.set_name(_("RayForge Sketch Files"))
+        filter_rfs.add_pattern("*.rfs")
+        filters = Gio.ListStore.new(Gtk.FileFilter)
+        filters.append(filter_rfs)
+
+        dialog.set_filters(filters)
+        dialog.set_default_filter(filter_rfs)
+
+        dialog.open(self.window, None, self._on_open_dialog_finish)
+
+    def _on_open_dialog_finish(self, dialog, result):
+        try:
+            file = dialog.open_finish(result)
+            if file:
+                path = file.get_path()
+                if path and self.studio:
+                    logger.info(f"Loading sketch from: {path}")
+                    try:
+                        with open(path, "r", encoding="utf-8") as f:
+                            data = json.load(f)
+                        new_sketch = Sketch.from_dict(data)
+                        self.studio.set_sketch(new_sketch)
+                    except Exception as e:
+                        logger.error(
+                            f"Failed to load sketch file '{path}': {e}"
+                        )
+        except GLib.Error as e:
+            # This catches user cancellation
+            logger.debug(f"File open dialog cancelled: {e.message}")
+
+    def on_save_clicked(self, widget):
+        """Handles saving the current sketch to a file using Gtk.FileDialog."""
+        if not self.studio or not self.studio.canvas.sketch_element:
+            return
+
+        dialog = Gtk.FileDialog.new()
+        dialog.set_title(_("Save Sketch"))
+        dialog.set_initial_name("sketch.rfs")
+
+        filter_rfs = Gtk.FileFilter.new()
+        filter_rfs.set_name(_("RayForge Sketch Files"))
+        filter_rfs.add_pattern("*.rfs")
+        filters = Gio.ListStore.new(Gtk.FileFilter)
+        filters.append(filter_rfs)
+
+        dialog.set_filters(filters)
+        dialog.set_default_filter(filter_rfs)
+
+        dialog.save(self.window, None, self._on_save_dialog_finish)
+
+    def _on_save_dialog_finish(self, dialog, result):
+        try:
+            file = dialog.save_finish(result)
+            if file:
+                path = file.get_path()
+                if path and self.studio and self.studio.canvas.sketch_element:
+                    if not path.lower().endswith(".rfs"):
+                        path += ".rfs"
+                    logger.info(f"Saving sketch to: {path}")
+                    try:
+                        current_sketch = (
+                            self.studio.canvas.sketch_element.sketch
+                        )
+                        data = current_sketch.to_dict()
+                        with open(path, "w", encoding="utf-8") as f:
+                            json.dump(data, f, indent=2)
+                    except Exception as e:
+                        logger.error(f"Failed to save sketch to '{path}': {e}")
+        except GLib.Error as e:
+            logger.debug(f"File save dialog cancelled: {e.message}")
 
     def add_initial_sketch(self):
         """Creates and adds the first sketch with demo geometry."""
