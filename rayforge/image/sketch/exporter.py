@@ -45,7 +45,7 @@ class SketchExporter(Exporter):
         source = self.workpiece.source
         if (
             not source
-            or source.renderer.__class__.__name__ != "SketchImporter"
+            or source.renderer.__class__.__name__ != "SketchRenderer"
         ):
             raise ValueError(
                 "Cannot export: The selected item is not based on a sketch."

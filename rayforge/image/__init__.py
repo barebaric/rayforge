@@ -24,6 +24,7 @@ from .png.renderer import PNG_RENDERER
 from .procedural.renderer import PROCEDURAL_RENDERER
 from .ruida.importer import RuidaImporter
 from .ruida.renderer import RUIDA_RENDERER
+from .sketch.renderer import SKETCH_RENDERER
 from .svg.importer import SvgImporter
 from .svg.renderer import SVG_RENDERER
 
@@ -197,6 +198,7 @@ renderer_by_name: Dict[str, Renderer] = {
     "PdfRenderer": PDF_RENDERER,
     "RuidaRenderer": RUIDA_RENDERER,
     "SvgRenderer": SVG_RENDERER,
+    "SketchRenderer": SKETCH_RENDERER,
 }
 
 renderer_by_importer_name: Dict[str, Renderer] = {
