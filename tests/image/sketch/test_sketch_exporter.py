@@ -57,15 +57,15 @@ def test_sketch_exporter_success(simple_sketch_data):
     _, sketch_bytes = simple_sketch_data
 
     # 1. Create a mock renderer class whose name matches the target.
-    #    The architectural document specifies checking for "SketchImporter".
-    class SketchImporter(MockBaseRenderer):
+    #    The exporter checks for the class name "SketchRenderer".
+    class SketchRenderer(MockBaseRenderer):
         pass
 
     # 2. Create the SourceAsset containing the sketch data
     source_asset = SourceAsset(
         source_file=Path("internal.rfs"),
         original_data=sketch_bytes,
-        renderer=SketchImporter(),  # The class name of this instance matters
+        renderer=SketchRenderer(),  # The class name of this instance matters
     )
 
     # 3. Create a document and a workpiece linked to the source
@@ -95,13 +95,13 @@ def test_sketch_exporter_wrong_source_type():
     """
 
     # 1. Use a different renderer to simulate an SVG or other source
-    class SvgImporter(MockBaseRenderer):
+    class SvgRenderer(MockBaseRenderer):
         pass
 
     source_asset = SourceAsset(
         source_file=Path("image.svg"),
         original_data=b"<svg></svg>",
-        renderer=SvgImporter(),
+        renderer=SvgRenderer(),
     )
 
     # 2. Create document and workpiece

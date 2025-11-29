@@ -24,10 +24,10 @@ with warnings.catch_warnings():
     import pyvips
 
 from ..context import get_context
-from .source_asset_segment import SourceAssetSegment
 from .geo import Geometry
 from .item import DocItem
 from .matrix import Matrix
+from .source_asset_segment import SourceAssetSegment
 from .tab import Tab
 
 if TYPE_CHECKING:
@@ -115,6 +115,9 @@ class WorkPiece(DocItem):
         Invalidates and clears all cached renders for this workpiece.
         Should be called if the underlying data or geometry changes.
         """
+        logger.debug(
+            f"WP {self.uid[:8]}: Clearing all caches (render and boundaries)."
+        )
         self._render_cache.clear()
         self._boundaries_cache = (
             None  # Also clear the boundaries cache on update
@@ -213,14 +216,23 @@ class WorkPiece(DocItem):
             return self._edited_boundaries
 
         if self._boundaries_cache:
+            logger.debug(f"WP {self.uid[:8]}: Returning cached boundaries.")
             return self._boundaries_cache
 
         if not self.source_segment:
+            logger.warning(
+                f"WP {self.uid[:8]}: Cannot get boundaries, no source_segment."
+            )
             return None
 
         # Get the Y-down geometry from storage
         y_down_geo = self.source_segment.segment_mask_geometry
-        if not y_down_geo or y_down_geo.is_empty():
+        is_geom_empty = not y_down_geo or y_down_geo.is_empty()
+        logger.debug(
+            f"WP {self.uid[:8]}: Recalculating boundaries from segment. "
+            f"Stored geometry is_empty={is_geom_empty}"
+        )
+        if is_geom_empty:
             return None
 
         y_up_geo = y_down_geo.copy()
@@ -231,6 +243,10 @@ class WorkPiece(DocItem):
         flip_matrix = Matrix.translation(0, 1) @ Matrix.scale(1, -1)
         y_up_geo.transform(flip_matrix.to_4x4_numpy())
 
+        logger.debug(
+            f"WP {self.uid[:8]}: Caching new boundaries. "
+            f"Rect: {y_up_geo.rect()}"
+        )
         self._boundaries_cache = y_up_geo
         return self._boundaries_cache
 
@@ -437,7 +453,7 @@ class WorkPiece(DocItem):
         kwargs = {}
         renderer_name = renderer.__class__.__name__
 
-        if renderer_name in ("OpsRenderer", "DxfRenderer"):
+        if renderer_name in ("OpsRenderer", "DxfRenderer", "SketchRenderer"):
             kwargs["boundaries"] = self.boundaries
 
         if renderer_name == "DxfRenderer":
@@ -496,13 +512,21 @@ class WorkPiece(DocItem):
                 return None
 
         # 2. Apply Mask
-        mask_geo = self._boundaries_y_down
-        if mask_geo and not mask_geo.is_empty():
-            processed_image = image_util.apply_mask_to_vips_image(
-                processed_image, mask_geo
-            )
-            if not processed_image:
-                return None
+        # We skip masking for Vector sources because they already render with
+        # correct transparency, and masking with vector geometry (which can
+        # be open lines with zero area) would incorrectly hide the content.
+        is_vector = False
+        if self.source and self.source.metadata.get("is_vector"):
+            is_vector = True
+
+        if not is_vector:
+            mask_geo = self._boundaries_y_down
+            if mask_geo and not mask_geo.is_empty():
+                processed_image = image_util.apply_mask_to_vips_image(
+                    processed_image, mask_geo
+                )
+                if not processed_image:
+                    return None
 
         # 3. Final Resize Check
         if (
@@ -532,6 +556,9 @@ class WorkPiece(DocItem):
         # 1. Resolve Context
         ctx = self._resolve_render_context()
         if not ctx:
+            logger.warning(
+                f"WP {self.uid[:8]}: Could not resolve render context."
+            )
             return None
 
         # 2. Calculate Geometry
@@ -553,6 +580,7 @@ class WorkPiece(DocItem):
             final_data, render_w, render_h, **kwargs
         )
         if not raw_image:
+            logger.warning(f"WP {self.uid[:8]}: Renderer returned None.")
             return None
 
         # 5. Process (Crop/Mask/Resize)
