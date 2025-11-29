@@ -102,6 +102,53 @@ def test_sketch_circle_workflow():
     assert len(arcs) == 2
 
 
+def test_sketch_construction_geometry_is_ignored_on_roundtrip():
+    """
+    Tests that geometry marked 'construction' is not exported, even after a
+    full serialization and deserialization cycle.
+    """
+    s = Sketch()
+
+    # Add a regular line that should be exported
+    p1 = s.add_point(0, 0)
+    p2 = s.add_point(10, 0)
+    s.add_line(p1, p2, construction=False)
+
+    # Add various construction entities that should be ignored
+    p3 = s.add_point(0, 10)
+    p4 = s.add_point(10, 10)
+    s.add_line(p3, p4, construction=True)
+
+    p5_s = s.add_point(20, 0)
+    p5_e = s.add_point(30, 10)
+    p5_c = s.add_point(20, 10)
+    s.add_arc(p5_s, p5_e, p5_c, construction=True)
+
+    p6_c = s.add_point(40, 0)
+    p6_r = s.add_point(45, 0)
+    s.add_circle(p6_c, p6_r, construction=True)
+
+    # 1. Serialize the sketch to a dictionary
+    sketch_data = s.to_dict()
+
+    # Verify that the data contains the correct flags
+    construction_entities = [
+        e for e in sketch_data["registry"]["entities"] if e["construction"]
+    ]
+    assert len(construction_entities) == 3
+
+    # 2. Create a new sketch from the serialized data
+    s2 = Sketch.from_dict(sketch_data)
+
+    # 3. Generate the geometry from the new sketch
+    geo = s2.to_geometry()
+
+    # The simple export creates a MoveTo and a LineTo for each line.
+    # We only have one non-construction line.
+    # So we expect exactly 2 commands total after the round trip.
+    assert len(geo.commands) == 2
+
+
 def test_sketch_equal_length_workflow():
     """Test a full workflow using an equal length constraint."""
     s = Sketch()
