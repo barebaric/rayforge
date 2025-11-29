@@ -47,6 +47,7 @@ nav:
               - Depth: docs/features/operations/depth.md
               - Shrink Wrap: docs/features/operations/shrink-wrap.md
               - Material Test Grid: docs/features/operations/material-test-grid.md
+          - Parametric 2D Sketcher: docs/features/sketcher.md
           - Multi-Layer: docs/features/multi-layer.md
           - Stock Handling: docs/features/stock-handling.md
           - Material Libraries: docs/features/material-libraries.md
