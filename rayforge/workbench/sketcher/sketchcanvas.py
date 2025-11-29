@@ -1,11 +1,12 @@
 import logging
 from typing import Optional, cast, TYPE_CHECKING
 from gi.repository import Gtk, Gdk, Adw
+from ...core.sketcher.constraints import Constraint
+from ...core.matrix import Matrix
 from ..canvas import WorldSurface
-from .sketchelement import SketchElement
 from .editor import SketchEditor
+from .sketchelement import SketchElement
 from .sketch_cmd import ModifyConstraintValueCommand
-from rayforge.core.sketcher.constraints import Constraint
 
 if TYPE_CHECKING:
     from rayforge.core.sketcher import Sketch
@@ -15,14 +16,22 @@ logger = logging.getLogger(__name__)
 
 class SketchCanvas(WorldSurface):
     def __init__(
-        self, parent_window: Gtk.Window, single_mode: bool = False, **kwargs
+        self,
+        parent_window: Gtk.Window,
+        single_mode: bool = False,
+        width_mm: float = 2000.0,
+        height_mm: float = 2000.0,
+        **kwargs,
     ):
         # In single_mode, we hide the axes and labels for a cleaner look
         show_axis = not single_mode
         # A Sketcher doesn't have a fixed machine size. We initialize the
         # WorldSurface with a large default area to provide an "infinite" feel.
         super().__init__(
-            width_mm=2000, height_mm=2000, show_axis=show_axis, **kwargs
+            width_mm=width_mm,
+            height_mm=height_mm,
+            show_axis=show_axis,
+            **kwargs,
         )
         self.parent_window = parent_window
         self.single_mode = single_mode
@@ -66,6 +75,20 @@ class SketchCanvas(WorldSurface):
         new_sketch_elem.constraint_edit_requested.connect(
             self._on_constraint_edit_requested
         )
+
+        # For a new, empty sketch, position its element at the center of the
+        # canvas world. The subsequent call to update_bounds_from_sketch will
+        # then adjust this transform to center the element's content box
+        # (and thus the sketch origin) on this point.
+        is_empty_sketch = (
+            len(sketch.registry.entities) == 0
+            and len(sketch.registry.points) <= 1
+        )
+        if is_empty_sketch:
+            canvas_w, canvas_h = self.get_size_mm()
+            cx, cy = canvas_w / 2.0, canvas_h / 2.0
+            new_sketch_elem.set_transform(Matrix.translation(cx, cy))
+
         self.root.add(new_sketch_elem)
 
         # Update all internal references

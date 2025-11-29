@@ -1,8 +1,8 @@
 import logging
 from gi.repository import Gtk
 from blinker import Signal
+from ...core.sketcher import Sketch
 from .sketchcanvas import SketchCanvas
-from rayforge.core.sketcher import Sketch
 
 logger = logging.getLogger(__name__)
 
@@ -14,15 +14,33 @@ class SketchStudio(Gtk.Box):
     save/cancel lifecycle.
     """
 
-    def __init__(self, parent_window: Gtk.Window, **kwargs):
+    def __init__(
+        self,
+        parent_window: Gtk.Window,
+        width_mm: float = 1000.0,
+        height_mm: float = 1000.0,
+        **kwargs,
+    ):
         super().__init__(orientation=Gtk.Orientation.VERTICAL, **kwargs)
         self.parent_window = parent_window
+        self.width_mm = width_mm
+        self.height_mm = height_mm
 
         # Signals
         self.finished = Signal()
         self.cancelled = Signal()
 
         self._build_ui()
+
+    def set_world_size(self, width_mm: float, height_mm: float):
+        """
+        Updates the world dimensions of the sketch canvas. This is called
+        by the main window when the machine configuration changes.
+        """
+        self.width_mm = width_mm
+        self.height_mm = height_mm
+        if self.canvas:
+            self.canvas.set_size(width_mm, height_mm)
 
     def _build_ui(self):
         # 1. Session Bar (Header)
@@ -65,7 +83,10 @@ class SketchStudio(Gtk.Box):
         # 2. Main Content
         # Sidebar is currently disabled/hidden. Canvas takes full space.
         self.canvas = SketchCanvas(
-            parent_window=self.parent_window, single_mode=True
+            parent_window=self.parent_window,
+            single_mode=True,
+            width_mm=self.width_mm,
+            height_mm=self.height_mm,
         )
         self.canvas.set_vexpand(True)
         self.append(self.canvas)
