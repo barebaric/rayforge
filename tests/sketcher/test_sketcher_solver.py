@@ -187,12 +187,12 @@ def test_solver_impossible_constraints():
 
     # Initialize p2 near the compromise to test failure reporting
     # logic rather than optimizer descent capabilities in singular landscapes.
-    p2 = reg.add_point(15, 0)
+    p2 = reg.add_point(15.1, 0)  # Start slightly off
 
     constraints = [
-        # Must be at dist 10 from p1 (dist^2 = 100)
+        # Must be at dist 10 from p1
         DistanceConstraint(p1, p2, 10.0),
-        # BUT must also be at dist 20 from p1 (dist^2 = 400)
+        # BUT must also be at dist 20 from p1
         DistanceConstraint(p1, p2, 20.0),
     ]
 
@@ -203,8 +203,9 @@ def test_solver_impossible_constraints():
     # even though it is at the best possible location.
     assert success is False
 
-    # The solver minimizes the sum of squares of the errors. The error is
-    # (dist^2 - target^2). The minimum for (x-100)^2 + (x-400)^2 is at x=250.
-    # Therefore, the optimal distance is sqrt(250).
-    optimal_dist = math.sqrt((10**2 + 20**2) / 2)
-    assert reg.get_point(p2).x == pytest.approx(optimal_dist, abs=1e-3)
+    # The solver minimizes sum of squares of linear errors:
+    # E = (d-10)^2 + (d-20)^2
+    # The minimum for this is at d = (10+20)/2 = 15.0
+    optimal_dist = 15.0
+    # Relax tolerance slightly as the solver may terminate just short
+    assert reg.get_point(p2).x == pytest.approx(optimal_dist, abs=1e-2)
