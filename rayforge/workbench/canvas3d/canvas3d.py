@@ -97,7 +97,7 @@ def prepare_scene_vertices_async(
         else:
             zp_colors = np.array([], dtype=np.float32)
 
-        # 3. Apply final scene transformation (e.g., Y-down flip)
+        # 3. Apply final scene transformation
         def _transform_vertices(verts: np.ndarray, transform: np.ndarray):
             if verts.size == 0:
                 return verts
@@ -213,7 +213,17 @@ class Canvas3D(Gtk.GLArea):
         self._is_orbiting = False
         self._is_z_rotating = False
         self._gl_initialized = False
+
+        # This matrix is used for the Grid and Axes to visualize the
+        # machine coordinate system. If Y is down, we flip it so the visual
+        # origin (0,0) is at the Top-Left (Back-Left in 3D).
         self._model_matrix = np.identity(4, dtype=np.float32)
+        if self.y_down:
+            translate_mat = np.identity(4, dtype=np.float32)
+            translate_mat[1, 3] = self.depth_mm
+            scale_mat = np.identity(4, dtype=np.float32)
+            scale_mat[1, 1] = -1.0
+            self._model_matrix = translate_mat @ scale_mat
 
         self._color_spec: ColorSpecDict = {
             "cut": ("#ff00ff22", "#ff00ff"),
@@ -223,17 +233,6 @@ class Canvas3D(Gtk.GLArea):
         }
         self._color_set: Optional[ColorSet] = None
         self._theme_is_dirty = True
-
-        if self.y_down:
-            # This matrix transforms from a Y-up coordinate system (used by
-            # the Ops data) to a Y-down visual representation. It scales Y by
-            # -1 and then translates by the depth of the bed, effectively
-            # moving the origin from bottom-left to top-left.
-            translate_mat = np.identity(4, dtype=np.float32)
-            translate_mat[1, 3] = self.depth_mm
-            scale_mat = np.identity(4, dtype=np.float32)
-            scale_mat[1, 1] = -1.0
-            self._model_matrix = translate_mat @ scale_mat
 
         # State for interactions
         self._last_pan_offset: Optional[Tuple[float, float]] = None
@@ -538,7 +537,7 @@ class Canvas3D(Gtk.GLArea):
             # Base MVP for UI elements that should not be model-transformed
             mvp_matrix_ui = proj_matrix @ view_matrix
 
-            # MVP for scene geometry that IS model-transformed (e.g., Y-down)
+            # MVP for scene geometry that IS model-transformed (The Grid)
             mvp_matrix_scene = mvp_matrix_ui @ self._model_matrix
 
             # Convert to column-major for OpenGL
@@ -549,15 +548,17 @@ class Canvas3D(Gtk.GLArea):
                 self.axis_renderer.render(
                     self.main_shader,
                     self.text_shader,
-                    mvp_matrix_scene_gl,  # For grid/axes
-                    mvp_matrix_ui_gl,  # For text
+                    mvp_matrix_scene_gl,  # For grid/axes (Use Flipped)
+                    mvp_matrix_ui_gl,  # For text (Use Identity)
                     view_matrix,
                     self._model_matrix,  # Pass the model matrix for positions
                 )
             if self.ops_renderer and self.main_shader:
-                # The ops vertices are now pre-transformed into the scene's
-                # final coordinate space, so we use the UI matrix which only
-                # contains camera projection and view.
+                # The ops vertices are in internal Y-up coordinates.
+                # To visualize them correctly relative to the flipped grid,
+                # we render them with Identity model transform.
+                # Internal 0 is Front, Internal H is Back.
+                # Grid 0 is Back, Grid H is Front.
                 self.ops_renderer.render(
                     self.main_shader,
                     mvp_matrix_ui_gl,
@@ -565,11 +566,11 @@ class Canvas3D(Gtk.GLArea):
                     show_travel_moves=self._show_travel_moves,
                 )
             if self.texture_renderer and self.texture_shader:
-                # The texture quads are part of the scene and need the scene's
-                # model matrix. Their vertices are local, so the renderer
-                # combines the scene VP with the instance's world model matrix.
+                # Textures are also in internal Y-up coordinates.
+                # We use the UI matrix (Identity model) so they are placed
+                # correctly relative to the ops.
                 self.texture_renderer.render(
-                    mvp_matrix_scene, self.texture_shader
+                    mvp_matrix_ui, self.texture_shader
                 )
 
         except Exception as e:
@@ -886,9 +887,17 @@ class Canvas3D(Gtk.GLArea):
                     )
 
         # 3. Schedule the expensive vector preparation for a background thread
-        self._schedule_scene_preparation(scene_description)
+        # Content always uses Identity transform (Y-up internal matches view).
+        content_model_matrix = np.identity(4, dtype=np.float32)
+        self._schedule_scene_preparation(
+            scene_description, content_model_matrix
+        )
 
-    def _schedule_scene_preparation(self, scene_description: SceneDescription):
+    def _schedule_scene_preparation(
+        self,
+        scene_description: SceneDescription,
+        content_model_matrix: np.ndarray,
+    ):
         """
         Schedules the given SceneDescription to be prepared for rendering in
         a background thread.
@@ -905,7 +914,7 @@ class Canvas3D(Gtk.GLArea):
                 self.context.artifact_store,
                 scene_description,
                 self._color_set,
-                self._model_matrix,
+                content_model_matrix,
                 key=task_key,
                 when_done=self._on_scene_prepared,
             )
