@@ -105,6 +105,82 @@ def test_registry_lookup_failures(registry):
     assert registry.get_entity(999) is None
 
 
+def test_line_serialization_round_trip():
+    """Tests the to_dict and from_dict methods for a single Line."""
+    original_line = Line(id=10, p1_idx=1, p2_idx=2, construction=True)
+
+    data = original_line.to_dict()
+    assert data == {
+        "id": 10,
+        "type": "line",
+        "construction": True,
+        "p1_idx": 1,
+        "p2_idx": 2,
+    }
+
+    new_line = Line.from_dict(data)
+    assert isinstance(new_line, Line)
+    assert new_line.id == original_line.id
+    assert new_line.p1_idx == original_line.p1_idx
+    assert new_line.p2_idx == original_line.p2_idx
+    assert new_line.construction == original_line.construction
+
+
+def test_arc_serialization_round_trip():
+    """Tests the to_dict and from_dict methods for a single Arc."""
+    original_arc = Arc(
+        id=20,
+        start_idx=3,
+        end_idx=4,
+        center_idx=5,
+        clockwise=True,
+        construction=True,
+    )
+
+    data = original_arc.to_dict()
+    assert data == {
+        "id": 20,
+        "type": "arc",
+        "construction": True,
+        "start_idx": 3,
+        "end_idx": 4,
+        "center_idx": 5,
+        "clockwise": True,
+    }
+
+    new_arc = Arc.from_dict(data)
+    assert isinstance(new_arc, Arc)
+    assert new_arc.id == original_arc.id
+    assert new_arc.start_idx == original_arc.start_idx
+    assert new_arc.end_idx == original_arc.end_idx
+    assert new_arc.center_idx == original_arc.center_idx
+    assert new_arc.clockwise == original_arc.clockwise
+    assert new_arc.construction == original_arc.construction
+
+
+def test_circle_serialization_round_trip():
+    """Tests the to_dict and from_dict methods for a single Circle."""
+    original_circle = Circle(
+        id=30, center_idx=6, radius_pt_idx=7, construction=True
+    )
+
+    data = original_circle.to_dict()
+    assert data == {
+        "id": 30,
+        "type": "circle",
+        "construction": True,
+        "center_idx": 6,
+        "radius_pt_idx": 7,
+    }
+
+    new_circle = Circle.from_dict(data)
+    assert isinstance(new_circle, Circle)
+    assert new_circle.id == original_circle.id
+    assert new_circle.center_idx == original_circle.center_idx
+    assert new_circle.radius_pt_idx == original_circle.radius_pt_idx
+    assert new_circle.construction == original_circle.construction
+
+
 def test_entity_registry_serialization_round_trip():
     """Tests to_dict and from_dict for the entire EntityRegistry."""
     reg = EntityRegistry()

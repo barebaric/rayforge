@@ -1,5 +1,6 @@
 import json
 import logging
+from dataclasses import replace
 from typing import Dict, Any, TYPE_CHECKING, Optional
 
 from rayforge.undo import Command
@@ -45,6 +46,7 @@ class UpdateSketchSourceCommand(Command):
 
         # --- Calculate new state from the provided sketch dict ---
         new_sketch = Sketch.from_dict(new_sketch_dict)
+        new_sketch.solve()
         raw_geometry = new_sketch.to_geometry()
 
         if raw_geometry.is_empty():
@@ -100,18 +102,27 @@ class UpdateSketchSourceCommand(Command):
                 and workpiece.source_segment.source_asset_uid
                 == self.source_asset.uid
             ):
-                segment = workpiece.source_segment
-                if geometry is not None:
-                    segment.segment_mask_geometry = geometry.copy()
-                segment.width_mm = width_mm
-                segment.height_mm = height_mm
+                old_segment = workpiece.source_segment
 
-                # Synchronize the WorkPiece matrix with the new content size.
-                # This ensures the visual scaling matches the new source
-                # dimensions.
+                # Create a new, updated segment instance.
+                # Using dataclasses.replace is efficient and clean.
+                new_segment = replace(
+                    old_segment,
+                    segment_mask_geometry=geometry.copy()
+                    if geometry
+                    else old_segment.segment_mask_geometry,
+                    width_mm=width_mm,
+                    height_mm=height_mm,
+                )
+
+                # Assigning the new segment will trigger the WorkPiece's
+                # property setter, which correctly clears caches and sends
+                # the `updated` signal.
+                workpiece.source_segment = new_segment
+
+                # After updating the content, synchronize the transform
+                # to match the new natural size.
                 workpiece.set_size(width_mm, height_mm)
-
-                workpiece.clear_render_cache()
 
         self.doc.updated.send(self.doc)
 

@@ -171,7 +171,8 @@ class Arc(Entity):
     def __repr__(self) -> str:
         return (
             f"Arc(id={self.id}, start={self.start_idx}, end={self.end_idx}, "
-            f"center={self.center_idx}, cw={self.clockwise})"
+            f"center={self.center_idx}, cw={self.clockwise}, "
+            f"construction={self.construction})"
         )
 
 

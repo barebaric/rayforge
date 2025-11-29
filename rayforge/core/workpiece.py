@@ -63,7 +63,7 @@ class WorkPiece(DocItem):
         source_segment: Optional[SourceAssetSegment] = None,
     ):
         super().__init__(name=name)
-        self.source_segment = source_segment
+        self._source_segment = source_segment
         self._boundaries_cache: Optional[Geometry] = None
 
         # An optional override for the workpiece geometry. If set, this takes
@@ -88,6 +88,25 @@ class WorkPiece(DocItem):
         # This persists across view element destruction/creation
         # (e.g. Grouping) but is not serialized to disk.
         self._view_cache: Dict[str, Any] = {}
+
+    @property
+    def source_segment(self) -> Optional[SourceAssetSegment]:
+        """The source data definition for this workpiece."""
+        return self._source_segment
+
+    @source_segment.setter
+    def source_segment(self, new_segment: Optional[SourceAssetSegment]):
+        """
+        Sets a new source segment, clearing caches and signaling an update.
+        This is the correct way to modify a workpiece's source data.
+        """
+        if self._source_segment != new_segment:
+            self._source_segment = new_segment
+            # Invalidate all cached data that depends on the source.
+            self.clear_render_cache()
+            # Signal that the workpiece's content has changed. This is crucial
+            # for triggering the pipeline to re-process the geometry.
+            self.updated.send(self)
 
     @property
     def natural_size(self) -> Tuple[float, float]:
