@@ -26,3 +26,22 @@ def test_diameter_constraint(setup_env):
     # Target diam is 20, actual is 10. Error = 10 - 20 = -10
     c2 = DiameterConstraint(circ_id, 20.0)
     assert c2.error(reg, params) == pytest.approx(-10.0)
+
+
+def test_diameter_constraint_serialization_round_trip(setup_env):
+    reg, params = setup_env
+    center = reg.add_point(0, 0)
+    radius_pt = reg.add_point(5, 0)
+    circ_id = reg.add_circle(center, radius_pt)
+
+    # Create original constraint
+    original = DiameterConstraint(circ_id, 10.0)
+    
+    # Serialize to dict
+    serialized = original.to_dict()
+    
+    # Deserialize from dict
+    restored = DiameterConstraint.from_dict(serialized)
+    
+    # Check that the restored constraint has the same error
+    assert original.error(reg, params) == restored.error(reg, params)

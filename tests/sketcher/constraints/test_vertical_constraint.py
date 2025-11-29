@@ -59,3 +59,21 @@ def test_vertical_constraint_gradient(setup_env):
     x0 = np.array([1, 2, 5, 6], dtype=float)
     diff = check_grad(func_wrapper, grad_wrapper, x0, epsilon=1e-6)
     assert diff < 1e-5
+
+
+def test_vertical_constraint_serialization_round_trip(setup_env):
+    reg, params = setup_env
+    p1 = reg.add_point(0, 0)
+    p2 = reg.add_point(5, 10)
+
+    # Create original constraint
+    original = VerticalConstraint(p1, p2)
+    
+    # Serialize to dict
+    serialized = original.to_dict()
+    
+    # Deserialize from dict
+    restored = VerticalConstraint.from_dict(serialized)
+    
+    # Check that the restored constraint has the same error
+    assert original.error(reg, params) == restored.error(reg, params)

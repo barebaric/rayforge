@@ -66,3 +66,21 @@ def test_coincident_constraint_gradient(setup_env):
         grad = partial(grad_wrapper, error_index=i)
         diff = check_grad(func, grad, x0, epsilon=1e-6)
         assert diff < 1e-5
+
+
+def test_coincident_constraint_serialization_round_trip(setup_env):
+    reg, params = setup_env
+    p1 = reg.add_point(0, 0)
+    p2 = reg.add_point(3, 4)
+
+    # Create original constraint
+    original = CoincidentConstraint(p1, p2)
+
+    # Serialize to dict
+    serialized = original.to_dict()
+
+    # Deserialize from dict
+    restored = CoincidentConstraint.from_dict(serialized)
+
+    # Check that the restored constraint has the same error
+    assert original.error(reg, params) == restored.error(reg, params)
