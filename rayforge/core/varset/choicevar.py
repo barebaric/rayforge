@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Optional, List
+from typing import Optional, List, Dict, Any
 from .var import Var
 
 
@@ -46,6 +46,11 @@ class ChoiceVar(Var[str]):
                 )
 
         self.validator = _choice_validator
+
+    def to_dict(self, include_value: bool = False) -> Dict[str, Any]:
+        data = super().to_dict(include_value=include_value)
+        data.update({"choices": self.choices})
+        return data
 
     def get_display_for_value(self, value: Optional[str]) -> Optional[str]:
         """

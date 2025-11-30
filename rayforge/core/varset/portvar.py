@@ -22,6 +22,8 @@ class PortVar(IntVar):
         description: Optional[str] = None,
         default: Optional[int] = None,
         value: Optional[int] = None,
+        min_val: Optional[int] = None,
+        max_val: Optional[int] = None,
     ):
         super().__init__(
             key=key,

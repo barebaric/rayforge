@@ -1,4 +1,4 @@
-from typing import Optional, Callable
+from typing import Optional, Callable, Dict, Any
 from .var import Var, ValidationError
 
 
@@ -48,6 +48,11 @@ class FloatVar(Var[float]):
             value=value,
             validator=validator,
         )
+
+    def to_dict(self, include_value: bool = False) -> Dict[str, Any]:
+        data = super().to_dict(include_value=include_value)
+        data.update({"min_val": self.min_val, "max_val": self.max_val})
+        return data
 
 
 class SliderFloatVar(FloatVar):
