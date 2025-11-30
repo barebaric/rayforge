@@ -1,7 +1,7 @@
 import math
 import cairo
 from collections import defaultdict
-from typing import Optional, Tuple, Any
+from typing import Optional, Tuple, Any, List
 from rayforge.core.sketcher.entities import Line, Arc, Circle, Entity
 from rayforge.core.sketcher.constraints import Constraint
 from rayforge.core.geo.primitives import (
@@ -77,6 +77,54 @@ class SketchHitTester:
             return "entity", hit_entity
 
         return None, None
+
+    def get_objects_in_rect(
+        self,
+        min_x: float,
+        min_y: float,
+        max_x: float,
+        max_y: float,
+        element: Any,
+        strict_containment: bool = False,
+    ) -> Tuple[List[int], List[int]]:
+        """
+        Finds all points and entities within a Model Space rectangle.
+
+        Args:
+            min_x, min_y, max_x, max_y: The rectangle in Model Space.
+            element: The SketchElement.
+            strict_containment:
+                If True (Window Selection): Objects must be fully inside.
+                If False (Crossing Selection): Objects can overlap or be
+                  inside.
+
+        Returns:
+            A tuple of (list_of_point_ids, list_of_entity_ids).
+        """
+        registry = element.sketch.registry
+        points_inside = []
+        entities_inside = []
+        rect = (min_x, min_y, max_x, max_y)
+
+        # 1. Check Points
+        for p in registry.points:
+            if p.is_in_rect(rect):
+                points_inside.append(p.id)
+
+        # 2. Check Entities
+        for e in registry.entities:
+            is_match = False
+            if strict_containment:
+                if e.is_contained_by(rect, registry):
+                    is_match = True
+            else:
+                if e.intersects_rect(rect, registry):
+                    is_match = True
+
+            if is_match:
+                entities_inside.append(e.id)
+
+        return points_inside, entities_inside
 
     def _hit_test_points(self, wx, wy, element) -> Optional[int]:
         """Precise point hit-testing in SCREEN coordinates."""

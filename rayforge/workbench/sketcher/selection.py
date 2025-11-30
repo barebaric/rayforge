@@ -17,6 +17,15 @@ class SketchSelection:
         self.constraint_idx = None
         self.junction_pid = None
 
+    def copy(self) -> "SketchSelection":
+        """Creates a shallow copy of the selection state."""
+        new_sel = SketchSelection()
+        new_sel.point_ids = self.point_ids[:]
+        new_sel.entity_ids = self.entity_ids[:]
+        new_sel.constraint_idx = self.constraint_idx
+        new_sel.junction_pid = self.junction_pid
+        return new_sel
+
     def select_constraint(self, idx: int, is_multi: bool):
         """Selects a constraint by index."""
         self.constraint_idx = idx

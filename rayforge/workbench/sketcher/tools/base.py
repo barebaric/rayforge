@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+import cairo
 
 
 class SketchTool(ABC):
@@ -27,5 +28,12 @@ class SketchTool(ABC):
         """
         Called when the tool is about to be switched or deactivated.
         Subclasses can implement this to clean up their state.
+        """
+        pass
+
+    def draw_overlay(self, ctx: cairo.Context):
+        """
+        Called by the SketchElement to allow the active tool to draw
+        transient UI (like selection boxes) in screen space.
         """
         pass

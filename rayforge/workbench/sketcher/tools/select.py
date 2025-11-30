@@ -1,6 +1,7 @@
 import logging
 import math
-from typing import Optional, Tuple, Dict, cast
+import cairo
+from typing import Optional, Tuple, Dict, cast, TYPE_CHECKING
 from rayforge.core.sketcher.entities import Entity, Line, Arc, Circle
 from rayforge.core.matrix import Matrix
 from rayforge.core.sketcher.constraints import (
@@ -14,6 +15,9 @@ from rayforge.core.sketcher.constraints import (
 from ..sketch_cmd import AddItemsCommand, MovePointCommand
 from .base import SketchTool
 
+if TYPE_CHECKING:
+    from ..selection import SketchSelection
+
 logger = logging.getLogger(__name__)
 
 
@@ -25,6 +29,12 @@ class SelectTool(SketchTool):
         self.hovered_point_id: Optional[int] = None
         self.hovered_constraint_idx: Optional[int] = None
         self.hovered_junction_pid: Optional[int] = None
+
+        # --- Box Selection State ---
+        self.is_box_selecting: bool = False
+        self.drag_start_world_pos: Optional[Tuple[float, float]] = None
+        self.drag_current_world_pos: Optional[Tuple[float, float]] = None
+        self.drag_initial_selection: Optional["SketchSelection"] = None
 
         # --- Drag State ---
         # For dragging a single point
@@ -242,9 +252,6 @@ class SelectTool(SketchTool):
             self.element.mark_dirty()
             return False
 
-        if not is_multi:
-            self.element.selection.clear()
-
         if hit_type == "point":
             pid = cast(int, hit_obj)
             self.element.selection.select_point(pid, is_multi)
@@ -263,7 +270,17 @@ class SelectTool(SketchTool):
             return False
 
         else:
-            # Click on empty space
+            # Click on empty space: Prepare for Box Selection
+            if not is_multi:
+                self.element.selection.clear()
+                self.drag_initial_selection = None
+            else:
+                # Store the selection state BEFORE the drag
+                self.drag_initial_selection = self.element.selection.copy()
+
+            self.is_box_selecting = True
+            self.drag_start_world_pos = (world_x, world_y)
+            self.drag_current_world_pos = (world_x, world_y)
             self.element.mark_dirty()
             return False
 
@@ -273,8 +290,27 @@ class SelectTool(SketchTool):
             self._handle_point_drag(world_dx, world_dy)
         elif self.dragged_entity is not None:
             self._handle_entity_drag(world_dx, world_dy)
+        elif self.is_box_selecting and self.drag_start_world_pos:
+            # Update current drag position and perform live selection
+            start_x, start_y = self.drag_start_world_pos
+            self.drag_current_world_pos = (
+                start_x + world_dx,
+                start_y + world_dy,
+            )
+            self._update_live_box_selection()
+            self.element.mark_dirty()
 
     def on_release(self, world_x: float, world_y: float):
+        # Handle the end of a Box Selection
+        if self.is_box_selecting:
+            # Selection is already live. Just clean up the drag state.
+            self.is_box_selecting = False
+            self.drag_start_world_pos = None
+            self.drag_current_world_pos = None
+            self.drag_initial_selection = None
+            self.element.mark_dirty()
+            return
+
         # If a point was dragged, create an undoable command
         if self.dragged_point_id is not None and self.drag_point_start_pos:
             p = self._safe_get_point(self.dragged_point_id)
@@ -317,6 +353,9 @@ class SelectTool(SketchTool):
         self.element.mark_dirty()
 
     def on_hover_motion(self, world_x: float, world_y: float):
+        if self.is_box_selecting:
+            return
+
         hit_type, hit_obj = self.element.hittester.get_hit_data(
             world_x, world_y, self.element
         )
@@ -342,7 +381,103 @@ class SelectTool(SketchTool):
             self.hovered_junction_pid = new_hover_junction_pid
             self.element.mark_dirty()
 
+    def draw_overlay(self, ctx: cairo.Context):
+        """Draws the selection box."""
+        if (
+            not self.is_box_selecting
+            or not self.drag_start_world_pos
+            or not self.drag_current_world_pos
+        ):
+            return
+
+        if not self.element.canvas:
+            return
+
+        # Transform World Coordinates to Screen Coordinates
+        view_transform = self.element.canvas.view_transform
+        start_px = view_transform.transform_point(self.drag_start_world_pos)
+        curr_px = view_transform.transform_point(self.drag_current_world_pos)
+
+        x, y = start_px
+        w = curr_px[0] - x
+        h = curr_px[1] - y
+
+        ctx.save()
+
+        # Per user request, all box selections now behave as "crossing"
+        # selections, so we use the corresponding visual style (green, dashed)
+        # regardless of drag direction.
+        ctx.set_source_rgba(0.2, 0.8, 0.2, 0.2)  # Crossing Fill: Green
+        ctx.set_dash([4, 2])
+        ctx.rectangle(x, y, w, h)
+        ctx.fill_preserve()
+
+        # Stroke border
+        ctx.set_source_rgba(0.2, 0.8, 0.2, 0.8)  # Crossing Border: Green
+        ctx.set_line_width(1.0)
+        ctx.stroke()
+
+        ctx.restore()
+
     # --- Drag Logic Handlers ---
+
+    def _update_live_box_selection(self):
+        """
+        Calculates and updates the selection based on the current drag box.
+        """
+        if not self.drag_start_world_pos or not self.drag_current_world_pos:
+            return
+
+        # Calculate box in world coords
+        start_wx, start_wy = self.drag_start_world_pos
+        end_wx, end_wy = self.drag_current_world_pos
+
+        # Convert world box to Model Space for query
+        mx1, my1 = self.element.hittester.screen_to_model(
+            start_wx, start_wy, self.element
+        )
+        mx2, my2 = self.element.hittester.screen_to_model(
+            end_wx, end_wy, self.element
+        )
+        model_min_x = min(mx1, mx2)
+        model_max_x = max(mx1, mx2)
+        model_min_y = min(my1, my2)
+        model_max_y = max(my1, my2)
+
+        # Perform a "crossing" selection.
+        points_hit, entities_hit = self.element.hittester.get_objects_in_rect(
+            model_min_x,
+            model_min_y,
+            model_max_x,
+            model_max_y,
+            self.element,
+            strict_containment=False,
+        )
+
+        is_additive = self.drag_initial_selection is not None
+
+        if is_additive:
+            # Restore the pre-drag state
+            initial_state = self.drag_initial_selection
+            if initial_state:
+                self.element.selection.point_ids = initial_state.point_ids[:]
+                self.element.selection.entity_ids = initial_state.entity_ids[:]
+
+            # Add newly found items
+            for pid in points_hit:
+                if pid not in self.element.selection.point_ids:
+                    self.element.selection.point_ids.append(pid)
+
+            for eid in entities_hit:
+                if eid not in self.element.selection.entity_ids:
+                    self.element.selection.entity_ids.append(eid)
+        else:
+            # Not additive, so the selection is exactly what's in the box
+            self.element.selection.point_ids = points_hit
+            self.element.selection.entity_ids = entities_hit
+            # Clear other selection types
+            self.element.selection.constraint_idx = None
+            self.element.selection.junction_pid = None
 
     def _get_model_delta(
         self, world_dx: float, world_dy: float

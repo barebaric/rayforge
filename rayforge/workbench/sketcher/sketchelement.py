@@ -193,6 +193,8 @@ class SketchElement(CanvasElement):
     def draw_edit_overlay(self, ctx: cairo.Context):
         """Draws constraints, points, and handles on top of the canvas."""
         self.renderer.draw_edit_overlay(ctx)
+        # Allow the active tool to draw its own overlay (e.g. selection box)
+        self.current_tool.draw_overlay(ctx)
 
     # =========================================================================
     # Input Handling (Routed to Tools)
