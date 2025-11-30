@@ -59,21 +59,27 @@ class RecipeRow(Gtk.Box):
         suffix_box.append(delete_button)
 
     def _get_subtitle(self) -> str:
-        parts = [self.recipe.capability.label]
+        parts = []
         context = get_context()
 
+        # 1. Machine
         if self.recipe.target_machine_id:
             machine = context.machine_mgr.get_machine_by_id(
                 self.recipe.target_machine_id
             )
-            parts.append(machine.name if machine else "Unknown Machine")
+            parts.append(machine.name if machine else _("Unknown Machine"))
 
+        # 2. Capability
+        parts.append(self.recipe.capability.label)
+
+        # 3. Material
         if self.recipe.material_uid:
             material = context.material_mgr.get_material(
                 self.recipe.material_uid
             )
-            parts.append(material.name if material else "Unknown Material")
+            parts.append(material.name if material else _("Unknown Material"))
 
+        # 4. Thickness
         if self.recipe.min_thickness_mm is not None:
             min_formatted = format_value(
                 self.recipe.min_thickness_mm, "length"
@@ -125,7 +131,7 @@ class RecipeListWidget(PreferencesGroupWithButton):
         )
         dialog = AddEditRecipeDialog(parent=parent_window)
 
-        def on_response(d, response_id):
+        def on_response(d, response_id: str):
             if response_id == "add":
                 data = d.get_recipe_data()
                 if data["name"]:
@@ -142,7 +148,7 @@ class RecipeListWidget(PreferencesGroupWithButton):
                     get_context().recipe_mgr.add_recipe(new_recipe)
                     self.populate_recipes()
                     self.recipes_changed.send(self)
-            d.destroy()
+            d.close()
 
         dialog.connect("response", on_response)
         dialog.present()
@@ -154,7 +160,7 @@ class RecipeListWidget(PreferencesGroupWithButton):
         )
         dialog = AddEditRecipeDialog(parent=parent_window, recipe=recipe)
 
-        def on_response(d, response_id):
+        def on_response(d, response_id: str):
             if response_id == "save":
                 data = d.get_recipe_data()
                 if data["name"]:
@@ -171,7 +177,7 @@ class RecipeListWidget(PreferencesGroupWithButton):
                     get_context().recipe_mgr.save_recipe(recipe)
                     self.populate_recipes()
                     self.recipes_changed.send(self)
-            d.destroy()
+            d.close()
 
         dialog.connect("response", on_response)
         dialog.present()
