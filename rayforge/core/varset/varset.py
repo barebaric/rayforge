@@ -1,11 +1,44 @@
 from typing import Dict, Optional, Iterator, Any, List, KeysView, Type
+from blinker import Signal
 from .var import Var
 
 
 class VarSet:
     """
     A collection of Var objects, representing a logical group of settings or
-    parameters.
+    parameters. This class is observable via blinker signals.
+    """
+
+    var_added = Signal()
+    """
+    Signal sent when a new Var is added to the set.
+    Sender: The VarSet instance.
+    Args:
+        var (Var): The Var instance that was added.
+    """
+
+    var_removed = Signal()
+    """
+    Signal sent when a Var is removed from the set.
+    Sender: The VarSet instance.
+    Args:
+        var (Var): The Var instance that was removed.
+    """
+
+    cleared = Signal()
+    """
+    Signal sent when the VarSet is cleared of all Vars.
+    Sender: The VarSet instance.
+    """
+
+    var_value_changed = Signal()
+    """
+    Signal sent when a contained Var's value changes (bubbled up).
+    Sender: The VarSet instance.
+    Args:
+        var (Var): The child Var instance whose value changed.
+        **kwargs: The original arguments from Var.value_changed
+          (e.g., new_value).
     """
 
     def __init__(
@@ -29,14 +62,16 @@ class VarSet:
             for var in vars:
                 self.add(var)
 
+    def _on_child_var_changed(self, var: Var, **kwargs):
+        """Handler for bubbling up value changes from contained Vars."""
+        self.var_value_changed.send(self, var=var, **kwargs)
+
     @staticmethod
     def _create_var_from_dict(data: Dict[str, Any]) -> Var:
         """
         Internal factory to instantiate a Var subclass from its serialized
         definition.
         """
-        # These imports are done locally to prevent circular dependencies if
-        # Var subclasses ever need to import from VarSet.
         from .baudratevar import BaudrateVar
         from .boolvar import BoolVar
         from .choicevar import ChoiceVar
@@ -63,24 +98,17 @@ class VarSet:
 
         data_copy = data.copy()
         class_name = data_copy.pop("class", None)
-
         if not class_name:
             raise ValueError(
                 "Var definition dictionary is missing 'class' key."
             )
-
         if class_name not in _CLASS_MAP:
             raise ValueError(
                 f"Unknown Var class '{class_name}' in definition."
             )
-
         VarClass = _CLASS_MAP[class_name]
-
-        # The value is for instantiation, not definition, so remove it.
-        # The Var's own __init__ will set the value from 'default' if present.
         if "value" in data_copy:
             del data_copy["value"]
-
         return VarClass(**data_copy)
 
     @property
@@ -95,19 +123,29 @@ class VarSet:
                 f"Var with key '{var.key}' already exists in this VarSet."
             )
         self._vars[var.key] = var
+        # Use weak=False to ensure the bound method is not garbage collected
+        # prematurely. We are responsible for disconnecting it manually.
+        Var.value_changed.connect(
+            self._on_child_var_changed, sender=var, weak=False
+        )
+        self.var_added.send(self, var=var)
+
+    def remove(self, key: str) -> Optional[Var]:
+        """Removes a Var from the set by its key and returns it."""
+        var = self._vars.pop(key, None)
+        if var:
+            Var.value_changed.disconnect(
+                self._on_child_var_changed, sender=var
+            )
+            self.var_removed.send(self, var=var)
+        return var
 
     def get(self, key: str) -> Optional[Var]:
         """Gets a Var by its key, or None if not found."""
         return self._vars.get(key)
 
     def to_dict(self, include_value: bool = False) -> Dict[str, Any]:
-        """
-        Serializes the VarSet's full definition to a dictionary.
-
-        Args:
-            include_value: If True, the current values of the contained Vars
-                           are included. Defaults to False.
-        """
+        """Serializes the VarSet's full definition to a dictionary."""
         return {
             "title": self.title,
             "description": self.description,
@@ -118,20 +156,15 @@ class VarSet:
     def from_dict(cls, data: Dict[str, Any]) -> "VarSet":
         """Deserializes a dictionary into a full VarSet instance."""
         new_set = cls(
-            title=data.get("title"),
-            description=data.get("description"),
+            title=data.get("title"), description=data.get("description")
         )
-
         var_definitions = data.get("vars", [])
         for var_data in var_definitions:
             try:
-                # Use the internal static method as the factory
                 new_var = cls._create_var_from_dict(var_data)
                 new_set.add(new_var)
             except Exception as e:
-                # In a real app, this should likely use the logging module
                 print(f"Warning: Could not deserialize var: {e}")
-
         return new_set
 
     def __getitem__(self, key: str) -> Var:
@@ -170,19 +203,21 @@ class VarSet:
         """
         for key, value in values.items():
             if key in self._vars:
-                # Use the setter to trigger validation and coercion
                 self[key] = value
 
     def clear(self):
         """Removes all Var objects from the set."""
+        for var in self:
+            Var.value_changed.disconnect(
+                self._on_child_var_changed, sender=var
+            )
         self._vars.clear()
+        self.cleared.send(self)
 
     def validate(self):
         """
         Validates all Var objects in the set.
-
-        Raises:
-            ValidationError: On the first validation failure.
+        Raises: ValidationError on the first validation failure.
         """
         for var in self:
             var.validate()
