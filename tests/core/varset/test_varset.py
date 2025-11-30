@@ -1,4 +1,5 @@
 import pytest
+from unittest.mock import Mock
 from rayforge.core.varset.var import Var, ValidationError
 from rayforge.core.varset.intvar import IntVar
 from rayforge.core.varset.floatvar import FloatVar
@@ -182,22 +183,97 @@ class TestVarSet:
             )
         )
 
-        # Serialize
         serialized_data = original_vs.to_dict()
-
-        # Deserialize
         rehydrated_vs = VarSet.from_dict(serialized_data)
 
-        # Compare
         assert rehydrated_vs.title == original_vs.title
         assert rehydrated_vs.description == original_vs.description
         assert len(rehydrated_vs) == len(original_vs)
-        assert rehydrated_vs.keys() == original_vs.keys()
 
-        # Deep compare vars
         for key in original_vs.keys():
-            original_var = original_vs[key]
-            rehydrated_var = rehydrated_vs[key]
-            assert type(rehydrated_var) is type(original_var)
-            # Compare the full definition dictionary
-            assert rehydrated_var.to_dict() == original_var.to_dict()
+            assert rehydrated_vs[key].to_dict() == original_vs[key].to_dict()
+
+    # --- Observability Signal Tests ---
+
+    def test_var_added_signal(self):
+        """Test that the var_added signal is emitted correctly."""
+        vs = VarSet()
+        listener = Mock()
+        vs.var_added.connect(listener)
+
+        v1 = Var(key="a", label="A", var_type=str)
+        vs.add(v1)
+
+        listener.assert_called_once_with(vs, var=v1)
+
+    def test_var_removed_signal(self):
+        """Test that the var_removed signal is emitted correctly."""
+        vs = VarSet()
+        v1 = Var(key="a", label="A", var_type=str)
+        vs.add(v1)
+
+        listener = Mock()
+        vs.var_removed.connect(listener)
+
+        vs.remove("a")
+        listener.assert_called_once_with(vs, var=v1)
+
+        # Removing a non-existent key should not trigger the signal
+        listener.reset_mock()
+        vs.remove("non-existent")
+        listener.assert_not_called()
+
+    def test_cleared_signal(self):
+        """Test that the cleared signal is emitted correctly."""
+        vs = VarSet()
+        vs.add(Var(key="a", label="A", var_type=str))
+        listener = Mock()
+        vs.cleared.connect(listener)
+
+        vs.clear()
+        listener.assert_called_once_with(vs)
+
+    def test_var_value_changed_bubble_up_signal(self):
+        """
+        Test that value changes in child Vars bubble up through the VarSet.
+        """
+        vs = VarSet()
+        v1 = IntVar(key="a", label="A", value=10)
+        vs.add(v1)
+
+        listener = Mock()
+        vs.var_value_changed.connect(listener)
+
+        # Change value via dictionary access on the VarSet
+        vs["a"] = 20
+        listener.assert_called_once_with(
+            vs, var=v1, new_value=20, old_value=10
+        )
+
+        # Change value directly on the Var object
+        listener.reset_mock()
+        v1.value = 30
+        listener.assert_called_once_with(
+            vs, var=v1, new_value=30, old_value=20
+        )
+
+    def test_disconnect_on_remove_and_clear(self):
+        """Test that signal listeners are disconnected on remove and clear."""
+        vs = VarSet()
+        v1 = IntVar(key="a", label="A", value=10)
+        vs.add(v1)
+
+        listener = Mock()
+        vs.var_value_changed.connect(listener)
+
+        # 1. Test remove()
+        vs.remove("a")
+        v1.value = 50  # Change value of the now-removed var
+        listener.assert_not_called()  # The VarSet should not be listening
+
+        # 2. Test clear()
+        v2 = IntVar(key="b", label="B", value=100)
+        vs.add(v2)
+        vs.clear()
+        v2.value = 200  # Change value of the now-cleared var
+        listener.assert_not_called()

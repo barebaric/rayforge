@@ -1,4 +1,5 @@
 from typing import Optional, Type, Callable, Generic, TypeVar, Dict, Any
+from blinker import Signal
 
 
 T = TypeVar("T")
@@ -14,6 +15,15 @@ class Var(Generic[T]):
     """
     Represents a single typed variable with metadata for UI generation,
     validation, and data handling.
+    """
+
+    value_changed = Signal()
+    """
+    Signal sent when the Var's value changes.
+    Sender: The Var instance.
+    Args:
+        new_value (Optional[T]): The new value.
+        old_value (Optional[T]): The previous value.
     """
 
     def __init__(
@@ -78,48 +88,46 @@ class Var(Generic[T]):
     @value.setter
     def value(self, new_value: Optional[T]):
         """
-        Sets the variable's value, coercing it to the correct type.
-        Validation is now handled exclusively by the `validate()` method.
+        Sets the variable's value, coercing it to the correct type and
+        emitting a signal if the value has changed.
         """
+        old_value = self._value
+        coerced_value: Optional[T]
+
         # 1. Coerce value if not None
-        value: Optional[T]
         if new_value is None:
-            self._value = None
-            return
-
-        try:
-            if self.var_type is int:
-                # We coerce via float() to handle strings, floats, and ints.
-                value = int(float(new_value))  # type: ignore
-
-            # Handle coercion to bool, which can come from ints or various
-            # string forms.
-            elif self.var_type is bool:
-                if isinstance(new_value, str):
-                    val_lower = new_value.lower()
-                    if val_lower in ("true", "1", "on", "yes"):
-                        value = True  # type: ignore
-                    elif val_lower in ("false", "0", "off", "no"):
-                        value = False  # type: ignore
+            coerced_value = None
+        else:
+            try:
+                if self.var_type is int:
+                    coerced_value = int(float(new_value))  # type: ignore
+                elif self.var_type is bool:
+                    if isinstance(new_value, str):
+                        val_lower = new_value.lower()
+                        if val_lower in ("true", "1", "on", "yes"):
+                            coerced_value = True  # type: ignore
+                        elif val_lower in ("false", "0", "off", "no"):
+                            coerced_value = False  # type: ignore
+                        else:
+                            raise ValueError(
+                                f"Cannot convert string '{new_value}' to bool."
+                            )
                     else:
-                        raise ValueError(
-                            f"Cannot convert string '{new_value}' to bool."
-                        )
+                        coerced_value = bool(new_value)  # type: ignore
                 else:
-                    # Coerce from other types like int or float using standard
-                    # bool()
-                    value = bool(new_value)  # type: ignore
-            else:
-                # For other types (float, str, etc.), use direct coercion.
-                value = self.var_type(new_value)  # type: ignore[call-arg]
-        except (ValueError, TypeError) as e:
-            raise TypeError(
-                f"Value '{new_value}' for key '{self.key}' cannot be "
-                f"coerced to type {self.var_type.__name__}"
-            ) from e
+                    coerced_value = self.var_type(new_value)  # type: ignore
+            except (ValueError, TypeError) as e:
+                raise TypeError(
+                    f"Value '{new_value}' for key '{self.key}' cannot be "
+                    f"coerced to type {self.var_type.__name__}"
+                ) from e
 
-        # 2. Assign the coerced value. Validation is NOT performed here.
-        self._value = value
+        # 2. Assign the coerced value and emit signal if changed.
+        if old_value != coerced_value:
+            self._value = coerced_value
+            self.value_changed.send(
+                self, new_value=self._value, old_value=old_value
+            )
 
     def to_dict(self, include_value: bool = False) -> Dict[str, Any]:
         """

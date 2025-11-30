@@ -1,5 +1,6 @@
 import pytest
 from typing import cast
+from unittest.mock import Mock
 from rayforge.core.varset.var import Var, ValidationError
 
 
@@ -105,6 +106,27 @@ class TestVar:
             v.validate()
 
         assert v.value == 101
+
+    def test_value_changed_signal(self):
+        """Test that the value_changed signal is emitted correctly."""
+        v = Var(key="test", label="Test", var_type=int, value=10)
+        listener = Mock()
+        Var.value_changed.connect(listener, sender=v)
+
+        # 1. Change the value, expect signal
+        v.value = 20
+        listener.assert_called_once_with(v, new_value=20, old_value=10)
+
+        # 2. Set to same value, expect no signal
+        listener.reset_mock()
+        v.value = 20
+        listener.assert_not_called()
+
+        # 3. Change again
+        v.value = 30
+        listener.assert_called_once_with(v, new_value=30, old_value=20)
+
+        Var.value_changed.disconnect(listener, sender=v)
 
     def test_to_dict(self):
         """Test the to_dict method for serializing the definition."""
