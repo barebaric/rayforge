@@ -114,14 +114,17 @@ class GcodeDialect:
         scripts_vs = VarSet(title=_("Scripts"))
         scripts_vs.add(
             TextAreaVar(
-                "preamble", _("Preamble"), str, value="\n".join(self.preamble)
+                "preamble",
+                _("Preamble"),
+                description=_("Preamble script"),
+                value="\n".join(self.preamble),
             )
         )
         scripts_vs.add(
             TextAreaVar(
                 "postscript",
                 _("Postscript"),
-                str,
+                description=_("Postscript script"),
                 value="\n".join(self.postscript),
             )
         )
