@@ -37,8 +37,8 @@ class TestIntVar:
         with pytest.raises(ValidationError, match="Value cannot be None"):
             v.validate()
 
-    def test_serialization_round_trip(self):
-        """Test serializing and deserializing an IntVar."""
+    def test_serialization_and_rehydration(self):
+        """Test serializing (with and without value) and deserializing."""
         original_var = IntVar(
             key="retries",
             label="Retry Count",
@@ -47,9 +47,12 @@ class TestIntVar:
             min_val=0,
             max_val=10,
         )
+        original_var.value = 7  # Set a non-default value
 
-        serialized_data = original_var.to_dict()
-        assert serialized_data == {
+        # Test serialization of definition (default behavior)
+        serialized_def = original_var.to_dict()
+        assert "value" not in serialized_def
+        assert serialized_def == {
             "class": "IntVar",
             "key": "retries",
             "label": "Retry Count",
@@ -59,11 +62,16 @@ class TestIntVar:
             "max_val": 10,
         }
 
-        rehydrated_var = VarSet._create_var_from_dict(serialized_data)
+        # Test serialization of state (include_value=True)
+        serialized_state = original_var.to_dict(include_value=True)
+        assert serialized_state["value"] == 7
 
+        # Test rehydration from definition
+        rehydrated_var = VarSet._create_var_from_dict(serialized_def)
         assert isinstance(rehydrated_var, IntVar)
         assert rehydrated_var.key == original_var.key
         assert rehydrated_var.label == original_var.label
         assert rehydrated_var.default == original_var.default
         assert rehydrated_var.min_val == original_var.min_val
         assert rehydrated_var.max_val == original_var.max_val
+        assert rehydrated_var.value == original_var.default

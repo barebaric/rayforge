@@ -161,7 +161,7 @@ class TestVarSet:
         assert "title='My Settings'" in representation
         assert "count=2" in representation
 
-    def test_serialization_round_trip(self):
+    def test_serialization_and_rehydration(self):
         """
         Test a full serialization/deserialization cycle of a complex VarSet.
         """
@@ -182,14 +182,25 @@ class TestVarSet:
                 default="A",
             )
         )
+        original_vs["count"] = 99  # Set a non-default value
 
-        serialized_data = original_vs.to_dict()
-        rehydrated_vs = VarSet.from_dict(serialized_data)
+        # Test serialization of definition (default behavior)
+        serialized_def = original_vs.to_dict(include_value=False)
+        assert "value" not in serialized_def["vars"][0]
+        assert "value" not in serialized_def["vars"][1]
+        assert "value" not in serialized_def["vars"][2]
 
+        # Test serialization of state (include_value=True)
+        serialized_state = original_vs.to_dict(include_value=True)
+        assert serialized_state["vars"][0]["value"] == 99
+        assert serialized_state["vars"][1]["value"] == 1.2  # The default
+        assert serialized_state["vars"][2]["value"] == "A"  # The default
+
+        # Test rehydration from definition
+        rehydrated_vs = VarSet.from_dict(serialized_def)
         assert rehydrated_vs.title == original_vs.title
         assert rehydrated_vs.description == original_vs.description
         assert len(rehydrated_vs) == len(original_vs)
-
         for key in original_vs.keys():
             assert rehydrated_vs[key].to_dict() == original_vs[key].to_dict()
 

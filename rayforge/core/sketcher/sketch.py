@@ -2,8 +2,7 @@ import json
 from pathlib import Path
 from typing import Union, List, Optional, Set, Dict, Any, Sequence
 from ..geo import Geometry
-from .params import ParameterContext
-from .entities import EntityRegistry, Line, Arc, Circle
+from ..varset import VarSet
 from .constraints import (
     Constraint,
     DistanceConstraint,
@@ -19,6 +18,8 @@ from .constraints import (
     EqualLengthConstraint,
     SymmetryConstraint,
 )
+from .entities import EntityRegistry, Line, Arc, Circle
+from .params import ParameterContext
 from .solver import Solver
 
 
@@ -48,6 +49,10 @@ class Sketch:
         self.params = ParameterContext()
         self.registry = EntityRegistry()
         self.constraints: List[Constraint] = []
+        self.input_parameters = VarSet(
+            title=_("Input Parameters"),
+            description=_("Parameters that control this sketch's geometry."),
+        )
 
         # Initialize the Origin Point (Fixed Anchor)
         self.origin_id = self.registry.add_point(0.0, 0.0, fixed=True)
@@ -95,9 +100,12 @@ class Sketch:
 
         return True
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self, include_input_values: bool = True) -> Dict[str, Any]:
         """Serializes the Sketch to a dictionary."""
         return {
+            "input_parameters": self.input_parameters.to_dict(
+                include_value=include_input_values
+            ),
             "params": self.params.to_dict(),
             "registry": self.registry.to_dict(),
             "constraints": [c.to_dict() for c in self.constraints],
@@ -114,15 +122,18 @@ class Sketch:
                 f"{required_keys}."
             )
 
-        new_sketch = cls.__new__(
-            cls
-        )  # Create instance without calling __init__
+        new_sketch = cls()
+
+        # Handle backward compatibility for input_parameters
+        if "input_parameters" in data:
+            new_sketch.input_parameters = VarSet.from_dict(
+                data["input_parameters"]
+            )
 
         new_sketch.params = ParameterContext.from_dict(data["params"])
         new_sketch.registry = EntityRegistry.from_dict(data["registry"])
         new_sketch.origin_id = data["origin_id"]
         new_sketch.constraints = []
-
         for c_data in data["constraints"]:
             c_type = c_data.get("type")
             c_cls = _CONSTRAINT_CLASSES.get(c_type)
@@ -431,6 +442,15 @@ class Sketch:
 
     # --- Manipulation & Processing ---
 
+    def _update_params_from_inputs(self) -> None:
+        """
+        Injects the current values from the input_parameters VarSet into
+        the internal ParameterContext.
+        """
+        for var in self.input_parameters:
+            if var.value is not None:
+                self.params.set(var.key, var.value)
+
     def move_point(self, pid: int, x: float, y: float) -> bool:
         """
         Attempts to move a point to a new location and resolve constraints.
@@ -461,6 +481,9 @@ class Sketch:
         update_constraint_status: bool = True,
     ) -> bool:
         """Resolves all constraints."""
+        # Bridge the public API (VarSet) to the internal calculation engine.
+        self._update_params_from_inputs()
+
         all_constraints = self.constraints
         if extra_constraints:
             all_constraints = self.constraints + extra_constraints
