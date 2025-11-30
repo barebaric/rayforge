@@ -17,6 +17,12 @@ from rayforge.core.geo.primitives import (
     find_closest_point_on_line_segment,
     find_closest_point_on_arc,
     find_closest_point_on_line,
+    is_point_in_rect,
+    rect_a_contains_rect_b,
+    line_segment_intersects_rect,
+    arc_intersects_rect,
+    circle_is_contained_by_rect,
+    circle_intersects_rect,
 )
 
 
@@ -603,3 +609,99 @@ def test_find_closest_point_on_arc():
     # The closest point should be near the top of the arc, around (0, 7.5)
     assert pt[0] == pytest.approx(0, abs=2)
     assert pt[1] == pytest.approx(7.5, abs=2)
+
+
+# --- NEW TESTS for refactored entity logic ---
+
+
+@pytest.fixture
+def selection_rect():
+    return (10.0, 10.0, 50.0, 50.0)
+
+
+def test_is_point_in_rect(selection_rect):
+    # Inside
+    assert is_point_in_rect((25, 25), selection_rect)
+    # On edge
+    assert is_point_in_rect((10, 25), selection_rect)
+    assert is_point_in_rect((25, 50), selection_rect)
+    # Outside
+    assert not is_point_in_rect((5, 25), selection_rect)
+    assert not is_point_in_rect((60, 25), selection_rect)
+
+
+def test_rect_a_contains_rect_b(selection_rect):
+    # Fully contained
+    contained_rect = (20, 20, 40, 40)
+    assert rect_a_contains_rect_b(selection_rect, contained_rect)
+    # Touching edge
+    touching_rect = (10, 20, 40, 40)
+    assert rect_a_contains_rect_b(selection_rect, touching_rect)
+    # Intersecting
+    intersecting_rect = (40, 40, 60, 60)
+    assert not rect_a_contains_rect_b(selection_rect, intersecting_rect)
+    # Outside
+    outside_rect = (100, 100, 120, 120)
+    assert not rect_a_contains_rect_b(selection_rect, outside_rect)
+
+
+def test_line_segment_intersects_rect(selection_rect):
+    # Fully contained
+    assert line_segment_intersects_rect((20, 20), (40, 40), selection_rect)
+    # One point in, one out
+    assert line_segment_intersects_rect((25, 25), (60, 60), selection_rect)
+    # Crossing through
+    assert line_segment_intersects_rect((0, 25), (60, 25), selection_rect)
+    # Touching edge
+    assert line_segment_intersects_rect((0, 10), (20, 10), selection_rect)
+    # Fully outside
+    assert not line_segment_intersects_rect((0, 0), (5, 5), selection_rect)
+    # Bbox intersects, and segment does too (diagonal case)
+    assert line_segment_intersects_rect((0, 60), (60, 0), selection_rect)
+
+
+def test_arc_intersects_rect(selection_rect):
+    # Center (30,30), radius 10. Arc from East to North. Fully inside.
+    assert arc_intersects_rect(
+        (40, 30), (30, 40), (30, 30), False, selection_rect
+    )
+    # Arc from outside to inside
+    assert arc_intersects_rect(
+        (0, 30), (30, 40), (30, 30), False, selection_rect
+    )
+    # Arc passing through (top semi-circle)
+    assert arc_intersects_rect(
+        (0, 30), (60, 30), (30, 0), True, selection_rect
+    )
+    # Arc fully outside
+    assert not arc_intersects_rect(
+        (100, 100), (110, 110), (100, 110), False, selection_rect
+    )
+    # Arc bbox intersects, but arc does not (C-shape arc around a corner)
+    assert not arc_intersects_rect(
+        (0, 30), (30, 0), (0, 0), False, selection_rect
+    )
+
+
+def test_circle_is_contained_by_rect(selection_rect):
+    # Fully contained
+    assert circle_is_contained_by_rect((30, 30), 10, selection_rect)
+    # Touching edge
+    assert circle_is_contained_by_rect((20, 30), 10, selection_rect)
+    # Intersecting
+    assert not circle_is_contained_by_rect((5, 30), 10, selection_rect)
+    # Outside
+    assert not circle_is_contained_by_rect((100, 100), 5, selection_rect)
+
+
+def test_circle_intersects_rect(selection_rect):
+    # Intersects
+    assert circle_intersects_rect((5, 30), 10, selection_rect)
+    # Fully contained (should not intersect boundary)
+    assert not circle_intersects_rect((30, 30), 5, selection_rect)
+    # Rect is fully contained in circle (should not intersect boundary)
+    assert not circle_intersects_rect((30, 30), 100, selection_rect)
+    # Touching
+    assert circle_intersects_rect((0, 30), 10, selection_rect)
+    # Separate
+    assert not circle_intersects_rect((100, 100), 5, selection_rect)
