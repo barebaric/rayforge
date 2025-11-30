@@ -36,7 +36,9 @@ class DiameterConstraint(Constraint):
     def from_dict(cls, data: Dict[str, Any]) -> "DiameterConstraint":
         return cls(circle_id=data["circle_id"], diameter=data["value"])
 
-    def constrains_radius(self, entity_id: int) -> bool:
+    def constrains_radius(
+        self, registry: "EntityRegistry", entity_id: int
+    ) -> bool:
         return self.circle_id == entity_id
 
     def error(

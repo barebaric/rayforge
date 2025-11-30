@@ -38,10 +38,10 @@ def test_diameter_constrains_radius_method(setup_env):
     c = DiameterConstraint(circ_id, 10.0)
 
     # Should return True for the constrained circle
-    assert c.constrains_radius(circ_id) is True
+    assert c.constrains_radius(reg, circ_id) is True
     # Should return False for any other entity
-    assert c.constrains_radius(other_circ_id) is False
-    assert c.constrains_radius(999) is False
+    assert c.constrains_radius(reg, other_circ_id) is False
+    assert c.constrains_radius(reg, 999) is False
 
 
 def test_diameter_constraint_serialization_round_trip(setup_env):

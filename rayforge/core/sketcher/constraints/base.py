@@ -34,11 +34,14 @@ class Constraint:
         """
         return {}
 
-    def constrains_radius(self, entity_id: int) -> bool:
+    def constrains_radius(
+        self, registry: "EntityRegistry", entity_id: int
+    ) -> bool:
         """
         Returns True if this constraint explicitly defines or links the
         radius/length of the specified entity.
         Used by the Solver to determine visual feedback (green color).
+        The registry is provided to allow checking related point status.
         """
         return False
 

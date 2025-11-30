@@ -261,7 +261,7 @@ class Circle(Entity):
         radius_is_defined = radius_pt.constrained
         if not radius_is_defined:
             for constr in constraints:
-                if constr.constrains_radius(self.id):
+                if constr.constrains_radius(registry, self.id):
                     radius_is_defined = True
                     break
 

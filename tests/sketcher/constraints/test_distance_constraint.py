@@ -34,8 +34,8 @@ def test_distance_constrains_radius_method(setup_env):
     c = DistanceConstraint(p1, p2, 10.0)
 
     # Distance constraint doesn't constrain radius of an entity
-    assert c.constrains_radius(999) is False
-    assert c.constrains_radius(p1) is False
+    assert c.constrains_radius(reg, 999) is False
+    assert c.constrains_radius(reg, p1) is False
 
 
 def test_distance_constraint_with_expression(setup_env):
