@@ -62,6 +62,17 @@ class Entity:
         """
         self.constrained = False
 
+    def get_point_ids(self) -> List[int]:
+        """Returns IDs of all control points used by this entity."""
+        return []
+
+    def get_ignorable_unconstrained_points(self) -> List[int]:
+        """
+        Returns IDs of points that can remain unconstrained if this entity
+        is constrained (e.g. radius handles).
+        """
+        return []
+
     def to_dict(self) -> Dict[str, Any]:
         """Base serialization method for entities."""
         return {
@@ -82,6 +93,9 @@ class Line(Entity):
         self.p1_idx = p1_idx
         self.p2_idx = p2_idx
         self.type = "line"
+
+    def get_point_ids(self) -> List[int]:
+        return [self.p1_idx, self.p2_idx]
 
     def update_constrained_status(
         self, registry: "EntityRegistry", constraints: Sequence["Constraint"]
@@ -129,6 +143,9 @@ class Arc(Entity):
         self.center_idx = center_idx
         self.clockwise = clockwise
         self.type = "arc"
+
+    def get_point_ids(self) -> List[int]:
+        return [self.start_idx, self.end_idx, self.center_idx]
 
     def update_constrained_status(
         self, registry: "EntityRegistry", constraints: Sequence["Constraint"]
@@ -215,6 +232,19 @@ class Circle(Entity):
         self.center_idx = center_idx
         self.radius_pt_idx = radius_pt_idx
         self.type = "circle"
+
+    def get_point_ids(self) -> List[int]:
+        return [self.center_idx, self.radius_pt_idx]
+
+    def get_ignorable_unconstrained_points(self) -> List[int]:
+        """
+        If the circle is geometrically constrained, the radius point (which
+        acts only as a handle for the radius value) does not need to be
+        constrained rotationally.
+        """
+        if self.constrained:
+            return [self.radius_pt_idx]
+        return []
 
     def update_constrained_status(
         self, registry: "EntityRegistry", constraints: Sequence["Constraint"]
@@ -362,14 +392,7 @@ class EntityRegistry:
     def is_point_used(self, pid: int) -> bool:
         """Checks if a point is used by any entity in the sketch."""
         for e in self.entities:
-            p_ids = []
-            if isinstance(e, Line):
-                p_ids = [e.p1_idx, e.p2_idx]
-            elif isinstance(e, Arc):
-                p_ids = [e.start_idx, e.end_idx, e.center_idx]
-            elif isinstance(e, Circle):
-                p_ids = [e.center_idx, e.radius_pt_idx]
-            if pid in p_ids:
+            if pid in e.get_point_ids():
                 return True
         return False
 
