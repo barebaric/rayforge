@@ -77,6 +77,12 @@ class SketchCanvas(WorldSurface):
         if old_sketch:
             old_sketch.remove()
 
+        # Force a solve immediately. The sketch data has just been loaded from
+        # disk, so the 'constrained' flags on points/entities are all False.
+        # Running solve() calculates the Degrees of Freedom (DOF) and updates
+        # these flags, ensuring fully constrained entities appear green.
+        sketch.solve()
+
         # Create and configure the new element with the injected sketch
         new_sketch_elem = SketchElement(sketch=sketch)
         new_sketch_elem.constraint_edit_requested.connect(
