@@ -1,6 +1,6 @@
 from typing import List, Tuple, Dict, Optional, Any, Sequence, TYPE_CHECKING
 import math
-from ..geo import primitives
+from ..geo import primitives, clipping
 
 if TYPE_CHECKING:
     from .constraints import Constraint
@@ -36,6 +36,10 @@ class Point:
             y=data["y"],
             fixed=data.get("fixed", False),
         )
+
+    def is_in_rect(self, rect: Tuple[float, float, float, float]) -> bool:
+        """Checks if point is inside (min_x, min_y, max_x, max_y)."""
+        return rect[0] <= self.x <= rect[2] and rect[1] <= self.y <= rect[3]
 
     def __repr__(self) -> str:
         return (
@@ -73,6 +77,28 @@ class Entity:
         """
         return []
 
+    def is_contained_by(
+        self,
+        rect: Tuple[float, float, float, float],
+        registry: "EntityRegistry",
+    ) -> bool:
+        """
+        Returns True if the entity is fully strictly contained within the rect.
+        Used for Window Selection.
+        """
+        return False
+
+    def intersects_rect(
+        self,
+        rect: Tuple[float, float, float, float],
+        registry: "EntityRegistry",
+    ) -> bool:
+        """
+        Returns True if the entity intersects the rect or is contained by it.
+        Used for Crossing Selection.
+        """
+        return False
+
     def to_dict(self) -> Dict[str, Any]:
         """Base serialization method for entities."""
         return {
@@ -103,6 +129,35 @@ class Line(Entity):
         p1 = registry.get_point(self.p1_idx)
         p2 = registry.get_point(self.p2_idx)
         self.constrained = p1.constrained and p2.constrained
+
+    def is_contained_by(
+        self,
+        rect: Tuple[float, float, float, float],
+        registry: "EntityRegistry",
+    ) -> bool:
+        p1 = registry.get_point(self.p1_idx)
+        p2 = registry.get_point(self.p2_idx)
+        return p1.is_in_rect(rect) and p2.is_in_rect(rect)
+
+    def intersects_rect(
+        self,
+        rect: Tuple[float, float, float, float],
+        registry: "EntityRegistry",
+    ) -> bool:
+        p1 = registry.get_point(self.p1_idx)
+        p2 = registry.get_point(self.p2_idx)
+
+        # 1. Check if either endpoint is inside (Trivial Accept)
+        if p1.is_in_rect(rect) or p2.is_in_rect(rect):
+            return True
+
+        # 2. Use Cohen-Sutherland clipping to check if segment crosses
+        # Construct 3D tuples as clipping expects (x,y,z), we ignore Z.
+        start_3d = (p1.x, p1.y, 0.0)
+        end_3d = (p2.x, p2.y, 0.0)
+
+        clipped = clipping.clip_line_segment(start_3d, end_3d, rect)
+        return clipped is not None
 
     def to_dict(self) -> Dict[str, Any]:
         """Serializes the Line to a dictionary."""
@@ -154,6 +209,81 @@ class Arc(Entity):
         e = registry.get_point(self.end_idx)
         c = registry.get_point(self.center_idx)
         self.constrained = s.constrained and e.constrained and c.constrained
+
+    def _get_bbox(
+        self, registry: "EntityRegistry"
+    ) -> Tuple[float, float, float, float]:
+        start = registry.get_point(self.start_idx)
+        end = registry.get_point(self.end_idx)
+        center = registry.get_point(self.center_idx)
+
+        # Reuse core primitive utility for exact arc bounding box
+        # Note: primitive expects center_offset relative to start, so:
+        # center = start + offset. Here center is absolute.
+        # offset = center - start.
+        return primitives.get_arc_bounding_box(
+            start.pos(),
+            end.pos(),
+            (center.x - start.x, center.y - start.y),
+            self.clockwise,
+        )
+
+    def is_contained_by(
+        self,
+        rect: Tuple[float, float, float, float],
+        registry: "EntityRegistry",
+    ) -> bool:
+        # For an arc to be strictly inside, its entire bounding box must be
+        # inside
+        ax1, ay1, ax2, ay2 = self._get_bbox(registry)
+        rx1, ry1, rx2, ry2 = rect
+        return ax1 >= rx1 and ay1 >= ry1 and ax2 <= rx2 and ay2 <= ry2
+
+    def intersects_rect(
+        self,
+        rect: Tuple[float, float, float, float],
+        registry: "EntityRegistry",
+    ) -> bool:
+        start = registry.get_point(self.start_idx)
+        end = registry.get_point(self.end_idx)
+        center = registry.get_point(self.center_idx)
+        radius = math.hypot(start.x - center.x, start.y - center.y)
+
+        # Broad phase: Check if full circle's AABB intersects rect
+        rx1, ry1, rx2, ry2 = rect
+        cx, cy = center.pos()
+        if (
+            cx + radius < rx1
+            or cx - radius > rx2
+            or cy + radius < ry1
+            or cy - radius > ry2
+        ):
+            return False
+
+        # Now that an intersection is possible, do a detailed check by
+        # linearizing the arc and checking each sub-segment. This is robust.
+        from ..geo.linearize import linearize_arc
+
+        # A mock command object for linearize_arc
+        class MockArcCmd:
+            def __init__(self, end, center_offset, clockwise):
+                self.end = (end.x, end.y, 0.0)
+                self.center_offset = center_offset
+                self.clockwise = clockwise
+
+        mock_cmd = MockArcCmd(
+            end, (center.x - start.x, center.y - start.y), self.clockwise
+        )
+        start_3d = (start.x, start.y, 0.0)
+
+        # Use a sensible resolution for selection hit-testing
+        segments = linearize_arc(mock_cmd, start_3d, resolution=radius * 0.1)
+
+        for p1_3d, p2_3d in segments:
+            if clipping.clip_line_segment(p1_3d, p2_3d, rect) is not None:
+                return True
+
+        return False
 
     def to_dict(self) -> Dict[str, Any]:
         """Serializes the Arc to a dictionary."""
@@ -266,6 +396,59 @@ class Circle(Entity):
                     break
 
         self.constrained = center_is_constrained and radius_is_defined
+
+    def is_contained_by(
+        self,
+        rect: Tuple[float, float, float, float],
+        registry: "EntityRegistry",
+    ) -> bool:
+        center = registry.get_point(self.center_idx)
+        radius_pt = registry.get_point(self.radius_pt_idx)
+        radius = math.hypot(radius_pt.x - center.x, radius_pt.y - center.y)
+
+        rx1, ry1, rx2, ry2 = rect
+        return (
+            (center.x - radius) >= rx1
+            and (center.y - radius) >= ry1
+            and (center.x + radius) <= rx2
+            and (center.y + radius) <= ry2
+        )
+
+    def intersects_rect(
+        self,
+        rect: Tuple[float, float, float, float],
+        registry: "EntityRegistry",
+    ) -> bool:
+        center = registry.get_point(self.center_idx)
+        radius_pt = registry.get_point(self.radius_pt_idx)
+        radius = math.hypot(radius_pt.x - center.x, radius_pt.y - center.y)
+
+        rx1, ry1, rx2, ry2 = rect
+
+        # 1. Check for overlap (closest point on rect to center is within
+        # radius)
+        closest_x = max(rx1, min(center.x, rx2))
+        closest_y = max(ry1, min(center.y, ry2))
+        dist_sq_closest = (closest_x - center.x) ** 2 + (
+            closest_y - center.y
+        ) ** 2
+        if dist_sq_closest > radius * radius:
+            return False  # No overlap at all
+
+        # 2. If overlapping, check that the rect is not fully contained
+        # within the circle, which would mean it doesn't touch the boundary.
+        # Find the farthest corner of the rect from the circle center.
+        dx_far = max(abs(rx1 - center.x), abs(rx2 - center.x))
+        dy_far = max(abs(ry1 - center.y), abs(ry2 - center.y))
+        dist_sq_farthest = dx_far**2 + dy_far**2
+        if dist_sq_farthest < radius * radius:
+            return (
+                False  # Rect is entirely inside circle, not touching boundary
+            )
+
+        # If it overlaps but is not fully contained, it must intersect the
+        # boundary.
+        return True
 
     def to_dict(self) -> Dict[str, Any]:
         """Serializes the Circle to a dictionary."""
