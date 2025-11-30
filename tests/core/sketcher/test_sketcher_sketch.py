@@ -1,7 +1,8 @@
+import math
 import pytest
 from pathlib import Path
-from rayforge.core.sketcher.sketch import Sketch
 from rayforge.core.geo import ArcToCommand, Geometry
+from rayforge.core.sketcher import Sketch
 from rayforge.core.sketcher.constraints import (
     EqualDistanceConstraint,
     PointOnLineConstraint,
@@ -9,6 +10,7 @@ from rayforge.core.sketcher.constraints import (
     EqualLengthConstraint,
     SymmetryConstraint,
 )
+from rayforge.core.varset import FloatVar
 
 
 def test_sketch_workflow():
@@ -456,3 +458,190 @@ def test_sketch_supports_constraint(setup_sketch_for_validation):
     assert s.supports_constraint("symmetry", [p1, p2], []) is False
     assert s.supports_constraint("symmetry", [p1], [l1]) is False
     assert s.supports_constraint("symmetry", [p1, p2], [l1, l2]) is False
+
+
+def test_sketch_initializes_with_empty_varset():
+    """Test that a new Sketch has a valid, empty input_parameters VarSet."""
+    sketch = Sketch()
+    assert sketch.input_parameters is not None
+    assert len(sketch.input_parameters) == 0
+
+
+def test_bridge_from_varset_to_solver():
+    """
+    Verify that a value from input_parameters is correctly used by the solver.
+    """
+    sketch = Sketch()
+    p1 = sketch.add_point(0, 0)
+    p2 = sketch.add_point(100, 0)
+
+    # 1. Define an input parameter
+    width_var = FloatVar(key="width", label="Overall Width", default=123.45)
+    sketch.input_parameters.add(width_var)
+
+    # 2. Use it in a constraint
+    sketch.constrain_distance(p1, p2, "width")
+
+    # 3. Solve the sketch
+    assert sketch.solve() is True
+
+    # 4. Verify the result
+    pt1 = sketch.registry.get_point(p1)
+    pt2 = sketch.registry.get_point(p2)
+    final_dist = math.hypot(pt2.x - pt1.x, pt2.y - pt1.y)
+
+    assert final_dist == pytest.approx(123.45)
+
+
+def test_input_parameter_overrides_internal_parameter():
+    """
+    Verify that if an input_parameter has the same key as an internal
+    parameter, the input_parameter's value takes precedence.
+    """
+    sketch = Sketch()
+    p1 = sketch.add_point(0, 0)
+    p2 = sketch.add_point(100, 0)
+
+    # 1. Set an internal parameter with a "wrong" value
+    sketch.set_param("width", 999.9)
+
+    # 2. Define an input parameter with the "correct" value
+    width_var = FloatVar(key="width", label="Width", default=50.0)
+    sketch.input_parameters.add(width_var)
+
+    # 3. Use it in a constraint
+    sketch.constrain_distance(p1, p2, "width")
+
+    # 4. Solve the sketch
+    assert sketch.solve() is True
+
+    # 5. Verify the result uses the value from the input_parameter
+    pt1 = sketch.registry.get_point(p1)
+    pt2 = sketch.registry.get_point(p2)
+    final_dist = math.hypot(pt2.x - pt1.x, pt2.y - pt1.y)
+
+    assert final_dist == pytest.approx(50.0)
+
+
+def test_solve_with_no_input_parameters():
+    """
+    Verify that a sketch with no input parameters still solves correctly.
+    """
+    sketch = Sketch()
+    p1 = sketch.add_point(0, 0)
+    p2 = sketch.add_point(10, 20)
+
+    # Use a hard-coded value in the constraint
+    sketch.constrain_distance(p1, p2, 25.0)
+    assert sketch.solve() is True
+
+    pt1 = sketch.registry.get_point(p1)
+    pt2 = sketch.registry.get_point(p2)
+    final_dist = math.hypot(pt2.x - pt1.x, pt2.y - pt1.y)
+
+    assert final_dist == pytest.approx(25.0)
+
+
+def test_sketch_serialization_roundtrip_with_input_parameters():
+    """
+    Verify that a sketch with input_parameters can be serialized and
+    deserialized correctly, respecting the include_input_values flag.
+    """
+    # 1. Create a sketch and add an input parameter
+    sketch = Sketch()
+    width_var = FloatVar(
+        key="width", label="Overall Width", default=140.0, value=120.0
+    )
+    sketch.input_parameters.add(width_var)
+
+    # Add some geometry that uses the parameter
+    p1 = sketch.add_point(0, 0, fixed=True)
+    p2 = sketch.add_point(100, 0)
+    sketch.constrain_distance(p1, p2, "width")
+
+    # 2. Serialize to dict WITH value (state)
+    sketch_data_with_values = sketch.to_dict(include_input_values=True)
+
+    # 3. Assert serialized state data is correct
+    assert "input_parameters" in sketch_data_with_values
+    var_data_with_value = sketch_data_with_values["input_parameters"]["vars"][
+        0
+    ]
+    assert var_data_with_value["key"] == "width"
+    assert var_data_with_value["default"] == 140.0
+    assert "value" in var_data_with_value
+    assert var_data_with_value["value"] == 120.0
+
+    # 4. Serialize to dict WITHOUT value (definition)
+    sketch_data_definition_only = sketch.to_dict(include_input_values=False)
+
+    # 5. Assert serialized definition data is correct
+    var_data_def_only = sketch_data_definition_only["input_parameters"][
+        "vars"
+    ][0]
+    assert var_data_def_only["key"] == "width"
+    assert var_data_def_only["default"] == 140.0
+    assert "value" not in var_data_def_only
+
+    # 6. Deserialize back into a new sketch from the state data
+    new_sketch = Sketch.from_dict(sketch_data_with_values)
+
+    # 7. Assert the new sketch is reconstructed correctly
+    reloaded_var = new_sketch.input_parameters.get("width")
+    assert isinstance(reloaded_var, FloatVar)
+    assert reloaded_var.default == 140.0
+    assert reloaded_var.value == 120.0  # Value is restored
+
+    # 8. Check: does it still solve correctly with restored value?
+    assert new_sketch.solve() is True
+    pt2_reloaded = new_sketch.registry.get_point(p2)
+    final_dist = math.hypot(pt2_reloaded.x, pt2_reloaded.y)
+    assert final_dist == pytest.approx(120.0)
+
+    # 9. Test rehydration from definition-only data
+    new_sketch_from_def = Sketch.from_dict(sketch_data_definition_only)
+    reloaded_var_from_def = new_sketch_from_def.input_parameters.get("width")
+    assert reloaded_var_from_def is not None
+    # Value should be the default, not the original value
+    assert reloaded_var_from_def.value == 140.0
+
+    # 10. Check that it solves with the default value
+    assert new_sketch_from_def.solve() is True
+    pt2_reloaded_from_def = new_sketch_from_def.registry.get_point(p2)
+    final_dist_from_def = math.hypot(
+        pt2_reloaded_from_def.x, pt2_reloaded_from_def.y
+    )
+    assert final_dist_from_def == pytest.approx(140.0)
+
+
+def test_sketch_deserialization_backward_compatibility():
+    """
+    Verify that a sketch dictionary without the 'input_parameters' key
+    can be loaded without crashing.
+    """
+    # 1. Create a dictionary representing an old file format
+    old_sketch_data = {
+        "params": {"expressions": {"width": "100"}},
+        "registry": {
+            "points": [
+                {"id": 0, "x": 0.0, "y": 0.0, "fixed": True, "label": None}
+            ],
+            "entities": [],
+        },
+        "constraints": [],
+        "origin_id": 0,
+    }
+
+    # 2. Try to load it
+    try:
+        sketch = Sketch.from_dict(old_sketch_data)
+    except Exception as e:
+        pytest.fail(f"Sketch.from_dict failed to load old format: {e}")
+
+    # 3. Assert the result is a valid sketch with an empty VarSet
+    assert sketch is not None
+    assert isinstance(sketch, Sketch)
+    assert sketch.input_parameters is not None
+    assert len(sketch.input_parameters) == 0
+    # Make sure other parts loaded correctly
+    assert sketch.params.get("width") == 100.0

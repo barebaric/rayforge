@@ -107,8 +107,7 @@ class VarSet:
                 f"Unknown Var class '{class_name}' in definition."
             )
         VarClass = _CLASS_MAP[class_name]
-        if "value" in data_copy:
-            del data_copy["value"]
+        # Allow 'value' to be passed to constructor if present in dict
         return VarClass(**data_copy)
 
     @property

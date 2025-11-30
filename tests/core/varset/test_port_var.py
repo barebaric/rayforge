@@ -18,18 +18,21 @@ class TestPortVar:
         with pytest.raises(ValidationError, match="at most 65535"):
             v.validate()
 
-    def test_serialization_round_trip(self):
-        """Test serializing and deserializing a PortVar."""
+    def test_serialization_and_rehydration(self):
+        """Test serializing (with and without value) and deserializing."""
         original_var = PortVar(
             key="http_port",
             label="HTTP Port",
             description="The web server port.",
             default=80,
         )
+        original_var.value = 8080  # Set a non-default value
 
-        serialized_data = original_var.to_dict()
+        # Test serialization of definition (default behavior)
+        serialized_def = original_var.to_dict()
+        assert "value" not in serialized_def
         # PortVar inherits from IntVar, so it will serialize the bounds
-        assert serialized_data == {
+        assert serialized_def == {
             "class": "PortVar",
             "key": "http_port",
             "label": "HTTP Port",
@@ -39,10 +42,15 @@ class TestPortVar:
             "max_val": 65535,
         }
 
-        rehydrated_var = VarSet._create_var_from_dict(serialized_data)
+        # Test serialization of state (include_value=True)
+        serialized_state = original_var.to_dict(include_value=True)
+        assert serialized_state["value"] == 8080
 
+        # Test rehydration from definition
+        rehydrated_var = VarSet._create_var_from_dict(serialized_def)
         assert isinstance(rehydrated_var, PortVar)
         assert rehydrated_var.key == original_var.key
         assert rehydrated_var.label == original_var.label
         assert rehydrated_var.description == original_var.description
         assert rehydrated_var.default == original_var.default
+        assert rehydrated_var.value == original_var.default
