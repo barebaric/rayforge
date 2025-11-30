@@ -52,6 +52,49 @@ class Sketch:
         # Initialize the Origin Point (Fixed Anchor)
         self.origin_id = self.registry.add_point(0.0, 0.0, fixed=True)
 
+    @property
+    def is_fully_constrained(self) -> bool:
+        """
+        Returns True if every point and every entity in the sketch
+        is fully constrained.
+
+        Exception: Points that serve solely as internal handles for fully
+        constrained entities (e.g., Circle radius point) are ignored if they
+        are not constrained, provided they are not used by any other entity.
+        """
+        # An empty sketch (just origin) is considered fully constrained
+        if not self.registry.points:
+            return True
+
+        # 1. All entities must be constrained
+        if not all(e.constrained for e in self.registry.entities):
+            return False
+
+        # 2. Calculate point usage counts to ensure exclusive ownership
+        usage_count: Dict[int, int] = {}
+        for e in self.registry.entities:
+            for pid in e.get_point_ids():
+                usage_count[pid] = usage_count.get(pid, 0) + 1
+
+        # 3. Collect allowed exemptions polymorphically
+        allowed_unconstrained_ids = set()
+        for e in self.registry.entities:
+            candidates = e.get_ignorable_unconstrained_points()
+            for pid in candidates:
+                # Only allow exemption if the point is used exclusively by this
+                # entity (usage count == 1)
+                if usage_count.get(pid, 0) == 1:
+                    allowed_unconstrained_ids.add(pid)
+
+        # 4. Check all points
+        for p in self.registry.points:
+            if not p.constrained:
+                # If point is unconstrained, it must be in the exempt list
+                if p.id not in allowed_unconstrained_ids:
+                    return False
+
+        return True
+
     def to_dict(self) -> Dict[str, Any]:
         """Serializes the Sketch to a dictionary."""
         return {

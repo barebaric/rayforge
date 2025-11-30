@@ -107,6 +107,7 @@ class SketchRenderer:
     # --- Entities ---
 
     def _draw_entities(self, ctx: cairo.Context, is_editing: bool):
+        is_sketch_fully_constrained = self.element.sketch.is_fully_constrained
         entities = self.element.sketch.registry.entities or []
         for entity in entities:
             # If not in edit mode, skip drawing construction geometry.
@@ -128,7 +129,12 @@ class SketchRenderer:
                 else:
                     ctx.set_source_rgb(0.3, 0.5, 0.8)  # Light Blue
             else:
-                self._set_standard_color(ctx, is_sel, entity.constrained)
+                self._set_standard_color(
+                    ctx,
+                    is_sel,
+                    entity.constrained,
+                    is_sketch_fully_constrained,
+                )
 
             if isinstance(entity, Line):
                 self._draw_line_entity(ctx, entity)
@@ -140,12 +146,19 @@ class SketchRenderer:
             ctx.restore()
 
     def _set_standard_color(
-        self, ctx: cairo.Context, is_selected: bool, is_constrained: bool
+        self,
+        ctx: cairo.Context,
+        is_selected: bool,
+        is_constrained: bool,
+        is_sketch_fully_constrained: bool,
     ):
         if is_selected:
             ctx.set_source_rgb(1.0, 0.6, 0.0)  # Orange
         elif is_constrained:
-            ctx.set_source_rgb(0.2, 0.8, 0.2)  # Light Green
+            if is_sketch_fully_constrained:
+                ctx.set_source_rgb(0.0, 0.6, 0.0)  # Darker Green
+            else:
+                ctx.set_source_rgb(0.2, 0.8, 0.2)  # Light Green
         else:
             ctx.set_source_rgb(0.0, 0.0, 0.0)  # Black
 
@@ -677,6 +690,7 @@ class SketchRenderer:
     # --- Points ---
 
     def _draw_points(self, ctx, to_screen):
+        is_sketch_fully_constrained = self.element.sketch.is_fully_constrained
         points = self.element.sketch.registry.points or []
         origin_id = getattr(self.element.sketch, "origin_id", -1)
         hover_pid = self.element.tools["select"].hovered_point_id
@@ -726,7 +740,10 @@ class SketchRenderer:
                 ctx.set_source_rgba(1.0, 0.6, 0.0, 1.0)  # Orange
                 r = self.element.point_radius
             elif p.constrained:
-                ctx.set_source_rgba(0.2, 0.8, 0.2, 1.0)  # Light Green
+                if is_sketch_fully_constrained:
+                    ctx.set_source_rgba(0.0, 0.6, 0.0, 1.0)  # Darker Green
+                else:
+                    ctx.set_source_rgba(0.2, 0.8, 0.2, 1.0)  # Light Green
                 r = self.element.point_radius
             else:
                 ctx.set_source_rgba(0.0, 0.0, 0.0, 1.0)  # Black
