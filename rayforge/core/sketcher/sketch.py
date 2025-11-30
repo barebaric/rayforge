@@ -1,7 +1,7 @@
 import json
 import uuid
 from pathlib import Path
-from typing import Union, List, Optional, Set, Dict, Any, Sequence
+from typing import Any, Dict, List, Mapping, Optional, Sequence, Set, Union
 from ..geo import Geometry
 from ..varset import VarSet
 from .constraints import (
@@ -481,18 +481,47 @@ class Sketch:
     def solve(
         self,
         extra_constraints: Optional[List[Constraint]] = None,
+        variable_overrides: Optional[Mapping[str, Union[str, float]]] = None,
         update_constraint_status: bool = True,
     ) -> bool:
-        """Resolves all constraints."""
-        # Bridge the public API (VarSet) to the internal calculation engine.
-        self._update_params_from_inputs()
+        """
+        Resolves all constraints.
 
-        all_constraints = self.constraints
-        if extra_constraints:
-            all_constraints = self.constraints + extra_constraints
+        Args:
+            extra_constraints: A list of temporary constraints to add for this
+                solve, e.g., for dragging.
+            variable_overrides: A dictionary of parameter values to use for
+                this solve only, without permanently changing the sketch's
+                parameters. e.g., `{'width': 150.0}`.
+            update_constraint_status: If True, re-calculates the degrees of
+                freedom for all points and entities after a successful solve.
 
-        solver = Solver(self.registry, self.params, all_constraints)
-        return solver.solve(update_dof=update_constraint_status)
+        Returns:
+            True if the solver converged successfully.
+        """
+        original_params_data = self.params.to_dict()
+        try:
+            # Bridge the public API (VarSet) to the internal calculation
+            # engine.
+            self._update_params_from_inputs()
+
+            # Apply dynamic overrides, which take precedence
+            if variable_overrides:
+                for key, value in variable_overrides.items():
+                    self.params.set(key, value)
+
+            all_constraints = self.constraints
+            if extra_constraints:
+                all_constraints = self.constraints + extra_constraints
+
+            solver = Solver(self.registry, self.params, all_constraints)
+            success = solver.solve(update_dof=update_constraint_status)
+        finally:
+            # Restore the original parameter context to ensure overrides
+            # were temporary.
+            self.params = ParameterContext.from_dict(original_params_data)
+
+        return success
 
     def to_geometry(self) -> Geometry:
         """

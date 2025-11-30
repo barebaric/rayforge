@@ -254,6 +254,61 @@ def test_sketch_parameter_updates():
     assert s.registry.get_point(p2).x == pytest.approx(20.0)
 
 
+def test_solve_with_variable_overrides():
+    """
+    Tests that variable overrides in solve() work correctly and are temporary.
+    """
+    # 1. Setup a sketch with a parameter
+    s = Sketch()
+    s.set_param("width", 10.0)
+    p1 = s.add_point(0, 0, fixed=True)
+    p2 = s.add_point(1, 0)  # Initial position doesn't matter much
+    s.constrain_distance(p1, p2, "width")
+
+    # 2. Solve with the default parameter value
+    assert s.solve() is True
+    pt2 = s.registry.get_point(p2)
+    assert pt2.x == pytest.approx(10.0)
+    # Check that the parameter context has the correct value
+    assert s.params.get("width") == 10.0
+
+    # 3. Solve again, this time with an override
+    overrides = {"width": 25.0}
+    assert s.solve(variable_overrides=overrides) is True
+    pt2_override = s.registry.get_point(p2)
+    # The geometry should reflect the overridden value
+    assert pt2_override.x == pytest.approx(25.0)
+
+    # 4. Check that the override was temporary and did not persist
+    # The parameter context should be restored to its pre-solve state.
+    assert s.params.get("width") == 10.0
+
+    # 5. Solve again without overrides to confirm it uses the original value.
+    # The geometry should snap back to the state defined by the persistent
+    # parameter. We reset the point's position to give the solver work to do.
+    pt2.x = 1.0
+    pt2.y = 0.0
+    assert s.solve() is True
+    pt2_final = s.registry.get_point(p2)
+    assert pt2_final.x == pytest.approx(10.0)
+
+
+def test_solve_with_expression_override():
+    """
+    Tests that variable overrides can also accept string expressions.
+    """
+    s = Sketch()
+    s.set_param("base_len", 10.0)
+    s.set_param("width", "base_len")  # width = 10.0
+    p1 = s.add_point(0, 0, fixed=True)
+    p2 = s.add_point(1, 0)
+    s.constrain_distance(p1, p2, "width")
+
+    assert s.solve(variable_overrides={"width": "base_len * 3"}) is True
+    assert s.registry.get_point(p2).x == pytest.approx(30.0)
+    assert s.params.get("width") == 10.0  # Verify it was temporary
+
+
 def test_sketch_constraint_shortcuts():
     """Verify all constraint shortcut methods properly register constraints."""
     s = Sketch()
