@@ -3,7 +3,7 @@ import asyncio
 from copy import copy, deepcopy
 from typing import Callable, Optional, List
 from dataclasses import dataclass, field
-from ...shared.varset import Var, VarSet
+from ...core.varset import Var, VarSet
 from .driver import DeviceStatus, DeviceState, Pos
 
 

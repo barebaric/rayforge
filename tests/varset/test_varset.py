@@ -1,7 +1,7 @@
 import pytest
-from rayforge.shared.varset.var import Var, ValidationError
-from rayforge.shared.varset.intvar import IntVar
-from rayforge.shared.varset.varset import VarSet
+from rayforge.core.varset.var import Var, ValidationError
+from rayforge.core.varset.intvar import IntVar
+from rayforge.core.varset.varset import VarSet
 
 
 class TestVarSet:

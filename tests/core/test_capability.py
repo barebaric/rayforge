@@ -1,4 +1,4 @@
-from rayforge.shared.varset import VarSet, SliderFloatVar, IntVar, BoolVar
+from rayforge.core.varset import VarSet, SliderFloatVar, IntVar, BoolVar
 from rayforge.core.capability import (
     Capability,
     CutCapability,

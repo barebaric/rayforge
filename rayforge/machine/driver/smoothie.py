@@ -13,8 +13,8 @@ from typing import (
 )
 from ...context import RayforgeContext
 from ...core.ops import Ops
+from ...core.varset import VarSet, HostnameVar, PortVar
 from ...pipeline.encoder.gcode import GcodeEncoder
-from ...shared.varset import VarSet, HostnameVar, PortVar
 from ..transport import TelnetTransport, TransportStatus
 from ..transport.validators import is_valid_hostname_or_ip
 from .driver import (

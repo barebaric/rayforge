@@ -3,7 +3,7 @@ from typing import List, cast
 from gi.repository import Gtk, Adw, GLib, Gdk
 from blinker import Signal
 from ...context import get_context
-from ...shared.varset.varsetwidget import VarSetWidget, VarSet
+from ...shared.ui.varsetwidget import VarSetWidget, VarSet
 from ...icons import get_icon
 
 logger = logging.getLogger(__name__)

@@ -18,7 +18,7 @@ from ...context import RayforgeContext
 
 if TYPE_CHECKING:
     from ...core.doc import Doc
-    from ...shared.varset import VarSet
+    from ...core.varset import VarSet
     from ..models.machine import Machine
     from ..models.laser import Laser
     from ...pipeline.encoder.gcode import GcodeOpMap

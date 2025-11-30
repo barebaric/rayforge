@@ -1,7 +1,7 @@
 import copy
 from typing import List
 from gi.repository import Adw, Gtk
-from ...shared.varset.varsetwidget import VarSetWidget
+from ...shared.ui.varsetwidget import VarSetWidget
 from ..models.dialect import GcodeDialect
 
 
