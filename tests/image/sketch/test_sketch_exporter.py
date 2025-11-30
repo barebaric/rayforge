@@ -1,15 +1,9 @@
 import pytest
 import json
-from pathlib import Path
-import warnings
 
 # Core components
 from rayforge.core.doc import Doc
 from rayforge.core.workpiece import WorkPiece
-from rayforge.core.source_asset import SourceAsset
-from rayforge.core.source_asset_segment import SourceAssetSegment
-from rayforge.core.vectorization_spec import PassthroughSpec
-from rayforge.core.geo import Geometry
 
 # Sketcher components
 from rayforge.core.sketcher import Sketch
@@ -17,105 +11,54 @@ from rayforge.core.sketcher import Sketch
 # Exporter to test
 from rayforge.image.sketch.exporter import SketchExporter
 
-# Mock Renderer for testing
-from rayforge.image.base_renderer import Renderer
-
-with warnings.catch_warnings():
-    warnings.simplefilter("ignore", DeprecationWarning)
-    import pyvips
-
-
-class MockBaseRenderer(Renderer):
-    """A mock renderer to satisfy type hints and simulate identity."""
-
-    def render_base_image(self, data, width, height, **kwargs) -> pyvips.Image:
-        # Not used in this test
-        return pyvips.Image.black(1, 1)
-
 
 @pytest.fixture
-def simple_sketch_data() -> tuple[Sketch, bytes]:
-    """Creates a simple sketch and its serialized bytes."""
+def simple_sketch() -> Sketch:
+    """Creates a simple sketch object."""
     sketch = Sketch()
     p1 = sketch.add_point(0, 0)
     p2 = sketch.add_point(10, 10)
     sketch.add_line(p1, p2)
     sketch.constrain_distance(p1, p2, "14.14")
-    sketch_dict = sketch.to_dict()
-    # Use separators=(',', ':') for a compact, predictable representation
-    sketch_bytes = json.dumps(
-        sketch_dict, sort_keys=True, separators=(",", ":")
-    ).encode("utf-8")
-    return sketch, sketch_bytes
+    return sketch
 
 
-def test_sketch_exporter_success(simple_sketch_data):
+def test_sketch_exporter_success(simple_sketch: Sketch):
     """
-    Tests that the SketchExporter correctly extracts the original_data
-    from a sketch-based WorkPiece.
+    Tests that the SketchExporter correctly extracts the sketch definition
+    from a properly configured sketch-based WorkPiece.
     """
-    _, sketch_bytes = simple_sketch_data
-
-    # 1. Create a mock renderer class whose name matches the target.
-    #    The exporter checks for the class name "SketchRenderer".
-    class SketchRenderer(MockBaseRenderer):
-        pass
-
-    # 2. Create the SourceAsset containing the sketch data
-    source_asset = SourceAsset(
-        source_file=Path("internal.rfs"),
-        original_data=sketch_bytes,
-        renderer=SketchRenderer(),  # The class name of this instance matters
-    )
-
-    # 3. Create a document and a workpiece linked to the source
+    # 1. Create a document and add the sketch to its registry.
     doc = Doc()
-    doc.add_source_asset(source_asset)
+    doc.add_sketch(simple_sketch)
 
-    segment = SourceAssetSegment(
-        source_asset_uid=source_asset.uid,
-        segment_mask_geometry=Geometry(),
-        vectorization_spec=PassthroughSpec(),
-    )
-    workpiece = WorkPiece(name="MySketchWP", source_segment=segment)
+    # 2. Create a workpiece and link it to the sketch via UID.
+    #    For this test, it doesn't need a source_segment.
+    workpiece = WorkPiece(name="MySketchWP")
+    workpiece.sketch_uid = simple_sketch.uid
     doc.add_workpiece(workpiece)
 
-    # 4. Instantiate the exporter and run it
+    # 3. Instantiate the exporter and run it
     exporter = SketchExporter(workpiece)
     exported_bytes = exporter.export()
 
-    # 5. Assert that the exported data matches the original sketch bytes
-    assert exported_bytes == sketch_bytes
+    # 4. Assert that the exported data matches the original sketch data
+    expected_dict = simple_sketch.to_dict()
+    exported_dict = json.loads(exported_bytes)
+    assert exported_dict == expected_dict
 
 
 def test_sketch_exporter_wrong_source_type():
     """
     Tests that the SketchExporter raises a ValueError if the WorkPiece
-    is not based on a sketch.
+    is not based on a sketch (i.e., has no sketch_uid).
     """
-
-    # 1. Use a different renderer to simulate an SVG or other source
-    class SvgRenderer(MockBaseRenderer):
-        pass
-
-    source_asset = SourceAsset(
-        source_file=Path("image.svg"),
-        original_data=b"<svg></svg>",
-        renderer=SvgRenderer(),
-    )
-
-    # 2. Create document and workpiece
+    # 1. Create a workpiece that is NOT linked to a sketch
+    workpiece = WorkPiece(name="NotASketch")
     doc = Doc()
-    doc.add_source_asset(source_asset)
-    segment = SourceAssetSegment(
-        source_asset_uid=source_asset.uid,
-        segment_mask_geometry=Geometry(),
-        vectorization_spec=PassthroughSpec(),
-    )
-    workpiece = WorkPiece(name="MySvgWP", source_segment=segment)
     doc.add_workpiece(workpiece)
 
-    # 3. Assert that creating the exporter and calling export raises an error
+    # 2. Assert that creating the exporter and calling export raises an error
     exporter = SketchExporter(workpiece)
     with pytest.raises(ValueError, match="not based on a sketch"):
         exporter.export()

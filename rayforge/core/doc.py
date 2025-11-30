@@ -9,6 +9,7 @@ from .source_asset import SourceAsset
 
 if TYPE_CHECKING:
     from .stock import StockItem
+    from .sketcher.sketch import Sketch
 
 
 logger = logging.getLogger(__name__)
@@ -29,6 +30,7 @@ class Doc(DocItem):
         self.active_layer_changed = Signal()
         self.job_assembly_invalidated = Signal()
         self.source_assets: Dict[str, SourceAsset] = {}
+        self.sketches: Dict[str, "Sketch"] = {}
 
         # A new document starts with one empty workpiece layer
         workpiece_layer = Layer(_("Layer 1"))
@@ -41,6 +43,7 @@ class Doc(DocItem):
     def from_dict(cls, data: Dict) -> "Doc":
         """Deserializes the document from a dictionary."""
         from .stock import StockItem
+        from .sketcher.sketch import Sketch
 
         doc = cls()
         doc.uid = data.get("uid", doc.uid)
@@ -63,6 +66,11 @@ class Doc(DocItem):
             for uid, src_data in data.get("source_assets", {}).items()
         }
         doc.source_assets = source_assets
+
+        doc.sketches = {
+            uid: Sketch.from_dict(s_data)
+            for uid, s_data in data.get("sketches", {}).items()
+        }
 
         return doc
 
@@ -119,6 +127,7 @@ class Doc(DocItem):
                 uid: asset.to_dict()
                 for uid, asset in self.source_assets.items()
             },
+            "sketches": {uid: s.to_dict() for uid, s in self.sketches.items()},
         }
 
     def add_source_asset(self, asset: SourceAsset):
@@ -126,6 +135,18 @@ class Doc(DocItem):
         if not isinstance(asset, SourceAsset):
             raise TypeError("Only SourceAsset objects can be added.")
         self.source_assets[asset.uid] = asset
+
+    def add_sketch(self, sketch: "Sketch"):
+        """Adds a sketch to the document."""
+        self.sketches[sketch.uid] = sketch
+
+    def remove_sketch(self, uid: str):
+        """Removes a sketch from the document."""
+        self.sketches.pop(uid, None)
+
+    def get_sketch(self, uid: str) -> Optional["Sketch"]:
+        """Retrieves a sketch by its UID."""
+        return self.sketches.get(uid)
 
     @property
     def doc(self) -> "Doc":

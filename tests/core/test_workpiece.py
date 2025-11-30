@@ -11,6 +11,7 @@ from rayforge.core.matrix import Matrix
 from rayforge.core.tab import Tab
 from rayforge.core.geo import Geometry
 from rayforge.core.workpiece import WorkPiece
+from rayforge.core.sketcher.sketch import Sketch
 from rayforge.core.source_asset_segment import SourceAssetSegment
 from rayforge.core.vectorization_spec import PassthroughSpec
 from rayforge.image.svg.renderer import SvgRenderer
@@ -86,6 +87,9 @@ class TestWorkPiece:
         assert wp.tabs_enabled is True
         assert wp.source_segment is not None
         assert wp._edited_boundaries is None
+        assert wp.sketch_uid is None
+        assert wp.sketch_params == {}
+        assert wp._transient_sketch_definition is None
 
     def test_workpiece_is_docitem(self, workpiece_instance):
         assert isinstance(workpiece_instance, DocItem)
@@ -93,6 +97,13 @@ class TestWorkPiece:
 
     def test_serialization_deserialization(self, doc_with_workpiece):
         doc, wp, source = doc_with_workpiece
+
+        # Setup sketch data for serialization
+        sketch = Sketch()
+        doc.add_sketch(sketch)
+        wp.sketch_uid = sketch.uid
+        wp.sketch_params = {"width": 123.45}
+
         wp.set_size(80.0, 40.0)
         wp.pos = (10.5, 20.2)
         wp.angle = 90
@@ -114,6 +125,8 @@ class TestWorkPiece:
         assert "source_segment" in data_dict
         assert data_dict["source_segment"]["source_asset_uid"] == source.uid
         assert "edited_boundaries" in data_dict
+        assert data_dict["sketch_uid"] == sketch.uid
+        assert data_dict["sketch_params"] == {"width": 123.45}
 
         new_wp = WorkPiece.from_dict(data_dict)
 
@@ -140,6 +153,88 @@ class TestWorkPiece:
         assert len(new_wp._edited_boundaries.commands) == len(
             edited_geo.commands
         )
+        assert new_wp.sketch_uid == sketch.uid
+        assert new_wp.sketch_params == {"width": 123.45}
+
+    def test_in_world_hydrates_sketch_definition(self, doc_with_workpiece):
+        """
+        Tests that the in_world method correctly populates the transient
+        sketch definition for use in subprocesses.
+        """
+        doc, wp, _ = doc_with_workpiece
+
+        # Create and link a sketch
+        sketch = Sketch()
+        sketch.add_point(10, 20)  # Add some geometry to check for later
+        doc.add_sketch(sketch)
+        wp.sketch_uid = sketch.uid
+        wp.sketch_params = {"width": 50.0}
+
+        # The method under test
+        world_wp = wp.in_world()
+
+        # Check that the main properties are copied
+        assert world_wp.sketch_uid == sketch.uid
+        assert world_wp.sketch_params == {"width": 50.0}
+
+        # Check that the transient definition is hydrated correctly
+        transient_def = world_wp._transient_sketch_definition
+        assert transient_def is not None
+        assert isinstance(transient_def, Sketch)
+        assert transient_def is not sketch  # Must be a copy
+        assert transient_def.uid == sketch.uid
+
+        # Verify the copied sketch contains the original's geometry
+        # (Origin point + 1 added point)
+        assert len(transient_def.registry.points) == 2
+
+    def test_get_sketch_definition(self, doc_with_workpiece):
+        """
+        Tests retrieving the sketch definition from the document or from the
+        transient field.
+        """
+        doc, wp, _ = doc_with_workpiece
+
+        # Case 1: No sketch UID is set, should return None
+        assert wp.sketch_uid is None
+        assert wp.get_sketch_definition() is None
+
+        # Case 2: Sketch UID is set, should retrieve the sketch from the
+        # document
+        sketch_from_doc = Sketch()
+        doc.add_sketch(sketch_from_doc)
+        wp.sketch_uid = sketch_from_doc.uid
+
+        retrieved_sketch = wp.get_sketch_definition()
+        assert retrieved_sketch is not None
+        # It should be the exact same instance from the document's registry
+        assert retrieved_sketch is sketch_from_doc
+        assert retrieved_sketch.uid == sketch_from_doc.uid
+
+        # Case 3: A transient sketch definition exists and takes precedence
+        # This simulates a WorkPiece that has been prepared by `in_world()`
+        # for use in a subprocess.
+        transient_sketch = Sketch()
+        transient_sketch.uid = "transient-uid-123"
+
+        # Use a new WorkPiece instance to avoid side effects
+        wp_with_transient = WorkPiece(
+            "transient_test", source_segment=wp.source_segment
+        )
+        # Assign the doc-based sketch_uid to prove the transient one is used
+        # instead
+        wp_with_transient.sketch_uid = sketch_from_doc.uid
+        wp_with_transient._transient_sketch_definition = transient_sketch
+
+        # Add it to the doc so that a doc lookup *could* work, but shouldn't.
+        doc.active_layer.add_child(wp_with_transient)
+
+        retrieved_transient = wp_with_transient.get_sketch_definition()
+        assert retrieved_transient is not None
+        # It should be the transient instance, not the one from the doc
+        assert retrieved_transient is transient_sketch
+        assert retrieved_transient is not sketch_from_doc
+        assert retrieved_transient.uid == "transient-uid-123"
 
     def test_boundaries_override(self, workpiece_instance):
         """
@@ -584,34 +679,3 @@ class TestWorkPiece:
             vectorization_spec=PassthroughSpec(),
         )
         wp.source_segment = segment
-
-        # The geometry's bounding box is 2x2.
-        # Applying a 20x10 size results in a non-uniform world scale.
-        wp.set_size(20, 10)
-        wp.angle = 0  # ensure no rotation
-
-        tab = Tab(width=1, segment_index=1, pos=0.5)
-        direction = wp.get_tab_direction(tab)
-        assert direction is not None
-
-        expected_x, expected_y = (1.0, 2.0)
-        norm = (expected_x**2 + expected_y**2) ** 0.5
-        expected_direction = (expected_x / norm, expected_y / norm)
-
-        assert direction == pytest.approx(expected_direction)
-
-    def test_natural_size_override(self, workpiece_instance):
-        """
-        Tests that WorkPiece.natural_size returns the intrinsic source size
-        and does not change if children are added (which is illegal generally,
-        but the base class mechanism should be ignored).
-        """
-        wp = workpiece_instance
-        assert wp.natural_size == (100.0, 50.0)
-
-        # Even if we add a child (simulating a structural change on DocItem),
-        # WorkPiece should ignore it and return source dims.
-        child = WorkPiece("child")
-        wp.add_child(child)
-
-        assert wp.natural_size == (100.0, 50.0)

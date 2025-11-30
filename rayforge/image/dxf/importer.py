@@ -198,14 +198,14 @@ class DxfImporter(Importer):
                 source_asset_uid=source.uid,
                 segment_mask_geometry=segment_mask_geo,
                 vectorization_spec=PassthroughSpec(),
-                width_mm=width,
-                height_mm=height,
             )
 
             wp = WorkPiece(
                 name=self.source_file.stem,
                 source_segment=gen_config,
             )
+            wp.natural_width_mm = width
+            wp.natural_height_mm = height
 
             # Set the workpiece's matrix to position and scale it.
             # This matrix operates on the Y-up geometry that the

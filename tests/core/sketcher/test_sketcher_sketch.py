@@ -110,6 +110,7 @@ def test_sketch_construction_geometry_is_ignored_on_roundtrip():
     full serialization and deserialization cycle.
     """
     s = Sketch()
+    assert s.uid is not None
 
     # Add a regular line that should be exported
     p1 = s.add_point(0, 0)
@@ -132,6 +133,7 @@ def test_sketch_construction_geometry_is_ignored_on_roundtrip():
 
     # 1. Serialize the sketch to a dictionary
     sketch_data = s.to_dict()
+    assert "uid" in sketch_data
 
     # Verify that the data contains the correct flags
     construction_entities = [
@@ -141,6 +143,7 @@ def test_sketch_construction_geometry_is_ignored_on_roundtrip():
 
     # 2. Create a new sketch from the serialized data
     s2 = Sketch.from_dict(sketch_data)
+    assert s2.uid == s.uid
 
     # 3. Generate the geometry from the new sketch
     geo = s2.to_geometry()
@@ -296,12 +299,17 @@ def test_sketch_serialization_from_file():
 
     # 2. Load the sketch from the project file
     sketch1 = Sketch.from_file(file_path)
+    assert sketch1.uid is not None
+    assert isinstance(sketch1.uid, str)
 
     # 3. Serialize the loaded sketch back into a dictionary
     data_from_sketch1 = sketch1.to_dict()
+    assert "uid" in data_from_sketch1
+    assert data_from_sketch1["uid"] == sketch1.uid
 
     # 4. Create a second sketch instance from the serialized dictionary
     sketch2 = Sketch.from_dict(data_from_sketch1)
+    assert sketch2.uid == sketch1.uid
 
     # 5. Serialize the second sketch
     data_from_sketch2 = sketch2.to_dict()
@@ -549,6 +557,7 @@ def test_sketch_serialization_roundtrip_with_input_parameters():
     """
     # 1. Create a sketch and add an input parameter
     sketch = Sketch()
+    assert sketch.uid is not None
     width_var = FloatVar(
         key="width", label="Overall Width", default=140.0, value=120.0
     )
@@ -563,6 +572,7 @@ def test_sketch_serialization_roundtrip_with_input_parameters():
     sketch_data_with_values = sketch.to_dict(include_input_values=True)
 
     # 3. Assert serialized state data is correct
+    assert "uid" in sketch_data_with_values
     assert "input_parameters" in sketch_data_with_values
     var_data_with_value = sketch_data_with_values["input_parameters"]["vars"][
         0
@@ -585,6 +595,7 @@ def test_sketch_serialization_roundtrip_with_input_parameters():
 
     # 6. Deserialize back into a new sketch from the state data
     new_sketch = Sketch.from_dict(sketch_data_with_values)
+    assert new_sketch.uid == sketch.uid
 
     # 7. Assert the new sketch is reconstructed correctly
     reloaded_var = new_sketch.input_parameters.get("width")
@@ -616,8 +627,8 @@ def test_sketch_serialization_roundtrip_with_input_parameters():
 
 def test_sketch_deserialization_backward_compatibility():
     """
-    Verify that a sketch dictionary without the 'input_parameters' key
-    can be loaded without crashing.
+    Verify that a sketch dictionary without the 'input_parameters' and 'uid'
+    keys can be loaded without crashing.
     """
     # 1. Create a dictionary representing an old file format
     old_sketch_data = {
@@ -638,9 +649,13 @@ def test_sketch_deserialization_backward_compatibility():
     except Exception as e:
         pytest.fail(f"Sketch.from_dict failed to load old format: {e}")
 
-    # 3. Assert the result is a valid sketch with an empty VarSet
+    # 3. Assert the result is a valid sketch
     assert sketch is not None
     assert isinstance(sketch, Sketch)
+    # Assert a new UID was generated
+    assert sketch.uid is not None
+    assert isinstance(sketch.uid, str)
+    # Assert an empty VarSet was created
     assert sketch.input_parameters is not None
     assert len(sketch.input_parameters) == 0
     # Make sure other parts loaded correctly

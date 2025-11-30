@@ -84,8 +84,8 @@ class ProceduralImporter(Importer):
             source_file=self.source_file,
             original_data=self.raw_data,  # This is the recipe data
             renderer=PROCEDURAL_RENDERER,
-            width_mm=0.0,
-            height_mm=0.0,
+            width_mm=width_mm,
+            height_mm=height_mm,
         )
 
         # Step 3: Create and configure the WorkPiece.
@@ -103,14 +103,14 @@ class ProceduralImporter(Importer):
             source_asset_uid=source.uid,
             segment_mask_geometry=frame_geo,
             vectorization_spec=procedural_spec,
-            width_mm=width_mm,
-            height_mm=height_mm,
         )
 
         wp = WorkPiece(
             name=self.name,
             source_segment=gen_config,
         )
+        wp.natural_width_mm = width_mm
+        wp.natural_height_mm = height_mm
         wp.set_size(width_mm, height_mm)
 
         # Step 4: Return the complete payload.

@@ -27,7 +27,7 @@ class RuidaImporter(Importer):
         return parser.parse()
 
     def get_doc_items(
-        self, vectorization_spec: Optional["VectorizationSpec"] = None
+        self, vectorization_spec: Optional[VectorizationSpec] = None
     ) -> Optional[ImportPayload]:
         # Ruida files are always vector, so vectorization_spec is ignored.
         job = self._get_job()
@@ -79,13 +79,13 @@ class RuidaImporter(Importer):
             source_asset_uid=source.uid,
             segment_mask_geometry=segment_mask_geo,
             vectorization_spec=passthrough_spec,
-            width_mm=width,
-            height_mm=height,
         )
         wp = WorkPiece(
             name=self.source_file.stem,
             source_segment=gen_config,
         )
+        wp.natural_width_mm = width
+        wp.natural_height_mm = height
         wp.matrix = Matrix.translation(min_x, min_y) @ Matrix.scale(
             width, height
         )

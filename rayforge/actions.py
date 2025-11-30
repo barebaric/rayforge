@@ -211,13 +211,9 @@ class ActionManager:
         # Only enable if exactly one workpiece is selected and it is a sketch
         can_edit_or_export_sketch = False
         if len(selected_wps) == 1:
-            source = selected_wps[0].source
-            # We check the renderer name to avoid circular imports of
-            # SKETCH_RENDERER
-            if (
-                source
-                and source.renderer.__class__.__name__ == "SketchRenderer"
-            ):
+            wp = selected_wps[0]
+            # Is it a sketch-based WorkPiece?
+            if wp.sketch_uid:
                 can_edit_or_export_sketch = True
 
         if "export_sketch" in self.actions:

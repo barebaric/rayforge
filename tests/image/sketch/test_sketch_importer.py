@@ -54,8 +54,8 @@ def complex_sketch() -> Sketch:
 
 def test_sketch_importer_round_trip(complex_sketch: Sketch):
     """
-    Tests that a sketch can be serialized to bytes and then perfectly
-    deserialized back into an identical Sketch object.
+    Tests that a sketch can be serialized, imported, and correctly
+    reconstructed as a WorkPiece and Sketch object.
     """
     # 1. Serialize the original sketch to bytes
     original_dict = complex_sketch.to_dict()
@@ -64,32 +64,39 @@ def test_sketch_importer_round_trip(complex_sketch: Sketch):
     ).encode("utf-8")
 
     # 2. Instantiate the importer with the serialized data
-    # Explicitly provide a source file to ensure deterministic naming
     importer = SketchImporter(
         data=sketch_bytes, source_file=Path("MyTestSketch.rfs")
     )
 
-    # 3. Call get_doc_items()
-    # Now we expect a full payload with a WorkPiece
+    # 3. Call get_doc_items() to get the payload
     payload = importer.get_doc_items()
     assert payload is not None, "Importer failed to return payload"
     assert importer.parsed_sketch is not None
+    assert len(payload.sketches) == 1
+    imported_sketch_template = payload.sketches[0]
 
-    # Check payload contents
+    # 4. Check the WorkPiece in the payload
     assert len(payload.items) == 1
     item = payload.items[0]
 
     assert isinstance(item, WorkPiece)
     assert item.name == "MyTestSketch"
-    assert item.source_segment is not None
-    assert item.source_segment.segment_mask_geometry is not None
-    assert not item.source_segment.segment_mask_geometry.is_empty()
+    assert item.source_segment is None  # This is the key change
+    assert item.sketch_uid == complex_sketch.uid
 
-    # 4. Get the dictionary representation of the deserialized sketch
-    parsed_sketch_dict = importer.parsed_sketch.to_dict()
+    # 5. Verify the dimensions were set correctly on the WorkPiece
+    geo = complex_sketch.to_geometry()
+    min_x, min_y, max_x, max_y = geo.rect()
+    expected_width = max_x - min_x
+    expected_height = max_y - min_y
+    assert item.natural_width_mm == pytest.approx(expected_width)
+    assert item.natural_height_mm == pytest.approx(expected_height)
+    assert item.natural_size == pytest.approx(
+        (expected_width, expected_height)
+    )
 
-    # 5. Assert that the original and deserialized sketches are identical
-    # Comparing dictionaries is the most reliable way to check for equality.
+    # 6. Verify the sketch template itself was parsed correctly
+    parsed_sketch_dict = imported_sketch_template.to_dict()
     assert parsed_sketch_dict == original_dict
 
 
