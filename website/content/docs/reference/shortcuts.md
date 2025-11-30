@@ -13,6 +13,7 @@ Complete reference of keyboard shortcuts in Rayforge.
 
 | Shortcut | Action      | Description             |
 | -------- | ----------- | ----------------------- |
+| `Ctrl+N` | New Sketch  | Create new sketch       |
 | `Ctrl+I` | Import      | Open file import dialog |
 | `Ctrl+E` | Export      | Export G-code           |
 | `Ctrl+Q` | Quit        | Exit Rayforge           |
@@ -176,11 +177,11 @@ When editing G-code or text fields:
 3. `Ctrl+D` - Duplicate
 4. `Delete` - Remove
 5. `Ctrl+A` - Select All
-6. `Ctrl+I` - Import
-7. `Ctrl+E` - Export
-8. `H` - Toggle Workpieces
-9. `F12` - 3D View
-10. `Ctrl+Shift+S` - Simulation Mode
+6. `Ctrl+N` - New Sketch
+7. `Ctrl+I` - Import
+8. `Ctrl+E` - Export
+9. `H` - Toggle Workpieces
+10. `F12` - 3D View
 
 ### View & Visualization
 
@@ -240,7 +241,7 @@ When editing G-code or text fields:
 **Quick edit cycle:**
 
 ```
-1. Import (Ctrl+I)
+1. New Sketch (Ctrl+N) or Import (Ctrl+I)
 2. Arrange items (arrow keys, Shift+Arrow for alignment)
 3. Duplicate parts (Ctrl+D)
 4. Check in 3D (F12)
@@ -330,7 +331,8 @@ Some lesser-known shortcuts:
 
 | Category      | Shortcut     | Action           |
 | ------------- | ------------ | ---------------- |
-| **File**      | Ctrl+I       | Import           |
+| **File**      | Ctrl+N       | New Sketch       |
+|               | Ctrl+I       | Import           |
 |               | Ctrl+E       | Export           |
 |               | Ctrl+Q       | Quit             |
 |               | Ctrl+,       | Preferences      |

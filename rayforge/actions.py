@@ -355,6 +355,7 @@ class ActionManager:
             "win.view_toggle_perspective": "p",
             # Object
             "win.add_stock": "<Alt>s",
+            "win.new_sketch": "<Primary>n",
             "win.add-tabs-equidistant": "<Alt>t",
             # Arrange
             "win.group": "<Primary>g",
