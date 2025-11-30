@@ -1,5 +1,6 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
+import json
 from ..base_exporter import Exporter
 
 if TYPE_CHECKING:
@@ -32,28 +33,22 @@ class SketchExporter(Exporter):
 
     def export(self) -> bytes:
         """
-        Retrieves the serialized Sketch definition from the WorkPiece's
-        SourceAsset.
+        Retrieves the serialized Sketch definition from the document's
+        sketch registry.
 
         Returns:
             The raw JSON bytes representing the sketch.
 
         Raises:
             ValueError: If the WorkPiece is not derived from a sketch or if
-                        the source data is missing.
+                        the sketch definition is missing.
         """
-        source = self.workpiece.source
-        if (
-            not source
-            or source.renderer.__class__.__name__ != "SketchRenderer"
-        ):
+        sketch = self.workpiece.get_sketch_definition()
+        if not sketch:
             raise ValueError(
-                "Cannot export: The selected item is not based on a sketch."
+                "Cannot export: The selected item is not based on a sketch "
+                "or its definition is missing."
             )
 
-        if source.original_data is None:
-            raise ValueError(
-                "Cannot export: The sketch source data is missing."
-            )
-
-        return source.original_data
+        sketch_dict = sketch.to_dict()
+        return json.dumps(sketch_dict).encode("utf-8")

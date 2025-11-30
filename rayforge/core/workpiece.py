@@ -11,6 +11,7 @@ from typing import (
     TYPE_CHECKING,
     List,
     NamedTuple,
+    Union,
 )
 from pathlib import Path
 import warnings
@@ -34,6 +35,7 @@ if TYPE_CHECKING:
     from ..image.base_renderer import Renderer
     from .layer import Layer
     from .source_asset import SourceAsset
+    from .sketcher.sketch import Sketch
 
 
 logger = logging.getLogger(__name__)
@@ -44,7 +46,7 @@ CAIRO_MAX_DIMENSION = 16384
 class RenderContext(NamedTuple):
     """Encapsulates the resources required for rendering."""
 
-    data: bytes
+    data: Union[bytes, Any]
     renderer: "Renderer"
     source_pixel_dims: Optional[Tuple[int, int]]
     metadata: Dict[str, Any]
@@ -54,7 +56,7 @@ class WorkPiece(DocItem):
     """
     Represents a real-world workpiece. It is a lightweight data container,
     holding its transformation matrix and a link to its source and shape
-    definition via a SourceAssetSegment.
+    definition.
     """
 
     def __init__(
@@ -65,6 +67,10 @@ class WorkPiece(DocItem):
         super().__init__(name=name)
         self._source_segment = source_segment
         self._boundaries_cache: Optional[Geometry] = None
+
+        # Natural (untransformed) dimensions of the workpiece content.
+        self.natural_width_mm: float = 0.0
+        self.natural_height_mm: float = 0.0
 
         # An optional override for the workpiece geometry. If set, this takes
         # precedence over the source_segment's geometry. It allows for
@@ -80,6 +86,11 @@ class WorkPiece(DocItem):
         self._original_data: Optional[bytes] = None
         self._renderer: Optional["Renderer"] = None
         self._transient_source_px_dims: Optional[Tuple[int, int]] = None
+
+        # Parametric sketch fields
+        self.sketch_uid: Optional[str] = None
+        self.sketch_params: Dict[str, Any] = {}
+        self._transient_sketch_definition: Optional["Sketch"] = None
 
         self._tabs: List[Tab] = []
         self._tabs_enabled: bool = True
@@ -112,15 +123,9 @@ class WorkPiece(DocItem):
     def natural_size(self) -> Tuple[float, float]:
         """
         Returns the natural (untransformed) size of the content in mm.
-        Overrides the base class behavior to rely solely on intrinsic source
-        properties, ignoring any children or structural changes.
+        This is the authoritative source for the workpiece's intrinsic size.
         """
-        if self.source_segment and self.source_segment.width_mm > 0:
-            return (
-                self.source_segment.width_mm,
-                self.source_segment.height_mm,
-            )
-        return (0.0, 0.0)
+        return (self.natural_width_mm, self.natural_height_mm)
 
     def get_local_bbox(self) -> Optional[Tuple[float, float, float, float]]:
         """
@@ -203,6 +208,13 @@ class WorkPiece(DocItem):
         """Retrieves the renderer (internal use)."""
         if self._renderer is not None:
             return self._renderer
+
+        # If it's a sketch, we know the renderer.
+        if self.sketch_uid:
+            from ..image.sketch.renderer import SKETCH_RENDERER
+
+            return SKETCH_RENDERER
+
         source = self.source
         return source.renderer if source else None
 
@@ -238,6 +250,41 @@ class WorkPiece(DocItem):
             logger.debug(f"WP {self.uid[:8]}: Returning cached boundaries.")
             return self._boundaries_cache
 
+        # --- Sketch-based Geometry Generation ---
+        if self.sketch_uid:
+            sketch_def = self.get_sketch_definition()
+            if not sketch_def:
+                return None
+
+            from .sketcher.sketch import Sketch
+
+            instance_sketch = Sketch.from_dict(sketch_def.to_dict())
+            for key, val in self.sketch_params.items():
+                if key in instance_sketch.input_parameters.keys():
+                    try:
+                        instance_sketch.input_parameters[key] = val
+                    except Exception:
+                        pass
+
+            instance_sketch.solve()
+            unnormalized_geo = instance_sketch.to_geometry()
+
+            if unnormalized_geo.is_empty():
+                return unnormalized_geo  # Return empty geometry as-is
+
+            # Normalize the solved geometry to a 0-1 box (Y-Up)
+            min_x, min_y, max_x, max_y = unnormalized_geo.rect()
+            width = max(max_x - min_x, 1e-9)
+            height = max(max_y - min_y, 1e-9)
+            norm_matrix = Matrix.scale(
+                1.0 / width, 1.0 / height
+            ) @ Matrix.translation(-min_x, -min_y)
+            unnormalized_geo.transform(norm_matrix.to_4x4_numpy())
+
+            self._boundaries_cache = unnormalized_geo
+            return self._boundaries_cache
+
+        # --- SourceAssetSegment-based Geometry (legacy/other formats) ---
         if not self.source_segment:
             logger.warning(
                 f"WP {self.uid[:8]}: Cannot get boundaries, no source_segment."
@@ -284,8 +331,16 @@ class WorkPiece(DocItem):
             y_down_geo.transform(flip_matrix.to_4x4_numpy())
             return y_down_geo
 
-        # Case 2: No edits. The authoritative geometry is the one stored
-        # in the source segment, which is already in Y-DOWN format.
+        # For sketches, we must generate from the Y-up boundaries
+        if self.sketch_uid:
+            y_up_geo = self.boundaries
+            if not y_up_geo:
+                return None
+            y_down_geo = y_up_geo.copy()
+            flip_matrix = Matrix.translation(0, 1) @ Matrix.scale(1, -1)
+            y_down_geo.transform(flip_matrix.to_4x4_numpy())
+            return y_down_geo
+
         if self.source_segment:
             return self.source_segment.segment_mask_geometry
 
@@ -340,6 +395,8 @@ class WorkPiece(DocItem):
         world_wp.matrix = self.get_world_transform()
         world_wp.tabs = deepcopy(self.tabs)
         world_wp.tabs_enabled = self.tabs_enabled
+        world_wp.sketch_uid = self.sketch_uid
+        world_wp.sketch_params = deepcopy(self.sketch_params)
 
         # Ensure any edited boundaries are carried over.
         if self._edited_boundaries:
@@ -358,25 +415,57 @@ class WorkPiece(DocItem):
                     source.height_px,
                 )
 
+        # Hydrate the transient sketch definition if it exists
+        if self.sketch_uid and self.doc:
+            sketch = self.doc.get_sketch(self.sketch_uid)
+            if sketch:
+                # We copy the sketch definition so the subprocess has
+                # an independent object
+                from .sketcher.sketch import Sketch
+
+                world_wp._transient_sketch_definition = Sketch.from_dict(
+                    sketch.to_dict()
+                )
+
         return world_wp
+
+    def get_sketch_definition(self) -> Optional["Sketch"]:
+        """
+        Retrieves the Sketch definition for this workpiece, if applicable.
+        Prioritizes the transient definition (for subprocesses), then checks
+        the document registry.
+        """
+        if self._transient_sketch_definition:
+            return self._transient_sketch_definition
+        if self.sketch_uid and self.doc:
+            return self.doc.get_sketch(self.sketch_uid)
+        return None
 
     def _resolve_render_context(self) -> Optional[RenderContext]:
         """
         Resolves the data, renderer, and metadata needed for rendering.
         Unifies logic for transient (subprocess) vs. managed (document) states.
         """
+        # For sketches, the "data" is not needed, as the geometry is generated
+        # by the `boundaries` property. We pass empty bytes.
+        if self.sketch_uid:
+            from ..image.sketch.renderer import SKETCH_RENDERER
+
+            return RenderContext(
+                data=b"",
+                renderer=SKETCH_RENDERER,
+                source_pixel_dims=None,
+                metadata={"is_vector": True},
+            )
+
+        # --- Fallback to standard SourceAsset logic ---
+
         # 1. Renderer
         renderer = self._active_renderer
         if not renderer:
             return None
 
         # 2. Data
-        # We default to self.data (which handles transient vs source logic).
-        # However, for high-res tracing/cropping, we might prefer
-        # original_data.
-        # We'll resolve that decision in the geometry calculation step or
-        # simply provide both and let the geometry step decide which to use.
-        # For simplicity here, we start with the standard data.
         data_to_render = self.data
         if data_to_render is None:
             return None
@@ -538,6 +627,11 @@ class WorkPiece(DocItem):
         if self.source and self.source.metadata.get("is_vector"):
             is_vector = True
 
+        # Special check for Sketch rendering: if we rendered via sketch def,
+        # it is vector data.
+        if self.sketch_uid:
+            is_vector = True
+
         if not is_vector:
             mask_geo = self._boundaries_y_down
             if mask_geo and not mask_geo.is_empty():
@@ -629,6 +723,8 @@ class WorkPiece(DocItem):
             "uid": self.uid,
             "name": self.name,
             "matrix": self._matrix.to_list(),
+            "width_mm": self.natural_width_mm,
+            "height_mm": self.natural_height_mm,
             "tabs": [asdict(t) for t in self._tabs],
             "tabs_enabled": self._tabs_enabled,
             "source_segment": (
@@ -639,6 +735,8 @@ class WorkPiece(DocItem):
                 if self._edited_boundaries
                 else None
             ),
+            "sketch_uid": self.sketch_uid,
+            "sketch_params": self.sketch_params,
         }
         # Include hydrated data for subprocesses
         if self._data is not None:
@@ -649,6 +747,10 @@ class WorkPiece(DocItem):
             state["renderer_name"] = self._renderer.__class__.__name__
         if self._transient_source_px_dims is not None:
             state["source_px_dims"] = self._transient_source_px_dims
+        if self._transient_sketch_definition is not None:
+            state["transient_sketch_definition"] = (
+                self._transient_sketch_definition.to_dict()
+            )
         return state
 
     @classmethod
@@ -667,6 +769,8 @@ class WorkPiece(DocItem):
         )
         wp.uid = data["uid"]
         wp.matrix = Matrix.from_list(data["matrix"])
+        wp.natural_width_mm = data.get("width_mm", 0.0)
+        wp.natural_height_mm = data.get("height_mm", 0.0)
 
         loaded_tabs = []
         for t_data in data.get("tabs", []):
@@ -682,6 +786,9 @@ class WorkPiece(DocItem):
                 data["edited_boundaries"]
             )
 
+        wp.sketch_uid = data.get("sketch_uid")
+        wp.sketch_params = data.get("sketch_params", {})
+
         # Hydrate with transient data if provided for subprocesses
         if "data" in data:
             wp._data = data["data"]
@@ -695,6 +802,13 @@ class WorkPiece(DocItem):
 
             if renderer_name in renderer_by_name:
                 wp._renderer = renderer_by_name[renderer_name]
+
+        if "transient_sketch_definition" in data:
+            from .sketcher.sketch import Sketch
+
+            wp._transient_sketch_definition = Sketch.from_dict(
+                data["transient_sketch_definition"]
+            )
 
         return wp
 

@@ -12,9 +12,7 @@ from .core.group import Group
 from .core.item import DocItem
 from .core.sketcher import Sketch
 from .core.source_asset import SourceAsset
-from .core.source_asset_segment import SourceAssetSegment
 from .core.step import Step
-from .core.vectorization_spec import PassthroughSpec
 from .core.workpiece import WorkPiece
 from .doceditor.editor import DocEditor
 from .doceditor.ui import file_dialogs, import_handler
@@ -48,7 +46,7 @@ from .workbench.canvas3d import Canvas3D, initialized as canvas3d_initialized
 from .workbench.drag_drop_cmd import DragDropCmd
 from .workbench.elements.stock import StockElement
 from .workbench.simulator_cmd import SimulatorCmd
-from .workbench.sketcher.cmd import UpdateSketchSourceCommand
+from .workbench.sketcher.cmd import UpdateSketchCommand
 from .workbench.sketcher.studio import SketchStudio
 from .workbench.surface import WorkSurface
 from .workbench.view_mode_cmd import ViewModeCmd
@@ -457,17 +455,15 @@ class MainWindow(Adw.ApplicationWindow):
         self, workpiece: WorkPiece, is_new_sketch: bool = False
     ):
         """Switches the view to the SketchStudio to edit a workpiece."""
-        source = workpiece.source
-        if (
-            not source
-            or source.renderer.__class__.__name__ != "SketchRenderer"
-        ):
-            logger.warning("Attempted to edit non-sketch workpiece.")
+        sketch = None
+        if workpiece.sketch_uid:
+            sketch = self.doc_editor.doc.get_sketch(workpiece.sketch_uid)
+
+        if not sketch:
+            logger.warning("Attempted to edit a non-sketch workpiece.")
             return
 
         try:
-            sketch_dict = json.loads(source.original_data.decode("utf-8"))
-            sketch = Sketch.from_dict(sketch_dict)
             self.active_sketch_workpiece = workpiece
             self._is_editing_new_sketch = is_new_sketch
             self.sketch_studio.set_sketch(sketch)
@@ -502,25 +498,27 @@ class MainWindow(Adw.ApplicationWindow):
             self.exit_sketch_mode()
             return
 
-        source_asset = self.active_sketch_workpiece.source
-        if not source_asset:
+        # The workpiece is linked by sketch_uid, not source_asset anymore
+        sketch_uid = self.active_sketch_workpiece.sketch_uid
+        if not sketch_uid:
             logger.error(
-                "Sketch finished but active workpiece has no source asset."
+                "Sketch finished but active workpiece has no sketch UID."
             )
             self.exit_sketch_mode()
             return
 
         new_sketch_dict = sketch.to_dict()
 
-        # 1. Create the command. This pre-calculates the new dimensions and
-        #    normalized geometry.
-        cmd = UpdateSketchSourceCommand(
+        # 1. Create the new command.
+        # It needs the doc, the UID of the sketch to update, and the new data.
+        cmd = UpdateSketchCommand(
             doc=self.doc_editor.doc,
-            source_asset=source_asset,
+            sketch_uid=sketch_uid,
             new_sketch_dict=new_sketch_dict,
         )
 
-        # 2. Execute the command to update the source asset and segment data.
+        # 2. Execute the command to update the sketch template and all
+        # workpieces.
         self.doc_editor.history_manager.execute(cmd)
 
         self.exit_sketch_mode()
@@ -536,56 +534,50 @@ class MainWindow(Adw.ApplicationWindow):
 
     def on_new_sketch(self, action, param):
         """Action handler for creating a new sketch."""
-        # 1. Create an empty Sketch and serialize it
-        empty_sketch = Sketch()
-        sketch_dict = empty_sketch.to_dict()
-        sketch_data = json.dumps(sketch_dict).encode("utf-8")
+        # 1. Create an empty Sketch
+        new_sketch = Sketch()
 
-        # 2. Create the SourceAsset
+        # 2. Create a placeholder SourceAsset to hold the raw data for saving.
         source_asset = SourceAsset(
             source_file=Path("new_sketch.rfs"),
-            original_data=sketch_data,
+            original_data=json.dumps(new_sketch.to_dict()).encode("utf-8"),
             renderer=SKETCH_RENDERER,
             metadata={"is_vector": True},
         )
 
-        # 3. Create the SourceAssetSegment
-        geometry = empty_sketch.to_geometry()  # Will be empty
-        segment = SourceAssetSegment(
-            source_asset_uid=source_asset.uid,
-            segment_mask_geometry=geometry,
-            vectorization_spec=PassthroughSpec(),
-        )
-        # Set a default minimum size for the new empty sketch
-        segment.width_mm = 50.0
-        segment.height_mm = 50.0
-        source_asset.width_mm = 50.0
-        source_asset.height_mm = 50.0
+        # 3. Create the WorkPiece without a SourceAssetSegment.
+        workpiece = WorkPiece(name=_("New Sketch"), source_segment=None)
 
-        # 4. Create the WorkPiece
-        workpiece = WorkPiece(name=_("New Sketch"), source_segment=segment)
+        # 4. Set its default dimensions and link it to the sketch template.
+        workpiece.natural_width_mm = 50.0
+        workpiece.natural_height_mm = 50.0
+        workpiece.sketch_uid = new_sketch.uid
 
-        # 5. Add the item to the document first to establish its parentage.
+        # 5. Add everything to the document via a command.
         added_items = self.doc_editor.edit.add_items(
-            [workpiece], source_assets=[source_asset], name=_("New Sketch")
+            [workpiece],
+            source_assets=[source_asset],
+            sketches=[new_sketch],
+            name=_("New Sketch"),
         )
 
         if not added_items:
             logger.error("Failed to add new sketch workpiece to document.")
             return
 
-        # 6. Now that the item is in the scene graph, set its world position.
+        # 6. Position the new item in the center of the workspace.
         new_workpiece = added_items[0]
         surface_w, surface_h = self.surface.get_size_mm()
         center_x = surface_w / 2.0
         center_y = surface_h / 2.0
-        sketch_w, sketch_h = new_workpiece.size
+        # Use the newly set natural_size for centering calculation.
+        sketch_w, sketch_h = new_workpiece.natural_size
         new_workpiece.pos = (
             center_x - sketch_w / 2.0,
             center_y - sketch_h / 2.0,
         )
 
-        # 7. Immediately enter edit mode for the new workpiece
+        # 7. Immediately enter edit mode for the new workpiece.
         if isinstance(new_workpiece, WorkPiece):
             self.enter_sketch_mode(new_workpiece, is_new_sketch=True)
         else:
@@ -598,11 +590,7 @@ class MainWindow(Adw.ApplicationWindow):
             selected_items[0], WorkPiece
         ):
             wp = selected_items[0]
-            source = wp.source
-            if (
-                source
-                and source.renderer.__class__.__name__ == "SketchRenderer"
-            ):
+            if wp.sketch_uid:
                 self.enter_sketch_mode(wp)
             else:
                 self._on_editor_notification(

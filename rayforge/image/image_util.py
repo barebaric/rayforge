@@ -320,7 +320,9 @@ def create_single_workpiece_from_trace(
             segment_mask_geometry=Geometry(),
             vectorization_spec=vectorization_spec,
         )
-        return [WorkPiece(name=name_stem, source_segment=empty_segment)]
+        wp = WorkPiece(name=name_stem, source_segment=empty_segment)
+        # It will have default 0x0 size, which is correct for an empty item.
+        return [wp]
 
     min_x, min_y, max_x, max_y = combined_geo.rect()
     width_px = max_x - min_x
@@ -357,20 +359,21 @@ def create_single_workpiece_from_trace(
         crop_window_px=(min_x, min_y, width_px, height_px),
         cropped_width_mm=width_mm,
         cropped_height_mm=height_mm,
-        width_mm=width_mm,
-        height_mm=height_mm,
     )
 
     # Store crop info in metadata for the transient preview dialog
     source.metadata["crop_window_px"] = gen_config.crop_window_px
 
-    # The WorkPiece is now created purely from the source_segment.
-    # It no longer needs a separate 'boundaries' argument.
+    # Create the WorkPiece from the source_segment.
     final_wp = WorkPiece(
         name=name_stem,
         source_segment=gen_config,
     )
+    # Set its intrinsic dimensions directly.
+    final_wp.natural_width_mm = width_mm
+    final_wp.natural_height_mm = height_mm
 
+    # Set its size and position via the matrix.
     final_wp.set_size(width_mm, height_mm)
     final_wp.pos = (pos_x_mm, pos_y_mm)
 

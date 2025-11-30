@@ -7,6 +7,7 @@ from rayforge.core.step import Step
 from rayforge.core.stock import StockItem
 from rayforge.core.source_asset import SourceAsset
 from rayforge.image.svg.renderer import SvgRenderer
+from rayforge.core.sketcher.sketch import Sketch
 
 
 @pytest.fixture
@@ -26,6 +27,7 @@ def test_doc_initialization(doc):
     assert doc.history_manager is not None
     assert doc.source_assets == {}
     assert doc.stock_items == []
+    assert doc.sketches == {}
 
 
 def test_doc_stock_items_management(doc):
@@ -54,6 +56,36 @@ def test_doc_stock_items_management(doc):
     assert len(doc.stock_items) == 1
     assert stock1 not in doc.stock_items
     assert stock1.parent is None
+
+
+def test_doc_sketch_management(doc):
+    """Tests adding, removing, and getting sketches."""
+    sketch1 = Sketch()
+    sketch2 = Sketch()
+
+    # Test adding sketches
+    doc.add_sketch(sketch1)
+    assert len(doc.sketches) == 1
+    assert sketch1.uid in doc.sketches
+
+    doc.add_sketch(sketch2)
+    assert len(doc.sketches) == 2
+
+    # Test getting sketch by UID
+    found_sketch = doc.get_sketch(sketch1.uid)
+    assert found_sketch is sketch1
+
+    # Test getting non-existent sketch
+    assert doc.get_sketch("non-existent-uid") is None
+
+    # Test removing sketch
+    doc.remove_sketch(sketch1.uid)
+    assert len(doc.sketches) == 1
+    assert sketch1.uid not in doc.sketches
+
+    # Test removing non-existent sketch (should not raise error)
+    doc.remove_sketch("non-existent-uid")
+    assert len(doc.sketches) == 1
 
 
 def test_add_and_get_source_asset(doc):
@@ -228,6 +260,24 @@ def test_doc_serialization_with_stock_items(doc):
     assert stock2_dict["thickness"] == 15.0
 
 
+def test_doc_serialization_with_sketches(doc):
+    """Tests that the sketches registry is serialized correctly."""
+    sketch1 = Sketch()
+    sketch1.add_point(10, 10)
+    doc.add_sketch(sketch1)
+
+    data_dict = doc.to_dict()
+
+    assert "sketches" in data_dict
+    assert len(data_dict["sketches"]) == 1
+    assert sketch1.uid in data_dict["sketches"]
+
+    # Check structure of the sketch data
+    sketch1_dict = data_dict["sketches"][sketch1.uid]
+    assert sketch1_dict["uid"] == sketch1.uid
+    assert len(sketch1_dict["registry"]["points"]) > 0
+
+
 def test_doc_from_dict_deserialization():
     """Tests deserializing a Doc from a dictionary."""
     doc_dict = {
@@ -242,6 +292,7 @@ def test_doc_from_dict_deserialization():
         ],
         "stock_items": [],
         "source_assets": {},
+        "sketches": {},
     }
 
     with patch("rayforge.core.layer.Layer.from_dict") as mock_layer_from_dict:
@@ -253,12 +304,42 @@ def test_doc_from_dict_deserialization():
 
         assert isinstance(doc, Doc)
         assert len(doc.children) == 1
+        assert doc.sketches == {}
         mock_layer_from_dict.assert_called_once_with(
             {
                 "uid": "layer1-uid",
                 "type": "layer",
             }
         )
+
+
+def test_doc_deserialization_with_sketches():
+    """Tests deserializing a doc that contains sketches using a mock."""
+    sketch_data = {"uid": "sketch-123", "params": {}}
+    doc_dict = {
+        "uid": "test-doc-uid",
+        "type": "doc",
+        "active_layer_index": 0,
+        "children": [],
+        "stock_items": [],
+        "source_assets": {},
+        "sketches": {"sketch-123": sketch_data},
+    }
+
+    # Since we don't need to test Sketch.from_dict here, we can mock it
+    with patch(
+        "rayforge.core.sketcher.sketch.Sketch.from_dict"
+    ) as mock_sketch_from_dict:
+        mock_sketch = MagicMock(spec=Sketch)
+        mock_sketch.uid = "sketch-123"
+        mock_sketch_from_dict.return_value = mock_sketch
+
+        doc = Doc.from_dict(doc_dict)
+
+        mock_sketch_from_dict.assert_called_once_with(sketch_data)
+        assert len(doc.sketches) == 1
+        assert "sketch-123" in doc.sketches
+        assert doc.get_sketch("sketch-123") is mock_sketch
 
 
 def test_doc_roundtrip_serialization():
@@ -272,6 +353,11 @@ def test_doc_roundtrip_serialization():
     original.add_layer(layer2)
     original.active_layer = layer2
 
+    # Add a sketch
+    sketch = Sketch()
+    sketch.add_point(10, 20)
+    original.add_sketch(sketch)
+
     # Serialize and deserialize
     data = original.to_dict()
     restored = Doc.from_dict(data)
@@ -281,6 +367,20 @@ def test_doc_roundtrip_serialization():
     assert len(restored.layers) == len(original.layers)
     assert restored.uid == "test-doc-uid"
     assert len(restored.layers) == 2
+
+    # Check that sketches were restored
+    assert len(restored.sketches) == 1
+    assert sketch.uid in restored.sketches
+    restored_sketch = restored.get_sketch(sketch.uid)
+    assert restored_sketch is not None
+    assert restored_sketch.uid == sketch.uid
+    # Check that some geometry data was restored
+    # Original sketch has origin + 1 point = 2 points
+    assert len(restored_sketch.registry.points) == len(sketch.registry.points)
+    assert len(restored_sketch.registry.points) == 2
+    point = restored_sketch.registry.get_point(1)  # ID 0 is origin
+    assert point.x == 10
+    assert point.y == 20
 
 
 def test_doc_from_dict_with_default_active_layer_index():
@@ -296,6 +396,7 @@ def test_doc_from_dict_with_default_active_layer_index():
         ],
         "stock_items": [],
         "source_assets": {},
+        "sketches": {},
     }
 
     with patch("rayforge.core.layer.Layer.from_dict") as mock_layer_from_dict:
@@ -305,8 +406,7 @@ def test_doc_from_dict_with_default_active_layer_index():
 
         doc = Doc.from_dict(doc_dict)
 
-        assert isinstance(doc, Doc)
-        assert len(doc.children) == 1
+        assert doc._active_layer_index == 0  # Explicitly test the default
         mock_layer_from_dict.assert_called_once_with(
             {
                 "uid": "layer1-uid",

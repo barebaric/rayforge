@@ -18,7 +18,6 @@ class TestSourceAssetSegment:
             segment_mask_geometry=original_geo,
             vectorization_spec=spec,
             image_modifier_chain=modifiers,
-            width_mm=100.0,
         )
 
         # New geometry for clone
@@ -31,7 +30,6 @@ class TestSourceAssetSegment:
 
         # Verify basic properties
         assert clone.source_asset_uid == segment.source_asset_uid
-        assert clone.width_mm == segment.width_mm
         assert clone.segment_mask_geometry is new_geo
         assert clone.segment_mask_geometry is not original_geo
 

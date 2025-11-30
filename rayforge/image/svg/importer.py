@@ -396,13 +396,13 @@ class SvgImporter(Importer):
             source_asset_uid=source.uid,
             segment_mask_geometry=geo,
             vectorization_spec=PassthroughSpec(),
-            width_mm=width_mm,
-            height_mm=height_mm,
         )
         wp = WorkPiece(
             name=self.source_file.stem,
             source_segment=gen_config,
         )
+        wp.natural_width_mm = width_mm
+        wp.natural_height_mm = height_mm
         wp.set_size(width_mm, height_mm)
         wp.pos = (0, 0)
         logger.info(

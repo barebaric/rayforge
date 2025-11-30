@@ -10,6 +10,7 @@ from ..undo import ListItemCommand, ReorderListCommand
 if TYPE_CHECKING:
     from .editor import DocEditor
     from ..core.source_asset import SourceAsset
+    from ..core.sketcher.sketch import Sketch
 
 logger = logging.getLogger(__name__)
 
@@ -194,10 +195,11 @@ class EditCmd:
         self,
         items: List[DocItem],
         source_assets: Optional[List["SourceAsset"]] = None,
+        sketches: Optional[List["Sketch"]] = None,
         name: str = "Add item(s)",
     ) -> List[DocItem]:
         """
-        Adds a list of items and their associated source assets to the
+        Adds a list of items and their associated source assets/sketches to the
         document.
         """
         if not items:
@@ -212,6 +214,11 @@ class EditCmd:
             if source_assets:
                 for asset in source_assets:
                     self._editor.doc.add_source_asset(asset)
+
+            # Register sketches.
+            if sketches:
+                for sketch in sketches:
+                    self._editor.doc.add_sketch(sketch)
 
             for item in items:
                 command = ListItemCommand(

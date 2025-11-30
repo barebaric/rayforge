@@ -188,14 +188,8 @@ class WorkSurface(WorldSurface):
         elif isinstance(hit_elem, WorkPieceElement):
             wp_view = cast(WorkPieceElement, hit_elem)
 
-            # Check if this is a sketch workpiece
-            is_sketch = False
-            source = wp_view.data.source
-            if (
-                source
-                and source.renderer.__class__.__name__ == "SketchRenderer"
-            ):
-                is_sketch = True
+            # Check if this is a sketch workpiece using the new method
+            is_sketch = bool(wp_view.data.sketch_uid)
 
             # Check path proximity
             location = wp_view.get_closest_point_on_path(
@@ -390,9 +384,6 @@ class WorkSurface(WorldSurface):
         new_context = self.edit_context
 
         # Check for double-click to edit sketches.
-        # We perform an explicit hit test because 'new_context'
-        # (aka edit_context) might not be set to the workpiece if
-        # we are just selecting it.
         if n_press == 2:
             world_x, world_y = self._get_world_coords(x, y)
             hit_elem = self.root.get_elem_hit(
@@ -401,11 +392,8 @@ class WorkSurface(WorldSurface):
 
             if isinstance(hit_elem, WorkPieceElement):
                 wp = hit_elem.data
-                source = wp.source
-                if (
-                    source
-                    and source.renderer.__class__.__name__ == "SketchRenderer"
-                ):
+                # The new, correct logic:
+                if wp.sketch_uid:
                     self.edit_sketch_requested.send(self, workpiece=wp)
                     return
 

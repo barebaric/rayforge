@@ -1,15 +1,18 @@
 from __future__ import annotations
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Optional, List, Tuple, TYPE_CHECKING, NamedTuple
+from typing import Optional, List, Tuple, TYPE_CHECKING
+from dataclasses import dataclass, field
 
 if TYPE_CHECKING:
     from ..core.item import DocItem
     from ..core.vectorization_spec import VectorizationSpec
     from ..core.source_asset import SourceAsset
+    from ..core.sketcher.sketch import Sketch
 
 
-class ImportPayload(NamedTuple):
+@dataclass
+class ImportPayload:
     """
     A container for the complete result of a file import operation.
     It's a self-contained package ready for integration into a document.
@@ -17,6 +20,7 @@ class ImportPayload(NamedTuple):
 
     source: "SourceAsset"
     items: List["DocItem"]
+    sketches: List["Sketch"] = field(default_factory=list)
 
 
 class Importer(ABC):

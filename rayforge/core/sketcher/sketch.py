@@ -1,4 +1,5 @@
 import json
+import uuid
 from pathlib import Path
 from typing import Union, List, Optional, Set, Dict, Any, Sequence
 from ..geo import Geometry
@@ -45,7 +46,8 @@ class Sketch:
     and expressions.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, uid: Optional[str] = None) -> None:
+        self.uid = uid or str(uuid.uuid4())
         self.params = ParameterContext()
         self.registry = EntityRegistry()
         self.constraints: List[Constraint] = []
@@ -103,6 +105,7 @@ class Sketch:
     def to_dict(self, include_input_values: bool = True) -> Dict[str, Any]:
         """Serializes the Sketch to a dictionary."""
         return {
+            "uid": self.uid,
             "input_parameters": self.input_parameters.to_dict(
                 include_value=include_input_values
             ),
@@ -122,7 +125,7 @@ class Sketch:
                 f"{required_keys}."
             )
 
-        new_sketch = cls()
+        new_sketch = cls(uid=data.get("uid"))
 
         # Handle backward compatibility for input_parameters
         if "input_parameters" in data:

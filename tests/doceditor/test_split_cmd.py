@@ -67,6 +67,11 @@ def workpiece_on_layer(mock_editor):
     )
 
     wp = WorkPiece(name="TestItem", source_segment=segment)
+    # Set dimensions directly on the workpiece
+    wp.natural_width_mm = 10.0
+    wp.natural_height_mm = 10.0
+    wp.set_size(10.0, 10.0)
+
     layer.add_child(wp)
     return wp
 
@@ -169,11 +174,11 @@ def test_connectivity_strategy_real_split(split_cmd, mock_editor):
         source_asset_uid="dummy",
         segment_mask_geometry=norm_geo,
         vectorization_spec=PassthroughSpec(),
-        width_mm=30.0,
-        height_mm=10.0,
     )
 
     wp = WorkPiece(name="SplitMe", source_segment=segment)
+    wp.natural_width_mm = 30.0
+    wp.natural_height_mm = 10.0
     wp.set_size(30, 10)  # 30mm x 10mm
     wp.pos = (0, 0)
     layer.add_child(wp)
