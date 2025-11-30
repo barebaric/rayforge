@@ -56,10 +56,10 @@ def test_radius_constrains_radius_method(setup_env):
     c = RadiusConstraint(arc_id, 10.0)
 
     # Should return True for the constrained entity
-    assert c.constrains_radius(arc_id) is True
+    assert c.constrains_radius(reg, arc_id) is True
     # Should return False for others
-    assert c.constrains_radius(other_id) is False
-    assert c.constrains_radius(999) is False
+    assert c.constrains_radius(reg, other_id) is False
+    assert c.constrains_radius(reg, 999) is False
 
 
 def test_radius_constraint_invalid_entity(setup_env):

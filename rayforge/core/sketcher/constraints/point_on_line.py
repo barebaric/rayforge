@@ -1,5 +1,3 @@
-# constraints/point_on_line.py
-
 from __future__ import annotations
 import math
 from typing import (
@@ -35,6 +33,23 @@ class PointOnLineConstraint(Constraint):
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "PointOnLineConstraint":
         return cls(point_id=data["point_id"], shape_id=data["shape_id"])
+
+    def constrains_radius(
+        self, registry: "EntityRegistry", entity_id: int
+    ) -> bool:
+        """
+        If this constraint forces a point onto the target entity (circle/arc),
+        and that point is itself constrained, then the radius of the entity
+        is determined.
+        """
+        if self.shape_id != entity_id:
+            return False
+
+        try:
+            pt = registry.get_point(self.point_id)
+            return pt.constrained
+        except IndexError:
+            return False
 
     def error(
         self, reg: "EntityRegistry", params: "ParameterContext"

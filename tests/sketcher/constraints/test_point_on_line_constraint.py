@@ -58,6 +58,38 @@ def test_point_on_arc_circle_constraint(setup_env):
     assert c2.error(reg, params) == pytest.approx(2.0)
 
 
+def test_point_on_line_constrains_radius(setup_env):
+    """
+    Test that PointOnLineConstraint correctly reports constraining the radius
+    when the point on the circle is itself constrained.
+    """
+    reg, params = setup_env
+
+    # Setup Circle
+    c = reg.add_point(0, 0, fixed=True)
+    r_pt = reg.add_point(10, 0, fixed=False)  # Not fixed initially
+    circ_id = reg.add_circle(c, r_pt)
+
+    # Setup Constrained Point on Circle
+    p_constrained = reg.add_point(0, 10, fixed=False)
+    reg.get_point(p_constrained).constrained = True  # Simulate solver result
+
+    # Setup Unconstrained Point on Circle
+    p_unconstrained = reg.add_point(0, -10, fixed=False)
+    reg.get_point(p_unconstrained).constrained = False
+
+    # Constraint 1: Constrained Point -> Circle
+    c1 = PointOnLineConstraint(p_constrained, circ_id)
+    assert c1.constrains_radius(reg, circ_id) is True
+
+    # Constraint 2: Unconstrained Point -> Circle
+    c2 = PointOnLineConstraint(p_unconstrained, circ_id)
+    assert c2.constrains_radius(reg, circ_id) is False
+
+    # Constraint 3: Wrong Entity ID
+    assert c1.constrains_radius(reg, 999) is False
+
+
 def test_point_on_line_invalid_entity(setup_env):
     """Ensure it doesn't crash if passed a non-line ID."""
     reg, params = setup_env

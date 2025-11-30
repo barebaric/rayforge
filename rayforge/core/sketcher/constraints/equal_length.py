@@ -38,7 +38,9 @@ class EqualLengthConstraint(Constraint):
     def from_dict(cls, data: Dict[str, Any]) -> "EqualLengthConstraint":
         return cls(entity_ids=data["entity_ids"])
 
-    def constrains_radius(self, entity_id: int) -> bool:
+    def constrains_radius(
+        self, registry: "EntityRegistry", entity_id: int
+    ) -> bool:
         return entity_id in self.entity_ids
 
     def _get_length(self, entity, reg: "EntityRegistry") -> float:
