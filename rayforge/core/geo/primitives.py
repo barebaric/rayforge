@@ -483,3 +483,138 @@ def get_segment_region_intersections(
                 cut_points_t.add(max(0.0, min(1.0, t)))
 
     return sorted(list(cut_points_t))
+
+
+def is_point_in_rect(
+    point: Tuple[float, float], rect: Tuple[float, float, float, float]
+) -> bool:
+    """Checks if a 2D point is inside a rectangle."""
+    x, y = point
+    rx1, ry1, rx2, ry2 = rect
+    return rx1 <= x <= rx2 and ry1 <= y <= ry2
+
+
+def rect_a_contains_rect_b(
+    rect_a: Tuple[float, float, float, float],
+    rect_b: Tuple[float, float, float, float],
+) -> bool:
+    """Checks if rect_a fully contains rect_b."""
+    ax1, ay1, ax2, ay2 = rect_a
+    bx1, by1, bx2, by2 = rect_b
+    return bx1 >= ax1 and by1 >= ay1 and bx2 <= ax2 and by2 <= ay2
+
+
+def line_segment_intersects_rect(
+    p1: Tuple[float, float],
+    p2: Tuple[float, float],
+    rect: Tuple[float, float, float, float],
+) -> bool:
+    """Checks if a line segment intersects a rectangle."""
+    from . import clipping
+
+    # Use the robust Cohen-Sutherland clipping algorithm.
+    # If the algorithm returns a clipped segment, it means there was an
+    # intersection.
+    # The algorithm expects 3D points, so we add a dummy Z coordinate.
+    start_3d = (p1[0], p1[1], 0.0)
+    end_3d = (p2[0], p2[1], 0.0)
+    return clipping.clip_line_segment(start_3d, end_3d, rect) is not None
+
+
+def arc_intersects_rect(
+    start_pos: Tuple[float, float],
+    end_pos: Tuple[float, float],
+    center: Tuple[float, float],
+    clockwise: bool,
+    rect: Tuple[float, float, float, float],
+) -> bool:
+    """Checks if an arc intersects with a rectangle."""
+
+    # A mock command object for linearize_arc
+    class MockArcCmd:
+        def __init__(self, end, center_offset, clockwise):
+            self.end = (end[0], end[1], 0.0)
+            self.center_offset = center_offset
+            self.clockwise = clockwise
+
+    # Broad phase: Check if arc's AABB intersects rect's AABB
+    arc_box = get_arc_bounding_box(
+        start_pos,
+        end_pos,
+        (center[0] - start_pos[0], center[1] - start_pos[1]),
+        clockwise,
+    )
+    if (
+        arc_box[2] < rect[0]  # arc_xmax < rect_xmin
+        or arc_box[0] > rect[2]  # arc_xmin > rect_xmax
+        or arc_box[3] < rect[1]  # arc_ymax < rect_ymin
+        or arc_box[1] > rect[3]  # arc_ymin > rect_ymax
+    ):
+        return False
+
+    # Detailed phase: linearize the arc and check each segment.
+    mock_cmd = MockArcCmd(
+        end_pos,
+        (center[0] - start_pos[0], center[1] - start_pos[1]),
+        clockwise,
+    )
+    start_3d = (start_pos[0], start_pos[1], 0.0)
+    radius = math.hypot(start_pos[0] - center[0], start_pos[1] - center[1])
+    # Use a sensible resolution for selection hit-testing
+    segments = linearize_arc(mock_cmd, start_3d, resolution=radius * 0.1)
+
+    for p1_3d, p2_3d in segments:
+        if line_segment_intersects_rect(p1_3d[:2], p2_3d[:2], rect):
+            return True
+
+    return False
+
+
+def circle_is_contained_by_rect(
+    center: Tuple[float, float],
+    radius: float,
+    rect: Tuple[float, float, float, float],
+) -> bool:
+    """Checks if a circle is fully contained within a rectangle."""
+    cx, cy = center
+    rx1, ry1, rx2, ry2 = rect
+    return (
+        (cx - radius) >= rx1
+        and (cy - radius) >= ry1
+        and (cx + radius) <= rx2
+        and (cy + radius) <= ry2
+    )
+
+
+def circle_intersects_rect(
+    center: Tuple[float, float],
+    radius: float,
+    rect: Tuple[float, float, float, float],
+) -> bool:
+    """Checks if a circle's boundary intersects with a rectangle."""
+    cx, cy = center
+    rx1, ry1, rx2, ry2 = rect
+
+    # Quick rejection: if circle is fully contained, it doesn't intersect
+    # the boundary.
+    if circle_is_contained_by_rect(center, radius, rect):
+        return False
+
+    # 1. Check for overlap (closest point on rect to center is within radius)
+    closest_x = max(rx1, min(cx, rx2))
+    closest_y = max(ry1, min(cy, ry2))
+    dist_sq_closest = (closest_x - cx) ** 2 + (closest_y - cy) ** 2
+    if dist_sq_closest > radius * radius:
+        return False  # No overlap at all
+
+    # 2. If overlapping, check that the rect is not fully contained
+    # within the circle, which would mean it doesn't touch the boundary.
+    dx_far = max(abs(rx1 - cx), abs(rx2 - cx))
+    dy_far = max(abs(ry1 - cy), abs(ry2 - cy))
+    dist_sq_farthest = dx_far**2 + dy_far**2
+    if dist_sq_farthest < radius * radius:
+        return False  # Rect is entirely inside circle, not touching boundary
+
+    # If it overlaps but is not fully contained by either shape, it must
+    # intersect the boundary.
+    return True
