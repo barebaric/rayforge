@@ -90,11 +90,14 @@ class MainMenu(Gio.Menu):
         stock_group.append(_("Add Stock"), "win.add_stock")
         object_menu.append_section(None, stock_group)
 
-        export_group = Gio.Menu()
-        export_group.append(_("Export Sketch..."), "win.export_sketch")
-        object_menu.append_section(None, export_group)
+        sketch_group = Gio.Menu()
+        sketch_group.append(_("New Sketch"), "win.new_sketch")
+        sketch_group.append(_("Export Sketch..."), "win.export_sketch")
+        object_menu.append_section(None, sketch_group)
 
-        object_menu.append(_("Split"), "win.split")
+        other_group = Gio.Menu()
+        other_group.append(_("Split"), "win.split")
+        object_menu.append_section(None, other_group)
 
         tab_submenu = Gio.Menu()
         tab_submenu.append(
