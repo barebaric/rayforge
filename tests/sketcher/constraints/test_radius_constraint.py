@@ -45,6 +45,23 @@ def test_radius_constraint_on_circle(setup_env):
     assert c2.error(reg, params) == pytest.approx(5.0)
 
 
+def test_radius_constrains_radius_method(setup_env):
+    reg, params = setup_env
+    start = reg.add_point(10, 0)
+    end = reg.add_point(0, 10)
+    center = reg.add_point(0, 0)
+    arc_id = reg.add_arc(start, end, center)
+    other_id = reg.add_arc(start, end, center)
+
+    c = RadiusConstraint(arc_id, 10.0)
+
+    # Should return True for the constrained entity
+    assert c.constrains_radius(arc_id) is True
+    # Should return False for others
+    assert c.constrains_radius(other_id) is False
+    assert c.constrains_radius(999) is False
+
+
 def test_radius_constraint_invalid_entity(setup_env):
     reg, params = setup_env
     # Add a line, try to constrain radius (should fail gracefully/return 0)

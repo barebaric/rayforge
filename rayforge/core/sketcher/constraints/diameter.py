@@ -1,5 +1,3 @@
-# constraints/diameter.py
-
 from __future__ import annotations
 import math
 from typing import (
@@ -37,6 +35,9 @@ class DiameterConstraint(Constraint):
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "DiameterConstraint":
         return cls(circle_id=data["circle_id"], diameter=data["value"])
+
+    def constrains_radius(self, entity_id: int) -> bool:
+        return self.circle_id == entity_id
 
     def error(
         self, reg: "EntityRegistry", params: "ParameterContext"

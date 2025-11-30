@@ -28,6 +28,22 @@ def test_diameter_constraint(setup_env):
     assert c2.error(reg, params) == pytest.approx(-10.0)
 
 
+def test_diameter_constrains_radius_method(setup_env):
+    reg, params = setup_env
+    center = reg.add_point(0, 0)
+    radius_pt = reg.add_point(5, 0)
+    circ_id = reg.add_circle(center, radius_pt)
+    other_circ_id = reg.add_circle(center, radius_pt)
+
+    c = DiameterConstraint(circ_id, 10.0)
+
+    # Should return True for the constrained circle
+    assert c.constrains_radius(circ_id) is True
+    # Should return False for any other entity
+    assert c.constrains_radius(other_circ_id) is False
+    assert c.constrains_radius(999) is False
+
+
 def test_diameter_constraint_serialization_round_trip(setup_env):
     reg, params = setup_env
     center = reg.add_point(0, 0)

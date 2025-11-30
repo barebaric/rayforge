@@ -27,6 +27,17 @@ def test_distance_constraint(setup_env):
     assert c2.error(reg, params) == pytest.approx(5.0)
 
 
+def test_distance_constrains_radius_method(setup_env):
+    reg, params = setup_env
+    p1 = reg.add_point(0, 0)
+    p2 = reg.add_point(10, 0)
+    c = DistanceConstraint(p1, p2, 10.0)
+
+    # Distance constraint doesn't constrain radius of an entity
+    assert c.constrains_radius(999) is False
+    assert c.constrains_radius(p1) is False
+
+
 def test_distance_constraint_with_expression(setup_env):
     reg, params = setup_env
     params.set("width", 20.0)

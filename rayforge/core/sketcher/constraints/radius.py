@@ -1,5 +1,3 @@
-# constraints/radius.py
-
 from __future__ import annotations
 import math
 from typing import (
@@ -36,6 +34,9 @@ class RadiusConstraint(Constraint):
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "RadiusConstraint":
         return cls(entity_id=data["entity_id"], radius=data["value"])
+
+    def constrains_radius(self, entity_id: int) -> bool:
+        return self.entity_id == entity_id
 
     def error(
         self, reg: "EntityRegistry", params: "ParameterContext"

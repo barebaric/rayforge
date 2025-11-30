@@ -63,6 +63,28 @@ def test_equal_length_constraint(setup_env):
     assert EqualLengthConstraint([l1]).error(reg, params) == []
 
 
+def test_equal_length_constrains_radius_method(setup_env):
+    reg, params = setup_env
+    p1 = reg.add_point(0, 0)
+    p2 = reg.add_point(10, 0)
+    l1 = reg.add_line(p1, p2)
+
+    p3 = reg.add_point(0, 10)
+    p4 = reg.add_point(5, 10)
+    l2 = reg.add_line(p3, p4)
+
+    # Entity 999 (not in list)
+
+    c = EqualLengthConstraint([l1, l2])
+
+    # Should return True for entities in the list
+    assert c.constrains_radius(l1) is True
+    assert c.constrains_radius(l2) is True
+
+    # Should return False for entities not in the list
+    assert c.constrains_radius(999) is False
+
+
 def test_equal_length_constraint_gradient(setup_env):
     reg, params = setup_env
     p0 = reg.add_point(0, 0)

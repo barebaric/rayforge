@@ -333,3 +333,89 @@ def test_registry_is_point_used(registry):
     assert registry.is_point_used(p1) is True
     assert registry.is_point_used(p4) is True
     assert registry.is_point_used(p_unused) is False
+
+
+def test_line_update_constrained_status(registry):
+    """Test Line.update_constrained_status logic."""
+    p1 = registry.add_point(0, 0)
+    p2 = registry.add_point(10, 10)
+    lid = registry.add_line(p1, p2)
+    line = registry.get_entity(lid)
+
+    pt1 = registry.get_point(p1)
+    pt2 = registry.get_point(p2)
+
+    # Initially unconstrained
+    pt1.constrained = False
+    pt2.constrained = False
+    line.update_constrained_status(registry, [])
+    assert line.constrained is False
+
+    # One point constrained
+    pt1.constrained = True
+    line.update_constrained_status(registry, [])
+    assert line.constrained is False
+
+    # Both points constrained
+    pt2.constrained = True
+    line.update_constrained_status(registry, [])
+    assert line.constrained is True
+
+
+def test_arc_update_constrained_status(registry):
+    """Test Arc.update_constrained_status logic."""
+    s = registry.add_point(10, 0)
+    e = registry.add_point(0, 10)
+    c = registry.add_point(0, 0)
+    aid = registry.add_arc(s, e, c)
+    arc = registry.get_entity(aid)
+
+    pt_s = registry.get_point(s)
+    pt_e = registry.get_point(e)
+    pt_c = registry.get_point(c)
+
+    # Initial state
+    pt_s.constrained = False
+    pt_e.constrained = False
+    pt_c.constrained = False
+    arc.update_constrained_status(registry, [])
+    assert arc.constrained is False
+
+    # Fully constrained points
+    pt_s.constrained = True
+    pt_e.constrained = True
+    pt_c.constrained = True
+    arc.update_constrained_status(registry, [])
+    assert arc.constrained is True
+
+
+def test_circle_update_constrained_status(registry):
+    """
+    Test Circle.update_constrained_status logic.
+    Circle requires center point constrained AND radius defined.
+    """
+    c = registry.add_point(0, 0)
+    r = registry.add_point(10, 0)
+    cid = registry.add_circle(c, r)
+    circle = registry.get_entity(cid)
+
+    pt_c = registry.get_point(c)
+    pt_r = registry.get_point(r)
+
+    # Case 1: Nothing constrained
+    pt_c.constrained = False
+    pt_r.constrained = False
+    circle.update_constrained_status(registry, [])
+    assert circle.constrained is False
+
+    # Case 2: Only Center constrained (Radius undefined)
+    pt_c.constrained = True
+    circle.update_constrained_status(registry, [])
+    assert circle.constrained is False
+
+    # Case 3: Center + Radius Point constrained (Fully defined)
+    pt_r.constrained = True
+    circle.update_constrained_status(registry, [])
+    assert circle.constrained is True
+
+    # Case 4: Center constrained
