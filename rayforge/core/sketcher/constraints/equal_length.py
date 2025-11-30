@@ -1,5 +1,3 @@
-# constraints/equal_length.py
-
 from __future__ import annotations
 import math
 from typing import (
@@ -39,6 +37,9 @@ class EqualLengthConstraint(Constraint):
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "EqualLengthConstraint":
         return cls(entity_ids=data["entity_ids"])
+
+    def constrains_radius(self, entity_id: int) -> bool:
+        return entity_id in self.entity_ids
 
     def _get_length(self, entity, reg: "EntityRegistry") -> float:
         if isinstance(entity, Line):

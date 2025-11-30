@@ -1,5 +1,3 @@
-# constraints/base.py
-
 from __future__ import annotations
 from typing import (
     Union,
@@ -35,6 +33,14 @@ class Constraint:
         error().
         """
         return {}
+
+    def constrains_radius(self, entity_id: int) -> bool:
+        """
+        Returns True if this constraint explicitly defines or links the
+        radius/length of the specified entity.
+        Used by the Solver to determine visual feedback (green color).
+        """
+        return False
 
     def to_dict(self) -> Dict[str, Any]:
         """Serializes the constraint to a dictionary."""

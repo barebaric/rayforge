@@ -2,9 +2,9 @@ import numpy as np
 import scipy.linalg
 from scipy.optimize import least_squares
 from typing import Sequence, List
-from .entities import EntityRegistry, Point, Line, Arc, Circle
+from .entities import EntityRegistry, Point
 from .params import ParameterContext
-from .constraints import Constraint, RadiusConstraint, DiameterConstraint
+from .constraints import Constraint
 
 
 class Solver:
@@ -159,8 +159,9 @@ class Solver:
         # If the Null Space is empty, the system is fully constrained.
 
         # Get the null space basis ( orthonormal columns )
-        # We use a slightly loose tolerance to account for floating point drift
-        null_space = scipy.linalg.null_space(jacobian, rcond=1e-5)
+        # Using a tighter tolerance (1e-9) prevents false positives for DOF
+        # when the system is actually rigid but has scaling differences.
+        null_space = scipy.linalg.null_space(jacobian, rcond=1e-9)
 
         # null_space shape is (n_vars, n_dof)
         # If n_dof == 0, everything is constrained.
@@ -194,54 +195,7 @@ class Solver:
         """
         Updates the constrained status of Entities based on their points.
         An entity is constrained only if all its defining points are
-        constrained. For circles, it is constrained if its center and radius
-        are defined.
+        constrained.
         """
-        registry = self.registry
-        for entity in registry.entities:
-            is_fully_constrained = False
-
-            if isinstance(entity, Line):
-                p1 = registry.get_point(entity.p1_idx)
-                p2 = registry.get_point(entity.p2_idx)
-                is_fully_constrained = p1.constrained and p2.constrained
-
-            elif isinstance(entity, Arc):
-                s = registry.get_point(entity.start_idx)
-                e = registry.get_point(entity.end_idx)
-                c = registry.get_point(entity.center_idx)
-                is_fully_constrained = (
-                    s.constrained and e.constrained and c.constrained
-                )
-
-            elif isinstance(entity, Circle):
-                center_pt = registry.get_point(entity.center_idx)
-                radius_pt = registry.get_point(entity.radius_pt_idx)
-
-                # A circle's geometry is defined by its center and radius.
-                center_is_constrained = center_pt.constrained
-
-                # The radius is defined if:
-                # 1. An explicit Radius or Diameter constraint exists.
-                # 2. Or, the radius point itself is fully constrained.
-                radius_is_defined = radius_pt.constrained
-                if not radius_is_defined:
-                    for constr in self.constraints:
-                        if (
-                            isinstance(constr, RadiusConstraint)
-                            and constr.entity_id == entity.id
-                        ):
-                            radius_is_defined = True
-                            break
-                        if (
-                            isinstance(constr, DiameterConstraint)
-                            and constr.circle_id == entity.id
-                        ):
-                            radius_is_defined = True
-                            break
-
-                is_fully_constrained = (
-                    center_is_constrained and radius_is_defined
-                )
-
-            entity.constrained = is_fully_constrained
+        for entity in self.registry.entities:
+            entity.update_constrained_status(self.registry, self.constraints)

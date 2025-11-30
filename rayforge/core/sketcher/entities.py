@@ -1,6 +1,9 @@
-from typing import List, Tuple, Dict, Optional, Any
+from typing import List, Tuple, Dict, Optional, Any, Sequence, TYPE_CHECKING
 import math
 from ..geo import primitives
+
+if TYPE_CHECKING:
+    from .constraints import Constraint
 
 
 class Point:
@@ -50,6 +53,15 @@ class Entity:
         # Constrained state is calculated by solver
         self.constrained = False
 
+    def update_constrained_status(
+        self, registry: "EntityRegistry", constraints: Sequence["Constraint"]
+    ) -> None:
+        """
+        Updates self.constrained based on the status of defining points
+        and relevant constraints.
+        """
+        self.constrained = False
+
     def to_dict(self) -> Dict[str, Any]:
         """Base serialization method for entities."""
         return {
@@ -70,6 +82,13 @@ class Line(Entity):
         self.p1_idx = p1_idx
         self.p2_idx = p2_idx
         self.type = "line"
+
+    def update_constrained_status(
+        self, registry: "EntityRegistry", constraints: Sequence["Constraint"]
+    ) -> None:
+        p1 = registry.get_point(self.p1_idx)
+        p2 = registry.get_point(self.p2_idx)
+        self.constrained = p1.constrained and p2.constrained
 
     def to_dict(self) -> Dict[str, Any]:
         """Serializes the Line to a dictionary."""
@@ -110,6 +129,14 @@ class Arc(Entity):
         self.center_idx = center_idx
         self.clockwise = clockwise
         self.type = "arc"
+
+    def update_constrained_status(
+        self, registry: "EntityRegistry", constraints: Sequence["Constraint"]
+    ) -> None:
+        s = registry.get_point(self.start_idx)
+        e = registry.get_point(self.end_idx)
+        c = registry.get_point(self.center_idx)
+        self.constrained = s.constrained and e.constrained and c.constrained
 
     def to_dict(self) -> Dict[str, Any]:
         """Serializes the Arc to a dictionary."""
@@ -188,6 +215,27 @@ class Circle(Entity):
         self.center_idx = center_idx
         self.radius_pt_idx = radius_pt_idx
         self.type = "circle"
+
+    def update_constrained_status(
+        self, registry: "EntityRegistry", constraints: Sequence["Constraint"]
+    ) -> None:
+        center_pt = registry.get_point(self.center_idx)
+        radius_pt = registry.get_point(self.radius_pt_idx)
+
+        # A circle's geometry is defined by its center and radius.
+        center_is_constrained = center_pt.constrained
+
+        # The radius is defined if:
+        # 1. The radius point itself is fully constrained.
+        # 2. Or, a constraint explicitly defines the radius.
+        radius_is_defined = radius_pt.constrained
+        if not radius_is_defined:
+            for constr in constraints:
+                if constr.constrains_radius(self.id):
+                    radius_is_defined = True
+                    break
+
+        self.constrained = center_is_constrained and radius_is_defined
 
     def to_dict(self) -> Dict[str, Any]:
         """Serializes the Circle to a dictionary."""
