@@ -59,7 +59,7 @@ class SketchRenderer:
         if is_editing:
             self._draw_origin(ctx)
 
-        self._draw_entities(ctx, is_editing)
+        self._draw_entities(ctx, is_editing, scaled_line_width)
         ctx.restore()
 
     def draw_edit_overlay(self, ctx: cairo.Context):
@@ -106,9 +106,12 @@ class SketchRenderer:
 
     # --- Entities ---
 
-    def _draw_entities(self, ctx: cairo.Context, is_editing: bool):
+    def _draw_entities(
+        self, ctx: cairo.Context, is_editing: bool, base_line_width: float
+    ):
         is_sketch_fully_constrained = self.element.sketch.is_fully_constrained
         entities = self.element.sketch.registry.entities or []
+
         for entity in entities:
             # If not in edit mode, skip drawing construction geometry.
             if not is_editing and entity.construction:
@@ -117,32 +120,52 @@ class SketchRenderer:
             is_sel = entity.id in self.element.selection.entity_ids
             ctx.save()
 
+            # 1. Define the Path
+            has_path = False
+            if isinstance(entity, Line):
+                has_path = self._define_line_path(ctx, entity)
+            elif isinstance(entity, Arc):
+                has_path = self._define_arc_path(ctx, entity)
+            elif isinstance(entity, Circle):
+                has_path = self._define_circle_path(ctx, entity)
+
+            if not has_path:
+                ctx.restore()
+                continue
+
+            # 2. Draw Selection Underlay (Blurry Orange Glow)
+            if is_sel:
+                ctx.save()
+                # Remove dash pattern for the glow so it's solid
+                ctx.set_dash([])
+                # Semi-transparent orange
+                ctx.set_source_rgba(1.0, 0.6, 0.0, 0.4)
+                # Thicker line for the glow effect
+                ctx.set_line_width(base_line_width * 3.0)
+                ctx.stroke_preserve()
+                ctx.restore()
+
+            # 3. Draw Actual Entity
             if entity.construction:
                 ctx.set_dash([5, 5])
-                # Get the already-scaled line width from the context and
-                # reduce it for construction lines.
-                ctx.set_line_width(ctx.get_line_width() * 0.8)
-                if is_sel:
-                    ctx.set_source_rgb(1.0, 0.6, 0.0)  # Orange
-                elif entity.constrained:
+                # Reduce width for construction lines
+                ctx.set_line_width(base_line_width * 0.8)
+                if entity.constrained:
                     ctx.set_source_rgb(0.2, 0.3, 0.6)  # Dark Blue
                 else:
                     ctx.set_source_rgb(0.3, 0.5, 0.8)  # Light Blue
             else:
                 self._set_standard_color(
                     ctx,
-                    is_sel,
+                    # We pass False for selection here because we handled
+                    # visual selection via the underlay. We want the geometry
+                    # to keep its constraint color.
+                    False,
                     entity.constrained,
                     is_sketch_fully_constrained,
                 )
 
-            if isinstance(entity, Line):
-                self._draw_line_entity(ctx, entity)
-            elif isinstance(entity, Arc):
-                self._draw_arc_entity(ctx, entity)
-            elif isinstance(entity, Circle):
-                self._draw_circle_entity(ctx, entity)
-
+            ctx.stroke()
             ctx.restore()
 
     def _set_standard_color(
@@ -152,6 +175,8 @@ class SketchRenderer:
         is_constrained: bool,
         is_sketch_fully_constrained: bool,
     ):
+        # Even though we handle underlay separately, we keep this logic
+        # compatible in case is_selected is passed as True elsewhere.
         if is_selected:
             ctx.set_source_rgb(1.0, 0.6, 0.0)  # Orange
         elif is_constrained:
@@ -168,20 +193,23 @@ class SketchRenderer:
         except IndexError:
             return None
 
-    def _draw_line_entity(self, ctx: cairo.Context, line: Line):
+    def _define_line_path(self, ctx: cairo.Context, line: Line) -> bool:
+        """Defines the path for a line without stroking."""
         p1 = self._safe_get_point(line.p1_idx)
         p2 = self._safe_get_point(line.p2_idx)
         if p1 and p2:
             ctx.move_to(p1.x, p1.y)
             ctx.line_to(p2.x, p2.y)
-            ctx.stroke()
+            return True
+        return False
 
-    def _draw_arc_entity(self, ctx: cairo.Context, arc: Arc):
+    def _define_arc_path(self, ctx: cairo.Context, arc: Arc) -> bool:
+        """Defines the path for an arc without stroking."""
         start = self._safe_get_point(arc.start_idx)
         end = self._safe_get_point(arc.end_idx)
         center = self._safe_get_point(arc.center_idx)
         if not (start and end and center):
-            return
+            return False
 
         radius = math.hypot(start.x - center.x, start.y - center.y)
         start_a = math.atan2(start.y - center.y, start.x - center.x)
@@ -192,19 +220,21 @@ class SketchRenderer:
             ctx.arc_negative(center.x, center.y, radius, start_a, end_a)
         else:
             ctx.arc(center.x, center.y, radius, start_a, end_a)
-        ctx.stroke()
+        return True
 
-    # --- Overlays (Constraints & Junctions) ---
-    def _draw_circle_entity(self, ctx: cairo.Context, circle: Circle):
+    def _define_circle_path(self, ctx: cairo.Context, circle: Circle) -> bool:
+        """Defines the path for a circle without stroking."""
         center = self._safe_get_point(circle.center_idx)
         radius_pt = self._safe_get_point(circle.radius_pt_idx)
         if not (center and radius_pt):
-            return
+            return False
 
         radius = math.hypot(radius_pt.x - center.x, radius_pt.y - center.y)
         ctx.new_sub_path()
         ctx.arc(center.x, center.y, radius, 0, 2 * math.pi)
-        ctx.stroke()
+        return True
+
+    # --- Overlays (Constraints & Junctions) ---
 
     def _draw_overlays(self, ctx: cairo.Context, to_screen):
         # --- Stage 0: Get Hover State ---
@@ -733,21 +763,28 @@ class SketchRenderer:
                     ctx.restore()
                 continue  # Always skip drawing solid dot for origin
 
+            r = self.element.point_radius
+
+            # 1. Selection Glow Underlay
+            if is_explicit_sel or is_implicit_sel:
+                ctx.save()
+                ctx.set_source_rgba(
+                    1.0, 0.6, 0.0, 0.4
+                )  # Semi-transparent orange
+                ctx.arc(sx, sy, r + 4, 0, 2 * math.pi)
+                ctx.fill()
+                ctx.restore()
+
+            # 2. Main Point (Hover or Standard Color)
             if is_hovered:
                 ctx.set_source_rgba(1.0, 0.2, 0.2, 1.0)
-                r = self.element.point_radius
-            elif is_explicit_sel or is_implicit_sel:
-                ctx.set_source_rgba(1.0, 0.6, 0.0, 1.0)  # Orange
-                r = self.element.point_radius
             elif p.constrained:
                 if is_sketch_fully_constrained:
                     ctx.set_source_rgba(0.0, 0.6, 0.0, 1.0)  # Darker Green
                 else:
                     ctx.set_source_rgba(0.2, 0.8, 0.2, 1.0)  # Light Green
-                r = self.element.point_radius
             else:
                 ctx.set_source_rgba(0.0, 0.0, 0.0, 1.0)  # Black
-                r = self.element.point_radius
 
             ctx.arc(sx, sy, r, 0, 2 * math.pi)
             ctx.fill()
