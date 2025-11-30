@@ -20,7 +20,7 @@ class ParameterContext:
 
     def to_dict(self) -> Dict[str, Any]:
         """Serializes the parameter context to a dictionary."""
-        return {"expressions": self._expressions}
+        return {"expressions": self._expressions.copy()}
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "ParameterContext":
