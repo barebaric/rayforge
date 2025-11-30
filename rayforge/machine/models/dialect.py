@@ -2,7 +2,7 @@ from __future__ import annotations
 import uuid
 from dataclasses import dataclass, field, asdict, replace
 from typing import List, Dict, Optional, Any
-from ...shared.varset import VarSet, Var, TextAreaVar
+from ...core.varset import VarSet, Var, TextAreaVar
 
 
 _DIALECT_REGISTRY: Dict[str, "GcodeDialect"] = {}

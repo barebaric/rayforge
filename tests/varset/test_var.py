@@ -1,14 +1,14 @@
 import pytest
 from typing import cast
 from unittest.mock import patch
-from rayforge.shared.varset.var import Var, ValidationError
-from rayforge.shared.varset.intvar import IntVar
-from rayforge.shared.varset.floatvar import FloatVar, SliderFloatVar
-from rayforge.shared.varset.choicevar import ChoiceVar
-from rayforge.shared.varset.hostnamevar import HostnameVar
-from rayforge.shared.varset.serialportvar import SerialPortVar
-from rayforge.shared.varset.portvar import PortVar
-from rayforge.shared.varset.baudratevar import BaudrateVar
+from rayforge.core.varset.var import Var, ValidationError
+from rayforge.core.varset.intvar import IntVar
+from rayforge.core.varset.floatvar import FloatVar, SliderFloatVar
+from rayforge.core.varset.choicevar import ChoiceVar
+from rayforge.core.varset.hostnamevar import HostnameVar
+from rayforge.core.varset.serialportvar import SerialPortVar
+from rayforge.core.varset.portvar import PortVar
+from rayforge.core.varset.baudratevar import BaudrateVar
 
 
 class TestVar:
@@ -214,7 +214,7 @@ class TestVar:
         v.value = None
         v.validate()  # None should be allowed by default
 
-    @patch("rayforge.shared.varset.hostnamevar.is_valid_hostname_or_ip")
+    @patch("rayforge.core.varset.hostnamevar.is_valid_hostname_or_ip")
     def test_hostname_var(self, mock_is_valid):
         """Test HostnameVar validation logic."""
         mock_is_valid.side_effect = lambda h: h in ["valid.com", "1.2.3.4"]

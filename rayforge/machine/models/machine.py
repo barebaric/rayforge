@@ -6,10 +6,10 @@ import multiprocessing
 from typing import List, Dict, Any, Optional, Tuple, TYPE_CHECKING, Type
 from pathlib import Path
 from blinker import Signal
-from ...context import get_context, RayforgeContext
-from ...shared.tasker import task_mgr
-from ...shared.varset import ValidationError
 from ...camera.models.camera import Camera
+from ...context import get_context, RayforgeContext
+from ...core.varset import ValidationError
+from ...shared.tasker import task_mgr
 from ..transport import TransportStatus
 from ..driver.driver import (
     Driver,
@@ -27,7 +27,7 @@ from .macro import Macro, MacroTrigger
 from .dialect import get_dialect, GcodeDialect
 
 if TYPE_CHECKING:
-    from ...shared.varset import VarSet
+    from ...core.varset import VarSet
     from ...shared.tasker.context import ExecutionContext
 
 

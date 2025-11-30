@@ -6,16 +6,16 @@ from blinker import Signal
 from ..util.adwfix import get_spinrow_int
 from ...machine.transport.serial import SerialTransport
 from ...machine.transport.validators import is_valid_hostname_or_ip
-from .baudratevar import BaudrateVar
-from .hostnamevar import HostnameVar
-from .serialportvar import SerialPortVar
-from .textareavar import TextAreaVar
-from .intvar import IntVar
-from .floatvar import FloatVar, SliderFloatVar
-from .boolvar import BoolVar
-from .choicevar import ChoiceVar
-from .var import Var
-from .varset import VarSet
+from ...core.varset.baudratevar import BaudrateVar
+from ...core.varset.hostnamevar import HostnameVar
+from ...core.varset.serialportvar import SerialPortVar
+from ...core.varset.textareavar import TextAreaVar
+from ...core.varset.intvar import IntVar
+from ...core.varset.floatvar import FloatVar, SliderFloatVar
+from ...core.varset.boolvar import BoolVar
+from ...core.varset.choicevar import ChoiceVar
+from ...core.varset.var import Var
+from ...core.varset.varset import VarSet
 
 logger = logging.getLogger(__name__)
 NULL_CHOICE_LABEL = _("None Selected")

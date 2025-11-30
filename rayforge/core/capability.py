@@ -2,7 +2,7 @@ from __future__ import annotations
 from typing import Dict, List, Optional
 from abc import ABC, abstractmethod
 from ..context import get_context
-from ..shared.varset import (
+from .varset import (
     ChoiceVar,
     VarSet,
     IntVar,

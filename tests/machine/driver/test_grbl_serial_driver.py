@@ -12,7 +12,7 @@ from rayforge.machine.driver.driver import (
 )
 from rayforge.core.doc import Doc
 from rayforge.core.ops import Ops, MoveToCommand, LineToCommand
-from rayforge.shared.varset import VarSet, Var
+from rayforge.core.varset import VarSet, Var
 
 
 @pytest.fixture

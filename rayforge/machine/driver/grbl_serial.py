@@ -15,8 +15,8 @@ from typing import (
 )
 from ...context import RayforgeContext
 from ...core.ops import Ops
+from ...core.varset import Var, VarSet, SerialPortVar, BaudrateVar
 from ...pipeline.encoder.gcode import GcodeEncoder
-from ...shared.varset import Var, VarSet, SerialPortVar, BaudrateVar
 from ..transport import TransportStatus, SerialTransport
 from ..transport.serial import SerialPortPermissionError
 from .driver import (

@@ -12,7 +12,7 @@ from typing import (
 )
 from ...context import RayforgeContext
 from ...core.ops import Ops
-from ...shared.varset import VarSet
+from ...core.varset import VarSet
 from .driver import Driver, Axis
 
 if TYPE_CHECKING:
