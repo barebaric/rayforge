@@ -197,7 +197,7 @@ class RecipeControlWidget(Adw.ActionRow):
                     name=_("Set Applied Recipe"),
                 )
                 self.editor.doc.history_manager.execute(command)
-        dialog.destroy()
+        dialog.close()
 
     def _on_update_clicked(self, button: Gtk.Button):
         """Updates the applied recipe with the current step settings."""

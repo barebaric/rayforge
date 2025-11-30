@@ -1,10 +1,11 @@
 import logging
 from typing import Optional, Dict, Any, List
-from gi.repository import Gtk, Adw
+from gi.repository import Gtk, Adw, GObject
 from blinker import Signal
 from ...context import get_context
 from ...core.recipe import Recipe
 from ...core.capability import ALL_CAPABILITIES
+from ...icons import get_icon
 from ...shared.units.definitions import get_unit
 from ...shared.varset.varsetwidget import VarSetWidget
 from .material_selector import MaterialSelectorDialog
@@ -97,45 +98,96 @@ class OptionalSpinRowController:
         self.spin_button.handler_unblock(self._value_changed_handler_id)
 
 
-class AddEditRecipeDialog(Adw.MessageDialog):
-    """A dialog for creating or editing a Recipe, with dynamic settings."""
+class AddEditRecipeDialog(Adw.Window):
+    """
+    A multi-page window for creating or editing a Recipe.
+    Mimics a dialog with Cancel/Save buttons.
+    """
+
+    # Custom signal to mimic Gtk.Dialog response
+    __gsignals__ = {
+        "response": (GObject.SignalFlags.RUN_LAST, None, (str,)),
+    }
 
     def __init__(
         self, parent: Optional[Gtk.Window], recipe: Optional[Recipe] = None
     ):
-        super().__init__(transient_for=parent)
+        super().__init__(transient_for=parent, modal=True)
         self.recipe = recipe
         self._selected_material_uid: Optional[str] = (
             recipe.material_uid if recipe else None
         )
         self._machine_ids: List[Optional[str]] = []
-        # Filter out the Utility capability for UI purposes
         self._ui_capabilities = [cap for cap in ALL_CAPABILITIES]
 
         is_editing = recipe is not None
-        self.set_heading(
-            _("Edit Recipe") if is_editing else _("Add New Recipe")
-        )
-        # Store response_id for later use (button sensitivity)
-        self._response_id = "save" if is_editing else "add"
-        response_label = _("Save") if is_editing else _("Add")
-        self.add_response("cancel", _("Cancel"))
-        self.add_response(self._response_id, response_label)
-        self.set_response_appearance(
-            self._response_id, Adw.ResponseAppearance.SUGGESTED
-        )
-        self.set_default_response(self._response_id)
+        title = _("Edit Recipe") if is_editing else _("Add New Recipe")
+        self.set_title(title)
+        self.set_default_size(600, 700)
 
-        content_box = Gtk.Box(
-            orientation=Gtk.Orientation.VERTICAL,
-            spacing=24,
-            margin_start=6,
-            margin_end=6,
-        )
-        self.set_extra_child(content_box)
-        self.set_size_request(600, -1)
+        # Store the intended response ID for the positive action
+        self._positive_response_id = "save" if is_editing else "add"
 
-        # New group for Recipe metadata
+        # --- Layout ---
+        toolbar_view = Adw.ToolbarView()
+        self.set_content(toolbar_view)
+
+        header_bar = Adw.HeaderBar()
+        toolbar_view.add_top_bar(header_bar)
+
+        # Cancel Button
+        cancel_btn = Gtk.Button(label=_("Cancel"))
+        cancel_btn.connect("clicked", lambda w: self._send_response("cancel"))
+        header_bar.pack_start(cancel_btn)
+
+        # Save/Add Button
+        save_label = _("Save") if is_editing else _("Add")
+        self.save_btn = Gtk.Button(label=save_label)
+        self.save_btn.add_css_class("suggested-action")
+        self.save_btn.connect(
+            "clicked",
+            lambda w: self._send_response(self._positive_response_id),
+        )
+        header_bar.pack_end(self.save_btn)
+
+        # View Stack
+        self.view_stack = Adw.ViewStack()
+        toolbar_view.set_content(self.view_stack)
+
+        # --- Custom Switcher (Icon + Text horizontal) ---
+        switcher_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+        switcher_box.add_css_class("linked")
+        header_bar.set_title_widget(switcher_box)
+
+        # General Tab
+        btn_general = Gtk.ToggleButton()
+        btn_general.set_child(
+            self._create_tab_child(_("General"), "preferences-other-symbolic")
+        )
+        btn_general.connect("toggled", self._on_tab_toggled, "general")
+        switcher_box.append(btn_general)
+
+        # Applicability Tab
+        btn_applicability = Gtk.ToggleButton(group=btn_general)
+        btn_applicability.set_child(
+            self._create_tab_child(_("Applicability"), "query-symbolic")
+        )
+        btn_applicability.connect(
+            "toggled", self._on_tab_toggled, "applicability"
+        )
+        switcher_box.append(btn_applicability)
+
+        # Settings Tab
+        btn_settings = Gtk.ToggleButton(group=btn_general)
+        btn_settings.set_child(
+            self._create_tab_child(_("Settings"), "step-settings-symbolic")
+        )
+        btn_settings.connect("toggled", self._on_tab_toggled, "settings")
+        switcher_box.append(btn_settings)
+
+        # --- Page 1: General ---
+        page_general = Adw.PreferencesPage()
+        self.view_stack.add_named(page_general, "general")
         recipe_group = Adw.PreferencesGroup(
             title=_("Recipe"),
             description=_(
@@ -143,7 +195,7 @@ class AddEditRecipeDialog(Adw.MessageDialog):
                 "automatically applied later."
             ),
         )
-        content_box.append(recipe_group)
+        page_general.add(recipe_group)
 
         self.name_row = Adw.EntryRow(title=_("Name"))
         if recipe:
@@ -151,7 +203,8 @@ class AddEditRecipeDialog(Adw.MessageDialog):
         self.name_row.connect("notify::text", self._on_name_changed)
         recipe_group.add(self.name_row)
         self.name_row.connect(
-            "activate", lambda w: self.response(self._response_id)
+            "activate",
+            lambda w: self._send_response(self._positive_response_id),
         )
 
         self.desc_row = Adw.EntryRow(title=_("Description"))
@@ -159,6 +212,9 @@ class AddEditRecipeDialog(Adw.MessageDialog):
             self.desc_row.set_text(recipe.description)
         recipe_group.add(self.desc_row)
 
+        # --- Page 2: Applicability ---
+        page_applicability = Adw.PreferencesPage()
+        self.view_stack.add_named(page_applicability, "applicability")
         applicability_group = Adw.PreferencesGroup(
             title=_("Applicability"),
             description=_(
@@ -166,19 +222,9 @@ class AddEditRecipeDialog(Adw.MessageDialog):
                 "Leave fields blank to match any value."
             ),
         )
-        content_box.append(applicability_group)
+        page_applicability.add(applicability_group)
 
-        # Use filtered capabilities
-        cap_labels = [cap.label for cap in self._ui_capabilities]
-        self.capability_row = Adw.ComboRow(
-            title=_("Task Type"), model=Gtk.StringList.new(cap_labels)
-        )
-        self.capability_row.connect(
-            "notify::selected", self._on_capability_changed
-        )
-        applicability_group.add(self.capability_row)
-
-        # Machine Row
+        # Machine Row (Moved to top)
         machine_mgr = get_context().machine_mgr
         machines = machine_mgr.get_machines()
         machine_labels = [_("Any Machine")]
@@ -205,6 +251,16 @@ class AddEditRecipeDialog(Adw.MessageDialog):
                 self.machine_row.set_selected(0)
         else:
             self.machine_row.set_selected(0)
+
+        # Task Type (Capability) Row
+        cap_labels = [cap.label for cap in self._ui_capabilities]
+        self.capability_row = Adw.ComboRow(
+            title=_("Task Type"), model=Gtk.StringList.new(cap_labels)
+        )
+        self.capability_row.connect(
+            "notify::selected", self._on_capability_changed
+        )
+        applicability_group.add(self.capability_row)
 
         # Material Row
         self.material_row = Adw.ActionRow(title=_("Material"))
@@ -245,13 +301,20 @@ class AddEditRecipeDialog(Adw.MessageDialog):
             self._on_max_thickness_changed
         )
 
+        # --- Page 3: Settings ---
+        page_settings = Adw.PreferencesPage()
+        self.view_stack.add_named(page_settings, "settings")
         self.varset_widget = VarSetWidget(
             title=_("Settings"),
             description=_(
                 "The process settings that will be applied by this recipe."
             ),
         )
-        content_box.append(self.varset_widget)
+        page_settings.add(self.varset_widget)
+
+        # --- Final Initialization ---
+        # Set default tab
+        btn_general.set_active(True)
 
         if recipe:
             # Use filtered list for indexing
@@ -264,11 +327,27 @@ class AddEditRecipeDialog(Adw.MessageDialog):
         self._on_name_changed(self.name_row, None)
         self._on_capability_changed(self.capability_row, None)
 
+    def _create_tab_child(self, text: str, icon_name: str) -> Gtk.Widget:
+        """Creates a box with an icon and a label for the toggle button."""
+        box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
+        icon = get_icon(icon_name)
+        label = Gtk.Label(label=text)
+        box.append(icon)
+        box.append(label)
+        return box
+
+    def _on_tab_toggled(self, button, page_name):
+        if button.get_active():
+            self.view_stack.set_visible_child_name(page_name)
+
+    def _send_response(self, response_id: str):
+        self.emit("response", response_id)
+
     def _on_name_changed(self, entry_row, _pspec):
         """Updates the sensitivity of the add/save button."""
         name = self.name_row.get_text().strip()
         is_sensitive = bool(name)
-        self.set_response_enabled(self._response_id, is_sensitive)
+        self.save_btn.set_sensitive(is_sensitive)
 
     def _on_capability_changed(self, combo_row, _pspec):
         selected_index = combo_row.get_selected()
@@ -322,6 +401,7 @@ class AddEditRecipeDialog(Adw.MessageDialog):
             self.min_thickness_controller.set_spin_value_in_base(max_val_base)
 
     def _on_select_material(self, button):
+        # self is Adw.Window (which is a Gtk.Window), so it works as parent
         dialog = MaterialSelectorDialog(
             parent=self, on_select_callback=self._on_material_selected
         )
