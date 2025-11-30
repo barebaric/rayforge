@@ -133,13 +133,13 @@ class SketchRenderer:
                 ctx.restore()
                 continue
 
-            # 2. Draw Selection Underlay (Blurry Orange Glow)
+            # 2. Draw Selection Underlay (Blurry Glow)
             if is_sel:
                 ctx.save()
                 # Remove dash pattern for the glow so it's solid
                 ctx.set_dash([])
-                # Semi-transparent orange
-                ctx.set_source_rgba(1.0, 0.6, 0.0, 0.4)
+                # Semi-transparent blue for selection
+                ctx.set_source_rgba(0.2, 0.6, 1.0, 0.4)
                 # Thicker line for the glow effect
                 ctx.set_line_width(base_line_width * 3.0)
                 ctx.stroke_preserve()
@@ -173,7 +173,7 @@ class SketchRenderer:
         is_sketch_fully_constrained: bool,
     ):
         if is_selected:
-            ctx.set_source_rgb(1.0, 0.6, 0.0)  # Orange
+            ctx.set_source_rgb(0.2, 0.6, 1.0)  # Blue
         elif is_constrained:
             if is_sketch_fully_constrained:
                 ctx.set_source_rgb(0.0, 0.6, 0.0)  # Darker Green
@@ -242,9 +242,9 @@ class SketchRenderer:
             ctx.set_source_rgb(0.0, 0.6, 0.0)
 
     def _draw_selection_underlay(self, ctx, width_scale=3.0):
-        """Draws a semi-transparent orange underlay for the current path."""
+        """Draws a semi-transparent blue underlay for the current path."""
         ctx.save()
-        ctx.set_source_rgba(1.0, 0.6, 0.0, 0.4)
+        ctx.set_source_rgba(0.2, 0.6, 1.0, 0.4)
         ctx.set_line_width(ctx.get_line_width() * width_scale)
         ctx.stroke_preserve()
         ctx.restore()
@@ -351,9 +351,9 @@ class SketchRenderer:
         sx, sy = pos
         ctx.save()
 
-        # If selected, draw an orange background circle underlay
+        # If selected, draw a blue background circle underlay
         if is_selected:
-            ctx.set_source_rgba(1.0, 0.6, 0.0, 0.4)
+            ctx.set_source_rgba(0.2, 0.6, 1.0, 0.4)
             ctx.arc(sx, sy, 10, 0, 2 * math.pi)
             ctx.fill()
 
@@ -456,9 +456,9 @@ class SketchRenderer:
         ext = ctx.text_extents(label)
 
         ctx.save()
-        # Use background rect as underlay if selected
+        # Use background rect for selection/hover
         if is_selected:
-            ctx.set_source_rgba(1.0, 0.6, 0.0, 0.4)
+            ctx.set_source_rgba(0.2, 0.6, 1.0, 0.4)
         elif is_hovered:
             ctx.set_source_rgba(1.0, 0.95, 0.85, 0.9)
         else:
@@ -499,7 +499,7 @@ class SketchRenderer:
 
         ctx.save()
         if is_selected:
-            ctx.set_source_rgba(1.0, 0.6, 0.0, 0.4)
+            ctx.set_source_rgba(0.2, 0.6, 1.0, 0.4)
         elif is_hovered:
             ctx.set_source_rgba(1.0, 0.95, 0.85, 0.9)
         else:
@@ -792,7 +792,7 @@ class SketchRenderer:
                     if is_hovered:
                         ctx.set_source_rgba(1.0, 0.2, 0.2, 1.0)
                     else:  # Selected
-                        ctx.set_source_rgba(1.0, 0.6, 0.0, 1.0)
+                        ctx.set_source_rgba(0.2, 0.6, 1.0, 1.0)  # Blue
                     ctx.set_line_width(2.0)
                     ctx.arc(
                         sx, sy, self.element.point_radius * 1.5, 0, 2 * math.pi
@@ -807,8 +807,8 @@ class SketchRenderer:
             if is_explicit_sel or is_implicit_sel:
                 ctx.save()
                 ctx.set_source_rgba(
-                    1.0, 0.6, 0.0, 0.4
-                )  # Semi-transparent orange
+                    0.2, 0.6, 1.0, 0.4
+                )  # Semi-transparent blue
                 ctx.arc(sx, sy, r + 4, 0, 2 * math.pi)
                 ctx.fill()
                 ctx.restore()

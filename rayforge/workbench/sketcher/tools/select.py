@@ -404,16 +404,14 @@ class SelectTool(SketchTool):
 
         ctx.save()
 
-        # Per user request, all box selections now behave as "crossing"
-        # selections, so we use the corresponding visual style (green, dashed)
-        # regardless of drag direction.
-        ctx.set_source_rgba(0.2, 0.8, 0.2, 0.2)  # Crossing Fill: Green
+        # Draw a blue selection box.
+        ctx.set_source_rgba(0.2, 0.6, 1.0, 0.2)  # Selection Fill: Blue
         ctx.set_dash([4, 2])
         ctx.rectangle(x, y, w, h)
         ctx.fill_preserve()
 
         # Stroke border
-        ctx.set_source_rgba(0.2, 0.8, 0.2, 0.8)  # Crossing Border: Green
+        ctx.set_source_rgba(0.2, 0.6, 1.0, 0.7)  # Selection Border: Blue
         ctx.set_line_width(1.0)
         ctx.stroke()
 
