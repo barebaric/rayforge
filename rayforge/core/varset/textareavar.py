@@ -1,3 +1,4 @@
+from typing import Optional
 from .var import Var
 
 
@@ -8,4 +9,19 @@ class TextAreaVar(Var[str]):
     a single-line entry.
     """
 
-    pass
+    def __init__(
+        self,
+        key: str,
+        label: str,
+        description: Optional[str] = None,
+        default: Optional[str] = None,
+        value: Optional[str] = None,
+    ):
+        super().__init__(
+            key=key,
+            label=label,
+            var_type=str,
+            description=description,
+            default=default,
+            value=value,
+        )

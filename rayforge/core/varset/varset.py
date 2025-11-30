@@ -1,4 +1,4 @@
-from typing import Dict, Optional, Iterator, Any, List, KeysView
+from typing import Dict, Optional, Iterator, Any, List, KeysView, Type
 from .var import Var
 
 
@@ -29,6 +29,60 @@ class VarSet:
             for var in vars:
                 self.add(var)
 
+    @staticmethod
+    def _create_var_from_dict(data: Dict[str, Any]) -> Var:
+        """
+        Internal factory to instantiate a Var subclass from its serialized
+        definition.
+        """
+        # These imports are done locally to prevent circular dependencies if
+        # Var subclasses ever need to import from VarSet.
+        from .baudratevar import BaudrateVar
+        from .boolvar import BoolVar
+        from .choicevar import ChoiceVar
+        from .floatvar import FloatVar, SliderFloatVar
+        from .hostnamevar import HostnameVar
+        from .intvar import IntVar
+        from .portvar import PortVar
+        from .serialportvar import SerialPortVar
+        from .textareavar import TextAreaVar
+
+        _CLASS_MAP: Dict[str, Type[Var]] = {
+            "BaudrateVar": BaudrateVar,
+            "BoolVar": BoolVar,
+            "ChoiceVar": ChoiceVar,
+            "FloatVar": FloatVar,
+            "HostnameVar": HostnameVar,
+            "IntVar": IntVar,
+            "PortVar": PortVar,
+            "SerialPortVar": SerialPortVar,
+            "SliderFloatVar": SliderFloatVar,
+            "TextAreaVar": TextAreaVar,
+            "Var": Var,
+        }
+
+        data_copy = data.copy()
+        class_name = data_copy.pop("class", None)
+
+        if not class_name:
+            raise ValueError(
+                "Var definition dictionary is missing 'class' key."
+            )
+
+        if class_name not in _CLASS_MAP:
+            raise ValueError(
+                f"Unknown Var class '{class_name}' in definition."
+            )
+
+        VarClass = _CLASS_MAP[class_name]
+
+        # The value is for instantiation, not definition, so remove it.
+        # The Var's own __init__ will set the value from 'default' if present.
+        if "value" in data_copy:
+            del data_copy["value"]
+
+        return VarClass(**data_copy)
+
     @property
     def vars(self) -> List[Var]:
         """Returns the list of Var objects in the set."""
@@ -45,6 +99,40 @@ class VarSet:
     def get(self, key: str) -> Optional[Var]:
         """Gets a Var by its key, or None if not found."""
         return self._vars.get(key)
+
+    def to_dict(self, include_value: bool = False) -> Dict[str, Any]:
+        """
+        Serializes the VarSet's full definition to a dictionary.
+
+        Args:
+            include_value: If True, the current values of the contained Vars
+                           are included. Defaults to False.
+        """
+        return {
+            "title": self.title,
+            "description": self.description,
+            "vars": [var.to_dict(include_value=include_value) for var in self],
+        }
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> "VarSet":
+        """Deserializes a dictionary into a full VarSet instance."""
+        new_set = cls(
+            title=data.get("title"),
+            description=data.get("description"),
+        )
+
+        var_definitions = data.get("vars", [])
+        for var_data in var_definitions:
+            try:
+                # Use the internal static method as the factory
+                new_var = cls._create_var_from_dict(var_data)
+                new_set.add(new_var)
+            except Exception as e:
+                # In a real app, this should likely use the logging module
+                print(f"Warning: Could not deserialize var: {e}")
+
+        return new_set
 
     def __getitem__(self, key: str) -> Var:
         """Gets a Var by its key. Raises KeyError if not found."""

@@ -23,6 +23,8 @@ class BaudrateVar(IntVar):
         description: Optional[str] = _("Connection speed in bits per second"),
         default: Optional[int] = 115200,
         value: Optional[int] = None,
+        min_val: Optional[int] = None,
+        max_val: Optional[int] = None,
     ):
         super().__init__(
             key=key,
@@ -30,5 +32,8 @@ class BaudrateVar(IntVar):
             description=description,
             default=default,
             value=value,
+            # Provide sensible, non-None bounds for serialization
+            min_val=300,
+            max_val=4000000,
             validator=baud_rate_validator,
         )

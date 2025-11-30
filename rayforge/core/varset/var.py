@@ -1,4 +1,4 @@
-from typing import Optional, Type, Callable, Generic, TypeVar
+from typing import Optional, Type, Callable, Generic, TypeVar, Dict, Any
 
 
 T = TypeVar("T")
@@ -121,17 +121,24 @@ class Var(Generic[T]):
         # 2. Assign the coerced value. Validation is NOT performed here.
         self._value = value
 
-    def to_dict(self):
-        """Returns a dict of constructor arguments for easy copying."""
-        return {
+    def to_dict(self, include_value: bool = False) -> Dict[str, Any]:
+        """
+        Serializes the Var's definition to a dictionary.
+
+        Args:
+            include_value: If True, the current value of the Var is included
+                           in the output. Defaults to False.
+        """
+        data = {
+            "class": self.__class__.__name__,
             "key": self.key,
             "label": self.label,
-            "var_type": self.var_type,
             "description": self.description,
             "default": self.default,
-            "value": self.value,
-            "validator": self.validator,
         }
+        if include_value:
+            data["value"] = self.value
+        return data
 
     def __repr__(self) -> str:
         return (

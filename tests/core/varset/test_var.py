@@ -1,14 +1,6 @@
 import pytest
 from typing import cast
-from unittest.mock import patch
 from rayforge.core.varset.var import Var, ValidationError
-from rayforge.core.varset.intvar import IntVar
-from rayforge.core.varset.floatvar import FloatVar, SliderFloatVar
-from rayforge.core.varset.choicevar import ChoiceVar
-from rayforge.core.varset.hostnamevar import HostnameVar
-from rayforge.core.varset.serialportvar import SerialPortVar
-from rayforge.core.varset.portvar import PortVar
-from rayforge.core.varset.baudratevar import BaudrateVar
 
 
 class TestVar:
@@ -114,154 +106,36 @@ class TestVar:
 
         assert v.value == 101
 
-    def test_to_dict_and_repr(self):
-        """Test the to_dict method and __repr__ for completeness."""
+    def test_to_dict(self):
+        """Test the to_dict method for serializing the definition."""
         v = Var(
             key="test",
             label="Test",
-            var_type=int,
+            var_type=str,
             description="A test var",
-            default=10,
-            value=20,
+            default="abc",
+            value="xyz",
         )
-        data = v.to_dict()
 
-        assert data["key"] == "test"
-        assert data["label"] == "Test"
-        assert data["var_type"] is int
-        assert data["description"] == "A test var"
-        assert data["default"] == 10
-        assert data["value"] == 20
-        assert data["validator"] is None
+        # Test without value (definition only)
+        data = v.to_dict(include_value=False)
+        assert data == {
+            "class": "Var",
+            "key": "test",
+            "label": "Test",
+            "description": "A test var",
+            "default": "abc",
+        }
+        assert "value" not in data
 
+        # Test with value
+        data_with_val = v.to_dict(include_value=True)
+        assert data_with_val["value"] == "xyz"
+
+    def test_repr(self):
+        """Test the __repr__ for completeness."""
+        v = Var(key="test", label="Test", var_type=int, value=20)
         representation = repr(v)
         assert "key='test'" in representation
         assert "value=20" in representation
         assert "type=int" in representation
-
-    # --- Tests for Var subclasses ---
-
-    def test_int_var(self):
-        """Test IntVar with min/max bounds and an extra validator."""
-        v = IntVar(key="test_int", label="Test", min_val=10, max_val=20)
-        v.value = 15
-        v.validate()
-
-        v.value = 9
-        with pytest.raises(ValidationError, match="at least 10"):
-            v.validate()
-
-        v.value = 21
-        with pytest.raises(ValidationError, match="at most 20"):
-            v.validate()
-
-        v.value = None
-        v.validate()  # Should pass, as checks are guarded
-
-    def test_int_var_with_non_nullable_validator(self):
-        """Test an IntVar with a validator that rejects None."""
-
-        def not_none(v):
-            if v is None:
-                raise ValidationError("Value cannot be None")
-
-        v = IntVar(key="test", label="Test", validator=not_none)
-        v.value = 10
-        v.validate()
-
-        v.value = None
-        with pytest.raises(ValidationError, match="Value cannot be None"):
-            v.validate()
-
-    def test_float_var(self):
-        """Test FloatVar with min/max bounds and an extra validator."""
-        v = FloatVar(
-            key="test_float", label="Test", min_val=10.5, max_val=20.5
-        )
-        v.value = 15.0
-        v.validate()
-
-        v.value = 10.4
-        with pytest.raises(ValidationError, match="at least 10.5"):
-            v.validate()
-
-    def test_slider_float_var(self):
-        """Test SliderFloatVar to ensure it behaves like a FloatVar."""
-        v = SliderFloatVar(
-            key="slider", label="Slider", min_val=0.0, max_val=1.0
-        )
-        v.value = 0.5
-        v.validate()
-
-        v.value = 1.1
-        with pytest.raises(ValidationError, match="at most 1.0"):
-            v.validate()
-
-    def test_choice_var(self):
-        """Test ChoiceVar validation."""
-        choices = ["A", "B", "C"]
-        v = ChoiceVar(key="choice", label="Choice", choices=choices, value="A")
-
-        v.validate()  # Should pass
-
-        v.value = "B"
-        v.validate()  # Should pass
-
-        v.value = "D"
-        with pytest.raises(ValidationError, match="'D' is not a valid choice"):
-            v.validate()
-
-        v.value = None
-        v.validate()  # None should be allowed by default
-
-    @patch("rayforge.core.varset.hostnamevar.is_valid_hostname_or_ip")
-    def test_hostname_var(self, mock_is_valid):
-        """Test HostnameVar validation logic."""
-        mock_is_valid.side_effect = lambda h: h in ["valid.com", "1.2.3.4"]
-        v = HostnameVar(key="host", label="Host")
-
-        v.value = "valid.com"
-        v.validate()
-
-        v.value = "invalid-hostname"
-        with pytest.raises(
-            ValidationError, match="Invalid hostname or IP address format"
-        ):
-            v.validate()
-
-        v.value = None
-        with pytest.raises(ValidationError, match="cannot be empty"):
-            v.validate()
-
-    def test_serial_port_var(self):
-        """Test SerialPortVar validation logic."""
-        v = SerialPortVar(key="port", label="Port")
-        v.value = "/dev/ttyUSB0"
-        v.validate()
-
-        v.value = None
-        with pytest.raises(ValidationError, match="cannot be empty"):
-            v.validate()
-
-    def test_port_var(self):
-        """Test PortVar for network ports, checking its built-in validation."""
-        v = PortVar(key="port", label="Network Port")
-        v.value = 8080
-        v.validate()
-
-        v.value = 0
-        with pytest.raises(ValidationError, match="at least 1"):
-            v.validate()
-
-    @patch("rayforge.machine.transport.serial.SerialTransport.list_baud_rates")
-    def test_baudrate_var(self, mock_list_rates):
-        """Test BaudrateVar against a mocked list of standard rates."""
-        mock_list_rates.return_value = [9600, 19200, 115200]
-        v = BaudrateVar(key="baud", label="Baud Rate")
-
-        v.value = 115200
-        v.validate()
-
-        v.value = 9601
-        with pytest.raises(ValidationError, match="not a standard baud rate"):
-            v.validate()

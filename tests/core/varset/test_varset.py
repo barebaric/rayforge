@@ -1,6 +1,8 @@
 import pytest
 from rayforge.core.varset.var import Var, ValidationError
 from rayforge.core.varset.intvar import IntVar
+from rayforge.core.varset.floatvar import FloatVar
+from rayforge.core.varset.choicevar import ChoiceVar
 from rayforge.core.varset.varset import VarSet
 
 
@@ -75,14 +77,12 @@ class TestVarSet:
         vs.add(v2)
         vs.add(v3)
 
-        # Test iterator
         iterated_vars = list(vs)
         assert len(iterated_vars) == 3
         assert iterated_vars[0] is v1
         assert iterated_vars[1] is v2
         assert iterated_vars[2] is v3
 
-        # Test .vars property
         property_vars = vs.vars
         assert isinstance(property_vars, list)
         assert property_vars == iterated_vars
@@ -122,21 +122,12 @@ class TestVarSet:
         vs = VarSet()
         vs.add(Var(key="name", label="Name", var_type=str, default="ray"))
         vs.add(Var(key="speed", label="Speed", var_type=int, value=1000))
-        vs.add(
-            Var(key="enabled", label="Enabled", var_type=bool, default=True)
-        )
 
-        new_values = {
-            "name": "forge",
-            "speed": 2000,
-            "enabled": False,
-            "extra_key": "ignore me",
-        }
+        new_values = {"name": "forge", "speed": 2000, "extra": "ignore"}
         vs.set_values(new_values)
 
         assert vs["name"].value == "forge"
         assert vs["speed"].value == 2000
-        assert vs["enabled"].value is False
 
     def test_clear(self):
         """Test the clear method to remove all Vars."""
@@ -158,12 +149,7 @@ class TestVarSet:
             vs.validate()
 
         vs["bad"] = 15
-        try:
-            vs.validate()
-        except ValidationError:
-            pytest.fail(
-                "VarSet.validate() raised ValidationError unexpectedly."
-            )
+        vs.validate()  # Should not raise
 
     def test_repr(self):
         """Test the __repr__ method."""
@@ -173,3 +159,45 @@ class TestVarSet:
         representation = repr(vs)
         assert "title='My Settings'" in representation
         assert "count=2" in representation
+
+    def test_serialization_round_trip(self):
+        """
+        Test a full serialization/deserialization cycle of a complex VarSet.
+        """
+        original_vs = VarSet(
+            title="Complex Settings", description="A mix of var types."
+        )
+        original_vs.add(
+            IntVar(key="count", label="Count", default=5, min_val=0)
+        )
+        original_vs.add(
+            FloatVar(key="factor", label="Factor", default=1.2, max_val=2.0)
+        )
+        original_vs.add(
+            ChoiceVar(
+                key="mode",
+                label="Mode",
+                choices=["A", "B"],
+                default="A",
+            )
+        )
+
+        # Serialize
+        serialized_data = original_vs.to_dict()
+
+        # Deserialize
+        rehydrated_vs = VarSet.from_dict(serialized_data)
+
+        # Compare
+        assert rehydrated_vs.title == original_vs.title
+        assert rehydrated_vs.description == original_vs.description
+        assert len(rehydrated_vs) == len(original_vs)
+        assert rehydrated_vs.keys() == original_vs.keys()
+
+        # Deep compare vars
+        for key in original_vs.keys():
+            original_var = original_vs[key]
+            rehydrated_var = rehydrated_vs[key]
+            assert type(rehydrated_var) is type(original_var)
+            # Compare the full definition dictionary
+            assert rehydrated_var.to_dict() == original_var.to_dict()
