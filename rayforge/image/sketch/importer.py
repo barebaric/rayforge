@@ -51,6 +51,7 @@ class SketchImporter(Importer):
         # 2. Convert Sketch to Geometry
         self.parsed_sketch.solve()
         geometry = self.parsed_sketch.to_geometry()
+        geometry.close_gaps()
         if geometry.is_empty():
             logger.warning("Imported sketch has no geometry.")
 
