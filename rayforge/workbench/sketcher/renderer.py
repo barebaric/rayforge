@@ -157,10 +157,7 @@ class SketchRenderer:
             else:
                 self._set_standard_color(
                     ctx,
-                    # We pass False for selection here because we handled
-                    # visual selection via the underlay. We want the geometry
-                    # to keep its constraint color.
-                    False,
+                    False,  # Selection handled by underlay
                     entity.constrained,
                     is_sketch_fully_constrained,
                 )
@@ -175,8 +172,6 @@ class SketchRenderer:
         is_constrained: bool,
         is_sketch_fully_constrained: bool,
     ):
-        # Even though we handle underlay separately, we keep this logic
-        # compatible in case is_selected is passed as True elsewhere.
         if is_selected:
             ctx.set_source_rgb(1.0, 0.6, 0.0)  # Orange
         elif is_constrained:
@@ -236,6 +231,24 @@ class SketchRenderer:
 
     # --- Overlays (Constraints & Junctions) ---
 
+    def _set_constraint_color(self, ctx, is_hovered):
+        """
+        Sets the standard drawing color for constraints (ignoring selection
+        underlay).
+        """
+        if is_hovered:
+            ctx.set_source_rgb(1.0, 0.6, 0.0)
+        else:
+            ctx.set_source_rgb(0.0, 0.6, 0.0)
+
+    def _draw_selection_underlay(self, ctx, width_scale=3.0):
+        """Draws a semi-transparent orange underlay for the current path."""
+        ctx.save()
+        ctx.set_source_rgba(1.0, 0.6, 0.0, 0.4)
+        ctx.set_line_width(ctx.get_line_width() * width_scale)
+        ctx.stroke_preserve()
+        ctx.restore()
+
     def _draw_overlays(self, ctx: cairo.Context, to_screen):
         # --- Stage 0: Get Hover State ---
         select_tool = self.element.tools.get("select")
@@ -271,25 +284,17 @@ class SketchRenderer:
             elif isinstance(
                 constr, (HorizontalConstraint, VerticalConstraint)
             ):
-                if is_sel:
-                    ctx.set_source_rgb(1.0, 0.2, 0.2)
-                elif is_hovered:
-                    ctx.set_source_rgb(1.0, 0.6, 0.0)
-                else:
-                    ctx.set_source_rgb(0.0, 0.6, 0.0)
-                self._draw_hv_constraint(ctx, constr, to_screen)
+                self._draw_hv_constraint(
+                    ctx, constr, is_sel, is_hovered, to_screen
+                )
             elif isinstance(constr, PerpendicularConstraint):
                 self._draw_perp_constraint(
                     ctx, constr, is_sel, is_hovered, to_screen
                 )
             elif isinstance(constr, TangentConstraint):
-                if is_sel:
-                    ctx.set_source_rgb(1.0, 0.2, 0.2)
-                elif is_hovered:
-                    ctx.set_source_rgb(1.0, 0.6, 0.0)
-                else:
-                    ctx.set_source_rgb(0.0, 0.6, 0.0)
-                self._draw_tangent_constraint(ctx, constr, to_screen)
+                self._draw_tangent_constraint(
+                    ctx, constr, is_sel, is_hovered, to_screen
+                )
             elif isinstance(constr, CoincidentConstraint):
                 origin_id = getattr(self.element.sketch, "origin_id", -1)
                 pid_to_draw = constr.p1
@@ -316,18 +321,16 @@ class SketchRenderer:
 
                 is_sel = group_id == self.element.selection.constraint_idx
                 is_hovered = group_id == hovered_constraint_idx
-                if is_sel:
-                    ctx.set_source_rgb(1.0, 0.2, 0.2)
-                elif is_hovered:
-                    ctx.set_source_rgb(1.0, 0.6, 0.0)
-                else:
-                    ctx.set_source_rgb(0.0, 0.6, 0.0)
-                self._draw_equality_symbol(ctx, entity, to_screen)
+                self._draw_equality_symbol(
+                    ctx, entity, is_sel, is_hovered, to_screen
+                )
 
         # Draw implicit junction constraints
         self._draw_junctions(ctx, to_screen)
 
-    def _draw_equality_symbol(self, ctx, entity, to_screen):
+    def _draw_equality_symbol(
+        self, ctx, entity, is_selected, is_hovered, to_screen
+    ):
         """
         Draws a larger, always-horizontal '=' symbol offset from the entity.
         """
@@ -347,7 +350,15 @@ class SketchRenderer:
 
         sx, sy = pos
         ctx.save()
-        ctx.set_font_size(16)  # Larger font
+
+        # If selected, draw an orange background circle underlay
+        if is_selected:
+            ctx.set_source_rgba(1.0, 0.6, 0.0, 0.4)
+            ctx.arc(sx, sy, 10, 0, 2 * math.pi)
+            ctx.fill()
+
+        self._set_constraint_color(ctx, is_hovered)
+        ctx.set_font_size(16)
         ext = ctx.text_extents("=")
         # Center the text on the calculated screen point
         ctx.move_to(sx - ext.width / 2, sy + ext.height / 2)
@@ -384,14 +395,21 @@ class SketchRenderer:
                     sx, sy = to_screen.transform_point((p.x, p.y))
                     ctx.save()
                     ctx.set_line_width(1.5)
+
+                    radius = self.element.point_radius + 4
+                    ctx.new_sub_path()
+                    ctx.arc(sx, sy, radius, 0, 2 * math.pi)
+
                     if is_sel:
-                        ctx.set_source_rgba(1.0, 0.2, 0.2, 0.9)
-                    elif is_hovered:
-                        ctx.set_source_rgba(1.0, 0.6, 0.0, 0.9)  # Orange
+                        self._draw_selection_underlay(ctx)
+
+                    # Junctions are always implicit, so we use slightly
+                    # different colors
+                    if is_hovered:
+                        ctx.set_source_rgba(1.0, 0.6, 0.0, 0.9)
                     else:
                         ctx.set_source_rgba(0.0, 0.6, 0.0, 0.8)
-                    radius = self.element.point_radius + 4
-                    ctx.arc(sx, sy, radius, 0, 2 * math.pi)
+
                     ctx.stroke()
                     ctx.restore()
 
@@ -404,15 +422,15 @@ class SketchRenderer:
         sx, sy = to_screen.transform_point((p.x, p.y))
         ctx.save()
         ctx.set_line_width(1.5)
-        if is_selected:
-            ctx.set_source_rgba(1.0, 0.2, 0.2, 0.9)
-        elif is_hovered:
-            ctx.set_source_rgba(1.0, 0.6, 0.0, 0.9)  # Orange
-        else:
-            ctx.set_source_rgba(0.0, 0.6, 0.0, 0.8)
 
         radius = self.element.point_radius + 4
+        ctx.new_sub_path()
         ctx.arc(sx, sy, radius, 0, 2 * math.pi)
+
+        if is_selected:
+            self._draw_selection_underlay(ctx)
+
+        self._set_constraint_color(ctx, is_hovered)
         ctx.stroke()
         ctx.restore()
 
@@ -438,10 +456,11 @@ class SketchRenderer:
         ext = ctx.text_extents(label)
 
         ctx.save()
+        # Use background rect as underlay if selected
         if is_selected:
-            ctx.set_source_rgba(1, 0.9, 0.9, 0.9)
+            ctx.set_source_rgba(1.0, 0.6, 0.0, 0.4)
         elif is_hovered:
-            ctx.set_source_rgba(1.0, 0.95, 0.85, 0.9)  # Light Orange
+            ctx.set_source_rgba(1.0, 0.95, 0.85, 0.9)
         else:
             ctx.set_source_rgba(1, 1, 1, 0.8)
 
@@ -480,9 +499,9 @@ class SketchRenderer:
 
         ctx.save()
         if is_selected:
-            ctx.set_source_rgba(1, 0.9, 0.9, 0.9)
+            ctx.set_source_rgba(1.0, 0.6, 0.0, 0.4)
         elif is_hovered:
-            ctx.set_source_rgba(1.0, 0.95, 0.85, 0.9)  # Light orange
+            ctx.set_source_rgba(1.0, 0.95, 0.85, 0.9)
         else:
             ctx.set_source_rgba(1, 1, 1, 0.8)
 
@@ -518,7 +537,9 @@ class SketchRenderer:
 
         ctx.restore()
 
-    def _draw_hv_constraint(self, ctx, constr, to_screen):
+    def _draw_hv_constraint(
+        self, ctx, constr, is_selected, is_hovered, to_screen
+    ):
         p1 = self._safe_get_point(constr.p1)
         p2 = self._safe_get_point(constr.p2)
         if not (p1 and p2):
@@ -540,6 +561,11 @@ class SketchRenderer:
         else:
             ctx.move_to(mx + 10, my - size)
             ctx.line_to(mx + 10, my + size)
+
+        if is_selected:
+            self._draw_selection_underlay(ctx)
+
+        self._set_constraint_color(ctx, is_hovered)
         ctx.stroke()
         ctx.restore()
 
@@ -555,12 +581,6 @@ class SketchRenderer:
         sx, sy, ang1, ang2 = data
 
         ctx.save()
-        if is_selected:
-            ctx.set_source_rgb(1.0, 0.2, 0.2)
-        elif is_hovered:
-            ctx.set_source_rgb(1.0, 0.6, 0.0)
-        else:
-            ctx.set_source_rgb(0.0, 0.6, 0.0)
         ctx.set_line_width(1.5)
 
         # If we have angles, it's the classic line-line perpendicular case
@@ -572,10 +592,16 @@ class SketchRenderer:
             while diff > math.pi:
                 diff -= 2 * math.pi
 
+            ctx.new_sub_path()
             if diff > 0:
                 ctx.arc(sx, sy, radius, ang1, ang2)
             else:
                 ctx.arc_negative(sx, sy, radius, ang1, ang2)
+
+            if is_selected:
+                self._draw_selection_underlay(ctx)
+
+            self._set_constraint_color(ctx, is_hovered)
             ctx.stroke()
 
             # Dot
@@ -588,12 +614,20 @@ class SketchRenderer:
         else:
             # For all other cases (line-arc, arc-arc), draw a box at anchor
             sz = 8.0
+            ctx.new_sub_path()
             ctx.rectangle(sx - sz, sy - sz, sz * 2, sz * 2)
+
+            if is_selected:
+                self._draw_selection_underlay(ctx)
+
+            self._set_constraint_color(ctx, is_hovered)
             ctx.stroke()
 
         ctx.restore()
 
-    def _draw_tangent_constraint(self, ctx, constr, to_screen):
+    def _draw_tangent_constraint(
+        self, ctx, constr, is_selected, is_hovered, to_screen
+    ):
         line = self.element.sketch.registry.get_entity(constr.line_id)
         shape = self.element.sketch.registry.get_entity(constr.shape_id)
 
@@ -652,6 +686,10 @@ class SketchRenderer:
         ctx.move_to(-radius * 1.2, 0)
         ctx.line_to(radius * 1.2, 0)
 
+        if is_selected:
+            self._draw_selection_underlay(ctx)
+
+        self._set_constraint_color(ctx, is_hovered)
         ctx.stroke()
         ctx.restore()
 
@@ -675,16 +713,12 @@ class SketchRenderer:
         offset = 12.0
 
         ctx.save()
-        if is_selected:
-            ctx.set_source_rgb(1.0, 0.2, 0.2)
-        elif is_hovered:
-            ctx.set_source_rgb(1.0, 0.6, 0.0)
-        else:
-            ctx.set_source_rgb(0.0, 0.6, 0.0)
         ctx.set_line_width(1.5)
 
-        # Draw left marker ">"
-        # Position: move back from midpoint along the line
+        # Combine both markers into one path for efficient stroking
+        ctx.new_sub_path()
+
+        # Left marker ">"
         lx = mx - offset * math.cos(angle)
         ly = my - offset * math.sin(angle)
 
@@ -712,9 +746,13 @@ class SketchRenderer:
         ctx.move_to(3, -4)
         ctx.line_to(-3, 0)
         ctx.line_to(3, 4)
-        ctx.stroke()
         ctx.restore()
 
+        if is_selected:
+            self._draw_selection_underlay(ctx)
+
+        self._set_constraint_color(ctx, is_hovered)
+        ctx.stroke()
         ctx.restore()
 
     # --- Points ---
