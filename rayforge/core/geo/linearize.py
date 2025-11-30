@@ -4,7 +4,9 @@ import numpy as np
 
 
 def linearize_arc(
-    arc_cmd: Any, start_point: Tuple[float, float, float]
+    arc_cmd: Any,
+    start_point: Tuple[float, float, float],
+    resolution: float = 0.01,
 ) -> List[Tuple[Tuple[float, float, float], Tuple[float, float, float]]]:
     """
     Converts an arc command into a list of line segments.
@@ -17,6 +19,7 @@ def linearize_arc(
         arc_cmd: An object representing the arc (e.g., ops.ArcToCommand or
                  geometry.ArcToCommand).
         start_point: The (x, y, z) starting point of the arc.
+        resolution: percentage of arc length of each step
 
     Returns:
         A list of tuples, where each tuple represents a line segment
@@ -54,8 +57,7 @@ def linearize_arc(
     # Use the average radius to get a better estimate for arc length
     avg_radius = (radius_start + radius_end) / 2
     arc_len = abs(angle_range * avg_radius)
-    # Use ~0.5mm segments for linearization
-    num_segments = max(2, int(arc_len / 0.5))
+    num_segments = max(2, int(arc_len / resolution))
 
     prev_pt = p0
     for i in range(1, num_segments + 1):
