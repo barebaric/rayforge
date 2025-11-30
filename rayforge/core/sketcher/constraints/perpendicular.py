@@ -1,5 +1,3 @@
-# constraints/perpendicular.py
-
 from __future__ import annotations
 import math
 from typing import (
@@ -406,7 +404,31 @@ class PerpendicularConstraint(Constraint):
         threshold: float,
     ) -> bool:
         data = self.get_visuals(reg, to_screen)
-        if data:
-            vx, vy, _, _ = data
-            return math.hypot(sx - vx, sy - vy) < 20
-        return False
+        if not data:
+            return False
+
+        cx, cy, ang1, ang2 = data
+
+        if ang1 is not None and ang2 is not None:
+            # Case 1: Line-Line (Angles are provided)
+            # The marker is an arc with a dot. We hit-test the specific dot
+            # location.
+            visual_radius = 16.0  # Matches renderer.py
+            diff = ang2 - ang1
+
+            # Normalize angle difference to [-pi, pi]
+            while diff <= -math.pi:
+                diff += 2 * math.pi
+            while diff > math.pi:
+                diff -= 2 * math.pi
+
+            mid_angle = ang1 + diff / 2
+            # The dot is drawn at 0.6 * radius
+            target_x = cx + math.cos(mid_angle) * visual_radius * 0.6
+            target_y = cy + math.sin(mid_angle) * visual_radius * 0.6
+
+            return math.hypot(sx - target_x, sy - target_y) < threshold
+        else:
+            # Case 2: Line-Arc / Arc-Arc (Box style)
+            # The marker is a square box at the intersection/anchor.
+            return math.hypot(sx - cx, sy - cy) < threshold
