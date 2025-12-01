@@ -62,6 +62,7 @@ def test_doc_sketch_management(doc):
     """Tests adding, removing, and getting sketches."""
     sketch1 = Sketch()
     sketch2 = Sketch()
+    non_existent_sketch = Sketch()
 
     # Test adding sketches
     doc.add_sketch(sketch1)
@@ -79,12 +80,12 @@ def test_doc_sketch_management(doc):
     assert doc.get_sketch("non-existent-uid") is None
 
     # Test removing sketch
-    doc.remove_sketch(sketch1.uid)
+    doc.remove_sketch(sketch1)
     assert len(doc.sketches) == 1
     assert sketch1.uid not in doc.sketches
 
     # Test removing non-existent sketch (should not raise error)
-    doc.remove_sketch("non-existent-uid")
+    doc.remove_sketch(non_existent_sketch)
     assert len(doc.sketches) == 1
 
 
@@ -454,3 +455,258 @@ def test_has_result_logic(doc):
         # 7. Make the second step visible again. Result is back.
         step2.visible = True
         assert doc.has_result()
+
+
+# --- New/Extended Tests ---
+
+
+def test_stock_items_setter(doc):
+    """
+    Tests that the stock_items setter replaces stock items while preserving
+    other children like Layers.
+    """
+    layer = doc.layers[0]
+    stock1 = StockItem(name="Old Stock")
+    doc.add_stock_item(stock1)
+
+    assert doc.children == [layer, stock1]
+
+    new_stock1 = StockItem(name="New Stock 1")
+    new_stock2 = StockItem(name="New Stock 2")
+
+    # Act
+    doc.stock_items = [new_stock1, new_stock2]
+
+    # Assert
+    assert doc.layers == [layer]  # Layer is untouched
+    assert doc.stock_items == [new_stock1, new_stock2]  # Stock is updated
+    # Check the final order in the main children list
+    assert doc.children == [layer, new_stock1, new_stock2]
+
+
+def test_remove_layer_adjusts_active_index(doc):
+    """
+    Tests that removing a layer correctly adjusts the active layer index.
+    """
+    layer1 = doc.layers[0]
+    layer1.name = "Layer 1"
+    layer2 = Layer("Layer 2")
+    layer3 = Layer("Layer 3")
+    doc.add_layer(layer2)
+    doc.add_layer(layer3)
+    doc.active_layer = layer2
+    assert doc.active_layer is layer2
+    assert doc._active_layer_index == 1
+
+    # Case 1: Remove a layer before the active one
+    doc.remove_layer(layer1)
+    assert doc.layers == [layer2, layer3]
+    assert doc._active_layer_index == 0  # Index shifts down
+    assert doc.active_layer is layer2  # Instance remains the same
+
+    # Reset for Case 2
+    doc_case2 = Doc()
+    l1 = doc_case2.layers[0]
+    l1.name = "L1"
+    l2 = Layer("L2")
+    l3 = Layer("L3")
+    doc_case2.add_layer(l2)
+    doc_case2.add_layer(l3)
+    doc_case2.active_layer = l2
+    assert doc_case2._active_layer_index == 1
+
+    # Case 2: Remove the active layer
+    active_layer_changed_handler = MagicMock()
+    doc_case2.active_layer_changed.connect(active_layer_changed_handler)
+    doc_case2.remove_layer(l2)
+    assert doc_case2.layers == [l1, l3]
+    assert doc_case2._active_layer_index == 0  # Falls back to previous index
+    assert doc_case2.active_layer is l1
+    active_layer_changed_handler.assert_called_once()
+
+    # Reset for Case 3
+    doc_case3 = Doc()
+    ly1 = doc_case3.layers[0]
+    ly1.name = "LY1"
+    ly2 = Layer("LY2")
+    ly3 = Layer("LY3")
+    doc_case3.add_layer(ly2)
+    doc_case3.add_layer(ly3)
+    doc_case3.active_layer = ly2
+    assert doc_case3._active_layer_index == 1
+
+    # Case 3: Remove a layer after the active one
+    active_layer_changed_handler.reset_mock()
+    doc_case3.active_layer_changed.connect(active_layer_changed_handler)
+    doc_case3.remove_layer(ly3)
+    assert doc_case3.layers == [ly1, ly2]
+    assert doc_case3._active_layer_index == 1  # Index is unaffected
+    assert doc_case3.active_layer is ly2
+    active_layer_changed_handler.assert_not_called()
+
+
+def test_remove_last_layer_is_noop(doc):
+    """
+    Tests that an attempt to remove the last layer from a document does
+    nothing.
+    """
+    assert len(doc.layers) == 1
+    last_layer = doc.layers[0]
+    doc.remove_layer(last_layer)
+    assert len(doc.layers) == 1
+    assert doc.layers[0] is last_layer
+
+
+def test_set_layers_preserves_stock_items(doc):
+    """
+    Tests that set_layers replaces layers but preserves other children like
+    StockItems.
+    """
+    original_layer = doc.layers[0]
+    stock_item = StockItem(name="My Stock")
+    doc.add_stock_item(stock_item)
+
+    assert set(doc.children) == {original_layer, stock_item}
+
+    new_layer1 = Layer("New Layer 1")
+    new_layer2 = Layer("New Layer 2")
+
+    # Act
+    doc.set_layers([new_layer1, new_layer2])
+
+    # Assert
+    assert doc.layers == [new_layer1, new_layer2]  # Layers are replaced
+    assert doc.stock_items == [stock_item]  # Stock item is preserved
+    assert set(doc.children) == {new_layer1, new_layer2, stock_item}
+
+
+def test_set_layers_raises_error_on_empty_list(doc):
+    """
+    Tests that set_layers raises a ValueError if called with an empty list.
+    """
+    with pytest.raises(ValueError):
+        doc.set_layers([])
+
+
+def test_set_layers_active_layer_logic(doc):
+    """Tests how set_layers preserves or resets the active layer."""
+    layer1 = doc.layers[0]
+    layer1.name = "Layer 1"
+    layer2 = Layer("Layer 2")
+    layer3 = Layer("Layer 3")
+    doc.add_layer(layer2)
+    doc.add_layer(layer3)
+
+    # Case 1: Active layer is preserved in the new list
+    doc.active_layer = layer2
+    doc.set_layers([layer3, layer1, layer2])
+    assert doc.active_layer is layer2
+    assert doc._active_layer_index == 2
+
+    # Case 2: Active layer is removed from the new list
+    doc.active_layer = layer2
+    doc.set_layers([layer1, layer3])
+    assert doc.active_layer is layer1  # Defaults to index 0
+    assert doc._active_layer_index == 0
+
+
+def test_update_stock_visibility(doc):
+    """
+    Tests that update_stock_visibility correctly shows/hides stock based
+    on the active layer's assigned stock.
+    """
+    layer1 = doc.layers[0]
+    layer2 = Layer("Layer 2")
+    doc.add_layer(layer2)
+
+    stock1 = StockItem(name="Wood")
+    stock2 = StockItem(name="Acrylic")
+    doc.add_stock_item(stock1)
+    doc.add_stock_item(stock2)
+
+    layer1.stock_item_uid = stock1.uid
+    layer2.stock_item_uid = stock2.uid
+
+    # Mock the method we want to check calls on
+    stock1.set_visible = MagicMock()
+    stock2.set_visible = MagicMock()
+
+    # Act 1: set layer 2 as active (this is a CHANGE from default)
+    doc.active_layer = layer2
+
+    # Assert 1: stock1 should be hidden, stock2 visible
+    stock1.set_visible.assert_called_once_with(False)
+    stock2.set_visible.assert_called_once_with(True)
+
+    stock1.set_visible.reset_mock()
+    stock2.set_visible.reset_mock()
+
+    # Act 2: set layer 1 as active (this is also a CHANGE)
+    doc.active_layer = layer1
+
+    # Assert 2: stock1 should be visible, stock2 hidden
+    stock1.set_visible.assert_called_once_with(True)
+    stock2.set_visible.assert_called_once_with(False)
+
+
+def test_active_layer_setter_triggers_update_stock_visibility(doc):
+    """
+    Tests that changing the active layer automatically calls
+    update_stock_visibility.
+    """
+    layer2 = Layer("Layer 2")
+    doc.add_layer(layer2)
+
+    with patch.object(doc, "update_stock_visibility") as mock_update:
+        doc.active_layer = layer2
+        mock_update.assert_called_once()
+
+    with patch.object(doc, "update_stock_visibility") as mock_update:
+        # Setting to the same layer should not trigger it again
+        doc.active_layer = layer2
+        mock_update.assert_not_called()
+
+
+def test_from_dict_clears_default_layer():
+    """
+    Tests that Doc.from_dict removes the default layer created by __init__
+    before populating from the dictionary.
+    """
+    doc_dict = {
+        "uid": "test-doc-uid",
+        "children": [
+            {
+                "uid": "layer1-uid",
+                "type": "layer",
+                "name": "Loaded Layer 1",
+                "matrix": [
+                    [1, 0, 0],
+                    [0, 1, 0],
+                    [0, 0, 1],
+                ],
+                "children": [],
+                "workflow": {"type": "workflow", "steps": []},
+            },
+            {
+                "uid": "layer2-uid",
+                "type": "layer",
+                "name": "Loaded Layer 2",
+                "matrix": [
+                    [1, 0, 0],
+                    [0, 1, 0],
+                    [0, 0, 1],
+                ],
+                "children": [],
+                "workflow": {"type": "workflow", "steps": []},
+            },
+        ],
+    }
+
+    # Use real objects instead of mocks for a more robust test
+    restored_doc = Doc.from_dict(doc_dict)
+
+    assert len(restored_doc.layers) == 2
+    layer_names = [layer.name for layer in restored_doc.layers]
+    assert "Layer 1" not in layer_names  # Default name from __init__
+    assert "Loaded Layer 1" in layer_names
+    assert "Loaded Layer 2" in layer_names

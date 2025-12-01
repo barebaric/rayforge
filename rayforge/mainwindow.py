@@ -1,5 +1,4 @@
 import asyncio
-import json
 import logging
 from concurrent.futures import Future
 from pathlib import Path
@@ -11,17 +10,16 @@ from .context import get_context
 from .core.group import Group
 from .core.item import DocItem
 from .core.sketcher import Sketch
-from .core.source_asset import SourceAsset
 from .core.step import Step
 from .core.workpiece import WorkPiece
 from .doceditor.editor import DocEditor
 from .doceditor.ui import file_dialogs, import_handler
 from .doceditor.ui.item_properties import DocItemPropertiesWidget
 from .doceditor.ui.layer_list import LayerListView
+from .doceditor.ui.sketch_list import SketchListWidget
 from .doceditor.ui.stock_list import StockListView
 from .doceditor.ui.workflow_view import WorkflowView
 from .image.sketch.exporter import SketchExporter
-from .image.sketch.renderer import SKETCH_RENDERER
 from .machine.cmd import MachineCmd
 from .machine.driver.driver import DeviceState, DeviceStatus
 from .machine.driver.dummy import NoDeviceDriver
@@ -40,7 +38,7 @@ from .shared.ui.about import AboutDialog
 from .shared.ui.preferences_dialog import PreferencesWindow
 from .shared.ui.task_bar import TaskBar
 from .toolbar import MainToolbar
-from .undo import Command, HistoryManager
+from .undo import Command, HistoryManager, ListItemCommand
 from .workbench.canvas import CanvasElement
 from .workbench.canvas3d import Canvas3D, initialized as canvas3d_initialized
 from .workbench.drag_drop_cmd import DragDropCmd
@@ -257,7 +255,7 @@ class MainWindow(Adw.ApplicationWindow):
         # Initialize drag-and-drop command for the surface
         self.drag_drop_cmd = DragDropCmd(self, self.surface)
         self.surface.drag_drop_cmd = self.drag_drop_cmd
-        self.drag_drop_cmd.setup_file_drop_target()
+        self.drag_drop_cmd.setup_drop_targets()
 
         # Setup keyboard actions using the new ActionManager.
         self.action_manager = ActionManager(self)
@@ -384,6 +382,16 @@ class MainWindow(Adw.ApplicationWindow):
         self.stock_list_view.set_margin_end(12)
         right_pane_box.append(self.stock_list_view)
 
+        # Add the Sketch list view
+        self.sketch_list_view = SketchListWidget(self.doc_editor)
+        self.sketch_list_view.set_margin_top(20)
+        self.sketch_list_view.set_margin_end(12)
+        right_pane_box.append(self.sketch_list_view)
+        self.sketch_list_view.sketch_activated.connect(
+            self._on_sketch_definition_activated
+        )
+        self.sketch_list_view.add_clicked.connect(self.on_new_sketch)
+
         # Add the Layer list view
         self.layer_list_view = LayerListView(self.doc_editor)
         self.layer_list_view.set_margin_top(20)
@@ -489,38 +497,36 @@ class MainWindow(Adw.ApplicationWindow):
         self.active_sketch_workpiece = None
         self._is_editing_new_sketch = False
 
+    def enter_sketch_definition_mode(self, sketch: Sketch):
+        """Switches to SketchStudio to edit a sketch definition directly."""
+        try:
+            self.active_sketch_workpiece = None
+            self._is_editing_new_sketch = False
+            self.sketch_studio.set_sketch(sketch)
+            self.main_stack.set_visible_child_name("sketch")
+
+            # Swap menu and actions
+            self.menubar.set_menu_model(self.sketch_studio.menu_model)
+            self.insert_action_group("sketch", self.sketch_studio.action_group)
+            self.add_controller(self.sketch_studio.shortcut_controller)
+        except Exception as e:
+            logger.error(
+                f"Failed to load sketch definition for editing: {e}",
+                exc_info=True,
+            )
+
+    def _on_sketch_definition_activated(self, sender, *, sketch: Sketch):
+        """Handles activation of a sketch definition from the sketch list."""
+        self.enter_sketch_definition_mode(sketch)
+
     def _on_sketch_finished(self, sender, *, sketch: Sketch):
         """Handles the 'finished' signal from the SketchStudio."""
-        if not self.active_sketch_workpiece:
-            logger.error(
-                "Sketch finished but no active workpiece was tracked."
-            )
-            self.exit_sketch_mode()
-            return
-
-        # The workpiece is linked by sketch_uid, not source_asset anymore
-        sketch_uid = self.active_sketch_workpiece.sketch_uid
-        if not sketch_uid:
-            logger.error(
-                "Sketch finished but active workpiece has no sketch UID."
-            )
-            self.exit_sketch_mode()
-            return
-
-        new_sketch_dict = sketch.to_dict()
-
-        # 1. Create the new command.
-        # It needs the doc, the UID of the sketch to update, and the new data.
         cmd = UpdateSketchCommand(
             doc=self.doc_editor.doc,
-            sketch_uid=sketch_uid,
-            new_sketch_dict=new_sketch_dict,
+            sketch_uid=sketch.uid,
+            new_sketch_dict=sketch.to_dict(),
         )
-
-        # 2. Execute the command to update the sketch template and all
-        # workpieces.
         self.doc_editor.history_manager.execute(cmd)
-
         self.exit_sketch_mode()
 
     def _on_sketch_cancelled(self, sender):
@@ -529,59 +535,28 @@ class MainWindow(Adw.ApplicationWindow):
         self.exit_sketch_mode()
 
         if was_new:
-            # If we just created this sketch, remove it from the doc
+            # If we just created this sketch, remove it from the doc by
+            # undoing the creation command.
             self.doc_editor.history_manager.undo()
 
-    def on_new_sketch(self, action, param):
-        """Action handler for creating a new sketch."""
-        # 1. Create an empty Sketch
-        new_sketch = Sketch()
+    def on_new_sketch(self, action=None, param=None):
+        """Action handler for creating a new sketch definition."""
+        # 1. Create a new, empty sketch object
+        new_sketch = Sketch(name=_("New Sketch"))
 
-        # 2. Create a placeholder SourceAsset to hold the raw data for saving.
-        source_asset = SourceAsset(
-            source_file=Path("new_sketch.rfs"),
-            original_data=json.dumps(new_sketch.to_dict()).encode("utf-8"),
-            renderer=SKETCH_RENDERER,
-            metadata={"is_vector": True},
+        # 2. Create and execute an undoable command to add it to the document
+        command = ListItemCommand(
+            owner_obj=self.doc_editor.doc,
+            item=new_sketch,
+            undo_command="remove_sketch",
+            redo_command="add_sketch",
+            name=_("Create Sketch Definition"),
         )
+        self.doc_editor.history_manager.execute(command)
 
-        # 3. Create the WorkPiece without a SourceAssetSegment.
-        workpiece = WorkPiece(name=_("New Sketch"), source_segment=None)
-
-        # 4. Set its default dimensions and link it to the sketch template.
-        workpiece.natural_width_mm = 50.0
-        workpiece.natural_height_mm = 50.0
-        workpiece.sketch_uid = new_sketch.uid
-
-        # 5. Add everything to the document via a command.
-        added_items = self.doc_editor.edit.add_items(
-            [workpiece],
-            source_assets=[source_asset],
-            sketches=[new_sketch],
-            name=_("New Sketch"),
-        )
-
-        if not added_items:
-            logger.error("Failed to add new sketch workpiece to document.")
-            return
-
-        # 6. Position the new item in the center of the workspace.
-        new_workpiece = added_items[0]
-        surface_w, surface_h = self.surface.get_size_mm()
-        center_x = surface_w / 2.0
-        center_y = surface_h / 2.0
-        # Use the newly set natural_size for centering calculation.
-        sketch_w, sketch_h = new_workpiece.natural_size
-        new_workpiece.pos = (
-            center_x - sketch_w / 2.0,
-            center_y - sketch_h / 2.0,
-        )
-
-        # 7. Immediately enter edit mode for the new workpiece.
-        if isinstance(new_workpiece, WorkPiece):
-            self.enter_sketch_mode(new_workpiece, is_new_sketch=True)
-        else:
-            logger.error("Newly created sketch item is not a WorkPiece.")
+        # 3. Immediately enter edit mode for the new definition
+        self.enter_sketch_definition_mode(new_sketch)
+        self._is_editing_new_sketch = True
 
     def on_edit_sketch(self, action, param):
         """Action handler for editing the selected sketch."""

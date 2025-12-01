@@ -3,6 +3,7 @@ import pytest
 from pathlib import Path
 from typing import Tuple, cast
 from dataclasses import asdict
+from unittest.mock import MagicMock, patch
 from blinker import Signal
 from rayforge.core.doc import Doc
 from rayforge.core.source_asset import SourceAsset
@@ -90,6 +91,10 @@ class TestWorkPiece:
         assert wp.sketch_uid is None
         assert wp.sketch_params == {}
         assert wp._transient_sketch_definition is None
+
+        # New check for view cache initialization
+        assert hasattr(wp, "_view_cache")
+        assert isinstance(wp._view_cache, dict)
 
     def test_workpiece_is_docitem(self, workpiece_instance):
         assert isinstance(workpiece_instance, DocItem)
@@ -679,3 +684,143 @@ class TestWorkPiece:
             vectorization_spec=PassthroughSpec(),
         )
         wp.source_segment = segment
+
+    def test_from_sketch_factory_behavior(self):
+        """
+        Tests the WorkPiece.from_sketch factory method logic.
+        """
+        # We patch the Sketch class inside rayforge.core.sketcher.sketch
+        # because the module under test (workpiece.py) imports it locally.
+        with patch("rayforge.core.sketcher.sketch.Sketch") as MockSketchCls:
+            # Setup the mock instance returned by Sketch.from_dict()
+            mock_instance = MagicMock()
+            MockSketchCls.from_dict.return_value = mock_instance
+
+            # Setup the geometry returned by the mock instance.
+            # Define a 10x20 bounding box: (0,0) -> (10,20)
+            mock_geo = Geometry()
+            mock_geo.move_to(0, 0)
+            mock_geo.line_to(10, 20)
+
+            mock_instance.to_geometry.return_value = mock_geo
+            mock_instance.solve.return_value = True
+            mock_instance.name = "TestSketch"
+
+            # Create a dummy sketch object to pass in (the factory calls
+            # to_dict on it)
+            dummy_sketch = Sketch()
+            dummy_sketch.uid = "sketch-123"
+            dummy_sketch.name = "TestSketch"
+
+            # Run factory
+            wp = WorkPiece.from_sketch(dummy_sketch)
+
+            # Assertions
+            assert wp.sketch_uid == dummy_sketch.uid
+            assert wp.name == "TestSketch"
+            assert wp.natural_width_mm == pytest.approx(10.0)
+            assert wp.natural_height_mm == pytest.approx(20.0)
+
+            # The matrix should be scaled to natural size
+            sx, sy = wp.matrix.get_scale()
+            assert sx == pytest.approx(10.0)
+            assert sy == pytest.approx(20.0)
+
+            # 2. Test empty/failing sketch fallback
+            mock_instance.to_geometry.return_value = Geometry()  # Empty
+            wp_empty = WorkPiece.from_sketch(dummy_sketch)
+
+            assert wp_empty.natural_width_mm == 1.0
+            assert wp_empty.natural_height_mm == 1.0
+
+    def test_sketch_params_setter_triggers_update(self, doc_with_workpiece):
+        """
+        Tests that setting sketch_params triggers regeneration and updates
+        natural dimensions.
+        """
+        doc, wp, _ = doc_with_workpiece
+
+        # We create a mock sketch that returns specific geometry when solved
+        sketch = Sketch()
+        doc.add_sketch(sketch)
+        wp.sketch_uid = sketch.uid
+
+        updated_signals = []
+        wp.updated.connect(lambda s: updated_signals.append(s), weak=False)
+
+        # Patch Sketch at its definition because it is imported locally
+        # inside regenerate_from_sketch.
+        with patch("rayforge.core.sketcher.sketch.Sketch") as MockSketchCls:
+            # Setup the mock instance returned by Sketch.from_dict()
+            mock_instance = MagicMock()
+            MockSketchCls.from_dict.return_value = mock_instance
+
+            # Setup the geometry returned by the mock instance
+            mock_geo = Geometry()
+            # Define a bounding box (0,0) -> (50,25)
+            mock_geo.move_to(0, 0)
+            mock_geo.line_to(50, 25)
+
+            mock_instance.to_geometry.return_value = mock_geo
+            mock_instance.solve.return_value = True
+
+            # Action: Change params
+            new_params = {"W": 50, "H": 25}
+            wp.sketch_params = new_params
+
+            # Assertions
+            assert wp.sketch_params == new_params
+            assert len(updated_signals) > 0
+
+            # Verify regenerate logic was called
+            mock_instance.solve.assert_called()
+            # Verify variable overrides were passed to solve
+            call_args = mock_instance.solve.call_args
+            assert call_args.kwargs.get("variable_overrides") == new_params
+
+            # Verify natural size updated
+            assert wp.natural_width_mm == pytest.approx(50.0)
+            assert wp.natural_height_mm == pytest.approx(25.0)
+
+    def test_sketch_boundaries_normalization(self, doc_with_workpiece):
+        """
+        Tests that boundaries generated from a sketch are correctly normalized
+        to the 0-1 unit square, regardless of the sketch's physical size.
+        """
+        doc, wp, _ = doc_with_workpiece
+
+        sketch = Sketch()
+        doc.add_sketch(sketch)
+        wp.sketch_uid = sketch.uid
+        wp.clear_render_cache()
+
+        # Patch Sketch at its definition
+        with patch("rayforge.core.sketcher.sketch.Sketch") as MockSketchCls:
+            # Setup mock instance
+            mock_instance = MagicMock()
+            MockSketchCls.from_dict.return_value = mock_instance
+
+            # Setup the geometry: a 100x200 rectangle starting at 0,0
+            # This is what wp.boundaries will process.
+            mock_geo = Geometry()
+            mock_geo.move_to(0, 0)
+            mock_geo.line_to(100, 200)
+
+            mock_instance.to_geometry.return_value = mock_geo
+            mock_instance.solve.return_value = True
+
+            # Access boundaries
+            bounds = wp.boundaries
+            assert bounds is not None
+
+            # Verify normalization (should fill 0-1 box)
+            # The logic inside WorkPiece.boundaries detects the 100x200
+            # extent and normalizes it.
+            min_x, min_y, max_x, max_y = bounds.rect()
+            assert min_x == pytest.approx(0.0)
+            assert min_y == pytest.approx(0.0)
+            assert max_x == pytest.approx(1.0)
+            assert max_y == pytest.approx(1.0)
+
+            # Check cache was populated
+            assert wp._boundaries_cache is bounds

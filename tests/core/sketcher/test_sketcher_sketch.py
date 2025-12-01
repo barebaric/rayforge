@@ -715,3 +715,4 @@ def test_sketch_deserialization_backward_compatibility():
     assert len(sketch.input_parameters) == 0
     # Make sure other parts loaded correctly
     assert sketch.params.get("width") == 100.0
+    assert sketch.name == ""

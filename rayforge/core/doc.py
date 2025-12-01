@@ -139,10 +139,12 @@ class Doc(DocItem):
     def add_sketch(self, sketch: "Sketch"):
         """Adds a sketch to the document."""
         self.sketches[sketch.uid] = sketch
+        self.updated.send(self)
 
-    def remove_sketch(self, uid: str):
+    def remove_sketch(self, sketch: "Sketch"):
         """Removes a sketch from the document."""
-        self.sketches.pop(uid, None)
+        if self.sketches.pop(sketch.uid, None):
+            self.updated.send(self)
 
     def get_sketch(self, uid: str) -> Optional["Sketch"]:
         """Retrieves a sketch by its UID."""

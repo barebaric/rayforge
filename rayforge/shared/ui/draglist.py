@@ -58,6 +58,9 @@ class DragListBox(Gtk.ListBox):
         original_child = row.get_child()
         if original_child:
             row.set_child(None)  # Detach to re-parent it
+            # Store reference to the original child so drag handlers can
+            # access it
+            row.original_child = original_child
 
         # Create a container box with a handle and the original content
         hbox = Gtk.Box(
@@ -89,7 +92,9 @@ class DragListBox(Gtk.ListBox):
         # children (buttons, entries) are consumed by them and won't
         # start a drag, which is the desired behavior.
         drag_source = Gtk.DragSource()
-        drag_source.set_actions(Gdk.DragAction.MOVE)
+        # Allow MOVE for reordering and COPY for dragging content out
+        # (e.g. to canvas)
+        drag_source.set_actions(Gdk.DragAction.MOVE | Gdk.DragAction.COPY)
         drag_source.connect("prepare", self.on_drag_prepare, row)
         drag_source.connect("drag-end", self.on_drag_end)
         # Attach the drag source to the entire row. Clicks on interactive
@@ -120,7 +125,25 @@ class DragListBox(Gtk.ListBox):
 
         self.drag_source_row = row
         self.potential_drop_index = -1
-        return Gdk.ContentProvider.new_for_value(row)
+
+        # Base provider for internal reordering
+        providers = [Gdk.ContentProvider.new_for_value(row)]
+
+        # Check if the original child widget has additional drag content to
+        # offer (e.g., a SketchRowWidget offering a string UID)
+        if hasattr(row, "original_child") and hasattr(
+            row.original_child, "get_drag_content"
+        ):
+            extra_content = row.original_child.get_drag_content()
+            if extra_content:
+                providers.append(extra_content)
+
+        # Return a union of providers so both list reordering and canvas drop
+        # work
+        if len(providers) > 1:
+            return Gdk.ContentProvider.new_union(providers)
+        else:
+            return providers[0]
 
     def on_drag_motion(self, drop_target, x, y):
         # This handler is called on the *target* list. We only want to handle
@@ -162,7 +185,6 @@ class DragListBox(Gtk.ListBox):
             source_index = self.drag_source_row.get_index()
             # Only perform the move if the position is different
             if source_index != self.potential_drop_index:
-                self.remove(self.drag_source_row)
                 self.insert(self.drag_source_row, self.potential_drop_index)
                 self.reordered.send(self)
 

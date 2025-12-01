@@ -1,7 +1,7 @@
 import json
 import uuid
 from pathlib import Path
-from typing import Any, Dict, List, Mapping, Optional, Sequence, Set, Union
+from typing import Union, List, Optional, Set, Dict, Any, Sequence
 from ..geo import Geometry
 from ..varset import VarSet
 from .constraints import (
@@ -46,14 +46,15 @@ class Sketch:
     and expressions.
     """
 
-    def __init__(self, uid: Optional[str] = None) -> None:
-        self.uid = uid or str(uuid.uuid4())
+    def __init__(self, name: str = "New Sketch") -> None:
+        self.uid: str = str(uuid.uuid4())
+        self.name = name
         self.params = ParameterContext()
         self.registry = EntityRegistry()
         self.constraints: List[Constraint] = []
         self.input_parameters = VarSet(
-            title=_("Input Parameters"),
-            description=_("Parameters that control this sketch's geometry."),
+            title="Input Parameters",
+            description="Parameters that control this sketch's geometry.",
         )
 
         # Initialize the Origin Point (Fixed Anchor)
@@ -106,6 +107,7 @@ class Sketch:
         """Serializes the Sketch to a dictionary."""
         return {
             "uid": self.uid,
+            "name": self.name,
             "input_parameters": self.input_parameters.to_dict(
                 include_value=include_input_values
             ),
@@ -125,7 +127,9 @@ class Sketch:
                 f"{required_keys}."
             )
 
-        new_sketch = cls(uid=data.get("uid"))
+        new_sketch = cls()
+        new_sketch.uid = data.get("uid", str(uuid.uuid4()))
+        new_sketch.name = data.get("name", "")
 
         # Handle backward compatibility for input_parameters
         if "input_parameters" in data:
@@ -445,14 +449,25 @@ class Sketch:
 
     # --- Manipulation & Processing ---
 
-    def _update_params_from_inputs(self) -> None:
+    def _update_params_from_inputs(
+        self, variable_overrides: Optional[Dict[str, Any]] = None
+    ) -> None:
         """
-        Injects the current values from the input_parameters VarSet into
-        the internal ParameterContext.
+        Injects parameter values into the internal ParameterContext.
+        It prioritizes explicit overrides, then falls back to VarSet values.
         """
+        # 1. Apply defaults from the VarSet definition first
         for var in self.input_parameters:
+            if var.default is not None:
+                self.params.set(var.key, var.default)
+            # Also apply the explicit 'value' if set, for design-time previews
             if var.value is not None:
                 self.params.set(var.key, var.value)
+
+        # 2. Apply instance-specific overrides
+        if variable_overrides:
+            for key, value in variable_overrides.items():
+                self.params.set(key, value)
 
     def move_point(self, pid: int, x: float, y: float) -> bool:
         """
@@ -481,8 +496,8 @@ class Sketch:
     def solve(
         self,
         extra_constraints: Optional[List[Constraint]] = None,
-        variable_overrides: Optional[Mapping[str, Union[str, float]]] = None,
         update_constraint_status: bool = True,
+        variable_overrides: Optional[Dict[str, Any]] = None,
     ) -> bool:
         """
         Resolves all constraints.
@@ -490,25 +505,28 @@ class Sketch:
         Args:
             extra_constraints: A list of temporary constraints to add for this
                 solve, e.g., for dragging.
+            update_constraint_status: If True, re-calculates the degrees of
+                freedom for all points and entities after a successful solve.
             variable_overrides: A dictionary of parameter values to use for
                 this solve only, without permanently changing the sketch's
                 parameters. e.g., `{'width': 150.0}`.
-            update_constraint_status: If True, re-calculates the degrees of
-                freedom for all points and entities after a successful solve.
 
         Returns:
             True if the solver converged successfully.
         """
-        original_params_data = self.params.to_dict()
+        # If overrides are provided, we must treat them as temporary.
+        # We save the original parameter state and restore it after the solve.
+        original_params_dict = None
+        if variable_overrides:
+            original_params_dict = self.params.to_dict()
+
+        success = False
         try:
             # Bridge the public API (VarSet) to the internal calculation
             # engine.
-            self._update_params_from_inputs()
-
-            # Apply dynamic overrides, which take precedence
-            if variable_overrides:
-                for key, value in variable_overrides.items():
-                    self.params.set(key, value)
+            self._update_params_from_inputs(
+                variable_overrides=variable_overrides
+            )
 
             all_constraints = self.constraints
             if extra_constraints:
@@ -517,9 +535,9 @@ class Sketch:
             solver = Solver(self.registry, self.params, all_constraints)
             success = solver.solve(update_dof=update_constraint_status)
         finally:
-            # Restore the original parameter context to ensure overrides
-            # were temporary.
-            self.params = ParameterContext.from_dict(original_params_data)
+            # If we saved the original state, restore it now.
+            if original_params_dict is not None:
+                self.params = ParameterContext.from_dict(original_params_dict)
 
         return success
 
