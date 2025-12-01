@@ -11,6 +11,7 @@ from .core.group import Group
 from .core.item import DocItem
 from .core.sketcher import Sketch
 from .core.step import Step
+from .core.stock import StockItem
 from .core.workpiece import WorkPiece
 from .doceditor.editor import DocEditor
 from .doceditor.ui import file_dialogs, import_handler
@@ -38,6 +39,7 @@ from .shared.ui.preferences_dialog import PreferencesWindow
 from .shared.ui.task_bar import TaskBar
 from .toolbar import MainToolbar
 from .undo import Command, HistoryManager, ListItemCommand
+from .doceditor.ui.stock_properties_dialog import StockPropertiesDialog
 from .workbench.canvas import CanvasElement
 from .workbench.canvas3d import Canvas3D, initialized as canvas3d_initialized
 from .workbench.drag_drop_cmd import DragDropCmd
@@ -435,6 +437,9 @@ class MainWindow(Adw.ApplicationWindow):
         self.surface.edit_sketch_requested.connect(
             self._on_edit_sketch_requested
         )
+        self.surface.edit_stock_item_requested.connect(
+            self._on_edit_stock_item_requested
+        )
 
         # Create and add the status monitor widget.
         self.status_monitor = TaskBar(task_mgr)
@@ -576,6 +581,14 @@ class MainWindow(Adw.ApplicationWindow):
         """Signal handler for edit sketch requests from the surface."""
         logger.debug(f"Sketch edit requested for workpiece {workpiece.name}")
         self.enter_sketch_mode(workpiece)
+
+    def _on_edit_stock_item_requested(self, sender, *, stock_item: StockItem):
+        """Signal handler for edit stock item requests from the surface."""
+        logger.debug(
+            f"Stock properties requested for stock item {stock_item.name}"
+        )
+        dialog = StockPropertiesDialog(self, stock_item, self.doc_editor)
+        dialog.present()
 
     def on_export_sketch(self, action, param):
         """Action handler for exporting the selected sketch."""

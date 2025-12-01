@@ -89,6 +89,7 @@ class WorkSurface(WorldSurface):
 
         # Signal to request editing a sketch (handled by MainWindow)
         self.edit_sketch_requested = Signal()
+        self.edit_stock_item_requested = Signal()
 
         # Connect to generic signals from the base Canvas class
         self.move_begin.connect(self._on_any_transform_begin)
@@ -396,6 +397,12 @@ class WorkSurface(WorldSurface):
                 if wp.sketch_uid:
                     self.edit_sketch_requested.send(self, workpiece=wp)
                     return
+            elif isinstance(hit_elem, StockElement):
+                stock_item = cast(StockItem, hit_elem.data)
+                self.edit_stock_item_requested.send(
+                    self, stock_item=stock_item
+                )
+                return
 
         # Manage SketchEditor activation based on context changes.
         if old_context is not new_context:
