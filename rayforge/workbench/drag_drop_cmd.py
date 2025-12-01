@@ -8,8 +8,8 @@ paste operations, keeping them separate from the core UI components.
 import logging
 import tempfile
 from pathlib import Path
-from typing import TYPE_CHECKING, Optional
-from gi.repository import Gdk, Gtk, Gio, GLib, Adw
+from typing import TYPE_CHECKING, Optional, Tuple
+from gi.repository import GObject, Gdk, Gtk, Gio, GLib, Adw
 from ..context import get_context
 from ..image import bitmap_mime_types
 
@@ -34,6 +34,11 @@ class DragDropCmd:
         self.main_window = main_window
         self.surface = surface
         self._drop_overlay_label: Optional[Gtk.Label] = None
+
+        # Keep references to controllers
+        self._sketch_target: Optional[Gtk.DropTarget] = None
+        self._file_target: Optional[Gtk.DropTarget] = None
+
         self._apply_drop_overlay_css()
 
     def _apply_drop_overlay_css(self):
@@ -60,43 +65,85 @@ class DragDropCmd:
                 display, provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
             )
 
-    def setup_file_drop_target(self):
+    def setup_drop_targets(self):
         """
         Configure the canvas to accept file drops for importing.
-        Supports local files and file lists.
+        Supports local files and file lists, as well as internal Sketch
+        objects.
         """
-        # Create drop target that accepts files
-        drop_target = Gtk.DropTarget.new(Gio.File, Gdk.DragAction.COPY)
-        drop_target.set_gtypes([Gio.File, Gdk.FileList])
+        # We use separate drop targets for Sketches (Strings) and Files.
+        # This avoids issues with mixed types in a single controller.
 
-        # Connect signals
-        drop_target.connect("drop", self._on_file_dropped)
-        drop_target.connect("enter", self._on_drag_enter)
-        drop_target.connect("leave", self._on_drag_leave)
+        # --- 1. Sketch Target (Strings) ---
+        self._sketch_target = Gtk.DropTarget.new(
+            GObject.TYPE_STRING, Gdk.DragAction.COPY
+        )
+        self._sketch_target.connect("drop", self._on_sketch_drop)
+        self._sketch_target.connect("enter", self._on_sketch_drag_enter)
+        self.surface.add_controller(self._sketch_target)
 
-        # Attach to canvas widget
-        self.surface.add_controller(drop_target)
-        logger.debug("File drop target configured for WorkSurface")
+        # --- 2. File Target (Files & FileLists) ---
+        # Initialize with a valid type (Gio.File) then extend to FileList
+        self._file_target = Gtk.DropTarget.new(Gio.File, Gdk.DragAction.COPY)
+        self._file_target.set_gtypes([Gio.File, Gdk.FileList])
+        self._file_target.connect("drop", self._on_file_drop)
+        self._file_target.connect("enter", self._on_file_drag_enter)
+        self._file_target.connect("leave", self._on_drag_leave)
+        self.surface.add_controller(self._file_target)
 
-    def _on_drag_enter(
-        self, drop_target, x: float, y: float
-    ) -> Gdk.DragAction:
-        """
-        Called when files are dragged over the canvas.
-        Shows overlay message to provide visual feedback.
-        """
+        logger.debug(
+            "Split drop targets (Sketch/File) configured for WorkSurface"
+        )
+
+    # --- Sketch Handlers ---
+
+    def _on_sketch_drag_enter(self, drop_target, x, y):
+        # We accept copy for sketches. No overlay needed.
+        logger.debug("Sketch drag entered surface")
+        return Gdk.DragAction.COPY
+
+    def _on_sketch_drop(self, drop_target, value, x, y):
+        logger.debug(f"Sketch drop event: value={value}")
+        if isinstance(value, str):
+            # Convert widget coordinates to world coordinates (mm)
+            world_x_mm, world_y_mm = self.surface._get_world_coords(x, y)
+            return self._handle_sketch_drop(value, (world_x_mm, world_y_mm))
+        return False
+
+    # --- File Handlers ---
+
+    def _on_file_drag_enter(self, drop_target, x, y):
+        # Show overlay for files
         self._show_drop_overlay()
         return Gdk.DragAction.COPY
 
     def _on_drag_leave(self, drop_target):
-        """
-        Called when drag leaves the canvas.
-        Uses delayed removal to handle spurious leave events from GTK4.
-        """
-        # Don't immediately hide - GTK4 sometimes fires spurious leave
-        # events during active drags. Delay allows motion/drop to occur.
-        logger.debug("Drag leave signal received, scheduling delayed hide")
-        GLib.timeout_add(100, self._delayed_hide_overlay)
+        # Hide overlay
+        if self._drop_overlay_label:
+            logger.debug("Drag leave signal received, scheduling delayed hide")
+            GLib.timeout_add(100, self._delayed_hide_overlay)
+
+    def _on_file_drop(self, drop_target, value, x, y):
+        self._hide_drop_overlay()
+
+        logger.debug(f"File drop event: type={type(value)}")
+
+        # Convert widget coordinates to world coordinates (mm)
+        world_x_mm, world_y_mm = self.surface._get_world_coords(x, y)
+
+        files = self._extract_files_from_drop_value(value)
+        if files:
+            logger.info(
+                f"Processing file drop at world coords "
+                f"({world_x_mm:.2f}, {world_y_mm:.2f}) mm"
+            )
+            file_infos = self._get_file_infos(files)
+            self._import_dropped_files(file_infos, (world_x_mm, world_y_mm))
+            return True
+
+        return False
+
+    # --- Overlay & Helper Methods ---
 
     def _show_drop_overlay(self):
         """Display 'Drop files to import' overlay on canvas."""
@@ -109,7 +156,7 @@ class DragDropCmd:
         self._drop_overlay_label.set_halign(Gtk.Align.CENTER)
         self._drop_overlay_label.set_valign(Gtk.Align.CENTER)
 
-        # Make it semi-transparent and styled
+        # Make it semi-transparent
         self._drop_overlay_label.set_opacity(0.9)
 
         # Find the parent overlay (surface_overlay from MainWindow)
@@ -152,46 +199,6 @@ class DragDropCmd:
             widget = widget.get_parent()
         return None
 
-    def _on_file_dropped(self, drop_target, value, x: float, y: float) -> bool:
-        """
-        Handle files dropped onto the canvas.
-
-        Args:
-            drop_target: The Gtk.DropTarget that received the drop
-            value: Either a Gio.File or Gdk.FileList
-            x, y: Widget coordinates (pixels) where drop occurred
-
-        Returns:
-            True if drop was handled successfully, False otherwise
-        """
-        # Hide overlay immediately on drop
-        self._hide_drop_overlay()
-
-        try:
-            # Convert widget coordinates to world coordinates (mm)
-            world_x_mm, world_y_mm = self.surface._get_world_coords(x, y)
-            logger.info(
-                f"File(s) dropped at widget coords ({x:.1f}, {y:.1f}) "
-                f"→ world coords ({world_x_mm:.2f}, {world_y_mm:.2f}) mm"
-            )
-
-            # Extract file list from value
-            files = self._extract_files_from_drop_value(value)
-            if not files:
-                return False
-
-            # Get file info for all dropped files
-            file_infos = self._get_file_infos(files)
-
-            # Categorize and import files
-            self._import_dropped_files(file_infos, (world_x_mm, world_y_mm))
-
-            return True
-
-        except Exception as e:
-            logger.exception(f"Error handling dropped file: {e}")
-            return False
-
     def _extract_files_from_drop_value(self, value):
         """Extract file list from drop value."""
         files = []
@@ -221,12 +228,18 @@ class DragDropCmd:
                 continue
 
             file_path = Path(path_str)
-            file_info = gfile.query_info(
-                Gio.FILE_ATTRIBUTE_STANDARD_CONTENT_TYPE,
-                Gio.FileQueryInfoFlags.NONE,
-                None,
-            )
-            mime_type = file_info.get_content_type()
+            try:
+                file_info = gfile.query_info(
+                    Gio.FILE_ATTRIBUTE_STANDARD_CONTENT_TYPE,
+                    Gio.FileQueryInfoFlags.NONE,
+                    None,
+                )
+                mime_type = file_info.get_content_type()
+            except Exception as e:
+                logger.warning(
+                    f"Could not query file info for {file_path}: {e}"
+                )
+                continue
 
             # Check if we support this MIME type
             if mime_type not in importer_by_mime_type:
@@ -474,3 +487,40 @@ class DragDropCmd:
             Adw.Toast.new(_("Failed to import image from clipboard"))
         )
         return False
+
+    def _handle_sketch_drop(
+        self, sketch_uid: str, position_mm: Tuple[float, float]
+    ) -> bool:
+        """
+        Handle a sketch UID dropped onto the canvas.
+
+        Args:
+            sketch_uid: The UID of the sketch being dropped
+            position_mm: The (x, y) position in mm where to place the instance
+
+        Returns:
+            True if the drop was handled successfully
+        """
+        try:
+            edit_cmd = self.main_window.doc_editor.edit
+
+            # Create the sketch instance at the drop position
+            new_workpiece = edit_cmd.add_sketch_instance(
+                sketch_uid, position_mm
+            )
+
+            if new_workpiece:
+                logger.info(
+                    f"Created sketch instance {new_workpiece.uid[:8]} "
+                    f"from sketch {sketch_uid[:8]} at {position_mm}"
+                )
+                return True
+            else:
+                logger.warning(
+                    f"Failed to create sketch instance from {sketch_uid}"
+                )
+                return False
+
+        except Exception as e:
+            logger.exception(f"Error handling sketch drop: {e}")
+            return False

@@ -97,7 +97,7 @@ class EditCmd:
         history = self._editor.history_manager
         newly_pasted_items = []
 
-        target_layer = self._editor.default_workpiece_layer
+        target_layer = self._editor.doc.active_layer
 
         with history.transaction(_("Paste item(s)")) as t:
             offset_x = self._paste_increment_mm[0] * self._paste_counter
@@ -155,7 +155,7 @@ class EditCmd:
         history = self._editor.history_manager
         newly_duplicated_items = []
 
-        target_layer = self._editor.default_workpiece_layer
+        target_layer = self._editor.doc.active_layer
 
         top_level_items = self._get_top_level_items(items)
 
@@ -206,7 +206,7 @@ class EditCmd:
             return []
 
         history = self._editor.history_manager
-        target_layer = self._editor.default_workpiece_layer
+        target_layer = self._editor.doc.active_layer
 
         with history.transaction(_(name)) as t:
             # Add source assets. This is not currently undoable in this simple
@@ -295,3 +295,45 @@ class EditCmd:
         if self._paste_counter != 0:
             logger.debug("Paste counter reset to 0 due to context change.")
             self._paste_counter = 0
+
+    def add_sketch_instance(
+        self, sketch_uid: str, position_mm: Tuple[float, float]
+    ) -> WorkPiece:
+        """
+        Creates a new WorkPiece instance from a sketch definition.
+
+        Args:
+            sketch_uid: The UID of the sketch definition to instantiate
+            position_mm: The (x, y) position in mm where to place the instance
+
+        Returns:
+            The newly created WorkPiece instance
+        """
+        history = self._editor.history_manager
+        target_layer = self._editor.doc.active_layer
+
+        sketch_def = self._editor.doc.get_sketch(sketch_uid)
+        if not sketch_def:
+            raise ValueError(f"Sketch with UID {sketch_uid} not found.")
+
+        # Create new WorkPiece using the factory method which handles
+        # correct sizing and initialization.
+        new_workpiece = WorkPiece.from_sketch(sketch_def)
+
+        width, height = new_workpiece.natural_size
+        new_workpiece.pos = (
+            position_mm[0] - width / 2,
+            position_mm[1] - height / 2,
+        )
+
+        with history.transaction(_("Add Sketch Instance")) as t:
+            command = ListItemCommand(
+                owner_obj=target_layer,
+                item=new_workpiece,
+                undo_command="remove_child",
+                redo_command="add_child",
+                name=_("Add Sketch Instance"),
+            )
+            t.execute(command)
+
+        return new_workpiece

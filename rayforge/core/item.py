@@ -163,6 +163,10 @@ class DocItem(ABC):
         Sets the item size in mm while preserving its world-space center
         point. This manipulates the existing matrix.
         """
+        # Guard against zero dimensions to prevent singular matrices in Cairo
+        width_mm = max(abs(width_mm), 1e-9)
+        height_mm = max(abs(height_mm), 1e-9)
+
         world_transform_old = self.get_world_transform()
         current_w, current_h = world_transform_old.get_abs_scale()
 

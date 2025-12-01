@@ -46,9 +46,21 @@ class SketchImporter(Importer):
             logger.error(f"Failed to parse sketch data: {e}")
             return None
 
-        # 2. Convert Sketch to Geometry (for the WorkPiece's cache/bounds)
-        # Note: We solve it here just to get the initial bounds/mask.
-        # The WorkPiece will re-solve its own instance later.
+        # 2. Determine final name with priority logic.
+        # Sketch.from_dict provides the serialized name, or "" if missing.
+        final_name = self.parsed_sketch.name
+        if not final_name and self.source_file:
+            # Fallback to filename if no serialized name.
+            final_name = self.source_file.stem
+
+        # If still no name, apply a system default.
+        if not final_name:
+            final_name = "Untitled"
+
+        # Apply the final name to the sketch object.
+        self.parsed_sketch.name = final_name
+
+        # 3. Convert Sketch to Geometry (for the WorkPiece's cache/bounds)
         self.parsed_sketch.solve()
         geometry = self.parsed_sketch.to_geometry()
         geometry.close_gaps()
@@ -57,8 +69,7 @@ class SketchImporter(Importer):
         width = max(max_x - min_x, 1e-9)
         height = max(max_y - min_y, 1e-9)
 
-        # 1. Create the SourceAsset container to hold the original file bytes.
-        # This is important for saving, exporting, and round-trip editing.
+        # 4. Create the SourceAsset container.
         source_asset = SourceAsset(
             source_file=self.source_file
             if self.source_file
@@ -70,21 +81,17 @@ class SketchImporter(Importer):
             height_mm=height,
         )
 
-        # 2. Create the WorkPiece without a SourceAssetSegment.
-        name = "Sketch"
-        if self.source_file:
-            name = self.source_file.stem
+        # 5. Create the WorkPiece, giving it the same final name.
+        workpiece = WorkPiece(name=final_name, source_segment=None)
 
-        workpiece = WorkPiece(name=name, source_segment=None)
-
-        # 3. Set its dimensions and transformation directly.
+        # 6. Set dimensions and transformation.
         workpiece.natural_width_mm = width
         workpiece.natural_height_mm = height
         workpiece.matrix = Matrix.translation(min_x, min_y) @ Matrix.scale(
             width, height
         )
 
-        # 4. Link the WorkPiece to the Sketch Template.
+        # 7. Link to Sketch Template.
         workpiece.sketch_uid = self.parsed_sketch.uid
 
         return ImportPayload(

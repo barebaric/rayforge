@@ -13,7 +13,7 @@ from rayforge.image.sketch.importer import SketchImporter
 @pytest.fixture
 def complex_sketch() -> Sketch:
     """Creates a moderately complex sketch for serialization testing."""
-    s = Sketch()
+    s = Sketch(name="Complex Sketch")  # Give fixture a more descriptive name
 
     # Parameters
     s.set_param("width", 100)
@@ -80,8 +80,10 @@ def test_sketch_importer_round_trip(complex_sketch: Sketch):
     item = payload.items[0]
 
     assert isinstance(item, WorkPiece)
-    assert item.name == "MyTestSketch"
-    assert item.source_segment is None  # This is the key change
+    # The importer should prioritize the serialized name over the filename.
+    assert item.name == complex_sketch.name
+
+    assert item.source_segment is None
     assert item.sketch_uid == complex_sketch.uid
 
     # 5. Verify the dimensions were set correctly on the WorkPiece
@@ -98,6 +100,66 @@ def test_sketch_importer_round_trip(complex_sketch: Sketch):
     # 6. Verify the sketch template itself was parsed correctly
     parsed_sketch_dict = imported_sketch_template.to_dict()
     assert parsed_sketch_dict == original_dict
+
+
+def test_sketch_importer_naming_logic_serialized_priority(
+    complex_sketch: Sketch,
+):
+    """
+    Tests that if the JSON contains a name, it takes precedence over the
+    file name.
+    """
+    complex_sketch.name = "SerializedName"
+    data = json.dumps(complex_sketch.to_dict()).encode("utf-8")
+
+    # Pass a conflicting filename
+    importer = SketchImporter(data=data, source_file=Path("Filename.rfs"))
+    payload = importer.get_doc_items()
+
+    assert payload is not None
+    # Should use the name from JSON
+    assert payload.sketches[0].name == "SerializedName"
+    assert payload.items[0].name == "SerializedName"
+
+
+def test_sketch_importer_naming_logic_filename_fallback(
+    complex_sketch: Sketch,
+):
+    """
+    Tests that if the JSON has no name (or empty), it falls back to the
+    file name.
+    """
+    # Create data with empty name
+    d = complex_sketch.to_dict()
+    d["name"] = ""
+    data = json.dumps(d).encode("utf-8")
+
+    importer = SketchImporter(data=data, source_file=Path("MyDesign.rfs"))
+    payload = importer.get_doc_items()
+
+    assert payload is not None
+    # Should fall back to file stem
+    assert payload.sketches[0].name == "MyDesign"
+    assert payload.items[0].name == "MyDesign"
+
+
+def test_sketch_importer_naming_logic_default_fallback(complex_sketch: Sketch):
+    """
+    Tests that if JSON has no name and no file is provided, the name
+    defaults to "Untitled".
+    """
+    # Create data with missing name key entirely
+    d = complex_sketch.to_dict()
+    del d["name"]
+    data = json.dumps(d).encode("utf-8")
+
+    importer = SketchImporter(data=data, source_file=None)
+    payload = importer.get_doc_items()
+
+    assert payload is not None
+    # Should fall back to the default name "Untitled".
+    assert payload.sketches[0].name == "Untitled"
+    assert payload.items[0].name == "Untitled"
 
 
 def test_sketch_importer_bad_data():
