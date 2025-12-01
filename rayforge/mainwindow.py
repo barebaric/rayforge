@@ -276,8 +276,6 @@ class MainWindow(Adw.ApplicationWindow):
         doc.updated.connect(self.on_doc_changed)
         doc.descendant_added.connect(self.on_doc_changed)
         doc.descendant_removed.connect(self.on_doc_changed)
-        doc.descendant_updated.connect(self.on_doc_changed)
-        doc.descendant_transform_changed.connect(self.on_doc_changed)
         doc.active_layer_changed.connect(self._on_active_layer_changed)
         doc.history_manager.changed.connect(self.on_history_changed)
 
