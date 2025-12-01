@@ -6,7 +6,7 @@ import numpy as np
 def linearize_arc(
     arc_cmd: Any,
     start_point: Tuple[float, float, float],
-    resolution: float = 0.01,
+    resolution: float = 0.1,
 ) -> List[Tuple[Tuple[float, float, float], Tuple[float, float, float]]]:
     """
     Converts an arc command into a list of line segments.
