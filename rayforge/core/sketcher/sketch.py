@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Union, List, Optional, Set, Dict, Any, Sequence
 from ..geo import Geometry
 from ..varset import VarSet
+from ..asset import IAsset
 from .constraints import (
     Constraint,
     DistanceConstraint,
@@ -40,7 +41,7 @@ _CONSTRAINT_CLASSES = {
 }
 
 
-class Sketch:
+class Sketch(IAsset):
     """
     A parametric sketcher that allows defining geometry via constraints
     and expressions.
@@ -59,6 +60,26 @@ class Sketch:
 
         # Initialize the Origin Point (Fixed Anchor)
         self.origin_id = self.registry.add_point(0.0, 0.0, fixed=True)
+
+    @property
+    def asset_type_name(self) -> str:
+        """The machine-readable type name for the asset list."""
+        return "sketch"
+
+    @property
+    def display_icon_name(self) -> str:
+        """The icon name for the asset list."""
+        return "sketch-edit-symbolic"
+
+    @property
+    def is_reorderable(self) -> bool:
+        """Whether this asset type supports reordering in the asset list."""
+        return False
+
+    @property
+    def is_draggable_to_canvas(self) -> bool:
+        """Whether this asset can be dragged from the list onto the canvas."""
+        return True
 
     @property
     def is_fully_constrained(self) -> bool:

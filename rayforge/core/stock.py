@@ -5,12 +5,13 @@ from ..context import get_context
 from .item import DocItem
 from .geo import Geometry
 from .matrix import Matrix
+from .asset import IAsset
 
 if TYPE_CHECKING:
     from .material import Material
 
 
-class StockItem(DocItem):
+class StockItem(DocItem, IAsset):
     """
     Represents a piece of stock material in the document.
 
@@ -38,6 +39,26 @@ class StockItem(DocItem):
             # Set the internal _matrix directly to avoid firing signals during
             # construction, which is good practice.
             self._matrix = Matrix.scale(width, height)
+
+    @property
+    def asset_type_name(self) -> str:
+        """The machine-readable type name for the asset list."""
+        return "stock"
+
+    @property
+    def display_icon_name(self) -> str:
+        """The icon name for the asset list."""
+        return "stock-symbolic"
+
+    @property
+    def is_reorderable(self) -> bool:
+        """Whether this asset type supports reordering in the asset list."""
+        return True
+
+    @property
+    def is_draggable_to_canvas(self) -> bool:
+        """Whether this asset can be dragged from the list onto the canvas."""
+        return False
 
     @property
     def natural_size(self) -> Tuple[float, float]:

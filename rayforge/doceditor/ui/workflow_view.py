@@ -7,7 +7,7 @@ from ...undo.models.list_cmd import ListItemCommand, ReorderListCommand
 from ...shared.ui.draglist import DragListBox
 from ...shared.ui.expander import Expander
 from .step_box import StepBox
-from .step_selector import StepSelector
+from ...shared.ui.popover_menu import PopoverMenu
 
 if TYPE_CHECKING:
     from ..editor import DocEditor
@@ -159,17 +159,19 @@ class WorkflowView(Expander):
         if not self.workflow or not self.workflow.doc:
             return
 
-        popup = StepSelector(self.step_factories, self.editor.context)
+        popup = PopoverMenu(
+            step_factories=self.step_factories, context=self.editor.context
+        )
         popup.set_parent(button)
         popup.popup()
         popup.connect("closed", self.on_add_dialog_response)
 
-    def on_add_dialog_response(self, popup):
+    def on_add_dialog_response(self, popup: PopoverMenu):
         """Handles the creation of a new step after the popup closes."""
         if not self.workflow or not self.workflow.doc:
             return
-        if popup.selected_factory:
-            step_factory = popup.selected_factory
+        if popup.selected_item:
+            step_factory = popup.selected_item
             new_step = step_factory(self.editor.context)
 
             # Apply best recipe using helper method

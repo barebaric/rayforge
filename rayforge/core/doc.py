@@ -6,6 +6,7 @@ from .workpiece import WorkPiece
 from .layer import Layer
 from .item import DocItem
 from .source_asset import SourceAsset
+from .asset import IAsset
 
 if TYPE_CHECKING:
     from .stock import StockItem
@@ -149,6 +150,14 @@ class Doc(DocItem):
     def get_sketch(self, uid: str) -> Optional["Sketch"]:
         """Retrieves a sketch by its UID."""
         return self.sketches.get(uid)
+
+    def get_all_assets(self) -> List[IAsset]:
+        """Returns a unified list of all assets in a canonical order."""
+        # The order here defines the grouping in the UI.
+        assets: List[IAsset] = []
+        assets.extend(self.stock_items)
+        assets.extend(list(self.sketches.values()))
+        return assets
 
     @property
     def doc(self) -> "Doc":
