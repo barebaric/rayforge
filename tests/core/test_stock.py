@@ -26,6 +26,7 @@ def test_stock_item_initialization_with_geometry():
     stock = StockItem(geometry=geo)
     assert stock.geometry is geo
     assert len(stock.geometry.commands) == 5
+    assert stock.matrix == Matrix.scale(100, 50)
 
 
 def test_stock_item_to_dict_serialization():

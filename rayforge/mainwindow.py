@@ -14,10 +14,9 @@ from .core.step import Step
 from .core.workpiece import WorkPiece
 from .doceditor.editor import DocEditor
 from .doceditor.ui import file_dialogs, import_handler
+from .doceditor.ui.asset_list_view import AssetListView
 from .doceditor.ui.item_properties import DocItemPropertiesWidget
 from .doceditor.ui.layer_list import LayerListView
-from .doceditor.ui.sketch_list import SketchListWidget
-from .doceditor.ui.stock_list import StockListView
 from .doceditor.ui.workflow_view import WorkflowView
 from .image.sketch.exporter import SketchExporter
 from .machine.cmd import MachineCmd
@@ -375,20 +374,15 @@ class MainWindow(Adw.ApplicationWindow):
         right_pane_box.set_size_request(400, -1)
         right_pane_scrolled_window.set_child(right_pane_box)
 
-        # Add the Stock list view
-        self.stock_list_view = StockListView(self.doc_editor)
-        self.stock_list_view.set_margin_end(12)
-        right_pane_box.append(self.stock_list_view)
-
-        # Add the Sketch list view
-        self.sketch_list_view = SketchListWidget(self.doc_editor)
-        self.sketch_list_view.set_margin_top(20)
-        self.sketch_list_view.set_margin_end(12)
-        right_pane_box.append(self.sketch_list_view)
-        self.sketch_list_view.sketch_activated.connect(
+        # Add the unified Asset list view
+        self.asset_list_view = AssetListView(self.doc_editor)
+        self.asset_list_view.set_margin_end(12)
+        right_pane_box.append(self.asset_list_view)
+        self.asset_list_view.add_sketch_clicked.connect(self.on_new_sketch)
+        self.asset_list_view.add_stock_clicked.connect(self.on_add_stock_item)
+        self.asset_list_view.sketch_activated.connect(
             self._on_sketch_definition_activated
         )
-        self.sketch_list_view.add_clicked.connect(self.on_new_sketch)
 
         # Add the Layer list view
         self.layer_list_view = LayerListView(self.doc_editor)
@@ -456,6 +450,10 @@ class MainWindow(Adw.ApplicationWindow):
 
         # Set initial state
         self.on_config_changed(None)
+
+    def on_add_stock_item(self, sender):
+        """Handler for adding a new stock item, called from AssetListView."""
+        self.doc_editor.stock.add_stock_item()
 
     def enter_sketch_mode(
         self, workpiece: WorkPiece, is_new_sketch: bool = False
