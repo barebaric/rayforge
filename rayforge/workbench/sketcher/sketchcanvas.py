@@ -89,18 +89,13 @@ class SketchCanvas(WorldSurface):
             self._on_constraint_edit_requested
         )
 
-        # For a new, empty sketch, position its element at the center of the
-        # canvas world. The subsequent call to update_bounds_from_sketch will
-        # then adjust this transform to center the element's content box
-        # (and thus the sketch origin) on this point.
-        is_empty_sketch = (
-            len(sketch.registry.entities) == 0
-            and len(sketch.registry.points) <= 1
-        )
-        if is_empty_sketch:
-            canvas_w, canvas_h = self.get_size_mm()
-            cx, cy = canvas_w / 2.0, canvas_h / 2.0
-            new_sketch_elem.set_transform(Matrix.translation(cx, cy))
+        # Position the new sketch element at the center of the canvas world.
+        # The subsequent call to update_bounds_from_sketch (in SketchStudio)
+        # will adjust the element's bounds and transform to tightly fit the
+        # geometry while keeping the sketch's origin at this center point.
+        canvas_w, canvas_h = self.get_size_mm()
+        cx, cy = canvas_w / 2.0, canvas_h / 2.0
+        new_sketch_elem.set_transform(Matrix.translation(cx, cy))
 
         self.root.add(new_sketch_elem)
 
