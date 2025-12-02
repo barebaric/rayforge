@@ -135,6 +135,46 @@ class TestVar:
 
         v.value_changed.disconnect(listener)
 
+    def test_definition_changed_signal(self):
+        """Test the new definition_changed signal for key, label, and desc."""
+        v = Var(
+            key="old_key",
+            label="Old Label",
+            var_type=str,
+            description="Old Desc",
+        )
+        listener = Mock()
+        v.definition_changed.connect(listener)
+
+        # Change key
+        v.key = "new_key"
+        listener.assert_called_once_with(v, property="key")
+        listener.reset_mock()
+
+        # Set key to same value (no signal)
+        v.key = "new_key"
+        listener.assert_not_called()
+
+        # Change label
+        v.label = "New Label"
+        listener.assert_called_once_with(v, property="label")
+        listener.reset_mock()
+
+        # Set label to same value (no signal)
+        v.label = "New Label"
+        listener.assert_not_called()
+
+        # Change description
+        v.description = "New Desc"
+        listener.assert_called_once_with(v, property="description")
+        listener.reset_mock()
+
+        # Set description to same value (no signal)
+        v.description = "New Desc"
+        listener.assert_not_called()
+
+        v.definition_changed.disconnect(listener)
+
     def test_to_dict(self):
         """Test the to_dict method for serializing the definition."""
         v = Var(
@@ -180,9 +220,9 @@ class TestVar:
         assert v.value == 100, "Effective value should be the default"
         assert v.raw_value is None, "No explicit value should be stored"
 
-    def test_changing_default_triggers_signal_when_using_default(self):
+    def test_changing_default_triggers_both_signals_when_using_default(self):
         """
-        CRITICAL TEST: Verifies that changing the default value emits a signal
+        Verifies that changing the default emits both signals
         if the Var is currently using the default.
         """
         # 1. Setup: Var is using its default value
@@ -192,8 +232,10 @@ class TestVar:
         assert v.value == 10
         assert v.raw_value is None
 
-        listener = Mock()
-        v.value_changed.connect(listener)
+        value_listener = Mock()
+        def_listener = Mock()
+        v.value_changed.connect(value_listener)
+        v.definition_changed.connect(def_listener)
 
         # 2. Action: Change the default
         v.default = 20
@@ -201,14 +243,18 @@ class TestVar:
         # 3. Assertions
         assert v.default == 20, "Default should be updated"
         assert v.value == 20, "Effective value should now be the new default"
-        listener.assert_called_once_with(v, new_value=20, old_value=10)
+        value_listener.assert_called_once_with(v, new_value=20, old_value=10)
+        def_listener.assert_called_once_with(v, property="default")
 
-        v.value_changed.disconnect(listener)
+        v.value_changed.disconnect(value_listener)
+        v.definition_changed.disconnect(def_listener)
 
-    def test_changing_default_does_not_trigger_signal_when_overridden(self):
+    def test_changing_default_triggers_only_definition_signal_when_overridden(
+        self,
+    ):
         """
-        Verifies that changing the default value does NOT emit a signal if an
-        explicit value is already set.
+        Verifies that changing the default value ONLY emits definition_changed
+        if an explicit value is already set.
         """
         # 1. Setup: Var has an explicit value
         v = Var(
@@ -220,8 +266,10 @@ class TestVar:
         )
         assert v.value == 50
 
-        listener = Mock()
-        v.value_changed.connect(listener)
+        value_listener = Mock()
+        def_listener = Mock()
+        v.value_changed.connect(value_listener)
+        v.definition_changed.connect(def_listener)
 
         # 2. Action: Change the default
         v.default = 20
@@ -229,9 +277,11 @@ class TestVar:
         # 3. Assertions
         assert v.default == 20, "Default should be updated"
         assert v.value == 50, "Effective value should remain the explicit one"
-        listener.assert_not_called()
+        value_listener.assert_not_called()
+        def_listener.assert_called_once_with(v, property="default")
 
-        v.value_changed.disconnect(listener)
+        v.value_changed.disconnect(value_listener)
+        v.definition_changed.disconnect(def_listener)
 
     def test_setting_value_to_none_falls_back_to_default_and_signals(self):
         """

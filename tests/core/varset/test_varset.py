@@ -303,26 +303,53 @@ class TestVarSet:
             vs, var=v1, new_value=30, old_value=20
         )
 
+    def test_var_definition_changed_bubble_up_signal(self):
+        """
+        Test that definition changes in child Vars bubble up through the
+        VarSet.
+        """
+        vs = VarSet()
+        v1 = Var(key="a", label="A", var_type=str)
+        vs.add(v1)
+
+        listener = Mock()
+        vs.var_definition_changed.connect(listener)
+
+        # Change the key directly on the Var
+        v1.key = "a_new"
+        listener.assert_called_once_with(vs, var=v1, property="key")
+
+        # Change the label
+        listener.reset_mock()
+        v1.label = "A New"
+        listener.assert_called_once_with(vs, var=v1, property="label")
+
     def test_disconnect_on_remove_and_clear(self):
         """Test that signal listeners are disconnected on remove and clear."""
         vs = VarSet()
         v1 = IntVar(key="a", label="A", value=10)
         vs.add(v1)
 
-        listener = Mock()
-        vs.var_value_changed.connect(listener)
+        val_listener = Mock()
+        def_listener = Mock()
+        vs.var_value_changed.connect(val_listener)
+        vs.var_definition_changed.connect(def_listener)
 
         # 1. Test remove()
         vs.remove("a")
         v1.value = 50  # Change value of the now-removed var
-        listener.assert_not_called()  # The VarSet should not be listening
+        v1.key = "b"  # Change definition of the now-removed var
+        val_listener.assert_not_called()  # The VarSet should not be listening
+        def_listener.assert_not_called()
 
         # 2. Test clear()
-        v2 = IntVar(key="b", label="B", value=100)
+        v2 = IntVar(key="c", label="C", value=100)
         vs.add(v2)
         vs.clear()
         v2.value = 200  # Change value of the now-cleared var
-        listener.assert_not_called()
+        v2.label = "D"  # Change definition of the now-cleared var
+        val_listener.assert_not_called()
+        def_listener.assert_not_called()
 
     def test_var_default_change_bubble_up_signal(self):
         """
