@@ -524,7 +524,7 @@ class Sketch(IAsset):
                 ctx.update(self.params.get_all_values())
 
             # b) Add/overwrite with values from the new VarSet system.
-            if self.input_parameters:
+            if self.input_parameters is not None:
                 ctx.update(self.input_parameters.get_values())
 
             # c) Add/overwrite with runtime overrides (highest precedence).
