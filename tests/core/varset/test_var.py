@@ -12,25 +12,32 @@ class TestVar:
         assert v.label == "Test"
         assert v.var_type is str
         assert v.default == "hello"
-        assert v.value == "hello"
+        assert v.value == "hello"  # Effective value is default
+        assert v.raw_value is None  # No explicit value set
 
     def test_creation_with_value(self):
         """Test that an explicit value overrides the default on creation."""
         v = Var(key="test", label="Test", var_type=int, default=10, value=20)
-        assert v.value == 20
+        assert v.default == 10
+        assert v.raw_value == 20
+        assert v.value == 20  # Effective value is the explicit one
 
     def test_creation_no_default(self):
         """Test Var creation without a default value."""
         v = Var(key="test", label="Test", var_type=int)
         assert v.default is None
+        assert v.raw_value is None
         assert v.value is None
 
     def test_set_value(self):
-        """Test setting a value after creation."""
+        """Test setting an explicit value after creation."""
         v = Var(key="test", label="Test", var_type=int, default=10)
+        assert v.value == 10
         v.value = 50
+        assert v.raw_value == 50
         assert v.value == 50
         v.value = 100
+        assert v.raw_value == 100
         assert v.value == 100
 
     def test_type_coercion_numeric(self):
@@ -107,11 +114,11 @@ class TestVar:
 
         assert v.value == 101
 
-    def test_value_changed_signal(self):
+    def test_value_changed_signal_on_explicit_set(self):
         """Test that the value_changed signal is emitted correctly."""
         v = Var(key="test", label="Test", var_type=int, value=10)
         listener = Mock()
-        Var.value_changed.connect(listener, sender=v)
+        v.value_changed.connect(listener)
 
         # 1. Change the value, expect signal
         v.value = 20
@@ -126,7 +133,7 @@ class TestVar:
         v.value = 30
         listener.assert_called_once_with(v, new_value=30, old_value=20)
 
-        Var.value_changed.disconnect(listener, sender=v)
+        v.value_changed.disconnect(listener)
 
     def test_to_dict(self):
         """Test the to_dict method for serializing the definition."""
@@ -161,3 +168,95 @@ class TestVar:
         assert "key='test'" in representation
         assert "value=20" in representation
         assert "type=int" in representation
+
+    # --- NEW TESTS TO VERIFY CONTRACT ---
+
+    def test_value_falls_back_to_default(self):
+        """
+        Tests that the `value` property correctly returns the default when no
+        explicit value has been set.
+        """
+        v = Var(key="fallback", label="Fallback", var_type=int, default=100)
+        assert v.value == 100, "Effective value should be the default"
+        assert v.raw_value is None, "No explicit value should be stored"
+
+    def test_changing_default_triggers_signal_when_using_default(self):
+        """
+        CRITICAL TEST: Verifies that changing the default value emits a signal
+        if the Var is currently using the default.
+        """
+        # 1. Setup: Var is using its default value
+        v = Var(
+            key="test_default", label="Test Default", var_type=int, default=10
+        )
+        assert v.value == 10
+        assert v.raw_value is None
+
+        listener = Mock()
+        v.value_changed.connect(listener)
+
+        # 2. Action: Change the default
+        v.default = 20
+
+        # 3. Assertions
+        assert v.default == 20, "Default should be updated"
+        assert v.value == 20, "Effective value should now be the new default"
+        listener.assert_called_once_with(v, new_value=20, old_value=10)
+
+        v.value_changed.disconnect(listener)
+
+    def test_changing_default_does_not_trigger_signal_when_overridden(self):
+        """
+        Verifies that changing the default value does NOT emit a signal if an
+        explicit value is already set.
+        """
+        # 1. Setup: Var has an explicit value
+        v = Var(
+            key="test_default",
+            label="Test Default",
+            var_type=int,
+            default=10,
+            value=50,
+        )
+        assert v.value == 50
+
+        listener = Mock()
+        v.value_changed.connect(listener)
+
+        # 2. Action: Change the default
+        v.default = 20
+
+        # 3. Assertions
+        assert v.default == 20, "Default should be updated"
+        assert v.value == 50, "Effective value should remain the explicit one"
+        listener.assert_not_called()
+
+        v.value_changed.disconnect(listener)
+
+    def test_setting_value_to_none_falls_back_to_default_and_signals(self):
+        """
+        CRITICAL TEST: Verifies that clearing an explicit value by setting it
+        to None causes the Var to fall back to default and emit a signal.
+        """
+        # 1. Setup: Var has an explicit value
+        v = Var(
+            key="test_fallback",
+            label="Test Fallback",
+            var_type=int,
+            default=10,
+            value=50,
+        )
+        assert v.value == 50
+
+        listener = Mock()
+        v.value_changed.connect(listener)
+
+        # 2. Action: Set explicit value to None
+        v.value = None
+
+        # 3. Assertions
+        assert v.raw_value is None, "Explicit value should now be None"
+        assert v.value == 10, "Effective value should fall back to the default"
+        listener.assert_called_once_with(v, new_value=10, old_value=50)
+
+        v.value_changed.disconnect(listener)

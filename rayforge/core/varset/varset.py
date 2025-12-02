@@ -9,38 +9,6 @@ class VarSet:
     parameters. This class is observable via blinker signals.
     """
 
-    var_added = Signal()
-    """
-    Signal sent when a new Var is added to the set.
-    Sender: The VarSet instance.
-    Args:
-        var (Var): The Var instance that was added.
-    """
-
-    var_removed = Signal()
-    """
-    Signal sent when a Var is removed from the set.
-    Sender: The VarSet instance.
-    Args:
-        var (Var): The Var instance that was removed.
-    """
-
-    cleared = Signal()
-    """
-    Signal sent when the VarSet is cleared of all Vars.
-    Sender: The VarSet instance.
-    """
-
-    var_value_changed = Signal()
-    """
-    Signal sent when a contained Var's value changes (bubbled up).
-    Sender: The VarSet instance.
-    Args:
-        var (Var): The child Var instance whose value changed.
-        **kwargs: The original arguments from Var.value_changed
-          (e.g., new_value).
-    """
-
     def __init__(
         self,
         vars: Optional[List[Var]] = None,
@@ -59,6 +27,12 @@ class VarSet:
         self.description = description
         self._vars: Dict[str, Var] = {}
         self._order: List[str] = []  # Explicit order tracking
+
+        self.var_added = Signal()
+        self.var_removed = Signal()
+        self.cleared = Signal()
+        self.var_value_changed = Signal()
+
         if vars:
             for var in vars:
                 self.add(var)
@@ -125,11 +99,10 @@ class VarSet:
         self._vars[var.key] = var
         self._order.append(var.key)
 
-        # Use weak=False to ensure the bound method is not garbage collected
+        # Connect directly to the var's instance signal.
+        # weak=False ensures the bound method is not garbage collected
         # prematurely. We are responsible for disconnecting it manually.
-        Var.value_changed.connect(
-            self._on_child_var_changed, sender=var, weak=False
-        )
+        var.value_changed.connect(self._on_child_var_changed, weak=False)
         self.var_added.send(self, var=var)
 
     def remove(self, key: str) -> Optional[Var]:
@@ -138,9 +111,8 @@ class VarSet:
         if var:
             if key in self._order:
                 self._order.remove(key)
-            Var.value_changed.disconnect(
-                self._on_child_var_changed, sender=var
-            )
+            # Disconnect from the specific instance signal.
+            var.value_changed.disconnect(self._on_child_var_changed)
             self.var_removed.send(self, var=var)
         return var
 
@@ -236,9 +208,7 @@ class VarSet:
     def clear(self):
         """Removes all Var objects from the set."""
         for var in list(self._vars.values()):
-            Var.value_changed.disconnect(
-                self._on_child_var_changed, sender=var
-            )
+            var.value_changed.disconnect(self._on_child_var_changed)
         self._vars.clear()
         self._order.clear()
         self.cleared.send(self)

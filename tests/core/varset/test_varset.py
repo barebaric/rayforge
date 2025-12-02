@@ -323,3 +323,24 @@ class TestVarSet:
         vs.clear()
         v2.value = 200  # Change value of the now-cleared var
         listener.assert_not_called()
+
+    def test_var_default_change_bubble_up_signal(self):
+        """
+        Test that changing a child Var's default value bubbles up the
+        var_value_changed signal if the child's effective value changes.
+        """
+        vs = VarSet()
+        # Create var relying on default
+        v1 = IntVar(key="a", label="A", default=10)
+        vs.add(v1)
+
+        listener = Mock()
+        vs.var_value_changed.connect(listener)
+
+        # Change default on the child Var
+        # This changes effective value 10 -> 20, so signal should bubble
+        v1.default = 20
+
+        listener.assert_called_once_with(
+            vs, var=v1, new_value=20, old_value=10
+        )
