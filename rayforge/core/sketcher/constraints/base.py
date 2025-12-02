@@ -9,7 +9,7 @@ from typing import (
     Optional,
     TYPE_CHECKING,
 )
-from ..evaluator import safe_evaluate
+from ...expression import safe_evaluate
 
 if TYPE_CHECKING:
     from ..entities import EntityRegistry
