@@ -58,6 +58,7 @@ class VarSet:
         self.title = title
         self.description = description
         self._vars: Dict[str, Var] = {}
+        self._order: List[str] = []  # Explicit order tracking
         if vars:
             for var in vars:
                 self.add(var)
@@ -112,8 +113,8 @@ class VarSet:
 
     @property
     def vars(self) -> List[Var]:
-        """Returns the list of Var objects in the set."""
-        return list(self._vars.values())
+        """Returns the list of Var objects in the set in order."""
+        return [self._vars[key] for key in self._order]
 
     def add(self, var: Var):
         """Adds a Var to the set. Raises KeyError if the key exists."""
@@ -122,6 +123,8 @@ class VarSet:
                 f"Var with key '{var.key}' already exists in this VarSet."
             )
         self._vars[var.key] = var
+        self._order.append(var.key)
+
         # Use weak=False to ensure the bound method is not garbage collected
         # prematurely. We are responsible for disconnecting it manually.
         Var.value_changed.connect(
@@ -133,6 +136,8 @@ class VarSet:
         """Removes a Var from the set by its key and returns it."""
         var = self._vars.pop(key, None)
         if var:
+            if key in self._order:
+                self._order.remove(key)
             Var.value_changed.disconnect(
                 self._on_child_var_changed, sender=var
             )
@@ -143,12 +148,35 @@ class VarSet:
         """Gets a Var by its key, or None if not found."""
         return self._vars.get(key)
 
+    def move_var(self, key: str, new_index: int):
+        """
+        Moves the variable with the given key to a new index in the list.
+        """
+        if key not in self._order:
+            return
+
+        # Clamp index
+        if new_index < 0:
+            new_index = 0
+        if new_index >= len(self._order):
+            new_index = len(self._order) - 1
+
+        current_index = self._order.index(key)
+        if current_index == new_index:
+            return
+
+        self._order.pop(current_index)
+        self._order.insert(new_index, key)
+
     def to_dict(self, include_value: bool = False) -> Dict[str, Any]:
         """Serializes the VarSet's full definition to a dictionary."""
         return {
             "title": self.title,
             "description": self.description,
-            "vars": [var.to_dict(include_value=include_value) for var in self],
+            "vars": [
+                self._vars[key].to_dict(include_value=include_value)
+                for key in self._order
+            ],
         }
 
     @classmethod
@@ -180,8 +208,9 @@ class VarSet:
         self._vars[key].value = value
 
     def __iter__(self) -> Iterator[Var]:
-        """Iterates over the Var objects in insertion order."""
-        return iter(self._vars.values())
+        """Iterates over the Var objects in insertion/defined order."""
+        for key in self._order:
+            yield self._vars[key]
 
     def __len__(self) -> int:
         """Returns the number of Var objects in the set."""
@@ -206,11 +235,12 @@ class VarSet:
 
     def clear(self):
         """Removes all Var objects from the set."""
-        for var in self:
+        for var in list(self._vars.values()):
             Var.value_changed.disconnect(
                 self._on_child_var_changed, sender=var
             )
         self._vars.clear()
+        self._order.clear()
         self.cleared.send(self)
 
     def validate(self):

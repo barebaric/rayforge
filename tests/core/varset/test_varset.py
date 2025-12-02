@@ -88,6 +88,41 @@ class TestVarSet:
         assert isinstance(property_vars, list)
         assert property_vars == iterated_vars
 
+    def test_move_var(self):
+        """Test moving a Var to a different position in the order."""
+        vs = VarSet()
+        vs.add(Var(key="a", label="A", var_type=str))
+        vs.add(Var(key="b", label="B", var_type=str))
+        vs.add(Var(key="c", label="C", var_type=str))
+        vs.add(Var(key="d", label="D", var_type=str))
+
+        # Initial order should be a, b, c, d
+        assert [v.key for v in vs.vars] == ["a", "b", "c", "d"]
+
+        # Move 'a' from index 0 to index 2
+        vs.move_var("a", 2)
+        assert [v.key for v in vs.vars] == ["b", "c", "a", "d"]
+
+        # Move 'd' from index 3 to index 0
+        vs.move_var("d", 0)
+        assert [v.key for v in vs.vars] == ["d", "b", "c", "a"]
+
+        # Move 'c' to the same position (index 2)
+        vs.move_var("c", 2)
+        assert [v.key for v in vs.vars] == ["d", "b", "c", "a"]
+
+        # Move a non-existent key should do nothing
+        vs.move_var("nonexistent", 1)
+        assert [v.key for v in vs.vars] == ["d", "b", "c", "a"]
+
+        # Move to a negative index (should clamp to 0)
+        vs.move_var("b", -10)
+        assert [v.key for v in vs.vars] == ["b", "d", "c", "a"]
+
+        # Move to an out-of-bounds index (should clamp to end)
+        vs.move_var("c", 99)
+        assert [v.key for v in vs.vars] == ["b", "d", "a", "c"]
+
     def test_len(self):
         """Test the __len__ method."""
         vs = VarSet()
