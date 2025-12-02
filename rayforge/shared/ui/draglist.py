@@ -1,3 +1,4 @@
+from typing import Protocol, runtime_checkable
 from gi.repository import Gtk, Gdk
 from blinker import Signal
 from ...icons import get_icon
@@ -41,6 +42,21 @@ css = """
     opacity: 1;
 }
 """
+
+
+@runtime_checkable
+class Draggable(Protocol):
+    """
+    A protocol for widgets that can provide content for a drag operation.
+
+    This is typically used for dragging an item out of a list view onto another
+    widget, like a canvas. Any widget that implements the `get_drag_content`
+    method will satisfy this protocol.
+    """
+
+    def get_drag_content(self) -> Gdk.ContentProvider:
+        """Provides the content for a drag operation."""
+        ...
 
 
 class DragListBox(Gtk.ListBox):
@@ -122,7 +138,31 @@ class DragListBox(Gtk.ListBox):
 
         self.drag_source_row = row
         self.potential_drop_index = -1
-        return Gdk.ContentProvider.new_for_value(row)
+
+        # Default provider for reordering within the list
+        reorder_provider = Gdk.ContentProvider.new_for_value(row)
+        providers = [reorder_provider]
+
+        # Check if the row's content widget provides custom drag content for
+        # dropping on external widgets (like the canvas).
+        hbox = row.get_child()
+        if hbox and isinstance(hbox, Gtk.Box):
+            # The actual content widget is the last child in our hbox layout.
+            content_widget = hbox.get_last_child()
+
+            # Use a type-safe protocol check instead of hasattr
+            if isinstance(content_widget, Draggable):
+                # This is usually a provider for a string (e.g., sketch UID)
+                drag_out_provider = content_widget.get_drag_content()
+                if drag_out_provider:
+                    providers.append(drag_out_provider)
+
+        # If we have multiple providers, unite them. Otherwise, just use the
+        # one.
+        if len(providers) > 1:
+            return Gdk.ContentProvider.new_union(providers)
+        else:
+            return providers[0]
 
     def on_drag_motion(self, drop_target, x, y):
         # This handler is called on the *target* list. We only want to handle
