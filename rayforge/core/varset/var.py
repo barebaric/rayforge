@@ -17,15 +17,6 @@ class Var(Generic[T]):
     validation, and data handling.
     """
 
-    value_changed = Signal()
-    """
-    Signal sent when the Var's value changes.
-    Sender: The Var instance.
-    Args:
-        new_value (Optional[T]): The new value.
-        old_value (Optional[T]): The previous value.
-    """
-
     def __init__(
         self,
         key: str,
@@ -53,45 +44,78 @@ class Var(Generic[T]):
         self.label = label
         self.var_type = var_type
         self.description = description
-        self.default = default
+        self._default = default
         self.validator = validator
-        self._value: Optional[T] = None  # Initialize attribute
+        self._value: Optional[T] = None
 
-        # Set initial value, preferring explicit `value` over `default`.
-        self.value = value if value is not None else default
+        # Signal sent when the Var's value changes.
+        self.value_changed = Signal()
+
+        # Set initial explicit value ONLY if provided.
+        if value is not None:
+            self.value = value  # Use the public setter
 
     def validate(self) -> None:
         """
-        Runs the validator on the current value.
+        Runs the validator on the current effective value.
 
         Raises:
             ValidationError: If validation fails.
         """
         if self.validator:
             try:
-                # The validator receives self._value which might be None.
-                # It's the validator's job to handle this.
-                self.validator(self._value)
+                # The validator checks the effective value.
+                self.validator(self.value)
             except ValidationError:
                 raise
             except Exception as e:
                 raise ValidationError(
                     f"Validation failed for key '{self.key}' with value "
-                    f"'{self._value}': {e}"
+                    f"'{self.value}': {e}"
                 ) from e
 
     @property
-    def value(self) -> Optional[T]:
-        """The current value of the variable."""
+    def default(self) -> Optional[T]:
+        """The default value of the variable."""
+        return self._default
+
+    @default.setter
+    def default(self, new_default: Optional[T]):
+        """
+        Sets the default value, triggering updates if effective value changes.
+        """
+        old_effective_value = self.value
+        self._default = new_default
+        new_effective_value = self.value
+
+        if old_effective_value != new_effective_value:
+            self.value_changed.send(
+                self,
+                new_value=new_effective_value,
+                old_value=old_effective_value,
+            )
+
+    @property
+    def raw_value(self) -> Optional[T]:
+        """The explicitly set value, or None if the default is being used."""
         return self._value
+
+    @property
+    def value(self) -> Optional[T]:
+        """
+        The effective value of the variable (returns explicit value if set,
+        otherwise default).
+        """
+        if self._value is not None:
+            return self._value
+        return self.default
 
     @value.setter
     def value(self, new_value: Optional[T]):
         """
-        Sets the variable's value, coercing it to the correct type and
-        emitting a signal if the value has changed.
+        Sets the explicit override value for the variable.
         """
-        old_value = self._value
+        old_effective_value = self.value
         coerced_value: Optional[T]
 
         # 1. Coerce value if not None
@@ -122,11 +146,16 @@ class Var(Generic[T]):
                     f"coerced to type {self.var_type.__name__}"
                 ) from e
 
-        # 2. Assign the coerced value and emit signal if changed.
-        if old_value != coerced_value:
-            self._value = coerced_value
+        # 2. Assign the coerced value to the explicit storage.
+        self._value = coerced_value
+
+        # 3. Emit signal if the *effective* value changed.
+        new_effective_value = self.value
+        if old_effective_value != new_effective_value:
             self.value_changed.send(
-                self, new_value=self._value, old_value=old_value
+                self,
+                new_value=new_effective_value,
+                old_value=old_effective_value,
             )
 
     def to_dict(self, include_value: bool = False) -> Dict[str, Any]:
@@ -145,6 +174,7 @@ class Var(Generic[T]):
             "default": self.default,
         }
         if include_value:
+            # Always serialize the effective value
             data["value"] = self.value
         return data
 
