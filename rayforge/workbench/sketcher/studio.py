@@ -1,7 +1,10 @@
 import logging
-from gi.repository import Gtk, Gio
+from gi.repository import Gtk, Gio, Adw
 from blinker import Signal
 from ...core.sketcher import Sketch
+from ...core.varset import IntVar, FloatVar, SliderFloatVar
+from ...shared.ui.varset_editor import VarSetEditorWidget
+from ...undo.models.property_cmd import ChangePropertyCommand
 from .menu import SketchMenu
 from .sketchcanvas import SketchCanvas
 
@@ -96,16 +99,69 @@ class SketchStudio(Gtk.Box):
         self.btn_finish.connect("clicked", self._on_finish_clicked)
         self.session_bar.append(self.btn_finish)
 
-        # 2. Main Content
-        # Sidebar is currently disabled/hidden. Canvas takes full space.
+        # 2. Main Content Area (Side Panel + Canvas)
+        # Use a Paned widget to allow resizing between the panel and canvas
+        main_paned = Gtk.Paned(orientation=Gtk.Orientation.HORIZONTAL)
+        main_paned.set_vexpand(True)
+        main_paned.set_position(450)
+        self.append(main_paned)
+
+        # 2a. Side Panel
+        side_panel_scroller = Gtk.ScrolledWindow()
+        side_panel_scroller.set_policy(
+            Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC
+        )
+        # The paned widget handles sizing, no size request is needed here.
+        main_paned.set_start_child(side_panel_scroller)
+
+        side_panel_box = Gtk.Box(
+            orientation=Gtk.Orientation.VERTICAL, spacing=12
+        )
+        side_panel_box.set_margin_top(12)
+        side_panel_box.set_margin_bottom(12)
+        side_panel_box.set_margin_start(12)
+        side_panel_box.set_margin_end(12)
+        side_panel_scroller.set_child(side_panel_box)
+
+        # Properties Group (Name)
+        properties_group = Adw.PreferencesGroup()
+        properties_group.set_title(_("Properties"))
+        self.name_row = Adw.EntryRow(title=_("Name"))
+        self.name_row.connect("changed", self._on_name_changed)
+        properties_group.add(self.name_row)
+        side_panel_box.append(properties_group)
+
+        # VarSet Editor Group
+        # Limit the types of variables the user can add to the sketch
+        self.varset_editor = VarSetEditorWidget(
+            vartypes={IntVar, FloatVar, SliderFloatVar}
+        )
+        self.varset_editor.set_title(_("Input Parameters"))
+        side_panel_box.append(self.varset_editor)
+
+        # 2b. Canvas
         self.canvas = SketchCanvas(
             parent_window=self.parent_window,
             single_mode=True,
             width_mm=self.width_mm,
             height_mm=self.height_mm,
         )
-        self.canvas.set_vexpand(True)
-        self.append(self.canvas)
+        # The paned widget will handle expansion.
+        main_paned.set_end_child(self.canvas)
+
+        # Connect history manager to varset editor for undo support
+        if self.canvas.sketch_editor:
+            self.varset_editor.undo_manager = (
+                self.canvas.sketch_editor.history_manager
+            )
+
+        # Initialize the VarSetEditor with the default sketch's parameters
+        # This ensures variables added before 'set_sketch' are attached to
+        # the current sketch
+        if self.canvas.sketch_element:
+            self.varset_editor.populate(
+                self.canvas.sketch_element.sketch.input_parameters
+            )
 
         # 3. Initialize Actions and Menus
         self._init_menu()
@@ -176,14 +232,53 @@ class SketchStudio(Gtk.Box):
 
     def set_sketch(self, sketch: Sketch):
         """Loads a sketch model into the studio."""
-        logger.debug("Loading sketch into studio.")
+        logger.debug(
+            f"Called with sketch '{sketch.name}' (id: {id(sketch)}) and "
+            f"VarSet (id: {id(sketch.input_parameters)})"
+        )
+        # Load sketch into the canvas element
         self.canvas.set_sketch(sketch)
+
+        # Populate side panel with sketch data
+        self.name_row.set_text(sketch.name)
+        self.varset_editor.populate(sketch.input_parameters)
+
         # Ensure the element bounds are updated for the new content
         self.canvas.sketch_element.update_bounds_from_sketch()
         # Reset view to center content
         self.canvas.reset_view()
 
     # --- Action Handlers ---
+
+    def _on_name_changed(self, entry_row: Adw.EntryRow):
+        """Updates the sketch's name with undo support."""
+        if not self.canvas or not self.canvas.sketch_element:
+            return
+        sketch = self.canvas.sketch_element.sketch
+        new_name = entry_row.get_text()
+
+        if sketch.name == new_name:
+            return
+
+        if self.canvas.sketch_editor:
+            cmd = ChangePropertyCommand(
+                target=sketch,
+                property_name="name",
+                new_value=new_name,
+                on_change_callback=self._sync_name_ui,
+                name=_("Rename Sketch"),
+            )
+            self.canvas.sketch_editor.history_manager.execute(cmd)
+        else:
+            sketch.name = new_name
+
+    def _sync_name_ui(self):
+        """Updates the UI to match the underlying sketch object (for Undo)."""
+        if not self.canvas or not self.canvas.sketch_element:
+            return
+        sketch = self.canvas.sketch_element.sketch
+        if self.name_row.get_text() != sketch.name:
+            self.name_row.set_text(sketch.name)
 
     def _on_undo(self, action, param):
         if self.canvas.sketch_editor:

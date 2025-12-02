@@ -249,6 +249,16 @@ class SketchRenderer:
         ctx.stroke_preserve()
         ctx.restore()
 
+    def _format_constraint_value(self, constr):
+        """Helper to format the value string for constraints."""
+        # If it has an expression (e.g., "width"), show it.
+        # Otherwise, show the numeric value.
+        return (
+            f"{constr.expression}"
+            if constr.expression
+            else f"{float(constr.value):.1f}"
+        )
+
     def _draw_overlays(self, ctx: cairo.Context, to_screen):
         # --- Stage 0: Get Hover State ---
         select_tool = self.element.tools.get("select")
@@ -446,10 +456,11 @@ class SketchRenderer:
             return
         sx, sy, arc_mid_sx, arc_mid_sy = pos_data
 
+        val_str = self._format_constraint_value(constr)
         if isinstance(constr, RadiusConstraint):
-            label = _("R{value:.1f}").format(value=float(constr.value))
+            label = f"R{val_str}"
         elif isinstance(constr, DiameterConstraint):
-            label = _("Ø{value:.1f}").format(value=float(constr.value))
+            label = f"Ø{val_str}"
         else:
             return
 
@@ -494,7 +505,7 @@ class SketchRenderer:
         s2 = to_screen.transform_point((p2.x, p2.y))
         mx, my = (s1[0] + s2[0]) / 2, (s1[1] + s2[1]) / 2
 
-        label = f"{float(constr.value):.1f}"
+        label = self._format_constraint_value(constr)
         ext = ctx.text_extents(label)
 
         ctx.save()
@@ -633,9 +644,6 @@ class SketchRenderer:
 
         if not (line and shape):
             return
-        if not (isinstance(line, Line) and isinstance(shape, (Arc, Circle))):
-            return
-
         p1 = self._safe_get_point(line.p1_idx)
         p2 = self._safe_get_point(line.p2_idx)
         center = self._safe_get_point(shape.center_idx)
@@ -758,6 +766,7 @@ class SketchRenderer:
     # --- Points ---
 
     def _draw_points(self, ctx, to_screen):
+        """Draws all sketch points, including selection highlights."""
         is_sketch_fully_constrained = self.element.sketch.is_fully_constrained
         points = self.element.sketch.registry.points or []
         origin_id = getattr(self.element.sketch, "origin_id", -1)
