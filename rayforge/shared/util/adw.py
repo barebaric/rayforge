@@ -11,7 +11,8 @@ css = """
 }
 
 /* 2. Style the button to connect seamlessly to the ListBox above it. */
-.group-with-button-container > button.flat-bottom-button {
+.group-with-button-container > .flat-bottom-button,
+.group-with-button-container > .flat-bottom-button > .toggle {
     border-top-left-radius: 0;
     border-top-right-radius: 0;
     border-bottom-left-radius: 12px;
@@ -33,7 +34,8 @@ class PreferencesGroupWithButton(Adw.PreferencesGroup):
     items displayed in a Gtk.ListBox, with an "Add" button at the bottom.
 
     Subclasses must implement the `create_row_widget` and `_on_add_clicked`
-    methods.
+    methods. They can optionally override `_create_add_button` for custom
+    button types like a MenuButton.
     """
 
     def __init__(
@@ -44,6 +46,7 @@ class PreferencesGroupWithButton(Adw.PreferencesGroup):
     ):
         super().__init__(**kwargs)
         apply_css(css)
+        self.add_css_class("pref-group-with-button")
 
         container_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         container_box.add_css_class("card")
@@ -57,11 +60,48 @@ class PreferencesGroupWithButton(Adw.PreferencesGroup):
         self.list_box.get_style_context().add_class("frame")
         container_box.append(self.list_box)
 
-        self.add_button = Gtk.Button()
+        self.add_button = self._create_add_button(button_label)
         self.add_button.add_css_class("darkbutton")
         self.add_button.add_css_class("flat-bottom-button")
-        self.add_button.connect("clicked", self._on_add_clicked)
         container_box.append(self.add_button)
+
+    def set_items(self, items: Iterable):
+        is_selectable = (
+            self.list_box.get_selection_mode() != Gtk.SelectionMode.NONE
+        )
+
+        while child := self.list_box.get_row_at_index(0):
+            self.list_box.remove(child)
+
+        item_list = list(items)
+
+        if not item_list:
+            placeholder_label = Gtk.Label(label="No parameters")
+            placeholder_label.add_css_class("dim-label")
+            placeholder_label.set_halign(Gtk.Align.CENTER)
+            placeholder_label.set_margin_top(12)
+            placeholder_label.set_margin_bottom(12)
+            row = Gtk.ListBoxRow(child=placeholder_label, selectable=False)
+            self.list_box.append(row)
+        else:
+            for item in item_list:
+                widget = self.create_row_widget(item)
+                row = Gtk.ListBoxRow(child=widget, selectable=is_selectable)
+                self.list_box.append(row)
+
+    def create_row_widget(self, item: Any) -> Gtk.Widget:
+        raise NotImplementedError(
+            "Subclasses must implement create_row_widget()"
+        )
+
+    def _create_add_button(self, button_label: str) -> Gtk.Widget:
+        """
+        Default factory for the button. Creates a simple Gtk.Button.
+        Subclasses can override this to return a Gtk.MenuButton or other
+        widget.
+        """
+        button = Gtk.Button()
+        button.connect("clicked", self._on_add_clicked)
 
         button_content = Gtk.Box(
             orientation=Gtk.Orientation.HORIZONTAL,
@@ -72,43 +112,12 @@ class PreferencesGroupWithButton(Adw.PreferencesGroup):
             margin_bottom=10,
             margin_start=12,
         )
-        self.add_button.set_child(button_content)
+        button.set_child(button_content)
         button_content.append(get_icon("add-symbolic"))
         button_content.append(Gtk.Label(label=button_label))
-
-    def set_items(self, items: Iterable):
-        """
-        Clears and rebuilds the list box with widgets for the given items.
-        """
-        # Determine if rows should be selectable based on the list box's mode.
-        is_selectable = (
-            self.list_box.get_selection_mode() != Gtk.SelectionMode.NONE
-        )
-
-        while child := self.list_box.get_row_at_index(0):
-            self.list_box.remove(child)
-
-        for item in items:
-            widget = self.create_row_widget(item)
-            row = Gtk.ListBoxRow(child=widget, selectable=is_selectable)
-            self.list_box.append(row)
-
-    def create_row_widget(self, item: Any) -> Gtk.Widget:
-        """
-        Factory method to be implemented by subclasses.
-        Should return a widget to display for a single item in the list.
-        """
-        raise NotImplementedError(
-            "Subclasses of PreferencesGroupWithButton must implement "
-            "create_row_widget()"
-        )
+        return button
 
     def _on_add_clicked(self, button: Gtk.Button):
-        """
-        Handler for the add button, to be implemented by subclasses.
-        Should contain the logic for creating a new item.
-        """
         raise NotImplementedError(
-            "Subclasses of PreferencesGroupWithButton must implement "
-            "_on_add_clicked()"
+            "Subclasses must implement _on_add_clicked()"
         )
