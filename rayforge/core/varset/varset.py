@@ -50,7 +50,31 @@ class VarSet:
         self.var_value_changed.send(self, var=var, **kwargs)
 
     def _on_child_var_definition_changed(self, var: Var, **kwargs):
-        """Handler for bubbling up definition changes from contained Vars."""
+        """
+        Handler for bubbling up definition changes from contained Vars.
+        """
+        if kwargs.get("property") == "key":
+            old_key = None
+            for k, v in self._vars.items():
+                if v is var:
+                    old_key = k
+                    break
+
+            if old_key is not None and old_key != var.key:
+                logger.debug(
+                    f"Resyncing VarSet dictionary for key rename: "
+                    f"'{old_key}' -> '{var.key}'"
+                )
+                # Update the dictionary key
+                self._vars[var.key] = self._vars.pop(old_key)
+                # Update the explicit order list
+                try:
+                    idx = self._order.index(old_key)
+                    self._order[idx] = var.key
+                except ValueError:
+                    # Should not happen if state is consistent
+                    pass
+
         logger.debug(
             f"Signal bubble-up: var_definition_changed for var '{var.key}' "
             f"(prop: {kwargs.get('property')})"

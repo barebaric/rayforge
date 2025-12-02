@@ -324,6 +324,51 @@ class TestVarSet:
         v1.label = "A New"
         listener.assert_called_once_with(vs, var=v1, property="label")
 
+    def test_key_resynchronization_on_rename(self):
+        """
+        Tests that the VarSet's internal dictionary and order list are
+        updated when a child Var's key is changed.
+        """
+        vs = VarSet()
+        v1 = Var(key="old_key", label="Label 1", var_type=str, value="v1")
+        v2 = Var(key="other_key", label="Label 2", var_type=str, value="v2")
+        vs.add(v1)
+        vs.add(v2)
+
+        # Verify initial state
+        assert list(vs.keys()) == ["old_key", "other_key"]
+        assert vs.get("old_key") is v1
+        assert [v.key for v in vs.vars] == ["old_key", "other_key"]
+
+        # --- Act ---
+        # Rename the key directly on the Var object. The VarSet should detect
+        # this.
+        v1.key = "new_key"
+
+        # --- Assert ---
+        # 1. The VarSet's keys should be updated.
+        assert "new_key" in vs.keys()
+        assert "old_key" not in vs.keys()
+        assert sorted(list(vs.keys())) == ["new_key", "other_key"]
+
+        # 2. Accessing by the new key should work.
+        assert vs.get("new_key") is v1
+        assert vs["new_key"].value == "v1"
+
+        # 3. Accessing by the old key should fail.
+        assert vs.get("old_key") is None
+        with pytest.raises(KeyError):
+            _ = vs["old_key"]
+
+        # 4. The explicit order list should be updated.
+        assert [v.key for v in vs.vars] == ["new_key", "other_key"]
+
+        # 5. get_values() should use the new key.
+        values = vs.get_values()
+        assert "new_key" in values
+        assert "old_key" not in values
+        assert values["new_key"] == "v1"
+
     def test_disconnect_on_remove_and_clear(self):
         """Test that signal listeners are disconnected on remove and clear."""
         vs = VarSet()
