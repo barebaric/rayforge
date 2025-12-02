@@ -6,8 +6,10 @@ from typing import (
     Any,
     List,
     Callable,
+    Optional,
     TYPE_CHECKING,
 )
+from ..evaluator import safe_evaluate
 
 if TYPE_CHECKING:
     from ..entities import EntityRegistry
@@ -16,6 +18,10 @@ if TYPE_CHECKING:
 
 class Constraint:
     """Base class for all geometric constraints."""
+
+    # These attributes are expected on dimensional constraints
+    value: float = 0.0
+    expression: Optional[str] = None
 
     def error(
         self, reg: "EntityRegistry", params: "ParameterContext"
@@ -60,3 +66,16 @@ class Constraint:
     ) -> bool:
         """Checks if the constraint's visual representation is hit."""
         return False
+
+    def update_from_context(self, context: Dict[str, Any]):
+        """
+        Re-evaluates the expression (if present) using the provided context
+        and updates self.value.
+        """
+        if self.expression:
+            try:
+                self.value = safe_evaluate(self.expression, context)
+            except ValueError:
+                # Keep old value on failure to prevent geometry collapse
+                # during invalid typing
+                pass

@@ -2,7 +2,7 @@ import pytest
 import numpy as np
 from scipy.optimize import check_grad
 from functools import partial
-
+from types import SimpleNamespace
 from rayforge.core.sketcher.params import ParameterContext
 from rayforge.core.sketcher.entities import EntityRegistry
 from rayforge.core.sketcher.constraints import SymmetryConstraint
@@ -180,3 +180,38 @@ def test_symmetry_constraint_serialization_round_trip(setup_env):
 
     # Check that the restored constraint has the same error
     assert original.error(reg, params) == restored.error(reg, params)
+
+
+def test_symmetry_constraint_line_serialization_round_trip(setup_env):
+    reg, params = setup_env
+    l1 = reg.add_point(0, -10)
+    l2 = reg.add_point(0, 10)
+    axis_id = reg.add_line(l1, l2)
+    p1 = reg.add_point(-5, 5)
+    p2 = reg.add_point(5, 5)
+    original = SymmetryConstraint(p1, p2, axis=axis_id)
+    serialized = original.to_dict()
+    restored = SymmetryConstraint.from_dict(serialized)
+    assert original.error(reg, params) == restored.error(reg, params)
+
+
+def test_symmetry_is_hit(setup_env):
+    reg, params = setup_env
+    p1 = reg.add_point(-50, 0)
+    p2 = reg.add_point(50, 0)
+    c = SymmetryConstraint(p1, p2)
+
+    def to_screen(pos):
+        return pos
+
+    mock_element = SimpleNamespace()
+    threshold = 15.0
+
+    # Midpoint is (0,0). Angle is 0. Offset is 12.
+    # Symbol points are at (-12, 0) and (12, 0)
+    # Hit left symbol
+    assert c.is_hit(-12, 0, reg, to_screen, mock_element, threshold) is True
+    # Hit right symbol
+    assert c.is_hit(12, 0, reg, to_screen, mock_element, threshold) is True
+    # Miss
+    assert c.is_hit(50, 50, reg, to_screen, mock_element, threshold) is False

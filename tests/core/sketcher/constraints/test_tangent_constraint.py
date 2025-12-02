@@ -1,6 +1,7 @@
 import pytest
 import numpy as np
 from scipy.optimize import check_grad
+from types import SimpleNamespace
 
 from rayforge.core.sketcher.params import ParameterContext
 from rayforge.core.sketcher.entities import EntityRegistry
@@ -181,3 +182,33 @@ def test_tangent_constraint_serialization_round_trip(setup_env):
 
     # Check that the restored constraint has the same error
     assert original.error(reg, params) == restored.error(reg, params)
+
+
+def test_tangent_is_hit(setup_env):
+    reg, params = setup_env
+    center = reg.add_point(50, 50)
+    radius_pt = reg.add_point(50, 60)  # radius=10
+    circ_id = reg.add_circle(center, radius_pt)
+
+    lp1 = reg.add_point(0, 60)
+    lp2 = reg.add_point(100, 60)
+    line_id = reg.add_line(lp1, lp2)
+    c = TangentConstraint(line_id, circ_id)
+
+    def to_screen(pos):
+        return pos
+
+    mock_element = SimpleNamespace()
+    threshold = 15.0
+
+    # Tangent point is (50, 60). Normal angle is PI/2. Offset is 12.
+    # Symbol pos: (50, 60 + 12) = (50, 72)
+    symbol_x, symbol_y = 50, 72
+
+    # Hit
+    assert (
+        c.is_hit(symbol_x, symbol_y, reg, to_screen, mock_element, threshold)
+        is True
+    )
+    # Miss
+    assert c.is_hit(0, 0, reg, to_screen, mock_element, threshold) is False

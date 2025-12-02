@@ -1,6 +1,7 @@
 import pytest
 import numpy as np
 from scipy.optimize import check_grad
+from types import SimpleNamespace
 
 from rayforge.core.sketcher.params import ParameterContext
 from rayforge.core.sketcher.entities import EntityRegistry
@@ -211,3 +212,23 @@ def test_point_on_line_constraint_serialization_round_trip(setup_env):
 
     # Check that the restored constraint has the same error
     assert original.error(reg, params) == restored.error(reg, params)
+
+
+def test_point_on_line_is_hit(setup_env):
+    reg, params = setup_env
+    p1 = reg.add_point(10, 20)
+    l1 = reg.add_point(0, 0)
+    l2 = reg.add_point(100, 100)
+    line = reg.add_line(l1, l2)
+    c = PointOnLineConstraint(p1, line)
+
+    def to_screen(pos):
+        return pos
+
+    mock_element = SimpleNamespace()
+    threshold = 15.0
+
+    # Hit the point
+    assert c.is_hit(10, 20, reg, to_screen, mock_element, threshold) is True
+    # Miss the point
+    assert c.is_hit(30, 20, reg, to_screen, mock_element, threshold) is False

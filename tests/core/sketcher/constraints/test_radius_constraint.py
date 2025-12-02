@@ -1,6 +1,9 @@
 import pytest
 import numpy as np
 from scipy.optimize import check_grad
+import math
+from types import SimpleNamespace
+from unittest.mock import MagicMock
 
 from rayforge.core.sketcher.params import ParameterContext
 from rayforge.core.sketcher.entities import EntityRegistry
@@ -81,7 +84,7 @@ def test_radius_constraint_gradient(setup_env):
     arc_id = reg.add_arc(s_id, e_id, c_id)
     mutable_pids = [c_id, s_id]
 
-    constraint = RadiusConstraint(entity_id=arc_id, radius=12.0)
+    constraint = RadiusConstraint(entity_id=arc_id, value=12.0)
     pid_to_idx_map = {pid: i for i, pid in enumerate(mutable_pids)}
 
     def update_state_from_vec(x_vec):
@@ -128,3 +131,54 @@ def test_radius_constraint_serialization_round_trip(setup_env):
 
     # Check that the restored constraint has the same error
     assert original.error(reg, params) == restored.error(reg, params)
+
+
+def test_radius_constraint_with_expression(setup_env):
+    reg, params = setup_env
+    center = reg.add_point(0, 0)
+    radius_pt = reg.add_point(5, 0)
+    circ_id = reg.add_circle(center, radius_pt)
+
+    ctx = {"r_val": 10.0}
+    c = RadiusConstraint(circ_id, "r_val")
+    c.update_from_context(ctx)
+
+    # Current r=5, target=10. Error = 5 - 10 = -5
+    assert c.error(reg, params) == pytest.approx(-5.0)
+
+
+def test_radius_is_hit(setup_env):
+    reg, params = setup_env
+    start = reg.add_point(100, 0)
+    end = reg.add_point(0, 100)
+    center = reg.add_point(0, 0)
+    arc_id = reg.add_arc(start, end, center)
+
+    c = RadiusConstraint(arc_id, 100)
+
+    # Mock the canvas and element
+    mock_canvas = MagicMock()
+    mock_canvas.get_view_scale.return_value = (1.0, 1.0)
+    mock_element = SimpleNamespace(canvas=mock_canvas)
+
+    def to_screen(pos):
+        return pos
+
+    threshold = 15.0
+
+    # Label pos for arc is at (radius + 20) along midpoint vector
+    # Mid-angle is 45deg.
+    # pos = (120 * cos(45), 120 * sin(45)) ~ (84.85, 84.85)
+    dist = 120
+    angle = math.pi / 4
+    label_pos_x, label_pos_y = dist * math.cos(angle), dist * math.sin(angle)
+
+    # Hit
+    assert (
+        c.is_hit(
+            label_pos_x, label_pos_y, reg, to_screen, mock_element, threshold
+        )
+        is True
+    )
+    # Miss
+    assert c.is_hit(0, 0, reg, to_screen, mock_element, threshold) is False

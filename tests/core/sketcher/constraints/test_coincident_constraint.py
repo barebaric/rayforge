@@ -2,7 +2,7 @@ import pytest
 import numpy as np
 from scipy.optimize import check_grad
 from functools import partial
-
+from types import SimpleNamespace
 from rayforge.core.sketcher.params import ParameterContext
 from rayforge.core.sketcher.entities import EntityRegistry
 from rayforge.core.sketcher.constraints import CoincidentConstraint
@@ -84,3 +84,21 @@ def test_coincident_constraint_serialization_round_trip(setup_env):
 
     # Check that the restored constraint has the same error
     assert original.error(reg, params) == restored.error(reg, params)
+
+
+def test_coincident_is_hit(setup_env):
+    reg, params = setup_env
+    p1 = reg.add_point(10, 20)
+    p2 = reg.add_point(10, 20)
+    c = CoincidentConstraint(p1, p2)
+
+    def to_screen(pos):
+        return pos
+
+    mock_element = SimpleNamespace(sketch=SimpleNamespace(origin_id=-1))
+    threshold = 15.0
+
+    # Hit the point
+    assert c.is_hit(10, 20, reg, to_screen, mock_element, threshold) is True
+    # Miss the point
+    assert c.is_hit(30, 20, reg, to_screen, mock_element, threshold) is False

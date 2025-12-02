@@ -1,7 +1,8 @@
 import pytest
 import numpy as np
 from scipy.optimize import check_grad
-
+import math
+from types import SimpleNamespace
 from rayforge.core.sketcher.params import ParameterContext
 from rayforge.core.sketcher.entities import EntityRegistry
 from rayforge.core.sketcher.constraints import PerpendicularConstraint
@@ -179,6 +180,46 @@ def test_perpendicular_gradient_with_shared_points(setup_env):
     assert diff < 1e-5
 
 
+def test_perpendicular_constraint_line_circle_gradient(setup_env):
+    reg, params = setup_env
+    l1p1 = reg.add_point(0, 5)
+    l1p2 = reg.add_point(20, 5)
+    c1p = reg.add_point(10, 10)
+    c1r = reg.add_point(15, 10)
+    line1 = reg.add_line(l1p1, l1p2)
+    circ1 = reg.add_circle(c1p, c1r)
+    mutable_pids = [l1p1, l1p2, c1p]
+
+    constraint = PerpendicularConstraint(line1, circ1)
+    pid_to_idx_map = {pid: i for i, pid in enumerate(mutable_pids)}
+
+    def update_state_from_vec(x_vec):
+        for pid, i in pid_to_idx_map.items():
+            pt = reg.get_point(pid)
+            pt.x = x_vec[i * 2]
+            pt.y = x_vec[i * 2 + 1]
+
+    def func_wrapper(x_vec):
+        update_state_from_vec(x_vec)
+        return constraint.error(reg, params)
+
+    def grad_wrapper(x_vec):
+        update_state_from_vec(x_vec)
+        grad_map = constraint.gradient(reg, params)
+        grad_vec = np.zeros_like(x_vec)
+        for pid, grads in grad_map.items():
+            if pid in pid_to_idx_map:
+                idx = pid_to_idx_map[pid] * 2
+                dx, dy = grads[0]
+                grad_vec[idx] = dx
+                grad_vec[idx + 1] = dy
+        return grad_vec
+
+    x0 = np.array([0, 5, 20, 5, 10, 10], dtype=float)
+    diff = check_grad(func_wrapper, grad_wrapper, x0, epsilon=1e-6)
+    assert diff < 1e-5
+
+
 def test_perpendicular_constraint_serialization_round_trip(setup_env):
     reg, params = setup_env
 
@@ -203,3 +244,51 @@ def test_perpendicular_constraint_serialization_round_trip(setup_env):
 
     # Check that the restored constraint has the same error
     assert original.error(reg, params) == restored.error(reg, params)
+
+
+def test_perpendicular_is_hit(setup_env):
+    reg, params = setup_env
+
+    def to_screen(pos):
+        return pos
+
+    mock_element = SimpleNamespace()
+    threshold = 15.0
+
+    # --- Test Line-Line case ---
+    l1p1 = reg.add_point(0, 50)
+    l1p2 = reg.add_point(100, 50)
+    l1 = reg.add_line(l1p1, l1p2)
+
+    l2p1 = reg.add_point(50, 0)
+    l2p2 = reg.add_point(50, 100)
+    l2 = reg.add_line(l2p1, l2p2)
+    c_ll = PerpendicularConstraint(l1, l2)
+
+    # Visuals are centered at intersection (50, 50)
+    # The dot is placed at mid-angle with radius 0.6 * 16 = 9.6
+    # ang1 ~ 0 (from (100,50)), ang2 ~ PI/2 (from (50,100))
+    # mid-angle is ~PI/4. Dot pos ~ (50+9.6*cos(PI/4), 50+9.6*sin(PI/4))
+    # ~ (50+6.8, 50+6.8) = (56.8, 56.8)
+    hit_x, hit_y = (
+        50 + 9.6 * math.cos(math.pi / 4),
+        50 + 9.6 * math.sin(math.pi / 4),
+    )
+    assert (
+        c_ll.is_hit(hit_x, hit_y, reg, to_screen, mock_element, threshold)
+        is True
+    )
+    assert c_ll.is_hit(0, 0, reg, to_screen, mock_element, threshold) is False
+
+    # --- Test Line-Circle case ---
+    c1p = reg.add_point(150, 50)
+    c1r = reg.add_point(160, 50)
+    circ1 = reg.add_circle(c1p, c1r)
+    c_lc = PerpendicularConstraint(l1, circ1)
+
+    # Visuals are a box at the intersection of line and circle.
+    # No intersection, so it defaults to the center of the circle (150, 50).
+    assert (
+        c_lc.is_hit(150, 50, reg, to_screen, mock_element, threshold) is True
+    )
+    assert c_lc.is_hit(0, 0, reg, to_screen, mock_element, threshold) is False

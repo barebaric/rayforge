@@ -6,12 +6,13 @@ from typing import (
     Dict,
     Any,
     List,
+    Optional,
     Callable,
     TYPE_CHECKING,
 )
+from ..entities import Circle
 from .base import Constraint
 from .radius import RadiusConstraint
-from ..entities import Circle
 
 if TYPE_CHECKING:
     from ..entities import EntityRegistry
@@ -21,20 +22,41 @@ if TYPE_CHECKING:
 class DiameterConstraint(Constraint):
     """Enforces the diameter of a Circle."""
 
-    def __init__(self, circle_id: int, diameter: Union[str, float]):
+    def __init__(
+        self,
+        circle_id: int,
+        value: Union[str, float],
+        expression: Optional[str] = None,
+    ):
         self.circle_id = circle_id
-        self.value = diameter
+
+        if expression is not None:
+            self.expression = expression
+            self.value = float(value)
+        elif isinstance(value, str):
+            self.expression = value
+            self.value = 0.0
+        else:
+            self.expression = None
+            self.value = float(value)
 
     def to_dict(self) -> Dict[str, Any]:
-        return {
+        data = {
             "type": "DiameterConstraint",
             "circle_id": self.circle_id,
             "value": self.value,
         }
+        if self.expression:
+            data["expression"] = self.expression
+        return data
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "DiameterConstraint":
-        return cls(circle_id=data["circle_id"], diameter=data["value"])
+        return cls(
+            circle_id=data["circle_id"],
+            value=data["value"],
+            expression=data.get("expression"),
+        )
 
     def constrains_radius(
         self, registry: "EntityRegistry", entity_id: int
@@ -51,7 +73,7 @@ class DiameterConstraint(Constraint):
 
         center = reg.get_point(circle_entity.center_idx)
         radius_pt = reg.get_point(circle_entity.radius_pt_idx)
-        target_diameter = params.evaluate(self.value)
+        target_diameter = self.value
 
         curr_r = math.hypot(radius_pt.x - center.x, radius_pt.y - center.y)
         return 2 * curr_r - target_diameter
@@ -65,13 +87,16 @@ class DiameterConstraint(Constraint):
             p = reg.get_point(entity.radius_pt_idx)
             dx, dy = p.x - c.x, p.y - c.y
             dist = math.hypot(dx, dy)
+
+            ux, uy = 1.0, 0.0  # Default if points are coincident
             if dist > 1e-9:
                 ux, uy = dx / dist, dy / dist
-                # Error = 2*r - d. d(2r)/dp = 2 * u
-                return {
-                    entity.radius_pt_idx: [(2 * ux, 2 * uy)],
-                    entity.center_idx: [(-2 * ux, -2 * uy)],
-                }
+
+            # Error = 2*r - d. d(2r)/dp = 2 * u
+            return {
+                entity.radius_pt_idx: [(2 * ux, 2 * uy)],
+                entity.center_idx: [(-2 * ux, -2 * uy)],
+            }
         return {}
 
     def get_label_pos(
