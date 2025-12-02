@@ -1,6 +1,9 @@
+import logging
 from typing import Dict, Optional, Iterator, Any, List, KeysView, Type
 from blinker import Signal
 from .var import Var
+
+logger = logging.getLogger(__name__)
 
 
 class VarSet:
@@ -40,10 +43,18 @@ class VarSet:
 
     def _on_child_var_changed(self, var: Var, **kwargs):
         """Handler for bubbling up value changes from contained Vars."""
+        logger.debug(
+            f"Signal bubble-up: var_value_changed for var '{var.key}' "
+            f"to '{kwargs.get('new_value')}'"
+        )
         self.var_value_changed.send(self, var=var, **kwargs)
 
     def _on_child_var_definition_changed(self, var: Var, **kwargs):
         """Handler for bubbling up definition changes from contained Vars."""
+        logger.debug(
+            f"Signal bubble-up: var_definition_changed for var '{var.key}' "
+            f"(prop: {kwargs.get('property')})"
+        )
         self.var_definition_changed.send(self, var=var, **kwargs)
 
     @staticmethod
@@ -111,6 +122,7 @@ class VarSet:
         var.definition_changed.connect(
             self._on_child_var_definition_changed, weak=False
         )
+        logger.debug(f"Emitting signal: var_added for var '{var.key}'")
         self.var_added.send(self, var=var)
 
     def remove(self, key: str) -> Optional[Var]:
@@ -124,6 +136,7 @@ class VarSet:
             var.definition_changed.disconnect(
                 self._on_child_var_definition_changed
             )
+            logger.debug(f"Emitting signal: var_removed for var '{var.key}'")
             self.var_removed.send(self, var=var)
         return var
 
@@ -225,6 +238,7 @@ class VarSet:
             )
         self._vars.clear()
         self._order.clear()
+        logger.debug("Emitting signal: cleared")
         self.cleared.send(self)
 
     def validate(self):

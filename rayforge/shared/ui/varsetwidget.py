@@ -1,47 +1,38 @@
-import re
 import logging
 from typing import Any
 from gi.repository import Gtk, Adw
 from blinker import Signal
+
 from ..util.adwfix import get_spinrow_int
-from ...machine.transport.serial import SerialTransport
 from ...machine.transport.validators import is_valid_hostname_or_ip
-from ...core.varset.baudratevar import BaudrateVar
-from ...core.varset.hostnamevar import HostnameVar
-from ...core.varset.serialportvar import SerialPortVar
-from ...core.varset.textareavar import TextAreaVar
-from ...core.varset.intvar import IntVar
-from ...core.varset.floatvar import FloatVar, SliderFloatVar
-from ...core.varset.boolvar import BoolVar
-from ...core.varset.choicevar import ChoiceVar
-from ...core.varset.var import Var
-from ...core.varset.varset import VarSet
+from ...core.varset import (
+    BoolVar,
+    ChoiceVar,
+    HostnameVar,
+    SliderFloatVar,
+    TextAreaVar,
+    Var,
+    VarSet,
+)
+from .var_row_factory import VarRowFactory
 
 logger = logging.getLogger(__name__)
 NULL_CHOICE_LABEL = _("None Selected")
 
 
-def natural_sort_key(s):
-    return [
-        int(text) if text.isdigit() else text.lower()
-        for text in re.split("([0-9]+)", s)
-    ]
-
-
 class VarSetWidget(Adw.PreferencesGroup):
     """
     A self-contained Adwaita Preferences Group that populates itself with
-    rows based on a VarSet. It supports two modes: immediate updates, or
-    rows with explicit "Apply" buttons.
+    rows based on a VarSet. It uses a VarRowFactory to generate the UI
+    and supports both immediate updates and explicit "Apply" buttons.
     """
-
-    data_changed = Signal()
 
     def __init__(self, explicit_apply=False, **kwargs):
         super().__init__(**kwargs)
         self.explicit_apply = explicit_apply
         self.widget_map: dict[str, tuple[Adw.PreferencesRow, Var]] = {}
         self._created_rows = []
+        self._factory = VarRowFactory()
         self.data_changed = Signal()
 
     def clear_dynamic_rows(self):
@@ -59,12 +50,14 @@ class VarSetWidget(Adw.PreferencesGroup):
         # Set the group's title and description from the VarSet
         if var_set.title:
             self.set_title(var_set.title)
+        if var_set.description:
             self.set_description(var_set.description)
 
         self.clear_dynamic_rows()
         for var in var_set:
-            row = self._create_row_for_var(var)
+            row = self._factory.create_row_for_var(var, "value")
             if row:
+                self._wire_up_row(row, var)
                 self.add(row)
                 self._created_rows.append(row)
                 self.widget_map[var.key] = (row, var)
@@ -75,20 +68,19 @@ class VarSetWidget(Adw.PreferencesGroup):
         for key, (row, var) in self.widget_map.items():
             value = None
             if isinstance(var, TextAreaVar):
-                text_view = row.core_widget  # type: ignore
+                text_view = getattr(row, "core_widget", None)
                 if isinstance(text_view, Gtk.TextView):
                     buffer = text_view.get_buffer()
                     start, end = buffer.get_start_iter(), buffer.get_end_iter()
                     value = buffer.get_text(start, end, True)
-            elif isinstance(var, SliderFloatVar):
-                if isinstance(row, Adw.ActionRow):
-                    scale = row.get_activatable_widget()
-                    if isinstance(scale, Gtk.Scale):
-                        value = scale.get_value() / 100.0
+            elif isinstance(var, (SliderFloatVar, BoolVar)):
+                widget = getattr(row, "get_activatable_widget", lambda: None)()
+                if isinstance(widget, Gtk.Scale):
+                    value = widget.get_value() / 100.0
+                elif isinstance(widget, Gtk.Switch):
+                    value = widget.get_active()
             elif isinstance(row, Adw.EntryRow):
                 value = row.get_text()
-            elif isinstance(row, Adw.SwitchRow):
-                value = row.get_active()
             elif isinstance(row, Adw.SpinRow):
                 value = (
                     get_spinrow_int(row)
@@ -97,15 +89,15 @@ class VarSetWidget(Adw.PreferencesGroup):
                 )
             elif isinstance(row, Adw.ComboRow):
                 selected = row.get_selected_item()
-                display_str = (
-                    selected.get_string() if selected else ""  # type: ignore
-                )
+                display_str = ""
+                if selected:
+                    display_str = selected.get_string()  # type: ignore
+
                 if display_str == NULL_CHOICE_LABEL:
                     value = None
                 elif isinstance(var, ChoiceVar):
-                    # Convert display name back to stored value (e.g., UID)
                     value = var.get_value_for_display(display_str)
-                else:
+                else:  # For BaudrateVar, SerialPortVar
                     value = display_str
 
             values[key] = value
@@ -119,85 +111,40 @@ class VarSetWidget(Adw.PreferencesGroup):
 
             row, var = self.widget_map[key]
             if isinstance(var, TextAreaVar):
-                text_view = row.core_widget  # type: ignore
+                text_view = getattr(row, "core_widget", None)
                 if isinstance(text_view, Gtk.TextView):
                     text_view.get_buffer().set_text(str(value))
-            elif isinstance(var, SliderFloatVar):
-                if isinstance(row, Adw.ActionRow):
-                    scale = row.get_activatable_widget()
-                    if isinstance(scale, Gtk.Scale):
-                        scale.set_value(float(value) * 100.0)
+            elif isinstance(var, (SliderFloatVar, BoolVar)):
+                widget = getattr(row, "get_activatable_widget", lambda: None)()
+                if isinstance(widget, Gtk.Scale):
+                    widget.set_value(float(value) * 100.0)
+                elif isinstance(widget, Gtk.Switch):
+                    widget.set_active(bool(value))
             elif isinstance(row, Adw.EntryRow):
                 row.set_text(str(value))
-            elif isinstance(row, Adw.SwitchRow):
-                row.set_active(bool(value))
             elif isinstance(row, Adw.SpinRow):
-                # Coerce to float for SpinRow, even if var is int
                 row.set_value(float(value))
             elif isinstance(row, Adw.ComboRow):
                 model = row.get_model()
                 if isinstance(model, Gtk.StringList):
-                    # Determine the string to display in the UI
-                    display_str_to_find = NULL_CHOICE_LABEL
+                    display_str = NULL_CHOICE_LABEL
                     if value is not None:
-                        if isinstance(var, ChoiceVar):
-                            # Ask the var to translate its internal value
-                            # to a display value (e.g., Name).
-                            display_str_to_find = var.get_display_for_value(
-                                str(value)
-                            ) or str(value)
-                        else:
-                            display_str_to_find = str(value)
-
-                    # Find the index of that string in the model and select it
-                    found = False
+                        display_str = (
+                            var.get_display_for_value(str(value)) or str(value)
+                            if isinstance(var, ChoiceVar)
+                            else str(value)
+                        )
                     for i in range(model.get_n_items()):
-                        if model.get_string(i) == display_str_to_find:
+                        if model.get_string(i) == display_str:
                             row.set_selected(i)
-                            found = True
                             break
-                    if not found:
-                        row.set_selected(
-                            0
-                        )  # Default to "None Selected" if not found
 
     def _on_data_changed(self, key: str):
         self.data_changed.send(self, key=key)
 
-    def _create_row_for_var(self, var: Var):
-        if isinstance(var, TextAreaVar):
-            return self._create_textarea_row(var)
-        if isinstance(var, SliderFloatVar):
-            return self._create_slider_row(var)
-        if isinstance(var, ChoiceVar):
-            return self._create_choice_row(var)
-        if isinstance(var, SerialPortVar):
-            return self._create_port_selection_row(var)
-        if isinstance(var, BaudrateVar):
-            return self._create_baud_rate_row(var)
-        if isinstance(var, HostnameVar):
-            return self._create_hostname_row(var)
-        if isinstance(var, IntVar):
-            return self._create_integer_row(var)
-        if isinstance(var, FloatVar):
-            return self._create_float_row(var)
-
-        # Fallback to generic types if no specific class matches
-        if isinstance(var, BoolVar):
-            return self._create_boolean_row(var)
-        if var.var_type is str:
-            return self._create_string_row(var)
-
-        logger.warning(
-            f"No UI widget defined for Var with key '{var.key}' "
-            f"and type {type(var)}"
-        )
-        return None
-
     def _add_apply_button_if_needed(self, row, key):
         if not self.explicit_apply:
             return
-
         apply_button = Gtk.Button(
             icon_name="object-select-symbolic", tooltip_text=_("Apply Change")
         )
@@ -206,286 +153,40 @@ class VarSetWidget(Adw.PreferencesGroup):
         apply_button.connect("clicked", lambda b: self._on_data_changed(key))
         row.add_suffix(apply_button)
 
-    def _create_hostname_row(self, var: HostnameVar):
-        row = Adw.EntryRow(title=var.label)
-        if var.description:
-            row.set_tooltip_text(var.description)
-        if var.value is not None:
-            row.set_text(str(var.value))
+    def _wire_up_row(self, row: Adw.PreferencesRow, var: Var):
+        """Connects signals for the row based on the explicit_apply setting."""
+        widget = getattr(row, "get_activatable_widget", lambda: None)() or row
 
-        row.set_show_apply_button(True)
-
-        def on_validate(entry_row):
-            text = entry_row.get_text()
-            if is_valid_hostname_or_ip(text):
-                entry_row.remove_css_class("error")
-            else:
-                entry_row.add_css_class("error")
-
-        row.connect("changed", on_validate)
-        row.connect("apply", lambda r: self._on_data_changed(var.key))
-        on_validate(row)
-        return row
-
-    def _create_string_row(self, var: Var[str]):
-        row = Adw.EntryRow(title=var.label)
-        if var.description:
-            row.set_tooltip_text(var.description)
-        if var.value is not None:
-            row.set_text(str(var.value))
-        row.connect("apply", lambda r: self._on_data_changed(var.key))
         if self.explicit_apply:
             self._add_apply_button_if_needed(row, var.key)
-        return row
+            if isinstance(row, Adw.EntryRow):
+                row.connect("apply", lambda r: self._on_data_changed(var.key))
+            return
 
-    def _create_boolean_row(self, var: Var[bool]):
-        if self.explicit_apply:
-            row = Adw.SwitchRow(
-                title=var.label, subtitle=var.description or ""
+        if isinstance(row, Adw.EntryRow):
+            row.connect("apply", lambda r: self._on_data_changed(var.key))
+        elif isinstance(row, Adw.SpinRow):
+            row.connect("changed", lambda r: self._on_data_changed(var.key))
+        elif isinstance(row, Adw.ComboRow):
+            row.connect(
+                "notify::selected-item",
+                lambda r, p: self._on_data_changed(var.key),
             )
-            if var.value is not None:
-                row.set_active(bool(var.value))
-            self._add_apply_button_if_needed(row, var.key)
-        else:
-            row = Adw.ActionRow(
-                title=var.label, subtitle=var.description or ""
-            )
-            switch = Gtk.Switch(valign=Gtk.Align.CENTER)
-            switch.set_active(var.value if var.value is not None else False)
-            row.add_suffix(switch)
-            row.set_activatable_widget(switch)
-            switch.connect(
+        elif isinstance(widget, Gtk.Switch):
+            widget.connect(
                 "state-set", lambda s, a: self._on_data_changed(var.key)
             )
-        return row
-
-    def _create_integer_row(self, var: IntVar):
-        lower = var.min_val if var.min_val is not None else -2147483647
-        upper = var.max_val if var.max_val is not None else 2147483647
-
-        adj = Gtk.Adjustment(
-            value=var.value if var.value is not None else 0,
-            lower=lower,
-            upper=upper,
-            step_increment=1,
-        )
-        row = Adw.SpinRow(
-            title=var.label, subtitle=var.description or "", adjustment=adj
-        )
-        if not self.explicit_apply:
-            row.connect("changed", lambda r: self._on_data_changed(var.key))
-        else:
-            self._add_apply_button_if_needed(row, var.key)
-        return row
-
-    def _create_float_row(self, var: FloatVar):
-        lower = var.min_val if var.min_val is not None else -1.0e12
-        upper = var.max_val if var.max_val is not None else 1.0e12
-
-        adj = Gtk.Adjustment(
-            value=var.value if var.value is not None else 0.0,
-            lower=lower,
-            upper=upper,
-            step_increment=0.1,
-        )
-        row = Adw.SpinRow(
-            title=var.label,
-            subtitle=var.description or "",
-            adjustment=adj,
-            digits=3,
-        )
-        if not self.explicit_apply:
-            row.connect("changed", lambda r: self._on_data_changed(var.key))
-        else:
-            self._add_apply_button_if_needed(row, var.key)
-        return row
-
-    def _create_slider_row(self, var: SliderFloatVar):
-        row = Adw.ActionRow(title=var.label, subtitle=var.description or "")
-        min_val = (var.min_val if var.min_val is not None else 0.0) * 100
-        max_val = (var.max_val if var.max_val is not None else 1.0) * 100
-        default_val = (var.default if var.default is not None else 0.0) * 100
-
-        adj = Gtk.Adjustment(
-            value=default_val,
-            lower=min_val,
-            upper=max_val,
-            step_increment=1,
-            page_increment=10,
-        )
-        scale = Gtk.Scale(
-            orientation=Gtk.Orientation.HORIZONTAL,
-            adjustment=adj,
-            digits=0,
-            draw_value=True,
-            hexpand=True,
-        )
-        scale.set_size_request(200, -1)
-        row.add_suffix(scale)
-        row.set_activatable_widget(scale)
-
-        if not self.explicit_apply:
-            scale.connect(
+        elif isinstance(widget, Gtk.Scale):
+            widget.connect(
                 "value-changed", lambda s: self._on_data_changed(var.key)
             )
-        else:
-            self._add_apply_button_if_needed(row, var.key)
+        elif isinstance(var, HostnameVar) and isinstance(row, Adw.EntryRow):
 
-        return row
+            def on_validate(entry_row):
+                if is_valid_hostname_or_ip(entry_row.get_text()):
+                    entry_row.remove_css_class("error")
+                else:
+                    entry_row.add_css_class("error")
 
-    def _create_choice_row(self, var: ChoiceVar):
-        """Creates an Adw.ComboRow for a ChoiceVar."""
-        # Add a "None" option to allow unsetting the choice
-        choices = [NULL_CHOICE_LABEL] + var.choices
-        store = Gtk.StringList.new(choices)
-        row = Adw.ComboRow(
-            title=var.label, subtitle=var.description or "", model=store
-        )
-        # Set the initial selection
-        if var.value and var.value in choices:
-            row.set_selected(choices.index(var.value))
-        else:
-            row.set_selected(0)  # Default to "None"
-
-        if self.explicit_apply:
-            self._add_apply_button_if_needed(row, var.key)
-        else:
-            row.connect(
-                "notify::selected-item",
-                lambda r, p: self._on_data_changed(var.key),
-            )
-        return row
-
-    def _create_baud_rate_row(self, var: BaudrateVar):
-        # Get the list of choices as strings
-        choices_int = SerialTransport.list_baud_rates()
-        choices_str = [str(rate) for rate in choices_int]
-
-        # Create the ComboRow with a StringList model
-        store = Gtk.StringList.new(choices_str)
-        row = Adw.ComboRow(
-            title=var.label, subtitle=var.description or "", model=store
-        )
-
-        # Set the initial selection based on the Var's value
-        if var.value is not None:
-            try:
-                # Find the index of the current value in the choices
-                current_value_str = str(var.value)
-                if current_value_str in choices_str:
-                    index = choices_str.index(current_value_str)
-                    row.set_selected(index)
-            except ValueError:
-                logger.warning(
-                    f"Baud rate '{var.value}' is not in the standard list."
-                )
-
-        if self.explicit_apply:
-            self._add_apply_button_if_needed(row, var.key)
-        else:
-            row.connect(
-                "notify::selected-item",
-                lambda r, p: self._on_data_changed(var.key),
-            )
-        return row
-
-    def _create_port_selection_row(self, var: SerialPortVar):
-        # Use a set to combine available ports with the currently saved value,
-        # ensuring the saved value is always in the list even if disconnected.
-        available_ports = SerialTransport.list_ports()
-        port_set = set(available_ports)
-        if var.value:
-            port_set.add(var.value)
-
-        # Create the final sorted list for the UI
-        sorted_ports = sorted(list(port_set), key=natural_sort_key)
-        choices = [NULL_CHOICE_LABEL] + sorted_ports
-
-        store = Gtk.StringList.new(choices)
-        row = Adw.ComboRow(
-            title=var.label, subtitle=var.description or "", model=store
-        )
-
-        # Set initial selection from the var's value
-        if var.value and var.value in choices:
-            row.set_selected(choices.index(var.value))
-
-        # This handler is called just before the dropdown opens.
-        def on_open(gesture, n_press, x, y):
-            # Preserve the currently selected value from the UI
-            selected_obj = row.get_selected_item()
-            current_selection = (
-                selected_obj.get_string()  # type: ignore
-                if selected_obj
-                else None
-            )
-
-            # Fetch the new list of ports and ensure the current selection
-            # is preserved in the list.
-            new_ports = SerialTransport.list_ports()
-            port_set = set(new_ports)
-            if current_selection and current_selection != NULL_CHOICE_LABEL:
-                port_set.add(current_selection)
-
-            new_sorted_ports = sorted(list(port_set), key=natural_sort_key)
-            new_choices = [NULL_CHOICE_LABEL] + new_sorted_ports
-
-            # Get the existing model and update it in-place to avoid
-            # closing the popover
-            store = row.get_model()
-            if not isinstance(store, Gtk.StringList):
-                return
-
-            # Check if an update is even needed to prevent unnecessary
-            # updates
-            current_choices = [
-                store.get_string(i) for i in range(store.get_n_items())
-            ]
-            if current_choices == new_choices:
-                return
-
-            # Update the model using splice, which is less disruptive
-            store.splice(0, store.get_n_items(), new_choices)
-
-            # Restore the previous selection if it still exists
-            if current_selection and current_selection in new_choices:
-                row.set_selected(new_choices.index(current_selection))
-
-        # Add a click controller to trigger the refresh when the user
-        # clicks the row
-        click_controller = Gtk.GestureClick.new()
-        click_controller.connect("pressed", on_open)
-        row.add_controller(click_controller)
-
-        if self.explicit_apply:
-            self._add_apply_button_if_needed(row, var.key)
-        else:
-            # This signal fires when the user makes a new selection
-            row.connect(
-                "notify::selected-item",
-                lambda r, p: self._on_data_changed(var.key),
-            )
-        return row
-
-    def _create_textarea_row(self, var: TextAreaVar) -> Adw.ExpanderRow:
-        """Creates a row with a multi-line text view for TextAreaVar."""
-        row = Adw.ExpanderRow(title=var.label, subtitle=var.description or "")
-        text_view = Gtk.TextView(
-            monospace=True, wrap_mode=Gtk.WrapMode.WORD_CHAR
-        )
-        text_view.get_style_context().add_class("gcode-editor")
-        scroller = Gtk.ScrolledWindow(
-            child=text_view,
-            min_content_height=100,
-            hscrollbar_policy=Gtk.PolicyType.NEVER,
-        )
-        row.add_row(scroller)
-
-        if var.value is not None:
-            text_view.get_buffer().set_text(str(var.value))
-
-        # Attach the text_view to the row instance as a normal Python attribute
-        row.core_widget = text_view  # type: ignore
-
-        # For text views, changes are not signaled automatically.
-        return row
+            row.connect("changed", on_validate)
+            on_validate(row)
