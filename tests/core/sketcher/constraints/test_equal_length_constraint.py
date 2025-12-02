@@ -1,8 +1,9 @@
 import pytest
 import numpy as np
-from scipy.optimize import check_grad
 from functools import partial
-
+from scipy.optimize import check_grad
+from types import SimpleNamespace
+from unittest.mock import MagicMock
 from rayforge.core.sketcher.params import ParameterContext
 from rayforge.core.sketcher.entities import EntityRegistry
 from rayforge.core.sketcher.constraints import EqualLengthConstraint
@@ -153,3 +154,50 @@ def test_equal_length_constraint_serialization_round_trip(setup_env):
 
     # Check that the restored constraint has the same error
     assert original.error(reg, params) == restored.error(reg, params)
+
+
+def test_equal_length_is_hit(setup_env):
+    reg, params = setup_env
+    p1 = reg.add_point(0, 0)
+    p2 = reg.add_point(100, 0)
+    l1 = reg.add_line(p1, p2)
+
+    p3 = reg.add_point(0, 50)
+    p4 = reg.add_point(0, 150)
+    l2 = reg.add_line(p3, p4)
+
+    c = EqualLengthConstraint([l1, l2])
+
+    # Mock canvas and element
+    mock_canvas = MagicMock()
+    mock_canvas.get_view_scale.return_value = (1.0, 1.0)
+    mock_element = SimpleNamespace(canvas=mock_canvas)
+
+    def to_screen(pos):
+        return pos
+
+    threshold = 15.0
+
+    # Symbol pos for line 1: midpoint (50, 0), normal is (0, -1), offset 15
+    # -> (50, -15)
+    l1_symbol_x, l1_symbol_y = 50, -15
+    # Symbol pos for line 2: midpoint (0, 100), tangent angle pi/2, normal
+    # angle 0 -> (15, 100)
+    l2_symbol_x, l2_symbol_y = 15, 100
+
+    # Hit line 1
+    assert (
+        c.is_hit(
+            l1_symbol_x, l1_symbol_y, reg, to_screen, mock_element, threshold
+        )
+        is True
+    )
+    # Hit line 2
+    assert (
+        c.is_hit(
+            l2_symbol_x, l2_symbol_y, reg, to_screen, mock_element, threshold
+        )
+        is True
+    )
+    # Miss both
+    assert c.is_hit(0, 0, reg, to_screen, mock_element, threshold) is False

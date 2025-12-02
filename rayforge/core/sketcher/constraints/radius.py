@@ -6,11 +6,12 @@ from typing import (
     Dict,
     Any,
     List,
+    Optional,
     Callable,
     TYPE_CHECKING,
 )
-from .base import Constraint
 from ..entities import Arc, Circle
+from .base import Constraint
 
 if TYPE_CHECKING:
     from ..entities import EntityRegistry
@@ -20,20 +21,41 @@ if TYPE_CHECKING:
 class RadiusConstraint(Constraint):
     """Enforces radius of an Arc or Circle."""
 
-    def __init__(self, entity_id: int, radius: Union[str, float]):
+    def __init__(
+        self,
+        entity_id: int,
+        value: Union[str, float],
+        expression: Optional[str] = None,
+    ):
         self.entity_id = entity_id
-        self.value = radius
+
+        if expression is not None:
+            self.expression = expression
+            self.value = float(value)
+        elif isinstance(value, str):
+            self.expression = value
+            self.value = 0.0
+        else:
+            self.expression = None
+            self.value = float(value)
 
     def to_dict(self) -> Dict[str, Any]:
-        return {
+        data = {
             "type": "RadiusConstraint",
             "entity_id": self.entity_id,
             "value": self.value,
         }
+        if self.expression:
+            data["expression"] = self.expression
+        return data
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "RadiusConstraint":
-        return cls(entity_id=data["entity_id"], radius=data["value"])
+        return cls(
+            entity_id=data["entity_id"],
+            value=data["value"],
+            expression=data.get("expression"),
+        )
 
     def constrains_radius(
         self, registry: "EntityRegistry", entity_id: int
@@ -47,7 +69,7 @@ class RadiusConstraint(Constraint):
         if entity is None:
             return 0.0
 
-        target = params.evaluate(self.value)
+        target = self.value
         curr_r = 0.0
 
         if isinstance(entity, Arc):
@@ -86,12 +108,15 @@ class RadiusConstraint(Constraint):
         if c and p:
             dx, dy = p.x - c.x, p.y - c.y
             dist = math.hypot(dx, dy)
+
+            ux, uy = 1.0, 0.0  # Default if points are coincident
             if dist > 1e-9:
                 ux, uy = dx / dist, dy / dist
-                return {
-                    pt_idx: [(ux, uy)],
-                    center_idx: [(-ux, -uy)],
-                }
+
+            return {
+                pt_idx: [(ux, uy)],
+                center_idx: [(-ux, -uy)],
+            }
         return {}
 
     def get_label_pos(

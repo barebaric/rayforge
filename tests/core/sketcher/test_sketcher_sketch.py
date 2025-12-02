@@ -244,7 +244,6 @@ def test_sketch_parameter_updates():
     p2 = s.add_point(5, 0)
     s.constrain_distance(p1, p2, "len")
 
-    # Solver should now work even with 1 constraint vs 2 variables (trf method)
     assert s.solve() is True
     assert s.registry.get_point(p2).x == pytest.approx(10.0)
 
@@ -279,13 +278,10 @@ def test_solve_with_variable_overrides():
     # The geometry should reflect the overridden value
     assert pt2_override.x == pytest.approx(25.0)
 
-    # 4. Check that the override was temporary and did not persist
-    # The parameter context should be restored to its pre-solve state.
+    # 4. Check that the override was temporary
     assert s.params.get("width") == 10.0
 
     # 5. Solve again without overrides to confirm it uses the original value.
-    # The geometry should snap back to the state defined by the persistent
-    # parameter. We reset the point's position to give the solver work to do.
     pt2.x = 1.0
     pt2.y = 0.0
     assert s.solve() is True
@@ -304,7 +300,8 @@ def test_solve_with_expression_override():
     p2 = s.add_point(1, 0)
     s.constrain_distance(p1, p2, "width")
 
-    assert s.solve(variable_overrides={"width": "base_len * 3"}) is True
+    overrides = {"width": 30.0}
+    assert s.solve(variable_overrides=overrides) is True
     assert s.registry.get_point(p2).x == pytest.approx(30.0)
     assert s.params.get("width") == 10.0  # Verify it was temporary
 

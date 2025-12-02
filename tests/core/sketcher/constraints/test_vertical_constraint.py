@@ -1,6 +1,7 @@
 import pytest
 import numpy as np
 from scipy.optimize import check_grad
+from types import SimpleNamespace
 
 from rayforge.core.sketcher.params import ParameterContext
 from rayforge.core.sketcher.entities import EntityRegistry
@@ -77,3 +78,28 @@ def test_vertical_constraint_serialization_round_trip(setup_env):
 
     # Check that the restored constraint has the same error
     assert original.error(reg, params) == restored.error(reg, params)
+
+
+def test_vertical_is_hit(setup_env):
+    reg, params = setup_env
+    p1 = reg.add_point(50, 0)
+    p2 = reg.add_point(50, 100)
+    c = VerticalConstraint(p1, p2)
+
+    def to_screen(pos):
+        return pos
+
+    mock_element = SimpleNamespace()
+    threshold = 15.0
+
+    # Symbol is at t=0.2 along line, offset by +10 in X
+    # Point is at x=50, y=20. Symbol at x=60, y=20.
+    symbol_x, symbol_y = 60, 20
+
+    # Hit
+    assert (
+        c.is_hit(symbol_x, symbol_y, reg, to_screen, mock_element, threshold)
+        is True
+    )
+    # Miss
+    assert c.is_hit(0, 0, reg, to_screen, mock_element, threshold) is False

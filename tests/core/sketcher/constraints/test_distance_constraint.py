@@ -1,6 +1,7 @@
 import pytest
 import numpy as np
 from scipy.optimize import check_grad
+from types import SimpleNamespace
 from rayforge.core.sketcher.params import ParameterContext
 from rayforge.core.sketcher.entities import EntityRegistry
 from rayforge.core.sketcher.constraints import DistanceConstraint
@@ -40,11 +41,17 @@ def test_distance_constrains_radius_method(setup_env):
 
 def test_distance_constraint_with_expression(setup_env):
     reg, params = setup_env
-    params.set("width", 20.0)
+    # Mimic context values
+    ctx = {"width": 20.0}
+
     p1 = reg.add_point(0, 0)
     p2 = reg.add_point(10, 0)
 
     c = DistanceConstraint(p1, p2, "width")
+
+    # Sync value
+    c.update_from_context(ctx)
+
     # Actual dist is 10, Target dist is 20. Error is 10 - 20 = -10.
     assert c.error(reg, params) == pytest.approx(-10.0)
 
@@ -112,12 +119,13 @@ def test_distance_constraint_serialization_round_trip_with_expression(
     setup_env,
 ):
     reg, params = setup_env
-    params.set("width", 20.0)
+    ctx = {"width": 20.0}
     p1 = reg.add_point(0, 0)
     p2 = reg.add_point(10, 0)
 
     # Create original constraint with expression
     original = DistanceConstraint(p1, p2, "width")
+    original.update_from_context(ctx)
 
     # Serialize to dict
     serialized = original.to_dict()
@@ -125,5 +133,34 @@ def test_distance_constraint_serialization_round_trip_with_expression(
     # Deserialize from dict
     restored = DistanceConstraint.from_dict(serialized)
 
+    # Must sync restored constraint too
+    restored.update_from_context(ctx)
+
     # Check that the restored constraint has the same error
     assert original.error(reg, params) == restored.error(reg, params)
+
+
+def test_distance_is_hit(setup_env):
+    reg, params = setup_env
+    p1 = reg.add_point(0, 0)
+    p2 = reg.add_point(100, 0)
+    c = DistanceConstraint(p1, p2, 100)
+
+    def to_screen(pos):
+        return pos
+
+    mock_element = SimpleNamespace()
+    threshold = 15.0
+
+    # Midpoint is (50, 0)
+    mid_x, mid_y = 50, 0
+
+    # Hit
+    assert (
+        c.is_hit(mid_x, mid_y, reg, to_screen, mock_element, threshold) is True
+    )
+    # Miss
+    assert (
+        c.is_hit(mid_x + 20, mid_y, reg, to_screen, mock_element, threshold)
+        is False
+    )

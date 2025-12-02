@@ -351,7 +351,7 @@ class Sketch(IAsset):
             # Case A: Three points (1 center + 2 symmetric)
             if n_pts == 3 and n_ents == 0:
                 return True
-            # Case B: Two points + One Line (Axis)
+            # Case B: Two points + 1 Line (Axis)
             if n_pts == 2 and n_lines == 1 and n_ents == 1:
                 return True
             return False
@@ -470,26 +470,6 @@ class Sketch(IAsset):
 
     # --- Manipulation & Processing ---
 
-    def _update_params_from_inputs(
-        self, variable_overrides: Optional[Dict[str, Any]] = None
-    ) -> None:
-        """
-        Injects parameter values into the internal ParameterContext.
-        It prioritizes explicit overrides, then falls back to VarSet values.
-        """
-        # 1. Apply defaults from the VarSet definition first
-        for var in self.input_parameters:
-            if var.default is not None:
-                self.params.set(var.key, var.default)
-            # Also apply the explicit 'value' if set, for design-time previews
-            if var.value is not None:
-                self.params.set(var.key, var.value)
-
-        # 2. Apply instance-specific overrides
-        if variable_overrides:
-            for key, value in variable_overrides.items():
-                self.params.set(key, value)
-
     def move_point(self, pid: int, x: float, y: float) -> bool:
         """
         Attempts to move a point to a new location and resolve constraints.
@@ -535,30 +515,42 @@ class Sketch(IAsset):
         Returns:
             True if the solver converged successfully.
         """
-        # If overrides are provided, we must treat them as temporary.
-        # We save the original parameter state and restore it after the solve.
-        original_params_dict = None
-        if variable_overrides:
-            original_params_dict = self.params.to_dict()
-
         success = False
         try:
-            # Bridge the public API (VarSet) to the internal calculation
-            # engine.
-            self._update_params_from_inputs(
-                variable_overrides=variable_overrides
-            )
+            # Step 1: Build the evaluation context with correct precedence.
+            # a) Start with legacy parameters.
+            ctx = {}
+            if self.params:
+                ctx.update(self.params.get_all_values())
 
+            # b) Add/overwrite with values from the new VarSet system.
+            if self.input_parameters:
+                ctx.update(self.input_parameters.get_values())
+
+            # c) Add/overwrite with runtime overrides (highest precedence).
+            if variable_overrides:
+                ctx.update(variable_overrides)
+
+            # Step 2: Update constraints with the final context.
             all_constraints = self.constraints
             if extra_constraints:
                 all_constraints = self.constraints + extra_constraints
 
+            for c in all_constraints:
+                if hasattr(c, "update_from_context"):
+                    c.update_from_context(ctx)
+
+            # Step 3: Run the solver.
             solver = Solver(self.registry, self.params, all_constraints)
             success = solver.solve(update_dof=update_constraint_status)
-        finally:
-            # If we saved the original state, restore it now.
-            if original_params_dict is not None:
-                self.params = ParameterContext.from_dict(original_params_dict)
+
+        except Exception as e:
+            import logging
+
+            logging.getLogger(__name__).error(
+                f"Sketch solve failed: {e}", exc_info=True
+            )
+            success = False
 
         return success
 
