@@ -41,6 +41,12 @@ class ParameterContext:
             self.evaluate_all()
         return self._cache.get(name, default)
 
+    def get_all_values(self) -> Dict[str, float]:
+        """Evaluates all expressions and returns a dictionary of all values."""
+        if self._dirty:
+            self.evaluate_all()
+        return self._cache.copy()
+
     def evaluate(self, expression: str | float) -> float:
         """Evaluates an arbitrary expression string using current context."""
         if isinstance(expression, (int, float)):
@@ -53,10 +59,12 @@ class ParameterContext:
         if expression in self._cache:
             return self._cache[expression]
 
-        try:
-            # Merge math context with current variable values
-            ctx = self._math_context.copy()
+        # Merge math context with current variable values
+        ctx = self._math_context.copy()
+        if self._cache:
             ctx.update(self._cache)
+
+        try:
             return float(eval(str(expression), {"__builtins__": None}, ctx))
         except Exception:
             return 0.0
@@ -72,17 +80,21 @@ class ParameterContext:
 
         for _ in range(max_passes):
             progress = False
+            # Always start with a fresh context for each pass
             ctx = self._math_context.copy()
-            ctx.update(self._cache)
+            if self._cache:
+                ctx.update(self._cache)
 
             for name, expr in self._expressions.items():
                 if name in self._cache:
                     continue
 
                 try:
-                    val = float(eval(expr, {"__builtins__": None}, ctx))
+                    # The context for eval needs math and solved variables
+                    eval_ctx = self._math_context.copy()
+                    eval_ctx.update(self._cache)
+                    val = float(eval(expr, {"__builtins__": None}, eval_ctx))
                     self._cache[name] = val
-                    ctx[name] = val
                     progress = True
                 except (NameError, TypeError, SyntaxError):
                     # Dependency missing, try next pass

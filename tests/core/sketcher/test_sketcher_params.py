@@ -115,3 +115,29 @@ def test_parameter_context_serialization_round_trip(params):
     assert new_params.get("width") == 100.0
     assert new_params.get("height") == 50.0
     assert new_params.get("depth") == 10.0
+
+
+def test_get_all_values(params):
+    """Test getting a dictionary of all evaluated parameters."""
+    params.set("a", 10)
+    params.set("b", "a * 2")
+    params.set("c", "sqrt(a + 6)")  # sqrt(16) = 4
+
+    expected = {"a": 10.0, "b": 20.0, "c": 4.0}
+    result = params.get_all_values()
+    assert result == expected
+
+    # Ensure it's a copy and not a reference to the internal cache
+    result["a"] = 999
+    assert params.get("a") == 10.0
+
+
+def test_get_with_default(params):
+    """Test the default value functionality of get()."""
+    params.set("exists", 42)
+    # The default for `get` in the method signature is 0.0
+    assert params.get("does_not_exist") == 0.0
+    # Test providing a custom default value
+    assert params.get("does_not_exist_either", default=-1.0) == -1.0
+    # Test that existing keys don't use the provided default
+    assert params.get("exists", default=99.0) == 42.0
