@@ -2,7 +2,6 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING, List, Tuple, Optional, Dict
 from rayforge.undo.models.command import Command
-from rayforge.undo.models.property_cmd import ChangePropertyCommand
 from rayforge.core.sketcher.entities import Line, Arc, Circle
 
 if TYPE_CHECKING:
@@ -45,10 +44,10 @@ class SketchChangeCommand(Command):
                 pass
 
     def _solve_and_update(self):
-        """Helper to run the solver and update element bounds."""
-        self.element.sketch.solve()
-        self.element.update_bounds_from_sketch()
-        self.element.mark_dirty()
+        """Triggers a solve and update via a signal on the element."""
+        # The handler connected to this signal is now responsible for solving
+        # and redrawing.
+        self.element.sketch_changed.send(self.element)
 
     def execute(self) -> None:
         # If a snapshot wasn't provided during initialization (e.g. by a tool
@@ -235,27 +234,34 @@ class MovePointCommand(SketchChangeCommand):
         return True
 
 
-class ModifyConstraintValueCommand(SketchChangeCommand):
-    """Command to modify the value of a constraint and re-solve."""
+class ModifyConstraintCommand(SketchChangeCommand):
+    """
+    Command to modify the value or expression of a constraint.
+    """
 
     def __init__(
         self,
         element: "SketchElement",
         constraint: "Constraint",
         new_value: float,
+        new_expression: Optional[str] = None,
         name: str = _("Edit Constraint"),
     ):
         super().__init__(element, name)
-        # We wrap a ChangePropertyCommand to handle the value change
-        self.prop_cmd = ChangePropertyCommand(
-            target=constraint, property_name="value", new_value=new_value
-        )
+        self.constraint = constraint
+        self.new_value = float(new_value)
+        self.new_expression = new_expression
+
+        self.old_value = float(constraint.value)
+        self.old_expression = getattr(constraint, "expression", None)
 
     def _do_execute(self) -> None:
-        self.prop_cmd.execute()
+        self.constraint.value = self.new_value
+        self.constraint.expression = self.new_expression
 
     def _do_undo(self) -> None:
-        self.prop_cmd.undo()
+        self.constraint.value = self.old_value
+        self.constraint.expression = self.old_expression
 
 
 class ToggleConstructionCommand(SketchChangeCommand):

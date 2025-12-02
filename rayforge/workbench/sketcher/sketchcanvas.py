@@ -10,10 +10,11 @@ from ...core.sketcher.constraints import (
     VerticalConstraint,
 )
 from ...core.matrix import Matrix
+from ...core.expression.evaluator import safe_evaluate
 from ..canvas import WorldSurface
 from .editor import SketchEditor
 from .sketchelement import SketchElement
-from .sketch_cmd import ModifyConstraintValueCommand
+from .sketch_cmd import ModifyConstraintCommand
 
 if TYPE_CHECKING:
     from rayforge.core.sketcher import Sketch
@@ -63,19 +64,11 @@ class SketchCanvas(WorldSurface):
 
     def set_sketch(self, sketch: "Sketch"):
         """
-        Replaces the current sketch element with a new one wrapping the
-        provided Sketch model. This preserves the existing editor/canvas
-        setup but switches the data being edited.
+        Replaces the current sketch element's model with the provided Sketch.
+        This preserves the existing editor/canvas setup but switches the
+        data being edited, ensuring signal connections are updated.
         """
-        old_sketch = self.sketch_element
-
-        # Deactivate the editor from the old element
         self.sketch_editor.deactivate()
-        # Clear the edit context
-        self.edit_context = None
-        # Remove the old element from the scene graph
-        if old_sketch:
-            old_sketch.remove()
 
         # Force a solve immediately. The sketch data has just been loaded from
         # disk, so the 'constrained' flags on points/entities are all False.
@@ -83,26 +76,19 @@ class SketchCanvas(WorldSurface):
         # these flags, ensuring fully constrained entities appear green.
         sketch.solve()
 
-        # Create and configure the new element with the injected sketch
-        new_sketch_elem = SketchElement(sketch=sketch)
-        new_sketch_elem.constraint_edit_requested.connect(
-            self._on_constraint_edit_requested
-        )
+        # Replace the model on the existing element. The element's property
+        # setter will handle reconnecting signals to the new VarSet.
+        self.sketch_element.sketch = sketch
 
-        # Position the new sketch element at the center of the canvas world.
+        # Position the sketch element at the center of the canvas world.
         # The subsequent call to update_bounds_from_sketch (in SketchStudio)
         # will adjust the element's bounds and transform to tightly fit the
         # geometry while keeping the sketch's origin at this center point.
         canvas_w, canvas_h = self.get_size_mm()
         cx, cy = canvas_w / 2.0, canvas_h / 2.0
-        new_sketch_elem.set_transform(Matrix.translation(cx, cy))
+        self.sketch_element.set_transform(Matrix.translation(cx, cy))
 
-        self.root.add(new_sketch_elem)
-
-        # Update all internal references
-        self.sketch_element = new_sketch_elem
-        self.edit_context = new_sketch_elem
-        self.sketch_editor.activate(new_sketch_elem)
+        self.sketch_editor.activate(self.sketch_element)
 
         # Reset view to center on new sketch content
         self.reset_view()
@@ -122,14 +108,11 @@ class SketchCanvas(WorldSurface):
 
     def reset_sketch(self) -> SketchElement:
         """
-        Removes the current sketch element and replaces it with a new, empty
-        one, ensuring all internal references are updated correctly.
+        Replaces the current sketch with a new, empty one, ensuring all
+        internal references are updated correctly.
 
-        :return: The new SketchElement instance.
+        :return: The SketchElement instance.
         """
-        # This just delegates to set_sketch with a None (new) sketch,
-        # but for compatibility with existing tests/code, we implement it
-        # explicitly or just reuse the logic.
         from rayforge.core.sketcher import Sketch
 
         new_sketch = Sketch()
@@ -197,7 +180,6 @@ class SketchCanvas(WorldSurface):
         Opens a dialog to edit the value of a constraint. This is triggered
         by a double-click on a constraint label.
         """
-        # If a dialog is already open, do nothing.
         if self._active_dialog:
             return
 
@@ -209,49 +191,38 @@ class SketchCanvas(WorldSurface):
             )
             return
 
-        current_value = float(getattr(constraint, "value", 0))
+        # Get initial text: expression if present, else value
+        if constraint.expression is not None:
+            initial_text = constraint.expression
+        else:
+            initial_text = f"{float(getattr(constraint, 'value', 0)):g}"
 
         # Determine the user-friendly label and description based on type
         if isinstance(constraint, RadiusConstraint):
             row_title = _("Radius")
-            row_subtitle = _("Enter the new radius.")
+            row_subtitle = _("Enter radius or expression (e.g. 'width/2').")
         elif isinstance(constraint, DiameterConstraint):
             row_title = _("Diameter")
-            row_subtitle = _("Enter the new diameter.")
+            row_subtitle = _("Enter diameter or expression.")
         elif isinstance(
             constraint,
             (DistanceConstraint, HorizontalConstraint, VerticalConstraint),
         ):
             row_title = _("Length")
-            row_subtitle = _("Enter the new length.")
+            row_subtitle = _("Enter length or expression.")
         else:
             row_title = _("Value")
-            row_subtitle = _("Enter the new value for the constraint.")
+            row_subtitle = _("Enter value or expression.")
 
-        # Create Adjustment for the SpinRow
-        # We use a small lower bound > 0 because dimension constraints
-        # usually cannot be zero or negative.
-        adjustment = Gtk.Adjustment(
-            value=current_value,
-            lower=0.0001,
-            upper=100000.0,
-            step_increment=1.0,
-            page_increment=10.0,
-        )
+        # Use Adw.EntryRow to support both numeric and text input
+        entry_row = Adw.EntryRow(title=row_title)
+        entry_row.set_tooltip_text(row_subtitle)
+        entry_row.set_text(initial_text)
 
-        spin_row = Adw.SpinRow(
-            title=row_title,
-            subtitle=row_subtitle,
-            adjustment=adjustment,
-            digits=3,
-            snap_to_ticks=False,
-        )
-
-        # Adw.SpinRow looks best inside a boxed list when inside a dialog
+        # Adw.EntryRow looks best inside a boxed list when inside a dialog
         list_box = Gtk.ListBox()
         list_box.add_css_class("boxed-list")
-        list_box.append(spin_row)
-        # Ensure the dialog is wide enough
+        list_box.append(entry_row)
         list_box.set_size_request(500, -1)
 
         dialog = Adw.MessageDialog(
@@ -273,22 +244,48 @@ class SketchCanvas(WorldSurface):
         def on_key_pressed(controller, keyval, keycode, state):
             if keyval in (Gdk.KEY_Return, Gdk.KEY_KP_Enter):
                 GLib.idle_add(lambda: dialog.response("ok"))
-                return (
-                    False  # Let event propagate to SpinButton to update value
-                )
+                return True
             return False
 
         key_controller.connect("key-pressed", on_key_pressed)
-        spin_row.add_controller(key_controller)
+        entry_row.add_controller(key_controller)
+
+        # Also connect to 'apply' signal for convenience
+        entry_row.connect("apply", lambda row: dialog.response("ok"))
 
         def on_response(source, response_id):
             if response_id == "ok":
-                # Get the value directly from the SpinRow
-                new_value = spin_row.get_value()
-                cmd = ModifyConstraintValueCommand(
+                text_val = entry_row.get_text().strip()
+                # Initialize with current value to prevent collapse on eval
+                # failure
+                new_value = float(getattr(constraint, "value", 0.0))
+                new_expr = None
+
+                # Try simple float conversion first
+                try:
+                    new_value = float(text_val)
+                    # It's a number, so no expression
+                    new_expr = None
+                except ValueError:
+                    # It's a string, likely an expression or param name.
+                    # We store it as an expression.
+                    new_expr = text_val
+                    # Evaluate immediately to get current value for solving
+                    try:
+                        context = {}
+                        params = self.sketch_element.sketch.input_parameters
+                        if params is not None:
+                            context = params.get_values()
+                        new_value = safe_evaluate(text_val, context)
+                    except ValueError:
+                        # Fallback if invalid immediately
+                        pass
+
+                cmd = ModifyConstraintCommand(
                     element=self.sketch_element,
                     constraint=constraint,
                     new_value=new_value,
+                    new_expression=new_expr,
                 )
                 self.sketch_editor.history_manager.execute(cmd)
 

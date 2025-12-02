@@ -43,8 +43,6 @@ logger = logging.getLogger(__name__)
 
 
 class SketchElement(CanvasElement):
-    constraint_edit_requested = Signal()
-
     def __init__(
         self,
         x: float = 0,
@@ -65,7 +63,12 @@ class SketchElement(CanvasElement):
             **kwargs,
         )
 
+        # Signals
+        self.constraint_edit_requested = Signal()
+        self.sketch_changed = Signal()
+
         # Model
+        self._sketch: Sketch
         self.sketch = sketch if sketch is not None else Sketch()
 
         # State Managers
@@ -86,6 +89,96 @@ class SketchElement(CanvasElement):
         # Config
         self.point_radius = 5.0
         self.line_width = 2.0
+
+    @property
+    def sketch(self) -> Sketch:
+        return self._sketch
+
+    @sketch.setter
+    def sketch(self, new_sketch: Sketch):
+        logger.debug(f"Called for sketch '{new_sketch.name}'")
+        # Disconnect from old sketch's signals if it exists
+        if hasattr(self, "_sketch"):
+            self._disconnect_signals()
+
+        self._sketch = new_sketch
+
+        # Connect to new sketch's signals
+        self._connect_signals()
+
+    def _connect_signals(self):
+        """Connects to signals that indicate the model has changed."""
+        self.sketch_changed.connect(self._on_model_changed)
+        # FIX: Check for `is not None` instead of relying on truthiness,
+        # because an empty VarSet has a __len__ of 0 and evaluates to False.
+        if self.sketch and self.sketch.input_parameters is not None:
+            logger.debug(
+                f"Connecting to VarSet signals on "
+                f"{type(self.sketch.input_parameters).__name__} "
+                f"(id: {id(self.sketch.input_parameters)})"
+            )
+            self.sketch.input_parameters.var_added.connect(
+                self._on_model_changed
+            )
+            self.sketch.input_parameters.var_removed.connect(
+                self._on_model_changed
+            )
+            self.sketch.input_parameters.var_value_changed.connect(
+                self._on_model_changed
+            )
+            self.sketch.input_parameters.var_definition_changed.connect(
+                self._on_model_changed
+            )
+            self.sketch.input_parameters.cleared.connect(
+                self._on_model_changed
+            )
+
+    def _disconnect_signals(self):
+        """Disconnects signals to prevent leaks."""
+        self.sketch_changed.disconnect(self._on_model_changed)
+        if self.sketch and self.sketch.input_parameters is not None:
+            logger.debug(
+                "Disconnecting from VarSet signals on "
+                f"{type(self.sketch.input_parameters).__name__} "
+                f"(id: {id(self.sketch.input_parameters)})"
+            )
+            try:
+                self.sketch.input_parameters.var_added.disconnect(
+                    self._on_model_changed
+                )
+                self.sketch.input_parameters.var_removed.disconnect(
+                    self._on_model_changed
+                )
+                self.sketch.input_parameters.var_value_changed.disconnect(
+                    self._on_model_changed
+                )
+                self.sketch.input_parameters.var_definition_changed.disconnect(
+                    self._on_model_changed
+                )
+                self.sketch.input_parameters.cleared.disconnect(
+                    self._on_model_changed
+                )
+            except Exception as e:
+                logger.warning(
+                    f"Error during signal disconnection (safe to ignore): {e}"
+                )
+
+    def _on_model_changed(self, sender, **kwargs):
+        """
+        Central handler for all model changes. Triggers a solve and redraw.
+        """
+        logger.debug(
+            f"Triggered by {type(sender).__name__} (id: {id(sender)}) "
+            f"with kwargs: {kwargs}. Solving and redrawing."
+        )
+        self.sketch.solve()
+        self.update_bounds_from_sketch()
+        self.mark_dirty()
+
+    def remove(self):
+        """Overrides remove to cleanup signal connections."""
+        self._disconnect_signals()
+        super().remove()
 
     @property
     def current_tool(self):
