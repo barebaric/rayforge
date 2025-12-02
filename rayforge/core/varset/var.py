@@ -40,20 +40,55 @@ class Var(Generic[T]):
             validator: An optional callable that raises an exception if a new
                        value is invalid.
         """
-        self.key = key
-        self.label = label
+        self._key = key
+        self._label = label
         self.var_type = var_type
-        self.description = description
+        self._description = description
         self._default = default
         self.validator = validator
         self._value: Optional[T] = None
 
-        # Signal sent when the Var's value changes.
+        # Signal sent when the Var's value or default value changes.
         self.value_changed = Signal()
+        # Signal sent when the Var's definition (key, label, etc.) changes.
+        self.definition_changed = Signal()
 
         # Set initial explicit value ONLY if provided.
         if value is not None:
             self.value = value  # Use the public setter
+
+    @property
+    def key(self) -> str:
+        """The unique machine-readable identifier for the variable."""
+        return self._key
+
+    @key.setter
+    def key(self, new_key: str):
+        if self._key != new_key:
+            self._key = new_key
+            self.definition_changed.send(self, property="key")
+
+    @property
+    def label(self) -> str:
+        """The human-readable name for the variable (e.g., for UI)."""
+        return self._label
+
+    @label.setter
+    def label(self, new_label: str):
+        if self._label != new_label:
+            self._label = new_label
+            self.definition_changed.send(self, property="label")
+
+    @property
+    def description(self) -> Optional[str]:
+        """A longer, human-readable description."""
+        return self._description
+
+    @description.setter
+    def description(self, new_description: Optional[str]):
+        if self._description != new_description:
+            self._description = new_description
+            self.definition_changed.send(self, property="description")
 
     def validate(self) -> None:
         """
@@ -85,9 +120,18 @@ class Var(Generic[T]):
         Sets the default value, triggering updates if effective value changes.
         """
         old_effective_value = self.value
+        old_default = self._default
+
+        if old_default == new_default:
+            return  # Nothing to do
+
         self._default = new_default
         new_effective_value = self.value
 
+        # A change in default is always a change in definition.
+        self.definition_changed.send(self, property="default")
+
+        # If the effective value was also changed, send that signal too.
         if old_effective_value != new_effective_value:
             self.value_changed.send(
                 self,

@@ -32,6 +32,7 @@ class VarSet:
         self.var_removed = Signal()
         self.cleared = Signal()
         self.var_value_changed = Signal()
+        self.var_definition_changed = Signal()
 
         if vars:
             for var in vars:
@@ -40,6 +41,10 @@ class VarSet:
     def _on_child_var_changed(self, var: Var, **kwargs):
         """Handler for bubbling up value changes from contained Vars."""
         self.var_value_changed.send(self, var=var, **kwargs)
+
+    def _on_child_var_definition_changed(self, var: Var, **kwargs):
+        """Handler for bubbling up definition changes from contained Vars."""
+        self.var_definition_changed.send(self, var=var, **kwargs)
 
     @staticmethod
     def _create_var_from_dict(data: Dict[str, Any]) -> Var:
@@ -103,6 +108,9 @@ class VarSet:
         # weak=False ensures the bound method is not garbage collected
         # prematurely. We are responsible for disconnecting it manually.
         var.value_changed.connect(self._on_child_var_changed, weak=False)
+        var.definition_changed.connect(
+            self._on_child_var_definition_changed, weak=False
+        )
         self.var_added.send(self, var=var)
 
     def remove(self, key: str) -> Optional[Var]:
@@ -113,6 +121,9 @@ class VarSet:
                 self._order.remove(key)
             # Disconnect from the specific instance signal.
             var.value_changed.disconnect(self._on_child_var_changed)
+            var.definition_changed.disconnect(
+                self._on_child_var_definition_changed
+            )
             self.var_removed.send(self, var=var)
         return var
 
@@ -209,6 +220,9 @@ class VarSet:
         """Removes all Var objects from the set."""
         for var in list(self._vars.values()):
             var.value_changed.disconnect(self._on_child_var_changed)
+            var.definition_changed.disconnect(
+                self._on_child_var_definition_changed
+            )
         self._vars.clear()
         self._order.clear()
         self.cleared.send(self)
