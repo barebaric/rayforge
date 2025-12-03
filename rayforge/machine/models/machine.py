@@ -3,6 +3,9 @@ import uuid
 import logging
 import asyncio
 import multiprocessing
+import json
+import numpy as np
+from dataclasses import asdict
 from typing import List, Dict, Any, Optional, Tuple, TYPE_CHECKING, Type
 from pathlib import Path
 from blinker import Signal
@@ -29,6 +32,8 @@ from .dialect import get_dialect, GcodeDialect
 if TYPE_CHECKING:
     from ...core.varset import VarSet
     from ...shared.tasker.context import ExecutionContext
+    from ...core.ops import Ops
+    from ...core.doc import Doc
 
 
 logger = logging.getLogger(__name__)
@@ -599,6 +604,51 @@ class Machine:
             head = self.get_default_head()
 
         await self.driver.set_power(head, percent)
+
+    def encode_ops(
+        self, ops: "Ops", doc: "Doc"
+    ) -> Tuple[np.ndarray, np.ndarray]:
+        """
+        Encodes an Ops object into machine code (G-code) and a corresponding
+        operation map, specific to this machine's configuration.
+
+        Args:
+            ops: The Ops object to encode.
+            doc: The document context for the job.
+
+        Returns:
+            A tuple containing:
+            - A numpy array of machine code bytes (UTF-8 encoded G-code).
+            - A numpy array of the operation map bytes (UTF-8 encoded JSON).
+        """
+        encoder = self.driver.get_encoder()
+
+        # If the machine is Y-down, we must transform the ops coordinate
+        # system (Y-Up Internal -> Y-Down Machine) before generating G-code.
+        # The transform is Y_new = Height - Y_old.
+        ops_for_encoder = ops
+        if self.y_axis_down:
+            ops_for_encoder = ops.copy()
+            height = self.dimensions[1]
+            # Create transform matrix: Translate(0, H) @ Scale(1, -1)
+            # Result: y -> -y -> -y + H
+            transform = np.identity(4)
+            transform[1, 1] = -1.0
+            transform[1, 3] = height
+            ops_for_encoder.transform(transform)
+
+        gcode_str, op_map_obj = encoder.encode(ops_for_encoder, self, doc)
+
+        # Encode G-code and map to byte arrays
+        machine_code_bytes = np.frombuffer(
+            gcode_str.encode("utf-8"), dtype=np.uint8
+        )
+        op_map_str = json.dumps(asdict(op_map_obj))
+        op_map_bytes = np.frombuffer(
+            op_map_str.encode("utf-8"), dtype=np.uint8
+        )
+
+        return machine_code_bytes, op_map_bytes
 
     def refresh_settings(self):
         """Public API for the UI to request a settings refresh."""
