@@ -3,16 +3,16 @@ import pytest_asyncio
 import asyncio
 from unittest.mock import MagicMock, AsyncMock, PropertyMock
 from typing import cast
-
+from rayforge.core.doc import Doc
+from rayforge.core.ops import Ops, MoveToCommand, LineToCommand
+from rayforge.core.varset import VarSet, Var
 from rayforge.machine.driver.grbl_serial import GrblSerialDriver
 from rayforge.machine.transport import TransportStatus, SerialTransport
 from rayforge.machine.driver.driver import (
     DeviceStatus,
     DeviceConnectionError,
 )
-from rayforge.core.doc import Doc
-from rayforge.core.ops import Ops, MoveToCommand, LineToCommand
-from rayforge.core.varset import VarSet, Var
+from rayforge.pipeline.encoder.gcode import GcodeEncoder
 
 
 @pytest.fixture
@@ -91,6 +91,13 @@ async def connected_driver(driver: GrblSerialDriver, mocker):
 
 
 class TestGrblSerialDriver:
+    def test_get_encoder(self, driver: GrblSerialDriver):
+        """Test that get_encoder returns a GcodeEncoder instance."""
+        encoder = driver.get_encoder()
+        assert isinstance(encoder, GcodeEncoder)
+        # Verify it's configured with the machine's dialect
+        assert encoder.dialect.uid == driver._machine.dialect.uid
+
     @pytest.mark.asyncio
     async def test_connection_lifecycle(self, driver: GrblSerialDriver):
         """Test the connect and cleanup flow."""

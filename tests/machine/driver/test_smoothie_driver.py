@@ -4,12 +4,12 @@ import socket
 import pytest
 import pytest_asyncio
 from unittest.mock import MagicMock
-
-from rayforge.machine.driver.smoothie import SmoothieDriver
-from rayforge.machine.transport import TransportStatus
-from rayforge.machine.driver.driver import DeviceStatus, Axis
 from rayforge.core.doc import Doc
 from rayforge.core.ops import Ops, MoveToCommand, LineToCommand
+from rayforge.machine.driver.driver import DeviceStatus, Axis
+from rayforge.machine.driver.smoothie import SmoothieDriver
+from rayforge.machine.transport import TransportStatus
+from rayforge.pipeline.encoder.gcode import GcodeEncoder
 
 logger = logging.getLogger(__name__)
 
@@ -209,6 +209,13 @@ async def connected_driver(driver: SmoothieDriver):
 
 
 class TestSmoothieDriver:
+    def test_get_encoder(self, driver: SmoothieDriver):
+        """Test that get_encoder returns a GcodeEncoder instance."""
+        encoder = driver.get_encoder()
+        assert isinstance(encoder, GcodeEncoder)
+        # Verify it's configured with the machine's dialect
+        assert encoder.dialect.uid == driver._machine.dialect.uid
+
     @pytest.mark.asyncio
     async def test_connection_lifecycle(
         self, driver: SmoothieDriver, smoothie_server
