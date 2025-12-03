@@ -16,6 +16,7 @@ from typing import (
 from ...context import RayforgeContext
 from ...core.ops import Ops
 from ...core.varset import Var, VarSet, SerialPortVar, BaudrateVar
+from ...pipeline.encoder.base import OpsEncoder
 from ...pipeline.encoder.gcode import GcodeEncoder
 from ..transport import TransportStatus, SerialTransport
 from ..transport.serial import SerialPortPermissionError
@@ -102,6 +103,10 @@ class GrblSerialDriver(Driver):
                 BaudrateVar("baudrate"),
             ]
         )
+
+    def get_encoder(self) -> "OpsEncoder":
+        """Returns a GcodeEncoder configured for the machine's dialect."""
+        return GcodeEncoder(self._machine.dialect)
 
     def setup(self, **kwargs: Any):
         port = cast(str, kwargs.get("port", ""))
@@ -454,7 +459,7 @@ class GrblSerialDriver(Driver):
     ) -> None:
         self._start_job(on_command_done)
 
-        encoder = GcodeEncoder.for_machine(self._machine)
+        encoder = self.get_encoder()
         gcode, op_map = encoder.encode(ops, self._machine, doc)
         gcode_lines = gcode.splitlines()
 

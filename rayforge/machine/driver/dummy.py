@@ -13,6 +13,8 @@ from typing import (
 from ...context import RayforgeContext
 from ...core.ops import Ops
 from ...core.varset import VarSet
+from ...pipeline.encoder.base import OpsEncoder
+from ...pipeline.encoder.gcode import GcodeEncoder
 from .driver import Driver, Axis
 
 if TYPE_CHECKING:
@@ -44,6 +46,10 @@ class NoDeviceDriver(Driver):
     @classmethod
     def get_setup_vars(cls) -> "VarSet":
         return VarSet(title=_("No settings"))
+
+    def get_encoder(self) -> "OpsEncoder":
+        """Returns a GcodeEncoder configured for the machine's dialect."""
+        return GcodeEncoder(self._machine.dialect)
 
     def get_setting_vars(self) -> List["VarSet"]:
         return [VarSet(title=_("No settings"))]

@@ -19,6 +19,7 @@ from ...context import RayforgeContext
 if TYPE_CHECKING:
     from ...core.doc import Doc
     from ...core.varset import VarSet
+    from ...pipeline.encoder.base import OpsEncoder
     from ...pipeline.encoder.gcode import MachineCodeOpMap
     from ..models.machine import Machine
     from ..models.laser import Laser
@@ -169,6 +170,14 @@ class Driver(ABC):
         """
         Returns a VarSet defining the parameters needed for setup().
         This is used to dynamically generate the user interface.
+        """
+        pass
+
+    @abstractmethod
+    def get_encoder(self) -> "OpsEncoder":
+        """
+        Returns an OpsEncoder instance suitable for this driver and its
+        configured machine.
         """
         pass
 
@@ -370,8 +379,6 @@ class Driver(ABC):
         Returns:
             A MachineCodeOpMap for tracking command execution
         """
-        from ...pipeline.encoder.gcode import GcodeEncoder
-
-        encoder = GcodeEncoder.for_machine(self._machine)
+        encoder = self.get_encoder()
         _, op_map = encoder.encode(ops, self._machine, doc)
         return op_map

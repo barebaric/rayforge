@@ -1,10 +1,7 @@
 from __future__ import annotations
 import logging
-import json
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass
 from typing import Dict, Any
-import numpy as np
-
 from ...context import get_context
 from ...core.ops import Ops
 from ...core.doc import Doc
@@ -15,7 +12,6 @@ from ..artifact import (
     create_handle_from_dict,
     StepOpsArtifact,
 )
-from ..encoder.gcode import GcodeEncoder
 from ..encoder.vertexencoder import VertexEncoder
 
 
@@ -105,30 +101,7 @@ def make_job_artifact_in_subprocess(
     final_distance = final_ops.distance()
 
     proxy.set_message(_("Generating G-code..."))
-    encoder = GcodeEncoder.for_machine(machine)
-
-    # If the machine is Y-down, we must transform the ops coordinate system
-    # (Y-Up Internal -> Y-Down Machine) before generating G-code.
-    # The transform is Y_new = Height - Y_old.
-    ops_for_encoder = final_ops
-    if machine.y_axis_down:
-        ops_for_encoder = final_ops.copy()
-        height = machine.dimensions[1]
-        # Create transform matrix: Translate(0, H) @ Scale(1, -1)
-        # Result: y -> -y -> -y + H
-        transform = np.identity(4)
-        transform[1, 1] = -1.0
-        transform[1, 3] = height
-        ops_for_encoder.transform(transform)
-
-    gcode_str, op_map_obj = encoder.encode(ops_for_encoder, machine, doc)
-
-    # Encode G-code and map to byte arrays for storage in the artifact
-    machine_code_bytes = np.frombuffer(
-        gcode_str.encode("utf-8"), dtype=np.uint8
-    )
-    op_map_str = json.dumps(asdict(op_map_obj))
-    op_map_bytes = np.frombuffer(op_map_str.encode("utf-8"), dtype=np.uint8)
+    machine_code_bytes, op_map_bytes = machine.encode_ops(final_ops, doc)
 
     # Generate vertex data for UI preview/simulation
     # NOTE: The preview uses the original Y-Up final_ops. The 3D view camera

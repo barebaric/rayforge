@@ -74,7 +74,13 @@ class GcodeEncoder(OpsEncoder):
 
     def _get_current_laser_head(self, context: GcodeContext):
         if not self.active_laser_uid:
-            raise ValueError("No active laser head is set")
+            default_head = context.machine.get_default_head()
+            self.active_laser_uid = default_head.uid
+            logger.debug(
+                "No active laser set, defaulting to machine's first head: "
+                f"{self.active_laser_uid}"
+            )
+
         current_laser = context.machine.get_head_by_uid(self.active_laser_uid)
         if not current_laser:
             raise ValueError(
