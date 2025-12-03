@@ -155,7 +155,7 @@ class TestMachine:
 
         # Add a workpiece to the document, which will trigger ops generation.
         workpiece, source = create_test_workpiece_and_source()
-        doc.add_source_asset(source)
+        doc.add_asset(source)
         doc.active_layer.add_child(workpiece)
 
         # Wait for the background processing to finish.
@@ -202,7 +202,7 @@ class TestMachine:
 
         # Add a workpiece to the document.
         workpiece, source = create_test_workpiece_and_source()
-        doc.add_source_asset(source)
+        doc.add_asset(source)
         doc.active_layer.add_child(workpiece)
 
         # Wait for background processing to complete.

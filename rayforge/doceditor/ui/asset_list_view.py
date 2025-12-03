@@ -147,7 +147,8 @@ class AssetListView(Expander):
             self.add_sketch_clicked.send(self)
 
     def on_doc_changed(self, sender, **kwargs):
-        count = len(self.doc.get_all_assets())
+        visible_assets = [a for a in self.doc.get_all_assets() if not a.hidden]
+        count = len(visible_assets)
         self.set_subtitle(
             _("{count} asset").format(count=count)
             if count == 1
@@ -156,7 +157,7 @@ class AssetListView(Expander):
         self.update_list()
 
     def update_list(self):
-        new_assets = self.doc.get_all_assets()
+        new_assets = [a for a in self.doc.get_all_assets() if not a.hidden]
         uid_to_widget: Dict[str, Gtk.Widget] = {}
         child = self.draglist.get_first_child()
 

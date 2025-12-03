@@ -33,7 +33,6 @@ class Doc(DocItem):
         self.job_assembly_invalidated = Signal()
 
         # Asset Management
-        self.source_assets: Dict[str, SourceAsset] = {}
         self.assets: Dict[str, IAsset] = {}
         self.asset_order: List[str] = []
 
@@ -52,9 +51,14 @@ class Doc(DocItem):
         from .sketcher.sketch import Sketch
         from .geo import Geometry
         from .matrix import Matrix
+        from .source_asset import SourceAsset
 
         # --- Polymorphic Deserialization Factories ---
-        asset_class_map = {"stock": StockAsset, "sketch": Sketch}
+        asset_class_map = {
+            "stock": StockAsset,
+            "sketch": Sketch,
+            "source": SourceAsset,
+        }
         item_class_map = {"layer": Layer, "stockitem": StockItem}
 
         def _deserialize_asset(asset_data: Dict) -> IAsset:
@@ -95,7 +99,7 @@ class Doc(DocItem):
             doc.add_asset(Sketch.from_dict(s_data))
         source_assets_data = data.get("source_assets", {})
         for uid, src_data in source_assets_data.items():
-            doc.add_source_asset(SourceAsset.from_dict(src_data))
+            doc.add_asset(SourceAsset.from_dict(src_data))
 
         # Load children (Layers and StockItems) from unified list
         children = []
@@ -157,17 +161,7 @@ class Doc(DocItem):
             "active_layer_index": self._active_layer_index,
             "children": [child.to_dict() for child in self.children],
             "assets": [asset.to_dict() for asset in self.get_all_assets()],
-            "source_assets": {
-                uid: asset.to_dict()
-                for uid, asset in self.source_assets.items()
-            },
         }
-
-    def add_source_asset(self, asset: SourceAsset):
-        """Adds or updates a SourceAsset in the document's registry."""
-        if not isinstance(asset, SourceAsset):
-            raise TypeError("Only SourceAsset objects can be added.")
-        self.source_assets[asset.uid] = asset
 
     def add_asset(
         self, asset: IAsset, index: Optional[int] = None, silent: bool = False
@@ -223,6 +217,18 @@ class Doc(DocItem):
         return [
             self.assets[uid] for uid in self.asset_order if uid in self.assets
         ]
+
+    @property
+    def source_assets(self) -> Dict[str, "SourceAsset"]:
+        """
+        Returns a dictionary of all SourceAssets for compatibility.
+        NOTE: The order of this dictionary is not guaranteed.
+        """
+        return {
+            uid: cast(SourceAsset, asset)
+            for uid, asset in self.assets.items()
+            if asset.asset_type_name == "source"
+        }
 
     @property
     def stock_assets(self) -> Dict[str, "StockAsset"]:
