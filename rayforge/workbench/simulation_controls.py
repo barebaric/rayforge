@@ -6,7 +6,7 @@ import numpy as np
 from gi.repository import Gtk, GLib
 from blinker import Signal
 from ..core.ops import ScanLinePowerCommand
-from ..pipeline.encoder.gcode import GcodeOpMap
+from ..pipeline.encoder.gcode import MachineCodeOpMap
 from ..icons import get_icon
 from ..shared.util.gtk import apply_css
 from ..shared.ui.formatter import format_value
@@ -32,7 +32,7 @@ class PreviewControls(Gtk.Box):
         self.simulation_overlay = simulation_overlay
         self.step_changed = Signal()
         self.close_requested = Signal()
-        self.op_map: Optional[GcodeOpMap] = None
+        self.op_map: Optional[MachineCodeOpMap] = None
         self.num_gcode_lines = 0
 
         self.playing = False
@@ -173,12 +173,12 @@ class PreviewControls(Gtk.Box):
 
     def set_playback_source(
         self,
-        gcode_bytes: Optional[np.ndarray],
+        machine_code_bytes: Optional[np.ndarray],
         op_map_bytes: Optional[np.ndarray],
     ):
         """Sets the source data for driving the playback timeline."""
-        if gcode_bytes is not None:
-            gcode_str = gcode_bytes.tobytes().decode("utf-8")
+        if machine_code_bytes is not None:
+            gcode_str = machine_code_bytes.tobytes().decode("utf-8")
             self.num_gcode_lines = gcode_str.count("\n")
         else:
             self.num_gcode_lines = 0
@@ -186,12 +186,14 @@ class PreviewControls(Gtk.Box):
         if op_map_bytes is not None:
             map_str = op_map_bytes.tobytes().decode("utf-8")
             map_dict = json.loads(map_str)
-            self.op_map = GcodeOpMap(
-                op_to_gcode={
-                    int(k): v for k, v in map_dict["op_to_gcode"].items()
+            self.op_map = MachineCodeOpMap(
+                op_to_machine_code={
+                    int(k): v
+                    for k, v in map_dict["op_to_machine_code"].items()
                 },
-                gcode_to_op={
-                    int(k): v for k, v in map_dict["gcode_to_op"].items()
+                machine_code_to_op={
+                    int(k): v
+                    for k, v in map_dict["machine_code_to_op"].items()
                 },
             )
         else:
@@ -213,8 +215,8 @@ class PreviewControls(Gtk.Box):
         gcode_line_idx = int(self.slider.get_value())
         total = self.num_gcode_lines
 
-        if self.op_map and gcode_line_idx in self.op_map.gcode_to_op:
-            op_index = self.op_map.gcode_to_op[gcode_line_idx]
+        if self.op_map and gcode_line_idx in self.op_map.machine_code_to_op:
+            op_index = self.op_map.machine_code_to_op[gcode_line_idx]
             timeline = self.simulation_overlay.timeline
             if timeline.steps and 0 <= op_index < len(timeline.steps):
                 cmd, state, __ = timeline.steps[op_index]
@@ -250,16 +252,16 @@ class PreviewControls(Gtk.Box):
         op_index = -1
         timeline_index = -1
 
-        if self.op_map and gcode_line_idx in self.op_map.gcode_to_op:
-            op_index = self.op_map.gcode_to_op[gcode_line_idx]
+        if self.op_map and gcode_line_idx in self.op_map.machine_code_to_op:
+            op_index = self.op_map.machine_code_to_op[gcode_line_idx]
             if op_index in timeline.op_to_timeline_index:
                 timeline_index = timeline.op_to_timeline_index[op_index]
 
         if timeline_index == -1:
             # If no op corresponds (e.g., comment), find the last valid one
             for i in range(gcode_line_idx, -1, -1):
-                if self.op_map and i in self.op_map.gcode_to_op:
-                    op_idx = self.op_map.gcode_to_op[i]
+                if self.op_map and i in self.op_map.machine_code_to_op:
+                    op_idx = self.op_map.machine_code_to_op[i]
                     if op_idx in timeline.op_to_timeline_index:
                         timeline_index = timeline.op_to_timeline_index[op_idx]
                         break

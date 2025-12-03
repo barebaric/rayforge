@@ -7,7 +7,7 @@ from .base import BaseArtifact, VertexData
 from .handle import BaseArtifactHandle
 
 if TYPE_CHECKING:
-    from ..encoder.gcode import GcodeOpMap
+    from ..encoder.base import MachineCodeOpMap
 
 
 class JobArtifactHandle(BaseArtifactHandle):
@@ -44,7 +44,7 @@ class JobArtifact(BaseArtifact):
         ops: Ops,
         distance: float,
         time_estimate: Optional[float] = None,
-        gcode_bytes: Optional[np.ndarray] = None,
+        machine_code_bytes: Optional[np.ndarray] = None,
         op_map_bytes: Optional[np.ndarray] = None,
         vertex_data: Optional[VertexData] = None,
     ):
@@ -52,39 +52,46 @@ class JobArtifact(BaseArtifact):
         self.ops = ops
         self.distance = distance
         self.time_estimate = time_estimate
-        self.gcode_bytes: Optional[np.ndarray] = gcode_bytes
+        self.machine_code_bytes: Optional[np.ndarray] = machine_code_bytes
         self.op_map_bytes: Optional[np.ndarray] = op_map_bytes
         self.vertex_data: Optional[VertexData] = vertex_data
 
         # Caching properties for deserialized data
-        self._gcode_str: Optional[str] = None
-        self._op_map_obj: Optional["GcodeOpMap"] = None
+        self._machine_code_str: Optional[str] = None
+        self._op_map_obj: Optional["MachineCodeOpMap"] = None
 
     @property
-    def gcode(self) -> Optional[str]:
+    def machine_code(self) -> Optional[str]:
         """
         Lazily decodes and caches the G-code string from its byte array.
         """
-        if self._gcode_str is None and self.gcode_bytes is not None:
-            self._gcode_str = self.gcode_bytes.tobytes().decode("utf-8")
-        return self._gcode_str
+        if (
+            self._machine_code_str is None
+            and self.machine_code_bytes is not None
+        ):
+            self._machine_code_str = self.machine_code_bytes.tobytes().decode(
+                "utf-8"
+            )
+        return self._machine_code_str
 
     @property
-    def op_map(self) -> Optional["GcodeOpMap"]:
+    def op_map(self) -> Optional["MachineCodeOpMap"]:
         """
-        Lazily decodes and caches the GcodeOpMap from its byte array.
+        Lazily decodes and caches the MachineCodeOpMap from its byte array.
         """
-        from ..encoder.gcode import GcodeOpMap
+        from ..encoder.base import MachineCodeOpMap
 
         if self._op_map_obj is None and self.op_map_bytes is not None:
             map_str = self.op_map_bytes.tobytes().decode("utf-8")
             map_dict = json.loads(map_str)
-            self._op_map_obj = GcodeOpMap(
-                op_to_gcode={
-                    int(k): v for k, v in map_dict["op_to_gcode"].items()
+            self._op_map_obj = MachineCodeOpMap(
+                op_to_machine_code={
+                    int(k): v
+                    for k, v in map_dict["op_to_machine_code"].items()
                 },
-                gcode_to_op={
-                    int(k): v for k, v in map_dict["gcode_to_op"].items()
+                machine_code_to_op={
+                    int(k): v
+                    for k, v in map_dict["machine_code_to_op"].items()
                 },
             )
         return self._op_map_obj
@@ -98,8 +105,8 @@ class JobArtifact(BaseArtifact):
         }
         if self.vertex_data is not None:
             result["vertex_data"] = self.vertex_data.to_dict()
-        if self.gcode_bytes is not None:
-            result["gcode_bytes"] = self.gcode_bytes.tolist()
+        if self.machine_code_bytes is not None:
+            result["machine_code_bytes"] = self.machine_code_bytes.tolist()
         if self.op_map_bytes is not None:
             result["op_map_bytes"] = self.op_map_bytes.tolist()
         return result
@@ -117,9 +124,9 @@ class JobArtifact(BaseArtifact):
             common_args["vertex_data"] = VertexData.from_dict(
                 data["vertex_data"]
             )
-        if "gcode_bytes" in data:
-            common_args["gcode_bytes"] = np.array(
-                data["gcode_bytes"], dtype=np.uint8
+        if "machine_code_bytes" in data:
+            common_args["machine_code_bytes"] = np.array(
+                data["machine_code_bytes"], dtype=np.uint8
             )
         if "op_map_bytes" in data:
             common_args["op_map_bytes"] = np.array(
@@ -143,8 +150,8 @@ class JobArtifact(BaseArtifact):
 
     def get_arrays_for_storage(self) -> Dict[str, np.ndarray]:
         arrays = self.ops.to_numpy_arrays()
-        if self.gcode_bytes is not None:
-            arrays["gcode_bytes"] = self.gcode_bytes
+        if self.machine_code_bytes is not None:
+            arrays["machine_code_bytes"] = self.machine_code_bytes
         if self.op_map_bytes is not None:
             arrays["op_map_bytes"] = self.op_map_bytes
         if self.vertex_data is not None:
@@ -186,8 +193,8 @@ class JobArtifact(BaseArtifact):
             ops=ops,
             time_estimate=handle.time_estimate,
             distance=handle.distance,
-            gcode_bytes=arrays.get(
-                "gcode_bytes", np.empty(0, dtype=np.uint8)
+            machine_code_bytes=arrays.get(
+                "machine_code_bytes", np.empty(0, dtype=np.uint8)
             ).copy(),
             op_map_bytes=arrays.get(
                 "op_map_bytes", np.empty(0, dtype=np.uint8)

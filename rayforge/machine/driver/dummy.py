@@ -62,7 +62,7 @@ class NoDeviceDriver(Driver):
         """
         Dummy implementation that simulates command execution.
 
-        This implementation creates a GcodeOpMap to track which commands
+        This implementation creates a MachineCodeOpMap to track which commands
         correspond to which Ops, then simulates execution by calling the
         on_command_done callback for each command with a small delay.
         """

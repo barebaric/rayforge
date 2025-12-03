@@ -225,12 +225,14 @@ class DocEditor:
 
                 artifact = artifact_store.get(handle)
                 assert isinstance(artifact, JobArtifact)
-                if artifact.gcode_bytes is None:
+                if artifact.machine_code_bytes is None:
                     exc = ValueError("Final artifact is missing G-code data.")
                     export_future.set_exception(exc)
                     return
 
-                gcode_str = artifact.gcode_bytes.tobytes().decode("utf-8")
+                gcode_str = artifact.machine_code_bytes.tobytes().decode(
+                    "utf-8"
+                )
                 output_path.write_text(gcode_str, encoding="utf-8")
 
                 logger.info(f"Test export successful to {output_path}")

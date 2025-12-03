@@ -412,10 +412,12 @@ class FileCmd:
                 artifact = artifact_store.get(handle)
                 if not isinstance(artifact, JobArtifact):
                     raise ValueError("Expected a JobArtifact for export.")
-                if artifact.gcode_bytes is None:
+                if artifact.machine_code_bytes is None:
                     raise ValueError("Final artifact is missing G-code data.")
 
-                gcode_str = artifact.gcode_bytes.tobytes().decode("utf-8")
+                gcode_str = artifact.machine_code_bytes.tobytes().decode(
+                    "utf-8"
+                )
                 file_path.write_text(gcode_str, encoding="utf-8")
 
                 logger.info(f"Successfully exported G-code to {file_path}")
