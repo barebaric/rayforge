@@ -1,9 +1,9 @@
 import cairo
 import math
 from collections import defaultdict
-from rayforge.core.geo.primitives import find_closest_point_on_line
-from rayforge.core.sketcher.entities import Line, Arc, Circle
-from rayforge.core.sketcher.constraints import (
+from ...core.geo.primitives import find_closest_point_on_line
+from ...core.sketcher.entities import Line, Arc, Circle
+from ...core.sketcher.constraints import (
     DistanceConstraint,
     RadiusConstraint,
     DiameterConstraint,
@@ -16,6 +16,7 @@ from rayforge.core.sketcher.constraints import (
     EqualLengthConstraint,
     SymmetryConstraint,
 )
+from ...core.sketcher.constraints.base import ConstraintStatus
 
 
 class SketchRenderer:
@@ -231,15 +232,19 @@ class SketchRenderer:
 
     # --- Overlays (Constraints & Junctions) ---
 
-    def _set_constraint_color(self, ctx, is_hovered):
+    def _set_constraint_color(self, ctx, constraint, is_hovered):
         """
-        Sets the standard drawing color for constraints (ignoring selection
-        underlay).
+        Sets the standard drawing color for constraints based on hover and
+        status.
         """
         if is_hovered:
-            ctx.set_source_rgb(1.0, 0.6, 0.0)
-        else:
-            ctx.set_source_rgb(0.0, 0.6, 0.0)
+            ctx.set_source_rgb(1.0, 0.8, 0.0)  # Yellow for hover
+        elif constraint.status == ConstraintStatus.ERROR:
+            ctx.set_source_rgb(1.0, 0.2, 0.2)  # Red for error
+        elif constraint.status == ConstraintStatus.EXPRESSION_BASED:
+            ctx.set_source_rgb(1.0, 0.6, 0.0)  # Orange for expression
+        else:  # VALID
+            ctx.set_source_rgb(0.0, 0.6, 0.0)  # Green for valid
 
     def _draw_selection_underlay(self, ctx, width_scale=3.0):
         """Draws a semi-transparent blue underlay for the current path."""
@@ -251,13 +256,9 @@ class SketchRenderer:
 
     def _format_constraint_value(self, constr):
         """Helper to format the value string for constraints."""
-        # If it has an expression (e.g., "width"), show it.
-        # Otherwise, show the numeric value.
-        return (
-            f"{constr.expression}"
-            if constr.expression
-            else f"{float(constr.value):.1f}"
-        )
+        # Always show the evaluated numeric value, which is kept up-to-date
+        # by the solver, even for expressions.
+        return f"{float(constr.value):.1f}"
 
     def _draw_overlays(self, ctx: cairo.Context, to_screen):
         # --- Stage 0: Get Hover State ---
@@ -311,11 +312,16 @@ class SketchRenderer:
                 if constr.p1 == origin_id and origin_id != -1:
                     pid_to_draw = constr.p2
                 self._draw_point_constraint(
-                    ctx, pid_to_draw, to_screen, is_sel, is_hovered
+                    ctx, constr, pid_to_draw, to_screen, is_sel, is_hovered
                 )
             elif isinstance(constr, PointOnLineConstraint):
                 self._draw_point_constraint(
-                    ctx, constr.point_id, to_screen, is_sel, is_hovered
+                    ctx,
+                    constr,
+                    constr.point_id,
+                    to_screen,
+                    is_sel,
+                    is_hovered,
                 )
             elif isinstance(constr, SymmetryConstraint):
                 self._draw_symmetry_constraint(
@@ -332,14 +338,14 @@ class SketchRenderer:
                 is_sel = group_id == self.element.selection.constraint_idx
                 is_hovered = group_id == hovered_constraint_idx
                 self._draw_equality_symbol(
-                    ctx, entity, is_sel, is_hovered, to_screen
+                    ctx, entity, group_id, is_sel, is_hovered, to_screen
                 )
 
         # Draw implicit junction constraints
         self._draw_junctions(ctx, to_screen)
 
     def _draw_equality_symbol(
-        self, ctx, entity, is_selected, is_hovered, to_screen
+        self, ctx, entity, constraint_idx, is_selected, is_hovered, to_screen
     ):
         """
         Draws a larger, always-horizontal '=' symbol offset from the entity.
@@ -347,9 +353,13 @@ class SketchRenderer:
         if not entity:
             return
 
+        try:
+            constr = self.element.sketch.constraints[constraint_idx]
+        except (IndexError, TypeError):
+            return
+
         # Use the constraint's own logic to find the anchor point
-        temp_constr = EqualLengthConstraint([entity.id])
-        pos = temp_constr._get_symbol_pos(
+        pos = constr._get_symbol_pos(
             entity,
             self.element.sketch.registry,
             to_screen.transform_point,
@@ -367,7 +377,7 @@ class SketchRenderer:
             ctx.arc(sx, sy, 10, 0, 2 * math.pi)
             ctx.fill()
 
-        self._set_constraint_color(ctx, is_hovered)
+        self._set_constraint_color(ctx, constr, is_hovered)
         ctx.set_font_size(16)
         ext = ctx.text_extents("=")
         # Center the text on the calculated screen point
@@ -424,7 +434,7 @@ class SketchRenderer:
                     ctx.restore()
 
     def _draw_point_constraint(
-        self, ctx, pid, to_screen, is_selected, is_hovered
+        self, ctx, constr, pid, to_screen, is_selected, is_hovered
     ):
         p = self._safe_get_point(pid)
         if not p:
@@ -440,7 +450,7 @@ class SketchRenderer:
         if is_selected:
             self._draw_selection_underlay(ctx)
 
-        self._set_constraint_color(ctx, is_hovered)
+        self._set_constraint_color(ctx, constr, is_hovered)
         ctx.stroke()
         ctx.restore()
 
@@ -467,13 +477,17 @@ class SketchRenderer:
         ext = ctx.text_extents(label)
 
         ctx.save()
-        # Use background rect for selection/hover
+        # Set background color based on selection, hover, and status
         if is_selected:
-            ctx.set_source_rgba(0.2, 0.6, 1.0, 0.4)
+            ctx.set_source_rgba(0.2, 0.6, 1.0, 0.4)  # Blue selection
         elif is_hovered:
-            ctx.set_source_rgba(1.0, 0.95, 0.85, 0.9)
-        else:
-            ctx.set_source_rgba(1, 1, 1, 0.8)
+            ctx.set_source_rgba(1.0, 0.95, 0.85, 0.9)  # Light yellow hover
+        elif constr.status == ConstraintStatus.ERROR:
+            ctx.set_source_rgba(1.0, 0.8, 0.8, 0.9)  # Light red background
+        elif constr.status == ConstraintStatus.EXPRESSION_BASED:
+            ctx.set_source_rgba(1.0, 0.9, 0.7, 0.9)  # Light orange background
+        else:  # VALID
+            ctx.set_source_rgba(1, 1, 1, 0.8)  # Default white background
 
         bg_x = sx - ext.width / 2 - 4
         bg_y = sy - ext.height / 2 - 4
@@ -481,7 +495,12 @@ class SketchRenderer:
         ctx.fill()
         ctx.new_path()
 
-        ctx.set_source_rgb(0, 0, 0.5)
+        # Set text color based on status
+        if constr.status == ConstraintStatus.ERROR:
+            ctx.set_source_rgb(0.8, 0.0, 0.0)  # Red text for error
+        else:
+            ctx.set_source_rgb(0, 0, 0.5)  # Dark blue otherwise
+
         ctx.move_to(sx - ext.width / 2, sy + ext.height / 2 - 2)
         ctx.show_text(label)
 
@@ -509,12 +528,17 @@ class SketchRenderer:
         ext = ctx.text_extents(label)
 
         ctx.save()
+        # Set background color based on selection, hover, and status
         if is_selected:
-            ctx.set_source_rgba(0.2, 0.6, 1.0, 0.4)
+            ctx.set_source_rgba(0.2, 0.6, 1.0, 0.4)  # Blue selection
         elif is_hovered:
-            ctx.set_source_rgba(1.0, 0.95, 0.85, 0.9)
-        else:
-            ctx.set_source_rgba(1, 1, 1, 0.8)
+            ctx.set_source_rgba(1.0, 0.95, 0.85, 0.9)  # Light yellow hover
+        elif constr.status == ConstraintStatus.ERROR:
+            ctx.set_source_rgba(1.0, 0.8, 0.8, 0.9)  # Light red background
+        elif constr.status == ConstraintStatus.EXPRESSION_BASED:
+            ctx.set_source_rgba(1.0, 0.9, 0.7, 0.9)  # Light orange background
+        else:  # VALID
+            ctx.set_source_rgba(1, 1, 1, 0.8)  # Default white background
 
         # Draw label background
         bg_x = mx - ext.width / 2 - 4
@@ -523,8 +547,12 @@ class SketchRenderer:
         ctx.fill()
         ctx.new_path()
 
-        # Draw Text
-        ctx.set_source_rgb(0, 0, 0.5)
+        # Set text color based on status
+        if constr.status == ConstraintStatus.ERROR:
+            ctx.set_source_rgb(0.8, 0.0, 0.0)  # Red text for error
+        else:
+            ctx.set_source_rgb(0, 0, 0.5)  # Dark blue otherwise
+
         ctx.move_to(mx - ext.width / 2, my + ext.height / 2 - 2)
         ctx.show_text(label)
         ctx.new_path()
@@ -576,7 +604,7 @@ class SketchRenderer:
         if is_selected:
             self._draw_selection_underlay(ctx)
 
-        self._set_constraint_color(ctx, is_hovered)
+        self._set_constraint_color(ctx, constr, is_hovered)
         ctx.stroke()
         ctx.restore()
 
@@ -612,7 +640,7 @@ class SketchRenderer:
             if is_selected:
                 self._draw_selection_underlay(ctx)
 
-            self._set_constraint_color(ctx, is_hovered)
+            self._set_constraint_color(ctx, constr, is_hovered)
             ctx.stroke()
 
             # Dot
@@ -631,7 +659,7 @@ class SketchRenderer:
             if is_selected:
                 self._draw_selection_underlay(ctx)
 
-            self._set_constraint_color(ctx, is_hovered)
+            self._set_constraint_color(ctx, constr, is_hovered)
             ctx.stroke()
 
         ctx.restore()
@@ -697,7 +725,7 @@ class SketchRenderer:
         if is_selected:
             self._draw_selection_underlay(ctx)
 
-        self._set_constraint_color(ctx, is_hovered)
+        self._set_constraint_color(ctx, constr, is_hovered)
         ctx.stroke()
         ctx.restore()
 
@@ -759,7 +787,7 @@ class SketchRenderer:
         if is_selected:
             self._draw_selection_underlay(ctx)
 
-        self._set_constraint_color(ctx, is_hovered)
+        self._set_constraint_color(ctx, constr, is_hovered)
         ctx.stroke()
         ctx.restore()
 

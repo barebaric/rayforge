@@ -1,4 +1,5 @@
 from __future__ import annotations
+from enum import Enum, auto
 from typing import (
     Union,
     Tuple,
@@ -16,12 +17,21 @@ if TYPE_CHECKING:
     from ..params import ParameterContext
 
 
+class ConstraintStatus(Enum):
+    """Represents the validation status of a constraint."""
+
+    VALID = auto()
+    EXPRESSION_BASED = auto()
+    ERROR = auto()
+
+
 class Constraint:
     """Base class for all geometric constraints."""
 
     # These attributes are expected on dimensional constraints
     value: float = 0.0
     expression: Optional[str] = None
+    status: ConstraintStatus = ConstraintStatus.VALID
 
     def error(
         self, reg: "EntityRegistry", params: "ParameterContext"
@@ -70,12 +80,16 @@ class Constraint:
     def update_from_context(self, context: Dict[str, Any]):
         """
         Re-evaluates the expression (if present) using the provided context
-        and updates self.value.
+        and updates self.value and self.status.
         """
         if self.expression:
             try:
                 self.value = safe_evaluate(self.expression, context)
-            except ValueError:
+                self.status = ConstraintStatus.EXPRESSION_BASED
+            except (ValueError, SyntaxError, NameError, TypeError):
                 # Keep old value on failure to prevent geometry collapse
-                # during invalid typing
-                pass
+                # during invalid typing. Set status to error.
+                self.status = ConstraintStatus.ERROR
+        else:
+            # If there's no expression, it's just a valid numeric constraint.
+            self.status = ConstraintStatus.VALID
