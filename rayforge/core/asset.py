@@ -13,8 +13,13 @@ class IAsset(Protocol):
     uid: str
     """The unique identifier of the asset instance."""
 
-    name: str
-    """The user-facing name of the asset instance."""
+    @property
+    def name(self) -> str:
+        """The user-facing name of the asset instance."""
+        ...
+
+    @name.setter
+    def name(self, value: str) -> None: ...
 
     def to_dict(self) -> Dict[str, Any]:
         """Serializes the asset to a dictionary."""

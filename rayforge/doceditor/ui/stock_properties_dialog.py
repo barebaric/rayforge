@@ -157,8 +157,9 @@ class StockPropertiesDialog(Adw.Window):
 
     def _apply_name_change(self, new_name):
         """Apply the name change."""
-        if new_name and new_name != self.stock_item.name:
-            self.editor.stock.rename_stock_item(self.stock_item, new_name)
+        stock_asset = self.stock_item.stock_asset
+        if stock_asset and new_name and new_name != stock_asset.name:
+            self.editor.asset.rename_asset(stock_asset, new_name)
 
     def on_stock_item_updated(self, sender, **kwargs):
         """Update the UI when the stock item changes."""

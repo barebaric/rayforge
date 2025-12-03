@@ -1,11 +1,11 @@
 from __future__ import annotations
 from typing import Dict, Any, Optional, TYPE_CHECKING, Tuple, cast
-
+from .geo import Geometry
 from .item import DocItem
 from .matrix import Matrix
-from .geo import Geometry
 
 if TYPE_CHECKING:
+    from .asset import IAsset
     from .material import Material
     from .stock_asset import StockAsset
 
@@ -22,6 +22,10 @@ class StockItem(DocItem):
         super().__init__(name=name)
         self.stock_asset_uid: str = stock_asset_uid
         self.visible: bool = True
+
+    def depends_on_asset(self, asset: "IAsset") -> bool:
+        """Checks if this stock item is an instance of the given asset."""
+        return self.stock_asset_uid == asset.uid
 
     @property
     def stock_asset(self) -> Optional["StockAsset"]:

@@ -23,13 +23,25 @@ class StockAsset(IAsset):
         self, name: str = "Stock", geometry: Optional[Geometry] = None
     ):
         self.uid: str = str(uuid.uuid4())
-        self.name: str = name
+        self._name: str = name
         self.geometry: Geometry = (
             geometry if geometry is not None else Geometry()
         )
         self.thickness: Optional[float] = None
         self.material_uid: Optional[str] = None
         self.updated = Signal()
+
+    @property
+    def name(self) -> str:
+        """The user-facing name of the asset."""
+        return self._name
+
+    @name.setter
+    def name(self, value: str):
+        """Sets the asset name and sends an update signal if changed."""
+        if self._name != value:
+            self._name = value
+            self.updated.send(self)
 
     @property
     def asset_type_name(self) -> str:
@@ -75,12 +87,6 @@ class StockAsset(IAsset):
         asset.thickness = data.get("thickness")
         asset.material_uid = data.get("material_uid")
         return asset
-
-    def set_name(self, name: str):
-        """Setter method for use with undo commands."""
-        if self.name != name:
-            self.name = name
-            self.updated.send(self)
 
     def set_thickness(self, value: Optional[float]):
         """Setter method for use with undo commands."""

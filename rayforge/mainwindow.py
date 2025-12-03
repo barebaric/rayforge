@@ -458,7 +458,7 @@ class MainWindow(Adw.ApplicationWindow):
 
     def on_add_child(self, sender):
         """Handler for adding a new stock item, called from AssetListView."""
-        self.doc_editor.stock.add_child()
+        self.doc_editor.stock.add_stock()
 
     def enter_sketch_mode(
         self, workpiece: WorkPiece, is_new_sketch: bool = False

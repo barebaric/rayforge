@@ -11,6 +11,7 @@ from ..core.vectorization_spec import VectorizationSpec
 from ..pipeline.pipeline import Pipeline
 from ..machine.cmd import MachineCmd
 from ..pipeline.artifact import JobArtifactHandle, JobArtifact
+from .asset_cmd import AssetCmd
 from .edit_cmd import EditCmd
 from .split_cmd import SplitCmd
 from .file_cmd import FileCmd
@@ -83,6 +84,7 @@ class DocEditor:
         )
 
         # Instantiate and link command handlers, passing dependencies.
+        self.asset = AssetCmd(self)
         self.edit = EditCmd(self)
         self.file = FileCmd(self, self.task_manager)
         self.group = GroupCmd(self, self.task_manager)

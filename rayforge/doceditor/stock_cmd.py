@@ -26,7 +26,7 @@ class _AddStockCommand(Command):
         geometry: Geometry,
         pos: tuple[float, float],
     ):
-        super().__init__(name=_("Add Stock Item"))
+        super().__init__(name=_("Add Stock"))
         self.doc = doc
         self.asset = StockAsset(name=name, geometry=geometry)
         self.item = StockItem(stock_asset_uid=self.asset.uid, name=name)
@@ -47,42 +47,16 @@ class _AddStockCommand(Command):
         self.doc.remove_asset_by_uid(self.asset_uid)
 
 
-class _DeleteStockCommand(Command):
-    """
-    A private command to handle the deletion of a StockAsset and StockItem.
-    """
-
-    def __init__(self, doc: "Doc", stock_item: StockItem):
-        super().__init__(name=_("Remove Stock Item"))
-        self.doc = doc
-        self.item = stock_item
-        self.asset = stock_item.stock_asset
-        self.asset_uid = self.asset.uid if self.asset else None
-
-    def execute(self):
-        self.do()
-
-    def do(self):
-        self.doc.remove_child(self.item)
-        if self.asset_uid:
-            self.doc.remove_asset_by_uid(self.asset_uid)
-
-    def undo(self):
-        if self.asset:
-            self.doc.add_asset(self.asset, silent=True)
-        self.doc.add_child(self.item)
-
-
 class StockCmd:
     """Handles commands related to stock material."""
 
     def __init__(self, editor: "DocEditor"):
         self._editor = editor
 
-    def add_child(self):
+    def add_stock(self):
         """
-        Adds a new StockAsset and linking StockItem. This is a single
-        undoable operation.
+        Adds a new StockAsset and a linking StockItem to the document.
+        This is a single undoable operation.
         """
         doc = self._editor.doc
         machine = self._editor.context.config.machine
@@ -110,15 +84,6 @@ class StockCmd:
         )
         doc.history_manager.execute(command)
 
-    def delete_stock_item(self, stock_item: StockItem):
-        """
-        Deletes a StockItem and its associated StockAsset with an
-        undoable command.
-        """
-        doc = self._editor.doc
-        command = _DeleteStockCommand(doc, stock_item)
-        doc.history_manager.execute(command)
-
     def toggle_stock_visibility(self, stock_item: StockItem):
         """
         Toggles the visibility of a StockItem with an undoable command.
@@ -133,18 +98,18 @@ class StockCmd:
         )
         self._editor.doc.history_manager.execute(command)
 
-    def rename_stock_item(self, stock_item: StockItem, new_name: str):
+    def rename_stock_asset(self, stock_asset: StockAsset, new_name: str):
         """
-        Renames a StockItem's underlying asset with an undoable command.
-        The item's name is also updated to match.
+        Renames a StockAsset with an undoable command. It also finds and
+        renames all StockItem instances that use this asset.
         """
-        stock_asset = stock_item.stock_asset
-        if not stock_asset or new_name == stock_item.name:
+        if new_name == stock_asset.name:
             return
 
         with self._editor.doc.history_manager.transaction(
-            _("Rename stock item")
+            _("Rename Stock Asset")
         ) as t:
+            # Command to rename the asset definition
             t.execute(
                 ChangePropertyCommand(
                     target=stock_asset,
@@ -153,14 +118,17 @@ class StockCmd:
                     setter_method_name="set_name",
                 )
             )
-            t.execute(
-                ChangePropertyCommand(
-                    target=stock_item,
-                    property_name="name",
-                    new_value=new_name,
-                    setter_method_name="set_name",
-                )
-            )
+            # Find and rename all instances
+            for item in self._editor.doc.stock_items:
+                if item.stock_asset_uid == stock_asset.uid:
+                    t.execute(
+                        ChangePropertyCommand(
+                            target=item,
+                            property_name="name",
+                            new_value=new_name,
+                            setter_method_name="set_name",
+                        )
+                    )
 
     def set_stock_thickness(self, stock_item: StockItem, new_thickness: float):
         """

@@ -1,9 +1,8 @@
 import logging
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 from gi.repository import Gtk, Gdk, Pango
 from blinker import Signal
 from ...core.doc import Doc
-from ...core.stock import StockItem
 from ...core.stock_asset import StockAsset
 from ...core.sketcher.sketch import Sketch
 from ...shared.ui.formatter import format_value
@@ -46,12 +45,20 @@ class SketchAssetRowWidget(Gtk.Box):
         content_box.set_valign(Gtk.Align.CENTER)
         self.append(content_box)
 
-        # Title: A label for the sketch name
-        self.name_label = Gtk.Label()
-        self.name_label.set_hexpand(False)
-        self.name_label.set_halign(Gtk.Align.START)
-        self.name_label.set_ellipsize(Pango.EllipsizeMode.END)
-        content_box.append(self.name_label)
+        # Title: An entry styled to look like a label for renaming the asset
+        self.name_entry = Gtk.Entry()
+        self.name_entry.add_css_class("asset-title-entry")
+        self.name_entry.set_hexpand(False)
+        self.name_entry.set_halign(Gtk.Align.START)
+        self.name_entry.connect("activate", self.on_name_apply)
+        self.name_entry.connect(
+            "notify::has-focus", self.on_name_focus_changed
+        )
+        content_box.append(self.name_entry)
+
+        key_controller = Gtk.EventControllerKey.new()
+        key_controller.connect("key-pressed", self.on_name_escape_pressed)
+        self.name_entry.add_controller(key_controller)
 
         # Subtitle: A label for the sketch parameters count
         self.subtitle_label = Gtk.Label()
@@ -94,10 +101,28 @@ class SketchAssetRowWidget(Gtk.Box):
     def on_delete_clicked(self, button: Gtk.Button):
         self.delete_clicked.send(self)
 
+    def on_name_escape_pressed(self, controller, keyval, keycode, state):
+        if keyval == Gdk.KEY_Escape:
+            self.name_entry.set_text(self.asset.name)
+            list_box = self.get_ancestor(Gtk.ListBox)
+            if list_box:
+                list_box.grab_focus()
+            return True
+        return False
+
+    def on_name_focus_changed(self, entry: Gtk.Entry, gparam):
+        if not entry.has_focus():
+            self.on_name_apply(entry)
+
+    def on_name_apply(self, widget: Gtk.Widget, *args):
+        new_name = self.name_entry.get_text()
+        self.editor.asset.rename_asset(self.asset, new_name)
+
     def update_ui(self):
         """Synchronizes the widget's state with the sketch data."""
-        self.name_label.set_text(self.asset.name)
-        self.name_label.set_tooltip_text(
+        if not self.name_entry.has_focus():
+            self.name_entry.set_text(self.asset.name)
+        self.name_entry.set_tooltip_text(
             f"{self.asset.name} ({self.asset.uid})"
         )
 
@@ -116,7 +141,7 @@ class SketchAssetRowWidget(Gtk.Box):
 class StockAssetRowWidget(Gtk.Box):
     """
     A custom widget representing a single StockAsset in a list.
-    It finds its corresponding StockItem to manage instance properties.
+    It has no knowledge of any StockItem instances.
     """
 
     delete_clicked = Signal()
@@ -131,17 +156,6 @@ class StockAssetRowWidget(Gtk.Box):
         self.asset = asset  # This is the StockAsset
         self.editor = editor
 
-        # Find the corresponding StockItem instance. This UI assumes a 1-to-1
-        # mapping between asset and item, so we find the first one.
-        self.stock_item: Optional[StockItem] = next(
-            (
-                item
-                for item in doc.stock_items
-                if item.stock_asset_uid == asset.uid
-            ),
-            None,
-        )
-
         # Icon
         icon = get_icon(asset.display_icon_name)
         icon.set_valign(Gtk.Align.CENTER)
@@ -153,7 +167,7 @@ class StockAssetRowWidget(Gtk.Box):
         content_box.set_valign(Gtk.Align.CENTER)
         self.append(content_box)
 
-        # Title: An entry styled to look like a label
+        # Title: An entry styled to look like a label for renaming the asset
         self.name_entry = Gtk.Entry()
         self.name_entry.add_css_class("asset-title-entry")
         self.name_entry.set_hexpand(False)
@@ -180,9 +194,6 @@ class StockAssetRowWidget(Gtk.Box):
         suffix_box.set_valign(Gtk.Align.CENTER)
         self.append(suffix_box)
 
-        self.visibility_on_icon = get_icon("visibility-on-symbolic")
-        self.visibility_off_icon = get_icon("visibility-off-symbolic")
-
         properties_icon = get_icon("document-properties-symbolic")
         self.properties_button = Gtk.Button(child=properties_icon)
         self.properties_button.set_tooltip_text(_("Edit stock properties"))
@@ -190,20 +201,12 @@ class StockAssetRowWidget(Gtk.Box):
         suffix_box.append(self.properties_button)
 
         self.delete_button = Gtk.Button(child=get_icon("delete-symbolic"))
-        self.delete_button.set_tooltip_text(_("Delete this stock item"))
+        self.delete_button.set_tooltip_text(_("Delete this stock asset"))
         self.delete_button.connect("clicked", self.on_delete_clicked)
         suffix_box.append(self.delete_button)
 
-        self.visibility_button = Gtk.ToggleButton()
-        self.visibility_button.set_child(self.visibility_on_icon)
-        self.visibility_button.connect("clicked", self.on_button_view_click)
-        suffix_box.append(self.visibility_button)
-
         # Listen to the asset for changes to its data
         self.asset.updated.connect(self.on_asset_changed)
-        if self.stock_item:
-            # Listen to the item for visibility changes
-            self.stock_item.updated.connect(self.on_asset_changed)
 
         self._config_handler_id = get_context().config.changed.connect(
             self.on_config_changed
@@ -212,8 +215,6 @@ class StockAssetRowWidget(Gtk.Box):
 
     def do_destroy(self):
         self.asset.updated.disconnect(self.on_asset_changed)
-        if self.stock_item:
-            self.stock_item.updated.disconnect(self.on_asset_changed)
         if hasattr(self, "_config_handler_id"):
             get_context().config.changed.disconnect(self._config_handler_id)
 
@@ -240,36 +241,35 @@ class StockAssetRowWidget(Gtk.Box):
         self.delete_clicked.send(self)
 
     def on_name_apply(self, widget: Gtk.Widget, *args):
-        if not self.stock_item:
-            return
         new_name = self.name_entry.get_text()
-        if not new_name.strip() or new_name == self.asset.name:
-            self.name_entry.set_text(self.asset.name)
-            return
-        self.editor.stock.rename_stock_item(self.stock_item, new_name)
+        self.editor.asset.rename_asset(self.asset, new_name)
 
     def on_properties_clicked(self, button: Gtk.Button):
-        if not self.stock_item:
+        # Find the FIRST stock item that uses this asset to show properties
+        # This is a reasonable compromise for the properties dialog.
+        stock_item_instance = next(
+            (
+                item
+                for item in self.doc.stock_items
+                if item.stock_asset_uid == self.asset.uid
+            ),
+            None,
+        )
+        if not stock_item_instance:
+            logger.warning(
+                "Properties clicked for a stock asset with no instances."
+            )
+            # Optionally, show a dialog explaining this. For now, do nothing.
             return
+
         root = self.get_root()
         if root and isinstance(root, Gtk.Window):
-            dialog = StockPropertiesDialog(root, self.stock_item, self.editor)
+            dialog = StockPropertiesDialog(
+                root, stock_item_instance, self.editor
+            )
             dialog.present()
 
-    def on_button_view_click(self, button: Gtk.ToggleButton):
-        # Explicitly check for None before accessing attributes.
-        if self.stock_item is None:
-            return
-        # If the button state already matches the model, do nothing.
-        if button.get_active() == self.stock_item.visible:
-            return
-        self.editor.stock.toggle_stock_visibility(self.stock_item)
-
     def update_ui(self):
-        # UI should be disabled if there's no instance on the canvas
-        has_instance = self.stock_item is not None
-        self.set_sensitive(has_instance)
-
         if not self.name_entry.has_focus():
             self.name_entry.set_text(self.asset.name)
 
@@ -281,12 +281,3 @@ class StockAssetRowWidget(Gtk.Box):
 
         self.subtitle_label.set_label(subtitle)
         self.subtitle_label.set_tooltip_text(subtitle)
-
-        # Visibility is a property of the StockItem instance
-        if self.stock_item:
-            is_visible = self.stock_item.visible
-            self.visibility_button.set_active(is_visible)
-            if is_visible:
-                self.visibility_button.set_child(self.visibility_on_icon)
-            else:
-                self.visibility_button.set_child(self.visibility_off_icon)
