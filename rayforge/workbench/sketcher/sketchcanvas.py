@@ -224,15 +224,10 @@ class SketchCanvas(WorldSurface):
             variables=variables, functions=math_functions
         )
 
-        # Use ExpressionEntry instead of Adw.EntryRow
         expression_entry = ExpressionEntry()
         expression_entry.set_tooltip_text(row_subtitle)
-
-        # Adw.EntryRow looks best inside a boxed list when inside a dialog
-        list_box = Gtk.ListBox()
-        list_box.add_css_class("boxed-list")
-        list_box.append(expression_entry)
-        list_box.set_size_request(500, -1)
+        expression_entry.set_vexpand(True)
+        expression_entry.set_valign(Gtk.Align.START)
 
         dialog = Adw.MessageDialog(
             transient_for=self.parent_window,
@@ -240,19 +235,20 @@ class SketchCanvas(WorldSurface):
             destroy_with_parent=True,
             heading=_("Edit Constraint"),
         )
-        dialog.set_extra_child(list_box)
+        dialog.set_extra_child(expression_entry)
         dialog.add_response("cancel", _("Cancel"))
         dialog.add_response("ok", _("OK"))
         dialog.set_default_response("ok")
         dialog.set_close_response("cancel")
+        dialog.set_size_request(500, 220)
 
         # Handle "OK" button sensitivity and "Enter" key
         def on_validated(sender, *, is_valid):
             dialog.set_response_enabled("ok", is_valid)
 
-        expression_entry.validated.connect(on_validated)
+        expression_entry.validated.connect(on_validated, weak=False)
         expression_entry.activated.connect(
-            lambda sender: dialog.response("ok")
+            lambda sender: dialog.response("ok"), weak=False
         )
 
         # Set context and text *after* connecting signals to set initial state

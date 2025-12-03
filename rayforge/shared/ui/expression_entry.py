@@ -31,7 +31,7 @@ css = """
 
 /* Set a transparent background for the TextView inside the frame */
 .expression-entry-frame > GtkTextView {
-  padding: 6px;
+  padding: 8px;
   background-color: transparent;
 }
 
@@ -138,11 +138,14 @@ class ExpressionEntry(Gtk.Box):
             wrap_mode=Gtk.WrapMode.NONE,
             accepts_tab=False,
             monospace=True,
-            left_margin=10,
-            right_margin=10,
+            left_margin=12,
+            right_margin=12,
             top_margin=10,
             bottom_margin=10,
         )
+        self.textview.set_size_request(-1, 40)
+        self.textview.set_vexpand(True)
+
         self.frame = Gtk.Frame(child=self.textview)
         self.frame.add_css_class("expression-entry-frame")
         self.append(self.frame)
