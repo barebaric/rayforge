@@ -1,4 +1,5 @@
 import logging
+import multiprocessing as mp
 import threading
 import time
 import pytest
@@ -34,14 +35,19 @@ def event_sending_func(proxy: ExecutionContextProxy):
     return "event_sent"
 
 
-def worker_init(filepath: Path):
-    """Initializer function that writes its PID to a file."""
+def worker_init(filepath: Path, init_queue: mp.Queue):
+    """
+    Initializer function that writes its PID to a file and signals completion.
+    """
     # This function runs in the worker process.
     # We use a file-based side effect for the test to observe.
     import os
 
+    pid = os.getpid()
     with open(filepath, "a") as f:
-        f.write(f"{os.getpid()}\n")
+        f.write(f"{pid}\n")
+    # Signal back to the main process that this worker has initialized.
+    init_queue.put(pid)
 
 
 # --- Fixtures ---
@@ -222,37 +228,30 @@ class TestWorkerPoolManager:
         init_file = tmp_path / "init.log"
         num_workers = 3
 
-        # Create the pool with the initializer
+        # Use the same multiprocessing context as the pool to create a queue
+        ctx = mp.get_context("spawn")
+        init_queue = ctx.Queue()
+
+        # Create the pool with the initializer, passing the queue in initargs
         pool = WorkerPoolManager(
             num_workers=num_workers,
             initializer=worker_init,
-            initargs=(init_file,),
+            initargs=(init_file, init_queue),
         )
 
-        # To ensure all workers have run their initializer, we submit one task
-        # per worker and wait for all of them to complete. This is much more
-        # reliable than a fixed sleep.
-        all_tasks_completed = threading.Event()
-        completed_count = 0
-        lock = threading.Lock()
-
-        def on_complete(sender, key, task_id, result):
-            nonlocal completed_count
-            with lock:
-                completed_count += 1
-                if completed_count == num_workers:
-                    all_tasks_completed.set()
-
-        pool.task_completed.connect(on_complete)
-        for i in range(num_workers):
-            pool.submit(f"init_task_{i}", i, simple_add_func, 1, 1)
-
-        # Use a generous timeout for slow CI environments like Windows runners
-        completed_in_time = all_tasks_completed.wait(timeout=10)
-        assert completed_in_time, (
-            f"Not all worker initialization tasks completed in time. "
-            f"Expected {num_workers}, but only {completed_count} finished."
-        )
+        # Wait deterministically for all workers to signal initialization.
+        initialized_pids = set()
+        for _ in range(num_workers):
+            try:
+                # Use a generous timeout for slow CI environments
+                pid = init_queue.get(timeout=10)
+                initialized_pids.add(pid)
+            except Exception:
+                pytest.fail(
+                    "Timed out waiting for a worker to initialize. "
+                    f"Expected {num_workers} workers, but only "
+                    f"{len(initialized_pids)} signaled completion."
+                )
 
         # Shut down the pool to ensure all processes are finished and files
         # are flushed.
