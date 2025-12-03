@@ -13,35 +13,35 @@ class TestJobArtifact(unittest.TestCase):
         job_artifact = JobArtifact(
             ops=Ops(),
             distance=0.0,
-            gcode_bytes=np.array([72, 101, 108, 108, 111]),  # "Hello"
+            machine_code_bytes=np.array([72, 101, 108, 108, 111]),  # "Hello"
         )
         self.assertEqual(job_artifact.artifact_type, "JobArtifact")
 
     def test_final_job_serialization_round_trip(self):
         """Tests serialization for a final_job artifact."""
-        gcode_bytes = np.frombuffer(b"G1 X10", dtype=np.uint8)
+        machine_code_bytes = np.frombuffer(b"G1 X10", dtype=np.uint8)
         op_map_bytes = np.frombuffer(json.dumps({0: 0}).encode(), np.uint8)
 
         artifact = JobArtifact(
             ops=Ops(),
             distance=42.5,
-            gcode_bytes=gcode_bytes,
+            machine_code_bytes=machine_code_bytes,
             op_map_bytes=op_map_bytes,
             time_estimate=123.45,
         )
 
         reconstructed = JobArtifact.from_dict(artifact.to_dict())
 
-        self.assertIsNotNone(reconstructed.gcode_bytes)
+        self.assertIsNotNone(reconstructed.machine_code_bytes)
         self.assertIsNotNone(reconstructed.op_map_bytes)
         self.assertEqual(reconstructed.time_estimate, 123.45)
         self.assertEqual(reconstructed.distance, 42.5)
 
         # Add assertions to satisfy the type checker
-        assert reconstructed.gcode_bytes is not None
-        assert artifact.gcode_bytes is not None
+        assert reconstructed.machine_code_bytes is not None
+        assert artifact.machine_code_bytes is not None
         np.testing.assert_array_equal(
-            reconstructed.gcode_bytes, artifact.gcode_bytes
+            reconstructed.machine_code_bytes, artifact.machine_code_bytes
         )
 
         assert reconstructed.op_map_bytes is not None

@@ -30,7 +30,7 @@ from .machine.ui.log_dialog import MachineLogDialog
 from .machine.ui.settings_dialog import MachineSettingsDialog
 from .main_menu import MainMenu
 from .pipeline.artifact import JobArtifact, JobArtifactHandle
-from .pipeline.encoder.gcode import GcodeOpMap
+from .pipeline.encoder.gcode import MachineCodeOpMap
 from .pipeline.steps import STEP_FACTORIES, create_contour_step
 from .shared.gcodeedit.viewer import GcodeViewer
 from .shared.tasker import task_mgr
@@ -787,7 +787,7 @@ class MainWindow(Adw.ApplicationWindow):
         self.canvas3d.update_scene_from_doc()
 
     def _update_gcode_preview(
-        self, gcode_string: Optional[str], op_map: Optional[GcodeOpMap]
+        self, gcode_string: Optional[str], op_map: Optional[MachineCodeOpMap]
     ):
         """Updates the G-code preview panel from a pre-generated string."""
         if gcode_string is None:
@@ -1098,7 +1098,7 @@ class MainWindow(Adw.ApplicationWindow):
 
             if is_gcode_visible and final_artifact:
                 self._update_gcode_preview(
-                    final_artifact.gcode, final_artifact.op_map
+                    final_artifact.machine_code, final_artifact.op_map
                 )
             else:
                 self._update_gcode_preview(None, None)

@@ -5,7 +5,7 @@ from blinker import Signal
 from .editor import GcodeEditor
 
 if TYPE_CHECKING:
-    from ...pipeline.encoder.gcode import GcodeOpMap
+    from ...pipeline.encoder.gcode import MachineCodeOpMap
 
 
 class GcodeViewer(Gtk.Box):
@@ -23,7 +23,7 @@ class GcodeViewer(Gtk.Box):
         self.op_activated = Signal()
         self.line_activated = Signal()
         self.editor = GcodeEditor()
-        self.op_map: Optional[GcodeOpMap] = None
+        self.op_map: Optional[MachineCodeOpMap] = None
 
         # Configure the internal editor for previewing
         self.editor.text_view.set_editable(False)
@@ -36,8 +36,8 @@ class GcodeViewer(Gtk.Box):
 
     def _on_line_activated(self, sender, *, line_number: int):
         self.line_activated.send(self, line_number=line_number)
-        if self.op_map and line_number in self.op_map.gcode_to_op:
-            op_index = self.op_map.gcode_to_op[line_number]
+        if self.op_map and line_number in self.op_map.machine_code_to_op:
+            op_index = self.op_map.machine_code_to_op[line_number]
             self.op_activated.send(self, op_index=op_index)
 
     def set_gcode(self, gcode: str):
@@ -64,7 +64,7 @@ class GcodeViewer(Gtk.Box):
         self.op_map = None
         self.clear_highlight()
 
-    def set_op_map(self, op_map: GcodeOpMap):
+    def set_op_map(self, op_map: MachineCodeOpMap):
         self.op_map = op_map
 
     def highlight_line(self, line_number: int, use_align: bool = True):
@@ -72,11 +72,11 @@ class GcodeViewer(Gtk.Box):
         self.editor.highlight_line(line_number, use_align)
 
     def highlight_op(self, op_index: int):
-        if not self.op_map or op_index not in self.op_map.op_to_gcode:
+        if not self.op_map or op_index not in self.op_map.op_to_machine_code:
             self.clear_highlight()
             return
 
-        line_numbers = self.op_map.op_to_gcode[op_index]
+        line_numbers = self.op_map.op_to_machine_code[op_index]
         if line_numbers:
             # Highlight the first line associated with this op
             self.editor.highlight_line(line_numbers[0])

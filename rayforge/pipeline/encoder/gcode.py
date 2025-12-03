@@ -1,7 +1,7 @@
 import logging
 import math
-from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Optional, List, Tuple, Dict
+from typing import TYPE_CHECKING, Optional, List, Tuple
+from ...core.layer import Layer
 from ...core.ops import (
     Ops,
     Command,
@@ -22,37 +22,18 @@ from ...core.ops import (
     WorkpieceStartCommand,
     WorkpieceEndCommand,
 )
+from ...core.workpiece import WorkPiece
 from ...machine.models.dialect import GcodeDialect
 from ...machine.models.macro import MacroTrigger
 from ...shared.util.template import TemplateFormatter
-from .base import OpsEncoder
+from .base import OpsEncoder, MachineCodeOpMap
 from .context import GcodeContext, JobInfo
-from ...core.layer import Layer
-from ...core.workpiece import WorkPiece
 
 if TYPE_CHECKING:
     from ...core.doc import Doc
     from ...machine.models.machine import Machine
 
 logger = logging.getLogger(__name__)
-
-
-@dataclass
-class GcodeOpMap:
-    """
-    A container for a bidirectional mapping between Ops command indices and
-    G-code line numbers.
-
-    Attributes:
-        op_to_gcode: Maps an Ops command index to a list of G-code line
-                     numbers it generated. An empty list means the command
-                     produced no G-code.
-        gcode_to_op: Maps a G-code line number back to the Ops command
-                     index that generated it.
-    """
-
-    op_to_gcode: Dict[int, List[int]] = field(default_factory=dict)
-    gcode_to_op: Dict[int, int] = field(default_factory=dict)
 
 
 class GcodeEncoder(OpsEncoder):
@@ -103,7 +84,7 @@ class GcodeEncoder(OpsEncoder):
 
     def encode(
         self, ops: Ops, machine: "Machine", doc: "Doc"
-    ) -> Tuple[str, GcodeOpMap]:
+    ) -> Tuple[str, MachineCodeOpMap]:
         """Main encoding workflow"""
         # Set coordinate and feedrate format based on the machine's precision
         self._coord_format = f"{{:.{machine.gcode_precision}f}}"
@@ -115,7 +96,7 @@ class GcodeEncoder(OpsEncoder):
             machine=machine, doc=doc, job=JobInfo(extents=ops.rect())
         )
         gcode: List[str] = []
-        op_map = GcodeOpMap()
+        op_map = MachineCodeOpMap()
 
         # Include a bi-directional map from ops to line number.
         # Since this is an n:n mapping, this needs to be stored as
@@ -127,11 +108,11 @@ class GcodeEncoder(OpsEncoder):
 
             if end_line > start_line:
                 line_indices = list(range(start_line, end_line))
-                op_map.op_to_gcode[i] = line_indices
+                op_map.op_to_machine_code[i] = line_indices
                 for line_num in line_indices:
-                    op_map.gcode_to_op[line_num] = i
+                    op_map.machine_code_to_op[line_num] = i
             else:
-                op_map.op_to_gcode[i] = []
+                op_map.op_to_machine_code[i] = []
 
         self._finalize(gcode)
         return "\n".join(gcode), op_map

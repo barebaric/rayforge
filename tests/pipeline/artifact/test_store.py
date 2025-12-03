@@ -79,15 +79,18 @@ class TestArtifactStore(unittest.TestCase):
 
     def _create_sample_final_job_artifact(self) -> JobArtifact:
         """Helper to generate a final job artifact for tests."""
-        gcode_bytes = np.frombuffer(b"G1 X10 Y20", dtype=np.uint8)
-        op_map = {"op_to_gcode": {0: [0, 1]}, "gcode_to_op": {0: 0, 1: 0}}
+        machine_code_bytes = np.frombuffer(b"G1 X10 Y20", dtype=np.uint8)
+        op_map = {
+            "op_to_machine_code": {0: [0, 1]},
+            "machine_code_to_op": {0: 0, 1: 0},
+        }
         op_map_bytes = np.frombuffer(
             json.dumps(op_map).encode("utf-8"), dtype=np.uint8
         )
         return JobArtifact(
             ops=Ops(),
             distance=15.0,
-            gcode_bytes=gcode_bytes,
+            machine_code_bytes=machine_code_bytes,
             op_map_bytes=op_map_bytes,
             vertex_data=VertexData(),  # Final jobs have vertex data
         )
@@ -189,32 +192,38 @@ class TestArtifactStore(unittest.TestCase):
         # 3. Verify
         assert isinstance(retrieved_artifact, JobArtifact)
         self.assertEqual(retrieved_artifact.artifact_type, "JobArtifact")
-        self.assertIsNotNone(retrieved_artifact.gcode_bytes)
+        self.assertIsNotNone(retrieved_artifact.machine_code_bytes)
         self.assertIsNotNone(retrieved_artifact.op_map_bytes)
         self.assertIsNotNone(retrieved_artifact.vertex_data)
 
         # Add assertions to satisfy the type checker
-        assert retrieved_artifact.gcode_bytes is not None
+        assert retrieved_artifact.machine_code_bytes is not None
         assert retrieved_artifact.op_map_bytes is not None
 
         # Decode and verify content
-        gcode_str = retrieved_artifact.gcode_bytes.tobytes().decode("utf-8")
+        gcode_str = retrieved_artifact.machine_code_bytes.tobytes().decode(
+            "utf-8"
+        )
         op_map_str = retrieved_artifact.op_map_bytes.tobytes().decode("utf-8")
         raw_op_map = json.loads(op_map_str)
 
         # Reconstruct the map with integer keys, just like the app does.
         op_map = {
-            "op_to_gcode": {
-                int(k): v for k, v in raw_op_map["op_to_gcode"].items()
+            "op_to_machine_code": {
+                int(k): v for k, v in raw_op_map["op_to_machine_code"].items()
             },
-            "gcode_to_op": {
-                int(k): v for k, v in raw_op_map["gcode_to_op"].items()
+            "machine_code_to_op": {
+                int(k): v for k, v in raw_op_map["machine_code_to_op"].items()
             },
         }
 
         self.assertEqual(gcode_str, "G1 X10 Y20")
         self.assertDictEqual(
-            op_map, {"op_to_gcode": {0: [0, 1]}, "gcode_to_op": {0: 0, 1: 0}}
+            op_map,
+            {
+                "op_to_machine_code": {0: [0, 1]},
+                "machine_code_to_op": {0: 0, 1: 0},
+            },
         )
 
         # 4. Release

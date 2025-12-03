@@ -182,7 +182,7 @@ class SmoothieDriver(Driver):
         try:
             for op_index in range(len(ops)):
                 # Find all g-code lines for this specific op_index
-                line_indices = op_map.op_to_gcode.get(op_index, [])
+                line_indices = op_map.op_to_machine_code.get(op_index, [])
                 if not line_indices:
                     # If an op generates no g-code, still report it as done.
                     if on_command_done:
