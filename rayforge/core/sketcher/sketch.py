@@ -2,6 +2,7 @@ import json
 import uuid
 from pathlib import Path
 from typing import Union, List, Optional, Set, Dict, Any, Sequence
+from blinker import Signal
 from ..geo import Geometry
 from ..varset import VarSet
 from ..asset import IAsset
@@ -49,7 +50,7 @@ class Sketch(IAsset):
 
     def __init__(self, name: str = "New Sketch") -> None:
         self.uid: str = str(uuid.uuid4())
-        self.name = name
+        self._name = name
         self.params = ParameterContext()
         self.registry = EntityRegistry()
         self.constraints: List[Constraint] = []
@@ -57,9 +58,22 @@ class Sketch(IAsset):
             title="Input Parameters",
             description="Parameters that control this sketch's geometry.",
         )
+        self.updated = Signal()
 
         # Initialize the Origin Point (Fixed Anchor)
         self.origin_id = self.registry.add_point(0.0, 0.0, fixed=True)
+
+    @property
+    def name(self) -> str:
+        """The user-facing name of the asset."""
+        return self._name
+
+    @name.setter
+    def name(self, value: str):
+        """Sets the asset name and sends an update signal if changed."""
+        if self._name != value:
+            self._name = value
+            self.updated.send(self)
 
     @property
     def asset_type_name(self) -> str:

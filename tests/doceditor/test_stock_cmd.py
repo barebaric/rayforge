@@ -15,7 +15,7 @@ def mock_editor(context_initializer):
     """Provides a DocEditor instance with mocked dependencies."""
     task_manager = MagicMock(spec=TaskManager)
     doc = Doc()
-    # Mock machine for add_child, which uses machine dimensions
+    # Mock machine for add_stock, which uses machine dimensions
     mock_machine = MagicMock()
     mock_machine.dimensions = (200.0, 200.0)
     context_initializer.config.machine = mock_machine
@@ -39,7 +39,7 @@ def sample_stock_item_and_asset(mock_editor):
     geometry.line_to(10, 10)
 
     asset = StockAsset(geometry=geometry, name="Test Stock Asset")
-    item = StockItem(stock_asset_uid=asset.uid, name="Test Stock Item")
+    item = StockItem(stock_asset_uid=asset.uid, name="Test Stock Asset")
 
     doc.add_asset(asset)
     doc.add_child(item)
@@ -47,64 +47,17 @@ def sample_stock_item_and_asset(mock_editor):
     return item, asset
 
 
-def test_rename_stock_item(stock_cmd, sample_stock_item_and_asset):
-    """Test renaming a stock item and its underlying asset."""
-    item, asset = sample_stock_item_and_asset
-    new_name = "New Test Stock"
-    initial_history_len = len(stock_cmd._editor.doc.history_manager.undo_stack)
-
-    stock_cmd.rename_stock_item(item, new_name)
-
-    assert item.name == new_name
-    assert asset.name == new_name
-    hm = stock_cmd._editor.doc.history_manager
-    assert len(hm.undo_stack) == initial_history_len + 1
-
-
-def test_rename_stock_item_no_change(stock_cmd, sample_stock_item_and_asset):
-    """Test that renaming to the same name does nothing."""
-    item, asset = sample_stock_item_and_asset
-    initial_name = item.name
-    initial_history_len = len(stock_cmd._editor.doc.history_manager.undo_stack)
-
-    stock_cmd.rename_stock_item(item, initial_name)
-
-    assert item.name == initial_name
-    # The asset name should remain unchanged as well
-    assert asset.name == "Test Stock Asset"
-    hm = stock_cmd._editor.doc.history_manager
-    assert len(hm.undo_stack) == initial_history_len
-
-
-def test_add_child(stock_cmd):
+def test_add_stock(stock_cmd: StockCmd):
     """Test adding a new stock item and its asset."""
     doc = stock_cmd._editor.doc
     initial_item_count = len(doc.stock_items)
     initial_asset_count = len(doc.stock_assets)
     initial_history_len = len(doc.history_manager.undo_stack)
 
-    stock_cmd.add_child()
+    stock_cmd.add_stock()
 
     assert len(doc.stock_items) == initial_item_count + 1
     assert len(doc.stock_assets) == initial_asset_count + 1
-    hm = doc.history_manager
-    assert len(hm.undo_stack) == initial_history_len + 1
-
-
-def test_delete_stock_item(stock_cmd, sample_stock_item_and_asset):
-    """Test deleting a stock item and its asset."""
-    item, asset = sample_stock_item_and_asset
-    doc = stock_cmd._editor.doc
-    initial_item_count = len(doc.stock_items)
-    initial_asset_count = len(doc.stock_assets)
-    initial_history_len = len(doc.history_manager.undo_stack)
-
-    stock_cmd.delete_stock_item(item)
-
-    assert len(doc.stock_items) == initial_item_count - 1
-    assert len(doc.stock_assets) == initial_asset_count - 1
-    assert item not in doc.stock_items
-    assert asset.uid not in doc.stock_assets
     hm = doc.history_manager
     assert len(hm.undo_stack) == initial_history_len + 1
 
@@ -139,7 +92,7 @@ def test_set_stock_thickness(stock_cmd, sample_stock_item_and_asset):
 def test_set_stock_thickness_no_change(stock_cmd, sample_stock_item_and_asset):
     """Test that setting the same thickness does nothing."""
     item, asset = sample_stock_item_and_asset
-    asset.set_thickness(5.0)  # Ensure a starting value
+    asset.thickness = 5.0  # Ensure a starting value
     initial_thickness = item.thickness
     initial_history_len = len(stock_cmd._editor.doc.history_manager.undo_stack)
 

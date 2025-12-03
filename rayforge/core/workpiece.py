@@ -33,6 +33,7 @@ from .tab import Tab
 
 if TYPE_CHECKING:
     from ..image.base_renderer import Renderer
+    from .asset import IAsset
     from .layer import Layer
     from .source_asset import SourceAsset
     from .sketcher.sketch import Sketch
@@ -99,6 +100,20 @@ class WorkPiece(DocItem):
         # This persists across view element destruction/creation
         # (e.g. Grouping) but is not serialized to disk.
         self._view_cache: Dict[str, Any] = {}
+
+    def depends_on_asset(self, asset: "IAsset") -> bool:
+        """
+        Checks if this workpiece depends on the given asset, either through
+        its sketch definition or its source file.
+        """
+        if self.sketch_uid and self.sketch_uid == asset.uid:
+            return True
+        if (
+            self.source_segment
+            and self.source_segment.source_asset_uid == asset.uid
+        ):
+            return True
+        return False
 
     @classmethod
     def from_sketch(cls, sketch: "Sketch") -> "WorkPiece":

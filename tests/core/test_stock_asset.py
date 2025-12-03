@@ -56,6 +56,7 @@ def test_stock_asset_from_dict_deserialization():
         "geometry": {
             "commands": [{"type": "MoveToCommand", "end": [0, 0, 0]}]
         },
+        "type": "stock",
     }
 
     asset = StockAsset.from_dict(asset_dict)
@@ -68,13 +69,13 @@ def test_stock_asset_from_dict_deserialization():
     assert len(asset.geometry.commands) == 1
 
 
-def test_setters_fire_updated_signal():
-    """Tests that setter methods fire the 'updated' signal."""
+def test_property_setters_fire_updated_signal():
+    """Tests that property setters fire the 'updated' signal."""
     asset = StockAsset(name="Signal Test")
     handler = MagicMock()
     asset.updated.connect(handler)
 
-    asset.set_name("New Name")
+    asset.name = "New Name"
     handler.assert_called_once_with(asset)
     handler.reset_mock()
 

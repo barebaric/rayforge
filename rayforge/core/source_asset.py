@@ -27,12 +27,22 @@ class SourceAsset(IAsset):
     width_mm: float = 0.0
     height_mm: float = 0.0
     uid: str = field(default_factory=lambda: str(uuid.uuid4()))
-    name: str = field(init=False)
+    _name: str = field(init=False, repr=False)
 
     def __post_init__(self):
-        self.name = self.source_file.name
+        self._name = self.source_file.name
 
     # --- IAsset Protocol Implementation ---
+
+    @property
+    def name(self) -> str:
+        """The user-facing name of the asset instance."""
+        return self._name
+
+    @name.setter
+    def name(self, value: str) -> None:
+        """Sets the asset name. Provided for protocol compatibility."""
+        self._name = value
 
     @property
     def asset_type_name(self) -> str:
