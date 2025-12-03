@@ -683,7 +683,20 @@ class WorkPiece(DocItem):
                 return None
 
         # 2. Apply Mask
-        if spec.apply_mask:
+        # We skip masking for vector sources because they already render with
+        # correct transparency, and masking with vector geometry (which can
+        # be open lines with zero area) would incorrectly hide the content.
+        is_vector = False
+        if self.source and self.source.metadata.get("is_vector"):
+            is_vector = True
+
+        # Special check for Sketch rendering: if we rendered via sketch def,
+        # it is vector data.
+        if self.sketch_uid:
+            is_vector = True
+
+        if spec.apply_mask and not is_vector:
+            pre_mask_image = processed_image
             mask_geo = self._boundaries_y_down
             if mask_geo and not mask_geo.is_empty():
                 processed_image = image_util.apply_mask_to_vips_image(
@@ -691,6 +704,19 @@ class WorkPiece(DocItem):
                 )
                 if not processed_image:
                     return None
+
+            # If masking wiped everything out (e.g., coordinate mismatch),
+            # fall back to the unmasked image for preview purposes.
+            try:
+                alpha = processed_image[3]
+                if alpha.max() <= 0:
+                    logger.debug(
+                        "Mask produced empty alpha; using unmasked image "
+                        "for preview."
+                    )
+                    processed_image = pre_mask_image
+            except Exception:
+                pass
 
         # 3. Final Resize Check
         if (
@@ -703,6 +729,17 @@ class WorkPiece(DocItem):
                 processed_image = processed_image.resize(
                     h_scale, vscale=v_scale
                 )
+
+        if logger.isEnabledFor(logging.DEBUG):
+            try:
+                wp_uid = getattr(self, "uid", "workpiece")
+                debug_path = (
+                    f"/tmp/rayforge_render_{wp_uid}_{target_w}x{target_h}.png"
+                )
+                processed_image.write_to_file(debug_path)
+                logger.debug("Saved debug render to %s", debug_path)
+            except Exception as exc:
+                logger.debug("Failed to save debug render: %s", exc)
 
         return processed_image
 

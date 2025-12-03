@@ -37,7 +37,19 @@ if [ ! -d "$VENV_PATH" ]; then
     python3 -m venv "$VENV_PATH"
 fi
 
-source "$VENV_PATH/bin/activate"
+ACTIVATED_BY_SCRIPT=0
+if [ -z "${VIRTUAL_ENV:-}" ]; then
+    source "$VENV_PATH/bin/activate"
+    ACTIVATED_BY_SCRIPT=1
+fi
+
+cleanup() {
+    if (( ACTIVATED_BY_SCRIPT == 1 )); then
+        deactivate
+    fi
+}
+
+trap cleanup EXIT
 
 python -m pip install --upgrade pip
 python -m pip install --upgrade build pyinstaller
@@ -149,5 +161,3 @@ SH
 fi
 
 echo "Build artifacts created in dist/ and dist/*.whl"
-
-deactivate

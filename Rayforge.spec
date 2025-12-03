@@ -6,7 +6,7 @@ a = Analysis(
     pathex=[],
     binaries=[],
     datas=[('rayforge/version.txt', 'rayforge'), ('rayforge/resources', 'rayforge/resources'), ('rayforge/locale', 'rayforge/locale')],
-    hiddenimports=['gi._gi_cairo'],
+    hiddenimports=['gi._gi_cairo', 'cairosvg'],
     hookspath=['hooks'],
     hooksconfig={
         'gi': {

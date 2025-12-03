@@ -52,11 +52,18 @@ class VertexEncoder(OpsEncoder):
         travel_v: List[float] = []
         zero_power_v: List[float] = []
 
+        # Ensure each command carries the intended machine state, so power
+        # values are available even if SetPower commands were stripped.
+        ops.preload_state()
+
         # Track current state
         current_power = 0.0
         current_pos = (0.0, 0.0, 0.0)
 
         for cmd in ops.commands:
+            if hasattr(cmd, "state") and cmd.state is not None:
+                current_power = getattr(cmd.state, "power", current_power)
+
             if isinstance(cmd, SetPowerCommand):
                 current_power = cmd.power
                 continue

@@ -842,6 +842,20 @@ class Canvas3D(Gtk.GLArea):
             "[CANVAS3D] Scene preparation finished. Caching vertex data."
         )
         self._scene_vtx_cache = task.result()
+        (
+            powered_verts,
+            _powered_colors,
+            travel_verts,
+            zero_power_verts,
+            _zero_power_colors,
+        ) = self._scene_vtx_cache
+        logger.info(
+            "[CANVAS3D] Vertex counts - powered: %d, travel: %d, "
+            "zero_power: %d",
+            powered_verts.size // 3,
+            travel_verts.size // 3,
+            zero_power_verts.size // 3,
+        )
         self._update_renderer_from_cache()
 
     def _update_renderer_from_cache(self):
@@ -852,6 +866,17 @@ class Canvas3D(Gtk.GLArea):
             if self.ops_renderer:
                 self.ops_renderer.clear()
             logger.debug("[CANVAS3D] No vertex cache to update renderer from.")
+            if self.ops_renderer:
+                (
+                    powered_verts_dbg,
+                    powered_colors_dbg,
+                    travel_verts_dbg,
+                ) = self._build_debug_placeholder()
+                self.ops_renderer.update_from_vertex_data(
+                    powered_verts_dbg,
+                    powered_colors_dbg,
+                    travel_verts_dbg,
+                )
             self.queue_render()
             return
 
@@ -888,6 +913,25 @@ class Canvas3D(Gtk.GLArea):
             powered_colors_final,
             travel_verts_final,
         )
+
+        if (
+            powered_verts_final.size == 0
+            and travel_verts_final.size == 0
+        ):
+            logger.warning(
+                "[CANVAS3D] Scene vertex data is empty. Rendering "
+                "debug placeholder line."
+            )
+            (
+                powered_verts_dbg,
+                powered_colors_dbg,
+                travel_verts_dbg,
+            ) = self._build_debug_placeholder()
+            self.ops_renderer.update_from_vertex_data(
+                powered_verts_dbg,
+                powered_colors_dbg,
+                travel_verts_dbg,
+            )
         self.queue_render()
 
     def update_scene_from_doc(self):
@@ -909,6 +953,10 @@ class Canvas3D(Gtk.GLArea):
 
         # 1. Quickly generate the lightweight scene description
         scene_description = generate_scene_description(self.doc, self.pipeline)
+        logger.info(
+            "[CANVAS3D] Scene description created with %d render items.",
+            len(scene_description.render_items),
+        )
 
         # 2. Handle texture instances immediately on the main thread (fast)
         self.texture_renderer.clear()
@@ -957,3 +1005,29 @@ class Canvas3D(Gtk.GLArea):
                 key=task_key,
                 when_done=self._on_scene_prepared,
             )
+
+    def _build_debug_placeholder(self):
+        """
+        Builds a small placeholder line so rendering code paths stay visible
+        even when no vertex data is produced.
+        """
+        powered_verts = np.array(
+            [0.0, 0.0, 0.0, 5.0, 0.0, 0.0], dtype=np.float32
+        )
+        powered_colors = np.array(
+            [
+                1.0,
+                0.0,
+                0.0,
+                1.0,
+                1.0,
+                0.0,
+                0.0,
+                1.0,
+            ],
+            dtype=np.float32,
+        )
+        travel_verts = np.array(
+            [0.0, 0.0, 0.02, 5.0, 0.0, 0.02], dtype=np.float32
+        )
+        return powered_verts, powered_colors, travel_verts
