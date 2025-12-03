@@ -1,20 +1,22 @@
 import logging
+import math
 from typing import Optional, cast, TYPE_CHECKING
-from gi.repository import Gtk, Gdk, Adw, GLib
+from gi.repository import Adw, Gdk, Gtk
+from ...core.expression import ExpressionContext, safe_evaluate
+from ...core.matrix import Matrix
 from ...core.sketcher.constraints import (
     Constraint,
-    RadiusConstraint,
     DiameterConstraint,
     DistanceConstraint,
     HorizontalConstraint,
+    RadiusConstraint,
     VerticalConstraint,
 )
-from ...core.matrix import Matrix
-from ...core.expression.evaluator import safe_evaluate
+from ...shared.ui.expression_entry import ExpressionEntry
 from ..canvas import WorldSurface
 from .editor import SketchEditor
-from .sketchelement import SketchElement
 from .sketch_cmd import ModifyConstraintCommand
+from .sketchelement import SketchElement
 
 if TYPE_CHECKING:
     from rayforge.core.sketcher import Sketch
@@ -199,30 +201,37 @@ class SketchCanvas(WorldSurface):
 
         # Determine the user-friendly label and description based on type
         if isinstance(constraint, RadiusConstraint):
-            row_title = _("Radius")
             row_subtitle = _("Enter radius or expression (e.g. 'width/2').")
         elif isinstance(constraint, DiameterConstraint):
-            row_title = _("Diameter")
             row_subtitle = _("Enter diameter or expression.")
         elif isinstance(
             constraint,
             (DistanceConstraint, HorizontalConstraint, VerticalConstraint),
         ):
-            row_title = _("Length")
             row_subtitle = _("Enter length or expression.")
         else:
-            row_title = _("Value")
             row_subtitle = _("Enter value or expression.")
 
-        # Use Adw.EntryRow to support both numeric and text input
-        entry_row = Adw.EntryRow(title=row_title)
-        entry_row.set_tooltip_text(row_subtitle)
-        entry_row.set_text(initial_text)
+        # Create ExpressionContext
+        var_set = self.sketch_element.sketch.input_parameters
+        variables = (
+            {var.key: var.var_type for var in var_set} if var_set else {}
+        )
+        math_functions = {
+            k: v for k, v in math.__dict__.items() if not k.startswith("__")
+        }
+        context = ExpressionContext(
+            variables=variables, functions=math_functions
+        )
+
+        # Use ExpressionEntry instead of Adw.EntryRow
+        expression_entry = ExpressionEntry()
+        expression_entry.set_tooltip_text(row_subtitle)
 
         # Adw.EntryRow looks best inside a boxed list when inside a dialog
         list_box = Gtk.ListBox()
         list_box.add_css_class("boxed-list")
-        list_box.append(entry_row)
+        list_box.append(expression_entry)
         list_box.set_size_request(500, -1)
 
         dialog = Adw.MessageDialog(
@@ -237,25 +246,29 @@ class SketchCanvas(WorldSurface):
         dialog.set_default_response("ok")
         dialog.set_close_response("cancel")
 
-        # Handle Enter key to confirm dialog.
-        key_controller = Gtk.EventControllerKey()
-        key_controller.set_propagation_phase(Gtk.PropagationPhase.CAPTURE)
+        # Handle "OK" button sensitivity and "Enter" key
+        def on_validated(sender, *, is_valid):
+            dialog.set_response_enabled("ok", is_valid)
 
-        def on_key_pressed(controller, keyval, keycode, state):
-            if keyval in (Gdk.KEY_Return, Gdk.KEY_KP_Enter):
-                GLib.idle_add(lambda: dialog.response("ok"))
-                return True
-            return False
+        expression_entry.validated.connect(on_validated)
+        expression_entry.activated.connect(
+            lambda sender: dialog.response("ok")
+        )
 
-        key_controller.connect("key-pressed", on_key_pressed)
-        entry_row.add_controller(key_controller)
+        # Set context and text *after* connecting signals to set initial state
+        expression_entry.set_context(context)
+        expression_entry.set_text(initial_text)
 
-        # Also connect to 'apply' signal for convenience
-        entry_row.connect("apply", lambda row: dialog.response("ok"))
+        # Request focus for the text view and select all its content. This
+        # allows the user to start typing immediately to replace the value.
+        expression_entry.textview.grab_focus()
+        buffer = expression_entry.textview.get_buffer()
+        start, end = buffer.get_bounds()
+        buffer.select_range(start, end)
 
         def on_response(source, response_id):
             if response_id == "ok":
-                text_val = entry_row.get_text().strip()
+                text_val = expression_entry.get_text().strip()
                 # Initialize with current value to prevent collapse on eval
                 # failure
                 new_value = float(getattr(constraint, "value", 0.0))
@@ -272,11 +285,11 @@ class SketchCanvas(WorldSurface):
                     new_expr = text_val
                     # Evaluate immediately to get current value for solving
                     try:
-                        context = {}
+                        eval_context = {}
                         params = self.sketch_element.sketch.input_parameters
-                        if params is not None:
-                            context = params.get_values()
-                        new_value = safe_evaluate(text_val, context)
+                        if params:
+                            eval_context = params.get_values()
+                        new_value = safe_evaluate(text_val, eval_context)
                     except ValueError:
                         # Fallback if invalid immediately
                         pass

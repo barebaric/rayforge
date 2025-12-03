@@ -4,11 +4,9 @@ from typing import Dict, Any
 
 logger = logging.getLogger(__name__)
 
-# Allowed functions in expressions
-_MATH_FUNCTIONS = {
-    k: v
-    for k, v in math.__dict__.items()
-    if not k.startswith("__") and callable(v)
+# Allowed functions and constants in expressions
+MATH_CONTEXT = {
+    k: v for k, v in math.__dict__.items() if not k.startswith("__")
 }
 
 
@@ -34,16 +32,17 @@ def safe_evaluate(expression: str, context: Dict[str, Any]) -> float:
     expr = expression.strip()
 
     # Create the evaluation namespace
-    # We combine the user parameters (context) with standard math functions.
     # Note: Context overrides math functions if names collide.
-    namespace = _MATH_FUNCTIONS.copy()
+    namespace = MATH_CONTEXT.copy()
     namespace.update(context)
 
+    # Add the restricted builtins to the same namespace
+    namespace["__builtins__"] = {}
+
     try:
-        # Use Python's eval, but restricted to the specific namespace.
-        # We explicitly set __builtins__ to None to prevent access to
-        # dangerous system functions.
-        result = eval(expr, {"__builtins__": None}, namespace)
+        # Use Python's eval, passing the unified namespace as globals.
+        # Eval will use this for both globals and locals.
+        result = eval(expr, namespace)
         return float(result)
     except Exception as e:
         logger.error(f"Failed to evaluate expression '{expression}': {e}")
