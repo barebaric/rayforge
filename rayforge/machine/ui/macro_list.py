@@ -3,7 +3,7 @@ from gi.repository import Gtk
 from ...machine.models.machine import Machine
 from ..models.macro import Macro
 from ...icons import get_icon
-from ...shared.util.adw import PreferencesGroupWithButton
+from ...shared.ui.preferences_group import PreferencesGroupWithButton
 from .gcode_editor import GcodeEditorDialog
 
 

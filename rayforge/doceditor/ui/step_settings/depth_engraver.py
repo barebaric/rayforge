@@ -3,7 +3,7 @@ from gi.repository import Gtk, Adw, GObject
 from .base import StepComponentSettingsWidget
 from ....pipeline.producer.base import OpsProducer
 from ....pipeline.producer.depth import DepthEngraver, DepthMode
-from ....shared.util.adwfix import get_spinrow_int, get_spinrow_float
+from ....shared.ui.adwfix import get_spinrow_int, get_spinrow_float
 from ....shared.util.glib import DebounceMixin
 
 if TYPE_CHECKING:

@@ -14,7 +14,7 @@ from ...pipeline.artifact import (
     WorkPieceViewArtifact,
 )
 from ...shared.util.colors import ColorSet
-from ...shared.util.gtk_color import GtkColorResolver, ColorSpecDict
+from ...shared.ui.gtk_color import GtkColorResolver, ColorSpecDict
 from ..canvas import CanvasElement
 from .tab_handle import TabHandleElement
 

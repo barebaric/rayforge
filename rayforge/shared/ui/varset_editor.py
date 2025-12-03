@@ -15,7 +15,7 @@ from ...core.varset import (
     TextAreaVar,
 )
 from ...icons import get_icon
-from ...shared.util.adw import PreferencesGroupWithButton
+from .preferences_group import PreferencesGroupWithButton
 from ...undo.models.property_cmd import ChangePropertyCommand
 from .var_row_factory import VarRowFactory, NULL_CHOICE_LABEL
 

@@ -3,7 +3,7 @@ from typing import Any
 from gi.repository import Gtk, Adw
 from blinker import Signal
 
-from ..util.adwfix import get_spinrow_int
+from .adwfix import get_spinrow_int
 from ...machine.transport.validators import is_valid_hostname_or_ip
 from ...core.varset import (
     BoolVar,

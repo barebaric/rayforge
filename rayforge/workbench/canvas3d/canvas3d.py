@@ -8,7 +8,7 @@ from ...context import RayforgeContext
 from ...pipeline.artifact import ArtifactStore, StepRenderArtifact
 from ...pipeline.pipeline import Pipeline
 from ...shared.util.colors import ColorSet
-from ...shared.util.gtk_color import GtkColorResolver, ColorSpecDict
+from ...shared.ui.gtk_color import GtkColorResolver, ColorSpecDict
 from ...shared.tasker import task_mgr, Task
 from .axis_renderer_3d import AxisRenderer3D
 from .camera import Camera, rotation_matrix_from_axis_angle

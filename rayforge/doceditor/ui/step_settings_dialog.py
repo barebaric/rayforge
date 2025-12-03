@@ -5,7 +5,7 @@ from ...context import get_context
 from ...undo import HistoryManager, ChangePropertyCommand
 from ...core.step import Step
 from ...shared.ui.unit_spin_row import UnitSpinRowHelper
-from ...shared.util.adwfix import get_spinrow_float
+from ...shared.ui.adwfix import get_spinrow_float
 from ...pipeline.producer import OpsProducer
 from ...pipeline.transformer import OpsTransformer
 from ...icons import get_icon

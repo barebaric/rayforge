@@ -1,7 +1,7 @@
 from typing import Dict, Any, TYPE_CHECKING
 from gi.repository import Gtk, Adw
 from .base import StepComponentSettingsWidget
-from ....shared.util.adwfix import get_spinrow_int
+from ....shared.ui.adwfix import get_spinrow_int
 from ....shared.util.glib import DebounceMixin
 from ....pipeline.transformer import Smooth
 from ....undo import DictItemCommand

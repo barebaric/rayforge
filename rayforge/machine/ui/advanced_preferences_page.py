@@ -2,7 +2,7 @@ import logging
 from gi.repository import Gtk, Adw
 from ..models.dialect import get_available_dialects, GcodeDialect
 from ...context import get_context
-from ...shared.util.adwfix import get_spinrow_int
+from ...shared.ui.adwfix import get_spinrow_int
 from .hook_list import HookList
 from .macro_list import MacroListEditor
 from .dialect_list import DialectListEditor

@@ -6,7 +6,7 @@ from ..controller import CameraController
 from .properties_widget import CameraProperties
 from .selection_dialog import CameraSelectionDialog
 from ...icons import get_icon
-from ...shared.util.adw import PreferencesGroupWithButton
+from ...shared.ui.preferences_group import PreferencesGroupWithButton
 
 
 class CameraRow(Gtk.Box):

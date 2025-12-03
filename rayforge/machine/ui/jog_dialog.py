@@ -2,7 +2,7 @@ from gi.repository import Gtk, Adw, Gdk
 from ...machine.models.machine import Machine
 from ...machine.cmd import MachineCmd
 from .jog_widget import JogWidget
-from ...shared.util.adwfix import get_spinrow_int, get_spinrow_float
+from ...shared.ui.adwfix import get_spinrow_int, get_spinrow_float
 
 
 class JogDialog(Adw.Window):
