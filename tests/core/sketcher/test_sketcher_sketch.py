@@ -55,6 +55,31 @@ def test_sketch_workflow():
     assert max_y == pytest.approx(10.0, abs=1e-4)
 
 
+def test_sketch_is_empty():
+    """
+    Verifies the is_empty property logic:
+    - True for a new sketch (only origin point).
+    - True if only points are added (points are not drawable entities).
+    - False once a drawable entity (Line/Arc/Circle) is added.
+    """
+    s = Sketch()
+
+    # 1. Initially empty (contains origin point, but no entities)
+    assert s.is_empty is True
+    # Verify internal state: Origin exists, so points list is not empty
+    assert len(s.registry.points) == 1
+    assert len(s.registry.entities) == 0
+
+    # 2. Adding standalone points doesn't change emptiness regarding drawable
+    # geometry
+    p1 = s.add_point(10, 0)
+    assert s.is_empty is True
+
+    # 3. Adding an entity (Line) makes it not empty
+    s.add_line(s.origin_id, p1)
+    assert s.is_empty is False
+
+
 def test_sketch_arc_export():
     s = Sketch()
     # Simple quarter circle arc

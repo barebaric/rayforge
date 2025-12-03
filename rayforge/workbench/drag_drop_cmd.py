@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Optional, Tuple
 from gi.repository import GObject, Gdk, Gtk, Gio, GLib, Adw
 from ..context import get_context
+from ..core.sketcher import Sketch
 from ..image import bitmap_mime_types
 
 if TYPE_CHECKING:
@@ -502,6 +503,33 @@ class DragDropCmd:
             True if the drop was handled successfully
         """
         try:
+            # Retrieve the sketch asset from the document
+            doc = self.main_window.doc_editor.doc
+            sketch = doc.get_asset_by_uid(sketch_uid)
+
+            if not isinstance(sketch, Sketch):
+                logger.warning(
+                    f"Dropped sketch UID {sketch_uid} not found in document"
+                )
+                return False
+
+            # Check if the sketch is empty.
+            # A fresh sketch always has 1 point (the origin), so we check for
+            # entities (lines, arcs, circles) to determine if it has content.
+            if sketch.is_empty:
+                dialog = Adw.MessageDialog(
+                    transient_for=self.main_window,
+                    heading=_("Empty Sketch"),
+                    body=_(
+                        "The selected sketch contains no geometry. Please "
+                        "edit the sketch to add lines or shapes before "
+                        "placing on the canvas."
+                    ),
+                )
+                dialog.add_response("close", _("Close"))
+                dialog.present()
+                return False
+
             edit_cmd = self.main_window.doc_editor.edit
 
             # Create the sketch instance at the drop position
