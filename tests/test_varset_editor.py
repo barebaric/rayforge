@@ -1,6 +1,17 @@
 # flake8: noqa: E402
+import os
+import sys
 import pytest
 from unittest.mock import Mock
+
+if sys.platform.startswith("linux"):
+    os.environ.setdefault("PYOPENGL_PLATFORM", "egl")
+    if not os.environ.get("DISPLAY"):
+        pytest.skip(
+            "DISPLAY not set on Linux, skipping UI tests. Run with xvfb-run.",
+            allow_module_level=True,
+        )
+
 import gi
 
 gi.require_version("Gtk", "4.0")
