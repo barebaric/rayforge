@@ -61,7 +61,7 @@ if (( BUNDLE == 1 )); then
         echo "Icon is up to date, skipping generation."
     fi
 
-    pyinstaller --clean Rayforge.spec
+    pyinstaller --clean --noconfirm Rayforge.spec
 
     APP_ROOT="dist/Rayforge.app/Contents"
     FW_DIR="$APP_ROOT/Frameworks"
@@ -149,3 +149,5 @@ SH
 fi
 
 echo "Build artifacts created in dist/ and dist/*.whl"
+
+deactivate
