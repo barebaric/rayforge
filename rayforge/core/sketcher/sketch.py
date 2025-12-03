@@ -82,6 +82,13 @@ class Sketch(IAsset):
         return True
 
     @property
+    def is_empty(self) -> bool:
+        """Returns True if the sketch has no drawable entities."""
+        # We check entities rather than points, because an empty sketch
+        # always contains at least one point (the origin).
+        return len(self.registry.entities) == 0
+
+    @property
     def is_fully_constrained(self) -> bool:
         """
         Returns True if every point and every entity in the sketch
