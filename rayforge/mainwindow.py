@@ -381,7 +381,7 @@ class MainWindow(Adw.ApplicationWindow):
         self.asset_list_view.set_margin_end(12)
         right_pane_box.append(self.asset_list_view)
         self.asset_list_view.add_sketch_clicked.connect(self.on_new_sketch)
-        self.asset_list_view.add_stock_clicked.connect(self.on_add_stock_item)
+        self.asset_list_view.add_stock_clicked.connect(self.on_add_child)
         self.asset_list_view.sketch_activated.connect(
             self._on_sketch_definition_activated
         )
@@ -456,9 +456,9 @@ class MainWindow(Adw.ApplicationWindow):
         # Set initial state
         self.on_config_changed(None)
 
-    def on_add_stock_item(self, sender):
+    def on_add_child(self, sender):
         """Handler for adding a new stock item, called from AssetListView."""
-        self.doc_editor.stock.add_stock_item()
+        self.doc_editor.stock.add_child()
 
     def enter_sketch_mode(
         self, workpiece: WorkPiece, is_new_sketch: bool = False
@@ -466,7 +466,10 @@ class MainWindow(Adw.ApplicationWindow):
         """Switches the view to the SketchStudio to edit a workpiece."""
         sketch = None
         if workpiece.sketch_uid:
-            sketch = self.doc_editor.doc.get_sketch(workpiece.sketch_uid)
+            sketch = cast(
+                Optional["Sketch"],
+                self.doc_editor.doc.get_asset_by_uid(workpiece.sketch_uid),
+            )
 
         if not sketch:
             logger.warning("Attempted to edit a non-sketch workpiece.")
@@ -549,8 +552,8 @@ class MainWindow(Adw.ApplicationWindow):
         command = ListItemCommand(
             owner_obj=self.doc_editor.doc,
             item=new_sketch,
-            undo_command="remove_sketch",
-            redo_command="add_sketch",
+            undo_command="remove_asset",
+            redo_command="add_asset",
             name=_("Create Sketch Definition"),
         )
         self.doc_editor.history_manager.execute(command)

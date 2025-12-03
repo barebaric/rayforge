@@ -1,5 +1,5 @@
 import logging
-from typing import List, Optional, TypeVar, Iterable, Dict, TYPE_CHECKING
+from typing import List, Optional, TypeVar, Iterable, Dict, TYPE_CHECKING, cast
 from blinker import Signal
 from ..undo import HistoryManager
 from .workpiece import WorkPiece
@@ -10,6 +10,7 @@ from .asset import IAsset
 
 if TYPE_CHECKING:
     from .stock import StockItem
+    from .stock_asset import StockAsset
     from .sketcher.sketch import Sketch
 
 
@@ -30,8 +31,11 @@ class Doc(DocItem):
         self.history_manager = HistoryManager()
         self.active_layer_changed = Signal()
         self.job_assembly_invalidated = Signal()
+
+        # Asset Management
         self.source_assets: Dict[str, SourceAsset] = {}
-        self.sketches: Dict[str, "Sketch"] = {}
+        self.assets: Dict[str, IAsset] = {}
+        self.asset_order: List[str] = []
 
         # A new document starts with one empty workpiece layer
         workpiece_layer = Layer(_("Layer 1"))
@@ -44,69 +48,100 @@ class Doc(DocItem):
     def from_dict(cls, data: Dict) -> "Doc":
         """Deserializes the document from a dictionary."""
         from .stock import StockItem
+        from .stock_asset import StockAsset
         from .sketcher.sketch import Sketch
+        from .geo import Geometry
+        from .matrix import Matrix
+
+        # --- Polymorphic Deserialization Factories ---
+        asset_class_map = {"stock": StockAsset, "sketch": Sketch}
+        item_class_map = {"layer": Layer, "stockitem": StockItem}
+
+        def _deserialize_asset(asset_data: Dict) -> IAsset:
+            asset_type = asset_data.get("type")
+            asset_class = None
+            if asset_type:
+                asset_class = asset_class_map.get(asset_type)
+            if not asset_class:
+                raise TypeError(f"Unknown asset type '{asset_type}'")
+            return asset_class.from_dict(asset_data)
+
+        def _deserialize_item(item_data: Dict) -> DocItem:
+            item_type = item_data.get("type")
+            item_class = None
+            if item_type:
+                item_class = item_class_map.get(item_type)
+            if not item_class:
+                raise TypeError(f"Unknown document item type '{item_type}'")
+            return item_class.from_dict(item_data)
 
         doc = cls()
         doc.uid = data.get("uid", doc.uid)
 
         # Clear the default layer created by __init__
         doc.set_children([])
-        # Reset the index to a safe value before adding new layers
         doc._active_layer_index = -1
 
-        layers = [Layer.from_dict(d) for d in data.get("children", [])]
-        stock_items = [
-            StockItem.from_dict(d) for d in data.get("stock_items", [])
-        ]
-        doc.set_children(layers + stock_items)
+        # Load assets first from unified list
+        for asset_data in data.get("assets", []):
+            doc.add_asset(_deserialize_asset(asset_data))
 
+        # Legacy Asset Loading (from separate dictionaries)
+        stock_assets_data = data.get("stock_assets", {})
+        for uid, sa_data in stock_assets_data.items():
+            doc.add_asset(StockAsset.from_dict(sa_data))
+        sketches_data = data.get("sketches", {})
+        for uid, s_data in sketches_data.items():
+            doc.add_asset(Sketch.from_dict(s_data))
+        source_assets_data = data.get("source_assets", {})
+        for uid, src_data in source_assets_data.items():
+            doc.add_source_asset(SourceAsset.from_dict(src_data))
+
+        # Load children (Layers and StockItems) from unified list
+        children = []
+        children_data = data.get("children", [])
+        for d in children_data:
+            children.append(_deserialize_item(d))
+
+        # Legacy stock item loading (from separate list)
+        stock_items_data = data.get("stock_items", [])
+        for d in stock_items_data:
+            if "geometry" in d and "stock_asset_uid" not in d:
+                # Legacy format: create a StockAsset from item data
+                asset = StockAsset(name=d.get("name", "Stock"))
+                asset.geometry = (
+                    Geometry.from_dict(d["geometry"])
+                    if "geometry" in d and d["geometry"]
+                    else Geometry()
+                )
+                asset.thickness = d.get("thickness")
+                asset.material_uid = d.get("material_uid")
+                doc.add_asset(asset)
+
+                # Create a StockItem instance linked to the new asset
+                item = StockItem(
+                    stock_asset_uid=asset.uid, name=d.get("name", "Stock")
+                )
+                item.uid = d["uid"]
+                item.matrix = Matrix.from_list(d["matrix"])
+                item.visible = d.get("visible", True)
+                children.append(item)
+            else:
+                children.append(StockItem.from_dict(d))
+
+        doc.set_children(children)
         doc._active_layer_index = data.get("active_layer_index", 0)
-
-        source_assets = {
-            uid: SourceAsset.from_dict(src_data)
-            for uid, src_data in data.get("source_assets", {}).items()
-        }
-        doc.source_assets = source_assets
-
-        doc.sketches = {
-            uid: Sketch.from_dict(s_data)
-            for uid, s_data in data.get("sketches", {}).items()
-        }
 
         return doc
 
     @property
     def stock_items(self) -> List["StockItem"]:
         """Returns a list of all child items that are StockItems."""
-        from .stock import (
-            StockItem,
-        )  # Lazy import to avoid circular dependency
+        from .stock import StockItem
 
         return [
             child for child in self.children if isinstance(child, StockItem)
         ]
-
-    @stock_items.setter
-    def stock_items(self, new_stock_items: List["StockItem"]):
-        """
-        Replaces the existing stock items with a new list, preserving order,
-        while leaving other child types (like Layers) untouched.
-        """
-        from .stock import StockItem  # Lazy import
-
-        # Create a new children list containing only the non-stock items
-        other_children = [
-            child
-            for child in self.children
-            if not isinstance(child, StockItem)
-        ]
-
-        # Combine the non-stock items with the new list of stock items
-        new_children_list = other_children + new_stock_items
-
-        # Use set_children to correctly handle signal connection/disconnection
-        self.set_children(new_children_list)
-        self.updated.send(self)
 
     def get_source_asset_by_uid(self, uid: str) -> Optional[SourceAsset]:
         """
@@ -120,15 +155,12 @@ class Doc(DocItem):
             "uid": self.uid,
             "type": "doc",
             "active_layer_index": self._active_layer_index,
-            "children": [child.to_dict() for child in self.layers],
-            "stock_items": [
-                stock_item.to_dict() for stock_item in self.stock_items
-            ],
+            "children": [child.to_dict() for child in self.children],
+            "assets": [asset.to_dict() for asset in self.get_all_assets()],
             "source_assets": {
                 uid: asset.to_dict()
                 for uid, asset in self.source_assets.items()
             },
-            "sketches": {uid: s.to_dict() for uid, s in self.sketches.items()},
         }
 
     def add_source_asset(self, asset: SourceAsset):
@@ -137,49 +169,93 @@ class Doc(DocItem):
             raise TypeError("Only SourceAsset objects can be added.")
         self.source_assets[asset.uid] = asset
 
-    def add_sketch(self, sketch: "Sketch"):
-        """Adds a sketch to the document."""
-        self.sketches[sketch.uid] = sketch
-        self.updated.send(self)
+    def add_asset(
+        self, asset: IAsset, index: Optional[int] = None, silent: bool = False
+    ):
+        """
+        Adds or updates an asset in the document's unified registry and
+        maintains its order.
+        """
+        if not isinstance(asset, IAsset):
+            raise TypeError("Only IAsset objects can be added.")
+        if asset.uid in self.assets:
+            return  # Asset already exists
 
-    def remove_sketch(self, sketch: "Sketch"):
-        """Removes a sketch from the document."""
-        if self.sketches.pop(sketch.uid, None):
+        self.assets[asset.uid] = asset
+        if index is None:
+            self.asset_order.append(asset.uid)
+        else:
+            self.asset_order.insert(index, asset.uid)
+
+        if not silent:
             self.updated.send(self)
 
-    def get_sketch(self, uid: str) -> Optional["Sketch"]:
-        """Retrieves a sketch by its UID."""
-        return self.sketches.get(uid)
+    def remove_asset_by_uid(self, uid: str):
+        """Removes an asset from the document by its UID."""
+        if self.assets.pop(uid, None):
+            try:
+                self.asset_order.remove(uid)
+            except ValueError:
+                logger.warning(
+                    f"Asset UID {uid} was in asset dict but not in order list."
+                )
+            self.updated.send(self)
+
+    def remove_asset(self, asset: "IAsset"):
+        """Removes an asset from the document."""
+        self.remove_asset_by_uid(asset.uid)
+
+    def get_asset_by_uid(self, uid: str) -> Optional[IAsset]:
+        """Retrieves any asset from the document's registry by its UID."""
+        return self.assets.get(uid)
+
+    def set_asset_order(self, new_order_uids: List[str]):
+        """Sets the canonical order for all assets."""
+        if set(new_order_uids) != set(self.assets.keys()):
+            raise ValueError(
+                "New order list must contain all and only existing asset UIDs."
+            )
+        self.asset_order = new_order_uids
+        self.updated.send(self)
 
     def get_all_assets(self) -> List[IAsset]:
-        """Returns a unified list of all assets in a canonical order."""
-        # The order here defines the grouping in the UI.
-        assets: List[IAsset] = []
-        assets.extend(self.stock_items)
-        assets.extend(list(self.sketches.values()))
-        return assets
+        """Returns a unified list of all assets in the canonical order."""
+        return [
+            self.assets[uid] for uid in self.asset_order if uid in self.assets
+        ]
+
+    @property
+    def stock_assets(self) -> Dict[str, "StockAsset"]:
+        """
+        Returns a dictionary of all StockAssets for compatibility.
+        NOTE: The order of this dictionary is not guaranteed.
+        """
+        from .stock_asset import StockAsset
+
+        return {
+            uid: cast(StockAsset, asset)
+            for uid, asset in self.assets.items()
+            if asset.asset_type_name == "stock"
+        }
+
+    @property
+    def sketches(self) -> Dict[str, "Sketch"]:
+        """
+        Returns a dictionary of all Sketches for compatibility.
+        NOTE: The order of this dictionary is not guaranteed.
+        """
+        from .sketcher.sketch import Sketch
+
+        return {
+            uid: cast(Sketch, asset)
+            for uid, asset in self.assets.items()
+            if asset.asset_type_name == "sketch"
+        }
 
     @property
     def doc(self) -> "Doc":
         """The root Doc object is itself."""
         return self
-
-    def add_stock_item(self, stock_item: "StockItem"):
-        """Adds a stock item to the document."""
-        self.add_child(stock_item)
-        self.updated.send(self)
-
-    def remove_stock_item(self, stock_item: "StockItem"):
-        """Removes a stock item from the document."""
-        self.remove_child(stock_item)
-        self.updated.send(self)
-
-    def get_stock_item_by_uid(self, uid: str) -> Optional["StockItem"]:
-        """Retrieves a stock item by its UID."""
-        for stock_item in self.stock_items:
-            if stock_item.uid == uid:
-                return stock_item
-        return None
 
     @property
     def layers(self) -> List[Layer]:
@@ -331,10 +407,7 @@ class Doc(DocItem):
             # The old active layer is not in the new list, so pick a default.
             new_active_index = 0
 
-        # IMPORTANT: Update the active index BEFORE calling set_children.
         self._active_layer_index = new_active_index
-
-        # CRITICAL CHANGE: Preserve non-layer children (e.g., stock items)
         current_stock_items = self.stock_items
         new_children_list = new_layers_list + current_stock_items
         self.set_children(new_children_list)

@@ -109,8 +109,6 @@ class SketchElement(CanvasElement):
     def _connect_signals(self):
         """Connects to signals that indicate the model has changed."""
         self.sketch_changed.connect(self._on_model_changed)
-        # FIX: Check for `is not None` instead of relying on truthiness,
-        # because an empty VarSet has a __len__ of 0 and evaluates to False.
         if self.sketch and self.sketch.input_parameters is not None:
             logger.debug(
                 f"Connecting to VarSet signals on "

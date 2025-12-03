@@ -105,7 +105,7 @@ class TestWorkPiece:
 
         # Setup sketch data for serialization
         sketch = Sketch()
-        doc.add_sketch(sketch)
+        doc.add_asset(sketch)
         wp.sketch_uid = sketch.uid
         wp.sketch_params = {"width": 123.45}
 
@@ -171,7 +171,7 @@ class TestWorkPiece:
         # Create and link a sketch
         sketch = Sketch()
         sketch.add_point(10, 20)  # Add some geometry to check for later
-        doc.add_sketch(sketch)
+        doc.add_asset(sketch)
         wp.sketch_uid = sketch.uid
         wp.sketch_params = {"width": 50.0}
 
@@ -207,7 +207,7 @@ class TestWorkPiece:
         # Case 2: Sketch UID is set, should retrieve the sketch from the
         # document
         sketch_from_doc = Sketch()
-        doc.add_sketch(sketch_from_doc)
+        doc.add_asset(sketch_from_doc)
         wp.sketch_uid = sketch_from_doc.uid
 
         retrieved_sketch = wp.get_sketch_definition()
@@ -742,7 +742,7 @@ class TestWorkPiece:
 
         # We create a mock sketch that returns specific geometry when solved
         sketch = Sketch()
-        doc.add_sketch(sketch)
+        doc.add_asset(sketch)
         wp.sketch_uid = sketch.uid
 
         updated_signals = []
@@ -790,7 +790,7 @@ class TestWorkPiece:
         doc, wp, _ = doc_with_workpiece
 
         sketch = Sketch()
-        doc.add_sketch(sketch)
+        doc.add_asset(sketch)
         wp.sketch_uid = sketch.uid
         wp.clear_render_cache()
 

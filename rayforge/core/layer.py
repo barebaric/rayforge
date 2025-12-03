@@ -14,6 +14,7 @@ from typing import (
     Dict,
     TYPE_CHECKING,
     Any,
+    cast,
 )
 from blinker import Signal
 
@@ -254,7 +255,10 @@ class Layer(DocItem):
         if not self.stock_item_uid or not self.doc:
             return None
 
-        return self.doc.get_stock_item_by_uid(self.stock_item_uid)
+        return cast(
+            "Optional[StockItem]",
+            self.doc.get_child_by_uid(self.stock_item_uid),
+        )
 
     @stock_item.setter
     def stock_item(self, stock_item: Optional["StockItem"]):

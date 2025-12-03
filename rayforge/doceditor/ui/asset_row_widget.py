@@ -1,9 +1,10 @@
 import logging
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 from gi.repository import Gtk, Gdk, Pango
 from blinker import Signal
 from ...core.doc import Doc
 from ...core.stock import StockItem
+from ...core.stock_asset import StockAsset
 from ...core.sketcher.sketch import Sketch
 from ...shared.ui.formatter import format_value
 from ...context import get_context
@@ -114,20 +115,32 @@ class SketchAssetRowWidget(Gtk.Box):
 
 class StockAssetRowWidget(Gtk.Box):
     """
-    A custom widget representing a single StockItem asset in a list.
+    A custom widget representing a single StockAsset in a list.
+    It finds its corresponding StockItem to manage instance properties.
     """
 
     delete_clicked = Signal()
 
-    def __init__(self, doc: Doc, asset: StockItem, editor: "DocEditor"):
+    def __init__(self, doc: Doc, asset: StockAsset, editor: "DocEditor"):
         super().__init__(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
         self.add_css_class("asset-row-view")
         self.add_css_class("stock-asset-row")
 
         self.set_margin_start(6)
         self.doc = doc
-        self.asset = asset
+        self.asset = asset  # This is the StockAsset
         self.editor = editor
+
+        # Find the corresponding StockItem instance. This UI assumes a 1-to-1
+        # mapping between asset and item, so we find the first one.
+        self.stock_item: Optional[StockItem] = next(
+            (
+                item
+                for item in doc.stock_items
+                if item.stock_asset_uid == asset.uid
+            ),
+            None,
+        )
 
         # Icon
         icon = get_icon(asset.display_icon_name)
@@ -186,7 +199,12 @@ class StockAssetRowWidget(Gtk.Box):
         self.visibility_button.connect("clicked", self.on_button_view_click)
         suffix_box.append(self.visibility_button)
 
+        # Listen to the asset for changes to its data
         self.asset.updated.connect(self.on_asset_changed)
+        if self.stock_item:
+            # Listen to the item for visibility changes
+            self.stock_item.updated.connect(self.on_asset_changed)
+
         self._config_handler_id = get_context().config.changed.connect(
             self.on_config_changed
         )
@@ -194,6 +212,8 @@ class StockAssetRowWidget(Gtk.Box):
 
     def do_destroy(self):
         self.asset.updated.disconnect(self.on_asset_changed)
+        if self.stock_item:
+            self.stock_item.updated.disconnect(self.on_asset_changed)
         if hasattr(self, "_config_handler_id"):
             get_context().config.changed.disconnect(self._config_handler_id)
 
@@ -220,24 +240,36 @@ class StockAssetRowWidget(Gtk.Box):
         self.delete_clicked.send(self)
 
     def on_name_apply(self, widget: Gtk.Widget, *args):
+        if not self.stock_item:
+            return
         new_name = self.name_entry.get_text()
         if not new_name.strip() or new_name == self.asset.name:
             self.name_entry.set_text(self.asset.name)
             return
-        self.editor.stock.rename_stock_item(self.asset, new_name)
+        self.editor.stock.rename_stock_item(self.stock_item, new_name)
 
     def on_properties_clicked(self, button: Gtk.Button):
+        if not self.stock_item:
+            return
         root = self.get_root()
         if root and isinstance(root, Gtk.Window):
-            dialog = StockPropertiesDialog(root, self.asset, self.editor)
+            dialog = StockPropertiesDialog(root, self.stock_item, self.editor)
             dialog.present()
 
     def on_button_view_click(self, button: Gtk.ToggleButton):
-        if button.get_active() == self.asset.visible:
+        # Explicitly check for None before accessing attributes.
+        if self.stock_item is None:
             return
-        self.editor.stock.toggle_stock_visibility(self.asset)
+        # If the button state already matches the model, do nothing.
+        if button.get_active() == self.stock_item.visible:
+            return
+        self.editor.stock.toggle_stock_visibility(self.stock_item)
 
     def update_ui(self):
+        # UI should be disabled if there's no instance on the canvas
+        has_instance = self.stock_item is not None
+        self.set_sensitive(has_instance)
+
         if not self.name_entry.has_focus():
             self.name_entry.set_text(self.asset.name)
 
@@ -250,8 +282,11 @@ class StockAssetRowWidget(Gtk.Box):
         self.subtitle_label.set_label(subtitle)
         self.subtitle_label.set_tooltip_text(subtitle)
 
-        self.visibility_button.set_active(self.asset.visible)
-        if self.asset.visible:
-            self.visibility_button.set_child(self.visibility_on_icon)
-        else:
-            self.visibility_button.set_child(self.visibility_off_icon)
+        # Visibility is a property of the StockItem instance
+        if self.stock_item:
+            is_visible = self.stock_item.visible
+            self.visibility_button.set_active(is_visible)
+            if is_visible:
+                self.visibility_button.set_child(self.visibility_on_icon)
+            else:
+                self.visibility_button.set_child(self.visibility_off_icon)

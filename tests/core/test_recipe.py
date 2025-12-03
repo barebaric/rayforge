@@ -1,9 +1,12 @@
 """Tests for the Recipe class."""
 
 from unittest.mock import Mock
+from typing import Optional
 import pytest
+from rayforge.core.doc import Doc
 from rayforge.core.recipe import Recipe
 from rayforge.core.stock import StockItem
+from rayforge.core.stock_asset import StockAsset
 from rayforge.core.capability import CUT, ENGRAVE
 
 
@@ -60,6 +63,26 @@ class TestRecipe:
         head3.uid = "laser-3"
         machine.heads = [head3]
         return machine
+
+    @pytest.fixture
+    def stock_item_factory(self):
+        """
+        A factory to create real, correctly structured StockItem instances.
+        """
+
+        def _create(
+            material_uid: Optional[str], thickness: Optional[float]
+        ) -> StockItem:
+            doc = Doc()
+            asset = StockAsset()
+            asset.material_uid = material_uid
+            asset.thickness = thickness
+            doc.add_asset(asset)
+            item = StockItem(stock_asset_uid=asset.uid)
+            doc.add_child(item)
+            return item
+
+        return _create
 
     def test_recipe_creation(self, sample_recipe: Recipe):
         """Test creating a Recipe with basic properties."""
@@ -131,88 +154,71 @@ class TestRecipe:
     # --- MATCHING LOGIC TESTS ---
 
     def test_matches_perfect(
-        self, sample_recipe: Recipe, mock_machine_a: Mock
+        self, sample_recipe: Recipe, mock_machine_a: Mock, stock_item_factory
     ):
         """Test a perfect match for a specific recipe."""
-        stock = StockItem()
-        stock.material_uid = "plywood-6mm"
-        stock.thickness = 6.0
+        stock = stock_item_factory("plywood-6mm", 6.0)
         assert sample_recipe.matches(stock, {CUT}, mock_machine_a) is True
 
     def test_matches_generic(
-        self, generic_recipe: Recipe, mock_machine_a: Mock
+        self, generic_recipe: Recipe, mock_machine_a: Mock, stock_item_factory
     ):
         """Test that a generic recipe matches any context."""
-        stock = StockItem()
-        stock.material_uid = "any-material"
-        stock.thickness = 10.0
+        stock = stock_item_factory("any-material", 10.0)
         assert generic_recipe.matches(stock, {CUT}, mock_machine_a) is True
         assert generic_recipe.matches(None, {CUT}, mock_machine_a) is True
         assert generic_recipe.matches(stock, {CUT}, None) is True
 
     def test_matches_machine_fail(
-        self, sample_recipe: Recipe, mock_machine_b: Mock
+        self, sample_recipe: Recipe, mock_machine_b: Mock, stock_item_factory
     ):
         """Test match failure due to incorrect machine."""
-        stock = StockItem()
-        stock.material_uid = "plywood-6mm"
-        stock.thickness = 6.0
+        stock = stock_item_factory("plywood-6mm", 6.0)
         assert sample_recipe.matches(stock, {CUT}, mock_machine_b) is False
 
     def test_matches_laser_head_fail(
-        self, sample_recipe: Recipe, mock_machine_a: Mock
+        self, sample_recipe: Recipe, mock_machine_a: Mock, stock_item_factory
     ):
         """Test match failure due to laser head not on machine."""
-        # Modify recipe to require a laser that machine_a does not have
         sample_recipe.settings["selected_laser_uid"] = "non-existent-laser"
-        stock = StockItem()
-        stock.material_uid = "plywood-6mm"
-        stock.thickness = 6.0
+        stock = stock_item_factory("plywood-6mm", 6.0)
         assert sample_recipe.matches(stock, {CUT}, mock_machine_a) is False
 
-    def test_matches_no_machine_provided_fail(self, sample_recipe: Recipe):
+    def test_matches_no_machine_provided_fail(
+        self, sample_recipe: Recipe, stock_item_factory
+    ):
         """
         Test match failure when recipe requires machine but none is given.
         """
-        stock = StockItem()
-        stock.material_uid = "plywood-6mm"
-        stock.thickness = 6.0
+        stock = stock_item_factory("plywood-6mm", 6.0)
         assert sample_recipe.matches(stock, {CUT}, None) is False
 
     def test_matches_capability_fail(
-        self, sample_recipe: Recipe, mock_machine_a: Mock
+        self, sample_recipe: Recipe, mock_machine_a: Mock, stock_item_factory
     ):
         """Test match failure due to incorrect capability."""
-        stock = StockItem()
-        stock.material_uid = "plywood-6mm"
-        stock.thickness = 6.0
+        stock = stock_item_factory("plywood-6mm", 6.0)
         assert sample_recipe.matches(stock, {ENGRAVE}, mock_machine_a) is False
 
     def test_matches_material_fail(
-        self, sample_recipe: Recipe, mock_machine_a: Mock
+        self, sample_recipe: Recipe, mock_machine_a: Mock, stock_item_factory
     ):
         """Test match failure due to material mismatch."""
-        stock = StockItem()
-        stock.material_uid = "wrong-material"
-        stock.thickness = 6.0
+        stock = stock_item_factory("wrong-material", 6.0)
         assert sample_recipe.matches(stock, {CUT}, mock_machine_a) is False
 
     def test_matches_thickness_fail_too_thin(
-        self, sample_recipe: Recipe, mock_machine_a: Mock
+        self, sample_recipe: Recipe, mock_machine_a: Mock, stock_item_factory
     ):
         """Test match failure due to thickness being too low."""
-        stock = StockItem()
-        stock.material_uid = "plywood-6mm"
-        stock.thickness = 3.0
+        stock = stock_item_factory("plywood-6mm", 3.0)
         assert sample_recipe.matches(stock, {CUT}, mock_machine_a) is False
 
     def test_matches_thickness_fail_too_thick(
-        self, sample_recipe: Recipe, mock_machine_a: Mock
+        self, sample_recipe: Recipe, mock_machine_a: Mock, stock_item_factory
     ):
         """Test match failure due to thickness being too high."""
-        stock = StockItem()
-        stock.material_uid = "plywood-6mm"
-        stock.thickness = 10.0
+        stock = stock_item_factory("plywood-6mm", 10.0)
         assert sample_recipe.matches(stock, {CUT}, mock_machine_a) is False
 
     def test_matches_no_stock_fail(
@@ -224,42 +230,30 @@ class TestRecipe:
         assert sample_recipe.matches(None, {CUT}, mock_machine_a) is False
 
     def test_matches_no_thickness_fail(
-        self, sample_recipe: Recipe, mock_machine_a: Mock
+        self, sample_recipe: Recipe, mock_machine_a: Mock, stock_item_factory
     ):
         """
         Test that a thickness-specific recipe fails when stock has no
         thickness.
         """
-        stock = StockItem()
-        stock.material_uid = "plywood-6mm"
-        stock.thickness = None
+        stock = stock_item_factory("plywood-6mm", None)
         assert sample_recipe.matches(stock, {CUT}, mock_machine_a) is False
 
-    def test_matches_material_only_recipe(self):
+    def test_matches_material_only_recipe(self, stock_item_factory):
         """Test a recipe that only specifies material."""
         recipe = Recipe(material_uid="mdf-3mm")
-        stock_match = StockItem()
-        stock_match.material_uid = "mdf-3mm"
-        stock_match.thickness = 3.0
-        stock_fail = StockItem()
-        stock_fail.material_uid = "acrylic-3mm"
-        stock_fail.thickness = 3.0
+        stock_match = stock_item_factory("mdf-3mm", 3.0)
+        stock_fail = stock_item_factory("acrylic-3mm", 3.0)
         assert recipe.matches(stock_match) is True
         assert recipe.matches(stock_fail) is False
         assert recipe.matches(None) is False
 
-    def test_matches_thickness_only_recipe(self):
+    def test_matches_thickness_only_recipe(self, stock_item_factory):
         """Test a recipe that only specifies thickness."""
         recipe = Recipe(min_thickness_mm=2.8, max_thickness_mm=3.2)
-        stock_match = StockItem()
-        stock_match.material_uid = "any"
-        stock_match.thickness = 3.0
-        stock_fail = StockItem()
-        stock_fail.material_uid = "any"
-        stock_fail.thickness = 4.0
-        stock_no_thickness = StockItem()
-        stock_no_thickness.material_uid = "any"
-        stock_no_thickness.thickness = None
+        stock_match = stock_item_factory("any", 3.0)
+        stock_fail = stock_item_factory("any", 4.0)
+        stock_no_thickness = stock_item_factory("any", None)
         assert recipe.matches(stock_match) is True
         assert recipe.matches(stock_fail) is False
         assert recipe.matches(stock_no_thickness) is False

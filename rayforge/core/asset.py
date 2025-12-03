@@ -1,4 +1,4 @@
-from typing import Protocol, runtime_checkable
+from typing import Protocol, runtime_checkable, Dict, Any
 
 
 @runtime_checkable
@@ -15,6 +15,15 @@ class IAsset(Protocol):
 
     name: str
     """The user-facing name of the asset instance."""
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Serializes the asset to a dictionary."""
+        ...
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> "IAsset":
+        """Deserializes the asset from a dictionary."""
+        ...
 
     @property
     def asset_type_name(self) -> str:

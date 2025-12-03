@@ -4,7 +4,6 @@ from rayforge.core.workpiece import WorkPiece
 from rayforge.core.layer import Layer
 from rayforge.core.matrix import Matrix
 from rayforge.core.stock import StockItem
-from rayforge.core.geo import Geometry
 
 
 @pytest.fixture
@@ -19,13 +18,13 @@ def workpiece_factory():
 
 @pytest.fixture
 def stock_item_factory():
-    """Provides a factory to create dummy StockItem instances for testing."""
+    """
+    Provides a factory to create dummy StockItem instances for testing.
+    These tests only care about the type, so a dummy UID is sufficient.
+    """
 
     def _create_stock_item(name="test_stock"):
-        geo = Geometry()
-        geo.move_to(0, 0)
-        geo.line_to(100, 100)
-        return StockItem(name=name, geometry=geo)
+        return StockItem(stock_asset_uid=f"asset-for-{name}", name=name)
 
     return _create_stock_item
 
@@ -345,7 +344,7 @@ def test_deserialization_skips_stock_item_child():
                 "type": "stockitem",
                 "name": "My Stock",
                 "matrix": Matrix.identity().to_list(),
-                "geometry": None,
+                "stock_asset_uid": "some-asset-uid",
             },
         ],
     }

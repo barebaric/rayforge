@@ -225,7 +225,7 @@ class ActionManager:
 
     def on_add_stock(self, action, param):
         """Handler for the 'add_stock' action."""
-        self.editor.stock.add_stock_item()
+        self.editor.stock.add_child()
 
     def _get_workpieces_for_tabbing(self) -> list[WorkPiece]:
         """

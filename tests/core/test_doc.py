@@ -1,3 +1,4 @@
+from typing import Optional, cast
 import pytest
 from unittest.mock import MagicMock, patch
 from pathlib import Path
@@ -5,6 +6,7 @@ from rayforge.core.doc import Doc
 from rayforge.core.layer import Layer
 from rayforge.core.step import Step
 from rayforge.core.stock import StockItem
+from rayforge.core.stock_asset import StockAsset
 from rayforge.core.source_asset import SourceAsset
 from rayforge.image.svg.renderer import SvgRenderer
 from rayforge.core.sketcher.sketch import Sketch
@@ -26,66 +28,85 @@ def test_doc_initialization(doc):
     assert doc.active_layer.name == "Layer 1"
     assert doc.history_manager is not None
     assert doc.source_assets == {}
+    assert doc.stock_assets == {}
     assert doc.stock_items == []
     assert doc.sketches == {}
 
 
+def test_doc_stock_asset_management(doc):
+    """Tests adding, removing, and getting stock assets."""
+    asset1 = StockAsset(name="Asset 1")
+    asset2 = StockAsset(name="Asset 2")
+
+    doc.add_asset(asset1)
+    assert len(doc.stock_assets) == 1
+    assert asset1.uid in doc.stock_assets
+
+    doc.add_asset(asset2)
+    assert len(doc.stock_assets) == 2
+
+    found_asset = doc.get_asset_by_uid(asset1.uid)
+    assert found_asset is asset1
+
+    doc.remove_asset_by_uid(asset1.uid)
+    assert len(doc.stock_assets) == 1
+    assert asset1.uid not in doc.stock_assets
+
+
 def test_doc_stock_items_management(doc):
     """Tests adding, removing, and getting stock items."""
-    stock1 = StockItem(name="Stock 1")
-    stock2 = StockItem(name="Stock 2")
+    asset1 = StockAsset(name="Asset 1")
+    doc.add_asset(asset1)
+    stock1 = StockItem(stock_asset_uid=asset1.uid, name="Stock 1")
+    stock2 = StockItem(stock_asset_uid=asset1.uid, name="Stock 2")
 
-    # Test adding stock items
-    doc.add_stock_item(stock1)
+    doc.add_child(stock1)
     assert len(doc.stock_items) == 1
     assert stock1 in doc.stock_items
     assert stock1.parent is doc
 
-    doc.add_stock_item(stock2)
+    doc.add_child(stock2)
     assert len(doc.stock_items) == 2
 
-    # Test getting stock item by UID
-    found_stock = doc.get_stock_item_by_uid(stock1.uid)
+    found_stock = doc.get_child_by_uid(stock1.uid)
     assert found_stock is stock1
 
-    # Test getting non-existent stock item
-    assert doc.get_stock_item_by_uid("non-existent") is None
+    assert doc.get_child_by_uid("non-existent") is None
 
-    # Test removing stock item
-    doc.remove_stock_item(stock1)
+    doc.remove_child(stock1)
     assert len(doc.stock_items) == 1
     assert stock1 not in doc.stock_items
     assert stock1.parent is None
 
 
-def test_doc_sketch_management(doc):
+def test_doc_asset_management(doc):
     """Tests adding, removing, and getting sketches."""
     sketch1 = Sketch()
     sketch2 = Sketch()
     non_existent_sketch = Sketch()
 
     # Test adding sketches
-    doc.add_sketch(sketch1)
+    doc.add_asset(sketch1)
     assert len(doc.sketches) == 1
     assert sketch1.uid in doc.sketches
 
-    doc.add_sketch(sketch2)
+    doc.add_asset(sketch2)
     assert len(doc.sketches) == 2
 
     # Test getting sketch by UID
-    found_sketch = doc.get_sketch(sketch1.uid)
+    found_sketch = cast(Optional[Sketch], doc.get_asset_by_uid(sketch1.uid))
     assert found_sketch is sketch1
 
     # Test getting non-existent sketch
-    assert doc.get_sketch("non-existent-uid") is None
+    assert doc.get_asset_by_uid("non-existent-uid") is None
 
     # Test removing sketch
-    doc.remove_sketch(sketch1)
+    doc.remove_asset(sketch1)
     assert len(doc.sketches) == 1
     assert sketch1.uid not in doc.sketches
 
     # Test removing non-existent sketch (should not raise error)
-    doc.remove_sketch(non_existent_sketch)
+    doc.remove_asset(non_existent_sketch)
     assert len(doc.sketches) == 1
 
 
@@ -236,50 +257,52 @@ def test_doc_serialization_with_source_assets(doc):
     assert asset1_dict["renderer_name"] == "SvgRenderer"
 
 
-def test_doc_serialization_with_stock_items(doc):
-    """Tests that stock_items are serialized correctly."""
-    stock1 = StockItem(name="Stock 1")
-    stock1.thickness = 10.0
-    stock2 = StockItem(name="Stock 2")
-    stock2.thickness = 15.0
-
-    doc.add_stock_item(stock1)
-    doc.add_stock_item(stock2)
+def test_doc_serialization_with_stock(doc):
+    """Tests that stock assets and items are serialized correctly."""
+    asset1 = StockAsset(name="Asset 1")
+    asset1.thickness = 10.0
+    doc.add_asset(asset1)
+    item1 = StockItem(stock_asset_uid=asset1.uid, name="Item 1")
+    doc.add_child(item1)
 
     data_dict = doc.to_dict()
 
-    assert "stock_items" in data_dict
-    assert len(data_dict["stock_items"]) == 2
+    assert "assets" in data_dict
+    assert len(data_dict["assets"]) == 1
+    asset1_dict = data_dict["assets"][0]
+    assert asset1_dict["name"] == "Asset 1"
+    assert asset1_dict["thickness"] == 10.0
+    assert asset1_dict["type"] == "stock"
 
-    # Check structure of stock items
-    stock1_dict = data_dict["stock_items"][0]
-    assert stock1_dict["name"] == "Stock 1"
-    assert stock1_dict["thickness"] == 10.0
-
-    stock2_dict = data_dict["stock_items"][1]
-    assert stock2_dict["name"] == "Stock 2"
-    assert stock2_dict["thickness"] == 15.0
+    assert "children" in data_dict
+    # Find the stock item among the children (it's the second child after
+    # the default layer)
+    item1_dict = next(
+        (c for c in data_dict["children"] if c.get("type") == "stockitem"),
+        None,
+    )
+    assert item1_dict is not None
+    assert item1_dict["name"] == "Item 1"
+    assert item1_dict["stock_asset_uid"] == asset1.uid
 
 
 def test_doc_serialization_with_sketches(doc):
     """Tests that the sketches registry is serialized correctly."""
     sketch1 = Sketch()
     sketch1.add_point(10, 10)
-    doc.add_sketch(sketch1)
+    doc.add_asset(sketch1)
 
     data_dict = doc.to_dict()
 
-    assert "sketches" in data_dict
-    assert len(data_dict["sketches"]) == 1
-    assert sketch1.uid in data_dict["sketches"]
-
-    # Check structure of the sketch data
-    sketch1_dict = data_dict["sketches"][sketch1.uid]
+    assert "assets" in data_dict
+    assert len(data_dict["assets"]) == 1
+    sketch1_dict = data_dict["assets"][0]
     assert sketch1_dict["uid"] == sketch1.uid
+    assert sketch1_dict["type"] == "sketch"
     assert len(sketch1_dict["registry"]["points"]) > 0
 
 
-def test_doc_from_dict_deserialization():
+def test_doc_from_dict_deserialization(doc):
     """Tests deserializing a Doc from a dictionary."""
     doc_dict = {
         "uid": "test-doc-uid",
@@ -291,9 +314,8 @@ def test_doc_from_dict_deserialization():
                 "type": "layer",
             }
         ],
-        "stock_items": [],
+        "assets": [],
         "source_assets": {},
-        "sketches": {},
     }
 
     with patch("rayforge.core.layer.Layer.from_dict") as mock_layer_from_dict:
@@ -301,17 +323,50 @@ def test_doc_from_dict_deserialization():
         mock_layer.get_local_bbox.return_value = None
         mock_layer_from_dict.return_value = mock_layer
 
-        doc = Doc.from_dict(doc_dict)
+        new_doc = Doc.from_dict(doc_dict)
 
-        assert isinstance(doc, Doc)
-        assert len(doc.children) == 1
-        assert doc.sketches == {}
+        assert isinstance(new_doc, Doc)
+        assert len(new_doc.children) == 1
+        assert new_doc.sketches == {}
         mock_layer_from_dict.assert_called_once_with(
             {
                 "uid": "layer1-uid",
                 "type": "layer",
             }
         )
+
+
+def test_doc_deserialization_legacy_stock_format():
+    """
+    Tests that from_dict correctly handles the old format where stock items
+    contained all their data.
+    """
+    legacy_doc_dict = {
+        "uid": "legacy-doc",
+        "stock_items": [
+            {
+                "uid": "stock-item-uid",
+                "name": "Old Stock",
+                "type": "stockitem",
+                "thickness": 3.0,
+                "material_uid": "mdf",
+                "geometry": {"commands": []},
+                "matrix": [[1, 0, 0], [0, 1, 0], [0, 0, 1]],
+            }
+        ],
+    }
+    doc = Doc.from_dict(legacy_doc_dict)
+    assert len(doc.stock_assets) == 1
+    assert len(doc.stock_items) == 1
+
+    item = doc.stock_items[0]
+    asset = doc.get_asset_by_uid(item.stock_asset_uid)
+
+    assert item.uid == "stock-item-uid"
+    assert isinstance(asset, StockAsset)
+    assert asset.name == "Old Stock"
+    assert asset.thickness == 3.0
+    assert asset.material_uid == "mdf"
 
 
 def test_doc_deserialization_with_sketches():
@@ -333,6 +388,8 @@ def test_doc_deserialization_with_sketches():
     ) as mock_sketch_from_dict:
         mock_sketch = MagicMock(spec=Sketch)
         mock_sketch.uid = "sketch-123"
+        # The mock needs asset_type_name for the .sketches property to work
+        mock_sketch.asset_type_name = "sketch"
         mock_sketch_from_dict.return_value = mock_sketch
 
         doc = Doc.from_dict(doc_dict)
@@ -340,7 +397,7 @@ def test_doc_deserialization_with_sketches():
         mock_sketch_from_dict.assert_called_once_with(sketch_data)
         assert len(doc.sketches) == 1
         assert "sketch-123" in doc.sketches
-        assert doc.get_sketch("sketch-123") is mock_sketch
+        assert doc.get_asset_by_uid("sketch-123") is mock_sketch
 
 
 def test_doc_roundtrip_serialization():
@@ -357,7 +414,7 @@ def test_doc_roundtrip_serialization():
     # Add a sketch
     sketch = Sketch()
     sketch.add_point(10, 20)
-    original.add_sketch(sketch)
+    original.add_asset(sketch)
 
     # Serialize and deserialize
     data = original.to_dict()
@@ -372,8 +429,8 @@ def test_doc_roundtrip_serialization():
     # Check that sketches were restored
     assert len(restored.sketches) == 1
     assert sketch.uid in restored.sketches
-    restored_sketch = restored.get_sketch(sketch.uid)
-    assert restored_sketch is not None
+    restored_sketch = restored.get_asset_by_uid(sketch.uid)
+    assert isinstance(restored_sketch, Sketch)
     assert restored_sketch.uid == sketch.uid
     # Check that some geometry data was restored
     # Original sketch has origin + 1 point = 2 points
@@ -457,33 +514,6 @@ def test_has_result_logic(doc):
         assert doc.has_result()
 
 
-# --- New/Extended Tests ---
-
-
-def test_stock_items_setter(doc):
-    """
-    Tests that the stock_items setter replaces stock items while preserving
-    other children like Layers.
-    """
-    layer = doc.layers[0]
-    stock1 = StockItem(name="Old Stock")
-    doc.add_stock_item(stock1)
-
-    assert doc.children == [layer, stock1]
-
-    new_stock1 = StockItem(name="New Stock 1")
-    new_stock2 = StockItem(name="New Stock 2")
-
-    # Act
-    doc.stock_items = [new_stock1, new_stock2]
-
-    # Assert
-    assert doc.layers == [layer]  # Layer is untouched
-    assert doc.stock_items == [new_stock1, new_stock2]  # Stock is updated
-    # Check the final order in the main children list
-    assert doc.children == [layer, new_stock1, new_stock2]
-
-
 def test_remove_layer_adjusts_active_index(doc):
     """
     Tests that removing a layer correctly adjusts the active layer index.
@@ -563,8 +593,10 @@ def test_set_layers_preserves_stock_items(doc):
     StockItems.
     """
     original_layer = doc.layers[0]
-    stock_item = StockItem(name="My Stock")
-    doc.add_stock_item(stock_item)
+    asset = StockAsset(name="My Asset")
+    doc.add_asset(asset)
+    stock_item = StockItem(stock_asset_uid=asset.uid, name="My Stock")
+    doc.add_child(stock_item)
 
     assert set(doc.children) == {original_layer, stock_item}
 
@@ -619,10 +651,15 @@ def test_update_stock_visibility(doc):
     layer2 = Layer("Layer 2")
     doc.add_layer(layer2)
 
-    stock1 = StockItem(name="Wood")
-    stock2 = StockItem(name="Acrylic")
-    doc.add_stock_item(stock1)
-    doc.add_stock_item(stock2)
+    asset1 = StockAsset(name="Asset 1")
+    asset2 = StockAsset(name="Asset 2")
+    doc.add_asset(asset1)
+    doc.add_asset(asset2)
+
+    stock1 = StockItem(stock_asset_uid=asset1.uid, name="Wood")
+    stock2 = StockItem(stock_asset_uid=asset2.uid, name="Acrylic")
+    doc.add_child(stock1)
+    doc.add_child(stock2)
 
     layer1.stock_item_uid = stock1.uid
     layer2.stock_item_uid = stock2.uid

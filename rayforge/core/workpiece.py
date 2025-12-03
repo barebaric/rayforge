@@ -485,7 +485,7 @@ class WorkPiece(DocItem):
 
         # Hydrate the transient sketch definition if it exists
         if self.sketch_uid and self.doc:
-            sketch = self.doc.get_sketch(self.sketch_uid)
+            sketch = self.doc.get_asset_by_uid(self.sketch_uid)
             if sketch:
                 # We copy the sketch definition so the subprocess has
                 # an independent object
@@ -506,7 +506,9 @@ class WorkPiece(DocItem):
         if self._transient_sketch_definition:
             return self._transient_sketch_definition
         if self.sketch_uid and self.doc:
-            return self.doc.get_sketch(self.sketch_uid)
+            return cast(
+                Optional["Sketch"], self.doc.get_asset_by_uid(self.sketch_uid)
+            )
         return None
 
     def _resolve_render_context(self) -> Optional[RenderContext]:
