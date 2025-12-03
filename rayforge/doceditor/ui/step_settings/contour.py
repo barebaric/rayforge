@@ -3,7 +3,7 @@ from gi.repository import Gtk, Adw
 from .base import StepComponentSettingsWidget
 from ....pipeline.producer.base import OpsProducer, CutSide
 from ....pipeline.producer.contour import ContourProducer, CutOrder
-from ....shared.util.adwfix import get_spinrow_float
+from ....shared.ui.adwfix import get_spinrow_float
 from ....shared.util.glib import DebounceMixin
 
 if TYPE_CHECKING:

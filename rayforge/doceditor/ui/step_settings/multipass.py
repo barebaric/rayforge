@@ -3,7 +3,7 @@ from gi.repository import Gtk, Adw
 from .base import StepComponentSettingsWidget
 from ....pipeline.transformer import MultiPassTransformer
 from ....undo import DictItemCommand
-from ....shared.util.adwfix import get_spinrow_int, get_spinrow_float
+from ....shared.ui.adwfix import get_spinrow_int, get_spinrow_float
 from ....shared.util.glib import DebounceMixin
 
 if TYPE_CHECKING:

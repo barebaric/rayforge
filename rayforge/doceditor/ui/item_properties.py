@@ -8,7 +8,7 @@ from ...core.stock import StockItem
 from ...core.workpiece import WorkPiece
 from ...icons import get_icon
 from ...shared.ui.expander import Expander
-from ...shared.util.adwfix import get_spinrow_float
+from ...shared.ui.adwfix import get_spinrow_float
 from .image_metadata_dialog import ImageMetadataDialog
 
 if TYPE_CHECKING:

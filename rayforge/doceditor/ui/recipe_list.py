@@ -5,7 +5,7 @@ from blinker import Signal
 from ...context import get_context
 from ...core.recipe import Recipe
 from ...shared.ui.formatter import format_value
-from ...shared.util.adw import PreferencesGroupWithButton
+from ...shared.ui.preferences_group import PreferencesGroupWithButton
 from ...icons import get_icon
 from .edit_recipe_dialog import AddEditRecipeDialog
 

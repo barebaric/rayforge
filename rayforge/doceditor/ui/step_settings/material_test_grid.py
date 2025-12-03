@@ -9,7 +9,7 @@ from typing import Dict, Any, TYPE_CHECKING, cast
 from gi.repository import Adw, GLib, GObject, Gtk
 
 from ....pipeline.producer import MaterialTestGridProducer
-from ....shared.util.adwfix import get_spinrow_float, get_spinrow_int
+from ....shared.ui.adwfix import get_spinrow_float, get_spinrow_int
 from ....shared.util.glib import DebounceMixin
 from ....undo import DictItemCommand
 from .base import StepComponentSettingsWidget

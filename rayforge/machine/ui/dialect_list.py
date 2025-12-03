@@ -3,7 +3,7 @@ from gi.repository import Gtk, Adw
 from ...machine.models.dialect import GcodeDialect, get_available_dialects
 from ...context import get_context
 from ...icons import get_icon
-from ...shared.util.adw import PreferencesGroupWithButton
+from ...shared.ui.preferences_group import PreferencesGroupWithButton
 from .dialect_editor import DialectEditorDialog
 
 

@@ -2,7 +2,7 @@ import logging
 from typing import Dict, Tuple, Optional, Union, Any, TypeGuard, cast
 import numpy as np
 from gi.repository import Gdk, Gtk
-from .colors import ColorSet, ColorRGBA
+from ..util.colors import ColorSet, ColorRGBA
 
 logger = logging.getLogger(__name__)
 
