@@ -88,7 +88,7 @@ class FileCmd:
         the history manager.
         """
         if source:
-            self._editor.doc.add_source_asset(source)
+            self._editor.doc.add_asset(source)
 
         if sketches:
             for sketch in sketches:

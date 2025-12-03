@@ -213,7 +213,7 @@ class EditCmd:
             # command, but matches the import logic.
             if source_assets:
                 for asset in source_assets:
-                    self._editor.doc.add_source_asset(asset)
+                    self._editor.doc.add_asset(asset)
 
             # Register sketches.
             if sketches:

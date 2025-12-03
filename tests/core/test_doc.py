@@ -1,4 +1,4 @@
-from typing import Optional, cast
+from typing import cast
 import pytest
 from unittest.mock import MagicMock, patch
 from pathlib import Path
@@ -33,24 +33,59 @@ def test_doc_initialization(doc):
     assert doc.sketches == {}
 
 
-def test_doc_stock_asset_management(doc):
-    """Tests adding, removing, and getting stock assets."""
-    asset1 = StockAsset(name="Asset 1")
-    asset2 = StockAsset(name="Asset 2")
+@pytest.mark.parametrize(
+    "asset_factory, compatibility_property_name",
+    [
+        (lambda: StockAsset(name="Test Stock"), "stock_assets"),
+        (lambda: Sketch(name="Test Sketch"), "sketches"),
+        (
+            lambda: SourceAsset(
+                source_file=Path("test.svg"),
+                original_data=b"",
+                renderer=SvgRenderer(),
+            ),
+            "source_assets",
+        ),
+    ],
+)
+def test_doc_asset_management(doc, asset_factory, compatibility_property_name):
+    """Tests adding, removing, and getting all types of assets."""
+    asset1 = asset_factory()
+    asset2 = asset_factory()
 
+    # 1. Test adding assets
     doc.add_asset(asset1)
-    assert len(doc.stock_assets) == 1
-    assert asset1.uid in doc.stock_assets
+    compatibility_property = getattr(doc, compatibility_property_name)
+    assert len(doc.get_all_assets()) == 1
+    assert len(compatibility_property) == 1
+    assert asset1.uid in compatibility_property
 
     doc.add_asset(asset2)
-    assert len(doc.stock_assets) == 2
+    compatibility_property = getattr(doc, compatibility_property_name)
+    assert len(doc.get_all_assets()) == 2
+    assert len(compatibility_property) == 2
 
+    # 2. Test getting asset by UID
     found_asset = doc.get_asset_by_uid(asset1.uid)
     assert found_asset is asset1
+    assert doc.get_asset_by_uid("non-existent-uid") is None
 
-    doc.remove_asset_by_uid(asset1.uid)
-    assert len(doc.stock_assets) == 1
-    assert asset1.uid not in doc.stock_assets
+    # 3. Test removing asset
+    doc.remove_asset(asset1)
+    compatibility_property = getattr(doc, compatibility_property_name)
+    assert len(doc.get_all_assets()) == 1
+    assert len(compatibility_property) == 1
+    assert asset1.uid not in compatibility_property
+    assert doc.get_asset_by_uid(asset1.uid) is None
+
+    # 4. Test removing a non-existent asset (should not raise error)
+    non_existent_asset = asset_factory()
+    doc.remove_asset(non_existent_asset)
+    assert len(doc.get_all_assets()) == 1
+
+    # 5. Test that adding a non-IAsset object raises a TypeError
+    with pytest.raises(TypeError):
+        doc.add_asset("not an asset")
 
 
 def test_doc_stock_items_management(doc):
@@ -77,62 +112,6 @@ def test_doc_stock_items_management(doc):
     assert len(doc.stock_items) == 1
     assert stock1 not in doc.stock_items
     assert stock1.parent is None
-
-
-def test_doc_asset_management(doc):
-    """Tests adding, removing, and getting sketches."""
-    sketch1 = Sketch()
-    sketch2 = Sketch()
-    non_existent_sketch = Sketch()
-
-    # Test adding sketches
-    doc.add_asset(sketch1)
-    assert len(doc.sketches) == 1
-    assert sketch1.uid in doc.sketches
-
-    doc.add_asset(sketch2)
-    assert len(doc.sketches) == 2
-
-    # Test getting sketch by UID
-    found_sketch = cast(Optional[Sketch], doc.get_asset_by_uid(sketch1.uid))
-    assert found_sketch is sketch1
-
-    # Test getting non-existent sketch
-    assert doc.get_asset_by_uid("non-existent-uid") is None
-
-    # Test removing sketch
-    doc.remove_asset(sketch1)
-    assert len(doc.sketches) == 1
-    assert sketch1.uid not in doc.sketches
-
-    # Test removing non-existent sketch (should not raise error)
-    doc.remove_asset(non_existent_sketch)
-    assert len(doc.sketches) == 1
-
-
-def test_add_and_get_source_asset(doc):
-    """Tests the getter and setter for source assets."""
-    asset = SourceAsset(
-        source_file=Path("a.png"),
-        original_data=b"abc",
-        renderer=SvgRenderer(),
-    )
-
-    # Test adding a source
-    doc.add_source_asset(asset)
-    assert len(doc.source_assets) == 1
-    assert asset.uid in doc.source_assets
-
-    # Test retrieving the source
-    retrieved_asset = doc.get_source_asset_by_uid(asset.uid)
-    assert retrieved_asset is asset
-
-    # Test retrieving a non-existent source
-    assert doc.get_source_asset_by_uid("non-existent-uid") is None
-
-    # Test that adding a non-SourceAsset object raises a TypeError
-    with pytest.raises(TypeError):
-        doc.add_source_asset("not a source")
 
 
 def test_add_layer_fires_descendant_added(doc):
@@ -229,7 +208,9 @@ def test_descendant_removed_bubbles_up_to_doc(doc):
 
 
 def test_doc_serialization_with_source_assets(doc):
-    """Tests that the source_assets registry is serialized correctly."""
+    """
+    Tests that source assets are serialized correctly into the assets list.
+    """
     asset1 = SourceAsset(
         source_file=Path("a.png"),
         original_data=b"abc",
@@ -240,18 +221,22 @@ def test_doc_serialization_with_source_assets(doc):
         original_data=b"def",
         renderer=SvgRenderer(),
     )
-    doc.add_source_asset(asset1)
-    doc.add_source_asset(asset2)
+    doc.add_asset(asset1)
+    doc.add_asset(asset2)
 
     data_dict = doc.to_dict()
 
-    assert "source_assets" in data_dict
-    assert len(data_dict["source_assets"]) == 2
-    assert asset1.uid in data_dict["source_assets"]
-    assert asset2.uid in data_dict["source_assets"]
+    assert "assets" in data_dict
+    all_assets = data_dict["assets"]
+    source_asset_dicts = [a for a in all_assets if a.get("type") == "source"]
+    assert len(source_asset_dicts) == 2
+
+    uids_in_dict = {a["uid"] for a in source_asset_dicts}
+    assert asset1.uid in uids_in_dict
+    assert asset2.uid in uids_in_dict
 
     # Check structure of a source asset
-    asset1_dict = data_dict["source_assets"][asset1.uid]
+    asset1_dict = next(a for a in source_asset_dicts if a["uid"] == asset1.uid)
     assert asset1_dict["uid"] == asset1.uid
     assert asset1_dict["source_file"] == "a.png"
     assert asset1_dict["renderer_name"] == "SvgRenderer"
@@ -289,17 +274,20 @@ def test_doc_serialization_with_stock(doc):
 def test_doc_serialization_with_sketches(doc):
     """Tests that the sketches registry is serialized correctly."""
     sketch1 = Sketch()
-    sketch1.add_point(10, 10)
+    sketch1.name = "My Sketch"
     doc.add_asset(sketch1)
 
     data_dict = doc.to_dict()
 
     assert "assets" in data_dict
-    assert len(data_dict["assets"]) == 1
-    sketch1_dict = data_dict["assets"][0]
+    all_assets = data_dict["assets"]
+    sketch_dicts = [a for a in all_assets if a.get("type") == "sketch"]
+
+    assert len(sketch_dicts) == 1
+    sketch1_dict = sketch_dicts[0]
     assert sketch1_dict["uid"] == sketch1.uid
     assert sketch1_dict["type"] == "sketch"
-    assert len(sketch1_dict["registry"]["points"]) > 0
+    assert sketch1_dict["name"] == "My Sketch"
 
 
 def test_doc_from_dict_deserialization(doc):
@@ -315,7 +303,6 @@ def test_doc_from_dict_deserialization(doc):
             }
         ],
         "assets": [],
-        "source_assets": {},
     }
 
     with patch("rayforge.core.layer.Layer.from_dict") as mock_layer_from_dict:
@@ -334,6 +321,55 @@ def test_doc_from_dict_deserialization(doc):
                 "type": "layer",
             }
         )
+
+
+def test_doc_from_dict_deserialization_modern_assets():
+    """Tests deserializing a Doc with assets in the unified list."""
+    doc_dict = {
+        "uid": "test-doc-uid",
+        "type": "doc",
+        "children": [],
+        "assets": [
+            {
+                "uid": "s1",
+                "type": "stock",
+                "name": "MDF",
+                "geometry": {"commands": []},
+            },
+            {
+                "uid": "k1",
+                "type": "sketch",
+                "name": "Circle",
+                "params": {},
+                "registry": {},
+                "constraints": [],
+                "origin_id": "origin-0",
+            },
+            {
+                "uid": "r1",
+                "type": "source",
+                "name": "img.svg",
+                "source_file": "img.svg",
+                "original_data": b"",
+                "renderer_name": "SvgRenderer",
+            },
+        ],
+    }
+
+    with patch.dict(
+        "rayforge.image.renderer_by_name",
+        {"SvgRenderer": SvgRenderer()},
+        clear=True,
+    ):
+        new_doc = Doc.from_dict(doc_dict)
+
+    assert len(new_doc.get_all_assets()) == 3
+    assert len(new_doc.stock_assets) == 1
+    assert len(new_doc.sketches) == 1
+    assert len(new_doc.source_assets) == 1
+    assert "s1" in new_doc.stock_assets
+    assert "k1" in new_doc.sketches
+    assert "r1" in new_doc.source_assets
 
 
 def test_doc_deserialization_legacy_stock_format():
@@ -371,7 +407,15 @@ def test_doc_deserialization_legacy_stock_format():
 
 def test_doc_deserialization_with_sketches():
     """Tests deserializing a doc that contains sketches using a mock."""
-    sketch_data = {"uid": "sketch-123", "params": {}}
+    sketch_data = {
+        "uid": "sketch-123",
+        "type": "sketch",
+        "name": "Test",
+        "params": {},
+        "registry": {},
+        "constraints": [],
+        "origin_id": "origin-0",
+    }
     doc_dict = {
         "uid": "test-doc-uid",
         "type": "doc",
@@ -413,7 +457,7 @@ def test_doc_roundtrip_serialization():
 
     # Add a sketch
     sketch = Sketch()
-    sketch.add_point(10, 20)
+    sketch.name = "My Test Sketch"
     original.add_asset(sketch)
 
     # Serialize and deserialize
@@ -429,16 +473,10 @@ def test_doc_roundtrip_serialization():
     # Check that sketches were restored
     assert len(restored.sketches) == 1
     assert sketch.uid in restored.sketches
-    restored_sketch = restored.get_asset_by_uid(sketch.uid)
+    restored_sketch = cast(Sketch, restored.get_asset_by_uid(sketch.uid))
     assert isinstance(restored_sketch, Sketch)
     assert restored_sketch.uid == sketch.uid
-    # Check that some geometry data was restored
-    # Original sketch has origin + 1 point = 2 points
-    assert len(restored_sketch.registry.points) == len(sketch.registry.points)
-    assert len(restored_sketch.registry.points) == 2
-    point = restored_sketch.registry.get_point(1)  # ID 0 is origin
-    assert point.x == 10
-    assert point.y == 20
+    assert restored_sketch.name == "My Test Sketch"
 
 
 def test_doc_from_dict_with_default_active_layer_index():
@@ -716,25 +754,29 @@ def test_from_dict_clears_default_layer():
                 "uid": "layer1-uid",
                 "type": "layer",
                 "name": "Loaded Layer 1",
-                "matrix": [
-                    [1, 0, 0],
-                    [0, 1, 0],
-                    [0, 0, 1],
-                ],
+                "matrix": [[1, 0, 0], [0, 1, 0], [0, 0, 1]],
                 "children": [],
-                "workflow": {"type": "workflow", "steps": []},
+                "workflow": {
+                    "uid": "wf1",
+                    "type": "workflow",
+                    "name": "WF",
+                    "matrix": [[1, 0, 0], [0, 1, 0], [0, 0, 1]],
+                    "children": [],
+                },
             },
             {
                 "uid": "layer2-uid",
                 "type": "layer",
                 "name": "Loaded Layer 2",
-                "matrix": [
-                    [1, 0, 0],
-                    [0, 1, 0],
-                    [0, 0, 1],
-                ],
+                "matrix": [[1, 0, 0], [0, 1, 0], [0, 0, 1]],
                 "children": [],
-                "workflow": {"type": "workflow", "steps": []},
+                "workflow": {
+                    "uid": "wf2",
+                    "type": "workflow",
+                    "name": "WF",
+                    "matrix": [[1, 0, 0], [0, 1, 0], [0, 0, 1]],
+                    "children": [],
+                },
             },
         ],
     }

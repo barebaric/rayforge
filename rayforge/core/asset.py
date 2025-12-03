@@ -44,3 +44,8 @@ class IAsset(Protocol):
     def is_draggable_to_canvas(self) -> bool:
         """Indicates if this asset can be dragged onto the canvas."""
         ...
+
+    @property
+    def hidden(self) -> bool:
+        """Indicates if this asset should be hidden from UI."""
+        return False

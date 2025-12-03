@@ -147,7 +147,7 @@ class TestPipeline:
             original_data=self.svg_data,
             renderer=SVG_RENDERER,
         )
-        doc.add_source_asset(source)
+        doc.add_asset(source)
         gen_config = SourceAssetSegment(
             source_asset_uid=source.uid,
             segment_mask_geometry=Geometry(),

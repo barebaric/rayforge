@@ -72,7 +72,7 @@ class MaterialTestCmd:
             workpiece = payload.items[0]
             assert isinstance(workpiece, WorkPiece)
 
-            self._doc.add_source_asset(source)
+            self._doc.add_asset(source)
             step.generated_workpiece_uid = workpiece.uid  # Link step to WP
             width_mm, height_mm = workpiece.size
 

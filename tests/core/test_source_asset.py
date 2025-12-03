@@ -22,6 +22,7 @@ class TestSourceAsset:
         asset = basic_asset
         assert isinstance(asset.uid, str)
         assert asset.source_file == Path("test.svg")
+        assert asset.name == "test.svg"
         assert asset.original_data == b"SVG_DATA"
         assert asset.base_render_data is None
         assert isinstance(asset.renderer, SvgRenderer)
@@ -44,6 +45,8 @@ class TestSourceAsset:
         data_dict = basic_asset.to_dict()
 
         assert data_dict["uid"] == basic_asset.uid
+        assert data_dict["type"] == "source"
+        assert data_dict["name"] == "test.svg"
         assert data_dict["source_file"] == "test.svg"
         assert data_dict["original_data"] == b"SVG_DATA"
         assert data_dict["base_render_data"] == b"RENDER_DATA"
@@ -54,6 +57,8 @@ class TestSourceAsset:
         """Tests deserialization from a dictionary."""
         data_dict = {
             "uid": "test-uid",
+            "type": "source",
+            "name": "test.png",
             "source_file": "test.png",
             "original_data": b"PNG_DATA",
             "base_render_data": b"RENDER_DATA",
@@ -68,6 +73,7 @@ class TestSourceAsset:
             new_asset = SourceAsset.from_dict(data_dict)
 
         assert new_asset.uid == "test-uid"
+        assert new_asset.name == "test.png"
         assert new_asset.original_data == b"PNG_DATA"
         assert new_asset.base_render_data == b"RENDER_DATA"
         assert isinstance(new_asset.renderer, SvgRenderer)
@@ -87,6 +93,7 @@ class TestSourceAsset:
             restored_asset = SourceAsset.from_dict(data_dict)
 
         assert restored_asset.uid == basic_asset.uid
+        assert restored_asset.name == basic_asset.name
         assert restored_asset.source_file == basic_asset.source_file
         assert restored_asset.original_data == basic_asset.original_data
         assert restored_asset.base_render_data == basic_asset.base_render_data
