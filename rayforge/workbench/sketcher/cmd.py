@@ -29,7 +29,7 @@ class UpdateSketchCommand(Command):
         self.sketch_uid = sketch_uid
 
         # --- Store old state for undo ---
-        old_sketch = doc.get_sketch(sketch_uid)
+        old_sketch = doc.get_asset_by_uid(sketch_uid)
         if not old_sketch:
             raise ValueError(f"Sketch with UID {sketch_uid} not found.")
         self.old_sketch_dict = old_sketch.to_dict()

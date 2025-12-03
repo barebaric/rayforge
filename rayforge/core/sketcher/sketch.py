@@ -128,6 +128,7 @@ class Sketch(IAsset):
         """Serializes the Sketch to a dictionary."""
         return {
             "uid": self.uid,
+            "type": self.asset_type_name,
             "name": self.name,
             "input_parameters": self.input_parameters.to_dict(
                 include_value=include_input_values

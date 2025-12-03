@@ -92,7 +92,7 @@ class FileCmd:
 
         if sketches:
             for sketch in sketches:
-                self._editor.doc.add_sketch(sketch)
+                self._editor.doc.add_asset(sketch)
 
         target_layer = cast(Layer, self._editor.default_workpiece_layer)
         cmd_name = _(f"Import {filename.name}")

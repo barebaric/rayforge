@@ -1,15 +1,14 @@
 import logging
 from gi.repository import Gtk, Adw
 from blinker import Signal
-from typing import cast, TYPE_CHECKING, Dict
-
-from ...core.asset import IAsset
+from typing import cast, TYPE_CHECKING, Dict, List
+from ...core.doc import Doc
 from ...core.sketcher.sketch import Sketch
-from ...core.stock import StockItem
+from ...core.stock_asset import StockAsset
 from ...shared.ui.draglist import DragListBox
 from ...shared.ui.expander import Expander
 from ...shared.util.gtk import apply_css
-from ...undo import ListItemCommand
+from ...undo import ListItemCommand, Command
 from ...icons import get_icon
 from .asset_row_factory import create_asset_row_widget
 from .asset_row_widget import StockAssetRowWidget, SketchAssetRowWidget
@@ -18,6 +17,7 @@ from ...shared.ui.popover_menu import PopoverMenu
 
 if TYPE_CHECKING:
     from ..editor import DocEditor
+    from ...core.asset import IAsset
 
 logger = logging.getLogger(__name__)
 
@@ -55,10 +55,20 @@ css = """
 """
 
 
-class AssetListBoxRow(Gtk.ListBoxRow):
-    def __init__(self, asset: IAsset, **kwargs):
-        super().__init__(**kwargs)
-        self.asset = asset
+class _ReorderAssetsCommand(Command):
+    """A command to handle reordering assets in the document."""
+
+    def __init__(self, doc: Doc, new_asset_order: List["IAsset"]):
+        super().__init__(name=_("Reorder Assets"))
+        self.doc = doc
+        self.old_order = doc.asset_order[:]
+        self.new_order = [asset.uid for asset in new_asset_order]
+
+    def execute(self):
+        self.doc.set_asset_order(self.new_order)
+
+    def undo(self):
+        self.doc.set_asset_order(self.old_order)
 
 
 class AssetListView(Expander):
@@ -87,6 +97,7 @@ class AssetListView(Expander):
         self.draglist = DragListBox()
         self.draglist.add_css_class("asset-list-box")
         self.draglist.connect("row-activated", self.on_row_activated)
+        self.draglist.reordered.connect(self.on_assets_reordered)
         content_box.append(self.draglist)
 
         # A Gtk.Button, styled as a card, serves as our "Add" button
@@ -150,11 +161,18 @@ class AssetListView(Expander):
         child = self.draglist.get_first_child()
 
         while child:
-            row = cast(AssetListBoxRow, child)
-            widget = row.get_child()
-            if isinstance(widget, (StockAssetRowWidget, SketchAssetRowWidget)):
-                row.set_child(None)
-                uid_to_widget[widget.asset.uid] = widget
+            row = cast(Gtk.ListBoxRow, child)
+            # The child of the row is an hbox created by DragListBox
+            hbox = row.get_child()
+            if isinstance(hbox, Gtk.Box):
+                # The actual asset widget is the last child of the hbox
+                widget = hbox.get_last_child()
+                if isinstance(
+                    widget, (StockAssetRowWidget, SketchAssetRowWidget)
+                ):
+                    # Detach the widget from its parent hbox so we can reuse it
+                    hbox.remove(widget)
+                    uid_to_widget[widget.asset.uid] = widget
             child = child.get_next_sibling()
 
         self.draglist.remove_all()
@@ -173,7 +191,8 @@ class AssetListView(Expander):
             if not widget:
                 continue
 
-            new_row = AssetListBoxRow(asset)
+            new_row = Gtk.ListBoxRow()
+            new_row.data = asset  # type: ignore
             new_row.set_activatable(True)
             new_row.set_child(widget)
 
@@ -185,12 +204,34 @@ class AssetListView(Expander):
 
             self.draglist.add_row(new_row)
 
-    def on_row_activated(self, listbox: Gtk.ListBox, row: AssetListBoxRow):
-        asset = row.asset
+    def on_assets_reordered(self, draglist: DragListBox):
+        """
+        Handles the reordering of assets in the list and applies the change
+        to the document model via an undoable command.
+        """
+        new_asset_order = [row.data for row in draglist]  # type: ignore
+        command = _ReorderAssetsCommand(
+            doc=self.doc, new_asset_order=new_asset_order
+        )
+        self.editor.doc.history_manager.execute(command)
+
+    def on_row_activated(self, listbox: Gtk.ListBox, row: Gtk.ListBoxRow):
+        asset = row.data  # type: ignore
         if asset.asset_type_name == "sketch":
             self.sketch_activated.send(self, sketch=cast(Sketch, asset))
         elif asset.asset_type_name == "stock":
-            self.stock_activated.send(self, stock_item=cast(StockItem, asset))
+            stock_asset = cast(StockAsset, asset)
+            # Find the corresponding item on the canvas to activate
+            stock_item = next(
+                (
+                    item
+                    for item in self.doc.stock_items
+                    if item.stock_asset_uid == stock_asset.uid
+                ),
+                None,
+            )
+            if stock_item:
+                self.stock_activated.send(self, stock_item=stock_item)
 
     def on_edit_sketch_clicked(self, sketch_row_widget: SketchAssetRowWidget):
         sketch = sketch_row_widget.asset
@@ -230,12 +271,13 @@ class AssetListView(Expander):
         command = ListItemCommand(
             owner_obj=self.doc,
             item=sketch_to_delete,
-            undo_command="add_sketch",
-            redo_command="remove_sketch",
+            undo_command="add_asset",
+            redo_command="remove_asset",
             name=_("Delete Sketch Definition"),
         )
         self.editor.doc.history_manager.execute(command)
 
     def on_delete_stock_clicked(self, stock_row_widget: StockAssetRowWidget):
-        stock_item_to_delete = stock_row_widget.asset
-        self.editor.stock.delete_stock_item(stock_item_to_delete)
+        stock_item_to_delete = stock_row_widget.stock_item
+        if stock_item_to_delete:
+            self.editor.stock.delete_stock_item(stock_item_to_delete)

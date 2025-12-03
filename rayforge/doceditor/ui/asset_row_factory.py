@@ -2,7 +2,7 @@ import logging
 from typing import Optional, TYPE_CHECKING, cast
 from gi.repository import Gtk
 from ...core.asset import IAsset
-from ...core.stock import StockItem
+from ...core.stock_asset import StockAsset
 from ...core.sketcher.sketch import Sketch
 from .asset_row_widget import StockAssetRowWidget, SketchAssetRowWidget
 
@@ -22,7 +22,7 @@ def create_asset_row_widget(
 
     if asset.asset_type_name == "stock":
         # Cast the asset to the specific type for the constructor
-        stock_item = cast(StockItem, asset)
+        stock_item = cast(StockAsset, asset)
         return StockAssetRowWidget(doc, stock_item, editor)
 
     elif asset.asset_type_name == "sketch":

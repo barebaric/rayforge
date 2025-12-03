@@ -2,14 +2,75 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING
 from ..core.stock import StockItem
+from ..core.stock_asset import StockAsset
 from ..core.geo import Geometry
-from ..undo import ChangePropertyCommand
-from ..undo.models.list_cmd import ListItemCommand, ReorderListCommand
+from ..core.matrix import Matrix
+from ..undo import ChangePropertyCommand, Command
 
 if TYPE_CHECKING:
     from .editor import DocEditor
+    from ..core.doc import Doc
 
 logger = logging.getLogger(__name__)
+
+
+class _AddStockCommand(Command):
+    """
+    A private command to handle the creation of a StockAsset and StockItem.
+    """
+
+    def __init__(
+        self,
+        doc: "Doc",
+        name: str,
+        geometry: Geometry,
+        pos: tuple[float, float],
+    ):
+        super().__init__(name=_("Add Stock Item"))
+        self.doc = doc
+        self.asset = StockAsset(name=name, geometry=geometry)
+        self.item = StockItem(stock_asset_uid=self.asset.uid, name=name)
+        w, h = self.asset.get_natural_size()
+        self.item.matrix = Matrix.scale(w, h)
+        self.item.pos = pos
+        self.asset_uid = self.asset.uid
+
+    def execute(self):
+        self.do()
+
+    def do(self):
+        self.doc.add_asset(self.asset, silent=True)
+        self.doc.add_child(self.item)
+
+    def undo(self):
+        self.doc.remove_child(self.item)
+        self.doc.remove_asset_by_uid(self.asset_uid)
+
+
+class _DeleteStockCommand(Command):
+    """
+    A private command to handle the deletion of a StockAsset and StockItem.
+    """
+
+    def __init__(self, doc: "Doc", stock_item: StockItem):
+        super().__init__(name=_("Remove Stock Item"))
+        self.doc = doc
+        self.item = stock_item
+        self.asset = stock_item.stock_asset
+        self.asset_uid = self.asset.uid if self.asset else None
+
+    def execute(self):
+        self.do()
+
+    def do(self):
+        self.doc.remove_child(self.item)
+        if self.asset_uid:
+            self.doc.remove_asset_by_uid(self.asset_uid)
+
+    def undo(self):
+        if self.asset:
+            self.doc.add_asset(self.asset, silent=True)
+        self.doc.add_child(self.item)
 
 
 class StockCmd:
@@ -18,26 +79,22 @@ class StockCmd:
     def __init__(self, editor: "DocEditor"):
         self._editor = editor
 
-    def add_stock_item(self):
+    def add_child(self):
         """
-        Adds a new StockItem with a default size based on machine dimensions.
-        This is a single undoable operation.
+        Adds a new StockAsset and linking StockItem. This is a single
+        undoable operation.
         """
         doc = self._editor.doc
-
-        # Get machine dimensions, with a fallback
         machine = self._editor.context.config.machine
-        machine_w, machine_h = (200.0, 200.0)  # A sensible fallback
+        machine_w, machine_h = (200.0, 200.0)
         if machine:
             machine_w, machine_h = machine.dimensions
 
-        # Calculate a proportional size (e.g., 80%) and centered position
         stock_w = machine_w * 0.8
         stock_h = machine_h * 0.8
         stock_x = (machine_w - stock_w) / 2
         stock_y = (machine_h - stock_h) / 2
 
-        # Create geometry for a rectangle of the calculated size at the origin
         default_geometry = Geometry()
         default_geometry.move_to(0, 0)
         default_geometry.line_to(stock_w, 0)
@@ -45,55 +102,28 @@ class StockCmd:
         default_geometry.line_to(0, stock_h)
         default_geometry.close_path()
 
-        # Generate auto-numbered name
-        stock_count = len(doc.stock_items) + 1
+        stock_count = len(doc.stock_assets) + 1
         stock_name = _("Stock {count}").format(count=stock_count)
-        new_stock_item = StockItem(geometry=default_geometry, name=stock_name)
 
-        # The StockItem constructor sets its matrix to scale to the geometry
-        # size. Now, we set its world position, which updates the matrix's
-        # translation part.
-        new_stock_item.pos = (stock_x, stock_y)
-
-        # Create and execute the command through the history manager
-        command = ListItemCommand(
-            owner_obj=doc,
-            item=new_stock_item,
-            undo_command="remove_stock_item",
-            redo_command="add_stock_item",
-            name=_("Add Stock Item"),
+        command = _AddStockCommand(
+            doc, stock_name, default_geometry, (stock_x, stock_y)
         )
         doc.history_manager.execute(command)
 
     def delete_stock_item(self, stock_item: StockItem):
         """
-        Deletes a StockItem with an undoable command.
-
-        Args:
-            stock_item: The StockItem to delete
+        Deletes a StockItem and its associated StockAsset with an
+        undoable command.
         """
         doc = self._editor.doc
-
-        command = ListItemCommand(
-            owner_obj=doc,
-            item=stock_item,
-            undo_command="add_stock_item",
-            redo_command="remove_stock_item",
-            name=_("Remove Stock Item"),
-        )
+        command = _DeleteStockCommand(doc, stock_item)
         doc.history_manager.execute(command)
 
     def toggle_stock_visibility(self, stock_item: StockItem):
         """
         Toggles the visibility of a StockItem with an undoable command.
-
-        Args:
-            stock_item: The StockItem to toggle visibility for
         """
-        from ..undo.models.property_cmd import ChangePropertyCommand
-
         new_visibility = not stock_item.visible
-
         command = ChangePropertyCommand(
             target=stock_item,
             property_name="visible",
@@ -103,81 +133,67 @@ class StockCmd:
         )
         self._editor.doc.history_manager.execute(command)
 
-    def reorder_stock_items(self, new_order: list[StockItem]):
-        """
-        Reorders stock items with an undoable command.
-
-        Args:
-            new_order: The new list of StockItems in the desired order
-        """
-        doc = self._editor.doc
-
-        command = ReorderListCommand(
-            target_obj=doc,
-            list_property_name="stock_items",
-            new_list=new_order,
-            name=_("Reorder Stock Items"),
-        )
-        doc.history_manager.execute(command)
-
     def rename_stock_item(self, stock_item: StockItem, new_name: str):
         """
-        Renames a StockItem with an undoable command.
-
-        Args:
-            stock_item: The StockItem to rename.
-            new_name: The new name for the StockItem.
+        Renames a StockItem's underlying asset with an undoable command.
+        The item's name is also updated to match.
         """
-        from ..undo.models.property_cmd import ChangePropertyCommand
-
-        if new_name == stock_item.name:
+        stock_asset = stock_item.stock_asset
+        if not stock_asset or new_name == stock_item.name:
             return
 
-        command = ChangePropertyCommand(
-            target=stock_item,
-            property_name="name",
-            new_value=new_name,
-            setter_method_name="set_name",
-            name=_("Rename stock item"),
-        )
-        self._editor.doc.history_manager.execute(command)
+        with self._editor.doc.history_manager.transaction(
+            _("Rename stock item")
+        ) as t:
+            t.execute(
+                ChangePropertyCommand(
+                    target=stock_asset,
+                    property_name="name",
+                    new_value=new_name,
+                    setter_method_name="set_name",
+                )
+            )
+            t.execute(
+                ChangePropertyCommand(
+                    target=stock_item,
+                    property_name="name",
+                    new_value=new_name,
+                    setter_method_name="set_name",
+                )
+            )
 
     def set_stock_thickness(self, stock_item: StockItem, new_thickness: float):
         """
-        Sets the thickness of a StockItem with an undoable command.
-
-        Args:
-            stock_item: The StockItem to modify.
-            new_thickness: The new thickness for the StockItem.
+        Sets the thickness of a StockAsset with an undoable command.
         """
-        if new_thickness == stock_item.thickness:
+        stock_asset = stock_item.stock_asset
+        if not stock_asset or new_thickness == stock_asset.thickness:
             return
 
         command = ChangePropertyCommand(
-            target=stock_item,
+            target=stock_asset,
             property_name="thickness",
             new_value=new_thickness,
             setter_method_name="set_thickness",
             name=_("Change stock thickness"),
         )
         self._editor.doc.history_manager.execute(command)
+        stock_item.updated.send(stock_item)
 
     def set_stock_material(self, stock_item: StockItem, new_material_uid: str):
         """
-        Sets the material of a StockItem with an undoable command.
-
-        Args:
-            stock_item: The StockItem to modify.
-            new_material_uid: The new material UID for the StockItem.
+        Sets the material of a StockAsset with an undoable command.
         """
-        if new_material_uid == stock_item.material_uid:
+        stock_asset = stock_item.stock_asset
+        if not stock_asset or new_material_uid == stock_asset.material_uid:
             return
 
         command = ChangePropertyCommand(
-            target=stock_item,
+            target=stock_asset,
             property_name="material_uid",
             new_value=new_material_uid,
             setter_method_name="set_material",
             name=_("Change stock material"),
         )
         self._editor.doc.history_manager.execute(command)
+        stock_item.updated.send(stock_item)

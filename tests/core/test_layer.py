@@ -5,6 +5,7 @@ from rayforge.core.doc import Doc
 from rayforge.core.workpiece import WorkPiece
 from rayforge.core.step import Step
 from rayforge.core.stock import StockItem
+from rayforge.core.stock_asset import StockAsset
 from rayforge.core.layer import Layer
 from rayforge.core.matrix import Matrix
 
@@ -132,8 +133,12 @@ def test_layer_stock_item_property():
     """Tests that a Layer can get and set stock items."""
     doc = Doc()
     layer = doc.active_layer
-    stock_item = StockItem(name="Test Stock")
-    doc.add_stock_item(stock_item)
+    stock_asset = StockAsset(name="Test Stock Asset")
+    doc.add_asset(stock_asset)
+    stock_item = StockItem(
+        stock_asset_uid=stock_asset.uid, name="Test Stock Item"
+    )
+    doc.add_child(stock_item)
 
     # Initially no stock item assigned
     assert layer.stock_item is None

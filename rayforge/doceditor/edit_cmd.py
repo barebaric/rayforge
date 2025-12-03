@@ -1,6 +1,6 @@
 import uuid
 import logging
-from typing import TYPE_CHECKING, List, Dict, Tuple, Sequence, Optional
+from typing import TYPE_CHECKING, List, Dict, Tuple, Sequence, Optional, cast
 from ..core.item import DocItem
 from ..core.group import Group
 from ..core.workpiece import WorkPiece
@@ -218,7 +218,7 @@ class EditCmd:
             # Register sketches.
             if sketches:
                 for sketch in sketches:
-                    self._editor.doc.add_sketch(sketch)
+                    self._editor.doc.add_asset(sketch)
 
             for item in items:
                 command = ListItemCommand(
@@ -312,7 +312,9 @@ class EditCmd:
         history = self._editor.history_manager
         target_layer = self._editor.doc.active_layer
 
-        sketch_def = self._editor.doc.get_sketch(sketch_uid)
+        sketch_def = cast(
+            Optional["Sketch"], self._editor.doc.get_asset_by_uid(sketch_uid)
+        )
         if not sketch_def:
             raise ValueError(f"Sketch with UID {sketch_uid} not found.")
 

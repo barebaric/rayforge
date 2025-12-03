@@ -1,13 +1,16 @@
 """Tests for the RecipeManager class."""
 
 from unittest.mock import Mock
+from typing import Optional
 import pytest
 import tempfile
 import yaml
 from pathlib import Path
+from rayforge.core.doc import Doc
 from rayforge.core.recipe import Recipe
 from rayforge.core.recipe_manager import RecipeManager
 from rayforge.core.stock import StockItem
+from rayforge.core.stock_asset import StockAsset
 from rayforge.core.capability import CUT, ENGRAVE
 from rayforge.machine.models.machine import Machine
 
@@ -37,6 +40,26 @@ class TestRecipeManager:
         mock.id = "machine-b"
         mock.name = "Machine B"
         return mock
+
+    @pytest.fixture
+    def stock_item_factory(self):
+        """
+        A factory to create real, correctly structured StockItem instances.
+        """
+
+        def _create(
+            material_uid: Optional[str], thickness: Optional[float]
+        ) -> StockItem:
+            doc = Doc()
+            asset = StockAsset()
+            asset.material_uid = material_uid
+            asset.thickness = thickness
+            doc.add_asset(asset)
+            item = StockItem(stock_asset_uid=asset.uid)
+            doc.add_child(item)
+            return item
+
+        return _create
 
     def test_manager_creation_and_load_empty(self, recipes_dir: Path):
         """Test creating a RecipeManager for an empty directory."""
@@ -196,15 +219,16 @@ class TestRecipeManager:
         return manager
 
     def test_find_recipes_perfect_match(
-        self, manager_with_recipes: RecipeManager, machine_a: Mock
+        self,
+        manager_with_recipes: RecipeManager,
+        machine_a: Mock,
+        stock_item_factory,
     ):
         """
         Test finding recipes with a perfect stock and machine match,
         checking sort order.
         """
-        stock = StockItem()
-        stock.material_uid = "walnut"
-        stock.thickness = 3.0
+        stock = stock_item_factory("walnut", 3.0)
         results = manager_with_recipes.find_recipes(
             stock, capabilities={CUT}, machine=machine_a
         )
@@ -218,12 +242,13 @@ class TestRecipeManager:
         assert results[4].uid == "generic-cut"  # (1,1,1,1)
 
     def test_find_recipes_different_machine(
-        self, manager_with_recipes: RecipeManager, machine_b: Mock
+        self,
+        manager_with_recipes: RecipeManager,
+        machine_b: Mock,
+        stock_item_factory,
     ):
         """Test that machine-specific recipes are filtered out."""
-        stock = StockItem()
-        stock.material_uid = "walnut"
-        stock.thickness = 3.0
+        stock = stock_item_factory("walnut", 3.0)
         results = manager_with_recipes.find_recipes(
             stock, capabilities={CUT}, machine=machine_b
         )
@@ -236,15 +261,13 @@ class TestRecipeManager:
         assert results[2].uid == "generic-cut"
 
     def test_find_recipes_no_machine_provided(
-        self, manager_with_recipes: RecipeManager
+        self, manager_with_recipes: RecipeManager, stock_item_factory
     ):
         """
         Test that machine-specific recipes are filtered out when no machine
         is provided.
         """
-        stock = StockItem()
-        stock.material_uid = "walnut"
-        stock.thickness = 3.0
+        stock = stock_item_factory("walnut", 3.0)
         results = manager_with_recipes.find_recipes(
             stock, capabilities={CUT}, machine=None
         )
@@ -254,12 +277,13 @@ class TestRecipeManager:
         assert results[0].uid == "walnut-3mm-cut"
 
     def test_find_recipes_material_only_match(
-        self, manager_with_recipes: RecipeManager, machine_a: Mock
+        self,
+        manager_with_recipes: RecipeManager,
+        machine_a: Mock,
+        stock_item_factory,
     ):
         """Test finding recipes when only material matches."""
-        stock = StockItem()
-        stock.material_uid = "walnut"
-        stock.thickness = 10.0  # Thickness mismatch
+        stock = stock_item_factory("walnut", 10.0)  # Thickness mismatch
         results = manager_with_recipes.find_recipes(
             stock, capabilities={CUT}, machine=machine_a
         )
@@ -269,12 +293,13 @@ class TestRecipeManager:
         assert results[1].uid == "generic-cut"
 
     def test_find_recipes_thickness_only_match(
-        self, manager_with_recipes: RecipeManager, machine_a: Mock
+        self,
+        manager_with_recipes: RecipeManager,
+        machine_a: Mock,
+        stock_item_factory,
     ):
         """Test finding recipes when only thickness matches."""
-        stock = StockItem()
-        stock.material_uid = "mdf"
-        stock.thickness = 3.0  # Material mismatch
+        stock = stock_item_factory("mdf", 3.0)  # Material mismatch
         # This recipe doesn't match because it also has a machine spec
         # so only generic-cut should appear.
         results = manager_with_recipes.find_recipes(
@@ -285,14 +310,15 @@ class TestRecipeManager:
         assert results[0].uid == "generic-cut"
 
     def test_find_recipes_no_match(
-        self, manager_with_recipes: RecipeManager, machine_a: Mock
+        self,
+        manager_with_recipes: RecipeManager,
+        machine_a: Mock,
+        stock_item_factory,
     ):
         """
         Test finding recipes when nothing matches, only generic should return.
         """
-        stock = StockItem()
-        stock.material_uid = "mdf"
-        stock.thickness = 10.0
+        stock = stock_item_factory("mdf", 10.0)
         results = manager_with_recipes.find_recipes(
             stock, capabilities={CUT}, machine=machine_a
         )
@@ -314,12 +340,13 @@ class TestRecipeManager:
         assert results[0].uid == "generic-cut"
 
     def test_find_recipes_filters_by_capability(
-        self, manager_with_recipes: RecipeManager, machine_a: Mock
+        self,
+        manager_with_recipes: RecipeManager,
+        machine_a: Mock,
+        stock_item_factory,
     ):
         """Test that find_recipes correctly filters by capability."""
-        stock = StockItem()
-        stock.material_uid = "walnut"
-        stock.thickness = 3.0
+        stock = stock_item_factory("walnut", 3.0)
         results = manager_with_recipes.find_recipes(
             stock, capabilities={ENGRAVE}, machine=machine_a
         )
@@ -328,12 +355,13 @@ class TestRecipeManager:
         assert results[0].uid == "generic-engrave"
 
     def test_find_recipes_multi_capability(
-        self, manager_with_recipes: RecipeManager, machine_a: Mock
+        self,
+        manager_with_recipes: RecipeManager,
+        machine_a: Mock,
+        stock_item_factory,
     ):
         """Test finding recipes that match one of several capabilities."""
-        stock = StockItem()
-        stock.material_uid = "walnut"
-        stock.thickness = 3.0
+        stock = stock_item_factory("walnut", 3.0)
         results = manager_with_recipes.find_recipes(
             stock, capabilities={CUT, ENGRAVE}, machine=machine_a
         )

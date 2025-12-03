@@ -30,7 +30,7 @@ def test_sketch_exporter_success(simple_sketch: Sketch):
     """
     # 1. Create a document and add the sketch to its registry.
     doc = Doc()
-    doc.add_sketch(simple_sketch)
+    doc.add_asset(simple_sketch)
 
     # 2. Create a workpiece and link it to the sketch via UID.
     #    For this test, it doesn't need a source_segment.

@@ -606,6 +606,21 @@ class DocItem(ABC):
 
         return all_descendants
 
+    def get_child_by_uid(self, uid: str) -> Optional["DocItem"]:
+        """
+        Finds a direct child of this item by its unique identifier.
+
+        Args:
+            uid: The unique identifier to search for.
+
+        Returns:
+            The DocItem if found, otherwise None.
+        """
+        for child in self.children:
+            if child.uid == uid:
+                return child
+        return None
+
     def find_descendant_by_uid(self, uid: str) -> Optional[DocItem]:
         """
         Recursively searches the subtree for a descendant with a matching UID.
