@@ -2,26 +2,26 @@ from typing import Tuple
 import pytest
 import asyncio
 from pathlib import Path
-
 from rayforge.core.doc import Doc
+from rayforge.core.geo import Geometry
+from rayforge.core.matrix import Matrix
+from rayforge.core.ops import Ops
 from rayforge.core.source_asset import SourceAsset
 from rayforge.core.source_asset_segment import SourceAssetSegment
 from rayforge.core.vectorization_spec import PassthroughSpec
-from rayforge.core.geo import Geometry
-from rayforge.core.ops import Ops
 from rayforge.core.workpiece import WorkPiece
 from rayforge.doceditor.editor import DocEditor
 from rayforge.image import SVG_RENDERER
 import rayforge.machine.driver as driver_module
 from rayforge.machine.cmd import MachineCmd
-from rayforge.machine.models.laser import Laser
-from rayforge.machine.models.machine import Machine
 from rayforge.machine.driver.dummy import NoDeviceDriver
 from rayforge.machine.driver.driver import Axis
+from rayforge.machine.models.laser import Laser
+from rayforge.machine.models.machine import Machine
 from rayforge.machine.models.macro import MacroTrigger
-from rayforge.shared.tasker.manager import TaskManager
-from rayforge.core.matrix import Matrix
 from rayforge.pipeline import steps
+from rayforge.pipeline.encoder.gcode import GcodeEncoder
+from rayforge.shared.tasker.manager import TaskManager
 
 
 # Define the test-specific driver in the test file where it is used.
@@ -131,6 +131,40 @@ class TestMachine:
         cleanup_spy.assert_called_once()
         assert machine.driver_name == "OtherDriver"
         assert machine.driver_args == {"port": "/dev/null"}
+
+    def test_encode_ops_delegates_to_driver(self, machine: Machine, mocker):
+        """
+        Verify that machine.encode_ops calls get_encoder on the active
+        driver.
+        """
+        # --- Arrange ---
+        # Create a mock encoder and spy on its encode method
+        mock_encoder = GcodeEncoder(machine.dialect)
+        encode_spy = mocker.spy(mock_encoder, "encode")
+
+        # Patch the driver's get_encoder method to return our mock.
+        # The return value of patch is the mock that replaced the original.
+        get_encoder_mock = mocker.patch.object(
+            machine.driver, "get_encoder", return_value=mock_encoder
+        )
+
+        ops_to_encode = Ops()
+        doc_context = Doc()
+
+        # --- Act ---
+        machine_code, op_map = machine.encode_ops(ops_to_encode, doc_context)
+
+        # --- Assert ---
+        # 1. Verify that the patched get_encoder method was called
+        get_encoder_mock.assert_called_once()
+
+        # 2. Verify that the encoder's encode method was called with the
+        # correct args
+        encode_spy.assert_called_once()
+        call_args = encode_spy.call_args.args
+        assert call_args[0] is ops_to_encode
+        assert call_args[1] is machine
+        assert call_args[2] is doc_context
 
     @pytest.mark.asyncio
     async def test_send_job_calls_driver_run(

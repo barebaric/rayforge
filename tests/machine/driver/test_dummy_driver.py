@@ -5,6 +5,7 @@ from rayforge.core.doc import Doc
 from rayforge.core.ops import Ops, MoveToCommand, LineToCommand
 from rayforge.machine.driver.dummy import NoDeviceDriver
 from rayforge.machine.models.machine import Machine
+from rayforge.pipeline.encoder.gcode import GcodeEncoder
 
 
 class TestDummyDriverCallback:
@@ -18,7 +19,9 @@ class TestDummyDriverCallback:
     @pytest.fixture
     def machine(self, context_initializer):
         """Provides a default Machine instance."""
-        return Machine(context_initializer)
+        machine = Machine(context_initializer)
+        machine.dialect_uid = "grbl"  # Set a known dialect for predictability
+        return machine
 
     @pytest.fixture
     def doc(self):
@@ -44,6 +47,13 @@ class TestDummyDriverCallback:
         ops.add(LineToCommand((0.0, 10.0, 0.0)))
         ops.add(LineToCommand((0.0, 0.0, 0.0)))
         return ops
+
+    def test_get_encoder(self, driver: NoDeviceDriver):
+        """Test that get_encoder returns a GcodeEncoder instance."""
+        encoder = driver.get_encoder()
+        assert isinstance(encoder, GcodeEncoder)
+        # Verify it's configured with the machine's dialect
+        assert encoder.dialect.uid == driver._machine.dialect.uid
 
     @pytest.mark.asyncio
     async def test_run_without_callback(
