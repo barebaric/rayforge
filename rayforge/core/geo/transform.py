@@ -75,8 +75,6 @@ def grow_geometry(geometry: T_Geometry, offset: float) -> T_Geometry:
 
     # Pyclipper works with integers, so we need to scale our coordinates.
     CLIPPER_SCALE = 1e7
-    pco = pyclipper.PyclipperOffset()  # type: ignore
-
     paths_to_offset = []
     for i, data in enumerate(contour_data):
         logger.debug(f"Processing contour #{i} for pyclipper")
@@ -105,16 +103,22 @@ def grow_geometry(geometry: T_Geometry, offset: float) -> T_Geometry:
         ]
         paths_to_offset.append(scaled_vertices)
 
-    pco.AddPaths(
-        paths_to_offset,
-        pyclipper.JT_MITER,  # type: ignore
-        pyclipper.ET_CLOSEDPOLYGON,  # type: ignore
-    )
-    solution = pco.Execute(offset * CLIPPER_SCALE)
+    # Offset each contour independently to avoid unintended unions when
+    # adjacent shapes touch or overlap. This preserves shared edges as
+    # distinct toolpaths.
+    all_solutions = []
+    for path in paths_to_offset:
+        pco = pyclipper.PyclipperOffset()  # type: ignore
+        pco.AddPath(
+            path,
+            pyclipper.JT_MITER,  # type: ignore
+            pyclipper.ET_CLOSEDPOLYGON,  # type: ignore
+        )
+        all_solutions.extend(pco.Execute(offset * CLIPPER_SCALE))
 
-    logger.debug(f"Pyclipper generated {len(solution)} offset contours.")
+    logger.debug(f"Pyclipper generated {len(all_solutions)} offset contours.")
 
-    for new_contour_scaled in solution:
+    for new_contour_scaled in all_solutions:
         if len(new_contour_scaled) < 3:
             continue
 
