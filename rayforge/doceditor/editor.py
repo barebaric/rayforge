@@ -83,6 +83,9 @@ class DocEditor:
             self._on_processing_state_changed
         )
 
+        # Global preference for maintaining aspect ratio during transforms.
+        self.aspect_ratio_locked: bool = True
+
         # Instantiate and link command handlers, passing dependencies.
         self.asset = AssetCmd(self)
         self.edit = EditCmd(self)

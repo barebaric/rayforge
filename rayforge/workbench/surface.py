@@ -91,6 +91,11 @@ class WorkSurface(WorldSurface):
         self.edit_sketch_requested = Signal()
         self.edit_stock_item_requested = Signal()
 
+        # Aspect-ratio lock preference shared with the properties panel.
+        self.editor.aspect_ratio_locked = (
+            getattr(self.editor, "aspect_ratio_locked", True) is True
+        )
+
         # Connect to generic signals from the base Canvas class
         self.move_begin.connect(self._on_any_transform_begin)
         self.resize_begin.connect(self._on_resize_begin)
@@ -119,6 +124,17 @@ class WorkSurface(WorldSurface):
     def show_travel_moves(self) -> bool:
         """Returns True if travel moves should be rendered."""
         return self._show_travel_moves
+
+    def _get_ratio_lock_default(self) -> bool:
+        """
+        Returns the current aspect-ratio lock preference shared with the
+        properties panel. Defaults to True for workpieces.
+        """
+        return bool(getattr(self.editor, "aspect_ratio_locked", True))
+
+    def set_aspect_ratio_locked(self, locked: bool) -> None:
+        """Synchronizes the lock state with the editor."""
+        self.editor.aspect_ratio_locked = locked
 
     def set_laser_dot_visible(self, visible: bool = True) -> None:
         self._laser_dot.set_visible(visible)

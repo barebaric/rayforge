@@ -12,6 +12,7 @@ from . import transform
 from .region import (
     ElementRegion,
     BBOX_REGIONS,
+    CORNER_RESIZE_HANDLES,
     RESIZE_HANDLES,
     ROTATE_HANDLES,
     ROTATE_SHEAR_HANDLES,
@@ -138,6 +139,23 @@ class Canvas(Gtk.DrawingArea):
         Finds the first element with matching data in the canvas.
         """
         return self.root.find_by_data(data)
+
+    def _get_ratio_lock_default(self) -> bool:
+        """
+        Base implementation for whether aspect ratio should be locked during
+        resize. Subclasses can override to bind to UI state.
+        """
+        return False
+
+    def _should_constrain_aspect(self, active_region: ElementRegion) -> bool:
+        """
+        Determines if the current resize interaction should maintain aspect
+        ratio, applying Shift as an inverter of the default preference. Only
+        corner handles honor aspect locking; edge handles always deform.
+        """
+        if active_region not in CORNER_RESIZE_HANDLES:
+            return False
+        return self._get_ratio_lock_default() ^ self._shift_pressed
 
     def find_by_type(
         self, thetype: Any
@@ -863,13 +881,16 @@ class Canvas(Gtk.DrawingArea):
                 self._selection_group.apply_move(world_dx, world_dy)
             elif self._resizing:
                 if self._active_origin:
+                    constrain_aspect = self._should_constrain_aspect(
+                        self._active_region
+                    )
                     self._selection_group.resize_from_drag(
                         self._active_region,
                         world_dx,
                         world_dy,
                         self._active_origin,
                         self._ctrl_pressed,
-                        self._shift_pressed,
+                        constrain_aspect,
                     )
                 for elem in self._selection_group.elements:
                     elem.trigger_update()
@@ -930,6 +951,9 @@ class Canvas(Gtk.DrawingArea):
                     and self._initial_transform
                     and self._initial_world_transform
                 ):
+                    constrain_aspect = self._should_constrain_aspect(
+                        self._active_region
+                    )
                     transform.resize_element(
                         element=self._drag_target,
                         world_dx=world_dx,
@@ -938,7 +962,7 @@ class Canvas(Gtk.DrawingArea):
                         initial_world_transform=self._initial_world_transform,
                         active_region=self._active_region,
                         view_transform=self.view_transform,
-                        shift_pressed=self._shift_pressed,
+                        constrain_aspect=constrain_aspect,
                         ctrl_pressed=self._ctrl_pressed,
                     )
                     self._drag_target.trigger_update()
