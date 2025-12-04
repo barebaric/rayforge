@@ -1014,27 +1014,6 @@ class WorkPieceElement(CanvasElement):
             artifact.vertex_data, ctx, (1.0, 1.0), drawable_height_mm
         )
 
-        if logger.isEnabledFor(logging.DEBUG):
-            try:
-                img_w_px = max(1, int(math.ceil(union_w)))
-                img_h_px = max(1, int(math.ceil(union_h)))
-                debug_img = cairo.ImageSurface(
-                    cairo.FORMAT_ARGB32, img_w_px, img_h_px
-                )
-                debug_ctx = cairo.Context(debug_img)
-                debug_ctx.translate(-extents[0], -extents[1])
-                debug_ctx.set_source_surface(surface, 0, 0)
-                debug_ctx.paint()
-                debug_path = (
-                    f"/tmp/rayforge_ops_{step.uid}_{img_w_px}x{img_h_px}.png"
-                )
-                debug_img.write_to_png(debug_path)
-                logger.debug(
-                    "Saved ops recording debug PNG to %s", debug_path
-                )
-            except Exception as exc:  # pragma: no cover - debug helper
-                logger.debug("Failed to save ops recording debug PNG: %s", exc)
-
         return step.uid, surface, generation_id
 
     def _on_ops_drawing_recorded(self, future: Future):

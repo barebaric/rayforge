@@ -730,17 +730,6 @@ class WorkPiece(DocItem):
                     h_scale, vscale=v_scale
                 )
 
-        if logger.isEnabledFor(logging.DEBUG):
-            try:
-                wp_uid = getattr(self, "uid", "workpiece")
-                debug_path = (
-                    f"/tmp/rayforge_render_{wp_uid}_{target_w}x{target_h}.png"
-                )
-                processed_image.write_to_file(debug_path)
-                logger.debug("Saved debug render to %s", debug_path)
-            except Exception as exc:
-                logger.debug("Failed to save debug render: %s", exc)
-
         return processed_image
 
     def get_vips_image(
