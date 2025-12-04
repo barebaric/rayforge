@@ -99,7 +99,7 @@ class DocItemPropertiesWidget(Expander):
 
         # Fixed Ratio Switch
         self.fixed_ratio_switch = Adw.SwitchRow(
-            title=_("Fixed Ratio"), active=True
+            title=_("Fixed Ratio"), active=self.editor.aspect_ratio_locked
         )
         self.fixed_ratio_switch.connect(
             "notify::active", self._on_fixed_ratio_toggled
@@ -415,7 +415,10 @@ class DocItemPropertiesWidget(Expander):
             self._in_update = False
 
     def _on_fixed_ratio_toggled(self, switch_row, GParamSpec):
+        if self._in_update:
+            return
         logger.debug(f"Fixed ratio toggled: {switch_row.get_active()}")
+        self.editor.aspect_ratio_locked = switch_row.get_active()
         # Check if the primary selected item is a workpiece or stock item
         is_ratio_lockable = self.items and isinstance(
             self.items[0], (WorkPiece, StockItem, Group)
@@ -704,6 +707,10 @@ class DocItemPropertiesWidget(Expander):
         is_single_item_with_size = (
             is_single_workpiece or is_single_stockitem or is_single_group
         )
+
+        self._in_update = True
+        self.fixed_ratio_switch.set_active(self.editor.aspect_ratio_locked)
+        self._in_update = False
 
         self.source_file_row.set_visible(is_single_workpiece)
         self.fixed_ratio_switch.set_sensitive(

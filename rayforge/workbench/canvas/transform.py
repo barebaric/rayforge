@@ -129,7 +129,7 @@ def resize_element(
     initial_world_transform: Matrix,
     active_region: ElementRegion,
     view_transform: Matrix,
-    shift_pressed: bool,
+    constrain_aspect: bool,
     ctrl_pressed: bool,
 ):
     """
@@ -156,7 +156,7 @@ def resize_element(
         active_region=active_region,
         drag_delta=local_delta,
         is_flipped=view_transform.is_flipped(),  # Pass the flag
-        constrain_aspect=shift_pressed,
+        constrain_aspect=constrain_aspect,
         from_center=ctrl_pressed,
         min_size=min_size_local,
     )

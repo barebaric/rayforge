@@ -246,7 +246,7 @@ class MultiSelectionGroup:
         offset_y: float,
         active_origin: Tuple[float, float, float, float],
         ctrl_pressed: bool,
-        shift_pressed: bool,
+        constrain_aspect: bool,
     ):
         """
         Calculates and applies the new group bounding box by calling the
@@ -267,7 +267,7 @@ class MultiSelectionGroup:
             active_region=active_region,
             drag_delta=(offset_x, offset_y),
             is_flipped=self.canvas.view_transform.is_flipped(),
-            constrain_aspect=shift_pressed,
+            constrain_aspect=constrain_aspect,
             from_center=ctrl_pressed,
             min_size=min_size_world,
         )
