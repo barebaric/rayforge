@@ -409,16 +409,11 @@ class SvgImporter(Importer):
         scale_y = height_mm / height_px
         geo.transform(Matrix.scale(scale_x, scale_y).to_4x4_numpy())
 
-        min_x, min_y, max_x, max_y = geo.rect()
-        content_w = max_x - min_x
-        content_h = max_y - min_y
-        if content_w <= 1e-9 or content_h <= 1e-9:
-            return
-
-        geo.transform(Matrix.translation(-min_x, -min_y).to_4x4_numpy())
-        geo.transform(
-            Matrix.scale(1.0 / width_mm, 1.0 / height_mm).to_4x4_numpy()
-        )
+        # Normalize to page coordinates (origin at 0,0; scale by page size).
+        if width_mm > 1e-9 and height_mm > 1e-9:
+            geo.transform(
+                Matrix.scale(1.0 / width_mm, 1.0 / height_mm).to_4x4_numpy()
+            )
 
     def _create_workpiece(
         self,
