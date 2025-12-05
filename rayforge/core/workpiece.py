@@ -1383,6 +1383,8 @@ class WorkPiece(DocItem):
                 f"WP {self.uid[:8]}: New natural size: "
                 f"{width:.2f}x{height:.2f}mm"
             )
+            # Update the workpiece's actual size to match its new natural size.
+            self.set_size(width, height)
 
         # Invalidate the geometry cache to force regeneration on next render
         self.clear_render_cache()

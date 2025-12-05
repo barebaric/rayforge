@@ -46,6 +46,7 @@ class VarSetWidget(Adw.PreferencesGroup):
         """
         Clears previous dynamic rows and builds new ones from a VarSet.
         Any static rows added manually are preserved.
+        Reuse existing rows if possible to preserve state.
         """
         # Set the group's title and description from the VarSet
         if var_set.title:
@@ -53,8 +54,43 @@ class VarSetWidget(Adw.PreferencesGroup):
         if var_set.description:
             self.set_description(var_set.description)
 
-        self.clear_dynamic_rows()
+        # 1. Identify rows to remove (keys not present in new set)
+        new_keys = {var.key for var in var_set}
+        existing_keys = list(self.widget_map.keys())
+
+        for key in existing_keys:
+            if key not in new_keys:
+                row, _ = self.widget_map.pop(key)
+                self.remove(row)
+                if row in self._created_rows:
+                    self._created_rows.remove(row)
+
+        # 2. Add or update rows
         for var in var_set:
+            if var.key in self.widget_map:
+                row, old_var = self.widget_map[var.key]
+
+                # Determine if we need to rebuild the widget
+                needs_rebuild = type(var) is not type(old_var)
+                if not needs_rebuild and isinstance(var, ChoiceVar):
+                    assert isinstance(old_var, ChoiceVar)
+                    # Rebuild ChoiceVar if options changed
+                    if var.choices != old_var.choices:
+                        needs_rebuild = True
+
+                if needs_rebuild:
+                    self.remove(row)
+                    if row in self._created_rows:
+                        self._created_rows.remove(row)
+                    del self.widget_map[var.key]
+                else:
+                    # Update reference and attributes (e.g. limits) without
+                    # destroying
+                    self.widget_map[var.key] = (row, var)
+                    self._update_row_attributes(row, var)
+                    continue
+
+            # Create new row
             row = self._factory.create_row_for_var(var, "value")
             if row:
                 self._wire_up_row(row, var)
@@ -62,23 +98,64 @@ class VarSetWidget(Adw.PreferencesGroup):
                 self._created_rows.append(row)
                 self.widget_map[var.key] = (row, var)
 
+    def _update_row_attributes(self, row: Adw.PreferencesRow, var: Var):
+        """
+        Updates an existing row's properties (title, subtitle, ranges)
+        from a new Var definition.
+        """
+        if hasattr(row, "set_title") and var.label:
+            row.set_title(var.label)
+
+        widget = getattr(row, "get_activatable_widget", lambda: None)()
+
+        if isinstance(row, Adw.SpinRow):
+            self._update_adjustment(row.get_adjustment(), var)
+            if var.description:
+                row.set_subtitle(var.description)
+
+        elif isinstance(widget, Gtk.Scale):
+            self._update_adjustment(widget.get_adjustment(), var)
+            if var.description:
+                row.set_tooltip_text(var.description)
+
+        elif isinstance(row, Adw.EntryRow):
+            if var.description:
+                row.set_tooltip_text(var.description)
+
+    def _update_adjustment(self, adj: Gtk.Adjustment, var: Var):
+        """Updates the limits of an adjustment if the var defines them."""
+        if not adj:
+            return
+
+        min_val = getattr(var, "min_val", None)
+        max_val = getattr(var, "max_val", None)
+
+        if min_val is not None:
+            adj.set_lower(float(min_val))
+        if max_val is not None:
+            adj.set_upper(float(max_val))
+
     def get_values(self) -> dict[str, Any]:
         """Reads all current values from the UI widgets."""
         values = {}
         for key, (row, var) in self.widget_map.items():
             value = None
+            widget = getattr(row, "get_activatable_widget", lambda: None)()
             if isinstance(var, TextAreaVar):
                 text_view = getattr(row, "core_widget", None)
                 if isinstance(text_view, Gtk.TextView):
                     buffer = text_view.get_buffer()
                     start, end = buffer.get_start_iter(), buffer.get_end_iter()
                     value = buffer.get_text(start, end, True)
-            elif isinstance(var, (SliderFloatVar, BoolVar)):
-                widget = getattr(row, "get_activatable_widget", lambda: None)()
-                if isinstance(widget, Gtk.Scale):
-                    value = widget.get_value() / 100.0
-                elif isinstance(widget, Gtk.Switch):
-                    value = widget.get_active()
+            elif isinstance(var, SliderFloatVar) and isinstance(
+                widget, Gtk.Scale
+            ):
+                min_val = var.min_val if var.min_val is not None else 0.0
+                max_val = var.max_val if var.max_val is not None else 1.0
+                percent = widget.get_value() / 100.0
+                value = min_val + percent * (max_val - min_val)
+            elif isinstance(var, BoolVar) and isinstance(widget, Gtk.Switch):
+                value = widget.get_active()
             elif isinstance(row, Adw.EntryRow):
                 value = row.get_text()
             elif isinstance(row, Adw.SpinRow):
@@ -110,16 +187,23 @@ class VarSetWidget(Adw.PreferencesGroup):
                 continue
 
             row, var = self.widget_map[key]
+            widget = getattr(row, "get_activatable_widget", lambda: None)()
             if isinstance(var, TextAreaVar):
                 text_view = getattr(row, "core_widget", None)
                 if isinstance(text_view, Gtk.TextView):
                     text_view.get_buffer().set_text(str(value))
-            elif isinstance(var, (SliderFloatVar, BoolVar)):
-                widget = getattr(row, "get_activatable_widget", lambda: None)()
-                if isinstance(widget, Gtk.Scale):
-                    widget.set_value(float(value) * 100.0)
-                elif isinstance(widget, Gtk.Switch):
-                    widget.set_active(bool(value))
+            elif isinstance(var, SliderFloatVar) and isinstance(
+                widget, Gtk.Scale
+            ):
+                min_val = var.min_val if var.min_val is not None else 0.0
+                max_val = var.max_val if var.max_val is not None else 1.0
+                range_size = max_val - min_val
+                percent = 0.0
+                if range_size > 1e-9:
+                    percent = ((float(value) - min_val) / range_size) * 100.0
+                widget.set_value(percent)
+            elif isinstance(var, BoolVar) and isinstance(widget, Gtk.Switch):
+                widget.set_active(bool(value))
             elif isinstance(row, Adw.EntryRow):
                 row.set_text(str(value))
             elif isinstance(row, Adw.SpinRow):
@@ -166,7 +250,9 @@ class VarSetWidget(Adw.PreferencesGroup):
         if isinstance(row, Adw.EntryRow):
             row.connect("apply", lambda r: self._on_data_changed(var.key))
         elif isinstance(row, Adw.SpinRow):
-            row.connect("changed", lambda r: self._on_data_changed(var.key))
+            row.connect(
+                "notify::value", lambda r, p: self._on_data_changed(var.key)
+            )
         elif isinstance(row, Adw.ComboRow):
             row.connect(
                 "notify::selected-item",

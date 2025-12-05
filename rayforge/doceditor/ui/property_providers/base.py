@@ -1,5 +1,3 @@
-# rayforge/doceditor/ui/property_providers/base.py
-
 from abc import ABC, abstractmethod
 from gi.repository import Gtk
 from typing import List, TYPE_CHECKING
@@ -31,11 +29,18 @@ class PropertyProvider(ABC):
         ...
 
     @abstractmethod
-    def create_rows(
-        self, editor: "DocEditor", items: List[DocItem]
-    ) -> List[Gtk.Widget]:
+    def create_widgets(self) -> List[Gtk.Widget]:
         """
-        Generates the list of Adw.PreferencesRow widgets for the given
-        selection.
+        Creates the necessary Gtk.Widget instances for this provider.
+        This method is called only once. The created widgets should be
+        stored as instance members for later access by `update_widgets`.
+        """
+        ...
+
+    @abstractmethod
+    def update_widgets(self, editor: "DocEditor", items: List[DocItem]):
+        """
+        Updates the state of the widgets created by `create_widgets` to
+        reflect the properties of the currently selected items.
         """
         ...

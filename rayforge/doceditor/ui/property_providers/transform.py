@@ -20,19 +20,19 @@ class TransformPropertyProvider(PropertyProvider):
     def can_handle(self, items: List[DocItem]) -> bool:
         return bool(items)
 
-    def create_rows(
-        self, editor: "DocEditor", items: List[DocItem]
-    ) -> List[Gtk.Widget]:
-        self.editor = editor
-        self.items = items
+    def create_widgets(self) -> List[Gtk.Widget]:
+        """Creates the widgets for transform properties once."""
         self._rows = []
-
-        # --- Create Widgets ---
         self._create_position_rows()
         self._create_size_rows()
         self._create_angle_shear_rows()
+        return self._rows
 
-        # --- Update UI from Model ---
+    def update_widgets(self, editor: "DocEditor", items: List[DocItem]):
+        """Updates the transform widgets with data from the selected items."""
+        self.editor = editor
+        self.items = items
+
         item = self.items[0]
         machine = get_context().machine
         bounds = machine.dimensions if machine else default_dim
@@ -62,8 +62,6 @@ class TransformPropertyProvider(PropertyProvider):
         self._in_update = False
 
         self._update_row_visibility_and_details()
-
-        return self._rows
 
     def _create_position_rows(self):
         # X Position Entry
