@@ -148,16 +148,23 @@ class VarRowFactory:
         row = Adw.ActionRow(title=var.label)
         if var.description:
             row.set_subtitle(var.description)
-        min_val = (var.min_val if var.min_val is not None else 0.0) * 100
-        max_val = (var.max_val if var.max_val is not None else 1.0) * 100
-        initial_val = getattr(var, target_property)
-        initial_scaled = (
-            (float(initial_val) * 100) if initial_val is not None else 0.0
-        )
+
+        min_val = var.min_val if var.min_val is not None else 0.0
+        max_val = var.max_val if var.max_val is not None else 1.0
+        val = getattr(var, target_property)
+        if val is None:
+            val = min_val
+
+        # Calculate initial percentage for the slider
+        initial_percent = 0.0
+        range_size = max_val - min_val
+        if range_size > 1e-9:
+            initial_percent = ((val - min_val) / range_size) * 100.0
+
         adj = Gtk.Adjustment(
-            value=initial_scaled,
-            lower=min_val,
-            upper=max_val,
+            value=initial_percent,
+            lower=0.0,
+            upper=100.0,
             step_increment=1,
             page_increment=10,
         )

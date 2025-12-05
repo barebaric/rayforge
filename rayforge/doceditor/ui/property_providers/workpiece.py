@@ -20,13 +20,8 @@ class WorkpieceInfoProvider(PropertyProvider):
     def can_handle(self, items: List[DocItem]) -> bool:
         return len(items) == 1 and isinstance(items[0], WorkPiece)
 
-    def create_rows(
-        self, editor: "DocEditor", items: List[DocItem]
-    ) -> List[Gtk.Widget]:
-        self.editor = editor
-        self.items = items
-        workpiece = cast(WorkPiece, self.items[0])
-
+    def create_widgets(self) -> List[Gtk.Widget]:
+        """Creates the widgets for workpiece info properties."""
         # Source File Row
         self.source_file_row = Adw.ActionRow(title=_("Source File"))
         self.metadata_info_button = Gtk.Button(
@@ -48,10 +43,20 @@ class WorkpieceInfoProvider(PropertyProvider):
             "clicked", self._on_open_source_file_clicked
         )
         self.source_file_row.add_suffix(self.open_source_button)
-        self._update_source_file_row(workpiece)
 
         # Vector count row
         self.vector_count_row = Adw.ActionRow(title=_("Vector Commands"))
+
+        return [self.source_file_row, self.vector_count_row]
+
+    def update_widgets(self, editor: "DocEditor", items: List[DocItem]):
+        """Updates the workpiece info widgets with new data."""
+        self.editor = editor
+        self.items = items
+        workpiece = cast(WorkPiece, self.items[0])
+
+        self._update_source_file_row(workpiece)
+
         is_debug_and_has_vectors = (
             logging.getLogger().getEffectiveLevel() == logging.DEBUG
             and workpiece.boundaries is not None
@@ -60,8 +65,6 @@ class WorkpieceInfoProvider(PropertyProvider):
         if is_debug_and_has_vectors:
             vectors = len(workpiece.boundaries) if workpiece.boundaries else 0
             self.vector_count_row.set_subtitle(f"{vectors} commands")
-
-        return [self.source_file_row, self.vector_count_row]
 
     def _update_source_file_row(self, workpiece: WorkPiece):
         file_path = workpiece.source_file
@@ -123,12 +126,8 @@ class TabsPropertyProvider(PropertyProvider):
             and items[0].boundaries is not None
         )
 
-    def create_rows(
-        self, editor: "DocEditor", items: List[DocItem]
-    ) -> List[Gtk.Widget]:
-        self.editor = editor
-        self.items = items
-        workpiece = cast(WorkPiece, self.items[0])
+    def create_widgets(self) -> List[Gtk.Widget]:
+        """Creates the widgets for tab properties."""
         self._rows = []
 
         # Tabs Switch
@@ -165,8 +164,14 @@ class TabsPropertyProvider(PropertyProvider):
         self.tab_width_row.add_suffix(self.reset_tab_width_button)
         self._rows.append(self.tab_width_row)
 
-        self._update_tabs_rows(workpiece)
         return self._rows
+
+    def update_widgets(self, editor: "DocEditor", items: List[DocItem]):
+        """Updates the tabs widgets with new data."""
+        self.editor = editor
+        self.items = items
+        workpiece = cast(WorkPiece, self.items[0])
+        self._update_tabs_rows(workpiece)
 
     def _update_tabs_rows(self, workpiece: WorkPiece):
         self._in_update = True
