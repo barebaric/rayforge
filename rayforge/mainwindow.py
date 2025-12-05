@@ -157,12 +157,6 @@ class MainWindow(Adw.ApplicationWindow):
         self.view_cmd = ViewModeCmd(self.doc_editor, self)
         self.simulator_cmd = SimulatorCmd(self)
 
-        # Add a global click handler to manage focus correctly.
-        root_click_gesture = Gtk.GestureClick.new()
-        root_click_gesture.set_propagation_phase(Gtk.PropagationPhase.CAPTURE)
-        root_click_gesture.connect("pressed", self._on_root_click_pressed)
-        self.add_controller(root_click_gesture)
-
         # Add a key controller to handle ESC key for exiting simulation mode
         key_controller = Gtk.EventControllerKey()
         key_controller.connect("key-pressed", self._on_key_pressed)
@@ -204,6 +198,12 @@ class MainWindow(Adw.ApplicationWindow):
         # Create a container for the main UI
         main_ui_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         self.main_stack.add_named(main_ui_box, "main")
+
+        # Add a click handler to the main UI area
+        ui_click_gesture = Gtk.GestureClick.new()
+        ui_click_gesture.set_propagation_phase(Gtk.PropagationPhase.CAPTURE)
+        ui_click_gesture.connect("pressed", self._on_root_click_pressed)
+        main_ui_box.add_controller(ui_click_gesture)
 
         # Create and add the main toolbar.
         self.toolbar = MainToolbar()
@@ -910,8 +910,16 @@ class MainWindow(Adw.ApplicationWindow):
     def _on_root_click_pressed(self, gesture, n_press, x, y):
         """
         Global click handler to unfocus widgets when clicking on "dead space".
+        Uses idle_add to defer the focus grab, ensuring menu popovers have
+        time to process their close events first.
         """
-        self.surface.grab_focus()
+        logger.debug("Clicked the main window")
+
+        def _deferred_focus():
+            self.surface.grab_focus()
+            return False
+
+        GLib.idle_add(_deferred_focus)
 
     def on_machine_selected_by_selector(self, sender, *, machine: Machine):
         """
