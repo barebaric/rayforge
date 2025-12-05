@@ -19,7 +19,7 @@ class GeneralPreferencesPage(Adw.PreferencesPage):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.set_title(_("General"))
-        self.set_icon_name("preferences-system-symbolic")
+        self.set_icon_name("ui-settings-symbolic")
 
         app_settings_group = Adw.PreferencesGroup()
         app_settings_group.set_title(_("Appearance"))

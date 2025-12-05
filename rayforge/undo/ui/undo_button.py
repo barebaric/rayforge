@@ -3,6 +3,7 @@ from typing import List, Optional
 from gi.repository import Gtk
 from .. import HistoryManager
 from ..models.command import Command
+from ...icons import get_icon
 
 
 logger = logging.getLogger(__name__)
@@ -29,7 +30,7 @@ class _HistoryButton(Gtk.Box):
         self.manager: Optional[HistoryManager] = None
 
         # 1. The main action button
-        self.main_button = Gtk.Button(icon_name=icon_name)
+        self.main_button = Gtk.Button(child=get_icon(icon_name))
         self.main_button.set_tooltip_text(tooltip)
         self.append(self.main_button)
 
@@ -124,7 +125,7 @@ class UndoButton(_HistoryButton):
 
     def __init__(self, **kwargs):
         super().__init__(
-            icon_name="edit-undo-symbolic",
+            icon_name="undo-symbolic",
             tooltip=_("Undo the last action"),
             **kwargs,
         )
@@ -149,7 +150,7 @@ class RedoButton(_HistoryButton):
 
     def __init__(self, **kwargs):
         super().__init__(
-            icon_name="edit-redo-symbolic",
+            icon_name="redo-symbolic",
             tooltip=_("Redo the last action"),
             **kwargs,
         )

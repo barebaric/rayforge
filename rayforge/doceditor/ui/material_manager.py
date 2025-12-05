@@ -22,7 +22,7 @@ class MaterialManager(Adw.PreferencesPage):
         """Initialize the material manager."""
         super().__init__(
             title=_("Materials"),
-            icon_name="emblem-documents-symbolic",
+            icon_name="material-symbolic",
         )
 
         self.library_list_editor = LibraryListWidget(
