@@ -24,6 +24,7 @@ from rayforge.shared.ui.varset_editor import (
     VarSetEditorWidget,
     VarDefinitionRowWidget,
 )
+from rayforge.undo import HistoryManager
 
 
 def process_events(duration_sec: float = 0.1):
@@ -53,7 +54,8 @@ def editor_widget_in_window(ui_context_initializer, var_set):
     Adw.Window for testing.
     """
     window = Adw.Window()
-    editor = VarSetEditorWidget()
+    undo_manager = HistoryManager()
+    editor = VarSetEditorWidget(undo_manager=undo_manager)
     editor.populate(var_set)
 
     box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
