@@ -95,6 +95,8 @@ nav:
           - Drivers: docs/developer/driver.md
   - Contributing:
       - contributing/index.md
+  - Discord:
+      - https://discord.gg/sTHNdTtpQJ
 
 not_in_nav: docs/includes/abbreviations.md
 
