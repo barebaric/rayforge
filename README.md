@@ -18,6 +18,8 @@ Rayforge is a modern, cross-platform G-code sender and control software for GRBL
 ![Screenshot](website/content/docs/images/ss-main.png)
 
 You can also check the [official Rayforge homepage](https://rayforge.org).
+We also have a [Discord](https://discord.gg/sTHNdTtpQJ).
+
 
 ## Key Features
 
