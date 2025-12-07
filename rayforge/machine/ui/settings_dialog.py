@@ -14,9 +14,9 @@ class MachineSettingsDialog(Adw.PreferencesDialog):
         super().__init__(**kwargs)
         self.machine = machine
         if machine.name:
-            self.set_title(_(f"{machine.name} - Machine Preferences"))
+            self.set_title(_(f"{machine.name} - Machine Settings"))
         else:
-            self.set_title(_("Machine Preferences"))
+            self.set_title(_("Machine Settings"))
 
         # Make the dialog resizable
         self.set_size_request(-1, -1)

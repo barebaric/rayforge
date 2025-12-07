@@ -35,7 +35,7 @@ from .pipeline.steps import STEP_FACTORIES, create_contour_step
 from .shared.gcodeedit.viewer import GcodeViewer
 from .shared.tasker import task_mgr
 from .shared.ui.about import AboutDialog
-from .shared.ui.preferences_dialog import PreferencesWindow
+from .shared.ui.preferences_dialog import SettingsWindow
 from .shared.ui.task_bar import TaskBar
 from .toolbar import MainToolbar
 from .undo import Command, HistoryManager, ListItemCommand
@@ -1720,8 +1720,8 @@ class MainWindow(Adw.ApplicationWindow):
         dialog = AboutDialog(transient_for=self)
         dialog.present()
 
-    def show_preferences(self, action, param):
-        dialog = PreferencesWindow(transient_for=self)
+    def show_settings(self, action, param):
+        dialog = SettingsWindow(transient_for=self)
         dialog.present()
         dialog.connect("close-request", self._on_preferences_dialog_closed)
 

@@ -1166,12 +1166,12 @@ msgstr "Tamanho do ponto do laser na direção Y"
 
 #: rayforge/machine/ui/settings_dialog.py:17
 #, python-brace-format
-msgid "{machine.name} - Machine Preferences"
-msgstr "{machine.name} - Preferências da Máquina"
+msgid "{machine.name} - Machine Settings"
+msgstr "{machine.name} - Configurações da Máquina"
 
 #: rayforge/machine/ui/settings_dialog.py:19
-msgid "Machine Preferences"
-msgstr "Preferências da Máquina"
+msgid "Machine Settings"
+msgstr "Configurações da Máquina"
 
 #: rayforge/machine/ui/log_dialog.py:30
 msgid "Machine Log"
@@ -1478,8 +1478,8 @@ msgid "Serial port cannot be empty."
 msgstr "A porta serial não pode estar vazia."
 
 #: rayforge/shared/ui/preferences_dialog.py:19
-msgid "Preferences"
-msgstr "Preferências"
+msgid "Settings"
+msgstr "Configurações"
 
 #: rayforge/shared/ui/preferences_dialog.py:41
 msgid "Categories"
