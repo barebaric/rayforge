@@ -1971,8 +1971,8 @@ msgid "Clear Document"
 msgstr "Limpiar documento"
 
 #: rayforge/main_menu.py:48
-msgid "Preferences…"
-msgstr "Preferencias…"
+msgid "Settings"
+msgstr "Ajustes"
 
 #: rayforge/main_menu.py:55
 msgid "Show Workpieces"
@@ -2147,7 +2147,7 @@ msgid "Clear Alarm"
 msgstr "Limpiar alarma"
 
 #: rayforge/main_menu.py:178
-msgid "Machine Settings…"
+msgid "Machine Settings"
 msgstr "Ajustes de la máquina…"
 
 #: rayforge/main_menu.py:181
