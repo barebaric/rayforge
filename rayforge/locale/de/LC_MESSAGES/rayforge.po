@@ -1967,10 +1967,6 @@ msgstr "Alles auswählen"
 msgid "Clear Document"
 msgstr "Dokument leeren"
 
-#: rayforge/main_menu.py:48
-msgid "Settings"
-msgstr "Einstellungen"
-
 #: rayforge/main_menu.py:55
 msgid "Show Workpieces"
 msgstr "Werkstücke anzeigen"
@@ -3307,10 +3303,6 @@ msgstr "Max. Dicke"
 #: rayforge/doceditor/ui/edit_recipe_dialog.py:233
 msgid "Maximum stock thickness for this recipe to apply"
 msgstr "Maximale Materialdicke, bei der dieses Rezept angewendet wird."
-
-#: rayforge/doceditor/ui/edit_recipe_dialog.py:249
-msgid "Settings"
-msgstr "Einstellungen"
 
 #: rayforge/doceditor/ui/edit_recipe_dialog.py:251
 msgid "The process settings that will be applied by this recipe."

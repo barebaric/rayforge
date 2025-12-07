@@ -1431,10 +1431,6 @@ msgstr ""
 msgid "Serial port cannot be empty."
 msgstr ""
 
-#: rayforge/shared/ui/preferences_dialog.py:19
-msgid "Settings"
-msgstr ""
-
 #: rayforge/shared/ui/preferences_dialog.py:41
 msgid "Categories"
 msgstr ""
@@ -3224,10 +3220,6 @@ msgstr ""
 
 #: rayforge/doceditor/ui/edit_recipe_dialog.py:233
 msgid "Maximum stock thickness for this recipe to apply"
-msgstr ""
-
-#: rayforge/doceditor/ui/edit_recipe_dialog.py:249
-msgid "Settings"
 msgstr ""
 
 #: rayforge/doceditor/ui/edit_recipe_dialog.py:251
