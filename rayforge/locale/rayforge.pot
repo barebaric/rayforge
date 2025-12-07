@@ -1187,10 +1187,6 @@ msgstr ""
 msgid "Select driver"
 msgstr ""
 
-#: rayforge/machine/ui/general_preferences_page.py:94
-msgid "Machine Settings"
-msgstr ""
-
 #: rayforge/machine/ui/general_preferences_page.py:98
 msgid "Home On Start"
 msgstr ""
@@ -2084,10 +2080,6 @@ msgstr ""
 
 #: rayforge/main_menu.py:173
 msgid "Clear Alarm"
-msgstr ""
-
-#: rayforge/main_menu.py:178
-msgid "Machine Settings"
 msgstr ""
 
 #: rayforge/main_menu.py:181

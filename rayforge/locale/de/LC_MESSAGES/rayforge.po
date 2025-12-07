@@ -1220,10 +1220,6 @@ msgstr "Treiber-Einstellungen"
 msgid "Select driver"
 msgstr "Treiber auswählen"
 
-#: rayforge/machine/ui/general_preferences_page.py:94
-msgid "Machine Settings"
-msgstr "Maschineneinstellungen"
-
 #: rayforge/machine/ui/general_preferences_page.py:98
 msgid "Home On Start"
 msgstr "Beim Start referenzieren"
@@ -2138,10 +2134,6 @@ msgstr "Auftrag abbrechen"
 #: rayforge/main_menu.py:173
 msgid "Clear Alarm"
 msgstr "Alarm zurücksetzen"
-
-#: rayforge/main_menu.py:178
-msgid "Machine Settings"
-msgstr "Maschineneinstellungen…"
 
 #: rayforge/main_menu.py:181
 msgid "_Machine"

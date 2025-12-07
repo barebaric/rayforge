@@ -1170,10 +1170,6 @@ msgstr "Tamaño del punto láser en la dirección Y"
 msgid "{machine.name} - Machine Settings"
 msgstr "{machine.name} - Ajustes de la máquina"
 
-#: rayforge/machine/ui/settings_dialog.py:19
-msgid "Machine Settings"
-msgstr "Ajustes de la máquina"
-
 #: rayforge/machine/ui/log_dialog.py:30
 msgid "Machine Log"
 msgstr "Registro de la máquina"
@@ -2141,10 +2137,6 @@ msgstr "Cancelar trabajo"
 #: rayforge/main_menu.py:173
 msgid "Clear Alarm"
 msgstr "Limpiar alarma"
-
-#: rayforge/main_menu.py:178
-msgid "Machine Settings"
-msgstr "Ajustes de la máquina…"
 
 #: rayforge/main_menu.py:181
 msgid "_Machine"

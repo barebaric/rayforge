@@ -1219,10 +1219,6 @@ msgstr "Configurações do Driver"
 msgid "Select driver"
 msgstr "Selecionar driver"
 
-#: rayforge/machine/ui/general_preferences_page.py:94
-msgid "Machine Settings"
-msgstr "Configurações da Máquina"
-
 #: rayforge/machine/ui/general_preferences_page.py:98
 msgid "Home On Start"
 msgstr "Referenciar ao Iniciar"
@@ -2135,10 +2131,6 @@ msgstr "Cancelar Trabalho"
 #: rayforge/main_menu.py:173
 msgid "Clear Alarm"
 msgstr "Limpar Alarme"
-
-#: rayforge/main_menu.py:178
-msgid "Machine Settings"
-msgstr "Configurações da Máquina…"
 
 #: rayforge/main_menu.py:181
 msgid "_Machine"

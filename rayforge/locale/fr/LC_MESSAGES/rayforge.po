@@ -1229,10 +1229,6 @@ msgstr "Paramètres du pilote"
 msgid "Select driver"
 msgstr "Sélectionner un pilote"
 
-#: rayforge/machine/ui/general_preferences_page.py:94
-msgid "Machine Settings"
-msgstr "Paramètres de la machine"
-
 #: rayforge/machine/ui/general_preferences_page.py:98
 msgid "Home On Start"
 msgstr "Retour à l’origine au démarrage"
@@ -2149,10 +2145,6 @@ msgstr "Annuler la tâche"
 #: rayforge/main_menu.py:173
 msgid "Clear Alarm"
 msgstr "Effacer l’alarme"
-
-#: rayforge/main_menu.py:178
-msgid "Machine Settings"
-msgstr "Paramètres de la machine..."
 
 #: rayforge/main_menu.py:181
 msgid "_Machine"
