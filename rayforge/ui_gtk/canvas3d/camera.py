@@ -207,7 +207,8 @@ class Camera:
         )
         self.target = np.array([center_x, center_y, 0.0], dtype=np.float64)
 
-        # Standard orientation: Up vector points along positive Y.
+        # Keep the camera's up aligned to +Y; scene transforms handle axis
+        # orientation differences.
         self.up = np.array([0.0, 1.0, 0.0], dtype=np.float64)
         # A top-down view should be orthographic, not perspective.
 
