@@ -1,0 +1,126 @@
+name: Build macOS App (Intel)
+
+on:
+  push:
+    branches:
+      - "**"
+    tags:
+      - "*"
+  pull_request:
+    branches:
+      - "**"
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build macOS Bundle (Intel)
+    runs-on: macos-13
+    outputs:
+      version: ${{ steps.set-version.outputs.version }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Set Version
+        id: set-version
+        shell: bash
+        run: |
+          if [[ "${{ github.ref_type }}" == "tag" ]]; then
+            VERSION=${{ github.ref_name }}
+          elif git describe --tags >/dev/null 2>&1; then
+            VERSION=$(git describe --tags)
+          else
+            VERSION="v0.0.0-$(git rev-parse --short HEAD)"
+          fi
+          if [ -z "$VERSION" ]; then
+            echo "Error: No git version number found!"
+            exit 1
+          fi
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Version: $VERSION"
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+          cache-dependency-path: requirements.txt
+
+      - name: Install macOS dependencies
+        run: bash scripts/mac_setup.sh --install
+
+      - name: Lint
+        run: pixi run lint
+
+      - name: Test
+        run: pixi run test
+
+      - name: Build macOS bundle
+        run: bash scripts/mac_build.sh --bundle --version "${{ env.VERSION }}"
+
+      - name: Package .app bundle
+        run: |
+          APP_PATH="dist/Rayforge.app"
+          if [ ! -d "$APP_PATH" ]; then
+            echo "App bundle not found at $APP_PATH"
+            exit 1
+          fi
+          ZIP_NAME="rayforge-${{ steps.set-version.outputs.version }}-macos-intel-app.zip"
+          ditto -c -k --keepParent "$APP_PATH" "$ZIP_NAME"
+
+      - name: Upload macOS bundle artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: rayforge-${{ steps.set-version.outputs.version }}-macos-intel-app.zip
+          path: rayforge-${{ steps.set-version.outputs.version }}-macos-intel-app.zip
+          compression-level: 9
+
+      - name: Upload Python distributions
+        uses: actions/upload-artifact@v4
+        with:
+          name: rayforge-${{ steps.set-version.outputs.version }}-macos-intel-dists
+          path: |
+            dist/*.whl
+            dist/*.tar.gz
+          if-no-files-found: error
+
+  release:
+    name: Create GitHub Release (Intel)
+    needs: build
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/') && github.repository == 'barebaric/rayforge'
+    permissions:
+      contents: write
+    steps:
+      - name: Download macOS app artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: rayforge-${{ needs.build.outputs.version }}-macos-intel-app.zip
+
+      - name: Download Python distributions
+        uses: actions/download-artifact@v4
+        with:
+          name: rayforge-${{ needs.build.outputs.version }}-macos-intel-dists
+          path: ./dist
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            rayforge-${{ needs.build.outputs.version }}-macos-intel.zip
+            dist/*.whl
+            dist/*.tar.gz
+          draft: false
+          prerelease: false
+          name: Release ${{ needs.build.outputs.version }}
+          tag_name: ${{ github.ref_name }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
