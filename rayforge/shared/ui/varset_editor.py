@@ -102,17 +102,15 @@ class VarDefinitionRowWidget(Adw.ExpanderRow):
         prefix_box.set_margin_end(8)
 
         # Drag Handle
-        drag_handle = Gtk.Image(
-            icon_name="list-drag-handle-symbolic",
-            tooltip_text=_("Drag to reorder"),
-        )
+        drag_handle = get_icon("drag-handle-symbolic")
+        drag_handle.set_tooltip_text(_("Drag to reorder"))
         drag_handle.add_css_class("dim-label")
         drag_handle.set_cursor(Gdk.Cursor.new_from_name("grab", None))
         prefix_box.append(drag_handle)
 
         # Delete Button
         delete_button = Gtk.Button(
-            icon_name="user-trash-symbolic",
+            child=get_icon("delete-symbolic"),
             tooltip_text=_("Delete Variable"),
             valign=Gtk.Align.CENTER,
         )

@@ -97,7 +97,7 @@ class MainToolbar(Gtk.Box):
         self.append(self.camera_visibility_button)
 
         self.show_travel_button = Gtk.ToggleButton()
-        self.show_travel_button.set_child(get_icon("laser-path-symbolic"))
+        self.show_travel_button.set_child(get_icon("travel-path-symbolic"))
         self.show_travel_button.set_active(False)
         self.show_travel_button.set_tooltip_text(
             _("Toggle travel move visibility")
@@ -129,9 +129,7 @@ class MainToolbar(Gtk.Box):
 
         # Add a button for the G-code Preview
         self.gcode_preview_button = Gtk.ToggleButton()
-        self.gcode_preview_button.set_child(
-            get_icon("document-properties-symbolic")
-        )
+        self.gcode_preview_button.set_child(get_icon("gcode-symbolic"))
         self.gcode_preview_button.set_active(False)
         self.gcode_preview_button.set_tooltip_text(_("Toggle G-code Preview"))
         self.gcode_preview_button.set_action_name("win.toggle_gcode_preview")

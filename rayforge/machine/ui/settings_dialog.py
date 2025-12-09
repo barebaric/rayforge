@@ -23,13 +23,13 @@ class MachineSettingsDialog(Adw.PreferencesDialog):
 
         # Create and add the preferences pages
         self.add(GeneralPreferencesPage(machine=self.machine))
+        self.add(AdvancedPreferencesPage(machine=self.machine))
 
         # Create the device page
         device_page = DeviceSettingsPage(machine=self.machine)
         device_page.show_toast.connect(self._on_show_toast)
         self.add(device_page)
 
-        self.add(AdvancedPreferencesPage(machine=self.machine))
         self.add(LaserPreferencesPage(machine=self.machine))
 
         # Create and manage the decoupled camera page

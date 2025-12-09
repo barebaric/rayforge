@@ -268,7 +268,7 @@ class AddEditRecipeDialog(Adw.Window):
         material_button.set_valign(Gtk.Align.CENTER)
         material_button.connect("clicked", self._on_select_material)
         self.material_row.add_suffix(material_button)
-        clear_button = Gtk.Button.new_from_icon_name("edit-clear-symbolic")
+        clear_button = Gtk.Button(child=get_icon("clear-symbolic"))
         clear_button.set_valign(Gtk.Align.CENTER)
         clear_button.set_tooltip_text(_("Clear Material Selection"))
         clear_button.connect("clicked", self._on_clear_material)

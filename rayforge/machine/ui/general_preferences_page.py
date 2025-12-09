@@ -1,9 +1,9 @@
 from gi.repository import Gtk, Adw
-from ..driver import drivers
 from ...shared.ui.adwfix import get_spinrow_int
-from ..models.machine import Machine
-from ...shared.ui.varsetwidget import VarSetWidget
 from ...shared.ui.unit_spin_row import UnitSpinRowHelper
+from ...shared.ui.varsetwidget import VarSetWidget
+from ..driver import drivers
+from ..models.machine import Machine
 
 
 class GeneralPreferencesPage(Adw.PreferencesPage):

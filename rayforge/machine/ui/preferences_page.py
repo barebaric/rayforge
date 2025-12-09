@@ -78,7 +78,7 @@ class MachinePreferencesPage(Adw.PreferencesPage):
             is_valid, error_msg = machine.validate_driver_setup()
 
             if not is_valid:
-                icon = get_icon("dialog-warning-symbolic")
+                icon = get_icon("warning-symbolic")
                 icon.get_style_context().add_class("warning")
                 tooltip = error_msg or _(
                     "This machine has an invalid configuration."
@@ -98,7 +98,7 @@ class MachinePreferencesPage(Adw.PreferencesPage):
             row.add_suffix(buttons_box)
 
             edit_button = Gtk.Button(
-                child=get_icon("document-edit-symbolic"),
+                child=get_icon("edit-symbolic"),
                 valign=Gtk.Align.CENTER,
             )
             edit_button.connect(

@@ -3,6 +3,7 @@ from gi.repository import Gtk, Gio, Adw
 from blinker import Signal
 from ...core.sketcher import Sketch
 from ...core.varset import IntVar, FloatVar, SliderFloatVar
+from ...icons import get_icon
 from ...shared.ui.varset_editor import VarSetEditorWidget
 from ...undo.models.property_cmd import ChangePropertyCommand
 from .menu import SketchMenu
@@ -60,7 +61,7 @@ class SketchStudio(Gtk.Box):
         self.append(self.session_bar)
 
         # Left: Cancel
-        self.btn_cancel = Gtk.Button(icon_name="window-close-symbolic")
+        self.btn_cancel = Gtk.Button(child=get_icon("close-symbolic"))
         self.btn_cancel.set_tooltip_text(_("Cancel Sketch"))
         self.btn_cancel.connect("clicked", self._on_cancel_clicked)
         self.session_bar.append(self.btn_cancel)

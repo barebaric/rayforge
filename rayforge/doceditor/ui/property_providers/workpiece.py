@@ -135,7 +135,7 @@ class TabsPropertyProvider(PropertyProvider):
         self.tabs_row.connect("notify::active", self._on_tabs_enabled_toggled)
 
         self.clear_tabs_button = Gtk.Button(
-            icon_name="edit-clear-symbolic",
+            child=get_icon("clear-symbolic"),
             valign=Gtk.Align.CENTER,
             tooltip_text=_("Remove all tabs"),
         )
@@ -151,8 +151,8 @@ class TabsPropertyProvider(PropertyProvider):
             digits=2,
         )
         self.tab_width_row.connect("notify::value", self._on_tab_width_changed)
-        self.reset_tab_width_button = Gtk.Button.new_from_icon_name(
-            "edit-undo-symbolic"
+        self.reset_tab_width_button = Gtk.Button(
+            child=get_icon("undo-symbolic")
         )
         self.reset_tab_width_button.set_valign(Gtk.Align.CENTER)
         self.reset_tab_width_button.set_tooltip_text(

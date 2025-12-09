@@ -6,12 +6,14 @@
    fill="#000000"
    version="1.1"
    id="svg1"
-   sodipodi:docname="pause-symbolic.svg"
+   sodipodi:docname="skip-previous-symbolic.svg"
    inkscape:version="1.4.2 (ebf0e940d0, 2025-05-08)"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
    xmlns="http://www.w3.org/2000/svg"
    xmlns:svg="http://www.w3.org/2000/svg">
+  <defs
+     id="defs1" />
   <sodipodi:namedview
      id="namedview1"
      pagecolor="#ffffff"
@@ -30,9 +32,7 @@
      inkscape:window-y="32"
      inkscape:window-maximized="1"
      inkscape:current-layer="svg1" />
-  <defs
-     id="defs1" />
   <path
-     d="M520-200v-560h240v560H520Zm-320 0v-560h240v560H200Zm400-80h80v-400h-80v400Zm-320 0h80v-400h-80v400Zm0-400v400-400Zm320 0v400-400Z"
+     d="M220-240v-480h80v480h-80Zm520 0L380-480l360-240v480Zm-80-240Zm0 90v-180l-136 90 136 90Z"
      id="path1" />
 </svg>
