@@ -47,7 +47,7 @@ class SplitMenuButton(Gtk.Box):
         # 2. The dropdown button for the menu
         popover = self._build_popover()
         self.menu_button = Gtk.MenuButton(
-            icon_name="pan-down-symbolic",
+            child=get_icon("pan-down-symbolic"),
             popover=popover,
             tooltip_text=_("Show all options"),
         )

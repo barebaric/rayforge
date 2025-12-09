@@ -61,7 +61,7 @@ class DeviceSettingsPage(Adw.PreferencesPage):
 
         # Error row with copy and close buttons
         self.error_row = Adw.ActionRow(use_markup=True, activatable=False)
-        self.error_row.set_icon_name("dialog-error-symbolic")
+        self.error_row.add_prefix(get_icon("error-symbolic"))
         self.error_row.add_css_class("error")
 
         copy_button = Gtk.Button(child=get_icon("copy-symbolic"))
@@ -92,7 +92,7 @@ class DeviceSettingsPage(Adw.PreferencesPage):
         ]
         for item in items:
             warning_row = Adw.ActionRow(title=item, activatable=False)
-            warning_row.set_icon_name("dialog-warning-symbolic")
+            warning_row.add_prefix(get_icon("warning-symbolic"))
             warning_row.add_css_class("warning")
 
             close_button = Gtk.Button(child=get_icon("close-symbolic"))
@@ -112,9 +112,9 @@ class DeviceSettingsPage(Adw.PreferencesPage):
             title=_(
                 "Click the refresh button to load settings from the device."
             ),
-            icon_name="info-symbolic",
             activatable=False,
         )
+        prompt_row.add_prefix(get_icon("info-symbolic"))
         self.prompt_group.add(prompt_row)
         self.add(self.prompt_group)
 

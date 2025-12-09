@@ -1,5 +1,6 @@
 from typing import cast, Dict, Tuple
 from gi.repository import Gtk, Adw
+from ...icons import get_icon
 from ...machine.models.machine import Machine
 from ..models.macro import Macro, MacroTrigger
 from .gcode_editor import GcodeEditorDialog
@@ -42,18 +43,16 @@ class HookList(Adw.PreferencesGroup):
             row.add_suffix(switch)
 
             # "Reset to Default" button
-            reset_button = Gtk.Button(
-                icon_name="edit-undo-symbolic", valign=Gtk.Align.CENTER
-            )
+            reset_button = Gtk.Button(valign=Gtk.Align.CENTER)
+            reset_button.set_child(get_icon("undo-symbolic"))
             reset_button.add_css_class("flat")
             reset_button.set_tooltip_text(_("Reset to Default"))
             reset_button.connect("clicked", self._on_reset_clicked, trigger)
             row.add_suffix(reset_button)
 
             # "Edit" button
-            edit_button = Gtk.Button(
-                icon_name="document-edit-symbolic", valign=Gtk.Align.CENTER
-            )
+            edit_button = Gtk.Button(valign=Gtk.Align.CENTER)
+            edit_button.set_child(get_icon("edit-symbolic"))
             edit_button.add_css_class("flat")
             edit_button.connect("clicked", self._on_edit_clicked, trigger)
             row.add_suffix(edit_button)

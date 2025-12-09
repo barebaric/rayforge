@@ -117,8 +117,9 @@ class PreviewControls(Gtk.Box):
         self.content_box.append(button_box)
 
         # Go to Start button
-        self.go_to_start_button = Gtk.Button()
-        self.go_to_start_button.set_icon_name("media-skip-backward-symbolic")
+        self.go_to_start_button = Gtk.Button(
+            child=get_icon("skip-previous-symbolic")
+        )
         self.go_to_start_button.set_tooltip_text("Go to Start")
         self.go_to_start_button.connect(
             "clicked", self._on_go_to_start_clicked
@@ -126,22 +127,23 @@ class PreviewControls(Gtk.Box):
         button_box.append(self.go_to_start_button)
 
         # Step Back button
-        self.step_back_button = Gtk.Button()
-        self.step_back_button.set_icon_name("media-seek-backward-symbolic")
+        self.step_back_button = Gtk.Button(
+            child=get_icon("fast-rewind-symbolic")
+        )
         self.step_back_button.set_tooltip_text("Step Back")
         self.step_back_button.connect("clicked", self._on_step_back_clicked)
         button_box.append(self.step_back_button)
 
         # Play/Pause button
-        self.play_button = Gtk.Button()
-        self.play_button.set_icon_name("media-playback-start-symbolic")
+        self.play_button = Gtk.Button(child=get_icon("play-arrow-symbolic"))
         self.play_button.set_tooltip_text("Play/Pause")
         self.play_button.connect("clicked", self._on_play_pause_clicked)
         button_box.append(self.play_button)
 
         # Step Forward button
-        self.step_forward_button = Gtk.Button()
-        self.step_forward_button.set_icon_name("media-seek-forward-symbolic")
+        self.step_forward_button = Gtk.Button(
+            child=get_icon("fast-forward-symbolic")
+        )
         self.step_forward_button.set_tooltip_text("Step Forward")
         self.step_forward_button.connect(
             "clicked", self._on_step_forward_clicked
@@ -149,8 +151,9 @@ class PreviewControls(Gtk.Box):
         button_box.append(self.step_forward_button)
 
         # Go to End button
-        self.go_to_end_button = Gtk.Button()
-        self.go_to_end_button.set_icon_name("media-skip-forward-symbolic")
+        self.go_to_end_button = Gtk.Button(
+            child=get_icon("skip-forward-symbolic")
+        )
         self.go_to_end_button.set_tooltip_text("Go to End")
         self.go_to_end_button.connect("clicked", self._on_go_to_end_clicked)
         button_box.append(self.go_to_end_button)
@@ -309,7 +312,7 @@ class PreviewControls(Gtk.Box):
     def _start_playback(self):
         """Starts automatic playback."""
         self.playing = True
-        self.play_button.set_icon_name("media-playback-pause-symbolic")
+        self.play_button.set_child(get_icon("pause-symbolic"))
 
         fps = 24
         if self.num_gcode_lines > 0:
@@ -326,7 +329,7 @@ class PreviewControls(Gtk.Box):
     def _pause_playback(self):
         """Pauses playback."""
         self.playing = False
-        self.play_button.set_icon_name("media-playback-start-symbolic")
+        self.play_button.set_child(get_icon("play-arrow-symbolic"))
 
         if self.playback_timeout_id:
             GLib.source_remove(self.playback_timeout_id)

@@ -4,6 +4,7 @@ from typing import Optional
 from gi.repository import Gtk, Adw, GLib, Gio
 from blinker import Signal
 from ...context import get_context
+from ...icons import get_icon
 from ...logging_setup import (
     ui_log_event_received,
     get_memory_handler,
@@ -54,8 +55,13 @@ class MachineLogDialog(Adw.Dialog):  # TODO: with Adw 1.6, use BottomSheet
         self.scrolled_window.set_child(self.terminal)
         box.append(self.scrolled_window)
 
-        self.save_log_button = Gtk.Button.new_with_label(_("Save Debug Log"))
-        self.save_log_button.set_icon_name("document-save-symbolic")
+        self.save_log_button = Gtk.Button()
+        button_content = Gtk.Box(
+            orientation=Gtk.Orientation.HORIZONTAL, spacing=6
+        )
+        button_content.append(get_icon("save-symbolic"))
+        button_content.append(Gtk.Label(label=_("Save Debug Log")))
+        self.save_log_button.set_child(button_content)
         self.save_log_button.add_css_class("suggested-action")
         self.save_log_button.set_margin_top(6)
         self.save_log_button.set_margin_bottom(6)

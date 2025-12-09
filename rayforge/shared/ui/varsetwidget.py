@@ -14,6 +14,7 @@ from ...core.varset import (
     Var,
     VarSet,
 )
+from ...icons import get_icon
 from .var_row_factory import VarRowFactory
 
 logger = logging.getLogger(__name__)
@@ -230,7 +231,8 @@ class VarSetWidget(Adw.PreferencesGroup):
         if not self.explicit_apply:
             return
         apply_button = Gtk.Button(
-            icon_name="object-select-symbolic", tooltip_text=_("Apply Change")
+            child=get_icon("object-select-symbolic"),
+            tooltip_text=_("Apply Change"),
         )
         apply_button.add_css_class("flat")
         apply_button.set_valign(Gtk.Align.CENTER)
