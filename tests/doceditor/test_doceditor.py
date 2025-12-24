@@ -3,9 +3,11 @@ import logging
 from pathlib import Path
 import pytest
 import re
-from rayforge.doceditor.editor import DocEditor
-from rayforge.pipeline import steps
+from rayforge.context import get_context
 from rayforge.core.vectorization_spec import TraceSpec
+from rayforge.doceditor.editor import DocEditor
+from rayforge.machine.models.machine import Origin
+from rayforge.pipeline import steps
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -61,6 +63,12 @@ async def test_import_svg_export_gcode(
     context_initializer, editor, tmp_path, assets_path
 ):
     """Full end-to-end test using a real subprocess for ops generation."""
+    # The expected G-code was generated with TOP_LEFT origin (no coordinate flip).
+    # The new Machine defaults to BOTTOM_LEFT, so we force TOP_LEFT here.
+    machine = get_context().machine
+    assert machine is not None, "Machine should be initialized in context"
+    machine.set_origin(Origin.TOP_LEFT)
+
     # --- 1. ARRANGE ---
     step = steps.create_contour_step(
         context_initializer, name="Vectorize", optimize=False

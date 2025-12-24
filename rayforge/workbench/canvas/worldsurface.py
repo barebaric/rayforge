@@ -28,6 +28,7 @@ class WorldSurface(Canvas):
         self,
         width_mm: float = 100.0,
         height_mm: float = 100.0,
+        x_axis_right: bool = False,
         y_axis_down: bool = False,
         show_grid: bool = True,
         show_axis: bool = True,
@@ -51,6 +52,7 @@ class WorldSurface(Canvas):
         self._axis_renderer = AxisRenderer(
             width_mm=self.width_mm,
             height_mm=self.height_mm,
+            x_axis_right=x_axis_right,
             y_axis_down=y_axis_down,
             show_grid=show_grid,
             show_axis=show_axis,

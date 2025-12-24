@@ -34,6 +34,35 @@ class TestMatrix:
         assert m1 != m3
         assert m1 != "not a matrix"
 
+    def test_is_close(self):
+        """Tests the is_close() method for approximate equality."""
+        m1 = Matrix.identity()
+        m2 = Matrix.identity()
+
+        # Exact match
+        assert m1.is_close(m2)
+
+        # Within default tolerance (1e-6)
+        m_close = Matrix.identity()
+        # Modify internal numpy array directly to inject small error.
+        # We modify index [0, 2] (value 0.0) instead of [0, 0] (value 1.0)
+        # to test absolute tolerance without relative tolerance interference.
+        m_close.m[0, 2] += 1e-7
+        assert m1.is_close(m_close)
+
+        # Outside default tolerance
+        m_far = Matrix.identity()
+        m_far.m[0, 2] += 1e-5
+        assert not m1.is_close(m_far)
+
+        # Custom tolerance
+        assert m1.is_close(m_far, tol=1e-4)
+        assert not m1.is_close(m_close, tol=1e-8)
+
+        # Type checking
+        with pytest.raises(TypeError):
+            m1.is_close(None)  # type: ignore
+
     def test_to_numpy(self):
         m = Matrix.translation(10, 20)
         np_arr = m.to_numpy()

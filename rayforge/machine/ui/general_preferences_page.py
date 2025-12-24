@@ -3,7 +3,7 @@ from ...shared.ui.adwfix import get_spinrow_int
 from ...shared.ui.unit_spin_row import UnitSpinRowHelper
 from ...shared.ui.varsetwidget import VarSetWidget
 from ..driver import drivers
-from ..models.machine import Machine
+from ..models.machine import Machine, Origin
 
 
 class GeneralPreferencesPage(Adw.PreferencesPage):
@@ -119,17 +119,28 @@ class GeneralPreferencesPage(Adw.PreferencesPage):
         )
         machine_group.add(clear_alarm_row)
 
-        # Y-Axis direction switch
-        y_axis_switch_row = Adw.SwitchRow(
-            title=_("Invert Y Axis Direction"),
-            subtitle=_(
-                "Enable if your machine's origin is top-left"
-                " instead of bottom-left"
-            ),
+        # Origin selector
+        origin_store = Gtk.StringList()
+        origin_store.append(_("Bottom Left"))
+        origin_store.append(_("Top Left"))
+        origin_store.append(_("Top Right"))
+        origin_store.append(_("Bottom Right"))
+        origin_combo_row = Adw.ComboRow(
+            title=_("Origin"),
+            subtitle=_("Machine coordinate origin position"),
+            model=origin_store,
         )
-        y_axis_switch_row.set_active(self.machine.y_axis_down)
-        y_axis_switch_row.connect("notify::active", self.on_y_axis_toggled)
-        machine_group.add(y_axis_switch_row)
+        origin_combo_row.set_selected(
+            {
+                Origin.BOTTOM_LEFT: 0,
+                Origin.TOP_LEFT: 1,
+                Origin.TOP_RIGHT: 2,
+                Origin.BOTTOM_RIGHT: 3,
+            }.get(self.machine.origin, 0)
+        )
+        origin_combo_row.connect("notify::selected", self.on_origin_changed)
+        self.origin_combo_row = origin_combo_row
+        machine_group.add(origin_combo_row)
 
         # Max Travel Speed
         travel_speed_adjustment = Gtk.Adjustment(
@@ -335,8 +346,16 @@ class GeneralPreferencesPage(Adw.PreferencesPage):
     def on_clear_alarm_on_connect_changed(self, row, _):
         self.machine.set_clear_alarm_on_connect(row.get_active())
 
-    def on_y_axis_toggled(self, row, _):
-        self.machine.set_y_axis_down(row.get_active())
+    def on_origin_changed(self, row, _):
+        selected_index = row.get_selected()
+        origin_map = {
+            0: Origin.BOTTOM_LEFT,
+            1: Origin.TOP_LEFT,
+            2: Origin.TOP_RIGHT,
+            3: Origin.BOTTOM_RIGHT,
+        }
+        origin = origin_map.get(selected_index, Origin.BOTTOM_LEFT)
+        self.machine.set_origin(origin)
 
     def on_travel_speed_changed(self, helper: UnitSpinRowHelper):
         """Update the max travel speed when the value changes."""

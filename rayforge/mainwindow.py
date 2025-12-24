@@ -229,11 +229,13 @@ class MainWindow(Adw.ApplicationWindow):
         config = get_context().config
         if config.machine:
             width_mm, height_mm = config.machine.dimensions
-            y_down = getattr(config.machine, "y_axis_down", False)
+            y_down = config.machine.y_axis_down
+            x_right = config.machine.x_axis_right
         else:
             # Default to a square aspect ratio if no machine is configured
             width_mm, height_mm = 100.0, 100.0
             y_down = False
+            x_right = False
 
         # Create the Sketch Studio, passing the machine dimensions.
         self.sketch_studio = SketchStudio(
@@ -344,6 +346,7 @@ class MainWindow(Adw.ApplicationWindow):
                 width_mm=width_mm,
                 depth_mm=height_mm,
                 y_down=y_down,
+                x_right=x_right,
             )
 
             # Create a stack to switch between 2D and 3D views
@@ -1207,10 +1210,12 @@ class MainWindow(Adw.ApplicationWindow):
         new_machine = config.machine
         if new_machine:
             width_mm, height_mm = new_machine.dimensions
-            y_down = getattr(new_machine, "y_axis_down", False)
+            y_down = new_machine.y_axis_down
+            x_right = new_machine.x_axis_right
         else:
             width_mm, height_mm = 100.0, 100.0
             y_down = False
+            x_right = False
 
         # Update the 3D canvas to match the new machine.
         if canvas3d_initialized and hasattr(self, "view_stack"):
@@ -1231,6 +1236,7 @@ class MainWindow(Adw.ApplicationWindow):
                 width_mm=width_mm,
                 depth_mm=height_mm,
                 y_down=y_down,
+                x_right=x_right,
             )
             self.view_stack.add_named(self.canvas3d, "3d")
 

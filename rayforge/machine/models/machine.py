@@ -6,6 +6,7 @@ import multiprocessing
 import json
 import numpy as np
 from dataclasses import asdict
+from enum import Enum
 from typing import List, Dict, Any, Optional, Tuple, TYPE_CHECKING, Type
 from pathlib import Path
 from blinker import Signal
@@ -28,6 +29,14 @@ from ..driver.driver import Axis
 from .laser import Laser
 from .macro import Macro, MacroTrigger
 from .dialect import get_dialect, GcodeDialect
+
+
+class Origin(Enum):
+    TOP_LEFT = "top_left"
+    BOTTOM_LEFT = "bottom_left"
+    TOP_RIGHT = "top_right"
+    BOTTOM_RIGHT = "bottom_right"
+
 
 if TYPE_CHECKING:
     from ...core.varset import VarSet
@@ -80,7 +89,7 @@ class Machine:
         self.max_cut_speed: int = 1000  # in mm/min
         self.acceleration: int = 1000  # in mm/s²
         self.dimensions: Tuple[int, int] = 200, 200
-        self.y_axis_down: bool = False
+        self.origin: Origin = Origin.BOTTOM_LEFT
         self.soft_limits_enabled: bool = True
         self._settings_lock = asyncio.Lock()
 
@@ -350,9 +359,17 @@ class Machine:
         self.dimensions = (width, height)
         self.changed.send(self)
 
-    def set_y_axis_down(self, y_axis_down: bool):
-        self.y_axis_down = y_axis_down
+    def set_origin(self, origin: Origin):
+        self.origin = origin
         self.changed.send(self)
+
+    @property
+    def y_axis_down(self) -> bool:
+        return self.origin in (Origin.TOP_LEFT, Origin.TOP_RIGHT)
+
+    @property
+    def x_axis_right(self) -> bool:
+        return self.origin in (Origin.TOP_RIGHT, Origin.BOTTOM_RIGHT)
 
     def set_soft_limits_enabled(self, enabled: bool):
         """Enable or disable soft limits for jog operations."""
@@ -623,18 +640,31 @@ class Machine:
         """
         encoder = self.driver.get_encoder()
 
-        # If the machine is Y-down, we must transform the ops coordinate
-        # system (Y-Up Internal -> Y-Down Machine) before generating G-code.
-        # The transform is Y_new = Height - Y_old.
+        # Transform the ops coordinate system (Y-Up Internal -> Machine)
+        # before generating G-code based on the origin setting.
         ops_for_encoder = ops
-        if self.y_axis_down:
+        if self.origin != Origin.TOP_LEFT:
             ops_for_encoder = ops.copy()
-            height = self.dimensions[1]
-            # Create transform matrix: Translate(0, H) @ Scale(1, -1)
-            # Result: y -> -y -> -y + H
+            width, height = self.dimensions
             transform = np.identity(4)
-            transform[1, 1] = -1.0
-            transform[1, 3] = height
+
+            if self.origin == Origin.BOTTOM_LEFT:
+                # Y-down, X-left: Y_new = Height - Y_old
+                transform[1, 1] = -1.0
+                transform[1, 3] = height
+            elif self.origin == Origin.TOP_RIGHT:
+                # Y-up, X-right: X_new = Width - X_old
+                transform[0, 0] = -1.0
+                transform[0, 3] = width
+            elif self.origin == Origin.BOTTOM_RIGHT:
+                # Y-down, X-right:
+                #   X_new = Width - X_old
+                #   Y_new = Height - Y_old
+                transform[0, 0] = -1.0
+                transform[0, 3] = width
+                transform[1, 1] = -1.0
+                transform[1, 3] = height
+
             ops_for_encoder.transform(transform)
 
         gcode_str, op_map_obj = encoder.encode(ops_for_encoder, self, doc)
@@ -743,7 +773,7 @@ class Machine:
                 "home_on_start": self.home_on_start,
                 "dialect_uid": self.dialect_uid,
                 "dimensions": list(self.dimensions),
-                "y_axis_down": self.y_axis_down,
+                "origin": self.origin.value,
                 "heads": [head.to_dict() for head in self.heads],
                 "cameras": [camera.to_dict() for camera in self.cameras],
                 "hookmacros": {
@@ -851,7 +881,15 @@ class Machine:
 
         ma.dialect_uid = dialect_uid
         ma.dimensions = tuple(ma_data.get("dimensions", ma.dimensions))
-        ma.y_axis_down = ma_data.get("y_axis_down", ma.y_axis_down)
+        origin_value = ma_data.get("origin", None)
+        if origin_value is not None:
+            ma.origin = Origin(origin_value)
+        else:
+            ma.origin = (
+                Origin.BOTTOM_LEFT
+                if ma_data.get("y_axis_down", False)
+                else Origin.TOP_LEFT
+            )
         ma.soft_limits_enabled = ma_data.get(
             "soft_limits_enabled", ma.soft_limits_enabled
         )

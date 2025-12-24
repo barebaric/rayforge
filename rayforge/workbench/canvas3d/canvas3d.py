@@ -186,6 +186,7 @@ class Canvas3D(Gtk.GLArea):
         pipeline: "Pipeline",
         width_mm: float,
         depth_mm: float,
+        x_right: bool = False,
         y_down: bool = False,
         **kwargs,
     ):
@@ -195,6 +196,7 @@ class Canvas3D(Gtk.GLArea):
         self.pipeline = pipeline
         self.width_mm = width_mm
         self.depth_mm = depth_mm
+        self.x_right = x_right
         self.y_down = y_down
 
         self.camera: Optional[Camera] = None
@@ -214,16 +216,20 @@ class Canvas3D(Gtk.GLArea):
         self._is_z_rotating = False
         self._gl_initialized = False
 
-        # This matrix is used for the Grid and Axes to visualize the
-        # machine coordinate system. If Y is down, we flip it so the visual
-        # origin (0,0) is at the Top-Left (Back-Left in 3D).
-        self._model_matrix = np.identity(4, dtype=np.float32)
+        # This matrix transforms the grid and axes from a standard Y-up,
+        # X-right system to match the machine's coordinate system.
+        translate_mat = np.identity(4, dtype=np.float32)
+        scale_mat = np.identity(4, dtype=np.float32)
+
         if self.y_down:
-            translate_mat = np.identity(4, dtype=np.float32)
             translate_mat[1, 3] = self.depth_mm
-            scale_mat = np.identity(4, dtype=np.float32)
             scale_mat[1, 1] = -1.0
-            self._model_matrix = translate_mat @ scale_mat
+
+        if self.x_right:
+            translate_mat[0, 3] = self.width_mm
+            scale_mat[0, 0] = -1.0
+
+        self._model_matrix = translate_mat @ scale_mat
 
         self._color_spec: ColorSpecDict = {
             "cut": ("#ff00ff22", "#ff00ff"),
@@ -549,7 +555,8 @@ class Canvas3D(Gtk.GLArea):
                     mvp_matrix_scene_gl,  # For grid/axes (Use Flipped)
                     mvp_matrix_ui_gl,  # For text (Use Identity)
                     view_matrix,
-                    self._model_matrix,  # Pass the model matrix for positions
+                    self._model_matrix,  # Pass model matrix for positions
+                    x_right=self.x_right,
                 )
             if self.ops_renderer and self.main_shader:
                 # The ops vertices are in internal Y-up coordinates.

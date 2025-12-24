@@ -52,6 +52,7 @@ class WorkSurface(WorldSurface):
         self._workpieces_visible = True
         width_mm, height_mm = machine.dimensions if machine else (100.0, 100.0)
         y_axis_down = machine.y_axis_down if machine else False
+        x_axis_right = machine.x_axis_right if machine else False
         self._cam_visible = cam_visible
         self._transform_start_states: Dict[CanvasElement, dict] = {}
         self.right_click_context: Optional[Dict] = None
@@ -65,6 +66,7 @@ class WorkSurface(WorldSurface):
             width_mm=width_mm,
             height_mm=height_mm,
             y_axis_down=y_axis_down,
+            x_axis_right=x_axis_right,
             **kwargs,
         )
 
@@ -689,8 +691,11 @@ class WorkSurface(WorldSurface):
         # and all calculated coordinates.
         size_changed = machine.dimensions != (self.width_mm, self.height_mm)
         y_axis_changed = machine.y_axis_down != self._axis_renderer.y_axis_down
+        x_axis_changed = (
+            machine.x_axis_right != self._axis_renderer.x_axis_right
+        )
 
-        if size_changed or y_axis_changed:
+        if size_changed or x_axis_changed or y_axis_changed:
             self.reset_view()
         else:
             # No major reset needed, but other properties like the list of
@@ -705,6 +710,7 @@ class WorkSurface(WorldSurface):
         if not self.machine:
             # If no machine, reset to a default view
             self.set_size(100.0, 100.0)
+            self._axis_renderer.set_x_axis_right(False)
             self._axis_renderer.set_y_axis_down(False)
             super().reset_view()
             self.aspect_ratio_changed.send(self, ratio=1.0)
@@ -718,6 +724,7 @@ class WorkSurface(WorldSurface):
         )
         new_dimensions = self.machine.dimensions
         self.set_size(new_dimensions[0], new_dimensions[1])
+        self._axis_renderer.set_x_axis_right(self.machine.x_axis_right)
         self._axis_renderer.set_y_axis_down(self.machine.y_axis_down)
         # Call the base class reset which handles pan/zoom
         super().reset_view()

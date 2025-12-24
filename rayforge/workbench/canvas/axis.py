@@ -22,6 +22,7 @@ class AxisRenderer:
         width_mm: float = 100.0,
         height_mm: float = 100.0,
         y_axis_down: bool = False,
+        x_axis_right: bool = False,
         fg_color: Tuple[float, float, float, float] = (0.0, 0.0, 0.0, 1.0),
         grid_color: Tuple[float, float, float, float] = (0.9, 0.9, 0.9, 1.0),
         show_grid: bool = True,
@@ -31,6 +32,7 @@ class AxisRenderer:
         self.width_mm: float = width_mm
         self.height_mm: float = height_mm
         self.y_axis_down: bool = y_axis_down
+        self.x_axis_right: bool = x_axis_right
         self.fg_color: Tuple[float, float, float, float] = fg_color
         self.grid_color: Tuple[float, float, float, float] = grid_color
         self.show_grid: bool = show_grid
@@ -53,14 +55,18 @@ class AxisRenderer:
         y_axis_space = float(self.get_y_axis_width())
 
         # Define paddings based on original logic.
-        left_padding = y_axis_space
-        right_padding = math.ceil(y_axis_space / 2)
+        if self.x_axis_right:
+            left_padding = math.ceil(y_axis_space / 2)
+            right_padding = y_axis_space
+        else:
+            left_padding = y_axis_space
+            right_padding = math.ceil(y_axis_space / 2)
         total_horiz_padding = left_padding + right_padding
 
         if self.y_axis_down:
             top_padding = x_axis_space
             bottom_padding = math.ceil(x_axis_space / 2)
-        else:  # Y-up
+        else:
             top_padding = math.ceil(x_axis_space / 2)
             bottom_padding = x_axis_space
         total_vert_padding = top_padding + bottom_padding
@@ -256,23 +262,33 @@ class AxisRenderer:
         ctx.set_source_rgba(*self.fg_color)
         ctx.set_line_width(1)
 
-        # Determine axis positions based on Y orientation
+        # Determine axis positions based on Y and X orientation
         if self.y_axis_down:
-            # Y-down view: Origin top-left.
-            # X-axis at top (y = height), Y-axis goes down.
+            # Y-down view: Origin at top.
             x_axis_y = self.height_mm
             y_axis_start_mm = (0, self.height_mm)
             y_axis_end_mm = (0, 0)
         else:
-            # Y-up view: Origin bottom-left.
-            # X-axis at bottom (y = 0), Y-axis goes up.
+            # Y-up view: Origin at bottom.
             x_axis_y = 0.0
             y_axis_start_mm = (0, 0)
             y_axis_end_mm = (0, self.height_mm)
 
+        if self.x_axis_right:
+            # X-right view: Origin at right side.
+            y_axis_start_mm = (self.width_mm, y_axis_start_mm[1])
+            y_axis_end_mm = (self.width_mm, y_axis_end_mm[1])
+        else:
+            # X-left view: Origin at left side.
+            pass
+
         # Draw Axis Lines
-        x_axis_start_mm = (0, x_axis_y)
-        x_axis_end_mm = (self.width_mm, x_axis_y)
+        if self.x_axis_right:
+            x_axis_start_mm = (self.width_mm, x_axis_y)
+            x_axis_end_mm = (0, x_axis_y)
+        else:
+            x_axis_start_mm = (0, x_axis_y)
+            x_axis_end_mm = (self.width_mm, x_axis_y)
 
         x_start_px = view_transform.transform_point(x_axis_start_mm)
         x_end_px = view_transform.transform_point(x_axis_end_mm)
@@ -293,7 +309,10 @@ class AxisRenderer:
             if x_mm >= self.width_mm - 1e-6:
                 break
 
-            label_val = round(x_mm, precision)
+            if self.x_axis_right:
+                label_val = round(self.width_mm - x_mm, precision)
+            else:
+                label_val = round(x_mm, precision)
             label = f"{label_val:g}"
             extents = ctx.text_extents(label)
             label_pos_px = view_transform.transform_point((x_mm, x_axis_y))
@@ -323,7 +342,9 @@ class AxisRenderer:
             extents = ctx.text_extents(label)
             # For y-down, a label of "10" means 10mm down from the top.
             world_y = self.height_mm - y_mm if self.y_axis_down else y_mm
-            label_pos_px = view_transform.transform_point((0, world_y))
+            # For x-right, a label of "10" means 10mm from the right.
+            world_x = self.width_mm - 0 if self.x_axis_right else 0
+            label_pos_px = view_transform.transform_point((world_x, world_y))
 
             ctx.move_to(
                 label_pos_px[0] - extents.width - 4,
@@ -360,6 +381,9 @@ class AxisRenderer:
 
     def set_height_mm(self, height_mm: float):
         self.height_mm = height_mm
+
+    def set_x_axis_right(self, x_axis_right: bool):
+        self.x_axis_right = x_axis_right
 
     def set_y_axis_down(self, y_axis_down: bool):
         self.y_axis_down = y_axis_down

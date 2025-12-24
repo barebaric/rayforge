@@ -17,7 +17,7 @@ from rayforge.machine.cmd import MachineCmd
 from rayforge.machine.driver.dummy import NoDeviceDriver
 from rayforge.machine.driver.driver import Axis
 from rayforge.machine.models.laser import Laser
-from rayforge.machine.models.machine import Machine
+from rayforge.machine.models.machine import Machine, Origin
 from rayforge.machine.models.macro import MacroTrigger
 from rayforge.pipeline import steps
 from rayforge.pipeline.encoder.gcode import GcodeEncoder
@@ -138,6 +138,10 @@ class TestMachine:
         driver.
         """
         # --- Arrange ---
+        # Set origin to TOP_LEFT so encode_ops does not create a copy of ops
+        # for coordinate transformation.
+        machine.set_origin(Origin.TOP_LEFT)
+
         # Create a mock encoder and spy on its encode method
         mock_encoder = GcodeEncoder(machine.dialect)
         encode_spy = mocker.spy(mock_encoder, "encode")

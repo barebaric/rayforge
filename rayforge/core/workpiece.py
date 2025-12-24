@@ -1187,9 +1187,7 @@ class WorkPiece(DocItem):
         Gets the workpiece's anchor position in the machine's native
         coordinate system.
         """
-        current_pos = self.pos
-        current_size = self.size
-        if current_pos is None or current_size is None:
+        if not self.pos or not self.size:
             return None
 
         context = get_context()
@@ -1197,16 +1195,21 @@ class WorkPiece(DocItem):
             return None
 
         machine = context.machine
-        model_x, model_y = current_pos  # Canonical: Y-up, bottom-left
+        model_x, model_y = self.pos
+        width, height = self.size
+        mach_w, mach_h = machine.dimensions
 
-        if machine.y_axis_down:
-            # Convert to machine: Y-down, top-left
-            machine_height = machine.dimensions[1]
-            machine_y = machine_height - model_y - current_size[1]
-            return model_x, machine_y
-        else:
-            # Machine is Y-up, same as model
-            return current_pos
+        # Calculate Machine X
+        machine_x = (
+            (mach_w - model_x - width) if machine.x_axis_right else model_x
+        )
+
+        # Calculate Machine Y
+        machine_y = (
+            (mach_h - model_y - height) if machine.y_axis_down else model_y
+        )
+
+        return machine_x, machine_y
 
     @pos_machine.setter
     def pos_machine(self, pos: Tuple[float, float]):
@@ -1214,8 +1217,7 @@ class WorkPiece(DocItem):
         Sets the workpiece's position from the machine's native
         coordinate system.
         """
-        current_size = self.size
-        if pos is None or current_size is None:
+        if not pos or not self.size:
             return
 
         context = get_context()
@@ -1224,19 +1226,22 @@ class WorkPiece(DocItem):
 
         machine = context.machine
         machine_x, machine_y = pos
-        model_pos = (0.0, 0.0)
+        width, height = self.size
+        mach_w, mach_h = machine.dimensions
 
-        if machine.y_axis_down:
-            # Convert from machine (Y-down, top-left) to
-            # model (Y-up, bottom-left)
-            machine_height = machine.dimensions[1]
-            model_y = machine_height - machine_y - current_size[1]
-            model_pos = machine_x, model_y
+        # Handle X Axis
+        if machine.x_axis_right:
+            model_x = mach_w - machine_x - width
         else:
-            # Machine is Y-up, same as model
-            model_pos = machine_x, machine_y
+            model_x = machine_x
 
-        self.pos = model_pos
+        # Handle Y Axis
+        if machine.y_axis_down:
+            model_y = mach_h - machine_y - height
+        else:
+            model_y = machine_y
+
+        self.pos = (model_x, model_y)
 
     def apply_split(self, fragments: List[Geometry]) -> List["WorkPiece"]:
         """
