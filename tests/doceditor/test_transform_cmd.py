@@ -63,6 +63,7 @@ def test_set_position_with_y_axis_down(transform_cmd, sample_items):
         "rayforge.doceditor.transform_cmd.get_context"
     ) as mock_get_context:
         mock_machine = MagicMock()
+        mock_machine.x_axis_right = False
         mock_machine.y_axis_down = True
         mock_machine.dimensions = (100, 100)
         mock_get_context.return_value.machine = mock_machine

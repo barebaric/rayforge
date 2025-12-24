@@ -85,6 +85,19 @@ class Matrix:
             return False
         return np.allclose(self.m, other.m)
 
+    def is_close(self, other: "Matrix", tol: float = 1e-6) -> bool:
+        """
+        Checks if two matrices are effectively equal within a specific
+        tolerance.
+
+        Args:
+            other: The matrix to compare against.
+            tol: The absolute tolerance parameter.
+        """
+        if not isinstance(other, Matrix):
+            raise TypeError("Can only compare with another Matrix.")
+        return np.allclose(self.m, other.m, atol=tol)
+
     def __repr__(self) -> str:
         """Returns a developer-friendly, evaluatable string representation."""
         return f"Matrix({self.m.tolist()})"

@@ -42,6 +42,9 @@ class TransformCmd:
 
         with history_manager.transaction(_("Transform item(s)")) as t:
             for doc_item, old_matrix, new_matrix in changes:
+                if old_matrix.is_close(new_matrix):
+                    continue
+
                 cmd = ChangePropertyCommand(
                     target=doc_item,
                     property_name="matrix",
@@ -76,6 +79,10 @@ class TransformCmd:
                 # world space, not local space.
                 delta = Matrix.translation(dx_mm, dy_mm)
                 new_matrix = delta @ old_matrix
+
+                if old_matrix.is_close(new_matrix):
+                    continue
+
                 cmd = ChangePropertyCommand(
                     target=item,
                     property_name="matrix",
@@ -109,6 +116,9 @@ class TransformCmd:
                 # center
                 flip_matrix = Matrix.flip_horizontal(center=world_center)
                 new_matrix = flip_matrix @ old_matrix
+
+                if old_matrix.is_close(new_matrix):
+                    continue
 
                 cmd = ChangePropertyCommand(
                     target=item,
@@ -144,6 +154,9 @@ class TransformCmd:
                 flip_matrix = Matrix.flip_vertical(center=world_center)
                 new_matrix = flip_matrix @ old_matrix
 
+                if old_matrix.is_close(new_matrix):
+                    continue
+
                 cmd = ChangePropertyCommand(
                     target=item,
                     property_name="matrix",
@@ -167,20 +180,29 @@ class TransformCmd:
 
                 # Calculate the target Y in world coordinates (Y-up)
                 size_world = item.size
-                x_world = x
-
                 machine = get_context().machine
+                if machine and machine.x_axis_right:
+                    machine_width = machine.dimensions[0]
+                    x_world = machine_width - x - size_world[0]
+                else:
+                    x_world = x
+
                 if machine and machine.y_axis_down:
                     machine_height = machine.dimensions[1]
                     y_world = machine_height - y - size_world[1]
                 else:
                     y_world = y
 
-                new_pos_world = (x_world, y_world)
-                item.pos = new_pos_world
-                new_matrix = item.matrix.copy()
+                current_pos = item.pos
+                dx = x_world - current_pos[0]
+                dy = y_world - current_pos[1]
 
-                if old_matrix == new_matrix:
+                # We apply the translation purely to the matrix to avoid
+                # double-updates caused by setting item.pos directly before
+                # the command executes.
+                new_matrix = Matrix.translation(dx, dy) @ old_matrix
+
+                if old_matrix.is_close(new_matrix):
                     continue
 
                 cmd = ChangePropertyCommand(
@@ -268,7 +290,7 @@ class TransformCmd:
                 item.set_size(new_width, new_height)
                 new_matrix = item.matrix.copy()
 
-                if old_matrix == new_matrix:
+                if old_matrix.is_close(new_matrix):
                     continue
 
                 cmd = ChangePropertyCommand(
@@ -294,7 +316,7 @@ class TransformCmd:
                 item.angle = angle
                 new_matrix = item.matrix.copy()
 
-                if old_matrix == new_matrix:
+                if old_matrix.is_close(new_matrix):
                     continue
 
                 cmd = ChangePropertyCommand(
@@ -320,7 +342,7 @@ class TransformCmd:
                 item.shear = shear
                 new_matrix = item.matrix.copy()
 
-                if old_matrix == new_matrix:
+                if old_matrix.is_close(new_matrix):
                     continue
 
                 cmd = ChangePropertyCommand(

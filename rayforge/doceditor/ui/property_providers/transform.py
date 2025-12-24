@@ -36,6 +36,7 @@ class TransformPropertyProvider(PropertyProvider):
         item = self.items[0]
         machine = get_context().machine
         bounds = machine.dimensions if machine else default_dim
+        x_axis_right = machine.x_axis_right if machine else False
         y_axis_down = machine.y_axis_down if machine else False
 
         size_world = item.size
@@ -43,23 +44,47 @@ class TransformPropertyProvider(PropertyProvider):
         angle_local = item.angle
         shear_local = item.shear
 
+        # Calculate X position in machine coordinates
+        if x_axis_right:
+            self.x_row.set_subtitle(_("Zero is on the right"))
+            machine_width = bounds[0]
+            pos_machine_x = machine_width - pos_world[0] - size_world[0]
+        else:
+            self.x_row.set_subtitle(_("Zero is on the left"))
+            pos_machine_x = pos_world[0]
+
+        # Calculate Y position in machine coordinates
         if y_axis_down:
             self.y_row.set_subtitle(_("Zero is at the top"))
             machine_height = bounds[1]
-            pos_machine_x = pos_world[0]
             pos_machine_y = machine_height - pos_world[1] - size_world[1]
         else:
             self.y_row.set_subtitle(_("Zero is at the bottom"))
-            pos_machine_x, pos_machine_y = pos_world
+            pos_machine_y = pos_world[1]
 
+        # Use a safe re-entrant pattern for updating widgets
+        was_in_update = getattr(self, "_in_update", False)
         self._in_update = True
-        self.width_row.set_value(size_world[0])
-        self.height_row.set_value(size_world[1])
-        self.x_row.set_value(pos_machine_x)
-        self.y_row.set_value(pos_machine_y)
-        self.angle_row.set_value(-angle_local)
-        self.shear_row.set_value(shear_local)
-        self._in_update = False
+        try:
+            # Check before setting to avoid signal emission loop from float
+            # drift
+            if abs(self.width_row.get_value() - size_world[0]) > 1e-4:
+                self.width_row.set_value(size_world[0])
+            if abs(self.height_row.get_value() - size_world[1]) > 1e-4:
+                self.height_row.set_value(size_world[1])
+
+            if abs(self.x_row.get_value() - pos_machine_x) > 1e-4:
+                self.x_row.set_value(pos_machine_x)
+
+            if abs(self.y_row.get_value() - pos_machine_y) > 1e-4:
+                self.y_row.set_value(pos_machine_y)
+
+            if abs(self.angle_row.get_value() - (-angle_local)) > 1e-4:
+                self.angle_row.set_value(-angle_local)
+            if abs(self.shear_row.get_value() - shear_local) > 1e-4:
+                self.shear_row.set_value(shear_local)
+        finally:
+            self._in_update = was_in_update
 
         self._update_row_visibility_and_details()
 
@@ -73,6 +98,12 @@ class TransformPropertyProvider(PropertyProvider):
         self.x_row.set_digits(2)
         self.x_row.connect("notify::value", self._on_x_changed)
 
+        # X Reset Button
+        self.reset_x_button = self._create_reset_button(
+            _("Reset X position to 0"), self._on_reset_x_clicked
+        )
+        self.x_row.add_suffix(self.reset_x_button)
+
         # Y Position Entry
         self.y_row = Adw.SpinRow(
             title=_("Y Position"),
@@ -80,12 +111,6 @@ class TransformPropertyProvider(PropertyProvider):
         )
         self.y_row.set_digits(2)
         self.y_row.connect("notify::value", self._on_y_changed)
-
-        # Reset Buttons
-        self.reset_x_button = self._create_reset_button(
-            _("Reset X position to 0"), self._on_reset_x_clicked
-        )
-        self.x_row.add_suffix(self.reset_x_button)
 
         self.reset_y_button = self._create_reset_button(
             _("Reset Y position to 0"), self._on_reset_y_clicked

@@ -148,6 +148,7 @@ class AxisRenderer3D(BaseRenderer):
         text_mvp: np.ndarray,
         view_matrix: np.ndarray,
         model_matrix: np.ndarray,
+        x_right: bool = False,
     ) -> None:
         """
         Orchestrates the rendering of all components in the correct order.
@@ -159,6 +160,7 @@ class AxisRenderer3D(BaseRenderer):
             text_mvp: The MVP matrix for the text labels (no model transform).
             view_matrix: The view matrix, used for billboarding text.
             model_matrix: The model matrix for coordinate system transforms.
+            x_right: True if the machine origin is on the right side.
         """
         if not all((self.grid_vao, self.axes_vao, self.text_renderer)):
             return
@@ -185,7 +187,11 @@ class AxisRenderer3D(BaseRenderer):
         GL.glBindVertexArray(0)
 
         self._render_axis_labels(
-            text_shader, text_mvp, view_matrix, model_matrix
+            text_shader,
+            text_mvp,
+            view_matrix,
+            model_matrix,
+            x_right=x_right,
         )
         GL.glDisable(GL.GL_BLEND)
 
@@ -195,6 +201,7 @@ class AxisRenderer3D(BaseRenderer):
         text_mvp_matrix: np.ndarray,
         view_matrix: np.ndarray,
         model_matrix: np.ndarray,
+        x_right: bool = False,
     ) -> None:
         """Helper method to render text labels along the axes."""
         if not self.text_renderer:
@@ -224,10 +231,17 @@ class AxisRenderer3D(BaseRenderer):
                 text_mvp_matrix,
                 view_matrix,
             )
-        # Y-axis labels (right-aligned to the left of the axis)
+        # Y-axis labels (alignment and position depends on X-axis direction)
+        y_label_align = "right"
+        if x_right:
+            y_label_align = "left"
+
         for y in np.arange(
             self.grid_size_mm, self.height_mm + 1e-5, self.grid_size_mm
         ):
+            # Place the label anchor to the left of the Y-axis (in ideal
+            # pre-transform space). The model matrix will correctly position
+            # this on the outside of the machine bed.
             pos_original = np.array([-y_axis_label_x_offset, y, 0.0, 1.0])
             pos_transformed = (model_matrix @ pos_original)[:3]
 
@@ -239,5 +253,5 @@ class AxisRenderer3D(BaseRenderer):
                 self.label_color,
                 text_mvp_matrix,
                 view_matrix,
-                align="right",
+                align=y_label_align,
             )

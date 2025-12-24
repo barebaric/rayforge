@@ -1,7 +1,7 @@
 import logging
 from dataclasses import dataclass
 from typing import List, Dict, Any, Tuple, Optional, TYPE_CHECKING
-from .machine import Machine, Laser
+from .machine import Machine, Laser, Origin
 from .macro import Macro, MacroTrigger
 from ..driver import get_driver_cls
 from .dialect import get_dialect
@@ -25,7 +25,7 @@ class MachineProfile:
     dialect_uid: Optional[str] = None
     gcode_precision: Optional[int] = None
     dimensions: Optional[Tuple[int, int]] = None
-    y_axis_down: Optional[bool] = None
+    origin: Optional[Origin] = None
     max_travel_speed: Optional[int] = None
     max_cut_speed: Optional[int] = None
     driver_args: Optional[Dict[str, Any]] = None
@@ -100,8 +100,8 @@ class MachineProfile:
             m.gcode_precision = self.gcode_precision
         if self.dimensions is not None:
             m.dimensions = self.dimensions
-        if self.y_axis_down is not None:
-            m.y_axis_down = self.y_axis_down
+        if self.origin is not None:
+            m.origin = self.origin
         if self.max_travel_speed is not None:
             m.max_travel_speed = self.max_travel_speed
         if self.max_cut_speed is not None:
@@ -143,7 +143,7 @@ PROFILES: List[MachineProfile] = [
         dialect_uid="smoothieware",
         gcode_precision=4,
         dimensions=(300, 200),
-        y_axis_down=False,
+        origin=Origin.BOTTOM_LEFT,
         max_travel_speed=3000,
         max_cut_speed=3000,
         home_on_start=True,
@@ -179,7 +179,7 @@ PROFILES: List[MachineProfile] = [
         dialect_uid="grbl",
         gcode_precision=3,
         dimensions=(120, 120),
-        y_axis_down=False,
+        origin=Origin.BOTTOM_LEFT,
         max_travel_speed=3000,
         max_cut_speed=1000,
         home_on_start=True,
@@ -198,7 +198,7 @@ PROFILES: List[MachineProfile] = [
         dialect_uid="grbl",
         gcode_precision=3,
         dimensions=(400, 400),
-        y_axis_down=False,
+        origin=Origin.BOTTOM_LEFT,
         max_travel_speed=3000,
         max_cut_speed=1000,
         heads=[
@@ -216,7 +216,7 @@ PROFILES: List[MachineProfile] = [
         dialect_uid="grbl",
         gcode_precision=3,
         dimensions=(430, 390),
-        y_axis_down=False,
+        origin=Origin.BOTTOM_LEFT,
         max_travel_speed=3000,
         max_cut_speed=1000,
         home_on_start=True,
@@ -245,6 +245,6 @@ PROFILES: List[MachineProfile] = [
         name=_("Other Device"),
         driver_class_name="GrblDriver",
         dialect_uid="grbl",
-        y_axis_down=False,
+        origin=Origin.BOTTOM_LEFT,
     ),
 ]
