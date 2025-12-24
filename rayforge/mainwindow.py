@@ -1469,8 +1469,11 @@ class MainWindow(Adw.ApplicationWindow):
         config = get_context().config
         if not config.machine:
             return
-        dialog = MachineSettingsDialog(machine=config.machine)
-        dialog.present(self)
+        dialog = MachineSettingsDialog(
+            machine=config.machine,
+            transient_for=self,
+        )
+        dialog.present()
 
     def on_status_bar_clicked(self, sender):
         config = get_context().config
@@ -1730,8 +1733,11 @@ class MainWindow(Adw.ApplicationWindow):
         config = get_context().config
         if not config.machine:
             return
-        dialog = MachineSettingsDialog(machine=config.machine)
-        dialog.present(self)
+        dialog = MachineSettingsDialog(
+            machine=config.machine,
+            transient_for=self,
+        )
+        dialog.present()
 
     def on_show_material_test(self, action, param):
         """Creates a material test grid by delegating to the editor command."""
