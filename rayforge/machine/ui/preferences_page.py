@@ -124,8 +124,11 @@ class MachinePreferencesPage(Adw.PreferencesPage):
 
     def _on_edit_machine_clicked(self, button, machine: Machine):
         """Opens the detailed settings dialog for a specific machine."""
-        dialog = MachineSettingsDialog(machine=machine)
-        dialog.present(self.get_ancestor(Gtk.Window))
+        dialog = MachineSettingsDialog(
+            machine=machine,
+            transient_for=self.get_ancestor(Gtk.Window),
+        )
+        dialog.present()
 
     def _on_delete_machine_clicked(self, button, machine: Machine):
         """Shows a confirmation dialog before deleting a machine."""
@@ -174,5 +177,8 @@ class MachinePreferencesPage(Adw.PreferencesPage):
         new_machine = profile.create_machine(get_context())
         machine_mgr.add_machine(new_machine)
 
-        editor_dialog = MachineSettingsDialog(machine=new_machine)
-        editor_dialog.present(self.get_ancestor(Gtk.Window))
+        editor_dialog = MachineSettingsDialog(
+            machine=new_machine,
+            transient_for=self.get_ancestor(Gtk.Window),
+        )
+        editor_dialog.present()
