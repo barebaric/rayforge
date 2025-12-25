@@ -249,13 +249,14 @@ class WorldSurface(Canvas):
         # dimensions to calculate the correct pan/zoom/scale matrix.
         self._rebuild_view_transform()
 
-    def _rebuild_view_transform(self) -> None:
+    def _rebuild_view_transform(self) -> bool:
         """
         Constructs the world-to-view transformation matrix.
+        Returns True if the view scale has changed.
         """
         widget_w, widget_h = self.get_width(), self.get_height()
         if widget_w <= 0 or widget_h <= 0:
-            return
+            return False
 
         content_x, content_y, content_w, content_h = (
             self._axis_renderer.get_content_layout(widget_w, widget_h)
@@ -311,6 +312,8 @@ class WorldSurface(Canvas):
         if scale_changed:
             self._last_view_scale_x = new_scale_x
             self._last_view_scale_y = new_scale_y
+
+        return scale_changed
 
     def reset_view(self) -> None:
         """
