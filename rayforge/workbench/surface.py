@@ -96,7 +96,7 @@ class WorkSurface(WorldSurface):
         # DotElement size is in world units (mm) and is dynamically
         # updated to maintain a constant pixel size on screen.
         self._laser_dot_pos_mm = 0.0, 0.0
-        self._laser_dot = DotElement(0, 0, 5.0)
+        self._laser_dot = DotElement(0, 0, 1.0)
         self.root.add(self._laser_dot)
 
         # Signals for clipboard and duplication operations
@@ -469,30 +469,20 @@ class WorkSurface(WorldSurface):
         # after the machine is set (or cleared) to ensure the view is correct.
         self._sync_camera_elements()
 
-    def _rebuild_view_transform(self):
+    def _rebuild_view_transform(self) -> bool:
         """
         Constructs the world-to-view transformation matrix.
-        This override propagates view scale changes to WorkPieceElements.
+        This override propagates view scale changes to WorkPieceElements and
+        updates the laser dot to maintain a constant pixel size.
         """
-        # Get old scale before rebuilding
-        old_scale_x, old_scale_y = self.get_view_scale()
-
-        # Let the base class do the actual transform calculation
-        super()._rebuild_view_transform()
-
-        # Check if the effective scale (pixels-per-mm) has changed. Panning
-        # does not change the scale, but zooming and resizing the window do.
-        # This prevents expensive re-rendering of buffered elements during
-        # panning.
-        new_scale_x, new_scale_y = self.get_view_scale()
-        scale_changed = (
-            abs(new_scale_x - old_scale_x) > 1e-9
-            or abs(new_scale_y - old_scale_y) > 1e-9
-        )
+        # Let the base class do the actual transform calculation and tell us
+        # if the scale changed.
+        scale_changed = super()._rebuild_view_transform()
 
         if scale_changed:
             # Update laser dot size to maintain a constant size in pixels.
-            desired_diameter_px = 3.0
+            desired_diameter_px = 6.0
+            new_scale_x, _ = self.get_view_scale()
             if new_scale_x > 1e-9:
                 diameter_mm = desired_diameter_px / new_scale_x
                 self._laser_dot.set_size(diameter_mm, diameter_mm)
@@ -507,6 +497,8 @@ class WorkSurface(WorldSurface):
         self.set_laser_dot_position(
             self._laser_dot_pos_mm[0], self._laser_dot_pos_mm[1]
         )
+
+        return scale_changed
 
     def set_show_travel_moves(self, show: bool):
         """Sets whether to display travel moves and triggers re-rendering."""
