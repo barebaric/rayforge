@@ -90,6 +90,8 @@ class Machine:
         self.acceleration: int = 1000  # in mm/s²
         self.dimensions: Tuple[int, int] = 200, 200
         self.origin: Origin = Origin.BOTTOM_LEFT
+        self.x_axis_negative: bool = False
+        self.y_axis_negative: bool = False
         self.soft_limits_enabled: bool = True
         self._settings_lock = asyncio.Lock()
 
@@ -361,6 +363,20 @@ class Machine:
 
     def set_origin(self, origin: Origin):
         self.origin = origin
+        self.changed.send(self)
+
+    def set_x_axis_negative(self, is_negative: bool):
+        """Sets the direction of the X-axis coordinate system."""
+        if self.x_axis_negative == is_negative:
+            return
+        self.x_axis_negative = is_negative
+        self.changed.send(self)
+
+    def set_y_axis_negative(self, is_negative: bool):
+        """Sets the direction of the Y-axis coordinate system."""
+        if self.y_axis_negative == is_negative:
+            return
+        self.y_axis_negative = is_negative
         self.changed.send(self)
 
     @property
@@ -643,29 +659,41 @@ class Machine:
         # Transform the ops coordinate system (Y-Up Internal -> Machine)
         # before generating G-code based on the origin setting.
         ops_for_encoder = ops
-        if self.origin != Origin.TOP_LEFT:
+        if (
+            self.origin != Origin.TOP_LEFT
+            or self.x_axis_negative
+            or self.y_axis_negative
+        ):
             ops_for_encoder = ops.copy()
             width, height = self.dimensions
-            transform = np.identity(4)
 
+            # 1. Create the origin transformation matrix
+            origin_transform = np.identity(4)
             if self.origin == Origin.BOTTOM_LEFT:
                 # Y-down, X-left: Y_new = Height - Y_old
-                transform[1, 1] = -1.0
-                transform[1, 3] = height
+                origin_transform[1, 1] = -1.0
+                origin_transform[1, 3] = height
             elif self.origin == Origin.TOP_RIGHT:
                 # Y-up, X-right: X_new = Width - X_old
-                transform[0, 0] = -1.0
-                transform[0, 3] = width
+                origin_transform[0, 0] = -1.0
+                origin_transform[0, 3] = width
             elif self.origin == Origin.BOTTOM_RIGHT:
-                # Y-down, X-right:
-                #   X_new = Width - X_old
-                #   Y_new = Height - Y_old
-                transform[0, 0] = -1.0
-                transform[0, 3] = width
-                transform[1, 1] = -1.0
-                transform[1, 3] = height
+                # Y-down, X-right: X_new=W-X_old, Y_new=H-Y_old
+                origin_transform[0, 0] = -1.0
+                origin_transform[0, 3] = width
+                origin_transform[1, 1] = -1.0
+                origin_transform[1, 3] = height
 
-            ops_for_encoder.transform(transform)
+            # 2. Create the negative-axis scaling matrix
+            scale_neg_mat = np.identity(4)
+            if self.x_axis_negative:
+                scale_neg_mat[0, 0] = -1.0
+            if self.y_axis_negative:
+                scale_neg_mat[1, 1] = -1.0
+
+            # 3. Combine transformations (apply origin, then negativity)
+            final_transform = scale_neg_mat @ origin_transform
+            ops_for_encoder.transform(final_transform)
 
         gcode_str, op_map_obj = encoder.encode(ops_for_encoder, self, doc)
 
@@ -774,6 +802,8 @@ class Machine:
                 "dialect_uid": self.dialect_uid,
                 "dimensions": list(self.dimensions),
                 "origin": self.origin.value,
+                "x_axis_negative": self.x_axis_negative,
+                "y_axis_negative": self.y_axis_negative,
                 "heads": [head.to_dict() for head in self.heads],
                 "cameras": [camera.to_dict() for camera in self.cameras],
                 "hookmacros": {
@@ -890,6 +920,8 @@ class Machine:
                 if ma_data.get("y_axis_down", False)
                 else Origin.TOP_LEFT
             )
+        ma.x_axis_negative = ma_data.get("x_axis_negative", False)
+        ma.y_axis_negative = ma_data.get("y_axis_negative", False)
         ma.soft_limits_enabled = ma_data.get(
             "soft_limits_enabled", ma.soft_limits_enabled
         )

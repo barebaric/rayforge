@@ -1,6 +1,7 @@
 from typing import Tuple
 import pytest
 import asyncio
+import numpy as np
 from pathlib import Path
 from rayforge.core.doc import Doc
 from rayforge.core.geo import Geometry
@@ -100,6 +101,8 @@ class TestMachine:
         assert machine.name is not None
         assert machine.id is not None
         assert machine.acceleration == 1000
+        assert machine.x_axis_negative is False
+        assert machine.y_axis_negative is False
 
     @pytest.mark.asyncio
     async def test_set_driver(
@@ -169,6 +172,127 @@ class TestMachine:
         assert call_args[0] is ops_to_encode
         assert call_args[1] is machine
         assert call_args[2] is doc_context
+
+    def test_encode_ops_transforms_coordinates(self, machine: Machine, mocker):
+        """
+        Verify that encode_ops correctly applies coordinate transformations
+        (copies ops and transforms them) when the machine configuration
+        requires it (non-top-left origin or negative axes).
+        """
+        # --- Arrange ---
+        from dataclasses import dataclass
+
+        @dataclass
+        class MockOpMap:
+            """A dummy dataclass to satisfy asdict() checks."""
+
+            pass
+
+        mock_encoder = mocker.Mock()
+        # Mock the encoder to return dummy bytes and a dataclass instance
+        # machine.encode_ops calls asdict() on the second return value
+        mock_encoder.encode.return_value = ("G0", MockOpMap())
+
+        mocker.patch.object(
+            machine.driver, "get_encoder", return_value=mock_encoder
+        )
+
+        # Create a mock Ops object. We need to be able to copy it.
+        # The copy must return a *different* mock so we can verify transform
+        # is called on the copy, not the original.
+        original_ops = mocker.Mock(spec=Ops)
+        copied_ops = mocker.Mock(spec=Ops)
+        original_ops.copy.return_value = copied_ops
+
+        doc = Doc()
+
+        # --- Case 1: Defaults (Top Left, No Negatives) ---
+        machine.set_origin(Origin.TOP_LEFT)
+        machine.set_x_axis_negative(False)
+        machine.set_y_axis_negative(False)
+
+        machine.encode_ops(original_ops, doc)
+
+        # Should pass original, no copy, no transform
+        mock_encoder.encode.assert_called_with(original_ops, machine, doc)
+        original_ops.copy.assert_not_called()
+        original_ops.transform.assert_not_called()
+
+        # --- Case 2: X Negative (Trigger Transformation) ---
+        machine.set_x_axis_negative(True)
+        mock_encoder.reset_mock()
+        original_ops.reset_mock()
+
+        machine.encode_ops(original_ops, doc)
+
+        # Should copy, transform copy, pass copy
+        original_ops.copy.assert_called_once()
+        copied_ops.transform.assert_called_once()
+        mock_encoder.encode.assert_called_with(copied_ops, machine, doc)
+
+        # Verify the transform matrix has X flipped (-1 scale)
+        args, _ = copied_ops.transform.call_args
+        matrix_arg = args[0]
+        assert isinstance(matrix_arg, np.ndarray)
+        assert matrix_arg[0, 0] == -1.0  # X scale
+        assert matrix_arg[1, 1] == 1.0  # Y scale
+
+        # --- Case 3: Origin Change (Trigger Transformation) ---
+        machine.set_x_axis_negative(False)
+        machine.set_origin(Origin.BOTTOM_LEFT)
+        mock_encoder.reset_mock()
+        original_ops.reset_mock()
+        copied_ops.reset_mock()
+
+        machine.encode_ops(original_ops, doc)
+
+        original_ops.copy.assert_called_once()
+        copied_ops.transform.assert_called_once()
+        mock_encoder.encode.assert_called_with(copied_ops, machine, doc)
+
+        # Verify the transform matrix has Y flipped (-1 scale) for Bottom Left
+        # (Since Rayforge internal is Top-Left, Bottom-Left means flip Y)
+        args, _ = copied_ops.transform.call_args
+        matrix_arg = args[0]
+        assert matrix_arg[0, 0] == 1.0  # X scale
+        assert matrix_arg[1, 1] == -1.0  # Y scale
+
+    def test_negative_axis_setters(self, machine: Machine, mocker):
+        """Test setting negative axis flags emits changed signal."""
+        changed_spy = mocker.spy(machine.changed, "send")
+
+        # Set X negative
+        machine.set_x_axis_negative(True)
+        assert machine.x_axis_negative is True
+        changed_spy.assert_called_once_with(machine)
+        changed_spy.reset_mock()
+
+        # Set same value (should not emit)
+        machine.set_x_axis_negative(True)
+        changed_spy.assert_not_called()
+
+        # Set Y negative
+        machine.set_y_axis_negative(True)
+        assert machine.y_axis_negative is True
+        changed_spy.assert_called_once_with(machine)
+
+    @pytest.mark.asyncio
+    async def test_machine_serialization_with_negative_axes(
+        self, machine: Machine, task_mgr: TaskManager
+    ):
+        """Test that negative axis flags are serialized/deserialized."""
+        machine.set_x_axis_negative(True)
+        machine.set_y_axis_negative(True)
+
+        data = machine.to_dict()
+        assert data["machine"]["x_axis_negative"] is True
+        assert data["machine"]["y_axis_negative"] is True
+
+        new_machine = Machine.from_dict(data)
+        await wait_for_tasks_to_finish(task_mgr)
+
+        assert new_machine.x_axis_negative is True
+        assert new_machine.y_axis_negative is True
 
     @pytest.mark.asyncio
     async def test_send_job_calls_driver_run(

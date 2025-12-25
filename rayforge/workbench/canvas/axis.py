@@ -23,6 +23,8 @@ class AxisRenderer:
         height_mm: float = 100.0,
         y_axis_down: bool = False,
         x_axis_right: bool = False,
+        x_axis_negative: bool = False,
+        y_axis_negative: bool = False,
         fg_color: Tuple[float, float, float, float] = (0.0, 0.0, 0.0, 1.0),
         grid_color: Tuple[float, float, float, float] = (0.9, 0.9, 0.9, 1.0),
         show_grid: bool = True,
@@ -33,6 +35,8 @@ class AxisRenderer:
         self.height_mm: float = height_mm
         self.y_axis_down: bool = y_axis_down
         self.x_axis_right: bool = x_axis_right
+        self.x_axis_negative: bool = x_axis_negative
+        self.y_axis_negative: bool = y_axis_negative
         self.fg_color: Tuple[float, float, float, float] = fg_color
         self.grid_color: Tuple[float, float, float, float] = grid_color
         self.show_grid: bool = show_grid
@@ -264,32 +268,28 @@ class AxisRenderer:
 
         # Determine axis positions based on Y and X orientation
         if self.y_axis_down:
-            # Y-down view: Origin at top.
+            # Y-down view: Origin at top. X axis is at the bottom.
             x_axis_y = self.height_mm
             y_axis_start_mm = (0, self.height_mm)
             y_axis_end_mm = (0, 0)
         else:
-            # Y-up view: Origin at bottom.
+            # Y-up view: Origin at bottom. X axis is at the bottom.
             x_axis_y = 0.0
             y_axis_start_mm = (0, 0)
             y_axis_end_mm = (0, self.height_mm)
 
         if self.x_axis_right:
-            # X-right view: Origin at right side.
+            # X-right view: Y axis is on the right side.
             y_axis_start_mm = (self.width_mm, y_axis_start_mm[1])
             y_axis_end_mm = (self.width_mm, y_axis_end_mm[1])
-        else:
-            # X-left view: Origin at left side.
-            pass
-
-        # Draw Axis Lines
-        if self.x_axis_right:
             x_axis_start_mm = (self.width_mm, x_axis_y)
             x_axis_end_mm = (0, x_axis_y)
         else:
+            # X-left view: Y axis is on the left side.
             x_axis_start_mm = (0, x_axis_y)
             x_axis_end_mm = (self.width_mm, x_axis_y)
 
+        # Draw Axis Lines
         x_start_px = view_transform.transform_point(x_axis_start_mm)
         x_end_px = view_transform.transform_point(x_axis_end_mm)
         y_start_px = view_transform.transform_point(y_axis_start_mm)
@@ -305,26 +305,29 @@ class AxisRenderer:
         # Draw X Labels
         k = 1
         while True:
-            x_mm = k * grid_size_mm
-            if x_mm >= self.width_mm - 1e-6:
+            dist_from_y_axis = k * grid_size_mm
+            if dist_from_y_axis >= self.width_mm - 1e-6:
                 break
 
-            if self.x_axis_right:
-                label_val = round(self.width_mm - x_mm, precision)
-            else:
-                label_val = round(x_mm, precision)
-            label = f"{label_val:g}"
-            extents = ctx.text_extents(label)
-            label_pos_px = view_transform.transform_point((x_mm, x_axis_y))
+            # The numerical value of the label
+            label_val = (
+                -dist_from_y_axis if self.x_axis_negative else dist_from_y_axis
+            )
+            label = f"{round(label_val, precision):g}"
 
-            if self.y_axis_down:
-                y_offset = -4
-            else:
-                y_offset = extents.height + 4
+            # The physical position of the label in world coordinates
+            world_x = (
+                self.width_mm - dist_from_y_axis
+                if self.x_axis_right
+                else dist_from_y_axis
+            )
+            label_pos_px = view_transform.transform_point((world_x, x_axis_y))
+            extents = ctx.text_extents(label)
+
+            y_offset = -4 if self.y_axis_down else extents.height + 4
 
             ctx.move_to(
-                label_pos_px[0] - extents.width / 2,
-                label_pos_px[1] + y_offset,
+                label_pos_px[0] - extents.width / 2, label_pos_px[1] + y_offset
             )
             ctx.show_text(label)
             k += 1
@@ -332,22 +335,31 @@ class AxisRenderer:
         # Draw Y Labels
         k = 1
         while True:
-            y_mm = k * grid_size_mm
-            if y_mm >= self.height_mm - 1e-6:
+            dist_from_x_axis = k * grid_size_mm
+            if dist_from_x_axis >= self.height_mm - 1e-6:
                 break
 
-            label_val = round(y_mm, precision)
-            label = f"{label_val:g}"
-
+            # The numerical value of the label
+            label_val = (
+                -dist_from_x_axis if self.y_axis_negative else dist_from_x_axis
+            )
+            label = f"{round(label_val, precision):g}"
             extents = ctx.text_extents(label)
-            # For y-down, a label of "10" means 10mm down from the top.
-            world_y = self.height_mm - y_mm if self.y_axis_down else y_mm
-            # For x-right, a label of "10" means 10mm from the right.
-            world_x = self.width_mm - 0 if self.x_axis_right else 0
+
+            # The physical position of the label in world coordinates
+            world_y = (
+                self.height_mm - dist_from_x_axis
+                if self.y_axis_down
+                else dist_from_x_axis
+            )
+            world_x = self.width_mm if self.x_axis_right else 0
             label_pos_px = view_transform.transform_point((world_x, world_y))
 
+            # When the axis is on the right, we draw text to the right of the
+            # axis (left-aligned style).
+            x_offset = 4 if self.x_axis_right else -extents.width - 4
             ctx.move_to(
-                label_pos_px[0] - extents.width - 4,
+                label_pos_px[0] + x_offset,
                 label_pos_px[1] + extents.height / 2,
             )
             ctx.show_text(label)
@@ -371,8 +383,11 @@ class AxisRenderer:
         temp_surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, 1, 1)
         ctx = cairo.Context(temp_surface)
 
-        # The widest label on the Y-axis will be for the largest coordinate.
-        max_y_label = f"{self.height_mm:.0f}"
+        # Account for the minus sign if the axis is negative.
+        if self.y_axis_negative:
+            max_y_label = f"{-self.height_mm:.0f}"
+        else:
+            max_y_label = f"{self.height_mm:.0f}"
         extents = ctx.text_extents(max_y_label)
         return math.ceil(extents.width) + 4
 
@@ -387,6 +402,12 @@ class AxisRenderer:
 
     def set_y_axis_down(self, y_axis_down: bool):
         self.y_axis_down = y_axis_down
+
+    def set_x_axis_negative(self, x_axis_negative: bool):
+        self.x_axis_negative = x_axis_negative
+
+    def set_y_axis_negative(self, y_axis_negative: bool):
+        self.y_axis_negative = y_axis_negative
 
     def set_fg_color(self, fg_color: Tuple[float, float, float, float]):
         self.fg_color = fg_color

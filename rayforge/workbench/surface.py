@@ -50,9 +50,21 @@ class WorkSurface(WorldSurface):
         self.machine = None  # will be assigned by set_machine() below
         self._show_travel_moves = False
         self._workpieces_visible = True
-        width_mm, height_mm = machine.dimensions if machine else (100.0, 100.0)
-        y_axis_down = machine.y_axis_down if machine else False
-        x_axis_right = machine.x_axis_right if machine else False
+        if machine:
+            width_mm, height_mm = machine.dimensions
+            y_axis_down = machine.y_axis_down
+            x_axis_right = machine.x_axis_right
+            x_axis_negative = machine.x_axis_negative
+            y_axis_negative = machine.y_axis_negative
+        else:
+            width_mm, height_mm = 100.0, 100.0
+            y_axis_down, x_axis_right, x_axis_negative, y_axis_negative = (
+                False,
+                False,
+                False,
+                False,
+            )
+
         self._cam_visible = cam_visible
         self._transform_start_states: Dict[CanvasElement, dict] = {}
         self.right_click_context: Optional[Dict] = None
@@ -67,6 +79,8 @@ class WorkSurface(WorldSurface):
             height_mm=height_mm,
             y_axis_down=y_axis_down,
             x_axis_right=x_axis_right,
+            x_axis_negative=x_axis_negative,
+            y_axis_negative=y_axis_negative,
             **kwargs,
         )
 
@@ -686,16 +700,26 @@ class WorkSurface(WorldSurface):
             self._sync_camera_elements()
             return
 
-        # Check for changes that require a full view reset. A change to either
-        # dimensions or y-axis orientation invalidates the current pan, zoom,
-        # and all calculated coordinates.
+        # Check for changes that require a full view reset.
         size_changed = machine.dimensions != (self.width_mm, self.height_mm)
         y_axis_changed = machine.y_axis_down != self._axis_renderer.y_axis_down
         x_axis_changed = (
             machine.x_axis_right != self._axis_renderer.x_axis_right
         )
+        x_negative_changed = (
+            machine.x_axis_negative != self._axis_renderer.x_axis_negative
+        )
+        y_negative_changed = (
+            machine.y_axis_negative != self._axis_renderer.y_axis_negative
+        )
 
-        if size_changed or x_axis_changed or y_axis_changed:
+        if (
+            size_changed
+            or x_axis_changed
+            or y_axis_changed
+            or x_negative_changed
+            or y_negative_changed
+        ):
             self.reset_view()
         else:
             # No major reset needed, but other properties like the list of
@@ -712,6 +736,8 @@ class WorkSurface(WorldSurface):
             self.set_size(100.0, 100.0)
             self._axis_renderer.set_x_axis_right(False)
             self._axis_renderer.set_y_axis_down(False)
+            self._axis_renderer.set_x_axis_negative(False)
+            self._axis_renderer.set_y_axis_negative(False)
             super().reset_view()
             self.aspect_ratio_changed.send(self, ratio=1.0)
             self._sync_camera_elements()
@@ -719,13 +745,18 @@ class WorkSurface(WorldSurface):
 
         logger.debug(
             f"Resetting view for machine '{self.machine.name}' "
-            f"with dims={self.machine.dimensions} and "
-            f"y_down={self.machine.y_axis_down}"
+            f"with dims={self.machine.dimensions}, "
+            f"x_right={self.machine.x_axis_right}, "
+            f"y_down={self.machine.y_axis_down}, "
+            f"x_neg={self.machine.x_axis_negative}, "
+            f"y_neg={self.machine.y_axis_negative}"
         )
         new_dimensions = self.machine.dimensions
         self.set_size(new_dimensions[0], new_dimensions[1])
         self._axis_renderer.set_x_axis_right(self.machine.x_axis_right)
         self._axis_renderer.set_y_axis_down(self.machine.y_axis_down)
+        self._axis_renderer.set_x_axis_negative(self.machine.x_axis_negative)
+        self._axis_renderer.set_y_axis_negative(self.machine.y_axis_negative)
         # Call the base class reset which handles pan/zoom
         super().reset_view()
         new_ratio = (

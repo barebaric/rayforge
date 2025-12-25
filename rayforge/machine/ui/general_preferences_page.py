@@ -142,6 +142,30 @@ class GeneralPreferencesPage(Adw.PreferencesPage):
         self.origin_combo_row = origin_combo_row
         machine_group.add(origin_combo_row)
 
+        # X-Axis Negative
+        x_axis_negative_row = Adw.SwitchRow()
+        x_axis_negative_row.set_title(_("X-Axis Negative"))
+        x_axis_negative_row.set_subtitle(
+            _("If enabled, X coordinates will count down from the origin")
+        )
+        x_axis_negative_row.set_active(machine.x_axis_negative)
+        x_axis_negative_row.connect(
+            "notify::active", self.on_x_negative_changed
+        )
+        machine_group.add(x_axis_negative_row)
+
+        # Y-Axis Negative
+        y_axis_negative_row = Adw.SwitchRow()
+        y_axis_negative_row.set_title(_("Y-Axis Negative"))
+        y_axis_negative_row.set_subtitle(
+            _("If enabled, Y coordinates will count down from the origin")
+        )
+        y_axis_negative_row.set_active(machine.y_axis_negative)
+        y_axis_negative_row.connect(
+            "notify::active", self.on_y_negative_changed
+        )
+        machine_group.add(y_axis_negative_row)
+
         # Max Travel Speed
         travel_speed_adjustment = Gtk.Adjustment(
             lower=0,
@@ -356,6 +380,14 @@ class GeneralPreferencesPage(Adw.PreferencesPage):
         }
         origin = origin_map.get(selected_index, Origin.BOTTOM_LEFT)
         self.machine.set_origin(origin)
+
+    def on_x_negative_changed(self, row, _):
+        """Handle the X-Axis Negative switch."""
+        self.machine.set_x_axis_negative(row.get_active())
+
+    def on_y_negative_changed(self, row, _):
+        """Handle the Y-Axis Negative switch."""
+        self.machine.set_y_axis_negative(row.get_active())
 
     def on_travel_speed_changed(self, helper: UnitSpinRowHelper):
         """Update the max travel speed when the value changes."""

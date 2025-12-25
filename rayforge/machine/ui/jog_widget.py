@@ -145,20 +145,36 @@ class JogWidget(Adw.PreferencesGroup):
         y_up = self.jog_distance
 
         if self.machine:
-            # If X axis is right-positive (standard), Right button moves +X.
-            # Otherwise, Right button moves -X.
-            x_right = (
-                self.jog_distance
-                if self.machine.x_axis_right
-                else -self.jog_distance
+            # Step 1: Determine the physical direction based on origin.
+            # If origin is on the right, the "Right" button moves physically
+            # left (-X).
+            physical_x_direction = 1.0 if self.machine.x_axis_right else -1.0
+            # If origin is at the top, the "Up" button moves physically
+            # down (-Y).
+            physical_y_direction = -1.0 if self.machine.y_axis_down else 1.0
+
+            # Step 2: Determine the numerical direction based on axis
+            # negativity. If axis is negative, a positive physical move
+            # requires a negative number.
+            numerical_x_direction = (
+                -1.0 if self.machine.x_axis_negative else 1.0
+            )
+            numerical_y_direction = (
+                -1.0 if self.machine.y_axis_negative else 1.0
             )
 
-            # If Y axis is down-positive (inverted), Up button moves -Y.
-            # Otherwise, Up button moves +Y.
+            # Step 3: Combine the effects.
+            # The final numerical delta is the jog distance times the combined
+            # directions.
+            x_right = (
+                self.jog_distance
+                * physical_x_direction
+                * numerical_x_direction
+            )
             y_up = (
-                -self.jog_distance
-                if self.machine.y_axis_down
-                else self.jog_distance
+                self.jog_distance
+                * physical_y_direction
+                * numerical_y_direction
             )
 
         return x_right, y_up

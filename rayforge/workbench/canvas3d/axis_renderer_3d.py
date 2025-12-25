@@ -149,6 +149,8 @@ class AxisRenderer3D(BaseRenderer):
         view_matrix: np.ndarray,
         model_matrix: np.ndarray,
         x_right: bool = False,
+        x_negative: bool = False,
+        y_negative: bool = False,
     ) -> None:
         """
         Orchestrates the rendering of all components in the correct order.
@@ -161,6 +163,8 @@ class AxisRenderer3D(BaseRenderer):
             view_matrix: The view matrix, used for billboarding text.
             model_matrix: The model matrix for coordinate system transforms.
             x_right: True if the machine origin is on the right side.
+            x_negative: True if the X-axis counts down from the origin.
+            y_negative: True if the Y-axis counts down from the origin.
         """
         if not all((self.grid_vao, self.axes_vao, self.text_renderer)):
             return
@@ -192,6 +196,8 @@ class AxisRenderer3D(BaseRenderer):
             view_matrix,
             model_matrix,
             x_right=x_right,
+            x_negative=x_negative,
+            y_negative=y_negative,
         )
         GL.glDisable(GL.GL_BLEND)
 
@@ -202,6 +208,8 @@ class AxisRenderer3D(BaseRenderer):
         view_matrix: np.ndarray,
         model_matrix: np.ndarray,
         x_right: bool = False,
+        x_negative: bool = False,
+        y_negative: bool = False,
     ) -> None:
         """Helper method to render text labels along the axes."""
         if not self.text_renderer:
@@ -222,9 +230,12 @@ class AxisRenderer3D(BaseRenderer):
             # (e.g. Y-down)
             pos_transformed = (model_matrix @ pos_original)[:3]
 
+            label_val = -x if x_negative else x
+            label_text = str(int(label_val))
+
             self.text_renderer.render_text(
                 text_shader,
-                str(int(x)),
+                label_text,
                 pos_transformed,
                 label_height_mm,
                 self.label_color,
@@ -245,9 +256,12 @@ class AxisRenderer3D(BaseRenderer):
             pos_original = np.array([-y_axis_label_x_offset, y, 0.0, 1.0])
             pos_transformed = (model_matrix @ pos_original)[:3]
 
+            label_val = -y if y_negative else y
+            label_text = str(int(label_val))
+
             self.text_renderer.render_text(
                 text_shader,
-                str(int(y)),
+                label_text,
                 pos_transformed,
                 label_height_mm,
                 self.label_color,
