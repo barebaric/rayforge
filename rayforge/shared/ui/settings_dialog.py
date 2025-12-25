@@ -1,14 +1,14 @@
 from gi.repository import Adw, Gdk, Gtk
 from .general_preferences_page import GeneralPreferencesPage
-from ...machine.ui.preferences_page import MachinePreferencesPage
+from ...machine.ui.settings_page import MachineSettingsPage
 from ...doceditor.ui.material_manager import MaterialManager
 from ...doceditor.ui.recipe_manager import RecipeManager
 from ...icons import get_icon
 
 
-class PreferencesWindow(Adw.Window):
+class SettingsWindow(Adw.Window):
     """
-    The main, non-modal preferences window for the application.
+    The main, non-modal settings window for the application.
     It is built using the modern Adwaita composition pattern and contains pages
     for general application settings and machine management.
     """
@@ -16,7 +16,7 @@ class PreferencesWindow(Adw.Window):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-        self.set_title(_("Preferences"))
+        self.set_title(_("Settings"))
         self.set_default_size(800, 800)
         self.set_size_request(-1, -1)
 
@@ -47,7 +47,7 @@ class PreferencesWindow(Adw.Window):
 
         # Populate both the sidebar and the content stack
         self._add_page(GeneralPreferencesPage)
-        self._add_page(MachinePreferencesPage)
+        self._add_page(MachineSettingsPage)
         self._add_page(MaterialManager)
         self._add_page(RecipeManager)
 

@@ -9,11 +9,11 @@ from ...shared.ui.round_button import RoundButton
 from ...icons import get_icon
 
 
-class MachinePreferencesPage(Adw.PreferencesPage):
-    """A preferences page for adding, removing, and managing machines."""
+class MachineSettingsPage(Adw.PreferencesPage):
+    """A settings page for adding, removing, and managing machines."""
 
     def __init__(self, **kwargs):
-        """Initializes the Machine Preferences page."""
+        """Initializes the Machine Settings page."""
         super().__init__(**kwargs)
         self.set_title(_("Machines"))
         self.set_icon_name("drive-harddisk-symbolic")

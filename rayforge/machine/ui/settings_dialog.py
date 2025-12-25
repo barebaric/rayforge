@@ -1,5 +1,6 @@
 from gi.repository import Gtk, Adw
 from ...camera.models import Camera
+from ...camera.ui.camera_preferences_page import CameraPreferencesPage
 from ...context import get_context
 from ...icons import get_icon
 from ..models.machine import Machine
@@ -7,7 +8,6 @@ from .general_preferences_page import GeneralPreferencesPage
 from .device_settings_page import DeviceSettingsPage
 from .advanced_preferences_page import AdvancedPreferencesPage
 from .laser_preferences_page import LaserPreferencesPage
-from ...camera.ui.camera_preferences_page import CameraPreferencesPage
 
 
 class MachineSettingsDialog(Adw.Window):
@@ -17,9 +17,9 @@ class MachineSettingsDialog(Adw.Window):
             self.set_transient_for(transient_for)
         self.machine = machine
         if machine.name:
-            self.set_title(_(f"{machine.name} - Machine Preferences"))
+            self.set_title(_(f"{machine.name} - Machine Settings"))
         else:
-            self.set_title(_("Machine Preferences"))
+            self.set_title(_("Machine Settings"))
         self.set_size_request(700, 700)
 
         # --- Layout ---
