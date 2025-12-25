@@ -35,7 +35,7 @@ from .pipeline.steps import STEP_FACTORIES, create_contour_step
 from .shared.gcodeedit.viewer import GcodeViewer
 from .shared.tasker import task_mgr
 from .shared.ui.about import AboutDialog
-from .shared.ui.preferences_dialog import PreferencesWindow
+from .shared.ui.settings_dialog import SettingsWindow
 from .shared.ui.task_bar import TaskBar
 from .toolbar import MainToolbar
 from .undo import Command, HistoryManager, ListItemCommand
@@ -1745,10 +1745,10 @@ class MainWindow(Adw.ApplicationWindow):
         dialog = AboutDialog(transient_for=self)
         dialog.present()
 
-    def show_preferences(self, action, param):
-        dialog = PreferencesWindow(transient_for=self)
+    def show_settings(self, action, param):
+        dialog = SettingsWindow(transient_for=self)
         dialog.present()
-        dialog.connect("close-request", self._on_preferences_dialog_closed)
+        dialog.connect("close-request", self._on_settings_dialog_closed)
 
     def show_machine_settings(self, action, param):
         """Opens the machine settings dialog for the current machine."""
@@ -1765,8 +1765,8 @@ class MainWindow(Adw.ApplicationWindow):
         """Creates a material test grid by delegating to the editor command."""
         self.doc_editor.material_test.create_test_grid()
 
-    def _on_preferences_dialog_closed(self, dialog):
-        logger.debug("Preferences dialog closed")
+    def _on_settings_dialog_closed(self, dialog):
+        logger.debug("Settings dialog closed")
         self.surface.grab_focus()  # re-enables keyboard shortcuts
 
     def _on_job_time_updated(self, sender, *, total_seconds):

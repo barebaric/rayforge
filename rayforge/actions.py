@@ -34,7 +34,7 @@ class ActionManager:
         self._add_action("import", self.win.on_menu_import)
         self._add_action("export", self.win.on_export_clicked)
         self._add_action("about", self.win.show_about_dialog)
-        self._add_action("preferences", self.win.show_preferences)
+        self._add_action("settings", self.win.show_settings)
         self._add_action("machine-settings", self.win.show_machine_settings)
 
         # Tools Actions
@@ -336,7 +336,7 @@ class ActionManager:
             "win.duplicate": "<Primary>d",
             "win.remove": "Delete",
             "win.clear": "<Primary><Shift>Delete",
-            "win.preferences": "<Primary>comma",
+            "win.settings": "<Primary>comma",
             # View
             "win.show_workpieces": "h",
             "win.show_tabs": "t",

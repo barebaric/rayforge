@@ -45,7 +45,7 @@ class MainMenu(Gio.Menu):
         edit_menu.append_section(None, selection_group)
 
         settings_group = Gio.Menu()
-        settings_group.append(_("Preferences…"), "win.preferences")
+        settings_group.append(_("Settings"), "win.settings")
         edit_menu.append_section(None, settings_group)
         self.append_submenu(_("_Edit"), edit_menu)
 
