@@ -60,13 +60,22 @@ class VarRowFactory:
     ) -> Adw.PreferencesRow:
         row: Adw.PreferencesRow | None = None
 
+        # 1. Try to find a creator for the specific subclass
         for var_class, creator_method in self._CREATOR_MAP.items():
             if isinstance(var, var_class):
                 row = creator_method(var, target_property)
                 break
 
-        if row is None and var.var_type is str:
-            row = self._create_string_row(var, target_property)
+        # 2. If no specific creator found, dispatch based on value type
+        if row is None:
+            if var.var_type is int:
+                row = self._create_integer_row(var, target_property)
+            elif var.var_type is float:
+                row = self._create_float_row(var, target_property)
+            elif var.var_type is bool:
+                row = self._create_boolean_row(var, target_property)
+            elif var.var_type is str:
+                row = self._create_string_row(var, target_property)
 
         if row is None:
             logger.warning(
@@ -82,7 +91,7 @@ class VarRowFactory:
             )
         return row
 
-    def _create_string_row(self, var: Var[str], target_property: str):
+    def _create_string_row(self, var: Var, target_property: str):
         row = Adw.EntryRow(title=var.label)
         if var.description:
             row.set_tooltip_text(var.description)
@@ -101,7 +110,7 @@ class VarRowFactory:
             row.set_text(str(initial_val))
         return row
 
-    def _create_boolean_row(self, var: BoolVar, target_property: str):
+    def _create_boolean_row(self, var: Var, target_property: str):
         row = Adw.ActionRow(title=var.label)
         if var.description:
             row.set_subtitle(var.description)
@@ -114,10 +123,15 @@ class VarRowFactory:
         row.set_activatable_widget(switch)
         return row
 
-    def _create_integer_row(self, var: IntVar, target_property: str):
-        lower = var.min_val if var.min_val is not None else -2147483647
-        upper = var.max_val if var.max_val is not None else 2147483647
+    def _create_integer_row(self, var: Var, target_property: str):
+        # Use getattr to safely handle generic Vars that don't have min/max
+        min_val = getattr(var, "min_val", None)
+        max_val = getattr(var, "max_val", None)
+        lower = min_val if min_val is not None else -2147483647
+        upper = max_val if max_val is not None else 2147483647
+
         initial_val = getattr(var, target_property)
+
         adj = Gtk.Adjustment(
             value=int(initial_val) if initial_val is not None else 0,
             lower=lower,
@@ -129,10 +143,15 @@ class VarRowFactory:
             row.set_subtitle(var.description)
         return row
 
-    def _create_float_row(self, var: FloatVar, target_property: str):
-        lower = var.min_val if var.min_val is not None else -1.0e12
-        upper = var.max_val if var.max_val is not None else 1.0e12
+    def _create_float_row(self, var: Var, target_property: str):
+        # Use getattr to safely handle generic Vars that don't have min/max
+        min_val = getattr(var, "min_val", None)
+        max_val = getattr(var, "max_val", None)
+        lower = min_val if min_val is not None else -1.0e12
+        upper = max_val if max_val is not None else 1.0e12
+
         initial_val = getattr(var, target_property)
+
         adj = Gtk.Adjustment(
             value=float(initial_val) if initial_val is not None else 0.0,
             lower=lower,
