@@ -30,6 +30,8 @@ class WorldSurface(Canvas):
         height_mm: float = 100.0,
         x_axis_right: bool = False,
         y_axis_down: bool = False,
+        x_axis_negative: bool = False,
+        y_axis_negative: bool = False,
         show_grid: bool = True,
         show_axis: bool = True,
         **kwargs,
@@ -54,6 +56,8 @@ class WorldSurface(Canvas):
             height_mm=self.height_mm,
             x_axis_right=x_axis_right,
             y_axis_down=y_axis_down,
+            x_axis_negative=x_axis_negative,
+            y_axis_negative=y_axis_negative,
             show_grid=show_grid,
             show_axis=show_axis,
         )

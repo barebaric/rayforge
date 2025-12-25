@@ -231,11 +231,17 @@ class MainWindow(Adw.ApplicationWindow):
             width_mm, height_mm = config.machine.dimensions
             y_down = config.machine.y_axis_down
             x_right = config.machine.x_axis_right
+            x_negative = config.machine.x_axis_negative
+            y_negative = config.machine.y_axis_negative
         else:
             # Default to a square aspect ratio if no machine is configured
             width_mm, height_mm = 100.0, 100.0
-            y_down = False
-            x_right = False
+            y_down, x_right, x_negative, y_negative = (
+                False,
+                False,
+                False,
+                False,
+            )
 
         # Create the Sketch Studio, passing the machine dimensions.
         self.sketch_studio = SketchStudio(
@@ -347,6 +353,8 @@ class MainWindow(Adw.ApplicationWindow):
                 depth_mm=height_mm,
                 y_down=y_down,
                 x_right=x_right,
+                x_negative=x_negative,
+                y_negative=y_negative,
             )
 
             # Create a stack to switch between 2D and 3D views
@@ -1212,10 +1220,16 @@ class MainWindow(Adw.ApplicationWindow):
             width_mm, height_mm = new_machine.dimensions
             y_down = new_machine.y_axis_down
             x_right = new_machine.x_axis_right
+            x_negative = new_machine.x_axis_negative
+            y_negative = new_machine.y_axis_negative
         else:
             width_mm, height_mm = 100.0, 100.0
-            y_down = False
-            x_right = False
+            y_down, x_right, x_negative, y_negative = (
+                False,
+                False,
+                False,
+                False,
+            )
 
         # Update the 3D canvas to match the new machine.
         if canvas3d_initialized and hasattr(self, "view_stack"):
@@ -1237,6 +1251,8 @@ class MainWindow(Adw.ApplicationWindow):
                 depth_mm=height_mm,
                 y_down=y_down,
                 x_right=x_right,
+                x_negative=x_negative,
+                y_negative=y_negative,
             )
             self.view_stack.add_named(self.canvas3d, "3d")
 

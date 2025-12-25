@@ -188,6 +188,8 @@ class Canvas3D(Gtk.GLArea):
         depth_mm: float,
         x_right: bool = False,
         y_down: bool = False,
+        x_negative: bool = False,
+        y_negative: bool = False,
         **kwargs,
     ):
         super().__init__(**kwargs)
@@ -198,6 +200,8 @@ class Canvas3D(Gtk.GLArea):
         self.depth_mm = depth_mm
         self.x_right = x_right
         self.y_down = y_down
+        self.x_negative = x_negative
+        self.y_negative = y_negative
 
         self.camera: Optional[Camera] = None
         self.main_shader: Optional[Shader] = None
@@ -557,6 +561,8 @@ class Canvas3D(Gtk.GLArea):
                     view_matrix,
                     self._model_matrix,  # Pass model matrix for positions
                     x_right=self.x_right,
+                    x_negative=self.x_negative,
+                    y_negative=self.y_negative,
                 )
             if self.ops_renderer and self.main_shader:
                 # The ops vertices are in internal Y-up coordinates.

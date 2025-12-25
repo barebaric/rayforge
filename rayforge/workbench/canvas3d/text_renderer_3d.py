@@ -7,6 +7,7 @@ from a specified font for the characters '0'-'9'.
 """
 
 import logging
+import math
 from typing import Dict, Optional, Tuple, Union
 import numpy as np
 from OpenGL import GL
@@ -55,39 +56,47 @@ class TextRenderer3D(BaseRenderer):
     def _prepare_texture_atlas_pango(self) -> None:
         """
         Creates a texture atlas for numeric characters using Pango and Cairo.
+        This version uses font-wide metrics (ascent/descent) to ensure all
+        characters are vertically aligned to a common baseline.
         """
-        chars_to_render = "0123456789"
+        chars_to_render = "0123456789-"
         padding_px = 2
 
-        # Create a dummy Cairo surface to create a context for font metric
-        # calculations
+        # Create a dummy Cairo surface to create a context for Pango
         dummy_surface = cairo.ImageSurface(cairo.FORMAT_A8, 1, 1)
         cr = cairo.Context(dummy_surface)
         layout = PangoCairo.create_layout(cr)
         layout.set_font_description(self.font_desc)
 
+        # Get font-wide metrics to establish a common baseline. This is key
+        # to correctly aligning characters with different vertical extents,
+        # like '8' and '-'.
+        pango_context = layout.get_context()
+        metrics = pango_context.get_metrics(self.font_desc, None)
+        ascent = metrics.get_ascent() / Pango.SCALE
+        descent = metrics.get_descent() / Pango.SCALE
+
+        # The atlas height is the full logical line height of the font.
+        self.atlas_height = math.ceil(ascent + descent)
+
         char_metrics = {}
         total_advance_px = 0
-        max_ink_height = 0
 
         for char in chars_to_render:
             layout.set_text(char, -1)
             ink_rect, logical_rect = layout.get_pixel_extents()
-            # Pango's advance is in Pango units, so we get pixel size from the
-            # logical rect
+            # We use the logical width (advance) for spacing calculation
             advance_px = logical_rect.width
             char_metrics[char] = {
                 "ink_rect": ink_rect,
                 "advance_px": advance_px,
             }
             total_advance_px += advance_px + padding_px
-            max_ink_height = max(max_ink_height, ink_rect.height)
             logger.debug(
                 f"Char '{char}': advance={advance_px}px, ink_rect={ink_rect}"
             )
 
         self.atlas_width = int(total_advance_px)
-        self.atlas_height = max_ink_height
 
         if self.atlas_width <= 0 or self.atlas_height <= 0:
             logger.error(
@@ -97,9 +106,7 @@ class TextRenderer3D(BaseRenderer):
             )
             return
 
-        # Create the real surface for the atlas. FORMAT_A8 is a single 8-bit
-        # alpha channel,
-        # perfect for a grayscale font texture.
+        # Create the real surface for the atlas
         atlas_surface = cairo.ImageSurface(
             cairo.FORMAT_A8, self.atlas_width, self.atlas_height
         )
@@ -114,7 +121,13 @@ class TextRenderer3D(BaseRenderer):
             ink_rect = metrics["ink_rect"]
             advance_px = metrics["advance_px"]
 
-            cr.move_to(x_cursor - ink_rect.x, -ink_rect.y)
+            # We position the layout at y=0. Pango draws text relative to its
+            # logical box. Since our atlas height is exactly ascent+descent,
+            # this aligns the font baseline to `y = ascent`, keeping all
+            # characters vertically aligned correctly.
+            # We shift X to remove the left-side bearing for tighter packing,
+            # but we allocate the full logical width for the texture slot.
+            cr.move_to(x_cursor - ink_rect.x, 0)
             layout.set_text(char, -1)
             PangoCairo.show_layout(cr, layout)
 
@@ -133,10 +146,7 @@ class TextRenderer3D(BaseRenderer):
         buffer = atlas_surface.get_data()
         stride = atlas_surface.get_stride()
 
-        # The stride is the number of bytes per row. If it's not equal to the
-        # width, it means there's padding that OpenGL won't understand by
-        # default.
-        # We create a new, tightly-packed buffer by copying row by row.
+        # Repack buffer if stride != width (remove padding bytes)
         if stride != self.atlas_width:
             logger.debug(
                 f"Atlas stride ({stride}) != width ({self.atlas_width}). "
@@ -152,7 +162,6 @@ class TextRenderer3D(BaseRenderer):
                 ] = buffer[row_start_in:row_end_in]
             self._atlas_buffer = bytes(unpacked_buffer)
         else:
-            # Buffer is already tightly packed
             self._atlas_buffer = bytes(buffer)
 
     def init_gl(self) -> None:
