@@ -178,7 +178,7 @@ class MainMenu(Gio.Menu):
 
         machine_settings_group = Gio.Menu()
         machine_settings_group.append(
-            _("Machine Settings…"), "win.machine-settings"
+            _("Machine Settings"), "win.machine-settings"
         )
         machine_menu.append_section(None, machine_settings_group)
         self.append_submenu(_("_Machine"), machine_menu)
