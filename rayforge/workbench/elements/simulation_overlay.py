@@ -2,7 +2,8 @@
 
 import cairo
 import numpy as np
-from typing import Tuple, Optional, Dict
+from typing import Dict, Optional, Tuple
+from gi.repository import Gdk
 from ...core.ops import Ops, State
 from ...core.ops.commands import ArcToCommand, ScanLinePowerCommand
 from ..canvas.element import CanvasElement
@@ -319,6 +320,9 @@ class SimulationOverlay(CanvasElement):
 
     def _draw_legend(self, ctx: cairo.Context):
         """Draws the speed heatmap legend in pixel space."""
+        if not self.canvas:
+            return
+
         min_speed, max_speed = self.timeline.speed_range
 
         # Legend position and size (in pixels)
@@ -342,14 +346,19 @@ class SimulationOverlay(CanvasElement):
             ctx.rectangle(legend_x, y, legend_width, segment_height)
             ctx.fill()
 
-        # Draw border around legend
-        ctx.set_source_rgb(0.2, 0.2, 0.2)
+        # Get theme colors
+        # Use GtkWidget.get_color() to retrieve the theme's foreground color.
+        # This works for both text and high-contrast borders.
+        fg_color = self.canvas.get_color()
+
+        # Draw border around legend using the foreground color
+        Gdk.cairo_set_source_rgba(ctx, fg_color)
         ctx.set_line_width(1)
         ctx.rectangle(legend_x, legend_y, legend_width, legend_height)
         ctx.stroke()
 
-        # Draw labels
-        ctx.set_source_rgb(0.0, 0.0, 0.0)
+        # Draw labels using the foreground color
+        Gdk.cairo_set_source_rgba(ctx, fg_color)
         ctx.select_font_face(
             "sans-serif",
             cairo.FONT_SLANT_NORMAL,
