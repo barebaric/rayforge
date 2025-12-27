@@ -11,8 +11,8 @@ logger = logging.getLogger(__name__)
 
 css = """
 .point-bubble {
-    background-color: rgba(255, 255, 255, 1.0);
-    border: 1px solid #ccc;
+    background-color: @popover_bg_color;
+    border: 1px solid @borders;
     border-radius: 5px;
     padding: 5px;
 }
