@@ -93,6 +93,10 @@ class WorkPiece(DocItem):
         self._sketch_params: Dict[str, Any] = {}
         self._transient_sketch_definition: Optional["Sketch"] = None
 
+        # For sketches and other workpieces without a source_segment,
+        # we store the UID of the SourceAsset to track the source file.
+        self.source_asset_uid: Optional[str] = None
+
         self._tabs: List[Tab] = []
         self._tabs_enabled: bool = True
 
@@ -277,9 +281,21 @@ class WorkPiece(DocItem):
 
     @property
     def source_file(self) -> Optional[Path]:
-        """Retrieves the source file path from the linked SourceAsset."""
+        """
+        Retrieves the source file path from the linked SourceAsset.
+
+        For workpieces with a source_segment, this retrieves the source file
+        from the segment's SourceAsset. For sketches and other workpieces
+        without a source_segment, this retrieves the source file from the
+        directly linked SourceAsset via source_asset_uid.
+        """
         source = self.source
-        return source.source_file if source else None
+        if source:
+            return source.source_file
+        if self.source_asset_uid and self.doc:
+            asset = self.doc.get_source_asset_by_uid(self.source_asset_uid)
+            return asset.source_file if asset else None
+        return None
 
     @property
     def _active_renderer(self) -> "Optional[Renderer]":
@@ -480,6 +496,7 @@ class WorkPiece(DocItem):
         world_wp.tabs_enabled = self.tabs_enabled
         world_wp.sketch_uid = self.sketch_uid
         world_wp.sketch_params = deepcopy(self._sketch_params)
+        world_wp.source_asset_uid = self.source_asset_uid
 
         # Ensure any edited boundaries are carried over.
         if self._edited_boundaries:
@@ -822,6 +839,7 @@ class WorkPiece(DocItem):
             ),
             "sketch_uid": self.sketch_uid,
             "sketch_params": self._sketch_params,
+            "source_asset_uid": self.source_asset_uid,
         }
         # Include hydrated data for subprocesses
         if self._data is not None:
@@ -873,6 +891,7 @@ class WorkPiece(DocItem):
 
         wp.sketch_uid = data.get("sketch_uid")
         wp._sketch_params = data.get("sketch_params", {})
+        wp.source_asset_uid = data.get("source_asset_uid")
 
         # Hydrate with transient data if provided for subprocesses
         if "data" in data:
