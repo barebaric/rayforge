@@ -1,5 +1,5 @@
 from gi.repository import Gtk, Adw, Gdk
-from typing import Optional, Tuple
+from typing import Optional
 from ...machine.driver.driver import Axis
 from ...machine.models.machine import Machine
 from ...machine.cmd import MachineCmd
@@ -35,56 +35,64 @@ class JogWidget(Adw.PreferencesGroup):
             button.set_child(icon)
             return button
 
-        # X-Y+ button (top left diagonal)
+        # Top-left diagonal button
         self.x_minus_y_plus_btn = create_icon_button(
-            "arrow-north-west", _("X- Y+")
+            "arrow-north-west-symbolic", _("Move North-West")
         )
         self.x_minus_y_plus_btn.connect(
             "clicked", self._on_x_minus_y_plus_clicked
         )
         jog_grid.attach(self.x_minus_y_plus_btn, 0, 0, 1, 1)
 
-        # Y+ button (top center) - Icon updated in _update_direction_icons
-        self.y_plus_btn = create_icon_button("arrow-north", _("Y+"))
+        # Away/North button
+        self.y_plus_btn = create_icon_button(
+            "arrow-north-symbolic", _("Move North")
+        )
         self.y_plus_btn.connect("clicked", self._on_y_plus_clicked)
         jog_grid.attach(self.y_plus_btn, 1, 0, 1, 1)
 
-        # X+Y+ button (top right diagonal)
+        # Top-right diagonal button
         self.x_plus_y_plus_btn = create_icon_button(
-            "arrow-north-east", _("X+ Y+")
+            "arrow-north-east-symbolic", _("Move North-East")
         )
         self.x_plus_y_plus_btn.connect(
             "clicked", self._on_x_plus_y_plus_clicked
         )
         jog_grid.attach(self.x_plus_y_plus_btn, 2, 0, 1, 1)
 
-        # X- button (middle left) - Icon updated in _update_direction_icons
-        self.x_minus_btn = create_icon_button("arrow-west", _("X-"))
+        # Left/West button
+        self.x_minus_btn = create_icon_button(
+            "arrow-west-symbolic", _("Move West (Left)")
+        )
         self.x_minus_btn.connect("clicked", self._on_x_minus_clicked)
         jog_grid.attach(self.x_minus_btn, 0, 1, 1, 1)
 
-        # X+ button (middle right) - Icon updated in _update_direction_icons
-        self.x_plus_btn = create_icon_button("arrow-east", _("X+"))
+        # Right/East button
+        self.x_plus_btn = create_icon_button(
+            "arrow-east-symbolic", _("Move East (Right)")
+        )
         self.x_plus_btn.connect("clicked", self._on_x_plus_clicked)
         jog_grid.attach(self.x_plus_btn, 2, 1, 1, 1)
 
-        # X-Y- button (bottom left diagonal)
+        # Bottom-left diagonal button
         self.x_minus_y_minus_btn = create_icon_button(
-            "arrow-south-west", _("X- Y-")
+            "arrow-south-west-symbolic", _("Move South-West")
         )
         self.x_minus_y_minus_btn.connect(
             "clicked", self._on_x_minus_y_minus_clicked
         )
         jog_grid.attach(self.x_minus_y_minus_btn, 0, 2, 1, 1)
 
-        # Y- button (bottom center) - Icon updated in _update_direction_icons
-        self.y_minus_btn = create_icon_button("arrow-south", _("Y-"))
+        # Toward/South button
+        self.y_minus_btn = create_icon_button(
+            "arrow-south-symbolic", _("Move South")
+        )
         self.y_minus_btn.connect("clicked", self._on_y_minus_clicked)
         jog_grid.attach(self.y_minus_btn, 1, 2, 1, 1)
 
-        # X+Y- button (bottom right diagonal)
+        # Bottom-right diagonal button
         self.x_plus_y_minus_btn = create_icon_button(
-            "arrow-south-east", _("X+ Y-")
+            "arrow-south-east-symbolic", _("Move South-East")
         )
         self.x_plus_y_minus_btn.connect(
             "clicked", self._on_x_plus_y_minus_clicked
@@ -92,23 +100,26 @@ class JogWidget(Adw.PreferencesGroup):
         jog_grid.attach(self.x_plus_y_minus_btn, 2, 2, 1, 1)
 
         # Z buttons to the right
-        self.z_plus_btn = Gtk.Button(label=_("Z+"))
+        self.z_plus_btn = create_icon_button(
+            "arrow-z-up-symbolic", _("Move Up")
+        )
         self.z_plus_btn.set_size_request(60, 60)
         self.z_plus_btn.connect("clicked", self._on_z_plus_clicked)
         jog_grid.attach(self.z_plus_btn, 4, 0, 1, 1)
 
-        self.z_minus_btn = Gtk.Button(label=_("Z-"))
+        self.z_minus_btn = create_icon_button(
+            "arrow-z-down-symbolic", _("Move Down")
+        )
         self.z_minus_btn.set_size_request(60, 60)
         self.z_minus_btn.connect("clicked", self._on_z_minus_clicked)
-        jog_grid.attach(self.z_minus_btn, 4, 2, 1, 1)  # One row lower
+        jog_grid.attach(self.z_minus_btn, 4, 2, 1, 1)
 
         # Add key controller for cursor key support
         key_controller = Gtk.EventControllerKey()
         key_controller.connect("key-pressed", self._on_key_pressed)
         self.add_controller(key_controller)
 
-        # Set initial icons and sensitivity
-        self._update_direction_icons()
+        # Set initial sensitivity
         self._update_button_sensitivity()
 
     def set_machine(self, machine: Machine, machine_cmd: MachineCmd):
@@ -130,74 +141,8 @@ class JogWidget(Adw.PreferencesGroup):
         if self.machine:
             self.machine.state_changed.connect(self._on_machine_state_changed)
 
-        self._update_direction_icons()
         self._update_button_sensitivity()
         self._update_limit_status()
-
-    def _get_visual_jog_deltas(self) -> Tuple[float, float]:
-        """
-        Calculate jog deltas for visual Right (X) and Up (Y) directions.
-        Returns:
-            Tuple[float, float]: (x_right_delta, y_up_delta)
-        """
-        # Default standard Cartesian
-        x_right = self.jog_distance
-        y_up = self.jog_distance
-
-        if self.machine:
-            # Step 1: Determine the physical direction based on origin.
-            # If origin is on the right, the "Right" button moves physically
-            # left (-X).
-            physical_x_direction = 1.0 if self.machine.x_axis_right else -1.0
-            # If origin is at the top, the "Up" button moves physically
-            # down (-Y).
-            physical_y_direction = -1.0 if self.machine.y_axis_down else 1.0
-
-            # Step 2: Determine the numerical direction based on axis
-            # negativity. If axis is negative, a positive physical move
-            # requires a negative number.
-            numerical_x_direction = (
-                -1.0 if self.machine.x_axis_negative else 1.0
-            )
-            numerical_y_direction = (
-                -1.0 if self.machine.y_axis_negative else 1.0
-            )
-
-            # Step 3: Combine the effects.
-            # The final numerical delta is the jog distance times the combined
-            # directions.
-            x_right = (
-                self.jog_distance
-                * physical_x_direction
-                * numerical_x_direction
-            )
-            y_up = (
-                self.jog_distance
-                * physical_y_direction
-                * numerical_y_direction
-            )
-
-        return x_right, y_up
-
-    def _update_direction_icons(self):
-        """Update X and Y direction icons based on machine configuration."""
-        # Default to standard Cartesian if machine is not set
-        y_axis_down = self.machine and self.machine.y_axis_down
-        x_axis_right = self.machine.x_axis_right if self.machine else True
-
-        # Determine icons based on configuration
-        # If Y is down (positive), Up button (negative Y) is moving 'North'
-        y_plus_icon = "arrow-south" if y_axis_down else "arrow-north"
-        y_minus_icon = "arrow-north" if y_axis_down else "arrow-south"
-
-        # If X is right (positive), Right button (positive X) is 'East'
-        x_plus_icon = "arrow-east" if x_axis_right else "arrow-west"
-        x_minus_icon = "arrow-west" if x_axis_right else "arrow-east"
-
-        self.y_plus_btn.set_child(get_icon(y_plus_icon))
-        self.y_minus_btn.set_child(get_icon(y_minus_icon))
-        self.x_plus_btn.set_child(get_icon(x_plus_icon))
-        self.x_minus_btn.set_child(get_icon(x_minus_icon))
 
     def _update_button_sensitivity(self):
         """Update button sensitivity based on machine capabilities."""
@@ -245,20 +190,18 @@ class JogWidget(Adw.PreferencesGroup):
 
         machine = self.machine
 
-        # Reset all button styles
         buttons = [
             self.x_plus_btn,
             self.x_minus_btn,
             self.y_plus_btn,
             self.y_minus_btn,
+            self.z_plus_btn,
+            self.z_minus_btn,
             self.x_plus_y_plus_btn,
             self.x_minus_y_plus_btn,
             self.x_plus_y_minus_btn,
             self.x_minus_y_minus_btn,
-            self.z_plus_btn,
-            self.z_minus_btn,
         ]
-
         for button in buttons:
             button.remove_css_class("warning")
             button.remove_css_class("destructive-action")
@@ -266,50 +209,46 @@ class JogWidget(Adw.PreferencesGroup):
         if not machine.soft_limits_enabled:
             return
 
-        x_right_dist, y_up_dist = self._get_visual_jog_deltas()
+        # Get the signed coordinate deltas for visual directions from the model
+        x_east, y_north, z_up = machine.get_visual_jog_deltas(
+            self.jog_distance
+        )
 
-        # Check limits using the actual distance that will be commanded
-        if machine.would_jog_exceed_limits(Axis.X, x_right_dist):
+        # Check limits using the final signed delta that will be commanded
+        if machine.would_jog_exceed_limits(Axis.X, x_east):
             self.x_plus_btn.add_css_class("warning")
-
-        if machine.would_jog_exceed_limits(Axis.X, -x_right_dist):
+        if machine.would_jog_exceed_limits(Axis.X, -x_east):
             self.x_minus_btn.add_css_class("warning")
 
-        if machine.would_jog_exceed_limits(Axis.Y, y_up_dist):
+        if machine.would_jog_exceed_limits(Axis.Y, y_north):
             self.y_plus_btn.add_css_class("warning")
-
-        if machine.would_jog_exceed_limits(Axis.Y, -y_up_dist):
+        if machine.would_jog_exceed_limits(Axis.Y, -y_north):
             self.y_minus_btn.add_css_class("warning")
 
-        if machine.would_jog_exceed_limits(Axis.Z, self.jog_distance):
+        if machine.would_jog_exceed_limits(Axis.Z, z_up):
             self.z_plus_btn.add_css_class("warning")
-
-        if machine.would_jog_exceed_limits(Axis.Z, -self.jog_distance):
+        if machine.would_jog_exceed_limits(Axis.Z, -z_up):
             self.z_minus_btn.add_css_class("warning")
 
         # Diagonal buttons
-        # Right-Up
         if machine.would_jog_exceed_limits(
-            Axis.X, x_right_dist
-        ) or machine.would_jog_exceed_limits(Axis.Y, y_up_dist):
+            Axis.X, x_east
+        ) or machine.would_jog_exceed_limits(Axis.Y, y_north):
             self.x_plus_y_plus_btn.add_css_class("warning")
 
-        # Left-Up
         if machine.would_jog_exceed_limits(
-            Axis.X, -x_right_dist
-        ) or machine.would_jog_exceed_limits(Axis.Y, y_up_dist):
+            Axis.X, -x_east
+        ) or machine.would_jog_exceed_limits(Axis.Y, y_north):
             self.x_minus_y_plus_btn.add_css_class("warning")
 
-        # Right-Down
         if machine.would_jog_exceed_limits(
-            Axis.X, x_right_dist
-        ) or machine.would_jog_exceed_limits(Axis.Y, -y_up_dist):
+            Axis.X, x_east
+        ) or machine.would_jog_exceed_limits(Axis.Y, -y_north):
             self.x_plus_y_minus_btn.add_css_class("warning")
 
-        # Left-Down
         if machine.would_jog_exceed_limits(
-            Axis.X, -x_right_dist
-        ) or machine.would_jog_exceed_limits(Axis.Y, -y_up_dist):
+            Axis.X, -x_east
+        ) or machine.would_jog_exceed_limits(Axis.Y, -y_north):
             self.x_minus_y_minus_btn.add_css_class("warning")
 
     def _on_machine_state_changed(self, machine, state):
@@ -317,102 +256,119 @@ class JogWidget(Adw.PreferencesGroup):
         self._update_limit_status()
 
     def _jog_xy(self, x_dist: float, y_dist: float):
-        """Helper to jog X and Y, splitting commands if necessary."""
+        """Helper to jog X and Y by sending separate commands."""
         if not self.machine or not self.machine_cmd:
             return
 
-        # Send separate commands to ensure correct direction per axis,
-        # as mixed signs in a combined bitmask might not be supported
-        # or might result in incorrect direction if the driver/firmware
-        # expects a single distance value.
         if x_dist != 0:
             self.machine_cmd.jog(self.machine, Axis.X, x_dist, self.jog_speed)
         if y_dist != 0:
             self.machine_cmd.jog(self.machine, Axis.Y, y_dist, self.jog_speed)
 
     def _on_x_plus_clicked(self, button):
-        """Handle Right button click."""
+        """Handle Right (East) button click."""
         if self.machine and self.machine_cmd:
-            x_dist, _ = self._get_visual_jog_deltas()
+            x_dist, _, _ = self.machine.get_visual_jog_deltas(
+                self.jog_distance
+            )
             self.machine_cmd.jog(self.machine, Axis.X, x_dist, self.jog_speed)
 
     def _on_x_minus_clicked(self, button):
-        """Handle Left button click."""
+        """Handle Left (West) button click."""
         if self.machine and self.machine_cmd:
-            x_dist, _ = self._get_visual_jog_deltas()
+            x_dist, _, _ = self.machine.get_visual_jog_deltas(
+                self.jog_distance
+            )
             self.machine_cmd.jog(self.machine, Axis.X, -x_dist, self.jog_speed)
 
     def _on_y_plus_clicked(self, button):
-        """Handle Up button click."""
+        """Handle Away (North) button click."""
         if self.machine and self.machine_cmd:
-            _, y_dist = self._get_visual_jog_deltas()
+            _, y_dist, _ = self.machine.get_visual_jog_deltas(
+                self.jog_distance
+            )
             self.machine_cmd.jog(self.machine, Axis.Y, y_dist, self.jog_speed)
 
     def _on_y_minus_clicked(self, button):
-        """Handle Down button click."""
+        """Handle Toward (South) button click."""
         if self.machine and self.machine_cmd:
-            _, y_dist = self._get_visual_jog_deltas()
+            _, y_dist, _ = self.machine.get_visual_jog_deltas(
+                self.jog_distance
+            )
             self.machine_cmd.jog(self.machine, Axis.Y, -y_dist, self.jog_speed)
 
     def _on_z_plus_clicked(self, button):
-        """Handle Z+ button click."""
+        """Handle Up button click."""
         if self.machine and self.machine_cmd:
-            self.machine_cmd.jog(
-                self.machine, Axis.Z, self.jog_distance, self.jog_speed
+            _, _, z_dist = self.machine.get_visual_jog_deltas(
+                self.jog_distance
             )
+            self.machine_cmd.jog(self.machine, Axis.Z, z_dist, self.jog_speed)
 
     def _on_z_minus_clicked(self, button):
-        """Handle Z- button click."""
+        """Handle Down button click."""
         if self.machine and self.machine_cmd:
-            self.machine_cmd.jog(
-                self.machine, Axis.Z, -self.jog_distance, self.jog_speed
+            _, _, z_dist = self.machine.get_visual_jog_deltas(
+                self.jog_distance
             )
+            self.machine_cmd.jog(self.machine, Axis.Z, -z_dist, self.jog_speed)
 
     def _on_x_plus_y_plus_clicked(self, button):
-        """Handle Right-Up diagonal button click."""
-        x_dist, y_dist = self._get_visual_jog_deltas()
-        self._jog_xy(x_dist, y_dist)
+        """Handle Right-Away diagonal button click."""
+        if self.machine:
+            x_dist, y_dist, _ = self.machine.get_visual_jog_deltas(
+                self.jog_distance
+            )
+            self._jog_xy(x_dist, y_dist)
 
     def _on_x_minus_y_plus_clicked(self, button):
-        """Handle Left-Up diagonal button click."""
-        x_dist, y_dist = self._get_visual_jog_deltas()
-        self._jog_xy(-x_dist, y_dist)
+        """Handle Left-Away diagonal button click."""
+        if self.machine:
+            x_dist, y_dist, _ = self.machine.get_visual_jog_deltas(
+                self.jog_distance
+            )
+            self._jog_xy(-x_dist, y_dist)
 
     def _on_x_plus_y_minus_clicked(self, button):
-        """Handle Right-Down diagonal button click."""
-        x_dist, y_dist = self._get_visual_jog_deltas()
-        self._jog_xy(x_dist, -y_dist)
+        """Handle Right-Toward diagonal button click."""
+        if self.machine:
+            x_dist, y_dist, _ = self.machine.get_visual_jog_deltas(
+                self.jog_distance
+            )
+            self._jog_xy(x_dist, -y_dist)
 
     def _on_x_minus_y_minus_clicked(self, button):
-        """Handle Left-Down diagonal button click."""
-        x_dist, y_dist = self._get_visual_jog_deltas()
-        self._jog_xy(-x_dist, -y_dist)
+        """Handle Left-Toward diagonal button click."""
+        if self.machine:
+            x_dist, y_dist, _ = self.machine.get_visual_jog_deltas(
+                self.jog_distance
+            )
+            self._jog_xy(-x_dist, -y_dist)
         return False
 
     def _on_key_pressed(self, controller, keyval, keycode, state):
         """Handle key press events for cursor key jogging."""
-        # Only process cursor keys if machine is connected and ready
         if not self.machine or not self.machine.is_connected():
             return False
 
         # Map cursor keys to jog actions
         if keyval == Gdk.KEY_Up:
-            self._on_y_plus_clicked(None)
+            self._on_y_plus_clicked(None)  # Away
             return True
         elif keyval == Gdk.KEY_Down:
-            self._on_y_minus_clicked(None)
+            self._on_y_minus_clicked(None)  # Toward
             return True
         elif keyval == Gdk.KEY_Left:
-            self._on_x_minus_clicked(None)
+            self._on_x_minus_clicked(None)  # Left
             return True
         elif keyval == Gdk.KEY_Right:
-            self._on_x_plus_clicked(None)
+            self._on_x_plus_clicked(None)  # Right
             return True
         elif keyval == Gdk.KEY_Page_Up:
-            self._on_z_plus_clicked(None)
+            self._on_z_plus_clicked(None)  # Up
             return True
         elif keyval == Gdk.KEY_Page_Down:
-            self._on_z_minus_clicked(None)
+            self._on_z_minus_clicked(None)  # Down
             return True
 
         return False

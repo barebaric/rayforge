@@ -308,6 +308,4 @@ class MachineCmd:
 
     def home(self, machine: "Machine", axis: Optional[Axis] = None):
         """Adds a task to home a specific axis."""
-        self._editor.task_manager.add_coroutine(
-            lambda ctx: machine.driver.home(axis)
-        )
+        self._editor.task_manager.add_coroutine(lambda ctx: machine.home(axis))
