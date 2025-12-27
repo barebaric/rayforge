@@ -1,5 +1,6 @@
 from gi.repository import Gtk
 from typing import Optional
+from ...icons import get_icon
 from ...machine.transport.transport import (
     TransportStatus,
     TRANSPORT_STATUS_LABELS,
@@ -11,9 +12,8 @@ class ConnectionStatusIconWidget(Gtk.Box):
     def __init__(self):
         super().__init__(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
 
-        # Create an image widget to display the status icon
-        self.status_image = Gtk.Image()
-        self.append(self.status_image)
+        # Placeholder for the image widget
+        self.status_image: Optional[Gtk.Widget] = None
 
         # Set the initial status
         self.set_status(TransportStatus.DISCONNECTED)
@@ -21,28 +21,39 @@ class ConnectionStatusIconWidget(Gtk.Box):
     def set_status(self, status):
         """Update the status icon based on the given status."""
         icon_name = self._get_icon_name_for_status(status)
-        self.status_image.set_from_icon_name(icon_name)
+
+        # Get the new image widget from the helper
+        new_image = get_icon(icon_name)
+
+        # Remove the old image if it exists
+        if self.status_image is not None:
+            self.remove(self.status_image)
+
+        # Set and add the new image
+        self.status_image = new_image
+        if self.status_image:
+            self.append(self.status_image)
 
     def _get_icon_name_for_status(self, status):
         """Map the status to an appropriate icon name."""
         if status == TransportStatus.UNKNOWN:
-            return "network-error-symbolic"
+            return "question-box-symbolic"
         elif status == TransportStatus.IDLE:
-            return "network-idle-symbolic"
+            return "status-idle-symbolic"
         elif status == TransportStatus.CONNECTING:
-            return "network-transmit-receive-symbolic"
+            return "status-connecting-symbolic"
         elif status == TransportStatus.CONNECTED:
-            return "network-wired-symbolic"
+            return "status-connected-symbolic"
         elif status == TransportStatus.ERROR:
-            return "network-error-symbolic"
+            return "error-symbolic"
         elif status == TransportStatus.CLOSING:
-            return "network-offline-symbolic"
+            return "status-offline-symbolic"
         elif status == TransportStatus.DISCONNECTED:
-            return "network-offline-symbolic"
+            return "status-offline-symbolic"
         elif status == TransportStatus.SLEEPING:
-            return "network-offline-symbolic"
+            return "sleep-symbolic"
         else:
-            return "network-offline-symbolic"  # Default icon
+            return "status-offline-symbolic"  # Default icon
 
 
 class ConnectionStatusWidget(Gtk.Box):

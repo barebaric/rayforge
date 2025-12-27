@@ -1,5 +1,6 @@
 from gi.repository import Gtk
 from typing import Optional
+from ...icons import get_icon
 from ...machine.driver.driver import (
     DeviceStatus,
     DeviceState,
@@ -12,9 +13,8 @@ class MachineStatusIconWidget(Gtk.Box):
     def __init__(self):
         super().__init__(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
 
-        # Create an image widget to display the status icon
-        self.status_image = Gtk.Image()
-        self.append(self.status_image)
+        # Placeholder for the image widget
+        self.status_image: Optional[Gtk.Widget] = None
 
         # Set the initial status
         self.set_status(DeviceStatus.UNKNOWN)
@@ -22,44 +22,55 @@ class MachineStatusIconWidget(Gtk.Box):
     def set_status(self, status):
         """Update the status icon based on the given status."""
         icon_name = self._get_icon_name_for_status(status)
-        self.status_image.set_from_icon_name(icon_name)
+
+        # Get the new image widget from the helper
+        new_image = get_icon(icon_name)
+
+        # Remove the old image if it exists
+        if self.status_image is not None:
+            self.remove(self.status_image)
+
+        # Set and add the new image
+        self.status_image = new_image
+        if self.status_image:
+            self.append(self.status_image)
 
     def _get_icon_name_for_status(self, status):
         """Map the status to an appropriate symbolic icon name."""
         if status == DeviceStatus.UNKNOWN:
-            return "dialog-question-symbolic"
+            return "question-box-symbolic"
         elif status == DeviceStatus.IDLE:
-            return "emblem-ok-symbolic"
+            return "status-idle-symbolic"
         elif status == DeviceStatus.RUN:
-            return "media-playback-start-symbolic"
+            return "play-arrow-symbolic"
         elif status == DeviceStatus.HOLD:
-            return "media-playback-pause-symbolic"
+            return "pause-symbolic"
         elif status == DeviceStatus.JOG:
-            return "media-seek-forward-symbolic"
+            return "jog-symbolic"
         elif status == DeviceStatus.ALARM:
-            return "dialog-warning-symbolic"
+            return "alarm-symbolic"
         elif status == DeviceStatus.DOOR:
-            return "system-lock-screen-symbolic"
+            return "door-symbolic"
         elif status == DeviceStatus.CHECK:
-            return "system-search-symbolic"
+            return "status-check-symbolic"
         elif status == DeviceStatus.HOME:
-            return "go-home-symbolic"
+            return "home-symbolic"
         elif status == DeviceStatus.SLEEP:
-            return "system-suspend-symbolic"
+            return "sleep-symbolic"
         elif status == DeviceStatus.TOOL:
-            return "preferences-system-symbolic"
+            return "machine-settings-general-symbolic"
         elif status == DeviceStatus.QUEUE:
-            return "view-list-bullet-symbolic"
+            return "batch-symbolic"
         elif status == DeviceStatus.LOCK:
-            return "system-lock-screen-symbolic"
+            return "lock-symbolic"
         elif status == DeviceStatus.UNLOCK:
-            return "process-working-symbolic"
+            return "lock-open-symbolic"
         elif status == DeviceStatus.CYCLE:
             return "refresh-symbolic"
         elif status == DeviceStatus.TEST:
-            return "utilities-terminal-symbolic"
+            return "test-symbolic"
         else:
-            return "network-offline-symbolic"
+            return "status-offline-symbolic"
 
 
 class MachineStatusWidget(Gtk.Box):
