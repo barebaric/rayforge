@@ -91,8 +91,9 @@ class SketchImporter(Importer):
             width, height
         )
 
-        # 7. Link to Sketch Template.
+        # 7. Link to Sketch Template and SourceAsset.
         workpiece.sketch_uid = self.parsed_sketch.uid
+        workpiece.source_asset_uid = source_asset.uid
 
         return ImportPayload(
             source=source_asset,

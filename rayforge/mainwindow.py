@@ -611,7 +611,7 @@ class MainWindow(Adw.ApplicationWindow):
             # The ActionManager already validates that this is a sketch-based
             # workpiece
             file_dialogs.show_export_sketch_dialog(
-                self, self._on_export_sketch_save_response
+                self, self._on_export_sketch_save_response, selected_items[0]
             )
         else:
             self._on_editor_notification(

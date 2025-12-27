@@ -1,9 +1,10 @@
 import logging
-from typing import Callable, TYPE_CHECKING, Any
+from typing import Callable, TYPE_CHECKING, Any, Optional
 from gi.repository import Gtk, Gio
 from ...image import importers
 
 if TYPE_CHECKING:
+    from ...core.workpiece import WorkPiece
     from ...mainwindow import MainWindow
 
 logger = logging.getLogger(__name__)
@@ -79,7 +80,11 @@ def show_export_gcode_dialog(win: "MainWindow", callback: Callable):
     dialog.save(win, None, callback, win)
 
 
-def show_export_sketch_dialog(win: "MainWindow", callback: Callable):
+def show_export_sketch_dialog(
+    win: "MainWindow",
+    callback: Callable,
+    workpiece: Optional["WorkPiece"] = None,
+):
     """
     Shows the save file dialog for exporting a Rayforge Sketch (.rfs).
 
@@ -87,10 +92,24 @@ def show_export_sketch_dialog(win: "MainWindow", callback: Callable):
         win: The parent Gtk.Window.
         callback: The function to call with (dialog, result, user_data) upon
                   response.
+        workpiece: Optional workpiece to use for default export location.
+                   If provided, the dialog will default to the source file
+                   location and name of the workpiece.
     """
     dialog = Gtk.FileDialog.new()
     dialog.set_title(_("Export Sketch"))
-    dialog.set_initial_name("sketch.rfs")
+
+    if workpiece and workpiece.source_file:
+        dialog.set_initial_name(workpiece.source_file.name)
+        try:
+            folder = Gio.File.new_for_path(str(workpiece.source_file.parent))
+            dialog.set_initial_folder(folder)
+        except Exception:
+            logger.debug(
+                "Could not set initial folder for sketch export dialog"
+            )
+    else:
+        dialog.set_initial_name("sketch.rfs")
 
     filter_list = Gio.ListStore.new(Gtk.FileFilter)
     sketch_filter = Gtk.FileFilter()
