@@ -1,7 +1,6 @@
 from typing import Tuple
 import pytest
 import asyncio
-import numpy as np
 from pathlib import Path
 from rayforge.core.doc import Doc
 from rayforge.core.geo import Geometry
@@ -101,8 +100,9 @@ class TestMachine:
         assert machine.name is not None
         assert machine.id is not None
         assert machine.acceleration == 1000
-        assert machine.x_axis_negative is False
-        assert machine.y_axis_negative is False
+        assert machine.reverse_x_axis is False
+        assert machine.reverse_y_axis is False
+        assert machine.reverse_z_axis is False
 
     @pytest.mark.asyncio
     async def test_set_driver(
@@ -173,11 +173,12 @@ class TestMachine:
         assert call_args[1] is machine
         assert call_args[2] is doc_context
 
-    def test_encode_ops_transforms_coordinates(self, machine: Machine, mocker):
+    def test_encode_ops_transforms_coordinates_for_origin(
+        self, machine: Machine, mocker
+    ):
         """
         Verify that encode_ops correctly applies coordinate transformations
-        (copies ops and transforms them) when the machine configuration
-        requires it (non-top-left origin or negative axes).
+        when the machine origin is not Top-Left.
         """
         # --- Arrange ---
         from dataclasses import dataclass
@@ -197,20 +198,14 @@ class TestMachine:
             machine.driver, "get_encoder", return_value=mock_encoder
         )
 
-        # Create a mock Ops object. We need to be able to copy it.
-        # The copy must return a *different* mock so we can verify transform
-        # is called on the copy, not the original.
         original_ops = mocker.Mock(spec=Ops)
         copied_ops = mocker.Mock(spec=Ops)
         original_ops.copy.return_value = copied_ops
 
         doc = Doc()
 
-        # --- Case 1: Defaults (Top Left, No Negatives) ---
+        # --- Case 1: Default (Top Left) ---
         machine.set_origin(Origin.TOP_LEFT)
-        machine.set_x_axis_negative(False)
-        machine.set_y_axis_negative(False)
-
         machine.encode_ops(original_ops, doc)
 
         # Should pass original, no copy, no transform
@@ -218,27 +213,7 @@ class TestMachine:
         original_ops.copy.assert_not_called()
         original_ops.transform.assert_not_called()
 
-        # --- Case 2: X Negative (Trigger Transformation) ---
-        machine.set_x_axis_negative(True)
-        mock_encoder.reset_mock()
-        original_ops.reset_mock()
-
-        machine.encode_ops(original_ops, doc)
-
-        # Should copy, transform copy, pass copy
-        original_ops.copy.assert_called_once()
-        copied_ops.transform.assert_called_once()
-        mock_encoder.encode.assert_called_with(copied_ops, machine, doc)
-
-        # Verify the transform matrix has X flipped (-1 scale)
-        args, _ = copied_ops.transform.call_args
-        matrix_arg = args[0]
-        assert isinstance(matrix_arg, np.ndarray)
-        assert matrix_arg[0, 0] == -1.0  # X scale
-        assert matrix_arg[1, 1] == 1.0  # Y scale
-
-        # --- Case 3: Origin Change (Trigger Transformation) ---
-        machine.set_x_axis_negative(False)
+        # --- Case 2: Origin Change (Trigger Transformation) ---
         machine.set_origin(Origin.BOTTOM_LEFT)
         mock_encoder.reset_mock()
         original_ops.reset_mock()
@@ -257,42 +232,80 @@ class TestMachine:
         assert matrix_arg[0, 0] == 1.0  # X scale
         assert matrix_arg[1, 1] == -1.0  # Y scale
 
-    def test_negative_axis_setters(self, machine: Machine, mocker):
-        """Test setting negative axis flags emits changed signal."""
+    def test_reverse_axis_setters(self, machine: Machine, mocker):
+        """Test setting reverse axis flags emits changed signal."""
         changed_spy = mocker.spy(machine.changed, "send")
 
-        # Set X negative
-        machine.set_x_axis_negative(True)
-        assert machine.x_axis_negative is True
+        # Set X reverse
+        machine.set_reverse_x_axis(True)
+        assert machine.reverse_x_axis is True
         changed_spy.assert_called_once_with(machine)
         changed_spy.reset_mock()
 
         # Set same value (should not emit)
-        machine.set_x_axis_negative(True)
+        machine.set_reverse_x_axis(True)
         changed_spy.assert_not_called()
 
-        # Set Y negative
-        machine.set_y_axis_negative(True)
-        assert machine.y_axis_negative is True
+        # Set Y reverse
+        machine.set_reverse_y_axis(True)
+        assert machine.reverse_y_axis is True
+        changed_spy.assert_called_once_with(machine)
+        changed_spy.reset_mock()
+
+        # Set Z reverse
+        machine.set_reverse_z_axis(True)
+        assert machine.reverse_z_axis is True
         changed_spy.assert_called_once_with(machine)
 
     @pytest.mark.asyncio
-    async def test_machine_serialization_with_negative_axes(
+    async def test_machine_serialization_with_reverse_axes(
         self, machine: Machine, task_mgr: TaskManager
     ):
-        """Test that negative axis flags are serialized/deserialized."""
-        machine.set_x_axis_negative(True)
-        machine.set_y_axis_negative(True)
+        """Test that reverse axis flags are serialized/deserialized."""
+        machine.set_reverse_x_axis(True)
+        machine.set_reverse_y_axis(True)
+        machine.set_reverse_z_axis(True)
 
         data = machine.to_dict()
-        assert data["machine"]["x_axis_negative"] is True
-        assert data["machine"]["y_axis_negative"] is True
+        assert data["machine"]["reverse_x_axis"] is True
+        assert data["machine"]["reverse_y_axis"] is True
+        assert data["machine"]["reverse_z_axis"] is True
 
         new_machine = Machine.from_dict(data)
         await wait_for_tasks_to_finish(task_mgr)
 
-        assert new_machine.x_axis_negative is True
-        assert new_machine.y_axis_negative is True
+        assert new_machine.reverse_x_axis is True
+        assert new_machine.reverse_y_axis is True
+        assert new_machine.reverse_z_axis is True
+
+    @pytest.mark.asyncio
+    async def test_serialization_migration_from_negative_to_reverse(
+        self, task_mgr: TaskManager
+    ):
+        """
+        Tests that legacy x_axis_negative configs are migrated to the new
+        reverse_x_axis property on load.
+        """
+        legacy_data = {
+            "machine": {
+                "name": "Legacy Negative Axis Machine",
+                "x_axis_negative": True,
+                "y_axis_negative": False,
+            }
+        }
+
+        migrated_machine = Machine.from_dict(legacy_data)
+        await wait_for_tasks_to_finish(task_mgr)
+
+        assert migrated_machine.reverse_x_axis is True
+        assert migrated_machine.reverse_y_axis is False
+
+        # Verify the old keys are not present in the new serialized data
+        new_data = migrated_machine.to_dict()["machine"]
+        assert "x_axis_negative" not in new_data
+        assert "y_axis_negative" not in new_data
+        assert new_data["reverse_x_axis"] is True
+        assert new_data["reverse_y_axis"] is False
 
     @pytest.mark.asyncio
     async def test_send_job_calls_driver_run(
@@ -995,3 +1008,66 @@ class TestMachine:
         assert len(_DIALECT_REGISTRY) == initial_dialect_count
         assert new_machine.dialect_uid == "smoothieware"
         assert MacroTrigger.LAYER_START in new_machine.hookmacros
+
+    @pytest.mark.parametrize(
+        "reverse_x, reverse_y, reverse_z, distance, expected",
+        [
+            (False, False, False, 10.0, (10.0, 10.0, 10.0)),
+            (True, False, False, 10.0, (-10.0, 10.0, 10.0)),
+            (False, True, False, 10.0, (10.0, -10.0, 10.0)),
+            (False, False, True, 10.0, (10.0, 10.0, -10.0)),
+            (True, True, True, 5.0, (-5.0, -5.0, -5.0)),
+        ],
+    )
+    def test_get_visual_jog_deltas(
+        self,
+        machine: Machine,
+        reverse_x,
+        reverse_y,
+        reverse_z,
+        distance,
+        expected,
+    ):
+        """
+        Tests that the jog delta calculation correctly inverts axes based on
+        the reverse settings.
+        """
+        machine.set_reverse_x_axis(reverse_x)
+        machine.set_reverse_y_axis(reverse_y)
+        machine.set_reverse_z_axis(reverse_z)
+
+        deltas = machine.get_visual_jog_deltas(distance)
+        assert deltas == expected
+
+    def test_would_jog_exceed_limits(self, machine: Machine, mocker):
+        """
+        Tests the soft limit checking logic under various conditions.
+        """
+        machine.set_dimensions(200, 300)  # Limits are 0-200, 0-300
+        machine.set_soft_limits_enabled(True)
+        mocker.patch.object(
+            machine, "get_current_position", return_value=(100.0, 150.0, 0.0)
+        )
+
+        # Valid moves within limits
+        assert machine.would_jog_exceed_limits(Axis.X, 50.0) is False
+        assert machine.would_jog_exceed_limits(Axis.X, -50.0) is False
+        assert machine.would_jog_exceed_limits(Axis.Y, 50.0) is False
+        assert machine.would_jog_exceed_limits(Axis.Y, -50.0) is False
+
+        # Invalid moves that would exceed limits
+        assert machine.would_jog_exceed_limits(Axis.X, 100.1) is True
+        assert machine.would_jog_exceed_limits(Axis.X, -100.1) is True
+        assert machine.would_jog_exceed_limits(Axis.Y, 150.1) is True
+        assert machine.would_jog_exceed_limits(Axis.Y, -150.1) is True
+
+        # Should return False when soft limits are disabled
+        machine.set_soft_limits_enabled(False)
+        assert machine.would_jog_exceed_limits(Axis.X, 9999) is False
+
+        # Should return False if the current position for an axis is unknown
+        machine.set_soft_limits_enabled(True)
+        mocker.patch.object(
+            machine, "get_current_position", return_value=(None, 150.0, 0.0)
+        )
+        assert machine.would_jog_exceed_limits(Axis.X, 9999) is False

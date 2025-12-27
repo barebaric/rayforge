@@ -90,8 +90,9 @@ class Machine:
         self.acceleration: int = 1000  # in mm/s²
         self.dimensions: Tuple[int, int] = 200, 200
         self.origin: Origin = Origin.BOTTOM_LEFT
-        self.x_axis_negative: bool = False
-        self.y_axis_negative: bool = False
+        self.reverse_x_axis: bool = False
+        self.reverse_y_axis: bool = False
+        self.reverse_z_axis: bool = False
         self.soft_limits_enabled: bool = True
         self._settings_lock = asyncio.Lock()
 
@@ -365,27 +366,70 @@ class Machine:
         self.origin = origin
         self.changed.send(self)
 
-    def set_x_axis_negative(self, is_negative: bool):
-        """Sets the direction of the X-axis coordinate system."""
-        if self.x_axis_negative == is_negative:
+    def set_reverse_x_axis(self, is_reversed: bool):
+        """Sets if the X-axis direction is reversed."""
+        if self.reverse_x_axis == is_reversed:
             return
-        self.x_axis_negative = is_negative
+        self.reverse_x_axis = is_reversed
         self.changed.send(self)
 
-    def set_y_axis_negative(self, is_negative: bool):
-        """Sets the direction of the Y-axis coordinate system."""
-        if self.y_axis_negative == is_negative:
+    def set_reverse_y_axis(self, is_reversed: bool):
+        """Sets if the Y-axis direction is reversed."""
+        if self.reverse_y_axis == is_reversed:
             return
-        self.y_axis_negative = is_negative
+        self.reverse_y_axis = is_reversed
+        self.changed.send(self)
+
+    def set_reverse_z_axis(self, is_reversed: bool):
+        """Sets if the Z-axis direction is reversed."""
+        if self.reverse_z_axis == is_reversed:
+            return
+        self.reverse_z_axis = is_reversed
         self.changed.send(self)
 
     @property
     def y_axis_down(self) -> bool:
+        """
+        True if the Y coordinate decreases as the head moves away from the
+        user (i.e., origin is at the top). Used for G-code generation.
+        """
         return self.origin in (Origin.TOP_LEFT, Origin.TOP_RIGHT)
 
     @property
     def x_axis_right(self) -> bool:
+        """
+        True if the X coordinate decreases as the head moves left
+        (i.e., origin is on the right). Used for G-code generation.
+        """
         return self.origin in (Origin.TOP_RIGHT, Origin.BOTTOM_RIGHT)
+
+    def get_visual_jog_deltas(
+        self, distance: float
+    ) -> Tuple[float, float, float]:
+        """
+        Calculate the signed coordinate deltas for a jog operation based on a
+        user's visual intent.
+
+        Args:
+            distance: The positive distance for the jog.
+
+        Returns:
+            A tuple of (delta_for_east, delta_for_north, delta_for_up).
+        """
+        # A positive delta means the coordinate value increases.
+        # The user's intent (e.g., move RIGHT) is mapped to either a
+        # positive or negative delta based on the reverse axis settings.
+
+        # "RIGHT" (East)
+        x_delta = distance * (-1.0 if self.reverse_x_axis else 1.0)
+
+        # "AWAY" (North)
+        y_delta = distance * (-1.0 if self.reverse_y_axis else 1.0)
+
+        # "UP"
+        z_delta = distance * (-1.0 if self.reverse_z_axis else 1.0)
+
+        return x_delta, y_delta, z_delta
 
     def set_soft_limits_enabled(self, enabled: bool):
         """Enable or disable soft limits for jog operations."""
@@ -404,29 +448,36 @@ class Machine:
         return (0.0, 0.0, float(self.dimensions[0]), float(self.dimensions[1]))
 
     def would_jog_exceed_limits(self, axis: Axis, distance: float) -> bool:
-        """Check if a jog operation would exceed soft limits."""
+        """
+        Check if a jog operation would exceed soft limits.
+
+        Note: The `distance` argument must be the final, signed coordinate
+        delta that will be sent to the machine.
+        """
         if not self.soft_limits_enabled:
             return False
 
         current_pos = self.get_current_position()
         x_pos, y_pos, z_pos = current_pos
-
-        if x_pos is None or y_pos is None:
-            return False
-
         x_min, y_min, x_max, y_max = self.get_soft_limits()
 
         # Check X axis
         if axis & Axis.X:
+            if x_pos is None:
+                return False  # Cannot check limits if position is unknown
             new_x = x_pos + distance
             if new_x < x_min or new_x > x_max:
                 return True
 
         # Check Y axis
         if axis & Axis.Y:
+            if y_pos is None:
+                return False  # Cannot check limits if position is unknown
             new_y = y_pos + distance
             if new_y < y_min or new_y > y_max:
                 return True
+
+        # Note: Z-axis soft limits are not currently implemented
 
         return False
 
@@ -439,23 +490,23 @@ class Machine:
 
         current_pos = self.get_current_position()
         x_pos, y_pos, z_pos = current_pos
-
-        if x_pos is None or y_pos is None:
-            return distance
-
         x_min, y_min, x_max, y_max = self.get_soft_limits()
         adjusted_distance = distance
 
         # Check X axis
         if axis & Axis.X:
+            if x_pos is None:
+                return distance  # Cannot adjust if position is unknown
             new_x = x_pos + distance
             if new_x < x_min:
                 adjusted_distance = x_min - x_pos
             elif new_x > x_max:
                 adjusted_distance = x_max - x_pos
 
-        # Check Y axis (only if not already adjusted for X)
-        if axis & Axis.Y and adjusted_distance == distance:
+        # Check Y axis
+        if axis & Axis.Y:
+            if y_pos is None:
+                return distance  # Cannot adjust if position is unknown
             new_y = y_pos + distance
             if new_y < y_min:
                 adjusted_distance = y_min - y_pos
@@ -659,41 +710,28 @@ class Machine:
         # Transform the ops coordinate system (Y-Up Internal -> Machine)
         # before generating G-code based on the origin setting.
         ops_for_encoder = ops
-        if (
-            self.origin != Origin.TOP_LEFT
-            or self.x_axis_negative
-            or self.y_axis_negative
-        ):
+        if self.origin != Origin.TOP_LEFT:
             ops_for_encoder = ops.copy()
             width, height = self.dimensions
 
-            # 1. Create the origin transformation matrix
-            origin_transform = np.identity(4)
+            # Create the origin transformation matrix
+            transform = np.identity(4)
             if self.origin == Origin.BOTTOM_LEFT:
                 # Y-down, X-left: Y_new = Height - Y_old
-                origin_transform[1, 1] = -1.0
-                origin_transform[1, 3] = height
+                transform[1, 1] = -1.0
+                transform[1, 3] = height
             elif self.origin == Origin.TOP_RIGHT:
                 # Y-up, X-right: X_new = Width - X_old
-                origin_transform[0, 0] = -1.0
-                origin_transform[0, 3] = width
+                transform[0, 0] = -1.0
+                transform[0, 3] = width
             elif self.origin == Origin.BOTTOM_RIGHT:
                 # Y-down, X-right: X_new=W-X_old, Y_new=H-Y_old
-                origin_transform[0, 0] = -1.0
-                origin_transform[0, 3] = width
-                origin_transform[1, 1] = -1.0
-                origin_transform[1, 3] = height
+                transform[0, 0] = -1.0
+                transform[0, 3] = width
+                transform[1, 1] = -1.0
+                transform[1, 3] = height
 
-            # 2. Create the negative-axis scaling matrix
-            scale_neg_mat = np.identity(4)
-            if self.x_axis_negative:
-                scale_neg_mat[0, 0] = -1.0
-            if self.y_axis_negative:
-                scale_neg_mat[1, 1] = -1.0
-
-            # 3. Combine transformations (apply origin, then negativity)
-            final_transform = scale_neg_mat @ origin_transform
-            ops_for_encoder.transform(final_transform)
+            ops_for_encoder.transform(transform)
 
         gcode_str, op_map_obj = encoder.encode(ops_for_encoder, self, doc)
 
@@ -802,8 +840,9 @@ class Machine:
                 "dialect_uid": self.dialect_uid,
                 "dimensions": list(self.dimensions),
                 "origin": self.origin.value,
-                "x_axis_negative": self.x_axis_negative,
-                "y_axis_negative": self.y_axis_negative,
+                "reverse_x_axis": self.reverse_x_axis,
+                "reverse_y_axis": self.reverse_y_axis,
+                "reverse_z_axis": self.reverse_z_axis,
                 "heads": [head.to_dict() for head in self.heads],
                 "cameras": [camera.to_dict() for camera in self.cameras],
                 "hookmacros": {
@@ -914,14 +953,26 @@ class Machine:
         origin_value = ma_data.get("origin", None)
         if origin_value is not None:
             ma.origin = Origin(origin_value)
-        else:
+        else:  # Legacy support for y_axis_down
             ma.origin = (
                 Origin.BOTTOM_LEFT
-                if ma_data.get("y_axis_down", False)
+                if ma_data.get("y_axis_down", False) is False
                 else Origin.TOP_LEFT
             )
-        ma.x_axis_negative = ma_data.get("x_axis_negative", False)
-        ma.y_axis_negative = ma_data.get("y_axis_negative", False)
+
+        # Load new reverse axis settings if they exist
+        ma.reverse_x_axis = ma_data.get("reverse_x_axis", False)
+        ma.reverse_y_axis = ma_data.get("reverse_y_axis", False)
+        ma.reverse_z_axis = ma_data.get("reverse_z_axis", False)
+
+        # Migrate from old "negative" settings if present
+        if "x_axis_negative" in ma_data:
+            logger.info("Migrating legacy 'x_axis_negative' setting.")
+            ma.reverse_x_axis = ma_data["x_axis_negative"]
+        if "y_axis_negative" in ma_data:
+            logger.info("Migrating legacy 'y_axis_negative' setting.")
+            ma.reverse_y_axis = ma_data["y_axis_negative"]
+
         ma.soft_limits_enabled = ma_data.get(
             "soft_limits_enabled", ma.soft_limits_enabled
         )

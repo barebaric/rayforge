@@ -231,12 +231,12 @@ class MainWindow(Adw.ApplicationWindow):
             width_mm, height_mm = config.machine.dimensions
             y_down = config.machine.y_axis_down
             x_right = config.machine.x_axis_right
-            x_negative = config.machine.x_axis_negative
-            y_negative = config.machine.y_axis_negative
+            reverse_x = config.machine.reverse_x_axis
+            reverse_y = config.machine.reverse_y_axis
         else:
             # Default to a square aspect ratio if no machine is configured
             width_mm, height_mm = 100.0, 100.0
-            y_down, x_right, x_negative, y_negative = (
+            y_down, x_right, reverse_x, reverse_y = (
                 False,
                 False,
                 False,
@@ -353,8 +353,8 @@ class MainWindow(Adw.ApplicationWindow):
                 depth_mm=height_mm,
                 y_down=y_down,
                 x_right=x_right,
-                x_negative=x_negative,
-                y_negative=y_negative,
+                x_negative=reverse_x,
+                y_negative=reverse_y,
             )
 
             # Create a stack to switch between 2D and 3D views
@@ -1220,11 +1220,11 @@ class MainWindow(Adw.ApplicationWindow):
             width_mm, height_mm = new_machine.dimensions
             y_down = new_machine.y_axis_down
             x_right = new_machine.x_axis_right
-            x_negative = new_machine.x_axis_negative
-            y_negative = new_machine.y_axis_negative
+            reverse_x = new_machine.reverse_x_axis
+            reverse_y = new_machine.reverse_y_axis
         else:
             width_mm, height_mm = 100.0, 100.0
-            y_down, x_right, x_negative, y_negative = (
+            y_down, x_right, reverse_x, reverse_y = (
                 False,
                 False,
                 False,
@@ -1251,8 +1251,8 @@ class MainWindow(Adw.ApplicationWindow):
                 depth_mm=height_mm,
                 y_down=y_down,
                 x_right=x_right,
-                x_negative=x_negative,
-                y_negative=y_negative,
+                x_negative=reverse_x,
+                y_negative=reverse_y,
             )
             self.view_stack.add_named(self.canvas3d, "3d")
 

@@ -54,11 +54,11 @@ class WorkSurface(WorldSurface):
             width_mm, height_mm = machine.dimensions
             y_axis_down = machine.y_axis_down
             x_axis_right = machine.x_axis_right
-            x_axis_negative = machine.x_axis_negative
-            y_axis_negative = machine.y_axis_negative
+            reverse_x_axis = machine.reverse_x_axis
+            reverse_y_axis = machine.reverse_y_axis
         else:
             width_mm, height_mm = 100.0, 100.0
-            y_axis_down, x_axis_right, x_axis_negative, y_axis_negative = (
+            y_axis_down, x_axis_right, reverse_x_axis, reverse_y_axis = (
                 False,
                 False,
                 False,
@@ -79,8 +79,8 @@ class WorkSurface(WorldSurface):
             height_mm=height_mm,
             y_axis_down=y_axis_down,
             x_axis_right=x_axis_right,
-            x_axis_negative=x_axis_negative,
-            y_axis_negative=y_axis_negative,
+            reverse_x_axis=reverse_x_axis,
+            reverse_y_axis=reverse_y_axis,
             **kwargs,
         )
 
@@ -698,19 +698,19 @@ class WorkSurface(WorldSurface):
         x_axis_changed = (
             machine.x_axis_right != self._axis_renderer.x_axis_right
         )
-        x_negative_changed = (
-            machine.x_axis_negative != self._axis_renderer.x_axis_negative
+        x_reverse_changed = (
+            machine.reverse_x_axis != self._axis_renderer.x_axis_negative
         )
-        y_negative_changed = (
-            machine.y_axis_negative != self._axis_renderer.y_axis_negative
+        y_reverse_changed = (
+            machine.reverse_y_axis != self._axis_renderer.y_axis_negative
         )
 
         if (
             size_changed
             or x_axis_changed
             or y_axis_changed
-            or x_negative_changed
-            or y_negative_changed
+            or x_reverse_changed
+            or y_reverse_changed
         ):
             self.reset_view()
         else:
@@ -740,15 +740,15 @@ class WorkSurface(WorldSurface):
             f"with dims={self.machine.dimensions}, "
             f"x_right={self.machine.x_axis_right}, "
             f"y_down={self.machine.y_axis_down}, "
-            f"x_neg={self.machine.x_axis_negative}, "
-            f"y_neg={self.machine.y_axis_negative}"
+            f"reverse_x={self.machine.reverse_x_axis}, "
+            f"reverse_y={self.machine.reverse_y_axis}"
         )
         new_dimensions = self.machine.dimensions
         self.set_size(new_dimensions[0], new_dimensions[1])
         self._axis_renderer.set_x_axis_right(self.machine.x_axis_right)
         self._axis_renderer.set_y_axis_down(self.machine.y_axis_down)
-        self._axis_renderer.set_x_axis_negative(self.machine.x_axis_negative)
-        self._axis_renderer.set_y_axis_negative(self.machine.y_axis_negative)
+        self._axis_renderer.set_x_axis_negative(self.machine.reverse_x_axis)
+        self._axis_renderer.set_y_axis_negative(self.machine.reverse_y_axis)
         # Call the base class reset which handles pan/zoom
         super().reset_view()
         new_ratio = (
