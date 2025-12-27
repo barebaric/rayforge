@@ -194,7 +194,7 @@ class StockAssetRowWidget(Gtk.Box):
         suffix_box.set_valign(Gtk.Align.CENTER)
         self.append(suffix_box)
 
-        properties_icon = get_icon("document-properties-symbolic")
+        properties_icon = get_icon("settings-symbolic")
         self.properties_button = Gtk.Button(child=properties_icon)
         self.properties_button.set_tooltip_text(_("Edit stock properties"))
         self.properties_button.connect("clicked", self.on_properties_clicked)
