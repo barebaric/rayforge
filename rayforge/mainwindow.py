@@ -973,6 +973,22 @@ class MainWindow(Adw.ApplicationWindow):
             self.machine_cmd.clear_alarm(machine)
         self._update_actions_and_ui()
 
+    def _on_machine_hours_changed(self, sender, **kwargs):
+        """
+        Called when machine hours change. Checks for maintenance notifications.
+        """
+        due_counters = sender.consume_due_notifications()
+        for counter in due_counters:
+            msg = _(
+                "Maintenance Alert: {name} has reached its limit "
+                "({curr:g}h / {limit:g}h)"
+            ).format(
+                name=counter.name,
+                curr=counter.value,
+                limit=counter.notify_at,
+            )
+            self._on_editor_notification(self, msg, persistent=True)
+
     def on_history_changed(
         self, history_manager: HistoryManager, command: Command
     ):
@@ -1199,6 +1215,9 @@ class MainWindow(Adw.ApplicationWindow):
                 self._on_job_finished
             )
             self._current_machine.changed.disconnect(self._update_macros_menu)
+            self._current_machine.machine_hours.changed.disconnect(
+                self._on_machine_hours_changed
+            )
 
         config = get_context().config
         self._current_machine = config.machine
@@ -1213,6 +1232,9 @@ class MainWindow(Adw.ApplicationWindow):
             )
             self._current_machine.job_finished.connect(self._on_job_finished)
             self._current_machine.changed.connect(self._update_macros_menu)
+            self._current_machine.machine_hours.changed.connect(
+                self._on_machine_hours_changed
+            )
 
         # Define new machine dimensions
         new_machine = config.machine
@@ -1269,6 +1291,10 @@ class MainWindow(Adw.ApplicationWindow):
 
         # Update theme
         self.apply_theme()
+
+        # Check for any pending notifications from the new machine immediately
+        if self._current_machine:
+            self._on_machine_hours_changed(self._current_machine.machine_hours)
 
     def apply_theme(self):
         """Reads the theme from config and applies it to the UI."""

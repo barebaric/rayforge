@@ -114,6 +114,18 @@ class MachineCmd:
                 )
                 if self._current_monitor:
                     self._current_monitor.mark_as_complete()
+
+            estimated_seconds = ops.estimate_time(
+                default_cut_speed=machine.max_cut_speed,
+                default_travel_speed=machine.max_travel_speed,
+                acceleration=machine.acceleration,
+            )
+            estimated_hours = estimated_seconds / 3600.0
+            machine.add_machine_hours(estimated_hours)
+            logger.info(
+                f"Job completed. Estimated time: {estimated_hours:.3f}h "
+                f"added to machine hours."
+            )
         finally:
             cleanup_monitor()
 
