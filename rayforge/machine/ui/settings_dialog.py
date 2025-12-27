@@ -8,6 +8,7 @@ from .general_preferences_page import GeneralPreferencesPage
 from .device_settings_page import DeviceSettingsPage
 from .advanced_preferences_page import AdvancedPreferencesPage
 from .laser_preferences_page import LaserPreferencesPage
+from .machine_hours_page import MachineHoursPage
 
 
 class MachineSettingsDialog(Adw.Window):
@@ -85,6 +86,16 @@ class MachineSettingsDialog(Adw.Window):
         btn_camera.connect("toggled", self._on_tab_toggled, "camera")
         switcher_box.append(btn_camera)
 
+        # Machine Hours Tab
+        btn_hours = Gtk.ToggleButton(group=btn_general)
+        btn_hours.set_child(
+            self._create_tab_child(
+                _("Hours"), "preferences-system-time-symbolic"
+            )
+        )
+        btn_hours.connect("toggled", self._on_tab_toggled, "hours")
+        switcher_box.append(btn_hours)
+
         # --- Page 1: General ---
         self.view_stack.add_named(
             GeneralPreferencesPage(machine=self.machine), "general"
@@ -114,6 +125,11 @@ class MachineSettingsDialog(Adw.Window):
             self._on_camera_remove_requested
         )
         self.view_stack.add_named(self.camera_page, "camera")
+
+        # --- Page 6: Machine Hours ---
+        self.view_stack.add_named(
+            MachineHoursPage(machine=self.machine), "hours"
+        )
 
         # Sync UI with CameraManager signals
         camera_mgr = get_context().camera_mgr

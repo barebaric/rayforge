@@ -29,6 +29,7 @@ from ..driver.driver import Axis
 from .laser import Laser
 from .macro import Macro, MacroTrigger
 from .dialect import get_dialect, GcodeDialect
+from .machine_hours import MachineHours
 
 
 class Origin(Enum):
@@ -95,6 +96,9 @@ class Machine:
         self.reverse_z_axis: bool = False
         self.soft_limits_enabled: bool = True
         self._settings_lock = asyncio.Lock()
+
+        self.machine_hours: MachineHours = MachineHours()
+        self.machine_hours.changed.connect(self._on_machine_hours_changed)
 
         # Signals
         self.changed = Signal()
@@ -610,6 +614,26 @@ class Machine:
     def _on_camera_changed(self, camera, *args):
         self.changed.send(self)
 
+    def _on_machine_hours_changed(self, machine_hours, *args):
+        """
+        Handle machine hours changes and propagate to machine changed
+        signal.
+        """
+        self.changed.send(self)
+
+    def add_machine_hours(self, hours: float) -> None:
+        """
+        Add hours to the machine's total hours and all counters.
+
+        Args:
+            hours: Hours to add (can be fractional).
+        """
+        self.machine_hours.add_hours(hours)
+
+    def get_machine_hours(self) -> MachineHours:
+        """Get the machine hours tracker."""
+        return self.machine_hours
+
     def add_macro(self, macro: Macro):
         """Adds a macro and notifies listeners."""
         if macro.uid in self.macros:
@@ -860,6 +884,7 @@ class Machine:
                 "gcode": {
                     "gcode_precision": self.gcode_precision,
                 },
+                "machine_hours": self.machine_hours.to_dict(),
             }
         }
 
@@ -1006,6 +1031,10 @@ class Machine:
         ma.acceleration = speeds.get("acceleration", ma.acceleration)
         gcode = ma_data.get("gcode", {})
         ma.gcode_precision = gcode.get("gcode_precision", 3)
+
+        hours_data = ma_data.get("machine_hours", {})
+        ma.machine_hours = MachineHours.from_dict(hours_data)
+        ma.machine_hours.changed.connect(ma._on_machine_hours_changed)
 
         if not is_inert:
             task_mgr.add_coroutine(
