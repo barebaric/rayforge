@@ -6,7 +6,6 @@ from blinker import Signal
 from .adwfix import get_spinrow_int
 from ...machine.transport.validators import is_valid_hostname_or_ip
 from ...core.varset import (
-    BoolVar,
     ChoiceVar,
     HostnameVar,
     SliderFloatVar,
@@ -155,7 +154,7 @@ class VarSetWidget(Adw.PreferencesGroup):
                 max_val = var.max_val if var.max_val is not None else 1.0
                 percent = widget.get_value() / 100.0
                 value = min_val + percent * (max_val - min_val)
-            elif isinstance(var, BoolVar) and isinstance(widget, Gtk.Switch):
+            elif isinstance(widget, Gtk.Switch):
                 value = widget.get_active()
             elif isinstance(row, Adw.EntryRow):
                 value = row.get_text()
@@ -203,7 +202,7 @@ class VarSetWidget(Adw.PreferencesGroup):
                 if range_size > 1e-9:
                     percent = ((float(value) - min_val) / range_size) * 100.0
                 widget.set_value(percent)
-            elif isinstance(var, BoolVar) and isinstance(widget, Gtk.Switch):
+            elif isinstance(widget, Gtk.Switch):
                 widget.set_active(bool(value))
             elif isinstance(row, Adw.EntryRow):
                 row.set_text(str(value))
