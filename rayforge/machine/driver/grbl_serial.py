@@ -421,9 +421,14 @@ class GrblSerialDriver(Driver):
                             "data": command_bytes,
                         },
                     )
-                    await self.serial_transport.send(command_bytes)
+
+                    # Add to queue BEFORE sending.
+                    # Fast machines can reply with 'ok' before await send()
+                    # returns. If we queue after sending, the RX handler finds
+                    # an empty queue and drops the 'ok', causing a deadlock.
                     self._rx_buffer_count += command_len
-                    await self._sent_gcode_queue.put((command_len, op_index))
+                    self._sent_gcode_queue.put_nowait((command_len, op_index))
+                    await self.serial_transport.send(command_bytes)
 
             # Wait for all sent commands to be acknowledged
             if not self._is_cancelled and not self._job_exception:
