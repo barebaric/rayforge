@@ -76,7 +76,7 @@ class MachineLogDialog(Adw.Dialog):  # TODO: with Adw 1.6, use BottomSheet
         self.connect("closed", self.on_closed)
 
         parent_width = parent.get_allocated_width()
-        self.set_size_request(max(100, parent_width - 24), -1)
+        self.set_size_request(max(100, parent_width - 80), -1)
         self.set_follows_content_size(True)
 
     def on_closed(self, *args):
