@@ -2,6 +2,7 @@ import glob
 import logging
 import asyncio
 import os
+import serial
 import serial_asyncio
 from typing import Optional, List
 from serial.tools import list_ports
@@ -236,8 +237,15 @@ class SerialTransport(Transport):
         if not self._writer:
             raise ConnectionError("Serial port not open")
         logger.debug(f"Sending data: {data!r}")
-        self._writer.write(data)
-        await self._writer.drain()
+        try:
+            self._writer.write(data)
+            await self._writer.drain()
+        except (serial.SerialException, OSError) as e:
+            # Wrap low-level serial errors as ConnectionError so drivers
+            # can handle them gracefully (e.g., breaking a poll loop).
+            raise ConnectionError(
+                f"Failed to write to serial port: {e}"
+            ) from e
 
     async def _receive_loop(self) -> None:
         """
@@ -255,6 +263,23 @@ class SerialTransport(Transport):
                     break  # Exit loop if connection is closed
             except asyncio.CancelledError:
                 logger.debug("_receive_loop cancelled.")
+                break
+            except serial.SerialException as e:
+                # Handle common Linux disconnect error gracefully
+                msg = str(e)
+                if (
+                    "device reports readiness to read but returned no data"
+                    in msg
+                ):
+                    logger.warning(
+                        f"Serial connection lost (device disconnected?): {e}"
+                    )
+                else:
+                    logger.error(f"Serial error in _receive_loop: {e}")
+
+                self.status_changed.send(
+                    self, status=TransportStatus.ERROR, message=msg
+                )
                 break
             except Exception as e:
                 logger.error(f"Error in _receive_loop: {e}")
