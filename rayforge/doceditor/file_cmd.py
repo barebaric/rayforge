@@ -99,8 +99,15 @@ class FileCmd:
 
         with self._editor.history_manager.transaction(cmd_name) as t:
             for item in items:
+                # If the item is a Layer, it should be added to the Doc (root),
+                # otherwise add to the active layer.
+                if isinstance(item, Layer):
+                    owner = self._editor.doc
+                else:
+                    owner = target_layer
+
                 command = ListItemCommand(
-                    owner_obj=target_layer,
+                    owner_obj=owner,
                     item=item,
                     undo_command="remove_child",
                     redo_command="add_child",

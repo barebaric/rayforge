@@ -1,7 +1,7 @@
 import asyncio
 import logging
 from pathlib import Path
-from typing import TYPE_CHECKING, Optional, Tuple
+from typing import TYPE_CHECKING, Optional, Tuple, List
 import cairo
 from gi.repository import Adw, Gdk, GdkPixbuf, Gtk
 from blinker import Signal
@@ -11,8 +11,10 @@ from ...core.vectorization_spec import (
     VectorizationSpec,
 )
 from ...core.workpiece import WorkPiece
+from ...core.layer import Layer
 from ...image import ImportPayload, import_file_from_bytes
 from ...shared.util.cairoutil import draw_geometry_to_cairo_context
+from ...image.svg.svgutil import extract_layer_manifest
 
 if TYPE_CHECKING:
     from ..editor import DocEditor
@@ -48,6 +50,7 @@ class RasterImportDialog(Adw.Window):
         self._preview_payload: Optional[ImportPayload] = None
         self._background_pixbuf: Optional[GdkPixbuf.Pixbuf] = None
         self._in_update = False  # Prevent signal recursion
+        self._layer_widgets: List[Gtk.Switch] = []
 
         self.set_title(_("Import Image"))
         self.set_default_size(1100, 800)
@@ -106,6 +109,11 @@ class RasterImportDialog(Adw.Window):
         )
         mode_group.add(self.use_vectors_switch)
         mode_group.set_visible(self.is_svg)
+
+        # Layers Group (Dynamic)
+        self.layers_group = Adw.PreferencesGroup(title=_("Layers"))
+        self.layers_group.set_visible(False)
+        preferences_page.add(self.layers_group)
 
         # Trace Settings Group
         self.trace_group = Adw.PreferencesGroup(title=_("Trace Settings"))
@@ -183,6 +191,9 @@ class RasterImportDialog(Adw.Window):
     def _on_import_mode_toggled(self, switch, *args):
         is_direct_import = self.is_svg and switch.get_active()
         self.trace_group.set_sensitive(not is_direct_import)
+        self.layers_group.set_sensitive(
+            is_direct_import
+        )  # Only vector import supports specific layer select
         self._schedule_preview_update()
 
     def _on_auto_threshold_toggled(self, switch, _pspec):
@@ -193,18 +204,58 @@ class RasterImportDialog(Adw.Window):
     def _load_initial_data(self):
         try:
             self._file_bytes = self.file_path.read_bytes()
+            if self.is_svg:
+                self._populate_layers_ui()
         except Exception:
             logger.error(
                 f"Failed to read import file {self.file_path}", exc_info=True
             )
             self.close()
 
+    def _populate_layers_ui(self):
+        if not self._file_bytes:
+            return
+
+        layers = extract_layer_manifest(self._file_bytes)
+        if not layers:
+            return
+
+        self.layers_group.set_visible(True)
+        expander = Adw.ExpanderRow(title=_("Select Layers"), expanded=True)
+        self.layers_group.add(expander)
+        self._layer_widgets.clear()
+
+        for layer in layers:
+            row = Adw.ActionRow(title=layer["name"])
+            switch = Gtk.Switch(active=True, valign=Gtk.Align.CENTER)
+            # Use direct attribute assignment for the layer ID
+            switch._layer_id = layer["id"]  # type: ignore
+            switch.connect("notify::active", self._schedule_preview_update)
+
+            row.add_suffix(switch)
+            # Make the whole row click toggle the switch
+            row.set_activatable_widget(switch)
+            expander.add_row(row)
+
+            self._layer_widgets.append(switch)
+
+    def _get_active_layer_ids(self) -> Optional[List[str]]:
+        if not self._layer_widgets:
+            return None
+        return [
+            w._layer_id  # type: ignore
+            for w in self._layer_widgets
+            if w.get_active()
+        ]
+
     def _get_current_spec(self) -> VectorizationSpec:
         """
         Constructs a VectorizationSpec from the current UI control values.
         """
         if self.is_svg and self.use_vectors_switch.get_active():
-            return PassthroughSpec()
+            return PassthroughSpec(
+                active_layer_ids=self._get_active_layer_ids()
+            )
         else:
             return TraceSpec(
                 threshold=self.threshold_adjustment.get_value(),
@@ -223,6 +274,20 @@ class RasterImportDialog(Adw.Window):
         self.editor.task_manager.add_coroutine(
             self._update_preview_task, key="raster-import-preview"
         )
+
+    def _extract_workpiece(self, item) -> Optional[WorkPiece]:
+        """
+        Recursively extract the first WorkPiece from a potentially nested item.
+        """
+        if isinstance(item, WorkPiece):
+            return item
+        if isinstance(item, Layer):
+            # Check direct children
+            for child in item.children:
+                wp = self._extract_workpiece(child)
+                if wp:
+                    return wp
+        return None
 
     async def _update_preview_task(self, ctx):
         """
@@ -247,35 +312,49 @@ class RasterImportDialog(Adw.Window):
             )
 
             if not payload or not payload.items:
-                raise ValueError("Import process failed to produce any items.")
+                self.editor.task_manager.schedule_on_main_thread(
+                    self._update_ui_with_preview, (None, b"")
+                )
+                return
 
-            workpiece = payload.items[0]
-            if not isinstance(workpiece, WorkPiece):
-                # Should be impossible given importer contracts
-                raise ValueError("Imported item is not a WorkPiece")
+            # For previewing, we need a "Reference" workpiece to determine the
+            # coordinate system and background image. Since all split items
+            # share the same master coordinates, the first one is sufficient.
+            # We must handle the case where the item is a Layer (container).
+            reference_wp = self._extract_workpiece(payload.items[0])
+
+            if not reference_wp:
+                # Should be impossible if payload.items is populated correctly
+                raise ValueError("Imported items contain no WorkPieces")
 
             # Hydrate the workpiece with source data for standalone rendering.
             # This enables correct behavior for cropping and high-res tracing,
             # as WorkPiece.get_vips_image needs access to the original data
             # and source dimensions which are normally accessed via self.doc.
-            workpiece._data = payload.source.original_data
-            workpiece._original_data = payload.source.original_data
-            workpiece._renderer = payload.source.renderer
+            reference_wp._data = payload.source.base_render_data
+            reference_wp._original_data = payload.source.original_data
+            reference_wp._renderer = payload.source.renderer
             if (
                 payload.source.width_px is not None
                 and payload.source.height_px is not None
             ):
-                workpiece._transient_source_px_dims = (
+                reference_wp._transient_source_px_dims = (
                     payload.source.width_px,
                     payload.source.height_px,
                 )
 
             # Calculate preview dimensions preserving aspect ratio
-            size_mm = workpiece.natural_size
+            size_mm = reference_wp.natural_size
             w_mm, h_mm = size_mm if size_mm else (0, 0)
 
             if w_mm <= 0 or h_mm <= 0:
-                raise ValueError("Source has invalid physical dimensions.")
+                # If dimensions are missing (e.g. empty SVG due to filtering),
+                # use fallback dimensions to avoid crash.
+                logger.warning(
+                    "WorkPiece has zero dimensions, using fallback for "
+                    "preview."
+                )
+                w_mm, h_mm = 100, 100
 
             aspect = w_mm / h_mm
             if aspect >= 1.0:
@@ -286,9 +365,7 @@ class RasterImportDialog(Adw.Window):
                 render_w = int(PREVIEW_RENDER_SIZE_PX * aspect)
 
             # Delegate rendering to the WorkPiece
-            # This handles renderer selection, data retrieval, and cropping
-            # defined by the SourceAssetSegment.
-            vips_image = workpiece.get_vips_image(
+            vips_image = reference_wp.get_vips_image(
                 max(1, render_w), max(1, render_h)
             )
 
@@ -386,19 +463,21 @@ class RasterImportDialog(Adw.Window):
         if not self._preview_payload or not self._preview_payload.items:
             return
 
-        item = self._preview_payload.items[0]
-        boundaries = item.boundaries if isinstance(item, WorkPiece) else None
-        if not boundaries:
+        items = self._preview_payload.items
+        if not items:
             return
 
         is_direct_import = self.is_svg and self.use_vectors_switch.get_active()
 
         # Determine the correct aspect ratio for the content
+        # We need a reference workpiece to know the size
+        reference_item = self._extract_workpiece(items[0])
         aspect_w, aspect_h = 1.0, 1.0
-        if is_direct_import and isinstance(item, WorkPiece):
+
+        if is_direct_import and reference_item:
             # For direct import, the true aspect ratio is from the workpiece's
             # final calculated size in millimeters.
-            size_mm = item.size
+            size_mm = reference_item.size
             if size_mm and size_mm[0] > 0 and size_mm[1] > 0:
                 aspect_w, aspect_h = size_mm
         elif self._background_pixbuf:
@@ -443,9 +522,13 @@ class RasterImportDialog(Adw.Window):
             mask_ctx.scale(img_w, img_h)
             mask_ctx.translate(0, 1)
             mask_ctx.scale(1, -1)
-            draw_geometry_to_cairo_context(boundaries, mask_ctx)
-            mask_ctx.set_source_rgb(1, 1, 1)
-            mask_ctx.fill()
+
+            if reference_item and reference_item.boundaries:
+                draw_geometry_to_cairo_context(
+                    reference_item.boundaries, mask_ctx
+                )
+                mask_ctx.set_source_rgb(1, 1, 1)
+                mask_ctx.fill()
 
             ctx.save()
             # Correctly scale the image surface to fit the drawing area
@@ -454,7 +537,7 @@ class RasterImportDialog(Adw.Window):
             ctx.mask_surface(mask_surface, 0, 0)
             ctx.restore()
 
-        # Step 2: Draw the vector stroke on top for ALL modes
+        # Step 2: Draw the vector stroke on top for ALL items
         # Set up the main context to draw the Y-up normalized geometry
         ctx.scale(draw_w, draw_h)
         ctx.translate(0, 1)
@@ -464,10 +547,19 @@ class RasterImportDialog(Adw.Window):
         if max_dim > 0:
             ctx.set_line_width(2.0 / max_dim)
 
-        ctx.set_source_rgb(0.1, 0.5, 1.0)
-        ctx.new_path()
-        draw_geometry_to_cairo_context(boundaries, ctx)
-        ctx.stroke()
+        # Recursively find and draw all workpieces
+        def draw_item(item):
+            if isinstance(item, WorkPiece) and item.boundaries:
+                ctx.set_source_rgb(0.1, 0.5, 1.0)
+                ctx.new_path()
+                draw_geometry_to_cairo_context(item.boundaries, ctx)
+                ctx.stroke()
+            elif isinstance(item, Layer):
+                for child in item.children:
+                    draw_item(child)
+
+        for item in items:
+            draw_item(item)
 
         ctx.restore()
 

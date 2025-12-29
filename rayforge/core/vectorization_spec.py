@@ -1,7 +1,7 @@
 from __future__ import annotations
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Any, Dict
+from typing import Any, Dict, List, Optional
 
 
 @dataclass
@@ -61,12 +61,17 @@ class PassthroughSpec(VectorizationSpec):
     Specifies that vectors should be parsed directly from a vector source.
     """
 
+    active_layer_ids: Optional[List[str]] = None
+
     def to_dict(self) -> Dict[str, Any]:
-        return {"type": "PassthroughSpec"}
+        return {
+            "type": "PassthroughSpec",
+            "active_layer_ids": self.active_layer_ids,
+        }
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "PassthroughSpec":
-        return cls()
+        return cls(active_layer_ids=data.get("active_layer_ids"))
 
 
 @dataclass
