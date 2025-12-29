@@ -30,6 +30,7 @@ class JogDialog(Adw.Window):
                 self._on_connection_status_changed
             )
             self.machine.state_changed.connect(self._on_machine_state_changed)
+            self.machine.changed.connect(self._on_machine_changed)
 
         # Create a vertical box to hold the header bar and the content
         main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
@@ -142,6 +143,7 @@ class JogDialog(Adw.Window):
             self.machine.state_changed.disconnect(
                 self._on_machine_state_changed
             )
+            self.machine.changed.disconnect(self._on_machine_changed)
         return False  # Allow the window to close
 
     def _on_speed_changed(self, spin_row):
@@ -182,20 +184,42 @@ class JogDialog(Adw.Window):
         """Update button sensitivity based on machine capabilities."""
         has_machine = self.machine is not None
         is_connected = has_machine and self.machine.is_connected()
+        single_axis_homing_enabled = (
+            has_machine and self.machine.single_axis_homing_enabled
+        )
 
         # Home buttons
         from ...machine.driver.driver import Axis
 
         self.home_x_btn.set_sensitive(
-            is_connected and self.machine.can_home(Axis.X)
+            is_connected
+            and self.machine.can_home(Axis.X)
+            and single_axis_homing_enabled
         )
         self.home_y_btn.set_sensitive(
-            is_connected and self.machine.can_home(Axis.Y)
+            is_connected
+            and self.machine.can_home(Axis.Y)
+            and single_axis_homing_enabled
         )
         self.home_z_btn.set_sensitive(
-            is_connected and self.machine.can_home(Axis.Z)
+            is_connected
+            and self.machine.can_home(Axis.Z)
+            and single_axis_homing_enabled
         )
         self.home_all_btn.set_sensitive(is_connected)
+
+        # Update tooltips for single axis home buttons
+        tooltip = None
+        if single_axis_homing_enabled:
+            tooltip = None
+        else:
+            tooltip = _(
+                "Single axis homing is disabled in machine settings"
+            )
+
+        self.home_x_btn.set_tooltip_text(tooltip)
+        self.home_y_btn.set_tooltip_text(tooltip)
+        self.home_z_btn.set_tooltip_text(tooltip)
 
         # Update jog widget sensitivity
         self.jog_widget._update_button_sensitivity()
@@ -210,5 +234,11 @@ class JogDialog(Adw.Window):
     def _on_machine_state_changed(self, machine, state):
         """
         Handle machine state changes to update button sensitivity.
+        """
+        self._update_button_sensitivity()
+
+    def _on_machine_changed(self, machine, **kwargs):
+        """
+        Handle machine configuration changes to update button sensitivity.
         """
         self._update_button_sensitivity()
