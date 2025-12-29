@@ -78,6 +78,7 @@ class Machine:
 
         self.home_on_start: bool = False
         self.clear_alarm_on_connect: bool = False
+        self.single_axis_homing_enabled: bool = True
         self.dialect_uid: str = "grbl"
         self.gcode_precision: int = 3
         self.hookmacros: Dict[MacroTrigger, Macro] = {}
@@ -348,6 +349,12 @@ class Machine:
         if self.clear_alarm_on_connect == clear_alarm:
             return
         self.clear_alarm_on_connect = clear_alarm
+        self.changed.send(self)
+
+    def set_single_axis_homing_enabled(self, enabled: bool = True):
+        if self.single_axis_homing_enabled == enabled:
+            return
+        self.single_axis_homing_enabled = enabled
         self.changed.send(self)
 
     def set_max_travel_speed(self, speed: int):
@@ -861,6 +868,7 @@ class Machine:
                 "driver_args": self.driver_args,
                 "clear_alarm_on_connect": self.clear_alarm_on_connect,
                 "home_on_start": self.home_on_start,
+                "single_axis_homing_enabled": self.single_axis_homing_enabled,
                 "dialect_uid": self.dialect_uid,
                 "dimensions": list(self.dimensions),
                 "origin": self.origin.value,
@@ -960,6 +968,9 @@ class Machine:
             "clear_alarm_on_connect", ma.clear_alarm_on_connect
         )
         ma.home_on_start = ma_data.get("home_on_start", ma.home_on_start)
+        ma.single_axis_homing_enabled = ma_data.get(
+            "single_axis_homing_enabled", ma.single_axis_homing_enabled
+        )
 
         dialect_uid = ma_data.get("dialect_uid")
         if not dialect_uid:  # backward compatibility

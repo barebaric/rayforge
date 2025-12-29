@@ -220,6 +220,17 @@ class GeneralPreferencesPage(Adw.PreferencesPage):
         )
         axes_group.add(self.reverse_z_axis_row)
 
+        single_axis_homing_row = Adw.SwitchRow()
+        single_axis_homing_row.set_title(_("Allow Single Axis Homing"))
+        single_axis_homing_row.set_subtitle(
+            _("Enable individual axis homing controls in the jog dialog")
+        )
+        single_axis_homing_row.set_active(machine.single_axis_homing_enabled)
+        single_axis_homing_row.connect(
+            "notify::active", self.on_single_axis_homing_changed
+        )
+        axes_group.add(single_axis_homing_row)
+
         # Group for Speeds
         speeds_group = Adw.PreferencesGroup(
             title=_("Speeds &amp; Acceleration")
@@ -397,6 +408,9 @@ class GeneralPreferencesPage(Adw.PreferencesPage):
 
     def on_clear_alarm_on_connect_changed(self, row, _):
         self.machine.set_clear_alarm_on_connect(row.get_active())
+
+    def on_single_axis_homing_changed(self, row, _):
+        self.machine.set_single_axis_homing_enabled(row.get_active())
 
     def on_origin_changed(self, row, _):
         selected_index = row.get_selected()
