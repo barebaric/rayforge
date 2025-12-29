@@ -13,13 +13,15 @@ from svgelements import (
     Move,
     Path,
     QuadraticBezier,
+    Group,
 )
 
 from ...core.geo import Geometry
-from ...core.source_asset_segment import SourceAssetSegment
 from ...core.item import DocItem
+from ...core.layer import Layer
 from ...core.matrix import Matrix
 from ...core.source_asset import SourceAsset
+from ...core.source_asset_segment import SourceAssetSegment
 from ...core.vectorization_spec import (
     PassthroughSpec,
     TraceSpec,
@@ -30,7 +32,13 @@ from ..base_importer import Importer, ImportPayload
 from .. import image_util
 from ..tracing import trace_surface, VTRACER_PIXEL_LIMIT
 from .renderer import SVG_RENDERER
-from .svgutil import PPI, get_natural_size, trim_svg
+from .svgutil import (
+    PPI,
+    get_natural_size,
+    trim_svg,
+    extract_layer_manifest,
+    filter_svg_layers,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -52,6 +60,15 @@ class SvgImporter(Importer):
         Otherwise, it attempts to parse the SVG path and shape data
         directly for a high-fidelity vector import.
         """
+        # Determine if we need to pre-filter layers
+        active_layer_ids = None
+        if isinstance(vectorization_spec, PassthroughSpec):
+            active_layer_ids = vectorization_spec.active_layer_ids
+
+        render_data = self.raw_data
+        if active_layer_ids is not None:
+            render_data = filter_svg_layers(self.raw_data, active_layer_ids)
+
         source = SourceAsset(
             source_file=self.source_file,
             original_data=self.raw_data,
@@ -60,13 +77,14 @@ class SvgImporter(Importer):
 
         if isinstance(vectorization_spec, TraceSpec):
             # Path 1: Render to bitmap and trace
+            # Note: TraceSpec doesn't currently support layer filtering in UI
             items = self._get_doc_items_from_trace(source, vectorization_spec)
         else:
             # Path 2: Direct vector parsing with pre-trimming
-            trimmed_data = trim_svg(self.raw_data)
+            trimmed_data = trim_svg(render_data)
             source.base_render_data = trimmed_data
             self._populate_metadata(source)
-            items = self._get_doc_items_direct(source)
+            items = self._get_doc_items_direct(source, active_layer_ids)
 
         if not items:
             return None
@@ -163,7 +181,7 @@ class SvgImporter(Importer):
         )
 
     def _get_doc_items_direct(
-        self, source: SourceAsset
+        self, source: SourceAsset, active_layer_ids: Optional[List[str]] = None
     ) -> Optional[List[DocItem]]:
         """
         Orchestrates the direct parsing of SVG data into DocItems.
@@ -188,10 +206,7 @@ class SvgImporter(Importer):
         if svg is None:
             return None
 
-        # 3. Convert SVG shapes to internal geometry (in pixel coordinates).
-        geo = self._convert_svg_to_geometry(svg, final_dims_mm)
-
-        # 4. Get pixel dimensions for normalization.
+        # 3. Get pixel dimensions for normalization.
         pixel_dims = self._get_pixel_dimensions(svg)
         if not pixel_dims:
             msg = (
@@ -202,14 +217,127 @@ class SvgImporter(Importer):
             return self._get_doc_items_from_trace(source, TraceSpec())
         width_px, height_px = pixel_dims
 
-        # 5. Normalize geometry to a 0-1 unit square (Y-down).
+        # 4. Handle Split Layers if requested
+        if active_layer_ids:
+            return self._create_split_items(
+                svg,
+                active_layer_ids,
+                source,
+                final_dims_mm,
+                width_px,
+                height_px,
+            )
+
+        # 5. Standard path (merged import)
+        # Convert SVG shapes to internal geometry (in pixel coordinates).
+        geo = self._convert_svg_to_geometry(svg, final_dims_mm)
+
+        # Normalize geometry to a 0-1 unit square (Y-down).
         self._normalize_geometry(geo, width_px, height_px)
 
-        # 6. Create the final workpiece.
+        # Create the final workpiece.
         wp = self._create_workpiece(
             geo, source, final_width_mm, final_height_mm
         )
         return [wp]
+
+    def _create_split_items(
+        self,
+        svg: SVG,
+        layer_ids: List[str],
+        source: SourceAsset,
+        final_dims_mm: Tuple[float, float],
+        width_px: float,
+        height_px: float,
+    ) -> List[DocItem]:
+        """
+        Creates separate Layer items containing WorkPieces for each selected
+        layer ID. The WorkPieces share the same size and transform but use
+        different geometry masks.
+        """
+        # Create a master WorkPiece to use as the matrix template.
+        master_geo = self._convert_svg_to_geometry(svg, final_dims_mm)
+        self._normalize_geometry(master_geo, width_px, height_px)
+        master_wp = self._create_workpiece(
+            master_geo, source, final_dims_mm[0], final_dims_mm[1]
+        )
+
+        final_items: List[DocItem] = []
+        manifest = extract_layer_manifest(self.raw_data)
+        layer_names = {m["id"]: m["name"] for m in manifest}
+
+        for lid in layer_ids:
+            layer_geo = Geometry()
+            target_group = self._find_element_by_id(svg, lid)
+            if target_group:
+                self._convert_group_to_geometry(
+                    target_group, layer_geo, final_dims_mm
+                )
+
+            # Normalize to the MASTER coordinate system (Y-down 0-1)
+            # We do NOT flip this to Y-Up here. SourceAssetSegment stores
+            # Y-Down geometry. WorkPiece.boundaries flips it to Y-Up for use.
+            self._normalize_geometry(layer_geo, width_px, height_px)
+
+            if not layer_geo.is_empty():
+                # Create Segment
+                segment = SourceAssetSegment(
+                    source_asset_uid=source.uid,
+                    segment_mask_geometry=layer_geo,
+                    vectorization_spec=PassthroughSpec(),
+                )
+
+                # Create WorkPiece
+                wp_name = layer_names.get(lid, f"Layer {lid}")
+                wp = WorkPiece(name=wp_name, source_segment=segment)
+                wp.matrix = master_wp.matrix
+                wp.natural_width_mm = master_wp.natural_width_mm
+                wp.natural_height_mm = master_wp.natural_height_mm
+
+                # Create Container Layer
+                new_layer = Layer(name=wp_name)
+                new_layer.add_child(wp)
+                final_items.append(new_layer)
+
+        if not final_items:
+            # Fallback if no specific layers found (shouldn't happen
+            # with filter)
+            return [master_wp]
+
+        return final_items
+
+    def _find_element_by_id(self, container, target_id):
+        """Recursively finds an element by ID in the svgelements tree."""
+        if (
+            hasattr(container, "values")
+            and container.values.get("id") == target_id
+        ):
+            return container
+        if hasattr(container, "__iter__"):
+            for child in container:
+                found = self._find_element_by_id(child, target_id)
+                if found:
+                    return found
+        return None
+
+    def _convert_group_to_geometry(self, group, geo, final_dims_mm):
+        """Converts a specific group's subtree to geometry."""
+        final_width_mm, final_height_mm = final_dims_mm
+        avg_dim = max(final_width_mm, final_height_mm, 1.0)
+        avg_scale = avg_dim / 960
+        tolerance = 0.1 / avg_scale if avg_scale > 1e-9 else 0.1
+
+        def recurse(element):
+            try:
+                path = Path(element)
+                path.reify()
+                self._add_path_to_geometry(path, geo, tolerance)
+            except (AttributeError, TypeError):
+                if isinstance(element, Group) or hasattr(element, "__iter__"):
+                    for child in element:
+                        recurse(child)
+
+        recurse(group)
 
     def _get_final_dimensions(
         self, source: SourceAsset
