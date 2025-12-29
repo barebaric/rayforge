@@ -8,9 +8,15 @@ A **layer** in Rayforge is:
 
 - **A container** for workpieces (imported shapes, images, text)
 - **A workflow** defining how those workpieces are processed
-- **An execution unit** processed sequentially during jobs
+- **A step** processed sequentially during jobs
 
-**Key concept:** Layers are processed in order, one after another, allowing you to control the sequence of operations.
+**Key concept:** Layers are processed in order, one after another, allowing
+you to control the sequence of operations.
+
+!!! note "Layers and Workpieces"
+    A layer contains one or more workpieces. When importing SVG files with
+    layers, each layer from your design becomes a separate layer in Rayforge.
+    This lets you keep your design organized exactly as you created it.
 
 ---
 
@@ -26,6 +32,7 @@ The most common multi-layer workflow:
 - **Layer 2:** Contour cut the outline
 
 **Why separate layers?**
+
 - Engraving first ensures the piece doesn't move during engraving
 - Cutting last prevents pieces from falling before engraving completes
 - Different power/speed settings for each operation
@@ -39,6 +46,7 @@ For thick materials:
 - **Layer 3:** Optional third pass if needed
 
 **Benefits:**
+
 - Reduces charring compared to single high-power pass
 - Each layer can have different speed/power settings
 
@@ -51,21 +59,30 @@ Different materials in one job:
 - **Layer 3:** Mark metal parts
 
 **Requirements:**
+
 - Each layer targets different areas of the bed
 - Different speed/power/focus for each material
 
-**4. Color Layer Mapping**
+**4. SVG Layer Import**
 
-Organize by color:
+Import SVG files with existing layer structure:
 
-- **Layer 1:** All red paths (cutting layer)
-- **Layer 2:** All black paths (engraving layer)
-- **Layer 3:** All blue paths (scoring layer)
+- **Layer 1:** Engraving elements from SVG
+- **Layer 2:** Cutting elements from SVG
+- **Layer 3:** Scoring elements from SVG
 
 **Workflow:**
-- Import SVG with color-coded paths
-- Rayforge can auto-assign paths to layers by color
-- Each layer gets appropriate operation settings
+
+- Import an SVG file that has layers
+- Enable "Use Original Vectors" in the import dialog
+- Select which layers to import from the detected layers list
+- Each layer becomes a separate layer in Rayforge
+
+**Requirements:**
+
+- Your SVG file must use layers (created in Inkscape or similar software)
+- Enable "Use Original Vectors" when importing
+- Layer names are preserved from your design software
 
 ---
 
@@ -83,13 +100,17 @@ Organize by color:
 
 Each layer has:
 
-| Property | Description |
-|----------|-------------|
-| **Name** | User-facing label |
-| **Visible** | Toggle visibility in canvas and preview |
-| **Stock Item** | Optional material association |
-| **Workflow** | The operation(s) applied to workpieces in this layer |
-| **Workpieces** | The shapes/images contained in this layer |
+| Property       | Description                                          |
+| -------------- | ---------------------------------------------------- |
+| **Name**       | The name shown in the layer list                     |
+| **Visible**    | Toggle visibility in canvas and preview              |
+| **Stock Item** | Optional material association                        |
+| **Workflow**   | The operation(s) applied to workpieces in this layer |
+| **Workpieces** | The shapes/images contained in this layer            |
+
+!!! note "Layers as Containers"
+    Layers are containers for your workpieces. When importing SVG files with
+    layers, each layer from your design becomes a separate layer in Rayforge.
 
 ### Reordering Layers
 
@@ -101,6 +122,7 @@ To reorder:
 2. **Order matters** - layers execute from top to bottom
 
 **Example:**
+
 ```
 Layers Panel:
 1. Engrave Layer     Executes first
@@ -115,7 +137,8 @@ Layers Panel:
 3. **Confirm deletion** (all workpieces in the layer are removed)
 
 !!! warning "Deletion is Permanent"
-    Deleting a layer removes all its workpieces and workflow settings. Use Undo if you delete accidentally.
+    Deleting a layer removes all its workpieces and workflow settings. Use Undo
+    if you delete accidentally.
 
 ---
 
@@ -127,29 +150,60 @@ Layers Panel:
 2. **Drag the workpiece** to the desired layer in the Layers panel
 3. **Or use the properties panel** to change the workpiece's layer
 
-### Auto-Assignment by Color
+### SVG Layer Import
 
-When importing SVG files:
+When importing SVG files with "Use Original Vectors" enabled:
 
-1. **Enable "Assign by Color"** in import settings
-2. **Rayforge creates layers** based on stroke/fill colors
-3. **Each color** gets its own layer automatically
+1. **Enable "Use Original Vectors"** in the import dialog
+2. **Rayforge detects layers** from your SVG file
+3. **Select which layers** to import using the layer switches
+4. **Each selected layer** becomes a separate layer with its own workpiece
 
-**Example:** SVG with red, black, and blue paths:
-- Red paths  "Red Layer"
-- Black paths  "Black Layer"
-- Blue paths  "Blue Layer"
+!!! note "Layer Detection"
+    Rayforge automatically detects layers from your SVG file. Each layer
+    you created in your design software will appear as a separate layer in
+    Rayforge.
+
+!!! note "Vector Import Only"
+    Layer selection is only available when using direct vector import.
+    When using trace mode, the entire SVG is processed as one workpiece.
 
 ### Moving Workpieces Between Layers
 
 **Drag and drop:**
+
 - Select workpiece(s) in the canvas or Document panel
 - Drag to target layer in Layers panel
 
 **Cut and paste:**
+
 - Cut workpiece from current layer (Ctrl+X)
 - Select target layer
 - Paste (Ctrl+V)
+
+### SVG Import Dialog
+
+When importing SVG files, the import dialog provides options that affect
+layer handling:
+
+**Import Mode:**
+
+- **Use Original Vectors:** Preserves your vector paths and layer structure.
+  When enabled, a "Layers" section appears showing all layers from your file.
+- **Trace Mode:** Converts the SVG to a bitmap and traces the outlines.
+  Layer selection is disabled in this mode.
+
+**Layers Section (Vector Import Only):**
+
+- Shows all layers from your SVG file
+- Each layer has a toggle switch to enable/disable import
+- Layer names from your design software are preserved
+- Only selected layers are imported as separate layers
+
+!!! tip "Preparing SVG Files for Layer Import"
+    To use SVG layer import, create your design with layers in software like
+    Inkscape. Use the Layers panel to organize your design, and Rayforge
+    will preserve that structure.
 
 ---
 
@@ -157,33 +211,39 @@ When importing SVG files:
 
 Each layer has a **Workflow** that defines how its workpieces are processed.
 
-### Workflow Structure
+### Setting Up Layer Workflows
 
-A workflow consists of:
+For each layer, you choose an operation type and configure its settings:
 
-1. **Producer** - Generates initial toolpaths from workpieces
-   - Contour, Raster, Depth Engraving, etc.
+**Operation Types:**
 
-2. **Transformers** (optional) - Modify toolpaths
-   - Overscan, Kerf adjustment, Tabs, etc.
+- **Contour** - Follows outlines (for cutting or scoring)
+- **Raster Engraving** - Engraves images and fills areas
+- **Depth Engraving** - Creates varying depth engravings
 
-3. **Post-processing** - Final optimizations
-   - Path ordering, speed optimization
+**Optional Enhancements:**
 
-### Common Layer Workflows
+- **Tabs** - Small bridges to hold parts in place during cutting
+- **Overscan** - Extends cuts beyond the shape for cleaner edges
+- **Kerf Adjustment** - Compensates for the laser's cutting width
+
+### Common Layer Setups
 
 **Engraving Layer:**
-- Producer: Raster Engraving
+
+- Operation: Raster Engraving
 - Settings: 300-500 DPI, moderate speed
-- No transformers typically needed
+- Typically no additional options needed
 
 **Cutting Layer:**
-- Producer: Contour Cutting
-- Transformers: Tabs (for holding parts), Overscan (for clean edges)
+
+- Operation: Contour Cutting
+- Options: Tabs (to hold parts), Overscan (for clean edges)
 - Settings: Slower speed, higher power
 
 **Scoring Layer:**
-- Producer: Contour (without cutting through)
+
+- Operation: Contour (light power, doesn't cut through)
 - Settings: Low power, fast speed
 - Purpose: Fold lines, decorative lines
 
@@ -202,21 +262,23 @@ Control which layers are shown in the canvas and previews:
   - **Still included in generated G-code**
 
 **Use cases:**
+
 - Hide complex engraving layers while positioning cut layers
 - Declutter the canvas when working on specific layers
 - Focus on one layer at a time
 
 ### Visibility vs. Enabled
 
-| State | Canvas | Preview | G-code |
-|-------|--------|---------|--------|
-| **Visible & Enabled** |  |  |  |
-| **Hidden & Enabled** |  |  |  |
-| **Visible & Disabled** |  |  |  |
-| **Hidden & Disabled** |  |  |  |
+| State                  | Canvas | Preview | G-code |
+| ---------------------- | ------ | ------- | ------ |
+| **Visible & Enabled**  |        |         |        |
+| **Hidden & Enabled**   |        |         |        |
+| **Visible & Disabled** |        |         |        |
+| **Hidden & Disabled**  |        |         |        |
 
 !!! note "Disabling Layers"
-    To temporarily exclude a layer from jobs without deleting it, disable the layer's workflow or remove its operation.
+To temporarily exclude a layer from jobs without deleting it, turn off the
+layer's operation or disable it in the layer settings.
 
 ---
 
@@ -224,34 +286,28 @@ Control which layers are shown in the canvas and previews:
 
 ### How Layers are Processed
 
-During job execution:
-
-```
-FOR each layer (in order):
-  [Layer Start Hook]  (if configured)
-
-  FOR each workpiece in layer:
-    [Workpiece Start Hook]  (if configured)
-    ... execute workpiece operations ...
-    [Workpiece End Hook]  (if configured)
-
-  [Layer End Hook]  (if configured)
-```
+During job execution, Rayforge processes each layer in order from top to
+bottom. Within each layer, all workpieces are processed before moving to
+the next layer.
 
 ### Order Matters
 
 **Wrong order:**
+
 ```
 1. Cut Layer
 2. Engrave Layer
 ```
+
 **Problem:** Cut parts may fall out or move before engraving!
 
 **Correct order:**
+
 ```
 1. Engrave Layer
 2. Cut Layer
 ```
+
 **Why:** Engraving happens while part is still attached, then cutting frees it.
 
 ### Multiple Passes
@@ -286,33 +342,33 @@ Material 2 (3mm Plywood):
 ```
 
 **Workflow:**
+
 1. Process all Material 1 layers
 2. Swap materials
 3. Process all Material 2 layers
 
 **Alternative:** Use separate documents for different materials.
 
-### Conditional Layer Processing
+### Pausing Between Layers
 
-**Using hooks for layer control:**
+You can configure Rayforge to pause between layers. This is useful when you
+need to:
 
-Layer Start Hook:
-```gcode
-; Layer: {layer_name}
-M0 (Pause for material change)
-```
+- Change materials mid-job
+- Inspect progress before continuing
+- Adjust focus for different operations
 
-**Use case:** Pause between layers to inspect, adjust focus, or change materials.
+To set up layer pauses, use the hooks feature in your machine settings.
 
 ### Layer-Specific Settings
 
 Each layer's workflow can have unique settings:
 
-| Layer | Operation | Speed | Power | Passes |
-|-------|-----------|-------|-------|--------|
-| Engrave | Raster | 300 mm/min | 20% | 1 |
-| Score | Contour | 500 mm/min | 10% | 1 |
-| Cut | Contour | 100 mm/min | 90% | 2 |
+| Layer   | Operation | Speed      | Power | Passes |
+| ------- | --------- | ---------- | ----- | ------ |
+| Engrave | Raster    | 300 mm/min | 20%   | 1      |
+| Score   | Contour   | 500 mm/min | 10%   | 1      |
+| Cut     | Contour   | 100 mm/min | 90%   | 2      |
 
 ---
 
@@ -321,6 +377,7 @@ Each layer's workflow can have unique settings:
 ### Naming Conventions
 
 **Good layer names:**
+
 - "Engrave - Logo"
 - "Cut - Outer Contour"
 - "Score - Fold Lines"
@@ -328,6 +385,7 @@ Each layer's workflow can have unique settings:
 - "Pass 2 - Final Cut"
 
 **Poor layer names:**
+
 - "Layer 1", "Layer 2" (not descriptive)
 - Long descriptions (keep concise)
 
@@ -339,14 +397,29 @@ Each layer's workflow can have unique settings:
 4. **Use visibility** to focus on current work
 5. **Delete unused layers** to keep projects clean
 
+### Preparing SVG Files for Layer Import
+
+**For best results when importing SVG layers:**
+
+1. **Use the Layers panel** in your design software to organize your design
+2. **Assign meaningful names** to each layer (e.g., "Engrave", "Cut")
+3. **Keep layers flat** - avoid putting layers inside other layers
+4. **Save your file** and import into Rayforge
+5. **Verify layer detection** by checking the import dialog
+
+Rayforge works best with SVG files created in Inkscape or similar vector
+design software that supports layers.
+
 ### Performance
 
 **Many layers:**
+
 - No significant performance impact
 - 10-20 layers is common for complex jobs
 - Organize logically, not to minimize layer count
 
 **Simplify if needed:**
+
 - Combine similar operations into one layer when possible
 - Use fewer raster engravings (most resource-intensive)
 
@@ -379,6 +452,7 @@ Each layer's workflow can have unique settings:
 **Clarification:** This is normal if layers share the same XY area.
 
 **Solutions:**
+
 - Use layer visibility to hide other layers temporarily
 - Check 3D preview to see depth/order
 - Verify this is intentional (e.g., engraving then cutting same shape)
@@ -388,6 +462,38 @@ Each layer's workflow can have unique settings:
 **Problem:** Workpiece was assigned to incorrect layer.
 
 **Solution:** Drag workpiece to correct layer in Layers panel or Document tree.
+
+### SVG Layers Not Detected
+
+**Problem:** Importing an SVG file but no layers appear in the import dialog.
+
+**Solutions:**
+
+1. **Check SVG structure** - Open your file in Inkscape or similar software
+   to verify it has layers
+2. **Enable "Use Original Vectors"** - Layer selection is only available in
+   this import mode
+3. **Verify your design has layers** - Make sure you created layers in your
+   design software, not just groups
+4. **Check for nested layers** - Layers inside other layers may not be
+   detected properly
+5. **Re-save your file** - Sometimes re-saving with a current version of
+   your design software helps
+
+### SVG Layer Import Shows Wrong Content
+
+**Problem:** Imported layer shows content from other layers or is empty.
+
+**Solutions:**
+
+1. **Check layer selection** - Verify the correct layers are enabled in the
+   import dialog
+2. **Verify your design** - Open the original file in your design software
+   to confirm each layer contains the right content
+3. **Check for shared elements** - Elements that appear in multiple layers
+   may cause confusion
+4. **Try trace mode** - Use trace mode as a fallback if vector import has
+   issues
 
 ---
 
