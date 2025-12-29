@@ -934,16 +934,11 @@ class MainWindow(Adw.ApplicationWindow):
 
     def on_machine_selected_by_selector(self, sender, *, machine: Machine):
         """
-        Handles the 'machine_selected' signal from the MachineSelector widget.
-        The signature is compatible with the blinker library.
+        Handles the 'machine_selected' signal from the MachineSelector widget,
+        delegating the logic to the MachineManager.
         """
-        config = get_context().config
-        # The widget's signal is the source of truth for user-driven changes.
-        # We just need to update the global config.
-        if config.machine is None or config.machine.id != machine.id:
-            logger.info(f"User selected machine via dropdown: {machine.name}")
-            config.set_machine(machine)
-            self.surface.set_machine(machine)
+        context = get_context()
+        context.machine_mgr.set_active_machine(machine)
 
     def _on_machine_status_changed(self, machine: Machine, state: DeviceState):
         """Called when the active machine's state changes."""

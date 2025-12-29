@@ -54,7 +54,7 @@ class NoDeviceDriver(Driver):
     def get_setting_vars(self) -> List["VarSet"]:
         return [VarSet(title=_("No settings"))]
 
-    async def connect(self) -> None:
+    async def _connect_implementation(self) -> None:
         pass
 
     async def run(

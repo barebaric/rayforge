@@ -94,8 +94,12 @@ async def wait_for_tasks_to_finish(task_mgr: TaskManager):
 class TestMachine:
     """Test suite for the Machine model and its command handlers."""
 
-    def test_instantiation(self, machine: Machine):
+    @pytest.mark.asyncio
+    async def test_instantiation(
+        self, machine: Machine, task_mgr: TaskManager
+    ):
         """Test that a new machine defaults to using NoDeviceDriver."""
+        await wait_for_tasks_to_finish(task_mgr)
         assert isinstance(machine.driver, NoDeviceDriver)
         assert machine.name is not None
         assert machine.id is not None
@@ -113,6 +117,7 @@ class TestMachine:
         context_initializer,
     ):
         """Test that changing the driver triggers a rebuild and cleanup."""
+        await wait_for_tasks_to_finish(task_mgr)
         assert isinstance(machine.driver, NoDeviceDriver)
         assert machine.driver_name is None
 
@@ -135,11 +140,15 @@ class TestMachine:
         assert machine.driver_name == "OtherDriver"
         assert machine.driver_args == {"port": "/dev/null"}
 
-    def test_encode_ops_delegates_to_driver(self, machine: Machine, mocker):
+    @pytest.mark.asyncio
+    async def test_encode_ops_delegates_to_driver(
+        self, machine: Machine, mocker, task_mgr: TaskManager
+    ):
         """
         Verify that machine.encode_ops calls get_encoder on the active
         driver.
         """
+        await wait_for_tasks_to_finish(task_mgr)
         # --- Arrange ---
         # Set origin to TOP_LEFT so encode_ops does not create a copy of ops
         # for coordinate transformation.
@@ -173,13 +182,15 @@ class TestMachine:
         assert call_args[1] is machine
         assert call_args[2] is doc_context
 
-    def test_encode_ops_transforms_coordinates_for_origin(
-        self, machine: Machine, mocker
+    @pytest.mark.asyncio
+    async def test_encode_ops_transforms_coordinates_for_origin(
+        self, machine: Machine, mocker, task_mgr: TaskManager
     ):
         """
         Verify that encode_ops correctly applies coordinate transformations
         when the machine origin is not Top-Left.
         """
+        await wait_for_tasks_to_finish(task_mgr)
         # --- Arrange ---
         from dataclasses import dataclass
 
@@ -232,8 +243,12 @@ class TestMachine:
         assert matrix_arg[0, 0] == 1.0  # X scale
         assert matrix_arg[1, 1] == -1.0  # Y scale
 
-    def test_reverse_axis_setters(self, machine: Machine, mocker):
+    @pytest.mark.asyncio
+    async def test_reverse_axis_setters(
+        self, machine: Machine, mocker, task_mgr: TaskManager
+    ):
         """Test setting reverse axis flags emits changed signal."""
+        await wait_for_tasks_to_finish(task_mgr)
         changed_spy = mocker.spy(machine.changed, "send")
 
         # Set X reverse
@@ -262,6 +277,7 @@ class TestMachine:
         self, machine: Machine, task_mgr: TaskManager
     ):
         """Test that reverse axis flags are serialized/deserialized."""
+        await wait_for_tasks_to_finish(task_mgr)
         machine.set_reverse_x_axis(True)
         machine.set_reverse_y_axis(True)
         machine.set_reverse_z_axis(True)
@@ -322,6 +338,7 @@ class TestMachine:
         with the expected arguments, including the `doc`.
         """
         # --- Arrange ---
+        await wait_for_tasks_to_finish(task_mgr)
         # Add a step to the workflow, which is required for job assembly.
         step = steps.create_contour_step(context_initializer)
         workflow = doc.active_layer.workflow
@@ -364,6 +381,7 @@ class TestMachine:
     ):
         """Verify that framing a job calls the driver's run method."""
         # --- Arrange ---
+        await wait_for_tasks_to_finish(task_mgr)
         # Configure the machine to be capable of framing.
         head = machine.get_default_head()
         head.set_frame_power(1)
@@ -398,8 +416,10 @@ class TestMachine:
         assert not ops.is_empty()
         assert received_doc is doc
 
-    def test_can_focus(self, machine: Machine):
+    @pytest.mark.asyncio
+    async def test_can_focus(self, machine: Machine, task_mgr: TaskManager):
         """Test that can_focus returns True when any head has focus power."""
+        await wait_for_tasks_to_finish(task_mgr)
         # Default state - focus power is 0
         assert machine.can_focus() is False
 
@@ -431,6 +451,7 @@ class TestMachine:
         Test simple fire-and-forget commands like home, cancel, etc.,
         ensuring they correctly delegate to the driver.
         """
+        await wait_for_tasks_to_finish(task_mgr)
         machine_cmd = MachineCmd(doc_editor)
 
         # Spy on the INSTANCE methods now that the fixture is stable
@@ -478,14 +499,22 @@ class TestMachine:
         select_tool_spy.assert_called_once_with(5)
 
     @pytest.mark.asyncio
-    async def test_shutdown_cleans_up_driver(self, machine: Machine, mocker):
+    async def test_shutdown_cleans_up_driver(
+        self, machine: Machine, mocker, task_mgr: TaskManager
+    ):
         """Verify that shutting down the machine calls driver.cleanup()."""
+        await wait_for_tasks_to_finish(task_mgr)
         cleanup_spy = mocker.spy(machine.driver, "cleanup")
         await machine.shutdown()
+        await wait_for_tasks_to_finish(task_mgr)
         cleanup_spy.assert_called_once()
 
-    def test_acceleration_setter(self, machine: Machine, mocker):
+    @pytest.mark.asyncio
+    async def test_acceleration_setter(
+        self, machine: Machine, mocker, task_mgr: TaskManager
+    ):
         """Test that the acceleration setter works correctly."""
+        await wait_for_tasks_to_finish(task_mgr)
         # Test setting acceleration
         machine.set_acceleration(2000)
         assert machine.acceleration == 2000
@@ -500,6 +529,7 @@ class TestMachine:
         self, machine: Machine, task_mgr: TaskManager
     ):
         """Test that acceleration is properly serialized and deserialized."""
+        await wait_for_tasks_to_finish(task_mgr)
         # Set a specific acceleration value
         machine.set_acceleration(2500)
 
@@ -519,8 +549,12 @@ class TestMachine:
         # Check that acceleration is preserved
         assert new_machine.acceleration == 2500
 
-    def test_get_default_head(self, machine: Machine):
+    @pytest.mark.asyncio
+    async def test_get_default_head(
+        self, machine: Machine, task_mgr: TaskManager
+    ):
         """Returns the first laser head, or raises an error if none exist."""
+        await wait_for_tasks_to_finish(task_mgr)
         default_head = machine.get_default_head()
         assert isinstance(default_head, Laser)
         assert len(machine.heads) == 1
@@ -542,15 +576,19 @@ class TestMachine:
         ):
             machine.get_default_head()
 
-    def test_home(self, machine: Machine):
+    @pytest.mark.asyncio
+    async def test_home(self, machine: Machine, task_mgr: TaskManager):
         """Test that dummy driver has all jog features."""
+        await wait_for_tasks_to_finish(task_mgr)
         assert machine.can_home()
         assert machine.can_home(Axis.X)
         assert machine.can_home(Axis.Y)
         assert machine.can_home(Axis.Z)
 
-    def test_jog(self, machine: Machine):
+    @pytest.mark.asyncio
+    async def test_jog(self, machine: Machine, task_mgr: TaskManager):
         """Test that dummy driver has all jog features."""
+        await wait_for_tasks_to_finish(task_mgr)
         assert machine.can_jog()
         assert machine.can_jog(Axis.X)
         assert machine.can_jog(Axis.Y)
@@ -565,6 +603,7 @@ class TestMachine:
         context_initializer,
     ):
         """Test that set_power correctly calls driver with percentage."""
+        await wait_for_tasks_to_finish(task_mgr)
         # Mock the driver's set_power method
         mock_set_power = mocker.spy(machine.driver, "set_power")
 
@@ -584,6 +623,7 @@ class TestMachine:
         context_initializer,
     ):
         """Test that set_power with 0% calls driver with disable command."""
+        await wait_for_tasks_to_finish(task_mgr)
         # Mock the driver's set_power method
         mock_set_power = mocker.spy(machine.driver, "set_power")
 
@@ -603,6 +643,7 @@ class TestMachine:
         context_initializer,
     ):
         """Test that set_power with 100% calls driver with max power."""
+        await wait_for_tasks_to_finish(task_mgr)
         # Mock the driver's set_power method
         mock_set_power = mocker.spy(machine.driver, "set_power")
 
@@ -622,6 +663,7 @@ class TestMachine:
         context_initializer,
     ):
         """Test that set_power with specific head calls driver correctly."""
+        await wait_for_tasks_to_finish(task_mgr)
         # Mock driver's set_power method
         mock_set_power = mocker.spy(machine.driver, "set_power")
 
@@ -636,8 +678,12 @@ class TestMachine:
         # Verify driver method was called with correct arguments
         mock_set_power.assert_called_once_with(laser2, 75)
 
-    def test_dialect_property(self, machine: Machine):
+    @pytest.mark.asyncio
+    async def test_dialect_property(
+        self, machine: Machine, task_mgr: TaskManager
+    ):
         """Test that dialect property returns correct dialect instance."""
+        await wait_for_tasks_to_finish(task_mgr)
         from rayforge.machine.models.dialect import get_dialect
 
         # Get the dialect through the property
@@ -652,8 +698,12 @@ class TestMachine:
         expected_dialect = get_dialect(machine.dialect_uid)
         assert dialect == expected_dialect
 
-    def test_dialect_property_changes_with_dialect_uid(self, machine: Machine):
+    @pytest.mark.asyncio
+    async def test_dialect_property_changes_with_dialect_uid(
+        self, machine: Machine, task_mgr: TaskManager
+    ):
         """Test that dialect property reflects changes to dialect_uid."""
+        await wait_for_tasks_to_finish(task_mgr)
         from rayforge.machine.models.dialect_builtins import (
             GRBL_DIALECT,
             SMOOTHIEWARE_DIALECT,
@@ -673,7 +723,11 @@ class TestMachine:
         machine.set_dialect_uid("grbl")
         assert machine.dialect == GRBL_DIALECT
 
-    def test_can_g0_with_speed(self, machine: Machine):
+    @pytest.mark.asyncio
+    async def test_can_g0_with_speed(
+        self, machine: Machine, task_mgr: TaskManager
+    ):
+        await wait_for_tasks_to_finish(task_mgr)
         assert machine.can_g0_with_speed()
 
     @pytest.mark.asyncio
@@ -687,37 +741,37 @@ class TestMachine:
             machine.set_driver(SmoothieDriver, {"host": "test", "port": 23})
             # Wait for the async set_driver operation to complete
             await wait_for_tasks_to_finish(task_mgr)
+
+            # Test G0 with speed support
+            assert machine.can_g0_with_speed()
+
+            # Test homing support
+            assert machine.can_home()
+            assert machine.can_home(Axis.X)
+            assert machine.can_home(Axis.Y)
+            assert machine.can_home(Axis.Z)
+
+            # Test jogging support
+            assert machine.can_jog()
+            assert machine.can_jog(Axis.X)
+            assert machine.can_jog(Axis.Y)
+            assert machine.can_jog(Axis.Z)
         finally:
             # Ensure the driver is cleaned up to stop any pending tasks
             await machine.shutdown()
-
-        # Test G0 with speed support
-        assert machine.can_g0_with_speed()
-
-        # Test homing support
-        assert machine.can_home()
-        assert machine.can_home(Axis.X)
-        assert machine.can_home(Axis.Y)
-        assert machine.can_home(Axis.Z)
-
-        # Test jogging support
-        assert machine.can_jog()
-        assert machine.can_jog(Axis.X)
-        assert machine.can_jog(Axis.Y)
-        assert machine.can_jog(Axis.Z)
+            await wait_for_tasks_to_finish(task_mgr)
 
     @pytest.mark.asyncio
     async def test_new_driver_methods_grbl_network(
-        self, machine: Machine, context_initializer
+        self, machine: Machine, context_initializer, task_mgr: TaskManager
     ):
         """Test new driver methods for GrblNetworkDriver."""
         from rayforge.machine.driver.grbl import GrblNetworkDriver
 
         try:
             # Create driver directly to avoid setup issues
-            driver = GrblNetworkDriver(context_initializer, machine)
-            driver.setup(host="test")
-            machine.driver = driver
+            machine.set_driver(GrblNetworkDriver, {"host": "test"})
+            await wait_for_tasks_to_finish(task_mgr)
 
             # Test G0 with speed support (GRBL doesn't support this)
             assert not machine.can_g0_with_speed()
@@ -735,19 +789,21 @@ class TestMachine:
             assert machine.can_jog(Axis.Z)
         finally:
             await machine.shutdown()
+            await wait_for_tasks_to_finish(task_mgr)
 
     @pytest.mark.asyncio
     async def test_new_driver_methods_grbl_serial(
-        self, machine: Machine, context_initializer
+        self, machine: Machine, context_initializer, task_mgr: TaskManager
     ):
         """Test new driver methods for GrblSerialDriver."""
         from rayforge.machine.driver.grbl_serial import GrblSerialDriver
 
         try:
             # Create driver directly to avoid setup issues
-            driver = GrblSerialDriver(context_initializer, machine)
-            driver.setup(port="/dev/test", baudrate=115200)
-            machine.driver = driver
+            machine.set_driver(
+                GrblSerialDriver, {"port": "/dev/test", "baudrate": 115200}
+            )
+            await wait_for_tasks_to_finish(task_mgr)
 
             # Test G0 with speed support (GRBL doesn't support this)
             assert not machine.can_g0_with_speed()
@@ -765,10 +821,11 @@ class TestMachine:
             assert machine.can_jog(Axis.Z)
         finally:
             await machine.shutdown()
+            await wait_for_tasks_to_finish(task_mgr)
 
     @pytest.mark.asyncio
     async def test_home_method_with_multiple_axes(
-        self, machine, mocker, context_initializer
+        self, machine, mocker, context_initializer, task_mgr
     ):
         """
         Test that home method accepts multiple axes using binary operators.
@@ -779,9 +836,10 @@ class TestMachine:
         mock_send_and_wait = mocker.AsyncMock()
 
         # Create driver directly to avoid setup issues
-        driver = SmoothieDriver(context_initializer, machine)
-        driver._send_and_wait = mock_send_and_wait
-        machine.driver = driver
+        machine.set_driver(SmoothieDriver, {"host": "test", "port": 23})
+        await wait_for_tasks_to_finish(task_mgr)
+
+        machine.driver._send_and_wait = mock_send_and_wait
 
         # Test home with single axis
         await machine.home(Axis.X)
@@ -848,53 +906,54 @@ class TestMachine:
         # Verify that the driver's method was called with the correct argument
         run_raw_spy.assert_called_once_with(test_gcode)
 
-    def test_reports_granular_progress_no_device_driver(
-        self, machine: Machine
+    @pytest.mark.asyncio
+    async def test_reports_granular_progress_no_device_driver(
+        self, machine: Machine, task_mgr: TaskManager
     ):
         """Test reports_granular_progress returns True with NoDeviceDriver."""
+        await wait_for_tasks_to_finish(task_mgr)
         # NoDeviceDriver is the default driver and should return True
         assert machine.reports_granular_progress
 
-    def test_reports_granular_progress_grbl_serial(
-        self, machine: Machine, context_initializer
+    @pytest.mark.asyncio
+    async def test_reports_granular_progress_grbl_serial(
+        self, machine: Machine, context_initializer, task_mgr
     ):
         """Test reports_granular_progress returns True for GrblSerialDriver."""
         from rayforge.machine.driver.grbl_serial import GrblSerialDriver
 
-        # Create driver directly to avoid setup issues
-        driver = GrblSerialDriver(context_initializer, machine)
-        driver.setup(port="/dev/test", baudrate=115200)
-        machine.driver = driver
+        machine.set_driver(
+            GrblSerialDriver, {"port": "/dev/test", "baudrate": 115200}
+        )
+        await wait_for_tasks_to_finish(task_mgr)
 
         # GrblSerialDriver should report granular progress
         assert machine.reports_granular_progress
 
-    def test_reports_granular_progress_grbl_network(
-        self, machine: Machine, context_initializer
+    @pytest.mark.asyncio
+    async def test_reports_granular_progress_grbl_network(
+        self, machine: Machine, context_initializer, task_mgr
     ):
         """
         Test reports_granular_progress returns False for GrblNetworkDriver.
         """
         from rayforge.machine.driver.grbl import GrblNetworkDriver
 
-        # Create driver directly to avoid setup issues
-        driver = GrblNetworkDriver(context_initializer, machine)
-        driver.setup(host="test")
-        machine.driver = driver
+        machine.set_driver(GrblNetworkDriver, {"host": "test"})
+        await wait_for_tasks_to_finish(task_mgr)
 
         # GrblNetworkDriver should not report granular progress
         assert not machine.reports_granular_progress
 
-    def test_reports_granular_progress_smoothie(
-        self, machine: Machine, context_initializer
+    @pytest.mark.asyncio
+    async def test_reports_granular_progress_smoothie(
+        self, machine: Machine, context_initializer, task_mgr
     ):
         """Test reports_granular_progress returns True for SmoothieDriver."""
         from rayforge.machine.driver.smoothie import SmoothieDriver
 
-        # Create driver directly to avoid setup issues
-        driver = SmoothieDriver(context_initializer, machine)
-        driver.setup(host="test", port=23)
-        machine.driver = driver
+        machine.set_driver(SmoothieDriver, {"host": "test", "port": 23})
+        await wait_for_tasks_to_finish(task_mgr)
 
         # SmoothieDriver should report granular progress
         assert machine.reports_granular_progress
@@ -1019,7 +1078,8 @@ class TestMachine:
             (True, True, True, 5.0, (-5.0, -5.0, -5.0)),
         ],
     )
-    def test_get_visual_jog_deltas(
+    @pytest.mark.asyncio
+    async def test_get_visual_jog_deltas(
         self,
         machine: Machine,
         reverse_x,
@@ -1027,11 +1087,13 @@ class TestMachine:
         reverse_z,
         distance,
         expected,
+        task_mgr: TaskManager,
     ):
         """
         Tests that the jog delta calculation correctly inverts axes based on
         the reverse settings.
         """
+        await wait_for_tasks_to_finish(task_mgr)
         machine.set_reverse_x_axis(reverse_x)
         machine.set_reverse_y_axis(reverse_y)
         machine.set_reverse_z_axis(reverse_z)
@@ -1039,10 +1101,14 @@ class TestMachine:
         deltas = machine.get_visual_jog_deltas(distance)
         assert deltas == expected
 
-    def test_would_jog_exceed_limits(self, machine: Machine, mocker):
+    @pytest.mark.asyncio
+    async def test_would_jog_exceed_limits(
+        self, machine: Machine, mocker, task_mgr: TaskManager
+    ):
         """
         Tests the soft limit checking logic under various conditions.
         """
+        await wait_for_tasks_to_finish(task_mgr)
         machine.set_dimensions(200, 300)  # Limits are 0-200, 0-300
         machine.set_soft_limits_enabled(True)
         mocker.patch.object(

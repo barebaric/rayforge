@@ -22,6 +22,7 @@ from ..driver.driver import (
     DeviceStatus,
     DriverSetupError,
     DriverPrecheckError,
+    ResourceBusyError,
 )
 from ..driver.dummy import NoDeviceDriver
 from ..driver import get_driver_cls
@@ -76,6 +77,7 @@ class Machine:
 
         self.driver: Driver = NoDeviceDriver(context, self)
 
+        self.auto_connect: bool = True
         self.home_on_start: bool = False
         self.clear_alarm_on_connect: bool = False
         self.single_axis_homing_enabled: bool = True
@@ -113,6 +115,22 @@ class Machine:
 
         self._connect_driver_signals()
         self.add_head(Laser())
+
+    async def connect(self):
+        """Public method to connect the driver."""
+        if self.driver is not None:
+            await self.driver.connect()
+
+    async def disconnect(self):
+        """Public method to disconnect the driver."""
+        # Cancel any pending connection tasks for this driver
+        task_mgr.cancel_task((self.id, "driver-connect"))
+        if self.driver is not None:
+            await self.driver.cleanup()
+            # After cleanup, the driver might need to be rebuilt to reconnect
+            task_mgr.add_coroutine(
+                self._rebuild_driver_instance, key=(self.id, "rebuild-driver")
+            )
 
     async def shutdown(self):
         """
@@ -155,8 +173,8 @@ class Machine:
         self, ctx: Optional["ExecutionContext"] = None
     ):
         """
-        Instantiates, sets up, and connects the driver based on the
-        machine's current configuration. This is managed by the task manager.
+        Instantiates and sets up the driver based on the machine's current
+        configuration. It does NOT connect it.
         """
         logger.info(
             f"Machine '{self.name}' (id:{self.id}) rebuilding driver to "
@@ -191,27 +209,14 @@ class Machine:
             new_driver.setup_error = str(e)
 
         self.driver = new_driver
-
         self._connect_driver_signals()
 
-        # A setup error prevents connection, but a precheck error does not.
-        if self.driver is not None and not self.driver.setup_error:
-            # Add the connect task with a key unique to this machine
-            task_mgr.add_coroutine(
-                lambda ctx: self.driver.connect(),
-                key=(self.id, "driver-connect"),
-            )
-        else:
-            logger.error(
-                "Driver setup failed, connection will not be attempted."
-            )
-
         # Notify the UI of the change *after* the new driver is in place.
-        # This MUST be done on the main thread to prevent UI corruption.
         self._scheduler(self.changed.send, self)
 
         # Now it is safe to clean up the old driver.
-        await old_driver.cleanup()
+        if old_driver:
+            await old_driver.cleanup()
 
     def _reset_status(self):
         """Resets status to a disconnected/unknown state and signals it."""
@@ -866,6 +871,7 @@ class Machine:
                 "name": self.name,
                 "driver": self.driver_name,
                 "driver_args": self.driver_args,
+                "auto_connect": self.auto_connect,
                 "clear_alarm_on_connect": self.clear_alarm_on_connect,
                 "home_on_start": self.home_on_start,
                 "single_axis_homing_enabled": self.single_axis_homing_enabled,
@@ -964,6 +970,7 @@ class Machine:
         ma.name = ma_data.get("name", ma.name)
         ma.driver_name = ma_data.get("driver")
         ma.driver_args = ma_data.get("driver_args", {})
+        ma.auto_connect = ma_data.get("auto_connect", ma.auto_connect)
         ma.clear_alarm_on_connect = ma_data.get(
             "clear_alarm_on_connect", ma.clear_alarm_on_connect
         )
@@ -1047,11 +1054,6 @@ class Machine:
         ma.machine_hours = MachineHours.from_dict(hours_data)
         ma.machine_hours.changed.connect(ma._on_machine_hours_changed)
 
-        if not is_inert:
-            task_mgr.add_coroutine(
-                ma._rebuild_driver_instance, key=(ma.id, "rebuild-driver")
-            )
-
         return ma
 
 
@@ -1075,6 +1077,94 @@ class MachineManager:
         if tasks:
             await asyncio.gather(*tasks)
         logger.info("All machines shut down.")
+
+    def initialize_connections(self):
+        """
+        Initializes machine connections on startup by rebuilding all drivers
+        and then connecting, prioritizing the active machine.
+        """
+        context = get_context()
+        active_machine = context.config.machine
+
+        # Define a lambda to use with add_coroutine that captures the machine
+        def connect_task(m):
+            return lambda ctx: self._rebuild_and_connect_machine(m)
+
+        # First, schedule the task for the active machine
+        if active_machine:
+            task_mgr.add_coroutine(connect_task(active_machine))
+
+        # Then, schedule tasks for the rest
+        for machine in self.machines.values():
+            if machine is not active_machine:
+                task_mgr.add_coroutine(connect_task(machine))
+
+    async def _rebuild_and_connect_machine(self, machine: "Machine"):
+        """
+        A single, sequenced task that rebuilds a machine's driver and then
+        connects if auto_connect is on.
+        """
+        await machine._rebuild_driver_instance()
+        if machine.auto_connect:
+            await self._safe_connect(machine)
+
+    async def _safe_connect(self, machine: "Machine"):
+        """
+        Attempts to connect a machine, suppressing ResourceBusyErrors.
+        """
+        try:
+            await machine.connect()
+        except ResourceBusyError:
+            context = get_context()
+            if machine is context.config.machine:
+                logger.warning(
+                    f"Active machine '{machine.name}' could not connect "
+                    "because resource is busy."
+                )
+            else:
+                logger.debug(
+                    f"Inactive machine '{machine.name}' deferred connection: "
+                    "resource busy."
+                )
+        except Exception as e:
+            logger.error(
+                f"Failed to auto-connect machine '{machine.name}': {e}"
+            )
+
+    def set_active_machine(self, new_machine: Machine):
+        """
+        Sets the active machine, handling the connection lifecycle for
+        shared resources.
+        """
+        context = get_context()
+        old_machine = context.config.machine
+
+        if old_machine and old_machine.id == new_machine.id:
+            return  # No change
+
+        logger.info(f"Switching active machine to '{new_machine.name}'")
+
+        async def switch_routine(ctx):
+            # 1. Disconnect the old machine if it's connected
+            if old_machine and old_machine.is_connected():
+                logger.info(
+                    f"Disconnecting previous machine '{old_machine.name}'"
+                )
+                await old_machine.disconnect()
+                # Add a small delay for the OS to release the port
+                await asyncio.sleep(0.2)
+
+            # 2. Update the global config. This triggers UI updates.
+            context.config.set_machine(new_machine)
+
+            # 3. Connect the new machine if it's set to auto-connect
+            if new_machine.auto_connect:
+                logger.info(
+                    f"Connecting to new active machine '{new_machine.name}'"
+                )
+                await self._safe_connect(new_machine)
+
+        task_mgr.add_coroutine(switch_routine)
 
     def filename_from_id(self, machine_id: str) -> Path:
         return self.base_dir / f"{machine_id}.yaml"

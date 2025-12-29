@@ -49,9 +49,17 @@ class SmoothieDriver(Driver):
     def __init__(self, context: RayforgeContext, machine: "Machine"):
         super().__init__(context, machine)
         self.telnet: Optional[TelnetTransport] = None
+        self.host: Optional[str] = None
+        self.port: Optional[int] = None
         self.keep_running = False
         self._connection_task: Optional[asyncio.Task] = None
         self._ok_event = asyncio.Event()
+
+    @property
+    def resource_uri(self) -> Optional[str]:
+        if self.host:
+            return f"tcp://{self.host}:{self.port}"
+        return None
 
     @classmethod
     def precheck(cls, **kwargs: Any) -> None:
@@ -95,6 +103,9 @@ class SmoothieDriver(Driver):
             raise DriverSetupError(_("Hostname must be configured."))
         super().setup()
 
+        self.host = host
+        self.port = port
+
         # Initialize transports
         self.telnet = TelnetTransport(host, port)
         self.telnet.received.connect(self.on_telnet_data_received)
@@ -113,7 +124,7 @@ class SmoothieDriver(Driver):
             self.telnet = None
         await super().cleanup()
 
-    async def connect(self):
+    async def _connect_implementation(self):
         self.keep_running = True
         self._connection_task = asyncio.create_task(self._connection_loop())
 

@@ -82,6 +82,12 @@ class GrblSerialDriver(Driver):
         self._buffer_has_space = asyncio.Event()
         self._job_exception: Optional[Exception] = None
 
+    @property
+    def resource_uri(self) -> Optional[str]:
+        if self.serial_transport and self.serial_transport.port:
+            return f"serial://{self.serial_transport.port}"
+        return None
+
     @classmethod
     def precheck(cls, **kwargs: Any) -> None:
         """Checks for systemic serial port issues before setup."""
@@ -202,7 +208,7 @@ class GrblSerialDriver(Driver):
         )
         await self.serial_transport.send(payload)
 
-    async def connect(self):
+    async def _connect_implementation(self):
         """
         Launches the connection loop as a background task and returns,
         allowing the UI to remain responsive.
