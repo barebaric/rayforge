@@ -41,6 +41,10 @@ class UnitSpinRowHelper:
         self._adj_handler_id = adjustment.connect(
             "value-changed", self._on_value_changed
         )
+        # Also connect to notify::text to detect keyboard input changes
+        self._text_handler_id = self.spin_row.connect(
+            "notify::text", self._on_text_changed
+        )
         self._config_handler_id = get_context().config.changed.connect(
             self._on_config_changed
         )
@@ -54,13 +58,20 @@ class UnitSpinRowHelper:
         adj = self.spin_row.get_adjustment()
         if adj and self._adj_handler_id:
             adj.disconnect(self._adj_handler_id)
+        if self._text_handler_id:
+            self.spin_row.disconnect(self._text_handler_id)
         if self._config_handler_id:
             get_context().config.changed.disconnect(self._config_handler_id)
         self._adj_handler_id = None
+        self._text_handler_id = None
         self._config_handler_id = None
         self._destroy_handler_id = None
 
     def _on_value_changed(self, adjustment):
+        if not self._is_updating:
+            self.changed.send(self)
+
+    def _on_text_changed(self, spin_row, pspec):
         if not self._is_updating:
             self.changed.send(self)
 
