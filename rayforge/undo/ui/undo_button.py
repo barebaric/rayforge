@@ -35,7 +35,7 @@ class _HistoryButton(Gtk.Box):
         self.append(self.main_button)
 
         # 2. The dropdown button for history
-        self.menu_button = Gtk.MenuButton(icon_name="pan-down-symbolic")
+        self.menu_button = Gtk.MenuButton(child=get_icon("pan-down-symbolic"))
         self.menu_button.set_tooltip_text(_("Show History"))
         popover = Gtk.Popover()
         self.menu_button.set_popover(popover)

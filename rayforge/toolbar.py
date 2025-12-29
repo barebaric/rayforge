@@ -119,9 +119,7 @@ class MainToolbar(Gtk.Box):
 
         # Add a button to toggle execution simulation
         self.simulate_button = Gtk.ToggleButton()
-        self.simulate_button.set_child(
-            get_icon("media-playback-start-symbolic")
-        )
+        self.simulate_button.set_child(get_icon("play-arrow-symbolic"))
         self.simulate_button.set_active(False)
         self.simulate_button.set_tooltip_text(_("Toggle execution simulation"))
         self.simulate_button.set_action_name("win.simulate_mode")
