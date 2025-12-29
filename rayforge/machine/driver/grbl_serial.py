@@ -532,7 +532,19 @@ class GrblSerialDriver(Driver):
         self._is_cancelled = False
         request = CommandRequest(command)
         await self._command_queue.put(request)
-        await asyncio.wait_for(request.finished.wait(), timeout=10.0)
+        try:
+            await asyncio.wait_for(request.finished.wait(), timeout=10.0)
+        except (asyncio.TimeoutError, asyncio.CancelledError):
+            # If the wait times out or is cancelled, we MUST ensure the
+            # finished event is set. Otherwise, the _process_command_queue
+            # background task will hang forever awaiting this request, holding
+            # the lock and preventing any future commands from running.
+            logger.warning(
+                f"Command '{command}' timed out or was cancelled. "
+                "Unblocking queue."
+            )
+            request.finished.set()
+            raise
         return request.response_lines
 
     async def set_hold(self, hold: bool = True) -> None:
