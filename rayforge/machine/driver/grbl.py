@@ -631,6 +631,8 @@ class GrblNetworkDriver(Driver):
 
     async def write_setting(self, key: str, value: Any) -> None:
         """Writes a setting by sending '$<key>=<value>'."""
+        if isinstance(value, bool):
+            value = 1 if value else 0
         cmd = f"${key}={value}"
         await self._execute_command(cmd)
 

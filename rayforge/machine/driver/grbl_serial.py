@@ -682,6 +682,8 @@ class GrblSerialDriver(Driver):
         self.settings_read.send(self, settings=result)
 
     async def write_setting(self, key: str, value: Any) -> None:
+        if isinstance(value, bool):
+            value = 1 if value else 0
         cmd = f"${key}={value}"
         await self._execute_command(cmd)
 
