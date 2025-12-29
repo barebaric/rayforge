@@ -5,6 +5,7 @@ from blinker import Signal
 from ...context import get_context
 from ...shared.ui.varsetwidget import VarSetWidget, VarSet
 from ...icons import get_icon
+from ..driver.driver import ResourceBusyError
 
 logger = logging.getLogger(__name__)
 
@@ -294,7 +295,16 @@ class DeviceSettingsPage(Adw.PreferencesPage):
         self._is_busy = False
         # Clear any stale settings from the UI by passing an empty list
         self._rebuild_settings_widgets([])
-        self._show_error(str(error))
+
+        # Friendly error message for resource busy
+        if isinstance(error, ResourceBusyError):
+            msg = _("Cannot connect: Used by '{machine}'").format(
+                machine=error.owner_name
+            )
+            self._show_error(msg)
+        else:
+            self._show_error(str(error))
+
         self._update_ui_state()
 
     def _on_setting_apply(self, sender: VarSetWidget, key: str):

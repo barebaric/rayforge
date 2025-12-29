@@ -72,6 +72,14 @@ class GrblNetworkDriver(Driver):
         self._current_request: Optional[CommandRequest] = None
         self._cmd_lock = asyncio.Lock()
 
+    @property
+    def resource_uri(self) -> Optional[str]:
+        if self.host:
+            # We assume port 80 is the control port for locking purposes
+            # even if ws_port is different.
+            return f"tcp://{self.host}:{self.port}"
+        return None
+
     @classmethod
     def precheck(cls, **kwargs: Any) -> None:
         host = cast(str, kwargs.get("host", ""))
@@ -318,7 +326,7 @@ class GrblNetworkDriver(Driver):
         await session.close()
         return data
 
-    async def connect(self):
+    async def _connect_implementation(self):
         if not self.host:
             self._update_connection_status(
                 TransportStatus.DISCONNECTED, "No host configured"

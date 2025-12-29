@@ -24,6 +24,7 @@ def mock_serial_transport(mocker):
     mock.send = AsyncMock()
     mock.received = MagicMock()
     mock.status_changed = MagicMock()
+    mock.port = "/dev/ttyUSB0"
     return mock
 
 

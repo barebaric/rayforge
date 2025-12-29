@@ -89,6 +89,7 @@ def main():
 
     gi.require_version("Adw", "1")
     from gi.repository import Adw, GLib
+    from rayforge.context import get_context
 
     class App(Adw.Application):
         def __init__(self, args):
@@ -110,6 +111,11 @@ def main():
                 self.win.connect("map", self._load_initial_files)
 
             self.win.present()
+
+            # Now that the UI is active, trigger the initial machine connections.
+            context = get_context()
+            if context.machine_mgr:
+                context.machine_mgr.initialize_connections()
 
         def _load_initial_files(self, widget):
             """
@@ -218,7 +224,6 @@ def main():
 
     # Import modules that depend on GTK or manage global state
     import rayforge.shared.tasker
-    from rayforge.context import get_context
 
     # Initialize the full application context. This creates all managers
     # and sets up the backward-compatibility shim for old code.

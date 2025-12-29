@@ -46,6 +46,22 @@ class DeviceConnectionError(Exception):
     pass
 
 
+class ResourceBusyError(DeviceConnectionError):
+    """
+    Raised when attempting to connect to a resource (e.g. serial port)
+    that is already in use by another configured machine.
+    """
+
+    def __init__(self, resource: str, owner_name: str):
+        self.resource = resource
+        self.owner_name = owner_name
+        super().__init__(
+            _(
+                "Resource '{resource}' is currently in use by '{owner}'."
+            ).format(resource=resource, owner=owner_name)
+        )
+
+
 class DeviceStatus(Enum):
     UNKNOWN = auto()
     IDLE = auto()
@@ -141,6 +157,18 @@ class Driver(ABC):
         self.state: DeviceState = DeviceState()
         self.setup_error: Optional[str] = None
 
+    @property
+    def resource_uri(self) -> Optional[str]:
+        """
+        Returns a unique identifier for the physical resource used by this
+        driver (e.g. 'serial:///dev/ttyUSB0' or 'tcp://192.168.1.50:80').
+
+        If multiple machines share this URI, the driver will prevent them
+        from connecting simultaneously. Returns None if the driver does not
+        lock a physical resource.
+        """
+        return None
+
     @classmethod
     @abstractmethod
     def precheck(cls, **kwargs: Any) -> None:
@@ -189,8 +217,31 @@ class Driver(ABC):
         """
         pass
 
-    @abstractmethod
     async def connect(self) -> None:
+        """
+        Checks for resource conflicts with other machines, then establishes
+        the connection via _connect_implementation().
+        """
+        my_uri = self.resource_uri
+        if my_uri:
+            # Check all other machines managed by the context
+            # We access the internal dictionary to avoid overhead
+            machines = self._context.machine_mgr.machines.values()
+            for other_machine in machines:
+                if other_machine is self._machine:
+                    continue
+
+                if (
+                    other_machine.is_connected()
+                    and other_machine.driver
+                    and other_machine.driver.resource_uri == my_uri
+                ):
+                    raise ResourceBusyError(my_uri, other_machine.name)
+
+        await self._connect_implementation()
+
+    @abstractmethod
+    async def _connect_implementation(self) -> None:
         """
         Establishes the connection and maintains it. i.e. auto reconnect.
         On errors or lost connection it should continue trying.
