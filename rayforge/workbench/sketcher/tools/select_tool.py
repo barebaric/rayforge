@@ -2,6 +2,7 @@ import logging
 import math
 import cairo
 from typing import Optional, Tuple, Dict, cast, TYPE_CHECKING
+
 from rayforge.core.sketcher.entities import Entity, Line, Arc, Circle
 from rayforge.core.matrix import Matrix
 from rayforge.core.sketcher.constraints import (

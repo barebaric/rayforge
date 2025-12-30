@@ -816,6 +816,54 @@ def test_fill_is_removed_when_boundary_is_broken():
     assert len(s.fills) == 0
 
 
+def test_remove_point_if_unused():
+    """
+    Tests the remove_point_if_unused method.
+    """
+    s = Sketch()
+
+    # 1. Test removing a point that is not used by any entity
+    unused_pid = s.add_point(100, 100)
+    assert s.remove_point_if_unused(unused_pid) is True
+    assert unused_pid not in [p.id for p in s.registry.points]
+
+    # 2. Test that None returns False and does nothing
+    assert s.remove_point_if_unused(None) is False
+
+    # 3. Test that a point used by an entity is not removed
+    p1 = s.add_point(0, 0)
+    p2 = s.add_point(10, 0)
+    s.add_line(p1, p2)
+    assert s.remove_point_if_unused(p1) is False
+    assert p1 in [p.id for p in s.registry.points]
+
+    # 4. Test removing a point after its entity is removed
+    p3 = s.add_point(20, 0)
+    p4 = s.add_point(30, 0)
+    l2 = s.add_line(p3, p4)
+    entity = s.registry.get_entity(l2)
+    if entity is not None:
+        s.remove_entities([entity])
+    assert s.remove_point_if_unused(p3) is True
+    assert s.remove_point_if_unused(p4) is True
+    assert p3 not in [p.id for p in s.registry.points]
+    assert p4 not in [p.id for p in s.registry.points]
+
+    # 5. Test that origin point is removed when not used by any entity
+    # (in a new sketch with no entities, origin is considered unused)
+    origin_pid = s.origin_id
+    assert s.remove_point_if_unused(origin_pid) is True
+    assert origin_pid not in [p.id for p in s.registry.points]
+
+    # 6. Test that origin point is NOT removed when used by an entity
+    s2 = Sketch()
+    origin_pid2 = s2.origin_id
+    p_other = s2.add_point(10, 0)
+    s2.add_line(origin_pid2, p_other)
+    assert s2.remove_point_if_unused(origin_pid2) is False
+    assert origin_pid2 in [p.id for p in s2.registry.points]
+
+
 class TestSketchLoopFindingHelpers:
     @pytest.fixture
     def cross_sketch(self):

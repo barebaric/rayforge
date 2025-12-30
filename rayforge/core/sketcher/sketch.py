@@ -288,6 +288,25 @@ class Sketch(IAsset):
         self.registry.remove_entities_by_id(ids_to_remove)
         self._validate_and_cleanup_fills()
 
+    def remove_point_if_unused(self, pid: Optional[int]) -> bool:
+        """
+        Removes a point from the registry if it's not part of any entity.
+
+        Args:
+            pid: The point ID to remove. If None, returns False.
+
+        Returns:
+            True if the point was removed, False otherwise.
+        """
+        if pid is None:
+            return False
+        if not self.registry.is_point_used(pid):
+            self.registry.points = [
+                p for p in self.registry.points if p.id != pid
+            ]
+            return True
+        return False
+
     def _get_edge_tangent_at_start(
         self, entity: Any, start_pid: int
     ) -> Tuple[float, float]:
