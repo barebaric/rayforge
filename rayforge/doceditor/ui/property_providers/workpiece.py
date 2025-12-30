@@ -22,6 +22,7 @@ class WorkpieceInfoProvider(PropertyProvider):
 
     def create_widgets(self) -> List[Gtk.Widget]:
         """Creates the widgets for workpiece info properties."""
+        logger.debug("Creating workpiece info property widgets.")
         # Source File Row
         self.source_file_row = Adw.ActionRow(title=_("Source File"))
         self.metadata_info_button = Gtk.Button(
@@ -51,6 +52,9 @@ class WorkpieceInfoProvider(PropertyProvider):
 
     def update_widgets(self, editor: "DocEditor", items: List[DocItem]):
         """Updates the workpiece info widgets with new data."""
+        logger.debug(
+            f"Updating workpiece info widgets for {len(items)} items."
+        )
         self.editor = editor
         self.items = items
         workpiece = cast(WorkPiece, self.items[0])
@@ -128,6 +132,7 @@ class TabsPropertyProvider(PropertyProvider):
 
     def create_widgets(self) -> List[Gtk.Widget]:
         """Creates the widgets for tab properties."""
+        logger.debug("Creating tabs property widgets.")
         self._rows = []
 
         # Tabs Switch
@@ -168,6 +173,7 @@ class TabsPropertyProvider(PropertyProvider):
 
     def update_widgets(self, editor: "DocEditor", items: List[DocItem]):
         """Updates the tabs widgets with new data."""
+        logger.debug(f"Updating tabs property widgets for {len(items)} items.")
         self.editor = editor
         self.items = items
         workpiece = cast(WorkPiece, self.items[0])
@@ -175,8 +181,11 @@ class TabsPropertyProvider(PropertyProvider):
 
     def _update_tabs_rows(self, workpiece: WorkPiece):
         self._in_update = True
-        self.tabs_row.set_active(workpiece.tabs_enabled)
-        self._in_update = False
+        try:
+            self.tabs_row.set_active(workpiece.tabs_enabled)
+        finally:
+            self._in_update = False
+
         self.tab_width_row.set_visible(workpiece.tabs_enabled)
         self.clear_tabs_button.set_sensitive(bool(workpiece.tabs))
         self.tabs_row.set_subtitle(
@@ -209,6 +218,9 @@ class TabsPropertyProvider(PropertyProvider):
         self.editor.tab.clear_tabs(workpiece)
 
     def _on_tabs_enabled_toggled(self, switch, GParamSpec):
+        logger.debug(
+            f"_on_tabs_enabled_toggled called. _in_update={self._in_update}"
+        )
         if self._in_update:
             return
         workpiece = cast(WorkPiece, self.items[0])
@@ -216,6 +228,9 @@ class TabsPropertyProvider(PropertyProvider):
         self.editor.tab.set_workpiece_tabs_enabled(workpiece, new_value)
 
     def _on_tab_width_changed(self, spin_row, GParamSpec):
+        logger.debug(
+            f"_on_tab_width_changed called. _in_update={self._in_update}"
+        )
         if self._in_update:
             return
         workpiece = cast(WorkPiece, self.items[0])

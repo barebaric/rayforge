@@ -1,7 +1,7 @@
 import logging
 from blinker import Signal
 from typing import TYPE_CHECKING, Optional, cast, Dict, List, Sequence
-from gi.repository import Gdk, Gtk, GLib
+from gi.repository import Gdk, Gtk
 from ..camera.controller import CameraController
 from ..context import get_context
 from ..core.group import Group
@@ -389,9 +389,7 @@ class WorkSurface(WorldSurface):
         Overrides base to add application-specific layer selection logic,
         handle double-click editing, and manage the SketchEditor lifecycle.
         """
-        # Manually and safely grab focus, allowing other event handlers
-        # (like menu closing) to complete first before changing focus.
-        GLib.idle_add(self.grab_focus)
+        logger.debug("WorkSurface.on_button_press fired")
 
         # A left-click should clear any lingering right-click context.
         if gesture.get_button() == Gdk.BUTTON_PRIMARY:

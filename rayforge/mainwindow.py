@@ -199,12 +199,6 @@ class MainWindow(Adw.ApplicationWindow):
         main_ui_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         self.main_stack.add_named(main_ui_box, "main")
 
-        # Add a click handler to the main UI area
-        ui_click_gesture = Gtk.GestureClick.new()
-        ui_click_gesture.set_propagation_phase(Gtk.PropagationPhase.CAPTURE)
-        ui_click_gesture.connect("pressed", self._on_root_click_pressed)
-        main_ui_box.add_controller(ui_click_gesture)
-
         # Create and add the main toolbar.
         self.toolbar = MainToolbar()
         self._connect_toolbar_signals()
@@ -343,6 +337,15 @@ class MainWindow(Adw.ApplicationWindow):
         self.surface_overlay = Gtk.Overlay()
         self.surface_overlay.set_child(self.surface)
         self.view_stack.add_named(self.surface_overlay, "2d")
+
+        # Add a click handler to unfocus when clicking the "dead space" of the
+        # canvas area. This is the correct place for this handler, as it won't
+        # interfere with clicks on the sidebar.
+        canvas_click_gesture = Gtk.GestureClick.new()
+        canvas_click_gesture.connect(
+            "pressed", self._on_canvas_area_click_pressed
+        )
+        # self.surface_overlay.add_controller(canvas_click_gesture)
 
         if canvas3d_initialized:
             self.canvas3d = Canvas3D(
@@ -918,19 +921,14 @@ class MainWindow(Adw.ApplicationWindow):
             self.on_machine_selected_by_selector
         )
 
-    def _on_root_click_pressed(self, gesture, n_press, x, y):
+    def _on_canvas_area_click_pressed(self, gesture, n_press, x, y):
         """
-        Global click handler to unfocus widgets when clicking on "dead space".
-        Uses idle_add to defer the focus grab, ensuring menu popovers have
-        time to process their close events first.
+        Handler for clicks on the canvas overlay area (the 'dead space').
+        It unfocuses any other widget and gives focus to the surface for
+        keyboard shortcuts.
         """
-        logger.debug("Clicked the main window")
-
-        def _deferred_focus():
-            self.surface.grab_focus()
-            return False
-
-        GLib.idle_add(_deferred_focus)
+        logger.debug("Clicked on canvas area dead space, focusing surface.")
+        self.surface.grab_focus()
 
     def on_machine_selected_by_selector(self, sender, *, machine: Machine):
         """
