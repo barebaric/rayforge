@@ -739,3 +739,259 @@ def test_sketch_deserialization_backward_compatibility():
     # Make sure other parts loaded correctly
     assert sketch.params.get("width") == 100.0
     assert sketch.name == ""
+
+
+class TestSketchLoopFindingHelpers:
+    @pytest.fixture
+    def cross_sketch(self):
+        """A sketch with 4 lines meeting at the origin."""
+        s = Sketch()
+        p_center = s.origin_id
+        p_right = s.add_point(10, 0)
+        p_up = s.add_point(0, 10)
+        p_left = s.add_point(-10, 0)
+        p_down = s.add_point(0, -10)
+        l_right = s.add_line(p_center, p_right)  # Angle 0
+        l_up = s.add_line(p_center, p_up)  # Angle pi/2
+        l_left = s.add_line(p_center, p_left)  # Angle pi
+        l_down = s.add_line(p_center, p_down)  # Angle -pi/2
+        return s, {
+            "center": p_center,
+            "l_right": l_right,
+            "l_up": l_up,
+            "l_left": l_left,
+            "l_down": l_down,
+        }
+
+    def test_build_adjacency_list(self):
+        s = Sketch()
+        p1 = s.add_point(0, 0)
+        p2 = s.add_point(10, 0)
+        l1 = s.add_line(p1, p2)
+        adj = s._build_adjacency_list()
+
+        assert p1 in adj
+        assert p2 in adj
+        assert len(adj[p1]) == 1
+        assert len(adj[p2]) == 1
+
+        edge_from_p1 = adj[p1][0]
+        assert edge_from_p1["id"] == l1
+        assert edge_from_p1["to"] == p2
+        assert edge_from_p1["fwd"] is True
+
+        edge_from_p2 = adj[p2][0]
+        assert edge_from_p2["id"] == l1
+        assert edge_from_p2["to"] == p1
+        assert edge_from_p2["fwd"] is False
+
+    def test_sort_edges_by_angle(self, cross_sketch):
+        s, ids = cross_sketch
+        adj = s._build_adjacency_list()
+        sorted_adj = s._sort_edges_by_angle(adj)
+
+        center_edges = sorted_adj[ids["center"]]
+        assert len(center_edges) == 4
+
+        # Expected order: down (-pi/2), right (0), up (pi/2), left (pi)
+        sorted_ids = [e["id"] for e in center_edges]
+        assert sorted_ids == [
+            ids["l_down"],
+            ids["l_right"],
+            ids["l_up"],
+            ids["l_left"],
+        ]
+
+    def test_get_next_edge_ccw(self, cross_sketch):
+        s, ids = cross_sketch
+        adj = s._build_adjacency_list()
+        sorted_adj = s._sort_edges_by_angle(adj)
+
+        center_id = ids["center"]
+
+        # To test finding the next edge in a loop, we simulate arriving
+        # at the center.
+        #
+        # Scene: We arrive at Center from the Right.
+        # The entity 'l_right' connects Center(0,0) and Right(10,0).
+        # We traveled Right -> Center. This is the reverse direction of
+        # l_right. So incoming_fwd = False.
+        #
+        # To continue the loop CCW (keeping face on left), we need to make a
+        # LEFT turn at the Center.
+        # In: (-1, 0) (Right -> Center)
+        # Options: Up (0, 1), Left (-1, 0), Down (0, -1), Right (1, 0).
+        # A left turn relative to (-1, 0) is Down (0, -1).
+        # Note: In standard Cartesian coords:
+        # Vector A=(-1,0). Vector B=(0,-1).
+        #   Cross Z = (-1*-1) - 0 = 1 (Positive/CCW).
+        # Vector B=(0,1) (Up). Cross Z = (-1*1) - 0 = -1 (Negative/CW).
+        # So Down is the correct Left turn.
+
+        next_edge = s._get_next_edge_ccw(
+            center_id, ids["l_right"], False, sorted_adj
+        )
+        assert next_edge["id"] == ids["l_down"]
+
+    def test_calculate_loop_signed_area(self):
+        s = Sketch()
+        p1 = s.add_point(0, 0)
+        p2 = s.add_point(10, 0)
+        p3 = s.add_point(10, 10)
+        p4 = s.add_point(0, 10)
+        l1 = s.add_line(p1, p2)
+        l2 = s.add_line(p2, p3)
+        l3 = s.add_line(p3, p4)
+        l4 = s.add_line(p4, p1)
+
+        # CCW Loop: P1->P2->P3->P4->P1
+        ccw_loop = [(l1, True), (l2, True), (l3, True), (l4, True)]
+        area_ccw = s._calculate_loop_signed_area(ccw_loop)
+        assert area_ccw == pytest.approx(100.0)
+
+        # CW Loop: P1->P4->P3->P2->P1
+        # L4 is P4->P1. False is P1->P4.
+        # L3 is P3->P4. False is P4->P3.
+        # L2 is P2->P3. False is P3->P2.
+        # L1 is P1->P2. False is P2->P1.
+        cw_loop = [(l4, False), (l3, False), (l2, False), (l1, False)]
+        area_cw = s._calculate_loop_signed_area(cw_loop)
+        assert area_cw == pytest.approx(-100.0)
+
+        # Degenerate Loop (back and forth)
+        degen_loop = [(l1, True), (l1, False)]
+        area_degen = s._calculate_loop_signed_area(degen_loop)
+        assert area_degen == pytest.approx(0.0)
+
+
+def test_sketch_find_all_closed_loops():
+    """Tests the core graph traversal algorithm for finding faces."""
+
+    def get_loop_ids(loops):
+        """Helper to get sets of entity IDs for easy comparison."""
+        return [set(item[0] for item in loop) for loop in loops]
+
+    # --- Test Case 1: Simple Square ---
+    s1 = Sketch()
+    p1 = s1.add_point(0, 0)
+    p2 = s1.add_point(10, 0)
+    p3 = s1.add_point(10, 10)
+    p4 = s1.add_point(0, 10)
+    l1 = s1.add_line(p1, p2)
+    l2 = s1.add_line(p2, p3)
+    l3 = s1.add_line(p3, p4)
+    l4 = s1.add_line(p4, p1)
+    loops1 = s1._find_all_closed_loops()
+    assert len(loops1) == 1
+    assert get_loop_ids(loops1)[0] == {l1, l2, l3, l4}
+
+    # --- Test Case 2: Dangling Edge ---
+    s2 = Sketch()
+    p1 = s2.add_point(0, 0)
+    p2 = s2.add_point(10, 0)
+    p3 = s2.add_point(10, 10)
+    p4 = s2.add_point(0, 10)
+    p5 = s2.add_point(20, 0)
+    l1 = s2.add_line(p1, p2)
+    l2 = s2.add_line(p2, p3)
+    l3 = s2.add_line(p3, p4)
+    l4 = s2.add_line(p4, p1)
+    s2.add_line(p2, p5)  # Dangling line, no assignment needed
+    loops2 = s2._find_all_closed_loops()
+    assert len(loops2) == 1
+    assert get_loop_ids(loops2)[0] == {l1, l2, l3, l4}
+
+    # --- Test Case 3: Two Separate Shapes ---
+    s3 = Sketch()
+    # Shape A
+    p1 = s3.add_point(0, 0)
+    p2 = s3.add_point(1, 0)
+    p3 = s3.add_point(1, 1)
+    p4 = s3.add_point(0, 1)
+    la1 = s3.add_line(p1, p2)
+    la2 = s3.add_line(p2, p3)
+    la3 = s3.add_line(p3, p4)
+    la4 = s3.add_line(p4, p1)
+    # Shape B
+    p5 = s3.add_point(10, 10)
+    p6 = s3.add_point(11, 10)
+    p7 = s3.add_point(11, 11)
+    p8 = s3.add_point(10, 11)
+    lb1 = s3.add_line(p5, p6)
+    lb2 = s3.add_line(p6, p7)
+    lb3 = s3.add_line(p7, p8)
+    lb4 = s3.add_line(p8, p5)
+    loops3 = s3._find_all_closed_loops()
+    assert len(loops3) == 2
+    loop_sets3 = get_loop_ids(loops3)
+    assert {la1, la2, la3, la4} in loop_sets3
+    assert {lb1, lb2, lb3, lb4} in loop_sets3
+
+    # --- Test Case 4: Figure-Eight (Shared Point/Edge) ---
+    s4 = Sketch()
+    # Left loop
+    p1 = s4.add_point(-1, -1)
+    p2 = s4.add_point(0, -1)
+    p3 = s4.add_point(0, 0)  # Shared point
+    p4 = s4.add_point(-1, 0)
+    ll1 = s4.add_line(p1, p2)
+    ll2 = s4.add_line(p2, p3)
+    ll3 = s4.add_line(p3, p4)
+    ll4 = s4.add_line(p4, p1)
+    # Right loop
+    p5 = s4.add_point(1, 0)
+    p6 = s4.add_point(1, -1)
+    rl1 = s4.add_line(p3, p5)
+    rl2 = s4.add_line(p5, p6)
+    rl3 = s4.add_line(p6, p2)
+    loops4 = s4._find_all_closed_loops()
+    assert len(loops4) == 2
+    loop_sets4 = get_loop_ids(loops4)
+    assert {ll1, ll2, ll3, ll4} in loop_sets4
+    assert {rl1, rl2, rl3, ll2} in loop_sets4  # ll2 is shared edge
+
+    # --- Test Case 5: Shape with an Arc (D-Shape) ---
+    s5 = Sketch()
+    p1 = s5.add_point(-10, 0)
+    p2 = s5.add_point(10, 0)
+    c = s5.add_point(0, 0)
+    l1 = s5.add_line(p1, p2)
+    a1 = s5.add_arc(p2, p1, c, clockwise=False)  # Semicircle
+    loops5 = s5._find_all_closed_loops()
+    assert len(loops5) == 1
+    assert get_loop_ids(loops5)[0] == {l1, a1}
+
+    # --- Test Case 6: Circle ---
+    s6 = Sketch()
+    c = s6.add_point(0, 0)
+    r = s6.add_point(10, 0)
+    c1 = s6.add_circle(c, r)
+    loops6 = s6._find_all_closed_loops()
+    assert len(loops6) == 1
+    assert get_loop_ids(loops6)[0] == {c1}
+
+    # --- Test Case 7: Shape with Hole ---
+    s7 = Sketch()
+    # Outer
+    op1 = s7.add_point(0, 0)
+    op2 = s7.add_point(10, 0)
+    op3 = s7.add_point(10, 10)
+    op4 = s7.add_point(0, 10)
+    ol1 = s7.add_line(op1, op2)
+    ol2 = s7.add_line(op2, op3)
+    ol3 = s7.add_line(op3, op4)
+    ol4 = s7.add_line(op4, op1)
+    # Inner
+    ip1 = s7.add_point(2, 2)
+    ip2 = s7.add_point(8, 2)
+    ip3 = s7.add_point(8, 8)
+    ip4 = s7.add_point(2, 8)
+    il1 = s7.add_line(ip1, ip2)
+    il2 = s7.add_line(ip2, ip3)
+    il3 = s7.add_line(ip3, ip4)
+    il4 = s7.add_line(ip4, ip1)
+    loops7 = s7._find_all_closed_loops()
+    assert len(loops7) == 2
+    loop_sets7 = get_loop_ids(loops7)
+    assert {ol1, ol2, ol3, ol4} in loop_sets7
+    assert {il1, il2, il3, il4} in loop_sets7

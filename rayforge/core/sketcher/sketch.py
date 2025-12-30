@@ -1,8 +1,10 @@
 import json
 import uuid
 from pathlib import Path
-from typing import Union, List, Optional, Set, Dict, Any, Sequence
+from typing import Union, List, Optional, Set, Dict, Any, Sequence, Tuple
 from blinker import Signal
+from collections import defaultdict
+import math
 from ..geo import Geometry
 from ..varset import VarSet
 from ..asset import IAsset
@@ -229,6 +231,267 @@ class Sketch(IAsset):
     ) -> int:
         """Adds a circle defined by a center and a point on its radius."""
         return self.registry.add_circle(center, radius_pt, construction)
+
+    def _get_edge_tangent_at_start(
+        self, entity: Any, start_pid: int
+    ) -> Tuple[float, float]:
+        """Helper to get the tangent vector for an entity at a given point."""
+        if isinstance(entity, Line):
+            p1 = self.registry.get_point(entity.p1_idx)
+            p2 = self.registry.get_point(entity.p2_idx)
+            if start_pid == p1.id:
+                return (p2.x - p1.x, p2.y - p1.y)
+            else:
+                return (p1.x - p2.x, p1.y - p2.y)
+
+        elif isinstance(entity, Arc):
+            start = self.registry.get_point(entity.start_idx)
+            center = self.registry.get_point(entity.center_idx)
+            if start_pid == start.id:
+                # Traversing forward from the arc's start point
+                # Tangent of circle at P is perp to Radius CP.
+                # If CCW: (-dy, dx). If CW: (dy, -dx).
+                dx, dy = start.x - center.x, start.y - center.y
+                return (dy, -dx) if entity.clockwise else (-dy, dx)
+            else:
+                # Traversing backward from the arc's end point
+                end = self.registry.get_point(entity.end_idx)
+                dx, dy = end.x - center.x, end.y - center.y
+                # Tangent of curve at End is T. Traversal is -T.
+                # T_ccw = (-dy, dx). Traversal = (dy, -dx).
+                # T_cw = (dy, -dx). Traversal = (-dy, dx).
+                return (-dy, dx) if entity.clockwise else (dy, -dx)
+        return (1.0, 0.0)
+
+    def _build_adjacency_list(self) -> Dict[int, List[Dict[str, Any]]]:
+        """
+        Builds a map of point_id -> list of outgoing edges.
+        Each edge dict contains: {'to': point_id, 'id': entity_id, 'fwd': bool}
+        """
+        adj = defaultdict(list)
+        for e in self.registry.entities:
+            # Skip circles in graph traversal (handled separately)
+            if isinstance(e, Circle):
+                continue
+            if isinstance(e, (Line, Arc)):
+                p_ids = e.get_point_ids()
+                # Lines/Arcs have 2 endpoints for traversal
+                p1_id, p2_id = p_ids[0], p_ids[1]
+                adj[p1_id].append({"to": p2_id, "id": e.id, "fwd": True})
+                adj[p2_id].append({"to": p1_id, "id": e.id, "fwd": False})
+        return adj
+
+    def _sort_edges_by_angle(
+        self, adj: Dict[int, List[Dict[str, Any]]]
+    ) -> Dict[int, List[Dict[str, Any]]]:
+        """
+        Sorts the outgoing edges at each node by angle (CCW).
+        """
+        sorted_adj = {}
+        for p_id, edges in adj.items():
+            edges_with_angle = []
+            for edge in edges:
+                entity = self.registry.get_entity(edge["id"])
+                if not entity:
+                    continue
+                tangent_vec = self._get_edge_tangent_at_start(entity, p_id)
+                angle = math.atan2(tangent_vec[1], tangent_vec[0])
+                edges_with_angle.append({"angle": angle, **edge})
+
+            # Sort by angle [-pi, pi]
+            edges_with_angle.sort(key=lambda x: x["angle"])
+            sorted_adj[p_id] = edges_with_angle
+        return sorted_adj
+
+    def _get_next_edge_ccw(
+        self,
+        current_p_id: int,
+        incoming_entity_id: int,
+        incoming_fwd: bool,
+        sorted_adj: Dict[int, List[Dict[str, Any]]],
+    ) -> Optional[Dict[str, Any]]:
+        """
+        Given an incoming edge to a node, picks the next edge in CCW order
+        (left-most turn) to traverse faces.
+        """
+        outgoing_edges = sorted_adj.get(current_p_id, [])
+        if not outgoing_edges:
+            return None
+
+        # If we arrived via `incoming_entity_id` traveling `incoming_fwd`,
+        # then looking back from the current node, that edge is the reverse.
+        rev_fwd = not incoming_fwd
+
+        try:
+            # Find the edge entry in the current node's list that corresponds
+            # to where we came from.
+            idx = next(
+                i
+                for i, e in enumerate(outgoing_edges)
+                if e["id"] == incoming_entity_id and e["fwd"] == rev_fwd
+            )
+            # Pick the previous edge in the sorted list (CCW rotation)
+            next_idx = (idx - 1) % len(outgoing_edges)
+            return outgoing_edges[next_idx]
+        except StopIteration:
+            return None
+
+    def _calculate_loop_signed_area(
+        self, loop: List[Tuple[int, bool]]
+    ) -> float:
+        """Calculates signed area of the loop using Shoelace formula."""
+        if not loop:
+            return 0.0
+
+        points = []
+        # Calculate polygon area (straight chords)
+        first_ent = self.registry.get_entity(loop[0][0])
+        if not first_ent:
+            return 0.0
+        first_fwd = loop[0][1]
+        p_ids = first_ent.get_point_ids()
+        curr_p_id = p_ids[0] if first_fwd else p_ids[1]
+
+        for eid, fwd in loop:
+            try:
+                pt = self.registry.get_point(curr_p_id)
+                points.append((pt.x, pt.y))
+                ent = self.registry.get_entity(eid)
+                if not ent:
+                    return 0.0
+                p_ids = ent.get_point_ids()
+                curr_p_id = p_ids[1] if curr_p_id == p_ids[0] else p_ids[0]
+            except IndexError:
+                return 0.0
+
+        area = 0.0
+        for i in range(len(points)):
+            p1 = points[i]
+            p2 = points[(i + 1) % len(points)]
+            area += p1[0] * p2[1] - p2[0] * p1[1]
+        area *= 0.5
+
+        # Add contributions from Arcs (area between chord and arc)
+        for eid, fwd in loop:
+            ent = self.registry.get_entity(eid)
+            if isinstance(ent, Arc):
+                # Calculate area of the circular segment
+                start = self.registry.get_point(ent.start_idx)
+                end = self.registry.get_point(ent.end_idx)
+                center = self.registry.get_point(ent.center_idx)
+
+                # Vectors from center
+                r_vec_start = (start.x - center.x, start.y - center.y)
+                r_vec_end = (end.x - center.x, end.y - center.y)
+                radius_sq = r_vec_start[0] ** 2 + r_vec_start[1] ** 2
+
+                # Calculate sweep angle of the arc definition
+                ang_start = math.atan2(r_vec_start[1], r_vec_start[0])
+                ang_end = math.atan2(r_vec_end[1], r_vec_end[0])
+
+                if ent.clockwise:
+                    # CW: Start -> End decreases angle
+                    diff = ang_start - ang_end
+                else:
+                    # CCW: Start -> End increases angle
+                    diff = ang_end - ang_start
+
+                # Normalize to [0, 2pi)
+                while diff < 0:
+                    diff += 2 * math.pi
+                while diff >= 2 * math.pi:
+                    diff -= 2 * math.pi
+
+                # Area of segment = 0.5 * r^2 * (theta - sin(theta))
+                # This area is always positive.
+                seg_area = 0.5 * radius_sq * (diff - math.sin(diff))
+
+                # Determine sign contribution to the loop area (assumed
+                # CCW positive).
+                # If Arc is CCW and we traverse Fwd: Left turn. Add.
+                # If Arc is CW and we traverse Fwd: Right turn. Subtract.
+                # If Arc is CCW and we traverse Rev: Right turn. Subtract.
+                # If Arc is CW and we traverse Rev: Left turn. Add.
+
+                is_ccw_arc = not ent.clockwise
+                is_left_turn = is_ccw_arc == fwd
+
+                if is_left_turn:
+                    area += seg_area
+                else:
+                    area -= seg_area
+
+        return area
+
+    def _find_all_closed_loops(self) -> List[List[Tuple[int, bool]]]:
+        """
+        Finds all closed loops (faces) in the sketch graph.
+        """
+        adj = self._build_adjacency_list()
+        sorted_adj = self._sort_edges_by_angle(adj)
+
+        loops = []
+        visited_half_edges: Set[Tuple[int, int, bool]] = set()
+
+        for p_start, edges in sorted_adj.items():
+            for start_edge in edges:
+                half_edge_key = (p_start, start_edge["id"], start_edge["fwd"])
+                if half_edge_key in visited_half_edges:
+                    continue
+
+                loop: List[Tuple[int, bool]] = []
+                loop_half_edges: List[Tuple[int, int, bool]] = []
+                curr_p = p_start
+                curr_edge = start_edge
+
+                for _ in range(len(self.registry.entities) + 1):
+                    current_half_edge = (
+                        curr_p,
+                        curr_edge["id"],
+                        curr_edge["fwd"],
+                    )
+                    if current_half_edge in visited_half_edges:
+                        loop = []
+                        break
+
+                    loop.append((curr_edge["id"], curr_edge["fwd"]))
+                    loop_half_edges.append(current_half_edge)
+
+                    next_p = curr_edge["to"]
+
+                    next_edge_info = self._get_next_edge_ccw(
+                        next_p, curr_edge["id"], curr_edge["fwd"], sorted_adj
+                    )
+
+                    if not next_edge_info:
+                        loop = []
+                        break
+
+                    next_key = (
+                        next_p,
+                        next_edge_info["id"],
+                        next_edge_info["fwd"],
+                    )
+                    if next_key == half_edge_key:
+                        break  # Loop closed
+
+                    curr_p = next_p
+                    curr_edge = next_edge_info
+                else:
+                    loop = []  # Loop did not close
+
+                if loop:
+                    if self._calculate_loop_signed_area(loop) > 1e-6:
+                        loops.append(loop)
+                        # Mark all half-edges from the valid loop as visited
+                        visited_half_edges.update(loop_half_edges)
+
+        # Add circles as single-entity loops
+        for e in self.registry.entities:
+            if isinstance(e, Circle):
+                loops.append([(e.id, True)])
+
+        return loops
 
     # --- Validation ---
 
