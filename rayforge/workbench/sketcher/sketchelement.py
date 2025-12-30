@@ -898,6 +898,23 @@ class SketchElement(CanvasElement):
         except IndexError:
             return None
 
+    def remove_point_if_unused(self, pid: Optional[int]) -> bool:
+        """
+        Removes a point from the registry if it's not part of any entity.
+
+        Args:
+            pid: The point ID to remove.
+
+        Returns:
+            True if the point was removed, False otherwise.
+        """
+        if pid is None:
+            return False
+        removed = self.sketch.remove_point_if_unused(pid)
+        if removed:
+            self.mark_dirty()
+        return removed
+
     def mark_dirty(self, ancestors=False, recursive=False):
         super().mark_dirty(ancestors=ancestors, recursive=recursive)
         if self.canvas:
