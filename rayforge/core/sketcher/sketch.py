@@ -23,7 +23,7 @@ from .constraints import (
     EqualLengthConstraint,
     SymmetryConstraint,
 )
-from .entities import EntityRegistry, Line, Arc, Circle
+from .entities import EntityRegistry, Line, Arc, Circle, Entity
 from .params import ParameterContext
 from .solver import Solver
 
@@ -44,6 +44,27 @@ _CONSTRAINT_CLASSES = {
 }
 
 
+class Fill:
+    """Represents a filled area bounded by sketch entities."""
+
+    def __init__(self, uid: str, boundary: List[Tuple[int, bool]]):
+        self.uid = uid
+        self.boundary = boundary  # List of (entity_id, is_forward_traversal)
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "uid": self.uid,
+            "boundary": self.boundary,
+        }
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> "Fill":
+        return cls(
+            uid=data.get("uid", str(uuid.uuid4())),
+            boundary=data["boundary"],
+        )
+
+
 class Sketch(IAsset):
     """
     A parametric sketcher that allows defining geometry via constraints
@@ -56,6 +77,7 @@ class Sketch(IAsset):
         self.params = ParameterContext()
         self.registry = EntityRegistry()
         self.constraints: List[Constraint] = []
+        self.fills: List[Fill] = []
         self.input_parameters = VarSet(
             title="Input Parameters",
             description="Parameters that control this sketch's geometry.",
@@ -64,6 +86,24 @@ class Sketch(IAsset):
 
         # Initialize the Origin Point (Fixed Anchor)
         self.origin_id = self.registry.add_point(0.0, 0.0, fixed=True)
+
+    def _validate_and_cleanup_fills(self):
+        """
+        Removes any Fill objects whose boundary entities no longer form a
+        valid, closed loop (e.g., if an entity was deleted).
+        """
+        valid_fills = []
+        # Find all currently valid loops to check against
+        current_loops = self._find_all_closed_loops()
+        # For efficient lookup, convert lists to sets of tuples
+        current_loop_sets = {frozenset(loop) for loop in current_loops}
+
+        for fill in self.fills:
+            fill_boundary_set = frozenset(fill.boundary)
+            if fill_boundary_set in current_loop_sets:
+                valid_fills.append(fill)
+
+        self.fills = valid_fills
 
     @property
     def name(self) -> str:
@@ -159,6 +199,7 @@ class Sketch(IAsset):
             "params": self.params.to_dict(),
             "registry": self.registry.to_dict(),
             "constraints": [c.to_dict() for c in self.constraints],
+            "fills": [f.to_dict() for f in self.fills],
             "origin_id": self.origin_id,
         }
 
@@ -191,6 +232,10 @@ class Sketch(IAsset):
             c_cls = _CONSTRAINT_CLASSES.get(c_type)
             if c_cls:
                 new_sketch.constraints.append(c_cls.from_dict(c_data))
+
+        new_sketch.fills = []
+        for f_data in data.get("fills", []):
+            new_sketch.fills.append(Fill.from_dict(f_data))
 
         return new_sketch
 
@@ -231,6 +276,17 @@ class Sketch(IAsset):
     ) -> int:
         """Adds a circle defined by a center and a point on its radius."""
         return self.registry.add_circle(center, radius_pt, construction)
+
+    def remove_entities(self, entities_to_remove: List[Entity]):
+        """
+        Removes entities from the sketch and automatically cleans up any
+        dependent fills.
+        """
+        if not entities_to_remove:
+            return
+        ids_to_remove = [e.id for e in entities_to_remove]
+        self.registry.remove_entities_by_id(ids_to_remove)
+        self._validate_and_cleanup_fills()
 
     def _get_edge_tangent_at_start(
         self, entity: Any, start_pid: int

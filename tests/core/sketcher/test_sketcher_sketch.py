@@ -1,8 +1,10 @@
 import math
+import uuid
 import pytest
 from pathlib import Path
 from rayforge.core.geo import ArcToCommand, Geometry
 from rayforge.core.sketcher import Sketch
+from rayforge.core.sketcher.sketch import Fill
 from rayforge.core.sketcher.constraints import (
     EqualDistanceConstraint,
     PointOnLineConstraint,
@@ -736,9 +738,82 @@ def test_sketch_deserialization_backward_compatibility():
     # Assert an empty VarSet was created
     assert sketch.input_parameters is not None
     assert len(sketch.input_parameters) == 0
+    # Assert fills list is initialized and empty for backward compatibility
+    assert sketch.fills == []
     # Make sure other parts loaded correctly
     assert sketch.params.get("width") == 100.0
     assert sketch.name == ""
+
+
+def test_sketch_serialization_roundtrip_with_fill():
+    """
+    Verify that a sketch with a Fill can be serialized and deserialized
+    correctly.
+    """
+    # 1. Create a sketch with a simple closed shape
+    s = Sketch()
+    p1 = s.add_point(0, 0)
+    p2 = s.add_point(10, 0)
+    p3 = s.add_point(10, 10)
+    p4 = s.add_point(0, 10)
+    s.add_line(p1, p2)
+    s.add_line(p2, p3)
+    s.add_line(p3, p4)
+    s.add_line(p4, p1)
+
+    # 2. Find the loop and create a Fill object for it
+    loops = s._find_all_closed_loops()
+    assert len(loops) == 1
+    boundary = loops[0]
+    fill_uid = str(uuid.uuid4())
+    s.fills.append(Fill(uid=fill_uid, boundary=boundary))
+
+    # 3. Serialize the sketch to a dictionary
+    sketch_data = s.to_dict()
+    assert "fills" in sketch_data
+    assert len(sketch_data["fills"]) == 1
+    fill_data = sketch_data["fills"][0]
+    assert fill_data["uid"] == fill_uid
+    assert fill_data["boundary"] == boundary
+
+    # 4. Deserialize back into a new sketch
+    new_sketch = Sketch.from_dict(sketch_data)
+    assert new_sketch.uid == s.uid
+    assert len(new_sketch.fills) == 1
+    reloaded_fill = new_sketch.fills[0]
+    assert isinstance(reloaded_fill, Fill)
+    assert reloaded_fill.uid == fill_uid
+    assert reloaded_fill.boundary == boundary
+
+
+def test_fill_is_removed_when_boundary_is_broken():
+    """
+    Tests that a Fill is automatically removed if its boundary is no longer
+    a valid closed loop after a geometry change.
+    """
+    # 1. Create a sketch with a filled square
+    s = Sketch()
+    p1 = s.add_point(0, 0)
+    p2 = s.add_point(10, 0)
+    p3 = s.add_point(10, 10)
+    p4 = s.add_point(0, 10)
+    s.add_line(p1, p2)
+    s.add_line(p2, p3)
+    l3 = s.add_line(p3, p4)
+    s.add_line(p4, p1)
+
+    loops = s._find_all_closed_loops()
+    assert len(loops) == 1
+    s.fills.append(Fill(uid=str(uuid.uuid4()), boundary=loops[0]))
+    assert len(s.fills) == 1
+
+    # 2. Get the entity to remove and call the public removal method
+    l3_entity = s.registry.get_entity(l3)
+    assert l3_entity is not None
+    s.remove_entities([l3_entity])
+
+    # 3. Assert that the fill has been automatically removed by the method
+    assert len(s.fills) == 0
 
 
 class TestSketchLoopFindingHelpers:

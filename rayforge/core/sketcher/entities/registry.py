@@ -89,6 +89,13 @@ class EntityRegistry:
         self._id_counter += 1
         return eid
 
+    def remove_entities_by_id(self, entity_ids: List[int]):
+        """Removes one or more entities from the registry by their IDs."""
+        ids_to_remove = set(entity_ids)
+        self.entities = [e for e in self.entities if e.id not in ids_to_remove]
+        # Rebuild the map for simplicity and correctness
+        self._entity_map = {e.id: e for e in self.entities}
+
     def is_point_used(self, pid: int) -> bool:
         """Checks if a point is used by any entity in the sketch."""
         for e in self.entities:
