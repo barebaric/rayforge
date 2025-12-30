@@ -43,6 +43,7 @@ class SketchPropertyProvider(PropertyProvider):
 
     def create_widgets(self) -> List[Gtk.Widget]:
         """Creates the VarSetWidget for sketch parameters."""
+        logger.debug("Creating sketch property widgets.")
         # The VarSetWidget dynamically creates its own rows, so we create
         # it here but leave it empty. It will be populated in update_widgets.
         self.varset_widget = VarSetWidget(title=_("Sketch Parameters"))
@@ -56,6 +57,9 @@ class SketchPropertyProvider(PropertyProvider):
 
     def update_widgets(self, editor: "DocEditor", items: List[DocItem]):
         """Populates and updates the VarSetWidget based on the selection."""
+        logger.debug(
+            f"Updating sketch property widgets for {len(items)} items."
+        )
         self._in_update = True
         try:
             self.editor = editor
@@ -66,11 +70,13 @@ class SketchPropertyProvider(PropertyProvider):
             sketch = first_wp.get_sketch_definition()
             if not sketch or not sketch.input_parameters:
                 # To clear the widget, populate it with an empty VarSet.
+                logger.debug("No sketch or params found, clearing widget.")
                 self.varset_widget.populate(VarSet())
                 return
 
             # 1. (Re)populate the VarSetWidget from the sketch definition.
             # This builds the UI with the default values for each parameter.
+            logger.debug("Populating VarSetWidget from sketch definition.")
             self.varset_widget.populate(sketch.input_parameters)
 
             # 2. Update the UI to reflect the actual values from the selection,
@@ -78,6 +84,7 @@ class SketchPropertyProvider(PropertyProvider):
             self._update_widget_for_mixed_state(sketch, workpieces)
         finally:
             self._in_update = False
+            logger.debug("Finished updating sketch property widgets.")
 
     def _update_widget_for_mixed_state(
         self, sketch: Sketch, workpieces: List[WorkPiece]
@@ -88,10 +95,12 @@ class SketchPropertyProvider(PropertyProvider):
         """
         if len(workpieces) == 1:
             # For a single selection, just set the current values.
+            logger.debug("Single item selected, setting direct values.")
             self.varset_widget.set_values(workpieces[0].sketch_params)
             return
 
         # For multiple selections, check each parameter for mixed values.
+        logger.debug("Multiple items selected, checking for mixed values.")
         for key, (row, var) in self.varset_widget.widget_map.items():
             all_values: Set[Any] = set()
             for wp in workpieces:
@@ -105,6 +114,7 @@ class SketchPropertyProvider(PropertyProvider):
                 self.varset_widget.set_values({key: common_value})
             else:
                 # Values are mixed. Update UI to reflect this.
+                logger.debug(f"Parameter '{key}' has mixed values.")
                 if isinstance(row, Adw.EntryRow):
                     row.set_text("")
                 elif isinstance(row, Adw.SpinRow):
@@ -125,19 +135,26 @@ class SketchPropertyProvider(PropertyProvider):
         Handles the raw signal from the VarSetWidget. Instead of applying
         changes immediately, it schedules a debounced update.
         """
+        logger.debug(
+            f"_on_params_changed called for key '{key}'. "
+            f"_in_update={self._in_update}."
+        )
         if self._in_update or not self.items:
             return
 
         # Cancel any previously scheduled update
         if self._debounce_timer_id > 0:
+            logger.debug("Cancelling previous debounce timer.")
             GLib.source_remove(self._debounce_timer_id)
             self._debounce_timer_id = 0
 
         # Store the latest value for the changed key
         all_values = sender.get_values()
         self._pending_changes[key] = all_values.get(key)
+        logger.debug(f"Pending changes: {self._pending_changes}")
 
         # Schedule the actual update to happen after a short delay
+        logger.debug("Scheduling debounced update.")
         self._debounce_timer_id = GLib.timeout_add(
             DEBOUNCE_DELAY_MS, self._apply_debounced_changes
         )
@@ -147,9 +164,11 @@ class SketchPropertyProvider(PropertyProvider):
         Applies the collected changes to the model. This is called by the
         GLib timer after the user has paused input.
         """
+        logger.debug("Debounced timer fired.")
         if not self._pending_changes or not self.items:
             self._debounce_timer_id = 0
             self._pending_changes.clear()
+            logger.debug("No pending changes to apply, stopping timer.")
             return GLib.SOURCE_REMOVE  # Stop the timer
 
         # Make a copy of the changes and clear the pending state

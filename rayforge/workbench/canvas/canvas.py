@@ -439,6 +439,7 @@ class Canvas(Gtk.DrawingArea):
         manages selection changes and initiates move, resize, rotate, or
         framing operations.
         """
+        logger.debug(f"Canvas.on_button_press fired for {type(self).__name__}")
         self.grab_focus()
         self._was_dragging = False
         world_x, world_y = self._get_world_coords(x, y)

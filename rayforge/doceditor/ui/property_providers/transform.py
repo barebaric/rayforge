@@ -1,3 +1,4 @@
+import logging
 from gi.repository import Gtk, Adw
 from typing import Optional, Tuple, List, TYPE_CHECKING
 from ....context import get_context
@@ -12,6 +13,7 @@ if TYPE_CHECKING:
     from ...editor import DocEditor
 
 default_dim = 100, 100
+logger = logging.getLogger(__name__)
 
 
 class TransformPropertyProvider(PropertyProvider):
@@ -22,6 +24,7 @@ class TransformPropertyProvider(PropertyProvider):
 
     def create_widgets(self) -> List[Gtk.Widget]:
         """Creates the widgets for transform properties once."""
+        logger.debug("Creating transform property widgets.")
         self._rows = []
         self._create_position_rows()
         self._create_size_rows()
@@ -30,6 +33,7 @@ class TransformPropertyProvider(PropertyProvider):
 
     def update_widgets(self, editor: "DocEditor", items: List[DocItem]):
         """Updates the transform widgets with data from the selected items."""
+        logger.debug(f"Updating transform widgets for {len(items)} items.")
         self.editor = editor
         self.items = items
 
@@ -66,23 +70,44 @@ class TransformPropertyProvider(PropertyProvider):
         was_in_update = getattr(self, "_in_update", False)
         self._in_update = True
         try:
-            # Check before setting to avoid signal emission loop from float
-            # drift
-            if abs(self.width_row.get_value() - size_world[0]) > 1e-4:
-                self.width_row.set_value(size_world[0])
-            if abs(self.height_row.get_value() - size_world[1]) > 1e-4:
-                self.height_row.set_value(size_world[1])
+            # Get digits for rounding to prevent float precision issues
+            width_digits = self.width_row.get_digits()
+            height_digits = self.height_row.get_digits()
+            x_digits = self.x_row.get_digits()
+            y_digits = self.y_row.get_digits()
+            angle_digits = self.angle_row.get_digits()
+            shear_digits = self.shear_row.get_digits()
 
-            if abs(self.x_row.get_value() - pos_machine_x) > 1e-4:
-                self.x_row.set_value(pos_machine_x)
+            # Round values before comparing and setting
+            width_rounded = round(size_world[0], width_digits)
+            height_rounded = round(size_world[1], height_digits)
+            x_rounded = round(pos_machine_x, x_digits)
+            y_rounded = round(pos_machine_y, y_digits)
+            angle_rounded = round(-angle_local, angle_digits)
+            shear_rounded = round(shear_local, shear_digits)
 
-            if abs(self.y_row.get_value() - pos_machine_y) > 1e-4:
-                self.y_row.set_value(pos_machine_y)
+            # Check before setting to avoid signal emission loop
+            if abs(self.width_row.get_value() - width_rounded) > 1e-9:
+                logger.debug(f"Setting width UI to {width_rounded}")
+                self.width_row.set_value(width_rounded)
+            if abs(self.height_row.get_value() - height_rounded) > 1e-9:
+                logger.debug(f"Setting height UI to {height_rounded}")
+                self.height_row.set_value(height_rounded)
 
-            if abs(self.angle_row.get_value() - (-angle_local)) > 1e-4:
-                self.angle_row.set_value(-angle_local)
-            if abs(self.shear_row.get_value() - shear_local) > 1e-4:
-                self.shear_row.set_value(shear_local)
+            if abs(self.x_row.get_value() - x_rounded) > 1e-9:
+                logger.debug(f"Setting X UI to {x_rounded}")
+                self.x_row.set_value(x_rounded)
+
+            if abs(self.y_row.get_value() - y_rounded) > 1e-9:
+                logger.debug(f"Setting Y UI to {y_rounded}")
+                self.y_row.set_value(y_rounded)
+
+            if abs(self.angle_row.get_value() - angle_rounded) > 1e-9:
+                logger.debug(f"Setting angle UI to {angle_rounded}")
+                self.angle_row.set_value(angle_rounded)
+            if abs(self.shear_row.get_value() - shear_rounded) > 1e-9:
+                logger.debug(f"Setting shear UI to {shear_rounded}")
+                self.shear_row.set_value(shear_rounded)
         finally:
             self._in_update = was_in_update
 
@@ -279,13 +304,17 @@ class TransformPropertyProvider(PropertyProvider):
         return new_width, new_height
 
     def _on_width_changed(self, spin_row, GParamSpec):
+        logger.debug(f"_on_width_changed called. _in_update={self._in_update}")
         if self._in_update or not self.items:
             return
         self._in_update = True
         try:
             new_width_from_ui = get_spinrow_float(self.width_row)
             if new_width_from_ui is None:
+                logger.debug("Width change ignored, no value from UI.")
                 return
+
+            logger.debug(f"Handling width change to {new_width_from_ui}")
 
             if self.fixed_ratio_switch.get_active():
                 first_item = self.items[0]
@@ -304,15 +333,22 @@ class TransformPropertyProvider(PropertyProvider):
             )
         finally:
             self._in_update = False
+            logger.debug("_on_width_changed finished.")
 
     def _on_height_changed(self, spin_row, GParamSpec):
+        logger.debug(
+            f"_on_height_changed called. _in_update={self._in_update}"
+        )
         if self._in_update or not self.items:
             return
         self._in_update = True
         try:
             new_height_from_ui = get_spinrow_float(self.height_row)
             if new_height_from_ui is None:
+                logger.debug("Height change ignored, no value from UI.")
                 return
+
+            logger.debug(f"Handling height change to {new_height_from_ui}")
 
             if self.fixed_ratio_switch.get_active():
                 first_item = self.items[0]
@@ -331,60 +367,75 @@ class TransformPropertyProvider(PropertyProvider):
             )
         finally:
             self._in_update = False
+            logger.debug("_on_height_changed finished.")
 
     def _on_x_changed(self, spin_row, GParamSpec):
+        logger.debug(f"_on_x_changed called. _in_update={self._in_update}")
         if self._in_update or not self.items:
             return
         self._in_update = True
         try:
             new_x_machine = get_spinrow_float(self.x_row)
             if new_x_machine is None:
+                logger.debug("X change ignored, no value from UI.")
                 return
 
+            logger.debug(f"Handling X change to {new_x_machine}")
             current_y_machine = self.y_row.get_value()
             self.editor.transform.set_position(
                 self.items, new_x_machine, current_y_machine
             )
         finally:
             self._in_update = False
+            logger.debug("_on_x_changed finished.")
 
     def _on_y_changed(self, spin_row, GParamSpec):
+        logger.debug(f"_on_y_changed called. _in_update={self._in_update}")
         if self._in_update or not self.items:
             return
         self._in_update = True
         try:
             new_y_machine = get_spinrow_float(self.y_row)
             if new_y_machine is None:
+                logger.debug("Y change ignored, no value from UI.")
                 return
 
+            logger.debug(f"Handling Y change to {new_y_machine}")
             current_x_machine = self.x_row.get_value()
             self.editor.transform.set_position(
                 self.items, current_x_machine, new_y_machine
             )
         finally:
             self._in_update = False
+            logger.debug("_on_y_changed finished.")
 
     def _on_angle_changed(self, spin_row, GParamSpec):
+        logger.debug(f"_on_angle_changed called. _in_update={self._in_update}")
         if self._in_update or not self.items:
             return
         self._in_update = True
         try:
             new_angle_from_ui = spin_row.get_value()
             new_angle = -new_angle_from_ui
+            logger.debug(f"Handling angle change to {new_angle}")
 
             self.editor.transform.set_angle(self.items, new_angle)
         finally:
             self._in_update = False
+            logger.debug("_on_angle_changed finished.")
 
     def _on_shear_changed(self, spin_row, GParamSpec):
+        logger.debug(f"_on_shear_changed called. _in_update={self._in_update}")
         if self._in_update or not self.items:
             return
         self._in_update = True
         try:
             new_shear_from_ui = spin_row.get_value()
+            logger.debug(f"Handling shear change to {new_shear_from_ui}")
             self.editor.transform.set_shear(self.items, new_shear_from_ui)
         finally:
             self._in_update = False
+            logger.debug("_on_shear_changed finished.")
 
     def _on_fixed_ratio_toggled(self, switch_row, GParamSpec):
         is_ratio_lockable = self.items and isinstance(
