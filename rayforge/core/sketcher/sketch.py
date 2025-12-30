@@ -399,6 +399,18 @@ class Sketch(IAsset):
         if not loop:
             return 0.0
 
+        # Special case for circles
+        if len(loop) == 1:
+            entity = self.registry.get_entity(loop[0][0])
+            if isinstance(entity, Circle):
+                center = self.registry.get_point(entity.center_idx)
+                radius_pt = self.registry.get_point(entity.radius_pt_idx)
+                radius = math.hypot(
+                    radius_pt.x - center.x, radius_pt.y - center.y
+                )
+                # By convention, a single circle loop is CCW -> positive area
+                return math.pi * radius**2
+
         points = []
         # Calculate polygon area (straight chords)
         first_ent = self.registry.get_entity(loop[0][0])

@@ -1070,3 +1070,33 @@ def test_sketch_find_all_closed_loops():
     loop_sets7 = get_loop_ids(loops7)
     assert {ol1, ol2, ol3, ol4} in loop_sets7
     assert {il1, il2, il3, il4} in loop_sets7
+
+
+def test_find_all_closed_loops_with_circle_hole():
+    """Tests finding loops when a circle is used as a hole."""
+    s = Sketch()
+    # Outer square
+    p1 = s.add_point(-10, -10)
+    p2 = s.add_point(10, -10)
+    p3 = s.add_point(10, 10)
+    p4 = s.add_point(-10, 10)
+    l1 = s.add_line(p1, p2)
+    l2 = s.add_line(p2, p3)
+    l3 = s.add_line(p3, p4)
+    l4 = s.add_line(p4, p1)
+    # Inner circle
+    c = s.add_point(0, 0)
+    r = s.add_point(5, 0)
+    c1 = s.add_circle(c, r)
+
+    loops = s._find_all_closed_loops()
+    assert len(loops) == 2
+
+    loop_sets = [set(item[0] for item in loop) for loop in loops]
+    assert {l1, l2, l3, l4} in loop_sets
+    assert {c1} in loop_sets
+
+    # Verify area calculation is correct for the circle loop
+    circle_loop = next(loop for loop in loops if loop[0][0] == c1)
+    area = s._calculate_loop_signed_area(circle_loop)
+    assert area == pytest.approx(math.pi * 5**2)
