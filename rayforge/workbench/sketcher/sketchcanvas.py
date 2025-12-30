@@ -12,10 +12,10 @@ from ...core.sketcher.constraints import (
     RadiusConstraint,
     VerticalConstraint,
 )
+from ...core.sketcher.sketch_cmd import ModifyConstraintCommand
 from ...shared.ui.expression_entry import ExpressionEntry
 from ..canvas import WorldSurface
 from .editor import SketchEditor
-from .sketch_cmd import ModifyConstraintCommand
 from .sketchelement import SketchElement
 
 if TYPE_CHECKING:
@@ -291,7 +291,7 @@ class SketchCanvas(WorldSurface):
                         pass
 
                 cmd = ModifyConstraintCommand(
-                    element=self.sketch_element,
+                    sketch=self.sketch_element.sketch,
                     constraint=constraint,
                     new_value=new_value,
                     new_expression=new_expr,

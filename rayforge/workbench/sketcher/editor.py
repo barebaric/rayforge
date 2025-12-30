@@ -3,10 +3,10 @@ from typing import Union, Optional, TYPE_CHECKING
 from gi.repository import Gtk, Gdk, GLib
 from ...core.sketcher.entities import Point, Entity
 from ...core.sketcher.constraints import Constraint
+from ...core.sketcher.tools import SelectTool
 from ...undo import HistoryManager
 from ..canvas.cursor import get_tool_cursor
 from .piemenu import SketchPieMenu
-from .tools import SelectTool
 
 if TYPE_CHECKING:
     from .sketchelement import SketchElement

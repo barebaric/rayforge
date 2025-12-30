@@ -1,8 +1,7 @@
 import math
 from typing import Optional
-
-from rayforge.core.sketcher.entities import Point, Arc
-from rayforge.core.sketcher.constraints import EqualDistanceConstraint
+from ..constraints import EqualDistanceConstraint
+from ..entities import Point, Arc
 from ..sketch_cmd import AddItemsCommand
 from .base import SketchTool
 
@@ -266,14 +265,13 @@ class ArcTool(SketchTool):
                         pass
 
                 cmd = AddItemsCommand(
-                    self.element,
+                    self.element.sketch,
                     _("Add Arc"),
                     points=points_to_add,
                     entities=[new_arc],
                     constraints=[geom_constr],
                 )
-                if self.element.editor:
-                    self.element.editor.history_manager.execute(cmd)
+                self.element.execute_command(cmd)
 
                 # Reset tool state
                 self.center_id = None

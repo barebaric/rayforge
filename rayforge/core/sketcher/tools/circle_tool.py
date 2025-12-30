@@ -1,6 +1,5 @@
 from typing import Optional
-
-from rayforge.core.sketcher.entities import Point, Circle
+from ..entities import Point, Circle
 from ..sketch_cmd import AddItemsCommand
 from .base import SketchTool
 
@@ -147,13 +146,12 @@ class CircleTool(SketchTool):
                         pass
 
                 cmd = AddItemsCommand(
-                    self.element,
+                    self.element.sketch,
                     _("Add Circle"),
                     points=points_to_add,
                     entities=[new_circle],
                 )
-                if self.element.editor:
-                    self.element.editor.history_manager.execute(cmd)
+                self.element.execute_command(cmd)
 
                 # Reset for next circle
                 self.center_id = None

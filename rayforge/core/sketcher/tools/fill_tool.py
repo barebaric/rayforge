@@ -1,8 +1,7 @@
 import math
 from typing import List, Tuple
-
-from rayforge.core.sketcher.entities import Circle
-from ....core.geo import primitives as geo_primitives
+from ...geo import primitives as geo_primitives
+from ..entities import Circle
 from ..sketch_cmd import AddFillCommand, RemoveFillCommand
 from .base import SketchTool
 
@@ -82,14 +81,12 @@ class FillTool(SketchTool):
 
         if existing_fill:
             # Remove the fill
-            cmd = RemoveFillCommand(self.element, existing_fill)
-            if self.element.editor:
-                self.element.editor.history_manager.execute(cmd)
+            cmd = RemoveFillCommand(self.element.sketch, existing_fill)
+            self.element.execute_command(cmd)
         else:
             # Add a new fill
-            cmd = AddFillCommand(self.element, target_loop)
-            if self.element.editor:
-                self.element.editor.history_manager.execute(cmd)
+            cmd = AddFillCommand(self.element.sketch, target_loop)
+            self.element.execute_command(cmd)
 
         self.element.mark_dirty()
         return True

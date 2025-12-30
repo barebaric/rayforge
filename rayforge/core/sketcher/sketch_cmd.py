@@ -2,15 +2,14 @@ from __future__ import annotations
 import logging
 import uuid
 from typing import TYPE_CHECKING, List, Tuple, Optional, Dict
-from rayforge.undo.models.command import Command
-from rayforge.core.sketcher.entities import Line, Arc, Circle
-from rayforge.core.sketcher.sketch import Fill
+from ...undo.models.command import Command
+from .entities import Line, Arc, Circle
+from .sketch import Fill, Sketch
 
 
 if TYPE_CHECKING:
-    from rayforge.core.sketcher.entities import Point, Entity
-    from rayforge.core.sketcher.constraints import Constraint
-    from .sketchelement import SketchElement
+    from .entities import Point, Entity
+    from .constraints import Constraint
 
 logger = logging.getLogger(__name__)
 
@@ -21,21 +20,21 @@ class SketchChangeCommand(Command):
     Includes functionality to snapshot geometry state for precise undo.
     """
 
-    def __init__(self, element: "SketchElement", name: str):
+    def __init__(self, sketch: "Sketch", name: str):
         super().__init__(name)
-        self.element = element
+        self.sketch = sketch
         # Stores {point_id: (x, y)} for all points in the sketch
         self._state_snapshot: Dict[int, Tuple[float, float]] = {}
 
     def capture_snapshot(self):
         """Captures the current coordinates of all points."""
         self._state_snapshot = {
-            p.id: (p.x, p.y) for p in self.element.sketch.registry.points
+            p.id: (p.x, p.y) for p in self.sketch.registry.points
         }
 
     def restore_snapshot(self):
         """Restores coordinates from the snapshot."""
-        registry = self.element.sketch.registry
+        registry = self.sketch.registry
         for pid, (x, y) in self._state_snapshot.items():
             try:
                 p = registry.get_point(pid)
@@ -46,12 +45,6 @@ class SketchChangeCommand(Command):
                 # but typically this shouldn't happen.
                 pass
 
-    def _solve_and_update(self):
-        """Triggers a solve and update via a signal on the element."""
-        # The handler connected to this signal is now responsible for solving
-        # and redrawing.
-        self.element.sketch_changed.send(self.element)
-
     def execute(self) -> None:
         # If a snapshot wasn't provided during initialization (e.g. by a tool
         # that moved points before creating the command), capture it now.
@@ -59,7 +52,7 @@ class SketchChangeCommand(Command):
             self.capture_snapshot()
 
         self._do_execute()
-        self._solve_and_update()
+        self.sketch.notify_update()
 
     def undo(self) -> None:
         self._do_undo()
@@ -67,7 +60,7 @@ class SketchChangeCommand(Command):
         # This prevents the solver from jumping to an alternative solution
         # (e.g., triangle flip) when constraints are reapplied.
         self.restore_snapshot()
-        self._solve_and_update()
+        self.sketch.notify_update()
 
     def _do_execute(self) -> None:
         raise NotImplementedError
@@ -81,19 +74,19 @@ class AddItemsCommand(SketchChangeCommand):
 
     def __init__(
         self,
-        element: "SketchElement",
+        sketch: "Sketch",
         name: str,
         points: Optional[List["Point"]] = None,
         entities: Optional[List["Entity"]] = None,
         constraints: Optional[List["Constraint"]] = None,
     ):
-        super().__init__(element, name)
+        super().__init__(sketch, name)
         self.points = points or []
         self.entities = entities or []
         self.constraints = constraints or []
 
     def _do_execute(self) -> None:
-        registry = self.element.sketch.registry
+        registry = self.sketch.registry
         new_points = []
         for p in self.points:
             # Assign a real ID if it's a new point
@@ -113,10 +106,10 @@ class AddItemsCommand(SketchChangeCommand):
 
         # Rebuild entity map after adding
         registry._entity_map = {e.id: e for e in registry.entities}
-        self.element.sketch.constraints.extend(self.constraints)
+        self.sketch.constraints.extend(self.constraints)
 
     def _do_undo(self) -> None:
-        registry = self.element.sketch.registry
+        registry = self.sketch.registry
         point_ids = {p.id for p in self.points}
         entity_ids = {e.id for e in self.entities}
 
@@ -126,8 +119,8 @@ class AddItemsCommand(SketchChangeCommand):
         ]
         registry._entity_map = {e.id: e for e in registry.entities}
         for c in self.constraints:
-            if c in self.element.sketch.constraints:
-                self.element.sketch.constraints.remove(c)
+            if c in self.sketch.constraints:
+                self.sketch.constraints.remove(c)
 
 
 class RemoveItemsCommand(SketchChangeCommand):
@@ -135,19 +128,19 @@ class RemoveItemsCommand(SketchChangeCommand):
 
     def __init__(
         self,
-        element: "SketchElement",
+        sketch: "Sketch",
         name: str,
         points: Optional[List["Point"]] = None,
         entities: Optional[List["Entity"]] = None,
         constraints: Optional[List["Constraint"]] = None,
     ):
-        super().__init__(element, name)
+        super().__init__(sketch, name)
         self.points = points or []
         self.entities = entities or []
         self.constraints = constraints or []
 
     def _do_execute(self) -> None:
-        registry = self.element.sketch.registry
+        registry = self.sketch.registry
         point_ids = {p.id for p in self.points}
         entity_ids = {e.id for e in self.entities}
 
@@ -157,15 +150,15 @@ class RemoveItemsCommand(SketchChangeCommand):
         ]
         registry._entity_map = {e.id: e for e in registry.entities}
         for c in self.constraints:
-            if c in self.element.sketch.constraints:
-                self.element.sketch.constraints.remove(c)
+            if c in self.sketch.constraints:
+                self.sketch.constraints.remove(c)
 
     def _do_undo(self) -> None:
-        registry = self.element.sketch.registry
+        registry = self.sketch.registry
         registry.points.extend(self.points)
         registry.entities.extend(self.entities)
         registry._entity_map = {e.id: e for e in registry.entities}
-        self.element.sketch.constraints.extend(self.constraints)
+        self.sketch.constraints.extend(self.constraints)
 
 
 class MovePointCommand(SketchChangeCommand):
@@ -173,13 +166,13 @@ class MovePointCommand(SketchChangeCommand):
 
     def __init__(
         self,
-        element: "SketchElement",
+        sketch: "Sketch",
         point_id: int,
         start_pos: Tuple[float, float],
         end_pos: Tuple[float, float],
         snapshot: Optional[Dict[int, Tuple[float, float]]] = None,
     ):
-        super().__init__(element, _("Move Point"))
+        super().__init__(sketch, _("Move Point"))
         self.point_id = point_id
         self.start_pos = start_pos
         self.end_pos = end_pos
@@ -198,9 +191,7 @@ class MovePointCommand(SketchChangeCommand):
             return self._point_ref
         # Find in registry if not cached or mismatched
         try:
-            self._point_ref = self.element.sketch.registry.get_point(
-                self.point_id
-            )
+            self._point_ref = self.sketch.registry.get_point(self.point_id)
             return self._point_ref
         except IndexError:
             return None
@@ -244,13 +235,13 @@ class ModifyConstraintCommand(SketchChangeCommand):
 
     def __init__(
         self,
-        element: "SketchElement",
+        sketch: "Sketch",
         constraint: "Constraint",
         new_value: float,
         new_expression: Optional[str] = None,
         name: str = _("Edit Constraint"),
     ):
-        super().__init__(element, name)
+        super().__init__(sketch, name)
         self.constraint = constraint
         self.new_value = float(new_value)
         self.new_expression = new_expression
@@ -270,10 +261,8 @@ class ModifyConstraintCommand(SketchChangeCommand):
 class ToggleConstructionCommand(SketchChangeCommand):
     """Command to toggle the construction state of multiple entities."""
 
-    def __init__(
-        self, element: "SketchElement", name: str, entity_ids: List[int]
-    ):
-        super().__init__(element, name)
+    def __init__(self, sketch: "Sketch", name: str, entity_ids: List[int]):
+        super().__init__(sketch, name)
         self.entity_ids = entity_ids
         self.original_states: Dict[int, bool] = {}
         self.new_state: Optional[bool] = None
@@ -282,7 +271,7 @@ class ToggleConstructionCommand(SketchChangeCommand):
         self.original_states.clear()
         entities_to_modify = []
         for eid in self.entity_ids:
-            ent = self.element.sketch.registry.get_entity(eid)
+            ent = self.sketch.registry.get_entity(eid)
             if ent:
                 entities_to_modify.append(ent)
                 self.original_states[eid] = ent.construction
@@ -302,7 +291,7 @@ class ToggleConstructionCommand(SketchChangeCommand):
 
     def _do_undo(self) -> None:
         for eid, old_state in self.original_states.items():
-            ent = self.element.sketch.registry.get_entity(eid)
+            ent = self.sketch.registry.get_entity(eid)
             if ent:
                 ent.construction = old_state
 
@@ -310,8 +299,8 @@ class ToggleConstructionCommand(SketchChangeCommand):
 class UnstickJunctionCommand(SketchChangeCommand):
     """Command to separate entities at a shared point."""
 
-    def __init__(self, element: "SketchElement", junction_pid: int):
-        super().__init__(element, _("Unstick Junction"))
+    def __init__(self, sketch: "Sketch", junction_pid: int):
+        super().__init__(sketch, _("Unstick Junction"))
         self.junction_pid = junction_pid
         self.new_point: Optional[Point] = None
         # Stores {entity_id: (attribute_name, old_pid)}
@@ -319,14 +308,12 @@ class UnstickJunctionCommand(SketchChangeCommand):
 
     def _do_execute(self) -> None:
         try:
-            junction_pt = self.element.sketch.registry.get_point(
-                self.junction_pid
-            )
+            junction_pt = self.sketch.registry.get_point(self.junction_pid)
         except IndexError:
             return
 
         entities_at_junction = []
-        for e in self.element.sketch.registry.entities:
+        for e in self.sketch.registry.entities:
             if isinstance(e, Line):
                 if self.junction_pid in [e.p1_idx, e.p2_idx]:
                     entities_at_junction.append(e)
@@ -345,8 +332,8 @@ class UnstickJunctionCommand(SketchChangeCommand):
             return
 
         # Create a new point, add it to the registry, and store it
-        new_pid = self.element.sketch.add_point(junction_pt.x, junction_pt.y)
-        self.new_point = self.element.sketch.registry.get_point(new_pid)
+        new_pid = self.sketch.add_point(junction_pt.x, junction_pt.y)
+        self.new_point = self.sketch.registry.get_point(new_pid)
 
         # Keep the first entity, modify the rest
         is_first = True
@@ -386,13 +373,13 @@ class UnstickJunctionCommand(SketchChangeCommand):
     def _do_undo(self) -> None:
         # Revert changes to entities
         for eid, (attr, old_pid) in self.modified_map.items():
-            e = self.element.sketch.registry.get_entity(eid)
+            e = self.sketch.registry.get_entity(eid)
             if e:
                 setattr(e, attr, old_pid)
 
         # Remove the added point
         if self.new_point:
-            registry = self.element.sketch.registry
+            registry = self.sketch.registry
             registry.points = [
                 p for p in registry.points if p.id != self.new_point.id
             ]
@@ -403,22 +390,22 @@ class AddFillCommand(SketchChangeCommand):
 
     def __init__(
         self,
-        element: "SketchElement",
+        sketch: "Sketch",
         boundary: List[Tuple[int, bool]],
         name: str = _("Add Fill"),
     ):
-        super().__init__(element, name)
+        super().__init__(sketch, name)
         self.fill: Optional[Fill] = None
         self._boundary = boundary
 
     def _do_execute(self) -> None:
         if self.fill is None:
             self.fill = Fill(uid=str(uuid.uuid4()), boundary=self._boundary)
-        self.element.sketch.fills.append(self.fill)
+        self.sketch.fills.append(self.fill)
 
     def _do_undo(self) -> None:
-        if self.fill and self.fill in self.element.sketch.fills:
-            self.element.sketch.fills.remove(self.fill)
+        if self.fill and self.fill in self.sketch.fills:
+            self.sketch.fills.remove(self.fill)
 
 
 class RemoveFillCommand(SketchChangeCommand):
@@ -426,16 +413,16 @@ class RemoveFillCommand(SketchChangeCommand):
 
     def __init__(
         self,
-        element: "SketchElement",
+        sketch: "Sketch",
         fill: Fill,
         name: str = _("Remove Fill"),
     ):
-        super().__init__(element, name)
+        super().__init__(sketch, name)
         self.fill = fill
 
     def _do_execute(self) -> None:
-        if self.fill in self.element.sketch.fills:
-            self.element.sketch.fills.remove(self.fill)
+        if self.fill in self.sketch.fills:
+            self.sketch.fills.remove(self.fill)
 
     def _do_undo(self) -> None:
-        self.element.sketch.fills.append(self.fill)
+        self.sketch.fills.append(self.fill)

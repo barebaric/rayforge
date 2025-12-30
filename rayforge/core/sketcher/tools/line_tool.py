@@ -1,6 +1,5 @@
 from typing import Optional
-
-from rayforge.core.sketcher.entities import Point, Line
+from ..entities import Point, Line
 from ..sketch_cmd import AddItemsCommand
 from .base import SketchTool
 
@@ -94,13 +93,12 @@ class LineTool(SketchTool):
                         pass
 
                 cmd = AddItemsCommand(
-                    self.element,
+                    self.element.sketch,
                     _("Add Line"),
                     points=points_to_add,
                     entities=[new_line],
                 )
-                if self.element.editor:
-                    self.element.editor.history_manager.execute(cmd)
+                self.element.execute_command(cmd)
 
             # Start a new line segment from this point
             self.line_start_id = pid_hit
