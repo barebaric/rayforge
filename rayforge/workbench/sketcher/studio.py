@@ -198,6 +198,7 @@ class SketchStudio(Gtk.Box):
             "tool_line": "line",
             "tool_circle": "circle",
             "tool_arc": "arc",
+            "tool_fill": "fill",
         }
         for action_name, tool_id in tool_map.items():
             action = Gio.SimpleAction.new(action_name, None)
@@ -220,6 +221,7 @@ class SketchStudio(Gtk.Box):
             "sketch.tool_line": ["l"],
             "sketch.tool_circle": ["c"],
             "sketch.tool_arc": ["a"],
+            "sketch.tool_fill": ["i"],
             "sketch.finish": ["<Primary>Return"],
         }
 

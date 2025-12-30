@@ -79,6 +79,7 @@ The sketcher uses keyboard shortcuts inspired by FreeCAD for consistency and eff
 - `G+L`: Line tool
 - `G+A`: Arc tool
 - `G+C`: Circle tool
+- `G+F`: Fill Area tool
 - `G+N`: Toggle construction mode on selection
 
 ### Constraint Shortcuts

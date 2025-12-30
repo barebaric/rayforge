@@ -60,9 +60,10 @@ class SketchImporter(Importer):
         # Apply the final name to the sketch object.
         self.parsed_sketch.name = final_name
 
-        # 3. Convert Sketch to Geometry (for the WorkPiece's cache/bounds)
+        # 3. Solve the sketch and get all geometry (strokes and fills)
         self.parsed_sketch.solve()
         geometry = self.parsed_sketch.to_geometry()
+        fill_geometries = self.parsed_sketch.get_fill_geometries()
         geometry.close_gaps()
 
         min_x, min_y, max_x, max_y = geometry.rect()
@@ -94,6 +95,18 @@ class SketchImporter(Importer):
         # 7. Link to Sketch Template and SourceAsset.
         workpiece.sketch_uid = self.parsed_sketch.uid
         workpiece.source_asset_uid = source_asset.uid
+
+        # 8. Pre-populate the workpiece's caches with normalized geometry.
+        # This prevents the first render from being empty.
+        norm_matrix = Matrix.scale(
+            1.0 / width, 1.0 / height
+        ) @ Matrix.translation(-min_x, -min_y)
+        geometry.transform(norm_matrix.to_4x4_numpy())
+        for fill_geo in fill_geometries:
+            fill_geo.transform(norm_matrix.to_4x4_numpy())
+
+        workpiece._boundaries_cache = geometry
+        workpiece._fills_cache = fill_geometries
 
         return ImportPayload(
             source=source_asset,

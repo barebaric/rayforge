@@ -68,6 +68,7 @@ class WorkPiece(DocItem):
         super().__init__(name=name)
         self._source_segment = source_segment
         self._boundaries_cache: Optional[Geometry] = None
+        self._fills_cache: Optional[List[Geometry]] = None
 
         # Natural (untransformed) dimensions of the workpiece content.
         self.natural_width_mm: float = 0.0
@@ -135,12 +136,14 @@ class WorkPiece(DocItem):
         # 1. Solve a transient copy to determine natural size without side
         # effects.
         geometry = None
+        fill_geometries = []
         min_x, min_y = 0.0, 0.0
 
         try:
             temp_sketch = Sketch.from_dict(sketch.to_dict())
             temp_sketch.solve()
             geometry = temp_sketch.to_geometry()
+            fill_geometries = temp_sketch.get_fill_geometries()
 
             if not geometry.is_empty():
                 min_x, min_y, max_x, max_y = geometry.rect()
@@ -157,6 +160,7 @@ class WorkPiece(DocItem):
             from .geo import Geometry
 
             geometry = Geometry()
+            fill_geometries = []
 
         # 2. Create the instance
         instance = cls(name=sketch.name or "Sketch")
@@ -168,17 +172,20 @@ class WorkPiece(DocItem):
         if width > 1e-6 and height > 1e-6:
             instance.set_size(width, height)
 
-        # 4. Pre-populate boundaries cache to avoid immediate re-solve on
-        # first render. We perform the same normalization here that the
-        # boundaries property does.
+        # 4. Pre-populate caches to avoid immediate re-solve on first render.
+        # We perform the same normalization here that the boundaries property
+        # does.
         if geometry and not geometry.is_empty():
             norm_matrix = Matrix.scale(
                 1.0 / width, 1.0 / height
             ) @ Matrix.translation(-min_x, -min_y)
             geometry.transform(norm_matrix.to_4x4_numpy())
+            for fill_geo in fill_geometries:
+                fill_geo.transform(norm_matrix.to_4x4_numpy())
 
-        # Cache the result (even if empty) to ensure fast rendering
+        # Cache the results (even if empty) to ensure fast rendering
         instance._boundaries_cache = geometry
+        instance._fills_cache = fill_geometries
 
         return instance
 
@@ -225,9 +232,8 @@ class WorkPiece(DocItem):
             f"WP {self.uid[:8]}: Clearing all caches (render and boundaries)."
         )
         self._render_cache.clear()
-        self._boundaries_cache = (
-            None  # Also clear the boundaries cache on update
-        )
+        self._boundaries_cache = None
+        self._fills_cache = None
 
     @property
     def source(self) -> "Optional[SourceAsset]":
@@ -364,23 +370,32 @@ class WorkPiece(DocItem):
 
             instance_sketch.solve()
             unnormalized_geo = instance_sketch.to_geometry()
+            # Also get fill geometries from the same solved state.
+            unnormalized_fills = instance_sketch.get_fill_geometries()
 
             # Cache the geometry even if it is empty, to prevent
             # re-solving on every render frame.
             if unnormalized_geo.is_empty():
                 self._boundaries_cache = unnormalized_geo
+                self._fills_cache = unnormalized_fills
                 return self._boundaries_cache
 
-            # Normalize the solved geometry to a 0-1 box (Y-Up)
+            # Normalize the solved geometry to a 0-1 box (Y-Up) based on
+            # the boundaries (strokes).
             min_x, min_y, max_x, max_y = unnormalized_geo.rect()
             width = max(max_x - min_x, 1e-9)
             height = max(max_y - min_y, 1e-9)
             norm_matrix = Matrix.scale(
                 1.0 / width, 1.0 / height
             ) @ Matrix.translation(-min_x, -min_y)
+
+            # Apply same normalization to both strokes and fills
             unnormalized_geo.transform(norm_matrix.to_4x4_numpy())
+            for fill_geo in unnormalized_fills:
+                fill_geo.transform(norm_matrix.to_4x4_numpy())
 
             self._boundaries_cache = unnormalized_geo
+            self._fills_cache = unnormalized_fills
             return self._boundaries_cache
 
         # --- SourceAssetSegment-based Geometry (legacy/other formats) ---
@@ -663,10 +678,19 @@ class WorkPiece(DocItem):
         kwargs = {}
         renderer_name = renderer.__class__.__name__
 
-        if renderer_name in ("OpsRenderer", "DxfRenderer", "SketchRenderer"):
+        # For OpsRenderer, only pass boundaries (strokes).
+        if renderer_name == "OpsRenderer":
             kwargs["boundaries"] = self.boundaries
 
+        # For SketchRenderer, pass boundaries AND fills. The call to
+        # self.boundaries ensures the fills cache is populated.
+        if renderer_name == "SketchRenderer":
+            kwargs["boundaries"] = self.boundaries
+            if self._fills_cache:
+                kwargs["fills"] = self._fills_cache
+
         if renderer_name == "DxfRenderer":
+            kwargs["boundaries"] = self.boundaries
             kwargs["source_metadata"] = metadata
             kwargs["workpiece_matrix"] = self.matrix
 

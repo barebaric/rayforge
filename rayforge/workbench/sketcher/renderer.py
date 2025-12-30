@@ -2,6 +2,7 @@ import cairo
 import math
 from collections import defaultdict
 from ...core.geo.primitives import find_closest_point_on_line
+from ...core.geo.geometry import MoveToCommand, LineToCommand, ArcToCommand
 from ...core.sketcher.entities import Line, Arc, Circle
 from ...core.sketcher.constraints import (
     DistanceConstraint,
@@ -60,6 +61,7 @@ class SketchRenderer:
         if is_editing:
             self._draw_origin(ctx)
 
+        self._draw_fills(ctx)
         self._draw_entities(ctx, is_editing, scaled_line_width)
         ctx.restore()
 
@@ -104,6 +106,58 @@ class SketchRenderer:
         ctx.arc(0, 0, 4.0 / scale, 0, 2 * math.pi)
         ctx.stroke()
         ctx.restore()
+
+    def _draw_fills(self, ctx: cairo.Context):
+        """Draws the filled regions of the sketch."""
+        # Use the sketch's centralized logic to get geometry
+        fill_geometries = self.element.sketch.get_fill_geometries()
+
+        for geo in fill_geometries:
+            ctx.new_path()
+
+            for cmd in geo.commands:
+                if isinstance(cmd, MoveToCommand):
+                    ctx.move_to(cmd.end[0], cmd.end[1])
+
+                elif isinstance(cmd, LineToCommand):
+                    ctx.line_to(cmd.end[0], cmd.end[1])
+
+                elif isinstance(cmd, ArcToCommand):
+                    # Current point (start of arc)
+                    try:
+                        sx, sy = ctx.get_current_point()
+                    except Exception:
+                        # Should not happen if geometry is valid and starts
+                        # with MoveTo
+                        continue
+
+                    # Center offset (i, j) is relative to start
+                    i, j = cmd.center_offset
+                    cx, cy = sx + i, sy + j
+
+                    radius = math.hypot(i, j)
+
+                    # Angles
+                    # Start vector: from Center to Start -> (-i, -j)
+                    start_angle = math.atan2(-j, -i)
+
+                    # End vector: from Center to End
+                    end_x, end_y = cmd.end[0], cmd.end[1]
+                    end_angle = math.atan2(end_y - cy, end_x - cx)
+
+                    if cmd.clockwise:
+                        ctx.arc_negative(
+                            cx, cy, radius, start_angle, end_angle
+                        )
+                    else:
+                        ctx.arc(cx, cy, radius, start_angle, end_angle)
+
+            ctx.close_path()
+
+            ctx.save()
+            ctx.set_source_rgba(0.85, 0.85, 0.85, 0.7)
+            ctx.fill()
+            ctx.restore()
 
     # --- Entities ---
 

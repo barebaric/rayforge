@@ -27,7 +27,7 @@ from rayforge.core.sketcher.constraints import (
 from .selection import SketchSelection
 from .hittest import SketchHitTester
 from .renderer import SketchRenderer
-from .tools import SelectTool, LineTool, ArcTool, CircleTool
+from .tools import SelectTool, LineTool, ArcTool, CircleTool, FillTool
 from .sketch_cmd import (
     AddItemsCommand,
     RemoveItemsCommand,
@@ -83,6 +83,7 @@ class SketchElement(CanvasElement):
             "line": LineTool(self),
             "arc": ArcTool(self),
             "circle": CircleTool(self),
+            "fill": FillTool(self),
         }
         self.active_tool_name = "select"
 
