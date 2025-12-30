@@ -87,6 +87,10 @@ class Sketch(IAsset):
         # Initialize the Origin Point (Fixed Anchor)
         self.origin_id = self.registry.add_point(0.0, 0.0, fixed=True)
 
+    def notify_update(self):
+        """Public method to signal that the sketch has been modified."""
+        self.updated.send(self)
+
     def _validate_and_cleanup_fills(self):
         """
         Removes any Fill objects whose boundary entities no longer form a

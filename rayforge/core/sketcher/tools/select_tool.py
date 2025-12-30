@@ -2,10 +2,9 @@ import logging
 import math
 import cairo
 from typing import Optional, Tuple, Dict, cast, TYPE_CHECKING
-
-from rayforge.core.sketcher.entities import Entity, Line, Arc, Circle
-from rayforge.core.matrix import Matrix
-from rayforge.core.sketcher.constraints import (
+from ...matrix import Matrix
+from ..entities import Entity, Line, Arc, Circle
+from ..constraints import (
     DragConstraint,
     DistanceConstraint,
     RadiusConstraint,
@@ -98,12 +97,11 @@ class SelectTool(SketchTool):
                         radius = math.hypot(s.x - c.x, s.y - c.y)
                         new_constr = RadiusConstraint(entity.id, radius)
                         cmd = AddItemsCommand(
-                            self.element,
+                            self.element.sketch,
                             _("Add Radius"),
                             constraints=[new_constr],
                         )
-                        if self.element.editor:
-                            self.element.editor.history_manager.execute(cmd)
+                        self.element.execute_command(cmd)
                         logger.debug(
                             f"Created new constraint, emitting signal: "
                             f"{new_constr}"
@@ -139,12 +137,11 @@ class SelectTool(SketchTool):
                         dist = math.hypot(p1.x - p2.x, p1.y - p2.y)
                         new_constr = DistanceConstraint(p1_id, p2_id, dist)
                         cmd = AddItemsCommand(
-                            self.element,
+                            self.element.sketch,
                             _("Add Distance"),
                             constraints=[new_constr],
                         )
-                        if self.element.editor:
-                            self.element.editor.history_manager.execute(cmd)
+                        self.element.execute_command(cmd)
                         logger.debug(
                             f"Created new constraint, emitting signal: "
                             f"{new_constr}"
@@ -180,12 +177,11 @@ class SelectTool(SketchTool):
                         radius = math.hypot(r_pt.x - c.x, r_pt.y - c.y)
                         new_constr = DiameterConstraint(entity.id, radius * 2)
                         cmd = AddItemsCommand(
-                            self.element,
+                            self.element.sketch,
                             _("Add Diameter"),
                             constraints=[new_constr],
                         )
-                        if self.element.editor:
-                            self.element.editor.history_manager.execute(cmd)
+                        self.element.execute_command(cmd)
                         logger.debug(
                             f"Created new constraint, emitting signal: "
                             f"{new_constr}"
@@ -326,14 +322,13 @@ class SelectTool(SketchTool):
                     # points return to their pre-drag state, not just the
                     # single dragged point.
                     cmd = MovePointCommand(
-                        self.element,
+                        self.element.sketch,
                         self.dragged_point_id,
                         (start_x, start_y),
                         (end_x, end_y),
                         snapshot=self.drag_initial_positions,
                     )
-                    if self.element.editor:
-                        self.element.editor.history_manager.execute(cmd)
+                    self.element.execute_command(cmd)
 
         # Clear all drag-related state
         self.dragged_point_id = None
