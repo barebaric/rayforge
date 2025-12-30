@@ -23,6 +23,11 @@ logger = logging.getLogger(__name__)
 NULL_CHOICE_LABEL = _("None Selected")
 
 
+def escape_title(text: str) -> str:
+    """Escape ampersands for GTK/Adwaita title display."""
+    return text.replace("&", "&&")
+
+
 def natural_sort_key(s: str) -> list:
     """Sorts strings containing numbers in a natural order."""
     return [
@@ -83,7 +88,7 @@ class VarRowFactory:
                 f"and type {type(var)}"
             )
             row = Adw.ActionRow(
-                title=var.label,
+                title=escape_title(var.label),
                 subtitle=_("Unsupported type: {t}").format(
                     t=type(var).__name__
                 ),
@@ -92,7 +97,7 @@ class VarRowFactory:
         return row
 
     def _create_string_row(self, var: Var, target_property: str):
-        row = Adw.EntryRow(title=var.label)
+        row = Adw.EntryRow(title=escape_title(var.label))
         if var.description:
             row.set_tooltip_text(var.description)
         initial_val = getattr(var, target_property)
@@ -101,7 +106,7 @@ class VarRowFactory:
         return row
 
     def _create_hostname_row(self, var: HostnameVar, target_property: str):
-        row = Adw.EntryRow(title=var.label)
+        row = Adw.EntryRow(title=escape_title(var.label))
         if var.description:
             row.set_tooltip_text(var.description)
         row.set_show_apply_button(True)
@@ -111,7 +116,7 @@ class VarRowFactory:
         return row
 
     def _create_boolean_row(self, var: Var, target_property: str):
-        row = Adw.ActionRow(title=var.label)
+        row = Adw.ActionRow(title=escape_title(var.label))
         if var.description:
             row.set_subtitle(var.description)
         switch = Gtk.Switch(valign=Gtk.Align.CENTER)
@@ -138,7 +143,7 @@ class VarRowFactory:
             upper=upper,
             step_increment=1,
         )
-        row = Adw.SpinRow(adjustment=adj, title=var.label)
+        row = Adw.SpinRow(adjustment=adj, title=escape_title(var.label))
         if var.description:
             row.set_subtitle(var.description)
         return row
@@ -158,13 +163,17 @@ class VarRowFactory:
             upper=upper,
             step_increment=0.1,
         )
-        row = Adw.SpinRow(adjustment=adj, digits=3, title=var.label)
+        row = Adw.SpinRow(
+            adjustment=adj,
+            digits=3,
+            title=escape_title(var.label),
+        )
         if var.description:
             row.set_subtitle(var.description)
         return row
 
     def _create_slider_row(self, var: SliderFloatVar, target_property: str):
-        row = Adw.ActionRow(title=var.label)
+        row = Adw.ActionRow(title=escape_title(var.label))
         if var.description:
             row.set_subtitle(var.description)
 
@@ -202,7 +211,7 @@ class VarRowFactory:
     def _create_choice_row(self, var: ChoiceVar, target_property: str):
         choices = [NULL_CHOICE_LABEL] + var.choices
         store = Gtk.StringList.new(choices)
-        row = Adw.ComboRow(model=store, title=var.label)
+        row = Adw.ComboRow(model=store, title=escape_title(var.label))
         if var.description:
             row.set_subtitle(var.description)
         initial_val = getattr(var, target_property)
@@ -215,7 +224,7 @@ class VarRowFactory:
     def _create_baud_rate_row(self, var: BaudrateVar, target_property: str):
         choices_str = [str(rate) for rate in SerialTransport.list_baud_rates()]
         store = Gtk.StringList.new(choices_str)
-        row = Adw.ComboRow(model=store, title=var.label)
+        row = Adw.ComboRow(model=store, title=escape_title(var.label))
         if var.description:
             row.set_subtitle(var.description)
         initial_val = getattr(var, target_property)
@@ -233,7 +242,7 @@ class VarRowFactory:
         sorted_ports = sorted(list(port_set), key=natural_sort_key)
         choices = [NULL_CHOICE_LABEL] + sorted_ports
         store = Gtk.StringList.new(choices)
-        row = Adw.ComboRow(model=store, title=var.label)
+        row = Adw.ComboRow(model=store, title=escape_title(var.label))
         if var.description:
             row.set_subtitle(var.description)
         if initial_val and initial_val in choices:
@@ -264,7 +273,7 @@ class VarRowFactory:
         return row
 
     def _create_textarea_row(self, var: TextAreaVar, target_property: str):
-        row = Adw.ExpanderRow(title=var.label)
+        row = Adw.ExpanderRow(title=escape_title(var.label))
         if var.description:
             row.set_subtitle(var.description)
         text_view = Gtk.TextView(

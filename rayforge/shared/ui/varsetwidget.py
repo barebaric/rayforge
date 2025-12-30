@@ -2,9 +2,6 @@ import logging
 from typing import Any
 from gi.repository import Gtk, Adw
 from blinker import Signal
-
-from .adwfix import get_spinrow_int
-from ...machine.transport.validators import is_valid_hostname_or_ip
 from ...core.varset import (
     ChoiceVar,
     HostnameVar,
@@ -14,7 +11,9 @@ from ...core.varset import (
     VarSet,
 )
 from ...icons import get_icon
-from .var_row_factory import VarRowFactory
+from ...machine.transport.validators import is_valid_hostname_or_ip
+from .adwfix import get_spinrow_int
+from .var_row_factory import VarRowFactory, escape_title
 
 logger = logging.getLogger(__name__)
 NULL_CHOICE_LABEL = _("None Selected")
@@ -50,9 +49,9 @@ class VarSetWidget(Adw.PreferencesGroup):
         """
         # Set the group's title and description from the VarSet
         if var_set.title:
-            self.set_title(var_set.title)
+            self.set_title(escape_title(var_set.title))
         if var_set.description:
-            self.set_description(var_set.description)
+            self.set_description(escape_title(var_set.description))
 
         # 1. Identify rows to remove (keys not present in new set)
         new_keys = {var.key for var in var_set}
@@ -104,7 +103,7 @@ class VarSetWidget(Adw.PreferencesGroup):
         from a new Var definition.
         """
         if hasattr(row, "set_title") and var.label:
-            row.set_title(var.label)
+            row.set_title(escape_title(var.label))
 
         widget = getattr(row, "get_activatable_widget", lambda: None)()
 
