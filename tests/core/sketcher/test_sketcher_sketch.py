@@ -2,7 +2,7 @@ import math
 import uuid
 import pytest
 from pathlib import Path
-from rayforge.core.geo import ArcToCommand, Geometry
+from rayforge.core.geo import ArcToCommand, Geometry, LineToCommand
 from rayforge.core.sketcher import Sketch
 from rayforge.core.sketcher.sketch import Fill
 from rayforge.core.sketcher.constraints import (
@@ -1100,3 +1100,150 @@ def test_find_all_closed_loops_with_circle_hole():
     circle_loop = next(loop for loop in loops if loop[0][0] == c1)
     area = s._calculate_loop_signed_area(circle_loop)
     assert area == pytest.approx(math.pi * 5**2)
+
+
+def test_sketch_fill_geometry_generation_circle():
+    """Test generating fill geometry for a single Circle loop."""
+    sketch = Sketch()
+    c = sketch.add_point(0, 0)
+    r = sketch.add_point(10, 0)
+
+    # Create circle
+    cid = sketch.add_circle(c, r)
+
+    # Define fill
+    fill = Fill(uid="fill1", boundary=[(cid, True)])
+    sketch.fills.append(fill)
+
+    # Generate geometries
+    geos = sketch.get_fill_geometries()
+
+    assert len(geos) == 1
+    geo = geos[0]
+
+    # Check commands: should be 1 MoveTo + 2 ArcTo (semicircles)
+    assert len(geo.commands) == 3
+
+    # Start at radius point (10, 0)
+    assert geo.commands[0].end == (10.0, 0.0, 0.0)
+
+    # First arc to (-10, 0). Center is (0,0). Offset from (10,0) is (-10, 0).
+    arc1 = geo.commands[1]
+    assert isinstance(arc1, ArcToCommand)
+    assert arc1.end == (-10.0, 0.0, 0.0)
+    assert arc1.center_offset == (-10.0, 0.0)
+    assert not arc1.clockwise
+
+    # Second arc to (10, 0). Offset from (-10,0) is (10, 0).
+    arc2 = geo.commands[2]
+    assert isinstance(arc2, ArcToCommand)
+    assert arc2.end == (10.0, 0.0, 0.0)
+    assert arc2.center_offset == (10.0, 0.0)
+    assert not arc2.clockwise
+
+
+def test_sketch_fill_geometry_generation_rect():
+    """Test generating fill geometry for a rectangle (multi-segment lines)."""
+    sketch = Sketch()
+    p1 = sketch.add_point(0, 0)
+    p2 = sketch.add_point(10, 0)
+    p3 = sketch.add_point(10, 10)
+    p4 = sketch.add_point(0, 10)
+
+    l1 = sketch.add_line(p1, p2)
+    l2 = sketch.add_line(p2, p3)
+    l3 = sketch.add_line(p3, p4)
+    l4 = sketch.add_line(p4, p1)
+
+    # Define fill loop
+    boundary = [
+        (l1, True),  # p1 -> p2
+        (l2, True),  # p2 -> p3
+        (l3, True),  # p3 -> p4
+        (l4, True),  # p4 -> p1
+    ]
+    fill = Fill(uid="fill_rect", boundary=boundary)
+    sketch.fills.append(fill)
+
+    geos = sketch.get_fill_geometries()
+    assert len(geos) == 1
+    geo = geos[0]
+
+    assert len(geo.commands) == 5  # MoveTo + 4 LineTo
+
+    # Check start
+    assert geo.commands[0].end == (0.0, 0.0, 0.0)
+
+    # Check sequence
+    assert isinstance(geo.commands[1], LineToCommand)
+    assert geo.commands[1].end == (10.0, 0.0, 0.0)
+
+    assert isinstance(geo.commands[2], LineToCommand)
+    assert geo.commands[2].end == (10.0, 10.0, 0.0)
+
+    assert isinstance(geo.commands[3], LineToCommand)
+    assert geo.commands[3].end == (0.0, 10.0, 0.0)
+
+    assert isinstance(geo.commands[4], LineToCommand)
+    assert geo.commands[4].end == (0.0, 0.0, 0.0)
+
+
+def test_sketch_fill_geometry_generation_arc_shape():
+    """Test fill with mixed Lines and Arcs, including reverse traversal."""
+    sketch = Sketch()
+
+    # Shape: A semi-circle connected by a straight line.
+    # Points: (-10, 0) and (10, 0). Center (0,0).
+
+    p_left = sketch.add_point(-10, 0)
+    p_right = sketch.add_point(10, 0)
+    p_center = sketch.add_point(0, 0)
+
+    # Line from Left to Right
+    line_id = sketch.add_line(p_left, p_right)
+
+    # Arc from Left to Right (top half). Clockwise.
+    # Start: Left, End: Right, Center: Center.
+    # If CW: goes Left -> Top -> Right.
+    arc_id = sketch.add_arc(p_left, p_right, p_center, clockwise=True)
+
+    # Loop definition:
+    # 1. Line: Left -> Right (Forward)
+    # 2. Arc: Right -> Left (Reverse of Arc definition Left->Right)
+
+    boundary = [
+        (line_id, True),  # (-10,0) -> (10,0)
+        (arc_id, False),  # (10,0) -> (-10,0) via arc
+    ]
+
+    fill = Fill(uid="fill_arc", boundary=boundary)
+    sketch.fills.append(fill)
+
+    geos = sketch.get_fill_geometries()
+    assert len(geos) == 1
+    geo = geos[0]
+
+    assert len(geo.commands) == 3  # MoveTo + LineTo + ArcTo
+
+    # 1. MoveTo Start of Line (-10, 0)
+    assert geo.commands[0].end == (-10.0, 0.0, 0.0)
+
+    # 2. LineTo End of Line (10, 0)
+    assert isinstance(geo.commands[1], LineToCommand)
+    assert geo.commands[1].end == (10.0, 0.0, 0.0)
+
+    # 3. ArcTo back to (-10, 0)
+    # Entity is CW. Traversal is Reverse.
+    # In `get_fill_geometries`: is_cw = not entity.clockwise if not fwd.
+    # So is_cw should be False (CCW).
+
+    cmd_arc = geo.commands[2]
+    assert isinstance(cmd_arc, ArcToCommand)
+    assert cmd_arc.end == (-10.0, 0.0, 0.0)
+
+    # Center offset relative to current point (10, 0). Center is (0,0).
+    # Offset = (0 - 10, 0 - 0) = (-10, 0)
+    assert cmd_arc.center_offset == (-10.0, 0.0)
+
+    # Direction check
+    assert cmd_arc.clockwise is False

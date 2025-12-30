@@ -58,6 +58,7 @@ class SketchEditor:
             "gl": "set_tool:line",
             "ga": "set_tool:arc",
             "gc": "set_tool:circle",
+            "gf": "set_tool:fill",
             "gn": "toggle_construction_on_selection",
             # Constraints (Single Key)
             "h": "add_horizontal_constraint",
@@ -124,6 +125,8 @@ class SketchEditor:
             return get_tool_cursor("sketch-arc-symbolic")
         if tool == "circle":
             return get_tool_cursor("sketch-circle-symbolic")
+        if tool == "fill":
+            return get_tool_cursor("sketch-fill-symbolic")
 
         # Default cursor for 'select' tool or any other case.
         return Gdk.Cursor.new_from_name("default")
