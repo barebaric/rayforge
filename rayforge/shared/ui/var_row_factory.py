@@ -200,7 +200,7 @@ class VarRowFactory:
             orientation=Gtk.Orientation.HORIZONTAL,
             adjustment=adj,
             digits=0,
-            draw_value=True,
+            draw_value=var.show_value,
             hexpand=True,
         )
         scale.set_size_request(200, -1)

@@ -63,4 +63,31 @@ class SliderFloatVar(FloatVar):
     which the UI will display as 0-100.
     """
 
-    pass
+    def __init__(
+        self,
+        key: str,
+        label: str,
+        description: Optional[str] = None,
+        default: Optional[float] = None,
+        value: Optional[float] = None,
+        min_val: Optional[float] = None,
+        max_val: Optional[float] = None,
+        extra_validator: Optional[Callable[[float], None]] = None,
+        show_value: bool = True,
+    ):
+        self.show_value = show_value
+        super().__init__(
+            key=key,
+            label=label,
+            description=description,
+            default=default,
+            value=value,
+            min_val=min_val,
+            max_val=max_val,
+            extra_validator=extra_validator,
+        )
+
+    def to_dict(self, include_value: bool = False) -> Dict[str, Any]:
+        data = super().to_dict(include_value=include_value)
+        data.update({"show_value": self.show_value})
+        return data
