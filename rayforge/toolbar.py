@@ -2,7 +2,7 @@ import logging
 from gi.repository import Gtk
 from blinker import Signal
 from .icons import get_icon
-from .undo.ui.undo_button import UndoButton, RedoButton
+from .shared.ui.undo_button import UndoButton, RedoButton
 from .machine.ui.machine_selector import MachineSelector
 from .splitbutton import SplitMenuButton
 from .workbench.canvas3d import initialized as canvas3d_initialized

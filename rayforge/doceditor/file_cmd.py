@@ -3,21 +3,21 @@ import logging
 from pathlib import Path
 from typing import TYPE_CHECKING, List, Optional, Tuple, cast, Callable
 
+from ..context import get_context
 from ..core.item import DocItem
 from ..core.layer import Layer
 from ..core.matrix import Matrix
+from ..core.source_asset import SourceAsset
+from ..core.undo import ListItemCommand
 from ..core.vectorization_spec import VectorizationSpec
 from ..image import import_file, ImportPayload
-from ..core.source_asset import SourceAsset
-from ..context import get_context
 from ..pipeline.artifact import JobArtifactHandle, JobArtifact
-from ..undo import ListItemCommand
 from .layout.align import PositionAtStrategy
 
 if TYPE_CHECKING:
+    from ..core.sketcher.sketch import Sketch
     from ..doceditor.editor import DocEditor
     from ..shared.tasker.manager import TaskManager
-    from ..core.sketcher.sketch import Sketch
 
 
 logger = logging.getLogger(__name__)

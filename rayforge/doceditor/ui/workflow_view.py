@@ -3,7 +3,7 @@ from typing import Optional, List, Callable, cast, TYPE_CHECKING
 from gi.repository import Gtk
 from ...icons import get_icon
 from ...core.workflow import Workflow
-from ...undo.models.list_cmd import ListItemCommand, ReorderListCommand
+from ...core.undo.list_cmd import ListItemCommand, ReorderListCommand
 from ...shared.ui.draglist import DragListBox
 from ...shared.ui.expander import Expander
 from .step_box import StepBox

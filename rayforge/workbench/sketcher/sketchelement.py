@@ -40,7 +40,7 @@ from .hittest import SketchHitTester
 from .renderer import SketchRenderer
 
 if TYPE_CHECKING:
-    from ...undo.models.command import Command
+    from ...core.undo.command import Command
     from .sketchcanvas import SketchCanvas
     from .editor import SketchEditor
 

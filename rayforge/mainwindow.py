@@ -12,6 +12,7 @@ from .core.item import DocItem
 from .core.sketcher import Sketch
 from .core.step import Step
 from .core.stock import StockItem
+from .core.undo import Command, HistoryManager, ListItemCommand
 from .core.workpiece import WorkPiece
 from .doceditor.editor import DocEditor
 from .doceditor.ui import file_dialogs, import_handler
@@ -38,7 +39,6 @@ from .shared.ui.about import AboutDialog
 from .shared.ui.settings_dialog import SettingsWindow
 from .shared.ui.task_bar import TaskBar
 from .toolbar import MainToolbar
-from .undo import Command, HistoryManager, ListItemCommand
 from .doceditor.ui.stock_properties_dialog import StockPropertiesDialog
 from .workbench.canvas import CanvasElement
 from .workbench.canvas3d import Canvas3D, initialized as canvas3d_initialized

@@ -1,8 +1,8 @@
 from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING, List, Dict, Any
+from ..core.undo import ChangePropertyCommand
 from ..core.workpiece import WorkPiece
-from ..undo import ChangePropertyCommand
 
 if TYPE_CHECKING:
     from .editor import DocEditor

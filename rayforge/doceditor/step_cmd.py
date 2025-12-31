@@ -1,11 +1,11 @@
 from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING, Any, Dict
-from ..undo import DictItemCommand
+from ..core.undo import DictItemCommand
 
 if TYPE_CHECKING:
-    from .editor import DocEditor
     from ..core.step import Step
+    from .editor import DocEditor
 
 
 logger = logging.getLogger(__name__)

@@ -1,8 +1,8 @@
 from typing import Dict, Any, TYPE_CHECKING
 from gi.repository import Adw
 from .base import StepComponentSettingsWidget
+from ....core.undo import DictItemCommand
 from ....pipeline.transformer import Optimize
-from ....undo import DictItemCommand
 
 if TYPE_CHECKING:
     from ....core.step import Step

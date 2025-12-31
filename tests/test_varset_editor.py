@@ -19,12 +19,12 @@ gi.require_version("Adw", "1")
 from gi.repository import Adw, Gtk, GLib
 import time
 
+from rayforge.core.undo import HistoryManager
 from rayforge.core.varset import VarSet, IntVar, FloatVar
 from rayforge.shared.ui.varset_editor import (
     VarSetEditorWidget,
     VarDefinitionRowWidget,
 )
-from rayforge.undo import HistoryManager
 
 
 def process_events(duration_sec: float = 0.1):

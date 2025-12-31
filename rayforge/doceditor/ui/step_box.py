@@ -3,7 +3,7 @@ from gi.repository import Gtk, Adw
 from blinker import Signal
 from ...core.step import Step
 from ...icons import get_icon
-from ...undo.models.property_cmd import ChangePropertyCommand
+from ...core.undo.property_cmd import ChangePropertyCommand
 from ...shared.ui.formatter import format_value
 from ...context import get_context
 from .step_settings_dialog import StepSettingsDialog

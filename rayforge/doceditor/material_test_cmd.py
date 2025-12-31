@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING
 
 from ..core.item import DocItem
 from ..core.step import Step
+from ..core.undo import ListItemCommand
 from ..core.workpiece import WorkPiece
 from ..image.procedural import ProceduralImporter
 from ..pipeline.producer.material_test_grid import (
@@ -12,7 +13,6 @@ from ..pipeline.producer.material_test_grid import (
     get_material_test_proportional_size,
 )
 from ..pipeline.steps import create_material_test_step
-from ..undo import ListItemCommand
 
 if TYPE_CHECKING:
     from .editor import DocEditor

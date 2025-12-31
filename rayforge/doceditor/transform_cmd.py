@@ -1,12 +1,12 @@
 from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING, List, Tuple, Optional
-from ..core.item import DocItem
-from ..core.workpiece import WorkPiece
-from ..core.stock import StockItem
-from ..core.matrix import Matrix
-from ..undo import ChangePropertyCommand
 from ..context import get_context
+from ..core.item import DocItem
+from ..core.matrix import Matrix
+from ..core.stock import StockItem
+from ..core.undo import ChangePropertyCommand
+from ..core.workpiece import WorkPiece
 
 if TYPE_CHECKING:
     from .editor import DocEditor

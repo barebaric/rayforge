@@ -99,9 +99,7 @@ def test_circle_tool_on_hover_motion_no_preview(circle_tool):
     assert True
 
 
-def test_circle_tool_on_hover_motion_with_preview(
-    circle_tool, mock_element
-):
+def test_circle_tool_on_hover_motion_with_preview(circle_tool, mock_element):
     """Test on_hover_motion updates preview when in preview stage."""
     circle_tool.center_id = 0
     circle_tool.temp_radius_id = 1

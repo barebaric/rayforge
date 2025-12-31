@@ -3,6 +3,7 @@ import logging
 from typing import TYPE_CHECKING, List, Tuple
 from ..shared.util.glib import idle_add
 from ..core.item import DocItem
+from ..core.undo import ChangePropertyCommand
 from .layout import (
     BboxAlignLeftStrategy,
     BboxAlignCenterStrategy,
@@ -16,12 +17,11 @@ from .layout import (
     PixelPerfectLayoutStrategy,
     PositionAtStrategy,
 )
-from ..undo import ChangePropertyCommand
 
 if TYPE_CHECKING:
-    from .editor import DocEditor
-    from ..shared.tasker.task import Task
     from ..shared.tasker.manager import TaskManager
+    from ..shared.tasker.task import Task
+    from .editor import DocEditor
 
 logger = logging.getLogger(__name__)
 

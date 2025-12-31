@@ -1,11 +1,11 @@
 from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING
-from ..core.stock import StockItem
-from ..core.stock_asset import StockAsset
 from ..core.geo import Geometry
 from ..core.matrix import Matrix
-from ..undo import ChangePropertyCommand, Command
+from ..core.undo import ChangePropertyCommand, Command
+from ..core.stock import StockItem
+from ..core.stock_asset import StockAsset
 
 if TYPE_CHECKING:
     from .editor import DocEditor

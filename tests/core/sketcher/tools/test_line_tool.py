@@ -47,9 +47,7 @@ def test_line_tool_on_deactivate_no_start(line_tool, mock_element):
     assert line_tool.start_point_temp is False
 
 
-def test_line_tool_on_deactivate_with_temp_start(
-    line_tool, mock_element
-):
+def test_line_tool_on_deactivate_with_temp_start(line_tool, mock_element):
     """Test on_deactivate with temporary start point."""
     line_tool.line_start_id = 1
     line_tool.start_point_temp = True
