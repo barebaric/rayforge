@@ -48,7 +48,7 @@ class DialectRow(Gtk.Box):
             delete_button.connect("clicked", self._on_delete_clicked)
             suffix_box.append(delete_button)
         else:
-            copy_button = Gtk.Button(child=get_icon("edit-copy-symbolic"))
+            copy_button = Gtk.Button(child=get_icon("copy-symbolic"))
             copy_button.add_css_class("flat")
             copy_button.set_tooltip_text(_("Copy & Edit"))
             copy_button.connect("clicked", self._on_copy_edit_clicked)

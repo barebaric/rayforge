@@ -68,14 +68,14 @@ class CounterRow(Gtk.Box):
         self.append(suffix_box)
 
         # Reset button
-        reset_button = Gtk.Button(child=get_icon("view-refresh-symbolic"))
+        reset_button = Gtk.Button(child=get_icon("refresh-symbolic"))
         reset_button.set_tooltip_text(_("Reset Counter"))
         reset_button.add_css_class("flat")
         reset_button.connect("clicked", self._on_reset_clicked)
         suffix_box.append(reset_button)
 
         # Edit button
-        edit_button = Gtk.Button(child=get_icon("document-edit-symbolic"))
+        edit_button = Gtk.Button(child=get_icon("edit-symbolic"))
         edit_button.set_tooltip_text(_("Edit Counter"))
         edit_button.add_css_class("flat")
         edit_button.connect("clicked", self._on_edit_clicked)
@@ -312,7 +312,6 @@ class MachineHoursPage(Adw.PreferencesPage):
     def __init__(self, machine: Machine, **kwargs):
         super().__init__(
             title=_("Machine Hours"),
-            icon_name="preferences-system-time-symbolic",
             **kwargs,
         )
         self.machine = machine
@@ -329,7 +328,7 @@ class MachineHoursPage(Adw.PreferencesPage):
         self.total_hours_row.add_prefix(get_icon("hourglass-symbolic"))
 
         # Add Reset Button for Total Hours
-        reset_total_btn = Gtk.Button(child=get_icon("view-refresh-symbolic"))
+        reset_total_btn = Gtk.Button(child=get_icon("refresh-symbolic"))
         reset_total_btn.set_tooltip_text(_("Reset Total Hours"))
         reset_total_btn.add_css_class("flat")
         reset_total_btn.set_valign(Gtk.Align.CENTER)

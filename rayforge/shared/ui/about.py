@@ -170,7 +170,7 @@ class AboutDialog(Adw.Window):
         button.set_child(get_icon("check-symbolic"))
         GLib.timeout_add(
             2000,
-            lambda: button.set_child(get_icon("edit-copy-symbolic"))
+            lambda: button.set_child(get_icon("copy-symbolic"))
             and GLib.SOURCE_REMOVE,
         )
 
@@ -227,7 +227,7 @@ class AboutDialog(Adw.Window):
         version_row = Adw.ActionRow(title=_("Version"))
         version_row.set_subtitle(__version__ or _not_found_str)
 
-        copy_button = Gtk.Button(child=get_icon("edit-copy-symbolic"))
+        copy_button = Gtk.Button(child=get_icon("copy-symbolic"))
         copy_button.set_valign(Gtk.Align.CENTER)
         copy_button.add_css_class("flat")
         copy_button.set_tooltip_text(_("Copy Version"))
@@ -256,9 +256,7 @@ class AboutDialog(Adw.Window):
         )
         sys_info_row.set_activatable(True)
 
-        self.inline_copy_button = Gtk.Button(
-            child=get_icon("edit-copy-symbolic")
-        )
+        self.inline_copy_button = Gtk.Button(child=get_icon("copy-symbolic"))
         self.inline_copy_button.set_valign(Gtk.Align.CENTER)
         self.inline_copy_button.add_css_class("flat")
         self.inline_copy_button.set_tooltip_text(_("Copy System Information"))
@@ -321,9 +319,7 @@ class AboutDialog(Adw.Window):
         )
         self.header_bar.pack_start(self.back_button)
 
-        self.header_copy_button = Gtk.Button(
-            child=get_icon("edit-copy-symbolic")
-        )
+        self.header_copy_button = Gtk.Button(child=get_icon("copy-symbolic"))
         self.header_copy_button.set_tooltip_text(_("Copy System Information"))
         self.header_copy_button.connect("clicked", self._on_copy_info_clicked)
         self.header_bar.pack_end(self.header_copy_button)
