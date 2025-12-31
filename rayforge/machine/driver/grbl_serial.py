@@ -169,6 +169,10 @@ class GrblSerialDriver(Driver):
                 await self._connection_task
             except asyncio.CancelledError:
                 pass
+            except Exception as e:
+                logger.warning(
+                    f"Ignored exception in connection task during cleanup: {e}"
+                )
             self._connection_task = None
 
         if self._command_task:
@@ -177,6 +181,10 @@ class GrblSerialDriver(Driver):
                 await self._command_task
             except asyncio.CancelledError:
                 pass
+            except Exception as e:
+                logger.warning(
+                    f"Ignored exception in command task during cleanup: {e}"
+                )
             self._command_task = None
 
         if self.serial_transport:
@@ -231,6 +239,17 @@ class GrblSerialDriver(Driver):
             except asyncio.CancelledError:
                 pass
 
+        # Check if setup was successful (serial_transport exists)
+        if not self.serial_transport:
+            logger.error(
+                "Cannot connect: Serial transport not initialized "
+                "(check port settings)."
+            )
+            self._update_connection_status(
+                TransportStatus.ERROR, _("Port not configured")
+            )
+            return
+
         logger.debug("GrblNextSerialDriver connect initiated.")
         self.keep_running = True
         self._is_cancelled = False
@@ -250,10 +269,11 @@ class GrblSerialDriver(Driver):
             self._update_connection_status(TransportStatus.CONNECTING)
             logger.debug("Attempting connection…")
 
-            transport = self.serial_transport
-            assert transport, "Transport not initialized"
-
             try:
+                transport = self.serial_transport
+                if not transport:
+                    raise DriverSetupError("Transport not initialized")
+
                 await transport.connect()
                 logger.info("Connection established successfully.")
                 self._update_connection_status(TransportStatus.CONNECTED)
@@ -300,9 +320,12 @@ class GrblSerialDriver(Driver):
                 logger.error(f"Unexpected error in connection loop: {e}")
                 self._update_connection_status(TransportStatus.ERROR, str(e))
             finally:
-                if transport and transport.is_connected:
+                if (
+                    self.serial_transport
+                    and self.serial_transport.is_connected
+                ):
                     logger.debug("Disconnecting transport in finally block")
-                    await transport.disconnect()
+                    await self.serial_transport.disconnect()
 
             if not self.keep_running:
                 break
