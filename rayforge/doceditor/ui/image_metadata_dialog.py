@@ -29,7 +29,7 @@ class ImageMetadataDialog(Adw.Window):
         main_box.append(self.header_bar)
 
         # Add copy button to header bar
-        self.copy_button = Gtk.Button(child=get_icon("edit-copy-symbolic"))
+        self.copy_button = Gtk.Button(child=get_icon("copy-symbolic"))
         self.copy_button.set_tooltip_text(_("Copy Metadata"))
         self.copy_button.connect("clicked", self._on_copy_clicked)
         self.header_bar.pack_end(self.copy_button)
