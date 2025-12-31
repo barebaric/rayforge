@@ -204,6 +204,25 @@ body, html {
     transform: rotateY(-10deg) rotateX(5deg) scale(1.05);
 }
 
+.video-container {
+    width: 100%;
+    max-width: 800px;
+    margin: 2rem auto;
+    display: flex;
+    justify-content: center;
+    z-index: 2;
+    animation: fadeIn 1s ease-out 0.5s backwards;
+}
+
+.video-container iframe {
+    width: 100%;
+    max-width: 700px;
+    aspect-ratio: 16 / 9;
+    border-radius: 12px;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
 /* --- Main Content (BELOW HERO) --- */
 .container {
     max-width: 1100px;
@@ -534,6 +553,9 @@ h2 {
     .card {
         width: 180px;
         height: 180px;
+    }
+    .video-container {
+        padding: 0 1rem;
     }
 }
 
