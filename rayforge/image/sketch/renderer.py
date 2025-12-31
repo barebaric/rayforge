@@ -51,9 +51,14 @@ def _geometry_to_svg_path(
             # Large arc flag is 1 if sweep is > 180 degrees.
             # For sketches, we assume arcs are <= 180.
             large_arc = 0
-            # Sweep flag is 1 for CCW, 0 for CW (in SVG's Y-down space).
-            # Our geometry is Y-up. CCW in Y-up is CW in Y-down.
-            sweep = 0 if cmd.clockwise else 1
+
+            # Sweep flag in SVG (Y-down):
+            # 1: Positive angle direction (Clockwise)
+            # 0: Negative angle direction (Counter-Clockwise)
+            #
+            # Since visual direction is preserved (Top stays Top),
+            # Source CW (True) maps to SVG CW (1).
+            sweep = 1 if cmd.clockwise else 0
 
             path_data.append(
                 f"A {radius_x_px:.3f} {radius_y_px:.3f} 0 {large_arc} {sweep} "
