@@ -252,6 +252,7 @@ def main():
     # 2. Run the async shutdown on the TaskManager's event loop and wait for it.
     loop = rayforge.shared.tasker.task_mgr.loop
     if loop.is_running():
+        logger.info(f"Running async shutdown on loop {loop}...")
         future = asyncio.run_coroutine_threadsafe(shutdown_async(), loop)
         try:
             # Block until the async cleanup is finished.
@@ -264,16 +265,22 @@ def main():
         )
 
     # 3. Save configuration. This happens AFTER async tasks are done.
+    logger.info("Saving configuration")
     if context.config_mgr:
         context.config_mgr.save()
         logger.info("Saved config.")
+    else:
+        logger.info("No config manager to save.")
 
     # 4. As the final step, clean up the document editor,
     # and shut down the task manager itself.
     # The context shutdown (including artifact store) now happens in the async
     # part above, so we only need to clean up the editor here.
+    logger.info("Cleaning up DocEditor")
     app.win.doc_editor.cleanup()
     logger.info("DocEditor cleaned up.")
+
+    logger.info("Shutting down TaskManager")
     rayforge.shared.tasker.task_mgr.shutdown()
     logger.info("Task manager shut down.")
 
