@@ -1,11 +1,11 @@
 from typing import Dict, Any, TYPE_CHECKING, cast
 from gi.repository import Gtk, Adw
-from .base import StepComponentSettingsWidget
-from ....shared.ui.adwfix import get_spinrow_float
-from ....shared.util.glib import DebounceMixin
+from ....core.undo import DictItemCommand
 from ....pipeline.producer.base import OpsProducer, CutSide
 from ....pipeline.producer.shrinkwrap import ShrinkWrapProducer
-from ....undo import DictItemCommand
+from ....shared.ui.adwfix import get_spinrow_float
+from ....shared.util.glib import DebounceMixin
+from .base import StepComponentSettingsWidget
 
 if TYPE_CHECKING:
     from ....core.step import Step

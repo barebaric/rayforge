@@ -2,10 +2,10 @@ from typing import Tuple, TYPE_CHECKING
 from gi.repository import Gtk, Adw, GLib, Gdk
 from blinker import Signal
 from ...context import get_context
-from ...undo import HistoryManager, ChangePropertyCommand
 from ...core.step import Step
-from ...shared.ui.unit_spin_row import UnitSpinRowHelper
+from ...core.undo import HistoryManager, ChangePropertyCommand
 from ...shared.ui.adwfix import get_spinrow_float
+from ...shared.ui.unit_spin_row import UnitSpinRowHelper
 from ...pipeline.producer import OpsProducer
 from ...pipeline.transformer import OpsTransformer
 from ...icons import get_icon

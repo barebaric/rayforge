@@ -213,9 +213,7 @@ class JogDialog(Adw.Window):
         if single_axis_homing_enabled:
             tooltip = None
         else:
-            tooltip = _(
-                "Single axis homing is disabled in machine settings"
-            )
+            tooltip = _("Single axis homing is disabled in machine settings")
 
         self.home_x_btn.set_tooltip_text(tooltip)
         self.home_y_btn.set_tooltip_text(tooltip)

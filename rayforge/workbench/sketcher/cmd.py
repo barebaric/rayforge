@@ -1,7 +1,7 @@
 import logging
 from typing import Dict, Any, TYPE_CHECKING
-from rayforge.undo import Command
 from rayforge.core.sketcher import Sketch
+from rayforge.core.undo import Command
 
 if TYPE_CHECKING:
     from rayforge.core.doc import Doc

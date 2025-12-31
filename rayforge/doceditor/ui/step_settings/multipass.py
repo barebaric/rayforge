@@ -1,10 +1,10 @@
 from typing import Dict, Any, TYPE_CHECKING
 from gi.repository import Gtk, Adw
-from .base import StepComponentSettingsWidget
+from ....core.undo import DictItemCommand
 from ....pipeline.transformer import MultiPassTransformer
-from ....undo import DictItemCommand
 from ....shared.ui.adwfix import get_spinrow_int, get_spinrow_float
 from ....shared.util.glib import DebounceMixin
+from .base import StepComponentSettingsWidget
 
 if TYPE_CHECKING:
     from ....core.step import Step

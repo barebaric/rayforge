@@ -1,7 +1,7 @@
 from typing import Any, TYPE_CHECKING
 from gi.repository import Adw, Gtk
 from .base import StepComponentSettingsWidget
-from ....undo import DictItemCommand
+from ....core.undo import DictItemCommand
 from ....shared.util.glib import DebounceMixin
 
 if TYPE_CHECKING:

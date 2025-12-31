@@ -2,10 +2,10 @@ import uuid
 import logging
 from typing import TYPE_CHECKING, List
 from abc import ABC, abstractmethod
-from ..core.item import DocItem
 from ..core.geo import Geometry
+from ..core.item import DocItem
+from ..core.undo import ListItemCommand
 from ..core.workpiece import WorkPiece
-from ..undo import ListItemCommand
 
 if TYPE_CHECKING:
     from .editor import DocEditor

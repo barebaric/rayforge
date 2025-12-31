@@ -1,8 +1,7 @@
 import logging
 from typing import List, Optional
 from gi.repository import Gtk
-from .. import HistoryManager
-from ..models.command import Command
+from ...core.undo import HistoryManager, Command
 from ...icons import get_icon
 
 

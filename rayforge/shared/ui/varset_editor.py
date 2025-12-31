@@ -12,6 +12,7 @@ from typing import (
 )
 from gi.repository import Gtk, Adw, Gdk
 from blinker import Signal
+from ...core.undo.property_cmd import ChangePropertyCommand
 from ...core.varset import (
     Var,
     VarSet,
@@ -26,11 +27,10 @@ from ...core.varset import (
 )
 from ...icons import get_icon
 from .preferences_group import PreferencesGroupWithButton
-from ...undo.models.property_cmd import ChangePropertyCommand
 from .var_row_factory import VarRowFactory, NULL_CHOICE_LABEL
 
 if TYPE_CHECKING:
-    from ...undo import HistoryManager
+    from ...core.undo import HistoryManager
 
 logger = logging.getLogger(__name__)
 

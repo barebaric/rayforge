@@ -1,17 +1,17 @@
 import logging
 from typing import List, Optional, TypeVar, Iterable, Dict, TYPE_CHECKING, cast
 from blinker import Signal
-from ..undo import HistoryManager
-from .workpiece import WorkPiece
-from .layer import Layer
-from .item import DocItem
-from .source_asset import SourceAsset
+from ..core.undo import HistoryManager
 from .asset import IAsset
+from .item import DocItem
+from .layer import Layer
+from .source_asset import SourceAsset
+from .workpiece import WorkPiece
 
 if TYPE_CHECKING:
+    from .sketcher.sketch import Sketch
     from .stock import StockItem
     from .stock_asset import StockAsset
-    from .sketcher.sketch import Sketch
 
 
 logger = logging.getLogger(__name__)

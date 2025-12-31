@@ -156,9 +156,7 @@ def test_select_tool_prepare_point_drag(select_tool, mock_element):
     mock_point.x = 10.0
     mock_point.y = 20.0
     mock_element.sketch.registry.get_point.return_value = mock_point
-    mock_element.get_world_transform.return_value.invert.return_value = (
-        Mock()
-    )
+    mock_element.get_world_transform.return_value.invert.return_value = Mock()
     mock_element.content_transform.invert.return_value = Mock()
 
     select_tool._prepare_point_drag(5)

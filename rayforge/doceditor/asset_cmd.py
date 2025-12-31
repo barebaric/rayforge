@@ -2,7 +2,7 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING
 from ..core.asset import IAsset
-from ..undo import ListItemCommand, ChangePropertyCommand
+from ..core.undo import ListItemCommand, ChangePropertyCommand
 
 if TYPE_CHECKING:
     from .editor import DocEditor

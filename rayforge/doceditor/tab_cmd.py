@@ -5,14 +5,14 @@ from typing import TYPE_CHECKING, List, Tuple, Optional
 from copy import deepcopy
 from dataclasses import replace
 
-from ..core.tab import Tab
 from ..core.geo import (
     Geometry,
     LineToCommand,
     ArcToCommand,
     MoveToCommand,
 )
-from ..undo import Command
+from ..core.tab import Tab
+from ..core.undo import Command
 from ..core.workpiece import WorkPiece
 
 if TYPE_CHECKING:
@@ -325,7 +325,7 @@ class TabCmd:
         workpiece.tabs_enabled = enabled
 
         # This is a simple property change, so we can use a generic command
-        from ..undo import ChangePropertyCommand
+        from ..core.undo import ChangePropertyCommand
 
         cmd = ChangePropertyCommand(
             target=workpiece,

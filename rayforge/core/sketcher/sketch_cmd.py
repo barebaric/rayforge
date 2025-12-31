@@ -2,7 +2,7 @@ from __future__ import annotations
 import logging
 import uuid
 from typing import TYPE_CHECKING, List, Tuple, Optional, Dict
-from ...undo.models.command import Command
+from ..undo.command import Command
 from .entities import Line, Arc, Circle
 from .sketch import Fill, Sketch
 

@@ -5,7 +5,7 @@ from ...core.sketcher import Sketch
 from ...core.varset import IntVar, FloatVar, SliderFloatVar
 from ...icons import get_icon
 from ...shared.ui.varset_editor import VarSetEditorWidget
-from ...undo.models.property_cmd import ChangePropertyCommand
+from ...core.undo.property_cmd import ChangePropertyCommand
 from .menu import SketchMenu
 from .sketchcanvas import SketchCanvas
 

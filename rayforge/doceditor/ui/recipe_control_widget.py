@@ -6,7 +6,7 @@ from ...context import get_context
 from ...core.step import Step
 from ...core.recipe import Recipe
 from ...core.capability import Capability
-from ...undo.models.property_cmd import ChangePropertyCommand
+from ...core.undo.property_cmd import ChangePropertyCommand
 from .recipe_selector_dialog import RecipeSelectorDialog
 from .edit_recipe_dialog import AddEditRecipeDialog
 

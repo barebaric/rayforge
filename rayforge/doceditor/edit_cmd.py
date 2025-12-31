@@ -3,14 +3,14 @@ import logging
 from typing import TYPE_CHECKING, List, Dict, Tuple, Sequence, Optional, cast
 from ..core.item import DocItem
 from ..core.group import Group
+from ..core.undo import ListItemCommand, ReorderListCommand
 from ..core.workpiece import WorkPiece
 from ..core.workflow import Workflow
-from ..undo import ListItemCommand, ReorderListCommand
 
 if TYPE_CHECKING:
-    from .editor import DocEditor
-    from ..core.source_asset import SourceAsset
     from ..core.sketcher.sketch import Sketch
+    from ..core.source_asset import SourceAsset
+    from .editor import DocEditor
 
 logger = logging.getLogger(__name__)
 
