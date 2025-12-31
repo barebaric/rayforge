@@ -544,25 +544,33 @@ class TaskManager:
         This method is thread-safe.
         """
         try:
+            logger.info("Shutdown started")
             with self._lock:
                 tasks_to_cancel = list(self._tasks.values())
 
-            logger.debug(
-                f"Shutting down. Cancelling {len(tasks_to_cancel)} tasks"
-            )
+            logger.info(f"Active tasks at shutdown: {len(tasks_to_cancel)}")
+            logger.info("Cancelling all active tasks...")
             for task in tasks_to_cancel:
+                status = task.get_status()
+                progress = task.get_progress()
+                logger.info(
+                    f"  Task '{task.key}': status={status}, "
+                    f"progress={progress:.1f}%"
+                )
                 self.cancel_task(task.key)
 
             # Shut down the worker pool. This will wait for workers to exit.
             self._pool.shutdown()
 
+            logger.info("Stopping asyncio event loop...")
             # Stop the asyncio loop
             if self.loop.is_running():
                 self.loop.call_soon_threadsafe(self.loop.stop)
+            logger.debug("Joining thread...")
             self._thread.join(timeout=1.0)
             if self._thread.is_alive():
                 logger.warning("thread shutdown timed out, ignoring")
-            logger.debug("TaskManager shutdown complete.")
+            logger.info("TaskManager shutdown complete.")
         except KeyboardInterrupt:
             logger.debug(
                 "TaskManager shutdown interrupted by user. "

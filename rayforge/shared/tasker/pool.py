@@ -23,6 +23,8 @@ _WORKER_POISON_PILL = None
 # A sentinel message to signal the result listener thread to shut down.
 # Use a string for safe comparison across threads/processes.
 _LISTENER_SENTINEL = "__listener_sentinel__"
+# Message type for worker shutdown info
+_SHUTDOWN_INFO_MSG = "__shutdown_info__"
 
 
 class _TaggedQueue:
@@ -95,6 +97,7 @@ def _worker_main_loop(
             return
 
     worker_logger.info(f"Worker process {os.getpid()} started and ready.")
+    last_task_key = None
 
     while True:
         try:
@@ -110,9 +113,21 @@ def _worker_main_loop(
 
         if job is _WORKER_POISON_PILL:
             worker_logger.info(f"Worker {os.getpid()} received poison pill.")
+            try:
+                result_queue.put_nowait(
+                    (
+                        _SHUTDOWN_INFO_MSG,
+                        0,
+                        _SHUTDOWN_INFO_MSG,
+                        (os.getpid(), last_task_key),
+                    )
+                )
+            except (OSError, BrokenPipeError):
+                pass
             break
 
         key, task_id, user_func, user_args, user_kwargs = job
+        last_task_key = key
         worker_logger.debug(f"Worker {os.getpid()} starting task '{key}'.")
 
         # Wrap the result queue to automatically tag all messages from the
@@ -165,6 +180,7 @@ class WorkerPoolManager:
         self._workers: List[BaseProcess] = []
         self._cancelled_task_ids: Set[int] = set()
         self._lock = threading.Lock()
+        self._worker_shutdown_info: dict[int, tuple[int, Any | None]] = {}
 
         # Signals for the TaskManager to subscribe to
         self.task_event_received = Signal()
@@ -263,6 +279,16 @@ class WorkerPoolManager:
 
             key, task_id, msg_type, value = message
 
+            if msg_type == _SHUTDOWN_INFO_MSG:
+                pid, last_task_key = value
+                with self._lock:
+                    self._worker_shutdown_info[pid] = (pid, last_task_key)
+                logger.debug(
+                    f"Received shutdown info from worker {pid}: "
+                    f"last_task={last_task_key}"
+                )
+                continue
+
             # The 'event' message type is special because it may carry
             # resource handles (like shared memory). These must ALWAYS be
             # forwarded to the TaskManager so the receiving code has a
@@ -321,6 +347,11 @@ class WorkerPoolManager:
         """
         logger.info("Shutting down worker pool.")
         try:
+            for worker in self._workers:
+                pid = worker.pid
+                status = "alive" if worker.is_alive() else "dead"
+                logger.info(f"Worker PID {pid}: {status}")
+
             # 1. Signal workers to exit by sending a poison pill for each one.
             for _ in self._workers:
                 try:
@@ -329,6 +360,8 @@ class WorkerPoolManager:
                     pass  # Queue may already be closed if workers crashed
 
             # 2. Join worker processes with a timeout.
+            # Capture PIDs before closing workers for shutdown summary.
+            worker_pids = [w.pid for w in self._workers]
             for worker in self._workers:
                 worker.join(timeout=timeout)
                 if worker.is_alive():
@@ -361,6 +394,19 @@ class WorkerPoolManager:
             # It's important to join the queue's feeder thread.
             self._task_queue.join_thread()
             self._result_queue.join_thread()
+
+            logger.debug("Worker shutdown summary")
+            for pid in worker_pids:
+                if pid in self._worker_shutdown_info:
+                    _, last_task_key = self._worker_shutdown_info[pid]
+                    logger.info(
+                        f"Worker PID {pid}: last_task='{last_task_key}'"
+                    )
+                else:
+                    logger.warning(
+                        f"Worker PID {pid}: no shutdown info received "
+                        "(may have crashed or not reported)"
+                    )
             logger.info("Worker pool shutdown complete.")
         except KeyboardInterrupt:
             logger.debug(
