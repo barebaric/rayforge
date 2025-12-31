@@ -137,6 +137,22 @@ class GcodeEncoder(OpsEncoder):
             expanded_lines = formatter.expand_macro(macro_action)
             gcode.extend(expanded_lines)
 
+    def _format_script_lines(
+        self, lines: List[str], context: GcodeContext
+    ) -> List[str]:
+        """
+        Formats a list of script lines by applying template substitution.
+
+        Args:
+            lines: The list of script lines to format.
+            context: The GcodeContext containing job, machine, and doc info.
+
+        Returns:
+            A list of formatted script lines with placeholders replaced.
+        """
+        formatter = TemplateFormatter(context.machine, context)
+        return [formatter.format_string(line) for line in lines]
+
     def _handle_command(
         self, gcode: List[str], cmd: Command, context: GcodeContext
     ) -> None:
@@ -182,7 +198,9 @@ class GcodeEncoder(OpsEncoder):
                 )
                 self.current_pos = cmd.end
             case JobStartCommand():
-                gcode.extend(self.dialect.preamble)
+                gcode.extend(
+                    self._format_script_lines(self.dialect.preamble, context)
+                )
             case JobEndCommand():
                 # This is the single point of truth for job cleanup.
                 # First, perform guaranteed safety shutdowns. This emits the
@@ -190,7 +208,9 @@ class GcodeEncoder(OpsEncoder):
                 self._laser_off(context, gcode)
                 if self.air_assist:
                     self._set_air_assist(context, gcode, False)
-                gcode.extend(self.dialect.postscript)
+                gcode.extend(
+                    self._format_script_lines(self.dialect.postscript, context)
+                )
             case LayerStartCommand(layer_uid=uid):
                 descendant = context.doc.find_descendant_by_uid(uid)
                 if isinstance(descendant, Layer):
