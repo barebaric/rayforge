@@ -5,6 +5,12 @@ from typing import TYPE_CHECKING, Optional, Tuple, List
 import cairo
 from gi.repository import Adw, Gdk, GdkPixbuf, Gtk
 from blinker import Signal
+import warnings
+
+with warnings.catch_warnings():
+    warnings.simplefilter("ignore", DeprecationWarning)
+    import pyvips
+
 from ...core.vectorization_spec import (
     TraceSpec,
     PassthroughSpec,
@@ -185,8 +191,7 @@ class RasterImportDialog(Adw.Window):
         self._load_initial_data()
         self._on_import_mode_toggled(
             self.use_vectors_switch
-        )  # Sets initial sensitivity
-        self._schedule_preview_update()
+        )  # Sets initial sensitivity and schedules first update
 
     def _on_import_mode_toggled(self, switch, *args):
         is_direct_import = self.is_svg and switch.get_active()
@@ -301,8 +306,7 @@ class RasterImportDialog(Adw.Window):
         ctx.set_message(_("Generating preview..."))
 
         try:
-            # Run the blocking I/O and CPU-bound work in a thread.
-            # This works for both TraceSpec and PassthroughSpec.
+            # 1. Get the vector geometry and metadata from the importer
             payload = await asyncio.to_thread(
                 import_file_from_bytes,
                 self._file_bytes,
@@ -312,78 +316,80 @@ class RasterImportDialog(Adw.Window):
             )
 
             if not payload or not payload.items:
-                self.editor.task_manager.schedule_on_main_thread(
+                return self.editor.task_manager.schedule_on_main_thread(
                     self._update_ui_with_preview, (None, b"")
                 )
-                return
 
-            # For previewing, we need a "Reference" workpiece to determine the
-            # coordinate system and background image. Since all split items
-            # share the same master coordinates, the first one is sufficient.
-            # We must handle the case where the item is a Layer (container).
             reference_wp = self._extract_workpiece(payload.items[0])
-
             if not reference_wp:
-                # Should be impossible if payload.items is populated correctly
                 raise ValueError("Imported items contain no WorkPieces")
 
-            # Hydrate the workpiece with source data for standalone rendering.
-            # This enables correct behavior for cropping and high-res tracing,
-            # as WorkPiece.get_vips_image needs access to the original data
-            # and source dimensions which are normally accessed via self.doc.
-            reference_wp._data = payload.source.base_render_data
-            reference_wp._original_data = payload.source.original_data
-            reference_wp._renderer = payload.source.renderer
-            if (
-                payload.source.width_px is not None
-                and payload.source.height_px is not None
-            ):
-                reference_wp._transient_source_px_dims = (
-                    payload.source.width_px,
-                    payload.source.height_px,
+            # 2. Generate a high-resolution base image for the preview.
+            vips_image = None
+            if isinstance(spec, TraceSpec):
+                # For tracing, prioritize pre-rendered data from the importer
+                # (e.g., SVG-trace). Fall back to the original file bytes for
+                # standard rasters (PNG, PDF, etc.).
+                image_bytes = (
+                    payload.source.base_render_data or self._file_bytes
                 )
+                if not image_bytes:
+                    raise ValueError(
+                        "No image data available for tracing preview."
+                    )
 
-            # Calculate preview dimensions preserving aspect ratio
-            size_mm = reference_wp.natural_size
-            w_mm, h_mm = size_mm if size_mm else (0, 0)
+                full_image = pyvips.Image.new_from_buffer(image_bytes, "")
 
-            if w_mm <= 0 or h_mm <= 0:
-                # If dimensions are missing (e.g. empty SVG due to filtering),
-                # use fallback dimensions to avoid crash.
-                logger.warning(
-                    "WorkPiece has zero dimensions, using fallback for "
-                    "preview."
+                # Apply cropping if the importer specified a crop window
+                # (e.g., PDF auto-crop)
+                if (
+                    reference_wp.source_segment
+                    and reference_wp.source_segment.crop_window_px
+                ):
+                    x, y, w, h = map(
+                        int, reference_wp.source_segment.crop_window_px
+                    )
+                    vips_image = full_image.crop(x, y, w, h)
+                else:
+                    vips_image = full_image
+
+            elif isinstance(spec, PassthroughSpec):
+                # For direct SVG import, render the vector data at a high
+                # resolution.
+                if not payload.source.base_render_data:
+                    raise ValueError(
+                        "Importer did not provide SVG data for direct import "
+                        "preview."
+                    )
+                # The `scale` parameter is key to getting a sharp render from
+                # SVG data.
+                vips_image = pyvips.Image.new_from_buffer(
+                    payload.source.base_render_data, "", scale=4.0
                 )
-                w_mm, h_mm = 100, 100
-
-            aspect = w_mm / h_mm
-            if aspect >= 1.0:
-                render_w = PREVIEW_RENDER_SIZE_PX
-                render_h = int(PREVIEW_RENDER_SIZE_PX / aspect)
-            else:
-                render_h = PREVIEW_RENDER_SIZE_PX
-                render_w = int(PREVIEW_RENDER_SIZE_PX * aspect)
-
-            # Delegate rendering to the WorkPiece
-            vips_image = reference_wp.get_vips_image(
-                max(1, render_w), max(1, render_h)
-            )
 
             if not vips_image:
-                raise ValueError("Failed to render preview image.")
+                raise ValueError(
+                    "Could not generate a base image for the preview."
+                )
 
-            # Dialog-specific visualization: Invert background for
-            # dark-on-light traces
+            # 3. Thumbnail the high-resolution base image for display
+            preview_vips = vips_image.thumbnail_image(
+                PREVIEW_RENDER_SIZE_PX,
+                height=PREVIEW_RENDER_SIZE_PX,
+                size="both",
+            )
+
             if isinstance(spec, TraceSpec) and spec.invert:
-                vips_image = vips_image.flatten(
+                preview_vips = preview_vips.flatten(
                     background=[255, 255, 255]
                 ).invert()
 
-            png_bytes = vips_image.pngsave_buffer()
+            png_bytes = preview_vips.pngsave_buffer()
 
             self.editor.task_manager.schedule_on_main_thread(
                 self._update_ui_with_preview, (payload, png_bytes)
             )
+
         except Exception as e:
             logger.error(
                 f"Failed to generate import preview: {e}", exc_info=True
@@ -404,10 +410,13 @@ class RasterImportDialog(Adw.Window):
             payload, image_bytes = result
             self._preview_payload = payload
             try:
-                loader = GdkPixbuf.PixbufLoader.new()
-                loader.write(image_bytes)
-                loader.close()
-                self._background_pixbuf = loader.get_pixbuf()
+                if image_bytes:
+                    loader = GdkPixbuf.PixbufLoader.new()
+                    loader.write(image_bytes)
+                    loader.close()
+                    self._background_pixbuf = loader.get_pixbuf()
+                else:
+                    self._background_pixbuf = None
             except Exception:
                 self._background_pixbuf = None
                 logger.error("Failed to create pixbuf from rendered PNG data.")
@@ -467,35 +476,21 @@ class RasterImportDialog(Adw.Window):
         if not items:
             return
 
-        is_direct_import = self.is_svg and self.use_vectors_switch.get_active()
+        if not self._background_pixbuf:
+            return
 
-        # Determine the correct aspect ratio for the content
-        # We need a reference workpiece to know the size
-        reference_item = self._extract_workpiece(items[0])
-        aspect_w, aspect_h = 1.0, 1.0
-
-        if is_direct_import and reference_item:
-            # For direct import, the true aspect ratio is from the workpiece's
-            # final calculated size in millimeters.
-            size_mm = reference_item.size
-            if size_mm and size_mm[0] > 0 and size_mm[1] > 0:
-                aspect_w, aspect_h = size_mm
-        elif self._background_pixbuf:
-            # For tracing, the aspect ratio is from the background image
-            # pixbuf, which has been cropped during the preview generation.
-            aspect_w = self._background_pixbuf.get_width()
-            aspect_h = self._background_pixbuf.get_height()
+        aspect_w = self._background_pixbuf.get_width()
+        aspect_h = self._background_pixbuf.get_height()
 
         if aspect_w <= 0 or aspect_h <= 0:
             return
 
-        # Calculate drawing area based on the CORRECT aspect ratio
+        # Calculate drawing area based on the background image's aspect ratio
         margin = 20
         view_w, view_h = w - 2 * margin, h - 2 * margin
         if view_w <= 0 or view_h <= 0:
             return
 
-        # Fit the content box (defined by its aspect ratio) into the view
         scale = min(view_w / aspect_w, view_h / aspect_h)
         draw_w = aspect_w * scale
         draw_h = aspect_h * scale
@@ -503,42 +498,19 @@ class RasterImportDialog(Adw.Window):
         draw_y = (h - draw_h) / 2
 
         ctx.save()
-        # Move origin to the top-left of our correctly-proportioned draw area
+        ctx.translate(draw_x, draw_y)
+        ctx.scale(draw_w / aspect_w, draw_h / aspect_h)
+
+        # Step 1: Draw the background image.
+        Gdk.cairo_set_source_pixbuf(ctx, self._background_pixbuf, 0, 0)
+        ctx.paint()
+        ctx.restore()
+
+        # --- Draw Vector Overlay ---
+        ctx.save()
         ctx.translate(draw_x, draw_y)
 
-        # Step 1: Draw the masked image ONLY if in tracing mode
-        if not is_direct_import and self._background_pixbuf:
-            img_w = self._background_pixbuf.get_width()
-            img_h = self._background_pixbuf.get_height()
-
-            img_surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, img_w, img_h)
-            img_ctx = cairo.Context(img_surface)
-            Gdk.cairo_set_source_pixbuf(img_ctx, self._background_pixbuf, 0, 0)
-            img_ctx.paint()
-
-            mask_surface = cairo.ImageSurface(cairo.FORMAT_A8, img_w, img_h)
-            mask_ctx = cairo.Context(mask_surface)
-            # Set up the mask context to draw the Y-up normalized geometry
-            mask_ctx.scale(img_w, img_h)
-            mask_ctx.translate(0, 1)
-            mask_ctx.scale(1, -1)
-
-            if reference_item and reference_item.boundaries:
-                draw_geometry_to_cairo_context(
-                    reference_item.boundaries, mask_ctx
-                )
-                mask_ctx.set_source_rgb(1, 1, 1)
-                mask_ctx.fill()
-
-            ctx.save()
-            # Correctly scale the image surface to fit the drawing area
-            ctx.scale(draw_w / img_w, draw_h / img_h)
-            ctx.set_source_surface(img_surface, 0, 0)
-            ctx.mask_surface(mask_surface, 0, 0)
-            ctx.restore()
-
-        # Step 2: Draw the vector stroke on top for ALL items
-        # Set up the main context to draw the Y-up normalized geometry
+        # Set up the context to draw the Y-up normalized geometry
         ctx.scale(draw_w, draw_h)
         ctx.translate(0, 1)
         ctx.scale(1, -1)
@@ -547,7 +519,6 @@ class RasterImportDialog(Adw.Window):
         if max_dim > 0:
             ctx.set_line_width(2.0 / max_dim)
 
-        # Recursively find and draw all workpieces
         def draw_item(item):
             if isinstance(item, WorkPiece) and item.boundaries:
                 ctx.set_source_rgb(0.1, 0.5, 1.0)
