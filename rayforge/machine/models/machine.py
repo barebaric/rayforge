@@ -1,36 +1,40 @@
-import yaml
-import uuid
-import logging
 import asyncio
-import multiprocessing
 import json
-import numpy as np
+import logging
+import multiprocessing
+import uuid
 from dataclasses import asdict
 from enum import Enum
-from typing import List, Dict, Any, Optional, Tuple, TYPE_CHECKING, Type
 from pathlib import Path
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type
+
+import numpy as np
+import yaml
 from blinker import Signal
+
+from rayforge.core.ops.commands import MovingCommand
+
 from ...camera.models.camera import Camera
-from ...context import get_context, RayforgeContext
+from ...context import RayforgeContext, get_context
 from ...core.varset import ValidationError
 from ...shared.tasker import task_mgr
-from ..transport import TransportStatus
+from ..driver import get_driver_cls
 from ..driver.driver import (
-    Driver,
+    Axis,
     DeviceConnectionError,
     DeviceState,
     DeviceStatus,
-    DriverSetupError,
+    Driver,
     DriverPrecheckError,
+    DriverSetupError,
     ResourceBusyError,
 )
 from ..driver.dummy import NoDeviceDriver
-from ..driver import get_driver_cls
-from ..driver.driver import Axis
+from ..transport import TransportStatus
+from .dialect import GcodeDialect, get_dialect
 from .laser import Laser
-from .macro import Macro, MacroTrigger
-from .dialect import get_dialect, GcodeDialect
 from .machine_hours import MachineHours
+from .macro import Macro, MacroTrigger
 
 
 class Origin(Enum):
@@ -41,10 +45,10 @@ class Origin(Enum):
 
 
 if TYPE_CHECKING:
+    from ...core.doc import Doc
+    from ...core.ops import Ops
     from ...core.varset import VarSet
     from ...shared.tasker.context import ExecutionContext
-    from ...core.ops import Ops
-    from ...core.doc import Doc
 
 
 logger = logging.getLogger(__name__)
@@ -93,6 +97,7 @@ class Machine:
         self.max_cut_speed: int = 1000  # in mm/min
         self.acceleration: int = 1000  # in mm/s²
         self.dimensions: Tuple[int, int] = 200, 200
+        self.offsets: Tuple[int, int] = 0, 0
         self.origin: Origin = Origin.BOTTOM_LEFT
         self.reverse_x_axis: bool = False
         self.reverse_y_axis: bool = False
@@ -169,9 +174,7 @@ class Machine:
         )
         self.driver.job_finished.disconnect(self._on_driver_job_finished)
 
-    async def _rebuild_driver_instance(
-        self, ctx: Optional["ExecutionContext"] = None
-    ):
+    async def _rebuild_driver_instance(self, ctx: Optional["ExecutionContext"] = None):
         """
         Instantiates and sets up the driver based on the machine's current
         configuration. It does NOT connect it.
@@ -194,9 +197,7 @@ class Machine:
         try:
             driver_cls.precheck(**self.driver_args)
         except DriverPrecheckError as e:
-            logger.warning(
-                f"Precheck failed for driver {self.driver_name}: {e}"
-            )
+            logger.warning(f"Precheck failed for driver {self.driver_name}: {e}")
             self.precheck_error = str(e)
 
         new_driver = driver_cls(self.context, self)
@@ -220,20 +221,14 @@ class Machine:
 
     def _reset_status(self):
         """Resets status to a disconnected/unknown state and signals it."""
-        state_actually_changed = (
-            self.device_state.status != DeviceStatus.UNKNOWN
-        )
-        conn_actually_changed = (
-            self.connection_status != TransportStatus.DISCONNECTED
-        )
+        state_actually_changed = self.device_state.status != DeviceStatus.UNKNOWN
+        conn_actually_changed = self.connection_status != TransportStatus.DISCONNECTED
 
         self.device_state = DeviceState()  # Defaults to UNKNOWN
         self.connection_status = TransportStatus.DISCONNECTED
 
         if state_actually_changed:
-            self._scheduler(
-                self.state_changed.send, self, state=self.device_state
-            )
+            self._scheduler(self.state_changed.send, self, state=self.device_state)
         if conn_actually_changed:
             self._scheduler(
                 self.connection_status_changed.send,
@@ -305,10 +300,7 @@ class Machine:
     def set_driver(self, driver_cls: Type[Driver], args=None):
         new_driver_name = driver_cls.__name__
         new_args = args or {}
-        if (
-            self.driver_name == new_driver_name
-            and self.driver_args == new_args
-        ):
+        if self.driver_name == new_driver_name and self.driver_args == new_args:
             return
 
         self.driver_name = new_driver_name
@@ -378,6 +370,10 @@ class Machine:
         self.dimensions = (width, height)
         self.changed.send(self)
 
+    def set_offsets(self, x_offset: int, y_offset: int):
+        self.offsets = (x_offset, y_offset)
+        self.changed.send(self)
+
     def set_origin(self, origin: Origin):
         self.origin = origin
         self.changed.send(self)
@@ -419,9 +415,7 @@ class Machine:
         """
         return self.origin in (Origin.TOP_RIGHT, Origin.BOTTOM_RIGHT)
 
-    def get_visual_jog_deltas(
-        self, distance: float
-    ) -> Tuple[float, float, float]:
+    def get_visual_jog_deltas(self, distance: float) -> Tuple[float, float, float]:
         """
         Calculate the signed coordinate deltas for a jog operation based on a
         user's visual intent (e.g., clicking the "Right" arrow).
@@ -502,9 +496,7 @@ class Machine:
 
         return False
 
-    def _adjust_jog_distance_for_limits(
-        self, axis: Axis, distance: float
-    ) -> float:
+    def _adjust_jog_distance_for_limits(self, axis: Axis, distance: float) -> float:
         """Adjust jog distance to stay within soft limits."""
         if not self.soft_limits_enabled:
             return distance
@@ -568,9 +560,7 @@ class Machine:
 
         # If soft limits are enabled, adjust distance to stay within limits
         if self.soft_limits_enabled:
-            adjusted_distance = self._adjust_jog_distance_for_limits(
-                axis, distance
-            )
+            adjusted_distance = self._adjust_jog_distance_for_limits(axis, distance)
             if adjusted_distance != distance:
                 logger.debug(
                     f"Adjusting jog distance from {distance} to "
@@ -718,9 +708,7 @@ class Machine:
             head: The laser head to control. If None, uses the default head.
             percent: Power percentage (0-1.0). 0 disables power.
         """
-        logger.debug(
-            f"Head {head.uid if head else None} power to {percent * 100}%"
-        )
+        logger.debug(f"Head {head.uid if head else None} power to {percent * 100}%")
         if not self.driver:
             raise ValueError("No driver configured for this machine.")
 
@@ -730,9 +718,7 @@ class Machine:
 
         await self.driver.set_power(head, percent)
 
-    def encode_ops(
-        self, ops: "Ops", doc: "Doc"
-    ) -> Tuple[np.ndarray, np.ndarray]:
+    def encode_ops(self, ops: "Ops", doc: "Doc") -> Tuple[np.ndarray, np.ndarray]:
         """
         Encodes an Ops object into machine code (G-code) and a corresponding
         operation map, specific to this machine's configuration.
@@ -752,6 +738,16 @@ class Machine:
         # before generating G-code based on the origin setting.
         # We assume Internal Ops are Y-Up (Cartesian, 0,0 at Bottom-Left).
         ops_for_encoder = ops
+
+        # Apply offsets
+        for command in ops_for_encoder.commands:
+            if isinstance(command, MovingCommand):
+                base_end = command.end or (0, 0, 0)
+                command.end = (
+                    base_end[0] + self.offsets[0],
+                    base_end[1] + self.offsets[1],
+                    base_end[2],
+                )
 
         # If Origin is BOTTOM_LEFT, it matches Internal (Y-Up, X-Right).
         # Any other origin requires transformation.
@@ -788,13 +784,9 @@ class Machine:
         gcode_str, op_map_obj = encoder.encode(ops_for_encoder, self, doc)
 
         # Encode G-code and map to byte arrays
-        machine_code_bytes = np.frombuffer(
-            gcode_str.encode("utf-8"), dtype=np.uint8
-        )
+        machine_code_bytes = np.frombuffer(gcode_str.encode("utf-8"), dtype=np.uint8)
         op_map_str = json.dumps(asdict(op_map_obj))
-        op_map_bytes = np.frombuffer(
-            op_map_str.encode("utf-8"), dtype=np.uint8
-        )
+        op_map_bytes = np.frombuffer(op_map_str.encode("utf-8"), dtype=np.uint8)
 
         return machine_code_bytes, op_map_bytes
 
@@ -841,9 +833,7 @@ class Machine:
             def on_settings_read(sender, settings: List["VarSet"]):
                 logger.debug("on_settings_read: Handler called.")
                 sender.settings_read.disconnect(on_settings_read)
-                self._scheduler(
-                    self.settings_updated.send, self, var_sets=settings
-                )
+                self._scheduler(self.settings_updated.send, self, var_sets=settings)
                 logger.debug("on_settings_read: Handler finished.")
 
             self.driver.settings_read.connect(on_settings_read)
@@ -870,9 +860,7 @@ class Machine:
 
         try:
             async with self._settings_lock:
-                logger.debug(
-                    f"_write_setting_to_device(key={key}): Lock acquired."
-                )
+                logger.debug(f"_write_setting_to_device(key={key}): Lock acquired.")
                 await self.driver.write_setting(key, value)
                 self._scheduler(self.setting_applied.send, self)
         except (DeviceConnectionError, ConnectionError) as e:
@@ -893,6 +881,7 @@ class Machine:
                 "single_axis_homing_enabled": self.single_axis_homing_enabled,
                 "dialect_uid": self.dialect_uid,
                 "dimensions": list(self.dimensions),
+                "offsets": list(self.offsets),
                 "origin": self.origin.value,
                 "reverse_x_axis": self.reverse_x_axis,
                 "reverse_y_axis": self.reverse_y_axis,
@@ -903,9 +892,7 @@ class Machine:
                     trigger.name: macro.to_dict()
                     for trigger, macro in self.hookmacros.items()
                 },
-                "macros": {
-                    uid: macro.to_dict() for uid, macro in self.macros.items()
-                },
+                "macros": {uid: macro.to_dict() for uid, macro in self.macros.items()},
                 "speeds": {
                     "max_cut_speed": self.max_cut_speed,
                     "max_travel_speed": self.max_travel_speed,
@@ -976,9 +963,7 @@ class Machine:
         return new_dialect.uid, new_hook_data
 
     @classmethod
-    def from_dict(
-        cls, data: Dict[str, Any], is_inert: bool = False
-    ) -> "Machine":
+    def from_dict(cls, data: Dict[str, Any], is_inert: bool = False) -> "Machine":
         context = get_context()
         ma = cls(context)
         ma_data = data.get("machine", {})
@@ -1009,6 +994,7 @@ class Machine:
 
         ma.dialect_uid = dialect_uid
         ma.dimensions = tuple(ma_data.get("dimensions", ma.dimensions))
+        ma.offsets = tuple(ma_data.get("offsets", ma.dimensions))
         origin_value = ma_data.get("origin", None)
         if origin_value is not None:
             ma.origin = Origin(origin_value)
@@ -1042,9 +1028,7 @@ class Machine:
                 trigger = MacroTrigger[trigger_name]
                 ma.hookmacros[trigger] = Macro.from_dict(macro_data)
             except KeyError:
-                logger.warning(
-                    f"Skipping unknown hook trigger '{trigger_name}'"
-                )
+                logger.warning(f"Skipping unknown hook trigger '{trigger_name}'")
 
         macro_data = ma_data.get("macros", {})
         for uid, macro_data in macro_data.items():
@@ -1059,9 +1043,7 @@ class Machine:
             ma.add_camera(Camera.from_dict(obj))
         speeds = ma_data.get("speeds", {})
         ma.max_cut_speed = speeds.get("max_cut_speed", ma.max_cut_speed)
-        ma.max_travel_speed = speeds.get(
-            "max_travel_speed", ma.max_travel_speed
-        )
+        ma.max_travel_speed = speeds.get("max_travel_speed", ma.max_travel_speed)
         ma.acceleration = speeds.get("acceleration", ma.acceleration)
         gcode = ma_data.get("gcode", {})
         ma.gcode_precision = gcode.get("gcode_precision", 3)
@@ -1143,9 +1125,7 @@ class MachineManager:
                     "resource busy."
                 )
         except Exception as e:
-            logger.error(
-                f"Failed to auto-connect machine '{machine.name}': {e}"
-            )
+            logger.error(f"Failed to auto-connect machine '{machine.name}': {e}")
 
     def set_active_machine(self, new_machine: Machine):
         """
@@ -1163,9 +1143,7 @@ class MachineManager:
         async def switch_routine(ctx):
             # 1. Disconnect the old machine if it's connected
             if old_machine and old_machine.is_connected():
-                logger.info(
-                    f"Disconnecting previous machine '{old_machine.name}'"
-                )
+                logger.info(f"Disconnecting previous machine '{old_machine.name}'")
                 await old_machine.disconnect()
                 # Add a small delay for the OS to release the port
                 await asyncio.sleep(0.2)
@@ -1175,9 +1153,7 @@ class MachineManager:
 
             # 3. Connect the new machine if it's set to auto-connect
             if new_machine.auto_connect:
-                logger.info(
-                    f"Connecting to new active machine '{new_machine.name}'"
-                )
+                logger.info(f"Connecting to new active machine '{new_machine.name}'")
                 await self._safe_connect(new_machine)
 
         task_mgr.add_coroutine(switch_routine)
