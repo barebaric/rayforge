@@ -6,7 +6,7 @@ from gi.repository import Gio, Adw
 from ...core.vectorization_spec import VectorizationSpec, TraceSpec
 from ...image import bitmap_mime_types
 from . import file_dialogs
-from .raster_import_dialog import RasterImportDialog
+from .import_dialog import ImportDialog
 
 if TYPE_CHECKING:
     from ...mainwindow import MainWindow
@@ -15,17 +15,17 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-def _start_interactive_raster_import(
+def _start_interactive_import(
     win: "MainWindow",
     editor: "DocEditor",
     file_path: Path,
     mime_type: str,
     position_mm: Optional[tuple[float, float]] = None,
 ):
-    """Creates and presents the main interactive raster import dialog."""
-    logger.info("Starting interactive raster import...")
+    """Creates and presents the main interactive import dialog."""
+    logger.info("Starting interactive import...")
 
-    import_dialog = RasterImportDialog(
+    import_dialog = ImportDialog(
         parent=win, editor=editor, file_path=file_path, mime_type=mime_type
     )
 
@@ -33,7 +33,7 @@ def _start_interactive_raster_import(
     def on_dialog_response(
         sender, *, response_id: str, spec: VectorizationSpec
     ):
-        _on_raster_import_dialog_response(
+        _on_import_dialog_response(
             sender,
             response_id,
             spec,
@@ -49,7 +49,7 @@ def _start_interactive_raster_import(
     import_dialog.present()
 
 
-def _on_raster_import_dialog_response(
+def _on_import_dialog_response(
     dialog,
     response_id: str,
     spec: VectorizationSpec,
@@ -59,8 +59,8 @@ def _on_raster_import_dialog_response(
     mime_type: str,
     position_mm: Optional[tuple[float, float]] = None,
 ):
-    """Callback for when the interactive raster import dialog is closed."""
-    logger.info(f"Received response '{response_id}' from RasterImportDialog.")
+    """Callback for when the interactive import dialog is closed."""
+    logger.info(f"Received response '{response_id}' from ImportDialog.")
     if response_id == "import":
         logger.info(
             f"Executing final import for {file_path} with spec: {spec}"
@@ -96,7 +96,7 @@ def _on_file_selected(dialog, result, user_data):
         if is_raster_like:
             # For SVGs, PDFs, and standard raster types, go to the unified
             # interactive dialog.
-            _start_interactive_raster_import(win, editor, file_path, mime_type)
+            _start_interactive_import(win, editor, file_path, mime_type)
         else:
             # For other vector types (dxf, etc.) or unknown types, import
             # directly without any dialogs.
@@ -142,7 +142,7 @@ def import_file_at_position(
     if is_raster_like:
         # For SVGs, PDFs, and standard raster types, go to the unified
         # interactive dialog.
-        _start_interactive_raster_import(
+        _start_interactive_import(
             win, editor, file_path, mime_type, position_mm
         )
     else:
@@ -173,18 +173,18 @@ def _on_batch_trace_response(
             editor.file.load_file_from_path(
                 file_path, mime_type, vectorization_spec, position_mm
             )
-        logger.info(f"Batch imported {len(file_list)} raster files")
+        logger.info(f"Batch imported {len(file_list)} files")
     # else: user cancelled, do nothing
 
 
-def import_multiple_rasters_at_position(
+def import_multiple_files_at_position(
     win: "MainWindow",
     editor: "DocEditor",
     file_list: list[tuple[Path, str]],
     position_mm: tuple[float, float],
 ):
     """
-    Import multiple raster files with a single batch configuration dialog.
+    Import multiple files with a single batch configuration dialog.
 
     Args:
         win: MainWindow instance
@@ -207,7 +207,7 @@ def import_multiple_rasters_at_position(
         modal=True,
         heading=_(f"Batch Import {file_count} Images"),
         body=_(
-            f"Import {file_count} raster images:\n{file_names}\n\n"
+            f"Import {file_count} images:\n{file_names}\n\n"
             f"All images will be traced using the default tracing settings "
             f"and positioned at the drop location."
         ),

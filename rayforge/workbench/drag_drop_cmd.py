@@ -308,13 +308,13 @@ class DragDropCmd:
                     position_mm,
                 )
             else:
-                # Multiple raster files - use batch import
+                # Multiple files - use batch import
                 world_x_mm, world_y_mm = position_mm
                 logger.info(
-                    f"Batch importing {len(raster_files)} raster files at "
+                    f"Batch importing {len(raster_files)} files at "
                     f"({world_x_mm:.2f}, {world_y_mm:.2f}) mm"
                 )
-                import_handler.import_multiple_rasters_at_position(
+                import_handler.import_multiple_files_at_position(
                     self.main_window,
                     self.surface.editor,
                     raster_files,
