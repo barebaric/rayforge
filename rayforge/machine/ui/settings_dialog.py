@@ -89,9 +89,7 @@ class MachineSettingsDialog(Adw.Window):
         # Machine Hours Tab
         btn_hours = Gtk.ToggleButton(group=btn_general)
         btn_hours.set_child(
-            self._create_tab_child(
-                _("Hours"), "preferences-system-time-symbolic"
-            )
+            self._create_tab_child(_("Hours"), "timer-symbolic")
         )
         btn_hours.connect("toggled", self._on_tab_toggled, "hours")
         switcher_box.append(btn_hours)
