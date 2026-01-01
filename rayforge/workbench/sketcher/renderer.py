@@ -561,7 +561,7 @@ class SketchRenderer:
         ctx.move_to(sx - ext.width / 2, sy + ext.height / 2 - 2)
         ctx.show_text(label)
 
-        ctx.set_source_rgba(0.5, 0.5, 0.5, 0.5)
+        self._set_constraint_color(ctx, constr, is_hovered)
         ctx.set_line_width(1)
         ctx.set_dash([4, 4])
         ctx.move_to(sx, sy)
@@ -624,7 +624,7 @@ class SketchRenderer:
                     break
 
         if not has_geometry:
-            ctx.set_source_rgba(0.5, 0.5, 0.5, 0.5)
+            self._set_constraint_color(ctx, constr, is_hovered)
             ctx.set_line_width(1)
             ctx.set_dash([4, 4])
             ctx.move_to(s1[0], s1[1])
