@@ -319,20 +319,26 @@ class GcodeEncoder(OpsEncoder):
     ) -> None:
         """Rapid movement with laser safety"""
         self._laser_off(context, gcode)
-        self._emit_modal_speed(gcode, self.travel_speed or 0)
-        f_command = (
-            f" F{self._feed_format.format(self.travel_speed)}"
-            if self.travel_speed is not None
-            else ""
-        )
-        gcode.append(
-            self.dialect.travel_move.format(
-                x=self._coord_format.format(x),
-                y=self._coord_format.format(y),
-                z=self._coord_format.format(z),
-                f_command=f_command,
-            )
-        )
+
+        machine = context.machine
+        f_command = ""
+        template_vars = {
+            "x": self._coord_format.format(x),
+            "y": self._coord_format.format(y),
+            "z": self._coord_format.format(z),
+        }
+
+        # Only add F-code to G0 if the driver supports it
+        if machine.can_g0_with_speed():
+            self._emit_modal_speed(gcode, self.travel_speed or 0)
+            if self.travel_speed is not None:
+                f_command = f" F{self._feed_format.format(self.travel_speed)}"
+            template_vars["f_command"] = f_command
+        # If the driver does not support G0 with speed, the f_command key
+        # will not be in the dict, preventing a KeyError for dialects that
+        # do not have an {f_command} placeholder in their travel_move string.
+
+        gcode.append(self.dialect.travel_move.format(**template_vars))
 
     def _handle_line_to(
         self,

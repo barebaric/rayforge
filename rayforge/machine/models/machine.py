@@ -383,14 +383,14 @@ class Machine:
         self.changed.send(self)
 
     def set_reverse_x_axis(self, is_reversed: bool):
-        """Sets if the X-axis direction is reversed."""
+        """Sets if the X-axis coordinate display is inverted."""
         if self.reverse_x_axis == is_reversed:
             return
         self.reverse_x_axis = is_reversed
         self.changed.send(self)
 
     def set_reverse_y_axis(self, is_reversed: bool):
-        """Sets if the Y-axis direction is reversed."""
+        """Sets if the Y-axis coordinate display is inverted."""
         if self.reverse_y_axis == is_reversed:
             return
         self.reverse_y_axis = is_reversed
@@ -424,7 +424,7 @@ class Machine:
     ) -> Tuple[float, float, float]:
         """
         Calculate the signed coordinate deltas for a jog operation based on a
-        user's visual intent.
+        user's visual intent (e.g., clicking the "Right" arrow).
 
         Args:
             distance: The positive distance for the jog.
@@ -432,21 +432,22 @@ class Machine:
         Returns:
             A tuple of (delta_for_east, delta_for_north, delta_for_up).
         """
-        # A positive delta means the coordinate value increases.
-        # "RIGHT" (East) maps to +X
-        # "AWAY" (North) maps to +Y
-        # We ignore reverse_x/y_axis here because those settings are used to
-        # invert the coordinate readout (for negative workspaces), not to
-        # define physical motor reversal. G-code generation assumes standard
-        # Cartesian direction (Right=X+, Back=Y+), so jogging must match.
+        # "Visual" refers to the UI controls (Arrows).
+        # "RIGHT" Arrow (East) -> Physical Positive X movement.
+        # "UP" Arrow (North/Away) -> Physical Positive Y movement.
 
-        # "RIGHT" (East)
+        # We IGNORE self.reverse_x_axis and self.reverse_y_axis here.
+        # Rationale: Those settings are intended to invert the *displayed*
+        # coordinates (DRO) for machines with negative workspaces
+        # (e.g. Top-Right origin), NOT to invert the physical motor direction.
+        # Standard G-code behavior is: X+ is Right, Y+ is Away.
+        # The user expects the Right Arrow to move the head Right.
+
         x_delta = distance
-
-        # "AWAY" (North)
         y_delta = distance
 
-        # "UP"
+        # Z-axis is different. Often "Reverse Z" implies kinematic inversion
+        # (Bed moves up vs Head moves up). We respect it for jogging.
         z_delta = distance * (-1.0 if self.reverse_z_axis else 1.0)
 
         return x_delta, y_delta, z_delta
@@ -749,27 +750,38 @@ class Machine:
 
         # Transform the ops coordinate system (Y-Up Internal -> Machine)
         # before generating G-code based on the origin setting.
+        # We assume Internal Ops are Y-Up (Cartesian, 0,0 at Bottom-Left).
         ops_for_encoder = ops
-        if self.origin != Origin.TOP_LEFT:
+
+        # If Origin is BOTTOM_LEFT, it matches Internal (Y-Up, X-Right).
+        # Any other origin requires transformation.
+        if self.origin != Origin.BOTTOM_LEFT:
             ops_for_encoder = ops.copy()
             width, height = self.dimensions
 
             # Create the origin transformation matrix
             transform = np.identity(4)
-            if self.origin == Origin.BOTTOM_LEFT:
-                # Y-down, X-left: Y_new = Height - Y_old
+
+            if self.origin == Origin.TOP_LEFT:
+                # Machine is Y-Down (0,0 at Top-Left).
+                # Flip Y: Y_new = Height - Y_old
                 transform[1, 1] = -1.0
                 transform[1, 3] = height
+
             elif self.origin == Origin.TOP_RIGHT:
-                # Y-up, X-right: X_new = Width - X_old
-                transform[0, 0] = -1.0
-                transform[0, 3] = width
-            elif self.origin == Origin.BOTTOM_RIGHT:
-                # Y-down, X-right: X_new=W-X_old, Y_new=H-Y_old
+                # Machine is Y-Down, X-Left (0,0 at Top-Right).
+                # Flip X: X_new = Width - X_old
+                # Flip Y: Y_new = Height - Y_old
                 transform[0, 0] = -1.0
                 transform[0, 3] = width
                 transform[1, 1] = -1.0
                 transform[1, 3] = height
+
+            elif self.origin == Origin.BOTTOM_RIGHT:
+                # Machine is Y-Up, X-Left (0,0 at Bottom-Right).
+                # Flip X: X_new = Width - X_old
+                transform[0, 0] = -1.0
+                transform[0, 3] = width
 
             ops_for_encoder.transform(transform)
 

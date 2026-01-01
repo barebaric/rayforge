@@ -63,11 +63,12 @@ async def test_import_svg_export_gcode(
     context_initializer, editor, tmp_path, assets_path
 ):
     """Full end-to-end test using a real subprocess for ops generation."""
-    # The expected G-code was generated with TOP_LEFT origin (no coordinate flip).
-    # The new Machine defaults to BOTTOM_LEFT, so we force TOP_LEFT here.
+    # The expected G-code was generated assuming "Identity" transformation (no flip).
+    # In the updated Machine model, Origin.BOTTOM_LEFT represents the Identity state
+    # (matching the internal Y-Up Cartesian coordinates).
     machine = get_context().machine
     assert machine is not None, "Machine should be initialized in context"
-    machine.set_origin(Origin.TOP_LEFT)
+    machine.set_origin(Origin.BOTTOM_LEFT)
 
     # --- 1. ARRANGE ---
     step = steps.create_contour_step(
