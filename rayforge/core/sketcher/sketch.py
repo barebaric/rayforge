@@ -346,8 +346,20 @@ class Sketch(IAsset):
         """
         Builds a map of point_id -> list of outgoing edges.
         Each edge dict contains: {'to': point_id, 'id': entity_id, 'fwd': bool}
+
+        Coincident points are treated as the same node in the graph, so edges
+        are added for all points in a coincident group.
         """
         adj = defaultdict(list)
+
+        # Build a mapping from each point to its coincident group
+        point_to_group = {}
+        for p in self.registry.points:
+            if p.id not in point_to_group:
+                coincident_group = self.get_coincident_points(p.id)
+                for pid in coincident_group:
+                    point_to_group[pid] = coincident_group
+
         for e in self.registry.entities:
             # Skip circles in graph traversal (handled separately)
             if isinstance(e, Circle):
@@ -356,8 +368,26 @@ class Sketch(IAsset):
                 p_ids = e.get_point_ids()
                 # Lines/Arcs have 2 endpoints for traversal
                 p1_id, p2_id = p_ids[0], p_ids[1]
-                adj[p1_id].append({"to": p2_id, "id": e.id, "fwd": True})
-                adj[p2_id].append({"to": p1_id, "id": e.id, "fwd": False})
+
+                # Get the coincident groups for both endpoints
+                group1 = point_to_group.get(p1_id, {p1_id})
+                group2 = point_to_group.get(p2_id, {p2_id})
+
+                # Add edges from all points in group1 to all points in group2
+                for src in group1:
+                    for dst in group2:
+                        if src != dst:
+                            adj[src].append(
+                                {"to": dst, "id": e.id, "fwd": True}
+                            )
+
+                # Add edges from all points in group2 to all points in group1
+                for src in group2:
+                    for dst in group1:
+                        if src != dst:
+                            adj[src].append(
+                                {"to": dst, "id": e.id, "fwd": False}
+                            )
         return adj
 
     def _sort_edges_by_angle(
