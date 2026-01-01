@@ -121,5 +121,5 @@ class DiameterConstraint(Constraint):
         pos_data = self.get_label_pos(reg, to_screen, element)
         if pos_data:
             label_sx, label_sy, _, _ = pos_data
-            return math.hypot(sx - label_sx, sy - label_sy) < 15
+            return math.hypot(sx - label_sx, sy - label_sy) < threshold
         return False

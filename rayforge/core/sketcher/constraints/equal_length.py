@@ -195,6 +195,6 @@ class EqualLengthConstraint(Constraint):
             pos = self._get_symbol_pos(entity, reg, to_screen, element)
             if pos:
                 esx, esy = pos
-                if math.hypot(sx - esx, sy - esy) < 15:
+                if math.hypot(sx - esx, sy - esy) < threshold:
                     return True
         return False
