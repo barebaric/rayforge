@@ -631,7 +631,7 @@ class Machine:
         Handle machine hours changes and propagate to machine changed
         signal.
         """
-        self.changed.send(self)
+        self._scheduler(self.changed.send, self)
 
     def add_machine_hours(self, hours: float) -> None:
         """
