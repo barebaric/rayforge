@@ -105,5 +105,5 @@ class DistanceConstraint(Constraint):
             s1 = to_screen((p1.x, p1.y))
             s2 = to_screen((p2.x, p2.y))
             mx, my = (s1[0] + s2[0]) / 2, (s1[1] + s2[1]) / 2
-            return math.hypot(sx - mx, sy - my) < 15
+            return math.hypot(sx - mx, sy - my) < threshold
         return False

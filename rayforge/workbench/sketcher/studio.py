@@ -64,6 +64,7 @@ class SketchStudio(Gtk.Box):
         self.btn_cancel = Gtk.Button(child=get_icon("close-symbolic"))
         self.btn_cancel.set_tooltip_text(_("Cancel Sketch"))
         self.btn_cancel.connect("clicked", self._on_cancel_clicked)
+        self.btn_cancel.set_can_focus(False)
         self.session_bar.append(self.btn_cancel)
 
         # Center: Title (using spacers to center it roughly)
@@ -250,6 +251,8 @@ class SketchStudio(Gtk.Box):
         self.canvas.sketch_element.update_bounds_from_sketch()
         # Reset view to center content
         self.canvas.reset_view()
+        # Grab focus for the canvas so keyboard shortcuts work
+        self.canvas.grab_focus()
 
     # --- Action Handlers ---
 
