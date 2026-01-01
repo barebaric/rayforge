@@ -180,8 +180,8 @@ class GeneralPreferencesPage(Adw.PreferencesPage):
         self.reverse_x_axis_row.set_title(_("Reverse X-Axis Direction"))
         self.reverse_x_axis_row.set_subtitle(
             _(
-                "Enable if a positive X command (e.g., G0 X10) moves the head "
-                "toward the origin"
+                "Invert the displayed coordinate values. Does not affect "
+                "motion direction."
             )
         )
         self.reverse_x_axis_row.set_active(machine.reverse_x_axis)
@@ -195,8 +195,8 @@ class GeneralPreferencesPage(Adw.PreferencesPage):
         self.reverse_y_axis_row.set_title(_("Reverse Y-Axis Direction"))
         self.reverse_y_axis_row.set_subtitle(
             _(
-                "Enable if a positive Y command (e.g., G0 Y10) moves the head "
-                "toward the origin"
+                "Invert the displayed coordinate values. Does not affect "
+                "motion direction."
             )
         )
         self.reverse_y_axis_row.set_active(machine.reverse_y_axis)

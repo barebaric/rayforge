@@ -433,14 +433,18 @@ class Machine:
             A tuple of (delta_for_east, delta_for_north, delta_for_up).
         """
         # A positive delta means the coordinate value increases.
-        # The user's intent (e.g., move RIGHT) is mapped to either a
-        # positive or negative delta based on the reverse axis settings.
+        # "RIGHT" (East) maps to +X
+        # "AWAY" (North) maps to +Y
+        # We ignore reverse_x/y_axis here because those settings are used to
+        # invert the coordinate readout (for negative workspaces), not to
+        # define physical motor reversal. G-code generation assumes standard
+        # Cartesian direction (Right=X+, Back=Y+), so jogging must match.
 
         # "RIGHT" (East)
-        x_delta = distance * (-1.0 if self.reverse_x_axis else 1.0)
+        x_delta = distance
 
         # "AWAY" (North)
-        y_delta = distance * (-1.0 if self.reverse_y_axis else 1.0)
+        y_delta = distance
 
         # "UP"
         z_delta = distance * (-1.0 if self.reverse_z_axis else 1.0)
