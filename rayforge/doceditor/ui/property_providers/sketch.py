@@ -4,7 +4,6 @@ from typing import List, cast, Any, Set, TYPE_CHECKING
 from gi.repository import Adw, Gtk, GLib
 
 from ....core.item import DocItem
-from ....core.sketcher.sketch import Sketch
 from ....core.varset import VarSet
 from ....core.workpiece import WorkPiece
 from ....shared.ui.varsetwidget import VarSetWidget
@@ -74,29 +73,43 @@ class SketchPropertyProvider(PropertyProvider):
                 self.varset_widget.populate(VarSet())
                 return
 
-            # 1. (Re)populate the VarSetWidget from the sketch definition.
-            # This builds the UI with the default values for each parameter.
-            logger.debug("Populating VarSetWidget from sketch definition.")
-            self.varset_widget.populate(sketch.input_parameters)
+            # 1. (Re)populate the VarSetWidget from a CLEAN copy of the sketch
+            # definition. This prevents state from one instance's UI session
+            # from leaking into another's.
+            logger.debug(
+                "Populating VarSetWidget from a clean sketch definition copy."
+            )
+            clean_varset_def = sketch.input_parameters.to_dict(
+                include_value=False
+            )
+            clean_varset = VarSet.from_dict(clean_varset_def)
+            self.varset_widget.populate(clean_varset)
 
             # 2. Update the UI to reflect the actual values from the selection,
             # handling mixed values appropriately.
-            self._update_widget_for_mixed_state(sketch, workpieces)
+            self._update_widget_for_mixed_state(clean_varset, workpieces)
         finally:
             self._in_update = False
             logger.debug("Finished updating sketch property widgets.")
 
     def _update_widget_for_mixed_state(
-        self, sketch: Sketch, workpieces: List[WorkPiece]
+        self, base_varset: VarSet, workpieces: List[WorkPiece]
     ):
         """
         Adjusts the UI controls to show common values or indicate a
-        mixed state when multiple items are selected.
+        mixed state when multiple items are selected. This is done by
+        calculating the final state (defaults + overrides) and setting it.
         """
         if len(workpieces) == 1:
-            # For a single selection, just set the current values.
-            logger.debug("Single item selected, setting direct values.")
-            self.varset_widget.set_values(workpieces[0].sketch_params)
+            wp = workpieces[0]
+            # Build the final set of values: start with defaults, then
+            # override.
+            final_values = base_varset.get_values()
+            final_values.update(wp.sketch_params)
+            logger.debug(
+                f"Single item selected, setting final values: {final_values}"
+            )
+            self.varset_widget.set_values(final_values)
             return
 
         # For multiple selections, check each parameter for mixed values.
@@ -104,7 +117,7 @@ class SketchPropertyProvider(PropertyProvider):
         for key, (row, var) in self.varset_widget.widget_map.items():
             all_values: Set[Any] = set()
             for wp in workpieces:
-                # Get the instance's value, falling back to the sketch default.
+                # Get the instance's value, falling back to the Var's default.
                 value = wp.sketch_params.get(key, var.default)
                 all_values.add(value)
 

@@ -893,31 +893,34 @@ class Sketch(IAsset):
         """
         success = False
         try:
-            # Step 1: Build the evaluation context with correct precedence.
-            # a) Start with legacy parameters.
-            ctx = {}
-            if self.params:
-                ctx.update(self.params.get_all_values())
+            # Step 1: Create a disposable ParameterContext clone for this
+            # solve.
+            solve_params = ParameterContext.from_dict(self.params.to_dict())
 
-            # b) Add/overwrite with values from the new VarSet system.
-            if self.input_parameters is not None:
-                ctx.update(self.input_parameters.get_values())
-
-            # c) Add/overwrite with runtime overrides (highest precedence).
+            # Step 2: Build the seed dictionary, starting with defaults from
+            # the VarSet, then applying instance-specific overrides.
+            initial_values = {}
+            if self.input_parameters:
+                initial_values.update(self.input_parameters.get_values())
             if variable_overrides:
-                ctx.update(variable_overrides)
+                initial_values.update(variable_overrides)
 
-            # Step 2: Update constraints with the final context.
+            # Step 3: Evaluate all expressions from scratch using the temporary
+            # context, seeded with the combined values.
+            solve_params.evaluate_all(initial_values=initial_values)
+            ctx = solve_params.get_all_values()
+
+            # Step 4: Update constraints with the final, resolved values.
             all_constraints = self.constraints
             if extra_constraints:
                 all_constraints = self.constraints + extra_constraints
-
             for c in all_constraints:
                 if hasattr(c, "update_from_context"):
                     c.update_from_context(ctx)
 
-            # Step 3: Run the solver.
-            solver = Solver(self.registry, self.params, all_constraints)
+            # Step 5: Run the solver with the disposable, correctly evaluated
+            # context.
+            solver = Solver(self.registry, solve_params, all_constraints)
             success = solver.solve(update_dof=update_constraint_status)
 
         except Exception as e:
