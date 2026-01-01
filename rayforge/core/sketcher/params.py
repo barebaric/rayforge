@@ -1,5 +1,5 @@
 import math
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 
 
 class ParameterContext:
@@ -69,12 +69,22 @@ class ParameterContext:
         except Exception:
             return 0.0
 
-    def evaluate_all(self) -> None:
+    def evaluate_all(
+        self, initial_values: Optional[Dict[str, float]] = None
+    ) -> None:
         """
         Iteratively resolves dependencies.
         Simple multi-pass solver to handle out-of-order definitions.
+
+        Args:
+            initial_values: An optional dictionary of pre-set values to seed
+                            the evaluation cache with. These have the highest
+                            precedence.
         """
         self._cache.clear()
+        if initial_values:
+            self._cache.update(initial_values)
+
         # Max iterations equal to number of params to prevent infinite loops
         max_passes = len(self._expressions) + 1
 
@@ -82,6 +92,7 @@ class ParameterContext:
             progress = False
             # Always start with a fresh context for each pass
             ctx = self._math_context.copy()
+            # The cache may already contain initial_values
             if self._cache:
                 ctx.update(self._cache)
 

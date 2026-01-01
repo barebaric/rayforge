@@ -361,14 +361,14 @@ class WorkPiece(DocItem):
             from .sketcher.sketch import Sketch
 
             instance_sketch = Sketch.from_dict(sketch_def.to_dict())
-            for key, val in self.sketch_params.items():
-                if key in instance_sketch.input_parameters.keys():
-                    try:
-                        instance_sketch.input_parameters[key] = val
-                    except Exception:
-                        pass
 
-            instance_sketch.solve()
+            # Solve the sketch clone with this instance's specific parameter
+            # overrides to generate the correct, unnormalized geometry.
+            logger.debug(
+                f"WP {self.uid[:8]}: Solving clone for boundaries with "
+                f"overrides: {self.sketch_params}"
+            )
+            instance_sketch.solve(variable_overrides=self.sketch_params)
             unnormalized_geo = instance_sketch.to_geometry()
             # Also get fill geometries from the same solved state.
             unnormalized_fills = instance_sketch.get_fill_geometries()
@@ -385,6 +385,21 @@ class WorkPiece(DocItem):
             min_x, min_y, max_x, max_y = unnormalized_geo.rect()
             width = max(max_x - min_x, 1e-9)
             height = max(max_y - min_y, 1e-9)
+
+            # Detect natural size change and update metadata
+            old_w = self.natural_width_mm
+            old_h = self.natural_height_mm
+
+            if abs(width - old_w) > 1e-5 or abs(height - old_h) > 1e-5:
+                # Update natural dimensions to match the actual geometry
+                self.natural_width_mm = width
+                self.natural_height_mm = height
+                logger.debug(
+                    f"WP {self.uid[:8]}: Natural size changed to "
+                    f"{width:.2f}x{height:.2f}"
+                )
+                self.set_size(width, height)
+
             norm_matrix = Matrix.scale(
                 1.0 / width, 1.0 / height
             ) @ Matrix.translation(-min_x, -min_y)
@@ -957,6 +972,7 @@ class WorkPiece(DocItem):
         if self._sketch_params != new_params:
             self._sketch_params = new_params
             if self.sketch_uid:
+                # Regenerate the internal geometry and natural size
                 self.regenerate_from_sketch()
 
     def natural_sizes(self) -> Optional[Tuple[float, float]]:
@@ -1371,12 +1387,12 @@ class WorkPiece(DocItem):
         Regenerates the workpiece from its sketch definition.
 
         This method:
-        1. Fetches the Sketch definition using self.sketch_uid
-        2. Solves a CLONE of the sketch (to match boundaries behavior)
-        3. Calculates the natural size from the solved geometry's bounding box
-        4. Updates self.natural_width_mm and self.natural_height_mm
-        5. Invalidates the geometry cache
-        6. Sends an updated signal
+        1. Fetches and clones the sketch definition.
+        2. Solves the clone with instance-specific parameter overrides.
+        3. Calculates the new natural size from the solved geometry.
+        4. Updates the instance's `natural_width/height_mm`.
+        5. It resizes the on-canvas item.
+        6. Invalidates caches and signals the UI to redraw.
         """
         if not self.sketch_uid:
             logger.warning(
@@ -1403,8 +1419,14 @@ class WorkPiece(DocItem):
 
         instance_sketch = Sketch.from_dict(sketch_def.to_dict())
 
-        # Solve the sketch with current parameter overrides
-        success = instance_sketch.solve(variable_overrides=self.sketch_params)
+        # Solve the sketch with current parameter overrides.
+        variable_overrides = self.sketch_params or {}
+        logger.debug(
+            f"WP {self.uid[:8]}: Solving clone with overrides: "
+            f"{variable_overrides}"
+        )
+        success = instance_sketch.solve(variable_overrides=variable_overrides)
+
         if not success:
             logger.warning(
                 f"WP {self.uid[:8]}: Sketch solve failed during regeneration"
