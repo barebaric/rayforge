@@ -102,13 +102,18 @@ class GeneralPreferencesPage(Adw.PreferencesPage):
             _("Send a homing command when the application starts")
         )
         home_on_start_row.set_active(machine.home_on_start)
-        home_on_start_row.connect("notify::active", self.on_home_on_start_changed)
+        home_on_start_row.connect(
+            "notify::active", self.on_home_on_start_changed
+        )
         behavior_group.add(home_on_start_row)
 
         clear_alarm_row = Adw.SwitchRow()
         clear_alarm_row.set_title(_("Clear Alarm On Connect"))
         clear_alarm_row.set_subtitle(
-            _("Automatically send an unlock command if " "connected in an ALARM state")
+            _(
+                "Automatically send an unlock command if "
+                "connected in an ALARM state"
+            )
         )
         clear_alarm_row.set_active(machine.clear_alarm_on_connect)
         clear_alarm_row.connect(
@@ -178,7 +183,9 @@ class GeneralPreferencesPage(Adw.PreferencesPage):
         origin_store.append(_("Bottom Right"))
         origin_combo_row = Adw.ComboRow(
             title=_("Coordinate Origin (0,0)"),
-            subtitle=_("The physical corner where coordinates are zero after homing"),
+            subtitle=_(
+                "The physical corner where coordinates are zero after homing"
+            ),
             model=origin_store,
         )
         origin_combo_row.set_selected(
@@ -203,7 +210,9 @@ class GeneralPreferencesPage(Adw.PreferencesPage):
             )
         )
         self.reverse_x_axis_row.set_active(machine.reverse_x_axis)
-        self.reverse_x_axis_row.connect("notify::active", self.on_reverse_x_changed)
+        self.reverse_x_axis_row.connect(
+            "notify::active", self.on_reverse_x_changed
+        )
         axes_group.add(self.reverse_x_axis_row)
 
         # Reverse Y-Axis
@@ -216,17 +225,24 @@ class GeneralPreferencesPage(Adw.PreferencesPage):
             )
         )
         self.reverse_y_axis_row.set_active(machine.reverse_y_axis)
-        self.reverse_y_axis_row.connect("notify::active", self.on_reverse_y_changed)
+        self.reverse_y_axis_row.connect(
+            "notify::active", self.on_reverse_y_changed
+        )
         axes_group.add(self.reverse_y_axis_row)
 
         # Reverse Z-Axis
         self.reverse_z_axis_row = Adw.SwitchRow()
         self.reverse_z_axis_row.set_title(_("Reverse Z-Axis Direction"))
         self.reverse_z_axis_row.set_subtitle(
-            _("Enable if a positive Z command (e.g., G0 Z10) moves the head " "down")
+            _(
+                "Enable if a positive Z command (e.g., G0 Z10) moves the head "
+                "down"
+            )
         )
         self.reverse_z_axis_row.set_active(machine.reverse_z_axis)
-        self.reverse_z_axis_row.connect("notify::active", self.on_reverse_z_changed)
+        self.reverse_z_axis_row.connect(
+            "notify::active", self.on_reverse_z_changed
+        )
         axes_group.add(self.reverse_z_axis_row)
 
         single_axis_homing_row = Adw.SwitchRow()
@@ -241,7 +257,9 @@ class GeneralPreferencesPage(Adw.PreferencesPage):
         axes_group.add(single_axis_homing_row)
 
         # Group for Speeds
-        speeds_group = Adw.PreferencesGroup(title=_("Speeds &amp; Acceleration"))
+        speeds_group = Adw.PreferencesGroup(
+            title=_("Speeds &amp; Acceleration")
+        )
         self.add(speeds_group)
 
         # Max Travel Speed
@@ -260,7 +278,9 @@ class GeneralPreferencesPage(Adw.PreferencesPage):
             spin_row=travel_speed_row,
             quantity="speed",
         )
-        self.travel_speed_helper.set_value_in_base_units(self.machine.max_travel_speed)
+        self.travel_speed_helper.set_value_in_base_units(
+            self.machine.max_travel_speed
+        )
         self.travel_speed_helper.changed.connect(self.on_travel_speed_changed)
         self.travel_speed_row = travel_speed_row
         speeds_group.add(travel_speed_row)
@@ -281,7 +301,9 @@ class GeneralPreferencesPage(Adw.PreferencesPage):
             spin_row=cut_speed_row,
             quantity="speed",
         )
-        self.cut_speed_helper.set_value_in_base_units(self.machine.max_cut_speed)
+        self.cut_speed_helper.set_value_in_base_units(
+            self.machine.max_cut_speed
+        )
         self.cut_speed_helper.changed.connect(self.on_cut_speed_changed)
         speeds_group.add(cut_speed_row)
 
@@ -294,14 +316,18 @@ class GeneralPreferencesPage(Adw.PreferencesPage):
         )
         acceleration_row = Adw.SpinRow(
             title=_("Acceleration"),
-            subtitle=_("Machine acceleration. Used only for time estimations."),
+            subtitle=_(
+                "Machine acceleration. Used only for time estimations."
+            ),
             adjustment=acceleration_adjustment,
         )
         self.acceleration_helper = UnitSpinRowHelper(
             spin_row=acceleration_row,
             quantity="acceleration",
         )
-        self.acceleration_helper.set_value_in_base_units(self.machine.acceleration)
+        self.acceleration_helper.set_value_in_base_units(
+            self.machine.acceleration
+        )
         self.acceleration_helper.changed.connect(self.on_acceleration_changed)
         speeds_group.add(acceleration_row)
 
@@ -351,7 +377,9 @@ class GeneralPreferencesPage(Adw.PreferencesPage):
         if errors:
             full_error_msg = " \n".join(errors)
             self.error_banner.set_title(
-                _("<b>Configuration required:</b> {error}").format(error=full_error_msg)
+                _("<b>Configuration required:</b> {error}").format(
+                    error=full_error_msg
+                )
             )
             self.error_banner.set_revealed(True)
         else:
@@ -482,10 +510,14 @@ class GeneralPreferencesPage(Adw.PreferencesPage):
 
         if self.machine.can_g0_with_speed():
             self.travel_speed_row.set_sensitive(True)
-            self.travel_speed_row.set_subtitle(_("Maximum rapid movement speed"))
+            self.travel_speed_row.set_subtitle(
+                _("Maximum rapid movement speed")
+            )
         else:
             self.travel_speed_row.set_sensitive(False)
-            self.travel_speed_row.set_subtitle(_("Not supported by the driver"))
+            self.travel_speed_row.set_subtitle(
+                _("Not supported by the driver")
+            )
 
     def _update_z_axis_state(self):
         """Update Z-axis controls based on driver features."""
