@@ -1072,10 +1072,18 @@ class TestMachine:
         "reverse_x, reverse_y, reverse_z, distance, expected",
         [
             (False, False, False, 10.0, (10.0, 10.0, 10.0)),
-            (True, False, False, 10.0, (-10.0, 10.0, 10.0)),
-            (False, True, False, 10.0, (10.0, -10.0, 10.0)),
+            (
+                True,
+                False,
+                False,
+                10.0,
+                (10.0, 10.0, 10.0),
+            ),  # Reverse X/Y affects display only
+            (False, True, False, 10.0, (10.0, 10.0, 10.0)),
+            # Reverse Z also affects jog direction
             (False, False, True, 10.0, (10.0, 10.0, -10.0)),
-            (True, True, True, 5.0, (-5.0, -5.0, -5.0)),
+            # X/Y positive, Z inverted
+            (True, True, True, 5.0, (5.0, 5.0, -5.0)),
         ],
     )
     @pytest.mark.asyncio
