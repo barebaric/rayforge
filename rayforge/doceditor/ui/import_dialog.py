@@ -31,9 +31,9 @@ logger = logging.getLogger(__name__)
 PREVIEW_RENDER_SIZE_PX = 1024
 
 
-class RasterImportDialog(Adw.Window):
+class ImportDialog(Adw.Window):
     """
-    A dialog for importing raster images with live preview of vectorization.
+    A dialog for importing images with live preview of vectorization.
     Also handles SVG import options (direct vs. trace).
     """
 
