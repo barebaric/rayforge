@@ -202,7 +202,10 @@ class SketchRenderer:
 
             # 3. Draw Actual Entity
             if entity.construction:
-                ctx.set_dash([5, 5])
+                # Calculate scale to convert screen pixels to world coords
+                scale = self.element.line_width / base_line_width
+                # Set dash pattern in screen pixels (5 on, 5 off)
+                ctx.set_dash([5.0 / scale, 5.0 / scale])
                 # Reduce width for construction lines
                 ctx.set_line_width(base_line_width * 0.8)
                 if entity.constrained:
