@@ -150,9 +150,9 @@ class TestMachine:
         """
         await wait_for_tasks_to_finish(task_mgr)
         # --- Arrange ---
-        # Set origin to TOP_LEFT so encode_ops does not create a copy of ops
-        # for coordinate transformation.
-        machine.set_origin(Origin.TOP_LEFT)
+        # Set origin to BOTTOM_LEFT so encode_ops does not create a copy of ops
+        # for coordinate transformation (identity).
+        machine.set_origin(Origin.BOTTOM_LEFT)
 
         # Create a mock encoder and spy on its encode method
         mock_encoder = GcodeEncoder(machine.dialect)
@@ -188,7 +188,8 @@ class TestMachine:
     ):
         """
         Verify that encode_ops correctly applies coordinate transformations
-        when the machine origin is not Top-Left.
+        when the machine origin is not Bottom-Left (the internal native
+        format).
         """
         await wait_for_tasks_to_finish(task_mgr)
         # --- Arrange ---
@@ -215,8 +216,9 @@ class TestMachine:
 
         doc = Doc()
 
-        # --- Case 1: Default (Top Left) ---
-        machine.set_origin(Origin.TOP_LEFT)
+        # --- Case 1: Default (Bottom Left) - Should be Identity ---
+        # Internal is Y-Up (BL), Machine is BL -> No transform needed.
+        machine.set_origin(Origin.BOTTOM_LEFT)
         machine.encode_ops(original_ops, doc)
 
         # Should pass original, no copy, no transform
@@ -224,8 +226,9 @@ class TestMachine:
         original_ops.copy.assert_not_called()
         original_ops.transform.assert_not_called()
 
-        # --- Case 2: Origin Change (Trigger Transformation) ---
-        machine.set_origin(Origin.BOTTOM_LEFT)
+        # --- Case 2: Origin Change (Top Left) - Should Transform ---
+        # Internal is Y-Up (BL), Machine is TL (Y-Down) -> Needs Y Flip.
+        machine.set_origin(Origin.TOP_LEFT)
         mock_encoder.reset_mock()
         original_ops.reset_mock()
         copied_ops.reset_mock()
@@ -236,8 +239,9 @@ class TestMachine:
         copied_ops.transform.assert_called_once()
         mock_encoder.encode.assert_called_with(copied_ops, machine, doc)
 
-        # Verify the transform matrix has Y flipped (-1 scale) for Bottom Left
-        # (Since Rayforge internal is Top-Left, Bottom-Left means flip Y)
+        # Verify the transform matrix has Y flipped (-1 scale) for Top Left
+        # conversion
+        # Y_new = Height - Y_old
         args, _ = copied_ops.transform.call_args
         matrix_arg = args[0]
         assert matrix_arg[0, 0] == 1.0  # X scale
@@ -1072,15 +1076,10 @@ class TestMachine:
         "reverse_x, reverse_y, reverse_z, distance, expected",
         [
             (False, False, False, 10.0, (10.0, 10.0, 10.0)),
-            (
-                True,
-                False,
-                False,
-                10.0,
-                (10.0, 10.0, 10.0),
-            ),  # Reverse X/Y affects display only
+            # Reverse X/Y no longer affect jog direction (display only)
+            (True, False, False, 10.0, (10.0, 10.0, 10.0)),
             (False, True, False, 10.0, (10.0, 10.0, 10.0)),
-            # Reverse Z also affects jog direction
+            # Reverse Z still affects jog direction
             (False, False, True, 10.0, (10.0, 10.0, -10.0)),
             # X/Y positive, Z inverted
             (True, True, True, 5.0, (5.0, 5.0, -5.0)),
