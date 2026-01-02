@@ -28,6 +28,12 @@ from .params import ParameterContext
 from .solver import Solver
 
 
+_DEFAULT_VARSET_TITLE = _("Sketch Parameters")
+_DEFAULT_VARSET_DESCRIPTION = _(
+    "Parameters that control this sketch's geometry"
+)
+
+
 _CONSTRAINT_CLASSES = {
     "DistanceConstraint": DistanceConstraint,
     "EqualDistanceConstraint": EqualDistanceConstraint,
@@ -79,8 +85,8 @@ class Sketch(IAsset):
         self.constraints: List[Constraint] = []
         self.fills: List[Fill] = []
         self.input_parameters = VarSet(
-            title=_("Sketch Parameters"),
-            description=_("Parameters that control this sketch's geometry."),
+            title=_DEFAULT_VARSET_TITLE,
+            description=_DEFAULT_VARSET_DESCRIPTION,
         )
         self.updated = Signal()
 
@@ -198,7 +204,7 @@ class Sketch(IAsset):
             "type": self.asset_type_name,
             "name": self.name,
             "input_parameters": self.input_parameters.to_dict(
-                include_value=include_input_values
+                include_value=include_input_values, include_metadata=False
             ),
             "params": self.params.to_dict(),
             "registry": self.registry.to_dict(),
@@ -225,6 +231,12 @@ class Sketch(IAsset):
         if "input_parameters" in data:
             new_sketch.input_parameters = VarSet.from_dict(
                 data["input_parameters"]
+            )
+            # Re-apply the default title and description, as they are not
+            # serialized in the file.
+            new_sketch.input_parameters.title = _DEFAULT_VARSET_TITLE
+            new_sketch.input_parameters.description = (
+                _DEFAULT_VARSET_DESCRIPTION
             )
 
         new_sketch.params = ParameterContext.from_dict(data["params"])

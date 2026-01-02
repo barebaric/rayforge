@@ -138,7 +138,6 @@ class SketchStudio(Gtk.Box):
         self.varset_editor = VarSetEditorWidget(
             vartypes={IntVar, FloatVar, SliderFloatVar}
         )
-        self.varset_editor.set_title(_("Input Parameters"))
         side_panel_box.append(self.varset_editor)
 
         # 2b. Canvas

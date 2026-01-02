@@ -239,6 +239,30 @@ class TestVarSet:
         for key in original_vs.keys():
             assert rehydrated_vs[key].to_dict() == original_vs[key].to_dict()
 
+    def test_serialization_metadata_flag(self):
+        """
+        Test that the `include_metadata` flag in `to_dict` works correctly.
+        """
+        vs = VarSet(
+            title="My Test Settings",
+            description="These are for testing.",
+            vars=[Var(key="a", label="A", var_type=str)],
+        )
+
+        # 1. Test with metadata (default behavior)
+        d_with_meta = vs.to_dict()
+        assert "title" in d_with_meta
+        assert "description" in d_with_meta
+        assert d_with_meta["title"] == "My Test Settings"
+        assert d_with_meta["description"] == "These are for testing."
+        assert "vars" in d_with_meta
+
+        # 2. Test without metadata
+        d_without_meta = vs.to_dict(include_metadata=False)
+        assert "title" not in d_without_meta
+        assert "description" not in d_without_meta
+        assert "vars" in d_without_meta
+
     # --- Observability Signal Tests ---
 
     def test_var_added_signal(self):
