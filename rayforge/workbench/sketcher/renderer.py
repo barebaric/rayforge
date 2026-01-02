@@ -825,7 +825,6 @@ class SketchRenderer:
         ctx.move_to(-3, -4)
         ctx.line_to(3, 0)
         ctx.line_to(-3, 4)
-        ctx.stroke()
         ctx.restore()
 
         # Draw right marker "<"
