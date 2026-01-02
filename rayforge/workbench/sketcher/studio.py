@@ -1,5 +1,5 @@
 import logging
-from gi.repository import Gtk, Gio, Adw
+from gi.repository import Gtk, Gio, Adw, GLib
 from blinker import Signal
 from ...core.sketcher import Sketch
 from ...core.varset import IntVar, FloatVar, SliderFloatVar
@@ -252,7 +252,13 @@ class SketchStudio(Gtk.Box):
         # Reset view to center content
         self.canvas.reset_view()
         # Grab focus for the canvas so keyboard shortcuts work
-        self.canvas.grab_focus()
+        # Use a tick callback to ensure focus is grabbed after the widget
+        # is visible and the main loop has processed the visibility change
+
+        def grab_focus_callback(widget, clock):
+            self.canvas.grab_focus()
+            return GLib.SOURCE_REMOVE
+        self.add_tick_callback(grab_focus_callback)
 
     # --- Action Handlers ---
 
