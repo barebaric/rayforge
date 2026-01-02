@@ -79,8 +79,8 @@ class Sketch(IAsset):
         self.constraints: List[Constraint] = []
         self.fills: List[Fill] = []
         self.input_parameters = VarSet(
-            title="Input Parameters",
-            description="Parameters that control this sketch's geometry.",
+            title=_("Sketch Parameters"),
+            description=_("Parameters that control this sketch's geometry."),
         )
         self.updated = Signal()
 
