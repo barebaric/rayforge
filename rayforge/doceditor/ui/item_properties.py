@@ -8,7 +8,6 @@ from ...core.workpiece import WorkPiece
 from ...shared.ui.expander import Expander
 from .property_providers import (
     PropertyProvider,
-    SketchPropertyProvider,
     TransformPropertyProvider,
     WorkpieceInfoProvider,
     TabsPropertyProvider,
@@ -55,7 +54,6 @@ class DocItemPropertiesWidget(Expander):
             TransformPropertyProvider(),
             WorkpieceInfoProvider(),
             TabsPropertyProvider(),
-            SketchPropertyProvider(),
         ]
         # This will hold tuples of (provider, [list_of_widgets])
         self._provider_widget_map: List[

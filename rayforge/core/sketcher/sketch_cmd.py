@@ -88,21 +88,44 @@ class AddItemsCommand(SketchChangeCommand):
     def _do_execute(self) -> None:
         registry = self.sketch.registry
         new_points = []
+        id_map: Dict[int, int] = {}  # Map old temp IDs to new final IDs
+
         for p in self.points:
-            # Assign a real ID if it's a new point
-            if p.id >= registry._id_counter:
+            old_id = p.id
+            # Assign a real ID if it's a temp ID (negative or >= counter)
+            if p.id < 0 or p.id >= registry._id_counter:
                 p.id = registry._id_counter
                 registry._id_counter += 1
+            if old_id != p.id:
+                id_map[old_id] = p.id
             new_points.append(p)
         registry.points.extend(new_points)
 
         new_entities = []
         for e in self.entities:
-            if e.id >= registry._id_counter:
+            old_id = e.id
+            if e.id < 0 or e.id >= registry._id_counter:
                 e.id = registry._id_counter
                 registry._id_counter += 1
+            if old_id != e.id:
+                id_map[old_id] = e.id
+
+            # Update point references within the entity
+            for attr, value in vars(e).items():
+                if isinstance(value, int) and value in id_map:
+                    setattr(e, attr, id_map[value])
             new_entities.append(e)
         registry.entities.extend(new_entities)
+
+        # Update point and entity references within constraints
+        for c in self.constraints:
+            for attr, value in vars(c).items():
+                if isinstance(value, int) and value in id_map:
+                    setattr(c, attr, id_map[value])
+                elif isinstance(value, list):
+                    # Handle lists of IDs, like in EqualLengthConstraint
+                    new_ids = [id_map.get(old, old) for old in value]
+                    setattr(c, attr, new_ids)
 
         # Rebuild entity map after adding
         registry._entity_map = {e.id: e for e in registry.entities}

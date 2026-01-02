@@ -164,6 +164,9 @@ class SvgImporter(Importer):
             yres = h_px / h_mm  # pixels per mm
             vips_image = vips_image.copy(xres=xres, yres=yres)
 
+        # This makes the high-res raster available to the preview dialog.
+        source.base_render_data = vips_image.pngsave_buffer()
+
         normalized_vips = image_util.normalize_to_rgba(vips_image)
         if not normalized_vips:
             return None

@@ -1,5 +1,5 @@
 import logging
-from gi.repository import Gtk, Gio, Adw
+from gi.repository import Gtk, Gio, Adw, GLib
 from blinker import Signal
 from ...core.sketcher import Sketch
 from ...core.varset import IntVar, FloatVar, SliderFloatVar
@@ -64,6 +64,7 @@ class SketchStudio(Gtk.Box):
         self.btn_cancel = Gtk.Button(child=get_icon("close-symbolic"))
         self.btn_cancel.set_tooltip_text(_("Cancel Sketch"))
         self.btn_cancel.connect("clicked", self._on_cancel_clicked)
+        self.btn_cancel.set_can_focus(False)
         self.session_bar.append(self.btn_cancel)
 
         # Center: Title (using spacers to center it roughly)
@@ -137,7 +138,6 @@ class SketchStudio(Gtk.Box):
         self.varset_editor = VarSetEditorWidget(
             vartypes={IntVar, FloatVar, SliderFloatVar}
         )
-        self.varset_editor.set_title(_("Input Parameters"))
         side_panel_box.append(self.varset_editor)
 
         # 2b. Canvas
@@ -198,6 +198,7 @@ class SketchStudio(Gtk.Box):
             "tool_line": "line",
             "tool_circle": "circle",
             "tool_arc": "arc",
+            "tool_rounded_rect": "rounded_rect",
             "tool_fill": "fill",
         }
         for action_name, tool_id in tool_map.items():
@@ -250,6 +251,14 @@ class SketchStudio(Gtk.Box):
         self.canvas.sketch_element.update_bounds_from_sketch()
         # Reset view to center content
         self.canvas.reset_view()
+        # Grab focus for the canvas so keyboard shortcuts work
+        # Use a tick callback to ensure focus is grabbed after the widget
+        # is visible and the main loop has processed the visibility change
+
+        def grab_focus_callback(widget, clock):
+            self.canvas.grab_focus()
+            return GLib.SOURCE_REMOVE
+        self.add_tick_callback(grab_focus_callback)
 
     # --- Action Handlers ---
 

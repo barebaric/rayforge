@@ -202,7 +202,10 @@ class SketchRenderer:
 
             # 3. Draw Actual Entity
             if entity.construction:
-                ctx.set_dash([5, 5])
+                # Calculate scale to convert screen pixels to world coords
+                scale = self.element.line_width / base_line_width
+                # Set dash pattern in screen pixels (5 on, 5 off)
+                ctx.set_dash([5.0 / scale, 5.0 / scale])
                 # Reduce width for construction lines
                 ctx.set_line_width(base_line_width * 0.8)
                 if entity.constrained:
@@ -558,7 +561,7 @@ class SketchRenderer:
         ctx.move_to(sx - ext.width / 2, sy + ext.height / 2 - 2)
         ctx.show_text(label)
 
-        ctx.set_source_rgba(0.5, 0.5, 0.5, 0.5)
+        self._set_constraint_color(ctx, constr, is_hovered)
         ctx.set_line_width(1)
         ctx.set_dash([4, 4])
         ctx.move_to(sx, sy)
@@ -621,7 +624,7 @@ class SketchRenderer:
                     break
 
         if not has_geometry:
-            ctx.set_source_rgba(0.5, 0.5, 0.5, 0.5)
+            self._set_constraint_color(ctx, constr, is_hovered)
             ctx.set_line_width(1)
             ctx.set_dash([4, 4])
             ctx.move_to(s1[0], s1[1])
@@ -733,30 +736,32 @@ class SketchRenderer:
         if not (p1 and p2 and center):
             return
 
+        # Find closest point on infinite line from center (in model space)
         tangent_mx, tangent_my = find_closest_point_on_line(
             (p1.x, p1.y), (p2.x, p2.y), center.x, center.y
         )
 
-        # Find the angle from the circle center to the tangency point. This
-        # defines the orientation of our symbol.
-        angle = math.atan2(tangent_my - center.y, tangent_mx - center.x)
+        # Convert everything to screen space BEFORE calculating offset
+        sx_tangent, sy_tangent = to_screen.transform_point(
+            (tangent_mx, tangent_my)
+        )
+        sx_center, sy_center = to_screen.transform_point((center.x, center.y))
 
-        # We place the symbol offset from the tangency point along the normal
-        offset = 12.0
-        symbol_mx = tangent_mx + offset * math.cos(angle)
-        symbol_my = tangent_my + offset * math.sin(angle)
+        # Calculate angle in screen space
+        angle = math.atan2(sy_tangent - sy_center, sx_tangent - sx_center)
 
-        # Transform anchor to screen coordinates
-        sx, sy = to_screen.transform_point((symbol_mx, symbol_my))
+        # Apply fixed pixel offset in screen space
+        offset = 15.0
+        sx = sx_tangent + offset * math.cos(angle)
+        sy = sy_tangent + offset * math.sin(angle)
 
         # Draw the symbol
         ctx.save()
         ctx.set_line_width(1.5)
 
         ctx.translate(sx, sy)
-        # We need to rotate the symbol so the 'line' part is parallel to the
-        # tangent line in the sketch. The tangent line is perpendicular to our
-        # 'angle' vector. So rotate by angle + 90deg.
+        # Rotate so the 'line' part is parallel to the tangent line.
+        # The angle calculated is normal to the tangent line.
         ctx.rotate(angle + math.pi / 2.0)
 
         radius = 6.0
@@ -820,7 +825,6 @@ class SketchRenderer:
         ctx.move_to(-3, -4)
         ctx.line_to(3, 0)
         ctx.line_to(-3, 4)
-        ctx.stroke()
         ctx.restore()
 
         # Draw right marker "<"

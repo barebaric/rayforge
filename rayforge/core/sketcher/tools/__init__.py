@@ -4,6 +4,7 @@ from .arc_tool import ArcTool
 from .circle_tool import CircleTool
 from .fill_tool import FillTool
 from .select_tool import SelectTool
+from .rounded_rect_tool import RoundedRectTool
 
 __all__ = [
     "ArcTool",
@@ -12,4 +13,5 @@ __all__ = [
     "LineTool",
     "SelectTool",
     "SketchTool",
+    "RoundedRectTool",
 ]

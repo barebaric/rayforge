@@ -58,6 +58,7 @@ class SketchEditor:
             "gl": "set_tool:line",
             "ga": "set_tool:arc",
             "gc": "set_tool:circle",
+            "gr": "set_tool:rounded_rect",
             "gf": "set_tool:fill",
             "gn": "toggle_construction_on_selection",
             # Constraints (Single Key)
@@ -127,6 +128,8 @@ class SketchEditor:
             return get_tool_cursor("sketch-circle-symbolic")
         if tool == "fill":
             return get_tool_cursor("sketch-fill-symbolic")
+        if tool == "rounded_rect":
+            return get_tool_cursor("sketch-rounded-rect-symbolic")
 
         # Default cursor for 'select' tool or any other case.
         return Gdk.Cursor.new_from_name("default")
@@ -255,6 +258,8 @@ class SketchEditor:
         logger.info(f"Tool activated: {tool}")
         if self.sketch_element:
             self.sketch_element.set_tool(tool)
+            if self.sketch_element.canvas:
+                self.sketch_element.canvas.grab_focus()
 
     def on_constraint_selected(self, sender, constraint_type: str):
         logger.info(f"Constraint activated: {constraint_type}")
@@ -283,6 +288,9 @@ class SketchEditor:
         elif constraint_type == "symmetry":
             ctx.add_symmetry_constraint()
 
+        if self.sketch_element.canvas:
+            self.sketch_element.canvas.grab_focus()
+
     def on_action_triggered(self, sender, action: str):
         logger.info(f"Action activated: {action}")
         if not self.sketch_element:
@@ -293,6 +301,9 @@ class SketchEditor:
             ctx.toggle_construction_on_selection()
         elif action == "delete":
             ctx.delete_selection()
+
+        if self.sketch_element.canvas:
+            self.sketch_element.canvas.grab_focus()
 
     def _on_key_sequence_timeout(self) -> bool:
         """Callback to reset the key sequence after a delay."""

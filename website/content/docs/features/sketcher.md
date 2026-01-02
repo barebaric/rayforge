@@ -35,10 +35,12 @@ The sketcher supports creating the following basic geometric elements:
 
 - **Lines**: Draw straight line segments between points
 - **Circles**: Create circles by defining a center point and radius
-- **Arcs**: Draw arcs with specified center, radius, and angle range
+- **Arcs**: Draw arcs by specifying a center point, start point, and end point
+- **Fills**: Fill closed regions to create solid areas
 
 These elements form the foundation of your 2D designs and can be combined to create
-complex shapes.
+complex shapes. Fills are particularly useful for creating solid regions that will
+be engraved or cut as a single piece.
 
 ## Parametric Constraint System
 
@@ -51,16 +53,21 @@ precise geometric relationships:
 - **Vertical**: Constrains a line to be perfectly vertical
 - **Horizontal**: Constrains a line to be perfectly horizontal
 - **Tangent**: Makes a line tangent to a circle or arc
-- **Perpendicular**: Forces two lines to meet at 90 degrees
-- **Point on Line/Shape**: Constrains a point to lie on a line or curve
-- **Symmetry**: Creates symmetrical relationships between elements
+- **Perpendicular**: Forces two lines, a line and an arc/circle, or two arcs/circles
+  to meet at 90 degrees
+- **Point on Line/Shape**: Constrains a point to lie on a line, arc, or circle
+- **Symmetry**: Creates symmetrical relationships between elements. Supports two modes:
+  - **Point Symmetry**: Select 3 points (first is the center)
+  - **Line Symmetry**: Select 2 points and 1 line (the line is the axis)
 
 ### Dimensional Constraints
 
 - **Distance**: Sets the exact distance between two points or along a line
 - **Diameter**: Defines the diameter of a circle
 - **Radius**: Sets the radius of a circle or arc
-- **Equal Length/Radius**: Forces multiple elements to have the same dimensions
+- **Equal Length/Radius**: Forces multiple elements (lines, arcs, or circles) to have
+  the same length or radius
+- **Equal Distance**: Forces the distance between two point pairs to be equal
 
 ## Pie Menu Interface
 
@@ -68,11 +75,15 @@ The sketcher features a context-aware pie menu that provides quick access to all
 and constraint tools. This radial menu appears when you right-click in the sketch
 workspace and adapts based on your current context and selection.
 
+The pie menu items dynamically show available options based on what you have selected.
+For example, when clicking on empty space, you'll see drawing tools. When clicking on
+selected geometry, you'll see applicable constraints.
+
 ![Sketcher Pie Menu](../images/sketcher-pie-menu.png)
 
 ## Keyboard Shortcuts
 
-The sketcher uses keyboard shortcuts inspired by FreeCAD for consistency and efficiency:
+The sketcher provides keyboard shortcuts for efficient workflow:
 
 ### Tool Shortcuts
 - `Space`: Select tool
@@ -99,6 +110,23 @@ The sketcher uses keyboard shortcuts inspired by FreeCAD for consistency and eff
 - `Ctrl+Y` or `Ctrl+Shift+Z`: Redo
 - `Delete`: Delete selected elements
 - `Escape`: Cancel current operation or deselect
+- `F`: Fit view to content
+
+## Construction Mode
+
+Construction mode allows you to mark entities as "construction geometry" - helper
+elements used to guide your design but not part of the final output. Construction
+entities are displayed differently (typically as dashed lines) and are not included when
+the sketch is used for laser cutting or engraving.
+
+To toggle construction mode:
+- Select one or more entities
+- Press `N` or `G+N`, or use the Construction option in the pie menu
+
+Construction entities are useful for:
+- Creating reference lines and circles
+- Defining temporary geometry for alignment
+- Building complex shapes from a framework of guides
 
 ## Import and Export
 
@@ -129,8 +157,8 @@ dimensional relationships.
 - **Dynamic Cursor**: The cursor changes to reflect the active drawing tool
 - **Constraint Visualization**: Applied constraints are clearly indicated in the interface
 - **Real-time Updates**: Changes to constraints immediately update the geometry
-
-## Limitations
-
-The sketcher is optimized for 2D design work and may not be suitable for extremely
-complex mechanical designs that require 3D modeling capabilities.
+- **Double-Click Editing**: Double-click on dimensional constraints (Distance, Radius, Diameter)
+  opens a dialog to edit their values
+- **Parametric Expressions**: Dimensional constraints support expressions, allowing values to be
+  calculated from other parameters (e.g., `width/2` for a radius that's half the
+  width)

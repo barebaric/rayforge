@@ -188,16 +188,27 @@ class VarSet:
         self._order.pop(current_index)
         self._order.insert(new_index, key)
 
-    def to_dict(self, include_value: bool = False) -> Dict[str, Any]:
-        """Serializes the VarSet's full definition to a dictionary."""
-        return {
-            "title": self.title,
-            "description": self.description,
+    def to_dict(
+        self, include_value: bool = False, include_metadata: bool = True
+    ) -> Dict[str, Any]:
+        """
+        Serializes the VarSet's definition to a dictionary.
+
+        Args:
+            include_value: If True, include the current value of each Var.
+            include_metadata: If True, include the VarSet's title and
+                              description.
+        """
+        data: Dict[str, Any] = {
             "vars": [
                 self._vars[key].to_dict(include_value=include_value)
                 for key in self._order
             ],
         }
+        if include_metadata:
+            data["title"] = self.title
+            data["description"] = self.description
+        return data
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "VarSet":
