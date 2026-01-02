@@ -1,5 +1,3 @@
-# constraints/tangent.py
-
 from __future__ import annotations
 import math
 from typing import (
@@ -195,11 +193,16 @@ class TangentConstraint(Constraint):
             (p1.x, p1.y), (p2.x, p2.y), center.x, center.y
         )
 
-        # The visual symbol is offset from the tangency point along the normal
-        angle = math.atan2(tangent_my - center.y, tangent_mx - center.x)
-        offset = 12.0
-        symbol_mx = tangent_mx + offset * math.cos(angle)
-        symbol_my = tangent_my + offset * math.sin(angle)
+        # Convert to Screen Space first
+        sx_tangent, sy_tangent = to_screen((tangent_mx, tangent_my))
+        sx_center, sy_center = to_screen((center.x, center.y))
 
-        symbol_sx, symbol_sy = to_screen((symbol_mx, symbol_my))
+        # Calculate angle in screen space
+        angle = math.atan2(sy_tangent - sy_center, sx_tangent - sx_center)
+
+        # Apply offset in screen pixels
+        offset = 15.0
+        symbol_sx = sx_tangent + offset * math.cos(angle)
+        symbol_sy = sy_tangent + offset * math.sin(angle)
+
         return math.hypot(sx - symbol_sx, sy - symbol_sy) < threshold
