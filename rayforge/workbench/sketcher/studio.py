@@ -198,6 +198,7 @@ class SketchStudio(Gtk.Box):
             "tool_line": "line",
             "tool_circle": "circle",
             "tool_arc": "arc",
+            "tool_rounded_rect": "rounded_rect",
             "tool_fill": "fill",
         }
         for action_name, tool_id in tool_map.items():
