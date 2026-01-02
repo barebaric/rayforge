@@ -58,6 +58,7 @@ class SketchEditor:
             "gl": "set_tool:line",
             "ga": "set_tool:arc",
             "gc": "set_tool:circle",
+            "gr": "set_tool:rounded_rect",
             "gf": "set_tool:fill",
             "gn": "toggle_construction_on_selection",
             # Constraints (Single Key)
@@ -127,6 +128,8 @@ class SketchEditor:
             return get_tool_cursor("sketch-circle-symbolic")
         if tool == "fill":
             return get_tool_cursor("sketch-fill-symbolic")
+        if tool == "rounded_rect":
+            return get_tool_cursor("sketch-rounded-rect-symbolic")
 
         # Default cursor for 'select' tool or any other case.
         return Gdk.Cursor.new_from_name("default")

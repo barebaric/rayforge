@@ -34,6 +34,7 @@ from ...core.sketcher.tools import (
     ArcTool,
     CircleTool,
     FillTool,
+    RoundedRectTool,
 )
 from ..canvas import CanvasElement
 from .hittest import SketchHitTester
@@ -90,6 +91,7 @@ class SketchElement(CanvasElement):
             "arc": ArcTool(self),
             "circle": CircleTool(self),
             "fill": FillTool(self),
+            "rounded_rect": RoundedRectTool(self),
         }
         self.active_tool_name = "select"
 
