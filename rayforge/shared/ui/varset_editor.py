@@ -799,6 +799,10 @@ class VarSetEditorWidget(PreferencesGroupWithButton):
     def populate(self, var_set: VarSet):
         """Populates the editor with an existing VarSet."""
         self._var_set = var_set
+        if var_set.title:
+            self.set_title(var_set.title)
+        if var_set.description:
+            self.set_description(var_set.description)
         self.set_items(self._var_set.vars)
 
     def get_var_set(self) -> VarSet:
