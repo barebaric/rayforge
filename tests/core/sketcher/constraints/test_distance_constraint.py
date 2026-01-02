@@ -152,15 +152,14 @@ def test_distance_is_hit(setup_env):
     mock_element = SimpleNamespace()
     threshold = 15.0
 
-    # Midpoint is (50, 0)
-    mid_x, mid_y = 50, 0
+    # Hit on the line segment (at midpoint)
+    assert c.is_hit(50, 0, reg, to_screen, mock_element, threshold) is True
 
-    # Hit
-    assert (
-        c.is_hit(mid_x, mid_y, reg, to_screen, mock_element, threshold) is True
-    )
-    # Miss
-    assert (
-        c.is_hit(mid_x + 20, mid_y, reg, to_screen, mock_element, threshold)
-        is False
-    )
+    # Hit on the line segment (not at midpoint)
+    assert c.is_hit(70, 0, reg, to_screen, mock_element, threshold) is True
+
+    # Hit near the line segment (within threshold)
+    assert c.is_hit(50, 10, reg, to_screen, mock_element, threshold) is True
+
+    # Miss - far from the line segment (beyond threshold)
+    assert c.is_hit(50, 20, reg, to_screen, mock_element, threshold) is False

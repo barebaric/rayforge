@@ -40,6 +40,7 @@ class SketchPieMenu(PieMenu):
             "line": "set_tool:line",
             "arc": "set_tool:arc",
             "circle": "set_tool:circle",
+            "rounded_rect": "set_tool:rounded_rect",
             "fill": "set_tool:fill",
             # Actions
             "construction": "toggle_construction_on_selection",
@@ -105,6 +106,13 @@ class SketchPieMenu(PieMenu):
 
         label = f"{_('Circle')}{get_shortcut_label('circle')}"
         item = PieMenuItem("sketch-circle-symbolic", label, data="circle")
+        item.on_click.connect(self._on_tool_clicked, weak=False)
+        self.add_item(item)
+
+        label = f"{_('Rounded Rectangle')}{get_shortcut_label('rounded_rect')}"
+        item = PieMenuItem(
+            "sketch-rounded-rect-symbolic", label, data="rounded_rect"
+        )
         item.on_click.connect(self._on_tool_clicked, weak=False)
         self.add_item(item)
 
@@ -231,7 +239,14 @@ class SketchPieMenu(PieMenu):
 
                 # Tools (creation/select) are only visible if empty space was
                 # clicked
-                if key in ("select", "line", "arc", "circle", "fill"):
+                if key in (
+                    "select",
+                    "line",
+                    "arc",
+                    "circle",
+                    "rounded_rect",
+                    "fill",
+                ):
                     item.visible = not has_target
 
                 # Actions (delete, construction)

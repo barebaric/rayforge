@@ -19,6 +19,7 @@ from .doceditor.ui import file_dialogs, import_handler
 from .doceditor.ui.asset_list_view import AssetListView
 from .doceditor.ui.item_properties import DocItemPropertiesWidget
 from .doceditor.ui.layer_list import LayerListView
+from .doceditor.ui.sketch_properties import SketchPropertiesWidget
 from .doceditor.ui.workflow_view import WorkflowView
 from .image.sketch.exporter import SketchExporter
 from .machine.cmd import MachineCmd
@@ -434,6 +435,14 @@ class MainWindow(Adw.ApplicationWindow):
             Gtk.RevealerTransitionType.SLIDE_UP
         )
         right_pane_box.append(self.item_revealer)
+
+        # Add the SketchPropertiesWidget
+        self.sketch_props_widget = SketchPropertiesWidget(
+            editor=self.doc_editor
+        )
+        self.sketch_props_widget.set_margin_top(20)
+        self.sketch_props_widget.set_margin_end(12)
+        right_pane_box.append(self.sketch_props_widget)
 
         # Connect signals for item selection and actions
         self.surface.selection_changed.connect(self._on_selection_changed)
@@ -1193,6 +1202,7 @@ class MainWindow(Adw.ApplicationWindow):
 
         self.item_props_widget.set_items(selected_items)
         self.item_revealer.set_reveal_child(bool(selected_items))
+        self.sketch_props_widget.set_items(selected_items)
         self._update_actions_and_ui()
 
     def on_config_changed(self, sender, **kwargs):

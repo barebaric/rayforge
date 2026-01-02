@@ -391,14 +391,13 @@ class WorkPiece(DocItem):
             old_h = self.natural_height_mm
 
             if abs(width - old_w) > 1e-5 or abs(height - old_h) > 1e-5:
-                # Update natural dimensions to match the actual geometry
+                # Update natural dimensions to match the actual geometry.
                 self.natural_width_mm = width
                 self.natural_height_mm = height
                 logger.debug(
                     f"WP {self.uid[:8]}: Natural size changed to "
                     f"{width:.2f}x{height:.2f}"
                 )
-                self.set_size(width, height)
 
             norm_matrix = Matrix.scale(
                 1.0 / width, 1.0 / height

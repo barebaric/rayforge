@@ -80,6 +80,11 @@ class PdfImporter(Importer):
             logger.error("Failed to render PDF to an image for processing.")
             return None
 
+        # Store the rendered image so the preview dialog can use it. This
+        # ensures the dialog crops the exact same image the crop_window was
+        # calculated from.
+        source.base_render_data = vips_image.pngsave_buffer()
+
         # Update the source asset with the rendered image dimensions
         source.width_px = vips_image.width
         source.height_px = vips_image.height

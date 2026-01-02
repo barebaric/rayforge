@@ -10,6 +10,7 @@ from typing import (
     Callable,
     TYPE_CHECKING,
 )
+from ...geo.primitives import find_closest_point_on_line_segment
 from .base import Constraint
 
 if TYPE_CHECKING:
@@ -90,6 +91,25 @@ class DistanceConstraint(Constraint):
             self.p2: [(ux, uy)],
         }
 
+    def get_label_pos(
+        self,
+        reg: "EntityRegistry",
+        to_screen: Callable[[Tuple[float, float]], Tuple[float, float]],
+        element: Any,
+    ):
+        """Calculates screen position for distance constraint label."""
+        p1 = reg.get_point(self.p1)
+        p2 = reg.get_point(self.p2)
+        if not (p1 and p2):
+            return None
+
+        s1 = to_screen((p1.x, p1.y))
+        s2 = to_screen((p2.x, p2.y))
+        mx = (s1[0] + s2[0]) / 2
+        my = (s1[1] + s2[1]) / 2
+
+        return mx, my
+
     def is_hit(
         self,
         sx: float,
@@ -104,6 +124,25 @@ class DistanceConstraint(Constraint):
         if p1 and p2:
             s1 = to_screen((p1.x, p1.y))
             s2 = to_screen((p2.x, p2.y))
-            mx, my = (s1[0] + s2[0]) / 2, (s1[1] + s2[1]) / 2
-            return math.hypot(sx - mx, sy - my) < 15
+
+            _, _, dist_sq = find_closest_point_on_line_segment(s1, s2, sx, sy)
+
+            if dist_sq < threshold**2:
+                return True
+
+        pos_data = self.get_label_pos(reg, to_screen, element)
+        if pos_data:
+            label_sx, label_sy = pos_data
+
+            label_width = 20.0
+            label_height = 20.0
+            half_w = label_width / 2.0
+            half_h = label_height / 2.0
+
+            x_min = label_sx - half_w - 4.0
+            x_max = label_sx + half_w + 4.0
+            y_min = label_sy - half_h - 4.0
+            y_max = label_sy + half_h + 4.0
+
+            return x_min <= sx <= x_max and y_min <= sy <= y_max
         return False

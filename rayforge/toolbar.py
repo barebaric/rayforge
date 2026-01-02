@@ -43,11 +43,6 @@ class MainToolbar(Gtk.Box):
         sep = Gtk.Separator(orientation=Gtk.Orientation.VERTICAL)
         self.append(sep)
 
-        new_sketch_button = Gtk.Button(child=get_icon("sketch-add-symbolic"))
-        new_sketch_button.set_tooltip_text(_("New Sketch"))
-        new_sketch_button.set_action_name("win.new_sketch")
-        self.append(new_sketch_button)
-
         edit_sketch_button = Gtk.Button(child=get_icon("sketch-edit-symbolic"))
         edit_sketch_button.set_tooltip_text(_("Edit Sketch"))
         edit_sketch_button.set_action_name("win.edit_sketch")
