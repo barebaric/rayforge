@@ -1,7 +1,10 @@
-from typing import Tuple
-import pytest
 import asyncio
 from pathlib import Path
+from typing import Tuple
+
+import pytest
+
+import rayforge.machine.driver as driver_module
 from rayforge.core.doc import Doc
 from rayforge.core.geo import Geometry
 from rayforge.core.matrix import Matrix
@@ -12,10 +15,9 @@ from rayforge.core.vectorization_spec import PassthroughSpec
 from rayforge.core.workpiece import WorkPiece
 from rayforge.doceditor.editor import DocEditor
 from rayforge.image import SVG_RENDERER
-import rayforge.machine.driver as driver_module
 from rayforge.machine.cmd import MachineCmd
-from rayforge.machine.driver.dummy import NoDeviceDriver
 from rayforge.machine.driver.driver import Axis
+from rayforge.machine.driver.dummy import NoDeviceDriver
 from rayforge.machine.models.laser import Laser
 from rayforge.machine.models.machine import Machine, Origin
 from rayforge.machine.models.macro import MacroTrigger
@@ -53,9 +55,9 @@ def doc_editor(
     from rayforge.context import get_context
 
     config_manager = get_context().config_mgr
-    assert config_manager is not None, (
-        "ConfigManager was not initialized in context"
-    )
+    assert (
+        config_manager is not None
+    ), "ConfigManager was not initialized in context"
     return DocEditor(task_mgr, context_initializer, doc)
 
 
@@ -202,6 +204,7 @@ class TestMachine:
             pass
 
         mock_encoder = mocker.Mock()
+
         # Mock the encoder to return dummy bytes and a dataclass instance
         # machine.encode_ops calls asdict() on the second return value
         mock_encoder.encode.return_value = ("G0", MockOpMap())
@@ -211,7 +214,9 @@ class TestMachine:
         )
 
         original_ops = mocker.Mock(spec=Ops)
+        original_ops.commands = []
         copied_ops = mocker.Mock(spec=Ops)
+        copied_ops.commands = []
         original_ops.copy.return_value = copied_ops
 
         doc = Doc()
@@ -232,6 +237,8 @@ class TestMachine:
         mock_encoder.reset_mock()
         original_ops.reset_mock()
         copied_ops.reset_mock()
+        original_ops.commands = []
+        copied_ops.commands = []
 
         machine.encode_ops(original_ops, doc)
 
@@ -969,8 +976,8 @@ class TestMachine:
         custom dialect upon loading a machine.
         """
         from rayforge.machine.models.dialect import (
-            get_dialect,
             _DIALECT_REGISTRY,
+            get_dialect,
         )
 
         initial_dialect_count = len(_DIALECT_REGISTRY)
@@ -1014,8 +1021,8 @@ class TestMachine:
         present.
         """
         from rayforge.machine.models.dialect import (
-            get_dialect,
             _DIALECT_REGISTRY,
+            get_dialect,
         )
 
         base_dialect = get_dialect("grbl")
