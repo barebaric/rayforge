@@ -1,7 +1,7 @@
 from __future__ import annotations
 import logging
 import uuid
-from typing import TYPE_CHECKING, List, Tuple, Optional, Dict
+from typing import TYPE_CHECKING, List, Tuple, Optional, Dict, Sequence
 from ..undo.command import Command
 from .entities import Line, Arc, Circle
 from .sketch import Fill, Sketch
@@ -76,14 +76,14 @@ class AddItemsCommand(SketchChangeCommand):
         self,
         sketch: "Sketch",
         name: str,
-        points: Optional[List["Point"]] = None,
-        entities: Optional[List["Entity"]] = None,
-        constraints: Optional[List["Constraint"]] = None,
+        points: Optional[Sequence["Point"]] = None,
+        entities: Optional[Sequence["Entity"]] = None,
+        constraints: Optional[Sequence["Constraint"]] = None,
     ):
         super().__init__(sketch, name)
-        self.points = points or []
-        self.entities = entities or []
-        self.constraints = constraints or []
+        self.points = list(points) if points else []
+        self.entities = list(entities) if entities else []
+        self.constraints = list(constraints) if constraints else []
 
     def _do_execute(self) -> None:
         registry = self.sketch.registry

@@ -41,6 +41,7 @@ class SketchPieMenu(PieMenu):
             "arc": "set_tool:arc",
             "circle": "set_tool:circle",
             "rounded_rect": "set_tool:rounded_rect",
+            "rectangle": "set_tool:rectangle",
             "fill": "set_tool:fill",
             # Actions
             "construction": "toggle_construction_on_selection",
@@ -106,6 +107,11 @@ class SketchPieMenu(PieMenu):
 
         label = f"{_('Circle')}{get_shortcut_label('circle')}"
         item = PieMenuItem("sketch-circle-symbolic", label, data="circle")
+        item.on_click.connect(self._on_tool_clicked, weak=False)
+        self.add_item(item)
+
+        label = f"{_('Rectangle')}{get_shortcut_label('rectangle')}"
+        item = PieMenuItem("sketch-rect-symbolic", label, data="rectangle")
         item.on_click.connect(self._on_tool_clicked, weak=False)
         self.add_item(item)
 
@@ -245,6 +251,7 @@ class SketchPieMenu(PieMenu):
                     "arc",
                     "circle",
                     "rounded_rect",
+                    "rectangle",
                     "fill",
                 ):
                     item.visible = not has_target
