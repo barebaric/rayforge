@@ -8,8 +8,8 @@ from blinker import Signal
 from ..core.ops import ScanLinePowerCommand
 from ..pipeline.encoder.gcode import MachineCodeOpMap
 from ..icons import get_icon
-from ..shared.util.gtk import apply_css
 from ..shared.ui.formatter import format_value
+from ..shared.ui.gtk import apply_css
 
 
 class PreviewControls(Gtk.Box):

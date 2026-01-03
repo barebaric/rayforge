@@ -1,5 +1,5 @@
 from gi.repository import Gtk
-from ..util.gtk import apply_css
+from .gtk import apply_css
 
 
 class ProgressBar(Gtk.ProgressBar):

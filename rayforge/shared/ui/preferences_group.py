@@ -1,7 +1,7 @@
 from typing import Any, Iterable
 from gi.repository import Gtk, Adw
 from ...icons import get_icon
-from ..util.gtk import apply_css
+from .gtk import apply_css
 
 css = """
 /* 1. Round the top corners of the ListBox to match its .card parent. */

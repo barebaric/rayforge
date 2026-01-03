@@ -6,7 +6,7 @@ from gi.repository import Gtk, Adw
 from ...context import get_context
 from ...core.material import Material
 from ...core.material_library import MaterialLibrary
-from ...shared.util.gtk import apply_css
+from ...shared.ui.gtk import apply_css
 
 logger = logging.getLogger(__name__)
 

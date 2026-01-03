@@ -3,12 +3,12 @@ import math
 from typing import List, Optional, Tuple
 import numpy as np
 from gi.repository import Gtk, Adw, Gdk, GLib
-from ..models.camera import Pos
+from ...icons import get_icon
+from ...shared.ui.gtk import apply_css
 from ..controller import CameraController
+from ..models.camera import Pos
 from .display_widget import CameraDisplay
 from .point_bubble_widget import PointBubbleWidget
-from ...icons import get_icon
-from ...shared.util.gtk import apply_css
 
 logger = logging.getLogger(__name__)
 

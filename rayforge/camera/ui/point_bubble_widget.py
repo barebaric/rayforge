@@ -3,7 +3,7 @@ from typing import Optional, Tuple
 from blinker import Signal
 from gi.repository import Gtk
 from ...icons import get_icon
-from ...shared.util.gtk import apply_css
+from ...shared.ui.gtk import apply_css
 
 
 logger = logging.getLogger(__name__)

@@ -4,8 +4,8 @@ from gi.repository import Gtk, Adw
 from ...context import get_context
 from ...core.recipe import Recipe
 from ...core.capability import Capability
-from ...shared.util.gtk import apply_css
 from ...icons import get_icon
+from ...shared.ui.gtk import apply_css
 
 if TYPE_CHECKING:
     from ..editor import DocEditor
