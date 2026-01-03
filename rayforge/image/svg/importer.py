@@ -17,6 +17,8 @@ from svgelements import (
 )
 
 from ...core.geo import Geometry
+from ...core.geo.linearize import linearize_bezier_adaptive
+from ...core.geo.simplify import simplify_points
 from ...core.item import DocItem
 from ...core.layer import Layer
 from ...core.matrix import Matrix
@@ -34,10 +36,10 @@ from ..tracing import trace_surface, VTRACER_PIXEL_LIMIT
 from .renderer import SVG_RENDERER
 from .svgutil import (
     PPI,
+    MM_PER_PX,
     get_natural_size,
     trim_svg,
     extract_layer_manifest,
-    filter_svg_layers,
 )
 
 logger = logging.getLogger(__name__)
@@ -60,14 +62,15 @@ class SvgImporter(Importer):
         Otherwise, it attempts to parse the SVG path and shape data
         directly for a high-fidelity vector import.
         """
-        # Determine if we need to pre-filter layers
+        # Determine if we have active layers (for splitting logic later)
         active_layer_ids = None
         if isinstance(vectorization_spec, PassthroughSpec):
             active_layer_ids = vectorization_spec.active_layer_ids
 
+        # Use raw data for source to avoid corruption issues with
+        # pre-filtering.
+        # Layer filtering is handled during geometry extraction.
         render_data = self.raw_data
-        if active_layer_ids is not None:
-            render_data = filter_svg_layers(self.raw_data, active_layer_ids)
 
         source = SourceAsset(
             source_file=self.source_file,
@@ -111,10 +114,13 @@ class SvgImporter(Importer):
                     metadata["trimmed_height_mm"] = trimmed_size[1]
 
                 # Get viewBox from trimmed SVG for direct import
-                root = ET.fromstring(source.base_render_data)
-                vb_str = root.get("viewBox")
-                if vb_str:
-                    metadata["viewbox"] = tuple(map(float, vb_str.split()))
+                try:
+                    root = ET.fromstring(source.base_render_data)
+                    vb_str = root.get("viewBox")
+                    if vb_str:
+                        metadata["viewbox"] = tuple(map(float, vb_str.split()))
+                except ET.ParseError:
+                    pass
 
             source.metadata.update(metadata)
         except Exception as e:
@@ -193,23 +199,14 @@ class SvgImporter(Importer):
             logger.error("source has no data to process for direct import")
             return None
 
-        # 1. Establish authoritative dimensions in millimeters.
-        final_dims_mm = self._get_final_dimensions(source)
-        if not final_dims_mm:
-            msg = (
-                "SVG is missing width or height attributes; "
-                "falling back to trace method for direct import."
-            )
-            logger.warning(msg)
-            return self._get_doc_items_from_trace(source, TraceSpec())
-        final_width_mm, final_height_mm = final_dims_mm
-
-        # 2. Parse SVG data into an object model.
+        # 1. Parse SVG data into an object model first.
+        #    This allows us to get robust dimensions from svgelements if the
+        #    simple metadata extraction failed (e.g. missing attributes).
         svg = self._parse_svg_data(source)
         if svg is None:
             return None
 
-        # 3. Get pixel dimensions for normalization.
+        # 2. Get pixel dimensions for normalization.
         pixel_dims = self._get_pixel_dimensions(svg)
         if not pixel_dims:
             msg = (
@@ -219,6 +216,19 @@ class SvgImporter(Importer):
             logger.warning(msg)
             return self._get_doc_items_from_trace(source, TraceSpec())
         width_px, height_px = pixel_dims
+
+        # 3. Establish authoritative dimensions in millimeters.
+        final_dims_mm = self._get_final_dimensions(source)
+        if not final_dims_mm:
+            # Fallback: Use dimensions derived from svgelements
+            # svgelements normalizes units to 96 DPI (usually)
+            final_dims_mm = (width_px * MM_PER_PX, height_px * MM_PER_PX)
+            logger.info(
+                "Using svgelements dimensions as fallback: "
+                f"{final_dims_mm[0]:.2f}mm x {final_dims_mm[1]:.2f}mm"
+            )
+
+        final_width_mm, final_height_mm = final_dims_mm
 
         # 4. Handle Split Layers if requested
         if active_layer_ids:
@@ -234,6 +244,22 @@ class SvgImporter(Importer):
         # 5. Standard path (merged import)
         # Convert SVG shapes to internal geometry (in pixel coordinates).
         geo = self._convert_svg_to_geometry(svg, final_dims_mm)
+
+        # Apply decimation (RDP) here, before any normalization or matrix math.
+        # Use a small pixel tolerance to remove micro-segments from flattening
+        # without losing visual fidelity on small-scale features.
+        # Note: Major simplification is now done during buffer flushing
+        # inside _convert_svg_to_geometry. This pass catches inter-segment
+        # issues.
+        geo.simplify(tolerance=0.1)
+
+        # If the SVG contained no parsable vector paths, abort the import.
+        if geo.is_empty():
+            logger.info(
+                "Direct SVG import resulted in empty geometry. "
+                "No items created."
+            )
+            return None
 
         # Normalize geometry to a 0-1 unit square (Y-down).
         self._normalize_geometry(geo, width_px, height_px)
@@ -260,7 +286,13 @@ class SvgImporter(Importer):
         """
         # Create a master WorkPiece to use as the matrix template.
         master_geo = self._convert_svg_to_geometry(svg, final_dims_mm)
+        master_geo.simplify(tolerance=0.1)
         self._normalize_geometry(master_geo, width_px, height_px)
+
+        # If the master geometry is empty, there's nothing to split.
+        if master_geo.is_empty():
+            return []
+
         master_wp = self._create_workpiece(
             master_geo, source, final_dims_mm[0], final_dims_mm[1]
         )
@@ -269,17 +301,68 @@ class SvgImporter(Importer):
         manifest = extract_layer_manifest(self.raw_data)
         layer_names = {m["id"]: m["name"] for m in manifest}
 
-        for lid in layer_ids:
-            layer_geo = Geometry()
-            target_group = self._find_element_by_id(svg, lid)
-            if target_group:
-                self._convert_group_to_geometry(
-                    target_group, layer_geo, final_dims_mm
+        # Prepare geometry containers for each requested layer
+        layer_geoms = {lid: Geometry() for lid in layer_ids}
+
+        # Calculate tolerance
+        # Use a fixed, high-precision tolerance for consistency
+        tolerance = 0.05
+
+        # Iterate all elements in SVG and assign to layers based on ancestry.
+        # This handles transforms and <use> tags correctly via svgelements
+        # flattening.
+        for element in svg.elements():
+            # Skip containers (Group, SVG) to prevent double-counting geometry.
+            # We only want leaf shapes. This prevents "double cut" issues where
+            # both a Group and its children are processed.
+            if isinstance(element, (Group, SVG)):
+                continue
+
+            # Skip elements without a parent attribute.
+            # This handles the AttributeError: 'SVG' object has no attribute
+            # 'parent' if the root object is yielded or other oddities occur.
+            if not hasattr(element, "parent"):
+                continue
+
+            # Find which layer this element belongs to by walking up parents
+            target_lid = None
+            parent = element.parent
+            while parent:
+                # Check if parent ID matches a requested layer
+                # svgelements nodes store attributes in .values
+                pid = (
+                    parent.values.get("id")
+                    if hasattr(parent, "values")
+                    else None
                 )
+                if pid in layer_geoms:
+                    target_lid = pid
+                    break
+
+                # Move up safely
+                if hasattr(parent, "parent"):
+                    parent = parent.parent
+                else:
+                    parent = None
+
+            if target_lid:
+                try:
+                    path = Path(element)
+                    path.reify()
+                    self._add_path_to_geometry(
+                        path, layer_geoms[target_lid], tolerance
+                    )
+                except (AttributeError, TypeError):
+                    pass
+
+        # Create DocItems from populated geometries
+        for lid in layer_ids:
+            layer_geo = layer_geoms[lid]
+
+            # Simplify each layer individually with a small tolerance
+            layer_geo.simplify(tolerance=0.1)
 
             # Normalize to the MASTER coordinate system (Y-down 0-1)
-            # We do NOT flip this to Y-Up here. SourceAssetSegment stores
-            # Y-Down geometry. WorkPiece.boundaries flips it to Y-Up for use.
             self._normalize_geometry(layer_geo, width_px, height_px)
 
             if not layer_geo.is_empty():
@@ -308,39 +391,6 @@ class SvgImporter(Importer):
             return [master_wp]
 
         return final_items
-
-    def _find_element_by_id(self, container, target_id):
-        """Recursively finds an element by ID in the svgelements tree."""
-        if (
-            hasattr(container, "values")
-            and container.values.get("id") == target_id
-        ):
-            return container
-        if hasattr(container, "__iter__"):
-            for child in container:
-                found = self._find_element_by_id(child, target_id)
-                if found:
-                    return found
-        return None
-
-    def _convert_group_to_geometry(self, group, geo, final_dims_mm):
-        """Converts a specific group's subtree to geometry."""
-        final_width_mm, final_height_mm = final_dims_mm
-        avg_dim = max(final_width_mm, final_height_mm, 1.0)
-        avg_scale = avg_dim / 960
-        tolerance = 0.1 / avg_scale if avg_scale > 1e-9 else 0.1
-
-        def recurse(element):
-            try:
-                path = Path(element)
-                path.reify()
-                self._add_path_to_geometry(path, geo, tolerance)
-            except (AttributeError, TypeError):
-                if isinstance(element, Group) or hasattr(element, "__iter__"):
-                    for child in element:
-                        recurse(child)
-
-        recurse(group)
 
     def _get_final_dimensions(
         self, source: SourceAsset
@@ -398,12 +448,13 @@ class SvgImporter(Importer):
         Converts an SVG object into a Geometry object in pixel coordinates.
         """
         geo = Geometry()
-        final_width_mm, final_height_mm = final_dims_mm
 
-        # Calculate tolerance for curve flattening.
-        avg_dim = max(final_width_mm, final_height_mm, 1.0)
-        avg_scale = avg_dim / 960  # Assuming typical viewBox size
-        tolerance = 0.1 / avg_scale if avg_scale > 1e-9 else 0.1
+        # Use a fixed, high-precision tolerance for linearization and
+        # buffering. SVG coordinates are usually 96 DPI.
+        # 0.05 px ~= 0.013 mm, which is sufficient for high fidelity import.
+        # Using the previous dynamic heuristic caused jagged lines on small
+        # items.
+        tolerance = 0.05
 
         for shape in svg.elements():
             try:
@@ -417,23 +468,73 @@ class SvgImporter(Importer):
     def _add_path_to_geometry(
         self, path: Path, geo: Geometry, tolerance: float
     ) -> None:
-        """Converts a single Path object's segments to Geometry commands."""
+        """
+        Converts a single Path object's segments to Geometry commands.
+
+        This method buffers points from linearized segments and simplifies them
+        using NumPy before creating geometry objects. This massively reduces
+        overhead for complex Bezier paths.
+        """
+        point_buffer: List[Tuple[float, float]] = []
+
+        def flush_buffer():
+            nonlocal point_buffer
+            if len(point_buffer) > 1:
+                # Simplify raw point data efficiently
+                simplified = simplify_points(point_buffer, tolerance)
+                # Reconstruct LineTo commands. Skip first point as it
+                # connects to the previous command's end.
+                for p in simplified[1:]:
+                    geo.line_to(p[0], p[1])
+
+            # Maintain the last point to ensure continuity
+            if point_buffer:
+                point_buffer = [point_buffer[-1]]
+
         for seg in path:
             # Use a local variable to help strict type checkers.
             end = seg.end
             if end is None or end.x is None or end.y is None:
                 continue
 
+            end_pt = (float(end.x), float(end.y))
+
             if isinstance(seg, Move):
-                geo.move_to(float(end.x), float(end.y))
+                flush_buffer()
+                point_buffer = [end_pt]
+                geo.move_to(end_pt[0], end_pt[1])
+
             elif isinstance(seg, Line):
-                geo.line_to(float(end.x), float(end.y))
+                if not point_buffer:
+                    start = seg.start
+                    if start and start.x is not None and start.y is not None:
+                        point_buffer = [(float(start.x), float(start.y))]
+                point_buffer.append(end_pt)
+
             elif isinstance(seg, Close):
+                flush_buffer()
                 geo.close_path()
+                point_buffer = []
+
             elif isinstance(seg, Arc):
+                flush_buffer()
                 self._add_arc_to_geometry(seg, geo)
+                point_buffer = [end_pt]
+
             elif isinstance(seg, (CubicBezier, QuadraticBezier)):
-                self._flatten_bezier_to_geometry(seg, geo, tolerance)
+                if not point_buffer:
+                    start = seg.start
+                    if start and start.x is not None and start.y is not None:
+                        point_buffer = [(float(start.x), float(start.y))]
+
+                # Get raw linearized points and extend buffer directly
+                new_points = self._get_bezier_points(seg, tolerance)
+                # Skip the first point as it connects to the previous
+                # command's end
+                point_buffer.extend(new_points)
+
+        # Flush any remaining segments
+        flush_buffer()
 
     def _add_arc_to_geometry(self, seg: Arc, geo: Geometry) -> None:
         """Adds an Arc segment to the Geometry."""
@@ -472,36 +573,64 @@ class SvgImporter(Importer):
             clockwise=is_clockwise,
         )
 
-    def _flatten_bezier_to_geometry(
+    def _get_bezier_points(
         self,
         seg: Union[CubicBezier, QuadraticBezier],
-        geo: Geometry,
         tolerance: float,
-    ) -> None:
-        """Flattens a Bezier curve into a series of lines in the Geometry."""
-        # Use a local variable to help Pylance avoid 'Unbound' issues.
+    ) -> List[Tuple[float, float]]:
+        """
+        Linearizes a Bezier curve into a list of 2D points.
+        Returns a list of (x, y) tuples.
+        """
+        start = seg.start
         end = seg.end
 
-        if end is None:
-            return
-        if end.x is None or end.y is None:
-            return
+        if start is None or start.x is None or start.y is None:
+            return []
+        if end is None or end.x is None or end.y is None:
+            return []
 
-        length = seg.length()
-        end_x, end_y = float(end.x), float(end.y)
+        # Prepare control points for cubic bezier
+        start_pt = (float(start.x), float(start.y))
+        end_pt = (float(end.x), float(end.y))
 
-        # If the curve is very short, treat it as a straight line.
-        if length is None or length <= 1e-9:
-            geo.line_to(end_x, end_y)
-            return
+        if isinstance(seg, QuadraticBezier):
+            control = seg.control
+            if control is None or control.x is None or control.y is None:
+                return []
 
-        num_steps = max(2, int(length / tolerance))
+            c_x, c_y = float(control.x), float(control.y)
+            # Promote Quadratic to Cubic for the generic flattener
+            # CP1 = Start + (2/3)*(Control - Start)
+            # CP2 = End + (2/3)*(Control - End)
+            c1_x = start_pt[0] + (2 / 3) * (c_x - start_pt[0])
+            c1_y = start_pt[1] + (2 / 3) * (c_y - start_pt[1])
+            c2_x = end_pt[0] + (2 / 3) * (c_x - end_pt[0])
+            c2_y = end_pt[1] + (2 / 3) * (c_y - end_pt[1])
+            c1_pt = (c1_x, c1_y)
+            c2_pt = (c2_x, c2_y)
+        else:
+            c1 = seg.control1
+            c2 = seg.control2
+            if (
+                c1 is None
+                or c1.x is None
+                or c1.y is None
+                or c2 is None
+                or c2.x is None
+                or c2.y is None
+            ):
+                return []
 
-        for i in range(1, num_steps + 1):
-            t = i / num_steps
-            p = seg.point(t)
-            if p is not None and p.x is not None and p.y is not None:
-                geo.line_to(float(p.x), float(p.y))
+            c1_pt = (float(c1.x), float(c1.y))
+            c2_pt = (float(c2.x), float(c2.y))
+
+        # Use the Adaptive Linearization.
+        # We square the tolerance because the adaptive function compares
+        # squared distances.
+        return linearize_bezier_adaptive(
+            start_pt, c1_pt, c2_pt, end_pt, tolerance**2
+        )
 
     def _normalize_geometry(
         self, geo: Geometry, width_px: float, height_px: float

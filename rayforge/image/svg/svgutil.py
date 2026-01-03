@@ -79,6 +79,11 @@ def _get_margins_from_data(
         if not root.get("viewBox"):
             root.set("viewBox", f"0 0 {orig_w} {orig_h}")
 
+        # Add overflow:visible to ensure all geometry, including parts
+        # defined by control points outside the viewBox, is rendered for
+        # accurate margin calculation.
+        root.set("style", "overflow: visible")
+
         img = pyvips.Image.svgload_buffer(ET.tostring(root))
         if img.bands < 4:
             img = img.bandjoin(255)  # Ensure alpha channel for trimming

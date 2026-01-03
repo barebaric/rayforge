@@ -22,15 +22,16 @@ from .analysis import (
     get_outward_normal_at,
     get_subpath_area,
 )
+from .primitives import (
+    find_closest_point_on_line_segment,
+    find_closest_point_on_arc,
+)
 from .query import (
     get_bounding_rect,
     find_closest_point_on_path,
     get_total_distance,
 )
-from .primitives import (
-    find_closest_point_on_line_segment,
-    find_closest_point_on_arc,
-)
+from .simplify import simplify_geometry
 
 
 logger = logging.getLogger(__name__)
@@ -248,6 +249,26 @@ class Geometry:
                 bool(clockwise),
             )
         )
+
+    def simplify(self: T_Geometry, tolerance: float = 0.01) -> T_Geometry:
+        """
+        Reduces the number of segments in the geometry using the
+        Ramer-Douglas-Peucker algorithm. This preserves the overall shape
+        while removing redundant collinear or near-collinear points.
+
+        Args:
+            tolerance: The maximum perpendicular distance deviation (mm).
+
+        Returns:
+            The modified Geometry object (self).
+        """
+        if not self.commands:
+            return self
+
+        self.commands = simplify_geometry(self.commands, tolerance)
+        self._winding_cache.clear()
+
+        return self
 
     def close_gaps(self: T_Geometry, tolerance: float = 1e-6) -> T_Geometry:
         """
