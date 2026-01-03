@@ -1,4 +1,5 @@
-from gi.repository import Gtk, Adw
+from gi.repository import Adw, Gtk
+
 from ...shared.ui.adwfix import get_spinrow_int
 from ...shared.ui.unit_spin_row import UnitSpinRowHelper
 from ...shared.ui.varsetwidget import VarSetWidget
@@ -149,6 +150,30 @@ class GeneralPreferencesPage(Adw.PreferencesPage):
         height_adjustment.set_value(self.machine.dimensions[1])
         self.height_row.connect("changed", self.on_height_changed)
         axes_group.add(self.height_row)
+
+        x_offset_adjustment = Gtk.Adjustment(
+            lower=0, upper=10000, step_increment=1, page_increment=10
+        )
+        self.x_offset_row = Adw.SpinRow(
+            title=_("X Offset"),
+            subtitle=_("Offset to add to each gcode command on x axis."),
+            adjustment=x_offset_adjustment,
+        )
+        x_offset_adjustment.set_value(self.machine.offsets[0])
+        self.x_offset_row.connect("changed", self.on_x_offset_changed)
+        axes_group.add(self.x_offset_row)
+
+        y_offset_adjustment = Gtk.Adjustment(
+            lower=0, upper=10000, step_increment=1, page_increment=10
+        )
+        self.y_offset_row = Adw.SpinRow(
+            title=_("Y Offset"),
+            subtitle=_("Offset to add to each gcode command on y axis."),
+            adjustment=y_offset_adjustment,
+        )
+        y_offset_adjustment.set_value(self.machine.offsets[1])
+        self.y_offset_row.connect("changed", self.on_y_offset_changed)
+        axes_group.add(self.y_offset_row)
 
         # Origin selector
         origin_store = Gtk.StringList()
@@ -467,6 +492,16 @@ class GeneralPreferencesPage(Adw.PreferencesPage):
         width = self.machine.dimensions[0]
         height = get_spinrow_int(spinrow)
         self.machine.set_dimensions(width, height)
+
+    def on_x_offset_changed(self, spinrow):
+        y_offset = self.machine.offsets[1]
+        x_offset = get_spinrow_int(spinrow)
+        self.machine.set_offsets(x_offset, y_offset)
+
+    def on_y_offset_changed(self, spinrow):
+        x_offset = self.machine.offsets[0]
+        y_offset = get_spinrow_int(spinrow)
+        self.machine.set_offsets(x_offset, y_offset)
 
     def _update_travel_speed_state(self):
         """Update the travel speed row based on driver features."""
