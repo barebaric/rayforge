@@ -44,6 +44,7 @@ class SketchMenu(Gio.Menu):
         constr_group.append(
             _("Toggle Construction"), "sketch.toggle_construction"
         )
+        constr_group.append(_("Chamfer Corner"), "sketch.chamfer_corner")
         tools_menu.append_section(_("Modify"), constr_group)
 
         self.append_submenu(_("_Sketch"), tools_menu)

@@ -22,6 +22,7 @@ from .constraints import (
     TangentConstraint,
     EqualLengthConstraint,
     SymmetryConstraint,
+    CollinearConstraint,
 )
 from .entities import EntityRegistry, Line, Arc, Circle, Entity
 from .params import ParameterContext
@@ -47,6 +48,7 @@ _CONSTRAINT_CLASSES = {
     "TangentConstraint": TangentConstraint,
     "EqualLengthConstraint": EqualLengthConstraint,
     "SymmetryConstraint": SymmetryConstraint,
+    "CollinearConstraint": CollinearConstraint,
 }
 
 

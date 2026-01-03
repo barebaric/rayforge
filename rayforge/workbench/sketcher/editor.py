@@ -62,6 +62,8 @@ class SketchEditor:
             "go": "set_tool:rounded_rect",
             "gf": "set_tool:fill",
             "gn": "toggle_construction_on_selection",
+            # Actions
+            "ch": "add_chamfer_action",
             # Constraints (Single Key)
             "h": "add_horizontal_constraint",
             "v": "add_vertical_constraint",
@@ -197,9 +199,17 @@ class SketchEditor:
             pid = hit_obj
             target = sketch_element.sketch.registry.get_point(pid)
 
-            if pid not in selection.point_ids:
-                selection.select_point(pid, is_multi=False)
-                selection_changed = True
+            # Check if this point is a valid chamfer corner (2 lines). If so,
+            # promote the selection type to "junction".
+            if len(sketch_element.get_lines_at_point(pid)) == 2:
+                target_type = "junction"
+                if selection.junction_pid != pid:
+                    selection.select_junction(pid, is_multi=False)
+                    selection_changed = True
+            else:
+                if pid not in selection.point_ids:
+                    selection.select_point(pid, is_multi=False)
+                    selection_changed = True
 
         elif hit_type == "junction":
             assert isinstance(hit_obj, int)
@@ -304,6 +314,8 @@ class SketchEditor:
             ctx.toggle_construction_on_selection()
         elif action == "delete":
             ctx.delete_selection()
+        elif action == "chamfer":
+            ctx.add_chamfer_action()
 
         if self.sketch_element.canvas:
             self.sketch_element.canvas.grab_focus()
