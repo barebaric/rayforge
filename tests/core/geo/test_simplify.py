@@ -131,3 +131,78 @@ def test_simplify_closed_shape():
     assert (10, 10, 0) in points
     assert (0, 10, 0) in points
     assert (0, 0, 0) in points
+
+
+def test_simplify_empty_geometry():
+    """Tests that an empty geometry is handled gracefully."""
+    geo = Geometry()
+    simplified = geo.simplify(tolerance=0.1)
+    assert len(simplified.commands) == 0
+
+
+def test_simplify_single_segment():
+    """Tests that a single segment (2 points) is not reduced."""
+    geo = Geometry()
+    geo.move_to(0, 0)
+    geo.line_to(10, 10)
+
+    # Even with huge tolerance, start and end must be preserved
+    simplified = geo.simplify(tolerance=100.0)
+
+    assert len(simplified.commands) == 2
+    assert simplified.commands[0].end == (0, 0, 0)
+    assert simplified.commands[1].end == (10, 10, 0)
+
+
+def test_simplify_z_axis_preservation():
+    """Tests that Z coordinates are preserved even if RDP is 2D based."""
+    geo = Geometry()
+    geo.move_to(0, 0, 1)
+    geo.line_to(5, 0, 2)  # Collinear in XY, but has Z
+    geo.line_to(10, 0, 3)
+
+    # The current implementation calculates error in 2D (XY).
+    # Since (5,0) is perfectly on the line between (0,0) and (10,0),
+    # it should be removed, and the line should connect (0,0,1) -> (10,0,3).
+    simplified = geo.simplify(tolerance=0.1)
+
+    assert len(simplified.commands) == 2
+    assert simplified.commands[0].end == (0, 0, 1)
+    assert simplified.commands[1].end == (10, 0, 3)
+
+
+def test_simplify_zigzag_removal():
+    """Tests removal of high frequency zigzag noise within tolerance."""
+    geo = Geometry()
+    geo.move_to(0, 0)
+    # Zigzag with amplitude 0.05
+    for x in range(1, 10):
+        y = 0.05 if x % 2 else -0.05
+        geo.line_to(x, y)
+    geo.line_to(10, 0)
+
+    # Tolerance 0.1 > Amplitude 0.05 -> should result in straight line
+    simplified = geo.simplify(tolerance=0.1)
+
+    assert len(simplified.commands) == 2
+    assert simplified.commands[0].end == (0, 0, 0)
+    assert simplified.commands[1].end == (10, 0, 0)
+
+
+def test_simplify_duplicate_points():
+    """Tests that consecutive duplicate points are removed/handled."""
+    geo = Geometry()
+    geo.move_to(0, 0)
+    geo.line_to(0, 0)  # Duplicate
+    geo.line_to(10, 10)
+    geo.line_to(10, 10)  # Duplicate
+
+    simplified = geo.simplify(tolerance=0.001)
+
+    # RDP inherently handles duplicates by seeing zero deviation
+    # or zero chord length logic.
+    # Logic: Start(0,0) -> End(10,10). Mid points (0,0) and (10,10)
+    # lie exactly on the line segment.
+    assert len(simplified.commands) == 2
+    assert simplified.commands[0].end == (0, 0, 0)
+    assert simplified.commands[1].end == (10, 10, 0)
