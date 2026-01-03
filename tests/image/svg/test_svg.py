@@ -279,8 +279,13 @@ class TestSvgRenderer:
         assert surface.get_height() == 100
 
     def test_render_chunk_generator(self):
+        # Added a <rect> element so the importer finds vector content and
+        # can create a valid WorkPiece. The test's goal is to check the
+        # chunking mechanism, not the empty-SVG import behavior.
         svg_data = (
-            b'<svg width="1000px" height="500px" viewBox="0 0 1000 500"></svg>'
+            b'<svg width="1000px" height="500px" viewBox="0 0 1000 500">'
+            b'<rect width="1000" height="500" fill="black" />'
+            b"</svg>"
         )
         importer = SvgImporter(svg_data, source_file=Path("chunk.svg"))
         workpiece = _setup_workpiece_with_context(importer)
