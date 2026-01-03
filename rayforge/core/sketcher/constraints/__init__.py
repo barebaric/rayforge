@@ -4,6 +4,7 @@ Geometric constraints for the 2D CAD sketcher.
 
 from .base import Constraint
 from .coincident import CoincidentConstraint
+from .collinear import CollinearConstraint
 from .diameter import DiameterConstraint
 from .distance import DistanceConstraint
 from .drag import DragConstraint
@@ -20,6 +21,7 @@ from .vertical import VerticalConstraint
 __all__ = [
     "Constraint",
     "CoincidentConstraint",
+    "CollinearConstraint",
     "DiameterConstraint",
     "DistanceConstraint",
     "DragConstraint",

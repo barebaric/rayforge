@@ -185,6 +185,7 @@ class SketchStudio(Gtk.Box):
             ("delete", self._on_delete),
             ("view_fit", self._on_view_fit),
             ("toggle_construction", self._on_toggle_construction),
+            ("chamfer_corner", self._on_chamfer),
         ]
 
         for name, cb in actions:
@@ -312,6 +313,10 @@ class SketchStudio(Gtk.Box):
     def _on_toggle_construction(self, action, param):
         if self.canvas.sketch_element:
             self.canvas.sketch_element.toggle_construction_on_selection()
+
+    def _on_chamfer(self, action, param):
+        if self.canvas.sketch_element:
+            self.canvas.sketch_element.add_chamfer_action()
 
     def _on_cancel_clicked(self, btn, *args):
         logger.info("SketchStudio: Cancel clicked")

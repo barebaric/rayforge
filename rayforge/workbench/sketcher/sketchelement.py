@@ -19,6 +19,7 @@ from ...core.sketcher.constraints import (
     EqualLengthConstraint,
     SymmetryConstraint,
     Constraint,
+    CollinearConstraint,
 )
 from ...core.sketcher.entities import Line, Arc, Circle, Entity, Point
 from ...core.sketcher.selection import SketchSelection
@@ -27,6 +28,7 @@ from ...core.sketcher.sketch_cmd import (
     RemoveItemsCommand,
     ToggleConstructionCommand,
     UnstickJunctionCommand,
+    ChamferCommand,
 )
 from ...core.sketcher.tools import (
     SelectTool,
@@ -326,6 +328,14 @@ class SketchElement(CanvasElement):
     # Capabilities Querying
     # =========================================================================
 
+    def get_lines_at_point(self, pid: int) -> List[Line]:
+        """Returns a list of all Line entities connected to a point."""
+        return [
+            e
+            for e in self.sketch.registry.entities
+            if isinstance(e, Line) and pid in (e.p1_idx, e.p2_idx)
+        ]
+
     def is_action_supported(self, action: str) -> bool:
         """
         Determines if a generic action is valid for the current selection.
@@ -344,6 +354,16 @@ class SketchElement(CanvasElement):
             return (
                 has_points or has_entities or has_constraints or has_junctions
             )
+
+        if action == "chamfer":
+            # Valid if exactly one junction is selected and it connects
+            # exactly two lines.
+            if self.selection.junction_pid is not None:
+                lines_at_junction = self.get_lines_at_point(
+                    self.selection.junction_pid
+                )
+                return len(lines_at_junction) == 2
+            return False
 
         return False
 
@@ -508,6 +528,8 @@ class SketchElement(CanvasElement):
                 points_in_constraint = [constr.p1, constr.p2]
                 if constr.center is not None:
                     points_in_constraint.append(constr.center)
+            elif isinstance(constr, CollinearConstraint):
+                points_in_constraint = [constr.p1, constr.p2, constr.p3]
 
             if any(p in to_delete_point_ids for p in points_in_constraint):
                 should_remove = True
@@ -911,6 +933,56 @@ class SketchElement(CanvasElement):
                 self.sketch, _("Add Symmetry Constraint"), constraints=[constr]
             )
             self.execute_command(cmd)
+
+    def add_chamfer_action(self):
+        """Creates a chamfer at the selected corner junction."""
+        DEFAULT_DISTANCE = 10.0
+        if not self.is_action_supported("chamfer") or not self.editor:
+            logger.warning("Chamfer requires a selected corner of two lines.")
+            return
+
+        corner_pid = self.selection.junction_pid
+        if corner_pid is None:
+            return
+
+        lines_at_junction = self.get_lines_at_point(corner_pid)
+
+        if len(lines_at_junction) != 2:
+            return
+        line1, line2 = lines_at_junction
+
+        # Determine a sensible default chamfer size
+        corner_pt = self._get_point(corner_pid)
+        if not corner_pt:
+            return
+
+        other1_pid = (
+            line1.p2_idx if line1.p1_idx == corner_pid else line1.p1_idx
+        )
+        other1_pt = self._get_point(other1_pid)
+        if not other1_pt:
+            return
+
+        len1 = math.hypot(other1_pt.x - corner_pt.x, other1_pt.y - corner_pt.y)
+
+        other2_pid = (
+            line2.p2_idx if line2.p1_idx == corner_pid else line2.p1_idx
+        )
+        other2_pt = self._get_point(other2_pid)
+        if not other2_pt:
+            return
+
+        len2 = math.hypot(other2_pt.x - corner_pt.x, other2_pt.y - corner_pt.y)
+
+        chamfer_dist = min(DEFAULT_DISTANCE, len1 / 2.0, len2 / 2.0)
+        if chamfer_dist < 1e-6:
+            logger.warning("Lines are too short to create a chamfer.")
+            return
+
+        cmd = ChamferCommand(
+            self.sketch, corner_pid, line1.id, line2.id, chamfer_dist
+        )
+        self.execute_command(cmd)
 
     def _get_entity_by_id(self, eid: int) -> Optional[Entity]:
         return self.sketch.registry.get_entity(eid)
