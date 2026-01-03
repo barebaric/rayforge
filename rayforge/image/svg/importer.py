@@ -249,6 +249,14 @@ class SvgImporter(Importer):
         # without losing visual fidelity on small-scale features.
         geo.simplify(tolerance=0.1)
 
+        # If the SVG contained no parsable vector paths, abort the import.
+        if geo.is_empty():
+            logger.info(
+                "Direct SVG import resulted in empty geometry. "
+                "No items created."
+            )
+            return None
+
         # Normalize geometry to a 0-1 unit square (Y-down).
         self._normalize_geometry(geo, width_px, height_px)
 
@@ -276,6 +284,11 @@ class SvgImporter(Importer):
         master_geo = self._convert_svg_to_geometry(svg, final_dims_mm)
         master_geo.simplify(tolerance=0.1)
         self._normalize_geometry(master_geo, width_px, height_px)
+
+        # If the master geometry is empty, there's nothing to split.
+        if master_geo.is_empty():
+            return []
+
         master_wp = self._create_workpiece(
             master_geo, source, final_dims_mm[0], final_dims_mm[1]
         )
