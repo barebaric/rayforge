@@ -33,6 +33,10 @@ class SvgRenderer(Renderer):
             root.set("width", f"{width}px")
             root.set("height", f"{height}px")
             root.set("preserveAspectRatio", "none")
+            # Add overflow:visible to render content outside the viewBox.
+            # Some designs rely on bezier control points outside the viewbox,
+            # which would otherwise be clipped by default.
+            root.set("style", "overflow: visible")
 
             return pyvips.Image.svgload_buffer(ET.tostring(root))
         except (pyvips.Error, ET.ParseError, ValueError, TypeError):
