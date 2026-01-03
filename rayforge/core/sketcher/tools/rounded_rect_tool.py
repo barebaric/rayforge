@@ -167,6 +167,7 @@ class RoundedRectTool(SketchTool):
             # Reset tool for the next rectangle
             self.start_id = None
             self.start_temp = False
+            self._is_previewing = False
 
         self.element.mark_dirty()
         return True
