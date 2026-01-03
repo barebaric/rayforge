@@ -2,6 +2,7 @@ from unittest.mock import MagicMock, call
 
 import pytest
 
+from rayforge.core.sketcher.commands import AddItemsCommand
 from rayforge.core.sketcher.constraints import (
     EqualDistanceConstraint,
     EqualLengthConstraint,
@@ -10,7 +11,6 @@ from rayforge.core.sketcher.constraints import (
     VerticalConstraint,
 )
 from rayforge.core.sketcher.entities import Arc, Line, Point
-from rayforge.core.sketcher.sketch_cmd import AddItemsCommand
 from rayforge.core.sketcher.tools import RoundedRectTool
 
 

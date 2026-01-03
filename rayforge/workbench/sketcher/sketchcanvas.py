@@ -4,6 +4,7 @@ from typing import Optional, cast, TYPE_CHECKING
 from gi.repository import Adw, Gdk, Gtk
 from ...core.expression import ExpressionContext, safe_evaluate
 from ...core.matrix import Matrix
+from ...core.sketcher.commands import ModifyConstraintCommand
 from ...core.sketcher.constraints import (
     Constraint,
     DiameterConstraint,
@@ -12,7 +13,6 @@ from ...core.sketcher.constraints import (
     RadiusConstraint,
     VerticalConstraint,
 )
-from ...core.sketcher.sketch_cmd import ModifyConstraintCommand
 from ...shared.ui.expression_entry import ExpressionEntry
 from ..canvas import WorldSurface
 from .editor import SketchEditor

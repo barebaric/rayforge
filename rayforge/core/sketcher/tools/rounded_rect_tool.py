@@ -1,5 +1,6 @@
 from typing import Optional, Dict
 from ..entities import Point, Line, Arc
+from ..commands import AddItemsCommand
 from ..constraints import (
     HorizontalConstraint,
     VerticalConstraint,
@@ -7,7 +8,6 @@ from ..constraints import (
     EqualLengthConstraint,
     EqualDistanceConstraint,
 )
-from ..sketch_cmd import AddItemsCommand
 from .base import SketchTool
 
 

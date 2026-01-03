@@ -1,8 +1,8 @@
 import math
 from typing import List, Tuple
 from ...geo import primitives as geo_primitives
+from ..commands import AddFillCommand, RemoveFillCommand
 from ..entities import Circle
-from ..sketch_cmd import AddFillCommand, RemoveFillCommand
 from .base import SketchTool
 
 
