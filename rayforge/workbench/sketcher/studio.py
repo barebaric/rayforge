@@ -198,6 +198,7 @@ class SketchStudio(Gtk.Box):
             "tool_line": "line",
             "tool_circle": "circle",
             "tool_arc": "arc",
+            "tool_rectangle": "rectangle",
             "tool_rounded_rect": "rounded_rect",
             "tool_fill": "fill",
         }
@@ -258,6 +259,7 @@ class SketchStudio(Gtk.Box):
         def grab_focus_callback(widget, clock):
             self.canvas.grab_focus()
             return GLib.SOURCE_REMOVE
+
         self.add_tick_callback(grab_focus_callback)
 
     # --- Action Handlers ---
