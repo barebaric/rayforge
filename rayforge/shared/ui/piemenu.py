@@ -4,8 +4,8 @@ import logging
 from typing import List, Any
 from gi.repository import Gtk, Gdk
 from blinker import Signal
-from ...shared.util.gtk import apply_css
 from ...icons import get_icon_pixbuf
+from .gtk import apply_css
 
 logger = logging.getLogger(__name__)
 

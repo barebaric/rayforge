@@ -2,7 +2,7 @@ from typing import Protocol, runtime_checkable
 from gi.repository import Gtk, Gdk
 from blinker import Signal
 from ...icons import get_icon
-from ..util.gtk import apply_css
+from .gtk import apply_css
 
 
 css = """

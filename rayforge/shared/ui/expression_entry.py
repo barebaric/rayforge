@@ -9,7 +9,7 @@ from ...core.expression import (
     Token,
     TokenType,
 )
-from ..util.gtk import apply_css
+from .gtk import apply_css
 
 
 logger = logging.getLogger(__name__)

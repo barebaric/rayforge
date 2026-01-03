@@ -8,8 +8,8 @@ from ...core.stock_asset import StockAsset
 from ...core.undo import Command
 from ...shared.ui.draglist import DragListBox
 from ...shared.ui.expander import Expander
+from ...shared.ui.gtk import apply_css
 from ...shared.ui.popover_menu import PopoverMenu
-from ...shared.util.gtk import apply_css
 from ...icons import get_icon
 from .asset_row_factory import create_asset_row_widget
 from .asset_row_widget import StockAssetRowWidget, SketchAssetRowWidget

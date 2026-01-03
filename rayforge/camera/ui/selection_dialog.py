@@ -1,6 +1,6 @@
 from gi.repository import Gtk, Adw, GdkPixbuf
 from typing import Optional
-from ...shared.util.gtk import apply_css
+from ...shared.ui.gtk import apply_css
 from ..models.camera import Camera
 from ..controller import CameraController
 

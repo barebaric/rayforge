@@ -1,6 +1,6 @@
 from gi.repository import Gtk
 from ...icons import get_icon
-from ..util.gtk import apply_css
+from .gtk import apply_css
 
 
 css = """
