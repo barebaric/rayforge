@@ -65,9 +65,12 @@ class Fill:
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "Fill":
+        # JSON deserializes tuples as lists. Convert back to tuples so they
+        # are hashable (required for FillTool set operations).
+        boundary = [tuple(item) for item in data["boundary"]]
         return cls(
             uid=data.get("uid", str(uuid.uuid4())),
-            boundary=data["boundary"],
+            boundary=boundary,
         )
 
 
