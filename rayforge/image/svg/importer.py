@@ -96,6 +96,12 @@ class SvgImporter(Importer):
         """Calculates and stores metadata for direct SVG import."""
         metadata = {}
         try:
+            # Mark as a vector source to bypass unnecessary masking later.
+            # Vector renderers (like for SVG) produce images with correct
+            # alpha channels, so a secondary mask from centerline geometry
+            # is not needed and can be harmful (e.g., for open paths).
+            metadata["is_vector"] = True
+
             # Get size of original, untrimmed SVG
             untrimmed_size = get_natural_size(source.original_data)
             if untrimmed_size:
