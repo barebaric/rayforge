@@ -2,12 +2,12 @@ from unittest.mock import MagicMock, call
 from typing import cast
 import pytest
 
+from rayforge.core.sketcher.commands import AddItemsCommand
 from rayforge.core.sketcher.constraints import (
     HorizontalConstraint,
     VerticalConstraint,
 )
 from rayforge.core.sketcher.entities import Line, Point
-from rayforge.core.sketcher.sketch_cmd import AddItemsCommand
 from rayforge.core.sketcher.tools import RectangleTool
 
 

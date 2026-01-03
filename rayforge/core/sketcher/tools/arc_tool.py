@@ -1,8 +1,8 @@
 import math
 from typing import Optional
+from ..commands import AddItemsCommand
 from ..constraints import EqualDistanceConstraint
 from ..entities import Point, Arc
-from ..sketch_cmd import AddItemsCommand
 from .base import SketchTool
 
 

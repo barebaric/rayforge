@@ -3,7 +3,7 @@ import math
 import cairo
 from typing import Optional, Tuple, Dict, cast, TYPE_CHECKING
 from ...matrix import Matrix
-from ..entities import Entity, Line, Arc, Circle
+from ..commands import AddItemsCommand, MovePointCommand
 from ..constraints import (
     DragConstraint,
     DistanceConstraint,
@@ -12,7 +12,7 @@ from ..constraints import (
     CoincidentConstraint,
     PointOnLineConstraint,
 )
-from ..sketch_cmd import AddItemsCommand, MovePointCommand
+from ..entities import Entity, Line, Arc, Circle
 from .base import SketchTool
 
 if TYPE_CHECKING:

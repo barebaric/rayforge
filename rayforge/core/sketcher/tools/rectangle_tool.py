@@ -1,10 +1,10 @@
 from typing import Optional, Dict
 from ..entities import Point, Line
+from ..commands import AddItemsCommand
 from ..constraints import (
     HorizontalConstraint,
     VerticalConstraint,
 )
-from ..sketch_cmd import AddItemsCommand
 from .base import SketchTool
 
 

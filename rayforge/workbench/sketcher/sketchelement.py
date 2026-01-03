@@ -5,6 +5,13 @@ from blinker import Signal
 from typing import Tuple, List, Optional, TYPE_CHECKING, cast
 from ...core.matrix import Matrix
 from ...core.sketcher import Sketch
+from ...core.sketcher.commands import (
+    AddItemsCommand,
+    RemoveItemsCommand,
+    ToggleConstructionCommand,
+    UnstickJunctionCommand,
+    ChamferCommand,
+)
 from ...core.sketcher.constraints import (
     PerpendicularConstraint,
     TangentConstraint,
@@ -23,13 +30,6 @@ from ...core.sketcher.constraints import (
 )
 from ...core.sketcher.entities import Line, Arc, Circle, Entity, Point
 from ...core.sketcher.selection import SketchSelection
-from ...core.sketcher.sketch_cmd import (
-    AddItemsCommand,
-    RemoveItemsCommand,
-    ToggleConstructionCommand,
-    UnstickJunctionCommand,
-    ChamferCommand,
-)
 from ...core.sketcher.tools import (
     SelectTool,
     LineTool,

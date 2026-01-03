@@ -3,12 +3,12 @@ from unittest.mock import MagicMock
 import pytest
 
 from rayforge.core.sketcher import Sketch
+from rayforge.core.sketcher.commands import ChamferCommand
 from rayforge.core.sketcher.constraints import (
     CollinearConstraint,
     EqualDistanceConstraint,
 )
 from rayforge.core.sketcher.entities import Line
-from rayforge.core.sketcher.sketch_cmd import ChamferCommand
 from rayforge.workbench.sketcher.sketchelement import SketchElement
 
 # This is a constant from the implementation, let's use it for consistency

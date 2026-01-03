@@ -1,6 +1,6 @@
 from typing import Optional
+from ..commands import AddItemsCommand
 from ..entities import Point, Line
-from ..sketch_cmd import AddItemsCommand
 from .base import SketchTool
 
 
