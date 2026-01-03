@@ -1,5 +1,5 @@
 import numpy as np
-from typing import List, Tuple, TYPE_CHECKING, cast
+from typing import List, Tuple, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from .geometry import Command
@@ -81,6 +81,25 @@ def _ramer_douglas_peucker_numpy(
     return points[keep]
 
 
+def simplify_points(
+    points: List[Tuple[float, float]], tolerance: float
+) -> List[Tuple[float, float]]:
+    """
+    Simplifies a list of 2D points using the Ramer-Douglas-Peucker algorithm.
+    This bypasses Command object creation for raw buffer processing.
+    """
+    if len(points) < 3:
+        return points
+
+    # Convert list of tuples to numpy array
+    arr = np.array(points, dtype=np.float64)
+    simplified_arr = _ramer_douglas_peucker_numpy(arr, tolerance)
+
+    # Convert back to list of tuples
+    # simplify_arr is (N, 2)
+    return [tuple(p) for p in simplified_arr.tolist()]  # type: ignore
+
+
 def simplify_geometry(
     commands: List["Command"], tolerance: float = 0.01
 ) -> List["Command"]:
@@ -121,12 +140,19 @@ def simplify_geometry(
             # Reconstruct LineTo commands
             # Skip the first point as it's the anchor (MoveTo or previous end)
             for p in final_points_arr[1:]:
-                # Check for correct tuple size to satisfy type checkers
-                # p is a numpy row, convert to tuple
-                p_tuple = tuple(p.tolist())
-                if len(p_tuple) >= 3:
-                    p3 = cast(Tuple[float, float, float], p_tuple[:3])
-                    simplified_commands.append(LineToCommand(p3))
+                # Convert numpy row to standard list for cleaner indexing
+                # checks
+                p_list = p.tolist()
+
+                if len(p_list) >= 3:
+                    simplified_commands.append(
+                        LineToCommand((p_list[0], p_list[1], p_list[2]))
+                    )
+                elif len(p_list) >= 2:
+                    # Fallback if numpy array was only 2D (x, y)
+                    simplified_commands.append(
+                        LineToCommand((p_list[0], p_list[1], 0.0))
+                    )
 
         current_chain = []
 

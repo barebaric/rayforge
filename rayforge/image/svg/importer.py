@@ -18,6 +18,7 @@ from svgelements import (
 
 from ...core.geo import Geometry
 from ...core.geo.linearize import linearize_bezier_adaptive
+from ...core.geo.simplify import simplify_points
 from ...core.item import DocItem
 from ...core.layer import Layer
 from ...core.matrix import Matrix
@@ -247,6 +248,9 @@ class SvgImporter(Importer):
         # Apply decimation (RDP) here, before any normalization or matrix math.
         # Use a small pixel tolerance to remove micro-segments from flattening
         # without losing visual fidelity on small-scale features.
+        # Note: Major simplification is now done during buffer flushing
+        # inside _convert_svg_to_geometry. This pass catches inter-segment
+        # issues.
         geo.simplify(tolerance=0.1)
 
         # If the SVG contained no parsable vector paths, abort the import.
@@ -301,9 +305,8 @@ class SvgImporter(Importer):
         layer_geoms = {lid: Geometry() for lid in layer_ids}
 
         # Calculate tolerance
-        avg_dim = max(final_dims_mm[0], final_dims_mm[1], 1.0)
-        avg_scale = avg_dim / 960
-        tolerance = 0.1 / avg_scale if avg_scale > 1e-9 else 0.1
+        # Use a fixed, high-precision tolerance for consistency
+        tolerance = 0.05
 
         # Iterate all elements in SVG and assign to layers based on ancestry.
         # This handles transforms and <use> tags correctly via svgelements
@@ -445,12 +448,13 @@ class SvgImporter(Importer):
         Converts an SVG object into a Geometry object in pixel coordinates.
         """
         geo = Geometry()
-        final_width_mm, final_height_mm = final_dims_mm
 
-        # Calculate tolerance for curve flattening.
-        avg_dim = max(final_width_mm, final_height_mm, 1.0)
-        avg_scale = avg_dim / 960  # Assuming typical viewBox size
-        tolerance = 0.1 / avg_scale if avg_scale > 1e-9 else 0.1
+        # Use a fixed, high-precision tolerance for linearization and
+        # buffering. SVG coordinates are usually 96 DPI.
+        # 0.05 px ~= 0.013 mm, which is sufficient for high fidelity import.
+        # Using the previous dynamic heuristic caused jagged lines on small
+        # items.
+        tolerance = 0.05
 
         for shape in svg.elements():
             try:
@@ -464,23 +468,73 @@ class SvgImporter(Importer):
     def _add_path_to_geometry(
         self, path: Path, geo: Geometry, tolerance: float
     ) -> None:
-        """Converts a single Path object's segments to Geometry commands."""
+        """
+        Converts a single Path object's segments to Geometry commands.
+
+        This method buffers points from linearized segments and simplifies them
+        using NumPy before creating geometry objects. This massively reduces
+        overhead for complex Bezier paths.
+        """
+        point_buffer: List[Tuple[float, float]] = []
+
+        def flush_buffer():
+            nonlocal point_buffer
+            if len(point_buffer) > 1:
+                # Simplify raw point data efficiently
+                simplified = simplify_points(point_buffer, tolerance)
+                # Reconstruct LineTo commands. Skip first point as it
+                # connects to the previous command's end.
+                for p in simplified[1:]:
+                    geo.line_to(p[0], p[1])
+
+            # Maintain the last point to ensure continuity
+            if point_buffer:
+                point_buffer = [point_buffer[-1]]
+
         for seg in path:
             # Use a local variable to help strict type checkers.
             end = seg.end
             if end is None or end.x is None or end.y is None:
                 continue
 
+            end_pt = (float(end.x), float(end.y))
+
             if isinstance(seg, Move):
-                geo.move_to(float(end.x), float(end.y))
+                flush_buffer()
+                point_buffer = [end_pt]
+                geo.move_to(end_pt[0], end_pt[1])
+
             elif isinstance(seg, Line):
-                geo.line_to(float(end.x), float(end.y))
+                if not point_buffer:
+                    start = seg.start
+                    if start and start.x is not None and start.y is not None:
+                        point_buffer = [(float(start.x), float(start.y))]
+                point_buffer.append(end_pt)
+
             elif isinstance(seg, Close):
+                flush_buffer()
                 geo.close_path()
+                point_buffer = []
+
             elif isinstance(seg, Arc):
+                flush_buffer()
                 self._add_arc_to_geometry(seg, geo)
+                point_buffer = [end_pt]
+
             elif isinstance(seg, (CubicBezier, QuadraticBezier)):
-                self._flatten_bezier_to_geometry(seg, geo, tolerance)
+                if not point_buffer:
+                    start = seg.start
+                    if start and start.x is not None and start.y is not None:
+                        point_buffer = [(float(start.x), float(start.y))]
+
+                # Get raw linearized points and extend buffer directly
+                new_points = self._get_bezier_points(seg, tolerance)
+                # Skip the first point as it connects to the previous
+                # command's end
+                point_buffer.extend(new_points)
+
+        # Flush any remaining segments
+        flush_buffer()
 
     def _add_arc_to_geometry(self, seg: Arc, geo: Geometry) -> None:
         """Adds an Arc segment to the Geometry."""
@@ -519,20 +573,22 @@ class SvgImporter(Importer):
             clockwise=is_clockwise,
         )
 
-    def _flatten_bezier_to_geometry(
+    def _get_bezier_points(
         self,
         seg: Union[CubicBezier, QuadraticBezier],
-        geo: Geometry,
         tolerance: float,
-    ) -> None:
-        """Flattens a Bezier curve into a series of lines in the Geometry."""
+    ) -> List[Tuple[float, float]]:
+        """
+        Linearizes a Bezier curve into a list of 2D points.
+        Returns a list of (x, y) tuples.
+        """
         start = seg.start
         end = seg.end
 
         if start is None or start.x is None or start.y is None:
-            return
+            return []
         if end is None or end.x is None or end.y is None:
-            return
+            return []
 
         # Prepare control points for cubic bezier
         start_pt = (float(start.x), float(start.y))
@@ -541,7 +597,7 @@ class SvgImporter(Importer):
         if isinstance(seg, QuadraticBezier):
             control = seg.control
             if control is None or control.x is None or control.y is None:
-                return
+                return []
 
             c_x, c_y = float(control.x), float(control.y)
             # Promote Quadratic to Cubic for the generic flattener
@@ -564,20 +620,17 @@ class SvgImporter(Importer):
                 or c2.x is None
                 or c2.y is None
             ):
-                return
+                return []
 
             c1_pt = (float(c1.x), float(c1.y))
             c2_pt = (float(c2.x), float(c2.y))
 
-        # Use the new Adaptive Linearization instead of uniform steps.
+        # Use the Adaptive Linearization.
         # We square the tolerance because the adaptive function compares
         # squared distances.
-        points = linearize_bezier_adaptive(
+        return linearize_bezier_adaptive(
             start_pt, c1_pt, c2_pt, end_pt, tolerance**2
         )
-
-        for p in points:
-            geo.line_to(p[0], p[1])
 
     def _normalize_geometry(
         self, geo: Geometry, width_px: float, height_px: float
