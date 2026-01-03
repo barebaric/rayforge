@@ -125,6 +125,107 @@ def linearize_bezier(
     ]
 
 
+def linearize_bezier_adaptive(
+    p0: Tuple[float, float],
+    c1: Tuple[float, float],
+    c2: Tuple[float, float],
+    p1: Tuple[float, float],
+    tolerance_sq: float,
+    max_depth: int = 10,
+) -> List[Tuple[float, float]]:
+    """
+    Recursively flattens a cubic Bezier curve based on geometric error.
+
+    Args:
+        p0, c1, c2, p1: 2D control points (x, y).
+        tolerance_sq: The squared maximum allowable distance error.
+        max_depth: Maximum recursion depth to prevent infinite loops on
+                   singularities/cusps. 10 = max 1024 segments.
+
+    Returns:
+        A list of points (excluding p0, including p1) that approximate the
+        curve.
+    """
+    points: List[Tuple[float, float]] = []
+
+    def recursive_step(
+        p0: Tuple[float, float],
+        c1: Tuple[float, float],
+        c2: Tuple[float, float],
+        p1: Tuple[float, float],
+        depth: int,
+    ):
+        # 1. Determine if the curve is flat enough to be a line.
+        # We check the distance of control points c1 and c2 from the
+        # baseline p0-p1. If both are within tolerance, we stop.
+
+        # Vector from p0 to p1
+        vx, vy = p1[0] - p0[0], p1[1] - p0[1]
+        norm_sq = vx * vx + vy * vy
+
+        is_flat = False
+
+        if depth >= max_depth:
+            is_flat = True
+        elif norm_sq < 1e-9:
+            # Endpoints are the same, check distance of controls to point p0
+            d1_sq = (c1[0] - p0[0]) ** 2 + (c1[1] - p0[1]) ** 2
+            d2_sq = (c2[0] - p0[0]) ** 2 + (c2[1] - p0[1]) ** 2
+            if d1_sq < tolerance_sq and d2_sq < tolerance_sq:
+                is_flat = True
+        else:
+            # Perpendicular distance from C to line P0-P1
+            # dist = abs((y2-y1)x0 - (x2-x1)y0 + x2y1 - y2x1) / sqrt(...)
+            # We compare squared distances to avoid sqrt
+            # dist_sq = ((y2-y1)x0 - (x2-x1)y0 + cross_base)^2 / norm_sq
+
+            # Precalc terms for the line equation
+            term1 = -vy  # -(y1-y0)
+            term2 = vx  # (x1-x0)
+            # constant = cross product p0 x p1 = x0y1 - y0x1
+            term3 = p0[0] * p1[1] - p0[1] * p1[0]
+
+            # Distance for C1
+            cross1 = abs(term1 * c1[0] + term2 * c1[1] - term3)
+            # Distance for C2
+            cross2 = abs(term1 * c2[0] + term2 * c2[1] - term3)
+
+            # We compare squared distances to avoid sqrt
+            # dist_sq = cross^2 / norm_sq
+            # condition:
+            #   dist_sq < tolerance_sq  => cross^2 < tolerance_sq * norm_sq
+            limit = tolerance_sq * norm_sq
+            if (cross1 * cross1) < limit and (cross2 * cross2) < limit:
+                is_flat = True
+
+        if is_flat:
+            return
+
+        # 2. If not flat, split using De Casteljau's algorithm
+        # Midpoints of edges
+        m01 = ((p0[0] + c1[0]) / 2, (p0[1] + c1[1]) / 2)
+        m12 = ((c1[0] + c2[0]) / 2, (c1[1] + c2[1]) / 2)
+        m23 = ((c2[0] + p1[0]) / 2, (c2[1] + p1[1]) / 2)
+
+        # Midpoints of midpoints
+        q01 = ((m01[0] + m12[0]) / 2, (m01[1] + m12[1]) / 2)
+        q12 = ((m12[0] + m23[0]) / 2, (m12[1] + m23[1]) / 2)
+
+        # Final midpoint on the curve
+        r = ((q01[0] + q12[0]) / 2, (q01[1] + q12[1]) / 2)
+
+        # Recurse Left
+        recursive_step(p0, m01, q01, r, depth + 1)
+        # Add the split point
+        points.append(r)
+        # Recurse Right
+        recursive_step(r, q12, m23, p1, depth + 1)
+
+    recursive_step(p0, c1, c2, p1, 0)
+    points.append(p1)
+    return points
+
+
 def resample_polyline(
     points: List[Tuple[float, float, float]],
     max_segment_length: float,

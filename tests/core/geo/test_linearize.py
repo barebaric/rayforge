@@ -5,6 +5,7 @@ from rayforge.core.geo import Geometry, LineToCommand, ArcToCommand
 from rayforge.core.geo.linearize import (
     linearize_arc,
     linearize_bezier,
+    linearize_bezier_adaptive,
     resample_polyline,
 )
 
@@ -64,6 +65,40 @@ def test_linearize_bezier_3d():
     expected_y = 0.125 * 0 + 0.375 * 1 + 0.375 * 1 + 0.125 * 0  # 0.75
     expected_z = 0.125 * 0 + 0.375 * 5 + 0.375 * 5 + 0.125 * 10  # 5.0
     assert midpoint == pytest.approx((expected_x, expected_y, expected_z))
+
+
+def test_linearize_bezier_adaptive_flat():
+    """Tests adaptive linearization on a perfectly flat line."""
+    p0 = (0.0, 0.0)
+    c1 = (2.5, 0.0)  # Collinear control points
+    c2 = (7.5, 0.0)
+    p1 = (10.0, 0.0)
+
+    # With a reasonable tolerance, this should result in exactly 1 segment
+    points = linearize_bezier_adaptive(p0, c1, c2, p1, tolerance_sq=0.01)
+
+    # Should contain only the end point
+    assert len(points) == 1
+    assert points[0] == p1
+
+
+def test_linearize_bezier_adaptive_curved():
+    """Tests adaptive linearization on a curve."""
+    p0 = (0.0, 0.0)
+    c1 = (0.0, 10.0)
+    c2 = (10.0, 10.0)
+    p1 = (10.0, 0.0)
+
+    # High tolerance = fewer points
+    points_coarse = linearize_bezier_adaptive(p0, c1, c2, p1, tolerance_sq=1.0)
+    # Low tolerance = more points
+    points_fine = linearize_bezier_adaptive(
+        p0, c1, c2, p1, tolerance_sq=0.0001
+    )
+
+    assert len(points_fine) > len(points_coarse)
+    assert points_fine[-1] == p1
+    assert points_coarse[-1] == p1
 
 
 def test_resample_polyline_open_path():

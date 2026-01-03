@@ -17,6 +17,7 @@ from svgelements import (
 )
 
 from ...core.geo import Geometry
+from ...core.geo.linearize import linearize_bezier_adaptive
 from ...core.item import DocItem
 from ...core.layer import Layer
 from ...core.matrix import Matrix
@@ -235,6 +236,11 @@ class SvgImporter(Importer):
         # Convert SVG shapes to internal geometry (in pixel coordinates).
         geo = self._convert_svg_to_geometry(svg, final_dims_mm)
 
+        # Apply decimation (RDP) here, before any normalization or matrix math.
+        # Use a small pixel tolerance (0.5px) which will remove micro-segments
+        # while keeping visual fidelity high.
+        geo.simplify(tolerance=0.5)
+
         # Normalize geometry to a 0-1 unit square (Y-down).
         self._normalize_geometry(geo, width_px, height_px)
 
@@ -260,6 +266,8 @@ class SvgImporter(Importer):
         """
         # Create a master WorkPiece to use as the matrix template.
         master_geo = self._convert_svg_to_geometry(svg, final_dims_mm)
+        # Simplify the master too, so the metrics match
+        master_geo.simplify(tolerance=0.5)
         self._normalize_geometry(master_geo, width_px, height_px)
         master_wp = self._create_workpiece(
             master_geo, source, final_dims_mm[0], final_dims_mm[1]
@@ -276,6 +284,9 @@ class SvgImporter(Importer):
                 self._convert_group_to_geometry(
                     target_group, layer_geo, final_dims_mm
                 )
+
+            # Simplify each layer individually
+            layer_geo.simplify(tolerance=0.5)
 
             # Normalize to the MASTER coordinate system (Y-down 0-1)
             # We do NOT flip this to Y-Up here. SourceAssetSegment stores
@@ -327,6 +338,9 @@ class SvgImporter(Importer):
         """Converts a specific group's subtree to geometry."""
         final_width_mm, final_height_mm = final_dims_mm
         avg_dim = max(final_width_mm, final_height_mm, 1.0)
+        # Note: tolerance calculation here is less critical for Beziers
+        # now that we use adaptive subdivision in the flatten method.
+        # But we still pass it for consistency.
         avg_scale = avg_dim / 960
         tolerance = 0.1 / avg_scale if avg_scale > 1e-9 else 0.1
 
@@ -479,29 +493,58 @@ class SvgImporter(Importer):
         tolerance: float,
     ) -> None:
         """Flattens a Bezier curve into a series of lines in the Geometry."""
-        # Use a local variable to help Pylance avoid 'Unbound' issues.
+        start = seg.start
         end = seg.end
 
-        if end is None:
+        if start is None or start.x is None or start.y is None:
             return
-        if end.x is None or end.y is None:
-            return
-
-        length = seg.length()
-        end_x, end_y = float(end.x), float(end.y)
-
-        # If the curve is very short, treat it as a straight line.
-        if length is None or length <= 1e-9:
-            geo.line_to(end_x, end_y)
+        if end is None or end.x is None or end.y is None:
             return
 
-        num_steps = max(2, int(length / tolerance))
+        # Prepare control points for cubic bezier
+        start_pt = (float(start.x), float(start.y))
+        end_pt = (float(end.x), float(end.y))
 
-        for i in range(1, num_steps + 1):
-            t = i / num_steps
-            p = seg.point(t)
-            if p is not None and p.x is not None and p.y is not None:
-                geo.line_to(float(p.x), float(p.y))
+        if isinstance(seg, QuadraticBezier):
+            control = seg.control
+            if control is None or control.x is None or control.y is None:
+                return
+
+            c_x, c_y = float(control.x), float(control.y)
+            # Promote Quadratic to Cubic for the generic flattener
+            # CP1 = Start + (2/3)*(Control - Start)
+            # CP2 = End + (2/3)*(Control - End)
+            c1_x = start_pt[0] + (2 / 3) * (c_x - start_pt[0])
+            c1_y = start_pt[1] + (2 / 3) * (c_y - start_pt[1])
+            c2_x = end_pt[0] + (2 / 3) * (c_x - end_pt[0])
+            c2_y = end_pt[1] + (2 / 3) * (c_y - end_pt[1])
+            c1_pt = (c1_x, c1_y)
+            c2_pt = (c2_x, c2_y)
+        else:
+            c1 = seg.control1
+            c2 = seg.control2
+            if (
+                c1 is None
+                or c1.x is None
+                or c1.y is None
+                or c2 is None
+                or c2.x is None
+                or c2.y is None
+            ):
+                return
+
+            c1_pt = (float(c1.x), float(c1.y))
+            c2_pt = (float(c2.x), float(c2.y))
+
+        # Use the new Adaptive Linearization instead of uniform steps.
+        # We square the tolerance because the adaptive function compares
+        # squared distances.
+        points = linearize_bezier_adaptive(
+            start_pt, c1_pt, c2_pt, end_pt, tolerance**2
+        )
+
+        for p in points:
+            geo.line_to(p[0], p[1])
 
     def _normalize_geometry(
         self, geo: Geometry, width_px: float, height_px: float

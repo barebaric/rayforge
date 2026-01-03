@@ -41,6 +41,26 @@ def test_add_commands(empty_geometry):
     assert isinstance(empty_geometry.commands[1], LineToCommand)
 
 
+def test_simplify_wrapper(sample_geometry):
+    """Tests that simplify calls the underlying module."""
+    # Capture the original commands list object
+    original_cmds = sample_geometry.commands
+
+    with patch(
+        "rayforge.core.geo.geometry.simplify_geometry"
+    ) as mock_simplify:
+        mock_return_cmds = [MoveToCommand((0, 0, 0))]
+        mock_simplify.return_value = mock_return_cmds
+
+        result = sample_geometry.simplify(tolerance=0.5)
+
+        assert result is sample_geometry
+        # Check that the geometry's command list was replaced by the result
+        assert sample_geometry.commands is mock_return_cmds
+        # Check that the function was called with the ORIGINAL list object
+        mock_simplify.assert_called_once_with(original_cmds, 0.5)
+
+
 def test_clear_commands(sample_geometry):
     sample_geometry.clear()
     assert len(sample_geometry.commands) == 0
