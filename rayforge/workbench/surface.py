@@ -9,7 +9,7 @@ from ..core.item import DocItem
 from ..core.layer import Layer
 from ..core.stock import StockItem
 from ..core.workpiece import WorkPiece
-from ..machine.models.machine import Machine
+from ..machine.models.machine import Machine, Origin
 from .canvas import WorldSurface, CanvasElement
 from .elements.stock import StockElement
 from .elements.workpiece import WorkPieceElement
@@ -148,6 +148,22 @@ class WorkSurface(WorldSurface):
     def set_laser_dot_position(self, x_mm: float, y_mm: float) -> None:
         """Sets the laser dot position in real-world mm."""
         self._laser_dot_pos_mm = x_mm, y_mm
+
+        # Transform machine coordinates to canvas coordinates.
+        # The machine reports position in its own coordinate system based
+        # on its origin setting. The canvas expects coordinates in a
+        # Y-Up system with origin at bottom-left.
+        if self.machine:
+            width, height = self.machine.dimensions
+            origin = self.machine.origin
+
+            if origin == Origin.TOP_LEFT:
+                y_mm = height - y_mm
+            elif origin == Origin.TOP_RIGHT:
+                x_mm = width - x_mm
+                y_mm = height - y_mm
+            elif origin == Origin.BOTTOM_RIGHT:
+                x_mm = width - x_mm
 
         # The dot is a child of self.root, so its coordinates are in the
         # world (mm) space. We want to center it on the given mm coords.

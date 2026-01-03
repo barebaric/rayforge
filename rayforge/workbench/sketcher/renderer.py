@@ -238,7 +238,8 @@ class SketchRenderer:
             else:
                 ctx.set_source_rgb(0.2, 0.8, 0.2)  # Light Green
         else:
-            ctx.set_source_rgb(0.0, 0.0, 0.0)  # Black
+            fg_rgba = self.element.canvas.get_color()
+            ctx.set_source_rgb(fg_rgba.red, fg_rgba.green, fg_rgba.blue)
 
     def _safe_get_point(self, pid):
         try:
