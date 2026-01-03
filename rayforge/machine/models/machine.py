@@ -1,36 +1,40 @@
-import yaml
-import uuid
-import logging
 import asyncio
-import multiprocessing
 import json
-import numpy as np
+import logging
+import multiprocessing
+import uuid
 from dataclasses import asdict
 from enum import Enum
-from typing import List, Dict, Any, Optional, Tuple, TYPE_CHECKING, Type
 from pathlib import Path
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type
+
+import numpy as np
+import yaml
 from blinker import Signal
+
+from rayforge.core.ops.commands import MovingCommand
+
 from ...camera.models.camera import Camera
-from ...context import get_context, RayforgeContext
+from ...context import RayforgeContext, get_context
 from ...core.varset import ValidationError
 from ...shared.tasker import task_mgr
-from ..transport import TransportStatus
+from ..driver import get_driver_cls
 from ..driver.driver import (
-    Driver,
+    Axis,
     DeviceConnectionError,
     DeviceState,
     DeviceStatus,
-    DriverSetupError,
+    Driver,
     DriverPrecheckError,
+    DriverSetupError,
     ResourceBusyError,
 )
 from ..driver.dummy import NoDeviceDriver
-from ..driver import get_driver_cls
-from ..driver.driver import Axis
+from ..transport import TransportStatus
+from .dialect import GcodeDialect, get_dialect
 from .laser import Laser
-from .macro import Macro, MacroTrigger
-from .dialect import get_dialect, GcodeDialect
 from .machine_hours import MachineHours
+from .macro import Macro, MacroTrigger
 
 
 class Origin(Enum):
@@ -41,10 +45,10 @@ class Origin(Enum):
 
 
 if TYPE_CHECKING:
+    from ...core.doc import Doc
+    from ...core.ops import Ops
     from ...core.varset import VarSet
     from ...shared.tasker.context import ExecutionContext
-    from ...core.ops import Ops
-    from ...core.doc import Doc
 
 
 logger = logging.getLogger(__name__)
@@ -93,6 +97,7 @@ class Machine:
         self.max_cut_speed: int = 1000  # in mm/min
         self.acceleration: int = 1000  # in mm/s²
         self.dimensions: Tuple[int, int] = 200, 200
+        self.offsets: Tuple[int, int] = 0, 0
         self.origin: Origin = Origin.BOTTOM_LEFT
         self.reverse_x_axis: bool = False
         self.reverse_y_axis: bool = False
@@ -376,6 +381,10 @@ class Machine:
 
     def set_dimensions(self, width: int, height: int):
         self.dimensions = (width, height)
+        self.changed.send(self)
+
+    def set_offsets(self, x_offset: int, y_offset: int):
+        self.offsets = (x_offset, y_offset)
         self.changed.send(self)
 
     def set_origin(self, origin: Origin):
@@ -753,6 +762,16 @@ class Machine:
         # We assume Internal Ops are Y-Up (Cartesian, 0,0 at Bottom-Left).
         ops_for_encoder = ops
 
+        # Apply offsets
+        for command in ops_for_encoder.commands:
+            if isinstance(command, MovingCommand):
+                base_end = command.end or (0, 0, 0)
+                command.end = (
+                    base_end[0] + self.offsets[0],
+                    base_end[1] + self.offsets[1],
+                    base_end[2],
+                )
+
         # If Origin is BOTTOM_LEFT, it matches Internal (Y-Up, X-Right).
         # Any other origin requires transformation.
         if self.origin != Origin.BOTTOM_LEFT:
@@ -893,6 +912,7 @@ class Machine:
                 "single_axis_homing_enabled": self.single_axis_homing_enabled,
                 "dialect_uid": self.dialect_uid,
                 "dimensions": list(self.dimensions),
+                "offsets": list(self.offsets),
                 "origin": self.origin.value,
                 "reverse_x_axis": self.reverse_x_axis,
                 "reverse_y_axis": self.reverse_y_axis,
@@ -1009,6 +1029,7 @@ class Machine:
 
         ma.dialect_uid = dialect_uid
         ma.dimensions = tuple(ma_data.get("dimensions", ma.dimensions))
+        ma.offsets = tuple(ma_data.get("offsets", ma.dimensions))
         origin_value = ma_data.get("origin", None)
         if origin_value is not None:
             ma.origin = Origin(origin_value)
