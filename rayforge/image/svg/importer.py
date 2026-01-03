@@ -35,10 +35,10 @@ from ..tracing import trace_surface, VTRACER_PIXEL_LIMIT
 from .renderer import SVG_RENDERER
 from .svgutil import (
     PPI,
+    MM_PER_PX,
     get_natural_size,
     trim_svg,
     extract_layer_manifest,
-    filter_svg_layers,
 )
 
 logger = logging.getLogger(__name__)
@@ -61,14 +61,15 @@ class SvgImporter(Importer):
         Otherwise, it attempts to parse the SVG path and shape data
         directly for a high-fidelity vector import.
         """
-        # Determine if we need to pre-filter layers
+        # Determine if we have active layers (for splitting logic later)
         active_layer_ids = None
         if isinstance(vectorization_spec, PassthroughSpec):
             active_layer_ids = vectorization_spec.active_layer_ids
 
+        # Use raw data for source to avoid corruption issues with
+        # pre-filtering.
+        # Layer filtering is handled during geometry extraction.
         render_data = self.raw_data
-        if active_layer_ids is not None:
-            render_data = filter_svg_layers(self.raw_data, active_layer_ids)
 
         source = SourceAsset(
             source_file=self.source_file,
@@ -96,12 +97,6 @@ class SvgImporter(Importer):
         """Calculates and stores metadata for direct SVG import."""
         metadata = {}
         try:
-            # Mark as a vector source to bypass unnecessary masking later.
-            # Vector renderers (like for SVG) produce images with correct
-            # alpha channels, so a secondary mask from centerline geometry
-            # is not needed and can be harmful (e.g., for open paths).
-            metadata["is_vector"] = True
-
             # Get size of original, untrimmed SVG
             untrimmed_size = get_natural_size(source.original_data)
             if untrimmed_size:
@@ -118,10 +113,13 @@ class SvgImporter(Importer):
                     metadata["trimmed_height_mm"] = trimmed_size[1]
 
                 # Get viewBox from trimmed SVG for direct import
-                root = ET.fromstring(source.base_render_data)
-                vb_str = root.get("viewBox")
-                if vb_str:
-                    metadata["viewbox"] = tuple(map(float, vb_str.split()))
+                try:
+                    root = ET.fromstring(source.base_render_data)
+                    vb_str = root.get("viewBox")
+                    if vb_str:
+                        metadata["viewbox"] = tuple(map(float, vb_str.split()))
+                except ET.ParseError:
+                    pass
 
             source.metadata.update(metadata)
         except Exception as e:
@@ -200,23 +198,14 @@ class SvgImporter(Importer):
             logger.error("source has no data to process for direct import")
             return None
 
-        # 1. Establish authoritative dimensions in millimeters.
-        final_dims_mm = self._get_final_dimensions(source)
-        if not final_dims_mm:
-            msg = (
-                "SVG is missing width or height attributes; "
-                "falling back to trace method for direct import."
-            )
-            logger.warning(msg)
-            return self._get_doc_items_from_trace(source, TraceSpec())
-        final_width_mm, final_height_mm = final_dims_mm
-
-        # 2. Parse SVG data into an object model.
+        # 1. Parse SVG data into an object model first.
+        #    This allows us to get robust dimensions from svgelements if the
+        #    simple metadata extraction failed (e.g. missing attributes).
         svg = self._parse_svg_data(source)
         if svg is None:
             return None
 
-        # 3. Get pixel dimensions for normalization.
+        # 2. Get pixel dimensions for normalization.
         pixel_dims = self._get_pixel_dimensions(svg)
         if not pixel_dims:
             msg = (
@@ -226,6 +215,19 @@ class SvgImporter(Importer):
             logger.warning(msg)
             return self._get_doc_items_from_trace(source, TraceSpec())
         width_px, height_px = pixel_dims
+
+        # 3. Establish authoritative dimensions in millimeters.
+        final_dims_mm = self._get_final_dimensions(source)
+        if not final_dims_mm:
+            # Fallback: Use dimensions derived from svgelements
+            # svgelements normalizes units to 96 DPI (usually)
+            final_dims_mm = (width_px * MM_PER_PX, height_px * MM_PER_PX)
+            logger.info(
+                "Using svgelements dimensions as fallback: "
+                f"{final_dims_mm[0]:.2f}mm x {final_dims_mm[1]:.2f}mm"
+            )
+
+        final_width_mm, final_height_mm = final_dims_mm
 
         # 4. Handle Split Layers if requested
         if active_layer_ids:
@@ -243,9 +245,9 @@ class SvgImporter(Importer):
         geo = self._convert_svg_to_geometry(svg, final_dims_mm)
 
         # Apply decimation (RDP) here, before any normalization or matrix math.
-        # Use a small pixel tolerance (0.5px) which will remove micro-segments
-        # while keeping visual fidelity high.
-        geo.simplify(tolerance=0.5)
+        # Use a small pixel tolerance to remove micro-segments from flattening
+        # without losing visual fidelity on small-scale features.
+        geo.simplify(tolerance=0.1)
 
         # Normalize geometry to a 0-1 unit square (Y-down).
         self._normalize_geometry(geo, width_px, height_px)
@@ -272,8 +274,7 @@ class SvgImporter(Importer):
         """
         # Create a master WorkPiece to use as the matrix template.
         master_geo = self._convert_svg_to_geometry(svg, final_dims_mm)
-        # Simplify the master too, so the metrics match
-        master_geo.simplify(tolerance=0.5)
+        master_geo.simplify(tolerance=0.1)
         self._normalize_geometry(master_geo, width_px, height_px)
         master_wp = self._create_workpiece(
             master_geo, source, final_dims_mm[0], final_dims_mm[1]
@@ -283,20 +284,69 @@ class SvgImporter(Importer):
         manifest = extract_layer_manifest(self.raw_data)
         layer_names = {m["id"]: m["name"] for m in manifest}
 
-        for lid in layer_ids:
-            layer_geo = Geometry()
-            target_group = self._find_element_by_id(svg, lid)
-            if target_group:
-                self._convert_group_to_geometry(
-                    target_group, layer_geo, final_dims_mm
-                )
+        # Prepare geometry containers for each requested layer
+        layer_geoms = {lid: Geometry() for lid in layer_ids}
 
-            # Simplify each layer individually
-            layer_geo.simplify(tolerance=0.5)
+        # Calculate tolerance
+        avg_dim = max(final_dims_mm[0], final_dims_mm[1], 1.0)
+        avg_scale = avg_dim / 960
+        tolerance = 0.1 / avg_scale if avg_scale > 1e-9 else 0.1
+
+        # Iterate all elements in SVG and assign to layers based on ancestry.
+        # This handles transforms and <use> tags correctly via svgelements
+        # flattening.
+        for element in svg.elements():
+            # Skip containers (Group, SVG) to prevent double-counting geometry.
+            # We only want leaf shapes. This prevents "double cut" issues where
+            # both a Group and its children are processed.
+            if isinstance(element, (Group, SVG)):
+                continue
+
+            # Skip elements without a parent attribute.
+            # This handles the AttributeError: 'SVG' object has no attribute
+            # 'parent' if the root object is yielded or other oddities occur.
+            if not hasattr(element, "parent"):
+                continue
+
+            # Find which layer this element belongs to by walking up parents
+            target_lid = None
+            parent = element.parent
+            while parent:
+                # Check if parent ID matches a requested layer
+                # svgelements nodes store attributes in .values
+                pid = (
+                    parent.values.get("id")
+                    if hasattr(parent, "values")
+                    else None
+                )
+                if pid in layer_geoms:
+                    target_lid = pid
+                    break
+
+                # Move up safely
+                if hasattr(parent, "parent"):
+                    parent = parent.parent
+                else:
+                    parent = None
+
+            if target_lid:
+                try:
+                    path = Path(element)
+                    path.reify()
+                    self._add_path_to_geometry(
+                        path, layer_geoms[target_lid], tolerance
+                    )
+                except (AttributeError, TypeError):
+                    pass
+
+        # Create DocItems from populated geometries
+        for lid in layer_ids:
+            layer_geo = layer_geoms[lid]
+
+            # Simplify each layer individually with a small tolerance
+            layer_geo.simplify(tolerance=0.1)
 
             # Normalize to the MASTER coordinate system (Y-down 0-1)
-            # We do NOT flip this to Y-Up here. SourceAssetSegment stores
-            # Y-Down geometry. WorkPiece.boundaries flips it to Y-Up for use.
             self._normalize_geometry(layer_geo, width_px, height_px)
 
             if not layer_geo.is_empty():
@@ -325,42 +375,6 @@ class SvgImporter(Importer):
             return [master_wp]
 
         return final_items
-
-    def _find_element_by_id(self, container, target_id):
-        """Recursively finds an element by ID in the svgelements tree."""
-        if (
-            hasattr(container, "values")
-            and container.values.get("id") == target_id
-        ):
-            return container
-        if hasattr(container, "__iter__"):
-            for child in container:
-                found = self._find_element_by_id(child, target_id)
-                if found:
-                    return found
-        return None
-
-    def _convert_group_to_geometry(self, group, geo, final_dims_mm):
-        """Converts a specific group's subtree to geometry."""
-        final_width_mm, final_height_mm = final_dims_mm
-        avg_dim = max(final_width_mm, final_height_mm, 1.0)
-        # Note: tolerance calculation here is less critical for Beziers
-        # now that we use adaptive subdivision in the flatten method.
-        # But we still pass it for consistency.
-        avg_scale = avg_dim / 960
-        tolerance = 0.1 / avg_scale if avg_scale > 1e-9 else 0.1
-
-        def recurse(element):
-            try:
-                path = Path(element)
-                path.reify()
-                self._add_path_to_geometry(path, geo, tolerance)
-            except (AttributeError, TypeError):
-                if isinstance(element, Group) or hasattr(element, "__iter__"):
-                    for child in element:
-                        recurse(child)
-
-        recurse(group)
 
     def _get_final_dimensions(
         self, source: SourceAsset
