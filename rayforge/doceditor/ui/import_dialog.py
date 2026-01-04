@@ -19,7 +19,6 @@ from ...core.vectorization_spec import (
 from ...core.workpiece import WorkPiece
 from ...core.layer import Layer
 from ...image import ImportPayload, import_file_from_bytes
-from ...shared.util.cairoutil import draw_geometry_to_cairo_context
 from ...image.svg.svgutil import extract_layer_manifest
 
 if TYPE_CHECKING:
@@ -523,7 +522,7 @@ class ImportDialog(Adw.Window):
             if isinstance(item, WorkPiece) and item.boundaries:
                 ctx.set_source_rgb(0.1, 0.5, 1.0)
                 ctx.new_path()
-                draw_geometry_to_cairo_context(item.boundaries, ctx)
+                item.boundaries.to_cairo(ctx)
                 ctx.stroke()
             elif isinstance(item, Layer):
                 for child in item.children:

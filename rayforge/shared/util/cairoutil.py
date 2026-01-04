@@ -1,21 +1,5 @@
 import cairo
 import numpy as np
-import math
-from typing import TYPE_CHECKING
-from ...core.geo.constants import (
-    CMD_TYPE_MOVE,
-    CMD_TYPE_LINE,
-    CMD_TYPE_ARC,
-    COL_TYPE,
-    COL_X,
-    COL_Y,
-    COL_I,
-    COL_J,
-    COL_CW,
-)
-
-if TYPE_CHECKING:
-    from ...core.geo.geometry import Geometry
 
 
 def convert_surface_to_grayscale(surface):
@@ -68,50 +52,3 @@ def make_transparent(surface, threshold=250):
     argb[mask] = (0x00 << 24) | (r[mask] << 16) | (g[mask] << 8) | b[mask]
 
     # No need to return anything as the surface is modified in place
-
-
-def draw_geometry_to_cairo_context(geometry: "Geometry", ctx: cairo.Context):
-    """
-    Draws a Geometry object's path to a Cairo context.
-
-    This function iterates through the geometry's commands and translates
-    them into the corresponding Cairo drawing operations.
-
-    Args:
-        geometry: The Geometry object to draw.
-        ctx: The Cairo context to draw on.
-    """
-    last_point = (0.0, 0.0)
-    data = geometry.data
-    if data is None:
-        return
-
-    for i in range(len(data)):
-        row = data[i]
-        cmd_type = row[COL_TYPE]
-        end = (row[COL_X], row[COL_Y])
-
-        if cmd_type == CMD_TYPE_MOVE:
-            ctx.move_to(end[0], end[1])
-        elif cmd_type == CMD_TYPE_LINE:
-            ctx.line_to(end[0], end[1])
-        elif cmd_type == CMD_TYPE_ARC:
-            # Cairo's arc needs center, radius, and angles.
-            center_x = last_point[0] + row[COL_I]
-            center_y = last_point[1] + row[COL_J]
-            radius = math.hypot(row[COL_I], row[COL_J])
-
-            start_angle = math.atan2(
-                -row[COL_J], -row[COL_I]
-            )  # Vector from center to start
-            end_angle = math.atan2(end[1] - center_y, end[0] - center_x)
-
-            clockwise = bool(row[COL_CW])
-            if clockwise:
-                ctx.arc_negative(
-                    center_x, center_y, radius, start_angle, end_angle
-                )
-            else:
-                ctx.arc(center_x, center_y, radius, start_angle, end_angle)
-
-        last_point = end

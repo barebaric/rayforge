@@ -12,6 +12,7 @@ from typing import (
     Type,
 )
 from copy import deepcopy
+import math
 import numpy as np
 from .analysis import (
     is_closed,
@@ -620,6 +621,48 @@ class Geometry:
         from . import analysis  # Local import to prevent circular dependency
 
         return analysis.encloses(self, other)
+
+    def to_cairo(self, ctx: cairo.Context) -> None:
+        """
+        Draws this geometry's path to a Cairo context.
+
+        This method iterates through the geometry's commands and translates
+        them into the corresponding Cairo drawing operations.
+
+        Args:
+            ctx: The Cairo context to draw on.
+        """
+        last_point = (0.0, 0.0)
+        data = self.data
+        if data is None:
+            return
+
+        for i in range(len(data)):
+            row = data[i]
+            cmd_type = row[COL_TYPE]
+            end = (row[COL_X], row[COL_Y])
+
+            if cmd_type == CMD_TYPE_MOVE:
+                ctx.move_to(end[0], end[1])
+            elif cmd_type == CMD_TYPE_LINE:
+                ctx.line_to(end[0], end[1])
+            elif cmd_type == CMD_TYPE_ARC:
+                center_x = last_point[0] + row[COL_I]
+                center_y = last_point[1] + row[COL_J]
+                radius = math.hypot(row[COL_I], row[COL_J])
+
+                start_angle = math.atan2(-row[COL_J], -row[COL_I])
+                end_angle = math.atan2(end[1] - center_y, end[0] - center_x)
+
+                clockwise = bool(row[COL_CW])
+                if clockwise:
+                    ctx.arc_negative(
+                        center_x, center_y, radius, start_angle, end_angle
+                    )
+                else:
+                    ctx.arc(center_x, center_y, radius, start_angle, end_angle)
+
+            last_point = end
 
     @classmethod
     def from_cairo_path(
