@@ -485,7 +485,7 @@ class SvgImporter(Importer):
                 # Reconstruct LineTo commands. Skip first point as it
                 # connects to the previous command's end.
                 for p in simplified[1:]:
-                    geo.line_to(p[0], p[1])
+                    geo.line_to(p[0], p[1], 0.0)
 
             # Maintain the last point to ensure continuity
             if point_buffer:
@@ -502,7 +502,7 @@ class SvgImporter(Importer):
             if isinstance(seg, Move):
                 flush_buffer()
                 point_buffer = [end_pt]
-                geo.move_to(end_pt[0], end_pt[1])
+                geo.move_to(end_pt[0], end_pt[1], 0.0)
 
             elif isinstance(seg, Line):
                 if not point_buffer:
@@ -570,7 +570,8 @@ class SvgImporter(Importer):
             float(end.y),
             center_offset_x,
             center_offset_y,
-            clockwise=is_clockwise,
+            is_clockwise,
+            0.0,
         )
 
     def _get_bezier_points(

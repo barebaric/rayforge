@@ -1,4 +1,18 @@
-from typing import List, Tuple, Any, Optional
+import math
+from typing import Tuple, Optional
+import numpy as np
+from .constants import (
+    CMD_TYPE_MOVE,
+    CMD_TYPE_LINE,
+    CMD_TYPE_ARC,
+    COL_TYPE,
+    COL_X,
+    COL_Y,
+    COL_Z,
+    COL_I,
+    COL_J,
+    COL_CW,
+)
 from .primitives import (
     find_closest_point_on_line_segment,
     find_closest_point_on_arc,
@@ -6,127 +20,159 @@ from .primitives import (
 )
 
 
-def get_bounding_rect(
-    commands: List[Any],
-    include_travel: bool = False,
+def get_bounding_rect_from_array(
+    data: np.ndarray,
 ) -> Tuple[float, float, float, float]:
     """
-    Returns a rectangle (x1, y1, x2, y2) that encloses the
-    occupied area in the XY plane. This function is generic and works with
-    both ops.Command and geo.Command lists.
+    Calculates the bounding box (min_x, min_y, max_x, max_y) from the
+    geometry array.
     """
-    occupied_points: List[Tuple[float, float, float]] = []
-    last_point: Optional[Tuple[float, float, float]] = None
-    for cmd in commands:
-        # Use duck-typing on class names to remain generic
-        cmd_type_name = cmd.__class__.__name__
-        if (
-            cmd_type_name == "MoveToCommand"
-            and hasattr(cmd, "end")
-            and cmd.end
-        ):
-            if include_travel:
-                if last_point is not None:
-                    occupied_points.append(last_point)
-                occupied_points.append(cmd.end)
-            last_point = cmd.end
-        elif (
-            cmd_type_name
-            in ("LineToCommand", "ArcToCommand", "ScanLinePowerCommand")
-            and hasattr(cmd, "end")
-            and cmd.end
-        ):
-            start_point = last_point  # Capture start point for this command
+    if data is None or data.shape[0] == 0:
+        return 0.0, 0.0, 0.0, 0.0
 
-            if start_point is not None:
-                occupied_points.append(start_point)
-            occupied_points.append(cmd.end)
+    # 1. Gather all endpoints from the array.
+    # Columns 1 and 2 are X and Y.
+    points_x = data[:, COL_X]
+    points_y = data[:, COL_Y]
 
-            # For arcs, we must also consider the curve's extent.
-            if cmd_type_name == "ArcToCommand" and start_point:
-                arc_box = get_arc_bounding_box(
-                    start_pos=start_point[:2],
-                    end_pos=cmd.end[:2],
-                    center_offset=cmd.center_offset,
-                    clockwise=cmd.clockwise,
+    min_x = np.min(points_x)
+    max_x = np.max(points_x)
+    min_y = np.min(points_y)
+    max_y = np.max(points_y)
+
+    # 2. Handle Arcs.
+    # Arcs might bulge outside the bounding box defined by their endpoints.
+    # We iterate only over Arc rows.
+    arc_indices = np.where(data[:, COL_TYPE] == CMD_TYPE_ARC)[0]
+
+    if len(arc_indices) > 0:
+        # We need the start point for each arc.
+        # The start point of row[i] is the end point of row[i-1].
+        # If i=0, start is (0,0) implicitly.
+
+        # Get start indices (previous row index)
+        start_indices = arc_indices - 1
+
+        # Construct start points array
+        start_points = np.zeros((len(arc_indices), 2))
+
+        valid_starts_mask = start_indices >= 0
+        if np.any(valid_starts_mask):
+            valid_start_idxs = start_indices[valid_starts_mask]
+            # Fetch X, Y from previous rows
+            start_points[valid_starts_mask, 0] = data[valid_start_idxs, COL_X]
+            start_points[valid_starts_mask, 1] = data[valid_start_idxs, COL_Y]
+
+        # Iterate over arcs to check bounds.
+        # Vectorizing get_arc_bounding_box is difficult due to conditional
+        # logic, so we loop explicitly. This loop iterates only over arcs,
+        # which are typically sparse compared to lines.
+        for i, row_idx in enumerate(arc_indices):
+            row = data[row_idx]
+            start = (start_points[i, 0], start_points[i, 1])
+            end = (row[COL_X], row[COL_Y])
+            center_offset = (row[COL_I], row[COL_J])
+            clockwise = bool(row[COL_CW])
+
+            ax1, ay1, ax2, ay2 = get_arc_bounding_box(
+                start, end, center_offset, clockwise
+            )
+
+            if ax1 < min_x:
+                min_x = ax1
+            if ay1 < min_y:
+                min_y = ay1
+            if ax2 > max_x:
+                max_x = ax2
+            if ay2 > max_y:
+                max_y = ay2
+
+    return float(min_x), float(min_y), float(max_x), float(max_y)
+
+
+def get_total_distance_from_array(data: np.ndarray) -> float:
+    """
+    Calculates the total 2D path length for all moving commands in a numpy
+    array.
+    """
+    total_dist = 0.0
+    last_point = (0.0, 0.0, 0.0)
+
+    for i in range(len(data)):
+        row = data[i]
+        cmd_type = row[COL_TYPE]
+        end_point = (row[COL_X], row[COL_Y], row[COL_Z])
+
+        if cmd_type in (CMD_TYPE_MOVE, CMD_TYPE_LINE):
+            total_dist += math.hypot(
+                end_point[0] - last_point[0], end_point[1] - last_point[1]
+            )
+        elif cmd_type == CMD_TYPE_ARC:
+            center_offset = (row[COL_I], row[COL_J])
+            clockwise = bool(row[COL_CW])
+            center_x = last_point[0] + center_offset[0]
+            center_y = last_point[1] + center_offset[1]
+            radius = math.hypot(center_offset[0], center_offset[1])
+
+            if radius > 1e-9:
+                start_angle = math.atan2(
+                    last_point[1] - center_y, last_point[0] - center_x
                 )
-                # By adding the min and max corners of the arc's true
-                # bounding box, we ensure the final min/max calculation
-                # will correctly encompass the arc's full curve.
-                occupied_points.append((arc_box[0], arc_box[1], 0.0))
-                occupied_points.append((arc_box[2], arc_box[3], 0.0))
+                end_angle = math.atan2(
+                    end_point[1] - center_y, end_point[0] - center_x
+                )
+                angle_span = end_angle - start_angle
+                if clockwise:
+                    if angle_span > 1e-9:
+                        angle_span -= 2 * math.pi
+                else:
+                    if angle_span < -1e-9:
+                        angle_span += 2 * math.pi
+                total_dist += abs(angle_span * radius)
 
-            last_point = cmd.end
+        last_point = end_point
 
-    if not occupied_points:
-        return 0.0, 0.0, 0.0, 0.0
-
-    xs = [p[0] for p in occupied_points if p]
-    ys = [p[1] for p in occupied_points if p]
-    if not xs or not ys:
-        return 0.0, 0.0, 0.0, 0.0
-    min_x, max_x = min(xs), max(xs)
-    min_y, max_y = min(ys), max(ys)
-    return min_x, min_y, max_x, max_y
+    return total_dist
 
 
-def get_total_distance(commands: List[Any]) -> float:
-    """
-    Calculates the total 2D path length for all moving commands in a list.
-    """
-    total = 0.0
-    last: Optional[Tuple[float, float, float]] = None
-    for cmd in commands:
-        total += cmd.distance(last)
-        # Update last point if the command was a move
-        if hasattr(cmd, "end") and cmd.end is not None:
-            last = cmd.end
-    return total
-
-
-def find_closest_point_on_path(
-    commands: List[Any], x: float, y: float
+def find_closest_point_on_path_from_array(
+    data: np.ndarray, x: float, y: float
 ) -> Optional[Tuple[int, float, Tuple[float, float]]]:
     """
-    Finds the closest point on an entire path to a given 2D coordinate.
+    Finds the closest point on an entire path to a given 2D coordinate from a
+    numpy array.
     """
     min_dist_sq = float("inf")
     closest_info: Optional[Tuple[int, float, Tuple[float, float]]] = None
 
     last_pos_3d: Tuple[float, float, float] = (0.0, 0.0, 0.0)
-    for i, cmd in enumerate(commands):
-        # Use duck-typing on class names
-        cmd_type_name = cmd.__class__.__name__
+    for i in range(len(data)):
+        row = data[i]
+        cmd_type = row[COL_TYPE]
+        end_point_3d = (row[COL_X], row[COL_Y], row[COL_Z])
 
-        if cmd_type_name == "MoveToCommand":
-            if cmd.end:
-                last_pos_3d = cmd.end
-            continue
-        if (
-            cmd_type_name not in ("LineToCommand", "ArcToCommand")
-            or not cmd.end
-        ):
+        if cmd_type == CMD_TYPE_MOVE:
+            last_pos_3d = end_point_3d
             continue
 
-        start_pos = last_pos_3d
+        start_pos_3d = last_pos_3d
 
-        if cmd_type_name == "LineToCommand":
+        if cmd_type == CMD_TYPE_LINE:
             t, pt, dist_sq = find_closest_point_on_line_segment(
-                start_pos[:2], cmd.end[:2], x, y
+                start_pos_3d[:2], end_point_3d[:2], x, y
             )
             if dist_sq < min_dist_sq:
                 min_dist_sq = dist_sq
                 closest_info = (i, t, pt)
 
-        elif cmd_type_name == "ArcToCommand":
-            result = find_closest_point_on_arc(cmd, start_pos, x, y)
+        elif cmd_type == CMD_TYPE_ARC:
+            result = find_closest_point_on_arc(row, start_pos_3d, x, y)
             if result:
                 t_arc, pt_arc, dist_sq_arc = result
                 if dist_sq_arc < min_dist_sq:
                     min_dist_sq = dist_sq_arc
                     closest_info = (i, t_arc, pt_arc)
 
-        if hasattr(cmd, "end") and cmd.end:
-            last_pos_3d = cmd.end
+        last_pos_3d = end_point_3d
 
     return closest_info

@@ -2,7 +2,17 @@ import math
 import uuid
 import pytest
 from pathlib import Path
-from rayforge.core.geo import ArcToCommand, Geometry, LineToCommand
+from rayforge.core.geo import Geometry
+from rayforge.core.geo.constants import (
+    CMD_TYPE_LINE,
+    CMD_TYPE_ARC,
+    COL_TYPE,
+    COL_X,
+    COL_Z,
+    COL_I,
+    COL_J,
+    COL_CW,
+)
 from rayforge.core.sketcher import Sketch
 from rayforge.core.sketcher.sketch import Fill
 from rayforge.core.sketcher.constraints import (
@@ -47,7 +57,7 @@ def test_sketch_workflow():
     # 5. Check geometry export
     geo = s.to_geometry()
     assert isinstance(geo, Geometry)
-    assert len(geo.commands) == 8  # 4 moves + 4 lines (simple export)
+    assert len(geo) == 8  # 4 moves + 4 lines (simple export)
 
     # Check bounding box is approx 10x10
     min_x, min_y, max_x, max_y = geo.rect()
@@ -92,17 +102,18 @@ def test_sketch_arc_export():
     s.add_arc(p1, p2, c, clockwise=False)
 
     geo = s.to_geometry()
+    data = geo.data
+    assert data is not None
 
     # Should contain a MoveTo(10,0) and ArcTo(0,10)
-    # Filter for ArcTo
-    arcs = [cmd for cmd in geo.commands if isinstance(cmd, ArcToCommand)]
-    assert len(arcs) == 1
+    arc_rows = data[data[:, COL_TYPE] == CMD_TYPE_ARC]
+    assert len(arc_rows) == 1
 
-    arc = arcs[0]
-    assert arc.end == (0.0, 10.0, 0.0)
+    arc_row = arc_rows[0]
+    assert (arc_row[COL_X : COL_Z + 1] == (0.0, 10.0, 0.0)).all()
     # Check offsets. Center (0,0) relative to Start (10,0) is (-10, 0)
-    assert arc.center_offset == (-10.0, 0.0)
-    assert arc.clockwise is False
+    assert (arc_row[COL_I : COL_J + 1] == (-10.0, 0.0)).all()
+    assert arc_row[COL_CW] == 0.0
 
 
 def test_sketch_circle_workflow():
@@ -127,7 +138,9 @@ def test_sketch_circle_workflow():
     geo = s.to_geometry()
     # Should export as two semi-circles -> 2 ArcToCommands
     assert isinstance(geo, Geometry)
-    arcs = [cmd for cmd in geo.commands if isinstance(cmd, ArcToCommand)]
+    data = geo.data
+    assert data is not None
+    arcs = data[data[:, COL_TYPE] == CMD_TYPE_ARC]
     assert len(arcs) == 2
 
 
@@ -178,7 +191,7 @@ def test_sketch_construction_geometry_is_ignored_on_roundtrip():
     # The simple export creates a MoveTo and a LineTo for each line.
     # We only have one non-construction line.
     # So we expect exactly 2 commands total after the round trip.
-    assert len(geo.commands) == 2
+    assert len(geo) == 2
 
 
 def test_sketch_equal_length_workflow():
@@ -1168,26 +1181,28 @@ def test_sketch_fill_geometry_generation_circle():
 
     assert len(geos) == 1
     geo = geos[0]
+    data = geo.data
+    assert data is not None
 
     # Check commands: should be 1 MoveTo + 2 ArcTo (semicircles)
-    assert len(geo.commands) == 3
+    assert len(geo) == 3
 
     # Start at radius point (10, 0)
-    assert geo.commands[0].end == (10.0, 0.0, 0.0)
+    assert (data[0, COL_X : COL_Z + 1] == (10.0, 0.0, 0.0)).all()
 
     # First arc to (-10, 0). Center is (0,0). Offset from (10,0) is (-10, 0).
-    arc1 = geo.commands[1]
-    assert isinstance(arc1, ArcToCommand)
-    assert arc1.end == (-10.0, 0.0, 0.0)
-    assert arc1.center_offset == (-10.0, 0.0)
-    assert not arc1.clockwise
+    arc1 = data[1]
+    assert arc1[COL_TYPE] == CMD_TYPE_ARC
+    assert (arc1[COL_X : COL_Z + 1] == (-10.0, 0.0, 0.0)).all()
+    assert (arc1[COL_I : COL_J + 1] == (-10.0, 0.0)).all()
+    assert not bool(arc1[COL_CW])
 
     # Second arc to (10, 0). Offset from (-10,0) is (10, 0).
-    arc2 = geo.commands[2]
-    assert isinstance(arc2, ArcToCommand)
-    assert arc2.end == (10.0, 0.0, 0.0)
-    assert arc2.center_offset == (10.0, 0.0)
-    assert not arc2.clockwise
+    arc2 = data[2]
+    assert arc2[COL_TYPE] == CMD_TYPE_ARC
+    assert (arc2[COL_X : COL_Z + 1] == (10.0, 0.0, 0.0)).all()
+    assert (arc2[COL_I : COL_J + 1] == (10.0, 0.0)).all()
+    assert not bool(arc2[COL_CW])
 
 
 def test_sketch_fill_geometry_generation_rect():
@@ -1216,24 +1231,26 @@ def test_sketch_fill_geometry_generation_rect():
     geos = sketch.get_fill_geometries()
     assert len(geos) == 1
     geo = geos[0]
+    data = geo.data
+    assert data is not None
 
-    assert len(geo.commands) == 5  # MoveTo + 4 LineTo
+    assert len(geo) == 5  # MoveTo + 4 LineTo
 
     # Check start
-    assert geo.commands[0].end == (0.0, 0.0, 0.0)
+    assert (data[0, COL_X : COL_Z + 1] == (0.0, 0.0, 0.0)).all()
 
     # Check sequence
-    assert isinstance(geo.commands[1], LineToCommand)
-    assert geo.commands[1].end == (10.0, 0.0, 0.0)
+    assert data[1, COL_TYPE] == CMD_TYPE_LINE
+    assert (data[1, COL_X : COL_Z + 1] == (10.0, 0.0, 0.0)).all()
 
-    assert isinstance(geo.commands[2], LineToCommand)
-    assert geo.commands[2].end == (10.0, 10.0, 0.0)
+    assert data[2, COL_TYPE] == CMD_TYPE_LINE
+    assert (data[2, COL_X : COL_Z + 1] == (10.0, 10.0, 0.0)).all()
 
-    assert isinstance(geo.commands[3], LineToCommand)
-    assert geo.commands[3].end == (0.0, 10.0, 0.0)
+    assert data[3, COL_TYPE] == CMD_TYPE_LINE
+    assert (data[3, COL_X : COL_Z + 1] == (0.0, 10.0, 0.0)).all()
 
-    assert isinstance(geo.commands[4], LineToCommand)
-    assert geo.commands[4].end == (0.0, 0.0, 0.0)
+    assert data[4, COL_TYPE] == CMD_TYPE_LINE
+    assert (data[4, COL_X : COL_Z + 1] == (0.0, 0.0, 0.0)).all()
 
 
 def test_sketch_fill_geometry_generation_arc_shape():
@@ -1270,28 +1287,30 @@ def test_sketch_fill_geometry_generation_arc_shape():
     geos = sketch.get_fill_geometries()
     assert len(geos) == 1
     geo = geos[0]
+    data = geo.data
+    assert data is not None
 
-    assert len(geo.commands) == 3  # MoveTo + LineTo + ArcTo
+    assert len(geo) == 3  # MoveTo + LineTo + ArcTo
 
     # 1. MoveTo Start of Line (-10, 0)
-    assert geo.commands[0].end == (-10.0, 0.0, 0.0)
+    assert (data[0, COL_X : COL_Z + 1] == (-10.0, 0.0, 0.0)).all()
 
     # 2. LineTo End of Line (10, 0)
-    assert isinstance(geo.commands[1], LineToCommand)
-    assert geo.commands[1].end == (10.0, 0.0, 0.0)
+    assert data[1, COL_TYPE] == CMD_TYPE_LINE
+    assert (data[1, COL_X : COL_Z + 1] == (10.0, 0.0, 0.0)).all()
 
     # 3. ArcTo back to (-10, 0)
     # Entity is CW. Traversal is Reverse.
     # In `get_fill_geometries`: is_cw = not entity.clockwise if not fwd.
     # So is_cw should be False (CCW).
 
-    cmd_arc = geo.commands[2]
-    assert isinstance(cmd_arc, ArcToCommand)
-    assert cmd_arc.end == (-10.0, 0.0, 0.0)
+    cmd_arc = data[2]
+    assert cmd_arc[COL_TYPE] == CMD_TYPE_ARC
+    assert (cmd_arc[COL_X : COL_Z + 1] == (-10.0, 0.0, 0.0)).all()
 
     # Center offset relative to current point (10, 0). Center is (0,0).
     # Offset = (0 - 10, 0 - 0) = (-10, 0)
-    assert cmd_arc.center_offset == (-10.0, 0.0)
+    assert (cmd_arc[COL_I : COL_J + 1] == (-10.0, 0.0)).all()
 
     # Direction check
-    assert cmd_arc.clockwise is False
+    assert not bool(cmd_arc[COL_CW])

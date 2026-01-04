@@ -1,8 +1,12 @@
 import numpy as np
-from typing import List, Tuple, TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from .geometry import Command
+from typing import List, Tuple
+from .constants import (
+    CMD_TYPE_MOVE,
+    CMD_TYPE_LINE,
+    CMD_TYPE_ARC,
+    GEO_ARRAY_COLS,
+    COL_TYPE,
+)
 
 
 def _ramer_douglas_peucker_numpy(
@@ -100,104 +104,62 @@ def simplify_points(
     return [tuple(p) for p in simplified_arr.tolist()]  # type: ignore
 
 
-def simplify_geometry(
-    commands: List["Command"], tolerance: float = 0.01
-) -> List["Command"]:
+def simplify_geometry_from_array(
+    data: np.ndarray, tolerance: float
+) -> np.ndarray:
     """
-    Reduces the number of commands in a command list using the
-    Ramer-Douglas-Peucker algorithm. Uses NumPy for performance.
-
-    Args:
-        commands: The input list of geometric commands.
-        tolerance: The maximum allowed perpendicular distance (in mm) from the
-                   simplified line to the original points.
-
-    Returns:
-        A new list of simplified commands.
+    Simplifies a geometry numpy array by applying RDP to linear chains.
     """
-    from .geometry import (
-        MoveToCommand,
-        LineToCommand,
-        ArcToCommand,
-        MovingCommand,
-    )
+    if data is None or len(data) == 0:
+        return np.array([])
 
-    if not commands:
-        return []
-
-    simplified_commands: List["Command"] = []
-
-    # We collect points for a continuous linear chain here
-    current_chain: List[Tuple[float, float, float]] = []
+    simplified_rows: List[np.ndarray] = []
+    point_chain: List[np.ndarray] = []
 
     def flush_chain():
-        nonlocal current_chain
-        if len(current_chain) > 1:
-            # Always use NumPy Acceleration
-            arr = np.array(current_chain, dtype=np.float64)
-            final_points_arr = _ramer_douglas_peucker_numpy(arr, tolerance)
+        nonlocal point_chain
+        if len(point_chain) > 1:
+            points_arr = np.array(point_chain)
+            simplified_arr = _ramer_douglas_peucker_numpy(
+                points_arr, tolerance
+            )
 
-            # Reconstruct LineTo commands
-            # Skip the first point as it's the anchor (MoveTo or previous end)
-            for p in final_points_arr[1:]:
-                # Convert numpy row to standard list for cleaner indexing
-                # checks
-                p_list = p.tolist()
+            # Reconstruct LineTo commands for simplified points
+            for p in simplified_arr[1:]:
+                row = np.zeros(GEO_ARRAY_COLS)
+                row[COL_TYPE] = CMD_TYPE_LINE
+                row[1:4] = p
+                simplified_rows.append(row)
+        point_chain = []
 
-                if len(p_list) >= 3:
-                    simplified_commands.append(
-                        LineToCommand((p_list[0], p_list[1], p_list[2]))
-                    )
-                elif len(p_list) >= 2:
-                    # Fallback if numpy array was only 2D (x, y)
-                    simplified_commands.append(
-                        LineToCommand((p_list[0], p_list[1], 0.0))
-                    )
+    last_pos = np.array([0.0, 0.0, 0.0])
 
-        current_chain = []
+    for row in data:
+        cmd_type = row[COL_TYPE]
+        end_pos = row[1:4]
 
-    last_pos: Tuple[float, float, float] = (0.0, 0.0, 0.0)
-
-    for cmd in commands:
-        if isinstance(cmd, MoveToCommand):
-            # A MoveTo breaks any current chain
+        if cmd_type == CMD_TYPE_MOVE:
             flush_chain()
-            simplified_commands.append(cmd)
-            if cmd.end:
-                last_pos = cmd.end
-                # Start a new potential chain
-                current_chain = [last_pos]
-
-        elif isinstance(cmd, LineToCommand):
-            if cmd.end:
-                if not current_chain:
-                    # Should ideally not happen if malformed geometry starts
-                    # with LineTo, but we assume (0,0) start.
-                    current_chain = [last_pos]
-
-                current_chain.append(cmd.end)
-                last_pos = cmd.end
-
-        elif isinstance(cmd, ArcToCommand):
-            # Arcs break the simplification chain.
+            simplified_rows.append(row)
+            last_pos = end_pos
+            point_chain = [last_pos]
+        elif cmd_type == CMD_TYPE_LINE:
+            if not point_chain:
+                point_chain = [last_pos]
+            point_chain.append(end_pos)
+            last_pos = end_pos
+        elif cmd_type == CMD_TYPE_ARC:
             flush_chain()
-            simplified_commands.append(cmd)
-            if cmd.end:
-                last_pos = cmd.end
-                # Start a new potential chain after the arc
-                current_chain = [last_pos]
-
-        elif isinstance(cmd, MovingCommand):
-            # Fallback for generic moving commands - treat as break
-            flush_chain()
-            simplified_commands.append(cmd)
-            if cmd.end:
-                last_pos = cmd.end
-                current_chain = [last_pos]
+            simplified_rows.append(row)
+            last_pos = end_pos
+            point_chain = [last_pos]
         else:
-            # Non-moving commands (state, markers) are preserved
             flush_chain()
-            simplified_commands.append(cmd)
+            simplified_rows.append(row)
 
     flush_chain()
-    return simplified_commands
+
+    if not simplified_rows:
+        return np.array([]).reshape(0, GEO_ARRAY_COLS)
+
+    return np.array(simplified_rows)

@@ -2,7 +2,17 @@ from __future__ import annotations
 import math
 import logging
 from typing import Optional, List, Tuple, Dict, Any
-from .base import OpsTransformer, ExecutionPhase
+from ...core.geo.constants import (
+    CMD_TYPE_LINE,
+    CMD_TYPE_ARC,
+    COL_TYPE,
+    COL_X,
+    COL_Y,
+    COL_Z,
+    COL_I,
+    COL_J,
+    COL_CW,
+)
 from ...core.ops import (
     Ops,
     Command,
@@ -10,13 +20,9 @@ from ...core.ops import (
     OpsSectionStartCommand,
     OpsSectionEndCommand,
 )
-from ...core.geo import (
-    LineToCommand as GeoLineToCommand,
-    ArcToCommand as GeoArcToCommand,
-    MovingCommand as GeoMovingCommand,
-)
 from ...core.workpiece import WorkPiece
 from ...shared.tasker.proxy import BaseExecutionContext
+from .base import OpsTransformer, ExecutionPhase
 
 logger = logging.getLogger(__name__)
 
@@ -52,12 +58,15 @@ class TabOpsTransformer(OpsTransformer):
         workpiece's local coordinate space. This matches the coordinate space
         of the incoming Ops object during the generation phase.
         """
-        if not workpiece.boundaries:
+        if not workpiece.boundaries or workpiece.boundaries.is_empty():
             logger.debug(
                 "TabOps: workpiece has no vectors, cannot generate clip data."
             )
             return []
 
+        boundaries_data = workpiece.boundaries.data
+        if boundaries_data is None:
+            return []
         clip_data = []
 
         # The Ops object at this stage is in local coordinates, so we
@@ -71,7 +80,7 @@ class TabOpsTransformer(OpsTransformer):
         )
 
         for tab in workpiece.tabs:
-            if tab.segment_index >= len(workpiece.boundaries.commands):
+            if tab.segment_index >= len(boundaries_data):
                 logger.warning(
                     f"Tab {tab.uid} has invalid segment_index "
                     f"{tab.segment_index}, skipping."
@@ -79,37 +88,36 @@ class TabOpsTransformer(OpsTransformer):
                 continue
 
             p_start_3d: Tuple[float, float, float] = (0.0, 0.0, 0.0)
-            # Find the start point of the command segment by looking backwards
-            # for the last command that had an endpoint.
-            for i in range(tab.segment_index - 1, -1, -1):
-                prev_cmd = workpiece.boundaries.commands[i]
-                if isinstance(prev_cmd, GeoMovingCommand) and prev_cmd.end:
-                    p_start_3d = prev_cmd.end
-                    break
+            if tab.segment_index > 0:
+                p_start_3d = tuple(
+                    boundaries_data[tab.segment_index - 1, COL_X : COL_Z + 1]
+                )
 
-            cmd = workpiece.boundaries.commands[tab.segment_index]
-            if (
-                not isinstance(cmd, (GeoLineToCommand, GeoArcToCommand))
-                or not cmd.end
-            ):
+            row = boundaries_data[tab.segment_index]
+            cmd_type = row[COL_TYPE]
+            end_point = (row[COL_X], row[COL_Y], row[COL_Z])
+
+            if cmd_type not in (CMD_TYPE_LINE, CMD_TYPE_ARC):
                 continue
 
             logger.debug(
                 f"Processing Tab UID {tab.uid} on segment {tab.segment_index} "
-                f"(type: {cmd.__class__.__name__}) starting from {p_start_3d}"
+                f"(type: {cmd_type}) starting from {p_start_3d}"
             )
 
             center_x, center_y = 0.0, 0.0
 
-            if isinstance(cmd, GeoLineToCommand):
-                p_start, p_end = p_start_3d[:2], cmd.end[:2]
+            if cmd_type == CMD_TYPE_LINE:
+                p_start, p_end = p_start_3d[:2], end_point[:2]
                 center_x = p_start[0] + (p_end[0] - p_start[0]) * tab.pos
                 center_y = p_start[1] + (p_end[1] - p_start[1]) * tab.pos
 
-            elif isinstance(cmd, GeoArcToCommand):
+            elif cmd_type == CMD_TYPE_ARC:
+                center_offset = (row[COL_I], row[COL_J])
+                clockwise = bool(row[COL_CW])
                 center = (
-                    p_start_3d[0] + cmd.center_offset[0],
-                    p_start_3d[1] + cmd.center_offset[1],
+                    p_start_3d[0] + center_offset[0],
+                    p_start_3d[1] + center_offset[1],
                 )
                 radius = math.dist(p_start_3d[:2], center)
                 if radius < 1e-9:
@@ -119,10 +127,10 @@ class TabOpsTransformer(OpsTransformer):
                     p_start_3d[1] - center[1], p_start_3d[0] - center[0]
                 )
                 end_angle = math.atan2(
-                    cmd.end[1] - center[1], cmd.end[0] - center[0]
+                    end_point[1] - center[1], end_point[0] - center[0]
                 )
                 angle_range = end_angle - start_angle
-                if cmd.clockwise:
+                if clockwise:
                     if angle_range > 0:
                         angle_range -= 2 * math.pi
                 else:

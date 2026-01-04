@@ -2,11 +2,16 @@ import cairo
 import numpy as np
 import math
 from typing import TYPE_CHECKING
-from ...core.geo.geometry import (
-    MoveToCommand,
-    LineToCommand,
-    ArcToCommand,
-    MovingCommand,
+from ...core.geo.constants import (
+    CMD_TYPE_MOVE,
+    CMD_TYPE_LINE,
+    CMD_TYPE_ARC,
+    COL_TYPE,
+    COL_X,
+    COL_Y,
+    COL_I,
+    COL_J,
+    COL_CW,
 )
 
 if TYPE_CHECKING:
@@ -76,32 +81,37 @@ def draw_geometry_to_cairo_context(geometry: "Geometry", ctx: cairo.Context):
         geometry: The Geometry object to draw.
         ctx: The Cairo context to draw on.
     """
-
     last_point = (0.0, 0.0)
-    for cmd in geometry.commands:
-        if isinstance(cmd, MoveToCommand):
-            ctx.move_to(cmd.end[0], cmd.end[1])
-        elif isinstance(cmd, LineToCommand):
-            ctx.line_to(cmd.end[0], cmd.end[1])
-        elif isinstance(cmd, ArcToCommand):
+    data = geometry.data
+    if data is None:
+        return
+
+    for i in range(len(data)):
+        row = data[i]
+        cmd_type = row[COL_TYPE]
+        end = (row[COL_X], row[COL_Y])
+
+        if cmd_type == CMD_TYPE_MOVE:
+            ctx.move_to(end[0], end[1])
+        elif cmd_type == CMD_TYPE_LINE:
+            ctx.line_to(end[0], end[1])
+        elif cmd_type == CMD_TYPE_ARC:
             # Cairo's arc needs center, radius, and angles.
-            center_x = last_point[0] + cmd.center_offset[0]
-            center_y = last_point[1] + cmd.center_offset[1]
-            radius = math.hypot(cmd.center_offset[0], cmd.center_offset[1])
+            center_x = last_point[0] + row[COL_I]
+            center_y = last_point[1] + row[COL_J]
+            radius = math.hypot(row[COL_I], row[COL_J])
 
             start_angle = math.atan2(
-                -cmd.center_offset[1], -cmd.center_offset[0]
-            )
-            end_angle = math.atan2(
-                cmd.end[1] - center_y, cmd.end[0] - center_x
-            )
+                -row[COL_J], -row[COL_I]
+            )  # Vector from center to start
+            end_angle = math.atan2(end[1] - center_y, end[0] - center_x)
 
-            if cmd.clockwise:
+            clockwise = bool(row[COL_CW])
+            if clockwise:
                 ctx.arc_negative(
                     center_x, center_y, radius, start_angle, end_angle
                 )
             else:
                 ctx.arc(center_x, center_y, radius, start_angle, end_angle)
 
-        if isinstance(cmd, MovingCommand):
-            last_point = (cmd.end[0], cmd.end[1])
+        last_point = end

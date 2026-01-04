@@ -1,13 +1,19 @@
 import pytest
-from typing import cast
+from typing import NamedTuple
 
-from rayforge.core.geo import Geometry, LineToCommand, ArcToCommand
+from rayforge.core.geo import Geometry
 from rayforge.core.geo.linearize import (
     linearize_arc,
     linearize_bezier,
     linearize_bezier_adaptive,
     resample_polyline,
 )
+
+
+class MockArc(NamedTuple):
+    end: tuple[float, float, float]
+    center_offset: tuple[float, float]
+    clockwise: bool
 
 
 @pytest.fixture
@@ -21,10 +27,16 @@ def sample_geometry():
 
 def test_linearize_arc(sample_geometry):
     """Tests the external linearize_arc function."""
+    assert sample_geometry.data is not None
     # The second command is a line_to(10,10), which is the start of the arc
-    start_point = cast(LineToCommand, sample_geometry.commands[1]).end
+    start_point = tuple(sample_geometry.data[1, 1:4])
     # The third command is the arc
-    arc_cmd = cast(ArcToCommand, sample_geometry.commands[2])
+    arc_row = sample_geometry.data[2]
+    arc_cmd = MockArc(
+        end=tuple(arc_row[1:4]),
+        center_offset=(arc_row[4], arc_row[5]),
+        clockwise=bool(arc_row[6]),
+    )
 
     segments = linearize_arc(arc_cmd, start_point)
 

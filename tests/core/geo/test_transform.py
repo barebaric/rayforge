@@ -1,16 +1,16 @@
 import pytest
 import math
 import numpy as np
-from copy import deepcopy
-from typing import cast
+from rayforge.core.geo.constants import (
+    CMD_TYPE_LINE,
+    CMD_TYPE_ARC,
+    COL_TYPE,
+)
 from rayforge.core.geo import (
     Geometry,
-    ArcToCommand,
-    LineToCommand,
 )
 from rayforge.core.geo.transform import (
     grow_geometry,
-    apply_affine_transform,
 )
 
 
@@ -62,19 +62,12 @@ def test_transform_identity():
     geo = Geometry()
     geo.move_to(10, 20, 30)
     geo.arc_to(50, 60, i=5, j=7, z=40)
-    original_geo = deepcopy(geo)
+    original_geo = geo.copy()
 
     identity_matrix = np.identity(4, dtype=float)
-    transformed_cmds = apply_affine_transform(geo.commands, identity_matrix)
+    geo.transform(identity_matrix)
 
-    arc_cmd = cast(ArcToCommand, transformed_cmds[1])
-    orig_arc_cmd = cast(ArcToCommand, original_geo.commands[1])
-
-    assert transformed_cmds[0].end == pytest.approx(
-        original_geo.commands[0].end
-    )
-    assert arc_cmd.end == pytest.approx(orig_arc_cmd.end)
-    assert arc_cmd.center_offset == pytest.approx(orig_arc_cmd.center_offset)
+    assert geo == original_geo
 
 
 def test_transform_translate():
@@ -83,14 +76,13 @@ def test_transform_translate():
     geo.arc_to(50, 60, i=5, j=7, z=40)
 
     translate_matrix = _create_translate_matrix(10, -5, 15)
-    transformed_cmds = apply_affine_transform(geo.commands, translate_matrix)
+    geo.transform(translate_matrix)
+    assert geo.data is not None
 
-    arc_cmd = cast(ArcToCommand, transformed_cmds[1])
-
-    assert transformed_cmds[0].end == pytest.approx((20, 15, 45))
-    assert arc_cmd.end == pytest.approx((60, 55, 55))
+    assert np.allclose(geo.data[0, 1:4], (20, 15, 45))
+    assert np.allclose(geo.data[1, 1:4], (60, 55, 55))
     # Translation should NOT affect arc center offsets (vectors)
-    assert arc_cmd.center_offset == pytest.approx((5, 7))
+    assert np.allclose(geo.data[1, 4:6], (5, 7))
 
 
 def test_transform_scale_non_uniform_linearizes_arc():
@@ -99,17 +91,17 @@ def test_transform_scale_non_uniform_linearizes_arc():
     geo.arc_to(22, 22, i=5, j=7, z=-10)
     scale_matrix = _create_scale_matrix(2, 3, 4)
 
-    # This should trigger _transform_commands_non_uniform
-    transformed_cmds = apply_affine_transform(geo.commands, scale_matrix)
+    geo.transform(scale_matrix)
+    assert geo.data is not None
 
-    assert transformed_cmds[0].end == pytest.approx((20, 60, 20))
+    assert np.allclose(geo.data[0, 1:4], (20, 60, 20))
     # Arcs are linearized on non-uniform scale
-    assert isinstance(transformed_cmds[1], LineToCommand)
-    final_cmd = transformed_cmds[-1]
-    assert final_cmd.end is not None
-    final_point = final_cmd.end
+    assert geo.data[1, COL_TYPE] == CMD_TYPE_LINE
+    final_row = geo.data[-1]
+    assert final_row is not None
+    final_point = final_row[1:4]
     expected_final_point = (22 * 2, 22 * 3, -10 * 4)
-    assert final_point == pytest.approx(expected_final_point)
+    assert np.allclose(final_point, expected_final_point)
 
 
 def test_transform_rotate_preserves_z():
@@ -117,10 +109,10 @@ def test_transform_rotate_preserves_z():
     geo.move_to(10, 10, -5)
     rotate_matrix = _create_z_rotate_matrix(math.radians(90))
 
-    transformed_cmds = apply_affine_transform(geo.commands, rotate_matrix)
+    geo.transform(rotate_matrix)
+    assert geo.data is not None
 
-    assert transformed_cmds[0].end is not None
-    x, y, z = transformed_cmds[0].end
+    x, y, z = geo.data[0, 1:4]
     assert z == -5
     assert x == pytest.approx(-10)
     assert y == pytest.approx(10)
@@ -134,13 +126,14 @@ def test_transform_uniform_scale_preserves_arcs():
 
     # Uniform scale by 2
     scale_matrix = _create_scale_matrix(2, 2, 2)
-    transformed_cmds = apply_affine_transform(geo.commands, scale_matrix)
+    geo.transform(scale_matrix)
+    assert geo.data is not None
 
-    assert isinstance(transformed_cmds[1], ArcToCommand)
-    arc_cmd = cast(ArcToCommand, transformed_cmds[1])
-    assert arc_cmd.end == pytest.approx((20, 0, 0))
+    arc_row = geo.data[1]
+    assert arc_row[COL_TYPE] == CMD_TYPE_ARC
+    assert np.allclose(arc_row[1:4], (20, 0, 0))
     # Offset should also scale
-    assert arc_cmd.center_offset == pytest.approx((10, 0))
+    assert np.allclose(arc_row[4:6], (10, 0))
 
 
 # --- Grow/Offset Tests ---
@@ -190,7 +183,7 @@ def test_grow_shape_with_hole():
     # Inner CW square (hole) (5,5) -> (15,15), Area = -100
     inner = Geometry.from_points([(5, 5), (5, 15), (15, 15), (15, 5)])
     shape_with_hole = outer.copy()
-    shape_with_hole.commands.extend(inner.commands)
+    shape_with_hole.extend(inner)
     assert shape_with_hole.area() == pytest.approx(300.0)
 
     # Grow by 1. Outer becomes 22x22, inner becomes 8x8.

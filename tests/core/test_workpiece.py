@@ -155,9 +155,7 @@ class TestWorkPiece:
         assert new_wp.source_segment is not None
         assert new_wp.source_segment.source_asset_uid == source.uid
         assert new_wp._edited_boundaries is not None
-        assert len(new_wp._edited_boundaries.commands) == len(
-            edited_geo.commands
-        )
+        assert len(new_wp._edited_boundaries) == len(edited_geo)
         assert new_wp.sketch_uid == sketch.uid
         assert new_wp.sketch_params == {"width": 123.45}
 

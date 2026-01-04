@@ -1,13 +1,23 @@
 import math
 import logging
-from typing import Tuple, Optional, TYPE_CHECKING, TypeVar, List
+from typing import Tuple, Optional, TYPE_CHECKING, TypeVar
 import numpy as np
 import pyclipper
-
+from .constants import (
+    CMD_TYPE_LINE,
+    CMD_TYPE_ARC,
+    COL_TYPE,
+    COL_X,
+    COL_Y,
+    COL_Z,
+    COL_I,
+    COL_J,
+    COL_CW,
+)
 from .linearize import linearize_arc
 
 if TYPE_CHECKING:
-    from .geometry import Geometry, Command
+    from .geometry import Geometry
 
 # Define a TypeVar to make the function generic over Geometry and its
 # subclasses.
@@ -111,134 +121,34 @@ def grow_geometry(geometry: T_Geometry, offset: float) -> T_Geometry:
         )
 
         if not new_contour_geo.is_empty():
-            new_geo.commands.extend(new_contour_geo.commands)
+            new_geo.extend(new_contour_geo)
 
     logger.debug("Grow_geometry finished")
     return new_geo
 
 
-def _transform_commands_non_uniform(
-    commands: List["Command"], matrix: "np.ndarray"
-) -> List["Command"]:
+class _MockArcCmd:
+    """Helper to adapt array data for linearize_arc."""
+
+    __slots__ = ("end", "center_offset", "clockwise")
+
+    def __init__(self, end, center_offset, clockwise):
+        self.end = end
+        self.center_offset = center_offset
+        self.clockwise = clockwise
+
+
+def apply_affine_transform_to_array(
+    data: np.ndarray, matrix: np.ndarray
+) -> np.ndarray:
     """
-    Handles transformation when non-uniform scaling is present.
-    Arcs must be linearized as they become elliptical.
+    Applies an affine transformation to the geometry array.
+    Handles uniform and non-uniform scaling (linearizing arcs for the latter).
     """
-    # Local import to avoid circular dependency
-    from .geometry import LineToCommand, ArcToCommand, MovingCommand
+    if data is None or data.shape[0] == 0:
+        return data
 
-    transformed_commands: List["Command"] = []
-    last_point_untransformed: Optional[Tuple[float, float, float]] = None
-
-    for cmd in commands:
-        original_cmd_end = cmd.end if isinstance(cmd, MovingCommand) else None
-
-        if isinstance(cmd, ArcToCommand):
-            start_point = last_point_untransformed or (0.0, 0.0, 0.0)
-            segments = linearize_arc(cmd, start_point)
-            for p1, p2 in segments:
-                point_vec = np.array([p2[0], p2[1], p2[2], 1.0])
-                transformed_vec = matrix @ point_vec
-                transformed_commands.append(
-                    LineToCommand(tuple(transformed_vec[:3]))
-                )
-        elif isinstance(cmd, MovingCommand):
-            point_vec = np.array([*cmd.end, 1.0])
-            transformed_vec = matrix @ point_vec
-            cmd.end = tuple(transformed_vec[:3])
-
-            if isinstance(cmd, ArcToCommand):
-                # Recalculate offset (vector transform)
-                offset_vec_3d = np.array(
-                    [cmd.center_offset[0], cmd.center_offset[1], 0]
-                )
-                rot_scale_matrix = matrix[:3, :3]
-                new_offset_vec_3d = rot_scale_matrix @ offset_vec_3d
-                cmd.center_offset = (
-                    new_offset_vec_3d[0],
-                    new_offset_vec_3d[1],
-                )
-            transformed_commands.append(cmd)
-        else:
-            transformed_commands.append(cmd)
-
-        if original_cmd_end is not None:
-            last_point_untransformed = original_cmd_end
-
-    return transformed_commands
-
-
-def _transform_commands_uniform(
-    commands: List["Command"], matrix: "np.ndarray"
-) -> List["Command"]:
-    """
-    Handles transformation for uniform scaling, rotation, and translation.
-    Uses vectorized numpy operations for high performance.
-    Updates commands in-place where possible.
-    """
-    # Local import to avoid circular dependency
-    from .geometry import ArcToCommand, MovingCommand
-
-    points: List[Tuple[float, float, float]] = []
-    cmd_indices: List[int] = []
-    arc_offsets: List[Tuple[float, float, float]] = []
-    arc_indices: List[int] = []
-
-    for i, cmd in enumerate(commands):
-        if isinstance(cmd, MovingCommand) and cmd.end:
-            points.append(cmd.end)
-            cmd_indices.append(i)
-            if isinstance(cmd, ArcToCommand):
-                # 2D offsets to 3D vectors
-                arc_offsets.append((*cmd.center_offset, 0.0))
-                arc_indices.append(i)
-
-    if points:
-        # Batch transform points
-        pts_array = np.array(points)
-        ones = np.ones((pts_array.shape[0], 1))
-        pts_homo = np.hstack([pts_array, ones])
-        transformed_pts = pts_homo @ matrix.T
-        res_pts = transformed_pts[:, :3].tolist()
-
-        for i, original_idx in enumerate(cmd_indices):
-            commands[original_idx].end = tuple(res_pts[i])
-
-        # Batch transform arc offsets (rotation/scale only)
-        if arc_offsets:
-            vec_array = np.array(arc_offsets)
-            rot_scale_matrix = matrix[:3, :3]
-            transformed_offsets = vec_array @ rot_scale_matrix.T
-            res_offsets = transformed_offsets.tolist()
-
-            for i, original_idx in enumerate(arc_indices):
-                off = res_offsets[i]
-                cmd_to_update = commands[original_idx]
-                if isinstance(cmd_to_update, ArcToCommand):
-                    cmd_to_update.center_offset = (off[0], off[1])
-
-    return commands
-
-
-def apply_affine_transform(
-    commands: List["Command"], matrix: "np.ndarray"
-) -> List["Command"]:
-    """
-    Applies an affine transformation matrix to a list of commands.
-    Automatically selects between a fast vectorized path for uniform transforms
-    and a linearization path for non-uniform scaling.
-
-    Args:
-        commands: The list of commands to transform.
-        matrix: A 4x4 numpy affine transformation matrix.
-
-    Returns:
-        The list of transformed commands (may be a new list or modified
-        original).
-    """
-    if not commands:
-        return commands
-
+    # Check for non-uniform scaling
     v_x = matrix @ np.array([1, 0, 0, 0])
     v_y = matrix @ np.array([0, 1, 0, 0])
     len_x = np.linalg.norm(v_x[:2])
@@ -246,6 +156,95 @@ def apply_affine_transform(
     is_non_uniform = not np.isclose(len_x, len_y)
 
     if is_non_uniform:
-        return _transform_commands_non_uniform(commands, matrix)
+        return _transform_array_non_uniform(data, matrix)
     else:
-        return _transform_commands_uniform(commands, matrix)
+        return _transform_array_uniform(data, matrix)
+
+
+def _transform_array_uniform(
+    data: np.ndarray, matrix: np.ndarray
+) -> np.ndarray:
+    # XYZ transform
+    # data is (N, 7). Columns 1,2,3 are X,Y,Z.
+    points = data[:, COL_X : COL_Z + 1]
+    ones = np.ones((points.shape[0], 1))
+    pts_homo = np.hstack([points, ones])
+
+    transformed_pts = pts_homo @ matrix.T
+    data[:, COL_X : COL_Z + 1] = transformed_pts[:, :3]
+
+    # Arc IJ transform (Rotation/Scale only)
+    is_arc = data[:, COL_TYPE] == CMD_TYPE_ARC
+    if np.any(is_arc):
+        vecs = data[is_arc, COL_I : COL_J + 1]
+        # Add Z=0 for 3D rotation, though offsets are usually 2D.
+        vecs_3d = np.hstack([vecs, np.zeros((vecs.shape[0], 1))])
+
+        rot_scale_matrix = matrix[:3, :3]
+        transformed_vecs = vecs_3d @ rot_scale_matrix.T
+
+        data[is_arc, COL_I : COL_J + 1] = transformed_vecs[:, :2]
+
+        # Check determinant for flip
+        # Calculate 2D determinant of top-left 2x2
+        det = matrix[0, 0] * matrix[1, 1] - matrix[0, 1] * matrix[1, 0]
+        if det < 0:
+            # Flip clockwise flag
+            data[is_arc, COL_CW] = np.where(
+                data[is_arc, COL_CW] > 0.5, 0.0, 1.0
+            )
+
+    return data
+
+
+def _transform_array_non_uniform(
+    data: np.ndarray, matrix: np.ndarray
+) -> np.ndarray:
+    new_rows = []
+    last_point = (0.0, 0.0, 0.0)
+
+    for row in data:
+        cmd_type = row[COL_TYPE]
+        original_end = (row[COL_X], row[COL_Y], row[COL_Z])
+
+        if cmd_type == CMD_TYPE_ARC:
+            start_pt = last_point
+
+            mock_cmd = _MockArcCmd(
+                end=original_end,
+                center_offset=(row[COL_I], row[COL_J]),
+                clockwise=bool(row[COL_CW]),
+            )
+
+            segments = linearize_arc(mock_cmd, start_pt)
+            for _, p2 in segments:
+                p_vec = np.array([p2[0], p2[1], p2[2], 1.0])
+                trans_p = matrix @ p_vec
+
+                new_rows.append(
+                    [
+                        CMD_TYPE_LINE,
+                        trans_p[0],
+                        trans_p[1],
+                        trans_p[2],
+                        0.0,
+                        0.0,
+                        0.0,
+                    ]
+                )
+        else:
+            # Transform end point
+            p_vec = np.array(
+                [original_end[0], original_end[1], original_end[2], 1.0]
+            )
+            trans_p = matrix @ p_vec
+
+            new_row = row.copy()
+            new_row[COL_X] = trans_p[0]
+            new_row[COL_Y] = trans_p[1]
+            new_row[COL_Z] = trans_p[2]
+            new_rows.append(new_row)
+
+        last_point = original_end
+
+    return np.array(new_rows)

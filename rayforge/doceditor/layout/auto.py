@@ -5,23 +5,36 @@ Implements a pixel-based layout strategy for dense packing of workpieces.
 from __future__ import annotations
 import math
 import logging
-from typing import List, Sequence, Dict, Optional, Tuple, TYPE_CHECKING, cast
+from typing import (
+    List,
+    Sequence,
+    Dict,
+    Optional,
+    Tuple,
+    TYPE_CHECKING,
+)
 from dataclasses import dataclass
-
 import cairo
 import numpy as np
 from scipy.ndimage import binary_dilation
 from scipy.signal import fftconvolve
-
-from ...core.geo import MoveToCommand, LineToCommand, ArcToCommand
+from ...context import get_context
+from ...core.geo.constants import (
+    CMD_TYPE_MOVE,
+    CMD_TYPE_LINE,
+    CMD_TYPE_ARC,
+    COL_TYPE,
+    COL_X,
+    COL_Y,
+    COL_Z,
+)
 from ...core.geo.linearize import linearize_arc
-from ...core.matrix import Matrix
 from ...core.group import Group
+from ...core.matrix import Matrix
 from ...core.item import DocItem
 from ...core.stock import StockItem
 from ...core.workpiece import WorkPiece
 from .base import LayoutStrategy
-from ...context import get_context
 
 if TYPE_CHECKING:
     from ...shared.tasker.context import ExecutionContext
@@ -278,19 +291,23 @@ class PixelPerfectLayoutStrategy(LayoutStrategy):
         ctx.set_source_rgb(1, 1, 1)  # Use white for the valid area
         ctx.scale(self.resolution, self.resolution)  # Scale context to mm
 
-        # Draw the path from the geometry commands.
+        # Draw the path from the geometry data.
         last_pos = (0.0, 0.0, 0.0)
-        for cmd in geometry_for_render.commands:
-            end = cast(Tuple[float, float, float], getattr(cmd, "end", None))
-            if isinstance(cmd, MoveToCommand):
-                ctx.move_to(end[0], end[1])
-            elif isinstance(cmd, LineToCommand):
-                ctx.line_to(end[0], end[1])
-            elif isinstance(cmd, ArcToCommand):
-                segments = linearize_arc(cmd, last_pos)
-                for _, p2 in segments:
-                    ctx.line_to(p2[0], p2[1])
-            if end is not None:
+        data = geometry_for_render.data
+        if data is not None:
+            for i in range(len(data)):
+                row = data[i]
+                cmd_type = row[COL_TYPE]
+                end = (row[COL_X], row[COL_Y], row[COL_Z])
+
+                if cmd_type == CMD_TYPE_MOVE:
+                    ctx.move_to(end[0], end[1])
+                elif cmd_type == CMD_TYPE_LINE:
+                    ctx.line_to(end[0], end[1])
+                elif cmd_type == CMD_TYPE_ARC:
+                    segments = linearize_arc(row, last_pos)
+                    for _, p2 in segments:
+                        ctx.line_to(p2[0], p2[1])
                 last_pos = end
         ctx.fill()
 

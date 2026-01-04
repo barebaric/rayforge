@@ -167,7 +167,7 @@ class ContourProducer(OpsProducer):
         # 5. Apply offsets.
         composite_geo = Geometry()
         for geo in target_contours:
-            composite_geo.commands.extend(geo.commands)
+            composite_geo.extend(geo)
 
         if abs(total_offset) > 1e-6:
             # Attempt to apply the offset (grow/shrink).
@@ -213,11 +213,11 @@ class ContourProducer(OpsProducer):
                 # Combine the lists of contours into composite Geometry objects
                 outer_geo = Geometry()
                 for geo in outer_contours:
-                    outer_geo.commands.extend(geo.commands)
+                    outer_geo.extend(geo)
 
                 inner_geo = Geometry()
                 for geo in inner_contours:
-                    inner_geo.commands.extend(geo.commands)
+                    inner_geo.extend(geo)
 
                 group1 = (
                     inner_geo

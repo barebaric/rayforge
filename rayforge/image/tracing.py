@@ -431,7 +431,7 @@ def _svg_path_data_to_geometries(
                 current_geo, current_pos, start_of_subpath
             )
 
-    return [g for g in geometries if g.commands]
+    return [g for g in geometries if not g.is_empty()]
 
 
 def _traverse_svg_node(

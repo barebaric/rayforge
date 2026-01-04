@@ -1,6 +1,7 @@
 import numpy as np
 import cairo
 from unittest.mock import MagicMock, ANY
+from rayforge.core.geo.constants import COL_TYPE, CMD_TYPE_MOVE, CMD_TYPE_LINE
 from rayforge.image.tracing import trace_surface, Geometry
 
 
@@ -119,16 +120,14 @@ def test_trace_surface_hull_fallback_path(monkeypatch):
     assert len(geometries) == 50
 
     # A convex hull of a square has exactly 5 commands: M, L, L, L, L (close)
-    assert len(geometries[0].commands) == 5
-    # The test now correctly asserts that close_path() adds a LineToCommand
-    command_types = [type(cmd).__name__ for cmd in geometries[0].commands]
-    assert command_types == [
-        "MoveToCommand",
-        "LineToCommand",
-        "LineToCommand",
-        "LineToCommand",
-        "LineToCommand",
-    ]
+    # Note: len(geo) counts rows in the numpy array.
+    assert len(geometries[0]) == 5
+
+    # Check command types directly from numpy array
+    data = geometries[0].data
+    assert data is not None
+    assert data[0, COL_TYPE] == CMD_TYPE_MOVE
+    assert np.all(data[1:, COL_TYPE] == CMD_TYPE_LINE)
 
 
 def test_trace_surface_edge_touching_shape():

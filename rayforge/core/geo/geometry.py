@@ -1,9 +1,7 @@
 from __future__ import annotations
-import math
 import logging
 import cairo
 from typing import (
-    Iterator,
     List,
     Optional,
     Tuple,
@@ -17,21 +15,34 @@ from copy import deepcopy
 import numpy as np
 from .analysis import (
     is_closed,
-    get_path_winding_order,
-    get_point_and_tangent_at,
-    get_outward_normal_at,
-    get_subpath_area,
+    get_path_winding_order_from_array,
+    get_point_and_tangent_at_from_array,
+    get_outward_normal_at_from_array,
+    get_area_from_array,
+    get_subpath_vertices_from_array,
+)
+from .constants import (
+    CMD_TYPE_MOVE,
+    CMD_TYPE_LINE,
+    CMD_TYPE_ARC,
+    COL_TYPE,
+    COL_X,
+    COL_Y,
+    COL_Z,
+    COL_I,
+    COL_J,
+    COL_CW,
 )
 from .primitives import (
     find_closest_point_on_line_segment,
     find_closest_point_on_arc,
 )
 from .query import (
-    get_bounding_rect,
-    find_closest_point_on_path,
-    get_total_distance,
+    get_bounding_rect_from_array,
+    find_closest_point_on_path_from_array,
+    get_total_distance_from_array,
 )
-from .simplify import simplify_geometry
+from .simplify import simplify_geometry_from_array
 
 
 logger = logging.getLogger(__name__)
@@ -39,196 +50,133 @@ logger = logging.getLogger(__name__)
 T_Geometry = TypeVar("T_Geometry", bound="Geometry")
 
 
-class Command:
-    """Base for all geometric commands."""
-
-    __slots__ = ("end",)
-
-    def __init__(
-        self, end: Optional[Tuple[float, float, float]] = None
-    ) -> None:
-        self.end: Optional[Tuple[float, float, float]] = end
-
-    def __eq__(self, other: object) -> bool:
-        if not isinstance(other, Command):
-            return NotImplemented
-        return self.end == other.end
-
-    def to_dict(self) -> Dict[str, Any]:
-        return {"type": self.__class__.__name__}
-
-    def distance(
-        self, last_point: Optional[Tuple[float, float, float]]
-    ) -> float:
-        """Calculates the 2D distance covered by this command."""
-        return 0.0
-
-
-class MovingCommand(Command):
-    """A geometric command that involves movement."""
-
-    __slots__ = ()
-
-    end: Tuple[float, float, float]  # type: ignore[reportRedeclaration]
-
-    def to_dict(self) -> Dict[str, Any]:
-        d = super().to_dict()
-        d["end"] = self.end
-        return d
-
-    def distance(
-        self, last_point: Optional[Tuple[float, float, float]]
-    ) -> float:
-        """
-        Calculates the 2D distance of the move (approximating arcs as lines).
-        """
-        if last_point is None:
-            return 0.0
-        return math.hypot(
-            self.end[0] - last_point[0], self.end[1] - last_point[1]
-        )
-
-
-class MoveToCommand(MovingCommand):
-    """A move-to command."""
-
-    __slots__ = ()
-
-
-class LineToCommand(MovingCommand):
-    """A line-to command."""
-
-    __slots__ = ()
-
-
-class ArcToCommand(MovingCommand):
-    """An arc-to command."""
-
-    __slots__ = ("center_offset", "clockwise")
-
-    def __init__(
-        self,
-        end: Tuple[float, float, float],
-        center_offset: Tuple[float, float],
-        clockwise: bool,
-    ) -> None:
-        super().__init__(end)
-        self.center_offset = center_offset
-        self.clockwise = clockwise
-
-    def __eq__(self, other: object) -> bool:
-        if not isinstance(other, ArcToCommand):
-            return NotImplemented
-        return (
-            self.end == other.end
-            and self.center_offset == other.center_offset
-            and self.clockwise == other.clockwise
-        )
-
-    def to_dict(self) -> Dict[str, Any]:
-        d = super().to_dict()
-        d["center_offset"] = self.center_offset
-        d["clockwise"] = self.clockwise
-        return d
-
-    def distance(
-        self, last_point: Optional[Tuple[float, float, float]]
-    ) -> float:
-        """
-        Calculates the true 2D length of the arc path.
-        """
-        if not last_point or not self.end:
-            return 0.0
-
-        # The center of the arc's circle in the XY plane
-        center_x = last_point[0] + self.center_offset[0]
-        center_y = last_point[1] + self.center_offset[1]
-
-        # The radius is the distance from the center to the start point
-        radius = math.hypot(self.center_offset[0], self.center_offset[1])
-
-        if radius < 1e-9:
-            # If the radius is zero, the arc is just a point.
-            return 0.0
-
-        # Calculate the start and end angles relative to the center
-        start_angle = math.atan2(
-            last_point[1] - center_y, last_point[0] - center_x
-        )
-        end_angle = math.atan2(self.end[1] - center_y, self.end[0] - center_x)
-
-        # Calculate the sweep of the angle
-        angle_span = end_angle - start_angle
-
-        # Adjust the angle span based on direction (clockwise/ccw) and wrapping
-        if self.clockwise:
-            if angle_span > 1e-9:  # Ensure we subtract to go negative
-                angle_span -= 2 * math.pi
-        else:  # Counter-clockwise
-            if angle_span < -1e-9:  # Ensure we add to go positive
-                angle_span += 2 * math.pi
-
-        # Arc length is radius times the absolute angle span in radians
-        return abs(angle_span * radius)
-
-
 class Geometry:
     """
-    Represents pure, process-agnostic shape data. It is completely
-    self-contained and has no dependency on Ops.
+    Represents pure, process-agnostic shape data, stored internally as a
+    NumPy array for performance.
     """
 
     def __init__(self) -> None:
-        self.commands: List[Command] = []
         self.last_move_to: Tuple[float, float, float] = (0.0, 0.0, 0.0)
         self._winding_cache: Dict[int, str] = {}
+        self._pending_data: List[List[float]] = []
+        self._data: Optional[np.ndarray] = None
 
-    def __iter__(self) -> Iterator[Command]:
-        return iter(self.commands)
+    @property
+    def data(self) -> Optional[np.ndarray]:
+        """
+        Provides read-only access to the internal NumPy data array.
+        Ensures any pending data is synchronized before access.
+        """
+        self._sync_to_numpy()
+        return self._data
+
+    def _sync_to_numpy(self) -> None:
+        """
+        Consolidates pending data into the main NumPy array.
+        """
+        if not self._pending_data:
+            return
+
+        new_block = np.array(self._pending_data, dtype=np.float64)
+        if self._data is None or len(self._data) == 0:
+            self._data = new_block
+        else:
+            self._data = np.vstack((self._data, new_block))
+
+        self._pending_data = []
 
     def __len__(self) -> int:
-        return len(self.commands)
+        data_len = 0 if self._data is None else len(self._data)
+        pending_len = len(self._pending_data)
+        return data_len + pending_len
 
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, Geometry):
             return NotImplemented
-        if len(self.commands) != len(other.commands):
+
+        # Accessing .data property on both handles the sync
+        if (self.data is None or len(self.data) == 0) and (
+            other.data is None or len(other.data) == 0
+        ):
+            return True
+        if self.data is None or other.data is None:
             return False
-        for command, other_command in zip(self.commands, other.commands):
-            if command != other_command:
-                return False
-        return True
+
+        return np.array_equal(self.data, other.data)
 
     def __hash__(self):
-        # A simple hash based on the commands. This allows Geometry objects
-        # to be used in sets and as dictionary keys.
-        return hash(tuple(str(cmd.to_dict()) for cmd in self.commands))
+        """
+        Calculates a hash based on the binary representation of the geometry
+        data.
+        """
+        if self.data is None:
+            return 0
+        return hash(self.data.tobytes())
 
     def copy(self: T_Geometry) -> T_Geometry:
         """Creates a deep copy of the Geometry object."""
         new_geo = self.__class__()
-        new_geo.commands = deepcopy(self.commands)
         new_geo.last_move_to = self.last_move_to
+
+        # Manually sync before copying internal state to avoid double-sync
+        self._sync_to_numpy()
+        new_geo._pending_data = []  # Copied data is already synced
+        if self._data is not None:
+            new_geo._data = self._data.copy()
+
         return new_geo
 
     def is_empty(self) -> bool:
-        return not self.commands
+        data_is_empty = self._data is None or len(self._data) == 0
+        pending_is_empty = not self._pending_data
+        return data_is_empty and pending_is_empty
 
     def clear(self) -> None:
-        self.commands = []
         self._winding_cache.clear()
+        self._pending_data = []
+        self._data = None
 
-    def add(self, command: Command) -> None:
-        self.commands.append(command)
+    def extend(self, other: "Geometry") -> None:
+        """Extends this geometry with commands from another."""
+        # Accessing other.data ensures it's synced
+        if other.data is not None and len(other.data) > 0:
+            # Fast path: append numpy data directly
+            self._sync_to_numpy()  # sync self first
+            if self._data is None:
+                self._data = other.data.copy()
+            else:
+                self._data = np.vstack((self._data, other.data))
+        elif other._pending_data:
+            # If other only has pending data, we can just extend our list
+            self._pending_data.extend(deepcopy(other._pending_data))
 
     def move_to(self, x: float, y: float, z: float = 0.0) -> None:
         self.last_move_to = (float(x), float(y), float(z))
-        cmd = MoveToCommand(self.last_move_to)
-        self.commands.append(cmd)
+        self._pending_data.append(
+            [
+                CMD_TYPE_MOVE,
+                self.last_move_to[0],
+                self.last_move_to[1],
+                self.last_move_to[2],
+                0.0,
+                0.0,
+                0.0,
+            ]
+        )
 
     def line_to(self, x: float, y: float, z: float = 0.0) -> None:
-        cmd = LineToCommand((float(x), float(y), float(z)))
-        self.commands.append(cmd)
+        self._pending_data.append(
+            [
+                CMD_TYPE_LINE,
+                float(x),
+                float(y),
+                float(z),
+                0.0,
+                0.0,
+                0.0,
+            ]
+        )
 
     def close_path(self) -> None:
         self.line_to(*self.last_move_to)
@@ -242,12 +190,16 @@ class Geometry:
         clockwise: bool = True,
         z: float = 0.0,
     ) -> None:
-        self.commands.append(
-            ArcToCommand(
-                (float(x), float(y), float(z)),
-                (float(i), float(j)),
-                bool(clockwise),
-            )
+        self._pending_data.append(
+            [
+                CMD_TYPE_ARC,
+                float(x),
+                float(y),
+                float(z),
+                float(i),
+                float(j),
+                1.0 if bool(clockwise) else 0.0,
+            ]
         )
 
     def simplify(self: T_Geometry, tolerance: float = 0.01) -> T_Geometry:
@@ -262,12 +214,11 @@ class Geometry:
         Returns:
             The modified Geometry object (self).
         """
-        if not self.commands:
+        if self.is_empty() or self.data is None:
             return self
 
-        self.commands = simplify_geometry(self.commands, tolerance)
+        self._data = simplify_geometry_from_array(self.data, tolerance)
         self._winding_cache.clear()
-
         return self
 
     def close_gaps(self: T_Geometry, tolerance: float = 1e-6) -> T_Geometry:
@@ -285,12 +236,19 @@ class Geometry:
         Returns:
             The modified Geometry object (self).
         """
-        from . import contours  # Local import to prevent circular dependency
+        from . import contours
 
-        # The function returns a new object; we update self with its data.
-        new_geo = contours.close_geometry_gaps(self, tolerance=tolerance)
-        self.commands = new_geo.commands
-        self._winding_cache.clear()  # Winding order might have changed
+        if self.is_empty() or self.data is None:
+            return self
+
+        new_geo = contours.close_geometry_gaps(
+            self.copy(), tolerance=tolerance
+        )
+
+        self.clear()
+        self.extend(new_geo)
+        self._winding_cache.clear()
+
         return self
 
     def rect(self) -> Tuple[float, float, float, float]:
@@ -298,11 +256,15 @@ class Geometry:
         Returns a rectangle (x1, y1, x2, y2) that encloses the
         occupied area in the XY plane.
         """
-        return get_bounding_rect(self.commands)
+        if self.data is not None and len(self.data) > 0:
+            return get_bounding_rect_from_array(self.data)
+        return 0.0, 0.0, 0.0, 0.0
 
     def distance(self) -> float:
         """Calculates the total 2D path length for all moving commands."""
-        return get_total_distance(self.commands)
+        if self.data is None:
+            return 0.0
+        return get_total_distance_from_array(self.data)
 
     def area(self) -> float:
         """
@@ -314,11 +276,9 @@ class Geometry:
         will have a negative area. The absolute value of the final sum is
         returned.
         """
-        total_signed_area = 0.0
-        for i, cmd in enumerate(self.commands):
-            if isinstance(cmd, MoveToCommand):
-                total_signed_area += get_subpath_area(self.commands, i)
-        return abs(total_signed_area)
+        if self.data is None:
+            return 0.0
+        return get_area_from_array(self.data)
 
     def segments(self) -> List[List[Tuple[float, float, float]]]:
         """
@@ -332,39 +292,45 @@ class Geometry:
             A list of lists, where each inner list contains the (x, y, z)
             points of a subpath.
         """
-        if not self.commands:
+        if self.data is None or len(self.data) == 0:
             return []
 
         all_segments: List[List[Tuple[float, float, float]]] = []
         current_segment_points: List[Tuple[float, float, float]] = []
 
-        for cmd in self.commands:
-            if isinstance(cmd, MoveToCommand):
+        # Find the first real command to establish a start point if needed
+        implicit_start: Tuple[float, float, float] = (0.0, 0.0, 0.0)
+
+        for i in range(self.data.shape[0]):
+            row = self.data[i]
+            cmd_type = row[COL_TYPE]
+            end_point = (row[COL_X], row[COL_Y], row[COL_Z])
+
+            if cmd_type == CMD_TYPE_MOVE:
                 if current_segment_points:
                     all_segments.append(current_segment_points)
-                # Start a new segment with the move_to point
-                current_segment_points = [cmd.end]
-            elif isinstance(cmd, MovingCommand):
+                current_segment_points = [end_point]
+            else:  # Line, Arc, etc.
                 if not current_segment_points:
-                    # Geometry starts with a drawing command, assume (0,0,0)
-                    # start
-                    current_segment_points.append((0.0, 0.0, 0.0))
-                current_segment_points.append(cmd.end)
+                    current_segment_points.append(implicit_start)
+                current_segment_points.append(end_point)
 
-        # Add the last segment if it exists
         if current_segment_points:
             all_segments.append(current_segment_points)
 
         return all_segments
 
     def transform(self: T_Geometry, matrix: "np.ndarray") -> T_Geometry:
-        from . import transform  # Local import to prevent circular dependency
+        from . import (
+            transform as tr,
+        )  # Local import to prevent circular dependency
 
-        self.commands = transform.apply_affine_transform(self.commands, matrix)
-
-        last_move_vec = np.array([*self.last_move_to, 1.0])
-        transformed_last_move_vec = matrix @ last_move_vec
-        self.last_move_to = tuple(transformed_last_move_vec[:3])
+        if self.data is not None and len(self.data) > 0:
+            self._data = tr.apply_affine_transform_to_array(self.data, matrix)
+            # Update last_move_to by transforming it
+            last_move_vec = np.array([*self.last_move_to, 1.0])
+            transformed_last_move_vec = matrix @ last_move_vec
+            self.last_move_to = tuple(transformed_last_move_vec[:3])
         return self
 
     def grow(self: T_Geometry, amount: float) -> T_Geometry:
@@ -420,7 +386,9 @@ class Geometry:
         """
         Finds the closest point on the geometry's path to a given 2D point.
         """
-        return find_closest_point_on_path(self.commands, x, y)
+        if self.data is None:
+            return None
+        return find_closest_point_on_path_from_array(self.data, x, y)
 
     def find_closest_point_on_segment(
         self, segment_index: int, x: float, y: float
@@ -429,35 +397,34 @@ class Geometry:
         Finds the closest point on a specific segment to the given coordinates.
         Returns (t, point) or None.
         """
-        if segment_index >= len(self.commands):
+        if self.data is None or segment_index >= len(self.data):
             return None
 
-        cmd = self.commands[segment_index]
-        if not isinstance(cmd, (LineToCommand, ArcToCommand)) or not cmd.end:
+        row = self.data[segment_index]
+        cmd_type = row[COL_TYPE]
+        end_point_3d = (row[COL_X], row[COL_Y], row[COL_Z])
+
+        if cmd_type not in (CMD_TYPE_LINE, CMD_TYPE_ARC):
             return None
 
         # Find start point
-        start_point = None
-        for i in range(segment_index - 1, -1, -1):
-            prev_cmd = self.commands[i]
-            if isinstance(prev_cmd, MovingCommand) and prev_cmd.end:
-                start_point = prev_cmd.end
-                break
+        if segment_index > 0:
+            start_point = tuple(
+                self.data[segment_index - 1, COL_X : COL_Z + 1]
+            )
+        else:
+            start_point = (0.0, 0.0, 0.0)
 
-        if not start_point:
-            return None
-
-        if isinstance(cmd, LineToCommand):
-            t, point = find_closest_point_on_line_segment(
-                start_point[:2], cmd.end[:2], x, y
-            )[:2]
+        if cmd_type == CMD_TYPE_LINE:
+            t, point, _ = find_closest_point_on_line_segment(
+                start_point[:2], end_point_3d[:2], x, y
+            )
             return (t, point)
-        elif isinstance(cmd, ArcToCommand):
-            result = find_closest_point_on_arc(cmd, start_point, x, y)
+        elif cmd_type == CMD_TYPE_ARC:
+            result = find_closest_point_on_arc(row, start_point, x, y)
             if result:
                 t_arc, pt_arc, _ = result
                 return (t_arc, pt_arc)
-
         return None
 
     def get_winding_order(self, segment_index: int) -> str:
@@ -465,20 +432,24 @@ class Geometry:
         Determines the winding order ('cw', 'ccw', or 'unknown') for the
         subpath containing the command at `segment_index`.
         """
+        if self.data is None:
+            return "unknown"
         # Caching is useful here because winding order is expensive to compute
         # and may be requested multiple times for the same subpath.
         subpath_start_index = -1
         for i in range(segment_index, -1, -1):
-            if isinstance(self.commands[i], MoveToCommand):
+            if self.data[i, COL_TYPE] == CMD_TYPE_MOVE:
                 subpath_start_index = i
                 break
         if subpath_start_index == -1:
-            return "unknown"
+            subpath_start_index = 0
 
         if subpath_start_index in self._winding_cache:
             return self._winding_cache[subpath_start_index]
 
-        result = get_path_winding_order(self.commands, segment_index)
+        result = get_path_winding_order_from_array(
+            self.data, subpath_start_index
+        )
         self._winding_cache[subpath_start_index] = result
         return result
 
@@ -489,7 +460,9 @@ class Geometry:
         Calculates the 2D point and the normalized 2D tangent vector at a
         parameter `t` (0-1) along a given command segment.
         """
-        return get_point_and_tangent_at(self.commands, segment_index, t)
+        if self.data is None:
+            return None
+        return get_point_and_tangent_at_from_array(self.data, segment_index, t)
 
     def get_outward_normal_at(
         self, segment_index: int, t: float
@@ -498,7 +471,9 @@ class Geometry:
         Calculates the outward-pointing, normalized 2D normal vector for a
         point on the geometry path.
         """
-        return get_outward_normal_at(self.commands, segment_index, t)
+        if self.data is None:
+            return None
+        return get_outward_normal_at_from_array(self.data, segment_index, t)
 
     def is_closed(self, tolerance: float = 1e-6) -> bool:
         """
@@ -518,7 +493,9 @@ class Geometry:
         Returns:
             True if the path is closed, False otherwise.
         """
-        return is_closed(self.commands, tolerance=tolerance)
+        if self.data is None:
+            return False
+        return is_closed(self.data, tolerance=tolerance)
 
     def _get_valid_contours_data(
         self, contour_geometries: List["Geometry"]
@@ -529,42 +506,33 @@ class Geometry:
         """
         contour_data = []
         for i, contour_geo in enumerate(contour_geometries):
-            if len(contour_geo.commands) < 2 or not isinstance(
-                contour_geo.commands[0], MoveToCommand
-            ):
+            if contour_geo.is_empty():
                 continue
 
-            start_cmd = contour_geo.commands[0]
-            end_cmd = contour_geo.commands[-1]
-            if not isinstance(start_cmd, MovingCommand) or not isinstance(
-                end_cmd, MovingCommand
+            # Access .data to trigger sync
+            data = contour_geo.data
+            if (
+                data is None
+                or data.shape[0] < 2
+                or data[0, COL_TYPE] != CMD_TYPE_MOVE
             ):
-                continue
-
-            start_point = start_cmd.end
-            end_point = end_cmd.end
-            if start_point is None or end_point is None:
                 continue
 
             min_x, min_y, max_x, max_y = contour_geo.rect()
             bbox_area = (max_x - min_x) * (max_y - min_y)
+            is_closed_flag = is_closed(data) and bbox_area > 1e-9
 
-            # A contour is valid and closed if its path is closed AND it's
-            # not degenerate (has some area).
-            is_closed = contour_geo.is_closed() and bbox_area > 1e-9
-
-            # A single-contour geometry by definition has only one segment list
-            segments = contour_geo.segments()
-            if not segments:
+            if not is_closed_flag:
                 continue
-            vertices_3d = segments[0]
-            vertices_2d = [p[:2] for p in vertices_3d]
+
+            # A single contour geometry has one "move" at the start (index 0).
+            vertices_2d = get_subpath_vertices_from_array(data, 0)
 
             contour_data.append(
                 {
                     "geo": contour_geo,
                     "vertices": vertices_2d,
-                    "is_closed": is_closed,
+                    "is_closed": is_closed_flag,
                     "original_index": i,
                 }
             )
@@ -614,21 +582,25 @@ class Geometry:
                                 lies on another segment are not considered
                                 intersections. If True, they are flagged.
         """
-        from .intersect import check_self_intersection  # Local import
+        from .intersect import (
+            check_self_intersection_from_array,
+        )  # Local import
 
-        return check_self_intersection(
-            self.commands, fail_on_t_junction=fail_on_t_junction
+        if self.data is None:
+            return False
+        return check_self_intersection_from_array(
+            self.data, fail_on_t_junction=fail_on_t_junction
         )
 
     def intersects_with(self, other: "Geometry") -> bool:
         """
         Checks if this geometry's path intersects with another geometry's path.
         """
-        from .intersect import check_intersection  # Local import
+        from .intersect import check_intersection_from_array  # Local import
 
-        # When checking two different geometries, T-junctions are always
-        # intersections.
-        return check_intersection(self.commands, other.commands)
+        if self.data is None or other.data is None:
+            return False
+        return check_intersection_from_array(self.data, other.data)
 
     def encloses(self, other: "Geometry") -> bool:
         """
@@ -707,7 +679,6 @@ class Geometry:
             new_geo.line_to(*point)
             has_segments = True
 
-        # Only close the path if requested and it's a valid path
         if close and has_segments:
             new_geo.close_path()
 
@@ -723,21 +694,29 @@ class Geometry:
             A dictionary with a compact representation of the geometry data.
         """
         compact_cmds = []
-        for cmd in self.commands:
-            if isinstance(cmd, MoveToCommand):
-                compact_cmds.append(["M", *cmd.end])
-            elif isinstance(cmd, LineToCommand):
-                compact_cmds.append(["L", *cmd.end])
-            elif isinstance(cmd, ArcToCommand):
-                compact_cmds.append(
-                    [
-                        "A",
-                        *cmd.end,
-                        *cmd.center_offset,
-                        1 if cmd.clockwise else 0,
-                    ]
-                )
-            # Non-geometric commands are skipped
+        if self.data is not None:
+            for row in self.data:
+                cmd_type = row[COL_TYPE]
+                if cmd_type == CMD_TYPE_MOVE:
+                    compact_cmds.append(
+                        ["M", row[COL_X], row[COL_Y], row[COL_Z]]
+                    )
+                elif cmd_type == CMD_TYPE_LINE:
+                    compact_cmds.append(
+                        ["L", row[COL_X], row[COL_Y], row[COL_Z]]
+                    )
+                elif cmd_type == CMD_TYPE_ARC:
+                    compact_cmds.append(
+                        [
+                            "A",
+                            row[COL_X],
+                            row[COL_Y],
+                            row[COL_Z],
+                            row[COL_I],
+                            row[COL_J],
+                            int(row[COL_CW]),
+                        ]
+                    )
         return {
             "last_move_to": list(self.last_move_to),
             "commands": compact_cmds,
@@ -763,16 +742,17 @@ class Geometry:
         for cmd_data in data.get("commands", []):
             cmd_type = cmd_data[0]
             if cmd_type == "M":
-                new_geo.add(MoveToCommand(end=tuple(cmd_data[1:4])))
+                new_geo.move_to(cmd_data[1], cmd_data[2], cmd_data[3])
             elif cmd_type == "L":
-                new_geo.add(LineToCommand(end=tuple(cmd_data[1:4])))
+                new_geo.line_to(cmd_data[1], cmd_data[2], cmd_data[3])
             elif cmd_type == "A":
-                new_geo.add(
-                    ArcToCommand(
-                        end=tuple(cmd_data[1:4]),
-                        center_offset=tuple(cmd_data[4:6]),
-                        clockwise=bool(cmd_data[6]),
-                    )
+                new_geo.arc_to(
+                    cmd_data[1],
+                    cmd_data[2],
+                    i=cmd_data[4],
+                    j=cmd_data[5],
+                    clockwise=bool(cmd_data[6]),
+                    z=cmd_data[3],
                 )
             else:
                 logger.warning(
@@ -783,36 +763,48 @@ class Geometry:
 
     def to_dict(self) -> Dict[str, Any]:
         """Serializes the Geometry object to a dictionary."""
-        return {
-            "commands": [cmd.to_dict() for cmd in self.commands],
-            "last_move_to": self.last_move_to,
-        }
+        return self.dump()
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> Geometry:
+    def from_dict(cls, data: Dict[str, Any]) -> "Geometry":
         """Deserializes a dictionary into a Geometry instance."""
         new_geo = cls()
         last_move = tuple(data.get("last_move_to", (0.0, 0.0, 0.0)))
         assert len(last_move) == 3, "last_move_to must be a 3-tuple"
         new_geo.last_move_to = last_move
 
-        for cmd_data in data.get("commands", []):
-            cmd_type = cmd_data.get("type")
-            if cmd_type == "MoveToCommand":
-                new_geo.add(MoveToCommand(end=tuple(cmd_data["end"])))
-            elif cmd_type == "LineToCommand":
-                new_geo.add(LineToCommand(end=tuple(cmd_data["end"])))
-            elif cmd_type == "ArcToCommand":
-                new_geo.add(
-                    ArcToCommand(
-                        end=tuple(cmd_data["end"]),
-                        center_offset=tuple(cmd_data["center_offset"]),
-                        clockwise=cmd_data["clockwise"],
+        commands = data.get("commands", [])
+        if not commands:
+            return new_geo
+
+        # Check format: verbose dicts or compact lists
+        first_cmd = commands[0]
+        is_compact_format = isinstance(first_cmd, list)
+
+        if is_compact_format:
+            return cls.load(data)
+        else:
+            # Handle verbose format
+            for cmd_data in commands:
+                cmd_type = cmd_data.get("type")
+                if cmd_type == "MoveToCommand":
+                    end = tuple(cmd_data["end"])
+                    new_geo.move_to(end[0], end[1], end[2])
+                elif cmd_type == "LineToCommand":
+                    end = tuple(cmd_data["end"])
+                    new_geo.line_to(end[0], end[1], end[2])
+                elif cmd_type == "ArcToCommand":
+                    end = tuple(cmd_data["end"])
+                    offset = tuple(cmd_data["center_offset"])
+                    new_geo.arc_to(
+                        end[0],
+                        end[1],
+                        offset[0],
+                        offset[1],
+                        cmd_data["clockwise"],
+                        end[2],
                     )
-                )
-            else:
-                logger.warning(
-                    "Skipping non-geometric command type during Geometry"
-                    f" deserialization: {cmd_type}"
-                )
+                else:
+                    # Silently ignore non-geometric commands (e.g., from Ops)
+                    pass
         return new_geo

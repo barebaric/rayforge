@@ -2,7 +2,17 @@ import cairo
 import math
 from collections import defaultdict
 from ...core.geo.primitives import find_closest_point_on_line
-from ...core.geo.geometry import MoveToCommand, LineToCommand, ArcToCommand
+from ...core.geo.constants import (
+    CMD_TYPE_MOVE,
+    CMD_TYPE_LINE,
+    CMD_TYPE_ARC,
+    COL_TYPE,
+    COL_X,
+    COL_Y,
+    COL_I,
+    COL_J,
+    COL_CW,
+)
 from ...core.sketcher.entities import Line, Arc, Circle
 from ...core.sketcher.constraints import (
     DistanceConstraint,
@@ -114,25 +124,25 @@ class SketchRenderer:
 
         for geo in fill_geometries:
             ctx.new_path()
+            data = geo.data
+            if data is None:
+                continue
 
-            for cmd in geo.commands:
-                if isinstance(cmd, MoveToCommand):
-                    ctx.move_to(cmd.end[0], cmd.end[1])
+            last_point = (0.0, 0.0)
+            for row in data:
+                cmd_type = row[COL_TYPE]
+                if cmd_type == CMD_TYPE_MOVE:
+                    ctx.move_to(row[COL_X], row[COL_Y])
 
-                elif isinstance(cmd, LineToCommand):
-                    ctx.line_to(cmd.end[0], cmd.end[1])
+                elif cmd_type == CMD_TYPE_LINE:
+                    ctx.line_to(row[COL_X], row[COL_Y])
 
-                elif isinstance(cmd, ArcToCommand):
+                elif cmd_type == CMD_TYPE_ARC:
                     # Current point (start of arc)
-                    try:
-                        sx, sy = ctx.get_current_point()
-                    except Exception:
-                        # Should not happen if geometry is valid and starts
-                        # with MoveTo
-                        continue
+                    sx, sy = last_point
 
                     # Center offset (i, j) is relative to start
-                    i, j = cmd.center_offset
+                    i, j = row[COL_I], row[COL_J]
                     cx, cy = sx + i, sy + j
 
                     radius = math.hypot(i, j)
@@ -142,15 +152,17 @@ class SketchRenderer:
                     start_angle = math.atan2(-j, -i)
 
                     # End vector: from Center to End
-                    end_x, end_y = cmd.end[0], cmd.end[1]
+                    end_x, end_y = row[COL_X], row[COL_Y]
                     end_angle = math.atan2(end_y - cy, end_x - cx)
 
-                    if cmd.clockwise:
+                    is_clockwise = bool(row[COL_CW])
+                    if is_clockwise:
                         ctx.arc_negative(
                             cx, cy, radius, start_angle, end_angle
                         )
                     else:
                         ctx.arc(cx, cy, radius, start_angle, end_angle)
+                last_point = (row[COL_X], row[COL_Y])
 
             ctx.close_path()
 

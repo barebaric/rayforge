@@ -1,5 +1,17 @@
 import math
 from typing import List, Tuple, Optional, Any
+import numpy as np
+from .constants import (
+    CMD_TYPE_ARC,
+    COL_TYPE,
+    COL_X,
+    COL_Y,
+    COL_Z,
+    COL_I,
+    COL_J,
+    COL_CW,
+    GEO_ARRAY_COLS,
+)
 from .linearize import linearize_arc
 
 
@@ -353,10 +365,13 @@ def find_closest_point_on_line_segment(
 
 
 def _find_closest_on_linearized_arc(
-    arc_cmd: Any, start_pos: Tuple[float, float, float], x: float, y: float
+    arc_row: np.ndarray,
+    start_pos: Tuple[float, float, float],
+    x: float,
+    y: float,
 ) -> Optional[Tuple[float, Tuple[float, float], float]]:
     """Helper to find the closest point on a linearized arc."""
-    arc_segments = linearize_arc(arc_cmd, start_pos)
+    arc_segments = linearize_arc(arc_row, start_pos)
     if not arc_segments:
         return None
 
@@ -379,24 +394,26 @@ def _find_closest_on_linearized_arc(
     return t_arc, pt_best, dist_sq_best
 
 
-def find_closest_point_on_arc(
-    arc_cmd: Any, start_pos: Tuple[float, float, float], x: float, y: float
+def _find_closest_point_on_arc_from_array(
+    arc_row: np.ndarray,
+    start_pos: Tuple[float, float, float],
+    x: float,
+    y: float,
 ) -> Optional[Tuple[float, Tuple[float, float], float]]:
-    """
-    Finds the closest point on an arc, using an analytical method for
-    circular arcs and falling back to linearization for spirals.
-    """
+    """Internal NumPy-native implementation."""
     p0 = start_pos[:2]
-    p1 = arc_cmd.end[:2]
+    p1 = (arc_row[COL_X], arc_row[COL_Y])
+    center_offset = (arc_row[COL_I], arc_row[COL_J])
+    clockwise = bool(arc_row[COL_CW])
     center = (
-        p0[0] + arc_cmd.center_offset[0],
-        p0[1] + arc_cmd.center_offset[1],
+        p0[0] + center_offset[0],
+        p0[1] + center_offset[1],
     )
     radius_start = math.dist(p0, center)
     radius_end = math.dist(p1, center)
 
     if not math.isclose(radius_start, radius_end):
-        return _find_closest_on_linearized_arc(arc_cmd, start_pos, x, y)
+        return _find_closest_on_linearized_arc(arc_row, start_pos, x, y)
 
     radius = radius_start
     if radius < 1e-9:
@@ -422,7 +439,7 @@ def find_closest_point_on_arc(
     angle_range = end_angle - start_angle
     angle_to_check = point_angle - start_angle
 
-    if arc_cmd.clockwise:
+    if clockwise:
         if angle_range > 1e-9:
             angle_range -= 2 * math.pi
         if angle_to_check > 1e-9:
@@ -434,7 +451,7 @@ def find_closest_point_on_arc(
             angle_to_check += 2 * math.pi
 
     is_on_arc = False
-    if arc_cmd.clockwise:
+    if clockwise:
         if angle_to_check >= angle_range - 1e-9 and angle_to_check <= 1e-9:
             is_on_arc = True
     else:
@@ -455,6 +472,34 @@ def find_closest_point_on_arc(
     dist_sq = (x - closest_point[0]) ** 2 + (y - closest_point[1]) ** 2
     t = max(0.0, min(1.0, t))
     return t, closest_point, dist_sq
+
+
+def find_closest_point_on_arc(
+    arc_input: Any, start_pos: Tuple[float, float, float], x: float, y: float
+) -> Optional[Tuple[float, Tuple[float, float], float]]:
+    """
+    Finds the closest point on an arc, using an analytical method for
+    circular arcs and falling back to linearization for spirals.
+    This function is backward-compatible and accepts either a NumPy array row
+    or an object with .end, .center_offset, and .clockwise attributes.
+    """
+    if isinstance(arc_input, np.ndarray):
+        return _find_closest_point_on_arc_from_array(
+            arc_input, start_pos, x, y
+        )
+    else:
+        temp_row = np.zeros(GEO_ARRAY_COLS, dtype=np.float64)
+        temp_row[COL_TYPE] = CMD_TYPE_ARC
+        if hasattr(arc_input, "end") and arc_input.end is not None:
+            temp_row[COL_X] = arc_input.end[0]
+            temp_row[COL_Y] = arc_input.end[1]
+            temp_row[COL_Z] = arc_input.end[2]
+        if hasattr(arc_input, "center_offset"):
+            temp_row[COL_I] = arc_input.center_offset[0]
+            temp_row[COL_J] = arc_input.center_offset[1]
+        if hasattr(arc_input, "clockwise"):
+            temp_row[COL_CW] = 1.0 if arc_input.clockwise else 0.0
+        return _find_closest_point_on_arc_from_array(temp_row, start_pos, x, y)
 
 
 def get_segment_region_intersections(
@@ -530,13 +575,6 @@ def arc_intersects_rect(
 ) -> bool:
     """Checks if an arc intersects with a rectangle."""
 
-    # A mock command object for linearize_arc
-    class MockArcCmd:
-        def __init__(self, end, center_offset, clockwise):
-            self.end = (end[0], end[1], 0.0)
-            self.center_offset = center_offset
-            self.clockwise = clockwise
-
     # Broad phase: Check if arc's AABB intersects rect's AABB
     arc_box = get_arc_bounding_box(
         start_pos,
@@ -552,11 +590,18 @@ def arc_intersects_rect(
     ):
         return False
 
+    # A mock command object for linearize_arc
+    class MockArcCmd:
+        def __init__(self, end, center_offset, is_clockwise):
+            self.end = end
+            self.center_offset = center_offset
+            self.clockwise = is_clockwise
+
     # Detailed phase: linearize the arc and check each segment.
     mock_cmd = MockArcCmd(
-        end_pos,
-        (center[0] - start_pos[0], center[1] - start_pos[1]),
-        clockwise,
+        end=(end_pos[0], end_pos[1], 0.0),
+        center_offset=(center[0] - start_pos[0], center[1] - start_pos[1]),
+        is_clockwise=clockwise,
     )
     start_3d = (start_pos[0], start_pos[1], 0.0)
     radius = math.hypot(start_pos[0] - center[0], start_pos[1] - center[1])

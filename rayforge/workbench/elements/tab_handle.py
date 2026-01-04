@@ -201,7 +201,7 @@ class TabHandleElement(CanvasElement):
         parent_view = cast("WorkPieceElement", self.parent)
         tab = cast(Tab, self.data)
         if not parent_view.data.boundaries or tab.segment_index >= len(
-            parent_view.data.boundaries.commands
+            parent_view.data.boundaries
         ):
             return
 

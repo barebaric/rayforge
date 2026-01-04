@@ -1,4 +1,5 @@
 import pytest
+import numpy as np
 from rayforge.core.geo import Geometry
 
 
@@ -92,7 +93,7 @@ def test_no_self_intersection_multiple_subpaths():
     second_square = Geometry.from_points(
         [(10, 10), (15, 10), (15, 15), (10, 15)]
     )
-    geo.commands.extend(second_square.commands)
+    geo.extend(second_square)
     assert not geo.has_self_intersections()
 
 
@@ -104,13 +105,20 @@ def test_self_intersection_in_one_of_multiple_subpaths(
     shape.
     """
     # Offset the figure eight to ensure it doesn't intersect the square
-    for cmd in figure_eight_geometry.commands:
-        if cmd.end:
-            cmd.end = (cmd.end[0] + 20, cmd.end[1] + 20, cmd.end[2])
+    translation_matrix = np.array(
+        [
+            [1, 0, 0, 20],
+            [0, 1, 0, 20],
+            [0, 0, 1, 0],
+            [0, 0, 0, 1],
+        ],
+        dtype=float,
+    )
+    figure_eight_geometry.transform(translation_matrix)
 
     # Combine them
     combined_geo = square_geometry
-    combined_geo.commands.extend(figure_eight_geometry.commands)
+    combined_geo.extend(figure_eight_geometry)
 
     assert combined_geo.has_self_intersections()
 
@@ -128,8 +136,8 @@ def test_no_intersection_separate_shapes():
 
 def test_intersection_crossing_shapes():
     """Two geometries that cross each other should intersect."""
-    geo1 = Geometry.from_points([(0, 5), (10, 5)])
-    geo2 = Geometry.from_points([(5, 0), (5, 10)])
+    geo1 = Geometry.from_points([(0, 5), (10, 5)], close=False)
+    geo2 = Geometry.from_points([(5, 0), (5, 10)], close=False)
     assert geo1.intersects_with(geo2)
     assert geo2.intersects_with(geo1)
 

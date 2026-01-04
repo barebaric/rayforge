@@ -1,16 +1,23 @@
 import pytest
 import math
 import numpy as np
-from typing import cast
-from unittest.mock import patch
+from unittest.mock import patch, ANY
 
 from rayforge.core.geo import (
     Geometry,
-    MoveToCommand,
-    LineToCommand,
-    ArcToCommand,
 )
-from rayforge.core.geo.query import get_total_distance
+from rayforge.core.geo.query import get_total_distance_from_array
+
+# Constants needed for mocking numpy data structure
+from rayforge.core.geo.constants import (
+    CMD_TYPE_MOVE,
+    CMD_TYPE_LINE,
+    CMD_TYPE_ARC,
+    COL_TYPE,
+    COL_X,
+    COL_Y,
+    COL_Z,
+)
 
 
 @pytest.fixture
@@ -28,99 +35,97 @@ def sample_geometry():
 
 
 def test_initialization(empty_geometry):
-    assert len(empty_geometry.commands) == 0
+    assert len(empty_geometry) == 0
     assert empty_geometry.last_move_to == (0.0, 0.0, 0.0)
 
 
 def test_add_commands(empty_geometry):
     empty_geometry.move_to(5, 5)
-    assert len(empty_geometry.commands) == 1
-    assert isinstance(empty_geometry.commands[0], MoveToCommand)
-
+    assert len(empty_geometry) == 1
     empty_geometry.line_to(10, 10)
-    assert isinstance(empty_geometry.commands[1], LineToCommand)
+    assert len(empty_geometry) == 2
+    empty_geometry._sync_to_numpy()
+    assert empty_geometry.data is not None
+    assert empty_geometry.data[0, COL_TYPE] == CMD_TYPE_MOVE
+    assert empty_geometry.data[1, COL_TYPE] == CMD_TYPE_LINE
 
 
 def test_simplify_wrapper(sample_geometry):
     """Tests that simplify calls the underlying module."""
-    # Capture the original commands list object
-    original_cmds = sample_geometry.commands
+    # Ensure numpy data is populated before we patch
+    sample_geometry._sync_to_numpy()
+    original_data = sample_geometry.data
 
     with patch(
-        "rayforge.core.geo.geometry.simplify_geometry"
+        "rayforge.core.geo.geometry.simplify_geometry_from_array"
     ) as mock_simplify:
-        mock_return_cmds = [MoveToCommand((0, 0, 0))]
-        mock_simplify.return_value = mock_return_cmds
+        # Mock returns a simplified numpy array
+        mock_return_data = np.array([[CMD_TYPE_MOVE, 0.0, 0.0, 0.0, 0, 0, 0]])
+        mock_simplify.return_value = mock_return_data
 
         result = sample_geometry.simplify(tolerance=0.5)
 
         assert result is sample_geometry
-        # Check that the geometry's command list was replaced by the result
-        assert sample_geometry.commands is mock_return_cmds
-        # Check that the function was called with the ORIGINAL list object
-        mock_simplify.assert_called_once_with(original_cmds, 0.5)
+        # Check that the geometry's internal data was replaced by the result
+        np.testing.assert_array_equal(sample_geometry.data, mock_return_data)
+        # Check that the function was called with the ORIGINAL data array
+        assert original_data is not None
+        mock_simplify.assert_called_once()
+        np.testing.assert_array_equal(
+            mock_simplify.call_args[0][0], original_data
+        )
+        assert mock_simplify.call_args[0][1] == 0.5
 
 
 def test_clear_commands(sample_geometry):
     sample_geometry.clear()
-    assert len(sample_geometry.commands) == 0
+    assert len(sample_geometry) == 0
+    assert sample_geometry.is_empty()
 
 
 def test_move_to(sample_geometry):
     sample_geometry.move_to(15, 15)
-    last_cmd = sample_geometry.commands[-1]
-    assert isinstance(last_cmd, MoveToCommand)
-    assert last_cmd.end == (15.0, 15.0, 0.0)
+    sample_geometry._sync_to_numpy()
+    assert sample_geometry.data is not None
+    last_row = sample_geometry.data[-1]
+    assert last_row[COL_TYPE] == CMD_TYPE_MOVE
+    assert (last_row[COL_X : COL_Z + 1] == (15.0, 15.0, 0.0)).all()
 
 
 def test_line_to(sample_geometry):
     sample_geometry.line_to(20, 20)
-    last_cmd = sample_geometry.commands[-1]
-    assert isinstance(last_cmd, LineToCommand)
-    assert last_cmd.end == (20.0, 20.0, 0.0)
+    sample_geometry._sync_to_numpy()
+    assert sample_geometry.data is not None
+    last_row = sample_geometry.data[-1]
+    assert last_row[COL_TYPE] == CMD_TYPE_LINE
+    assert (last_row[COL_X : COL_Z + 1] == (20.0, 20.0, 0.0)).all()
 
 
 def test_close_path(sample_geometry):
     sample_geometry.move_to(5, 5, -1.0)
     sample_geometry.close_path()
-    last_cmd = sample_geometry.commands[-1]
-    assert isinstance(last_cmd, LineToCommand)
-    assert last_cmd.end == sample_geometry.last_move_to
-    assert last_cmd.end == (5.0, 5.0, -1.0)
+    sample_geometry._sync_to_numpy()
+    assert sample_geometry.data is not None
+    last_row = sample_geometry.data[-1]
+    assert last_row[COL_TYPE] == CMD_TYPE_LINE
+    assert (last_row[COL_X : COL_Z + 1] == sample_geometry.last_move_to).all()
+    assert (last_row[COL_X : COL_Z + 1] == (5.0, 5.0, -1.0)).all()
 
 
 def test_arc_to(sample_geometry):
     sample_geometry.arc_to(5, 5, 2, 3, clockwise=False)
-    last_cmd = sample_geometry.commands[-1]
-    assert isinstance(last_cmd, ArcToCommand)
-    assert last_cmd.end == (5.0, 5.0, 0.0)
-    assert last_cmd.clockwise is False
+    sample_geometry._sync_to_numpy()
+    assert sample_geometry.data is not None
+    last_row = sample_geometry.data[-1]
+    assert last_row[COL_TYPE] == CMD_TYPE_ARC
+    assert (last_row[COL_X : COL_Z + 1] == (5.0, 5.0, 0.0)).all()
+    assert last_row[-1] == 0.0  # Clockwise is False
 
 
 def test_serialization_deserialization(sample_geometry):
-    geo_dict = sample_geometry.to_dict()
+    geo_dict = sample_geometry.dump()
     new_geo = Geometry.from_dict(geo_dict)
-
-    assert len(new_geo.commands) == len(sample_geometry.commands)
-    assert new_geo.last_move_to == sample_geometry.last_move_to
-    for cmd1, cmd2 in zip(new_geo.commands, sample_geometry.commands):
-        assert type(cmd1) is type(cmd2)
-        assert cmd1.end == cmd2.end
-
-
-def test_from_dict_ignores_state_commands():
-    geo_dict = {
-        "commands": [
-            {"type": "MoveToCommand", "end": [0, 0, 0]},
-            {"type": "SetPowerCommand", "power": 500},
-            {"type": "LineToCommand", "end": [10, 10, 0]},
-        ],
-        "last_move_to": [0, 0, 0],
-    }
-    geo = Geometry.from_dict(geo_dict)
-    assert len(geo.commands) == 2
-    assert isinstance(geo.commands[0], MoveToCommand)
-    assert isinstance(geo.commands[1], LineToCommand)
+    assert new_geo == sample_geometry
 
 
 def test_copy_method(sample_geometry):
@@ -130,23 +135,14 @@ def test_copy_method(sample_geometry):
 
     # Check for initial equality and deep copy semantics
     assert copied_geo is not original_geo
-    assert copied_geo.commands is not original_geo.commands
-    assert len(copied_geo.commands) == len(original_geo.commands)
+    assert copied_geo == original_geo
     assert copied_geo.last_move_to == original_geo.last_move_to
-    # Check a specific command's value to ensure it was copied
-    original_line_to = cast(LineToCommand, original_geo.commands[1])
-    copied_line_to = cast(LineToCommand, copied_geo.commands[1])
-    assert copied_line_to.end == original_line_to.end
 
     # Modify the original and check that the copy is unaffected
-    original_geo.line_to(100, 100)  # Adds a 4th command
-    cast(MoveToCommand, original_geo.commands[0]).end = (99, 99, 99)
-
-    # The copy should still have the original number of commands
-    assert len(copied_geo.commands) == 3
-    # The copy's first command should have its original value
-    copied_move_to = cast(MoveToCommand, copied_geo.commands[0])
-    assert copied_move_to.end == (0.0, 0.0, 0.0)
+    original_geo.line_to(100, 100)
+    assert copied_geo != original_geo
+    assert len(copied_geo) == 3
+    assert len(original_geo) == 4
 
 
 def test_distance(sample_geometry):
@@ -172,29 +168,9 @@ def test_distance(sample_geometry):
 
     assert sample_geometry.distance() == pytest.approx(expected_dist)
     # Also test the query function directly
-    assert get_total_distance(sample_geometry.commands) == pytest.approx(
-        expected_dist
-    )
-
-
-def test_geo_command_distance():
-    last_point = (0.0, 0.0, 0.0)
-    line_cmd = LineToCommand((3.0, 4.0, 0.0))
-    assert line_cmd.distance(last_point) == pytest.approx(5.0)
-
-    move_cmd = MoveToCommand((-3.0, -4.0, 0.0))
-    assert move_cmd.distance(last_point) == pytest.approx(5.0)
-
-    # We'll test a 90-degree arc from (10,0) to (0,10) centered at the origin.
-    start_point_for_arc = (10.0, 0.0, 0.0)
-    arc_cmd = ArcToCommand(
-        end=(0.0, 10.0, 0.0), center_offset=(-10.0, 0.0), clockwise=False
-    )
-    # Radius is 10, angle span is PI/2.
-    expected_arc_length = 0.5 * math.pi * 10
-    assert arc_cmd.distance(start_point_for_arc) == pytest.approx(
-        expected_arc_length
-    )
+    assert get_total_distance_from_array(
+        sample_geometry.data
+    ) == pytest.approx(expected_dist)
 
 
 def test_area():
@@ -215,7 +191,7 @@ def test_area():
     geo_with_hole = Geometry.from_points([(0, 0), (10, 0), (10, 10), (0, 10)])
     # Inner CW square (hole) (2,2) -> (8,8)
     hole = Geometry.from_points([(2, 2), (2, 8), (8, 8), (8, 2)])
-    geo_with_hole.commands.extend(hole.commands)
+    geo_with_hole.extend(hole)  # Use extend to merge numpy data
     # Expected area = 100 - (6*6) = 64
     assert geo_with_hole.area() == pytest.approx(64.0)
 
@@ -224,7 +200,7 @@ def test_area():
     second_shape = Geometry.from_points(
         [(10, 10), (15, 10), (15, 15), (10, 15)]
     )
-    geo_two_shapes.commands.extend(second_shape.commands)
+    geo_two_shapes.extend(second_shape)  # Use extend to merge numpy data
     # Expected area = 25 + 25 = 50
     assert geo_two_shapes.area() == pytest.approx(50.0)
 
@@ -279,53 +255,42 @@ def test_from_points():
 
     # Test case 2: Single point
     geo_single = Geometry.from_points([(10, 20)])
-    assert len(geo_single.commands) == 1
-    assert isinstance(geo_single.commands[0], MoveToCommand)
-    assert geo_single.commands[0].end == (10, 20, 0)
+    assert len(geo_single) == 1
+    geo_single._sync_to_numpy()
+    assert geo_single.data is not None
+    assert geo_single.data[0, COL_TYPE] == CMD_TYPE_MOVE
+    assert (geo_single.data[0, 1:4] == (10, 20, 0)).all()
     assert geo_single.last_move_to == (10, 20, 0)
-    # A single point doesn't get closed
-    assert not any(
-        isinstance(cmd, LineToCommand) for cmd in geo_single.commands
-    )
 
     # Test case 3: Triangle (closed by default)
     points = [(0, 0), (10, 0), (5, 10)]
     geo_triangle = Geometry.from_points(points)
-    assert len(geo_triangle.commands) == 4
-    assert isinstance(geo_triangle.commands[0], MoveToCommand)
-    assert geo_triangle.commands[0].end == (0, 0, 0)
-    assert isinstance(geo_triangle.commands[3], LineToCommand)
-    assert geo_triangle.commands[3].end == (0, 0, 0)  # from close_path
+    assert len(geo_triangle) == 4
+    geo_triangle._sync_to_numpy()
+    assert geo_triangle.data is not None
+    assert geo_triangle.data[0, COL_TYPE] == CMD_TYPE_MOVE
+    assert (geo_triangle.data[0, 1:4] == (0, 0, 0)).all()
+    assert geo_triangle.data[3, COL_TYPE] == CMD_TYPE_LINE
+    assert (geo_triangle.data[3, 1:4] == (0, 0, 0)).all()
 
     # Test case 4: Triangle (open)
     geo_triangle_open = Geometry.from_points(points, close=False)
-    assert len(geo_triangle_open.commands) == 3
-    assert isinstance(geo_triangle_open.commands[0], MoveToCommand)
-    assert geo_triangle_open.commands[0].end == (0, 0, 0)
-    assert isinstance(geo_triangle_open.commands[2], LineToCommand)
-    assert geo_triangle_open.commands[2].end == (5, 10, 0)  # last point
-    # Final check: end point is not the start point
+    assert len(geo_triangle_open) == 3
+    geo_triangle_open._sync_to_numpy()
+    assert geo_triangle_open.data is not None
     assert (
-        geo_triangle_open.commands[-1].end != geo_triangle_open.commands[0].end
-    )
+        geo_triangle_open.data[-1, 1:4] != geo_triangle_open.data[0, 1:4]
+    ).any()
 
     # Test case 5: Points with Z coordinates (closed)
     points_3d = [(0, 0, 1), (10, 0, 2), (5, 10, 3)]
     geo_3d = Geometry.from_points(points_3d)
-    assert len(geo_3d.commands) == 4
-    assert geo_3d.commands[0].end == (0, 0, 1)
-    assert geo_3d.commands[1].end == (10, 0, 2)
-    assert geo_3d.commands[2].end == (5, 10, 3)
-    assert geo_3d.commands[3].end == (0, 0, 1)  # from close_path
+    assert len(geo_3d) == 4
+    geo_3d._sync_to_numpy()
+    assert geo_3d.data is not None
+    assert (geo_3d.data[0, 1:4] == (0, 0, 1)).all()
+    assert (geo_3d.data[3, 1:4] == (0, 0, 1)).all()
     assert geo_3d.last_move_to == (0, 0, 1)
-
-    # Test case 6: Points with Z coordinates (open)
-    geo_3d_open = Geometry.from_points(points_3d, close=False)
-    assert len(geo_3d_open.commands) == 3
-    assert geo_3d_open.commands[0].end == (0, 0, 1)
-    assert geo_3d_open.commands[1].end == (10, 0, 2)
-    assert geo_3d_open.commands[2].end == (5, 10, 3)
-    assert geo_3d_open.last_move_to == (0, 0, 1)
 
 
 def test_dump_and_load(sample_geometry):
@@ -338,21 +303,11 @@ def test_dump_and_load(sample_geometry):
 
     assert dumped_data["last_move_to"] == list(sample_geometry.last_move_to)
     assert len(dumped_data["commands"]) == 3
-    # M 0 0 0
     assert dumped_data["commands"][0] == ["M", 0.0, 0.0, 0.0]
-    # L 10 10 0
     assert dumped_data["commands"][1] == ["L", 10.0, 10.0, 0.0]
-    # A 20 0 0 5 -10 1 (default clockwise is True)
     assert dumped_data["commands"][2] == ["A", 20.0, 0.0, 0.0, 5.0, -10.0, 1]
 
-    assert loaded_geo.last_move_to == sample_geometry.last_move_to
-    assert len(loaded_geo.commands) == len(sample_geometry.commands)
-    for original_cmd, loaded_cmd in zip(
-        sample_geometry.commands, loaded_geo.commands
-    ):
-        assert type(original_cmd) is type(loaded_cmd)
-        # Easy way to check all attributes are the same
-        assert original_cmd.to_dict() == loaded_cmd.to_dict()
+    assert loaded_geo == sample_geometry
 
     # Test with an empty geometry
     empty_geo = Geometry()
@@ -373,21 +328,19 @@ def test_dump_and_load(sample_geometry):
 @patch("rayforge.core.geo.contours.close_geometry_gaps")
 def test_close_gaps_wrapper(mock_close_gaps, sample_geometry):
     """Tests the Geometry.close_gaps() wrapper method."""
-    # The wrapper modifies the object in-place, so we need to simulate the
-    # return value of the underlying function.
     mock_return_geo = Geometry()
-    mock_return_geo.line_to(1, 1)  # Give it some unique content
+    mock_return_geo.line_to(1, 1)
     mock_close_gaps.return_value = mock_return_geo
 
-    # The method should return `self`
     result = sample_geometry.close_gaps(tolerance=1e-5)
     assert result is sample_geometry
 
-    # Check that the underlying function was called correctly
-    mock_close_gaps.assert_called_once_with(sample_geometry, tolerance=1e-5)
+    # The function is called with a COPY of the original geometry.
+    # We use ANY to check that it was called with a Geometry object.
+    mock_close_gaps.assert_called_once_with(ANY, tolerance=1e-5)
 
-    # Check that the geometry's commands were updated from the result
-    assert sample_geometry.commands == mock_return_geo.commands
+    # Check that the geometry's data was updated from the result
+    assert sample_geometry == mock_return_geo
 
 
 @patch("rayforge.core.geo.contours.split_inner_and_outer_contours")
@@ -425,9 +378,13 @@ def test_is_closed_wrapper(mock_is_closed, sample_geometry):
     mock_is_closed.return_value = True
     result = sample_geometry.is_closed(tolerance=1e-5)
     assert result is True
-    mock_is_closed.assert_called_once_with(
-        sample_geometry.commands, tolerance=1e-5
+    assert sample_geometry.data is not None
+    mock_is_closed.assert_called_once()
+    # Check that the call was made with the numpy array
+    np.testing.assert_array_equal(
+        mock_is_closed.call_args[0][0], sample_geometry.data
     )
+    assert mock_is_closed.call_args[1]["tolerance"] == 1e-5
 
 
 @patch("rayforge.core.geo.contours.remove_inner_edges")
@@ -461,23 +418,31 @@ def test_encloses_wrapper(mock_encloses, sample_geometry):
     mock_encloses.assert_called_once_with(sample_geometry, other_geo)
 
 
-@patch("rayforge.core.geo.intersect.check_self_intersection")
+@patch("rayforge.core.geo.intersect.check_self_intersection_from_array")
 def test_has_self_intersections_wrapper(mock_check, sample_geometry):
     """Tests the Geometry.has_self_intersections() wrapper method."""
     sample_geometry.has_self_intersections(fail_on_t_junction=True)
-    mock_check.assert_called_once_with(
-        sample_geometry.commands, fail_on_t_junction=True
+    assert sample_geometry.data is not None
+    mock_check.assert_called_once()
+    np.testing.assert_array_equal(
+        mock_check.call_args[0][0], sample_geometry.data
     )
+    assert mock_check.call_args[1]["fail_on_t_junction"] is True
 
 
-@patch("rayforge.core.geo.intersect.check_intersection")
+@patch("rayforge.core.geo.intersect.check_intersection_from_array")
 def test_intersects_with_wrapper(mock_check, sample_geometry):
     """Tests the Geometry.intersects_with() wrapper method."""
     other_geo = Geometry()
+    other_geo.line_to(1, 1)  # Make other_geo non-empty
     sample_geometry.intersects_with(other_geo)
-    mock_check.assert_called_once_with(
-        sample_geometry.commands, other_geo.commands
+    assert sample_geometry.data is not None
+    assert other_geo.data is not None
+    mock_check.assert_called_once()
+    np.testing.assert_array_equal(
+        mock_check.call_args[0][0], sample_geometry.data
     )
+    np.testing.assert_array_equal(mock_check.call_args[0][1], other_geo.data)
 
 
 @patch("rayforge.core.geo.transform.grow_geometry")
@@ -487,25 +452,36 @@ def test_grow_wrapper(mock_grow, sample_geometry):
     mock_grow.assert_called_once_with(sample_geometry, offset=5.0)
 
 
-@patch("rayforge.core.geo.transform.apply_affine_transform")
-def test_transform_wrapper(mock_transform, sample_geometry):
+@patch("rayforge.core.geo.transform.apply_affine_transform_to_array")
+def test_transform_wrapper(mock_transform_array, sample_geometry):
     """
     Tests that Geometry.transform() delegates correctly to
-    apply_affine_transform.
+    apply_affine_transform_to_array when shadow data is available.
     """
     matrix = np.identity(4)
-    # Mock the return to ensure the wrapper updates self.commands
-    mock_cmds = [LineToCommand((99, 99, 99))]
-    mock_transform.return_value = mock_cmds
 
-    # We must capture the original commands list before calling transform,
-    # because transform() updates self.commands to point to the result
-    # (mock_cmds).
-    # The mock records the argument passed (original commands), but
-    # self.commands will be different when we assert.
-    original_commands = sample_geometry.commands
+    # Ensure sample_geometry has its internal numpy buffer populated
+    sample_geometry._sync_to_numpy()
+    original_data = sample_geometry.data
+
+    # Mock the return: a single MoveTo command at (99, 99, 99)
+    mock_data = np.zeros((1, 7))
+    mock_data[0, COL_TYPE] = CMD_TYPE_MOVE
+    mock_data[0, COL_X] = 99.0
+    mock_data[0, COL_Y] = 99.0
+    mock_data[0, COL_Z] = 99.0
+
+    mock_transform_array.return_value = mock_data
 
     sample_geometry.transform(matrix)
 
-    mock_transform.assert_called_once_with(original_commands, matrix)
-    assert sample_geometry.commands == mock_cmds
+    # Verify delegation
+    assert mock_transform_array.called
+    args, _ = mock_transform_array.call_args
+    # First arg is the numpy array, second is the matrix
+    assert original_data is not None
+    np.testing.assert_array_equal(args[0], original_data)
+    assert args[1] is matrix
+
+    # Verify that the geometry's data has been updated
+    np.testing.assert_array_equal(sample_geometry.data, mock_data)

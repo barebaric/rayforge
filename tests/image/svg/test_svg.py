@@ -8,17 +8,17 @@ from rayforge.image.svg.importer import SvgImporter
 from rayforge.image.svg.renderer import SVG_RENDERER
 from rayforge.image.svg.svgutil import MM_PER_PX
 from rayforge.image.util import parse_length
-from rayforge.core.workpiece import WorkPiece
-from rayforge.core.vectorization_spec import TraceSpec
-from rayforge.core.geo import (
-    Geometry,
-    MoveToCommand,
-    LineToCommand,
+from rayforge.core.geo import Geometry
+from rayforge.core.geo.constants import (
+    CMD_TYPE_MOVE,
+    CMD_TYPE_LINE,
+    COL_TYPE,
 )
 from rayforge.core.matrix import Matrix
 from rayforge.core.source_asset import SourceAsset
 from rayforge.core.source_asset_segment import SourceAssetSegment
-from rayforge.core.vectorization_spec import PassthroughSpec
+from rayforge.core.vectorization_spec import PassthroughSpec, TraceSpec
+from rayforge.core.workpiece import WorkPiece
 
 
 def _setup_workpiece_with_context(
@@ -154,16 +154,17 @@ class TestSvgImporter:
         # A simple rectangle, when converted to Path by svgelements and then
         # to Geometry in _get_doc_items_direct, should typically result in:
         # MOVE_TO, LINE_TO, LINE_TO, LINE_TO, CLOSE_PATH -> 5 commands.
-        assert len(wp.boundaries.commands) == 5
+        assert len(wp.boundaries) == 5
 
         # Check the types of commands to ensure they are basic path elements
-        cmds = wp.boundaries.commands
-        assert isinstance(cmds[0], MoveToCommand)
-        assert isinstance(cmds[1], LineToCommand)
-        assert isinstance(cmds[2], LineToCommand)
-        assert isinstance(cmds[3], LineToCommand)
+        data = wp.boundaries.data
+        assert data is not None
+        assert data[0, COL_TYPE] == CMD_TYPE_MOVE
+        assert data[1, COL_TYPE] == CMD_TYPE_LINE
+        assert data[2, COL_TYPE] == CMD_TYPE_LINE
+        assert data[3, COL_TYPE] == CMD_TYPE_LINE
         # The close_path command in geometry.py adds a LineToCommand
-        assert isinstance(cmds[4], LineToCommand)
+        assert data[4, COL_TYPE] == CMD_TYPE_LINE
 
         # Check the overall bounds of the imported geometry.
         # The geometry must be normalized to a 1x1 unit.
@@ -247,7 +248,7 @@ class TestSvgImporter:
         # Check if vectors were generated through tracing
         assert wp.boundaries is not None
         assert isinstance(wp.boundaries, Geometry)
-        assert len(wp.boundaries.commands) > 4
+        assert len(wp.boundaries) > 4
 
         # Check the overall bounds of the TRACED geometry.
         # Per the new architecture, the vectors MUST be normalized to a

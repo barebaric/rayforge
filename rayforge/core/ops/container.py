@@ -11,10 +11,12 @@ from typing import (
     Dict,
     Any,
     TYPE_CHECKING,
+    cast,
 )
 import numpy as np
 import json
-from ..geo import linearize, query, clipping
+from ..geo import linearize, clipping
+from ..geo.primitives import get_arc_bounding_box
 from .commands import (
     State,
     Command,
@@ -48,6 +50,82 @@ if TYPE_CHECKING:
     from ..geo.geometry import Geometry
 
 logger = logging.getLogger(__name__)
+
+
+def _get_bounding_rect_legacy(
+    commands: List[Command],
+    include_travel: bool = False,
+) -> Tuple[float, float, float, float]:
+    """
+    Returns a rectangle (x1, y1, x2, y2) that encloses the
+    occupied area in the XY plane. This is a legacy function for use with
+    lists of ops.Command objects.
+    """
+    occupied_points: List[Tuple[float, float, float]] = []
+    last_point: Optional[Tuple[float, float, float]] = None
+    for cmd in commands:
+        cmd_type_name = cmd.__class__.__name__
+        if (
+            cmd_type_name == "MoveToCommand"
+            and hasattr(cmd, "end")
+            and cmd.end
+        ):
+            if include_travel:
+                if last_point is not None:
+                    occupied_points.append(last_point)
+                occupied_points.append(cmd.end)
+            last_point = cmd.end
+        elif (
+            cmd_type_name
+            in ("LineToCommand", "ArcToCommand", "ScanLinePowerCommand")
+            and hasattr(cmd, "end")
+            and cmd.end
+        ):
+            start_point = last_point  # Capture start point for this command
+
+            if start_point is not None:
+                occupied_points.append(start_point)
+            occupied_points.append(cmd.end)
+
+            # For arcs, we must also consider the curve's extent.
+            if cmd_type_name == "ArcToCommand" and start_point:
+                arc_cmd = cast(ArcToCommand, cmd)
+                arc_box = get_arc_bounding_box(
+                    start_pos=start_point[:2],
+                    end_pos=arc_cmd.end[:2],
+                    center_offset=arc_cmd.center_offset,
+                    clockwise=arc_cmd.clockwise,
+                )
+                occupied_points.append((arc_box[0], arc_box[1], 0.0))
+                occupied_points.append((arc_box[2], arc_box[3], 0.0))
+
+            last_point = cmd.end
+
+    if not occupied_points:
+        return 0.0, 0.0, 0.0, 0.0
+
+    xs = [p[0] for p in occupied_points if p]
+    ys = [p[1] for p in occupied_points if p]
+    if not xs or not ys:
+        return 0.0, 0.0, 0.0, 0.0
+    min_x, max_x = min(xs), max(xs)
+    min_y, max_y = min(ys), max(ys)
+    return min_x, min_y, max_x, max_y
+
+
+def _get_total_distance_legacy(commands: List[Command]) -> float:
+    """
+    Calculates the total 2D path length for all moving commands in a list.
+    Legacy function for ops.Command lists.
+    """
+    total = 0.0
+    last: Optional[Tuple[float, float, float]] = None
+    for cmd in commands:
+        total += cmd.distance(last)
+        # Update last point if the command was a move
+        if hasattr(cmd, "end") and cmd.end is not None:
+            last = cmd.end
+    return total
 
 
 class Ops:
@@ -299,23 +377,33 @@ class Ops:
         return new_ops
 
     @classmethod
-    def from_geometry(cls, geometry: Geometry) -> "Ops":
+    def from_geometry(cls, geometry: "Geometry") -> "Ops":
         """
         Creates an Ops object from a Geometry object, converting its path.
         """
         from .. import geo
 
         new_ops = cls()
-        for cmd in geometry.commands:
-            # Explicitly convert from geo.Command to ops.Command
-            if isinstance(cmd, geo.MoveToCommand):
-                new_ops.add(MoveToCommand(cmd.end))
-            elif isinstance(cmd, geo.LineToCommand):
-                new_ops.add(LineToCommand(cmd.end))
-            elif isinstance(cmd, geo.ArcToCommand):
-                new_ops.add(
-                    ArcToCommand(cmd.end, cmd.center_offset, cmd.clockwise)
+        data = geometry.data
+        if data is not None:
+            for row in data:
+                cmd_type = row[geo.constants.COL_TYPE]
+                end = (
+                    row[geo.constants.COL_X],
+                    row[geo.constants.COL_Y],
+                    row[geo.constants.COL_Z],
                 )
+                if cmd_type == geo.constants.CMD_TYPE_MOVE:
+                    new_ops.add(MoveToCommand(end))
+                elif cmd_type == geo.constants.CMD_TYPE_LINE:
+                    new_ops.add(LineToCommand(end))
+                elif cmd_type == geo.constants.CMD_TYPE_ARC:
+                    center_offset = (
+                        row[geo.constants.COL_I],
+                        row[geo.constants.COL_J],
+                    )
+                    clockwise = bool(row[geo.constants.COL_CW])
+                    new_ops.add(ArcToCommand(end, center_offset, clockwise))
         new_ops.last_move_to = geometry.last_move_to
         return new_ops
 
@@ -632,7 +720,7 @@ class Ops:
         Args:
             include_travel: If True, travel moves are included in the bounds.
         """
-        return query.get_bounding_rect(
+        return _get_bounding_rect_legacy(
             self.commands, include_travel=include_travel
         )
 
@@ -666,7 +754,7 @@ class Ops:
         """
         Calculates the total 2D path length for all moving commands.
         """
-        return query.get_total_distance(self.commands)
+        return _get_total_distance_legacy(self.commands)
 
     def cut_distance(self) -> float:
         """
@@ -903,7 +991,8 @@ class Ops:
             return False
 
         # 1. Find the closest segment on the entire path
-        closest = query.find_closest_point_on_path(self.commands, x, y)
+        temp_geo = self.to_geometry()
+        closest = temp_geo.find_closest_point(x, y)
         if not closest:
             return False
 
@@ -940,7 +1029,8 @@ class Ops:
             return False
 
         # 4. Find closest point on the *linearized* path and calculate distance
-        linear_closest = query.find_closest_point_on_path(linear_cmds, x, y)
+        linear_temp_geo = temp_ops.to_geometry()
+        linear_closest = linear_temp_geo.find_closest_point(x, y)
         if not linear_closest:
             return False
 

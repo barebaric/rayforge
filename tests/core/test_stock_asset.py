@@ -22,7 +22,7 @@ def test_stock_asset_initialization_with_geometry():
 
     asset = StockAsset(geometry=geo)
     assert asset.geometry is geo
-    assert len(asset.geometry.commands) == 5
+    assert len(asset.geometry) == 5
 
 
 def test_stock_asset_to_dict_serialization():
@@ -54,7 +54,8 @@ def test_stock_asset_from_dict_deserialization():
         "thickness": 3.0,
         "material_uid": "mdf-3mm",
         "geometry": {
-            "commands": [{"type": "MoveToCommand", "end": [0, 0, 0]}]
+            "commands": [["M", 0.0, 0.0, 0.0]],
+            "last_move_to": [0.0, 0.0, 0.0],
         },
         "type": "stock",
     }
@@ -66,7 +67,7 @@ def test_stock_asset_from_dict_deserialization():
     assert asset.name == "Deserialized Asset"
     assert asset.thickness == 3.0
     assert asset.material_uid == "mdf-3mm"
-    assert len(asset.geometry.commands) == 1
+    assert len(asset.geometry) == 1
 
 
 def test_property_setters_fire_updated_signal():

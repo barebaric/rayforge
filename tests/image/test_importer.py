@@ -37,7 +37,7 @@ class TestImporter:
         assert wp.boundaries is not None, (
             "PNG import should have generated vectors"
         )
-        assert len(wp.boundaries.commands) > 0
+        assert len(wp.boundaries) > 0
 
     def test_import_by_data_with_mime(self, tests_root: Path):
         """Tests importing from bytes data when a MIME type is provided."""

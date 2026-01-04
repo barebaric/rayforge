@@ -2,7 +2,18 @@ import logging
 import math
 from typing import Optional, TYPE_CHECKING, List
 import warnings
-from ...core.geo import Geometry, MoveToCommand, LineToCommand, ArcToCommand
+from ...core.geo import Geometry
+from ...core.geo.constants import (
+    CMD_TYPE_MOVE,
+    CMD_TYPE_LINE,
+    CMD_TYPE_ARC,
+    COL_TYPE,
+    COL_X,
+    COL_Y,
+    COL_I,
+    COL_J,
+    COL_CW,
+)
 from ..base_renderer import Renderer
 
 with warnings.catch_warnings():
@@ -26,25 +37,30 @@ def _geometry_to_svg_path(
     scaled to the target pixel dimensions.
     """
     path_data = []
+    data = geometry.data
+    if data is None:
+        return ""
     # Cairo/SVG use Y-down, but our normalized geometry is Y-up. We flip Y.
     # Flip matrix: Scale Y by -1, then translate by height.
     # y' = -y * height + height = height * (1 - y)
-    for cmd in geometry.commands:
-        if isinstance(cmd, MoveToCommand):
-            x, y, _ = cmd.end
+    for row in data:
+        cmd_type = row[COL_TYPE]
+        if cmd_type == CMD_TYPE_MOVE:
+            x, y = row[COL_X], row[COL_Y]
             path_data.append(f"M {x * width:.3f} {height * (1 - y):.3f}")
-        elif isinstance(cmd, LineToCommand):
-            x, y, _ = cmd.end
+        elif cmd_type == CMD_TYPE_LINE:
+            x, y = row[COL_X], row[COL_Y]
             path_data.append(f"L {x * width:.3f} {height * (1 - y):.3f}")
-        elif isinstance(cmd, ArcToCommand):
+        elif cmd_type == CMD_TYPE_ARC:
             # This requires converting center-offset format to SVG's
             # endpoint + radius format.
 
-            ex, ey_up, _ = cmd.end
+            ex, ey_up = row[COL_X], row[COL_Y]
             ex_px = ex * width
             ey_px = height * (1 - ey_up)
 
-            radius = math.hypot(cmd.center_offset[0], cmd.center_offset[1])
+            center_offset_x, center_offset_y = row[COL_I], row[COL_J]
+            radius = math.hypot(center_offset_x, center_offset_y)
             radius_x_px = radius * width
             radius_y_px = radius * height
 
@@ -58,7 +74,7 @@ def _geometry_to_svg_path(
             #
             # Since visual direction is preserved (Top stays Top),
             # Source CW (True) maps to SVG CW (1).
-            sweep = 1 if cmd.clockwise else 0
+            sweep = 1 if bool(row[COL_CW]) else 0
 
             path_data.append(
                 f"A {radius_x_px:.3f} {radius_y_px:.3f} 0 {large_arc} {sweep} "
