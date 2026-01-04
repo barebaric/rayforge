@@ -157,11 +157,22 @@ class TestPngImporter:
         assert wp.size[0] == pytest.approx(expected_width_mm, 5)
         assert wp.size[1] == pytest.approx(expected_height_mm, 5)
 
-    def test_importer_requires_vectorization_spec(self, color_png_data: bytes):
-        """Importer returns None if no vectorization_spec is provided."""
+    def test_importer_defaults_spec_if_none(self, color_png_data: bytes):
+        """
+        Importer uses default TraceSpec if no vectorization_spec is provided.
+        """
         importer = PngImporter(color_png_data)
+        # Pass None explicitly, expecting success now
         payload = importer.get_doc_items(vectorization_spec=None)
-        assert payload is None
+
+        assert payload is not None
+        assert payload.items
+        assert len(payload.items) == 1
+
+        wp = payload.items[0]
+        assert isinstance(wp, WorkPiece)
+        assert isinstance(wp.source_segment, SourceAssetSegment)
+        assert isinstance(wp.source_segment.vectorization_spec, TraceSpec)
 
     def test_importer_handles_invalid_data(self):
         """Tests the importer returns None for invalid PNG data."""
