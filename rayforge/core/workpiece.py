@@ -1318,8 +1318,8 @@ class WorkPiece(DocItem):
         Returns:
             A list of new WorkPiece instances.
         """
-        if len(fragments) <= 1:
-            return [self]
+        if not fragments or len(fragments) <= 1:
+            return []
 
         new_workpieces = []
         original_matrix = self.matrix

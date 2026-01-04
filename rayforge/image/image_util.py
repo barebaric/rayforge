@@ -8,7 +8,14 @@ from ..core.source_asset_segment import SourceAssetSegment
 from ..core.item import DocItem
 from ..core.matrix import Matrix
 from ..core.workpiece import WorkPiece
-from ..core.geo import Geometry, MoveToCommand, LineToCommand
+from ..core.geo import Geometry
+from ..core.geo.constants import (
+    CMD_TYPE_MOVE,
+    CMD_TYPE_LINE,
+    COL_TYPE,
+    COL_X,
+    COL_Y,
+)
 
 if TYPE_CHECKING:
     from ..core.source_asset import SourceAsset
@@ -234,24 +241,29 @@ def _render_geometry_to_vips_mask(
 
     # Draw the geometry filled with white
     ctx.set_source_rgba(1, 1, 1, 1)
-    for cmd in geometry.commands:
-        if isinstance(cmd, MoveToCommand):
-            assert cmd.end is not None
-            ctx.move_to(cmd.end[0], cmd.end[1])
-        elif isinstance(cmd, LineToCommand):
-            assert cmd.end is not None
-            ctx.line_to(cmd.end[0], cmd.end[1])
+    data = geometry.data
+    if data is not None:
+        for row in data:
+            cmd_type = row[COL_TYPE]
+            if cmd_type == CMD_TYPE_MOVE:
+                ctx.move_to(row[COL_X], row[COL_Y])
+            elif cmd_type == CMD_TYPE_LINE:
+                ctx.line_to(row[COL_X], row[COL_Y])
     ctx.fill()
 
     # Handle Cairo stride padding (e.g. if width is not multiple of 4)
     stride = surface.get_stride()
-    data = surface.get_data()
+    cairo_data = surface.get_data()
 
     if stride == width:
-        return pyvips.Image.new_from_memory(data, width, height, 1, "uchar")
+        return pyvips.Image.new_from_memory(
+            cairo_data, width, height, 1, "uchar"
+        )
 
     # Remove stride padding using numpy to prevent mask distortion
-    arr = numpy.frombuffer(data, dtype=numpy.uint8).reshape((height, stride))
+    arr = numpy.frombuffer(cairo_data, dtype=numpy.uint8).reshape(
+        (height, stride)
+    )
     clean_data = numpy.ascontiguousarray(arr[:, :width]).tobytes()
 
     return pyvips.Image.new_from_memory(clean_data, width, height, 1, "uchar")
@@ -309,7 +321,7 @@ def create_single_workpiece_from_trace(
     if geometries:
         for geo in geometries:
             geo.close_gaps()
-            combined_geo.commands.extend(geo.commands)
+            combined_geo.extend(geo)
 
     if combined_geo.is_empty():
         logger.warning("Tracing produced no vectors, creating an empty item.")

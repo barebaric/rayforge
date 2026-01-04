@@ -12,13 +12,21 @@ from . import linearize
 from . import primitives
 from . import query
 from . import transform
+from .constants import (
+    CMD_TYPE_MOVE,
+    CMD_TYPE_LINE,
+    CMD_TYPE_ARC,
+    COL_TYPE,
+    COL_X,
+    COL_Y,
+    COL_Z,
+    COL_I,
+    COL_J,
+    COL_CW,
+    GEO_ARRAY_COLS,
+)
 from .geometry import (
     Geometry,
-    Command,
-    MovingCommand,
-    MoveToCommand,
-    LineToCommand,
-    ArcToCommand,
 )
 
 __all__ = [
@@ -31,9 +39,15 @@ __all__ = [
     "query",
     "transform",
     "Geometry",
-    "Command",
-    "MovingCommand",
-    "MoveToCommand",
-    "LineToCommand",
-    "ArcToCommand",
+    "CMD_TYPE_MOVE",
+    "CMD_TYPE_LINE",
+    "CMD_TYPE_ARC",
+    "COL_TYPE",
+    "COL_X",
+    "COL_Y",
+    "COL_Z",
+    "COL_I",
+    "COL_J",
+    "COL_CW",
+    "GEO_ARRAY_COLS",
 ]

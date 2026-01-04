@@ -2,10 +2,16 @@ import logging
 import math
 import cairo
 from ...core.stock import StockItem
-from ...core.geo import (
-    MoveToCommand as GeoMove,
-    LineToCommand as GeoLine,
-    ArcToCommand as GeoArc,
+from ...core.geo.constants import (
+    CMD_TYPE_MOVE,
+    CMD_TYPE_LINE,
+    CMD_TYPE_ARC,
+    COL_TYPE,
+    COL_X,
+    COL_Y,
+    COL_I,
+    COL_J,
+    COL_CW,
 )
 from ..canvas import CanvasElement
 
@@ -69,7 +75,7 @@ class StockElement(CanvasElement):
 
     def draw(self, ctx: cairo.Context):
         """Draws the stock geometry directly to the main canvas context."""
-        if not self.data.geometry or not self.visible:
+        if self.data.geometry.is_empty() or not self.visible:
             return
 
         ctx.save()
@@ -84,37 +90,40 @@ class StockElement(CanvasElement):
             ctx.translate(-min_x, -min_y)
 
         # Build the path from geometry data
-        for cmd in self.data.geometry:
-            if cmd.end is None:
-                continue
+        last_point = (0.0, 0.0)
+        data = self.data.geometry.data
+        if data is not None:
+            for row in data:
+                cmd_type = row[COL_TYPE]
+                x, y = row[COL_X], row[COL_Y]
 
-            x, y, z = cmd.end
-
-            match cmd:
-                case GeoMove():
+                if cmd_type == CMD_TYPE_MOVE:
                     ctx.move_to(x, y)
-                case GeoLine():
+                elif cmd_type == CMD_TYPE_LINE:
                     ctx.line_to(x, y)
-                case GeoArc():
-                    start_x, start_y = ctx.get_current_point()
-                    i, j = cmd.center_offset
+                elif cmd_type == CMD_TYPE_ARC:
+                    start_x, start_y = last_point
+                    i, j = row[COL_I], row[COL_J]
                     center_x, center_y = start_x + i, start_y + j
                     radius = math.dist(
                         (start_x, start_y), (center_x, center_y)
                     )
                     if radius < 1e-6:
                         ctx.line_to(x, y)
+                        last_point = (x, y)
                         continue
 
                     angle1 = math.atan2(start_y - center_y, start_x - center_x)
                     angle2 = math.atan2(y - center_y, x - center_x)
 
-                    if cmd.clockwise:
+                    is_clockwise = bool(row[COL_CW])
+                    if is_clockwise:
                         ctx.arc(center_x, center_y, radius, angle1, angle2)
                     else:
                         ctx.arc_negative(
                             center_x, center_y, radius, angle1, angle2
                         )
+                last_point = (x, y)
 
         # Get the material color if available
         material = self.data.material

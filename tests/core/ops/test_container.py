@@ -5,9 +5,7 @@ import json
 import numpy as np
 from contextlib import redirect_stdout
 from typing import cast
-from rayforge.core import geo
 from rayforge.core.geo.geometry import Geometry
-
 from rayforge.core.ops import (
     Ops,
     MoveToCommand,
@@ -640,10 +638,9 @@ def test_subtract_regions_with_scanline():
 def test_from_geometry():
     # Use the actual Geometry class instead of mocks to ensure correct types
     geo_obj = Geometry()
-    geo_obj.add(geo.MoveToCommand((10, 10, 0)))
-    geo_obj.add(geo.LineToCommand((20, 20, 0)))
-    geo_obj.add(geo.ArcToCommand((30, 10, 0), (-10, 0), False))
-    # last_move_to is updated automatically by geo.add()
+    geo_obj.move_to(10, 10, 0)
+    geo_obj.line_to(20, 20, 0)
+    geo_obj.arc_to(30, 10, -10, 0, clockwise=False, z=0)
 
     ops = Ops.from_geometry(geo_obj)
 

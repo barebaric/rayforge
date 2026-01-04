@@ -1,6 +1,8 @@
 from __future__ import annotations
 import logging
-from typing import List, TYPE_CHECKING, Optional, Set
+from typing import List, TYPE_CHECKING, Set
+import numpy as np
+from .constants import CMD_TYPE_MOVE, COL_TYPE
 
 if TYPE_CHECKING:
     from .geometry import Geometry
@@ -14,28 +16,39 @@ def split_into_contours(geometry: "Geometry") -> List["Geometry"]:
     Geometry objects. Each new object represents one continuous subpath
     that starts with a MoveToCommand.
     """
-    if geometry.is_empty():
+    geometry._sync_to_numpy()
+    if geometry.is_empty() or geometry._data is None:
         return []
 
-    from .geometry import Geometry, MoveToCommand
+    from .geometry import Geometry
 
     contours: List[Geometry] = []
-    current_geo: Optional["Geometry"] = None
+    data = geometry._data
 
-    for cmd in geometry.commands:
-        if isinstance(cmd, MoveToCommand):
-            # A MoveTo command always starts a new contour.
-            current_geo = Geometry()
-            contours.append(current_geo)
+    move_indices = np.where(data[:, COL_TYPE] == CMD_TYPE_MOVE)[0]
 
-        if current_geo is None:
-            # This handles geometries that might not start with a
-            # MoveToCommand. The first drawing command will implicitly
-            # start the first contour.
-            current_geo = Geometry()
-            contours.append(current_geo)
+    # If there are no MoveTo commands, or if the first command is not a MoveTo,
+    # the entire array is treated as a single contour.
+    if len(move_indices) == 0:
+        if len(data) > 0:
+            new_geo = Geometry()
+            new_geo._data = data.copy()
+            contours.append(new_geo)
+    else:
+        # Handle the first segment if it doesn't start with a move
+        if move_indices[0] != 0:
+            new_geo = Geometry()
+            new_geo._data = data[: move_indices[0]].copy()
+            contours.append(new_geo)
 
-        current_geo.add(cmd)
+        # Split the array at each MoveTo index (excluding the first one)
+        # This creates sub-arrays, each starting with a MoveTo.
+        split_arrays = np.split(data, move_indices[1:])
+        for arr in split_arrays:
+            if len(arr) > 0:
+                new_geo = Geometry()
+                new_geo._data = arr.copy()
+                contours.append(new_geo)
 
     # Filter out any empty geometries that might have been created
     return [c for c in contours if not c.is_empty()]
@@ -114,14 +127,14 @@ def split_into_components(geometry: "Geometry") -> List["Geometry"]:
         has_closed_path = False
         for idx in indices:
             contour = all_contour_data[idx]
-            component_geo.commands.extend(contour["geo"].commands)
+            component_geo.extend(contour["geo"])
             if contour["is_closed"]:
                 has_closed_path = True
 
         if has_closed_path:
             final_geometries.append(component_geo)
         else:
-            stray_open_geo.commands.extend(component_geo.commands)
+            stray_open_geo.extend(component_geo)
 
     if not stray_open_geo.is_empty():
         logger.debug(

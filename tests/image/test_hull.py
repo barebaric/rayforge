@@ -48,7 +48,7 @@ def test_get_enclosing_hull():
     # (6 vertices).
     # A 6-vertex shape results in 7 commands:
     # 1 MoveTo, 5 LineTo's, and 1 final LineTo from close_path().
-    assert len(geo.commands) == 7
+    assert len(geo) == 7
 
 
 def test_get_enclosing_hull_no_content():
@@ -88,8 +88,8 @@ def test_get_hulls_from_image_multiple_components():
     # The convex hull of a square is a square (4 vertices).
     # A 4-vertex shape results in 5 commands:
     # 1 MoveTo, 3 LineTo's, and 1 final LineTo from close_path().
-    assert len(geometries[0].commands) == 5
-    assert len(geometries[1].commands) == 5
+    assert len(geometries[0]) == 5
+    assert len(geometries[1]) == 5
 
 
 def test_get_hulls_from_image_no_content():
@@ -144,7 +144,7 @@ def test_concave_hull_creates_valid_indentation():
     )
 
     # 1. Check basic properties: more vertices and smaller area than convex.
-    assert len(concave_geo.commands) > len(convex_geo.commands), (
+    assert len(concave_geo) > len(convex_geo), (
         "Concave hull should have more vertices than the convex hull."
     )
     assert convex_geo.area() > 0
@@ -181,8 +181,7 @@ def test_get_concave_hull_zero_gravity():
 
     assert convex_geo is not None
     assert concave_geo is not None
-    assert len(convex_geo.commands) == len(concave_geo.commands)
+    assert len(convex_geo) == len(concave_geo)
 
     # Check if the command points are identical
-    for cmd1, cmd2 in zip(convex_geo.commands, concave_geo.commands):
-        assert cmd1.end == cmd2.end
+    np.testing.assert_array_equal(convex_geo.data, concave_geo.data)

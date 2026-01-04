@@ -1,8 +1,10 @@
-from rayforge.core.geo import (
-    Geometry,
-    MoveToCommand,
-    LineToCommand,
-    ArcToCommand,
+import numpy as np
+from rayforge.core.geo import Geometry
+from rayforge.core.geo.constants import (
+    CMD_TYPE_MOVE,
+    CMD_TYPE_LINE,
+    CMD_TYPE_ARC,
+    COL_TYPE,
 )
 
 
@@ -18,12 +20,14 @@ def test_simplify_straight_line():
     # With a tiny tolerance, all intermediate points on a perfect line
     # should go
     simplified = geo.simplify(tolerance=0.001)
+    simplified._sync_to_numpy()
+    assert simplified.data is not None
 
-    assert len(simplified.commands) == 2
-    assert isinstance(simplified.commands[0], MoveToCommand)
-    assert simplified.commands[0].end == (0, 0, 0)
-    assert isinstance(simplified.commands[1], LineToCommand)
-    assert simplified.commands[1].end == (10, 10, 0)
+    assert len(simplified) == 2
+    assert simplified.data[0, COL_TYPE] == CMD_TYPE_MOVE
+    assert np.all(simplified.data[0, 1:4] == (0, 0, 0))
+    assert simplified.data[1, COL_TYPE] == CMD_TYPE_LINE
+    assert np.all(simplified.data[1, 1:4] == (10, 10, 0))
 
 
 def test_simplify_significant_corner():
@@ -35,9 +39,10 @@ def test_simplify_significant_corner():
 
     # Tolerance is smaller than the height of the triangle (5)
     simplified = geo.simplify(tolerance=1.0)
+    assert simplified.data is not None
 
-    assert len(simplified.commands) == 3
-    assert simplified.commands[1].end == (5, 5, 0)
+    assert len(simplified) == 3
+    assert np.all(simplified.data[1, 1:4] == (5, 5, 0))
 
 
 def test_simplify_insignificant_bump():
@@ -49,9 +54,10 @@ def test_simplify_insignificant_bump():
 
     # Tolerance (0.5) > Deviation (0.1), so middle point is removed
     simplified = geo.simplify(tolerance=0.5)
+    assert simplified.data is not None
 
-    assert len(simplified.commands) == 2
-    assert simplified.commands[1].end == (10, 0, 0)
+    assert len(simplified) == 2
+    assert np.all(simplified.data[1, 1:4] == (10, 0, 0))
 
 
 def test_simplify_preserves_arcs():
@@ -65,6 +71,7 @@ def test_simplify_preserves_arcs():
     geo.line_to(6, 0)  # Collinear, should be removed
 
     simplified = geo.simplify(tolerance=0.1)
+    assert simplified.data is not None
 
     # Expected:
     # 1. MoveTo(0,0)
@@ -72,10 +79,10 @@ def test_simplify_preserves_arcs():
     # 3. ArcTo(...)   <- Preserved
     # 4. LineTo(6,0)  <- The end of the second linear chain
 
-    assert len(simplified.commands) == 4
-    assert isinstance(simplified.commands[2], ArcToCommand)
-    assert simplified.commands[1].end == (2, 0, 0)
-    assert simplified.commands[3].end == (6, 0, 0)
+    assert len(simplified) == 4
+    assert simplified.data[2, COL_TYPE] == CMD_TYPE_ARC
+    assert np.all(simplified.data[1, 1:4] == (2, 0, 0))
+    assert np.all(simplified.data[3, 1:4] == (6, 0, 0))
 
 
 def test_simplify_preserves_moveto_breaks():
@@ -92,15 +99,16 @@ def test_simplify_preserves_moveto_breaks():
     geo.line_to(30, 0)  # Simplifies to (20,0)->(30,0)
 
     simplified = geo.simplify(tolerance=0.1)
+    assert simplified.data is not None
 
-    assert len(simplified.commands) == 4
-    assert isinstance(simplified.commands[0], MoveToCommand)
-    assert isinstance(simplified.commands[1], LineToCommand)
-    assert isinstance(simplified.commands[2], MoveToCommand)
-    assert isinstance(simplified.commands[3], LineToCommand)
+    assert len(simplified) == 4
+    assert simplified.data[0, COL_TYPE] == CMD_TYPE_MOVE
+    assert simplified.data[1, COL_TYPE] == CMD_TYPE_LINE
+    assert simplified.data[2, COL_TYPE] == CMD_TYPE_MOVE
+    assert simplified.data[3, COL_TYPE] == CMD_TYPE_LINE
 
-    assert simplified.commands[1].end == (10, 0, 0)
-    assert simplified.commands[3].end == (30, 0, 0)
+    assert np.all(simplified.data[1, 1:4] == (10, 0, 0))
+    assert np.all(simplified.data[3, 1:4] == (30, 0, 0))
 
 
 def test_simplify_closed_shape():
@@ -116,17 +124,10 @@ def test_simplify_closed_shape():
     geo.close_path()  # LineTo(0,0)
 
     simplified = geo.simplify(tolerance=0.1)
+    assert simplified.data is not None
 
-    # RDP on a closed loop treats it as a polyline from start to end.
-    # For a square (0,0)..(10,0)..(10,10)..(0,10)..(0,0):
-    # The max deviation from the baseline (0,0)->(0,0) is at (10,10), so it
-    # splits there.
-    # Recursion 1: (0,0)..(10,10). Baseline is diagonal. Corner (10,0) is far.
-    # Recursion 2: (10,10)..(0,0). Baseline is diagonal. Corner (0,10) is far.
-    # Result: All 4 corners preserved.
-
-    assert len(simplified.commands) == 5  # Move + 4 Lines
-    points = [cmd.end for cmd in simplified.commands]
+    assert len(simplified) == 5  # Move + 4 Lines
+    points = [tuple(row[1:4]) for row in simplified.data]
     assert (10, 0, 0) in points
     assert (10, 10, 0) in points
     assert (0, 10, 0) in points
@@ -137,7 +138,7 @@ def test_simplify_empty_geometry():
     """Tests that an empty geometry is handled gracefully."""
     geo = Geometry()
     simplified = geo.simplify(tolerance=0.1)
-    assert len(simplified.commands) == 0
+    assert len(simplified) == 0
 
 
 def test_simplify_single_segment():
@@ -148,10 +149,11 @@ def test_simplify_single_segment():
 
     # Even with huge tolerance, start and end must be preserved
     simplified = geo.simplify(tolerance=100.0)
+    assert simplified.data is not None
 
-    assert len(simplified.commands) == 2
-    assert simplified.commands[0].end == (0, 0, 0)
-    assert simplified.commands[1].end == (10, 10, 0)
+    assert len(simplified) == 2
+    assert np.all(simplified.data[0, 1:4] == (0, 0, 0))
+    assert np.all(simplified.data[1, 1:4] == (10, 10, 0))
 
 
 def test_simplify_z_axis_preservation():
@@ -161,14 +163,12 @@ def test_simplify_z_axis_preservation():
     geo.line_to(5, 0, 2)  # Collinear in XY, but has Z
     geo.line_to(10, 0, 3)
 
-    # The current implementation calculates error in 2D (XY).
-    # Since (5,0) is perfectly on the line between (0,0) and (10,0),
-    # it should be removed, and the line should connect (0,0,1) -> (10,0,3).
     simplified = geo.simplify(tolerance=0.1)
+    assert simplified.data is not None
 
-    assert len(simplified.commands) == 2
-    assert simplified.commands[0].end == (0, 0, 1)
-    assert simplified.commands[1].end == (10, 0, 3)
+    assert len(simplified) == 2
+    assert np.all(simplified.data[0, 1:4] == (0, 0, 1))
+    assert np.all(simplified.data[1, 1:4] == (10, 0, 3))
 
 
 def test_simplify_zigzag_removal():
@@ -183,10 +183,11 @@ def test_simplify_zigzag_removal():
 
     # Tolerance 0.1 > Amplitude 0.05 -> should result in straight line
     simplified = geo.simplify(tolerance=0.1)
+    assert simplified.data is not None
 
-    assert len(simplified.commands) == 2
-    assert simplified.commands[0].end == (0, 0, 0)
-    assert simplified.commands[1].end == (10, 0, 0)
+    assert len(simplified) == 2
+    assert np.all(simplified.data[0, 1:4] == (0, 0, 0))
+    assert np.all(simplified.data[1, 1:4] == (10, 0, 0))
 
 
 def test_simplify_duplicate_points():
@@ -198,11 +199,8 @@ def test_simplify_duplicate_points():
     geo.line_to(10, 10)  # Duplicate
 
     simplified = geo.simplify(tolerance=0.001)
+    assert simplified.data is not None
 
-    # RDP inherently handles duplicates by seeing zero deviation
-    # or zero chord length logic.
-    # Logic: Start(0,0) -> End(10,10). Mid points (0,0) and (10,10)
-    # lie exactly on the line segment.
-    assert len(simplified.commands) == 2
-    assert simplified.commands[0].end == (0, 0, 0)
-    assert simplified.commands[1].end == (10, 10, 0)
+    assert len(simplified) == 2
+    assert np.all(simplified.data[0, 1:4] == (0, 0, 0))
+    assert np.all(simplified.data[1, 1:4] == (10, 10, 0))

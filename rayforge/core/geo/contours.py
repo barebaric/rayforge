@@ -1,15 +1,97 @@
 from __future__ import annotations
-import math
 import logging
 from typing import List, Tuple, TYPE_CHECKING
-from .analysis import get_subpath_area
+import numpy as np
+from .analysis import get_subpath_area_from_array
 from .primitives import is_point_in_polygon
 from .split import split_into_contours
+from .constants import (
+    CMD_TYPE_MOVE,
+    CMD_TYPE_LINE,
+    CMD_TYPE_ARC,
+    COL_TYPE,
+    COL_X,
+    COL_Y,
+    COL_Z,
+    COL_I,
+    COL_J,
+    COL_CW,
+)
+
 
 if TYPE_CHECKING:
-    from .geometry import Geometry, Command
+    from .geometry import Geometry
 
 logger = logging.getLogger(__name__)
+
+
+def close_geometry_gaps_from_array(
+    data: np.ndarray, tolerance: float = 1e-6
+) -> np.ndarray:
+    """
+    Closes small gaps in a geometry array to form clean, connected paths.
+
+    Args:
+        data: The input geometry numpy array.
+        tolerance: The maximum distance between two points to be
+                    considered "the same".
+
+    Returns:
+        A new, modified numpy array.
+    """
+    if data is None or len(data) < 2:
+        return data if data is not None else np.array([])
+
+    # Pass 1: Close gaps within each contour (intra-contour)
+    # This pass modifies a copy of the array.
+    modified_data = data.copy()
+    move_indices = np.where(modified_data[:, COL_TYPE] == CMD_TYPE_MOVE)[0]
+    sub_arrays = np.split(modified_data, move_indices[1:])
+
+    for sub in sub_arrays:
+        if len(sub) < 2:
+            continue
+        start_pt = sub[0, COL_X : COL_Z + 1]
+        end_pt = sub[-1, COL_X : COL_Z + 1]
+        dist_sq = np.sum((start_pt - end_pt) ** 2)
+        if dist_sq < tolerance * tolerance:
+            # Snap the end point to the start point.
+            sub[-1, COL_X : COL_Z + 1] = start_pt
+    # Reassemble the array after modifications
+    modified_data = np.vstack(sub_arrays)
+
+    # Pass 2: Connect adjacent contours (inter-contour)
+    # This pass builds a new list of rows, as it can change command types.
+    final_rows: List[np.ndarray] = []
+    last_end_point: np.ndarray | None = None
+    for row in modified_data:
+        cmd_type = row[COL_TYPE]
+        end_point = row[COL_X : COL_Z + 1]
+
+        if cmd_type == CMD_TYPE_MOVE:
+            if last_end_point is not None:
+                dist_sq = np.sum((end_point - last_end_point) ** 2)
+                if dist_sq < tolerance * tolerance:
+                    # This MoveTo is a small jump; replace with a LineTo
+                    # to the exact previous endpoint to close the gap.
+                    new_row = row.copy()
+                    new_row[COL_TYPE] = CMD_TYPE_LINE
+                    new_row[COL_X : COL_Z + 1] = last_end_point
+                    final_rows.append(new_row)
+                    # The logical position remains last_end_point
+                else:
+                    final_rows.append(row)
+                    last_end_point = end_point
+            else:
+                final_rows.append(row)
+                last_end_point = end_point
+        else:
+            final_rows.append(row)
+            last_end_point = end_point
+
+    if not final_rows:
+        return np.array([])
+    return np.array(final_rows)
 
 
 def close_geometry_gaps(
@@ -18,16 +100,7 @@ def close_geometry_gaps(
     """
     Closes small gaps in a Geometry object to form clean, connected paths.
 
-    This function creates a new Geometry object with the modifications. The
-    process is two-fold:
-    1.  It iterates through each subpath (contour) and checks if the
-        start and end points are within the given tolerance. If so, it
-        snaps the end point to the start point, creating a perfectly
-        closed shape.
-    2.  It then checks for gaps between separate subpaths. If a `MoveTo`
-        command starts very close to where the previous path ended, it
-        replaces the `MoveTo` with a `LineTo`, effectively stitching the
-        two paths together.
+    This function creates a new Geometry object with the modifications.
 
     Args:
         geometry: The input Geometry object.
@@ -37,127 +110,92 @@ def close_geometry_gaps(
     Returns:
         A new, modified Geometry object.
     """
-    from .geometry import MoveToCommand, MovingCommand, LineToCommand
-
-    if len(geometry.commands) < 2:
-        return geometry.copy()
-
-    # Work on a copy to avoid modifying the original
     new_geo = geometry.copy()
+    new_geo._sync_to_numpy()
+    if new_geo.is_empty() or new_geo._data is None:
+        return new_geo
 
-    # Pass 1: Close gaps within each contour (intra-contour)
-    contour_blocks: List[List[Command]] = []
-    if new_geo.commands:
-        current_block: List[Command] = []
-        for cmd in new_geo.commands:
-            if isinstance(cmd, MoveToCommand):
-                if current_block:
-                    contour_blocks.append(current_block)
-                current_block = [cmd]
-            else:
-                if not current_block:  # Path starts with drawing cmd
-                    current_block.append(MoveToCommand((0.0, 0.0, 0.0)))
-                current_block.append(cmd)
-        if current_block:
-            contour_blocks.append(current_block)
-
-    for block in contour_blocks:
-        if len(block) < 2:
-            continue
-        start_cmd = block[0]
-        end_cmd = block[-1]
-        if (
-            isinstance(start_cmd, MoveToCommand)
-            and isinstance(end_cmd, MovingCommand)
-            and start_cmd.end
-            and end_cmd.end
-        ):
-            if math.dist(start_cmd.end, end_cmd.end) < tolerance:
-                # Snap the end point to the start point. This modifies the
-                # command object within the new_geo.commands list.
-                end_cmd.end = start_cmd.end
-
-    # Pass 2: Connect adjacent contours (inter-contour) using the modified list
-    final_commands: List[Command] = []
-    last_end_point: tuple[float, float, float] | None = None
-    for cmd in new_geo.commands:
-        if isinstance(cmd, MoveToCommand) and cmd.end:
-            if (
-                last_end_point is not None
-                and math.dist(cmd.end, last_end_point) < tolerance
-            ):
-                # This MoveTo is a small jump; replace with a LineTo
-                # to the exact previous endpoint to close the gap.
-                final_commands.append(LineToCommand(last_end_point))
-                # The logical position remains last_end_point
-            else:
-                final_commands.append(cmd)
-                last_end_point = cmd.end
-        elif isinstance(cmd, MovingCommand) and cmd.end:
-            final_commands.append(cmd)
-            last_end_point = cmd.end
-        else:
-            final_commands.append(cmd)  # Non-moving command
-
-    new_geo.commands = final_commands
+    new_geo._data = close_geometry_gaps_from_array(
+        new_geo._data, tolerance=tolerance
+    )
     return new_geo
 
 
 def reverse_contour(contour: Geometry) -> Geometry:
     """Reverses the direction of a single-contour Geometry object."""
-    from .geometry import (
-        Geometry,
-        MoveToCommand,
-        LineToCommand,
-        ArcToCommand,
-        MovingCommand,
+    from .geometry import Geometry
+
+    contour._sync_to_numpy()
+    data = contour._data
+    if data is None or len(data) == 0:
+        return contour.copy()
+
+    if data[0, COL_TYPE] != CMD_TYPE_MOVE:
+        return contour.copy()  # Can only reverse single contours
+
+    new_rows = []
+
+    # New path starts at the old path's end
+    last_row = data[-1]
+    new_rows.append(
+        [
+            CMD_TYPE_MOVE,
+            last_row[COL_X],
+            last_row[COL_Y],
+            last_row[COL_Z],
+            0.0,
+            0.0,
+            0.0,
+        ]
     )
+    last_point = last_row[COL_X : COL_Z + 1]
 
-    if contour.is_empty() or not isinstance(
-        contour.commands[0], MoveToCommand
-    ):
-        return contour.copy()
+    # Iterate backwards through rows
+    for i in range(len(data) - 1, 0, -1):
+        end_row = data[i]
+        start_row = data[i - 1]
+        start_point = start_row[COL_X : COL_Z + 1]
+        cmd_type = end_row[COL_TYPE]
 
-    new_geo = Geometry()
-    moving_cmds = [
-        cmd for cmd in contour.commands if isinstance(cmd, MovingCommand)
-    ]
-    if not moving_cmds:
-        return contour.copy()
-
-    # The new path starts at the old path's end
-    new_geo.move_to(*moving_cmds[-1].end)
-    last_point = moving_cmds[-1].end
-
-    # Iterate backwards through the moving commands
-    for i in range(len(moving_cmds) - 1, 0, -1):
-        end_cmd = moving_cmds[i]
-        start_cmd = moving_cmds[i - 1]
-        start_point = start_cmd.end
-
-        if isinstance(end_cmd, LineToCommand):
-            new_geo.line_to(*start_point)
-        elif isinstance(end_cmd, ArcToCommand):
-            # To reverse an arc, we swap start/end points and flip the flag.
-            # The center offset must be recalculated from the new start point.
-            center_abs = (
-                start_point[0] + end_cmd.center_offset[0],
-                start_point[1] + end_cmd.center_offset[1],
+        if cmd_type == CMD_TYPE_LINE:
+            new_rows.append(
+                [
+                    CMD_TYPE_LINE,
+                    start_point[0],
+                    start_point[1],
+                    start_point[2],
+                    0,
+                    0,
+                    0,
+                ]
             )
-            new_offset = (
-                center_abs[0] - last_point[0],
-                center_abs[1] - last_point[1],
+        elif cmd_type == CMD_TYPE_ARC:
+            center_abs_x = start_point[0] + end_row[COL_I]
+            center_abs_y = start_point[1] + end_row[COL_J]
+            new_offset_x = center_abs_x - last_point[0]
+            new_offset_y = center_abs_y - last_point[1]
+            new_cw = 1.0 - end_row[COL_CW]  # Flip clockwise flag
+            new_rows.append(
+                [
+                    CMD_TYPE_ARC,
+                    start_point[0],
+                    start_point[1],
+                    start_point[2],
+                    new_offset_x,
+                    new_offset_y,
+                    new_cw,
+                ]
             )
-            new_geo.arc_to(
-                x=start_point[0],
-                y=start_point[1],
-                z=start_point[2],
-                i=new_offset[0],
-                j=new_offset[1],
-                clockwise=not end_cmd.clockwise,
-            )
+
         last_point = start_point
 
+    new_geo = Geometry()
+    new_geo._data = np.array(new_rows)
+    new_geo.last_move_to = (
+        new_rows[0][COL_X],
+        new_rows[0][COL_Y],
+        new_rows[0][COL_Z],
+    )
     return new_geo
 
 
@@ -214,7 +252,10 @@ def normalize_winding_orders(contours: List[Geometry]) -> List[Geometry]:
         if c.is_empty():
             contour_data.append(None)
             continue
-
+        c._sync_to_numpy()  # Ensure data is available
+        if c.data is None:
+            contour_data.append(None)
+            continue
         segments = c.segments()
         if not segments:
             contour_data.append(None)
@@ -272,7 +313,10 @@ def normalize_winding_orders(contours: List[Geometry]) -> List[Geometry]:
             if is_point_in_polygon(current["test_point"], other["verts"]):
                 nesting_level += 1
 
-        signed_area = get_subpath_area(current["geo"].commands, 0)
+        current_data = current["geo"].data
+        if current_data is None:
+            continue
+        signed_area = get_subpath_area_from_array(current_data, 0)
         is_ccw = signed_area > 0
         is_nested_odd = nesting_level % 2 != 0
 
@@ -313,11 +357,13 @@ def filter_to_external_contours(contours: List[Geometry]) -> List[Geometry]:
     # After normalization, any "external" or "solid" area will have a CCW
     # winding order (positive area). Holes will be CW (negative area).
     # We simply need to keep the CCW ones.
-    return [
-        c
-        for c in normalized_contours
-        if get_subpath_area(c.commands, 0) > 1e-9
-    ]
+    final_contours = []
+    for c in normalized_contours:
+        c._sync_to_numpy()
+        data = c.data
+        if data is not None and get_subpath_area_from_array(data, 0) > 1e-9:
+            final_contours.append(c)
+    return final_contours
 
 
 def remove_inner_edges(geometry: Geometry) -> Geometry:
@@ -363,9 +409,9 @@ def remove_inner_edges(geometry: Geometry) -> Geometry:
     # Reassemble the final geometry
     final_geo = Geometry()
     for contour in external_closed_contours:
-        final_geo.commands.extend(contour.commands)
+        final_geo.extend(contour)
     for contour in open_contours:
-        final_geo.commands.extend(contour.commands)
+        final_geo.extend(contour)
 
     # Preserve the last_move_to from the original, as it's the most
     # sensible value, although its direct relevance might be diminished.

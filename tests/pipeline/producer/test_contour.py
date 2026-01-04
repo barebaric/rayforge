@@ -79,8 +79,8 @@ def vector_workpiece() -> WorkPiece:
     inner = create_rect(0.25, 0.25, 0.5, 0.5, cw=True)  # CW hole
 
     combined = Geometry()
-    combined.commands.extend(outer.commands)
-    combined.commands.extend(inner.commands)
+    combined.extend(outer)
+    combined.extend(inner)
 
     segment = SourceAssetSegment(
         source_asset_uid="test",
@@ -332,8 +332,8 @@ def test_winding_normalization_on_import(laser, dummy_surface):
     )  # CCW (Wrong! Should be CW)
 
     bad_winding_geo = Geometry()
-    bad_winding_geo.commands.extend(outer.commands)
-    bad_winding_geo.commands.extend(inner.commands)
+    bad_winding_geo.extend(outer)
+    bad_winding_geo.extend(inner)
 
     wp = WorkPiece(name="bad_winding")
     wp._boundaries_cache = bad_winding_geo

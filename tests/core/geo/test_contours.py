@@ -1,6 +1,7 @@
 import pytest
-from rayforge.core.geo import Geometry, MoveToCommand, LineToCommand
-from rayforge.core.geo.analysis import get_subpath_area
+import numpy as np
+from rayforge.core.geo import Geometry
+from rayforge.core.geo.analysis import get_subpath_area_from_array
 from rayforge.core.geo.contours import (
     filter_to_external_contours,
     reverse_contour,
@@ -8,16 +9,19 @@ from rayforge.core.geo.contours import (
     close_geometry_gaps,
     split_inner_and_outer_contours,
 )
+from rayforge.core.geo.constants import COL_TYPE, CMD_TYPE_MOVE, CMD_TYPE_LINE
 
 
 def test_reverse_contour_simple_polygon():
     """Tests reversing a simple square."""
     ccw_square = Geometry.from_points([(0, 0), (10, 0), (10, 10), (0, 10)])
-    original_area = get_subpath_area(ccw_square.commands, 0)
+    assert ccw_square.data is not None
+    original_area = get_subpath_area_from_array(ccw_square.data, 0)
     assert original_area > 0  # Is CCW
 
     reversed_square = reverse_contour(ccw_square)
-    reversed_area = get_subpath_area(reversed_square.commands, 0)
+    assert reversed_square.data is not None
+    reversed_area = get_subpath_area_from_array(reversed_square.data, 0)
     assert reversed_area < 0  # Is now CW
     assert reversed_area == pytest.approx(-original_area)
 
@@ -29,10 +33,12 @@ def test_reverse_contour_with_arc():
     semi.move_to(10, 0)
     semi.arc_to(-10, 0, i=-10, j=0, clockwise=False)  # CCW
     semi.line_to(10, 0)
-    assert get_subpath_area(semi.commands, 0) > 0
+    assert semi.data is not None
+    assert get_subpath_area_from_array(semi.data, 0) > 0
 
     reversed_semi = reverse_contour(semi)
-    assert get_subpath_area(reversed_semi.commands, 0) < 0
+    assert reversed_semi.data is not None
+    assert get_subpath_area_from_array(reversed_semi.data, 0) < 0
 
 
 def test_split_inner_and_outer_contours_empty_and_single():
@@ -123,14 +129,18 @@ def test_normalize_winding_donut_all_ccw():
     """Tests a donut where both contours are incorrectly CCW."""
     outer = Geometry.from_points([(0, 0), (20, 0), (20, 20), (0, 20)])
     hole = Geometry.from_points([(5, 5), (15, 5), (15, 15), (5, 15)])
-    assert get_subpath_area(outer.commands, 0) > 0
-    assert get_subpath_area(hole.commands, 0) > 0
+    assert outer.data is not None
+    assert hole.data is not None
+    assert get_subpath_area_from_array(outer.data, 0) > 0
+    assert get_subpath_area_from_array(hole.data, 0) > 0
 
     normalized = normalize_winding_orders([outer, hole])
     # Outer (nesting 0) should remain CCW
-    assert get_subpath_area(normalized[0].commands, 0) > 0
+    assert normalized[0].data is not None
+    assert get_subpath_area_from_array(normalized[0].data, 0) > 0
     # Inner (nesting 1) should be flipped to CW
-    assert get_subpath_area(normalized[1].commands, 0) < 0
+    assert normalized[1].data is not None
+    assert get_subpath_area_from_array(normalized[1].data, 0) < 0
 
 
 def test_normalize_winding_with_incorrect_container():
@@ -145,7 +155,8 @@ def test_normalize_winding_with_incorrect_container():
     # Create a hole (can be any direction, let's use CCW)
     hole_ccw = Geometry.from_points([(5, 5), (15, 5), (15, 15), (5, 15)])
 
-    assert get_subpath_area(outer_cw.commands, 0) < 0  # Verify it's CW
+    assert outer_cw.data is not None
+    assert get_subpath_area_from_array(outer_cw.data, 0) < 0  # Verify it's CW
 
     # The buggy `normalize_winding_orders` would fail here.
     # `outer_cw.encloses(hole_ccw)` would return False because outer_cw is CW.
@@ -153,7 +164,8 @@ def test_normalize_winding_with_incorrect_container():
     normalized = normalize_winding_orders([outer_cw, hole_ccw])
 
     # This assertion would fail: the hole would not have been flipped to CW.
-    assert get_subpath_area(normalized[1].commands, 0) < 0
+    assert normalized[1].data is not None
+    assert get_subpath_area_from_array(normalized[1].data, 0) < 0
 
 
 def test_filter_external_empty_list():
@@ -200,8 +212,10 @@ def test_filter_external_robust_to_winding_order():
     # Donut shape, but the "hole" is wound CCW, which is incorrect.
     outer = Geometry.from_points([(0, 0), (20, 0), (20, 20), (0, 20)])
     incorrect_hole = Geometry.from_points([(5, 5), (15, 5), (15, 15), (5, 15)])
-    assert get_subpath_area(outer.commands, 0) > 0
-    assert get_subpath_area(incorrect_hole.commands, 0) > 0
+    assert outer.data is not None
+    assert incorrect_hole.data is not None
+    assert get_subpath_area_from_array(outer.data, 0) > 0
+    assert get_subpath_area_from_array(incorrect_hole.data, 0) > 0
 
     # A correct filter should normalize the hole to CW and then discard it.
     result = filter_to_external_contours([outer, incorrect_hole])
@@ -248,17 +262,19 @@ def test_close_geometry_gaps_functional():
     geo_intra.line_to(10, 10)
     geo_intra.line_to(0.000001, 10)  # Ends near (0, 10)
     geo_intra.line_to(0.000002, 0.000003)  # Ends near start point (0, 0)
-    original_intra_commands = geo_intra.copy().commands
+    original_intra_data = geo_intra.copy().data
+    assert original_intra_data is not None
 
     result_intra = close_geometry_gaps(geo_intra, tolerance=1e-5)
+    assert result_intra.data is not None
     assert result_intra is not geo_intra
-    assert result_intra.commands is not geo_intra.commands
-    assert (
-        geo_intra.commands[-1].end == original_intra_commands[-1].end
-    )  # Original is unchanged
-    assert result_intra.commands[0].end == (0, 0, 0)
+    assert geo_intra.data is not None
+    assert not np.array_equal(result_intra.data, geo_intra.data)
+    # Original is unchanged
+    assert np.all(geo_intra.data[-1, 1:4] == original_intra_data[-1, 1:4])
+    assert np.all(result_intra.data[0, 1:4] == (0, 0, 0))
     # The final point should be snapped to the start point
-    assert result_intra.commands[-1].end == (0, 0, 0)
+    assert np.all(result_intra.data[-1, 1:4] == (0, 0, 0))
 
     # 2. Test inter-contour gap closing (stitching paths)
     geo_inter = Geometry()
@@ -266,19 +282,22 @@ def test_close_geometry_gaps_functional():
     geo_inter.line_to(10, 10)
     geo_inter.move_to(10.000001, 10.000002)  # A small jump
     geo_inter.line_to(20, 20)
-    original_inter_commands = geo_inter.copy().commands
+    original_inter_data = geo_inter.copy().data
+    assert original_inter_data is not None
 
     result_inter = close_geometry_gaps(geo_inter, tolerance=1e-5)
+    assert result_inter.data is not None
     assert result_inter is not geo_inter
-    assert result_inter.commands is not geo_inter.commands
-    # Assert original is unchanged by comparing its command to the saved copy
-    assert isinstance(geo_inter.commands[2], MoveToCommand)
-    assert geo_inter.commands[2].end == original_inter_commands[2].end
+    assert geo_inter.data is not None
+    assert not np.array_equal(result_inter.data, geo_inter.data)
+    # Assert original is unchanged
+    assert geo_inter.data[2, COL_TYPE] == CMD_TYPE_MOVE
+    assert np.all(geo_inter.data[2, 1:4] == original_inter_data[2, 1:4])
 
     # The MoveTo should be replaced with a LineTo in the result
-    assert isinstance(result_inter.commands[2], LineToCommand)
+    assert result_inter.data[2, COL_TYPE] == CMD_TYPE_LINE
     # The new LineTo should connect to the exact previous endpoint
-    assert result_inter.commands[2].end == (10, 10, 0)
+    assert np.all(result_inter.data[2, 1:4] == (10, 10, 0))
 
 
 def test_close_geometry_gaps_respects_tolerance():
@@ -291,15 +310,17 @@ def test_close_geometry_gaps_respects_tolerance():
 
     # First, try with a tolerance that is too small
     result1 = close_geometry_gaps(geo, tolerance=0.1)
+    assert result1.data is not None
     # The MoveTo should NOT be replaced
-    assert isinstance(result1.commands[2], MoveToCommand)
-    assert result1.commands[2].end == (10.1, 10.1, 0)
+    assert result1.data[2, COL_TYPE] == CMD_TYPE_MOVE
+    assert np.all(result1.data[2, 1:4] == (10.1, 10.1, 0))
 
     # Now, try with a tolerance that is large enough
     result2 = close_geometry_gaps(geo, tolerance=0.2)
+    assert result2.data is not None
     # The MoveTo SHOULD be replaced
-    assert isinstance(result2.commands[2], LineToCommand)
-    assert result2.commands[2].end == (10, 10, 0)
+    assert result2.data[2, COL_TYPE] == CMD_TYPE_LINE
+    assert np.all(result2.data[2, 1:4] == (10, 10, 0))
 
 
 def test_remove_inner_edges():
@@ -331,7 +352,7 @@ def test_remove_inner_edges():
     # Test Case 4: Donut shape (one outer, one inner closed path)
     geo_donut = Geometry.from_points([(0, 0), (10, 0), (10, 10), (0, 10)])
     hole = Geometry.from_points([(2, 2), (2, 8), (8, 8), (8, 2)])
-    geo_donut.commands.extend(hole.commands)
+    geo_donut.extend(hole)
     assert geo_donut.area() == pytest.approx(100 - 36)  # Area = 64
 
     result_donut = geo_donut.remove_inner_edges()
@@ -374,9 +395,10 @@ def test_remove_inner_edges():
         [(10, 10), (20, 10), (20, 20), (10, 20)]
     )  # Inner
     geo_bullseye = Geometry()
-    geo_bullseye.commands.extend(c1.commands)
-    geo_bullseye.commands.extend(c2_hole.commands)
-    geo_bullseye.commands.extend(c3.commands)
+    geo_bullseye.extend(c1)
+    geo_bullseye.extend(c2_hole)
+    geo_bullseye.extend(c3)
+
     # Total area = (30*30) - (20*20) + (10*10) = 900 - 400 + 100 = 600
     assert geo_bullseye.area() == pytest.approx(600)
 

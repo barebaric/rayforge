@@ -1,45 +1,57 @@
 import math
-from typing import List, Tuple, Any, Optional, TYPE_CHECKING
+from typing import List, Tuple, Optional, TYPE_CHECKING
 from itertools import groupby
+import numpy as np
 from .linearize import linearize_arc
 from .primitives import is_point_in_polygon
+from .constants import (
+    CMD_TYPE_MOVE,
+    CMD_TYPE_LINE,
+    CMD_TYPE_ARC,
+    COL_TYPE,
+    COL_X,
+    COL_Y,
+    COL_Z,
+    COL_I,
+    COL_J,
+    COL_CW,
+)
 
 if TYPE_CHECKING:
     from .geometry import Geometry
 
 
-def is_closed(commands: List[Any], tolerance: float = 1e-6) -> bool:
+def is_closed(commands: np.ndarray, tolerance: float = 1e-6) -> bool:
     """
-    Checks if a single-contour path defined by a list of commands is closed.
+    Checks if a single-contour path defined by a numpy array is closed.
 
     A path is considered closed if it contains at least one drawing command
     and its start and end points are within the specified tolerance. The path
-    is expected to begin with a MoveToCommand.
+    is expected to begin with a MoveToCommand (or equivalent in array).
 
     Args:
-        commands: A list of command objects representing a single contour.
+        commands: A numpy array representing a single contour.
         tolerance: The maximum distance to consider start and end points equal.
 
     Returns:
         True if the path is closed, False otherwise.
     """
-    # Imports are local to prevent circular dependencies at module load time.
-    from .geometry import MoveToCommand, MovingCommand
-
     if len(commands) < 2:
         return False
 
-    start_cmd = commands[0]
-    # A valid contour for this check should start with a MoveTo
-    if not isinstance(start_cmd, MoveToCommand) or start_cmd.end is None:
+    # Check start command (must be MoveTo)
+    if commands[0, COL_TYPE] != CMD_TYPE_MOVE:
         return False
 
-    # The last command must be a moving command to have an endpoint
-    end_cmd = commands[-1]
-    if not isinstance(end_cmd, MovingCommand) or end_cmd.end is None:
-        return False
+    # Extract start and end coordinates (X, Y, Z)
+    start_point = commands[0, COL_X : COL_Z + 1]
+    end_point = commands[-1, COL_X : COL_Z + 1]
 
-    return math.dist(start_cmd.end, end_cmd.end) < tolerance
+    # Calculate squared Euclidean distance
+    dist_sq = np.sum((start_point - end_point) ** 2)
+
+    # Convert numpy bool to python bool
+    return bool(dist_sq < (tolerance * tolerance))
 
 
 def encloses(container: "Geometry", content: "Geometry") -> bool:
@@ -63,7 +75,6 @@ def encloses(container: "Geometry", content: "Geometry") -> bool:
         return False
 
     # 2. Broad Phase: Bounding Box Check
-    cont_min_x, cont_min_y, cont_max_x, cont_max_y = container.rect()
     cont_min_x, cont_min_y, cont_max_x, cont_max_y = container.rect()
     other_min_x, other_min_y, other_max_x, other_max_y = content.rect()
     if not (
@@ -92,8 +103,12 @@ def encloses(container: "Geometry", content: "Geometry") -> bool:
 
     winding_number = 0
     for contour in closed_contours:
-        # A single contour geometry always starts at command index 0
-        area = get_subpath_area(contour["geo"].commands, 0)
+        contour["geo"]._sync_to_numpy()
+        data = contour["geo"]._data
+        if data is None:
+            continue
+        # A single contour geometry always starts at command index 0.
+        area = get_subpath_area_from_array(data, 0)
 
         if is_point_in_polygon(test_point, contour["vertices"]):
             if area > 1e-9:  # CCW (outer boundary)
@@ -104,50 +119,50 @@ def encloses(container: "Geometry", content: "Geometry") -> bool:
     return winding_number > 0
 
 
-def get_subpath_vertices(
-    commands: List[Any], start_cmd_index: int
+def get_subpath_vertices_from_array(
+    data: np.ndarray, start_cmd_index: int
 ) -> List[Tuple[float, float]]:
     """
     Extracts all 2D vertices for a single continuous subpath starting at a
-    given MoveToCommand index, linearizing any arcs.
+    given MoveToCommand index from a numpy array, linearizing any arcs.
     """
-    from .geometry import MoveToCommand, LineToCommand, ArcToCommand
-
     vertices: List[Tuple[float, float]] = []
-    if start_cmd_index >= len(commands):
+    if start_cmd_index >= len(data):
         return []
-    last_pos_3d = commands[start_cmd_index].end or (0.0, 0.0, 0.0)
+
+    start_row = data[start_cmd_index]
+    last_pos_3d = (start_row[COL_X], start_row[COL_Y], start_row[COL_Z])
     vertices.append(last_pos_3d[:2])
 
-    for i in range(start_cmd_index + 1, len(commands)):
-        cmd = commands[i]
-        if isinstance(cmd, MoveToCommand):
-            # End of the subpath
-            break
-        if not isinstance(cmd, (LineToCommand, ArcToCommand)) or not cmd.end:
-            continue
+    for i in range(start_cmd_index + 1, len(data)):
+        row = data[i]
+        cmd_type = row[COL_TYPE]
 
-        if isinstance(cmd, LineToCommand):
-            vertices.append(cmd.end[:2])
-        elif isinstance(cmd, ArcToCommand):
-            segments = linearize_arc(cmd, last_pos_3d)
+        if cmd_type == CMD_TYPE_MOVE:
+            break
+
+        end_point_3d = (row[COL_X], row[COL_Y], row[COL_Z])
+        if cmd_type == CMD_TYPE_LINE:
+            vertices.append(end_point_3d[:2])
+        elif cmd_type == CMD_TYPE_ARC:
+            segments = linearize_arc(row, last_pos_3d)
             for _, p2 in segments:
                 vertices.append(p2[:2])
-        last_pos_3d = cmd.end
-
+        last_pos_3d = end_point_3d
     return vertices
 
 
-def get_subpath_area(commands: List[Any], start_cmd_index: int) -> float:
+def get_subpath_area_from_array(
+    data: np.ndarray, start_cmd_index: int
+) -> float:
     """
-    Calculates the signed area of a subpath using the shoelace formula.
-    Returns 0 for open or degenerate paths.
+    Calculates the signed area of a subpath from a numpy array using the
+    shoelace formula. Returns 0 for open or degenerate paths.
     """
-    vertices = get_subpath_vertices(commands, start_cmd_index)
+    vertices = get_subpath_vertices_from_array(data, start_cmd_index)
     if len(vertices) < 3:
         return 0.0
 
-    # A subpath is closed if its first and last vertices are the same.
     p_start, p_end = vertices[0], vertices[-1]
     if not (
         math.isclose(p_start[0], p_end[0])
@@ -155,34 +170,48 @@ def get_subpath_area(commands: List[Any], start_cmd_index: int) -> float:
     ):
         return 0.0
 
-    # Shoelace formula to calculate signed area
-    area = 0.0
-    # The last point is a duplicate of the first, so we can ignore it.
-    for i in range(len(vertices) - 1):
-        p1 = vertices[i]
-        p2 = vertices[i + 1]
-        area += (p1[0] * p2[1]) - (p2[0] * p1[1])
-
-    return area / 2.0
+    verts_arr = np.array(vertices)
+    x = verts_arr[:-1, 0]
+    y_shifted = verts_arr[1:, 1]
+    y = verts_arr[:-1, 1]
+    x_shifted = verts_arr[1:, 0]
+    return np.sum(x * y_shifted - x_shifted * y) / 2.0
 
 
-def get_path_winding_order(commands: List[Any], segment_index: int) -> str:
+def get_area_from_array(data: np.ndarray) -> float:
+    """
+    Calculates the total area of all closed subpaths in a geometry array.
+    """
+    if data is None or data.shape[0] == 0:
+        return 0.0
+
+    total_signed_area = 0.0
+    move_indices = np.where(data[:, COL_TYPE] == CMD_TYPE_MOVE)[0]
+
+    processed_data = data
+    if len(data) > 0 and data[0, COL_TYPE] != CMD_TYPE_MOVE:
+        # Geometry doesn't start with a move, prepend one at (0,0,0)
+        processed_data = np.insert(
+            data, 0, [CMD_TYPE_MOVE, 0, 0, 0, 0, 0, 0], axis=0
+        )
+        move_indices = np.where(processed_data[:, COL_TYPE] == CMD_TYPE_MOVE)[
+            0
+        ]
+
+    for i in move_indices:
+        total_signed_area += get_subpath_area_from_array(processed_data, i)
+
+    return abs(total_signed_area)
+
+
+def get_path_winding_order_from_array(
+    data: np.ndarray, start_cmd_index: int
+) -> str:
     """
     Determines winding order ('cw', 'ccw', 'unknown') for the subpath at a
     given index.
     """
-    from .geometry import MoveToCommand
-
-    # Find the start of the subpath for the given segment
-    subpath_start_index = -1
-    for i in range(segment_index, -1, -1):
-        if isinstance(commands[i], MoveToCommand):
-            subpath_start_index = i
-            break
-    if subpath_start_index == -1:
-        return "unknown"
-
-    area = get_subpath_area(commands, subpath_start_index)
+    area = get_subpath_area_from_array(data, start_cmd_index)
 
     # Convention: positive area is CCW, negative is CW in a Y-up system
     if abs(area) < 1e-9:
@@ -193,43 +222,45 @@ def get_path_winding_order(commands: List[Any], segment_index: int) -> str:
         return "cw"
 
 
-def get_point_and_tangent_at(
-    commands: List[Any], segment_index: int, t: float
+def get_point_and_tangent_at_from_array(
+    data: np.ndarray, row_index: int, t: float
 ) -> Optional[Tuple[Tuple[float, float], Tuple[float, float]]]:
     """
     Calculates the 2D point and tangent vector at a parameter 't' along a
-    segment.
+    segment represented by a row in the data array.
     """
-    from .geometry import LineToCommand, ArcToCommand, MovingCommand
+    if row_index >= len(data):
+        return None
 
-    cmd = commands[segment_index]
-    if not isinstance(cmd, MovingCommand) or cmd.end is None:
+    row = data[row_index]
+    cmd_type = row[COL_TYPE]
+    if cmd_type not in (CMD_TYPE_LINE, CMD_TYPE_ARC):
         return None
 
     # Find the start point of this segment
-    start_pos_3d: Tuple[float, float, float] = (0.0, 0.0, 0.0)
-    for i in range(segment_index - 1, -1, -1):
-        prev_cmd = commands[i]
-        if prev_cmd.end:
-            start_pos_3d = prev_cmd.end
-            break
+    if row_index > 0:
+        start_pos_3d = tuple(data[row_index - 1, COL_X : COL_Z + 1])
+    else:
+        start_pos_3d = (0.0, 0.0, 0.0)
 
     p0 = start_pos_3d[:2]
-    p1 = cmd.end[:2]
+    p1 = tuple(row[COL_X : COL_Y + 1])
 
-    if isinstance(cmd, LineToCommand):
+    if cmd_type == CMD_TYPE_LINE:
         point = (p0[0] + t * (p1[0] - p0[0]), p0[1] + t * (p1[1] - p0[1]))
         tangent_vec = (p1[0] - p0[0], p1[1] - p0[1])
-    elif isinstance(cmd, ArcToCommand):
+    elif cmd_type == CMD_TYPE_ARC:
+        center_offset = (row[COL_I], row[COL_J])
+        clockwise = bool(row[COL_CW])
         center = (
-            p0[0] + cmd.center_offset[0],
-            p0[1] + cmd.center_offset[1],
+            p0[0] + center_offset[0],
+            p0[1] + center_offset[1],
         )
         start_angle = math.atan2(p0[1] - center[1], p0[0] - center[0])
         end_angle = math.atan2(p1[1] - center[1], p1[0] - center[0])
         angle_range = end_angle - start_angle
 
-        if cmd.clockwise:
+        if clockwise:
             if angle_range > 0:
                 angle_range -= 2 * math.pi
         else:
@@ -247,7 +278,7 @@ def get_point_and_tangent_at(
         )
 
         radius_vec = (point[0] - center[0], point[1] - center[1])
-        if cmd.clockwise:
+        if clockwise:
             tangent_vec = (radius_vec[1], -radius_vec[0])
         else:
             tangent_vec = (-radius_vec[1], radius_vec[0])
@@ -262,18 +293,28 @@ def get_point_and_tangent_at(
     return point, normalized_tangent
 
 
-def get_outward_normal_at(
-    commands: List[Any], segment_index: int, t: float
+def get_outward_normal_at_from_array(
+    data: np.ndarray, row_index: int, t: float
 ) -> Optional[Tuple[float, float]]:
     """
     Calculates the outward-pointing normal vector for a point on a closed
-    path.
+    path from a numpy array.
     """
-    winding = get_path_winding_order(commands, segment_index)
+    # Find the start of the subpath for the given segment
+    subpath_start_index = -1
+    for i in range(row_index, -1, -1):
+        if data[i, COL_TYPE] == CMD_TYPE_MOVE:
+            subpath_start_index = i
+            break
+    if subpath_start_index == -1:
+        # If no move is found, assume the path starts at index 0.
+        subpath_start_index = 0
+
+    winding = get_path_winding_order_from_array(data, subpath_start_index)
     if winding == "unknown":
         return None
 
-    result = get_point_and_tangent_at(commands, segment_index, t)
+    result = get_point_and_tangent_at_from_array(data, row_index, t)
     if not result:
         return None
 
