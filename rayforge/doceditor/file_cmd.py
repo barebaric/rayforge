@@ -1,7 +1,7 @@
 import asyncio
 import logging
 from pathlib import Path
-from typing import TYPE_CHECKING, List, Optional, Tuple, cast, Callable
+from typing import TYPE_CHECKING, Callable, List, Optional, Tuple, cast
 
 from ..context import get_context
 from ..core.item import DocItem
@@ -10,8 +10,8 @@ from ..core.matrix import Matrix
 from ..core.source_asset import SourceAsset
 from ..core.undo import ListItemCommand
 from ..core.vectorization_spec import VectorizationSpec
-from ..image import import_file, ImportPayload
-from ..pipeline.artifact import JobArtifactHandle, JobArtifact
+from ..image import ImportPayload, import_file
+from ..pipeline.artifact import JobArtifact, JobArtifactHandle
 from .layout.align import PositionAtStrategy
 
 if TYPE_CHECKING:
@@ -178,6 +178,8 @@ class FileCmd:
                         msg = _(
                             f"Import failed: No items were created "
                             f"from {fn.name}"
+                            f"{' (tip: only use paths for svg)' if fn.suffix == '.svg'
+                            else ''}"
                         )
                     logger.warning(
                         f"Importer created no items for '{fn.name}' "
