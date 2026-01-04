@@ -2,17 +2,6 @@ import cairo
 import math
 from collections import defaultdict
 from ...core.geo.primitives import find_closest_point_on_line
-from ...core.geo.constants import (
-    CMD_TYPE_MOVE,
-    CMD_TYPE_LINE,
-    CMD_TYPE_ARC,
-    COL_TYPE,
-    COL_X,
-    COL_Y,
-    COL_I,
-    COL_J,
-    COL_CW,
-)
 from ...core.sketcher.entities import Line, Arc, Circle
 from ...core.sketcher.constraints import (
     DistanceConstraint,
@@ -119,51 +108,11 @@ class SketchRenderer:
 
     def _draw_fills(self, ctx: cairo.Context):
         """Draws the filled regions of the sketch."""
-        # Use the sketch's centralized logic to get geometry
         fill_geometries = self.element.sketch.get_fill_geometries()
 
         for geo in fill_geometries:
             ctx.new_path()
-            data = geo.data
-            if data is None:
-                continue
-
-            last_point = (0.0, 0.0)
-            for row in data:
-                cmd_type = row[COL_TYPE]
-                if cmd_type == CMD_TYPE_MOVE:
-                    ctx.move_to(row[COL_X], row[COL_Y])
-
-                elif cmd_type == CMD_TYPE_LINE:
-                    ctx.line_to(row[COL_X], row[COL_Y])
-
-                elif cmd_type == CMD_TYPE_ARC:
-                    # Current point (start of arc)
-                    sx, sy = last_point
-
-                    # Center offset (i, j) is relative to start
-                    i, j = row[COL_I], row[COL_J]
-                    cx, cy = sx + i, sy + j
-
-                    radius = math.hypot(i, j)
-
-                    # Angles
-                    # Start vector: from Center to Start -> (-i, -j)
-                    start_angle = math.atan2(-j, -i)
-
-                    # End vector: from Center to End
-                    end_x, end_y = row[COL_X], row[COL_Y]
-                    end_angle = math.atan2(end_y - cy, end_x - cx)
-
-                    is_clockwise = bool(row[COL_CW])
-                    if is_clockwise:
-                        ctx.arc_negative(
-                            cx, cy, radius, start_angle, end_angle
-                        )
-                    else:
-                        ctx.arc(cx, cy, radius, start_angle, end_angle)
-                last_point = (row[COL_X], row[COL_Y])
-
+            geo.to_cairo(ctx)
             ctx.close_path()
 
             ctx.save()

@@ -485,3 +485,53 @@ def test_transform_wrapper(mock_transform_array, sample_geometry):
 
     # Verify that the geometry's data has been updated
     np.testing.assert_array_equal(sample_geometry.data, mock_data)
+
+
+def test_to_cairo():
+    """Tests the to_cairo() method for drawing geometry to a Cairo context."""
+    from unittest.mock import Mock
+    import cairo
+
+    geo = Geometry()
+    geo.move_to(5, 5)
+    geo.line_to(10, 10)
+    geo.arc_to(15, 5, i=0, j=-5, clockwise=False)
+
+    ctx = Mock(spec=cairo.Context)
+    geo.to_cairo(ctx)
+
+    ctx.move_to.assert_called_once_with(5, 5)
+    ctx.line_to.assert_called_once_with(10, 10)
+    ctx.arc.assert_called_once()
+
+
+def test_to_cairo_empty_geometry():
+    """Tests that to_cairo() handles empty geometry gracefully."""
+    from unittest.mock import Mock
+    import cairo
+
+    geo = Geometry()
+    ctx = Mock(spec=cairo.Context)
+    geo.to_cairo(ctx)
+
+    ctx.move_to.assert_not_called()
+    ctx.line_to.assert_not_called()
+    ctx.arc.assert_not_called()
+    ctx.arc_negative.assert_not_called()
+
+
+def test_to_cairo_clockwise_arc():
+    """Tests that to_cairo() correctly draws clockwise arcs."""
+    from unittest.mock import Mock
+    import cairo
+
+    geo = Geometry()
+    geo.move_to(10, 10)
+    geo.arc_to(15, 10, i=0, j=-5, clockwise=True)
+
+    ctx = Mock(spec=cairo.Context)
+    geo.to_cairo(ctx)
+
+    ctx.move_to.assert_called_once_with(10, 10)
+    ctx.arc_negative.assert_called_once()
+    ctx.arc.assert_not_called()
