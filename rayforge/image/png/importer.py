@@ -25,6 +25,9 @@ class PngImporter(Importer):
     def get_doc_items(
         self, vectorization_spec: Optional["VectorizationSpec"] = None
     ) -> Optional[ImportPayload]:
+        if vectorization_spec is None:
+            vectorization_spec = TraceSpec()
+
         if not isinstance(vectorization_spec, TraceSpec):
             logger.error("PngImporter requires a TraceSpec to trace.")
             return None
