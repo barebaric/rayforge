@@ -45,16 +45,53 @@ def test_safe_list_ports_linux(monkeypatch):
     def mock_glob(pattern):
         if pattern == "/dev/ttyUSB*":
             return ["/dev/ttyUSB1", "/dev/ttyUSB0"]
-        # Corrected typo here: "/dev/ttyACM*" instead of "/dev/yACM*"
         if pattern == "/dev/ttyACM*":
             return ["/dev/ttyACM0"]
+        if pattern == "/dev/serial/by-id/*":
+            return [
+                "/dev/serial/by-id/"
+                "usb-FTDI_FT232R_USB_UART_AH03K1A0-if00-port0"
+            ]
+        if pattern == "/dev/serial/by-path/*":
+            return ["/dev/serial/by-path/pci-0000:00:14.0-usb-0:1:1.0-port0"]
         return []
 
     monkeypatch.setattr(
         "rayforge.machine.transport.serial.glob.glob", mock_glob
     )
     ports = safe_list_ports_linux()
-    expected_ports = ["/dev/ttyACM0", "/dev/ttyUSB0", "/dev/ttyUSB1"]
+    expected_ports = [
+        "/dev/serial/by-id/usb-FTDI_FT232R_USB_UART_AH03K1A0-if00-port0",
+        "/dev/serial/by-path/pci-0000:00:14.0-usb-0:1:1.0-port0",
+        "/dev/ttyACM0",
+        "/dev/ttyUSB0",
+        "/dev/ttyUSB1",
+    ]
+    assert ports == expected_ports
+
+
+def test_safe_list_ports_linux_symlinks_only(monkeypatch):
+    """Test that symlinks are included when no standard ports exist."""
+
+    def mock_glob(pattern):
+        if pattern in ["/dev/ttyUSB*", "/dev/ttyACM*"]:
+            return []
+        if pattern == "/dev/serial/by-id/*":
+            return [
+                "/dev/serial/by-id/"
+                "usb-FTDI_FT232R_USB_UART_AH03K1A0-if00-port0"
+            ]
+        if pattern == "/dev/serial/by-path/*":
+            return []
+        return []
+
+    monkeypatch.setattr(
+        "rayforge.machine.transport.serial.glob.glob", mock_glob
+    )
+    ports = safe_list_ports_linux()
+    expected_ports = [
+        "/dev/serial/by-id/usb-FTDI_FT232R_USB_UART_AH03K1A0-if00-port0"
+    ]
     assert ports == expected_ports
 
 
