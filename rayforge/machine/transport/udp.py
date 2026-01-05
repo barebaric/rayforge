@@ -1,67 +1,29 @@
 import asyncio
+import asyncudp
+import socket
 import logging
-from typing import Optional, Tuple, cast
+from typing import Optional
 from .transport import Transport, TransportStatus
 
 logger = logging.getLogger(__name__)
 
 
-class _UdpProtocol(asyncio.DatagramProtocol):
-    """
-    Internal Protocol class required by asyncio.create_datagram_endpoint.
-    Bridges low-level protocol events to the UdpTransport high-level logic.
-    """
-
-    def __init__(self, transport_wrapper: "UdpTransport"):
-        self.transport_wrapper = transport_wrapper
-
-    def connection_made(self, transport: asyncio.BaseTransport) -> None:
-        # We handle status updates in the UdpTransport.connect method
-        # to ensure the transport reference is set before the signal fires.
-        pass
-
-    def datagram_received(self, data: bytes, addr: Tuple[str, int]) -> None:
-        if self.transport_wrapper:
-            self.transport_wrapper._handle_data(data)
-
-    def error_received(self, exc: Exception) -> None:
-        logger.error(f"UDP Error received: {exc}")
-        if self.transport_wrapper:
-            self.transport_wrapper._handle_error(exc)
-
-    def connection_lost(self, exc: Optional[Exception]) -> None:
-        # This is called when the socket is closed or no longer usable.
-        if self.transport_wrapper:
-            self.transport_wrapper._handle_close(exc)
-
-
 class UdpTransport(Transport):
-    """
-    UDP Transport implementation.
-
-    Since UDP is connectionless, 'Connected' state implies the socket is bound
-    and configured to send to a specific remote address.
-    """
-
     def __init__(self, host: str, port: int):
-        """
-        Initialize UDP transport.
-
-        Args:
-            host: Remote hostname or IP address.
-            port: Remote port.
-        """
         super().__init__()
         self.host = host
+        self.host_ip = socket.gethostbyname(host)
         self.port = port
-        self._transport: Optional[asyncio.DatagramTransport] = None
-        self._protocol: Optional[_UdpProtocol] = None
+        self.reader: Optional[asyncudp.Socket] = None
+        self.writer: Optional[asyncudp.Socket] = None
         self._running = False
+        self._reconnect_interval = 5
+        self._connection_task: Optional[asyncio.Task] = None
 
     @property
     def is_connected(self) -> bool:
-        """Check if the socket is created and active."""
-        return self._transport is not None and not self._transport.is_closing()
+        """Check if the transport is actively connected."""
+        return self.writer is not None
 
     async def connect(self) -> None:
         if self.is_connected:
@@ -69,82 +31,87 @@ class UdpTransport(Transport):
 
         self._running = True
         self.status_changed.send(self, status=TransportStatus.CONNECTING)
-        logger.info(f"Setting up UDP endpoint for {self.host}:{self.port}...")
-
-        loop = asyncio.get_running_loop()
+        logger.info(f"Connecting to server at {self.host}:{self.port}...")
         try:
-            # remote_addr acts as a default destination for sendto(), making
-            # the socket "connected" in OS terms (filtering incoming packets).
-            transport, protocol = await loop.create_datagram_endpoint(
-                lambda: _UdpProtocol(self), remote_addr=(self.host, self.port)
+            self.reader = await asyncudp.create_socket(
+                remote_addr=(self.host_ip, self.port)
             )
+            self.writer = self.reader
 
-            self._transport = cast(asyncio.DatagramTransport, transport)
-            self._protocol = cast(_UdpProtocol, protocol)
-
-            logger.info(f"UDP socket bound to {self.host}:{self.port}")
             self.status_changed.send(self, status=TransportStatus.CONNECTED)
-
+            logger.info(f"Successfully connected to {self.host}:{self.port}.")
+            # Connection is successful, start the management task
+            self._connection_task = asyncio.create_task(
+                self._manage_connection()
+            )
         except Exception as e:
-            logger.error(f"Failed to create UDP endpoint: {e}")
+            # Failed to connect, report error and re-raise so caller knows.
+            logger.error(f"Failed to connect to {self.host}:{self.port}: {e}")
             self.status_changed.send(
                 self, status=TransportStatus.ERROR, message=str(e)
             )
-            # Ensure cleanup if partially created
-            await self.disconnect()
             raise
 
+    async def _manage_connection(self) -> None:
+        """
+        Manages an active connection: receives data and handles disconnects.
+        """
+        try:
+            await self._receive_loop()
+        except Exception as e:
+            self.status_changed.send(
+                self, status=TransportStatus.ERROR, message=str(e)
+            )
+        finally:
+            # Connection was lost or an error occurred.
+            if self.writer:
+                self.writer.close()
+            self.writer = None
+            self.reader = None
+            self.status_changed.send(self, status=TransportStatus.DISCONNECTED)
+
     async def disconnect(self) -> None:
-        """
-        Close the UDP socket.
-        """
-        logger.info("Closing UDP transport...")
+        logger.info(f"Disconnecting from server at {self.host}:{self.port}...")
         self._running = False
-
-        if self._transport:
-            self.status_changed.send(self, status=TransportStatus.CLOSING)
-            self._transport.close()
-            # We do not await transport.wait_closed() here because
-            # asyncio.DatagramTransport does not always expose it consistently
-            # across versions/implementations, and close() is immediate.
-
-        self._transport = None
-        self._protocol = None
-
-        # Signal explicitly here, though connection_lost also triggers it.
-        # This ensures the state is cleared even if connection_lost doesn't
-        # fire.
+        if self._connection_task:
+            self._connection_task.cancel()
+            try:
+                await self._connection_task
+            except asyncio.CancelledError:
+                pass  # Expected
+        if self.writer:
+            try:
+                self.writer.close()
+            except ConnectionResetError:
+                pass  # The other end might have already closed it.
+        self.writer = None
+        self.reader = None
         self.status_changed.send(self, status=TransportStatus.DISCONNECTED)
+        logger.info(f"Disconnected from {self.host}:{self.port}.")
 
     async def send(self, data: bytes) -> None:
-        if not self.is_connected or self._transport is None:
-            raise ConnectionError("UDP transport not connected")
+        if not self.writer:
+            raise ConnectionError("Not connected")
+        # Since the socket was created with remote_addr, it is "connected".
+        # We must not specify the destination address in sendto().
+        self.writer.sendto(data)
 
-        try:
-            self._transport.sendto(data)
-        except Exception as e:
-            # Basic send errors (e.g. buffer full, network down immediate
-            # check)
-            raise ConnectionError(f"Failed to send UDP packet: {e}") from e
-
-    def _handle_data(self, data: bytes) -> None:
-        """Internal callback from protocol."""
-        if self._running:
-            self.received.send(self, data=data)
-
-    def _handle_error(self, exc: Exception) -> None:
-        """Internal callback for protocol errors."""
-        self.status_changed.send(
-            self, status=TransportStatus.ERROR, message=str(exc)
-        )
-
-    def _handle_close(self, exc: Optional[Exception]) -> None:
-        """Internal callback for connection loss."""
-        if self._running:
-            self._running = False
-            msg = str(exc) if exc else None
-            if exc:
+    async def _receive_loop(self) -> None:
+        while self.reader:
+            try:
+                data, _ = await self.reader.recvfrom()
+                if data:
+                    self.received.send(self, data=data)
+                else:
+                    logger.info(
+                        f"Connection to {self.host}:{self.port} "
+                        "closed by peer."
+                    )
+                    break
+            except asyncio.CancelledError:
+                break
+            except Exception as e:
                 self.status_changed.send(
-                    self, status=TransportStatus.ERROR, message=msg
+                    self, status=TransportStatus.ERROR, message=str(e)
                 )
-            self.status_changed.send(self, status=TransportStatus.DISCONNECTED)
+                break
