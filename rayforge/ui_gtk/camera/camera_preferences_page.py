@@ -1,12 +1,12 @@
 from gi.repository import Gtk, Adw
 from blinker import Signal
 from typing import List, cast
-from ..models.camera import Camera
-from ..controller import CameraController
+from ...camera.models.camera import Camera
+from ...camera.controller import CameraController
 from .properties_widget import CameraProperties
 from .selection_dialog import CameraSelectionDialog
-from ...ui_gtk.icons import get_icon
-from ...ui_gtk.settings.preferences_group import PreferencesGroupWithButton
+from ..icons import get_icon
+from ..settings.preferences_group import PreferencesGroupWithButton
 
 
 class CameraRow(Gtk.Box):

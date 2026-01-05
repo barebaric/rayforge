@@ -1,10 +1,10 @@
 import logging
 from typing import cast
 from gi.repository import Gtk, Adw
-from ...ui_gtk.settings.preferences_group import PreferencesGroupWithButton
-from ..models.machine import Machine
-from ..models.machine_hours import ResettableCounter
-from ...ui_gtk.icons import get_icon
+from ..settings.preferences_group import PreferencesGroupWithButton
+from ...machine.models.machine import Machine
+from ...machine.models.machine_hours import ResettableCounter
+from ..icons import get_icon
 
 
 logger = logging.getLogger(__name__)

@@ -1,12 +1,12 @@
 from typing import cast, Optional
 from gi.repository import Adw, Gtk
 from ...context import get_context
-from ..models.machine import Machine
-from ..models.profile import MachineProfile
+from ...machine.models.machine import Machine
+from ...machine.models.profile import MachineProfile
 from .settings_dialog import MachineSettingsDialog
 from .profile_selector import MachineProfileSelectorDialog
-from ...ui_gtk.shared.round_button import RoundButton
-from ...ui_gtk.icons import get_icon
+from ..shared.round_button import RoundButton
+from ..icons import get_icon
 
 
 class MachineSettingsPage(Adw.PreferencesPage):

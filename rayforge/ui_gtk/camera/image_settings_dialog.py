@@ -1,6 +1,6 @@
 import logging
 from gi.repository import Gtk, Adw
-from ..controller import CameraController
+from ...camera.controller import CameraController
 from .display_widget import CameraDisplay
 
 

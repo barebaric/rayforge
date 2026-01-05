@@ -1,8 +1,8 @@
 import copy
 from typing import List
 from gi.repository import Adw, Gtk
-from ...ui_gtk.varset.varsetwidget import VarSetWidget
-from ..models.dialect import GcodeDialect
+from ..varset.varsetwidget import VarSetWidget
+from ...machine.models.dialect import GcodeDialect
 
 
 def _text_to_list(text: str) -> List[str]:

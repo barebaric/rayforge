@@ -3,7 +3,7 @@ from typing import Optional, cast
 from gi.repository import Gtk, Gio, GObject
 from blinker import Signal
 from ...context import get_context
-from ..models.machine import Machine
+from ...machine.models.machine import Machine
 
 logger = logging.getLogger(__name__)
 

@@ -2,8 +2,8 @@ import logging
 from typing import Optional, Tuple
 from blinker import Signal
 from gi.repository import Gtk
-from ...ui_gtk.icons import get_icon
-from ...ui_gtk.shared.gtk import apply_css
+from ..icons import get_icon
+from ..shared.gtk import apply_css
 
 
 logger = logging.getLogger(__name__)

@@ -3,7 +3,7 @@ from gi.repository import Gtk
 from blinker import Signal
 from .icons import get_icon
 from .shared.undo_button import UndoButton, RedoButton
-from ..machine.ui.machine_selector import MachineSelector
+from .machine.machine_selector import MachineSelector
 from .shared.splitbutton import SplitMenuButton
 from .canvas3d import initialized as canvas3d_initialized
 
