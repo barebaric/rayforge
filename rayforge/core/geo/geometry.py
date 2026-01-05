@@ -203,6 +203,22 @@ class Geometry:
             ]
         )
 
+    def append_numpy_data(self, new_data: np.ndarray) -> None:
+        """
+        Directly appends a block of command data (N, 7) to the internal
+        storage. This bypasses the overhead of Python list construction
+        for bulk operations.
+        """
+        if new_data is None or len(new_data) == 0:
+            return
+
+        self._sync_to_numpy()
+
+        if self._data is None:
+            self._data = new_data.copy()
+        else:
+            self._data = np.vstack((self._data, new_data))
+
     def simplify(self: T_Geometry, tolerance: float = 0.01) -> T_Geometry:
         """
         Reduces the number of segments in the geometry using the
