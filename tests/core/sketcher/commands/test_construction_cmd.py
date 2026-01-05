@@ -32,9 +32,7 @@ def test_toggle_construction_command_initialization(sketch, entities):
     assert cmd.new_state is None
 
 
-def test_toggle_construction_command_normal_to_construction(
-    sketch, entities
-):
+def test_toggle_construction_command_normal_to_construction(sketch, entities):
     """Test toggling from normal to construction state."""
     cmd = ToggleConstructionCommand(sketch, "Toggle", entities)
 
@@ -51,9 +49,7 @@ def test_toggle_construction_command_normal_to_construction(
     assert cmd.new_state is True
 
 
-def test_toggle_construction_command_construction_to_normal(
-    sketch, entities
-):
+def test_toggle_construction_command_construction_to_normal(sketch, entities):
     """Test toggling from construction to normal state."""
     for eid in entities:
         ent = sketch.registry.get_entity(eid)
@@ -118,9 +114,7 @@ def test_toggle_construction_command_with_invalid_entity_id(sketch):
     assert cmd.new_state is None
 
 
-def test_toggle_construction_cmd_with_mixed_valid_invalid(
-    sketch, entities
-):
+def test_toggle_construction_cmd_with_mixed_valid_invalid(sketch, entities):
     """Test with a mix of valid and invalid entity IDs."""
     cmd = ToggleConstructionCommand(sketch, "Toggle", entities + [9999])
 
