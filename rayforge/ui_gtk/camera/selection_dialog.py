@@ -1,8 +1,8 @@
 from gi.repository import Gtk, Adw, GdkPixbuf
 from typing import Optional
-from ...ui_gtk.shared.gtk import apply_css
-from ..models.camera import Camera
-from ..controller import CameraController
+from ..shared.gtk import apply_css
+from ...camera.models.camera import Camera
+from ...camera.controller import CameraController
 
 
 class CameraSelectionDialog(Adw.MessageDialog):

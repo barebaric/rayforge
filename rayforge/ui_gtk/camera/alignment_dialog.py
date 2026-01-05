@@ -3,10 +3,10 @@ import math
 from typing import List, Optional, Tuple
 import numpy as np
 from gi.repository import Gtk, Adw, Gdk, GLib
-from ...ui_gtk.icons import get_icon
-from ...ui_gtk.shared.gtk import apply_css
-from ..controller import CameraController
-from ..models.camera import Pos
+from ..icons import get_icon
+from ..shared.gtk import apply_css
+from ...camera.controller import CameraController
+from ...camera.models.camera import Pos
 from .display_widget import CameraDisplay
 from .point_bubble_widget import PointBubbleWidget
 

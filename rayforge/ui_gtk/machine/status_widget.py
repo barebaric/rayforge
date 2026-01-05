@@ -1,6 +1,6 @@
 from gi.repository import Gtk
 from typing import Optional
-from ...ui_gtk.icons import get_icon
+from ..icons import get_icon
 from ...machine.driver.driver import (
     DeviceStatus,
     DeviceState,

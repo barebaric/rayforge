@@ -28,9 +28,9 @@ from ..machine.driver.driver import DeviceState, DeviceStatus
 from ..machine.driver.dummy import NoDeviceDriver
 from ..machine.models.machine import Machine
 from ..machine.transport import TransportStatus
-from ..machine.ui.jog_dialog import JogDialog
-from ..machine.ui.log_dialog import MachineLogDialog
-from ..machine.ui.settings_dialog import MachineSettingsDialog
+from .machine.jog_dialog import JogDialog
+from .machine.log_dialog import MachineLogDialog
+from .machine.settings_dialog import MachineSettingsDialog
 from .main_menu import MainMenu
 from ..pipeline.artifact import JobArtifact, JobArtifactHandle
 from ..pipeline.encoder.gcode import MachineCodeOpMap

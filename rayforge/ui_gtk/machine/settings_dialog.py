@@ -1,9 +1,9 @@
 from gi.repository import Gtk, Adw, Gdk
 from ...camera.models import Camera
-from ...camera.ui.camera_preferences_page import CameraPreferencesPage
+from ..camera.camera_preferences_page import CameraPreferencesPage
 from ...context import get_context
-from ...ui_gtk.icons import get_icon
-from ..models.machine import Machine
+from ..icons import get_icon
+from ...machine.models.machine import Machine
 from .general_preferences_page import GeneralPreferencesPage
 from .device_settings_page import DeviceSettingsPage
 from .advanced_preferences_page import AdvancedPreferencesPage

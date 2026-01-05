@@ -1,9 +1,9 @@
 from typing import cast
 from gi.repository import Gtk
 from ...machine.models.machine import Machine
-from ..models.macro import Macro
-from ...ui_gtk.icons import get_icon
-from ...ui_gtk.settings.preferences_group import PreferencesGroupWithButton
+from ...machine.models.macro import Macro
+from ..icons import get_icon
+from ..settings.preferences_group import PreferencesGroupWithButton
 from .gcode_editor import GcodeEditorDialog
 
 

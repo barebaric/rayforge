@@ -3,7 +3,7 @@ from typing import Optional
 from ...machine.driver.driver import Axis
 from ...machine.models.machine import Machine
 from ...machine.cmd import MachineCmd
-from ...ui_gtk.icons import get_icon
+from ..icons import get_icon
 
 
 class JogWidget(Adw.PreferencesGroup):

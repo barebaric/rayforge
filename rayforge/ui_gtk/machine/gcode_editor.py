@@ -1,8 +1,8 @@
 from typing import List, Optional
 from gi.repository import Gtk, Adw, Gdk, GLib
-from ..models.macro import Macro
+from ...machine.models.macro import Macro
 from ...pipeline.encoder.context import GcodeContext
-from ...ui_gtk.icons import get_icon
+from ..icons import get_icon
 
 # Define characters that are not allowed in macro names
 FORBIDDEN_NAME_CHARS = "();[]{}<>"

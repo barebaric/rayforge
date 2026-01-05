@@ -2,8 +2,8 @@ from typing import cast
 from gi.repository import Gtk, Adw
 from ...machine.models.dialect import GcodeDialect, get_available_dialects
 from ...context import get_context
-from ...ui_gtk.icons import get_icon
-from ...ui_gtk.settings.preferences_group import PreferencesGroupWithButton
+from ..icons import get_icon
+from ..settings.preferences_group import PreferencesGroupWithButton
 from .dialect_editor import DialectEditorDialog
 
 

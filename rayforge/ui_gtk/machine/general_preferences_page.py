@@ -1,11 +1,11 @@
 from gi.repository import Adw, Gtk
 
-from ...ui_gtk.shared.adwfix import get_spinrow_int
-from ...ui_gtk.shared.unit_spin_row import UnitSpinRowHelper
-from ...ui_gtk.varset.varsetwidget import VarSetWidget
-from ..driver import drivers
-from ..driver.driver import Axis
-from ..models.machine import Machine, Origin
+from ..shared.adwfix import get_spinrow_int
+from ..shared.unit_spin_row import UnitSpinRowHelper
+from ..varset.varsetwidget import VarSetWidget
+from ...machine.driver import drivers
+from ...machine.driver.driver import Axis
+from ...machine.models.machine import Machine, Origin
 
 
 class GeneralPreferencesPage(Adw.PreferencesPage):
