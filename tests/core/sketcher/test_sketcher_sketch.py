@@ -787,7 +787,9 @@ def test_sketch_serialization_roundtrip_with_fill():
     assert len(sketch_data["fills"]) == 1
     fill_data = sketch_data["fills"][0]
     assert fill_data["uid"] == fill_uid
-    assert fill_data["boundary"] == boundary
+    # to_dict() should return lists for JSON compatibility
+    expected_boundary = [list(item) for item in boundary]
+    assert fill_data["boundary"] == expected_boundary
 
     # 4. Deserialize back into a new sketch
     new_sketch = Sketch.from_dict(sketch_data)
