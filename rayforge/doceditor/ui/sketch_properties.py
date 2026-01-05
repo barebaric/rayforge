@@ -11,7 +11,7 @@ from ...shared.ui.adwfix import get_spinrow_int
 from ...shared.ui.expander import Expander
 from ...shared.ui.var_row_factory import VarRowFactory
 from ...shared.ui.varsetwidget import NULL_CHOICE_LABEL
-from ...workbench.sketcher.cmd import UpdateSketchCommand
+from ...ui_gtk.sketcher.cmd import UpdateSketchCommand
 
 if TYPE_CHECKING:
     from ..editor import DocEditor

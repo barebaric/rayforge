@@ -5,7 +5,7 @@ from unittest.mock import MagicMock
 from rayforge.core.doc import Doc
 from rayforge.core.layer import Layer
 from rayforge.core.step import Step
-from rayforge.workbench.canvas3d.scene_assembler import (
+from rayforge.ui_gtk.canvas3d.scene_assembler import (
     RenderItem,
     SceneDescription,
     generate_scene_description,
