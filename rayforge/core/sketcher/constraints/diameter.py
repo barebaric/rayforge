@@ -15,8 +15,8 @@ from .base import Constraint
 from .radius import RadiusConstraint
 
 if TYPE_CHECKING:
-    from ..entities import EntityRegistry
     from ..params import ParameterContext
+    from ..registry import EntityRegistry
 
 
 class DiameterConstraint(Constraint):

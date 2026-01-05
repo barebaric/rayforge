@@ -20,8 +20,8 @@ from rayforge.core.geo.primitives import (
 )
 
 if TYPE_CHECKING:
-    from ..entities import EntityRegistry
     from ..params import ParameterContext
+    from ..registry import EntityRegistry
 
 
 class PerpendicularConstraint(Constraint):

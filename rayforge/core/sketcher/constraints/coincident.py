@@ -13,8 +13,8 @@ from typing import (
 from .base import Constraint
 
 if TYPE_CHECKING:
-    from ..entities import EntityRegistry
     from ..params import ParameterContext
+    from ..registry import EntityRegistry
 
 
 class CoincidentConstraint(Constraint):
