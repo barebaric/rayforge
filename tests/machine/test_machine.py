@@ -55,9 +55,9 @@ def doc_editor(
     from rayforge.context import get_context
 
     config_manager = get_context().config_mgr
-    assert (
-        config_manager is not None
-    ), "ConfigManager was not initialized in context"
+    assert config_manager is not None, (
+        "ConfigManager was not initialized in context"
+    )
     return DocEditor(task_mgr, context_initializer, doc)
 
 

@@ -445,9 +445,7 @@ class ImportDialog(Adw.Window):
         self.import_button.set_sensitive(self._preview_payload is not None)
 
         # Show warning banner for SVG direct vector mode failures
-        is_direct_vector = (
-            self.is_svg and self.use_vectors_switch.get_active()
-        )
+        is_direct_vector = self.is_svg and self.use_vectors_switch.get_active()
         self.warning_banner.set_revealed(
             is_direct_vector and self._preview_payload is None
         )

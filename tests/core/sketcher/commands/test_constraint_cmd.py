@@ -58,9 +58,7 @@ def test_modify_constraint_command_execute(sketch, constraint):
     assert constraint.expression == "20"
 
 
-def test_modify_constraint_cmd_execute_without_expression(
-    sketch, constraint
-):
+def test_modify_constraint_cmd_execute_without_expression(sketch, constraint):
     """Test execute when no new expression is provided."""
     cmd = ModifyConstraintCommand(sketch, constraint, 20.0)
 
