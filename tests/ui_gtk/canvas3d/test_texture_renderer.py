@@ -2,6 +2,7 @@
 Tests for the TextureArtifactRenderer class.
 """
 
+import pytest
 import numpy as np
 from unittest.mock import patch
 from rayforge.ui_gtk.canvas3d.texture_renderer import (
@@ -10,6 +11,7 @@ from rayforge.ui_gtk.canvas3d.texture_renderer import (
 from rayforge.pipeline.artifact.base import TextureData
 
 
+@pytest.mark.ui
 def test_texture_coordinates_orientation():
     """
     Test that texture coordinates are set up correctly.
@@ -55,6 +57,7 @@ def test_texture_coordinates_orientation():
     )
 
 
+@pytest.mark.ui
 def test_add_instance_with_different_sizes():
     """
     Test that texture instances are added correctly with different transforms.

@@ -60,6 +60,7 @@ def colors():
     )
 
 
+@pytest.mark.ui
 def test_prepare_vertex_data(ops_renderer, sample_ops, colors):
     """
     Test that prepare_vertex_data with travel_only=True only returns

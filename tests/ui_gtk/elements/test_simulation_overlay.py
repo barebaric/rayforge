@@ -1,5 +1,6 @@
 """Tests for the preview overlay canvas element."""
 
+import pytest
 from rayforge.core.ops import (
     Ops,
 )
@@ -10,6 +11,7 @@ from rayforge.ui_gtk.canvas2d.elements.simulation_overlay import (
 )
 
 
+@pytest.mark.ui
 def test_speed_to_heatmap_color_basic():
     """Test heatmap color generation."""
     # Test minimum speed (should be blue)
@@ -21,6 +23,7 @@ def test_speed_to_heatmap_color_basic():
     assert r == 1.0  # Red component should be max
 
 
+@pytest.mark.ui
 def test_ops_timeline_creation():
     """Test timeline creation from operations."""
     ops = Ops()
@@ -37,6 +40,7 @@ def test_ops_timeline_creation():
     assert max_speed == 1000.0
 
 
+@pytest.mark.ui
 def test_ops_timeline_speed_range():
     """Test speed range calculation from multiple speeds."""
     ops = Ops()
@@ -52,6 +56,7 @@ def test_ops_timeline_speed_range():
     assert max_speed == 500.0
 
 
+@pytest.mark.ui
 def test_preview_overlay_initialization():
     """Test preview overlay initialization."""
     overlay = SimulationOverlay((100.0, 100.0))
@@ -62,6 +67,7 @@ def test_preview_overlay_initialization():
     assert overlay.selectable is False
 
 
+@pytest.mark.ui
 def test_preview_overlay_set_ops():
     """Test setting operations on overlay."""
     overlay = SimulationOverlay((100.0, 100.0))
@@ -77,6 +83,7 @@ def test_preview_overlay_set_ops():
     assert overlay.get_step_count() == 2
 
 
+@pytest.mark.ui
 def test_preview_overlay_set_step():
     """Test setting current playback step."""
     overlay = SimulationOverlay((100.0, 100.0))
@@ -92,6 +99,7 @@ def test_preview_overlay_set_step():
     assert overlay.current_step == 1
 
 
+@pytest.mark.ui
 def test_preview_overlay_empty_ops():
     """Test overlay with no operations."""
     overlay = SimulationOverlay((100.0, 100.0))

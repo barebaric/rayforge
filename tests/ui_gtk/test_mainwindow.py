@@ -83,7 +83,7 @@ def activate_simulation_mode(window) -> bool:
 
 @pytest.fixture
 def assets_path() -> Path:
-    return Path(__file__).parent.parent / "tests"
+    return Path(__file__).parent.parent
 
 
 @pytest.fixture
