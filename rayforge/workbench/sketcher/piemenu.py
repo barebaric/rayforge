@@ -46,6 +46,7 @@ class SketchPieMenu(PieMenu):
             # Actions
             "construction": "toggle_construction_on_selection",
             "chamfer": "add_chamfer_action",
+            "fillet": "add_fillet_action",
             # Constraints (Single Key)
             "horiz": "add_horizontal_constraint",
             "vert": "add_vertical_constraint",
@@ -138,6 +139,11 @@ class SketchPieMenu(PieMenu):
 
         label = f"{_('Chamfer')}{get_shortcut_label('chamfer')}"
         item = PieMenuItem("sketch-chamfer-symbolic", label, data="chamfer")
+        item.on_click.connect(self._on_action_clicked, weak=False)
+        self.add_item(item)
+
+        label = f"{_('Fillet')}{get_shortcut_label('fillet')}"
+        item = PieMenuItem("sketch-fillet-symbolic", label, data="fillet")
         item.on_click.connect(self._on_action_clicked, weak=False)
         self.add_item(item)
 
@@ -263,7 +269,7 @@ class SketchPieMenu(PieMenu):
                     item.visible = not has_target
 
                 # Actions (delete, construction)
-                elif key in ("delete", "construction", "chamfer"):
+                elif key in ("delete", "construction", "chamfer", "fillet"):
                     item.visible = self.sketch_element.is_action_supported(key)
 
                 # Constraints (dist, horiz, vert, etc.)

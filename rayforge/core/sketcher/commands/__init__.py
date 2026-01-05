@@ -7,6 +7,7 @@ from .constraint import ModifyConstraintCommand
 from .construction import ToggleConstructionCommand
 from .fill import AddFillCommand, RemoveFillCommand
 from .chamfer import ChamferCommand
+from .fillet import FilletCommand
 
 __all__ = [
     "SketchChangeCommand",
@@ -19,4 +20,5 @@ __all__ = [
     "AddFillCommand",
     "RemoveFillCommand",
     "ChamferCommand",
+    "FilletCommand",
 ]
