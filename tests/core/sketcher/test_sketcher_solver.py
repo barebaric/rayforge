@@ -1,13 +1,13 @@
 import pytest
 import math
-from rayforge.core.sketcher.entities import EntityRegistry
-from rayforge.core.sketcher.params import ParameterContext
 from rayforge.core.sketcher.constraints import (
     DistanceConstraint,
     HorizontalConstraint,
     VerticalConstraint,
     DragConstraint,
 )
+from rayforge.core.sketcher.params import ParameterContext
+from rayforge.core.sketcher.registry import EntityRegistry
 from rayforge.core.sketcher.solver import Solver
 
 

@@ -1,6 +1,7 @@
 import pytest
 import math
-from rayforge.core.sketcher.entities import EntityRegistry, Arc
+from rayforge.core.sketcher.entities import Arc
+from rayforge.core.sketcher.registry import EntityRegistry
 
 
 @pytest.fixture

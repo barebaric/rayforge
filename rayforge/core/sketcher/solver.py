@@ -2,9 +2,10 @@ import numpy as np
 import scipy.linalg
 from scipy.optimize import least_squares
 from typing import Sequence, List
-from .entities import EntityRegistry, Point
-from .params import ParameterContext
 from .constraints import Constraint
+from .entities import Point
+from .params import ParameterContext
+from .registry import EntityRegistry
 
 
 class Solver:

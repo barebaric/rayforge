@@ -5,9 +5,9 @@ import math
 from types import SimpleNamespace
 from unittest.mock import MagicMock
 
-from rayforge.core.sketcher.params import ParameterContext
-from rayforge.core.sketcher.entities import EntityRegistry
 from rayforge.core.sketcher.constraints import RadiusConstraint
+from rayforge.core.sketcher.params import ParameterContext
+from rayforge.core.sketcher.registry import EntityRegistry
 
 
 @pytest.fixture

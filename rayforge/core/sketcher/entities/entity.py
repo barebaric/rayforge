@@ -1,8 +1,8 @@
 from typing import List, Tuple, Dict, Any, Sequence, TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from .registry import EntityRegistry
     from ..constraints import Constraint
+    from ..registry import EntityRegistry
 
 
 class Entity:

@@ -2,10 +2,9 @@ import pytest
 import numpy as np
 from scipy.optimize import check_grad
 from functools import partial
-
-from rayforge.core.sketcher.params import ParameterContext
-from rayforge.core.sketcher.entities import EntityRegistry
 from rayforge.core.sketcher.constraints import DragConstraint
+from rayforge.core.sketcher.params import ParameterContext
+from rayforge.core.sketcher.registry import EntityRegistry
 
 
 @pytest.fixture

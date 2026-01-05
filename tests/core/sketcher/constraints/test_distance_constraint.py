@@ -2,9 +2,9 @@ import pytest
 import numpy as np
 from scipy.optimize import check_grad
 from types import SimpleNamespace
-from rayforge.core.sketcher.params import ParameterContext
-from rayforge.core.sketcher.entities import EntityRegistry
 from rayforge.core.sketcher.constraints import DistanceConstraint
+from rayforge.core.sketcher.params import ParameterContext
+from rayforge.core.sketcher.registry import EntityRegistry
 
 
 @pytest.fixture
