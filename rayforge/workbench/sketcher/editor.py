@@ -64,6 +64,7 @@ class SketchEditor:
             "gn": "toggle_construction_on_selection",
             # Actions
             "ch": "add_chamfer_action",
+            "cf": "add_fillet_action",
             # Constraints (Single Key)
             "h": "add_horizontal_constraint",
             "v": "add_vertical_constraint",
@@ -316,6 +317,8 @@ class SketchEditor:
             ctx.delete_selection()
         elif action == "chamfer":
             ctx.add_chamfer_action()
+        elif action == "fillet":
+            ctx.add_fillet_action()
 
         if self.sketch_element.canvas:
             self.sketch_element.canvas.grab_focus()

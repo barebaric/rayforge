@@ -11,6 +11,7 @@ from ...core.sketcher.commands import (
     ToggleConstructionCommand,
     UnstickJunctionCommand,
     ChamferCommand,
+    FilletCommand,
 )
 from ...core.sketcher.constraints import (
     PerpendicularConstraint,
@@ -355,7 +356,7 @@ class SketchElement(CanvasElement):
                 has_points or has_entities or has_constraints or has_junctions
             )
 
-        if action == "chamfer":
+        if action in ("chamfer", "fillet"):
             # Valid if exactly one junction is selected and it connects
             # exactly two lines.
             if self.selection.junction_pid is not None:
@@ -981,6 +982,72 @@ class SketchElement(CanvasElement):
 
         cmd = ChamferCommand(
             self.sketch, corner_pid, line1.id, line2.id, chamfer_dist
+        )
+        self.execute_command(cmd)
+
+    def add_fillet_action(self):
+        """Creates a fillet at the selected corner junction."""
+        DEFAULT_RADIUS = 10.0
+        if not self.is_action_supported("fillet") or not self.editor:
+            logger.warning("Fillet requires a selected corner of two lines.")
+            return
+
+        corner_pid = self.selection.junction_pid
+        if corner_pid is None:
+            return
+
+        lines_at_junction = self.get_lines_at_point(corner_pid)
+
+        if len(lines_at_junction) != 2:
+            return
+        line1, line2 = lines_at_junction
+
+        # Determine a sensible default fillet radius
+        corner_pt = self._get_point(corner_pid)
+        if not corner_pt:
+            return
+
+        other1_pid = (
+            line1.p2_idx if line1.p1_idx == corner_pid else line1.p1_idx
+        )
+        other1_pt = self._get_point(other1_pid)
+        if not other1_pt:
+            return
+
+        len1 = math.hypot(other1_pt.x - corner_pt.x, other1_pt.y - corner_pt.y)
+
+        other2_pid = (
+            line2.p2_idx if line2.p1_idx == corner_pid else line2.p1_idx
+        )
+        other2_pt = self._get_point(other2_pid)
+        if not other2_pt:
+            return
+
+        len2 = math.hypot(other2_pt.x - corner_pt.x, other2_pt.y - corner_pt.y)
+
+        # Calculate angle between lines to determine max radius
+        v1 = (other1_pt.x - corner_pt.x, other1_pt.y - corner_pt.y)
+        v2 = (other2_pt.x - corner_pt.x, other2_pt.y - corner_pt.y)
+        len_v1 = math.hypot(v1[0], v1[1])
+        len_v2 = math.hypot(v2[0], v2[1])
+        u1 = (v1[0] / len_v1, v1[1] / len_v1)
+        u2 = (v2[0] / len_v2, v2[1] / len_v2)
+        dot = u1[0] * u2[0] + u1[1] * u2[1]
+        angle = math.acos(max(-1.0, min(1.0, dot)))
+        half_angle = angle / 2.0
+
+        # Max radius is limited by the shorter line and the angle
+        max_radius = min(len1, len2) * math.sin(half_angle)
+        fillet_radius = min(DEFAULT_RADIUS, max_radius)
+
+        if fillet_radius < 1e-6:
+            logger.warning(
+                "Lines are too short or angle too acute for fillet."
+            )
+            return
+
+        cmd = FilletCommand(
+            self.sketch, corner_pid, line1.id, line2.id, fillet_radius
         )
         self.execute_command(cmd)
 
