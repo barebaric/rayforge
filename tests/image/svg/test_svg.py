@@ -416,3 +416,47 @@ class TestSvgRenderer:
         # The renderer should not find a size for a workpiece with no metadata
         # Since WorkPiece initialization sets (0.0, 0.0) when size is unknown
         assert workpiece.natural_size == (0.0, 0.0)
+
+    def test_tricky_arc_bounding_box(self):
+        """
+        Tests that the bounding box is correctly computed after importing
+        an SVG with complex arc geometry (tricky-arc.svg).
+        """
+        svg_path = Path(__file__).parent / "tricky-arc.svg"
+        with open(svg_path, "rb") as f:
+            svg_data = f.read()
+
+        importer = SvgImporter(svg_data, source_file=svg_path)
+        wp = _setup_workpiece_with_context(importer)
+
+        # Check that the workpiece has a valid size
+        size = wp.size
+        assert size is not None
+        # The SVG is 100x100mm, content should be trimmed to approximately
+        # the actual geometry bounds
+        assert size[0] > 0
+        assert size[1] > 0
+        # Content should be smaller than the full 100mm canvas
+        assert size[0] < 100
+        assert size[1] < 100
+
+        # Check the world-space bounding box
+        bbox = wp.get_geometry_world_bbox()
+        assert bbox is not None
+        min_x, min_y, max_x, max_y = bbox
+
+        # The path starts at ~(7.4, 6.1) and extends to ~(87.5, 81.7)
+        # with an arc that may extend slightly beyond these points
+        assert min_x == pytest.approx(0.0, abs=1)
+        assert min_y == pytest.approx(0.0, abs=1)
+        assert max_x == pytest.approx(size[0], abs=1)
+        assert max_y == pytest.approx(size[1], abs=1)
+
+        # Check that the normalized geometry bounds are correct
+        # Use a relaxed tolerance to account for raster-based trimming variance
+        assert wp.boundaries is not None
+        geo_min_x, geo_min_y, geo_max_x, geo_max_y = wp.boundaries.rect()
+        assert geo_min_x == pytest.approx(0.0, abs=0.01)
+        assert geo_min_y == pytest.approx(0.0, abs=0.01)
+        assert geo_max_x == pytest.approx(1.0, abs=0.01)
+        assert geo_max_y == pytest.approx(1.0, abs=0.01)
