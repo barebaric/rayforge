@@ -5,9 +5,9 @@ from blinker import Signal
 from ...context import get_context
 from ...core.recipe import Recipe
 from ...core.capability import ALL_CAPABILITIES
-from ...icons import get_icon
+from ...ui_gtk.icons import get_icon
 from ...shared.units.definitions import get_unit
-from ...shared.ui.varsetwidget import VarSetWidget
+from ...ui_gtk.varset.varsetwidget import VarSetWidget
 from .material_selector import MaterialSelectorDialog
 
 logger = logging.getLogger(__name__)

@@ -4,9 +4,9 @@ from gi.repository import Gtk, Adw
 from blinker import Signal
 from ...context import get_context
 from ...core.recipe import Recipe
-from ...shared.ui.formatter import format_value
-from ...shared.ui.preferences_group import PreferencesGroupWithButton
-from ...icons import get_icon
+from ...shared.units.formatter import format_value
+from ...ui_gtk.settings.preferences_group import PreferencesGroupWithButton
+from ...ui_gtk.icons import get_icon
 from .edit_recipe_dialog import AddEditRecipeDialog
 
 logger = logging.getLogger(__name__)

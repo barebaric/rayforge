@@ -6,11 +6,11 @@ from ...core.doc import Doc
 from ...core.sketcher.sketch import Sketch
 from ...core.stock_asset import StockAsset
 from ...core.undo import Command
-from ...shared.ui.draglist import DragListBox
-from ...shared.ui.expander import Expander
-from ...shared.ui.gtk import apply_css
-from ...shared.ui.popover_menu import PopoverMenu
-from ...icons import get_icon
+from ...ui_gtk.shared.draglist import DragListBox
+from ...ui_gtk.shared.expander import Expander
+from ...ui_gtk.shared.gtk import apply_css
+from ...ui_gtk.shared.popover_menu import PopoverMenu
+from ...ui_gtk.icons import get_icon
 from .asset_row_factory import create_asset_row_widget
 from .asset_row_widget import StockAssetRowWidget, SketchAssetRowWidget
 

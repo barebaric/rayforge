@@ -15,7 +15,7 @@ from ...core.sketcher import Sketch
 from ...image import bitmap_mime_types
 
 if TYPE_CHECKING:
-    from ...mainwindow import MainWindow
+    from ...ui_gtk.mainwindow import MainWindow
     from .surface import WorkSurface
 
 logger = logging.getLogger(__name__)

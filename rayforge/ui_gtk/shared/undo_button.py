@@ -2,7 +2,7 @@ import logging
 from typing import List, Optional
 from gi.repository import Gtk
 from ...core.undo import HistoryManager, Command
-from ...icons import get_icon
+from ..icons import get_icon
 
 
 logger = logging.getLogger(__name__)

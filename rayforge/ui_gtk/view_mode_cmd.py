@@ -6,7 +6,7 @@ from ..context import get_context
 if TYPE_CHECKING:
     from gi.repository import Gio
     from .canvas3d import Canvas3D
-    from ..mainwindow import MainWindow
+    from ..ui_gtk.mainwindow import MainWindow
     from ..doceditor.editor import DocEditor
 
 logger = logging.getLogger(__name__)

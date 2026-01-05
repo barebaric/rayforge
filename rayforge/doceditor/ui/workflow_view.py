@@ -1,13 +1,13 @@
 import logging
 from typing import Optional, List, Callable, cast, TYPE_CHECKING
 from gi.repository import Gtk
-from ...icons import get_icon
+from ...ui_gtk.icons import get_icon
 from ...core.workflow import Workflow
 from ...core.undo.list_cmd import ListItemCommand, ReorderListCommand
-from ...shared.ui.draglist import DragListBox
-from ...shared.ui.expander import Expander
+from ...ui_gtk.shared.draglist import DragListBox
+from ...ui_gtk.shared.expander import Expander
 from .step_box import StepBox
-from ...shared.ui.popover_menu import PopoverMenu
+from ...ui_gtk.shared.popover_menu import PopoverMenu
 
 if TYPE_CHECKING:
     from ..editor import DocEditor

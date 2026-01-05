@@ -9,7 +9,7 @@ from . import file_dialogs
 from .import_dialog import ImportDialog
 
 if TYPE_CHECKING:
-    from ...mainwindow import MainWindow
+    from ...ui_gtk.mainwindow import MainWindow
     from ..editor import DocEditor
 
 logger = logging.getLogger(__name__)

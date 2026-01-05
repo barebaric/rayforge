@@ -1,5 +1,5 @@
 import logging
-from ..util.once import once_per_object
+from ...shared.util.once import once_per_object
 from gi.repository import Gtk, Gdk
 
 logger = logging.getLogger(__name__)

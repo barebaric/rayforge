@@ -10,9 +10,9 @@ from ...core.varset import (
     Var,
     VarSet,
 )
-from ...icons import get_icon
+from ..icons import get_icon
 from ...machine.transport.validators import is_valid_hostname_or_ip
-from .adwfix import get_spinrow_int
+from ..shared.adwfix import get_spinrow_int
 from .var_row_factory import VarRowFactory, escape_title
 
 logger = logging.getLogger(__name__)

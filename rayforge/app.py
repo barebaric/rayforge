@@ -100,7 +100,7 @@ def main():
 
         def do_activate(self):
             # Import the window here to avoid module-level side-effects
-            from rayforge.mainwindow import MainWindow
+            from rayforge.ui_gtk.mainwindow import MainWindow
 
             self.win = MainWindow(application=self)
 

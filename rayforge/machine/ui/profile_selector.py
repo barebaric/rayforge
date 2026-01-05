@@ -1,6 +1,6 @@
 from blinker import Signal
 from gi.repository import Adw, Gtk
-from ...shared.ui.gtk import apply_css
+from ...ui_gtk.shared.gtk import apply_css
 from ..models.profile import MachineProfile, PROFILES
 
 

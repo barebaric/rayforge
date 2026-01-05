@@ -2,9 +2,9 @@ from typing import cast
 from gi.repository import Gtk, Adw
 from ..models.laser import Laser
 from ...machine.models.machine import Machine
-from ...shared.ui.preferences_group import PreferencesGroupWithButton
-from ...shared.ui.adwfix import get_spinrow_int, get_spinrow_float
-from ...icons import get_icon
+from ...ui_gtk.settings.preferences_group import PreferencesGroupWithButton
+from ...ui_gtk.shared.adwfix import get_spinrow_int, get_spinrow_float
+from ...ui_gtk.icons import get_icon
 
 
 class LaserRow(Gtk.Box):

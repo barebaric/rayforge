@@ -1,6 +1,6 @@
 from gi.repository import Gio
 from typing import List
-from .machine.models.macro import Macro
+from ..machine.models.macro import Macro
 
 
 class MainMenu(Gio.Menu):

@@ -3,7 +3,7 @@ from gi.repository import Gtk, Adw
 from .base import StepComponentSettingsWidget
 from ....pipeline.transformer import OverscanTransformer
 from ....shared.util.glib import DebounceMixin
-from ....shared.ui.unit_spin_row import UnitSpinRowHelper
+from ....ui_gtk.shared.unit_spin_row import UnitSpinRowHelper
 from ....context import get_context
 
 if TYPE_CHECKING:

@@ -4,52 +4,52 @@ from concurrent.futures import Future
 from pathlib import Path
 from typing import Callable, Coroutine, List, Optional, cast
 from gi.repository import Adw, Gdk, Gio, GLib, Gtk
-from . import __version__
+from .. import __version__
 from .actions import ActionManager
-from .context import get_context
-from .core.group import Group
-from .core.item import DocItem
-from .core.sketcher import Sketch
-from .core.step import Step
-from .core.stock import StockItem
-from .core.undo import Command, HistoryManager, ListItemCommand
-from .core.workpiece import WorkPiece
-from .doceditor.editor import DocEditor
-from .doceditor.ui import file_dialogs, import_handler
-from .doceditor.ui.asset_list_view import AssetListView
-from .doceditor.ui.item_properties import DocItemPropertiesWidget
-from .doceditor.ui.layer_list import LayerListView
-from .doceditor.ui.stock_properties_dialog import StockPropertiesDialog
-from .doceditor.ui.sketch_properties import SketchPropertiesWidget
-from .doceditor.ui.workflow_view import WorkflowView
-from .image.sketch.exporter import SketchExporter
-from .machine.cmd import MachineCmd
-from .machine.driver.driver import DeviceState, DeviceStatus
-from .machine.driver.dummy import NoDeviceDriver
-from .machine.models.machine import Machine
-from .machine.transport import TransportStatus
-from .machine.ui.jog_dialog import JogDialog
-from .machine.ui.log_dialog import MachineLogDialog
-from .machine.ui.settings_dialog import MachineSettingsDialog
+from ..context import get_context
+from ..core.group import Group
+from ..core.item import DocItem
+from ..core.sketcher import Sketch
+from ..core.step import Step
+from ..core.stock import StockItem
+from ..core.undo import Command, HistoryManager, ListItemCommand
+from ..core.workpiece import WorkPiece
+from ..doceditor.editor import DocEditor
+from ..doceditor.ui import file_dialogs, import_handler
+from ..doceditor.ui.asset_list_view import AssetListView
+from ..doceditor.ui.item_properties import DocItemPropertiesWidget
+from ..doceditor.ui.layer_list import LayerListView
+from ..doceditor.ui.stock_properties_dialog import StockPropertiesDialog
+from ..doceditor.ui.sketch_properties import SketchPropertiesWidget
+from ..doceditor.ui.workflow_view import WorkflowView
+from ..image.sketch.exporter import SketchExporter
+from ..machine.cmd import MachineCmd
+from ..machine.driver.driver import DeviceState, DeviceStatus
+from ..machine.driver.dummy import NoDeviceDriver
+from ..machine.models.machine import Machine
+from ..machine.transport import TransportStatus
+from ..machine.ui.jog_dialog import JogDialog
+from ..machine.ui.log_dialog import MachineLogDialog
+from ..machine.ui.settings_dialog import MachineSettingsDialog
 from .main_menu import MainMenu
-from .pipeline.artifact import JobArtifact, JobArtifactHandle
-from .pipeline.encoder.gcode import MachineCodeOpMap
-from .pipeline.steps import STEP_FACTORIES, create_contour_step
-from .shared.gcodeedit.viewer import GcodeViewer
-from .shared.tasker import task_mgr
-from .shared.ui.about import AboutDialog
-from .shared.ui.settings_dialog import SettingsWindow
-from .shared.ui.task_bar import TaskBar
+from ..pipeline.artifact import JobArtifact, JobArtifactHandle
+from ..pipeline.encoder.gcode import MachineCodeOpMap
+from ..pipeline.steps import STEP_FACTORIES, create_contour_step
+from ..shared.gcodeedit.viewer import GcodeViewer
+from ..shared.tasker import task_mgr
+from .about import AboutDialog
+from .settings.settings_dialog import SettingsWindow
+from .task_bar import TaskBar
 from .toolbar import MainToolbar
-from .ui_gtk.canvas import CanvasElement
-from .ui_gtk.canvas2d.drag_drop_cmd import DragDropCmd
-from .ui_gtk.canvas2d.elements.stock import StockElement
-from .ui_gtk.canvas2d.simulator_cmd import SimulatorCmd
-from .ui_gtk.canvas2d.surface import WorkSurface
-from .ui_gtk.canvas3d import Canvas3D, initialized as canvas3d_initialized
-from .ui_gtk.sketcher.cmd import UpdateSketchCommand
-from .ui_gtk.sketcher.studio import SketchStudio
-from .ui_gtk.view_mode_cmd import ViewModeCmd
+from .canvas import CanvasElement
+from .canvas2d.drag_drop_cmd import DragDropCmd
+from .canvas2d.elements.stock import StockElement
+from .canvas2d.simulator_cmd import SimulatorCmd
+from .canvas2d.surface import WorkSurface
+from .canvas3d import Canvas3D, initialized as canvas3d_initialized
+from .sketcher.cmd import UpdateSketchCommand
+from .sketcher.studio import SketchStudio
+from .view_mode_cmd import ViewModeCmd
 
 
 logger = logging.getLogger(__name__)

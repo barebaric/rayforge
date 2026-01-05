@@ -4,7 +4,7 @@ from typing import Optional
 from gi.repository import Gtk, Adw, GLib, Gio
 from blinker import Signal
 from ...context import get_context
-from ...icons import get_icon
+from ...ui_gtk.icons import get_icon
 from ...logging_setup import (
     ui_log_event_received,
     get_memory_handler,

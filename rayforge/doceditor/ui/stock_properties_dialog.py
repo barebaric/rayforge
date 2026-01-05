@@ -3,7 +3,7 @@ from gi.repository import Gtk, Adw, GLib
 from typing import TYPE_CHECKING, Tuple, Optional
 from ...context import get_context
 from ...core.stock import StockItem
-from ...shared.ui.unit_spin_row import UnitSelectorSpinRow
+from ...ui_gtk.shared.unit_spin_row import UnitSelectorSpinRow
 from .material_selector import MaterialSelectorDialog
 
 if TYPE_CHECKING:

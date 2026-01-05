@@ -1,8 +1,8 @@
 from gi.repository import Adw, Gtk
 
-from ...shared.ui.adwfix import get_spinrow_int
-from ...shared.ui.unit_spin_row import UnitSpinRowHelper
-from ...shared.ui.varsetwidget import VarSetWidget
+from ...ui_gtk.shared.adwfix import get_spinrow_int
+from ...ui_gtk.shared.unit_spin_row import UnitSpinRowHelper
+from ...ui_gtk.varset.varsetwidget import VarSetWidget
 from ..driver import drivers
 from ..driver.driver import Axis
 from ..models.machine import Machine, Origin

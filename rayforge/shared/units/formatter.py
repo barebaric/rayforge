@@ -1,4 +1,4 @@
-from ..units.definitions import (
+from .definitions import (
     get_base_unit_for_quantity,
     get_unit,
 )

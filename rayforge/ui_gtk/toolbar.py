@@ -2,10 +2,10 @@ import logging
 from gi.repository import Gtk
 from blinker import Signal
 from .icons import get_icon
-from .shared.ui.undo_button import UndoButton, RedoButton
-from .machine.ui.machine_selector import MachineSelector
-from .splitbutton import SplitMenuButton
-from .ui_gtk.canvas3d import initialized as canvas3d_initialized
+from .shared.undo_button import UndoButton, RedoButton
+from ..machine.ui.machine_selector import MachineSelector
+from .shared.splitbutton import SplitMenuButton
+from .canvas3d import initialized as canvas3d_initialized
 
 logger = logging.getLogger(__name__)
 

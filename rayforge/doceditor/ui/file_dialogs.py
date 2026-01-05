@@ -5,7 +5,7 @@ from ...image import importers
 
 if TYPE_CHECKING:
     from ...core.workpiece import WorkPiece
-    from ...mainwindow import MainWindow
+    from ...ui_gtk.mainwindow import MainWindow
 
 logger = logging.getLogger(__name__)
 

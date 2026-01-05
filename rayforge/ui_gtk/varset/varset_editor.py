@@ -25,8 +25,8 @@ from ...core.varset import (
     SerialPortVar,
     TextAreaVar,
 )
-from ...icons import get_icon
-from .preferences_group import PreferencesGroupWithButton
+from ..icons import get_icon
+from ..settings.preferences_group import PreferencesGroupWithButton
 from .var_row_factory import VarRowFactory, NULL_CHOICE_LABEL
 
 if TYPE_CHECKING:

@@ -4,11 +4,11 @@ from blinker import Signal
 from ...context import get_context
 from ...core.step import Step
 from ...core.undo import HistoryManager, ChangePropertyCommand
-from ...shared.ui.adwfix import get_spinrow_float
-from ...shared.ui.unit_spin_row import UnitSpinRowHelper
+from ...ui_gtk.shared.adwfix import get_spinrow_float
+from ...ui_gtk.shared.unit_spin_row import UnitSpinRowHelper
 from ...pipeline.producer import OpsProducer
 from ...pipeline.transformer import OpsTransformer
-from ...icons import get_icon
+from ...ui_gtk.icons import get_icon
 from .step_settings import WIDGET_REGISTRY
 from .recipe_control_widget import RecipeControlWidget
 

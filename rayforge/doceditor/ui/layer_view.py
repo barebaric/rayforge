@@ -4,8 +4,8 @@ from gi.repository import Gtk, Gdk, Pango, Adw
 from blinker import Signal
 from ...core.doc import Doc
 from ...core.layer import Layer
-from ...icons import get_icon
-from ...shared.ui.gtk import apply_css
+from ...ui_gtk.icons import get_icon
+from ...ui_gtk.shared.gtk import apply_css
 
 if TYPE_CHECKING:
     from ...core.stock import StockItem
