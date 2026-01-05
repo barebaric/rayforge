@@ -158,6 +158,7 @@ if [[ "$1" == "pip" || -z "$1" ]]; then
     echo "Installing/updating pip packages..."
     $PYTHON_BIN_PATH -m pip install --upgrade pip --break-system-packages
 
+    $PYTHON_BIN_PATH -m pip install --no-cache-dir --no-build-isolation asyncudp==0.11.0 --break-system-packages
     $PYTHON_BIN_PATH -m pip install --no-cache-dir --no-build-isolation vtracer==0.6.11 --break-system-packages
     $PYTHON_BIN_PATH -m pip install --no-cache-dir pyclipper==1.3.0.post6 --break-system-packages
     $PYTHON_BIN_PATH -m pip install --no-cache-dir --no-build-isolation --no-deps pyvips==3.0.0 --break-system-packages
