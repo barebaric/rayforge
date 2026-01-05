@@ -36,7 +36,12 @@ def safe_list_ports_linux() -> List[str]:
     """
     ports = []
     # Use glob to find all devices matching the common patterns
-    for pattern in ["/dev/ttyUSB*", "/dev/ttyACM*"]:
+    for pattern in [
+        "/dev/ttyUSB*",
+        "/dev/ttyACM*",
+        "/dev/serial/by-id/*",
+        "/dev/serial/by-path/*",
+    ]:
         try:
             ports.extend(glob.glob(pattern))
         except Exception as e:
