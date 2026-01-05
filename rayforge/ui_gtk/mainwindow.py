@@ -4,6 +4,8 @@ from concurrent.futures import Future
 from pathlib import Path
 from typing import Callable, Coroutine, List, Optional, cast
 from gi.repository import Adw, Gdk, Gio, GLib, Gtk
+
+from .doceditor import file_dialogs
 from .. import __version__
 from .actions import ActionManager
 from ..context import get_context
@@ -15,13 +17,13 @@ from ..core.stock import StockItem
 from ..core.undo import Command, HistoryManager, ListItemCommand
 from ..core.workpiece import WorkPiece
 from ..doceditor.editor import DocEditor
-from ..doceditor.ui import file_dialogs, import_handler
-from ..doceditor.ui.asset_list_view import AssetListView
-from ..doceditor.ui.item_properties import DocItemPropertiesWidget
-from ..doceditor.ui.layer_list import LayerListView
-from ..doceditor.ui.stock_properties_dialog import StockPropertiesDialog
-from ..doceditor.ui.sketch_properties import SketchPropertiesWidget
-from ..doceditor.ui.workflow_view import WorkflowView
+from .doceditor import import_handler
+from .doceditor.asset_list_view import AssetListView
+from .doceditor.item_properties import DocItemPropertiesWidget
+from .doceditor.layer_list import LayerListView
+from .doceditor.stock_properties_dialog import StockPropertiesDialog
+from .doceditor.sketch_properties import SketchPropertiesWidget
+from .doceditor.workflow_view import WorkflowView
 from ..image.sketch.exporter import SketchExporter
 from ..machine.cmd import MachineCmd
 from ..machine.driver.driver import DeviceState, DeviceStatus

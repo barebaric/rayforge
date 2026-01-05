@@ -4,7 +4,7 @@ from ..core.group import Group
 from ..core.item import DocItem
 from ..core.layer import Layer
 from ..core.workpiece import WorkPiece
-from ..doceditor.ui.add_tabs_popover import AddTabsPopover
+from .doceditor.add_tabs_popover import AddTabsPopover
 
 
 if TYPE_CHECKING:
