@@ -384,26 +384,16 @@ class Ops:
         from .. import geo
 
         new_ops = cls()
-        data = geometry.data
-        if data is not None:
-            for row in data:
-                cmd_type = row[geo.constants.COL_TYPE]
-                end = (
-                    row[geo.constants.COL_X],
-                    row[geo.constants.COL_Y],
-                    row[geo.constants.COL_Z],
-                )
-                if cmd_type == geo.constants.CMD_TYPE_MOVE:
-                    new_ops.add(MoveToCommand(end))
-                elif cmd_type == geo.constants.CMD_TYPE_LINE:
-                    new_ops.add(LineToCommand(end))
-                elif cmd_type == geo.constants.CMD_TYPE_ARC:
-                    center_offset = (
-                        row[geo.constants.COL_I],
-                        row[geo.constants.COL_J],
-                    )
-                    clockwise = bool(row[geo.constants.COL_CW])
-                    new_ops.add(ArcToCommand(end, center_offset, clockwise))
+        for cmd_type, x, y, z, i, j, cw in geometry.iter_commands():
+            end = (x, y, z)
+            if cmd_type == geo.constants.CMD_TYPE_MOVE:
+                new_ops.add(MoveToCommand(end))
+            elif cmd_type == geo.constants.CMD_TYPE_LINE:
+                new_ops.add(LineToCommand(end))
+            elif cmd_type == geo.constants.CMD_TYPE_ARC:
+                center_offset = (i, j)
+                clockwise = bool(cw)
+                new_ops.add(ArcToCommand(end, center_offset, clockwise))
         new_ops.last_move_to = geometry.last_move_to
         return new_ops
 

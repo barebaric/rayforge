@@ -12,9 +12,6 @@ from ..core.geo import Geometry
 from ..core.geo.constants import (
     CMD_TYPE_MOVE,
     CMD_TYPE_LINE,
-    COL_TYPE,
-    COL_X,
-    COL_Y,
 )
 
 if TYPE_CHECKING:
@@ -241,14 +238,11 @@ def _render_geometry_to_vips_mask(
 
     # Draw the geometry filled with white
     ctx.set_source_rgba(1, 1, 1, 1)
-    data = geometry.data
-    if data is not None:
-        for row in data:
-            cmd_type = row[COL_TYPE]
-            if cmd_type == CMD_TYPE_MOVE:
-                ctx.move_to(row[COL_X], row[COL_Y])
-            elif cmd_type == CMD_TYPE_LINE:
-                ctx.line_to(row[COL_X], row[COL_Y])
+    for cmd_type, x, y, z, i, j, cw in geometry.iter_commands():
+        if cmd_type == CMD_TYPE_MOVE:
+            ctx.move_to(x, y)
+        elif cmd_type == CMD_TYPE_LINE:
+            ctx.line_to(x, y)
     ctx.fill()
 
     # Handle Cairo stride padding (e.g. if width is not multiple of 4)

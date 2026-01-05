@@ -535,3 +535,90 @@ def test_to_cairo_clockwise_arc():
     ctx.move_to.assert_called_once_with(10, 10)
     ctx.arc_negative.assert_called_once()
     ctx.arc.assert_not_called()
+
+
+def test_get_command_at_valid_index():
+    """Tests get_command_at() with valid indices."""
+    geo = Geometry()
+    geo.move_to(0, 0, 1)
+    geo.line_to(10, 10, 2)
+    geo.arc_to(20, 0, i=5, j=-10, clockwise=False, z=3)
+
+    cmd0 = geo.get_command_at(0)
+    assert cmd0 == (CMD_TYPE_MOVE, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0)
+
+    cmd1 = geo.get_command_at(1)
+    assert cmd1 == (CMD_TYPE_LINE, 10.0, 10.0, 2.0, 0.0, 0.0, 0.0)
+
+    cmd2 = geo.get_command_at(2)
+    assert cmd2 == (CMD_TYPE_ARC, 20.0, 0.0, 3.0, 5.0, -10.0, 0.0)
+
+
+def test_get_command_at_negative_index():
+    """Tests get_command_at() with negative index."""
+    geo = Geometry()
+    geo.move_to(0, 0)
+    assert geo.get_command_at(-1) is None
+
+
+def test_get_command_at_out_of_bounds():
+    """Tests get_command_at() with index out of bounds."""
+    geo = Geometry()
+    geo.move_to(0, 0)
+    geo.line_to(10, 10)
+    assert geo.get_command_at(2) is None
+    assert geo.get_command_at(100) is None
+
+
+def test_get_command_at_empty_geometry():
+    """Tests get_command_at() on empty geometry."""
+    geo = Geometry()
+    assert geo.get_command_at(0) is None
+
+
+def test_iter_commands():
+    """Tests iter_commands() yields all commands correctly."""
+    geo = Geometry()
+    geo.move_to(0, 0, 1)
+    geo.line_to(10, 10, 2)
+    geo.arc_to(20, 0, i=5, j=-10, clockwise=False, z=3)
+
+    commands = list(geo.iter_commands())
+
+    assert len(commands) == 3
+    assert commands[0] == (CMD_TYPE_MOVE, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0)
+    assert commands[1] == (CMD_TYPE_LINE, 10.0, 10.0, 2.0, 0.0, 0.0, 0.0)
+    assert commands[2] == (CMD_TYPE_ARC, 20.0, 0.0, 3.0, 5.0, -10.0, 0.0)
+
+
+def test_iter_commands_empty_geometry():
+    """Tests iter_commands() on empty geometry."""
+    geo = Geometry()
+    commands = list(geo.iter_commands())
+    assert commands == []
+
+
+def test_iter_commands_with_pending_data():
+    """Tests iter_commands() syncs pending data before iteration."""
+    geo = Geometry()
+    geo.move_to(5, 5, 1)
+    geo.line_to(15, 15, 2)
+
+    commands = list(geo.iter_commands())
+
+    assert len(commands) == 2
+    assert commands[0] == (CMD_TYPE_MOVE, 5.0, 5.0, 1.0, 0.0, 0.0, 0.0)
+    assert commands[1] == (CMD_TYPE_LINE, 15.0, 15.0, 2.0, 0.0, 0.0, 0.0)
+
+
+def test_iter_commands_clockwise_arc():
+    """Tests iter_commands() with clockwise arc."""
+    geo = Geometry()
+    geo.move_to(10, 10)
+    geo.arc_to(15, 10, i=0, j=-5, clockwise=True)
+
+    commands = list(geo.iter_commands())
+
+    assert len(commands) == 2
+    assert commands[0] == (CMD_TYPE_MOVE, 10.0, 10.0, 0.0, 0.0, 0.0, 0.0)
+    assert commands[1] == (CMD_TYPE_ARC, 15.0, 10.0, 0.0, 0.0, -5.0, 1.0)
