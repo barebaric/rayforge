@@ -10,13 +10,13 @@ import tempfile
 from pathlib import Path
 from typing import TYPE_CHECKING, Optional, Tuple
 from gi.repository import GObject, Gdk, Gtk, Gio, GLib, Adw
-from ..context import get_context
-from ..core.sketcher import Sketch
-from ..image import bitmap_mime_types
+from ...context import get_context
+from ...core.sketcher import Sketch
+from ...image import bitmap_mime_types
 
 if TYPE_CHECKING:
-    from ..mainwindow import MainWindow
-    from ..workbench.surface import WorkSurface
+    from ...mainwindow import MainWindow
+    from .surface import WorkSurface
 
 logger = logging.getLogger(__name__)
 
@@ -219,7 +219,7 @@ class DragDropCmd:
 
     def _get_file_infos(self, files):
         """Get file path and MIME type information for dropped files."""
-        from ..image import importer_by_mime_type
+        from ...image import importer_by_mime_type
 
         file_infos = []
         for gfile in files:
@@ -262,7 +262,7 @@ class DragDropCmd:
             file_infos: List of (file_path, mime_type) tuples
             position_mm: (x, y) tuple in world coordinates
         """
-        from ..doceditor.ui import import_handler
+        from ...doceditor.ui import import_handler
 
         # Separate SVGs from raster files
         svg_files = []
@@ -435,7 +435,7 @@ class DragDropCmd:
                 center_x, center_y = 50.0, 50.0  # Fallback
 
             # Import the temporary file
-            from ..doceditor.ui import import_handler
+            from ...doceditor.ui import import_handler
 
             import_handler.import_file_at_position(
                 self.main_window,

@@ -4,13 +4,13 @@ from typing import TYPE_CHECKING, Optional
 
 from gi.repository import GLib
 
-from ..context import get_context
-from ..pipeline.artifact import JobArtifact
+from ...context import get_context
+from ...pipeline.artifact import JobArtifact
 from .elements.simulation_overlay import SimulationOverlay
 from .simulation_controls import PreviewControls
 
 if TYPE_CHECKING:
-    from ..mainwindow import MainWindow
+    from ...mainwindow import MainWindow
     from gi.repository import Gio
 
 logger = logging.getLogger(__name__)

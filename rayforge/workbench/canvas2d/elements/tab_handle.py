@@ -4,10 +4,10 @@ import logging
 from typing import TYPE_CHECKING, cast, Optional, Tuple, List
 from gi.repository import Gdk
 from copy import deepcopy
-from ..canvas.element import CanvasElement
-from ...core.tab import Tab
-from ...core.undo import ChangePropertyCommand
-from ...core.matrix import Matrix
+from ...canvas.element import CanvasElement
+from ....core.tab import Tab
+from ....core.undo import ChangePropertyCommand
+from ....core.matrix import Matrix
 
 if TYPE_CHECKING:
     from ..surface import WorkSurface

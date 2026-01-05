@@ -1,7 +1,7 @@
 import math
 import logging
 import cairo
-from ..canvas import CanvasElement
+from ...canvas import CanvasElement
 
 
 logger = logging.getLogger(__name__)

@@ -5,11 +5,11 @@ from typing import Optional
 import numpy as np
 from gi.repository import Gtk, GLib
 from blinker import Signal
-from ..core.ops import ScanLinePowerCommand
-from ..pipeline.encoder.gcode import MachineCodeOpMap
-from ..icons import get_icon
-from ..shared.ui.formatter import format_value
-from ..shared.ui.gtk import apply_css
+from ...core.ops import ScanLinePowerCommand
+from ...pipeline.encoder.gcode import MachineCodeOpMap
+from ...icons import get_icon
+from ...shared.ui.formatter import format_value
+from ...shared.ui.gtk import apply_css
 
 
 class PreviewControls(Gtk.Box):
