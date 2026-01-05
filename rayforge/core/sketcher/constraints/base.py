@@ -13,8 +13,8 @@ from typing import (
 from ...expression import safe_evaluate
 
 if TYPE_CHECKING:
-    from ..entities import EntityRegistry
     from ..params import ParameterContext
+    from ..registry import EntityRegistry
 
 
 class ConstraintStatus(Enum):

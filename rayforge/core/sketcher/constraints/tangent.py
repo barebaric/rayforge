@@ -13,8 +13,8 @@ from ..entities import Line, Arc, Circle
 from rayforge.core.geo.primitives import find_closest_point_on_line
 
 if TYPE_CHECKING:
-    from ..entities import EntityRegistry
     from ..params import ParameterContext
+    from ..registry import EntityRegistry
 
 
 class TangentConstraint(Constraint):

@@ -12,8 +12,8 @@ from .base import Constraint
 from ..entities import Line, Arc, Circle
 
 if TYPE_CHECKING:
-    from ..entities import EntityRegistry
     from ..params import ParameterContext
+    from ..registry import EntityRegistry
 
 
 class PointOnLineConstraint(Constraint):

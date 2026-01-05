@@ -15,8 +15,8 @@ from .base import Constraint
 from ..entities import Line
 
 if TYPE_CHECKING:
-    from ..entities import EntityRegistry
     from ..params import ParameterContext
+    from ..registry import EntityRegistry
 
 
 class SymmetryConstraint(Constraint):
