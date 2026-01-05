@@ -76,7 +76,7 @@ class TabCmd:
         segment_lengths: List[Tuple[int, float]] = []
         last_point = (0.0, 0.0, 0.0)
 
-        for i, (cmd_type, x, y, z, i, j, cw) in enumerate(
+        for segment_idx, (cmd_type, x, y, z, i, j, cw) in enumerate(
             geometry.iter_commands()
         ):
             end_point = (x, y, z)
@@ -122,7 +122,7 @@ class TabCmd:
                     length = math.dist(last_point[:2], end_point[:2])
 
             if length > 1e-6:
-                segment_lengths.append((i, length))
+                segment_lengths.append((segment_idx, length))
                 total_length += length
 
             # Update last_point for the next segment
