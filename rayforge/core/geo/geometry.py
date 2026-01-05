@@ -851,3 +851,59 @@ class Geometry:
                     # Silently ignore non-geometric commands (e.g., from Ops)
                     pass
         return new_geo
+
+    def iter_commands(
+        self,
+    ) -> Iterable[Tuple[int, float, float, float, float, float, float]]:
+        """
+        Yields command data tuples for each command in the geometry.
+
+        Each yielded tuple contains:
+        (cmd_type, x, y, z, i, j, cw)
+
+        This method ensures data is synced before iteration and provides
+        a clean interface without exposing the raw NumPy array.
+
+        Yields:
+            Tuples of (cmd_type, x, y, z, i, j, cw) for each command.
+        """
+        if self.data is None:
+            return
+
+        for row in self.data:
+            yield (
+                int(row[COL_TYPE]),
+                float(row[COL_X]),
+                float(row[COL_Y]),
+                float(row[COL_Z]),
+                float(row[COL_I]),
+                float(row[COL_J]),
+                float(row[COL_CW]),
+            )
+
+    def get_command_at(
+        self, index: int
+    ) -> Optional[Tuple[int, float, float, float, float, float, float]]:
+        """
+        Returns command data tuple at the specified index.
+
+        Args:
+            index: The index of the command to retrieve.
+
+        Returns:
+            A tuple (cmd_type, x, y, z, i, j, cw) or None if
+            the index is out of bounds or data is None.
+        """
+        if self.data is None or index < 0 or index >= len(self.data):
+            return None
+
+        row = self.data[index]
+        return (
+            int(row[COL_TYPE]),
+            float(row[COL_X]),
+            float(row[COL_Y]),
+            float(row[COL_Z]),
+            float(row[COL_I]),
+            float(row[COL_J]),
+            float(row[COL_CW]),
+        )

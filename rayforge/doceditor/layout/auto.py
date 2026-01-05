@@ -19,15 +19,6 @@ import numpy as np
 from scipy.ndimage import binary_dilation
 from scipy.signal import fftconvolve
 from ...context import get_context
-from ...core.geo.constants import (
-    CMD_TYPE_MOVE,
-    CMD_TYPE_LINE,
-    CMD_TYPE_ARC,
-    COL_TYPE,
-    COL_X,
-    COL_Y,
-    COL_Z,
-)
 from ...core.geo.linearize import linearize_arc
 from ...core.group import Group
 from ...core.matrix import Matrix
@@ -51,7 +42,7 @@ class WorkpieceVariant:
     mask: np.ndarray  # Dilated mask for collision detection
     local_bbox: Tuple[float, float, float, float]  # Bbox in local coords
     angle_offset: int  # Rotation applied to create this variant
-    unrotated_size_mm: Tuple[float, float]  # The size of the source shape
+    unrotated_size_mm: Tuple[float, float]  # The size of source shape
 
 
 @dataclass
@@ -59,7 +50,7 @@ class PlacedItem:
     """Represents a workpiece variant placed on the packing canvas."""
 
     variant: WorkpieceVariant
-    position_px: Tuple[int, int]  # (y, x) position on the canvas
+    position_px: Tuple[int, int]  # (y, x) position on canvas
 
 
 class PixelPerfectLayoutStrategy(LayoutStrategy):
@@ -84,7 +75,7 @@ class PixelPerfectLayoutStrategy(LayoutStrategy):
         allow_rotation: bool = True,
     ):
         """
-        Initializes the pixel-perfect layout strategy.
+        Initializes pixel-perfect layout strategy.
 
         Args:
             items: The list of DocItems to arrange.
@@ -108,6 +99,7 @@ class PixelPerfectLayoutStrategy(LayoutStrategy):
         """
         if not self.items:
             return {}
+
         logger.info("Starting pixel-perfect layout...")
 
         if context:
@@ -219,12 +211,12 @@ class PixelPerfectLayoutStrategy(LayoutStrategy):
                 target_x = stock_bbox[0] + stock_bbox[2] + self.margin_mm * 4
                 target_y = stock_bbox[1] + stock_bbox[3]
 
-                # Calculate the single (dx, dy) offset for the whole group
+                # Calculate a single (dx, dy) offset for the whole group
                 dx = target_x - unplaced_coll_bbox[0]
                 dy = target_y - unplaced_coll_bbox[3]
 
                 for item in self.unplaced_items:
-                    # Reset rotation and apply the collective translation
+                    # Reset rotation and apply to collective translation
                     old_world_transform = item.get_world_transform()
                     tx_old, ty_old = old_world_transform.decompose()[:2]
 
@@ -269,7 +261,7 @@ class PixelPerfectLayoutStrategy(LayoutStrategy):
             A 2D boolean numpy array where True represents a valid area.
         """
         # 1. Get the transform that maps the stock's local geometry space to
-        #    the world, then to the canvas's local pixel space.
+        #    world, then to the canvas's local pixel space.
         stock_world_transform = stock_item.get_world_transform()
         canvas_origin_world = (stock_item.bbox[0], stock_item.bbox[1])
         translation_to_canvas = Matrix.translation(
@@ -288,27 +280,25 @@ class PixelPerfectLayoutStrategy(LayoutStrategy):
         # 3. Render the transformed geometry onto a cairo surface.
         surface = cairo.ImageSurface(cairo.FORMAT_A8, width_px, height_px)
         ctx = cairo.Context(surface)
-        ctx.set_source_rgb(1, 1, 1)  # Use white for the valid area
+        ctx.set_source_rgb(1, 1, 1)  # Use white for valid area
         ctx.scale(self.resolution, self.resolution)  # Scale context to mm
 
-        # Draw the path from the geometry data.
+        # Draw path from geometry data.
         last_pos = (0.0, 0.0, 0.0)
-        data = geometry_for_render.data
-        if data is not None:
-            for i in range(len(data)):
-                row = data[i]
-                cmd_type = row[COL_TYPE]
-                end = (row[COL_X], row[COL_Y], row[COL_Z])
+        for cmd_type, x, y, z, i, j, cw in geometry_for_render.iter_commands():
+            end = (x, y, z)
 
-                if cmd_type == CMD_TYPE_MOVE:
-                    ctx.move_to(end[0], end[1])
-                elif cmd_type == CMD_TYPE_LINE:
-                    ctx.line_to(end[0], end[1])
-                elif cmd_type == CMD_TYPE_ARC:
-                    segments = linearize_arc(row, last_pos)
-                    for _, p2 in segments:
-                        ctx.line_to(p2[0], p2[1])
-                last_pos = end
+            if cmd_type == 0:  # CMD_TYPE_MOVE
+                ctx.move_to(end[0], end[1])
+            elif cmd_type == 1:  # CMD_TYPE_LINE
+                ctx.line_to(end[0], end[1])
+            elif cmd_type == 2:  # CMD_TYPE_ARC
+                segments = linearize_arc(
+                    (cmd_type, x, y, z, i, j, cw), last_pos
+                )
+                for _, p2 in segments:
+                    ctx.line_to(p2[0], p2[1])
+            last_pos = end
         ctx.fill()
 
         # 4. Extract the pixel data into a NumPy array.
@@ -445,7 +435,7 @@ class PixelPerfectLayoutStrategy(LayoutStrategy):
                 del item_dict[item_obj.uid]
 
                 if context:
-                    # Calculate progress within the 0.1 to 0.9 range allocated
+                    # Calculate progress within 0.1 to 0.9 range allocated
                     # for the packing phase (an 80% span).
                     pack_progress = (i + 1) / total_items
                     total_progress = 0.1 + (pack_progress * 0.8)
@@ -547,7 +537,7 @@ class PixelPerfectLayoutStrategy(LayoutStrategy):
         self, placements: List[PlacedItem], group_offset: Tuple[float, float]
     ) -> Dict[DocItem, Matrix]:
         """
-        Converts the list of pixel placements into transform deltas.
+        Converts a list of pixel placements into transform deltas.
 
         Args:
             placements: The list of `PlacedItem`s.
@@ -584,7 +574,8 @@ class PixelPerfectLayoutStrategy(LayoutStrategy):
         margin_px = int(self.margin_mm * self.resolution)
         group_offset_x, group_offset_y = group_offset
 
-        # 1. Calculate final position of the rotated bbox corner in world space
+        # 1. Calculate the final position of the rotated bbox corner in world
+        # space
         true_x_px = x_px + margin_px
         true_y_px = y_px + margin_px
 
@@ -799,7 +790,7 @@ class PixelPerfectLayoutStrategy(LayoutStrategy):
         ctx.set_source_surface(source_surface, 0, 0)
         ctx.paint()
 
-        # 4. Extract mask data from cairo surface into a numpy array.
+        # 4. Extract the mask data from the cairo surface into a numpy array.
         buf = final_surface.get_data()
         mask = np.frombuffer(buf, dtype=np.uint8).reshape(
             (height_px, final_surface.get_stride())
