@@ -1,8 +1,8 @@
 from gi.repository import Adw, Gdk, Gtk
 from .general_preferences_page import GeneralPreferencesPage
 from ..machine.settings_page import MachineSettingsPage
-from ...doceditor.ui.material_manager import MaterialManager
-from ...doceditor.ui.recipe_manager import RecipeManager
+from ..doceditor.material_manager import MaterialManager
+from ..doceditor.recipe_manager import RecipeManager
 from ..icons import get_icon
 
 

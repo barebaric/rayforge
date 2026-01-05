@@ -262,7 +262,7 @@ class DragDropCmd:
             file_infos: List of (file_path, mime_type) tuples
             position_mm: (x, y) tuple in world coordinates
         """
-        from ...doceditor.ui import import_handler
+        from ..doceditor import import_handler
 
         # Separate SVGs from raster files
         svg_files = []
@@ -435,7 +435,7 @@ class DragDropCmd:
                 center_x, center_y = 50.0, 50.0  # Fallback
 
             # Import the temporary file
-            from ...doceditor.ui import import_handler
+            from ..doceditor import import_handler
 
             import_handler.import_file_at_position(
                 self.main_window,
