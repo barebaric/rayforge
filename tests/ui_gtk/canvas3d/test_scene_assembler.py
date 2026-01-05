@@ -61,6 +61,7 @@ def mock_step_artifact_handle() -> StepRenderArtifactHandle:
 
 
 @pytest.mark.usefixtures("test_machine_and_config")
+@pytest.mark.ui
 class TestRenderItem:
     """Test the RenderItem dataclass for the new Step-based structure."""
 
@@ -85,6 +86,7 @@ class TestRenderItem:
 
 
 @pytest.mark.usefixtures("test_machine_and_config")
+@pytest.mark.ui
 class TestSceneDescription:
     """Test the SceneDescription dataclass."""
 
@@ -113,6 +115,7 @@ class TestSceneDescription:
 
 
 @pytest.mark.usefixtures("test_machine_and_config")
+@pytest.mark.ui
 class TestGenerateSceneDescription:
     """Test the generate_scene_description function."""
 
