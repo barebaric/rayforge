@@ -34,6 +34,7 @@ rust = "*"
 [feature.app.pypi-dependencies]
 rayforge = { editable = true, path = "." }
 aiohttp = "==3.12.14"
+asyncudp = "==0.11.0"
 blinker = "==1.9.0"
 build = "*"
 ezdxf = "==1.3.5"
