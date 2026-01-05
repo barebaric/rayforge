@@ -3,6 +3,7 @@ from .transport import Transport, TransportStatus
 from .http import HttpTransport
 from .serial import SerialTransport
 from .telnet import TelnetTransport
+from .udp import UdpTransport
 from .websocket import WebSocketTransport
 
 
@@ -12,5 +13,6 @@ __all__ = [
     "HttpTransport",
     "SerialTransport",
     "TelnetTransport",
+    "UdpTransport",
     "WebSocketTransport",
 ]
