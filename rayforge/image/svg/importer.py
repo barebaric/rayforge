@@ -594,7 +594,6 @@ class SvgImporter(Importer):
         point_buffer: List[Tuple[float, float]] = []
 
         def flush_buffer():
-            nonlocal point_buffer
             if len(point_buffer) > 1:
                 # Convert to numpy array
                 pts_arr = np.array(point_buffer, dtype=np.float64)
