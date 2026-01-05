@@ -1,7 +1,8 @@
 repos:
-  - repo: https://github.com/PyCQA/flake8
-    rev: 7.1.0
+  - repo: local
     hooks:
-      - id: flake8
-        args: ["--config=./.flake8", "--ignore=E127,E128,E121,E123,E126,E203,E226,E24,E704,W503,W504"]
-        exclude: tests/
+      - id: pixi-lint
+        name: pixi run lint
+        entry: pixi run lint
+        language: system
+        pass_filenames: false
