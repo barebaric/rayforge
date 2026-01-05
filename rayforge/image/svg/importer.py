@@ -1,9 +1,9 @@
 import io
 import math
 import logging
-from typing import List, Optional, Tuple, Union
+from typing import List, Optional, Tuple
+import cairo
 from xml.etree import ElementTree as ET
-
 from svgelements import (
     SVG,
     Arc,
@@ -17,7 +17,6 @@ from svgelements import (
 )
 
 from ...core.geo import Geometry
-from ...core.geo.linearize import linearize_bezier_adaptive
 from ...core.geo.simplify import simplify_points
 from ...core.item import DocItem
 from ...core.layer import Layer
@@ -452,8 +451,6 @@ class SvgImporter(Importer):
         # Use a fixed, high-precision tolerance for linearization and
         # buffering. SVG coordinates are usually 96 DPI.
         # 0.05 px ~= 0.013 mm, which is sufficient for high fidelity import.
-        # Using the previous dynamic heuristic caused jagged lines on small
-        # items.
         tolerance = 0.05
 
         for shape in svg.elements():
@@ -469,21 +466,133 @@ class SvgImporter(Importer):
         self, path: Path, geo: Geometry, tolerance: float
     ) -> None:
         """
-        Converts a single Path object's segments to Geometry commands.
+        Converts a single Path object's segments to Geometry commands using
+        Cairo's optimized C implementation for flattening Bezier curves.
 
-        This method buffers points from linearized segments and simplifies them
-        using NumPy before creating geometry objects. This massively reduces
-        overhead for complex Bezier paths.
+        This avoids slow Python-based recursion for curve linearization by:
+        1. Constructing the path in a temporary Cairo context.
+        2. Utilizing `ctx.copy_path_flat()` to get pre-flattened line data.
+        3. Buffering points for efficient ingestion into the Geometry object.
         """
+        # Create a throwaway 1x1 surface just to get a Context
+        surface = cairo.ImageSurface(cairo.FORMAT_A8, 1, 1)
+        ctx = cairo.Context(surface)
+
+        # Set tolerance for flattening (conversion of curves to lines)
+        ctx.set_tolerance(tolerance)
+
+        # Feed svgelements path data into the Cairo context
+        for seg in path:
+            start = seg.start
+            end = seg.end
+            if end is None:
+                continue
+
+            # Robust checking before accessing coordinates
+            if end.x is None or end.y is None:
+                continue
+
+            end_pt = (float(end.x), float(end.y))
+
+            if isinstance(seg, Move):
+                ctx.move_to(end_pt[0], end_pt[1])
+
+            elif isinstance(seg, Line):
+                ctx.line_to(end_pt[0], end_pt[1])
+
+            elif isinstance(seg, Close):
+                ctx.close_path()
+
+            elif isinstance(seg, CubicBezier):
+                c1 = seg.control1
+                c2 = seg.control2
+                # Ensure control points exist before accessing properties
+                if (
+                    c1 is not None
+                    and c2 is not None
+                    and c1.x is not None
+                    and c1.y is not None
+                    and c2.x is not None
+                    and c2.y is not None
+                ):
+                    ctx.curve_to(
+                        float(c1.x),
+                        float(c1.y),
+                        float(c2.x),
+                        float(c2.y),
+                        end_pt[0],
+                        end_pt[1],
+                    )
+
+            elif isinstance(seg, QuadraticBezier):
+                # Promote Quadratic to Cubic for Cairo
+                # CP1 = Start + (2/3)*(Control - Start)
+                # CP2 = End + (2/3)*(Control - End)
+                s = start
+                c = seg.control
+
+                if (
+                    s is not None
+                    and c is not None
+                    and s.x is not None
+                    and s.y is not None
+                    and c.x is not None
+                    and c.y is not None
+                ):
+                    sx, sy = float(s.x), float(s.y)
+                    cx, cy = float(c.x), float(c.y)
+                    ex, ey = end_pt
+
+                    c1x = sx + (2.0 / 3.0) * (cx - sx)
+                    c1y = sy + (2.0 / 3.0) * (cy - sy)
+                    c2x = ex + (2.0 / 3.0) * (cx - ex)
+                    c2y = ey + (2.0 / 3.0) * (cy - ey)
+
+                    ctx.curve_to(c1x, c1y, c2x, c2y, ex, ey)
+
+            elif isinstance(seg, Arc):
+                # svgelements handles elliptical arcs and rotation logic
+                # much better than manual Cairo calls. We convert the Arc
+                # to a series of cubic beziers using svgelements' own logic.
+                for cubic in seg.as_cubic_curves():
+                    # as_cubic_curves returns CubicBezier objects
+                    c1 = cubic.control1
+                    c2 = cubic.control2
+                    e = cubic.end
+                    if (
+                        c1 is not None
+                        and c2 is not None
+                        and e is not None
+                        and c1.x is not None
+                        and c1.y is not None
+                        and c2.x is not None
+                        and c2.y is not None
+                        and e.x is not None
+                        and e.y is not None
+                    ):
+                        ctx.curve_to(
+                            float(c1.x),
+                            float(c1.y),
+                            float(c2.x),
+                            float(c2.y),
+                            float(e.x),
+                            float(e.y),
+                        )
+
+        # Retrieve the flattened path (Moves, Lines, Closes) from Cairo
+        flat_path_iter = ctx.copy_path_flat()
+
         point_buffer: List[Tuple[float, float]] = []
 
         def flush_buffer():
             nonlocal point_buffer
             if len(point_buffer) > 1:
-                # Simplify raw point data efficiently
+                # Use numpy-based RDP simplification on the dense linear data
+                # generated by Cairo. This reduces point count while keeping
+                # shape.
                 simplified = simplify_points(point_buffer, tolerance)
-                # Reconstruct LineTo commands. Skip first point as it
-                # connects to the previous command's end.
+
+                # Transfer to Geometry
                 for p in simplified[1:]:
                     geo.line_to(p[0], p[1], 0.0)
 
@@ -491,147 +600,25 @@ class SvgImporter(Importer):
             if point_buffer:
                 point_buffer = [point_buffer[-1]]
 
-        for seg in path:
-            # Use a local variable to help strict type checkers.
-            end = seg.end
-            if end is None or end.x is None or end.y is None:
-                continue
-
-            end_pt = (float(end.x), float(end.y))
-
-            if isinstance(seg, Move):
+        # Process the flattened Cairo commands
+        for type, points in flat_path_iter:
+            if type == cairo.PATH_MOVE_TO:
                 flush_buffer()
-                point_buffer = [end_pt]
-                geo.move_to(end_pt[0], end_pt[1], 0.0)
+                p = (points[0], points[1])
+                point_buffer = [p]
+                geo.move_to(p[0], p[1], 0.0)
 
-            elif isinstance(seg, Line):
-                if not point_buffer:
-                    start = seg.start
-                    if start and start.x is not None and start.y is not None:
-                        point_buffer = [(float(start.x), float(start.y))]
-                point_buffer.append(end_pt)
+            elif type == cairo.PATH_LINE_TO:
+                p = (points[0], points[1])
+                point_buffer.append(p)
 
-            elif isinstance(seg, Close):
+            elif type == cairo.PATH_CLOSE_PATH:
                 flush_buffer()
                 geo.close_path()
                 point_buffer = []
 
-            elif isinstance(seg, Arc):
-                flush_buffer()
-                self._add_arc_to_geometry(seg, geo)
-                point_buffer = [end_pt]
-
-            elif isinstance(seg, (CubicBezier, QuadraticBezier)):
-                if not point_buffer:
-                    start = seg.start
-                    if start and start.x is not None and start.y is not None:
-                        point_buffer = [(float(start.x), float(start.y))]
-
-                # Get raw linearized points and extend buffer directly
-                new_points = self._get_bezier_points(seg, tolerance)
-                # Skip the first point as it connects to the previous
-                # command's end
-                point_buffer.extend(new_points)
-
         # Flush any remaining segments
         flush_buffer()
-
-    def _add_arc_to_geometry(self, seg: Arc, geo: Geometry) -> None:
-        """Adds an Arc segment to the Geometry."""
-        # Local variables help type checkers confirm non-None status.
-        start = seg.start
-        center = seg.center
-        end = seg.end
-
-        if (
-            start is None
-            or start.x is None
-            or start.y is None
-            or center is None
-            or center.x is None
-            or center.y is None
-            or end is None
-            or end.x is None
-            or end.y is None
-        ):
-            return
-
-        start_x, start_y = float(start.x), float(start.y)
-        center_x, center_y = float(center.x), float(center.y)
-
-        center_offset_x = center_x - start_x
-        center_offset_y = center_y - start_y
-        # Per SVG spec, sweep-flag=1 is positive-angle (clockwise).
-        # svgelements preserves this as sweep=1 and correctly flips it on
-        # transforms with negative determinants.
-        is_clockwise = bool(seg.sweep)
-        geo.arc_to(
-            float(end.x),
-            float(end.y),
-            center_offset_x,
-            center_offset_y,
-            is_clockwise,
-            0.0,
-        )
-
-    def _get_bezier_points(
-        self,
-        seg: Union[CubicBezier, QuadraticBezier],
-        tolerance: float,
-    ) -> List[Tuple[float, float]]:
-        """
-        Linearizes a Bezier curve into a list of 2D points.
-        Returns a list of (x, y) tuples.
-        """
-        start = seg.start
-        end = seg.end
-
-        if start is None or start.x is None or start.y is None:
-            return []
-        if end is None or end.x is None or end.y is None:
-            return []
-
-        # Prepare control points for cubic bezier
-        start_pt = (float(start.x), float(start.y))
-        end_pt = (float(end.x), float(end.y))
-
-        if isinstance(seg, QuadraticBezier):
-            control = seg.control
-            if control is None or control.x is None or control.y is None:
-                return []
-
-            c_x, c_y = float(control.x), float(control.y)
-            # Promote Quadratic to Cubic for the generic flattener
-            # CP1 = Start + (2/3)*(Control - Start)
-            # CP2 = End + (2/3)*(Control - End)
-            c1_x = start_pt[0] + (2 / 3) * (c_x - start_pt[0])
-            c1_y = start_pt[1] + (2 / 3) * (c_y - start_pt[1])
-            c2_x = end_pt[0] + (2 / 3) * (c_x - end_pt[0])
-            c2_y = end_pt[1] + (2 / 3) * (c_y - end_pt[1])
-            c1_pt = (c1_x, c1_y)
-            c2_pt = (c2_x, c2_y)
-        else:
-            c1 = seg.control1
-            c2 = seg.control2
-            if (
-                c1 is None
-                or c1.x is None
-                or c1.y is None
-                or c2 is None
-                or c2.x is None
-                or c2.y is None
-            ):
-                return []
-
-            c1_pt = (float(c1.x), float(c1.y))
-            c2_pt = (float(c2.x), float(c2.y))
-
-        # Use the Adaptive Linearization.
-        # We square the tolerance because the adaptive function compares
-        # squared distances.
-        return linearize_bezier_adaptive(
-            start_pt, c1_pt, c2_pt, end_pt, tolerance**2
-        )
 
     def _normalize_geometry(
         self, geo: Geometry, width_px: float, height_px: float
