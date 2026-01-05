@@ -85,6 +85,16 @@ def _ramer_douglas_peucker_numpy(
     return points[keep]
 
 
+def simplify_points_to_array(
+    points: np.ndarray, tolerance: float
+) -> np.ndarray:
+    """
+    Simplifies a numpy array of 2D points using the Ramer-Douglas-Peucker
+    algorithm. Returns a numpy array of the kept points.
+    """
+    return _ramer_douglas_peucker_numpy(points, tolerance)
+
+
 def simplify_points(
     points: List[Tuple[float, float]], tolerance: float
 ) -> List[Tuple[float, float]]:
