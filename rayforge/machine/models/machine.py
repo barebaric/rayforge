@@ -1029,7 +1029,7 @@ class Machine:
 
         ma.dialect_uid = dialect_uid
         ma.dimensions = tuple(ma_data.get("dimensions", ma.dimensions))
-        ma.offsets = tuple(ma_data.get("offsets", ma.dimensions))
+        ma.offsets = tuple(ma_data.get("offsets", ma.offsets))
         origin_value = ma_data.get("origin", None)
         if origin_value is not None:
             ma.origin = Origin(origin_value)
