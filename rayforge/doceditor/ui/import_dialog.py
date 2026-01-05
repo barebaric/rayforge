@@ -66,6 +66,22 @@ class ImportDialog(Adw.Window):
         header_bar = Adw.HeaderBar()
         main_box.append(header_bar)
 
+        # Banner for SVG direct vector mode issues
+        self.warning_banner = Adw.Banner(
+            title=_(
+                "SVG produced no output in direct vector mode. "
+                "SVGs containing text or other non-path elements "
+                "should be converted to paths before importing "
+                "(e.g., in Inkscape: Path > Object to Path)."
+            ),
+            button_label=_("Switch to Trace Mode"),
+        )
+        self.warning_banner.connect(
+            "button-clicked", self._on_switch_to_trace_clicked
+        )
+        self.warning_banner.set_revealed(False)
+        main_box.append(self.warning_banner)
+
         content_box = Gtk.Box(
             orientation=Gtk.Orientation.HORIZONTAL, vexpand=True, hexpand=True
         )
@@ -198,7 +214,11 @@ class ImportDialog(Adw.Window):
         self.layers_group.set_sensitive(
             is_direct_import
         )  # Only vector import supports specific layer select
+        self.warning_banner.set_revealed(False)
         self._schedule_preview_update()
+
+    def _on_switch_to_trace_clicked(self, banner):
+        self.use_vectors_switch.set_active(False)
 
     def _on_auto_threshold_toggled(self, switch, _pspec):
         is_auto = switch.get_active()
@@ -423,6 +443,15 @@ class ImportDialog(Adw.Window):
         self.preview_area.queue_draw()
         self.status_spinner.stop()
         self.import_button.set_sensitive(self._preview_payload is not None)
+
+        # Show warning banner for SVG direct vector mode failures
+        is_direct_vector = (
+            self.is_svg and self.use_vectors_switch.get_active()
+        )
+        self.warning_banner.set_revealed(
+            is_direct_vector and self._preview_payload is None
+        )
+
         if self._preview_payload is None:
             logger.warning("Preview generation resulted in no payload.")
 
