@@ -19,6 +19,7 @@ from .doceditor.ui import file_dialogs, import_handler
 from .doceditor.ui.asset_list_view import AssetListView
 from .doceditor.ui.item_properties import DocItemPropertiesWidget
 from .doceditor.ui.layer_list import LayerListView
+from .doceditor.ui.stock_properties_dialog import StockPropertiesDialog
 from .doceditor.ui.sketch_properties import SketchPropertiesWidget
 from .doceditor.ui.workflow_view import WorkflowView
 from .image.sketch.exporter import SketchExporter
@@ -40,15 +41,14 @@ from .shared.ui.about import AboutDialog
 from .shared.ui.settings_dialog import SettingsWindow
 from .shared.ui.task_bar import TaskBar
 from .toolbar import MainToolbar
-from .doceditor.ui.stock_properties_dialog import StockPropertiesDialog
 from .workbench.canvas import CanvasElement
+from .workbench.canvas2d.drag_drop_cmd import DragDropCmd
+from .workbench.canvas2d.elements.stock import StockElement
+from .workbench.canvas2d.simulator_cmd import SimulatorCmd
+from .workbench.canvas2d.surface import WorkSurface
 from .workbench.canvas3d import Canvas3D, initialized as canvas3d_initialized
-from .workbench.drag_drop_cmd import DragDropCmd
-from .workbench.elements.stock import StockElement
-from .workbench.simulator_cmd import SimulatorCmd
 from .workbench.sketcher.cmd import UpdateSketchCommand
 from .workbench.sketcher.studio import SketchStudio
-from .workbench.surface import WorkSurface
 from .workbench.view_mode_cmd import ViewModeCmd
 
 

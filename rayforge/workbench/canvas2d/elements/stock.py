@@ -1,8 +1,8 @@
 import logging
 import math
 import cairo
-from ...core.stock import StockItem
-from ...core.geo.constants import (
+from ....core.stock import StockItem
+from ....core.geo.constants import (
     CMD_TYPE_MOVE,
     CMD_TYPE_LINE,
     CMD_TYPE_ARC,
@@ -13,7 +13,7 @@ from ...core.geo.constants import (
     COL_J,
     COL_CW,
 )
-from ..canvas import CanvasElement
+from ...canvas import CanvasElement
 
 
 logger = logging.getLogger(__name__)

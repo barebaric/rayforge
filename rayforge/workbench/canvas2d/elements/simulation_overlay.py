@@ -4,10 +4,10 @@ import cairo
 import numpy as np
 from typing import Dict, Optional, Tuple
 from gi.repository import Gdk
-from ...core.ops import Ops, State
-from ...core.ops.commands import ArcToCommand, ScanLinePowerCommand
-from ..canvas.element import CanvasElement
-from ...core.geo.linearize import linearize_arc
+from ....core.ops import Ops, State
+from ....core.ops.commands import ArcToCommand, ScanLinePowerCommand
+from ...canvas.element import CanvasElement
+from ....core.geo.linearize import linearize_arc
 
 
 def speed_to_heatmap_color(

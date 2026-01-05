@@ -2,15 +2,15 @@ import logging
 from blinker import Signal
 from typing import TYPE_CHECKING, Optional, cast, Dict, List, Sequence
 from gi.repository import Gdk, Gtk
-from ..camera.controller import CameraController
-from ..context import get_context
-from ..core.group import Group
-from ..core.item import DocItem
-from ..core.layer import Layer
-from ..core.stock import StockItem
-from ..core.workpiece import WorkPiece
-from ..machine.models.machine import Machine, Origin
-from .canvas import WorldSurface, CanvasElement
+from ...camera.controller import CameraController
+from ...context import get_context
+from ...core.group import Group
+from ...core.item import DocItem
+from ...core.layer import Layer
+from ...core.stock import StockItem
+from ...core.workpiece import WorkPiece
+from ...machine.models.machine import Machine, Origin
+from ..canvas import WorldSurface, CanvasElement
 from .elements.stock import StockElement
 from .elements.workpiece import WorkPieceElement
 from .elements.group import GroupElement
@@ -19,12 +19,12 @@ from .elements.layer import LayerElement
 from .elements.tab_handle import TabHandleElement
 from .elements.dot import DotElement
 from . import context_menu
-from .sketcher.editor import SketchEditor
-from .sketcher.sketchelement import SketchElement
+from ..sketcher.editor import SketchEditor
+from ..sketcher.sketchelement import SketchElement
 
 if TYPE_CHECKING:
-    from ..doceditor.editor import DocEditor
-    from ..workbench.drag_drop_cmd import DragDropCmd
+    from ...doceditor.editor import DocEditor
+    from .drag_drop_cmd import DragDropCmd
 
 logger = logging.getLogger(__name__)
 

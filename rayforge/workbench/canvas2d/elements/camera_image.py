@@ -4,8 +4,8 @@ import cairo
 import cv2
 import numpy as np
 from gi.repository import GLib
-from ...camera.controller import CameraController
-from ..canvas import CanvasElement
+from ....camera.controller import CameraController
+from ...canvas import CanvasElement
 from typing import TYPE_CHECKING, cast
 
 if TYPE_CHECKING:

@@ -3,7 +3,7 @@
 from rayforge.core.ops import (
     Ops,
 )
-from rayforge.workbench.elements.simulation_overlay import (
+from rayforge.workbench.canvas2d.elements.simulation_overlay import (
     SimulationOverlay,
     OpsTimeline,
     speed_to_heatmap_color,

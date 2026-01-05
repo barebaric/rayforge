@@ -1,12 +1,12 @@
 import logging
 from typing import cast, TYPE_CHECKING
-from ...core.workflow import Step
-from ..canvas import CanvasElement
+from ....core.workflow import Step
+from ...canvas import CanvasElement
 from .group import GroupElement
 from .workpiece import WorkPieceElement
 
 if TYPE_CHECKING:
-    from ...pipeline.pipeline import Pipeline
+    from ....pipeline.pipeline import Pipeline
 
 
 logger = logging.getLogger(__name__)

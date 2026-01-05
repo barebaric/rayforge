@@ -1,18 +1,18 @@
 import logging
 from typing import TYPE_CHECKING, cast, Optional
 
-from ...core.stock import StockItem
-from ...core.item import DocItem
-from ...core.workpiece import WorkPiece
-from ...core.group import Group
-from ..canvas.element import CanvasElement
+from ....core.stock import StockItem
+from ....core.item import DocItem
+from ....core.workpiece import WorkPiece
+from ....core.group import Group
+from ...canvas.element import CanvasElement
 from .workpiece import WorkPieceElement
 from .step import StepElement
 from .group import GroupElement
 from .stock import StockElement
 
 if TYPE_CHECKING:
-    from ...core.layer import Layer
+    from ....core.layer import Layer
 
 
 logger = logging.getLogger(__name__)

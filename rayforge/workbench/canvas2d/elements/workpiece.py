@@ -4,24 +4,24 @@ import cairo
 from concurrent.futures import Future
 import numpy as np
 from gi.repository import GLib
-from ...context import get_context
-from ...core.workpiece import WorkPiece
-from ...core.step import Step
-from ...core.matrix import Matrix
-from ...pipeline.artifact import (
+from ....context import get_context
+from ....core.workpiece import WorkPiece
+from ....core.step import Step
+from ....core.matrix import Matrix
+from ....pipeline.artifact import (
     WorkPieceArtifact,
     BaseArtifactHandle,
     WorkPieceViewArtifact,
 )
-from ...shared.util.colors import ColorSet
-from ...shared.ui.gtk_color import GtkColorResolver, ColorSpecDict
-from ..canvas import CanvasElement
+from ....shared.util.colors import ColorSet
+from ....shared.ui.gtk_color import GtkColorResolver, ColorSpecDict
+from ...canvas import CanvasElement
 from .tab_handle import TabHandleElement
 
 if TYPE_CHECKING:
     from ..surface import WorkSurface
-    from ...pipeline.pipeline import Pipeline
-    from ...pipeline.artifact.base import VertexData
+    from ....pipeline.pipeline import Pipeline
+    from ....pipeline.artifact.base import VertexData
 
 logger = logging.getLogger(__name__)
 
