@@ -1,12 +1,8 @@
 import pytest
 import json
 from pathlib import Path
-
-# Sketcher components
 from rayforge.core.sketcher import Sketch
 from rayforge.core.workpiece import WorkPiece
-
-# Importer to test
 from rayforge.image.sketch.importer import SketchImporter
 
 
@@ -176,3 +172,90 @@ def test_sketch_importer_bad_data():
     importer2 = SketchImporter(data=bad_data_2)
     assert importer2.get_doc_items() is None
     assert importer2.parsed_sketch is None
+
+
+def test_sketch_importer_round_trip_mouse():
+    """
+    Tests that the mouse.rfs sketch can be imported and correctly
+    reconstructed as a WorkPiece and Sketch object.
+    """
+    # 1. Read the original mouse.rfs file
+    mouse_file = Path(__file__).parent / "mouse.rfs"
+    original_data = mouse_file.read_bytes()
+
+    # 2. Parse the original JSON for comparison
+    original_dict = json.loads(original_data)
+
+    # 3. Instantiate the importer with the serialized data
+    importer = SketchImporter(data=original_data, source_file=mouse_file)
+
+    # 4. Call get_doc_items() to get the payload
+    payload = importer.get_doc_items()
+    assert payload is not None, "Importer failed to return payload"
+    assert importer.parsed_sketch is not None
+    assert len(payload.sketches) == 1
+    imported_sketch_template = payload.sketches[0]
+
+    # 5. Check the WorkPiece in the payload
+    assert len(payload.items) == 1
+    item = payload.items[0]
+
+    assert isinstance(item, WorkPiece)
+    # The importer should prioritize the serialized name over the filename.
+    assert item.name == original_dict["name"]
+
+    assert item.source_segment is None
+    assert item.sketch_uid == original_dict["uid"]
+
+    # 6. Verify the dimensions were set correctly on the WorkPiece
+    imported_sketch_template.solve()
+    geo = imported_sketch_template.to_geometry()
+    min_x, min_y, max_x, max_y = geo.rect()
+    expected_width = max_x - min_x
+    expected_height = max_y - min_y
+    assert item.natural_width_mm == pytest.approx(expected_width)
+    assert item.natural_height_mm == pytest.approx(expected_height)
+    assert item.natural_size == pytest.approx(
+        (expected_width, expected_height)
+    )
+
+    # 7. Verify the sketch template itself was parsed correctly
+    # Note: Point coordinates may be np.float64 instead of plain floats
+    parsed_sketch_dict = imported_sketch_template.to_dict()
+
+    # Check top-level fields
+    assert parsed_sketch_dict["uid"] == original_dict["uid"]
+    assert parsed_sketch_dict["name"] == original_dict["name"]
+    assert parsed_sketch_dict["type"] == original_dict["type"]
+    assert parsed_sketch_dict["origin_id"] == original_dict["origin_id"]
+
+    # Check input parameters
+    assert (
+        parsed_sketch_dict["input_parameters"]
+        == original_dict["input_parameters"]
+    )
+
+    # Check params
+    assert parsed_sketch_dict["params"] == original_dict["params"]
+
+    # Check registry points (values may be np.float64)
+    for orig_point, parsed_point in zip(
+        original_dict["registry"]["points"],
+        parsed_sketch_dict["registry"]["points"],
+    ):
+        assert orig_point["id"] == parsed_point["id"]
+        assert orig_point["fixed"] == parsed_point["fixed"]
+        assert pytest.approx(orig_point["x"]) == float(parsed_point["x"])
+        assert pytest.approx(orig_point["y"]) == float(parsed_point["y"])
+
+    # Check registry entities
+    assert (
+        parsed_sketch_dict["registry"]["entities"]
+        == original_dict["registry"]["entities"]
+    )
+
+    # Check constraints
+    assert parsed_sketch_dict["constraints"] == original_dict["constraints"]
+
+    # Check fills (should now be lists, not tuples)
+    assert parsed_sketch_dict["fills"] == original_dict["fills"]

@@ -63,7 +63,7 @@ class Fill:
     def to_dict(self) -> Dict[str, Any]:
         return {
             "uid": self.uid,
-            "boundary": self.boundary,
+            "boundary": [list(item) for item in self.boundary],
         }
 
     @classmethod
