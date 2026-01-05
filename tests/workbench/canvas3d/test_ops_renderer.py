@@ -1,6 +1,6 @@
 import pytest
 import numpy as np
-from rayforge.workbench.canvas3d.ops_renderer import OpsRenderer
+from rayforge.ui_gtk.canvas3d.ops_renderer import OpsRenderer
 from rayforge.core.ops import Ops
 from rayforge.shared.util.colors import ColorSet
 

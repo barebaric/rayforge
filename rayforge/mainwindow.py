@@ -41,15 +41,15 @@ from .shared.ui.about import AboutDialog
 from .shared.ui.settings_dialog import SettingsWindow
 from .shared.ui.task_bar import TaskBar
 from .toolbar import MainToolbar
-from .workbench.canvas import CanvasElement
-from .workbench.canvas2d.drag_drop_cmd import DragDropCmd
-from .workbench.canvas2d.elements.stock import StockElement
-from .workbench.canvas2d.simulator_cmd import SimulatorCmd
-from .workbench.canvas2d.surface import WorkSurface
-from .workbench.canvas3d import Canvas3D, initialized as canvas3d_initialized
-from .workbench.sketcher.cmd import UpdateSketchCommand
-from .workbench.sketcher.studio import SketchStudio
-from .workbench.view_mode_cmd import ViewModeCmd
+from .ui_gtk.canvas import CanvasElement
+from .ui_gtk.canvas2d.drag_drop_cmd import DragDropCmd
+from .ui_gtk.canvas2d.elements.stock import StockElement
+from .ui_gtk.canvas2d.simulator_cmd import SimulatorCmd
+from .ui_gtk.canvas2d.surface import WorkSurface
+from .ui_gtk.canvas3d import Canvas3D, initialized as canvas3d_initialized
+from .ui_gtk.sketcher.cmd import UpdateSketchCommand
+from .ui_gtk.sketcher.studio import SketchStudio
+from .ui_gtk.view_mode_cmd import ViewModeCmd
 
 
 logger = logging.getLogger(__name__)

@@ -9,7 +9,7 @@ from rayforge.core.sketcher.constraints import (
     EqualDistanceConstraint,
 )
 from rayforge.core.sketcher.entities import Line
-from rayforge.workbench.sketcher.sketchelement import SketchElement
+from rayforge.ui_gtk.sketcher.sketchelement import SketchElement
 
 # This is a constant from the implementation, let's use it for consistency
 DEFAULT_CHAMFER_DISTANCE = 10.0

@@ -218,7 +218,7 @@ def main():
     # making Gtk available in gi, as the canvas uses Gtk.
     # The rest of the app can now check `rayforge.canvas3d.initialized`.
     # It is safe to import other modules that depend on canvas3d after this.
-    from rayforge.workbench import canvas3d
+    from rayforge.ui_gtk import canvas3d
 
     canvas3d.initialize()
 

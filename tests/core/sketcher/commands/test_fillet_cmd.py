@@ -10,7 +10,7 @@ from rayforge.core.sketcher.constraints import (
     TangentConstraint,
 )
 from rayforge.core.sketcher.entities import Line, Arc
-from rayforge.workbench.sketcher.sketchelement import SketchElement
+from rayforge.ui_gtk.sketcher.sketchelement import SketchElement
 
 # Constant for consistency
 DEFAULT_FILLET_RADIUS = 10.0
