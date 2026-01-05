@@ -1,9 +1,9 @@
 from typing import List, Dict, Optional, Any
-from .point import Point
-from .entity import Entity
-from .line import Line
-from .arc import Arc
-from .circle import Circle
+from .entities.point import Point
+from .entities.entity import Entity
+from .entities.line import Line
+from .entities.arc import Arc
+from .entities.circle import Circle
 
 _ENTITY_CLASSES = {"line": Line, "arc": Arc, "circle": Circle}
 

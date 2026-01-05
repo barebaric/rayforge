@@ -1,5 +1,6 @@
 import pytest
-from rayforge.core.sketcher.entities import EntityRegistry, Line
+from rayforge.core.sketcher.entities import Line
+from rayforge.core.sketcher.registry import EntityRegistry
 
 
 @pytest.fixture

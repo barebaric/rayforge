@@ -24,8 +24,9 @@ from .constraints import (
     SymmetryConstraint,
     CollinearConstraint,
 )
-from .entities import EntityRegistry, Line, Arc, Circle, Entity
+from .entities import Line, Arc, Circle, Entity
 from .params import ParameterContext
+from .registry import EntityRegistry
 from .solver import Solver
 
 
