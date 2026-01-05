@@ -3,8 +3,8 @@ from gi.repository import Gtk, Adw, Gio
 from typing import List, cast, TYPE_CHECKING
 from ....core.item import DocItem
 from ....core.workpiece import WorkPiece
-from ....icons import get_icon
-from ....shared.ui.adwfix import get_spinrow_float
+from ....ui_gtk.icons import get_icon
+from ....ui_gtk.shared.adwfix import get_spinrow_float
 from ..image_metadata_dialog import ImageMetadataDialog
 from .base import PropertyProvider
 

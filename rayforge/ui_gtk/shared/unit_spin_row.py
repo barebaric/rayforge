@@ -3,9 +3,9 @@ from typing import Optional
 from gi.repository import Adw, Gtk
 from blinker import Signal
 from ...context import get_context
-from ..units.definitions import Unit, get_unit, get_units_for_quantity
+from ...shared.units.definitions import Unit, get_unit, get_units_for_quantity
 from .adwfix import get_spinrow_float
-from .formatter import format_value
+from ...shared.units.formatter import format_value
 
 logger = logging.getLogger(__name__)
 

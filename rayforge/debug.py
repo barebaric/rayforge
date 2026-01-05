@@ -85,7 +85,7 @@ class DebugDumpManager:
         """
         # Perform imports locally to avoid circular dependencies at startup
         from .context import get_context
-        from .shared.ui.about import get_dependency_info
+        from .ui_gtk.about import get_dependency_info
         from .logging_setup import get_memory_handler
         from .config import LOG_DIR
         from . import __version__

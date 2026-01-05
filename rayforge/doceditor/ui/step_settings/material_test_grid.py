@@ -10,7 +10,7 @@ from gi.repository import Adw, GLib, GObject, Gtk
 
 from ....core.undo import DictItemCommand
 from ....pipeline.producer import MaterialTestGridProducer
-from ....shared.ui.adwfix import get_spinrow_float, get_spinrow_int
+from ....ui_gtk.shared.adwfix import get_spinrow_float, get_spinrow_int
 from ....shared.util.glib import DebounceMixin
 from .base import StepComponentSettingsWidget
 
@@ -496,7 +496,7 @@ class MaterialTestGridSettingsWidget(
         """Exits execution preview mode if currently active."""
         if not self.step.doc:
             return
-        from ....mainwindow import MainWindow
+        from ....ui_gtk.mainwindow import MainWindow
 
         root = self.get_root()
         if not isinstance(root, MainWindow):

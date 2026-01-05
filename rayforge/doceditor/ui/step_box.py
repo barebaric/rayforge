@@ -2,9 +2,9 @@ from typing import TYPE_CHECKING
 from gi.repository import Gtk, Adw
 from blinker import Signal
 from ...core.step import Step
-from ...icons import get_icon
+from ...ui_gtk.icons import get_icon
 from ...core.undo.property_cmd import ChangePropertyCommand
-from ...shared.ui.formatter import format_value
+from ...shared.units.formatter import format_value
 from ...context import get_context
 from .step_settings_dialog import StepSettingsDialog
 

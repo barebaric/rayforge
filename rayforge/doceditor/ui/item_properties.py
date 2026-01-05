@@ -5,7 +5,7 @@ from ...core.group import Group
 from ...core.item import DocItem
 from ...core.stock import StockItem
 from ...core.workpiece import WorkPiece
-from ...shared.ui.expander import Expander
+from ...ui_gtk.shared.expander import Expander
 from .property_providers import (
     PropertyProvider,
     TransformPropertyProvider,

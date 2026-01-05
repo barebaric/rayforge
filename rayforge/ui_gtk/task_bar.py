@@ -2,10 +2,10 @@ import logging
 from gi.repository import Gtk, Pango
 from typing import Optional, Dict, Any
 from blinker import Signal
-from ...machine.ui.connection_status_widget import ConnectionStatusWidget
-from ...machine.ui.status_widget import MachineStatusWidget
-from ...machine.models.machine import Machine
-from .progress_bar import ProgressBar
+from ..machine.ui.connection_status_widget import ConnectionStatusWidget
+from ..machine.ui.status_widget import MachineStatusWidget
+from ..machine.models.machine import Machine
+from .shared.progress_bar import ProgressBar
 
 
 logger = logging.getLogger(__name__)

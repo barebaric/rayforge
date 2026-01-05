@@ -3,8 +3,8 @@ from gi.repository import Gtk, Gio, Adw, GLib
 from blinker import Signal
 from ...core.sketcher import Sketch
 from ...core.varset import IntVar, FloatVar, SliderFloatVar
-from ...icons import get_icon
-from ...shared.ui.varset_editor import VarSetEditorWidget
+from ..icons import get_icon
+from ..varset.varset_editor import VarSetEditorWidget
 from ...core.undo.property_cmd import ChangePropertyCommand
 from .menu import SketchMenu
 from .sketchcanvas import SketchCanvas

@@ -10,7 +10,7 @@ from .elements.simulation_overlay import SimulationOverlay
 from .simulation_controls import PreviewControls
 
 if TYPE_CHECKING:
-    from ...mainwindow import MainWindow
+    from ...ui_gtk.mainwindow import MainWindow
     from gi.repository import Gio
 
 logger = logging.getLogger(__name__)

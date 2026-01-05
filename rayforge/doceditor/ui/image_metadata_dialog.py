@@ -1,7 +1,7 @@
 import logging
 from typing import Any, Optional, List, Tuple
 from gi.repository import Gtk, Adw, Pango, Gdk
-from ...icons import get_icon
+from ...ui_gtk.icons import get_icon
 
 logger = logging.getLogger(__name__)
 

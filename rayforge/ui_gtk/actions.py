@@ -1,10 +1,10 @@
 from typing import TYPE_CHECKING, Dict, Callable, Optional, cast
 from gi.repository import Gtk, Gio, GLib
-from .core.group import Group
-from .core.item import DocItem
-from .core.layer import Layer
-from .core.workpiece import WorkPiece
-from .doceditor.ui.add_tabs_popover import AddTabsPopover
+from ..core.group import Group
+from ..core.item import DocItem
+from ..core.layer import Layer
+from ..core.workpiece import WorkPiece
+from ..doceditor.ui.add_tabs_popover import AddTabsPopover
 
 
 if TYPE_CHECKING:

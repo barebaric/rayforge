@@ -3,8 +3,8 @@ import math
 from typing import List, Optional, Tuple
 import numpy as np
 from gi.repository import Gtk, Adw, Gdk, GLib
-from ...icons import get_icon
-from ...shared.ui.gtk import apply_css
+from ...ui_gtk.icons import get_icon
+from ...ui_gtk.shared.gtk import apply_css
 from ..controller import CameraController
 from ..models.camera import Pos
 from .display_widget import CameraDisplay

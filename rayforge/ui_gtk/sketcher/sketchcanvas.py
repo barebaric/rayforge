@@ -13,7 +13,7 @@ from ...core.sketcher.constraints import (
     RadiusConstraint,
     VerticalConstraint,
 )
-from ...shared.ui.expression_entry import ExpressionEntry
+from ..shared.expression_entry import ExpressionEntry
 from ..canvas import WorldSurface
 from .editor import SketchEditor
 from .sketchelement import SketchElement

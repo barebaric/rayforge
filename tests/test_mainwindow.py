@@ -25,7 +25,7 @@ gi.require_version("Adw", "1")
 gi.require_version("Gdk", "4.0")
 from gi.repository import Adw, GLib
 
-from rayforge.mainwindow import MainWindow
+from rayforge.ui_gtk.mainwindow import MainWindow
 from rayforge.core.vectorization_spec import TraceSpec
 
 logger = logging.getLogger(__name__)

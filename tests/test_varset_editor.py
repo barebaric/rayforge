@@ -21,7 +21,7 @@ import time
 
 from rayforge.core.undo import HistoryManager
 from rayforge.core.varset import VarSet, IntVar, FloatVar
-from rayforge.shared.ui.varset_editor import (
+from rayforge.ui_gtk.varset.varset_editor import (
     VarSetEditorWidget,
     VarDefinitionRowWidget,
 )

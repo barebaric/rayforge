@@ -7,9 +7,9 @@ from gi.repository import Gtk, GLib
 from blinker import Signal
 from ...core.ops import ScanLinePowerCommand
 from ...pipeline.encoder.gcode import MachineCodeOpMap
-from ...icons import get_icon
-from ...shared.ui.formatter import format_value
-from ...shared.ui.gtk import apply_css
+from ...ui_gtk.icons import get_icon
+from ...shared.units.formatter import format_value
+from ...ui_gtk.shared.gtk import apply_css
 
 
 class PreviewControls(Gtk.Box):

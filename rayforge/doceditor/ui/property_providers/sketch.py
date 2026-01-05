@@ -6,7 +6,7 @@ from gi.repository import Adw, Gtk, GLib
 from ....core.item import DocItem
 from ....core.varset import VarSet
 from ....core.workpiece import WorkPiece
-from ....shared.ui.varsetwidget import VarSetWidget
+from ....ui_gtk.varset.varsetwidget import VarSetWidget
 from .base import PropertyProvider
 
 if TYPE_CHECKING:

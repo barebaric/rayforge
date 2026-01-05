@@ -6,8 +6,8 @@ from gi.repository import Gtk, Adw
 from blinker import Signal
 from ...context import get_context
 from ...core.material_library import MaterialLibrary
-from ...shared.ui.preferences_group import PreferencesGroupWithButton
-from ...icons import get_icon
+from ...ui_gtk.settings.preferences_group import PreferencesGroupWithButton
+from ...ui_gtk.icons import get_icon
 
 logger = logging.getLogger(__name__)
 

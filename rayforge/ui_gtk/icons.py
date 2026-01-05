@@ -4,7 +4,7 @@ import pathlib
 from functools import lru_cache
 from typing import Dict, Union
 from gi.repository import Gtk, Gio, GdkPixbuf
-from .resources import icons  # type: ignore
+from ..resources import icons  # type: ignore
 
 
 logger = logging.getLogger(__name__)

@@ -4,8 +4,8 @@ import webbrowser
 import logging
 from importlib.metadata import version, PackageNotFoundError
 from gi.repository import Gtk, Adw, GLib
-from ... import __version__
-from ...icons import get_icon
+from .. import __version__
+from .icons import get_icon
 
 
 logger = logging.getLogger(__name__)

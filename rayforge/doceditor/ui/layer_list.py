@@ -4,10 +4,10 @@ from blinker import Signal
 from typing import cast, TYPE_CHECKING
 
 from ...core.layer import Layer
-from ...shared.ui.draglist import DragListBox
+from ...ui_gtk.shared.draglist import DragListBox
 from .layer_view import LayerView
-from ...shared.ui.expander import Expander
-from ...icons import get_icon
+from ...ui_gtk.shared.expander import Expander
+from ...ui_gtk.icons import get_icon
 
 if TYPE_CHECKING:
     from ..editor import DocEditor

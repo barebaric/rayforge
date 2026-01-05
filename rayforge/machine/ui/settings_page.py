@@ -5,8 +5,8 @@ from ..models.machine import Machine
 from ..models.profile import MachineProfile
 from .settings_dialog import MachineSettingsDialog
 from .profile_selector import MachineProfileSelectorDialog
-from ...shared.ui.round_button import RoundButton
-from ...icons import get_icon
+from ...ui_gtk.shared.round_button import RoundButton
+from ...ui_gtk.icons import get_icon
 
 
 class MachineSettingsPage(Adw.PreferencesPage):

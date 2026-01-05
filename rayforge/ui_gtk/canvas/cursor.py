@@ -3,7 +3,7 @@ import logging
 from typing import Dict, Optional
 import cairo
 from gi.repository import Gdk, GLib
-from ...icons import get_icon_pixbuf
+from ..icons import get_icon_pixbuf
 from .region import ElementRegion, ROTATE_HANDLES
 
 logger = logging.getLogger(__name__)

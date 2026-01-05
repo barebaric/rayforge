@@ -1,7 +1,7 @@
 import logging
 from typing import Sequence, Tuple
 from gi.repository import Gtk
-from .icons import get_icon
+from ..icons import get_icon
 
 logger = logging.getLogger(__name__)
 

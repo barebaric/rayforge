@@ -1,6 +1,6 @@
 from gi.repository import Gtk
 from typing import Optional
-from ...icons import get_icon
+from ...ui_gtk.icons import get_icon
 from ...machine.transport.transport import (
     TransportStatus,
     TRANSPORT_STATUS_LABELS,

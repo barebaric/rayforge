@@ -5,9 +5,9 @@ from blinker import Signal
 from ...core.doc import Doc
 from ...core.stock_asset import StockAsset
 from ...core.sketcher.sketch import Sketch
-from ...shared.ui.formatter import format_value
+from ...shared.units.formatter import format_value
 from ...context import get_context
-from ...icons import get_icon
+from ...ui_gtk.icons import get_icon
 from .stock_properties_dialog import StockPropertiesDialog
 
 if TYPE_CHECKING:

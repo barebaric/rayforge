@@ -3,7 +3,7 @@ from typing import Optional, Union, TYPE_CHECKING
 from blinker import Signal
 from gi.repository import Gtk
 
-from rayforge.shared.ui.piemenu import PieMenu, PieMenuItem
+from rayforge.ui_gtk.shared.piemenu import PieMenu, PieMenuItem
 
 if TYPE_CHECKING:
     from rayforge.ui_gtk.sketcher.sketchelement import SketchElement

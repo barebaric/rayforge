@@ -1,5 +1,5 @@
 from gi.repository import Gtk
-from ...icons import get_icon
+from ..icons import get_icon
 from .gtk import apply_css
 
 
