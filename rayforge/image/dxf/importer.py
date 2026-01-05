@@ -1,14 +1,24 @@
 import io
 import logging
+import math
 from copy import deepcopy
 from typing import Iterable, Optional, List, Dict, Tuple
+import numpy as np
 import ezdxf
 import ezdxf.math
 from ezdxf import bbox
 from ezdxf.lldxf.const import DXFStructureError
 from ezdxf.addons import text2path
 
-from ...core.geo import Geometry
+from ...core.geo import (
+    Geometry,
+    GEO_ARRAY_COLS,
+    CMD_TYPE_LINE,
+    COL_TYPE,
+    COL_X,
+    COL_Y,
+)
+from ...core.geo.simplify import simplify_points_to_array
 from ...core.group import Group
 from ...core.workpiece import WorkPiece
 from ...core.matrix import Matrix
@@ -72,11 +82,24 @@ class DxfImporter(Importer):
 
         scale = self._get_scale_to_mm(doc)
         min_x_mm, min_y_mm, _, _ = bounds
+
+        # Calculate adaptive tolerance based on diagonal size
+        # Baseline 0.01mm for high precision, scaled up for large files.
+        # e.g., 2m diagonal -> 0.1mm tolerance.
+        diag_mm = math.hypot(width_mm, height_mm)
+        tolerance_mm = max(0.01, diag_mm / 20000.0)
+
         blocks_cache: Dict[str, List[DocItem]] = {}
 
         # Pre-parse all block definitions into DocItem templates.
         self._prepare_blocks_cache(
-            doc, scale, min_x_mm, min_y_mm, source, blocks_cache
+            doc,
+            scale,
+            min_x_mm,
+            min_y_mm,
+            source,
+            blocks_cache,
+            tolerance_mm,
         )
 
         # Group entities by layer to support layer-based grouping
@@ -97,6 +120,8 @@ class DxfImporter(Importer):
                 min_y_mm,
                 source,
                 blocks_cache,
+                parent_transform=None,
+                tolerance_mm=tolerance_mm,
             )
             if items:
                 active_layers.append((layer_name, items))
@@ -122,6 +147,7 @@ class DxfImporter(Importer):
         ty: float,
         source: SourceAsset,
         blocks_cache: Dict[str, List[DocItem]],
+        tolerance_mm: float,
     ):
         """Recursively parses all block definitions into lists of DocItems."""
         blocks_cache.clear()
@@ -135,6 +161,7 @@ class DxfImporter(Importer):
                 source,
                 blocks_cache,
                 ezdxf.math.Matrix44(),
+                tolerance_mm,
             )
 
     def _entities_to_doc_items(
@@ -147,6 +174,7 @@ class DxfImporter(Importer):
         source: SourceAsset,
         blocks_cache: Dict[str, List[DocItem]],
         parent_transform: Optional[ezdxf.math.Matrix44] = None,
+        tolerance_mm: float = 0.01,
     ) -> List[DocItem]:
         """
         Converts a list of DXF entities into a list of DocItems (WorkPieces
@@ -256,13 +284,30 @@ class DxfImporter(Importer):
                 )
             else:
                 self._entity_to_geo(
-                    current_geo, entity, doc, scale, tx, ty, parent_transform
+                    current_geo,
+                    entity,
+                    doc,
+                    scale,
+                    tx,
+                    ty,
+                    parent_transform,
+                    tolerance_mm,
                 )
 
         flush_geo_to_workpiece()
         return result_items
 
-    def _entity_to_geo(self, geo, entity, doc, scale, tx, ty, transform):
+    def _entity_to_geo(
+        self,
+        geo,
+        entity,
+        doc,
+        scale,
+        tx,
+        ty,
+        transform,
+        tolerance_mm: float = 0.01,
+    ):
         """Dispatcher to call the correct handler for a given DXF entity."""
         handler_map = {
             "LINE": self._line_to_geo,
@@ -278,7 +323,7 @@ class DxfImporter(Importer):
         }
         handler = handler_map.get(entity.dxftype())
         if handler:
-            handler(geo, entity, scale, tx, ty, transform)
+            handler(geo, entity, scale, tx, ty, transform, tolerance_mm)
         else:
             logger.warning(
                 f"Unsupported DXF entity type: {entity.dxftype()}. "
@@ -307,28 +352,78 @@ class DxfImporter(Importer):
     def _poly_to_geo(
         self,
         geo: Geometry,
-        points: List[ezdxf.math.Vec3],
+        points: Iterable[ezdxf.math.Vec3],
         is_closed: bool,
         scale: float,
         tx: float,
         ty: float,
         transform: Optional[ezdxf.math.Matrix44] = None,
+        simplify: bool = False,
+        tolerance_mm: float = 0.01,
     ) -> Optional[List[Tuple[float, float]]]:
         if not points:
             return None
-        if transform:
-            points = list(transform.transform_vertices(points))
-        if not points:
+
+        # Convert ezdxf points (Vec3 or similar) to numpy array for processing
+        # This handles the extraction from iterators immediately.
+        # ezdxf Vec3 is iterable (x, y, z), so we can just use list
+        # comprehension
+        raw_points = np.array([(p.x, p.y) for p in points], dtype=np.float64)
+
+        if len(raw_points) == 0:
             return None
-        scaled_points = [
-            ((p.x * scale) - tx, (p.y * scale) - ty) for p in points
-        ]
-        geo.move_to(scaled_points[0][0], scaled_points[0][1])
-        for x, y in scaled_points[1:]:
-            geo.line_to(x, y)
+
+        # Apply transformation if provided (DXF block transforms)
+        if transform:
+            # Transform expects Vec3s, so we must rely on ezdxf's logic before
+            # numpy conversion if we want to use the Matrix44 directly, OR
+            # we implement the affine transform in numpy.
+            # Given we already have raw_points as Nx2, let's use the iterator
+            # logic again to be safe with ezdxf types, or transform first.
+            # Re-doing list conversion for transform safety:
+            t_points = list(transform.transform_vertices(points))
+            raw_points = np.array(
+                [(p.x, p.y) for p in t_points], dtype=np.float64
+            )
+
+        # Apply global scale and translation to millimeters
+        # p_mm = p_dxf * scale - offset
+        scaled_points = raw_points * scale
+        scaled_points[:, 0] -= tx
+        scaled_points[:, 1] -= ty
+
+        # Apply Simplification (RDP) if requested
+        if simplify and len(scaled_points) > 2:
+            scaled_points = simplify_points_to_array(
+                scaled_points, tolerance_mm
+            )
+
+        if len(scaled_points) < 1:
+            return None
+
+        # Add to Geometry using Bulk Ingestion
+        # 1. Move to start
+        start = scaled_points[0]
+        geo.move_to(start[0], start[1])
+
+        # 2. Append lines for the rest
+        count = len(scaled_points)
+        if count > 1:
+            # Create block for points[1:]
+            block = np.zeros((count - 1, GEO_ARRAY_COLS), dtype=np.float64)
+            block[:, COL_TYPE] = CMD_TYPE_LINE
+            block[:, COL_X] = scaled_points[1:, 0]
+            block[:, COL_Y] = scaled_points[1:, 1]
+            geo.append_numpy_data(block)
+
+        # 3. Handle closing
         if is_closed:
-            geo.line_to(scaled_points[0][0], scaled_points[0][1])
-        return scaled_points
+            # Line back to start
+            geo.line_to(start[0], start[1])
+
+        # Return list for solid filling usage if needed
+        # (This remains a slow path for hatch/solid fills but is acceptable)
+        return scaled_points.tolist()
 
     def _solid_to_geo_and_data(
         self,
@@ -348,9 +443,16 @@ class DxfImporter(Importer):
             entity.dxf.vtx2,
         ]
         # Add the outline to geometry and get the final scaled points for
-        # the fill
+        # the fill. Solids are simple shapes, so no simplification needed.
         scaled_points = self._poly_to_geo(
-            geo, points, True, scale, tx, ty, transform
+            geo,
+            points,
+            True,
+            scale,
+            tx,
+            ty,
+            transform,
+            simplify=False,
         )
         if scaled_points:
             solids_list.append(scaled_points)
@@ -363,9 +465,12 @@ class DxfImporter(Importer):
         tx: float,
         ty: float,
         transform=None,
+        tolerance_mm: float = 0.01,
     ):
         points = [entity.dxf.start, entity.dxf.end]
-        self._poly_to_geo(geo, points, False, scale, tx, ty, transform)
+        self._poly_to_geo(
+            geo, points, False, scale, tx, ty, transform, simplify=False
+        )
 
     def _lwpolyline_to_geo(
         self,
@@ -375,9 +480,25 @@ class DxfImporter(Importer):
         tx: float,
         ty: float,
         transform=None,
+        tolerance_mm: float = 0.01,
     ):
+        # LWPolylines can have bulges (arcs). ezdxf handles this via
+        # vertices(). We assume vertices() returns points.
+        # If bulges are present, this might need ezdxf path iteration instead.
+        # For pure vertex LWPolylines, this works.
+        # For safety with bulges, we should ideally use make_path, but keeping
+        # original logic structure:
         points = [ezdxf.math.Vec3(p[0], p[1], 0) for p in entity.vertices()]
-        self._poly_to_geo(geo, points, entity.closed, scale, tx, ty, transform)
+        self._poly_to_geo(
+            geo,
+            points,
+            entity.closed,
+            scale,
+            tx,
+            ty,
+            transform,
+            simplify=False,
+        )
 
     def _arc_to_geo(
         self,
@@ -387,6 +508,7 @@ class DxfImporter(Importer):
         tx: float,
         ty: float,
         transform=None,
+        tolerance_mm: float = 0.01,
     ):
         start_point, end_point, center_point = (
             entity.start_point,
@@ -430,12 +552,28 @@ class DxfImporter(Importer):
         tx: float,
         ty: float,
         transform=None,
+        tolerance_mm: float = 0.01,
     ):
         try:
             path_obj = ezdxf.path.make_path(entity)  # type: ignore
-            points = list(path_obj.flattening(distance=0.01))
+            # flattening distance is in drawing units.
+            # tolerance_mm is in mm.
+            # dist_units = tolerance_mm / scale
+            flat_dist = tolerance_mm / scale if scale > 0 else tolerance_mm
+            points = list(path_obj.flattening(distance=flat_dist))
             is_closed = getattr(entity, "closed", False)
-            self._poly_to_geo(geo, points, is_closed, scale, tx, ty, transform)
+            # Enable simplification for approximated curves
+            self._poly_to_geo(
+                geo,
+                points,
+                is_closed,
+                scale,
+                tx,
+                ty,
+                transform,
+                simplify=True,
+                tolerance_mm=tolerance_mm,
+            )
         except Exception:
             pass
 
@@ -447,13 +585,18 @@ class DxfImporter(Importer):
         tx: float,
         ty: float,
         transform: Optional[ezdxf.math.Matrix44] = None,
+        tolerance_mm: float = 0.01,
     ):
         try:
             for v_entity in entity.virtual_entities():
                 if v_entity.dxftype() == "LINE":
-                    self._line_to_geo(geo, v_entity, scale, tx, ty, transform)
+                    self._line_to_geo(
+                        geo, v_entity, scale, tx, ty, transform, tolerance_mm
+                    )
                 elif v_entity.dxftype() == "ARC":
-                    self._arc_to_geo(geo, v_entity, scale, tx, ty, transform)
+                    self._arc_to_geo(
+                        geo, v_entity, scale, tx, ty, transform, tolerance_mm
+                    )
         except Exception:
             self._poly_to_geo(
                 geo,
@@ -463,6 +606,7 @@ class DxfImporter(Importer):
                 tx,
                 ty,
                 transform,
+                simplify=False,
             )
 
     def _hatch_to_geo(
@@ -473,21 +617,40 @@ class DxfImporter(Importer):
         tx: float,
         ty: float,
         transform: Optional[ezdxf.math.Matrix44] = None,
+        tolerance_mm: float = 0.01,
     ):
         try:
             for path in entity.paths:
                 for v_entity in path.virtual_entities():
                     if v_entity.dxftype() == "LINE":
                         self._line_to_geo(
-                            geo, v_entity, scale, tx, ty, transform
+                            geo,
+                            v_entity,
+                            scale,
+                            tx,
+                            ty,
+                            transform,
+                            tolerance_mm,
                         )
                     elif v_entity.dxftype() == "ARC":
                         self._arc_to_geo(
-                            geo, v_entity, scale, tx, ty, transform
+                            geo,
+                            v_entity,
+                            scale,
+                            tx,
+                            ty,
+                            transform,
+                            tolerance_mm,
                         )
                     elif v_entity.dxftype() in ("SPLINE", "ELLIPSE"):
                         self._poly_approx_to_geo(
-                            geo, v_entity, scale, tx, ty, transform
+                            geo,
+                            v_entity,
+                            scale,
+                            tx,
+                            ty,
+                            transform,
+                            tolerance_mm,
                         )
         except Exception:
             pass
@@ -500,10 +663,25 @@ class DxfImporter(Importer):
         tx: float,
         ty: float,
         transform: Optional[ezdxf.math.Matrix44] = None,
+        tolerance_mm: float = 0.01,
     ):
         try:
             for path in text2path.make_paths_from_entity(entity):
-                points = list(path.flattening(distance=0.01))
-                self._poly_to_geo(geo, points, False, scale, tx, ty, transform)
+                # Text usually generates clean curves, but dense.
+                flat_dist = tolerance_mm / scale if scale > 0 else tolerance_mm
+                points = list(path.flattening(distance=flat_dist))
+                # Text contours are usually implicitly closed paths, or open
+                # strokes. text2path generates strokes.
+                self._poly_to_geo(
+                    geo,
+                    points,
+                    False,
+                    scale,
+                    tx,
+                    ty,
+                    transform,
+                    simplify=True,
+                    tolerance_mm=tolerance_mm,
+                )
         except Exception:
             pass
