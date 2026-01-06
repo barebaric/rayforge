@@ -1,6 +1,6 @@
-# Rayforge Plugin Developer Guide
+# Rayforge Package Developer Guide
 
-Rayforge uses a plugin system based on [pluggy](https://pluggy.readthedocs.io/)
+Rayforge uses a package system based on [pluggy](https://pluggy.readthedocs.io/)
 to allow developers to extend functionality, add new machine drivers, or
 integrate custom logic without modifying the core codebase.
 
@@ -12,36 +12,36 @@ The fastest way to start is using the official template.
    [rayforge-package-template](https://github.com/barebaric/rayforge-package-template).
 2. **Rename** the directory and update the metadata.
 
-## 2. Plugin Structure
+## 2. Package Structure
 
-The `PackageManager` scans the `packages` directory. A valid plugin must be a
+The `PackageManager` scans the `packages` directory. A valid package must be a
 directory containing at least two files:
 
 1. `rayforge_package.yaml` (Metadata)
-2. A Python entry point (e.g., `plugin.py`)
+2. A Python entry point (e.g., `package.py`)
 
 **Directory Layout:**
 
 ```text
-my-rayforge-plugin/
+my-rayforge-package/
 ├── rayforge_package.yaml  <-- Required Manifest
-├── plugin.py              <-- Entry point (logic)
+├── package.py             <-- Entry point (logic)
 ├── assets/                <-- Optional resources
 └── README.md
 ```
 
 ## 3. The Manifest (`rayforge_package.yaml`)
 
-This file tells Rayforge how to load your plugin.
+This file tells Rayforge how to load your package.
 
 ```yaml
 # rayforge_package.yaml
 
-# Unique identifier for your plugin
-name: my_custom_plugin
+# Unique identifier for your package
+name: my_custom_package
 
 # Human-readable display name
-display_name: "My Custom Plugin"
+display_name: "My Custom Package"
 
 # Version string
 version: 0.1.0
@@ -49,20 +49,20 @@ version: 0.1.0
 # Description displayed in the UI
 description: "Adds support for the XYZ laser cutter."
 
-# The python file to load (relative to the plugin folder)
-entry_point: plugin.py
+# The python file to load (relative to the package folder)
+entry_point: package.py
 
 # Author metadata
 author: Jane Doe
-url: https://github.com/username/my-custom-plugin
+url: https://github.com/username/my-custom-package
 ```
 
-## 4. Writing the Plugin Code
+## 4. Writing the Package Code
 
 Rayforge uses `pluggy` hooks. To hook into Rayforge, define functions decorated
 with `@pluggy.HookimplMarker("rayforge")`.
 
-### Basic Boilerplate (`plugin.py`)
+### Basic Boilerplate (`package.py`)
 
 ```python
 import logging
@@ -79,14 +79,14 @@ def rayforge_init(context: RayforgeContext):
     Called when Rayforge is fully initialized.
     This is your main entry point to access managers.
     """
-    logger.info("My Custom Plugin has started!")
+    logger.info("My Custom Package has started!")
 
     # Access core systems via the context
     machine = context.machine
     camera = context.camera_mgr
 
     if machine:
-        logger.info(f"Plugin running on machine: {machine.id}")
+        logger.info(f"Package running on machine: {machine.id}")
 
 @hookimpl
 def register_machines(machine_manager):
@@ -123,7 +123,7 @@ you can access:
 
 ## 6. Development & Testing
 
-To test your plugin locally without publishing it:
+To test your package locally without publishing it:
 
 1.  **Locate your Configuration Directory:**
     Rayforge uses `platformdirs`.
@@ -133,31 +133,31 @@ To test your plugin locally without publishing it:
     - **Linux:** `~/.config/rayforge/packages`
       _(Check the logs on startup for `Config dir is ...`)_
 
-2.  **Symlink your plugin:**
+2.  **Symlink your package:**
     Instead of copying files back and forth, create a symbolic link from your dev
     folder to the Rayforge packages folder.
 
     _Linux/macOS:_
 
     ```bash
-    ln -s /path/to/my-rayforge-plugin ~/.config/rayforge/packages/my-rayforge-plugin
+    ln -s /path/to/my-rayforge-package ~/.config/rayforge/packages/my-rayforge-package
     ```
 
 3.  **Restart Rayforge:**
     The application scans the directory on startup. Check the console logs for:
-    > `Loaded plugin: my_custom_plugin`
+    > `Loaded package: my_custom_package`
 
 ## 7. Publishing
 
-To share your plugin with the community:
+To share your package with the community:
 
 1.  **Host on Git:** Push your code to a public Git repository (GitHub, GitLab,
     etc.).
 2.  **Submit to Registry:**
     - Go to [rayforge-registry](https://github.com/barebaric/rayforge-registry).
     - Fork the repository.
-    - Add your plugin's Git URL and metadata to the registry list.
+    - Add your package's Git URL and metadata to the registry list.
     - Submit a Pull Request.
 
-Once accepted, users can install your plugin directly via the Rayforge UI or by
+Once accepted, users can install your package directly via the Rayforge UI or by
 using the Git URL.
