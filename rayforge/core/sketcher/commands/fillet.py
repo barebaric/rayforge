@@ -1,12 +1,12 @@
 from __future__ import annotations
 import logging
 import math
-from typing import TYPE_CHECKING, List, Optional
+from typing import TYPE_CHECKING, Optional, Dict, Any
+
 from .base import SketchChangeCommand
 from .items import AddItemsCommand, RemoveItemsCommand
 from ..entities import Line, Point, Arc
 from ..constraints import (
-    Constraint,
     TangentConstraint,
     CollinearConstraint,
     EqualDistanceConstraint,
@@ -14,6 +14,7 @@ from ..constraints import (
 
 if TYPE_CHECKING:
     from ..sketch import Sketch
+    from ..registry import EntityRegistry
 
 logger = logging.getLogger(__name__)
 
@@ -36,186 +37,157 @@ class FilletCommand(SketchChangeCommand):
         self.radius = radius
 
         # State for undo/redo
-        self.added_points: List[Point] = []
-        self.added_entities: List[Line | Arc] = []
-        self.added_constraints: List[Constraint] = []
-        self.removed_entities: List[Line] = []
-        self.corner_point: Optional[Point] = None
+        self.add_cmd: Optional[AddItemsCommand] = None
+        self.remove_cmd: Optional[RemoveItemsCommand] = None
+        self._prepared = False
 
-    def _do_execute(self) -> None:
-        sketch = self.sketch
-        reg = sketch.registry
+    @staticmethod
+    def calculate_geometry(
+        reg: "EntityRegistry",
+        corner_pid: int,
+        line1_id: int,
+        line2_id: int,
+        radius: float,
+    ) -> Optional[Dict[str, Any]]:
+        """
+        Calculates the points, entities, and constraints for a fillet.
+        This is a pure function for testability and reusability.
+        """
+        line1 = reg.get_entity(line1_id)
+        line2 = reg.get_entity(line2_id)
+        if not isinstance(line1, Line) or not isinstance(line2, Line):
+            return None
 
-        # On first run, calculate geometry and prepare items
-        if not self.added_points:
-            line1 = reg.get_entity(self.line1_id)
-            line2 = reg.get_entity(self.line2_id)
-            if not isinstance(line1, Line) or not isinstance(line2, Line):
-                return
-            self.removed_entities = [line1, line2]
-
-            try:
-                self.corner_point = reg.get_point(self.corner_pid)
-                # Identify the "other" points (far ends of the lines)
-                other1_pid = (
-                    line1.p2_idx
-                    if line1.p1_idx == self.corner_pid
-                    else line1.p1_idx
-                )
-                other2_pid = (
-                    line2.p2_idx
-                    if line2.p1_idx == self.corner_pid
-                    else line2.p1_idx
-                )
-                other1_pt = reg.get_point(other1_pid)
-                other2_pt = reg.get_point(other2_pid)
-            except IndexError:
-                return
-
-            # Vector math to find tangent points and center
-            v1 = (
-                other1_pt.x - self.corner_point.x,
-                other1_pt.y - self.corner_point.y,
+        try:
+            corner_point = reg.get_point(corner_pid)
+            other1_pid = (
+                line1.p2_idx if line1.p1_idx == corner_pid else line1.p1_idx
             )
-            v2 = (
-                other2_pt.x - self.corner_point.x,
-                other2_pt.y - self.corner_point.y,
+            other2_pid = (
+                line2.p2_idx if line2.p1_idx == corner_pid else line2.p1_idx
             )
+            other1_pt = reg.get_point(other1_pid)
+            other2_pt = reg.get_point(other2_pid)
+        except IndexError:
+            return None
 
-            len1 = math.hypot(v1[0], v1[1])
-            len2 = math.hypot(v2[0], v2[1])
+        v1 = (other1_pt.x - corner_point.x, other1_pt.y - corner_point.y)
+        v2 = (other2_pt.x - corner_point.x, other2_pt.y - corner_point.y)
+        len1, len2 = math.hypot(v1[0], v1[1]), math.hypot(v2[0], v2[1])
 
-            if len1 < 1e-9 or len2 < 1e-9:
-                return  # Degenerate lines
+        if len1 < 1e-9 or len2 < 1e-9:
+            return None
 
-            # Unit vectors pointing AWAY from corner
-            u1 = (v1[0] / len1, v1[1] / len1)
-            u2 = (v2[0] / len2, v2[1] / len2)
+        u1 = (v1[0] / len1, v1[1] / len1)
+        u2 = (v2[0] / len2, v2[1] / len2)
+        dot = max(-1.0, min(1.0, u1[0] * u2[0] + u1[1] * u2[1]))
+        angle = math.acos(dot)
 
-            # Calculate angle between vectors
-            dot = u1[0] * u2[0] + u1[1] * u2[1]
-            # Clamp to avoid domain errors
-            dot = max(-1.0, min(1.0, dot))
-            angle = math.acos(dot)
+        if angle < 1e-3 or abs(angle - math.pi) < 1e-3:
+            return None
 
-            # Avoid parallel lines (angle 0 or 180)
-            if angle < 1e-3 or abs(angle - math.pi) < 1e-3:
-                return
+        tan_half = math.tan(angle / 2.0)
+        if abs(tan_half) < 1e-9:
+            return None
+        dist_to_tangent = radius / tan_half
 
-            # Distance from corner to tangent points: d = r / tan(theta/2)
-            tan_half = math.tan(angle / 2.0)
-            if abs(tan_half) < 1e-9:
-                return
-            dist_to_tangent = self.radius / tan_half
+        if dist_to_tangent > len1 or dist_to_tangent > len2:
+            return None  # Fillet too large for lines
 
-            # Coordinates of tangent points
-            p_tan1_pos = (
-                self.corner_point.x + dist_to_tangent * u1[0],
-                self.corner_point.y + dist_to_tangent * u1[1],
-            )
-            p_tan2_pos = (
-                self.corner_point.x + dist_to_tangent * u2[0],
-                self.corner_point.y + dist_to_tangent * u2[1],
-            )
-
-            # Calculate Arc Center
-            # The center lies on the angle bisector.
-            bisector_x = u1[0] + u2[0]
-            bisector_y = u1[1] + u2[1]
-            bisector_len = math.hypot(bisector_x, bisector_y)
-
-            if bisector_len < 1e-9:
-                return
-
-            u_bisector = (bisector_x / bisector_len, bisector_y / bisector_len)
-
-            # Distance from corner to center: h = r / sin(theta/2)
-            sin_half = math.sin(angle / 2.0)
-            dist_to_center = self.radius / sin_half
-
-            p_center_pos = (
-                self.corner_point.x + dist_to_center * u_bisector[0],
-                self.corner_point.y + dist_to_center * u_bisector[1],
-            )
-
-            # Determine winding:
-            # If turning from u1 to u2 is CCW (Left turn), the arc (Tan1->Tan2)
-            # must be drawn Clockwise in local coordinates to fit inside.
-            cross = u1[0] * u2[1] - u1[1] * u2[0]
-            is_cw = cross > 0
-
-            # Create new Items
-            # IDs: -1: Tan1, -2: Tan2, -3: Center
-            # IDs: -4: Line1, -5: Line2, -6: Arc
-            p_tan1 = Point(-1, p_tan1_pos[0], p_tan1_pos[1])
-            p_tan2 = Point(-2, p_tan2_pos[0], p_tan2_pos[1])
-            p_center = Point(-3, p_center_pos[0], p_center_pos[1])
-
-            self.added_points = [p_tan1, p_tan2, p_center]
-
-            # New truncated lines connecting original endpoints to tangent
-            # points
-            new_line1 = Line(-4, other1_pid, p_tan1.id)
-            new_line2 = Line(-5, other2_pid, p_tan2.id)
-
-            # The fillet arc
-            fillet_arc = Arc(
-                -6,
-                start_idx=p_tan1.id,
-                end_idx=p_tan2.id,
-                center_idx=p_center.id,
-                clockwise=is_cw,
-            )
-
-            self.added_entities = [new_line1, new_line2, fillet_arc]
-
-            # Constraints
-            # 1. Tangent: Ensures smooth transition from line to arc.
-            # 2. Collinear: Keeps the new line segments aligned with the
-            # virtual intersection point (the original corner).
-            # 3. EqualDistance: Ensures the fillet is symmetric relative to the
-            #    virtual corner, preventing the tangent points from sliding
-            #    independently along the lines.
-            self.added_constraints = [
-                TangentConstraint(new_line1.id, fillet_arc.id),
-                TangentConstraint(new_line2.id, fillet_arc.id),
-                CollinearConstraint(other1_pid, self.corner_pid, p_tan1.id),
-                CollinearConstraint(other2_pid, self.corner_pid, p_tan2.id),
-                EqualDistanceConstraint(
-                    self.corner_pid, p_tan1.id, self.corner_pid, p_tan2.id
-                ),
-            ]
-
-        # --- Apply changes ---
-        # 1. Remove original lines
-        remove_cmd = RemoveItemsCommand(
-            sketch, "", entities=self.removed_entities
+        p_tan1_pos = (
+            corner_point.x + dist_to_tangent * u1[0],
+            corner_point.y + dist_to_tangent * u1[1],
         )
-        remove_cmd._do_execute()
-
-        # 2. Add new geometry and constraints
-        add_cmd = AddItemsCommand(
-            sketch,
-            "",
-            points=self.added_points,
-            entities=self.added_entities,
-            constraints=self.added_constraints,
+        p_tan2_pos = (
+            corner_point.x + dist_to_tangent * u2[0],
+            corner_point.y + dist_to_tangent * u2[1],
         )
-        add_cmd._do_execute()
 
-    def _do_undo(self) -> None:
-        # 1. Remove new geometry
-        remove_cmd = RemoveItemsCommand(
+        bisector_len = math.hypot(u1[0] + u2[0], u1[1] + u2[1])
+        if bisector_len < 1e-9:
+            return None
+
+        u_bisector = (
+            (u1[0] + u2[0]) / bisector_len,
+            (u1[1] + u2[1]) / bisector_len,
+        )
+        dist_to_center = radius / math.sin(angle / 2.0)
+        p_center_pos = (
+            corner_point.x + dist_to_center * u_bisector[0],
+            corner_point.y + dist_to_center * u_bisector[1],
+        )
+
+        cross = u1[0] * u2[1] - u1[1] * u2[0]
+        is_cw = cross > 0
+
+        p_tan1 = Point(-1, p_tan1_pos[0], p_tan1_pos[1])
+        p_tan2 = Point(-2, p_tan2_pos[0], p_tan2_pos[1])
+        p_center = Point(-3, p_center_pos[0], p_center_pos[1])
+
+        new_line1 = Line(-4, other1_pid, p_tan1.id)
+        new_line2 = Line(-5, other2_pid, p_tan2.id)
+        fillet_arc = Arc(
+            -6, p_tan1.id, p_tan2.id, p_center.id, clockwise=is_cw
+        )
+
+        added_constraints = [
+            TangentConstraint(new_line1.id, fillet_arc.id),
+            TangentConstraint(new_line2.id, fillet_arc.id),
+            CollinearConstraint(other1_pid, corner_pid, p_tan1.id),
+            CollinearConstraint(other2_pid, corner_pid, p_tan2.id),
+            EqualDistanceConstraint(
+                corner_pid, p_tan1.id, corner_pid, p_tan2.id
+            ),
+        ]
+
+        return {
+            "points": [p_tan1, p_tan2, p_center],
+            "entities": [new_line1, new_line2, fillet_arc],
+            "constraints": added_constraints,
+            "removed_entities": [line1, line2],
+        }
+
+    def _prepare(self) -> bool:
+        """Prepares internal commands on first execution."""
+        if self._prepared:
+            return True
+
+        result = self.calculate_geometry(
+            self.sketch.registry,
+            self.corner_pid,
+            self.line1_id,
+            self.line2_id,
+            self.radius,
+        )
+
+        if result is None:
+            return False
+
+        self.remove_cmd = RemoveItemsCommand(
+            self.sketch, "", entities=result["removed_entities"]
+        )
+        self.add_cmd = AddItemsCommand(
             self.sketch,
             "",
-            points=self.added_points,
-            entities=self.added_entities,
-            constraints=self.added_constraints,
+            points=result["points"],
+            entities=result["entities"],
+            constraints=result["constraints"],
         )
-        remove_cmd._do_execute()
+        self._prepared = True
+        return True
 
-        # 2. Add original lines back
-        add_cmd = AddItemsCommand(
-            self.sketch, "", entities=self.removed_entities
-        )
-        add_cmd._do_execute()
+    def _do_execute(self) -> None:
+        if not self._prepare():
+            return
+
+        if self.remove_cmd:
+            self.remove_cmd._do_execute()
+        if self.add_cmd:
+            self.add_cmd._do_execute()
+
+    def _do_undo(self) -> None:
+        if not self.add_cmd or not self.remove_cmd:
+            return
+
+        self.add_cmd._do_undo()
+        self.remove_cmd._do_undo()

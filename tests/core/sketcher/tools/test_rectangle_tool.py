@@ -1,13 +1,8 @@
 from unittest.mock import MagicMock, call
-from typing import cast
 import pytest
 
-from rayforge.core.sketcher.commands import AddItemsCommand
-from rayforge.core.sketcher.constraints import (
-    HorizontalConstraint,
-    VerticalConstraint,
-)
-from rayforge.core.sketcher.entities import Line, Point
+from rayforge.core.sketcher.commands import RectangleCommand
+from rayforge.core.sketcher.entities import Point
 from rayforge.core.sketcher.tools import RectangleTool
 
 
@@ -97,17 +92,13 @@ def test_second_click_no_hit_creates_rectangle(rect_tool, mock_element):
     # Verify command execution
     mock_element.execute_command.assert_called_once()
     cmd = mock_element.execute_command.call_args[0][0]
-    assert isinstance(cmd, AddItemsCommand)
+    assert isinstance(cmd, RectangleCommand)
 
-    # Check command contents
-    assert len(cmd.points) == 4  # p1(temp), p2, p3, p4
-    assert len(cmd.entities) == 4
-    assert len(cmd.constraints) == 4
-    assert all(isinstance(e, Line) for e in cmd.entities)
-    assert (
-        sum(isinstance(c, HorizontalConstraint) for c in cmd.constraints) == 2
-    )
-    assert sum(isinstance(c, VerticalConstraint) for c in cmd.constraints) == 2
+    # Verify command contents
+    assert cmd.start_pid == 0
+    assert cmd.end_pos == (100, 50)
+    assert cmd.end_pid is None
+    assert cmd.is_start_temp is True
 
     # Verify tool reset
     assert rect_tool.start_id is None
@@ -137,14 +128,13 @@ def test_second_click_with_hit_creates_rectangle(rect_tool, mock_element):
     # Verify command execution
     mock_element.execute_command.assert_called_once()
     cmd = mock_element.execute_command.call_args[0][0]
-    assert isinstance(cmd, AddItemsCommand)
+    assert isinstance(cmd, RectangleCommand)
 
-    # Check command contents (only 2 new points, start and end already exist)
-    assert len(cmd.points) == 2  # p2, p4
-    line_2 = cast(Line, cmd.entities[1])
-    assert line_2.p2_idx == 7  # Line 2 should connect to p3 (ID 7)
-    assert len(cmd.entities) == 4
-    assert len(cmd.constraints) == 4
+    # Check command contents
+    assert cmd.start_pid == 0
+    assert cmd.end_pos == (100, 50)
+    assert cmd.end_pid == 7
+    assert cmd.is_start_temp is False
 
 
 def test_on_hover_motion_updates_preview(rect_tool, mock_element):
@@ -189,6 +179,7 @@ def test_degenerate_rectangle_aborts_creation(rect_tool, mock_element):
     rect_tool.start_temp = True
     rect_tool._is_previewing = True
     mock_element.sketch.registry.get_point.return_value = Point(0, 10, 20)
+    mock_element.sketch.remove_point_if_unused = MagicMock()
     rect_tool._cleanup_temps = MagicMock()
 
     # --- Simulate second click at nearly the same spot ---
@@ -196,7 +187,15 @@ def test_degenerate_rectangle_aborts_creation(rect_tool, mock_element):
     result = rect_tool.on_press(100, 200, 1)
 
     assert result is True
-    mock_element.execute_command.assert_not_called()
-    # Verify tool reset and temp start point was cleaned up
-    assert rect_tool.start_id is None
-    mock_element.remove_point_if_unused.assert_called_once_with(0)
+
+    # The command should be executed...
+    mock_element.execute_command.assert_called_once()
+    cmd = mock_element.execute_command.call_args[0][0]
+    assert isinstance(cmd, RectangleCommand)
+
+    # ...but its internal logic should detect the degenerate case and do
+    # nothing except clean up the temporary start point.
+    cmd.sketch = mock_element.sketch
+    cmd._do_execute()
+    mock_element.sketch.remove_point_if_unused.assert_called_once_with(0)
+    assert cmd.add_cmd is None

@@ -2,15 +2,8 @@ from unittest.mock import MagicMock, call
 
 import pytest
 
-from rayforge.core.sketcher.commands import AddItemsCommand
-from rayforge.core.sketcher.constraints import (
-    EqualDistanceConstraint,
-    EqualLengthConstraint,
-    HorizontalConstraint,
-    TangentConstraint,
-    VerticalConstraint,
-)
-from rayforge.core.sketcher.entities import Arc, Line, Point
+from rayforge.core.sketcher.commands import RoundedRectCommand
+from rayforge.core.sketcher.entities import Point
 from rayforge.core.sketcher.tools import RoundedRectTool
 
 
@@ -81,11 +74,8 @@ def test_second_click_creates_rounded_rectangle(tool, mock_element):
     tool.start_id = 0
     tool.start_temp = True  # Important for checking point removal
     tool._is_previewing = True
-    # Mock the removal of the temp start point
     mock_start_point = Point(0, 0, 0)
     mock_element.sketch.registry.get_point.return_value = mock_start_point
-    mock_element.sketch.registry.points.remove = MagicMock()
-
     tool._cleanup_temps = MagicMock()
 
     # --- Simulate second click ---
@@ -95,35 +85,16 @@ def test_second_click_creates_rounded_rectangle(tool, mock_element):
     assert result is True
     tool._cleanup_temps.assert_called_once()
 
-    # Verify that the temp start point was removed from the registry
-    mock_element.sketch.registry.points.remove.assert_called_once_with(
-        mock_start_point
-    )
-
     # Verify command execution
     mock_element.execute_command.assert_called_once()
     cmd = mock_element.execute_command.call_args[0][0]
-    assert isinstance(cmd, AddItemsCommand)
+    assert isinstance(cmd, RoundedRectCommand)
 
     # Check command contents
-    assert len(cmd.points) == 12  # 8 tangent points + 4 center points
-    assert len(cmd.entities) == 8  # 4 lines + 4 arcs
-    # 4 HV + 8 Tangent + 1 EqualLength + 4 EqualDistance = 17
-    assert len(cmd.constraints) == 17
-    assert sum(isinstance(e, Line) for e in cmd.entities) == 4
-    assert sum(isinstance(e, Arc) for e in cmd.entities) == 4
-    assert (
-        sum(isinstance(c, HorizontalConstraint) for c in cmd.constraints) == 2
-    )
-    assert sum(isinstance(c, VerticalConstraint) for c in cmd.constraints) == 2
-    assert sum(isinstance(c, TangentConstraint) for c in cmd.constraints) == 8
-    assert (
-        sum(isinstance(c, EqualLengthConstraint) for c in cmd.constraints) == 1
-    )
-    assert (
-        sum(isinstance(c, EqualDistanceConstraint) for c in cmd.constraints)
-        == 4
-    )
+    assert cmd.start_pid == 0
+    assert cmd.end_pos == (100, 50)
+    assert cmd.is_start_temp is True
+    assert cmd.radius == tool.DEFAULT_RADIUS
 
     # Verify tool reset
     assert tool.start_id is None
@@ -173,6 +144,7 @@ def test_degenerate_rounded_rectangle_aborts_creation(tool, mock_element):
     tool._is_previewing = True
     mock_start_point = Point(0, 10, 20)
     mock_element.sketch.registry.get_point.return_value = mock_start_point
+    mock_element.sketch.remove_point_if_unused = MagicMock()
     tool._cleanup_temps = MagicMock()
 
     # --- Simulate second click at nearly the same spot ---
@@ -180,7 +152,14 @@ def test_degenerate_rounded_rectangle_aborts_creation(tool, mock_element):
     result = tool.on_press(100, 200, 1)
 
     assert result is True
-    mock_element.execute_command.assert_not_called()
-    # Verify tool reset and temp start point was cleaned up
-    assert tool.start_id is None
-    mock_element.remove_point_if_unused.assert_called_once_with(0)
+    # The command should be executed...
+    mock_element.execute_command.assert_called_once()
+    cmd = mock_element.execute_command.call_args[0][0]
+    assert isinstance(cmd, RoundedRectCommand)
+
+    # ...but its internal logic should detect the degenerate case and do
+    # nothing except clean up the temporary start point.
+    cmd.sketch = mock_element.sketch
+    cmd._do_execute()
+    mock_element.sketch.remove_point_if_unused.assert_called_once_with(0)
+    assert cmd.add_cmd is None

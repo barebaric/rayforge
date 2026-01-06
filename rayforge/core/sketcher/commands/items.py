@@ -1,12 +1,12 @@
 from __future__ import annotations
 import logging
-from typing import TYPE_CHECKING, List, Optional, Sequence, Dict
-
+from typing import TYPE_CHECKING, List, Optional, Sequence, Dict, Tuple
+from ..entities import Arc
 from .base import SketchChangeCommand
 
 if TYPE_CHECKING:
+    from ..constraints import Constraint, EqualDistanceConstraint
     from ..entities import Entity, Point
-    from ..constraints import Constraint
     from ..sketch import Sketch
 
 logger = logging.getLogger(__name__)
@@ -104,6 +104,95 @@ class RemoveItemsCommand(SketchChangeCommand):
         self.points = points or []
         self.entities = list(entities) if entities else []
         self.constraints = constraints or []
+
+    @staticmethod
+    def calculate_dependencies(
+        sketch: Sketch, selection
+    ) -> Tuple[List["Point"], List["Entity"], List["Constraint"]]:
+        """
+        Calculates the full set of items to be deleted based on the current
+        selection, including dependent items.
+        """
+        to_delete_constraints: List[Constraint] = []
+        to_delete_entity_ids = set(selection.entity_ids)
+        to_delete_point_ids = set(selection.point_ids)
+
+        # 1. Selected Constraints
+        if selection.constraint_idx is not None:
+            if sketch.constraints and (
+                0 <= selection.constraint_idx < len(sketch.constraints)
+            ):
+                to_delete_constraints.append(
+                    sketch.constraints[selection.constraint_idx]
+                )
+
+        registry_entities = sketch.registry.entities or []
+        entity_map = {e.id: e for e in registry_entities}
+
+        # 2. Cascading: If points are deleted, find entities that use them
+        for e in registry_entities:
+            if e.id in to_delete_entity_ids:
+                continue
+            p_ids: List[int] = e.get_point_ids()
+            # If any control point is marked for deletion, the entity must go
+            if any(pid in to_delete_point_ids for pid in p_ids):
+                to_delete_entity_ids.add(e.id)
+
+        # 2.5. Cleanup Implicit Constraints for Deleted Entities (Arc geometry)
+        # Arcs rely on EqualDistanceConstraint(c, s, c, e) not linked by ID.
+        current_constraints = sketch.constraints or []
+        for eid in to_delete_entity_ids:
+            e = entity_map.get(eid)
+            if isinstance(e, Arc):
+                c, s, end = e.center_idx, e.start_idx, e.end_idx
+                # Find constraints matching this geometry
+                for constr in current_constraints:
+                    if isinstance(constr, EqualDistanceConstraint):
+                        set1 = {constr.p1, constr.p2}
+                        set2 = {constr.p3, constr.p4}
+                        target1, target2 = {c, s}, {c, end}
+                        if (set1 == target1 and set2 == target2) or (
+                            set1 == target2 and set2 == target1
+                        ):
+                            if constr not in to_delete_constraints:
+                                to_delete_constraints.append(constr)
+
+        # 3. Orphan Points
+        if to_delete_entity_ids:
+            used_points_by_remaining = set()
+            points_of_deleted_entities = set()
+
+            for e in registry_entities:
+                p_ids = e.get_point_ids()
+                if e.id in to_delete_entity_ids:
+                    points_of_deleted_entities.update(p_ids)
+                else:
+                    used_points_by_remaining.update(p_ids)
+
+            orphans = points_of_deleted_entities - used_points_by_remaining
+            to_delete_point_ids.update(orphans)
+
+        # 4. Cleanup Constraints (Dependencies)
+        for constr in current_constraints:
+            if constr in to_delete_constraints:
+                continue
+            if constr.depends_on_points(
+                to_delete_point_ids
+            ) or constr.depends_on_entities(to_delete_entity_ids):
+                if constr not in to_delete_constraints:
+                    to_delete_constraints.append(constr)
+
+        # 5. Get actual objects from IDs
+        final_points = [
+            p
+            for p in sketch.registry.points
+            if p.id in to_delete_point_ids and not p.fixed
+        ]
+        final_entities = [
+            e for e in registry_entities if e.id in to_delete_entity_ids
+        ]
+
+        return final_points, final_entities, to_delete_constraints
 
     def _do_execute(self) -> None:
         registry = self.sketch.registry

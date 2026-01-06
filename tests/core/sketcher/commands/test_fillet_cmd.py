@@ -30,6 +30,41 @@ def sketch_with_corner():
     return s, corner_pid, line1_id, line2_id
 
 
+def test_fillet_calculate_geometry(sketch_with_corner):
+    """Test the static geometry calculation for a valid fillet."""
+    sketch, corner_pid, line1_id, line2_id = sketch_with_corner
+    result = FilletCommand.calculate_geometry(
+        sketch.registry, corner_pid, line1_id, line2_id, DEFAULT_FILLET_RADIUS
+    )
+
+    assert result is not None
+    assert len(result["points"]) == 3
+    assert len(result["entities"]) == 3
+    assert len(result["constraints"]) == 5
+    assert len(result["removed_entities"]) == 2
+
+    p_tan1, p_tan2, p_center = result["points"]
+    assert p_tan1.x == pytest.approx(-10.0)
+    assert p_tan1.y == pytest.approx(0.0)
+    assert p_tan2.x == pytest.approx(0.0)
+    assert p_tan2.y == pytest.approx(10.0)
+    assert p_center.x == pytest.approx(-10.0)
+    assert p_center.y == pytest.approx(10.0)
+
+
+def test_fillet_calculate_geometry_too_large(sketch_with_corner):
+    """Test that calculation fails if the fillet radius is too large."""
+    sketch, corner_pid, line1_id, line2_id = sketch_with_corner
+    result = FilletCommand.calculate_geometry(
+        sketch.registry,
+        corner_pid,
+        line1_id,
+        line2_id,
+        200.0,  # Too large
+    )
+    assert result is None
+
+
 def test_fillet_command_execute(sketch_with_corner):
     """Test the direct execution of FilletCommand."""
     sketch, corner_pid, line1_id, line2_id = sketch_with_corner
@@ -52,12 +87,13 @@ def test_fillet_command_execute(sketch_with_corner):
     assert len(sketch.constraints) == initial_constraints_count + 5
 
     # Verify new geometry types
-    assert len(command.added_entities) == 3
+    assert command.add_cmd is not None
+    assert len(command.add_cmd.entities) == 3
     # First two are lines connecting original points to tangents
-    assert isinstance(command.added_entities[0], Line)
-    assert isinstance(command.added_entities[1], Line)
+    assert isinstance(command.add_cmd.entities[0], Line)
+    assert isinstance(command.add_cmd.entities[1], Line)
     # Third is the Arc
-    fillet_arc = command.added_entities[2]
+    fillet_arc = command.add_cmd.entities[2]
     assert isinstance(fillet_arc, Arc)
 
     # Verify constraints

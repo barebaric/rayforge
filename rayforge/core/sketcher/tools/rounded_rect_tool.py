@@ -1,13 +1,6 @@
 from typing import Optional, Dict
-from ..entities import Point, Line, Arc
-from ..commands import AddItemsCommand
-from ..constraints import (
-    HorizontalConstraint,
-    VerticalConstraint,
-    TangentConstraint,
-    EqualLengthConstraint,
-    EqualDistanceConstraint,
-)
+from ..entities import Arc
+from ..commands import RoundedRectCommand
 from .base import SketchTool
 
 
@@ -108,59 +101,14 @@ class RoundedRectTool(SketchTool):
             self._update_preview_geometry(is_creation=True)
         else:
             # --- Second Click: Finalize the rectangle ---
-            final_mx, final_my = mx, my
-            # If a point is hit, snap to it
-            if pid_hit is not None:
-                final_p = self.element.sketch.registry.get_point(pid_hit)
-                final_mx, final_my = final_p.x, final_p.y
-
-            start_p = self.element.sketch.registry.get_point(self.start_id)
-
-            # Cleanup preview geometry before creating the final command
             self._cleanup_temps()
 
-            # Generate geometry and constraints for the command
-            points, entities, constraints = self._generate_geometry(
-                start_p.x, start_p.y, final_mx, final_my, start_p.id
-            )
-
-            # Abort if geometry is degenerate (zero size)
-            if not points:
-                # If the start point was temporary, it needs to be cleaned up.
-                if self.start_temp:
-                    self.element.remove_point_if_unused(self.start_id)
-                self.start_id = None
-                self.start_temp = False
-                self.element.mark_dirty()
-                return True  # We handled the click by aborting.
-
-            # Determine the points to add. We intentionally exclude p1 and p3
-            # (the sharp corners) as they are virtual construction points
-            # for the rounded rect and shouldn't persist as dangling points.
-            points_to_add = []
-
-            # The 'points' dict contains p1 (start), p3 (end), and all t/c
-            # points. We filter out p1 and p3.
-            for name, p_obj in points.items():
-                if name not in ("p1", "p3"):
-                    points_to_add.append(p_obj)
-
-            # Special handling for the start point if it was temporary
-            if self.start_temp:
-                # Remove the temporary start point from the registry.
-                # Since we are NOT adding it to 'points_to_add', it will
-                # simply cease to exist, effectively "consuming" the click.
-                self.element.sketch.registry.points.remove(start_p)
-
-            # We don't need logic for pid_hit (snapping end) regarding p3,
-            # because p3 is never added to the sketch anyway.
-
-            cmd = AddItemsCommand(
+            cmd = RoundedRectCommand(
                 self.element.sketch,
-                _("Add Rounded Rectangle"),
-                points=points_to_add,
-                entities=entities,
-                constraints=constraints,
+                self.start_id,
+                (mx, my),
+                self.DEFAULT_RADIUS,
+                is_start_temp=self.start_temp,
             )
             self.element.execute_command(cmd)
 
@@ -261,137 +209,6 @@ class RoundedRectTool(SketchTool):
                 arc_entity = registry.get_entity(self._preview_ids[key])
                 if isinstance(arc_entity, Arc):
                     arc_entity.clockwise = is_cw
-
-    def _generate_geometry(self, x1, y1, x2, y2, start_id: int):
-        """Generates final points, entities, and constraints."""
-        width = abs(x2 - x1)
-        height = abs(y2 - y1)
-
-        if width < 1e-6 or height < 1e-6:
-            return {}, [], []
-
-        radius = min(self.DEFAULT_RADIUS, width / 2.0, height / 2.0)
-        sx = 1 if x2 > x1 else -1
-        sy = 1 if y2 > y1 else -1
-
-        temp_id_counter = -1
-
-        def next_temp_id():
-            nonlocal temp_id_counter
-            temp_id_counter -= 1
-            return temp_id_counter
-
-        # Create points
-        points = {
-            "p1": Point(start_id, x1, y1),
-            "p3": Point(next_temp_id(), x2, y2),
-            "t1": Point(next_temp_id(), x1 + sx * radius, y1),
-            "t2": Point(next_temp_id(), x2 - sx * radius, y1),
-            "t3": Point(next_temp_id(), x2, y1 + sy * radius),
-            "t4": Point(next_temp_id(), x2, y2 - sy * radius),
-            "t5": Point(next_temp_id(), x2 - sx * radius, y2),
-            "t6": Point(next_temp_id(), x1 + sx * radius, y2),
-            "t7": Point(next_temp_id(), x1, y2 - sy * radius),
-            "t8": Point(next_temp_id(), x1, y1 + sy * radius),
-            "c1": Point(next_temp_id(), x1 + sx * radius, y1 + sy * radius),
-            "c2": Point(next_temp_id(), x2 - sx * radius, y1 + sy * radius),
-            "c3": Point(next_temp_id(), x2 - sx * radius, y2 - sy * radius),
-            "c4": Point(next_temp_id(), x1 + sx * radius, y2 - sy * radius),
-        }
-
-        # Correct logic for convex rounded corners
-        is_cw = sx * sy < 0
-
-        # Create entities
-        # Arc(id, start, end, center, cw)
-        entities = [
-            Line(next_temp_id(), points["t1"].id, points["t2"].id),
-            Line(next_temp_id(), points["t3"].id, points["t4"].id),
-            Line(next_temp_id(), points["t5"].id, points["t6"].id),
-            Line(next_temp_id(), points["t7"].id, points["t8"].id),
-            Arc(
-                next_temp_id(),
-                points["t8"].id,
-                points["t1"].id,
-                points["c1"].id,
-                clockwise=is_cw,
-            ),
-            Arc(
-                next_temp_id(),
-                points["t2"].id,
-                points["t3"].id,
-                points["c2"].id,
-                clockwise=is_cw,
-            ),
-            Arc(
-                next_temp_id(),
-                points["t4"].id,
-                points["t5"].id,
-                points["c3"].id,
-                clockwise=is_cw,
-            ),
-            Arc(
-                next_temp_id(),
-                points["t6"].id,
-                points["t7"].id,
-                points["c4"].id,
-                clockwise=is_cw,
-            ),
-        ]
-
-        # Create constraints
-        constraints = [
-            HorizontalConstraint(points["t1"].id, points["t2"].id),
-            VerticalConstraint(points["t3"].id, points["t4"].id),
-            HorizontalConstraint(points["t5"].id, points["t6"].id),
-            VerticalConstraint(points["t7"].id, points["t8"].id),
-            # top line -> top-left arc
-            TangentConstraint(entities[0].id, entities[4].id),
-            # left line -> top-left arc
-            TangentConstraint(entities[3].id, entities[4].id),
-            # top line -> top-right arc
-            TangentConstraint(entities[0].id, entities[5].id),
-            # right line -> top-right arc
-            TangentConstraint(entities[1].id, entities[5].id),
-            # right line -> bottom-right arc
-            TangentConstraint(entities[1].id, entities[6].id),
-            # bottom line -> bottom-right arc
-            TangentConstraint(entities[2].id, entities[6].id),
-            # bottom line -> bottom-left arc
-            TangentConstraint(entities[2].id, entities[7].id),
-            # left line -> bottom-left arc
-            TangentConstraint(entities[3].id, entities[7].id),
-            # all arcs equal radius
-            EqualLengthConstraint([e.id for e in entities[4:]]),
-            # Ensure arc endpoints are equidistant from center (force
-            # circularity)
-            EqualDistanceConstraint(
-                points["c1"].id,
-                points["t8"].id,
-                points["c1"].id,
-                points["t1"].id,
-            ),
-            EqualDistanceConstraint(
-                points["c2"].id,
-                points["t2"].id,
-                points["c2"].id,
-                points["t3"].id,
-            ),
-            EqualDistanceConstraint(
-                points["c3"].id,
-                points["t4"].id,
-                points["c3"].id,
-                points["t5"].id,
-            ),
-            EqualDistanceConstraint(
-                points["c4"].id,
-                points["t6"].id,
-                points["c4"].id,
-                points["t7"].id,
-            ),
-        ]
-
-        return points, entities, constraints
 
     def on_drag(self, world_dx: float, world_dy: float):
         pass
