@@ -228,11 +228,15 @@ class AxisRenderer:
         ctx.set_source_rgba(*self.grid_color)
         ctx.set_hairline(True)
 
+        # Determine grid origin based on axis settings
+        origin_x = self.width_mm if self.x_axis_right else 0.0
+        origin_y = self.height_mm if self.y_axis_down else 0.0
+
         # Vertical lines (along X)
-        k_start_x = math.ceil(min_x / grid_size_mm)
-        k_end_x = math.floor(max_x / grid_size_mm)
+        k_start_x = math.ceil((min_x - origin_x) / grid_size_mm)
+        k_end_x = math.floor((max_x - origin_x) / grid_size_mm)
         for k in range(k_start_x, k_end_x + 1):
-            x_mm = k * grid_size_mm
+            x_mm = origin_x + k * grid_size_mm
             p1_px = view_transform.transform_point((x_mm, min_y))
             p2_px = view_transform.transform_point((x_mm, max_y))
             ctx.move_to(p1_px[0], p1_px[1])
@@ -240,10 +244,10 @@ class AxisRenderer:
             ctx.stroke()
 
         # Horizontal lines (along Y)
-        k_start_y = math.ceil(min_y / grid_size_mm)
-        k_end_y = math.floor(max_y / grid_size_mm)
+        k_start_y = math.ceil((min_y - origin_y) / grid_size_mm)
+        k_end_y = math.floor((max_y - origin_y) / grid_size_mm)
         for k in range(k_start_y, k_end_y + 1):
-            y_mm = k * grid_size_mm
+            y_mm = origin_y + k * grid_size_mm
             p1_px = view_transform.transform_point((min_x, y_mm))
             p2_px = view_transform.transform_point((max_x, y_mm))
             ctx.move_to(p1_px[0], p1_px[1])
