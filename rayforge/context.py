@@ -1,6 +1,9 @@
 import logging
 import threading
 from typing import Optional, TYPE_CHECKING
+import pluggy
+from .core.hooks import RayforgeSpecs
+from .core.package_manager import PackageManager
 
 # Use a TYPE_CHECKING block to import types for static analysis
 # without causing a runtime circular import.
@@ -35,11 +38,18 @@ class RayforgeContext:
         from .pipeline.artifact.store import ArtifactStore
         from .debug import DebugDumpManager
         from .machine.models.dialect_manager import DialectManager
-        from .config import DIALECT_DIR
+        from .config import DIALECT_DIR, PACKAGES_DIR
 
         self.artifact_store = ArtifactStore()
         # The DialectManager is safe and necessary for all processes.
         self._dialect_mgr = DialectManager(DIALECT_DIR)
+
+        # Initialize the plugin manager
+        self.plugin_mgr = pluggy.PluginManager("rayforge")
+        self.plugin_mgr.add_hookspecs(RayforgeSpecs)
+
+        # Initialize the package manager
+        self.package_mgr = PackageManager(PACKAGES_DIR, self.plugin_mgr)
 
         # These managers are initialized to None. The main application thread
         # MUST call initialize_full_context() to create them.
@@ -185,6 +195,12 @@ class RayforgeContext:
             f"Recipe manager initialized with "
             f"{len(self._recipe_mgr.get_all_recipes())} recipes"
         )
+
+        # Load plugins from disk
+        self.package_mgr.load_installed_packages()
+
+        # Trigger the init hook for all registered plugins
+        self.plugin_mgr.hook.rayforge_init(context=self)
 
         logger.info("Full application context initialized")
 
