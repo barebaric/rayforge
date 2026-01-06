@@ -1,6 +1,6 @@
 import logging
 from gi.repository import Gtk, Adw
-from typing import Optional, Tuple, List, TYPE_CHECKING
+from typing import List, TYPE_CHECKING
 from ....context import get_context
 from ....core.group import Group
 from ....core.item import DocItem
@@ -39,32 +39,32 @@ class TransformPropertyProvider(PropertyProvider):
 
         item = self.items[0]
         machine = get_context().machine
-        bounds = machine.dimensions if machine else default_dim
-        x_axis_right = machine.x_axis_right if machine else False
-        y_axis_down = machine.y_axis_down if machine else False
 
-        size_world = item.size
-        pos_world = item.pos
+        # Calculate X/Y position in machine coordinates
+        if machine:
+            pos_machine = machine.world_to_machine(item.pos, item.size)
+            pos_machine_x, pos_machine_y = pos_machine
+
+            # Update subtitles based on machine settings
+            self.x_row.set_subtitle(
+                _("Zero is on the right")
+                if machine.x_axis_right
+                else _("Zero is on the left")
+            )
+            self.y_row.set_subtitle(
+                _("Zero is at the top")
+                if machine.y_axis_down
+                else _("Zero is at the bottom")
+            )
+        else:
+            # Fallback if no machine
+            pos_machine_x, pos_machine_y = item.pos
+            self.x_row.set_subtitle("")
+            self.y_row.set_subtitle("")
+
         angle_local = item.angle
         shear_local = item.shear
-
-        # Calculate X position in machine coordinates
-        if x_axis_right:
-            self.x_row.set_subtitle(_("Zero is on the right"))
-            machine_width = bounds[0]
-            pos_machine_x = machine_width - pos_world[0] - size_world[0]
-        else:
-            self.x_row.set_subtitle(_("Zero is on the left"))
-            pos_machine_x = pos_world[0]
-
-        # Calculate Y position in machine coordinates
-        if y_axis_down:
-            self.y_row.set_subtitle(_("Zero is at the top"))
-            machine_height = bounds[1]
-            pos_machine_y = machine_height - pos_world[1] - size_world[1]
-        else:
-            self.y_row.set_subtitle(_("Zero is at the bottom"))
-            pos_machine_y = pos_world[1]
+        size_world = item.size
 
         # Use a safe re-entrant pattern for updating widgets
         was_in_update = getattr(self, "_in_update", False)
@@ -275,34 +275,6 @@ class TransformPropertyProvider(PropertyProvider):
         button.connect("clicked", on_clicked)
         return button
 
-    def _calculate_new_size_with_ratio(
-        self, item: DocItem, value: float, changed_dim: str
-    ) -> Tuple[Optional[float], Optional[float]]:
-        aspect_ratio = None
-        if isinstance(item, (WorkPiece, StockItem, Group)):
-            aspect_ratio = item.get_current_aspect_ratio()
-
-        if not aspect_ratio:
-            return None, None
-
-        width_min = self.width_row.get_adjustment().get_lower()
-        height_min = self.height_row.get_adjustment().get_lower()
-
-        if changed_dim == "width":
-            new_width = value
-            new_height = new_width / aspect_ratio
-            if new_height < height_min:
-                new_height = height_min
-                new_width = new_height * aspect_ratio
-        else:  # changed_dim == 'height'
-            new_height = value
-            new_width = new_height * aspect_ratio
-            if new_width < width_min:
-                new_width = width_min
-                new_height = new_width / aspect_ratio
-
-        return new_width, new_height
-
     def _on_width_changed(self, spin_row, GParamSpec):
         logger.debug(f"_on_width_changed called. _in_update={self._in_update}")
         if self._in_update or not self.items:
@@ -316,19 +288,10 @@ class TransformPropertyProvider(PropertyProvider):
 
             logger.debug(f"Handling width change to {new_width_from_ui}")
 
-            if self.fixed_ratio_switch.get_active():
-                first_item = self.items[0]
-                w, h = self._calculate_new_size_with_ratio(
-                    first_item, new_width_from_ui, "width"
-                )
-                if w is not None and h is not None:
-                    self.height_row.set_value(h)
-                    self.width_row.set_value(w)
-
             self.editor.transform.set_size(
                 items=self.items,
-                width=get_spinrow_float(self.width_row),
-                height=get_spinrow_float(self.height_row),
+                width=new_width_from_ui,
+                height=None,  # Signal that this dimension should be calculated
                 fixed_ratio=self.fixed_ratio_switch.get_active(),
             )
         finally:
@@ -350,19 +313,10 @@ class TransformPropertyProvider(PropertyProvider):
 
             logger.debug(f"Handling height change to {new_height_from_ui}")
 
-            if self.fixed_ratio_switch.get_active():
-                first_item = self.items[0]
-                w, h = self._calculate_new_size_with_ratio(
-                    first_item, new_height_from_ui, "height"
-                )
-                if w is not None and h is not None:
-                    self.width_row.set_value(w)
-                    self.height_row.set_value(h)
-
             self.editor.transform.set_size(
                 items=self.items,
-                width=get_spinrow_float(self.width_row),
-                height=get_spinrow_float(self.height_row),
+                width=None,  # Signal that this dimension should be calculated
+                height=new_height_from_ui,
                 fixed_ratio=self.fixed_ratio_switch.get_active(),
             )
         finally:
@@ -450,12 +404,15 @@ class TransformPropertyProvider(PropertyProvider):
         if not self.items:
             return
 
+        # Simple logic: reset height based on current width and natural aspect
         items_to_resize = []
+        sizes_to_set = []
+
         for item in self.items:
             if not isinstance(item, (WorkPiece, StockItem, Group)):
                 continue
-            current_size = item.size
-            current_width = current_size[0]
+
+            current_width = item.size[0]
 
             default_aspect = None
             if isinstance(item, (WorkPiece, StockItem)):
@@ -464,39 +421,24 @@ class TransformPropertyProvider(PropertyProvider):
                 nw, nh = item.natural_size
                 default_aspect = nw / nh if nh > 0 else None
 
-            if not default_aspect or default_aspect == 0:
-                continue
-            new_height = current_width / default_aspect
-            new_size = (current_width, new_height)
-            if new_size != current_size:
+            if default_aspect and default_aspect > 0:
+                new_height = current_width / default_aspect
                 items_to_resize.append(item)
+                sizes_to_set.append((current_width, new_height))
 
         if items_to_resize:
-            first_item = items_to_resize[0]
-            if isinstance(first_item, (WorkPiece, StockItem, Group)):
-                current_width = first_item.size[0]
-                default_aspect = None
-                if isinstance(first_item, (WorkPiece, StockItem)):
-                    default_aspect = first_item.get_natural_aspect_ratio()
-                elif first_item.natural_size:
-                    nw, nh = first_item.natural_size
-                    default_aspect = nw / nh if nh > 0 else None
-
-                if default_aspect and default_aspect != 0:
-                    new_height = current_width / default_aspect
-                    self.editor.transform.set_size(
-                        items=items_to_resize,
-                        width=current_width,
-                        height=new_height,
-                        fixed_ratio=False,
-                    )
+            self.editor.transform.set_size(
+                items=items_to_resize,
+                sizes=sizes_to_set,
+            )
 
     def _on_reset_dimension_clicked(self, button, dimension_to_reset: str):
         if not self.items:
             return
 
-        sizes_to_set = []
         items_to_resize = []
+        sizes_to_set = []
+
         for item in self.items:
             if not isinstance(item, (WorkPiece, StockItem, Group)):
                 continue
@@ -504,35 +446,26 @@ class TransformPropertyProvider(PropertyProvider):
             natural_width, natural_height = item.natural_size
             current_width, current_height = item.size
 
-            new_width, new_height = current_width, current_height
+            new_width = current_width
+            new_height = current_height
 
             if dimension_to_reset == "width":
                 new_width = natural_width
                 if self.fixed_ratio_switch.get_active():
-                    aspect = None
-                    if isinstance(item, (WorkPiece, StockItem)):
-                        aspect = item.get_natural_aspect_ratio()
-                    elif item.natural_size:
-                        nw, nh = item.natural_size
-                        aspect = nw / nh if nh > 0 else None
-                    if aspect and new_width > 1e-9:
-                        new_height = new_width / aspect
+                    # Recalculate height to match new width + current aspect
+                    current_aspect = item.get_current_aspect_ratio()
+                    if current_aspect:
+                        new_height = new_width / current_aspect
             else:
                 new_height = natural_height
                 if self.fixed_ratio_switch.get_active():
-                    aspect = None
-                    if isinstance(item, (WorkPiece, StockItem)):
-                        aspect = item.get_natural_aspect_ratio()
-                    elif item.natural_size:
-                        nw, nh = item.natural_size
-                        aspect = nw / nh if nh > 0 else None
-                    if aspect and new_height > 1e-9:
-                        new_width = new_height * aspect
+                    current_aspect = item.get_current_aspect_ratio()
+                    if current_aspect:
+                        new_width = new_height * current_aspect
 
-            new_size = (new_width, new_height)
-            if new_size != item.size:
+            if (new_width, new_height) != item.size:
                 items_to_resize.append(item)
-                sizes_to_set.append(new_size)
+                sizes_to_set.append((new_width, new_height))
 
         if items_to_resize:
             self.editor.transform.set_size(
@@ -557,41 +490,15 @@ class TransformPropertyProvider(PropertyProvider):
     def _on_reset_x_clicked(self, button):
         if not self.items:
             return
-        items_to_reset = [
-            item for item in self.items if abs(item.pos[0] - 0.0) >= 1e-9
-        ]
-        if items_to_reset:
-            current_y_machine = self.y_row.get_value()
-            self.editor.transform.set_position(
-                items_to_reset, 0.0, current_y_machine
-            )
+
+        # Reset machine X to 0. Backend handles conversion.
+        current_y_machine = self.y_row.get_value()
+        self.editor.transform.set_position(self.items, 0.0, current_y_machine)
 
     def _on_reset_y_clicked(self, button):
         if not self.items:
             return
-        machine = get_context().machine
-        bounds = machine.dimensions if machine else default_dim
-        y_axis_down = machine.y_axis_down if machine else False
 
-        items_to_reset = []
-        target_y_machine = 0.0
-        if y_axis_down:
-            machine_height = bounds[1]
-            first_item_size = self.items[0].size
-            target_y_machine = machine_height - first_item_size[1]
-
-        for item in self.items:
-            pos_world, size_world = item.pos, item.size
-            target_y_world = 0.0
-            if y_axis_down:
-                machine_height = bounds[1]
-                target_y_world = machine_height - size_world[1]
-
-            if abs(pos_world[1] - target_y_world) >= 1e-9:
-                items_to_reset.append(item)
-
-        if items_to_reset:
-            current_x_machine = self.x_row.get_value()
-            self.editor.transform.set_position(
-                items_to_reset, current_x_machine, target_y_machine
-            )
+        # Reset machine Y to 0. Backend handles conversion.
+        current_x_machine = self.x_row.get_value()
+        self.editor.transform.set_position(self.items, current_x_machine, 0.0)
