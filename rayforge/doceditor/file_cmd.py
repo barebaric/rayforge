@@ -1,7 +1,22 @@
 import asyncio
 import logging
+import warnings
+from dataclasses import dataclass, field
 from pathlib import Path
-from typing import TYPE_CHECKING, List, Optional, Tuple, cast, Callable
+from typing import (
+    TYPE_CHECKING,
+    List,
+    Optional,
+    Tuple,
+    cast,
+    Callable,
+    Dict,
+    Any,
+)
+
+with warnings.catch_warnings():
+    warnings.simplefilter("ignore", DeprecationWarning)
+    import pyvips
 
 from ..context import get_context
 from ..core.item import DocItem
@@ -9,8 +24,13 @@ from ..core.layer import Layer
 from ..core.matrix import Matrix
 from ..core.source_asset import SourceAsset
 from ..core.undo import ListItemCommand
-from ..core.vectorization_spec import VectorizationSpec
-from ..image import import_file, ImportPayload
+from ..core.vectorization_spec import (
+    VectorizationSpec,
+    TraceSpec,
+    PassthroughSpec,
+)
+from ..core.workpiece import WorkPiece
+from ..image import import_file, import_file_from_bytes, ImportPayload
 from ..pipeline.artifact import JobArtifactHandle, JobArtifact
 from .layout.align import PositionAtStrategy
 
@@ -23,6 +43,19 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
+@dataclass
+class PreviewResult:
+    """
+    Result of a preview generation operation.
+    Contains the rendered image bytes and the document items to display.
+    """
+
+    image_bytes: bytes
+    payload: Optional[ImportPayload]
+    aspect_ratio: float = 1.0
+    warnings: List[str] = field(default_factory=list)
+
+
 class FileCmd:
     """Handles file import and export operations."""
 
@@ -33,6 +66,150 @@ class FileCmd:
     ):
         self._editor = editor
         self._task_manager = task_manager
+
+    def scan_import_file(
+        self, file_bytes: bytes, mime_type: str
+    ) -> Dict[str, Any]:
+        """
+        Lightweight scan of a file to extract metadata without full processing.
+        """
+        result = {}
+        if mime_type == "image/svg+xml":
+            try:
+                from ..image.svg.svgutil import extract_layer_manifest
+
+                result["layers"] = extract_layer_manifest(file_bytes)
+            except Exception as e:
+                logger.warning(f"Failed to scan SVG layers: {e}")
+        return result
+
+    async def generate_preview(
+        self,
+        file_bytes: bytes,
+        filename: str,
+        mime_type: str,
+        spec: VectorizationSpec,
+        preview_size_px: int,
+    ) -> Optional[PreviewResult]:
+        """
+        Generates a preview image and vector payload for the import dialog.
+        Runs the heavy image processing in a background thread.
+        """
+        return await asyncio.to_thread(
+            self._generate_preview_impl,
+            file_bytes,
+            filename,
+            mime_type,
+            spec,
+            preview_size_px,
+        )
+
+    def _generate_preview_impl(
+        self,
+        file_bytes: bytes,
+        filename: str,
+        mime_type: str,
+        spec: VectorizationSpec,
+        preview_size_px: int,
+    ) -> Optional[PreviewResult]:
+        """Blocking implementation of preview generation."""
+        try:
+            # 1. Get vector geometry and metadata
+            payload = import_file_from_bytes(
+                file_bytes,
+                filename,
+                mime_type,
+                spec,
+            )
+
+            if not payload or not payload.items:
+                return None
+
+            # Helper to find reference workpiece for crop/size logic
+            reference_wp = self._extract_first_workpiece(payload.items)
+            if not reference_wp:
+                return None
+
+            # 2. Generate high-res base image
+            vips_image = None
+            if isinstance(spec, TraceSpec):
+                # For tracing, use pre-rendered data (SVG trace) or raw bytes
+                image_bytes = payload.source.base_render_data or file_bytes
+                if not image_bytes:
+                    return None
+
+                full_image = pyvips.Image.new_from_buffer(image_bytes, "")
+
+                # Apply cropping if importer specified it
+                if (
+                    reference_wp.source_segment
+                    and reference_wp.source_segment.crop_window_px
+                ):
+                    x, y, w, h = map(
+                        int, reference_wp.source_segment.crop_window_px
+                    )
+                    vips_image = full_image.crop(x, y, w, h)
+                else:
+                    vips_image = full_image
+
+            elif isinstance(spec, PassthroughSpec):
+                # For direct SVG, render vector data at high resolution
+                if not payload.source.base_render_data:
+                    return None
+
+                vips_image = pyvips.Image.new_from_buffer(
+                    payload.source.base_render_data, "", scale=4.0
+                )
+
+            if not vips_image:
+                return None
+
+            # 3. Create thumbnail
+            aspect_ratio = (
+                vips_image.width / vips_image.height
+                if vips_image.height
+                else 1.0
+            )
+
+            preview_vips = vips_image.thumbnail_image(
+                preview_size_px,
+                height=preview_size_px,
+                size="both",
+            )
+
+            if isinstance(spec, TraceSpec) and spec.invert:
+                preview_vips = preview_vips.flatten(
+                    background=[255, 255, 255]
+                ).invert()
+
+            png_bytes = preview_vips.pngsave_buffer()
+
+            return PreviewResult(
+                image_bytes=png_bytes,
+                payload=payload,
+                aspect_ratio=aspect_ratio,
+            )
+
+        except Exception as e:
+            logger.error(
+                f"Failed to generate import preview: {e}", exc_info=True
+            )
+            return None
+
+    def _extract_first_workpiece(
+        self, items: List[DocItem]
+    ) -> Optional[WorkPiece]:
+        """Recursively extract the first WorkPiece from a list of items."""
+        for item in items:
+            if isinstance(item, WorkPiece):
+                return item
+            if isinstance(item, Layer):
+                # Check direct children
+                for child in item.children:
+                    res = self._extract_first_workpiece([child])
+                    if res:
+                        return res
+        return None
 
     async def _load_file_async(
         self,

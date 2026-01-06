@@ -1,15 +1,9 @@
-import asyncio
 import logging
 from pathlib import Path
-from typing import TYPE_CHECKING, Optional, Tuple, List
+from typing import TYPE_CHECKING, Optional, List
 import cairo
 from gi.repository import Adw, Gdk, GdkPixbuf, Gtk
 from blinker import Signal
-import warnings
-
-with warnings.catch_warnings():
-    warnings.simplefilter("ignore", DeprecationWarning)
-    import pyvips
 
 from ...core.vectorization_spec import (
     TraceSpec,
@@ -18,8 +12,7 @@ from ...core.vectorization_spec import (
 )
 from ...core.workpiece import WorkPiece
 from ...core.layer import Layer
-from ...image import ImportPayload, import_file_from_bytes
-from ...image.svg.svgutil import extract_layer_manifest
+from ...doceditor.file_cmd import PreviewResult
 
 if TYPE_CHECKING:
     from ...doceditor.editor import DocEditor
@@ -33,7 +26,6 @@ PREVIEW_RENDER_SIZE_PX = 1024
 class ImportDialog(Adw.Window):
     """
     A dialog for importing images with live preview of vectorization.
-    Also handles SVG import options (direct vs. trace).
     """
 
     def __init__(
@@ -52,7 +44,7 @@ class ImportDialog(Adw.Window):
 
         # Internal state
         self._file_bytes: Optional[bytes] = None
-        self._preview_payload: Optional[ImportPayload] = None
+        self._preview_result: Optional[PreviewResult] = None
         self._background_pixbuf: Optional[GdkPixbuf.Pixbuf] = None
         self._in_update = False  # Prevent signal recursion
         self._layer_widgets: List[Gtk.Switch] = []
@@ -66,7 +58,7 @@ class ImportDialog(Adw.Window):
         header_bar = Adw.HeaderBar()
         main_box.append(header_bar)
 
-        # Banner for SVG direct vector mode issues
+        # Banner for warnings (e.g. SVG empty content)
         self.warning_banner = Adw.Banner(
             title=_(
                 "SVG produced no output in direct vector mode. "
@@ -87,7 +79,7 @@ class ImportDialog(Adw.Window):
         )
         main_box.append(content_box)
 
-        # Header Bar
+        # Header Bar Buttons
         self.import_button = Gtk.Button(
             label=_("Import"), css_classes=["suggested-action"]
         )
@@ -169,7 +161,7 @@ class ImportDialog(Adw.Window):
             subtitle=_("Trace objects darker than this value"),
         )
         self.threshold_row.add_suffix(self.threshold_scale)
-        self.threshold_row.set_sensitive(False)  # Disabled by default
+        self.threshold_row.set_sensitive(False)
         self.trace_group.add(self.threshold_row)
 
         # Invert
@@ -204,16 +196,12 @@ class ImportDialog(Adw.Window):
 
         # Initial Load & State
         self._load_initial_data()
-        self._on_import_mode_toggled(
-            self.use_vectors_switch
-        )  # Sets initial sensitivity and schedules first update
+        self._on_import_mode_toggled(self.use_vectors_switch)
 
     def _on_import_mode_toggled(self, switch, *args):
         is_direct_import = self.is_svg and switch.get_active()
         self.trace_group.set_sensitive(not is_direct_import)
-        self.layers_group.set_sensitive(
-            is_direct_import
-        )  # Only vector import supports specific layer select
+        self.layers_group.set_sensitive(is_direct_import)
         self.warning_banner.set_revealed(False)
         self._schedule_preview_update()
 
@@ -240,7 +228,11 @@ class ImportDialog(Adw.Window):
         if not self._file_bytes:
             return
 
-        layers = extract_layer_manifest(self._file_bytes)
+        scan_result = self.editor.file.scan_import_file(
+            self._file_bytes, self.mime_type
+        )
+        layers = scan_result.get("layers", [])
+
         if not layers:
             return
 
@@ -252,12 +244,10 @@ class ImportDialog(Adw.Window):
         for layer in layers:
             row = Adw.ActionRow(title=layer["name"])
             switch = Gtk.Switch(active=True, valign=Gtk.Align.CENTER)
-            # Use direct attribute assignment for the layer ID
             switch._layer_id = layer["id"]  # type: ignore
             switch.connect("notify::active", self._schedule_preview_update)
 
             row.add_suffix(switch)
-            # Make the whole row click toggle the switch
             row.set_activatable_widget(switch)
             expander.add_row(row)
 
@@ -294,29 +284,14 @@ class ImportDialog(Adw.Window):
         self.status_spinner.start()
         self.import_button.set_sensitive(False)
 
-        # Use the TaskManager to run the blocking import off the main thread
+        # Dispatch task to TaskManager using FileCmd
         self.editor.task_manager.add_coroutine(
             self._update_preview_task, key="raster-import-preview"
         )
 
-    def _extract_workpiece(self, item) -> Optional[WorkPiece]:
-        """
-        Recursively extract the first WorkPiece from a potentially nested item.
-        """
-        if isinstance(item, WorkPiece):
-            return item
-        if isinstance(item, Layer):
-            # Check direct children
-            for child in item.children:
-                wp = self._extract_workpiece(child)
-                if wp:
-                    return wp
-        return None
-
     async def _update_preview_task(self, ctx):
         """
-        Async task to generate a vector preview. This task handles both
-        direct vector import and bitmap tracing modes.
+        Async task that calls the backend to generate the preview.
         """
         if not self._file_bytes:
             return
@@ -324,134 +299,42 @@ class ImportDialog(Adw.Window):
         spec = self._get_current_spec()
         ctx.set_message(_("Generating preview..."))
 
-        try:
-            # 1. Get the vector geometry and metadata from the importer
-            payload = await asyncio.to_thread(
-                import_file_from_bytes,
-                self._file_bytes,
-                self.file_path.name,
-                self.mime_type,
-                spec,
-            )
+        result = await self.editor.file.generate_preview(
+            self._file_bytes,
+            self.file_path.name,
+            self.mime_type,
+            spec,
+            PREVIEW_RENDER_SIZE_PX,
+        )
 
-            if not payload or not payload.items:
-                return self.editor.task_manager.schedule_on_main_thread(
-                    self._update_ui_with_preview, (None, b"")
-                )
+        self.editor.task_manager.schedule_on_main_thread(
+            self._update_ui_with_preview, result
+        )
 
-            reference_wp = self._extract_workpiece(payload.items[0])
-            if not reference_wp:
-                raise ValueError("Imported items contain no WorkPieces")
-
-            # 2. Generate a high-resolution base image for the preview.
-            vips_image = None
-            if isinstance(spec, TraceSpec):
-                # For tracing, prioritize pre-rendered data from the importer
-                # (e.g., SVG-trace). Fall back to the original file bytes for
-                # standard rasters (PNG, PDF, etc.).
-                image_bytes = (
-                    payload.source.base_render_data or self._file_bytes
-                )
-                if not image_bytes:
-                    raise ValueError(
-                        "No image data available for tracing preview."
-                    )
-
-                full_image = pyvips.Image.new_from_buffer(image_bytes, "")
-
-                # Apply cropping if the importer specified a crop window
-                # (e.g., PDF auto-crop)
-                if (
-                    reference_wp.source_segment
-                    and reference_wp.source_segment.crop_window_px
-                ):
-                    x, y, w, h = map(
-                        int, reference_wp.source_segment.crop_window_px
-                    )
-                    vips_image = full_image.crop(x, y, w, h)
-                else:
-                    vips_image = full_image
-
-            elif isinstance(spec, PassthroughSpec):
-                # For direct SVG import, render the vector data at a high
-                # resolution.
-                if not payload.source.base_render_data:
-                    raise ValueError(
-                        "Importer did not provide SVG data for direct import "
-                        "preview."
-                    )
-                # The `scale` parameter is key to getting a sharp render from
-                # SVG data.
-                vips_image = pyvips.Image.new_from_buffer(
-                    payload.source.base_render_data, "", scale=4.0
-                )
-
-            if not vips_image:
-                raise ValueError(
-                    "Could not generate a base image for the preview."
-                )
-
-            # 3. Thumbnail the high-resolution base image for display
-            preview_vips = vips_image.thumbnail_image(
-                PREVIEW_RENDER_SIZE_PX,
-                height=PREVIEW_RENDER_SIZE_PX,
-                size="both",
-            )
-
-            if isinstance(spec, TraceSpec) and spec.invert:
-                preview_vips = preview_vips.flatten(
-                    background=[255, 255, 255]
-                ).invert()
-
-            png_bytes = preview_vips.pngsave_buffer()
-
-            self.editor.task_manager.schedule_on_main_thread(
-                self._update_ui_with_preview, (payload, png_bytes)
-            )
-
-        except Exception as e:
-            logger.error(
-                f"Failed to generate import preview: {e}", exc_info=True
-            )
-            self.editor.task_manager.schedule_on_main_thread(
-                self._update_ui_with_preview, None
-            )
-
-    def _update_ui_with_preview(
-        self, result: Optional[Tuple[Optional[ImportPayload], bytes]]
-    ):
+    def _update_ui_with_preview(self, result: Optional[PreviewResult]):
         """Updates the UI with the result of the preview task."""
-        if result is None:
-            self._preview_payload = None
-            self._background_pixbuf = None
-            logger.warning("Preview generation failed.")
-        else:
-            payload, image_bytes = result
-            self._preview_payload = payload
+        self._preview_result = result
+        self._background_pixbuf = None
+
+        if result and result.image_bytes:
             try:
-                if image_bytes:
-                    loader = GdkPixbuf.PixbufLoader.new()
-                    loader.write(image_bytes)
-                    loader.close()
-                    self._background_pixbuf = loader.get_pixbuf()
-                else:
-                    self._background_pixbuf = None
+                loader = GdkPixbuf.PixbufLoader.new()
+                loader.write(result.image_bytes)
+                loader.close()
+                self._background_pixbuf = loader.get_pixbuf()
             except Exception:
-                self._background_pixbuf = None
-                logger.error("Failed to create pixbuf from rendered PNG data.")
+                logger.error("Failed to create pixbuf from preview bytes.")
 
         self.preview_area.queue_draw()
         self.status_spinner.stop()
-        self.import_button.set_sensitive(self._preview_payload is not None)
+        self.import_button.set_sensitive(self._preview_result is not None)
 
-        # Show warning banner for SVG direct vector mode failures
+        # Handle warnings/errors
         is_direct_vector = self.is_svg and self.use_vectors_switch.get_active()
+        failed_generation = self._preview_result is None
         self.warning_banner.set_revealed(
-            is_direct_vector and self._preview_payload is None
+            is_direct_vector and failed_generation
         )
-
-        if self._preview_payload is None:
-            logger.warning("Preview generation resulted in no payload.")
 
     def _draw_checkerboard_background(
         self, ctx: cairo.Context, width: int, height: int
@@ -480,11 +363,8 @@ class ImportDialog(Adw.Window):
         tile_ctx.rectangle(0, CHECKER_SIZE, CHECKER_SIZE, CHECKER_SIZE)
         tile_ctx.fill()
 
-        # Create a pattern from the tile and set it to repeat
         pattern = cairo.SurfacePattern(tile_surface)
         pattern.set_extend(cairo.EXTEND_REPEAT)
-
-        # Use the pattern as the source for the main context and paint
         ctx.set_source(pattern)
         ctx.paint()
 
@@ -492,17 +372,9 @@ class ImportDialog(Adw.Window):
         self, area: Gtk.DrawingArea, ctx: cairo.Context, w, h
     ):
         """Draws the background image and vectors onto the preview area."""
-        # Use the helper to draw a checkerboard over the entire area
         self._draw_checkerboard_background(ctx, w, h)
 
-        if not self._preview_payload or not self._preview_payload.items:
-            return
-
-        items = self._preview_payload.items
-        if not items:
-            return
-
-        if not self._background_pixbuf:
+        if not self._preview_result or not self._background_pixbuf:
             return
 
         aspect_w = self._background_pixbuf.get_width()
@@ -511,7 +383,7 @@ class ImportDialog(Adw.Window):
         if aspect_w <= 0 or aspect_h <= 0:
             return
 
-        # Calculate drawing area based on the background image's aspect ratio
+        # Calculate drawing area
         margin = 20
         view_w, view_h = w - 2 * margin, h - 2 * margin
         if view_w <= 0 or view_h <= 0:
@@ -523,20 +395,26 @@ class ImportDialog(Adw.Window):
         draw_x = (w - draw_w) / 2
         draw_y = (h - draw_h) / 2
 
+        # 1. Draw Background Image
         ctx.save()
         ctx.translate(draw_x, draw_y)
         ctx.scale(draw_w / aspect_w, draw_h / aspect_h)
-
-        # Step 1: Draw the background image.
         Gdk.cairo_set_source_pixbuf(ctx, self._background_pixbuf, 0, 0)
         ctx.paint()
         ctx.restore()
 
-        # --- Draw Vector Overlay ---
+        # 2. Draw Vectors
+        # The backend returns a WorkPiece with normalized geometry (0-1).
+        # We draw it over the full drawing area.
+        payload = self._preview_result.payload
+        if not payload or not payload.items:
+            return
+
         ctx.save()
         ctx.translate(draw_x, draw_y)
 
-        # Set up the context to draw the Y-up normalized geometry
+        # Scale to the drawing area. Y is flipped to match standard coord
+        # system. Geometry is Y-up, Cairo is Y-down.
         ctx.scale(draw_w, draw_h)
         ctx.translate(0, 1)
         ctx.scale(1, -1)
@@ -555,7 +433,7 @@ class ImportDialog(Adw.Window):
                 for child in item.children:
                     draw_item(child)
 
-        for item in items:
+        for item in payload.items:
             draw_item(item)
 
         ctx.restore()
