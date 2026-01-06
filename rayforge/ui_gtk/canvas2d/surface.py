@@ -157,13 +157,16 @@ class WorkSurface(WorldSurface):
             width, height = self.machine.dimensions
             origin = self.machine.origin
 
+            # We use abs() here because some machine configurations (e.g. CNCs)
+            # report negative coordinates for positions within the workspace
+            # relative to the homing switch.
             if origin == Origin.TOP_LEFT:
-                y_mm = height - y_mm
+                y_mm = height - abs(y_mm)
             elif origin == Origin.TOP_RIGHT:
-                x_mm = width - x_mm
-                y_mm = height - y_mm
+                x_mm = width - abs(x_mm)
+                y_mm = height - abs(y_mm)
             elif origin == Origin.BOTTOM_RIGHT:
-                x_mm = width - x_mm
+                x_mm = width - abs(x_mm)
 
         # The dot is a child of self.root, so its coordinates are in the
         # world (mm) space. We want to center it on the given mm coords.
