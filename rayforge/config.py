@@ -14,6 +14,7 @@ MACHINE_DIR.mkdir(parents=True, exist_ok=True)
 DIALECT_DIR = CONFIG_DIR / "dialects"
 DIALECT_DIR.mkdir(parents=True, exist_ok=True)
 CONFIG_FILE = CONFIG_DIR / "config.yaml"
+PACKAGES_DIR = CONFIG_DIR / "packages"
 
 # State files (like logs)
 LOG_DIR = Path(user_log_dir("rayforge"))

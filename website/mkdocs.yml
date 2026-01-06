@@ -93,6 +93,8 @@ nav:
           - Pipeline: docs/developer/pipeline.md
           - Task Manager: docs/developer/tasker.md
           - Drivers: docs/developer/driver.md
+      - Plugins:
+          - Plugin Developer Guide: docs/developer/plugin-docs.md
   - Contributing:
       - contributing/index.md
   - Discord:
