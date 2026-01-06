@@ -3,10 +3,10 @@ from blinker import Signal
 from typing import List, cast
 from ...camera.models.camera import Camera
 from ...camera.controller import CameraController
+from ..icons import get_icon
+from ..shared.preferences_group import PreferencesGroupWithButton
 from .properties_widget import CameraProperties
 from .selection_dialog import CameraSelectionDialog
-from ..icons import get_icon
-from ..settings.preferences_group import PreferencesGroupWithButton
 
 
 class CameraRow(Gtk.Box):

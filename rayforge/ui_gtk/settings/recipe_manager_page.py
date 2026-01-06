@@ -1,11 +1,11 @@
 import logging
 from gi.repository import Adw
-from .recipe_list import RecipeListWidget
+from ..doceditor.recipe_list import RecipeListWidget
 
 logger = logging.getLogger(__name__)
 
 
-class RecipeManager(Adw.PreferencesPage):
+class RecipeManagerPage(Adw.PreferencesPage):
     """
     Widget for managing recipes.
     """

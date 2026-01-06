@@ -2,8 +2,8 @@ from typing import cast
 from gi.repository import Gtk, Adw
 from ...machine.models.laser import Laser
 from ...machine.models.machine import Machine
-from ..settings.preferences_group import PreferencesGroupWithButton
 from ..shared.adwfix import get_spinrow_int, get_spinrow_float
+from ..shared.preferences_group import PreferencesGroupWithButton
 from ..icons import get_icon
 
 

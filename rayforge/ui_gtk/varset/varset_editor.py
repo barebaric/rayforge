@@ -26,7 +26,7 @@ from ...core.varset import (
     TextAreaVar,
 )
 from ..icons import get_icon
-from ..settings.preferences_group import PreferencesGroupWithButton
+from ..shared.preferences_group import PreferencesGroupWithButton
 from .var_row_factory import VarRowFactory, NULL_CHOICE_LABEL
 
 if TYPE_CHECKING:

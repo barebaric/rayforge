@@ -8,8 +8,8 @@ from blinker import Signal
 from ...context import get_context
 from ...core.material import Material, MaterialAppearance
 from ...core.material_library import MaterialLibrary
-from ..settings.preferences_group import PreferencesGroupWithButton
 from ..icons import get_icon
+from ..shared.preferences_group import PreferencesGroupWithButton
 from .add_material_dialog import AddMaterialDialog
 
 logger = logging.getLogger(__name__)

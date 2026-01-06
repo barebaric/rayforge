@@ -4,13 +4,13 @@ import logging
 from typing import Optional
 from gi.repository import Adw
 from ...core.material_library import MaterialLibrary
-from .material_library_list import LibraryListWidget
-from .material_list import MaterialListWidget
+from ..doceditor.material_library_list import LibraryListWidget
+from ..doceditor.material_list import MaterialListWidget
 
 logger = logging.getLogger(__name__)
 
 
-class MaterialManager(Adw.PreferencesPage):
+class MaterialManagerPage(Adw.PreferencesPage):
     """
     Widget for managing materials and libraries.
     """
