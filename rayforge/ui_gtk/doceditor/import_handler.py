@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Optional
 from gi.repository import Gio, Adw
 from ...core.vectorization_spec import VectorizationSpec, TraceSpec
-from ...image import bitmap_mime_types
+from ...doceditor.file_cmd import ImportAction
 from . import file_dialogs
 from .import_dialog import ImportDialog
 
@@ -80,6 +80,8 @@ def _on_file_selected(dialog, result, user_data):
             return
 
         file_path = Path(file.get_path())
+
+        # Get MIME type from Gio for accuracy
         file_info = file.query_info(
             Gio.FILE_ATTRIBUTE_STANDARD_CONTENT_TYPE,
             Gio.FileQueryInfoFlags.NONE,
@@ -87,21 +89,19 @@ def _on_file_selected(dialog, result, user_data):
         )
         mime_type = file_info.get_content_type()
 
-        is_raster_like = (
-            mime_type in bitmap_mime_types
-            or mime_type == "application/pdf"
-            or mime_type == "image/svg+xml"
-        )
+        # Ask the backend what to do with this file
+        action = editor.file.analyze_import_target(file_path, mime_type)
 
-        if is_raster_like:
-            # For SVGs, PDFs, and standard raster types, go to the unified
-            # interactive dialog.
+        if action == ImportAction.INTERACTIVE_CONFIG:
             _start_interactive_import(win, editor, file_path, mime_type)
-        else:
-            # For other vector types (dxf, etc.) or unknown types, import
-            # directly without any dialogs.
+        elif action == ImportAction.DIRECT_LOAD:
             editor.file.load_file_from_path(file_path, mime_type, None)
             win.item_revealer.set_reveal_child(False)
+        else:  # UNSUPPORTED
+            logger.warning(
+                f"Unsupported file type: {mime_type} for {file_path}"
+            )
+            # Optionally show an error dialog here
 
     except Exception:
         logger.exception("Error opening file")
@@ -112,7 +112,10 @@ def start_interactive_import(win: "MainWindow", editor: "DocEditor"):
     Initiates the full interactive file import process, starting with a
     file chooser dialog.
     """
-    file_dialogs.show_import_dialog(win, _on_file_selected, (win, editor))
+    # Now passing editor to get supported file types
+    file_dialogs.show_import_dialog(
+        win, editor, _on_file_selected, (win, editor)
+    )
 
 
 def import_file_at_position(
@@ -133,26 +136,20 @@ def import_file_at_position(
         position_mm: Optional (x, y) tuple in world coordinates (mm)
             to center the imported item
     """
-    is_raster_like = (
-        mime_type in bitmap_mime_types
-        or mime_type == "application/pdf"
-        or mime_type == "image/svg+xml"
-    )
+    # Ask backend for routing decision
+    action = editor.file.analyze_import_target(file_path, mime_type)
 
-    if is_raster_like:
-        # For SVGs, PDFs, and standard raster types, go to the unified
-        # interactive dialog.
+    if action == ImportAction.INTERACTIVE_CONFIG:
         _start_interactive_import(
             win, editor, file_path, mime_type, position_mm
         )
-    else:
-        # Direct import for other types
+    elif action == ImportAction.DIRECT_LOAD:
         editor.file.load_file_from_path(
             file_path, mime_type, None, position_mm
         )
-
-    # Hide properties widget in case something was selected before import
-    win.item_revealer.set_reveal_child(False)
+        win.item_revealer.set_reveal_child(False)
+    else:
+        logger.warning(f"Unsupported file type: {mime_type} for {file_path}")
 
 
 def _on_batch_trace_response(
@@ -167,13 +164,15 @@ def _on_batch_trace_response(
     Handles the user's choice from the batch tracing configuration dialog.
     """
     if response_id == "import":
-        # User confirmed - import all files with default tracing
+        # User confirmed - execute batch import via backend
+        # We extract just the paths for the backend method
+        paths = [f[0] for f in file_list]
         vectorization_spec = TraceSpec()
-        for file_path, mime_type in file_list:
-            editor.file.load_file_from_path(
-                file_path, mime_type, vectorization_spec, position_mm
-            )
-        logger.info(f"Batch imported {len(file_list)} files")
+
+        editor.file.execute_batch_import(
+            paths, vectorization_spec, position_mm
+        )
+        logger.info(f"Batch import started for {len(file_list)} files")
     # else: user cancelled, do nothing
 
 
@@ -196,6 +195,26 @@ def import_multiple_files_at_position(
     if not file_list:
         return
 
+    # Check if any file in the list actually requires interactive config
+    needs_config = False
+    for path, mime in file_list:
+        if (
+            editor.file.analyze_import_target(path, mime)
+            == ImportAction.INTERACTIVE_CONFIG
+        ):
+            needs_config = True
+            break
+
+    if not needs_config:
+        # If no files need config, just load them all directly
+        paths = [f[0] for f in file_list]
+        vectorization_spec = TraceSpec()
+        editor.file.execute_batch_import(
+            paths, vectorization_spec, position_mm
+        )
+        return
+
+    # If configuration is needed, show the batch dialog
     file_count = len(file_list)
     file_names = ", ".join(f.name for f, _ in file_list[:3])
     if file_count > 3:
