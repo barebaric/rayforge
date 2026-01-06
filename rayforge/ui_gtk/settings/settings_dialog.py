@@ -1,9 +1,9 @@
 from gi.repository import Adw, Gdk, Gtk
-from .general_preferences_page import GeneralPreferencesPage
-from ..machine.settings_page import MachineSettingsPage
-from ..doceditor.material_manager import MaterialManager
-from ..doceditor.recipe_manager import RecipeManager
 from ..icons import get_icon
+from .general_preferences_page import GeneralPreferencesPage
+from .machine_settings_page import MachineSettingsPage
+from .material_manager_page import MaterialManagerPage
+from .recipe_manager_page import RecipeManagerPage
 
 
 class SettingsWindow(Adw.Window):
@@ -48,8 +48,8 @@ class SettingsWindow(Adw.Window):
         # Populate both the sidebar and the content stack
         self._add_page(GeneralPreferencesPage)
         self._add_page(MachineSettingsPage)
-        self._add_page(MaterialManager)
-        self._add_page(RecipeManager)
+        self._add_page(MaterialManagerPage)
+        self._add_page(RecipeManagerPage)
 
         # Create the content's NavigationPage wrapper using the first page's
         # title

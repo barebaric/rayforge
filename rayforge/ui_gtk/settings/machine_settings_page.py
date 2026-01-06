@@ -3,10 +3,10 @@ from gi.repository import Adw, Gtk
 from ...context import get_context
 from ...machine.models.machine import Machine
 from ...machine.models.profile import MachineProfile
-from .settings_dialog import MachineSettingsDialog
-from .profile_selector import MachineProfileSelectorDialog
-from ..shared.round_button import RoundButton
 from ..icons import get_icon
+from ..machine.profile_selector import MachineProfileSelectorDialog
+from ..machine.settings_dialog import MachineSettingsDialog
+from ..shared.round_button import RoundButton
 
 
 class MachineSettingsPage(Adw.PreferencesPage):

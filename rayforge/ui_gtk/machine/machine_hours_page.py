@@ -1,9 +1,9 @@
 import logging
 from typing import cast
 from gi.repository import Gtk, Adw
-from ..settings.preferences_group import PreferencesGroupWithButton
 from ...machine.models.machine import Machine
 from ...machine.models.machine_hours import ResettableCounter
+from ..shared.preferences_group import PreferencesGroupWithButton
 from ..icons import get_icon
 
 
