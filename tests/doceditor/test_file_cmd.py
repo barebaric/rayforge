@@ -8,7 +8,7 @@ from rayforge.core.layer import Layer
 from rayforge.core.source_asset import SourceAsset
 from rayforge.core.vectorization_spec import TraceSpec
 from rayforge.doceditor.editor import DocEditor
-from rayforge.doceditor.file_cmd import FileCmd, PreviewResult
+from rayforge.doceditor.file_cmd import FileCmd, PreviewResult, ImportAction
 from rayforge.image import ImportPayload
 from rayforge.image.svg.renderer import SVG_RENDERER
 from rayforge.shared.tasker.manager import TaskManager
@@ -508,3 +508,101 @@ class TestExportGcodeToPath:
             file_cmd.export_gcode_to_path(export_path)
 
             assert not export_path.exists()
+
+
+class TestGetSupportedImportFilters:
+    """Tests for get_supported_import_filters method."""
+
+    def test_get_supported_import_filters(self, file_cmd):
+        """Test retrieving supported import filters."""
+        filters = file_cmd.get_supported_import_filters()
+        assert isinstance(filters, list)
+        assert len(filters) > 0
+
+        # Verify structure of first filter
+        first = filters[0]
+        assert "label" in first
+        assert "extensions" in first
+        assert "mime_types" in first
+
+
+class TestAnalyzeImportTarget:
+    """Tests for analyze_import_target method."""
+
+    def test_analyze_svg(self, file_cmd):
+        """Test that SVG files trigger interactive config."""
+        path = Path("test.svg")
+        # Ensure we hit the specific interactive logic
+        with patch(
+            "rayforge.doceditor.file_cmd.importer_by_mime_type",
+            {"image/svg+xml": MagicMock(is_bitmap=False)},
+        ):
+            action = file_cmd.analyze_import_target(path, "image/svg+xml")
+            assert action == ImportAction.INTERACTIVE_CONFIG
+
+    def test_analyze_png(self, file_cmd):
+        """Test that PNG files trigger interactive config."""
+        path = Path("test.png")
+        # Mock PNG importer with is_bitmap=True
+        mock_importer = MagicMock()
+        mock_importer.is_bitmap = True
+        with patch(
+            "rayforge.doceditor.file_cmd.importer_by_mime_type",
+            {"image/png": mock_importer},
+        ):
+            action = file_cmd.analyze_import_target(path, "image/png")
+            assert action == ImportAction.INTERACTIVE_CONFIG
+
+    def test_analyze_dxf(self, file_cmd):
+        """Test that DXF files trigger direct load."""
+        path = Path("test.dxf")
+        mock_importer = MagicMock()
+        mock_importer.is_bitmap = False
+
+        # Test with explicit mime
+        with patch(
+            "rayforge.doceditor.file_cmd.importer_by_mime_type",
+            {"application/dxf": mock_importer},
+        ):
+            action = file_cmd.analyze_import_target(path, "application/dxf")
+            assert action == ImportAction.DIRECT_LOAD
+
+        # Test extension fallback
+        with patch(
+            "rayforge.doceditor.file_cmd.importer_by_extension",
+            {".dxf": mock_importer},
+        ):
+            action = file_cmd.analyze_import_target(path, None)
+            assert action == ImportAction.DIRECT_LOAD
+
+    def test_analyze_unsupported(self, file_cmd):
+        """Test that unknown files return unsupported."""
+        path = Path("test.exe")
+        # Ensure no importers match
+        with patch("rayforge.doceditor.file_cmd.importer_by_mime_type", {}):
+            with patch(
+                "rayforge.doceditor.file_cmd.importer_by_extension", {}
+            ):
+                action = file_cmd.analyze_import_target(
+                    path, "application/octet-stream"
+                )
+                assert action == ImportAction.UNSUPPORTED
+
+
+class TestExecuteBatchImport:
+    """Tests for execute_batch_import method."""
+
+    def test_execute_batch_import(self, file_cmd):
+        """Test that batch import spawns individual load tasks."""
+        files = [Path("test1.png"), Path("test2.jpg")]
+        spec = TraceSpec()
+        pos = (10.0, 10.0)
+
+        with patch.object(file_cmd, "load_file_from_path") as mock_load:
+            file_cmd.execute_batch_import(files, spec, pos)
+
+            assert mock_load.call_count == 2
+
+            # Verify calls
+            mock_load.assert_any_call(files[0], "image/png", spec, pos)
+            mock_load.assert_any_call(files[1], "image/jpeg", spec, pos)

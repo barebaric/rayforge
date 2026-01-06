@@ -1,23 +1,27 @@
 import logging
 from typing import Callable, TYPE_CHECKING, Any, Optional
 from gi.repository import Gtk, Gio
-from ...image import importers
 
 if TYPE_CHECKING:
     from ...core.workpiece import WorkPiece
+    from ...doceditor.editor import DocEditor
     from ..mainwindow import MainWindow
 
 logger = logging.getLogger(__name__)
 
 
 def show_import_dialog(
-    win: "MainWindow", callback: Callable, user_data: Any = None
+    win: "MainWindow",
+    editor: "DocEditor",
+    callback: Callable,
+    user_data: Any = None,
 ):
     """
     Shows the file chooser dialog for importing files.
 
     Args:
         win: The parent Gtk.Window.
+        editor: The DocEditor instance to retrieve supported file types.
         callback: The function to call with (dialog, result, user_data) upon
                   response.
         user_data: Custom data to pass to the callback.
@@ -28,20 +32,28 @@ def show_import_dialog(
     filter_list = Gio.ListStore.new(Gtk.FileFilter)
     all_supported = Gtk.FileFilter()
     all_supported.set_name(_("All supported"))
-    for importer_class in importers:
+
+    # Get supported filters from the backend
+    supported_types = editor.file.get_supported_import_filters()
+
+    for file_type in supported_types:
         file_filter = Gtk.FileFilter()
-        if importer_class.label:
-            file_filter.set_name(_(importer_class.label))
-        if importer_class.extensions:
-            for ext in importer_class.extensions:
+        if file_type["label"]:
+            file_filter.set_name(_(file_type["label"]))
+
+        if file_type["extensions"]:
+            for ext in file_type["extensions"]:
                 pattern = f"*{ext}"
                 file_filter.add_pattern(pattern)
                 all_supported.add_pattern(pattern)
-        if importer_class.mime_types:
-            for mime_type in importer_class.mime_types:
+
+        if file_type["mime_types"]:
+            for mime_type in file_type["mime_types"]:
                 file_filter.add_mime_type(mime_type)
                 all_supported.add_mime_type(mime_type)
+
         filter_list.append(file_filter)
+
     filter_list.append(all_supported)
 
     dialog.set_filters(filter_list)

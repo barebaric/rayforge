@@ -1,7 +1,9 @@
 import asyncio
 import logging
 import warnings
+import mimetypes
 from dataclasses import dataclass, field
+from enum import Enum, auto
 from pathlib import Path
 from typing import (
     TYPE_CHECKING,
@@ -30,7 +32,15 @@ from ..core.vectorization_spec import (
     PassthroughSpec,
 )
 from ..core.workpiece import WorkPiece
-from ..image import import_file, import_file_from_bytes, ImportPayload
+from ..image import (
+    import_file,
+    import_file_from_bytes,
+    ImportPayload,
+    importers,
+    bitmap_mime_types,
+    importer_by_mime_type,
+    importer_by_extension,
+)
 from ..pipeline.artifact import JobArtifactHandle, JobArtifact
 from .layout.align import PositionAtStrategy
 
@@ -56,6 +66,14 @@ class PreviewResult:
     warnings: List[str] = field(default_factory=list)
 
 
+class ImportAction(Enum):
+    """Determines the workflow required to import a specific file."""
+
+    DIRECT_LOAD = auto()
+    INTERACTIVE_CONFIG = auto()
+    UNSUPPORTED = auto()
+
+
 class FileCmd:
     """Handles file import and export operations."""
 
@@ -66,6 +84,59 @@ class FileCmd:
     ):
         self._editor = editor
         self._task_manager = task_manager
+
+    def get_supported_import_filters(self) -> List[Dict[str, Any]]:
+        """
+        Returns a list of dictionaries describing supported file types
+        for UI dialogs.
+        Each dict has 'label', 'extensions', and 'mime_types'.
+        """
+        filters = []
+        for imp in importers:
+            filters.append(
+                {
+                    "label": imp.label,
+                    "extensions": imp.extensions,
+                    "mime_types": imp.mime_types,
+                }
+            )
+        return filters
+
+    def analyze_import_target(
+        self, file_path: Path, mime_type: Optional[str] = None
+    ) -> ImportAction:
+        """
+        Analyzes a file path (and optional mime type) to determine how it
+        should be imported.
+        """
+        if not mime_type:
+            mime_type, _ = mimetypes.guess_type(file_path)
+
+        # 1. Check if we have an importer for this file
+        importer_cls = None
+        if mime_type:
+            importer_cls = importer_by_mime_type.get(mime_type)
+
+        if not importer_cls and file_path.suffix:
+            importer_cls = importer_by_extension.get(file_path.suffix.lower())
+
+        if not importer_cls:
+            return ImportAction.UNSUPPORTED
+
+        # 2. Determine if it requires configuration (Interactive) or can load
+        # directly. Raster images, SVGs, and PDFs usually require configuration
+        # (tracing, layers, cropping)
+        is_raster_like = (
+            (mime_type and mime_type in bitmap_mime_types)
+            or mime_type == "application/pdf"
+            or mime_type == "image/svg+xml"
+            or importer_cls.is_bitmap  # Fallback check on the class property
+        )
+
+        if is_raster_like:
+            return ImportAction.INTERACTIVE_CONFIG
+
+        return ImportAction.DIRECT_LOAD
 
     def scan_import_file(
         self, file_bytes: bytes, mime_type: str
@@ -420,6 +491,22 @@ class FileCmd:
             position_mm,
             key=f"import-{filename}",
         )
+
+    def execute_batch_import(
+        self,
+        files: List[Path],
+        spec: VectorizationSpec,
+        pos: Optional[Tuple[float, float]],
+    ):
+        """
+        Imports multiple files using the same vectorization settings.
+        This spawns individual import tasks for each file.
+        """
+        for file_path in files:
+            # We assume files are valid if passed here, or guess mime type
+            # individually
+            mime_type, _ = mimetypes.guess_type(file_path)
+            self.load_file_from_path(file_path, mime_type, spec, pos)
 
     def _calculate_items_bbox(
         self,
