@@ -29,6 +29,43 @@ def sketch_with_corner():
     return s, corner_pid, line1_id, line2_id
 
 
+def test_chamfer_calculate_geometry(sketch_with_corner):
+    """Test the static geometry calculation for a valid chamfer."""
+    sketch, corner_pid, line1_id, line2_id = sketch_with_corner
+    result = ChamferCommand.calculate_geometry(
+        sketch.registry,
+        corner_pid,
+        line1_id,
+        line2_id,
+        DEFAULT_CHAMFER_DISTANCE,
+    )
+    assert result is not None
+    assert len(result["points"]) == 2
+    assert len(result["entities"]) == 3
+    assert len(result["constraints"]) == 3
+    assert len(result["removed_entities"]) == 2
+
+    # Check that new points are in correct positions
+    p1, p2 = result["points"]
+    assert p1.x == pytest.approx(-10.0)
+    assert p1.y == pytest.approx(0.0)
+    assert p2.x == pytest.approx(0.0)
+    assert p2.y == pytest.approx(10.0)
+
+
+def test_chamfer_calculate_geometry_too_short(sketch_with_corner):
+    """Test that calculation fails if lines are shorter than chamfer dist."""
+    sketch, corner_pid, line1_id, line2_id = sketch_with_corner
+    result = ChamferCommand.calculate_geometry(
+        sketch.registry,
+        corner_pid,
+        line1_id,
+        line2_id,
+        200.0,  # Too large
+    )
+    assert result is None
+
+
 def test_chamfer_command_execute(sketch_with_corner):
     """Test the direct execution of ChamferCommand."""
     sketch, corner_pid, line1_id, line2_id = sketch_with_corner
@@ -50,8 +87,9 @@ def test_chamfer_command_execute(sketch_with_corner):
     assert len(sketch.constraints) == initial_constraints_count + 3
 
     # Verify new line and constraints
-    assert len(command.added_entities) > 0
-    chamfer_line = command.added_entities[0]
+    assert command.add_cmd is not None
+    assert len(command.add_cmd.entities) == 3
+    chamfer_line = command.add_cmd.entities[0]
     new_line = sketch.registry.get_entity(chamfer_line.id)
     assert new_line is not None
     assert isinstance(new_line, Line)

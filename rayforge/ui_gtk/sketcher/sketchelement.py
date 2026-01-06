@@ -21,13 +21,10 @@ from ...core.sketcher.constraints import (
     DistanceConstraint,
     HorizontalConstraint,
     VerticalConstraint,
-    EqualDistanceConstraint,
     CoincidentConstraint,
     PointOnLineConstraint,
     EqualLengthConstraint,
     SymmetryConstraint,
-    Constraint,
-    CollinearConstraint,
 )
 from ...core.sketcher.entities import Line, Arc, Circle, Entity, Point
 from ...core.sketcher.selection import SketchSelection
@@ -407,176 +404,10 @@ class SketchElement(CanvasElement):
         )
         self.execute_command(cmd)
 
-    def _get_items_to_delete(
-        self,
-    ) -> Tuple[List[Point], List[Entity], List[Constraint]]:
-        """
-        Calculates the full set of items to be deleted based on the current
-        selection, including dependent items.
-        """
-        to_delete_constraints: List[Constraint] = []
-        to_delete_entity_ids = set(self.selection.entity_ids)
-        to_delete_point_ids = set(self.selection.point_ids)
-
-        # 1. Selected Constraints
-        if self.selection.constraint_idx is not None:
-            if self.sketch.constraints and (
-                0
-                <= self.selection.constraint_idx
-                < len(self.sketch.constraints)
-            ):
-                to_delete_constraints.append(
-                    self.sketch.constraints[self.selection.constraint_idx]
-                )
-
-        registry_entities = self.sketch.registry.entities or []
-        entity_map = {e.id: e for e in registry_entities}
-
-        # 2. Cascading: If points are deleted, find entities that use them
-        for e in registry_entities:
-            if e.id in to_delete_entity_ids:
-                continue
-
-            p_ids: List[int] = []
-            if isinstance(e, Line):
-                p_ids = [e.p1_idx, e.p2_idx]
-            elif isinstance(e, Arc):
-                p_ids = [e.start_idx, e.end_idx, e.center_idx]
-            elif isinstance(e, Circle):
-                p_ids = [e.center_idx, e.radius_pt_idx]
-
-            # If any control point is marked for deletion, the entity must go
-            if any(pid in to_delete_point_ids for pid in p_ids):
-                to_delete_entity_ids.add(e.id)
-
-        # 2.5. Cleanup Implicit Constraints for Deleted Entities (Arc geometry)
-        # Arcs rely on EqualDistanceConstraint(c, s, c, e) not linked by ID.
-        current_constraints = self.sketch.constraints or []
-        for eid in to_delete_entity_ids:
-            e = entity_map.get(eid)
-            if isinstance(e, Arc):
-                c, s, end = e.center_idx, e.start_idx, e.end_idx
-
-                # Find constraints matching this geometry
-                for constr in current_constraints:
-                    if isinstance(constr, EqualDistanceConstraint):
-                        # Check if constraint matches dist(c,s) == dist(c,end)
-                        set1 = {constr.p1, constr.p2}
-                        set2 = {constr.p3, constr.p4}
-
-                        target1 = {c, s}
-                        target2 = {c, end}
-
-                        # Match either order
-                        if (set1 == target1 and set2 == target2) or (
-                            set1 == target2 and set2 == target1
-                        ):
-                            if constr not in to_delete_constraints:
-                                to_delete_constraints.append(constr)
-
-        # 3. Orphan Points: Find points in deleted entities not used by
-        # remaining entities
-        if to_delete_entity_ids:
-            used_points_by_remaining = set()
-            points_of_deleted_entities = set()
-
-            for e in registry_entities:
-                p_ids = []
-                if isinstance(e, Line):
-                    p_ids = [e.p1_idx, e.p2_idx]
-                elif isinstance(e, Arc):
-                    p_ids = [e.start_idx, e.end_idx, e.center_idx]
-                elif isinstance(e, Circle):
-                    p_ids = [e.center_idx, e.radius_pt_idx]
-
-                if e.id in to_delete_entity_ids:
-                    points_of_deleted_entities.update(p_ids)
-                else:
-                    used_points_by_remaining.update(p_ids)
-
-            orphans = points_of_deleted_entities - used_points_by_remaining
-            to_delete_point_ids.update(orphans)
-
-        # 4. Cleanup Constraints (Dependencies)
-        for constr in current_constraints:
-            if constr in to_delete_constraints:
-                continue
-
-            should_remove = False
-
-            # Check Point Dependencies
-            points_in_constraint = []
-            if isinstance(
-                constr,
-                (
-                    DistanceConstraint,
-                    HorizontalConstraint,
-                    VerticalConstraint,
-                    CoincidentConstraint,
-                ),
-            ):
-                points_in_constraint = [constr.p1, constr.p2]
-            elif isinstance(constr, EqualDistanceConstraint):
-                points_in_constraint = [
-                    constr.p1,
-                    constr.p2,
-                    constr.p3,
-                    constr.p4,
-                ]
-            elif isinstance(constr, PointOnLineConstraint):
-                points_in_constraint = [constr.point_id]
-            elif isinstance(constr, SymmetryConstraint):
-                points_in_constraint = [constr.p1, constr.p2]
-                if constr.center is not None:
-                    points_in_constraint.append(constr.center)
-            elif isinstance(constr, CollinearConstraint):
-                points_in_constraint = [constr.p1, constr.p2, constr.p3]
-
-            if any(p in to_delete_point_ids for p in points_in_constraint):
-                should_remove = True
-
-            # Check Entity Dependencies
-            if not should_remove:
-                entities_in_constraint = []
-                if isinstance(constr, PerpendicularConstraint):
-                    entities_in_constraint = [constr.e1_id, constr.e2_id]
-                elif isinstance(constr, TangentConstraint):
-                    entities_in_constraint = [constr.line_id, constr.shape_id]
-                elif isinstance(constr, RadiusConstraint):
-                    entities_in_constraint = [constr.entity_id]
-                elif isinstance(constr, DiameterConstraint):
-                    entities_in_constraint = [constr.circle_id]
-                elif isinstance(constr, PointOnLineConstraint):
-                    entities_in_constraint = [constr.shape_id]
-                elif isinstance(constr, EqualLengthConstraint):
-                    entities_in_constraint = constr.entity_ids
-                elif isinstance(constr, SymmetryConstraint):
-                    if constr.axis is not None:
-                        entities_in_constraint = [constr.axis]
-
-                if any(
-                    e in to_delete_entity_ids for e in entities_in_constraint
-                ):
-                    should_remove = True
-
-            if should_remove and constr not in to_delete_constraints:
-                to_delete_constraints.append(constr)
-
-        # 5. Get actual objects from IDs
-        final_points = [
-            p
-            for p in self.sketch.registry.points
-            if p.id in to_delete_point_ids and not p.fixed
-        ]
-        final_entities = [
-            e for e in registry_entities if e.id in to_delete_entity_ids
-        ]
-
-        return final_points, final_entities, to_delete_constraints
-
     def delete_selection(self) -> bool:
         """
-        Robust deletion logic.
+        Robust deletion logic. Delegates dependency calculation to the
+        RemoveItemsCommand.
         """
         if not self.editor:
             return False
@@ -594,7 +425,9 @@ class SketchElement(CanvasElement):
             points_to_del,
             entities_to_del,
             constraints_to_del,
-        ) = self._get_items_to_delete()
+        ) = RemoveItemsCommand.calculate_dependencies(
+            self.sketch, self.selection
+        )
 
         did_work = bool(points_to_del or entities_to_del or constraints_to_del)
         if did_work:
@@ -947,41 +780,29 @@ class SketchElement(CanvasElement):
             return
 
         lines_at_junction = self.get_lines_at_point(corner_pid)
-
         if len(lines_at_junction) != 2:
             return
         line1, line2 = lines_at_junction
 
         # Determine a sensible default chamfer size
-        corner_pt = self._get_point(corner_pid)
-        if not corner_pt:
-            return
-
-        other1_pid = (
-            line1.p2_idx if line1.p1_idx == corner_pid else line1.p1_idx
+        geom = ChamferCommand.calculate_geometry(
+            self.sketch.registry,
+            corner_pid,
+            line1.id,
+            line2.id,
+            DEFAULT_DISTANCE,
         )
-        other1_pt = self._get_point(other1_pid)
-        if not other1_pt:
-            return
 
-        len1 = math.hypot(other1_pt.x - corner_pt.x, other1_pt.y - corner_pt.y)
-
-        other2_pid = (
-            line2.p2_idx if line2.p1_idx == corner_pid else line2.p1_idx
-        )
-        other2_pt = self._get_point(other2_pid)
-        if not other2_pt:
-            return
-
-        len2 = math.hypot(other2_pt.x - corner_pt.x, other2_pt.y - corner_pt.y)
-
-        chamfer_dist = min(DEFAULT_DISTANCE, len1 / 2.0, len2 / 2.0)
-        if chamfer_dist < 1e-6:
+        if not geom:
             logger.warning("Lines are too short to create a chamfer.")
             return
 
         cmd = ChamferCommand(
-            self.sketch, corner_pid, line1.id, line2.id, chamfer_dist
+            self.sketch,
+            corner_pid,
+            line1.id,
+            line2.id,
+            self.sketch.params.evaluate(DEFAULT_DISTANCE),
         )
         self.execute_command(cmd)
 
@@ -997,57 +818,30 @@ class SketchElement(CanvasElement):
             return
 
         lines_at_junction = self.get_lines_at_point(corner_pid)
-
         if len(lines_at_junction) != 2:
             return
         line1, line2 = lines_at_junction
 
-        # Determine a sensible default fillet radius
-        corner_pt = self._get_point(corner_pid)
-        if not corner_pt:
-            return
-
-        other1_pid = (
-            line1.p2_idx if line1.p1_idx == corner_pid else line1.p1_idx
+        # Determine a sensible default fillet radius from backend calculation
+        geom = FilletCommand.calculate_geometry(
+            self.sketch.registry,
+            corner_pid,
+            line1.id,
+            line2.id,
+            DEFAULT_RADIUS,
         )
-        other1_pt = self._get_point(other1_pid)
-        if not other1_pt:
-            return
-
-        len1 = math.hypot(other1_pt.x - corner_pt.x, other1_pt.y - corner_pt.y)
-
-        other2_pid = (
-            line2.p2_idx if line2.p1_idx == corner_pid else line2.p1_idx
-        )
-        other2_pt = self._get_point(other2_pid)
-        if not other2_pt:
-            return
-
-        len2 = math.hypot(other2_pt.x - corner_pt.x, other2_pt.y - corner_pt.y)
-
-        # Calculate angle between lines to determine max radius
-        v1 = (other1_pt.x - corner_pt.x, other1_pt.y - corner_pt.y)
-        v2 = (other2_pt.x - corner_pt.x, other2_pt.y - corner_pt.y)
-        len_v1 = math.hypot(v1[0], v1[1])
-        len_v2 = math.hypot(v2[0], v2[1])
-        u1 = (v1[0] / len_v1, v1[1] / len_v1)
-        u2 = (v2[0] / len_v2, v2[1] / len_v2)
-        dot = u1[0] * u2[0] + u1[1] * u2[1]
-        angle = math.acos(max(-1.0, min(1.0, dot)))
-        half_angle = angle / 2.0
-
-        # Max radius is limited by the shorter line and the angle
-        max_radius = min(len1, len2) * math.sin(half_angle)
-        fillet_radius = min(DEFAULT_RADIUS, max_radius)
-
-        if fillet_radius < 1e-6:
+        if not geom:
             logger.warning(
                 "Lines are too short or angle too acute for fillet."
             )
             return
 
         cmd = FilletCommand(
-            self.sketch, corner_pid, line1.id, line2.id, fillet_radius
+            self.sketch,
+            corner_pid,
+            line1.id,
+            line2.id,
+            self.sketch.params.evaluate(DEFAULT_RADIUS),
         )
         self.execute_command(cmd)
 

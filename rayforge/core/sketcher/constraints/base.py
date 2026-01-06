@@ -9,6 +9,7 @@ from typing import (
     Callable,
     Optional,
     TYPE_CHECKING,
+    Set,
 )
 from ...expression import safe_evaluate
 
@@ -93,3 +94,35 @@ class Constraint:
         else:
             # If there's no expression, it's just a valid numeric constraint.
             self.status = ConstraintStatus.VALID
+
+    def depends_on_points(self, point_ids: Set[int]) -> bool:
+        """Checks if the constraint references any of the given point IDs."""
+        for attr in ["p1", "p2", "p3", "p4", "center", "point_id"]:
+            if hasattr(self, attr):
+                pid = getattr(self, attr)
+                if pid is not None and pid in point_ids:
+                    return True
+        return False
+
+    def depends_on_entities(self, entity_ids: Set[int]) -> bool:
+        """Checks if the constraint references any of the given entity IDs."""
+        for attr in [
+            "e1_id",
+            "e2_id",
+            "line_id",
+            "shape_id",
+            "entity_id",
+            "circle_id",
+            "axis",
+        ]:
+            if hasattr(self, attr):
+                eid = getattr(self, attr)
+                if eid is not None and eid in entity_ids:
+                    return True
+        # Special case for lists of entities
+        for attr in ["entity_ids"]:
+            if hasattr(self, attr):
+                eids = getattr(self, attr)
+                if eids and not entity_ids.isdisjoint(eids):
+                    return True
+        return False

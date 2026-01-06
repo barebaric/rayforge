@@ -1,10 +1,5 @@
 from typing import Optional, Dict
-from ..entities import Point, Line
-from ..commands import AddItemsCommand
-from ..constraints import (
-    HorizontalConstraint,
-    VerticalConstraint,
-)
+from ..commands import RectangleCommand
 from .base import SketchTool
 
 
@@ -107,61 +102,22 @@ class RectangleTool(SketchTool):
             self._update_preview_geometry(is_creation=True)
         else:
             # --- Second Click: Finalize the rectangle ---
-            # If we hit one of our own preview points, treat it as a miss
-            # to ensure a new, real point is created.
-            if pid_hit in self._preview_ids.values():
-                pid_hit = None
-
             final_pid_hit = pid_hit
-            final_mx, final_my = mx, my
-            if final_pid_hit is not None:
-                final_p = self.element.sketch.registry.get_point(final_pid_hit)
-                final_mx, final_my = final_p.x, final_p.y
+            # Check if we hit a preview point BEFORE cleaning up temps.
+            # If we hit our own ghost geometry, treat it as a miss
+            # (coord input).
+            if pid_hit in self._preview_ids.values():
+                final_pid_hit = None
 
-            start_p = self.element.sketch.registry.get_point(self.start_id)
-
-            # Cleanup preview geometry before creating the final command
             self._cleanup_temps()
 
-            # Generate geometry and constraints for the command
-            points, entities, constraints = self._generate_geometry(
-                start_p.x,
-                start_p.y,
-                final_mx,
-                final_my,
-                self.start_id,
-                final_pid_hit,
-            )
-
-            if not points:  # Degenerate
-                if self.start_temp:
-                    self.element.remove_point_if_unused(self.start_id)
-                self.start_id = None
-                self.start_temp = False
-                self.element.mark_dirty()
-                return True
-
-            points_to_add = []
-            # P2 and P4 are always new
-            points_to_add.append(points["p2"])
-            points_to_add.append(points["p4"])
-            # Handle P3 (end point)
-            if final_pid_hit is None:
-                points_to_add.append(points["p3"])
-            # Handle P1 (start point)
-            if self.start_temp:
-                try:
-                    self.element.sketch.registry.points.remove(start_p)
-                    points_to_add.append(points["p1"])
-                except (IndexError, ValueError):
-                    pass
-
-            cmd = AddItemsCommand(
+            # Create the command to generate the rectangle
+            cmd = RectangleCommand(
                 self.element.sketch,
-                _("Add Rectangle"),
-                points=points_to_add,
-                entities=entities,
-                constraints=constraints,
+                self.start_id,
+                (mx, my),
+                end_pid=final_pid_hit,
+                is_start_temp=self.start_temp,
             )
             self.element.execute_command(cmd)
 
@@ -203,51 +159,6 @@ class RectangleTool(SketchTool):
             for name, (px, py) in coords.items():
                 p = registry.get_point(self._preview_ids[name])
                 p.x, p.y = px, py
-
-    def _generate_geometry(
-        self, x1, y1, x2, y2, start_id: int, end_pid: Optional[int]
-    ):
-        """Generates final points, entities, and constraints."""
-        width = abs(x2 - x1)
-        height = abs(y2 - y1)
-
-        if width < 1e-6 or height < 1e-6:
-            return {}, [], []
-
-        temp_id_counter = -1
-
-        def next_temp_id():
-            nonlocal temp_id_counter
-            temp_id_counter -= 1
-            return temp_id_counter
-
-        p3_id = end_pid if end_pid is not None else next_temp_id()
-
-        # Create points
-        points = {
-            "p1": Point(start_id, x1, y1),
-            "p2": Point(next_temp_id(), x2, y1),
-            "p3": Point(p3_id, x2, y2),
-            "p4": Point(next_temp_id(), x1, y2),
-        }
-
-        # Create entities
-        entities = [
-            Line(next_temp_id(), points["p1"].id, points["p2"].id),
-            Line(next_temp_id(), points["p2"].id, points["p3"].id),
-            Line(next_temp_id(), points["p3"].id, points["p4"].id),
-            Line(next_temp_id(), points["p4"].id, points["p1"].id),
-        ]
-
-        # Create constraints
-        constraints = [
-            HorizontalConstraint(points["p1"].id, points["p2"].id),
-            VerticalConstraint(points["p2"].id, points["p3"].id),
-            HorizontalConstraint(points["p4"].id, points["p3"].id),
-            VerticalConstraint(points["p1"].id, points["p4"].id),
-        ]
-
-        return points, entities, constraints
 
     def on_drag(self, world_dx: float, world_dy: float):
         pass
