@@ -778,29 +778,46 @@ class Machine:
             ops_for_encoder = ops.copy()
             width, height = self.dimensions
 
-            # Create the origin transformation matrix
+            # Create the origin transformation matrix. This is complex because
+            # it depends on both the origin corner and whether the machine
+            # uses a positive or negative coordinate system for each axis.
+            # The 'reverse_x_axis' and 'reverse_y_axis' flags indicate a
+            # negative coordinate system.
             transform = np.identity(4)
 
-            if self.origin == Origin.TOP_LEFT:
-                # Machine is Y-Down (0,0 at Top-Left).
-                # Flip Y: Y_new = Height - Y_old
-                transform[1, 1] = -1.0
-                transform[1, 3] = height
+            # --- Y-Axis Transformation ---
+            if self.y_axis_down:  # Origin is TOP_LEFT or TOP_RIGHT
+                if self.reverse_y_axis:
+                    # Negative workspace: Machine Y is 0 at top,
+                    # decreases down.
+                    # World Y=height maps to Machine Y=0.
+                    # Formula: y_m = y_w - height
+                    transform[1, 3] = -float(height)
+                else:
+                    # Positive workspace: Machine Y is 0 at top,
+                    # increases down.
+                    # World Y=height maps to Y=0; World Y=0 maps to
+                    # Y=height.
+                    # Formula: y_m = height - y_w
+                    transform[1, 1] = -1.0
+                    transform[1, 3] = float(height)
 
-            elif self.origin == Origin.TOP_RIGHT:
-                # Machine is Y-Down, X-Left (0,0 at Top-Right).
-                # Flip X: X_new = Width - X_old
-                # Flip Y: Y_new = Height - Y_old
-                transform[0, 0] = -1.0
-                transform[0, 3] = width
-                transform[1, 1] = -1.0
-                transform[1, 3] = height
-
-            elif self.origin == Origin.BOTTOM_RIGHT:
-                # Machine is Y-Up, X-Left (0,0 at Bottom-Right).
-                # Flip X: X_new = Width - X_old
-                transform[0, 0] = -1.0
-                transform[0, 3] = width
+            # --- X-Axis Transformation ---
+            if self.x_axis_right:  # Origin is TOP_RIGHT or BOTTOM_RIGHT
+                if self.reverse_x_axis:
+                    # Negative workspace: Machine X is 0 at right,
+                    # decreases left.
+                    # World X=width maps to Machine X=0.
+                    # Formula: x_m = x_w - width
+                    transform[0, 3] = -float(width)
+                else:
+                    # Positive workspace: Machine X is 0 at right,
+                    # increases left.
+                    # World X=width maps to X=0; World X=0 maps to
+                    # X=width.
+                    # Formula: x_m = width - x_w
+                    transform[0, 0] = -1.0
+                    transform[0, 3] = float(width)
 
             ops_for_encoder.transform(transform)
 
