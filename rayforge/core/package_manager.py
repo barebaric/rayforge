@@ -66,7 +66,7 @@ class PackageManager:
 
     def fetch_registry(self) -> List[PackageMetadata]:
         """
-        Fetches and parses the plugin registry from the remote repository.
+        Fetches and parses the package registry from the remote repository.
         Returns a list of PackageMetadata objects.
         """
         if yaml is None:
@@ -167,7 +167,7 @@ class PackageManager:
             return remote_str != local_str
 
     def load_installed_packages(self):
-        """Scans the packages directory and loads valid plugins."""
+        """Scans the packages directory and loads valid packages."""
         if not self.packages_dir.exists():
             self.packages_dir.mkdir(parents=True, exist_ok=True)
             return
@@ -335,10 +335,7 @@ class PackageManager:
             # 2. Unregister from the plugin manager
             if module_name in sys.modules:
                 module = sys.modules[module_name]
-                if hasattr(self.plugin_mgr, "unregister"):
-                    self.plugin_mgr.unregister(module)
-                else:
-                    logger.warning("Plugin manager has no unregister method.")
+                self.plugin_mgr.unregister(module)
 
             # 3. Unload module from Python's cache
             if module_name in sys.modules:

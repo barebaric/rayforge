@@ -1,4 +1,4 @@
-"""Integration tests for plugin loading and execution."""
+"""Integration tests for package loading and execution."""
 
 import sys
 
@@ -6,31 +6,31 @@ from rayforge.context import RayforgeContext
 from rayforge.core.package_manager import PackageManager
 
 
-class TestPluginRoundTrip:
-    """Test cases for full plugin loading lifecycle."""
+class TestPackageRoundTrip:
+    """Test cases for full package loading lifecycle."""
 
-    def test_full_plugin_loading_and_execution(self, tmp_path):
+    def test_full_package_loading_and_execution(self, tmp_path):
         """
-        Creates a real plugin file structure, loads it, and ensures it runs.
+        Creates a real package file structure, loads it, and ensures it runs.
         """
         packages_dir = tmp_path / "packages"
-        plugin_dir = packages_dir / "integration_test_plugin"
-        plugin_dir.mkdir(parents=True)
+        package_dir = packages_dir / "integration_test_package"
+        package_dir.mkdir(parents=True)
 
-        (plugin_dir / "rayforge-package.yaml").write_text(
+        (package_dir / "rayforge-package.yaml").write_text(
             "name: this_name_is_ignored\nversion: 0.1\n"
-            "entry_point: plugin.py\n"
+            "entry_point: package.py\n"
         )
 
-        (plugin_dir / "plugin.py").write_text(
+        (package_dir / "package.py").write_text(
             "import sys\n"
             "from rayforge.core.hooks import hookimpl\n"
             "\n"
-            "sys.modules['integration_test_plugin_loaded'] = False\n"
+            "sys.modules['integration_test_package_loaded'] = False\n"
             "\n"
             "@hookimpl\n"
             "def rayforge_init(context):\n"
-            "    sys.modules['integration_test_plugin_loaded'] = True\n"
+            "    sys.modules['integration_test_package_loaded'] = True\n"
         )
 
         context = RayforgeContext()
@@ -39,25 +39,25 @@ class TestPluginRoundTrip:
         context.initialize_full_context()
 
         # The module name is derived from the directory, not the YAML file.
-        assert "rayforge_plugins.integration_test_plugin" in sys.modules
-        assert sys.modules.get("integration_test_plugin_loaded") is True
+        assert "rayforge_plugins.integration_test_package" in sys.modules
+        assert sys.modules.get("integration_test_package_loaded") is True
 
-        del sys.modules["integration_test_plugin_loaded"]
+        del sys.modules["integration_test_package_loaded"]
 
-    def test_plugin_loading_with_multiple_hooks(self, tmp_path):
+    def test_package_loading_with_multiple_hooks(self, tmp_path):
         """
-        Tests that a plugin can implement multiple hooks.
+        Tests that a package can implement multiple hooks.
         """
         packages_dir = tmp_path / "packages"
-        plugin_dir = packages_dir / "multi_hook_plugin"
-        plugin_dir.mkdir(parents=True)
+        package_dir = packages_dir / "multi_hook_package"
+        package_dir.mkdir(parents=True)
 
-        (plugin_dir / "rayforge-package.yaml").write_text(
+        (package_dir / "rayforge-package.yaml").write_text(
             "name: this_name_is_ignored\nversion: 0.1\n"
-            "entry_point: plugin.py\n"
+            "entry_point: package.py\n"
         )
 
-        (plugin_dir / "plugin.py").write_text(
+        (package_dir / "package.py").write_text(
             "import sys\n"
             "from rayforge.core.hooks import hookimpl\n"
             "\n"
@@ -74,20 +74,20 @@ class TestPluginRoundTrip:
         context.initialize_full_context()
 
         # The module name is derived from the directory, not the YAML file.
-        assert "rayforge_plugins.multi_hook_plugin" in sys.modules
+        assert "rayforge_plugins.multi_hook_package" in sys.modules
         assert sys.modules.get("multi_hook_rayforge_init") is True
 
         del sys.modules["multi_hook_rayforge_init"]
 
-    def test_plugin_loading_invalid_entry_point(self, tmp_path):
+    def test_package_loading_invalid_entry_point(self, tmp_path):
         """
         Tests that invalid entry point files are handled gracefully.
         """
         packages_dir = tmp_path / "packages"
-        plugin_dir = packages_dir / "invalid_plugin"
-        plugin_dir.mkdir(parents=True)
+        package_dir = packages_dir / "invalid_package"
+        package_dir.mkdir(parents=True)
 
-        (plugin_dir / "rayforge-package.yaml").write_text(
+        (package_dir / "rayforge-package.yaml").write_text(
             "name: invalid_test\nversion: 0.1\nentry_point: nonexistent.py\n"
         )
 
@@ -96,17 +96,17 @@ class TestPluginRoundTrip:
 
         context.initialize_full_context()
 
-        assert "rayforge_plugins.invalid_plugin" not in sys.modules
+        assert "rayforge_plugins.invalid_package" not in sys.modules
 
-    def test_plugin_loading_missing_metadata(self, tmp_path):
+    def test_package_loading_missing_metadata(self, tmp_path):
         """
         Tests that directories without metadata are skipped.
         """
         packages_dir = tmp_path / "packages"
-        plugin_dir = packages_dir / "no_metadata_plugin"
-        plugin_dir.mkdir(parents=True)
+        package_dir = packages_dir / "no_metadata_package"
+        package_dir.mkdir(parents=True)
 
-        (plugin_dir / "plugin.py").write_text(
+        (package_dir / "package.py").write_text(
             "from rayforge.core.hooks import hookimpl\n"
             "\n"
             "@hookimpl\n"
@@ -119,4 +119,4 @@ class TestPluginRoundTrip:
 
         context.initialize_full_context()
 
-        assert "rayforge_plugins.no_metadata_plugin" not in sys.modules
+        assert "rayforge_plugins.no_metadata_package" not in sys.modules
