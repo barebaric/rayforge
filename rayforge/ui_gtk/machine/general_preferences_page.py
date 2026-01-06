@@ -204,10 +204,7 @@ class GeneralPreferencesPage(Adw.PreferencesPage):
         self.reverse_x_axis_row = Adw.SwitchRow()
         self.reverse_x_axis_row.set_title(_("Reverse X-Axis Direction"))
         self.reverse_x_axis_row.set_subtitle(
-            _(
-                "Invert the displayed coordinate values. Does not affect "
-                "motion direction."
-            )
+            _("Makes coordinate values negative")
         )
         self.reverse_x_axis_row.set_active(machine.reverse_x_axis)
         self.reverse_x_axis_row.connect(
@@ -219,10 +216,7 @@ class GeneralPreferencesPage(Adw.PreferencesPage):
         self.reverse_y_axis_row = Adw.SwitchRow()
         self.reverse_y_axis_row.set_title(_("Reverse Y-Axis Direction"))
         self.reverse_y_axis_row.set_subtitle(
-            _(
-                "Invert the displayed coordinate values. Does not affect "
-                "motion direction."
-            )
+            _("Makes coordinate values negative")
         )
         self.reverse_y_axis_row.set_active(machine.reverse_y_axis)
         self.reverse_y_axis_row.connect(
