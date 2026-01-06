@@ -45,6 +45,7 @@ pypdf = "==6.4.0"
 pyserial-asyncio = "==0.6"
 pyvips = "==3.0.0"
 PyYAML = "==6.0.2"
+semver = "==3.0.2"
 vtracer = "==0.6.11"
 websockets = "==14.2"
 

@@ -7,7 +7,8 @@ hookimpl = pluggy.HookimplMarker("rayforge")
 class RayforgeSpecs:
     """
     Core hook specifications.
-    Plugins implement these methods to extend functionality.
+    Plugins (Rayforge packages) implement these methods to extend
+    functionality.
     """
 
     @hookspec

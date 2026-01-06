@@ -17,8 +17,9 @@ class TestPluginRoundTrip:
         plugin_dir = packages_dir / "integration_test_plugin"
         plugin_dir.mkdir(parents=True)
 
-        (plugin_dir / "rayforge_package.yaml").write_text(
-            "name: integration_test\nversion: 0.1\nentry_point: plugin.py\n"
+        (plugin_dir / "rayforge-package.yaml").write_text(
+            "name: this_name_is_ignored\nversion: 0.1\n"
+            "entry_point: plugin.py\n"
         )
 
         (plugin_dir / "plugin.py").write_text(
@@ -37,7 +38,8 @@ class TestPluginRoundTrip:
 
         context.initialize_full_context()
 
-        assert "rayforge_plugins.integration_test" in sys.modules
+        # The module name is derived from the directory, not the YAML file.
+        assert "rayforge_plugins.integration_test_plugin" in sys.modules
         assert sys.modules.get("integration_test_plugin_loaded") is True
 
         del sys.modules["integration_test_plugin_loaded"]
@@ -50,8 +52,9 @@ class TestPluginRoundTrip:
         plugin_dir = packages_dir / "multi_hook_plugin"
         plugin_dir.mkdir(parents=True)
 
-        (plugin_dir / "rayforge_package.yaml").write_text(
-            "name: multi_hook_test\nversion: 0.1\nentry_point: plugin.py\n"
+        (plugin_dir / "rayforge-package.yaml").write_text(
+            "name: this_name_is_ignored\nversion: 0.1\n"
+            "entry_point: plugin.py\n"
         )
 
         (plugin_dir / "plugin.py").write_text(
@@ -70,7 +73,8 @@ class TestPluginRoundTrip:
 
         context.initialize_full_context()
 
-        assert "rayforge_plugins.multi_hook_test" in sys.modules
+        # The module name is derived from the directory, not the YAML file.
+        assert "rayforge_plugins.multi_hook_plugin" in sys.modules
         assert sys.modules.get("multi_hook_rayforge_init") is True
 
         del sys.modules["multi_hook_rayforge_init"]
@@ -83,7 +87,7 @@ class TestPluginRoundTrip:
         plugin_dir = packages_dir / "invalid_plugin"
         plugin_dir.mkdir(parents=True)
 
-        (plugin_dir / "rayforge_package.yaml").write_text(
+        (plugin_dir / "rayforge-package.yaml").write_text(
             "name: invalid_test\nversion: 0.1\nentry_point: nonexistent.py\n"
         )
 
@@ -92,7 +96,7 @@ class TestPluginRoundTrip:
 
         context.initialize_full_context()
 
-        assert "rayforge_plugins.invalid_test" not in sys.modules
+        assert "rayforge_plugins.invalid_plugin" not in sys.modules
 
     def test_plugin_loading_missing_metadata(self, tmp_path):
         """

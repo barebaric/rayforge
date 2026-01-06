@@ -27,6 +27,12 @@ USER_MATERIALS_DIR = CONFIG_DIR / "materials"
 # Material directories
 USER_RECIPES_DIR = CONFIG_DIR / "recipes"
 
+# Package registry
+PACKAGE_REGISTRY_URL = (
+    "https://raw.githubusercontent.com/barebaric/rayforge-registry/"
+    "main/registry.yaml"
+)
+
 logger.info(f"Config dir is {CONFIG_DIR}")
 logger.info(f"Log dir is {LOG_DIR}")
 

@@ -1,623 +1,263 @@
-"""Tests for the PackageManager class."""
-
 import sys
 import tempfile
-import yaml
 from pathlib import Path
+from typing import Optional
 from unittest.mock import Mock, MagicMock, patch
+import pytest
+from rayforge.core.package_manager import PackageManager, UpdateStatus
+from rayforge.core.package import (
+    Package,
+    PackageValidationError,
+    PackageMetadata,
+)
 
-from rayforge.core.package_manager import PackageManager
+
+@pytest.fixture
+def manager():
+    """Provides a PackageManager instance with a temporary directory."""
+    with tempfile.TemporaryDirectory() as temp_dir:
+        packages_dir = Path(temp_dir) / "packages"
+        plugin_mgr = Mock()
+        yield PackageManager(packages_dir, plugin_mgr)
 
 
-class TestPackageManager:
-    """Test cases for the PackageManager class."""
+# Helper to create a properly structured mock package
+def create_mock_package(
+    name: str = "test_plugin",
+    version: str = "1.0.0",
+    code: Optional[str] = "plugin.py:main",
+) -> MagicMock:
+    """Creates a MagicMock that accurately mimics a Package object."""
+    mock_pkg = MagicMock(spec=Package)
+    # Configure the mock to have the nested metadata structure
+    mock_pkg.metadata = MagicMock(spec=PackageMetadata)
+    mock_pkg.metadata.name = name
+    mock_pkg.metadata.version = version
+    mock_pkg.metadata.provides = MagicMock()
+    mock_pkg.metadata.provides.code = code
+    mock_pkg.root_path = MagicMock(spec=Path)
+    return mock_pkg
 
-    def test_manager_creation(self):
-        """Test creating a PackageManager."""
-        with tempfile.TemporaryDirectory() as temp_dir:
-            packages_dir = Path(temp_dir) / "packages"
-            plugin_mgr = Mock()
 
-            manager = PackageManager(packages_dir, plugin_mgr)
+class TestPackageManagerLoading:
+    """Tests related to loading existing packages."""
 
-            assert manager.packages_dir == packages_dir
-            assert manager.plugin_mgr == plugin_mgr
-            assert manager.loaded_packages == {}
+    def test_load_installed_packages_creates_directory(self, manager):
+        manager.load_installed_packages()
+        assert manager.packages_dir.exists()
 
-    def test_load_installed_packages_creates_directory(self):
-        """Test that load_installed_packages creates directory if missing."""
-        with tempfile.TemporaryDirectory() as temp_dir:
-            packages_dir = Path(temp_dir) / "packages"
-            plugin_mgr = Mock()
+    def test_load_installed_packages_scans_directories(self, manager):
+        manager.packages_dir.mkdir()
+        (manager.packages_dir / "pkg1").mkdir()
+        (manager.packages_dir / "pkg2").mkdir()
+        (manager.packages_dir / "a_file.txt").touch()
 
-            manager = PackageManager(packages_dir, plugin_mgr)
+        with patch.object(manager, "load_package") as mock_load:
             manager.load_installed_packages()
+            assert mock_load.call_count == 2
+            mock_load.assert_any_call(manager.packages_dir / "pkg1")
+            mock_load.assert_any_call(manager.packages_dir / "pkg2")
 
-            assert packages_dir.exists()
-            assert manager.loaded_packages == {}
+    def test_load_package_no_metadata_file(self, manager):
+        package_dir = manager.packages_dir / "no_meta_pkg"
+        package_dir.mkdir(parents=True)
+        manager.load_package(package_dir)
+        assert not manager.loaded_packages
+        manager.plugin_mgr.register.assert_not_called()
 
-    def test_load_installed_packages_scans_directories(self):
-        """Test that load_installed_packages scans package directories."""
-        with tempfile.TemporaryDirectory() as temp_dir:
-            packages_dir = Path(temp_dir) / "packages"
-            plugin_mgr = Mock()
+    @patch("rayforge.core.package_manager.Package.load_from_directory")
+    def test_load_package_success(self, mock_load, manager):
+        package_dir = manager.packages_dir / "test_pkg"
 
-            manager = PackageManager(packages_dir, plugin_mgr)
+        mock_pkg = create_mock_package(
+            name="test_plugin", code="plugin.py:main"
+        )
+        mock_load.return_value = mock_pkg
 
-            package1_dir = packages_dir / "package1"
-            package2_dir = packages_dir / "package2"
-            packages_dir.mkdir()
-            package1_dir.mkdir()
-            package2_dir.mkdir()
-
-            with patch.object(manager, "load_package") as mock_load:
-                manager.load_installed_packages()
-
-                assert mock_load.call_count == 2
-                mock_load.assert_any_call(package1_dir)
-                mock_load.assert_any_call(package2_dir)
-
-    def test_load_package_no_metadata_file(self):
-        """Test load_package returns early when metadata file is missing."""
-        with tempfile.TemporaryDirectory() as temp_dir:
-            packages_dir = Path(temp_dir) / "packages"
-            plugin_mgr = Mock()
-
-            manager = PackageManager(packages_dir, plugin_mgr)
-            package_dir = packages_dir / "test_package"
-            package_dir.mkdir(parents=True)
-
+        with patch("rayforge.core.package_manager.importlib.util"):
             manager.load_package(package_dir)
 
-            assert manager.loaded_packages == {}
-            plugin_mgr.register.assert_not_called()
+        mock_load.assert_called_once_with(package_dir)
+        assert "test_plugin" in manager.loaded_packages
+        manager.plugin_mgr.register.assert_called_once()
 
-    def test_load_package_with_valid_metadata(self):
-        """Test load_package successfully loads a valid package."""
-        with tempfile.TemporaryDirectory() as temp_dir:
-            packages_dir = Path(temp_dir) / "packages"
-            plugin_mgr = Mock()
+    @patch("rayforge.core.package_manager.Package.load_from_directory")
+    def test_load_package_validation_error(self, mock_load, manager):
+        mock_load.side_effect = PackageValidationError("Bad format")
+        manager.load_package(Path("any/path"))
+        assert not manager.loaded_packages
+        manager.plugin_mgr.register.assert_not_called()
 
-            manager = PackageManager(packages_dir, plugin_mgr)
-            package_dir = packages_dir / "test_package"
-            package_dir.mkdir(parents=True)
 
-            metadata = {
-                "name": "test_plugin",
-                "entry_point": "plugin.py",
-            }
-            meta_file = package_dir / "rayforge_package.yaml"
-            with open(meta_file, "w") as f:
-                yaml.dump(metadata, f)
+class TestPackageManagerInstallation:
+    """Tests related to installing new packages."""
 
-            entry_point = package_dir / "plugin.py"
-            entry_point.write_text("# test plugin")
-
-            with patch(
-                "rayforge.core.package_manager.importlib"
-            ) as mock_importlib:
-                mock_spec = MagicMock()
-                mock_loader = MagicMock()
-                mock_spec.loader = mock_loader
-                mock_importlib.util.spec_from_file_location.return_value = (
-                    mock_spec
-                )
-                mock_importlib.util.module_from_spec.return_value = MagicMock()
-
-                manager.load_package(package_dir)
-
-                assert "test_package" in manager.loaded_packages
-                assert manager.loaded_packages["test_package"] == metadata
-                plugin_mgr.register.assert_called_once()
-
-    def test_load_package_missing_entry_point(self):
-        """Test load_package handles missing entry point file."""
-        with tempfile.TemporaryDirectory() as temp_dir:
-            packages_dir = Path(temp_dir) / "packages"
-            plugin_mgr = Mock()
-
-            manager = PackageManager(packages_dir, plugin_mgr)
-            package_dir = packages_dir / "test_package"
-            package_dir.mkdir(parents=True)
-
-            metadata = {
-                "name": "test_plugin",
-                "entry_point": "nonexistent.py",
-            }
-            meta_file = package_dir / "rayforge_package.yaml"
-            with open(meta_file, "w") as f:
-                yaml.dump(metadata, f)
-
-            manager.load_package(package_dir)
-
-            assert manager.loaded_packages == {}
-            plugin_mgr.register.assert_not_called()
-
-    def test_load_package_invalid_metadata(self):
-        """Test load_package handles invalid metadata."""
-        with tempfile.TemporaryDirectory() as temp_dir:
-            packages_dir = Path(temp_dir) / "packages"
-            plugin_mgr = Mock()
-
-            manager = PackageManager(packages_dir, plugin_mgr)
-            package_dir = packages_dir / "test_package"
-            package_dir.mkdir(parents=True)
-
-            metadata = {
-                "name": "test_plugin",
-            }
-            meta_file = package_dir / "rayforge_package.yaml"
-            with open(meta_file, "w") as f:
-                yaml.dump(metadata, f)
-
-            manager.load_package(package_dir)
-
-            assert manager.loaded_packages == {}
-            plugin_mgr.register.assert_not_called()
-
-    def test_load_package_exception_handling(self):
-        """Test load_package handles exceptions gracefully."""
-        with tempfile.TemporaryDirectory() as temp_dir:
-            packages_dir = Path(temp_dir) / "packages"
-            plugin_mgr = Mock()
-
-            manager = PackageManager(packages_dir, plugin_mgr)
-            package_dir = packages_dir / "test_package"
-            package_dir.mkdir(parents=True)
-
-            metadata = {
-                "name": "test_plugin",
-                "entry_point": "plugin.py",
-            }
-            meta_file = package_dir / "rayforge_package.yaml"
-            with open(meta_file, "w") as f:
-                yaml.dump(metadata, f)
-
-            entry_point = package_dir / "plugin.py"
-            entry_point.write_text("# test plugin")
-
-            with patch(
-                "rayforge.core.package_manager.importlib"
-            ) as mock_importlib:
-                mock_importlib.util.spec_from_file_location.side_effect = (
-                    Exception("Import error")
-                )
-
-                manager.load_package(package_dir)
-
-                assert manager.loaded_packages == {}
-                plugin_mgr.register.assert_not_called()
-
-    def test_read_metadata_success(self):
-        """Test _read_metadata successfully parses YAML."""
-        with tempfile.TemporaryDirectory() as temp_dir:
-            packages_dir = Path(temp_dir) / "packages"
-            plugin_mgr = Mock()
-
-            manager = PackageManager(packages_dir, plugin_mgr)
-            package_dir = packages_dir / "test_package"
-            package_dir.mkdir(parents=True)
-
-            metadata = {
-                "name": "test_plugin",
-                "entry_point": "plugin.py",
-            }
-            meta_file = package_dir / "rayforge_package.yaml"
-            with open(meta_file, "w") as f:
-                yaml.dump(metadata, f)
-
-            result = manager._read_metadata(meta_file)
-
-            assert result == metadata
-
-    def test_read_metadata_yaml_not_available(self):
-        """Test _read_metadata handles missing PyYAML."""
-        with tempfile.TemporaryDirectory() as temp_dir:
-            packages_dir = Path(temp_dir) / "packages"
-            plugin_mgr = Mock()
-
-            manager = PackageManager(packages_dir, plugin_mgr)
-            package_dir = packages_dir / "test_package"
-            package_dir.mkdir(parents=True)
-
-            meta_file = package_dir / "rayforge_package.yaml"
-            meta_file.write_text("test: data")
-
-            with patch("builtins.__import__", side_effect=ImportError):
-                result = manager._read_metadata(meta_file)
-
+    def test_install_package_git_not_available(self, manager):
+        with patch("importlib.import_module", side_effect=ImportError):
+            result = manager.install_package("some_url")
             assert result is None
 
-    def test_validate_metadata_valid(self):
-        """Test _validate_metadata returns True for valid metadata."""
-        with tempfile.TemporaryDirectory() as temp_dir:
-            packages_dir = Path(temp_dir) / "packages"
-            plugin_mgr = Mock()
+    def test_install_package_clone_failure(self, manager):
+        with patch(
+            "git.Repo.clone_from", side_effect=Exception("network error")
+        ):
+            result = manager.install_package("some_url")
+            assert result is None
+            if not manager.packages_dir.exists():
+                manager.packages_dir.mkdir()
+            assert not any(manager.packages_dir.iterdir())
 
-            manager = PackageManager(packages_dir, plugin_mgr)
-            package_dir = packages_dir / "test_package"
+    def test_install_package_validation_failure(self, manager):
+        mock_pkg = create_mock_package()
+        mock_pkg.validate.side_effect = PackageValidationError("Missing asset")
 
-            metadata = {
-                "name": "test_plugin",
-                "entry_point": "plugin.py",
-            }
-
-            result = manager._validate_metadata(metadata, package_dir)
-
-            assert result is True
-
-    def test_validate_metadata_none(self):
-        """Test _validate_metadata returns False for None metadata."""
-        with tempfile.TemporaryDirectory() as temp_dir:
-            packages_dir = Path(temp_dir) / "packages"
-            plugin_mgr = Mock()
-
-            manager = PackageManager(packages_dir, plugin_mgr)
-            package_dir = packages_dir / "test_package"
-
-            result = manager._validate_metadata(None, package_dir)
-
-            assert result is False
-
-    def test_validate_metadata_missing_entry_point(self):
-        """Test _validate_metadata returns False when entry_point missing."""
-        with tempfile.TemporaryDirectory() as temp_dir:
-            packages_dir = Path(temp_dir) / "packages"
-            plugin_mgr = Mock()
-
-            manager = PackageManager(packages_dir, plugin_mgr)
-            package_dir = packages_dir / "test_package"
-
-            metadata = {
-                "name": "test_plugin",
-            }
-
-            result = manager._validate_metadata(metadata, package_dir)
-
-            assert result is False
-
-    def test_import_and_register(self):
-        """Test _import_and_register imports and registers module."""
-        with tempfile.TemporaryDirectory() as temp_dir:
-            packages_dir = Path(temp_dir) / "packages"
-            plugin_mgr = Mock()
-
-            manager = PackageManager(packages_dir, plugin_mgr)
-            package_dir = packages_dir / "test_package"
-            module_path = package_dir / "plugin.py"
-
-            metadata = {
-                "name": "test_plugin",
-                "entry_point": "plugin.py",
-            }
-
-            mock_module = MagicMock()
-            mock_spec = MagicMock()
-            mock_loader = MagicMock()
-            mock_spec.loader = mock_loader
-
-            with patch(
-                "rayforge.core.package_manager.importlib"
-            ) as mock_importlib:
-                mock_importlib.util.spec_from_file_location.return_value = (
-                    mock_spec
-                )
-                mock_importlib.util.module_from_spec.return_value = mock_module
-
-                manager._import_and_register(
-                    metadata, package_dir, module_path
-                )
-
-                assert "test_package" in manager.loaded_packages
-                assert manager.loaded_packages["test_package"] == metadata
-                plugin_mgr.register.assert_called_once_with(mock_module)
-
-    def test_import_and_register_no_spec(self):
-        """Test _import_and_register handles missing spec."""
-        with tempfile.TemporaryDirectory() as temp_dir:
-            packages_dir = Path(temp_dir) / "packages"
-            plugin_mgr = Mock()
-
-            manager = PackageManager(packages_dir, plugin_mgr)
-            package_dir = packages_dir / "test_package"
-            module_path = package_dir / "plugin.py"
-
-            metadata = {
-                "name": "test_plugin",
-                "entry_point": "plugin.py",
-            }
-
-            with patch(
-                "rayforge.core.package_manager.importlib"
-            ) as mock_importlib:
-                mock_importlib.util.spec_from_file_location.return_value = None
-
-                manager._import_and_register(
-                    metadata, package_dir, module_path
-                )
-
-                assert manager.loaded_packages == {}
-                plugin_mgr.register.assert_not_called()
-
-    def test_import_and_register_no_loader(self):
-        """Test _import_and_register handles missing loader."""
-        with tempfile.TemporaryDirectory() as temp_dir:
-            packages_dir = Path(temp_dir) / "packages"
-            plugin_mgr = Mock()
-
-            manager = PackageManager(packages_dir, plugin_mgr)
-            package_dir = packages_dir / "test_package"
-            module_path = package_dir / "plugin.py"
-
-            metadata = {
-                "name": "test_plugin",
-                "entry_point": "plugin.py",
-            }
-
-            mock_spec = MagicMock()
-            mock_spec.loader = None
-
-            with patch(
-                "rayforge.core.package_manager.importlib"
-            ) as mock_importlib:
-                mock_importlib.util.spec_from_file_location.return_value = (
-                    mock_spec
-                )
-
-                manager._import_and_register(
-                    metadata, package_dir, module_path
-                )
-
-                assert manager.loaded_packages == {}
-                plugin_mgr.register.assert_not_called()
-
-    def test_install_package_git_not_available(self):
-        """Test install_package returns None when GitPython not available."""
-        with tempfile.TemporaryDirectory() as temp_dir:
-            packages_dir = Path(temp_dir) / "packages"
-            plugin_mgr = Mock()
-
-            manager = PackageManager(packages_dir, plugin_mgr)
-            packages_dir.mkdir()
-
-            with patch("builtins.__import__", side_effect=ImportError):
-                result = manager.install_package(
-                    "https://github.com/test/repo.git"
-                )
+        with (
+            patch("git.Repo.clone_from"),
+            patch(
+                "rayforge.core.package_manager.Package.load_from_directory",
+                return_value=mock_pkg,
+            ),
+        ):
+            result = manager.install_package("some_url")
 
             assert result is None
+            if not manager.packages_dir.exists():
+                manager.packages_dir.mkdir()
+            assert not any(manager.packages_dir.iterdir())
 
-    def test_install_package_already_exists(self):
-        """Test install_package returns None when package exists."""
-        with tempfile.TemporaryDirectory() as temp_dir:
-            packages_dir = Path(temp_dir) / "packages"
-            plugin_mgr = Mock()
+    def test_install_package_upgrades_existing(self, manager):
+        manager.packages_dir.mkdir()
+        install_name = "my-plugin"
+        git_url = f"https://example.com/repo/{install_name}.git"
+        final_path = manager.packages_dir / install_name
+        final_path.mkdir()  # Make it exist so the upgrade logic triggers
 
-            manager = PackageManager(packages_dir, plugin_mgr)
-            packages_dir.mkdir()
+        # Mock for the validation step inside install_package
+        mock_pkg_for_validation = create_mock_package()
 
-            existing_package = packages_dir / "repo"
-            existing_package.mkdir()
+        with (
+            patch("git.Repo.clone_from"),
+            patch(
+                "rayforge.core.package_manager.Package.load_from_directory",
+                return_value=mock_pkg_for_validation,
+            ),
+            patch("shutil.copytree"),
+            patch.object(manager, "uninstall_package") as mock_uninstall,
+            patch.object(manager, "load_package") as mock_load_package,
+        ):
+            manager.install_package(git_url, package_id=install_name)
 
-            result = manager.install_package(
-                "https://github.com/test/repo.git"
-            )
+            mock_uninstall.assert_called_once_with(install_name)
+            mock_load_package.assert_called_once_with(final_path)
 
-            assert result is None
+    def test_install_package_success(self, manager):
+        manager.packages_dir.mkdir()
+        git_url = "https://a.b/c.git"
+        install_name = "c"  # Derived from URL for manual install
 
-    def test_install_package_success(self):
-        """Test install_package successfully clones repository."""
-        with tempfile.TemporaryDirectory() as temp_dir:
-            packages_dir = Path(temp_dir) / "packages"
-            plugin_mgr = Mock()
+        mock_pkg_for_validation = create_mock_package()
 
-            manager = PackageManager(packages_dir, plugin_mgr)
-            packages_dir.mkdir()
+        with (
+            patch("git.Repo.clone_from"),
+            patch(
+                "rayforge.core.package_manager.Package.load_from_directory",
+                return_value=mock_pkg_for_validation,
+            ),
+            patch("shutil.copytree"),
+            patch.object(manager, "load_package") as mock_load_package,
+        ):
+            result = manager.install_package(git_url)
 
-            mock_repo = MagicMock()
-            mock_git_module = MagicMock()
-            mock_git_module.Repo.clone_from.return_value = mock_repo
+            final_path = manager.packages_dir / install_name
+            assert result == final_path
+            mock_load_package.assert_called_once_with(final_path)
 
-            with patch.dict(sys.modules, {"git": mock_git_module}):
-                result = manager.install_package(
-                    "https://github.com/test/repo.git"
-                )
 
-            expected_path = packages_dir / "repo"
-            assert result == expected_path
-            mock_git_module.Repo.clone_from.assert_called_once_with(
-                "https://github.com/test/repo.git", expected_path
-            )
+class TestPackageManagerUninstall:
+    """Tests for the uninstall_package method."""
 
-    def test_install_package_clone_failure(self):
-        """Test install_package handles clone failure."""
-        with tempfile.TemporaryDirectory() as temp_dir:
-            packages_dir = Path(temp_dir) / "packages"
-            plugin_mgr = Mock()
+    def test_uninstall_package_success(self, manager):
+        """Test a successful package uninstall cleans up everything."""
+        pkg_name = "my-uninstall-pkg"
+        module_name = f"rayforge_plugins.{pkg_name}"
 
-            manager = PackageManager(packages_dir, plugin_mgr)
-            packages_dir.mkdir()
+        # 1. Setup filesystem
+        pkg_path = manager.packages_dir / pkg_name
+        pkg_path.mkdir(parents=True)
 
-            mock_git_module = MagicMock()
-            mock_git_module.Repo.clone_from.side_effect = Exception(
-                "Clone failed"
-            )
+        # 2. Setup sys.modules to simulate a loaded module
+        sys.modules[module_name] = Mock()
 
-            with patch.dict(sys.modules, {"git": mock_git_module}):
-                result = manager.install_package(
-                    "https://github.com/test/repo.git"
-                )
+        # 3. Setup manager state with the loaded package
+        mock_pkg = create_mock_package(name=pkg_name)
+        mock_pkg.root_path = pkg_path  # Link mock object to the real path
+        manager.loaded_packages[pkg_name] = mock_pkg
 
-            assert result is None
-            assert not (packages_dir / "repo").exists()
+        # Execute the uninstall
+        result = manager.uninstall_package(pkg_name)
 
-    def test_install_package_clone_failure_no_cleanup(self):
-        """Test install_package does not cleanup when dir not created."""
-        with tempfile.TemporaryDirectory() as temp_dir:
-            packages_dir = Path(temp_dir) / "packages"
-            plugin_mgr = Mock()
+        # Assertions
+        assert result is True
+        assert not pkg_path.exists()
+        assert pkg_name not in manager.loaded_packages
+        assert module_name not in sys.modules
+        manager.plugin_mgr.unregister.assert_called_once()
 
-            manager = PackageManager(packages_dir, plugin_mgr)
-            packages_dir.mkdir()
+    def test_uninstall_unknown_package(self, manager):
+        """Test that uninstalling a non-existent package fails gracefully."""
+        result = manager.uninstall_package("non-existent-pkg")
+        assert result is False
 
-            mock_git_module = MagicMock()
-            mock_git_module.Repo.clone_from.side_effect = Exception(
-                "Clone failed"
-            )
 
-            with patch.dict(sys.modules, {"git": mock_git_module}):
-                with patch.object(
-                    manager, "_cleanup_failed_install"
-                ) as mock_cleanup:
-                    result = manager.install_package(
-                        "https://github.com/test/repo.git"
-                    )
+class TestPackageManagerUpdates:
+    """Tests for the check_update_status method."""
 
-            assert result is None
-            mock_cleanup.assert_not_called()
+    def test_status_not_installed(self, manager):
+        remote_meta = PackageMetadata("new-pkg", "", "1.0.0", Mock(), Mock())
+        status, local_ver = manager.check_update_status(remote_meta)
+        assert status == UpdateStatus.NOT_INSTALLED
+        assert local_ver is None
 
-    def test_extract_repo_name_https(self):
-        """Test _extract_repo_name extracts name from HTTPS URL."""
-        with tempfile.TemporaryDirectory() as temp_dir:
-            packages_dir = Path(temp_dir) / "packages"
-            plugin_mgr = Mock()
+    def test_status_up_to_date(self, manager):
+        pkg_id = "installed-pkg"
+        manager.loaded_packages[pkg_id] = create_mock_package(
+            name=pkg_id, version="1.2.3"
+        )
+        remote_meta = PackageMetadata(pkg_id, "", "1.2.3", Mock(), Mock())
+        status, local_ver = manager.check_update_status(remote_meta)
+        assert status == UpdateStatus.UP_TO_DATE
+        assert local_ver == "1.2.3"
 
-            manager = PackageManager(packages_dir, plugin_mgr)
+    def test_status_update_available(self, manager):
+        pkg_id = "installed-pkg"
+        manager.loaded_packages[pkg_id] = create_mock_package(
+            name=pkg_id, version="1.2.3"
+        )
+        remote_meta = PackageMetadata(pkg_id, "", "1.3.0", Mock(), Mock())
+        status, local_ver = manager.check_update_status(remote_meta)
+        assert status == UpdateStatus.UPDATE_AVAILABLE
+        assert local_ver == "1.2.3"
 
-            url = "https://github.com/test/repo.git"
-            result = manager._extract_repo_name(url)
+    def test_status_local_is_newer(self, manager):
+        pkg_id = "installed-pkg"
+        manager.loaded_packages[pkg_id] = create_mock_package(
+            name=pkg_id, version="2.0.0"
+        )
+        remote_meta = PackageMetadata(pkg_id, "", "1.5.0", Mock(), Mock())
+        status, local_ver = manager.check_update_status(remote_meta)
+        assert status == UpdateStatus.UP_TO_DATE
+        assert local_ver == "2.0.0"
 
-            assert result == "repo"
 
-    def test_extract_repo_name_ssh(self):
-        """Test _extract_repo_name extracts name from SSH URL."""
-        with tempfile.TemporaryDirectory() as temp_dir:
-            packages_dir = Path(temp_dir) / "packages"
-            plugin_mgr = Mock()
-
-            manager = PackageManager(packages_dir, plugin_mgr)
-
-            url = "git@github.com:test/repo.git"
-            result = manager._extract_repo_name(url)
-
-            assert result == "repo"
-
-    def test_extract_repo_name_without_git_extension(self):
-        """Test _extract_repo_name handles URL without .git extension."""
-        with tempfile.TemporaryDirectory() as temp_dir:
-            packages_dir = Path(temp_dir) / "packages"
-            plugin_mgr = Mock()
-
-            manager = PackageManager(packages_dir, plugin_mgr)
-
-            url = "https://github.com/test/repo"
-            result = manager._extract_repo_name(url)
-
-            assert result == "repo"
-
-    def test_extract_repo_name_with_trailing_slash(self):
-        """Test _extract_repo_name handles trailing slash."""
-        with tempfile.TemporaryDirectory() as temp_dir:
-            packages_dir = Path(temp_dir) / "packages"
-            plugin_mgr = Mock()
-
-            manager = PackageManager(packages_dir, plugin_mgr)
-
-            url = "https://github.com/test/repo.git/"
-            result = manager._extract_repo_name(url)
-
-            assert result == "repo"
-
-    def test_cleanup_failed_install(self):
-        """Test _cleanup_failed_install removes directory."""
-        with tempfile.TemporaryDirectory() as temp_dir:
-            packages_dir = Path(temp_dir) / "packages"
-            plugin_mgr = Mock()
-
-            manager = PackageManager(packages_dir, plugin_mgr)
-            package_path = packages_dir / "test_package"
-            package_path.mkdir(parents=True)
-
-            manager._cleanup_failed_install(package_path)
-
-            assert not package_path.exists()
-
-    def test_cleanup_failed_install_nonexistent(self):
-        """Test _cleanup_failed_install handles nonexistent directory."""
-        with tempfile.TemporaryDirectory() as temp_dir:
-            packages_dir = Path(temp_dir) / "packages"
-            plugin_mgr = Mock()
-
-            manager = PackageManager(packages_dir, plugin_mgr)
-            package_path = packages_dir / "nonexistent"
-
-            manager._cleanup_failed_install(package_path)
-
-            assert not package_path.exists()
-
-    def test_cleanup_failed_install_exception(self):
-        """Test _cleanup_failed_install handles exceptions."""
-        with tempfile.TemporaryDirectory() as temp_dir:
-            packages_dir = Path(temp_dir) / "packages"
-            plugin_mgr = Mock()
-
-            manager = PackageManager(packages_dir, plugin_mgr)
-            package_path = packages_dir / "test_package"
-            package_path.mkdir(parents=True)
-
-            with patch("builtins.__import__", side_effect=ImportError):
-                manager._cleanup_failed_install(package_path)
-
-            assert package_path.exists()
-
-    def test_load_package_uses_default_name(self):
-        """Test load_package uses directory name when name not in metadata."""
-        with tempfile.TemporaryDirectory() as temp_dir:
-            packages_dir = Path(temp_dir) / "packages"
-            plugin_mgr = Mock()
-
-            manager = PackageManager(packages_dir, plugin_mgr)
-            package_dir = packages_dir / "test_package"
-            package_dir.mkdir(parents=True)
-
-            metadata = {
-                "entry_point": "plugin.py",
-            }
-            meta_file = package_dir / "rayforge_package.yaml"
-            with open(meta_file, "w") as f:
-                yaml.dump(metadata, f)
-
-            entry_point = package_dir / "plugin.py"
-            entry_point.write_text("# test plugin")
-
-            with patch(
-                "rayforge.core.package_manager.importlib"
-            ) as mock_importlib:
-                mock_spec = MagicMock()
-                mock_loader = MagicMock()
-                mock_spec.loader = mock_loader
-                mock_importlib.util.spec_from_file_location.return_value = (
-                    mock_spec
-                )
-                mock_importlib.util.module_from_spec.return_value = MagicMock()
-
-                manager.load_package(package_dir)
-
-                assert "test_package" in manager.loaded_packages
-                plugin_mgr.register.assert_called_once()
-
-    def test_load_installed_packages_ignores_files(self):
-        """Test load_installed_packages ignores non-directory entries."""
-        with tempfile.TemporaryDirectory() as temp_dir:
-            packages_dir = Path(temp_dir) / "packages"
-            plugin_mgr = Mock()
-
-            manager = PackageManager(packages_dir, plugin_mgr)
-            packages_dir.mkdir()
-
-            (packages_dir / "file.txt").write_text("test")
-
-            with patch.object(manager, "load_package") as mock_load:
-                manager.load_installed_packages()
-
-                mock_load.assert_not_called()
+class TestPackageManagerHelpers:
+    @pytest.mark.parametrize(
+        "url, expected",
+        [
+            ("https://github.com/user/repo.git", "repo"),
+            ("https://github.com/user/repo", "repo"),
+            ("git@github.com:user/repo.git", "repo"),
+            ("https://github.com/user/repo.git/", "repo"),
+        ],
+    )
+    def test_extract_repo_name(self, manager, url, expected):
+        assert manager._extract_repo_name(url) == expected
