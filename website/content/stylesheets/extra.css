@@ -714,7 +714,17 @@ kbd {
 /* Increase size of tab text */
 .md-tabs__item a.md-tabs__link {
     font-size: 0.8rem;
-} 
+}
+
+h1 code, h2 code, h3 code, h4 code, h5 code, h6 code {
+    color: var(--primary-text) !important;
+    background-color: rgba(255, 255, 255, 0.15);
+    padding: 0.1em 0.4em;
+    border-radius: 4px;
+    -webkit-text-fill-color: var(--primary-text) !important;
+    background-clip: border-box !important;
+    -webkit-background-clip: border-box !important;
+}
 
 /* Responsive adjustments */
 @media screen and (min-width:35em) {
