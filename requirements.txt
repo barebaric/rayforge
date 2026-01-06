@@ -17,6 +17,7 @@ pyserial_asyncio==0.6
 pyvips==3.0.0
 PyYAML==6.0.2
 scipy==1.16.3
+semver==3.0.2
 svgelements==1.9.6
 vtracer==0.6.11
 websockets==14.2

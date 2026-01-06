@@ -92,7 +92,7 @@ class LibraryRow(Gtk.Box):
                 return _("1 material")
             return _("{count} materials").format(count=material_count)
         else:
-            return _("Plugin library ({source})").format(
+            return _("Library from package: ({source})").format(
                 source=self.library.source
             )
 

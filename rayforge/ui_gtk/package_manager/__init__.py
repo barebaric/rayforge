@@ -1,0 +1,1 @@
+"""Package manager UI components."""
