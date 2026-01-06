@@ -1093,6 +1093,89 @@ class Machine:
 
         return ma
 
+    def world_to_machine(
+        self,
+        pos_world: Tuple[float, float],
+        size_world: Tuple[float, float],
+    ) -> Tuple[float, float]:
+        """
+        Converts coordinates from internal World Space (Bottom-Left 0,0, Y-Up)
+        to Machine Space (User-facing, based on Origin setting).
+
+        Args:
+            pos_world: (x, y) position in world coordinates (top-left corner
+              of item).
+            size_world: (width, height) of the item.
+
+        Returns:
+            (x, y) position in machine coordinates.
+        """
+        machine_width, machine_height = self.dimensions
+        wx, wy = pos_world
+        w, h = size_world
+
+        # X Calculation
+        if self.x_axis_right:
+            # Origin is Right. World X=0 is Far Right in Machine Space?
+            # No, Internal World 0,0 is always Bottom-Left.
+            # If Machine Origin is Top-Right (X-Left, Y-Down):
+            # Machine X=0 is Right edge. Machine X increases to the Left.
+            # pos_machine_x = machine_width - pos_world_x - item_width
+            mx = machine_width - wx - w
+        else:
+            # Origin is Left. Machine X increases to the Right (standard).
+            mx = wx
+
+        # Y Calculation
+        if self.y_axis_down:
+            # Origin is Top. Machine Y=0 is Top edge. Machine Y increases Down.
+            # Internal World Y=0 is Bottom.
+            # pos_machine_y = machine_height - pos_world_y - item_height
+            my = machine_height - wy - h
+        else:
+            # Origin is Bottom. Machine Y increases Up (standard).
+            my = wy
+
+        return mx, my
+
+    def machine_to_world(
+        self,
+        pos_machine: Tuple[float, float],
+        size_world: Tuple[float, float],
+    ) -> Tuple[float, float]:
+        """
+        Converts coordinates from Machine Space (User-facing) back to
+        internal World Space (Bottom-Left 0,0, Y-Up).
+
+        Args:
+            pos_machine: (x, y) position in machine coordinates.
+            size_world: (width, height) of the item.
+
+        Returns:
+            (x, y) position in world coordinates.
+        """
+        machine_width, machine_height = self.dimensions
+        mx, my = pos_machine
+        w, h = size_world
+
+        # The logic is symmetric to world_to_machine.
+
+        # X Calculation
+        if self.x_axis_right:
+            # wx = machine_width - mx - w
+            wx = machine_width - mx - w
+        else:
+            wx = mx
+
+        # Y Calculation
+        if self.y_axis_down:
+            # wy = machine_height - my - h
+            wy = machine_height - my - h
+        else:
+            wy = my
+
+        return wx, wy
+
 
 class MachineManager:
     def __init__(self, base_dir: Path):

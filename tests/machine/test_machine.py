@@ -1151,3 +1151,74 @@ class TestMachine:
             machine, "get_current_position", return_value=(None, 150.0, 0.0)
         )
         assert machine.would_jog_exceed_limits(Axis.X, 9999) is False
+
+    @pytest.mark.asyncio
+    async def test_world_to_machine_transforms(
+        self, machine: Machine, task_mgr: TaskManager
+    ):
+        """
+        Verify coordinate transformations from World Space (Bottom-Left Y-Up)
+        to Machine Space for various origin configurations.
+        """
+        await wait_for_tasks_to_finish(task_mgr)
+
+        machine.set_dimensions(100, 100)
+        item_size = (10, 10)
+
+        # Test Case 1: Bottom-Left (Identity)
+        machine.set_origin(Origin.BOTTOM_LEFT)
+        # World (10, 10) -> Machine (10, 10)
+        res = machine.world_to_machine((10, 10), item_size)
+        assert res == (10, 10)
+
+        # Test Case 2: Top-Left (Y-Down)
+        machine.set_origin(Origin.TOP_LEFT)
+        # World Y=10 (near bottom) -> Machine Y should be large (near 100)
+        # Machine Y = Height - World Y - Item Height
+        # 100 - 10 - 10 = 80
+        res = machine.world_to_machine((10, 10), item_size)
+        assert res == (10, 80)
+
+        # Test Case 3: Top-Right (X-Left, Y-Down)
+        machine.set_origin(Origin.TOP_RIGHT)
+        # World X=10 (near left) -> Machine X should be large
+        # Machine X = Width - World X - Item Width
+        # 100 - 10 - 10 = 80
+        # Machine Y = 80 (as above)
+        res = machine.world_to_machine((10, 10), item_size)
+        assert res == (80, 80)
+
+        # Test Case 4: Bottom-Right (X-Left, Y-Up)
+        machine.set_origin(Origin.BOTTOM_RIGHT)
+        # Machine X = 80
+        # Machine Y = 10 (Identity for Y)
+        res = machine.world_to_machine((10, 10), item_size)
+        assert res == (80, 10)
+
+    @pytest.mark.asyncio
+    async def test_machine_to_world_transforms(
+        self, machine: Machine, task_mgr: TaskManager
+    ):
+        """
+        Verify coordinate transformations from Machine Space back to
+        World Space. This should be the inverse of world_to_machine.
+        """
+        await wait_for_tasks_to_finish(task_mgr)
+
+        machine.set_dimensions(100, 100)
+        item_size = (10, 10)
+
+        # Test Case 1: Top-Right (X-Left, Y-Down)
+        machine.set_origin(Origin.TOP_RIGHT)
+
+        # Machine input: (80, 80)
+        # Should transform back to World (10, 10)
+        res = machine.machine_to_world((80, 80), item_size)
+        assert res == (10, 10)
+
+        # Machine input: (0, 0) -> Top-Right corner in Machine Space
+        # Should be World: X = 100 - 0 - 10 = 90
+        #                Y = 100 - 0 - 10 = 90
+        # i.e., Top-Right in World Space (assuming 100x100 bounds)
+        res = machine.machine_to_world((0, 0), item_size)
+        assert res == (90, 90)
