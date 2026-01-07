@@ -1,7 +1,8 @@
 import warnings
-from typing import Optional, TYPE_CHECKING
+from typing import Optional, TYPE_CHECKING, List
 from xml.etree import ElementTree as ET
 from ..base_renderer import Renderer
+from .svgutil import filter_svg_layers
 
 with warnings.catch_warnings():
     warnings.simplefilter("ignore", DeprecationWarning)
@@ -24,18 +25,29 @@ class SvgRenderer(Renderer):
         """
         Renders raw SVG data to a pyvips Image by setting its pixel dimensions.
         Expects data to be pre-trimmed for content.
+        Can optionally filter by layer IDs if 'visible_layer_ids' is passed.
         """
         if not data:
             return None
+
+        render_data = data
+        visible_layer_ids: Optional[List[str]] = kwargs.get(
+            "visible_layer_ids"
+        )
+        if visible_layer_ids:
+            render_data = filter_svg_layers(data, visible_layer_ids)
+
+        if not render_data:
+            return None
+
         try:
             # Modify SVG dimensions for the loader to render at target size
-            root = ET.fromstring(data)
+            root = ET.fromstring(render_data)
             root.set("width", f"{width}px")
             root.set("height", f"{height}px")
-            root.set("preserveAspectRatio", "none")
-            # Add overflow:visible to render content outside the viewBox.
-            # Some designs rely on bezier control points outside the viewbox,
-            # which would otherwise be clipped by default.
+            # REMOVED: root.set("preserveAspectRatio", "none")
+            # This was causing the content to stretch to fill the width/height
+            # instead of scaling proportionally. Default behavior is correct.
             root.set("style", "overflow: visible")
 
             return pyvips.Image.svgload_buffer(ET.tostring(root))
