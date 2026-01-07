@@ -326,7 +326,15 @@ class LaserPreferencesPage(Adw.PreferencesPage):
         self.laser_list_editor.list_box.connect(
             "row-selected", self.on_laserhead_selected
         )
-        # Initial state is handled by the initial _on_machine_changed call
+
+        # The initial selection is set inside the LaserListEditor's
+        # constructor, which runs before this signal handler is connected.
+        # Manually trigger the handler now to sync the UI with the initial
+        # state.
+        initial_row = self.laser_list_editor.list_box.get_selected_row()
+        self.on_laserhead_selected(
+            self.laser_list_editor.list_box, initial_row
+        )
 
     def on_laserhead_selected(self, listbox, row):
         """Update the configuration panel when a Laser is selected."""
