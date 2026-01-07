@@ -330,6 +330,7 @@ class FileCmd:
         source: Optional[SourceAsset],
         filename: Path,
         sketches: Optional[List["Sketch"]] = None,
+        vectorization_spec: Optional[VectorizationSpec] = None,
     ):
         """
         Adds the imported items and their source to the document model using
@@ -345,28 +346,45 @@ class FileCmd:
         target_layer = cast(Layer, self._editor.default_workpiece_layer)
         cmd_name = _(f"Import {filename.name}")
 
+        create_new_layers = True
+        if isinstance(vectorization_spec, PassthroughSpec):
+            create_new_layers = vectorization_spec.create_new_layers
+
         with self._editor.history_manager.transaction(cmd_name) as t:
             for item in items:
-                # If the item is a Layer, it should be added to the Doc (root),
-                # otherwise add to the active layer.
-                if isinstance(item, Layer):
+                if isinstance(item, Layer) and create_new_layers:
                     owner = self._editor.doc
+                    command = ListItemCommand(
+                        owner_obj=owner,
+                        item=item,
+                        undo_command="remove_child",
+                        redo_command="add_child",
+                    )
+                    t.execute(command)
+                elif isinstance(item, Layer):
+                    for child in item.get_content_items():
+                        command = ListItemCommand(
+                            owner_obj=target_layer,
+                            item=child,
+                            undo_command="remove_child",
+                            redo_command="add_child",
+                        )
+                        t.execute(command)
                 else:
-                    owner = target_layer
-
-                command = ListItemCommand(
-                    owner_obj=owner,
-                    item=item,
-                    undo_command="remove_child",
-                    redo_command="add_child",
-                )
-                t.execute(command)
+                    command = ListItemCommand(
+                        owner_obj=target_layer,
+                        item=item,
+                        undo_command="remove_child",
+                        redo_command="add_child",
+                    )
+                    t.execute(command)
 
     def _finalize_import_on_main_thread(
         self,
         payload: ImportPayload,
         filename: Path,
         position_mm: Optional[Tuple[float, float]],
+        vectorization_spec: Optional[VectorizationSpec] = None,
     ):
         """
         Performs the final steps of an import on the main thread.
@@ -381,7 +399,11 @@ class FileCmd:
         #    safe now as all subsequent signal handling will be on the
         #    main thread.
         self._commit_items_to_document(
-            payload.items, payload.source, filename, payload.sketches
+            payload.items,
+            payload.source,
+            filename,
+            payload.sketches,
+            vectorization_spec,
         )
 
     def load_file_from_path(
@@ -449,7 +471,7 @@ class FileCmd:
                     """Wraps finalizer to signal future on completion/error."""
                     try:
                         self._finalize_import_on_main_thread(
-                            payload, fn, pos_mm
+                            payload, fn, pos_mm, vec_spec
                         )
                         if not main_thread_done.done():
                             loop.call_soon_threadsafe(

@@ -62,16 +62,21 @@ class PassthroughSpec(VectorizationSpec):
     """
 
     active_layer_ids: Optional[List[str]] = None
+    create_new_layers: bool = True
 
     def to_dict(self) -> Dict[str, Any]:
         return {
             "type": "PassthroughSpec",
             "active_layer_ids": self.active_layer_ids,
+            "create_new_layers": self.create_new_layers,
         }
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "PassthroughSpec":
-        return cls(active_layer_ids=data.get("active_layer_ids"))
+        return cls(
+            active_layer_ids=data.get("active_layer_ids"),
+            create_new_layers=data.get("create_new_layers", True),
+        )
 
 
 @dataclass
