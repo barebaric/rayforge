@@ -151,11 +151,13 @@ class MachineSettingsDialog(Adw.Window):
         if row:
             page_name = self._row_to_page_name[row]
             self.content_stack.set_visible_child_name(page_name)
-            stack_page = self.content_stack.get_page(page_name)
-            if stack_page:
-                title = stack_page.get_title()
-                if title:
-                    self.content_page.set_title(title)
+            child = self.content_stack.get_child_by_name(page_name)
+            if child:
+                stack_page = self.content_stack.get_page(child)
+                if stack_page:
+                    title = stack_page.get_title()
+                    if title:
+                        self.content_page.set_title(title)
 
     def _on_show_toast(self, sender, message: str):
         """
