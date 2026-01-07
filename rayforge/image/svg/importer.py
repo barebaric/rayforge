@@ -316,52 +316,33 @@ class SvgImporter(Importer):
         # Use a fixed, high-precision tolerance for consistency
         tolerance = 0.05
 
-        # Iterate all elements in SVG and assign to layers based on ancestry.
-        # This handles transforms and <use> tags correctly via svgelements
-        # flattening.
-        for element in svg.elements():
-            # Skip containers (Group, SVG) to prevent double-counting geometry.
-            # We only want leaf shapes. This prevents "double cut" issues where
-            # both a Group and its children are processed.
-            if isinstance(element, (Group, SVG)):
-                continue
-
-            # Skip elements without a parent attribute.
-            # This handles the AttributeError: 'SVG' object has no attribute
-            # 'parent' if the root object is yielded or other oddities occur.
-            if not hasattr(element, "parent"):
-                continue
-
-            # Find which layer this element belongs to by walking up parents
-            target_lid = None
-            parent = element.parent
-            while parent:
-                # Check if parent ID matches a requested layer
-                # svgelements nodes store attributes in .values
-                pid = (
-                    parent.values.get("id")
-                    if hasattr(parent, "values")
-                    else None
-                )
-                if pid in layer_geoms:
-                    target_lid = pid
-                    break
-
-                # Move up safely
-                if hasattr(parent, "parent"):
-                    parent = parent.parent
+        def _get_all_shapes(group: Group):
+            """Recursively yields all shapes from a group."""
+            for item in group:
+                if isinstance(item, Group):
+                    yield from _get_all_shapes(item)
                 else:
-                    parent = None
+                    yield item
 
-            if target_lid:
-                try:
-                    path = Path(element)
-                    path.reify()
-                    self._add_path_to_geometry(
-                        path, layer_geoms[target_lid], tolerance
-                    )
-                except (AttributeError, TypeError):
-                    pass
+        # Iterate over each direct child of the SVG root. If it's a Group
+        # that matches a requested layer ID, process all shapes within it.
+        for element in svg:
+            if not isinstance(element, Group):
+                continue
+
+            lid = element.id
+            if lid and lid in layer_geoms:
+                # This group is a layer we want to import.
+                # Process all shapes within this group (and its subgroups).
+                for shape in _get_all_shapes(element):
+                    try:
+                        path = Path(shape)
+                        path.reify()  # Apply transforms
+                        self._add_path_to_geometry(
+                            path, layer_geoms[lid], tolerance
+                        )
+                    except (AttributeError, TypeError):
+                        pass  # Ignore non-shape elements like <defs>
 
         # Create DocItems from populated geometries
         for lid in layer_ids:
@@ -379,6 +360,7 @@ class SvgImporter(Importer):
                     source_asset_uid=source.uid,
                     segment_mask_geometry=layer_geo,
                     vectorization_spec=PassthroughSpec(),
+                    layer_id=lid,
                 )
 
                 # Create WorkPiece

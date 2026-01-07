@@ -22,6 +22,7 @@ class SourceAssetSegment:
     segment_mask_geometry: Geometry
     vectorization_spec: VectorizationSpec
     image_modifier_chain: ImageModifierChain = field(default_factory=list)
+    layer_id: Optional[str] = None
 
     # --- Fields for cropped/traced bitmap rendering ---
     crop_window_px: Optional[Tuple[float, float, float, float]] = None
@@ -38,6 +39,7 @@ class SourceAssetSegment:
             "crop_window_px": self.crop_window_px,
             "cropped_width_mm": self.cropped_width_mm,
             "cropped_height_mm": self.cropped_height_mm,
+            "layer_id": self.layer_id,
         }
 
     @classmethod
@@ -60,6 +62,7 @@ class SourceAssetSegment:
             crop_window_px=crop_window,
             cropped_width_mm=data.get("cropped_width_mm"),
             cropped_height_mm=data.get("cropped_height_mm"),
+            layer_id=data.get("layer_id"),
         )
 
     def clone_with_geometry(

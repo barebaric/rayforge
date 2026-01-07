@@ -708,6 +708,15 @@ class WorkPiece(DocItem):
             kwargs["source_metadata"] = metadata
             kwargs["workpiece_matrix"] = self.matrix
 
+        if renderer_name == "SvgRenderer" and self.source_segment:
+            # Check for layer_id to support rendering individual layers
+            # from a multi-layer SVG source.
+            if (
+                hasattr(self.source_segment, "layer_id")
+                and self.source_segment.layer_id
+            ):
+                kwargs["visible_layer_ids"] = [self.source_segment.layer_id]
+
         return kwargs
 
     def _process_rendered_image(

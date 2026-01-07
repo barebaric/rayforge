@@ -14,6 +14,7 @@ from rayforge.core.geo.constants import (
     CMD_TYPE_LINE,
     COL_TYPE,
 )
+from rayforge.core.layer import Layer
 from rayforge.core.matrix import Matrix
 from rayforge.core.source_asset import SourceAsset
 from rayforge.core.source_asset_segment import SourceAssetSegment
@@ -97,6 +98,13 @@ def svg_with_offset_text_data() -> bytes:
                 <text x="90" y="90" font-family="sans-serif" font-size="10"
                       text-anchor="end">Test</text>
               </svg>"""
+
+
+@pytest.fixture
+def twolayer_svg_data() -> bytes:
+    svg_path = Path(__file__).parent / "twolayer.svg"
+    with open(svg_path, "rb") as f:
+        return f.read()
 
 
 @pytest.fixture
@@ -324,6 +332,91 @@ class TestSvgImporter:
         assert geo_rect_min_y == pytest.approx(0.0, abs=1e-3)
         assert geo_rect_max_x == pytest.approx(1.0, abs=1e-3)
         assert geo_rect_max_y == pytest.approx(1.0, abs=1e-3)
+
+    def test_layer_split_import(self, twolayer_svg_data: bytes):
+        """
+        Tests that importing an SVG with multiple layers and a PassthroughSpec
+        correctly creates separate Layer items, each with a WorkPiece that
+        renders only its own layer's content.
+        """
+        importer = SvgImporter(
+            twolayer_svg_data, source_file=Path("twolayer.svg")
+        )
+        # Specify the layers to import
+        spec = PassthroughSpec(active_layer_ids=["layer1", "layer2"])
+
+        payload = importer.get_doc_items(vectorization_spec=spec)
+        assert payload is not None
+        assert payload.source is not None
+        assert len(payload.items) == 2
+
+        source = payload.source
+        items = payload.items
+
+        # Setup mock doc context
+        mock_doc = Mock()
+        mock_doc.source_assets = {source.uid: source}
+        mock_doc.get_source_asset_by_uid.side_effect = (
+            mock_doc.source_assets.get
+        )
+
+        # Expected sizes based on SVG content
+        # Ellipse: approx 71.5mm wide. Rect: approx 52.5mm wide.
+        # Combined trimmed size will be ~71.6mm x ~94mm
+        expected_wp_width = 71.56
+        expected_wp_height = 93.96
+
+        # --- Verify Layer 1 (Ellipse) ---
+        layer1 = cast(Layer, items[0])
+        assert isinstance(layer1, Layer)
+        assert layer1.name == "Calque 1"
+        assert len(layer1.workpieces) == 1
+        wp1 = layer1.workpieces[0]
+        assert isinstance(wp1, WorkPiece)
+        assert wp1.source_segment is not None
+        assert wp1.source_segment.layer_id == "layer1"
+        assert wp1.size == pytest.approx(
+            (expected_wp_width, expected_wp_height), rel=1e-2
+        )
+
+        # Link workpiece to mock doc for rendering
+        wp1.parent = Mock(
+            doc=mock_doc, get_world_transform=lambda: Matrix.identity()
+        )
+
+        # Render and check image content
+        img1 = wp1.get_vips_image(width=100, height=100)
+        assert img1 is not None
+        alpha1 = img1[3] > 0
+        _, _, w1, h1 = alpha1.find_trim(background=0)
+        # Check aspect ratio for ellipse (approx 71.5 / 69.4 = 1.03)
+        assert (w1 / h1) == pytest.approx(1.03, abs=0.05)
+
+        # --- Verify Layer 2 (Rectangle) ---
+        layer2 = cast(Layer, items[1])
+        assert isinstance(layer2, Layer)
+        assert layer2.name == "Calque 2"
+        assert len(layer2.workpieces) == 1
+        wp2 = layer2.workpieces[0]
+        assert isinstance(wp2, WorkPiece)
+        assert wp2.source_segment is not None
+        assert wp2.source_segment.layer_id == "layer2"
+        assert wp2.size == pytest.approx(
+            (expected_wp_width, expected_wp_height), rel=1e-2
+        )
+
+        # Link workpiece to mock doc for rendering
+        wp2.parent = Mock(
+            doc=mock_doc, get_world_transform=lambda: Matrix.identity()
+        )
+
+        # Render and check image content
+        img2 = wp2.get_vips_image(width=100, height=100)
+        assert img2 is not None
+        alpha2 = img2[3] > 0
+        _, _, w2, h2 = alpha2.find_trim(background=0)
+        # Check aspect ratio for rectangle (approx 52.4 / 53.2 = 0.98)
+        assert (w2 / h2) == pytest.approx(0.98, abs=0.05)
 
 
 class TestSvgRenderer:
