@@ -1,4 +1,5 @@
 import ast
+import importlib
 import logging
 import re
 import yaml
@@ -53,6 +54,7 @@ class PackageMetadata:
     name: str
     description: str
     version: str
+    depends: List[str]
     author: PackageAuthor
     provides: PackageProvides
     url: str = ""
@@ -93,11 +95,18 @@ class PackageMetadata:
         # We populate basics needed for the UI listing
         provides = PackageProvides()
 
+        depends = data.get("depends", [])
+        if isinstance(depends, str):
+            depends = [depends]
+
         return cls(
             name=pkg_id,
             display_name=data.get("name", pkg_id),
             description=data.get("description", ""),
-            version=str(data.get("version", "0.0.0")),
+            version=str(
+                data.get("latest_stable", data.get("version", "0.0.0"))
+            ),
+            depends=depends,
             author=author,
             provides=provides,
             url=data.get("repository", ""),
@@ -125,6 +134,10 @@ class Package:
         """
         Loads a package from a directory by parsing its YAML metadata file.
         The directory name is treated as the canonical package ID.
+        The version is obtained from git tags.
+
+        Args:
+            package_dir (Path): The directory containing the package.
         """
         meta_file = package_dir / METADATA_FILENAME
         if not meta_file.exists():
@@ -176,11 +189,18 @@ class Package:
             # 3. Construct Metadata
             # The directory name is the source of truth for the package
             # name (ID).
+            depends = data.get("depends", [])
+            if isinstance(depends, str):
+                depends = [depends]
+
+            version = cls.get_git_tag_version(package_dir)
+
             metadata = PackageMetadata(
                 name=package_dir.name,
                 display_name=data.get("display_name", data.get("name", "")),
                 description=data.get("description", ""),
-                version=str(data.get("version", "0.0.1")),
+                version=version,
+                depends=depends,
                 author=author,
                 provides=provides,
                 url=data.get("url", ""),
@@ -215,6 +235,55 @@ class Package:
             raise PackageValidationError(
                 f"Invalid semantic version: {self.metadata.version}"
             )
+
+        # --- 2.1 Depends Validation ---
+        if not self.metadata.depends:
+            raise PackageValidationError("depends is required.")
+        for dep in self.metadata.depends:
+            if not isinstance(dep, str):
+                raise PackageValidationError(
+                    f"Dependency must be a string: {dep}"
+                )
+            parts = dep.split(",")
+            if not parts or not parts[0]:
+                raise PackageValidationError(
+                    f"Invalid dependency format: {dep}"
+                )
+            pkg_part = parts[0].strip()
+            if not pkg_part:
+                raise PackageValidationError(
+                    f"Invalid dependency format: {dep}"
+                )
+            # Validate version constraints if present
+            for constraint in parts[1:]:
+                constraint = constraint.strip()
+                if not constraint:
+                    continue
+                # Extract operator and version
+                op_match = re.match(r"^([~^><=!]+)(.+)$", constraint)
+                if not op_match:
+                    raise PackageValidationError(
+                        f"Invalid version constraint '{constraint}' in: {dep}"
+                    )
+                version_str = op_match.group(2).lstrip("v")
+                operator = op_match.group(1)
+
+                # For tilde operator, allow partial versions (e.g., ~0.27)
+                # and normalize them to full semver (e.g., ~0.27 -> ~0.27.0)
+                if operator == "~":
+                    version_parts = version_str.split(".")
+                    if len(version_parts) == 2:
+                        version_str = f"{version_str}.0"
+                    elif len(version_parts) == 1:
+                        version_str = f"{version_str}.0.0"
+
+                try:
+                    semver.VersionInfo.parse(version_str)
+                except ValueError:
+                    raise PackageValidationError(
+                        f"Invalid semantic version in constraint "
+                        f"'{constraint}': {dep}"
+                    )
 
         # --- 3. Author Validation ---
         if not self.metadata.author.name:
@@ -339,3 +408,44 @@ class Package:
             )
         except Exception as e:
             raise PackageValidationError(f"Failed to parse entry point: {e}")
+
+    @staticmethod
+    def get_git_tag_version(package_dir: Path) -> str:
+        """
+        Gets the version from git tags in the package directory.
+
+        Args:
+            package_dir (Path): The directory containing the package.
+
+        Returns:
+            str: The version from the latest git tag.
+        """
+        try:
+            importlib.import_module("git")
+        except ImportError:
+            logger.warning(
+                "GitPython is required to get git tag version, "
+                "using default version 0.0.1"
+            )
+            return "0.0.1"
+
+        from git import Repo
+
+        try:
+            repo = Repo(package_dir)
+            tags = repo.tags
+            if tags:
+                latest_tag = sorted(
+                    tags, key=lambda t: t.commit.committed_datetime
+                )[-1]
+                return latest_tag.name
+            logger.warning(
+                f"No git tags found in {package_dir}, "
+                "using default version 0.0.1"
+            )
+            return "0.0.1"
+        except Exception as e:
+            logger.warning(
+                f"Failed to get git tag version from {package_dir}: {e}"
+            )
+            return "0.0.1"

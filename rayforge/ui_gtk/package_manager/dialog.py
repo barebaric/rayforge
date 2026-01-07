@@ -5,6 +5,7 @@ from gi.repository import Adw, Gtk, GLib, Gdk
 from ...context import get_context
 from ...core.package import PackageMetadata
 from ...core.package_manager import UpdateStatus
+from ... import __version__
 from ..icons import get_icon
 
 logger = logging.getLogger(__name__)
@@ -174,6 +175,16 @@ class PackageRegistryDialog(Adw.Window):
                 btn.set_sensitive(False)
                 btn.set_tooltip_text(
                     _("Version {v} already installed").format(v=local_ver)
+                )
+            elif status == UpdateStatus.INCOMPATIBLE:
+                btn.set_label(_("Incompatible"))
+                btn.set_sensitive(False)
+                deps_str = ", ".join(package.depends)
+                btn.set_tooltip_text(
+                    _(
+                        "Requires {deps}, but current rayforge "
+                        "version is {current}"
+                    ).format(deps=deps_str, current=__version__)
                 )
 
             if not package.url:  # Handle invalid registry entries
