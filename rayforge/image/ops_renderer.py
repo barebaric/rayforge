@@ -1,10 +1,11 @@
 import cairo
 import numpy as np
-from typing import Optional, TYPE_CHECKING, Any
+from typing import Optional, TYPE_CHECKING
 
 if TYPE_CHECKING:
     pass
 
+from ..core.geo import Geometry
 from ..core.ops import Ops
 from ..pipeline.encoder.cairoencoder import CairoEncoder
 from ..shared.util.colors import ColorSet
@@ -26,7 +27,7 @@ class OpsRenderer(Renderer):
     """
 
     def _render_to_cairo_surface(
-        self, boundaries: Any, width: int, height: int
+        self, boundaries: Geometry, width: int, height: int
     ) -> Optional[cairo.ImageSurface]:
         """Internal helper for DXF renderer reuse."""
         render_width, render_height = width, height
