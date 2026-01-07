@@ -414,7 +414,8 @@ class Driver(ABC):
         ] = None,
     ) -> "MachineCodeOpMap":
         """
-        Creates a MachineCodeOpMap for tracking command execution.
+        Creates a MachineCodeOpMap for tracking command execution by using the
+        centralized machine encoder.
 
         This method should be called by driver implementations to get a
         MachineCodeOpMap that can be used to track which Ops commands
@@ -430,6 +431,5 @@ class Driver(ABC):
         Returns:
             A MachineCodeOpMap for tracking command execution
         """
-        encoder = self.get_encoder()
-        _, op_map = encoder.encode(ops, self._machine, doc)
+        _, op_map = self._machine.encode_ops(ops, doc)
         return op_map

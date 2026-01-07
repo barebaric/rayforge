@@ -152,8 +152,6 @@ class TestMachine:
         """
         await wait_for_tasks_to_finish(task_mgr)
         # --- Arrange ---
-        # Set origin to BOTTOM_LEFT so encode_ops does not create a copy of ops
-        # for coordinate transformation (identity).
         machine.set_origin(Origin.BOTTOM_LEFT)
 
         # Create a mock encoder and spy on its encode method
@@ -161,7 +159,6 @@ class TestMachine:
         encode_spy = mocker.spy(mock_encoder, "encode")
 
         # Patch the driver's get_encoder method to return our mock.
-        # The return value of patch is the mock that replaced the original.
         get_encoder_mock = mocker.patch.object(
             machine.driver, "get_encoder", return_value=mock_encoder
         )
@@ -169,18 +166,26 @@ class TestMachine:
         ops_to_encode = Ops()
         doc_context = Doc()
 
+        # Spy on the copy method to check it's called
+        copy_spy = mocker.spy(ops_to_encode, "copy")
+
         # --- Act ---
-        machine_code, op_map = machine.encode_ops(ops_to_encode, doc_context)
+        machine.encode_ops(ops_to_encode, doc_context)
 
         # --- Assert ---
         # 1. Verify that the patched get_encoder method was called
         get_encoder_mock.assert_called_once()
 
-        # 2. Verify that the encoder's encode method was called with the
+        # 2. Verify that the ops were copied before being passed to the encoder
+        copy_spy.assert_called_once()
+
+        # 3. Verify that the encoder's encode method was called with the
         # correct args
         encode_spy.assert_called_once()
         call_args = encode_spy.call_args.args
-        assert call_args[0] is ops_to_encode
+        assert isinstance(call_args[0], Ops)
+        # Check that the encoded ops is the one returned by copy()
+        assert call_args[0] is copy_spy.spy_return
         assert call_args[1] is machine
         assert call_args[2] is doc_context
 
@@ -204,9 +209,6 @@ class TestMachine:
             pass
 
         mock_encoder = mocker.Mock()
-
-        # Mock the encoder to return dummy bytes and a dataclass instance
-        # machine.encode_ops calls asdict() on the second return value
         mock_encoder.encode.return_value = ("G0", MockOpMap())
 
         mocker.patch.object(
@@ -221,24 +223,26 @@ class TestMachine:
 
         doc = Doc()
 
-        # --- Case 1: Default (Bottom Left) - Should be Identity ---
-        # Internal is Y-Up (BL), Machine is BL -> No transform needed.
+        # --- Case 1: Default (Bottom Left) - Should NOT Transform ---
         machine.set_origin(Origin.BOTTOM_LEFT)
+        mock_encoder.reset_mock()
+        original_ops.reset_mock()
+        copied_ops.reset_mock()
+
         machine.encode_ops(original_ops, doc)
 
-        # Should pass original, no copy, no transform
-        mock_encoder.encode.assert_called_with(original_ops, machine, doc)
-        original_ops.copy.assert_not_called()
-        original_ops.transform.assert_not_called()
+        # A copy is always made to apply offsets.
+        original_ops.copy.assert_called_once()
+        # But transform should not be called on the copy for this origin.
+        copied_ops.transform.assert_not_called()
+        # The encoder should be called with the copied object.
+        mock_encoder.encode.assert_called_with(copied_ops, machine, doc)
 
         # --- Case 2: Origin Change (Top Left) - Should Transform ---
-        # Internal is Y-Up (BL), Machine is TL (Y-Down) -> Needs Y Flip.
         machine.set_origin(Origin.TOP_LEFT)
         mock_encoder.reset_mock()
         original_ops.reset_mock()
         copied_ops.reset_mock()
-        original_ops.commands = []
-        copied_ops.commands = []
 
         machine.encode_ops(original_ops, doc)
 

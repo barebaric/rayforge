@@ -378,8 +378,9 @@ class GrblNetworkDriver(Driver):
     ) -> None:
         if not self.host:
             raise ConnectionError("Driver not configured with a host.")
-        encoder = self.get_encoder()
-        gcode, op_map = encoder.encode(ops, self._machine, doc)
+
+        # Let the machine handle coordinate transformations and encoding
+        gcode, op_map = self._machine.encode_ops(ops, doc)
 
         try:
             # For GRBL driver, we don't track individual commands
