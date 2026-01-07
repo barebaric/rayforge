@@ -1,9 +1,7 @@
 import asyncio
-import json
 import logging
 import multiprocessing
 import uuid
-from dataclasses import asdict
 from enum import Enum
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type
@@ -17,6 +15,7 @@ from rayforge.core.ops.commands import MovingCommand
 from ...camera.models.camera import Camera
 from ...context import RayforgeContext, get_context
 from ...core.varset import ValidationError
+from ...pipeline.encoder.gcode import MachineCodeOpMap
 from ...shared.tasker import task_mgr
 from ..driver import get_driver_cls
 from ..driver.driver import (
@@ -741,10 +740,12 @@ class Machine:
 
     def encode_ops(
         self, ops: "Ops", doc: "Doc"
-    ) -> Tuple[np.ndarray, np.ndarray]:
+    ) -> Tuple[str, "MachineCodeOpMap"]:
         """
         Encodes an Ops object into machine code (G-code) and a corresponding
         operation map, specific to this machine's configuration.
+        This is the single source of truth for applying machine-specific
+        coordinate transformations.
 
         Args:
             ops: The Ops object to encode.
@@ -752,15 +753,14 @@ class Machine:
 
         Returns:
             A tuple containing:
-            - A numpy array of machine code bytes (UTF-8 encoded G-code).
-            - A numpy array of the operation map bytes (UTF-8 encoded JSON).
+            - A string of machine code (G-code).
+            - A MachineCodeOpMap object.
         """
         encoder = self.driver.get_encoder()
 
-        # Transform the ops coordinate system (Y-Up Internal -> Machine)
-        # before generating G-code based on the origin setting.
-        # We assume Internal Ops are Y-Up (Cartesian, 0,0 at Bottom-Left).
-        ops_for_encoder = ops
+        # We operate on a copy to avoid modifying the original Ops object,
+        # which is owned by the pipeline and may be reused.
+        ops_for_encoder = ops.copy()
 
         # Apply offsets
         for command in ops_for_encoder.commands:
@@ -772,10 +772,16 @@ class Machine:
                     base_end[2],
                 )
 
-        # If Origin is BOTTOM_LEFT, it matches Internal (Y-Up, X-Right).
-        # Any other origin requires transformation.
-        if self.origin != Origin.BOTTOM_LEFT:
-            ops_for_encoder = ops.copy()
+        # If Origin is BOTTOM_LEFT and axes are not reversed, the internal
+        # coordinate system matches the machine's. Any other configuration
+        # requires transformation.
+        needs_transform = (
+            self.origin != Origin.BOTTOM_LEFT
+            or self.reverse_x_axis
+            or self.reverse_y_axis
+        )
+
+        if needs_transform:
             width, height = self.dimensions
 
             # Create the origin transformation matrix. This is complex because
@@ -801,6 +807,11 @@ class Machine:
                     # Formula: y_m = height - y_w
                     transform[1, 1] = -1.0
                     transform[1, 3] = float(height)
+            elif self.reverse_y_axis:
+                # Origin is at bottom, but Y is negative (uncommon)
+                # World Y=0 maps to Y=0, but Y increases negatively.
+                # Formula: y_m = -y_w
+                transform[1, 1] = -1.0
 
             # --- X-Axis Transformation ---
             if self.x_axis_right:  # Origin is TOP_RIGHT or BOTTOM_RIGHT
@@ -818,21 +829,17 @@ class Machine:
                     # Formula: x_m = width - x_w
                     transform[0, 0] = -1.0
                     transform[0, 3] = float(width)
+            elif self.reverse_x_axis:
+                # Origin is at left, but X is negative (uncommon)
+                # World X=0 maps to X=0, but X increases negatively.
+                # Formula: x_m = -x_w
+                transform[0, 0] = -1.0
 
             ops_for_encoder.transform(transform)
 
         gcode_str, op_map_obj = encoder.encode(ops_for_encoder, self, doc)
 
-        # Encode G-code and map to byte arrays
-        machine_code_bytes = np.frombuffer(
-            gcode_str.encode("utf-8"), dtype=np.uint8
-        )
-        op_map_str = json.dumps(asdict(op_map_obj))
-        op_map_bytes = np.frombuffer(
-            op_map_str.encode("utf-8"), dtype=np.uint8
-        )
-
-        return machine_code_bytes, op_map_bytes
+        return gcode_str, op_map_obj
 
     def refresh_settings(self):
         """Public API for the UI to request a settings refresh."""
@@ -926,7 +933,7 @@ class Machine:
                 "auto_connect": self.auto_connect,
                 "clear_alarm_on_connect": self.clear_alarm_on_connect,
                 "home_on_start": self.home_on_start,
-                "single_axis_homing_enabled": self.single_axis_homing_enabled,
+                "single_axis_homing_enabled": self.single_axis_homing_enabled,  # noqa: E501
                 "dialect_uid": self.dialect_uid,
                 "dimensions": list(self.dimensions),
                 "offsets": list(self.offsets),
@@ -992,7 +999,8 @@ class Machine:
             base_dialect = get_dialect("grbl")
 
         new_label = _("{label} (for {machine_name})").format(
-            label=base_dialect.label, machine_name=machine_name
+            label=base_dialect.label,
+            machine_name=machine_name,
         )
         new_dialect = base_dialect.copy_as_custom(new_label=new_label)
 
@@ -1025,11 +1033,13 @@ class Machine:
         ma.driver_args = ma_data.get("driver_args", {})
         ma.auto_connect = ma_data.get("auto_connect", ma.auto_connect)
         ma.clear_alarm_on_connect = ma_data.get(
-            "clear_alarm_on_connect", ma.clear_alarm_on_connect
+            "clear_alarm_on_connect",
+            ma.clear_alarm_on_connect,
         )
         ma.home_on_start = ma_data.get("home_on_start", ma.home_on_start)
         ma.single_axis_homing_enabled = ma_data.get(
-            "single_axis_homing_enabled", ma.single_axis_homing_enabled
+            "single_axis_homing_enabled",
+            ma.single_axis_homing_enabled,
         )
 
         dialect_uid = ma_data.get("dialect_uid")

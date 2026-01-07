@@ -529,8 +529,8 @@ class GrblSerialDriver(Driver):
     ) -> None:
         self._start_job(on_command_done)
 
-        encoder = self.get_encoder()
-        gcode, op_map = encoder.encode(ops, self._machine, doc)
+        # Let the machine handle coordinate transformations and encoding
+        gcode, op_map = self._machine.encode_ops(ops, doc)
         gcode_lines = gcode.splitlines()
 
         await self._stream_gcode(gcode_lines, op_map.machine_code_to_op)

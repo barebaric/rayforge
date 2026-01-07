@@ -191,8 +191,8 @@ class SmoothieDriver(Driver):
             Callable[[int], Union[None, Awaitable[None]]]
         ] = None,
     ) -> None:
-        encoder = self.get_encoder()
-        gcode, op_map = encoder.encode(ops, self._machine, doc)
+        # Let the machine handle coordinate transformations and encoding
+        gcode, op_map = self._machine.encode_ops(ops, doc)
         gcode_lines = gcode.splitlines()
 
         try:
