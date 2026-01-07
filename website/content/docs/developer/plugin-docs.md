@@ -49,6 +49,10 @@ version: 0.1.0
 # Description displayed in the UI
 description: "Adds support for the XYZ laser cutter."
 
+# Dependencies (package and version constraints)
+depends:
+  - rayforge>=0.27.0,~0.27
+
 # The python file to load (relative to the package folder)
 entry_point: package.py
 

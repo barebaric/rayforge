@@ -4,13 +4,17 @@ import importlib.util
 import urllib.request
 import shutil
 import tempfile
-import semver
 from enum import Enum, auto
 from pathlib import Path
 from typing import Optional, List, Dict, Any, Tuple
 from urllib.parse import urlparse
 import yaml
+from .. import __version__
 from ..config import PACKAGE_REGISTRY_URL
+from ..shared.util.versioning import (
+    check_rayforge_compatibility,
+    is_newer_version,
+)
 from .package import Package, PackageMetadata, PackageValidationError
 
 logger = logging.getLogger(__name__)
@@ -22,6 +26,7 @@ class UpdateStatus(Enum):
     NOT_INSTALLED = auto()
     UPDATE_AVAILABLE = auto()
     UP_TO_DATE = auto()
+    INCOMPATIBLE = auto()
 
 
 class PackageManager:
@@ -144,27 +149,12 @@ class PackageManager:
             return (UpdateStatus.NOT_INSTALLED, None)
 
         local_version = installed_pkg.metadata.version
-        is_newer = self._is_newer_version(remote_meta.version, local_version)
+        is_newer = is_newer_version(remote_meta.version, local_version)
 
         if is_newer:
             return (UpdateStatus.UPDATE_AVAILABLE, local_version)
         else:
             return (UpdateStatus.UP_TO_DATE, local_version)
-
-    def _is_newer_version(self, remote_str: str, local_str: str) -> bool:
-        """Compares two version strings using semver."""
-        try:
-            # Strip leading 'v' if present for validation
-            remote_v = semver.VersionInfo.parse(remote_str.lstrip("v"))
-            local_v = semver.VersionInfo.parse(local_str.lstrip("v"))
-            return remote_v > local_v
-        except ValueError:
-            # Fallback to string comparison if not valid semver
-            logger.warning(
-                f"Could not parse versions '{remote_str}' or '{local_str}' "
-                "with semver. Falling back to string comparison."
-            )
-            return remote_str != local_str
 
     def load_installed_packages(self):
         """Scans the packages directory and loads valid packages."""
@@ -189,6 +179,16 @@ class PackageManager:
                 logger.info(f"Loaded asset package: {pkg.metadata.name}")
                 return
 
+            if (
+                self._check_version_compatibility(pkg)
+                != UpdateStatus.UP_TO_DATE
+            ):
+                logger.warning(
+                    f"Skipping package '{pkg.metadata.name}' due to "
+                    "version incompatibility"
+                )
+                return
+
             self._import_and_register(pkg)
 
         except (PackageValidationError, FileNotFoundError) as e:
@@ -200,6 +200,20 @@ class PackageManager:
                 f"Failed to load package {package_path.name}: {e}",
                 exc_info=True,
             )
+
+    def _check_version_compatibility(self, pkg: Package):
+        """
+        Checks if package's dependencies are compatible.
+        Returns UpdateStatus.UP_TO_DATE if compatible, INCOMPATIBLE otherwise.
+        """
+        current_version = __version__
+        if not current_version:
+            logger.warning("Could not determine current rayforge version")
+            return UpdateStatus.UP_TO_DATE
+
+        if check_rayforge_compatibility(pkg.metadata.depends, current_version):
+            return UpdateStatus.UP_TO_DATE
+        return UpdateStatus.INCOMPATIBLE
 
     def _import_and_register(self, pkg: Package):
         """
@@ -290,9 +304,6 @@ class PackageManager:
                     self.uninstall_package(install_name)
 
                 shutil.copytree(temp_path, final_path, dirs_exist_ok=True)
-                git_folder = final_path / ".git"
-                if git_folder.exists():
-                    shutil.rmtree(git_folder, ignore_errors=True)
 
                 logger.info(f"Successfully installed package to {final_path}")
                 self.load_package(final_path)

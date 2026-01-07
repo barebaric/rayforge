@@ -1,7 +1,7 @@
 import sys
 import tempfile
 from pathlib import Path
-from typing import Optional
+from typing import List, Optional
 from unittest.mock import Mock, MagicMock, patch
 import pytest
 from rayforge.core.package_manager import PackageManager, UpdateStatus
@@ -26,13 +26,17 @@ def create_mock_package(
     name: str = "test_plugin",
     version: str = "1.0.0",
     code: Optional[str] = "plugin.py:main",
+    depends: Optional[List] = None,
 ) -> MagicMock:
     """Creates a MagicMock that accurately mimics a Package object."""
+    if depends is None:
+        depends = ["rayforge>=0.27.0,~0.27"]
     mock_pkg = MagicMock(spec=Package)
     # Configure the mock to have the nested metadata structure
     mock_pkg.metadata = MagicMock(spec=PackageMetadata)
     mock_pkg.metadata.name = name
     mock_pkg.metadata.version = version
+    mock_pkg.metadata.depends = depends
     mock_pkg.metadata.provides = MagicMock()
     mock_pkg.metadata.provides.code = code
     mock_pkg.root_path = MagicMock(spec=Path)
@@ -87,6 +91,27 @@ class TestPackageManagerLoading:
         manager.load_package(Path("any/path"))
         assert not manager.loaded_packages
         manager.plugin_mgr.register.assert_not_called()
+
+    @patch("rayforge.core.package_manager.Package.load_from_directory")
+    def test_load_package_incompatible_version(self, mock_load, manager):
+        mock_pkg = create_mock_package(
+            name="test_plugin",
+            code="plugin.py:main",
+            depends=["rayforge>=99.99.99,~99.99"],
+        )
+        mock_load.return_value = mock_pkg
+
+        with (
+            patch("rayforge.core.package_manager.importlib.util"),
+            patch.object(
+                manager,
+                "_check_version_compatibility",
+                return_value=UpdateStatus.INCOMPATIBLE,
+            ),
+        ):
+            manager.load_package(manager.packages_dir / "test_pkg")
+
+        assert "test_plugin" not in manager.loaded_packages
 
 
 class TestPackageManagerInstallation:
@@ -213,7 +238,9 @@ class TestPackageManagerUpdates:
     """Tests for the check_update_status method."""
 
     def test_status_not_installed(self, manager):
-        remote_meta = PackageMetadata("new-pkg", "", "1.0.0", Mock(), Mock())
+        remote_meta = PackageMetadata(
+            "new-pkg", "", "1.0.0", ["rayforge>=0.27.0,~0.27"], Mock(), Mock()
+        )
         status, local_ver = manager.check_update_status(remote_meta)
         assert status == UpdateStatus.NOT_INSTALLED
         assert local_ver is None
@@ -223,7 +250,9 @@ class TestPackageManagerUpdates:
         manager.loaded_packages[pkg_id] = create_mock_package(
             name=pkg_id, version="1.2.3"
         )
-        remote_meta = PackageMetadata(pkg_id, "", "1.2.3", Mock(), Mock())
+        remote_meta = PackageMetadata(
+            pkg_id, "", "1.2.3", ["rayforge>=0.27.0,~0.27"], Mock(), Mock()
+        )
         status, local_ver = manager.check_update_status(remote_meta)
         assert status == UpdateStatus.UP_TO_DATE
         assert local_ver == "1.2.3"
@@ -233,7 +262,9 @@ class TestPackageManagerUpdates:
         manager.loaded_packages[pkg_id] = create_mock_package(
             name=pkg_id, version="1.2.3"
         )
-        remote_meta = PackageMetadata(pkg_id, "", "1.3.0", Mock(), Mock())
+        remote_meta = PackageMetadata(
+            pkg_id, "", "1.3.0", ["rayforge>=0.27.0,~0.27"], Mock(), Mock()
+        )
         status, local_ver = manager.check_update_status(remote_meta)
         assert status == UpdateStatus.UPDATE_AVAILABLE
         assert local_ver == "1.2.3"
@@ -243,7 +274,9 @@ class TestPackageManagerUpdates:
         manager.loaded_packages[pkg_id] = create_mock_package(
             name=pkg_id, version="2.0.0"
         )
-        remote_meta = PackageMetadata(pkg_id, "", "1.5.0", Mock(), Mock())
+        remote_meta = PackageMetadata(
+            pkg_id, "", "1.5.0", ["rayforge>=0.27.0,~0.27"], Mock(), Mock()
+        )
         status, local_ver = manager.check_update_status(remote_meta)
         assert status == UpdateStatus.UP_TO_DATE
         assert local_ver == "2.0.0"
