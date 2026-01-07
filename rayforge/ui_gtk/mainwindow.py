@@ -5,9 +5,7 @@ from pathlib import Path
 from typing import Callable, Coroutine, List, Optional, cast
 from gi.repository import Adw, Gdk, Gio, GLib, Gtk
 
-from .doceditor import file_dialogs
 from .. import __version__
-from .actions import ActionManager
 from ..context import get_context
 from ..core.group import Group
 from ..core.item import DocItem
@@ -17,40 +15,43 @@ from ..core.stock import StockItem
 from ..core.undo import Command, HistoryManager, ListItemCommand
 from ..core.workpiece import WorkPiece
 from ..doceditor.editor import DocEditor
-from .doceditor import import_handler
-from .doceditor.asset_list_view import AssetListView
-from .doceditor.item_properties import DocItemPropertiesWidget
-from .doceditor.layer_list import LayerListView
-from .doceditor.stock_properties_dialog import StockPropertiesDialog
-from .doceditor.sketch_properties import SketchPropertiesWidget
-from .doceditor.workflow_view import WorkflowView
 from ..image.sketch.exporter import SketchExporter
 from ..machine.cmd import MachineCmd
 from ..machine.driver.driver import DeviceState, DeviceStatus
 from ..machine.driver.dummy import NoDeviceDriver
 from ..machine.models.machine import Machine
 from ..machine.transport import TransportStatus
-from .machine.jog_dialog import JogDialog
-from .machine.log_dialog import MachineLogDialog
-from .machine.settings_dialog import MachineSettingsDialog
-from .main_menu import MainMenu
 from ..pipeline.artifact import JobArtifact, JobArtifactHandle
 from ..pipeline.encoder.gcode import MachineCodeOpMap
 from ..pipeline.steps import STEP_FACTORIES, create_contour_step
 from ..shared.gcodeedit.viewer import GcodeViewer
 from ..shared.tasker import task_mgr
+from ..shared.util.time_format import format_hours_to_hm
 from .about import AboutDialog
-from .settings.settings_dialog import SettingsWindow
-from .task_bar import TaskBar
-from .toolbar import MainToolbar
+from .actions import ActionManager
 from .canvas import CanvasElement
 from .canvas2d.drag_drop_cmd import DragDropCmd
 from .canvas2d.elements.stock import StockElement
 from .canvas2d.simulator_cmd import SimulatorCmd
 from .canvas2d.surface import WorkSurface
 from .canvas3d import Canvas3D, initialized as canvas3d_initialized
+from .doceditor import file_dialogs
+from .doceditor.asset_list_view import AssetListView
+from .doceditor.import_handler import start_interactive_import
+from .doceditor.item_properties import DocItemPropertiesWidget
+from .doceditor.layer_list import LayerListView
+from .doceditor.stock_properties_dialog import StockPropertiesDialog
+from .doceditor.sketch_properties import SketchPropertiesWidget
+from .doceditor.workflow_view import WorkflowView
+from .machine.jog_dialog import JogDialog
+from .machine.log_dialog import MachineLogDialog
+from .machine.settings_dialog import MachineSettingsDialog
+from .main_menu import MainMenu
+from .settings.settings_dialog import SettingsWindow
 from .sketcher.cmd import UpdateSketchCommand
 from .sketcher.studio import SketchStudio
+from .task_bar import TaskBar
+from .toolbar import MainToolbar
 from .view_mode_cmd import ViewModeCmd
 
 
@@ -985,11 +986,11 @@ class MainWindow(Adw.ApplicationWindow):
         for counter in due_counters:
             msg = _(
                 "Maintenance Alert: {name} has reached its limit "
-                "({curr:g}h / {limit:g}h)"
+                "({curr} / {limit})"
             ).format(
                 name=counter.name,
-                curr=counter.value,
-                limit=counter.notify_at,
+                curr=format_hours_to_hm(counter.value),
+                limit=format_hours_to_hm(counter.notify_at),
             )
             self._on_editor_notification(self, msg, persistent=True)
 
@@ -1543,7 +1544,7 @@ class MainWindow(Adw.ApplicationWindow):
         self.close()
 
     def on_menu_import(self, action, param=None):
-        import_handler.start_interactive_import(self, self.doc_editor)
+        start_interactive_import(self, self.doc_editor)
 
     def on_open_clicked(self, sender):
         self.on_menu_import(sender)

@@ -3,8 +3,9 @@ from typing import cast
 from gi.repository import Gtk, Adw
 from ...machine.models.machine import Machine
 from ...machine.models.machine_hours import ResettableCounter
-from ..shared.preferences_group import PreferencesGroupWithButton
+from ...shared.util.time_format import format_hours_to_hm
 from ..icons import get_icon
+from ..shared.preferences_group import PreferencesGroupWithButton
 
 
 logger = logging.getLogger(__name__)
@@ -46,14 +47,12 @@ class CounterRow(Gtk.Box):
         info_box.append(title_label)
 
         # Time Subtitle
-        hours = int(self.counter.value)
-        minutes = int((self.counter.value - hours) * 60)
-        subtitle_text = f"{hours}h {minutes}m"
+        subtitle_text = format_hours_to_hm(self.counter.value)
 
         # If there is a notification threshold, show it as a limit
         # (e.g., "10h / 100h")
         if self.counter.notify_at is not None:
-            subtitle_text += f" / {self.counter.notify_at:g}h"
+            subtitle_text += f" / {format_hours_to_hm(self.counter.notify_at)}"
 
         value_label = Gtk.Label(
             label=subtitle_text,
@@ -377,10 +376,8 @@ class MachineHoursPage(Adw.PreferencesPage):
     def _update_ui(self):
         """Update UI with current machine hours data."""
         total_hours = self.machine.machine_hours.total_hours
-        hours = int(total_hours)
-        minutes = int((total_hours - hours) * 60)
         self.total_hours_row.set_subtitle(
-            _("{hours}h {minutes}m total").format(hours=hours, minutes=minutes)
+            _("{time} total").format(time=format_hours_to_hm(total_hours))
         )
 
     def _on_reset_total_clicked(self, button: Gtk.Button):
