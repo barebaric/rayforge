@@ -253,6 +253,14 @@ class ImportDialog(Adw.Window):
 
             self._layer_widgets.append(switch)
 
+        # Create new layers switch (under the layer list)
+        self.create_new_layers_switch = Adw.SwitchRow(
+            title=_("Create New Layers"),
+            subtitle=_("Create a new layer for each imported layer"),
+            active=False,
+        )
+        expander.add_row(self.create_new_layers_switch)
+
     def _get_active_layer_ids(self) -> Optional[List[str]]:
         if not self._layer_widgets:
             return None
@@ -268,7 +276,8 @@ class ImportDialog(Adw.Window):
         """
         if self.is_svg and self.use_vectors_switch.get_active():
             return PassthroughSpec(
-                active_layer_ids=self._get_active_layer_ids()
+                active_layer_ids=self._get_active_layer_ids(),
+                create_new_layers=self.create_new_layers_switch.get_active(),
             )
         else:
             return TraceSpec(
