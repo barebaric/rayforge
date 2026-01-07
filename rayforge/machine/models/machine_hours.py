@@ -34,7 +34,6 @@ class ResettableCounter:
             "name": self.name,
             "value": self.value,
             "notify_at": self.notify_at,
-            "notification_sent": self.notification_sent,
         }
 
     @classmethod
@@ -45,7 +44,6 @@ class ResettableCounter:
             name=data.get("name", "Counter"),
             value=data.get("value", 0.0),
             notify_at=data.get("notify_at"),
-            notification_sent=data.get("notification_sent", False),
         )
 
     def add_hours(self, hours: float) -> None:
