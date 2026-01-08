@@ -29,7 +29,7 @@ def empty_geometry():
 
 @pytest.fixture
 def sample_geometry():
-    geo = Geometry()
+    geo = Geometry(force_beziers=False)
     geo.move_to(0, 0)
     geo.line_to(10, 10)
     geo.arc_to(20, 0, i=5, j=-10)
@@ -39,8 +39,8 @@ def sample_geometry():
 def test_initialization(empty_geometry):
     assert len(empty_geometry) == 0
     assert empty_geometry.last_move_to == (0.0, 0.0, 0.0)
-    # Default should be False
-    assert empty_geometry._force_beziers is False
+    # Default should be True
+    assert empty_geometry.force_beziers is True
 
 
 def test_add_commands(empty_geometry):
@@ -118,11 +118,15 @@ def test_close_path(sample_geometry):
     assert (last_row[COL_X : COL_Z + 1] == (5.0, 5.0, -1.0)).all()
 
 
-def test_arc_to(sample_geometry):
-    sample_geometry.arc_to(5, 5, 2, 3, clockwise=False)
-    sample_geometry._sync_to_numpy()
-    assert sample_geometry.data is not None
-    last_row = sample_geometry.data[-1]
+def test_arc_to():
+    geo = Geometry(force_beziers=False)
+    geo.move_to(0, 0)
+    geo.line_to(10, 10)
+    geo.arc_to(20, 0, i=5, j=-10)
+    geo.arc_to(5, 5, 2, 3, clockwise=False)
+    geo._sync_to_numpy()
+    assert geo.data is not None
+    last_row = geo.data[-1]
     assert last_row[COL_TYPE] == CMD_TYPE_ARC
     assert (last_row[COL_X : COL_Z + 1] == (5.0, 5.0, 0.0)).all()
     assert last_row[6] == 0.0  # Clockwise is False
@@ -147,7 +151,7 @@ def test_serialization_deserialization(sample_geometry):
 def test_copy_method(sample_geometry):
     """Tests the deep copy functionality of the Geometry class."""
     # Set a flag to ensure it's copied
-    sample_geometry._force_beziers = True
+    sample_geometry.force_beziers = True
 
     original_geo = sample_geometry
     copied_geo = original_geo.copy()
@@ -157,7 +161,7 @@ def test_copy_method(sample_geometry):
     assert copied_geo == original_geo
     assert copied_geo.last_move_to == original_geo.last_move_to
     # Check that configuration flags are preserved
-    assert copied_geo._force_beziers is True
+    assert copied_geo.force_beziers is True
 
     # Modify the original and check that the copy is unaffected
     original_geo.line_to(100, 100)
@@ -233,7 +237,7 @@ def test_segments():
     assert geo_empty.segments() == []
 
     # Test case 2: Single open path
-    geo_open = Geometry()
+    geo_open = Geometry(force_beziers=False)
     geo_open.move_to(0, 0, 1)
     geo_open.line_to(10, 0, 2)
     geo_open.arc_to(10, 10, i=0, j=5, z=3)
@@ -319,10 +323,13 @@ def test_dump_and_load(sample_geometry):
     Tests the dump() and load() methods for space-efficient serialization.
     """
     # Test with a non-empty geometry
-    geo_with_bezier = sample_geometry.copy()
+    geo_with_bezier = Geometry(force_beziers=False)
+    geo_with_bezier.move_to(0, 0)
+    geo_with_bezier.line_to(10, 10)
+    geo_with_bezier.arc_to(20, 0, i=5, j=-10)
     geo_with_bezier.bezier_to(30, 10, c1x=22, c1y=2, c2x=28, c2y=8)
     dumped_data = geo_with_bezier.dump()
-    loaded_geo = Geometry.load(dumped_data)
+    loaded_geo = Geometry.load(dumped_data, force_beziers=False)
 
     assert dumped_data["last_move_to"] == list(geo_with_bezier.last_move_to)
     assert len(dumped_data["commands"]) == 4
@@ -350,7 +357,7 @@ def test_dump_and_load(sample_geometry):
 def test_force_beziers_init():
     """Test that the configuration flag is stored correctly."""
     geo = Geometry(force_beziers=True)
-    assert geo._force_beziers is True
+    assert geo.force_beziers is True
 
 
 def test_arc_to_converts_when_forced():
@@ -602,7 +609,7 @@ def test_to_cairo():
     from unittest.mock import Mock
     import cairo
 
-    geo = Geometry()
+    geo = Geometry(force_beziers=False)
     geo.move_to(5, 5)
     geo.line_to(10, 10)
     geo.arc_to(15, 5, i=0, j=-5, clockwise=False)
@@ -637,7 +644,7 @@ def test_to_cairo_clockwise_arc():
     from unittest.mock import Mock
     import cairo
 
-    geo = Geometry()
+    geo = Geometry(force_beziers=False)
     geo.move_to(10, 10)
     geo.arc_to(15, 10, i=0, j=-5, clockwise=True)
 
@@ -651,7 +658,7 @@ def test_to_cairo_clockwise_arc():
 
 def test_get_command_at_valid_index():
     """Tests get_command_at() with valid indices."""
-    geo = Geometry()
+    geo = Geometry(force_beziers=False)
     geo.move_to(0, 0, 1)
     geo.line_to(10, 10, 2)
     geo.arc_to(20, 0, i=5, j=-10, clockwise=False, z=3)
@@ -694,7 +701,7 @@ def test_get_command_at_empty_geometry():
 
 def test_iter_commands():
     """Tests iter_commands() yields all commands correctly."""
-    geo = Geometry()
+    geo = Geometry(force_beziers=False)
     geo.move_to(0, 0, 1)
     geo.line_to(10, 10, 2)
     geo.arc_to(20, 0, i=5, j=-10, clockwise=False, z=3)
@@ -740,7 +747,7 @@ def test_iter_commands_with_pending_data():
 
 def test_iter_commands_clockwise_arc():
     """Tests iter_commands() with clockwise arc."""
-    geo = Geometry()
+    geo = Geometry(force_beziers=False)
     geo.move_to(10, 10)
     geo.arc_to(15, 10, i=0, j=-5, clockwise=True)
 

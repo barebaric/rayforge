@@ -13,6 +13,10 @@ from .constants import (
     COL_I,
     COL_J,
     COL_CW,
+    COL_C1X,
+    COL_C1Y,
+    COL_C2X,
+    COL_C2Y,
 )
 from .linearize import _linearize_bezier_from_array
 from .primitives import (
@@ -91,8 +95,9 @@ def get_bounding_rect_from_array(
                 max_y = ay2
 
     # 3. Handle Beziers.
-    # The curve can extend beyond the convex hull of its control points.
-    # The safest way is to linearize and find the bounds of the polyline.
+    # The curve is guaranteed to be contained within the convex hull of its
+    # control points (P0, C1, C2, P3). We use this property for a fast
+    # safe bounding box calculation, instead of linearizing.
     bezier_indices = np.where(data[:, COL_TYPE] == CMD_TYPE_BEZIER)[0]
     if len(bezier_indices) > 0:
         start_indices = bezier_indices - 1
@@ -104,15 +109,33 @@ def get_bounding_rect_from_array(
                 valid_start_idxs, COL_X : COL_Z + 1
             ]
 
-        for i, row_idx in enumerate(bezier_indices):
-            row = data[row_idx]
-            start = tuple(start_points[i])
-            segments = _linearize_bezier_from_array(row, start)
-            for p1, p2 in segments:
-                min_x = min(min_x, p1[0], p2[0])
-                min_y = min(min_y, p1[1], p2[1])
-                max_x = max(max_x, p1[0], p2[0])
-                max_y = max(max_y, p1[1], p2[1])
+        # P0 (Start points)
+        p0_x = start_points[:, 0]
+        p0_y = start_points[:, 1]
+
+        # P3 (End points)
+        p3_x = data[bezier_indices, COL_X]
+        p3_y = data[bezier_indices, COL_Y]
+
+        # C1 (Control Point 1)
+        c1_x = data[bezier_indices, COL_C1X]
+        c1_y = data[bezier_indices, COL_C1Y]
+
+        # C2 (Control Point 2)
+        c2_x = data[bezier_indices, COL_C2X]
+        c2_y = data[bezier_indices, COL_C2Y]
+
+        # Calculate robust bounds using all control points
+        # Using np.minimum.reduce / np.maximum.reduce is efficient
+        min_bz_x = np.minimum.reduce([p0_x, p3_x, c1_x, c2_x])
+        max_bz_x = np.maximum.reduce([p0_x, p3_x, c1_x, c2_x])
+        min_bz_y = np.minimum.reduce([p0_y, p3_y, c1_y, c2_y])
+        max_bz_y = np.maximum.reduce([p0_y, p3_y, c1_y, c2_y])
+
+        min_x = min(min_x, np.min(min_bz_x))
+        max_x = max(max_x, np.max(max_bz_x))
+        min_y = min(min_y, np.min(min_bz_y))
+        max_y = max(max_y, np.max(max_bz_y))
 
     return float(min_x), float(min_y), float(max_x), float(max_y)
 

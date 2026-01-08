@@ -8,7 +8,7 @@ from unittest.mock import Mock
 from rayforge.image.dxf.importer import DxfImporter
 from rayforge.core.workpiece import WorkPiece
 from rayforge.core.matrix import Matrix
-from rayforge.core.geo import CMD_TYPE_ARC
+from rayforge.core.geo import CMD_TYPE_BEZIER
 
 
 # Fixtures
@@ -218,9 +218,9 @@ class TestDXFImporter:
         assert not boundaries.is_empty()
         data = boundaries.data
         assert data is not None
-        has_arc_commands = (data[:, 0] == CMD_TYPE_ARC).any()
-        assert has_arc_commands, (
-            "Circle should contain arc commands, not be linearized"
+        has_bezier_commands = (data[:, 0] == CMD_TYPE_BEZIER).any()
+        assert has_bezier_commands, (
+            "Circle should contain bezier commands, not be linearized"
         )
 
     def test_acdbcircle_dxf_not_linearized(
@@ -238,7 +238,7 @@ class TestDXFImporter:
         assert not boundaries.is_empty()
         data = boundaries.data
         assert data is not None
-        has_arc_commands = (data[:, 0] == CMD_TYPE_ARC).any()
-        assert has_arc_commands, (
-            "ACDB circle should contain arc commands, not be linearized"
+        has_bezier_commands = (data[:, 0] == CMD_TYPE_BEZIER).any()
+        assert has_bezier_commands, (
+            "ACDB circle should contain bezier commands, not be linearized"
         )

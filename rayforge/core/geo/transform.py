@@ -165,17 +165,19 @@ def apply_affine_transform_to_array(
         return data
 
     # Check for non-uniform scaling
+    # Compare squared lengths to correctly handle uniform reflections
+    # (e.g., scale(1, -1) is uniform, just a flip)
     v_x = matrix @ np.array([1, 0, 0, 0])
     v_y = matrix @ np.array([0, 1, 0, 0])
-    len_x = np.linalg.norm(v_x[:2])
-    len_y = np.linalg.norm(v_y[:2])
-    is_non_uniform = not np.isclose(len_x, len_y)
+    len_x_sq = np.sum(v_x[:2] ** 2)
+    len_y_sq = np.sum(v_y[:2] ** 2)
+    is_non_uniform = not np.isclose(len_x_sq, len_y_sq)
 
     if is_non_uniform:
         logger.debug(
             "Non-uniform scaling detected (x_scale=%f, y_scale=%f).",
-            len_x,
-            len_y,
+            np.sqrt(len_x_sq),
+            np.sqrt(len_y_sq),
         )
         return _transform_array_non_uniform(data, matrix)
     else:

@@ -69,12 +69,12 @@ class Geometry:
     cannot be non-uniformly scaled.
     """
 
-    def __init__(self, force_beziers: bool = False) -> None:
+    def __init__(self, force_beziers: bool = True) -> None:
+        self.force_beziers = force_beziers
         self.last_move_to: Tuple[float, float, float] = (0.0, 0.0, 0.0)
         self._winding_cache: Dict[int, str] = {}
         self._pending_data: List[List[float]] = []
         self._data: Optional[np.ndarray] = None
-        self._force_beziers = force_beziers
 
     @property
     def data(self) -> Optional[np.ndarray]:
@@ -143,7 +143,7 @@ class Geometry:
 
     def copy(self: T_Geometry) -> T_Geometry:
         """Creates a deep copy of the Geometry object."""
-        new_geo = self.__class__(force_beziers=self._force_beziers)
+        new_geo = self.__class__(force_beziers=self.force_beziers)
         new_geo.last_move_to = self.last_move_to
 
         # Manually sync before copying internal state to avoid double-sync
@@ -173,7 +173,7 @@ class Geometry:
         process.
         """
         # If we aren't enforcing beziers, use the fast path
-        if not self._force_beziers:
+        if not self.force_beziers:
             if other.data is not None and len(other.data) > 0:
                 self._sync_to_numpy()  # sync self first
                 if self._data is None:
@@ -281,7 +281,7 @@ class Geometry:
         clockwise: bool = True,
         z: float = 0.0,
     ) -> None:
-        if self._force_beziers:
+        if self.force_beziers:
             start_point = self._get_last_point()
             end_point = (float(x), float(y), float(z))
             center_offset = (float(i), float(j))
