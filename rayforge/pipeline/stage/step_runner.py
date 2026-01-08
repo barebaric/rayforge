@@ -78,25 +78,29 @@ def make_step_artifact_in_subprocess(
 
         workpiece = WorkPiece.from_dict(info["workpiece_dict"])
         ops = artifact.ops.copy()
+
+        # Decompose the world matrix to separate Scale from Placement
         world_matrix = Matrix.from_list(info["world_transform_list"])
         (tx, ty, angle, sx, sy, skew) = world_matrix.decompose()
 
-        # 1. Ensure ops are in final local size (in mm).
-        if artifact.is_scalable and artifact.source_dimensions:
-            target_w, target_h = workpiece.size
-            source_w, source_h = artifact.source_dimensions
-            if source_w > 1e-9 and source_h > 1e-9:
-                ops.scale(target_w / source_w, target_h / source_h)
+        # 1. Scaling Phase: Only for scalable artifacts (e.g. Vectors/Sketches)
+        #    Non-scalable artifacts (Raster/Contour) are already sized in mm.
+        if artifact.is_scalable:
+            if artifact.source_dimensions:
+                target_w, target_h = workpiece.size
+                source_w, source_h = artifact.source_dimensions
+                if source_w > 1e-9 and source_h > 1e-9:
+                    ops.scale(target_w / source_w, target_h / source_h)
 
-        # 2. Create the single, correct placement-only matrix for this
-        # workpiece. This will be used for both vertices and textures.
+        # 2. Placement Phase: Apply Translation and Rotation to ALL artifacts.
+        #    This moves them from Local MM Space -> World Space.
+        #    Note: We reconstruct the matrix with Scale=1.0 because scaling
+        #    was either handled above or pre-baked into the artifact.
         workpiece_placement_matrix = Matrix.compose(
             tx, ty, angle, 1.0, math.copysign(1.0, sy), skew
         )
-
-        # 2. FOR VERTICES: The 'ops' data is pre-scaled. Apply the
-        # placement-only transform to position it correctly.
         ops.transform(workpiece_placement_matrix.to_4x4_numpy())
+
         combined_ops.extend(ops)
 
         # 3. FOR TEXTURES: The renderer draws a 1x1 unit quad. We must
@@ -181,7 +185,7 @@ def make_step_artifact_in_subprocess(
         },
     )
 
-    # 7. NOW perform the expensive time calculation
+    # 7. Calculate time estimate
     proxy.set_message(_("Calculating time estimate..."))
     final_time = combined_ops.estimate_time(
         default_cut_speed=cut_speed,

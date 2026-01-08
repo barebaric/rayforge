@@ -451,7 +451,7 @@ class TestWorkPiece:
         doc.add_asset(source)
         gen_config = SourceAssetSegment(
             source_asset_uid=source.uid,
-            segment_mask_geometry=Geometry(),
+            pristine_geometry=Geometry(),
             vectorization_spec=PassthroughSpec(),
         )
         wp = WorkPiece("nosize.dat", source_segment=gen_config)
@@ -614,7 +614,8 @@ class TestWorkPiece:
         geo_y_down.close_path()  # (index 4)
         segment = SourceAssetSegment(
             source_asset_uid="<none>",
-            segment_mask_geometry=geo_y_down,
+            pristine_geometry=geo_y_down,
+            normalization_matrix=Matrix.identity(),
             vectorization_spec=PassthroughSpec(),
         )
 
@@ -653,7 +654,7 @@ class TestWorkPiece:
         open_geo_y_down = Geometry()
         open_geo_y_down.move_to(0, 0)
         open_geo_y_down.line_to(1, 0)
-        wp.source_segment.segment_mask_geometry = open_geo_y_down
+        wp.source_segment.pristine_geometry = open_geo_y_down
         wp.clear_render_cache()  # This will also clear the boundaries cache
         # Use a tab on the only existing segment (index 1)
         tab_on_open = Tab(width=1, segment_index=1, pos=0.5)
@@ -678,7 +679,7 @@ class TestWorkPiece:
         geo.close_path()
         segment = SourceAssetSegment(
             source_asset_uid="<none>",
-            segment_mask_geometry=geo,
+            pristine_geometry=geo,
             vectorization_spec=PassthroughSpec(),
         )
         wp.source_segment = segment

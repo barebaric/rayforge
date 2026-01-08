@@ -121,7 +121,7 @@ class TestPipelineArtifacts:
         doc.add_asset(source)
         gen_config = SourceAssetSegment(
             source_asset_uid=source.uid,
-            segment_mask_geometry=Geometry(),
+            pristine_geometry=Geometry(),
             vectorization_spec=PassthroughSpec(),
         )
         workpiece.source_segment = gen_config

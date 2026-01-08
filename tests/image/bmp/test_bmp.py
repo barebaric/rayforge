@@ -349,7 +349,7 @@ class TestBmpRenderer:
         )
         gen_config = SourceAssetSegment(
             source_asset_uid=source.uid,
-            segment_mask_geometry=Geometry(),
+            pristine_geometry=Geometry(),
             vectorization_spec=TraceSpec(),
         )
         invalid_wp = WorkPiece(name="invalid", source_segment=gen_config)

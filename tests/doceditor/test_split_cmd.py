@@ -6,6 +6,7 @@ from rayforge.doceditor.split_cmd import SplitCmd, SplitStrategy
 from rayforge.core.doc import Doc
 from rayforge.core.workpiece import WorkPiece
 from rayforge.core.geo import Geometry
+from rayforge.core.matrix import Matrix
 from rayforge.core.source_asset_segment import SourceAssetSegment
 from rayforge.core.vectorization_spec import PassthroughSpec
 
@@ -62,8 +63,9 @@ def workpiece_on_layer(mock_editor):
 
     segment = SourceAssetSegment(
         source_asset_uid="dummy",
-        segment_mask_geometry=geo,
+        pristine_geometry=geo,
         vectorization_spec=PassthroughSpec(),
+        normalization_matrix=Matrix.identity(),
     )
 
     wp = WorkPiece(name="TestItem", source_segment=segment)
@@ -172,8 +174,9 @@ def test_connectivity_strategy_real_split(split_cmd, mock_editor):
 
     segment = SourceAssetSegment(
         source_asset_uid="dummy",
-        segment_mask_geometry=norm_geo,
+        pristine_geometry=norm_geo,
         vectorization_spec=PassthroughSpec(),
+        normalization_matrix=Matrix.identity(),
     )
 
     wp = WorkPiece(name="SplitMe", source_segment=segment)

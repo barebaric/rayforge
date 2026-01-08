@@ -15,7 +15,7 @@ class TestSourceAssetSegment:
 
         segment = SourceAssetSegment(
             source_asset_uid="uid-123",
-            segment_mask_geometry=original_geo,
+            pristine_geometry=original_geo,
             vectorization_spec=spec,
             image_modifier_chain=modifiers,
         )
@@ -30,8 +30,8 @@ class TestSourceAssetSegment:
 
         # Verify basic properties
         assert clone.source_asset_uid == segment.source_asset_uid
-        assert clone.segment_mask_geometry is new_geo
-        assert clone.segment_mask_geometry is not original_geo
+        assert clone.pristine_geometry is new_geo
+        assert clone.pristine_geometry is not original_geo
 
         # Verify Deep Copy of mutable fields
         assert clone.vectorization_spec == segment.vectorization_spec

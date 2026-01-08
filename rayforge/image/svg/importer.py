@@ -251,30 +251,41 @@ class SvgImporter(Importer):
 
         # 5. Standard path (merged import)
         # Convert SVG shapes to internal geometry (in pixel coordinates).
-        geo = self._convert_svg_to_geometry(svg, final_dims_mm)
-
-        # Apply decimation (RDP) here, before any normalization or matrix math.
-        # Use a small pixel tolerance to remove micro-segments from flattening
-        # without losing visual fidelity on small-scale features.
-        # Note: Major simplification is now done during buffer flushing
-        # inside _convert_svg_to_geometry. This pass catches inter-segment
-        # issues.
-        geo.simplify(tolerance=0.1)
+        # This now preserves circular arcs.
+        pristine_geo = self._convert_svg_to_geometry(svg, final_dims_mm)
+        logger.info(
+            f"SVG Import: Pristine geometry created with "
+            f"{len(pristine_geo)} commands."
+        )
 
         # If the SVG contained no parsable vector paths, abort the import.
-        if geo.is_empty():
+        if pristine_geo.is_empty():
             logger.info(
                 "Direct SVG import resulted in empty geometry. "
                 "No items created."
             )
             return None
 
-        # Normalize geometry to a 0-1 unit square (Y-down).
-        self._normalize_geometry(geo, width_px, height_px)
+        # Calculate normalization matrix for the new path
+        normalization_matrix = Matrix.scale(1.0 / width_px, 1.0 / height_px)
 
-        # Create the final workpiece.
-        wp = self._create_workpiece(
-            geo, source, final_width_mm, final_height_mm
+        # Create the segment with the pristine geometry and its normalization
+        # matrix
+        segment = SourceAssetSegment(
+            source_asset_uid=source.uid,
+            vectorization_spec=PassthroughSpec(),
+            pristine_geometry=pristine_geo,
+            normalization_matrix=normalization_matrix,
+        )
+
+        wp = WorkPiece(name=self.source_file.stem, source_segment=segment)
+        wp.natural_width_mm = final_width_mm
+        wp.natural_height_mm = final_height_mm
+        wp.set_size(final_width_mm, final_height_mm)
+        wp.pos = (0, 0)
+        logger.info(
+            f"Workpiece set size: "
+            f"{final_width_mm:.3f}mm x {final_height_mm:.3f}mm"
         )
         return [wp]
 
@@ -293,17 +304,26 @@ class SvgImporter(Importer):
         different geometry masks.
         """
         # Create a master WorkPiece to use as the matrix template.
-        master_geo = self._convert_svg_to_geometry(svg, final_dims_mm)
-        master_geo.simplify(tolerance=0.1)
-        self._normalize_geometry(master_geo, width_px, height_px)
+        master_pristine_geo = self._convert_svg_to_geometry(svg, final_dims_mm)
 
         # If the master geometry is empty, there's nothing to split.
-        if master_geo.is_empty():
+        if master_pristine_geo.is_empty():
             return []
 
-        master_wp = self._create_workpiece(
-            master_geo, source, final_dims_mm[0], final_dims_mm[1]
+        normalization_matrix = Matrix.scale(1.0 / width_px, 1.0 / height_px)
+        master_segment = SourceAssetSegment(
+            source_asset_uid=source.uid,
+            vectorization_spec=PassthroughSpec(),
+            pristine_geometry=master_pristine_geo,
+            normalization_matrix=normalization_matrix,
         )
+        master_wp = WorkPiece(
+            name=self.source_file.stem, source_segment=master_segment
+        )
+        master_wp.natural_width_mm = final_dims_mm[0]
+        master_wp.natural_height_mm = final_dims_mm[1]
+        master_wp.set_size(final_dims_mm[0], final_dims_mm[1])
+        master_wp.pos = (0, 0)
 
         final_items: List[DocItem] = []
         manifest = extract_layer_manifest(self.raw_data)
@@ -337,7 +357,6 @@ class SvgImporter(Importer):
                 for shape in _get_all_shapes(element):
                     try:
                         path = Path(shape)
-                        path.reify()  # Apply transforms
                         self._add_path_to_geometry(
                             path, layer_geoms[lid], tolerance
                         )
@@ -346,21 +365,15 @@ class SvgImporter(Importer):
 
         # Create DocItems from populated geometries
         for lid in layer_ids:
-            layer_geo = layer_geoms[lid]
+            pristine_layer_geo = layer_geoms[lid]
 
-            # Simplify each layer individually with a small tolerance
-            layer_geo.simplify(tolerance=0.1)
-
-            # Normalize to the MASTER coordinate system (Y-down 0-1)
-            self._normalize_geometry(layer_geo, width_px, height_px)
-
-            if not layer_geo.is_empty():
-                # Create Segment
+            if not pristine_layer_geo.is_empty():
                 segment = SourceAssetSegment(
                     source_asset_uid=source.uid,
-                    segment_mask_geometry=layer_geo,
                     vectorization_spec=PassthroughSpec(),
                     layer_id=lid,
+                    pristine_geometry=pristine_layer_geo,
+                    normalization_matrix=normalization_matrix,
                 )
 
                 # Create WorkPiece
@@ -436,6 +449,7 @@ class SvgImporter(Importer):
     ) -> Geometry:
         """
         Converts an SVG object into a Geometry object in pixel coordinates.
+        Preserves circular arcs.
         """
         geo = Geometry()
 
@@ -457,14 +471,15 @@ class SvgImporter(Importer):
         self, path: Path, geo: Geometry, tolerance: float
     ) -> None:
         """
-        Converts a single Path object's segments to Geometry commands using
-        Cairo's optimized C implementation for flattening Bezier curves.
-
-        This avoids slow Python-based recursion for curve linearization by:
+        Converts a single Path object's segments to Geometry commands using a
+        hybrid approach: circular arcs are added directly, while all other
+        curves are flattened using Cairo. This avoids slow Python-based
+        recursion for curve linearization by:
         1. Constructing the path in a temporary Cairo context.
         2. Utilizing `ctx.copy_path_flat()` to get pre-flattened line data.
         3. Buffering points for efficient ingestion into the Geometry object.
         """
+        logger.debug(f"Processing path with {len(path)} segments.")
         # Create a throwaway 1x1 surface just to get a Context
         surface = cairo.ImageSurface(cairo.FORMAT_A8, 1, 1)
         ctx = cairo.Context(surface)
@@ -472,107 +487,158 @@ class SvgImporter(Importer):
         # Set tolerance for flattening (conversion of curves to lines)
         ctx.set_tolerance(tolerance)
 
-        # Feed svgelements path data into the Cairo context
-        for seg in path:
-            start = seg.start
-            end = seg.end
-            if end is None:
-                continue
+        # Feed svgelements path data into the Cairo context or Geometry
+        for i, seg in enumerate(path):
+            is_circular_arc = False
+            if (
+                isinstance(seg, Arc)
+                and seg.rx is not None
+                and seg.ry is not None
+            ):
+                # Check if it's a circular arc (or very close to one)
+                if abs(seg.rx - seg.ry) < 1e-3:
+                    is_circular_arc = True
 
-            # Robust checking before accessing coordinates
-            if end.x is None or end.y is None:
-                continue
+            if is_circular_arc:
+                logger.debug(
+                    f"Segment {i} is a circular arc, adding directly."
+                )
+                # 1. Flush any pending non-arc segments from the cairo context
+                self._process_cairo_flat_path(ctx, geo, tolerance)
 
-            end_pt = (float(end.x), float(end.y))
-
-            if isinstance(seg, Move):
-                ctx.move_to(end_pt[0], end_pt[1])
-
-            elif isinstance(seg, Line):
-                ctx.line_to(end_pt[0], end_pt[1])
-
-            elif isinstance(seg, Close):
-                ctx.close_path()
-
-            elif isinstance(seg, CubicBezier):
-                c1 = seg.control1
-                c2 = seg.control2
-                # Ensure control points exist before accessing properties
+                # 2. Add the arc directly to our Geometry
+                start = seg.start
+                end = seg.end
+                center = seg.center
                 if (
-                    c1 is not None
-                    and c2 is not None
-                    and c1.x is not None
-                    and c1.y is not None
-                    and c2.x is not None
-                    and c2.y is not None
+                    start is not None
+                    and end is not None
+                    and center is not None
+                    and start.x is not None
+                    and start.y is not None
+                    and end.x is not None
+                    and end.y is not None
+                    and center.real is not None
+                    and center.imag is not None
                 ):
-                    ctx.curve_to(
-                        float(c1.x),
-                        float(c1.y),
-                        float(c2.x),
-                        float(c2.y),
-                        end_pt[0],
-                        end_pt[1],
+                    i_offset = center.real - start.x
+                    j_offset = center.imag - start.y
+
+                    # SVG sweep_flag: 1 is "positive-angle" direction.
+                    # In SVG's Y-down, this is CW. Our geometry expects
+                    # CW=True.
+                    clockwise = bool(seg.sweep)
+                    geo.arc_to(
+                        float(end.x),
+                        float(end.y),
+                        i_offset,
+                        j_offset,
+                        clockwise=clockwise,
+                        z=0.0,
                     )
+                # 3. Update Cairo's current point to keep it in sync
+                if end is not None and end.x is not None and end.y is not None:
+                    ctx.move_to(float(end.x), float(end.y))
+            else:
+                logger.debug(
+                    f"Segment {i} is {type(seg).__name__}, adding to cairo."
+                )
+                # For all other segment types, feed them into Cairo
+                start = seg.start
+                end = seg.end
+                if end is None:
+                    continue
+                # Robust checking before accessing coordinates
+                if end.x is None or end.y is None:
+                    continue
 
-            elif isinstance(seg, QuadraticBezier):
-                # Promote Quadratic to Cubic for Cairo
-                # CP1 = Start + (2/3)*(Control - Start)
-                # CP2 = End + (2/3)*(Control - End)
-                s = start
-                c = seg.control
+                end_pt = (float(end.x), float(end.y))
 
-                if (
-                    s is not None
-                    and c is not None
-                    and s.x is not None
-                    and s.y is not None
-                    and c.x is not None
-                    and c.y is not None
-                ):
-                    sx, sy = float(s.x), float(s.y)
-                    cx, cy = float(c.x), float(c.y)
-                    ex, ey = end_pt
+                if isinstance(seg, Move):
+                    ctx.move_to(end_pt[0], end_pt[1])
 
-                    c1x = sx + (2.0 / 3.0) * (cx - sx)
-                    c1y = sy + (2.0 / 3.0) * (cy - sy)
-                    c2x = ex + (2.0 / 3.0) * (cx - ex)
-                    c2y = ey + (2.0 / 3.0) * (cy - ey)
+                elif isinstance(seg, Line):
+                    ctx.line_to(end_pt[0], end_pt[1])
 
-                    ctx.curve_to(c1x, c1y, c2x, c2y, ex, ey)
+                elif isinstance(seg, Close):
+                    ctx.close_path()
 
-            elif isinstance(seg, Arc):
-                # svgelements handles elliptical arcs and rotation logic
-                # much better than manual Cairo calls. We convert the Arc
-                # to a series of cubic beziers using svgelements' own logic.
-                for cubic in seg.as_cubic_curves():
-                    # as_cubic_curves returns CubicBezier objects
-                    c1 = cubic.control1
-                    c2 = cubic.control2
-                    e = cubic.end
+                elif isinstance(seg, CubicBezier):
+                    c1 = seg.control1
+                    c2 = seg.control2
+                    # Ensure control points exist before accessing properties
                     if (
                         c1 is not None
                         and c2 is not None
-                        and e is not None
                         and c1.x is not None
                         and c1.y is not None
                         and c2.x is not None
                         and c2.y is not None
-                        and e.x is not None
-                        and e.y is not None
                     ):
                         ctx.curve_to(
                             float(c1.x),
                             float(c1.y),
                             float(c2.x),
                             float(c2.y),
-                            float(e.x),
-                            float(e.y),
+                            end_pt[0],
+                            end_pt[1],
                         )
 
-        # Retrieve the flattened path (Moves, Lines, Closes) from Cairo
-        flat_path_iter = ctx.copy_path_flat()
+                elif isinstance(seg, QuadraticBezier):
+                    # Promote Quadratic to Cubic for Cairo
+                    # CP1 = Start + (2/3)*(Control - Start)
+                    # CP2 = End + (2/3)*(Control - End)
+                    c = seg.control
+                    if (
+                        start is not None
+                        and c is not None
+                        and start.x is not None
+                        and start.y is not None
+                        and c.x is not None
+                        and c.y is not None
+                    ):
+                        sx, sy = float(start.x), float(start.y)
+                        cx, cy = float(c.x), float(c.y)
+                        ex, ey = end_pt
 
+                        c1x = sx + (2.0 / 3.0) * (cx - sx)
+                        c1y = sy + (2.0 / 3.0) * (cy - sy)
+                        c2x = ex + (2.0 / 3.0) * (cx - ex)
+                        c2y = ey + (2.0 / 3.0) * (cy - ey)
+
+                        ctx.curve_to(c1x, c1y, c2x, c2y, ex, ey)
+
+                elif isinstance(seg, Arc):  # Elliptical arc
+                    for cubic in seg.as_cubic_curves():
+                        c1, c2, e = cubic.control1, cubic.control2, cubic.end
+                        if (
+                            c1 is not None
+                            and c2 is not None
+                            and e is not None
+                            and c1.x is not None
+                            and c1.y is not None
+                            and c2.x is not None
+                            and c2.y is not None
+                            and e.x is not None
+                            and e.y is not None
+                        ):
+                            ctx.curve_to(
+                                float(c1.x),
+                                float(c1.y),
+                                float(c2.x),
+                                float(c2.y),
+                                float(e.x),
+                                float(e.y),
+                            )
+
+        # Flush any remaining segments from the cairo context
+        self._process_cairo_flat_path(ctx, geo, tolerance)
+
+    def _process_cairo_flat_path(
+        self, ctx: cairo.Context, geo: Geometry, tolerance: float
+    ):
+        """Helper to flush flattened bezier/line data from Cairo to Geometry"""
+        flat_path_iter = ctx.copy_path_flat()
         point_buffer: List[Tuple[float, float]] = []
 
         def flush_buffer():
@@ -622,6 +688,8 @@ class SvgImporter(Importer):
 
         # Flush any remaining segments
         flush_buffer()
+        # After flushing, clear the Cairo path
+        ctx.new_path()
 
     def _normalize_geometry(
         self, geo: Geometry, width_px: float, height_px: float
@@ -634,29 +702,3 @@ class SvgImporter(Importer):
         if width_px > 0 and height_px > 0:
             norm_matrix = Matrix.scale(1.0 / width_px, 1.0 / height_px)
             geo.transform(norm_matrix.to_4x4_numpy())
-
-    def _create_workpiece(
-        self,
-        geo: Geometry,
-        source: SourceAsset,
-        width_mm: float,
-        height_mm: float,
-    ) -> WorkPiece:
-        """Creates and configures the final WorkPiece."""
-        gen_config = SourceAssetSegment(
-            source_asset_uid=source.uid,
-            segment_mask_geometry=geo,
-            vectorization_spec=PassthroughSpec(),
-        )
-        wp = WorkPiece(
-            name=self.source_file.stem,
-            source_segment=gen_config,
-        )
-        wp.natural_width_mm = width_mm
-        wp.natural_height_mm = height_mm
-        wp.set_size(width_mm, height_mm)
-        wp.pos = (0, 0)
-        logger.info(
-            f"Workpiece set size: {width_mm:.3f}mm x {height_mm:.3f}mm"
-        )
-        return wp

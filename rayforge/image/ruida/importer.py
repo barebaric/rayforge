@@ -31,8 +31,8 @@ class RuidaImporter(Importer):
     ) -> Optional[ImportPayload]:
         # Ruida files are always vector, so vectorization_spec is ignored.
         job = self._get_job()
-        geometry = self._get_geometry(job)
-        geometry.close_gaps()
+        pristine_geo = self._get_geometry(job)
+        pristine_geo.close_gaps()
 
         source = SourceAsset(
             source_file=self.source_file,
@@ -40,7 +40,7 @@ class RuidaImporter(Importer):
             renderer=RUIDA_RENDERER,
         )
 
-        if not geometry or geometry.is_empty():
+        if not pristine_geo or pristine_geo.is_empty():
             # Still return a source for an empty file, but no items.
             return ImportPayload(source=source, items=[])
 
@@ -57,28 +57,19 @@ class RuidaImporter(Importer):
         width = max(width_mm, 1e-9)
         height = max(height_mm, 1e-9)
 
-        # The geometry from the Ruida is Y-up. We must convert it to a
-        # normalized Y-down geometry for storage in the segment.
-        segment_mask_geo = geometry.copy()
-
-        # 1. Translate to origin (0,0 is bottom-left).
-        translate_matrix = Matrix.translation(-min_x, -min_y)
-        segment_mask_geo.transform(translate_matrix.to_4x4_numpy())
-
-        # 2. Normalize to a 1x1 box (still Y-up).
-        if width > 0 and height > 0:
-            norm_matrix = Matrix.scale(1.0 / width, 1.0 / height)
-            segment_mask_geo.transform(norm_matrix.to_4x4_numpy())
-
-        # 3. Flip the Y-axis to convert to Y-down for storage.
-        flip_matrix = Matrix.translation(0, 1) @ Matrix.scale(1, -1)
-        segment_mask_geo.transform(flip_matrix.to_4x4_numpy())
+        # Create a matrix that transforms the pristine geometry (in mm, Y-up)
+        # into a normalized (0-1, Y-down) coordinate space.
+        translate_to_origin = Matrix.translation(-min_x, -min_y)
+        scale_to_unit = Matrix.scale(1.0 / width, 1.0 / height)
+        flip_y = Matrix.translation(0, 1) @ Matrix.scale(1, -1)
+        normalization_matrix = flip_y @ scale_to_unit @ translate_to_origin
 
         passthrough_spec = PassthroughSpec()
         gen_config = SourceAssetSegment(
             source_asset_uid=source.uid,
-            segment_mask_geometry=segment_mask_geo,
             vectorization_spec=passthrough_spec,
+            pristine_geometry=pristine_geo,
+            normalization_matrix=normalization_matrix,
         )
         wp = WorkPiece(
             name=self.source_file.stem,
