@@ -19,7 +19,6 @@ import numpy as np
 from scipy.ndimage import binary_dilation
 from scipy.signal import fftconvolve
 from ...context import get_context
-from ...core.geo.linearize import linearize_arc
 from ...core.group import Group
 from ...core.matrix import Matrix
 from ...core.item import DocItem
@@ -284,21 +283,7 @@ class PixelPerfectLayoutStrategy(LayoutStrategy):
         ctx.scale(self.resolution, self.resolution)  # Scale context to mm
 
         # Draw path from geometry data.
-        last_pos = (0.0, 0.0, 0.0)
-        for cmd_type, x, y, z, i, j, cw in geometry_for_render.iter_commands():
-            end = (x, y, z)
-
-            if cmd_type == 0:  # CMD_TYPE_MOVE
-                ctx.move_to(end[0], end[1])
-            elif cmd_type == 1:  # CMD_TYPE_LINE
-                ctx.line_to(end[0], end[1])
-            elif cmd_type == 2:  # CMD_TYPE_ARC
-                segments = linearize_arc(
-                    (cmd_type, x, y, z, i, j, cw), last_pos
-                )
-                for _, p2 in segments:
-                    ctx.line_to(p2[0], p2[1])
-            last_pos = end
+        geometry_for_render.to_cairo(ctx)
         ctx.fill()
 
         # 4. Extract the pixel data into a NumPy array.

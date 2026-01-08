@@ -5,6 +5,7 @@ from .constants import (
     CMD_TYPE_MOVE,
     CMD_TYPE_LINE,
     CMD_TYPE_ARC,
+    CMD_TYPE_BEZIER,
     COL_TYPE,
     COL_X,
     COL_Y,
@@ -13,9 +14,11 @@ from .constants import (
     COL_J,
     COL_CW,
 )
+from .linearize import _linearize_bezier_from_array
 from .primitives import (
     find_closest_point_on_line_segment,
     find_closest_point_on_arc,
+    find_closest_point_on_bezier,
     get_arc_bounding_box,
 )
 
@@ -87,6 +90,30 @@ def get_bounding_rect_from_array(
             if ay2 > max_y:
                 max_y = ay2
 
+    # 3. Handle Beziers.
+    # The curve can extend beyond the convex hull of its control points.
+    # The safest way is to linearize and find the bounds of the polyline.
+    bezier_indices = np.where(data[:, COL_TYPE] == CMD_TYPE_BEZIER)[0]
+    if len(bezier_indices) > 0:
+        start_indices = bezier_indices - 1
+        start_points = np.zeros((len(bezier_indices), 3))  # X, Y, Z
+        valid_starts_mask = start_indices >= 0
+        if np.any(valid_starts_mask):
+            valid_start_idxs = start_indices[valid_starts_mask]
+            start_points[valid_starts_mask] = data[
+                valid_start_idxs, COL_X : COL_Z + 1
+            ]
+
+        for i, row_idx in enumerate(bezier_indices):
+            row = data[row_idx]
+            start = tuple(start_points[i])
+            segments = _linearize_bezier_from_array(row, start)
+            for p1, p2 in segments:
+                min_x = min(min_x, p1[0], p2[0])
+                min_y = min(min_y, p1[1], p2[1])
+                max_x = max(max_x, p1[0], p2[0])
+                max_y = max(max_y, p1[1], p2[1])
+
     return float(min_x), float(min_y), float(max_x), float(max_y)
 
 
@@ -129,6 +156,10 @@ def get_total_distance_from_array(data: np.ndarray) -> float:
                     if angle_span < -1e-9:
                         angle_span += 2 * math.pi
                 total_dist += abs(angle_span * radius)
+        elif cmd_type == CMD_TYPE_BEZIER:
+            segments = _linearize_bezier_from_array(row, last_point)
+            for p1, p2 in segments:
+                total_dist += math.hypot(p2[0] - p1[0], p2[1] - p1[1])
 
         last_point = end_point
 
@@ -172,6 +203,14 @@ def find_closest_point_on_path_from_array(
                 if dist_sq_arc < min_dist_sq:
                     min_dist_sq = dist_sq_arc
                     closest_info = (i, t_arc, pt_arc)
+
+        elif cmd_type == CMD_TYPE_BEZIER:
+            result = find_closest_point_on_bezier(row, start_pos_3d, x, y)
+            if result:
+                t_bezier, pt_bezier, dist_sq_bezier = result
+                if dist_sq_bezier < min_dist_sq:
+                    min_dist_sq = dist_sq_bezier
+                    closest_info = (i, t_bezier, pt_bezier)
 
         last_pos_3d = end_point_3d
 

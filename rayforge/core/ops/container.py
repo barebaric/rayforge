@@ -384,16 +384,44 @@ class Ops:
         from .. import geo
 
         new_ops = cls()
-        for cmd_type, x, y, z, i, j, cw in geometry.iter_commands():
+        if geometry.data is None:
+            new_ops.last_move_to = geometry.last_move_to
+            return new_ops
+
+        last_pos = (0.0, 0.0, 0.0)
+        for row in geometry.data:
+            cmd_type = row[geo.constants.COL_TYPE]
+            x, y, z = row[geo.constants.COL_X : geo.constants.COL_Z + 1]
             end = (x, y, z)
+
             if cmd_type == geo.constants.CMD_TYPE_MOVE:
                 new_ops.add(MoveToCommand(end))
             elif cmd_type == geo.constants.CMD_TYPE_LINE:
                 new_ops.add(LineToCommand(end))
             elif cmd_type == geo.constants.CMD_TYPE_ARC:
+                i = row[geo.constants.COL_I]
+                j = row[geo.constants.COL_J]
+                cw = row[geo.constants.COL_CW]
                 center_offset = (i, j)
                 clockwise = bool(cw)
                 new_ops.add(ArcToCommand(end, center_offset, clockwise))
+            elif cmd_type == geo.constants.CMD_TYPE_BEZIER:
+                # Ops doesn't have a native Bezier command, so we linearize.
+                segments = geo.linearize._linearize_bezier_from_array(
+                    row, last_pos
+                )
+                for _, p2 in segments:
+                    new_ops.add(LineToCommand(p2))
+
+            # Update last_pos with the endpoint of the original command
+            if cmd_type in (
+                geo.constants.CMD_TYPE_MOVE,
+                geo.constants.CMD_TYPE_LINE,
+                geo.constants.CMD_TYPE_ARC,
+                geo.constants.CMD_TYPE_BEZIER,
+            ):
+                last_pos = end
+
         new_ops.last_move_to = geometry.last_move_to
         return new_ops
 

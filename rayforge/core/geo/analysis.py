@@ -2,12 +2,13 @@ import math
 from typing import List, Tuple, Optional, TYPE_CHECKING
 from itertools import groupby
 import numpy as np
-from .linearize import linearize_arc
+from .linearize import linearize_arc, _linearize_bezier_from_array
 from .primitives import is_point_in_polygon
 from .constants import (
     CMD_TYPE_MOVE,
     CMD_TYPE_LINE,
     CMD_TYPE_ARC,
+    CMD_TYPE_BEZIER,
     COL_TYPE,
     COL_X,
     COL_Y,
@@ -15,6 +16,10 @@ from .constants import (
     COL_I,
     COL_J,
     COL_CW,
+    COL_C1X,
+    COL_C1Y,
+    COL_C2X,
+    COL_C2Y,
 )
 
 if TYPE_CHECKING:
@@ -148,6 +153,10 @@ def get_subpath_vertices_from_array(
             segments = linearize_arc(row, last_pos_3d)
             for _, p2 in segments:
                 vertices.append(p2[:2])
+        elif cmd_type == CMD_TYPE_BEZIER:
+            segments = _linearize_bezier_from_array(row, last_pos_3d)
+            for _, p2 in segments:
+                vertices.append(p2[:2])
         last_pos_3d = end_point_3d
     return vertices
 
@@ -192,7 +201,7 @@ def get_area_from_array(data: np.ndarray) -> float:
     if len(data) > 0 and data[0, COL_TYPE] != CMD_TYPE_MOVE:
         # Geometry doesn't start with a move, prepend one at (0,0,0)
         processed_data = np.insert(
-            data, 0, [CMD_TYPE_MOVE, 0, 0, 0, 0, 0, 0], axis=0
+            data, 0, [CMD_TYPE_MOVE, 0, 0, 0, 0, 0, 0, 0], axis=0
         )
         move_indices = np.where(processed_data[:, COL_TYPE] == CMD_TYPE_MOVE)[
             0
@@ -234,7 +243,7 @@ def get_point_and_tangent_at_from_array(
 
     row = data[row_index]
     cmd_type = row[COL_TYPE]
-    if cmd_type not in (CMD_TYPE_LINE, CMD_TYPE_ARC):
+    if cmd_type not in (CMD_TYPE_LINE, CMD_TYPE_ARC, CMD_TYPE_BEZIER):
         return None
 
     # Find the start point of this segment
@@ -282,6 +291,36 @@ def get_point_and_tangent_at_from_array(
             tangent_vec = (radius_vec[1], -radius_vec[0])
         else:
             tangent_vec = (-radius_vec[1], radius_vec[0])
+    elif cmd_type == CMD_TYPE_BEZIER:
+        c1 = (row[COL_C1X], row[COL_C1Y])
+        c2 = (row[COL_C2X], row[COL_C2Y])
+        # Point (B(t))
+        omt = 1 - t
+        p_x = (
+            omt**3 * p0[0]
+            + 3 * omt**2 * t * c1[0]
+            + 3 * omt * t**2 * c2[0]
+            + t**3 * p1[0]
+        )
+        p_y = (
+            omt**3 * p0[1]
+            + 3 * omt**2 * t * c1[1]
+            + 3 * omt * t**2 * c2[1]
+            + t**3 * p1[1]
+        )
+        point = (p_x, p_y)
+        # Tangent (B'(t))
+        tx = (
+            3 * omt**2 * (c1[0] - p0[0])
+            + 6 * omt * t * (c2[0] - c1[0])
+            + 3 * t**2 * (p1[0] - c2[0])
+        )
+        ty = (
+            3 * omt**2 * (c1[1] - p0[1])
+            + 6 * omt * t * (c2[1] - c1[1])
+            + 3 * t**2 * (p1[1] - c2[1])
+        )
+        tangent_vec = (tx, ty)
     else:
         return None
 

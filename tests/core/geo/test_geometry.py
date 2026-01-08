@@ -13,10 +13,12 @@ from rayforge.core.geo.constants import (
     CMD_TYPE_MOVE,
     CMD_TYPE_LINE,
     CMD_TYPE_ARC,
+    CMD_TYPE_BEZIER,
     COL_TYPE,
     COL_X,
     COL_Y,
     COL_Z,
+    GEO_ARRAY_COLS,
 )
 
 
@@ -60,7 +62,9 @@ def test_simplify_wrapper(sample_geometry):
         "rayforge.core.geo.geometry.simplify_geometry_from_array"
     ) as mock_simplify:
         # Mock returns a simplified numpy array
-        mock_return_data = np.array([[CMD_TYPE_MOVE, 0.0, 0.0, 0.0, 0, 0, 0]])
+        mock_return_data = np.array(
+            [[CMD_TYPE_MOVE, 0.0, 0.0, 0.0, 0, 0, 0, 0]]
+        )
         mock_simplify.return_value = mock_return_data
 
         result = sample_geometry.simplify(tolerance=0.5)
@@ -119,7 +123,17 @@ def test_arc_to(sample_geometry):
     last_row = sample_geometry.data[-1]
     assert last_row[COL_TYPE] == CMD_TYPE_ARC
     assert (last_row[COL_X : COL_Z + 1] == (5.0, 5.0, 0.0)).all()
-    assert last_row[-1] == 0.0  # Clockwise is False
+    assert last_row[6] == 0.0  # Clockwise is False
+
+
+def test_bezier_to(empty_geometry):
+    empty_geometry.bezier_to(10, 10, c1x=2, c1y=2, c2x=8, c2y=8)
+    empty_geometry._sync_to_numpy()
+    assert empty_geometry.data is not None
+    last_row = empty_geometry.data[-1]
+    assert last_row[COL_TYPE] == CMD_TYPE_BEZIER
+    assert (last_row[1:4] == (10.0, 10.0, 0.0)).all()
+    assert (last_row[4:8] == (2.0, 2.0, 8.0, 8.0)).all()
 
 
 def test_serialization_deserialization(sample_geometry):
@@ -298,16 +312,19 @@ def test_dump_and_load(sample_geometry):
     Tests the dump() and load() methods for space-efficient serialization.
     """
     # Test with a non-empty geometry
-    dumped_data = sample_geometry.dump()
+    geo_with_bezier = sample_geometry.copy()
+    geo_with_bezier.bezier_to(30, 10, c1x=22, c1y=2, c2x=28, c2y=8)
+    dumped_data = geo_with_bezier.dump()
     loaded_geo = Geometry.load(dumped_data)
 
-    assert dumped_data["last_move_to"] == list(sample_geometry.last_move_to)
-    assert len(dumped_data["commands"]) == 3
+    assert dumped_data["last_move_to"] == list(geo_with_bezier.last_move_to)
+    assert len(dumped_data["commands"]) == 4
     assert dumped_data["commands"][0] == ["M", 0.0, 0.0, 0.0]
     assert dumped_data["commands"][1] == ["L", 10.0, 10.0, 0.0]
     assert dumped_data["commands"][2] == ["A", 20.0, 0.0, 0.0, 5.0, -10.0, 1]
+    assert dumped_data["commands"][3] == ["B", 30.0, 10.0, 0.0, 22, 2, 28, 8]
 
-    assert loaded_geo == sample_geometry
+    assert loaded_geo == geo_with_bezier
 
     # Test with an empty geometry
     empty_geo = Geometry()
@@ -465,7 +482,7 @@ def test_transform_wrapper(mock_transform_array, sample_geometry):
     original_data = sample_geometry.data
 
     # Mock the return: a single MoveTo command at (99, 99, 99)
-    mock_data = np.zeros((1, 7))
+    mock_data = np.zeros((1, GEO_ARRAY_COLS))
     mock_data[0, COL_TYPE] = CMD_TYPE_MOVE
     mock_data[0, COL_X] = 99.0
     mock_data[0, COL_Y] = 99.0
@@ -496,6 +513,7 @@ def test_to_cairo():
     geo.move_to(5, 5)
     geo.line_to(10, 10)
     geo.arc_to(15, 5, i=0, j=-5, clockwise=False)
+    geo.bezier_to(20, 15, c1x=16, c1y=6, c2x=18, c2y=14)
 
     ctx = Mock(spec=cairo.Context)
     geo.to_cairo(ctx)
@@ -503,6 +521,7 @@ def test_to_cairo():
     ctx.move_to.assert_called_once_with(5, 5)
     ctx.line_to.assert_called_once_with(10, 10)
     ctx.arc.assert_called_once()
+    ctx.curve_to.assert_called_once_with(16, 6, 18, 14, 20, 15)
 
 
 def test_to_cairo_empty_geometry():
@@ -543,15 +562,19 @@ def test_get_command_at_valid_index():
     geo.move_to(0, 0, 1)
     geo.line_to(10, 10, 2)
     geo.arc_to(20, 0, i=5, j=-10, clockwise=False, z=3)
+    geo.bezier_to(30, 10, c1x=22, c1y=2, c2x=28, c2y=8, z=4)
 
     cmd0 = geo.get_command_at(0)
-    assert cmd0 == (CMD_TYPE_MOVE, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0)
+    assert cmd0 == (CMD_TYPE_MOVE, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0)
 
     cmd1 = geo.get_command_at(1)
-    assert cmd1 == (CMD_TYPE_LINE, 10.0, 10.0, 2.0, 0.0, 0.0, 0.0)
+    assert cmd1 == (CMD_TYPE_LINE, 10.0, 10.0, 2.0, 0.0, 0.0, 0.0, 0.0)
 
     cmd2 = geo.get_command_at(2)
-    assert cmd2 == (CMD_TYPE_ARC, 20.0, 0.0, 3.0, 5.0, -10.0, 0.0)
+    assert cmd2 == (CMD_TYPE_ARC, 20.0, 0.0, 3.0, 5.0, -10.0, 0.0, 0.0)
+
+    cmd3 = geo.get_command_at(3)
+    assert cmd3 == (CMD_TYPE_BEZIER, 30.0, 10.0, 4.0, 22.0, 2.0, 28.0, 8.0)
 
 
 def test_get_command_at_negative_index():
@@ -582,13 +605,24 @@ def test_iter_commands():
     geo.move_to(0, 0, 1)
     geo.line_to(10, 10, 2)
     geo.arc_to(20, 0, i=5, j=-10, clockwise=False, z=3)
+    geo.bezier_to(30, 10, c1x=22, c1y=2, c2x=28, c2y=8, z=4)
 
     commands = list(geo.iter_commands())
 
-    assert len(commands) == 3
-    assert commands[0] == (CMD_TYPE_MOVE, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0)
-    assert commands[1] == (CMD_TYPE_LINE, 10.0, 10.0, 2.0, 0.0, 0.0, 0.0)
-    assert commands[2] == (CMD_TYPE_ARC, 20.0, 0.0, 3.0, 5.0, -10.0, 0.0)
+    assert len(commands) == 4
+    assert commands[0] == (CMD_TYPE_MOVE, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0)
+    assert commands[1] == (CMD_TYPE_LINE, 10.0, 10.0, 2.0, 0.0, 0.0, 0.0, 0.0)
+    assert commands[2] == (CMD_TYPE_ARC, 20.0, 0.0, 3.0, 5.0, -10.0, 0.0, 0.0)
+    assert commands[3] == (
+        CMD_TYPE_BEZIER,
+        30.0,
+        10.0,
+        4.0,
+        22.0,
+        2.0,
+        28.0,
+        8.0,
+    )
 
 
 def test_iter_commands_empty_geometry():
@@ -607,8 +641,8 @@ def test_iter_commands_with_pending_data():
     commands = list(geo.iter_commands())
 
     assert len(commands) == 2
-    assert commands[0] == (CMD_TYPE_MOVE, 5.0, 5.0, 1.0, 0.0, 0.0, 0.0)
-    assert commands[1] == (CMD_TYPE_LINE, 15.0, 15.0, 2.0, 0.0, 0.0, 0.0)
+    assert commands[0] == (CMD_TYPE_MOVE, 5.0, 5.0, 1.0, 0.0, 0.0, 0.0, 0.0)
+    assert commands[1] == (CMD_TYPE_LINE, 15.0, 15.0, 2.0, 0.0, 0.0, 0.0, 0.0)
 
 
 def test_iter_commands_clockwise_arc():
@@ -620,5 +654,5 @@ def test_iter_commands_clockwise_arc():
     commands = list(geo.iter_commands())
 
     assert len(commands) == 2
-    assert commands[0] == (CMD_TYPE_MOVE, 10.0, 10.0, 0.0, 0.0, 0.0, 0.0)
-    assert commands[1] == (CMD_TYPE_ARC, 15.0, 10.0, 0.0, 0.0, -5.0, 1.0)
+    assert commands[0] == (CMD_TYPE_MOVE, 10.0, 10.0, 0.0, 0.0, 0.0, 0.0, 0.0)
+    assert commands[1] == (CMD_TYPE_ARC, 15.0, 10.0, 0.0, 0.0, -5.0, 1.0, 0.0)

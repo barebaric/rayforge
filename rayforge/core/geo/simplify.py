@@ -4,6 +4,7 @@ from .constants import (
     CMD_TYPE_MOVE,
     CMD_TYPE_LINE,
     CMD_TYPE_ARC,
+    CMD_TYPE_BEZIER,
     GEO_ARRAY_COLS,
     COL_TYPE,
 )
@@ -158,7 +159,7 @@ def simplify_geometry_from_array(
                 point_chain = [last_pos]
             point_chain.append(end_pos)
             last_pos = end_pos
-        elif cmd_type == CMD_TYPE_ARC:
+        elif cmd_type in (CMD_TYPE_ARC, CMD_TYPE_BEZIER):
             flush_chain()
             simplified_rows.append(row)
             last_pos = end_pos

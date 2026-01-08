@@ -6,6 +6,7 @@ import pyclipper
 from .constants import (
     CMD_TYPE_LINE,
     CMD_TYPE_ARC,
+    CMD_TYPE_BEZIER,
     COL_TYPE,
     COL_X,
     COL_Y,
@@ -13,6 +14,10 @@ from .constants import (
     COL_I,
     COL_J,
     COL_CW,
+    COL_C1X,
+    COL_C1Y,
+    COL_C2X,
+    COL_C2Y,
 )
 from .linearize import linearize_arc
 
@@ -138,6 +143,17 @@ class _MockArcCmd:
         self.clockwise = clockwise
 
 
+class _MockBezierCmd:
+    """Helper to adapt array data for linearization."""
+
+    __slots__ = ("end", "c1", "c2")
+
+    def __init__(self, end, c1, c2):
+        self.end = end
+        self.c1 = c1
+        self.c2 = c2
+
+
 def apply_affine_transform_to_array(
     data: np.ndarray, matrix: np.ndarray
 ) -> np.ndarray:
@@ -165,7 +181,7 @@ def _transform_array_uniform(
     data: np.ndarray, matrix: np.ndarray
 ) -> np.ndarray:
     # XYZ transform
-    # data is (N, 7). Columns 1,2,3 are X,Y,Z.
+    # data is (N, 8). Columns 1,2,3 are X,Y,Z.
     points = data[:, COL_X : COL_Z + 1]
     ones = np.ones((points.shape[0], 1))
     pts_homo = np.hstack([points, ones])
@@ -194,12 +210,41 @@ def _transform_array_uniform(
                 data[is_arc, COL_CW] > 0.5, 0.0, 1.0
             )
 
+    # Bezier control point transform (Full transform)
+    is_bezier = data[:, COL_TYPE] == CMD_TYPE_BEZIER
+    if np.any(is_bezier):
+        # Transform C1
+        c1_pts = data[is_bezier, COL_C1X : COL_C1Y + 1]
+        c1_homo = np.hstack(
+            [
+                c1_pts,
+                np.zeros((c1_pts.shape[0], 1)),
+                np.ones((c1_pts.shape[0], 1)),
+            ]
+        )
+        trans_c1 = c1_homo @ matrix.T
+        data[is_bezier, COL_C1X : COL_C1Y + 1] = trans_c1[:, :2]
+
+        # Transform C2
+        c2_pts = data[is_bezier, COL_C2X : COL_C2Y + 1]
+        c2_homo = np.hstack(
+            [
+                c2_pts,
+                np.zeros((c2_pts.shape[0], 1)),
+                np.ones((c2_pts.shape[0], 1)),
+            ]
+        )
+        trans_c2 = c2_homo @ matrix.T
+        data[is_bezier, COL_C2X : COL_C2Y + 1] = trans_c2[:, :2]
+
     return data
 
 
 def _transform_array_non_uniform(
     data: np.ndarray, matrix: np.ndarray
 ) -> np.ndarray:
+    from .linearize import _linearize_bezier_from_array
+
     new_rows = []
     last_point = (0.0, 0.0, 0.0)
 
@@ -227,6 +272,25 @@ def _transform_array_non_uniform(
                         trans_p[0],
                         trans_p[1],
                         trans_p[2],
+                        0.0,
+                        0.0,
+                        0.0,
+                        0.0,
+                    ]
+                )
+        elif cmd_type == CMD_TYPE_BEZIER:
+            start_pt = last_point
+            segments = _linearize_bezier_from_array(row, start_pt)
+            for _, p2 in segments:
+                p_vec = np.array([p2[0], p2[1], p2[2], 1.0])
+                trans_p = matrix @ p_vec
+                new_rows.append(
+                    [
+                        CMD_TYPE_LINE,
+                        trans_p[0],
+                        trans_p[1],
+                        trans_p[2],
+                        0.0,
                         0.0,
                         0.0,
                         0.0,

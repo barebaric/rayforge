@@ -76,9 +76,16 @@ class TabCmd:
         segment_lengths: List[Tuple[int, float]] = []
         last_point = (0.0, 0.0, 0.0)
 
-        for segment_idx, (cmd_type, x, y, z, i, j, cw) in enumerate(
-            geometry.iter_commands()
-        ):
+        for segment_idx, (
+            cmd_type,
+            x,
+            y,
+            z,
+            p1,
+            p2,
+            p3,
+            _,
+        ) in enumerate(geometry.iter_commands()):
             end_point = (x, y, z)
 
             # MoveTo just updates the pen position for the next drawable
@@ -94,6 +101,7 @@ class TabCmd:
             if cmd_type == CMD_TYPE_LINE:
                 length = math.dist(last_point[:2], end_point[:2])
             elif cmd_type == CMD_TYPE_ARC:
+                i, j, cw = p1, p2, p3  # Unpack arc params
                 center_offset = (i, j)
                 clockwise = bool(cw)
 

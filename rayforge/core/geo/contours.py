@@ -9,6 +9,7 @@ from .constants import (
     CMD_TYPE_MOVE,
     CMD_TYPE_LINE,
     CMD_TYPE_ARC,
+    CMD_TYPE_BEZIER,
     COL_TYPE,
     COL_X,
     COL_Y,
@@ -16,6 +17,10 @@ from .constants import (
     COL_I,
     COL_J,
     COL_CW,
+    COL_C1X,
+    COL_C1Y,
+    COL_C2X,
+    COL_C2Y,
 )
 
 
@@ -146,6 +151,7 @@ def reverse_contour(contour: Geometry) -> Geometry:
             0.0,
             0.0,
             0.0,
+            0.0,
         ]
     )
     last_point = last_row[COL_X : COL_Z + 1]
@@ -167,6 +173,7 @@ def reverse_contour(contour: Geometry) -> Geometry:
                     0,
                     0,
                     0,
+                    0,
                 ]
             )
         elif cmd_type == CMD_TYPE_ARC:
@@ -184,6 +191,22 @@ def reverse_contour(contour: Geometry) -> Geometry:
                     new_offset_x,
                     new_offset_y,
                     new_cw,
+                    0.0,
+                ]
+            )
+        elif cmd_type == CMD_TYPE_BEZIER:
+            # For a reversed bezier P0->(C1,C2)->P1, the new curve is
+            # P1->(C2,C1)->P0.
+            new_rows.append(
+                [
+                    CMD_TYPE_BEZIER,
+                    start_point[0],
+                    start_point[1],
+                    start_point[2],
+                    end_row[COL_C2X],  # old C2 becomes new C1
+                    end_row[COL_C2Y],
+                    end_row[COL_C1X],  # old C1 becomes new C2
+                    end_row[COL_C1Y],
                 ]
             )
 

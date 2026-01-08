@@ -26,6 +26,7 @@ from .constants import (
     CMD_TYPE_MOVE,
     CMD_TYPE_LINE,
     CMD_TYPE_ARC,
+    CMD_TYPE_BEZIER,
     COL_TYPE,
     COL_X,
     COL_Y,
@@ -33,10 +34,15 @@ from .constants import (
     COL_I,
     COL_J,
     COL_CW,
+    COL_C1X,
+    COL_C1Y,
+    COL_C2X,
+    COL_C2Y,
 )
 from .primitives import (
     find_closest_point_on_line_segment,
     find_closest_point_on_arc,
+    find_closest_point_on_bezier,
 )
 from .query import (
     get_bounding_rect_from_array,
@@ -163,6 +169,7 @@ class Geometry:
                 0.0,
                 0.0,
                 0.0,
+                0.0,
             ]
         )
 
@@ -173,6 +180,7 @@ class Geometry:
                 float(x),
                 float(y),
                 float(z),
+                0.0,
                 0.0,
                 0.0,
                 0.0,
@@ -200,12 +208,48 @@ class Geometry:
                 float(i),
                 float(j),
                 1.0 if bool(clockwise) else 0.0,
+                0.0,
+            ]
+        )
+
+    def bezier_to(
+        self,
+        x: float,
+        y: float,
+        c1x: float,
+        c1y: float,
+        c2x: float,
+        c2y: float,
+        z: float = 0.0,
+    ) -> None:
+        """
+        Adds a cubic Bézier curve segment to the geometry.
+
+        Args:
+            x: The x-coordinate of the curve's endpoint.
+            y: The y-coordinate of the curve's endpoint.
+            c1x: The x-coordinate of the first control point.
+            c1y: The y-coordinate of the first control point.
+            c2x: The x-coordinate of the second control point.
+            c2y: The y-coordinate of the second control point.
+            z: The z-coordinate of the curve's endpoint.
+        """
+        self._pending_data.append(
+            [
+                CMD_TYPE_BEZIER,
+                float(x),
+                float(y),
+                float(z),
+                float(c1x),
+                float(c1y),
+                float(c2x),
+                float(c2y),
             ]
         )
 
     def append_numpy_data(self, new_data: np.ndarray) -> None:
         """
-        Directly appends a block of command data (N, 7) to the internal
+        Directly appends a block of command data (N, 8) to the internal
         storage. This bypasses the overhead of Python list construction
         for bulk operations.
         """
@@ -421,7 +465,7 @@ class Geometry:
         cmd_type = row[COL_TYPE]
         end_point_3d = (row[COL_X], row[COL_Y], row[COL_Z])
 
-        if cmd_type not in (CMD_TYPE_LINE, CMD_TYPE_ARC):
+        if cmd_type not in (CMD_TYPE_LINE, CMD_TYPE_ARC, CMD_TYPE_BEZIER):
             return None
 
         # Find start point
@@ -442,6 +486,11 @@ class Geometry:
             if result:
                 t_arc, pt_arc, _ = result
                 return (t_arc, pt_arc)
+        elif cmd_type == CMD_TYPE_BEZIER:
+            result = find_closest_point_on_bezier(row, start_point, x, y)
+            if result:
+                t_bezier, pt_bezier, _ = result
+                return (t_bezier, pt_bezier)
         return None
 
     def get_winding_order(self, segment_index: int) -> str:
@@ -677,6 +726,10 @@ class Geometry:
                     )
                 else:
                     ctx.arc(center_x, center_y, radius, start_angle, end_angle)
+            elif cmd_type == CMD_TYPE_BEZIER:
+                c1 = (row[COL_C1X], row[COL_C1Y])
+                c2 = (row[COL_C2X], row[COL_C2Y])
+                ctx.curve_to(c1[0], c1[1], c2[0], c2[1], end[0], end[1])
 
             last_point = end
 
@@ -776,6 +829,19 @@ class Geometry:
                             int(row[COL_CW]),
                         ]
                     )
+                elif cmd_type == CMD_TYPE_BEZIER:
+                    compact_cmds.append(
+                        [
+                            "B",
+                            row[COL_X],
+                            row[COL_Y],
+                            row[COL_Z],
+                            row[COL_C1X],
+                            row[COL_C1Y],
+                            row[COL_C2X],
+                            row[COL_C2Y],
+                        ]
+                    )
         return {
             "last_move_to": list(self.last_move_to),
             "commands": compact_cmds,
@@ -812,6 +878,16 @@ class Geometry:
                     j=cmd_data[5],
                     clockwise=bool(cmd_data[6]),
                     z=cmd_data[3],
+                )
+            elif cmd_type == "B":
+                new_geo.bezier_to(
+                    x=cmd_data[1],
+                    y=cmd_data[2],
+                    z=cmd_data[3],
+                    c1x=cmd_data[4],
+                    c1y=cmd_data[5],
+                    c2x=cmd_data[6],
+                    c2y=cmd_data[7],
                 )
             else:
                 logger.warning(
@@ -870,18 +946,18 @@ class Geometry:
 
     def iter_commands(
         self,
-    ) -> Iterable[Tuple[int, float, float, float, float, float, float]]:
+    ) -> Iterable[Tuple[int, float, float, float, float, float, float, float]]:
         """
         Yields command data tuples for each command in the geometry.
 
         Each yielded tuple contains:
-        (cmd_type, x, y, z, i, j, cw)
+        (cmd_type, x, y, z, p1, p2, p3, p4)
 
         This method ensures data is synced before iteration and provides
         a clean interface without exposing the raw NumPy array.
 
         Yields:
-            Tuples of (cmd_type, x, y, z, i, j, cw) for each command.
+            Tuples of (cmd_type, x, y, z, p1, p2, p3, p4) for each command.
         """
         if self.data is None:
             return
@@ -892,14 +968,15 @@ class Geometry:
                 float(row[COL_X]),
                 float(row[COL_Y]),
                 float(row[COL_Z]),
-                float(row[COL_I]),
-                float(row[COL_J]),
-                float(row[COL_CW]),
+                float(row[4]),
+                float(row[5]),
+                float(row[6]),
+                float(row[7]),
             )
 
     def get_command_at(
         self, index: int
-    ) -> Optional[Tuple[int, float, float, float, float, float, float]]:
+    ) -> Optional[Tuple[int, float, float, float, float, float, float, float]]:
         """
         Returns command data tuple at the specified index.
 
@@ -907,7 +984,7 @@ class Geometry:
             index: The index of the command to retrieve.
 
         Returns:
-            A tuple (cmd_type, x, y, z, i, j, cw) or None if
+            A tuple (cmd_type, x, y, z, p1, p2, p3, p4) or None if
             the index is out of bounds or data is None.
         """
         if self.data is None or index < 0 or index >= len(self.data):
@@ -919,7 +996,8 @@ class Geometry:
             float(row[COL_X]),
             float(row[COL_Y]),
             float(row[COL_Z]),
-            float(row[COL_I]),
-            float(row[COL_J]),
-            float(row[COL_CW]),
+            float(row[4]),
+            float(row[5]),
+            float(row[6]),
+            float(row[7]),
         )
