@@ -105,26 +105,51 @@ def test_transform_translate():
     assert np.allclose(geo.data[2, COL_C2X : COL_C2Y + 1], (75, 70))
 
 
-def test_transform_scale_non_uniform_linearizes_curves():
+def test_transform_scale_non_uniform_preserves_beziers():
     geo = Geometry()
     geo.move_to(10, 20, 5)
+    # Arc will be linearized because elliptical arcs aren't supported
     geo.arc_to(22, 22, i=5, j=7, z=-10)
+    # Bezier should be preserved (affine invariant)
     geo.bezier_to(30, 30, c1x=24, c1y=24, c2x=28, c2y=28, z=-20)
     scale_matrix = _create_scale_matrix(2, 3, 4)
 
     geo.transform(scale_matrix)
     assert geo.data is not None
 
-    # Check move
+    # 1. Check Move
     assert np.allclose(geo.data[0, 1:4], (20, 60, 20))
 
-    # Arc and Bezier are linearized on non-uniform scale
-    assert np.all(geo.data[1:, COL_TYPE] == CMD_TYPE_LINE)
+    # 2. Check Arc linearization
+    # The Arc command (index 1 in original) is replaced by multiple
+    # LINE commands. The Bezier command was last. So:
+    # Index 0: Move
+    # Index 1 to N-2: Lines (from linearized Arc)
+    # Index N-1: Bezier
+
+    assert geo.data[0, COL_TYPE] == CMD_TYPE_MOVE
+    assert geo.data[-1, COL_TYPE] == CMD_TYPE_BEZIER
+
+    # Verify intermediate commands are lines
+    assert len(geo.data) > 2
+    for i in range(1, len(geo.data) - 1):
+        assert geo.data[i, COL_TYPE] == CMD_TYPE_LINE
+
+    # 3. Check Bezier Transformation
     final_row = geo.data[-1]
-    assert final_row is not None
+
+    # End point: (30*2, 30*3, -20*4) -> (60, 90, -80)
     final_point = final_row[1:4]
-    expected_final_point = (30 * 2, 30 * 3, -20 * 4)
+    expected_final_point = (60.0, 90.0, -80.0)
     assert np.allclose(final_point, expected_final_point)
+
+    # Control Point 1: (24*2, 24*3) -> (48, 72)
+    c1 = final_row[COL_C1X : COL_C1Y + 1]
+    assert np.allclose(c1, (48.0, 72.0))
+
+    # Control Point 2: (28*2, 28*3) -> (56, 84)
+    c2 = final_row[COL_C2X : COL_C2Y + 1]
+    assert np.allclose(c2, (56.0, 84.0))
 
 
 def test_transform_rotate_preserves_z():
@@ -240,31 +265,46 @@ def test_transform_array_flip():
 
 
 def test_transform_array_non_uniform():
-    # Arc circle
-    # Start (10,0), End (-10,0), Center (0,0) -> Offset (-10,0). Half circle.
+    # Input: Move -> Arc -> Bezier
+    # Arc: Start (10,0), End (-10,0), Center (0,0) -> Offset (-10,0).
+    # Bezier: Start (-10,0), End (0,10), C1(-10, 5), C2(-5, 10)
     data = np.array(
         [
             [CMD_TYPE_MOVE, 10.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
             [CMD_TYPE_ARC, -10.0, 0.0, 0.0, -10.0, 0.0, 0.0, 0.0],
+            [CMD_TYPE_BEZIER, 0.0, 10.0, 0.0, -10.0, 5.0, -5.0, 10.0],
         ]
     )
 
-    # Scale Y by 0.5 -> Ellipse
+    # Scale Y by 0.5 -> Ellipse.
     matrix = np.eye(4)
     matrix[1, 1] = 0.5
 
     transformed = apply_affine_transform_to_array(data, matrix)
 
-    # First row is still the transformed Move
+    # 1. Check Move
     assert transformed[0, COL_TYPE] == CMD_TYPE_MOVE
-    # Subsequent rows should all be LINE commands
-    assert transformed.shape[0] > 2
-    assert np.all(transformed[1:, COL_TYPE] == CMD_TYPE_LINE)
+    assert transformed[0, COL_X] == 10.0
+    assert transformed[0, COL_Y] == 0.0
 
-    # End point should be at (-10, 0) still
+    # 2. Check Arc -> Lines
+    # The middle section should be lines
+    assert transformed[1, COL_TYPE] == CMD_TYPE_LINE
+
+    # 3. Check Bezier -> Bezier (Last element)
     last_row = transformed[-1]
-    assert np.isclose(last_row[COL_X], -10.0)
-    assert np.isclose(last_row[COL_Y], 0.0)
+    assert last_row[COL_TYPE] == CMD_TYPE_BEZIER
+
+    # Check Bezier Points transformation
+    # End: (0, 10) -> (0, 5)
+    assert np.isclose(last_row[COL_X], 0.0)
+    assert np.isclose(last_row[COL_Y], 5.0)
+    # C1: (-10, 5) -> (-10, 2.5)
+    assert np.isclose(last_row[COL_C1X], -10.0)
+    assert np.isclose(last_row[COL_C1Y], 2.5)
+    # C2: (-5, 10) -> (-5, 5)
+    assert np.isclose(last_row[COL_C2X], -5.0)
+    assert np.isclose(last_row[COL_C2Y], 5.0)
 
 
 # --- Grow/Offset Tests ---

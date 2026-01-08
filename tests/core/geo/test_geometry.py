@@ -39,6 +39,8 @@ def sample_geometry():
 def test_initialization(empty_geometry):
     assert len(empty_geometry) == 0
     assert empty_geometry.last_move_to == (0.0, 0.0, 0.0)
+    # Default should be False
+    assert empty_geometry._force_beziers is False
 
 
 def test_add_commands(empty_geometry):
@@ -144,6 +146,9 @@ def test_serialization_deserialization(sample_geometry):
 
 def test_copy_method(sample_geometry):
     """Tests the deep copy functionality of the Geometry class."""
+    # Set a flag to ensure it's copied
+    sample_geometry._force_beziers = True
+
     original_geo = sample_geometry
     copied_geo = original_geo.copy()
 
@@ -151,6 +156,8 @@ def test_copy_method(sample_geometry):
     assert copied_geo is not original_geo
     assert copied_geo == original_geo
     assert copied_geo.last_move_to == original_geo.last_move_to
+    # Check that configuration flags are preserved
+    assert copied_geo._force_beziers is True
 
     # Modify the original and check that the copy is unaffected
     original_geo.line_to(100, 100)
@@ -335,6 +342,92 @@ def test_dump_and_load(sample_geometry):
     assert dumped_empty["commands"] == []
     assert loaded_empty.is_empty()
     assert loaded_empty.last_move_to == (0.0, 0.0, 0.0)
+
+
+# --- Force Bezier Conversion Tests ---
+
+
+def test_force_beziers_init():
+    """Test that the configuration flag is stored correctly."""
+    geo = Geometry(force_beziers=True)
+    assert geo._force_beziers is True
+
+
+def test_arc_to_converts_when_forced():
+    """Test that arc_to creates Bezier commands when force_beziers is True."""
+    geo = Geometry(force_beziers=True)
+    geo.move_to(0, 0)
+
+    # Create a simple 90 degree arc
+    # Start (0,0), Center (10,0), End (10,10)
+    # i=10, j=0. Clockwise=False (CCW)
+    geo.arc_to(10, 10, i=10, j=0, clockwise=False)
+
+    # Force sync
+    geo._sync_to_numpy()
+    data = geo.data
+    assert data is not None
+
+    assert len(data) > 1
+    assert data[0, COL_TYPE] == CMD_TYPE_MOVE
+
+    # Check that subsequent commands are BEZIER, not ARC
+    for i in range(1, len(data)):
+        assert data[i, COL_TYPE] == CMD_TYPE_BEZIER
+
+    # Check endpoints of the last segment match the requested arc end
+    last_row = data[-1]
+    assert math.isclose(last_row[COL_X], 10.0)
+    assert math.isclose(last_row[COL_Y], 10.0)
+
+
+def test_extend_converts_incoming_arcs():
+    """
+    Test that extending a force_beziers=True geometry with a standard
+    geometry (containing arcs) converts the incoming arcs.
+    """
+    # Source geometry with an arc
+    source = Geometry()
+    source.move_to(0, 0)
+    source.arc_to(10, 0, i=5, j=0, clockwise=True)  # Semi-circle
+
+    # Destination geometry with forced beziers
+    dest = Geometry(force_beziers=True)
+    dest.extend(source)
+
+    dest._sync_to_numpy()
+    data = dest.data
+    assert data is not None
+
+    # Should contain Moves and Beziers, but no Arcs
+    assert np.any(data[:, COL_TYPE] == CMD_TYPE_MOVE)
+    assert np.any(data[:, COL_TYPE] == CMD_TYPE_BEZIER)
+    assert not np.any(data[:, COL_TYPE] == CMD_TYPE_ARC)
+
+
+def test_load_respects_force_beziers(sample_geometry):
+    """
+    Test that loading from a dump with force_beziers=True converts
+    arcs found in the serialized data.
+    """
+    # sample_geometry contains an arc
+    dumped = sample_geometry.dump()
+
+    # Load with forcing enabled
+    loaded = Geometry.load(dumped, force_beziers=True)
+
+    loaded._sync_to_numpy()
+    data = loaded.data
+    assert data is not None
+
+    assert not np.any(data[:, COL_TYPE] == CMD_TYPE_ARC)
+    assert np.any(data[:, COL_TYPE] == CMD_TYPE_BEZIER)
+
+    # Check that endpoint is preserved
+    last_row = data[-1]
+    # sample_geometry ends at (20, 0)
+    assert math.isclose(last_row[COL_X], 20.0)
+    assert math.isclose(last_row[COL_Y], 0.0)
 
 
 # --- Wrapper Method Tests ---

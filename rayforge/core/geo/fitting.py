@@ -2,6 +2,17 @@ import math
 from typing import List, Tuple, Optional
 import numpy as np
 from scipy.optimize import least_squares
+from .constants import (
+    CMD_TYPE_BEZIER,
+    COL_C1X,
+    COL_C1Y,
+    COL_C2X,
+    COL_C2Y,
+    COL_X,
+    COL_Z,
+    COL_TYPE,
+)
+from .primitives import get_arc_angles
 
 
 def are_collinear(
@@ -146,3 +157,119 @@ def get_arc_to_polyline_deviation(
 
         max_deviation = max(max_deviation, deviation)
     return max_deviation
+
+
+def convert_arc_to_beziers_from_array(
+    start_point: Tuple[float, float, float],
+    end_point: Tuple[float, float, float],
+    center_offset: Tuple[float, float],
+    clockwise: bool,
+) -> List[np.ndarray]:
+    """
+    Approximates a circular arc with one or more cubic Bézier curves.
+
+    An arc is split into segments of at most 90 degrees, as a single cubic
+    Bézier can represent this with high precision. Z coordinates are linearly
+    interpolated along the path.
+
+    Args:
+        start_point: The 3D start point (x, y, z) of the arc.
+        end_point: The 3D end point (x, y, z) of the arc.
+        center_offset: The 2D vector (i, j) from the start point to the
+                       arc's center.
+        clockwise: The direction of the arc.
+
+    Returns:
+        A list of numpy arrays, where each array is a row representing a
+        single CMD_TYPE_BEZIER command. Returns an empty list for zero-length
+        arcs.
+    """
+    p0_2d = start_point[:2]
+    p_end_2d = end_point[:2]
+    z_start, z_end = start_point[2], end_point[2]
+
+    center = (p0_2d[0] + center_offset[0], p0_2d[1] + center_offset[1])
+    radius = math.hypot(center_offset[0], center_offset[1])
+    radius_end = math.hypot(p_end_2d[0] - center[0], p_end_2d[1] - center[1])
+
+    if radius < 1e-9:
+        return []  # Cannot create an arc with zero radius.
+
+    # Strict check for full circles (coincident start/end)
+    is_coincident = math.isclose(
+        start_point[0], end_point[0], abs_tol=1e-12
+    ) and math.isclose(start_point[1], end_point[1], abs_tol=1e-12)
+
+    if is_coincident:
+        # Standard convention: coincident points on a non-zero radius arc
+        # define a full circle.
+        total_sweep = -2 * math.pi if clockwise else 2 * math.pi
+        start_angle = math.atan2(p0_2d[1] - center[1], p0_2d[0] - center[0])
+    else:
+        start_angle, _, total_sweep = get_arc_angles(
+            p0_2d, p_end_2d, center, clockwise
+        )
+
+    # Threshold for treating an arc as zero-length noise.
+    # 1e-8 radians is approx 0.00000057 degrees.
+    if abs(total_sweep) < 1e-8:
+        return []
+
+    # Determine number of segments (max 90 degrees per segment)
+    num_segments = max(1, math.ceil(abs(total_sweep) / (math.pi / 2)))
+    segment_sweep = total_sweep / num_segments
+    kappa = (4.0 / 3.0) * math.tan(abs(segment_sweep) / 4.0)
+
+    bezier_rows: List[np.ndarray] = []
+    current_p0 = np.array(start_point)
+
+    for i in range(num_segments):
+        angle1 = start_angle + (i + 1) * segment_sweep
+
+        # The end point of the last segment must be the original end_point.
+        if i == num_segments - 1:
+            current_p3 = np.array(end_point)
+        else:
+            # Interpolate radius for spirals
+            t1 = (i + 1) / num_segments
+            radius1_interp = radius + t1 * (radius_end - radius)
+            p3_x = center[0] + radius1_interp * math.cos(angle1)
+            p3_y = center[1] + radius1_interp * math.sin(angle1)
+            p3_z = z_start + t1 * (z_end - z_start)
+            current_p3 = np.array([p3_x, p3_y, p3_z])
+
+        # Tangent vectors (rotated radius vectors with length = radius)
+        r_vec0 = (current_p0[0] - center[0], current_p0[1] - center[1])
+        r_vec1 = (current_p3[0] - center[0], current_p3[1] - center[1])
+
+        if clockwise:
+            t_vec0 = (r_vec0[1], -r_vec0[0])
+            t_vec1 = (r_vec1[1], -r_vec1[0])
+        else:
+            t_vec0 = (-r_vec0[1], r_vec0[0])
+            t_vec1 = (-r_vec1[1], r_vec1[0])
+
+        # P1 = P0 + kappa * T0
+        c1 = (
+            current_p0[0] + t_vec0[0] * kappa,
+            current_p0[1] + t_vec0[1] * kappa,
+        )
+        # P2 = P3 - kappa * T1
+        c2 = (
+            current_p3[0] - t_vec1[0] * kappa,
+            current_p3[1] - t_vec1[1] * kappa,
+        )
+
+        # Build the command row
+        row = np.zeros(8, dtype=np.float64)
+        row[COL_TYPE] = CMD_TYPE_BEZIER
+        row[COL_X : COL_Z + 1] = current_p3
+        row[COL_C1X] = c1[0]
+        row[COL_C1Y] = c1[1]
+        row[COL_C2X] = c2[0]
+        row[COL_C2Y] = c2[1]
+        bezier_rows.append(row)
+
+        current_p0 = current_p3
+
+    return bezier_rows
