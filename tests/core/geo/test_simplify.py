@@ -62,7 +62,7 @@ def test_simplify_insignificant_bump():
 
 def test_simplify_preserves_arcs():
     """Tests that simplification does not decimate arcs."""
-    geo = Geometry()
+    geo = Geometry(force_beziers=False)
     geo.move_to(0, 0)
     geo.line_to(1, 0)
     geo.line_to(2, 0)  # Collinear, should be removed

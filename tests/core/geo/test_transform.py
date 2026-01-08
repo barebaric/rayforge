@@ -83,7 +83,7 @@ def test_transform_identity():
 
 
 def test_transform_translate():
-    geo = Geometry()
+    geo = Geometry(force_beziers=False)
     geo.move_to(10, 20, 30)
     geo.arc_to(50, 60, i=5, j=7, z=40)
     geo.bezier_to(70, 80, c1x=55, c1y=65, c2x=65, c2y=75, z=50)
@@ -106,7 +106,7 @@ def test_transform_translate():
 
 
 def test_transform_scale_non_uniform_preserves_beziers():
-    geo = Geometry()
+    geo = Geometry(force_beziers=False)
     geo.move_to(10, 20, 5)
     # Arc will be linearized because elliptical arcs aren't supported
     geo.arc_to(22, 22, i=5, j=7, z=-10)
@@ -167,7 +167,7 @@ def test_transform_rotate_preserves_z():
 
 
 def test_transform_uniform_scale_preserves_curves():
-    geo = Geometry()
+    geo = Geometry(force_beziers=False)
     geo.move_to(0, 0, 0)
     # Arc from (0,0) to (10,0) with center at (5,0) -> radius 5
     geo.arc_to(10, 0, i=5, j=0, clockwise=True)

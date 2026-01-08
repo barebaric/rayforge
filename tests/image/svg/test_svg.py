@@ -12,7 +12,7 @@ from rayforge.core.geo import Geometry
 from rayforge.core.geo.constants import (
     CMD_TYPE_MOVE,
     CMD_TYPE_LINE,
-    CMD_TYPE_ARC,
+    CMD_TYPE_BEZIER,
     COL_TYPE,
 )
 from rayforge.core.layer import Layer
@@ -267,9 +267,9 @@ class TestSvgImporter:
         data = wp.boundaries.data
         assert data is not None
 
-        has_arc_commands = (data[:, COL_TYPE] == CMD_TYPE_ARC).any()
-        assert has_arc_commands, (
-            "SVG circles should contain arc commands, not be linearized"
+        has_bezier_commands = (data[:, COL_TYPE] == CMD_TYPE_BEZIER).any()
+        assert has_bezier_commands, (
+            "SVG circles should contain bezier commands, not be linearized"
         )
 
     def test_direct_import_with_offset_text(

@@ -121,9 +121,9 @@ def split_into_components(geometry: "Geometry") -> List["Geometry"]:
     logger.debug(f"Found {len(component_indices_list)} raw components.")
 
     final_geometries: List[Geometry] = []
-    stray_open_geo = Geometry()
+    stray_open_geo = Geometry(force_beziers=geometry.force_beziers)
     for i, indices in enumerate(component_indices_list):
-        component_geo = Geometry()
+        component_geo = Geometry(force_beziers=geometry.force_beziers)
         has_closed_path = False
         for idx in indices:
             contour = all_contour_data[idx]
