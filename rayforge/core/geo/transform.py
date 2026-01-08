@@ -172,6 +172,11 @@ def apply_affine_transform_to_array(
     is_non_uniform = not np.isclose(len_x, len_y)
 
     if is_non_uniform:
+        logger.debug(
+            "Non-uniform scaling detected (x_scale=%f, y_scale=%f).",
+            len_x,
+            len_y,
+        )
         return _transform_array_non_uniform(data, matrix)
     else:
         return _transform_array_uniform(data, matrix)
@@ -243,8 +248,6 @@ def _transform_array_uniform(
 def _transform_array_non_uniform(
     data: np.ndarray, matrix: np.ndarray
 ) -> np.ndarray:
-    from .linearize import _linearize_bezier_from_array
-
     new_rows = []
     last_point = (0.0, 0.0, 0.0)
 
@@ -260,7 +263,7 @@ def _transform_array_non_uniform(
                 center_offset=(row[COL_I], row[COL_J]),
                 clockwise=bool(row[COL_CW]),
             )
-
+            # Arcs must be linearized for non-uniform scaling
             segments = linearize_arc(mock_cmd, start_pt)
             for _, p2 in segments:
                 p_vec = np.array([p2[0], p2[1], p2[2], 1.0])
@@ -279,24 +282,34 @@ def _transform_array_non_uniform(
                     ]
                 )
         elif cmd_type == CMD_TYPE_BEZIER:
-            start_pt = last_point
-            segments = _linearize_bezier_from_array(row, start_pt)
-            for _, p2 in segments:
-                p_vec = np.array([p2[0], p2[1], p2[2], 1.0])
-                trans_p = matrix @ p_vec
-                new_rows.append(
-                    [
-                        CMD_TYPE_LINE,
-                        trans_p[0],
-                        trans_p[1],
-                        trans_p[2],
-                        0.0,
-                        0.0,
-                        0.0,
-                        0.0,
-                    ]
-                )
-        else:
+            # Bezier curves are affine-invariant and can be transformed
+            # directly without linearization.
+            new_row = row.copy()
+
+            # Transform endpoint (X, Y, Z)
+            p_vec = np.array(
+                [original_end[0], original_end[1], original_end[2], 1.0]
+            )
+            trans_p = matrix @ p_vec
+            new_row[COL_X] = trans_p[0]
+            new_row[COL_Y] = trans_p[1]
+            new_row[COL_Z] = trans_p[2]
+
+            # Transform C1 (X, Y)
+            c1_orig = np.array([row[COL_C1X], row[COL_C1Y], 0.0, 1.0])
+            trans_c1 = matrix @ c1_orig
+            new_row[COL_C1X] = trans_c1[0]
+            new_row[COL_C1Y] = trans_c1[1]
+
+            # Transform C2 (X, Y)
+            c2_orig = np.array([row[COL_C2X], row[COL_C2Y], 0.0, 1.0])
+            trans_c2 = matrix @ c2_orig
+            new_row[COL_C2X] = trans_c2[0]
+            new_row[COL_C2Y] = trans_c2[1]
+
+            new_rows.append(new_row)
+
+        else:  # CMD_TYPE_MOVE, CMD_TYPE_LINE, etc.
             # Transform end point
             p_vec = np.array(
                 [original_end[0], original_end[1], original_end[2], 1.0]
@@ -311,4 +324,8 @@ def _transform_array_non_uniform(
 
         last_point = original_end
 
+    if not new_rows:
+        return np.array([]).reshape(
+            0, data.shape[1]
+        )  # Return empty array with correct number of columns
     return np.array(new_rows)
