@@ -45,9 +45,10 @@ class SvgRenderer(Renderer):
             root = ET.fromstring(render_data)
             root.set("width", f"{width}px")
             root.set("height", f"{height}px")
-            # REMOVED: root.set("preserveAspectRatio", "none")
-            # This was causing the content to stretch to fill the width/height
-            # instead of scaling proportionally. Default behavior is correct.
+            root.set("preserveAspectRatio", "none")
+            # This causes the content to stretch to fill the width/height
+            # instead of scaling proportionally. This is REQUIRED for tracing
+            # non-uniformly scaled objects correctly.
             root.set("style", "overflow: visible")
 
             return pyvips.Image.svgload_buffer(ET.tostring(root))
