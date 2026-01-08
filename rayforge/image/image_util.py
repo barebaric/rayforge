@@ -9,10 +9,6 @@ from ..core.item import DocItem
 from ..core.matrix import Matrix
 from ..core.workpiece import WorkPiece
 from ..core.geo import Geometry
-from ..core.geo.constants import (
-    CMD_TYPE_MOVE,
-    CMD_TYPE_LINE,
-)
 
 if TYPE_CHECKING:
     from ..core.source_asset import SourceAsset
@@ -238,11 +234,7 @@ def _render_geometry_to_vips_mask(
 
     # Draw the geometry filled with white
     ctx.set_source_rgba(1, 1, 1, 1)
-    for cmd_type, x, y, z, i, j, cw in geometry.iter_commands():
-        if cmd_type == CMD_TYPE_MOVE:
-            ctx.move_to(x, y)
-        elif cmd_type == CMD_TYPE_LINE:
-            ctx.line_to(x, y)
+    geometry.to_cairo(ctx)
     ctx.fill()
 
     # Handle Cairo stride padding (e.g. if width is not multiple of 4)

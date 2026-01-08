@@ -78,7 +78,7 @@ class TabOpsTransformer(OpsTransformer):
                 )
                 continue
 
-            cmd_type, x, y, z, i, j, cw = cmd
+            cmd_type, x, y, z, p1, p2, p3, _ = cmd
             end_point = (x, y, z)
 
             if cmd_type not in (CMD_TYPE_LINE, CMD_TYPE_ARC):
@@ -90,7 +90,7 @@ class TabOpsTransformer(OpsTransformer):
                     tab.segment_index - 1
                 )
                 if prev_cmd:
-                    _, prev_x, prev_y, prev_z, _, _, _ = prev_cmd
+                    _, prev_x, prev_y, prev_z, _, _, _, _ = prev_cmd
                     p_start_3d = (prev_x, prev_y, prev_z)
 
             logger.debug(
@@ -106,6 +106,7 @@ class TabOpsTransformer(OpsTransformer):
                 center_y = p_start[1] + (p_end[1] - p_start[1]) * tab.pos
 
             elif cmd_type == CMD_TYPE_ARC:
+                i, j, cw = p1, p2, p3
                 center_offset = (i, j)
                 clockwise = bool(cw)
                 center = (

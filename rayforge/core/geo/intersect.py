@@ -1,12 +1,13 @@
 from typing import List, Tuple
 import numpy as np
 
-from .linearize import linearize_arc
+from .linearize import linearize_arc, _linearize_bezier_from_array
 from .primitives import line_segment_intersection
 from .constants import (
     CMD_TYPE_MOVE,
     CMD_TYPE_LINE,
     CMD_TYPE_ARC,
+    CMD_TYPE_BEZIER,
     COL_TYPE,
     COL_X,
     COL_Y,
@@ -33,6 +34,8 @@ def _get_segments_for_row(
         return [(start_point, end_point)]
     elif cmd_type == CMD_TYPE_ARC:
         return linearize_arc(row, start_point)
+    elif cmd_type == CMD_TYPE_BEZIER:
+        return _linearize_bezier_from_array(row, start_point)
     return []
 
 
@@ -45,13 +48,13 @@ def _data_intersect(
     """Core logic to check for intersections between two numpy data arrays."""
     for i in range(len(data1)):
         cmd_type1 = data1[i, COL_TYPE]
-        if cmd_type1 not in (CMD_TYPE_LINE, CMD_TYPE_ARC):
+        if cmd_type1 not in (CMD_TYPE_LINE, CMD_TYPE_ARC, CMD_TYPE_BEZIER):
             continue
 
         start_idx_j = i + 1 if is_self_check else 0
         for j in range(start_idx_j, len(data2)):
             cmd_type2 = data2[j, COL_TYPE]
-            if cmd_type2 not in (CMD_TYPE_LINE, CMD_TYPE_ARC):
+            if cmd_type2 not in (CMD_TYPE_LINE, CMD_TYPE_ARC, CMD_TYPE_BEZIER):
                 continue
 
             segments1 = _get_segments_for_row(data1, i)

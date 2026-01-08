@@ -2,15 +2,27 @@ import pytest
 import math
 import numpy as np
 from rayforge.core.geo.constants import (
+    CMD_TYPE_MOVE,
     CMD_TYPE_LINE,
     CMD_TYPE_ARC,
+    CMD_TYPE_BEZIER,
     COL_TYPE,
+    COL_X,
+    COL_Y,
+    COL_I,
+    COL_J,
+    COL_CW,
+    COL_C1X,
+    COL_C1Y,
+    COL_C2X,
+    COL_C2Y,
 )
 from rayforge.core.geo import (
     Geometry,
 )
 from rayforge.core.geo.transform import (
     grow_geometry,
+    apply_affine_transform_to_array,
 )
 
 
@@ -74,33 +86,44 @@ def test_transform_translate():
     geo = Geometry()
     geo.move_to(10, 20, 30)
     geo.arc_to(50, 60, i=5, j=7, z=40)
+    geo.bezier_to(70, 80, c1x=55, c1y=65, c2x=65, c2y=75, z=50)
 
     translate_matrix = _create_translate_matrix(10, -5, 15)
     geo.transform(translate_matrix)
     assert geo.data is not None
 
+    # Check move
     assert np.allclose(geo.data[0, 1:4], (20, 15, 45))
+    # Check arc
     assert np.allclose(geo.data[1, 1:4], (60, 55, 55))
     # Translation should NOT affect arc center offsets (vectors)
     assert np.allclose(geo.data[1, 4:6], (5, 7))
+    # Check bezier
+    assert np.allclose(geo.data[2, 1:4], (80, 75, 65))
+    # Translation SHOULD affect bezier control points (absolute coords)
+    assert np.allclose(geo.data[2, COL_C1X : COL_C1Y + 1], (65, 60))
+    assert np.allclose(geo.data[2, COL_C2X : COL_C2Y + 1], (75, 70))
 
 
-def test_transform_scale_non_uniform_linearizes_arc():
+def test_transform_scale_non_uniform_linearizes_curves():
     geo = Geometry()
     geo.move_to(10, 20, 5)
     geo.arc_to(22, 22, i=5, j=7, z=-10)
+    geo.bezier_to(30, 30, c1x=24, c1y=24, c2x=28, c2y=28, z=-20)
     scale_matrix = _create_scale_matrix(2, 3, 4)
 
     geo.transform(scale_matrix)
     assert geo.data is not None
 
+    # Check move
     assert np.allclose(geo.data[0, 1:4], (20, 60, 20))
-    # Arcs are linearized on non-uniform scale
-    assert geo.data[1, COL_TYPE] == CMD_TYPE_LINE
+
+    # Arc and Bezier are linearized on non-uniform scale
+    assert np.all(geo.data[1:, COL_TYPE] == CMD_TYPE_LINE)
     final_row = geo.data[-1]
     assert final_row is not None
     final_point = final_row[1:4]
-    expected_final_point = (22 * 2, 22 * 3, -10 * 4)
+    expected_final_point = (30 * 2, 30 * 3, -20 * 4)
     assert np.allclose(final_point, expected_final_point)
 
 
@@ -118,22 +141,130 @@ def test_transform_rotate_preserves_z():
     assert y == pytest.approx(10)
 
 
-def test_transform_uniform_scale_preserves_arcs():
+def test_transform_uniform_scale_preserves_curves():
     geo = Geometry()
     geo.move_to(0, 0, 0)
     # Arc from (0,0) to (10,0) with center at (5,0) -> radius 5
     geo.arc_to(10, 0, i=5, j=0, clockwise=True)
+    # Bezier from (10,0) to (20,0)
+    geo.bezier_to(20, 0, c1x=12, c1y=2, c2x=18, c2y=-2)
 
     # Uniform scale by 2
     scale_matrix = _create_scale_matrix(2, 2, 2)
     geo.transform(scale_matrix)
     assert geo.data is not None
 
+    # Check arc
     arc_row = geo.data[1]
     assert arc_row[COL_TYPE] == CMD_TYPE_ARC
     assert np.allclose(arc_row[1:4], (20, 0, 0))
     # Offset should also scale
     assert np.allclose(arc_row[4:6], (10, 0))
+
+    # Check bezier
+    bezier_row = geo.data[2]
+    assert bezier_row[COL_TYPE] == CMD_TYPE_BEZIER
+    assert np.allclose(bezier_row[1:4], (40, 0, 0))
+    # Control points should also scale
+    assert np.allclose(bezier_row[COL_C1X : COL_C1Y + 1], (24, 4))
+    assert np.allclose(bezier_row[COL_C2X : COL_C2Y + 1], (36, -4))
+
+
+# --- Raw Array Transform Tests (formerly test_transform_numpy.py) ---
+
+
+def test_transform_array_uniform_translation():
+    data = np.array(
+        [
+            [CMD_TYPE_MOVE, 10.0, 20.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+            [CMD_TYPE_LINE, 30.0, 40.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+        ]
+    )
+
+    # Manual translation matrix
+    matrix = np.eye(4)
+    matrix[0, 3] = 5.0
+    matrix[1, 3] = 5.0
+
+    transformed = apply_affine_transform_to_array(data, matrix)
+
+    # Check move
+    assert transformed[0, COL_X] == 15.0
+    assert transformed[0, COL_Y] == 25.0
+
+    # Check line
+    assert transformed[1, COL_X] == 35.0
+    assert transformed[1, COL_Y] == 45.0
+
+
+def test_transform_array_uniform_rotation_arc():
+    # Arc from (10,0) to (0,10), center at (0,0) -> Offset from start (-10, 0)
+    data = np.array(
+        [[CMD_TYPE_ARC, 0.0, 10.0, 0.0, -10.0, 0.0, 0.0, 0.0]]  # CCW 0.0
+    )
+
+    # Manual 90 deg rotation matrix (CCW)
+    matrix = np.eye(4)
+    matrix[0, 0] = 0.0
+    matrix[0, 1] = -1.0
+    matrix[1, 0] = 1.0
+    matrix[1, 1] = 0.0
+
+    transformed = apply_affine_transform_to_array(data, matrix)
+
+    # Check end point (0,10) -> (-10, 0)
+    assert np.isclose(transformed[0, COL_X], -10.0)
+    assert np.isclose(transformed[0, COL_Y], 0.0)
+
+    # Check offset (-10, 0) -> (0, -10)
+    # Rotation of vector (-10, 0) by 90 deg is (0, -10)
+    assert np.isclose(transformed[0, COL_I], 0.0)
+    assert np.isclose(transformed[0, COL_J], -10.0)
+
+
+def test_transform_array_flip():
+    # Arc
+    data = np.array(
+        [[CMD_TYPE_ARC, 10.0, 10.0, 0.0, 5.0, 0.0, 0.0, 0.0]]  # CW=0 (CCW)
+    )
+
+    # Flip X: Scale(-1, 1)
+    matrix = np.eye(4)
+    matrix[0, 0] = -1.0
+
+    transformed = apply_affine_transform_to_array(data, matrix)
+
+    assert transformed[0, COL_X] == -10.0
+    assert transformed[0, COL_I] == -5.0
+    assert transformed[0, COL_CW] == 1.0  # Flipped to CW
+
+
+def test_transform_array_non_uniform():
+    # Arc circle
+    # Start (10,0), End (-10,0), Center (0,0) -> Offset (-10,0). Half circle.
+    data = np.array(
+        [
+            [CMD_TYPE_MOVE, 10.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+            [CMD_TYPE_ARC, -10.0, 0.0, 0.0, -10.0, 0.0, 0.0, 0.0],
+        ]
+    )
+
+    # Scale Y by 0.5 -> Ellipse
+    matrix = np.eye(4)
+    matrix[1, 1] = 0.5
+
+    transformed = apply_affine_transform_to_array(data, matrix)
+
+    # First row is still the transformed Move
+    assert transformed[0, COL_TYPE] == CMD_TYPE_MOVE
+    # Subsequent rows should all be LINE commands
+    assert transformed.shape[0] > 2
+    assert np.all(transformed[1:, COL_TYPE] == CMD_TYPE_LINE)
+
+    # End point should be at (-10, 0) still
+    last_row = transformed[-1]
+    assert np.isclose(last_row[COL_X], -10.0)
+    assert np.isclose(last_row[COL_Y], 0.0)
 
 
 # --- Grow/Offset Tests ---

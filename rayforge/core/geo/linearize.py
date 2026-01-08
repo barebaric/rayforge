@@ -1,5 +1,5 @@
 import math
-from typing import List, Tuple, Any
+from typing import List, Tuple, Any, cast
 import numpy as np
 from .constants import (
     CMD_TYPE_ARC,
@@ -11,6 +11,10 @@ from .constants import (
     COL_J,
     COL_CW,
     GEO_ARRAY_COLS,
+    COL_C1X,
+    COL_C1Y,
+    COL_C2X,
+    COL_C2Y,
 )
 
 
@@ -70,6 +74,37 @@ def _linearize_arc_from_array(
         segments.append((prev_pt, next_pt))
         prev_pt = next_pt
     return segments
+
+
+def _linearize_bezier_from_array(
+    bezier_row: np.ndarray,
+    start_point: Tuple[float, float, float],
+    resolution: float = 0.1,
+) -> List[Tuple[Tuple[float, float, float], Tuple[float, float, float]]]:
+    """Internal, NumPy-native implementation for Bezier linearization."""
+    p0 = start_point
+    p1 = (bezier_row[COL_X], bezier_row[COL_Y], bezier_row[COL_Z])
+    c1_2d = (bezier_row[COL_C1X], bezier_row[COL_C1Y])
+    c2_2d = (bezier_row[COL_C2X], bezier_row[COL_C2Y])
+
+    # Interpolate Z for control points for a smooth 3D curve
+    z0, z1 = p0[2], p1[2]
+    c1 = (c1_2d[0], c1_2d[1], z0 * (2 / 3) + z1 * (1 / 3))
+    c2 = (c2_2d[0], c2_2d[1], z0 * (1 / 3) + z1 * (2 / 3))
+
+    # Estimate curve length by summing chord lengths
+    l01 = math.dist(p0, c1)
+    l12 = math.dist(c1, c2)
+    l23 = math.dist(c2, p1)
+    estimated_len = l01 + l12 + l23
+    num_steps = max(2, int(estimated_len / resolution))
+
+    # Cast is needed here because linearize_bezier is generic, but we know
+    # we are passing it 3D points and expect 3D points back.
+    return cast(
+        List[Tuple[Tuple[float, float, float], Tuple[float, float, float]]],
+        linearize_bezier(p0, c1, c2, p1, num_steps),
+    )
 
 
 def linearize_arc(
