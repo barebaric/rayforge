@@ -9,6 +9,7 @@ import ezdxf.math
 from ezdxf import bbox
 from ezdxf.lldxf.const import DXFStructureError
 from ezdxf.addons import text2path
+from ezdxf.path import Command
 
 from ...core.geo import (
     Geometry,
@@ -588,6 +589,73 @@ class DxfImporter(Importer):
             z=end_point.z * scale,
         )
 
+    def _consume_path(
+        self,
+        geo: Geometry,
+        path,
+        scale: float,
+        tx: float,
+        ty: float,
+    ):
+        """
+        Consumes an ezdxf.path.Path object and adds it to the Geometry.
+        Handles Bezier curves (Cubic) directly. Converts Quadratic Beziers
+        to Cubic.
+        """
+        last_x, last_y, last_z = 0.0, 0.0, 0.0
+
+        for cmd in path:
+            if cmd.type == Command.MOVE_TO:
+                x = cmd.end.x * scale - tx
+                y = cmd.end.y * scale - ty
+                z = cmd.end.z * scale
+                geo.move_to(x, y, z)
+                last_x, last_y, last_z = x, y, z
+
+            elif cmd.type == Command.LINE_TO:
+                x = cmd.end.x * scale - tx
+                y = cmd.end.y * scale - ty
+                z = cmd.end.z * scale
+                geo.line_to(x, y, z)
+                last_x, last_y, last_z = x, y, z
+
+            elif cmd.type == Command.CURVE3_TO:
+                # Quadratic Bezier: P0 (last), C (ctrl), P1 (end)
+                end_x = cmd.end.x * scale - tx
+                end_y = cmd.end.y * scale - ty
+                end_z = cmd.end.z * scale
+
+                ctrl_x = cmd.ctrl.x * scale - tx
+                ctrl_y = cmd.ctrl.y * scale - ty
+
+                # Convert Quad to Cubic
+                # C1 = P0 + 2/3 * (C - P0)
+                c1x = last_x + (2.0 / 3.0) * (ctrl_x - last_x)
+                c1y = last_y + (2.0 / 3.0) * (ctrl_y - last_y)
+
+                # C2 = P1 + 2/3 * (C - P1)
+                c2x = end_x + (2.0 / 3.0) * (ctrl_x - end_x)
+                c2y = end_y + (2.0 / 3.0) * (ctrl_y - end_y)
+
+                geo.bezier_to(end_x, end_y, c1x, c1y, c2x, c2y, end_z)
+                last_x, last_y, last_z = end_x, end_y, end_z
+
+            elif cmd.type == Command.CURVE4_TO:
+                # Cubic Bezier: P0 (last), C1, C2, P1 (end)
+                end_x = cmd.end.x * scale - tx
+                end_y = cmd.end.y * scale - ty
+                end_z = cmd.end.z * scale
+
+                c1x = cmd.ctrl1.x * scale - tx
+                c1y = cmd.ctrl1.y * scale - ty
+
+                c2x = cmd.ctrl2.x * scale - tx
+                c2y = cmd.ctrl2.y * scale - ty
+
+                geo.bezier_to(end_x, end_y, c1x, c1y, c2x, c2y, end_z)
+                last_x, last_y, last_z = end_x, end_y, end_z
+                last_z += 0  # to avoid unused variable warning
+
     def _poly_approx_to_geo(
         self,
         geo: Geometry,
@@ -598,27 +666,18 @@ class DxfImporter(Importer):
         transform=None,
         tolerance_mm: float = 0.01,
     ):
+        """
+        Converts entities like ELLIPSE and SPLINE to Geometry using
+        ezdxf's path interface, preserving Bezier curves.
+        """
         try:
             path_obj = ezdxf.path.make_path(entity)  # type: ignore
-            # flattening distance is in drawing units.
-            # tolerance_mm is in mm.
-            # dist_units = tolerance_mm / scale
-            flat_dist = tolerance_mm / scale if scale > 0 else tolerance_mm
-            points = list(path_obj.flattening(distance=flat_dist))
-            is_closed = getattr(entity, "closed", False)
-            # Enable simplification for approximated curves
-            self._poly_to_geo(
-                geo,
-                points,
-                is_closed,
-                scale,
-                tx,
-                ty,
-                transform,
-                simplify=True,
-                tolerance_mm=tolerance_mm,
-            )
+            if transform:
+                path_obj = path_obj.transform(transform)
+
+            self._consume_path(geo, path_obj, scale, tx, ty)
         except Exception:
+            # Fallback for entities that might fail path conversion
             pass
 
     def _polyline_to_geo(
@@ -710,22 +769,10 @@ class DxfImporter(Importer):
         tolerance_mm: float = 0.01,
     ):
         try:
-            for path in text2path.make_paths_from_entity(entity):
-                # Text usually generates clean curves, but dense.
-                flat_dist = tolerance_mm / scale if scale > 0 else tolerance_mm
-                points = list(path.flattening(distance=flat_dist))
-                # Text contours are usually implicitly closed paths, or open
-                # strokes. text2path generates strokes.
-                self._poly_to_geo(
-                    geo,
-                    points,
-                    False,
-                    scale,
-                    tx,
-                    ty,
-                    transform,
-                    simplify=True,
-                    tolerance_mm=tolerance_mm,
-                )
+            paths = text2path.make_paths_from_entity(entity)
+            for path in paths:
+                if transform:
+                    path = path.transform(transform)
+                self._consume_path(geo, path, scale, tx, ty)
         except Exception:
             pass
