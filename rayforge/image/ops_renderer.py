@@ -1,14 +1,10 @@
 import cairo
-import numpy as np
 from typing import Optional, TYPE_CHECKING
 
 if TYPE_CHECKING:
     pass
 
 from ..core.geo import Geometry
-from ..core.ops import Ops
-from ..pipeline.encoder.cairoencoder import CairoEncoder
-from ..shared.util.colors import ColorSet
 from .base_renderer import Renderer
 import warnings
 
@@ -23,13 +19,13 @@ CAIRO_MAX_DIMENSION = 16384
 
 class OpsRenderer(Renderer):
     """
-    Renders vector geometry (Ops/Geometry) to an image.
+    Renders vector geometry (Geometry) to an image.
     """
 
     def _render_to_cairo_surface(
         self, boundaries: Geometry, width: int, height: int
     ) -> Optional[cairo.ImageSurface]:
-        """Internal helper for DXF renderer reuse."""
+        """Internal helper for renderer reuse."""
         render_width, render_height = width, height
         if render_width <= 0 or render_height <= 0:
             return None
@@ -55,7 +51,6 @@ class OpsRenderer(Renderer):
         ctx = cairo.Context(surface)
         ctx.set_source_rgba(0, 0, 0, 0)  # Transparent background
         ctx.paint()
-        ctx.set_source_rgb(0, 0, 0)  # Black lines
 
         # Calculate scaling to fit the workpiece's local geometry into
         # the surface
@@ -69,34 +64,38 @@ class OpsRenderer(Renderer):
         scale_x = render_width / geo_width
         scale_y = render_height / geo_height
 
-        # Translate the geometry so its top-left corner is at the origin
-        ctx.translate(-geo_min_x * scale_x, -geo_min_y * scale_y)
+        # Render directly from Geometry to support Beziers and avoid
+        # intermediate linearization in Ops.
+        ctx.save()
 
-        # The CairoEncoder expects an Ops object, so we convert our pure
-        # geometry into a temporary Ops object for rendering.
-        render_ops = Ops.from_geometry(boundaries)
+        # Transform Logic:
+        # Map Geometry box (min_x, min_y, max_x, max_y) to Surface
+        # (0, 0, w, h).
+        # Surface (0,0) is Top-Left.
+        # Geometry is Cartesian (Y-Up).
+        # PixelX = (GeoX - min_x) * scale_x
+        # PixelY = (max_y - GeoY) * scale_y
+        #
+        # Translate(-min_x*scale_x, max_y*scale_y) -> Scale(scale_x, -scale_y)
+        ctx.translate(-geo_min_x * scale_x, geo_max_y * scale_y)
+        ctx.scale(scale_x, -scale_y)
 
-        encoder = CairoEncoder()
+        # Set style
+        ctx.set_source_rgb(0, 0, 0)  # Black lines
 
-        # Create a simple ColorSet with black cut color
-        cut_lut = np.zeros((256, 4))
-        cut_lut[:, 3] = 1.0  # Full alpha
+        # Try to use hairlines for crisp rendering independent of scale
+        try:
+            ctx.set_hairline(True)
+        except AttributeError:
+            # Fallback for older cairo
+            ctx.set_line_width(1.0 / max(scale_x, scale_y))
 
-        colors = ColorSet(
-            {
-                "cut": cut_lut,
-                "engrave": cut_lut,  # Use same for engrave
-                "travel": (0, 0, 0, 0.0),  # transparent
-                "zero_power": (0, 0, 0, 1.0),  # black
-            }
-        )
+        ctx.set_line_cap(cairo.LINE_CAP_SQUARE)
 
-        encoder.encode(
-            ops=render_ops,
-            ctx=ctx,
-            scale=(scale_x, scale_y),
-            colors=colors,
-        )
+        boundaries.to_cairo(ctx)
+        ctx.stroke()
+
+        ctx.restore()
 
         return surface
 
