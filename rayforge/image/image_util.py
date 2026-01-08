@@ -323,7 +323,8 @@ def create_single_workpiece_from_trace(
         # this source
         empty_segment = SourceAssetSegment(
             source_asset_uid=source.uid,
-            segment_mask_geometry=Geometry(),
+            pristine_geometry=Geometry(),
+            normalization_matrix=Matrix.identity(),
             vectorization_spec=vectorization_spec,
         )
         wp = WorkPiece(name=name_stem, source_segment=empty_segment)
@@ -334,18 +335,15 @@ def create_single_workpiece_from_trace(
     width_px = max_x - min_x
     height_px = max_y - min_y
 
-    # Create a geometry in the pixel space of the cropped image area.
-    pixel_space_geo = combined_geo.copy()
-    pixel_space_geo.transform(
-        Matrix.translation(-min_x, -min_y).to_4x4_numpy()
-    )
+    # Create a geometry in the pixel space of the cropped image area. This
+    # becomes the pristine geometry for the segment.
+    pristine_geo = combined_geo.copy()
+    pristine_geo.transform(Matrix.translation(-min_x, -min_y).to_4x4_numpy())
 
-    normalized_mask_geo = pixel_space_geo.copy()
+    # Create the matrix that normalizes the pristine geometry to a 1x1 box.
+    normalization_matrix = Matrix.identity()
     if width_px > 0 and height_px > 0:
-        # Normalize to a 0-1 box (Y-down coordinates). This is the only
-        # version we need to store.
-        norm_matrix = Matrix.scale(1.0 / width_px, 1.0 / height_px)
-        normalized_mask_geo.transform(norm_matrix.to_4x4_numpy())
+        normalization_matrix = Matrix.scale(1.0 / width_px, 1.0 / height_px)
 
     mm_per_px_x, mm_per_px_y = get_mm_per_pixel(image)
     width_mm = width_px * mm_per_px_x
@@ -360,8 +358,9 @@ def create_single_workpiece_from_trace(
 
     gen_config = SourceAssetSegment(
         source_asset_uid=source.uid,
-        segment_mask_geometry=normalized_mask_geo,  # Store the Y-down version
         vectorization_spec=vectorization_spec,
+        pristine_geometry=pristine_geo,
+        normalization_matrix=normalization_matrix,
         crop_window_px=(min_x, min_y, width_px, height_px),
         cropped_width_mm=width_mm,
         cropped_height_mm=height_mm,

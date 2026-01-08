@@ -198,34 +198,25 @@ class DxfImporter(Importer):
                 existing_solids.extend(current_solids)
                 source.metadata["solids"] = existing_solids
 
-            min_x, min_y, max_x, max_y = current_geo.rect()
+            pristine_geo = current_geo.copy()
+            pristine_geo.close_gaps()
+
+            min_x, min_y, max_x, max_y = pristine_geo.rect()
             width = max(max_x - min_x, 1e-9)
             height = max(max_y - min_y, 1e-9)
 
-            # The geometry from the DXF is Y-up. We must convert it to a
-            # normalized Y-down geometry for storage in the segment.
-            segment_mask_geo = current_geo.copy()
-            segment_mask_geo.close_gaps()
-
-            # 1. Translate to origin (0,0 is bottom-left).
-            translation_matrix = Matrix.translation(-min_x, -min_y)
-            segment_mask_geo.transform(translation_matrix.to_4x4_numpy())
-
-            # 2. Normalize to a 1x1 box. The geometry is now in a
-            #    (0,0)-(1,1) box, but is still Y-up.
-            if width > 0 and height > 0:
-                norm_matrix = Matrix.scale(1.0 / width, 1.0 / height)
-                segment_mask_geo.transform(norm_matrix.to_4x4_numpy())
-
-            # 3. Flip the Y-axis to convert to the required Y-down format.
-            #    This is a scale by -1 on Y, then a translation by +1 on Y.
-            flip_matrix = Matrix.translation(0, 1) @ Matrix.scale(1, -1)
-            segment_mask_geo.transform(flip_matrix.to_4x4_numpy())
+            # Create a matrix that transforms the pristine geometry
+            # (in mm, Y-up) into a normalized (0-1, Y-down) coordinate space.
+            translate_to_origin = Matrix.translation(-min_x, -min_y)
+            scale_to_unit = Matrix.scale(1.0 / width, 1.0 / height)
+            flip_y = Matrix.translation(0, 1) @ Matrix.scale(1, -1)
+            normalization_matrix = flip_y @ scale_to_unit @ translate_to_origin
 
             gen_config = SourceAssetSegment(
                 source_asset_uid=source.uid,
-                segment_mask_geometry=segment_mask_geo,
                 vectorization_spec=PassthroughSpec(),
+                pristine_geometry=pristine_geo,
+                normalization_matrix=normalization_matrix,
             )
 
             wp = WorkPiece(
@@ -311,7 +302,7 @@ class DxfImporter(Importer):
         """Dispatcher to call the correct handler for a given DXF entity."""
         handler_map = {
             "LINE": self._line_to_geo,
-            "CIRCLE": self._poly_approx_to_geo,
+            "CIRCLE": self._circle_to_geo,
             "LWPOLYLINE": self._lwpolyline_to_geo,
             "ARC": self._arc_to_geo,
             "ELLIPSE": self._poly_approx_to_geo,
@@ -470,6 +461,59 @@ class DxfImporter(Importer):
         points = [entity.dxf.start, entity.dxf.end]
         self._poly_to_geo(
             geo, points, False, scale, tx, ty, transform, simplify=False
+        )
+
+    def _circle_to_geo(
+        self,
+        geo: Geometry,
+        entity,
+        scale: float,
+        tx: float,
+        ty: float,
+        transform: Optional[ezdxf.math.Matrix44] = None,
+        tolerance_mm: float = 0.01,
+    ):
+        """Handles CIRCLE entities by creating two 180-degree arcs."""
+        # Copy the entity to avoid modifying the original in a block def
+        temp_entity = entity.copy()
+        if transform:
+            try:
+                temp_entity.transform(transform)
+            except (NotImplementedError, AttributeError):
+                # Some entities might not support transformation directly
+                self._poly_approx_to_geo(
+                    geo, entity, scale, tx, ty, transform, tolerance_mm
+                )
+                return
+
+        # If a non-uniform scale was applied, it becomes an ellipse
+        if temp_entity.dxftype() == "ELLIPSE":
+            self._poly_approx_to_geo(
+                geo, temp_entity, scale, tx, ty, None, tolerance_mm
+            )
+            return
+
+        center = temp_entity.dxf.center
+        radius = temp_entity.dxf.radius
+
+        # Apply global scale and translation
+        cx_mm = center.x * scale - tx
+        cy_mm = center.y * scale - ty
+        z_mm = center.z * scale
+        r_mm = radius * scale
+
+        # Define circle as two 180-degree arcs. Start at 3 o'clock.
+        start_point = (cx_mm + r_mm, cy_mm, z_mm)
+        mid_point = (cx_mm - r_mm, cy_mm, z_mm)
+
+        geo.move_to(start_point[0], start_point[1], start_point[2])
+        # First semi-circle (CCW by default in DXF)
+        geo.arc_to(
+            mid_point[0], mid_point[1], -r_mm, 0, clockwise=False, z=z_mm
+        )
+        # Second semi-circle
+        geo.arc_to(
+            start_point[0], start_point[1], r_mm, 0, clockwise=False, z=z_mm
         )
 
     def _lwpolyline_to_geo(

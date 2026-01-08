@@ -84,7 +84,7 @@ def vector_workpiece() -> WorkPiece:
 
     segment = SourceAssetSegment(
         source_asset_uid="test",
-        segment_mask_geometry=combined,
+        pristine_geometry=combined,
         # Note: This gets stored as Y-down, but for Passthrough logic in tests
         # we often mock the boundaries directly
         vectorization_spec=PassthroughSpec(),

@@ -203,7 +203,7 @@ class TestJpgRenderer:
         )
         gen_config = SourceAssetSegment(
             source_asset_uid=source.uid,
-            segment_mask_geometry=Geometry(),
+            pristine_geometry=Geometry(),
             vectorization_spec=TraceSpec(),
         )
         invalid_wp = WorkPiece(name="invalid", source_segment=gen_config)
@@ -218,7 +218,7 @@ class TestJpgRenderer:
         mock_parent.get_world_transform.return_value = Matrix.identity()
         invalid_wp.parent = mock_parent
 
-        assert invalid_wp.natural_sizes() == (0.0, 0.0)
+        assert invalid_wp.natural_size == (0.0, 0.0)
         assert invalid_wp.render_to_pixels(100, 100) is None
 
         chunks = list(

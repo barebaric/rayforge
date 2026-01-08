@@ -99,7 +99,7 @@ def color_workpiece(color_png_data: bytes) -> WorkPiece:
     # Clear the mask geometry to ensure we test the raw color rendering
     # without trace-based masking potentially hiding light pixels.
     assert wp.source_segment is not None
-    wp.source_segment.segment_mask_geometry = Geometry()
+    wp.source_segment.pristine_geometry = Geometry()
     return wp
 
 
@@ -280,7 +280,7 @@ class TestPngRenderer:
         )
         gen_config = SourceAssetSegment(
             source_asset_uid=source.uid,
-            segment_mask_geometry=Geometry(),
+            pristine_geometry=Geometry(),
             vectorization_spec=TraceSpec(),
         )
         invalid_wp = WorkPiece(name="invalid", source_segment=gen_config)
@@ -295,7 +295,7 @@ class TestPngRenderer:
         mock_parent.get_world_transform.return_value = Matrix.identity()
         invalid_wp.parent = mock_parent
 
-        assert invalid_wp.natural_sizes() == (0.0, 0.0)
+        assert invalid_wp.natural_size == (0.0, 0.0)
         assert invalid_wp.render_to_pixels(100, 100) is None
 
         chunks = list(

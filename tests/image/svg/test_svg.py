@@ -12,6 +12,7 @@ from rayforge.core.geo import Geometry
 from rayforge.core.geo.constants import (
     CMD_TYPE_MOVE,
     CMD_TYPE_LINE,
+    CMD_TYPE_ARC,
     COL_TYPE,
 )
 from rayforge.core.layer import Layer
@@ -103,6 +104,13 @@ def svg_with_offset_text_data() -> bytes:
 @pytest.fixture
 def twolayer_svg_data() -> bytes:
     svg_path = Path(__file__).parent / "twolayer.svg"
+    with open(svg_path, "rb") as f:
+        return f.read()
+
+
+@pytest.fixture
+def circle_svg_data() -> bytes:
+    svg_path = Path(__file__).parent / "circle.svg"
     with open(svg_path, "rb") as f:
         return f.read()
 
@@ -241,6 +249,28 @@ class TestSvgImporter:
         # Ensure all subsequent commands are LINES (flattened), not ARCS/CURVES
         for i in range(1, command_count):
             assert data[i, COL_TYPE] == CMD_TYPE_LINE
+
+    def test_circle_svg_not_linearized(self, circle_svg_data: bytes):
+        """
+        Tests that SVG circles are NOT linearized (flattened) by the
+        SVG importer. Circular arcs are preserved as arc commands,
+        similar to DXF importer behavior.
+        """
+        importer = SvgImporter(circle_svg_data, source_file=Path("circle.svg"))
+        payload = importer.get_doc_items(vectorization_spec=None)
+
+        assert payload is not None
+        wp = cast(WorkPiece, payload.items[0])
+        assert isinstance(wp, WorkPiece)
+        assert wp.boundaries is not None
+
+        data = wp.boundaries.data
+        assert data is not None
+
+        has_arc_commands = (data[:, COL_TYPE] == CMD_TYPE_ARC).any()
+        assert has_arc_commands, (
+            "SVG circles should contain arc commands, not be linearized"
+        )
 
     def test_direct_import_with_offset_text(
         self, svg_with_offset_text_data: bytes
@@ -494,7 +524,7 @@ class TestSvgRenderer:
         # Manually create a basic generation_config to link to the source
         gen_config = SourceAssetSegment(
             source_asset_uid=source.uid,
-            segment_mask_geometry=Geometry(),
+            pristine_geometry=Geometry(),
             vectorization_spec=PassthroughSpec(),
         )
         workpiece.source_segment = gen_config
