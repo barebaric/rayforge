@@ -739,6 +739,50 @@ class TestMachine:
         assert machine.dialect == GRBL_DIALECT
 
     @pytest.mark.asyncio
+    async def test_dialects_changed_signal_triggers_machine_changed(
+        self, machine: Machine, task_mgr: TaskManager, mocker
+    ):
+        """
+        Test that when dialects are updated via dialect manager,
+        the machine's changed signal is triggered.
+        """
+        await wait_for_tasks_to_finish(task_mgr)
+        from rayforge.machine.models.dialect import GcodeDialect
+
+        # Spy on machine's changed signal
+        changed_spy = mocker.spy(machine.changed, "send")
+
+        # Get the dialect manager and update the current dialect
+        dialect_mgr = machine.context.dialect_mgr
+        current_dialect = machine.dialect
+
+        # Update the dialect (simulating what happens when user edits dialect)
+        updated_dialect = GcodeDialect(
+            label=current_dialect.label,
+            description=current_dialect.description,
+            uid=current_dialect.uid,
+            laser_on="M3 S{power:.0f}",
+            laser_off="M5",
+            travel_move=current_dialect.travel_move,
+            linear_move=current_dialect.linear_move,
+            is_custom=True,
+            tool_change=current_dialect.tool_change,
+            set_speed=current_dialect.set_speed,
+            arc_cw=current_dialect.arc_cw,
+            arc_ccw=current_dialect.arc_ccw,
+            air_assist_on=current_dialect.air_assist_on,
+            air_assist_off=current_dialect.air_assist_off,
+            preamble=current_dialect.preamble,
+            postscript=current_dialect.postscript,
+        )
+
+        # Update the dialect via dialect manager
+        dialect_mgr.update_dialect(updated_dialect)
+
+        # Verify machine's changed signal was triggered
+        changed_spy.assert_called_once_with(machine)
+
+    @pytest.mark.asyncio
     async def test_can_g0_with_speed(
         self, machine: Machine, task_mgr: TaskManager
     ):
