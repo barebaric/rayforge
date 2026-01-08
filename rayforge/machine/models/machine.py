@@ -107,6 +107,11 @@ class Machine:
         self.machine_hours: MachineHours = MachineHours()
         self.machine_hours.changed.connect(self._on_machine_hours_changed)
 
+        # Connect to dialect manager to detect dialect changes
+        self.context.dialect_mgr.dialects_changed.connect(
+            self._on_dialects_changed
+        )
+
         # Signals
         self.changed = Signal()
         self.settings_error = Signal()
@@ -146,6 +151,9 @@ class Machine:
         if self.driver is not None:
             await self.driver.cleanup()
         self._disconnect_driver_signals()
+        self.context.dialect_mgr.dialects_changed.disconnect(
+            self._on_dialects_changed
+        )
 
     def _connect_driver_signals(self):
         if self.driver is None:
@@ -172,6 +180,13 @@ class Machine:
             self._on_driver_command_status_changed
         )
         self.driver.job_finished.disconnect(self._on_driver_job_finished)
+
+    def _on_dialects_changed(self, sender=None, **kwargs):
+        """
+        Callback when dialects are updated.
+        Sends machine's changed signal to trigger recalculation.
+        """
+        self.changed.send(self)
 
     async def _rebuild_driver_instance(
         self, ctx: Optional["ExecutionContext"] = None
