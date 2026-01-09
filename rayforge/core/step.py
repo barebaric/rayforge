@@ -129,7 +129,6 @@ class Step(DocItem, ABC):
         step.kerf_mm = data.get("kerf_mm", 0.0)
         return step
 
-    # ... rest of the Step class methods ...
     def get_settings(self) -> Dict[str, Any]:
         """
         Bundles all physical process parameters into a dictionary.

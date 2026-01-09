@@ -24,6 +24,7 @@ class MachineProfile:
     driver_class_name: Optional[str] = None
     dialect_uid: Optional[str] = None
     gcode_precision: Optional[int] = None
+    supports_arcs: Optional[bool] = None
     dimensions: Optional[Tuple[int, int]] = None
     origin: Optional[Origin] = None
     max_travel_speed: Optional[int] = None
@@ -98,6 +99,8 @@ class MachineProfile:
 
         if self.gcode_precision is not None:
             m.gcode_precision = self.gcode_precision
+        if self.supports_arcs is not None:
+            m.supports_arcs = self.supports_arcs
         if self.dimensions is not None:
             m.dimensions = self.dimensions
         if self.origin is not None:
