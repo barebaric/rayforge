@@ -1,7 +1,7 @@
 from typing import List, Tuple
 import numpy as np
 
-from .linearize import linearize_arc, _linearize_bezier_from_array
+from .linearize import linearize_arc, linearize_bezier_from_array
 from .primitives import line_segment_intersection
 from .constants import (
     CMD_TYPE_MOVE,
@@ -35,7 +35,7 @@ def _get_segments_for_row(
     elif cmd_type == CMD_TYPE_ARC:
         return linearize_arc(row, start_point)
     elif cmd_type == CMD_TYPE_BEZIER:
-        return _linearize_bezier_from_array(row, start_point)
+        return linearize_bezier_from_array(row, start_point)
     return []
 
 

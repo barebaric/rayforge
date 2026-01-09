@@ -18,7 +18,7 @@ from .constants import (
     COL_C2X,
     COL_C2Y,
 )
-from .linearize import _linearize_bezier_from_array
+from .linearize import linearize_bezier_from_array
 from .primitives import (
     find_closest_point_on_line_segment,
     find_closest_point_on_arc,
@@ -180,7 +180,7 @@ def get_total_distance_from_array(data: np.ndarray) -> float:
                         angle_span += 2 * math.pi
                 total_dist += abs(angle_span * radius)
         elif cmd_type == CMD_TYPE_BEZIER:
-            segments = _linearize_bezier_from_array(row, last_point)
+            segments = linearize_bezier_from_array(row, last_point)
             for p1, p2 in segments:
                 total_dist += math.hypot(p2[0] - p1[0], p2[1] - p1[1])
 

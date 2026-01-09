@@ -2,7 +2,7 @@ import math
 from typing import List, Tuple, Optional, TYPE_CHECKING
 from itertools import groupby
 import numpy as np
-from .linearize import linearize_arc, _linearize_bezier_from_array
+from .linearize import linearize_arc, linearize_bezier_from_array
 from .primitives import is_point_in_polygon
 from .constants import (
     CMD_TYPE_MOVE,
@@ -154,7 +154,7 @@ def get_subpath_vertices_from_array(
             for _, p2 in segments:
                 vertices.append(p2[:2])
         elif cmd_type == CMD_TYPE_BEZIER:
-            segments = _linearize_bezier_from_array(row, last_pos_3d)
+            segments = linearize_bezier_from_array(row, last_pos_3d)
             for _, p2 in segments:
                 vertices.append(p2[:2])
         last_pos_3d = end_point_3d
