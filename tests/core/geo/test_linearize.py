@@ -1,13 +1,21 @@
 import pytest
 from typing import NamedTuple
+import numpy as np
 
 from rayforge.core.geo import Geometry
+from rayforge.core.geo.constants import (
+    CMD_TYPE_MOVE,
+    CMD_TYPE_LINE,
+    CMD_TYPE_ARC,
+    COL_TYPE,
+)
 from rayforge.core.geo.linearize import (
     linearize_arc,
     linearize_bezier,
     linearize_bezier_adaptive,
     resample_polyline,
     flatten_to_points,
+    linearize_geometry,
 )
 
 
@@ -201,3 +209,31 @@ def test_flatten_to_points_empty():
     """Tests flatten_to_points with empty geometry."""
     result = flatten_to_points(None, 0.1)
     assert result == []
+
+
+def test_linearize_geometry():
+    """Tests the linearize_geometry function."""
+    geo = Geometry()
+    geo.move_to(0, 0)
+    geo.arc_to(10, 10, i=10, j=0, clockwise=False)
+
+    geo._sync_to_numpy()
+    data = geo.data
+
+    result = linearize_geometry(data, tolerance=0.1)
+
+    # Should contain only MOVE and LINE commands
+    cmd_types = result[:, COL_TYPE]
+    assert CMD_TYPE_ARC not in cmd_types
+    assert CMD_TYPE_MOVE in cmd_types
+    assert CMD_TYPE_LINE in cmd_types
+
+    # The end point should still be (10, 10)
+    end_point = result[-1, 1:4]
+    np.testing.assert_allclose(end_point, (10.0, 10.0, 0.0), atol=1e-6)
+
+
+def test_linearize_geometry_empty():
+    """Tests linearize_geometry with empty data."""
+    result = linearize_geometry(None, 0.1)
+    assert result.shape == (0, 8)

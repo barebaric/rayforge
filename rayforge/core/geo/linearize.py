@@ -58,7 +58,7 @@ def flatten_to_points(
             for _, p_end in segments:
                 current_subpath.append(p_end)
         elif cmd_type == CMD_TYPE_BEZIER:
-            segments = _linearize_bezier_from_array(row, last_pos, resolution)
+            segments = linearize_bezier_from_array(row, last_pos, resolution)
             for _, p_end in segments:
                 current_subpath.append(p_end)
 
@@ -136,7 +136,7 @@ def _linearize_arc_from_array(
     return segments
 
 
-def _linearize_bezier_from_array(
+def linearize_bezier_from_array(
     bezier_row: np.ndarray,
     start_point: Tuple[float, float, float],
     resolution: float = 0.1,
@@ -382,3 +382,47 @@ def resample_polyline(
             new_points.append(p2)
 
     return new_points
+
+
+def linearize_geometry(
+    data: Optional[np.ndarray], tolerance: float
+) -> np.ndarray:
+    """
+    Converts geometry data to a polyline approximation (Lines only),
+    reducing vertex count using the Ramer-Douglas-Peucker algorithm.
+
+    Args:
+        data: NumPy array of geometry commands.
+        tolerance: The maximum allowable deviation.
+
+    Returns:
+        A NumPy array containing only MOVE and LINE commands.
+    """
+    from .simplify import simplify_points_to_array
+
+    if data is None or len(data) == 0:
+        return np.array([]).reshape(0, GEO_ARRAY_COLS)
+
+    resolution = tolerance * 0.25
+    subpaths_points = flatten_to_points(data, resolution)
+
+    new_rows = []
+    for points in subpaths_points:
+        if not points:
+            continue
+
+        pts_arr = np.array(points, dtype=np.float64)
+        simplified_arr = simplify_points_to_array(pts_arr, tolerance)
+
+        if len(simplified_arr) > 0:
+            p0 = simplified_arr[0]
+            new_rows.append([CMD_TYPE_MOVE, p0[0], p0[1], p0[2], 0, 0, 0, 0])
+
+            for i in range(1, len(simplified_arr)):
+                p = simplified_arr[i]
+                new_rows.append([CMD_TYPE_LINE, p[0], p[1], p[2], 0, 0, 0, 0])
+
+    if not new_rows:
+        return np.array([]).reshape(0, GEO_ARRAY_COLS)
+
+    return np.array(new_rows, dtype=np.float64)

@@ -407,7 +407,7 @@ class Ops:
                 new_ops.add(ArcToCommand(end, center_offset, clockwise))
             elif cmd_type == geo.constants.CMD_TYPE_BEZIER:
                 # Ops doesn't have a native Bezier command, so we linearize.
-                segments = geo.linearize._linearize_bezier_from_array(
+                segments = geo.linearize.linearize_bezier_from_array(
                     row, last_pos
                 )
                 for _, p2 in segments:

@@ -12,7 +12,7 @@ from .constants import (
     COL_CW,
     GEO_ARRAY_COLS,
 )
-from .linearize import linearize_arc, _linearize_bezier_from_array
+from .linearize import linearize_arc, linearize_bezier_from_array
 
 
 def normalize_angle(angle: float) -> float:
@@ -403,7 +403,7 @@ def find_closest_point_on_bezier(
     """
     Finds the closest point on a Bézier curve by linearizing it.
     """
-    bezier_segments = _linearize_bezier_from_array(bezier_row, start_pos)
+    bezier_segments = linearize_bezier_from_array(bezier_row, start_pos)
     if not bezier_segments:
         return None
 
