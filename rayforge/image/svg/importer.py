@@ -2,7 +2,6 @@ import io
 import math
 import logging
 from typing import List, Optional, Tuple
-import cairo
 from xml.etree import ElementTree as ET
 from svgelements import (
     SVG,
@@ -15,17 +14,8 @@ from svgelements import (
     QuadraticBezier,
     Group,
 )
-import numpy as np
 
-from ...core.geo import (
-    Geometry,
-    GEO_ARRAY_COLS,
-    CMD_TYPE_LINE,
-    COL_TYPE,
-    COL_X,
-    COL_Y,
-)
-from ...core.geo.simplify import simplify_points_to_array
+from ...core.geo import Geometry
 from ...core.item import DocItem
 from ...core.layer import Layer
 from ...core.matrix import Matrix
@@ -208,8 +198,6 @@ class SvgImporter(Importer):
             return None
 
         # 1. Parse SVG data into an object model first.
-        #    This allows us to get robust dimensions from svgelements if the
-        #    simple metadata extraction failed (e.g. missing attributes).
         svg = self._parse_svg_data(source)
         if svg is None:
             return None
@@ -250,15 +238,7 @@ class SvgImporter(Importer):
             )
 
         # 5. Standard path (merged import)
-        # Convert SVG shapes to internal geometry (in pixel coordinates).
-        # This now preserves circular arcs.
-        pristine_geo = self._convert_svg_to_geometry(svg, final_dims_mm)
-        logger.info(
-            f"SVG Import: Pristine geometry created with "
-            f"{len(pristine_geo)} commands."
-        )
-
-        # If the SVG contained no parsable vector paths, abort the import.
+        pristine_geo = self._convert_svg_to_geometry(svg)
         if pristine_geo.is_empty():
             logger.info(
                 "Direct SVG import resulted in empty geometry. "
@@ -266,11 +246,66 @@ class SvgImporter(Importer):
             )
             return None
 
-        # Calculate normalization matrix for the new path
-        normalization_matrix = Matrix.scale(1.0 / width_px, 1.0 / height_px)
+        # Get the geometry bounding box.
+        geo_min_x, geo_min_y, geo_max_x, geo_max_y = pristine_geo.rect()
+        geo_width = geo_max_x - geo_min_x
+        geo_height = geo_max_y - geo_min_y
 
-        # Create the segment with the pristine geometry and its normalization
-        # matrix
+        if geo_width <= 0 or geo_height <= 0:
+            logger.warning("SVG import resulted in zero-dimension geometry.")
+            return None
+
+        # --- Coordinate System Normalization ---
+        # svgelements usually applies the viewport transform (User->Pixels).
+        # We need to detect this and ensure we are working in User Units.
+
+        vb = source.metadata.get("viewbox")
+        user_unit_to_mm_x = 1.0
+        user_unit_to_mm_y = 1.0
+
+        if vb:
+            vb_x, vb_y, vb_w, vb_h = vb
+
+            # Calculate implied scale factor (Native / User)
+            svg_scale_x = width_px / vb_w if vb_w > 0 else 1.0
+            svg_scale_y = height_px / vb_h if vb_h > 0 else 1.0
+
+            # If significant scale detected, assume svgelements baked it in.
+            # We must revert it to get User Units.
+            if abs(svg_scale_x - 1.0) > 0.1:
+                inv_scale = Matrix.scale(1.0 / svg_scale_x, 1.0 / svg_scale_y)
+                pristine_geo.transform(inv_scale.to_4x4_numpy())
+
+                # Update local bounds variables
+                geo_min_x /= svg_scale_x
+                geo_min_y /= svg_scale_y
+                geo_max_x /= svg_scale_x
+                geo_max_y /= svg_scale_y
+                geo_width /= svg_scale_x
+                geo_height /= svg_scale_y
+
+            # Now geometry is in User Units.
+            # Calculate conversion factor to MM based on ViewBox and
+            # Final Dimensions.
+            if vb_w > 0:
+                user_unit_to_mm_x = final_width_mm / vb_w
+            if vb_h > 0:
+                user_unit_to_mm_y = final_height_mm / vb_h
+        else:
+            # No ViewBox: Assume 1:1 mapping (Pixels=UserUnits)
+            if width_px > 0:
+                user_unit_to_mm_x = final_width_mm / width_px
+            if height_px > 0:
+                user_unit_to_mm_y = final_height_mm / height_px
+
+        # ---
+
+        # The normalization matrix maps the geometry (User Units) to 0-1 box.
+        norm_scale = Matrix.scale(1.0 / geo_width, 1.0 / geo_height)
+        norm_translate = Matrix.translation(-geo_min_x, -geo_min_y)
+        normalization_matrix = norm_scale @ norm_translate
+
+        # Create the segment
         segment = SourceAssetSegment(
             source_asset_uid=source.uid,
             vectorization_spec=PassthroughSpec(),
@@ -278,15 +313,49 @@ class SvgImporter(Importer):
             normalization_matrix=normalization_matrix,
         )
 
+        # Physical size
+        wp_width_mm = geo_width * user_unit_to_mm_x
+        wp_height_mm = geo_height * user_unit_to_mm_y
+
+        # Position (X)
+        wp_pos_x_mm = geo_min_x * user_unit_to_mm_x
+
+        # Position (Y)
+        # Flip from Y-Down User Space to Y-Up World Space.
+        # We align relative to the bottom of the "Page" (ViewBox).
+        if vb:
+            _, vb_y, _, vb_h = vb
+            visual_bottom_y = vb_y + vb_h
+            dist_from_bottom_units = visual_bottom_y - geo_max_y
+            wp_pos_y_mm = dist_from_bottom_units * user_unit_to_mm_y
+        else:
+            # Fallback: assume User Units = Pixels
+            wp_pos_y_mm = (height_px - geo_max_y) * user_unit_to_mm_y
+
+        # Correction for Trim offset to restore absolute position
+        if (
+            "untrimmed_height_mm" in source.metadata
+            and "untrimmed_width_mm" in source.metadata
+        ):
+            if vb:
+                # X: Add the trim offset (vb_x)
+                wp_pos_x_mm += vb[0] * user_unit_to_mm_x
+
+                # Y: Restore absolute Y-Up position
+                # geo_max_y is relative to ViewBox top.
+                # Absolute User Y from top = geo_max_y + vb_y
+                untrimmed_h_mm = source.metadata["untrimmed_height_mm"]
+                abs_geo_bottom_y_units = geo_max_y + vb[1]
+                wp_pos_y_mm = untrimmed_h_mm - (
+                    abs_geo_bottom_y_units * user_unit_to_mm_y
+                )
+
         wp = WorkPiece(name=self.source_file.stem, source_segment=segment)
-        wp.natural_width_mm = final_width_mm
-        wp.natural_height_mm = final_height_mm
-        wp.set_size(final_width_mm, final_height_mm)
-        wp.pos = (0, 0)
-        logger.info(
-            f"Workpiece set size: "
-            f"{final_width_mm:.3f}mm x {final_height_mm:.3f}mm"
-        )
+        wp.natural_width_mm = wp_width_mm
+        wp.natural_height_mm = wp_height_mm
+        wp.set_size(wp_width_mm, wp_height_mm)
+        wp.pos = (wp_pos_x_mm, wp_pos_y_mm)
+
         return [wp]
 
     def _create_split_items(
@@ -303,19 +372,51 @@ class SvgImporter(Importer):
         layer ID. The WorkPieces share the same size and transform but use
         different geometry masks.
         """
-        # Create a master WorkPiece to use as the matrix template.
-        master_pristine_geo = self._convert_svg_to_geometry(svg, final_dims_mm)
-
-        # If the master geometry is empty, there's nothing to split.
+        master_pristine_geo = self._convert_svg_to_geometry(svg)
         if master_pristine_geo.is_empty():
             return []
 
-        normalization_matrix = Matrix.scale(1.0 / width_px, 1.0 / height_px)
+        # Logic for Full-Page Normalization
+        vb = source.metadata.get("viewbox")
+        norm_width = width_px
+        norm_height = height_px
+        norm_off_x = 0
+        norm_off_y = 0
+
+        # Define scale variables early to avoid NameError/Unbound
+        svg_scale_x = 1.0
+        svg_scale_y = 1.0
+        vb_x, vb_y, vb_w, vb_h = 0.0, 0.0, 0.0, 0.0
+
+        if vb:
+            vb_x, vb_y, vb_w, vb_h = vb
+            # Detect Scale (same as direct)
+            svg_scale_x = width_px / vb_w if vb_w > 0 else 1.0
+            svg_scale_y = height_px / vb_h if vb_h > 0 else 1.0
+
+            if abs(svg_scale_x - 1.0) > 0.1:
+                inv_scale = Matrix.scale(1.0 / svg_scale_x, 1.0 / svg_scale_y)
+                master_pristine_geo.transform(inv_scale.to_4x4_numpy())
+
+            # For Split, we normalize to the ViewBox
+            norm_width = vb_w
+            norm_height = vb_h
+            norm_off_x = vb_x
+            norm_off_y = vb_y
+
+        # Normalization Matrix maps ViewBox to 0-1
+        norm_matrix = Matrix.scale(
+            1.0 / norm_width, 1.0 / norm_height
+        ) @ Matrix.translation(-norm_off_x, -norm_off_y)
+
+        # Master WP Size = Full Page Size
+        # Master WP Pos = 0,0 (relative to page)
+
         master_segment = SourceAssetSegment(
             source_asset_uid=source.uid,
             vectorization_spec=PassthroughSpec(),
             pristine_geometry=master_pristine_geo,
-            normalization_matrix=normalization_matrix,
+            normalization_matrix=norm_matrix,
         )
         master_wp = WorkPiece(
             name=self.source_file.stem, source_segment=master_segment
@@ -323,49 +424,40 @@ class SvgImporter(Importer):
         master_wp.natural_width_mm = final_dims_mm[0]
         master_wp.natural_height_mm = final_dims_mm[1]
         master_wp.set_size(final_dims_mm[0], final_dims_mm[1])
-        master_wp.pos = (0, 0)
+        master_wp.pos = (0, 0)  # Trimmed origin
 
         final_items: List[DocItem] = []
         manifest = extract_layer_manifest(self.raw_data)
         layer_names = {m["id"]: m["name"] for m in manifest}
 
-        # Prepare geometry containers for each requested layer
         layer_geoms = {lid: Geometry() for lid in layer_ids}
 
-        # Calculate tolerance
-        # Use a fixed, high-precision tolerance for consistency
-        tolerance = 0.05
-
         def _get_all_shapes(group: Group):
-            """Recursively yields all shapes from a group."""
             for item in group:
                 if isinstance(item, Group):
                     yield from _get_all_shapes(item)
                 else:
                     yield item
 
-        # Iterate over each direct child of the SVG root. If it's a Group
-        # that matches a requested layer ID, process all shapes within it.
         for element in svg:
             if not isinstance(element, Group):
                 continue
-
             lid = element.id
             if lid and lid in layer_geoms:
-                # This group is a layer we want to import.
-                # Process all shapes within this group (and its subgroups).
                 for shape in _get_all_shapes(element):
                     try:
                         path = Path(shape)
-                        self._add_path_to_geometry(
-                            path, layer_geoms[lid], tolerance
-                        )
+                        self._add_path_to_geometry(path, layer_geoms[lid])
                     except (AttributeError, TypeError):
-                        pass  # Ignore non-shape elements like <defs>
+                        pass
 
-        # Create DocItems from populated geometries
         for lid in layer_ids:
             pristine_layer_geo = layer_geoms[lid]
+
+            # Apply same inverse scale if needed
+            if vb and abs(svg_scale_x - 1.0) > 0.1:
+                inv_scale = Matrix.scale(1.0 / svg_scale_x, 1.0 / svg_scale_y)
+                pristine_layer_geo.transform(inv_scale.to_4x4_numpy())
 
             if not pristine_layer_geo.is_empty():
                 segment = SourceAssetSegment(
@@ -373,24 +465,20 @@ class SvgImporter(Importer):
                     vectorization_spec=PassthroughSpec(),
                     layer_id=lid,
                     pristine_geometry=pristine_layer_geo,
-                    normalization_matrix=normalization_matrix,
+                    normalization_matrix=norm_matrix,
                 )
 
-                # Create WorkPiece
                 wp_name = layer_names.get(lid, f"Layer {lid}")
                 wp = WorkPiece(name=wp_name, source_segment=segment)
                 wp.matrix = master_wp.matrix
                 wp.natural_width_mm = master_wp.natural_width_mm
                 wp.natural_height_mm = master_wp.natural_height_mm
 
-                # Create Container Layer
                 new_layer = Layer(name=wp_name)
                 new_layer.add_child(wp)
                 final_items.append(new_layer)
 
         if not final_items:
-            # Fallback if no specific layers found (shouldn't happen
-            # with filter)
             return [master_wp]
 
         return final_items
@@ -444,252 +532,107 @@ class SvgImporter(Importer):
         logger.debug(msg)
         return width_px, height_px
 
-    def _convert_svg_to_geometry(
-        self, svg: SVG, final_dims_mm: Tuple[float, float]
-    ) -> Geometry:
+    def _convert_svg_to_geometry(self, svg: SVG) -> Geometry:
         """
         Converts an SVG object into a Geometry object in pixel coordinates.
-        Preserves circular arcs.
+        Preserves curves as Béziers.
         """
         geo = Geometry()
-
-        # Use a fixed, high-precision tolerance for linearization and
-        # buffering. SVG coordinates are usually 96 DPI.
-        # 0.05 px ~= 0.013 mm, which is sufficient for high fidelity import.
-        tolerance = 0.05
 
         for shape in svg.elements():
             try:
                 path = Path(shape)
                 path.reify()  # Apply transforms
-                self._add_path_to_geometry(path, geo, tolerance)
+                self._add_path_to_geometry(path, geo)
             except (AttributeError, TypeError):
                 continue  # Skip non-shape elements like <defs>
         return geo
 
-    def _add_path_to_geometry(
-        self, path: Path, geo: Geometry, tolerance: float
-    ) -> None:
+    def _add_path_to_geometry(self, path: Path, geo: Geometry) -> None:
         """
-        Converts a single Path object's segments to Geometry commands using a
-        hybrid approach: circular arcs are added directly, while all other
-        curves are flattened using Cairo. This avoids slow Python-based
-        recursion for curve linearization by:
-        1. Constructing the path in a temporary Cairo context.
-        2. Utilizing `ctx.copy_path_flat()` to get pre-flattened line data.
-        3. Buffering points for efficient ingestion into the Geometry object.
+        Converts a single Path object's segments to Geometry commands.
+        Curves are added as Béziers instead of being linearized.
         """
-        logger.debug(f"Processing path with {len(path)} segments.")
-        # Create a throwaway 1x1 surface just to get a Context
-        surface = cairo.ImageSurface(cairo.FORMAT_A8, 1, 1)
-        ctx = cairo.Context(surface)
-
-        # Set tolerance for flattening (conversion of curves to lines)
-        ctx.set_tolerance(tolerance)
-
-        # Feed svgelements path data into the Cairo context or Geometry
-        for i, seg in enumerate(path):
-            is_circular_arc = False
-            if (
-                isinstance(seg, Arc)
-                and seg.rx is not None
-                and seg.ry is not None
-            ):
-                # Check if it's a circular arc (or very close to one)
-                if abs(seg.rx - seg.ry) < 1e-3:
-                    is_circular_arc = True
-
-            if is_circular_arc:
-                logger.debug(
-                    f"Segment {i} is a circular arc, adding directly."
-                )
-                # 1. Flush any pending non-arc segments from the cairo context
-                self._process_cairo_flat_path(ctx, geo, tolerance)
-
-                # 2. Add the arc directly to our Geometry
-                start = seg.start
-                end = seg.end
-                center = seg.center
-                if (
-                    start is not None
-                    and end is not None
-                    and center is not None
-                    and start.x is not None
-                    and start.y is not None
-                    and end.x is not None
-                    and end.y is not None
-                    and center.real is not None
-                    and center.imag is not None
-                ):
-                    i_offset = center.real - start.x
-                    j_offset = center.imag - start.y
-
-                    # SVG sweep_flag: 1 is "positive-angle" direction.
-                    # In SVG's Y-down, this is CW. Our geometry expects
-                    # CW=True.
-                    clockwise = bool(seg.sweep)
-                    geo.arc_to_as_bezier(
-                        float(end.x),
-                        float(end.y),
-                        i_offset,
-                        j_offset,
-                        clockwise=clockwise,
-                        z=0.0,
-                    )
-                # 3. Update Cairo's current point to keep it in sync
-                if end is not None and end.x is not None and end.y is not None:
-                    ctx.move_to(float(end.x), float(end.y))
-            else:
-                logger.debug(
-                    f"Segment {i} is {type(seg).__name__}, adding to cairo."
-                )
-                # For all other segment types, feed them into Cairo
-                start = seg.start
-                end = seg.end
-                if end is None:
+        for seg in path:
+            # Check for a valid end point, which is required for most segments.
+            end_pt = (0.0, 0.0)
+            if not isinstance(seg, Close):
+                if seg.end is None or seg.end.x is None or seg.end.y is None:
                     continue
-                # Robust checking before accessing coordinates
-                if end.x is None or end.y is None:
-                    continue
+                end_pt = (float(seg.end.x), float(seg.end.y))
 
-                end_pt = (float(end.x), float(end.y))
+            if isinstance(seg, Move):
+                geo.move_to(end_pt[0], end_pt[1])
 
-                if isinstance(seg, Move):
-                    ctx.move_to(end_pt[0], end_pt[1])
+            elif isinstance(seg, Line):
+                geo.line_to(end_pt[0], end_pt[1])
 
-                elif isinstance(seg, Line):
-                    ctx.line_to(end_pt[0], end_pt[1])
-
-                elif isinstance(seg, Close):
-                    ctx.close_path()
-
-                elif isinstance(seg, CubicBezier):
-                    c1 = seg.control1
-                    c2 = seg.control2
-                    # Ensure control points exist before accessing properties
-                    if (
-                        c1 is not None
-                        and c2 is not None
-                        and c1.x is not None
-                        and c1.y is not None
-                        and c2.x is not None
-                        and c2.y is not None
-                    ):
-                        ctx.curve_to(
-                            float(c1.x),
-                            float(c1.y),
-                            float(c2.x),
-                            float(c2.y),
-                            end_pt[0],
-                            end_pt[1],
-                        )
-
-                elif isinstance(seg, QuadraticBezier):
-                    # Promote Quadratic to Cubic for Cairo
-                    # CP1 = Start + (2/3)*(Control - Start)
-                    # CP2 = End + (2/3)*(Control - End)
-                    c = seg.control
-                    if (
-                        start is not None
-                        and c is not None
-                        and start.x is not None
-                        and start.y is not None
-                        and c.x is not None
-                        and c.y is not None
-                    ):
-                        sx, sy = float(start.x), float(start.y)
-                        cx, cy = float(c.x), float(c.y)
-                        ex, ey = end_pt
-
-                        c1x = sx + (2.0 / 3.0) * (cx - sx)
-                        c1y = sy + (2.0 / 3.0) * (cy - sy)
-                        c2x = ex + (2.0 / 3.0) * (cx - ex)
-                        c2y = ey + (2.0 / 3.0) * (cy - ey)
-
-                        ctx.curve_to(c1x, c1y, c2x, c2y, ex, ey)
-
-                elif isinstance(seg, Arc):  # Elliptical arc
-                    for cubic in seg.as_cubic_curves():
-                        c1, c2, e = cubic.control1, cubic.control2, cubic.end
-                        if (
-                            c1 is not None
-                            and c2 is not None
-                            and e is not None
-                            and c1.x is not None
-                            and c1.y is not None
-                            and c2.x is not None
-                            and c2.y is not None
-                            and e.x is not None
-                            and e.y is not None
-                        ):
-                            ctx.curve_to(
-                                float(c1.x),
-                                float(c1.y),
-                                float(c2.x),
-                                float(c2.y),
-                                float(e.x),
-                                float(e.y),
-                            )
-
-        # Flush any remaining segments from the cairo context
-        self._process_cairo_flat_path(ctx, geo, tolerance)
-
-    def _process_cairo_flat_path(
-        self, ctx: cairo.Context, geo: Geometry, tolerance: float
-    ):
-        """Helper to flush flattened bezier/line data from Cairo to Geometry"""
-        flat_path_iter = ctx.copy_path_flat()
-        point_buffer: List[Tuple[float, float]] = []
-
-        def flush_buffer():
-            if len(point_buffer) > 1:
-                # Convert to numpy array
-                pts_arr = np.array(point_buffer, dtype=np.float64)
-
-                # Simplify using the numpy-based RDP function
-                simplified_arr = simplify_points_to_array(pts_arr, tolerance)
-
-                # We need to add LineTo commands for points[1:]
-                # points[0] is the start (already MovedTo or LinedTo)
-                count = len(simplified_arr)
-                if count > 1:
-                    # Allocate block
-                    # Shape: (count - 1, 7)
-                    block = np.zeros(
-                        (count - 1, GEO_ARRAY_COLS), dtype=np.float64
-                    )
-
-                    # Set Command Type
-                    block[:, COL_TYPE] = CMD_TYPE_LINE
-
-                    # Set X, Y
-                    block[:, COL_X] = simplified_arr[1:, 0]
-                    block[:, COL_Y] = simplified_arr[1:, 1]
-
-                    # Bulk append to geometry
-                    geo.append_numpy_data(block)
-
-        # Process the flattened Cairo commands
-        for type, points in flat_path_iter:
-            if type == cairo.PATH_MOVE_TO:
-                flush_buffer()
-                p = (points[0], points[1])
-                point_buffer = [p]
-                geo.move_to(p[0], p[1], 0.0)
-
-            elif type == cairo.PATH_LINE_TO:
-                p = (points[0], points[1])
-                point_buffer.append(p)
-
-            elif type == cairo.PATH_CLOSE_PATH:
-                flush_buffer()
+            elif isinstance(seg, Close):
                 geo.close_path()
-                point_buffer = []
 
-        # Flush any remaining segments
-        flush_buffer()
-        # After flushing, clear the Cairo path
-        ctx.new_path()
+            elif isinstance(seg, CubicBezier):
+                if (
+                    seg.control1 is not None
+                    and seg.control1.x is not None
+                    and seg.control1.y is not None
+                    and seg.control2 is not None
+                    and seg.control2.x is not None
+                    and seg.control2.y is not None
+                ):
+                    c1 = (float(seg.control1.x), float(seg.control1.y))
+                    c2 = (float(seg.control2.x), float(seg.control2.y))
+                    geo.bezier_to(
+                        end_pt[0], end_pt[1], c1[0], c1[1], c2[0], c2[1]
+                    )
+                else:
+                    geo.line_to(end_pt[0], end_pt[1])
+
+            elif isinstance(seg, QuadraticBezier):
+                if (
+                    seg.start is not None
+                    and seg.start.x is not None
+                    and seg.start.y is not None
+                    and seg.control is not None
+                    and seg.control.x is not None
+                    and seg.control.y is not None
+                ):
+                    sx, sy = float(seg.start.x), float(seg.start.y)
+                    cx, cy = float(seg.control.x), float(seg.control.y)
+                    ex, ey = end_pt
+
+                    c1x = sx + (2.0 / 3.0) * (cx - sx)
+                    c1y = sy + (2.0 / 3.0) * (cy - sy)
+                    c2x = ex + (2.0 / 3.0) * (cx - ex)
+                    c2y = ey + (2.0 / 3.0) * (cy - ey)
+
+                    geo.bezier_to(ex, ey, c1x, c1y, c2x, c2y)
+                else:
+                    geo.line_to(end_pt[0], end_pt[1])
+
+            elif isinstance(seg, Arc):
+                # svgelements handles Arc -> Cubic conversion
+                for cubic in seg.as_cubic_curves():
+                    if (
+                        cubic.end is not None
+                        and cubic.end.x is not None
+                        and cubic.end.y is not None
+                        and cubic.control1 is not None
+                        and cubic.control1.x is not None
+                        and cubic.control1.y is not None
+                        and cubic.control2 is not None
+                        and cubic.control2.x is not None
+                        and cubic.control2.y is not None
+                    ):
+                        e = (float(cubic.end.x), float(cubic.end.y))
+                        c1 = (float(cubic.control1.x), float(cubic.control1.y))
+                        c2 = (float(cubic.control2.x), float(cubic.control2.y))
+                        geo.bezier_to(e[0], e[1], c1[0], c1[1], c2[0], c2[1])
+                    elif (
+                        cubic.end is not None
+                        and cubic.end.x is not None
+                        and cubic.end.y is not None
+                    ):
+                        geo.line_to(float(cubic.end.x), float(cubic.end.y))
 
     def _normalize_geometry(
         self, geo: Geometry, width_px: float, height_px: float
