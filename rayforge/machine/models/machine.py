@@ -87,6 +87,7 @@ class Machine:
         self.dialect_uid: str = "grbl"
         self.gcode_precision: int = 3
         self.supports_arcs: bool = True
+        self.arc_tolerance: float = 0.03
         self.hookmacros: Dict[MacroTrigger, Macro] = {}
         self.macros: Dict[str, Macro] = {}
         self.heads: List[Laser] = []
@@ -364,6 +365,12 @@ class Machine:
         if self.gcode_precision == precision:
             return
         self.gcode_precision = precision
+        self.changed.send(self)
+
+    def set_arc_tolerance(self, tolerance: float):
+        if self.arc_tolerance == tolerance:
+            return
+        self.arc_tolerance = tolerance
         self.changed.send(self)
 
     def set_home_on_start(self, home_on_start: bool = True):
@@ -952,6 +959,7 @@ class Machine:
                 "single_axis_homing_enabled": self.single_axis_homing_enabled,  # noqa: E501
                 "dialect_uid": self.dialect_uid,
                 "supports_arcs": self.supports_arcs,
+                "arc_tolerance": self.arc_tolerance,
                 "dimensions": list(self.dimensions),
                 "offsets": list(self.offsets),
                 "origin": self.origin.value,
@@ -1129,8 +1137,9 @@ class Machine:
         )
         ma.acceleration = speeds.get("acceleration", ma.acceleration)
         gcode = ma_data.get("gcode", {})
-        ma.gcode_precision = gcode.get("gcode_precision", 3)
-        ma.supports_arcs = ma_data.get("supports_arcs", True)
+        ma.gcode_precision = gcode.get("gcode_precision", ma.gcode_precision)
+        ma.supports_arcs = ma_data.get("supports_arcs", ma.supports_arcs)
+        ma.arc_tolerance = ma_data.get("arc_tolerance", ma.arc_tolerance)
 
         hours_data = ma_data.get("machine_hours", {})
         ma.machine_hours = MachineHours.from_dict(hours_data)
