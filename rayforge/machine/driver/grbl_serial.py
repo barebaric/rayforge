@@ -850,7 +850,28 @@ class GrblSerialDriver(Driver):
 
         # Logic for character-counting streaming protocol during a job
         if self._job_running:
-            if line == "ok":
+            # First, perform the strict, correct check.
+            is_ack = line == "ok"
+
+            # If the strict check fails, apply a surgical patch ONLY for NULL
+            # byte corruption. This is a specific workaround for a known
+            # hardware/firmware-level serial fault.
+            if not is_ack:
+                # Remove only NULL bytes and re-check for exact equality.
+                line_without_nulls = line.replace("\x00", "")
+                if line_without_nulls == "ok":
+                    logger.critical(
+                        "HARDWARE FAULT DETECTED: A corrupted 'ok' "
+                        f"acknowledgement with NULL bytes was received "
+                        f"({repr(line)}). The job is continuing, but this "
+                        "indicates a critical problem with the USB cable, "
+                        "electrical noise (EMI), or power supply. The "
+                        "hardware connection MUST be fixed for reliable "
+                        "operation."
+                    )
+                    is_ack = True
+
+            if is_ack:
                 try:
                     # Get the length and op_index of the command that finished
                     (
