@@ -85,6 +85,7 @@ class Machine:
         self.clear_alarm_on_connect: bool = False
         self.single_axis_homing_enabled: bool = True
         self.dialect_uid: str = "grbl"
+        self._hydrated_dialect: Optional[GcodeDialect] = None
         self.gcode_precision: int = 3
         self.supports_arcs: bool = True
         self.arc_tolerance: float = 0.03
@@ -353,7 +354,17 @@ class Machine:
     @property
     def dialect(self) -> "GcodeDialect":
         """Get the current dialect instance for this machine."""
+        if self._hydrated_dialect:
+            return self._hydrated_dialect
         return get_dialect(self.dialect_uid)
+
+    def hydrate(self):
+        """
+        Fetches the current dialect from the registry and stores it internally.
+        This ensures that when serialized, the machine carries the full
+        dialect definition.
+        """
+        self._hydrated_dialect = get_dialect(self.dialect_uid)
 
     def set_dialect_uid(self, dialect_uid: str):
         if self.dialect_uid == dialect_uid:
@@ -948,7 +959,7 @@ class Machine:
             logger.debug(f"_write_setting_to_device(key={key}): Done.")
 
     def to_dict(self) -> Dict[str, Any]:
-        return {
+        data = {
             "machine": {
                 "name": self.name,
                 "driver": self.driver_name,
@@ -986,6 +997,11 @@ class Machine:
                 "machine_hours": self.machine_hours.to_dict(),
             }
         }
+        if self._hydrated_dialect:
+            data["machine"]["frozen_dialect"] = (
+                self._hydrated_dialect.to_dict()
+            )
+        return data
 
     @staticmethod
     def _migrate_legacy_hooks_to_dialect(
@@ -1144,6 +1160,10 @@ class Machine:
         hours_data = ma_data.get("machine_hours", {})
         ma.machine_hours = MachineHours.from_dict(hours_data)
         ma.machine_hours.changed.connect(ma._on_machine_hours_changed)
+
+        frozen_dialect_data = ma_data.get("frozen_dialect")
+        if frozen_dialect_data:
+            ma._hydrated_dialect = GcodeDialect.from_dict(frozen_dialect_data)
 
         return ma
 

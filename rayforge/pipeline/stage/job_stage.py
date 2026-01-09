@@ -75,6 +75,9 @@ class JobPipelineStage(PipelineStage):
                 on_done(None, RuntimeError("No machine is configured."))
             return
 
+        # Hydrate the machine to capture the current dialect state
+        machine.hydrate()
+
         step_handles = {
             step.uid: handle.to_dict()
             for layer in doc.layers
