@@ -208,7 +208,7 @@ def test_sketch_importer_round_trip_mouse():
     assert item.sketch_uid == original_dict["uid"]
 
     # 6. Verify the dimensions were set correctly on the WorkPiece
-    imported_sketch_template.solve()
+    # The importer has already solved the sketch, so use the current geometry
     geo = imported_sketch_template.to_geometry()
     min_x, min_y, max_x, max_y = geo.rect()
     expected_width = max_x - min_x

@@ -528,7 +528,7 @@ class SvgImporter(Importer):
                     # In SVG's Y-down, this is CW. Our geometry expects
                     # CW=True.
                     clockwise = bool(seg.sweep)
-                    geo.arc_to(
+                    geo.arc_to_as_bezier(
                         float(end.x),
                         float(end.y),
                         i_offset,

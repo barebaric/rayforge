@@ -986,7 +986,7 @@ class Sketch(IAsset):
         Converts the solved sketch into a Geometry object.
         Links separate entities into continuous paths where possible.
         """
-        geo = Geometry(force_beziers=False)
+        geo = Geometry()
 
         # Simple export: MoveTo -> LineTo/ArcTo for every entity.
         for entity in self.registry.entities:
@@ -1049,7 +1049,7 @@ class Sketch(IAsset):
             if not fill.boundary:
                 continue
 
-            geo = Geometry(force_beziers=False)
+            geo = Geometry()
 
             # Case 1: Single entity loop (Circle)
             if len(fill.boundary) == 1:

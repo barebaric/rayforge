@@ -9,6 +9,7 @@ from rayforge.core.geo.constants import (
     COL_TYPE,
     COL_X,
     COL_Y,
+    COL_Z,
     COL_I,
     COL_J,
     COL_CW,
@@ -83,7 +84,7 @@ def test_transform_identity():
 
 
 def test_transform_translate():
-    geo = Geometry(force_beziers=False)
+    geo = Geometry()
     geo.move_to(10, 20, 30)
     geo.arc_to(50, 60, i=5, j=7, z=40)
     geo.bezier_to(70, 80, c1x=55, c1y=65, c2x=65, c2y=75, z=50)
@@ -106,11 +107,12 @@ def test_transform_translate():
 
 
 def test_transform_scale_non_uniform_preserves_beziers():
-    geo = Geometry(force_beziers=False)
+    geo = Geometry()
     geo.move_to(10, 20, 5)
-    # Arc will be linearized because elliptical arcs aren't supported
-    geo.arc_to(22, 22, i=5, j=7, z=-10)
-    # Bezier should be preserved (affine invariant)
+    # Arc converted to bezier using arc_to_as_bezier(). This may create
+    # one or more bezier segments.
+    geo.arc_to_as_bezier(22, 22, i=5, j=7, z=-10)
+    # This is the last command added.
     geo.bezier_to(30, 30, c1x=24, c1y=24, c2x=28, c2y=28, z=-20)
     scale_matrix = _create_scale_matrix(2, 3, 4)
 
@@ -120,36 +122,32 @@ def test_transform_scale_non_uniform_preserves_beziers():
     # 1. Check Move
     assert np.allclose(geo.data[0, 1:4], (20, 60, 20))
 
-    # 2. Check Arc linearization
-    # The Arc command (index 1 in original) is replaced by multiple
-    # LINE commands. The Bezier command was last. So:
-    # Index 0: Move
-    # Index 1 to N-2: Lines (from linearized Arc)
-    # Index N-1: Bezier
+    # 2. Check that all subsequent commands are still Beziers
+    assert np.all(geo.data[1:, COL_TYPE] == CMD_TYPE_BEZIER)
 
-    assert geo.data[0, COL_TYPE] == CMD_TYPE_MOVE
-    assert geo.data[-1, COL_TYPE] == CMD_TYPE_BEZIER
+    # 3. Check the final state of the explicit bezier_to command.
+    # It's the last row.
+    final_bezier_row = geo.data[-1]
 
-    # Verify intermediate commands are lines
-    assert len(geo.data) > 2
-    for i in range(1, len(geo.data) - 1):
-        assert geo.data[i, COL_TYPE] == CMD_TYPE_LINE
+    # Check end point: (30*2, 30*3, -20*4) -> (60, 90, -80)
+    final_point = final_bezier_row[COL_X : COL_Z + 1]
+    assert np.allclose(final_point, (60.0, 90.0, -80.0))
 
-    # 3. Check Bezier Transformation
-    final_row = geo.data[-1]
+    # Check C1: (24*2, 24*3) -> (48, 72)
+    final_c1 = final_bezier_row[COL_C1X : COL_C1Y + 1]
+    assert np.allclose(final_c1, (48.0, 72.0))
 
-    # End point: (30*2, 30*3, -20*4) -> (60, 90, -80)
-    final_point = final_row[1:4]
-    expected_final_point = (60.0, 90.0, -80.0)
-    assert np.allclose(final_point, expected_final_point)
+    # Check C2: (28*2, 28*3) -> (56, 84)
+    final_c2 = final_bezier_row[COL_C2X : COL_C2Y + 1]
+    assert np.allclose(final_c2, (56.0, 84.0))
 
-    # Control Point 1: (24*2, 24*3) -> (48, 72)
-    c1 = final_row[COL_C1X : COL_C1Y + 1]
-    assert np.allclose(c1, (48.0, 72.0))
+    # 4. Check the final state of the arc_to_as_bezier command.
+    # Its last segment is the second-to-last row.
+    arc_end_row = geo.data[-2]
 
-    # Control Point 2: (28*2, 28*3) -> (56, 84)
-    c2 = final_row[COL_C2X : COL_C2Y + 1]
-    assert np.allclose(c2, (56.0, 84.0))
+    # Check end point: (22*2, 22*3, -10*4) -> (44, 66, -40)
+    arc_final_point = arc_end_row[COL_X : COL_Z + 1]
+    assert np.allclose(arc_final_point, (44.0, 66.0, -40.0))
 
 
 def test_transform_rotate_preserves_z():
@@ -167,7 +165,7 @@ def test_transform_rotate_preserves_z():
 
 
 def test_transform_uniform_scale_preserves_curves():
-    geo = Geometry(force_beziers=False)
+    geo = Geometry()
     geo.move_to(0, 0, 0)
     # Arc from (0,0) to (10,0) with center at (5,0) -> radius 5
     geo.arc_to(10, 0, i=5, j=0, clockwise=True)

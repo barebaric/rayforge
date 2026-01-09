@@ -64,11 +64,16 @@ class SketchImporter(Importer):
         self.parsed_sketch.solve()
         geometry = self.parsed_sketch.to_geometry()
         fill_geometries = self.parsed_sketch.get_fill_geometries()
-        geometry.close_gaps()
 
+        # Calculate dimensions before modifying the geometry
         min_x, min_y, max_x, max_y = geometry.rect()
         width = max(max_x - min_x, 1e-9)
         height = max(max_y - min_y, 1e-9)
+
+        geometry.close_gaps()
+        geometry.upgrade_to_scalable()
+        for fill_geo in fill_geometries:
+            fill_geo.upgrade_to_scalable()
 
         # 4. Create the SourceAsset container.
         source_asset = SourceAsset(

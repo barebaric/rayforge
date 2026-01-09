@@ -85,7 +85,7 @@ def test_get_winding_order(ccw_square_geometry, cw_square_geometry):
 
 
 def test_get_point_and_tangent_at():
-    geo = Geometry(force_beziers=False)
+    geo = Geometry()
     geo.move_to(0, 0)
     geo.line_to(10, 0)  # row 1
     assert geo.data is not None

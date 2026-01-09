@@ -637,7 +637,7 @@ def test_subtract_regions_with_scanline():
 
 def test_from_geometry():
     # Use the actual Geometry class instead of mocks to ensure correct types
-    geo_obj = Geometry(force_beziers=False)
+    geo_obj = Geometry()
     geo_obj.move_to(10, 10, 0)
     geo_obj.line_to(20, 20, 0)
     geo_obj.arc_to(30, 10, -10, 0, clockwise=False, z=0)
@@ -661,11 +661,11 @@ def test_from_geometry_with_bezier():
     geo_obj = Geometry()
     geo_obj.move_to(10, 10, 0)
     geo_obj.line_to(20, 20, 0)
-    geo_obj.arc_to(30, 10, -10, 0, clockwise=False, z=0)
+    geo_obj.arc_to_as_bezier(30, 10, -10, 0, clockwise=False, z=0)
 
     ops = Ops.from_geometry(geo_obj)
 
-    # Geometry(force_beziers=True) converts arcs to beziers.
+    # arc_to_as_bezier() converts arcs to beziers.
     # Ops.from_geometry linearizes beziers to lines.
     assert len(ops.commands) > 3
     assert isinstance(ops.commands[0], MoveToCommand)
