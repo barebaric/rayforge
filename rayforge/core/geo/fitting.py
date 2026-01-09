@@ -1,18 +1,33 @@
+import logging
 import math
-from typing import List, Tuple, Optional
+from typing import List, Tuple, Optional, cast, Callable
 import numpy as np
 from scipy.optimize import least_squares
 from .constants import (
     CMD_TYPE_BEZIER,
+    CMD_TYPE_LINE,
+    CMD_TYPE_ARC,
+    CMD_TYPE_MOVE,
     COL_C1X,
     COL_C1Y,
     COL_C2X,
     COL_C2Y,
     COL_X,
+    COL_Y,
     COL_Z,
     COL_TYPE,
+    COL_I,
+    COL_J,
+    COL_CW,
 )
+from .linearize import linearize_bezier_from_array
 from .primitives import get_arc_angles
+
+
+logger = logging.getLogger(__name__)
+
+
+Point2DOr3D = Tuple[float, float] | Tuple[float, float, float]
 
 
 def are_collinear(
@@ -48,6 +63,43 @@ def are_collinear(
         if dist > tolerance:
             return False
     return True
+
+
+def fit_circle_3_points(
+    p1: Tuple[float, ...], p2: Tuple[float, ...], p3: Tuple[float, ...]
+) -> Optional[Tuple[Tuple[float, float], float]]:
+    """
+    Analytically calculates the center and radius of a circle passing through
+    three 2D points. Returns None if the points are collinear.
+    """
+    x1, y1 = p1[:2]
+    x2, y2 = p2[:2]
+    x3, y3 = p3[:2]
+
+    # Check for collinearity using the area of the triangle.
+    # A small area indicates the points are nearly collinear.
+    area = x1 * (y2 - y3) + x2 * (y3 - y1) + x3 * (y1 - y2)
+    if abs(area) < 1e-9:
+        return None
+
+    # Using the perpendicular bisector method.
+    # The center (xc, yc) is the intersection of the perpendicular bisectors
+    # of the chords p1-p2 and p2-p3.
+    d12 = 2 * ((y2 - y1) * (x3 - x2) - (y3 - y2) * (x2 - x1))
+    if abs(d12) < 1e-9:
+        return None  # Should be caught by collinearity check, but for safety.
+
+    sq1 = x1**2 + y1**2
+    sq2 = x2**2 + y2**2
+    sq3 = x3**2 + y3**2
+
+    xc = ((sq1 - sq2) * (y3 - y2) - (sq2 - sq3) * (y2 - y1)) / d12
+    yc = ((x2 - x1) * (sq2 - sq3) - (x3 - x2) * (sq1 - sq2)) / d12
+
+    center = (xc, yc)
+    radius = math.hypot(x1 - xc, y1 - yc)
+
+    return center, radius
 
 
 def fit_circle_to_points(
@@ -273,3 +325,330 @@ def convert_arc_to_beziers_from_array(
         current_p0 = current_p3
 
     return bezier_rows
+
+
+def get_max_line_deviation(
+    pts: List[Tuple[float, ...]], start_idx: int, end_idx: int
+) -> Tuple[float, int]:
+    """
+    Calculates the max deviation from the chord line between two points.
+
+    Args:
+        pts: List of points.
+        start_idx: Index of the start point.
+        end_idx: Index of the end point.
+
+    Returns:
+        Tuple of (max_distance, index_of_furthest_point).
+    """
+    p_start = pts[start_idx]
+    p_end = pts[end_idx]
+    dx = p_end[0] - p_start[0]
+    dy = p_end[1] - p_start[1]
+    line_len_sq = dx * dx + dy * dy
+
+    max_dist_sq = 0.0
+    max_idx = start_idx
+
+    if line_len_sq < 1e-12:
+        for i in range(start_idx + 1, end_idx):
+            p = pts[i]
+            d_sq = (p[0] - p_start[0]) ** 2 + (p[1] - p_start[1]) ** 2
+            if d_sq > max_dist_sq:
+                max_dist_sq = d_sq
+                max_idx = i
+        return math.sqrt(max_dist_sq), max_idx
+
+    for i in range(start_idx + 1, end_idx):
+        p = pts[i]
+        cross_prod = (p[0] - p_start[0]) * dy - (p[1] - p_start[1]) * dx
+        d_sq = (cross_prod * cross_prod) / line_len_sq
+        if d_sq > max_dist_sq:
+            max_dist_sq = d_sq
+            max_idx = i
+
+    return math.sqrt(max_dist_sq), max_idx
+
+
+def create_line_cmd(end_point: Point2DOr3D) -> np.ndarray:
+    """
+    Creates a line command array.
+
+    Args:
+        end_point: The 3D end point (x, y, z) of the line.
+
+    Returns:
+        A numpy array representing a line command.
+    """
+    row = np.zeros(8, dtype=np.float64)
+    row[COL_TYPE] = CMD_TYPE_LINE
+    row[COL_X] = end_point[0]
+    row[COL_Y] = end_point[1]
+    row[COL_Z] = end_point[2] if len(end_point) > 2 else 0.0
+    return row
+
+
+def create_arc_cmd(
+    end_point: Point2DOr3D,
+    center: Tuple[float, float],
+    start_point: Point2DOr3D,
+) -> np.ndarray:
+    """
+    Creates an arc command array.
+
+    Args:
+        end_point: The 3D end point (x, y, z) of the arc.
+        center: The 2D center (xc, yc) of the arc.
+        start_point: The 3D start point (x, y, z) of the arc.
+
+    Returns:
+        A numpy array representing an arc command.
+    """
+    row = np.zeros(8, dtype=np.float64)
+    row[COL_TYPE] = CMD_TYPE_ARC
+    row[COL_X] = end_point[0]
+    row[COL_Y] = end_point[1]
+    row[COL_Z] = end_point[2] if len(end_point) > 2 else 0.0
+
+    xc, yc = center
+    row[COL_I] = xc - start_point[0]
+    row[COL_J] = yc - start_point[1]
+
+    v1x = start_point[0] - xc
+    v1y = start_point[1] - yc
+    v2x = end_point[0] - xc
+    v2y = end_point[1] - yc
+    cross = v1x * v2y - v1y * v2x
+    row[COL_CW] = 1.0 if cross < 0 else 0.0
+
+    return row
+
+
+def is_clockwise_around_center(
+    pts: List[Tuple[float, ...]], center: Tuple[float, float]
+) -> bool:
+    """
+    Determines if points wind clockwise around a center point.
+
+    Args:
+        pts: List of points.
+        center: The center point (xc, yc).
+
+    Returns:
+        True if points wind clockwise, False otherwise.
+    """
+    xc, yc = center
+    area = 0.0
+    for i in range(len(pts) - 1):
+        x1, y1 = pts[i][0] - xc, pts[i][1] - yc
+        x2, y2 = pts[i + 1][0] - xc, pts[i + 1][1] - yc
+        area += x1 * y2 - x2 * y1
+    return area < 0
+
+
+def fit_points_recursive(
+    points: List[Tuple[float, ...]],
+    tolerance: float,
+    start: int,
+    end: int,
+) -> List[np.ndarray]:
+    """
+    Recursively fits primitives to a segment of points.
+
+    Args:
+        points: List of points.
+        tolerance: Maximum allowable deviation.
+        start: Start index of the segment.
+        end: End index of the segment.
+
+    Returns:
+        List of command arrays.
+    """
+    if start >= end:
+        return []
+
+    # First, try to fit a straight line to the segment.
+    max_dist, split_idx = get_max_line_deviation(points, start, end)
+    if max_dist < tolerance:
+        pt = points[end]
+        if len(pt) < 2:
+            raise ValueError(f"Point must have at least 2 coordinates: {pt}")
+        return [create_line_cmd(cast(Point2DOr3D, pt))]
+
+    # --- Fast path for 3-point segments ---
+    # Use a faster analytical method instead of the general-purpose,
+    # expensive least-squares solver for this common case.
+    if end - start == 2:  # Segment has 3 points: start, start+1, end
+        p1, p2, p3 = points[start], points[start + 1], points[end]
+        fast_fit = fit_circle_3_points(p1, p2, p3)
+        if fast_fit:
+            center, radius = fast_fit
+            # We still must check if the arc deviates too far from the
+            # original polyline segments (p1-p2 and p2-p3).
+            arc_dev = get_arc_to_polyline_deviation(
+                [p1, p2, p3], center, radius
+            )
+            if arc_dev < tolerance:
+                row = create_arc_cmd(
+                    cast(Point2DOr3D, p3), center, cast(Point2DOr3D, p1)
+                )
+                is_cw = is_clockwise_around_center([p1, p2, p3], center)
+                row[COL_CW] = 1.0 if is_cw else 0.0
+                return [row]
+        # If fast fit fails, we fall through to the splitting logic below.
+
+    # --- General case for > 3 points ---
+    # If a line doesn't fit, try to fit a circular arc.
+    subset = points[start : end + 1]
+    fit_result = fit_circle_to_points(subset)
+    if fit_result:
+        center, radius, _ = fit_result
+        arc_dev = get_arc_to_polyline_deviation(subset, center, radius)
+        if arc_dev < tolerance:
+            end_pt = points[end]
+            start_pt = points[start]
+            if len(end_pt) < 2 or len(start_pt) < 2:
+                raise ValueError(
+                    f"Points must have at least 2 coordinates: "
+                    f"start={start_pt}, end={end_pt}"
+                )
+            row = create_arc_cmd(
+                cast(Point2DOr3D, end_pt), center, cast(Point2DOr3D, start_pt)
+            )
+            is_cw = is_clockwise_around_center(subset, center)
+            row[COL_CW] = 1.0 if is_cw else 0.0
+            return [row]
+
+    # If neither a line nor an arc fits, split the segment and recurse.
+    if split_idx == start or split_idx == end:
+        split_idx = (start + end) // 2
+
+    left_cmds = fit_points_recursive(points, tolerance, start, split_idx)
+    right_cmds = fit_points_recursive(points, tolerance, split_idx, end)
+    return left_cmds + right_cmds
+
+
+def fit_points_to_primitives(
+    points: List[Tuple[float, ...]], tolerance: float
+) -> List[np.ndarray]:
+    """
+    Approximates a list of points with a sequence of Line and Arc commands
+    (CMD_TYPE_LINE, CMD_TYPE_ARC) stored in numpy arrays.
+
+    This function recursively fits the best primitive to segments of the point
+    list. It prefers straight lines if they fall within tolerance, otherwise
+    it attempts to fit a circular arc. If neither fits, it subdivides the path.
+
+    Args:
+        points: A list of 2D or 3D points representing the path.
+        tolerance: The maximum allowable deviation from the original path.
+
+    Returns:
+        A list of numpy arrays, where each array is a geometry command row.
+    """
+    if len(points) < 2:
+        return []
+
+    return fit_points_recursive(points, tolerance, 0, len(points) - 1)
+
+
+def fit_arcs(
+    data: Optional[np.ndarray],
+    tolerance: float,
+    on_progress: Optional[Callable[[float], None]] = None,
+) -> Optional[np.ndarray]:
+    """
+    Reconstructs geometry data using an optimal set of Line and Arc
+    commands. This function is optimized to handle both polylines and
+    existing curves (like Beziers) efficiently, ensuring output
+    contains only Lines and Arcs.
+
+    Args:
+        data: NumPy array of geometry commands.
+        tolerance: The maximum allowable deviation.
+        on_progress: An optional callback function that receives progress
+                     updates from 0.0 to 1.0.
+
+    Returns:
+        A NumPy array of geometry commands.
+    """
+    if data is None or len(data) == 0:
+        return data
+
+    from .simplify import simplify_points_to_array
+
+    logger.debug("Starting optimized fit_arcs process...")
+    new_rows: List[np.ndarray] = []
+    line_point_chain: List[Tuple[float, float, float]] = []
+    resolution = tolerance * 0.25
+    total_rows = len(data)
+
+    def flush_line_chain():
+        """
+        Processes the collected chain of line segment points with arc
+        fitting.
+        """
+        nonlocal line_point_chain
+        if len(line_point_chain) > 1:
+            logger.debug(
+                f"Flushing line chain with {len(line_point_chain)} points "
+                "for arc fitting."
+            )
+            primitives = fit_points_to_primitives(line_point_chain, tolerance)
+            new_rows.extend(primitives)
+            logger.debug(
+                f"Line chain resulted in {len(primitives)} primitives."
+            )
+        line_point_chain = []
+
+    last_pos = (0.0, 0.0, 0.0)
+
+    for i, row in enumerate(data):
+        if on_progress and i % 50 == 0:
+            on_progress(i / total_rows)
+
+        cmd_type = row[COL_TYPE]
+        end_pos = (row[COL_X], row[COL_Y], row[COL_Z])
+
+        if cmd_type == CMD_TYPE_LINE:
+            if not line_point_chain:
+                line_point_chain.append(last_pos)
+            line_point_chain.append(end_pos)
+        else:
+            flush_line_chain()
+
+            if cmd_type == CMD_TYPE_MOVE:
+                new_rows.append(row)
+            elif cmd_type == CMD_TYPE_ARC:
+                new_rows.append(row)
+            elif cmd_type == CMD_TYPE_BEZIER:
+                bezier_points = [last_pos]
+                segments = linearize_bezier_from_array(
+                    row, last_pos, resolution
+                )
+                for _, p_end in segments:
+                    bezier_points.append(p_end)
+
+                if len(bezier_points) > 1:
+                    points_arr = np.array(bezier_points, dtype=np.float64)
+                    simplified_arr = simplify_points_to_array(
+                        points_arr, tolerance
+                    )
+                    simplified_points = [
+                        tuple(p) for p in simplified_arr.tolist()
+                    ]
+
+                    if len(simplified_points) > 1:
+                        primitives = fit_points_to_primitives(
+                            simplified_points, tolerance
+                        )
+                        new_rows.extend(primitives)
+
+        last_pos = end_pos
+
+    flush_line_chain()
+
+    if not new_rows:
+        return np.empty((0, 8), dtype=np.float64)
+    else:
+        return np.array(new_rows, dtype=np.float64)
