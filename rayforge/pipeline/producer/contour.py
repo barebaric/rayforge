@@ -14,6 +14,7 @@ from .base import OpsProducer, CutSide
 if TYPE_CHECKING:
     from ...core.workpiece import WorkPiece
     from ...machine.models.laser import Laser
+    from ...shared.tasker.proxy import BaseExecutionContext
 
 logger = logging.getLogger(__name__)
 
@@ -77,12 +78,14 @@ class ContourProducer(OpsProducer):
         workpiece: "Optional[WorkPiece]" = None,
         settings: Optional[Dict[str, Any]] = None,
         y_offset_mm: float = 0.0,
+        proxy: Optional["BaseExecutionContext"] = None,
     ) -> WorkPieceArtifact:
         if workpiece is None:
             raise ValueError("ContourProducer requires a workpiece context.")
 
         # 1. Calculate total offset from producer and step settings
-        kerf_mm = (settings or {}).get("kerf_mm", laser.spot_size_mm[0])
+        settings = settings or {}
+        kerf_mm = settings.get("kerf_mm", laser.spot_size_mm[0])
         kerf_compensation = kerf_mm / 2.0
         total_offset = 0.0
         if self.cut_side == CutSide.CENTERLINE:
@@ -178,7 +181,29 @@ class ContourProducer(OpsProducer):
             # No offset was requested, so use the composite geometry.
             final_geometry = composite_geo
 
-        # 5. Create Ops by splitting into optimizable groups
+        # 5. Optimize for machining
+        # Determine machining tolerance based on spot size. A fraction
+        # like 1/10 is generally good for visual fidelity vs command count.
+        # Fallback to 0.01mm if spot size is unavailable or zero.
+        spot_size = laser.spot_size_mm[0]
+        tolerance = spot_size * 0.1 if spot_size > 0 else 0.01
+
+        # Check if the machine driver prefers arcs. Default to True if not
+        # specified, as intermediate Arcs are generally better.
+        allow_arcs = settings.get("output_arcs", True)
+
+        if not final_geometry.is_empty():
+            if allow_arcs:
+                progress_callback = proxy.set_progress if proxy else None
+                if proxy:
+                    proxy.set_message("Optimizing path with arcs...")
+                final_geometry = final_geometry.fit_arcs(
+                    tolerance, on_progress=progress_callback
+                )
+            else:
+                final_geometry = final_geometry.linearize(tolerance)
+
+        # 6. Create Ops by splitting into optimizable groups
         final_ops = Ops()
         if not final_geometry.is_empty():
             final_ops.set_laser(laser.uid)
@@ -231,7 +256,7 @@ class ContourProducer(OpsProducer):
                     final_ops.extend(Ops.from_geometry(group2))
                     final_ops.ops_section_end(SectionType.VECTOR_OUTLINE)
 
-        # 6. Create the artifact.
+        # 7. Create the artifact.
         return WorkPieceArtifact(
             ops=final_ops,
             is_scalable=False,

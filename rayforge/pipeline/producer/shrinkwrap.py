@@ -10,6 +10,7 @@ from ...core.ops import (
 )
 from ...image.hull import get_concave_hull
 from ...image.tracing import prepare_surface
+from ...core.geo import contours
 from ..artifact import WorkPieceArtifact
 from ..coord import CoordinateSystem
 from .base import OpsProducer, CutSide
@@ -17,6 +18,7 @@ from .base import OpsProducer, CutSide
 if TYPE_CHECKING:
     from ...core.workpiece import WorkPiece
     from ...machine.models.laser import Laser
+    from ...shared.tasker.proxy import BaseExecutionContext
 
 BORDER_SIZE = 2
 
@@ -60,6 +62,7 @@ class ShrinkWrapProducer(OpsProducer):
         workpiece: "Optional[WorkPiece]" = None,
         settings: Optional[Dict[str, Any]] = None,
         y_offset_mm: float = 0.0,
+        proxy: Optional["BaseExecutionContext"] = None,
     ) -> WorkPieceArtifact:
         if workpiece is None:
             raise ValueError(
@@ -67,9 +70,10 @@ class ShrinkWrapProducer(OpsProducer):
             )
 
         final_ops = Ops()
+        settings = settings or {}
 
         # 1. Calculate total offset
-        kerf_mm = (settings or {}).get("kerf_mm", laser.spot_size_mm[0])
+        kerf_mm = settings.get("kerf_mm", laser.spot_size_mm[0])
         kerf_compensation = kerf_mm / 2.0
         total_offset = 0.0
         if self.cut_side == CutSide.CENTERLINE:
@@ -92,7 +96,7 @@ class ShrinkWrapProducer(OpsProducer):
                 gravity=self.gravity,
             )
 
-        if hull_geometry:
+        if hull_geometry and not hull_geometry.is_empty():
             # 3. Scale the pixel-based geometry to final millimeter size first
             width_mm, height_mm = workpiece.size
             px_width, px_height = surface.get_width(), surface.get_height()
@@ -102,22 +106,46 @@ class ShrinkWrapProducer(OpsProducer):
                 scaling_matrix = Matrix.scale(scale_x, scale_y)
                 hull_geometry.transform(scaling_matrix.to_4x4_numpy())
 
-            # 4. Apply offset in millimeter space
+            # 4. Normalize winding order BEFORE offsetting (grow). This ensures
+            #    that a positive offset correctly expands the shape.
+            normalized_geos = contours.normalize_winding_orders(
+                [hull_geometry]
+            )
+            if not normalized_geos:
+                hull_geometry = None
+            else:
+                hull_geometry = normalized_geos[0]
+
+        if hull_geometry and not hull_geometry.is_empty():
+            # 5. Apply offset in millimeter space
             if abs(total_offset) > 1e-6:
                 hull_geometry = hull_geometry.grow(total_offset)
 
-            # 5. Convert to Ops
+            # 6. Optimize for machining with arc fitting
+            spot_size = laser.spot_size_mm[0]
+            tolerance = spot_size * 0.1 if spot_size > 0 else 0.01
+            allow_arcs = settings.get("output_arcs", True)
+
+            if allow_arcs and not hull_geometry.is_empty():
+                progress_callback = proxy.set_progress if proxy else None
+                if proxy:
+                    proxy.set_message("Optimizing path with arcs...")
+                hull_geometry.fit_arcs(
+                    tolerance, on_progress=progress_callback
+                )
+
+            # 7. Convert to Ops
             final_ops.set_laser(laser.uid)
             final_ops.add(
                 OpsSectionStartCommand(
                     SectionType.VECTOR_OUTLINE, workpiece.uid
                 )
             )
-            final_ops.set_power((settings or {}).get("power", 0))
+            final_ops.set_power(settings.get("power", 0))
             final_ops.extend(Ops.from_geometry(hull_geometry))
             final_ops.add(OpsSectionEndCommand(SectionType.VECTOR_OUTLINE))
 
-        # 6. Create the artifact. The ops are pre-scaled, so they are not
+        # 8. Create the artifact. The ops are pre-scaled, so they are not
         #    scalable in the pipeline cache sense.
         return WorkPieceArtifact(
             ops=final_ops,

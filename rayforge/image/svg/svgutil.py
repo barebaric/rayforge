@@ -70,9 +70,9 @@ def _get_margins_from_data(
             render_w = measurement_size * aspect_ratio
 
         # 3. Modify SVG for a large, proportional render.
-        # DO NOT set preserveAspectRatio="none", as this causes distortion.
         root.set("width", f"{render_w}px")
         root.set("height", f"{render_h}px")
+        root.set("preserveAspectRatio", "none")
 
         # Create viewBox if it's missing, which is crucial for the renderer
         # to have a coordinate system.

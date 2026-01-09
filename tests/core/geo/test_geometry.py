@@ -54,19 +54,19 @@ def test_add_commands(empty_geometry):
 
 
 def test_simplify_wrapper(sample_geometry):
-    """Tests that simplify calls the underlying module."""
+    """Tests that simplify calls the underlying optimization module."""
     # Ensure numpy data is populated before we patch
     sample_geometry._sync_to_numpy()
     original_data = sample_geometry.data
 
     with patch(
-        "rayforge.core.geo.geometry.simplify_geometry_from_array"
-    ) as mock_simplify:
+        "rayforge.core.geo.geometry.optimize_path_from_array"
+    ) as mock_optimize:
         # Mock returns a simplified numpy array
         mock_return_data = np.array(
             [[CMD_TYPE_MOVE, 0.0, 0.0, 0.0, 0, 0, 0, 0]]
         )
-        mock_simplify.return_value = mock_return_data
+        mock_optimize.return_value = mock_return_data
 
         result = sample_geometry.simplify(tolerance=0.5)
 
@@ -74,12 +74,13 @@ def test_simplify_wrapper(sample_geometry):
         # Check that the geometry's internal data was replaced by the result
         np.testing.assert_array_equal(sample_geometry.data, mock_return_data)
         # Check that the function was called with the ORIGINAL data array
+        # and the correct flags
         assert original_data is not None
-        mock_simplify.assert_called_once()
-        np.testing.assert_array_equal(
-            mock_simplify.call_args[0][0], original_data
-        )
-        assert mock_simplify.call_args[0][1] == 0.5
+        mock_optimize.assert_called_once()
+        pos_args, kw_args = mock_optimize.call_args
+        np.testing.assert_array_equal(pos_args[0], original_data)
+        assert pos_args[1] == 0.5
+        assert kw_args["fit_arcs"] is False  # fit_arcs should be False
 
 
 def test_clear_commands(sample_geometry):
@@ -864,3 +865,80 @@ def test_upgrade_to_scalable_is_idempotent():
     np.testing.assert_array_equal(
         data_after_first_call, data_after_second_call
     )
+
+
+def test_linearize_approximation():
+    """
+    Test that linearize() converts curves to lines within tolerance.
+    """
+    geo = Geometry()
+    geo.move_to(0, 0)
+    # 90 degree arc of radius 10
+    geo.arc_to(10, 10, i=10, j=0, clockwise=False)
+
+    # Use a coarse tolerance to see visible simplification
+    geo.linearize(tolerance=0.1)
+
+    assert geo.data is not None
+    cmd_types = geo.data[:, COL_TYPE]
+
+    # Should contain no Arcs
+    assert CMD_TYPE_ARC not in cmd_types
+    # Should contain Lines
+    assert CMD_TYPE_LINE in cmd_types
+
+    # The end point should still be (10, 10)
+    end_point = geo.data[-1, COL_X : COL_Z + 1]
+    np.testing.assert_allclose(end_point, (10.0, 10.0, 0.0), atol=1e-6)
+
+
+def test_fit_arcs_approximation():
+    """
+    Test that fit_arcs() reconstructs arcs from dense points.
+    """
+    # Create a dense polyline that approximates a circle
+    points = []
+    radius = 10.0
+    center = (0.0, 0.0)
+    for i in range(101):
+        angle = (i / 100.0) * (np.pi / 2)  # 0 to 90 degrees
+        x = center[0] + radius * math.cos(angle)
+        y = center[1] + radius * math.sin(angle)
+        points.append((x, y, 0.0))
+
+    geo = Geometry.from_points(points, close=False)
+
+    # Before fitting, it should be all Lines
+    assert geo.data is not None
+    assert np.all(geo.data[1:, COL_TYPE] == CMD_TYPE_LINE)
+
+    # Fit arcs with a reasonable tolerance
+    geo.fit_arcs(tolerance=0.1)
+
+    # After fitting, it should contain Arcs
+    assert geo.data is not None
+    cmd_types = geo.data[:, COL_TYPE]
+    assert CMD_TYPE_ARC in cmd_types
+
+    # Should have significantly fewer commands than 100 lines
+    assert len(geo.data) < 10
+
+
+def test_fit_arcs_mixed_geometry():
+    """
+    Test fitting on geometry that has both straight lines and curves.
+    """
+    geo = Geometry()
+    geo.move_to(0, 0)
+    geo.line_to(10, 0)  # Straight line
+    geo.arc_to(20, 10, i=0, j=10, clockwise=False)  # 90 deg arc
+    assert geo.data is not None
+    original_data = geo.data.copy()
+
+    # Fitting arcs should only process the line segment and preserve the arc
+    geo.fit_arcs(tolerance=0.1)
+
+    assert geo.data is not None
+    # The output should still be identical because the line is already optimal
+    # and the arc should have been preserved.
+    np.testing.assert_array_equal(geo.data, original_data)

@@ -3,6 +3,7 @@ import math
 from typing import List, Tuple, Optional, cast, Callable
 import numpy as np
 from scipy.optimize import least_squares
+from .analysis import arc_direction_is_clockwise
 from .constants import (
     CMD_TYPE_BEZIER,
     CMD_TYPE_LINE,
@@ -19,9 +20,11 @@ from .constants import (
     COL_I,
     COL_J,
     COL_CW,
+    GEO_ARRAY_COLS,
 )
 from .linearize import linearize_bezier_from_array
 from .primitives import get_arc_angles
+from .simplify import simplify_points_to_array
 
 
 logger = logging.getLogger(__name__)
@@ -424,28 +427,6 @@ def create_arc_cmd(
     return row
 
 
-def is_clockwise_around_center(
-    pts: List[Tuple[float, ...]], center: Tuple[float, float]
-) -> bool:
-    """
-    Determines if points wind clockwise around a center point.
-
-    Args:
-        pts: List of points.
-        center: The center point (xc, yc).
-
-    Returns:
-        True if points wind clockwise, False otherwise.
-    """
-    xc, yc = center
-    area = 0.0
-    for i in range(len(pts) - 1):
-        x1, y1 = pts[i][0] - xc, pts[i][1] - yc
-        x2, y2 = pts[i + 1][0] - xc, pts[i + 1][1] - yc
-        area += x1 * y2 - x2 * y1
-    return area < 0
-
-
 def fit_points_recursive(
     points: List[Tuple[float, ...]],
     tolerance: float,
@@ -492,7 +473,7 @@ def fit_points_recursive(
                 row = create_arc_cmd(
                     cast(Point2DOr3D, p3), center, cast(Point2DOr3D, p1)
                 )
-                is_cw = is_clockwise_around_center([p1, p2, p3], center)
+                is_cw = arc_direction_is_clockwise([p1, p2, p3], center)
                 row[COL_CW] = 1.0 if is_cw else 0.0
                 return [row]
         # If fast fit fails, we fall through to the splitting logic below.
@@ -515,7 +496,7 @@ def fit_points_recursive(
             row = create_arc_cmd(
                 cast(Point2DOr3D, end_pt), center, cast(Point2DOr3D, start_pt)
             )
-            is_cw = is_clockwise_around_center(subset, center)
+            is_cw = arc_direction_is_clockwise(subset, center)
             row[COL_CW] = 1.0 if is_cw else 0.0
             return [row]
 
@@ -652,3 +633,59 @@ def fit_arcs(
         return np.empty((0, 8), dtype=np.float64)
     else:
         return np.array(new_rows, dtype=np.float64)
+
+
+def optimize_path_from_array(
+    data: Optional[np.ndarray], tolerance: float, fit_arcs: bool
+) -> np.ndarray:
+    """
+    Optimizes a geometry numpy array by processing chains of line segments.
+    It can either simplify these chains into fewer lines (RDP) or fit
+    lines and arcs to them. Non-line commands (arcs, beziers) are preserved.
+    """
+    if data is None or len(data) == 0:
+        return np.array([])
+
+    optimized_rows: List[np.ndarray] = []
+    point_chain: List[Tuple[float, float, float]] = []
+
+    def flush_chain():
+        nonlocal point_chain
+        if len(point_chain) > 1:
+            if fit_arcs:
+                primitives = fit_points_to_primitives(point_chain, tolerance)
+                optimized_rows.extend(primitives)
+            else:
+                points_arr = np.array(point_chain)
+                simplified_arr = simplify_points_to_array(
+                    points_arr, tolerance
+                )
+                for p in simplified_arr[1:]:
+                    row = np.zeros(GEO_ARRAY_COLS, dtype=np.float64)
+                    row[COL_TYPE] = CMD_TYPE_LINE
+                    row[1:4] = p
+                    optimized_rows.append(row)
+        point_chain = []
+
+    last_pos = (0.0, 0.0, 0.0)
+    for row in data:
+        cmd_type = row[COL_TYPE]
+        end_pos = (row[COL_X], row[COL_Y], row[COL_Z])
+
+        if cmd_type == CMD_TYPE_LINE:
+            if not point_chain:
+                point_chain.append(last_pos)
+            point_chain.append(end_pos)
+        else:
+            flush_chain()
+            optimized_rows.append(row)
+            point_chain = [end_pos]
+
+        last_pos = end_pos
+
+    flush_chain()
+
+    if not optimized_rows:
+        return np.array([]).reshape(0, GEO_ARRAY_COLS)
+
+    return np.array(optimized_rows)

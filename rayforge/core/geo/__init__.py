@@ -30,9 +30,7 @@ from .constants import (
     COL_C2Y,
     GEO_ARRAY_COLS,
 )
-from .geometry import (
-    Geometry,
-)
+from .geometry import Geometry
 
 __all__ = [
     "analysis",

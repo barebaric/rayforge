@@ -27,6 +27,101 @@ from .primitives import (
 )
 
 
+def _compute_cubic_bezier_bounds_1d(
+    p0: np.ndarray, p1: np.ndarray, p2: np.ndarray, p3: np.ndarray
+) -> Tuple[np.ndarray, np.ndarray]:
+    """
+    Computes min and max values for 1D cubic Bezier coefficients vectorized.
+    p0, p1, p2, p3 are 1D arrays of shape (N,).
+    Returns (min_vals, max_vals).
+    """
+    # Start with endpoints
+    local_min = np.minimum(p0, p3)
+    local_max = np.maximum(p0, p3)
+
+    # Derivatives coefficients: at^2 + bt + c = 0
+    # B(t) = (1-t)^3 P0 + 3(1-t)^2 t P1 + 3(1-t) t^2 P2 + t^3 P3
+    # B'(t) coefficients:
+    a = 3 * (-p0 + 3 * p1 - 3 * p2 + p3)
+    b = 6 * (p0 - 2 * p1 + p2)
+    c = 3 * (p1 - p0)
+
+    # Solve quadratic equation for t: at^2 + bt + c = 0
+    discriminant = b**2 - 4 * a * c
+
+    # Filter for valid quadratic solutions (discriminant >= 0 and a != 0)
+    # We use a small epsilon for a != 0
+    valid_mask = (discriminant >= 0) & (np.abs(a) > 1e-9)
+
+    if np.any(valid_mask):
+        sqrt_disc = np.sqrt(discriminant[valid_mask])
+        a_valid = a[valid_mask]
+        b_valid = b[valid_mask]
+
+        t1 = (-b_valid - sqrt_disc) / (2 * a_valid)
+        t2 = (-b_valid + sqrt_disc) / (2 * a_valid)
+
+        # Check t1
+        t1_valid_mask = (t1 > 0) & (t1 < 1)
+        if np.any(t1_valid_mask):
+            # Indices in the original arrays where t1 is valid
+            full_indices = np.where(valid_mask)[0][t1_valid_mask]
+            t = t1[t1_valid_mask]
+
+            # Evaluate Bezier at t
+            mt = 1 - t
+            val = (
+                mt**3 * p0[full_indices]
+                + 3 * mt**2 * t * p1[full_indices]
+                + 3 * mt * t**2 * p2[full_indices]
+                + t**3 * p3[full_indices]
+            )
+
+            local_min[full_indices] = np.minimum(local_min[full_indices], val)
+            local_max[full_indices] = np.maximum(local_max[full_indices], val)
+
+        # Check t2
+        t2_valid_mask = (t2 > 0) & (t2 < 1)
+        if np.any(t2_valid_mask):
+            full_indices = np.where(valid_mask)[0][t2_valid_mask]
+            t = t2[t2_valid_mask]
+
+            mt = 1 - t
+            val = (
+                mt**3 * p0[full_indices]
+                + 3 * mt**2 * t * p1[full_indices]
+                + 3 * mt * t**2 * p2[full_indices]
+                + t**3 * p3[full_indices]
+            )
+
+            local_min[full_indices] = np.minimum(local_min[full_indices], val)
+            local_max[full_indices] = np.maximum(local_max[full_indices], val)
+
+    # Handle linear/quadratic cases where a ~ 0 but b != 0
+    # bt + c = 0  => t = -c/b
+    linear_mask = (np.abs(a) <= 1e-9) & (np.abs(b) > 1e-9)
+    if np.any(linear_mask):
+        t = -c[linear_mask] / b[linear_mask]
+        t_valid_mask = (t > 0) & (t < 1)
+
+        if np.any(t_valid_mask):
+            full_indices = np.where(linear_mask)[0][t_valid_mask]
+            t_val = t[t_valid_mask]
+
+            mt = 1 - t_val
+            val = (
+                mt**3 * p0[full_indices]
+                + 3 * mt**2 * t_val * p1[full_indices]
+                + 3 * mt * t_val**2 * p2[full_indices]
+                + t_val**3 * p3[full_indices]
+            )
+
+            local_min[full_indices] = np.minimum(local_min[full_indices], val)
+            local_max[full_indices] = np.maximum(local_max[full_indices], val)
+
+    return local_min, local_max
+
+
 def get_bounding_rect_from_array(
     data: np.ndarray,
 ) -> Tuple[float, float, float, float]:
@@ -109,33 +204,31 @@ def get_bounding_rect_from_array(
                 valid_start_idxs, COL_X : COL_Z + 1
             ]
 
-        # P0 (Start points)
+        # Extract P0, P1 (C1), P2 (C2), P3
         p0_x = start_points[:, 0]
         p0_y = start_points[:, 1]
 
-        # P3 (End points)
+        p1_x = data[bezier_indices, COL_C1X]
+        p1_y = data[bezier_indices, COL_C1Y]
+
+        p2_x = data[bezier_indices, COL_C2X]
+        p2_y = data[bezier_indices, COL_C2Y]
+
         p3_x = data[bezier_indices, COL_X]
         p3_y = data[bezier_indices, COL_Y]
 
-        # C1 (Control Point 1)
-        c1_x = data[bezier_indices, COL_C1X]
-        c1_y = data[bezier_indices, COL_C1Y]
+        # Calculate exact bounds
+        bx_min, bx_max = _compute_cubic_bezier_bounds_1d(
+            p0_x, p1_x, p2_x, p3_x
+        )
+        by_min, by_max = _compute_cubic_bezier_bounds_1d(
+            p0_y, p1_y, p2_y, p3_y
+        )
 
-        # C2 (Control Point 2)
-        c2_x = data[bezier_indices, COL_C2X]
-        c2_y = data[bezier_indices, COL_C2Y]
-
-        # Calculate robust bounds using all control points
-        # Using np.minimum.reduce / np.maximum.reduce is efficient
-        min_bz_x = np.minimum.reduce([p0_x, p3_x, c1_x, c2_x])
-        max_bz_x = np.maximum.reduce([p0_x, p3_x, c1_x, c2_x])
-        min_bz_y = np.minimum.reduce([p0_y, p3_y, c1_y, c2_y])
-        max_bz_y = np.maximum.reduce([p0_y, p3_y, c1_y, c2_y])
-
-        min_x = min(min_x, np.min(min_bz_x))
-        max_x = max(max_x, np.max(max_bz_x))
-        min_y = min(min_y, np.min(min_bz_y))
-        max_y = max(max_y, np.max(max_bz_y))
+        min_x = min(min_x, np.min(bx_min))
+        max_x = max(max_x, np.max(bx_max))
+        min_y = min(min_y, np.min(by_min))
+        max_y = max(max_y, np.max(by_max))
 
     return float(min_x), float(min_y), float(max_x), float(max_y)
 

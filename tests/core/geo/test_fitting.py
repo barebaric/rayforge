@@ -12,9 +12,9 @@ from rayforge.core.geo.fitting import (
     get_max_line_deviation,
     create_line_cmd,
     create_arc_cmd,
-    is_clockwise_around_center,
     fit_points_recursive,
     fit_arcs,
+    optimize_path_from_array,
 )
 from rayforge.core.geo.constants import (
     CMD_TYPE_BEZIER,
@@ -595,27 +595,6 @@ def test_create_arc_cmd_cw():
     assert cmd[COL_CW] == 1.0
 
 
-def test_is_clockwise_around_center_ccw():
-    """Test detecting CCW winding around a center."""
-    center = (0.0, 0.0)
-    points = [(1.0, 0.0, 0.0), (0.0, 1.0, 0.0), (-1.0, 0.0, 0.0)]
-    assert is_clockwise_around_center(points, center) is False
-
-
-def test_is_clockwise_around_center_cw():
-    """Test detecting CW winding around a center."""
-    center = (0.0, 0.0)
-    points = [(1.0, 0.0, 0.0), (0.0, -1.0, 0.0), (-1.0, 0.0, 0.0)]
-    assert is_clockwise_around_center(points, center) is True
-
-
-def test_is_clockwise_around_center_offset():
-    """Test detecting winding with offset center."""
-    center = (5.0, 5.0)
-    points = [(6.0, 5.0, 0.0), (5.0, 6.0, 0.0), (4.0, 5.0, 0.0)]
-    assert is_clockwise_around_center(points, center) is False
-
-
 def test_fit_points_recursive_line():
     """Test recursive fitting produces a line for collinear points."""
     points = [(0.0, 0.0, 0.0), (5.0, 0.0, 0.0), (10.0, 0.0, 0.0)]
@@ -728,3 +707,115 @@ def test_fit_arcs_with_progress():
     # Last progress value should be close to 1.0
     # Note: fit_arcs only calls progress every 50 rows
     assert progress_values[-1] >= 0.75
+
+
+def test_optimize_path_from_array_rdp_simplification():
+    """Tests RDP simplification (fit_arcs=False)."""
+    data = np.array([
+        [CMD_TYPE_MOVE, 0.0, 0.0, 0.0, 0, 0, 0, 0],
+        [CMD_TYPE_LINE, 1.0, 1.0, 0.0, 0, 0, 0, 0],
+        [CMD_TYPE_LINE, 2.0, 2.0, 0.0, 0, 0, 0, 0],
+        [CMD_TYPE_LINE, 3.0, 3.0, 0.0, 0, 0, 0, 0],
+        [CMD_TYPE_LINE, 10.0, 10.0, 0.0, 0, 0, 0, 0],
+    ], dtype=np.float64)
+
+    result = optimize_path_from_array(data, tolerance=0.1, fit_arcs=False)
+
+    assert result is not None
+    assert len(result) == 2
+    assert result[0, COL_TYPE] == CMD_TYPE_MOVE
+    assert np.allclose(result[0, 1:4], (0, 0, 0))
+    assert result[1, COL_TYPE] == CMD_TYPE_LINE
+    assert np.allclose(result[1, 1:4], (10, 10, 0))
+
+
+def test_optimize_path_from_array_arc_fitting():
+    """Tests arc fitting (fit_arcs=True)."""
+    data = np.array([
+        [CMD_TYPE_MOVE, 0.0, 0.0, 0.0, 0, 0, 0, 0],
+        [CMD_TYPE_LINE, 1.0, 0.0, 0.0, 0, 0, 0, 0],
+        [CMD_TYPE_LINE, 2.0, 0.0, 0.0, 0, 0, 0, 0],
+        [CMD_TYPE_LINE, 3.0, 0.0, 0.0, 0, 0, 0, 0],
+        [CMD_TYPE_LINE, 4.0, 0.0, 0.0, 0, 0, 0, 0],
+        [CMD_TYPE_LINE, 5.0, 0.0, 0.0, 0, 0, 0, 0],
+    ], dtype=np.float64)
+
+    result = optimize_path_from_array(data, tolerance=0.1, fit_arcs=True)
+
+    assert result is not None
+    assert len(result) == 2
+    assert result[0, COL_TYPE] == CMD_TYPE_MOVE
+    assert result[1, COL_TYPE] == CMD_TYPE_LINE
+
+
+def test_optimize_path_from_array_preserves_arcs():
+    """Tests that arcs are preserved."""
+    data = np.array([
+        [CMD_TYPE_MOVE, 0.0, 0.0, 0.0, 0, 0, 0, 0],
+        [CMD_TYPE_LINE, 1.0, 0.0, 0.0, 0, 0, 0, 0],
+        [CMD_TYPE_LINE, 2.0, 0.0, 0.0, 0, 0, 0, 0],
+        [CMD_TYPE_ARC, 4.0, 0.0, 0.0, 1.0, 0.0, 0, 0],
+        [CMD_TYPE_LINE, 5.0, 0.0, 0.0, 0, 0, 0, 0],
+        [CMD_TYPE_LINE, 6.0, 0.0, 0.0, 0, 0, 0, 0],
+    ], dtype=np.float64)
+
+    result = optimize_path_from_array(data, tolerance=0.1, fit_arcs=False)
+
+    assert result is not None
+    assert len(result) == 4
+    assert result[0, COL_TYPE] == CMD_TYPE_MOVE
+    assert result[1, COL_TYPE] == CMD_TYPE_LINE
+    assert result[2, COL_TYPE] == CMD_TYPE_ARC
+    assert result[3, COL_TYPE] == CMD_TYPE_LINE
+
+
+def test_optimize_path_from_array_empty():
+    """Tests empty input."""
+    result = optimize_path_from_array(None, tolerance=0.1, fit_arcs=False)
+    assert result is not None
+    assert len(result) == 0
+
+
+def test_optimize_path_from_array_empty_array():
+    """Tests empty array input."""
+    data = np.array([])
+    result = optimize_path_from_array(data, tolerance=0.1, fit_arcs=False)
+    assert result is not None
+    assert len(result) == 0
+
+
+def test_optimize_path_from_array_moveto_breaks_chain():
+    """Tests that MoveTo breaks the simplification chain."""
+    data = np.array([
+        [CMD_TYPE_MOVE, 0.0, 0.0, 0.0, 0, 0, 0, 0],
+        [CMD_TYPE_LINE, 5.0, 0.0, 0.0, 0, 0, 0, 0],
+        [CMD_TYPE_LINE, 10.0, 0.0, 0.0, 0, 0, 0, 0],
+        [CMD_TYPE_MOVE, 20.0, 0.0, 0.0, 0, 0, 0, 0],
+        [CMD_TYPE_LINE, 25.0, 0.0, 0.0, 0, 0, 0, 0],
+        [CMD_TYPE_LINE, 30.0, 0.0, 0.0, 0, 0, 0, 0],
+    ], dtype=np.float64)
+
+    result = optimize_path_from_array(data, tolerance=0.1, fit_arcs=False)
+
+    assert result is not None
+    assert len(result) == 4
+    assert result[0, COL_TYPE] == CMD_TYPE_MOVE
+    assert result[1, COL_TYPE] == CMD_TYPE_LINE
+    assert result[2, COL_TYPE] == CMD_TYPE_MOVE
+    assert result[3, COL_TYPE] == CMD_TYPE_LINE
+
+
+def test_optimize_path_from_array_z_axis_preservation():
+    """Tests that Z coordinates are preserved."""
+    data = np.array([
+        [CMD_TYPE_MOVE, 0.0, 0.0, 1.0, 0, 0, 0, 0],
+        [CMD_TYPE_LINE, 5.0, 0.0, 2.0, 0, 0, 0, 0],
+        [CMD_TYPE_LINE, 10.0, 0.0, 3.0, 0, 0, 0, 0],
+    ], dtype=np.float64)
+
+    result = optimize_path_from_array(data, tolerance=0.1, fit_arcs=False)
+
+    assert result is not None
+    assert len(result) == 2
+    assert np.allclose(result[0, 1:4], (0, 0, 1))
+    assert np.allclose(result[1, 1:4], (10, 0, 3))

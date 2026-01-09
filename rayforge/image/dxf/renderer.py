@@ -1,4 +1,5 @@
 from typing import Optional, TYPE_CHECKING
+import logging
 from ..base_renderer import Renderer
 from ..ops_renderer import OPS_RENDERER
 import warnings
@@ -9,6 +10,8 @@ with warnings.catch_warnings():
 
 if TYPE_CHECKING:
     pass
+
+logger = logging.getLogger(__name__)
 
 
 class DxfRenderer(Renderer):
@@ -26,46 +29,67 @@ class DxfRenderer(Renderer):
     ) -> Optional[pyvips.Image]:
         boundaries = kwargs.get("boundaries")
         if not boundaries or boundaries.is_empty():
+            logger.warning(
+                "DxfRenderer: No boundaries provided, cannot render."
+            )
             return None
 
         # 1. Render vector outlines using OpsRenderer
+        logger.debug("DxfRenderer: Rendering vector outlines...")
         surface = OPS_RENDERER._render_to_cairo_surface(
             boundaries, width, height
         )
         if not surface:
+            logger.error("DxfRenderer: Failed to render vector outlines.")
             return None
 
         # 2. Draw solids if present
         source_metadata = kwargs.get("source_metadata")
-        workpiece_matrix = kwargs.get("workpiece_matrix")
 
-        if source_metadata and workpiece_matrix:
+        if source_metadata:
             solids = source_metadata.get("solids", [])
             if solids:
                 import cairo
 
+                logger.debug(
+                    f"DxfRenderer: Rendering {len(solids)} solid fills..."
+                )
                 ctx = cairo.Context(surface)
-                ops_min_x, ops_min_y, ops_max_x, ops_max_y = boundaries.rect()
-                ops_width = ops_max_x - ops_min_x
-                ops_height = ops_max_y - ops_min_y
 
-                if ops_width > 1e-9 and ops_height > 1e-9:
-                    scale_x = width / ops_width
-                    scale_y = height / ops_height
-                    norm_tx, norm_ty = workpiece_matrix.get_translation()
+                # Get the transformation info from the vector rendering step
+                geo_min_x, geo_min_y, geo_max_x, geo_max_y = boundaries.rect()
+                geo_width = geo_max_x - geo_min_x
+                geo_height = geo_max_y - geo_min_y
 
-                    ctx.scale(scale_x, scale_y)
-                    ctx.translate(-norm_tx, -norm_ty)
+                if geo_width > 1e-9 and geo_height > 1e-9:
+                    scale_x = width / geo_width
+                    scale_y = height / geo_height
 
-                    ctx.set_source_rgb(0, 0, 0)
-                    for solid_points in solids:
+                    # Apply the same Y-flipping transform as OpsRenderer
+                    ctx.save()
+                    ctx.translate(-geo_min_x * scale_x, geo_max_y * scale_y)
+                    ctx.scale(scale_x, -scale_y)
+
+                    ctx.set_source_rgb(0, 0, 0)  # Black fill
+                    for i, solid_points in enumerate(solids):
                         if len(solid_points) < 3:
+                            logger.warning(
+                                f"Skipping degenerate solid #{i} "
+                                f"with < 3 points."
+                            )
                             continue
-                        ctx.move_to(solid_points[0][0], solid_points[0][1])
+
+                        p_start = solid_points[0]
+                        ctx.move_to(p_start[0], p_start[1])
                         for x, y in solid_points[1:]:
                             ctx.line_to(x, y)
                         ctx.close_path()
                         ctx.fill()
+                    ctx.restore()
+                else:
+                    logger.warning(
+                        "Cannot render solids because geometry has zero size."
+                    )
 
         # 3. Convert Cairo surface to PyVips Image
         h, w = surface.get_height(), surface.get_width()
