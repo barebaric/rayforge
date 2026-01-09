@@ -796,29 +796,24 @@ class TestMachine:
         """Test new driver methods for SmoothieDriver."""
         from rayforge.machine.driver.smoothie import SmoothieDriver
 
-        try:
-            machine.set_driver(SmoothieDriver, {"host": "test", "port": 23})
-            # Wait for the async set_driver operation to complete
-            await wait_for_tasks_to_finish(task_mgr)
+        machine.set_driver(SmoothieDriver, {"host": "test", "port": 23})
+        # Wait for the async set_driver operation to complete
+        await wait_for_tasks_to_finish(task_mgr)
 
-            # Test G0 with speed support
-            assert machine.can_g0_with_speed()
+        # Test G0 with speed support
+        assert machine.can_g0_with_speed()
 
-            # Test homing support
-            assert machine.can_home()
-            assert machine.can_home(Axis.X)
-            assert machine.can_home(Axis.Y)
-            assert machine.can_home(Axis.Z)
+        # Test homing support
+        assert machine.can_home()
+        assert machine.can_home(Axis.X)
+        assert machine.can_home(Axis.Y)
+        assert machine.can_home(Axis.Z)
 
-            # Test jogging support
-            assert machine.can_jog()
-            assert machine.can_jog(Axis.X)
-            assert machine.can_jog(Axis.Y)
-            assert machine.can_jog(Axis.Z)
-        finally:
-            # Ensure the driver is cleaned up to stop any pending tasks
-            await machine.shutdown()
-            await wait_for_tasks_to_finish(task_mgr)
+        # Test jogging support
+        assert machine.can_jog()
+        assert machine.can_jog(Axis.X)
+        assert machine.can_jog(Axis.Y)
+        assert machine.can_jog(Axis.Z)
 
     @pytest.mark.asyncio
     async def test_new_driver_methods_grbl_network(
@@ -827,28 +822,24 @@ class TestMachine:
         """Test new driver methods for GrblNetworkDriver."""
         from rayforge.machine.driver.grbl import GrblNetworkDriver
 
-        try:
-            # Create driver directly to avoid setup issues
-            machine.set_driver(GrblNetworkDriver, {"host": "test"})
-            await wait_for_tasks_to_finish(task_mgr)
+        # Create driver directly to avoid setup issues
+        machine.set_driver(GrblNetworkDriver, {"host": "test"})
+        await wait_for_tasks_to_finish(task_mgr)
 
-            # Test G0 with speed support (GRBL doesn't support this)
-            assert not machine.can_g0_with_speed()
+        # Test G0 with speed support (GRBL doesn't support this)
+        assert not machine.can_g0_with_speed()
 
-            # Test homing support
-            assert machine.can_home()
-            assert machine.can_home(Axis.X)
-            assert machine.can_home(Axis.Y)
-            assert machine.can_home(Axis.Z)
+        # Test homing support
+        assert machine.can_home()
+        assert machine.can_home(Axis.X)
+        assert machine.can_home(Axis.Y)
+        assert machine.can_home(Axis.Z)
 
-            # Test jogging support
-            assert machine.can_jog()
-            assert machine.can_jog(Axis.X)
-            assert machine.can_jog(Axis.Y)
-            assert machine.can_jog(Axis.Z)
-        finally:
-            await machine.shutdown()
-            await wait_for_tasks_to_finish(task_mgr)
+        # Test jogging support
+        assert machine.can_jog()
+        assert machine.can_jog(Axis.X)
+        assert machine.can_jog(Axis.Y)
+        assert machine.can_jog(Axis.Z)
 
     @pytest.mark.asyncio
     async def test_new_driver_methods_grbl_serial(
@@ -857,30 +848,26 @@ class TestMachine:
         """Test new driver methods for GrblSerialDriver."""
         from rayforge.machine.driver.grbl_serial import GrblSerialDriver
 
-        try:
-            # Create driver directly to avoid setup issues
-            machine.set_driver(
-                GrblSerialDriver, {"port": "/dev/test", "baudrate": 115200}
-            )
-            await wait_for_tasks_to_finish(task_mgr)
+        # Create driver directly to avoid setup issues
+        machine.set_driver(
+            GrblSerialDriver, {"port": "/dev/test", "baudrate": 115200}
+        )
+        await wait_for_tasks_to_finish(task_mgr)
 
-            # Test G0 with speed support (GRBL doesn't support this)
-            assert not machine.can_g0_with_speed()
+        # Test G0 with speed support (GRBL doesn't support this)
+        assert not machine.can_g0_with_speed()
 
-            # Test homing support
-            assert machine.can_home()
-            assert machine.can_home(Axis.X)
-            assert machine.can_home(Axis.Y)
-            assert machine.can_home(Axis.Z)
+        # Test homing support
+        assert machine.can_home()
+        assert machine.can_home(Axis.X)
+        assert machine.can_home(Axis.Y)
+        assert machine.can_home(Axis.Z)
 
-            # Test jogging support
-            assert machine.can_jog()
-            assert machine.can_jog(Axis.X)
-            assert machine.can_jog(Axis.Y)
-            assert machine.can_jog(Axis.Z)
-        finally:
-            await machine.shutdown()
-            await wait_for_tasks_to_finish(task_mgr)
+        # Test jogging support
+        assert machine.can_jog()
+        assert machine.can_jog(Axis.X)
+        assert machine.can_jog(Axis.Y)
+        assert machine.can_jog(Axis.Z)
 
     @pytest.mark.asyncio
     async def test_home_method_with_multiple_axes(

@@ -5,7 +5,7 @@ import logging
 import gc
 from functools import partial
 import pytest_asyncio
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, AsyncGenerator
 from unittest.mock import patch
 from gi.repository import GLib
 from rayforge.worker_init import initialize_worker
@@ -203,16 +203,18 @@ async def context_initializer(tmp_path, task_mgr, monkeypatch):
     context_module._context_instance = None
 
 
-@pytest.fixture
-def machine(context_initializer) -> "Machine":
+@pytest_asyncio.fixture
+async def machine(context_initializer) -> AsyncGenerator["Machine", None]:
     """
-    Provides a fresh, test-isolated Machine instance.
+    Provides a fresh, test-isolated Machine instance with automatic async
+    teardown.
     """
     from rayforge.machine.models.machine import Machine
 
-    # The patch is already active thanks to the autouse fixture. We can just
-    # create a new machine for the test to use.
-    return Machine(context_initializer)
+    m = Machine(context_initializer)
+    yield m
+    # Proper async teardown is handled here by the fixture runner
+    await m.shutdown()
 
 
 @pytest.fixture
