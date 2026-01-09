@@ -2,7 +2,6 @@
 import inspect
 from .base import OpsTransformer, ExecutionPhase
 from .multipass import MultiPassTransformer
-from .arcwelder import ArcWeld
 from .optimize import Optimize
 from .overscan import OverscanTransformer
 from .smooth import Smooth
@@ -20,7 +19,6 @@ __all__ = [
     "OpsTransformer",
     "ExecutionPhase",
     "MultiPassTransformer",
-    "ArcWeld",
     "Optimize",
     "OverscanTransformer",
     "Smooth",
