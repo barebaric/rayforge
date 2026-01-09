@@ -9,13 +9,14 @@ from typing import (
     Callable,
     Union,
     Awaitable,
+    Dict,
 )
 from ...context import RayforgeContext
 from ...core.ops import Ops
 from ...core.varset import VarSet
 from ...pipeline.encoder.base import OpsEncoder
 from ...pipeline.encoder.gcode import GcodeEncoder
-from .driver import Driver, Axis
+from .driver import Driver, Axis, Pos
 
 if TYPE_CHECKING:
     from ...core.doc import Doc
@@ -153,3 +154,30 @@ class NoDeviceDriver(Driver):
     def can_g0_with_speed(self) -> bool:
         """Dummy driver supports G0 with speed."""
         return True
+
+    async def set_wcs_offset(
+        self, wcs_slot: str, x: float, y: float, z: float
+    ) -> None:
+        """Dummy implementation, does nothing."""
+        pass
+
+    async def read_wcs_offsets(self) -> Dict[str, Pos]:
+        """Dummy implementation, returns empty dictionary."""
+        return {}
+
+    async def run_probe_cycle(
+        self, axis: Axis, max_travel: float, feed_rate: int
+    ) -> Optional[Pos]:
+        """
+        Dummy implementation, simulates a successful probe after a short delay.
+        """
+        self.probe_status_changed.send(
+            self, message=f"Simulating probe cycle for axis {axis.name}..."
+        )
+        await asyncio.sleep(0.5)
+        # Simulate a successful probe at a fixed position
+        simulated_pos = (10.0, 15.0, -1.0)
+        self.probe_status_changed.send(
+            self, message=f"Probe triggered at {simulated_pos}"
+        )
+        return simulated_pos

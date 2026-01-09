@@ -11,6 +11,7 @@ from typing import (
     Callable,
     Union,
     Awaitable,
+    Dict,
 )
 from ...context import RayforgeContext
 from ...core.ops import Ops
@@ -25,11 +26,15 @@ from .driver import (
     DriverPrecheckError,
     DeviceConnectionError,
     Axis,
+    Pos,
 )
 from .grbl_util import (
     parse_state,
     get_grbl_setting_varsets,
     grbl_setting_re,
+    wcs_re,
+    prb_re,
+    gcode_to_p_number,
     CommandRequest,
     hw_info_url,
     fw_info_url,
@@ -519,9 +524,17 @@ class GrblNetworkDriver(Driver):
             distance: The distance to jog in mm (positive or negative)
             speed: The jog speed in mm/min
         """
-        assert axis.name
-        axis_letter: str = axis.name.upper()
-        cmd = f"$J=G91 G21 F{speed} {axis_letter}{distance}"
+        # Build the command with all specified axes
+        cmd_parts = [f"$J=G91 G21 F{speed}"]
+
+        # Add each axis component to the command
+        for single_axis in Axis:
+            if axis & single_axis:
+                assert single_axis.name
+                axis_letter = single_axis.name.upper()
+                cmd_parts.append(f"{axis_letter}{distance}")
+
+        cmd = " ".join(cmd_parts)
         await self._execute_command(cmd)
 
     def on_http_data_received(self, sender, data: bytes):
@@ -644,6 +657,52 @@ class GrblNetworkDriver(Driver):
             value = 1 if value else 0
         cmd = f"${key}={value}"
         await self._execute_command(cmd)
+
+    async def set_wcs_offset(
+        self, wcs_slot: str, x: float, y: float, z: float
+    ) -> None:
+        p_num = gcode_to_p_number(wcs_slot)
+        if p_num is None:
+            raise ValueError(f"Invalid WCS slot: {wcs_slot}")
+        cmd = f"G10 L2 P{p_num} X{x} Y{y} Z{z}"
+        await self._execute_command(cmd)
+
+    async def read_wcs_offsets(self) -> Dict[str, Pos]:
+        response_lines = await self._execute_command("$#")
+        offsets = {}
+        for line in response_lines:
+            match = wcs_re.match(line)
+            if match:
+                slot, x_str, y_str, z_str = match.groups()
+                offsets[slot] = (float(x_str), float(y_str), float(z_str))
+        self.wcs_updated.send(self, offsets=offsets)
+        return offsets
+
+    async def run_probe_cycle(
+        self, axis: Axis, max_travel: float, feed_rate: int
+    ) -> Optional[Pos]:
+        assert axis.name, "Probing requires a single, named axis."
+        axis_letter = axis.name.upper()
+        cmd = f"G38.2 {axis_letter}{max_travel} F{feed_rate}"
+
+        self.probe_status_changed.send(
+            self, message=f"Probing {axis_letter}..."
+        )
+        response_lines = await self._execute_command(cmd)
+
+        for line in response_lines:
+            match = prb_re.match(line)
+            if match:
+                x_str, y_str, z_str, success = match.groups()
+                if int(success) == 1:
+                    pos: Pos = (float(x_str), float(y_str), float(z_str))
+                    self.probe_status_changed.send(
+                        self, message=f"Probe triggered at {pos}"
+                    )
+                    return pos
+
+        self.probe_status_changed.send(self, message="Probe failed")
+        return None
 
     def can_g0_with_speed(self) -> bool:
         """GRBL doesn't support speed parameter in G0 commands."""

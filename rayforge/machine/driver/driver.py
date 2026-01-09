@@ -9,6 +9,7 @@ from typing import (
     Callable,
     Union,
     Awaitable,
+    Dict,
 )
 from blinker import Signal
 from dataclasses import dataclass
@@ -136,6 +137,8 @@ class Driver(ABC):
        state_changed: emitted when the DeviceState changes
        command_status_changed: to monitor a command that was sent
        connection_status_changed: signals connectivity changes
+       probe_status_changed: emits status during a probing cycle
+       wcs_updated: emitted when work coordinate system data is updated
     """
 
     label: str
@@ -153,6 +156,8 @@ class Driver(ABC):
         self.connection_status_changed = Signal()
         self.settings_read = Signal()
         self.job_finished = Signal()
+        self.probe_status_changed = Signal()
+        self.wcs_updated = Signal()
         self.did_setup = False
         self.state: DeviceState = DeviceState()
         self.setup_error: Optional[str] = None
@@ -433,3 +438,44 @@ class Driver(ABC):
         """
         _, op_map = self._machine.encode_ops(ops, doc)
         return op_map
+
+    @abstractmethod
+    async def set_wcs_offset(
+        self, wcs_slot: str, x: float, y: float, z: float
+    ) -> None:
+        """
+        Sends a command to the controller to define the offset for a
+        specific WCS slot (e.g. "G54").
+        """
+        pass
+
+    @abstractmethod
+    async def read_wcs_offsets(self) -> Dict[str, Pos]:
+        """
+        Sends a command to query all current WCS offsets from the controller.
+
+        Returns:
+            A dictionary where keys are WCS slot names (e.g., "G54") and
+            values are (x, y, z) offset tuples.
+        """
+        pass
+
+    @abstractmethod
+    async def run_probe_cycle(
+        self, axis: Axis, max_travel: float, feed_rate: int
+    ) -> Optional[Pos]:
+        """
+        Initiates a single probing move along the specified axis. The move
+        is performed in the negative direction if max_travel is negative.
+
+        Args:
+            axis: The axis to probe along.
+            max_travel: The maximum distance to travel in mm. The sign
+                        indicates direction.
+            feed_rate: The speed of the probing move in mm/min.
+
+        Returns:
+            The absolute machine coordinates (x, y, z) of the trigger point,
+            or None if the probe failed to trigger.
+        """
+        pass

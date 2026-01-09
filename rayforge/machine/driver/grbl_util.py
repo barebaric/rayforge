@@ -36,6 +36,21 @@ status_url = command_url.format(command="?")
 pos_re = re.compile(r":(-?\d+\.\d+),(-?\d+\.\d+),(-?\d+\.\d+)")
 fs_re = re.compile(r"FS:(\d+),(\d+)")
 grbl_setting_re = re.compile(r"\$(\d+)=([\d\.-]+)")
+wcs_re = re.compile(r"\[(G5[4-9]):([\d\.-]+),([\d\.-]+),([\d\.-]+)\]")
+prb_re = re.compile(r"\[PRB:([\d\.-]+),([\d\.-]+),([\d\.-]+):(\d)\]")
+
+
+# GRBL WCS Helper
+def gcode_to_p_number(wcs_slot: str) -> Optional[int]:
+    """Converts a G-code WCS name (e.g., "G54") to its P-number."""
+    try:
+        # G54 is P1, G55 is P2, etc.
+        p_num = int(wcs_slot[2:]) - 53
+        if 1 <= p_num <= 6:  # G54-G59
+            return p_num
+    except (ValueError, IndexError):
+        pass
+    return None
 
 
 # GRBL State Parsers
