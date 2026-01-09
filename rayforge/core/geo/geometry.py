@@ -76,10 +76,14 @@ class Geometry:
     def __init__(self) -> None:
         """Initializes a new, empty Geometry object."""
         self.last_move_to: Tuple[float, float, float] = (0.0, 0.0, 0.0)
+        self._uniform_scalable: bool = True
         self._winding_cache: Dict[int, str] = {}
         self._pending_data: List[List[float]] = []
         self._data: Optional[np.ndarray] = None
-        self._uniform_scalable: bool = True
+
+    @property
+    def uniform_scalable(self) -> bool:
+        return self._uniform_scalable
 
     @property
     def data(self) -> Optional[np.ndarray]:
