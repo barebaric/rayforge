@@ -357,7 +357,7 @@ def test_dump_and_load(sample_geometry):
 def test_force_beziers_init():
     """Test that the configuration flag is stored correctly."""
     geo = Geometry()
-    assert geo._uniform_scalable is True
+    assert geo.uniform_scalable is True
 
 
 def test_arc_to_as_bezier():
@@ -408,7 +408,7 @@ def test_extend_preserves_uniform_scalable():
     # Should contain Moves and Arcs
     assert np.any(data[:, COL_TYPE] == CMD_TYPE_MOVE)
     assert np.any(data[:, COL_TYPE] == CMD_TYPE_ARC)
-    assert not dest._uniform_scalable
+    assert not dest.uniform_scalable
 
 
 def test_load_preserves_uniform_scalable(sample_geometry):
@@ -426,7 +426,7 @@ def test_load_preserves_uniform_scalable(sample_geometry):
     assert data is not None
 
     assert np.any(data[:, COL_TYPE] == CMD_TYPE_ARC)
-    assert not loaded._uniform_scalable
+    assert not loaded.uniform_scalable
 
     # Check that endpoint is preserved
     last_row = data[-1]
@@ -768,11 +768,11 @@ def test_upgrade_to_scalable_on_scalable_geo():
     assert geo.data is not None
     original_data = geo.data.copy()
 
-    assert geo._uniform_scalable is True
+    assert geo.uniform_scalable is True
     result = geo.upgrade_to_scalable()
 
     assert result is geo
-    assert geo._uniform_scalable is True
+    assert geo.uniform_scalable is True
     np.testing.assert_array_equal(geo.data, original_data)
 
 
@@ -780,13 +780,13 @@ def test_upgrade_to_scalable_on_empty_geo():
     """Tests that upgrade_to_scalable handles empty geometry gracefully."""
     geo = Geometry()
     assert geo.is_empty()
-    assert geo._uniform_scalable is True
+    assert geo.uniform_scalable is True
 
     result = geo.upgrade_to_scalable()
 
     assert result is geo
     assert geo.is_empty()
-    assert geo._uniform_scalable is True
+    assert geo.uniform_scalable is True
 
 
 def test_upgrade_to_scalable_converts_arcs():
@@ -797,14 +797,14 @@ def test_upgrade_to_scalable_converts_arcs():
     geo.arc_to(20, 0, i=5, j=-10, clockwise=True)  # Command to be converted
 
     # Initial state check
-    assert geo._uniform_scalable is False
+    assert geo.uniform_scalable is False
 
     # Perform the upgrade
     result = geo.upgrade_to_scalable()
     assert result is geo
 
     # Final state check
-    assert geo._uniform_scalable is True
+    assert geo.uniform_scalable is True
     assert geo.data is not None
 
     # Check command types
@@ -829,11 +829,11 @@ def test_upgrade_to_scalable_multiple_arcs():
     geo.arc_to(30, 0, i=0, j=-10, clockwise=True)  # 90 deg CW arc
     final_end_point = (30.0, 0.0, 0.0)
 
-    assert geo._uniform_scalable is False
+    assert geo.uniform_scalable is False
 
     geo.upgrade_to_scalable()
 
-    assert geo._uniform_scalable is True
+    assert geo.uniform_scalable is True
     assert geo.data is not None
     assert CMD_TYPE_ARC not in geo.data[:, COL_TYPE]
 
@@ -854,7 +854,7 @@ def test_upgrade_to_scalable_is_idempotent():
     geo.upgrade_to_scalable()
     assert geo.data is not None
     data_after_first_call = geo.data.copy()
-    assert geo._uniform_scalable is True
+    assert geo.uniform_scalable is True
     assert CMD_TYPE_ARC not in data_after_first_call[:, COL_TYPE]
 
     # Second call
