@@ -7,6 +7,7 @@ from rayforge.core.geo.linearize import (
     linearize_bezier,
     linearize_bezier_adaptive,
     resample_polyline,
+    flatten_to_points,
 )
 
 
@@ -170,3 +171,33 @@ def test_resample_polyline_closed_path():
     assert resampled[-1] != resampled[0]
     # Check that one of the new points is correct
     assert (5.0, 0.0, 2.0) in resampled
+
+
+def test_flatten_to_points():
+    """Tests flatten_to_points function."""
+    geo = Geometry()
+    geo.move_to(0, 0)
+    geo.line_to(10, 0)
+    geo.arc_to(10, 10, i=5, j=-5, clockwise=False)
+    geo.bezier_to(5, 15, c1x=2, c1y=5, c2x=8, c2y=10)
+
+    geo._sync_to_numpy()
+    data = geo.data
+
+    result = flatten_to_points(data, 0.1)
+
+    # Should return 1 subpath (one for the move command)
+    assert len(result) == 1
+
+    # First subpath should have many points due to bezier linearization
+    assert len(result[0]) > 4
+
+    # Check some point values
+    assert result[0][0] == (0.0, 0.0, 0.0)
+    assert result[0][1] == (10.0, 0.0, 0.0)
+
+
+def test_flatten_to_points_empty():
+    """Tests flatten_to_points with empty geometry."""
+    result = flatten_to_points(None, 0.1)
+    assert result == []

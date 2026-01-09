@@ -1,8 +1,11 @@
 import math
-from typing import List, Tuple, Any, cast
+from typing import List, Tuple, Any, cast, Optional
 import numpy as np
 from .constants import (
     CMD_TYPE_ARC,
+    CMD_TYPE_MOVE,
+    CMD_TYPE_LINE,
+    CMD_TYPE_BEZIER,
     COL_TYPE,
     COL_X,
     COL_Y,
@@ -16,6 +19,55 @@ from .constants import (
     COL_C2X,
     COL_C2Y,
 )
+
+
+def flatten_to_points(
+    data: Optional[np.ndarray], resolution: float
+) -> List[List[Tuple[float, float, float]]]:
+    """
+    Converts geometry data into a list of dense point lists (one per
+    subpath). Arcs and Beziers are linearized using the given resolution.
+
+    Args:
+        data: NumPy array of geometry commands.
+        resolution: The resolution for linearizing curves.
+
+    Returns:
+        A list of subpaths, where each subpath is a list of (x, y, z) points.
+    """
+    if data is None or len(data) == 0:
+        return []
+
+    subpaths: List[List[Tuple[float, float, float]]] = []
+    current_subpath: List[Tuple[float, float, float]] = []
+    last_pos = (0.0, 0.0, 0.0)
+
+    for row in data:
+        cmd_type = row[COL_TYPE]
+        end_pos = (row[COL_X], row[COL_Y], row[COL_Z])
+
+        if cmd_type == CMD_TYPE_MOVE:
+            if current_subpath:
+                subpaths.append(current_subpath)
+                current_subpath = []
+            current_subpath.append(end_pos)
+        elif cmd_type == CMD_TYPE_LINE:
+            current_subpath.append(end_pos)
+        elif cmd_type == CMD_TYPE_ARC:
+            segments = _linearize_arc_from_array(row, last_pos, resolution)
+            for _, p_end in segments:
+                current_subpath.append(p_end)
+        elif cmd_type == CMD_TYPE_BEZIER:
+            segments = _linearize_bezier_from_array(row, last_pos, resolution)
+            for _, p_end in segments:
+                current_subpath.append(p_end)
+
+        last_pos = end_pos
+
+    if current_subpath:
+        subpaths.append(current_subpath)
+
+    return subpaths
 
 
 def _linearize_arc_from_array(
