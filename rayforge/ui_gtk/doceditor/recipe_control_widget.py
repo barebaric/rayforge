@@ -182,7 +182,7 @@ class RecipeControlWidget(Adw.ActionRow):
     def _on_save_as_dialog_response(
         self, dialog: AddEditRecipeDialog, response_id: str
     ):
-        if response_id == "add":
+        if response_id in ("add", "save"):
             data = dialog.get_recipe_data()
             if data["name"]:
                 new_recipe = Recipe(**data)
