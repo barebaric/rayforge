@@ -86,6 +86,7 @@ class Machine:
         self.single_axis_homing_enabled: bool = True
         self.dialect_uid: str = "grbl"
         self.gcode_precision: int = 3
+        self.supports_arcs: bool = True
         self.hookmacros: Dict[MacroTrigger, Macro] = {}
         self.macros: Dict[str, Macro] = {}
         self.heads: List[Laser] = []
@@ -950,6 +951,7 @@ class Machine:
                 "home_on_start": self.home_on_start,
                 "single_axis_homing_enabled": self.single_axis_homing_enabled,  # noqa: E501
                 "dialect_uid": self.dialect_uid,
+                "supports_arcs": self.supports_arcs,
                 "dimensions": list(self.dimensions),
                 "offsets": list(self.offsets),
                 "origin": self.origin.value,
@@ -1128,6 +1130,7 @@ class Machine:
         ma.acceleration = speeds.get("acceleration", ma.acceleration)
         gcode = ma_data.get("gcode", {})
         ma.gcode_precision = gcode.get("gcode_precision", 3)
+        ma.supports_arcs = ma_data.get("supports_arcs", True)
 
         hours_data = ma_data.get("machine_hours", {})
         ma.machine_hours = MachineHours.from_dict(hours_data)

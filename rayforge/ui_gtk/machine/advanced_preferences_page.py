@@ -25,7 +25,7 @@ class AdvancedPreferencesPage(Adw.PreferencesPage):
         # Output settings (was Dialect)
         output_group = Adw.PreferencesGroup(title=_("Output"))
         output_group.set_description(
-            _("Configure the G-code flavor and format for your machine.")
+            _("Configure the G-code flavor and format for your machine")
         )
         self.add(output_group)
 
@@ -48,13 +48,25 @@ class AdvancedPreferencesPage(Adw.PreferencesPage):
             title=_("G-code Precision"),
             subtitle=_(
                 "Number of decimal places for coordinates "
-                "(e.g., 3 for mm, 6 for µm)."
+                "(e.g., 3 for mm, 6 for µm)"
             ),
             adjustment=precision_adjustment,
         )
         precision_adjustment.set_value(self.machine.gcode_precision)
         self.precision_row.connect("changed", self.on_precision_changed)
         output_group.add(self.precision_row)
+
+        # Arcs support setting
+        self.arcs_row = Adw.SwitchRow(
+            title=_("Support Arcs"),
+            subtitle=_(
+                "Generate G2/G3 arc commands for smoother paths."
+                "Disable if your machine does not support arcs"
+            ),
+        )
+        self.arcs_row.set_active(self.machine.supports_arcs)
+        self.arcs_row.connect("notify::active", self.on_arcs_changed)
+        output_group.add(self.arcs_row)
 
         # Connect the signal BEFORE setting the initial selection.
         # This ensures the handler is called to set the initial title/subtitle.
@@ -147,3 +159,8 @@ class AdvancedPreferencesPage(Adw.PreferencesPage):
         """Update the machine's G-code precision when the value changes."""
         value = get_spinrow_int(spinrow)
         self.machine.set_gcode_precision(value)
+
+    def on_arcs_changed(self, switch_row, _param):
+        """Update the machine's arcs support when the value changes."""
+        self.machine.supports_arcs = switch_row.get_active()
+        self.machine.changed.send(self.machine)

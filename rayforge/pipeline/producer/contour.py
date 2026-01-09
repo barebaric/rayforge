@@ -188,9 +188,11 @@ class ContourProducer(OpsProducer):
         spot_size = laser.spot_size_mm[0]
         tolerance = spot_size * 0.1 if spot_size > 0 else 0.01
 
-        # Check if the machine driver prefers arcs. Default to True if not
-        # specified, as intermediate Arcs are generally better.
-        allow_arcs = settings.get("output_arcs", True)
+        # Check if the machine supports arcs. The machine setting takes
+        # precedence over the step setting.
+        allow_arcs = settings.get(
+            "machine_supports_arcs", settings.get("output_arcs", True)
+        )
 
         if not final_geometry.is_empty():
             if allow_arcs:
