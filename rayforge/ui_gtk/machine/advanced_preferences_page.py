@@ -25,7 +25,7 @@ class AdvancedPreferencesPage(Adw.PreferencesPage):
         # Output settings (was Dialect)
         output_group = Adw.PreferencesGroup(title=_("Output"))
         output_group.set_description(
-            _("Configure the G-code flavor and format for your machine")
+            _("Configure G-code flavor and format for your machine")
         )
         self.add(output_group)
 
@@ -60,7 +60,7 @@ class AdvancedPreferencesPage(Adw.PreferencesPage):
         self.arcs_row = Adw.SwitchRow(
             title=_("Support Arcs"),
             subtitle=_(
-                "Generate G2/G3 arc commands for smoother paths."
+                "Generate G2/G3 arc commands for smoother paths. "
                 "Disable if your machine does not support arcs"
             ),
         )
@@ -68,8 +68,30 @@ class AdvancedPreferencesPage(Adw.PreferencesPage):
         self.arcs_row.connect("notify::active", self.on_arcs_changed)
         output_group.add(self.arcs_row)
 
-        # Connect the signal BEFORE setting the initial selection.
-        # This ensures the handler is called to set the initial title/subtitle.
+        # Arc tolerance setting
+        tolerance_adjustment = Gtk.Adjustment(
+            lower=0.001, upper=10.0, step_increment=0.001, page_increment=0.01
+        )
+        self.arc_tolerance_row = Adw.SpinRow(
+            title=_("Arc Tolerance"),
+            subtitle=_(
+                "Maximum deviation from original path when "
+                "fitting arcs (in mm). Lower values "
+                "drastically increase processing time and job size"
+            ),
+            adjustment=tolerance_adjustment,
+        )
+        self.arc_tolerance_row.set_digits(3)
+        self.arc_tolerance_row.set_width_chars(5)
+        tolerance_adjustment.set_value(self.machine.arc_tolerance)
+        self.arc_tolerance_row.set_sensitive(self.machine.supports_arcs)
+        self.arc_tolerance_row.connect(
+            "changed", self.on_arc_tolerance_changed
+        )
+        output_group.add(self.arc_tolerance_row)
+
+        # Connect to signal BEFORE setting up dialect selection.
+        # This ensures that handler is called to set initial title/subtitle.
         self.dialect_combo_row.connect(
             "notify::selected", self.on_dialect_changed
         )
@@ -163,4 +185,9 @@ class AdvancedPreferencesPage(Adw.PreferencesPage):
     def on_arcs_changed(self, switch_row, _param):
         """Update the machine's arcs support when the value changes."""
         self.machine.supports_arcs = switch_row.get_active()
+        self.arc_tolerance_row.set_sensitive(self.machine.supports_arcs)
         self.machine.changed.send(self.machine)
+
+    def on_arc_tolerance_changed(self, spinrow):
+        """Update to machine's arc tolerance when value changes."""
+        self.machine.set_arc_tolerance(spinrow.get_value())

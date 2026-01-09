@@ -122,8 +122,12 @@ class ShrinkWrapProducer(OpsProducer):
                 hull_geometry = hull_geometry.grow(total_offset)
 
             # 6. Optimize for machining with arc fitting
-            spot_size = laser.spot_size_mm[0]
-            tolerance = spot_size * 0.1 if spot_size > 0 else 0.01
+            # Use machine's arc tolerance setting if available, otherwise
+            # fallback to spot size calculation.
+            tolerance = settings.get("arc_tolerance")
+            if tolerance is None:
+                spot_size = laser.spot_size_mm[0]
+                tolerance = spot_size * 0.1 if spot_size > 0 else 0.01
             allow_arcs = settings.get(
                 "machine_supports_arcs", settings.get("output_arcs", True)
             )

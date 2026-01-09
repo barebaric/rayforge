@@ -22,7 +22,7 @@ from .constants import (
     COL_CW,
     GEO_ARRAY_COLS,
 )
-from .linearize import linearize_bezier_from_array
+from .linearize import linearize_bezier_from_array, linearize_arc
 from .primitives import get_arc_angles
 from .simplify import simplify_points_to_array
 
@@ -556,11 +556,11 @@ def fit_arcs(
     if data is None or len(data) == 0:
         return data
 
-    from .simplify import simplify_points_to_array
-
     logger.debug("Starting optimized fit_arcs process...")
     new_rows: List[np.ndarray] = []
     line_point_chain: List[Tuple[float, float, float]] = []
+
+    # Calculate linearization resolution.
     resolution = tolerance * 0.25
     total_rows = len(data)
 
@@ -571,15 +571,22 @@ def fit_arcs(
         """
         nonlocal line_point_chain
         if len(line_point_chain) > 1:
-            logger.debug(
-                f"Flushing line chain with {len(line_point_chain)} points "
-                "for arc fitting."
-            )
-            primitives = fit_points_to_primitives(line_point_chain, tolerance)
+            # 1. Convert to numpy for fast processing
+            points_arr = np.array(line_point_chain, dtype=np.float64)
+
+            # 2. Simplify points using Ramer-Douglas-Peucker.
+            # This drastically reduces the point count (e.g. 1000 -> 20)
+            # before the expensive curve fitting runs, while guaranteeing
+            # the shape remains within 'tolerance'.
+            simplified_arr = simplify_points_to_array(points_arr, tolerance)
+
+            # 3. Convert back to list of tuples for the fitter
+            simplified_points = [tuple(p) for p in simplified_arr.tolist()]
+
+            # 4. Run the curve fitting on the simplified set
+            primitives = fit_points_to_primitives(simplified_points, tolerance)
             new_rows.extend(primitives)
-            logger.debug(
-                f"Line chain resulted in {len(primitives)} primitives."
-            )
+
         line_point_chain = []
 
     last_pos = (0.0, 0.0, 0.0)
@@ -591,42 +598,35 @@ def fit_arcs(
         cmd_type = row[COL_TYPE]
         end_pos = (row[COL_X], row[COL_Y], row[COL_Z])
 
-        if cmd_type == CMD_TYPE_LINE:
-            if not line_point_chain:
-                line_point_chain.append(last_pos)
-            line_point_chain.append(end_pos)
-        else:
+        # If we hit a Move, the previous continuous path ends.
+        if cmd_type == CMD_TYPE_MOVE:
             flush_line_chain()
+            new_rows.append(row)
+            last_pos = end_pos
+            continue
 
-            if cmd_type == CMD_TYPE_MOVE:
-                new_rows.append(row)
-            elif cmd_type == CMD_TYPE_ARC:
-                new_rows.append(row)
-            elif cmd_type == CMD_TYPE_BEZIER:
-                bezier_points = [last_pos]
-                segments = linearize_bezier_from_array(
-                    row, last_pos, resolution
-                )
-                for _, p_end in segments:
-                    bezier_points.append(p_end)
+        # Initialize chain start if needed
+        if not line_point_chain:
+            line_point_chain.append(last_pos)
 
-                if len(bezier_points) > 1:
-                    points_arr = np.array(bezier_points, dtype=np.float64)
-                    simplified_arr = simplify_points_to_array(
-                        points_arr, tolerance
-                    )
-                    simplified_points = [
-                        tuple(p) for p in simplified_arr.tolist()
-                    ]
+        if cmd_type == CMD_TYPE_LINE:
+            line_point_chain.append(end_pos)
 
-                    if len(simplified_points) > 1:
-                        primitives = fit_points_to_primitives(
-                            simplified_points, tolerance
-                        )
-                        new_rows.extend(primitives)
+        elif cmd_type == CMD_TYPE_ARC:
+            # Linearize Arc and add to chain
+            segments = linearize_arc(row, last_pos, resolution)
+            for _, p_end in segments:
+                line_point_chain.append(p_end)
+
+        elif cmd_type == CMD_TYPE_BEZIER:
+            # Linearize Bezier and add to chain
+            segments = linearize_bezier_from_array(row, last_pos, resolution)
+            for _, p_end in segments:
+                line_point_chain.append(p_end)
 
         last_pos = end_pos
 
+    # Process the final chain
     flush_line_chain()
 
     if not new_rows:
