@@ -1,5 +1,6 @@
 import cairo
 from typing import Optional, TYPE_CHECKING
+import logging
 
 if TYPE_CHECKING:
     pass
@@ -16,6 +17,8 @@ with warnings.catch_warnings():
 # We use a slightly more conservative value to be safe.
 CAIRO_MAX_DIMENSION = 16384
 
+logger = logging.getLogger(__name__)
+
 
 class OpsRenderer(Renderer):
     """
@@ -28,7 +31,16 @@ class OpsRenderer(Renderer):
         """Internal helper for renderer reuse."""
         render_width, render_height = width, height
         if render_width <= 0 or render_height <= 0:
+            logger.warning(
+                f"OpsRenderer received invalid dimensions: {width}x{height}. "
+                "Cannot render."
+            )
             return None
+
+        logger.debug(
+            f"OpsRenderer: Rendering to Cairo surface of "
+            f"{render_width}x{render_height} px."
+        )
 
         # Downscale if requested size exceeds Cairo's limit
         if (
@@ -44,6 +56,10 @@ class OpsRenderer(Renderer):
                 )
             render_width = max(1, int(render_width * scale_factor))
             render_height = max(1, int(render_height * scale_factor))
+            logger.warning(
+                "Requested render size exceeds Cairo limit. "
+                f"Downscaling to {render_width}x{render_height}."
+            )
 
         surface = cairo.ImageSurface(
             cairo.FORMAT_ARGB32, render_width, render_height
@@ -59,6 +75,9 @@ class OpsRenderer(Renderer):
         geo_height = geo_max_y - geo_min_y
 
         if geo_width <= 1e-9 or geo_height <= 1e-9:
+            logger.warning(
+                "Geometry has zero size. Returning transparent surface."
+            )
             return surface  # Return transparent surface if no size
 
         scale_x = render_width / geo_width
@@ -88,12 +107,15 @@ class OpsRenderer(Renderer):
             ctx.set_hairline(True)
         except AttributeError:
             # Fallback for older cairo
-            ctx.set_line_width(1.0 / max(scale_x, scale_y))
+            lw = 1.0 / max(scale_x, scale_y)
+            ctx.set_line_width(lw)
+            logger.debug(f"Using fallback line width: {lw}")
 
         ctx.set_line_cap(cairo.LINE_CAP_SQUARE)
 
         boundaries.to_cairo(ctx)
         ctx.stroke()
+        logger.debug("Stroked geometry path to Cairo context.")
 
         ctx.restore()
 
@@ -108,6 +130,9 @@ class OpsRenderer(Renderer):
     ) -> Optional[pyvips.Image]:
         boundaries = kwargs.get("boundaries")
         if not boundaries or boundaries.is_empty():
+            logger.warning(
+                "OpsRenderer: No boundaries provided or boundaries are empty."
+            )
             return None
 
         surface = self._render_to_cairo_surface(boundaries, width, height)
