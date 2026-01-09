@@ -52,6 +52,39 @@ def test_linearize_arc(sample_geometry):
     assert last_segment_end == pytest.approx(arc_cmd.end)
 
 
+def test_linearize_arc_full_circle():
+    """Tests that linearizing a full circle (coincident start/end) works."""
+    start_point = (10.0, 0.0, 5.0)
+    # For a full circle, end is the same as start
+    arc_cmd = MockArc(
+        end=start_point,
+        center_offset=(-10.0, 0.0),  # Center is at (0,0,z)
+        clockwise=False,  # CCW
+    )
+
+    segments = linearize_arc(arc_cmd, start_point, resolution=1.0)
+
+    # For a circle of radius 10, circumference is ~62.8.
+    # With resolution 1.0, expect ~62 segments.
+    assert len(segments) > 50
+
+    # Check start and end points of the chain
+    first_segment_start, _ = segments[0]
+    _, last_segment_end = segments[-1]
+
+    # Both should be very close to the original start/end point
+    assert first_segment_start == pytest.approx(start_point)
+    assert last_segment_end == pytest.approx(start_point, abs=1e-6)
+
+    # Check the point halfway through the linearization
+    mid_segment_idx = len(segments) // 2
+    _, mid_point = segments[mid_segment_idx - 1]
+
+    # Halfway around a CCW circle from (10,0) is (-10,0). Z should be the same.
+    expected_mid_point = (-10.0, 0.0, 5.0)
+    assert mid_point == pytest.approx(expected_mid_point, abs=0.1)
+
+
 def test_linearize_bezier_3d():
     """Tests linearization of a 3D Bézier curve."""
     p0 = (0.0, 0.0, 0.0)
