@@ -47,13 +47,21 @@ def _linearize_arc_from_array(
 
     start_angle = math.atan2(p0[1] - center[1], p0[0] - center[0])
     end_angle = math.atan2(p1[1] - center[1], p1[0] - center[0])
-    angle_range = end_angle - start_angle
-    if clockwise:
-        if angle_range > 0:
-            angle_range -= 2 * math.pi
+
+    is_coincident = math.isclose(p0[0], p1[0], abs_tol=1e-9) and math.isclose(
+        p0[1], p1[1], abs_tol=1e-9
+    )
+
+    if is_coincident and radius_start > 1e-9:
+        angle_range = -2 * math.pi if clockwise else 2 * math.pi
     else:
-        if angle_range < 0:
-            angle_range += 2 * math.pi
+        angle_range = end_angle - start_angle
+        if clockwise:
+            if angle_range > 1e-9:
+                angle_range -= 2 * math.pi
+        else:
+            if angle_range < -1e-9:
+                angle_range += 2 * math.pi
 
     # Use the average radius to get a better estimate for arc length
     avg_radius = (radius_start + radius_end) / 2
@@ -270,7 +278,7 @@ def linearize_bezier_adaptive(
 
         # Midpoints of midpoints
         q01 = ((m01[0] + m12[0]) / 2, (m01[1] + m12[1]) / 2)
-        q12 = ((m12[0] + m23[0]) / 2, (m12[1] + m23[1]) / 2)
+        q12 = ((m12[0] + m23[0]) / 2, (m12[1] + m12[1]) / 2)
 
         # Final midpoint on the curve
         r = ((q01[0] + q12[0]) / 2, (q01[1] + q12[1]) / 2)
