@@ -63,18 +63,17 @@ class Geometry:
     Represents pure, process-agnostic shape data, stored internally as a
     NumPy array for performance.
 
-    The geometry can be configured to automatically convert circular arcs into
-    Bézier curves upon creation (`force_beziers=True`). This is required if the
-    geometry is intended to undergo non-uniform scaling, as circular arcs
-    cannot be non-uniformly scaled.
+    The geometry tracks whether it contains circular arcs, which cannot be
+    non-uniformly scaled. Use `arc_to_as_bezier()` to add arcs as Bézier curves
+    if non-uniform scaling is needed.
     """
 
-    def __init__(self, force_beziers: bool = True) -> None:
-        self.force_beziers = force_beziers
+    def __init__(self) -> None:
         self.last_move_to: Tuple[float, float, float] = (0.0, 0.0, 0.0)
         self._winding_cache: Dict[int, str] = {}
         self._pending_data: List[List[float]] = []
         self._data: Optional[np.ndarray] = None
+        self._uniform_scalable: bool = True
 
     @property
     def data(self) -> Optional[np.ndarray]:
@@ -142,9 +141,15 @@ class Geometry:
         return hash(self.data.tobytes())
 
     def copy(self: T_Geometry) -> T_Geometry:
-        """Creates a deep copy of the Geometry object."""
-        new_geo = self.__class__(force_beziers=self.force_beziers)
+        """
+        Creates a deep copy of the Geometry object.
+
+        Returns:
+            A new Geometry object with the same data and state.
+        """
+        new_geo = self.__class__()
         new_geo.last_move_to = self.last_move_to
+        new_geo._uniform_scalable = self._uniform_scalable
 
         # Manually sync before copying internal state to avoid double-sync
         self._sync_to_numpy()
@@ -155,92 +160,55 @@ class Geometry:
         return new_geo
 
     def is_empty(self) -> bool:
+        """
+        Checks if the geometry contains any commands.
+
+        Returns:
+            True if the geometry is empty, False otherwise.
+        """
         data_is_empty = self._data is None or len(self._data) == 0
         pending_is_empty = not self._pending_data
         return data_is_empty and pending_is_empty
 
     def clear(self) -> None:
+        """
+        Clears all commands from the geometry and resets internal state.
+        """
         self._winding_cache.clear()
         self._pending_data = []
         self._data = None
+        self._uniform_scalable = True
 
     def extend(self, other: "Geometry") -> None:
         """
         Extends this geometry with commands from another.
 
-        If this geometry is configured with `force_beziers=True`, any arcs
-        in the `other` geometry will be converted to Bézier curves during the
-        process.
+        Args:
+            other: The Geometry object to extend from.
         """
-        # If we aren't enforcing beziers, use the fast path
-        if not self.force_beziers:
-            if other.data is not None and len(other.data) > 0:
-                self._sync_to_numpy()  # sync self first
-                if self._data is None:
-                    self._data = other.data.copy()
-                else:
-                    self._data = np.vstack((self._data, other.data))
-            elif other._pending_data:
-                self._pending_data.extend(deepcopy(other._pending_data))
-            return
-
-        # If we ARE enforcing beziers, we must check 'other' for arcs and
-        # convert them if found.
-
-        # Accessing other.data ensures it is synced.
-        other_data = other.data
-        if other_data is None or len(other_data) == 0:
-            return
-
-        # Check if we actually need to do any work
-        has_arcs = np.any(other_data[:, COL_TYPE] == CMD_TYPE_ARC)
-
-        if not has_arcs:
-            # Safe to bulk copy
-            self._sync_to_numpy()
+        if other.data is not None and len(other.data) > 0:
+            self._sync_to_numpy()  # sync self first
             if self._data is None:
-                self._data = other_data.copy()
+                self._data = other.data.copy()
             else:
-                self._data = np.vstack((self._data, other_data))
-        else:
-            # Mixed content: iterate, convert arcs, and rebuild
-            converted_rows = []
+                self._data = np.vstack((self._data, other.data))
+        elif other._pending_data:
+            self._pending_data.extend(deepcopy(other._pending_data))
 
-            # We need to track the position to calculate arc parameters
-            # Initialize with (0,0,0) or start of other data?
-            # Commands in `other` are absolute coordinates, so (0,0,0) is
-            # the implicit start if the first command isn't MoveTo.
-            current_pos = (0.0, 0.0, 0.0)
-
-            for i in range(len(other_data)):
-                row = other_data[i]
-                cmd_type = row[COL_TYPE]
-                end_pos = (row[COL_X], row[COL_Y], row[COL_Z])
-
-                if cmd_type == CMD_TYPE_ARC:
-                    start_pos = current_pos
-                    center_offset = (row[COL_I], row[COL_J])
-                    cw = bool(row[COL_CW])
-
-                    bezier_rows = convert_arc_to_beziers_from_array(
-                        start_pos, end_pos, center_offset, cw
-                    )
-                    for b_row in bezier_rows:
-                        converted_rows.append(b_row)
-                else:
-                    converted_rows.append(row)
-
-                current_pos = end_pos
-
-            if converted_rows:
-                block = np.vstack(converted_rows)
-                self._sync_to_numpy()
-                if self._data is None:
-                    self._data = block
-                else:
-                    self._data = np.vstack((self._data, block))
+        # Update uniform_scalable flag based on the other geometry
+        self._uniform_scalable = (
+            self._uniform_scalable and other._uniform_scalable
+        )
 
     def move_to(self, x: float, y: float, z: float = 0.0) -> None:
+        """
+        Adds a move command to the geometry, starting a new subpath.
+
+        Args:
+            x: The x-coordinate of the new position.
+            y: The y-coordinate of the new position.
+            z: The z-coordinate of the new position.
+        """
         self.last_move_to = (float(x), float(y), float(z))
         self._pending_data.append(
             [
@@ -256,6 +224,14 @@ class Geometry:
         )
 
     def line_to(self, x: float, y: float, z: float = 0.0) -> None:
+        """
+        Adds a line segment to the geometry.
+
+        Args:
+            x: The x-coordinate of the line's endpoint.
+            y: The y-coordinate of the line's endpoint.
+            z: The z-coordinate of the line's endpoint.
+        """
         self._pending_data.append(
             [
                 CMD_TYPE_LINE,
@@ -270,6 +246,9 @@ class Geometry:
         )
 
     def close_path(self) -> None:
+        """
+        Closes the current subpath by adding a line to the last move position.
+        """
         self.line_to(*self.last_move_to)
 
     def arc_to(
@@ -281,31 +260,70 @@ class Geometry:
         clockwise: bool = True,
         z: float = 0.0,
     ) -> None:
-        if self.force_beziers:
-            start_point = self._get_last_point()
-            end_point = (float(x), float(y), float(z))
-            center_offset = (float(i), float(j))
+        """
+        Adds a circular arc segment to the geometry.
 
-            bezier_rows = convert_arc_to_beziers_from_array(
-                start_point, end_point, center_offset, clockwise
-            )
+        Args:
+            x: The x-coordinate of the arc's endpoint.
+            y: The y-coordinate of the arc's endpoint.
+            i: The x-offset of the arc's center from the start point.
+            j: The y-offset of the arc's center from the start point.
+            clockwise: If True, the arc is drawn clockwise.
+            z: The z-coordinate of the arc's endpoint.
 
-            for row in bezier_rows:
-                # row is a numpy array, pending_data expects list
-                self._pending_data.append(row.tolist())
-        else:
-            self._pending_data.append(
-                [
-                    CMD_TYPE_ARC,
-                    float(x),
-                    float(y),
-                    float(z),
-                    float(i),
-                    float(j),
-                    1.0 if bool(clockwise) else 0.0,
-                    0.0,
-                ]
-            )
+        Note:
+            Adding an arc marks the geometry as non-uniformly scalable.
+            Use `arc_to_as_bezier()` if you need non-uniform scaling.
+        """
+        self._uniform_scalable = False
+        self._pending_data.append(
+            [
+                CMD_TYPE_ARC,
+                float(x),
+                float(y),
+                float(z),
+                float(i),
+                float(j),
+                1.0 if bool(clockwise) else 0.0,
+                0.0,
+            ]
+        )
+
+    def arc_to_as_bezier(
+        self,
+        x: float,
+        y: float,
+        i: float,
+        j: float,
+        clockwise: bool = True,
+        z: float = 0.0,
+    ) -> None:
+        """
+        Adds a circular arc segment to the geometry, converted to Bézier
+        curves.
+
+        This method converts the arc to one or more cubic Bézier curves,
+        allowing the geometry to be non-uniformly scaled.
+
+        Args:
+            x: The x-coordinate of the arc's endpoint.
+            y: The y-coordinate of the arc's endpoint.
+            i: The x-offset of the arc's center from the start point.
+            j: The y-offset of the arc's center from the start point.
+            clockwise: If True, the arc is drawn clockwise.
+            z: The z-coordinate of the arc's endpoint.
+        """
+        start_point = self._get_last_point()
+        end_point = (float(x), float(y), float(z))
+        center_offset = (float(i), float(j))
+
+        bezier_rows = convert_arc_to_beziers_from_array(
+            start_point, end_point, center_offset, clockwise
+        )
+
+        for row in bezier_rows:
+            # row is a numpy array, pending_data expects list
+            self._pending_data.append(row.tolist())
 
     def bezier_to(
         self,
@@ -348,10 +366,12 @@ class Geometry:
         storage. This bypasses the overhead of Python list construction
         for bulk operations.
 
-        Note: If `force_beziers` is True, this method assumes the input
-        `new_data` has already been processed to remove arcs, or that the
-        caller accepts the risk of mixing types. It does NOT automatically
-        convert arcs in this low-level method for performance reasons.
+        Args:
+            new_data: A NumPy array of shape (N, 8) containing command data.
+
+        Note:
+            This is a low-level method that assumes the input data has already
+            been processed. It does NOT automatically convert arcs.
         """
         if new_data is None or len(new_data) == 0:
             return
@@ -379,6 +399,52 @@ class Geometry:
             return self
 
         self._data = simplify_geometry_from_array(self.data, tolerance)
+        self._winding_cache.clear()
+        return self
+
+    def upgrade_to_scalable(self: T_Geometry) -> T_Geometry:
+        """
+        Converts all circular arcs in the geometry to Bézier curves, making
+        the geometry fully non-uniformly scalable.
+
+        This method operates in-place. If the geometry is already scalable
+        (i.e., contains no arcs), this method does nothing.
+
+        Returns:
+            The modified Geometry object (self).
+        """
+        if self._uniform_scalable or self.is_empty() or self.data is None:
+            return self
+
+        new_rows = []
+        last_point = (0.0, 0.0, 0.0)
+
+        for row in self.data:
+            cmd_type = row[COL_TYPE]
+            end_point = (row[COL_X], row[COL_Y], row[COL_Z])
+
+            if cmd_type == CMD_TYPE_ARC:
+                start_point = last_point
+                center_offset = (row[COL_I], row[COL_J])
+                clockwise = bool(row[COL_CW])
+
+                bezier_rows = convert_arc_to_beziers_from_array(
+                    start_point, end_point, center_offset, clockwise
+                )
+                new_rows.extend(bezier_rows)
+            else:
+                new_rows.append(row)
+
+            # The start point for the next command is the end point of the
+            # original command, regardless of linearization.
+            last_point = end_point
+
+        if not new_rows:
+            self._data = None
+        else:
+            self._data = np.vstack(new_rows)
+
+        self._uniform_scalable = True
         self._winding_cache.clear()
         return self
 
@@ -485,16 +551,39 @@ class Geometry:
         """
         Applies an affine transformation matrix to the geometry.
 
-        Note: If the geometry contains circular arcs and the transformation
-        matrix represents a non-uniform scaling (i.e., scaling X and Y
-        differently), a TypeError will be raised. To perform non-uniform
-        scaling, recreate the Geometry with `force_beziers=True`.
+        Args:
+            matrix: A 4x4 affine transformation matrix.
+
+        Returns:
+            The modified Geometry object (self).
+
+        Raises:
+            TypeError: If the geometry contains circular arcs and the
+                transformation matrix represents non-uniform scaling.
+
+        Note:
+            Non-uniform scaling (different X and Y scale factors) is not
+            supported for geometries containing circular arcs. Use
+            `arc_to_as_bezier()` instead of `arc_to()` to add arcs if
+            non-uniform scaling is needed.
         """
         from . import (
             transform as tr,
         )  # Local import to prevent circular dependency
 
         if self.data is not None and len(self.data) > 0:
+            # Check for non-uniform scaling if geometry is not uniform scalable
+            if not self._uniform_scalable:
+                # Extract scale factors from the matrix
+                sx = math.sqrt(matrix[0, 0] ** 2 + matrix[0, 1] ** 2)
+                sy = math.sqrt(matrix[1, 0] ** 2 + matrix[1, 1] ** 2)
+                if not math.isclose(sx, sy, rel_tol=1e-9):
+                    raise TypeError(
+                        "Non-uniform scaling is not supported for "
+                        "geometries containing circular arcs. "
+                        "Use arc_to_as_bezier() instead of arc_to()."
+                    )
+
             self._data = tr.apply_affine_transform_to_array(self.data, matrix)
             # Update last_move_to by transforming it
             last_move_vec = np.array([*self.last_move_to, 1.0])
@@ -845,7 +934,6 @@ class Geometry:
     def from_cairo_path(
         cls: Type[T_Geometry],
         path_data: cairo.Path,
-        force_beziers: bool = False,
     ) -> T_Geometry:
         """
         Creates a Geometry instance from a flattened Cairo path data structure.
@@ -853,13 +941,11 @@ class Geometry:
         Args:
             path_data: An iterable of (path_type, points) tuples, as returned
                        by `cairo.Context.copy_path_flat()`.
-            force_beziers: If True, configures the geometry to convert any
-                           future arcs to Bézier curves.
 
         Returns:
             A new Geometry instance.
         """
-        new_geo = cls(force_beziers=force_beziers)
+        new_geo = cls()
         for path_type, points in path_data:  # type: ignore
             if path_type == cairo.PATH_MOVE_TO:
                 new_geo.move_to(points[0], points[1])
@@ -874,7 +960,6 @@ class Geometry:
         cls: Type[T_Geometry],
         points: Iterable[Tuple[float, ...]],
         close: bool = True,
-        force_beziers: bool = False,
     ) -> T_Geometry:
         """
         Creates a Geometry path from a list of points.
@@ -885,13 +970,11 @@ class Geometry:
             close: If True (default), a final segment will be added to close
                    the path, forming a polygon. If False, an open polyline
                    is created.
-            force_beziers: If True, configures the geometry to convert any
-                           future arcs to Bézier curves.
 
         Returns:
             A new Geometry instance representing the polygon or polyline.
         """
-        new_geo = cls(force_beziers=force_beziers)
+        new_geo = cls()
         point_iterator = iter(points)
 
         try:
@@ -966,7 +1049,6 @@ class Geometry:
     def load(
         cls: Type[T_Geometry],
         data: Dict[str, Any],
-        force_beziers: bool = False,
     ) -> T_Geometry:
         """
         Creates a Geometry instance from its space-efficient representation
@@ -974,13 +1056,11 @@ class Geometry:
 
         Args:
             data: The dictionary created by the dump() method.
-            force_beziers: If True, any arcs in the loaded data will be
-                           converted to Bézier curves.
 
         Returns:
             A new Geometry instance.
         """
-        new_geo = cls(force_beziers=force_beziers)
+        new_geo = cls()
         last_move = tuple(data.get("last_move_to", (0.0, 0.0, 0.0)))
         assert len(last_move) == 3, "last_move_to must be a 3-tuple"
         new_geo.last_move_to = last_move
@@ -1022,18 +1102,17 @@ class Geometry:
         return self.dump()
 
     @classmethod
-    def from_dict(
-        cls, data: Dict[str, Any], force_beziers: bool = False
-    ) -> "Geometry":
+    def from_dict(cls, data: Dict[str, Any]) -> "Geometry":
         """
         Deserializes a dictionary into a Geometry instance.
 
         Args:
             data: The dictionary representation.
-            force_beziers: If True, any arcs in the loaded data will be
-                           converted to Bézier curves.
+
+        Returns:
+            A new Geometry instance.
         """
-        new_geo = cls(force_beziers=force_beziers)
+        new_geo = cls()
         last_move = tuple(data.get("last_move_to", (0.0, 0.0, 0.0)))
         assert len(last_move) == 3, "last_move_to must be a 3-tuple"
         new_geo.last_move_to = last_move
@@ -1047,7 +1126,7 @@ class Geometry:
         is_compact_format = isinstance(first_cmd, list)
 
         if is_compact_format:
-            return cls.load(data, force_beziers=force_beziers)
+            return cls.load(data)
         else:
             # Handle verbose format
             for cmd_data in commands:

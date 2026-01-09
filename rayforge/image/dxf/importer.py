@@ -509,11 +509,11 @@ class DxfImporter(Importer):
 
         geo.move_to(start_point[0], start_point[1], start_point[2])
         # First semi-circle (CCW by default in DXF)
-        geo.arc_to(
+        geo.arc_to_as_bezier(
             mid_point[0], mid_point[1], -r_mm, 0, clockwise=False, z=z_mm
         )
         # Second semi-circle
-        geo.arc_to(
+        geo.arc_to_as_bezier(
             start_point[0], start_point[1], r_mm, 0, clockwise=False, z=z_mm
         )
 
@@ -580,7 +580,7 @@ class DxfImporter(Importer):
             center_offset.y * scale,
         )
         geo.move_to(final_start_x, final_start_y, start_point.z * scale)
-        geo.arc_to(
+        geo.arc_to_as_bezier(
             final_end_x,
             final_end_y,
             final_offset_i,

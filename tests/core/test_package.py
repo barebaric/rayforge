@@ -3,7 +3,7 @@ import yaml
 import pytest
 from pathlib import Path
 from unittest.mock import Mock, patch, MagicMock
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from rayforge.core.package import (
     Package,
     PackageMetadata,
@@ -193,7 +193,7 @@ class TestGetGitTagVersion:
             path = Path(tmp)
 
             now = datetime.now(timezone.utc)
-            earlier = now.replace(hour=now.hour - 1)
+            earlier = now - timedelta(hours=1)
 
             tag1 = Mock()
             tag1.name = "v1.0.0"
@@ -217,8 +217,8 @@ class TestGetGitTagVersion:
             path = Path(tmp)
 
             now = datetime.now(timezone.utc)
-            earlier = now.replace(hour=now.hour - 1)
-            earliest = now.replace(hour=now.hour - 2)
+            earlier = now - timedelta(hours=1)
+            earliest = now - timedelta(hours=2)
 
             tag1 = Mock()
             tag1.name = "v3.0.0"

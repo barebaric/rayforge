@@ -29,7 +29,7 @@ def empty_geometry():
 
 @pytest.fixture
 def sample_geometry():
-    geo = Geometry(force_beziers=False)
+    geo = Geometry()
     geo.move_to(0, 0)
     geo.line_to(10, 10)
     geo.arc_to(20, 0, i=5, j=-10)
@@ -39,8 +39,7 @@ def sample_geometry():
 def test_initialization(empty_geometry):
     assert len(empty_geometry) == 0
     assert empty_geometry.last_move_to == (0.0, 0.0, 0.0)
-    # Default should be True
-    assert empty_geometry.force_beziers is True
+    assert empty_geometry._uniform_scalable is True
 
 
 def test_add_commands(empty_geometry):
@@ -119,7 +118,7 @@ def test_close_path(sample_geometry):
 
 
 def test_arc_to():
-    geo = Geometry(force_beziers=False)
+    geo = Geometry()
     geo.move_to(0, 0)
     geo.line_to(10, 10)
     geo.arc_to(20, 0, i=5, j=-10)
@@ -151,7 +150,7 @@ def test_serialization_deserialization(sample_geometry):
 def test_copy_method(sample_geometry):
     """Tests the deep copy functionality of the Geometry class."""
     # Set a flag to ensure it's copied
-    sample_geometry.force_beziers = True
+    sample_geometry._uniform_scalable = False
 
     original_geo = sample_geometry
     copied_geo = original_geo.copy()
@@ -161,7 +160,7 @@ def test_copy_method(sample_geometry):
     assert copied_geo == original_geo
     assert copied_geo.last_move_to == original_geo.last_move_to
     # Check that configuration flags are preserved
-    assert copied_geo.force_beziers is True
+    assert copied_geo._uniform_scalable is False
 
     # Modify the original and check that the copy is unaffected
     original_geo.line_to(100, 100)
@@ -237,7 +236,7 @@ def test_segments():
     assert geo_empty.segments() == []
 
     # Test case 2: Single open path
-    geo_open = Geometry(force_beziers=False)
+    geo_open = Geometry()
     geo_open.move_to(0, 0, 1)
     geo_open.line_to(10, 0, 2)
     geo_open.arc_to(10, 10, i=0, j=5, z=3)
@@ -323,13 +322,13 @@ def test_dump_and_load(sample_geometry):
     Tests the dump() and load() methods for space-efficient serialization.
     """
     # Test with a non-empty geometry
-    geo_with_bezier = Geometry(force_beziers=False)
+    geo_with_bezier = Geometry()
     geo_with_bezier.move_to(0, 0)
     geo_with_bezier.line_to(10, 10)
     geo_with_bezier.arc_to(20, 0, i=5, j=-10)
     geo_with_bezier.bezier_to(30, 10, c1x=22, c1y=2, c2x=28, c2y=8)
     dumped_data = geo_with_bezier.dump()
-    loaded_geo = Geometry.load(dumped_data, force_beziers=False)
+    loaded_geo = Geometry.load(dumped_data)
 
     assert dumped_data["last_move_to"] == list(geo_with_bezier.last_move_to)
     assert len(dumped_data["commands"]) == 4
@@ -356,19 +355,19 @@ def test_dump_and_load(sample_geometry):
 
 def test_force_beziers_init():
     """Test that the configuration flag is stored correctly."""
-    geo = Geometry(force_beziers=True)
-    assert geo.force_beziers is True
+    geo = Geometry()
+    assert geo._uniform_scalable is True
 
 
-def test_arc_to_converts_when_forced():
-    """Test that arc_to creates Bezier commands when force_beziers is True."""
-    geo = Geometry(force_beziers=True)
+def test_arc_to_as_bezier():
+    """Test that arc_to_as_bezier creates Bezier commands."""
+    geo = Geometry()
     geo.move_to(0, 0)
 
     # Create a simple 90 degree arc
     # Start (0,0), Center (10,0), End (10,10)
     # i=10, j=0. Clockwise=False (CCW)
-    geo.arc_to(10, 10, i=10, j=0, clockwise=False)
+    geo.arc_to_as_bezier(10, 10, i=10, j=0, clockwise=False)
 
     # Force sync
     geo._sync_to_numpy()
@@ -388,47 +387,45 @@ def test_arc_to_converts_when_forced():
     assert math.isclose(last_row[COL_Y], 10.0)
 
 
-def test_extend_converts_incoming_arcs():
+def test_extend_preserves_uniform_scalable():
     """
-    Test that extending a force_beziers=True geometry with a standard
-    geometry (containing arcs) converts the incoming arcs.
+    Test that extending a geometry preserves the uniform_scalable flag.
     """
     # Source geometry with an arc
     source = Geometry()
     source.move_to(0, 0)
     source.arc_to(10, 0, i=5, j=0, clockwise=True)  # Semi-circle
 
-    # Destination geometry with forced beziers
-    dest = Geometry(force_beziers=True)
+    # Destination geometry
+    dest = Geometry()
     dest.extend(source)
 
     dest._sync_to_numpy()
     data = dest.data
     assert data is not None
 
-    # Should contain Moves and Beziers, but no Arcs
+    # Should contain Moves and Arcs
     assert np.any(data[:, COL_TYPE] == CMD_TYPE_MOVE)
-    assert np.any(data[:, COL_TYPE] == CMD_TYPE_BEZIER)
-    assert not np.any(data[:, COL_TYPE] == CMD_TYPE_ARC)
+    assert np.any(data[:, COL_TYPE] == CMD_TYPE_ARC)
+    assert not dest._uniform_scalable
 
 
-def test_load_respects_force_beziers(sample_geometry):
+def test_load_preserves_uniform_scalable(sample_geometry):
     """
-    Test that loading from a dump with force_beziers=True converts
-    arcs found in the serialized data.
+    Test that loading from a dump preserves the uniform_scalable flag.
     """
     # sample_geometry contains an arc
     dumped = sample_geometry.dump()
 
-    # Load with forcing enabled
-    loaded = Geometry.load(dumped, force_beziers=True)
+    # Load
+    loaded = Geometry.load(dumped)
 
     loaded._sync_to_numpy()
     data = loaded.data
     assert data is not None
 
-    assert not np.any(data[:, COL_TYPE] == CMD_TYPE_ARC)
-    assert np.any(data[:, COL_TYPE] == CMD_TYPE_BEZIER)
+    assert np.any(data[:, COL_TYPE] == CMD_TYPE_ARC)
+    assert not loaded._uniform_scalable
 
     # Check that endpoint is preserved
     last_row = data[-1]
@@ -609,7 +606,7 @@ def test_to_cairo():
     from unittest.mock import Mock
     import cairo
 
-    geo = Geometry(force_beziers=False)
+    geo = Geometry()
     geo.move_to(5, 5)
     geo.line_to(10, 10)
     geo.arc_to(15, 5, i=0, j=-5, clockwise=False)
@@ -644,7 +641,7 @@ def test_to_cairo_clockwise_arc():
     from unittest.mock import Mock
     import cairo
 
-    geo = Geometry(force_beziers=False)
+    geo = Geometry()
     geo.move_to(10, 10)
     geo.arc_to(15, 10, i=0, j=-5, clockwise=True)
 
@@ -658,7 +655,7 @@ def test_to_cairo_clockwise_arc():
 
 def test_get_command_at_valid_index():
     """Tests get_command_at() with valid indices."""
-    geo = Geometry(force_beziers=False)
+    geo = Geometry()
     geo.move_to(0, 0, 1)
     geo.line_to(10, 10, 2)
     geo.arc_to(20, 0, i=5, j=-10, clockwise=False, z=3)
@@ -701,7 +698,7 @@ def test_get_command_at_empty_geometry():
 
 def test_iter_commands():
     """Tests iter_commands() yields all commands correctly."""
-    geo = Geometry(force_beziers=False)
+    geo = Geometry()
     geo.move_to(0, 0, 1)
     geo.line_to(10, 10, 2)
     geo.arc_to(20, 0, i=5, j=-10, clockwise=False, z=3)
@@ -747,7 +744,7 @@ def test_iter_commands_with_pending_data():
 
 def test_iter_commands_clockwise_arc():
     """Tests iter_commands() with clockwise arc."""
-    geo = Geometry(force_beziers=False)
+    geo = Geometry()
     geo.move_to(10, 10)
     geo.arc_to(15, 10, i=0, j=-5, clockwise=True)
 
@@ -756,3 +753,114 @@ def test_iter_commands_clockwise_arc():
     assert len(commands) == 2
     assert commands[0] == (CMD_TYPE_MOVE, 10.0, 10.0, 0.0, 0.0, 0.0, 0.0, 0.0)
     assert commands[1] == (CMD_TYPE_ARC, 15.0, 10.0, 0.0, 0.0, -5.0, 1.0, 0.0)
+
+
+def test_upgrade_to_scalable_on_scalable_geo():
+    """
+    Tests that upgrade_to_scalable does nothing on an already scalable
+    geometry.
+    """
+    geo = Geometry()
+    geo.move_to(0, 0)
+    geo.line_to(10, 10)
+    geo.bezier_to(20, 0, c1x=12, c1y=12, c2x=18, c2y=2)
+    assert geo.data is not None
+    original_data = geo.data.copy()
+
+    assert geo._uniform_scalable is True
+    result = geo.upgrade_to_scalable()
+
+    assert result is geo
+    assert geo._uniform_scalable is True
+    np.testing.assert_array_equal(geo.data, original_data)
+
+
+def test_upgrade_to_scalable_on_empty_geo():
+    """Tests that upgrade_to_scalable handles empty geometry gracefully."""
+    geo = Geometry()
+    assert geo.is_empty()
+    assert geo._uniform_scalable is True
+
+    result = geo.upgrade_to_scalable()
+
+    assert result is geo
+    assert geo.is_empty()
+    assert geo._uniform_scalable is True
+
+
+def test_upgrade_to_scalable_converts_arcs():
+    """Tests the core functionality of converting arcs to beziers."""
+    geo = Geometry()
+    geo.move_to(0, 0)
+    geo.line_to(10, 10)  # Preserved command
+    geo.arc_to(20, 0, i=5, j=-10, clockwise=True)  # Command to be converted
+
+    # Initial state check
+    assert geo._uniform_scalable is False
+
+    # Perform the upgrade
+    result = geo.upgrade_to_scalable()
+    assert result is geo
+
+    # Final state check
+    assert geo._uniform_scalable is True
+    assert geo.data is not None
+
+    # Check command types
+    command_types = geo.data[:, COL_TYPE]
+    assert CMD_TYPE_ARC not in command_types
+    assert CMD_TYPE_BEZIER in command_types
+    assert CMD_TYPE_LINE in command_types
+    assert CMD_TYPE_MOVE in command_types
+
+    # Check path integrity
+    # The last bezier should end where the arc ended.
+    final_point = geo.data[-1, COL_X : COL_Z + 1]
+    np.testing.assert_allclose(final_point, [20.0, 0.0, 0.0], atol=1e-9)
+
+
+def test_upgrade_to_scalable_multiple_arcs():
+    """Tests upgrading a geometry with multiple arcs and segments."""
+    geo = Geometry()
+    geo.move_to(0, 0)
+    geo.arc_to(10, 10, i=10, j=0, clockwise=False)  # 90 deg CCW arc
+    geo.line_to(20, 10)
+    geo.arc_to(30, 0, i=0, j=-10, clockwise=True)  # 90 deg CW arc
+    final_end_point = (30.0, 0.0, 0.0)
+
+    assert geo._uniform_scalable is False
+
+    geo.upgrade_to_scalable()
+
+    assert geo._uniform_scalable is True
+    assert geo.data is not None
+    assert CMD_TYPE_ARC not in geo.data[:, COL_TYPE]
+
+    # Verify that the final endpoint of the entire path is preserved
+    final_point_after = geo.data[-1, COL_X : COL_Z + 1]
+    np.testing.assert_allclose(final_point_after, final_end_point, atol=1e-9)
+
+
+def test_upgrade_to_scalable_is_idempotent():
+    """
+    Tests that calling upgrade_to_scalable multiple times has no extra effect.
+    """
+    geo = Geometry()
+    geo.move_to(0, 0)
+    geo.arc_to(10, 10, i=10, j=0, clockwise=False)
+
+    # First call
+    geo.upgrade_to_scalable()
+    assert geo.data is not None
+    data_after_first_call = geo.data.copy()
+    assert geo._uniform_scalable is True
+    assert CMD_TYPE_ARC not in data_after_first_call[:, COL_TYPE]
+
+    # Second call
+    geo.upgrade_to_scalable()
+    data_after_second_call = geo.data
+
+    # The data should be identical
+    np.testing.assert_array_equal(
+        data_after_first_call, data_after_second_call
+    )

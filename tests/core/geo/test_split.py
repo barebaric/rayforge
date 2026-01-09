@@ -91,7 +91,7 @@ def test_split_into_components_two_separate_shapes():
 
 
 def test_split_into_components_containment_letter_o():
-    geo = Geometry(force_beziers=False)
+    geo = Geometry()
     # Outer circle (r=10, center=0,0)
     geo.move_to(10, 0)
     geo.arc_to(-10, 0, i=-10, j=0, clockwise=False)

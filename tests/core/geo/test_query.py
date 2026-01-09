@@ -53,7 +53,7 @@ def test_get_bounding_rect_with_beziers():
     geometry is forced to use Beziers (approximating the arc).
     """
     # Same geometry logic as sample_geometry, but with force_beziers=True
-    geo = Geometry(force_beziers=True)
+    geo = Geometry()
     geo.move_to(0, 0)
     geo.line_to(10, 10)
     geo.arc_to(20, 10, i=5, j=0, clockwise=True)
@@ -70,7 +70,7 @@ def test_get_bounding_rect_with_beziers():
 
 def test_get_total_distance_with_geo_commands():
     # 90 deg CCW arc, radius 10, length should be 5*pi
-    geo = Geometry(force_beziers=False)
+    geo = Geometry()
     geo.move_to(0, 0)
     geo.line_to(10, 0)  # Length 10
     geo.arc_to(0, 10, i=-10, j=0, clockwise=False)

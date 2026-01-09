@@ -145,6 +145,11 @@ class WorkPiece(DocItem):
             geometry = temp_sketch.to_geometry()
             fill_geometries = temp_sketch.get_fill_geometries()
 
+            # Upgrade all generated geometry to be fully scalable
+            geometry.upgrade_to_scalable()
+            for fill_geo in fill_geometries:
+                fill_geo.upgrade_to_scalable()
+
             if not geometry.is_empty():
                 min_x, min_y, max_x, max_y = geometry.rect()
                 width = max(max_x - min_x, 1e-9)
@@ -372,6 +377,11 @@ class WorkPiece(DocItem):
             unnormalized_geo = instance_sketch.to_geometry()
             # Also get fill geometries from the same solved state.
             unnormalized_fills = instance_sketch.get_fill_geometries()
+
+            # Upgrade all generated geometry to be fully scalable
+            unnormalized_geo.upgrade_to_scalable()
+            for fill_geo in unnormalized_fills:
+                fill_geo.upgrade_to_scalable()
 
             # Cache the geometry even if it is empty, to prevent
             # re-solving on every render frame.
