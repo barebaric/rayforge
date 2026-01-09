@@ -151,7 +151,7 @@ class TestWorkPiece:
         assert new_wp.size == pytest.approx(wp.size)
         assert new_wp.angle == pytest.approx(wp.angle, abs=1e-9)
         assert new_wp.matrix == wp.matrix
-        assert new_wp.natural_size == (100.0, 50.0)
+        assert new_wp.natural_size == pytest.approx((100.0, 50.0))
         assert new_wp.source_segment is not None
         assert new_wp.source_segment.source_asset_uid == source.uid
         assert new_wp._edited_boundaries is not None
@@ -421,10 +421,9 @@ class TestWorkPiece:
         wp = workpiece_instance
         assert wp.get_natural_aspect_ratio() == pytest.approx(2.0)
         # get_default_size should return the SVG's natural size.
-        assert wp.get_default_size(bounds_width=1000, bounds_height=1000) == (
-            100.0,
-            50.0,
-        )
+        assert wp.get_default_size(
+            bounds_width=1000, bounds_height=1000
+        ) == pytest.approx((100.0, 50.0))
         # The importer sets the size to the natural size.
         assert wp.size == pytest.approx((100.0, 50.0))
 
