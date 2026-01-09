@@ -10,6 +10,7 @@ from typing import (
     Callable,
     Union,
     Awaitable,
+    Dict,
 )
 from ...context import RayforgeContext
 from ...core.ops import Ops
@@ -24,6 +25,7 @@ from .driver import (
     DriverSetupError,
     DriverPrecheckError,
     Axis,
+    Pos,
 )
 from .grbl_util import parse_state
 
@@ -34,6 +36,17 @@ if TYPE_CHECKING:
 
 
 logger = logging.getLogger(__name__)
+
+
+# Smoothie uses P1 for G54, P2 for G55, etc.
+_wcs_to_p_map = {
+    "G54": 1,
+    "G55": 2,
+    "G56": 3,
+    "G57": 4,
+    "G58": 5,
+    "G59": 6,
+}
 
 
 class SmoothieDriver(Driver):
@@ -388,6 +401,35 @@ class SmoothieDriver(Driver):
     async def write_setting(self, key: str, value: Any) -> None:
         raise NotImplementedError(
             "Device settings not implemented for this driver"
+        )
+
+    async def set_wcs_offset(
+        self, wcs_slot: str, x: float, y: float, z: float
+    ) -> None:
+        """Sets a WCS offset using Smoothie's G10 L20 command."""
+        if wcs_slot not in _wcs_to_p_map:
+            raise ValueError(f"Invalid WCS slot: {wcs_slot}")
+
+        p_num = _wcs_to_p_map[wcs_slot]
+        cmd = f"G10 L20 P{p_num} X{x} Y{y} Z{z}"
+        await self._send_and_wait(cmd.encode("utf-8"))
+
+    async def read_wcs_offsets(self) -> Dict[str, Pos]:
+        """Reading all WCS offsets is not supported by Smoothie."""
+        raise NotImplementedError(
+            "Reading all WCS offsets is not reliably supported "
+            "by Smoothieware."
+        )
+
+    async def run_probe_cycle(
+        self, axis: Axis, max_travel: float, feed_rate: int
+    ) -> Optional[Pos]:
+        """
+        Probing is not implemented due to difficulty in reliably capturing
+        real-time probe position feedback over the standard Telnet protocol.
+        """
+        raise NotImplementedError(
+            "Probing is not implemented for the Smoothie driver via Telnet."
         )
 
     def can_g0_with_speed(self) -> bool:

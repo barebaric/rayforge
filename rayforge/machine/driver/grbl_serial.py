@@ -27,11 +27,15 @@ from .driver import (
     DriverPrecheckError,
     DeviceConnectionError,
     Axis,
+    Pos,
 )
 from .grbl_util import (
     parse_state,
     get_grbl_setting_varsets,
     grbl_setting_re,
+    wcs_re,
+    prb_re,
+    gcode_to_p_number,
     CommandRequest,
 )
 
@@ -763,6 +767,58 @@ class GrblSerialDriver(Driver):
             value = 1 if value else 0
         cmd = f"${key}={value}"
         await self._execute_command(cmd)
+
+    async def set_wcs_offset(
+        self, wcs_slot: str, x: float, y: float, z: float
+    ) -> None:
+        p_num = gcode_to_p_number(wcs_slot)
+        if p_num is None:
+            raise ValueError(f"Invalid WCS slot: {wcs_slot}")
+        cmd = f"G10 L2 P{p_num} X{x} Y{y} Z{z}"
+        await self._execute_command(cmd)
+
+    async def read_wcs_offsets(self) -> Dict[str, Pos]:
+        response_lines = await self._execute_command("$#")
+        offsets = {}
+        for line in response_lines:
+            match = wcs_re.match(line)
+            if match:
+                slot, x_str, y_str, z_str = match.groups()
+                offsets[slot] = (float(x_str), float(y_str), float(z_str))
+        self.wcs_updated.send(self, offsets=offsets)
+        return offsets
+
+    async def run_probe_cycle(
+        self, axis: Axis, max_travel: float, feed_rate: int
+    ) -> Optional[Pos]:
+        assert axis.name, "Probing requires a single, named axis."
+        axis_letter = axis.name.upper()
+        cmd = f"G38.2 {axis_letter}{max_travel} F{feed_rate}"
+
+        self.probe_status_changed.send(
+            self, message=f"Probing {axis_letter}..."
+        )
+        try:
+            response_lines = await self._execute_command(cmd)
+        except DeviceConnectionError:
+            self.probe_status_changed.send(
+                self, message="Probe failed: Timed out"
+            )
+            return None
+
+        for line in response_lines:
+            match = prb_re.match(line)
+            if match:
+                x_str, y_str, z_str, success = match.groups()
+                if int(success) == 1:
+                    pos: Pos = (float(x_str), float(y_str), float(z_str))
+                    self.probe_status_changed.send(
+                        self, message=f"Probe triggered at {pos}"
+                    )
+                    return pos
+
+        self.probe_status_changed.send(self, message="Probe failed")
+        return None
 
     def on_serial_data_received(self, sender, data: bytes):
         """
