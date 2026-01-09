@@ -1,6 +1,6 @@
 from typing import Any, List, Tuple, Iterator, Optional, Dict
 import numpy as np
-from ...shared.tasker.proxy import ExecutionContextProxy
+from ...shared.tasker.proxy import ExecutionContextProxy, BaseExecutionContext
 from ..encoder.vertexencoder import VertexEncoder
 from ...context import get_context
 from ..artifact import WorkPieceArtifact
@@ -65,6 +65,7 @@ def make_workpiece_artifact_in_subprocess(
         *,
         y_offset_mm: float = 0.0,
         step_settings: Dict[str, Any],
+        proxy: Optional[BaseExecutionContext] = None,
     ) -> WorkPieceArtifact:
         """
         Applies image modifiers and runs the OpsProducer on a surface or
@@ -83,6 +84,7 @@ def make_workpiece_artifact_in_subprocess(
             y_offset_mm: The vertical offset in mm for the current chunk, used
                 by raster operations.
             step_settings: The dictionary of settings from the Step.
+            proxy: The execution context proxy for progress reporting.
 
         Returns:
             A Artifact object containing the generated operations
@@ -100,9 +102,12 @@ def make_workpiece_artifact_in_subprocess(
             workpiece=workpiece,
             settings=step_settings,
             y_offset_mm=y_offset_mm,
+            proxy=proxy,
         )
 
-    def _execute_vector() -> Iterator[Tuple[WorkPieceArtifact, float]]:
+    def _execute_vector(
+        execute_ctx: BaseExecutionContext,
+    ) -> Iterator[Tuple[WorkPieceArtifact, float]]:
         """
         Handles Ops generation for scalable (vector) operations.
 
@@ -141,6 +146,7 @@ def make_workpiece_artifact_in_subprocess(
                 surface=None,
                 render_pixels_per_mm=None,
                 step_settings=settings,
+                proxy=execute_ctx,
             )
             yield artifact, 1.0
             return
@@ -177,13 +183,15 @@ def make_workpiece_artifact_in_subprocess(
         # The producer (e.g., ContourProducer) will trace the bitmap and return
         # an artifact with pixel coordinates.
         artifact = _trace_and_modify_surface(
-            surface, None, step_settings=settings
+            surface, None, step_settings=settings, proxy=execute_ctx
         )
 
         yield artifact, 1.0
         surface.flush()
 
-    def _execute_raster() -> Iterator[Tuple[WorkPieceArtifact, float]]:
+    def _execute_raster(
+        execute_ctx: BaseExecutionContext,
+    ) -> Iterator[Tuple[WorkPieceArtifact, float]]:
         """
         Handles Ops generation for non-scalable (raster) operations.
 
@@ -219,6 +227,7 @@ def make_workpiece_artifact_in_subprocess(
                 surface,
                 (px_per_mm_x, px_per_mm_y),
                 step_settings=settings,
+                proxy=execute_ctx,
             )
             yield full_artifact, 1.0
             surface.flush()
@@ -251,6 +260,7 @@ def make_workpiece_artifact_in_subprocess(
                 (px_per_mm_x, px_per_mm_y),
                 y_offset_mm=y_offset_from_top_mm,
                 step_settings=settings,
+                proxy=execute_ctx,
             )
 
             # The ops are generated at the origin, so translate them to the
@@ -297,7 +307,11 @@ def make_workpiece_artifact_in_subprocess(
     execute_ctx = proxy.sub_context(
         base_progress=0.0, progress_range=execute_weight
     )
-    execute_iterator = _execute_vector() if is_vector else _execute_raster()
+    execute_iterator = (
+        _execute_vector(execute_ctx)
+        if is_vector
+        else _execute_raster(execute_ctx)
+    )
 
     for chunk_artifact, execute_progress in execute_iterator:
         execute_ctx.set_progress(execute_progress)

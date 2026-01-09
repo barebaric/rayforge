@@ -35,7 +35,6 @@ from .svgutil import (
     PPI,
     MM_PER_PX,
     get_natural_size,
-    trim_svg,
     extract_layer_manifest,
 )
 
@@ -81,7 +80,11 @@ class SvgImporter(Importer):
             items = self._get_doc_items_from_trace(source, vectorization_spec)
         else:
             # Path 2: Direct vector parsing with pre-trimming
-            trimmed_data = trim_svg(render_data)
+
+            # Use analytical trimming to avoid raster clipping of control
+            # points
+            trimmed_data = self._analytical_trim(render_data)
+
             source.base_render_data = trimmed_data
             source.metadata["is_vector"] = True
             self._populate_metadata(source)
@@ -123,6 +126,93 @@ class SvgImporter(Importer):
             source.metadata.update(metadata)
         except Exception as e:
             logger.warning(f"Could not calculate SVG metadata: {e}")
+
+    def _analytical_trim(self, data: bytes) -> bytes:
+        """
+        Trims the SVG using vector geometry bounds instead of rasterization.
+        This handles elements that extend beyond the document bounds (overflow)
+        without clipping.
+        """
+        try:
+            stream = io.BytesIO(data)
+            svg = SVG.parse(stream, ppi=PPI)
+
+            # Determine scaling baked into svgelements
+            # svgelements.SVG.width/height are in pixels (96 DPI usually)
+            width_px = (
+                svg.width.px if hasattr(svg.width, "px") else float(svg.width)
+            )
+            height_px = (
+                svg.height.px
+                if hasattr(svg.height, "px")
+                else float(svg.height)
+            )
+
+            vb_x, vb_y, vb_w, vb_h = 0, 0, width_px, height_px
+            if svg.viewbox:
+                vb_x = svg.viewbox.x
+                vb_y = svg.viewbox.y
+                vb_w = svg.viewbox.width
+                vb_h = svg.viewbox.height
+
+            scale_x = width_px / vb_w if vb_w > 0 else 1.0
+            scale_y = height_px / vb_h if vb_h > 0 else 1.0
+
+            # Convert to geometry to find bounds
+            geo = self._convert_svg_to_geometry(svg)
+            if geo.is_empty():
+                return data
+
+            min_x, min_y, max_x, max_y = geo.rect()
+
+            # Unscale to get User Unit bounds
+            user_min_x = (min_x / scale_x) + vb_x
+            user_max_x = (max_x / scale_x) + vb_x
+            user_min_y = (min_y / scale_y) + vb_y
+            user_max_y = (max_y / scale_y) + vb_y
+
+            user_w = user_max_x - user_min_x
+            user_h = user_max_y - user_min_y
+
+            # Avoid tiny boxes or invalid results
+            if user_w <= 1e-6 or user_h <= 1e-6:
+                return data
+
+            # Noise filter: if the new trim box is effectively identical to
+            # the original viewbox, return the original data to avoid float
+            # noise.
+            if (
+                abs(user_min_x - vb_x) < 1e-4
+                and abs(user_min_y - vb_y) < 1e-4
+                and abs(user_w - vb_w) < 1e-4
+                and abs(user_h - vb_h) < 1e-4
+            ):
+                return data
+
+            # Manipulate XML
+            root = ET.fromstring(data)
+
+            # Update ViewBox to exactly enclose the geometry
+            new_vb = f"{user_min_x:g} {user_min_y:g} {user_w:g} {user_h:g}"
+            root.set("viewBox", new_vb)
+
+            # Update width/height to reflect the physical size of the new
+            # viewbox. We preserve the original unit scale ratio.
+            new_width_px = user_w * scale_x
+            new_height_px = user_h * scale_y
+
+            root.set("width", f"{new_width_px:.4f}px")
+            root.set("height", f"{new_height_px:.4f}px")
+
+            # Remove preserveAspectRatio to avoid confusion, forcing 1:1 map
+            if "preserveAspectRatio" in root.attrib:
+                del root.attrib["preserveAspectRatio"]
+
+            return ET.tostring(root)
+
+        except Exception as e:
+            logger.warning(f"Analytical trim failed: {e}")
+            return data
 
     def _get_doc_items_from_trace(
         self, source: SourceAsset, vectorization_spec: TraceSpec
@@ -213,6 +303,12 @@ class SvgImporter(Importer):
             return self._get_doc_items_from_trace(source, TraceSpec())
         width_px, height_px = pixel_dims
 
+        # Ensure the source asset has pixel dimensions.
+        # These are required for correct viewBox calculation in split/crop
+        # operations.
+        source.width_px = int(width_px)
+        source.height_px = int(height_px)
+
         # 3. Establish authoritative dimensions in millimeters.
         final_dims_mm = self._get_final_dimensions(source)
         if not final_dims_mm:
@@ -297,8 +393,6 @@ class SvgImporter(Importer):
                 user_unit_to_mm_x = final_width_mm / width_px
             if height_px > 0:
                 user_unit_to_mm_y = final_height_mm / height_px
-
-        # ---
 
         # The normalization matrix maps the geometry (User Units) to 0-1 box.
         norm_scale = Matrix.scale(1.0 / geo_width, 1.0 / geo_height)

@@ -1,5 +1,5 @@
 import warnings
-from typing import Optional, TYPE_CHECKING, List
+from typing import Optional, TYPE_CHECKING, List, Tuple
 from xml.etree import ElementTree as ET
 from ..base_renderer import Renderer
 from .svgutil import filter_svg_layers
@@ -20,20 +20,21 @@ class SvgRenderer(Renderer):
         data: bytes,
         width: int,
         height: int,
+        visible_layer_ids: Optional[List[str]] = None,
+        viewbox: Optional[Tuple[float, float, float, float]] = None,
         **kwargs,
     ) -> Optional[pyvips.Image]:
         """
         Renders raw SVG data to a pyvips Image by setting its pixel dimensions.
         Expects data to be pre-trimmed for content.
         Can optionally filter by layer IDs if 'visible_layer_ids' is passed.
+        Can optionally override the viewBox if 'viewbox' is passed
+        (x, y, w, h).
         """
         if not data:
             return None
 
         render_data = data
-        visible_layer_ids: Optional[List[str]] = kwargs.get(
-            "visible_layer_ids"
-        )
         if visible_layer_ids:
             render_data = filter_svg_layers(data, visible_layer_ids)
 
@@ -46,6 +47,13 @@ class SvgRenderer(Renderer):
             root.set("width", f"{width}px")
             root.set("height", f"{height}px")
             root.set("preserveAspectRatio", "none")
+
+            # Allow overriding the viewBox (used for rendering split/cropped
+            # vector segments)
+            if viewbox:
+                vb_x, vb_y, vb_w, vb_h = viewbox
+                root.set("viewBox", f"{vb_x} {vb_y} {vb_w} {vb_h}")
+
             # This causes the content to stretch to fill the width/height
             # instead of scaling proportionally. This is REQUIRED for tracing
             # non-uniformly scaled objects correctly.

@@ -530,10 +530,10 @@ class TestSvgRenderer:
         assert size is not None
         assert size[0] > 0
         assert size[1] > 0
-        # The geometry extends beyond the 100mm canvas due to control points
-        # or arc calculations. The new importer logic correctly captures this.
-        assert size[0] > 100
-        assert size[1] > 75
+        # The geometry is trimmed to the actual path bounds within the
+        # 100mm canvas. The path coordinates are all within the viewBox.
+        assert size[0] < 100
+        assert size[1] < 100
 
         # Check the world-space bounding box matches the workpiece transform
         bbox = wp.get_geometry_world_bbox()

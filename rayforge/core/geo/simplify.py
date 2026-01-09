@@ -1,20 +1,52 @@
 import numpy as np
-from typing import List, Tuple
-from .constants import (
-    CMD_TYPE_MOVE,
-    CMD_TYPE_LINE,
-    CMD_TYPE_ARC,
-    CMD_TYPE_BEZIER,
-    GEO_ARRAY_COLS,
-    COL_TYPE,
-)
+from typing import List, Sequence, Tuple
 
 
-def _ramer_douglas_peucker_numpy(
+def simplify_points_to_array(
     points: np.ndarray, tolerance: float
 ) -> np.ndarray:
     """
-    Vectorized Iterative Ramer-Douglas-Peucker using NumPy.
+    Simplify a sequence of 2D points using the Ramer-Douglas-Peucker algorithm.
+
+    This is a vectorized, iterative implementation that avoids recursion depth
+    issues by using an explicit stack. The algorithm works by recursively
+    dividing the curve and keeping points that are farther from the chord
+    connecting the endpoints than the specified tolerance.
+
+    Parameters
+    ----------
+    points : np.ndarray
+        An array of shape (N, 2) or (N, 3) representing the points to simplify.
+        The first two columns (X, Y) are used for distance calculation.
+        Additional columns (e.g., Z) are preserved in the output.
+    tolerance : float
+        The maximum perpendicular distance from the chord for a point to be
+        removed. Points with deviation greater than this value are kept.
+        Must be non-negative; negative values are treated as zero.
+
+    Returns
+    -------
+    np.ndarray
+        A subset of the input points with shape (M, K) where M <= N and K is
+        the same as the input dimensionality. The first and last points are
+        always preserved.
+
+    Notes
+    -----
+    - The implementation uses squared distances to avoid unnecessary square
+      root operations.
+    - A small epsilon (1e-12) is used to handle degenerate cases where start
+      and end points are practically identical.
+    - The algorithm uses an iterative stack-based approach instead of recursion
+      to avoid stack overflow on large point sequences.
+
+    Examples
+    --------
+    >>> import numpy as np
+    >>> points = np.array([(0, 0), (1, 1), (2, 2), (3, 3), (10, 10)])
+    >>> simplify_points_to_array(points, tolerance=0.001)
+    array([[ 0.,  0.],
+           [10., 10.]])
     """
     n = len(points)
     if n < 3:
@@ -86,91 +118,44 @@ def _ramer_douglas_peucker_numpy(
     return points[keep]
 
 
-def simplify_points_to_array(
-    points: np.ndarray, tolerance: float
-) -> np.ndarray:
-    """
-    Simplifies a numpy array of 2D points using the Ramer-Douglas-Peucker
-    algorithm. Returns a numpy array of the kept points.
-    """
-    return _ramer_douglas_peucker_numpy(points, tolerance)
-
-
 def simplify_points(
-    points: List[Tuple[float, float]], tolerance: float
-) -> List[Tuple[float, float]]:
+    points: Sequence[Tuple[float, float]], tolerance: float
+) -> Sequence[Tuple[float, float]]:
     """
-    Simplifies a list of 2D points using the Ramer-Douglas-Peucker algorithm.
-    This bypasses Command object creation for raw buffer processing.
+    Simplify a sequence of 2D points using the Ramer-Douglas-Peucker algorithm.
+
+    This is a convenience wrapper that converts between Python sequences of
+    tuples and numpy arrays, allowing use with standard Python data structures.
+
+    Parameters
+    ----------
+    points : Sequence[Tuple[float, float]]
+        A sequence of (x, y) coordinate tuples representing the points to
+        simplify.
+    tolerance : float
+        The maximum perpendicular distance from the chord for a point to be
+        removed. Points with deviation greater than this value are kept.
+        Must be non-negative; negative values are treated as zero.
+
+    Returns
+    -------
+    Sequence[Tuple[float, float]]
+        A sequence of (x, y) coordinate tuples representing the simplified
+        points. The first and last points are always preserved.
+
+    Examples
+    --------
+    >>> points = [(0, 0), (1, 1), (2, 2), (3, 3), (10, 10)]
+    >>> simplify_points(points, tolerance=0.001)
+    [(0, 0), (10, 10)]
     """
     if len(points) < 3:
         return points
 
     # Convert list of tuples to numpy array
     arr = np.array(points, dtype=np.float64)
-    simplified_arr = _ramer_douglas_peucker_numpy(arr, tolerance)
+    simplified_arr = simplify_points_to_array(arr, tolerance)
 
     # Convert back to list of tuples
     # simplify_arr is (N, 2)
-    return [tuple(p) for p in simplified_arr.tolist()]  # type: ignore
-
-
-def simplify_geometry_from_array(
-    data: np.ndarray, tolerance: float
-) -> np.ndarray:
-    """
-    Simplifies a geometry numpy array by applying RDP to linear chains.
-    """
-    if data is None or len(data) == 0:
-        return np.array([])
-
-    simplified_rows: List[np.ndarray] = []
-    point_chain: List[np.ndarray] = []
-
-    def flush_chain():
-        nonlocal point_chain
-        if len(point_chain) > 1:
-            points_arr = np.array(point_chain)
-            simplified_arr = _ramer_douglas_peucker_numpy(
-                points_arr, tolerance
-            )
-
-            # Reconstruct LineTo commands for simplified points
-            for p in simplified_arr[1:]:
-                row = np.zeros(GEO_ARRAY_COLS)
-                row[COL_TYPE] = CMD_TYPE_LINE
-                row[1:4] = p
-                simplified_rows.append(row)
-        point_chain = []
-
-    last_pos = np.array([0.0, 0.0, 0.0])
-
-    for row in data:
-        cmd_type = row[COL_TYPE]
-        end_pos = row[1:4]
-
-        if cmd_type == CMD_TYPE_MOVE:
-            flush_chain()
-            simplified_rows.append(row)
-            last_pos = end_pos
-            point_chain = [last_pos]
-        elif cmd_type == CMD_TYPE_LINE:
-            if not point_chain:
-                point_chain = [last_pos]
-            point_chain.append(end_pos)
-            last_pos = end_pos
-        elif cmd_type in (CMD_TYPE_ARC, CMD_TYPE_BEZIER):
-            flush_chain()
-            simplified_rows.append(row)
-            last_pos = end_pos
-            point_chain = [last_pos]
-        else:
-            flush_chain()
-            simplified_rows.append(row)
-
-    flush_chain()
-
-    if not simplified_rows:
-        return np.array([]).reshape(0, GEO_ARRAY_COLS)
-
-    return np.array(simplified_rows)
+    return [tuple(p) for p in simplified_arr.tolist()]

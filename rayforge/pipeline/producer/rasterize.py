@@ -11,6 +11,7 @@ from .base import OpsProducer
 if TYPE_CHECKING:
     from ...core.workpiece import WorkPiece
     from ...machine.models.laser import Laser
+    from ...shared.tasker.proxy import BaseExecutionContext
 
 logger = logging.getLogger(__name__)
 
@@ -276,6 +277,7 @@ class Rasterizer(OpsProducer):
         workpiece: "Optional[WorkPiece]" = None,
         settings: Optional[Dict[str, Any]] = None,
         y_offset_mm: float = 0.0,
+        proxy: Optional["BaseExecutionContext"] = None,
     ) -> WorkPieceArtifact:
         if workpiece is None:
             raise ValueError("Rasterizer requires a workpiece context.")

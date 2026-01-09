@@ -10,6 +10,7 @@ from typing import (
     Any,
     Iterable,
     Type,
+    Callable,
 )
 from copy import deepcopy
 import math
@@ -39,6 +40,12 @@ from .constants import (
     COL_C2X,
     COL_C2Y,
 )
+from .fitting import (
+    convert_arc_to_beziers_from_array,
+    fit_arcs,
+    optimize_path_from_array,
+)
+from .linearize import linearize_geometry
 from .primitives import (
     find_closest_point_on_line_segment,
     find_closest_point_on_arc,
@@ -49,8 +56,6 @@ from .query import (
     find_closest_point_on_path_from_array,
     get_total_distance_from_array,
 )
-from .simplify import simplify_geometry_from_array
-from .fitting import convert_arc_to_beziers_from_array
 
 
 logger = logging.getLogger(__name__)
@@ -69,6 +74,7 @@ class Geometry:
     """
 
     def __init__(self) -> None:
+        """Initializes a new, empty Geometry object."""
         self.last_move_to: Tuple[float, float, float] = (0.0, 0.0, 0.0)
         self._winding_cache: Dict[int, str] = {}
         self._pending_data: List[List[float]] = []
@@ -113,11 +119,13 @@ class Geometry:
         return (0.0, 0.0, 0.0)
 
     def __len__(self) -> int:
+        """Returns the total number of commands in the geometry."""
         data_len = 0 if self._data is None else len(self._data)
         pending_len = len(self._pending_data)
         return data_len + pending_len
 
     def __eq__(self, other: object) -> bool:
+        """Checks equality between two Geometry objects."""
         if not isinstance(other, Geometry):
             return NotImplemented
 
@@ -385,9 +393,8 @@ class Geometry:
 
     def simplify(self: T_Geometry, tolerance: float = 0.01) -> T_Geometry:
         """
-        Reduces the number of segments in the geometry using the
-        Ramer-Douglas-Peucker algorithm. This preserves the overall shape
-        while removing redundant collinear or near-collinear points.
+        Reduces the number of segments in any linear chains using the
+        Ramer-Douglas-Peucker algorithm. Arcs and Beziers are preserved.
 
         Args:
             tolerance: The maximum perpendicular distance deviation (mm).
@@ -398,8 +405,77 @@ class Geometry:
         if self.is_empty() or self.data is None:
             return self
 
-        self._data = simplify_geometry_from_array(self.data, tolerance)
+        self._data = optimize_path_from_array(
+            self.data, tolerance, fit_arcs=False
+        )
         self._winding_cache.clear()
+        return self
+
+    def linearize(self: T_Geometry, tolerance: float) -> T_Geometry:
+        """
+        Converts the geometry to a polyline approximation (Lines only),
+        reducing vertex count using the Ramer-Douglas-Peucker algorithm.
+
+        Args:
+            tolerance: The maximum allowable deviation.
+
+        Returns:
+            The modified Geometry object (self).
+        """
+        if self.is_empty() or self.data is None:
+            return self
+
+        self._sync_to_numpy()
+        self._data = linearize_geometry(self._data, tolerance)
+
+        # Update last_move_to from the last move command
+        if self._data is not None and len(self._data) > 0:
+            for r in reversed(self._data):
+                if r[COL_TYPE] == CMD_TYPE_MOVE:
+                    self.last_move_to = (r[COL_X], r[COL_Y], r[COL_Z])
+                    break
+
+        self._winding_cache.clear()
+        self._uniform_scalable = True  # Lines are scalable
+        return self
+
+    def fit_arcs(
+        self: T_Geometry,
+        tolerance: float,
+        on_progress: Optional[Callable[[float], None]] = None,
+    ) -> T_Geometry:
+        """
+        Reconstructs the geometry using an optimal set of Line and Arc
+        commands. This method is optimized to handle both polylines and
+        existing curves (like Beziers) efficiently, ensuring the output
+        contains only Lines and Arcs.
+
+        Args:
+            tolerance: The maximum allowable deviation.
+            on_progress: An optional callback function that receives progress
+                         updates from 0.0 to 1.0.
+
+        Returns:
+            The modified Geometry object (self).
+        """
+        if self.is_empty() or self.data is None:
+            return self
+
+        self._sync_to_numpy()
+        new_data = fit_arcs(self._data, tolerance, on_progress)
+
+        if new_data is None or len(new_data) == 0:
+            self._data = None
+        else:
+            self._data = new_data
+            self.last_move_to = (0.0, 0.0, 0.0)
+            for r in reversed(new_data):
+                if r[COL_TYPE] == CMD_TYPE_MOVE:
+                    self.last_move_to = (r[COL_X], r[COL_Y], r[COL_Z])
+                    break
+
+        self._winding_cache.clear()
+        self._uniform_scalable = False
         return self
 
     def upgrade_to_scalable(self: T_Geometry) -> T_Geometry:
@@ -482,13 +558,21 @@ class Geometry:
         """
         Returns a rectangle (x1, y1, x2, y2) that encloses the
         occupied area in the XY plane.
+
+        Returns:
+            A tuple containing (min_x, min_y, max_x, max_y) coordinates.
         """
         if self.data is not None and len(self.data) > 0:
             return get_bounding_rect_from_array(self.data)
         return 0.0, 0.0, 0.0, 0.0
 
     def distance(self) -> float:
-        """Calculates the total 2D path length for all moving commands."""
+        """
+        Calculates the total 2D path length for all moving commands.
+
+        Returns:
+            The total path length in the XY plane.
+        """
         if self.data is None:
             return 0.0
         return get_total_distance_from_array(self.data)
@@ -643,6 +727,16 @@ class Geometry:
     ) -> Optional[Tuple[int, float, Tuple[float, float]]]:
         """
         Finds the closest point on the geometry's path to a given 2D point.
+
+        Args:
+            x: The x-coordinate of the query point.
+            y: The y-coordinate of the query point.
+
+        Returns:
+            A tuple (segment_index, t, point) where segment_index is the
+            index of the closest command segment, t is the parameter along
+            that segment (0-1), and point is the (x, y) coordinates of the
+            closest point. Returns None if the geometry is empty.
         """
         if self.data is None:
             return None
@@ -653,7 +747,16 @@ class Geometry:
     ) -> Optional[Tuple[float, Tuple[float, float]]]:
         """
         Finds the closest point on a specific segment to the given coordinates.
-        Returns (t, point) or None.
+
+        Args:
+            segment_index: The index of the command segment.
+            x: The x-coordinate of the query point.
+            y: The y-coordinate of the query point.
+
+        Returns:
+            A tuple (t, point) where t is the parameter along the segment
+            (0-1) and point is the (x, y) coordinates of the closest point.
+            Returns None if the segment is not a valid path command.
         """
         if self.data is None or segment_index >= len(self.data):
             return None
@@ -694,6 +797,12 @@ class Geometry:
         """
         Determines the winding order ('cw', 'ccw', or 'unknown') for the
         subpath containing the command at `segment_index`.
+
+        Args:
+            segment_index: The index of a command within the subpath.
+
+        Returns:
+            'cw' for clockwise, 'ccw' for counter-clockwise, or 'unknown'.
         """
         if self.data is None:
             return "unknown"
@@ -722,6 +831,15 @@ class Geometry:
         """
         Calculates the 2D point and the normalized 2D tangent vector at a
         parameter `t` (0-1) along a given command segment.
+
+        Args:
+            segment_index: The index of the command segment.
+            t: The parameter along the segment (0 to 1).
+
+        Returns:
+            A tuple ((x, y), (tx, ty)) where (x, y) is the point and
+            (tx, ty) is the normalized tangent vector. Returns None if the
+            geometry is empty or the segment index is invalid.
         """
         if self.data is None:
             return None
@@ -733,6 +851,15 @@ class Geometry:
         """
         Calculates the outward-pointing, normalized 2D normal vector for a
         point on the geometry path.
+
+        Args:
+            segment_index: The index of the command segment.
+            t: The parameter along the segment (0 to 1).
+
+        Returns:
+            A tuple (nx, ny) representing the normalized outward normal vector.
+            Returns None if the geometry is empty or the segment index is
+            invalid.
         """
         if self.data is None:
             return None
@@ -821,6 +948,10 @@ class Geometry:
         """
         Analyzes the geometry and splits it into a list of separate,
         logically connected shapes (components).
+
+        Returns:
+            A list of Geometry objects, each representing a distinct
+            component.
         """
         from . import split as split_module
 
@@ -830,6 +961,9 @@ class Geometry:
         """
         Splits the geometry into a list of separate, single-contour
         Geometry objects.
+
+        Returns:
+            A list of Geometry objects, each containing a single contour.
         """
         from . import split as split_module
 
@@ -858,6 +992,12 @@ class Geometry:
     def intersects_with(self, other: "Geometry") -> bool:
         """
         Checks if this geometry's path intersects with another geometry's path.
+
+        Args:
+            other: The Geometry object to check for intersection.
+
+        Returns:
+            True if the paths intersect, False otherwise.
         """
         from .intersect import check_intersection_from_array  # Local import
 
@@ -1098,7 +1238,12 @@ class Geometry:
         return new_geo
 
     def to_dict(self) -> Dict[str, Any]:
-        """Serializes the Geometry object to a dictionary."""
+        """
+        Serializes the Geometry object to a dictionary.
+
+        Returns:
+            A dictionary representation of the geometry.
+        """
         return self.dump()
 
     @classmethod

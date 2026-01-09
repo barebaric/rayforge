@@ -645,10 +645,21 @@ class WorkPiece(DocItem):
             self.source_segment
             and self.source_segment.crop_window_px is not None
         )
+        is_vector = False
+        if self.source and self.source.metadata.get("is_vector"):
+            is_vector = True
 
-        # If cropping, we must render the *original* full image at a scaled-up
-        # resolution such that the crop window matches the target dimensions.
-        if is_cropped and self.original_data and source_px_dims:
+        # If cropping a non-vector image, we must render the *original* full
+        # image at a scaled-up resolution such that the crop window matches
+        # the target dimensions.
+        # Vector sources handle cropping via ViewBox overrides in
+        # _build_renderer_kwargs, so they skip this expensive path.
+        if (
+            is_cropped
+            and not is_vector
+            and self.original_data
+            and source_px_dims
+        ):
             # We need to switch to the original data for the full render
             data_override = self.original_data
             source_w, source_h = source_px_dims
@@ -712,6 +723,52 @@ class WorkPiece(DocItem):
             ):
                 kwargs["visible_layer_ids"] = [self.source_segment.layer_id]
 
+            # For vector splitting/cropping, we calculate a ViewBox override
+            # based on the crop window.
+            if (
+                self.source_segment.crop_window_px
+                and self.source
+                and self.source.metadata.get("is_vector")
+            ):
+                crop_px = self.source_segment.crop_window_px
+                vb_orig = self.source.metadata.get("viewbox")
+
+                # We need source pixel dims to map crop_px to user units
+                src_w_px = self.source.width_px
+                src_h_px = self.source.height_px
+
+                if vb_orig:
+                    vb_x, vb_y, vb_w, vb_h = vb_orig
+
+                    # Calculate scale factors (User Units per Pixel)
+                    # Note: We assume uniform scale if w/h ratio matches,
+                    # but calculate independently to be safe.
+                    scale_x = (
+                        vb_w / src_w_px if (src_w_px and src_w_px > 0) else 1.0
+                    )
+                    scale_y = (
+                        vb_h / src_h_px if (src_h_px and src_h_px > 0) else 1.0
+                    )
+
+                    # Map crop window (pixels) to new ViewBox (user units)
+                    # Crop X/Y are relative to the top-left of the original
+                    # image (0,0 in px space)
+                    # Orig ViewBox X/Y is the user-unit coordinate of (0,0) px.
+
+                    cx, cy, cw, ch = crop_px
+
+                    new_vb_x = vb_x + (cx * scale_x)
+                    new_vb_y = vb_y + (cy * scale_y)
+                    new_vb_w = cw * scale_x
+                    new_vb_h = ch * scale_y
+
+                    kwargs["viewbox"] = (
+                        new_vb_x,
+                        new_vb_y,
+                        new_vb_w,
+                        new_vb_h,
+                    )
+
         return kwargs
 
     def _process_rendered_image(
@@ -729,17 +786,26 @@ class WorkPiece(DocItem):
         processed_image = image
         target_w, target_h = target_size
 
-        # 1. Apply Crop
-        # We re-calculate the crop rect based on the actual image dimensions
-        # to be robust against renderers that might snap to nearest DPI/size.
+        # Check if vector to skip certain raster-only logic
+        is_vector = False
+        if self.source and self.source.metadata.get("is_vector"):
+            is_vector = True
+        if self.sketch_uid:
+            is_vector = True
+
+        # 1. Apply Crop (Only for non-vectors, or if crop_rect_hint is
+        # explicit) Vector cropping is handled via ViewBox override in
+        # the renderer.
         if (
             crop_rect_hint
+            and not is_vector
             and self.source_segment
             and self.source_segment.crop_window_px
         ):
             crop_x, crop_y, crop_w, crop_h = map(
                 float, self.source_segment.crop_window_px
             )
+            # Re-calculate the crop rect based on the actual image dimensions.
             actual_w = processed_image.width
             actual_h = processed_image.height
 
@@ -767,15 +833,6 @@ class WorkPiece(DocItem):
         # We skip masking for Vector sources because they already render with
         # correct transparency, and masking with vector geometry (which can
         # be open lines with zero area) would incorrectly hide the content.
-        is_vector = False
-        if self.source and self.source.metadata.get("is_vector"):
-            is_vector = True
-
-        # Special check for Sketch rendering: if we rendered via sketch def,
-        # it is vector data.
-        if self.sketch_uid:
-            is_vector = True
-
         if not is_vector:
             mask_geo = self._boundaries_y_down
             if mask_geo and not mask_geo.is_empty():
@@ -1394,8 +1451,11 @@ class WorkPiece(DocItem):
                     y_down_frag
                 )
 
-                # For non-vector sources, we must calculate the new crop window
-                if source and not source.metadata.get("is_vector", False):
+                # Calculate the new crop window relative to the parent's.
+                # This must account for the Y-up geometry vs Y-down pixels.
+                # Enabled for ALL sources (vectors included) to allow correct
+                # split rendering.
+                if source:
                     parent_crop = self.source_segment.crop_window_px
                     pc_x, pc_y, pc_w, pc_h = 0, 0, 0, 0
 

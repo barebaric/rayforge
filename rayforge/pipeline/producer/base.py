@@ -8,6 +8,7 @@ from ..artifact import WorkPieceArtifact
 if TYPE_CHECKING:
     from ...core.workpiece import WorkPiece
     from ...machine.models.laser import Laser
+    from ...shared.tasker.proxy import BaseExecutionContext
 
 
 class CutSide(Enum):
@@ -40,6 +41,7 @@ class OpsProducer(ABC):
         workpiece: "Optional[WorkPiece]" = None,
         settings: Optional[Dict[str, Any]] = None,
         y_offset_mm: float = 0.0,
+        proxy: Optional["BaseExecutionContext"] = None,
     ) -> WorkPieceArtifact:
         pass
 

@@ -15,6 +15,7 @@ from ...core.ops import (
 if TYPE_CHECKING:
     from ...machine.models.laser import Laser
     from ...core.workpiece import WorkPiece
+    from ...shared.tasker.proxy import BaseExecutionContext
 
 logger = logging.getLogger(__name__)
 
@@ -58,6 +59,7 @@ class DepthEngraver(OpsProducer):
         workpiece: "Optional[WorkPiece]" = None,
         settings: Optional[Dict[str, Any]] = None,
         y_offset_mm: float = 0.0,
+        proxy: Optional["BaseExecutionContext"] = None,
     ) -> WorkPieceArtifact:
         if workpiece is None:
             raise ValueError("DepthEngraver requires a workpiece context.")
