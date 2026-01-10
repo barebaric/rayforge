@@ -4,7 +4,7 @@ from copy import copy, deepcopy
 from typing import Callable, Optional, List
 from dataclasses import dataclass, field
 from ...core.varset import Var, VarSet
-from .driver import DeviceStatus, DeviceState, Pos
+from .driver import DeviceStatus, DeviceState, Pos, DeviceError
 
 
 # GRBL Next-gen command requests
@@ -40,6 +40,245 @@ wcs_re = re.compile(r"\[(G5[4-9]):([\d\.-]+),([\d\.-]+),([\d\.-]+)\]")
 prb_re = re.compile(r"\[PRB:([\d\.-]+),([\d\.-]+),([\d\.-]+):(\d)\]")
 
 
+# GRBL Error Codes
+GRBL_ERROR_CODES = {
+    1: DeviceError(
+        1,
+        _("Expected Command Letter"),
+        _(
+            "G-code words consist of a letter and a value. Letter was not "
+            "found."
+        ),
+    ),
+    2: DeviceError(
+        2,
+        _("Bad Number Format"),
+        _(
+            "Missing the expected G-code word value or numeric value "
+            "format is not valid."
+        ),
+    ),
+    3: DeviceError(
+        3,
+        _("Invalid Statement"),
+        _("Grbl '$' system command was not recognized or supported."),
+    ),
+    4: DeviceError(
+        4,
+        _("Value < 0"),
+        _("Negative value received for an expected positive value."),
+    ),
+    5: DeviceError(
+        5,
+        _("Homing Disabled"),
+        _("Homing cycle failure. Homing is not enabled via settings."),
+    ),
+    7: DeviceError(
+        7,
+        _("EEPROM Read Fail"),
+        _(
+            "An EEPROM read failed. Auto-restoring affected EEPROM to default "
+            "values."
+        ),
+    ),
+    8: DeviceError(
+        8,
+        _("Not Idle"),
+        _(
+            "Grbl '$' command cannot be used unless Grbl is IDLE. Ensures "
+            "smooth operation during a job."
+        ),
+    ),
+    9: DeviceError(
+        9,
+        _("G-Code Lock"),
+        _("G-code commands are locked out during alarm or jog state."),
+    ),
+    10: DeviceError(
+        10,
+        _("Homing Not Enabled"),
+        _("Soft limits cannot be enabled without homing also enabled."),
+    ),
+    11: DeviceError(
+        11,
+        _("Line Overflow"),
+        _(
+            "Max characters per line exceeded. File most likely formatted "
+            "improperly."
+        ),
+    ),
+    14: DeviceError(
+        14,
+        _("Line Length Exceeded"),
+        _(
+            "Build info or startup line exceeded EEPROM line length limit. "
+            "Line not stored."
+        ),
+    ),
+    15: DeviceError(
+        15,
+        _("Travel Exceeded"),
+        _("Jog target exceeds machine travel. Jog command has been ignored."),
+    ),
+    17: DeviceError(
+        17,
+        _("Setting Disabled"),
+        _("Laser mode requires PWM output."),
+    ),
+    20: DeviceError(
+        20,
+        _("Unsupported Command"),
+        _(
+            "Unsupported or invalid g-code command found in block. This "
+            "usually means that you used the wrong Post-Processor to make "
+            "your file, or that some incompatible code within needs to be "
+            "manually deleted."
+        ),
+    ),
+    21: DeviceError(
+        21,
+        _("Modal Group Violation"),
+        _(
+            "More than one g-code command from same modal group found in "
+            "block."
+        ),
+    ),
+    22: DeviceError(
+        22,
+        _("Undefined Feed Rate"),
+        _("Feed rate has not yet been set or is undefined."),
+    ),
+    23: DeviceError(
+        23,
+        _("Motion Group Violation"),
+        _(
+            "More than one g-code command from motion group (G0, G1, G2, G3, "
+            "G38.2, G80) found in block."
+        ),
+    ),
+    24: DeviceError(
+        24,
+        _("Plane Selection Violation"),
+        _(
+            "More than one g-code command from plane selection group (G17, "
+            "G18, G19) found in block."
+        ),
+    ),
+    25: DeviceError(
+        25,
+        _("Distance Mode Violation"),
+        _(
+            "More than one g-code command from distance mode group (G90, G91) "
+            "found in block."
+        ),
+    ),
+    26: DeviceError(
+        26,
+        _("Feed Rate Mode Violation"),
+        _(
+            "More than one g-code command from feed rate mode group (G93, "
+            "G94, G95) found in block."
+        ),
+    ),
+    27: DeviceError(
+        27,
+        _("Units Violation"),
+        _(
+            "More than one g-code command from units group (G20, G21) found "
+            "in block."
+        ),
+    ),
+    28: DeviceError(
+        28,
+        _("Cutter Radius Compensation Violation"),
+        _(
+            "More than one g-code command from cutter radius compensation "
+            "group (G40) found in block."
+        ),
+    ),
+    29: DeviceError(
+        29,
+        _("Tool Length Offset Violation"),
+        _(
+            "More than one g-code command from tool length offset group (G43, "
+            "G49) found in block."
+        ),
+    ),
+    30: DeviceError(
+        30,
+        _("Cycle Retract Mode Violation"),
+        _(
+            "More than one g-code command from cycle retract mode group "
+            "(G98, G99) found in block."
+        ),
+    ),
+    31: DeviceError(
+        31,
+        _("Spindle Speed Mode Violation"),
+        _(
+            "More than one g-code command from spindle speed mode group "
+            "(G96, G97) found in block."
+        ),
+    ),
+    32: DeviceError(
+        32,
+        _("Coolant Mode Violation"),
+        _(
+            "More than one g-code command from coolant mode group "
+            "(M7, M8, M9) found in block."
+        ),
+    ),
+    33: DeviceError(
+        33,
+        _("Coordinate System Selection Violation"),
+        _(
+            "More than one g-code command from coordinate system selection "
+            "group (G54-G59) found in block."
+        ),
+    ),
+    34: DeviceError(
+        34,
+        _("Path Control Mode Violation"),
+        _(
+            "More than one g-code command from path control mode group "
+            "(G61, G61.1, G64) found in block."
+        ),
+    ),
+    35: DeviceError(
+        35,
+        _("Stop Mode Violation"),
+        _(
+            "More than one g-code command from stop mode group (M0, M1, M2, "
+            "M30, M60) found in block."
+        ),
+    ),
+    36: DeviceError(
+        36,
+        _("Spindle State Violation"),
+        _(
+            "More than one g-code command from spindle state group (M3, M4, "
+            "M5) found in block."
+        ),
+    ),
+    37: DeviceError(
+        37,
+        _("Tool Select Violation"),
+        _(
+            "More than one g-code command from tool select group (T) found in "
+            "block."
+        ),
+    ),
+    38: DeviceError(
+        38,
+        _("Non-Modal Actions Violation"),
+        _(
+            "More than one g-code command from non-modal actions group "
+            "(G4, G10, G28, G30, G53, G92) found in block."
+        ),
+    ),
+}
+
+
 # GRBL WCS Helper
 def gcode_to_p_number(wcs_slot: str) -> Optional[int]:
     """Converts a G-code WCS name (e.g., "G54") to its P-number."""
@@ -64,6 +303,18 @@ def _parse_pos_triplet(pos: str) -> Optional[Pos]:
     return pos_triplet
 
 
+def error_code_to_device_error(error_code: str) -> DeviceError:
+    try:
+        code = int(error_code)
+        return GRBL_ERROR_CODES[code]
+    except (ValueError, TypeError):
+        return DeviceError(
+            -1,
+            _("Unknown Error"),
+            _("Invalid error code reported by machine."),
+        )
+
+
 def parse_state(
     state_str: str, default: DeviceState, logger: Callable
 ) -> DeviceState:
@@ -82,9 +333,17 @@ def parse_state(
                 attribs.append(part)
 
         if status:
+            status_parts = status.split(":")
+            status_name = status_parts[0]
+            error_code = None
+            if len(status_parts) > 1:
+                error_code = status_parts[1]
             try:
-                state.status = DeviceStatus[status.upper()]
-                logger(message=f"Parsed status: {status}")
+                state.status = DeviceStatus[status_name.upper()]
+                logger(message=f"Parsed status: {status_name}")
+                if error_code is not None:
+                    state.error = error_code_to_device_error(error_code)
+                    logger(message=f"Parsed error code: {error_code}")
             except KeyError:
                 logger(message=f"device sent an unsupported status: {status}")
 

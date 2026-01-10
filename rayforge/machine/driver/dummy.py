@@ -44,6 +44,9 @@ class NoDeviceDriver(Driver):
     def precheck(cls, **kwargs: Any) -> None:
         pass
 
+    def _setup_implementation(self, **kwargs: Any) -> None:
+        pass
+
     @classmethod
     def get_setup_vars(cls) -> "VarSet":
         return VarSet(title=_("No settings"))

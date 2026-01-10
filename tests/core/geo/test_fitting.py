@@ -711,13 +711,16 @@ def test_fit_arcs_with_progress():
 
 def test_optimize_path_from_array_rdp_simplification():
     """Tests RDP simplification (fit_arcs=False)."""
-    data = np.array([
-        [CMD_TYPE_MOVE, 0.0, 0.0, 0.0, 0, 0, 0, 0],
-        [CMD_TYPE_LINE, 1.0, 1.0, 0.0, 0, 0, 0, 0],
-        [CMD_TYPE_LINE, 2.0, 2.0, 0.0, 0, 0, 0, 0],
-        [CMD_TYPE_LINE, 3.0, 3.0, 0.0, 0, 0, 0, 0],
-        [CMD_TYPE_LINE, 10.0, 10.0, 0.0, 0, 0, 0, 0],
-    ], dtype=np.float64)
+    data = np.array(
+        [
+            [CMD_TYPE_MOVE, 0.0, 0.0, 0.0, 0, 0, 0, 0],
+            [CMD_TYPE_LINE, 1.0, 1.0, 0.0, 0, 0, 0, 0],
+            [CMD_TYPE_LINE, 2.0, 2.0, 0.0, 0, 0, 0, 0],
+            [CMD_TYPE_LINE, 3.0, 3.0, 0.0, 0, 0, 0, 0],
+            [CMD_TYPE_LINE, 10.0, 10.0, 0.0, 0, 0, 0, 0],
+        ],
+        dtype=np.float64,
+    )
 
     result = optimize_path_from_array(data, tolerance=0.1, fit_arcs=False)
 
@@ -731,14 +734,17 @@ def test_optimize_path_from_array_rdp_simplification():
 
 def test_optimize_path_from_array_arc_fitting():
     """Tests arc fitting (fit_arcs=True)."""
-    data = np.array([
-        [CMD_TYPE_MOVE, 0.0, 0.0, 0.0, 0, 0, 0, 0],
-        [CMD_TYPE_LINE, 1.0, 0.0, 0.0, 0, 0, 0, 0],
-        [CMD_TYPE_LINE, 2.0, 0.0, 0.0, 0, 0, 0, 0],
-        [CMD_TYPE_LINE, 3.0, 0.0, 0.0, 0, 0, 0, 0],
-        [CMD_TYPE_LINE, 4.0, 0.0, 0.0, 0, 0, 0, 0],
-        [CMD_TYPE_LINE, 5.0, 0.0, 0.0, 0, 0, 0, 0],
-    ], dtype=np.float64)
+    data = np.array(
+        [
+            [CMD_TYPE_MOVE, 0.0, 0.0, 0.0, 0, 0, 0, 0],
+            [CMD_TYPE_LINE, 1.0, 0.0, 0.0, 0, 0, 0, 0],
+            [CMD_TYPE_LINE, 2.0, 0.0, 0.0, 0, 0, 0, 0],
+            [CMD_TYPE_LINE, 3.0, 0.0, 0.0, 0, 0, 0, 0],
+            [CMD_TYPE_LINE, 4.0, 0.0, 0.0, 0, 0, 0, 0],
+            [CMD_TYPE_LINE, 5.0, 0.0, 0.0, 0, 0, 0, 0],
+        ],
+        dtype=np.float64,
+    )
 
     result = optimize_path_from_array(data, tolerance=0.1, fit_arcs=True)
 
@@ -750,14 +756,17 @@ def test_optimize_path_from_array_arc_fitting():
 
 def test_optimize_path_from_array_preserves_arcs():
     """Tests that arcs are preserved."""
-    data = np.array([
-        [CMD_TYPE_MOVE, 0.0, 0.0, 0.0, 0, 0, 0, 0],
-        [CMD_TYPE_LINE, 1.0, 0.0, 0.0, 0, 0, 0, 0],
-        [CMD_TYPE_LINE, 2.0, 0.0, 0.0, 0, 0, 0, 0],
-        [CMD_TYPE_ARC, 4.0, 0.0, 0.0, 1.0, 0.0, 0, 0],
-        [CMD_TYPE_LINE, 5.0, 0.0, 0.0, 0, 0, 0, 0],
-        [CMD_TYPE_LINE, 6.0, 0.0, 0.0, 0, 0, 0, 0],
-    ], dtype=np.float64)
+    data = np.array(
+        [
+            [CMD_TYPE_MOVE, 0.0, 0.0, 0.0, 0, 0, 0, 0],
+            [CMD_TYPE_LINE, 1.0, 0.0, 0.0, 0, 0, 0, 0],
+            [CMD_TYPE_LINE, 2.0, 0.0, 0.0, 0, 0, 0, 0],
+            [CMD_TYPE_ARC, 4.0, 0.0, 0.0, 1.0, 0.0, 0, 0],
+            [CMD_TYPE_LINE, 5.0, 0.0, 0.0, 0, 0, 0, 0],
+            [CMD_TYPE_LINE, 6.0, 0.0, 0.0, 0, 0, 0, 0],
+        ],
+        dtype=np.float64,
+    )
 
     result = optimize_path_from_array(data, tolerance=0.1, fit_arcs=False)
 
@@ -786,14 +795,17 @@ def test_optimize_path_from_array_empty_array():
 
 def test_optimize_path_from_array_moveto_breaks_chain():
     """Tests that MoveTo breaks the simplification chain."""
-    data = np.array([
-        [CMD_TYPE_MOVE, 0.0, 0.0, 0.0, 0, 0, 0, 0],
-        [CMD_TYPE_LINE, 5.0, 0.0, 0.0, 0, 0, 0, 0],
-        [CMD_TYPE_LINE, 10.0, 0.0, 0.0, 0, 0, 0, 0],
-        [CMD_TYPE_MOVE, 20.0, 0.0, 0.0, 0, 0, 0, 0],
-        [CMD_TYPE_LINE, 25.0, 0.0, 0.0, 0, 0, 0, 0],
-        [CMD_TYPE_LINE, 30.0, 0.0, 0.0, 0, 0, 0, 0],
-    ], dtype=np.float64)
+    data = np.array(
+        [
+            [CMD_TYPE_MOVE, 0.0, 0.0, 0.0, 0, 0, 0, 0],
+            [CMD_TYPE_LINE, 5.0, 0.0, 0.0, 0, 0, 0, 0],
+            [CMD_TYPE_LINE, 10.0, 0.0, 0.0, 0, 0, 0, 0],
+            [CMD_TYPE_MOVE, 20.0, 0.0, 0.0, 0, 0, 0, 0],
+            [CMD_TYPE_LINE, 25.0, 0.0, 0.0, 0, 0, 0, 0],
+            [CMD_TYPE_LINE, 30.0, 0.0, 0.0, 0, 0, 0, 0],
+        ],
+        dtype=np.float64,
+    )
 
     result = optimize_path_from_array(data, tolerance=0.1, fit_arcs=False)
 
@@ -807,11 +819,14 @@ def test_optimize_path_from_array_moveto_breaks_chain():
 
 def test_optimize_path_from_array_z_axis_preservation():
     """Tests that Z coordinates are preserved."""
-    data = np.array([
-        [CMD_TYPE_MOVE, 0.0, 0.0, 1.0, 0, 0, 0, 0],
-        [CMD_TYPE_LINE, 5.0, 0.0, 2.0, 0, 0, 0, 0],
-        [CMD_TYPE_LINE, 10.0, 0.0, 3.0, 0, 0, 0, 0],
-    ], dtype=np.float64)
+    data = np.array(
+        [
+            [CMD_TYPE_MOVE, 0.0, 0.0, 1.0, 0, 0, 0, 0],
+            [CMD_TYPE_LINE, 5.0, 0.0, 2.0, 0, 0, 0, 0],
+            [CMD_TYPE_LINE, 10.0, 0.0, 3.0, 0, 0, 0, 0],
+        ],
+        dtype=np.float64,
+    )
 
     result = optimize_path_from_array(data, tolerance=0.1, fit_arcs=False)
 

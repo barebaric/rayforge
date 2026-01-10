@@ -121,14 +121,13 @@ class GrblNetworkDriver(Driver):
         """Returns a GcodeEncoder configured for the machine's dialect."""
         return GcodeEncoder(self._machine.dialect)
 
-    def setup(self, **kwargs: Any):
+    def _setup_implementation(self, **kwargs: Any) -> None:
         host = cast(str, kwargs.get("host", ""))
         port = cast(int, kwargs.get("port", 80))
         ws_port = cast(int, kwargs.get("ws_port", 81))
         if not host:
             raise DriverSetupError(_("Hostname must be configured."))
 
-        super().setup()
         self.host = host
         self.port = port
         self.ws_port = ws_port
@@ -320,6 +319,7 @@ class GrblNetworkDriver(Driver):
         async with aiohttp.ClientSession() as session:
             async with session.get(url) as response:
                 data = await response.text()
+
         logger.debug(
             f"GET {url} response: {data}",
             extra={
@@ -505,7 +505,7 @@ class GrblNetworkDriver(Driver):
             # Disable power
             cmd = dialect.laser_off
         else:
-            # Enable power with specified percentage
+            # Enable power with the specified percentage
             power_abs = percent * head.max_power
             cmd = dialect.laser_on.format(power=power_abs)
 
@@ -520,7 +520,8 @@ class GrblNetworkDriver(Driver):
         Jogs the machine along a specific axis using GRBL's $J command.
 
         Args:
-            axis: The Axis enum value
+            axis: The Axis enum value or combination of axes using
+                  binary operators (e.g. Axis.X|Axis.Y)
             distance: The distance to jog in mm (positive or negative)
             speed: The jog speed in mm/min
         """

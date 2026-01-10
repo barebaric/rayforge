@@ -1359,7 +1359,7 @@ class MainWindow(Adw.ApplicationWindow):
             self.toolbar.export_button.set_tooltip_text(export_tooltip)
 
             self.toolbar.machine_warning_box.set_visible(
-                bool(active_driver and active_driver.setup_error)
+                bool(active_driver and active_driver.state.error)
             )
             am.get_action("machine-settings").set_enabled(True)
 
@@ -1390,7 +1390,7 @@ class MainWindow(Adw.ApplicationWindow):
 
             send_sensitive = (
                 not isinstance(active_driver, NoDeviceDriver)
-                and (active_driver and not active_driver.setup_error)
+                and (active_driver and not active_driver.state.error)
                 and conn_status == TransportStatus.CONNECTED
                 and doc.has_result()
                 and not is_job_or_task_active

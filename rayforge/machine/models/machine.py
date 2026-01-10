@@ -25,7 +25,6 @@ from ..driver.driver import (
     DeviceStatus,
     Driver,
     DriverPrecheckError,
-    DriverSetupError,
     ResourceBusyError,
 )
 from ..driver.dummy import NoDeviceDriver
@@ -222,13 +221,7 @@ class Machine:
             self.precheck_error = str(e)
 
         new_driver = driver_cls(self.context, self)
-
-        # Run setup. A setup error is considered fatal and prevents connection.
-        try:
-            new_driver.setup(**self.driver_args)
-        except DriverSetupError as e:
-            logger.error(f"Setup failed for driver {self.driver_name}: {e}")
-            new_driver.setup_error = str(e)
+        new_driver.setup(**self.driver_args)
 
         self.driver = new_driver
         self._connect_driver_signals()
