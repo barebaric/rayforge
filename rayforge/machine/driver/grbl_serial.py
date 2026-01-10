@@ -28,6 +28,7 @@ from .driver import (
     DeviceConnectionError,
     Axis,
     Pos,
+    DeviceError,
 )
 from .grbl_util import (
     parse_state,
@@ -36,6 +37,7 @@ from .grbl_util import (
     wcs_re,
     prb_re,
     gcode_to_p_number,
+    error_code_to_device_error,
     CommandRequest,
 )
 
@@ -118,7 +120,7 @@ class GrblSerialDriver(Driver):
         """Returns a GcodeEncoder configured for the machine's dialect."""
         return GcodeEncoder(self._machine.dialect)
 
-    def setup(self, **kwargs: Any):
+    def _setup_implementation(self, **kwargs: Any) -> None:
         port = cast(str, kwargs.get("port", ""))
         baudrate = kwargs.get("baudrate", 115200)
 
@@ -137,8 +139,6 @@ class GrblSerialDriver(Driver):
                 f"Port {port} is a hardware serial port, which is unlikely "
                 f"for USB-based GRBL devices."
             )
-
-        super().setup()
 
         self.serial_transport = SerialTransport(port, baudrate)
         self.serial_transport.received.connect(self.on_serial_data_received)
@@ -1010,6 +1010,19 @@ class GrblSerialDriver(Driver):
     def can_g0_with_speed(self) -> bool:
         """GRBL doesn't support speed parameter in G0 commands."""
         return False
+
+    def get_error(self, error_code: str) -> Optional[DeviceError]:
+        """
+        Returns error details for a given GRBL error code.
+
+        Args:
+            error_code: The error code string from device (e.g., "1", "2").
+
+        Returns:
+            An ErrorCode instance with title and description, or None if the
+            error code is not recognized.
+        """
+        return error_code_to_device_error(error_code)
 
     def _update_connection_status(
         self, status: TransportStatus, message: Optional[str] = None

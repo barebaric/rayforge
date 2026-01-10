@@ -103,6 +103,15 @@ DEVICE_STATUS_LABELS = {
 }
 
 
+@dataclass
+class DeviceError:
+    """Error with code, title and description."""
+
+    code: int
+    title: str
+    description: str
+
+
 Pos = Tuple[Optional[float], Optional[float], Optional[float]]  # x, y, z in mm
 
 
@@ -117,6 +126,7 @@ class Axis(IntFlag):
 @dataclass
 class DeviceState:
     status: DeviceStatus = DeviceStatus.UNKNOWN
+    error: Optional[DeviceError] = None
     machine_pos: Pos = (None, None, None)
     work_pos: Pos = (None, None, None)
     feed_rate: Optional[int] = None
@@ -160,7 +170,6 @@ class Driver(ABC):
         self.wcs_updated = Signal()
         self.did_setup = False
         self.state: DeviceState = DeviceState()
-        self.setup_error: Optional[str] = None
 
     @property
     def resource_uri(self) -> Optional[str]:
@@ -184,18 +193,36 @@ class Driver(ABC):
         """
         pass
 
+    @abstractmethod
+    def _setup_implementation(self, **kwargs: Any) -> None:
+        """
+        Driver-specific setup implementation. Subclasses should override
+        this method to perform their setup logic. If setup fails, this
+        method should raise DriverSetupError.
+        """
+        pass
+
     def setup(self, **kwargs: Any):
         """
         The method will be invoked with a dictionary of values gathered
         from the UI, based on the VarSet returned by get_setup_vars().
         """
         assert not self.did_setup
+        self.state.error = None
+        try:
+            self._setup_implementation(**kwargs)
+        except DriverSetupError as e:
+            logger.error(f"Setup failed: {e}")
+            self.state.error = DeviceError(
+                -999,
+                str(e),
+                _("Error during setup. You may need to edit device settings."),
+            )
         self.did_setup = True
-        self.setup_error = None
 
     async def cleanup(self):
         self.did_setup = False
-        self.setup_error = None
+        self.state.error = None
 
     @classmethod
     @abstractmethod

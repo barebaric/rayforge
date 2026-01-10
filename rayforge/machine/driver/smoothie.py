@@ -108,13 +108,12 @@ class SmoothieDriver(Driver):
     def get_setting_vars(self) -> List["VarSet"]:
         return [VarSet()]
 
-    def setup(self, **kwargs: Any):
+    def _setup_implementation(self, **kwargs: Any) -> None:
         host = cast(str, kwargs.get("host", ""))
         port = kwargs.get("port", 23)
 
         if not host:
             raise DriverSetupError(_("Hostname must be configured."))
-        super().setup()
 
         self.host = host
         self.port = port

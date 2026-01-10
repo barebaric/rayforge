@@ -365,8 +365,8 @@ class GeneralPreferencesPage(Adw.PreferencesPage):
         errors = []
         if self.machine.precheck_error:
             errors.append(self.machine.precheck_error)
-        if self.machine.driver and self.machine.driver.setup_error:
-            errors.append(self.machine.driver.setup_error)
+        if self.machine.driver and self.machine.driver.state.error:
+            errors.append(self.machine.driver.state.error.title)
 
         if errors:
             full_error_msg = " \n".join(errors)
