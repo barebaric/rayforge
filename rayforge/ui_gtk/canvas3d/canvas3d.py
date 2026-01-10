@@ -1,3 +1,5 @@
+# rayforge/ui_gtk/view3d/canvas3d.py
+
 import logging
 import math
 from typing import Optional, Tuple, List, TYPE_CHECKING
@@ -31,6 +33,7 @@ from .texture_renderer import TextureArtifactRenderer
 
 if TYPE_CHECKING:
     from ...core.doc import Doc
+    from ...machine.models.machine import Machine
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -219,6 +222,7 @@ class Canvas3D(Gtk.GLArea):
         self._is_orbiting = False
         self._is_z_rotating = False
         self._gl_initialized = False
+        self._wcs_offset_mm: Tuple[float, float, float] = (0.0, 0.0, 0.0)
 
         # This matrix transforms the grid and axes from a standard Y-up,
         # X-right system to match the machine's coordinate system.
@@ -264,6 +268,16 @@ class Canvas3D(Gtk.GLArea):
             self.pipeline.processing_state_changed.connect(
                 self._on_pipeline_state_changed
             )
+        # Connect to machine for WCS updates
+        machine = self.context.machine
+        if machine:
+            machine.wcs_updated.connect(self._on_wcs_updated)
+            machine.changed.connect(self._on_wcs_updated)
+
+    def _on_wcs_updated(self, machine: "Machine", **kwargs):
+        """Handler for when the machine's WCS state changes."""
+        self._wcs_offset_mm = machine.get_active_wcs_offset()
+        self.queue_render()
 
     def _on_pipeline_state_changed(self, sender, *, is_processing: bool):
         """
@@ -404,6 +418,10 @@ class Canvas3D(Gtk.GLArea):
             self.pipeline.processing_state_changed.disconnect(
                 self._on_pipeline_state_changed
             )
+        machine = self.context.machine
+        if machine:
+            machine.wcs_updated.disconnect(self._on_wcs_updated)
+            machine.changed.disconnect(self._on_wcs_updated)
         self.make_current()
         try:
             if self._scene_preparation_task:
@@ -560,6 +578,7 @@ class Canvas3D(Gtk.GLArea):
                     mvp_matrix_ui_gl,  # For text (Use Identity)
                     view_matrix,
                     self._model_matrix,  # Pass model matrix for positions
+                    origin_offset_mm=self._wcs_offset_mm,
                     x_right=self.x_right,
                     x_negative=self.x_negative,
                     y_negative=self.y_negative,
