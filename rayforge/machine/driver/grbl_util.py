@@ -283,8 +283,13 @@ GRBL_ERROR_CODES = {
 def gcode_to_p_number(wcs_slot: str) -> Optional[int]:
     """Converts a G-code WCS name (e.g., "G54") to its P-number."""
     try:
+        # Check format, e.g. "G54"
+        if not wcs_slot.startswith("G"):
+            return None
+
         # G54 is P1, G55 is P2, etc.
-        p_num = int(wcs_slot[2:]) - 53
+        # Slice from index 1 to get the number "54", "55", etc.
+        p_num = int(wcs_slot[1:]) - 53
         if 1 <= p_num <= 6:  # G54-G59
             return p_num
     except (ValueError, IndexError):
