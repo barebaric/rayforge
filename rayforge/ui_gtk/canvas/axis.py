@@ -177,7 +177,7 @@ class AxisRenderer:
             ctx.restore()
             return
 
-        # --- Shared Calculations ---
+        # Shared Calculations
         # Calculate adaptive grid spacing
         scale_x, scale_y = view_transform.get_scale()
         pixels_per_mm = (abs(scale_x) + abs(scale_y)) / 2.0
@@ -195,7 +195,7 @@ class AxisRenderer:
             max(tl_mm[1], br_mm[1]),
         )
 
-        # --- Draw Grid ---
+        # Draw Grid
         if self.show_grid:
             self._draw_grid(
                 ctx,
@@ -208,7 +208,7 @@ class AxisRenderer:
                 origin_offset_mm,
             )
 
-        # --- Draw Axes and Labels ---
+        # Draw Axes and Labels
         if self.show_axis:
             self._draw_axis_and_labels(
                 ctx, view_transform, adaptive_grid_size_mm, origin_offset_mm
@@ -234,22 +234,48 @@ class AxisRenderer:
         # Determine grid origin based on the WCS offset
         origin_x, origin_y, _ = origin_offset_mm
 
-        # Vertical lines (along X)
-        k_start_x = math.ceil((min_x - origin_x) / grid_size_mm)
-        k_end_x = math.floor((max_x - origin_x) / grid_size_mm)
+        # Determine the World Coordinate of the WCS Origin to align grid lines.
+        # This handles cases where Machine Zero is at Right/Top properly.
+        if self.x_axis_right:
+            # If Machine X=0 is Right edge, and we have an offset from that
+            # in machine coords, we need to map that back to Canvas World.
+            # Canvas X=0 is Left. Canvas X=Width is Right.
+
+            # Logic:
+            # 1. Start at Machine X=0 (Canvas X=Width)
+            # 2. Subtract offset_x (which moves left in Machine Space if +)
+            # Actually: Machine Coordinates usually move Left as they decrease?
+            # Or Right as they decrease?
+            # If `x_axis_right` is True, it implies visual inversion.
+            # Grid alignment is purely visual relative to the WCS origin.
+
+            # If x_axis_right=True, origin_x is distance from Right Edge.
+            # So World X = Width - origin_x
+            wcs_world_x = self.width_mm - origin_x
+        else:
+            wcs_world_x = origin_x
+
+        if self.y_axis_down:
+            wcs_world_y = self.height_mm - origin_y
+        else:
+            wcs_world_y = origin_y
+
+        # Vertical lines (along X) aligned to WCS X
+        k_start_x = math.ceil((min_x - wcs_world_x) / grid_size_mm)
+        k_end_x = math.floor((max_x - wcs_world_x) / grid_size_mm)
         for k in range(k_start_x, k_end_x + 1):
-            x_mm = origin_x + k * grid_size_mm
+            x_mm = wcs_world_x + k * grid_size_mm
             p1_px = view_transform.transform_point((x_mm, min_y))
             p2_px = view_transform.transform_point((x_mm, max_y))
             ctx.move_to(p1_px[0], p1_px[1])
             ctx.line_to(p2_px[0], p2_px[1])
             ctx.stroke()
 
-        # Horizontal lines (along Y)
-        k_start_y = math.ceil((min_y - origin_y) / grid_size_mm)
-        k_end_y = math.floor((max_y - origin_y) / grid_size_mm)
+        # Horizontal lines (along Y) aligned to WCS Y
+        k_start_y = math.ceil((min_y - wcs_world_y) / grid_size_mm)
+        k_end_y = math.floor((max_y - wcs_world_y) / grid_size_mm)
         for k in range(k_start_y, k_end_y + 1):
-            y_mm = origin_y + k * grid_size_mm
+            y_mm = wcs_world_y + k * grid_size_mm
             p1_px = view_transform.transform_point((min_x, y_mm))
             p2_px = view_transform.transform_point((max_x, y_mm))
             ctx.move_to(p1_px[0], p1_px[1])
@@ -274,7 +300,17 @@ class AxisRenderer:
         ctx.set_line_width(1)
 
         work_origin_x, work_origin_y, _ = origin_offset_mm
-        zero_label_drawn = False
+
+        # Calculate World Coordinates of WCS Origin
+        if self.x_axis_right:
+            wcs_world_x = self.width_mm - work_origin_x
+        else:
+            wcs_world_x = work_origin_x
+
+        if self.y_axis_down:
+            wcs_world_y = self.height_mm - work_origin_y
+        else:
+            wcs_world_y = work_origin_y
 
         # Determine axis positions based on Y and X orientation
         if self.y_axis_down:
@@ -299,7 +335,7 @@ class AxisRenderer:
             x_axis_start_mm = (0, x_axis_y)
             x_axis_end_mm = (self.width_mm, x_axis_y)
 
-        # Draw Axis Lines (These are fixed to the physical machine bed)
+        # Draw physical bed borders
         x_start_px = view_transform.transform_point(x_axis_start_mm)
         x_end_px = view_transform.transform_point(x_axis_end_mm)
         y_start_px = view_transform.transform_point(y_axis_start_mm)
@@ -313,25 +349,31 @@ class AxisRenderer:
         ctx.stroke()
 
         # Draw X Labels
-        # Determine the range of X coordinates to label
-        min_label_val_x = -work_origin_x
-        max_label_val_x = self.width_mm - work_origin_x
-        k_start_x = math.ceil(min_label_val_x / grid_size_mm)
-        k_end_x = math.floor(max_label_val_x / grid_size_mm)
+        # Calculate label iterations relative to WCS Origin, constrained to
+        # Bed Width
+        min_delta_x = -wcs_world_x
+        max_delta_x = self.width_mm - wcs_world_x
+        k_start_x = math.ceil(min_delta_x / grid_size_mm)
+        k_end_x = math.floor(max_delta_x / grid_size_mm)
 
         for k in range(k_start_x, k_end_x + 1):
-            if k == 0:
-                zero_label_drawn = True
-            label_val = k * grid_size_mm
-            # The physical position of the label in world coordinates
-            world_x = work_origin_x + label_val
+            delta = k * grid_size_mm
+            world_x = wcs_world_x + delta
 
-            final_label_val = -label_val if self.x_axis_negative else label_val
-            label = f"{round(final_label_val, precision):g}"
+            if self.x_axis_right:
+                # Canvas X increases Right. Machine X increases Left.
+                # So moving +CanvasX is -MachineX.
+                label_val = -delta
+            else:
+                label_val = delta
 
+            # Apply final sign flip if axis is negative
+            if self.x_axis_negative:
+                label_val = -label_val
+
+            label = f"{round(label_val, precision):g}"
             label_pos_px = view_transform.transform_point((world_x, x_axis_y))
             extents = ctx.text_extents(label)
-
             y_offset = -4 if self.y_axis_down else extents.height + 4
 
             ctx.move_to(
@@ -340,21 +382,31 @@ class AxisRenderer:
             ctx.show_text(label)
 
         # Draw Y Labels
-        min_label_val_y = -work_origin_y
-        max_label_val_y = self.height_mm - work_origin_y
-        k_start_y = math.ceil(min_label_val_y / grid_size_mm)
-        k_end_y = math.floor(max_label_val_y / grid_size_mm)
+        min_delta_y = -wcs_world_y
+        max_delta_y = self.height_mm - wcs_world_y
+
+        k_start_y = math.ceil(min_delta_y / grid_size_mm)
+        k_end_y = math.floor(max_delta_y / grid_size_mm)
         world_x_for_y_labels = self.width_mm if self.x_axis_right else 0
 
         for k in range(k_start_y, k_end_y + 1):
-            # Skip drawing the "0" label if the X-axis loop already handled it.
-            if k == 0 and zero_label_drawn:
-                continue
-            label_val = k * grid_size_mm
-            world_y = work_origin_y + label_val
+            delta = k * grid_size_mm
+            world_y = wcs_world_y + delta
 
-            final_label_val = -label_val if self.y_axis_negative else label_val
-            label = f"{round(final_label_val, precision):g}"
+            if self.y_axis_down:
+                # Canvas Y increases Up. Machine Y increases Down.
+                label_val = -delta
+            else:
+                label_val = delta
+
+            if self.y_axis_negative:
+                label_val = -label_val
+
+            # Fix double zero overlap
+            if abs(label_val) < 1e-9:
+                continue
+
+            label = f"{round(label_val, precision):g}"
             extents = ctx.text_extents(label)
 
             label_pos_px = view_transform.transform_point(
@@ -385,8 +437,7 @@ class AxisRenderer:
         # which corresponds to the largest coordinate value.
         temp_surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, 1, 1)
         ctx = cairo.Context(temp_surface)
-
-        # Account for the minus sign if the axis is negative.
+        # Account for negative sign potentially making label wider
         if self.y_axis_negative:
             max_y_label = f"{-self.height_mm:.0f}"
         else:

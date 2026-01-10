@@ -9,16 +9,16 @@ from ...core.item import DocItem
 from ...core.layer import Layer
 from ...core.stock import StockItem
 from ...core.workpiece import WorkPiece
-from ...machine.models.machine import Machine, Origin
+from ...machine.models.machine import Machine
 from ..canvas import WorldSurface, CanvasElement
-from .elements.camera_image import CameraImageElement
-from .elements.dot import DotElement
-from .elements.group import GroupElement
-from .elements.layer import LayerElement
 from .elements.stock import StockElement
-from .elements.tab_handle import TabHandleElement
-from .elements.work_origin import WorkOriginElement
 from .elements.workpiece import WorkPieceElement
+from .elements.group import GroupElement
+from .elements.camera_image import CameraImageElement
+from .elements.layer import LayerElement
+from .elements.tab_handle import TabHandleElement
+from .elements.dot import DotElement
+from .elements.work_origin import WorkOriginElement
 from . import context_menu
 from ..sketcher.editor import SketchEditor
 from ..sketcher.sketchelement import SketchElement
@@ -154,32 +154,39 @@ class WorkSurface(WorldSurface):
         """Sets the laser dot position in real-world mm."""
         self._laser_dot_pos_mm = x_mm, y_mm
 
-        # Transform machine coordinates to canvas coordinates.
-        # The machine reports position in its own coordinate system based
-        # on its origin setting. The canvas expects coordinates in a
-        # Y-Up system with origin at bottom-left.
-        if self.machine:
-            width, height = self.machine.dimensions
-            origin = self.machine.origin
-
-            # We use abs() here because some machine configurations (e.g. CNCs)
-            # report negative coordinates for positions within the workspace
-            # relative to the homing switch.
-            if origin == Origin.TOP_LEFT:
-                y_mm = height - abs(y_mm)
-            elif origin == Origin.TOP_RIGHT:
-                x_mm = width - abs(x_mm)
-                y_mm = height - abs(y_mm)
-            elif origin == Origin.BOTTOM_RIGHT:
-                x_mm = width - abs(x_mm)
+        # Transform machine coordinates to canvas coordinates (similar to
+        # Work Origin logic)
+        canvas_x, canvas_y = self._machine_coords_to_canvas(x_mm, y_mm)
 
         # The dot is a child of self.root, so its coordinates are in the
         # world (mm) space. We want to center it on the given mm coords.
         dot_w_mm = self._laser_dot.width
         dot_h_mm = self._laser_dot.height
-        self._laser_dot.set_pos(x_mm - dot_w_mm / 2, y_mm - dot_h_mm / 2)
+        self._laser_dot.set_pos(
+            canvas_x - dot_w_mm / 2, canvas_y - dot_h_mm / 2
+        )
 
         self.queue_draw()
+
+    def _machine_coords_to_canvas(
+        self, m_x: float, m_y: float
+    ) -> tuple[float, float]:
+        """
+        Helper to convert machine coordinates to canvas world coordinates.
+        """
+        canvas_x, canvas_y = m_x, m_y
+
+        if self.machine:
+            width, height = self.machine.dimensions
+
+            # Logic mirrored from axis.py to ensure consistency
+            if self.machine.x_axis_right:
+                canvas_x = width - m_x
+
+            if self.machine.y_axis_down:
+                canvas_y = height - m_y
+
+        return canvas_x, canvas_y
 
     def get_global_tab_visibility(self) -> bool:
         """
@@ -497,10 +504,16 @@ class WorkSurface(WorldSurface):
     def _on_wcs_updated(self, machine: Machine):
         """Handles updates to the machine's WCS state."""
         offset = machine.get_active_wcs_offset()
-        self._work_origin_element.set_pos(offset[0], offset[1])
-        # Hide the origin element if the offset is zero (i.e. we are in
-        # machine coordinates, or the work origin is the same as machine zero).
-        is_at_origin = offset[0] == 0.0 and offset[1] == 0.0
+        offset_x, offset_y, _ = offset
+
+        # Map Machine Coordinates (from WCS) to World Canvas Coordinates for
+        # placement
+        canvas_x, canvas_y = self._machine_coords_to_canvas(offset_x, offset_y)
+
+        self._work_origin_element.set_pos(canvas_x, canvas_y)
+
+        # Hide the origin element if the offset is zero.
+        is_at_origin = offset_x == 0.0 and offset_y == 0.0
         self._work_origin_element.set_visible(not is_at_origin)
         self.queue_draw()
 
@@ -810,6 +823,14 @@ class WorkSurface(WorldSurface):
         self._axis_renderer.set_y_axis_down(self.machine.y_axis_down)
         self._axis_renderer.set_x_axis_negative(self.machine.reverse_x_axis)
         self._axis_renderer.set_y_axis_negative(self.machine.reverse_y_axis)
+
+        self._work_origin_element.set_orientation(
+            self.machine.x_axis_right,
+            self.machine.y_axis_down,
+            self.machine.reverse_x_axis,
+            self.machine.reverse_y_axis,
+        )
+
         # Call the base class reset which handles pan/zoom
         super().reset_view()
         new_ratio = (
@@ -819,6 +840,7 @@ class WorkSurface(WorldSurface):
         )
         self.aspect_ratio_changed.send(self, ratio=new_ratio)
         self._sync_camera_elements()
+        self._on_wcs_updated(self.machine)
 
     def _sync_camera_elements(self):
         """
