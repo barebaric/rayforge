@@ -106,6 +106,21 @@ class Machine:
         self.soft_limits_enabled: bool = True
         self._settings_lock = asyncio.Lock()
 
+        # Work Coordinate System (WCS) State
+        # We default to standard G-code names for convenience, but the logic
+        # is agnostic. Any key in wcs_offsets is considered a mutable WCS.
+        # Any key NOT in wcs_offsets is considered an immutable/absolute system
+        # with (0,0,0) offset.
+        self.active_wcs: str = "G54"
+        self.wcs_offsets: Dict[str, Tuple[float, float, float]] = {
+            "G54": (0.0, 0.0, 0.0),
+            "G55": (0.0, 0.0, 0.0),
+            "G56": (0.0, 0.0, 0.0),
+            "G57": (0.0, 0.0, 0.0),
+            "G58": (0.0, 0.0, 0.0),
+            "G59": (0.0, 0.0, 0.0),
+        }
+
         self.machine_hours: MachineHours = MachineHours()
         self.machine_hours.changed.connect(self._on_machine_hours_changed)
 
@@ -123,6 +138,7 @@ class Machine:
         self.state_changed = Signal()
         self.job_finished = Signal()
         self.command_status_changed = Signal()
+        self.wcs_updated = Signal()
 
         self._connect_driver_signals()
         self.add_head(Laser())
@@ -168,6 +184,7 @@ class Machine:
             self._on_driver_command_status_changed
         )
         self.driver.job_finished.connect(self._on_driver_job_finished)
+        self.driver.wcs_updated.connect(self._on_driver_wcs_updated)
         self._on_driver_state_changed(self.driver, self.driver.state)
         self._reset_status()
 
@@ -182,6 +199,7 @@ class Machine:
             self._on_driver_command_status_changed
         )
         self.driver.job_finished.disconnect(self._on_driver_job_finished)
+        self.driver.wcs_updated.disconnect(self._on_driver_wcs_updated)
 
     def _on_dialects_changed(self, sender=None, **kwargs):
         """
@@ -272,6 +290,12 @@ class Machine:
                 status=status,
                 message=message,
             )
+            if status == TransportStatus.CONNECTED:
+                # Sync WCS offsets on connect
+                task_mgr.add_coroutine(
+                    lambda ctx: self.sync_wcs_from_device(),
+                    key=(self.id, "sync-wcs"),
+                )
 
     def _on_driver_state_changed(self, driver: Driver, state: DeviceState):
         """Proxies the state changed signal from the active driver."""
@@ -297,6 +321,15 @@ class Machine:
             status=status,
             message=message,
         )
+
+    def _on_driver_wcs_updated(
+        self, driver: Driver, offsets: Dict[str, Tuple[float, float, float]]
+    ):
+        """Updates internal WCS state from driver updates."""
+        self.wcs_offsets.update(offsets)
+        self._scheduler(self.wcs_updated.send, self)
+        # Also notify general change so views update
+        self._scheduler(self.changed.send, self)
 
     def is_connected(self) -> bool:
         """
@@ -765,6 +798,99 @@ class Machine:
 
         await self.driver.set_power(head, percent)
 
+    def get_active_wcs_offset(self) -> Tuple[float, float, float]:
+        """
+        Returns the (x, y, z) offset for the currently active WCS.
+        If the active_wcs is not in the known offsets dictionary, it assumes
+        an absolute coordinate system with zero offset.
+        """
+        return self.wcs_offsets.get(self.active_wcs, (0.0, 0.0, 0.0))
+
+    def set_active_wcs(self, wcs: str):
+        """Sets the active WCS and notifies listeners."""
+        if wcs != self.active_wcs:
+            self.active_wcs = wcs
+            self.changed.send(self)
+
+    async def set_work_origin(
+        self, x: float, y: float, z: float, wcs_slot: Optional[str] = None
+    ):
+        """
+        Sets the work origin at the specified machine coordinates.
+
+        Args:
+            x: X-coordinate in machine space.
+            y: Y-coordinate in machine space.
+            z: Z-coordinate in machine space.
+            wcs_slot: The WCS slot to update (e.g. "G54"). Defaults to active.
+        """
+        if not self.is_connected():
+            return
+
+        slot = wcs_slot or self.active_wcs
+        if slot not in self.wcs_offsets:
+            logger.warning(
+                f"Cannot set offset for immutable WCS '{slot}' "
+                "(e.g. Machine Coordinates)."
+            )
+            return
+
+        await self.driver.set_wcs_offset(slot, x, y, z)
+        # Trigger read back to ensure state is synced
+        await self.driver.read_wcs_offsets()
+
+    async def set_work_origin_here(
+        self, axes: Axis, wcs_slot: Optional[str] = None
+    ):
+        """
+        Sets the work origin for the specified axes to the current machine
+        position.
+
+        Args:
+            axes: Flag combination of axes to set (e.g. Axis.X | Axis.Y).
+            wcs_slot: The WCS slot to update (e.g. "G54"). Defaults to active.
+        """
+        if not self.is_connected():
+            return
+
+        slot = wcs_slot or self.active_wcs
+        if slot not in self.wcs_offsets:
+            logger.warning(
+                f"Cannot set offset for immutable WCS '{slot}' "
+                "(e.g. Machine Coordinates)."
+            )
+            return
+
+        # Get current machine position
+        m_pos = self.device_state.machine_pos
+        # Need to handle None values in machine_pos (if not reported yet)
+        if any(v is None for v in m_pos):
+            logger.warning("Cannot set work origin: Unknown machine position.")
+            return
+
+        # Get current offsets to preserve unselected axes
+        current_offsets = self.wcs_offsets.get(slot, (0.0, 0.0, 0.0))
+
+        new_x, new_y, new_z = current_offsets
+
+        # For "Set Zero Here", the new offset is exactly the current machine
+        # position for that axis.
+        # Work_Pos = Machine_Pos - Offset.
+        # If Work_Pos = 0, Offset = Machine_Pos.
+        if axes & Axis.X and m_pos[0] is not None:
+            new_x = m_pos[0]
+        if axes & Axis.Y and m_pos[1] is not None:
+            new_y = m_pos[1]
+        if axes & Axis.Z and m_pos[2] is not None:
+            new_z = m_pos[2]
+
+        await self.set_work_origin(new_x, new_y, new_z, slot)
+
+    async def sync_wcs_from_device(self):
+        """Queries the device for current WCS offsets and updates state."""
+        if self.is_connected():
+            await self.driver.read_wcs_offsets()
+
     def encode_ops(
         self, ops: "Ops", doc: "Doc"
     ) -> Tuple[str, "MachineCodeOpMap"]:
@@ -864,6 +990,21 @@ class Machine:
 
             ops_for_encoder.transform(transform)
 
+        # Apply WCS Offset Logic
+        # The document is drawn on a canvas representing the full machine bed.
+        # ops_for_encoder is now in "Machine Coordinates".
+        # We must subtract the WCS offset to get "Command Coordinates", so that
+        # when the machine adds the offset back during execution, it lands on
+        # the correct physical spot.
+        # Cmd = Machine - Offset
+        wcs_offset = self.get_active_wcs_offset()
+        if wcs_offset != (0.0, 0.0, 0.0):
+            wcs_transform = np.identity(4)
+            wcs_transform[0, 3] = -wcs_offset[0]
+            wcs_transform[1, 3] = -wcs_offset[1]
+            wcs_transform[2, 3] = -wcs_offset[2]
+            ops_for_encoder.transform(wcs_transform)
+
         gcode_str, op_map_obj = encoder.encode(ops_for_encoder, self, doc)
 
         return gcode_str, op_map_obj
@@ -962,6 +1103,8 @@ class Machine:
                 "home_on_start": self.home_on_start,
                 "single_axis_homing_enabled": self.single_axis_homing_enabled,  # noqa: E501
                 "dialect_uid": self.dialect_uid,
+                "active_wcs": self.active_wcs,
+                "wcs_offsets": self.wcs_offsets,
                 "supports_arcs": self.supports_arcs,
                 "arc_tolerance": self.arc_tolerance,
                 "dimensions": list(self.dimensions),
@@ -1089,6 +1232,10 @@ class Machine:
         )
 
         ma.dialect_uid = dialect_uid
+        ma.active_wcs = ma_data.get("active_wcs", "G54")
+        if "wcs_offsets" in ma_data:
+            ma.wcs_offsets = ma_data["wcs_offsets"]
+
         ma.dimensions = tuple(ma_data.get("dimensions", ma.dimensions))
         ma.offsets = tuple(ma_data.get("offsets", ma.offsets))
         origin_value = ma_data.get("origin", None)
