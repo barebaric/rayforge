@@ -159,7 +159,7 @@ class AxisRenderer3D(BaseRenderer):
         Args:
             line_shader: The shader program for drawing lines/solids.
             text_shader: The shader program for drawing text.
-            scene_mvp: The MVP matrix for the grid and background.
+            scene_mvp: The final MVP matrix for the grid and background.
             text_mvp: The MVP matrix for the text labels (no model transform).
             view_matrix: The view matrix, used for billboarding text.
             model_matrix: The model matrix for coordinate system transforms.
@@ -172,31 +172,16 @@ class AxisRenderer3D(BaseRenderer):
         if not all((self.grid_vao, self.axes_vao, self.text_renderer)):
             return
 
-        # Create a translation matrix for the WCS offset
-        offset_x, offset_y, offset_z = origin_offset_mm
-        wcs_transform = np.array(
-            [
-                [1, 0, 0, offset_x],
-                [0, 1, 0, offset_y],
-                [0, 0, 1, offset_z],
-                [0, 0, 0, 1],
-            ],
-            dtype=np.float32,
-        ).T  # Transpose for column-major
-
-        # Apply the WCS transform to the scene's MVP for drawing the grid
-        final_scene_mvp = scene_mvp @ wcs_transform
-
         # Enable blending for transparent objects
         GL.glEnable(GL.GL_BLEND)
         GL.glBlendFunc(GL.GL_SRC_ALPHA, GL.GL_ONE_MINUS_SRC_ALPHA)
         line_shader.use()
 
         GL.glDepthMask(GL.GL_FALSE)
-        self.background_renderer.render(line_shader, final_scene_mvp)
+        self.background_renderer.render(line_shader, scene_mvp)
         GL.glDepthMask(GL.GL_TRUE)
 
-        line_shader.set_mat4("uMVP", final_scene_mvp)
+        line_shader.set_mat4("uMVP", scene_mvp)
         line_shader.set_vec4("uColor", self.grid_color)
         GL.glLineWidth(1.0)
         GL.glBindVertexArray(self.grid_vao)
@@ -250,7 +235,7 @@ class AxisRenderer3D(BaseRenderer):
             pos_original = np.array([x, -x_axis_label_y_offset, 0.0, 1.0])
             # Transform position into the target coordinate system
             pos_flipped = (model_matrix @ pos_original)[:3]
-            # Add the final WCS world offset
+            # Add the final WCS world offset so labels follow the grid
             pos_final = pos_flipped + offset_vec
 
             label_val = -x if x_negative else x

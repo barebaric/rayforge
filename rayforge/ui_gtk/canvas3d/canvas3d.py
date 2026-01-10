@@ -249,7 +249,6 @@ class Canvas3D(Gtk.GLArea):
         self._last_pan_offset: Optional[Tuple[float, float]] = None
         self._rotation_pivot: Optional[np.ndarray] = None
         self._last_orbit_pos: Optional[Tuple[float, float]] = None
-        # We reuse this variable to store the linear drag offset (x, y)
         self._last_z_rotate_screen_pos: Optional[Tuple[float, float]] = None
 
         self.set_has_depth_buffer(True)
@@ -271,6 +270,8 @@ class Canvas3D(Gtk.GLArea):
         if machine:
             machine.wcs_updated.connect(self._on_wcs_updated)
             machine.changed.connect(self._on_wcs_updated)
+            # Initialize with current state
+            self._wcs_offset_mm = machine.get_active_wcs_offset()
 
     def _on_wcs_updated(self, machine: "Machine", **kwargs):
         """Handler for when the machine's WCS state changes."""
@@ -561,8 +562,30 @@ class Canvas3D(Gtk.GLArea):
             # Base MVP for UI elements that should not be model-transformed
             mvp_matrix_ui = proj_matrix @ view_matrix
 
-            # MVP for scene geometry that IS model-transformed (The Grid)
-            mvp_matrix_scene = mvp_matrix_ui @ self._model_matrix
+            # Create WCS translation matrix (Corrected: Col 3 Translation)
+            offset_x, offset_y, offset_z = self._wcs_offset_mm
+            wcs_translation_matrix = np.array(
+                [
+                    [1, 0, 0, offset_x],
+                    [0, 1, 0, offset_y],
+                    [0, 0, 1, offset_z],
+                    [0, 0, 0, 1],
+                ],
+                dtype=np.float32,
+            )
+
+            # Final model matrix for the grid combines the origin flip and WCS
+            # translation. Grid/Axes vertices are in local (0..W, 0..H).
+            # 1. Apply wcs_translation (shift by offset).
+            # 2. Apply _model_matrix (orient to machine coords).
+            # Note: matrix order A @ B applies B then A.
+            # grid_model_matrix = self._model_matrix @ wcs_translation_matrix
+            # This order applies WCS translation locally, THEN applies the
+            # machine flip/origin shift.
+            grid_model_matrix = self._model_matrix @ wcs_translation_matrix
+
+            # Final MVP for scene geometry (grid, axes)
+            mvp_matrix_scene = mvp_matrix_ui @ grid_model_matrix
 
             # Convert to column-major for OpenGL
             mvp_matrix_ui_gl = mvp_matrix_ui.T
@@ -572,21 +595,20 @@ class Canvas3D(Gtk.GLArea):
                 self.axis_renderer.render(
                     self.main_shader,
                     self.text_shader,
-                    mvp_matrix_scene_gl,  # For grid/axes (Use Flipped)
-                    mvp_matrix_ui_gl,  # For text (Use Identity)
+                    mvp_matrix_scene_gl,  # Pass the final grid MVP
+                    mvp_matrix_ui_gl,  # For text (no model/WCS transform)
                     view_matrix,
-                    self._model_matrix,  # Pass model matrix for positions
+                    self._model_matrix,  # Pass model matrix for labels
                     origin_offset_mm=self._wcs_offset_mm,
                     x_right=self.x_right,
                     x_negative=self.x_negative,
                     y_negative=self.y_negative,
                 )
             if self.ops_renderer and self.main_shader:
-                # The ops vertices are in internal Y-up coordinates.
-                # To visualize them correctly relative to the flipped grid,
-                # we render them with Identity model transform.
-                # Internal 0 is Front, Internal H is Back.
-                # Grid 0 is Back, Grid H is Front.
+                # The ops vertices are in machine absolute coordinates
+                # (Y-up internal). We use the UI matrix (Identity model) so
+                # they are placed relative to the machine bed, ignoring the
+                # WCS grid offset.
                 self.ops_renderer.render(
                     self.main_shader,
                     mvp_matrix_ui_gl,
@@ -594,9 +616,7 @@ class Canvas3D(Gtk.GLArea):
                     show_travel_moves=self._show_travel_moves,
                 )
             if self.texture_renderer and self.texture_shader:
-                # Textures are also in internal Y-up coordinates.
-                # We use the UI matrix (Identity model) so they are placed
-                # correctly relative to the ops.
+                # Textures are also in machine absolute coordinates.
                 self.texture_renderer.render(
                     mvp_matrix_ui, self.texture_shader
                 )
