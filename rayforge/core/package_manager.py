@@ -165,7 +165,7 @@ class PackageManager:
         logger.info(f"Scanning for packages in {self.packages_dir}...")
         for child in self.packages_dir.iterdir():
             if child.is_dir():
-                self.load_package(child)
+                self.load_package(child.resolve())
 
     def load_package(self, package_path: Path):
         """
