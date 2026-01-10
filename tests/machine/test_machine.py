@@ -21,6 +21,7 @@ from rayforge.machine.driver.dummy import NoDeviceDriver
 from rayforge.machine.models.laser import Laser
 from rayforge.machine.models.machine import Machine, Origin
 from rayforge.machine.models.macro import MacroTrigger
+from rayforge.machine.transport import TransportStatus
 from rayforge.pipeline import steps
 from rayforge.pipeline.encoder.gcode import GcodeEncoder
 from rayforge.shared.tasker.manager import TaskManager
@@ -257,6 +258,177 @@ class TestMachine:
         matrix_arg = args[0]
         assert matrix_arg[0, 0] == 1.0  # X scale
         assert matrix_arg[1, 1] == -1.0  # Y scale
+
+    @pytest.mark.asyncio
+    async def test_encode_ops_applies_wcs_offset(
+        self, machine: Machine, mocker, task_mgr: TaskManager
+    ):
+        """
+        Verify that encode_ops correctly subtracts the active WCS offset
+        from the coordinates.
+        """
+        await wait_for_tasks_to_finish(task_mgr)
+
+        # Setup mocks
+        mock_encoder = mocker.Mock()
+        mock_encoder.encode.return_value = ("G0", object())
+        mocker.patch.object(
+            machine.driver, "get_encoder", return_value=mock_encoder
+        )
+
+        original_ops = mocker.Mock(spec=Ops)
+        original_ops.commands = []
+        copied_ops = mocker.Mock(spec=Ops)
+        copied_ops.commands = []
+        original_ops.copy.return_value = copied_ops
+
+        doc = Doc()
+        machine.set_origin(Origin.BOTTOM_LEFT)
+
+        # Set WCS offset
+        machine.wcs_offsets["G54"] = (100.0, 100.0, 0.0)
+        machine.set_active_wcs("G54")
+
+        # Act
+        machine.encode_ops(original_ops, doc)
+
+        # Assert
+        # Should have called transform to apply WCS offset
+        copied_ops.transform.assert_called_once()
+        args, _ = copied_ops.transform.call_args
+        matrix_arg = args[0]
+
+        # Verify matrix translates by -offset
+        assert matrix_arg[0, 3] == -100.0
+        assert matrix_arg[1, 3] == -100.0
+
+    @pytest.mark.asyncio
+    async def test_encode_ops_ignores_wcs_if_missing(
+        self, machine: Machine, mocker, task_mgr: TaskManager
+    ):
+        """
+        Verify that encode_ops treats missing WCS keys as absolute (0,0,0)
+        and does NOT apply a transform.
+        """
+        await wait_for_tasks_to_finish(task_mgr)
+
+        # Setup mocks
+        mock_encoder = mocker.Mock()
+        mock_encoder.encode.return_value = ("G0", object())
+        mocker.patch.object(
+            machine.driver, "get_encoder", return_value=mock_encoder
+        )
+
+        original_ops = mocker.Mock(spec=Ops)
+        original_ops.commands = []
+        copied_ops = mocker.Mock(spec=Ops)
+        copied_ops.commands = []
+        original_ops.copy.return_value = copied_ops
+
+        doc = Doc()
+        machine.set_origin(Origin.BOTTOM_LEFT)
+
+        # Set active WCS to "G53" (which is NOT in default wcs_offsets)
+        machine.set_active_wcs("G53")
+        assert "G53" not in machine.wcs_offsets
+
+        # Act
+        machine.encode_ops(original_ops, doc)
+
+        # Assert
+        # Should NOT have called transform because offset is (0,0,0)
+        copied_ops.transform.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_set_work_origin_here(
+        self, machine: Machine, mocker, task_mgr: TaskManager
+    ):
+        """
+        Test that set_work_origin_here correctly delegates to the driver.
+        """
+        await wait_for_tasks_to_finish(task_mgr)
+
+        # Arrange
+        machine.connection_status = TransportStatus.CONNECTED
+        machine.active_wcs = "G54"
+        machine.wcs_offsets["G54"] = (10.0, 20.0, 0.0)
+        machine.device_state.machine_pos = (100.0, 200.0, 0.0)
+
+        set_wcs_spy = mocker.patch.object(
+            machine.driver, "set_wcs_offset", new_callable=mocker.AsyncMock
+        )
+        read_wcs_spy = mocker.patch.object(
+            machine.driver, "read_wcs_offsets", new_callable=mocker.AsyncMock
+        )
+
+        # Act 1: Set X only
+        await machine.set_work_origin_here(Axis.X)
+
+        # Assert 1
+        # Should use current Machine X (100.0) for X offset
+        # Should preserve existing offsets for Y (20.0) and Z (0.0)
+        set_wcs_spy.assert_called_once_with("G54", 100.0, 20.0, 0.0)
+        read_wcs_spy.assert_called_once()
+
+        set_wcs_spy.reset_mock()
+        read_wcs_spy.reset_mock()
+
+        # Act 2: Set X and Y
+        await machine.set_work_origin_here(Axis.X | Axis.Y)
+
+        # Assert 2
+        set_wcs_spy.assert_called_once_with("G54", 100.0, 200.0, 0.0)
+        read_wcs_spy.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_set_work_origin_blocks_immutable(
+        self, machine: Machine, mocker, task_mgr: TaskManager
+    ):
+        """
+        Test that set_work_origin prevents setting offsets for IDs not in
+        wcs_offsets (e.g. G53).
+        """
+        await wait_for_tasks_to_finish(task_mgr)
+
+        machine.connection_status = TransportStatus.CONNECTED
+        set_wcs_spy = mocker.patch.object(
+            machine.driver, "set_wcs_offset", new_callable=mocker.AsyncMock
+        )
+
+        # Try to set G53 (Machine Coordinates)
+        machine.set_active_wcs("G53")
+        assert "G53" not in machine.wcs_offsets
+
+        await machine.set_work_origin(10, 10, 10)
+
+        set_wcs_spy.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_set_work_origin(
+        self, machine: Machine, mocker, task_mgr: TaskManager
+    ):
+        """
+        Test that set_work_origin correctly delegates to the driver.
+        """
+        await wait_for_tasks_to_finish(task_mgr)
+
+        # Arrange
+        machine.connection_status = TransportStatus.CONNECTED
+        machine.active_wcs = "G55"
+
+        set_wcs_spy = mocker.patch.object(
+            machine.driver, "set_wcs_offset", new_callable=mocker.AsyncMock
+        )
+        read_wcs_spy = mocker.patch.object(
+            machine.driver, "read_wcs_offsets", new_callable=mocker.AsyncMock
+        )
+
+        # Act
+        await machine.set_work_origin(50.0, 60.0, 70.0)
+
+        # Assert
+        set_wcs_spy.assert_called_once_with("G55", 50.0, 60.0, 70.0)
+        read_wcs_spy.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_reverse_axis_setters(
