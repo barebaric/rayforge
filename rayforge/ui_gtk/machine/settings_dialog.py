@@ -20,7 +20,7 @@ class MachineSettingsDialog(Adw.Window):
         machine: Machine,
         transient_for=None,
         initial_page: Optional[str] = None,
-        **kwargs
+        **kwargs,
     ):
         super().__init__(**kwargs)
         if transient_for:
