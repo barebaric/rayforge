@@ -87,6 +87,7 @@ class GrblSerialDriver(Driver):
         )
         self._buffer_has_space = asyncio.Event()
         self._job_exception: Optional[Exception] = None
+        self._poll_status_while_running: bool = True
 
     @property
     def resource_uri(self) -> Optional[str]:
@@ -113,6 +114,16 @@ class GrblSerialDriver(Driver):
                     description=_("Serial port for the device"),
                 ),
                 BaudrateVar("baudrate"),
+                Var(
+                    key="poll_status_while_running",
+                    label=_("Enable status polling during running jobs"),
+                    description=_(
+                        "Whether to query status during jobs. "
+                        "Disabling can help reduce load on slow machines"
+                    ),
+                    var_type=bool,
+                    default=True,
+                ),
             ]
         )
 
@@ -123,6 +134,9 @@ class GrblSerialDriver(Driver):
     def _setup_implementation(self, **kwargs: Any) -> None:
         port = cast(str, kwargs.get("port", ""))
         baudrate = kwargs.get("baudrate", 115200)
+        self._poll_status_while_running = bool(
+            kwargs.get("poll_status_while_running", False)
+        )
 
         if not port:
             raise DriverSetupError(_("Port must be configured."))
@@ -289,6 +303,14 @@ class GrblSerialDriver(Driver):
                     "Connection established. Starting status polling."
                 )
                 while transport.is_connected and self.keep_running:
+                    # Skip status polling during jobs if configured
+                    if (
+                        not self._poll_status_while_running
+                        and self._job_running
+                    ):
+                        await asyncio.sleep(0.5)
+                        continue
+
                     async with self._cmd_lock:
                         try:
                             logger.debug("Sending status poll")
