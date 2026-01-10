@@ -1033,7 +1033,25 @@ class MainWindow(Adw.ApplicationWindow):
                 curr=format_hours_to_hm(counter.value),
                 limit=format_hours_to_hm(counter.notify_at),
             )
-            self._on_editor_notification(self, msg, persistent=True)
+            self._on_editor_notification(
+                self,
+                msg,
+                persistent=True,
+                action_label=_("View Counters"),
+                action_callback=lambda: self._open_machine_hours_dialog(),
+            )
+
+    def _open_machine_hours_dialog(self):
+        """Opens the machine settings dialog on the Hours page."""
+        config = get_context().config
+        if not config.machine:
+            return
+        dialog = MachineSettingsDialog(
+            machine=config.machine,
+            transient_for=self,
+            initial_page="hours",
+        )
+        dialog.present()
 
     def on_history_changed(
         self, history_manager: HistoryManager, command: Command
