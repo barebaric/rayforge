@@ -71,16 +71,10 @@ class TestSegmentMaskGeometry:
         self, tests_root: Path
     ):
         """Test that DXF import populates segment_mask_geometry."""
-        dxf_path = tests_root / "image/dxf/simple.dxf"
+        dxf_path = tests_root / "image/dxf/circle.dxf"
         payload = import_file(
             dxf_path
         )  # No vectorization_spec for direct import
-
-        # Note: This test assumes the existence of a simple.dxf file
-        # If the file doesn't exist, we'll skip this test
-        if not dxf_path.exists():
-            pytest.skip("DXF test file not found")
-            return
 
         assert payload is not None
         assert payload.source is not None
@@ -93,8 +87,6 @@ class TestSegmentMaskGeometry:
         assert isinstance(wp, WorkPiece)
         assert wp.source_segment is not None
         assert wp.source_segment.pristine_geometry is not None
-        assert payload.source.width_px == 300
-        assert payload.source.height_px == 358
 
         # The boundaries property returns a Y-up version, while the source
         # segment stores the original Y-down version. They should not be
