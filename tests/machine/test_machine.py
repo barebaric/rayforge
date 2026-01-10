@@ -772,6 +772,12 @@ class TestMachine:
             arc_ccw=current_dialect.arc_ccw,
             air_assist_on=current_dialect.air_assist_on,
             air_assist_off=current_dialect.air_assist_off,
+            home_all=current_dialect.home_all,
+            home_axis=current_dialect.home_axis,
+            move_to=current_dialect.move_to,
+            clear_alarm=current_dialect.clear_alarm,
+            set_wcs_offset=current_dialect.set_wcs_offset,
+            probe_cycle=current_dialect.probe_cycle,
             preamble=current_dialect.preamble,
             postscript=current_dialect.postscript,
         )

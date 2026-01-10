@@ -62,6 +62,14 @@ class GcodeDialect:
     air_assist_on: str
     air_assist_off: str
 
+    # Machine Control Commands
+    home_all: str
+    home_axis: str
+    move_to: str
+    clear_alarm: str
+    set_wcs_offset: str
+    probe_cycle: str
+
     # Preamble & Postscript
     preamble: List[str] = field(default_factory=list)
     postscript: List[str] = field(default_factory=list)
@@ -107,6 +115,12 @@ class GcodeDialect:
             ("set_speed", _("Set Speed")),
             ("air_assist_on", _("Air On")),
             ("air_assist_off", _("Air Off")),
+            ("home_all", _("Home All")),
+            ("home_axis", _("Home Axis")),
+            ("move_to", _("Move To")),
+            ("clear_alarm", _("Clear Alarm")),
+            ("set_wcs_offset", _("Set WCS Offset")),
+            ("probe_cycle", _("Probe Cycle")),
         ]
         for key, label in template_fields:
             templates_vs.add(Var(key, label, str, value=getattr(self, key)))
@@ -168,6 +182,12 @@ class GcodeDialect:
             arc_ccw=data.get("arc_ccw", ""),
             air_assist_on=data.get("air_assist_on", ""),
             air_assist_off=data.get("air_assist_off", ""),
+            home_all=data.get("home_all", ""),
+            home_axis=data.get("home_axis", ""),
+            move_to=data.get("move_to", ""),
+            clear_alarm=data.get("clear_alarm", ""),
+            set_wcs_offset=data.get("set_wcs_offset", ""),
+            probe_cycle=data.get("probe_cycle", ""),
             preamble=data.get("preamble", []),
             postscript=data.get("postscript", []),
             uid=data.get("uid", str(uuid.uuid4())),
