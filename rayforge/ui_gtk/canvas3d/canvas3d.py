@@ -1,7 +1,4 @@
-# rayforge/ui_gtk/view3d/canvas3d.py
-
 import logging
-import math
 from typing import Optional, Tuple, List, TYPE_CHECKING
 import numpy as np
 from gi.repository import Gdk, Gtk, Pango
@@ -252,6 +249,7 @@ class Canvas3D(Gtk.GLArea):
         self._last_pan_offset: Optional[Tuple[float, float]] = None
         self._rotation_pivot: Optional[np.ndarray] = None
         self._last_orbit_pos: Optional[Tuple[float, float]] = None
+        # We reuse this variable to store the linear drag offset (x, y)
         self._last_z_rotate_screen_pos: Optional[Tuple[float, float]] = None
 
         self.set_has_depth_buffer(True)
@@ -759,41 +757,31 @@ class Canvas3D(Gtk.GLArea):
         self._last_z_rotate_screen_pos = None  # Will be set on first update
 
     def on_z_rotate_update(self, gesture, offset_x: float, offset_y: float):
-        """Handles updates during a Z-axis 'turntable' rotation."""
+        """Handles updates during a Z-axis rotation drag (linear motion)."""
         if not self.camera or not self._is_z_rotating:
             return
 
-        event = gesture.get_last_event()
-        if not event:
-            return
-        _, x_curr, y_curr = event.get_position()
-
+        # Initialize the last position with the current offset if it's None.
+        # This handles the start of the drag smoothly.
         if self._last_z_rotate_screen_pos is None:
-            self._last_z_rotate_screen_pos = (x_curr, y_curr)
-            return
+            self._last_z_rotate_screen_pos = (0.0, 0.0)
 
-        x_prev, y_prev = self._last_z_rotate_screen_pos
-        self._last_z_rotate_screen_pos = (x_curr, y_curr)
+        prev_off_x, _ = self._last_z_rotate_screen_pos
 
-        # Use the center of the widget as the screen-space pivot
-        pivot_x = self.get_width() / 2.0
-        pivot_y = self.get_height() / 2.0
+        # Calculate delta from the last frame's offset
+        delta_x = offset_x - prev_off_x
 
-        # Calculate angle of the previous and current mouse positions
-        # relative to the screen pivot.
-        angle_prev = math.atan2(y_prev - pivot_y, x_prev - pivot_x)
-        angle_curr = math.atan2(y_curr - pivot_y, x_curr - pivot_y)
-        delta_angle = angle_curr - angle_prev
+        # Update the stored offset for the next frame
+        self._last_z_rotate_screen_pos = (offset_x, offset_y)
 
-        # Handle atan2 wrap-around from -pi to pi
-        if delta_angle > math.pi:
-            delta_angle -= 2 * math.pi
-        elif delta_angle < -math.pi:
-            delta_angle += 2 * math.pi
+        # Apply rotation. Dragging left/right rotates around world Z.
+        # Sensitivity: Radians per pixel.
+        sensitivity = 0.01
+        angle = -delta_x * sensitivity
 
         axis_z = np.array([0, 0, 1], dtype=np.float64)
-        pivot_world = self.camera.target  # Rotate around the look-at point
-        self.camera.orbit(pivot_world, axis_z, delta_angle)
+        pivot_world = self.camera.target
+        self.camera.orbit(pivot_world, axis_z, angle)
         self.queue_render()
 
     def on_z_rotate_end(self, gesture, offset_x, offset_y):
