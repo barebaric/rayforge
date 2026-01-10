@@ -111,7 +111,7 @@ class Machine:
         # is agnostic. Any key in wcs_offsets is considered a mutable WCS.
         # Any key NOT in wcs_offsets is considered an immutable/absolute system
         # with (0,0,0) offset.
-        self.active_wcs: str = "G54"
+        self.active_wcs: str = "G53"
         self.wcs_offsets: Dict[str, Tuple[float, float, float]] = {
             "G54": (0.0, 0.0, 0.0),
             "G55": (0.0, 0.0, 0.0),
@@ -1092,7 +1092,7 @@ class Machine:
         finally:
             logger.debug(f"_write_setting_to_device(key={key}): Done.")
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self, include_frozen_dialect: bool = True) -> Dict[str, Any]:
         data = {
             "machine": {
                 "name": self.name,
@@ -1133,7 +1133,7 @@ class Machine:
                 "machine_hours": self.machine_hours.to_dict(),
             }
         }
-        if self._hydrated_dialect:
+        if include_frozen_dialect and self._hydrated_dialect:
             data["machine"]["frozen_dialect"] = (
                 self._hydrated_dialect.to_dict()
             )
@@ -1232,7 +1232,7 @@ class Machine:
         )
 
         ma.dialect_uid = dialect_uid
-        ma.active_wcs = ma_data.get("active_wcs", "G54")
+        ma.active_wcs = ma_data.get("active_wcs", ma.active_wcs)
         if "wcs_offsets" in ma_data:
             ma.wcs_offsets = ma_data["wcs_offsets"]
 
@@ -1300,10 +1300,6 @@ class Machine:
         hours_data = ma_data.get("machine_hours", {})
         ma.machine_hours = MachineHours.from_dict(hours_data)
         ma.machine_hours.changed.connect(ma._on_machine_hours_changed)
-
-        frozen_dialect_data = ma_data.get("frozen_dialect")
-        if frozen_dialect_data:
-            ma._hydrated_dialect = GcodeDialect.from_dict(frozen_dialect_data)
 
         return ma
 
@@ -1544,7 +1540,7 @@ class MachineManager:
         logger.debug(f"Saving machine {machine.id}")
         machine_file = self.filename_from_id(machine.id)
         with open(machine_file, "w") as f:
-            data = machine.to_dict()
+            data = machine.to_dict(include_frozen_dialect=False)
             yaml.safe_dump(data, f)
 
     def load_machine(self, machine_id: str) -> Optional["Machine"]:
