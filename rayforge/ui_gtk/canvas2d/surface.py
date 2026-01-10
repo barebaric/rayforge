@@ -1,7 +1,7 @@
 import logging
 from blinker import Signal
 from typing import TYPE_CHECKING, Optional, cast, Dict, List, Sequence
-from gi.repository import Gdk, Gtk
+from gi.repository import Gdk, Gtk, Graphene
 from ...camera.controller import CameraController
 from ...context import get_context
 from ...core.group import Group
@@ -11,13 +11,14 @@ from ...core.stock import StockItem
 from ...core.workpiece import WorkPiece
 from ...machine.models.machine import Machine, Origin
 from ..canvas import WorldSurface, CanvasElement
-from .elements.stock import StockElement
-from .elements.workpiece import WorkPieceElement
-from .elements.group import GroupElement
 from .elements.camera_image import CameraImageElement
-from .elements.layer import LayerElement
-from .elements.tab_handle import TabHandleElement
 from .elements.dot import DotElement
+from .elements.group import GroupElement
+from .elements.layer import LayerElement
+from .elements.stock import StockElement
+from .elements.tab_handle import TabHandleElement
+from .elements.work_origin import WorkOriginElement
+from .elements.workpiece import WorkPieceElement
 from . import context_menu
 from ..sketcher.editor import SketchEditor
 from ..sketcher.sketchelement import SketchElement
@@ -98,6 +99,10 @@ class WorkSurface(WorldSurface):
         self._laser_dot_pos_mm = 0.0, 0.0
         self._laser_dot = DotElement(0, 0, 1.0)
         self.root.add(self._laser_dot)
+
+        # Add the Work Origin visual element
+        self._work_origin_element = WorkOriginElement()
+        self.root.add(self._work_origin_element)
 
         # Signals for clipboard and duplication operations
         self.cut_requested = Signal()
@@ -473,6 +478,7 @@ class WorkSurface(WorldSurface):
         # Disconnect from the old machine's signals
         if self.machine:
             self.machine.changed.disconnect(self._on_machine_changed)
+            self.machine.wcs_updated.disconnect(self._on_wcs_updated)
 
         # Update the machine reference
         self.machine = machine
@@ -480,11 +486,45 @@ class WorkSurface(WorldSurface):
         # Connect to the new machine's signals
         if self.machine:
             self.machine.changed.connect(self._on_machine_changed)
+            self.machine.wcs_updated.connect(self._on_wcs_updated)
             self.reset_view()
+            self._on_wcs_updated(self.machine)
 
         # Synchronize camera elements to match the new machine. This is called
         # after the machine is set (or cleared) to ensure the view is correct.
         self._sync_camera_elements()
+
+    def _on_wcs_updated(self, machine: Machine):
+        """Handles updates to the machine's WCS state."""
+        offset = machine.get_active_wcs_offset()
+        self._work_origin_element.set_pos(offset[0], offset[1])
+        # Hide the origin element if the offset is zero (i.e. we are in
+        # machine coordinates, or the work origin is the same as machine zero).
+        is_at_origin = offset[0] == 0.0 and offset[1] == 0.0
+        self._work_origin_element.set_visible(not is_at_origin)
+        self.queue_draw()
+
+    def do_snapshot(self, snapshot: Gtk.Snapshot) -> None:
+        # Override the base WorldSurface snapshot to pass in the WCS offset.
+        self._update_theme_colors()
+
+        width, height = self.get_width(), self.get_height()
+        ctx = snapshot.append_cairo(Graphene.Rect().init(0, 0, width, height))
+
+        # Get the current WCS offset from the machine model
+        offset = (
+            self.machine.get_active_wcs_offset() if self.machine else (0, 0, 0)
+        )
+
+        # Draw grid and axes first, relative to the WCS offset.
+        self._axis_renderer.draw_grid_and_labels(
+            ctx, self.view_transform, width, height, origin_offset_mm=offset
+        )
+
+        # Now, delegate to the base Canvas's snapshot implementation, which
+        # will correctly apply the view_transform and render all elements
+        # (which are in physical machine coordinates) and selection handles.
+        super(WorldSurface, self).do_snapshot(snapshot)
 
     def _rebuild_view_transform(self) -> bool:
         """
@@ -606,8 +646,8 @@ class WorkSurface(WorldSurface):
             if isinstance(element, StockElement):
                 # Stock elements are below all layers but above camera images
                 return 10
-            if isinstance(element, CameraImageElement):
-                # Camera images are at the very bottom.
+            if isinstance(element, (CameraImageElement, WorkOriginElement)):
+                # Camera images and WCS origin are at the very bottom.
                 return -2
             # Other elements (like the laser dot) are above the camera but
             # below stock and layers.
@@ -622,7 +662,9 @@ class WorkSurface(WorldSurface):
         children_to_remove = [
             c
             for c in self.root.children
-            if not isinstance(c, (CameraImageElement, DotElement))
+            if not isinstance(
+                c, (CameraImageElement, DotElement, WorkOriginElement)
+            )
         ]
         for child in children_to_remove:
             child.remove()
@@ -734,6 +776,8 @@ class WorkSurface(WorldSurface):
             # No major reset needed, but other properties like the list of
             # cameras might have changed.
             self._sync_camera_elements()
+            # The WCS might also have changed, so trigger an update.
+            self._on_wcs_updated(machine)
 
     def reset_view(self):
         """
