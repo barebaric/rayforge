@@ -148,6 +148,7 @@ class AxisRenderer3D(BaseRenderer):
         text_mvp: np.ndarray,
         view_matrix: np.ndarray,
         model_matrix: np.ndarray,
+        origin_offset_mm: Tuple[float, float, float] = (0.0, 0.0, 0.0),
         x_right: bool = False,
         x_negative: bool = False,
         y_negative: bool = False,
@@ -162,6 +163,8 @@ class AxisRenderer3D(BaseRenderer):
             text_mvp: The MVP matrix for the text labels (no model transform).
             view_matrix: The view matrix, used for billboarding text.
             model_matrix: The model matrix for coordinate system transforms.
+            origin_offset_mm: The (x, y, z) offset for the work coordinate
+              system.
             x_right: True if the machine origin is on the right side.
             x_negative: True if the X-axis counts down from the origin.
             y_negative: True if the Y-axis counts down from the origin.
@@ -169,15 +172,31 @@ class AxisRenderer3D(BaseRenderer):
         if not all((self.grid_vao, self.axes_vao, self.text_renderer)):
             return
 
+        # Create a translation matrix for the WCS offset
+        offset_x, offset_y, offset_z = origin_offset_mm
+        wcs_transform = np.array(
+            [
+                [1, 0, 0, offset_x],
+                [0, 1, 0, offset_y],
+                [0, 0, 1, offset_z],
+                [0, 0, 0, 1],
+            ],
+            dtype=np.float32,
+        ).T  # Transpose for column-major
+
+        # Apply the WCS transform to the scene's MVP for drawing the grid
+        final_scene_mvp = scene_mvp @ wcs_transform
+
         # Enable blending for transparent objects
         GL.glEnable(GL.GL_BLEND)
         GL.glBlendFunc(GL.GL_SRC_ALPHA, GL.GL_ONE_MINUS_SRC_ALPHA)
         line_shader.use()
 
         GL.glDepthMask(GL.GL_FALSE)
-        self.background_renderer.render(line_shader, scene_mvp)
+        self.background_renderer.render(line_shader, final_scene_mvp)
         GL.glDepthMask(GL.GL_TRUE)
 
+        line_shader.set_mat4("uMVP", final_scene_mvp)
         line_shader.set_vec4("uColor", self.grid_color)
         GL.glLineWidth(1.0)
         GL.glBindVertexArray(self.grid_vao)
@@ -195,6 +214,7 @@ class AxisRenderer3D(BaseRenderer):
             text_mvp,
             view_matrix,
             model_matrix,
+            origin_offset_mm=origin_offset_mm,
             x_right=x_right,
             x_negative=x_negative,
             y_negative=y_negative,
@@ -207,6 +227,7 @@ class AxisRenderer3D(BaseRenderer):
         text_mvp_matrix: np.ndarray,
         view_matrix: np.ndarray,
         model_matrix: np.ndarray,
+        origin_offset_mm: Tuple[float, float, float],
         x_right: bool = False,
         x_negative: bool = False,
         y_negative: bool = False,
@@ -219,6 +240,7 @@ class AxisRenderer3D(BaseRenderer):
         # Offsets are in world units (mm).
         x_axis_label_y_offset = label_height_mm * 1.2
         y_axis_label_x_offset = label_height_mm * 0.6
+        offset_vec = np.array(origin_offset_mm, dtype=np.float32)
 
         # X-axis labels (centered below the axis)
         for x in np.arange(
@@ -227,8 +249,9 @@ class AxisRenderer3D(BaseRenderer):
             # Original position in Y-up coordinate system
             pos_original = np.array([x, -x_axis_label_y_offset, 0.0, 1.0])
             # Transform position into the target coordinate system
-            # (e.g. Y-down)
-            pos_transformed = (model_matrix @ pos_original)[:3]
+            pos_flipped = (model_matrix @ pos_original)[:3]
+            # Add the final WCS world offset
+            pos_final = pos_flipped + offset_vec
 
             label_val = -x if x_negative else x
             label_text = str(int(label_val))
@@ -236,7 +259,7 @@ class AxisRenderer3D(BaseRenderer):
             self.text_renderer.render_text(
                 text_shader,
                 label_text,
-                pos_transformed,
+                pos_final,
                 label_height_mm,
                 self.label_color,
                 text_mvp_matrix,
@@ -254,7 +277,9 @@ class AxisRenderer3D(BaseRenderer):
             # pre-transform space). The model matrix will correctly position
             # this on the outside of the machine bed.
             pos_original = np.array([-y_axis_label_x_offset, y, 0.0, 1.0])
-            pos_transformed = (model_matrix @ pos_original)[:3]
+            pos_flipped = (model_matrix @ pos_original)[:3]
+            # Add the final WCS world offset
+            pos_final = pos_flipped + offset_vec
 
             label_val = -y if y_negative else y
             label_text = str(int(label_val))
@@ -262,7 +287,7 @@ class AxisRenderer3D(BaseRenderer):
             self.text_renderer.render_text(
                 text_shader,
                 label_text,
-                pos_transformed,
+                pos_final,
                 label_height_mm,
                 self.label_color,
                 text_mvp_matrix,
