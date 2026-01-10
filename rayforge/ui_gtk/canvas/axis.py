@@ -143,13 +143,13 @@ class AxisRenderer:
         # greater than or equal to the target size.
         power_of_10 = 10 ** math.floor(math.log10(target_grid_size_mm))
 
-        # Use more balanced thresholds for selecting the multiplier
+        # Use corrected thresholds to round up to the nearest 1, 2, 5, or 10.
         relative_size = target_grid_size_mm / power_of_10
-        if relative_size <= 1.5:
+        if relative_size <= 1.0:
             return power_of_10
-        elif relative_size <= 3.5:
+        elif relative_size <= 2.0:
             return 2 * power_of_10
-        elif relative_size <= 7.5:
+        elif relative_size <= 5.0:
             return 5 * power_of_10
         else:
             return 10 * power_of_10
@@ -160,6 +160,7 @@ class AxisRenderer:
         view_transform: Matrix,
         widget_w: int,
         widget_h: int,
+        origin_offset_mm: Tuple[float, float, float] = (0.0, 0.0, 0.0),
     ):
         """
         Draws the grid, axes, and labels onto the Cairo context using the
@@ -204,12 +205,13 @@ class AxisRenderer:
                 visible_max_x,
                 visible_min_y,
                 visible_max_y,
+                origin_offset_mm,
             )
 
         # --- Draw Axes and Labels ---
         if self.show_axis:
             self._draw_axis_and_labels(
-                ctx, view_transform, adaptive_grid_size_mm
+                ctx, view_transform, adaptive_grid_size_mm, origin_offset_mm
             )
 
         ctx.restore()
@@ -223,14 +225,14 @@ class AxisRenderer:
         max_x: float,
         min_y: float,
         max_y: float,
+        origin_offset_mm: Tuple[float, float, float],
     ):
         """Internal helper to draw the infinite grid lines."""
         ctx.set_source_rgba(*self.grid_color)
         ctx.set_hairline(True)
 
-        # Determine grid origin based on axis settings
-        origin_x = self.width_mm if self.x_axis_right else 0.0
-        origin_y = self.height_mm if self.y_axis_down else 0.0
+        # Determine grid origin based on the WCS offset
+        origin_x, origin_y, _ = origin_offset_mm
 
         # Vertical lines (along X)
         k_start_x = math.ceil((min_x - origin_x) / grid_size_mm)
@@ -259,6 +261,7 @@ class AxisRenderer:
         ctx: cairo.Context,
         view_transform: Matrix,
         grid_size_mm: float,
+        origin_offset_mm: Tuple[float, float, float],
     ):
         """Internal helper to draw the main XY axes and text labels."""
         # Calculate precision needed to display fractional grid sizes
@@ -269,6 +272,9 @@ class AxisRenderer:
 
         ctx.set_source_rgba(*self.fg_color)
         ctx.set_line_width(1)
+
+        work_origin_x, work_origin_y, _ = origin_offset_mm
+        zero_label_drawn = False
 
         # Determine axis positions based on Y and X orientation
         if self.y_axis_down:
@@ -293,7 +299,7 @@ class AxisRenderer:
             x_axis_start_mm = (0, x_axis_y)
             x_axis_end_mm = (self.width_mm, x_axis_y)
 
-        # Draw Axis Lines
+        # Draw Axis Lines (These are fixed to the physical machine bed)
         x_start_px = view_transform.transform_point(x_axis_start_mm)
         x_end_px = view_transform.transform_point(x_axis_end_mm)
         y_start_px = view_transform.transform_point(y_axis_start_mm)
@@ -307,24 +313,22 @@ class AxisRenderer:
         ctx.stroke()
 
         # Draw X Labels
-        k = 1
-        while True:
-            dist_from_y_axis = k * grid_size_mm
-            if dist_from_y_axis >= self.width_mm - 1e-6:
-                break
+        # Determine the range of X coordinates to label
+        min_label_val_x = -work_origin_x
+        max_label_val_x = self.width_mm - work_origin_x
+        k_start_x = math.ceil(min_label_val_x / grid_size_mm)
+        k_end_x = math.floor(max_label_val_x / grid_size_mm)
 
-            # The numerical value of the label
-            label_val = (
-                -dist_from_y_axis if self.x_axis_negative else dist_from_y_axis
-            )
-            label = f"{round(label_val, precision):g}"
-
+        for k in range(k_start_x, k_end_x + 1):
+            if k == 0:
+                zero_label_drawn = True
+            label_val = k * grid_size_mm
             # The physical position of the label in world coordinates
-            world_x = (
-                self.width_mm - dist_from_y_axis
-                if self.x_axis_right
-                else dist_from_y_axis
-            )
+            world_x = work_origin_x + label_val
+
+            final_label_val = -label_val if self.x_axis_negative else label_val
+            label = f"{round(final_label_val, precision):g}"
+
             label_pos_px = view_transform.transform_point((world_x, x_axis_y))
             extents = ctx.text_extents(label)
 
@@ -334,40 +338,35 @@ class AxisRenderer:
                 label_pos_px[0] - extents.width / 2, label_pos_px[1] + y_offset
             )
             ctx.show_text(label)
-            k += 1
 
         # Draw Y Labels
-        k = 1
-        while True:
-            dist_from_x_axis = k * grid_size_mm
-            if dist_from_x_axis >= self.height_mm - 1e-6:
-                break
+        min_label_val_y = -work_origin_y
+        max_label_val_y = self.height_mm - work_origin_y
+        k_start_y = math.ceil(min_label_val_y / grid_size_mm)
+        k_end_y = math.floor(max_label_val_y / grid_size_mm)
+        world_x_for_y_labels = self.width_mm if self.x_axis_right else 0
 
-            # The numerical value of the label
-            label_val = (
-                -dist_from_x_axis if self.y_axis_negative else dist_from_x_axis
-            )
-            label = f"{round(label_val, precision):g}"
+        for k in range(k_start_y, k_end_y + 1):
+            # Skip drawing the "0" label if the X-axis loop already handled it.
+            if k == 0 and zero_label_drawn:
+                continue
+            label_val = k * grid_size_mm
+            world_y = work_origin_y + label_val
+
+            final_label_val = -label_val if self.y_axis_negative else label_val
+            label = f"{round(final_label_val, precision):g}"
             extents = ctx.text_extents(label)
 
-            # The physical position of the label in world coordinates
-            world_y = (
-                self.height_mm - dist_from_x_axis
-                if self.y_axis_down
-                else dist_from_x_axis
+            label_pos_px = view_transform.transform_point(
+                (world_x_for_y_labels, world_y)
             )
-            world_x = self.width_mm if self.x_axis_right else 0
-            label_pos_px = view_transform.transform_point((world_x, world_y))
 
-            # When the axis is on the right, we draw text to the right of the
-            # axis (left-aligned style).
             x_offset = 4 if self.x_axis_right else -extents.width - 4
             ctx.move_to(
                 label_pos_px[0] + x_offset,
                 label_pos_px[1] + extents.height / 2,
             )
             ctx.show_text(label)
-            k += 1
 
     def get_x_axis_height(self) -> int:
         """Calculates the maximum height of the X-axis labels."""
