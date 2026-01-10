@@ -270,7 +270,7 @@ environments:
       - pypi: https://files.pythonhosted.org/packages/c2/2f/81d580a0fb83baeb066698975cb14a618bdbed7720678566f1b046a95fe8/pyflakes-3.4.0-py2.py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/16/6e/edcff8b3eb9c65fdfeefb55bb990a872d95797d75b0c0c666d65ccc47018/pygobject_stubs-2.14.0.tar.gz
       - pypi: https://files.pythonhosted.org/packages/10/5e/1aa9a93198c6b64513c9d7752de7422c06402de6600a8767da1524f9570b/pyparsing-3.2.5-py3-none-any.whl
-      - pypi: https://files.pythonhosted.org/packages/cd/f2/9c9429411c91ac1dd5cd66780f22b6df20c64c3646cdd1e6d67cf38579c4/pypdf-6.4.0-py3-none-any.whl
+      - pypi: https://files.pythonhosted.org/packages/b2/ba/96f99276194f720e74ed99905a080f6e77810558874e8935e580331b46de/pypdf-6.6.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/bd/24/12818598c362d7f300f18e74db45963dbcb85150324092410c8b49405e42/pyproject_hooks-1.2.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/0c/82/a2c93e32800940d9573fb28c346772a14778b84ba7524e691b324620ab89/pyright-1.1.408-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/07/bc/587a445451b253b285629263eb51c2d8e9bcea4fc97826266d186f96f558/pyserial-3.5-py2.py3-none-any.whl
@@ -3227,10 +3227,10 @@ packages:
   - railroad-diagrams ; extra == 'diagrams'
   - jinja2 ; extra == 'diagrams'
   requires_python: '>=3.9'
-- pypi: https://files.pythonhosted.org/packages/cd/f2/9c9429411c91ac1dd5cd66780f22b6df20c64c3646cdd1e6d67cf38579c4/pypdf-6.4.0-py3-none-any.whl
+- pypi: https://files.pythonhosted.org/packages/b2/ba/96f99276194f720e74ed99905a080f6e77810558874e8935e580331b46de/pypdf-6.6.0-py3-none-any.whl
   name: pypdf
-  version: 6.4.0
-  sha256: 55ab9837ed97fd7fcc5c131d52fcc2223bc5c6b8a1488bbf7c0e27f1f0023a79
+  version: 6.6.0
+  sha256: bca9091ef6de36c7b1a81e09327c554b7ce51e88dad68f5890c2b4a4417f1fd7
   requires_dist:
   - typing-extensions>=4.0 ; python_full_version < '3.11'
   - cryptography ; extra == 'crypto'
@@ -3422,7 +3422,7 @@ packages:
   timestamp: 1746622023242
 - pypi: ./
   name: rayforge
-  version: 0.27.1.post92+git.974a3074.dirty
+  version: 0.27.1.post98+git.08ed4bd0.dirty
   sha256: b6132eb09b12c3445d397a0ce74cdea29e78027033c7bd50f96cc048021acf1d
   requires_dist:
   - aiohttp==3.13.3
@@ -3439,7 +3439,7 @@ packages:
   - pygobject==3.50.0
   - pyopengl==3.1.9
   - pyopengl-accelerate==3.1.9
-  - pypdf==6.4.0
+  - pypdf==6.6.0
   - pyserial-asyncio==0.6
   - pyvips==3.0.0
   - pyyaml==6.0.2
