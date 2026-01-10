@@ -157,6 +157,12 @@ class DialectListEditor(PreferencesGroupWithButton):
             arc_ccw="",
             air_assist_on="",
             air_assist_off="",
+            home_all="",
+            home_axis="",
+            move_to="",
+            clear_alarm="",
+            set_wcs_offset="",
+            probe_cycle="",
         )
         editor_dialog = DialectEditorDialog(parent, new_dialect)
         editor_dialog.connect(

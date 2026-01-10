@@ -655,8 +655,9 @@ class GrblSerialDriver(Driver):
                  homes all axes. Can be a single Axis or multiple axes
                  using binary operators (e.g. Axis.X|Axis.Y)
         """
+        dialect = self._machine.dialect
         if axes is None:
-            await self._execute_command("$H")
+            await self._execute_command(dialect.home_all)
             return
 
         # Handle multiple axes - home them one by one
@@ -664,20 +665,25 @@ class GrblSerialDriver(Driver):
             if axes & axis:
                 assert axis.name
                 axis_letter: str = axis.name.upper()
-                cmd = f"$H{axis_letter}"
+                cmd = dialect.home_axis.format(axis_letter=axis_letter)
                 await self._execute_command(cmd)
 
     async def move_to(self, pos_x, pos_y) -> None:
-        cmd = f"$J=G90 G21 F1500 X{float(pos_x)} Y{float(pos_y)}"
+        dialect = self._machine.dialect
+        cmd = dialect.move_to.format(
+            speed=1500, x=float(pos_x), y=float(pos_y)
+        )
         await self._execute_command(cmd)
 
     async def select_tool(self, tool_number: int) -> None:
         """Sends a tool change command for the given tool number."""
-        cmd = f"T{tool_number}"
+        dialect = self._machine.dialect
+        cmd = dialect.tool_change.format(tool_number=tool_number)
         await self._execute_command(cmd)
 
     async def clear_alarm(self) -> None:
-        await self._execute_command("$X")
+        dialect = self._machine.dialect
+        await self._execute_command(dialect.clear_alarm)
 
     async def set_power(self, head: "Laser", percent: float) -> None:
         """
@@ -796,7 +802,10 @@ class GrblSerialDriver(Driver):
         p_num = gcode_to_p_number(wcs_slot)
         if p_num is None:
             raise ValueError(f"Invalid WCS slot: {wcs_slot}")
-        cmd = f"G10 L2 P{p_num} X{x} Y{y} Z{z}"
+        dialect = self._machine.dialect
+        cmd = dialect.set_wcs_offset.format(
+            p_num=p_num, x=x, y=y, z=z
+        )
         await self._execute_command(cmd)
 
     async def read_wcs_offsets(self) -> Dict[str, Pos]:
@@ -815,7 +824,12 @@ class GrblSerialDriver(Driver):
     ) -> Optional[Pos]:
         assert axis.name, "Probing requires a single, named axis."
         axis_letter = axis.name.upper()
-        cmd = f"G38.2 {axis_letter}{max_travel} F{feed_rate}"
+        dialect = self._machine.dialect
+        cmd = dialect.probe_cycle.format(
+            axis_letter=axis_letter,
+            max_travel=max_travel,
+            feed_rate=feed_rate,
+        )
 
         self.probe_status_changed.send(
             self, message=f"Probing {axis_letter}..."

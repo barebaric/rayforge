@@ -277,8 +277,9 @@ class SmoothieDriver(Driver):
                  homes all axes. Can be a single Axis or multiple axes
                  using binary operators (e.g. Axis.X|Axis.Y)
         """
+        dialect = self._machine.dialect
         if axes is None:
-            await self._send_and_wait(b"$H")
+            await self._send_and_wait(dialect.home_all.encode())
             return
 
         # Handle multiple axes - home them one by one
@@ -286,11 +287,12 @@ class SmoothieDriver(Driver):
             if axes & axis:
                 assert axis.name
                 axis_letter: str = axis.name.upper()
-                cmd = f"G28 {axis_letter}0"
+                cmd = dialect.home_axis.format(axis_letter=axis_letter)
                 await self._send_and_wait(cmd.encode())
 
     async def move_to(self, pos_x, pos_y) -> None:
-        cmd = f"G90 G0 X{float(pos_x)} Y{float(pos_y)}"
+        dialect = self._machine.dialect
+        cmd = dialect.move_to.format(x=float(pos_x), y=float(pos_y))
         await self._send_and_wait(cmd.encode())
 
     def can_jog(self, axis: Optional[Axis] = None) -> bool:
@@ -313,11 +315,13 @@ class SmoothieDriver(Driver):
 
     async def select_tool(self, tool_number: int) -> None:
         """Sends a tool change command for the given tool number."""
-        cmd = f"T{tool_number}"
+        dialect = self._machine.dialect
+        cmd = dialect.tool_change.format(tool_number=tool_number)
         await self._send_and_wait(cmd.encode())
 
     async def clear_alarm(self) -> None:
-        await self._send_and_wait(b"M999")
+        dialect = self._machine.dialect
+        await self._send_and_wait(dialect.clear_alarm.encode())
 
     async def set_power(self, head: "Laser", percent: float) -> None:
         """
@@ -410,7 +414,10 @@ class SmoothieDriver(Driver):
             raise ValueError(f"Invalid WCS slot: {wcs_slot}")
 
         p_num = _wcs_to_p_map[wcs_slot]
-        cmd = f"G10 L20 P{p_num} X{x} Y{y} Z{z}"
+        dialect = self._machine.dialect
+        cmd = dialect.set_wcs_offset.format(
+            p_num=p_num, x=x, y=y, z=z
+        )
         await self._send_and_wait(cmd.encode("utf-8"))
 
     async def read_wcs_offsets(self) -> Dict[str, Pos]:
