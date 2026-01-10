@@ -1,3 +1,5 @@
+from typing import Optional
+
 from gi.repository import Gtk, Adw, Gdk
 from ...camera.models import Camera
 from ..camera.camera_preferences_page import CameraPreferencesPage
@@ -12,12 +14,20 @@ from .machine_hours_page import MachineHoursPage
 
 
 class MachineSettingsDialog(Adw.Window):
-    def __init__(self, *, machine: Machine, transient_for=None, **kwargs):
+    def __init__(
+        self,
+        *,
+        machine: Machine,
+        transient_for=None,
+        initial_page: Optional[str] = None,
+        **kwargs
+    ):
         super().__init__(**kwargs)
         if transient_for:
             self.set_transient_for(transient_for)
         self.machine = machine
         self._row_to_page_name = {}
+        self._initial_page = initial_page
         if machine.name:
             self.set_title(_(f"{machine.name} - Machine Settings"))
         else:
@@ -122,8 +132,14 @@ class MachineSettingsDialog(Adw.Window):
         # Initial population of all dependent pages
         self._sync_camera_page()
 
-        # Select first row by default
-        self.sidebar_list.select_row(self.sidebar_list.get_row_at_index(0))
+        # Select the specified page or first row by default
+        if self._initial_page:
+            for row, page_name in self._row_to_page_name.items():
+                if page_name == self._initial_page:
+                    self.sidebar_list.select_row(row)
+                    break
+        else:
+            self.sidebar_list.select_row(self.sidebar_list.get_row_at_index(0))
 
     def _add_sidebar_row(
         self, label_text: str, icon_name: str, page_name: str
