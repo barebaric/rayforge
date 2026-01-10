@@ -827,8 +827,6 @@ class WorkSurface(WorldSurface):
         self._work_origin_element.set_orientation(
             self.machine.x_axis_right,
             self.machine.y_axis_down,
-            self.machine.reverse_x_axis,
-            self.machine.reverse_y_axis,
         )
 
         # Call the base class reset which handles pan/zoom
