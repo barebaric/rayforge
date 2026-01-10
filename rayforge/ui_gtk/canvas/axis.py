@@ -348,6 +348,10 @@ class AxisRenderer:
         ctx.line_to(y_end_px[0], y_end_px[1])
         ctx.stroke()
 
+        # --- Draw Labels ---
+        corner_x_label_value = None
+        world_x_for_y_labels = self.width_mm if self.x_axis_right else 0
+
         # Draw X Labels
         # Calculate label iterations relative to WCS Origin, constrained to
         # Bed Width
@@ -371,6 +375,10 @@ class AxisRenderer:
             if self.x_axis_negative:
                 label_val = -label_val
 
+            # Check if this label is at the corner where the Y-axis is drawn
+            if abs(world_x - world_x_for_y_labels) < 1e-3:
+                corner_x_label_value = label_val
+
             label = f"{round(label_val, precision):g}"
             label_pos_px = view_transform.transform_point((world_x, x_axis_y))
             extents = ctx.text_extents(label)
@@ -387,7 +395,6 @@ class AxisRenderer:
 
         k_start_y = math.ceil(min_delta_y / grid_size_mm)
         k_end_y = math.floor(max_delta_y / grid_size_mm)
-        world_x_for_y_labels = self.width_mm if self.x_axis_right else 0
 
         for k in range(k_start_y, k_end_y + 1):
             delta = k * grid_size_mm
@@ -402,8 +409,16 @@ class AxisRenderer:
             if self.y_axis_negative:
                 label_val = -label_val
 
-            # Fix double zero overlap
-            if abs(label_val) < 1e-9:
+            # Check if this label is at the corner where the X-axis is drawn
+            is_at_corner = abs(world_y - x_axis_y) < 1e-3
+
+            # Skip drawing the Y label if it's at the corner AND its value
+            # is the same as the X label's value at that corner.
+            if (
+                is_at_corner
+                and corner_x_label_value is not None
+                and abs(label_val - corner_x_label_value) < 1e-9
+            ):
                 continue
 
             label = f"{round(label_val, precision):g}"
