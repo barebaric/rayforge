@@ -276,7 +276,7 @@ class MainToolbar(Gtk.Box):
         self.append(self.wcs_dropdown)
 
         self.zero_here_button = Gtk.Button(
-            child=get_icon("check-circle-symbolic")
+            child=get_icon("zero-here-symbolic")
         )
         self.zero_here_button.set_tooltip_text(
             _("Set Work Zero at Current Position")
