@@ -1,5 +1,5 @@
 import logging
-from gi.repository import Gtk
+from gi.repository import GLib, Gtk
 from blinker import Signal
 from .icons import get_icon
 from .shared.undo_button import UndoButton, RedoButton
@@ -22,6 +22,7 @@ class MainToolbar(Gtk.Box):
         )
         # Signals for View-State controls (not app actions)
         self.machine_warning_clicked = Signal()
+        self.wcs_selected = Signal()
 
         self.set_margin_bottom(2)
         self.set_margin_top(2)
@@ -259,6 +260,33 @@ class MainToolbar(Gtk.Box):
         self.focus_button.connect("toggled", self._on_focus_toggled)
         self.append(self.focus_button)
 
+        # WCS controls
+        sep = Gtk.Separator(orientation=Gtk.Orientation.VERTICAL)
+        self.append(sep)
+
+        self.wcs_dropdown = Gtk.DropDown()
+        self.wcs_dropdown.set_tooltip_text(_("Work Coordinate System"))
+        self.wcs_store = Gtk.StringList()
+        # Initialize with standard options immediately
+        wcs_options = ["G53", "G54", "G55", "G56", "G57", "G58", "G59"]
+        for opt in wcs_options:
+            self.wcs_store.append(opt)
+        self.wcs_dropdown.set_model(self.wcs_store)
+        self.wcs_dropdown.connect("notify::selected", self._on_wcs_selected)
+        self.append(self.wcs_dropdown)
+
+        self.zero_here_button = Gtk.Button(
+            child=get_icon("check-circle-symbolic")
+        )
+        self.zero_here_button.set_tooltip_text(
+            _("Set Work Zero at Current Position")
+        )
+        self.zero_here_button.set_action_name("win.zero-here")
+        self.zero_here_button.set_action_target_value(
+            GLib.Variant.new_string("all")
+        )
+        self.append(self.zero_here_button)
+
         # Add spacer to push machine selector to the right
         spacer = Gtk.Box()
         spacer.set_hexpand(True)
@@ -302,3 +330,23 @@ class MainToolbar(Gtk.Box):
             button.set_child(self.focus_off_icon)
         else:
             button.set_child(self.focus_on_icon)
+
+    def set_active_wcs(self, wcs: str):
+        """Programmatically selects the WCS in the dropdown."""
+        # Find index of wcs string in store
+        found_index = -1
+        for i in range(self.wcs_store.get_n_items()):
+            if self.wcs_store.get_string(i) == wcs:
+                found_index = i
+                break
+
+        if found_index >= 0:
+            if self.wcs_dropdown.get_selected() != found_index:
+                self.wcs_dropdown.set_selected(found_index)
+
+    def _on_wcs_selected(self, dropdown, param):
+        """Handle WCS selection change."""
+        selected_item = dropdown.get_selected_item()
+        if selected_item:
+            wcs_str = selected_item.get_string()
+            self.wcs_selected.send(self, wcs=wcs_str)

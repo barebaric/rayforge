@@ -672,9 +672,7 @@ class GrblNetworkDriver(Driver):
         if p_num is None:
             raise ValueError(f"Invalid WCS slot: {wcs_slot}")
         dialect = self._machine.dialect
-        cmd = dialect.set_wcs_offset.format(
-            p_num=p_num, x=x, y=y, z=z
-        )
+        cmd = dialect.set_wcs_offset.format(p_num=p_num, x=x, y=y, z=z)
         await self._execute_command(cmd)
 
     async def read_wcs_offsets(self) -> Dict[str, Pos]:

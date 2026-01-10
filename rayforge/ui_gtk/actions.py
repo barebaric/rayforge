@@ -176,6 +176,12 @@ class ActionManager:
             GLib.Variant.new_boolean(False),
         )
 
+        self._add_action(
+            "zero-here",
+            self.win.on_zero_here_clicked,
+            GLib.VariantType.new("s"),
+        )
+
         self.update_action_states()
 
     def update_action_states(self, *args, **kwargs):

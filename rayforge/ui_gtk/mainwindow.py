@@ -17,7 +17,7 @@ from ..core.workpiece import WorkPiece
 from ..doceditor.editor import DocEditor
 from ..image.sketch.exporter import SketchExporter
 from ..machine.cmd import MachineCmd
-from ..machine.driver.driver import DeviceState, DeviceStatus
+from ..machine.driver.driver import DeviceState, DeviceStatus, Axis
 from ..machine.driver.dummy import NoDeviceDriver
 from ..machine.models.machine import Machine
 from ..machine.transport import TransportStatus
@@ -932,6 +932,47 @@ class MainWindow(Adw.ApplicationWindow):
         self.toolbar.machine_selector.machine_selected.connect(
             self.on_machine_selected_by_selector
         )
+        # Connect WCS signal
+        self.toolbar.wcs_selected.connect(self._on_wcs_selected_toolbar)
+
+    def _on_wcs_selected_toolbar(self, sender, *, wcs: str):
+        """Handles WCS selection from the main toolbar."""
+        config = get_context().config
+        if not config.machine:
+            return
+        logger.debug(f"Toolbar WCS selected: {wcs}")
+        # Only set if different to avoid redundant updates
+        if config.machine.active_wcs != wcs:
+            config.machine.set_active_wcs(wcs)
+
+    def _update_wcs_dropdown(self, machine: Optional[Machine], **kwargs):
+        """
+        Synchronizes the toolbar WCS dropdown with the machine's active state.
+        """
+        if not machine:
+            # Maybe disable it or set to G53 default?
+            return
+
+        # We assume the toolbar knows the list of available WCS.
+        # Just update the selected item.
+        self.toolbar.set_active_wcs(machine.active_wcs)
+
+    def on_zero_here_clicked(self, action, param):
+        """Handler for 'zero-here' action."""
+        config = get_context().config
+        if not config.machine:
+            return
+
+        # 'param' is likely "all" string from the action setup
+        axes_to_zero = Axis.X | Axis.Y | Axis.Z
+
+        async def zero_func(ctx):
+            # Explicitly check again to satisfy type checker
+            if config.machine:
+                await config.machine.set_work_origin_here(axes_to_zero)
+
+        # Launch async zeroing
+        task_mgr.add_coroutine(zero_func)
 
     def _on_canvas_area_click_pressed(self, gesture, n_press, x, y):
         """
@@ -1224,6 +1265,8 @@ class MainWindow(Adw.ApplicationWindow):
             self._current_machine.machine_hours.changed.disconnect(
                 self._on_machine_hours_changed
             )
+            # Disconnect WCS change signal
+            self._current_machine.changed.disconnect(self._update_wcs_dropdown)
 
         config = get_context().config
         self._current_machine = config.machine
@@ -1241,6 +1284,8 @@ class MainWindow(Adw.ApplicationWindow):
             self._current_machine.machine_hours.changed.connect(
                 self._on_machine_hours_changed
             )
+            # Update WCS dropdown when machine active_wcs changes
+            self._current_machine.changed.connect(self._update_wcs_dropdown)
 
         # Define new machine dimensions
         new_machine = config.machine
@@ -1294,6 +1339,7 @@ class MainWindow(Adw.ApplicationWindow):
         self.surface.update_from_doc()
         self._update_macros_menu()
         self._update_actions_and_ui()
+        self._update_wcs_dropdown(config.machine)
 
         # Update theme
         self.apply_theme()
@@ -1332,6 +1378,10 @@ class MainWindow(Adw.ApplicationWindow):
             am.get_action("machine-cancel").set_enabled(False)
             am.get_action("machine-clear-alarm").set_enabled(False)
             am.get_action("execute-macro").set_enabled(False)
+            # Disable WCS controls
+            self.toolbar.wcs_dropdown.set_sensitive(False)
+            am.get_action("zero-here").set_enabled(False)
+
             self.toolbar.export_button.set_tooltip_text(
                 _("Select a machine to enable G-code export")
             )
@@ -1455,6 +1505,12 @@ class MainWindow(Adw.ApplicationWindow):
             # Set macro action sensitivity
             can_run_macros = connected and not is_job_or_task_active
             am.get_action("execute-macro").set_enabled(can_run_macros)
+
+            # WCS UI
+            self.toolbar.wcs_dropdown.set_sensitive(not is_job_or_task_active)
+            is_g53 = active_machine.active_wcs == "G53"
+            can_zero = connected and not is_g53 and not is_job_or_task_active
+            am.get_action("zero-here").set_enabled(can_zero)
 
         # Update actions that don't depend on the machine state
         selected_elements = self.surface.get_selected_elements()

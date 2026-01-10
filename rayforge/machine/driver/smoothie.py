@@ -415,9 +415,7 @@ class SmoothieDriver(Driver):
 
         p_num = _wcs_to_p_map[wcs_slot]
         dialect = self._machine.dialect
-        cmd = dialect.set_wcs_offset.format(
-            p_num=p_num, x=x, y=y, z=z
-        )
+        cmd = dialect.set_wcs_offset.format(p_num=p_num, x=x, y=y, z=z)
         await self._send_and_wait(cmd.encode("utf-8"))
 
     async def read_wcs_offsets(self) -> Dict[str, Pos]:
