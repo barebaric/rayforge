@@ -198,9 +198,20 @@ class GcodeEncoder(OpsEncoder):
                 )
                 self.current_pos = cmd.end
             case JobStartCommand():
+                # 1. Emit Preamble
                 gcode.extend(
                     self._format_script_lines(self.dialect.preamble, context)
                 )
+                # 2. Inject Active WCS command if applicable.
+                # We inject this AFTER the preamble to ensure it isn't reset
+                # by any homing or reset commands within the preamble.
+                # We check if the active WCS is a standard G-code coordinate
+                # system (G54-G59). "G53" is not injected as it's non-modal
+                # or handled per-move.
+                wcs_cmd = context.machine.active_wcs
+                if wcs_cmd in ["G54", "G55", "G56", "G57", "G58", "G59"]:
+                    gcode.append(wcs_cmd)
+
             case JobEndCommand():
                 # This is the single point of truth for job cleanup.
                 # First, perform guaranteed safety shutdowns. This emits the
