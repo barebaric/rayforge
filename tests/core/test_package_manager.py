@@ -59,8 +59,10 @@ class TestPackageManagerLoading:
         with patch.object(manager, "load_package") as mock_load:
             manager.load_installed_packages()
             assert mock_load.call_count == 2
-            mock_load.assert_any_call(manager.packages_dir / "pkg1")
-            mock_load.assert_any_call(manager.packages_dir / "pkg2")
+            pkg1_path = (manager.packages_dir / "pkg1").resolve()
+            pkg2_path = (manager.packages_dir / "pkg2").resolve()
+            mock_load.assert_any_call(pkg1_path)
+            mock_load.assert_any_call(pkg2_path)
 
     def test_load_package_no_metadata_file(self, manager):
         package_dir = manager.packages_dir / "no_meta_pkg"
