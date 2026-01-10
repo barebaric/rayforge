@@ -177,6 +177,7 @@ async def driver(context_initializer, machine, smoothie_server):
     Handles cleanup ensuring background tasks are stopped.
     """
     host, port = smoothie_server.host, smoothie_server.port
+    machine.dialect_uid = "smoothieware"
     driver_instance = SmoothieDriver(context_initializer, machine)
     driver_instance.setup(host=host, port=port)
 
