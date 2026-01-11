@@ -107,12 +107,18 @@ jobs:
           # The build script will source .msys2_env internally.
           bash scripts/win_build.sh "${{ env.VERSION }}"
 
+      - name: Compress PyInstaller Bundle
+        shell: bash
+        run: |
+          BUNDLE_DIR="dist/rayforge-v${{ env.VERSION }}"
+          ZIP_FILE="dist/rayforge-v${{ env.VERSION }}-windows-bundle.zip"
+          zip -r9 "${ZIP_FILE}" "${BUNDLE_DIR}"
+
       - name: Upload PyInstaller bundle
         uses: actions/upload-artifact@v4
         with:
-          name: rayforge-v${{ steps.set-version.outputs.version }}-windows-bundle.zip
-          path: dist/rayforge-v${{ steps.set-version.outputs.version }}/
-          compression-level: 9
+          name: rayforge-v${{ steps.set-version.outputs.version }}-windows-bundle
+          path: dist/rayforge-v${{ steps.set-version.outputs.version }}-windows-bundle.zip
 
       - name: Upload Installer Artifact
         uses: actions/upload-artifact@v4
@@ -129,17 +135,28 @@ jobs:
       - name: Download Artifact
         uses: actions/download-artifact@v4
         with:
-          name: rayforge-v${{ needs.build.outputs.version }}-windows-bundle.zip
+          name: rayforge-v${{ needs.build.outputs.version }}-windows-bundle
+
+      - name: Extract Bundle
+        shell: bash
+        run: |
+          unzip rayforge-v${{ needs.build.outputs.version }}-windows-bundle.zip
 
       - name: Test Executable
         shell: bash
         run: |
           echo "Listing files in current directory:"
           ls -l
-          
+
+          # Define paths based on the extracted directory
+          BUNDLE_DIR="dist/rayforge-v${{ needs.build.outputs.version }}"
           EXECUTABLE_NAME="rayforge-v${{ needs.build.outputs.version }}.exe"
+
+          echo "Listing files in extracted directory:"
+          ls -lR "${BUNDLE_DIR}"
+
           echo "Running executable directly:"
-          ./"${EXECUTABLE_NAME}" --help
+          ./"${BUNDLE_DIR}/${EXECUTABLE_NAME}" --help
 
   release:
     name: Create GitHub Release
