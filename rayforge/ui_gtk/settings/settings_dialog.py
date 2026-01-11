@@ -1,4 +1,7 @@
 from gi.repository import Adw, Gdk, Gtk
+
+from rayforge.ui_gtk.patched_dialog_window import PatchedDialogWindow
+
 from ..icons import get_icon
 from .general_preferences_page import GeneralPreferencesPage
 from .machine_settings_page import MachineSettingsPage
@@ -7,7 +10,7 @@ from .package_manager_page import PackageManagerPage
 from .recipe_manager_page import RecipeManagerPage
 
 
-class SettingsWindow(Adw.Window):
+class SettingsWindow(PatchedDialogWindow):
     """
     The main, non-modal settings window for the application.
     """

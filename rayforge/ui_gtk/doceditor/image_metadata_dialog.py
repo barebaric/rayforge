@@ -1,12 +1,16 @@
 import logging
-from typing import Any, Optional, List, Tuple
-from gi.repository import Gtk, Adw, Pango, Gdk
+from typing import Any, List, Optional, Tuple
+
+from gi.repository import Adw, Gdk, Gtk, Pango
+
+from rayforge.ui_gtk.patched_dialog_window import PatchedDialogWindow
+
 from ..icons import get_icon
 
 logger = logging.getLogger(__name__)
 
 
-class ImageMetadataDialog(Adw.Window):
+class ImageMetadataDialog(PatchedDialogWindow):
     """
     A dialog that displays image metadata in a clean, organized format.
     """

@@ -1,12 +1,16 @@
 import logging
-from typing import Optional, Dict, Any, List
-from gi.repository import Gtk, Adw, GObject
+from typing import Any, Dict, List, Optional
+
 from blinker import Signal
+from gi.repository import Adw, GObject, Gtk
+
+from rayforge.ui_gtk.patched_dialog_window import PatchedDialogWindow
+
 from ...context import get_context
-from ...core.recipe import Recipe
 from ...core.capability import ALL_CAPABILITIES
-from ..icons import get_icon
+from ...core.recipe import Recipe
 from ...shared.units.definitions import get_unit
+from ..icons import get_icon
 from ..varset.varsetwidget import VarSetWidget
 from .material_selector import MaterialSelectorDialog
 
@@ -98,7 +102,7 @@ class OptionalSpinRowController:
         self.spin_button.handler_unblock(self._value_changed_handler_id)
 
 
-class AddEditRecipeDialog(Adw.Window):
+class AddEditRecipeDialog(PatchedDialogWindow):
     """
     A multi-page window for creating or editing a Recipe.
     Mimics a dialog with Cancel/Save buttons.

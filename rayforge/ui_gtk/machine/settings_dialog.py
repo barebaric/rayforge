@@ -1,14 +1,15 @@
 from typing import Optional
 
-from gi.repository import Gtk, Adw, Gdk
+from gi.repository import Adw, Gdk, Gtk
+
 from ...camera.models import Camera
-from ..camera.camera_preferences_page import CameraPreferencesPage
 from ...context import get_context
-from ..icons import get_icon
 from ...machine.models.machine import Machine
-from .general_preferences_page import GeneralPreferencesPage
-from .device_settings_page import DeviceSettingsPage
+from ..camera.camera_preferences_page import CameraPreferencesPage
+from ..icons import get_icon
 from .advanced_preferences_page import AdvancedPreferencesPage
+from .device_settings_page import DeviceSettingsPage
+from .general_preferences_page import GeneralPreferencesPage
 from .laser_preferences_page import LaserPreferencesPage
 from .machine_hours_page import MachineHoursPage
 
