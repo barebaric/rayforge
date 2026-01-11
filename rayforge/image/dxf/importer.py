@@ -162,6 +162,7 @@ class DxfImporter(Importer):
                 blocks_cache,
                 ezdxf.math.Matrix44(),
                 tolerance_mm,
+                ignore_solids=True,  # Suppress global solid harvest in blocks
             )
 
     def _entities_to_doc_items(
@@ -175,6 +176,7 @@ class DxfImporter(Importer):
         blocks_cache: Dict[str, List[DocItem]],
         parent_transform: Optional[ezdxf.math.Matrix44] = None,
         tolerance_mm: float = 0.01,
+        ignore_solids: bool = False,
     ) -> List[DocItem]:
         """
         Converts a list of DXF entities into a list of DocItems (WorkPieces
@@ -193,7 +195,9 @@ class DxfImporter(Importer):
             if current_geo.is_empty():
                 return
 
-            if source and current_solids:
+            # Only harvest solids if we are in the main modelspace context.
+            # Block definitions should not pollute the global source metadata.
+            if source and current_solids and not ignore_solids:
                 existing_solids = source.metadata.get("solids", [])
                 existing_solids.extend(current_solids)
                 source.metadata["solids"] = existing_solids
