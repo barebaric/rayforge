@@ -15,8 +15,8 @@
         <section class="hero">
             <div class="hero-top">
                 <div class="hero-content">
-                    <h1>Unleash Your Creative Blueprint</h1>
-                    <p>Precision laser cutting and engraving for limitless creations. Completely free and open source.</p>
+                    <h1>The World's Most Powerful Open Source Laser Software</h1>
+                    <p>Precision laser cutting and engraving for limitless creations. 2D CAD. Completely free and open source.</p>
                     <!--
                     <div class="hero-cta-buttons">
                         <a href="#" class="button button-primary">Download Latest Version</a>
@@ -43,7 +43,7 @@
 
             <div class="quick-links-container">
                 <div class="cards-grid">
-                    <div class="card-item">
+                    <div class="card-item scroll-animate fade-in-up delay-1">
                         <a href="{{ (config.extra.latest_docs ~ '/getting-started/') | url }}" class="card card-gradient-1">
                             <div class="card-icon">
                                 {% include ".icons/material/rocket-launch.svg" %}
@@ -52,7 +52,7 @@
                         <h3><a href="{{ (config.extra.latest_docs ~ '/getting-started/') | url }}">Getting Started</a></h3>
                         <p>Install and configure Rayforge.</p>
                     </div>
-                    <div class="card-item">
+                    <div class="card-item scroll-animate fade-in-up delay-2">
                         <a href="{{ (config.extra.latest_docs ~ '/ui/') | url }}" class="card card-gradient-2">
                             <div class="card-icon">
                                 {% include ".icons/material/view-dashboard.svg" %}
@@ -61,7 +61,7 @@
                         <h3><a href="{{ (config.extra.latest_docs ~ '/ui/') | url }}">User Interface</a></h3>
                         <p>Explore the tools and layout.</p>
                     </div>
-                    <div class="card-item">
+                    <div class="card-item scroll-animate fade-in-up delay-3">
                         <a href="{{ (config.extra.latest_docs ~ '/features/') | url }}" class="card card-gradient-3">
                             <div class="card-icon">
                                 {% include ".icons/material/feature-search.svg" %}
@@ -77,104 +77,115 @@
         <div class="features-container">
             <!-- Feature 1: 3D Creations -->
             <section class="feature-section">
-                <div class="feature-image">
-                    <img src="assets/screenshot-3d-closeup.png" alt="Rayforge showing 3D toolpaths">
-                </div>
-                <div class="feature-content">
-                    <h2>Bring Your Creations to Life in 3D</h2>
-                    <p>
-                        Seamlessly transition from 2D designs to 3D toolpaths. Rayforge generates G-code for
-                        both 2-axis and 3-axis laser cutters and engravers, bridging the gap between flat
-                        designs and physical objects.
-                    </p>
-                    <p class="compatibility-heading">Compatible with:</p>
-                    <ul>
-                        <li>Grbl</li>
-                        <li>Smoothieware</li>
-                    </ul>
+                <div class="feature-section-inner">
+                    <div class="feature-image scroll-animate fade-in-left">
+                        <img src="assets/screenshot-3d-closeup.png" alt="Rayforge showing 3D toolpaths">
+                    </div>
+                    <div class="feature-content scroll-animate fade-in-right">
+                        <h2>Your Creations in 3D</h2>
+                        <p>
+                            Seamlessly transition from 2D designs to 3D toolpaths. Rayforge generates G-code for
+                            both 2-axis and 3-axis laser cutters and engravers, bridging the gap between flat
+                            designs and physical objects.
+                        </p>
+                        <p class="compatibility-heading">Compatible with:</p>
+                        <ul>
+                            <li>Grbl</li>
+                            <li>Smoothieware</li>
+                        </ul>
+                    </div>
                 </div>
             </section>
 
             <!-- Feature 2: Parametric Sketcher -->
-            <section class="feature-section reverse">
-                <div class="feature-image">
-                    <img src="assets/screenshot-sketcher.png" alt="Parametric 2D Sketcher interface">
-                </div>
-                <div class="feature-content">
-                    <h2>Parametric 2D Sketcher</h2>
-                    <p>
-                        Create precise, constraint-based 2D designs directly within Rayforge. The parametric
-                        sketcher provides a complete set of tools for creating geometric shapes and applying
-                        parametric constraints to define precise relationships between elements. Design custom
-                        parts from scratch without needing external CAD software.
-                    </p>
-                    <ul>
-                        <li>Create lines, circles, arcs, and fills</li>
-                        <li>Apply geometric constraints: coincident, vertical, horizontal, tangent, perpendicular, symmetry</li>
-                        <li>Set dimensional constraints: distance, diameter, radius, equal length/radius</li>
-                        <li>Parametric expressions for calculated dimensions</li>
-                        <li>Construction mode for helper geometry</li>
-                    </ul>
+            <section class="feature-section">
+                <div class="feature-section-inner reverse">
+                    <div class="feature-image scroll-animate fade-in-right">
+                        <img src="assets/screenshot-sketcher.png" alt="Parametric 2D Sketcher interface">
+                    </div>
+                    <div class="feature-content scroll-animate fade-in-left">
+                        <h2>Parametric 2D Sketcher</h2>
+                        <p>
+                            Create precise, constraint-based 2D designs directly within Rayforge. The parametric
+                            sketcher provides a complete set of tools for creating geometric shapes and applying
+                            parametric constraints to define precise relationships between elements. Design custom
+                            parts from scratch without needing external CAD software.
+                        </p>
+                        <ul>
+                            <li>Create lines, circles, arcs, and fills</li>
+                            <li>Apply geometric constraints: coincident, vertical, horizontal, tangent, perpendicular, symmetry</li>
+                            <li>Set dimensional constraints: distance, diameter, radius, equal length/radius</li>
+                            <li>Parametric expressions for calculated dimensions</li>
+                            <li>Construction mode for helper geometry</li>
+                        </ul>
+                    </div>
                 </div>
             </section>
 
             <!-- Feature 3: Advanced Optimization -->
-            <section class="feature-section reverse">
-                <div class="feature-image">
-                    <img src="assets/screenshot-optimizer.png" alt="Advanced path optimization visualization">
-                </div>
-                <div class="feature-content">
-                    <h2>Advanced Path Optimization</h2>
-                    <p>
-                        Save time and material with intelligent pathfinding algorithms and auto-layout
-                        functionality. Rayforge automatically optimizes the cutting order to minimize
-                        travel time and material waste, ensuring efficient and cost-effective production.
-                    </p>
-                    <ul>
-                        <li>Don't waste time when cutting and engraving</li>
-                        <li>Save material with automatic layout and nesting for large projects</li>
-                    </ul>
+            <section class="feature-section">
+                <div class="feature-section-inner">
+                    <div class="feature-image scroll-animate fade-in-left">
+                        <img src="assets/screenshot-optimizer.png" alt="Advanced path optimization visualization">
+                    </div>
+                    <div class="feature-content scroll-animate fade-in-right">
+                        <h2>Advanced Path Optimization</h2>
+                        <p>
+                            Save time and material with intelligent pathfinding algorithms and auto-layout
+                            functionality. Rayforge automatically optimizes the cutting order to minimize
+                            travel time and material waste, ensuring efficient and cost-effective production.
+                        </p>
+                        <ul>
+                            <li>Don't waste time when cutting and engraving</li>
+                            <li>Save material with automatic layout and nesting for large projects</li>
+                            <li>Native arc support with G2/G3 commands for smoother curves</li>
+                        </ul>
+                    </div>
                 </div>
             </section>
 
             <!-- Feature 4: Simulation -->
             <section class="feature-section">
-                <div class="feature-image">
-                    <img src="assets/screenshot-simulation.png" alt="Simulate inside Rayforge">
-                </div>
-                <div class="feature-content">
-                    <h2>Powerful Built-in Simulator</h2>
-                    <p>
-                        Validate your G-code and simulate the cutting process before you start.
-                        Our built-in simulator helps you catch potential issues early, saving you
-                        time and materials.
-                    </p>
-                    <ul>
-                        <li>G-code preview</li>
-                        <li>Visual simulation of cutting paths</li>
-                        <li>Live 2D preview of all operations while you edit</li>
-                    </ul>
+                <div class="feature-section-inner reverse">
+                    <div class="feature-image scroll-animate fade-in-right">
+                        <img src="assets/screenshot-simulation.png" alt="Simulate inside Rayforge">
+                    </div>
+                    <div class="feature-content scroll-animate fade-in-left">
+                        <h2>Powerful Built-in Simulator</h2>
+                        <p>
+                            Validate your G-code and simulate the cutting process before you start.
+                            Our built-in simulator helps you catch potential issues early, saving you
+                            time and materials.
+                        </p>
+                        <ul>
+                            <li>G-code preview</li>
+                            <li>Visual simulation of cutting paths</li>
+                            <li>Live 2D preview of all operations while you edit</li>
+                        </ul>
+                    </div>
                 </div>
             </section>
 
             <!-- Feature 5: Material and Workflow Management -->
-            <section class="feature-section reverse">
-                <div class="feature-image">
-                    <img src="assets/screenshot-recipe.png" alt="Recipe management interface">
-                </div>
-                <div class="feature-content">
-                    <h2>Material and Workflow Management</h2>
-                    <p>
-                        Streamline your laser cutting workflow with comprehensive material, stock, and recipe
-                        management tools designed to improve consistency and efficiency in your projects.
-                    </p>
-                    <ul>
-                        <li>Organize materials by type and properties with custom libraries</li>
-                        <li>Define physical stock dimensions and optimize material usage</li>
-                        <li>Create reusable recipes for consistent results across similar materials</li>
-                        <li>Auto-layout designs within stock boundaries to maximize efficiency</li>
-                        <li>Smart recipe matching based on material, thickness, and machine type</li>
-                    </ul>
+            <section class="feature-section">
+                <div class="feature-section-inner">
+                    <div class="feature-image scroll-animate fade-in-left">
+                        <img src="assets/screenshot-recipe.png" alt="Recipe management interface">
+                    </div>
+                    <div class="feature-content scroll-animate fade-in-right">
+                        <h2>Material and Workflow Management</h2>
+                        <p>
+                            Streamline your laser cutting workflow with comprehensive material, stock, and recipe
+                            management tools designed to improve consistency and efficiency in your projects.
+                        </p>
+                        <ul>
+                            <li>Organize materials by type and properties with custom libraries</li>
+                            <li>Define physical stock dimensions and optimize material usage</li>
+                            <li>Create reusable recipes for consistent results across similar materials</li>
+                            <li>Auto-layout designs within stock boundaries to maximize efficiency</li>
+                            <li>Smart recipe matching based on material, thickness, and machine type</li>
+                        </ul>
+                    </div>
                 </div>
             </section>
         </div>
@@ -183,6 +194,30 @@
     <footer class="footer">
         <p>&copy; 2024 Rayforge. All Rights Reserved.</p>
     </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const observerOptions = {
+                root: null,
+                rootMargin: '0px',
+                threshold: 0.15
+            };
+
+            const observer = new IntersectionObserver(function(entries) {
+                entries.forEach(function(entry) {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('visible');
+                        observer.unobserve(entry.target);
+                    }
+                });
+            }, observerOptions);
+
+            const animatedElements = document.querySelectorAll('.scroll-animate');
+            animatedElements.forEach(function(el) {
+                observer.observe(el);
+            });
+        });
+    </script>
 
 </body>
 </html>

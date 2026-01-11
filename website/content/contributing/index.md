@@ -1,5 +1,11 @@
 # Contributing to Rayforge
 
+## Support the Project
+
+<a href="https://www.patreon.com/c/knipknap">
+    <img src="https://c5.patreon.com/external/logo/become_a_patron_button.png" alt="Become a Patron" height="55"/>
+</a>
+
 ## Community & Support
 
 - **Report Issues**: [GitHub Issues](https://github.com/barebaric/rayforge/issues)

@@ -6,6 +6,7 @@
 
 [![Get it from the Snap Store](https://snapcraft.io/en/light/install.svg)](https://snapcraft.io/rayforge)
 <a href="https://flathub.org/apps/org.rayforge.rayforge"><img alt="Get it from Flathub" src="website/content/docs/images/flathub-badge.svg" height="55"/></a>
+<a href="https://www.patreon.com/c/knipknap"><img src="https://c5.patreon.com/external/logo/become_a_patron_button.png" alt="Become a Patron" height="55"/></a>
 
 # Rayforge
 

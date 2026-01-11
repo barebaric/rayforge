@@ -37,6 +37,8 @@ body, html {
     position: sticky;
     top: 0;
     z-index: 1000;
+    flex-wrap: nowrap;
+    min-width: 0;
 }
 
 .logo {
@@ -55,32 +57,64 @@ body, html {
     vertical-align: middle;
 }
 
+.nav-links {
+    display: flex;
+    align-items: center;
+    flex-shrink: 1;
+    min-width: 0;
+    overflow: hidden;
+}
+
 .nav-links a {
     color: var(--secondary-text);
     text-decoration: none;
     margin: 0 1rem;
     font-weight: 500;
     transition: color 0.3s ease;
+    white-space: nowrap;
 }
 
 .nav-links a:hover {
     color: var(--primary-text);
 }
 
+.nav-actions {
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+}
+
 .nav-actions .btn {
     background-color: var(--accent-purple);
     color: white;
-    padding: 0.6rem 1.2rem;
+    padding: 0 1.5rem;
     border-radius: 8px;
     text-decoration: none;
     font-weight: 500;
     transition: background-color 0.3s ease, transform 0.2s ease;
+    white-space: nowrap;
+    height: 45px;
+    display: inline-flex;
+    align-items: center;
 }
 
 .nav-actions .btn:hover {
     background-color: #7b38e0;
     transform: translateY(-2px);
     box-shadow: 0 4px 15px rgba(138, 66, 245, 0.3);
+}
+
+.nav-actions a {
+    margin: 0 0.5rem;
+    flex-shrink: 0;
+}
+
+.nav-actions a img {
+    vertical-align: middle;
+    display: inline-block;
+    border-radius: 8px;
+    margin-top: -1px;
+    min-width: 150px;
 }
 
 /* --- Hero Section --- */
@@ -347,16 +381,59 @@ h2 {
 
 /* --- Feature Sections --- */
 .features-container {
-    max-width: 1100px;
-    margin: 0 auto;
-    padding: 6rem 2rem 2rem;
+    padding: 0;
 }
 
 .feature-section {
+    position: relative;
+    padding: 4rem 0;
+}
+
+.feature-section:first-of-type {
+    padding-top: 4rem;
+}
+
+.feature-section:nth-of-type(even)::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 0;
+}
+
+.feature-section:nth-of-type(2)::before {
+    background: linear-gradient(135deg, rgba(20, 100, 180, 0.08) 0%, rgba(106, 13, 173, 0.04) 100%),
+                radial-gradient(circle at 20% 30%, rgba(29, 135, 225, 0.15) 0%, transparent 60%),
+                radial-gradient(circle at 80% 70%, rgba(106, 13, 173, 0.1) 0%, transparent 60%);
+}
+
+.feature-section:nth-of-type(4)::before {
+    background: linear-gradient(135deg, rgba(29, 135, 225, 0.08) 0%, rgba(255, 166, 40, 0.04) 100%),
+                radial-gradient(circle at 25% 25%, rgba(29, 135, 225, 0.15) 0%, transparent 60%),
+                radial-gradient(circle at 75% 75%, rgba(255, 166, 40, 0.1) 0%, transparent 60%);
+}
+
+.feature-section:nth-of-type(6)::before {
+    background: linear-gradient(135deg, rgba(106, 13, 173, 0.05) 0%, rgba(255, 166, 40, 0.05) 100%),
+                radial-gradient(circle at 15% 50%, var(--accent-purple) 0%, transparent 60%),
+                radial-gradient(circle at 85% 50%, var(--gradient-end) 0%, transparent 60%);
+}
+
+.feature-section-inner {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 3rem 2rem;
     display: flex;
     align-items: center;
     gap: 4rem;
-    margin-bottom: 6rem;
+    position: relative;
+    z-index: 1;
+}
+
+.feature-section-inner.reverse {
+    flex-direction: row-reverse;
 }
 
 .feature-section:last-child {
@@ -378,6 +455,12 @@ h2 {
     border-radius: 12px;
     box-shadow: 0 15px 30px -10px rgba(0, 0, 0, 0.4);
     border: 1px solid var(--border-color);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.feature-image img:hover {
+    transform: scale(1.05);
+    box-shadow: 0 25px 40px -10px rgba(0, 0, 0, 0.5);
 }
 
 .feature-content h2 {
@@ -505,6 +588,36 @@ h2 {
     to { opacity: 1; transform: translateX(0) rotateY(-20deg) rotateX(10deg); }
 }
 
+/* Scroll Animations */
+.scroll-animate {
+    opacity: 0;
+    transition: opacity 0.8s ease-out, transform 0.8s ease-out;
+}
+
+.scroll-animate.fade-in-up {
+    transform: translateY(60px);
+}
+
+.scroll-animate.fade-in-left {
+    transform: translateX(-60px);
+}
+
+.scroll-animate.fade-in-right {
+    transform: translateX(60px);
+}
+
+.scroll-animate.visible {
+    opacity: 1;
+    transform: translateY(0) translateX(0);
+}
+
+/* Staggered animation delays */
+.scroll-animate.delay-1 { transition-delay: 0.1s; }
+.scroll-animate.delay-2 { transition-delay: 0.2s; }
+.scroll-animate.delay-3 { transition-delay: 0.3s; }
+.scroll-animate.delay-4 { transition-delay: 0.4s; }
+.scroll-animate.delay-5 { transition-delay: 0.5s; }
+
 /* --- Responsive Design --- */
 @media (max-width: 992px) {
     .hero {
@@ -528,11 +641,16 @@ h2 {
         to { opacity: 1; transform: translateY(0); }
     }
 
-    .feature-section,
-    .feature-section.reverse {
+    .feature-section {
+        padding: 3rem 0;
+    }
+
+    .feature-section-inner,
+    .feature-section-inner.reverse {
         flex-direction: column;
         text-align: center;
         gap: 2rem;
+        padding: 2rem 1.5rem;
     }
     .feature-content h2 {
         text-align: center;
@@ -557,6 +675,10 @@ h2 {
     .video-container {
         padding: 0 1rem;
     }
+}
+
+@media (max-width: 900px) {
+    .nav-links { display: none; }
 }
 
 /* Import Ubuntu Sans font from Google Fonts */
