@@ -47,7 +47,7 @@ jobs:
           msystem: MINGW64
           update: true
           # Minimal packages required to run the setup script itself
-          install: base-devel git unzip wget
+          install: base-devel git unzip wget zip
 
       - name: Configure Environment Paths
         shell: msys2 {0}
