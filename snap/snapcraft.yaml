@@ -26,6 +26,7 @@ apps:
       PYTHONPATH: $SNAP/lib/python3.12/site-packages:$SNAP/usr/lib/python3/dist-packages
       LD_LIBRARY_PATH: $SNAP/gnome-platform/usr/lib/x86_64-linux-gnu/libproxy:$SNAP/usr/lib/rayforge-libs
       LD_PRELOAD: $SNAP/bin/semwraplib.so
+      XDG_DATA_DIRS: $SNAP/usr/share:$SNAP/gnome-platform/usr/share:$XDG_DATA_DIRS
 
 slots:
   rayforge:
@@ -53,6 +54,7 @@ parts:
       - python3-setuptools
       - libvips-dev
       - git  # Required for git describe
+      - gtk-update-icon-cache 
     stage-packages:
       - libvips42t64
       - adwaita-icon-theme
@@ -82,4 +84,5 @@ parts:
       ln -s ../x86_64-linux-gnu/libsz.so.2 $SNAPCRAFT_PART_INSTALL/usr/lib/rayforge-libs/libsz.so.2
       ln -s ../x86_64-linux-gnu/libaec.so.0 $SNAPCRAFT_PART_INSTALL/usr/lib/rayforge-libs/libaec.so.0
 
+      gtk-update-icon-cache -q -t -f $SNAPCRAFT_PART_INSTALL/usr/share/icons/Adwaita
       snapcraftctl build
