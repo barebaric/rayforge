@@ -108,7 +108,7 @@ jobs:
           bash scripts/win_build.sh "${{ env.VERSION }}"
 
       - name: Compress PyInstaller Bundle
-        shell: bash
+        shell: msys2 {0}
         run: |
           BUNDLE_DIR="dist/rayforge-v${{ env.VERSION }}"
           ZIP_FILE="dist/rayforge-v${{ env.VERSION }}-windows-bundle.zip"
