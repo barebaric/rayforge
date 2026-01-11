@@ -492,11 +492,13 @@ class SvgImporter(Importer):
                 inv_scale = Matrix.scale(1.0 / svg_scale_x, 1.0 / svg_scale_y)
                 master_pristine_geo.transform(inv_scale.to_4x4_numpy())
 
-            # For Split, we normalize to the ViewBox
+            # For Split, we normalize to the ViewBox.
+            # svgelements shifts coordinates to the ViewBox origin (0,0),
+            # so we do not need to subtract vb_x/vb_y here (offset is 0).
             norm_width = vb_w
             norm_height = vb_h
-            norm_off_x = vb_x
-            norm_off_y = vb_y
+            norm_off_x = 0
+            norm_off_y = 0
 
         # Normalization Matrix maps ViewBox to 0-1
         norm_matrix = Matrix.scale(
@@ -518,7 +520,21 @@ class SvgImporter(Importer):
         master_wp.natural_width_mm = final_dims_mm[0]
         master_wp.natural_height_mm = final_dims_mm[1]
         master_wp.set_size(final_dims_mm[0], final_dims_mm[1])
-        master_wp.pos = (0, 0)  # Trimmed origin
+
+        # Calculate absolute position to restore original layout
+        pos_x, pos_y = 0.0, 0.0
+        if vb:
+            scale_x = final_dims_mm[0] / vb_w if vb_w > 0 else 1.0
+            scale_y = final_dims_mm[1] / vb_h if vb_h > 0 else 1.0
+
+            pos_x = vb_x * scale_x
+
+            if "untrimmed_height_mm" in source.metadata:
+                untrimmed_h = source.metadata["untrimmed_height_mm"]
+                # Bottom of ViewBox in Y-down user units is vb_y + vb_h
+                pos_y = untrimmed_h - ((vb_y + vb_h) * scale_y)
+
+        master_wp.pos = (pos_x, pos_y)
 
         final_items: List[DocItem] = []
         manifest = extract_layer_manifest(self.raw_data)
