@@ -21,6 +21,7 @@ from ..machine.driver.driver import DeviceState, DeviceStatus, Axis
 from ..machine.driver.dummy import NoDeviceDriver
 from ..machine.models.machine import Machine
 from ..machine.transport import TransportStatus
+from ..package_mgr.update_cmd import UpdateCommand
 from ..pipeline.artifact import JobArtifact, JobArtifactHandle
 from ..pipeline.encoder.gcode import MachineCodeOpMap
 from ..pipeline.steps import STEP_FACTORIES, create_contour_step
@@ -156,6 +157,12 @@ class MainWindow(Adw.ApplicationWindow):
         self.doc_editor = DocEditor(task_mgr, context)
         self.machine_cmd = MachineCmd(self.doc_editor)
         self.machine_cmd.job_started.connect(self._on_job_started)
+
+        # Instantiate and connect the UpdateCommand's notification signal
+        self.update_cmd = UpdateCommand(task_mgr, context)
+        self.update_cmd.notification_requested.connect(
+            self._on_editor_notification
+        )
 
         # Instantiate UI-specific command handlers
         self.view_cmd = ViewModeCmd(self.doc_editor, self)
@@ -481,6 +488,19 @@ class MainWindow(Adw.ApplicationWindow):
 
         # Set initial state
         self.on_config_changed(None)
+
+        # Trigger startup tasks when window is shown
+        self.connect("map", self._trigger_startup_tasks)
+
+    def _trigger_startup_tasks(self, widget):
+        """
+        Runs once when the window is first shown.
+        """
+        # Disconnect self to ensure it only runs once
+        self.disconnect_by_func(self._trigger_startup_tasks)
+
+        # Trigger the non-blocking check for package updates
+        self.update_cmd.check_for_updates_on_startup()
 
     def on_add_child(self, sender):
         """Handler for adding a new stock item, called from AssetListView."""

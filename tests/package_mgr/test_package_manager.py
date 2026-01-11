@@ -4,8 +4,8 @@ from pathlib import Path
 from typing import List, Optional
 from unittest.mock import Mock, MagicMock, patch
 import pytest
-from rayforge.core.package_manager import PackageManager, UpdateStatus
-from rayforge.core.package import (
+from rayforge.package_mgr.package_manager import PackageManager, UpdateStatus
+from rayforge.package_mgr.package import (
     Package,
     PackageValidationError,
     PackageMetadata,
@@ -71,7 +71,7 @@ class TestPackageManagerLoading:
         assert not manager.loaded_packages
         manager.plugin_mgr.register.assert_not_called()
 
-    @patch("rayforge.core.package_manager.Package.load_from_directory")
+    @patch("rayforge.package_mgr.package_manager.Package.load_from_directory")
     def test_load_package_success(self, mock_load, manager):
         package_dir = manager.packages_dir / "test_pkg"
 
@@ -80,21 +80,21 @@ class TestPackageManagerLoading:
         )
         mock_load.return_value = mock_pkg
 
-        with patch("rayforge.core.package_manager.importlib.util"):
+        with patch("rayforge.package_mgr.package_manager.importlib.util"):
             manager.load_package(package_dir)
 
         mock_load.assert_called_once_with(package_dir)
         assert "test_plugin" in manager.loaded_packages
         manager.plugin_mgr.register.assert_called_once()
 
-    @patch("rayforge.core.package_manager.Package.load_from_directory")
+    @patch("rayforge.package_mgr.package_manager.Package.load_from_directory")
     def test_load_package_validation_error(self, mock_load, manager):
         mock_load.side_effect = PackageValidationError("Bad format")
         manager.load_package(Path("any/path"))
         assert not manager.loaded_packages
         manager.plugin_mgr.register.assert_not_called()
 
-    @patch("rayforge.core.package_manager.Package.load_from_directory")
+    @patch("rayforge.package_mgr.package_manager.Package.load_from_directory")
     def test_load_package_incompatible_version(self, mock_load, manager):
         mock_pkg = create_mock_package(
             name="test_plugin",
@@ -104,7 +104,7 @@ class TestPackageManagerLoading:
         mock_load.return_value = mock_pkg
 
         with (
-            patch("rayforge.core.package_manager.importlib.util"),
+            patch("rayforge.package_mgr.package_manager.importlib.util"),
             patch.object(
                 manager,
                 "_check_version_compatibility",
@@ -141,7 +141,8 @@ class TestPackageManagerInstallation:
         with (
             patch("git.Repo.clone_from"),
             patch(
-                "rayforge.core.package_manager.Package.load_from_directory",
+                "rayforge.package_mgr.package_manager."
+                "Package.load_from_directory",
                 return_value=mock_pkg,
             ),
         ):
@@ -165,7 +166,8 @@ class TestPackageManagerInstallation:
         with (
             patch("git.Repo.clone_from"),
             patch(
-                "rayforge.core.package_manager.Package.load_from_directory",
+                "rayforge.package_mgr.package_manager."
+                "Package.load_from_directory",
                 return_value=mock_pkg_for_validation,
             ),
             patch("shutil.copytree"),
@@ -187,7 +189,8 @@ class TestPackageManagerInstallation:
         with (
             patch("git.Repo.clone_from"),
             patch(
-                "rayforge.core.package_manager.Package.load_from_directory",
+                "rayforge.package_mgr.package_manager."
+                "Package.load_from_directory",
                 return_value=mock_pkg_for_validation,
             ),
             patch("shutil.copytree"),
@@ -282,6 +285,71 @@ class TestPackageManagerUpdates:
         status, local_ver = manager.check_update_status(remote_meta)
         assert status == UpdateStatus.UP_TO_DATE
         assert local_ver == "2.0.0"
+
+    def test_check_for_updates_finds_one_update(self, manager):
+        # Local packages
+        manager.loaded_packages["up-to-date"] = create_mock_package(
+            name="up-to-date", version="1.0.0"
+        )
+        outdated_pkg = create_mock_package(name="outdated", version="1.0.0")
+        manager.loaded_packages["outdated"] = outdated_pkg
+
+        # Remote registry
+        remote_meta = [
+            PackageMetadata("up-to-date", "", "1.0.0", [], Mock(), Mock()),
+            PackageMetadata("outdated", "", "1.1.0", [], Mock(), Mock()),
+            PackageMetadata("not-installed", "", "1.0.0", [], Mock(), Mock()),
+        ]
+
+        with patch.object(manager, "fetch_registry", return_value=remote_meta):
+            updates = manager.check_for_updates()
+
+        assert len(updates) == 1
+        local_pkg, remote_pkg_meta = updates[0]
+        assert local_pkg is outdated_pkg
+        assert remote_pkg_meta.name == "outdated"
+        assert remote_pkg_meta.version == "1.1.0"
+
+    def test_check_for_updates_no_updates(self, manager):
+        manager.loaded_packages["pkg1"] = create_mock_package(
+            name="pkg1", version="2.0.0"
+        )
+        remote_meta = [
+            PackageMetadata("pkg1", "", "2.0.0", [], Mock(), Mock()),
+            PackageMetadata("pkg2", "", "1.0.0", [], Mock(), Mock()),
+        ]
+        with patch.object(manager, "fetch_registry", return_value=remote_meta):
+            updates = manager.check_for_updates()
+        assert len(updates) == 0
+
+    def test_check_for_updates_fetch_fails(self, manager):
+        manager.loaded_packages["pkg1"] = create_mock_package(
+            name="pkg1", version="1.0.0"
+        )
+        with patch.object(
+            manager, "fetch_registry", side_effect=Exception("Network error")
+        ):
+            updates = manager.check_for_updates()
+        assert len(updates) == 0
+
+    def test_check_for_updates_empty_registry(self, manager):
+        manager.loaded_packages["pkg1"] = create_mock_package(
+            name="pkg1", version="1.0.0"
+        )
+        with patch.object(manager, "fetch_registry", return_value=[]):
+            updates = manager.check_for_updates()
+        assert len(updates) == 0
+
+    def test_check_for_updates_local_not_in_registry(self, manager):
+        manager.loaded_packages["local-only"] = create_mock_package(
+            name="local-only", version="1.0.0"
+        )
+        remote_meta = [
+            PackageMetadata("other-pkg", "", "1.0.0", [], Mock(), Mock())
+        ]
+        with patch.object(manager, "fetch_registry", return_value=remote_meta):
+            updates = manager.check_for_updates()
+        assert len(updates) == 0
 
 
 class TestPackageManagerHelpers:

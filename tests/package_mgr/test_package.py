@@ -4,7 +4,7 @@ import pytest
 from pathlib import Path
 from unittest.mock import Mock, patch, MagicMock
 from datetime import datetime, timezone, timedelta
-from rayforge.core.package import (
+from rayforge.package_mgr.package import (
     Package,
     PackageMetadata,
     PackageValidationError,

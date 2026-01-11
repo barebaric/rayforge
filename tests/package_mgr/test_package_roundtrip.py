@@ -3,7 +3,7 @@
 import sys
 
 from rayforge.context import RayforgeContext
-from rayforge.core.package_manager import PackageManager
+from rayforge.package_mgr.package_manager import PackageManager
 
 
 class TestPackageRoundTrip:

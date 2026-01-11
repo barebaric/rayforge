@@ -2,10 +2,10 @@ import logging
 import threading
 from typing import List
 from gi.repository import Adw, Gtk, GLib, Gdk
-from ...context import get_context
-from ...core.package import PackageMetadata
-from ...core.package_manager import UpdateStatus
 from ... import __version__
+from ...context import get_context
+from ...package_mgr.package import PackageMetadata
+from ...package_mgr.package_manager import UpdateStatus
 from ..icons import get_icon
 
 logger = logging.getLogger(__name__)

@@ -4,7 +4,7 @@ from typing import cast
 from gi.repository import Adw, Gtk, GLib
 from blinker import Signal
 from ...context import get_context
-from ...core.package import Package, PackageMetadata
+from ...package_mgr.package import Package, PackageMetadata
 from ..icons import get_icon
 from ..shared.preferences_group import PreferencesGroupWithButton
 from .dialog import PackageRegistryDialog

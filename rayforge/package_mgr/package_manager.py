@@ -156,6 +156,51 @@ class PackageManager:
         else:
             return (UpdateStatus.UP_TO_DATE, local_version)
 
+    def check_for_updates(self) -> List[Tuple[Package, PackageMetadata]]:
+        """
+        Compares all installed packages against the remote registry to find
+        available updates.
+
+        Returns:
+            A list of tuples, where each tuple contains the locally installed
+            Package object and the remote PackageMetadata for the update.
+        """
+        logger.info("Checking for available package updates...")
+        try:
+            remote_packages_list = self.fetch_registry()
+            if not remote_packages_list:
+                logger.warning(
+                    "Could not fetch remote registry for update check."
+                )
+                return []
+        except Exception as e:
+            logger.error(f"Failed to fetch registry for update check: {e}")
+            return []
+
+        # Create a dict for efficient lookup
+        remote_packages = {pkg.name: pkg for pkg in remote_packages_list}
+        updates_available: List[Tuple[Package, PackageMetadata]] = []
+
+        for installed_pkg in self.loaded_packages.values():
+            remote_meta = remote_packages.get(installed_pkg.metadata.name)
+            if not remote_meta:
+                continue  # Installed package not in remote registry
+
+            if is_newer_version(
+                remote_meta.version, installed_pkg.metadata.version
+            ):
+                logger.info(
+                    f"Update found for '{installed_pkg.metadata.name}': "
+                    f"{installed_pkg.metadata.version} -> "
+                    f"{remote_meta.version}"
+                )
+                updates_available.append((installed_pkg, remote_meta))
+
+        if not updates_available:
+            logger.info("All installed packages are up to date.")
+
+        return updates_available
+
     def load_installed_packages(self):
         """Scans the packages directory and loads valid packages."""
         if not self.packages_dir.exists():
