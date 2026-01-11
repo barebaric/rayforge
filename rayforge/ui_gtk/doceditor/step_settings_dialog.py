@@ -3,14 +3,13 @@ from typing import TYPE_CHECKING, Tuple
 from blinker import Signal
 from gi.repository import Adw, Gdk, GLib, Gtk
 
-from rayforge.ui_gtk.patched_dialog_window import PatchedDialogWindow
-
 from ...context import get_context
 from ...core.step import Step
 from ...core.undo import ChangePropertyCommand, HistoryManager
 from ...pipeline.producer import OpsProducer
 from ...pipeline.transformer import OpsTransformer
 from ..icons import get_icon
+from ..patched_dialog_window import PatchedDialogWindow
 from ..shared.adwfix import get_spinrow_float
 from ..shared.unit_spin_row import UnitSpinRowHelper
 from .recipe_control_widget import RecipeControlWidget

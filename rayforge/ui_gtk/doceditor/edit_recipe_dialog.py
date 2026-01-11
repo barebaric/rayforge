@@ -4,13 +4,12 @@ from typing import Any, Dict, List, Optional
 from blinker import Signal
 from gi.repository import Adw, GObject, Gtk
 
-from rayforge.ui_gtk.patched_dialog_window import PatchedDialogWindow
-
 from ...context import get_context
 from ...core.capability import ALL_CAPABILITIES
 from ...core.recipe import Recipe
 from ...shared.units.definitions import get_unit
 from ..icons import get_icon
+from ..patched_dialog_window import PatchedDialogWindow
 from ..varset.varsetwidget import VarSetWidget
 from .material_selector import MaterialSelectorDialog
 

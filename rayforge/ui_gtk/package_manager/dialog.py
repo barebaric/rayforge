@@ -4,13 +4,12 @@ from typing import List
 
 from gi.repository import Adw, Gdk, GLib, Gtk
 
-from rayforge.ui_gtk.patched_dialog_window import PatchedDialogWindow
-
 from ... import __version__
 from ...context import get_context
 from ...package_mgr.package import PackageMetadata
 from ...package_mgr.package_manager import UpdateStatus
 from ..icons import get_icon
+from ..patched_dialog_window import PatchedDialogWindow
 
 logger = logging.getLogger(__name__)
 

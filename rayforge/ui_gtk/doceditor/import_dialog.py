@@ -6,8 +6,6 @@ import cairo
 from blinker import Signal
 from gi.repository import Adw, Gdk, GdkPixbuf, Gtk
 
-from rayforge.ui_gtk.patched_dialog_window import PatchedDialogWindow
-
 from ...core.layer import Layer
 from ...core.vectorization_spec import (
     PassthroughSpec,
@@ -16,6 +14,7 @@ from ...core.vectorization_spec import (
 )
 from ...core.workpiece import WorkPiece
 from ...doceditor.file_cmd import PreviewResult
+from ..patched_dialog_window import PatchedDialogWindow
 
 if TYPE_CHECKING:
     from ...doceditor.editor import DocEditor

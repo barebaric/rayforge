@@ -2,11 +2,10 @@ from typing import List, Optional
 
 from gi.repository import Adw, Gdk, GLib, Gtk
 
-from rayforge.ui_gtk.patched_dialog_window import PatchedDialogWindow
-
 from ...machine.models.macro import Macro
 from ...pipeline.encoder.context import GcodeContext
 from ..icons import get_icon
+from ..patched_dialog_window import PatchedDialogWindow
 
 # Define characters that are not allowed in macro names
 FORBIDDEN_NAME_CHARS = "();[]{}<>"

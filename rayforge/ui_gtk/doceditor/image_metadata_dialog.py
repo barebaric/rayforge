@@ -3,9 +3,8 @@ from typing import Any, List, Optional, Tuple
 
 from gi.repository import Adw, Gdk, Gtk, Pango
 
-from rayforge.ui_gtk.patched_dialog_window import PatchedDialogWindow
-
 from ..icons import get_icon
+from ..patched_dialog_window import PatchedDialogWindow
 
 logger = logging.getLogger(__name__)
 

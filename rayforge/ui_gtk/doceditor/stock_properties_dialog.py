@@ -3,10 +3,9 @@ from typing import TYPE_CHECKING, Optional, Tuple
 
 from gi.repository import Adw, GLib, Gtk
 
-from rayforge.ui_gtk.patched_dialog_window import PatchedDialogWindow
-
 from ...context import get_context
 from ...core.stock import StockItem
+from ..patched_dialog_window import PatchedDialogWindow
 from ..shared.unit_spin_row import UnitSelectorSpinRow
 from .material_selector import MaterialSelectorDialog
 

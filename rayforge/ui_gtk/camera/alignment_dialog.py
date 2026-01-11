@@ -5,11 +5,10 @@ from typing import List, Optional, Tuple
 import numpy as np
 from gi.repository import Adw, Gdk, GLib, Gtk
 
-from rayforge.ui_gtk.patched_dialog_window import PatchedDialogWindow
-
 from ...camera.controller import CameraController
 from ...camera.models.camera import Pos
 from ..icons import get_icon
+from ..patched_dialog_window import PatchedDialogWindow
 from ..shared.gtk import apply_css
 from .display_widget import CameraDisplay
 from .point_bubble_widget import PointBubbleWidget

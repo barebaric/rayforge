@@ -3,12 +3,11 @@ from typing import cast
 
 from gi.repository import Adw, Gtk
 
-from rayforge.ui_gtk.patched_dialog_window import PatchedDialogWindow
-
 from ...machine.models.machine import Machine
 from ...machine.models.machine_hours import ResettableCounter
 from ...shared.util.time_format import format_hours_to_hm
 from ..icons import get_icon
+from ..patched_dialog_window import PatchedDialogWindow
 from ..shared.preferences_group import PreferencesGroupWithButton
 
 logger = logging.getLogger(__name__)

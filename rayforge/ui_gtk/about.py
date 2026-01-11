@@ -6,10 +6,9 @@ from importlib.metadata import PackageNotFoundError, version
 
 from gi.repository import Adw, GLib, Gtk
 
-from rayforge.ui_gtk.patched_dialog_window import PatchedDialogWindow
-
 from .. import __version__
 from .icons import get_icon
+from .patched_dialog_window import PatchedDialogWindow
 
 logger = logging.getLogger(__name__)
 _not_found_str = _("Not found")

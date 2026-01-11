@@ -1,11 +1,10 @@
 from gi.repository import Adw, Gdk, Gtk
 
-from rayforge.ui_gtk.patched_dialog_window import PatchedDialogWindow
-
 from ...machine.cmd import MachineCmd
 from ...machine.driver.driver import Axis
 from ...machine.models.machine import Machine
 from ...shared.tasker import task_mgr
+from ..patched_dialog_window import PatchedDialogWindow
 from ..shared.adwfix import get_spinrow_float, get_spinrow_int
 from .jog_widget import JogWidget
 

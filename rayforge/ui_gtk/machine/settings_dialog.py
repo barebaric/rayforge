@@ -2,13 +2,12 @@ from typing import Optional
 
 from gi.repository import Adw, Gdk, Gtk
 
-from rayforge.ui_gtk.patched_dialog_window import PatchedDialogWindow
-
 from ...camera.models import Camera
 from ...context import get_context
 from ...machine.models.machine import Machine
 from ..camera.camera_preferences_page import CameraPreferencesPage
 from ..icons import get_icon
+from ..patched_dialog_window import PatchedDialogWindow
 from .advanced_preferences_page import AdvancedPreferencesPage
 from .device_settings_page import DeviceSettingsPage
 from .general_preferences_page import GeneralPreferencesPage
