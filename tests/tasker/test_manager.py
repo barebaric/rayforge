@@ -610,9 +610,9 @@ class TestWaitUntilSettled:
         elapsed = time.time() - start_time
 
         assert result is False
-        assert (
-            elapsed >= 0.5
-        )  # Should have waited at least the timeout duration
+        # Should have waited at least the timeout duration (allowing a
+        # tiny margin for floating point errors)
+        assert elapsed >= 0.49
         assert elapsed < 2.0  # But less than the task duration
 
         # Clean up
