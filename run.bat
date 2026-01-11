@@ -30,6 +30,9 @@ if "%~1"=="" (
     goto :usage
 )
 
+set "APP_ARGS="
+for /f "tokens=1,* delims= " %%a in ("%*") do set "APP_ARGS=%%b"
+
 :: --- Command Dispatcher ---
 if /i "%~1"=="setup"   goto :setup
 if /i "%~1"=="test"    goto :test
@@ -65,7 +68,8 @@ goto :eof
 :app
 echo.
 echo --- Running Rayforge Application ---
-%MSYS2_SHELL% %MSYS2_ARGS% "(source .msys2_env && python -m rayforge.app %*)%PAUSE_ON_ERROR%"
+shift
+%MSYS2_SHELL% %MSYS2_ARGS% "(source .msys2_env && python -m rayforge.app %APP_ARGS%)%PAUSE_ON_ERROR%"
 goto :eof
 
 

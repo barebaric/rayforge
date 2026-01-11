@@ -1,14 +1,17 @@
-from typing import Tuple, TYPE_CHECKING
-from gi.repository import Gtk, Adw, GLib, Gdk
+from typing import TYPE_CHECKING, Tuple
+
 from blinker import Signal
+from gi.repository import Adw, Gdk, GLib, Gtk
+
 from ...context import get_context
 from ...core.step import Step
-from ...core.undo import HistoryManager, ChangePropertyCommand
-from ..shared.adwfix import get_spinrow_float
-from ..shared.unit_spin_row import UnitSpinRowHelper
+from ...core.undo import ChangePropertyCommand, HistoryManager
 from ...pipeline.producer import OpsProducer
 from ...pipeline.transformer import OpsTransformer
 from ..icons import get_icon
+from ..shared.adwfix import get_spinrow_float
+from ..shared.patched_dialog_window import PatchedDialogWindow
+from ..shared.unit_spin_row import UnitSpinRowHelper
 from .recipe_control_widget import RecipeControlWidget
 from .step_settings import WIDGET_REGISTRY
 
@@ -427,7 +430,7 @@ class PostProcessingSettingsView(Adw.PreferencesPage):
             self.add(placeholder_group)
 
 
-class StepSettingsDialog(Adw.Window):
+class StepSettingsDialog(PatchedDialogWindow):
     def __init__(
         self,
         editor: "DocEditor",
