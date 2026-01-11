@@ -55,6 +55,7 @@ parts:
       - git  # Required for git describe
     stage-packages:
       - libvips42t64
+      - adwaita-icon-theme
     parse-info: [share/metainfo/org.rayforge.rayforge.metainfo.xml]
     override-pull: |
       craftctl default
