@@ -2,7 +2,8 @@ from gi.repository import Adw
 
 """
 PatchedDialogWindow:
-A replacement for Adw.Window that fixes wrong window being focused when a dialog is closed on windows.
+A replacement for Adw.Window that fixes wrong window
+being focused when a dialog is closed on windows.
 See:
 https://bugzilla.gnome.org/show_bug.cgi?id=112404
 & https://gitlab.gnome.org/GNOME/gtk/-/issues/7313
