@@ -7,12 +7,7 @@ from ...core.geo.constants import (
     CMD_TYPE_MOVE,
     CMD_TYPE_LINE,
     CMD_TYPE_ARC,
-    COL_TYPE,
-    COL_X,
-    COL_Y,
-    COL_I,
-    COL_J,
-    COL_CW,
+    CMD_TYPE_BEZIER,
 )
 from ..base_renderer import Renderer
 
@@ -37,30 +32,23 @@ def _geometry_to_svg_path(
     scaled to the target pixel dimensions.
     """
     path_data = []
-    data = geometry.data
-    if data is None:
-        return ""
     # Cairo/SVG use Y-down, but our normalized geometry is Y-up. We flip Y.
     # Flip matrix: Scale Y by -1, then translate by height.
     # y' = -y * height + height = height * (1 - y)
-    for row in data:
-        cmd_type = row[COL_TYPE]
+    for cmd_type, x, y, z, p1, p2, p3, p4 in geometry.iter_commands():
         if cmd_type == CMD_TYPE_MOVE:
-            x, y = row[COL_X], row[COL_Y]
             path_data.append(f"M {x * width:.3f} {height * (1 - y):.3f}")
         elif cmd_type == CMD_TYPE_LINE:
-            x, y = row[COL_X], row[COL_Y]
             path_data.append(f"L {x * width:.3f} {height * (1 - y):.3f}")
         elif cmd_type == CMD_TYPE_ARC:
+            i, j, cw = p1, p2, p3  # Unpack arc params from generic slots
             # This requires converting center-offset format to SVG's
             # endpoint + radius format.
 
-            ex, ey_up = row[COL_X], row[COL_Y]
-            ex_px = ex * width
-            ey_px = height * (1 - ey_up)
+            ex_px = x * width
+            ey_px = height * (1 - y)
 
-            center_offset_x, center_offset_y = row[COL_I], row[COL_J]
-            radius = math.hypot(center_offset_x, center_offset_y)
+            radius = math.hypot(i, j)
             radius_x_px = radius * width
             radius_y_px = radius * height
 
@@ -74,12 +62,25 @@ def _geometry_to_svg_path(
             #
             # Since visual direction is preserved (Top stays Top),
             # Source CW (True) maps to SVG CW (1).
-            sweep = 1 if bool(row[COL_CW]) else 0
+            sweep = 1 if bool(cw) else 0
 
             path_data.append(
                 f"A {radius_x_px:.3f} {radius_y_px:.3f} 0 {large_arc} {sweep} "
                 f"{ex_px:.3f} {ey_px:.3f}"
             )
+        elif cmd_type == CMD_TYPE_BEZIER:
+            c1x, c1y, c2x, c2y = p1, p2, p3, p4
+            c1x_px = c1x * width
+            c1y_px = height * (1 - c1y)  # Y-flip
+            c2x_px = c2x * width
+            c2y_px = height * (1 - c2y)  # Y-flip
+            ex_px = x * width
+            ey_px = height * (1 - y)  # Y-flip
+            path_data.append(
+                f"C {c1x_px:.3f} {c1y_px:.3f} {c2x_px:.3f} {c2y_px:.3f} "
+                f"{ex_px:.3f} {ey_px:.3f}"
+            )
+
     return " ".join(path_data)
 
 

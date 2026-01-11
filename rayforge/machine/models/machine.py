@@ -1,9 +1,7 @@
 import asyncio
-import json
 import logging
 import multiprocessing
 import uuid
-from dataclasses import asdict
 from enum import Enum
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type
@@ -17,6 +15,7 @@ from rayforge.core.ops.commands import MovingCommand
 from ...camera.models.camera import Camera
 from ...context import RayforgeContext, get_context
 from ...core.varset import ValidationError
+from ...pipeline.encoder.gcode import MachineCodeOpMap
 from ...shared.tasker import task_mgr
 from ..driver import get_driver_cls
 from ..driver.driver import (
@@ -26,7 +25,6 @@ from ..driver.driver import (
     DeviceStatus,
     Driver,
     DriverPrecheckError,
-    DriverSetupError,
     ResourceBusyError,
 )
 from ..driver.dummy import NoDeviceDriver
@@ -86,7 +84,10 @@ class Machine:
         self.clear_alarm_on_connect: bool = False
         self.single_axis_homing_enabled: bool = True
         self.dialect_uid: str = "grbl"
+        self._hydrated_dialect: Optional[GcodeDialect] = None
         self.gcode_precision: int = 3
+        self.supports_arcs: bool = True
+        self.arc_tolerance: float = 0.03
         self.hookmacros: Dict[MacroTrigger, Macro] = {}
         self.macros: Dict[str, Macro] = {}
         self.heads: List[Laser] = []
@@ -105,8 +106,28 @@ class Machine:
         self.soft_limits_enabled: bool = True
         self._settings_lock = asyncio.Lock()
 
+        # Work Coordinate System (WCS) State
+        # We default to standard G-code names for convenience, but the logic
+        # is agnostic. Any key in wcs_offsets is considered a mutable WCS.
+        # Any key NOT in wcs_offsets is considered an immutable/absolute system
+        # with (0,0,0) offset.
+        self.active_wcs: str = "G53"
+        self.wcs_offsets: Dict[str, Tuple[float, float, float]] = {
+            "G54": (0.0, 0.0, 0.0),
+            "G55": (0.0, 0.0, 0.0),
+            "G56": (0.0, 0.0, 0.0),
+            "G57": (0.0, 0.0, 0.0),
+            "G58": (0.0, 0.0, 0.0),
+            "G59": (0.0, 0.0, 0.0),
+        }
+
         self.machine_hours: MachineHours = MachineHours()
         self.machine_hours.changed.connect(self._on_machine_hours_changed)
+
+        # Connect to dialect manager to detect dialect changes
+        self.context.dialect_mgr.dialects_changed.connect(
+            self._on_dialects_changed
+        )
 
         # Signals
         self.changed = Signal()
@@ -117,6 +138,7 @@ class Machine:
         self.state_changed = Signal()
         self.job_finished = Signal()
         self.command_status_changed = Signal()
+        self.wcs_updated = Signal()
 
         self._connect_driver_signals()
         self.add_head(Laser())
@@ -147,6 +169,9 @@ class Machine:
         if self.driver is not None:
             await self.driver.cleanup()
         self._disconnect_driver_signals()
+        self.context.dialect_mgr.dialects_changed.disconnect(
+            self._on_dialects_changed
+        )
 
     def _connect_driver_signals(self):
         if self.driver is None:
@@ -159,6 +184,7 @@ class Machine:
             self._on_driver_command_status_changed
         )
         self.driver.job_finished.connect(self._on_driver_job_finished)
+        self.driver.wcs_updated.connect(self._on_driver_wcs_updated)
         self._on_driver_state_changed(self.driver, self.driver.state)
         self._reset_status()
 
@@ -173,6 +199,14 @@ class Machine:
             self._on_driver_command_status_changed
         )
         self.driver.job_finished.disconnect(self._on_driver_job_finished)
+        self.driver.wcs_updated.disconnect(self._on_driver_wcs_updated)
+
+    def _on_dialects_changed(self, sender=None, **kwargs):
+        """
+        Callback when dialects are updated.
+        Sends machine's changed signal to trigger recalculation.
+        """
+        self.changed.send(self)
 
     async def _rebuild_driver_instance(
         self, ctx: Optional["ExecutionContext"] = None
@@ -205,13 +239,7 @@ class Machine:
             self.precheck_error = str(e)
 
         new_driver = driver_cls(self.context, self)
-
-        # Run setup. A setup error is considered fatal and prevents connection.
-        try:
-            new_driver.setup(**self.driver_args)
-        except DriverSetupError as e:
-            logger.error(f"Setup failed for driver {self.driver_name}: {e}")
-            new_driver.setup_error = str(e)
+        new_driver.setup(**self.driver_args)
 
         self.driver = new_driver
         self._connect_driver_signals()
@@ -262,6 +290,12 @@ class Machine:
                 status=status,
                 message=message,
             )
+            if status == TransportStatus.CONNECTED:
+                # Sync WCS offsets on connect
+                task_mgr.add_coroutine(
+                    lambda ctx: self.sync_wcs_from_device(),
+                    key=(self.id, "sync-wcs"),
+                )
 
     def _on_driver_state_changed(self, driver: Driver, state: DeviceState):
         """Proxies the state changed signal from the active driver."""
@@ -287,6 +321,15 @@ class Machine:
             status=status,
             message=message,
         )
+
+    def _on_driver_wcs_updated(
+        self, driver: Driver, offsets: Dict[str, Tuple[float, float, float]]
+    ):
+        """Updates internal WCS state from driver updates."""
+        self.wcs_offsets.update(offsets)
+        self._scheduler(self.wcs_updated.send, self)
+        # Also notify general change so views update
+        self._scheduler(self.changed.send, self)
 
     def is_connected(self) -> bool:
         """
@@ -337,7 +380,17 @@ class Machine:
     @property
     def dialect(self) -> "GcodeDialect":
         """Get the current dialect instance for this machine."""
+        if self._hydrated_dialect:
+            return self._hydrated_dialect
         return get_dialect(self.dialect_uid)
+
+    def hydrate(self):
+        """
+        Fetches the current dialect from the registry and stores it internally.
+        This ensures that when serialized, the machine carries the full
+        dialect definition.
+        """
+        self._hydrated_dialect = get_dialect(self.dialect_uid)
 
     def set_dialect_uid(self, dialect_uid: str):
         if self.dialect_uid == dialect_uid:
@@ -349,6 +402,12 @@ class Machine:
         if self.gcode_precision == precision:
             return
         self.gcode_precision = precision
+        self.changed.send(self)
+
+    def set_arc_tolerance(self, tolerance: float):
+        if self.arc_tolerance == tolerance:
+            return
+        self.arc_tolerance = tolerance
         self.changed.send(self)
 
     def set_home_on_start(self, home_on_start: bool = True):
@@ -739,12 +798,107 @@ class Machine:
 
         await self.driver.set_power(head, percent)
 
+    def get_active_wcs_offset(self) -> Tuple[float, float, float]:
+        """
+        Returns the (x, y, z) offset for the currently active WCS.
+        If the active_wcs is not in the known offsets dictionary, it assumes
+        an absolute coordinate system with zero offset.
+        """
+        return self.wcs_offsets.get(self.active_wcs, (0.0, 0.0, 0.0))
+
+    def set_active_wcs(self, wcs: str):
+        """Sets the active WCS and notifies listeners."""
+        if wcs != self.active_wcs:
+            self.active_wcs = wcs
+            self.changed.send(self)
+
+    async def set_work_origin(
+        self, x: float, y: float, z: float, wcs_slot: Optional[str] = None
+    ):
+        """
+        Sets the work origin at the specified machine coordinates.
+
+        Args:
+            x: X-coordinate in machine space.
+            y: Y-coordinate in machine space.
+            z: Z-coordinate in machine space.
+            wcs_slot: The WCS slot to update (e.g. "G54"). Defaults to active.
+        """
+        if not self.is_connected():
+            return
+
+        slot = wcs_slot or self.active_wcs
+        if slot not in self.wcs_offsets:
+            logger.warning(
+                f"Cannot set offset for immutable WCS '{slot}' "
+                "(e.g. Machine Coordinates)."
+            )
+            return
+
+        await self.driver.set_wcs_offset(slot, x, y, z)
+        # Trigger read back to ensure state is synced
+        await self.driver.read_wcs_offsets()
+
+    async def set_work_origin_here(
+        self, axes: Axis, wcs_slot: Optional[str] = None
+    ):
+        """
+        Sets the work origin for the specified axes to the current machine
+        position.
+
+        Args:
+            axes: Flag combination of axes to set (e.g. Axis.X | Axis.Y).
+            wcs_slot: The WCS slot to update (e.g. "G54"). Defaults to active.
+        """
+        if not self.is_connected():
+            return
+
+        slot = wcs_slot or self.active_wcs
+        if slot not in self.wcs_offsets:
+            logger.warning(
+                f"Cannot set offset for immutable WCS '{slot}' "
+                "(e.g. Machine Coordinates)."
+            )
+            return
+
+        # Get current machine position
+        m_pos = self.device_state.machine_pos
+        # Need to handle None values in machine_pos (if not reported yet)
+        if any(v is None for v in m_pos):
+            logger.warning("Cannot set work origin: Unknown machine position.")
+            return
+
+        # Get current offsets to preserve unselected axes
+        current_offsets = self.wcs_offsets.get(slot, (0.0, 0.0, 0.0))
+
+        new_x, new_y, new_z = current_offsets
+
+        # For "Set Zero Here", the new offset is exactly the current machine
+        # position for that axis.
+        # Work_Pos = Machine_Pos - Offset.
+        # If Work_Pos = 0, Offset = Machine_Pos.
+        if axes & Axis.X and m_pos[0] is not None:
+            new_x = m_pos[0]
+        if axes & Axis.Y and m_pos[1] is not None:
+            new_y = m_pos[1]
+        if axes & Axis.Z and m_pos[2] is not None:
+            new_z = m_pos[2]
+
+        await self.set_work_origin(new_x, new_y, new_z, slot)
+
+    async def sync_wcs_from_device(self):
+        """Queries the device for current WCS offsets and updates state."""
+        if self.is_connected():
+            await self.driver.read_wcs_offsets()
+
     def encode_ops(
         self, ops: "Ops", doc: "Doc"
-    ) -> Tuple[np.ndarray, np.ndarray]:
+    ) -> Tuple[str, "MachineCodeOpMap"]:
         """
         Encodes an Ops object into machine code (G-code) and a corresponding
         operation map, specific to this machine's configuration.
+        This is the single source of truth for applying machine-specific
+        coordinate transformations.
 
         Args:
             ops: The Ops object to encode.
@@ -752,15 +906,14 @@ class Machine:
 
         Returns:
             A tuple containing:
-            - A numpy array of machine code bytes (UTF-8 encoded G-code).
-            - A numpy array of the operation map bytes (UTF-8 encoded JSON).
+            - A string of machine code (G-code).
+            - A MachineCodeOpMap object.
         """
         encoder = self.driver.get_encoder()
 
-        # Transform the ops coordinate system (Y-Up Internal -> Machine)
-        # before generating G-code based on the origin setting.
-        # We assume Internal Ops are Y-Up (Cartesian, 0,0 at Bottom-Left).
-        ops_for_encoder = ops
+        # We operate on a copy to avoid modifying the original Ops object,
+        # which is owned by the pipeline and may be reused.
+        ops_for_encoder = ops.copy()
 
         # Apply offsets
         for command in ops_for_encoder.commands:
@@ -772,50 +925,89 @@ class Machine:
                     base_end[2],
                 )
 
-        # If Origin is BOTTOM_LEFT, it matches Internal (Y-Up, X-Right).
-        # Any other origin requires transformation.
-        if self.origin != Origin.BOTTOM_LEFT:
-            ops_for_encoder = ops.copy()
+        # If Origin is BOTTOM_LEFT and axes are not reversed, the internal
+        # coordinate system matches the machine's. Any other configuration
+        # requires transformation.
+        needs_transform = (
+            self.origin != Origin.BOTTOM_LEFT
+            or self.reverse_x_axis
+            or self.reverse_y_axis
+        )
+
+        if needs_transform:
             width, height = self.dimensions
 
-            # Create the origin transformation matrix
+            # Create the origin transformation matrix. This is complex because
+            # it depends on both the origin corner and whether the machine
+            # uses a positive or negative coordinate system for each axis.
+            # The 'reverse_x_axis' and 'reverse_y_axis' flags indicate a
+            # negative coordinate system.
             transform = np.identity(4)
 
-            if self.origin == Origin.TOP_LEFT:
-                # Machine is Y-Down (0,0 at Top-Left).
-                # Flip Y: Y_new = Height - Y_old
+            # --- Y-Axis Transformation ---
+            if self.y_axis_down:  # Origin is TOP_LEFT or TOP_RIGHT
+                if self.reverse_y_axis:
+                    # Negative workspace: Machine Y is 0 at top,
+                    # decreases down.
+                    # World Y=height maps to Machine Y=0.
+                    # Formula: y_m = y_w - height
+                    transform[1, 3] = -float(height)
+                else:
+                    # Positive workspace: Machine Y is 0 at top,
+                    # increases down.
+                    # World Y=height maps to Y=0; World Y=0 maps to
+                    # Y=height.
+                    # Formula: y_m = height - y_w
+                    transform[1, 1] = -1.0
+                    transform[1, 3] = float(height)
+            elif self.reverse_y_axis:
+                # Origin is at bottom, but Y is negative (uncommon)
+                # World Y=0 maps to Y=0, but Y increases negatively.
+                # Formula: y_m = -y_w
                 transform[1, 1] = -1.0
-                transform[1, 3] = height
 
-            elif self.origin == Origin.TOP_RIGHT:
-                # Machine is Y-Down, X-Left (0,0 at Top-Right).
-                # Flip X: X_new = Width - X_old
-                # Flip Y: Y_new = Height - Y_old
+            # --- X-Axis Transformation ---
+            if self.x_axis_right:  # Origin is TOP_RIGHT or BOTTOM_RIGHT
+                if self.reverse_x_axis:
+                    # Negative workspace: Machine X is 0 at right,
+                    # decreases left.
+                    # World X=width maps to Machine X=0.
+                    # Formula: x_m = x_w - width
+                    transform[0, 3] = -float(width)
+                else:
+                    # Positive workspace: Machine X is 0 at right,
+                    # increases left.
+                    # World X=width maps to X=0; World X=0 maps to
+                    # X=width.
+                    # Formula: x_m = width - x_w
+                    transform[0, 0] = -1.0
+                    transform[0, 3] = float(width)
+            elif self.reverse_x_axis:
+                # Origin is at left, but X is negative (uncommon)
+                # World X=0 maps to X=0, but X increases negatively.
+                # Formula: x_m = -x_w
                 transform[0, 0] = -1.0
-                transform[0, 3] = width
-                transform[1, 1] = -1.0
-                transform[1, 3] = height
-
-            elif self.origin == Origin.BOTTOM_RIGHT:
-                # Machine is Y-Up, X-Left (0,0 at Bottom-Right).
-                # Flip X: X_new = Width - X_old
-                transform[0, 0] = -1.0
-                transform[0, 3] = width
 
             ops_for_encoder.transform(transform)
 
+        # Apply WCS Offset Logic
+        # The document is drawn on a canvas representing the full machine bed.
+        # ops_for_encoder is now in "Machine Coordinates".
+        # We must subtract the WCS offset to get "Command Coordinates", so that
+        # when the machine adds the offset back during execution, it lands on
+        # the correct physical spot.
+        # Cmd = Machine - Offset
+        wcs_offset = self.get_active_wcs_offset()
+        if wcs_offset != (0.0, 0.0, 0.0):
+            wcs_transform = np.identity(4)
+            wcs_transform[0, 3] = -wcs_offset[0]
+            wcs_transform[1, 3] = -wcs_offset[1]
+            wcs_transform[2, 3] = -wcs_offset[2]
+            ops_for_encoder.transform(wcs_transform)
+
         gcode_str, op_map_obj = encoder.encode(ops_for_encoder, self, doc)
 
-        # Encode G-code and map to byte arrays
-        machine_code_bytes = np.frombuffer(
-            gcode_str.encode("utf-8"), dtype=np.uint8
-        )
-        op_map_str = json.dumps(asdict(op_map_obj))
-        op_map_bytes = np.frombuffer(
-            op_map_str.encode("utf-8"), dtype=np.uint8
-        )
-
-        return machine_code_bytes, op_map_bytes
+        return gcode_str, op_map_obj
 
     def refresh_settings(self):
         """Public API for the UI to request a settings refresh."""
@@ -900,8 +1092,8 @@ class Machine:
         finally:
             logger.debug(f"_write_setting_to_device(key={key}): Done.")
 
-    def to_dict(self) -> Dict[str, Any]:
-        return {
+    def to_dict(self, include_frozen_dialect: bool = True) -> Dict[str, Any]:
+        data = {
             "machine": {
                 "name": self.name,
                 "driver": self.driver_name,
@@ -909,8 +1101,12 @@ class Machine:
                 "auto_connect": self.auto_connect,
                 "clear_alarm_on_connect": self.clear_alarm_on_connect,
                 "home_on_start": self.home_on_start,
-                "single_axis_homing_enabled": self.single_axis_homing_enabled,
+                "single_axis_homing_enabled": self.single_axis_homing_enabled,  # noqa: E501
                 "dialect_uid": self.dialect_uid,
+                "active_wcs": self.active_wcs,
+                "wcs_offsets": self.wcs_offsets,
+                "supports_arcs": self.supports_arcs,
+                "arc_tolerance": self.arc_tolerance,
                 "dimensions": list(self.dimensions),
                 "offsets": list(self.offsets),
                 "origin": self.origin.value,
@@ -937,6 +1133,11 @@ class Machine:
                 "machine_hours": self.machine_hours.to_dict(),
             }
         }
+        if include_frozen_dialect and self._hydrated_dialect:
+            data["machine"]["frozen_dialect"] = (
+                self._hydrated_dialect.to_dict()
+            )
+        return data
 
     @staticmethod
     def _migrate_legacy_hooks_to_dialect(
@@ -975,7 +1176,8 @@ class Machine:
             base_dialect = get_dialect("grbl")
 
         new_label = _("{label} (for {machine_name})").format(
-            label=base_dialect.label, machine_name=machine_name
+            label=base_dialect.label,
+            machine_name=machine_name,
         )
         new_dialect = base_dialect.copy_as_custom(new_label=new_label)
 
@@ -1008,11 +1210,13 @@ class Machine:
         ma.driver_args = ma_data.get("driver_args", {})
         ma.auto_connect = ma_data.get("auto_connect", ma.auto_connect)
         ma.clear_alarm_on_connect = ma_data.get(
-            "clear_alarm_on_connect", ma.clear_alarm_on_connect
+            "clear_alarm_on_connect",
+            ma.clear_alarm_on_connect,
         )
         ma.home_on_start = ma_data.get("home_on_start", ma.home_on_start)
         ma.single_axis_homing_enabled = ma_data.get(
-            "single_axis_homing_enabled", ma.single_axis_homing_enabled
+            "single_axis_homing_enabled",
+            ma.single_axis_homing_enabled,
         )
 
         dialect_uid = ma_data.get("dialect_uid")
@@ -1028,8 +1232,12 @@ class Machine:
         )
 
         ma.dialect_uid = dialect_uid
+        ma.active_wcs = ma_data.get("active_wcs", ma.active_wcs)
+        if "wcs_offsets" in ma_data:
+            ma.wcs_offsets = ma_data["wcs_offsets"]
+
         ma.dimensions = tuple(ma_data.get("dimensions", ma.dimensions))
-        ma.offsets = tuple(ma_data.get("offsets", ma.dimensions))
+        ma.offsets = tuple(ma_data.get("offsets", ma.offsets))
         origin_value = ma_data.get("origin", None)
         if origin_value is not None:
             ma.origin = Origin(origin_value)
@@ -1085,13 +1293,98 @@ class Machine:
         )
         ma.acceleration = speeds.get("acceleration", ma.acceleration)
         gcode = ma_data.get("gcode", {})
-        ma.gcode_precision = gcode.get("gcode_precision", 3)
+        ma.gcode_precision = gcode.get("gcode_precision", ma.gcode_precision)
+        ma.supports_arcs = ma_data.get("supports_arcs", ma.supports_arcs)
+        ma.arc_tolerance = ma_data.get("arc_tolerance", ma.arc_tolerance)
 
         hours_data = ma_data.get("machine_hours", {})
         ma.machine_hours = MachineHours.from_dict(hours_data)
         ma.machine_hours.changed.connect(ma._on_machine_hours_changed)
 
         return ma
+
+    def world_to_machine(
+        self,
+        pos_world: Tuple[float, float],
+        size_world: Tuple[float, float],
+    ) -> Tuple[float, float]:
+        """
+        Converts coordinates from internal World Space (Bottom-Left 0,0, Y-Up)
+        to Machine Space (User-facing, based on Origin setting).
+
+        Args:
+            pos_world: (x, y) position in world coordinates (top-left corner
+              of item).
+            size_world: (width, height) of the item.
+
+        Returns:
+            (x, y) position in machine coordinates.
+        """
+        machine_width, machine_height = self.dimensions
+        wx, wy = pos_world
+        w, h = size_world
+
+        # X Calculation
+        if self.x_axis_right:
+            # Origin is Right. World X=0 is Far Right in Machine Space?
+            # No, Internal World 0,0 is always Bottom-Left.
+            # If Machine Origin is Top-Right (X-Left, Y-Down):
+            # Machine X=0 is Right edge. Machine X increases to the Left.
+            # pos_machine_x = machine_width - pos_world_x - item_width
+            mx = machine_width - wx - w
+        else:
+            # Origin is Left. Machine X increases to the Right (standard).
+            mx = wx
+
+        # Y Calculation
+        if self.y_axis_down:
+            # Origin is Top. Machine Y=0 is Top edge. Machine Y increases Down.
+            # Internal World Y=0 is Bottom.
+            # pos_machine_y = machine_height - pos_world_y - item_height
+            my = machine_height - wy - h
+        else:
+            # Origin is Bottom. Machine Y increases Up (standard).
+            my = wy
+
+        return mx, my
+
+    def machine_to_world(
+        self,
+        pos_machine: Tuple[float, float],
+        size_world: Tuple[float, float],
+    ) -> Tuple[float, float]:
+        """
+        Converts coordinates from Machine Space (User-facing) back to
+        internal World Space (Bottom-Left 0,0, Y-Up).
+
+        Args:
+            pos_machine: (x, y) position in machine coordinates.
+            size_world: (width, height) of the item.
+
+        Returns:
+            (x, y) position in world coordinates.
+        """
+        machine_width, machine_height = self.dimensions
+        mx, my = pos_machine
+        w, h = size_world
+
+        # The logic is symmetric to world_to_machine.
+
+        # X Calculation
+        if self.x_axis_right:
+            # wx = machine_width - mx - w
+            wx = machine_width - mx - w
+        else:
+            wx = mx
+
+        # Y Calculation
+        if self.y_axis_down:
+            # wy = machine_height - my - h
+            wy = machine_height - my - h
+        else:
+            wy = my
+
+        return wx, wy
 
 
 class MachineManager:
@@ -1247,7 +1540,7 @@ class MachineManager:
         logger.debug(f"Saving machine {machine.id}")
         machine_file = self.filename_from_id(machine.id)
         with open(machine_file, "w") as f:
-            data = machine.to_dict()
+            data = machine.to_dict(include_frozen_dialect=False)
             yaml.safe_dump(data, f)
 
     def load_machine(self, machine_id: str) -> Optional["Machine"]:

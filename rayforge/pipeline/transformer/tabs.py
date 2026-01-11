@@ -5,13 +5,6 @@ from typing import Optional, List, Tuple, Dict, Any
 from ...core.geo.constants import (
     CMD_TYPE_LINE,
     CMD_TYPE_ARC,
-    COL_TYPE,
-    COL_X,
-    COL_Y,
-    COL_Z,
-    COL_I,
-    COL_J,
-    COL_CW,
 )
 from ...core.ops import (
     Ops,
@@ -64,9 +57,6 @@ class TabOpsTransformer(OpsTransformer):
             )
             return []
 
-        boundaries_data = workpiece.boundaries.data
-        if boundaries_data is None:
-            return []
         clip_data = []
 
         # The Ops object at this stage is in local coordinates, so we
@@ -80,25 +70,28 @@ class TabOpsTransformer(OpsTransformer):
         )
 
         for tab in workpiece.tabs:
-            if tab.segment_index >= len(boundaries_data):
+            cmd = workpiece.boundaries.get_command_at(tab.segment_index)
+            if cmd is None:
                 logger.warning(
                     f"Tab {tab.uid} has invalid segment_index "
                     f"{tab.segment_index}, skipping."
                 )
                 continue
 
-            p_start_3d: Tuple[float, float, float] = (0.0, 0.0, 0.0)
-            if tab.segment_index > 0:
-                p_start_3d = tuple(
-                    boundaries_data[tab.segment_index - 1, COL_X : COL_Z + 1]
-                )
-
-            row = boundaries_data[tab.segment_index]
-            cmd_type = row[COL_TYPE]
-            end_point = (row[COL_X], row[COL_Y], row[COL_Z])
+            cmd_type, x, y, z, p1, p2, p3, _ = cmd
+            end_point = (x, y, z)
 
             if cmd_type not in (CMD_TYPE_LINE, CMD_TYPE_ARC):
                 continue
+
+            p_start_3d: Tuple[float, float, float] = (0.0, 0.0, 0.0)
+            if tab.segment_index > 0:
+                prev_cmd = workpiece.boundaries.get_command_at(
+                    tab.segment_index - 1
+                )
+                if prev_cmd:
+                    _, prev_x, prev_y, prev_z, _, _, _, _ = prev_cmd
+                    p_start_3d = (prev_x, prev_y, prev_z)
 
             logger.debug(
                 f"Processing Tab UID {tab.uid} on segment {tab.segment_index} "
@@ -113,8 +106,9 @@ class TabOpsTransformer(OpsTransformer):
                 center_y = p_start[1] + (p_end[1] - p_start[1]) * tab.pos
 
             elif cmd_type == CMD_TYPE_ARC:
-                center_offset = (row[COL_I], row[COL_J])
-                clockwise = bool(row[COL_CW])
+                i, j, cw = p1, p2, p3
+                center_offset = (i, j)
+                clockwise = bool(cw)
                 center = (
                     p_start_3d[0] + center_offset[0],
                     p_start_3d[1] + center_offset[1],

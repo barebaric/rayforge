@@ -24,8 +24,9 @@ from .constraints import (
     SymmetryConstraint,
     CollinearConstraint,
 )
-from .entities import EntityRegistry, Line, Arc, Circle, Entity
+from .entities import Line, Arc, Circle, Entity
 from .params import ParameterContext
+from .registry import EntityRegistry
 from .solver import Solver
 
 
@@ -62,7 +63,7 @@ class Fill:
     def to_dict(self) -> Dict[str, Any]:
         return {
             "uid": self.uid,
-            "boundary": self.boundary,
+            "boundary": [list(item) for item in self.boundary],
         }
 
     @classmethod

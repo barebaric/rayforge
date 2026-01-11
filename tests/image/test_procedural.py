@@ -174,7 +174,7 @@ class TestProceduralRenderer:
         wp = WorkPiece(name="bad")
         wp.source_segment = SourceAssetSegment(
             source_asset_uid=source.uid,
-            segment_mask_geometry=Geometry(),
+            pristine_geometry=Geometry(),
             vectorization_spec=ProceduralSpec(),
         )
         # Mock parent context
@@ -187,7 +187,7 @@ class TestProceduralRenderer:
         mock_parent.get_world_transform.return_value = Matrix.identity()
         wp.parent = mock_parent
 
-        assert wp.natural_sizes() == (0.0, 0.0)
+        assert wp.natural_size == (0.0, 0.0)
         assert wp.render_to_pixels(10, 10) is None
 
     def test_renderer_handles_invalid_function_path(self):
@@ -207,7 +207,7 @@ class TestProceduralRenderer:
         wp = WorkPiece(name="bad")
         wp.source_segment = SourceAssetSegment(
             source_asset_uid=source.uid,
-            segment_mask_geometry=Geometry(),
+            pristine_geometry=Geometry(),
             vectorization_spec=ProceduralSpec(),
         )
         mock_doc = Mock(source_assets={source.uid: source})
@@ -218,7 +218,7 @@ class TestProceduralRenderer:
         mock_parent.get_world_transform.return_value = Matrix.identity()
         wp.parent = mock_parent
 
-        assert wp.natural_sizes() == (0.0, 0.0)
+        assert wp.natural_size == (0.0, 0.0)
         assert wp.render_to_pixels(10, 10) is None
 
     def test_renderer_handles_function_exception(self):
@@ -238,7 +238,7 @@ class TestProceduralRenderer:
         wp = WorkPiece(name="bad")
         wp.source_segment = SourceAssetSegment(
             source_asset_uid=source.uid,
-            segment_mask_geometry=Geometry(),
+            pristine_geometry=Geometry(),
             vectorization_spec=ProceduralSpec(),
         )
         mock_doc = Mock(source_assets={source.uid: source})
@@ -249,5 +249,5 @@ class TestProceduralRenderer:
         mock_parent.get_world_transform.return_value = Matrix.identity()
         wp.parent = mock_parent
 
-        assert wp.natural_sizes() == (0.0, 0.0)
+        assert wp.natural_size == (0.0, 0.0)
         assert wp.render_to_pixels(10, 10) is None

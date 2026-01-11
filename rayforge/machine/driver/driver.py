@@ -9,6 +9,7 @@ from typing import (
     Callable,
     Union,
     Awaitable,
+    Dict,
 )
 from blinker import Signal
 from dataclasses import dataclass
@@ -102,6 +103,15 @@ DEVICE_STATUS_LABELS = {
 }
 
 
+@dataclass
+class DeviceError:
+    """Error with code, title and description."""
+
+    code: int
+    title: str
+    description: str
+
+
 Pos = Tuple[Optional[float], Optional[float], Optional[float]]  # x, y, z in mm
 
 
@@ -116,6 +126,7 @@ class Axis(IntFlag):
 @dataclass
 class DeviceState:
     status: DeviceStatus = DeviceStatus.UNKNOWN
+    error: Optional[DeviceError] = None
     machine_pos: Pos = (None, None, None)
     work_pos: Pos = (None, None, None)
     feed_rate: Optional[int] = None
@@ -136,6 +147,8 @@ class Driver(ABC):
        state_changed: emitted when the DeviceState changes
        command_status_changed: to monitor a command that was sent
        connection_status_changed: signals connectivity changes
+       probe_status_changed: emits status during a probing cycle
+       wcs_updated: emitted when work coordinate system data is updated
     """
 
     label: str
@@ -153,9 +166,10 @@ class Driver(ABC):
         self.connection_status_changed = Signal()
         self.settings_read = Signal()
         self.job_finished = Signal()
+        self.probe_status_changed = Signal()
+        self.wcs_updated = Signal()
         self.did_setup = False
         self.state: DeviceState = DeviceState()
-        self.setup_error: Optional[str] = None
 
     @property
     def resource_uri(self) -> Optional[str]:
@@ -179,18 +193,36 @@ class Driver(ABC):
         """
         pass
 
+    @abstractmethod
+    def _setup_implementation(self, **kwargs: Any) -> None:
+        """
+        Driver-specific setup implementation. Subclasses should override
+        this method to perform their setup logic. If setup fails, this
+        method should raise DriverSetupError.
+        """
+        pass
+
     def setup(self, **kwargs: Any):
         """
         The method will be invoked with a dictionary of values gathered
         from the UI, based on the VarSet returned by get_setup_vars().
         """
         assert not self.did_setup
+        self.state.error = None
+        try:
+            self._setup_implementation(**kwargs)
+        except DriverSetupError as e:
+            logger.error(f"Setup failed: {e}")
+            self.state.error = DeviceError(
+                -999,
+                str(e),
+                _("Error during setup. You may need to edit device settings."),
+            )
         self.did_setup = True
-        self.setup_error = None
 
     async def cleanup(self):
         self.did_setup = False
-        self.setup_error = None
+        self.state.error = None
 
     @classmethod
     @abstractmethod
@@ -414,7 +446,8 @@ class Driver(ABC):
         ] = None,
     ) -> "MachineCodeOpMap":
         """
-        Creates a MachineCodeOpMap for tracking command execution.
+        Creates a MachineCodeOpMap for tracking command execution by using the
+        centralized machine encoder.
 
         This method should be called by driver implementations to get a
         MachineCodeOpMap that can be used to track which Ops commands
@@ -430,6 +463,46 @@ class Driver(ABC):
         Returns:
             A MachineCodeOpMap for tracking command execution
         """
-        encoder = self.get_encoder()
-        _, op_map = encoder.encode(ops, self._machine, doc)
+        _, op_map = self._machine.encode_ops(ops, doc)
         return op_map
+
+    @abstractmethod
+    async def set_wcs_offset(
+        self, wcs_slot: str, x: float, y: float, z: float
+    ) -> None:
+        """
+        Sends a command to the controller to define the offset for a
+        specific WCS slot (e.g. "G54").
+        """
+        pass
+
+    @abstractmethod
+    async def read_wcs_offsets(self) -> Dict[str, Pos]:
+        """
+        Sends a command to query all current WCS offsets from the controller.
+
+        Returns:
+            A dictionary where keys are WCS slot names (e.g., "G54") and
+            values are (x, y, z) offset tuples.
+        """
+        pass
+
+    @abstractmethod
+    async def run_probe_cycle(
+        self, axis: Axis, max_travel: float, feed_rate: int
+    ) -> Optional[Pos]:
+        """
+        Initiates a single probing move along the specified axis. The move
+        is performed in the negative direction if max_travel is negative.
+
+        Args:
+            axis: The axis to probe along.
+            max_travel: The maximum distance to travel in mm. The sign
+                        indicates direction.
+            feed_rate: The speed of the probing move in mm/min.
+
+        Returns:
+            The absolute machine coordinates (x, y, z) of the trigger point,
+            or None if the probe failed to trigger.
+        """
+        pass

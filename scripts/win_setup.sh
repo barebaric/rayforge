@@ -120,6 +120,7 @@ if [[ "$1" == "pacman" || -z "$1" ]]; then
       mingw-w64-x86_64-python-aiohttp
       mingw-w64-x86_64-python-blinker
       mingw-w64-x86_64-python-platformdirs
+      mingw-w64-x86_64-python-pluggy
       mingw-w64-x86_64-python-poetry-core
       mingw-w64-x86_64-python-pytest-asyncio
       mingw-w64-x86_64-python-pytest-cov
@@ -158,7 +159,10 @@ if [[ "$1" == "pip" || -z "$1" ]]; then
     echo "Installing/updating pip packages..."
     $PYTHON_BIN_PATH -m pip install --upgrade pip --break-system-packages
 
+    $PYTHON_BIN_PATH -m pip install --no-cache-dir --no-build-isolation asyncudp==0.11.0 --break-system-packages
+    $PYTHON_BIN_PATH -m pip install --no-cache-dir --no-build-isolation semver==3.0.2 --break-system-packages
     $PYTHON_BIN_PATH -m pip install --no-cache-dir --no-build-isolation vtracer==0.6.11 --break-system-packages
+    $PYTHON_BIN_PATH -m pip install --no-cache-dir GitPython==3.1.44 --break-system-packages
     $PYTHON_BIN_PATH -m pip install --no-cache-dir pyclipper==1.3.0.post6 --break-system-packages
     $PYTHON_BIN_PATH -m pip install --no-cache-dir --no-build-isolation --no-deps pyvips==3.0.0 --break-system-packages
     $PYTHON_BIN_PATH -m pip install --no-cache-dir pyserial_asyncio==0.6 ezdxf==1.3.5 pypdf==5.3.1 --break-system-packages

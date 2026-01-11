@@ -16,6 +16,7 @@ from .constants import (
     CMD_TYPE_MOVE,
     CMD_TYPE_LINE,
     CMD_TYPE_ARC,
+    CMD_TYPE_BEZIER,
     COL_TYPE,
     COL_X,
     COL_Y,
@@ -23,11 +24,13 @@ from .constants import (
     COL_I,
     COL_J,
     COL_CW,
+    COL_C1X,
+    COL_C1Y,
+    COL_C2X,
+    COL_C2Y,
     GEO_ARRAY_COLS,
 )
-from .geometry import (
-    Geometry,
-)
+from .geometry import Geometry
 
 __all__ = [
     "analysis",
@@ -42,6 +45,7 @@ __all__ = [
     "CMD_TYPE_MOVE",
     "CMD_TYPE_LINE",
     "CMD_TYPE_ARC",
+    "CMD_TYPE_BEZIER",
     "COL_TYPE",
     "COL_X",
     "COL_Y",
@@ -49,5 +53,9 @@ __all__ = [
     "COL_I",
     "COL_J",
     "COL_CW",
+    "COL_C1X",
+    "COL_C1Y",
+    "COL_C2X",
+    "COL_C2Y",
     "GEO_ARRAY_COLS",
 ]

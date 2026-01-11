@@ -12,7 +12,7 @@ from .constants import (
     COL_CW,
     GEO_ARRAY_COLS,
 )
-from .linearize import linearize_arc
+from .linearize import linearize_arc, linearize_bezier_from_array
 
 
 def normalize_angle(angle: float) -> float:
@@ -392,6 +392,39 @@ def _find_closest_on_linearized_arc(
     j_best, t_sub_best, pt_best, dist_sq_best = best_sub_result
     t_arc = (j_best + t_sub_best) / len(arc_segments)
     return t_arc, pt_best, dist_sq_best
+
+
+def find_closest_point_on_bezier(
+    bezier_row: np.ndarray,
+    start_pos: Tuple[float, float, float],
+    x: float,
+    y: float,
+) -> Optional[Tuple[float, Tuple[float, float], float]]:
+    """
+    Finds the closest point on a Bézier curve by linearizing it.
+    """
+    bezier_segments = linearize_bezier_from_array(bezier_row, start_pos)
+    if not bezier_segments:
+        return None
+
+    min_dist_sq_sub = float("inf")
+    best_sub_result = None
+
+    for j, (p1_3d, p2_3d) in enumerate(bezier_segments):
+        t_sub, pt_sub, dist_sq_sub = find_closest_point_on_line_segment(
+            p1_3d[:2], p2_3d[:2], x, y
+        )
+        if dist_sq_sub < min_dist_sq_sub:
+            min_dist_sq_sub = dist_sq_sub
+            best_sub_result = (j, t_sub, pt_sub, dist_sq_sub)
+
+    if not best_sub_result:
+        return None
+
+    j_best, t_sub_best, pt_best, dist_sq_best = best_sub_result
+    # Approximate t for the whole curve from the linearized segment
+    t_bezier = (j_best + t_sub_best) / len(bezier_segments)
+    return t_bezier, pt_best, dist_sq_best
 
 
 def _find_closest_point_on_arc_from_array(

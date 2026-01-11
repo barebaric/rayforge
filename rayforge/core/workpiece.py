@@ -145,6 +145,11 @@ class WorkPiece(DocItem):
             geometry = temp_sketch.to_geometry()
             fill_geometries = temp_sketch.get_fill_geometries()
 
+            # Upgrade all generated geometry to be fully scalable
+            geometry.upgrade_to_scalable()
+            for fill_geo in fill_geometries:
+                fill_geo.upgrade_to_scalable()
+
             if not geometry.is_empty():
                 min_x, min_y, max_x, max_y = geometry.rect()
                 width = max(max_x - min_x, 1e-9)
@@ -373,6 +378,11 @@ class WorkPiece(DocItem):
             # Also get fill geometries from the same solved state.
             unnormalized_fills = instance_sketch.get_fill_geometries()
 
+            # Upgrade all generated geometry to be fully scalable
+            unnormalized_geo.upgrade_to_scalable()
+            for fill_geo in unnormalized_fills:
+                fill_geo.upgrade_to_scalable()
+
             # Cache the geometry even if it is empty, to prevent
             # re-solving on every render frame.
             if unnormalized_geo.is_empty():
@@ -412,67 +422,52 @@ class WorkPiece(DocItem):
             self._fills_cache = unnormalized_fills
             return self._boundaries_cache
 
-        # --- SourceAssetSegment-based Geometry (legacy/other formats) ---
+        # --- SourceAssetSegment-based Geometry ---
         if not self.source_segment:
             logger.warning(
                 f"WP {self.uid[:8]}: Cannot get boundaries, no source_segment."
             )
             return None
 
-        # Get the Y-down geometry from storage
-        y_down_geo = self.source_segment.segment_mask_geometry
-        is_geom_empty = not y_down_geo or y_down_geo.is_empty()
+        # The authoritative path for vector imports
+        if (
+            self.source_segment.pristine_geometry
+            and self.source_segment.normalization_matrix is not None
+        ):
+            # Path for UI rendering: normalize the pristine data
+            norm_geo = self.source_segment.pristine_geometry.copy()
+            norm_matrix = self.source_segment.normalization_matrix
+            # Apply ONLY the normalization matrix.
+            norm_geo.transform(norm_matrix.to_4x4_numpy())
+            # Convert Y-down native to Y-up normalized for the contract
+            flip_matrix = Matrix.translation(0, 1) @ Matrix.scale(1, -1)
+            norm_geo.transform(flip_matrix.to_4x4_numpy())
+            self._boundaries_cache = norm_geo
+            return self._boundaries_cache
+
+        # If there's no pristine geometry, there's nothing to show.
         logger.debug(
-            f"WP {self.uid[:8]}: Recalculating boundaries from segment. "
-            f"Stored geometry is_empty={is_geom_empty}"
+            f"WP {self.uid[:8]}: No pristine geometry available in segment."
         )
-        if is_geom_empty:
-            return None
-
-        y_up_geo = y_down_geo.copy()
-
-        # Transformation to flip Y axis in a 0-1 box:
-        # 1. Scale Y by -1 (flips it from Y-down to Y-up)
-        # 2. Translate Y by +1 (moves it back into the 0-1 box)
-        flip_matrix = Matrix.translation(0, 1) @ Matrix.scale(1, -1)
-        y_up_geo.transform(flip_matrix.to_4x4_numpy())
-
-        logger.debug(
-            f"WP {self.uid[:8]}: Caching new boundaries. "
-            f"Rect: {y_up_geo.rect()}"
-        )
-        self._boundaries_cache = y_up_geo
-        return self._boundaries_cache
+        return None
 
     @property
     def _boundaries_y_down(self) -> Optional[Geometry]:
         """
-        Internal helper to get the appropriate Y-DOWN normalized geometry
-        for use in image masking, which operates in a Y-down pixel space.
+        Internal helper to get the Y-DOWN normalized geometry for use in
+        image masking, which operates in a Y-down pixel space.
         """
-        # Case 1: An edit (like a split) has occurred. The authoritative
-        # geometry is `_edited_boundaries`, which is Y-UP. We must flip it.
-        if self._edited_boundaries is not None:
-            y_down_geo = self._edited_boundaries.copy()
-            # Flip Y-up (0,0 at bottom) to Y-down (0,0 at top)
-            flip_matrix = Matrix.translation(0, 1) @ Matrix.scale(1, -1)
-            y_down_geo.transform(flip_matrix.to_4x4_numpy())
-            return y_down_geo
+        # This property *always* derives the Y-down geometry from the
+        # canonical Y-up `boundaries` property.
+        y_up_geo = self.boundaries
+        if not y_up_geo:
+            return None
 
-        # For sketches, we must generate from the Y-up boundaries
-        if self.sketch_uid:
-            y_up_geo = self.boundaries
-            if not y_up_geo:
-                return None
-            y_down_geo = y_up_geo.copy()
-            flip_matrix = Matrix.translation(0, 1) @ Matrix.scale(1, -1)
-            y_down_geo.transform(flip_matrix.to_4x4_numpy())
-            return y_down_geo
-
-        if self.source_segment:
-            return self.source_segment.segment_mask_geometry
-
-        return None
+        y_down_geo = y_up_geo.copy()
+        # Flip Y-up (0,0 at bottom) to Y-down (0,0 at top) in a 0-1 box
+        flip_matrix = Matrix.translation(0, 1) @ Matrix.scale(1, -1)
+        y_down_geo.transform(flip_matrix.to_4x4_numpy())
+        return y_down_geo
 
     @property
     def tabs(self) -> List[Tab]:
@@ -650,10 +645,21 @@ class WorkPiece(DocItem):
             self.source_segment
             and self.source_segment.crop_window_px is not None
         )
+        is_vector = False
+        if self.source and self.source.metadata.get("is_vector"):
+            is_vector = True
 
-        # If cropping, we must render the *original* full image at a scaled-up
-        # resolution such that the crop window matches the target dimensions.
-        if is_cropped and self.original_data and source_px_dims:
+        # If cropping a non-vector image, we must render the *original* full
+        # image at a scaled-up resolution such that the crop window matches
+        # the target dimensions.
+        # Vector sources handle cropping via ViewBox overrides in
+        # _build_renderer_kwargs, so they skip this expensive path.
+        if (
+            is_cropped
+            and not is_vector
+            and self.original_data
+            and source_px_dims
+        ):
             # We need to switch to the original data for the full render
             data_override = self.original_data
             source_w, source_h = source_px_dims
@@ -708,6 +714,61 @@ class WorkPiece(DocItem):
             kwargs["source_metadata"] = metadata
             kwargs["workpiece_matrix"] = self.matrix
 
+        if renderer_name == "SvgRenderer" and self.source_segment:
+            # Check for layer_id to support rendering individual layers
+            # from a multi-layer SVG source.
+            if (
+                hasattr(self.source_segment, "layer_id")
+                and self.source_segment.layer_id
+            ):
+                kwargs["visible_layer_ids"] = [self.source_segment.layer_id]
+
+            # For vector splitting/cropping, we calculate a ViewBox override
+            # based on the crop window.
+            if (
+                self.source_segment.crop_window_px
+                and self.source
+                and self.source.metadata.get("is_vector")
+            ):
+                crop_px = self.source_segment.crop_window_px
+                vb_orig = self.source.metadata.get("viewbox")
+
+                # We need source pixel dims to map crop_px to user units
+                src_w_px = self.source.width_px
+                src_h_px = self.source.height_px
+
+                if vb_orig:
+                    vb_x, vb_y, vb_w, vb_h = vb_orig
+
+                    # Calculate scale factors (User Units per Pixel)
+                    # Note: We assume uniform scale if w/h ratio matches,
+                    # but calculate independently to be safe.
+                    scale_x = (
+                        vb_w / src_w_px if (src_w_px and src_w_px > 0) else 1.0
+                    )
+                    scale_y = (
+                        vb_h / src_h_px if (src_h_px and src_h_px > 0) else 1.0
+                    )
+
+                    # Map crop window (pixels) to new ViewBox (user units)
+                    # Crop X/Y are relative to the top-left of the original
+                    # image (0,0 in px space)
+                    # Orig ViewBox X/Y is the user-unit coordinate of (0,0) px.
+
+                    cx, cy, cw, ch = crop_px
+
+                    new_vb_x = vb_x + (cx * scale_x)
+                    new_vb_y = vb_y + (cy * scale_y)
+                    new_vb_w = cw * scale_x
+                    new_vb_h = ch * scale_y
+
+                    kwargs["viewbox"] = (
+                        new_vb_x,
+                        new_vb_y,
+                        new_vb_w,
+                        new_vb_h,
+                    )
+
         return kwargs
 
     def _process_rendered_image(
@@ -725,17 +786,26 @@ class WorkPiece(DocItem):
         processed_image = image
         target_w, target_h = target_size
 
-        # 1. Apply Crop
-        # We re-calculate the crop rect based on the actual image dimensions
-        # to be robust against renderers that might snap to nearest DPI/size.
+        # Check if vector to skip certain raster-only logic
+        is_vector = False
+        if self.source and self.source.metadata.get("is_vector"):
+            is_vector = True
+        if self.sketch_uid:
+            is_vector = True
+
+        # 1. Apply Crop (Only for non-vectors, or if crop_rect_hint is
+        # explicit) Vector cropping is handled via ViewBox override in
+        # the renderer.
         if (
             crop_rect_hint
+            and not is_vector
             and self.source_segment
             and self.source_segment.crop_window_px
         ):
             crop_x, crop_y, crop_w, crop_h = map(
                 float, self.source_segment.crop_window_px
             )
+            # Re-calculate the crop rect based on the actual image dimensions.
             actual_w = processed_image.width
             actual_h = processed_image.height
 
@@ -763,15 +833,6 @@ class WorkPiece(DocItem):
         # We skip masking for Vector sources because they already render with
         # correct transparency, and masking with vector geometry (which can
         # be open lines with zero area) would incorrectly hide the content.
-        is_vector = False
-        if self.source and self.source.metadata.get("is_vector"):
-            is_vector = True
-
-        # Special check for Sketch rendering: if we rendered via sketch def,
-        # it is vector data.
-        if self.sketch_uid:
-            is_vector = True
-
         if not is_vector:
             mask_geo = self._boundaries_y_down
             if mask_geo and not mask_geo.is_empty():
@@ -913,12 +974,7 @@ class WorkPiece(DocItem):
         wp.natural_width_mm = data.get("width_mm", 0.0)
         wp.natural_height_mm = data.get("height_mm", 0.0)
 
-        loaded_tabs = []
-        for t_data in data.get("tabs", []):
-            t_data_copy = t_data.copy()
-            # Ignore 'length' for backward compatibility with older files.
-            t_data_copy.pop("length", None)
-            loaded_tabs.append(Tab(**t_data_copy))
+        loaded_tabs = [Tab(**t_data) for t_data in data.get("tabs", [])]
         wp.tabs = loaded_tabs
         wp.tabs_enabled = data.get("tabs_enabled", True)
 
@@ -973,12 +1029,6 @@ class WorkPiece(DocItem):
             if self.sketch_uid:
                 # Regenerate the internal geometry and natural size
                 self.regenerate_from_sketch()
-
-    def natural_sizes(self) -> Optional[Tuple[float, float]]:
-        """
-        Legacy method alias. Use property `natural_size` instead.
-        """
-        return self.natural_size
 
     def get_natural_aspect_ratio(self) -> Optional[float]:
         size = self.natural_size
@@ -1187,6 +1237,42 @@ class WorkPiece(DocItem):
         # Return the bounding box of the transformed geometry
         return world_geometry.rect()
 
+    def get_world_geometry(self) -> Optional["Geometry"]:
+        """
+        Returns the final, world-space geometry of the workpiece in
+        millimeters.
+        This is the definitive geometry for pipeline processing, composing all
+        transformations (normalization, local, and parent) before applying
+        them to the pristine source geometry.
+        """
+        # --- Path for direct vector imports (SVG, DXF, etc.) ---
+        if (
+            self.source_segment
+            and self.source_segment.pristine_geometry
+            and self.source_segment.normalization_matrix is not None
+        ):
+            pristine_geo = self.source_segment.pristine_geometry.copy()
+            norm_matrix = self.source_segment.normalization_matrix
+            world_transform = self.get_world_transform()
+
+            # The key insight: compose all matrices BEFORE transforming
+            # geometry
+            final_transform = world_transform @ norm_matrix
+            pristine_geo.transform(final_transform.to_4x4_numpy())
+            return pristine_geo
+
+        # --- Path for generated geometry (e.g., sketches) ---
+        # This path uses the `boundaries` property which returns a
+        # normalized 1x1 geometry.
+        boundaries = self.boundaries
+        if boundaries and not boundaries.is_empty():
+            world_geo = boundaries.copy()
+            world_transform = self.get_world_transform()
+            world_geo.transform(world_transform.to_4x4_numpy())
+            return world_geo
+
+        return None
+
     def get_tab_direction(self, tab: Tab) -> Optional[Tuple[float, float]]:
         """
         Calculates the "outside" direction vector for a given tab in world
@@ -1323,6 +1409,7 @@ class WorkPiece(DocItem):
 
         new_workpieces = []
         original_matrix = self.matrix
+        source = self.source
 
         # Get current physical dimensions to filter noise.
         # self.size returns (width_mm, height_mm).
@@ -1364,11 +1451,48 @@ class WorkPiece(DocItem):
                     y_down_frag
                 )
 
+                # Calculate the new crop window relative to the parent's.
+                # This must account for the Y-up geometry vs Y-down pixels.
+                # Enabled for ALL sources (vectors included) to allow correct
+                # split rendering.
+                if source:
+                    parent_crop = self.source_segment.crop_window_px
+                    pc_x, pc_y, pc_w, pc_h = 0, 0, 0, 0
+
+                    if parent_crop:
+                        pc_x, pc_y, pc_w, pc_h = parent_crop
+                    elif source.width_px and source.height_px:
+                        pc_x, pc_y, pc_w, pc_h = (
+                            0,
+                            0,
+                            source.width_px,
+                            source.height_px,
+                        )
+
+                    # Calculate new crop window relative to the parent's.
+                    # This must account for the Y-up geometry vs Y-down pixels.
+                    new_crop_x_px = pc_x + (min_x * pc_w)
+                    new_crop_y_px = pc_y + ((1 - min_y - h) * pc_h)
+                    new_crop_w_px = w * pc_w
+                    new_crop_h_px = h * pc_h
+
+                    new_segment.crop_window_px = (
+                        new_crop_x_px,
+                        new_crop_y_px,
+                        new_crop_w_px,
+                        new_crop_h_px,
+                    )
+                    new_segment.cropped_width_mm = w * phys_w
+                    new_segment.cropped_height_mm = h * phys_h
+
             # Initialize the new workpiece with the lightweight segment
             new_wp = WorkPiece(self.name, new_segment)
             new_wp.tabs_enabled = self.tabs_enabled
 
-            # 5. Calculate the matrix for the new piece.
+            # 5. Set natural size and calculate the matrix for the new piece.
+            new_wp.natural_width_mm = w * phys_w
+            new_wp.natural_height_mm = h * phys_h
+
             # It must be positioned such that it aligns with where this
             # fragment was in the original object.
             # Matrix op order: parent @ child.

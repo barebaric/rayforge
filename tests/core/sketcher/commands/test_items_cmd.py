@@ -123,9 +123,7 @@ def test_remove_items_command_remove_points(sketch):
     p2 = sketch.add_point(30.0, 40.0)
     point1 = sketch.registry.get_point(p1)
     point2 = sketch.registry.get_point(p2)
-    cmd = RemoveItemsCommand(
-        sketch, "Remove Items", points=[point1, point2]
-    )
+    cmd = RemoveItemsCommand(sketch, "Remove Items", points=[point1, point2])
 
     assert len(sketch.registry.points) == 3
 

@@ -6,10 +6,13 @@
 
 [![Get it from the Snap Store](https://snapcraft.io/en/light/install.svg)](https://snapcraft.io/rayforge)
 <a href="https://flathub.org/apps/org.rayforge.rayforge"><img alt="Get it from Flathub" src="website/content/docs/images/flathub-badge.svg" height="55"/></a>
+<a href="https://www.patreon.com/c/knipknap"><img src="https://c5.patreon.com/external/logo/become_a_patron_button.png" alt="Become a Patron" height="55"/></a>
 
 # Rayforge
 
-Rayforge is a modern, cross-platform G-code sender and control software for GRBL-based laser cutters and engravers. Built with Gtk4 and Libadwaita, it provides a clean, native interface for Linux and Windows, offering a full suite of tools for both hobbyists and professionals.
+Rayforge is a modern, cross-platform 2D CAD, G-code sender and control software for GRBL-based laser cutters and engravers.
+Built with Gtk4 and Libadwaita, it provides a clean, native interface for Linux and Windows, offering a full suite of tools
+for both hobbyists and professionals.
 
 <p align="center">
   <img src="website/content/assets/icon.svg" />
@@ -26,6 +29,7 @@ We also have a [Discord](https://discord.gg/sTHNdTtpQJ).
 | Feature                      | Description                                                                                                      |
 | :--------------------------- | :--------------------------------------------------------------------------------------------------------------- |
 | **Modern UI**                | Polished and modern UI built with Gtk4 and Libadwaita. Supports system, light, and dark themes.                  |
+| **Parametric Sketch Editor** | Create precise, constraint-based 2D designs with geometric and dimensional constraints.                         |
 | **Multi-Layer Operations**   | Assign different operations (e.g., engrave then cut) to layers in your design.                                   |
 | **Versatile Operations**     | Supports Contour, Raster Engraving (with cross-hatch fill), Shrink Wrap, and Depth Engraving.                    |
 | **Overscan & Kerf Comp.**    | Improve engraving quality with overscan and ensure dimensional accuracy with kerf compensation.                  |

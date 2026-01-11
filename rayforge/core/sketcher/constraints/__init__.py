@@ -18,6 +18,7 @@ from .symmetry import SymmetryConstraint
 from .tangent import TangentConstraint
 from .vertical import VerticalConstraint
 
+
 __all__ = [
     "Constraint",
     "CoincidentConstraint",

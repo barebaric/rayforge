@@ -5,10 +5,11 @@ from pathlib import Path
 from typing import Optional, Dict
 
 from ...core.geo import Geometry
+from ...core.matrix import Matrix
 from ...core.source_asset import SourceAsset
+from ...core.source_asset_segment import SourceAssetSegment
 from ...core.vectorization_spec import VectorizationSpec, ProceduralSpec
 from ...core.workpiece import WorkPiece
-from ...core.source_asset_segment import SourceAssetSegment
 from ..base_importer import Importer, ImportPayload
 from .renderer import PROCEDURAL_RENDERER
 
@@ -89,8 +90,9 @@ class ProceduralImporter(Importer):
         )
 
         # Step 3: Create and configure the WorkPiece.
-        # Per the architectural contract, we generate a normalized Y-down
-        # geometry (a 1x1 frame) for the segment mask.
+        # For procedural items, the geometry is generated on the fly.
+        # We create a placeholder 1x1 geometry to define the workpiece's
+        # boundaries, which will be scaled by its matrix.
         frame_geo = Geometry()
         frame_geo.move_to(0, 0)
         frame_geo.line_to(1, 0)
@@ -101,8 +103,9 @@ class ProceduralImporter(Importer):
         procedural_spec = ProceduralSpec()
         gen_config = SourceAssetSegment(
             source_asset_uid=source.uid,
-            segment_mask_geometry=frame_geo,
             vectorization_spec=procedural_spec,
+            pristine_geometry=frame_geo,
+            normalization_matrix=Matrix.identity(),
         )
 
         wp = WorkPiece(

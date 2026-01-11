@@ -27,11 +27,17 @@ from .driver import (
     DriverPrecheckError,
     DeviceConnectionError,
     Axis,
+    Pos,
+    DeviceError,
 )
 from .grbl_util import (
     parse_state,
     get_grbl_setting_varsets,
     grbl_setting_re,
+    wcs_re,
+    prb_re,
+    gcode_to_p_number,
+    error_code_to_device_error,
     CommandRequest,
 )
 
@@ -81,6 +87,7 @@ class GrblSerialDriver(Driver):
         )
         self._buffer_has_space = asyncio.Event()
         self._job_exception: Optional[Exception] = None
+        self._poll_status_while_running: bool = True
 
     @property
     def resource_uri(self) -> Optional[str]:
@@ -107,6 +114,16 @@ class GrblSerialDriver(Driver):
                     description=_("Serial port for the device"),
                 ),
                 BaudrateVar("baudrate"),
+                Var(
+                    key="poll_status_while_running",
+                    label=_("Enable status polling during running jobs"),
+                    description=_(
+                        "Whether to query status during jobs. "
+                        "Disabling can help reduce load on slow machines"
+                    ),
+                    var_type=bool,
+                    default=True,
+                ),
             ]
         )
 
@@ -114,9 +131,12 @@ class GrblSerialDriver(Driver):
         """Returns a GcodeEncoder configured for the machine's dialect."""
         return GcodeEncoder(self._machine.dialect)
 
-    def setup(self, **kwargs: Any):
+    def _setup_implementation(self, **kwargs: Any) -> None:
         port = cast(str, kwargs.get("port", ""))
         baudrate = kwargs.get("baudrate", 115200)
+        self._poll_status_while_running = bool(
+            kwargs.get("poll_status_while_running", False)
+        )
 
         if not port:
             raise DriverSetupError(_("Port must be configured."))
@@ -133,8 +153,6 @@ class GrblSerialDriver(Driver):
                 f"Port {port} is a hardware serial port, which is unlikely "
                 f"for USB-based GRBL devices."
             )
-
-        super().setup()
 
         self.serial_transport = SerialTransport(port, baudrate)
         self.serial_transport.received.connect(self.on_serial_data_received)
@@ -285,6 +303,14 @@ class GrblSerialDriver(Driver):
                     "Connection established. Starting status polling."
                 )
                 while transport.is_connected and self.keep_running:
+                    # Skip status polling during jobs if configured
+                    if (
+                        not self._poll_status_while_running
+                        and self._job_running
+                    ):
+                        await asyncio.sleep(0.5)
+                        continue
+
                     async with self._cmd_lock:
                         try:
                             logger.debug("Sending status poll")
@@ -529,8 +555,8 @@ class GrblSerialDriver(Driver):
     ) -> None:
         self._start_job(on_command_done)
 
-        encoder = self.get_encoder()
-        gcode, op_map = encoder.encode(ops, self._machine, doc)
+        # Let the machine handle coordinate transformations and encoding
+        gcode, op_map = self._machine.encode_ops(ops, doc)
         gcode_lines = gcode.splitlines()
 
         await self._stream_gcode(gcode_lines, op_map.machine_code_to_op)
@@ -629,8 +655,9 @@ class GrblSerialDriver(Driver):
                  homes all axes. Can be a single Axis or multiple axes
                  using binary operators (e.g. Axis.X|Axis.Y)
         """
+        dialect = self._machine.dialect
         if axes is None:
-            await self._execute_command("$H")
+            await self._execute_command(dialect.home_all)
             return
 
         # Handle multiple axes - home them one by one
@@ -638,20 +665,25 @@ class GrblSerialDriver(Driver):
             if axes & axis:
                 assert axis.name
                 axis_letter: str = axis.name.upper()
-                cmd = f"$H{axis_letter}"
+                cmd = dialect.home_axis.format(axis_letter=axis_letter)
                 await self._execute_command(cmd)
 
     async def move_to(self, pos_x, pos_y) -> None:
-        cmd = f"$J=G90 G21 F1500 X{float(pos_x)} Y{float(pos_y)}"
+        dialect = self._machine.dialect
+        cmd = dialect.move_to.format(
+            speed=1500, x=float(pos_x), y=float(pos_y)
+        )
         await self._execute_command(cmd)
 
     async def select_tool(self, tool_number: int) -> None:
         """Sends a tool change command for the given tool number."""
-        cmd = f"T{tool_number}"
+        dialect = self._machine.dialect
+        cmd = dialect.tool_change.format(tool_number=tool_number)
         await self._execute_command(cmd)
 
     async def clear_alarm(self) -> None:
-        await self._execute_command("$X")
+        dialect = self._machine.dialect
+        await self._execute_command(dialect.clear_alarm)
 
     async def set_power(self, head: "Laser", percent: float) -> None:
         """
@@ -764,6 +796,64 @@ class GrblSerialDriver(Driver):
         cmd = f"${key}={value}"
         await self._execute_command(cmd)
 
+    async def set_wcs_offset(
+        self, wcs_slot: str, x: float, y: float, z: float
+    ) -> None:
+        p_num = gcode_to_p_number(wcs_slot)
+        if p_num is None:
+            raise ValueError(f"Invalid WCS slot: {wcs_slot}")
+        dialect = self._machine.dialect
+        cmd = dialect.set_wcs_offset.format(p_num=p_num, x=x, y=y, z=z)
+        await self._execute_command(cmd)
+
+    async def read_wcs_offsets(self) -> Dict[str, Pos]:
+        response_lines = await self._execute_command("$#")
+        offsets = {}
+        for line in response_lines:
+            match = wcs_re.match(line)
+            if match:
+                slot, x_str, y_str, z_str = match.groups()
+                offsets[slot] = (float(x_str), float(y_str), float(z_str))
+        self.wcs_updated.send(self, offsets=offsets)
+        return offsets
+
+    async def run_probe_cycle(
+        self, axis: Axis, max_travel: float, feed_rate: int
+    ) -> Optional[Pos]:
+        assert axis.name, "Probing requires a single, named axis."
+        axis_letter = axis.name.upper()
+        dialect = self._machine.dialect
+        cmd = dialect.probe_cycle.format(
+            axis_letter=axis_letter,
+            max_travel=max_travel,
+            feed_rate=feed_rate,
+        )
+
+        self.probe_status_changed.send(
+            self, message=f"Probing {axis_letter}..."
+        )
+        try:
+            response_lines = await self._execute_command(cmd)
+        except DeviceConnectionError:
+            self.probe_status_changed.send(
+                self, message="Probe failed: Timed out"
+            )
+            return None
+
+        for line in response_lines:
+            match = prb_re.match(line)
+            if match:
+                x_str, y_str, z_str, success = match.groups()
+                if int(success) == 1:
+                    pos: Pos = (float(x_str), float(y_str), float(z_str))
+                    self.probe_status_changed.send(
+                        self, message=f"Probe triggered at {pos}"
+                    )
+                    return pos
+
+        self.probe_status_changed.send(self, message="Probe failed")
+        return None
+
     def on_serial_data_received(self, sender, data: bytes):
         """
         Primary handler for incoming serial data. Decodes, buffers, and
@@ -850,7 +940,28 @@ class GrblSerialDriver(Driver):
 
         # Logic for character-counting streaming protocol during a job
         if self._job_running:
-            if line == "ok":
+            # First, perform the strict, correct check.
+            is_ack = line == "ok"
+
+            # If the strict check fails, apply a surgical patch ONLY for NULL
+            # byte corruption. This is a specific workaround for a known
+            # hardware/firmware-level serial fault.
+            if not is_ack:
+                # Remove only NULL bytes and re-check for exact equality.
+                line_without_nulls = line.replace("\x00", "")
+                if line_without_nulls == "ok":
+                    logger.critical(
+                        "HARDWARE FAULT DETECTED: A corrupted 'ok' "
+                        f"acknowledgement with NULL bytes was received "
+                        f"({repr(line)}). The job is continuing, but this "
+                        "indicates a critical problem with the USB cable, "
+                        "electrical noise (EMI), or power supply. The "
+                        "hardware connection MUST be fixed for reliable "
+                        "operation."
+                    )
+                    is_ack = True
+
+            if is_ack:
                 try:
                     # Get the length and op_index of the command that finished
                     (
@@ -933,6 +1044,19 @@ class GrblSerialDriver(Driver):
     def can_g0_with_speed(self) -> bool:
         """GRBL doesn't support speed parameter in G0 commands."""
         return False
+
+    def get_error(self, error_code: str) -> Optional[DeviceError]:
+        """
+        Returns error details for a given GRBL error code.
+
+        Args:
+            error_code: The error code string from device (e.g., "1", "2").
+
+        Returns:
+            An ErrorCode instance with title and description, or None if the
+            error code is not recognized.
+        """
+        return error_code_to_device_error(error_code)
 
     def _update_connection_status(
         self, status: TransportStatus, message: Optional[str] = None

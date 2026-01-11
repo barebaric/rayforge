@@ -1,7 +1,24 @@
 import asyncio
 import logging
+import mimetypes
+import warnings
+from dataclasses import dataclass, field
+from enum import Enum, auto
 from pathlib import Path
-from typing import TYPE_CHECKING, Callable, List, Optional, Tuple, cast
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Callable,
+    Dict,
+    List,
+    Optional,
+    Tuple,
+    cast,
+)
+
+with warnings.catch_warnings():
+    warnings.simplefilter("ignore", DeprecationWarning)
+    import pyvips
 
 from ..context import get_context
 from ..core.item import DocItem
@@ -9,8 +26,21 @@ from ..core.layer import Layer
 from ..core.matrix import Matrix
 from ..core.source_asset import SourceAsset
 from ..core.undo import ListItemCommand
-from ..core.vectorization_spec import VectorizationSpec
-from ..image import ImportPayload, import_file
+from ..core.vectorization_spec import (
+    PassthroughSpec,
+    TraceSpec,
+    VectorizationSpec,
+)
+from ..core.workpiece import WorkPiece
+from ..image import (
+    ImportPayload,
+    bitmap_mime_types,
+    import_file,
+    import_file_from_bytes,
+    importer_by_extension,
+    importer_by_mime_type,
+    importers,
+)
 from ..pipeline.artifact import JobArtifact, JobArtifactHandle
 from .layout.align import PositionAtStrategy
 
@@ -23,6 +53,27 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
+@dataclass
+class PreviewResult:
+    """
+    Result of a preview generation operation.
+    Contains the rendered image bytes and the document items to display.
+    """
+
+    image_bytes: bytes
+    payload: Optional[ImportPayload]
+    aspect_ratio: float = 1.0
+    warnings: List[str] = field(default_factory=list)
+
+
+class ImportAction(Enum):
+    """Determines the workflow required to import a specific file."""
+
+    DIRECT_LOAD = auto()
+    INTERACTIVE_CONFIG = auto()
+    UNSUPPORTED = auto()
+
+
 class FileCmd:
     """Handles file import and export operations."""
 
@@ -33,6 +84,203 @@ class FileCmd:
     ):
         self._editor = editor
         self._task_manager = task_manager
+
+    def get_supported_import_filters(self) -> List[Dict[str, Any]]:
+        """
+        Returns a list of dictionaries describing supported file types
+        for UI dialogs.
+        Each dict has 'label', 'extensions', and 'mime_types'.
+        """
+        filters = []
+        for imp in importers:
+            filters.append(
+                {
+                    "label": imp.label,
+                    "extensions": imp.extensions,
+                    "mime_types": imp.mime_types,
+                }
+            )
+        return filters
+
+    def analyze_import_target(
+        self, file_path: Path, mime_type: Optional[str] = None
+    ) -> ImportAction:
+        """
+        Analyzes a file path (and optional mime type) to determine how it
+        should be imported.
+        """
+        if not mime_type:
+            mime_type, _ = mimetypes.guess_type(file_path)
+
+        # 1. Check if we have an importer for this file
+        importer_cls = None
+        if mime_type:
+            importer_cls = importer_by_mime_type.get(mime_type)
+
+        if not importer_cls and file_path.suffix:
+            importer_cls = importer_by_extension.get(file_path.suffix.lower())
+
+        if not importer_cls:
+            return ImportAction.UNSUPPORTED
+
+        # 2. Determine if it requires configuration (Interactive) or can load
+        # directly. Raster images, SVGs, and PDFs usually require configuration
+        # (tracing, layers, cropping)
+        is_raster_like = (
+            (mime_type and mime_type in bitmap_mime_types)
+            or mime_type == "application/pdf"
+            or mime_type == "image/svg+xml"
+            or importer_cls.is_bitmap  # Fallback check on the class property
+        )
+
+        if is_raster_like:
+            return ImportAction.INTERACTIVE_CONFIG
+
+        return ImportAction.DIRECT_LOAD
+
+    def scan_import_file(
+        self, file_bytes: bytes, mime_type: str
+    ) -> Dict[str, Any]:
+        """
+        Lightweight scan of a file to extract metadata without full processing.
+        """
+        result = {}
+        if mime_type == "image/svg+xml":
+            try:
+                from ..image.svg.svgutil import extract_layer_manifest
+
+                result["layers"] = extract_layer_manifest(file_bytes)
+            except Exception as e:
+                logger.warning(f"Failed to scan SVG layers: {e}")
+        return result
+
+    async def generate_preview(
+        self,
+        file_bytes: bytes,
+        filename: str,
+        mime_type: str,
+        spec: VectorizationSpec,
+        preview_size_px: int,
+    ) -> Optional[PreviewResult]:
+        """
+        Generates a preview image and vector payload for the import dialog.
+        Runs the heavy image processing in a background thread.
+        """
+        return await asyncio.to_thread(
+            self._generate_preview_impl,
+            file_bytes,
+            filename,
+            mime_type,
+            spec,
+            preview_size_px,
+        )
+
+    def _generate_preview_impl(
+        self,
+        file_bytes: bytes,
+        filename: str,
+        mime_type: str,
+        spec: VectorizationSpec,
+        preview_size_px: int,
+    ) -> Optional[PreviewResult]:
+        """Blocking implementation of preview generation."""
+        try:
+            # 1. Get vector geometry and metadata
+            payload = import_file_from_bytes(
+                file_bytes,
+                filename,
+                mime_type,
+                spec,
+            )
+
+            if not payload or not payload.items:
+                return None
+
+            # Helper to find reference workpiece for crop/size logic
+            reference_wp = self._extract_first_workpiece(payload.items)
+            if not reference_wp:
+                return None
+
+            # 2. Generate high-res base image
+            vips_image = None
+            if isinstance(spec, TraceSpec):
+                # For tracing, use pre-rendered data (SVG trace) or raw bytes
+                image_bytes = payload.source.base_render_data or file_bytes
+                if not image_bytes:
+                    return None
+
+                full_image = pyvips.Image.new_from_buffer(image_bytes, "")
+
+                # Apply cropping if importer specified it
+                if (
+                    reference_wp.source_segment
+                    and reference_wp.source_segment.crop_window_px
+                ):
+                    x, y, w, h = map(
+                        int, reference_wp.source_segment.crop_window_px
+                    )
+                    vips_image = full_image.crop(x, y, w, h)
+                else:
+                    vips_image = full_image
+
+            elif isinstance(spec, PassthroughSpec):
+                # For direct SVG, render vector data at high resolution
+                if not payload.source.base_render_data:
+                    return None
+
+                vips_image = pyvips.Image.new_from_buffer(
+                    payload.source.base_render_data, "", scale=4.0
+                )
+
+            if not vips_image:
+                return None
+
+            # 3. Create thumbnail
+            aspect_ratio = (
+                vips_image.width / vips_image.height
+                if vips_image.height
+                else 1.0
+            )
+
+            preview_vips = vips_image.thumbnail_image(
+                preview_size_px,
+                height=preview_size_px,
+                size="both",
+            )
+
+            if isinstance(spec, TraceSpec) and spec.invert:
+                preview_vips = preview_vips.flatten(
+                    background=[255, 255, 255]
+                ).invert()
+
+            png_bytes = preview_vips.pngsave_buffer()
+
+            return PreviewResult(
+                image_bytes=png_bytes,
+                payload=payload,
+                aspect_ratio=aspect_ratio,
+            )
+
+        except Exception as e:
+            logger.error(
+                f"Failed to generate import preview: {e}", exc_info=True
+            )
+            return None
+
+    def _extract_first_workpiece(
+        self, items: List[DocItem]
+    ) -> Optional[WorkPiece]:
+        """Recursively extract the first WorkPiece from a list of items."""
+        for item in items:
+            if isinstance(item, WorkPiece):
+                return item
+            if isinstance(item, Layer):
+                # Check direct children
+                for child in item.children:
+                    res = self._extract_first_workpiece([child])
+                    if res:
+                        return res
+        return None
 
     async def _load_file_async(
         self,
@@ -82,6 +330,7 @@ class FileCmd:
         source: Optional[SourceAsset],
         filename: Path,
         sketches: Optional[List["Sketch"]] = None,
+        vectorization_spec: Optional[VectorizationSpec] = None,
     ):
         """
         Adds the imported items and their source to the document model using
@@ -97,28 +346,45 @@ class FileCmd:
         target_layer = cast(Layer, self._editor.default_workpiece_layer)
         cmd_name = _(f"Import {filename.name}")
 
+        create_new_layers = True
+        if isinstance(vectorization_spec, PassthroughSpec):
+            create_new_layers = vectorization_spec.create_new_layers
+
         with self._editor.history_manager.transaction(cmd_name) as t:
             for item in items:
-                # If the item is a Layer, it should be added to the Doc (root),
-                # otherwise add to the active layer.
-                if isinstance(item, Layer):
+                if isinstance(item, Layer) and create_new_layers:
                     owner = self._editor.doc
+                    command = ListItemCommand(
+                        owner_obj=owner,
+                        item=item,
+                        undo_command="remove_child",
+                        redo_command="add_child",
+                    )
+                    t.execute(command)
+                elif isinstance(item, Layer):
+                    for child in item.get_content_items():
+                        command = ListItemCommand(
+                            owner_obj=target_layer,
+                            item=child,
+                            undo_command="remove_child",
+                            redo_command="add_child",
+                        )
+                        t.execute(command)
                 else:
-                    owner = target_layer
-
-                command = ListItemCommand(
-                    owner_obj=owner,
-                    item=item,
-                    undo_command="remove_child",
-                    redo_command="add_child",
-                )
-                t.execute(command)
+                    command = ListItemCommand(
+                        owner_obj=target_layer,
+                        item=item,
+                        undo_command="remove_child",
+                        redo_command="add_child",
+                    )
+                    t.execute(command)
 
     def _finalize_import_on_main_thread(
         self,
         payload: ImportPayload,
         filename: Path,
         position_mm: Optional[Tuple[float, float]],
+        vectorization_spec: Optional[VectorizationSpec] = None,
     ):
         """
         Performs the final steps of an import on the main thread.
@@ -133,7 +399,11 @@ class FileCmd:
         #    safe now as all subsequent signal handling will be on the
         #    main thread.
         self._commit_items_to_document(
-            payload.items, payload.source, filename, payload.sketches
+            payload.items,
+            payload.source,
+            filename,
+            payload.sketches,
+            vectorization_spec,
         )
 
     def load_file_from_path(
@@ -203,7 +473,7 @@ class FileCmd:
                     """Wraps finalizer to signal future on completion/error."""
                     try:
                         self._finalize_import_on_main_thread(
-                            payload, fn, pos_mm
+                            payload, fn, pos_mm, vec_spec
                         )
                         if not main_thread_done.done():
                             loop.call_soon_threadsafe(
@@ -245,6 +515,22 @@ class FileCmd:
             position_mm,
             key=f"import-{filename}",
         )
+
+    def execute_batch_import(
+        self,
+        files: List[Path],
+        spec: VectorizationSpec,
+        pos: Optional[Tuple[float, float]],
+    ):
+        """
+        Imports multiple files using the same vectorization settings.
+        This spawns individual import tasks for each file.
+        """
+        for file_path in files:
+            # We assume files are valid if passed here, or guess mime type
+            # individually
+            mime_type, _ = mimetypes.guess_type(file_path)
+            self.load_file_from_path(file_path, mime_type, spec, pos)
 
     def _calculate_items_bbox(
         self,

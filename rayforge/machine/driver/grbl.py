@@ -11,6 +11,7 @@ from typing import (
     Callable,
     Union,
     Awaitable,
+    Dict,
 )
 from ...context import RayforgeContext
 from ...core.ops import Ops
@@ -25,11 +26,15 @@ from .driver import (
     DriverPrecheckError,
     DeviceConnectionError,
     Axis,
+    Pos,
 )
 from .grbl_util import (
     parse_state,
     get_grbl_setting_varsets,
     grbl_setting_re,
+    wcs_re,
+    prb_re,
+    gcode_to_p_number,
     CommandRequest,
     hw_info_url,
     fw_info_url,
@@ -116,14 +121,13 @@ class GrblNetworkDriver(Driver):
         """Returns a GcodeEncoder configured for the machine's dialect."""
         return GcodeEncoder(self._machine.dialect)
 
-    def setup(self, **kwargs: Any):
+    def _setup_implementation(self, **kwargs: Any) -> None:
         host = cast(str, kwargs.get("host", ""))
         port = cast(int, kwargs.get("port", 80))
         ws_port = cast(int, kwargs.get("ws_port", 81))
         if not host:
             raise DriverSetupError(_("Hostname must be configured."))
 
-        super().setup()
         self.host = host
         self.port = port
         self.ws_port = ws_port
@@ -315,6 +319,7 @@ class GrblNetworkDriver(Driver):
         async with aiohttp.ClientSession() as session:
             async with session.get(url) as response:
                 data = await response.text()
+
         logger.debug(
             f"GET {url} response: {data}",
             extra={
@@ -378,8 +383,9 @@ class GrblNetworkDriver(Driver):
     ) -> None:
         if not self.host:
             raise ConnectionError("Driver not configured with a host.")
-        encoder = self.get_encoder()
-        gcode, op_map = encoder.encode(ops, self._machine, doc)
+
+        # Let the machine handle coordinate transformations and encoding
+        gcode, op_map = self._machine.encode_ops(ops, doc)
 
         try:
             # For GRBL driver, we don't track individual commands
@@ -460,8 +466,9 @@ class GrblNetworkDriver(Driver):
                  homes all axes. Can be a single Axis or multiple axes
                  using binary operators (e.g. Axis.X|Axis.Y)
         """
+        dialect = self._machine.dialect
         if axes is None:
-            await self._execute_command("$H")
+            await self._execute_command(dialect.home_all)
             return
 
         # Handle multiple axes - home them one by one
@@ -469,20 +476,25 @@ class GrblNetworkDriver(Driver):
             if axes & axis:
                 assert axis.name
                 axis_letter: str = axis.name.upper()
-                cmd = f"$H{axis_letter}"
+                cmd = dialect.home_axis.format(axis_letter=axis_letter)
                 await self._execute_command(cmd)
 
     async def move_to(self, pos_x, pos_y) -> None:
-        cmd = f"$J=G90 G21 F1500 X{float(pos_x)} Y{float(pos_y)}"
+        dialect = self._machine.dialect
+        cmd = dialect.move_to.format(
+            speed=1500, x=float(pos_x), y=float(pos_y)
+        )
         await self._execute_command(cmd)
 
     async def select_tool(self, tool_number: int) -> None:
         """Sends a tool change command for the given tool number."""
-        cmd = f"T{tool_number}"
+        dialect = self._machine.dialect
+        cmd = dialect.tool_change.format(tool_number=tool_number)
         await self._execute_command(cmd)
 
     async def clear_alarm(self) -> None:
-        await self._execute_command("$X")
+        dialect = self._machine.dialect
+        await self._execute_command(dialect.clear_alarm)
 
     async def set_power(self, head: "Laser", percent: float) -> None:
         """
@@ -499,7 +511,7 @@ class GrblNetworkDriver(Driver):
             # Disable power
             cmd = dialect.laser_off
         else:
-            # Enable power with specified percentage
+            # Enable power with the specified percentage
             power_abs = percent * head.max_power
             cmd = dialect.laser_on.format(power=power_abs)
 
@@ -514,13 +526,22 @@ class GrblNetworkDriver(Driver):
         Jogs the machine along a specific axis using GRBL's $J command.
 
         Args:
-            axis: The Axis enum value
+            axis: The Axis enum value or combination of axes using
+                  binary operators (e.g. Axis.X|Axis.Y)
             distance: The distance to jog in mm (positive or negative)
             speed: The jog speed in mm/min
         """
-        assert axis.name
-        axis_letter: str = axis.name.upper()
-        cmd = f"$J=G91 G21 F{speed} {axis_letter}{distance}"
+        # Build the command with all specified axes
+        cmd_parts = [f"$J=G91 G21 F{speed}"]
+
+        # Add each axis component to the command
+        for single_axis in Axis:
+            if axis & single_axis:
+                assert single_axis.name
+                axis_letter = single_axis.name.upper()
+                cmd_parts.append(f"{axis_letter}{distance}")
+
+        cmd = " ".join(cmd_parts)
         await self._execute_command(cmd)
 
     def on_http_data_received(self, sender, data: bytes):
@@ -643,6 +664,58 @@ class GrblNetworkDriver(Driver):
             value = 1 if value else 0
         cmd = f"${key}={value}"
         await self._execute_command(cmd)
+
+    async def set_wcs_offset(
+        self, wcs_slot: str, x: float, y: float, z: float
+    ) -> None:
+        p_num = gcode_to_p_number(wcs_slot)
+        if p_num is None:
+            raise ValueError(f"Invalid WCS slot: {wcs_slot}")
+        dialect = self._machine.dialect
+        cmd = dialect.set_wcs_offset.format(p_num=p_num, x=x, y=y, z=z)
+        await self._execute_command(cmd)
+
+    async def read_wcs_offsets(self) -> Dict[str, Pos]:
+        response_lines = await self._execute_command("$#")
+        offsets = {}
+        for line in response_lines:
+            match = wcs_re.match(line)
+            if match:
+                slot, x_str, y_str, z_str = match.groups()
+                offsets[slot] = (float(x_str), float(y_str), float(z_str))
+        self.wcs_updated.send(self, offsets=offsets)
+        return offsets
+
+    async def run_probe_cycle(
+        self, axis: Axis, max_travel: float, feed_rate: int
+    ) -> Optional[Pos]:
+        assert axis.name, "Probing requires a single, named axis."
+        axis_letter = axis.name.upper()
+        dialect = self._machine.dialect
+        cmd = dialect.probe_cycle.format(
+            axis_letter=axis_letter,
+            max_travel=max_travel,
+            feed_rate=feed_rate,
+        )
+
+        self.probe_status_changed.send(
+            self, message=f"Probing {axis_letter}..."
+        )
+        response_lines = await self._execute_command(cmd)
+
+        for line in response_lines:
+            match = prb_re.match(line)
+            if match:
+                x_str, y_str, z_str, success = match.groups()
+                if int(success) == 1:
+                    pos: Pos = (float(x_str), float(y_str), float(z_str))
+                    self.probe_status_changed.send(
+                        self, message=f"Probe triggered at {pos}"
+                    )
+                    return pos
+
+        self.probe_status_changed.send(self, message="Probe failed")
+        return None
 
     def can_g0_with_speed(self) -> bool:
         """GRBL doesn't support speed parameter in G0 commands."""

@@ -1,0 +1,485 @@
+import math
+import logging
+from typing import Tuple
+import cairo
+from ...core.matrix import Matrix
+
+
+logger = logging.getLogger(__name__)
+
+
+class AxisRenderer:
+    """
+    Helper class to render the grid, axes, and labels on a Cairo context.
+    This renderer is stateless regarding pan and zoom; it operates in
+    world coordinates (mm) and relies on a view_transform matrix to map
+    to widget pixel coordinates.
+    """
+
+    def __init__(
+        self,
+        grid_size_mm: float = 10.0,
+        width_mm: float = 100.0,
+        height_mm: float = 100.0,
+        y_axis_down: bool = False,
+        x_axis_right: bool = False,
+        x_axis_negative: bool = False,
+        y_axis_negative: bool = False,
+        fg_color: Tuple[float, float, float, float] = (0.0, 0.0, 0.0, 1.0),
+        grid_color: Tuple[float, float, float, float] = (0.9, 0.9, 0.9, 1.0),
+        show_grid: bool = True,
+        show_axis: bool = True,
+    ):
+        self.grid_size_mm: float = grid_size_mm
+        self.width_mm: float = width_mm
+        self.height_mm: float = height_mm
+        self.y_axis_down: bool = y_axis_down
+        self.x_axis_right: bool = x_axis_right
+        self.x_axis_negative: bool = x_axis_negative
+        self.y_axis_negative: bool = y_axis_negative
+        self.fg_color: Tuple[float, float, float, float] = fg_color
+        self.grid_color: Tuple[float, float, float, float] = grid_color
+        self.show_grid: bool = show_grid
+        self.show_axis: bool = show_axis
+        # Minimum pixel spacing for grid lines to avoid clutter
+        self.min_grid_spacing_px = 50.0
+
+    def get_content_layout(
+        self, widget_w: int, widget_h: int
+    ) -> Tuple[float, float, float, float]:
+        """
+        Calculates the content area's rectangle in widget pixels, respecting
+        the mm aspect ratio. This is the single source of truth for layout.
+
+        Returns:
+            A tuple of (content_x, content_y, content_width, content_height).
+        """
+        # 1. Calculate space needed for axes and labels.
+        x_axis_space = float(self.get_x_axis_height())
+        y_axis_space = float(self.get_y_axis_width())
+
+        # Define paddings based on original logic.
+        if self.x_axis_right:
+            left_padding = math.ceil(y_axis_space / 2)
+            right_padding = y_axis_space
+        else:
+            left_padding = y_axis_space
+            right_padding = math.ceil(y_axis_space / 2)
+        total_horiz_padding = left_padding + right_padding
+
+        if self.y_axis_down:
+            top_padding = x_axis_space
+            bottom_padding = math.ceil(x_axis_space / 2)
+        else:
+            top_padding = math.ceil(x_axis_space / 2)
+            bottom_padding = x_axis_space
+        total_vert_padding = top_padding + bottom_padding
+
+        # 2. Determine the available drawing area after subtracting padding.
+        available_width = float(widget_w) - total_horiz_padding
+        available_height = float(widget_h) - total_vert_padding
+
+        if available_width <= 0 or available_height <= 0:
+            logger.warning(
+                "Available drawing area is non-positive; "
+                "canvas may be too small."
+            )
+            return left_padding, top_padding, 0.0, 0.0
+
+        # 3. Calculate the target aspect ratio from mm dimensions.
+        if self.width_mm <= 0 or self.height_mm <= 0:
+            return left_padding, top_padding, available_width, available_height
+
+        world_aspect_ratio = self.width_mm / self.height_mm
+
+        # 4. Calculate content dimensions that fit and match aspect ratio.
+        available_aspect_ratio = available_width / available_height
+
+        if available_aspect_ratio > world_aspect_ratio:
+            # Available area is wider than needed. Height is the constraint.
+            content_height = available_height
+            content_width = content_height * world_aspect_ratio
+        else:
+            # Available area is taller than needed. Width is the constraint.
+            content_width = available_width
+            content_height = content_width / world_aspect_ratio
+
+        # 5. Center the content area within the available space.
+        x_offset = (available_width - content_width) / 2
+        y_offset = (available_height - content_height) / 2
+
+        content_x = left_padding + x_offset
+        content_y = top_padding + y_offset
+
+        return content_x, content_y, content_width, content_height
+
+    def get_base_pixels_per_mm(self, widget_w: int, widget_h: int) -> float:
+        """
+        Calculates the base pixels/mm for a zoom level of 1.0.
+        """
+        _, _, content_w, content_h = self.get_content_layout(
+            widget_w, widget_h
+        )
+        if self.width_mm <= 0 or self.height_mm <= 0:
+            return 1.0
+
+        base_ppm_x = content_w / self.width_mm
+        base_ppm_y = content_h / self.height_mm
+        return min(base_ppm_x, base_ppm_y)
+
+    def _get_adaptive_grid_size(self, pixels_per_mm: float) -> float:
+        """
+        Calculates an appropriate grid spacing in mm based on the current
+        zoom level (pixels per mm).
+        """
+        if pixels_per_mm <= 1e-6:
+            return self.grid_size_mm
+
+        # Calculate the grid size in mm that would correspond to our desired
+        # minimum pixel spacing.
+        target_grid_size_mm = self.min_grid_spacing_px / pixels_per_mm
+
+        # Find the next "nice" number (1, 2, 5, 10, 20, 50, 100...) that is
+        # greater than or equal to the target size.
+        power_of_10 = 10 ** math.floor(math.log10(target_grid_size_mm))
+
+        # Use corrected thresholds to round up to the nearest 1, 2, 5, or 10.
+        relative_size = target_grid_size_mm / power_of_10
+        if relative_size <= 1.0:
+            return power_of_10
+        elif relative_size <= 2.0:
+            return 2 * power_of_10
+        elif relative_size <= 5.0:
+            return 5 * power_of_10
+        else:
+            return 10 * power_of_10
+
+    def draw_grid_and_labels(
+        self,
+        ctx: cairo.Context,
+        view_transform: Matrix,
+        widget_w: int,
+        widget_h: int,
+        origin_offset_mm: Tuple[float, float, float] = (0.0, 0.0, 0.0),
+    ):
+        """
+        Draws the grid, axes, and labels onto the Cairo context using the
+        provided world-to-view transform and widget dimensions.
+        """
+        if not self.show_grid and not self.show_axis:
+            return
+
+        ctx.save()
+
+        try:
+            inv_view = view_transform.invert()
+        except Exception:
+            ctx.restore()
+            return
+
+        # Shared Calculations
+        # Calculate adaptive grid spacing
+        scale_x, scale_y = view_transform.get_scale()
+        pixels_per_mm = (abs(scale_x) + abs(scale_y)) / 2.0
+        adaptive_grid_size_mm = self._get_adaptive_grid_size(pixels_per_mm)
+
+        # Calculate visible bounds in mm for culling/optimizing grid lines
+        tl_mm = inv_view.transform_point((0, 0))
+        br_mm = inv_view.transform_point((widget_w, widget_h))
+        visible_min_x, visible_max_x = (
+            min(tl_mm[0], br_mm[0]),
+            max(tl_mm[0], br_mm[0]),
+        )
+        visible_min_y, visible_max_y = (
+            min(tl_mm[1], br_mm[1]),
+            max(tl_mm[1], br_mm[1]),
+        )
+
+        # Draw Grid
+        if self.show_grid:
+            self._draw_grid(
+                ctx,
+                view_transform,
+                adaptive_grid_size_mm,
+                visible_min_x,
+                visible_max_x,
+                visible_min_y,
+                visible_max_y,
+                origin_offset_mm,
+            )
+
+        # Draw Axes and Labels
+        if self.show_axis:
+            self._draw_axis_and_labels(
+                ctx, view_transform, adaptive_grid_size_mm, origin_offset_mm
+            )
+
+        ctx.restore()
+
+    def _draw_grid(
+        self,
+        ctx: cairo.Context,
+        view_transform: Matrix,
+        grid_size_mm: float,
+        min_x: float,
+        max_x: float,
+        min_y: float,
+        max_y: float,
+        origin_offset_mm: Tuple[float, float, float],
+    ):
+        """Internal helper to draw the infinite grid lines."""
+        ctx.set_source_rgba(*self.grid_color)
+        ctx.set_hairline(True)
+
+        # Determine grid origin based on the WCS offset
+        origin_x, origin_y, _ = origin_offset_mm
+
+        # Determine the World Coordinate of the WCS Origin to align grid lines.
+        # This handles cases where Machine Zero is at Right/Top properly.
+        if self.x_axis_right:
+            # If Machine X=0 is Right edge, and we have an offset from that
+            # in machine coords, we need to map that back to Canvas World.
+            # Canvas X=0 is Left. Canvas X=Width is Right.
+
+            # Logic:
+            # 1. Start at Machine X=0 (Canvas X=Width)
+            # 2. Subtract offset_x (which moves left in Machine Space if +)
+            # Actually: Machine Coordinates usually move Left as they decrease?
+            # Or Right as they decrease?
+            # If `x_axis_right` is True, it implies visual inversion.
+            # Grid alignment is purely visual relative to the WCS origin.
+
+            # If x_axis_right=True, origin_x is distance from Right Edge.
+            # So World X = Width - origin_x
+            wcs_world_x = self.width_mm - origin_x
+        else:
+            wcs_world_x = origin_x
+
+        if self.y_axis_down:
+            wcs_world_y = self.height_mm - origin_y
+        else:
+            wcs_world_y = origin_y
+
+        # Vertical lines (along X) aligned to WCS X
+        k_start_x = math.ceil((min_x - wcs_world_x) / grid_size_mm)
+        k_end_x = math.floor((max_x - wcs_world_x) / grid_size_mm)
+        for k in range(k_start_x, k_end_x + 1):
+            x_mm = wcs_world_x + k * grid_size_mm
+            p1_px = view_transform.transform_point((x_mm, min_y))
+            p2_px = view_transform.transform_point((x_mm, max_y))
+            ctx.move_to(p1_px[0], p1_px[1])
+            ctx.line_to(p2_px[0], p2_px[1])
+            ctx.stroke()
+
+        # Horizontal lines (along Y) aligned to WCS Y
+        k_start_y = math.ceil((min_y - wcs_world_y) / grid_size_mm)
+        k_end_y = math.floor((max_y - wcs_world_y) / grid_size_mm)
+        for k in range(k_start_y, k_end_y + 1):
+            y_mm = wcs_world_y + k * grid_size_mm
+            p1_px = view_transform.transform_point((min_x, y_mm))
+            p2_px = view_transform.transform_point((max_x, y_mm))
+            ctx.move_to(p1_px[0], p1_px[1])
+            ctx.line_to(p2_px[0], p2_px[1])
+            ctx.stroke()
+
+    def _draw_axis_and_labels(
+        self,
+        ctx: cairo.Context,
+        view_transform: Matrix,
+        grid_size_mm: float,
+        origin_offset_mm: Tuple[float, float, float],
+    ):
+        """Internal helper to draw the main XY axes and text labels."""
+        # Calculate precision needed to display fractional grid sizes
+        if grid_size_mm < 1:
+            precision = int(math.ceil(-math.log10(grid_size_mm)))
+        else:
+            precision = 0
+
+        ctx.set_source_rgba(*self.fg_color)
+        ctx.set_line_width(1)
+
+        work_origin_x, work_origin_y, _ = origin_offset_mm
+
+        # Calculate World Coordinates of WCS Origin
+        if self.x_axis_right:
+            wcs_world_x = self.width_mm - work_origin_x
+        else:
+            wcs_world_x = work_origin_x
+
+        if self.y_axis_down:
+            wcs_world_y = self.height_mm - work_origin_y
+        else:
+            wcs_world_y = work_origin_y
+
+        # Determine axis positions based on Y and X orientation
+        if self.y_axis_down:
+            # Y-down view: Origin at top. X axis is at the bottom.
+            x_axis_y = self.height_mm
+            y_axis_start_mm = (0, self.height_mm)
+            y_axis_end_mm = (0, 0)
+        else:
+            # Y-up view: Origin at bottom. X axis is at the bottom.
+            x_axis_y = 0.0
+            y_axis_start_mm = (0, 0)
+            y_axis_end_mm = (0, self.height_mm)
+
+        if self.x_axis_right:
+            # X-right view: Y axis is on the right side.
+            y_axis_start_mm = (self.width_mm, y_axis_start_mm[1])
+            y_axis_end_mm = (self.width_mm, y_axis_end_mm[1])
+            x_axis_start_mm = (self.width_mm, x_axis_y)
+            x_axis_end_mm = (0, x_axis_y)
+        else:
+            # X-left view: Y axis is on the left side.
+            x_axis_start_mm = (0, x_axis_y)
+            x_axis_end_mm = (self.width_mm, x_axis_y)
+
+        # Draw physical bed borders
+        x_start_px = view_transform.transform_point(x_axis_start_mm)
+        x_end_px = view_transform.transform_point(x_axis_end_mm)
+        y_start_px = view_transform.transform_point(y_axis_start_mm)
+        y_end_px = view_transform.transform_point(y_axis_end_mm)
+
+        ctx.move_to(x_start_px[0], x_start_px[1])
+        ctx.line_to(x_end_px[0], x_end_px[1])
+        ctx.stroke()
+        ctx.move_to(y_start_px[0], y_start_px[1])
+        ctx.line_to(y_end_px[0], y_end_px[1])
+        ctx.stroke()
+
+        # --- Draw Labels ---
+        corner_x_label_value = None
+        world_x_for_y_labels = self.width_mm if self.x_axis_right else 0
+
+        # Draw X Labels
+        # Calculate label iterations relative to WCS Origin, constrained to
+        # Bed Width
+        min_delta_x = -wcs_world_x
+        max_delta_x = self.width_mm - wcs_world_x
+        k_start_x = math.ceil(min_delta_x / grid_size_mm)
+        k_end_x = math.floor(max_delta_x / grid_size_mm)
+
+        for k in range(k_start_x, k_end_x + 1):
+            delta = k * grid_size_mm
+            world_x = wcs_world_x + delta
+
+            if self.x_axis_right:
+                # Canvas X increases Right. Machine X increases Left.
+                # So moving +CanvasX is -MachineX.
+                label_val = -delta
+            else:
+                label_val = delta
+
+            # Apply final sign flip if axis is negative
+            if self.x_axis_negative:
+                label_val = -label_val
+
+            # Check if this label is at the corner where the Y-axis is drawn
+            if abs(world_x - world_x_for_y_labels) < 1e-3:
+                corner_x_label_value = label_val
+
+            label = f"{round(label_val, precision):g}"
+            label_pos_px = view_transform.transform_point((world_x, x_axis_y))
+            extents = ctx.text_extents(label)
+            y_offset = -4 if self.y_axis_down else extents.height + 4
+
+            ctx.move_to(
+                label_pos_px[0] - extents.width / 2, label_pos_px[1] + y_offset
+            )
+            ctx.show_text(label)
+
+        # Draw Y Labels
+        min_delta_y = -wcs_world_y
+        max_delta_y = self.height_mm - wcs_world_y
+
+        k_start_y = math.ceil(min_delta_y / grid_size_mm)
+        k_end_y = math.floor(max_delta_y / grid_size_mm)
+
+        for k in range(k_start_y, k_end_y + 1):
+            delta = k * grid_size_mm
+            world_y = wcs_world_y + delta
+
+            if self.y_axis_down:
+                # Canvas Y increases Up. Machine Y increases Down.
+                label_val = -delta
+            else:
+                label_val = delta
+
+            if self.y_axis_negative:
+                label_val = -label_val
+
+            # Check if this label is at the corner where the X-axis is drawn
+            is_at_corner = abs(world_y - x_axis_y) < 1e-3
+
+            # Skip drawing the Y label if it's at the corner AND its value
+            # is the same as the X label's value at that corner.
+            if (
+                is_at_corner
+                and corner_x_label_value is not None
+                and abs(label_val - corner_x_label_value) < 1e-9
+            ):
+                continue
+
+            label = f"{round(label_val, precision):g}"
+            extents = ctx.text_extents(label)
+
+            label_pos_px = view_transform.transform_point(
+                (world_x_for_y_labels, world_y)
+            )
+
+            x_offset = 4 if self.x_axis_right else -extents.width - 4
+            ctx.move_to(
+                label_pos_px[0] + x_offset,
+                label_pos_px[1] + extents.height / 2,
+            )
+            ctx.show_text(label)
+
+    def get_x_axis_height(self) -> int:
+        """Calculates the maximum height of the X-axis labels."""
+        # The height of numeric labels is generally constant for a given font.
+        # We can measure a representative character like "8", which usually has
+        # the maximum height among digits.
+        temp_surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, 1, 1)
+        ctx = cairo.Context(temp_surface)
+
+        extents = ctx.text_extents("8")
+        return math.ceil(extents.height) + 4
+
+    def get_y_axis_width(self) -> int:
+        """Calculates the maximum width of the Y-axis labels."""
+        # The maximum width is determined by the label with the most digits,
+        # which corresponds to the largest coordinate value.
+        temp_surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, 1, 1)
+        ctx = cairo.Context(temp_surface)
+        # Account for negative sign potentially making label wider
+        if self.y_axis_negative:
+            max_y_label = f"{-self.height_mm:.0f}"
+        else:
+            max_y_label = f"{self.height_mm:.0f}"
+        extents = ctx.text_extents(max_y_label)
+        return math.ceil(extents.width) + 4
+
+    def set_width_mm(self, width_mm: float):
+        self.width_mm = width_mm
+
+    def set_height_mm(self, height_mm: float):
+        self.height_mm = height_mm
+
+    def set_x_axis_right(self, x_axis_right: bool):
+        self.x_axis_right = x_axis_right
+
+    def set_y_axis_down(self, y_axis_down: bool):
+        self.y_axis_down = y_axis_down
+
+    def set_x_axis_negative(self, x_axis_negative: bool):
+        self.x_axis_negative = x_axis_negative
+
+    def set_y_axis_negative(self, y_axis_negative: bool):
+        self.y_axis_negative = y_axis_negative
+
+    def set_fg_color(self, fg_color: Tuple[float, float, float, float]):
+        self.fg_color = fg_color
+
+    def set_grid_color(self, grid_color: Tuple[float, float, float, float]):
+        self.grid_color = grid_color

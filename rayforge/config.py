@@ -14,6 +14,7 @@ MACHINE_DIR.mkdir(parents=True, exist_ok=True)
 DIALECT_DIR = CONFIG_DIR / "dialects"
 DIALECT_DIR.mkdir(parents=True, exist_ok=True)
 CONFIG_FILE = CONFIG_DIR / "config.yaml"
+PACKAGES_DIR = CONFIG_DIR / "packages"
 
 # State files (like logs)
 LOG_DIR = Path(user_log_dir("rayforge"))
@@ -25,6 +26,12 @@ USER_MATERIALS_DIR = CONFIG_DIR / "materials"
 
 # Material directories
 USER_RECIPES_DIR = CONFIG_DIR / "recipes"
+
+# Package registry
+PACKAGE_REGISTRY_URL = (
+    "https://raw.githubusercontent.com/barebaric/rayforge-registry/"
+    "main/registry.yaml"
+)
 
 logger.info(f"Config dir is {CONFIG_DIR}")
 logger.info(f"Log dir is {LOG_DIR}")

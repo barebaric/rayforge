@@ -11,6 +11,7 @@ from rayforge.machine.transport import TransportStatus, SerialTransport
 from rayforge.machine.driver.driver import (
     DeviceStatus,
     DeviceConnectionError,
+    Axis,
 )
 from rayforge.pipeline.encoder.gcode import GcodeEncoder
 
@@ -325,3 +326,99 @@ class TestGrblSerialDriver:
         assert unknown_varset is not None
         # Note: the key for unknown vars is also just the number string
         assert unknown_varset["999"].value == "123"
+
+    @pytest.mark.asyncio
+    async def test_set_wcs_offset(
+        self, connected_driver: GrblSerialDriver, mocker
+    ):
+        """Test setting a WCS offset."""
+        driver = connected_driver
+        transport_mock = driver.serial_transport
+        assert transport_mock is not None
+        send_mock = cast(MagicMock, transport_mock.send)
+
+        # Patch gcode_to_p_number to return 2 for G55
+        mocker.patch(
+            "rayforge.machine.driver.grbl_serial.gcode_to_p_number",
+            return_value=2,
+        )
+
+        cmd_task = asyncio.create_task(
+            driver.set_wcs_offset("G55", 10.5, -20.0, 0.1)
+        )
+
+        # Wait for command to be queued (not using sleep)
+        # Give the async task a chance to run
+        done, pending = await asyncio.wait([cmd_task], timeout=0.1)
+
+        # Command shouldn't be done yet (waiting for response)
+        assert cmd_task not in done
+
+        # Check that send was called
+        send_mock.assert_called_once_with(b"G10 L2 P2 X10.5 Y-20.0 Z0.1\n")
+
+        # Complete the command
+        driver.on_serial_data_received(transport_mock, b"ok\r\n")
+
+        # Now wait for the task to complete
+        await cmd_task
+
+    @pytest.mark.asyncio
+    async def test_read_wcs_offsets(self, connected_driver: GrblSerialDriver):
+        """Test reading and parsing WCS offsets."""
+        driver = connected_driver
+        transport_mock = driver.serial_transport
+        assert transport_mock is not None
+        send_mock = cast(MagicMock, transport_mock.send)
+
+        response_data = (
+            b"[G54:1.000,2.000,3.000]\r\n[G55:4.000,5.000,6.000]\r\nok\r\n"
+        )
+
+        cmd_task = asyncio.create_task(driver.read_wcs_offsets())
+        await asyncio.sleep(0.01)
+        send_mock.assert_called_once_with(b"$#\n")
+        driver.on_serial_data_received(transport_mock, response_data)
+
+        offsets = await cmd_task
+        assert offsets["G54"] == (1.0, 2.0, 3.0)
+        assert offsets["G55"] == (4.0, 5.0, 6.0)
+
+    @pytest.mark.asyncio
+    async def test_probe_cycle_success(
+        self, connected_driver: GrblSerialDriver
+    ):
+        """Test a successful probing cycle."""
+        driver = connected_driver
+        transport_mock = driver.serial_transport
+        assert transport_mock is not None
+        send_mock = cast(MagicMock, transport_mock.send)
+
+        response_data = b"[PRB:10.123,20.456,-0.500:1]\r\nok\r\n"
+
+        cmd_task = asyncio.create_task(
+            driver.run_probe_cycle(Axis.Z, -15, 100)
+        )
+        await asyncio.sleep(0.01)
+        send_mock.assert_called_once_with(b"G38.2 Z-15 F100\n")
+        driver.on_serial_data_received(transport_mock, response_data)
+
+        result = await cmd_task
+        assert result == (10.123, 20.456, -0.5)
+
+    @pytest.mark.asyncio
+    async def test_probe_cycle_failure(
+        self, connected_driver: GrblSerialDriver
+    ):
+        """Test a probing cycle that does not trigger."""
+        driver = connected_driver
+        transport_mock = driver.serial_transport
+        assert transport_mock is not None
+
+        response_data = b"[PRB:0.000,0.000,0.000:0]\r\nok\r\n"
+        cmd_task = asyncio.create_task(driver.run_probe_cycle(Axis.X, 20, 150))
+        await asyncio.sleep(0.01)
+        driver.on_serial_data_received(transport_mock, response_data)
+
+        result = await cmd_task
+        assert result is None

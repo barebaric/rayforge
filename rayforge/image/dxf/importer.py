@@ -1,5 +1,6 @@
 import io
 import logging
+import math
 from copy import deepcopy
 from typing import Iterable, Optional, List, Dict, Tuple
 import ezdxf
@@ -7,7 +8,7 @@ import ezdxf.math
 from ezdxf import bbox
 from ezdxf.lldxf.const import DXFStructureError
 from ezdxf.addons import text2path
-
+from ezdxf.path import Command
 from ...core.geo import Geometry
 from ...core.group import Group
 from ...core.workpiece import WorkPiece
@@ -50,6 +51,10 @@ class DxfImporter(Importer):
             normalized_str = data_str.replace("\r\n", "\n")
             doc = ezdxf.read(io.StringIO(normalized_str))  # type: ignore
         except DXFStructureError:
+            logger.error(
+                "DXF Importer: Failed to parse DXF file due to "
+                "structure error."
+            )
             return None
 
         bounds = self._get_bounds_mm(doc)
@@ -63,6 +68,7 @@ class DxfImporter(Importer):
         )
 
         if not bounds or not bounds[2] or not bounds[3]:
+            logger.warning("DXF Importer: No valid bounds found in the file.")
             return ImportPayload(source=source, items=[])
 
         _, _, width_mm, height_mm = bounds
@@ -72,11 +78,27 @@ class DxfImporter(Importer):
 
         scale = self._get_scale_to_mm(doc)
         min_x_mm, min_y_mm, _, _ = bounds
+
+        # Calculate adaptive tolerance based on diagonal size
+        # Baseline 0.01mm for high precision, scaled up for large files.
+        # e.g., 2m diagonal -> 0.1mm tolerance.
+        diag_mm = math.hypot(width_mm, height_mm)
+        tolerance_mm = max(0.01, diag_mm / 20000.0)
+        logger.debug(
+            f"DXF Importer: Using adaptive tolerance of {tolerance_mm:.4f} mm."
+        )
+
         blocks_cache: Dict[str, List[DocItem]] = {}
 
         # Pre-parse all block definitions into DocItem templates.
         self._prepare_blocks_cache(
-            doc, scale, min_x_mm, min_y_mm, source, blocks_cache
+            doc,
+            scale,
+            min_x_mm,
+            min_y_mm,
+            source,
+            blocks_cache,
+            tolerance_mm,
         )
 
         # Group entities by layer to support layer-based grouping
@@ -89,6 +111,7 @@ class DxfImporter(Importer):
 
         active_layers = []
         for layer_name, entities in layer_map.items():
+            logger.debug(f"Processing layer: '{layer_name}'")
             items = self._entities_to_doc_items(
                 entities,
                 doc,
@@ -97,6 +120,8 @@ class DxfImporter(Importer):
                 min_y_mm,
                 source,
                 blocks_cache,
+                parent_transform=None,
+                tolerance_mm=tolerance_mm,
             )
             if items:
                 active_layers.append((layer_name, items))
@@ -122,6 +147,7 @@ class DxfImporter(Importer):
         ty: float,
         source: SourceAsset,
         blocks_cache: Dict[str, List[DocItem]],
+        tolerance_mm: float,
     ):
         """Recursively parses all block definitions into lists of DocItems."""
         blocks_cache.clear()
@@ -135,6 +161,7 @@ class DxfImporter(Importer):
                 source,
                 blocks_cache,
                 ezdxf.math.Matrix44(),
+                tolerance_mm,
             )
 
     def _entities_to_doc_items(
@@ -147,6 +174,7 @@ class DxfImporter(Importer):
         source: SourceAsset,
         blocks_cache: Dict[str, List[DocItem]],
         parent_transform: Optional[ezdxf.math.Matrix44] = None,
+        tolerance_mm: float = 0.01,
     ) -> List[DocItem]:
         """
         Converts a list of DXF entities into a list of DocItems (WorkPieces
@@ -170,34 +198,30 @@ class DxfImporter(Importer):
                 existing_solids.extend(current_solids)
                 source.metadata["solids"] = existing_solids
 
-            min_x, min_y, max_x, max_y = current_geo.rect()
+            pristine_geo = current_geo.copy()
+            pristine_geo.close_gaps()
+
+            min_x, min_y, max_x, max_y = pristine_geo.rect()
             width = max(max_x - min_x, 1e-9)
             height = max(max_y - min_y, 1e-9)
 
-            # The geometry from the DXF is Y-up. We must convert it to a
-            # normalized Y-down geometry for storage in the segment.
-            segment_mask_geo = current_geo.copy()
-            segment_mask_geo.close_gaps()
+            logger.debug(
+                f"Flushing geometry to WorkPiece. Bounds: "
+                f"w={width:.2f}, h={height:.2f}"
+            )
 
-            # 1. Translate to origin (0,0 is bottom-left).
-            translation_matrix = Matrix.translation(-min_x, -min_y)
-            segment_mask_geo.transform(translation_matrix.to_4x4_numpy())
-
-            # 2. Normalize to a 1x1 box. The geometry is now in a
-            #    (0,0)-(1,1) box, but is still Y-up.
-            if width > 0 and height > 0:
-                norm_matrix = Matrix.scale(1.0 / width, 1.0 / height)
-                segment_mask_geo.transform(norm_matrix.to_4x4_numpy())
-
-            # 3. Flip the Y-axis to convert to the required Y-down format.
-            #    This is a scale by -1 on Y, then a translation by +1 on Y.
-            flip_matrix = Matrix.translation(0, 1) @ Matrix.scale(1, -1)
-            segment_mask_geo.transform(flip_matrix.to_4x4_numpy())
+            # Create a matrix that transforms the pristine geometry
+            # (in mm, Y-up) into a normalized (0-1, Y-down) coordinate space.
+            translate_to_origin = Matrix.translation(-min_x, -min_y)
+            scale_to_unit = Matrix.scale(1.0 / width, 1.0 / height)
+            flip_y = Matrix.translation(0, 1) @ Matrix.scale(1, -1)
+            normalization_matrix = flip_y @ scale_to_unit @ translate_to_origin
 
             gen_config = SourceAssetSegment(
                 source_asset_uid=source.uid,
-                segment_mask_geometry=segment_mask_geo,
                 vectorization_spec=PassthroughSpec(),
+                pristine_geometry=pristine_geo,
+                normalization_matrix=normalization_matrix,
             )
 
             wp = WorkPiece(
@@ -256,29 +280,46 @@ class DxfImporter(Importer):
                 )
             else:
                 self._entity_to_geo(
-                    current_geo, entity, doc, scale, tx, ty, parent_transform
+                    current_geo,
+                    entity,
+                    doc,
+                    scale,
+                    tx,
+                    ty,
+                    parent_transform,
+                    tolerance_mm,
                 )
 
         flush_geo_to_workpiece()
         return result_items
 
-    def _entity_to_geo(self, geo, entity, doc, scale, tx, ty, transform):
+    def _entity_to_geo(
+        self,
+        geo,
+        entity,
+        doc,
+        scale,
+        tx,
+        ty,
+        transform,
+        tolerance_mm: float = 0.01,
+    ):
         """Dispatcher to call the correct handler for a given DXF entity."""
         handler_map = {
             "LINE": self._line_to_geo,
-            "CIRCLE": self._poly_approx_to_geo,
-            "LWPOLYLINE": self._lwpolyline_to_geo,
+            "CIRCLE": self._circle_to_geo,
             "ARC": self._arc_to_geo,
+            "LWPOLYLINE": self._poly_approx_to_geo,
             "ELLIPSE": self._poly_approx_to_geo,
             "SPLINE": self._poly_approx_to_geo,
-            "POLYLINE": self._polyline_to_geo,
+            "POLYLINE": self._poly_approx_to_geo,
             "HATCH": self._hatch_to_geo,
             "TEXT": self._text_to_geo,
             "MTEXT": self._text_to_geo,
         }
         handler = handler_map.get(entity.dxftype())
         if handler:
-            handler(geo, entity, scale, tx, ty, transform)
+            handler(geo, entity, scale, tx, ty, transform, tolerance_mm)
         else:
             logger.warning(
                 f"Unsupported DXF entity type: {entity.dxftype()}. "
@@ -304,32 +345,6 @@ class DxfImporter(Importer):
             (max_p.y - min_p.y) * scale,
         )
 
-    def _poly_to_geo(
-        self,
-        geo: Geometry,
-        points: List[ezdxf.math.Vec3],
-        is_closed: bool,
-        scale: float,
-        tx: float,
-        ty: float,
-        transform: Optional[ezdxf.math.Matrix44] = None,
-    ) -> Optional[List[Tuple[float, float]]]:
-        if not points:
-            return None
-        if transform:
-            points = list(transform.transform_vertices(points))
-        if not points:
-            return None
-        scaled_points = [
-            ((p.x * scale) - tx, (p.y * scale) - ty) for p in points
-        ]
-        geo.move_to(scaled_points[0][0], scaled_points[0][1])
-        for x, y in scaled_points[1:]:
-            geo.line_to(x, y)
-        if is_closed:
-            geo.line_to(scaled_points[0][0], scaled_points[0][1])
-        return scaled_points
-
     def _solid_to_geo_and_data(
         self,
         geo: Geometry,
@@ -340,18 +355,22 @@ class DxfImporter(Importer):
         ty: float,
         transform=None,
     ):
-        # A SOLID is a quadrilateral. Note the strange vertex order for DXF.
+        # Use poly_approx to draw the outline
+        self._poly_approx_to_geo(geo, entity, scale, tx, ty, transform)
+
+        # For the solid fill data, we need the transformed 2D points
         points = [
             entity.dxf.vtx0,
             entity.dxf.vtx1,
             entity.dxf.vtx3,
             entity.dxf.vtx2,
         ]
-        # Add the outline to geometry and get the final scaled points for
-        # the fill
-        scaled_points = self._poly_to_geo(
-            geo, points, True, scale, tx, ty, transform
-        )
+        if transform:
+            points = list(transform.transform_vertices(points))
+
+        scaled_points = [
+            ((p.x * scale) - tx, (p.y * scale) - ty) for p in points
+        ]
         if scaled_points:
             solids_list.append(scaled_points)
 
@@ -363,21 +382,99 @@ class DxfImporter(Importer):
         tx: float,
         ty: float,
         transform=None,
+        tolerance_mm: float = 0.01,
     ):
+        """
+        Converts a LINE entity directly to geometry commands without
+        approximation.
+        """
         points = [entity.dxf.start, entity.dxf.end]
-        self._poly_to_geo(geo, points, False, scale, tx, ty, transform)
+        if transform:
+            points = list(transform.transform_vertices(points))
 
-    def _lwpolyline_to_geo(
+        start_vec, end_vec = points
+
+        # Apply global scale and translation
+        start_x_mm = start_vec.x * scale - tx
+        start_y_mm = start_vec.y * scale - ty
+        start_z_mm = start_vec.z * scale
+
+        end_x_mm = end_vec.x * scale - tx
+        end_y_mm = end_vec.y * scale - ty
+        end_z_mm = end_vec.z * scale
+
+        # Check for continuity with the last point in the geometry
+        is_continuous = False
+        if not geo.is_empty():
+            last_point = geo._get_last_point()
+            # Use a small tolerance for floating point comparison
+            dist_sq = (
+                (last_point[0] - start_x_mm) ** 2
+                + (last_point[1] - start_y_mm) ** 2
+                + (last_point[2] - start_z_mm) ** 2
+            )
+            if dist_sq < 1e-6:
+                is_continuous = True
+
+        # If the path is not continuous, start a new subpath
+        if not is_continuous:
+            geo.move_to(start_x_mm, start_y_mm, start_z_mm)
+
+        # Add the line segment
+        geo.line_to(end_x_mm, end_y_mm, end_z_mm)
+
+    def _circle_to_geo(
         self,
         geo: Geometry,
         entity,
         scale: float,
         tx: float,
         ty: float,
-        transform=None,
+        transform: Optional[ezdxf.math.Matrix44] = None,
+        tolerance_mm: float = 0.01,
     ):
-        points = [ezdxf.math.Vec3(p[0], p[1], 0) for p in entity.vertices()]
-        self._poly_to_geo(geo, points, entity.closed, scale, tx, ty, transform)
+        """Handles CIRCLE entities by creating two 180-degree arcs."""
+        # Copy the entity to avoid modifying the original in a block def
+        temp_entity = entity.copy()
+        if transform:
+            try:
+                temp_entity.transform(transform)
+            except (NotImplementedError, AttributeError):
+                # Some entities might not support transformation directly
+                self._poly_approx_to_geo(
+                    geo, entity, scale, tx, ty, transform, tolerance_mm
+                )
+                return
+
+        # If a non-uniform scale was applied, it becomes an ellipse
+        if temp_entity.dxftype() == "ELLIPSE":
+            self._poly_approx_to_geo(
+                geo, temp_entity, scale, tx, ty, None, tolerance_mm
+            )
+            return
+
+        center = temp_entity.dxf.center
+        radius = temp_entity.dxf.radius
+
+        # Apply global scale and translation
+        cx_mm = center.x * scale - tx
+        cy_mm = center.y * scale - ty
+        z_mm = center.z * scale
+        r_mm = radius * scale
+
+        # Define circle as two 180-degree arcs. Start at 3 o'clock.
+        start_point = (cx_mm + r_mm, cy_mm, z_mm)
+        mid_point = (cx_mm - r_mm, cy_mm, z_mm)
+
+        geo.move_to(start_point[0], start_point[1], start_point[2])
+        # First semi-circle (CCW by default in DXF)
+        geo.arc_to_as_bezier(
+            mid_point[0], mid_point[1], -r_mm, 0, clockwise=False, z=z_mm
+        )
+        # Second semi-circle
+        geo.arc_to_as_bezier(
+            start_point[0], start_point[1], r_mm, 0, clockwise=False, z=z_mm
+        )
 
     def _arc_to_geo(
         self,
@@ -387,40 +484,90 @@ class DxfImporter(Importer):
         tx: float,
         ty: float,
         transform=None,
+        tolerance_mm: float = 0.01,
     ):
-        start_point, end_point, center_point = (
-            entity.start_point,
-            entity.end_point,
-            entity.dxf.center,
+        self._poly_approx_to_geo(
+            geo, entity, scale, tx, ty, transform, tolerance_mm
         )
-        if transform:
-            start_point, end_point, center_point = (
-                transform.transform(start_point),
-                transform.transform(end_point),
-                transform.transform(center_point),
+
+    def _consume_path(
+        self,
+        geo: Geometry,
+        path,
+        scale: float,
+        tx: float,
+        ty: float,
+    ):
+        """
+        Consumes an ezdxf.path.Path object and adds it to the Geometry.
+        This is the core path construction logic.
+        """
+        if not path:
+            return
+
+        all_commands = list(path.commands())
+        if not all_commands:
+            return
+
+        # Initialize current point from the last point in the geometry, if any
+        last_geo_point = geo._get_last_point() if not geo.is_empty() else None
+
+        # The 'start' of the path is the start of the first command.
+        start_vec = path.start * scale
+        current_x, current_y, current_z = (
+            start_vec.x - tx,
+            start_vec.y - ty,
+            start_vec.z,
+        )
+
+        is_continuous = False
+        if last_geo_point:
+            dist_sq = (
+                (last_geo_point[0] - current_x) ** 2
+                + (last_geo_point[1] - current_y) ** 2
+                + (last_geo_point[2] - current_z) ** 2
             )
-        center_offset = center_point - start_point
-        final_start_x, final_start_y = (
-            (start_point.x * scale) - tx,
-            (start_point.y * scale) - ty,
-        )
-        final_end_x, final_end_y = (
-            (end_point.x * scale) - tx,
-            (end_point.y * scale) - ty,
-        )
-        final_offset_i, final_offset_j = (
-            center_offset.x * scale,
-            center_offset.y * scale,
-        )
-        geo.move_to(final_start_x, final_start_y, start_point.z * scale)
-        geo.arc_to(
-            final_end_x,
-            final_end_y,
-            final_offset_i,
-            final_offset_j,
-            clockwise=entity.dxf.extrusion.z < 0,
-            z=end_point.z * scale,
-        )
+            if dist_sq < 1e-6:
+                is_continuous = True
+
+        if not is_continuous:
+            geo.move_to(current_x, current_y, current_z)
+
+        for i, cmd in enumerate(all_commands):
+            end_vec = cmd.end * scale
+            end_x, end_y, end_z = end_vec.x - tx, end_vec.y - ty, end_vec.z
+
+            if cmd.type == Command.MOVE_TO:
+                # This command type should not appear after the first one
+                # in a well-formed sub-path, but we handle it defensively
+                # by moving the geo's cursor.
+                logger.debug(
+                    f"[Cmd {i}] Explicit MOVE_TO: ({end_x:.2f}, {end_y:.2f})"
+                )
+                geo.move_to(end_x, end_y, end_z)
+            elif cmd.type == Command.LINE_TO:
+                geo.line_to(end_x, end_y, end_z)
+            elif cmd.type == Command.CURVE3_TO:
+                ctrl = cmd.ctrl * scale
+                ctrl_x, ctrl_y = ctrl.x - tx, ctrl.y - ty
+                c1x, c1y = (
+                    current_x + 2 / 3 * (ctrl_x - current_x),
+                    current_y + 2 / 3 * (ctrl_y - current_y),
+                )
+                c2x, c2y = (
+                    end_x + 2 / 3 * (ctrl_x - end_x),
+                    end_y + 2 / 3 * (ctrl_y - end_y),
+                )
+                geo.bezier_to(end_x, end_y, c1x, c1y, c2x, c2y, end_z)
+            elif cmd.type == Command.CURVE4_TO:
+                ctrl1 = cmd.ctrl1 * scale
+                c1x, c1y = ctrl1.x - tx, ctrl1.y - ty
+                ctrl2 = cmd.ctrl2 * scale
+                c2x, c2y = ctrl2.x - tx, ctrl2.y - ty
+                geo.bezier_to(end_x, end_y, c1x, c1y, c2x, c2y, end_z)
+
+            # Update the current point for the next command in the loop
+            current_x, current_y, current_z = end_x, end_y, end_z
 
     def _poly_approx_to_geo(
         self,
@@ -430,39 +577,31 @@ class DxfImporter(Importer):
         tx: float,
         ty: float,
         transform=None,
+        tolerance_mm: float = 0.01,
     ):
+        """
+        Converts entities to Geometry using ezdxf's path interface.
+        """
         try:
-            path_obj = ezdxf.path.make_path(entity)  # type: ignore
-            points = list(path_obj.flattening(distance=0.01))
-            is_closed = getattr(entity, "closed", False)
-            self._poly_to_geo(geo, points, is_closed, scale, tx, ty, transform)
-        except Exception:
-            pass
+            # Use `flattening` to control the linearization of curves.
+            # A small value ensures curves are converted to many small lines,
+            # which our `arc_to_as_bezier` can reconstruct. A value of 0
+            # might use the default, so a small explicit value is better.
+            path_obj = ezdxf.path.make_path(  # type: ignore
+                entity, flattening=tolerance_mm / 4.0
+            )
+            if transform:
+                path_obj = path_obj.transform(transform)
 
-    def _polyline_to_geo(
-        self,
-        geo: Geometry,
-        entity,
-        scale: float,
-        tx: float,
-        ty: float,
-        transform: Optional[ezdxf.math.Matrix44] = None,
-    ):
-        try:
-            for v_entity in entity.virtual_entities():
-                if v_entity.dxftype() == "LINE":
-                    self._line_to_geo(geo, v_entity, scale, tx, ty, transform)
-                elif v_entity.dxftype() == "ARC":
-                    self._arc_to_geo(geo, v_entity, scale, tx, ty, transform)
-        except Exception:
-            self._poly_to_geo(
-                geo,
-                list(entity.points()),
-                entity.is_closed,
-                scale,
-                tx,
-                ty,
-                transform,
+            self._consume_path(geo, path_obj, scale, tx, ty)
+        except ezdxf.path.EmptyPathError:  # type: ignore
+            logger.debug(
+                f"Skipping empty path from entity {entity.dxftype()}."
+            )
+        except Exception as e:
+            logger.error(
+                f"Failed to convert entity {entity.dxftype()} to path: {e}",
+                exc_info=True,
             )
 
     def _hatch_to_geo(
@@ -473,24 +612,19 @@ class DxfImporter(Importer):
         tx: float,
         ty: float,
         transform: Optional[ezdxf.math.Matrix44] = None,
+        tolerance_mm: float = 0.01,
     ):
         try:
+            # Hatches are complex; we convert each of their boundary paths.
             for path in entity.paths:
-                for v_entity in path.virtual_entities():
-                    if v_entity.dxftype() == "LINE":
-                        self._line_to_geo(
-                            geo, v_entity, scale, tx, ty, transform
-                        )
-                    elif v_entity.dxftype() == "ARC":
-                        self._arc_to_geo(
-                            geo, v_entity, scale, tx, ty, transform
-                        )
-                    elif v_entity.dxftype() in ("SPLINE", "ELLIPSE"):
-                        self._poly_approx_to_geo(
-                            geo, v_entity, scale, tx, ty, transform
-                        )
-        except Exception:
-            pass
+                # The path from a hatch is already a path object, so we
+                # consume it.
+                path_obj = path.to_path()
+                if transform:
+                    path_obj = path_obj.transform(transform)
+                self._consume_path(geo, path_obj, scale, tx, ty)
+        except Exception as e:
+            logger.error(f"Failed to process HATCH entity: {e}", exc_info=True)
 
     def _text_to_geo(
         self,
@@ -500,10 +634,13 @@ class DxfImporter(Importer):
         tx: float,
         ty: float,
         transform: Optional[ezdxf.math.Matrix44] = None,
+        tolerance_mm: float = 0.01,
     ):
         try:
-            for path in text2path.make_paths_from_entity(entity):
-                points = list(path.flattening(distance=0.01))
-                self._poly_to_geo(geo, points, False, scale, tx, ty, transform)
-        except Exception:
-            pass
+            paths = text2path.make_paths_from_entity(entity)
+            for path in paths:
+                if transform:
+                    path = path.transform(transform)
+                self._consume_path(geo, path, scale, tx, ty)
+        except Exception as e:
+            logger.error(f"Failed to convert TEXT entity: {e}", exc_info=True)

@@ -28,16 +28,16 @@ class TestSegmentMaskGeometry:
         wp = payload.items[0]
         assert isinstance(wp, WorkPiece)
         assert wp.source_segment is not None
-        assert wp.source_segment.segment_mask_geometry is not None
-        assert not wp.source_segment.segment_mask_geometry.is_empty()
+        assert wp.source_segment.pristine_geometry is not None
+        assert not wp.source_segment.pristine_geometry.is_empty()
 
         # For raster imports, boundaries and segment_mask_geometry are
         # different (boundaries are Y-up, segment_mask_geometry is Y-down)
         # But both should be non-empty
         assert wp.boundaries is not None
-        assert wp.source_segment.segment_mask_geometry is not None
+        assert wp.source_segment.pristine_geometry is not None
         assert not wp.boundaries.is_empty()
-        assert not wp.source_segment.segment_mask_geometry.is_empty()
+        assert not wp.source_segment.pristine_geometry.is_empty()
 
     def test_vector_import_populates_segment_mask_geometry(
         self, tests_root: Path
@@ -55,8 +55,8 @@ class TestSegmentMaskGeometry:
         wp = payload.items[0]
         assert isinstance(wp, WorkPiece)
         assert wp.source_segment is not None
-        assert wp.source_segment.segment_mask_geometry is not None
-        assert not wp.source_segment.segment_mask_geometry.is_empty()
+        assert wp.source_segment.pristine_geometry is not None
+        assert not wp.source_segment.pristine_geometry.is_empty()
 
         # The boundaries property returns a Y-up version, while the source
         # segment stores the original Y-down version. They should not be
@@ -64,23 +64,17 @@ class TestSegmentMaskGeometry:
         assert wp.boundaries is not None
         assert not wp.boundaries.is_empty()
         assert wp.boundaries.to_dict() != (
-            wp.source_segment.segment_mask_geometry.to_dict()
+            wp.source_segment.pristine_geometry.to_dict()
         )
 
     def test_dxf_import_populates_segment_mask_geometry(
         self, tests_root: Path
     ):
         """Test that DXF import populates segment_mask_geometry."""
-        dxf_path = tests_root / "image/dxf/simple.dxf"
+        dxf_path = tests_root / "image/dxf/circle.dxf"
         payload = import_file(
             dxf_path
         )  # No vectorization_spec for direct import
-
-        # Note: This test assumes the existence of a simple.dxf file
-        # If the file doesn't exist, we'll skip this test
-        if not dxf_path.exists():
-            pytest.skip("DXF test file not found")
-            return
 
         assert payload is not None
         assert payload.source is not None
@@ -92,9 +86,7 @@ class TestSegmentMaskGeometry:
         wp = payload.items[0]
         assert isinstance(wp, WorkPiece)
         assert wp.source_segment is not None
-        assert wp.source_segment.segment_mask_geometry is not None
-        assert payload.source.width_px == 300
-        assert payload.source.height_px == 358
+        assert wp.source_segment.pristine_geometry is not None
 
         # The boundaries property returns a Y-up version, while the source
         # segment stores the original Y-down version. They should not be
@@ -102,7 +94,7 @@ class TestSegmentMaskGeometry:
         assert wp.boundaries is not None
         assert not wp.boundaries.is_empty()
         assert wp.boundaries.to_dict() != (
-            wp.source_segment.segment_mask_geometry.to_dict()
+            wp.source_segment.pristine_geometry.to_dict()
         )
 
     def test_segment_mask_geometry_is_always_geometry_object(
@@ -120,7 +112,7 @@ class TestSegmentMaskGeometry:
         wp_raster = raster_payload.items[0]
         assert isinstance(wp_raster, WorkPiece)
         assert wp_raster.source_segment is not None
-        assert wp_raster.source_segment.segment_mask_geometry is not None
+        assert wp_raster.source_segment.pristine_geometry is not None
 
         # Test with vector import
         svg_path = tests_root / "image/svg/nested-rect.svg"
@@ -130,4 +122,4 @@ class TestSegmentMaskGeometry:
         wp_vector = vector_payload.items[0]
         assert isinstance(wp_vector, WorkPiece)
         assert wp_vector.source_segment is not None
-        assert wp_vector.source_segment.segment_mask_geometry is not None
+        assert wp_vector.source_segment.pristine_geometry is not None

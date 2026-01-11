@@ -4,8 +4,8 @@ from ...geo import primitives
 from .entity import Entity
 
 if TYPE_CHECKING:
-    from .registry import EntityRegistry
     from ..constraints import Constraint
+    from ..registry import EntityRegistry
 
 
 class Arc(Entity):

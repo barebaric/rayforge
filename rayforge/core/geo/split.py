@@ -122,8 +122,10 @@ def split_into_components(geometry: "Geometry") -> List["Geometry"]:
 
     final_geometries: List[Geometry] = []
     stray_open_geo = Geometry()
+    stray_open_geo._uniform_scalable = geometry._uniform_scalable
     for i, indices in enumerate(component_indices_list):
         component_geo = Geometry()
+        component_geo._uniform_scalable = geometry._uniform_scalable
         has_closed_path = False
         for idx in indices:
             contour = all_contour_data[idx]

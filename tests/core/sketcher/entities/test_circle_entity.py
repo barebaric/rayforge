@@ -1,5 +1,6 @@
 import pytest
-from rayforge.core.sketcher.entities import EntityRegistry, Circle
+from rayforge.core.sketcher.entities import Circle
+from rayforge.core.sketcher.registry import EntityRegistry
 
 
 @pytest.fixture

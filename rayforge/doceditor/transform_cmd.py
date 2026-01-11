@@ -4,9 +4,7 @@ from typing import TYPE_CHECKING, List, Tuple, Optional
 from ..context import get_context
 from ..core.item import DocItem
 from ..core.matrix import Matrix
-from ..core.stock import StockItem
 from ..core.undo import ChangePropertyCommand
-from ..core.workpiece import WorkPiece
 
 if TYPE_CHECKING:
     from .editor import DocEditor
@@ -167,39 +165,43 @@ class TransformCmd:
 
     def set_position(self, items: List[DocItem], x: float, y: float):
         """
-        Sets the position of one or more items, creating a single undoable
-        transaction for the operation.
+        Sets the position of one or more items using Machine Coordinates.
+        The coordinates are converted to World Coordinates based on the
+        active machine configuration.
+
+        Args:
+            items: List of items to move.
+            x: Target X position in machine coordinates.
+            y: Target Y position in machine coordinates.
         """
         history_manager = self._editor.history_manager
         if not items:
             return
 
+        machine = get_context().machine
+
         with history_manager.transaction(_("Move item(s)")) as t:
             for item in items:
                 old_matrix = item.matrix.copy()
 
-                # Calculate the target Y in world coordinates (Y-up)
+                # Convert target Machine Coordinate to World Coordinate
+                # We need the item's size for correct conversion if origin is
+                # right/top.
                 size_world = item.size
-                machine = get_context().machine
-                if machine and machine.x_axis_right:
-                    machine_width = machine.dimensions[0]
-                    x_world = machine_width - x - size_world[0]
-                else:
-                    x_world = x
 
-                if machine and machine.y_axis_down:
-                    machine_height = machine.dimensions[1]
-                    y_world = machine_height - y - size_world[1]
+                if machine:
+                    x_world, y_world = machine.machine_to_world(
+                        (x, y), size_world
+                    )
                 else:
-                    y_world = y
+                    # Fallback to direct mapping if no machine context
+                    x_world, y_world = x, y
 
                 current_pos = item.pos
                 dx = x_world - current_pos[0]
                 dy = y_world - current_pos[1]
 
-                # We apply the translation purely to the matrix to avoid
-                # double-updates caused by setting item.pos directly before
-                # the command executes.
+                # Apply translation to matrix
                 new_matrix = Matrix.translation(dx, dy) @ old_matrix
 
                 if old_matrix.is_close(new_matrix):
@@ -229,8 +231,8 @@ class TransformCmd:
             items: The list of DocItems to resize.
             width: The target width. Ignored if `sizes` is provided.
             height: The target height. Ignored if `sizes` is provided.
-            fixed_ratio: If True, maintains aspect ratio based on the first
-                         item. Ignored if `sizes` is provided.
+            fixed_ratio: If True, calculates the missing dimension based on
+                         aspect ratio if one dimension is None.
             sizes: A list of (width, height) tuples, one for each item.
                    If provided, this takes precedence over `width` and
                    `height`.
@@ -245,25 +247,23 @@ class TransformCmd:
             )
             return
 
-        def _calculate_new_size_with_ratio(
-            item: DocItem, value: float, changed_dim: str
-        ) -> Tuple[Optional[float], Optional[float]]:
-            """Calculates new width and height maintaining aspect ratio."""
-            aspect_ratio = None
-            if isinstance(item, (WorkPiece, StockItem)):
+        def _calculate_missing_dim(
+            item: DocItem, w: Optional[float], h: Optional[float]
+        ) -> Tuple[float, float]:
+            """Calculates final width and height handling aspect ratio."""
+            current_w, current_h = item.size
+            final_w = w if w is not None else current_w
+            final_h = h if h is not None else current_h
+
+            if fixed_ratio:
                 aspect_ratio = item.get_current_aspect_ratio()
+                if aspect_ratio:
+                    if w is not None and h is None:
+                        final_h = final_w / aspect_ratio
+                    elif h is not None and w is None:
+                        final_w = final_h * aspect_ratio
 
-            if not aspect_ratio:
-                return None, None
-
-            if changed_dim == "width":
-                new_width = value
-                new_height = new_width / aspect_ratio
-            else:  # changed_dim == 'height'
-                new_height = value
-                new_width = new_height * aspect_ratio
-
-            return new_width, new_height
+            return final_w, final_h
 
         with history_manager.transaction(_("Resize item(s)")) as t:
             for i, item in enumerate(items):
@@ -272,18 +272,9 @@ class TransformCmd:
                 if sizes is not None:
                     new_width, new_height = sizes[i]
                 else:
-                    new_width, new_height = item.size
-                    if width is not None:
-                        new_width = width
-                    if height is not None:
-                        new_height = height
-
-                    if fixed_ratio:
-                        w, h = _calculate_new_size_with_ratio(
-                            item, new_width, "width"
-                        )
-                        if w is not None and h is not None:
-                            new_width, new_height = w, h
+                    new_width, new_height = _calculate_missing_dim(
+                        item, width, height
+                    )
 
                 # The set_size method will rebuild the matrix,
                 # preserving pos/angle

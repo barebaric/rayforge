@@ -656,6 +656,31 @@ def test_from_geometry():
     assert ops.last_move_to == geo_obj.last_move_to
 
 
+def test_from_geometry_with_bezier():
+    # Use the actual Geometry class instead of mocks to ensure correct types
+    geo_obj = Geometry()
+    geo_obj.move_to(10, 10, 0)
+    geo_obj.line_to(20, 20, 0)
+    geo_obj.arc_to_as_bezier(30, 10, -10, 0, clockwise=False, z=0)
+
+    ops = Ops.from_geometry(geo_obj)
+
+    # arc_to_as_bezier() converts arcs to beziers.
+    # Ops.from_geometry linearizes beziers to lines.
+    assert len(ops.commands) > 3
+    assert isinstance(ops.commands[0], MoveToCommand)
+    assert ops.commands[0].end == (10, 10, 0)
+    assert isinstance(ops.commands[1], LineToCommand)
+    assert ops.commands[1].end == (20, 20, 0)
+
+    # Check that remaining commands are LineTo (linearized arc)
+    for cmd in ops.commands[2:]:
+        assert isinstance(cmd, LineToCommand)
+
+    assert ops.commands[-1].end == pytest.approx((30, 10, 0))
+    assert ops.last_move_to == geo_obj.last_move_to
+
+
 def test_serialization_deserialization_all_types():
     """Tests that all command types can be serialized and deserialized."""
     ops = Ops()

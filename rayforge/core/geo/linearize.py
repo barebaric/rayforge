@@ -1,8 +1,11 @@
 import math
-from typing import List, Tuple, Any
+from typing import List, Tuple, Any, cast, Optional
 import numpy as np
 from .constants import (
     CMD_TYPE_ARC,
+    CMD_TYPE_MOVE,
+    CMD_TYPE_LINE,
+    CMD_TYPE_BEZIER,
     COL_TYPE,
     COL_X,
     COL_Y,
@@ -11,7 +14,60 @@ from .constants import (
     COL_J,
     COL_CW,
     GEO_ARRAY_COLS,
+    COL_C1X,
+    COL_C1Y,
+    COL_C2X,
+    COL_C2Y,
 )
+
+
+def flatten_to_points(
+    data: Optional[np.ndarray], resolution: float
+) -> List[List[Tuple[float, float, float]]]:
+    """
+    Converts geometry data into a list of dense point lists (one per
+    subpath). Arcs and Beziers are linearized using the given resolution.
+
+    Args:
+        data: NumPy array of geometry commands.
+        resolution: The resolution for linearizing curves.
+
+    Returns:
+        A list of subpaths, where each subpath is a list of (x, y, z) points.
+    """
+    if data is None or len(data) == 0:
+        return []
+
+    subpaths: List[List[Tuple[float, float, float]]] = []
+    current_subpath: List[Tuple[float, float, float]] = []
+    last_pos = (0.0, 0.0, 0.0)
+
+    for row in data:
+        cmd_type = row[COL_TYPE]
+        end_pos = (row[COL_X], row[COL_Y], row[COL_Z])
+
+        if cmd_type == CMD_TYPE_MOVE:
+            if current_subpath:
+                subpaths.append(current_subpath)
+                current_subpath = []
+            current_subpath.append(end_pos)
+        elif cmd_type == CMD_TYPE_LINE:
+            current_subpath.append(end_pos)
+        elif cmd_type == CMD_TYPE_ARC:
+            segments = _linearize_arc_from_array(row, last_pos, resolution)
+            for _, p_end in segments:
+                current_subpath.append(p_end)
+        elif cmd_type == CMD_TYPE_BEZIER:
+            segments = linearize_bezier_from_array(row, last_pos, resolution)
+            for _, p_end in segments:
+                current_subpath.append(p_end)
+
+        last_pos = end_pos
+
+    if current_subpath:
+        subpaths.append(current_subpath)
+
+    return subpaths
 
 
 def _linearize_arc_from_array(
@@ -43,13 +99,21 @@ def _linearize_arc_from_array(
 
     start_angle = math.atan2(p0[1] - center[1], p0[0] - center[0])
     end_angle = math.atan2(p1[1] - center[1], p1[0] - center[0])
-    angle_range = end_angle - start_angle
-    if clockwise:
-        if angle_range > 0:
-            angle_range -= 2 * math.pi
+
+    is_coincident = math.isclose(p0[0], p1[0], abs_tol=1e-9) and math.isclose(
+        p0[1], p1[1], abs_tol=1e-9
+    )
+
+    if is_coincident and radius_start > 1e-9:
+        angle_range = -2 * math.pi if clockwise else 2 * math.pi
     else:
-        if angle_range < 0:
-            angle_range += 2 * math.pi
+        angle_range = end_angle - start_angle
+        if clockwise:
+            if angle_range > 1e-9:
+                angle_range -= 2 * math.pi
+        else:
+            if angle_range < -1e-9:
+                angle_range += 2 * math.pi
 
     # Use the average radius to get a better estimate for arc length
     avg_radius = (radius_start + radius_end) / 2
@@ -70,6 +134,37 @@ def _linearize_arc_from_array(
         segments.append((prev_pt, next_pt))
         prev_pt = next_pt
     return segments
+
+
+def linearize_bezier_from_array(
+    bezier_row: np.ndarray,
+    start_point: Tuple[float, float, float],
+    resolution: float = 0.1,
+) -> List[Tuple[Tuple[float, float, float], Tuple[float, float, float]]]:
+    """Internal, NumPy-native implementation for Bezier linearization."""
+    p0 = start_point
+    p1 = (bezier_row[COL_X], bezier_row[COL_Y], bezier_row[COL_Z])
+    c1_2d = (bezier_row[COL_C1X], bezier_row[COL_C1Y])
+    c2_2d = (bezier_row[COL_C2X], bezier_row[COL_C2Y])
+
+    # Interpolate Z for control points for a smooth 3D curve
+    z0, z1 = p0[2], p1[2]
+    c1 = (c1_2d[0], c1_2d[1], z0 * (2 / 3) + z1 * (1 / 3))
+    c2 = (c2_2d[0], c2_2d[1], z0 * (1 / 3) + z1 * (2 / 3))
+
+    # Estimate curve length by summing chord lengths
+    l01 = math.dist(p0, c1)
+    l12 = math.dist(c1, c2)
+    l23 = math.dist(c2, p1)
+    estimated_len = l01 + l12 + l23
+    num_steps = max(2, int(estimated_len / resolution))
+
+    # Cast is needed here because linearize_bezier is generic, but we know
+    # we are passing it 3D points and expect 3D points back.
+    return cast(
+        List[Tuple[Tuple[float, float, float], Tuple[float, float, float]]],
+        linearize_bezier(p0, c1, c2, p1, num_steps),
+    )
 
 
 def linearize_arc(
@@ -235,7 +330,7 @@ def linearize_bezier_adaptive(
 
         # Midpoints of midpoints
         q01 = ((m01[0] + m12[0]) / 2, (m01[1] + m12[1]) / 2)
-        q12 = ((m12[0] + m23[0]) / 2, (m12[1] + m23[1]) / 2)
+        q12 = ((m12[0] + m23[0]) / 2, (m12[1] + m12[1]) / 2)
 
         # Final midpoint on the curve
         r = ((q01[0] + q12[0]) / 2, (q01[1] + q12[1]) / 2)
@@ -287,3 +382,47 @@ def resample_polyline(
             new_points.append(p2)
 
     return new_points
+
+
+def linearize_geometry(
+    data: Optional[np.ndarray], tolerance: float
+) -> np.ndarray:
+    """
+    Converts geometry data to a polyline approximation (Lines only),
+    reducing vertex count using the Ramer-Douglas-Peucker algorithm.
+
+    Args:
+        data: NumPy array of geometry commands.
+        tolerance: The maximum allowable deviation.
+
+    Returns:
+        A NumPy array containing only MOVE and LINE commands.
+    """
+    from .simplify import simplify_points_to_array
+
+    if data is None or len(data) == 0:
+        return np.array([]).reshape(0, GEO_ARRAY_COLS)
+
+    resolution = tolerance * 0.25
+    subpaths_points = flatten_to_points(data, resolution)
+
+    new_rows = []
+    for points in subpaths_points:
+        if not points:
+            continue
+
+        pts_arr = np.array(points, dtype=np.float64)
+        simplified_arr = simplify_points_to_array(pts_arr, tolerance)
+
+        if len(simplified_arr) > 0:
+            p0 = simplified_arr[0]
+            new_rows.append([CMD_TYPE_MOVE, p0[0], p0[1], p0[2], 0, 0, 0, 0])
+
+            for i in range(1, len(simplified_arr)):
+                p = simplified_arr[i]
+                new_rows.append([CMD_TYPE_LINE, p[0], p[1], p[2], 0, 0, 0, 0])
+
+    if not new_rows:
+        return np.array([]).reshape(0, GEO_ARRAY_COLS)
+
+    return np.array(new_rows, dtype=np.float64)

@@ -1,5 +1,6 @@
 import pytest
 import io
+from pathlib import Path
 import ezdxf
 from typing import Optional
 from unittest.mock import Mock
@@ -7,6 +8,7 @@ from unittest.mock import Mock
 from rayforge.image.dxf.importer import DxfImporter
 from rayforge.core.workpiece import WorkPiece
 from rayforge.core.matrix import Matrix
+from rayforge.core.geo import CMD_TYPE_BEZIER
 
 
 # Fixtures
@@ -97,6 +99,28 @@ def inches_workpiece(inches_dxf_importer) -> Optional[WorkPiece]:
     return _setup_workpiece_with_context(inches_dxf_importer)
 
 
+@pytest.fixture
+def circle_dxf_file():
+    return Path(__file__).parent / "circle.dxf"
+
+
+@pytest.fixture
+def acdbcircle_dxf_file():
+    return Path(__file__).parent / "acdbcircle.dxf"
+
+
+@pytest.fixture
+def circle_dxf_importer_from_file(circle_dxf_file):
+    data = circle_dxf_file.read_bytes()
+    return DxfImporter(data)
+
+
+@pytest.fixture
+def acdbcircle_dxf_importer_from_file(acdbcircle_dxf_file):
+    data = acdbcircle_dxf_file.read_bytes()
+    return DxfImporter(data)
+
+
 # Test cases
 class TestDXFImporter:
     def test_empty_dxf(self, empty_dxf_importer):
@@ -178,3 +202,43 @@ class TestDXFImporter:
         importer = DxfImporter(invalid_dxf)
         payload = importer.get_doc_items(vectorization_spec=None)
         assert payload is None
+
+    def test_circle_dxf_not_linearized(
+        self, circle_dxf_importer_from_file: DxfImporter
+    ):
+        payload = circle_dxf_importer_from_file.get_doc_items(
+            vectorization_spec=None
+        )
+        assert payload is not None
+        assert len(payload.items) == 1
+        wp = payload.items[0]
+        assert isinstance(wp, WorkPiece)
+        boundaries = wp.boundaries
+        assert boundaries is not None
+        assert not boundaries.is_empty()
+        data = boundaries.data
+        assert data is not None
+        has_bezier_commands = (data[:, 0] == CMD_TYPE_BEZIER).any()
+        assert has_bezier_commands, (
+            "Circle should contain bezier commands, not be linearized"
+        )
+
+    def test_acdbcircle_dxf_not_linearized(
+        self, acdbcircle_dxf_importer_from_file: DxfImporter
+    ):
+        payload = acdbcircle_dxf_importer_from_file.get_doc_items(
+            vectorization_spec=None
+        )
+        assert payload is not None
+        assert len(payload.items) == 1
+        wp = payload.items[0]
+        assert isinstance(wp, WorkPiece)
+        boundaries = wp.boundaries
+        assert boundaries is not None
+        assert not boundaries.is_empty()
+        data = boundaries.data
+        assert data is not None
+        has_bezier_commands = (data[:, 0] == CMD_TYPE_BEZIER).any()
+        assert has_bezier_commands, (
+            "ACDB circle should contain bezier commands, not be linearized"
+        )

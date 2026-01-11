@@ -19,7 +19,7 @@ class ExecutionPhase(Enum):
 
     The execution order is always:
     1. GEOMETRY_REFINEMENT: For transformers that modify path geometry but
-       require it to be continuous (e.g., Smooth, ArcWeld).
+       require it to be continuous (e.g., Smooth).
     2. PATH_INTERRUPTION: For transformers that intentionally create gaps or
        discontinuities in paths (e.g., TabOpsTransformer).
     3. POST_PROCESSING: For transformers that operate on the final, potentially

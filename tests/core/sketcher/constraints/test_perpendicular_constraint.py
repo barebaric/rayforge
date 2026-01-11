@@ -3,9 +3,9 @@ import numpy as np
 from scipy.optimize import check_grad
 import math
 from types import SimpleNamespace
-from rayforge.core.sketcher.params import ParameterContext
-from rayforge.core.sketcher.entities import EntityRegistry
 from rayforge.core.sketcher.constraints import PerpendicularConstraint
+from rayforge.core.sketcher.params import ParameterContext
+from rayforge.core.sketcher.registry import EntityRegistry
 
 
 @pytest.fixture

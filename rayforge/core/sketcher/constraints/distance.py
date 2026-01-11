@@ -14,8 +14,8 @@ from ...geo.primitives import find_closest_point_on_line_segment
 from .base import Constraint
 
 if TYPE_CHECKING:
-    from ..entities import EntityRegistry
     from ..params import ParameterContext
+    from ..registry import EntityRegistry
 
 
 class DistanceConstraint(Constraint):

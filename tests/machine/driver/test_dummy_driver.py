@@ -6,6 +6,7 @@ from rayforge.core.ops import Ops, MoveToCommand, LineToCommand
 from rayforge.machine.driver.dummy import NoDeviceDriver
 from rayforge.machine.models.machine import Machine
 from rayforge.pipeline.encoder.gcode import GcodeEncoder
+from rayforge.machine.driver.driver import Axis
 
 
 class TestDummyDriverCallback:
@@ -230,3 +231,31 @@ class TestDummyDriverCallback:
         driver.job_finished.send = MagicMock()
         await driver.run_raw("")
         driver.job_finished.send.assert_called_once_with(driver)
+
+    @pytest.mark.asyncio
+    async def test_wcs_methods_do_not_raise(self, driver: NoDeviceDriver):
+        """Test that WCS methods can be called without raising exceptions."""
+        await driver.set_wcs_offset("G54", 1.0, 2.0, 3.0)
+        offsets = await driver.read_wcs_offsets()
+        assert offsets == {}
+
+    @pytest.mark.asyncio
+    async def test_run_probe_cycle_simulates_success(
+        self, driver: NoDeviceDriver
+    ):
+        """Test that the dummy probe cycle simulates a successful probe."""
+        probe_status_mock = MagicMock()
+        driver.probe_status_changed.send = probe_status_mock
+
+        result = await driver.run_probe_cycle(Axis.Z, -10, 100)
+
+        assert result is not None
+        assert isinstance(result, tuple)
+        assert len(result) == 3
+
+        # Check that status signals were sent
+        assert probe_status_mock.call_count == 2
+        first_call_msg = probe_status_mock.call_args_list[0].kwargs["message"]
+        second_call_msg = probe_status_mock.call_args_list[1].kwargs["message"]
+        assert "Simulating" in first_call_msg
+        assert "triggered" in second_call_msg

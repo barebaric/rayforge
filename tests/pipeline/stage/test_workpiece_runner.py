@@ -6,6 +6,7 @@ from pathlib import Path
 
 from rayforge.context import get_context
 from rayforge.core.geo import Geometry
+from rayforge.core.matrix import Matrix
 from rayforge.core.step import Step
 from rayforge.core.workpiece import WorkPiece
 from rayforge.core.source_asset import SourceAsset
@@ -55,8 +56,9 @@ def base_workpiece():
     # Create the segment that defines the shape.
     segment = SourceAssetSegment(
         source_asset_uid=source.uid,
-        segment_mask_geometry=geo,
+        pristine_geometry=geo,
         vectorization_spec=PassthroughSpec(),
+        normalization_matrix=Matrix.identity(),
     )
 
     # Create the workpiece using the new constructor.
@@ -92,8 +94,9 @@ def rasterable_workpiece():
     )
     segment = SourceAssetSegment(
         source_asset_uid=source.uid,
-        segment_mask_geometry=geo,
+        pristine_geometry=geo,
         vectorization_spec=PassthroughSpec(),
+        normalization_matrix=Matrix.identity(),
     )
 
     wp = WorkPiece(name="raster_wp.svg", source_segment=segment)
@@ -240,8 +243,9 @@ def test_empty_producer_result_returns_none(mock_proxy):
     )
     empty_segment = SourceAssetSegment(
         source_asset_uid=empty_source.uid,
-        segment_mask_geometry=Geometry(),  # Empty geometry
+        pristine_geometry=Geometry(),  # Empty geometry
         vectorization_spec=PassthroughSpec(),
+        normalization_matrix=Matrix.identity(),
     )
     empty_workpiece = WorkPiece(name="empty_wp", source_segment=empty_segment)
     empty_workpiece.set_size(10, 10)

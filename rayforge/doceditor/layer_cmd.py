@@ -7,7 +7,7 @@ from ..core.undo.list_cmd import ReorderListCommand
 from ..core.workpiece import WorkPiece
 
 if TYPE_CHECKING:
-    from ..workbench.surface import WorkSurface
+    from ..ui_gtk.canvas2d.surface import WorkSurface
     from .editor import DocEditor
 
 logger = logging.getLogger(__name__)

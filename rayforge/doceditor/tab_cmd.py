@@ -10,13 +10,6 @@ from ..core.geo.constants import (
     CMD_TYPE_MOVE,
     CMD_TYPE_LINE,
     CMD_TYPE_ARC,
-    COL_TYPE,
-    COL_X,
-    COL_Y,
-    COL_Z,
-    COL_I,
-    COL_J,
-    COL_CW,
 )
 from ..core.tab import Tab
 from ..core.undo import Command
@@ -75,8 +68,7 @@ class TabCmd:
         self, geometry: Geometry, count: int, width: float
     ) -> List[Tab]:
         """Calculates positions for a number of equally spaced tabs."""
-        data = geometry.data
-        if data is None or count <= 0:
+        if count <= 0:
             return []
 
         # 1. Calculate total perimeter and individual segment lengths
@@ -84,9 +76,17 @@ class TabCmd:
         segment_lengths: List[Tuple[int, float]] = []
         last_point = (0.0, 0.0, 0.0)
 
-        for i, row in enumerate(data):
-            cmd_type = row[COL_TYPE]
-            end_point = (row[COL_X], row[COL_Y], row[COL_Z])
+        for segment_idx, (
+            cmd_type,
+            x,
+            y,
+            z,
+            p1,
+            p2,
+            p3,
+            _,
+        ) in enumerate(geometry.iter_commands()):
+            end_point = (x, y, z)
 
             # MoveTo just updates the pen position for the next drawable
             # command. It has no length and cannot contain a tab.
@@ -101,8 +101,9 @@ class TabCmd:
             if cmd_type == CMD_TYPE_LINE:
                 length = math.dist(last_point[:2], end_point[:2])
             elif cmd_type == CMD_TYPE_ARC:
-                center_offset = (row[COL_I], row[COL_J])
-                clockwise = bool(row[COL_CW])
+                i, j, cw = p1, p2, p3  # Unpack arc params
+                center_offset = (i, j)
+                clockwise = bool(cw)
 
                 p0 = last_point
                 center = (
@@ -129,7 +130,7 @@ class TabCmd:
                     length = math.dist(last_point[:2], end_point[:2])
 
             if length > 1e-6:
-                segment_lengths.append((i, length))
+                segment_lengths.append((segment_idx, length))
                 total_length += length
 
             # Update last_point for the next segment

@@ -202,6 +202,9 @@ class WorkPiecePipelineStage(PipelineStage):
             logger.error("Cannot generate ops: No machine is configured.")
             return
 
+        settings["machine_supports_arcs"] = config.machine.supports_arcs
+        settings["arc_tolerance"] = config.machine.arc_tolerance
+
         try:
             selected_laser = step.get_selected_laser(config.machine)
         except ValueError as e:

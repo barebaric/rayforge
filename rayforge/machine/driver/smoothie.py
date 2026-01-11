@@ -10,6 +10,7 @@ from typing import (
     Callable,
     Union,
     Awaitable,
+    Dict,
 )
 from ...context import RayforgeContext
 from ...core.ops import Ops
@@ -24,6 +25,7 @@ from .driver import (
     DriverSetupError,
     DriverPrecheckError,
     Axis,
+    Pos,
 )
 from .grbl_util import parse_state
 
@@ -34,6 +36,17 @@ if TYPE_CHECKING:
 
 
 logger = logging.getLogger(__name__)
+
+
+# Smoothie uses P1 for G54, P2 for G55, etc.
+_wcs_to_p_map = {
+    "G54": 1,
+    "G55": 2,
+    "G56": 3,
+    "G57": 4,
+    "G58": 5,
+    "G59": 6,
+}
 
 
 class SmoothieDriver(Driver):
@@ -95,13 +108,12 @@ class SmoothieDriver(Driver):
     def get_setting_vars(self) -> List["VarSet"]:
         return [VarSet()]
 
-    def setup(self, **kwargs: Any):
+    def _setup_implementation(self, **kwargs: Any) -> None:
         host = cast(str, kwargs.get("host", ""))
         port = kwargs.get("port", 23)
 
         if not host:
             raise DriverSetupError(_("Hostname must be configured."))
-        super().setup()
 
         self.host = host
         self.port = port
@@ -191,8 +203,8 @@ class SmoothieDriver(Driver):
             Callable[[int], Union[None, Awaitable[None]]]
         ] = None,
     ) -> None:
-        encoder = self.get_encoder()
-        gcode, op_map = encoder.encode(ops, self._machine, doc)
+        # Let the machine handle coordinate transformations and encoding
+        gcode, op_map = self._machine.encode_ops(ops, doc)
         gcode_lines = gcode.splitlines()
 
         try:
@@ -265,8 +277,9 @@ class SmoothieDriver(Driver):
                  homes all axes. Can be a single Axis or multiple axes
                  using binary operators (e.g. Axis.X|Axis.Y)
         """
+        dialect = self._machine.dialect
         if axes is None:
-            await self._send_and_wait(b"$H")
+            await self._send_and_wait(dialect.home_all.encode())
             return
 
         # Handle multiple axes - home them one by one
@@ -274,11 +287,12 @@ class SmoothieDriver(Driver):
             if axes & axis:
                 assert axis.name
                 axis_letter: str = axis.name.upper()
-                cmd = f"G28 {axis_letter}0"
+                cmd = dialect.home_axis.format(axis_letter=axis_letter)
                 await self._send_and_wait(cmd.encode())
 
     async def move_to(self, pos_x, pos_y) -> None:
-        cmd = f"G90 G0 X{float(pos_x)} Y{float(pos_y)}"
+        dialect = self._machine.dialect
+        cmd = dialect.move_to.format(x=float(pos_x), y=float(pos_y))
         await self._send_and_wait(cmd.encode())
 
     def can_jog(self, axis: Optional[Axis] = None) -> bool:
@@ -301,11 +315,13 @@ class SmoothieDriver(Driver):
 
     async def select_tool(self, tool_number: int) -> None:
         """Sends a tool change command for the given tool number."""
-        cmd = f"T{tool_number}"
+        dialect = self._machine.dialect
+        cmd = dialect.tool_change.format(tool_number=tool_number)
         await self._send_and_wait(cmd.encode())
 
     async def clear_alarm(self) -> None:
-        await self._send_and_wait(b"M999")
+        dialect = self._machine.dialect
+        await self._send_and_wait(dialect.clear_alarm.encode())
 
     async def set_power(self, head: "Laser", percent: float) -> None:
         """
@@ -388,6 +404,36 @@ class SmoothieDriver(Driver):
     async def write_setting(self, key: str, value: Any) -> None:
         raise NotImplementedError(
             "Device settings not implemented for this driver"
+        )
+
+    async def set_wcs_offset(
+        self, wcs_slot: str, x: float, y: float, z: float
+    ) -> None:
+        """Sets a WCS offset using Smoothie's G10 L20 command."""
+        if wcs_slot not in _wcs_to_p_map:
+            raise ValueError(f"Invalid WCS slot: {wcs_slot}")
+
+        p_num = _wcs_to_p_map[wcs_slot]
+        dialect = self._machine.dialect
+        cmd = dialect.set_wcs_offset.format(p_num=p_num, x=x, y=y, z=z)
+        await self._send_and_wait(cmd.encode("utf-8"))
+
+    async def read_wcs_offsets(self) -> Dict[str, Pos]:
+        """Reading all WCS offsets is not supported by Smoothie."""
+        raise NotImplementedError(
+            "Reading all WCS offsets is not reliably supported "
+            "by Smoothieware."
+        )
+
+    async def run_probe_cycle(
+        self, axis: Axis, max_travel: float, feed_rate: int
+    ) -> Optional[Pos]:
+        """
+        Probing is not implemented due to difficulty in reliably capturing
+        real-time probe position feedback over the standard Telnet protocol.
+        """
+        raise NotImplementedError(
+            "Probing is not implemented for the Smoothie driver via Telnet."
         )
 
     def can_g0_with_speed(self) -> bool:

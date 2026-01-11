@@ -37,6 +37,7 @@ nav:
           - Canvas Tools: docs/ui/canvas-tools.md
           - 3D Preview: docs/ui/3d-preview.md
           - Jog Controls: docs/ui/jog-dialog.md
+          - Work Coordinate Systems: docs/ui/work-coordinate-systems.md
           - Settings: docs/ui/settings.md
       - Features:
           - docs/features/index.md
@@ -93,6 +94,8 @@ nav:
           - Pipeline: docs/developer/pipeline.md
           - Task Manager: docs/developer/tasker.md
           - Drivers: docs/developer/driver.md
+      - Plugins:
+          - Plugin Developer Guide: docs/developer/plugin-docs.md
   - Contributing:
       - contributing/index.md
   - Discord:

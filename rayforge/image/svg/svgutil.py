@@ -70,9 +70,9 @@ def _get_margins_from_data(
             render_w = measurement_size * aspect_ratio
 
         # 3. Modify SVG for a large, proportional render.
-        # DO NOT set preserveAspectRatio="none", as this causes distortion.
         root.set("width", f"{render_w}px")
         root.set("height", f"{render_h}px")
+        root.set("preserveAspectRatio", "none")
 
         # Create viewBox if it's missing, which is crucial for the renderer
         # to have a coordinate system.
@@ -169,8 +169,11 @@ def trim_svg(data: bytes) -> bytes:
         root.set("width", f"{new_w_val}{w_unit or 'px'}")
         root.set("height", f"{new_h_val}{h_unit or 'px'}")
 
-        # The content should fill the new view, so set aspect ratio to none
-        root.set("preserveAspectRatio", "none")
+        # This attribute forces non-proportional scaling and causes issues
+        # when rendering filtered layers. It's safer to rely on librsvg's
+        # default proportional scaling.
+        if "preserveAspectRatio" in root.attrib:
+            del root.attrib["preserveAspectRatio"]
 
         return ET.tostring(root)
 

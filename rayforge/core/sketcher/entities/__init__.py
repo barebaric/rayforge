@@ -3,7 +3,6 @@ from .entity import Entity
 from .line import Line
 from .arc import Arc
 from .circle import Circle
-from .registry import EntityRegistry
 
 __all__ = [
     "Point",
@@ -11,5 +10,4 @@ __all__ = [
     "Line",
     "Arc",
     "Circle",
-    "EntityRegistry",
 ]

@@ -177,6 +177,7 @@ async def driver(context_initializer, machine, smoothie_server):
     Handles cleanup ensuring background tasks are stopped.
     """
     host, port = smoothie_server.host, smoothie_server.port
+    machine.dialect_uid = "smoothieware"
     driver_instance = SmoothieDriver(context_initializer, machine)
     driver_instance.setup(host=host, port=port)
 
@@ -344,3 +345,29 @@ class TestSmoothieDriver:
             TransportStatus.DISCONNECTED in statuses
             or TransportStatus.ERROR in statuses
         )
+
+    @pytest.mark.asyncio
+    async def test_set_wcs_offset(
+        self, connected_driver: SmoothieDriver, smoothie_server
+    ):
+        """Test setting a WCS offset for Smoothie."""
+        driver = connected_driver
+        await driver.set_wcs_offset("G54", 1.1, 2.2, 3.3)
+        await asyncio.sleep(0.1)
+        assert b"G10 L20 P1 X1.1 Y2.2 Z3.3" in smoothie_server.received_data
+
+    @pytest.mark.asyncio
+    async def test_read_wcs_offsets_raises_not_implemented(
+        self, connected_driver: SmoothieDriver
+    ):
+        """Test that read_wcs_offsets raises NotImplementedError."""
+        with pytest.raises(NotImplementedError):
+            await connected_driver.read_wcs_offsets()
+
+    @pytest.mark.asyncio
+    async def test_run_probe_cycle_raises_not_implemented(
+        self, connected_driver: SmoothieDriver
+    ):
+        """Test that run_probe_cycle raises NotImplementedError."""
+        with pytest.raises(NotImplementedError):
+            await connected_driver.run_probe_cycle(Axis.Z, -10, 100)

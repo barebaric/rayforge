@@ -62,6 +62,14 @@ class GcodeDialect:
     air_assist_on: str
     air_assist_off: str
 
+    # Machine Control Commands
+    home_all: str
+    home_axis: str
+    move_to: str
+    clear_alarm: str
+    set_wcs_offset: str
+    probe_cycle: str
+
     # Preamble & Postscript
     preamble: List[str] = field(default_factory=list)
     postscript: List[str] = field(default_factory=list)
@@ -107,6 +115,12 @@ class GcodeDialect:
             ("set_speed", _("Set Speed")),
             ("air_assist_on", _("Air On")),
             ("air_assist_off", _("Air Off")),
+            ("home_all", _("Home All")),
+            ("home_axis", _("Home Axis")),
+            ("move_to", _("Move To")),
+            ("clear_alarm", _("Clear Alarm")),
+            ("set_wcs_offset", _("Set WCS Offset")),
+            ("probe_cycle", _("Probe Cycle")),
         ]
         for key, label in template_fields:
             templates_vs.add(Var(key, label, str, value=getattr(self, key)))
@@ -154,23 +168,41 @@ class GcodeDialect:
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "GcodeDialect":
-        """Creates a dialect instance from a dictionary."""
-        return cls(
-            label=data.get("label", _("Unnamed Dialect")),
-            description=data.get("description", ""),
-            laser_on=data.get("laser_on", ""),
-            laser_off=data.get("laser_off", ""),
-            tool_change=data.get("tool_change", ""),
-            set_speed=data.get("set_speed", ""),
-            travel_move=data.get("travel_move", ""),
-            linear_move=data.get("linear_move", ""),
-            arc_cw=data.get("arc_cw", ""),
-            arc_ccw=data.get("arc_ccw", ""),
-            air_assist_on=data.get("air_assist_on", ""),
-            air_assist_off=data.get("air_assist_off", ""),
-            preamble=data.get("preamble", []),
-            postscript=data.get("postscript", []),
-            uid=data.get("uid", str(uuid.uuid4())),
-            is_custom=data.get("is_custom", False),
-            parent_uid=data.get("parent_uid"),
-        )
+        """
+        Creates a dialect instance from a dictionary, correctly handling
+        missing fields by inheriting from the parent dialect.
+        """
+        # 1. Determine the base dialect to inherit defaults from
+        parent_uid = data.get("parent_uid")
+        base_dialect = None
+
+        if parent_uid:
+            # Try to find the specific parent in the loaded registry
+            base_dialect = _DIALECT_REGISTRY.get(parent_uid.lower())
+
+        if not base_dialect:
+            # If parent not found (or not specified), try to find generic GRBL
+            base_dialect = _DIALECT_REGISTRY.get("grbl")
+
+        # 2. Establish defaults
+        if base_dialect:
+            defaults = asdict(base_dialect)
+        else:
+            # If registry is empty (bootstrapping/testing), import the
+            # built-in GRBL dialect locally to avoid circular imports.
+            from .dialect_builtins import GRBL_DIALECT
+
+            defaults = asdict(GRBL_DIALECT)
+
+        # 3. Merge data on top of defaults.
+        # This ensures that any key missing in 'data' gets the value from
+        # 'defaults' (the parent/base dialect).
+        merged_data = defaults.copy()
+        merged_data.update(data)
+
+        # 4. Ensure identity fields are correct (don't inherit UID/custom flag)
+        merged_data["uid"] = data.get("uid", str(uuid.uuid4()))
+        merged_data["is_custom"] = data.get("is_custom", False)
+        merged_data["parent_uid"] = data.get("parent_uid")
+
+        return cls(**merged_data)

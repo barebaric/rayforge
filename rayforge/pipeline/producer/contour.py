@@ -14,6 +14,7 @@ from .base import OpsProducer, CutSide
 if TYPE_CHECKING:
     from ...core.workpiece import WorkPiece
     from ...machine.models.laser import Laser
+    from ...shared.tasker.proxy import BaseExecutionContext
 
 logger = logging.getLogger(__name__)
 
@@ -77,12 +78,14 @@ class ContourProducer(OpsProducer):
         workpiece: "Optional[WorkPiece]" = None,
         settings: Optional[Dict[str, Any]] = None,
         y_offset_mm: float = 0.0,
+        proxy: Optional["BaseExecutionContext"] = None,
     ) -> WorkPieceArtifact:
         if workpiece is None:
             raise ValueError("ContourProducer requires a workpiece context.")
 
         # 1. Calculate total offset from producer and step settings
-        kerf_mm = (settings or {}).get("kerf_mm", laser.spot_size_mm[0])
+        settings = settings or {}
+        kerf_mm = settings.get("kerf_mm", laser.spot_size_mm[0])
         kerf_compensation = kerf_mm / 2.0
         total_offset = 0.0
         if self.cut_side == CutSide.CENTERLINE:
@@ -94,6 +97,7 @@ class ContourProducer(OpsProducer):
 
         # 2. Get base contours and determine the correct scaling matrix
         base_contours = []
+        scaling_matrix = Matrix.identity()
 
         # Check if we have source vectors.
         has_vector_source = (
@@ -105,10 +109,14 @@ class ContourProducer(OpsProducer):
         # If override_threshold is True, we SKIP the vector source and fall
         # through to the raster tracing logic below.
         if has_vector_source and not self.override_threshold:
-            assert workpiece.boundaries
-            base_contours = workpiece.boundaries.split_into_contours()
-            sx, sy = workpiece.matrix.get_abs_scale()
-            scaling_matrix = Matrix.scale(sx, sy)
+            assert workpiece.boundaries is not None
+            # Get the 1x1 normalized geometry and scale it to the final size.
+            # The result is geometry at final size, but at the origin.
+            scaled_geo = workpiece.boundaries.copy()
+            width_mm, height_mm = workpiece.size
+            scaling_matrix = Matrix.scale(width_mm, height_mm)
+            scaled_geo.transform(scaling_matrix.to_4x4_numpy())
+            base_contours = scaled_geo.split_into_contours()
         elif surface:
             # Fall back to raster tracing if no vectors OR if override
             # is active
@@ -121,7 +129,7 @@ class ContourProducer(OpsProducer):
                     invert=False,
                 )
 
-            base_contours = trace_surface(surface, vectorization_spec=spec)
+            traced_contours = trace_surface(surface, vectorization_spec=spec)
 
             width_mm, height_mm = workpiece.size
             px_width, px_height = surface.get_width(), surface.get_height()
@@ -129,42 +137,24 @@ class ContourProducer(OpsProducer):
                 scale_x = width_mm / px_width
                 scale_y = height_mm / px_height
 
-                # Pixels are Y-down (Top-Left 0,0). World is Y-up.
-                # 1. Scale Y by negative to flip axis.
-                # 2. Translate Y by +height_mm to move the now-negative shape
-                #    back up into the positive quadrant.
-                scaling_matrix = Matrix.translation(
-                    0, height_mm
-                ) @ Matrix.scale(scale_x, -scale_y)
-            else:
-                scaling_matrix = Matrix.identity()
+                # The geometry is in pixel space (Y-down). Scale it to mm space
+                # (Y-up) at the origin.
+                transform = Matrix.translation(0, height_mm) @ Matrix.scale(
+                    scale_x, -scale_y
+                )
+                for geo in traced_contours:
+                    geo.transform(transform.to_4x4_numpy())
+                    base_contours.append(geo)
         else:
             # No vectors and no surface, so there is nothing to trace.
-            scaling_matrix = Matrix.identity()
+            pass
 
-        # 3. Scale all contours to their final millimeter size *first*.
-        mm_space_contours = []
-        for geo in base_contours:
-            geo.transform(scaling_matrix.to_4x4_numpy())
-            mm_space_contours.append(geo)
-
-        # 4. Normalize.
+        # 3. Normalize winding orders.
         target_contours = []
-        if mm_space_contours:
-            if has_vector_source and not self.override_threshold:
-                # For direct vector sources, trust the input and don't
-                # perform polygon cleaning, which would discard open paths.
-                target_contours = contours.normalize_winding_orders(
-                    mm_space_contours
-                )
+        if base_contours:
+            target_contours = contours.normalize_winding_orders(base_contours)
 
-            else:
-                # For raster-traced sources, clean up the contours.
-                target_contours = contours.normalize_winding_orders(
-                    mm_space_contours
-                )
-
-        # 5. Apply offsets.
+        # 4. Apply offsets.
         composite_geo = Geometry()
         for geo in target_contours:
             composite_geo.extend(geo)
@@ -190,6 +180,31 @@ class ContourProducer(OpsProducer):
         else:
             # No offset was requested, so use the composite geometry.
             final_geometry = composite_geo
+
+        # 5. Optimize for machining
+        # Use machine's arc tolerance setting if available, otherwise
+        # fallback to spot size calculation.
+        tolerance = settings.get("arc_tolerance")
+        if tolerance is None:
+            spot_size = laser.spot_size_mm[0]
+            tolerance = spot_size * 0.1 if spot_size > 0 else 0.01
+
+        # Check if the machine supports arcs. The machine setting takes
+        # precedence over the step setting.
+        allow_arcs = settings.get(
+            "machine_supports_arcs", settings.get("output_arcs", True)
+        )
+
+        if not final_geometry.is_empty():
+            if allow_arcs:
+                progress_callback = proxy.set_progress if proxy else None
+                if proxy:
+                    proxy.set_message("Optimizing path with arcs...")
+                final_geometry = final_geometry.fit_arcs(
+                    tolerance, on_progress=progress_callback
+                )
+            else:
+                final_geometry = final_geometry.linearize(tolerance)
 
         # 6. Create Ops by splitting into optimizable groups
         final_ops = Ops()

@@ -66,6 +66,15 @@ def test_set_position_with_y_axis_down(transform_cmd, sample_items):
         mock_machine.x_axis_right = False
         mock_machine.y_axis_down = True
         mock_machine.dimensions = (100, 100)
+
+        # Configure the mock to simulate Y-axis inversion logic:
+        # machine Y=0 -> world Y = height - item_height
+        # Here: machine Y=0, height=100, item_height=20 -> world Y=80
+        mock_machine.machine_to_world.side_effect = lambda pos, size: (
+            pos[0],
+            100 - pos[1] - size[1],
+        )
+
         mock_get_context.return_value.machine = mock_machine
         hm = transform_cmd._editor.history_manager
         initial_history_len = len(hm.undo_stack)
@@ -168,3 +177,66 @@ def test_set_size_no_items(transform_cmd):
     initial_history_len = len(hm.undo_stack)
     transform_cmd.set_size([], 10, 10)
     assert len(hm.undo_stack) == initial_history_len
+
+
+def test_set_position_with_x_axis_right(transform_cmd, sample_items):
+    """Test setting position when X-axis origin is on the right."""
+    with patch(
+        "rayforge.doceditor.transform_cmd.get_context"
+    ) as mock_get_context:
+        mock_machine = MagicMock()
+        mock_machine.x_axis_right = True
+        mock_machine.y_axis_down = False
+        mock_machine.dimensions = (100, 100)
+
+        # Mock machine_to_world call to return expected world coordinates
+        # For x=10 (Machine) -> World X = 100 - 10 - 20 (width) = 70
+        # For y=10 (Machine) -> World Y = 10
+        mock_machine.machine_to_world.side_effect = lambda pos, size: (
+            100 - pos[0] - size[0],
+            pos[1],
+        )
+
+        mock_get_context.return_value.machine = mock_machine
+
+        # Test with item2 (size 20x20)
+        transform_cmd.set_position([sample_items[1]], 10.0, 10.0)
+
+        # Expected World Position:
+        # X: 100 (bed width) - 10 (machine x) - 20 (width) = 70
+        # Y: 10 (machine y) = 10 (world y)
+        assert sample_items[1].pos == (70.0, 10.0)
+
+
+def test_set_size_with_fixed_ratio_width_only(transform_cmd, sample_items):
+    """Test setting width with fixed aspect ratio, calculating height."""
+    # Setup item with aspect ratio 2.0 (20x10)
+    item = sample_items[0]
+    item.set_size(20, 10)
+    assert item.get_current_aspect_ratio() == 2.0
+
+    hm = transform_cmd._editor.history_manager
+    initial_history_len = len(hm.undo_stack)
+
+    # Set width to 40, height should become 20
+    transform_cmd.set_size([item], width=40.0, height=None, fixed_ratio=True)
+
+    assert item.size == (40.0, 20.0)
+    assert len(hm.undo_stack) == initial_history_len + 1
+
+
+def test_set_size_with_fixed_ratio_height_only(transform_cmd, sample_items):
+    """Test setting height with fixed aspect ratio, calculating width."""
+    # Setup item with aspect ratio 0.5 (10x20)
+    item = sample_items[0]
+    item.set_size(10, 20)
+    assert item.get_current_aspect_ratio() == 0.5
+
+    hm = transform_cmd._editor.history_manager
+    initial_history_len = len(hm.undo_stack)
+
+    # Set height to 40, width should become 20
+    transform_cmd.set_size([item], width=None, height=40.0, fixed_ratio=True)
+
+    assert item.size == (20.0, 40.0)
+    assert len(hm.undo_stack) == initial_history_len + 1

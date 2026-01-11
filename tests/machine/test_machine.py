@@ -21,6 +21,7 @@ from rayforge.machine.driver.dummy import NoDeviceDriver
 from rayforge.machine.models.laser import Laser
 from rayforge.machine.models.machine import Machine, Origin
 from rayforge.machine.models.macro import MacroTrigger
+from rayforge.machine.transport import TransportStatus
 from rayforge.pipeline import steps
 from rayforge.pipeline.encoder.gcode import GcodeEncoder
 from rayforge.shared.tasker.manager import TaskManager
@@ -55,9 +56,9 @@ def doc_editor(
     from rayforge.context import get_context
 
     config_manager = get_context().config_mgr
-    assert (
-        config_manager is not None
-    ), "ConfigManager was not initialized in context"
+    assert config_manager is not None, (
+        "ConfigManager was not initialized in context"
+    )
     return DocEditor(task_mgr, context_initializer, doc)
 
 
@@ -72,7 +73,7 @@ def create_test_workpiece_and_source() -> Tuple[WorkPiece, SourceAsset]:
     )
     gen_config = SourceAssetSegment(
         source_asset_uid=source.uid,
-        segment_mask_geometry=Geometry(),
+        pristine_geometry=Geometry(),
         vectorization_spec=PassthroughSpec(),
     )
     workpiece = WorkPiece(name=source_file.name, source_segment=gen_config)
@@ -152,8 +153,6 @@ class TestMachine:
         """
         await wait_for_tasks_to_finish(task_mgr)
         # --- Arrange ---
-        # Set origin to BOTTOM_LEFT so encode_ops does not create a copy of ops
-        # for coordinate transformation (identity).
         machine.set_origin(Origin.BOTTOM_LEFT)
 
         # Create a mock encoder and spy on its encode method
@@ -161,7 +160,6 @@ class TestMachine:
         encode_spy = mocker.spy(mock_encoder, "encode")
 
         # Patch the driver's get_encoder method to return our mock.
-        # The return value of patch is the mock that replaced the original.
         get_encoder_mock = mocker.patch.object(
             machine.driver, "get_encoder", return_value=mock_encoder
         )
@@ -169,18 +167,26 @@ class TestMachine:
         ops_to_encode = Ops()
         doc_context = Doc()
 
+        # Spy on the copy method to check it's called
+        copy_spy = mocker.spy(ops_to_encode, "copy")
+
         # --- Act ---
-        machine_code, op_map = machine.encode_ops(ops_to_encode, doc_context)
+        machine.encode_ops(ops_to_encode, doc_context)
 
         # --- Assert ---
         # 1. Verify that the patched get_encoder method was called
         get_encoder_mock.assert_called_once()
 
-        # 2. Verify that the encoder's encode method was called with the
+        # 2. Verify that the ops were copied before being passed to the encoder
+        copy_spy.assert_called_once()
+
+        # 3. Verify that the encoder's encode method was called with the
         # correct args
         encode_spy.assert_called_once()
         call_args = encode_spy.call_args.args
-        assert call_args[0] is ops_to_encode
+        assert isinstance(call_args[0], Ops)
+        # Check that the encoded ops is the one returned by copy()
+        assert call_args[0] is copy_spy.spy_return
         assert call_args[1] is machine
         assert call_args[2] is doc_context
 
@@ -204,9 +210,6 @@ class TestMachine:
             pass
 
         mock_encoder = mocker.Mock()
-
-        # Mock the encoder to return dummy bytes and a dataclass instance
-        # machine.encode_ops calls asdict() on the second return value
         mock_encoder.encode.return_value = ("G0", MockOpMap())
 
         mocker.patch.object(
@@ -221,24 +224,26 @@ class TestMachine:
 
         doc = Doc()
 
-        # --- Case 1: Default (Bottom Left) - Should be Identity ---
-        # Internal is Y-Up (BL), Machine is BL -> No transform needed.
+        # --- Case 1: Default (Bottom Left) - Should NOT Transform ---
         machine.set_origin(Origin.BOTTOM_LEFT)
+        mock_encoder.reset_mock()
+        original_ops.reset_mock()
+        copied_ops.reset_mock()
+
         machine.encode_ops(original_ops, doc)
 
-        # Should pass original, no copy, no transform
-        mock_encoder.encode.assert_called_with(original_ops, machine, doc)
-        original_ops.copy.assert_not_called()
-        original_ops.transform.assert_not_called()
+        # A copy is always made to apply offsets.
+        original_ops.copy.assert_called_once()
+        # But transform should not be called on the copy for this origin.
+        copied_ops.transform.assert_not_called()
+        # The encoder should be called with the copied object.
+        mock_encoder.encode.assert_called_with(copied_ops, machine, doc)
 
         # --- Case 2: Origin Change (Top Left) - Should Transform ---
-        # Internal is Y-Up (BL), Machine is TL (Y-Down) -> Needs Y Flip.
         machine.set_origin(Origin.TOP_LEFT)
         mock_encoder.reset_mock()
         original_ops.reset_mock()
         copied_ops.reset_mock()
-        original_ops.commands = []
-        copied_ops.commands = []
 
         machine.encode_ops(original_ops, doc)
 
@@ -253,6 +258,177 @@ class TestMachine:
         matrix_arg = args[0]
         assert matrix_arg[0, 0] == 1.0  # X scale
         assert matrix_arg[1, 1] == -1.0  # Y scale
+
+    @pytest.mark.asyncio
+    async def test_encode_ops_applies_wcs_offset(
+        self, machine: Machine, mocker, task_mgr: TaskManager
+    ):
+        """
+        Verify that encode_ops correctly subtracts the active WCS offset
+        from the coordinates.
+        """
+        await wait_for_tasks_to_finish(task_mgr)
+
+        # Setup mocks
+        mock_encoder = mocker.Mock()
+        mock_encoder.encode.return_value = ("G0", object())
+        mocker.patch.object(
+            machine.driver, "get_encoder", return_value=mock_encoder
+        )
+
+        original_ops = mocker.Mock(spec=Ops)
+        original_ops.commands = []
+        copied_ops = mocker.Mock(spec=Ops)
+        copied_ops.commands = []
+        original_ops.copy.return_value = copied_ops
+
+        doc = Doc()
+        machine.set_origin(Origin.BOTTOM_LEFT)
+
+        # Set WCS offset
+        machine.wcs_offsets["G54"] = (100.0, 100.0, 0.0)
+        machine.set_active_wcs("G54")
+
+        # Act
+        machine.encode_ops(original_ops, doc)
+
+        # Assert
+        # Should have called transform to apply WCS offset
+        copied_ops.transform.assert_called_once()
+        args, _ = copied_ops.transform.call_args
+        matrix_arg = args[0]
+
+        # Verify matrix translates by -offset
+        assert matrix_arg[0, 3] == -100.0
+        assert matrix_arg[1, 3] == -100.0
+
+    @pytest.mark.asyncio
+    async def test_encode_ops_ignores_wcs_if_missing(
+        self, machine: Machine, mocker, task_mgr: TaskManager
+    ):
+        """
+        Verify that encode_ops treats missing WCS keys as absolute (0,0,0)
+        and does NOT apply a transform.
+        """
+        await wait_for_tasks_to_finish(task_mgr)
+
+        # Setup mocks
+        mock_encoder = mocker.Mock()
+        mock_encoder.encode.return_value = ("G0", object())
+        mocker.patch.object(
+            machine.driver, "get_encoder", return_value=mock_encoder
+        )
+
+        original_ops = mocker.Mock(spec=Ops)
+        original_ops.commands = []
+        copied_ops = mocker.Mock(spec=Ops)
+        copied_ops.commands = []
+        original_ops.copy.return_value = copied_ops
+
+        doc = Doc()
+        machine.set_origin(Origin.BOTTOM_LEFT)
+
+        # Set active WCS to "G53" (which is NOT in default wcs_offsets)
+        machine.set_active_wcs("G53")
+        assert "G53" not in machine.wcs_offsets
+
+        # Act
+        machine.encode_ops(original_ops, doc)
+
+        # Assert
+        # Should NOT have called transform because offset is (0,0,0)
+        copied_ops.transform.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_set_work_origin_here(
+        self, machine: Machine, mocker, task_mgr: TaskManager
+    ):
+        """
+        Test that set_work_origin_here correctly delegates to the driver.
+        """
+        await wait_for_tasks_to_finish(task_mgr)
+
+        # Arrange
+        machine.connection_status = TransportStatus.CONNECTED
+        machine.active_wcs = "G54"
+        machine.wcs_offsets["G54"] = (10.0, 20.0, 0.0)
+        machine.device_state.machine_pos = (100.0, 200.0, 0.0)
+
+        set_wcs_spy = mocker.patch.object(
+            machine.driver, "set_wcs_offset", new_callable=mocker.AsyncMock
+        )
+        read_wcs_spy = mocker.patch.object(
+            machine.driver, "read_wcs_offsets", new_callable=mocker.AsyncMock
+        )
+
+        # Act 1: Set X only
+        await machine.set_work_origin_here(Axis.X)
+
+        # Assert 1
+        # Should use current Machine X (100.0) for X offset
+        # Should preserve existing offsets for Y (20.0) and Z (0.0)
+        set_wcs_spy.assert_called_once_with("G54", 100.0, 20.0, 0.0)
+        read_wcs_spy.assert_called_once()
+
+        set_wcs_spy.reset_mock()
+        read_wcs_spy.reset_mock()
+
+        # Act 2: Set X and Y
+        await machine.set_work_origin_here(Axis.X | Axis.Y)
+
+        # Assert 2
+        set_wcs_spy.assert_called_once_with("G54", 100.0, 200.0, 0.0)
+        read_wcs_spy.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_set_work_origin_blocks_immutable(
+        self, machine: Machine, mocker, task_mgr: TaskManager
+    ):
+        """
+        Test that set_work_origin prevents setting offsets for IDs not in
+        wcs_offsets (e.g. G53).
+        """
+        await wait_for_tasks_to_finish(task_mgr)
+
+        machine.connection_status = TransportStatus.CONNECTED
+        set_wcs_spy = mocker.patch.object(
+            machine.driver, "set_wcs_offset", new_callable=mocker.AsyncMock
+        )
+
+        # Try to set G53 (Machine Coordinates)
+        machine.set_active_wcs("G53")
+        assert "G53" not in machine.wcs_offsets
+
+        await machine.set_work_origin(10, 10, 10)
+
+        set_wcs_spy.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_set_work_origin(
+        self, machine: Machine, mocker, task_mgr: TaskManager
+    ):
+        """
+        Test that set_work_origin correctly delegates to the driver.
+        """
+        await wait_for_tasks_to_finish(task_mgr)
+
+        # Arrange
+        machine.connection_status = TransportStatus.CONNECTED
+        machine.active_wcs = "G55"
+
+        set_wcs_spy = mocker.patch.object(
+            machine.driver, "set_wcs_offset", new_callable=mocker.AsyncMock
+        )
+        read_wcs_spy = mocker.patch.object(
+            machine.driver, "read_wcs_offsets", new_callable=mocker.AsyncMock
+        )
+
+        # Act
+        await machine.set_work_origin(50.0, 60.0, 70.0)
+
+        # Assert
+        set_wcs_spy.assert_called_once_with("G55", 50.0, 60.0, 70.0)
+        read_wcs_spy.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_reverse_axis_setters(
@@ -735,6 +911,56 @@ class TestMachine:
         assert machine.dialect == GRBL_DIALECT
 
     @pytest.mark.asyncio
+    async def test_dialects_changed_signal_triggers_machine_changed(
+        self, machine: Machine, task_mgr: TaskManager, mocker
+    ):
+        """
+        Test that when dialects are updated via dialect manager,
+        the machine's changed signal is triggered.
+        """
+        await wait_for_tasks_to_finish(task_mgr)
+        from rayforge.machine.models.dialect import GcodeDialect
+
+        # Spy on machine's changed signal
+        changed_spy = mocker.spy(machine.changed, "send")
+
+        # Get the dialect manager and update the current dialect
+        dialect_mgr = machine.context.dialect_mgr
+        current_dialect = machine.dialect
+
+        # Update the dialect (simulating what happens when user edits dialect)
+        updated_dialect = GcodeDialect(
+            label=current_dialect.label,
+            description=current_dialect.description,
+            uid=current_dialect.uid,
+            laser_on="M3 S{power:.0f}",
+            laser_off="M5",
+            travel_move=current_dialect.travel_move,
+            linear_move=current_dialect.linear_move,
+            is_custom=True,
+            tool_change=current_dialect.tool_change,
+            set_speed=current_dialect.set_speed,
+            arc_cw=current_dialect.arc_cw,
+            arc_ccw=current_dialect.arc_ccw,
+            air_assist_on=current_dialect.air_assist_on,
+            air_assist_off=current_dialect.air_assist_off,
+            home_all=current_dialect.home_all,
+            home_axis=current_dialect.home_axis,
+            move_to=current_dialect.move_to,
+            clear_alarm=current_dialect.clear_alarm,
+            set_wcs_offset=current_dialect.set_wcs_offset,
+            probe_cycle=current_dialect.probe_cycle,
+            preamble=current_dialect.preamble,
+            postscript=current_dialect.postscript,
+        )
+
+        # Update the dialect via dialect manager
+        dialect_mgr.update_dialect(updated_dialect)
+
+        # Verify machine's changed signal was triggered
+        changed_spy.assert_called_once_with(machine)
+
+    @pytest.mark.asyncio
     async def test_can_g0_with_speed(
         self, machine: Machine, task_mgr: TaskManager
     ):
@@ -748,29 +974,24 @@ class TestMachine:
         """Test new driver methods for SmoothieDriver."""
         from rayforge.machine.driver.smoothie import SmoothieDriver
 
-        try:
-            machine.set_driver(SmoothieDriver, {"host": "test", "port": 23})
-            # Wait for the async set_driver operation to complete
-            await wait_for_tasks_to_finish(task_mgr)
+        machine.set_driver(SmoothieDriver, {"host": "test", "port": 23})
+        # Wait for the async set_driver operation to complete
+        await wait_for_tasks_to_finish(task_mgr)
 
-            # Test G0 with speed support
-            assert machine.can_g0_with_speed()
+        # Test G0 with speed support
+        assert machine.can_g0_with_speed()
 
-            # Test homing support
-            assert machine.can_home()
-            assert machine.can_home(Axis.X)
-            assert machine.can_home(Axis.Y)
-            assert machine.can_home(Axis.Z)
+        # Test homing support
+        assert machine.can_home()
+        assert machine.can_home(Axis.X)
+        assert machine.can_home(Axis.Y)
+        assert machine.can_home(Axis.Z)
 
-            # Test jogging support
-            assert machine.can_jog()
-            assert machine.can_jog(Axis.X)
-            assert machine.can_jog(Axis.Y)
-            assert machine.can_jog(Axis.Z)
-        finally:
-            # Ensure the driver is cleaned up to stop any pending tasks
-            await machine.shutdown()
-            await wait_for_tasks_to_finish(task_mgr)
+        # Test jogging support
+        assert machine.can_jog()
+        assert machine.can_jog(Axis.X)
+        assert machine.can_jog(Axis.Y)
+        assert machine.can_jog(Axis.Z)
 
     @pytest.mark.asyncio
     async def test_new_driver_methods_grbl_network(
@@ -779,28 +1000,24 @@ class TestMachine:
         """Test new driver methods for GrblNetworkDriver."""
         from rayforge.machine.driver.grbl import GrblNetworkDriver
 
-        try:
-            # Create driver directly to avoid setup issues
-            machine.set_driver(GrblNetworkDriver, {"host": "test"})
-            await wait_for_tasks_to_finish(task_mgr)
+        # Create driver directly to avoid setup issues
+        machine.set_driver(GrblNetworkDriver, {"host": "test"})
+        await wait_for_tasks_to_finish(task_mgr)
 
-            # Test G0 with speed support (GRBL doesn't support this)
-            assert not machine.can_g0_with_speed()
+        # Test G0 with speed support (GRBL doesn't support this)
+        assert not machine.can_g0_with_speed()
 
-            # Test homing support
-            assert machine.can_home()
-            assert machine.can_home(Axis.X)
-            assert machine.can_home(Axis.Y)
-            assert machine.can_home(Axis.Z)
+        # Test homing support
+        assert machine.can_home()
+        assert machine.can_home(Axis.X)
+        assert machine.can_home(Axis.Y)
+        assert machine.can_home(Axis.Z)
 
-            # Test jogging support
-            assert machine.can_jog()
-            assert machine.can_jog(Axis.X)
-            assert machine.can_jog(Axis.Y)
-            assert machine.can_jog(Axis.Z)
-        finally:
-            await machine.shutdown()
-            await wait_for_tasks_to_finish(task_mgr)
+        # Test jogging support
+        assert machine.can_jog()
+        assert machine.can_jog(Axis.X)
+        assert machine.can_jog(Axis.Y)
+        assert machine.can_jog(Axis.Z)
 
     @pytest.mark.asyncio
     async def test_new_driver_methods_grbl_serial(
@@ -809,30 +1026,26 @@ class TestMachine:
         """Test new driver methods for GrblSerialDriver."""
         from rayforge.machine.driver.grbl_serial import GrblSerialDriver
 
-        try:
-            # Create driver directly to avoid setup issues
-            machine.set_driver(
-                GrblSerialDriver, {"port": "/dev/test", "baudrate": 115200}
-            )
-            await wait_for_tasks_to_finish(task_mgr)
+        # Create driver directly to avoid setup issues
+        machine.set_driver(
+            GrblSerialDriver, {"port": "/dev/test", "baudrate": 115200}
+        )
+        await wait_for_tasks_to_finish(task_mgr)
 
-            # Test G0 with speed support (GRBL doesn't support this)
-            assert not machine.can_g0_with_speed()
+        # Test G0 with speed support (GRBL doesn't support this)
+        assert not machine.can_g0_with_speed()
 
-            # Test homing support
-            assert machine.can_home()
-            assert machine.can_home(Axis.X)
-            assert machine.can_home(Axis.Y)
-            assert machine.can_home(Axis.Z)
+        # Test homing support
+        assert machine.can_home()
+        assert machine.can_home(Axis.X)
+        assert machine.can_home(Axis.Y)
+        assert machine.can_home(Axis.Z)
 
-            # Test jogging support
-            assert machine.can_jog()
-            assert machine.can_jog(Axis.X)
-            assert machine.can_jog(Axis.Y)
-            assert machine.can_jog(Axis.Z)
-        finally:
-            await machine.shutdown()
-            await wait_for_tasks_to_finish(task_mgr)
+        # Test jogging support
+        assert machine.can_jog()
+        assert machine.can_jog(Axis.X)
+        assert machine.can_jog(Axis.Y)
+        assert machine.can_jog(Axis.Z)
 
     @pytest.mark.asyncio
     async def test_home_method_with_multiple_axes(
@@ -1151,3 +1364,74 @@ class TestMachine:
             machine, "get_current_position", return_value=(None, 150.0, 0.0)
         )
         assert machine.would_jog_exceed_limits(Axis.X, 9999) is False
+
+    @pytest.mark.asyncio
+    async def test_world_to_machine_transforms(
+        self, machine: Machine, task_mgr: TaskManager
+    ):
+        """
+        Verify coordinate transformations from World Space (Bottom-Left Y-Up)
+        to Machine Space for various origin configurations.
+        """
+        await wait_for_tasks_to_finish(task_mgr)
+
+        machine.set_dimensions(100, 100)
+        item_size = (10, 10)
+
+        # Test Case 1: Bottom-Left (Identity)
+        machine.set_origin(Origin.BOTTOM_LEFT)
+        # World (10, 10) -> Machine (10, 10)
+        res = machine.world_to_machine((10, 10), item_size)
+        assert res == (10, 10)
+
+        # Test Case 2: Top-Left (Y-Down)
+        machine.set_origin(Origin.TOP_LEFT)
+        # World Y=10 (near bottom) -> Machine Y should be large (near 100)
+        # Machine Y = Height - World Y - Item Height
+        # 100 - 10 - 10 = 80
+        res = machine.world_to_machine((10, 10), item_size)
+        assert res == (10, 80)
+
+        # Test Case 3: Top-Right (X-Left, Y-Down)
+        machine.set_origin(Origin.TOP_RIGHT)
+        # World X=10 (near left) -> Machine X should be large
+        # Machine X = Width - World X - Item Width
+        # 100 - 10 - 10 = 80
+        # Machine Y = 80 (as above)
+        res = machine.world_to_machine((10, 10), item_size)
+        assert res == (80, 80)
+
+        # Test Case 4: Bottom-Right (X-Left, Y-Up)
+        machine.set_origin(Origin.BOTTOM_RIGHT)
+        # Machine X = 80
+        # Machine Y = 10 (Identity for Y)
+        res = machine.world_to_machine((10, 10), item_size)
+        assert res == (80, 10)
+
+    @pytest.mark.asyncio
+    async def test_machine_to_world_transforms(
+        self, machine: Machine, task_mgr: TaskManager
+    ):
+        """
+        Verify coordinate transformations from Machine Space back to
+        World Space. This should be the inverse of world_to_machine.
+        """
+        await wait_for_tasks_to_finish(task_mgr)
+
+        machine.set_dimensions(100, 100)
+        item_size = (10, 10)
+
+        # Test Case 1: Top-Right (X-Left, Y-Down)
+        machine.set_origin(Origin.TOP_RIGHT)
+
+        # Machine input: (80, 80)
+        # Should transform back to World (10, 10)
+        res = machine.machine_to_world((80, 80), item_size)
+        assert res == (10, 10)
+
+        # Machine input: (0, 0) -> Top-Right corner in Machine Space
+        # Should be World: X = 100 - 0 - 10 = 90
+        #                Y = 100 - 0 - 10 = 90
+        # i.e., Top-Right in World Space (assuming 100x100 bounds)
+        res = machine.machine_to_world((0, 0), item_size)
+        assert res == (90, 90)

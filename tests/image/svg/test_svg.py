@@ -12,8 +12,10 @@ from rayforge.core.geo import Geometry
 from rayforge.core.geo.constants import (
     CMD_TYPE_MOVE,
     CMD_TYPE_LINE,
+    CMD_TYPE_BEZIER,
     COL_TYPE,
 )
+from rayforge.core.layer import Layer
 from rayforge.core.matrix import Matrix
 from rayforge.core.source_asset import SourceAsset
 from rayforge.core.source_asset_segment import SourceAssetSegment
@@ -28,7 +30,10 @@ def _setup_workpiece_with_context(
     payload = importer.get_doc_items(vectorization_spec=vectorization_spec)
     assert payload is not None and payload.items
     source = payload.source
-    wp = cast(WorkPiece, payload.items[0])
+    item = payload.items[0]
+    wp = cast(
+        WorkPiece, item if isinstance(item, WorkPiece) else item.children[0]
+    )
 
     mock_doc = Mock()
     mock_doc.source_assets = {source.uid: source}
@@ -71,6 +76,18 @@ def square_svg_data() -> bytes:
 
 
 @pytest.fixture
+def curved_svg_data() -> bytes:
+    """
+    SVG with a single Quadratic Bezier curve.
+    Used to test the preservation of curves during import.
+    """
+    return b"""<svg xmlns="http://www.w3.org/2000/svg"
+                width="100mm" height="100mm" viewBox="0 0 100 100">
+                <path d="M 10 10 Q 50 90 90 10" stroke="black" fill="none"/>
+              </svg>"""
+
+
+@pytest.fixture
 def svg_with_offset_text_data() -> bytes:
     """
     SVG specifically for testing the vector misalignment bug.
@@ -85,6 +102,20 @@ def svg_with_offset_text_data() -> bytes:
                 <text x="90" y="90" font-family="sans-serif" font-size="10"
                       text-anchor="end">Test</text>
               </svg>"""
+
+
+@pytest.fixture
+def twolayer_svg_data() -> bytes:
+    svg_path = Path(__file__).parent / "twolayer.svg"
+    with open(svg_path, "rb") as f:
+        return f.read()
+
+
+@pytest.fixture
+def circle_svg_data() -> bytes:
+    svg_path = Path(__file__).parent / "circle.svg"
+    with open(svg_path, "rb") as f:
+        return f.read()
 
 
 @pytest.fixture
@@ -111,6 +142,7 @@ class TestSvgImporter:
         assert payload is not None
         wp = cast(WorkPiece, payload.items[0])
         assert isinstance(wp, WorkPiece)
+        assert wp.size is not None
         # The importer should set the size from the SVG's 'mm' dimensions.
         assert wp.size == pytest.approx((100.0, 50.0))
 
@@ -124,7 +156,8 @@ class TestSvgImporter:
 
         assert payload is not None
         wp = cast(WorkPiece, payload.items[0])
-        # The SVG content is 100px wide. The importer should convert this
+        assert wp.size is not None
+        # The SVG content is 100x100px. The importer should convert this
         # to mm using the fallback DPI.
         expected_size_mm = 100.0 * MM_PER_PX
         assert wp.size == pytest.approx((expected_size_mm, expected_size_mm))
@@ -141,19 +174,17 @@ class TestSvgImporter:
         wp = cast(WorkPiece, payload.items[0])
         assert isinstance(wp, WorkPiece)
 
-        # Verify workpiece size based on SVG width/height, considering content
-        # trimming. The rect (10,10) to (90,90) in a 100x100 viewBox means
-        # content is 80x80 units. This content is scaled to fill the
-        # calculated trimmed 80x80mm workpiece.
-        assert wp.size == pytest.approx((80.0, 80.0), 5)
+        size = wp.size
+        assert size is not None
+        # The rect is 80x80 units in a 100mm doc, so it should be 80x80mm.
+        assert size == pytest.approx((80.0, 80.0), 5)
 
         # Check if vectors were successfully imported
         assert wp.boundaries is not None
         assert isinstance(wp.boundaries, Geometry)
-
-        # A simple rectangle, when converted to Path by svgelements and then
-        # to Geometry in _get_doc_items_direct, should typically result in:
-        # MOVE_TO, LINE_TO, LINE_TO, LINE_TO, CLOSE_PATH -> 5 commands.
+        # A rect from svgelements becomes a path with M, L, L, L, Z.
+        # This translates to move_to, line_to, line_to, line_to, close_path.
+        # close_path() adds a final line_to, so 5 commands total.
         assert len(wp.boundaries) == 5
 
         # Check the types of commands to ensure they are basic path elements
@@ -163,8 +194,7 @@ class TestSvgImporter:
         assert data[1, COL_TYPE] == CMD_TYPE_LINE
         assert data[2, COL_TYPE] == CMD_TYPE_LINE
         assert data[3, COL_TYPE] == CMD_TYPE_LINE
-        # The close_path command in geometry.py adds a LineToCommand
-        assert data[4, COL_TYPE] == CMD_TYPE_LINE
+        assert data[4, COL_TYPE] == CMD_TYPE_LINE  # From close_path
 
         # Check the overall bounds of the imported geometry.
         # The geometry must be normalized to a 1x1 unit.
@@ -176,53 +206,91 @@ class TestSvgImporter:
         assert geo_rect_max_x == pytest.approx(1.0, abs=1e-3)
         assert geo_rect_max_y == pytest.approx(1.0, abs=1e-3)
 
+    def test_curves_are_preserved(self, curved_svg_data: bytes):
+        """
+        Tests that Bezier curves are preserved as Bezier commands and not
+        linearized (flattened).
+        """
+        importer = SvgImporter(curved_svg_data, source_file=Path("curve.svg"))
+        payload = importer.get_doc_items(vectorization_spec=None)
+
+        assert payload is not None
+        wp = cast(WorkPiece, payload.items[0])
+        assert isinstance(wp, WorkPiece)
+        assert wp.boundaries is not None
+
+        # A quadratic bezier curve 'M 10 10 Q 50 90 90 10' should be
+        # imported as a Move and a Cubic Bezier (Quadratic promoted to Cubic).
+        command_count = len(wp.boundaries)
+        # 1 Move + 1 Bezier
+        assert command_count == 2, (
+            "Curve was likely flattened; "
+            f"expected 2 segments, got {command_count}"
+        )
+
+        data = wp.boundaries.data
+        assert data is not None
+        assert data[0, COL_TYPE] == CMD_TYPE_MOVE
+        assert data[1, COL_TYPE] == CMD_TYPE_BEZIER
+
+    def test_circle_svg_not_linearized(self, circle_svg_data: bytes):
+        """
+        Tests that SVG circles are NOT linearized (flattened) by the
+        SVG importer. Circular arcs are preserved as arc/bezier commands.
+        """
+        importer = SvgImporter(circle_svg_data, source_file=Path("circle.svg"))
+        payload = importer.get_doc_items(vectorization_spec=None)
+
+        assert payload is not None
+        wp = cast(WorkPiece, payload.items[0])
+        assert isinstance(wp, WorkPiece)
+        assert wp.boundaries is not None
+
+        data = wp.boundaries.data
+        assert data is not None
+
+        has_bezier_commands = (data[:, COL_TYPE] == CMD_TYPE_BEZIER).any()
+        assert has_bezier_commands, (
+            "SVG circles should contain bezier commands, not be linearized"
+        )
+
     def test_direct_import_with_offset_text(
         self, svg_with_offset_text_data: bytes
     ):
         """
-        Tests the fix for the vector misalignment bug caused by text.
-        The workpiece size should be based on the trimmed bounds of ALL content
-        (rect + text), but the vector geometry should be correctly placed
-        within that larger frame.
+        Tests that vector geometry is correctly sized and positioned,
+        even if non-vector content (like text) affects the overall trim box.
         """
         importer = SvgImporter(
             svg_with_offset_text_data, source_file=Path("offset.svg")
         )
         wp = _setup_workpiece_with_context(importer)
 
-        # 1. Check the final workpiece size.
-        # The content (rect at 10,10 and text near 90,90) spans roughly 80%
-        # of the 100mm canvas. The trim function should resize the workpiece
-        # to this content. We expect a size of roughly 80x80mm.
-        assert wp.size[0] == pytest.approx(80.0, abs=5)
-        assert wp.size[1] == pytest.approx(80.0, abs=5)
+        # 1. Check the final workpiece size. The importer should ignore the
+        # text and create a workpiece sized to the vector rect (40x40mm).
+        size = wp.size
+        assert size is not None
+        assert size[0] == pytest.approx(40.0, abs=1)
+        assert size[1] == pytest.approx(40.0, abs=1)
 
-        # 2. Check that the vectors are normalized correctly. The vector
-        # content (the rect) should only occupy the left half of the
-        # normalized space, because the text occupies the right half.
-        assert wp.boundaries is not None
-        min_v, _, max_v, _ = wp.boundaries.rect()
-        assert min_v == pytest.approx(0.0, abs=1e-3)
-        # The vector data should only span half the width (0.5) of the
-        # full content area because the other half is text, which is ignored.
-        assert max_v == pytest.approx(0.5, abs=0.05)
+        # 2. Check the workpiece position. The rect started at (10,10) in a
+        # 100x100 Y-down canvas. The workpiece's bottom-left corner should be
+        # at y = 100 - 10(top) - 40(height) = 50.
+        pos = wp.pos
+        assert pos is not None
+        assert pos[0] == pytest.approx(10.0, abs=1)
+        assert pos[1] == pytest.approx(50.0, abs=1)
 
-        # 3. CRITICAL: Check the final position and scale of the vectors.
-        # The rect was at (10,10) with size (40,40) inside a viewbox that
-        # gets trimmed to start at (10,10) and have size (80,80).
-        # This means the rect should occupy the top-left quadrant of the
-        # final 80mm x 80mm workpiece.
-        # In a Y-up coordinate system (0,0 is bottom-left), the top-left
-        # quadrant spans x=[0, 40] and y=[40, 80].
+        # 3. Check the world bounding box, which should now match the
+        # workpiece's position and size.
         bbox = wp.get_geometry_world_bbox()
         assert bbox is not None
         min_x, min_y, max_x, max_y = bbox
-        # The trim process is raster-based and won't be perfectly aligned
-        # with the vector geometry. We relax the tolerance to allow for this.
-        assert min_x == pytest.approx(0.0, abs=1)
-        assert min_y == pytest.approx(wp.size[1] / 2, abs=1)  # approx 40
-        assert max_x == pytest.approx(wp.size[0] / 2, abs=1)  # approx 40
-        assert max_y == pytest.approx(wp.size[1], abs=1)  # approx 80
+
+        assert min_x == pytest.approx(pos[0], abs=1)
+        assert min_y == pytest.approx(pos[1], abs=1)
+        assert max_x == pytest.approx(pos[0] + size[0], abs=1)
+        assert max_y == pytest.approx(pos[1] + size[1], abs=1)
 
     def test_traced_bitmap_import_geometry(self, transparent_svg_data: bytes):
         """
@@ -239,11 +307,14 @@ class TestSvgImporter:
         wp = cast(WorkPiece, payload.items[0])
         assert isinstance(wp, WorkPiece)
 
+        size = wp.size
+        assert size is not None
+
         # The content is trimmed to 100x100px, which is converted to mm.
         expected_content_size_mm = 100.0 * MM_PER_PX
         # Use a looser tolerance to account for render/trace variance.
-        assert wp.size[0] == pytest.approx(expected_content_size_mm, rel=1e-2)
-        assert wp.size[1] == pytest.approx(expected_content_size_mm, rel=1e-2)
+        assert size[0] == pytest.approx(expected_content_size_mm, rel=1e-2)
+        assert size[1] == pytest.approx(expected_content_size_mm, rel=1e-2)
 
         # Check if vectors were generated through tracing
         assert wp.boundaries is not None
@@ -260,6 +331,95 @@ class TestSvgImporter:
         assert geo_rect_min_y == pytest.approx(0.0, abs=1e-3)
         assert geo_rect_max_x == pytest.approx(1.0, abs=1e-3)
         assert geo_rect_max_y == pytest.approx(1.0, abs=1e-3)
+
+    def test_layer_split_import(self, twolayer_svg_data: bytes):
+        """
+        Tests that importing an SVG with multiple layers and a PassthroughSpec
+        correctly creates separate Layer items, each with a WorkPiece that
+        renders only its own layer's content.
+        """
+        importer = SvgImporter(
+            twolayer_svg_data, source_file=Path("twolayer.svg")
+        )
+        # Specify the layers to import
+        spec = PassthroughSpec(active_layer_ids=["layer1", "layer2"])
+
+        payload = importer.get_doc_items(vectorization_spec=spec)
+        assert payload is not None
+        assert payload.source is not None
+        assert len(payload.items) == 2
+
+        source = payload.source
+        items = payload.items
+
+        # Setup mock doc context
+        mock_doc = Mock()
+        mock_doc.source_assets = {source.uid: source}
+        mock_doc.get_source_asset_by_uid.side_effect = (
+            mock_doc.source_assets.get
+        )
+
+        # Expected sizes based on SVG content
+        # Ellipse: approx 71.5mm wide. Rect: approx 52.5mm wide.
+        # Combined trimmed size will be ~71.6mm x ~94mm
+        expected_wp_width = 71.56
+        expected_wp_height = 93.96
+
+        # --- Verify Layer 1 (Ellipse) ---
+        layer1 = cast(Layer, items[0])
+        assert isinstance(layer1, Layer)
+        assert layer1.name == "Calque 1"
+        assert len(layer1.workpieces) == 1
+        wp1 = layer1.workpieces[0]
+        assert isinstance(wp1, WorkPiece)
+        assert wp1.source_segment is not None
+        assert wp1.source_segment.layer_id == "layer1"
+        assert wp1.size == pytest.approx(
+            (expected_wp_width, expected_wp_height), rel=1e-2
+        )
+
+        # Link workpiece to mock doc for rendering
+        wp1.parent = Mock(
+            doc=mock_doc, get_world_transform=lambda: Matrix.identity()
+        )
+
+        # Render and check image content
+        img1 = wp1.get_vips_image(width=100, height=100)
+        assert img1 is not None
+        alpha1 = img1[3] > 0
+        _, _, w1, h1 = alpha1.find_trim(background=0)
+        # Check aspect ratio for ellipse within combined viewBox
+        # The filtered SVG still uses the combined viewBox, so the
+        # aspect ratio reflects the ellipse's position within that space
+        assert (w1 / h1) == pytest.approx(1.35, abs=0.05)
+
+        # --- Verify Layer 2 (Rectangle) ---
+        layer2 = cast(Layer, items[1])
+        assert isinstance(layer2, Layer)
+        assert layer2.name == "Calque 2"
+        assert len(layer2.workpieces) == 1
+        wp2 = layer2.workpieces[0]
+        assert isinstance(wp2, WorkPiece)
+        assert wp2.source_segment is not None
+        assert wp2.source_segment.layer_id == "layer2"
+        assert wp2.size == pytest.approx(
+            (expected_wp_width, expected_wp_height), rel=1e-2
+        )
+
+        # Link workpiece to mock doc for rendering
+        wp2.parent = Mock(
+            doc=mock_doc, get_world_transform=lambda: Matrix.identity()
+        )
+
+        # Render and check image content
+        img2 = wp2.get_vips_image(width=100, height=100)
+        assert img2 is not None
+        alpha2 = img2[3] > 0
+        _, _, w2, h2 = alpha2.find_trim(background=0)
+        # Check aspect ratio for rectangle within combined viewBox
+        # The filtered SVG still uses the combined viewBox, so the
+        # aspect ratio reflects the rectangle's position within that space
+        assert (w2 / h2) == pytest.approx(1.30, abs=0.05)
 
 
 class TestSvgRenderer:
@@ -333,7 +493,7 @@ class TestSvgRenderer:
         # Manually create a basic generation_config to link to the source
         gen_config = SourceAssetSegment(
             source_asset_uid=source.uid,
-            segment_mask_geometry=Geometry(),
+            pristine_geometry=Geometry(),
             vectorization_spec=PassthroughSpec(),
         )
         workpiece.source_segment = gen_config
@@ -352,3 +512,46 @@ class TestSvgRenderer:
         # The renderer should not find a size for a workpiece with no metadata
         # Since WorkPiece initialization sets (0.0, 0.0) when size is unknown
         assert workpiece.natural_size == (0.0, 0.0)
+
+    def test_tricky_arc_bounding_box(self):
+        """
+        Tests that the bounding box is correctly computed after importing
+        an SVG with complex arc geometry (tricky-arc.svg).
+        """
+        svg_path = Path(__file__).parent / "tricky-arc.svg"
+        with open(svg_path, "rb") as f:
+            svg_data = f.read()
+
+        importer = SvgImporter(svg_data, source_file=svg_path)
+        wp = _setup_workpiece_with_context(importer)
+
+        # Check that the workpiece has a valid size
+        size = wp.size
+        assert size is not None
+        assert size[0] > 0
+        assert size[1] > 0
+        # The geometry is trimmed to the actual path bounds within the
+        # 100mm canvas. The path coordinates are all within the viewBox.
+        assert size[0] < 100
+        assert size[1] < 100
+
+        # Check the world-space bounding box matches the workpiece transform
+        bbox = wp.get_geometry_world_bbox()
+        assert bbox is not None
+        min_x, min_y, max_x, max_y = bbox
+        pos = wp.pos
+        assert pos is not None
+
+        assert min_x == pytest.approx(pos[0], abs=1)
+        assert min_y == pytest.approx(pos[1], abs=1)
+        assert max_x == pytest.approx(pos[0] + size[0], abs=1)
+        assert max_y == pytest.approx(pos[1] + size[1], abs=1)
+
+        # Check that the normalized geometry bounds are correct
+        # Use a relaxed tolerance to account for raster-based trimming variance
+        assert wp.boundaries is not None
+        geo_min_x, geo_min_y, geo_max_x, geo_max_y = wp.boundaries.rect()
+        assert geo_min_x == pytest.approx(0.0, abs=0.01)
+        assert geo_min_y == pytest.approx(0.0, abs=0.01)
+        assert geo_max_x == pytest.approx(1.0, abs=0.01)
+        assert geo_max_y == pytest.approx(1.0, abs=0.01)
