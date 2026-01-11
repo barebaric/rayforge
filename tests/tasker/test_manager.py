@@ -602,10 +602,10 @@ class TestWaitUntilSettled:
     def test_wait_until_settled_timeout(self, manager: TaskManager):
         """Test wait_until_settled returns False when timeout is reached."""
         # Add a very long task
+        start_time = time.time()
         manager.add_coroutine(simple_coro, duration=2.0, key="very_long_task")
 
         # wait_until_settled should timeout and return False
-        start_time = time.time()
         result = manager.wait_until_settled(500)  # 0.5 second timeout
         elapsed = time.time() - start_time
 
