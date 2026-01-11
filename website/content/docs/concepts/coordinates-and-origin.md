@@ -324,7 +324,9 @@ Usable area: 290mm (300 - 5 - 5)
 - Switch between them with G-code commands
 - Run same job at different locations
 
-**Rayforge support:** Limited. Primarily uses G54 (default). Advanced users can inject other coordinate systems via macros.
+**Rayforge support:** Full support for G53-G59 coordinate systems. See
+[Work Coordinate Systems (WCS)](../ui/work-coordinate-systems.md) for
+detailed information on using WCS in Rayforge's interface.
 
 ---
 
@@ -496,6 +498,7 @@ G0 X70 Y10
 
 ## Related Pages
 
+- [Work Coordinate Systems (WCS)](../ui/work-coordinate-systems.md) - Managing WCS in Rayforge
 - [Machine Setup](../machine/device-config.md) - Configure machine dimensions and origin
 - [GRBL Settings](../machine/grbl-settings.md) - Firmware coordinate settings
 - [Exporting G-code](../files/exporting.md) - Job positioning options

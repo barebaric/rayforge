@@ -1,6 +1,8 @@
 # 3D Preview
 
-The 3D preview window lets you visualize your G-code toolpaths before sending them to your machine. This powerful feature helps you catch errors and verify your job setup.
+The 3D preview window lets you visualize your G-code toolpaths before
+sending them to your machine. This powerful feature helps you catch errors
+and verify your job setup.
 
 ![3D Preview](../images/3d-preview.png)
 
@@ -35,6 +37,36 @@ Quick camera angles:
 - **Front** (++2++): Front elevation
 - **Right** (++3++): Right side elevation
 - **Isometric** (++4++): 3D isometric view
+
+## Work Coordinate System Display
+
+The 3D preview visualizes the active Work Coordinate System (WCS)
+differently from the 2D canvas:
+
+### Grid and Axes
+
+- **Isolated display**: The grid and axes appear as if the WCS origin is
+  the world origin
+- **Offset applied**: The entire grid is shifted to align with the selected
+  WCS offset
+- **Labels relative to WCS**: Coordinate labels show positions relative to
+  the WCS origin, not machine origin
+
+This "in isolation" display makes it easy to understand where your job will
+run relative to the selected work coordinate system, without being confused
+by the machine's absolute position.
+
+### Changing WCS
+
+The 3D preview automatically updates when you change the active WCS:
+- Select a different WCS from the toolbar dropdown
+- The grid and axes shift to reflect the new WCS origin
+- Labels update to show coordinates relative to the new WCS
+
+!!! tip "WCS in 3D Preview"
+    The 3D preview shows your toolpaths relative to the selected WCS. When you
+    change WCS, you'll see the toolpaths appear to move because the reference
+    point (the grid) has changed, not because the toolpaths themselves moved.
 
 ## Display Options
 
@@ -148,4 +180,8 @@ For large or complex jobs:
 
 ---
 
-**Next**: [Settings & Preferences →](settings.md)
+**Related Pages:**
+
+- [Work Coordinate Systems (WCS)](work-coordinate-systems.md) - Understanding WCS display
+- [Main Window](main-window.md) - Main interface overview
+- [Settings & Preferences](settings.md) - Configure preview settings

@@ -1,6 +1,8 @@
 # Jog Dialog
 
-The Jog Dialog provides manual control over your laser cutter's position, allowing you to precisely move the laser head for setup, alignment, and testing purposes.
+The Jog Dialog provides manual control over your laser cutter's position,
+allowing you to precisely move the laser head for setup, alignment, and
+testing purposes.
 
 ## Accessing the Jog Dialog
 
@@ -11,7 +13,8 @@ You can access the Jog Dialog in several ways:
 - **Keyboard Shortcut**: `Ctrl+J`
 
 !!! note "Connection Required"
-    The jog controls are only available when connected to a machine that supports jogging operations.
+    The jog controls are only available when connected to a machine
+    that supports jogging operations.
 
 ## Dialog Layout
 
@@ -33,7 +36,8 @@ The homing section provides buttons to home your machine's axes:
 | Home All | Homes all axes | Homes all axes simultaneously     |
 
 !!! tip "Homing Sequence"
-    It's recommended to home all axes before starting any job to ensure accurate positioning.
+    It's recommended to home all axes before starting any job to ensure
+    accurate positioning.
 
 ## Manual Jog Controls
 
@@ -63,7 +67,8 @@ The jog controls are arranged in a grid pattern:
 | Z-               | Z axis down                     | Page Down         |
 
 !!! note "Focus Required"
-    Keyboard shortcuts only work when the jog dialog has focus. Click anywhere in the dialog to ensure it has focus.
+    Keyboard shortcuts only work when the jog dialog has focus. Click anywhere in
+    the dialog to ensure it has focus.
 
 ### Visual Feedback
 
@@ -98,6 +103,69 @@ Configure the behavior of jog operations:
     - Use small distances (0.1-1.0 mm) for fine-tuning
     - Use medium distances (5-20 mm) for general positioning
     - Use large distances (50-100 mm) for quick repositioning
+
+## Work Coordinate System (WCS)
+
+The jog dialog provides controls for managing Work Coordinate Systems, allowing
+you to define custom reference points on your machine's work area.
+
+### Active System Selection
+
+Select which coordinate system is currently active:
+
+| Option        | Type  | Description                                     |
+| ------------- | ----- | ----------------------------------------------- |
+| G53 (Machine) | Fixed | Absolute machine coordinates, cannot be changed |
+| G54 (Work 1)  | User  | First work coordinate system                    |
+| G55 (Work 2)  | User  | Second work coordinate system                   |
+| G56 (Work 3)  | User  | Third work coordinate system                    |
+| G57 (Work 4)  | User  | Fourth work coordinate system                   |
+| G58 (Work 5)  | User  | Fifth work coordinate system                    |
+| G59 (Work 6)  | User  | Sixth work coordinate system                    |
+
+### Current Offsets
+
+Displays the offset values for the active WCS:
+
+- Shown as (X, Y, Z) in millimeters
+- Represents the distance from machine origin to WCS origin
+- Updates automatically when WCS offsets change
+
+### Current Position
+
+Shows the laser head's position in the active WCS:
+
+- Coordinates are relative to the selected WCS origin
+- Updates in real-time as you jog the machine
+
+### Setting WCS Zero
+
+Define where the origin of the active WCS should be:
+
+| Button | Function | Description                                          |
+| ------ | -------- | ---------------------------------------------------- |
+| Zero X | Set X=0  | Makes current X position the X origin for active WCS |
+| Zero Y | Set Y=0  | Makes current Y position the Y origin for active WCS |
+| Zero Z | Set Z=0  | Makes current Z position the Z origin for active WCS |
+
+!!! note "G53 Cannot Be Changed"
+    Zero buttons are disabled when G53 (Machine Coordinates) is selected,
+    as machine coordinates are fixed by hardware.
+
+!!! tip "Setting WCS Workflow"
+    1. Connect to your machine and home all axes
+    2. Select the WCS you want to configure (e.g., G54)
+    3. Jog the laser head to the desired origin position
+    4. Click Zero X and Zero Y to set this position as (0, 0)
+    5. The offset is stored in your machine's controller
+
+### WCS Button Sensitivity
+
+The zero buttons are only enabled when:
+
+- Connected to a machine
+- A mutable WCS is selected (G54-G59)
+- No job is currently running
 
 ## Machine Compatibility
 
@@ -205,6 +273,7 @@ When soft limits are enabled in your machine profile:
 
 **Related Pages:**
 
+- [Work Coordinate Systems (WCS)](work-coordinate-systems.md) - Managing WCS
 - [Machine Setup](../machine/index.md) - Configure your machine
 - [Keyboard Shortcuts](../reference/shortcuts.md) - Complete shortcut reference
 - [Main Window](main-window.md) - Main interface overview
