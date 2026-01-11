@@ -2,6 +2,8 @@ from typing import Optional
 
 from gi.repository import Adw, Gdk, Gtk
 
+from rayforge.ui_gtk.patched_dialog_window import PatchedDialogWindow
+
 from ...camera.models import Camera
 from ...context import get_context
 from ...machine.models.machine import Machine
@@ -14,7 +16,7 @@ from .laser_preferences_page import LaserPreferencesPage
 from .machine_hours_page import MachineHoursPage
 
 
-class MachineSettingsDialog(Adw.Window):
+class MachineSettingsDialog(PatchedDialogWindow):
     def __init__(
         self,
         *,

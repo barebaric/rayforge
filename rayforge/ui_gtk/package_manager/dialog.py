@@ -1,7 +1,11 @@
 import logging
 import threading
 from typing import List
-from gi.repository import Adw, Gtk, GLib, Gdk
+
+from gi.repository import Adw, Gdk, GLib, Gtk
+
+from rayforge.ui_gtk.patched_dialog_window import PatchedDialogWindow
+
 from ... import __version__
 from ...context import get_context
 from ...package_mgr.package import PackageMetadata
@@ -11,7 +15,7 @@ from ..icons import get_icon
 logger = logging.getLogger(__name__)
 
 
-class PackageRegistryDialog(Adw.Window):
+class PackageRegistryDialog(PatchedDialogWindow):
     """
     A dialog that fetches and lists available packages from the
     online registry via the PackageManager.

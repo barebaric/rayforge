@@ -1,5 +1,9 @@
 from typing import List, Optional
-from gi.repository import Gtk, Adw, Gdk, GLib
+
+from gi.repository import Adw, Gdk, GLib, Gtk
+
+from rayforge.ui_gtk.patched_dialog_window import PatchedDialogWindow
+
 from ...machine.models.macro import Macro
 from ...pipeline.encoder.context import GcodeContext
 from ..icons import get_icon
@@ -8,7 +12,7 @@ from ..icons import get_icon
 FORBIDDEN_NAME_CHARS = "();[]{}<>"
 
 
-class GcodeEditorDialog(Adw.Window):
+class GcodeEditorDialog(PatchedDialogWindow):
     """A generic modal dialog for editing a G-code macro."""
 
     def __init__(

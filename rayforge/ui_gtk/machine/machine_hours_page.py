@@ -1,12 +1,15 @@
 import logging
 from typing import cast
-from gi.repository import Gtk, Adw
+
+from gi.repository import Adw, Gtk
+
+from rayforge.ui_gtk.patched_dialog_window import PatchedDialogWindow
+
 from ...machine.models.machine import Machine
 from ...machine.models.machine_hours import ResettableCounter
 from ...shared.util.time_format import format_hours_to_hm
 from ..icons import get_icon
 from ..shared.preferences_group import PreferencesGroupWithButton
-
 
 logger = logging.getLogger(__name__)
 
@@ -211,7 +214,7 @@ class CounterListEditor(PreferencesGroupWithButton):
             logger.info(f"Added new counter: {new_counter.name}")
 
 
-class CounterEditDialog(Adw.Window):
+class CounterEditDialog(PatchedDialogWindow):
     """Dialog for editing counter settings."""
 
     def __init__(
