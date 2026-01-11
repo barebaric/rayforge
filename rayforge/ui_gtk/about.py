@@ -8,7 +8,7 @@ from gi.repository import Adw, GLib, Gtk
 
 from .. import __version__
 from .icons import get_icon
-from .patched_dialog_window import PatchedDialogWindow
+from .shared.patched_dialog_window import PatchedDialogWindow
 
 logger = logging.getLogger(__name__)
 _not_found_str = _("Not found")

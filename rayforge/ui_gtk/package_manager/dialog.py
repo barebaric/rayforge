@@ -9,7 +9,7 @@ from ...context import get_context
 from ...package_mgr.package import PackageMetadata
 from ...package_mgr.package_manager import UpdateStatus
 from ..icons import get_icon
-from ..patched_dialog_window import PatchedDialogWindow
+from ..shared.patched_dialog_window import PatchedDialogWindow
 
 logger = logging.getLogger(__name__)
 

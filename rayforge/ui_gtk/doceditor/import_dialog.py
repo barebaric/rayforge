@@ -14,7 +14,7 @@ from ...core.vectorization_spec import (
 )
 from ...core.workpiece import WorkPiece
 from ...doceditor.file_cmd import PreviewResult
-from ..patched_dialog_window import PatchedDialogWindow
+from ..shared.patched_dialog_window import PatchedDialogWindow
 
 if TYPE_CHECKING:
     from ...doceditor.editor import DocEditor

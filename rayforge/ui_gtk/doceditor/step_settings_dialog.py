@@ -9,8 +9,8 @@ from ...core.undo import ChangePropertyCommand, HistoryManager
 from ...pipeline.producer import OpsProducer
 from ...pipeline.transformer import OpsTransformer
 from ..icons import get_icon
-from ..patched_dialog_window import PatchedDialogWindow
 from ..shared.adwfix import get_spinrow_float
+from ..shared.patched_dialog_window import PatchedDialogWindow
 from ..shared.unit_spin_row import UnitSpinRowHelper
 from .recipe_control_widget import RecipeControlWidget
 from .step_settings import WIDGET_REGISTRY

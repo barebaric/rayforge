@@ -4,7 +4,7 @@ from typing import List
 from gi.repository import Adw, Gtk
 
 from ...machine.models.dialect import GcodeDialect
-from ..patched_dialog_window import PatchedDialogWindow
+from ..shared.patched_dialog_window import PatchedDialogWindow
 from ..varset.varsetwidget import VarSetWidget
 
 
