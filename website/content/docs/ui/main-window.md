@@ -26,6 +26,11 @@ Quick access to frequently used tools:
 - **Zoom tool**: Zoom in/out on specific areas
 - **Measurement tool**: Measure distances and angles
 - **Alignment tools**: Align and distribute objects
+- **WCS dropdown**: Select the active Work Coordinate System (G53-G59)
+
+The WCS dropdown allows you to quickly switch between coordinate systems
+without opening the Jog Dialog. See [Work Coordinate Systems (WCS)]
+(work-coordinate-systems.md) for more information.
 
 ### 3. Canvas
 
@@ -98,4 +103,9 @@ Customize the interface in **Edit → Preferences**:
 
 ---
 
-**Next**: [Canvas Tools →](canvas-tools.md)
+**Related Pages:**
+
+- [Work Coordinate Systems (WCS)](work-coordinate-systems.md) - Managing WCS
+- [Canvas Tools](canvas-tools.md) - Tools for manipulating designs
+- [Jog Dialog](jog-dialog.md) - Manual machine control
+- [3D Preview](3d-preview.md) - Visualize toolpaths in 3D
