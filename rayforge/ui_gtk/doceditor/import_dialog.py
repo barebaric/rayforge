@@ -134,6 +134,17 @@ class ImportDialog(PatchedDialogWindow):
         self.trace_group = Adw.PreferencesGroup(title=_("Trace Settings"))
         preferences_page.add(self.trace_group)
 
+        # Import Whole Image
+        self.import_whole_image_switch = Adw.SwitchRow(
+            title=_("Import Whole Image"),
+            subtitle=_("Import the entire image without tracing"),
+            active=True,
+        )
+        self.import_whole_image_switch.connect(
+            "notify::active", self._on_import_whole_image_toggled
+        )
+        self.trace_group.add(self.import_whole_image_switch)
+
         # Auto Threshold
         self.auto_threshold_switch = Adw.SwitchRow(
             title=_("Auto Threshold"),
@@ -199,6 +210,9 @@ class ImportDialog(PatchedDialogWindow):
         # Initial Load & State
         self._load_initial_data()
         self._on_import_mode_toggled(self.use_vectors_switch)
+        self._on_import_whole_image_toggled(
+            self.import_whole_image_switch, None
+        )
 
     def _on_import_mode_toggled(self, switch, *args):
         is_direct_import = self.is_svg and switch.get_active()
@@ -213,6 +227,15 @@ class ImportDialog(PatchedDialogWindow):
     def _on_auto_threshold_toggled(self, switch, _pspec):
         is_auto = switch.get_active()
         self.threshold_row.set_sensitive(not is_auto)
+        self._schedule_preview_update()
+
+    def _on_import_whole_image_toggled(self, switch, _pspec):
+        is_whole_image = switch.get_active()
+        self.auto_threshold_switch.set_sensitive(not is_whole_image)
+        self.threshold_row.set_sensitive(
+            not is_whole_image and not self.auto_threshold_switch.get_active()
+        )
+        self.invert_switch.set_sensitive(not is_whole_image)
         self._schedule_preview_update()
 
     def _load_initial_data(self):
@@ -282,6 +305,12 @@ class ImportDialog(PatchedDialogWindow):
                 create_new_layers=self.create_new_layers_switch.get_active(),
             )
         else:
+            if self.import_whole_image_switch.get_active():
+                return TraceSpec(
+                    threshold=1.0,
+                    auto_threshold=False,
+                    invert=False,
+                )
             return TraceSpec(
                 threshold=self.threshold_adjustment.get_value(),
                 auto_threshold=self.auto_threshold_switch.get_active(),
