@@ -681,6 +681,10 @@ h2 {
     .nav-links { display: none; }
 }
 
+@media (max-width: 850px) {
+    .nav-actions .btn { display: none; }
+}
+
 /* Import Ubuntu Sans font from Google Fonts */
 @import url('https://fonts.googleapis.com/css2?family=Ubuntu+Sans:ital,wght@0,100..800;1,100..800&family=Ubuntu+Sans+Mono:ital,wght@0,400..700;1,400..700&display=swap');
 
