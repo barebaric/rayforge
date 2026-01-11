@@ -688,6 +688,26 @@ def trace_surface(
     vector results.
     """
     logger.debug("Entering trace_surface")
+
+    spec = vectorization_spec
+    if not isinstance(spec, TraceSpec):
+        spec = TraceSpec()
+
+    # When threshold is 1.0 (maximum), use the whole image without tracing
+    if not spec.auto_threshold and spec.threshold == 1.0:
+        width = surface.get_width()
+        height = surface.get_height()
+        logger.info(
+            f"Threshold is 1.0, using whole image: {width}x{height}"
+        )
+        geo = Geometry()
+        geo.move_to(0, 0)
+        geo.line_to(width, 0)
+        geo.line_to(width, height)
+        geo.line_to(0, height)
+        geo.close_path()
+        return [geo]
+
     cleaned_boolean_image = prepare_surface(surface, vectorization_spec)
 
     if not np.any(cleaned_boolean_image):
