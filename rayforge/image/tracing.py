@@ -697,9 +697,7 @@ def trace_surface(
     if not spec.auto_threshold and spec.threshold == 1.0:
         width = surface.get_width()
         height = surface.get_height()
-        logger.info(
-            f"Threshold is 1.0, using whole image: {width}x{height}"
-        )
+        logger.info(f"Threshold is 1.0, using whole image: {width}x{height}")
         geo = Geometry()
         geo.move_to(0, 0)
         geo.line_to(width, 0)
