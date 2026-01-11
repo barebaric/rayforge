@@ -53,7 +53,9 @@ class GcodeViewer(Gtk.Box):
             self.editor.set_text(
                 _("G-code too large to preview.")
                 + "\n"
-                + _(f"({line_count:,} lines > 20,000 line limit)")
+                + _("({line_count} lines > 20,000 line limit)").format(
+                    line_count=f"{line_count:,}"
+                )
             )
         else:
             self.editor.set_text(gcode)

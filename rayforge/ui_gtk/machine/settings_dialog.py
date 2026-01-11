@@ -31,7 +31,11 @@ class MachineSettingsDialog(PatchedDialogWindow):
         self._row_to_page_name = {}
         self._initial_page = initial_page
         if machine.name:
-            self.set_title(_(f"{machine.name} - Machine Settings"))
+            self.set_title(
+                _("{machine_name} - Machine Settings").format(
+                    machine_name=machine.name
+                )
+            )
         else:
             self.set_title(_("Machine Settings"))
         self.set_default_size(800, 800)

@@ -344,7 +344,7 @@ class FileCmd:
                 self._editor.doc.add_asset(sketch)
 
         target_layer = cast(Layer, self._editor.default_workpiece_layer)
-        cmd_name = _(f"Import {filename.name}")
+        cmd_name = _("Import {filename}").format(filename=filename.name)
 
         create_new_layers = True
         if isinstance(vectorization_spec, PassthroughSpec):
@@ -432,7 +432,9 @@ class FileCmd:
         async def wrapper(ctx, fn, mt, vec_spec, pos_mm):
             try:
                 # Update task message for UI feedback
-                ctx.set_message(_(f"Importing {filename.name}..."))
+                ctx.set_message(
+                    _("Importing {filename}...").format(filename=filename.name)
+                )
 
                 # 1. Run blocking I/O and CPU work in a background thread.
                 payload = await self._load_file_async(fn, mt, vec_spec)
@@ -441,14 +443,14 @@ class FileCmd:
                 if not payload or not payload.items:
                     if mt and mt.startswith("image/"):
                         msg = _(
-                            f"Failed to import {fn.name}. The image file "
-                            f"may be corrupted or in an unsupported format."
-                        )
+                            "Failed to import {filename}. The image file "
+                            "may be corrupted or in an unsupported format."
+                        ).format(filename=fn.name)
                     else:
                         msg = _(
-                            f"Import failed: No items were created "
-                            f"from {fn.name}"
-                        )
+                            "Import failed: No items were created "
+                            "from {filename}"
+                        ).format(filename=fn.name)
                     logger.warning(
                         f"Importer created no items for '{fn.name}' "
                         f"(MIME: {mt})"
