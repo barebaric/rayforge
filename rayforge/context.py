@@ -3,7 +3,7 @@ import threading
 from typing import Optional, TYPE_CHECKING
 import pluggy
 from .core.hooks import RayforgeSpecs
-from .core.package_manager import PackageManager
+from .package_mgr.package_manager import PackageManager
 
 # Use a TYPE_CHECKING block to import types for static analysis
 # without causing a runtime circular import.
