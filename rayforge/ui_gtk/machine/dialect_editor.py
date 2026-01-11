@@ -1,8 +1,11 @@
 import copy
 from typing import List
+
 from gi.repository import Adw, Gtk
-from ..varset.varsetwidget import VarSetWidget
+
 from ...machine.models.dialect import GcodeDialect
+from ..shared.patched_dialog_window import PatchedDialogWindow
+from ..varset.varsetwidget import VarSetWidget
 
 
 def _text_to_list(text: str) -> List[str]:
@@ -10,7 +13,7 @@ def _text_to_list(text: str) -> List[str]:
     return text.strip().split("\n")
 
 
-class DialectEditorDialog(Adw.Window):
+class DialectEditorDialog(PatchedDialogWindow):
     """
     A dialog window for creating or editing a G-code dialect.
     This dialog is driven by VarSets provided by the GcodeDialect model itself.

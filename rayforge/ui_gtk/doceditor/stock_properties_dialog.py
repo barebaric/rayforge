@@ -1,19 +1,22 @@
 import logging
-from gi.repository import Gtk, Adw, GLib
-from typing import TYPE_CHECKING, Tuple, Optional
+from typing import TYPE_CHECKING, Optional, Tuple
+
+from gi.repository import Adw, GLib, Gtk
+
 from ...context import get_context
 from ...core.stock import StockItem
+from ..shared.patched_dialog_window import PatchedDialogWindow
 from ..shared.unit_spin_row import UnitSelectorSpinRow
 from .material_selector import MaterialSelectorDialog
 
 if TYPE_CHECKING:
-    from ...doceditor.editor import DocEditor
     from ...core.material import Material
+    from ...doceditor.editor import DocEditor
 
 logger = logging.getLogger(__name__)
 
 
-class StockPropertiesDialog(Adw.Window):
+class StockPropertiesDialog(PatchedDialogWindow):
     """
     A non-modal window for editing stock item properties.
     """

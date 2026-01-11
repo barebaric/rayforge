@@ -1,19 +1,22 @@
 import logging
 import math
 from typing import List, Optional, Tuple
+
 import numpy as np
-from gi.repository import Gtk, Adw, Gdk, GLib
-from ..icons import get_icon
-from ..shared.gtk import apply_css
+from gi.repository import Adw, Gdk, GLib, Gtk
+
 from ...camera.controller import CameraController
 from ...camera.models.camera import Pos
+from ..icons import get_icon
+from ..shared.gtk import apply_css
+from ..shared.patched_dialog_window import PatchedDialogWindow
 from .display_widget import CameraDisplay
 from .point_bubble_widget import PointBubbleWidget
 
 logger = logging.getLogger(__name__)
 
 
-class CameraAlignmentDialog(Adw.Window):
+class CameraAlignmentDialog(PatchedDialogWindow):
     def __init__(
         self, parent: Gtk.Window, controller: CameraController, **kwargs
     ):

@@ -1,12 +1,14 @@
-import sys
-import platform
-import webbrowser
 import logging
-from importlib.metadata import version, PackageNotFoundError
-from gi.repository import Gtk, Adw, GLib
+import platform
+import sys
+import webbrowser
+from importlib.metadata import PackageNotFoundError, version
+
+from gi.repository import Adw, GLib, Gtk
+
 from .. import __version__
 from .icons import get_icon
-
+from .shared.patched_dialog_window import PatchedDialogWindow
 
 logger = logging.getLogger(__name__)
 _not_found_str = _("Not found")
@@ -122,7 +124,7 @@ def get_dependency_info() -> dict:
     return {k: v for k, v in info.items() if v}
 
 
-class AboutDialog(Adw.Window):
+class AboutDialog(PatchedDialogWindow):
     """
     A custom 'About' dialog that uses a ViewStack to navigate between
     the main page and a detailed system information page.

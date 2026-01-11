@@ -1,18 +1,20 @@
 import logging
 from pathlib import Path
-from typing import TYPE_CHECKING, Optional, List
-import cairo
-from gi.repository import Adw, Gdk, GdkPixbuf, Gtk
-from blinker import Signal
+from typing import TYPE_CHECKING, List, Optional
 
+import cairo
+from blinker import Signal
+from gi.repository import Adw, Gdk, GdkPixbuf, Gtk
+
+from ...core.layer import Layer
 from ...core.vectorization_spec import (
-    TraceSpec,
     PassthroughSpec,
+    TraceSpec,
     VectorizationSpec,
 )
 from ...core.workpiece import WorkPiece
-from ...core.layer import Layer
 from ...doceditor.file_cmd import PreviewResult
+from ..shared.patched_dialog_window import PatchedDialogWindow
 
 if TYPE_CHECKING:
     from ...doceditor.editor import DocEditor
@@ -23,7 +25,7 @@ logger = logging.getLogger(__name__)
 PREVIEW_RENDER_SIZE_PX = 1024
 
 
-class ImportDialog(Adw.Window):
+class ImportDialog(PatchedDialogWindow):
     """
     A dialog for importing images with live preview of vectorization.
     """

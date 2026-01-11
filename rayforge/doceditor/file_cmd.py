@@ -1,19 +1,19 @@
 import asyncio
 import logging
-import warnings
 import mimetypes
+import warnings
 from dataclasses import dataclass, field
 from enum import Enum, auto
 from pathlib import Path
 from typing import (
     TYPE_CHECKING,
+    Any,
+    Callable,
+    Dict,
     List,
     Optional,
     Tuple,
     cast,
-    Callable,
-    Dict,
-    Any,
 )
 
 with warnings.catch_warnings():
@@ -27,21 +27,21 @@ from ..core.matrix import Matrix
 from ..core.source_asset import SourceAsset
 from ..core.undo import ListItemCommand
 from ..core.vectorization_spec import (
-    VectorizationSpec,
-    TraceSpec,
     PassthroughSpec,
+    TraceSpec,
+    VectorizationSpec,
 )
 from ..core.workpiece import WorkPiece
 from ..image import (
+    ImportPayload,
+    bitmap_mime_types,
     import_file,
     import_file_from_bytes,
-    ImportPayload,
-    importers,
-    bitmap_mime_types,
-    importer_by_mime_type,
     importer_by_extension,
+    importer_by_mime_type,
+    importers,
 )
-from ..pipeline.artifact import JobArtifactHandle, JobArtifact
+from ..pipeline.artifact import JobArtifact, JobArtifactHandle
 from .layout.align import PositionAtStrategy
 
 if TYPE_CHECKING:
