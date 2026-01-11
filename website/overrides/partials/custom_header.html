@@ -24,6 +24,9 @@
     <div class="nav-actions">
       {% if page.is_homepage %}
         {#- On the homepage, show the "Download Now" button -#}
+        <a href="https://www.patreon.com/c/knipknap" target="_blank" rel="noopener noreferrer">
+            <img src="https://c5.patreon.com/external/logo/become_a_patron_button.png" alt="Become a Patron" height="45"/>
+        </a>
         <a href="{{ (config.extra.latest_docs ~ '/getting-started/installation.html') | url }}" class="btn">Download Now</a>
       {% else %}
         {#- On all other pages, show the standard search bar -#}

@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import webbrowser
 from concurrent.futures import Future
 from pathlib import Path
 from typing import Callable, Coroutine, List, Optional, cast
@@ -1870,6 +1871,9 @@ class MainWindow(Adw.ApplicationWindow):
     def show_about_dialog(self, action, param):
         dialog = AboutDialog(transient_for=self)
         dialog.present()
+
+    def on_donate_clicked(self, action, param):
+        webbrowser.open("https://www.patreon.com/c/knipknap")
 
     def show_settings(self, action, param):
         dialog = SettingsWindow(transient_for=self)
