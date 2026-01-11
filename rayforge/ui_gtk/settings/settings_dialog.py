@@ -1,8 +1,7 @@
 from gi.repository import Adw, Gdk, Gtk
 
-from rayforge.ui_gtk.patched_dialog_window import PatchedDialogWindow
-
 from ..icons import get_icon
+from ..shared.patched_dialog_window import PatchedDialogWindow
 from .general_preferences_page import GeneralPreferencesPage
 from .machine_settings_page import MachineSettingsPage
 from .material_manager_page import MaterialManagerPage
