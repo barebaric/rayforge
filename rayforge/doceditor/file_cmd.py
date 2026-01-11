@@ -448,8 +448,6 @@ class FileCmd:
                         msg = _(
                             f"Import failed: No items were created "
                             f"from {fn.name}"
-                            f"{' (tip: only use paths for svg)' if fn.suffix == '.svg'
-                            else ''}"
                         )
                     logger.warning(
                         f"Importer created no items for '{fn.name}' "
