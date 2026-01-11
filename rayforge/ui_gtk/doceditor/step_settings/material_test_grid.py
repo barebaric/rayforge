@@ -447,7 +447,7 @@ class MaterialTestGridSettingsWidget(
             target_dict=params_dict,
             key=param_name,
             new_value=new_value,
-            name=_(f"Change {param_name}"),
+            name=_("Change {param_name}").format(param_name=param_name),
             on_change_callback=on_change,
         )
         self.history_manager.execute(command)
@@ -468,7 +468,7 @@ class MaterialTestGridSettingsWidget(
             target_dict=params_dict,
             key=param_name,
             new_value=current_range,
-            name=_(f"Change {param_name}"),
+            name=_("Change {param_name}").format(param_name=param_name),
             on_change_callback=on_change,
         )
         self.history_manager.execute(command)

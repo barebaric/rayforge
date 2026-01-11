@@ -203,7 +203,10 @@ class MachineCmd:
                 f"Failed to assemble or execute {job_name} job", exc_info=True
             )
             self._editor.notification_requested.send(
-                self, message=_(f"{job_name.capitalize()} failed: {e}")
+                self,
+                message=_("{job_name} failed: {error}").format(
+                    job_name=job_name.capitalize(), error=e
+                ),
             )
             # Re-raise the exception so the awaiting caller fails.
             raise

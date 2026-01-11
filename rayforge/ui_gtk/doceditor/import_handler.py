@@ -224,12 +224,14 @@ def import_multiple_files_at_position(
     dialog = Adw.MessageDialog(
         transient_for=win,
         modal=True,
-        heading=_(f"Batch Import {file_count} Images"),
-        body=_(
-            f"Import {file_count} images:\n{file_names}\n\n"
-            f"All images will be traced using the default tracing settings "
-            f"and positioned at the drop location."
+        heading=_("Batch Import {file_count} Images").format(
+            file_count=file_count
         ),
+        body=_(
+            "Import {file_count} images:\n{file_names}\n\n"
+            "All images will be traced using the default tracing settings "
+            "and positioned at the drop location."
+        ).format(file_count=file_count, file_names=file_names),
     )
     dialog.add_response("cancel", _("Cancel"))
     dialog.add_response("import", _("Import All"))

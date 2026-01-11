@@ -87,7 +87,9 @@ class DocItemPropertiesWidget(Expander):
         if count == 1:
             self.set_subtitle(_("1 item selected"))
         elif count > 1:
-            self.set_subtitle(_(f"{count} items selected"))
+            self.set_subtitle(
+                _("{count} items selected").format(count=count)
+            )
         else:
             self.set_subtitle("")
 
