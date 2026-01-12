@@ -1,41 +1,56 @@
 # Rayforge Driver Development Guide
 
-This guide provides a high-level overview of how to create a driver in Rayforge to add support for your laser cutter or engraver. By creating a driver, you integrate your machine's unique communication protocol and command language into the Rayforge ecosystem.
+This guide provides a high-level overview of how to create a driver in Rayforge
+to add support for your laser cutter or engraver. By creating a driver, you
+integrate your machine's unique communication protocol and command language into
+the Rayforge ecosystem.
 
 ## Driver Overview
 
-A driver is the bridge between Rayforge's core logic and your physical hardware. It is responsible for three main tasks:
+A driver is the bridge between Rayforge's core logic and your physical hardware.
+It is responsible for three main tasks:
 
-1.  **Managing Connectivity:** Handling the low-level communication protocol (Serial, WebSocket, HTTP, etc.).
-2.  **Translating and Executing Jobs:** Converting Rayforge's internal representation of a job (`Ops`) into machine-specific commands (like G-code) and sending them to the device.
-3.  **Reporting State:** Emitting signals to update the UI with the laser's real-time position, status (`IDLE`, `RUN`), and log messages.
+1.  **Managing Connectivity:** Handling the low-level communication protocol
+    (Serial, WebSocket, HTTP, etc.).
+2.  **Executing Jobs:** Sending pre-encoded machine code (e.g., G-code) to the
+    device and tracking execution progress.
+3.  **Reporting State:** Emitting signals to update the UI with the laser's
+    real-time position, status (`IDLE`, `RUN`), and log messages.
 
 To simplify this, Rayforge provides an architecture based on composable parts:
 
 ```mermaid
 graph TD;
-    subgraph Your Driver Implementation
-        Driver-->Transport;
-        Driver-->OpsEncoder;
-    end
-
     subgraph Rayforge Core
-        OpsProducer --> Ops;
+        OpsProducer-->|Produces| Ops;
+        Pipeline-->|Runs| OpsProducer;
     end
 
-    Ops --> Driver;
+    subgraph Your Driver Implementation
+        Ops -->|Encodes via| OpsEncoder;
+        OpsEncoder-->|Produces| MachineCode
+        MachineCode-->|Calls run| Driver;
+        Driver-->|Sends via| Transport;
+    end
+
     Transport --> Device[Physical Laser];
 ```
 
-- **`OpsEncoder`:** Translates `Ops` into a specific command language (e.g., G-code).
+- **`OpsEncoder`:** Translates `Ops` into a specific command language
+  (e.g., G-code). Used by both the Pipeline (for job encoding) and the
+  Driver (for individual commands like move_to, home, etc.).
+- **`Pipeline`:** Orchestrates encoding and produces final machine code.
 - **`Transport`:** Manages the connection and data transfer.
-- **`Driver`:** Orchestrates the process, handles device state, and communicates with the UI.
+- **`Driver`:** Executes machine code, handles device state, and communicates
+  with the UI.
 
 All driver operations are **asynchronous** to ensure the user interface remains responsive.
 
 ## The `Ops` Language
 
-Rayforge describes a laser job as a sequence of high-level operations, stored in an `Ops` object. This is the universal language within Rayforge for describing machine movements, independent of any specific hardware.
+Rayforge describes a laser job as a sequence of high-level operations, stored in
+an `Ops` object. This is the universal language within Rayforge for describing
+machine movements, independent of any specific hardware.
 
 | `Ops` Method         | Signature                      | Description                          |
 | :------------------- | :----------------------------- | :----------------------------------- |
@@ -48,7 +63,10 @@ Rayforge describes a laser job as a sequence of high-level operations, stored in
 | `enable_air_assist`  | `()`                           | Turn on air assist                   |
 | `disable_air_assist` | `()`                           | Turn off air assist                  |
 
-Your driver receives an `Ops` object and must execute these operations on the device. Typically, this is done by passing the `Ops` object to an `OpsEncoder`.
+Your driver receives pre-encoded machine code (e.g., a G-code string) and an
+operation map that tracks which machine code commands correspond to which
+operations. The pipeline handles encoding `Ops` to machine code before calling
+the driver's `run()` method.
 
 ```python
 # Example of how Rayforge builds an Ops object
@@ -81,7 +99,8 @@ class YourDriver(Driver):
 
 - `label`: A human-readable name shown in the UI.
 - `subtitle`: A brief description shown below the name.
-- `supports_settings`: A boolean indicating if the driver can read/write device settings (like GRBL's `$$`).
+- `supports_settings`: A boolean indicating if the driver can read/write device
+  settings (like GRBL's `$$`).
 
 ### Required Methods
 
@@ -89,42 +108,68 @@ Your driver class **MUST** implement the following methods. Note that most are *
 
 #### Configuration and Lifecycle
 
-- `get_setup_vars() -> VarSet`: **(Class Method)** Returns a `VarSet` object defining the parameters needed for connection (e.g., IP address, serial port). Rayforge uses this to automatically generate the setup form in the UI.
-- `precheck(**kwargs)`: **(Class Method)** A non-blocking, static check of the configuration that can be run before driver instantiation. Should raise `DriverPrecheckError` on failure.
-- `setup(**kwargs)`: Called once with the values from the setup form. Use this to initialize your transports and internal state.
-- `async def connect()`: Establishes and maintains a persistent connection to the device. This method should contain auto-reconnection logic.
-- `async def cleanup()`: Called when disconnecting. Should close all connections and release resources.
+- `get_setup_vars() -> VarSet`: **(Class Method)** Returns a `VarSet` object
+  defining the parameters needed for connection (e.g., IP address, serial port).
+  Rayforge uses this to automatically generate the setup form in the UI.
+- `precheck(**kwargs)`: **(Class Method)** A non-blocking, static check of the
+  configuration that can be run before driver instantiation. Should raise
+  `DriverPrecheckError` on failure.
+- `setup(**kwargs)`: Called once with the values from the setup form. Use this
+  to initialize your transports and internal state.
+- `async def connect()`: Establishes and maintains a persistent connection to
+  the device. This method should contain auto-reconnection logic.
+- `async def cleanup()`: Called when disconnecting. Should close all
+  connections and release resources.
 
 #### Device Control
 
-- `async def run(ops: Ops, machine: Machine, doc: Doc)`: The core method for executing a job. Here, you'll use an `OpsEncoder` to convert the `ops` object into commands and send them to the device.
-- `async def home(axes: Optional[Axis] = None)`: Homes the machine. Can home specific axes or all axes.
-- `async def move_to(pos_x: float, pos_y: float)`: Manually moves the laser head to a specific XY coordinate.
-- `async def set_hold(hold: bool = True)`: Pauses or resumes the current job.
+- `async def run(machine_code: Any, op_map: MachineCodeOpMap, doc: Doc,
+  on_command_done: Optional[Callable[[int], Union[None, Awaitable[None]]]]
+  = None)`: The core method for executing a job. Receives pre-encoded machine
+  code (e.g., G-code string) and a mapping between operation indices and
+  machine code. The `on_command_done` callback is called with the op_index
+  when each command completes.
+- `async def home(axes: Optional[Axis] = None)`: Homes the machine. Can home
+  specific axes or all axes.
+- `async def move_to(pos_x: float, pos_y: float)`: Manually moves the laser
+  head to a specific XY coordinate.
+- `async def set_hold(hold: bool = True)`: Pauses or resumes current job.
 - `async def cancel()`: Stops the current job.
-- `async def jog(axis: Axis, distance: float, speed: int)`: Jogs the machine along a specific axis.
-- `async def select_tool(tool_number: int)`: Selects a new tool/laser head by its number.
+- `async def jog(axis: Axis, distance: float, speed: int)`: Jogs the machine
+  along a specific axis.
+- `async def select_tool(tool_number: int)`: Selects a new tool/laser head by
+  its number.
 - `async def clear_alarm()`: Clears any active alarm state.
 
 #### Firmware Settings (if `supports_settings` is `True`)
 
-- `get_setting_vars() -> List[VarSet]`: Returns `VarSet` objects that define the structure of the device's settings page.
-- `async def read_settings()`: Reads all settings from the device and calls `_on_settings_read()` with the result.
-- `async def write_setting(key: str, value: Any)`: Writes a single setting to the device.
+- `get_setting_vars() -> List[VarSet]`: Returns `VarSet` objects that define
+  the structure of the device's settings page.
+- `async def read_settings()`: Reads all settings from the device and calls
+  `_on_settings_read()` with the result.
+- `async def write_setting(key: str, value: Any)`: Writes a single setting to
+  the device.
 
 ### Emitting Signals
 
-To communicate with the UI, your driver must emit signals. To ensure proper logging and thread safety, **you must not emit signals directly.** Instead, call the protected helper methods from the base `Driver` class.
+To communicate with the UI, your driver must emit signals. To ensure proper
+logging and thread safety, **you must not emit signals directly.** Instead,
+call the protected helper methods from the base `Driver` class.
 
 - `self._log(message)`: Sends a log message to the console.
-- `self._on_state_changed()`: Call this whenever you update `self.state` to notify the UI of a status or position change.
-- `self._on_connection_status_changed(status, message)`: Informs the UI about the connection status (`CONNECTING`, `CONNECTED`, `ERROR`, etc.).
-- `self._on_command_status_changed(status, message)`: Reports the status of a sent command.
-- `self._on_settings_read(settings)`: Sends the device settings you've read back to the UI.
+- `self._on_state_changed()`: Call this whenever you update `self.state` to
+  notify the UI of a status or position change.
+- `self._on_connection_status_changed(status, message)`: Informs the UI about
+  the connection status (`CONNECTING`, `CONNECTED`, `ERROR`, etc.).
+- `self._on_command_status_changed(status, message)`: Reports the status of a
+  sent command.
+- `self._on_settings_read(settings)`: Sends the device settings you've read
+  back to the UI.
 
 ## Have Questions?
 
-The best way to learn is to look at the existing drivers in `rayforge/machine/driver/`, such as:
+The best way to learn is to look at the existing drivers in
+`rayforge/machine/driver/`, such as:
 
 - `grbl.py` - GRBL-based machines
 - `grbl_serial.py` - Serial-based GRBL communication

@@ -551,9 +551,10 @@ class TestMachine:
 
         # --- Assert ---
         run_spy.assert_called_once()
-        ops, received_doc = run_spy.call_args.args
-        assert isinstance(ops, Ops)
-        assert not ops.is_empty()
+        _machine_code, op_map, received_doc = run_spy.call_args.args
+        from rayforge.pipeline.encoder.base import MachineCodeOpMap
+
+        assert isinstance(op_map, MachineCodeOpMap)
         assert received_doc is doc
 
     @pytest.mark.asyncio
@@ -598,9 +599,10 @@ class TestMachine:
 
         # --- Assert ---
         run_spy.assert_called_once()
-        ops, received_doc = run_spy.call_args.args
-        assert isinstance(ops, Ops)
-        assert not ops.is_empty()
+        machine_code, op_map, received_doc = run_spy.call_args.args
+        from rayforge.pipeline.encoder.base import MachineCodeOpMap
+
+        assert isinstance(op_map, MachineCodeOpMap)
         assert received_doc is doc
 
     @pytest.mark.asyncio

@@ -12,9 +12,8 @@ from typing import (
     Dict,
 )
 from ...context import RayforgeContext
-from ...core.ops import Ops
 from ...core.varset import VarSet
-from ...pipeline.encoder.base import OpsEncoder
+from ...pipeline.encoder.base import OpsEncoder, MachineCodeOpMap
 from ...pipeline.encoder.gcode import GcodeEncoder
 from .driver import Driver, Axis, Pos
 
@@ -63,7 +62,8 @@ class NoDeviceDriver(Driver):
 
     async def run(
         self,
-        ops: Ops,
+        machine_code: Any,
+        op_map: "MachineCodeOpMap",
         doc: "Doc",
         on_command_done: Optional[
             Callable[[int], Union[None, Awaitable[None]]]
@@ -72,15 +72,17 @@ class NoDeviceDriver(Driver):
         """
         Dummy implementation that simulates command execution.
 
-        This implementation creates a MachineCodeOpMap to track which commands
-        correspond to which Ops, then simulates execution by calling the
-        on_command_done callback for each command with a small delay.
+        This implementation iterates through the ops defined in op_map and
+        simulates execution by calling the on_command_done callback for each
+        command with a small delay.
         """
-        # Get the operation map for tracking
-        _ = self._track_command_execution(ops, doc, on_command_done)
+        # We assume ops are indexed 0..N-1.
+        num_ops = 0
+        if op_map and op_map.op_to_machine_code:
+            num_ops = max(op_map.op_to_machine_code.keys()) + 1
 
         # Simulate command execution with delays
-        for op_index in range(len(ops)):
+        for op_index in range(num_ops):
             # Small delay to simulate execution time
             await asyncio.sleep(0.01)
 
