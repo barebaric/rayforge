@@ -180,10 +180,12 @@ class WorkSurface(WorldSurface):
             width, height = self.machine.dimensions
 
             # Logic mirrored from axis.py to ensure consistency
-            if self.machine.x_axis_right:
+            # If x_axis_right XOR reverse_x_axis is true, we invert X
+            if self.machine.x_axis_right ^ self.machine.reverse_x_axis:
                 canvas_x = width - m_x
 
-            if self.machine.y_axis_down:
+            # If y_axis_down XOR reverse_y_axis is true, we invert Y
+            if self.machine.y_axis_down ^ self.machine.reverse_y_axis:
                 canvas_y = height - m_y
 
         return canvas_x, canvas_y
@@ -537,7 +539,7 @@ class WorkSurface(WorldSurface):
         # Now, delegate to the base Canvas's snapshot implementation, which
         # will correctly apply the view_transform and render all elements
         # (which are in physical machine coordinates) and selection handles.
-        super(WorldSurface, self).do_snapshot(snapshot)
+        super(WorkSurface, self).do_snapshot(snapshot)
 
     def _rebuild_view_transform(self) -> bool:
         """
