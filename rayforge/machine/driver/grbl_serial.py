@@ -14,9 +14,8 @@ from typing import (
     Awaitable,
 )
 from ...context import RayforgeContext
-from ...core.ops import Ops
 from ...core.varset import Var, VarSet, SerialPortVar, BaudrateVar
-from ...pipeline.encoder.base import OpsEncoder
+from ...pipeline.encoder.base import OpsEncoder, MachineCodeOpMap
 from ...pipeline.encoder.gcode import GcodeEncoder
 from ..transport import TransportStatus, SerialTransport
 from ..transport.serial import SerialPortPermissionError
@@ -475,6 +474,10 @@ class GrblSerialDriver(Driver):
                         "Job cancelled, errored, or machine in ALARM state. "
                         "Stopping G-code sending."
                     )
+                    if self.state.status == DeviceStatus.ALARM:
+                        self._job_exception = DeviceConnectionError(
+                            "Machine entered ALARM state during job."
+                        )
                     break
 
                 line = line.strip()
@@ -566,7 +569,8 @@ class GrblSerialDriver(Driver):
 
     async def run(
         self,
-        ops: Ops,
+        machine_code: Any,
+        op_map: "MachineCodeOpMap",
         doc: "Doc",
         on_command_done: Optional[
             Callable[[int], Union[None, Awaitable[None]]]
@@ -574,11 +578,11 @@ class GrblSerialDriver(Driver):
     ) -> None:
         self._start_job(on_command_done)
 
-        # Let the machine handle coordinate transformations and encoding
-        gcode, op_map = self._machine.encode_ops(ops, doc)
-        gcode_lines = gcode.splitlines()
+        gcode = cast(str, machine_code)
+        mapping = op_map.machine_code_to_op if op_map else None
 
-        await self._stream_gcode(gcode_lines, op_map.machine_code_to_op)
+        gcode_lines = gcode.splitlines()
+        await self._stream_gcode(gcode_lines, mapping)
 
     async def run_raw(self, gcode: str) -> None:
         """

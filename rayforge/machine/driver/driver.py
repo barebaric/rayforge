@@ -14,7 +14,6 @@ from typing import (
 from blinker import Signal
 from dataclasses import dataclass
 from enum import Enum, auto, IntFlag
-from ...core.ops import Ops
 from ...context import RayforgeContext
 
 if TYPE_CHECKING:
@@ -283,18 +282,19 @@ class Driver(ABC):
     @abstractmethod
     async def run(
         self,
-        ops: Ops,
+        machine_code: Any,
+        op_map: "MachineCodeOpMap",
         doc: "Doc",
         on_command_done: Optional[
             Callable[[int], Union[None, Awaitable[None]]]
         ] = None,
     ) -> None:
         """
-        Converts the given Ops into commands for the machine, and executes
-        them.
+        Executes the given machine code.
 
         Args:
-            ops: The operations to execute
+            machine_code: The machine code to execute (e.g. G-code string)
+            op_map: Mapping between op indices and machine code
             doc: The document context
             on_command_done: Optional sync or async callback called when each
                            command is done. Called with the op_index.
@@ -436,35 +436,6 @@ class Driver(ABC):
             True if the device supports G0 with speed, False otherwise
         """
         return False
-
-    def _track_command_execution(
-        self,
-        ops: Ops,
-        doc: "Doc",
-        on_command_done: Optional[
-            Callable[[int], Union[None, Awaitable[None]]]
-        ] = None,
-    ) -> "MachineCodeOpMap":
-        """
-        Creates a MachineCodeOpMap for tracking command execution by using the
-        centralized machine encoder.
-
-        This method should be called by driver implementations to get a
-        MachineCodeOpMap that can be used to track which Ops commands
-        correspond to which G-code (or other machine language) lines.
-        Drivers can then use this map to call the on_command_done
-        callback at the appropriate times.
-
-        Args:
-            ops: The operations to execute
-            doc: The document context
-            on_command_done: Optional callback for command completion
-
-        Returns:
-            A MachineCodeOpMap for tracking command execution
-        """
-        _, op_map = self._machine.encode_ops(ops, doc)
-        return op_map
 
     @abstractmethod
     async def set_wcs_offset(

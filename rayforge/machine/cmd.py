@@ -2,17 +2,19 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING, Optional, Callable, Coroutine
 from blinker import Signal
-from ..pipeline.artifact import JobArtifact, JobArtifactHandle
 from ..context import get_context
-from .job_monitor import JobMonitor
+from ..core.ops import Ops
+from ..pipeline.artifact import JobArtifact, JobArtifactHandle
+from ..pipeline.encoder.base import MachineCodeOpMap
 from ..pipeline.encoder.context import GcodeContext, JobInfo
 from ..shared.util.template import TemplateFormatter
+from .job_monitor import JobMonitor
+
 
 if TYPE_CHECKING:
     from .models.machine import Machine
     from .driver.driver import Axis
     from ..doceditor.editor import DocEditor
-    from ..core.ops import Ops
     from .models.laser import Laser
 
 
@@ -66,9 +68,11 @@ class MachineCmd:
         ops: "Ops",
         machine: "Machine",
         on_progress: Optional[Callable[[dict], None]] = None,
+        machine_code: Optional[str] = None,
+        op_map: Optional[MachineCodeOpMap] = None,
     ):
         """
-        Internal helper to execute an Ops object on a driver while managing
+        Internal helper to execute a job on a driver while managing
         a JobMonitor for progress reporting.
         """
         if self._current_monitor:
@@ -111,15 +115,25 @@ class MachineCmd:
             # Signal that the job has started.
             self._scheduler(self.job_started.send, self)
 
+            # If machine code or op map are missing, generate them now
+            if machine_code is None or op_map is None:
+                machine_code, op_map = machine.encode_ops(
+                    ops, self._editor.doc
+                )
+
             if machine.reports_granular_progress:
                 await machine.driver.run(
-                    ops,
+                    machine_code,
+                    op_map,
                     self._editor.doc,
                     on_command_done=self._current_monitor.update_progress,
                 )
             else:
                 await machine.driver.run(
-                    ops, self._editor.doc, on_command_done=None
+                    machine_code,
+                    op_map,
+                    self._editor.doc,
+                    on_command_done=None,
                 )
                 if self._current_monitor:
                     self._current_monitor.mark_as_complete()
@@ -155,18 +169,27 @@ class MachineCmd:
             logger.warning("Framing cancelled: Frame power is zero.")
             return  # This is a successful cancellation, not an error
 
-        frame = ops.get_frame(
+        frame_ops = ops.get_frame(
             power=head.frame_power_percent,
             speed=machine.max_travel_speed,
         )
-        from ..core.ops import Ops
 
         frame_with_laser = Ops()
         frame_with_laser.set_laser(head.uid)
-        frame_with_laser += frame * 20
+        frame_with_laser += frame_ops * 20
+
+        # We need to generate G-code specifically for this framing Ops to avoid
+        # the driver doing it.
+        machine_code, op_map = machine.encode_ops(
+            frame_with_laser, self._editor.doc
+        )
 
         await self._execute_monitored_job(
-            frame_with_laser, machine, on_progress
+            frame_with_laser,
+            machine,
+            on_progress,
+            machine_code=machine_code,
+            op_map=op_map,
         )
 
     async def _run_send_action(
@@ -179,8 +202,14 @@ class MachineCmd:
         artifact = get_context().artifact_store.get(handle)
         if not isinstance(artifact, JobArtifact):
             raise ValueError("_run_send_action received a non-JobArtifact")
-        ops = artifact.ops
-        await self._execute_monitored_job(ops, machine, on_progress)
+
+        await self._execute_monitored_job(
+            artifact.ops,
+            machine,
+            on_progress,
+            machine_code=artifact.machine_code,
+            op_map=artifact.op_map,
+        )
 
     async def _start_job(
         self,

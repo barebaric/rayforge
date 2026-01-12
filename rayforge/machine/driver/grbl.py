@@ -14,9 +14,8 @@ from typing import (
     Dict,
 )
 from ...context import RayforgeContext
-from ...core.ops import Ops
 from ...core.varset import Var, VarSet, HostnameVar, PortVar
-from ...pipeline.encoder.base import OpsEncoder
+from ...pipeline.encoder.base import OpsEncoder, MachineCodeOpMap
 from ...pipeline.encoder.gcode import GcodeEncoder
 from ..transport import HttpTransport, WebSocketTransport, TransportStatus
 from ..transport.validators import is_valid_hostname_or_ip
@@ -43,6 +42,7 @@ from .grbl_util import (
     upload_url,
     execute_url,
     status_url,
+    parse_grbl_parser_state,
 )
 
 if TYPE_CHECKING:
@@ -375,7 +375,8 @@ class GrblNetworkDriver(Driver):
 
     async def run(
         self,
-        ops: Ops,
+        machine_code: Any,
+        op_map: "MachineCodeOpMap",
         doc: "Doc",
         on_command_done: Optional[
             Callable[[int], Union[None, Awaitable[None]]]
@@ -384,15 +385,18 @@ class GrblNetworkDriver(Driver):
         if not self.host:
             raise ConnectionError("Driver not configured with a host.")
 
-        # Let the machine handle coordinate transformations and encoding
-        gcode, op_map = self._machine.encode_ops(ops, doc)
+        gcode = cast(str, machine_code)
 
         try:
             # For GRBL driver, we don't track individual commands
             # since we upload the entire file at once
             if on_command_done is not None:
                 # Call the callback for each op to indicate completion
-                for op_index in range(len(ops)):
+                num_ops = 0
+                if op_map and op_map.op_to_machine_code:
+                    num_ops = max(op_map.op_to_machine_code.keys()) + 1
+
+                for op_index in range(num_ops):
                     result = on_command_done(op_index)
                     if inspect.isawaitable(result):
                         await result
@@ -685,6 +689,15 @@ class GrblNetworkDriver(Driver):
                 offsets[slot] = (float(x_str), float(y_str), float(z_str))
         self.wcs_updated.send(self, offsets=offsets)
         return offsets
+
+    async def read_parser_state(self) -> Optional[str]:
+        """Reads the $G parser state to determine the active WCS."""
+        try:
+            response_lines = await self._execute_command("$G")
+            return parse_grbl_parser_state(response_lines)
+        except DeviceConnectionError as e:
+            logger.warning(f"Could not read parser state: {e}")
+            return None
 
     async def run_probe_cycle(
         self, axis: Axis, max_travel: float, feed_rate: int

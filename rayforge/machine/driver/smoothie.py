@@ -13,9 +13,8 @@ from typing import (
     Dict,
 )
 from ...context import RayforgeContext
-from ...core.ops import Ops
 from ...core.varset import VarSet, HostnameVar, PortVar
-from ...pipeline.encoder.base import OpsEncoder
+from ...pipeline.encoder.base import OpsEncoder, MachineCodeOpMap
 from ...pipeline.encoder.gcode import GcodeEncoder
 from ..transport import TelnetTransport, TransportStatus
 from ..transport.validators import is_valid_hostname_or_ip
@@ -197,20 +196,28 @@ class SmoothieDriver(Driver):
 
     async def run(
         self,
-        ops: Ops,
+        machine_code: Any,
+        op_map: "MachineCodeOpMap",
         doc: "Doc",
         on_command_done: Optional[
             Callable[[int], Union[None, Awaitable[None]]]
         ] = None,
     ) -> None:
-        # Let the machine handle coordinate transformations and encoding
-        gcode, op_map = self._machine.encode_ops(ops, doc)
+        gcode = cast(str, machine_code)
         gcode_lines = gcode.splitlines()
 
+        # We assume ops are indexed 0..N-1.
+        num_ops = 0
+        if op_map and op_map.op_to_machine_code:
+            num_ops = max(op_map.op_to_machine_code.keys()) + 1
+
         try:
-            for op_index in range(len(ops)):
+            for op_index in range(num_ops):
                 # Find all g-code lines for this specific op_index
-                line_indices = op_map.op_to_machine_code.get(op_index, [])
+                line_indices = []
+                if op_map:
+                    line_indices = op_map.op_to_machine_code.get(op_index, [])
+
                 if not line_indices:
                     # If an op generates no g-code, still report it as done.
                     if on_command_done:
