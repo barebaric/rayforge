@@ -487,6 +487,16 @@ class Driver(ABC):
         """
         pass
 
+    async def read_parser_state(self) -> Optional[str]:
+        """
+        Sends a command to query the active G-code modal states, specifically
+        to find the active coordinate system (e.g., "G54").
+
+        Returns:
+            The active WCS string if found, otherwise None.
+        """
+        return None
+
     @abstractmethod
     async def run_probe_cycle(
         self, axis: Axis, max_travel: float, feed_rate: int

@@ -422,3 +422,81 @@ class TestGrblSerialDriver:
 
         result = await cmd_task
         assert result is None
+
+    @pytest.mark.asyncio
+    async def test_read_parser_state_g54(
+        self, connected_driver: GrblSerialDriver
+    ):
+        """Test read_parser_state parses $G response with G54."""
+        driver = connected_driver
+        transport_mock = driver.serial_transport
+        assert transport_mock is not None
+
+        response_data = b"[G54 G17 G21 G90 G94 M5 M9 T0 F0 S0]\r\nok\r\n"
+        cmd_task = asyncio.create_task(driver.read_parser_state())
+        await asyncio.sleep(0.01)
+        send_mock = cast(MagicMock, transport_mock.send)
+        send_mock.assert_called_once_with(b"$G\n")
+        driver.on_serial_data_received(transport_mock, response_data)
+
+        result = await cmd_task
+        assert result == "G54"
+
+    @pytest.mark.asyncio
+    async def test_read_parser_state_g59(
+        self, connected_driver: GrblSerialDriver
+    ):
+        """Test read_parser_state parses $G response with G59."""
+        driver = connected_driver
+        transport_mock = driver.serial_transport
+        assert transport_mock is not None
+
+        response_data = b"[G59 G17 G21 G90 G94 M5 M9 T0 F0 S0]\r\nok\r\n"
+        cmd_task = asyncio.create_task(driver.read_parser_state())
+        await asyncio.sleep(0.01)
+        send_mock = cast(MagicMock, transport_mock.send)
+        send_mock.assert_called_once_with(b"$G\n")
+        driver.on_serial_data_received(transport_mock, response_data)
+
+        result = await cmd_task
+        assert result == "G59"
+
+    @pytest.mark.asyncio
+    async def test_read_parser_state_no_wcs_found(
+        self, connected_driver: GrblSerialDriver
+    ):
+        """Test read_parser_state returns None when no G54-G59 found."""
+        driver = connected_driver
+        transport_mock = driver.serial_transport
+        assert transport_mock is not None
+
+        response_data = b"[G17 G21 G90 G94 M5 M9 T0 F0 S0]\r\nok\r\n"
+        cmd_task = asyncio.create_task(driver.read_parser_state())
+        await asyncio.sleep(0.01)
+        send_mock = cast(MagicMock, transport_mock.send)
+        send_mock.assert_called_once_with(b"$G\n")
+        driver.on_serial_data_received(transport_mock, response_data)
+
+        result = await cmd_task
+        assert result is None
+
+    @pytest.mark.asyncio
+    async def test_read_parser_state_connection_error(
+        self, connected_driver: GrblSerialDriver, mocker
+    ):
+        """Test read_parser_state returns None on connection error."""
+        driver = connected_driver
+        transport_mock = driver.serial_transport
+        assert transport_mock is not None
+        from rayforge.machine.driver.driver import DeviceConnectionError
+
+        # Mock _execute_command to raise DeviceConnectionError
+        execute_command_mock = mocker.patch.object(
+            driver,
+            "_execute_command",
+            side_effect=DeviceConnectionError("Connection lost"),
+        )
+
+        result = await driver.read_parser_state()
+        assert result is None
+        execute_command_mock.assert_called_once_with("$G")

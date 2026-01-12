@@ -38,6 +38,8 @@ fs_re = re.compile(r"FS:(\d+),(\d+)")
 grbl_setting_re = re.compile(r"\$(\d+)=([\d\.-]+)")
 wcs_re = re.compile(r"\[(G5[4-9]):([\d\.-]+),([\d\.-]+),([\d\.-]+)\]")
 prb_re = re.compile(r"\[PRB:([\d\.-]+),([\d\.-]+),([\d\.-]+):(\d)\]")
+# Regex to find the active WCS (G54-G59) from a $G parser state report
+grbl_parser_state_re = re.compile(r".*(G5[4-9]).*")
 
 
 # GRBL Error Codes
@@ -318,6 +320,18 @@ def error_code_to_device_error(error_code: str) -> DeviceError:
             _("Unknown Error"),
             _("Invalid error code reported by machine."),
         )
+
+
+def parse_grbl_parser_state(response_lines: List[str]) -> Optional[str]:
+    """
+    Parses the response from a '$G' command to find the active WCS.
+    Example response: '[G54 G17 G21 G90 G94 M5 M9 T0 F0 S0]'
+    """
+    for line in response_lines:
+        match = grbl_parser_state_re.match(line)
+        if match:
+            return match.group(1)  # Return the found G-code (e.g., "G54")
+    return None
 
 
 def parse_state(
