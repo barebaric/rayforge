@@ -135,7 +135,7 @@ class GrblSerialDriver(Driver):
         port = cast(str, kwargs.get("port", ""))
         baudrate = kwargs.get("baudrate", 115200)
         self._poll_status_while_running = bool(
-            kwargs.get("poll_status_while_running", False)
+            kwargs.get("poll_status_while_running", True)
         )
 
         if not port:
@@ -520,6 +520,11 @@ class GrblSerialDriver(Driver):
                     self._rx_buffer_count += command_len
                     self._sent_gcode_queue.put_nowait((command_len, op_index))
                     await self.serial_transport.send(command_bytes)
+
+                # Yield to the event loop to allow status polling (and other
+                # tasks) to run. Without this, the tight loop might starve the
+                # _connection_loop task.
+                await asyncio.sleep(0)
 
             # Wait for all sent commands to be acknowledged
             if not self._is_cancelled and not self._job_exception:
