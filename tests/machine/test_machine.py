@@ -1435,3 +1435,88 @@ class TestMachine:
         # i.e., Top-Right in World Space (assuming 100x100 bounds)
         res = machine.machine_to_world((0, 0), item_size)
         assert res == (90, 90)
+
+    @pytest.mark.asyncio
+    async def test_sync_wcs_on_connect(
+        self, machine: Machine, mocker, task_mgr: TaskManager
+    ):
+        """
+        Test that machine schedules WCS sync tasks when driver
+        connects.
+        """
+        await wait_for_tasks_to_finish(task_mgr)
+
+        # Mock task manager's add_coroutine method
+        add_coroutine_spy = mocker.spy(task_mgr, "add_coroutine")
+
+        # Simulate driver connection status change to CONNECTED
+        machine._on_driver_connection_status_changed(
+            machine.driver, TransportStatus.CONNECTED
+        )
+
+        # Wait for scheduled tasks to complete
+        await wait_for_tasks_to_finish(task_mgr)
+
+        # Verify that sync_wcs_from_device was scheduled
+        assert add_coroutine_spy.call_count >= 1
+
+        # Check that first call was for sync_wcs_from_device
+        first_call = add_coroutine_spy.call_args_list[0]
+        assert first_call.kwargs["key"] == (machine.id, "sync-wcs-offsets")
+
+    @pytest.mark.asyncio
+    async def test_sync_active_wcs_on_connect(
+        self, machine: Machine, mocker, task_mgr: TaskManager
+    ):
+        """
+        Test that machine schedules active WCS sync task when driver
+        connects.
+        """
+        await wait_for_tasks_to_finish(task_mgr)
+
+        # Mock task manager's add_coroutine method
+        add_coroutine_spy = mocker.spy(task_mgr, "add_coroutine")
+
+        # Simulate driver connection status change to CONNECTED
+        machine._on_driver_connection_status_changed(
+            machine.driver, TransportStatus.CONNECTED
+        )
+
+        # Wait for scheduled tasks to complete
+        await wait_for_tasks_to_finish(task_mgr)
+
+        # Verify that sync_active_wcs_from_device was scheduled
+        assert add_coroutine_spy.call_count >= 2
+
+        # Check that second call was for sync_active_wcs_from_device
+        second_call = add_coroutine_spy.call_args_list[1]
+        assert second_call.kwargs["key"] == (machine.id, "sync-active-wcs")
+
+    @pytest.mark.asyncio
+    async def test_no_sync_on_non_connected_status(
+        self, machine: Machine, mocker, task_mgr: TaskManager
+    ):
+        """
+        Test that machine does not schedule sync tasks when status
+        is not CONNECTED.
+        """
+        await wait_for_tasks_to_finish(task_mgr)
+
+        # Mock the task manager's add_coroutine method
+        add_coroutine_spy = mocker.spy(task_mgr, "add_coroutine")
+
+        # Simulate driver connection status change to DISCONNECTED
+        machine._on_driver_connection_status_changed(
+            machine.driver, TransportStatus.DISCONNECTED
+        )
+
+        # Verify that no sync tasks were scheduled
+        add_coroutine_spy.assert_not_called()
+
+        # Simulate driver connection status change to CONNECTING
+        machine._on_driver_connection_status_changed(
+            machine.driver, TransportStatus.CONNECTING
+        )
+
+        # Still no sync tasks should be scheduled
+        add_coroutine_spy.assert_not_called()

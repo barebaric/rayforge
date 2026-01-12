@@ -371,3 +371,11 @@ class TestSmoothieDriver:
         """Test that run_probe_cycle raises NotImplementedError."""
         with pytest.raises(NotImplementedError):
             await connected_driver.run_probe_cycle(Axis.Z, -10, 100)
+
+    @pytest.mark.asyncio
+    async def test_read_parser_state_returns_none(
+        self, connected_driver: SmoothieDriver
+    ):
+        """Test that read_parser_state returns None (not implemented)."""
+        result = await connected_driver.read_parser_state()
+        assert result is None

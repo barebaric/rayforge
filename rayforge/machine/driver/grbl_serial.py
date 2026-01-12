@@ -39,6 +39,7 @@ from .grbl_util import (
     gcode_to_p_number,
     error_code_to_device_error,
     CommandRequest,
+    parse_grbl_parser_state,
 )
 
 if TYPE_CHECKING:
@@ -821,6 +822,15 @@ class GrblSerialDriver(Driver):
                 offsets[slot] = (float(x_str), float(y_str), float(z_str))
         self.wcs_updated.send(self, offsets=offsets)
         return offsets
+
+    async def read_parser_state(self) -> Optional[str]:
+        """Reads the $G parser state to determine the active WCS."""
+        try:
+            response_lines = await self._execute_command("$G")
+            return parse_grbl_parser_state(response_lines)
+        except DeviceConnectionError as e:
+            logger.error(f"Could not read parser state: {e}")
+            return None
 
     async def run_probe_cycle(
         self, axis: Axis, max_travel: float, feed_rate: int

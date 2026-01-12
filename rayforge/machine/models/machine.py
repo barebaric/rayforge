@@ -291,10 +291,14 @@ class Machine:
                 message=message,
             )
             if status == TransportStatus.CONNECTED:
-                # Sync WCS offsets on connect
+                # Sync all relevant state from device on connect
                 task_mgr.add_coroutine(
                     lambda ctx: self.sync_wcs_from_device(),
-                    key=(self.id, "sync-wcs"),
+                    key=(self.id, "sync-wcs-offsets"),
+                )
+                task_mgr.add_coroutine(
+                    lambda ctx: self.sync_active_wcs_from_device(),
+                    key=(self.id, "sync-active-wcs"),
                 )
 
     def _on_driver_state_changed(self, driver: Driver, state: DeviceState):
@@ -890,6 +894,14 @@ class Machine:
         """Queries the device for current WCS offsets and updates state."""
         if self.is_connected():
             await self.driver.read_wcs_offsets()
+
+    async def sync_active_wcs_from_device(self):
+        """Queries the device for its active WCS and updates state."""
+        if self.is_connected():
+            active_wcs = await self.driver.read_parser_state()
+            if active_wcs:
+                logger.info(f"Synced active WCS from device: '{active_wcs}'")
+                self.set_active_wcs(active_wcs)
 
     def encode_ops(
         self, ops: "Ops", doc: "Doc"
