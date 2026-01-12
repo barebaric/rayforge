@@ -172,6 +172,8 @@ class TestGrblSerialDriver:
         transport_mock = driver.serial_transport
         assert transport_mock is not None
 
+        driver._machine.set_active_wcs("G54")
+
         ops = Ops()
         ops.add(MoveToCommand((10, 10, 0)))
         ops.add(LineToCommand((20, 20, 0)))
