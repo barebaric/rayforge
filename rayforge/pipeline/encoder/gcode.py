@@ -320,6 +320,13 @@ class GcodeEncoder(OpsEncoder):
         if cmd:
             gcode.append(cmd)
 
+    def _get_wcs_prefix(self, context: GcodeContext) -> str:
+        """
+        Returns the G53 prefix if the active WCS is G53.
+        G53 is non-modal and must be applied to every motion line.
+        """
+        return "G53 " if context.machine.active_wcs == "G53" else ""
+
     def _handle_move_to(
         self,
         context: GcodeContext,
@@ -349,7 +356,8 @@ class GcodeEncoder(OpsEncoder):
         # will not be in the dict, preventing a KeyError for dialects that
         # do not have an {f_command} placeholder in their travel_move string.
 
-        gcode.append(self.dialect.travel_move.format(**template_vars))
+        prefix = self._get_wcs_prefix(context)
+        gcode.append(prefix + self.dialect.travel_move.format(**template_vars))
 
     def _handle_line_to(
         self,
@@ -367,8 +375,11 @@ class GcodeEncoder(OpsEncoder):
             if self.cut_speed is not None
             else ""
         )
+
+        prefix = self._get_wcs_prefix(context)
         gcode.append(
-            self.dialect.linear_move.format(
+            prefix
+            + self.dialect.linear_move.format(
                 x=self._coord_format.format(x),
                 y=self._coord_format.format(y),
                 z=self._coord_format.format(z),
