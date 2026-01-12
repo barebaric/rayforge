@@ -8,7 +8,6 @@ from blinker import Signal
 from ..core.doc import Doc
 from ..core.layer import Layer
 from ..core.vectorization_spec import VectorizationSpec
-from ..machine.cmd import MachineCmd
 from ..pipeline.artifact import JobArtifactHandle, JobArtifact
 from ..pipeline.pipeline import Pipeline
 from .asset_cmd import AssetCmd
@@ -98,7 +97,6 @@ class DocEditor:
         self.step = StepCmd(self)
         self.tab = TabCmd(self)
         self.transform = TransformCmd(self)
-        self.machine = MachineCmd(self)
 
     def cleanup(self):
         """
