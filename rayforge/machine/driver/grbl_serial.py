@@ -343,7 +343,9 @@ class GrblSerialDriver(Driver):
                 logger.info("Connection loop cancelled.")
                 break
             except Exception as e:
-                logger.error(f"Unexpected error in connection loop: {e}")
+                logger.error(
+                    f"Unexpected error in connection loop: {e}", exc_info=True
+                )
                 self._update_connection_status(TransportStatus.ERROR, str(e))
             finally:
                 if (
@@ -428,7 +430,9 @@ class GrblSerialDriver(Driver):
                 logger.info("Command queue processing cancelled.")
                 break
             except Exception as e:
-                logger.error(f"Unexpected error in command queue: {e}")
+                logger.error(
+                    f"Unexpected error in command queue: {e}", exc_info=True
+                )
                 self._update_connection_status(TransportStatus.ERROR, str(e))
         logger.debug("Leaving _process_command_queue.")
 
@@ -462,7 +466,7 @@ class GrblSerialDriver(Driver):
         logger.debug(
             f"Starting GRBL streaming job with {len(gcode_lines)} lines."
         )
-
+        job_completed_successfully = False
         try:
             for line_idx, line in enumerate(gcode_lines):
                 if (
@@ -475,9 +479,12 @@ class GrblSerialDriver(Driver):
                         "Stopping G-code sending."
                     )
                     if self.state.status == DeviceStatus.ALARM:
-                        self._job_exception = DeviceConnectionError(
-                            "Machine entered ALARM state during job."
-                        )
+                        # Set the exception but don't raise it yet, let the
+                        # loop terminate naturally.
+                        if not self._job_exception:
+                            self._job_exception = DeviceConnectionError(
+                                "Machine entered ALARM state during job."
+                            )
                     break
 
                 line = line.strip()
@@ -499,17 +506,21 @@ class GrblSerialDriver(Driver):
                 ):
                     self._buffer_has_space.clear()
                     if self.state.status == DeviceStatus.ALARM:
-                        self._job_exception = DeviceConnectionError(
-                            "Machine entered ALARM state during job."
-                        )
+                        if not self._job_exception:
+                            self._job_exception = DeviceConnectionError(
+                                "Machine entered ALARM state during job."
+                            )
                         break
                     await self._buffer_has_space.wait()
-                    if self._is_cancelled or self._job_exception:
-                        raise asyncio.CancelledError(
-                            "Job cancelled while waiting for buffer space"
-                        )
+                    if self._job_exception:
+                        break
+                    if self._is_cancelled:
+                        raise asyncio.CancelledError("Job cancelled")
 
-                if self.state.status == DeviceStatus.ALARM:
+                if (
+                    self._job_exception
+                    or self.state.status == DeviceStatus.ALARM
+                ):
                     break
 
                 async with self._cmd_lock:
@@ -548,22 +559,63 @@ class GrblSerialDriver(Driver):
                 logger.debug(
                     "All G-code sent. Waiting for all 'ok' responses."
                 )
-                await self._sent_gcode_queue.join()
-                logger.debug("All 'ok' responses received.")
+                try:
+                    await asyncio.wait_for(
+                        self._sent_gcode_queue.join(), timeout=10.0
+                    )
+                    logger.debug("All 'ok' responses received.")
+                except asyncio.TimeoutError:
+                    if self._job_exception:
+                        logger.debug(
+                            "Join timed out due to job exception. "
+                            "Raising exception."
+                        )
+                        raise self._job_exception
+                    logger.warning(
+                        "Join timed out without job exception. "
+                        "This may indicate a problem with the device."
+                    )
 
             if self._job_exception:
                 raise self._job_exception
+
+            job_completed_successfully = not self._is_cancelled
+
+        except DeviceConnectionError as e:
+            # Explicitly catch device errors (like ALARM) to prevent
+            # them from falling into the CancelledError block below, which
+            # triggers a soft-reset.
+            logger.warning(
+                f"Job stopping due to device error/alarm: {e}. "
+                "Not sending cancel/soft-reset."
+            )
+            job_completed_successfully = False
+            # Clear the queue to unblock join() if it's waiting
+            while not self._sent_gcode_queue.empty():
+                try:
+                    self._sent_gcode_queue.get_nowait()
+                    self._sent_gcode_queue.task_done()
+                except asyncio.QueueEmpty:
+                    break
+            raise e
 
         except (asyncio.CancelledError, ConnectionError) as e:
             logger.warning(f"Job interrupted: {e!r}")
             # If not cancelled explicitly, send a cancel command to be safe
             if not self._is_cancelled:
+                logger.info(f"Calling cancel() due to interruption: {e!r}")
                 await self.cancel()
+            if isinstance(e, asyncio.CancelledError):
+                job_completed_successfully = False
+            else:
+                raise
         finally:
             self._job_running = False
             self._on_command_done = None
-            # Check if not cancelled, because cancel() already sends this.
-            if not self._is_cancelled:
+            if job_completed_successfully:
+                self.job_finished.send(self)
+            # Signal job termination for UI cleanup, even on failure.
+            elif not self._is_cancelled:
                 self.job_finished.send(self)
             logger.debug("G-code streaming finished.")
 
@@ -580,9 +632,18 @@ class GrblSerialDriver(Driver):
 
         gcode = cast(str, machine_code)
         mapping = op_map.machine_code_to_op if op_map else None
-
         gcode_lines = gcode.splitlines()
-        await self._stream_gcode(gcode_lines, mapping)
+
+        try:
+            await self._stream_gcode(gcode_lines, mapping)
+        except DeviceConnectionError as e:
+            # Catch the device error here to prevent it from propagating up
+            # and tearing down the connection task. The error has already
+            # been logged inside _stream_gcode.
+            logger.warning(
+                f"Job terminated due to device error: {e}. "
+                "Connection remains active."
+            )
 
     async def run_raw(self, gcode: str) -> None:
         """
@@ -590,10 +651,15 @@ class GrblSerialDriver(Driver):
         protocol.
         """
         self._start_job()
-
         gcode_lines = gcode.splitlines()
-
-        await self._stream_gcode(gcode_lines)
+        try:
+            await self._stream_gcode(gcode_lines)
+        except DeviceConnectionError as e:
+            logger.warning(
+                f"Raw G-code terminated due to device error: {e}. "
+                "Connection remains active."
+            )
+            raise
 
     async def cancel(self) -> None:
         logger.debug("Cancel command initiated.")
@@ -606,6 +672,7 @@ class GrblSerialDriver(Driver):
         self._buffer_has_space.set()
 
         if self.serial_transport:
+            logger.info("Sending Soft Reset (Ctrl-X) to device.")
             payload = b"\x18"
             logger.debug(
                 f"TX: {payload!r}",
@@ -1043,7 +1110,6 @@ class GrblSerialDriver(Driver):
                     f"GRBL error: {line}"
                 )
                 self._buffer_has_space.set()  # Unblock run loop to terminate
-                asyncio.create_task(self.cancel())  # Soft-reset the device
             elif line.startswith("ALARM:"):
                 self.command_status_changed.send(
                     self, status=TransportStatus.ERROR, message=line
