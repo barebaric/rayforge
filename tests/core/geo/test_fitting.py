@@ -1,3 +1,4 @@
+import math
 import pytest
 import numpy as np
 
@@ -15,6 +16,7 @@ from rayforge.core.geo.fitting import (
     fit_points_recursive,
     fit_arcs,
     optimize_path_from_array,
+    project_circle_center_to_bisector,
 )
 from rayforge.core.geo.constants import (
     CMD_TYPE_BEZIER,
@@ -267,6 +269,65 @@ def test_fit_circle_to_points_semicircle_accuracy():
     assert np.isclose(yc, 0.0, atol=0.001)
     assert np.isclose(r, 10.0, rtol=0.001)
     assert error < 1e-6
+
+
+def test_project_circle_center_to_bisector_already_on_bisector():
+    """Test center already on bisector remains unchanged."""
+    p1 = (0.0, 0.0, 0.0)
+    p2 = (2.0, 0.0, 0.0)
+    center = (1.0, 1.0)
+    result = project_circle_center_to_bisector(p1, p2, center)
+    assert result == pytest.approx(center, abs=1e-9)
+
+
+def test_project_circle_center_to_bisector_offset_center():
+    """Test center offset from bisector is projected correctly."""
+    p1 = (0.0, 0.0, 0.0)
+    p2 = (2.0, 0.0, 0.0)
+    center = (1.0, 1.0)
+    result = project_circle_center_to_bisector(p1, p2, center)
+    assert result == pytest.approx((1.0, 1.0), abs=1e-9)
+
+
+def test_project_circle_center_to_bisector_diagonal_chord():
+    """Test projection for diagonal chord."""
+    p1 = (0.0, 0.0, 0.0)
+    p2 = (2.0, 2.0, 0.0)
+    center = (3.0, 0.0)
+    result = project_circle_center_to_bisector(p1, p2, center)
+    expected = (2.5, -0.5)
+    assert result == pytest.approx(expected, abs=1e-9)
+
+
+def test_project_circle_center_to_bisector_coincident_points():
+    """Test coincident points return original center."""
+    p1 = (1.0, 1.0, 0.0)
+    p2 = (1.0, 1.0, 0.0)
+    center = (5.0, 5.0)
+    result = project_circle_center_to_bisector(p1, p2, center)
+    assert result == pytest.approx(center, abs=1e-9)
+
+
+def test_project_circle_center_to_bisector_equal_distances():
+    """Test result ensures equal distances to both points."""
+    p1 = (0.0, 0.0, 0.0)
+    p2 = (4.0, 0.0, 0.0)
+    center = (1.0, 2.0)
+    result = project_circle_center_to_bisector(p1, p2, center)
+    dist1 = math.hypot(result[0] - p1[0], result[1] - p1[1])
+    dist2 = math.hypot(result[0] - p2[0], result[1] - p2[1])
+    assert dist1 == pytest.approx(dist2, abs=1e-9)
+
+
+def test_project_circle_center_to_bisector_2d_points():
+    """Test with 2D points (no z coordinate)."""
+    p1 = (0.0, 0.0)
+    p2 = (2.0, 0.0)
+    center = (1.5, 1.0)
+    result = project_circle_center_to_bisector(p1, p2, center)
+    dist1 = math.hypot(result[0] - p1[0], result[1] - p1[1])
+    dist2 = math.hypot(result[0] - p2[0], result[1] - p2[1])
+    assert dist1 == pytest.approx(dist2, abs=1e-9)
 
 
 def test_get_arc_to_polyline_deviation_perfect_arc():
