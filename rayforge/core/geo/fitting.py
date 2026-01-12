@@ -148,6 +148,51 @@ def fit_circle_to_points(
     return center, r, point_error
 
 
+def project_circle_center_to_bisector(
+    p1: Tuple[float, ...], p2: Tuple[float, ...], center: Tuple[float, float]
+) -> Tuple[float, float]:
+    """
+    Adjusts a circle center point so that it lies exactly on the perpendicular
+    bisector of the segment p1-p2.
+
+    This guarantees that dist(center, p1) == dist(center, p2), which is
+    required for G-code arcs to avoid "invalid target" errors (Error 33).
+    It minimizes the movement of the center point.
+    """
+    x1, y1 = p1[:2]
+    x2, y2 = p2[:2]
+    cx, cy = center
+
+    dx = x2 - x1
+    dy = y2 - y1
+    chord_len_sq = dx * dx + dy * dy
+
+    if chord_len_sq < 1e-12:
+        # p1 and p2 are coincident; any center is equidistant.
+        return center
+
+    # Midpoint of the chord
+    mx = (x1 + x2) / 2.0
+    my = (y1 + y2) / 2.0
+
+    # Vector from Midpoint to Center
+    vx = cx - mx
+    vy = cy - my
+
+    # Project M->C vector onto the chord vector.
+    # This gives us the component of the offset that is parallel to the chord.
+    # We want to remove this component to place C on the perpendicular
+    # bisector.
+    dot = vx * dx + vy * dy
+    proj_factor = dot / chord_len_sq
+
+    proj_x = dx * proj_factor
+    proj_y = dy * proj_factor
+
+    # New center = Old center - parallel component
+    return (cx - proj_x, cy - proj_y)
+
+
 def get_arc_to_polyline_deviation(
     points: List[Tuple[float, ...]], center: Tuple[float, float], radius: float
 ) -> float:
@@ -464,6 +509,12 @@ def fit_points_recursive(
         fast_fit = fit_circle_3_points(p1, p2, p3)
         if fast_fit:
             center, radius = fast_fit
+
+            # Ensure mathematically perfect arc (Start R == End R)
+            center = project_circle_center_to_bisector(p1, p3, center)
+            # Re-calculate radius to align perfectly with start/end
+            radius = math.hypot(p1[0] - center[0], p1[1] - center[1])
+
             # We still must check if the arc deviates too far from the
             # original polyline segments (p1-p2 and p2-p3).
             arc_dev = get_arc_to_polyline_deviation(
@@ -483,8 +534,22 @@ def fit_points_recursive(
     subset = points[start : end + 1]
     fit_result = fit_circle_to_points(subset)
     if fit_result:
-        center, radius, _ = fit_result
+        center, _, _ = fit_result
+
+        # Project center to bisector to guarantee R_start == R_end.
+        # This prevents G-code error 33 ("invalid target") on strict
+        # controllers.
+        center = project_circle_center_to_bisector(
+            points[start], points[end], center
+        )
+        # Recalculate radius based on start point and corrected center
+        radius = math.hypot(
+            points[start][0] - center[0], points[start][1] - center[1]
+        )
+
+        # Check deviation against the *corrected* arc
         arc_dev = get_arc_to_polyline_deviation(subset, center, radius)
+
         if arc_dev < tolerance:
             end_pt = points[end]
             start_pt = points[start]
