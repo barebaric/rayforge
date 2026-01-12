@@ -725,6 +725,7 @@ class MainWindow(Adw.ApplicationWindow):
         if config.machine:
             is_granular = config.machine.reports_granular_progress
         self.status_monitor.start_live_view(is_granular)
+        self._update_actions_and_ui()
 
     def _on_job_progress_updated(self, metrics: dict):
         """Callback for when job progress is updated."""
@@ -747,6 +748,9 @@ class MainWindow(Adw.ApplicationWindow):
             # will never fire, so we must stop the live view here to prevent
             # the UI from getting stuck.
             self.status_monitor.stop_live_view()
+
+        # Ensure UI is updated (e.g. Cancel button disabled, others enabled)
+        self._update_actions_and_ui()
 
     def _on_gcode_line_activated(self, sender, *, line_number: int):
         """
@@ -1455,7 +1459,9 @@ class MainWindow(Adw.ApplicationWindow):
             # A job/task is running if the machine is not idle or a UI task is
             # active.
             is_job_or_task_active = (
-                device_status != DeviceStatus.IDLE or task_mgr.has_tasks()
+                device_status != DeviceStatus.IDLE
+                or task_mgr.has_tasks()
+                or self.machine_cmd.is_job_running
             )
 
             am.get_action("machine-home").set_enabled(
@@ -1504,11 +1510,15 @@ class MainWindow(Adw.ApplicationWindow):
                 self.toolbar.hold_button.set_child(self.toolbar.hold_off_icon)
                 self.toolbar.hold_button.set_tooltip_text(_("Pause machine"))
 
-            cancel_sensitive = device_status in (
-                DeviceStatus.RUN,
-                DeviceStatus.HOLD,
-                DeviceStatus.JOG,
-                DeviceStatus.CYCLE,
+            cancel_sensitive = (
+                device_status
+                in (
+                    DeviceStatus.RUN,
+                    DeviceStatus.HOLD,
+                    DeviceStatus.JOG,
+                    DeviceStatus.CYCLE,
+                )
+                or self.machine_cmd.is_job_running
             )
             am.get_action("machine-cancel").set_enabled(cancel_sensitive)
 

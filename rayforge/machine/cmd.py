@@ -29,6 +29,11 @@ class MachineCmd:
         self._current_monitor: Optional[JobMonitor] = None
         self._on_progress_callback: Optional[Callable[[dict], None]] = None
 
+    @property
+    def is_job_running(self) -> bool:
+        """Returns True if a monitored job is currently running."""
+        return self._current_monitor is not None
+
     def home_machine(self, machine: "Machine"):
         """Adds a 'home' task to the task manager for the given machine."""
         driver = machine.driver
