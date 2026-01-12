@@ -83,30 +83,34 @@ class MachineCmd:
                 machine.driver.job_finished.send(machine.driver)
             return
 
-        # Store the callback and create the monitor
+        # Store the callback
         self._on_progress_callback = on_progress
-        self._current_monitor = JobMonitor(ops)
-
-        if self._on_progress_callback:
-            logger.debug("Connecting progress handler to JobMonitor")
-            self._current_monitor.progress_updated.connect(
-                self._progress_handler
-            )
 
         def cleanup_monitor():
             """Cleans up the monitor when the job is done."""
             logger.debug("Job finished, cleaning up monitor.")
             if self._current_monitor:
-                self._current_monitor.progress_updated.disconnect(
-                    self._progress_handler
-                )
-                self._current_monitor = None
+                try:
+                    self._current_monitor.progress_updated.disconnect(
+                        self._progress_handler
+                    )
+                finally:
+                    # Ensure the flag is cleared even if disconnect fails.
+                    self._current_monitor = None
             self._on_progress_callback = None
 
-        # Signal that the job has started.
-        self._scheduler(self.job_started.send, self)
-
         try:
+            self._current_monitor = JobMonitor(ops)
+
+            if self._on_progress_callback:
+                logger.debug("Connecting progress handler to JobMonitor")
+                self._current_monitor.progress_updated.connect(
+                    self._progress_handler
+                )
+
+            # Signal that the job has started.
+            self._scheduler(self.job_started.send, self)
+
             if machine.reports_granular_progress:
                 await machine.driver.run(
                     ops,
