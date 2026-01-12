@@ -94,6 +94,10 @@ nav:
           - Pipeline: docs/developer/pipeline.md
           - Task Manager: docs/developer/tasker.md
           - Drivers: docs/developer/driver.md
+      - API Docs:
+          - Geo Module: docs/developer/api-docs-geo.md
+          - Ops API: docs/developer/api-docs-ops.md
+          - Undo Manager: docs/developer/api-docs-undo.md
       - Plugins:
           - Plugin Developer Guide: docs/developer/plugin-docs.md
   - Contributing:
