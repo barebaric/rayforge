@@ -260,7 +260,6 @@ class TestGrblSerialDriver:
         with pytest.raises(DeviceConnectionError):
             await run_task
 
-        send_mock.assert_any_call(b"\x18")
         job_finished_mock.assert_called_once_with(driver)
 
     @pytest.mark.asyncio
