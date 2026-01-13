@@ -729,7 +729,6 @@ class MainWindow(Adw.ApplicationWindow):
 
     def _on_job_progress_updated(self, metrics: dict):
         """Callback for when job progress is updated."""
-        logger.debug(f"Job progress updated: {metrics}")
         self.status_monitor.update_live_progress(metrics)
 
     def _on_job_finished(self, sender):
