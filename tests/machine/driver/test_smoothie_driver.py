@@ -290,8 +290,8 @@ class TestSmoothieDriver:
 
         # Check that the server received the correct G-code
         received_str = smoothie_server.received_data.decode()
-        assert "G0 X10.000 Y10.000 Z0.000" in received_str
-        assert "G1 X20.000 Y20.000 Z0.000" in received_str
+        assert "G0 X10 Y10 Z0" in received_str
+        assert "G1 X20 Y20 Z0" in received_str
 
         # Check that callbacks were fired
         job_finished_mock.assert_called_once_with(driver)
