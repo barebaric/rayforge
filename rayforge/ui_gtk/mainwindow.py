@@ -974,7 +974,6 @@ class MainWindow(Adw.ApplicationWindow):
         Synchronizes the toolbar WCS dropdown with the machine's active state.
         """
         if not machine:
-            # Maybe disable it or set to G53 default?
             return
 
         # We assume the toolbar knows the list of available WCS.
@@ -1569,7 +1568,9 @@ class MainWindow(Adw.ApplicationWindow):
 
             # WCS UI
             self.toolbar.wcs_dropdown.set_sensitive(not is_job_or_task_active)
-            is_g53 = active_machine.active_wcs == "G53"
+            is_g53 = (
+                active_machine.active_wcs == active_machine.machine_space_wcs
+            )
 
             # Allow zeroing if connected OR if it's the dummy driver
             can_zero = (

@@ -163,6 +163,24 @@ class Driver(ABC):
     # report granular progress updates during the execution of a job.
     reports_granular_progress: bool = False
 
+    @property
+    @abstractmethod
+    def machine_space_wcs(self) -> str:
+        """
+        Returns the machine space coordinate system identifier.
+        This is an immutable coordinate system with zero offset.
+        """
+        pass
+
+    @property
+    @abstractmethod
+    def machine_space_wcs_display_name(self) -> str:
+        """
+        Returns a human-readable display name for the machine space
+        coordinate system.
+        """
+        pass
+
     def __init__(self, context: RayforgeContext, machine: "Machine"):
         self._context = context
         self._machine = machine

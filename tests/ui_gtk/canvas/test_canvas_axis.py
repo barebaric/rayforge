@@ -56,9 +56,7 @@ class TestAxisRendererLayout:
 
     def test_initialization_with_custom_font_size(self):
         """Test that the renderer initializes with custom font size."""
-        r = AxisRenderer(
-            width_mm=500.0, label_font_size=16.0
-        )
+        r = AxisRenderer(width_mm=500.0, label_font_size=16.0)
         assert r.label_font_size == 16.0
 
     def test_set_label_font_size(self):

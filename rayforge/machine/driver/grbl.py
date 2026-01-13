@@ -78,6 +78,14 @@ class GrblNetworkDriver(Driver):
         self._cmd_lock = asyncio.Lock()
 
     @property
+    def machine_space_wcs(self) -> str:
+        return "G53"
+
+    @property
+    def machine_space_wcs_display_name(self) -> str:
+        return _("Machine Coordinates (G53)")
+
+    @property
     def resource_uri(self) -> Optional[str]:
         if self.host:
             # We assume port 80 is the control port for locking purposes

@@ -51,6 +51,8 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
+MACHINE_SPACE_WCS = "MACHINE"
+
 
 def _raise_error(*args, **kwargs):
     raise RuntimeError("Cannot schedule from worker process")
@@ -148,6 +150,22 @@ class Machine:
         Returns a sorted list of supported mutable Work Coordinate Systems.
         """
         return sorted(list(self.wcs_offsets.keys()))
+
+    @property
+    def machine_space_wcs(self) -> str:
+        """
+        Returns the identifier for the machine space coordinate system.
+        Delegates to the driver's machine_space_wcs property.
+        """
+        return self.driver.machine_space_wcs
+
+    @property
+    def machine_space_wcs_display_name(self) -> str:
+        """
+        Returns the display name for the machine space coordinate system.
+        Delegates to the driver's machine_space_wcs_display_name property.
+        """
+        return self.driver.machine_space_wcs_display_name
 
     async def connect(self):
         """Public method to connect the driver."""

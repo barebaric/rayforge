@@ -90,6 +90,14 @@ class GrblSerialDriver(Driver):
         self._poll_status_while_running: bool = True
 
     @property
+    def machine_space_wcs(self) -> str:
+        return "G53"
+
+    @property
+    def machine_space_wcs_display_name(self) -> str:
+        return _("Machine Coordinates (G53)")
+
+    @property
     def resource_uri(self) -> Optional[str]:
         if self.serial_transport and self.serial_transport.port:
             return f"serial://{self.serial_transport.port}"
