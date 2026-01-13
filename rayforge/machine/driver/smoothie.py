@@ -68,6 +68,14 @@ class SmoothieDriver(Driver):
         self._ok_event = asyncio.Event()
 
     @property
+    def machine_space_wcs(self) -> str:
+        return "G53"
+
+    @property
+    def machine_space_wcs_display_name(self) -> str:
+        return _("Machine Coordinates (G53)")
+
+    @property
     def resource_uri(self) -> Optional[str]:
         if self.host:
             return f"tcp://{self.host}:{self.port}"

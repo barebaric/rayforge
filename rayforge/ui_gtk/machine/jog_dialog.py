@@ -369,7 +369,7 @@ class JogDialog(PatchedDialogWindow):
             else (None, None, None)
         )
 
-        # Check for unlisted WCS (e.g. G53 or unexpected)
+        # Check for unlisted WCS (e.g. machine space or unexpected)
         selected_idx = self.wcs_row.get_selected()
         if 0 <= selected_idx < len(self.wcs_list):
             selected_wcs_ui = self.wcs_list[selected_idx]
@@ -378,7 +378,7 @@ class JogDialog(PatchedDialogWindow):
 
         pos_x, pos_y, pos_z = (None, None, None)
         if m_x is not None and m_y is not None and m_z is not None:
-            if selected_wcs_ui == "G53":
+            if selected_wcs_ui == self.machine.machine_space_wcs:
                 pos_x, pos_y, pos_z = m_x, m_y, m_z
             else:
                 offset = self.machine.wcs_offsets.get(
@@ -402,14 +402,15 @@ class JogDialog(PatchedDialogWindow):
             self.position_row.set_subtitle(pos_str if pos_str else "---")
 
         # 4. Update Button Sensitivity
-        # Cannot set offsets for G53 (Machine Coordinates)
-        is_g53 = current_wcs == "G53"
+        # Cannot set offsets for machine space WCS
+        is_mcs = current_wcs == self.machine.machine_space_wcs
 
-        # Zero Here requires machine position (Active) and writable WCS (!G53)
-        can_zero = is_active and not is_g53
+        # Zero Here requires machine position (Active) and writable WCS
+        # (not machine space)
+        can_zero = is_active and not is_mcs
 
-        # Manual entry requires writable WCS (!G53), works offline
-        can_manual = not is_g53
+        # Manual entry requires writable WCS, works offline
+        can_manual = not is_mcs
 
         self.zero_x_btn.set_sensitive(can_zero)
         self.zero_y_btn.set_sensitive(can_zero)
@@ -417,8 +418,10 @@ class JogDialog(PatchedDialogWindow):
         self.zero_here_btn.set_sensitive(can_zero)
         self.edit_offsets_btn.set_sensitive(can_manual)
 
-        if is_g53:
-            msg = _("Offsets cannot be set in Machine Coordinate Mode (G53)")
+        if is_mcs:
+            msg = _(
+                "Offsets cannot be set in Machine Coordinate Mode ({wcs})"
+            ).format(wcs=self.machine.machine_space_wcs_display_name)
         elif not is_active:
             msg = _("Machine must be connected to set Zero Here")
         else:

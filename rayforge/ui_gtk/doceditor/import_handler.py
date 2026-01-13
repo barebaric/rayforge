@@ -87,9 +87,10 @@ def _on_file_selected(dialog, result, user_data):
             Gio.FileQueryInfoFlags.NONE,
             None,
         )
-        mime_type = Gio.content_type_get_mime_type(
-            file_info.get_content_type()
-        ) or file_info.get_content_type()
+        mime_type = (
+            Gio.content_type_get_mime_type(file_info.get_content_type())
+            or file_info.get_content_type()
+        )
 
         # Ask the backend what to do with this file
         action = editor.file.analyze_import_target(file_path, mime_type)

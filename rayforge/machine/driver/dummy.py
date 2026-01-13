@@ -53,6 +53,22 @@ class NoDeviceDriver(Driver):
             if key not in self._offsets:
                 self._offsets[key] = (0.0, 0.0, 0.0)
 
+    @property
+    def machine_space_wcs(self) -> str:
+        """
+        Returns the machine space coordinate system identifier.
+        This is an immutable coordinate system with zero offset.
+        """
+        return "MACHINE"
+
+    @property
+    def machine_space_wcs_display_name(self) -> str:
+        """
+        Returns a human-readable display name for the machine space
+        coordinate system.
+        """
+        return _("Machine Coordinates")
+
     @classmethod
     def precheck(cls, **kwargs: Any) -> None:
         pass
