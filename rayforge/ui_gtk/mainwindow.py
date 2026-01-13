@@ -1510,16 +1510,7 @@ class MainWindow(Adw.ApplicationWindow):
                 self.toolbar.hold_button.set_child(self.toolbar.hold_off_icon)
                 self.toolbar.hold_button.set_tooltip_text(_("Pause machine"))
 
-            cancel_sensitive = (
-                device_status
-                in (
-                    DeviceStatus.RUN,
-                    DeviceStatus.HOLD,
-                    DeviceStatus.JOG,
-                    DeviceStatus.CYCLE,
-                )
-                or self.machine_cmd.is_job_running
-            )
+            cancel_sensitive = conn_status == TransportStatus.CONNECTED
             am.get_action("machine-cancel").set_enabled(cancel_sensitive)
 
             clear_alarm_sensitive = device_status == DeviceStatus.ALARM
