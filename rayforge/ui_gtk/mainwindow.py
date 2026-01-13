@@ -1686,7 +1686,7 @@ class MainWindow(Adw.ApplicationWindow):
         if focus_state and focus_state.get_boolean():
             focus_action.change_state(GLib.Variant.new_boolean(False))
 
-        self.machine_cmd.home_machine(config.machine)
+        self.machine_cmd.home(config.machine)
 
     def _run_machine_job(self, job_coroutine: Coroutine):
         """

@@ -651,7 +651,7 @@ class TestMachine:
         select_tool_spy = mocker.spy(machine.driver, "select_tool")
 
         # Home
-        machine_cmd.home_machine(machine)
+        machine_cmd.home(machine)
         await wait_for_tasks_to_finish(task_mgr)
         home_spy.assert_called_once()
 
