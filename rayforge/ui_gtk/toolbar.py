@@ -296,10 +296,10 @@ class MainToolbar(Gtk.Box):
         self.machine_warning_box = Gtk.Box(spacing=6)
         self.machine_warning_box.set_margin_end(12)
         warning_icon = get_icon("warning-symbolic")
-        warning_label = Gtk.Label(label=_("Machine not fully configured"))
-        warning_label.add_css_class("warning-label")
+        self.warning_label = Gtk.Label(label=_("Machine not fully configured"))
+        self.warning_label.add_css_class("warning-label")
         self.machine_warning_box.append(warning_icon)
-        self.machine_warning_box.append(warning_label)
+        self.machine_warning_box.append(self.warning_label)
         self.machine_warning_box.set_tooltip_text(
             _("Machine driver is missing required settings. Click to edit.")
         )
@@ -350,3 +350,12 @@ class MainToolbar(Gtk.Box):
         if selected_item:
             wcs_str = selected_item.get_string()
             self.wcs_selected.send(self, wcs=wcs_str)
+
+    def set_machine_warning(
+        self, error_title: str, error_code: int, error_description: str
+    ):
+        """
+        Update the machine warning label with title, code and description.
+        """
+        self.warning_label.set_label(f"{error_title} ({error_code})")
+        self.machine_warning_box.set_tooltip_text(error_description)

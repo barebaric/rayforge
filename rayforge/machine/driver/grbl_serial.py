@@ -772,6 +772,8 @@ class GrblSerialDriver(Driver):
         # Toggle sequence
         await self._execute_command(temp_wcs)
         await self._execute_command(active_wcs)
+        self.state.error = None
+        self.state_changed.send(self, state=self.state)
 
     async def move_to(self, pos_x, pos_y) -> None:
         dialect = self._machine.dialect
@@ -789,6 +791,8 @@ class GrblSerialDriver(Driver):
     async def clear_alarm(self) -> None:
         dialect = self._machine.dialect
         await self._execute_command(dialect.clear_alarm)
+        self.state.error = None
+        self.state_changed.send(self, state=self.state)
 
     async def set_power(self, head: "Laser", percent: float) -> None:
         """
@@ -1113,6 +1117,9 @@ class GrblSerialDriver(Driver):
                         "was empty. Ignoring."
                     )
             elif line.startswith("error:"):
+                error_code = line.split(":")[1].strip()
+                self.state.error = error_code_to_device_error(error_code)
+                self.state_changed.send(self, state=self.state)
                 self.command_status_changed.send(
                     self, status=TransportStatus.ERROR, message=line
                 )
@@ -1125,6 +1132,9 @@ class GrblSerialDriver(Driver):
                 )
                 self._buffer_has_space.set()  # Unblock run loop to terminate
             elif line.startswith("ALARM:"):
+                alarm_code = line.split(":")[1].strip()
+                self.state.error = error_code_to_device_error(alarm_code)
+                self.state_changed.send(self, state=self.state)
                 self.command_status_changed.send(
                     self, status=TransportStatus.ERROR, message=line
                 )
@@ -1158,12 +1168,21 @@ class GrblSerialDriver(Driver):
                 request.finished.set()
 
         elif line.startswith("error:"):
-            # This is a COMMAND error, not a CONNECTION error.
+            error_code = line.split(":")[1].strip()
+            self.state.error = error_code_to_device_error(error_code)
+            self.state_changed.send(self, state=self.state)
             self.command_status_changed.send(
                 self, status=TransportStatus.ERROR, message=line
             )
             if request:
                 request.finished.set()
+        elif line.startswith("ALARM:"):
+            alarm_code = line.split(":")[1].strip()
+            self.state.error = error_code_to_device_error(alarm_code)
+            self.state_changed.send(self, state=self.state)
+            self.command_status_changed.send(
+                self, status=TransportStatus.ERROR, message=line
+            )
         else:
             # This could be a welcome message, an alarm, or a setting line
             logger.debug(f"Received informational line: {line}")
