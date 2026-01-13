@@ -1381,6 +1381,13 @@ class MainWindow(Adw.ApplicationWindow):
         self.surface.update_from_doc()
         self._update_macros_menu()
         self._update_actions_and_ui()
+
+        # Configure WCS list in toolbar
+        if config.machine:
+            self.toolbar.configure_wcs_list(config.machine.supported_wcs)
+        else:
+            self.toolbar.configure_wcs_list([])
+
         self._update_wcs_dropdown(config.machine)
 
         # Update theme
@@ -1434,6 +1441,7 @@ class MainWindow(Adw.ApplicationWindow):
             conn_status = active_machine.connection_status
             state = active_machine.device_state
             active_driver = active_machine.driver
+            is_dummy = isinstance(active_driver, NoDeviceDriver)
 
             can_export = doc.has_result() and not task_mgr.has_tasks()
             am.get_action("export").set_enabled(can_export)
@@ -1463,8 +1471,13 @@ class MainWindow(Adw.ApplicationWindow):
 
             # A job/task is running if the machine is not idle or a UI task is
             # active.
+            machine_processing = (
+                conn_status == TransportStatus.CONNECTED
+                and device_status != DeviceStatus.IDLE
+            )
+
             is_job_or_task_active = (
-                device_status != DeviceStatus.IDLE
+                machine_processing
                 or task_mgr.has_tasks()
                 or self.machine_cmd.is_job_running
             )
@@ -1557,7 +1570,13 @@ class MainWindow(Adw.ApplicationWindow):
             # WCS UI
             self.toolbar.wcs_dropdown.set_sensitive(not is_job_or_task_active)
             is_g53 = active_machine.active_wcs == "G53"
-            can_zero = connected and not is_g53 and not is_job_or_task_active
+
+            # Allow zeroing if connected OR if it's the dummy driver
+            can_zero = (
+                (connected or is_dummy)
+                and not is_g53
+                and not is_job_or_task_active
+            )
             am.get_action("zero-here").set_enabled(can_zero)
 
         # Update actions that don't depend on the machine state

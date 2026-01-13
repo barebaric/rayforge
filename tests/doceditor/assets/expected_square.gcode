@@ -1,5 +1,6 @@
 G21 ;Set units to mm
 G90 ;Absolute positioning
+G54
 T0
 G0 X95.049 Y104.951 Z0.000
 M4 S500
