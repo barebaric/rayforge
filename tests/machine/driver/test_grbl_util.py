@@ -185,55 +185,72 @@ class TestRecalculatePositions:
         mpos = (100.0, 200.0, 50.0)
         wpos = (None, None, None)
         wco = (10.0, 20.0, 5.0)
-        result_mpos, result_wpos = _recalculate_positions(
-            mpos, wpos, wco, mpos_found=True, wpos_found=False
+        result_mpos, result_wpos, result_wco = _recalculate_positions(
+            mpos, wpos, wco, mpos_found=True, wpos_found=False, wco_found=True
         )
         assert result_mpos == mpos
         assert result_wpos == (90.0, 180.0, 45.0)
+        assert result_wco == wco
 
     def test_recalculate_mpos_from_wpos_and_wco(self):
         """Test recalculating MPos from WPos and WCO."""
         mpos = (None, None, None)
         wpos = (90.0, 180.0, 45.0)
         wco = (10.0, 20.0, 5.0)
-        result_mpos, result_wpos = _recalculate_positions(
-            mpos, wpos, wco, mpos_found=False, wpos_found=True
+        result_mpos, result_wpos, result_wco = _recalculate_positions(
+            mpos, wpos, wco, mpos_found=False, wpos_found=True, wco_found=True
         )
         assert result_mpos == (100.0, 200.0, 50.0)
         assert result_wpos == wpos
+        assert result_wco == wco
+
+    def test_infer_wco_from_mpos_and_wpos(self):
+        """Test inferring WCO from MPos and WPos."""
+        mpos = (100.0, 200.0, 50.0)
+        wpos = (90.0, 180.0, 45.0)
+        wco = (0.0, 0.0, 0.0)  # Default/stale WCO
+        result_mpos, result_wpos, result_wco = _recalculate_positions(
+            mpos, wpos, wco, mpos_found=True, wpos_found=True, wco_found=False
+        )
+        assert result_mpos == mpos
+        assert result_wpos == wpos
+        assert result_wco == (10.0, 20.0, 5.0)
 
     def test_no_recalculation_when_mpos_not_found(self):
         """Test no recalculation when MPos not found."""
         mpos = (None, None, None)
         wpos = (90.0, 180.0, 45.0)
         wco = (10.0, 20.0, 5.0)
-        result_mpos, result_wpos = _recalculate_positions(
-            mpos, wpos, wco, mpos_found=False, wpos_found=False
+        result_mpos, result_wpos, result_wco = _recalculate_positions(
+            mpos, wpos, wco, mpos_found=False, wpos_found=False, wco_found=True
         )
         assert result_mpos == mpos
         assert result_wpos == wpos
+        assert result_wco == wco
 
     def test_no_recalculation_when_wco_incomplete(self):
         """Test no recalculation when WCO is incomplete."""
         mpos = (100.0, 200.0, 50.0)
         wpos = (None, None, None)
         wco = (10.0, None, 5.0)
-        result_mpos, result_wpos = _recalculate_positions(
-            mpos, wpos, wco, mpos_found=True, wpos_found=False
+        result_mpos, result_wpos, result_wco = _recalculate_positions(
+            mpos, wpos, wco, mpos_found=True, wpos_found=False, wco_found=True
         )
         assert result_mpos == mpos
         assert result_wpos == wpos
+        assert result_wco == wco
 
     def test_no_recalculation_when_mpos_incomplete(self):
         """Test no recalculation when MPos is incomplete."""
         mpos = (100.0, None, 50.0)
         wpos = (None, None, None)
         wco = (10.0, 20.0, 5.0)
-        result_mpos, result_wpos = _recalculate_positions(
-            mpos, wpos, wco, mpos_found=True, wpos_found=False
+        result_mpos, result_wpos, result_wco = _recalculate_positions(
+            mpos, wpos, wco, mpos_found=True, wpos_found=False, wco_found=True
         )
         assert result_mpos == mpos
         assert result_wpos == wpos
+        assert result_wco == wco
 
 
 class TestParseState:
@@ -254,6 +271,16 @@ class TestParseState:
             default,
         )
         assert result.status == DeviceStatus.IDLE
+        assert result.machine_pos == (100.0, 200.0, 50.0)
+        assert result.work_pos == (90.0, 180.0, 45.0)
+        assert result.wco == (10.0, 20.0, 5.0)
+
+    def test_parse_state_infers_wco(self):
+        """
+        Test that WCO is inferred if missing but MPos and WPos are present.
+        """
+        default = DeviceState()
+        result = parse_state("<Idle|MPos:100,200,50|WPos:90,180,45>", default)
         assert result.machine_pos == (100.0, 200.0, 50.0)
         assert result.work_pos == (90.0, 180.0, 45.0)
         assert result.wco == (10.0, 20.0, 5.0)
@@ -279,6 +306,7 @@ class TestParseState:
         result = parse_state("<Idle|MPos:100,200,50|WCO:10,20,5>", default)
         assert result.machine_pos == (100.0, 200.0, 50.0)
         assert result.work_pos == (90.0, 180.0, 45.0)
+        assert result.wco == (10.0, 20.0, 5.0)
 
     def test_parse_state_recalculates_mpos(self):
         """Test that MPos is recalculated from WPos and WCO."""
@@ -286,6 +314,7 @@ class TestParseState:
         result = parse_state("<Idle|WPos:90,180,45|WCO:10,20,5>", default)
         assert result.work_pos == (90.0, 180.0, 45.0)
         assert result.machine_pos == (100.0, 200.0, 50.0)
+        assert result.wco == (10.0, 20.0, 5.0)
 
     def test_parse_state_preserves_default_values(self):
         """Test that default values are preserved when not in input."""
