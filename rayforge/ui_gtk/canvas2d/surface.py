@@ -10,7 +10,7 @@ from ...core.layer import Layer
 from ...core.stock import StockItem
 from ...core.workpiece import WorkPiece
 from ...machine.models.machine import Machine
-from ..canvas import WorldSurface, CanvasElement
+from ..canvas import WorldSurface, Canvas, CanvasElement
 from .elements.stock import StockElement
 from .elements.workpiece import WorkPieceElement
 from .elements.group import GroupElement
@@ -547,10 +547,9 @@ class WorkSurface(WorldSurface):
             ctx, self.view_transform, width, height, origin_offset_mm=offset
         )
 
-        # Now, delegate to the base Canvas's snapshot implementation, which
-        # will correctly apply the view_transform and render all elements
-        # (which are in physical machine coordinates) and selection handles.
-        super(WorkSurface, self).do_snapshot(snapshot)
+        # We call Canvas.do_snapshot directly to bypass WorldSurface,
+        # which would draw the grid and labels again without the WCS offset.
+        Canvas.do_snapshot(self, snapshot)
 
     def _rebuild_view_transform(self) -> bool:
         """

@@ -26,6 +26,20 @@ def mock_context(mocker) -> MagicMock:
     return mock
 
 
+@pytest.fixture
+def mock_context_with_font_size(mocker) -> MagicMock:
+    """Provides a mocked Cairo context with font size tracking."""
+    mock = mocker.MagicMock(spec=cairo.Context)
+    mock.text_extents.return_value = MagicMock(width=10, height=12)
+    mock.font_size = None
+
+    def capture_font_size(size):
+        mock.font_size = size
+
+    mock.set_font_size.side_effect = capture_font_size
+    return mock
+
+
 class TestAxisRendererLayout:
     """Tests for layout calculations and adaptive sizing."""
 
@@ -38,6 +52,21 @@ class TestAxisRendererLayout:
         assert r.y_axis_down is True
         assert r.x_axis_negative is True
         assert r.show_grid is True
+        assert r.label_font_size == 12.0
+
+    def test_initialization_with_custom_font_size(self):
+        """Test that the renderer initializes with custom font size."""
+        r = AxisRenderer(
+            width_mm=500.0, label_font_size=16.0
+        )
+        assert r.label_font_size == 16.0
+
+    def test_set_label_font_size(self):
+        """Test setting the label font size."""
+        r = AxisRenderer(width_mm=500.0)
+        assert r.label_font_size == 12.0
+        r.set_label_font_size(18.0)
+        assert r.label_font_size == 18.0
 
     def test_get_content_layout(self, renderer):
         """Test that the content area is calculated correctly."""
@@ -47,6 +76,15 @@ class TestAxisRendererLayout:
         assert w > 0 and h > 0
         # Aspect ratio should be preserved
         assert np.isclose(w / h, WORLD_W / WORLD_H)
+
+    def test_font_size_affects_layout(self, renderer):
+        """Test that changing font size affects the layout calculations."""
+        x1, y1, w1, h1 = renderer.get_content_layout(WIDGET_W, WIDGET_H)
+        renderer.set_label_font_size(20.0)
+        x2, y2, w2, h2 = renderer.get_content_layout(WIDGET_W, WIDGET_H)
+        # Larger font should result in smaller content area
+        assert w2 < w1
+        assert h2 < h1
 
     def test_get_base_pixels_per_mm(self, renderer):
         """Test the calculation of the base pixels-per-millimeter scale."""
@@ -125,16 +163,20 @@ class TestAxisRendererDrawing:
         mock_context.move_to.assert_any_call(60.0, 0.0)  # Vertical at x=60
         mock_context.line_to.assert_any_call(60.0, 100.0)
 
-    def test_draw_labels_no_offset(self, renderer, mock_context):
+    def test_draw_labels_no_offset(
+        self, renderer, mock_context_with_font_size
+    ):
         """Verify labels are drawn correctly with no offset."""
         transform = Matrix.identity()
         renderer._draw_axis_and_labels(
-            mock_context, transform, 10.0, (0, 0, 0)
+            mock_context_with_font_size, transform, 10.0, (0, 0, 0)
         )
+        # Verify font size is set
+        assert mock_context_with_font_size.font_size == 12.0
 
         # Check if the text "20" was drawn for the X axis.
         # The preceding move_to call should be at world_x = 20
-        calls = mock_context.method_calls
+        calls = mock_context_with_font_size.method_calls
         found_label = False
         for i, c in enumerate(calls):
             if c == call.show_text("20") and i > 0:
@@ -148,13 +190,19 @@ class TestAxisRendererDrawing:
                     break
         assert found_label, 'Label "20" not found at the correct X position'
 
-    def test_draw_labels_with_offset(self, renderer, mock_context):
+    def test_draw_labels_with_offset(
+        self, renderer, mock_context_with_font_size
+    ):
         """Verify labels are drawn correctly with a WCS offset."""
         transform = Matrix.identity()
         offset = (50.0, 25.0, 0.0)
-        renderer._draw_axis_and_labels(mock_context, transform, 10.0, offset)
+        renderer._draw_axis_and_labels(
+            mock_context_with_font_size, transform, 10.0, offset
+        )
+        # Verify font size is set
+        assert mock_context_with_font_size.font_size == 12.0
 
-        calls = mock_context.method_calls
+        calls = mock_context_with_font_size.method_calls
         # The label "10" should be physically located at world_x = 50 + 10 = 60
         found_label_10 = False
         for i, c in enumerate(calls):
@@ -181,16 +229,18 @@ class TestAxisRendererDrawing:
             'Label "-50" not found at physical position x=0'
         )
 
-    def test_draw_labels_no_duplicate_zero(self, renderer, mock_context):
+    def test_draw_labels_no_duplicate_zero(
+        self, renderer, mock_context_with_font_size
+    ):
         """Verify the '0' label is only drawn once at the origin."""
         transform = Matrix.identity()
         renderer._draw_axis_and_labels(
-            mock_context, transform, 10.0, (0, 0, 0)
+            mock_context_with_font_size, transform, 10.0, (0, 0, 0)
         )
 
         # Count how many times show_text was called with "0" or "0.0"
         zero_label_count = 0
-        for c in mock_context.method_calls:
+        for c in mock_context_with_font_size.method_calls:
             if c[0] == "show_text" and c[1][0] in (
                 "0",
                 "0.0",
@@ -202,3 +252,15 @@ class TestAxisRendererDrawing:
             f"Expected '0' label to be drawn once, but it was drawn "
             f"{zero_label_count} times."
         )
+
+    def test_draw_labels_with_custom_font_size(
+        self, renderer, mock_context_with_font_size
+    ):
+        """Verify custom font size is applied when drawing labels."""
+        renderer.set_label_font_size(16.0)
+        transform = Matrix.identity()
+        renderer._draw_axis_and_labels(
+            mock_context_with_font_size, transform, 10.0, (0, 0, 0)
+        )
+        # Verify custom font size is set
+        assert mock_context_with_font_size.font_size == 16.0
