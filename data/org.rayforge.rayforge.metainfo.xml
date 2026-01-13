@@ -5,8 +5,9 @@
     <name translate="no">Samuel Abels</name>
   </developer>
   <content_rating type="oars-1.1" />
-  <url type="homepage">https://github.com/barebaric/rayforge</url>
+  <url type="homepage">https://rayforge.org</url>
   <url type="bugtracker">https://github.com/barebaric/rayforge/issues</url>
+  <url type="vcs-browser">https://github.com/barebaric/rayforge</url>
   
   <name>Rayforge</name>
   <summary>A desktop application for laser cutting and engraving</summary>
