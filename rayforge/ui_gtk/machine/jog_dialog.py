@@ -258,6 +258,8 @@ class JogDialog(PatchedDialogWindow):
             wcs = self.wcs_list[idx]
             if self.machine.active_wcs != wcs:
                 self.machine.set_active_wcs(wcs)
+        # Also update the position display immediately
+        self._update_wcs_ui()
 
     def _on_zero_axis_clicked(self, button, axis):
         """Handle Zero [Axis] button click."""
@@ -292,8 +294,33 @@ class JogDialog(PatchedDialogWindow):
             f"X: {off_x:.2f}   Y: {off_y:.2f}   Z: {off_z:.2f}"
         )
 
-        # 3. Update Position Display
-        pos_x, pos_y, pos_z = self.machine.get_current_position()
+        # 3. Update Position Display (Calculated for selected WCS)
+        m_pos = self.machine.device_state.machine_pos
+        m_x, m_y, m_z = (
+            m_pos
+            if m_pos and all(p is not None for p in m_pos)
+            else (None, None, None)
+        )
+
+        selected_idx = self.wcs_row.get_selected()
+        selected_wcs_ui = (
+            self.wcs_list[selected_idx]
+            if 0 <= selected_idx < len(self.wcs_list)
+            else self.machine.active_wcs
+        )
+
+        pos_x, pos_y, pos_z = (None, None, None)
+        if m_x is not None and m_y is not None and m_z is not None:
+            if selected_wcs_ui == "G53":
+                pos_x, pos_y, pos_z = m_x, m_y, m_z
+            else:
+                offset = self.machine.wcs_offsets.get(
+                    selected_wcs_ui, (0.0, 0.0, 0.0)
+                )
+                pos_x = m_x - offset[0]
+                pos_y = m_y - offset[1]
+                pos_z = m_z - offset[2]
+
         pos_str = ""
         if pos_x is not None:
             pos_str += f"X: {pos_x:.2f}   "
