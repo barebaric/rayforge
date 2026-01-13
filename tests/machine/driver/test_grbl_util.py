@@ -407,7 +407,7 @@ class TestErrorCodeToDeviceError:
         """Test parsing known error code."""
         result = error_code_to_device_error("1")
         assert result.code == 1
-        assert "Expected Command Letter" in result.title
+        assert "Missing Command Letter" in result.title
 
     def test_parse_unknown_error_code(self):
         """Test parsing unknown error code."""
