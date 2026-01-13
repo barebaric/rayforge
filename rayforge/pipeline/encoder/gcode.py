@@ -88,6 +88,38 @@ class GcodeEncoder(OpsEncoder):
             )
         return current_laser
 
+    def _format_coord(self, value: float) -> str:
+        """
+        Format a coordinate value with the specified precision,
+        stripping unnecessary trailing zeros.
+
+        Args:
+            value: The float value to format.
+
+        Returns:
+            The formatted string with trailing zeros removed.
+        """
+        formatted = self._coord_format.format(value)
+        if "." in formatted:
+            formatted = formatted.rstrip("0").rstrip(".")
+        return formatted
+
+    def _format_feed(self, value: float) -> str:
+        """
+        Format a feedrate value with the specified precision,
+        stripping unnecessary trailing zeros.
+
+        Args:
+            value: The float value to format.
+
+        Returns:
+            The formatted string with trailing zeros removed.
+        """
+        formatted = self._feed_format.format(value)
+        if "." in formatted:
+            formatted = formatted.rstrip("0").rstrip(".")
+        return formatted
+
     def encode(
         self, ops: Ops, machine: "Machine", doc: "Doc"
     ) -> Tuple[str, MachineCodeOpMap]:
@@ -334,16 +366,16 @@ class GcodeEncoder(OpsEncoder):
         machine = context.machine
         f_command = ""
         template_vars = {
-            "x": self._coord_format.format(x),
-            "y": self._coord_format.format(y),
-            "z": self._coord_format.format(z),
+            "x": self._format_coord(x),
+            "y": self._format_coord(y),
+            "z": self._format_coord(z),
         }
 
         # Only add F-code to G0 if the driver supports it
         if machine.can_g0_with_speed():
             self._emit_modal_speed(gcode, self.travel_speed or 0)
             if self.travel_speed is not None:
-                f_command = f" F{self._feed_format.format(self.travel_speed)}"
+                f_command = f" F{self._format_feed(self.travel_speed)}"
             template_vars["f_command"] = f_command
         # If the driver does not support G0 with speed, the f_command key
         # will not be in the dict, preventing a KeyError for dialects that
@@ -363,16 +395,16 @@ class GcodeEncoder(OpsEncoder):
         self._laser_on(context, gcode)
         self._emit_modal_speed(gcode, self.cut_speed or 0)
         f_command = (
-            f" F{self._feed_format.format(self.cut_speed)}"
+            f" F{self._format_feed(self.cut_speed)}"
             if self.cut_speed is not None
             else ""
         )
 
         gcode.append(
             self.dialect.linear_move.format(
-                x=self._coord_format.format(x),
-                y=self._coord_format.format(y),
-                z=self._coord_format.format(z),
+                x=self._format_coord(x),
+                y=self._format_coord(y),
+                z=self._format_coord(z),
                 f_command=f_command,
             )
         )
@@ -392,17 +424,17 @@ class GcodeEncoder(OpsEncoder):
         i, j = center
         template = self.dialect.arc_cw if cw else self.dialect.arc_ccw
         f_command = (
-            f" F{self._feed_format.format(self.cut_speed)}"
+            f" F{self._format_feed(self.cut_speed)}"
             if self.cut_speed is not None
             else ""
         )
         gcode.append(
             template.format(
-                x=self._coord_format.format(x),
-                y=self._coord_format.format(y),
-                z=self._coord_format.format(z),
-                i=self._coord_format.format(i),
-                j=self._coord_format.format(j),
+                x=self._format_coord(x),
+                y=self._format_coord(y),
+                z=self._format_coord(z),
+                i=self._format_coord(i),
+                j=self._format_coord(j),
                 f_command=f_command,
             )
         )
