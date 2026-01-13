@@ -36,13 +36,6 @@ class MachineCmd:
         """Returns True if a monitored job is currently running."""
         return self._current_monitor is not None
 
-    def home_machine(self, machine: "Machine"):
-        """Adds a 'home' task to the task manager for the given machine."""
-        driver = machine.driver
-        self._editor.task_manager.add_coroutine(
-            lambda ctx: driver.home(), key="home-machine"
-        )
-
     def select_tool(self, machine: "Machine", head_index: int):
         """Adds a 'select_head' task to the task manager."""
         if not (0 <= head_index < len(machine.heads)):
