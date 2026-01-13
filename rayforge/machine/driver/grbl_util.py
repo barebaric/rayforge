@@ -444,9 +444,11 @@ def _recalculate_positions(
     wco: Pos,
     mpos_found: bool,
     wpos_found: bool,
-) -> tuple[Pos, Pos]:
+    wco_found: bool,
+) -> tuple[Pos, Pos, Pos]:
     """
     Recalculate positions based on GRBL equations for consistency.
+    Also infers WCO if missing but both MPos and WPos are present.
 
     Args:
         machine_pos: Current machine position
@@ -454,29 +456,58 @@ def _recalculate_positions(
         wco: Work coordinate offset
         mpos_found: Whether machine position was found in input
         wpos_found: Whether work position was found in input
+        wco_found: Whether work coordinate offset was found in input
 
     Returns:
-        Tuple of (recalculated_machine_pos, recalculated_work_pos)
+        Tuple of (recalculated_machine_pos, recalculated_work_pos,
+        recalculated_wco)
     """
+    # 1. Infer WCO if explicitly missing but both MPos and WPos exist.
+    # WCO = MPos - WPos
+    if mpos_found and wpos_found and not wco_found:
+        mx, my, mz = machine_pos
+        wx, wy, wz = work_pos
+        if all(v is not None for v in [mx, my, mz, wx, wy, wz]):
+            m_float = cast(tuple[float, float, float], machine_pos)
+            w_float = cast(tuple[float, float, float], work_pos)
+            wco = (
+                m_float[0] - w_float[0],
+                m_float[1] - w_float[1],
+                m_float[2] - w_float[2],
+            )
+
+    # 2. Recalculate missing positions based on what we have.
+    # If MPos is known, calculate WPos.
     if mpos_found and all(v is not None for v in machine_pos):
         if all(v is not None for v in wco):
             m_float = cast(tuple[float, float, float], machine_pos)
             wco_float = cast(tuple[float, float, float], wco)
-            return machine_pos, (
-                m_float[0] - wco_float[0],
-                m_float[1] - wco_float[1],
-                m_float[2] - wco_float[2],
+            return (
+                machine_pos,
+                (
+                    m_float[0] - wco_float[0],
+                    m_float[1] - wco_float[1],
+                    m_float[2] - wco_float[2],
+                ),
+                wco,
             )
+
+    # If WPos is known (and MPos isn't), calculate MPos.
     elif wpos_found and all(v is not None for v in work_pos):
         if all(v is not None for v in wco):
             w_float = cast(tuple[float, float, float], work_pos)
             wco_float = cast(tuple[float, float, float], wco)
             return (
-                w_float[0] + wco_float[0],
-                w_float[1] + wco_float[1],
-                w_float[2] + wco_float[2],
-            ), work_pos
-    return machine_pos, work_pos
+                (
+                    w_float[0] + wco_float[0],
+                    w_float[1] + wco_float[1],
+                    w_float[2] + wco_float[2],
+                ),
+                work_pos,
+                wco,
+            )
+
+    return machine_pos, work_pos, wco
 
 
 def parse_state(
@@ -511,6 +542,7 @@ def parse_state(
 
         mpos_found = False
         wpos_found = False
+        wco_found = False
         for attrib in attribs:
             if attrib.startswith("MPos:"):
                 parsed = _parse_position_attribute(attrib, "MPos")
@@ -526,6 +558,7 @@ def parse_state(
                 parsed = _parse_position_attribute(attrib, "WCO")
                 if parsed:
                     state.wco = parsed
+                    wco_found = True
             elif attrib.startswith("FS:"):
                 feed_rate = _parse_feed_rate(attrib)
                 if feed_rate is not None:
@@ -538,12 +571,13 @@ def parse_state(
                         state.buffer_rx_available,
                     ) = buffer_state
 
-        state.machine_pos, state.work_pos = _recalculate_positions(
+        state.machine_pos, state.work_pos, state.wco = _recalculate_positions(
             state.machine_pos,
             state.work_pos,
             state.wco,
             mpos_found,
             wpos_found,
+            wco_found,
         )
 
     except (ValueError, TypeError) as e:

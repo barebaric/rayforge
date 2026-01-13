@@ -471,17 +471,32 @@ class GrblNetworkDriver(Driver):
                  using binary operators (e.g. Axis.X|Axis.Y)
         """
         dialect = self._machine.dialect
+
+        # Execute the homing command(s)
         if axes is None:
             await self._execute_command(dialect.home_all)
-            return
+        else:
+            for axis in Axis:
+                if axes & axis:
+                    assert axis.name
+                    axis_letter: str = axis.name.upper()
+                    cmd = dialect.home_axis.format(axis_letter=axis_letter)
+                    await self._execute_command(cmd)
 
-        # Handle multiple axes - home them one by one
-        for axis in Axis:
-            if axes & axis:
-                assert axis.name
-                axis_letter: str = axis.name.upper()
-                cmd = dialect.home_axis.format(axis_letter=axis_letter)
-                await self._execute_command(cmd)
+        # The following works around a quirk in some Grbl versions:
+        # After homing, the machine is still in G54, but forgets its
+        # offset. To re-activate the offset, we toggle to another
+        # WCS and then back.
+        # Just sending G54 is ignored if GRBL thinks it's already in G54.
+        active_wcs = self._machine.active_wcs
+        temp_wcs = "G55" if active_wcs == "G54" else "G54"
+
+        # Flush planner buffer
+        await self._execute_command("G4 P0.01")
+
+        # Toggle sequence
+        await self._execute_command(temp_wcs)
+        await self._execute_command(active_wcs)
 
     async def move_to(self, pos_x, pos_y) -> None:
         dialect = self._machine.dialect
