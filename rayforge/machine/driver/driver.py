@@ -124,11 +124,17 @@ class Axis(IntFlag):
 
 @dataclass
 class DeviceState:
+    """Represents the complete state of a device at a moment in time."""
+
     status: DeviceStatus = DeviceStatus.UNKNOWN
     error: Optional[DeviceError] = None
     machine_pos: Pos = (None, None, None)
     work_pos: Pos = (None, None, None)
+    wco: Pos = (0.0, 0.0, 0.0)  # Work Coordinate Offset
     feed_rate: Optional[int] = None
+    spindle_speed: Optional[int] = None
+    buffer_available: Optional[int] = None
+    buffer_rx_available: Optional[int] = None
 
 
 class Driver(ABC):

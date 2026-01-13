@@ -1,7 +1,7 @@
 import re
 import asyncio
 from copy import copy, deepcopy
-from typing import Callable, Optional, List
+from typing import Callable, Optional, List, cast
 from dataclasses import dataclass, field
 from ...core.varset import Var, VarSet
 from .driver import DeviceStatus, DeviceState, Pos, DeviceError
@@ -33,8 +33,9 @@ status_url = command_url.format(command="?")
 
 
 # GRBL Regex Parsers
-pos_re = re.compile(r":(-?\d+\.\d+),(-?\d+\.\d+),(-?\d+\.\d+)")
+pos_re = re.compile(r":(-?\d+\.?\d*),(-?\d+\.?\d*),(-?\d+\.?\d*)")
 fs_re = re.compile(r"FS:(\d+),(\d+)")
+bf_re = re.compile(r"Bf:(\d+),(\d+)")
 grbl_setting_re = re.compile(r"\$(\d+)=([\d\.-]+)")
 wcs_re = re.compile(r"\[(G5[4-9]):([\d\.-]+),([\d\.-]+),([\d\.-]+)\]")
 prb_re = re.compile(r"\[PRB:([\d\.-]+),([\d\.-]+),([\d\.-]+):(\d)\]")
@@ -314,7 +315,7 @@ def error_code_to_device_error(error_code: str) -> DeviceError:
     try:
         code = int(error_code)
         return GRBL_ERROR_CODES[code]
-    except (ValueError, TypeError):
+    except (ValueError, TypeError, KeyError):
         return DeviceError(
             -1,
             _("Unknown Error"),
@@ -334,56 +335,222 @@ def parse_grbl_parser_state(response_lines: List[str]) -> Optional[str]:
     return None
 
 
+def _split_status_line(state_str: str) -> tuple[str, list[str]]:
+    """
+    Split status line into status part and attribute parts.
+
+    Args:
+        state_str: Status string like '<Idle|MPos:10,20,30>'
+
+    Returns:
+        Tuple of (status_part, list_of_attributes)
+    """
+    status_parts = state_str[1:-1].split("|")
+    status = None
+    attribs = []
+    for part in status_parts:
+        if not part:
+            continue
+        if not status:
+            status = part
+        else:
+            attribs.append(part)
+    return status or "", attribs
+
+
+def _parse_status_part(status_part: str) -> tuple[DeviceStatus, Optional[str]]:
+    """
+    Parse status part into DeviceStatus and optional error code.
+
+    Args:
+        status_part: Status part like 'Idle' or 'Alarm:1'
+
+    Returns:
+        Tuple of (DeviceStatus, error_code or None)
+    """
+    status_parts = status_part.split(":")
+    status_name = status_parts[0]
+    error_code = status_parts[1] if len(status_parts) > 1 else None
+    try:
+        return DeviceStatus[status_name.upper()], error_code
+    except KeyError:
+        return DeviceStatus.UNKNOWN, error_code
+
+
+def _parse_position_attribute(attrib: str, pos_type: str) -> Optional[Pos]:
+    """
+    Parse a position attribute (MPos, WPos, or WCO).
+
+    Args:
+        attrib: Attribute string like 'MPos:10.0,20.0,30.0'
+        pos_type: Type of position ('MPos', 'WPos', or 'WCO')
+
+    Returns:
+        Position tuple or None if parsing fails
+    """
+    if not attrib.startswith(f"{pos_type}:"):
+        return None
+    return _parse_pos_triplet(attrib)
+
+
+def _parse_feed_rate(attrib: str) -> Optional[int]:
+    """
+    Parse feed rate from FS attribute.
+
+    Args:
+        attrib: Attribute string like 'FS:1000,0'
+
+    Returns:
+        Feed rate value or None if parsing fails
+    """
+    if not attrib.startswith("FS:"):
+        return None
+    match = fs_re.match(attrib)
+    if not match:
+        return None
+    try:
+        fs = [int(i) for i in match.groups()]
+        return int(fs[0])
+    except (ValueError, IndexError):
+        return None
+
+
+def _parse_buffer_state(attrib: str) -> Optional[tuple[int, int]]:
+    """
+    Parse buffer state from Bf attribute.
+
+    Args:
+        attrib: Attribute string like 'Bf:62,0'
+
+    Returns:
+        Tuple of (available_buffer_bytes, available_rx_buffer_bytes)
+        or None if parsing fails
+    """
+    if not attrib.startswith("Bf:"):
+        return None
+    match = bf_re.match(attrib)
+    if not match:
+        return None
+    try:
+        bf = [int(i) for i in match.groups()]
+        return (int(bf[0]), int(bf[1]))
+    except (ValueError, IndexError):
+        return None
+
+
+def _recalculate_positions(
+    machine_pos: Pos,
+    work_pos: Pos,
+    wco: Pos,
+    mpos_found: bool,
+    wpos_found: bool,
+) -> tuple[Pos, Pos]:
+    """
+    Recalculate positions based on GRBL equations for consistency.
+
+    Args:
+        machine_pos: Current machine position
+        work_pos: Current work position
+        wco: Work coordinate offset
+        mpos_found: Whether machine position was found in input
+        wpos_found: Whether work position was found in input
+
+    Returns:
+        Tuple of (recalculated_machine_pos, recalculated_work_pos)
+    """
+    if mpos_found and all(v is not None for v in machine_pos):
+        if all(v is not None for v in wco):
+            m_float = cast(tuple[float, float, float], machine_pos)
+            wco_float = cast(tuple[float, float, float], wco)
+            return machine_pos, (
+                m_float[0] - wco_float[0],
+                m_float[1] - wco_float[1],
+                m_float[2] - wco_float[2],
+            )
+    elif wpos_found and all(v is not None for v in work_pos):
+        if all(v is not None for v in wco):
+            w_float = cast(tuple[float, float, float], work_pos)
+            wco_float = cast(tuple[float, float, float], wco)
+            return (
+                w_float[0] + wco_float[0],
+                w_float[1] + wco_float[1],
+                w_float[2] + wco_float[2],
+            ), work_pos
+    return machine_pos, work_pos
+
+
 def parse_state(
-    state_str: str, default: DeviceState, logger: Callable
+    state_str: str,
+    default: DeviceState,
+    logger: Optional[Callable] = None,
 ) -> DeviceState:
+    """
+    Parse GRBL status string into DeviceState.
+
+    Args:
+        state_str: Status string like '<Idle|MPos:10.0,20.0,30.0|WPos:0,0,0>'
+        default: Default DeviceState to use as base
+        logger: Optional logger function for debugging
+
+    Returns:
+        Parsed DeviceState
+    """
     state = copy(default)
     try:
-        # Remove '<' and '>' and split by '|'
-        status_parts = state_str[1:-1].split("|")
-        status = None
-        attribs = []
-        for part in status_parts:
-            if not part:
-                continue
-            if not status:  # First part is the status
-                status = part.split(":")[0]
-            else:
-                attribs.append(part)
+        status_part, attribs = _split_status_line(state_str)
 
-        if status:
-            status_parts = status.split(":")
-            status_name = status_parts[0]
-            error_code = None
-            if len(status_parts) > 1:
-                error_code = status_parts[1]
-            try:
-                state.status = DeviceStatus[status_name.upper()]
-                logger(message=f"Parsed status: {status_name}")
-                if error_code is not None:
-                    state.error = error_code_to_device_error(error_code)
+        if status_part:
+            status, error_code = _parse_status_part(status_part)
+            state.status = status
+            if logger:
+                logger(message=f"Parsed status: {status.name}")
+            if error_code is not None:
+                state.error = error_code_to_device_error(error_code)
+                if logger:
                     logger(message=f"Parsed error code: {error_code}")
-            except KeyError:
-                logger(message=f"device sent an unsupported status: {status}")
 
+        mpos_found = False
+        wpos_found = False
         for attrib in attribs:
             if attrib.startswith("MPos:"):
-                state.machine_pos = (
-                    _parse_pos_triplet(attrib) or state.machine_pos
-                )
+                parsed = _parse_position_attribute(attrib, "MPos")
+                if parsed:
+                    state.machine_pos = parsed
+                    mpos_found = parsed[0] is not None
             elif attrib.startswith("WPos:"):
-                state.work_pos = _parse_pos_triplet(attrib) or state.work_pos
+                parsed = _parse_position_attribute(attrib, "WPos")
+                if parsed:
+                    state.work_pos = parsed
+                    wpos_found = parsed[0] is not None
+            elif attrib.startswith("WCO:"):
+                parsed = _parse_position_attribute(attrib, "WCO")
+                if parsed:
+                    state.wco = parsed
             elif attrib.startswith("FS:"):
-                try:
-                    match = fs_re.match(attrib)
-                    if not match:
-                        continue
-                    fs = [int(i) for i in match.groups()]
-                    state.feed_rate = int(fs[0])
-                except (ValueError, IndexError):
-                    logger(message=f"Invalid FS format: {attrib}")
-    except ValueError as e:
-        logger(message=f"Invalid status line format: {state_str}, error: {e}")
+                feed_rate = _parse_feed_rate(attrib)
+                if feed_rate is not None:
+                    state.feed_rate = feed_rate
+            elif attrib.startswith("Bf:"):
+                buffer_state = _parse_buffer_state(attrib)
+                if buffer_state:
+                    (
+                        state.buffer_available,
+                        state.buffer_rx_available,
+                    ) = buffer_state
+
+        state.machine_pos, state.work_pos = _recalculate_positions(
+            state.machine_pos,
+            state.work_pos,
+            state.wco,
+            mpos_found,
+            wpos_found,
+        )
+
+    except (ValueError, TypeError) as e:
+        if logger:
+            logger(
+                message=f"Invalid status line format: {state_str}, error: {e}"
+            )
     return state
 
 
