@@ -1,4 +1,5 @@
 import logging
+from typing import List
 from gi.repository import GLib, Gtk
 from blinker import Signal
 from .icons import get_icon
@@ -267,25 +268,13 @@ class MainToolbar(Gtk.Box):
         self.wcs_dropdown = Gtk.DropDown()
         self.wcs_dropdown.set_tooltip_text(_("Work Coordinate System"))
         self.wcs_store = Gtk.StringList()
-        # Initialize with standard options immediately
-        wcs_options = ["G53", "G54", "G55", "G56", "G57", "G58", "G59"]
-        for opt in wcs_options:
-            self.wcs_store.append(opt)
+        # Initial empty list, will be populated by MainWindow via
+        # configure_wcs_list()
         self.wcs_dropdown.set_model(self.wcs_store)
-        self.wcs_dropdown.connect("notify::selected", self._on_wcs_selected)
+        self.wcs_handler_id = self.wcs_dropdown.connect(
+            "notify::selected", self._on_wcs_selected
+        )
         self.append(self.wcs_dropdown)
-
-        self.zero_here_button = Gtk.Button(
-            child=get_icon("zero-here-symbolic")
-        )
-        self.zero_here_button.set_tooltip_text(
-            _("Set Work Zero at Current Position")
-        )
-        self.zero_here_button.set_action_name("win.zero-here")
-        self.zero_here_button.set_action_target_value(
-            GLib.Variant.new_string("all")
-        )
-        self.append(self.zero_here_button)
 
         # Add spacer to push machine selector to the right
         spacer = Gtk.Box()
@@ -331,6 +320,18 @@ class MainToolbar(Gtk.Box):
         else:
             button.set_child(self.focus_on_icon)
 
+    def configure_wcs_list(self, wcs_list: List[str]):
+        """Populates the WCS dropdown with the supported systems."""
+        # Block signal to prevent triggering selection logic during model swap
+        if self.wcs_handler_id:
+            self.wcs_dropdown.handler_block(self.wcs_handler_id)
+
+        self.wcs_store = Gtk.StringList.new(wcs_list)
+        self.wcs_dropdown.set_model(self.wcs_store)
+
+        if self.wcs_handler_id:
+            self.wcs_dropdown.handler_unblock(self.wcs_handler_id)
+
     def set_active_wcs(self, wcs: str):
         """Programmatically selects the WCS in the dropdown."""
         # Find index of wcs string in store
@@ -342,14 +343,27 @@ class MainToolbar(Gtk.Box):
 
         if found_index >= 0:
             if self.wcs_dropdown.get_selected() != found_index:
+                # Block handler to avoid round-trip signal when updating UI
+                if self.wcs_handler_id:
+                    self.wcs_dropdown.handler_block(self.wcs_handler_id)
+
                 self.wcs_dropdown.set_selected(found_index)
+
+                if self.wcs_handler_id:
+                    self.wcs_dropdown.handler_unblock(self.wcs_handler_id)
 
     def _on_wcs_selected(self, dropdown, param):
         """Handle WCS selection change."""
         selected_item = dropdown.get_selected_item()
         if selected_item:
             wcs_str = selected_item.get_string()
-            self.wcs_selected.send(self, wcs=wcs_str)
+            # Defer signal emission to avoid re-entrancy issues in GTK
+            GLib.idle_add(self._emit_wcs_selected, wcs_str)
+
+    def _emit_wcs_selected(self, wcs_str: str):
+        """Helper to emit signal from idle callback."""
+        self.wcs_selected.send(self, wcs=wcs_str)
+        return GLib.SOURCE_REMOVE
 
     def set_machine_warning(
         self, error_title: str, error_code: int, error_description: str

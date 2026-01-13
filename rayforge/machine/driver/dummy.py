@@ -10,12 +10,14 @@ from typing import (
     Union,
     Awaitable,
     Dict,
+    cast,
 )
 from ...context import RayforgeContext
 from ...core.varset import VarSet
 from ...pipeline.encoder.base import OpsEncoder, MachineCodeOpMap
 from ...pipeline.encoder.gcode import GcodeEncoder
-from .driver import Driver, Axis, Pos
+from ..transport import TransportStatus
+from .driver import Driver, Axis, Pos, DeviceStatus
 
 if TYPE_CHECKING:
     from ...core.doc import Doc
@@ -38,6 +40,18 @@ class NoDeviceDriver(Driver):
 
     def __init__(self, context: RayforgeContext, machine: "Machine"):
         super().__init__(context, machine)
+        # Internal state for WCS offsets to behave like a stateful machine
+        # Initialize from machine's persisted state to prevent overwriting
+        # loaded configuration with defaults upon connection.
+        self._offsets: Dict[str, Pos] = cast(
+            Dict[str, Pos], machine.wcs_offsets.copy()
+        )
+
+        # Ensure standard keys exist
+        defaults = ["G54", "G55", "G56", "G57", "G58", "G59"]
+        for key in defaults:
+            if key not in self._offsets:
+                self._offsets[key] = (0.0, 0.0, 0.0)
 
     @classmethod
     def precheck(cls, **kwargs: Any) -> None:
@@ -58,7 +72,22 @@ class NoDeviceDriver(Driver):
         return [VarSet(title=_("No settings"))]
 
     async def _connect_implementation(self) -> None:
-        pass
+        # Simulate connection sequence
+        self.connection_status_changed.send(
+            self, status=TransportStatus.CONNECTING
+        )
+        await asyncio.sleep(0.1)
+
+        # Set IDLE state so the UI knows we are ready and not "busy"
+        self.state.status = DeviceStatus.IDLE
+        self.state_changed.send(self, state=self.state)
+
+        self.connection_status_changed.send(
+            self, status=TransportStatus.CONNECTED
+        )
+
+        # Upon connect, broadcast WCS state (matches loaded machine state)
+        self.wcs_updated.send(self, offsets=self._offsets)
 
     async def run(
         self,
@@ -163,12 +192,23 @@ class NoDeviceDriver(Driver):
     async def set_wcs_offset(
         self, wcs_slot: str, x: float, y: float, z: float
     ) -> None:
-        """Dummy implementation, does nothing."""
-        pass
+        """Dummy implementation, updates internal state."""
+        self._offsets[wcs_slot] = (x, y, z)
+        # Notify machine that the driver updated offsets
+        self.wcs_updated.send(self, offsets=self._offsets)
 
     async def read_wcs_offsets(self) -> Dict[str, Pos]:
-        """Dummy implementation, returns empty dictionary."""
-        return {}
+        """Dummy implementation, returns internal state."""
+        self.wcs_updated.send(self, offsets=self._offsets)
+        return self._offsets
+
+    async def read_parser_state(self) -> Optional[str]:
+        """
+        Simulate reading the active WCS state.
+        Returns the machine's active WCS to treat the client's selection
+        as the source of truth for the dummy driver.
+        """
+        return self._machine.active_wcs
 
     async def run_probe_cycle(
         self, axis: Axis, max_travel: float, feed_rate: int

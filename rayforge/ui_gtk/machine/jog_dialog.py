@@ -2,11 +2,13 @@ from gi.repository import Adw, Gdk, Gtk
 
 from ...machine.cmd import MachineCmd
 from ...machine.driver.driver import Axis
+from ...machine.driver.dummy import NoDeviceDriver
 from ...machine.models.machine import Machine
 from ...shared.tasker import task_mgr
 from ..shared.adwfix import get_spinrow_float, get_spinrow_int
 from ..shared.patched_dialog_window import PatchedDialogWindow
 from .jog_widget import JogWidget
+from ..icons import get_icon
 
 
 class JogDialog(PatchedDialogWindow):
@@ -16,12 +18,10 @@ class JogDialog(PatchedDialogWindow):
         super().__init__(**kwargs)
         self.machine = machine
         self.machine_cmd = machine_cmd
-
-        # WCS ID Mapping for the UI
-        self.wcs_list = ["G53", "G54", "G55", "G56", "G57", "G58", "G59"]
+        self._edit_dialog = None  # Reference to keep dialog alive
 
         self.set_title(_("Machine Jog Control"))
-        self.set_default_size(600, 800)  # Increased height for new controls
+        self.set_default_size(600, 800)
         self.set_hide_on_close(False)
         self.connect("close-request", self._on_close_request)
         self.connect("show", self._on_show)
@@ -95,17 +95,10 @@ class JogDialog(PatchedDialogWindow):
         wcs_group = Adw.PreferencesGroup(title=_("Work Coordinates"))
         page.add(wcs_group)
 
-        wcs_model = Gtk.StringList.new(
-            [
-                _("G53 (Machine)"),
-                "G54 (Work 1)",
-                "G55 (Work 2)",
-                "G56 (Work 3)",
-                "G57 (Work 4)",
-                "G58 (Work 5)",
-                "G59 (Work 6)",
-            ]
-        )
+        # Create string list from machine supported WCS
+        self.wcs_list = self.machine.supported_wcs
+        wcs_model = Gtk.StringList.new(self.wcs_list)
+
         self.wcs_row = Adw.ComboRow(title=_("Active System"), model=wcs_model)
         self.wcs_row.connect(
             "notify::selected", self._on_wcs_selection_changed
@@ -113,12 +106,31 @@ class JogDialog(PatchedDialogWindow):
         wcs_group.add(self.wcs_row)
 
         self.offsets_row = Adw.ActionRow(title=_("Current Offsets"))
+
+        # Add Zero Here button to row
+        self.zero_here_btn = Gtk.Button(child=get_icon("zero-here-symbolic"))
+        self.zero_here_btn.set_tooltip_text(
+            _("Set Work Zero at Current Position")
+        )
+        self.zero_here_btn.add_css_class("flat")
+        self.zero_here_btn.connect(
+            "clicked", self._on_zero_axis_clicked, Axis.X | Axis.Y | Axis.Z
+        )
+        self.offsets_row.add_suffix(self.zero_here_btn)
+
+        # Add Edit button to row
+        self.edit_offsets_btn = Gtk.Button(child=get_icon("edit-symbolic"))
+        self.edit_offsets_btn.set_tooltip_text(_("Edit Offsets Manually"))
+        self.edit_offsets_btn.add_css_class("flat")
+        self.edit_offsets_btn.connect("clicked", self._on_edit_offsets_clicked)
+        self.offsets_row.add_suffix(self.edit_offsets_btn)
+
         wcs_group.add(self.offsets_row)
 
         self.position_row = Adw.ActionRow(title=_("Current Position"))
         wcs_group.add(self.position_row)
 
-        # Zeroing Buttons
+        # Zeroing Buttons (Individual Axes)
         zero_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
         zero_box.set_margin_top(12)
         wcs_group.add(zero_box)
@@ -146,14 +158,6 @@ class JogDialog(PatchedDialogWindow):
             _("Set current Z position as 0 for active WCS")
         )
         zero_box.append(self.zero_z_btn)
-
-        self.zero_all_btn = Gtk.Button(label=_("Zero All"))
-        self.zero_all_btn.add_css_class("pill")
-        self.zero_all_btn.add_css_class("suggested-action")
-        self.zero_all_btn.connect(
-            "clicked", self._on_zero_axis_clicked, Axis.X | Axis.Y | Axis.Z
-        )
-        zero_box.append(self.zero_all_btn)
 
         # --- Jog Widget ---
         self.jog_widget = JogWidget()
@@ -229,6 +233,62 @@ class JogDialog(PatchedDialogWindow):
         """Handle jog distance change."""
         self.jog_widget.jog_distance = get_spinrow_float(spin_row)
 
+    def _on_edit_offsets_clicked(self, button):
+        """Open a dialog to edit WCS offsets manually."""
+        if not self.machine:
+            return
+
+        off_x, off_y, off_z = self.machine.get_active_wcs_offset()
+
+        self._edit_dialog = Adw.MessageDialog(
+            heading=_("Edit Work Offsets"),
+            body=_(
+                "Enter the offset from Machine Zero to Work Zero for "
+                "the active WCS."
+            ),
+            transient_for=self,
+        )
+        self._edit_dialog.add_response("cancel", _("Cancel"))
+        self._edit_dialog.add_response("save", _("Save"))
+        self._edit_dialog.set_response_appearance(
+            "save", Adw.ResponseAppearance.SUGGESTED
+        )
+        self._edit_dialog.set_default_response("save")
+        self._edit_dialog.set_close_response("cancel")
+
+        # Create inputs
+        group = Adw.PreferencesGroup()
+
+        row_x = Adw.SpinRow.new_with_range(-10000, 10000, 0.1)
+        row_x.set_title("X Offset")
+        row_x.set_value(off_x)
+        group.add(row_x)
+
+        row_y = Adw.SpinRow.new_with_range(-10000, 10000, 0.1)
+        row_y.set_title("Y Offset")
+        row_y.set_value(off_y)
+        group.add(row_y)
+
+        row_z = Adw.SpinRow.new_with_range(-10000, 10000, 0.1)
+        row_z.set_title("Z Offset")
+        row_z.set_value(off_z)
+        group.add(row_z)
+
+        self._edit_dialog.set_extra_child(group)
+
+        def on_response(dlg, response):
+            if response == "save":
+                nx = row_x.get_value()
+                ny = row_y.get_value()
+                nz = row_z.get_value()
+                task_mgr.add_coroutine(
+                    lambda ctx: self.machine.set_work_origin(nx, ny, nz)
+                )
+            self._edit_dialog = None
+
+        self._edit_dialog.connect("response", on_response)
+        self._edit_dialog.present()
+
     def _on_home_x_clicked(self, button):
         """Handle Home X button click."""
         if self.machine and self.machine_cmd:
@@ -295,6 +355,13 @@ class JogDialog(PatchedDialogWindow):
         )
 
         # 3. Update Position Display (Calculated for selected WCS)
+        is_dummy = isinstance(self.machine.driver, NoDeviceDriver)
+        is_connected = self.machine.is_connected()
+        # Treat Dummy as effectively connected for WCS/Position display
+        # purposes because it maintains state even if strictly
+        # 'disconnected' in driver status
+        is_active = is_connected or is_dummy
+
         m_pos = self.machine.device_state.machine_pos
         m_x, m_y, m_z = (
             m_pos
@@ -302,12 +369,12 @@ class JogDialog(PatchedDialogWindow):
             else (None, None, None)
         )
 
+        # Check for unlisted WCS (e.g. G53 or unexpected)
         selected_idx = self.wcs_row.get_selected()
-        selected_wcs_ui = (
-            self.wcs_list[selected_idx]
-            if 0 <= selected_idx < len(self.wcs_list)
-            else self.machine.active_wcs
-        )
+        if 0 <= selected_idx < len(self.wcs_list):
+            selected_wcs_ui = self.wcs_list[selected_idx]
+        else:
+            selected_wcs_ui = self.machine.active_wcs
 
         pos_x, pos_y, pos_z = (None, None, None)
         if m_x is not None and m_y is not None and m_z is not None:
@@ -328,29 +395,37 @@ class JogDialog(PatchedDialogWindow):
             pos_str += f"Y: {pos_y:.2f}   "
         if pos_z is not None:
             pos_str += f"Z: {pos_z:.2f}"
-        if not pos_str:
-            pos_str = "---"
-        self.position_row.set_subtitle(pos_str)
 
-        # 4. Update Zero Button Sensitivity
+        if not is_active:
+            self.position_row.set_subtitle(_("Offline - Position Unknown"))
+        else:
+            self.position_row.set_subtitle(pos_str if pos_str else "---")
+
+        # 4. Update Button Sensitivity
         # Cannot set offsets for G53 (Machine Coordinates)
         is_g53 = current_wcs == "G53"
-        is_connected = self.machine.is_connected()
-        can_zero = is_connected and not is_g53
+
+        # Zero Here requires machine position (Active) and writable WCS (!G53)
+        can_zero = is_active and not is_g53
+
+        # Manual entry requires writable WCS (!G53), works offline
+        can_manual = not is_g53
 
         self.zero_x_btn.set_sensitive(can_zero)
         self.zero_y_btn.set_sensitive(can_zero)
         self.zero_z_btn.set_sensitive(can_zero)
-        self.zero_all_btn.set_sensitive(can_zero)
+        self.zero_here_btn.set_sensitive(can_zero)
+        self.edit_offsets_btn.set_sensitive(can_manual)
 
         if is_g53:
             msg = _("Offsets cannot be set in Machine Coordinate Mode (G53)")
-        elif not is_connected:
-            msg = _("Machine must be connected")
+        elif not is_active:
+            msg = _("Machine must be connected to set Zero Here")
         else:
             msg = _("Set current position as 0")
 
-        self.zero_all_btn.set_tooltip_text(msg)
+        # Update tooltips to reflect status
+        self.zero_here_btn.set_tooltip_text(msg)
 
     def _update_button_sensitivity(self):
         """Update button sensitivity based on machine capabilities."""

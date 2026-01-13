@@ -216,7 +216,7 @@ class TestDummyDriverCallback:
         test_head.uid = "test-head"
 
         # Call set_power with head and percentage
-        await driver.set_power(test_head, 50)
+        await driver.set_power(test_head, 0.5)
 
         # The dummy driver just logs, so we can't verify much here
         # but this test ensures the signature works correctly
@@ -242,11 +242,37 @@ class TestDummyDriverCallback:
         driver.job_finished.send.assert_called_once_with(driver)
 
     @pytest.mark.asyncio
-    async def test_wcs_methods_do_not_raise(self, driver: NoDeviceDriver):
-        """Test that WCS methods can be called without raising exceptions."""
-        await driver.set_wcs_offset("G54", 1.0, 2.0, 3.0)
+    async def test_wcs_methods_persist_state(self, driver: NoDeviceDriver):
+        """
+        Test that WCS methods update internal state correctly in the dummy
+        driver.
+        """
+        # Set an offset
+        await driver.set_wcs_offset("G54", 10.0, 20.0, 30.0)
+
+        # Read back offsets
         offsets = await driver.read_wcs_offsets()
-        assert offsets == {}
+
+        # Verify state persistence
+        assert offsets["G54"] == (10.0, 20.0, 30.0)
+
+        # Update a different WCS
+        await driver.set_wcs_offset("G55", 5.0, 5.0, 5.0)
+        offsets = await driver.read_wcs_offsets()
+
+        assert offsets["G55"] == (5.0, 5.0, 5.0)
+        # Ensure G54 wasn't clobbered
+        assert offsets["G54"] == (10.0, 20.0, 30.0)
+
+    @pytest.mark.asyncio
+    async def test_read_parser_state(self, driver: NoDeviceDriver, machine):
+        """
+        Test that the dummy driver returns the machine's active WCS
+        as its parser state.
+        """
+        machine.active_wcs = "G59"
+        parser_state = await driver.read_parser_state()
+        assert parser_state == "G59"
 
     @pytest.mark.asyncio
     async def test_run_probe_cycle_simulates_success(

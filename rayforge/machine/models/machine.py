@@ -64,11 +64,22 @@ class Machine:
         self.context = context
 
         if multiprocessing.current_process().daemon:
-            # This is a worker process, do not allow scheduling signals.
+            # This is the worker process, do not allow scheduling signals.
             self._scheduler = _raise_error
         else:
             # This is the main process, use the real scheduler.
             self._scheduler = task_mgr.schedule_on_main_thread
+
+        # Signals
+        self.changed = Signal()
+        self.settings_error = Signal()
+        self.settings_updated = Signal()
+        self.setting_applied = Signal()
+        self.connection_status_changed = Signal()
+        self.state_changed = Signal()
+        self.job_finished = Signal()
+        self.command_status_changed = Signal()
+        self.wcs_updated = Signal()
 
         self.connection_status: TransportStatus = TransportStatus.DISCONNECTED
         self.device_state: DeviceState = DeviceState()
@@ -76,8 +87,6 @@ class Machine:
         self.driver_name: Optional[str] = None
         self.driver_args: Dict[str, Any] = {}
         self.precheck_error: Optional[str] = None
-
-        self.driver: Driver = NoDeviceDriver(context, self)
 
         self.auto_connect: bool = True
         self.home_on_start: bool = False
@@ -111,7 +120,7 @@ class Machine:
         # is agnostic. Any key in wcs_offsets is considered a mutable WCS.
         # Any key NOT in wcs_offsets is considered an immutable/absolute system
         # with (0,0,0) offset.
-        self.active_wcs: str = "G53"
+        self.active_wcs: str = "G54"
         self.wcs_offsets: Dict[str, Tuple[float, float, float]] = {
             "G54": (0.0, 0.0, 0.0),
             "G55": (0.0, 0.0, 0.0),
@@ -129,19 +138,16 @@ class Machine:
             self._on_dialects_changed
         )
 
-        # Signals
-        self.changed = Signal()
-        self.settings_error = Signal()
-        self.settings_updated = Signal()
-        self.setting_applied = Signal()
-        self.connection_status_changed = Signal()
-        self.state_changed = Signal()
-        self.job_finished = Signal()
-        self.command_status_changed = Signal()
-        self.wcs_updated = Signal()
-
+        self.driver: Driver = NoDeviceDriver(context, self)
         self._connect_driver_signals()
         self.add_head(Laser())
+
+    @property
+    def supported_wcs(self) -> List[str]:
+        """
+        Returns a sorted list of supported mutable Work Coordinate Systems.
+        """
+        return sorted(list(self.wcs_offsets.keys()))
 
     async def connect(self):
         """Public method to connect the driver."""
@@ -828,15 +834,21 @@ class Machine:
             z: Z-coordinate in machine space.
             wcs_slot: The WCS slot to update (e.g. "G54"). Defaults to active.
         """
-        if not self.is_connected():
-            return
-
         slot = wcs_slot or self.active_wcs
         if slot not in self.wcs_offsets:
             logger.warning(
                 f"Cannot set offset for immutable WCS '{slot}' "
                 "(e.g. Machine Coordinates)."
             )
+            return
+
+        if not self.is_connected():
+            # Update local state directly if offline
+            self.wcs_offsets[slot] = (x, y, z)
+            # Notify listeners of WCS update
+            self._scheduler(self.wcs_updated.send, self)
+            # Notify listeners of general machine state change
+            self._scheduler(self.changed.send, self)
             return
 
         await self.driver.set_wcs_offset(slot, x, y, z)
