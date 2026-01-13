@@ -249,7 +249,6 @@ class TestGrblSerialDriver:
         run_task = asyncio.create_task(driver.run_raw(gcode))
 
         await asyncio.sleep(0.01)
-        # Fix: Assert the raw G-code, which is what run_raw sends
         send_mock.assert_any_call(b"G0 X10\n")
         driver.on_serial_data_received(transport_mock, b"ok\r\n")
 
@@ -257,8 +256,17 @@ class TestGrblSerialDriver:
         send_mock.assert_any_call(b"G999\n")
         driver.on_serial_data_received(transport_mock, b"error:20\r\n")
 
-        with pytest.raises(DeviceConnectionError):
-            await run_task
+        try:
+            await asyncio.wait_for(run_task, timeout=0.5)
+        except (asyncio.TimeoutError, asyncio.CancelledError):
+            pass
+
+        assert driver._job_running is False
+        assert driver._job_exception is not None
+        assert isinstance(driver._job_exception, DeviceConnectionError)
+        assert "error:20" in str(driver._job_exception)
+        assert driver._sent_gcode_queue.empty()
+        assert driver._rx_buffer_count == 0
 
         job_finished_mock.assert_called_once_with(driver)
 
