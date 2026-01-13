@@ -11,7 +11,6 @@ from typing import (
     Dict,
     Any,
     TYPE_CHECKING,
-    cast,
 )
 import numpy as np
 import json
@@ -50,67 +49,6 @@ if TYPE_CHECKING:
     from ..geo.geometry import Geometry
 
 logger = logging.getLogger(__name__)
-
-
-def _get_bounding_rect_legacy(
-    commands: List[Command],
-    include_travel: bool = False,
-) -> Tuple[float, float, float, float]:
-    """
-    Returns a rectangle (x1, y1, x2, y2) that encloses the
-    occupied area in the XY plane. This is a legacy function for use with
-    lists of ops.Command objects.
-    """
-    occupied_points: List[Tuple[float, float, float]] = []
-    last_point: Optional[Tuple[float, float, float]] = None
-    for cmd in commands:
-        cmd_type_name = cmd.__class__.__name__
-        if (
-            cmd_type_name == "MoveToCommand"
-            and hasattr(cmd, "end")
-            and cmd.end
-        ):
-            if include_travel:
-                if last_point is not None:
-                    occupied_points.append(last_point)
-                occupied_points.append(cmd.end)
-            last_point = cmd.end
-        elif (
-            cmd_type_name
-            in ("LineToCommand", "ArcToCommand", "ScanLinePowerCommand")
-            and hasattr(cmd, "end")
-            and cmd.end
-        ):
-            start_point = last_point  # Capture start point for this command
-
-            if start_point is not None:
-                occupied_points.append(start_point)
-            occupied_points.append(cmd.end)
-
-            # For arcs, we must also consider the curve's extent.
-            if cmd_type_name == "ArcToCommand" and start_point:
-                arc_cmd = cast(ArcToCommand, cmd)
-                arc_box = get_arc_bounding_box(
-                    start_pos=start_point[:2],
-                    end_pos=arc_cmd.end[:2],
-                    center_offset=arc_cmd.center_offset,
-                    clockwise=arc_cmd.clockwise,
-                )
-                occupied_points.append((arc_box[0], arc_box[1], 0.0))
-                occupied_points.append((arc_box[2], arc_box[3], 0.0))
-
-            last_point = cmd.end
-
-    if not occupied_points:
-        return 0.0, 0.0, 0.0, 0.0
-
-    xs = [p[0] for p in occupied_points if p]
-    ys = [p[1] for p in occupied_points if p]
-    if not xs or not ys:
-        return 0.0, 0.0, 0.0, 0.0
-    min_x, max_x = min(xs), max(xs)
-    min_y, max_y = min(ys), max(ys)
-    return min_x, min_y, max_x, max_y
 
 
 def _get_total_distance_legacy(commands: List[Command]) -> float:
@@ -741,9 +679,96 @@ class Ops:
         Args:
             include_travel: If True, travel moves are included in the bounds.
         """
-        return _get_bounding_rect_legacy(
-            self.commands, include_travel=include_travel
-        )
+        min_x, min_y = float("inf"), float("inf")
+        max_x, max_y = float("-inf"), float("-inf")
+
+        # Track current position
+        curr_x, curr_y = 0.0, 0.0
+        if self.last_move_to and include_travel:
+            curr_x, curr_y = self.last_move_to[0], self.last_move_to[1]
+
+        # Accumulate points in lists for vectorized min/max at the end.
+        points_x: List[float] = []
+        points_y: List[float] = []
+
+        # Store arc parameters for post-processing their bulges
+        arcs: List[Tuple[float, float, float, float, float, float, bool]] = []
+
+        has_content = False
+
+        for cmd in self.commands:
+            if not isinstance(cmd, MovingCommand):
+                continue
+
+            end_x, end_y = cmd.end[0], cmd.end[1]
+
+            if isinstance(cmd, MoveToCommand):
+                if include_travel:
+                    points_x.append(curr_x)
+                    points_y.append(curr_y)
+                    points_x.append(end_x)
+                    points_y.append(end_y)
+                    has_content = True
+                curr_x, curr_y = end_x, end_y
+                continue
+
+            # Drawing Command (Line, Arc, Scan)
+            points_x.append(curr_x)
+            points_y.append(curr_y)
+            points_x.append(end_x)
+            points_y.append(end_y)
+            has_content = True
+
+            if isinstance(cmd, ArcToCommand):
+                arcs.append(
+                    (
+                        curr_x,
+                        curr_y,
+                        end_x,
+                        end_y,
+                        cmd.center_offset[0],
+                        cmd.center_offset[1],
+                        cmd.clockwise,
+                    )
+                )
+
+            curr_x, curr_y = end_x, end_y
+
+        if not has_content:
+            return 0.0, 0.0, 0.0, 0.0
+
+        # Vectorized min/max
+        if points_x:
+            arr_x = np.array(points_x)
+            arr_y = np.array(points_y)
+            min_x = min(min_x, np.min(arr_x))
+            max_x = max(max_x, np.max(arr_x))
+            min_y = min(min_y, np.min(arr_y))
+            max_y = max(max_y, np.max(arr_y))
+
+        # Process Arcs to adjust bounds for bulges
+        for ax, ay, bx, by, i, j, cw in arcs:
+            radius = math.hypot(i, j)
+
+            # Explicit full-circle check
+            if (
+                math.isclose(ax, bx, abs_tol=1e-9)
+                and math.isclose(ay, by, abs_tol=1e-9)
+                and radius > 1e-9
+            ):
+                cx, cy = ax + i, ay + j
+                min_x = min(min_x, cx - radius)
+                max_x = max(max_x, cx + radius)
+                min_y = min(min_y, cy - radius)
+                max_y = max(max_y, cy + radius)
+            else:
+                abox = get_arc_bounding_box((ax, ay), (bx, by), (i, j), cw)
+                min_x = min(min_x, abox[0])
+                min_y = min(min_y, abox[1])
+                max_x = max(max_x, abox[2])
+                max_y = max(max_y, abox[3])
+
+        return min_x, min_y, max_x, max_y
 
     def get_frame(
         self,
@@ -1413,3 +1438,25 @@ class Ops:
                     self.last_move_to = cmd_rev.end
                     break
         return self
+
+
+class _MockArcCmd:
+    """Helper to adapt array data for linearize_arc."""
+
+    __slots__ = ("end", "center_offset", "clockwise")
+
+    def __init__(self, end, center_offset, clockwise):
+        self.end = end
+        self.center_offset = center_offset
+        self.clockwise = clockwise
+
+
+class _MockBezierCmd:
+    """Helper to adapt array data for linearization."""
+
+    __slots__ = ("end", "c1", "c2")
+
+    def __init__(self, end, c1, c2):
+        self.end = end
+        self.c1 = c1
+        self.c2 = c2
