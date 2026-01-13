@@ -44,239 +44,291 @@ grbl_parser_state_re = re.compile(r".*(G5[4-9]).*")
 
 
 # GRBL Error Codes
+# Source: https://github.com/gnea/grbl/wiki/Grbl-v1.1-Interface#message-summary
 GRBL_ERROR_CODES = {
     1: DeviceError(
         1,
-        _("Expected Command Letter"),
+        _("Missing Command Letter"),
         _(
-            "G-code words consist of a letter and a value. Letter was not "
-            "found."
+            "G-code commands need a letter followed by a value. "
+            "The command letter was not found."
         ),
     ),
     2: DeviceError(
         2,
-        _("Bad Number Format"),
+        _("Invalid Number Format"),
         _(
-            "Missing the expected G-code word value or numeric value "
-            "format is not valid."
+            "The value is missing or not in the correct numeric format. "
+            "Check your G-code syntax."
         ),
     ),
     3: DeviceError(
         3,
-        _("Invalid Statement"),
-        _("Grbl '$' system command was not recognized or supported."),
+        _("Unknown Command"),
+        _(
+            "This Grbl setting command is not recognized or supported. "
+            "Check the command syntax."
+        ),
     ),
     4: DeviceError(
         4,
-        _("Value < 0"),
-        _("Negative value received for an expected positive value."),
+        _("Negative Value"),
+        _(
+            "A positive number is required here, but a negative value was "
+            "received."
+        ),
     ),
     5: DeviceError(
         5,
         _("Homing Disabled"),
-        _("Homing cycle failure. Homing is not enabled via settings."),
+        _(
+            "Homing is not enabled in settings. Enable homing ($22=1) to "
+            "use this feature."
+        ),
+    ),
+    6: DeviceError(
+        6,
+        _("Pulse Time Too Short"),
+        _(
+            "Minimum step pulse time must be greater than 3 microseconds. "
+            "Check setting $0."
+        ),
     ),
     7: DeviceError(
         7,
-        _("EEPROM Read Fail"),
+        _("Memory Error"),
         _(
-            "An EEPROM read failed. Auto-restoring affected EEPROM to default "
-            "values."
+            "Settings reset to defaults due to a memory read failure. "
+            "Reconfigure your settings if needed."
         ),
     ),
     8: DeviceError(
         8,
-        _("Not Idle"),
+        _("Machine Busy"),
         _(
-            "Grbl '$' command cannot be used unless Grbl is IDLE. Ensures "
-            "smooth operation during a job."
+            "This command can only be used when the machine is idle. "
+            "Wait for the current job to finish."
         ),
     ),
     9: DeviceError(
         9,
-        _("G-Code Lock"),
-        _("G-code commands are locked out during alarm or jog state."),
+        _("Commands Locked"),
+        _(
+            "Cannot send commands while in alarm or jog mode. "
+            "Clear the alarm state first."
+        ),
     ),
     10: DeviceError(
         10,
-        _("Homing Not Enabled"),
-        _("Soft limits cannot be enabled without homing also enabled."),
+        _("Homing Required"),
+        _(
+            "Soft limits cannot be enabled without homing also enabled. "
+            "Enable homing first ($22=1)."
+        ),
     ),
     11: DeviceError(
         11,
-        _("Line Overflow"),
+        _("Line Too Long"),
         _(
-            "Max characters per line exceeded. File most likely formatted "
-            "improperly."
+            "The command line has too many characters and was ignored. "
+            "Check your file formatting."
+        ),
+    ),
+    12: DeviceError(
+        12,
+        _("Setting Too High"),
+        _(
+            "This setting exceeds the maximum step rate supported. "
+            "Use a lower value."
+        ),
+    ),
+    13: DeviceError(
+        13,
+        _("Door Open"),
+        _(
+            "The safety door was detected as open. Close the door and "
+            "resume operation."
         ),
     ),
     14: DeviceError(
         14,
-        _("Line Length Exceeded"),
+        _("Line Too Long"),
         _(
-            "Build info or startup line exceeded EEPROM line length limit. "
-            "Line not stored."
+            "Build info or startup line exceeds storage limit. "
+            "Shorten the line."
         ),
     ),
     15: DeviceError(
         15,
-        _("Travel Exceeded"),
-        _("Jog target exceeds machine travel. Jog command has been ignored."),
+        _("Target Out of Range"),
+        _(
+            "Jog target is beyond the machine's travel limits. "
+            "Move to a position within range."
+        ),
+    ),
+    16: DeviceError(
+        16,
+        _("Invalid Jog Command"),
+        _(
+            "Jog command is missing '=' or contains prohibited G-code. "
+            "Check the jog syntax."
+        ),
     ),
     17: DeviceError(
         17,
-        _("Setting Disabled"),
-        _("Laser mode requires PWM output."),
+        _("Laser Mode Error"),
+        _(
+            "Laser mode requires PWM output to work. "
+            "Check your hardware configuration."
+        ),
     ),
     20: DeviceError(
         20,
         _("Unsupported Command"),
         _(
-            "Unsupported or invalid g-code command found in block. This "
-            "usually means that you used the wrong Post-Processor to make "
-            "your file, or that some incompatible code within needs to be "
-            "manually deleted."
+            "This G-code command is not supported by the machine. "
+            "Check your post-processor settings."
         ),
     ),
     21: DeviceError(
         21,
-        _("Modal Group Violation"),
+        _("Conflicting Commands"),
         _(
-            "More than one g-code command from same modal group found in "
-            "block."
+            "Multiple commands from the same group found on one line. "
+            "Remove the duplicate command."
         ),
     ),
     22: DeviceError(
         22,
-        _("Undefined Feed Rate"),
-        _("Feed rate has not yet been set or is undefined."),
+        _("Feed Rate Missing"),
+        _(
+            "Set a feed rate before using motion commands. "
+            "Add an F command to specify speed."
+        ),
     ),
     23: DeviceError(
         23,
-        _("Motion Group Violation"),
+        _("Integer Required"),
         _(
-            "More than one g-code command from motion group (G0, G1, G2, G3, "
-            "G38.2, G80) found in block."
+            "This command requires a whole number value. "
+            "Remove any decimal points."
         ),
     ),
     24: DeviceError(
         24,
-        _("Plane Selection Violation"),
+        _("Axis Conflict"),
         _(
-            "More than one g-code command from plane selection group (G17, "
-            "G18, G19) found in block."
+            "Multiple commands trying to use the same axis. "
+            "Simplify the command."
         ),
     ),
     25: DeviceError(
         25,
-        _("Distance Mode Violation"),
+        _("Duplicate Word"),
         _(
-            "More than one g-code command from distance mode group (G90, G91) "
-            "found in block."
+            "The same G-code word appears more than once. "
+            "Remove the duplicate."
         ),
     ),
     26: DeviceError(
         26,
-        _("Feed Rate Mode Violation"),
+        _("Missing Axis"),
         _(
-            "More than one g-code command from feed rate mode group (G93, "
-            "G94, G95) found in block."
+            "This command requires XYZ axis coordinates. "
+            "Add the missing axis values."
         ),
     ),
     27: DeviceError(
         27,
-        _("Units Violation"),
+        _("Line Number Out of Range"),
         _(
-            "More than one g-code command from units group (G20, G21) found "
-            "in block."
+            "Line number must be between 1 and 9,999,999. "
+            "Use a valid line number."
         ),
     ),
     28: DeviceError(
         28,
-        _("Cutter Radius Compensation Violation"),
-        _(
-            "More than one g-code command from cutter radius compensation "
-            "group (G40) found in block."
-        ),
+        _("Missing Value"),
+        _("This command requires a P or L value. Add the missing parameter."),
     ),
     29: DeviceError(
         29,
-        _("Tool Length Offset Violation"),
+        _("Unsupported Coordinate"),
         _(
-            "More than one g-code command from tool length offset group (G43, "
-            "G49) found in block."
+            "Only G54-G59 coordinate systems are supported. "
+            "Use one of these instead."
         ),
     ),
     30: DeviceError(
         30,
-        _("Cycle Retract Mode Violation"),
+        _("Wrong Motion Mode"),
         _(
-            "More than one g-code command from cycle retract mode group "
-            "(G98, G99) found in block."
+            "G53 command requires G0 or G1 motion mode. "
+            "Set the correct motion mode first."
         ),
     ),
     31: DeviceError(
         31,
-        _("Spindle Speed Mode Violation"),
+        _("Unused Axis Words"),
         _(
-            "More than one g-code command from spindle speed mode group "
-            "(G96, G97) found in block."
+            "Axis words present but G80 cancel is active. "
+            "Remove the unused axis words."
         ),
     ),
     32: DeviceError(
         32,
-        _("Coolant Mode Violation"),
+        _("Missing Arc Data"),
         _(
-            "More than one g-code command from coolant mode group "
-            "(M7, M8, M9) found in block."
+            "G2/G3 arc command needs XYZ coordinates. "
+            "Add the axis values for the selected plane."
         ),
     ),
     33: DeviceError(
         33,
-        _("Coordinate System Selection Violation"),
+        _("Invalid Target"),
         _(
-            "More than one g-code command from coordinate system selection "
-            "group (G54-G59) found in block."
+            "Cannot create this arc or probe to current position. "
+            "Check the target coordinates."
         ),
     ),
     34: DeviceError(
         34,
-        _("Path Control Mode Violation"),
+        _("Arc Geometry Error"),
         _(
-            "More than one g-code command from path control mode group "
-            "(G61, G61.1, G64) found in block."
+            "Arc calculation failed. Try breaking the arc into smaller "
+            "pieces or use IJK offset instead."
         ),
     ),
     35: DeviceError(
         35,
-        _("Stop Mode Violation"),
+        _("Missing Arc Offset"),
         _(
-            "More than one g-code command from stop mode group (M0, M1, M2, "
-            "M30, M60) found in block."
+            "G2/G3 arc command needs IJK offset values. "
+            "Add the missing offset for the selected plane."
         ),
     ),
     36: DeviceError(
         36,
-        _("Spindle State Violation"),
+        _("Unused Words"),
         _(
-            "More than one g-code command from spindle state group (M3, M4, "
-            "M5) found in block."
+            "Some G-code words in this line are not used by any command. "
+            "Remove the unused words."
         ),
     ),
     37: DeviceError(
         37,
-        _("Tool Select Violation"),
+        _("Wrong Axis for Offset"),
         _(
-            "More than one g-code command from tool select group (T) found in "
-            "block."
+            "Tool length offset only works on the configured axis "
+            "(usually Z-axis). Check your settings."
         ),
     ),
     38: DeviceError(
         38,
-        _("Non-Modal Actions Violation"),
+        _("Tool Number Too High"),
         _(
-            "More than one g-code command from non-modal actions group "
-            "(G4, G10, G28, G30, G53, G92) found in block."
+            "Tool number exceeds the maximum supported value. "
+            "Use a valid tool number."
         ),
     ),
 }

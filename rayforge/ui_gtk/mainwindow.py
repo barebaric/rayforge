@@ -1455,7 +1455,7 @@ class MainWindow(Adw.ApplicationWindow):
                 self.toolbar.set_machine_warning(
                     active_driver.state.error.title,
                     active_driver.state.error.code,
-                    active_driver.state.error.description
+                    active_driver.state.error.description,
                 )
                 self.toolbar.machine_warning_box.set_visible(True)
             else:
