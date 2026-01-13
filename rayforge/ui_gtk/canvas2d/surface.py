@@ -488,6 +488,9 @@ class WorkSurface(WorldSurface):
         if self.machine:
             self.machine.changed.disconnect(self._on_machine_changed)
             self.machine.wcs_updated.disconnect(self._on_wcs_updated)
+            self.machine.state_changed.disconnect(
+                self._on_machine_state_changed
+            )
 
         # Update the machine reference
         self.machine = machine
@@ -496,6 +499,7 @@ class WorkSurface(WorldSurface):
         if self.machine:
             self.machine.changed.connect(self._on_machine_changed)
             self.machine.wcs_updated.connect(self._on_wcs_updated)
+            self.machine.state_changed.connect(self._on_machine_state_changed)
             self.reset_view()
             self._on_wcs_updated(self.machine)
 
@@ -518,6 +522,13 @@ class WorkSurface(WorldSurface):
         is_at_origin = offset_x == 0.0 and offset_y == 0.0
         self._work_origin_element.set_visible(not is_at_origin)
         self.queue_draw()
+
+    def _on_machine_state_changed(self, machine: Machine, state):
+        """Handles machine state changes including position updates."""
+        m_pos = state.machine_pos
+        if m_pos and all(p is not None for p in m_pos):
+            m_x, m_y, _ = m_pos
+            self.set_laser_dot_position(m_x, m_y)
 
     def do_snapshot(self, snapshot: Gtk.Snapshot) -> None:
         # Override the base WorldSurface snapshot to pass in the WCS offset.
