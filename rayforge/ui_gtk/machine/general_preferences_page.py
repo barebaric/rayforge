@@ -364,17 +364,21 @@ class GeneralPreferencesPage(Adw.PreferencesPage):
         """Shows or hides the error banner based on all possible errors."""
         errors = []
         if self.machine.precheck_error:
-            errors.append(self.machine.precheck_error)
+            errors.append(
+                _("<b>Configuration required:</b> {error}").format(
+                    error=self.machine.precheck_error
+                )
+            )
         if self.machine.driver and self.machine.driver.state.error:
-            errors.append(self.machine.driver.state.error.title)
+            errors.append(
+                _("<b>Error:</b> {error}").format(
+                    error=self.machine.driver.state.error.title
+                )
+            )
 
         if errors:
             full_error_msg = " \n".join(errors)
-            self.error_banner.set_title(
-                _("<b>Configuration required:</b> {error}").format(
-                    error=full_error_msg
-                )
-            )
+            self.error_banner.set_title(full_error_msg)
             self.error_banner.set_revealed(True)
         else:
             self.error_banner.set_revealed(False)

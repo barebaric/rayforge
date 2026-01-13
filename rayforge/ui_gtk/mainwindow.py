@@ -1451,9 +1451,15 @@ class MainWindow(Adw.ApplicationWindow):
                 )
             self.toolbar.export_button.set_tooltip_text(export_tooltip)
 
-            self.toolbar.machine_warning_box.set_visible(
-                bool(active_driver and active_driver.state.error)
-            )
+            if active_driver and active_driver.state.error:
+                self.toolbar.set_machine_warning(
+                    active_driver.state.error.title,
+                    active_driver.state.error.code,
+                    active_driver.state.error.description
+                )
+                self.toolbar.machine_warning_box.set_visible(True)
+            else:
+                self.toolbar.machine_warning_box.set_visible(False)
             am.get_action("machine-settings").set_enabled(True)
 
             # A job/task is running if the machine is not idle or a UI task is
@@ -1513,7 +1519,10 @@ class MainWindow(Adw.ApplicationWindow):
             cancel_sensitive = conn_status == TransportStatus.CONNECTED
             am.get_action("machine-cancel").set_enabled(cancel_sensitive)
 
-            clear_alarm_sensitive = device_status == DeviceStatus.ALARM
+            clear_alarm_sensitive = bool(
+                device_status == DeviceStatus.ALARM
+                or (active_driver and active_driver.state.error)
+            )
             am.get_action("machine-clear-alarm").set_enabled(
                 clear_alarm_sensitive
             )
