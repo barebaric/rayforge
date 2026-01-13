@@ -462,7 +462,10 @@ class Ops:
 
     def __mul__(self, count: int) -> Ops:
         result = Ops()
-        result.commands = count * self.commands
+        # Create distinct copies for each repetition to avoid shared
+        # references.
+        for _ in range(count):
+            result.commands.extend(deepcopy(self.commands))
         return result
 
     def __len__(self) -> int:
