@@ -29,6 +29,7 @@ class AxisRenderer:
         grid_color: Tuple[float, float, float, float] = (0.9, 0.9, 0.9, 1.0),
         show_grid: bool = True,
         show_axis: bool = True,
+        label_font_size: float = 12.0,
     ):
         self.grid_size_mm: float = grid_size_mm
         self.width_mm: float = width_mm
@@ -41,6 +42,7 @@ class AxisRenderer:
         self.grid_color: Tuple[float, float, float, float] = grid_color
         self.show_grid: bool = show_grid
         self.show_axis: bool = show_axis
+        self.label_font_size: float = label_font_size
         # Minimum pixel spacing for grid lines to avoid clutter
         self.min_grid_spacing_px = 50.0
 
@@ -298,6 +300,7 @@ class AxisRenderer:
 
         ctx.set_source_rgba(*self.fg_color)
         ctx.set_line_width(1)
+        ctx.set_font_size(self.label_font_size)
 
         work_origin_x, work_origin_y, _ = origin_offset_mm
 
@@ -442,6 +445,7 @@ class AxisRenderer:
         # the maximum height among digits.
         temp_surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, 1, 1)
         ctx = cairo.Context(temp_surface)
+        ctx.set_font_size(self.label_font_size)
 
         extents = ctx.text_extents("8")
         return math.ceil(extents.height) + 4
@@ -452,6 +456,7 @@ class AxisRenderer:
         # which corresponds to the largest coordinate value.
         temp_surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, 1, 1)
         ctx = cairo.Context(temp_surface)
+        ctx.set_font_size(self.label_font_size)
         # Account for negative sign potentially making label wider
         if self.y_axis_negative:
             max_y_label = f"{-self.height_mm:.0f}"
@@ -483,3 +488,6 @@ class AxisRenderer:
 
     def set_grid_color(self, grid_color: Tuple[float, float, float, float]):
         self.grid_color = grid_color
+
+    def set_label_font_size(self, label_font_size: float):
+        self.label_font_size = label_font_size
