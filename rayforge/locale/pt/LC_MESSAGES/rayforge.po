@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-01-11 23:33+0100\n"
+"POT-Creation-Date: 2026-01-13 23:59+0100\n"
 "PO-Revision-Date: 2025-07-24 22:09+0200\n"
 "Last-Translator: Samuel Abels <knipkap@gmail.com>\n"
 "Language-Team: Portuguese <LL@li.org>\n"
@@ -269,131 +269,194 @@ msgid "Unstick Junction"
 msgstr "Descolar Junção"
 
 #: rayforge/machine/driver/grbl_util.py
-msgid "Expected Command Letter"
-msgstr "Letra de Comando Esperada"
-
-#: rayforge/machine/driver/grbl_util.py
-msgid "G-code words consist of a letter and a value. Letter was not found."
-msgstr ""
-"Palavras G-code consistem numa letra e um valor. A letra não foi encontrada."
-
-#: rayforge/machine/driver/grbl_util.py
-msgid "Bad Number Format"
-msgstr "Formato de Número Inválido"
+msgid "Missing Command Letter"
+msgstr "Letra de comando ausente"
 
 #: rayforge/machine/driver/grbl_util.py
 msgid ""
-"Missing the expected G-code word value or numeric value format is not valid."
+"G-code commands need a letter followed by a value. The command letter was "
+"not found."
 msgstr ""
-"Falta o valor da palavra G-code esperado ou o formato do valor numérico é "
-"inválido."
+"Os comandos G-code necessitam uma letra seguida de um valor. A letra "
+"de comando não foi encontrada."
 
 #: rayforge/machine/driver/grbl_util.py
-msgid "Invalid Statement"
-msgstr "Declaração Inválida"
+msgid "Invalid Number Format"
+msgstr "Formato de número inválido"
 
 #: rayforge/machine/driver/grbl_util.py
-msgid "Grbl '$' system command was not recognized or supported."
-msgstr "O comando de sistema '$' do Grbl não foi reconhecido ou suportado."
+msgid ""
+"The value is missing or not in the correct numeric format. Check your G-code "
+"syntax."
+msgstr ""
+"O valor está ausente ou não está no formato numérico correto. Verifique "
+"a sintaxe do seu G-code."
 
 #: rayforge/machine/driver/grbl_util.py
-msgid "Value < 0"
-msgstr "Valor < 0"
+msgid "Unknown Command"
+msgstr "Comando desconhecido"
 
 #: rayforge/machine/driver/grbl_util.py
-msgid "Negative value received for an expected positive value."
-msgstr "Valor negativo recebido para um valor positivo esperado."
+msgid ""
+"This Grbl setting command is not recognized or supported. Check the command "
+"syntax."
+msgstr ""
+"Este comando de configuração do Grbl não é reconhecido ou suportado. "
+"Verifique a sintaxe do comando."
+
+#: rayforge/machine/driver/grbl_util.py
+msgid "Negative Value"
+msgstr "Valor negativo"
+
+#: rayforge/machine/driver/grbl_util.py
+msgid "A positive number is required here, but a negative value was received."
+msgstr ""
+"Um número positivo é necessário aqui, mas um valor negativo foi recebido."
 
 #: rayforge/machine/driver/grbl_util.py
 msgid "Homing Disabled"
 msgstr "Referenciação Desativada"
 
 #: rayforge/machine/driver/grbl_util.py
-msgid "Homing cycle failure. Homing is not enabled via settings."
+msgid ""
+"Homing is not enabled in settings. Enable homing ($22=1) to use this feature."
 msgstr ""
-"Falha no ciclo de referenciação. A referenciação não está ativada nas "
-"configurações."
+"O retorno à origem não está ativado nas configurações. Ative o retorno à "
+"origem ($22=1) para usar este recurso."
 
 #: rayforge/machine/driver/grbl_util.py
-msgid "EEPROM Read Fail"
-msgstr "Falha na Leitura da EEPROM"
+msgid "Pulse Time Too Short"
+msgstr "Tempo de pulso muito curto"
 
 #: rayforge/machine/driver/grbl_util.py
 msgid ""
-"An EEPROM read failed. Auto-restoring affected EEPROM to default values."
+"Minimum step pulse time must be greater than 3 microseconds. Check setting "
+"$0."
 msgstr ""
-"Falha na leitura da EEPROM. A restaurar automaticamente a EEPROM afetada "
-"para os valores padrão."
+"O tempo de pulso de passo mínimo deve ser maior que 3 microsegundos. "
+"Verifique a configuração $0."
 
 #: rayforge/machine/driver/grbl_util.py
-msgid "Not Idle"
-msgstr "Não Ocioso"
+msgid "Memory Error"
+msgstr "Erro de memória"
 
 #: rayforge/machine/driver/grbl_util.py
 msgid ""
-"Grbl '$' command cannot be used unless Grbl is IDLE. Ensures smooth "
-"operation during a job."
+"Settings reset to defaults due to a memory read failure. Reconfigure your "
+"settings if needed."
 msgstr ""
-"O comando '$' do Grbl não pode ser usado a menos que o Grbl esteja OCIOSO. "
-"Garante uma operação suave durante um trabalho."
+"As configurações foram redefinidas para os padrões devido a uma falha de "
+"leitura de memória. Reconfigure suas configurações se necessário."
 
 #: rayforge/machine/driver/grbl_util.py
-msgid "G-Code Lock"
-msgstr "Bloqueio de G-Code"
-
-#: rayforge/machine/driver/grbl_util.py
-msgid "G-code commands are locked out during alarm or jog state."
-msgstr "Os comandos G-code estão bloqueados durante o estado de alarme ou jog."
-
-#: rayforge/machine/driver/grbl_util.py
-msgid "Homing Not Enabled"
-msgstr "Referenciação Não Ativada"
-
-#: rayforge/machine/driver/grbl_util.py
-msgid "Soft limits cannot be enabled without homing also enabled."
-msgstr ""
-"Os limites de software não podem ser ativados sem a referenciação também "
-"estar ativada."
-
-#: rayforge/machine/driver/grbl_util.py
-msgid "Line Overflow"
-msgstr "Excesso de Linha"
+msgid "Machine Busy"
+msgstr "Máquina ocupada"
 
 #: rayforge/machine/driver/grbl_util.py
 msgid ""
-"Max characters per line exceeded. File most likely formatted improperly."
+"This command can only be used when the machine is idle. Wait for the current "
+"job to finish."
 msgstr ""
-"Máximo de caracteres por linha excedido. O ficheiro está provavelmente "
-"formatado incorretamente."
+"Este comando só pode ser usado quando a máquina está ociosa. Aguarde o "
+"trabalho atual terminar."
 
 #: rayforge/machine/driver/grbl_util.py
-msgid "Line Length Exceeded"
-msgstr "Comprimento da Linha Excedido"
+msgid "Commands Locked"
+msgstr "Comandos bloqueados"
 
 #: rayforge/machine/driver/grbl_util.py
 msgid ""
-"Build info or startup line exceeded EEPROM line length limit. Line not "
-"stored."
+"Cannot send commands while in alarm or jog mode. Clear the alarm state first."
 msgstr ""
-"A informação de compilação ou a linha de arranque excedeu o limite de "
-"comprimento da linha da EEPROM. Linha não armazenada."
+"Não é possível enviar comandos enquanto em modo de alarme ou movimento "
+"manual. Limpe o estado de alarme primeiro."
 
 #: rayforge/machine/driver/grbl_util.py
-msgid "Travel Exceeded"
-msgstr "Percurso Excedido"
+msgid "Homing Required"
+msgstr "Retorno à origem necessário"
 
 #: rayforge/machine/driver/grbl_util.py
-msgid "Jog target exceeds machine travel. Jog command has been ignored."
+msgid ""
+"Soft limits cannot be enabled without homing also enabled. Enable homing "
+"first ($22=1)."
 msgstr ""
-"O alvo do jog excede o percurso da máquina. O comando jog foi ignorado."
+"Os limites suaves não podem ser ativados sem que o retorno à origem "
+"também esteja ativado. Ative o retorno à origem primeiro ($22=1)."
 
 #: rayforge/machine/driver/grbl_util.py
-msgid "Setting Disabled"
-msgstr "Configuração Desativada"
+msgid "Line Too Long"
+msgstr "Linha muito longa"
 
 #: rayforge/machine/driver/grbl_util.py
-msgid "Laser mode requires PWM output."
-msgstr "O modo laser requer saída PWM."
+msgid ""
+"The command line has too many characters and was ignored. Check your file "
+"formatting."
+msgstr ""
+"A linha de comando tem muitos caracteres e foi ignorada. Verifique a "
+"formatação do seu arquivo."
+
+#: rayforge/machine/driver/grbl_util.py
+msgid "Setting Too High"
+msgstr "Configuração muito alta"
+
+#: rayforge/machine/driver/grbl_util.py
+msgid ""
+"This setting exceeds the maximum step rate supported. Use a lower value."
+msgstr ""
+"Esta configuração excede a taxa de passo máxima suportada. Use um valor "
+"mais baixo."
+
+#: rayforge/machine/driver/grbl_util.py
+msgid "Door Open"
+msgstr "Porta aberta"
+
+#: rayforge/machine/driver/grbl_util.py
+msgid ""
+"The safety door was detected as open. Close the door and resume operation."
+msgstr ""
+"A porta de segurança foi detectada como aberta. Feche a porta e retome a "
+"operação."
+
+#: rayforge/machine/driver/grbl_util.py
+msgid "Build info or startup line exceeds storage limit. Shorten the line."
+msgstr ""
+"As informações de build ou a linha de inicialização excedem o limite de "
+"armazenamento. Encurte a linha."
+
+#: rayforge/machine/driver/grbl_util.py
+msgid "Target Out of Range"
+msgstr "Alvo fora de alcance"
+
+#: rayforge/machine/driver/grbl_util.py
+msgid ""
+"Jog target is beyond the machine's travel limits. Move to a position within "
+"range."
+msgstr ""
+"O alvo de movimento manual está além dos limites de deslocamento da "
+"máquina. Mova para uma posição dentro do alcance."
+
+#: rayforge/machine/driver/grbl_util.py
+msgid "Invalid Jog Command"
+msgstr "Comando de movimento manual inválido"
+
+#: rayforge/machine/driver/grbl_util.py
+msgid ""
+"Jog command is missing '=' or contains prohibited G-code. Check the jog "
+"syntax."
+msgstr ""
+"O comando de movimento manual está faltando '=' ou contém G-code "
+"proibido. Verifique a sintaxe de movimento manual."
+
+#: rayforge/machine/driver/grbl_util.py
+msgid "Laser Mode Error"
+msgstr "Erro de modo laser"
+
+#: rayforge/machine/driver/grbl_util.py
+msgid ""
+"Laser mode requires PWM output to work. Check your hardware configuration."
+msgstr ""
+"O modo laser requer saída PWM para funcionar. Verifique a configuração do "
+"seu hardware."
 
 #: rayforge/machine/driver/grbl_util.py
 msgid "Unsupported Command"
@@ -401,219 +464,209 @@ msgstr "Comando Não Suportado"
 
 #: rayforge/machine/driver/grbl_util.py
 msgid ""
-"Unsupported or invalid g-code command found in block. This usually means "
-"that you used the wrong Post-Processor to make your file, or that some "
-"incompatible code within needs to be manually deleted."
+"This G-code command is not supported by the machine. Check your post-"
+"processor settings."
 msgstr ""
-"Comando g-code não suportado ou inválido encontrado no bloco. Isto "
-"geralmente significa que usou o Pós-Processador errado para criar o seu "
-"ficheiro, ou que algum código incompatível precisa ser excluído manualmente."
+"Este comando G-code não é suportado pela máquina. Verifique as "
+"configurações do seu pós-processador."
 
 #: rayforge/machine/driver/grbl_util.py
-msgid "Modal Group Violation"
-msgstr "Violação de Grupo Modal"
-
-#: rayforge/machine/driver/grbl_util.py
-msgid "More than one g-code command from same modal group found in block."
-msgstr ""
-"Mais do que um comando g-code do mesmo grupo modal encontrado no bloco."
-
-#: rayforge/machine/driver/grbl_util.py
-msgid "Undefined Feed Rate"
-msgstr "Taxa de Avanço Indefinida"
-
-#: rayforge/machine/driver/grbl_util.py
-msgid "Feed rate has not yet been set or is undefined."
-msgstr "A taxa de avanço ainda não foi definida ou está indefinida."
-
-#: rayforge/machine/driver/grbl_util.py
-msgid "Motion Group Violation"
-msgstr "Violação de Grupo de Movimento"
+msgid "Conflicting Commands"
+msgstr "Comandos em conflito"
 
 #: rayforge/machine/driver/grbl_util.py
 msgid ""
-"More than one g-code command from motion group (G0, G1, G2, G3, G38.2, G80) "
-"found in block."
+"Multiple commands from the same group found on one line. Remove the "
+"duplicate command."
 msgstr ""
-"Mais do que um comando g-code do grupo de movimento (G0, G1, G2, G3, G38.2, "
-"G80) encontrado no bloco."
+"Múltiplos comandos do mesmo grupo encontrados em uma linha. Remova o "
+"comando duplicado."
 
 #: rayforge/machine/driver/grbl_util.py
-msgid "Plane Selection Violation"
-msgstr "Violação de Seleção de Plano"
+msgid "Feed Rate Missing"
+msgstr "Taxa de avanço ausente"
 
 #: rayforge/machine/driver/grbl_util.py
 msgid ""
-"More than one g-code command from plane selection group (G17, G18, G19) "
-"found in block."
+"Set a feed rate before using motion commands. Add an F command to specify "
+"speed."
 msgstr ""
-"Mais do que um comando g-code do grupo de seleção de plano (G17, G18, G19) "
-"encontrado no bloco."
+"Defina uma taxa de avanço antes de usar comandos de movimento. Adicione "
+"um comando F para especificar a velocidade."
 
 #: rayforge/machine/driver/grbl_util.py
-msgid "Distance Mode Violation"
-msgstr "Violação do Modo de Distância"
+msgid "Integer Required"
+msgstr "Inteiro necessário"
+
+#: rayforge/machine/driver/grbl_util.py
+msgid "This command requires a whole number value. Remove any decimal points."
+msgstr ""
+"Este comando requer um valor de número inteiro. Remova todos os pontos "
+"decimais."
+
+#: rayforge/machine/driver/grbl_util.py
+msgid "Axis Conflict"
+msgstr "Conflito de eixo"
+
+#: rayforge/machine/driver/grbl_util.py
+msgid "Multiple commands trying to use the same axis. Simplify the command."
+msgstr ""
+"Múltiplos comandos tentando usar o mesmo eixo. Simplifique o comando."
+
+#: rayforge/machine/driver/grbl_util.py
+msgid "Duplicate Word"
+msgstr "Palavra duplicada"
+
+#: rayforge/machine/driver/grbl_util.py
+msgid "The same G-code word appears more than once. Remove the duplicate."
+msgstr ""
+"A mesma palavra G-code aparece mais de uma vez. Remova o duplicado."
+
+#: rayforge/machine/driver/grbl_util.py
+msgid "Missing Axis"
+msgstr "Eixo ausente"
 
 #: rayforge/machine/driver/grbl_util.py
 msgid ""
-"More than one g-code command from distance mode group (G90, G91) found in "
-"block."
+"This command requires XYZ axis coordinates. Add the missing axis values."
 msgstr ""
-"Mais do que um comando g-code do grupo de modo de distância (G90, G91) "
-"encontrado no bloco."
+"Este comando requer coordenadas de eixo XYZ. Adicione os valores de eixo "
+"ausentes."
 
 #: rayforge/machine/driver/grbl_util.py
-msgid "Feed Rate Mode Violation"
-msgstr "Violação do Modo de Taxa de Avanço"
+msgid "Line Number Out of Range"
+msgstr "Número de linha fora de alcance"
+
+#: rayforge/machine/driver/grbl_util.py
+msgid "Line number must be between 1 and 9,999,999. Use a valid line number."
+msgstr ""
+"O número de linha deve estar entre 1 e 9 999 999. Use um número "
+"de linha válido."
+
+#: rayforge/machine/driver/grbl_util.py
+msgid "Missing Value"
+msgstr "Valor ausente"
+
+#: rayforge/machine/driver/grbl_util.py
+msgid "This command requires a P or L value. Add the missing parameter."
+msgstr ""
+"Este comando requer um valor P ou L. Adicione o parâmetro ausente."
+
+#: rayforge/machine/driver/grbl_util.py
+msgid "Unsupported Coordinate"
+msgstr "Coordenada não suportada"
 
 #: rayforge/machine/driver/grbl_util.py
 msgid ""
-"More than one g-code command from feed rate mode group (G93, G94, G95) found "
-"in block."
+"Only G54-G59 coordinate systems are supported. Use one of these instead."
 msgstr ""
-"Mais do que um comando g-code do grupo de modo de taxa de avanço (G93, G94, "
-"G95) encontrado no bloco."
+"Apenas os sistemas de coordenadas G54-G59 são suportados. Use um deles "
+"em vez."
 
 #: rayforge/machine/driver/grbl_util.py
-msgid "Units Violation"
-msgstr "Violação de Unidades"
+msgid "Wrong Motion Mode"
+msgstr "Modo de movimento errado"
 
 #: rayforge/machine/driver/grbl_util.py
 msgid ""
-"More than one g-code command from units group (G20, G21) found in block."
+"G53 command requires G0 or G1 motion mode. Set the correct motion mode first."
 msgstr ""
-"Mais do que um comando g-code do grupo de unidades (G20, G21) encontrado no "
-"bloco."
+"O comando G53 requer o modo de movimento G0 ou G1. Defina o modo de "
+"movimento correto primeiro."
 
 #: rayforge/machine/driver/grbl_util.py
-msgid "Cutter Radius Compensation Violation"
-msgstr "Violação da Compensação do Raio da Ferramenta"
+msgid "Unused Axis Words"
+msgstr "Palavras de eixo não utilizadas"
 
 #: rayforge/machine/driver/grbl_util.py
 msgid ""
-"More than one g-code command from cutter radius compensation group (G40) "
-"found in block."
+"Axis words present but G80 cancel is active. Remove the unused axis words."
 msgstr ""
-"Mais do que um comando g-code do grupo de compensação do raio da ferramenta "
-"(G40) encontrado no bloco."
+"Palavras de eixo presentes mas o cancelamento G80 está ativo. Remova as "
+"palavras de eixo não utilizadas."
 
 #: rayforge/machine/driver/grbl_util.py
-msgid "Tool Length Offset Violation"
-msgstr "Violação do Deslocamento do Comprimento da Ferramenta"
+msgid "Missing Arc Data"
+msgstr "Dados de arco ausentes"
 
 #: rayforge/machine/driver/grbl_util.py
 msgid ""
-"More than one g-code command from tool length offset group (G43, G49) found "
-"in block."
+"G2/G3 arc command needs XYZ coordinates. Add the axis values for the "
+"selected plane."
 msgstr ""
-"Mais do que um comando g-code do grupo de deslocamento do comprimento da "
-"ferramenta (G43, G49) encontrado no bloco."
+"O comando de arco G2/G3 precisa de coordenadas XYZ. Adicione os valores "
+"de eixo para o plano selecionado."
 
 #: rayforge/machine/driver/grbl_util.py
-msgid "Cycle Retract Mode Violation"
-msgstr "Violação do Modo de Retração de Ciclo"
+msgid "Invalid Target"
+msgstr "Alvo inválido"
 
 #: rayforge/machine/driver/grbl_util.py
 msgid ""
-"More than one g-code command from cycle retract mode group (G98, G99) found "
-"in block."
+"Cannot create this arc or probe to current position. Check the target "
+"coordinates."
 msgstr ""
-"Mais do que um comando g-code do grupo de modo de retração de ciclo (G98, "
-"G99) encontrado no bloco."
+"Não é possível criar este arco ou sondar a posição atual. Verifique as "
+"coordenadas do alvo."
 
 #: rayforge/machine/driver/grbl_util.py
-msgid "Spindle Speed Mode Violation"
-msgstr "Violação do Modo de Velocidade do Fuso"
+msgid "Arc Geometry Error"
+msgstr "Erro de geometria de arco"
 
 #: rayforge/machine/driver/grbl_util.py
 msgid ""
-"More than one g-code command from spindle speed mode group (G96, G97) found "
-"in block."
+"Arc calculation failed. Try breaking the arc into smaller pieces or use IJK "
+"offset instead."
 msgstr ""
-"Mais do que um comando g-code do grupo de modo de velocidade do fuso (G96, "
-"G97) encontrado no bloco."
+"O cálculo do arco falhou. Tente dividir o arco em peças menores ou use "
+"o deslocamento IJK em vez disso."
 
 #: rayforge/machine/driver/grbl_util.py
-msgid "Coolant Mode Violation"
-msgstr "Violação do Modo de Refrigeração"
+msgid "Missing Arc Offset"
+msgstr "Deslocamento de arco ausente"
 
 #: rayforge/machine/driver/grbl_util.py
 msgid ""
-"More than one g-code command from coolant mode group (M7, M8, M9) found in "
-"block."
+"G2/G3 arc command needs IJK offset values. Add the missing offset for the "
+"selected plane."
 msgstr ""
-"Mais do que um comando g-code do grupo de modo de refrigeração (M7, M8, M9) "
-"encontrado no bloco."
+"O comando de arco G2/G3 precisa de valores de deslocamento IJK. "
+"Adicione o deslocamento ausente para o plano selecionado."
 
 #: rayforge/machine/driver/grbl_util.py
-msgid "Coordinate System Selection Violation"
-msgstr "Violação da Seleção do Sistema de Coordenadas"
+msgid "Unused Words"
+msgstr "Palavras não utilizadas"
 
 #: rayforge/machine/driver/grbl_util.py
 msgid ""
-"More than one g-code command from coordinate system selection group (G54-"
-"G59) found in block."
+"Some G-code words in this line are not used by any command. Remove the "
+"unused words."
 msgstr ""
-"Mais do que um comando g-code do grupo de seleção do sistema de coordenadas "
-"(G54-G59) encontrado no bloco."
+"Algumas palavras G-code nesta linha não são usadas por nenhum comando. "
+"Remova as palavras não utilizadas."
 
 #: rayforge/machine/driver/grbl_util.py
-msgid "Path Control Mode Violation"
-msgstr "Violação do Modo de Controle de Caminho"
+msgid "Wrong Axis for Offset"
+msgstr "Eixo errado para deslocamento"
 
 #: rayforge/machine/driver/grbl_util.py
 msgid ""
-"More than one g-code command from path control mode group (G61, G61.1, G64) "
-"found in block."
+"Tool length offset only works on the configured axis (usually Z-axis). Check "
+"your settings."
 msgstr ""
-"Mais do que um comando g-code do grupo de modo de controle de caminho (G61, "
-"G61.1, G64) encontrado no bloco."
+"O deslocamento de comprimento da ferramenta só funciona no eixo "
+"configurado (geralmente eixo Z). Verifique suas configurações."
 
 #: rayforge/machine/driver/grbl_util.py
-msgid "Stop Mode Violation"
-msgstr "Violação do Modo de Parada"
+msgid "Tool Number Too High"
+msgstr "Número de ferramenta muito alto"
 
 #: rayforge/machine/driver/grbl_util.py
 msgid ""
-"More than one g-code command from stop mode group (M0, M1, M2, M30, M60) "
-"found in block."
+"Tool number exceeds the maximum supported value. Use a valid tool number."
 msgstr ""
-"Mais do que um comando g-code do grupo de modo de parada (M0, M1, M2, M30, "
-"M60) encontrado no bloco."
-
-#: rayforge/machine/driver/grbl_util.py
-msgid "Spindle State Violation"
-msgstr "Violação do Estado do Fuso"
-
-#: rayforge/machine/driver/grbl_util.py
-msgid ""
-"More than one g-code command from spindle state group (M3, M4, M5) found in "
-"block."
-msgstr ""
-"Mais do que um comando g-code do grupo de estado do fuso (M3, M4, M5) "
-"encontrado no bloco."
-
-#: rayforge/machine/driver/grbl_util.py
-msgid "Tool Select Violation"
-msgstr "Violação de Seleção de Ferramenta"
-
-#: rayforge/machine/driver/grbl_util.py
-msgid "More than one g-code command from tool select group (T) found in block."
-msgstr ""
-"Mais do que um comando g-code do grupo de seleção de ferramenta (T) "
-"encontrado no bloco."
-
-#: rayforge/machine/driver/grbl_util.py
-msgid "Non-Modal Actions Violation"
-msgstr "Violação de Ações Não Modais"
-
-#: rayforge/machine/driver/grbl_util.py
-msgid ""
-"More than one g-code command from non-modal actions group (G4, G10, G28, "
-"G30, G53, G92) found in block."
-msgstr ""
-"Mais do que um comando g-code do grupo de ações não modais (G4, G10, G28, "
-"G30, G53, G92) encontrado no bloco."
+"O número da ferramenta excede o valor máximo suportado. Use um número de "
+"ferramenta válido."
 
 #: rayforge/machine/driver/grbl_util.py
 msgid "Unknown Error"
@@ -692,6 +745,11 @@ msgid "GRBL-compatible serial connection"
 msgstr "Conexão serial compatível com GRBL"
 
 #: rayforge/machine/driver/grbl_serial.py rayforge/machine/driver/smoothie.py
+#: rayforge/machine/driver/grbl.py
+msgid "Machine Coordinates (G53)"
+msgstr "Coordenadas de máquina (G53)"
+
+#: rayforge/machine/driver/grbl_serial.py rayforge/machine/driver/smoothie.py
 msgid "Port"
 msgstr "Porta"
 
@@ -743,6 +801,10 @@ msgstr "Nenhum driver"
 #: rayforge/machine/driver/dummy.py
 msgid "No connection"
 msgstr "Sem conexão"
+
+#: rayforge/machine/driver/dummy.py
+msgid "Machine Coordinates"
+msgstr "Coordenadas de máquina"
 
 #: rayforge/machine/driver/dummy.py
 msgid "No settings"
@@ -1175,6 +1237,7 @@ msgstr ""
 #: rayforge/ui_gtk/camera/selection_dialog.py
 #: rayforge/ui_gtk/camera/alignment_dialog.py
 #: rayforge/ui_gtk/machine/machine_hours_page.py
+#: rayforge/ui_gtk/machine/jog_dialog.py
 #: rayforge/ui_gtk/machine/dialect_editor.py
 #: rayforge/ui_gtk/machine/hook_list.py rayforge/ui_gtk/machine/gcode_editor.py
 #: rayforge/ui_gtk/machine/dialect_list.py
@@ -1597,6 +1660,7 @@ msgid "New Counter"
 msgstr "Novo Contador"
 
 #: rayforge/ui_gtk/machine/machine_hours_page.py
+#: rayforge/ui_gtk/machine/jog_dialog.py
 #: rayforge/ui_gtk/machine/dialect_editor.py
 #: rayforge/ui_gtk/machine/gcode_editor.py
 #: rayforge/ui_gtk/doceditor/material_library_list.py
@@ -1703,16 +1767,20 @@ msgid "Work Coordinates"
 msgstr "Coordenadas de Trabalho"
 
 #: rayforge/ui_gtk/machine/jog_dialog.py
-msgid "G53 (Machine)"
-msgstr "G53 (Máquina)"
-
-#: rayforge/ui_gtk/machine/jog_dialog.py
 msgid "Active System"
 msgstr "Sistema Ativo"
 
 #: rayforge/ui_gtk/machine/jog_dialog.py
 msgid "Current Offsets"
 msgstr "Deslocamentos Atuais"
+
+#: rayforge/ui_gtk/machine/jog_dialog.py
+msgid "Set Work Zero at Current Position"
+msgstr "Definir Zero de Trabalho na Posição Atual"
+
+#: rayforge/ui_gtk/machine/jog_dialog.py
+msgid "Edit Offsets Manually"
+msgstr "Editar deslocamentos manualmente"
 
 #: rayforge/ui_gtk/machine/jog_dialog.py
 msgid "Current Position"
@@ -1743,10 +1811,6 @@ msgid "Set current Z position as 0 for active WCS"
 msgstr "Definir a posição Z atual como 0 para o WCS ativo"
 
 #: rayforge/ui_gtk/machine/jog_dialog.py
-msgid "Zero All"
-msgstr "Zerar Tudo"
-
-#: rayforge/ui_gtk/machine/jog_dialog.py
 msgid "Jog Settings"
 msgstr "Configurações Jog"
 
@@ -1767,13 +1831,29 @@ msgid "Distance in mm"
 msgstr "Distância em mm"
 
 #: rayforge/ui_gtk/machine/jog_dialog.py
-msgid "Offsets cannot be set in Machine Coordinate Mode (G53)"
-msgstr ""
-"Deslocamentos não podem ser definidos no Modo de Coordenadas da Máquina (G53)"
+msgid "Edit Work Offsets"
+msgstr "Editar deslocamentos de trabalho"
 
 #: rayforge/ui_gtk/machine/jog_dialog.py
-msgid "Machine must be connected"
-msgstr "A máquina deve estar conectada"
+msgid "Enter the offset from Machine Zero to Work Zero for the active WCS."
+msgstr ""
+"Introduza o deslocamento do zero da máquina para o zero do "
+"trabalho para o WCS ativo."
+
+#: rayforge/ui_gtk/machine/jog_dialog.py
+msgid "Offline - Position Unknown"
+msgstr "Fora de linha - Posição desconhecida"
+
+#: rayforge/ui_gtk/machine/jog_dialog.py
+#, python-brace-format
+msgid "Offsets cannot be set in Machine Coordinate Mode ({wcs})"
+msgstr ""
+"Os deslocamentos não podem ser definidos no modo de coordenadas "
+"da máquina ({wcs})"
+
+#: rayforge/ui_gtk/machine/jog_dialog.py
+msgid "Machine must be connected to set Zero Here"
+msgstr "A máquina deve estar conectada para definir o zero aqui"
 
 #: rayforge/ui_gtk/machine/jog_dialog.py
 msgid "Set current position as 0"
@@ -2401,6 +2481,11 @@ msgstr "Aceleração da máquina. Usada apenas para estimativas de tempo."
 #, python-brace-format
 msgid "<b>Configuration required:</b> {error}"
 msgstr "<b>Configuração necessária:</b> {error}"
+
+#: rayforge/ui_gtk/machine/general_preferences_page.py
+#, python-brace-format
+msgid "<b>Error:</b> {error}"
+msgstr "<b>Erro:</b> {error}"
 
 #: rayforge/ui_gtk/machine/general_preferences_page.py
 msgid "Not supported by the driver"
@@ -3055,10 +3140,6 @@ msgstr "Alternar laser de foco"
 #: rayforge/ui_gtk/toolbar.py
 msgid "Work Coordinate System"
 msgstr "Sistema de Coordenadas de Trabalho"
-
-#: rayforge/ui_gtk/toolbar.py
-msgid "Set Work Zero at Current Position"
-msgstr "Definir Zero de Trabalho na Posição Atual"
 
 #: rayforge/ui_gtk/toolbar.py
 msgid "Machine not fully configured"
@@ -4912,8 +4993,8 @@ msgid ""
 "Failed to import {filename}. The image file may be corrupted or in an "
 "unsupported format."
 msgstr ""
-"Falha ao importar {filename}. O ficheiro de imagem pode estar corrompido "
-"ou num formato não suportado."
+"Falha ao importar {filename}. O ficheiro de imagem pode estar corrompido ou "
+"num formato não suportado."
 
 #: rayforge/doceditor/file_cmd.py
 #, python-brace-format
