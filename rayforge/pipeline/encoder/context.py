@@ -26,6 +26,11 @@ class GcodeContext:
     layer: Optional["Layer"] = None
     workpiece: Optional["WorkPiece"] = None
 
+    @property
+    def wcs_offset(self) -> Tuple[float, float, float]:
+        """The (x, y, z) offset for the currently active WCS."""
+        return self.machine.get_active_wcs_offset()
+
     # --- Static Variable Documentation ---
     _DOCS = {
         "job": [
@@ -43,6 +48,9 @@ class GcodeContext:
             ("job.extents[1]", "The minimum Y coordinate of the entire job."),
             ("job.extents[2]", "The maximum X coordinate of the entire job."),
             ("job.extents[3]", "The maximum Y coordinate of the entire job."),
+            ("wcs_offset[0]", "The X offset of the currently active WCS."),
+            ("wcs_offset[1]", "The Y offset of the currently active WCS."),
+            ("wcs_offset[2]", "The Z offset of the currently active WCS."),
         ],
         "layer": [
             ("layer.name", "The name of the current layer being processed."),
