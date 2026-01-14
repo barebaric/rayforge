@@ -1,3 +1,4 @@
+import pytest
 from rayforge.machine.driver.grbl_util import (
     _split_status_line,
     _parse_status_part,
@@ -10,6 +11,8 @@ from rayforge.machine.driver.grbl_util import (
     parse_grbl_parser_state,
     gcode_to_p_number,
     _parse_pos_triplet,
+    parse_version,
+    version_supports_single_axis_homing,
 )
 from rayforge.machine.driver.driver import DeviceStatus, DeviceState
 
@@ -488,3 +491,53 @@ class TestGcodeToPNumber:
         """Test that G53 returns None (not G54-G59)."""
         result = gcode_to_p_number("G53")
         assert result is None
+
+
+class TestParseVersion:
+    """Tests for parse_version function."""
+
+    @pytest.mark.parametrize(
+        "version_string, expected",
+        [
+            ("[VER:1.1f.20170801:]", (1.1, "f")),
+            ("[VER:1.1e.20170801:]", (1.1, "e")),
+            ("[VER:1.1g.20190825:]", (1.1, "g")),
+            ("[VER:1.1h.2023062602:]", (1.1, "h")),
+            ("[VER:2.0.20230101:]", (2.0, "")),
+            ("[VER:1.0c.20160101:]", (1.0, "c")),
+            ("[V4.00(8M.H35.20231010)]\n[VER:1.1h.2023101002:]", (1.1, "h")),
+            ("[PRODUCER:MKS DLC32]\n[VER:1.1f.20210101:]", (1.1, "f")),
+            ("[Some other info]", None),
+            ("", None),
+        ],
+    )
+    def test_version_parsing(self, version_string, expected):
+        """Test various version strings for parsing."""
+        lines = version_string.split("\n")
+        assert parse_version(lines) == expected
+
+
+class TestVersionSupportsSingleAxisHoming:
+    """Tests for version_supports_single_axis_homing function."""
+
+    @pytest.mark.parametrize(
+        "version_num, version_letter, expected",
+        [
+            (1.1, "f", False),
+            (1.1, "e", False),
+            (1.1, "g", True),
+            (1.1, "h", True),
+            (2.0, "", True),
+            (1.0, "c", False),
+            (1.1, "", False),
+            (1.2, "", True),
+        ],
+    )
+    def test_homing_support_detection(
+        self, version_num, version_letter, expected
+    ):
+        """Test homing support detection for various versions."""
+        result = version_supports_single_axis_homing(
+            version_num, version_letter
+        )
+        assert result == expected
