@@ -152,6 +152,11 @@ class MaterialTestGridProducer(OpsProducer):
         grid_elements.sort(key=lambda e: (-e["speed"], e["power"]))
 
         for element in grid_elements:
+            # Force laser state to OFF before setting new parameters.
+            # This prevents the encoder from emitting a "LASER ON" command
+            # while still at the previous location if the laser was previously
+            # active.
+            main_ops.set_power(0.0)
             main_ops.set_power(element["power"] / 100.0)
             main_ops.set_cut_speed(element["speed"])
             if self.test_type == MaterialTestGridType.ENGRAVE:
@@ -163,6 +168,8 @@ class MaterialTestGridProducer(OpsProducer):
         # Labels are always outlines, engraved at a configurable power.
         if label_elements:
             text_ops = self._vectorize_text_to_ops(params, width_mm, height_mm)
+            # Ensure laser is off before switching to label settings
+            main_ops.set_power(0.0)
             main_ops.set_power(self.label_power_percent / 100.0)
             main_ops.set_cut_speed(1000)
             main_ops.extend(text_ops)
