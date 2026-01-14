@@ -87,13 +87,29 @@ class DepthEngraver(OpsProducer):
             )
             data = data_with_padding[:, :width_px, :]
 
-            alpha = data[:, :, 3]
+            alpha = data[:, :, 3].astype(np.float32) / 255.0
+
+            r = data[:, :, 2].astype(np.float32)
+            g = data[:, :, 1].astype(np.float32)
+            b = data[:, :, 0].astype(np.float32)
+
+            alpha_safe = np.maximum(alpha, 1e-6)
+
+            r_unpremult = r / alpha_safe
+            g_unpremult = g / alpha_safe
+            b_unpremult = b / alpha_safe
+
+            r_unpremult = np.clip(r_unpremult, 0, 255)
+            g_unpremult = np.clip(g_unpremult, 0, 255)
+            b_unpremult = np.clip(b_unpremult, 0, 255)
+
+            r_blended = 255.0 - (255.0 - r_unpremult) * alpha
+            g_blended = 255.0 - (255.0 - g_unpremult) * alpha
+            b_blended = 255.0 - (255.0 - b_unpremult) * alpha
+
             gray_image = (
-                0.2989 * data[:, :, 2]
-                + 0.5870 * data[:, :, 1]
-                + 0.1140 * data[:, :, 0]
-            )
-            gray_image[alpha == 0] = 255
+                0.2989 * r_blended + 0.5870 * g_blended + 0.1140 * b_blended
+            ).astype(np.uint8)
 
             if self.depth_mode == DepthMode.POWER_MODULATION:
                 (
