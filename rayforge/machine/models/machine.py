@@ -42,6 +42,17 @@ class Origin(Enum):
     BOTTOM_RIGHT = "bottom_right"
 
 
+class JogDirection(Enum):
+    """Visual direction for jog operations."""
+
+    EAST = "east"
+    WEST = "west"
+    NORTH = "north"
+    SOUTH = "south"
+    UP = "up"
+    DOWN = "down"
+
+
 if TYPE_CHECKING:
     from ...core.doc import Doc
     from ...core.ops import Ops
@@ -515,37 +526,36 @@ class Machine:
         """
         return self.origin in (Origin.TOP_RIGHT, Origin.BOTTOM_RIGHT)
 
-    def get_visual_jog_deltas(
-        self, distance: float
-    ) -> Tuple[float, float, float]:
+    def calculate_jog(self, direction: JogDirection, distance: float) -> float:
         """
-        Calculate the signed coordinate deltas for a jog operation based on a
-        user's visual intent (e.g., clicking the "Right" arrow).
+        Calculate the signed coordinate delta for a jog operation based on a
+        visual direction.
 
         Args:
+            direction: The visual direction for the jog.
             distance: The positive distance for the jog.
 
         Returns:
-            A tuple of (delta_for_east, delta_for_north, delta_for_up).
+            The signed delta for the specified direction, taking into account
+            origin position and reverse axis settings.
         """
-        # "Visual" refers to the UI controls (Arrows).
-        # "RIGHT" Arrow (East) -> Physical Positive X movement.
-        # "UP" Arrow (North/Away) -> Physical Positive Y movement.
-
-        # However, we must account for the machine's origin position.
-        # When origin is on the right (TOP_RIGHT, BOTTOM_RIGHT),
-        # X coordinates decrease as the head moves right.
-        # When origin is on the top (TOP_LEFT, TOP_RIGHT),
-        # Y coordinates decrease as the head moves away (north).
-
-        x_delta = distance * (-1.0 if self.x_axis_right else 1.0)
-        y_delta = distance * (-1.0 if self.y_axis_down else 1.0)
-
-        # Z-axis is different. Often "Reverse Z" implies kinematic inversion
-        # (Bed moves up vs Head moves up). We respect it for jogging.
-        z_delta = distance * (-1.0 if self.reverse_z_axis else 1.0)
-
-        return x_delta, y_delta, z_delta
+        if direction == JogDirection.EAST:
+            delta = -distance if self.x_axis_right else distance
+            return -delta if self.reverse_x_axis else delta
+        if direction == JogDirection.WEST:
+            delta = distance if self.x_axis_right else -distance
+            return -delta if self.reverse_x_axis else delta
+        if direction == JogDirection.NORTH:
+            delta = -distance if self.y_axis_down else distance
+            return -delta if self.reverse_y_axis else delta
+        if direction == JogDirection.SOUTH:
+            delta = distance if self.y_axis_down else -distance
+            return -delta if self.reverse_y_axis else delta
+        if direction == JogDirection.UP:
+            return -distance if self.reverse_z_axis else distance
+        if direction == JogDirection.DOWN:
+            return distance if self.reverse_z_axis else -distance
+        return 0.0
 
     def set_soft_limits_enabled(self, enabled: bool):
         """Enable or disable soft limits for jog operations."""
@@ -560,8 +570,15 @@ class Machine:
 
     def get_soft_limits(self) -> Tuple[float, float, float, float]:
         """Get the soft limits as (x_min, y_min, x_max, y_max)."""
-        # Use machine dimensions as soft limits
-        return (0.0, 0.0, float(self.dimensions[0]), float(self.dimensions[1]))
+        w, h = float(self.dimensions[0]), float(self.dimensions[1])
+
+        # If an axis is reversed, the workspace is in the negative domain.
+        x_min = -w if self.reverse_x_axis else 0.0
+        x_max = 0.0 if self.reverse_x_axis else w
+        y_min = -h if self.reverse_y_axis else 0.0
+        y_max = 0.0 if self.reverse_y_axis else h
+
+        return (x_min, y_min, x_max, y_max)
 
     def would_jog_exceed_limits(self, axis: Axis, distance: float) -> bool:
         """
@@ -573,7 +590,7 @@ class Machine:
         if not self.soft_limits_enabled:
             return False
 
-        current_pos = self.get_current_position()
+        current_pos = self.device_state.machine_pos
         x_pos, y_pos, z_pos = current_pos
         x_min, y_min, x_max, y_max = self.get_soft_limits()
 
@@ -604,7 +621,7 @@ class Machine:
         if not self.soft_limits_enabled:
             return distance
 
-        current_pos = self.get_current_position()
+        current_pos = self.device_state.machine_pos
         x_pos, y_pos, z_pos = current_pos
         x_min, y_min, x_max, y_max = self.get_soft_limits()
         adjusted_distance = distance

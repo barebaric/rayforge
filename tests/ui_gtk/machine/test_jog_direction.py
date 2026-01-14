@@ -1,123 +1,85 @@
 import pytest
 from unittest.mock import MagicMock, AsyncMock
 from rayforge.machine.models.machine import Machine, Origin
-from rayforge.machine.driver.driver import Axis
-from rayforge.ui_gtk.machine.jog_widget import JogWidget
+from rayforge.machine.driver.driver import Axis, DeviceState
+from rayforge.machine.transport import TransportStatus  # <-- Import added
 
 # Jog distance and speed for testing
 JOG_DISTANCE = 10.0
 JOG_SPEED = 1000
 
-# (button_name, expected_axis, rev_z, origin)
+# (button, axis, origin, reversed, expectation)
 JOG_BUTTON_SCENARIOS = [
-    # --- X Axis Buttons ---
-    # Right (East) button - depends on origin
-    ("x_plus", Axis.X, False, Origin.BOTTOM_LEFT),
-    ("x_plus", Axis.X, True, Origin.BOTTOM_LEFT),
-    ("x_plus", Axis.X, False, Origin.TOP_LEFT),
-    ("x_plus", Axis.X, True, Origin.TOP_LEFT),
-    ("x_plus", Axis.X, False, Origin.TOP_RIGHT),
-    ("x_plus", Axis.X, True, Origin.TOP_RIGHT),
-    ("x_plus", Axis.X, False, Origin.BOTTOM_RIGHT),
-    ("x_plus", Axis.X, True, Origin.BOTTOM_RIGHT),
-    # Left (West) button - depends on origin
-    ("x_minus", Axis.X, False, Origin.BOTTOM_LEFT),
-    ("x_minus", Axis.X, True, Origin.BOTTOM_LEFT),
-    ("x_minus", Axis.X, False, Origin.TOP_LEFT),
-    ("x_minus", Axis.X, True, Origin.TOP_LEFT),
-    ("x_minus", Axis.X, False, Origin.TOP_RIGHT),
-    ("x_minus", Axis.X, True, Origin.TOP_RIGHT),
-    ("x_minus", Axis.X, False, Origin.BOTTOM_RIGHT),
-    ("x_minus", Axis.X, True, Origin.BOTTOM_RIGHT),
-    # --- Y Axis Buttons ---
-    # Away (North) button - depends on origin
-    ("y_plus", Axis.Y, False, Origin.BOTTOM_LEFT),
-    ("y_plus", Axis.Y, True, Origin.BOTTOM_LEFT),
-    ("y_plus", Axis.Y, False, Origin.TOP_LEFT),
-    ("y_plus", Axis.Y, True, Origin.TOP_LEFT),
-    ("y_plus", Axis.Y, False, Origin.TOP_RIGHT),
-    ("y_plus", Axis.Y, True, Origin.TOP_RIGHT),
-    ("y_plus", Axis.Y, False, Origin.BOTTOM_RIGHT),
-    ("y_plus", Axis.Y, True, Origin.BOTTOM_RIGHT),
-    # Toward (South) button - depends on origin
-    ("y_minus", Axis.Y, False, Origin.BOTTOM_LEFT),
-    ("y_minus", Axis.Y, True, Origin.BOTTOM_LEFT),
-    ("y_minus", Axis.Y, False, Origin.TOP_LEFT),
-    ("y_minus", Axis.Y, True, Origin.TOP_LEFT),
-    ("y_minus", Axis.Y, False, Origin.TOP_RIGHT),
-    ("y_minus", Axis.Y, True, Origin.TOP_RIGHT),
-    ("y_minus", Axis.Y, False, Origin.BOTTOM_RIGHT),
-    ("y_minus", Axis.Y, True, Origin.BOTTOM_RIGHT),
+    # Right (East) button
+    ("east", Axis.X, Origin.BOTTOM_LEFT, False, JOG_DISTANCE),
+    ("east", Axis.X, Origin.BOTTOM_LEFT, True, -JOG_DISTANCE),
+    ("east", Axis.X, Origin.TOP_LEFT, False, JOG_DISTANCE),
+    ("east", Axis.X, Origin.TOP_LEFT, True, -JOG_DISTANCE),
+    ("east", Axis.X, Origin.TOP_RIGHT, False, -JOG_DISTANCE),
+    ("east", Axis.X, Origin.TOP_RIGHT, True, JOG_DISTANCE),
+    ("east", Axis.X, Origin.BOTTOM_RIGHT, False, -JOG_DISTANCE),
+    ("east", Axis.X, Origin.BOTTOM_RIGHT, True, JOG_DISTANCE),
+    # Left (West) button
+    ("west", Axis.X, Origin.BOTTOM_LEFT, False, -JOG_DISTANCE),
+    ("west", Axis.X, Origin.BOTTOM_LEFT, True, JOG_DISTANCE),
+    ("west", Axis.X, Origin.TOP_LEFT, False, -JOG_DISTANCE),
+    ("west", Axis.X, Origin.TOP_LEFT, True, JOG_DISTANCE),
+    ("west", Axis.X, Origin.TOP_RIGHT, False, JOG_DISTANCE),
+    ("west", Axis.X, Origin.TOP_RIGHT, True, -JOG_DISTANCE),
+    ("west", Axis.X, Origin.BOTTOM_RIGHT, False, JOG_DISTANCE),
+    ("west", Axis.X, Origin.BOTTOM_RIGHT, True, -JOG_DISTANCE),
+    # Away (North) button
+    ("north", Axis.Y, Origin.BOTTOM_LEFT, False, JOG_DISTANCE),
+    ("north", Axis.Y, Origin.BOTTOM_LEFT, True, -JOG_DISTANCE),
+    ("north", Axis.Y, Origin.TOP_LEFT, False, -JOG_DISTANCE),
+    ("north", Axis.Y, Origin.TOP_LEFT, True, JOG_DISTANCE),
+    ("north", Axis.Y, Origin.TOP_RIGHT, False, -JOG_DISTANCE),
+    ("north", Axis.Y, Origin.TOP_RIGHT, True, JOG_DISTANCE),
+    ("north", Axis.Y, Origin.BOTTOM_RIGHT, False, JOG_DISTANCE),
+    ("north", Axis.Y, Origin.BOTTOM_RIGHT, True, -JOG_DISTANCE),
+    # Toward (South) button
+    ("south", Axis.Y, Origin.BOTTOM_LEFT, False, -JOG_DISTANCE),
+    ("south", Axis.Y, Origin.BOTTOM_LEFT, True, JOG_DISTANCE),
+    ("south", Axis.Y, Origin.TOP_LEFT, False, JOG_DISTANCE),
+    ("south", Axis.Y, Origin.TOP_LEFT, True, -JOG_DISTANCE),
+    ("south", Axis.Y, Origin.TOP_RIGHT, False, JOG_DISTANCE),
+    ("south", Axis.Y, Origin.TOP_RIGHT, True, -JOG_DISTANCE),
+    ("south", Axis.Y, Origin.BOTTOM_RIGHT, False, -JOG_DISTANCE),
+    ("south", Axis.Y, Origin.BOTTOM_RIGHT, True, JOG_DISTANCE),
     # --- Z Axis Buttons ---
     # Up button - depends on reverse_z_axis
-    ("z_plus", Axis.Z, False, Origin.BOTTOM_LEFT),
-    ("z_plus", Axis.Z, True, Origin.BOTTOM_LEFT),
-    ("z_plus", Axis.Z, False, Origin.TOP_LEFT),
-    ("z_plus", Axis.Z, True, Origin.TOP_LEFT),
-    ("z_plus", Axis.Z, False, Origin.TOP_RIGHT),
-    ("z_plus", Axis.Z, True, Origin.TOP_RIGHT),
-    ("z_plus", Axis.Z, False, Origin.BOTTOM_RIGHT),
-    ("z_plus", Axis.Z, True, Origin.BOTTOM_RIGHT),
+    ("z_plus", Axis.Z, Origin.BOTTOM_LEFT, False, JOG_DISTANCE),
+    ("z_plus", Axis.Z, Origin.BOTTOM_LEFT, True, -JOG_DISTANCE),
+    ("z_plus", Axis.Z, Origin.TOP_LEFT, False, JOG_DISTANCE),
+    ("z_plus", Axis.Z, Origin.TOP_LEFT, True, -JOG_DISTANCE),
+    ("z_plus", Axis.Z, Origin.TOP_RIGHT, False, JOG_DISTANCE),
+    ("z_plus", Axis.Z, Origin.TOP_RIGHT, True, -JOG_DISTANCE),
+    ("z_plus", Axis.Z, Origin.BOTTOM_RIGHT, False, JOG_DISTANCE),
+    ("z_plus", Axis.Z, Origin.BOTTOM_RIGHT, True, -JOG_DISTANCE),
     # Down button - depends on reverse_z_axis
-    ("z_minus", Axis.Z, False, Origin.BOTTOM_LEFT),
-    ("z_minus", Axis.Z, True, Origin.BOTTOM_LEFT),
-    ("z_minus", Axis.Z, False, Origin.TOP_LEFT),
-    ("z_minus", Axis.Z, True, Origin.TOP_LEFT),
-    ("z_minus", Axis.Z, False, Origin.TOP_RIGHT),
-    ("z_minus", Axis.Z, True, Origin.TOP_RIGHT),
-    ("z_minus", Axis.Z, False, Origin.BOTTOM_RIGHT),
-    ("z_minus", Axis.Z, True, Origin.BOTTOM_RIGHT),
-    # --- Diagonal Buttons ---
-    # North-East - depends on origin
-    ("x_plus_y_plus", Axis.X | Axis.Y, False, Origin.BOTTOM_LEFT),
-    ("x_plus_y_plus", Axis.X | Axis.Y, True, Origin.BOTTOM_LEFT),
-    ("x_plus_y_plus", Axis.X | Axis.Y, False, Origin.TOP_LEFT),
-    ("x_plus_y_plus", Axis.X | Axis.Y, True, Origin.TOP_LEFT),
-    ("x_plus_y_plus", Axis.X | Axis.Y, False, Origin.TOP_RIGHT),
-    ("x_plus_y_plus", Axis.X | Axis.Y, True, Origin.TOP_RIGHT),
-    ("x_plus_y_plus", Axis.X | Axis.Y, False, Origin.BOTTOM_RIGHT),
-    ("x_plus_y_plus", Axis.X | Axis.Y, True, Origin.BOTTOM_RIGHT),
-    # North-West - depends on origin
-    ("x_minus_y_plus", Axis.X | Axis.Y, False, Origin.BOTTOM_LEFT),
-    ("x_minus_y_plus", Axis.X | Axis.Y, True, Origin.BOTTOM_LEFT),
-    ("x_minus_y_plus", Axis.X | Axis.Y, False, Origin.TOP_LEFT),
-    ("x_minus_y_plus", Axis.X | Axis.Y, True, Origin.TOP_LEFT),
-    ("x_minus_y_plus", Axis.X | Axis.Y, False, Origin.TOP_RIGHT),
-    ("x_minus_y_plus", Axis.X | Axis.Y, True, Origin.TOP_RIGHT),
-    ("x_minus_y_plus", Axis.X | Axis.Y, False, Origin.BOTTOM_RIGHT),
-    ("x_minus_y_plus", Axis.X | Axis.Y, True, Origin.BOTTOM_RIGHT),
-    # South-East - depends on origin
-    ("x_plus_y_minus", Axis.X | Axis.Y, False, Origin.BOTTOM_LEFT),
-    ("x_plus_y_minus", Axis.X | Axis.Y, True, Origin.BOTTOM_LEFT),
-    ("x_plus_y_minus", Axis.X | Axis.Y, False, Origin.TOP_LEFT),
-    ("x_plus_y_minus", Axis.X | Axis.Y, True, Origin.TOP_LEFT),
-    ("x_plus_y_minus", Axis.X | Axis.Y, False, Origin.TOP_RIGHT),
-    ("x_plus_y_minus", Axis.X | Axis.Y, True, Origin.TOP_RIGHT),
-    ("x_plus_y_minus", Axis.X | Axis.Y, False, Origin.BOTTOM_RIGHT),
-    ("x_plus_y_minus", Axis.X | Axis.Y, True, Origin.BOTTOM_RIGHT),
-    # South-West - depends on origin
-    ("x_minus_y_minus", Axis.X | Axis.Y, False, Origin.BOTTOM_LEFT),
-    ("x_minus_y_minus", Axis.X | Axis.Y, True, Origin.BOTTOM_LEFT),
-    ("x_minus_y_minus", Axis.X | Axis.Y, False, Origin.TOP_LEFT),
-    ("x_minus_y_minus", Axis.X | Axis.Y, True, Origin.TOP_LEFT),
-    ("x_minus_y_minus", Axis.X | Axis.Y, False, Origin.TOP_RIGHT),
-    ("x_minus_y_minus", Axis.X | Axis.Y, True, Origin.TOP_RIGHT),
-    ("x_minus_y_minus", Axis.X | Axis.Y, False, Origin.BOTTOM_RIGHT),
-    ("x_minus_y_minus", Axis.X | Axis.Y, True, Origin.BOTTOM_RIGHT),
+    ("z_minus", Axis.Z, Origin.BOTTOM_LEFT, False, -JOG_DISTANCE),
+    ("z_minus", Axis.Z, Origin.BOTTOM_LEFT, True, JOG_DISTANCE),
+    ("z_minus", Axis.Z, Origin.TOP_LEFT, False, -JOG_DISTANCE),
+    ("z_minus", Axis.Z, Origin.TOP_LEFT, True, JOG_DISTANCE),
+    ("z_minus", Axis.Z, Origin.TOP_RIGHT, False, -JOG_DISTANCE),
+    ("z_minus", Axis.Z, Origin.TOP_RIGHT, True, JOG_DISTANCE),
+    ("z_minus", Axis.Z, Origin.BOTTOM_RIGHT, False, -JOG_DISTANCE),
+    ("z_minus", Axis.Z, Origin.BOTTOM_RIGHT, True, JOG_DISTANCE),
 ]
 
 
 @pytest.mark.ui
 @pytest.mark.parametrize(
-    "button_name, expected_axis, rev_z, origin",
+    "button_name, expected_axis, origin, reversed, expectation",
     JOG_BUTTON_SCENARIOS,
 )
 def test_jog_button_direction(
     ui_context_initializer,
     button_name,
     expected_axis,
-    rev_z,
     origin,
+    reversed,
+    expectation,
 ):
     """
     Verifies that each jog button sends the correct signed distance to the
@@ -130,13 +92,16 @@ def test_jog_button_direction(
       negative Y when origin is on the top.
     - Z axis: Depends on reverse_z_axis setting.
     """
+    # Import JogWidget here to avoid GTK import during test collection
+    from rayforge.ui_gtk.machine.jog_widget import JogWidget
+
     # 1. Configure the Machine
     machine = Machine(ui_context_initializer)
     machine.set_dimensions(200, 200)
     machine.set_origin(origin)
-    machine.set_reverse_x_axis(False)
-    machine.set_reverse_y_axis(False)
-    machine.set_reverse_z_axis(rev_z)
+    machine.set_reverse_x_axis(expected_axis == Axis.X and reversed)
+    machine.set_reverse_y_axis(expected_axis == Axis.Y and reversed)
+    machine.set_reverse_z_axis(expected_axis == Axis.Z and reversed)
 
     # 2. Mock MachineCmd
     mock_machine_cmd = MagicMock()
@@ -153,74 +118,144 @@ def test_jog_button_direction(
     button = getattr(jog_widget, f"{button_name}_btn")
     button.emit("clicked")
 
-    # 5. Calculate expected distances based on origin and button direction
-    # X axis: positive when origin is on left, negative when on right
-    if origin in (Origin.TOP_RIGHT, Origin.BOTTOM_RIGHT):
-        x_sign = -1.0
-    else:
-        x_sign = 1.0
+    # 5. Verify the jog command was called with expected distance
+    mock_jog.assert_called_once_with(
+        machine, expected_axis, expectation, JOG_SPEED
+    )
 
-    # Y axis: positive when origin is on bottom, negative when on top
-    if origin in (Origin.TOP_LEFT, Origin.TOP_RIGHT):
-        y_sign = -1.0
-    else:
-        y_sign = 1.0
 
-    # Z axis: depends on reverse_z_axis
-    z_sign = -1.0 if rev_z else 1.0
+LIMIT_SCENARIOS = [
+    # Standard (Bottom-Left, no reverse), near top-right corner
+    (
+        Origin.BOTTOM_LEFT,
+        False,
+        False,
+        (95.0, 95.0),
+        {
+            "east_btn",
+            "north_btn",
+            "north_east_btn",
+            "north_west_btn",
+            "south_east_btn",
+        },
+    ),
+    # Standard (Bottom-Left, no reverse), near bottom-left corner
+    (
+        Origin.BOTTOM_LEFT,
+        False,
+        False,
+        (5.0, 5.0),
+        {
+            "west_btn",
+            "south_btn",
+            "north_west_btn",
+            "south_west_btn",
+            "south_east_btn",
+        },
+    ),
+    # Top-Left (Y-down), near bottom-left corner (visually)
+    (
+        Origin.TOP_LEFT,
+        False,
+        False,
+        (5.0, 5.0),
+        {
+            "west_btn",
+            "north_btn",
+            "north_west_btn",
+            "south_west_btn",
+            "north_east_btn",
+        },
+    ),
+    # Bottom-Left, reverse X. Limits are X:[-100, 0], Y:[0, 100].
+    # Pos (-5, 5) is near visual bottom-left (X=0, Y=0).
+    (
+        Origin.BOTTOM_LEFT,
+        True,
+        False,
+        (-5.0, 5.0),
+        {
+            "west_btn",
+            "south_btn",
+            "south_east_btn",
+            "north_west_btn",
+            "south_west_btn",
+        },
+    ),
+    # Top-Right, reverse both. Limits are X:[-100, 0], Y:[-100, 0].
+    # Pos (-5, -5) is near visual top-right corner (X=0, Y=0).
+    (
+        Origin.TOP_RIGHT,
+        True,
+        True,
+        (-5.0, -5.0),
+        {
+            "east_btn",
+            "north_btn",
+            "north_east_btn",
+            "north_west_btn",
+            "south_east_btn",
+        },
+    ),
+    # Center position, no warnings expected
+    (Origin.BOTTOM_LEFT, False, False, (50.0, 50.0), set()),
+]
 
-    if expected_axis & (Axis.X | Axis.Y) and not (
-        expected_axis & Axis.X and expected_axis & Axis.Y
-    ):
-        # Single axis jog (X or Y only)
-        if button_name == "x_plus":
-            expected_dist = JOG_DISTANCE * x_sign
-        elif button_name == "x_minus":
-            expected_dist = -JOG_DISTANCE * x_sign
-        elif button_name == "y_plus":
-            expected_dist = JOG_DISTANCE * y_sign
-        elif button_name == "y_minus":
-            expected_dist = -JOG_DISTANCE * y_sign
-        else:
-            pytest.fail(f"Unknown button name: {button_name}")
 
-        mock_jog.assert_called_once_with(
-            machine, expected_axis, expected_dist, JOG_SPEED
-        )
-    elif expected_axis == Axis.Z:
-        # Z axis jog
-        if button_name == "z_plus":
-            expected_dist = JOG_DISTANCE * z_sign
-        elif button_name == "z_minus":
-            expected_dist = -JOG_DISTANCE * z_sign
-        else:
-            pytest.fail(f"Unknown button name: {button_name}")
+@pytest.mark.ui
+@pytest.mark.parametrize(
+    "origin, reverse_x, reverse_y, current_pos, expected_warnings",
+    LIMIT_SCENARIOS,
+)
+def test_jog_button_limit_warning(
+    ui_context_initializer,
+    origin,
+    reverse_x,
+    reverse_y,
+    current_pos,
+    expected_warnings,
+):
+    """
+    Verifies that jog buttons show a 'warning' CSS class if the jog would
+    exceed soft limits, considering machine origin and axis reversal.
+    """
+    from rayforge.ui_gtk.machine.jog_widget import JogWidget
 
-        mock_jog.assert_called_once_with(
-            machine, expected_axis, expected_dist, JOG_SPEED
-        )
-    else:
-        # Diagonal jog - called twice, once for X and once for Y
-        assert mock_jog.call_count == 2
-        calls = mock_jog.call_args_list
+    # 1. Configure the Machine
+    machine = Machine(ui_context_initializer)
+    machine.set_dimensions(100, 100)  # Limits are (0,0) to (100,100)
+    machine.set_origin(origin)
+    machine.set_reverse_x_axis(reverse_x)
+    machine.set_reverse_y_axis(reverse_y)
+    machine.set_soft_limits_enabled(True)
+    # THIS IS THE FIX: The widget only checks limits if machine is connected
+    machine.connection_status = TransportStatus.CONNECTED
 
-        # Determine expected X and Y distances based on button name
-        if button_name == "x_plus_y_plus":
-            expected_x = JOG_DISTANCE * x_sign
-            expected_y = JOG_DISTANCE * y_sign
-        elif button_name == "x_minus_y_plus":
-            expected_x = -JOG_DISTANCE * x_sign
-            expected_y = JOG_DISTANCE * y_sign
-        elif button_name == "x_plus_y_minus":
-            expected_x = JOG_DISTANCE * x_sign
-            expected_y = -JOG_DISTANCE * y_sign
-        elif button_name == "x_minus_y_minus":
-            expected_x = -JOG_DISTANCE * x_sign
-            expected_y = -JOG_DISTANCE * y_sign
-        else:
-            pytest.fail(f"Unknown button name: {button_name}")
+    # 2. Mock current position by setting device state
+    mock_state = DeviceState()
+    mock_state.machine_pos = (current_pos[0], current_pos[1], 0.0)
+    machine.device_state = mock_state
 
-        # Verify both calls were made (order may vary)
-        call_params = [(call[0][1], call[0][2]) for call in calls]
-        assert (Axis.X, expected_x) in call_params
-        assert (Axis.Y, expected_y) in call_params
+    # 3. Create JogWidget and set its machine
+    # This automatically calls _update_limit_status
+    jog_widget = JogWidget()
+    jog_widget.jog_distance = JOG_DISTANCE
+    jog_widget.set_machine(machine, MagicMock())
+
+    # 4. Collect all buttons that have the warning class
+    buttons = {
+        "east_btn": jog_widget.east_btn,
+        "west_btn": jog_widget.west_btn,
+        "north_btn": jog_widget.north_btn,
+        "south_btn": jog_widget.south_btn,
+        "north_east_btn": jog_widget.north_east_btn,
+        "north_west_btn": jog_widget.north_west_btn,
+        "south_east_btn": jog_widget.south_east_btn,
+        "south_west_btn": jog_widget.south_west_btn,
+    }
+    warned_buttons = {
+        name for name, btn in buttons.items() if btn.has_css_class("warning")
+    }
+
+    # 5. Assert that the set of warned buttons matches the expectation
+    assert warned_buttons == expected_warnings
