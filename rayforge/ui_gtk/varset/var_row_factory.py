@@ -209,7 +209,11 @@ class VarRowFactory:
         return row
 
     def _create_choice_row(self, var: ChoiceVar, target_property: str):
-        choices = [NULL_CHOICE_LABEL] + var.choices
+        choices = (
+            [NULL_CHOICE_LABEL] + var.choices
+            if var.allow_none
+            else var.choices
+        )
         store = Gtk.StringList.new(choices)
         row = Adw.ComboRow(model=store, title=escape_title(var.label))
         if var.description:

@@ -16,6 +16,7 @@ class ChoiceVar(Var[str]):
         description: Optional[str] = None,
         default: Optional[str] = None,
         value: Optional[str] = None,
+        allow_none: bool = True,
     ):
         """
         Initializes a new ChoiceVar instance.
@@ -27,6 +28,7 @@ class ChoiceVar(Var[str]):
             description: A longer, human-readable description.
             default: The default value. Must be one of the choices.
             value: The initial value. If provided, it overrides the default.
+            allow_none: Whether to include a "None Selected" option in UI.
         """
         super().__init__(
             key=key,
@@ -37,6 +39,7 @@ class ChoiceVar(Var[str]):
             value=value,
         )
         self.choices = choices
+        self.allow_none = allow_none
 
         # Validator to ensure the value is always one of the allowed choices.
         def _choice_validator(val: Optional[str]):
