@@ -1,7 +1,7 @@
 from gi.repository import Gtk, Adw, Gdk
 from typing import Optional
 from ...machine.driver.driver import Axis
-from ...machine.models.machine import Machine
+from ...machine.models.machine import JogDirection, Machine
 from ...machine.cmd import MachineCmd
 from ..icons import get_icon
 
@@ -36,68 +36,62 @@ class JogWidget(Adw.PreferencesGroup):
             return button
 
         # Top-left diagonal button
-        self.x_minus_y_plus_btn = create_icon_button(
+        self.north_west_btn = create_icon_button(
             "arrow-north-west-symbolic", _("Move North-West")
         )
-        self.x_minus_y_plus_btn.connect(
-            "clicked", self._on_x_minus_y_plus_clicked
-        )
-        jog_grid.attach(self.x_minus_y_plus_btn, 0, 0, 1, 1)
+        self.north_west_btn.connect("clicked", self._on_x_minus_y_plus_clicked)
+        jog_grid.attach(self.north_west_btn, 0, 0, 1, 1)
 
         # Away/North button
-        self.y_plus_btn = create_icon_button(
+        self.north_btn = create_icon_button(
             "arrow-north-symbolic", _("Move North")
         )
-        self.y_plus_btn.connect("clicked", self._on_y_plus_clicked)
-        jog_grid.attach(self.y_plus_btn, 1, 0, 1, 1)
+        self.north_btn.connect("clicked", self._on_y_plus_clicked)
+        jog_grid.attach(self.north_btn, 1, 0, 1, 1)
 
         # Top-right diagonal button
-        self.x_plus_y_plus_btn = create_icon_button(
+        self.north_east_btn = create_icon_button(
             "arrow-north-east-symbolic", _("Move North-East")
         )
-        self.x_plus_y_plus_btn.connect(
-            "clicked", self._on_x_plus_y_plus_clicked
-        )
-        jog_grid.attach(self.x_plus_y_plus_btn, 2, 0, 1, 1)
+        self.north_east_btn.connect("clicked", self._on_x_plus_y_plus_clicked)
+        jog_grid.attach(self.north_east_btn, 2, 0, 1, 1)
 
         # Left/West button
-        self.x_minus_btn = create_icon_button(
+        self.west_btn = create_icon_button(
             "arrow-west-symbolic", _("Move West (Left)")
         )
-        self.x_minus_btn.connect("clicked", self._on_x_minus_clicked)
-        jog_grid.attach(self.x_minus_btn, 0, 1, 1, 1)
+        self.west_btn.connect("clicked", self._on_x_minus_clicked)
+        jog_grid.attach(self.west_btn, 0, 1, 1, 1)
 
         # Right/East button
-        self.x_plus_btn = create_icon_button(
+        self.east_btn = create_icon_button(
             "arrow-east-symbolic", _("Move East (Right)")
         )
-        self.x_plus_btn.connect("clicked", self._on_x_plus_clicked)
-        jog_grid.attach(self.x_plus_btn, 2, 1, 1, 1)
+        self.east_btn.connect("clicked", self._on_x_plus_clicked)
+        jog_grid.attach(self.east_btn, 2, 1, 1, 1)
 
         # Bottom-left diagonal button
-        self.x_minus_y_minus_btn = create_icon_button(
+        self.south_west_btn = create_icon_button(
             "arrow-south-west-symbolic", _("Move South-West")
         )
-        self.x_minus_y_minus_btn.connect(
+        self.south_west_btn.connect(
             "clicked", self._on_x_minus_y_minus_clicked
         )
-        jog_grid.attach(self.x_minus_y_minus_btn, 0, 2, 1, 1)
+        jog_grid.attach(self.south_west_btn, 0, 2, 1, 1)
 
         # Toward/South button
-        self.y_minus_btn = create_icon_button(
+        self.south_btn = create_icon_button(
             "arrow-south-symbolic", _("Move South")
         )
-        self.y_minus_btn.connect("clicked", self._on_y_minus_clicked)
-        jog_grid.attach(self.y_minus_btn, 1, 2, 1, 1)
+        self.south_btn.connect("clicked", self._on_y_minus_clicked)
+        jog_grid.attach(self.south_btn, 1, 2, 1, 1)
 
         # Bottom-right diagonal button
-        self.x_plus_y_minus_btn = create_icon_button(
+        self.south_east_btn = create_icon_button(
             "arrow-south-east-symbolic", _("Move South-East")
         )
-        self.x_plus_y_minus_btn.connect(
-            "clicked", self._on_x_plus_y_minus_clicked
-        )
-        jog_grid.attach(self.x_plus_y_minus_btn, 2, 2, 1, 1)
+        self.south_east_btn.connect("clicked", self._on_x_plus_y_minus_clicked)
+        jog_grid.attach(self.south_east_btn, 2, 2, 1, 1)
 
         # Z buttons to the right
         self.z_plus_btn = create_icon_button(
@@ -147,14 +141,14 @@ class JogWidget(Adw.PreferencesGroup):
     def _update_button_sensitivity(self):
         """Update button sensitivity based on machine capabilities."""
         # Default all buttons to disabled
-        self.x_plus_btn.set_sensitive(False)
-        self.x_minus_btn.set_sensitive(False)
-        self.y_plus_btn.set_sensitive(False)
-        self.y_minus_btn.set_sensitive(False)
-        self.x_plus_y_plus_btn.set_sensitive(False)
-        self.x_minus_y_plus_btn.set_sensitive(False)
-        self.x_plus_y_minus_btn.set_sensitive(False)
-        self.x_minus_y_minus_btn.set_sensitive(False)
+        self.east_btn.set_sensitive(False)
+        self.west_btn.set_sensitive(False)
+        self.north_btn.set_sensitive(False)
+        self.south_btn.set_sensitive(False)
+        self.north_east_btn.set_sensitive(False)
+        self.north_west_btn.set_sensitive(False)
+        self.south_east_btn.set_sensitive(False)
+        self.south_west_btn.set_sensitive(False)
         self.z_plus_btn.set_sensitive(False)
         self.z_minus_btn.set_sensitive(False)
 
@@ -166,17 +160,17 @@ class JogWidget(Adw.PreferencesGroup):
         machine: Machine = self.machine  # type: ignore
 
         # Jog buttons
-        self.x_plus_btn.set_sensitive(machine.can_jog(Axis.X))
-        self.x_minus_btn.set_sensitive(machine.can_jog(Axis.X))
-        self.y_plus_btn.set_sensitive(machine.can_jog(Axis.Y))
-        self.y_minus_btn.set_sensitive(machine.can_jog(Axis.Y))
+        self.east_btn.set_sensitive(machine.can_jog(Axis.X))
+        self.west_btn.set_sensitive(machine.can_jog(Axis.X))
+        self.north_btn.set_sensitive(machine.can_jog(Axis.Y))
+        self.south_btn.set_sensitive(machine.can_jog(Axis.Y))
 
         # Diagonal buttons - need both X and Y axis support
         can_jog_xy = machine.can_jog(Axis.X) and machine.can_jog(Axis.Y)
-        self.x_plus_y_plus_btn.set_sensitive(can_jog_xy)
-        self.x_minus_y_plus_btn.set_sensitive(can_jog_xy)
-        self.x_plus_y_minus_btn.set_sensitive(can_jog_xy)
-        self.x_minus_y_minus_btn.set_sensitive(can_jog_xy)
+        self.north_east_btn.set_sensitive(can_jog_xy)
+        self.north_west_btn.set_sensitive(can_jog_xy)
+        self.south_east_btn.set_sensitive(can_jog_xy)
+        self.south_west_btn.set_sensitive(can_jog_xy)
 
         self.z_plus_btn.set_sensitive(machine.can_jog(Axis.Z))
         self.z_minus_btn.set_sensitive(machine.can_jog(Axis.Z))
@@ -191,16 +185,16 @@ class JogWidget(Adw.PreferencesGroup):
         machine = self.machine
 
         buttons = [
-            self.x_plus_btn,
-            self.x_minus_btn,
-            self.y_plus_btn,
-            self.y_minus_btn,
+            self.east_btn,
+            self.west_btn,
+            self.north_btn,
+            self.south_btn,
             self.z_plus_btn,
             self.z_minus_btn,
-            self.x_plus_y_plus_btn,
-            self.x_minus_y_plus_btn,
-            self.x_plus_y_minus_btn,
-            self.x_minus_y_minus_btn,
+            self.north_east_btn,
+            self.north_west_btn,
+            self.south_east_btn,
+            self.south_west_btn,
         ]
         for button in buttons:
             button.remove_css_class("warning")
@@ -209,47 +203,45 @@ class JogWidget(Adw.PreferencesGroup):
         if not machine.soft_limits_enabled:
             return
 
-        # Get the signed coordinate deltas for visual directions from the model
-        x_east, y_north, z_up = machine.get_visual_jog_deltas(
-            self.jog_distance
-        )
+        # Get the signed coordinate deltas for each visual direction from the
+        # model
+        x_east = machine.calculate_jog(JogDirection.EAST, self.jog_distance)
+        x_west = machine.calculate_jog(JogDirection.WEST, self.jog_distance)
+        y_north = machine.calculate_jog(JogDirection.NORTH, self.jog_distance)
+        y_south = machine.calculate_jog(JogDirection.SOUTH, self.jog_distance)
+        z_up = machine.calculate_jog(JogDirection.UP, self.jog_distance)
+        z_down = machine.calculate_jog(JogDirection.DOWN, self.jog_distance)
 
         # Check limits using the final signed delta that will be commanded
-        if machine.would_jog_exceed_limits(Axis.X, x_east):
-            self.x_plus_btn.add_css_class("warning")
-        if machine.would_jog_exceed_limits(Axis.X, -x_east):
-            self.x_minus_btn.add_css_class("warning")
+        exceeds_east = machine.would_jog_exceed_limits(Axis.X, x_east)
+        exceeds_west = machine.would_jog_exceed_limits(Axis.X, x_west)
+        exceeds_north = machine.would_jog_exceed_limits(Axis.Y, y_north)
+        exceeds_south = machine.would_jog_exceed_limits(Axis.Y, y_south)
+        exceeds_up = machine.would_jog_exceed_limits(Axis.Z, z_up)
+        exceeds_down = machine.would_jog_exceed_limits(Axis.Z, z_down)
 
-        if machine.would_jog_exceed_limits(Axis.Y, y_north):
-            self.y_plus_btn.add_css_class("warning")
-        if machine.would_jog_exceed_limits(Axis.Y, -y_north):
-            self.y_minus_btn.add_css_class("warning")
-
-        if machine.would_jog_exceed_limits(Axis.Z, z_up):
+        if exceeds_east:
+            self.east_btn.add_css_class("warning")
+        if exceeds_west:
+            self.west_btn.add_css_class("warning")
+        if exceeds_north:
+            self.north_btn.add_css_class("warning")
+        if exceeds_south:
+            self.south_btn.add_css_class("warning")
+        if exceeds_up:
             self.z_plus_btn.add_css_class("warning")
-        if machine.would_jog_exceed_limits(Axis.Z, -z_up):
+        if exceeds_down:
             self.z_minus_btn.add_css_class("warning")
 
         # Diagonal buttons
-        if machine.would_jog_exceed_limits(
-            Axis.X, x_east
-        ) or machine.would_jog_exceed_limits(Axis.Y, y_north):
-            self.x_plus_y_plus_btn.add_css_class("warning")
-
-        if machine.would_jog_exceed_limits(
-            Axis.X, -x_east
-        ) or machine.would_jog_exceed_limits(Axis.Y, y_north):
-            self.x_minus_y_plus_btn.add_css_class("warning")
-
-        if machine.would_jog_exceed_limits(
-            Axis.X, x_east
-        ) or machine.would_jog_exceed_limits(Axis.Y, -y_north):
-            self.x_plus_y_minus_btn.add_css_class("warning")
-
-        if machine.would_jog_exceed_limits(
-            Axis.X, -x_east
-        ) or machine.would_jog_exceed_limits(Axis.Y, -y_north):
-            self.x_minus_y_minus_btn.add_css_class("warning")
+        if exceeds_east or exceeds_north:
+            self.north_east_btn.add_css_class("warning")
+        if exceeds_west or exceeds_north:
+            self.north_west_btn.add_css_class("warning")
+        if exceeds_east or exceeds_south:
+            self.south_east_btn.add_css_class("warning")
+        if exceeds_west or exceeds_south:
+            self.south_west_btn.add_css_class("warning")
 
     def _on_machine_state_changed(self, machine, state):
         """Handle machine state changes to update limit status."""
@@ -268,82 +260,94 @@ class JogWidget(Adw.PreferencesGroup):
     def _on_x_plus_clicked(self, button):
         """Handle Right (East) button click."""
         if self.machine and self.machine_cmd:
-            x_dist, _, _ = self.machine.get_visual_jog_deltas(
-                self.jog_distance
+            x_dist = self.machine.calculate_jog(
+                JogDirection.EAST, self.jog_distance
             )
             self.machine_cmd.jog(self.machine, Axis.X, x_dist, self.jog_speed)
 
     def _on_x_minus_clicked(self, button):
         """Handle Left (West) button click."""
         if self.machine and self.machine_cmd:
-            x_dist, _, _ = self.machine.get_visual_jog_deltas(
-                self.jog_distance
+            x_dist = self.machine.calculate_jog(
+                JogDirection.WEST, self.jog_distance
             )
-            self.machine_cmd.jog(self.machine, Axis.X, -x_dist, self.jog_speed)
+            self.machine_cmd.jog(self.machine, Axis.X, x_dist, self.jog_speed)
 
     def _on_y_plus_clicked(self, button):
         """Handle Away (North) button click."""
         if self.machine and self.machine_cmd:
-            _, y_dist, _ = self.machine.get_visual_jog_deltas(
-                self.jog_distance
+            y_dist = self.machine.calculate_jog(
+                JogDirection.NORTH, self.jog_distance
             )
             self.machine_cmd.jog(self.machine, Axis.Y, y_dist, self.jog_speed)
 
     def _on_y_minus_clicked(self, button):
         """Handle Toward (South) button click."""
         if self.machine and self.machine_cmd:
-            _, y_dist, _ = self.machine.get_visual_jog_deltas(
-                self.jog_distance
+            y_dist = self.machine.calculate_jog(
+                JogDirection.SOUTH, self.jog_distance
             )
-            self.machine_cmd.jog(self.machine, Axis.Y, -y_dist, self.jog_speed)
+            self.machine_cmd.jog(self.machine, Axis.Y, y_dist, self.jog_speed)
 
     def _on_z_plus_clicked(self, button):
         """Handle Up button click."""
         if self.machine and self.machine_cmd:
-            _, _, z_dist = self.machine.get_visual_jog_deltas(
-                self.jog_distance
+            z_dist = self.machine.calculate_jog(
+                JogDirection.UP, self.jog_distance
             )
             self.machine_cmd.jog(self.machine, Axis.Z, z_dist, self.jog_speed)
 
     def _on_z_minus_clicked(self, button):
         """Handle Down button click."""
         if self.machine and self.machine_cmd:
-            _, _, z_dist = self.machine.get_visual_jog_deltas(
-                self.jog_distance
+            z_dist = self.machine.calculate_jog(
+                JogDirection.DOWN, self.jog_distance
             )
-            self.machine_cmd.jog(self.machine, Axis.Z, -z_dist, self.jog_speed)
+            self.machine_cmd.jog(self.machine, Axis.Z, z_dist, self.jog_speed)
 
     def _on_x_plus_y_plus_clicked(self, button):
         """Handle Right-Away diagonal button click."""
         if self.machine:
-            x_dist, y_dist, _ = self.machine.get_visual_jog_deltas(
-                self.jog_distance
+            x_dist = self.machine.calculate_jog(
+                JogDirection.EAST, self.jog_distance
+            )
+            y_dist = self.machine.calculate_jog(
+                JogDirection.NORTH, self.jog_distance
             )
             self._jog_xy(x_dist, y_dist)
 
     def _on_x_minus_y_plus_clicked(self, button):
         """Handle Left-Away diagonal button click."""
         if self.machine:
-            x_dist, y_dist, _ = self.machine.get_visual_jog_deltas(
-                self.jog_distance
+            x_dist = self.machine.calculate_jog(
+                JogDirection.WEST, self.jog_distance
             )
-            self._jog_xy(-x_dist, y_dist)
+            y_dist = self.machine.calculate_jog(
+                JogDirection.NORTH, self.jog_distance
+            )
+            self._jog_xy(x_dist, y_dist)
 
     def _on_x_plus_y_minus_clicked(self, button):
         """Handle Right-Toward diagonal button click."""
         if self.machine:
-            x_dist, y_dist, _ = self.machine.get_visual_jog_deltas(
-                self.jog_distance
+            x_dist = self.machine.calculate_jog(
+                JogDirection.EAST, self.jog_distance
             )
-            self._jog_xy(x_dist, -y_dist)
+            y_dist = self.machine.calculate_jog(
+                JogDirection.SOUTH, self.jog_distance
+            )
+            self._jog_xy(x_dist, y_dist)
 
     def _on_x_minus_y_minus_clicked(self, button):
         """Handle Left-Toward diagonal button click."""
         if self.machine:
-            x_dist, y_dist, _ = self.machine.get_visual_jog_deltas(
-                self.jog_distance
+            x_dist = self.machine.calculate_jog(
+                JogDirection.WEST, self.jog_distance
             )
-            self._jog_xy(-x_dist, -y_dist)
+            y_dist = self.machine.calculate_jog(
+                JogDirection.SOUTH, self.jog_distance
+            )
+            self._jog_xy(x_dist, y_dist)
         return False
 
     def _on_key_pressed(self, controller, keyval, keycode, state):
