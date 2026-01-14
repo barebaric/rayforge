@@ -532,15 +532,14 @@ class Machine:
         # "RIGHT" Arrow (East) -> Physical Positive X movement.
         # "UP" Arrow (North/Away) -> Physical Positive Y movement.
 
-        # We IGNORE self.reverse_x_axis and self.reverse_y_axis here.
-        # Rationale: Those settings are intended to invert the *displayed*
-        # coordinates (DRO) for machines with negative workspaces
-        # (e.g. Top-Right origin), NOT to invert the physical motor direction.
-        # Standard G-code behavior is: X+ is Right, Y+ is Away.
-        # The user expects the Right Arrow to move the head Right.
+        # However, we must account for the machine's origin position.
+        # When origin is on the right (TOP_RIGHT, BOTTOM_RIGHT),
+        # X coordinates decrease as the head moves right.
+        # When origin is on the top (TOP_LEFT, TOP_RIGHT),
+        # Y coordinates decrease as the head moves away (north).
 
-        x_delta = distance
-        y_delta = distance
+        x_delta = distance * (-1.0 if self.x_axis_right else 1.0)
+        y_delta = distance * (-1.0 if self.y_axis_down else 1.0)
 
         # Z-axis is different. Often "Reverse Z" implies kinematic inversion
         # (Bed moves up vs Head moves up). We respect it for jogging.
