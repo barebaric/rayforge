@@ -179,14 +179,24 @@ class WorkSurface(WorldSurface):
         if self.machine:
             width, height = self.machine.dimensions
 
-            # Logic mirrored from axis.py to ensure consistency
-            # If x_axis_right XOR reverse_x_axis is true, we invert X
-            if self.machine.x_axis_right ^ self.machine.reverse_x_axis:
-                canvas_x = width - m_x
+            # Normalize coordinates to be positive distance from origin
+            # based on the 'reverse' setting.
+            # If reverse is True, we assume the machine reports negative
+            # coords for the workspace, so we flip the sign to get
+            # positive distance.
+            eff_x = -m_x if self.machine.reverse_x_axis else m_x
+            eff_y = -m_y if self.machine.reverse_y_axis else m_y
 
-            # If y_axis_down XOR reverse_y_axis is true, we invert Y
-            if self.machine.y_axis_down ^ self.machine.reverse_y_axis:
-                canvas_y = height - m_y
+            # Apply origin offset
+            if self.machine.x_axis_right:
+                canvas_x = width - eff_x
+            else:
+                canvas_x = eff_x
+
+            if self.machine.y_axis_down:
+                canvas_y = height - eff_y
+            else:
+                canvas_y = eff_y
 
         return canvas_x, canvas_y
 
