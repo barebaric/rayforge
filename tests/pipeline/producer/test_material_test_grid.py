@@ -246,12 +246,16 @@ def test_power_and_speed_ranges(laser: Laser, mock_workpiece: WorkPiece):
         for c in artifact.ops.commands
         if isinstance(c, SetCutSpeedCommand)
     ]
-    powers = [
+    all_powers = [
         c.power
         for c in artifact.ops.commands
         if isinstance(c, SetPowerCommand)
     ]
+    # Filter out the explicit power-off commands for range validation
+    powers = [p for p in all_powers if p > 0]
     min_power, max_power = min_power_percent / 100.0, max_power_percent / 100.0
+
+    assert len(powers) == 25
     assert all(min_speed <= s <= max_speed for s in speeds)
     assert all(min_power - 1e-3 <= p <= max_power + 1e-3 for p in powers)
     assert min_speed in speeds
@@ -280,12 +284,15 @@ def test_single_column_grid(laser: Laser, mock_workpiece: WorkPiece):
         for c in artifact.ops.commands
         if isinstance(c, SetCutSpeedCommand)
     ]
-    powers = [
+    all_powers = [
         c.power
         for c in artifact.ops.commands
         if isinstance(c, SetPowerCommand)
     ]
+    # Filter out explicit power-off commands
+    powers = [p for p in all_powers if p > 0]
     assert len(set(speeds)) == 5
+    assert len(powers) == 5
     assert all(abs(p - 0.5) < 1e-3 for p in powers)
 
 
@@ -309,11 +316,13 @@ def test_single_row_grid(laser: Laser, mock_workpiece: WorkPiece):
         for c in artifact.ops.commands
         if isinstance(c, SetCutSpeedCommand)
     ]
-    powers = [
+    all_powers = [
         c.power
         for c in artifact.ops.commands
         if isinstance(c, SetPowerCommand)
     ]
+    # Filter out explicit power-off commands
+    powers = [p for p in all_powers if p > 0]
     assert all(s == 100.0 for s in speeds)
     assert len(set(powers)) == 5
 
