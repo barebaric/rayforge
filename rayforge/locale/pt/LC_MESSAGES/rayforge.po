@@ -277,8 +277,8 @@ msgid ""
 "G-code commands need a letter followed by a value. The command letter was "
 "not found."
 msgstr ""
-"Os comandos G-code necessitam uma letra seguida de um valor. A letra "
-"de comando não foi encontrada."
+"Os comandos G-code necessitam uma letra seguida de um valor. A letra de "
+"comando não foi encontrada."
 
 #: rayforge/machine/driver/grbl_util.py
 msgid "Invalid Number Format"
@@ -289,8 +289,8 @@ msgid ""
 "The value is missing or not in the correct numeric format. Check your G-code "
 "syntax."
 msgstr ""
-"O valor está ausente ou não está no formato numérico correto. Verifique "
-"a sintaxe do seu G-code."
+"O valor está ausente ou não está no formato numérico correto. Verifique a "
+"sintaxe do seu G-code."
 
 #: rayforge/machine/driver/grbl_util.py
 msgid "Unknown Command"
@@ -380,8 +380,8 @@ msgid ""
 "Soft limits cannot be enabled without homing also enabled. Enable homing "
 "first ($22=1)."
 msgstr ""
-"Os limites suaves não podem ser ativados sem que o retorno à origem "
-"também esteja ativado. Ative o retorno à origem primeiro ($22=1)."
+"Os limites suaves não podem ser ativados sem que o retorno à origem também "
+"esteja ativado. Ative o retorno à origem primeiro ($22=1)."
 
 #: rayforge/machine/driver/grbl_util.py
 msgid "Line Too Long"
@@ -403,8 +403,8 @@ msgstr "Configuração muito alta"
 msgid ""
 "This setting exceeds the maximum step rate supported. Use a lower value."
 msgstr ""
-"Esta configuração excede a taxa de passo máxima suportada. Use um valor "
-"mais baixo."
+"Esta configuração excede a taxa de passo máxima suportada. Use um valor mais "
+"baixo."
 
 #: rayforge/machine/driver/grbl_util.py
 msgid "Door Open"
@@ -432,8 +432,8 @@ msgid ""
 "Jog target is beyond the machine's travel limits. Move to a position within "
 "range."
 msgstr ""
-"O alvo de movimento manual está além dos limites de deslocamento da "
-"máquina. Mova para uma posição dentro do alcance."
+"O alvo de movimento manual está além dos limites de deslocamento da máquina. "
+"Mova para uma posição dentro do alcance."
 
 #: rayforge/machine/driver/grbl_util.py
 msgid "Invalid Jog Command"
@@ -444,8 +444,8 @@ msgid ""
 "Jog command is missing '=' or contains prohibited G-code. Check the jog "
 "syntax."
 msgstr ""
-"O comando de movimento manual está faltando '=' ou contém G-code "
-"proibido. Verifique a sintaxe de movimento manual."
+"O comando de movimento manual está faltando '=' ou contém G-code proibido. "
+"Verifique a sintaxe de movimento manual."
 
 #: rayforge/machine/driver/grbl_util.py
 msgid "Laser Mode Error"
@@ -467,8 +467,8 @@ msgid ""
 "This G-code command is not supported by the machine. Check your post-"
 "processor settings."
 msgstr ""
-"Este comando G-code não é suportado pela máquina. Verifique as "
-"configurações do seu pós-processador."
+"Este comando G-code não é suportado pela máquina. Verifique as configurações "
+"do seu pós-processador."
 
 #: rayforge/machine/driver/grbl_util.py
 msgid "Conflicting Commands"
@@ -479,8 +479,8 @@ msgid ""
 "Multiple commands from the same group found on one line. Remove the "
 "duplicate command."
 msgstr ""
-"Múltiplos comandos do mesmo grupo encontrados em uma linha. Remova o "
-"comando duplicado."
+"Múltiplos comandos do mesmo grupo encontrados em uma linha. Remova o comando "
+"duplicado."
 
 #: rayforge/machine/driver/grbl_util.py
 msgid "Feed Rate Missing"
@@ -491,8 +491,8 @@ msgid ""
 "Set a feed rate before using motion commands. Add an F command to specify "
 "speed."
 msgstr ""
-"Defina uma taxa de avanço antes de usar comandos de movimento. Adicione "
-"um comando F para especificar a velocidade."
+"Defina uma taxa de avanço antes de usar comandos de movimento. Adicione um "
+"comando F para especificar a velocidade."
 
 #: rayforge/machine/driver/grbl_util.py
 msgid "Integer Required"
@@ -510,8 +510,7 @@ msgstr "Conflito de eixo"
 
 #: rayforge/machine/driver/grbl_util.py
 msgid "Multiple commands trying to use the same axis. Simplify the command."
-msgstr ""
-"Múltiplos comandos tentando usar o mesmo eixo. Simplifique o comando."
+msgstr "Múltiplos comandos tentando usar o mesmo eixo. Simplifique o comando."
 
 #: rayforge/machine/driver/grbl_util.py
 msgid "Duplicate Word"
@@ -519,8 +518,7 @@ msgstr "Palavra duplicada"
 
 #: rayforge/machine/driver/grbl_util.py
 msgid "The same G-code word appears more than once. Remove the duplicate."
-msgstr ""
-"A mesma palavra G-code aparece mais de uma vez. Remova o duplicado."
+msgstr "A mesma palavra G-code aparece mais de uma vez. Remova o duplicado."
 
 #: rayforge/machine/driver/grbl_util.py
 msgid "Missing Axis"
@@ -540,8 +538,8 @@ msgstr "Número de linha fora de alcance"
 #: rayforge/machine/driver/grbl_util.py
 msgid "Line number must be between 1 and 9,999,999. Use a valid line number."
 msgstr ""
-"O número de linha deve estar entre 1 e 9 999 999. Use um número "
-"de linha válido."
+"O número de linha deve estar entre 1 e 9 999 999. Use um número de linha "
+"válido."
 
 #: rayforge/machine/driver/grbl_util.py
 msgid "Missing Value"
@@ -549,8 +547,7 @@ msgstr "Valor ausente"
 
 #: rayforge/machine/driver/grbl_util.py
 msgid "This command requires a P or L value. Add the missing parameter."
-msgstr ""
-"Este comando requer um valor P ou L. Adicione o parâmetro ausente."
+msgstr "Este comando requer um valor P ou L. Adicione o parâmetro ausente."
 
 #: rayforge/machine/driver/grbl_util.py
 msgid "Unsupported Coordinate"
@@ -560,8 +557,8 @@ msgstr "Coordenada não suportada"
 msgid ""
 "Only G54-G59 coordinate systems are supported. Use one of these instead."
 msgstr ""
-"Apenas os sistemas de coordenadas G54-G59 são suportados. Use um deles "
-"em vez."
+"Apenas os sistemas de coordenadas G54-G59 são suportados. Use um deles em "
+"vez."
 
 #: rayforge/machine/driver/grbl_util.py
 msgid "Wrong Motion Mode"
@@ -594,8 +591,8 @@ msgid ""
 "G2/G3 arc command needs XYZ coordinates. Add the axis values for the "
 "selected plane."
 msgstr ""
-"O comando de arco G2/G3 precisa de coordenadas XYZ. Adicione os valores "
-"de eixo para o plano selecionado."
+"O comando de arco G2/G3 precisa de coordenadas XYZ. Adicione os valores de "
+"eixo para o plano selecionado."
 
 #: rayforge/machine/driver/grbl_util.py
 msgid "Invalid Target"
@@ -618,8 +615,8 @@ msgid ""
 "Arc calculation failed. Try breaking the arc into smaller pieces or use IJK "
 "offset instead."
 msgstr ""
-"O cálculo do arco falhou. Tente dividir o arco em peças menores ou use "
-"o deslocamento IJK em vez disso."
+"O cálculo do arco falhou. Tente dividir o arco em peças menores ou use o "
+"deslocamento IJK em vez disso."
 
 #: rayforge/machine/driver/grbl_util.py
 msgid "Missing Arc Offset"
@@ -630,8 +627,8 @@ msgid ""
 "G2/G3 arc command needs IJK offset values. Add the missing offset for the "
 "selected plane."
 msgstr ""
-"O comando de arco G2/G3 precisa de valores de deslocamento IJK. "
-"Adicione o deslocamento ausente para o plano selecionado."
+"O comando de arco G2/G3 precisa de valores de deslocamento IJK. Adicione o "
+"deslocamento ausente para o plano selecionado."
 
 #: rayforge/machine/driver/grbl_util.py
 msgid "Unused Words"
@@ -654,8 +651,8 @@ msgid ""
 "Tool length offset only works on the configured axis (usually Z-axis). Check "
 "your settings."
 msgstr ""
-"O deslocamento de comprimento da ferramenta só funciona no eixo "
-"configurado (geralmente eixo Z). Verifique suas configurações."
+"O deslocamento de comprimento da ferramenta só funciona no eixo configurado "
+"(geralmente eixo Z). Verifique suas configurações."
 
 #: rayforge/machine/driver/grbl_util.py
 msgid "Tool Number Too High"
@@ -1837,8 +1834,8 @@ msgstr "Editar deslocamentos de trabalho"
 #: rayforge/ui_gtk/machine/jog_dialog.py
 msgid "Enter the offset from Machine Zero to Work Zero for the active WCS."
 msgstr ""
-"Introduza o deslocamento do zero da máquina para o zero do "
-"trabalho para o WCS ativo."
+"Introduza o deslocamento do zero da máquina para o zero do trabalho para o "
+"WCS ativo."
 
 #: rayforge/ui_gtk/machine/jog_dialog.py
 msgid "Offline - Position Unknown"
@@ -1848,8 +1845,8 @@ msgstr "Fora de linha - Posição desconhecida"
 #, python-brace-format
 msgid "Offsets cannot be set in Machine Coordinate Mode ({wcs})"
 msgstr ""
-"Os deslocamentos não podem ser definidos no modo de coordenadas "
-"da máquina ({wcs})"
+"Os deslocamentos não podem ser definidos no modo de coordenadas da máquina "
+"({wcs})"
 
 #: rayforge/ui_gtk/machine/jog_dialog.py
 msgid "Machine must be connected to set Zero Here"
