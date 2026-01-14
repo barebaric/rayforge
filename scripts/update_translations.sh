@@ -33,6 +33,7 @@ if [ "$COMPILE_ONLY" = false ]; then
     if [ -d "$lang_dir/LC_MESSAGES" ]; then
       echo "  Updating $lang_dir/LC_MESSAGES/rayforge.po"
       msgmerge --update -N "$lang_dir/LC_MESSAGES/rayforge.po" rayforge/locale/rayforge.pot
+      msgattrib --no-obsolete --output-file="$lang_dir/LC_MESSAGES/rayforge.po" "$lang_dir/LC_MESSAGES/rayforge.po"
     fi
   done
 else

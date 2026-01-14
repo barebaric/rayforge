@@ -1,0 +1,31 @@
+#!/bin/bash
+
+# Exit immediately if a command exits with a non-zero status.
+set -e
+
+# Check if language code is provided
+if [ -z "$1" ]; then
+  echo "Error: Language code is required."
+  echo "Usage: pixi run print-untranslated <lang>"
+  echo "Example: pixi run print-untranslated de"
+  exit 1
+fi
+
+LANG_CODE="$1"
+PO_FILE="rayforge/locale/${LANG_CODE}/LC_MESSAGES/rayforge.po"
+
+# Check if the .po file exists
+if [ ! -f "$PO_FILE" ]; then
+  echo "Error: Translation file not found: $PO_FILE"
+  echo "Available languages:"
+  for lang_dir in rayforge/locale/*/; do
+    lang=$(basename "$lang_dir")
+    if [ -d "$lang_dir/LC_MESSAGES" ] && [ -f "$lang_dir/LC_MESSAGES/rayforge.po" ]; then
+      echo "  - $lang"
+    fi
+  done
+  exit 1
+fi
+
+# Print untranslated strings
+msgattrib --untranslated --no-obsolete "$PO_FILE"
