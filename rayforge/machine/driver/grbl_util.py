@@ -41,6 +41,8 @@ wcs_re = re.compile(r"\[(G5[4-9]):([\d\.-]+),([\d\.-]+),([\d\.-]+)\]")
 prb_re = re.compile(r"\[PRB:([\d\.-]+),([\d\.-]+),([\d\.-]+):(\d)\]")
 # Regex to find the active WCS (G54-G59) from a $G parser state report
 grbl_parser_state_re = re.compile(r".*(G5[4-9]).*")
+# Regex to find the firmware version from a $I build info report
+grbl_version_re = re.compile(r"\[VER:(\d+\.\d+)([a-zA-Z]?)")
 
 
 # GRBL Error Codes
@@ -353,6 +355,47 @@ def gcode_to_p_number(wcs_slot: str) -> Optional[int]:
 
 
 # GRBL State Parsers
+def parse_version(response_lines: List[str]) -> Optional[tuple[float, str]]:
+    """
+    Parses '$I' output to extract the GRBL version number and letter.
+
+    Args:
+        response_lines: List of response lines from a '$I' command
+
+    Returns:
+        Tuple of (version_num, version_letter) or None if not found.
+        version_letter is an empty string if no letter is present.
+    """
+    for line in response_lines:
+        match = grbl_version_re.search(line)
+        if match:
+            version_num_str, version_letter = match.groups()
+            return float(version_num_str), version_letter
+    return None
+
+
+def version_supports_single_axis_homing(
+    version_num: float, version_letter: str = ""
+) -> bool:
+    """
+    Determines if a GRBL version supports single-axis homing.
+
+    Args:
+        version_num: Version number (e.g., 1.1, 2.0)
+        version_letter: Optional version letter (e.g., 'f', 'g')
+
+    Returns:
+        True if the version supports single-axis homing, False otherwise.
+        Support is assumed for versions > 1.1 or for 1.1g and newer.
+    """
+    if version_num > 1.1:
+        return True
+    if version_num == 1.1:
+        # 'f' and below do not support it. 'g' and above do.
+        return bool(version_letter and version_letter.lower() >= "g")
+    return False
+
+
 def _parse_pos_triplet(pos: str) -> Optional[Pos]:
     match = pos_re.search(pos)
     if not match:
