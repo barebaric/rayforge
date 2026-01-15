@@ -6,17 +6,11 @@ If you're experiencing problems with Rayforge, especially with connecting to or 
 
 Follow these simple steps to generate and share a report:
 
-#### 1. Open the Log Viewer
+#### 1. Save the Report
 
-At the bottom of the main window, you'll find the status bar. The left section shows the current connection status (e.g., "Connected", "Disconnected"). **Click on the connection status in the status bar** to open the Log Viewer panel.
+Go to **Help → Save Debug Log** in the menu bar. This will package all the necessary diagnostic information into a single `.zip` file. Save this file to a memorable location, like your Desktop.
 
-![Log area screenshot](../images/machine-logs.png)
-
-#### 2. Save the Report
-
-In the Log Viewer panel, click the **Save** button. This will package all the necessary diagnostic information into a single `.zip` file. Save this file to a memorable location, like your Desktop.
-
-#### 3. Create a GitHub Issue
+#### 2. Create a GitHub Issue
 
 Go to our [GitHub Issues page](https://github.com/barebaric/rayforge/issues/new/choose) and create a new issue. Please provide a clear title and a detailed description of the problem:
 
@@ -24,7 +18,7 @@ Go to our [GitHub Issues page](https://github.com/barebaric/rayforge/issues/new/
 - **What did you expect to happen?** (e.g., "I expected it to connect successfully.")
 - **What actually happened?** (e.g., "It stayed disconnected and the log showed timeout errors.")
 
-#### 4. Attach the Report
+#### 3. Attach the Report
 
 **Drag and drop the `.zip` file** you saved into the description box of the GitHub issue. This will upload and attach it to your report.
 

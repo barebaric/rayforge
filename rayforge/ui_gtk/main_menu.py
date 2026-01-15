@@ -187,6 +187,7 @@ class MainMenu(Gio.Menu):
         help_menu = Gio.Menu()
         help_menu.append(_("About"), "win.about")
         help_menu.append(_("Donate"), "win.donate")
+        help_menu.append(_("Save Debug Log"), "win.save_debug_log")
         self.append_submenu(_("_Help"), help_menu)
 
     def update_macros_menu(self, macros: List[Macro]):

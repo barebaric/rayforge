@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import shutil
 import webbrowser
 from concurrent.futures import Future
 from pathlib import Path
@@ -1903,6 +1904,50 @@ class MainWindow(Adw.ApplicationWindow):
 
     def on_donate_clicked(self, action, param):
         webbrowser.open("https://www.patreon.com/c/knipknap")
+
+    def on_save_debug_log(self, action, param):
+        archive_path = get_context().debug_dump_manager.create_dump_archive()
+
+        if not archive_path:
+            self._on_editor_notification(
+                self, _("Failed to create debug archive.")
+            )
+            return
+
+        dialog = Gtk.FileDialog.new()
+        dialog.set_title(_("Save Debug Log"))
+        dialog.set_initial_name(archive_path.name)
+
+        def save_callback(dialog, result):
+            try:
+                destination_file = dialog.save_finish(result)
+                if destination_file:
+                    destination_path = Path(destination_file.get_path())
+                    shutil.move(archive_path, destination_path)
+                    self._on_editor_notification(
+                        self,
+                        _("Debug log saved to {path}").format(
+                            path=destination_path.name
+                        ),
+                    )
+            except GLib.Error as e:
+                if not e.matches(
+                    Gio.io_error_quark(), Gio.IOErrorEnum.CANCELLED
+                ):
+                    self._on_editor_notification(
+                        self,
+                        _("Error saving file: {msg}").format(msg=e.message),
+                    )
+            except Exception as e:
+                self._on_editor_notification(
+                    self,
+                    _("An unexpected error occurred: {error}").format(error=e),
+                )
+            finally:
+                if archive_path.exists():
+                    archive_path.unlink()
+
+        dialog.save(self, None, save_callback)
 
     def show_settings(self, action, param):
         dialog = SettingsWindow(transient_for=self)
