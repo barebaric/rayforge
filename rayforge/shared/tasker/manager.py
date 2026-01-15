@@ -591,10 +591,7 @@ class TaskManager:
             True if all tasks completed before timeout, False if timeout was
             reached.
         """
-        # If already settled, return immediately.
-        if not self.has_tasks():
-            return True
-
+        # Define event and handler
         settled_event = threading.Event()
         timeout_seconds = timeout / 1000.0
 
@@ -603,11 +600,26 @@ class TaskManager:
             if not tasks:
                 # The manager is now idle. Set the event and disconnect.
                 settled_event.set()
-                self.tasks_updated.disconnect(on_update)
+                try:
+                    self.tasks_updated.disconnect(on_update)
+                except (ValueError, KeyError):
+                    # Signal might have been disconnected by the main thread
+                    # or another cleanup call. This is expected.
+                    pass
 
-        # Connect the handler. We don't use a weak reference because we
-        # need to guarantee disconnection.
+        # Connect the handler FIRST to avoid race conditions where the
+        # signal is fired after has_tasks() check but before connect().
         self.tasks_updated.connect(on_update, weak=False)
+
+        # If already settled, return immediately.
+        # Check this AFTER connecting to ensure we don't miss a signal
+        # that fires immediately after the check.
+        if not self.has_tasks():
+            try:
+                self.tasks_updated.disconnect(on_update)
+            except (ValueError, KeyError):
+                pass
+            return True
 
         # Wait for the event to be set by the callback. This is a blocking
         # call, but it does NOT block the main_thread_scheduler's event loop,
@@ -617,8 +629,7 @@ class TaskManager:
         # Always try to disconnect in case of a timeout to prevent leaks.
         try:
             self.tasks_updated.disconnect(on_update)
-        except Exception:
-            # It might have already been disconnected, which is fine.
+        except (ValueError, KeyError):
             pass
 
         return event_was_set
