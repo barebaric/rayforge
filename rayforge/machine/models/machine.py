@@ -673,24 +673,35 @@ class Machine:
             return
         await self.driver.home(axes)
 
-    async def jog(self, axis: Axis, distance: float, speed: int):
-        """Jogs the machine along a specific axis or combination of axes."""
+    async def jog(self, deltas: Dict[Axis, float], speed: int):
+        """
+        Jogs the machine along specified axes.
+
+        Args:
+            deltas: Dictionary mapping Axis enum members to distances in mm.
+            speed: Speed in mm/min.
+        """
         if self.driver is None:
             return
 
-        # If soft limits are enabled, adjust distance to stay within limits
-        if self.soft_limits_enabled:
-            adjusted_distance = self._adjust_jog_distance_for_limits(
-                axis, distance
-            )
-            if adjusted_distance != distance:
-                logger.debug(
-                    f"Adjusting jog distance from {distance} to "
-                    f"{adjusted_distance} to stay within limits"
-                )
-                distance = adjusted_distance
+        driver_kwargs = {}
 
-        await self.driver.jog(axis, distance, speed)
+        for axis, distance in deltas.items():
+            if distance == 0:
+                continue
+
+            # Check limits if enabled
+            if self.soft_limits_enabled:
+                distance = self._adjust_jog_distance_for_limits(axis, distance)
+
+            # Only add if there is movement and the axis has a name
+            if distance != 0 and axis.name:
+                driver_kwargs[axis.name.lower()] = distance
+
+        if not driver_kwargs:
+            return
+
+        await self.driver.jog(speed=speed, **driver_kwargs)
 
     async def run_raw(self, gcode: str):
         """Executes a raw G-code string on the machine."""

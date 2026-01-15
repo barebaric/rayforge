@@ -247,63 +247,72 @@ class JogWidget(Adw.PreferencesGroup):
         """Handle machine state changes to update limit status."""
         self._update_limit_status()
 
-    def _jog_xy(self, x_dist: float, y_dist: float):
-        """Helper to jog X and Y by sending separate commands."""
+    def _perform_jog(self, x: float = 0.0, y: float = 0.0, z: float = 0.0):
+        """
+        Helper to jog multiple axes simultaneously by sending a single
+        command dictionary.
+        """
         if not self.machine or not self.machine_cmd:
             return
 
-        if x_dist != 0:
-            self.machine_cmd.jog(self.machine, Axis.X, x_dist, self.jog_speed)
-        if y_dist != 0:
-            self.machine_cmd.jog(self.machine, Axis.Y, y_dist, self.jog_speed)
+        deltas = {}
+        if x != 0:
+            deltas[Axis.X] = x
+        if y != 0:
+            deltas[Axis.Y] = y
+        if z != 0:
+            deltas[Axis.Z] = z
+
+        if deltas:
+            self.machine_cmd.jog(self.machine, deltas, self.jog_speed)
 
     def _on_x_plus_clicked(self, button):
         """Handle Right (East) button click."""
-        if self.machine and self.machine_cmd:
+        if self.machine:
             x_dist = self.machine.calculate_jog(
                 JogDirection.EAST, self.jog_distance
             )
-            self.machine_cmd.jog(self.machine, Axis.X, x_dist, self.jog_speed)
+            self._perform_jog(x=x_dist)
 
     def _on_x_minus_clicked(self, button):
         """Handle Left (West) button click."""
-        if self.machine and self.machine_cmd:
+        if self.machine:
             x_dist = self.machine.calculate_jog(
                 JogDirection.WEST, self.jog_distance
             )
-            self.machine_cmd.jog(self.machine, Axis.X, x_dist, self.jog_speed)
+            self._perform_jog(x=x_dist)
 
     def _on_y_plus_clicked(self, button):
         """Handle Away (North) button click."""
-        if self.machine and self.machine_cmd:
+        if self.machine:
             y_dist = self.machine.calculate_jog(
                 JogDirection.NORTH, self.jog_distance
             )
-            self.machine_cmd.jog(self.machine, Axis.Y, y_dist, self.jog_speed)
+            self._perform_jog(y=y_dist)
 
     def _on_y_minus_clicked(self, button):
         """Handle Toward (South) button click."""
-        if self.machine and self.machine_cmd:
+        if self.machine:
             y_dist = self.machine.calculate_jog(
                 JogDirection.SOUTH, self.jog_distance
             )
-            self.machine_cmd.jog(self.machine, Axis.Y, y_dist, self.jog_speed)
+            self._perform_jog(y=y_dist)
 
     def _on_z_plus_clicked(self, button):
         """Handle Up button click."""
-        if self.machine and self.machine_cmd:
+        if self.machine:
             z_dist = self.machine.calculate_jog(
                 JogDirection.UP, self.jog_distance
             )
-            self.machine_cmd.jog(self.machine, Axis.Z, z_dist, self.jog_speed)
+            self._perform_jog(z=z_dist)
 
     def _on_z_minus_clicked(self, button):
         """Handle Down button click."""
-        if self.machine and self.machine_cmd:
+        if self.machine:
             z_dist = self.machine.calculate_jog(
                 JogDirection.DOWN, self.jog_distance
             )
-            self.machine_cmd.jog(self.machine, Axis.Z, z_dist, self.jog_speed)
+            self._perform_jog(z=z_dist)
 
     def _on_x_plus_y_plus_clicked(self, button):
         """Handle Right-Away diagonal button click."""
@@ -314,7 +323,7 @@ class JogWidget(Adw.PreferencesGroup):
             y_dist = self.machine.calculate_jog(
                 JogDirection.NORTH, self.jog_distance
             )
-            self._jog_xy(x_dist, y_dist)
+            self._perform_jog(x=x_dist, y=y_dist)
 
     def _on_x_minus_y_plus_clicked(self, button):
         """Handle Left-Away diagonal button click."""
@@ -325,7 +334,7 @@ class JogWidget(Adw.PreferencesGroup):
             y_dist = self.machine.calculate_jog(
                 JogDirection.NORTH, self.jog_distance
             )
-            self._jog_xy(x_dist, y_dist)
+            self._perform_jog(x=x_dist, y=y_dist)
 
     def _on_x_plus_y_minus_clicked(self, button):
         """Handle Right-Toward diagonal button click."""
@@ -336,7 +345,7 @@ class JogWidget(Adw.PreferencesGroup):
             y_dist = self.machine.calculate_jog(
                 JogDirection.SOUTH, self.jog_distance
             )
-            self._jog_xy(x_dist, y_dist)
+            self._perform_jog(x=x_dist, y=y_dist)
 
     def _on_x_minus_y_minus_clicked(self, button):
         """Handle Left-Toward diagonal button click."""
@@ -347,7 +356,7 @@ class JogWidget(Adw.PreferencesGroup):
             y_dist = self.machine.calculate_jog(
                 JogDirection.SOUTH, self.jog_distance
             )
-            self._jog_xy(x_dist, y_dist)
+            self._perform_jog(x=x_dist, y=y_dist)
         return False
 
     def _on_key_pressed(self, controller, keyval, keycode, state):

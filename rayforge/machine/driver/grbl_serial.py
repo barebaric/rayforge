@@ -810,25 +810,22 @@ class GrblSerialDriver(Driver):
         """GRBL supports jogging for all axes."""
         return True
 
-    async def jog(self, axis: Axis, distance: float, speed: int) -> None:
+    async def jog(self, speed: int, **deltas: float) -> None:
         """
-        Jogs the machine along a specific axis using GRBL's $J command.
+        Jogs the machine using GRBL's $J command.
 
         Args:
-            axis: The Axis enum value or combination of axes using
-                  binary operators (e.g. Axis.X|Axis.Y)
-            distance: The distance to jog in mm (positive or negative)
             speed: The jog speed in mm/min
+            **deltas: Axis names and distances (e.g. x=10.0, y=5.0)
         """
         # Build the command with all specified axes
         cmd_parts = [f"$J=G91 G21 F{speed}"]
 
-        # Add each axis component to the command
-        for single_axis in Axis:
-            if axis & single_axis:
-                assert single_axis.name
-                axis_letter = single_axis.name.upper()
-                cmd_parts.append(f"{axis_letter}{distance}")
+        for axis_name, distance in deltas.items():
+            cmd_parts.append(f"{axis_name.upper()}{distance}")
+
+        if len(cmd_parts) == 1:
+            return
 
         cmd = " ".join(cmd_parts)
         await self._execute_command(cmd)
