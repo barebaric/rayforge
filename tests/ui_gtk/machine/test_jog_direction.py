@@ -120,7 +120,7 @@ def test_jog_button_direction(
 
     # 5. Verify the jog command was called with expected distance
     mock_jog.assert_called_once_with(
-        machine, expected_axis, expectation, JOG_SPEED
+        machine, {expected_axis: expectation}, JOG_SPEED
     )
 
 
