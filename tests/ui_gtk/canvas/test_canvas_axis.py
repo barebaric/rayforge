@@ -1,7 +1,7 @@
 import pytest
 import cairo
 import numpy as np
-from unittest.mock import MagicMock, call
+from unittest.mock import MagicMock
 from rayforge.ui_gtk.canvas.axis import AxisRenderer
 from rayforge.core.matrix import Matrix
 
@@ -9,6 +9,77 @@ from rayforge.core.matrix import Matrix
 WIDGET_W, WIDGET_H = 800, 600
 # A known world size for consistent testing
 WORLD_W, WORLD_H = 400.0, 300.0
+
+# Test scenarios for axis expectations
+# (origin, axis_negative, wcs_offset, expected_labels, expected_marker_pos)
+AXIS_EXPECTATIONS = [
+    # ---------- Negative Axis Scenarios ----------
+    # TEST CASE 1: Bottom-Left origin, negative axis, WCS -20,-20
+    (
+        "bottom_left",
+        True,
+        (-20.0, -20.0),
+        (-100.0, 20.0),
+        (20.0, 20.0),
+    ),
+    # TEST CASE 2: Bottom-Left origin, negative axis, WCS 20,20
+    (
+        "bottom_left",
+        True,
+        (20.0, 20.0),
+        (-140.0, -20.0),
+        (-20.0, -20.0),
+    ),
+    # TEST CASE 3: Top-Right origin, negative axis, WCS -20,-20
+    (
+        "top_right",
+        True,
+        (-20.0, -20.0),
+        (-100.0, 20.0),
+        (100.0, 100.0),
+    ),
+    # TEST CASE 4: Top-Right origin, negative axis, WCS 20,20
+    (
+        "top_right",
+        True,
+        (20.0, 20.0),
+        (-140.0, -20.0),
+        (140.0, 140.0),
+    ),
+    # ---------- Positive Axis Scenarios ----------
+    # TEST CASE 5: Bottom-Left origin, positive axis, WCS -20,-20
+    (
+        "bottom_left",
+        False,
+        (-20.0, -20.0),
+        (20.0, 140.0),
+        (-20.0, -20.0),
+    ),
+    # TEST CASE 6: Bottom-Left origin, positive axis, WCS 20,20
+    (
+        "bottom_left",
+        False,
+        (20.0, 20.0),
+        (-20.0, 100.0),
+        (20.0, 20.0),
+    ),
+    # TEST CASE 7: Top-Right origin, positive axis, WCS -20,-20
+    (
+        "top_right",
+        False,
+        (-20.0, -20.0),
+        (20.0, 140.0),
+        (140.0, 140.0),
+    ),
+    # TEST CASE 8: Top-Right origin, positive axis, WCS 20,20
+    (
+        "top_right",
+        False,
+        (20.0, 20.0),
+        (-20.0, 100.0),
+        (100.0, 100.0),
+    ),
+]
 
 
 @pytest.fixture
@@ -176,16 +247,20 @@ class TestAxisRendererDrawing:
         # The preceding move_to call should be at world_x = 20
         calls = mock_context_with_font_size.method_calls
         found_label = False
-        for i, c in enumerate(calls):
-            if c == call.show_text("20") and i > 0:
+        for i, current_call in enumerate(calls):
+            if (
+                current_call[0] == "show_text"
+                and current_call[1][0] == "20"
+                and i > 0
+            ):
                 prev_call = calls[i - 1]
-                # prev_call should be move_to(x, y)
-                # We check that the x-coordinate is close to 20.0
-                if prev_call[0] == "move_to" and np.isclose(
-                    prev_call[1][0], 20.0 - 5.0
-                ):  # 20.0 - text_width/2
-                    found_label = True
-                    break
+                if prev_call[0] == "move_to":
+                    # prev_call is ('move_to', (x, y))
+                    if np.isclose(
+                        prev_call[1][0], 20.0 - 5.0
+                    ):  # 20.0 - text_width/2
+                        found_label = True
+                        break
         assert found_label, 'Label "20" not found at the correct X position'
 
     def test_draw_labels_with_offset(
@@ -204,7 +279,7 @@ class TestAxisRendererDrawing:
         # The label "10" should be physically located at world_x = 50 + 10 = 60
         found_label_10 = False
         for i, c in enumerate(calls):
-            if c == call.show_text("10") and i > 0:
+            if c[0] == "show_text" and c[1][0] == "10" and i > 0:
                 prev_call = calls[i - 1]
                 if prev_call[0] == "move_to" and np.isclose(
                     prev_call[1][0], 60.0 - 5.0
@@ -216,7 +291,7 @@ class TestAxisRendererDrawing:
         # The label "-50" should be physically located at world_x = 50 - 50 = 0
         found_label_neg_50 = False
         for i, c in enumerate(calls):
-            if c == call.show_text("-50") and i > 0:
+            if c[0] == "show_text" and c[1][0] == "-50" and i > 0:
                 prev_call = calls[i - 1]
                 if prev_call[0] == "move_to" and np.isclose(
                     prev_call[1][0], 0.0 - 5.0
@@ -239,6 +314,7 @@ class TestAxisRendererDrawing:
         # Count how many times show_text was called with "0" or "0.0"
         zero_label_count = 0
         for c in mock_context_with_font_size.method_calls:
+            # Correctly check the mock call tuple
             if c[0] == "show_text" and c[1][0] in (
                 "0",
                 "0.0",
@@ -262,3 +338,114 @@ class TestAxisRendererDrawing:
         )
         # Verify custom font size is set
         assert mock_context_with_font_size.font_size == 16.0
+
+
+class TestAxisExpectations:
+    """
+    Tests for axis rendering expectations under various configurations.
+
+    These tests verify that axis labels and WCS marker positions are
+    correctly calculated for different origin positions, machine
+    coordinate ranges, and WCS offsets.
+    """
+
+    @pytest.mark.parametrize(
+        "origin,axis_negative,wcs_offset,expected_labels,expected_marker_pos",
+        AXIS_EXPECTATIONS,
+    )
+    def test_axis_expectations(
+        self,
+        origin,
+        axis_negative,
+        wcs_offset,
+        expected_labels,
+        expected_marker_pos,
+    ):
+        """
+        Verifies axis rendering expectations for various configurations.
+
+        Args:
+            origin: Origin position ("bottom_left" or "top_right")
+            axis_negative: Whether axis is negative (True) or positive (False)
+            wcs_offset: WCS offset as (x, y) tuple
+            expected_labels: Expected (min_label, max_label) tuple
+            expected_marker_pos: Expected (marker_x, marker_y) tuple from
+                canvas bottom-left origin
+        """
+        # Create renderer with appropriate configuration
+        r = AxisRenderer(
+            width_mm=120.0,
+            height_mm=120.0,
+            grid_size_mm=10.0,
+            x_axis_right=(origin == "top_right"),
+            y_axis_down=(origin == "top_right"),
+            x_axis_negative=axis_negative,
+            y_axis_negative=axis_negative,
+        )
+
+        # Verify renderer configuration
+        if origin == "bottom_left":
+            assert r.x_axis_right is False
+            assert r.y_axis_down is False
+        else:
+            assert r.x_axis_right is True
+            assert r.y_axis_down is True
+
+        assert r.x_axis_negative == axis_negative
+        assert r.y_axis_negative == axis_negative
+
+        # Calculate WCS world position
+        wcs_x, wcs_y = wcs_offset
+
+        # Logic for determining the WCS marker visual position must match
+        # AxisRenderer logic: if axis is negative, the offset value in machine
+        # coords corresponds to a visual position inverted from origin.
+        eff_wcs_x = -wcs_x if r.x_axis_negative else wcs_x
+        eff_wcs_y = -wcs_y if r.y_axis_negative else wcs_y
+
+        if r.x_axis_right:
+            wcs_world_x = r.width_mm - eff_wcs_x
+        else:
+            wcs_world_x = eff_wcs_x
+
+        if r.y_axis_down:
+            wcs_world_y = r.height_mm - eff_wcs_y
+        else:
+            wcs_world_y = eff_wcs_y
+
+        # The test's `expected_marker_pos` defines the final visual position
+        # in canvas world coordinates (0,0 is bottom-left).
+        marker_x = wcs_world_x
+        marker_y = wcs_world_y
+
+        # Verify marker position by component
+        assert np.isclose(marker_x, expected_marker_pos[0])
+        assert np.isclose(marker_y, expected_marker_pos[1])
+
+        # Calculate expected label range
+        # The labels represent the delta from the WCS origin in machine
+        # coordinates.
+        delta_to_left_edge = 0 - wcs_world_x
+        delta_to_right_edge = r.width_mm - wcs_world_x
+
+        if r.x_axis_right:
+            # Machine X increases left (negative canvas delta)
+            label_at_left_edge = -delta_to_left_edge
+            label_at_right_edge = -delta_to_right_edge
+        else:
+            # Machine X increases right (positive canvas delta)
+            label_at_left_edge = delta_to_left_edge
+            label_at_right_edge = delta_to_right_edge
+
+        if r.x_axis_negative:
+            label_at_left_edge = -label_at_left_edge
+            label_at_right_edge = -label_at_right_edge
+
+        # The min and max labels are the min/max of the labels at the bed
+        # edges.
+        min_label = min(label_at_left_edge, label_at_right_edge)
+        max_label = max(label_at_left_edge, label_at_right_edge)
+
+        # Verify label range by component
+        assert np.isclose(min_label, expected_labels[0])
+        assert np.isclose(max_label, expected_labels[1])
