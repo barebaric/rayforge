@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-01-13 23:59+0100\n"
+"POT-Creation-Date: 2026-01-15 17:07+0100\n"
 "PO-Revision-Date: 2025-07-24 22:09+0200\n"
 "Last-Translator: Samuel Abels <knipkap@gmail.com>\n"
 "Language-Team: Portuguese <LL@li.org>\n"
@@ -829,7 +829,7 @@ msgstr "Em execução"
 msgid "Hold"
 msgstr "Em espera"
 
-#: rayforge/machine/driver/driver.py
+#: rayforge/machine/driver/driver.py rayforge/machine/models/dialect.py
 msgid "Jog"
 msgstr "Jog"
 
@@ -2293,37 +2293,6 @@ msgstr "Laser"
 msgid "Hours"
 msgstr "Horas"
 
-#: rayforge/ui_gtk/machine/log_dialog.py
-msgid "Machine Log"
-msgstr "Log da Máquina"
-
-#: rayforge/ui_gtk/machine/log_dialog.py
-msgid "Save Debug Log"
-msgstr "Salvar Log de Depuração"
-
-#: rayforge/ui_gtk/machine/log_dialog.py
-msgid "Failed to create debug archive."
-msgstr "Falha ao criar o arquivo de depuração."
-
-#: rayforge/ui_gtk/machine/log_dialog.py
-msgid "Could not find parent window to attach dialog."
-msgstr "Não foi possível encontrar a janela pai para anexar o diálogo."
-
-#: rayforge/ui_gtk/machine/log_dialog.py
-#, python-brace-format
-msgid "Debug log saved to {path}"
-msgstr "Log de depuração salvo em {path}"
-
-#: rayforge/ui_gtk/machine/log_dialog.py
-#, python-brace-format
-msgid "Error saving file: {msg}"
-msgstr "Erro ao salvar o arquivo: {msg}"
-
-#: rayforge/ui_gtk/machine/log_dialog.py
-#, python-brace-format
-msgid "An unexpected error occurred: {error}"
-msgstr "Ocorreu um erro inesperado: {error}"
-
 #: rayforge/ui_gtk/machine/general_preferences_page.py
 #: rayforge/ui_gtk/doceditor/edit_recipe_dialog.py
 msgid "Machine"
@@ -2673,6 +2642,10 @@ msgid "Show G-code Preview"
 msgstr "Mostrar Pré-visualização de G-code"
 
 #: rayforge/ui_gtk/main_menu.py
+msgid "Show Log Panel"
+msgstr "Mostrar painel de log"
+
+#: rayforge/ui_gtk/main_menu.py
 msgid "Simulate Execution"
 msgstr "Simular Execução"
 
@@ -2840,6 +2813,10 @@ msgstr "Sobre"
 msgid "Donate"
 msgstr "Doar"
 
+#: rayforge/ui_gtk/main_menu.py rayforge/ui_gtk/mainwindow.py
+msgid "Save Debug Log"
+msgstr "Salvar Log de Depuração"
+
 #: rayforge/ui_gtk/main_menu.py
 msgid "_Help"
 msgstr "_Ajuda"
@@ -2926,6 +2903,25 @@ msgstr "Retomar máquina"
 #: rayforge/ui_gtk/mainwindow.py rayforge/ui_gtk/toolbar.py
 msgid "Pause machine"
 msgstr "Pausar máquina"
+
+#: rayforge/ui_gtk/mainwindow.py
+msgid "Failed to create debug archive."
+msgstr "Falha ao criar o arquivo de depuração."
+
+#: rayforge/ui_gtk/mainwindow.py
+#, python-brace-format
+msgid "Debug log saved to {path}"
+msgstr "Log de depuração salvo em {path}"
+
+#: rayforge/ui_gtk/mainwindow.py
+#, python-brace-format
+msgid "Error saving file: {msg}"
+msgstr "Erro ao salvar o arquivo: {msg}"
+
+#: rayforge/ui_gtk/mainwindow.py
+#, python-brace-format
+msgid "An unexpected error occurred: {error}"
+msgstr "Ocorreu um erro inesperado: {error}"
 
 #: rayforge/ui_gtk/package_manager/package_list.py
 msgid "Uninstall Package"
@@ -3170,6 +3166,14 @@ msgid "Whole Surface"
 msgstr "Superfície Inteira"
 
 #: rayforge/ui_gtk/doceditor/import_dialog.py
+msgid "Create New Layers"
+msgstr "Criar Novas Camadas"
+
+#: rayforge/ui_gtk/doceditor/import_dialog.py
+msgid "Create a new layer for each imported layer"
+msgstr "Criar uma nova camada para cada camada importada"
+
+#: rayforge/ui_gtk/doceditor/import_dialog.py
 msgid "Import Image"
 msgstr "Importar imagem"
 
@@ -3247,14 +3251,6 @@ msgstr "Rastrear objetos claros em um fundo escuro"
 #: rayforge/ui_gtk/doceditor/import_dialog.py
 msgid "Select Layers"
 msgstr "Selecionar Camadas"
-
-#: rayforge/ui_gtk/doceditor/import_dialog.py
-msgid "Create New Layers"
-msgstr "Criar Novas Camadas"
-
-#: rayforge/ui_gtk/doceditor/import_dialog.py
-msgid "Create a new layer for each imported layer"
-msgstr "Criar uma nova camada para cada camada importada"
 
 #: rayforge/ui_gtk/doceditor/import_dialog.py
 msgid "Generating preview..."

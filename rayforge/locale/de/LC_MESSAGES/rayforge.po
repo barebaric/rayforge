@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-01-13 23:59+0100\n"
+"POT-Creation-Date: 2026-01-15 17:07+0100\n"
 "PO-Revision-Date: 2025-07-24 22:08+0200\n"
 "Last-Translator: Samuel Abels <knipknap@gmail.com>\n"
 "Language-Team: none\n"
@@ -834,7 +834,7 @@ msgstr "In Betrieb"
 msgid "Hold"
 msgstr "Angehalten"
 
-#: rayforge/machine/driver/driver.py
+#: rayforge/machine/driver/driver.py rayforge/machine/models/dialect.py
 msgid "Jog"
 msgstr "Manuell"
 
@@ -2305,38 +2305,6 @@ msgstr "Laser"
 msgid "Hours"
 msgstr "Betriebsstunden"
 
-#: rayforge/ui_gtk/machine/log_dialog.py
-msgid "Machine Log"
-msgstr "Maschinenprotokoll"
-
-#: rayforge/ui_gtk/machine/log_dialog.py
-msgid "Save Debug Log"
-msgstr "Debug-Protokoll speichern"
-
-#: rayforge/ui_gtk/machine/log_dialog.py
-msgid "Failed to create debug archive."
-msgstr "Debug-Archiv konnte nicht erstellt werden."
-
-#: rayforge/ui_gtk/machine/log_dialog.py
-msgid "Could not find parent window to attach dialog."
-msgstr ""
-"Übergeordnetes Fenster zum Anhängen des Dialogs konnte nicht gefunden werden."
-
-#: rayforge/ui_gtk/machine/log_dialog.py
-#, python-brace-format
-msgid "Debug log saved to {path}"
-msgstr "Debug-Protokoll wurde unter {path} gespeichert."
-
-#: rayforge/ui_gtk/machine/log_dialog.py
-#, python-brace-format
-msgid "Error saving file: {msg}"
-msgstr "Fehler beim Speichern der Datei: {msg}"
-
-#: rayforge/ui_gtk/machine/log_dialog.py
-#, python-brace-format
-msgid "An unexpected error occurred: {error}"
-msgstr "Ein unerwarteter Fehler ist aufgetreten: {error}"
-
 #: rayforge/ui_gtk/machine/general_preferences_page.py
 #: rayforge/ui_gtk/doceditor/edit_recipe_dialog.py
 msgid "Machine"
@@ -2689,6 +2657,10 @@ msgid "Show G-code Preview"
 msgstr "G-Code-Vorschau anzeigen"
 
 #: rayforge/ui_gtk/main_menu.py
+msgid "Show Log Panel"
+msgstr "Log-Panel anzeigen"
+
+#: rayforge/ui_gtk/main_menu.py
 msgid "Simulate Execution"
 msgstr "Ausführung simulieren"
 
@@ -2856,6 +2828,10 @@ msgstr "Über"
 msgid "Donate"
 msgstr "Spenden"
 
+#: rayforge/ui_gtk/main_menu.py rayforge/ui_gtk/mainwindow.py
+msgid "Save Debug Log"
+msgstr "Debug-Protokoll speichern"
+
 #: rayforge/ui_gtk/main_menu.py
 msgid "_Help"
 msgstr "_Hilfe"
@@ -2943,6 +2919,25 @@ msgstr "Maschine fortsetzen"
 #: rayforge/ui_gtk/mainwindow.py rayforge/ui_gtk/toolbar.py
 msgid "Pause machine"
 msgstr "Maschine pausieren"
+
+#: rayforge/ui_gtk/mainwindow.py
+msgid "Failed to create debug archive."
+msgstr "Debug-Archiv konnte nicht erstellt werden."
+
+#: rayforge/ui_gtk/mainwindow.py
+#, python-brace-format
+msgid "Debug log saved to {path}"
+msgstr "Debug-Protokoll wurde unter {path} gespeichert."
+
+#: rayforge/ui_gtk/mainwindow.py
+#, python-brace-format
+msgid "Error saving file: {msg}"
+msgstr "Fehler beim Speichern der Datei: {msg}"
+
+#: rayforge/ui_gtk/mainwindow.py
+#, python-brace-format
+msgid "An unexpected error occurred: {error}"
+msgstr "Ein unerwarteter Fehler ist aufgetreten: {error}"
 
 #: rayforge/ui_gtk/package_manager/package_list.py
 msgid "Uninstall Package"
@@ -3188,6 +3183,14 @@ msgid "Whole Surface"
 msgstr "Ganzer Bereich"
 
 #: rayforge/ui_gtk/doceditor/import_dialog.py
+msgid "Create New Layers"
+msgstr "Neue Ebenen erstellen"
+
+#: rayforge/ui_gtk/doceditor/import_dialog.py
+msgid "Create a new layer for each imported layer"
+msgstr "Für jede importierte Ebene eine neue Ebene erstellen"
+
+#: rayforge/ui_gtk/doceditor/import_dialog.py
 msgid "Import Image"
 msgstr "Bild importieren"
 
@@ -3265,14 +3268,6 @@ msgstr "Helle Objekte auf dunklem Hintergrund nachzeichnen"
 #: rayforge/ui_gtk/doceditor/import_dialog.py
 msgid "Select Layers"
 msgstr "Ebenen auswählen"
-
-#: rayforge/ui_gtk/doceditor/import_dialog.py
-msgid "Create New Layers"
-msgstr "Neue Ebenen erstellen"
-
-#: rayforge/ui_gtk/doceditor/import_dialog.py
-msgid "Create a new layer for each imported layer"
-msgstr "Für jede importierte Ebene eine neue Ebene erstellen"
 
 #: rayforge/ui_gtk/doceditor/import_dialog.py
 msgid "Generating preview..."

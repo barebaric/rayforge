@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-01-13 23:59+0100\n"
+"POT-Creation-Date: 2026-01-15 17:07+0100\n"
 "PO-Revision-Date: 2025-10-15 07:10+0200\n"
 "Last-Translator: Samuel <knipknap@gmail.com>\n"
 "Language-Team: French\n"
@@ -835,7 +835,7 @@ msgstr "Exécuter"
 msgid "Hold"
 msgstr "Pause"
 
-#: rayforge/machine/driver/driver.py
+#: rayforge/machine/driver/driver.py rayforge/machine/models/dialect.py
 msgid "Jog"
 msgstr "Déplacement manuel"
 
@@ -2308,39 +2308,6 @@ msgstr "Laser"
 msgid "Hours"
 msgstr "Heures"
 
-#: rayforge/ui_gtk/machine/log_dialog.py
-msgid "Machine Log"
-msgstr "Journal de la machine"
-
-#: rayforge/ui_gtk/machine/log_dialog.py
-msgid "Save Debug Log"
-msgstr "Enregistrer le journal de débogage"
-
-#: rayforge/ui_gtk/machine/log_dialog.py
-msgid "Failed to create debug archive."
-msgstr "Échec de la création de l’archive de débogage."
-
-#: rayforge/ui_gtk/machine/log_dialog.py
-msgid "Could not find parent window to attach dialog."
-msgstr ""
-"Impossible de trouver la fenêtre parente à laquelle attacher la boîte de "
-"dialogue."
-
-#: rayforge/ui_gtk/machine/log_dialog.py
-#, python-brace-format
-msgid "Debug log saved to {path}"
-msgstr "Journal de débogage enregistré dans {path}"
-
-#: rayforge/ui_gtk/machine/log_dialog.py
-#, python-brace-format
-msgid "Error saving file: {msg}"
-msgstr "Erreur lors de l’enregistrement du fichier : {msg}"
-
-#: rayforge/ui_gtk/machine/log_dialog.py
-#, python-brace-format
-msgid "An unexpected error occurred: {error}"
-msgstr "Une erreur inattendue s’est produite : {error}"
-
 #: rayforge/ui_gtk/machine/general_preferences_page.py
 #: rayforge/ui_gtk/doceditor/edit_recipe_dialog.py
 msgid "Machine"
@@ -2696,6 +2663,10 @@ msgid "Show G-code Preview"
 msgstr "Afficher l’aperçu du G-code"
 
 #: rayforge/ui_gtk/main_menu.py
+msgid "Show Log Panel"
+msgstr "Afficher le panneau de journal"
+
+#: rayforge/ui_gtk/main_menu.py
 msgid "Simulate Execution"
 msgstr "Simuler l’exécution"
 
@@ -2863,6 +2834,10 @@ msgstr "À propos"
 msgid "Donate"
 msgstr "Faire un don"
 
+#: rayforge/ui_gtk/main_menu.py rayforge/ui_gtk/mainwindow.py
+msgid "Save Debug Log"
+msgstr "Enregistrer le journal de débogage"
+
 #: rayforge/ui_gtk/main_menu.py
 msgid "_Help"
 msgstr "_Aide"
@@ -2949,6 +2924,25 @@ msgstr "Reprendre"
 #: rayforge/ui_gtk/mainwindow.py rayforge/ui_gtk/toolbar.py
 msgid "Pause machine"
 msgstr "Mettre en pause"
+
+#: rayforge/ui_gtk/mainwindow.py
+msgid "Failed to create debug archive."
+msgstr "Échec de la création de l’archive de débogage."
+
+#: rayforge/ui_gtk/mainwindow.py
+#, python-brace-format
+msgid "Debug log saved to {path}"
+msgstr "Journal de débogage enregistré dans {path}"
+
+#: rayforge/ui_gtk/mainwindow.py
+#, python-brace-format
+msgid "Error saving file: {msg}"
+msgstr "Erreur lors de l’enregistrement du fichier : {msg}"
+
+#: rayforge/ui_gtk/mainwindow.py
+#, python-brace-format
+msgid "An unexpected error occurred: {error}"
+msgstr "Une erreur inattendue s’est produite : {error}"
 
 #: rayforge/ui_gtk/package_manager/package_list.py
 msgid "Uninstall Package"
@@ -3194,6 +3188,14 @@ msgid "Whole Surface"
 msgstr "Toute la surface"
 
 #: rayforge/ui_gtk/doceditor/import_dialog.py
+msgid "Create New Layers"
+msgstr "Créer de nouveaux calques"
+
+#: rayforge/ui_gtk/doceditor/import_dialog.py
+msgid "Create a new layer for each imported layer"
+msgstr "Créer un nouveau calque pour chaque calque importé"
+
+#: rayforge/ui_gtk/doceditor/import_dialog.py
 msgid "Import Image"
 msgstr "Importer une image"
 
@@ -3271,14 +3273,6 @@ msgstr "Vectoriser les objets clairs sur fond sombre"
 #: rayforge/ui_gtk/doceditor/import_dialog.py
 msgid "Select Layers"
 msgstr "Sélectionner les calques"
-
-#: rayforge/ui_gtk/doceditor/import_dialog.py
-msgid "Create New Layers"
-msgstr "Créer de nouveaux calques"
-
-#: rayforge/ui_gtk/doceditor/import_dialog.py
-msgid "Create a new layer for each imported layer"
-msgstr "Créer un nouveau calque pour chaque calque importé"
 
 #: rayforge/ui_gtk/doceditor/import_dialog.py
 msgid "Generating preview..."
