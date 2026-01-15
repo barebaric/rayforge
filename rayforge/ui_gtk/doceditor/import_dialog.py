@@ -51,6 +51,12 @@ class ImportDialog(PatchedDialogWindow):
         self._in_update = False  # Prevent signal recursion
         self._layer_widgets: List[Gtk.Switch] = []
 
+        self.create_new_layers_switch = Adw.SwitchRow(
+            title=_("Create New Layers"),
+            subtitle=_("Create a new layer for each imported layer"),
+            active=False,
+        )
+
         self.set_title(_("Import Image"))
         self.set_default_size(1100, 800)
 
@@ -278,12 +284,6 @@ class ImportDialog(PatchedDialogWindow):
 
             self._layer_widgets.append(switch)
 
-        # Create new layers switch (under the layer list)
-        self.create_new_layers_switch = Adw.SwitchRow(
-            title=_("Create New Layers"),
-            subtitle=_("Create a new layer for each imported layer"),
-            active=False,
-        )
         expander.add_row(self.create_new_layers_switch)
 
     def _get_active_layer_ids(self) -> Optional[List[str]]:
@@ -326,7 +326,7 @@ class ImportDialog(PatchedDialogWindow):
 
         # Dispatch task to TaskManager using FileCmd
         self.editor.task_manager.add_coroutine(
-            self._update_preview_task, key="raster-import-preview"
+            self._update_preview_task, key="import-preview"
         )
 
     async def _update_preview_task(self, ctx):
