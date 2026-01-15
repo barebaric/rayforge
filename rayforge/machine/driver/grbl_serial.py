@@ -17,6 +17,7 @@ from ...context import RayforgeContext
 from ...core.varset import Var, VarSet, SerialPortVar, BaudrateVar
 from ...pipeline.encoder.base import OpsEncoder, MachineCodeOpMap
 from ...pipeline.encoder.gcode import GcodeEncoder
+from ...shared.tasker import task_mgr
 from ..transport import TransportStatus, SerialTransport
 from ..transport.serial import SerialPortPermissionError
 from .driver import (
@@ -389,7 +390,9 @@ class GrblSerialDriver(Driver):
                         )
                         # Mark as done so get() doesn't block forever
                         if not request.finished.is_set():
-                            request.finished.set()
+                            task_mgr.loop.call_soon_threadsafe(
+                                request.finished.set
+                            )
                         self._command_queue.task_done()
                         continue
 
@@ -421,15 +424,6 @@ class GrblSerialDriver(Driver):
                     finally:
                         self._current_request = None
                         self._command_queue.task_done()
-                        # If a job was running and the queue is now empty,
-                        # the job is finished.
-                        if self._job_running and self._command_queue.empty():
-                            logger.debug(
-                                "Job finished: command queue is empty."
-                            )
-                            self._job_running = False
-                            self._on_command_done = None
-                            self.job_finished.send(self)
 
                 # Release lock briefly to allow status polling
                 await asyncio.sleep(0.1)
@@ -460,6 +454,7 @@ class GrblSerialDriver(Driver):
         # Clear any old items from the queue
         while not self._sent_gcode_queue.empty():
             self._sent_gcode_queue.get_nowait()
+        self._buffer_has_space = asyncio.Event()
         self._buffer_has_space.set()  # Initially, there is space
 
     async def _stream_gcode(
@@ -589,33 +584,21 @@ class GrblSerialDriver(Driver):
 
             job_completed_successfully = not self._is_cancelled
 
-        except DeviceConnectionError as e:
-            # Explicitly catch device errors (like ALARM) to prevent
-            # them from falling into the CancelledError block below, which
-            # triggers a soft-reset.
-            logger.warning(
-                f"Job stopping due to device error/alarm: {e}. "
-                "Not sending cancel/soft-reset."
-            )
-            job_completed_successfully = False
-            # Clear the queue to unblock join() if it's waiting
-            while not self._sent_gcode_queue.empty():
-                try:
-                    self._sent_gcode_queue.get_nowait()
-                    self._sent_gcode_queue.task_done()
-                except asyncio.QueueEmpty:
-                    break
-            raise e
-
-        except (asyncio.CancelledError, ConnectionError) as e:
+        except (
+            asyncio.CancelledError,
+            ConnectionError,
+            DeviceConnectionError,
+        ) as e:
             logger.warning(f"Job interrupted: {e!r}")
+            job_completed_successfully = False
             # If not cancelled explicitly, send a cancel command to be safe
             if not self._is_cancelled:
                 logger.info(f"Calling cancel() due to interruption: {e!r}")
                 await self.cancel()
+            # Do not re-raise ConnectionError or DeviceConnectionError, let
+            # the task finish "failed"
+            # Only re-raise CancelledError to propagate cancellation upwards.
             if isinstance(e, asyncio.CancelledError):
-                job_completed_successfully = False
-            else:
                 raise
         finally:
             self._job_running = False
@@ -667,7 +650,6 @@ class GrblSerialDriver(Driver):
                 f"Raw G-code terminated due to device error: {e}. "
                 "Connection remains active."
             )
-            raise
 
     async def cancel(self) -> None:
         logger.debug("Cancel command initiated.")
@@ -677,7 +659,7 @@ class GrblSerialDriver(Driver):
         self._on_command_done = None
 
         # Unblock the run loop if it's waiting
-        self._buffer_has_space.set()
+        task_mgr.loop.call_soon_threadsafe(self._buffer_has_space.set)
 
         if self.serial_transport:
             logger.info("Sending Soft Reset (Ctrl-X) to device.")
@@ -696,7 +678,7 @@ class GrblSerialDriver(Driver):
                 try:
                     request = self._command_queue.get_nowait()
                     # Mark as finished to avoid hanging awaits
-                    request.finished.set()
+                    task_mgr.loop.call_soon_threadsafe(request.finished.set)
                     self._command_queue.task_done()
                 except asyncio.QueueEmpty:
                     break
@@ -732,7 +714,8 @@ class GrblSerialDriver(Driver):
                 f"Command '{command}' timed out or was cancelled. "
                 "Unblocking queue."
             )
-            request.finished.set()
+            if not request.finished.is_set():
+                task_mgr.loop.call_soon_threadsafe(request.finished.set)
             raise
         return request.response_lines
 
@@ -1063,6 +1046,29 @@ class GrblSerialDriver(Driver):
 
         logger.info(line, extra={"log_category": "MACHINE_EVENT"})
 
+        # Logic for single, interactive commands must be checked first
+        request = self._current_request
+        if request and not request.finished.is_set():
+            request.response_lines.append(line)
+            if line == "ok":
+                self.command_status_changed.send(
+                    self, status=TransportStatus.IDLE
+                )
+                logger.debug(
+                    f"Command '{request.command}' completed with 'ok'"
+                )
+                task_mgr.loop.call_soon_threadsafe(request.finished.set)
+                return  # Line consumed by single command
+            elif line.startswith("error:"):
+                error_code = line.split(":")[1].strip()
+                self.state.error = error_code_to_device_error(error_code)
+                self.state_changed.send(self, state=self.state)
+                self.command_status_changed.send(
+                    self, status=TransportStatus.ERROR, message=line
+                )
+                task_mgr.loop.call_soon_threadsafe(request.finished.set)
+                # Fall through to allow job error handling as well
+
         # Logic for character-counting streaming protocol during a job
         if self._job_running:
             # First, perform the strict, correct check.
@@ -1095,7 +1101,9 @@ class GrblSerialDriver(Driver):
                     ) = self._sent_gcode_queue.get_nowait()
                     self._rx_buffer_count -= command_len
                     self._sent_gcode_queue.task_done()
-                    self._buffer_has_space.set()  # Signal new buffer space
+                    task_mgr.loop.call_soon_threadsafe(
+                        self._buffer_has_space.set
+                    )
 
                     # If this command was part of a job, update progress.
                     if self._on_command_done and op_index is not None:
@@ -1138,7 +1146,7 @@ class GrblSerialDriver(Driver):
                 self._job_exception = DeviceConnectionError(
                     f"GRBL error: {line}"
                 )
-                self._buffer_has_space.set()  # Unblock run loop to terminate
+                task_mgr.loop.call_soon_threadsafe(self._buffer_has_space.set)
             elif line.startswith("ALARM:"):
                 alarm_code = line.split(":")[1].strip()
                 self.state.error = error_code_to_device_error(alarm_code)
@@ -1155,36 +1163,11 @@ class GrblSerialDriver(Driver):
                 )
                 # Unblock the run loop so it can see the exception and
                 # terminate
-                self._buffer_has_space.set()
+                task_mgr.loop.call_soon_threadsafe(self._buffer_has_space.set)
+            return
 
-            return  # Do not process further for single commands
-
-        # Logic for single, interactive commands (not during a job)
-        request = self._current_request
-
-        # Append the line to the response buffer of the current command
-        if request and not request.finished.is_set():
-            request.response_lines.append(line)
-
-        # Check for command completion signals
-        if line == "ok":
-            self.command_status_changed.send(self, status=TransportStatus.IDLE)
-            if request:
-                logger.debug(
-                    f"Command '{request.command}' completed with 'ok'"
-                )
-                request.finished.set()
-
-        elif line.startswith("error:"):
-            error_code = line.split(":")[1].strip()
-            self.state.error = error_code_to_device_error(error_code)
-            self.state_changed.send(self, state=self.state)
-            self.command_status_changed.send(
-                self, status=TransportStatus.ERROR, message=line
-            )
-            if request:
-                request.finished.set()
-        elif line.startswith("ALARM:"):
+        # Handle non-job-related alarms if no single command is active
+        if line.startswith("ALARM:"):
             alarm_code = line.split(":")[1].strip()
             self.state.error = error_code_to_device_error(alarm_code)
             self.state_changed.send(self, state=self.state)
@@ -1192,7 +1175,7 @@ class GrblSerialDriver(Driver):
                 self, status=TransportStatus.ERROR, message=line
             )
         else:
-            # This could be a welcome message, an alarm, or a setting line
+            # This could be a welcome message or other unsolicited info
             logger.debug(f"Received informational line: {line}")
 
     def can_g0_with_speed(self) -> bool:
