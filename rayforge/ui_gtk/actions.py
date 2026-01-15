@@ -35,6 +35,7 @@ class ActionManager:
         self._add_action("export", self.win.on_export_clicked)
         self._add_action("about", self.win.show_about_dialog)
         self._add_action("donate", self.win.on_donate_clicked)
+        self._add_action("save_debug_log", self.win.on_save_debug_log)
         self._add_action("settings", self.win.show_settings)
         self._add_action("machine-settings", self.win.show_machine_settings)
 
