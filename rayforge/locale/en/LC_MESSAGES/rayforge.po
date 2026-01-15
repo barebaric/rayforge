@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-01-13 23:59+0100\n"
+"POT-Creation-Date: 2026-01-15 17:07+0100\n"
 "PO-Revision-Date: 2025-07-13 11:49+0200\n"
 "Last-Translator: Samuel <knipknap@gmail.com>\n"
 "Language-Team: English\n"
@@ -756,7 +756,7 @@ msgstr ""
 msgid "Hold"
 msgstr ""
 
-#: rayforge/machine/driver/driver.py
+#: rayforge/machine/driver/driver.py rayforge/machine/models/dialect.py
 msgid "Jog"
 msgstr ""
 
@@ -2158,37 +2158,6 @@ msgstr ""
 msgid "Hours"
 msgstr ""
 
-#: rayforge/ui_gtk/machine/log_dialog.py
-msgid "Machine Log"
-msgstr ""
-
-#: rayforge/ui_gtk/machine/log_dialog.py
-msgid "Save Debug Log"
-msgstr ""
-
-#: rayforge/ui_gtk/machine/log_dialog.py
-msgid "Failed to create debug archive."
-msgstr ""
-
-#: rayforge/ui_gtk/machine/log_dialog.py
-msgid "Could not find parent window to attach dialog."
-msgstr ""
-
-#: rayforge/ui_gtk/machine/log_dialog.py
-#, python-brace-format
-msgid "Debug log saved to {path}"
-msgstr ""
-
-#: rayforge/ui_gtk/machine/log_dialog.py
-#, python-brace-format
-msgid "Error saving file: {msg}"
-msgstr ""
-
-#: rayforge/ui_gtk/machine/log_dialog.py
-#, python-brace-format
-msgid "An unexpected error occurred: {error}"
-msgstr ""
-
 #: rayforge/ui_gtk/machine/general_preferences_page.py
 #: rayforge/ui_gtk/doceditor/edit_recipe_dialog.py
 msgid "Machine"
@@ -2535,6 +2504,10 @@ msgid "Show G-code Preview"
 msgstr ""
 
 #: rayforge/ui_gtk/main_menu.py
+msgid "Show Log Panel"
+msgstr ""
+
+#: rayforge/ui_gtk/main_menu.py
 msgid "Simulate Execution"
 msgstr ""
 
@@ -2702,6 +2675,10 @@ msgstr ""
 msgid "Donate"
 msgstr ""
 
+#: rayforge/ui_gtk/main_menu.py rayforge/ui_gtk/mainwindow.py
+msgid "Save Debug Log"
+msgstr ""
+
 #: rayforge/ui_gtk/main_menu.py
 msgid "_Help"
 msgstr ""
@@ -2786,6 +2763,25 @@ msgstr ""
 
 #: rayforge/ui_gtk/mainwindow.py rayforge/ui_gtk/toolbar.py
 msgid "Pause machine"
+msgstr ""
+
+#: rayforge/ui_gtk/mainwindow.py
+msgid "Failed to create debug archive."
+msgstr ""
+
+#: rayforge/ui_gtk/mainwindow.py
+#, python-brace-format
+msgid "Debug log saved to {path}"
+msgstr ""
+
+#: rayforge/ui_gtk/mainwindow.py
+#, python-brace-format
+msgid "Error saving file: {msg}"
+msgstr ""
+
+#: rayforge/ui_gtk/mainwindow.py
+#, python-brace-format
+msgid "An unexpected error occurred: {error}"
 msgstr ""
 
 #: rayforge/ui_gtk/package_manager/package_list.py
@@ -3028,6 +3024,14 @@ msgid "Whole Surface"
 msgstr ""
 
 #: rayforge/ui_gtk/doceditor/import_dialog.py
+msgid "Create New Layers"
+msgstr ""
+
+#: rayforge/ui_gtk/doceditor/import_dialog.py
+msgid "Create a new layer for each imported layer"
+msgstr ""
+
+#: rayforge/ui_gtk/doceditor/import_dialog.py
 msgid "Import Image"
 msgstr ""
 
@@ -3101,14 +3105,6 @@ msgstr ""
 
 #: rayforge/ui_gtk/doceditor/import_dialog.py
 msgid "Select Layers"
-msgstr ""
-
-#: rayforge/ui_gtk/doceditor/import_dialog.py
-msgid "Create New Layers"
-msgstr ""
-
-#: rayforge/ui_gtk/doceditor/import_dialog.py
-msgid "Create a new layer for each imported layer"
 msgstr ""
 
 #: rayforge/ui_gtk/doceditor/import_dialog.py
