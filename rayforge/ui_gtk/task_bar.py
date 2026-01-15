@@ -36,12 +36,12 @@ class TaskBar(Gtk.Box):
     def __init__(self, task_mgr):
         super().__init__(orientation=Gtk.Orientation.VERTICAL)
         self.task_mgr = task_mgr
+        self.add_css_class("statusbar")
 
         # --- Top Row: Status Information using CenterBox for robust layout ---
         status_row = Gtk.CenterBox()
         status_row.set_margin_start(12)
         status_row.set_margin_end(12)
-        status_row.add_css_class("statusbar")
         self.append(status_row)
 
         # --- Left Column (Start Widget) ---
