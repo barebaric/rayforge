@@ -9,15 +9,22 @@ logger = logging.getLogger(__name__)
 
 # Configuration files
 CONFIG_DIR = Path(user_config_dir("rayforge"))
+logger.info(f"Config dir is {CONFIG_DIR}")
+
 MACHINE_DIR = CONFIG_DIR / "machines"
+logger.debug(f"MACHINE_DIR is {MACHINE_DIR}")
 MACHINE_DIR.mkdir(parents=True, exist_ok=True)
+
 DIALECT_DIR = CONFIG_DIR / "dialects"
+logger.debug(f"DIALECT_DIR is {DIALECT_DIR}")
 DIALECT_DIR.mkdir(parents=True, exist_ok=True)
+
 CONFIG_FILE = CONFIG_DIR / "config.yaml"
 PACKAGES_DIR = CONFIG_DIR / "packages"
 
 # State files (like logs)
 LOG_DIR = Path(user_log_dir("rayforge"))
+logger.info(f"Log dir is {LOG_DIR}")
 LOG_DIR.mkdir(parents=True, exist_ok=True)
 
 # Material directories
@@ -32,9 +39,6 @@ PACKAGE_REGISTRY_URL = (
     "https://raw.githubusercontent.com/barebaric/rayforge-registry/"
     "main/registry.yaml"
 )
-
-logger.info(f"Config dir is {CONFIG_DIR}")
-logger.info(f"Log dir is {LOG_DIR}")
 
 
 def getflag(name, default=False):
