@@ -68,6 +68,11 @@ class ActionManager:
             self.win.on_toggle_gcode_preview_state_change,
             GLib.Variant.new_boolean(False),
         )
+        self._add_stateful_action(
+            "toggle_log_panel",
+            self.win.on_toggle_log_panel_state_change,
+            GLib.Variant.new_boolean(False),
+        )
 
         self._add_stateful_action(
             "simulate_mode",
@@ -351,6 +356,7 @@ class ActionManager:
             "win.toggle_camera_view": "<Alt>c",
             "win.toggle_travel_view": "<Primary><Shift>t",
             "win.toggle_gcode_preview": "<Primary><Shift>g",
+            "win.toggle_log_panel": "<Primary>l",
             "win.show_3d_view": "F12",
             "win.simulate_mode": "<Primary><Shift>s",
             "win.view_top": "1",

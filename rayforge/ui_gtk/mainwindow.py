@@ -47,7 +47,7 @@ from .doceditor.stock_properties_dialog import StockPropertiesDialog
 from .doceditor.sketch_properties import SketchPropertiesWidget
 from .doceditor.workflow_view import WorkflowView
 from .machine.jog_dialog import JogDialog
-from .machine.log_dialog import MachineLogDialog
+from .machine.log_panel import MachineLogPanel
 from .machine.settings_dialog import MachineSettingsDialog
 from .main_menu import MainMenu
 from .settings.settings_dialog import SettingsWindow
@@ -141,6 +141,7 @@ class MainWindow(Adw.ApplicationWindow):
         self.set_title(_("Rayforge"))
         self._current_machine: Optional[Machine] = None  # For signal handling
         self._last_gcode_previewer_width = 350
+        self._last_log_panel_height = 200
         self._live_3d_view_connected = False
 
         # The ToastOverlay will wrap the main content box
@@ -200,13 +201,21 @@ class MainWindow(Adw.ApplicationWindow):
         )
         header_bar.set_title_widget(window_title)
 
+        # Create a vertical paned for main content and bottom log panel
+        self.vertical_paned = Gtk.Paned(orientation=Gtk.Orientation.VERTICAL)
+        self.vertical_paned.set_resize_start_child(True)
+        self.vertical_paned.set_resize_end_child(False)
+        self.vertical_paned.set_shrink_start_child(False)
+        self.vertical_paned.set_shrink_end_child(False)
+        vbox.append(self.vertical_paned)
+
         # Create a stack for switching between main view and sketch studio
         self.main_stack = Gtk.Stack()
         self.main_stack.set_vexpand(True)
         self.main_stack.set_transition_type(
             Gtk.StackTransitionType.SLIDE_UP_DOWN
         )
-        vbox.append(self.main_stack)
+        self.vertical_paned.set_start_child(self.main_stack)
 
         # Create a container for the main UI
         main_ui_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
@@ -476,10 +485,22 @@ class MainWindow(Adw.ApplicationWindow):
             self._on_edit_stock_item_requested
         )
 
-        # Create and add the status monitor widget.
+        # Create the log panel
+        config = get_context().config
+        self.log_panel = MachineLogPanel(config.machine)
+        self.log_panel.set_size_request(-1, self._last_log_panel_height)
+        self.log_panel.set_visible(False)
+        self.vertical_paned.set_end_child(self.log_panel)
+
+        # Connect to position signal to remember user's chosen height
+        self.vertical_paned.connect(
+            "notify::position", self._on_vertical_pane_position_changed
+        )
+
+        # Create and add the status monitor widget at the bottom of vbox
         self.status_monitor = TaskBar(task_mgr)
         self.status_monitor.log_requested.connect(self.on_status_bar_clicked)
-        main_ui_box.append(self.status_monitor)
+        vbox.append(self.status_monitor)
 
         # Set up config signals.
         config.changed.connect(self.on_config_changed)
@@ -770,10 +791,15 @@ class MainWindow(Adw.ApplicationWindow):
         be restored later.
         """
         position = paned.get_position()
-        # Only store the position if the pane is open. This prevents
-        # storing '0' when it gets hidden automatically.
         if position > 1:
             self._last_gcode_previewer_width = position
+
+    def _on_vertical_pane_position_changed(self, paned, param):
+        position = paned.get_position()
+        full_height = paned.get_allocated_height()
+        log_panel_height = full_height - position
+        if log_panel_height > 1:
+            self._last_log_panel_height = log_panel_height
 
     def _on_surface_transform_initiated(self, sender):
         """
@@ -1655,10 +1681,28 @@ class MainWindow(Adw.ApplicationWindow):
         dialog.present()
 
     def on_status_bar_clicked(self, sender):
-        config = get_context().config
-        dialog = MachineLogDialog(self, config.machine)
-        dialog.notification_requested.connect(self._on_dialog_notification)
-        dialog.present(self)
+        action = self.action_manager.get_action("toggle_log_panel")
+        state = action.get_state()
+        if state:
+            new_state = not state.get_boolean()
+            action.change_state(GLib.Variant.new_boolean(new_state))
+        else:
+            action.change_state(GLib.Variant.new_boolean(True))
+
+    def on_toggle_log_panel_state_change(
+        self, action: Gio.SimpleAction, value: GLib.Variant
+    ):
+        is_visible = value.get_boolean()
+        action.set_state(value)
+
+        if is_visible:
+            self.log_panel.set_visible(True)
+            full_height = self.vertical_paned.get_allocated_height()
+            self.vertical_paned.set_position(
+                full_height - self._last_log_panel_height
+            )
+        else:
+            self.log_panel.set_visible(False)
 
     def _on_dialog_notification(self, sender, message: str = ""):
         """Shows a toast when requested by a child dialog."""
