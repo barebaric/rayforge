@@ -160,6 +160,7 @@ class DialectListEditor(PreferencesGroupWithButton):
             home_all="",
             home_axis="",
             move_to="",
+            jog="",
             clear_alarm="",
             set_wcs_offset="",
             probe_cycle="",

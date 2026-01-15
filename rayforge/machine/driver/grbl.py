@@ -556,8 +556,8 @@ class GrblNetworkDriver(Driver):
             speed: The jog speed in mm/min
             **deltas: Axis names and distances (e.g. x=10.0, y=5.0)
         """
-        # Build the command with all specified axes
-        cmd_parts = [f"$J=G91 G21 F{speed}"]
+        dialect = self._machine.dialect
+        cmd_parts = [dialect.jog.format(speed=speed)]
 
         for axis_name, distance in deltas.items():
             cmd_parts.append(f"{axis_name.upper()}{distance}")
