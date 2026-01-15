@@ -236,21 +236,14 @@ class AxisRenderer:
         # Determine grid origin based on the WCS offset
         origin_x, origin_y, _ = origin_offset_mm
 
+        if self.x_axis_negative:
+            origin_x = -origin_x
+        if self.y_axis_negative:
+            origin_y = -origin_y
+
         # Determine the World Coordinate of the WCS Origin to align grid lines.
         # This handles cases where Machine Zero is at Right/Top properly.
         if self.x_axis_right:
-            # If Machine X=0 is Right edge, and we have an offset from that
-            # in machine coords, we need to map that back to Canvas World.
-            # Canvas X=0 is Left. Canvas X=Width is Right.
-
-            # Logic:
-            # 1. Start at Machine X=0 (Canvas X=Width)
-            # 2. Subtract offset_x (which moves left in Machine Space if +)
-            # Actually: Machine Coordinates usually move Left as they decrease?
-            # Or Right as they decrease?
-            # If `x_axis_right` is True, it implies visual inversion.
-            # Grid alignment is purely visual relative to the WCS origin.
-
             # If x_axis_right=True, origin_x is distance from Right Edge.
             # So World X = Width - origin_x
             wcs_world_x = self.width_mm - origin_x
@@ -303,6 +296,11 @@ class AxisRenderer:
         ctx.set_font_size(self.label_font_size)
 
         work_origin_x, work_origin_y, _ = origin_offset_mm
+
+        if self.x_axis_negative:
+            work_origin_x = -work_origin_x
+        if self.y_axis_negative:
+            work_origin_y = -work_origin_y
 
         # Calculate World Coordinates of WCS Origin
         if self.x_axis_right:
