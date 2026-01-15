@@ -1,6 +1,6 @@
 from __future__ import annotations
 import logging
-from typing import TYPE_CHECKING, Optional, Callable, Coroutine
+from typing import TYPE_CHECKING, Optional, Callable, Coroutine, Dict
 from blinker import Signal
 from ..context import get_context
 from ..core.ops import Ops
@@ -301,13 +301,12 @@ class MachineCmd:
             lambda ctx: driver.clear_alarm(), key="clear-alarm"
         )
 
-    def jog(self, machine: "Machine", axis: Axis, distance: float, speed: int):
+    def jog(self, machine: "Machine", deltas: Dict[Axis, float], speed: int):
         """
-        Adds a task to jog the machine along a specific axis
-        or combination of axes.
+        Adds a task to jog the machine along specific axes.
         """
         self._editor.task_manager.add_coroutine(
-            lambda ctx: machine.jog(axis, distance, speed)
+            lambda ctx: machine.jog(deltas, speed)
         )
 
     def execute_macro_by_uid(self, machine: "Machine", macro_uid: str):

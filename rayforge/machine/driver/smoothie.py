@@ -314,18 +314,23 @@ class SmoothieDriver(Driver):
         """Smoothie supports jogging for all axes."""
         return True
 
-    async def jog(self, axis: Axis, distance: float, speed: int) -> None:
+    async def jog(self, speed: int, **deltas: float) -> None:
         """
-        Jogs the machine along a specific axis using G91 incremental mode.
+        Jogs the machine using G91 incremental mode.
 
         Args:
-            axis: The Axis enum value
-            distance: The distance to jog in mm (positive or negative)
             speed: The jog speed in mm/min
+            **deltas: Axis names and distances (e.g. x=10.0, y=5.0)
         """
-        assert axis.name
-        axis_letter = axis.name.upper()
-        cmd = f"G91 G0 F{speed} {axis_letter}{distance}"
+        parts = [f"G91 G0 F{speed}"]
+
+        for axis_name, distance in deltas.items():
+            parts.append(f"{axis_name.upper()}{distance}")
+
+        if len(parts) == 1:
+            return
+
+        cmd = " ".join(parts)
         await self._send_and_wait(cmd.encode())
 
     async def select_tool(self, tool_number: int) -> None:

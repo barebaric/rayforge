@@ -7,6 +7,7 @@ from rayforge.core.doc import Doc
 from rayforge.core.ops import Ops, MoveToCommand, LineToCommand
 from rayforge.machine.cmd import MachineCmd
 from rayforge.machine.models.machine import Machine
+from rayforge.machine.driver.driver import Axis
 from rayforge.doceditor.editor import DocEditor
 from rayforge.pipeline.artifact import (
     ArtifactStore,
@@ -26,9 +27,9 @@ async def task_mgr(monkeypatch):
     main_loop = asyncio.get_running_loop()
 
     def asyncio_scheduler(callback, *args, **kwargs):
-        # Use call_soon as we are in a single-threaded asyncio test
-        # environment.
-        main_loop.call_soon(partial(callback, *args, **kwargs))
+        # Use call_soon_threadsafe because the TaskManager runs on a separate
+        # thread and schedules callbacks onto this main loop.
+        main_loop.call_soon_threadsafe(partial(callback, *args, **kwargs))
 
     # Instantiate the TaskManager with our custom scheduler
     tm = TaskManager(main_thread_scheduler=asyncio_scheduler)
@@ -91,6 +92,20 @@ def simple_ops():
 def job_artifact(simple_ops):
     """Creates a JobArtifact containing simple_ops."""
     return JobArtifact(ops=simple_ops, distance=simple_ops.distance())
+
+
+async def wait_for_tasks_to_finish(task_mgr: TaskManager):
+    """
+    Asynchronously waits for the task manager to become idle.
+    """
+    # Yield to the loop to ensure pending callbacks (like adding tasks) run
+    # first
+    await asyncio.sleep(0)
+
+    # Use the now-correct, thread-safe wait_until_settled in a non-blocking way
+    if await asyncio.to_thread(task_mgr.wait_until_settled, 2000):
+        return
+    pytest.fail("Task manager did not become idle in time.")
 
 
 class TestMachineCmdJobMonitoring:
@@ -220,3 +235,55 @@ class TestMachineCmdJobMonitoring:
 
         # 3. Verify cleanup happened
         assert machine_cmd._current_monitor is None
+
+
+class TestMachineCmdJog:
+    """Test suite for the jogging functionality in MachineCmd."""
+
+    @pytest.mark.asyncio
+    async def test_jog_with_deltas(
+        self, machine_cmd, machine, mocker, task_mgr
+    ):
+        """
+        Test jogging using the dictionary of deltas.
+        """
+        # --- Arrange ---
+        # Use a full AsyncMock replacement for machine.jog to avoid
+        # dependency on Machine logic or driver state, and ensure correct
+        # awaitable return for TaskManager.
+        jog_mock = mocker.patch.object(
+            machine, "jog", new_callable=mocker.AsyncMock
+        )
+
+        # --- Act ---
+        # Jog X axis by 10mm at 1000mm/min
+        deltas = {Axis.X: 10.0}
+        machine_cmd.jog(machine, deltas, 1000)
+
+        await wait_for_tasks_to_finish(task_mgr)
+
+        # --- Assert ---
+        # MachineCmd.jog should delegate to Machine.jog
+        jog_mock.assert_called_once_with(deltas, 1000)
+
+    @pytest.mark.asyncio
+    async def test_jog_multi_axis(
+        self, machine_cmd, machine, mocker, task_mgr
+    ):
+        """
+        Test jogging multiple axes.
+        """
+        # --- Arrange ---
+        jog_mock = mocker.patch.object(
+            machine, "jog", new_callable=mocker.AsyncMock
+        )
+
+        # --- Act ---
+        deltas = {Axis.X: 5.0, Axis.Y: -5.0}
+        machine_cmd.jog(machine, deltas, 1500)
+
+        await wait_for_tasks_to_finish(task_mgr)
+
+        # --- Assert ---
+        # Verify call arguments to Machine.jog
+        jog_mock.assert_called_once_with(deltas, 1500)

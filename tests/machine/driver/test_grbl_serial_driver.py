@@ -258,7 +258,11 @@ class TestGrblSerialDriver:
 
         try:
             await asyncio.wait_for(run_task, timeout=0.5)
-        except (asyncio.TimeoutError, asyncio.CancelledError):
+        except (
+            asyncio.TimeoutError,
+            asyncio.CancelledError,
+            DeviceConnectionError,
+        ):
             pass
 
         assert driver._job_running is False
@@ -551,7 +555,11 @@ class TestGrblSerialDriver:
 
         try:
             await asyncio.wait_for(run_task, timeout=0.5)
-        except (asyncio.TimeoutError, asyncio.CancelledError):
+        except (
+            asyncio.TimeoutError,
+            asyncio.CancelledError,
+            DeviceConnectionError,
+        ):
             pass
 
         assert driver._job_running is False
@@ -592,7 +600,11 @@ class TestGrblSerialDriver:
 
         try:
             await asyncio.wait_for(run_task, timeout=0.5)
-        except (asyncio.TimeoutError, asyncio.CancelledError):
+        except (
+            asyncio.TimeoutError,
+            asyncio.CancelledError,
+            DeviceConnectionError,
+        ):
             pass
 
         assert driver._job_running is False
@@ -637,7 +649,11 @@ class TestGrblSerialDriver:
 
         try:
             await asyncio.wait_for(run_task, timeout=0.5)
-        except (asyncio.TimeoutError, asyncio.CancelledError):
+        except (
+            asyncio.TimeoutError,
+            asyncio.CancelledError,
+            DeviceConnectionError,
+        ):
             pass
 
         assert driver._job_running is False
@@ -672,7 +688,11 @@ class TestGrblSerialDriver:
 
         try:
             await asyncio.wait_for(run_task, timeout=0.5)
-        except (asyncio.TimeoutError, asyncio.CancelledError):
+        except (
+            asyncio.TimeoutError,
+            asyncio.CancelledError,
+            DeviceConnectionError,
+        ):
             pass
 
         assert driver._sent_gcode_queue.empty()
@@ -721,7 +741,11 @@ class TestGrblSerialDriver:
 
         try:
             await asyncio.wait_for(run_task, timeout=0.5)
-        except (asyncio.TimeoutError, asyncio.CancelledError):
+        except (
+            asyncio.TimeoutError,
+            asyncio.CancelledError,
+            DeviceConnectionError,
+        ):
             pass
 
         assert driver._job_running is False

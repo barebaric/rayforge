@@ -318,7 +318,7 @@ class Driver(ABC):
 
         Args:
             machine_code: The machine code to execute (e.g. G-code string)
-            op_map: Mapping between op indices and machine code
+            op_map: Mapping between index of ops and machine code
             doc: The document context
             on_command_done: Optional sync or async callback called when each
                            command is done. Called with the op_index.
@@ -439,16 +439,14 @@ class Driver(ABC):
         return False
 
     @abstractmethod
-    async def jog(self, axis: Axis, distance: float, speed: int) -> None:
+    async def jog(self, speed: int, **deltas: float) -> None:
         """
-        Jogs the machine along a specific axis or combination of axes.
+        Jogs the machine along specified axes.
 
         Args:
-            axis: The axis or combination of axes to jog. Can be a single
-                  Axis or multiple axes using binary operators
-                  (e.g. Axis.X|Axis.Y)
-            distance: The distance to jog in mm (positive or negative)
-            speed: The jog speed in mm/min
+            speed: The jog speed in mm/min.
+            **deltas: Keyword arguments where the key is the axis name
+                      (e.g. 'x', 'y') and the value is the distance in mm.
         """
         pass
 

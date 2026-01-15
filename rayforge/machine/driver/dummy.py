@@ -198,7 +198,7 @@ class NoDeviceDriver(Driver):
         """Dummy driver supports jogging for all axes."""
         return True
 
-    async def jog(self, axis: Axis, distance: float, speed: int) -> None:
+    async def jog(self, speed: int, **deltas: float) -> None:
         pass
 
     def can_g0_with_speed(self) -> bool:

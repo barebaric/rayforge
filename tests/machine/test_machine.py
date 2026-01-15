@@ -1097,22 +1097,22 @@ class TestMachine:
         machine.driver.home = home_mock
 
         # Test jog method with single axis
-        await machine.jog(Axis.X, 1.0, 1000)
-        jog_mock.assert_called_once_with(Axis.X, 1.0, 1000)
+        await machine.jog({Axis.X: 1.0}, 1000)
+        jog_mock.assert_called_once_with(speed=1000, x=1.0)
 
         # Reset the mock
         jog_mock.reset_mock()
 
-        # Test jog method with multiple axes using bitmask
-        await machine.jog(Axis.X | Axis.Y, 2.0, 1500)
-        jog_mock.assert_called_once_with(Axis.X | Axis.Y, 2.0, 1500)
+        # Test jog method with multiple axes
+        await machine.jog({Axis.X: 2.0, Axis.Y: 2.0}, 1500)
+        jog_mock.assert_called_once_with(speed=1500, x=2.0, y=2.0)
 
         # Reset the mock
         jog_mock.reset_mock()
 
         # Test jog method with all axes
-        await machine.jog(Axis.X | Axis.Y | Axis.Z, 0.5, 2000)
-        jog_mock.assert_called_once_with(Axis.X | Axis.Y | Axis.Z, 0.5, 2000)
+        await machine.jog({Axis.X: 0.5, Axis.Y: 0.5, Axis.Z: 0.5}, 2000)
+        jog_mock.assert_called_once_with(speed=2000, x=0.5, y=0.5, z=0.5)
 
         # Test home method
         await machine.home(Axis.Y)
@@ -1459,6 +1459,9 @@ class TestMachine:
         }
         axis = dir_to_axis_map[direction]
 
+        axis_key_map = {Axis.X: "x", Axis.Y: "y", Axis.Z: "z"}
+        axis_key = axis_key_map[axis]
+
         if axis == Axis.X:
             machine.set_reverse_x_axis(reverse)
         elif axis == Axis.Y:
@@ -1477,11 +1480,12 @@ class TestMachine:
         calculated_delta = machine.calculate_jog(direction, distance)
         assert calculated_delta == expected_delta  # Sanity check
 
-        await machine.jog(axis, calculated_delta, speed)
+        await machine.jog({axis: calculated_delta}, speed)
 
         # --- Assert ---
         # The core assertion: driver receives the correctly calculated delta
-        jog_spy.assert_called_once_with(axis, calculated_delta, speed)
+        expected_kwargs = {"speed": speed, axis_key: calculated_delta}
+        jog_spy.assert_called_once_with(**expected_kwargs)
 
     @pytest.mark.parametrize(
         "enabled, reverse_x, reverse_y, current_pos, axis, distance, expected",
