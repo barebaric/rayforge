@@ -322,7 +322,8 @@ class SmoothieDriver(Driver):
             speed: The jog speed in mm/min
             **deltas: Axis names and distances (e.g. x=10.0, y=5.0)
         """
-        parts = [f"G91 G0 F{speed}"]
+        dialect = self._machine.dialect
+        parts = [dialect.jog.format(speed=speed)]
 
         for axis_name, distance in deltas.items():
             parts.append(f"{axis_name.upper()}{distance}")
