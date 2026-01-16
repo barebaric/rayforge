@@ -1,6 +1,6 @@
 import pytest
 import numpy as np
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 from rayforge.machine.models.machine import Origin
 from rayforge.ui_gtk.canvas3d.axis_renderer_3d import AxisRenderer3D
 
@@ -67,33 +67,42 @@ def test_wcs_marker_position(
 
     model_matrix = translate_mat @ scale_mat
 
-    renderer = AxisRenderer3D(width, height)
-    renderer.grid_vao = 1
-    renderer.axes_vao = 2
-    renderer.wcs_marker_vao = 3
-    renderer.background_renderer.vao = 99
-    renderer.text_renderer = MagicMock()
+    # Patch GL in axis_renderer_3d to prevent "invalid operation"
+    # (missing context) on Windows.
+    with patch("rayforge.ui_gtk.canvas3d.axis_renderer_3d.GL"):
+        renderer = AxisRenderer3D(width, height)
+        renderer.grid_vao = 1
+        renderer.axes_vao = 2
+        renderer.wcs_marker_vao = 3
 
-    mock_line_shader = MagicMock()
-    mock_text_shader = MagicMock()
+        # Mock background renderer to prevent it calling real GL from its
+        # module. This prevents execution of background_renderer.render(),
+        # reducing the number of uMVP calls by 1.
+        renderer.background_renderer = MagicMock()
+        renderer.background_renderer.vao = 99
 
-    text_mvp = np.identity(4, dtype=np.float32)
-    scene_mvp = np.identity(4, dtype=np.float32)
-    view_matrix = np.identity(4, dtype=np.float32)
+        renderer.text_renderer = MagicMock()
 
-    renderer.render(
-        line_shader=mock_line_shader,
-        text_shader=mock_text_shader,
-        scene_mvp=scene_mvp,
-        text_mvp=text_mvp,
-        view_matrix=view_matrix,
-        model_matrix=model_matrix,
-        origin_offset_mm=(wcs_x, wcs_y, 0.0),
-        x_right=x_right,
-        y_down=y_down,
-        x_negative=x_neg,
-        y_negative=y_neg,
-    )
+        mock_line_shader = MagicMock()
+        mock_text_shader = MagicMock()
+
+        text_mvp = np.identity(4, dtype=np.float32)
+        scene_mvp = np.identity(4, dtype=np.float32)
+        view_matrix = np.identity(4, dtype=np.float32)
+
+        renderer.render(
+            line_shader=mock_line_shader,
+            text_shader=mock_text_shader,
+            scene_mvp=scene_mvp,
+            text_mvp=text_mvp,
+            view_matrix=view_matrix,
+            model_matrix=model_matrix,
+            origin_offset_mm=(wcs_x, wcs_y, 0.0),
+            x_right=x_right,
+            y_down=y_down,
+            x_negative=x_neg,
+            y_negative=y_neg,
+        )
 
     mvp_calls = [
         args[1]
@@ -101,7 +110,9 @@ def test_wcs_marker_position(
         if args[0] == "uMVP"
     ]
 
-    assert len(mvp_calls) >= 3
+    # We expect at least 2 calls: one for Grid/Axes, one for WCS Marker.
+    # (The background plane call is suppressed by the mock).
+    assert len(mvp_calls) >= 2
     wcs_mvp = mvp_calls[-1]
 
     actual_x = wcs_mvp[3, 0]
