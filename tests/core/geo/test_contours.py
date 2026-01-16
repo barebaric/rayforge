@@ -8,6 +8,7 @@ from rayforge.core.geo.contours import (
     normalize_winding_orders,
     close_geometry_gaps,
     split_inner_and_outer_contours,
+    get_valid_contours_data,
 )
 from rayforge.core.geo.constants import COL_TYPE, CMD_TYPE_MOVE, CMD_TYPE_LINE
 
@@ -409,3 +410,126 @@ def test_remove_inner_edges():
     assert result_bullseye.area() == pytest.approx(1000)
     contours_bullseye = result_bullseye.split_into_contours()
     assert len(contours_bullseye) == 2
+
+
+def test_get_valid_contours_data_empty_list():
+    """Tests that an empty list returns an empty result."""
+    result = get_valid_contours_data([])
+    assert result == []
+
+
+def test_get_valid_contours_data_filters_empty_geometry():
+    """Tests that empty geometries are filtered out."""
+    empty_geo = Geometry()
+    result = get_valid_contours_data([empty_geo])
+    assert result == []
+
+
+def test_get_valid_contours_data_filters_open_contour():
+    """Tests that open contours are filtered out."""
+    open_contour = Geometry()
+    open_contour.move_to(0, 0)
+    open_contour.line_to(10, 0)
+    open_contour.line_to(10, 10)
+
+    result = get_valid_contours_data([open_contour])
+    assert result == []
+
+
+def test_get_valid_contours_data_filters_small_bbox():
+    """Tests that contours with very small bbox area are filtered out."""
+    tiny_contour = Geometry()
+    tiny_contour.move_to(0, 0)
+    tiny_contour.line_to(1e-10, 0)
+    tiny_contour.line_to(1e-10, 1e-10)
+    tiny_contour.line_to(0, 1e-10)
+
+    result = get_valid_contours_data([tiny_contour])
+    assert result == []
+
+
+def test_get_valid_contours_data_filters_no_move_to():
+    """Tests that contours not starting with MoveTo are filtered out."""
+    geo = Geometry()
+    geo.line_to(0, 0)
+    geo.line_to(10, 0)
+    geo.line_to(10, 10)
+    geo.line_to(0, 10)
+
+    result = get_valid_contours_data([geo])
+    assert result == []
+
+
+def test_get_valid_contours_data_valid_closed_contour():
+    """Tests that a valid closed contour is included."""
+    contour = Geometry.from_points([(0, 0), (10, 0), (10, 10), (0, 10)])
+
+    result = get_valid_contours_data([contour])
+
+    assert len(result) == 1
+    assert result[0]["geo"] is contour
+    assert result[0]["is_closed"] is True
+    assert result[0]["original_index"] == 0
+    assert len(result[0]["vertices"]) == 5
+
+
+def test_get_valid_contours_data_multiple_valid_contours():
+    """Tests that multiple valid contours are all included."""
+    c1 = Geometry.from_points([(0, 0), (5, 0), (5, 5), (0, 5)])
+    c2 = Geometry.from_points([(10, 10), (15, 10), (15, 15), (10, 15)])
+
+    result = get_valid_contours_data([c1, c2])
+
+    assert len(result) == 2
+    assert result[0]["geo"] is c1
+    assert result[1]["geo"] is c2
+    assert result[0]["original_index"] == 0
+    assert result[1]["original_index"] == 1
+
+
+def test_get_valid_contours_data_mixed_valid_invalid():
+    """Tests filtering with a mix of valid and invalid contours."""
+    valid = Geometry.from_points([(0, 0), (10, 0), (10, 10), (0, 10)])
+    empty = Geometry()
+    open_contour = Geometry()
+    open_contour.move_to(20, 20)
+    open_contour.line_to(30, 20)
+    open_contour.line_to(30, 30)
+
+    result = get_valid_contours_data([empty, valid, open_contour])
+
+    assert len(result) == 1
+    assert result[0]["geo"] is valid
+    assert result[0]["original_index"] == 1
+
+
+def test_get_valid_contours_data_preserves_indices():
+    """Tests that original_index is preserved correctly."""
+    c1 = Geometry.from_points([(0, 0), (5, 0), (5, 5), (0, 5)])
+    empty = Geometry()
+    c2 = Geometry.from_points([(10, 10), (15, 10), (15, 15), (10, 15)])
+    open_contour = Geometry()
+    open_contour.move_to(20, 20)
+    open_contour.line_to(30, 20)
+
+    result = get_valid_contours_data([c1, empty, c2, open_contour])
+
+    assert len(result) == 2
+    assert result[0]["original_index"] == 0
+    assert result[1]["original_index"] == 2
+
+
+def test_get_valid_contours_data_vertices_extraction():
+    """Tests that vertices are correctly extracted from contours."""
+    contour = Geometry.from_points([(0, 0), (10, 0), (10, 10), (0, 10)])
+
+    result = get_valid_contours_data([contour])
+
+    assert len(result) == 1
+    vertices = result[0]["vertices"]
+    assert len(vertices) == 5
+    assert vertices[0] == pytest.approx((0.0, 0.0))
+    assert vertices[1] == pytest.approx((10.0, 0.0))
+    assert vertices[2] == pytest.approx((10.0, 10.0))
+    assert vertices[3] == pytest.approx((0.0, 10.0))
+    assert vertices[4] == pytest.approx((0.0, 0.0))

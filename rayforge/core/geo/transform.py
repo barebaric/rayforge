@@ -65,9 +65,11 @@ def grow_geometry(geometry: T_Geometry, offset: float) -> T_Geometry:
         A new Geometry object of the same type as the input, containing
         the offset shape(s).
     """
+    from .contours import get_valid_contours_data
+
     new_geo = type(geometry)()
     contour_geometries = geometry.split_into_contours()
-    contour_data = geometry._get_valid_contours_data(contour_geometries)
+    contour_data = get_valid_contours_data(contour_geometries)
 
     logger.debug(f"Running grow_geometry with offset: {offset}")
 

@@ -2,8 +2,6 @@ import math
 from typing import List, Tuple, Optional, TYPE_CHECKING
 from itertools import groupby
 import numpy as np
-from .linearize import linearize_arc, linearize_bezier_from_array
-from .primitives import is_point_in_polygon
 from .constants import (
     CMD_TYPE_MOVE,
     CMD_TYPE_LINE,
@@ -21,6 +19,8 @@ from .constants import (
     COL_C2X,
     COL_C2Y,
 )
+from .linearize import linearize_arc, linearize_bezier_from_array
+from .primitives import is_point_in_polygon
 
 if TYPE_CHECKING:
     from .geometry import Geometry
@@ -100,8 +100,10 @@ def encloses(container: "Geometry", content: "Geometry") -> bool:
         return False  # Other geometry is degenerate
     test_point = other_segments[0][0][:2]
 
+    from .contours import get_valid_contours_data
+
     self_contours_geo = container.split_into_contours()
-    self_contour_data = container._get_valid_contours_data(self_contours_geo)
+    self_contour_data = get_valid_contours_data(self_contours_geo)
     closed_contours = [c for c in self_contour_data if c["is_closed"]]
     if not closed_contours:
         return False  # Self has no closed contours to contain anything

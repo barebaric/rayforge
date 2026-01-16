@@ -1,6 +1,6 @@
 from __future__ import annotations
 import logging
-from typing import List, Tuple, TYPE_CHECKING
+from typing import List, Tuple, TYPE_CHECKING, Dict
 import numpy as np
 from .analysis import get_subpath_area_from_array
 from .primitives import is_point_in_polygon
@@ -28,6 +28,68 @@ if TYPE_CHECKING:
     from .geometry import Geometry
 
 logger = logging.getLogger(__name__)
+
+
+def get_valid_contours_data(
+    contour_geometries: List["Geometry"],
+) -> List[Dict]:
+    """
+    Filters degenerate contours and pre-calculates their data.
+
+    This function processes a list of contour geometries and returns a list of
+    dictionaries containing pre-calculated data for each valid, closed contour.
+    Degenerate contours (empty, too small, or not closed) are filtered out.
+
+    Args:
+        contour_geometries: A list of Geometry objects, where each object is
+                           assumed to represent a single contour.
+
+    Returns:
+        A list of dictionaries, each containing:
+        - "geo": The Geometry object for the contour.
+        - "vertices": A list of 2D vertices extracted from the contour.
+        - "is_closed": Boolean indicating if the contour is closed.
+        - "original_index": The index of the contour in the input list.
+
+    Note:
+        Only closed contours with a non-zero bounding box area are included
+        in the result. The function requires contours to start with a MoveTo
+        command and have at least 2 commands.
+    """
+    from .constants import CMD_TYPE_MOVE, COL_TYPE
+    from .analysis import is_closed, get_subpath_vertices_from_array
+
+    contour_data = []
+    for i, contour_geo in enumerate(contour_geometries):
+        if contour_geo.is_empty():
+            continue
+
+        data = contour_geo.data
+        if (
+            data is None
+            or data.shape[0] < 2
+            or data[0, COL_TYPE] != CMD_TYPE_MOVE
+        ):
+            continue
+
+        min_x, min_y, max_x, max_y = contour_geo.rect()
+        bbox_area = (max_x - min_x) * (max_y - min_y)
+        is_closed_flag = is_closed(data) and bbox_area > 1e-9
+
+        if not is_closed_flag:
+            continue
+
+        vertices_2d = get_subpath_vertices_from_array(data, 0)
+
+        contour_data.append(
+            {
+                "geo": contour_geo,
+                "vertices": vertices_2d,
+                "is_closed": is_closed_flag,
+                "original_index": i,
+            }
+        )
+    return contour_data
 
 
 def close_geometry_gaps_from_array(

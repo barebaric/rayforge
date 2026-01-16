@@ -21,7 +21,6 @@ from .analysis import (
     get_point_and_tangent_at_from_array,
     get_outward_normal_at_from_array,
     get_area_from_array,
-    get_subpath_vertices_from_array,
 )
 from .constants import (
     CMD_TYPE_MOVE,
@@ -919,47 +918,6 @@ class Geometry:
         if self.data is None:
             return False
         return is_closed(self.data, tolerance=tolerance)
-
-    def _get_valid_contours_data(
-        self, contour_geometries: List["Geometry"]
-    ) -> List[Dict]:
-        """
-        Filters degenerate contours and pre-calculates their data, including
-        whether they are closed.
-        """
-        contour_data = []
-        for i, contour_geo in enumerate(contour_geometries):
-            if contour_geo.is_empty():
-                continue
-
-            # Access .data to trigger sync
-            data = contour_geo.data
-            if (
-                data is None
-                or data.shape[0] < 2
-                or data[0, COL_TYPE] != CMD_TYPE_MOVE
-            ):
-                continue
-
-            min_x, min_y, max_x, max_y = contour_geo.rect()
-            bbox_area = (max_x - min_x) * (max_y - min_y)
-            is_closed_flag = is_closed(data) and bbox_area > 1e-9
-
-            if not is_closed_flag:
-                continue
-
-            # A single contour geometry has one "move" at the start (index 0).
-            vertices_2d = get_subpath_vertices_from_array(data, 0)
-
-            contour_data.append(
-                {
-                    "geo": contour_geo,
-                    "vertices": vertices_2d,
-                    "is_closed": is_closed_flag,
-                    "original_index": i,
-                }
-            )
-        return contour_data
 
     def remove_inner_edges(self) -> "Geometry":
         """
