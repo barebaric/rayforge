@@ -602,6 +602,14 @@ class MainWindow(Adw.ApplicationWindow):
             new_sketch_dict=sketch.to_dict(),
         )
         self.doc_editor.history_manager.execute(cmd)
+
+        if self._is_editing_new_sketch:
+            center_x = self.sketch_studio.width_mm / 2
+            center_y = self.sketch_studio.height_mm / 2
+            self.doc_editor.edit.add_sketch_instance(
+                sketch.uid, (center_x, center_y)
+            )
+
         self.exit_sketch_mode()
 
     def _on_sketch_cancelled(self, sender):
