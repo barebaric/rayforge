@@ -700,6 +700,35 @@ class Geometry:
 
         return transform.grow_geometry(self, offset=amount)
 
+    def map_to_frame(
+        self: T_Geometry,
+        origin: Tuple[float, float],
+        p_width: Tuple[float, float],
+        p_height: Tuple[float, float],
+    ) -> T_Geometry:
+        """
+        Transforms the geometry to fit into an affine frame defined by three
+        points.
+
+        This is a convenience wrapper around the `map_geometry_to_frame`
+        function in the `transform` module. This method returns a new,
+        transformed Geometry object, leaving the original unchanged.
+
+        Args:
+            origin: The (x, y) coordinate for the bottom-left corner of the
+                    target frame.
+            p_width: The (x, y) coordinate for the bottom-right corner of the
+                     target frame.
+            p_height: The (x, y) coordinate for the top-left corner of the
+                      target frame.
+
+        Returns:
+            A new, transformed Geometry object.
+        """
+        from .transform import map_geometry_to_frame
+
+        return map_geometry_to_frame(self, origin, p_width, p_height)
+
     def split_inner_and_outer_contours(
         self,
     ) -> Tuple[List["Geometry"], List["Geometry"]]:
@@ -1136,6 +1165,45 @@ class Geometry:
         if close and has_segments:
             new_geo.close_path()
 
+        return new_geo
+
+    @classmethod
+    def from_text(
+        cls: Type[T_Geometry],
+        text: str,
+        font_family: str = "sans-serif",
+        font_size: float = 10.0,
+        is_bold: bool = False,
+        is_italic: bool = False,
+    ) -> T_Geometry:
+        """
+        Creates a Geometry instance from a string of text.
+
+        This is a convenience wrapper around the `text_to_geometry` function.
+        The resulting geometry is generated at the origin with natural font
+        dimensions.
+
+        Args:
+            text: The string content to render.
+            font_family: The font family name.
+            font_size: The font size in geometry units.
+            is_bold: Whether to use a bold weight.
+            is_italic: Whether to use an italic slant.
+
+        Returns:
+            A new Geometry instance representing the text path.
+        """
+        from .text import text_to_geometry
+
+        base_geo = text_to_geometry(
+            text,
+            font_family=font_family,
+            font_size=font_size,
+            is_bold=is_bold,
+            is_italic=is_italic,
+        )
+        new_geo = cls()
+        new_geo.extend(base_geo)
         return new_geo
 
     def dump(self) -> Dict[str, Any]:

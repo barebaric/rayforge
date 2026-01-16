@@ -351,6 +351,61 @@ def test_dump_and_load(sample_geometry):
     assert loaded_empty.last_move_to == (0.0, 0.0, 0.0)
 
 
+@patch("rayforge.core.geo.text.text_to_geometry")
+def test_from_text_wrapper(mock_text_to_geometry):
+    """Tests that Geometry.from_text() delegates to the text module."""
+    # Mock the return of the low-level function
+    mock_geo = Geometry()
+    mock_geo.line_to(1, 1)
+    mock_text_to_geometry.return_value = mock_geo
+
+    # Define a subclass to test correct instantiation
+    class MySubClass(Geometry):
+        pass
+
+    # Call the class method on the subclass
+    result_geo = MySubClass.from_text(
+        "test",
+        font_family="Arial",
+        font_size=12,
+        is_bold=True,
+        is_italic=False,
+    )
+
+    # Assert the low-level function was called correctly
+    mock_text_to_geometry.assert_called_once_with(
+        "test",
+        font_family="Arial",
+        font_size=12,
+        is_bold=True,
+        is_italic=False,
+    )
+
+    # Assert the result has the correct data from the mock
+    assert result_geo == mock_geo
+    # Assert the result is an instance of the class it was called on
+    assert isinstance(result_geo, MySubClass)
+
+
+@patch("rayforge.core.geo.transform.map_geometry_to_frame")
+def test_map_to_frame_wrapper(mock_map_to_frame):
+    """Tests that the map_to_frame() instance method delegates correctly."""
+    geo = Geometry.from_points([(0, 0), (1, 1)])
+    mock_map_to_frame.return_value = "Success"  # Mock return value
+
+    origin = (10, 10)
+    p_width = (20, 10)
+    p_height = (10, 30)
+
+    result = geo.map_to_frame(origin, p_width, p_height)
+
+    # Assert the wrapper returned the mocked value
+    assert result == "Success"
+
+    # Assert the low-level function was called with the correct arguments
+    mock_map_to_frame.assert_called_once_with(geo, origin, p_width, p_height)
+
+
 # --- Force Bezier Conversion Tests ---
 
 

@@ -11,6 +11,7 @@ from . import intersect
 from . import linearize
 from . import primitives
 from . import query
+from . import text
 from . import transform
 from .constants import (
     CMD_TYPE_MOVE,
@@ -40,6 +41,7 @@ __all__ = [
     "linearize",
     "primitives",
     "query",
+    "text",
     "transform",
     "Geometry",
     "CMD_TYPE_MOVE",

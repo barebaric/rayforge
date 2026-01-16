@@ -21,9 +21,11 @@ from rayforge.core.geo.constants import (
 from rayforge.core.geo import (
     Geometry,
 )
+from rayforge.core.geo.text import text_to_geometry
 from rayforge.core.geo.transform import (
-    grow_geometry,
     apply_affine_transform_to_array,
+    grow_geometry,
+    map_geometry_to_frame,
 )
 
 
@@ -416,3 +418,113 @@ def test_shrink_to_nothing():
     # area in this case, but it should be very small. A robust offset algorithm
     # would clean this up, but for now we check that it's close to zero.
     assert shrunk_past_zero.area() == pytest.approx(0.0, abs=1.0)
+
+
+# --- Map to Frame Tests ---
+
+
+def test_map_geometry_to_frame_identity():
+    """Tests mapping a geometry to a frame matching its own bounding box."""
+    geo = Geometry.from_points([(10, 20), (30, 20), (30, 50), (10, 50)])
+    original_geo = geo.copy()
+
+    # Define a frame that is identical to the geometry's bounding box
+    origin = (10, 20)
+    p_width = (30, 20)
+    p_height = (10, 50)
+
+    mapped_geo = map_geometry_to_frame(geo, origin, p_width, p_height)
+
+    # The result should be identical to the original
+    assert mapped_geo == original_geo
+
+
+def test_map_geometry_to_frame_translate_scale():
+    """Tests mapping a unit square to a larger, translated rectangle."""
+    # Source is a 1x1 square at the origin
+    unit_square = Geometry.from_points([(0, 0), (1, 0), (1, 1), (0, 1)])
+
+    # Target is a 50x20 rectangle at (100, 200)
+    origin = (100, 200)
+    p_width = (150, 200)  # 50 units wide
+    p_height = (100, 220)  # 20 units high
+
+    mapped_geo = map_geometry_to_frame(unit_square, origin, p_width, p_height)
+
+    # Check the bounding box of the result
+    min_x, min_y, max_x, max_y = mapped_geo.rect()
+    assert min_x == pytest.approx(100)
+    assert min_y == pytest.approx(200)
+    assert max_x == pytest.approx(150)
+    assert max_y == pytest.approx(220)
+
+
+def test_map_geometry_to_frame_non_uniform_scale():
+    """Tests mapping (stretching) a geometry non-uniformly."""
+    # Source is text "I", which has a non-square aspect ratio
+    text_geo = text_to_geometry("I", font_size=10)
+    min_x_s, min_y_s, max_x_s, max_y_s = text_geo.rect()
+    # The text is not at (0,0), so this is a good test case
+
+    # Target is a 50x100 rectangle at (0,0)
+    origin = (0, 0)
+    p_width = (50, 0)
+    p_height = (0, 100)
+
+    mapped_geo = map_geometry_to_frame(text_geo, origin, p_width, p_height)
+
+    # The result should be stretched to fill the 50x100 box exactly
+    min_x, min_y, max_x, max_y = mapped_geo.rect()
+    assert min_x == pytest.approx(0)
+    assert min_y == pytest.approx(0)
+    assert max_x == pytest.approx(50)
+    assert max_y == pytest.approx(100)
+
+
+def test_map_geometry_to_frame_rotate_and_shear():
+    """Tests mapping to a rotated and sheared parallelogram frame."""
+    unit_square = Geometry.from_points([(0, 0), (1, 0), (1, 1), (0, 1)])
+
+    # Target is a parallelogram
+    origin = (10, 10)
+    p_width = (20, 15)  # Vector U = (10, 5)
+    p_height = (5, 20)  # Vector V = (-5, 10)
+
+    mapped_geo = map_geometry_to_frame(unit_square, origin, p_width, p_height)
+
+    # The four corners of the unit square should map to the four corners of
+    # the parallelogram: P0, P_width, P_height, P_width+P_height-P0
+    segments = mapped_geo.segments()[0]
+    expected_corners = [
+        (10, 10, 0),  # origin
+        (20, 15, 0),  # p_width
+        (15, 25, 0),  # implicit 4th point: origin + U + V
+        (5, 20, 0),  # p_height
+    ]
+
+    # Check if all expected corners are present in the transformed geometry's
+    # vertices. The order might change due to how from_points works.
+    assert len(segments) == 5  # 4 points + closing point
+    for expected_corner in expected_corners:
+        found = any(np.allclose(p, expected_corner) for p in segments)
+        assert found, f"Corner {expected_corner} not found in transformed geo"
+
+
+def test_map_geometry_to_frame_empty_geometry():
+    """Tests that mapping an empty geometry results in an empty geometry."""
+    empty_geo = Geometry()
+    mapped_geo = map_geometry_to_frame(empty_geo, (0, 0), (10, 0), (0, 10))
+    assert mapped_geo.is_empty()
+
+
+def test_map_geometry_to_frame_degenerate_source():
+    """
+    Tests that mapping a geometry with zero width or height is handled.
+    """
+    # A single line has zero width/height depending on orientation
+    line_geo = Geometry.from_points([(0, 0), (10, 0)], close=False)
+    assert line_geo.rect()[3] - line_geo.rect()[1] == 0  # Zero height
+
+    mapped_geo = map_geometry_to_frame(line_geo, (0, 0), (10, 0), (0, 10))
+    # Should return an empty geometry as the scaling would be infinite
+    assert mapped_geo.is_empty()
