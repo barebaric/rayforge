@@ -601,6 +601,7 @@ class Canvas3D(Gtk.GLArea):
                     self._model_matrix,  # Pass model matrix for labels
                     origin_offset_mm=self._wcs_offset_mm,
                     x_right=self.x_right,
+                    y_down=self.y_down,
                     x_negative=self.x_negative,
                     y_negative=self.y_negative,
                 )
