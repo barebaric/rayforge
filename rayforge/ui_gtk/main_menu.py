@@ -63,7 +63,9 @@ class MainMenu(Gio.Menu):
         visibility_group.append(
             _("Show G-code Preview"), "win.toggle_gcode_preview"
         )
-        visibility_group.append(_("Show Log Panel"), "win.toggle_log_panel")
+        visibility_group.append(
+            _("Show Control Panel"), "win.toggle_control_panel"
+        )
         view_menu.append_section(None, visibility_group)
 
         # Simulation toggle

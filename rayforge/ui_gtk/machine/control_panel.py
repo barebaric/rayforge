@@ -18,7 +18,7 @@ css = """
 """
 
 
-class MachineLogPanel(Gtk.Box):
+class MachineControlPanel(Gtk.Box):
     notification_requested = Signal()
 
     def __init__(self, machine: Optional[Machine], **kwargs):
