@@ -94,7 +94,9 @@ def split_into_components(geometry: "Geometry") -> List["Geometry"]:
         logger.debug("<= 1 contour, returning a copy of the whole.")
         return [geometry.copy()]
 
-    all_contour_data = geometry._get_valid_contours_data(contour_geometries)
+    from .contours import get_valid_contours_data
+
+    all_contour_data = get_valid_contours_data(contour_geometries)
     if not all_contour_data:
         logger.debug("No valid contours found after filtering.")
         return []
