@@ -7,6 +7,7 @@ axes. It uses a composed PlaneRenderer for the background.
 """
 
 from __future__ import annotations
+import math
 import logging
 from typing import Optional, Tuple
 import numpy as np
@@ -47,6 +48,7 @@ class AxisRenderer3D(BaseRenderer):
         self.background_color = 0.8, 0.8, 0.8, 0.1
         self.grid_color = 0.4, 0.4, 0.4, 1.0
         self.axis_color = 1.0, 1.0, 1.0, 1.0
+        self.wcs_marker_color = 1.0, 0.0, 1.0, 1.0  # Magenta
         self.label_color = 0.9, 0.9, 0.9, 1.0
 
         # Composition
@@ -63,6 +65,11 @@ class AxisRenderer3D(BaseRenderer):
         # Grid and Axes resources
         self.grid_vao, self.grid_vbo, self.grid_vertex_count = 0, 0, 0
         self.axes_vao, self.axes_vbo, self.axes_vertex_count = 0, 0, 0
+        (
+            self.wcs_marker_vao,
+            self.wcs_marker_vbo,
+            self.wcs_marker_vertex_count,
+        ) = (0, 0, 0)
 
     def set_background_color(self, color: Tuple[float, float, float, float]):
         """Sets the color for the background plane."""
@@ -108,6 +115,24 @@ class AxisRenderer3D(BaseRenderer):
         # Axis vertices
         axis_verts = [0.0, 0.0, 0.0, w, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, h, 0.0]
 
+        # WCS Marker vertices (a cross)
+        marker_size = self.grid_size_mm * 0.5
+        marker_z_pos = 0.001  # Slightly above the axes
+        wcs_marker_verts = [
+            -marker_size,
+            0.0,
+            marker_z_pos,
+            marker_size,
+            0.0,
+            marker_z_pos,
+            0.0,
+            -marker_size,
+            marker_z_pos,
+            0.0,
+            marker_size,
+            marker_z_pos,
+        ]
+
         # Create Grid resources
         self.grid_vao = self._create_vao()
         self.grid_vbo = self._create_vbo()
@@ -138,6 +163,21 @@ class AxisRenderer3D(BaseRenderer):
         GL.glVertexAttribPointer(0, 3, GL.GL_FLOAT, GL.GL_FALSE, 0, None)
         GL.glEnableVertexAttribArray(0)
 
+        # Create WCS Marker resources
+        self.wcs_marker_vao = self._create_vao()
+        self.wcs_marker_vbo = self._create_vbo()
+        self.wcs_marker_vertex_count = len(wcs_marker_verts) // 3
+        GL.glBindVertexArray(self.wcs_marker_vao)
+        GL.glBindBuffer(GL.GL_ARRAY_BUFFER, self.wcs_marker_vbo)
+        GL.glBufferData(
+            GL.GL_ARRAY_BUFFER,
+            np.array(wcs_marker_verts, dtype=np.float32).nbytes,
+            np.array(wcs_marker_verts, dtype=np.float32),
+            GL.GL_STATIC_DRAW,
+        )
+        GL.glVertexAttribPointer(0, 3, GL.GL_FLOAT, GL.GL_FALSE, 0, None)
+        GL.glEnableVertexAttribArray(0)
+
         GL.glBindVertexArray(0)
 
     def render(
@@ -150,6 +190,7 @@ class AxisRenderer3D(BaseRenderer):
         model_matrix: np.ndarray,
         origin_offset_mm: Tuple[float, float, float] = (0.0, 0.0, 0.0),
         x_right: bool = False,
+        y_down: bool = False,
         x_negative: bool = False,
         y_negative: bool = False,
     ) -> None:
@@ -166,40 +207,55 @@ class AxisRenderer3D(BaseRenderer):
             origin_offset_mm: The (x, y, z) offset for the work coordinate
               system.
             x_right: True if the machine origin is on the right side.
+            y_down: True if the machine origin is at the top.
             x_negative: True if the X-axis counts down from the origin.
             y_negative: True if the Y-axis counts down from the origin.
         """
-        if not all((self.grid_vao, self.axes_vao, self.text_renderer)):
+        if not all(
+            (
+                self.grid_vao,
+                self.axes_vao,
+                self.wcs_marker_vao,
+                self.text_renderer,
+            )
+        ):
             return
 
-        # 1. Transform the WCS offset vector by the model_matrix. This converts
-        # the offset from machine coordinates (e.g., +Y is away) to the
-        # correct world-space translation vector (e.g., -Y for a top-left
-        # origin).
-        offset_vec = np.array([*origin_offset_mm, 0.0], dtype=np.float32)
+        # 1. Calculate the world-space position of the WCS origin.
+        # The offset is in machine coordinates. `model_matrix` transforms
+        # the machine bed to world space. We apply the same transform to the
+        # offset vector to find its world-space position.
+        off_x, off_y, off_z = origin_offset_mm
+
+        # Invert coordinates if the axis is configured as negative, so they
+        # represent positive magnitudes relative to the origin for the
+        # model matrix transform.
+        if x_negative:
+            off_x = -off_x
+        if y_negative:
+            off_y = -off_y
+
+        # Use w=1.0 so that translations in model_matrix are applied.
+        offset_vec = np.array([off_x, off_y, off_z, 1.0], dtype=np.float32)
         world_offset_vec = model_matrix @ offset_vec
 
-        # 2. Create a world-space translation matrix from this correct vector.
-        wcs_world_transform = np.identity(4, dtype=np.float32)
-        wcs_world_transform[:3, 3] = world_offset_vec[:3]
-
-        # 3. Apply this world translation to the grid's model matrix.
-        # The final model matrix for the grid is T_wcs @ M_machine.
-        grid_model_matrix = wcs_world_transform @ model_matrix
-
-        # 4. Construct the final MVP for the grid.
-        final_scene_mvp = grid_model_matrix.T @ text_mvp
+        # 2. Construct the MVP for the static grid/axes.
+        # The grid's model matrix is just the machine's base model_matrix
+        # (handling origin flips), without any WCS translation.
+        grid_mvp = model_matrix.T @ text_mvp
 
         # Enable blending for transparent objects
         GL.glEnable(GL.GL_BLEND)
         GL.glBlendFunc(GL.GL_SRC_ALPHA, GL.GL_ONE_MINUS_SRC_ALPHA)
         line_shader.use()
 
+        # Draw background plane
         GL.glDepthMask(GL.GL_FALSE)
-        self.background_renderer.render(line_shader, final_scene_mvp)
+        self.background_renderer.render(line_shader, grid_mvp)
         GL.glDepthMask(GL.GL_TRUE)
 
-        line_shader.set_mat4("uMVP", final_scene_mvp)
+        # Draw grid and axes
+        line_shader.set_mat4("uMVP", grid_mvp)
         line_shader.set_vec4("uColor", self.grid_color)
         GL.glLineWidth(1.0)
         GL.glBindVertexArray(self.grid_vao)
@@ -210,6 +266,16 @@ class AxisRenderer3D(BaseRenderer):
         GL.glBindVertexArray(self.axes_vao)
         GL.glDrawArrays(GL.GL_LINES, 0, self.axes_vertex_count)
 
+        # 3. Draw the WCS origin marker
+        wcs_translation_matrix = np.identity(4, dtype=np.float32)
+        wcs_translation_matrix[:3, 3] = world_offset_vec[:3]
+        wcs_marker_mvp = wcs_translation_matrix.T @ text_mvp
+
+        line_shader.set_mat4("uMVP", wcs_marker_mvp)
+        line_shader.set_vec4("uColor", self.wcs_marker_color)
+        GL.glBindVertexArray(self.wcs_marker_vao)
+        GL.glDrawArrays(GL.GL_LINES, 0, self.wcs_marker_vertex_count)
+
         GL.glBindVertexArray(0)
 
         # 5. Pass the correct world-space offset vector to the label renderer.
@@ -218,8 +284,9 @@ class AxisRenderer3D(BaseRenderer):
             text_mvp,
             view_matrix,
             model_matrix,
-            world_offset_vec=world_offset_vec[:3],
+            origin_offset_mm=origin_offset_mm,
             x_right=x_right,
+            y_down=y_down,
             x_negative=x_negative,
             y_negative=y_negative,
         )
@@ -231,8 +298,9 @@ class AxisRenderer3D(BaseRenderer):
         text_mvp_matrix: np.ndarray,
         view_matrix: np.ndarray,
         model_matrix: np.ndarray,
-        world_offset_vec: np.ndarray,
+        origin_offset_mm: Tuple[float, float, float],
         x_right: bool = False,
+        y_down: bool = False,
         x_negative: bool = False,
         y_negative: bool = False,
     ) -> None:
@@ -243,21 +311,54 @@ class AxisRenderer3D(BaseRenderer):
         x_axis_label_y_offset = label_height_mm * 1.2
         y_axis_label_x_offset = label_height_mm * 0.6
 
+        # 1. Get the WCS offset in machine coordinates
+        work_origin_x, work_origin_y, _ = origin_offset_mm
+
+        # 2. Calculate the visual position of the WCS origin in the local
+        #    (0..width, 0..height, Y-up) grid coordinate space.
+        #    The "eff_wcs" is the positive magnitude from the origin corner.
+        eff_wcs_x = -work_origin_x if x_negative else work_origin_x
+        eff_wcs_y = -work_origin_y if y_negative else work_origin_y
+
+        # Since model_matrix handles the reflection (scale -1), the local
+        # coordinate system always starts at the origin corner (0,0 local).
+        # So the WCS local position is simply the effective distance.
+        wcs_local_x = eff_wcs_x
+        wcs_local_y = eff_wcs_y
+
         # X-axis labels
-        for x in np.arange(
-            self.grid_size_mm, self.width_mm + 1e-5, self.grid_size_mm
-        ):
-            # 1. Define position in Local Grid Space (where labels sit)
-            pos_local = np.array([x, -x_axis_label_y_offset, 0.0, 1.0])
+        # Find the range of grid lines that are on the machine bed.
+        # Grid covers 0..Width.
+        # We label relative to WCS.
+        # delta = x_phys_local - wcs_local_x
+        # min_delta = 0 - wcs_local_x
+        # max_delta = Width - wcs_local_x
+        min_delta_x = 0.0 - wcs_local_x
+        max_delta_x = self.width_mm - wcs_local_x
+        k_start_x = math.ceil(min_delta_x / self.grid_size_mm)
+        k_end_x = math.floor(max_delta_x / self.grid_size_mm)
 
-            # 2. Transform to World Space using the machine's orientation
-            pos_world = (model_matrix @ pos_local)[:3]
+        for k in range(k_start_x, k_end_x + 1):
+            delta = k * self.grid_size_mm
 
-            # 3. Add the pre-calculated world-space WCS offset vector
-            pos_final = pos_world + world_offset_vec
+            # Physical position of the grid line in local space
+            x_phys_local = wcs_local_x + delta
 
-            label_val = -x if x_negative else x
-            label_text = str(int(label_val))
+            # Position of the label text below the grid line
+            pos_local = np.array(
+                [x_phys_local, -x_axis_label_y_offset, 0.0, 1.0]
+            )
+            pos_final = (model_matrix @ pos_local)[:3]
+
+            # Label value logic:
+            # If negative axis, movement into the bed (+delta) corresponds
+            # to more negative values.
+            # If positive axis, movement into the bed (+delta) corresponds
+            # to more positive values.
+            # This holds true regardless of origin corner (x_right) because
+            # delta is defined in the flipped local space.
+            label_val = -delta if x_negative else delta
+            label_text = str(int(round(label_val)))
 
             self.text_renderer.render_text(
                 text_shader,
@@ -274,20 +375,26 @@ class AxisRenderer3D(BaseRenderer):
         if x_right:
             y_label_align = "left"
 
-        for y in np.arange(
-            self.grid_size_mm, self.height_mm + 1e-5, self.grid_size_mm
-        ):
-            # 1. Define position in Local Grid Space
-            pos_local = np.array([-y_axis_label_x_offset, y, 0.0, 1.0])
+        min_delta_y = 0.0 - wcs_local_y
+        max_delta_y = self.height_mm - wcs_local_y
+        k_start_y = math.ceil(min_delta_y / self.grid_size_mm)
+        k_end_y = math.floor(max_delta_y / self.grid_size_mm)
 
-            # 2. Transform to World Space
-            pos_world = (model_matrix @ pos_local)[:3]
+        for k in range(k_start_y, k_end_y + 1):
+            delta = k * self.grid_size_mm
 
-            # 3. Add the pre-calculated world-space WCS offset vector
-            pos_final = pos_world + world_offset_vec
+            # Physical position of the grid line in local space
+            y_phys_local = wcs_local_y + delta
 
-            label_val = -y if y_negative else y
-            label_text = str(int(label_val))
+            # Position of the label text next to the grid line
+            pos_local = np.array(
+                [-y_axis_label_x_offset, y_phys_local, 0.0, 1.0]
+            )
+            pos_final = (model_matrix @ pos_local)[:3]
+
+            # Label value logic: same as X
+            label_val = -delta if y_negative else delta
+            label_text = str(int(round(label_val)))
 
             self.text_renderer.render_text(
                 text_shader,
