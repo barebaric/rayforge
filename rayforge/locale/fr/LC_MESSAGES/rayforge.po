@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-01-15 17:07+0100\n"
+"POT-Creation-Date: 2026-01-16 15:37+0100\n"
 "PO-Revision-Date: 2025-10-15 07:10+0200\n"
 "Last-Translator: Samuel <knipknap@gmail.com>\n"
 "Language-Team: French\n"
@@ -2663,8 +2663,8 @@ msgid "Show G-code Preview"
 msgstr "Afficher l’aperçu du G-code"
 
 #: rayforge/ui_gtk/main_menu.py
-msgid "Show Log Panel"
-msgstr "Afficher le panneau de journal"
+msgid "Show Control Panel"
+msgstr "Afficher le panneau de contrôle"
 
 #: rayforge/ui_gtk/main_menu.py
 msgid "Simulate Execution"
