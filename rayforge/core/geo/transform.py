@@ -132,6 +132,92 @@ def grow_geometry(geometry: T_Geometry, offset: float) -> T_Geometry:
     return new_geo
 
 
+def map_geometry_to_frame(
+    geometry: T_Geometry,
+    origin: Tuple[float, float],
+    p_width: Tuple[float, float],
+    p_height: Tuple[float, float],
+) -> T_Geometry:
+    """
+    Transforms a Geometry object to fit into an affine frame defined by three
+    points.
+
+    This function scales, rotates, and translates the input geometry from its
+    natural bounding box to fit perfectly within the parallelogram defined by
+    the origin, width point, and height point.
+
+    Args:
+        geometry: The Geometry object to transform. A copy is made.
+        origin: The (x, y) coordinate for the bottom-left corner of the
+                target frame.
+        p_width: The (x, y) coordinate for the bottom-right corner of the
+                 target frame, defining the local X-axis.
+        p_height: The (x, y) coordinate for the top-left corner of the
+                  target frame, defining the local Y-axis.
+
+    Returns:
+        A new, transformed Geometry object.
+    """
+    if geometry.is_empty():
+        return type(geometry)()
+
+    # 1. Get the source geometry's bounding box
+    min_x, min_y, max_x, max_y = geometry.rect()
+    src_width = max_x - min_x
+    src_height = max_y - min_y
+
+    # Handle degenerate source geometry
+    if src_width < 1e-9 or src_height < 1e-9:
+        return type(geometry)()
+
+    # 2. Calculate target frame vectors
+    u_vec = (p_width[0] - origin[0], p_width[1] - origin[1])
+    v_vec = (p_height[0] - origin[0], p_height[1] - origin[1])
+
+    # 3. Build the transformation matrix
+    # This matrix maps the source bounding box [min_x, min_y] -> [max_x, max_y]
+    # to the target parallelogram.
+    # We compose matrices: M = T_frame @ T_scale @ T_translate
+
+    # T_translate: moves source rect's origin to (0,0)
+    t1 = np.array(
+        [
+            [1, 0, 0, -min_x],
+            [0, 1, 0, -min_y],
+            [0, 0, 1, 0],
+            [0, 0, 0, 1],
+        ]
+    )
+
+    # T_scale: scales source rect (now at origin) to a 1x1 unit square
+    t2 = np.array(
+        [
+            [1 / src_width, 0, 0, 0],
+            [0, 1 / src_height, 0, 0],
+            [0, 0, 1, 0],
+            [0, 0, 0, 1],
+        ]
+    )
+
+    # T_frame: maps the 1x1 unit square to the target parallelogram
+    t3 = np.array(
+        [
+            [u_vec[0], v_vec[0], 0, origin[0]],
+            [u_vec[1], v_vec[1], 0, origin[1]],
+            [0, 0, 1, 0],
+            [0, 0, 0, 1],
+        ]
+    )
+
+    # Combine transformations: M applies T1, then T2, then T3.
+    final_matrix = t3 @ t2 @ t1
+
+    # 4. Apply the transformation
+    # We work on a copy to avoid modifying the original geometry
+    transformed_geo = geometry.copy()
+    return transformed_geo.transform(final_matrix)
+
+
 class _MockArcCmd:
     """Helper to adapt array data for linearize_arc."""
 
