@@ -46,8 +46,8 @@ from .doceditor.layer_list import LayerListView
 from .doceditor.stock_properties_dialog import StockPropertiesDialog
 from .doceditor.sketch_properties import SketchPropertiesWidget
 from .doceditor.workflow_view import WorkflowView
+from .machine.control_panel import MachineControlPanel
 from .machine.jog_dialog import JogDialog
-from .machine.log_panel import MachineLogPanel
 from .machine.settings_dialog import MachineSettingsDialog
 from .main_menu import MainMenu
 from .settings.settings_dialog import SettingsWindow
@@ -141,7 +141,7 @@ class MainWindow(Adw.ApplicationWindow):
         self.set_title(_("Rayforge"))
         self._current_machine: Optional[Machine] = None  # For signal handling
         self._last_gcode_previewer_width = 350
-        self._last_log_panel_height = 200
+        self._last_control_panel_height = 200
         self._live_3d_view_connected = False
 
         # The ToastOverlay will wrap the main content box
@@ -201,7 +201,7 @@ class MainWindow(Adw.ApplicationWindow):
         )
         header_bar.set_title_widget(window_title)
 
-        # Create a vertical paned for main content and bottom log panel
+        # Create a vertical paned for main content and bottom control panel
         self.vertical_paned = Gtk.Paned(orientation=Gtk.Orientation.VERTICAL)
         self.vertical_paned.set_resize_start_child(True)
         self.vertical_paned.set_resize_end_child(False)
@@ -485,12 +485,14 @@ class MainWindow(Adw.ApplicationWindow):
             self._on_edit_stock_item_requested
         )
 
-        # Create the log panel
+        # Create the control panel
         config = get_context().config
-        self.log_panel = MachineLogPanel(config.machine)
-        self.log_panel.set_size_request(-1, self._last_log_panel_height)
-        self.log_panel.set_visible(False)
-        self.vertical_paned.set_end_child(self.log_panel)
+        self.control_panel = MachineControlPanel(config.machine)
+        self.control_panel.set_size_request(
+            -1, self._last_control_panel_height
+        )
+        self.control_panel.set_visible(False)
+        self.vertical_paned.set_end_child(self.control_panel)
 
         # Connect to position signal to remember user's chosen height
         self.vertical_paned.connect(
@@ -797,9 +799,9 @@ class MainWindow(Adw.ApplicationWindow):
     def _on_vertical_pane_position_changed(self, paned, param):
         position = paned.get_position()
         full_height = paned.get_allocated_height()
-        log_panel_height = full_height - position
-        if log_panel_height > 1:
-            self._last_log_panel_height = log_panel_height
+        control_panel_height = full_height - position
+        if control_panel_height > 1:
+            self._last_control_panel_height = control_panel_height
 
     def _on_surface_transform_initiated(self, sender):
         """
@@ -1681,7 +1683,7 @@ class MainWindow(Adw.ApplicationWindow):
         dialog.present()
 
     def on_status_bar_clicked(self, sender):
-        action = self.action_manager.get_action("toggle_log_panel")
+        action = self.action_manager.get_action("toggle_control_panel")
         state = action.get_state()
         if state:
             new_state = not state.get_boolean()
@@ -1689,20 +1691,20 @@ class MainWindow(Adw.ApplicationWindow):
         else:
             action.change_state(GLib.Variant.new_boolean(True))
 
-    def on_toggle_log_panel_state_change(
+    def on_toggle_control_panel_state_change(
         self, action: Gio.SimpleAction, value: GLib.Variant
     ):
         is_visible = value.get_boolean()
         action.set_state(value)
 
         if is_visible:
-            self.log_panel.set_visible(True)
+            self.control_panel.set_visible(True)
             full_height = self.vertical_paned.get_allocated_height()
             self.vertical_paned.set_position(
-                full_height - self._last_log_panel_height
+                full_height - self._last_control_panel_height
             )
         else:
-            self.log_panel.set_visible(False)
+            self.control_panel.set_visible(False)
 
     def _on_dialog_notification(self, sender, message: str = ""):
         """Shows a toast when requested by a child dialog."""

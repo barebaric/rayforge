@@ -69,8 +69,8 @@ class ActionManager:
             GLib.Variant.new_boolean(False),
         )
         self._add_stateful_action(
-            "toggle_log_panel",
-            self.win.on_toggle_log_panel_state_change,
+            "toggle_control_panel",
+            self.win.on_toggle_control_panel_state_change,
             GLib.Variant.new_boolean(False),
         )
 
@@ -354,9 +354,9 @@ class ActionManager:
             "win.show_workpieces": "h",
             "win.show_tabs": "t",
             "win.toggle_camera_view": "<Alt>c",
-            "win.toggle_travel_view": "<Primary><Shift>t",
+            "win.toggle_control_panel": "<Primary>l",
             "win.toggle_gcode_preview": "<Primary><Shift>g",
-            "win.toggle_log_panel": "<Primary>l",
+            "win.toggle_travel_view": "<Primary><Shift>t",
             "win.show_3d_view": "F12",
             "win.simulate_mode": "<Primary><Shift>s",
             "win.view_top": "1",
