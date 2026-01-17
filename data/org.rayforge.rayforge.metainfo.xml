@@ -83,7 +83,7 @@
     </release>
     <release version="0.27" date="2025-01-02">
       <description>
-        <p>Enhanced Sketching, Machine Control & UI Refinements</p>
+        <p>Enhanced Sketching, Machine Control &amp; UI Refinements</p>
         <ul>
           <li>Expressions and parameters in parametric sketcher</li>
           <li>Filled shapes support in sketcher</li>
@@ -98,7 +98,7 @@
     </release>
     <release version="0.26" date="2025-11-30">
       <description>
-        <p>Parametric 2D Sketcher & Major Performance Upgrades</p>
+        <p>Parametric 2D Sketcher &amp; Major Performance Upgrades</p>
         <ul>
           <li>Parametric 2D sketcher with constraint system</li>
           <li>Import/export sketches with parametric constraints</li>
@@ -112,7 +112,7 @@
     </release>
     <release version="0.25" date="2025-11-22">
       <description>
-        <p>New Import Experience & Object Management</p>
+        <p>New Import Experience &amp; Object Management</p>
         <ul>
           <li>Interactive import dialog with tracing controls</li>
           <li>Split workpiece command for separating assets</li>
