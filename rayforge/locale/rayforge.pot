@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-01-16 15:37+0100\n"
+"POT-Creation-Date: 2026-01-17 13:21+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -1011,6 +1011,14 @@ msgid "{label} (for {machine_name})"
 msgstr ""
 
 #: rayforge/machine/models/profile.py
+msgid "Custom dialect for the Carvera Air machine."
+msgstr ""
+
+#: rayforge/machine/models/profile.py
+msgid "Custom preamble for the xTool D1 Pro machine."
+msgstr ""
+
+#: rayforge/machine/models/profile.py
 msgid "Other Device"
 msgstr ""
 
@@ -1748,6 +1756,31 @@ msgid "Single axis homing is disabled in machine settings"
 msgstr ""
 
 #: rayforge/ui_gtk/machine/dialect_editor.py
+msgid "Escaped braces {{ or }} are not supported."
+msgstr ""
+
+#: rayforge/ui_gtk/machine/dialect_editor.py
+msgid "Nested braces are not allowed."
+msgstr ""
+
+#: rayforge/ui_gtk/machine/dialect_editor.py
+msgid "Unmatched closing brace '}' found."
+msgstr ""
+
+#: rayforge/ui_gtk/machine/dialect_editor.py
+msgid "Unmatched opening brace '{' found."
+msgstr ""
+
+#: rayforge/ui_gtk/machine/dialect_editor.py
+msgid "Empty braces '{}' are not allowed."
+msgstr ""
+
+#: rayforge/ui_gtk/machine/dialect_editor.py
+#, python-brace-format
+msgid "Unsupported variable(s): {vars}"
+msgstr ""
+
+#: rayforge/ui_gtk/machine/dialect_editor.py
 #, python-brace-format
 msgid "Edit Dialect: {label}"
 msgstr ""
@@ -1755,6 +1788,10 @@ msgstr ""
 #: rayforge/ui_gtk/machine/dialect_editor.py
 #: rayforge/ui_gtk/machine/dialect_list.py
 msgid "New Dialect"
+msgstr ""
+
+#: rayforge/ui_gtk/machine/dialect_editor.py
+msgid "Label cannot be empty."
 msgstr ""
 
 #: rayforge/ui_gtk/machine/hook_list.py
@@ -4749,6 +4786,74 @@ msgstr ""
 
 #: rayforge/pipeline/transformer/multipass.py
 msgid "Repeats the path multiple times, optionally stepping down in Z."
+msgstr ""
+
+#: rayforge/pipeline/encoder/context.py
+msgid "The name of the current machine profile."
+msgstr ""
+
+#: rayforge/pipeline/encoder/context.py
+msgid "The width (X-axis) of the machine work area in mm."
+msgstr ""
+
+#: rayforge/pipeline/encoder/context.py
+msgid "The height (Y-axis) of the machine work area in mm."
+msgstr ""
+
+#: rayforge/pipeline/encoder/context.py
+msgid "The name of the current document file (if saved)."
+msgstr ""
+
+#: rayforge/pipeline/encoder/context.py
+msgid "The minimum X coordinate of the entire job."
+msgstr ""
+
+#: rayforge/pipeline/encoder/context.py
+msgid "The minimum Y coordinate of the entire job."
+msgstr ""
+
+#: rayforge/pipeline/encoder/context.py
+msgid "The maximum X coordinate of the entire job."
+msgstr ""
+
+#: rayforge/pipeline/encoder/context.py
+msgid "The maximum Y coordinate of the entire job."
+msgstr ""
+
+#: rayforge/pipeline/encoder/context.py
+msgid "The X offset of the currently active WCS."
+msgstr ""
+
+#: rayforge/pipeline/encoder/context.py
+msgid "The Y offset of the currently active WCS."
+msgstr ""
+
+#: rayforge/pipeline/encoder/context.py
+msgid "The Z offset of the currently active WCS."
+msgstr ""
+
+#: rayforge/pipeline/encoder/context.py
+msgid "The name of the current layer being processed."
+msgstr ""
+
+#: rayforge/pipeline/encoder/context.py
+msgid "The name of the current workpiece being processed."
+msgstr ""
+
+#: rayforge/pipeline/encoder/context.py
+msgid "The X position of the workpiece."
+msgstr ""
+
+#: rayforge/pipeline/encoder/context.py
+msgid "The Y position of the workpiece."
+msgstr ""
+
+#: rayforge/pipeline/encoder/context.py
+msgid "The width of the workpiece."
+msgstr ""
+
+#: rayforge/pipeline/encoder/context.py
+msgid "The height of the workpiece."
 msgstr ""
 
 #: rayforge/doceditor/material_test_cmd.py
