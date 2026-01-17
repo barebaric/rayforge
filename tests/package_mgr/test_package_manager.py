@@ -80,7 +80,14 @@ class TestPackageManagerLoading:
         )
         mock_load.return_value = mock_pkg
 
-        with patch("rayforge.package_mgr.package_manager.importlib.util"):
+        with (
+            patch("rayforge.package_mgr.package_manager.importlib.util"),
+            patch.object(
+                manager,
+                "_check_version_compatibility",
+                return_value=UpdateStatus.UP_TO_DATE,
+            ),
+        ):
             manager.load_package(package_dir)
 
         mock_load.assert_called_once_with(package_dir)
