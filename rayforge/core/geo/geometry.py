@@ -678,6 +678,40 @@ class Geometry:
             self.last_move_to = tuple(transformed_last_move_vec[:3])
         return self
 
+    def flip_x(self: T_Geometry) -> T_Geometry:
+        """
+        Flips the geometry across the Y-axis (inverts X coordinates).
+
+        Returns:
+            The modified Geometry object (self).
+        """
+        flip_matrix = np.array(
+            [
+                [-1, 0, 0, 0],
+                [0, 1, 0, 0],
+                [0, 0, 1, 0],
+                [0, 0, 0, 1],
+            ]
+        )
+        return self.transform(flip_matrix)
+
+    def flip_y(self: T_Geometry) -> T_Geometry:
+        """
+        Flips the geometry across the X-axis (inverts Y coordinates).
+
+        Returns:
+            The modified Geometry object (self).
+        """
+        flip_matrix = np.array(
+            [
+                [1, 0, 0, 0],
+                [0, -1, 0, 0],
+                [0, 0, 1, 0],
+                [0, 0, 0, 1],
+            ]
+        )
+        return self.transform(flip_matrix)
+
     def grow(self: T_Geometry, amount: float) -> T_Geometry:
         """
         Offsets the contours of any closed shape in the geometry by a
@@ -1135,7 +1169,8 @@ class Geometry:
         is_italic: bool = False,
     ) -> T_Geometry:
         """
-        Creates a Geometry instance from a string of text.
+        Creates a Geometry instance from a string of text. Text is inserted
+        in Y-down!
 
         This is a convenience wrapper around the `text_to_geometry` function.
         The resulting geometry is generated at the origin with natural font
