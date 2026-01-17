@@ -657,6 +657,86 @@ def test_transform_wrapper(mock_transform_array, sample_geometry):
     np.testing.assert_array_equal(sample_geometry.data, mock_data)
 
 
+def test_flip_x():
+    """Tests that flip_x() correctly inverts X coordinates."""
+    geo = Geometry()
+    geo.move_to(0, 0)
+    geo.line_to(10, 10)
+    geo.arc_to(20, 5, i=5, j=-5, clockwise=False)
+    geo.bezier_to(30, 10, c1x=22, c1y=2, c2x=28, c2y=8)
+
+    # Sync to get original data
+    geo._sync_to_numpy()
+    assert geo.data is not None
+    original_data = geo.data.copy()
+
+    # Apply flip_x
+    result = geo.flip_x()
+
+    assert result is geo
+
+    # Check that X coordinates are inverted
+    # MoveTo: (0, 0) -> (0, 0)
+    assert math.isclose(geo.data[0, COL_X], 0.0)
+    assert math.isclose(geo.data[0, COL_Y], 0.0)
+
+    # LineTo: (10, 10) -> (-10, 10)
+    assert math.isclose(geo.data[1, COL_X], -10.0)
+    assert math.isclose(geo.data[1, COL_Y], 10.0)
+
+    # ArcTo: (20, 5) -> (-20, 5)
+    assert math.isclose(geo.data[2, COL_X], -20.0)
+    assert math.isclose(geo.data[2, COL_Y], 5.0)
+
+    # BezierTo: (30, 10) -> (-30, 10)
+    assert math.isclose(geo.data[3, COL_X], -30.0)
+    assert math.isclose(geo.data[3, COL_Y], 10.0)
+
+    # Flipping twice should return to original
+    geo.flip_x()
+    np.testing.assert_allclose(geo.data, original_data, atol=1e-9)
+
+
+def test_flip_y():
+    """Tests that flip_y() correctly inverts Y coordinates."""
+    geo = Geometry()
+    geo.move_to(0, 0)
+    geo.line_to(10, 10)
+    geo.arc_to(20, 5, i=5, j=-5, clockwise=False)
+    geo.bezier_to(30, 10, c1x=22, c1y=2, c2x=28, c2y=8)
+
+    # Sync to get original data
+    geo._sync_to_numpy()
+    assert geo.data is not None
+    original_data = geo.data.copy()
+
+    # Apply flip_y
+    result = geo.flip_y()
+
+    assert result is geo
+
+    # Check that Y coordinates are inverted
+    # MoveTo: (0, 0) -> (0, 0)
+    assert math.isclose(geo.data[0, COL_X], 0.0)
+    assert math.isclose(geo.data[0, COL_Y], 0.0)
+
+    # LineTo: (10, 10) -> (10, -10)
+    assert math.isclose(geo.data[1, COL_X], 10.0)
+    assert math.isclose(geo.data[1, COL_Y], -10.0)
+
+    # ArcTo: (20, 5) -> (20, -5)
+    assert math.isclose(geo.data[2, COL_X], 20.0)
+    assert math.isclose(geo.data[2, COL_Y], -5.0)
+
+    # BezierTo: (30, 10) -> (30, -10)
+    assert math.isclose(geo.data[3, COL_X], 30.0)
+    assert math.isclose(geo.data[3, COL_Y], -10.0)
+
+    # Flipping twice should return to original
+    geo.flip_y()
+    np.testing.assert_allclose(geo.data, original_data, atol=1e-9)
+
+
 def test_to_cairo():
     """Tests the to_cairo() method for drawing geometry to a Cairo context."""
     from unittest.mock import Mock
