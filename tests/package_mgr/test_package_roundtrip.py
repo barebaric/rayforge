@@ -1,9 +1,13 @@
 """Integration tests for package loading and execution."""
 
 import sys
+from unittest.mock import patch
 
 from rayforge.context import RayforgeContext
-from rayforge.package_mgr.package_manager import PackageManager
+from rayforge.package_mgr.package_manager import (
+    PackageManager,
+    UpdateStatus,
+)
 
 
 class TestPackageRoundTrip:
@@ -38,7 +42,12 @@ class TestPackageRoundTrip:
         context = RayforgeContext()
         context.package_mgr = PackageManager(packages_dir, context.plugin_mgr)
 
-        context.initialize_full_context()
+        with patch.object(
+            context.package_mgr,
+            "_check_version_compatibility",
+            return_value=UpdateStatus.UP_TO_DATE,
+        ):
+            context.initialize_full_context()
 
         # The module name is derived from the directory, not the YAML file.
         assert "rayforge_plugins.integration_test_package" in sys.modules
@@ -75,7 +84,12 @@ class TestPackageRoundTrip:
         context = RayforgeContext()
         context.package_mgr = PackageManager(packages_dir, context.plugin_mgr)
 
-        context.initialize_full_context()
+        with patch.object(
+            context.package_mgr,
+            "_check_version_compatibility",
+            return_value=UpdateStatus.UP_TO_DATE,
+        ):
+            context.initialize_full_context()
 
         # The module name is derived from the directory, not the YAML file.
         assert "rayforge_plugins.multi_hook_package" in sys.modules
@@ -101,7 +115,12 @@ class TestPackageRoundTrip:
         context = RayforgeContext()
         context.package_mgr = PackageManager(packages_dir, context.plugin_mgr)
 
-        context.initialize_full_context()
+        with patch.object(
+            context.package_mgr,
+            "_check_version_compatibility",
+            return_value=UpdateStatus.UP_TO_DATE,
+        ):
+            context.initialize_full_context()
 
         assert "rayforge_plugins.invalid_package" not in sys.modules
 
