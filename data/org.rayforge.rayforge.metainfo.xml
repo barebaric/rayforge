@@ -55,6 +55,74 @@
   </screenshots>
 
   <releases>
+    <release version="0.28" date="2026-01-17">
+      <description>
+        <p>Work Coordinate Systems, True Arcs, and a New Package Manager</p>
+        <ul>
+          <li>Full support for Work Coordinate Systems (WCS) G54-G59</li>
+          <li>True arc support with superior geometry handling</li>
+          <li>New Package Manager for extensibility</li>
+          <li>New sketcher tools: Rectangle, Fillet, and Chamfer</li>
+          <li>Optimized G-code output and improved GRBL driver</li>
+          <li>Always-active Cancel button and improved UI</li>
+          <li>Numerous bug fixes and performance improvements</li>
+        </ul>
+      </description>
+    </release>
+    <release version="0.27.1" date="2025-01-03">
+      <description>
+        <p>Maintenance release with performance improvements</p>
+        <ul>
+          <li>Major performance boost for SVG imports</li>
+          <li>Fixed invalid clipping paths in SVG files</li>
+          <li>Restored sketcher fill toggling</li>
+          <li>Theme-aware sketcher line colors</li>
+          <li>Corrected laser dot position</li>
+        </ul>
+      </description>
+    </release>
+    <release version="0.27" date="2025-01-02">
+      <description>
+        <p>Enhanced Sketching, Machine Control & UI Refinements</p>
+        <ul>
+          <li>Expressions and parameters in parametric sketcher</li>
+          <li>Filled shapes support in sketcher</li>
+          <li>Improved constraint visualization and drag-select</li>
+          <li>Robust GRBL serial driver with better recovery</li>
+          <li>Variable substitutions in G-code</li>
+          <li>Flexible machine origins and negative axis support</li>
+          <li>Icon refresh and redesigned machine settings dialog</li>
+          <li>Dark mode improvements and streamlined settings</li>
+        </ul>
+      </description>
+    </release>
+    <release version="0.26" date="2025-11-30">
+      <description>
+        <p>Parametric 2D Sketcher & Major Performance Upgrades</p>
+        <ul>
+          <li>Parametric 2D sketcher with constraint system</li>
+          <li>Import/export sketches with parametric constraints</li>
+          <li>Significantly reduced memory usage</li>
+          <li>Faster operations with complex vector files</li>
+          <li>Fixed 3D view and G-code mirroring with Y-down machines</li>
+          <li>Improved Smoothieware driver compatibility</li>
+          <li>Added Makera Carvera Air machine profile</li>
+        </ul>
+      </description>
+    </release>
+    <release version="0.25" date="2025-11-22">
+      <description>
+        <p>New Import Experience & Object Management</p>
+        <ul>
+          <li>Interactive import dialog with tracing controls</li>
+          <li>Split workpiece command for separating assets</li>
+          <li>Custom G-code dialects support</li>
+          <li>Inner edges first in contour operations</li>
+          <li>Improved UI responsiveness with debouncing</li>
+          <li>Fixed power display bug and grouping visuals</li>
+        </ul>
+      </description>
+    </release>
     <release version="0.22" date="2025-09-20">
       <description>
         <p>This is the initial release.</p>
