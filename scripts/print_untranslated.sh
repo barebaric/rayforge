@@ -12,6 +12,21 @@ if [ -z "$1" ]; then
 fi
 
 LANG_CODE="$1"
+
+# Ignore English language file
+if [ "$LANG_CODE" = "en" ]; then
+  echo "Warning: English language file should never be translated."
+  echo "Available languages:"
+  for lang_dir in rayforge/locale/*/; do
+    lang=$(basename "$lang_dir")
+    if [ -d "$lang_dir/LC_MESSAGES" ] && [ -f "$lang_dir/LC_MESSAGES/rayforge.po" ]; then
+      if [ "$lang" != "en" ]; then
+        echo "  - $lang"
+      fi
+    fi
+  done
+  exit 1
+fi
 PO_FILE="rayforge/locale/${LANG_CODE}/LC_MESSAGES/rayforge.po"
 
 # Check if the .po file exists
