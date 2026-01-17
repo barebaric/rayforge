@@ -55,12 +55,16 @@ class GcodeEncoder(OpsEncoder):
         self.emitted_speed: Optional[float] = (
             None  # Last speed sent to the controller
         )
+        self.emitted_power: Optional[float] = (
+            None  # Last power sent to the controller
+        )
         self.air_assist: bool = False  # Air assist state
         self.laser_active: bool = False  # Laser on/off state
         self.active_laser_uid: Optional[str] = None
         self.current_pos: Tuple[float, float, float] = (0.0, 0.0, 0.0)
         self._coord_format: str = "{:.3f}"  # Default format
         self._feed_format: str = "{:.3f}"
+        self._power_format: str = "{:.3f}"
 
     @classmethod
     def for_machine(cls, machine: "Machine") -> "GcodeEncoder":
@@ -120,6 +124,22 @@ class GcodeEncoder(OpsEncoder):
             formatted = formatted.rstrip("0").rstrip(".")
         return formatted
 
+    def _format_power(self, value: float) -> str:
+        """
+        Format a power value with the specified precision,
+        stripping unnecessary trailing zeros.
+
+        Args:
+            value: The float value to format.
+
+        Returns:
+            The formatted string with trailing zeros removed.
+        """
+        formatted = self._power_format.format(value)
+        if "." in formatted:
+            formatted = formatted.rstrip("0").rstrip(".")
+        return formatted
+
     def encode(
         self, ops: Ops, machine: "Machine", doc: "Doc"
     ) -> Tuple[str, MachineCodeOpMap]:
@@ -127,8 +147,10 @@ class GcodeEncoder(OpsEncoder):
         # Set coordinate and feedrate format based on the machine's precision
         self._coord_format = f"{{:.{machine.gcode_precision}f}}"
         self._feed_format = self._coord_format
+        self._power_format = self._coord_format
         self.current_pos = (0.0, 0.0, 0.0)
         self.active_laser_uid = None
+        self.emitted_power = None
 
         context = GcodeContext(
             machine=machine, doc=doc, job=JobInfo(extents=ops.rect())
@@ -234,12 +256,11 @@ class GcodeEncoder(OpsEncoder):
                 gcode.extend(
                     self._format_script_lines(self.dialect.preamble, context)
                 )
-                # 2. Inject Active WCS command if applicable.
-                # We inject this AFTER the preamble to ensure it isn't reset
-                # by any homing or reset commands within the preamble.
-                # We check if the active WCS is a standard G-code coordinate
-                # system (G54-G59). "G53" is not injected as it's non-modal
-                # or handled per-move.
+
+                # 2. Inject Active WCS command. This is done AFTER the
+                # preamble to guarantee the correct coordinate system is
+                # active for the job, treating the preamble as a black box
+                # that may have changed state.
                 wcs_cmd = context.machine.active_wcs
                 if wcs_cmd in ["G54", "G55", "G56", "G57", "G58", "G59"]:
                     gcode.append(wcs_cmd)
@@ -287,7 +308,9 @@ class GcodeEncoder(OpsEncoder):
         has changed.
         """
         if self.dialect.set_speed and speed != self.emitted_speed:
-            gcode.append(self.dialect.set_speed.format(speed=speed))
+            cmd_str = self.dialect.set_speed.format(speed=speed)
+            if cmd_str:
+                gcode.append(cmd_str)
             self.emitted_speed = speed
 
     def _handle_set_laser(
@@ -312,7 +335,8 @@ class GcodeEncoder(OpsEncoder):
         cmd_str = self.dialect.tool_change.format(
             tool_number=laser_head.tool_number
         )
-        gcode.append(cmd_str)
+        if cmd_str:
+            gcode.append(cmd_str)
         self.active_laser_uid = laser_uid
 
     def _update_power(
@@ -333,7 +357,9 @@ class GcodeEncoder(OpsEncoder):
                 # Find the currently active laser head to get its max power
                 current_laser = self._get_current_laser_head(context)
                 power_abs = power * current_laser.max_power
-                gcode.append(self.dialect.laser_on.format(power=power_abs))
+                cmd_str = self.dialect.laser_on.format(power=power_abs)
+                if cmd_str:
+                    gcode.append(cmd_str)
             else:  # power <= 0
                 self._laser_off(context, gcode)
 
@@ -400,14 +426,21 @@ class GcodeEncoder(OpsEncoder):
             else ""
         )
 
-        gcode.append(
-            self.dialect.linear_move.format(
-                x=self._format_coord(x),
-                y=self._format_coord(y),
-                z=self._format_coord(z),
-                f_command=f_command,
-            )
-        )
+        s_command = ""
+        if self.power is not None and self.power > 0:
+            current_laser = self._get_current_laser_head(context)
+            power_abs = self.power * current_laser.max_power
+            s_command = f" S{self._format_power(power_abs)}"
+
+        template_vars = {
+            "x": self._format_coord(x),
+            "y": self._format_coord(y),
+            "z": self._format_coord(z),
+            "f_command": f_command,
+            "s_command": s_command,
+        }
+
+        gcode.append(self.dialect.linear_move.format(**template_vars))
 
     def _handle_arc_to(
         self,
@@ -428,6 +461,13 @@ class GcodeEncoder(OpsEncoder):
             if self.cut_speed is not None
             else ""
         )
+
+        s_command = ""
+        if self.power is not None and self.power > 0:
+            current_laser = self._get_current_laser_head(context)
+            power_abs = self.power * current_laser.max_power
+            s_command = f" S{self._format_power(power_abs)}"
+
         gcode.append(
             template.format(
                 x=self._format_coord(x),
@@ -436,6 +476,7 @@ class GcodeEncoder(OpsEncoder):
                 i=self._format_coord(i),
                 j=self._format_coord(j),
                 f_command=f_command,
+                s_command=s_command,
             )
         )
 
@@ -444,13 +485,17 @@ class GcodeEncoder(OpsEncoder):
         if not self.laser_active and self.power:
             current_laser = self._get_current_laser_head(context)
             power_abs = self.power * current_laser.max_power
-            gcode.append(self.dialect.laser_on.format(power=power_abs))
+            cmd_str = self.dialect.laser_on.format(power=power_abs)
+            if cmd_str:
+                gcode.append(cmd_str)
             self.laser_active = True
 
     def _laser_off(self, context: GcodeContext, gcode: List[str]) -> None:
         """Deactivate laser if active"""
         if self.laser_active:
-            gcode.append(self.dialect.laser_off)
+            cmd_str = self.dialect.laser_off
+            if cmd_str:
+                gcode.append(cmd_str)
             self.laser_active = False
 
     def _finalize(self, gcode: List[str]) -> None:

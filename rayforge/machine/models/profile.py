@@ -1,16 +1,46 @@
 import logging
-from dataclasses import dataclass
+from dataclasses import dataclass, asdict
 from typing import List, Dict, Any, Tuple, Optional, TYPE_CHECKING
 from .machine import Machine, Laser, Origin
 from .macro import Macro, MacroTrigger
 from ..driver import get_driver_cls
-from .dialect import get_dialect
+from .dialect import get_dialect, replace
 
 if TYPE_CHECKING:
     from ...context import RayforgeContext
 
 
 logger = logging.getLogger(__name__)
+
+
+@dataclass
+class DialectDefinition:
+    """
+    A type-safe container for dialect fields that can be overridden in a
+    MachineProfile. All fields are optional.
+    """
+
+    label: Optional[str] = None
+    description: Optional[str] = None
+    laser_on: Optional[str] = None
+    laser_off: Optional[str] = None
+    tool_change: Optional[str] = None
+    set_speed: Optional[str] = None
+    travel_move: Optional[str] = None
+    linear_move: Optional[str] = None
+    arc_cw: Optional[str] = None
+    arc_ccw: Optional[str] = None
+    air_assist_on: Optional[str] = None
+    air_assist_off: Optional[str] = None
+    home_all: Optional[str] = None
+    home_axis: Optional[str] = None
+    move_to: Optional[str] = None
+    jog: Optional[str] = None
+    clear_alarm: Optional[str] = None
+    set_wcs_offset: Optional[str] = None
+    probe_cycle: Optional[str] = None
+    preamble: Optional[List[str]] = None
+    postscript: Optional[List[str]] = None
 
 
 @dataclass
@@ -33,11 +63,7 @@ class MachineProfile:
     home_on_start: Optional[bool] = None
     heads: Optional[List[Dict[str, Any]]] = None
     hookmacros: Optional[List[Dict[str, Any]]] = None
-    # Dialect override fields
-    preamble: Optional[List[str]] = None
-    postscript: Optional[List[str]] = None
-    laser_on: Optional[str] = None
-    travel_move: Optional[str] = None
+    dialect_definition: Optional[DialectDefinition] = None
 
     def create_machine(self, context: "RayforgeContext") -> Machine:
         """
@@ -62,14 +88,10 @@ class MachineProfile:
                     f" with args {self.driver_args}"
                 )
 
-        # Handle dialect creation. If the profile has any dialect overrides,
-        # create a new custom dialect for this machine.
-        override_fields = ["preamble", "postscript", "laser_on", "travel_move"]
-        has_overrides = any(
-            getattr(self, field) is not None for field in override_fields
-        )
-
-        if has_overrides:
+        # Handle dialect creation. If the profile provides a dialect
+        # definition, create and register a new custom dialect for this
+        # machine.
+        if self.dialect_definition:
             base_dialect_uid = self.dialect_uid or "grbl"
             try:
                 base_dialect = get_dialect(base_dialect_uid)
@@ -80,21 +102,32 @@ class MachineProfile:
                 )
                 base_dialect = get_dialect("grbl")
 
-            new_label = _("{label} (for {machine_name})").format(
-                label=base_dialect.label, machine_name=self.name
-            )
+            new_label = self.dialect_definition.label or _(
+                "{label} (for {machine_name})"
+            ).format(label=base_dialect.label, machine_name=self.name)
+
+            # Create a new custom dialect based on the parent.
             new_dialect = base_dialect.copy_as_custom(new_label=new_label)
 
-            # Apply all specified overrides from the profile to the new dialect
-            for field in override_fields:
-                value = getattr(self, field)
-                if value is not None:
-                    setattr(new_dialect, field, value)
+            # Get a dictionary of only the fields that were explicitly set
+            # in the profile's dialect definition.
+            overrides = {
+                k: v
+                for k, v in asdict(self.dialect_definition).items()
+                if v is not None
+            }
 
-            # Add the new dialect to the manager (registers and saves it)
+            # Apply the overrides to the new dialect instance.
+            if overrides:
+                new_dialect = replace(new_dialect, **overrides)
+
+            # Add the new dialect to the manager (registers and saves it).
             context.dialect_mgr.add_dialect(new_dialect)
             m.dialect_uid = new_dialect.uid
+
         elif self.dialect_uid is not None:
+            # No custom definition, just use the specified built-in or
+            # existing dialect UID.
             m.dialect_uid = self.dialect_uid
 
         if self.gcode_precision is not None:
@@ -158,23 +191,31 @@ PROFILES: List[MachineProfile] = [
                 "spot_size_mm": [0.1, 0.1],
             }
         ],
-        laser_on="M3 S{power:.3f}",
-        travel_move="G0 X{x} Y{y} Z{z}",
-        preamble=[
-            "M321",
-            "G0Z0",
-            "G00 G54",
-            "G21 ; Set units to mm",
-            "G90 ; Absolute positioning",
-        ],
-        postscript=[
-            "M5 ; Ensure laser is off",
-            "G0 X0 Y0 ; Return to origin",
-            ";USER END SCRIPT",
-            "M322",
-            ";USER END SCRIPT",
-            "M2",
-        ],
+        dialect_definition=DialectDefinition(
+            description=_("Custom dialect for the Carvera Air machine."),
+            laser_on="",
+            laser_off="G1 S0",
+            travel_move="G0 X{x} Y{y} Z{z}",
+            linear_move="G1 X{x} Y{y} Z{z}{s_command}{f_command}",
+            arc_cw="G2 X{x} Y{y} Z{z} I{i} J{j}{s_command}{f_command}",
+            arc_ccw="G3 X{x} Y{y} Z{z} I{i} J{j}{s_command}{f_command}",
+            preamble=[
+                "M321",
+                "G0Z0",
+                "G00 G54",
+                "M3",
+                "G21 ; Set units to mm",
+                "G90 ; Absolute positioning",
+            ],
+            postscript=[
+                "M5 ; Ensure laser is off",
+                "G0 X0 Y0 ; Return to origin",
+                ";USER END SCRIPT",
+                "M322",
+                ";USER END SCRIPT",
+                "M2",
+            ],
+        ),
     ),
     MachineProfile(
         name="Sculpfun iCube",
@@ -236,13 +277,16 @@ PROFILES: List[MachineProfile] = [
                 "spot_size_mm": [0.05, 0.05],
             }
         ],
-        preamble=[
-            "G21 ;Set units to mm",
-            "G90 ;Absolute positioning",
-            "M5",
-            "M17",
-            "M106 S0",
-        ],
+        dialect_definition=DialectDefinition(
+            description=_("Custom preamble for the xTool D1 Pro machine."),
+            preamble=[
+                "G21 ;Set units to mm",
+                "G90 ;Absolute positioning",
+                "M5",
+                "M17",
+                "M106 S0",
+            ],
+        ),
     ),
     MachineProfile(
         name=_("Other Device"),
