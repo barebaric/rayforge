@@ -219,7 +219,17 @@ class FileCmd:
                     x, y, w, h = map(
                         int, reference_wp.source_segment.crop_window_px
                     )
-                    vips_image = full_image.crop(x, y, w, h)
+                    if (
+                        w > 0
+                        and h > 0
+                        and x >= 0
+                        and y >= 0
+                        and x + w <= full_image.width
+                        and y + h <= full_image.height
+                    ):
+                        vips_image = full_image.crop(x, y, w, h)
+                    else:
+                        vips_image = full_image
                 else:
                     vips_image = full_image
 
