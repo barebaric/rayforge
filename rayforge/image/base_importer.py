@@ -1,14 +1,52 @@
 from __future__ import annotations
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Optional, List, Tuple, TYPE_CHECKING
+from typing import Optional, List, Tuple, TYPE_CHECKING, Set
 from dataclasses import dataclass, field
+import enum
 
 if TYPE_CHECKING:
     from ..core.item import DocItem
     from ..core.vectorization_spec import VectorizationSpec
     from ..core.source_asset import SourceAsset
     from ..core.sketcher.sketch import Sketch
+
+
+class ImporterFeature(enum.Flag):
+    """
+    Defines the capabilities of an Importer class.
+    """
+
+    NONE = 0
+    BITMAP_TRACING = enum.auto()
+    DIRECT_VECTOR = enum.auto()
+    LAYER_SELECTION = enum.auto()
+    PROCEDURAL_GENERATION = enum.auto()
+
+
+@dataclass
+class LayerInfo:
+    """
+    A lightweight descriptor for a single layer discovered in a file scan.
+    """
+
+    id: str  # Machine-readable identifier (e.g., SVG group ID)
+    name: str  # User-facing name for the layer
+    color: Optional[Tuple[float, float, float]] = None
+    default_active: bool = True
+
+
+@dataclass
+class ImportManifest:
+    """
+    The result of a file scan, describing the file's contents and structure
+    without performing a full import.
+    """
+
+    layers: List[LayerInfo] = field(default_factory=list)
+    natural_size_mm: Optional[Tuple[float, float]] = None
+    title: Optional[str] = None
+    warnings: List[str] = field(default_factory=list)
 
 
 @dataclass
@@ -60,7 +98,9 @@ class Importer(ABC):
     label: str
     mime_types: Tuple[str, ...]
     extensions: Tuple[str, ...]
-    is_bitmap: bool = False
+
+    # The base set of features is empty. Subclasses MUST override this.
+    features: Set[ImporterFeature] = set()
 
     def __init__(self, data: bytes, source_file: Optional[Path] = None):
         """
@@ -68,6 +108,20 @@ class Importer(ABC):
         """
         self.raw_data = data
         self.source_file = source_file or Path("Untitled")
+
+    @abstractmethod
+    def scan(self) -> ImportManifest:
+        """
+        Performs a lightweight scan of the file to extract metadata and
+        structural information, like layers, without full processing.
+
+        This method should be fast and avoid heavy computation like pixel
+        processing or full geometry conversion.
+
+        Returns:
+            An ImportManifest describing the file's contents.
+        """
+        raise NotImplementedError
 
     @abstractmethod
     def get_doc_items(

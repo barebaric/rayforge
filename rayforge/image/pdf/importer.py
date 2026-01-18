@@ -4,11 +4,17 @@ from typing import Optional, Tuple, cast
 import cv2
 import numpy as np
 from pypdf import PdfReader
+from pypdf.errors import PdfReadError
 import math
 from ...core.source_asset import SourceAsset
 from ...core.vectorization_spec import TraceSpec, VectorizationSpec
 from .. import image_util
-from ..base_importer import Importer, ImportPayload
+from ..base_importer import (
+    Importer,
+    ImportPayload,
+    ImporterFeature,
+    ImportManifest,
+)
 from ..tracing import trace_surface, VTRACER_PIXEL_LIMIT
 from ..util import to_mm
 from .renderer import PDF_RENDERER
@@ -28,8 +34,49 @@ class PdfImporter(Importer):
     label = "PDF files"
     mime_types = ("application/pdf",)
     extensions = (".pdf",)
+    features = {ImporterFeature.BITMAP_TRACING}
     _TRACE_PPM = 24.0  # ~600 DPI for tracing
     _MAX_RENDER_DIM = 16384
+
+    def scan(self) -> ImportManifest:
+        """
+        Scans the PDF to find the dimensions of its first page.
+        """
+        try:
+            reader = PdfReader(io.BytesIO(self.raw_data))
+            if not reader.pages:
+                return ImportManifest(
+                    title=self.source_file.name,
+                    warnings=["PDF file contains no pages."],
+                )
+            media_box = reader.pages[0].mediabox
+            width_pt = float(media_box.width)
+            height_pt = float(media_box.height)
+            size_mm = (to_mm(width_pt, "pt"), to_mm(height_pt, "pt"))
+            title = reader.metadata.title if reader.metadata else None
+            return ImportManifest(
+                title=title or self.source_file.name, natural_size_mm=size_mm
+            )
+        except PdfReadError as e:
+            logger.warning(f"PDF scan failed for {self.source_file.name}: {e}")
+            return ImportManifest(
+                title=self.source_file.name,
+                warnings=[
+                    "Could not read PDF. File may be corrupt or encrypted."
+                ],
+            )
+        except Exception as e:
+            logger.error(
+                f"Unexpected error during PDF scan for "
+                f"{self.source_file.name}: {e}",
+                exc_info=True,
+            )
+            return ImportManifest(
+                title=self.source_file.name,
+                warnings=[
+                    "An unexpected error occurred while scanning the PDF file."
+                ],
+            )
 
     def get_doc_items(
         self, vectorization_spec: Optional["VectorizationSpec"] = None

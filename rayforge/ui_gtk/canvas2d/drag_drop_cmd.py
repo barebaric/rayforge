@@ -8,11 +8,12 @@ paste operations, keeping them separate from the core UI components.
 import logging
 import tempfile
 from pathlib import Path
-from typing import TYPE_CHECKING, Optional, Tuple
+from typing import TYPE_CHECKING, Optional, Tuple, List
 from gi.repository import GObject, Gdk, Gtk, Gio, GLib, Adw
 from ...context import get_context
 from ...core.sketcher import Sketch
-from ...image import bitmap_mime_types
+from ...doceditor.file_cmd import ImportAction
+from ...image import ImporterFeature, importers
 
 if TYPE_CHECKING:
     from ...ui_gtk.mainwindow import MainWindow
@@ -200,7 +201,7 @@ class DragDropCmd:
             widget = widget.get_parent()
         return None
 
-    def _extract_files_from_drop_value(self, value):
+    def _extract_files_from_drop_value(self, value) -> List[Gio.File]:
         """Extract file list from drop value."""
         files = []
         if isinstance(value, Gdk.FileList):
@@ -217,10 +218,9 @@ class DragDropCmd:
 
         return files
 
-    def _get_file_infos(self, files):
+    def _get_file_infos(self, files: List[Gio.File]) -> List[Tuple[Path, str]]:
         """Get file path and MIME type information for dropped files."""
-        from ...image import importer_by_mime_type
-
+        editor = self.main_window.doc_editor
         file_infos = []
         for gfile in files:
             path_str = gfile.get_path()
@@ -242,8 +242,11 @@ class DragDropCmd:
                 )
                 continue
 
-            # Check if we support this MIME type
-            if mime_type not in importer_by_mime_type:
+            # Check if we support this file by asking the backend.
+            importer_cls, _ = editor.file.get_importer_info(
+                file_path, mime_type
+            )
+            if not importer_cls:
                 logger.warning(
                     f"Unsupported file type: {mime_type} for {file_path}"
                 )
@@ -253,10 +256,14 @@ class DragDropCmd:
 
         return file_infos
 
-    def _import_dropped_files(self, file_infos, position_mm):
+    def _import_dropped_files(
+        self,
+        file_infos: List[Tuple[Path, str]],
+        position_mm: Tuple[float, float],
+    ):
         """
-        Import dropped files, separating SVGs from rasters for
-        appropriate handling.
+        Import dropped files, routing them to individual or batch import
+        handlers based on their capabilities.
 
         Args:
             file_infos: List of (file_path, mime_type) tuples
@@ -264,60 +271,50 @@ class DragDropCmd:
         """
         from ..doceditor import import_handler
 
-        # Separate SVGs from raster files
-        svg_files = []
-        raster_files = []
+        editor = self.main_window.doc_editor
+        files_for_batch_import: List[Tuple[Path, str]] = []
 
         for file_path, mime_type in file_infos:
-            if mime_type == "image/svg+xml":
-                svg_files.append((file_path, mime_type))
-            else:
-                # All other supported types go to raster
-                raster_files.append((file_path, mime_type))
+            action = editor.file.analyze_import_target(file_path, mime_type)
 
-        # Handle SVG files individually (each gets its own dialog)
-        for file_path, mime_type in svg_files:
-            world_x_mm, world_y_mm = position_mm
-            logger.info(
-                f"Importing SVG: {file_path} at "
-                f"({world_x_mm:.2f}, {world_y_mm:.2f}) mm"
-            )
-            import_handler.import_file_at_position(
-                self.main_window,
-                self.surface.editor,
-                file_path,
-                mime_type,
-                position_mm,
-            )
-
-        # Handle raster files with batch configuration
-        if raster_files:
-            if len(raster_files) == 1:
-                # Single raster file - use standard import
-                file_path, mime_type = raster_files[0]
-                world_x_mm, world_y_mm = position_mm
+            if action == ImportAction.INTERACTIVE_CONFIG:
+                # These files need their own dialog, so handle them one by one.
                 logger.info(
-                    f"Importing raster: {file_path} at "
-                    f"({world_x_mm:.2f}, {world_y_mm:.2f}) mm"
+                    f"Routing for individual import: {file_path.name} at "
+                    f"{position_mm}"
                 )
                 import_handler.import_file_at_position(
-                    self.main_window,
-                    self.surface.editor,
-                    file_path,
-                    mime_type,
-                    position_mm,
+                    self.main_window, editor, file_path, mime_type, position_mm
+                )
+            elif action == ImportAction.DIRECT_LOAD:
+                # These files can be batched together for a single
+                # import command.
+                files_for_batch_import.append((file_path, mime_type))
+            else:
+                # Unsupported files are already filtered out, but handle
+                # just in case.
+                logger.warning(f"Skipping unsupported file: {file_path.name}")
+
+        # Handle any files that were collected for batch import.
+        if files_for_batch_import:
+            if len(files_for_batch_import) == 1:
+                # If only one direct-load file, just import it.
+                file_path, mime_type = files_for_batch_import[0]
+                logger.info(f"Importing direct-load file: {file_path.name}")
+                editor.file.load_file_from_path(
+                    file_path, mime_type, None, position_mm
                 )
             else:
-                # Multiple files - use batch import
-                world_x_mm, world_y_mm = position_mm
+                # If multiple direct-load files, use the batch handler.
                 logger.info(
-                    f"Batch importing {len(raster_files)} files at "
-                    f"({world_x_mm:.2f}, {world_y_mm:.2f}) mm"
+                    f"Batch importing {len(files_for_batch_import)} "
+                    "direct-load files."
                 )
+                # Note: The batch handler will show a confirmation dialog.
                 import_handler.import_multiple_files_at_position(
                     self.main_window,
-                    self.surface.editor,
-                    raster_files,
+                    editor,
+                    files_for_batch_import,
                     position_mm,
                 )
 
@@ -326,14 +323,21 @@ class DragDropCmd:
         Handle paste operation, checking clipboard for image data first,
         then falling back to workpiece paste.
         """
-        # Priority 1: Check if system clipboard contains image data
         clipboard = self.main_window.get_clipboard()
         formats = clipboard.get_formats()
+
+        # Get all bitmap mime types from the backend
+        supported_bitmap_mimes = {
+            mime
+            for importer in importers
+            if ImporterFeature.BITMAP_TRACING in importer.features
+            for mime in importer.mime_types
+        }
 
         # Check for any supported bitmap image formats
         has_image = any(
             formats.contain_mime_type(mime_type)
-            for mime_type in bitmap_mime_types
+            for mime_type in supported_bitmap_mimes
         )
 
         if has_image:

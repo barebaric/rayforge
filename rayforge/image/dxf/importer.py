@@ -18,7 +18,13 @@ from ...core.vectorization_spec import VectorizationSpec
 from ...core.source_asset import SourceAsset
 from ...core.source_asset_segment import SourceAssetSegment
 from ...core.vectorization_spec import PassthroughSpec
-from ..base_importer import Importer, ImportPayload
+from ..base_importer import (
+    Importer,
+    ImportPayload,
+    ImporterFeature,
+    ImportManifest,
+    LayerInfo,
+)
 from .renderer import DXF_RENDERER
 
 logger = logging.getLogger(__name__)
@@ -41,6 +47,49 @@ class DxfImporter(Importer):
     label = "DXF files (2D)"
     mime_types = ("image/vnd.dxf",)
     extensions = (".dxf",)
+    features = {ImporterFeature.DIRECT_VECTOR, ImporterFeature.LAYER_SELECTION}
+
+    def scan(self) -> ImportManifest:
+        """
+        Scans the DXF file for layer names and overall dimensions.
+        """
+        try:
+            data_str = self.raw_data.decode("utf-8", errors="replace")
+            normalized_str = data_str.replace("\r\n", "\n")
+            doc = ezdxf.read(io.StringIO(normalized_str))  # type: ignore
+        except DXFStructureError as e:
+            logger.warning(f"DXF scan failed for {self.source_file.name}: {e}")
+            return ImportManifest(
+                title=self.source_file.name,
+                warnings=["File appears to be a corrupt or unsupported DXF."],
+            )
+        except Exception as e:
+            logger.error(
+                f"Unexpected error during DXF scan for "
+                f"{self.source_file.name}: {e}",
+                exc_info=True,
+            )
+            return ImportManifest(
+                title=self.source_file.name,
+                warnings=[
+                    "An unexpected error occurred while scanning the DXF file."
+                ],
+            )
+
+        layers = [
+            LayerInfo(id=layer.dxf.name, name=layer.dxf.name)
+            for layer in doc.layers
+            if layer.dxf.name.lower() != "defpoints"
+        ]
+
+        bounds = self._get_bounds_mm(doc)
+        size_mm = (bounds[2], bounds[3]) if bounds else None
+
+        return ImportManifest(
+            title=self.source_file.name,
+            layers=layers,
+            natural_size_mm=size_mm,
+        )
 
     def get_doc_items(
         self, vectorization_spec: Optional[VectorizationSpec] = None

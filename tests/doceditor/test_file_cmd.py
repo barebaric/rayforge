@@ -9,7 +9,12 @@ from rayforge.core.source_asset import SourceAsset
 from rayforge.core.vectorization_spec import TraceSpec
 from rayforge.doceditor.editor import DocEditor
 from rayforge.doceditor.file_cmd import FileCmd, PreviewResult, ImportAction
-from rayforge.image import ImportPayload
+from rayforge.image import (
+    ImportPayload,
+    ImporterFeature,
+    ImportManifest,
+    LayerInfo,
+)
 from rayforge.image.svg.renderer import SVG_RENDERER
 from rayforge.shared.tasker.manager import TaskManager
 
@@ -65,27 +70,86 @@ def sample_payload(sample_workpiece, sample_source_asset):
 class TestScanImportFile:
     """Tests for scan_import_file method."""
 
-    def test_scan_svg_file(self, file_cmd):
-        """Test scanning an SVG file extracts layer manifest."""
-        svg_bytes = b'<svg><g id="layer1"></g><g id="layer2"></g></svg>'
-        result = file_cmd.scan_import_file(svg_bytes, "image/svg+xml")
+    def test_scan_delegates_to_importer(self, file_cmd):
+        """
+        Test that scan_import_file correctly finds and calls the
+        importer's scan method.
+        """
+        svg_bytes = b"<svg></svg>"
+        file_path = Path("test.svg")
+        mime_type = "image/svg+xml"
 
-        assert "layers" in result
-        assert isinstance(result["layers"], list)
+        mock_importer_instance = MagicMock()
+        mock_manifest = ImportManifest(
+            layers=[LayerInfo(id="layer1", name="Layer 1")]
+        )
+        mock_importer_instance.scan.return_value = mock_manifest
 
-    def test_scan_non_svg_file(self, file_cmd):
-        """Test scanning a non-SVG file returns empty dict."""
-        png_bytes = b"\x89PNG\r\n\x1a\n"
-        result = file_cmd.scan_import_file(png_bytes, "image/png")
+        mock_importer_class = MagicMock()
+        mock_importer_class.return_value = mock_importer_instance
 
-        assert result == {}
+        with patch(
+            "rayforge.doceditor.file_cmd.importer_by_mime_type",
+            {mime_type: mock_importer_class},
+        ):
+            result = file_cmd.scan_import_file(svg_bytes, file_path, mime_type)
 
-    def test_scan_svg_with_exception(self, file_cmd, caplog):
-        """Test that SVG scan exceptions are handled gracefully."""
-        invalid_svg = b"not valid svg"
-        result = file_cmd.scan_import_file(invalid_svg, "image/svg+xml")
+            mock_importer_class.assert_called_once_with(
+                data=svg_bytes, source_file=file_path
+            )
+            mock_importer_instance.scan.assert_called_once()
+            assert result is mock_manifest
 
-        assert result == {"layers": []}
+    def test_scan_no_importer_found(self, file_cmd, caplog):
+        """Test scanning a file with no matching importer."""
+        some_bytes = b"data"
+        file_path = Path("test.unknown")
+        mime_type = "application/octet-stream"
+
+        with patch("rayforge.doceditor.file_cmd.importer_by_mime_type", {}):
+            with patch(
+                "rayforge.doceditor.file_cmd.importer_by_extension", {}
+            ):
+                result = file_cmd.scan_import_file(
+                    some_bytes, file_path, mime_type
+                )
+
+                assert isinstance(result, ImportManifest)
+                assert result.title == "test.unknown"
+                assert result.warnings == ["Unsupported file type: .unknown"]
+                assert "No importer found" in caplog.text
+
+    def test_scan_importer_raises_exception(self, file_cmd, caplog):
+        """
+        Test that exceptions during the importer's scan are handled
+        gracefully.
+        """
+        svg_bytes = b"<svg></svg>"
+        file_path = Path("test.svg")
+        mime_type = "image/svg+xml"
+
+        mock_importer_instance = MagicMock()
+        mock_importer_instance.scan.side_effect = ValueError("Parsing failed")
+
+        mock_importer_class = MagicMock()
+        # --- FIX ---
+        # Configure the __name__ attribute on the mock class itself.
+        mock_importer_class.__name__ = "MockSvgImporter"
+        mock_importer_class.return_value = mock_importer_instance
+
+        with patch(
+            "rayforge.doceditor.file_cmd.importer_by_mime_type",
+            {mime_type: mock_importer_class},
+        ):
+            result = file_cmd.scan_import_file(svg_bytes, file_path, mime_type)
+
+            assert isinstance(result, ImportManifest)
+            assert result.title == "test.svg"
+            assert result.warnings == [
+                "An unexpected error occurred during file analysis."
+            ]
+            assert "Error scanning file" in caplog.text
+            assert "MockSvgImporter" in caplog.text
 
 
 class TestExtractFirstWorkpiece:
@@ -293,7 +357,7 @@ class TestCommitItemsToDocument:
             [sample_workpiece], source, filename
         )
 
-        assert source.uid in file_cmd._editor.doc.source_assets
+        assert source.uid in file_cmd._editor.doc.assets
         assert sample_workpiece in (file_cmd._editor.doc.active_layer.children)
 
     def test_commit_layer_to_document(self, file_cmd, sample_layer):
@@ -307,7 +371,7 @@ class TestCommitItemsToDocument:
 
         file_cmd._commit_items_to_document([sample_layer], source, filename)
 
-        assert source in file_cmd._editor.doc.source_assets.values()
+        assert source in file_cmd._editor.doc.get_all_assets()
         assert sample_layer in file_cmd._editor.doc.children
 
     def test_commit_with_sketches(self, file_cmd, sample_workpiece):
@@ -326,7 +390,7 @@ class TestCommitItemsToDocument:
             [sample_workpiece], source, filename, sketches=[sketch]
         )
 
-        assert sketch in file_cmd._editor.doc.sketches.values()
+        assert sketch in file_cmd._editor.doc.get_all_assets()
 
 
 class TestFinalizeImportOnMainThread:
@@ -340,7 +404,7 @@ class TestFinalizeImportOnMainThread:
             sample_payload, filename, None
         )
 
-        assert sample_payload.source.uid in file_cmd._editor.doc.source_assets
+        assert sample_payload.source.uid in file_cmd._editor.doc.assets
         assert sample_payload.items[0] in (
             file_cmd._editor.doc.active_layer.children
         )
@@ -526,16 +590,64 @@ class TestGetSupportedImportFilters:
         assert "mime_types" in first
 
 
+class TestGetImporterInfo:
+    """Tests for the get_importer_info method."""
+
+    def test_get_info_by_mime(self, file_cmd):
+        """Test finding an importer and its features by MIME type."""
+        mock_importer = MagicMock()
+        mock_importer.features = {ImporterFeature.DIRECT_VECTOR}
+        with patch(
+            "rayforge.doceditor.file_cmd.importer_by_mime_type",
+            {"image/vnd.dxf": mock_importer},
+        ):
+            cls, features = file_cmd.get_importer_info(
+                Path("f.dxf"), "image/vnd.dxf"
+            )
+            assert cls is mock_importer
+            assert features == {ImporterFeature.DIRECT_VECTOR}
+
+    def test_get_info_by_extension(self, file_cmd):
+        """Test fallback to extension matching."""
+        mock_importer = MagicMock()
+        mock_importer.features = {ImporterFeature.BITMAP_TRACING}
+        with patch("rayforge.doceditor.file_cmd.importer_by_mime_type", {}):
+            with patch(
+                "rayforge.doceditor.file_cmd.importer_by_extension",
+                {".png": mock_importer},
+            ):
+                cls, features = file_cmd.get_importer_info(Path("f.png"), None)
+                assert cls is mock_importer
+                assert features == {ImporterFeature.BITMAP_TRACING}
+
+    def test_get_info_not_found(self, file_cmd):
+        """Test case where no importer is found."""
+        with patch("rayforge.doceditor.file_cmd.importer_by_mime_type", {}):
+            with patch(
+                "rayforge.doceditor.file_cmd.importer_by_extension", {}
+            ):
+                cls, features = file_cmd.get_importer_info(
+                    Path("f.txt"), "text/plain"
+                )
+                assert cls is None
+                assert features == set()
+
+
 class TestAnalyzeImportTarget:
     """Tests for analyze_import_target method."""
 
     def test_analyze_svg(self, file_cmd):
         """Test that SVG files trigger interactive config."""
         path = Path("test.svg")
-        # Ensure we hit the specific interactive logic
+        mock_importer = MagicMock()
+        mock_importer.features = {
+            ImporterFeature.DIRECT_VECTOR,
+            ImporterFeature.BITMAP_TRACING,
+            ImporterFeature.LAYER_SELECTION,
+        }
         with patch(
             "rayforge.doceditor.file_cmd.importer_by_mime_type",
-            {"image/svg+xml": MagicMock(is_bitmap=False)},
+            {"image/svg+xml": mock_importer},
         ):
             action = file_cmd.analyze_import_target(path, "image/svg+xml")
             assert action == ImportAction.INTERACTIVE_CONFIG
@@ -543,9 +655,8 @@ class TestAnalyzeImportTarget:
     def test_analyze_png(self, file_cmd):
         """Test that PNG files trigger interactive config."""
         path = Path("test.png")
-        # Mock PNG importer with is_bitmap=True
         mock_importer = MagicMock()
-        mock_importer.is_bitmap = True
+        mock_importer.features = {ImporterFeature.BITMAP_TRACING}
         with patch(
             "rayforge.doceditor.file_cmd.importer_by_mime_type",
             {"image/png": mock_importer},
@@ -554,18 +665,21 @@ class TestAnalyzeImportTarget:
             assert action == ImportAction.INTERACTIVE_CONFIG
 
     def test_analyze_dxf(self, file_cmd):
-        """Test that DXF files trigger direct load."""
+        """Test that DXF files trigger interactive config (due to layers)."""
         path = Path("test.dxf")
         mock_importer = MagicMock()
-        mock_importer.is_bitmap = False
+        mock_importer.features = {
+            ImporterFeature.DIRECT_VECTOR,
+            ImporterFeature.LAYER_SELECTION,
+        }
 
         # Test with explicit mime
         with patch(
             "rayforge.doceditor.file_cmd.importer_by_mime_type",
-            {"application/dxf": mock_importer},
+            {"image/vnd.dxf": mock_importer},
         ):
-            action = file_cmd.analyze_import_target(path, "application/dxf")
-            assert action == ImportAction.DIRECT_LOAD
+            action = file_cmd.analyze_import_target(path, "image/vnd.dxf")
+            assert action == ImportAction.INTERACTIVE_CONFIG
 
         # Test extension fallback
         with patch(
@@ -573,7 +687,7 @@ class TestAnalyzeImportTarget:
             {".dxf": mock_importer},
         ):
             action = file_cmd.analyze_import_target(path, None)
-            assert action == ImportAction.DIRECT_LOAD
+            assert action == ImportAction.INTERACTIVE_CONFIG
 
     def test_analyze_unsupported(self, file_cmd):
         """Test that unknown files return unsupported."""

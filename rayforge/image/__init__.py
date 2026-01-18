@@ -7,7 +7,13 @@ from ..core.vectorization_spec import VectorizationSpec
 from ..core.workpiece import WorkPiece
 from ..core.item import DocItem
 from ..core.source_asset import SourceAsset
-from .base_importer import Importer, ImportPayload
+from .base_importer import (
+    Importer,
+    ImporterFeature,
+    ImportManifest,
+    ImportPayload,
+    LayerInfo,
+)
 from .base_renderer import Renderer
 from .bmp.importer import BmpImporter
 from .bmp.renderer import BMP_RENDERER
@@ -53,11 +59,6 @@ importer_by_extension = dict()
 for base in importers:
     for extension in base.extensions:
         importer_by_extension[extension] = base
-
-bitmap_mime_types = set()
-for base in importers:
-    if base.is_bitmap:
-        bitmap_mime_types.update(base.mime_types)
 
 
 def _hydrate_workpieces_for_preview(
@@ -223,13 +224,15 @@ __all__ = [
     "RuidaImporter",
     "SketchImporter",
     "SvgImporter",
+    "ImporterFeature",
+    "ImportManifest",
+    "LayerInfo",
     "import_file",
     "import_file_from_bytes",
     "importers",
     "importer_by_name",
     "importer_by_mime_type",
     "importer_by_extension",
-    "bitmap_mime_types",
     "renderer_by_name",
     "renderer_by_importer_name",
 ]

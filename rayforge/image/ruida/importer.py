@@ -3,12 +3,17 @@ from typing import List, Optional
 from ...core.item import DocItem
 from ...core.geo import Geometry
 from ...core.vectorization_spec import VectorizationSpec
-from ..base_importer import Importer, ImportPayload
+from ..base_importer import (
+    Importer,
+    ImportPayload,
+    ImporterFeature,
+    ImportManifest,
+)
 from ...core.source_asset import SourceAsset
 from ...core.source_asset_segment import SourceAssetSegment
 from ...core.vectorization_spec import PassthroughSpec
 from .renderer import RUIDA_RENDERER
-from .parser import RuidaParser
+from .parser import RuidaParser, RuidaParseError
 from .job import RuidaJob
 from ...core.workpiece import WorkPiece
 from ...core.matrix import Matrix
@@ -20,6 +25,48 @@ class RuidaImporter(Importer):
     label = "Ruida files"
     mime_types = ("application/x-rd-file", "application/octet-stream")
     extensions = (".rd",)
+    features = {ImporterFeature.DIRECT_VECTOR}
+
+    def scan(self) -> ImportManifest:
+        """
+        Scans the Ruida file to determine its overall dimensions.
+        """
+        try:
+            job = self._get_job()
+            if not job.commands:
+                return ImportManifest(
+                    title=self.source_file.name,
+                    warnings=["File contains no vector data."],
+                )
+
+            min_x, min_y, max_x, max_y = job.get_extents()
+            width_mm = max_x - min_x
+            height_mm = max_y - min_y
+            return ImportManifest(
+                title=self.source_file.name,
+                natural_size_mm=(width_mm, height_mm),
+            )
+        except RuidaParseError as e:
+            logger.warning(
+                f"Ruida scan failed for {self.source_file.name}: {e}"
+            )
+            return ImportManifest(
+                title=self.source_file.name,
+                warnings=["Could not parse Ruida file. It may be corrupt."],
+            )
+        except Exception as e:
+            logger.error(
+                f"Unexpected error during Ruida scan for "
+                f"{self.source_file.name}: {e}",
+                exc_info=True,
+            )
+            return ImportManifest(
+                title=self.source_file.name,
+                warnings=[
+                    "An unexpected error occurred while scanning the "
+                    "Ruida file."
+                ],
+            )
 
     def _get_job(self) -> RuidaJob:
         """Parses the Ruida data into a job object."""
@@ -30,7 +77,12 @@ class RuidaImporter(Importer):
         self, vectorization_spec: Optional[VectorizationSpec] = None
     ) -> Optional[ImportPayload]:
         # Ruida files are always vector, so vectorization_spec is ignored.
-        job = self._get_job()
+        try:
+            job = self._get_job()
+        except RuidaParseError as e:
+            logger.error("Ruida file parse failed: %s", e)
+            return None
+
         pristine_geo = self._get_geometry(job)
         pristine_geo.close_gaps()
 

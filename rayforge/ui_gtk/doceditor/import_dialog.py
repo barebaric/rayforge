@@ -1,6 +1,6 @@
 import logging
 from pathlib import Path
-from typing import TYPE_CHECKING, List, Optional
+from typing import TYPE_CHECKING, List, Optional, Set
 
 import cairo
 from blinker import Signal
@@ -14,6 +14,7 @@ from ...core.vectorization_spec import (
 )
 from ...core.workpiece import WorkPiece
 from ...doceditor.file_cmd import PreviewResult
+from ...image.base_importer import ImportManifest, ImporterFeature
 from ..shared.patched_dialog_window import PatchedDialogWindow
 
 if TYPE_CHECKING:
@@ -36,16 +37,18 @@ class ImportDialog(PatchedDialogWindow):
         editor: "DocEditor",
         file_path: Path,
         mime_type: str,
+        features: Set[ImporterFeature],
     ):
         super().__init__(transient_for=parent, modal=True)
         self.editor = editor
         self.file_path = file_path
         self.mime_type = mime_type
-        self.is_svg = self.mime_type == "image/svg+xml"
+        self.features = features
         self.response = Signal()
 
         # Internal state
         self._file_bytes: Optional[bytes] = None
+        self._manifest: Optional[ImportManifest] = None
         self._preview_result: Optional[PreviewResult] = None
         self._background_pixbuf: Optional[GdkPixbuf.Pixbuf] = None
         self._in_update = False  # Prevent signal recursion
@@ -69,8 +72,8 @@ class ImportDialog(PatchedDialogWindow):
         # Banner for warnings (e.g. SVG empty content)
         self.warning_banner = Adw.Banner(
             title=_(
-                "SVG produced no output in direct vector mode. "
-                "SVGs containing text or other non-path elements "
+                "The file produced no output in direct vector mode. "
+                "Files containing text or other non-path elements "
                 "should be converted to paths before importing "
                 "(e.g., in Inkscape: Path > Object to Path)."
             ),
@@ -116,20 +119,23 @@ class ImportDialog(PatchedDialogWindow):
         preferences_page = Adw.PreferencesPage()
         sidebar.append(preferences_page)
 
-        # Import Mode Group (for SVG)
+        # Import Mode Group (for files with multiple import options)
         mode_group = Adw.PreferencesGroup(title=_("Import Mode"))
         preferences_page.add(mode_group)
 
         self.use_vectors_switch = Adw.SwitchRow(
             title=_("Use Original Vectors"),
-            subtitle=_("Import vector data directly (SVG only)"),
+            subtitle=_("Import vector data directly"),
             active=True,
         )
         self.use_vectors_switch.connect(
             "notify::active", self._on_import_mode_toggled
         )
         mode_group.add(self.use_vectors_switch)
-        mode_group.set_visible(self.is_svg)
+        # Show this group only if the importer supports both vector and trace
+        can_trace = ImporterFeature.BITMAP_TRACING in self.features
+        can_vector = ImporterFeature.DIRECT_VECTOR in self.features
+        mode_group.set_visible(can_trace and can_vector)
 
         # Layers Group (Dynamic)
         self.layers_group = Adw.PreferencesGroup(title=_("Layers"))
@@ -139,6 +145,7 @@ class ImportDialog(PatchedDialogWindow):
         # Trace Settings Group
         self.trace_group = Adw.PreferencesGroup(title=_("Trace Settings"))
         preferences_page.add(self.trace_group)
+        self.trace_group.set_visible(can_trace)
 
         # Import Whole Image
         self.import_whole_image_switch = Adw.SwitchRow(
@@ -221,7 +228,10 @@ class ImportDialog(PatchedDialogWindow):
         )
 
     def _on_import_mode_toggled(self, switch, *args):
-        is_direct_import = self.is_svg and switch.get_active()
+        is_direct_import = (
+            ImporterFeature.DIRECT_VECTOR in self.features
+            and switch.get_active()
+        )
         self.trace_group.set_sensitive(not is_direct_import)
         self.layers_group.set_sensitive(is_direct_import)
         self.warning_banner.set_revealed(False)
@@ -247,8 +257,17 @@ class ImportDialog(PatchedDialogWindow):
     def _load_initial_data(self):
         try:
             self._file_bytes = self.file_path.read_bytes()
-            if self.is_svg:
-                self._populate_layers_ui()
+            # Use the new generic scan method
+            self._manifest = self.editor.file.scan_import_file(
+                self._file_bytes, self.file_path, self.mime_type
+            )
+            # Log any warnings from the scan
+            if self._manifest and self._manifest.warnings:
+                for warning in self._manifest.warnings:
+                    logger.warning(
+                        f"Scan warning for {self.file_path.name}: {warning}"
+                    )
+            self._populate_layers_ui()
         except Exception:
             logger.error(
                 f"Failed to read import file {self.file_path}", exc_info=True
@@ -256,15 +275,7 @@ class ImportDialog(PatchedDialogWindow):
             self.close()
 
     def _populate_layers_ui(self):
-        if not self._file_bytes:
-            return
-
-        scan_result = self.editor.file.scan_import_file(
-            self._file_bytes, self.mime_type
-        )
-        layers = scan_result.get("layers", [])
-
-        if not layers:
+        if not self._manifest or not self._manifest.layers:
             return
 
         self.layers_group.set_visible(True)
@@ -272,10 +283,10 @@ class ImportDialog(PatchedDialogWindow):
         self.layers_group.add(expander)
         self._layer_widgets.clear()
 
-        for layer in layers:
-            row = Adw.ActionRow(title=layer["name"])
+        for layer_info in self._manifest.layers:
+            row = Adw.ActionRow(title=layer_info.name)
             switch = Gtk.Switch(active=True, valign=Gtk.Align.CENTER)
-            switch._layer_id = layer["id"]  # type: ignore
+            switch._layer_id = layer_info.id  # type: ignore
             switch.connect("notify::active", self._schedule_preview_update)
 
             row.add_suffix(switch)
@@ -299,7 +310,10 @@ class ImportDialog(PatchedDialogWindow):
         """
         Constructs a VectorizationSpec from the current UI control values.
         """
-        if self.is_svg and self.use_vectors_switch.get_active():
+        if (
+            ImporterFeature.DIRECT_VECTOR in self.features
+            and self.use_vectors_switch.get_active()
+        ):
             return PassthroughSpec(
                 active_layer_ids=self._get_active_layer_ids(),
                 create_new_layers=self.create_new_layers_switch.get_active(),
@@ -370,7 +384,10 @@ class ImportDialog(PatchedDialogWindow):
         self.import_button.set_sensitive(self._preview_result is not None)
 
         # Handle warnings/errors
-        is_direct_vector = self.is_svg and self.use_vectors_switch.get_active()
+        is_direct_vector = (
+            ImporterFeature.DIRECT_VECTOR in self.features
+            and self.use_vectors_switch.get_active()
+        )
         failed_generation = self._preview_result is None
         self.warning_banner.set_revealed(
             is_direct_vector and failed_generation

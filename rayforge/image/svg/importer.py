@@ -1,3 +1,4 @@
+from __future__ import annotations
 import io
 import math
 import logging
@@ -27,7 +28,13 @@ from ...core.vectorization_spec import (
     VectorizationSpec,
 )
 from ...core.workpiece import WorkPiece
-from ..base_importer import Importer, ImportPayload
+from ..base_importer import (
+    Importer,
+    ImportPayload,
+    ImporterFeature,
+    ImportManifest,
+    LayerInfo,
+)
 from .. import image_util
 from ..tracing import trace_surface, VTRACER_PIXEL_LIMIT
 from .renderer import SVG_RENDERER
@@ -45,9 +52,51 @@ class SvgImporter(Importer):
     label = "SVG files"
     mime_types = ("image/svg+xml",)
     extensions = (".svg",)
+    features = {
+        ImporterFeature.BITMAP_TRACING,
+        ImporterFeature.DIRECT_VECTOR,
+        ImporterFeature.LAYER_SELECTION,
+    }
+
+    def scan(self) -> ImportManifest:
+        """
+        Scans the SVG file for layer names and overall dimensions without a
+        full render.
+        """
+        warnings = []
+        layers = []
+        size_mm = None
+        try:
+            size_mm = get_natural_size(self.raw_data)
+            layer_data = extract_layer_manifest(self.raw_data)
+            layers = [
+                LayerInfo(id=layer["id"], name=layer["name"])
+                for layer in layer_data
+            ]
+        except ET.ParseError as e:
+            logger.warning(f"SVG scan failed for {self.source_file.name}: {e}")
+            warnings.append(
+                "Could not parse SVG. File may be corrupt or invalid."
+            )
+        except Exception as e:
+            logger.error(
+                f"Unexpected error during SVG scan for "
+                f"{self.source_file.name}: {e}",
+                exc_info=True,
+            )
+            warnings.append(
+                "An unexpected error occurred while scanning the SVG."
+            )
+
+        return ImportManifest(
+            title=self.source_file.name,
+            layers=layers,
+            natural_size_mm=size_mm,
+            warnings=warnings,
+        )
 
     def get_doc_items(
-        self, vectorization_spec: Optional["VectorizationSpec"] = None
+        self, vectorization_spec: Optional[VectorizationSpec] = None
     ) -> Optional[ImportPayload]:
         """
         Generates DocItems from SVG data.

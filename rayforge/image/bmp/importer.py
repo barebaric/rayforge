@@ -11,7 +11,12 @@ with warnings.catch_warnings():
 
 from ...core.source_asset import SourceAsset
 from ...core.vectorization_spec import TraceSpec, VectorizationSpec
-from ..base_importer import Importer, ImportPayload
+from ..base_importer import (
+    Importer,
+    ImportPayload,
+    ImporterFeature,
+    ImportManifest,
+)
 from ..tracing import trace_surface
 from .. import image_util
 from .parser import parse_bmp
@@ -24,7 +29,41 @@ class BmpImporter(Importer):
     label = "BMP files"
     mime_types = ("image/bmp",)
     extensions = (".bmp",)
-    is_bitmap = True
+    features = {ImporterFeature.BITMAP_TRACING}
+
+    def scan(self) -> ImportManifest:
+        """
+        Scans the BMP header to extract dimensions and calculate physical size.
+        """
+        try:
+            parsed_data = parse_bmp(self.raw_data)
+            if not parsed_data:
+                return ImportManifest(
+                    title=self.source_file.name,
+                    warnings=[
+                        "Could not parse BMP header. File may be unsupported."
+                    ],
+                )
+
+            _, width, height, dpi_x, dpi_y = parsed_data
+            dpi_x = dpi_x or 96.0
+            dpi_y = dpi_y or 96.0
+
+            width_mm = float(width) * (25.4 / dpi_x)
+            height_mm = float(height) * (25.4 / dpi_y)
+
+            return ImportManifest(
+                title=self.source_file.name,
+                natural_size_mm=(width_mm, height_mm),
+            )
+        except Exception as e:
+            logger.warning(f"BMP scan failed for {self.source_file.name}: {e}")
+            return ImportManifest(
+                title=self.source_file.name,
+                warnings=[
+                    "An unexpected error occurred while scanning the BMP file."
+                ],
+            )
 
     def get_doc_items(
         self, vectorization_spec: Optional["VectorizationSpec"] = None

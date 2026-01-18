@@ -10,7 +10,12 @@ from ...core.source_asset import SourceAsset
 from ...core.source_asset_segment import SourceAssetSegment
 from ...core.vectorization_spec import VectorizationSpec, ProceduralSpec
 from ...core.workpiece import WorkPiece
-from ..base_importer import Importer, ImportPayload
+from ..base_importer import (
+    Importer,
+    ImportPayload,
+    ImporterFeature,
+    ImportManifest,
+)
 from .renderer import PROCEDURAL_RENDERER
 
 logger = logging.getLogger(__name__)
@@ -24,6 +29,8 @@ class ProceduralImporter(Importer):
     instantiated programmatically with the "recipe" for creating content.
     It generates the SourceAsset and WorkPiece on the fly.
     """
+
+    features = {ImporterFeature.PROCEDURAL_GENERATION}
 
     def __init__(
         self,
@@ -59,6 +66,25 @@ class ProceduralImporter(Importer):
 
         # Initialize the base class. The recipe data serves as the "raw_data".
         super().__init__(data=recipe_data, source_file=Path(f"[{self.name}]"))
+
+    def scan(self) -> ImportManifest:
+        """
+        Calculates the size of the procedural item from its recipe.
+        """
+        try:
+            module_path, func_name = self.size_function_path.rsplit(".", 1)
+            module = importlib.import_module(module_path)
+            size_func = getattr(module, func_name)
+            size_mm = size_func(self.params)
+            return ImportManifest(title=self.name, natural_size_mm=size_mm)
+        except (ImportError, AttributeError, ValueError) as e:
+            logger.error(
+                f"Failed to calculate procedural size: {e}", exc_info=True
+            )
+            return ImportManifest(
+                title=self.name,
+                warnings=["Could not calculate size from procedural recipe."],
+            )
 
     def get_doc_items(
         self, vectorization_spec: Optional["VectorizationSpec"] = None
