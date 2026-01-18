@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-01-18 14:18+0100\n"
+"POT-Creation-Date: 2026-01-18 22:20+0100\n"
 "PO-Revision-Date: 2025-07-24 22:08+0200\n"
 "Last-Translator: Samuel Abels <knipknap@gmail.com>\n"
 "Language-Team: none\n"
@@ -1059,8 +1059,13 @@ msgid "Inject WCS after Preamble"
 msgstr "WCS nach Vorspann einfügen"
 
 #: rayforge/machine/models/dialect.py
-msgid "Inject the active WCS command (e.g., G54) after the preamble script."
-msgstr "Den aktiven WCS-Befehl (z.B. G54) nach dem Vorspann-Skript einfügen."
+#, python-brace-format
+msgid ""
+"Inject the active WCS command (e.g., G54) after the preamble script. When "
+"disabled, you can use {machine.active_wcs} in the preamble instead."
+msgstr ""
+"Füge den aktiven WCS-Befehl (z. B. G54) nach dem Vorspann-Skript ein. Wenn "
+"deaktiviert, kannst du stattdessen {machine.active_wcs} im Vorspann verwenden."
 
 #: rayforge/machine/models/dialect.py
 msgid "Preamble"
@@ -4998,6 +5003,10 @@ msgstr "Mehrfachdurchgang"
 #: rayforge/pipeline/transformer/multipass.py
 msgid "Repeats the path multiple times, optionally stepping down in Z."
 msgstr "Wiederholt den Pfad mehrmals, optional mit Z-Absenkung."
+
+#: rayforge/pipeline/encoder/context.py
+msgid "The name of the currently active coordinate system (e.g. 'G54')."
+msgstr "Der Name des aktuell aktiven Koordinatensystems (z. B. 'G54')."
 
 #: rayforge/pipeline/encoder/context.py
 msgid "The name of the current machine profile."
