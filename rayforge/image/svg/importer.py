@@ -2,7 +2,7 @@ from __future__ import annotations
 import io
 import math
 import logging
-from typing import List, Optional, Tuple
+from typing import List, Optional, Tuple, Dict
 from xml.etree import ElementTree as ET
 from svgelements import (
     SVG,
@@ -18,16 +18,13 @@ from svgelements import (
 
 from ...core.geo import Geometry
 from ...core.item import DocItem
-from ...core.layer import Layer
 from ...core.matrix import Matrix
 from ...core.source_asset import SourceAsset
-from ...core.source_asset_segment import SourceAssetSegment
 from ...core.vectorization_spec import (
     PassthroughSpec,
     TraceSpec,
     VectorizationSpec,
 )
-from ...core.workpiece import WorkPiece
 from ..base_importer import (
     Importer,
     ImportPayload,
@@ -36,6 +33,9 @@ from ..base_importer import (
     LayerInfo,
 )
 from .. import image_util
+from ..assembler import ItemAssembler
+from ..engine import NormalizationEngine
+from ..structures import ParsingResult, LayerGeometry
 from ..tracing import trace_surface, VTRACER_PIXEL_LIMIT
 from .renderer import SVG_RENDERER
 from .svgutil import (
@@ -46,6 +46,10 @@ from .svgutil import (
 )
 
 logger = logging.getLogger(__name__)
+
+# Type Aliases for cleaner signatures
+ViewBoxType = Optional[Tuple[float, float, float, float]]
+ParsingFactsType = Optional[Tuple[float, float, ViewBoxType]]
 
 
 class SvgImporter(Importer):
@@ -107,16 +111,6 @@ class SvgImporter(Importer):
         Otherwise, it attempts to parse the SVG path and shape data
         directly for a high-fidelity vector import.
         """
-        # Determine if we have active layers (for splitting logic later)
-        active_layer_ids = None
-        if isinstance(vectorization_spec, PassthroughSpec):
-            active_layer_ids = vectorization_spec.active_layer_ids
-
-        # Use raw data for source to avoid corruption issues with
-        # pre-filtering.
-        # Layer filtering is handled during geometry extraction.
-        render_data = self.raw_data
-
         source = SourceAsset(
             source_file=self.source_file,
             original_data=self.raw_data,
@@ -132,16 +126,18 @@ class SvgImporter(Importer):
 
             # Use analytical trimming to avoid raster clipping of control
             # points
-            trimmed_data = self._analytical_trim(render_data)
+            trimmed_data = self._analytical_trim(self.raw_data)
 
             source.base_render_data = trimmed_data
             source.metadata["is_vector"] = True
             self._populate_metadata(source)
-            items = self._get_doc_items_direct(source, active_layer_ids)
+            items = self._get_doc_items_direct(source, vectorization_spec)
 
-        if not items:
+        if items is None:
             return None
 
+        # If items is an empty list, it's a valid file with no content.
+        # Return a payload with the source but no items.
         return ImportPayload(source=source, items=items)
 
     def _populate_metadata(self, source: SourceAsset):
@@ -327,10 +323,13 @@ class SvgImporter(Importer):
         )
 
     def _get_doc_items_direct(
-        self, source: SourceAsset, active_layer_ids: Optional[List[str]] = None
+        self,
+        source: SourceAsset,
+        vectorization_spec: Optional[VectorizationSpec] = None,
     ) -> Optional[List[DocItem]]:
         """
-        Orchestrates the direct parsing of SVG data into DocItems.
+        Orchestrates the direct parsing of SVG data into DocItems using the
+        Parse -> Plan -> Assemble pipeline.
         """
         if not source.base_render_data:
             logger.error("source has no data to process for direct import")
@@ -341,16 +340,22 @@ class SvgImporter(Importer):
         if svg is None:
             return None
 
-        # 2. Get pixel dimensions for normalization.
-        pixel_dims = self._get_pixel_dimensions(svg)
-        if not pixel_dims:
-            msg = (
-                "Could not determine valid pixel dimensions from SVG; "
-                "falling back to trace method."
-            )
-            logger.warning(msg)
-            return self._get_doc_items_from_trace(source, TraceSpec())
-        width_px, height_px = pixel_dims
+        # Handle the edge case of a file with no explicit dimensions and no
+        # content.
+        # svgelements will default the size, but we can detect the absence of
+        # original width/height attributes.
+        has_explicit_dims = svg.values is not None and (
+            "width" in svg.values or "height" in svg.values
+        )
+        if not has_explicit_dims:
+            geo = self._convert_svg_to_geometry(svg)
+            if geo.is_empty():
+                return None  # Fails the import as expected by test_edge_cases.
+
+        facts = self._get_svg_parsing_facts(svg)
+        if not facts:
+            return None
+        width_px, height_px, vb = facts
 
         # Ensure the source asset has pixel dimensions.
         # These are required for correct viewBox calculation in split/crop
@@ -364,232 +369,53 @@ class SvgImporter(Importer):
             # Fallback: Use dimensions derived from svgelements
             # svgelements normalizes units to 96 DPI (usually)
             final_dims_mm = (width_px * MM_PER_PX, height_px * MM_PER_PX)
+
+        spec = vectorization_spec or PassthroughSpec()
+        parse_result = self._parse_to_result(svg, source, final_dims_mm)
+
+        if not parse_result:
+            logger.error("Failed to parse SVG into a structured result.")
+            return None
+
+        engine = NormalizationEngine()
+        plan = engine.calculate_layout(parse_result, spec)
+
+        if not plan:
             logger.info(
-                "Using svgelements dimensions as fallback: "
-                f"{final_dims_mm[0]:.2f}mm x {final_dims_mm[1]:.2f}mm"
-            )
-
-        final_width_mm, final_height_mm = final_dims_mm
-
-        # 4. Handle Split Layers if requested
-        if active_layer_ids:
-            return self._create_split_items(
-                svg,
-                active_layer_ids,
-                source,
-                final_dims_mm,
-                width_px,
-                height_px,
-            )
-
-        # 5. Standard path (merged import)
-        pristine_geo = self._convert_svg_to_geometry(svg)
-        if pristine_geo.is_empty():
-            logger.info(
-                "Direct SVG import resulted in empty geometry. "
+                "Direct SVG import resulted in empty layout plan. "
                 "No items created."
             )
-            return None
-
-        # Get the geometry bounding box.
-        geo_min_x, geo_min_y, geo_max_x, geo_max_y = pristine_geo.rect()
-        geo_width = geo_max_x - geo_min_x
-        geo_height = geo_max_y - geo_min_y
-
-        if geo_width <= 0 or geo_height <= 0:
-            logger.warning("SVG import resulted in zero-dimension geometry.")
-            return None
-
-        # --- Coordinate System Normalization ---
-        # svgelements usually applies the viewport transform (User->Pixels).
-        # We need to detect this and ensure we are working in User Units.
-
-        vb = source.metadata.get("viewbox")
-        user_unit_to_mm_x = 1.0
-        user_unit_to_mm_y = 1.0
-
-        if vb:
-            vb_x, vb_y, vb_w, vb_h = vb
-
-            # Calculate implied scale factor (Native / User)
-            svg_scale_x = width_px / vb_w if vb_w > 0 else 1.0
-            svg_scale_y = height_px / vb_h if vb_h > 0 else 1.0
-
-            # If significant scale detected, assume svgelements baked it in.
-            # We must revert it to get User Units.
-            if abs(svg_scale_x - 1.0) > 0.1:
-                inv_scale = Matrix.scale(1.0 / svg_scale_x, 1.0 / svg_scale_y)
-                pristine_geo.transform(inv_scale.to_4x4_numpy())
-
-                # Update local bounds variables
-                geo_min_x /= svg_scale_x
-                geo_min_y /= svg_scale_y
-                geo_max_x /= svg_scale_x
-                geo_max_y /= svg_scale_y
-                geo_width /= svg_scale_x
-                geo_height /= svg_scale_y
-
-            # Now geometry is in User Units.
-            # Calculate conversion factor to MM based on ViewBox and
-            # Final Dimensions.
-            if vb_w > 0:
-                user_unit_to_mm_x = final_width_mm / vb_w
-            if vb_h > 0:
-                user_unit_to_mm_y = final_height_mm / vb_h
-        else:
-            # No ViewBox: Assume 1:1 mapping (Pixels=UserUnits)
-            if width_px > 0:
-                user_unit_to_mm_x = final_width_mm / width_px
-            if height_px > 0:
-                user_unit_to_mm_y = final_height_mm / height_px
-
-        # The normalization matrix maps the geometry (User Units) to 0-1 box.
-        norm_scale = Matrix.scale(1.0 / geo_width, 1.0 / geo_height)
-        norm_translate = Matrix.translation(-geo_min_x, -geo_min_y)
-        normalization_matrix = norm_scale @ norm_translate
-
-        # Create the segment
-        segment = SourceAssetSegment(
-            source_asset_uid=source.uid,
-            vectorization_spec=PassthroughSpec(),
-            pristine_geometry=pristine_geo,
-            normalization_matrix=normalization_matrix,
-        )
-
-        # Physical size
-        wp_width_mm = geo_width * user_unit_to_mm_x
-        wp_height_mm = geo_height * user_unit_to_mm_y
-
-        # Position (X)
-        wp_pos_x_mm = geo_min_x * user_unit_to_mm_x
-
-        # Position (Y)
-        # Flip from Y-Down User Space to Y-Up World Space.
-        # We align relative to the bottom of the "Page" (ViewBox).
-        if vb:
-            _, vb_y, _, vb_h = vb
-            visual_bottom_y = vb_y + vb_h
-            dist_from_bottom_units = visual_bottom_y - geo_max_y
-            wp_pos_y_mm = dist_from_bottom_units * user_unit_to_mm_y
-        else:
-            # Fallback: assume User Units = Pixels
-            wp_pos_y_mm = (height_px - geo_max_y) * user_unit_to_mm_y
-
-        # Correction for Trim offset to restore absolute position
-        if (
-            "untrimmed_height_mm" in source.metadata
-            and "untrimmed_width_mm" in source.metadata
-        ):
-            if vb:
-                # X: Add the trim offset (vb_x)
-                wp_pos_x_mm += vb[0] * user_unit_to_mm_x
-
-                # Y: Restore absolute Y-Up position
-                # geo_max_y is relative to ViewBox top.
-                # Absolute User Y from top = geo_max_y + vb_y
-                untrimmed_h_mm = source.metadata["untrimmed_height_mm"]
-                abs_geo_bottom_y_units = geo_max_y + vb[1]
-                wp_pos_y_mm = untrimmed_h_mm - (
-                    abs_geo_bottom_y_units * user_unit_to_mm_y
-                )
-
-        wp = WorkPiece(name=self.source_file.stem, source_segment=segment)
-        wp.natural_width_mm = wp_width_mm
-        wp.natural_height_mm = wp_height_mm
-        wp.set_size(wp_width_mm, wp_height_mm)
-        wp.pos = (wp_pos_x_mm, wp_pos_y_mm)
-
-        return [wp]
-
-    def _create_split_items(
-        self,
-        svg: SVG,
-        layer_ids: List[str],
-        source: SourceAsset,
-        final_dims_mm: Tuple[float, float],
-        width_px: float,
-        height_px: float,
-    ) -> List[DocItem]:
-        """
-        Creates separate Layer items containing WorkPieces for each selected
-        layer ID. The WorkPieces share the same size and transform but use
-        different geometry masks.
-        """
-        master_pristine_geo = self._convert_svg_to_geometry(svg)
-        if master_pristine_geo.is_empty():
             return []
 
-        # Logic for Full-Page Normalization
-        vb = source.metadata.get("viewbox")
-        norm_width = width_px
-        norm_height = height_px
-        norm_off_x = 0
-        norm_off_y = 0
+        geometries: Dict[Optional[str], Geometry]
+        if len(plan) == 1 and plan[0].layer_id is None:
+            geometries = {None: self._convert_svg_to_geometry(svg)}
+        else:
+            layer_ids_in_plan = [
+                item.layer_id for item in plan if item.layer_id
+            ]
+            geometries = self._parse_geometry_by_layer(svg, layer_ids_in_plan)
 
-        # Define scale variables early to avoid NameError/Unbound
-        svg_scale_x = 1.0
-        svg_scale_y = 1.0
-        vb_x, vb_y, vb_w, vb_h = 0.0, 0.0, 0.0, 0.0
-
-        if vb:
-            vb_x, vb_y, vb_w, vb_h = vb
-            # Detect Scale (same as direct)
-            svg_scale_x = width_px / vb_w if vb_w > 0 else 1.0
-            svg_scale_y = height_px / vb_h if vb_h > 0 else 1.0
-
-            if abs(svg_scale_x - 1.0) > 0.1:
-                inv_scale = Matrix.scale(1.0 / svg_scale_x, 1.0 / svg_scale_y)
-                master_pristine_geo.transform(inv_scale.to_4x4_numpy())
-
-            # For Split, we normalize to the ViewBox.
-            # svgelements shifts coordinates to the ViewBox origin (0,0),
-            # so we do not need to subtract vb_x/vb_y here (offset is 0).
-            norm_width = vb_w
-            norm_height = vb_h
-            norm_off_x = 0
-            norm_off_y = 0
-
-        # Normalization Matrix maps ViewBox to 0-1
-        norm_matrix = Matrix.scale(
-            1.0 / norm_width, 1.0 / norm_height
-        ) @ Matrix.translation(-norm_off_x, -norm_off_y)
-
-        # Master WP Size = Full Page Size
-        # Master WP Pos = 0,0 (relative to page)
-
-        master_segment = SourceAssetSegment(
-            source_asset_uid=source.uid,
-            vectorization_spec=PassthroughSpec(),
-            pristine_geometry=master_pristine_geo,
-            normalization_matrix=norm_matrix,
+        assembler = ItemAssembler()
+        return assembler.create_items(
+            source,
+            plan,
+            spec,
+            self.source_file.stem,
+            geometries,
+            layer_manifest=extract_layer_manifest(self.raw_data),
         )
-        master_wp = WorkPiece(
-            name=self.source_file.stem, source_segment=master_segment
-        )
-        master_wp.natural_width_mm = final_dims_mm[0]
-        master_wp.natural_height_mm = final_dims_mm[1]
-        master_wp.set_size(final_dims_mm[0], final_dims_mm[1])
 
-        # Calculate absolute position to restore original layout
-        pos_x, pos_y = 0.0, 0.0
-        if vb:
-            scale_x = final_dims_mm[0] / vb_w if vb_w > 0 else 1.0
-            scale_y = final_dims_mm[1] / vb_h if vb_h > 0 else 1.0
-
-            pos_x = vb_x * scale_x
-
-            if "untrimmed_height_mm" in source.metadata:
-                untrimmed_h = source.metadata["untrimmed_height_mm"]
-                # Bottom of ViewBox in Y-down user units is vb_y + vb_h
-                pos_y = untrimmed_h - ((vb_y + vb_h) * scale_y)
-
-        master_wp.pos = (pos_x, pos_y)
-
-        final_items: List[DocItem] = []
-        manifest = extract_layer_manifest(self.raw_data)
-        layer_names = {m["id"]: m["name"] for m in manifest}
-
-        layer_geoms = {lid: Geometry() for lid in layer_ids}
+    def _parse_geometry_by_layer(
+        self, svg: SVG, layer_ids: List[str]
+    ) -> Dict[Optional[str], Geometry]:
+        """
+        Parses an SVG object and returns a dictionary mapping layer IDs to
+        their corresponding Geometry.
+        """
+        layer_geoms: Dict[Optional[str], Geometry] = {
+            lid: Geometry() for lid in layer_ids
+        }
 
         def _get_all_shapes(group: Group):
             for item in group:
@@ -609,38 +435,96 @@ class SvgImporter(Importer):
                         self._add_path_to_geometry(path, layer_geoms[lid])
                     except (AttributeError, TypeError):
                         pass
+        return layer_geoms
 
-        for lid in layer_ids:
-            pristine_layer_geo = layer_geoms[lid]
+    def _parse_to_result(
+        self, svg: SVG, source: SourceAsset, final_dims_mm: Tuple[float, float]
+    ) -> Optional[ParsingResult]:
+        """
+        Performs Phase 1 of the import pipeline: Parsing.
+        It extracts all geometric facts from the SVG into a ParsingResult DTO,
+        using the file's native coordinate system (pixels).
+        """
+        # Step 1: Extract SVG parsing facts
+        facts = self._get_svg_parsing_facts(svg)
+        if not facts:
+            return None
+        width_px, height_px, viewbox = facts
 
-            # Apply same inverse scale if needed
-            if vb and abs(svg_scale_x - 1.0) > 0.1:
-                inv_scale = Matrix.scale(1.0 / svg_scale_x, 1.0 / svg_scale_y)
-                pristine_layer_geo.transform(inv_scale.to_4x4_numpy())
+        # Calculate the correct scale factor based on final dimensions.
+        # This aligns the parsing result units (pixels) with physical reality.
+        unit_to_mm = final_dims_mm[0] / width_px if width_px > 0 else 1.0
 
-            if not pristine_layer_geo.is_empty():
-                segment = SourceAssetSegment(
-                    source_asset_uid=source.uid,
-                    vectorization_spec=PassthroughSpec(),
-                    layer_id=lid,
-                    pristine_geometry=pristine_layer_geo,
-                    normalization_matrix=norm_matrix,
+        # Step 3: Get untrimmed page bounds for positioning reference
+        untrimmed_page_bounds_px: Optional[
+            Tuple[float, float, float, float]
+        ] = None
+        untrimmed_w_mm = source.metadata.get("untrimmed_width_mm")
+        untrimmed_h_mm = source.metadata.get("untrimmed_height_mm")
+        if untrimmed_w_mm and untrimmed_h_mm and unit_to_mm > 0:
+            untrimmed_w_px = untrimmed_w_mm / unit_to_mm
+            untrimmed_h_px = untrimmed_h_mm / unit_to_mm
+            untrimmed_page_bounds_px = (0, 0, untrimmed_w_px, untrimmed_h_px)
+
+        # Step 4: Parse geometry for all layers
+        all_layer_ids = [
+            elem.id for elem in svg if isinstance(elem, Group) and elem.id
+        ]
+        if not all_layer_ids:
+            # Handle SVGs with no layers by treating the whole file as one
+            all_layer_ids = ["__default__"]
+            geometries_by_layer = {
+                "__default__": self._convert_svg_to_geometry(svg)
+            }
+        else:
+            geometries_by_layer = self._parse_geometry_by_layer(
+                svg, all_layer_ids
+            )
+
+        # Step 5: Calculate content bounds and assemble LayerGeometry objects
+        layer_geometries: List[LayerGeometry] = []
+        for layer_id, geo in geometries_by_layer.items():
+            if layer_id is None:
+                continue
+            if not geo.is_empty():
+                min_x, min_y, max_x, max_y = geo.rect()
+                layer_geometries.append(
+                    LayerGeometry(
+                        layer_id=layer_id,
+                        content_bounds=(
+                            min_x,
+                            min_y,
+                            max_x - min_x,
+                            max_y - min_y,
+                        ),
+                    )
                 )
 
-                wp_name = layer_names.get(lid, f"Layer {lid}")
-                wp = WorkPiece(name=wp_name, source_segment=segment)
-                wp.matrix = master_wp.matrix
-                wp.natural_width_mm = master_wp.natural_width_mm
-                wp.natural_height_mm = master_wp.natural_height_mm
+        # Step 6: Assemble the final ParsingResult, ensuring all bounds are
+        # consistently in PIXELS.
+        page_bounds_px: Tuple[float, float, float, float]
+        if viewbox:
+            # Convert the viewbox (in user units) to pixel bounds.
+            vb_x, vb_y, vb_w, vb_h = viewbox
+            scale_x = width_px / vb_w if vb_w > 0 else 1.0
+            scale_y = height_px / vb_h if vb_h > 0 else 1.0
+            page_bounds_px = (
+                vb_x * scale_x,
+                vb_y * scale_y,
+                vb_w * scale_x,
+                vb_h * scale_y,
+            )
+        else:
+            # No viewbox, the page bounds are simply the pixel dimensions.
+            page_bounds_px = (0.0, 0.0, width_px, height_px)
 
-                new_layer = Layer(name=wp_name)
-                new_layer.add_child(wp)
-                final_items.append(new_layer)
-
-        if not final_items:
-            return [master_wp]
-
-        return final_items
+        return ParsingResult(
+            page_bounds=page_bounds_px,
+            native_unit_to_mm=unit_to_mm,
+            is_y_down=True,
+            layers=layer_geometries,
+            untrimmed_page_bounds=untrimmed_page_bounds_px,
+        )
 
     def _get_final_dimensions(
         self, source: SourceAsset
@@ -667,29 +551,49 @@ class SvgImporter(Importer):
             logger.error(f"Failed to parse SVG for direct import: {e}")
             return None
 
-    def _get_pixel_dimensions(self, svg: SVG) -> Optional[Tuple[float, float]]:
+    def _get_svg_parsing_facts(self, svg: SVG) -> ParsingFactsType:
         """
-        Extracts the pixel width and height from a parsed SVG object.
+        Extracts top-level facts (dimensions, viewbox) from a parsed SVG
+        object.
         """
         if svg.width is None or svg.height is None:
             return None
 
-        width_px = (
-            svg.width.px if hasattr(svg.width, "px") else float(svg.width)
+        width_px: float = (
+            float(svg.width.px)
+            if hasattr(svg.width, "px")
+            else float(svg.width)
         )
-        height_px = (
-            svg.height.px if hasattr(svg.height, "px") else float(svg.height)
+        height_px: float = (
+            float(svg.height.px)
+            if hasattr(svg.height, "px")
+            else float(svg.height)
         )
 
         if width_px <= 1e-9 or height_px <= 1e-9:
             return None
 
+        viewbox: ViewBoxType = None
+        if (
+            svg.viewbox
+            and svg.viewbox.x is not None
+            and svg.viewbox.y is not None
+            and svg.viewbox.width is not None
+            and svg.viewbox.height is not None
+        ):
+            viewbox = (
+                svg.viewbox.x,
+                svg.viewbox.y,
+                svg.viewbox.width,
+                svg.viewbox.height,
+            )
+
         msg = (
             "Normalizing vectors using final pixel dimensions from "
-            "svgelements: {width_px:.3f}px x {height_px:.3f}px"
+            f"svgelements: {width_px:.3f}px x {height_px:.3f}px"
         )
         logger.debug(msg)
-        return width_px, height_px
+        return width_px, height_px, viewbox
 
     def _convert_svg_to_geometry(self, svg: SVG) -> Geometry:
         """
