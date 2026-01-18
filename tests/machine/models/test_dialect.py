@@ -166,3 +166,92 @@ def test_get_editor_varsets():
     # TextAreaVar joins lists with newlines
     expected_preamble = "\n".join(dialect.preamble)
     assert scripts["preamble"].value == expected_preamble
+    # Check inject_wcs_after_preamble field exists
+    assert scripts.get("inject_wcs_after_preamble") is not None
+    assert scripts["inject_wcs_after_preamble"].value is True
+
+
+def test_inject_wcs_after_preamble_default():
+    """Test that inject_wcs_after_preamble defaults to True."""
+    dialect = GcodeDialect(
+        label="Test Dialect",
+        description="A test description",
+        laser_on="M3",
+        laser_off="M5",
+        tool_change="T1",
+        set_speed="",
+        travel_move="G0",
+        linear_move="G1",
+        arc_cw="G2",
+        arc_ccw="G3",
+        air_assist_on="",
+        air_assist_off="",
+        home_all="$H",
+        home_axis="",
+        move_to="",
+        jog="",
+        clear_alarm="",
+        set_wcs_offset="",
+        probe_cycle="",
+    )
+    assert dialect.inject_wcs_after_preamble is True
+
+
+def test_inject_wcs_after_preamble_can_be_disabled():
+    """Test that inject_wcs_after_preamble can be set to False."""
+    dialect = GcodeDialect(
+        label="Test Dialect",
+        description="A test description",
+        laser_on="M3",
+        laser_off="M5",
+        tool_change="T1",
+        set_speed="",
+        travel_move="G0",
+        linear_move="G1",
+        arc_cw="G2",
+        arc_ccw="G3",
+        air_assist_on="",
+        air_assist_off="",
+        home_all="$H",
+        home_axis="",
+        move_to="",
+        jog="",
+        clear_alarm="",
+        set_wcs_offset="",
+        probe_cycle="",
+        inject_wcs_after_preamble=False,
+    )
+    assert dialect.inject_wcs_after_preamble is False
+
+
+def test_inject_wcs_after_preamble_serialization():
+    """Test that inject_wcs_after_preamble is serialized correctly."""
+    dialect = GcodeDialect(
+        label="Serialization Test",
+        description="Testing to_dict",
+        laser_on="M4",
+        laser_off="M5",
+        tool_change="",
+        set_speed="",
+        travel_move="",
+        linear_move="",
+        arc_cw="",
+        arc_ccw="",
+        air_assist_on="",
+        air_assist_off="",
+        home_all="",
+        home_axis="",
+        move_to="",
+        jog="",
+        clear_alarm="",
+        set_wcs_offset="G10 L2",
+        probe_cycle="G38.2",
+        preamble=["G21"],
+        postscript=["M5"],
+        uid="fixed-uid-123",
+        is_custom=True,
+        inject_wcs_after_preamble=False,
+    )
+    data = dialect.to_dict()
+
+    assert data["inject_wcs_after_preamble"] is False

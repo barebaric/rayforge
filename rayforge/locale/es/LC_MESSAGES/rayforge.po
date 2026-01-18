@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-01-17 13:21+0100\n"
+"POT-Creation-Date: 2026-01-18 14:18+0100\n"
 "PO-Revision-Date: 2025-08-08 10:00+0200\n"
 "Last-Translator: Samuel Abels\n"
 "Language-Team: Spanish <LL@li.org>\n"
@@ -1049,6 +1049,14 @@ msgstr "Ciclo de sondeo"
 #: rayforge/machine/models/dialect.py
 msgid "Scripts"
 msgstr "Scripts"
+
+#: rayforge/machine/models/dialect.py
+msgid "Inject WCS after Preamble"
+msgstr "Inyectar WCS después del preámbulo"
+
+#: rayforge/machine/models/dialect.py
+msgid "Inject the active WCS command (e.g., G54) after the preamble script."
+msgstr "Inyectar el comando WCS activo (p. ej., G54) después del script de preámbulo."
 
 #: rayforge/machine/models/dialect.py
 msgid "Preamble"
