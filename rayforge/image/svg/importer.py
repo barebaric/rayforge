@@ -80,7 +80,7 @@ class SvgImporter(Importer):
         except ET.ParseError as e:
             logger.warning(f"SVG scan failed for {self.source_file.name}: {e}")
             warnings.append(
-                "Could not parse SVG. File may be corrupt or invalid."
+                _("Could not parse SVG. File may be corrupt or invalid.")
             )
         except Exception as e:
             logger.error(
@@ -89,7 +89,7 @@ class SvgImporter(Importer):
                 exc_info=True,
             )
             warnings.append(
-                "An unexpected error occurred while scanning the SVG."
+                _("An unexpected error occurred while scanning the SVG.")
             )
 
         return ImportManifest(
