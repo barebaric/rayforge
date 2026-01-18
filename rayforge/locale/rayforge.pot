@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-01-18 14:18+0100\n"
+"POT-Creation-Date: 2026-01-18 22:20+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -976,7 +976,10 @@ msgid "Inject WCS after Preamble"
 msgstr ""
 
 #: rayforge/machine/models/dialect.py
-msgid "Inject the active WCS command (e.g., G54) after the preamble script."
+#, python-brace-format
+msgid ""
+"Inject the active WCS command (e.g., G54) after the preamble script. When "
+"disabled, you can use {machine.active_wcs} in the preamble instead."
 msgstr ""
 
 #: rayforge/machine/models/dialect.py
@@ -4794,6 +4797,10 @@ msgstr ""
 
 #: rayforge/pipeline/transformer/multipass.py
 msgid "Repeats the path multiple times, optionally stepping down in Z."
+msgstr ""
+
+#: rayforge/pipeline/encoder/context.py
+msgid "The name of the currently active coordinate system (e.g. 'G54')."
 msgstr ""
 
 #: rayforge/pipeline/encoder/context.py
