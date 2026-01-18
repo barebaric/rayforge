@@ -360,10 +360,11 @@ class TestSvgImporter:
         )
 
         # Expected sizes based on SVG content
-        # Ellipse: approx 71.5mm wide. Rect: approx 52.5mm wide.
-        # Combined trimmed size will be ~71.6mm x ~94mm
-        expected_wp_width = 71.56
-        expected_wp_height = 93.96
+        # Note: The importer crops workpieces to their content bounds.
+        # Layer 1 (Ellipse): ~71.6mm wide, ~69.5mm high
+        expected_wp1_size = (71.57, 69.45)
+        # Layer 2 (Rect): ~52.5mm wide, ~53.3mm high
+        expected_wp2_size = (52.46, 53.26)
 
         # --- Verify Layer 1 (Ellipse) ---
         layer1 = cast(Layer, items[0])
@@ -374,9 +375,8 @@ class TestSvgImporter:
         assert isinstance(wp1, WorkPiece)
         assert wp1.source_segment is not None
         assert wp1.source_segment.layer_id == "layer1"
-        assert wp1.size == pytest.approx(
-            (expected_wp_width, expected_wp_height), rel=1e-2
-        )
+        # Verify tight bounds
+        assert wp1.size == pytest.approx(expected_wp1_size, rel=1e-2)
 
         # Link workpiece to mock doc for rendering
         wp1.parent = Mock(
@@ -384,14 +384,17 @@ class TestSvgImporter:
         )
 
         # Render and check image content
+        # Note: Rendered image should match the aspect ratio of the tight
+        # content.
+        # We render to 100x100, which distorts the shape if it's not square.
+        # Since the shape now fills the WorkPiece bounds (tight cropping),
+        # it should also fill the rendered 100x100 frame (aspect ratio 1.0).
         img1 = wp1.get_vips_image(width=100, height=100)
         assert img1 is not None
         alpha1 = img1[3] > 0
         _, _, w1, h1 = alpha1.find_trim(background=0)
-        # Check aspect ratio for ellipse within combined viewBox
-        # The filtered SVG still uses the combined viewBox, so the
-        # aspect ratio reflects the ellipse's position within that space
-        assert (w1 / h1) == pytest.approx(1.35, abs=0.05)
+        # Aspect ratio of the Ellipse content rendered to square canvas
+        assert (w1 / h1) == pytest.approx(1.0, abs=0.05)
 
         # --- Verify Layer 2 (Rectangle) ---
         layer2 = cast(Layer, items[1])
@@ -402,9 +405,8 @@ class TestSvgImporter:
         assert isinstance(wp2, WorkPiece)
         assert wp2.source_segment is not None
         assert wp2.source_segment.layer_id == "layer2"
-        assert wp2.size == pytest.approx(
-            (expected_wp_width, expected_wp_height), rel=1e-2
-        )
+        # Verify tight bounds
+        assert wp2.size == pytest.approx(expected_wp2_size, rel=1e-2)
 
         # Link workpiece to mock doc for rendering
         wp2.parent = Mock(
@@ -416,10 +418,8 @@ class TestSvgImporter:
         assert img2 is not None
         alpha2 = img2[3] > 0
         _, _, w2, h2 = alpha2.find_trim(background=0)
-        # Check aspect ratio for rectangle within combined viewBox
-        # The filtered SVG still uses the combined viewBox, so the
-        # aspect ratio reflects the rectangle's position within that space
-        assert (w2 / h2) == pytest.approx(1.30, abs=0.05)
+        # Aspect ratio of the Rect content rendered to square canvas
+        assert (w2 / h2) == pytest.approx(1.0, abs=0.05)
 
 
 class TestSvgRenderer:
