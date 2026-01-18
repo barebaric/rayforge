@@ -9,7 +9,12 @@ with warnings.catch_warnings():
 from ...core.source_asset import SourceAsset
 from ...core.vectorization_spec import TraceSpec, VectorizationSpec
 from .. import image_util
-from ..base_importer import Importer, ImportPayload
+from ..base_importer import (
+    Importer,
+    ImportPayload,
+    ImporterFeature,
+    ImportManifest,
+)
 from ..tracing import trace_surface
 from .renderer import PNG_RENDERER
 
@@ -20,7 +25,26 @@ class PngImporter(Importer):
     label = "PNG files"
     mime_types = ("image/png",)
     extensions = (".png",)
-    is_bitmap = True
+    features = {ImporterFeature.BITMAP_TRACING}
+
+    def scan(self) -> ImportManifest:
+        """
+        Scans the PNG to extract physical dimensions from its metadata.
+        """
+        try:
+            image = pyvips.Image.pngload_buffer(
+                self.raw_data, access=pyvips.Access.SEQUENTIAL
+            )
+            size_mm = image_util.get_physical_size_mm(image)
+            return ImportManifest(
+                title=self.source_file.name, natural_size_mm=size_mm
+            )
+        except pyvips.Error as e:
+            logger.warning(f"PNG scan failed for {self.source_file.name}: {e}")
+            return ImportManifest(
+                title=self.source_file.name,
+                warnings=["Could not read PNG metadata. File may be corrupt."],
+            )
 
     def get_doc_items(
         self, vectorization_spec: Optional["VectorizationSpec"] = None

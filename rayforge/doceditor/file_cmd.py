@@ -14,6 +14,8 @@ from typing import (
     Optional,
     Tuple,
     cast,
+    Set,
+    Type,
 )
 
 with warnings.catch_warnings():
@@ -34,12 +36,14 @@ from ..core.vectorization_spec import (
 from ..core.workpiece import WorkPiece
 from ..image import (
     ImportPayload,
-    bitmap_mime_types,
     import_file,
     import_file_from_bytes,
     importer_by_extension,
     importer_by_mime_type,
     importers,
+    ImporterFeature,
+    ImportManifest,
+    Importer,
 )
 from ..pipeline.artifact import JobArtifact, JobArtifactHandle
 from .layout.align import PositionAtStrategy
@@ -102,17 +106,15 @@ class FileCmd:
             )
         return filters
 
-    def analyze_import_target(
-        self, file_path: Path, mime_type: Optional[str] = None
-    ) -> ImportAction:
+    def get_importer_info(
+        self, file_path: Path, mime_type: Optional[str]
+    ) -> Tuple[Optional[Type[Importer]], Set[ImporterFeature]]:
         """
-        Analyzes a file path (and optional mime type) to determine how it
-        should be imported.
+        Finds the importer for a file and returns its class and feature set.
         """
         if not mime_type:
             mime_type, _ = mimetypes.guess_type(file_path)
 
-        # 1. Check if we have an importer for this file
         importer_cls = None
         if mime_type:
             importer_cls = importer_by_mime_type.get(mime_type)
@@ -120,39 +122,68 @@ class FileCmd:
         if not importer_cls and file_path.suffix:
             importer_cls = importer_by_extension.get(file_path.suffix.lower())
 
+        if importer_cls:
+            return importer_cls, importer_cls.features
+        return None, set()
+
+    def analyze_import_target(
+        self, file_path: Path, mime_type: Optional[str] = None
+    ) -> ImportAction:
+        """
+        Analyzes a file path (and optional mime type) to determine how it
+        should be imported.
+        """
+        importer_cls, features = self.get_importer_info(file_path, mime_type)
+
         if not importer_cls:
             return ImportAction.UNSUPPORTED
 
-        # 2. Determine if it requires configuration (Interactive) or can load
-        # directly. Raster images, SVGs, and PDFs usually require configuration
-        # (tracing, layers, cropping)
-        is_raster_like = (
-            (mime_type and mime_type in bitmap_mime_types)
-            or mime_type == "application/pdf"
-            or mime_type == "image/svg+xml"
-            or importer_cls.is_bitmap  # Fallback check on the class property
-        )
-
-        if is_raster_like:
+        # Any format that can be traced OR has selectable layers needs an
+        # interactive dialog.
+        if (
+            ImporterFeature.BITMAP_TRACING in features
+            or ImporterFeature.LAYER_SELECTION in features
+        ):
             return ImportAction.INTERACTIVE_CONFIG
 
         return ImportAction.DIRECT_LOAD
 
     def scan_import_file(
-        self, file_bytes: bytes, mime_type: str
-    ) -> Dict[str, Any]:
+        self, file_bytes: bytes, file_path: Path, mime_type: str
+    ) -> ImportManifest:
         """
         Lightweight scan of a file to extract metadata without full processing.
         """
-        result = {}
-        if mime_type == "image/svg+xml":
-            try:
-                from ..image.svg.svgutil import extract_layer_manifest
+        importer_cls, _ = self.get_importer_info(file_path, mime_type)
 
-                result["layers"] = extract_layer_manifest(file_bytes)
-            except Exception as e:
-                logger.warning(f"Failed to scan SVG layers: {e}")
-        return result
+        if not importer_cls:
+            logger.warning(
+                f"No importer found for mime type '{mime_type}' or "
+                f"extension '{file_path.suffix}' during scan."
+            )
+            return ImportManifest(
+                title=file_path.name,
+                warnings=[f"Unsupported file type: {file_path.suffix}"],
+            )
+
+        try:
+            importer_instance = importer_cls(
+                data=file_bytes, source_file=file_path
+            )
+            manifest = importer_instance.scan()
+            return manifest
+        except Exception as e:
+            logger.error(
+                f"Error scanning file {file_path.name} with "
+                f"{importer_cls.__name__}: {e}",
+                exc_info=True,
+            )
+            return ImportManifest(
+                title=file_path.name,
+                warnings=[
+                    "An unexpected error occurred during file analysis."
+                ],
+            )
 
     async def generate_preview(
         self,

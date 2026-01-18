@@ -14,6 +14,12 @@ UM_PER_MM = 1000.0
 HandlerType = Tuple[int, Callable[[RuidaJob, bytes], None]]
 
 
+class RuidaParseError(Exception):
+    """Custom exception for errors during Ruida file parsing."""
+
+    pass
+
+
 def _unscramble(byte_val: int) -> int:
     """
     Decodes a single byte from a Ruida file stream. This is a required
@@ -90,7 +96,10 @@ class RuidaParser:
 
         if isinstance(handler_entry, dict):
             if self.index >= len(self.data):
-                return
+                raise RuidaParseError(
+                    f"Unexpected end of file after command "
+                    f"0x{command_byte:02X}."
+                )
             subcommand_byte = self.data[self.index]
             found_handler = handler_entry.get(subcommand_byte)
             if found_handler:
@@ -101,7 +110,11 @@ class RuidaParser:
 
         if handler:
             if self.index + length > len(self.data):
-                return  # Avoid reading past the end of the buffer
+                raise RuidaParseError(
+                    f"Incomplete payload for command 0x{command_byte:02X}. "
+                    f"Expected {length} bytes, "
+                    f"found {len(self.data) - self.index}."
+                )
             payload = self.data[self.index : self.index + length]
             self.index += length
             handler(job, payload)

@@ -25,8 +25,13 @@ def _start_interactive_import(
     """Creates and presents the main interactive import dialog."""
     logger.info("Starting interactive import...")
 
+    _, features = editor.file.get_importer_info(file_path, mime_type)
     import_dialog = ImportDialog(
-        parent=win, editor=editor, file_path=file_path, mime_type=mime_type
+        parent=win,
+        editor=editor,
+        file_path=file_path,
+        mime_type=mime_type,
+        features=features,
     )
 
     # Define the handler locally to capture context from its closure.

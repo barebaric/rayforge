@@ -7,7 +7,12 @@ from ...core.matrix import Matrix
 from ...core.sketcher.sketch import Sketch
 from ...core.source_asset import SourceAsset
 from ...core.workpiece import WorkPiece
-from ..base_importer import Importer, ImportPayload
+from ..base_importer import (
+    Importer,
+    ImportPayload,
+    ImporterFeature,
+    ImportManifest,
+)
 from .renderer import SKETCH_RENDERER
 
 if TYPE_CHECKING:
@@ -25,12 +30,29 @@ class SketchImporter(Importer):
     label = "Rayforge Sketch"
     extensions = (".rfs",)
     mime_types = ("application/vnd.rayforge-sketch",)
-    is_bitmap = False
+    features = {ImporterFeature.DIRECT_VECTOR}
 
     def __init__(self, data: bytes, source_file: Optional[Path] = None):
         super().__init__(data, source_file)
         self.renderer = SKETCH_RENDERER
         self.parsed_sketch: Optional[Sketch] = None
+
+    def scan(self) -> ImportManifest:
+        """
+        Scans the sketch JSON to extract its name.
+        """
+        try:
+            sketch_dict = json.loads(self.raw_data.decode("utf-8"))
+            name = sketch_dict.get("name") or self.source_file.stem
+            return ImportManifest(title=name)
+        except (json.JSONDecodeError, UnicodeDecodeError) as e:
+            logger.warning(
+                f"Sketch scan failed for {self.source_file.name}: {e}"
+            )
+            return ImportManifest(
+                title=self.source_file.name,
+                warnings=["Could not parse Sketch file. It may be corrupt."],
+            )
 
     def get_doc_items(
         self, vectorization_spec: Optional["VectorizationSpec"] = None
