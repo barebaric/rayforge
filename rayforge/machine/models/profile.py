@@ -41,6 +41,7 @@ class DialectDefinition:
     probe_cycle: Optional[str] = None
     preamble: Optional[List[str]] = None
     postscript: Optional[List[str]] = None
+    inject_wcs_after_preamble: Optional[bool] = None
 
 
 @dataclass
@@ -202,11 +203,12 @@ PROFILES: List[MachineProfile] = [
             preamble=[
                 "M321",
                 "G0Z0",
-                "G00 G54",
+                "G00 {machine.active_wcs}",
                 "M3",
                 "G21 ; Set units to mm",
                 "G90 ; Absolute positioning",
             ],
+            inject_wcs_after_preamble=False,
             postscript=[
                 "M5 ; Ensure laser is off",
                 "G0 X0 Y0 ; Return to origin",
