@@ -2,11 +2,12 @@ import pytest
 import io
 from pathlib import Path
 import ezdxf
-from typing import Optional
+from typing import Optional, Union
 from unittest.mock import Mock
 
 from rayforge.image.dxf.importer import DxfImporter
 from rayforge.core.workpiece import WorkPiece
+from rayforge.core.layer import Layer
 from rayforge.core.matrix import Matrix
 from rayforge.core.geo import CMD_TYPE_BEZIER
 
@@ -64,11 +65,16 @@ def _setup_workpiece_with_context(
     if not payload or not payload.items:
         return None
 
-    # For these tests, we expect a single WorkPiece.
+    # Handle both bare WorkPiece and Layer-wrapped WorkPiece for flexibility
     item = payload.items[0]
-    if not isinstance(item, WorkPiece):
+    wp: Optional[WorkPiece] = None
+    if isinstance(item, WorkPiece):
+        wp = item
+    elif isinstance(item, Layer) and item.workpieces:
+        wp = item.workpieces[0]
+
+    if not wp:
         return None
-    wp = item
 
     source = payload.source
 
@@ -131,16 +137,16 @@ class TestDXFImporter:
 
     def test_line_conversion(self, line_workpiece: WorkPiece):
         assert line_workpiece is not None
-        # Bbox is (0,0) to (100,50). Importer normalizes to origin (0,0).
+        # The line starts at (0,0) in the DXF. The engine preserves this.
         assert line_workpiece.pos == pytest.approx((0.0, 0.0))
         assert line_workpiece.size == pytest.approx((100.0, 50.0))
 
     def test_circle_conversion(self, circle_workpiece: WorkPiece):
         assert circle_workpiece is not None
 
-        # Bbox is (25,25) to (75,75). Importer normalizes the whole drawing
-        # by (-25, -25), so the final workpiece position is at (0,0).
-        assert circle_workpiece.pos == pytest.approx((0.0, 0.0))
+        # Bbox is (25,25) to (75,75). The engine preserves this absolute
+        # position.
+        assert circle_workpiece.pos == pytest.approx((25.0, 25.0))
         assert circle_workpiece.size == pytest.approx((50.0, 50.0))
 
     def test_unit_conversion(self, inches_workpiece: WorkPiece):
@@ -211,8 +217,13 @@ class TestDXFImporter:
         )
         assert payload is not None
         assert len(payload.items) == 1
-        wp = payload.items[0]
-        assert isinstance(wp, WorkPiece)
+        item = payload.items[0]
+        assert isinstance(item, (WorkPiece, Layer))
+        wp: Union[WorkPiece, Layer] = item
+        if isinstance(wp, Layer):
+            assert len(wp.workpieces) > 0
+            wp = wp.workpieces[0]
+
         boundaries = wp.boundaries
         assert boundaries is not None
         assert not boundaries.is_empty()
@@ -231,8 +242,13 @@ class TestDXFImporter:
         )
         assert payload is not None
         assert len(payload.items) == 1
-        wp = payload.items[0]
-        assert isinstance(wp, WorkPiece)
+        item = payload.items[0]
+        assert isinstance(item, (WorkPiece, Layer))
+        wp: Union[WorkPiece, Layer] = item
+        if isinstance(wp, Layer):
+            assert len(wp.workpieces) > 0
+            wp = wp.workpieces[0]
+
         boundaries = wp.boundaries
         assert boundaries is not None
         assert not boundaries.is_empty()

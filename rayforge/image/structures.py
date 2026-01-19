@@ -29,7 +29,7 @@ class ParsingResult:
 
     # The total canvas/page size defined by the file (x, y, w, h).
     # e.g., SVG ViewBox, PDF MediaBox, or Image Dimensions. For trimmed files,
-    # this represents the trimmed viewbox.
+    # this represents the trimmed viewbox. All coordinates must be absolute.
     page_bounds: Tuple[float, float, float, float]
 
     # Multiplier to convert Native units to Millimeters.
@@ -46,6 +46,11 @@ class ParsingResult:
     # The bounds of the original, untrimmed page, if available. This is used
     # as the frame of reference for positioning trimmed content.
     untrimmed_page_bounds: Optional[Tuple[float, float, float, float]] = None
+
+    # True if the pristine_geometry is already relative to its own
+    # content_bounds origin (e.g. for trimmed SVGs). False if it's in the
+    # global native coordinate system (e.g. for DXF).
+    geometry_is_relative_to_bounds: bool = False
 
 
 @dataclass
