@@ -389,7 +389,11 @@ class SvgImporter(Importer):
 
         geometries: Dict[Optional[str], Geometry]
         if len(plan) == 1 and plan[0].layer_id is None:
-            geometries = {None: self._convert_svg_to_geometry(svg)}
+            geometries = {
+                None: self._convert_svg_to_geometry(
+                    svg, translate_to_origin=True
+                )
+            }
         else:
             layer_ids_in_plan = [
                 item.layer_id for item in plan if item.layer_id
@@ -398,12 +402,14 @@ class SvgImporter(Importer):
 
         assembler = ItemAssembler()
         return assembler.create_items(
-            source,
-            plan,
-            spec,
-            self.source_file.stem,
-            geometries,
+            source_asset=source,
+            layout_plan=plan,
+            spec=spec,
+            source_name=self.source_file.stem,
+            geometries=geometries,
             layer_manifest=extract_layer_manifest(self.raw_data),
+            # Pass page_bounds to assembler for coordinate translation
+            page_bounds=parse_result.page_bounds,
         )
 
     def _parse_geometry_by_layer(
@@ -411,11 +417,10 @@ class SvgImporter(Importer):
     ) -> Dict[Optional[str], Geometry]:
         """
         Parses an SVG object and returns a dictionary mapping layer IDs to
-        their corresponding Geometry.
+        their corresponding Geometry. Each geometry is translated to its
+        own local origin (0,0) to fulfill the pipeline contract.
         """
-        layer_geoms: Dict[Optional[str], Geometry] = {
-            lid: Geometry() for lid in layer_ids
-        }
+        layer_geoms: Dict[Optional[str], Geometry] = {}
 
         def _get_all_shapes(group: Group):
             for item in group:
@@ -427,14 +432,26 @@ class SvgImporter(Importer):
         for element in svg:
             if not isinstance(element, Group):
                 continue
+
             lid = element.id
-            if lid and lid in layer_geoms:
+            if lid and lid in layer_ids:
+                layer_geo = Geometry()
                 for shape in _get_all_shapes(element):
                     try:
                         path = Path(shape)
-                        self._add_path_to_geometry(path, layer_geoms[lid])
+                        self._add_path_to_geometry(path, layer_geo)
                     except (AttributeError, TypeError):
                         pass
+
+                if not layer_geo.is_empty():
+                    # Translate the extracted geometry
+                    # so its own bounding box starts at (0,0). This makes it
+                    # truly relative to its content bounds.
+                    min_x, min_y, _, _ = layer_geo.rect()
+                    translate_matrix = Matrix.translation(-min_x, -min_y)
+                    layer_geo.transform(translate_matrix.to_4x4_numpy())
+                    layer_geoms[lid] = layer_geo
+
         return layer_geoms
 
     def _parse_to_result(
@@ -455,53 +472,8 @@ class SvgImporter(Importer):
         # This aligns the parsing result units (pixels) with physical reality.
         unit_to_mm = final_dims_mm[0] / width_px if width_px > 0 else 1.0
 
-        # Step 3: Get untrimmed page bounds for positioning reference
-        untrimmed_page_bounds_px: Optional[
-            Tuple[float, float, float, float]
-        ] = None
-        untrimmed_w_mm = source.metadata.get("untrimmed_width_mm")
-        untrimmed_h_mm = source.metadata.get("untrimmed_height_mm")
-        if untrimmed_w_mm and untrimmed_h_mm and unit_to_mm > 0:
-            untrimmed_w_px = untrimmed_w_mm / unit_to_mm
-            untrimmed_h_px = untrimmed_h_mm / unit_to_mm
-            untrimmed_page_bounds_px = (0, 0, untrimmed_w_px, untrimmed_h_px)
-
-        # Step 4: Parse geometry for all layers
-        all_layer_ids = [
-            elem.id for elem in svg if isinstance(elem, Group) and elem.id
-        ]
-        if not all_layer_ids:
-            # Handle SVGs with no layers by treating the whole file as one
-            all_layer_ids = ["__default__"]
-            geometries_by_layer = {
-                "__default__": self._convert_svg_to_geometry(svg)
-            }
-        else:
-            geometries_by_layer = self._parse_geometry_by_layer(
-                svg, all_layer_ids
-            )
-
-        # Step 5: Calculate content bounds and assemble LayerGeometry objects
-        layer_geometries: List[LayerGeometry] = []
-        for layer_id, geo in geometries_by_layer.items():
-            if layer_id is None:
-                continue
-            if not geo.is_empty():
-                min_x, min_y, max_x, max_y = geo.rect()
-                layer_geometries.append(
-                    LayerGeometry(
-                        layer_id=layer_id,
-                        content_bounds=(
-                            min_x,
-                            min_y,
-                            max_x - min_x,
-                            max_y - min_y,
-                        ),
-                    )
-                )
-
-        # Step 6: Assemble the final ParsingResult, ensuring all bounds are
-        # consistently in PIXELS.
+        # Step 2: Determine the absolute page bounds in pixels. This is the
+        # frame of reference for all other coordinates.
         page_bounds_px: Tuple[float, float, float, float]
         if viewbox:
             # Convert the viewbox (in user units) to pixel bounds.
@@ -517,13 +489,72 @@ class SvgImporter(Importer):
         else:
             # No viewbox, the page bounds are simply the pixel dimensions.
             page_bounds_px = (0.0, 0.0, width_px, height_px)
+        page_x, page_y = page_bounds_px[0], page_bounds_px[1]
 
+        # Step 3: Get untrimmed page bounds for positioning reference
+        untrimmed_page_bounds_px: Optional[
+            Tuple[float, float, float, float]
+        ] = None
+        untrimmed_w_mm = source.metadata.get("untrimmed_width_mm")
+        untrimmed_h_mm = source.metadata.get("untrimmed_height_mm")
+        if untrimmed_w_mm and untrimmed_h_mm and unit_to_mm > 0:
+            untrimmed_w_px = untrimmed_w_mm / unit_to_mm
+            untrimmed_h_px = untrimmed_h_mm / unit_to_mm
+            untrimmed_page_bounds_px = (0, 0, untrimmed_w_px, untrimmed_h_px)
+
+        # Step 4: Parse geometry for all layers to calculate their bounds
+        # Note: We parse the geometry BEFORE translating it to get the
+        # correct bounds within the trimmed SVG's coordinate space.
+        raw_geometries_by_layer: Dict[str, Geometry] = {}
+        all_layer_ids = [
+            elem.id for elem in svg if isinstance(elem, Group) and elem.id
+        ]
+        if not all_layer_ids:
+            all_layer_ids = ["__default__"]
+            raw_geometries_by_layer["__default__"] = (
+                self._convert_svg_to_geometry(svg)
+            )
+        else:
+            for lid in all_layer_ids:
+                temp_geo = Geometry()
+                # This is a bit inefficient, but necessary to isolate layers
+                for element in svg:
+                    if isinstance(element, Group) and element.id == lid:
+                        for shape in element:
+                            try:
+                                path = Path(shape)
+                                self._add_path_to_geometry(path, temp_geo)
+                            except (AttributeError, TypeError):
+                                pass
+                if not temp_geo.is_empty():
+                    raw_geometries_by_layer[lid] = temp_geo
+
+        # Step 5: Calculate content bounds and assemble LayerGeometry objects.
+        # Convert relative geometry bounds to absolute bounds by
+        # adding the page (viewBox) origin.
+        layer_geometries: List[LayerGeometry] = []
+        for layer_id, geo in raw_geometries_by_layer.items():
+            if not geo.is_empty():
+                min_x, min_y, max_x, max_y = geo.rect()
+                w = max_x - min_x
+                h = max_y - min_y
+                # Fulfill the contract: content_bounds must be absolute.
+                abs_content_bounds = (page_x + min_x, page_y + min_y, w, h)
+                layer_geometries.append(
+                    LayerGeometry(
+                        layer_id=layer_id,
+                        content_bounds=abs_content_bounds,
+                    )
+                )
+
+        # Step 6: Assemble the final ParsingResult.
         return ParsingResult(
             page_bounds=page_bounds_px,
             native_unit_to_mm=unit_to_mm,
             is_y_down=True,
             layers=layer_geometries,
             untrimmed_page_bounds=untrimmed_page_bounds_px,
+            geometry_is_relative_to_bounds=True,
         )
 
     def _get_final_dimensions(
@@ -595,10 +626,13 @@ class SvgImporter(Importer):
         logger.debug(msg)
         return width_px, height_px, viewbox
 
-    def _convert_svg_to_geometry(self, svg: SVG) -> Geometry:
+    def _convert_svg_to_geometry(
+        self, svg: SVG, translate_to_origin: bool = False
+    ) -> Geometry:
         """
         Converts an SVG object into a Geometry object in pixel coordinates.
         Preserves curves as Béziers.
+        Optionally translates the entire geometry to its own origin.
         """
         geo = Geometry()
 
@@ -609,6 +643,12 @@ class SvgImporter(Importer):
                 self._add_path_to_geometry(path, geo)
             except (AttributeError, TypeError):
                 continue  # Skip non-shape elements like <defs>
+
+        if translate_to_origin and not geo.is_empty():
+            min_x, min_y, _, _ = geo.rect()
+            translate_matrix = Matrix.translation(-min_x, -min_y)
+            geo.transform(translate_matrix.to_4x4_numpy())
+
         return geo
 
     def _add_path_to_geometry(self, path: Path, geo: Geometry) -> None:

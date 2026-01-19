@@ -1,5 +1,5 @@
 import logging
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Tuple
 from ..core.geo import Geometry
 from ..core.item import DocItem
 from ..core.layer import Layer
@@ -28,6 +28,7 @@ class ItemAssembler:
         source_name: str,
         geometries: Dict[Optional[str], Geometry],
         layer_manifest: Optional[List[Dict[str, str]]] = None,
+        page_bounds: Optional[Tuple[float, float, float, float]] = None,
     ) -> List[DocItem]:
         """
         Creates DocItems from the plan.
@@ -44,11 +45,21 @@ class ItemAssembler:
             else {}
         )
 
+        page_x, page_y = (
+            (page_bounds[0], page_bounds[1]) if page_bounds else (0.0, 0.0)
+        )
+
         for item in layout_plan:
             # 1. Create the Segment
             # This links the WorkPiece to the specific subset of the source
             # file
             geo = geometries.get(item.layer_id)
+
+            # The `item.crop_window` is in absolute native coordinates.
+            # For rendering trimmed vector files (like SVG), the renderer
+            # needs a viewBox that is relative to the trimmed file's origin.
+            abs_x, abs_y, w, h = item.crop_window
+            relative_crop_window = (abs_x - page_x, abs_y - page_y, w, h)
 
             segment = SourceAssetSegment(
                 source_asset_uid=source_asset.uid,
@@ -57,8 +68,7 @@ class ItemAssembler:
                 pristine_geometry=geo,
                 # Geometry Normalization
                 normalization_matrix=item.normalization_matrix,
-                # Raster Cropping
-                crop_window_px=item.crop_window,
+                crop_window_px=relative_crop_window,
             )
 
             # Note: We should probably store physical dimensions on the segment

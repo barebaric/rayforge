@@ -116,11 +116,23 @@ class NormalizationEngine:
             bh = 1.0
 
         # 1. Normalization Matrix: Native -> Unit Square (0-1)
-        # Translate to origin, then scale to 1. Note: This matrix operates on
-        # coordinates *relative* to the content bounds' origin (bx, by).
-        norm_matrix = Matrix.scale(1.0 / bw, 1.0 / bh) @ Matrix.translation(
-            -bx, -by
-        )
+        # Scale to 1, and only translate if the geometry is in the global
+        # coordinate system.
+        scale_matrix = Matrix.scale(1.0 / bw, 1.0 / bh)
+        if result.geometry_is_relative_to_bounds:
+            # Geometry is already at its local origin (0,0) due to trimming.
+            # No translation needed for normalization.
+            norm_matrix = scale_matrix
+        else:
+            # Geometry is in global coords. Translate it to its origin first.
+            norm_matrix = scale_matrix @ Matrix.translation(-bx, -by)
+
+        # If the source coordinate system is Y-Up, we
+        # must flip the normalized output to match the Y-Down contract
+        # expected by the WorkPiece.
+        if not result.is_y_down:
+            flip_matrix = Matrix.translation(0, 1) @ Matrix.scale(1, -1)
+            norm_matrix = flip_matrix @ norm_matrix
 
         # 2. World Matrix: Unit Square (0-1) -> Physical World (mm)
 
@@ -128,15 +140,8 @@ class NormalizationEngine:
         width_mm = bw * result.native_unit_to_mm
         height_mm = bh * result.native_unit_to_mm
 
-        # Determine the absolute native coordinates of the content's origin.
-        # This accounts for the offset of the trimmed viewbox itself.
-        # `page_bounds` represents the trimmed viewbox (x,y,w,h) in native
-        # units.
-        abs_bx = result.page_bounds[0] + bx
-        abs_by = result.page_bounds[1] + by
-
         # X Position is a direct scaling of the absolute X coordinate.
-        pos_x_mm = abs_bx * result.native_unit_to_mm
+        pos_x_mm = bx * result.native_unit_to_mm
 
         # Y Position depends on the coordinate system and the reference frame.
         # Rayforge World is Y-Up (0 at bottom).
@@ -145,13 +150,13 @@ class NormalizationEngine:
 
         if result.is_y_down:
             # Native is Y-Down (0 at top). We invert relative to the full page.
-            # Bottom of content in native coords = abs_by + bh.
-            # Distance from page bottom = ref_h_native - (abs_by + bh).
-            dist_from_bottom_native = ref_h_native - (abs_by + bh)
+            # Bottom of content in native coords = by + bh.
+            # Distance from page bottom = ref_h_native - (by + bh).
+            dist_from_bottom_native = ref_h_native - (by + bh)
             pos_y_mm = dist_from_bottom_native * result.native_unit_to_mm
         else:
             # Native is Y-Up (DXF). Origin is already at the bottom.
-            pos_y_mm = abs_by * result.native_unit_to_mm
+            pos_y_mm = by * result.native_unit_to_mm
 
         # World Matrix combines scale and the absolute calculated position.
         # Note: WorkPiece applies this matrix to a Y-Up 0-1 geometry.
