@@ -1,9 +1,14 @@
-from typing import List, Tuple
+from typing import List, Tuple, Optional, Dict
 import pytest
 
 from rayforge.core.vectorization_spec import PassthroughSpec
 from rayforge.image.engine import NormalizationEngine
-from rayforge.image.structures import ParsingResult, LayerGeometry
+from rayforge.image.structures import (
+    ParsingResult,
+    LayerGeometry,
+    VectorizationResult,
+)
+from rayforge.core.geo import Geometry
 
 
 @pytest.fixture
@@ -11,22 +16,32 @@ def engine():
     return NormalizationEngine()
 
 
-def create_result(
+def create_vec_result(
     page_bounds: Tuple[float, float, float, float],
     layers: List[Tuple[str, Tuple[float, float, float, float]]],
     is_y_down: bool = True,
     unit_scale: float = 1.0,
-) -> ParsingResult:
-    """Helper to construct a ParsingResult DTO."""
+) -> VectorizationResult:
+    """
+    Helper to construct a ParsingResult and wrap it in a
+    VectorizationResult.
+    """
     layer_geos = [
         LayerGeometry(layer_id=lid, content_bounds=bounds)
         for lid, bounds in layers
     ]
-    return ParsingResult(
+    parse_result = ParsingResult(
         page_bounds=page_bounds,
         native_unit_to_mm=unit_scale,
         is_y_down=is_y_down,
         layers=layer_geos,
+    )
+    # The engine currently doesn't use the geometry, so we can mock it.
+    geometries: Dict[Optional[str], Geometry] = {
+        layer.layer_id: Geometry() for layer in parse_result.layers
+    }
+    return VectorizationResult(
+        geometries_by_layer=geometries, source_parse_result=parse_result
     )
 
 
@@ -40,13 +55,13 @@ def test_single_layer_y_down(engine):
     # Content: 10x10 square at (10, 10) from top-left.
     # Bottom of content is at Y=20.
     # Distance from bottom of page = 100 - 20 = 80.
-    result = create_result(
+    vec_result = create_vec_result(
         page_bounds=(0, 0, 100, 100),
         layers=[("layer1", (10, 10, 10, 10))],
         is_y_down=True,
     )
 
-    plan = engine.calculate_layout(result, None)
+    plan = engine.calculate_layout(vec_result, None)
 
     assert len(plan) == 1
     item = plan[0]
@@ -85,13 +100,13 @@ def test_single_layer_y_up(engine):
     Coordinates should map directly.
     """
     # Content: 10x10 square at (10, 10) from bottom-left.
-    result = create_result(
+    vec_result = create_vec_result(
         page_bounds=(0, 0, 100, 100),
         layers=[("layer1", (10, 10, 10, 10))],
         is_y_down=False,  # DXF style
     )
 
-    plan = engine.calculate_layout(result, None)
+    plan = engine.calculate_layout(vec_result, None)
     item = plan[0]
 
     # Y position should be 10 directly
@@ -108,7 +123,7 @@ def test_merge_layers_union(engine):
     # Layer A: (0, 0, 10, 10)
     # Layer B: (20, 20, 10, 10)
     # Union: (0, 0, 30, 30)
-    result = create_result(
+    vec_result = create_vec_result(
         page_bounds=(0, 0, 100, 100),
         layers=[
             ("A", (0, 0, 10, 10)),
@@ -116,7 +131,7 @@ def test_merge_layers_union(engine):
         ],
     )
 
-    plan = engine.calculate_layout(result, None)
+    plan = engine.calculate_layout(vec_result, None)
 
     assert len(plan) == 1
     item = plan[0]
@@ -139,7 +154,7 @@ def test_split_layers_alignment(engine):
     # Layer Top: (10, 10, 10, 10). Bottom Y = 20. World Y = 80.
     # Layer Bottom: (10, 80, 10, 10). Bottom Y = 90. World Y = 10.
     # Visual distance: 70 units vertically.
-    result = create_result(
+    vec_result = create_vec_result(
         page_bounds=(0, 0, 100, 100),
         layers=[
             ("Top", (10, 10, 10, 10)),
@@ -148,7 +163,7 @@ def test_split_layers_alignment(engine):
     )
 
     spec = PassthroughSpec(active_layer_ids=["Top", "Bottom"])
-    plan = engine.calculate_layout(result, spec)
+    plan = engine.calculate_layout(vec_result, spec)
 
     assert len(plan) == 2
 
@@ -169,13 +184,13 @@ def test_unit_conversion(engine):
     Verifies that native units are correctly converted to mm.
     """
     # 1 Native Unit = 2.0 mm
-    result = create_result(
+    vec_result = create_vec_result(
         page_bounds=(0, 0, 100, 100),
         layers=[("L1", (0, 0, 10, 10))],
         unit_scale=2.0,
     )
 
-    plan = engine.calculate_layout(result, None)
+    plan = engine.calculate_layout(vec_result, None)
     item = plan[0]
 
     # Size should be 10 * 2.0 = 20mm
@@ -189,12 +204,12 @@ def test_empty_content_fallback(engine):
     Verifies that if content bounds are missing/zero, it falls back
     to the page bounds.
     """
-    result = create_result(
+    vec_result = create_vec_result(
         page_bounds=(0, 0, 100, 100),
         layers=[],  # No layers
     )
 
-    plan = engine.calculate_layout(result, None)
+    plan = engine.calculate_layout(vec_result, None)
 
     assert len(plan) == 1
     item = plan[0]

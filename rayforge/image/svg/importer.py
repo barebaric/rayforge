@@ -35,7 +35,7 @@ from ..base_importer import (
 from .. import image_util
 from ..assembler import ItemAssembler
 from ..engine import NormalizationEngine
-from ..structures import ParsingResult, LayerGeometry
+from ..structures import ParsingResult, LayerGeometry, VectorizationResult
 from ..tracing import trace_surface, VTRACER_PIXEL_LIMIT
 from .renderer import SVG_RENDERER
 from .svgutil import (
@@ -371,14 +371,22 @@ class SvgImporter(Importer):
             final_dims_mm = (width_px * MM_PER_PX, height_px * MM_PER_PX)
 
         spec = vectorization_spec or PassthroughSpec()
+
+        logger.debug("Phase 2: Parsing SVG to native geometry.")
         parse_result = self._parse_to_result(svg, source, final_dims_mm)
 
         if not parse_result:
             logger.error("Failed to parse SVG into a structured result.")
             return None
 
+        logger.debug("Phase 3: Vectorizing (extracting) geometry.")
+        vec_result = self._vectorize(svg, parse_result)
+
+        logger.debug(
+            "Phase 4: Calculating layout plan with NormalizationEngine."
+        )
         engine = NormalizationEngine()
-        plan = engine.calculate_layout(parse_result, spec)
+        plan = engine.calculate_layout(vec_result, spec)
 
         if not plan:
             logger.info(
@@ -395,11 +403,9 @@ class SvgImporter(Importer):
                 )
             }
         else:
-            layer_ids_in_plan = [
-                item.layer_id for item in plan if item.layer_id
-            ]
-            geometries = self._parse_geometry_by_layer(svg, layer_ids_in_plan)
+            geometries = vec_result.geometries_by_layer
 
+        logger.debug("Phase 5: Assembling DocItems.")
         assembler = ItemAssembler()
         return assembler.create_items(
             source_asset=source,
@@ -410,6 +416,30 @@ class SvgImporter(Importer):
             layer_manifest=extract_layer_manifest(self.raw_data),
             # Pass page_bounds to assembler for coordinate translation
             page_bounds=parse_result.page_bounds,
+        )
+
+    def _vectorize(
+        self, svg: SVG, parse_result: ParsingResult
+    ) -> VectorizationResult:
+        """Phase 3: Extract vector geometry and package for layout engine."""
+        all_layer_ids = [layer.layer_id for layer in parse_result.layers]
+        geometries_by_layer = self._parse_geometry_by_layer(svg, all_layer_ids)
+
+        # Handle SVGs that have no layers, just flat geometry
+        if not geometries_by_layer:
+            # The '__default__' key is used by the parser for layerless files
+            layer_id = (
+                parse_result.layers[0].layer_id
+                if parse_result.layers
+                else None
+            )
+            geometries_by_layer[layer_id] = self._convert_svg_to_geometry(
+                svg, translate_to_origin=True
+            )
+
+        return VectorizationResult(
+            geometries_by_layer=geometries_by_layer,
+            source_parse_result=parse_result,
         )
 
     def _parse_geometry_by_layer(

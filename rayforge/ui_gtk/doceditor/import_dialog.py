@@ -461,104 +461,99 @@ class ImportDialog(PatchedDialogWindow):
         ctx.restore()
 
         # 2. Draw Vectors
-        # The backend returns WorkPieces with normalized geometry (0-1)
-        # relative to their own tight content bounds. To draw them correctly
-        # over the full page preview, we must map them from their local
-        # World space to the Preview Page Space.
-        # Note: The background image (and thus the preview page space)
-        # corresponds to the *Trimmed* SVG content.
         payload = self._preview_result.payload
         if not payload or not payload.items:
             return
 
-        # Get metadata to align the World Coordinates with the Trimmed View.
-        meta = payload.source.metadata
-        page_w_mm = payload.source.width_mm
-        page_h_mm = payload.source.height_mm
+        is_trace_mode = isinstance(self._get_current_spec(), TraceSpec)
 
-        # If trimmed metadata exists, we use it as the "Page" dimensions for
-        # the preview, because the background image is the trimmed render.
-        trimmed_w = meta.get("trimmed_width_mm")
-        trimmed_h = meta.get("trimmed_height_mm")
-        viewbox = meta.get("viewbox")  # (vx, vy, vw, vh) in user units
+        if is_trace_mode:
+            # --- SIMPLIFIED PATH FOR TRACING ---
+            # In trace mode, the background is the cropped content, and the
+            # workpiece boundaries are normalized to that content. We just
+            # need to scale the 0-1 geometry to the preview drawing area.
+            ctx.save()
+            ctx.translate(draw_x, draw_y)
+            # Scale to the drawing area. Y is flipped because Cairo is Y-down.
+            ctx.scale(draw_w, draw_h)
+            ctx.translate(0, 1)
+            ctx.scale(1, -1)
 
-        # Calculate the World Coordinate offset of the Trimmed View.
-        # World Coords are Y-Up.
-        offset_x_mm = 0.0
-        offset_y_mm = 0.0
+            def draw_item_trace(item):
+                if isinstance(item, WorkPiece) and item.boundaries:
+                    ctx.save()
+                    # We are drawing the pure, normalized shape.
+                    # The workpiece matrix is NOT applied.
+                    px, py = ctx.device_to_user_distance(1.5, 1.5)
+                    ctx.set_line_width(max(abs(px), abs(py)))
+                    ctx.set_source_rgb(0.1, 0.5, 1.0)
+                    ctx.new_path()
+                    item.boundaries.to_cairo(ctx)
+                    ctx.stroke()
+                    ctx.restore()
+                elif isinstance(item, Layer):
+                    for child in item.children:
+                        draw_item_trace(child)
 
-        if trimmed_w and trimmed_h and viewbox:
-            # Use trimmed dimensions for scaling
-            page_w_mm = trimmed_w
-            page_h_mm = trimmed_h
+            for item in payload.items:
+                draw_item_trace(item)
 
-            # Calculate offsets from the original page
-            # 1. Calculate Unit Scaling (mm per user unit)
-            # trimmed_width_mm corresponds to viewbox width (vw)
-            vx, vy, vw, vh = viewbox
-            if vw > 0:
-                unit_to_mm = trimmed_w / vw
-                untrimmed_h = meta.get("untrimmed_height_mm", page_h_mm)
+            ctx.restore()
+        else:
+            # --- EXISTING COMPLEX PATH FOR DIRECT VECTOR (SVG, etc.) ---
+            # This logic is correct and should be preserved.
+            meta = payload.source.metadata
+            page_w_mm = payload.source.width_mm
+            page_h_mm = payload.source.height_mm
 
-                # World X offset (Left of trimmed view)
-                offset_x_mm = vx * unit_to_mm
+            trimmed_w = meta.get("trimmed_width_mm")
+            trimmed_h = meta.get("trimmed_height_mm")
+            viewbox = meta.get("viewbox")
 
-                # World Y offset (Bottom of trimmed view)
-                # World Y=0 is Bottom of Untrimmed Page.
-                # SVG Y is Y-Down.
-                # Trimmed Bottom in SVG Y = vy + vh
-                # Trimmed Bottom in World Y = UntrimmedH - (vy + vh)*u
-                offset_y_mm = untrimmed_h - (vy + vh) * unit_to_mm
+            offset_x_mm = 0.0
+            offset_y_mm = 0.0
+            if trimmed_w and trimmed_h and viewbox:
+                page_w_mm = trimmed_w
+                page_h_mm = trimmed_h
+                vx, vy, vw, vh = viewbox
+                if vw > 0:
+                    unit_to_mm = trimmed_w / vw
+                    untrimmed_h = meta.get("untrimmed_height_mm", page_h_mm)
+                    offset_x_mm = vx * unit_to_mm
+                    offset_y_mm = untrimmed_h - (vy + vh) * unit_to_mm
 
-        # Scale factor to convert mm (World) to Normalized Page (0-1)
-        sx = 1.0 / page_w_mm if page_w_mm > 0 else 1.0
-        sy = 1.0 / page_h_mm if page_h_mm > 0 else 1.0
+            sx = 1.0 / page_w_mm if page_w_mm > 0 else 1.0
+            sy = 1.0 / page_h_mm if page_h_mm > 0 else 1.0
 
-        ctx.save()
-        ctx.translate(draw_x, draw_y)
+            ctx.save()
+            ctx.translate(draw_x, draw_y)
+            ctx.scale(draw_w, draw_h)
+            ctx.translate(0, 1)
+            ctx.scale(1, -1)
 
-        # Scale to the drawing area. Y is flipped to match standard coord
-        # system. Geometry is Y-up, Cairo is Y-down.
-        ctx.scale(draw_w, draw_h)
-        ctx.translate(0, 1)
-        ctx.scale(1, -1)
+            def draw_item(item):
+                if isinstance(item, WorkPiece) and item.boundaries:
+                    ctx.save()
+                    ctx.scale(sx, sy)
+                    ctx.translate(-offset_x_mm, -offset_y_mm)
+                    xx, yx, xy, yy, x0, y0 = item.matrix.for_cairo()
+                    mat = cairo.Matrix(xx, yx, xy, yy, x0, y0)
+                    ctx.transform(mat)
+                    px, py = ctx.device_to_user_distance(1.5, 1.5)
+                    ctx.set_line_width(max(abs(px), abs(py)))
+                    ctx.set_source_rgb(0.1, 0.5, 1.0)
+                    ctx.new_path()
+                    item.boundaries.to_cairo(ctx)
+                    ctx.stroke()
+                    ctx.restore()
+                elif isinstance(item, Layer):
+                    for child in item.children:
+                        draw_item(child)
 
-        def draw_item(item):
-            if isinstance(item, WorkPiece) and item.boundaries:
-                ctx.save()
+            for item in payload.items:
+                draw_item(item)
 
-                # Apply transform chain: PageNorm <- World <- Local
-
-                # 1. Scale mm to PageNorm
-                ctx.scale(sx, sy)
-
-                # 2. Shift World Coordinates to align with Trimmed View
-                ctx.translate(-offset_x_mm, -offset_y_mm)
-
-                # 3. Apply WorkPiece World Matrix (Local -> World)
-                xx, yx, xy, yy, x0, y0 = item.matrix.for_cairo()
-                mat = cairo.Matrix(xx, yx, xy, yy, x0, y0)
-                ctx.transform(mat)
-
-                # Set line width dynamically based on scale to ensure
-                # visibility use 1.5 screen pixels
-                px, py = ctx.device_to_user_distance(1.5, 1.5)
-                ctx.set_line_width(max(abs(px), abs(py)))
-
-                ctx.set_source_rgb(0.1, 0.5, 1.0)
-                ctx.new_path()
-                item.boundaries.to_cairo(ctx)
-                ctx.stroke()
-                ctx.restore()
-
-            elif isinstance(item, Layer):
-                for child in item.children:
-                    draw_item(child)
-
-        for item in payload.items:
-            draw_item(item)
-
-        ctx.restore()
+            ctx.restore()
 
     def _on_import_clicked(self, button):
         final_spec = self._get_current_spec()

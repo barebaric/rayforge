@@ -19,7 +19,7 @@ from ..base_importer import (
     LayerInfo,
 )
 from ..engine import NormalizationEngine
-from ..structures import ParsingResult, LayerGeometry
+from ..structures import ParsingResult, LayerGeometry, VectorizationResult
 from .renderer import DXF_RENDERER
 
 logger = logging.getLogger(__name__)
@@ -104,17 +104,20 @@ class DxfImporter(Importer):
         )
         spec = vectorization_spec or PassthroughSpec()
 
-        logger.debug("Phase 1: Parsing DXF to native geometry.")
+        logger.debug("Phase 2: Parsing DXF to native geometry.")
         parse_result, geometries_by_layer = self._parse_to_result(doc)
         if not parse_result.layers:
             logger.warning("DXF contains no valid geometry to import.")
             return ImportPayload(source=source, items=[])
 
+        logger.debug("Phase 3: Vectorizing (packaging) parsed data.")
+        vec_result = self._vectorize(parse_result, geometries_by_layer)
+
         logger.debug(
-            "Phase 2: Calculating layout plan with NormalizationEngine."
+            "Phase 4: Calculating layout plan with NormalizationEngine."
         )
         engine = NormalizationEngine()
-        plan = engine.calculate_layout(parse_result, spec)
+        plan = engine.calculate_layout(vec_result, spec)
         if not plan:
             logger.warning("Layout plan is empty; no items will be created.")
             return ImportPayload(source=source, items=[])
@@ -130,7 +133,7 @@ class DxfImporter(Importer):
         else:
             geometries = geometries_by_layer
 
-        logger.debug("Phase 3: Assembling DocItems.")
+        logger.debug("Phase 5: Assembling DocItems.")
         assembler = ItemAssembler()
         items = assembler.create_items(
             source_asset=source,
@@ -143,6 +146,17 @@ class DxfImporter(Importer):
         logger.debug(f"Assembled {len(items)} top-level item(s).")
 
         return ImportPayload(source=source, items=items)
+
+    def _vectorize(
+        self,
+        parse_result: ParsingResult,
+        geometries_by_layer: Dict[Optional[str], Geometry],
+    ) -> VectorizationResult:
+        """Phase 3: Package parsed data for the layout engine."""
+        return VectorizationResult(
+            geometries_by_layer=geometries_by_layer,
+            source_parse_result=parse_result,
+        )
 
     def _get_layer_manifest(self, doc) -> List[Dict[str, str]]:
         return [
