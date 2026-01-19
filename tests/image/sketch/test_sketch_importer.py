@@ -79,7 +79,9 @@ def test_sketch_importer_round_trip(complex_sketch: Sketch):
     # The importer should prioritize the serialized name over the filename.
     assert item.name == complex_sketch.name
 
-    assert item.source_segment is None
+    assert item.source_segment is not None
+    assert item.source_segment.source_asset_uid == payload.source.uid
+
     assert item.sketch_uid == complex_sketch.uid
 
     # 5. Verify the dimensions were set correctly on the WorkPiece
@@ -204,7 +206,9 @@ def test_sketch_importer_round_trip_mouse():
     # The importer should prioritize the serialized name over the filename.
     assert item.name == original_dict["name"]
 
-    assert item.source_segment is None
+    assert item.source_segment is not None
+    assert item.source_segment.source_asset_uid == payload.source.uid
+
     assert item.sketch_uid == original_dict["uid"]
 
     # 6. Verify the dimensions were set correctly on the WorkPiece

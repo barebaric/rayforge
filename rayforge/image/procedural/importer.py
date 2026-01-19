@@ -5,17 +5,17 @@ from pathlib import Path
 from typing import Optional, Dict
 
 from ...core.geo import Geometry
-from ...core.matrix import Matrix
 from ...core.source_asset import SourceAsset
-from ...core.source_asset_segment import SourceAssetSegment
 from ...core.vectorization_spec import VectorizationSpec, ProceduralSpec
-from ...core.workpiece import WorkPiece
+from ..assembler import ItemAssembler
 from ..base_importer import (
     Importer,
     ImportPayload,
     ImporterFeature,
     ImportManifest,
 )
+from ..engine import NormalizationEngine
+from ..structures import ParsingResult, LayerGeometry, VectorizationResult
 from .renderer import PROCEDURAL_RENDERER
 
 logger = logging.getLogger(__name__)
@@ -93,8 +93,54 @@ class ProceduralImporter(Importer):
         Generates the ImportPayload containing the procedural WorkPiece and
         its corresponding SourceAsset.
         """
-        # Step 1: Calculate the initial size by dynamically calling the size
-        # function.
+        # Ensure we use a ProceduralSpec if none provided
+        spec = vectorization_spec or ProceduralSpec()
+
+        # Phase 2: Parse (Calculate dimensions)
+        parse_result = self._parse_to_result()
+        if not parse_result:
+            return None
+
+        # Create SourceAsset
+        _, _, w, h = parse_result.page_bounds
+        # For procedural, native units are 1:1 with mm (scale=1.0)
+        width_mm = w
+        height_mm = h
+
+        source = SourceAsset(
+            source_file=self.source_file,
+            original_data=self.raw_data,  # This is the recipe data
+            renderer=PROCEDURAL_RENDERER,
+            width_mm=width_mm,
+            height_mm=height_mm,
+        )
+
+        # Phase 3: Vectorize (Generate placeholder geometry)
+        vec_result = self._vectorize(parse_result)
+
+        # Phase 4: Layout
+        engine = NormalizationEngine()
+        plan = engine.calculate_layout(vec_result, spec)
+        if not plan:
+            return ImportPayload(source=source, items=[])
+
+        # Phase 5: Assembly
+        assembler = ItemAssembler()
+        items = assembler.create_items(
+            source_asset=source,
+            layout_plan=plan,
+            spec=spec,
+            source_name=self.name,
+            geometries=vec_result.geometries_by_layer,
+        )
+
+        return ImportPayload(source=source, items=items)
+
+    def _parse_to_result(self) -> Optional[ParsingResult]:
+        """
+        Phase 2: "Parse" the procedural parameters to determine geometric
+        properties.
+        """
         try:
             module_path, func_name = self.size_function_path.rsplit(".", 1)
             module = importlib.import_module(module_path)
@@ -106,41 +152,38 @@ class ProceduralImporter(Importer):
             )
             return None
 
-        # Step 2: Create the SourceAsset using the pre-generated recipe.
-        source = SourceAsset(
-            source_file=self.source_file,
-            original_data=self.raw_data,  # This is the recipe data
-            renderer=PROCEDURAL_RENDERER,
-            width_mm=width_mm,
-            height_mm=height_mm,
+        # Define the native coordinate system as 1 unit = 1 mm.
+        # This preserves the aspect ratio in the parsing result.
+        page_bounds = (0.0, 0.0, float(width_mm), float(height_mm))
+        layer_id = "__default__"
+
+        return ParsingResult(
+            page_bounds=page_bounds,
+            native_unit_to_mm=1.0,  # 1 native unit = 1 mm
+            is_y_down=True,  # Standardize on Y-down for generated content
+            layers=[
+                LayerGeometry(layer_id=layer_id, content_bounds=page_bounds)
+            ],
         )
 
-        # Step 3: Create and configure the WorkPiece.
-        # For procedural items, the geometry is generated on the fly.
-        # We create a placeholder 1x1 geometry to define the workpiece's
-        # boundaries, which will be scaled by its matrix.
+    def _vectorize(self, parse_result: ParsingResult) -> VectorizationResult:
+        """
+        Phase 3: Generate the pristine geometry.
+        We create a rectangle matching the calculated dimensions.
+        """
+        _, _, w, h = parse_result.page_bounds
+
         frame_geo = Geometry()
         frame_geo.move_to(0, 0)
-        frame_geo.line_to(1, 0)
-        frame_geo.line_to(1, 1)
-        frame_geo.line_to(0, 1)
+        frame_geo.line_to(w, 0)
+        frame_geo.line_to(w, h)
+        frame_geo.line_to(0, h)
         frame_geo.close_path()
 
-        procedural_spec = ProceduralSpec()
-        gen_config = SourceAssetSegment(
-            source_asset_uid=source.uid,
-            vectorization_spec=procedural_spec,
-            pristine_geometry=frame_geo,
-            normalization_matrix=Matrix.identity(),
-        )
+        # Retrieve the layer ID (we know there is one)
+        layer_id = parse_result.layers[0].layer_id
 
-        wp = WorkPiece(
-            name=self.name,
-            source_segment=gen_config,
+        return VectorizationResult(
+            geometries_by_layer={layer_id: frame_geo},
+            source_parse_result=parse_result,
         )
-        wp.natural_width_mm = width_mm
-        wp.natural_height_mm = height_mm
-        wp.set_size(width_mm, height_mm)
-
-        # Step 4: Return the complete payload.
-        return ImportPayload(source=source, items=[wp])
