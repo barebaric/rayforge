@@ -1,6 +1,5 @@
 import logging
-from typing import List, Optional
-from ...core.item import DocItem
+from typing import Optional, Tuple, Dict
 from ...core.geo import Geometry
 from ...core.vectorization_spec import VectorizationSpec
 from ..base_importer import (
@@ -10,13 +9,13 @@ from ..base_importer import (
     ImportManifest,
 )
 from ...core.source_asset import SourceAsset
-from ...core.source_asset_segment import SourceAssetSegment
 from ...core.vectorization_spec import PassthroughSpec
+from ..assembler import ItemAssembler
+from ..engine import NormalizationEngine
+from ..structures import ParsingResult, LayerGeometry
 from .renderer import RUIDA_RENDERER
 from .parser import RuidaParser, RuidaParseError
 from .job import RuidaJob
-from ...core.workpiece import WorkPiece
-from ...core.matrix import Matrix
 
 logger = logging.getLogger(__name__)
 
@@ -76,15 +75,12 @@ class RuidaImporter(Importer):
     def get_doc_items(
         self, vectorization_spec: Optional[VectorizationSpec] = None
     ) -> Optional[ImportPayload]:
-        # Ruida files are always vector, so vectorization_spec is ignored.
         try:
-            job = self._get_job()
+            # Phase 1: Parsing
+            parse_result, geometries_by_layer = self._parse_to_result()
         except RuidaParseError as e:
             logger.error("Ruida file parse failed: %s", e)
             return None
-
-        pristine_geo = self._get_geometry(job)
-        pristine_geo.close_gaps()
 
         source = SourceAsset(
             source_file=self.source_file,
@@ -92,49 +88,72 @@ class RuidaImporter(Importer):
             renderer=RUIDA_RENDERER,
         )
 
-        if not pristine_geo or pristine_geo.is_empty():
-            # Still return a source for an empty file, but no items.
+        if not parse_result.layers:
             return ImportPayload(source=source, items=[])
 
-        # Calculate and store the true natural size from the job's extents.
+        # Store natural size metadata from the definitive bounds
+        _, _, w, h = parse_result.page_bounds
+        source.width_mm = w
+        source.height_mm = h
+
+        # Phase 2: Layout
+        engine = NormalizationEngine()
+        spec = vectorization_spec or PassthroughSpec()
+        plan = engine.calculate_layout(parse_result, spec)
+
+        # Since Ruida files are always a single merged entity, the plan will
+        # have one item with layer_id=None. The assembler expects the geometry
+        # under the `None` key.
+        geometries: Dict[Optional[str], Geometry] = {
+            None: list(geometries_by_layer.values())[0]
+        }
+
+        # Phase 3: Assembly
+        assembler = ItemAssembler()
+        items = assembler.create_items(
+            source_asset=source,
+            layout_plan=plan,
+            spec=spec,
+            source_name=self.source_file.stem,
+            geometries=geometries,
+        )
+        return ImportPayload(source=source, items=items)
+
+    def _parse_to_result(
+        self,
+    ) -> Tuple[ParsingResult, Dict[Optional[str], Geometry]]:
+        job = self._get_job()
+        pristine_geo = self._get_geometry(job)
+        pristine_geo.close_gaps()
+
+        if not job.commands or pristine_geo.is_empty():
+            # Return empty but valid structures
+            empty_result = ParsingResult(
+                page_bounds=(0, 0, 0, 0),
+                native_unit_to_mm=1.0,
+                is_y_down=False,
+                layers=[],
+            )
+            geometries: Dict[Optional[str], Geometry] = {None: pristine_geo}
+            return empty_result, geometries
+
         min_x, min_y, max_x, max_y = job.get_extents()
         width_mm = max_x - min_x
         height_mm = max_y - min_y
-        if width_mm > 0 and height_mm > 0:
-            source.width_mm = width_mm
-            source.height_mm = height_mm
-            source.metadata["natural_size"] = (width_mm, height_mm)
 
-        # Create a single workpiece for the entire geometry (no splitting)
-        width = max(width_mm, 1e-9)
-        height = max(height_mm, 1e-9)
-
-        # Create a matrix that transforms the pristine geometry (in mm, Y-up)
-        # into a normalized (0-1, Y-down) coordinate space.
-        translate_to_origin = Matrix.translation(-min_x, -min_y)
-        scale_to_unit = Matrix.scale(1.0 / width, 1.0 / height)
-        flip_y = Matrix.translation(0, 1) @ Matrix.scale(1, -1)
-        normalization_matrix = flip_y @ scale_to_unit @ translate_to_origin
-
-        passthrough_spec = PassthroughSpec()
-        gen_config = SourceAssetSegment(
-            source_asset_uid=source.uid,
-            vectorization_spec=passthrough_spec,
-            pristine_geometry=pristine_geo,
-            normalization_matrix=normalization_matrix,
+        # Use a virtual layer ID for consistency with other importers
+        layer_id = "__default__"
+        page_bounds = (min_x, min_y, width_mm, height_mm)
+        parse_result = ParsingResult(
+            page_bounds=page_bounds,
+            native_unit_to_mm=1.0,
+            is_y_down=False,
+            layers=[
+                LayerGeometry(layer_id=layer_id, content_bounds=page_bounds)
+            ],
         )
-        wp = WorkPiece(
-            name=self.source_file.stem,
-            source_segment=gen_config,
-        )
-        wp.natural_width_mm = width
-        wp.natural_height_mm = height
-        wp.matrix = Matrix.translation(min_x, min_y) @ Matrix.scale(
-            width, height
-        )
-
-        items: List[DocItem] = [wp]
-        return ImportPayload(source=source, items=items)
+        geometries: Dict[Optional[str], Geometry] = {layer_id: pristine_geo}
+        return parse_result, geometries
 
     def _get_geometry(self, job: RuidaJob) -> Geometry:
         """
