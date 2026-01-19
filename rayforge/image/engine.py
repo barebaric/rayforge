@@ -1,8 +1,17 @@
 import logging
 from typing import List, Tuple, Optional
 from ..core.matrix import Matrix
-from ..core.vectorization_spec import VectorizationSpec, PassthroughSpec
-from .structures import ParsingResult, LayoutItem, LayerGeometry
+from ..core.vectorization_spec import (
+    VectorizationSpec,
+    PassthroughSpec,
+    TraceSpec,
+)
+from .structures import (
+    ParsingResult,
+    LayoutItem,
+    LayerGeometry,
+    VectorizationResult,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -17,17 +26,49 @@ class NormalizationEngine:
     """
 
     def calculate_layout(
-        self, result: ParsingResult, spec: Optional[VectorizationSpec]
+        self,
+        vec_result: VectorizationResult,
+        spec: Optional[VectorizationSpec],
     ) -> List[LayoutItem]:
         """
         Calculates the layout plan.
         """
-        # Determine intent from spec
+        result = vec_result.source_parse_result
+        spec = spec or PassthroughSpec()
+
+        # For traced results, the definitive bounds come from the new geometry.
+        if isinstance(spec, TraceSpec):
+            all_rects = []
+            for geo in vec_result.geometries_by_layer.values():
+                if geo and not geo.is_empty():
+                    min_x, min_y, max_x, max_y = geo.rect()
+                    all_rects.append(
+                        (min_x, min_y, max_x - min_x, max_y - min_y)
+                    )
+
+            if not all_rects:
+                # Fallback to page bounds if tracing produced no geometry
+                return [
+                    self._create_item_from_bounds(
+                        result.page_bounds, result, layer_id=None
+                    )
+                ]
+
+            union_rect = self._calculate_union_rect(all_rects)
+
+            if union_rect[2] <= 0 or union_rect[3] <= 0:
+                union_rect = result.page_bounds
+
+            return [
+                self._create_item_from_bounds(
+                    union_rect, result, layer_id=None
+                )
+            ]
+
+        # For direct vector imports (PassthroughSpec), bounds from parse phase
+        # are authoritative.
         split_layers = False
         active_layers = None
-
-        # Interpret spec (this logic bridges the current generic specs to
-        # specific intents)
         if isinstance(spec, PassthroughSpec):
             if spec.active_layer_ids:
                 split_layers = True

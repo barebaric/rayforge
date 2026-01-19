@@ -12,7 +12,7 @@ from ...core.source_asset import SourceAsset
 from ...core.vectorization_spec import PassthroughSpec
 from ..assembler import ItemAssembler
 from ..engine import NormalizationEngine
-from ..structures import ParsingResult, LayerGeometry
+from ..structures import ParsingResult, LayerGeometry, VectorizationResult
 from .renderer import RUIDA_RENDERER
 from .parser import RuidaParser, RuidaParseError
 from .job import RuidaJob
@@ -76,7 +76,7 @@ class RuidaImporter(Importer):
         self, vectorization_spec: Optional[VectorizationSpec] = None
     ) -> Optional[ImportPayload]:
         try:
-            # Phase 1: Parsing
+            # Phase 2: Parsing
             parse_result, geometries_by_layer = self._parse_to_result()
         except RuidaParseError as e:
             logger.error("Ruida file parse failed: %s", e)
@@ -96,10 +96,13 @@ class RuidaImporter(Importer):
         source.width_mm = w
         source.height_mm = h
 
-        # Phase 2: Layout
+        # Phase 3: Vectorize (packaging)
+        vec_result = self._vectorize(parse_result, geometries_by_layer)
+
+        # Phase 4: Layout
         engine = NormalizationEngine()
         spec = vectorization_spec or PassthroughSpec()
-        plan = engine.calculate_layout(parse_result, spec)
+        plan = engine.calculate_layout(vec_result, spec)
 
         # Since Ruida files are always a single merged entity, the plan will
         # have one item with layer_id=None. The assembler expects the geometry
@@ -108,7 +111,7 @@ class RuidaImporter(Importer):
             None: list(geometries_by_layer.values())[0]
         }
 
-        # Phase 3: Assembly
+        # Phase 5: Assembly
         assembler = ItemAssembler()
         items = assembler.create_items(
             source_asset=source,
@@ -118,6 +121,17 @@ class RuidaImporter(Importer):
             geometries=geometries,
         )
         return ImportPayload(source=source, items=items)
+
+    def _vectorize(
+        self,
+        parse_result: ParsingResult,
+        geometries_by_layer: Dict[Optional[str], Geometry],
+    ) -> VectorizationResult:
+        """Phase 3: Package parsed data for the layout engine."""
+        return VectorizationResult(
+            geometries_by_layer=geometries_by_layer,
+            source_parse_result=parse_result,
+        )
 
     def _parse_to_result(
         self,
