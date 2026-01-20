@@ -97,7 +97,7 @@ class ProceduralImporter(Importer):
         spec = vectorization_spec or ProceduralSpec()
 
         # Phase 2: Parse (Calculate dimensions)
-        parse_result = self._parse_to_result()
+        parse_result = self.parse()
         if not parse_result:
             return None
 
@@ -136,7 +136,7 @@ class ProceduralImporter(Importer):
 
         return ImportPayload(source=source, items=items)
 
-    def _parse_to_result(self) -> Optional[ParsingResult]:
+    def parse(self) -> Optional[ParsingResult]:
         """
         Phase 2: "Parse" the procedural parameters to determine geometric
         properties.

@@ -64,7 +64,7 @@ class SketchImporter(Importer):
         Deserializes the raw sketch data and converts it into a WorkPiece.
         """
         # Phase 2: Parse
-        parse_result = self._parse_to_result()
+        parse_result = self.parse()
         if not parse_result or not self.parsed_sketch:
             return None
 
@@ -131,7 +131,7 @@ class SketchImporter(Importer):
             sketches=[self.parsed_sketch],
         )
 
-    def _parse_to_result(self) -> Optional[ParsingResult]:
+    def parse(self) -> Optional[ParsingResult]:
         """Phase 2: Parse JSON into Sketch model and solve it for bounds."""
         try:
             sketch_dict = json.loads(self.raw_data.decode("utf-8"))

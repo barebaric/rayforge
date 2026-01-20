@@ -1,6 +1,7 @@
 import warnings
 from typing import Optional
 import logging
+from pathlib import Path
 
 with warnings.catch_warnings():
     warnings.simplefilter("ignore", DeprecationWarning)
@@ -34,6 +35,10 @@ class BmpImporter(Importer):
     mime_types = ("image/bmp",)
     extensions = (".bmp",)
     features = {ImporterFeature.BITMAP_TRACING}
+
+    def __init__(self, data: bytes, source_file: Optional[Path] = None):
+        super().__init__(data, source_file)
+        self._image: Optional[pyvips.Image] = None
 
     def scan(self) -> ImportManifest:
         """
@@ -76,9 +81,9 @@ class BmpImporter(Importer):
             logger.error("BmpImporter requires a TraceSpec to trace.")
             return None
 
-        # Phase 2 (Parse): Get ParsingResult and image data
-        parse_result, image = self._parse_to_result()
-        if not parse_result or not image:
+        # Phase 2 (Parse): Get ParsingResult and set self._image
+        parse_result = self.parse()
+        if not parse_result or not self._image:
             logger.error(
                 "BMP file could not be parsed. It may be compressed or in an "
                 "unsupported format."
@@ -101,7 +106,9 @@ class BmpImporter(Importer):
         )
 
         # Phase 3 (Vectorize): Trace the image to get vector geometry
-        vec_result = self._vectorize(parse_result, image, vectorization_spec)
+        vec_result = self._vectorize(
+            parse_result, self._image, vectorization_spec
+        )
 
         # Phase 4 (Layout): Calculate layout plan from vectorized geometry
         engine = NormalizationEngine()
@@ -139,21 +146,18 @@ class BmpImporter(Importer):
             source_parse_result=parse_result,
         )
 
-    def _parse_to_result(
-        self,
-    ) -> tuple[Optional[ParsingResult], Optional["pyvips.Image"]]:
+    def parse(self) -> Optional[ParsingResult]:
         """
         Phase 1: Parsing.
 
         Parses the BMP file and returns a ParsingResult containing geometric
-        facts about the image in its native coordinate system (pixels).
-
-        Returns:
-            A tuple of (ParsingResult, pyvips.Image) or (None, None) on error.
+        facts about the image in its native coordinate system (pixels). The
+        parsed pyvips.Image is stored in self._image.
         """
         parsed_data = parse_bmp(self.raw_data)
         if not parsed_data:
-            return None, None
+            self._image = None
+            return None
 
         rgba_bytes, width, height, dpi_x, dpi_y = parsed_data
         dpi_x = dpi_x or 96.0
@@ -168,11 +172,13 @@ class BmpImporter(Importer):
                 xres=dpi_x / 25.4,
                 yres=dpi_y / 25.4,
             )
+            self._image = image
         except pyvips.Error as e:
             logger.error(
                 "Failed to create pyvips image from parsed BMP data: %s", e
             )
-            return None, None
+            self._image = None
+            return None
 
         # Calculate unit conversion (pixels to mm)
         native_unit_to_mm = 25.4 / dpi_x
@@ -196,4 +202,4 @@ class BmpImporter(Importer):
             ],
         )
 
-        return parse_result, image
+        return parse_result
