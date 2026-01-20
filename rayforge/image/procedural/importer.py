@@ -116,7 +116,7 @@ class ProceduralImporter(Importer):
         )
 
         # Phase 3: Vectorize (Generate placeholder geometry)
-        vec_result = self._vectorize(parse_result)
+        vec_result = self.vectorize(parse_result, spec)
 
         # Phase 4: Layout
         engine = NormalizationEngine()
@@ -166,7 +166,9 @@ class ProceduralImporter(Importer):
             ],
         )
 
-    def _vectorize(self, parse_result: ParsingResult) -> VectorizationResult:
+    def vectorize(
+        self, parse_result: ParsingResult, spec: VectorizationSpec
+    ) -> VectorizationResult:
         """
         Phase 3: Generate the pristine geometry.
         We create a rectangle matching the calculated dimensions.

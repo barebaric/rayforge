@@ -90,9 +90,7 @@ class JpgImporter(Importer):
         )
 
         # Phase 3 (Vectorize): Trace the image to get vector geometry
-        vec_result = self._vectorize(
-            parse_result, self._image, vectorization_spec
-        )
+        vec_result = self.vectorize(parse_result, vectorization_spec)
 
         # Phase 4 (Layout): Calculate layout plan
         engine = NormalizationEngine()
@@ -113,14 +111,18 @@ class JpgImporter(Importer):
 
         return ImportPayload(source=source, items=items)
 
-    def _vectorize(
+    def vectorize(
         self,
         parse_result: ParsingResult,
-        image: pyvips.Image,
-        spec: TraceSpec,
+        spec: VectorizationSpec,
     ) -> VectorizationResult:
         """Phase 3: Generate vector geometry by tracing the bitmap."""
-        normalized_image = image_util.normalize_to_rgba(image)
+        assert self._image is not None, "parse() must be called first"
+        assert isinstance(spec, TraceSpec), (
+            "JpgImporter only supports TraceSpec"
+        )
+
+        normalized_image = image_util.normalize_to_rgba(self._image)
         if not normalized_image:
             logger.error("Failed to normalize image to RGBA format.")
             return VectorizationResult(

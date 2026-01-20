@@ -113,7 +113,7 @@ class DxfImporter(Importer):
             return ImportPayload(source=source, items=[])
 
         logger.debug("Phase 3: Vectorizing (packaging) parsed data.")
-        vec_result = self._vectorize(parse_result, self._geometries_by_layer)
+        vec_result = self.vectorize(parse_result, spec)
 
         logger.debug(
             "Phase 4: Calculating layout plan with NormalizationEngine."
@@ -149,14 +149,14 @@ class DxfImporter(Importer):
 
         return ImportPayload(source=source, items=items)
 
-    def _vectorize(
+    def vectorize(
         self,
         parse_result: ParsingResult,
-        geometries_by_layer: Dict[Optional[str], Geometry],
+        spec: VectorizationSpec,
     ) -> VectorizationResult:
         """Phase 3: Package parsed data for the layout engine."""
         return VectorizationResult(
-            geometries_by_layer=geometries_by_layer,
+            geometries_by_layer=self._geometries_by_layer,
             source_parse_result=parse_result,
         )
 
