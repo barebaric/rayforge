@@ -13,14 +13,11 @@ with warnings.catch_warnings():
 from ...core.geo import Geometry
 from ...core.source_asset import SourceAsset
 from ...core.vectorization_spec import TraceSpec, VectorizationSpec
-from ..assembler import ItemAssembler
 from ..base_importer import (
     Importer,
-    ImportPayload,
     ImporterFeature,
     ImportManifest,
 )
-from ..engine import NormalizationEngine
 from ..tracing import trace_surface
 from .. import image_util
 from ..structures import ParsingResult, LayerGeometry, VectorizationResult
@@ -74,58 +71,23 @@ class BmpImporter(Importer):
                 ],
             )
 
-    def get_doc_items(
-        self, vectorization_spec: Optional["VectorizationSpec"] = None
-    ) -> Optional[ImportPayload]:
-        if not isinstance(vectorization_spec, TraceSpec):
-            logger.error("BmpImporter requires a TraceSpec to trace.")
-            return None
+    def create_source_asset(self, parse_result: ParsingResult) -> SourceAsset:
+        """
+        Creates a SourceAsset for BMP import.
+        """
+        _, _, w_px, h_px = parse_result.page_bounds
+        width_mm = w_px * parse_result.native_unit_to_mm
+        height_mm = h_px * parse_result.native_unit_to_mm
 
-        # Phase 2 (Parse): Get ParsingResult and set self._image
-        parse_result = self.parse()
-        if not parse_result or not self._image:
-            logger.error(
-                "BMP file could not be parsed. It may be compressed or in an "
-                "unsupported format."
-            )
-            return None
-
-        # Create the SourceAsset with dimensions from parsing
-        _, _, w, h = parse_result.page_bounds
-        width_mm = w * parse_result.native_unit_to_mm
-        height_mm = h * parse_result.native_unit_to_mm
-
-        source = SourceAsset(
+        return SourceAsset(
             source_file=self.source_file,
             original_data=self.raw_data,
             renderer=BMP_RENDERER,
-            width_px=int(w),
-            height_px=int(h),
+            width_px=int(w_px),
+            height_px=int(h_px),
             width_mm=width_mm,
             height_mm=height_mm,
         )
-
-        # Phase 3 (Vectorize): Trace the image to get vector geometry
-        vec_result = self.vectorize(parse_result, vectorization_spec)
-
-        # Phase 4 (Layout): Calculate layout plan from vectorized geometry
-        engine = NormalizationEngine()
-        plan = engine.calculate_layout(vec_result, vectorization_spec)
-        if not plan:
-            logger.warning("Layout plan is empty; no items will be created.")
-            return ImportPayload(source=source, items=[])
-
-        # Phase 5 (Assemble): Create DocItems from the layout plan
-        assembler = ItemAssembler()
-        items = assembler.create_items(
-            source_asset=source,
-            layout_plan=plan,
-            spec=vectorization_spec,
-            source_name=self.source_file.stem,
-            geometries=vec_result.geometries_by_layer,
-        )
-
-        return ImportPayload(source=source, items=items)
 
     def vectorize(
         self,
@@ -200,7 +162,11 @@ class BmpImporter(Importer):
             native_unit_to_mm=native_unit_to_mm,
             is_y_down=True,
             layers=[
-                LayerGeometry(layer_id=layer_id, content_bounds=content_bounds)
+                LayerGeometry(
+                    layer_id=layer_id,
+                    name=layer_id,
+                    content_bounds=content_bounds,
+                )
             ],
         )
 

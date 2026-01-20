@@ -6,7 +6,7 @@ from ..core.layer import Layer
 from ..core.source_asset import SourceAsset
 from ..core.source_asset_segment import SourceAssetSegment
 from ..core.workpiece import WorkPiece
-from ..core.vectorization_spec import VectorizationSpec
+from ..core.vectorization_spec import VectorizationSpec, PassthroughSpec
 from .structures import LayoutItem
 
 logger = logging.getLogger(__name__)
@@ -27,7 +27,6 @@ class ItemAssembler:
         spec: VectorizationSpec,
         source_name: str,
         geometries: Dict[Optional[str], Geometry],
-        layer_manifest: Optional[List[Dict[str, str]]] = None,
         page_bounds: Optional[Tuple[float, float, float, float]] = None,
     ) -> List[DocItem]:
         """
@@ -39,11 +38,6 @@ class ItemAssembler:
         # If we have multiple items, we generally wrap them in Layers (if
         # requested by spec) or return a list of WorkPieces.
         items: List[DocItem] = []
-        layer_names = (
-            {m["id"]: m["name"] for m in layer_manifest}
-            if layer_manifest
-            else {}
-        )
 
         page_x, page_y = (
             (page_bounds[0], page_bounds[1]) if page_bounds else (0.0, 0.0)
@@ -83,18 +77,18 @@ class ItemAssembler:
             )
 
             # Note: We should probably store physical dimensions on the segment
-            # for split/crop reference, calculated from world matrix scale.
+            # for split/crop reference, calculated from the world matrix scale.
             w_mm, h_mm = item.world_matrix.get_abs_scale()
             segment.cropped_width_mm = w_mm
             segment.cropped_height_mm = h_mm
 
             # 2. Create the WorkPiece
-            # Prioritize human-readable name from manifest, fallback to ID,
+            # Prioritize human-readable name from layout item, fallback to ID,
             # then to the overall source name.
             name = (
-                layer_names.get(item.layer_id, item.layer_id)
-                if item.layer_id
-                else source_name
+                item.layer_name
+                if item.layer_name
+                else (item.layer_id if item.layer_id else source_name)
             )
             wp = WorkPiece(name=name, source_segment=segment)
 
@@ -104,7 +98,7 @@ class ItemAssembler:
             wp.natural_height_mm = h_mm
 
             # 4. Wrap in Layer if splitting is active and meaningful
-            if item.layer_id:
+            if item.layer_id and isinstance(spec, PassthroughSpec):
                 layer = Layer(name=name)
                 layer.add_child(wp)
                 items.append(layer)

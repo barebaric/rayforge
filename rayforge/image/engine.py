@@ -50,7 +50,10 @@ class NormalizationEngine:
                 # Fallback to page bounds if tracing produced no geometry
                 return [
                     self._create_item_from_bounds(
-                        result.page_bounds, result, layer_id=None
+                        result.page_bounds,
+                        result,
+                        layer_id=None,
+                        layer_name=None,
                     )
                 ]
 
@@ -61,7 +64,7 @@ class NormalizationEngine:
 
             return [
                 self._create_item_from_bounds(
-                    union_rect, result, layer_id=None
+                    union_rect, result, layer_id=None, layer_name=None
                 )
             ]
 
@@ -85,7 +88,10 @@ class NormalizationEngine:
             # Fallback for empty files or no matching layers: use page bounds.
             return [
                 self._create_item_from_bounds(
-                    result.page_bounds, result, layer_id=None
+                    result.page_bounds,
+                    result,
+                    layer_id=None,
+                    layer_name=None,
                 )
             ]
 
@@ -98,7 +104,10 @@ class NormalizationEngine:
                 # correct world_matrix and normalization_matrix.
                 plan.append(
                     self._create_item_from_bounds(
-                        layer.content_bounds, result, layer_id=layer.layer_id
+                        layer.content_bounds,
+                        result,
+                        layer_id=layer.layer_id,
+                        layer_name=layer.name,
                     )
                 )
             return plan
@@ -115,7 +124,7 @@ class NormalizationEngine:
 
             return [
                 self._create_item_from_bounds(
-                    union_rect, result, layer_id=None
+                    union_rect, result, layer_id=None, layer_name=None
                 )
             ]
 
@@ -143,6 +152,7 @@ class NormalizationEngine:
         bounds: Tuple[float, float, float, float],
         result: ParsingResult,
         layer_id: Optional[str],
+        layer_name: Optional[str],
     ) -> LayoutItem:
         """
         Generates the matrices for a specific bounding box (x, y, w, h)
@@ -206,12 +216,14 @@ class NormalizationEngine:
         )
 
         logger.debug(
-            f"NormalizationEngine: layer_id={layer_id}, bounds={bounds}, "
+            f"NormalizationEngine: layer_id={layer_id}, "
+            f"layer_name={layer_name}, bounds={bounds}, "
             f"crop_window={bounds}, "
             f"native_unit_to_mm={result.native_unit_to_mm}"
         )
         return LayoutItem(
             layer_id=layer_id,
+            layer_name=layer_name,
             world_matrix=world_matrix,
             normalization_matrix=norm_matrix,
             crop_window=bounds,

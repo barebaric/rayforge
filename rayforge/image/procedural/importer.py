@@ -7,14 +7,11 @@ from typing import Optional, Dict
 from ...core.geo import Geometry
 from ...core.source_asset import SourceAsset
 from ...core.vectorization_spec import VectorizationSpec, ProceduralSpec
-from ..assembler import ItemAssembler
 from ..base_importer import (
     Importer,
-    ImportPayload,
     ImporterFeature,
     ImportManifest,
 )
-from ..engine import NormalizationEngine
 from ..structures import ParsingResult, LayerGeometry, VectorizationResult
 from .renderer import PROCEDURAL_RENDERER
 
@@ -86,55 +83,22 @@ class ProceduralImporter(Importer):
                 warnings=["Could not calculate size from procedural recipe."],
             )
 
-    def get_doc_items(
-        self, vectorization_spec: Optional["VectorizationSpec"] = None
-    ) -> Optional[ImportPayload]:
+    def create_source_asset(self, parse_result: ParsingResult) -> SourceAsset:
         """
-        Generates the ImportPayload containing the procedural WorkPiece and
-        its corresponding SourceAsset.
+        Creates a SourceAsset for Procedural import.
         """
-        # Ensure we use a ProceduralSpec if none provided
-        spec = vectorization_spec or ProceduralSpec()
-
-        # Phase 2: Parse (Calculate dimensions)
-        parse_result = self.parse()
-        if not parse_result:
-            return None
-
-        # Create SourceAsset
         _, _, w, h = parse_result.page_bounds
         # For procedural, native units are 1:1 with mm (scale=1.0)
         width_mm = w
         height_mm = h
 
-        source = SourceAsset(
+        return SourceAsset(
             source_file=self.source_file,
             original_data=self.raw_data,  # This is the recipe data
             renderer=PROCEDURAL_RENDERER,
             width_mm=width_mm,
             height_mm=height_mm,
         )
-
-        # Phase 3: Vectorize (Generate placeholder geometry)
-        vec_result = self.vectorize(parse_result, spec)
-
-        # Phase 4: Layout
-        engine = NormalizationEngine()
-        plan = engine.calculate_layout(vec_result, spec)
-        if not plan:
-            return ImportPayload(source=source, items=[])
-
-        # Phase 5: Assembly
-        assembler = ItemAssembler()
-        items = assembler.create_items(
-            source_asset=source,
-            layout_plan=plan,
-            spec=spec,
-            source_name=self.name,
-            geometries=vec_result.geometries_by_layer,
-        )
-
-        return ImportPayload(source=source, items=items)
 
     def parse(self) -> Optional[ParsingResult]:
         """
@@ -162,7 +126,11 @@ class ProceduralImporter(Importer):
             native_unit_to_mm=1.0,  # 1 native unit = 1 mm
             is_y_down=True,  # Standardize on Y-down for generated content
             layers=[
-                LayerGeometry(layer_id=layer_id, content_bounds=page_bounds)
+                LayerGeometry(
+                    layer_id=layer_id,
+                    name=layer_id,
+                    content_bounds=page_bounds,
+                )
             ],
         )
 
@@ -173,6 +141,8 @@ class ProceduralImporter(Importer):
         Phase 3: Generate the pristine geometry.
         We create a rectangle matching the calculated dimensions.
         """
+        if not isinstance(spec, ProceduralSpec):
+            raise TypeError("ProceduralImporter only supports ProceduralSpec.")
         _, _, w, h = parse_result.page_bounds
 
         frame_geo = Geometry()

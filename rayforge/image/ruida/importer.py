@@ -88,19 +88,10 @@ class RuidaImporter(Importer):
             logger.error("Ruida file parse failed.")
             return None
 
-        source = SourceAsset(
-            source_file=self.source_file,
-            original_data=self.raw_data,
-            renderer=RUIDA_RENDERER,
-        )
+        source = self.create_source_asset(parse_result)
 
         if not parse_result.layers:
             return ImportPayload(source=source, items=[])
-
-        # Store natural size metadata from the definitive bounds
-        _, _, w, h = parse_result.page_bounds
-        source.width_mm = w
-        source.height_mm = h
 
         spec = vectorization_spec or PassthroughSpec()
 
@@ -128,6 +119,21 @@ class RuidaImporter(Importer):
             geometries=geometries,
         )
         return ImportPayload(source=source, items=items)
+
+    def create_source_asset(self, parse_result: ParsingResult) -> SourceAsset:
+        """
+        Creates a SourceAsset for Ruida import.
+        """
+        _, _, w, h = parse_result.page_bounds
+
+        source = SourceAsset(
+            source_file=self.source_file,
+            original_data=self.raw_data,
+            renderer=RUIDA_RENDERER,
+            width_mm=w,
+            height_mm=h,
+        )
+        return source
 
     def vectorize(
         self,
@@ -176,7 +182,11 @@ class RuidaImporter(Importer):
             native_unit_to_mm=1.0,
             is_y_down=False,
             layers=[
-                LayerGeometry(layer_id=layer_id, content_bounds=page_bounds)
+                LayerGeometry(
+                    layer_id=layer_id,
+                    name=layer_id,
+                    content_bounds=page_bounds,
+                )
             ],
         )
         self._geometries_by_layer = {layer_id: pristine_geo}

@@ -11,14 +11,11 @@ from ...core.geo import Geometry
 from ...core.source_asset import SourceAsset
 from ...core.vectorization_spec import TraceSpec, VectorizationSpec
 from .. import image_util
-from ..assembler import ItemAssembler
 from ..base_importer import (
     Importer,
-    ImportPayload,
     ImporterFeature,
     ImportManifest,
 )
-from ..engine import NormalizationEngine
 from ..structures import ParsingResult, LayerGeometry, VectorizationResult
 from ..tracing import trace_surface
 from .renderer import JPG_RENDERER
@@ -59,26 +56,19 @@ class JpgImporter(Importer):
                 ],
             )
 
-    def get_doc_items(
-        self, vectorization_spec: Optional["VectorizationSpec"] = None
-    ) -> Optional[ImportPayload]:
-        if not isinstance(vectorization_spec, TraceSpec):
-            logger.error("JpgImporter requires a TraceSpec to trace.")
-            return None
-
-        # Phase 2 (Parse): Get ParsingResult and image data
-        parse_result = self.parse()
-        if not parse_result or not self._image:
-            return None
-
-        # Create the SourceAsset
+    def create_source_asset(
+        self, parse_result: ParsingResult
+    ) -> SourceAsset:
+        """
+        Creates a SourceAsset for JPEG import.
+        """
         metadata = image_util.extract_vips_metadata(self._image)
         metadata["image_format"] = "JPEG"
         _, _, w_px, h_px = parse_result.page_bounds
         width_mm = w_px * parse_result.native_unit_to_mm
         height_mm = h_px * parse_result.native_unit_to_mm
 
-        source = SourceAsset(
+        return SourceAsset(
             source_file=self.source_file,
             original_data=self.raw_data,
             renderer=JPG_RENDERER,
@@ -89,28 +79,6 @@ class JpgImporter(Importer):
             height_mm=height_mm,
         )
 
-        # Phase 3 (Vectorize): Trace the image to get vector geometry
-        vec_result = self.vectorize(parse_result, vectorization_spec)
-
-        # Phase 4 (Layout): Calculate layout plan
-        engine = NormalizationEngine()
-        plan = engine.calculate_layout(vec_result, vectorization_spec)
-        if not plan:
-            logger.warning("Layout plan is empty; no items will be created.")
-            return ImportPayload(source=source, items=[])
-
-        # Phase 5 (Assemble): Create DocItems
-        assembler = ItemAssembler()
-        items = assembler.create_items(
-            source_asset=source,
-            layout_plan=plan,
-            spec=vectorization_spec,
-            source_name=self.source_file.stem,
-            geometries=vec_result.geometries_by_layer,
-        )
-
-        return ImportPayload(source=source, items=items)
-
     def vectorize(
         self,
         parse_result: ParsingResult,
@@ -118,9 +86,8 @@ class JpgImporter(Importer):
     ) -> VectorizationResult:
         """Phase 3: Generate vector geometry by tracing the bitmap."""
         assert self._image is not None, "parse() must be called first"
-        assert isinstance(spec, TraceSpec), (
-            "JpgImporter only supports TraceSpec"
-        )
+        if not isinstance(spec, TraceSpec):
+            raise TypeError("JpgImporter only supports TraceSpec")
 
         normalized_image = image_util.normalize_to_rgba(self._image)
         if not normalized_image:
@@ -174,7 +141,9 @@ class JpgImporter(Importer):
             is_y_down=True,
             layers=[
                 LayerGeometry(
-                    layer_id="__default__", content_bounds=page_bounds
+                    layer_id="__default__",
+                    name="__default__",
+                    content_bounds=page_bounds,
                 )
             ],
         )

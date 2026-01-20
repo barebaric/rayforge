@@ -117,9 +117,7 @@ class SvgImporter(Importer):
         """
         self.trimmed_data = self._analytical_trim(self.raw_data)
 
-    def create_source_asset(
-        self, parse_result: ParsingResult, spec: VectorizationSpec
-    ) -> SourceAsset:
+    def create_source_asset(self, parse_result: ParsingResult) -> SourceAsset:
         """
         Creates a SourceAsset for SVG import.
         """
@@ -162,7 +160,6 @@ class SvgImporter(Importer):
                 except ET.ParseError:
                     pass
 
-            metadata["is_vector"] = not isinstance(spec, TraceSpec)
             source.metadata.update(metadata)
         except Exception as e:
             logger.warning(f"Could not calculate SVG metadata: {e}")
@@ -260,7 +257,13 @@ class SvgImporter(Importer):
                 if not temp_geo.is_empty():
                     raw_geometries_by_layer[lid] = temp_geo
 
-        # Step 8: Calculate content bounds and assemble LayerGeometry objects.
+        # Step 8: Get layer manifest for layer names.
+        layer_manifest = extract_layer_manifest(self.trimmed_data)
+        layer_names_by_id = {
+            layer["id"]: layer["name"] for layer in layer_manifest
+        }
+
+        # Step 9: Calculate content bounds and assemble LayerGeometry objects.
         layer_geometries: List[LayerGeometry] = []
         for layer_id, geo in raw_geometries_by_layer.items():
             if not geo.is_empty():
@@ -271,11 +274,12 @@ class SvgImporter(Importer):
                 layer_geometries.append(
                     LayerGeometry(
                         layer_id=layer_id,
+                        name=layer_names_by_id.get(layer_id, layer_id),
                         content_bounds=abs_content_bounds,
                     )
                 )
 
-        # Step 9: Assemble and return the final ParsingResult.
+        # Step 10: Assemble and return the final ParsingResult.
         return ParsingResult(
             page_bounds=page_bounds_px,
             native_unit_to_mm=unit_to_mm,
@@ -305,12 +309,10 @@ class SvgImporter(Importer):
             return None
 
         # Create Source Asset
-        source = self.create_source_asset(parse_result, spec)
+        source = self.create_source_asset(parse_result)
 
         # Phase 3: Vectorize
         vec_result = self.vectorize(parse_result, spec)
-        if vec_result is None:
-            return None
 
         # If tracing occurred, update the source asset with the rendered png
         if self.traced_artefacts:
@@ -352,7 +354,6 @@ class SvgImporter(Importer):
                         spec=spec,
                         source_name=self.source_file.stem,
                         geometries=geometries,
-                        layer_manifest=extract_layer_manifest(self.raw_data),
                         page_bounds=parse_result.page_bounds,
                     )
             else:
@@ -366,7 +367,6 @@ class SvgImporter(Importer):
                     spec=spec,
                     source_name=self.source_file.stem,
                     geometries=geometries,
-                    layer_manifest=extract_layer_manifest(self.raw_data),
                     page_bounds=vec_result.source_parse_result.page_bounds,
                 )
 
@@ -592,16 +592,22 @@ class SvgImporter(Importer):
 
     def vectorize(
         self,
-        result: ParsingResult,
+        parse_result: ParsingResult,
         spec: VectorizationSpec,
-    ) -> Optional[VectorizationResult]:
+    ) -> VectorizationResult:
         """Unified vectorization method that dispatches based on spec type."""
-        self.traced_artefacts = {}  # Reset
+        self.traced_artefacts = {}
         if isinstance(spec, TraceSpec):
-            return self._vectorize_trace(result, spec)
+            result = self._vectorize_trace(parse_result, spec)
+            if result is None:
+                raise ValueError(
+                    "Failed to vectorize SVG: bitmap tracing "
+                    "produced no result"
+                )
+            return result
         if not isinstance(spec, PassthroughSpec):
             spec = PassthroughSpec()
-        return self._vectorize_direct(result, spec)
+        return self._vectorize_direct(parse_result, spec)
 
     def _parse_geometry_by_layer(
         self, svg: SVG, layer_ids: List[str]

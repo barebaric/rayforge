@@ -1,18 +1,10 @@
-from typing import Optional, Tuple, Dict, Any, List, TYPE_CHECKING
+from typing import Optional, Tuple, Dict, Any
 import logging
 import cairo
 import numpy
 import pyvips
-
-from ..core.source_asset_segment import SourceAssetSegment
-from ..core.item import DocItem
-from ..core.matrix import Matrix
-from ..core.workpiece import WorkPiece
 from ..core.geo import Geometry
-
-if TYPE_CHECKING:
-    from ..core.source_asset import SourceAsset
-    from ..core.vectorization_spec import TraceSpec
+from ..core.matrix import Matrix
 
 logger = logging.getLogger(__name__)
 
@@ -290,88 +282,3 @@ def apply_mask_to_vips_image(
 
     # Return RGBA with the new intersected alpha
     return rgba_image[0:3].bandjoin(final_alpha)
-
-
-def create_single_workpiece_from_trace(
-    geometries: List[Geometry],
-    source: "SourceAsset",
-    image: pyvips.Image,
-    vectorization_spec: "TraceSpec",
-    name_stem: str,
-) -> List[DocItem]:
-    """
-    Combines all traced geometries into a single WorkPiece. It creates a
-    normalized (Y-down) mask geometry that defines the workpiece's shape.
-    """
-    combined_geo = Geometry()
-    if geometries:
-        for geo in geometries:
-            geo.close_gaps()
-            combined_geo.extend(geo)
-
-    if combined_geo.is_empty():
-        logger.warning("Tracing produced no vectors, creating an empty item.")
-        # Create a workpiece with an empty segment to signify it came from
-        # this source
-        empty_segment = SourceAssetSegment(
-            source_asset_uid=source.uid,
-            pristine_geometry=Geometry(),
-            normalization_matrix=Matrix.identity(),
-            vectorization_spec=vectorization_spec,
-        )
-        wp = WorkPiece(name=name_stem, source_segment=empty_segment)
-        # It will have default 0x0 size, which is correct for an empty item.
-        return [wp]
-
-    min_x, min_y, max_x, max_y = combined_geo.rect()
-    width_px = max_x - min_x
-    height_px = max_y - min_y
-
-    # Create a geometry in the pixel space of the cropped image area. This
-    # becomes the pristine geometry for the segment.
-    pristine_geo = combined_geo.copy()
-    pristine_geo.transform(Matrix.translation(-min_x, -min_y).to_4x4_numpy())
-
-    # Create the matrix that normalizes the pristine geometry to a 1x1 box.
-    normalization_matrix = Matrix.identity()
-    if width_px > 0 and height_px > 0:
-        normalization_matrix = Matrix.scale(1.0 / width_px, 1.0 / height_px)
-
-    mm_per_px_x, mm_per_px_y = get_mm_per_pixel(image)
-    width_mm = width_px * mm_per_px_x
-    height_mm = height_px * mm_per_px_y
-    pos_x_mm = min_x * mm_per_px_x
-    # Position calculation must also be Y-up
-    pos_y_mm = (image.height - max_y) * mm_per_px_y
-
-    # Update the source asset with the full image dimensions
-    source.width_px = image.width
-    source.height_px = image.height
-
-    gen_config = SourceAssetSegment(
-        source_asset_uid=source.uid,
-        vectorization_spec=vectorization_spec,
-        pristine_geometry=pristine_geo,
-        normalization_matrix=normalization_matrix,
-        crop_window_px=(min_x, min_y, width_px, height_px),
-        cropped_width_mm=width_mm,
-        cropped_height_mm=height_mm,
-    )
-
-    # Store crop info in metadata for the transient preview dialog
-    source.metadata["crop_window_px"] = gen_config.crop_window_px
-
-    # Create the WorkPiece from the source_segment.
-    final_wp = WorkPiece(
-        name=name_stem,
-        source_segment=gen_config,
-    )
-    # Set its intrinsic dimensions directly.
-    final_wp.natural_width_mm = width_mm
-    final_wp.natural_height_mm = height_mm
-
-    # Set its size and position via the matrix.
-    final_wp.set_size(width_mm, height_mm)
-    final_wp.pos = (pos_x_mm, pos_y_mm)
-
-    return [final_wp]

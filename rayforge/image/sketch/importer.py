@@ -68,20 +68,8 @@ class SketchImporter(Importer):
         if not parse_result or not self.parsed_sketch:
             return None
 
-        # Determine dimensions from parse result
-        _, _, width, height = parse_result.page_bounds
-
         # Create SourceAsset
-        source_asset = SourceAsset(
-            source_file=self.source_file
-            if self.source_file
-            else Path("sketch.rfs"),
-            original_data=self.raw_data,
-            renderer=self.renderer,
-            metadata={"is_vector": True},
-            width_mm=width,
-            height_mm=height,
-        )
+        source_asset = self.create_source_asset(parse_result)
 
         spec = vectorization_spec or PassthroughSpec()
 
@@ -131,6 +119,23 @@ class SketchImporter(Importer):
             sketches=[self.parsed_sketch],
         )
 
+    def create_source_asset(self, parse_result: ParsingResult) -> SourceAsset:
+        """
+        Creates a SourceAsset for Sketch import.
+        """
+        _, _, width, height = parse_result.page_bounds
+
+        return SourceAsset(
+            source_file=self.source_file
+            if self.source_file
+            else Path("sketch.rfs"),
+            original_data=self.raw_data,
+            renderer=self.renderer,
+            metadata={"is_vector": True},
+            width_mm=width,
+            height_mm=height,
+        )
+
     def parse(self) -> Optional[ParsingResult]:
         """Phase 2: Parse JSON into Sketch model and solve it for bounds."""
         try:
@@ -171,7 +176,11 @@ class SketchImporter(Importer):
             native_unit_to_mm=1.0,
             is_y_down=False,  # Sketches are Y-Up
             layers=[
-                LayerGeometry(layer_id=layer_id, content_bounds=page_bounds)
+                LayerGeometry(
+                    layer_id=layer_id,
+                    name=layer_id,
+                    content_bounds=page_bounds,
+                )
             ],
         )
 

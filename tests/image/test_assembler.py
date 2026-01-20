@@ -27,6 +27,7 @@ class TestItemAssembler(unittest.TestCase):
         plan = [
             LayoutItem(
                 layer_id=None,
+                layer_name=None,
                 world_matrix=Matrix.identity(),
                 normalization_matrix=Matrix.identity(),
                 crop_window=(0, 0, 100, 100),
@@ -62,12 +63,14 @@ class TestItemAssembler(unittest.TestCase):
         plan = [
             LayoutItem(
                 layer_id="LayerA",
+                layer_name="LayerA",
                 world_matrix=Matrix.identity(),
                 normalization_matrix=Matrix.identity(),
                 crop_window=(0, 0, 10, 10),
             ),
             LayoutItem(
                 layer_id="LayerB",
+                layer_name="LayerB",
                 world_matrix=Matrix.translation(10, 10),
                 normalization_matrix=Matrix.identity(),
                 crop_window=(20, 20, 10, 10),

@@ -100,12 +100,7 @@ class DxfImporter(Importer):
             logger.error("DXF Importer: Failed to parse DXF file.")
             return None
 
-        source = SourceAsset(
-            source_file=self.source_file,
-            original_data=self.raw_data,
-            renderer=DXF_RENDERER,
-            metadata={"is_vector": True},
-        )
+        source = self.create_source_asset(parse_result)
         spec = vectorization_spec or PassthroughSpec()
 
         if not parse_result.layers:
@@ -143,11 +138,28 @@ class DxfImporter(Importer):
             spec=spec,
             source_name=self.source_file.stem,
             geometries=geometries,
-            layer_manifest=self._get_layer_manifest(self._dxf_doc),
         )
         logger.debug(f"Assembled {len(items)} top-level item(s).")
 
         return ImportPayload(source=source, items=items)
+
+    def create_source_asset(self, parse_result: ParsingResult) -> SourceAsset:
+        """
+        Creates a SourceAsset for DXF import.
+        """
+        _, _, w, h = parse_result.page_bounds
+        width_mm = w * parse_result.native_unit_to_mm
+        height_mm = h * parse_result.native_unit_to_mm
+
+        source = SourceAsset(
+            source_file=self.source_file,
+            original_data=self.raw_data,
+            renderer=DXF_RENDERER,
+            metadata={"is_vector": True},
+            width_mm=width_mm,
+            height_mm=height_mm,
+        )
+        return source
 
     def vectorize(
         self,
@@ -207,7 +219,9 @@ class DxfImporter(Importer):
             content_bounds = (min_x, min_y, w, h)
             result.layers.append(
                 LayerGeometry(
-                    layer_id=layer_name, content_bounds=content_bounds
+                    layer_id=layer_name,
+                    name=layer_name,
+                    content_bounds=content_bounds,
                 )
             )
 

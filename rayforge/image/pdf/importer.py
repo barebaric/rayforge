@@ -15,14 +15,11 @@ from ...core.geo import Geometry
 from ...core.source_asset import SourceAsset
 from ...core.vectorization_spec import TraceSpec, VectorizationSpec
 from .. import image_util
-from ..assembler import ItemAssembler
 from ..base_importer import (
     Importer,
-    ImportPayload,
     ImporterFeature,
     ImportManifest,
 )
-from ..engine import NormalizationEngine
 from ..structures import ParsingResult, LayerGeometry, VectorizationResult
 from ..tracing import trace_surface, VTRACER_PIXEL_LIMIT
 from ..util import to_mm
@@ -91,66 +88,28 @@ class PdfImporter(Importer):
                 ],
             )
 
-    def get_doc_items(
-        self, vectorization_spec: Optional["VectorizationSpec"] = None
-    ) -> Optional[ImportPayload]:
-        """
-        Retrieve document items from the PDF file.
-        """
-        # Phase 2 (Parse): Get ParsingResult and render self._image
-        parse_result = self.parse()
+    def create_source_asset(self, parse_result: ParsingResult) -> SourceAsset:
+        """Creates a SourceAsset for the PDF import."""
+        assert self._image is not None, "parse() must have been called first"
 
-        # Create SourceAsset first to handle failure cases gracefully
-        source = SourceAsset(
-            source_file=self.source_file,
-            original_data=self.raw_data,
-            renderer=PDF_RENDERER,
-        )
-
-        if not parse_result or not self._image:
-            return ImportPayload(source=source, items=[])
-
-        # Populate SourceAsset with dimensions
+        # Populate dimensions
         _, _, w_px, h_px = parse_result.page_bounds
         width_mm = w_px * parse_result.native_unit_to_mm
         height_mm = h_px * parse_result.native_unit_to_mm
 
-        source.width_px = int(w_px)
-        source.height_px = int(h_px)
-        source.width_mm = width_mm
-        source.height_mm = height_mm
+        source = SourceAsset(
+            source_file=self.source_file,
+            original_data=self.raw_data,
+            renderer=PDF_RENDERER,
+            width_px=int(w_px),
+            height_px=int(h_px),
+            width_mm=width_mm,
+            height_mm=height_mm,
+        )
 
         # Store the rendered image so the preview dialog can use it.
         source.base_render_data = self._image.pngsave_buffer()
-
-        spec = vectorization_spec
-        if not isinstance(spec, TraceSpec):
-            logger.warning(
-                "PdfImporter did not receive a TraceSpec, using defaults."
-            )
-            spec = TraceSpec()
-
-        # Phase 3 (Vectorize)
-        vec_result = self.vectorize(parse_result, spec)
-
-        # Phase 4 (Layout)
-        engine = NormalizationEngine()
-        plan = engine.calculate_layout(vec_result, spec)
-        if not plan:
-            logger.warning("Layout plan is empty; no items will be created.")
-            return ImportPayload(source=source, items=[])
-
-        # Phase 5 (Assemble)
-        assembler = ItemAssembler()
-        items = assembler.create_items(
-            source_asset=source,
-            layout_plan=plan,
-            spec=spec,
-            source_name=self.source_file.stem,
-            geometries=vec_result.geometries_by_layer,
-        )
-
-        return ImportPayload(source=source, items=items)
+        return source
 
     def vectorize(
         self,
@@ -159,9 +118,8 @@ class PdfImporter(Importer):
     ) -> VectorizationResult:
         """Phase 3: Generate vector geometry by tracing the bitmap."""
         assert self._image is not None, "parse() must be called first"
-        assert isinstance(spec, TraceSpec), (
-            "PdfImporter only supports TraceSpec"
-        )
+        if not isinstance(spec, TraceSpec):
+            raise TypeError("PdfImporter only supports TraceSpec")
 
         norm_image = image_util.normalize_to_rgba(self._image)
         if not norm_image:
@@ -226,7 +184,9 @@ class PdfImporter(Importer):
             is_y_down=True,
             layers=[
                 LayerGeometry(
-                    layer_id="__default__", content_bounds=page_bounds
+                    layer_id="__default__",
+                    name="__default__",
+                    content_bounds=page_bounds,
                 )
             ],
         )

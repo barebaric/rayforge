@@ -30,6 +30,7 @@ from .item import DocItem
 from .matrix import Matrix
 from .source_asset_segment import SourceAssetSegment
 from .tab import Tab
+from .vectorization_spec import TraceSpec
 
 if TYPE_CHECKING:
     from ..image.base_renderer import Renderer
@@ -645,9 +646,9 @@ class WorkPiece(DocItem):
             self.source_segment
             and self.source_segment.crop_window_px is not None
         )
-        is_vector = False
-        if self.source and self.source.metadata.get("is_vector"):
-            is_vector = True
+        is_vector = self.source_segment is not None and not isinstance(
+            self.source_segment.vectorization_spec, TraceSpec
+        )
 
         # If cropping a non-vector image, we must render the *original* full
         # image at a scaled-up resolution such that the crop window matches
@@ -725,11 +726,13 @@ class WorkPiece(DocItem):
 
             # For vector splitting/cropping, we calculate a ViewBox override
             # based on the crop window.
-            if (
-                self.source_segment.crop_window_px
-                and self.source
-                and self.source.metadata.get("is_vector")
-            ):
+            if self.source_segment.crop_window_px and self.source:
+                is_vector = self.source_segment is not None and not isinstance(
+                    self.source_segment.vectorization_spec, TraceSpec
+                )
+                if not is_vector:
+                    return kwargs
+
                 crop_px = self.source_segment.crop_window_px
                 vb_orig = self.source.metadata.get("viewbox")
 
@@ -787,11 +790,12 @@ class WorkPiece(DocItem):
         target_w, target_h = target_size
 
         # Check if vector to skip certain raster-only logic
-        is_vector = False
-        if self.source and self.source.metadata.get("is_vector"):
-            is_vector = True
-        if self.sketch_uid:
-            is_vector = True
+        is_vector = (self.sketch_uid is not None) or (
+            self.source_segment is not None
+            and not isinstance(
+                self.source_segment.vectorization_spec, TraceSpec
+            )
+        )
 
         # 1. Apply Crop (Only for non-vectors, or if crop_rect_hint is
         # explicit) Vector cropping is handled via ViewBox override in
@@ -827,7 +831,13 @@ class WorkPiece(DocItem):
                 processed_image, scaled_x, scaled_y, scaled_w, scaled_h
             )
             if not processed_image:
+                logger.debug("Cropping failed: processed_image is None")
                 return None
+            else:
+                logger.debug(
+                    f"Cropping succeeded: cropped_w={processed_image.width}, "
+                    f"cropped_h={processed_image.height}"
+                )
 
         # 2. Apply Mask
         # We skip masking for Vector sources because they already render with
