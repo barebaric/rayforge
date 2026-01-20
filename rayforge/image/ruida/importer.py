@@ -102,12 +102,13 @@ class RuidaImporter(Importer):
         source.width_mm = w
         source.height_mm = h
 
+        spec = vectorization_spec or PassthroughSpec()
+
         # Phase 3: Vectorize (packaging)
-        vec_result = self._vectorize(parse_result, self._geometries_by_layer)
+        vec_result = self.vectorize(parse_result, spec)
 
         # Phase 4: Layout
         engine = NormalizationEngine()
-        spec = vectorization_spec or PassthroughSpec()
         plan = engine.calculate_layout(vec_result, spec)
 
         # Since Ruida files are always a single merged entity, the plan will
@@ -128,14 +129,14 @@ class RuidaImporter(Importer):
         )
         return ImportPayload(source=source, items=items)
 
-    def _vectorize(
+    def vectorize(
         self,
         parse_result: ParsingResult,
-        geometries_by_layer: Dict[Optional[str], Geometry],
+        spec: VectorizationSpec,
     ) -> VectorizationResult:
         """Phase 3: Package parsed data for the layout engine."""
         return VectorizationResult(
-            geometries_by_layer=geometries_by_layer,
+            geometries_by_layer=self._geometries_by_layer,
             source_parse_result=parse_result,
         )
 

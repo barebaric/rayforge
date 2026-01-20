@@ -106,9 +106,7 @@ class BmpImporter(Importer):
         )
 
         # Phase 3 (Vectorize): Trace the image to get vector geometry
-        vec_result = self._vectorize(
-            parse_result, self._image, vectorization_spec
-        )
+        vec_result = self.vectorize(parse_result, vectorization_spec)
 
         # Phase 4 (Layout): Calculate layout plan from vectorized geometry
         engine = NormalizationEngine()
@@ -129,13 +127,17 @@ class BmpImporter(Importer):
 
         return ImportPayload(source=source, items=items)
 
-    def _vectorize(
+    def vectorize(
         self,
         parse_result: ParsingResult,
-        image: pyvips.Image,
-        spec: TraceSpec,
+        spec: VectorizationSpec,
     ) -> VectorizationResult:
-        surface = image_util.vips_rgba_to_cairo_surface(image)
+        assert self._image is not None, "parse() must be called first"
+        assert isinstance(spec, TraceSpec), (
+            "BmpImporter only supports TraceSpec"
+        )
+
+        surface = image_util.vips_rgba_to_cairo_surface(self._image)
         geometries_list = trace_surface(surface, spec)
         merged_geometry = Geometry()
         for geo in geometries_list:

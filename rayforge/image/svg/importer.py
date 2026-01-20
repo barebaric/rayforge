@@ -71,6 +71,7 @@ class SvgImporter(Importer):
         super().__init__(data, source_file)
         self.trimmed_data: Optional[bytes] = None
         self.svg: Optional[SVG] = None
+        self.traced_artefacts: Dict[str, Any] = {}
 
     def scan(self) -> ImportManifest:
         """
@@ -307,9 +308,15 @@ class SvgImporter(Importer):
         source = self.create_source_asset(parse_result, spec)
 
         # Phase 3: Vectorize
-        vec_result = self.vectorize(source, parse_result, spec)
+        vec_result = self.vectorize(parse_result, spec)
         if vec_result is None:
             return None
+
+        # If tracing occurred, update the source asset with the rendered png
+        if self.traced_artefacts:
+            source.base_render_data = self.traced_artefacts.get("png_data")
+            source.width_px = self.traced_artefacts.get("width_px")
+            source.height_px = self.traced_artefacts.get("height_px")
 
         logger.debug(
             "Phase 4: Calculating layout plan with NormalizationEngine."
@@ -456,7 +463,6 @@ class SvgImporter(Importer):
 
     def _vectorize_trace(
         self,
-        source: SourceAsset,
         result: ParsingResult,
         spec: TraceSpec,
     ) -> Optional[VectorizationResult]:
@@ -471,16 +477,14 @@ class SvgImporter(Importer):
         )
         native_unit_to_mm = result.native_unit_to_mm
 
-        w_px = page_bounds[2]
-        h_px = page_bounds[3]
-        w_mm = w_px * native_unit_to_mm
-        h_mm = h_px * native_unit_to_mm
+        w_px_orig = page_bounds[2]
+        h_px_orig = page_bounds[3]
+        w_mm = w_px_orig * native_unit_to_mm
+        h_mm = h_px_orig * native_unit_to_mm
 
         if w_mm <= 0 or h_mm <= 0:
             logger.warning("Cannot trace SVG: failed to determine size.")
             return None
-
-        source.width_mm, source.height_mm = w_mm, h_mm
 
         aspect = w_mm / h_mm if h_mm > 0 else 1.0
         TARGET_DIM = math.sqrt(VTRACER_PIXEL_LIMIT)
@@ -516,11 +520,10 @@ class SvgImporter(Importer):
             vips_image = vips_image.copy(xres=xres, yres=yres)
 
         png_data = vips_image.pngsave_buffer()
-        logger.debug(
-            f"Setting base_render_data: len={len(png_data)}, "
-            f"original_data_len={len(source.original_data)}"
-        )
-        source.base_render_data = png_data
+        logger.debug(f"Storing traced artefacts: len={len(png_data)}")
+        self.traced_artefacts["png_data"] = png_data
+        self.traced_artefacts["width_px"] = vips_image.width
+        self.traced_artefacts["height_px"] = vips_image.height
 
         normalized_vips = image_util.normalize_to_rgba(vips_image)
         if not normalized_vips:
@@ -537,9 +540,6 @@ class SvgImporter(Importer):
                 combined_geo.extend(geo)
 
         pristine_geo = combined_geo.copy()
-
-        source.width_px = vips_image.width
-        source.height_px = vips_image.height
 
         rendered_width = w_px
         rendered_height = h_px
@@ -592,13 +592,13 @@ class SvgImporter(Importer):
 
     def vectorize(
         self,
-        source: SourceAsset,
         result: ParsingResult,
         spec: VectorizationSpec,
     ) -> Optional[VectorizationResult]:
         """Unified vectorization method that dispatches based on spec type."""
+        self.traced_artefacts = {}  # Reset
         if isinstance(spec, TraceSpec):
-            return self._vectorize_trace(source, result, spec)
+            return self._vectorize_trace(result, spec)
         if not isinstance(spec, PassthroughSpec):
             spec = PassthroughSpec()
         return self._vectorize_direct(result, spec)

@@ -86,7 +86,7 @@ class SketchImporter(Importer):
         spec = vectorization_spec or PassthroughSpec()
 
         # Phase 3: Vectorize
-        vec_result = self._vectorize(parse_result)
+        vec_result = self.vectorize(parse_result, spec)
 
         # Phase 4: Layout
         engine = NormalizationEngine()
@@ -175,7 +175,9 @@ class SketchImporter(Importer):
             ],
         )
 
-    def _vectorize(self, parse_result: ParsingResult) -> VectorizationResult:
+    def vectorize(
+        self, parse_result: ParsingResult, spec: VectorizationSpec
+    ) -> VectorizationResult:
         """Phase 3: Extract geometry from the solved sketch."""
         if not self.parsed_sketch:
             # Should not happen if parse succeeded

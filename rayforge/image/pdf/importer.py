@@ -131,7 +131,7 @@ class PdfImporter(Importer):
             spec = TraceSpec()
 
         # Phase 3 (Vectorize)
-        vec_result = self._vectorize(parse_result, self._image, spec)
+        vec_result = self.vectorize(parse_result, spec)
 
         # Phase 4 (Layout)
         engine = NormalizationEngine()
@@ -152,14 +152,18 @@ class PdfImporter(Importer):
 
         return ImportPayload(source=source, items=items)
 
-    def _vectorize(
+    def vectorize(
         self,
         parse_result: ParsingResult,
-        image: pyvips.Image,
-        spec: TraceSpec,
+        spec: VectorizationSpec,
     ) -> VectorizationResult:
         """Phase 3: Generate vector geometry by tracing the bitmap."""
-        norm_image = image_util.normalize_to_rgba(image)
+        assert self._image is not None, "parse() must be called first"
+        assert isinstance(spec, TraceSpec), (
+            "PdfImporter only supports TraceSpec"
+        )
+
+        norm_image = image_util.normalize_to_rgba(self._image)
         if not norm_image:
             logger.error("Failed to normalize PDF image for tracing.")
             return VectorizationResult(
