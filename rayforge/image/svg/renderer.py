@@ -1,4 +1,5 @@
 import warnings
+import logging
 from typing import Optional, TYPE_CHECKING, List, Tuple
 from xml.etree import ElementTree as ET
 from ..base_renderer import Renderer
@@ -7,6 +8,8 @@ from .svgutil import filter_svg_layers
 with warnings.catch_warnings():
     warnings.simplefilter("ignore", DeprecationWarning)
     import pyvips
+
+logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     pass
@@ -59,7 +62,14 @@ class SvgRenderer(Renderer):
             # non-uniformly scaled objects correctly.
             root.set("style", "overflow: visible")
 
-            return pyvips.Image.svgload_buffer(ET.tostring(root))
+            svg_bytes = ET.tostring(root)
+            image = pyvips.Image.svgload_buffer(svg_bytes)
+            # logger.debug(
+            #    f"SvgRenderer.render_base_image: requested width={width}, "
+            #    f"height={height}, actual image width={image.width}, "
+            #    f"height={image.height}"
+            # )
+            return image
         except (pyvips.Error, ET.ParseError, ValueError, TypeError):
             return None
 

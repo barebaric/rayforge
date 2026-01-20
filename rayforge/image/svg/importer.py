@@ -2,7 +2,8 @@ from __future__ import annotations
 import io
 import math
 import logging
-from typing import List, Optional, Tuple, Dict
+from typing import List, Optional, Tuple, Dict, Any
+from pathlib import Path
 from xml.etree import ElementTree as ET
 from svgelements import (
     SVG,
@@ -11,7 +12,7 @@ from svgelements import (
     CubicBezier,
     Line,
     Move,
-    Path,
+    Path as SvgPath,
     QuadraticBezier,
     Group,
 )
@@ -35,7 +36,11 @@ from ..base_importer import (
 from .. import image_util
 from ..assembler import ItemAssembler
 from ..engine import NormalizationEngine
-from ..structures import ParsingResult, LayerGeometry, VectorizationResult
+from ..structures import (
+    ParsingResult,
+    LayerGeometry,
+    VectorizationResult,
+)
 from ..tracing import trace_surface, VTRACER_PIXEL_LIMIT
 from .renderer import SVG_RENDERER
 from .svgutil import (
@@ -61,6 +66,11 @@ class SvgImporter(Importer):
         ImporterFeature.DIRECT_VECTOR,
         ImporterFeature.LAYER_SELECTION,
     }
+
+    def __init__(self, data: bytes, source_file: Optional[Path] = None):
+        super().__init__(data, source_file)
+        self.trimmed_data: Optional[bytes] = None
+        self.svg: Optional[SVG] = None
 
     def scan(self) -> ImportManifest:
         """
@@ -99,56 +109,39 @@ class SvgImporter(Importer):
             warnings=warnings,
         )
 
-    def get_doc_items(
-        self, vectorization_spec: Optional[VectorizationSpec] = None
-    ) -> Optional[ImportPayload]:
+    def _prepare_trimmed_data(self) -> None:
         """
-        Generates DocItems from SVG data.
+        Prepares the trimmed SVG data by applying analytical trimming to the
+        raw data. Populates self.trimmed_data.
+        """
+        self.trimmed_data = self._analytical_trim(self.raw_data)
 
-        If a TraceSpec is provided, it renders the SVG to a bitmap and
-        traces it. This is robust but may lose fidelity.
-
-        Otherwise, it attempts to parse the SVG path and shape data
-        directly for a high-fidelity vector import.
+    def create_source_asset(
+        self, parse_result: ParsingResult, spec: VectorizationSpec
+    ) -> SourceAsset:
+        """
+        Creates a SourceAsset for SVG import.
         """
         source = SourceAsset(
             source_file=self.source_file,
             original_data=self.raw_data,
             renderer=SVG_RENDERER,
         )
+        source.base_render_data = self.trimmed_data
 
-        if isinstance(vectorization_spec, TraceSpec):
-            # Path 1: Render to bitmap and trace
-            # Note: TraceSpec doesn't currently support layer filtering in UI
-            items = self._get_doc_items_from_trace(source, vectorization_spec)
-        else:
-            # Path 2: Direct vector parsing with pre-trimming
+        # Populate dimensions from parse result
+        _, _, w_px, h_px = parse_result.page_bounds
+        source.width_px = int(w_px)
+        source.height_px = int(h_px)
+        source.width_mm = w_px * parse_result.native_unit_to_mm
+        source.height_mm = h_px * parse_result.native_unit_to_mm
 
-            # Use analytical trimming to avoid raster clipping of control
-            # points
-            trimmed_data = self._analytical_trim(self.raw_data)
-
-            source.base_render_data = trimmed_data
-            source.metadata["is_vector"] = True
-            self._populate_metadata(source)
-            items = self._get_doc_items_direct(source, vectorization_spec)
-
-        if items is None:
-            return None
-
-        # If items is an empty list, it's a valid file with no content.
-        # Return a payload with the source but no items.
-        return ImportPayload(source=source, items=items)
-
-    def _populate_metadata(self, source: SourceAsset):
-        """Calculates and stores metadata for direct SVG import."""
-        metadata = {}
+        # Populate metadata
+        metadata: Dict[str, Any] = {}
         try:
             # Get size of original, untrimmed SVG
             untrimmed_size = get_natural_size(source.original_data)
             if untrimmed_size:
-                source.width_mm = untrimmed_size[0]
-                source.height_mm = untrimmed_size[1]
                 metadata["untrimmed_width_mm"] = untrimmed_size[0]
                 metadata["untrimmed_height_mm"] = untrimmed_size[1]
 
@@ -168,9 +161,211 @@ class SvgImporter(Importer):
                 except ET.ParseError:
                     pass
 
+            metadata["is_vector"] = not isinstance(spec, TraceSpec)
             source.metadata.update(metadata)
         except Exception as e:
             logger.warning(f"Could not calculate SVG metadata: {e}")
+
+        return source
+
+    def parse(self) -> Optional[ParsingResult]:
+        """
+        Parses the SVG data into a ParsingResult.
+
+        This method performs analytical trimming, parses the result into
+        svgelements (creating self.svg), and generates the ParsingResult.
+        """
+        # Step 1: Prepare trimmed data
+        self._prepare_trimmed_data()
+        if not self.trimmed_data:
+            logger.error("Failed to prepare trimmed SVG data.")
+            return None
+
+        # Step 2: Parse SVG into svgelements object
+        svg = self._parse_svg_data(self.trimmed_data)
+        if svg is None:
+            return None
+        self.svg = svg
+
+        # Early exit check: If SVG has no explicit dimensions, we must check if
+        # it has any geometry before proceeding.
+        has_explicit_dims = svg.values is not None and (
+            "width" in svg.values or "height" in svg.values
+        )
+        if not has_explicit_dims:
+            geo = self._convert_svg_to_geometry(svg)
+            if geo.is_empty():
+                return None
+
+        # Step 3: Extract top-level parsing facts from the parsed SVG object.
+        facts = self._get_svg_parsing_facts(svg)
+        if not facts:
+            return None
+        width_px, height_px, viewbox = facts
+
+        # Step 4: Determine physical dimensions and scale factor.
+        final_dims_mm = get_natural_size(self.trimmed_data)
+        if not final_dims_mm:
+            final_dims_mm = (width_px * MM_PER_PX, height_px * MM_PER_PX)
+        unit_to_mm = final_dims_mm[0] / width_px if width_px > 0 else 1.0
+
+        # Step 5: Determine the absolute page bounds in pixels.
+        page_bounds_px: Tuple[float, float, float, float]
+        if viewbox:
+            vb_x, vb_y, vb_w, vb_h = viewbox
+            scale_x = width_px / vb_w if vb_w > 0 else 1.0
+            scale_y = height_px / vb_h if vb_h > 0 else 1.0
+            page_bounds_px = (
+                vb_x * scale_x,
+                vb_y * scale_y,
+                vb_w * scale_x,
+                vb_h * scale_y,
+            )
+        else:
+            page_bounds_px = (0.0, 0.0, width_px, height_px)
+        page_x, page_y = page_bounds_px[0], page_bounds_px[1]
+
+        # Step 6: Get untrimmed page bounds for positioning reference.
+        untrimmed_page_bounds_px: Optional[
+            Tuple[float, float, float, float]
+        ] = None
+        untrimmed_size_mm = get_natural_size(self.raw_data)
+        if untrimmed_size_mm and unit_to_mm > 0:
+            untrimmed_w_px = untrimmed_size_mm[0] / unit_to_mm
+            untrimmed_h_px = untrimmed_size_mm[1] / unit_to_mm
+            untrimmed_page_bounds_px = (0, 0, untrimmed_w_px, untrimmed_h_px)
+
+        # Step 7: Parse geometry for all layers to calculate their bounds.
+        raw_geometries_by_layer: Dict[str, Geometry] = {}
+        all_layer_ids = [
+            elem.id for elem in svg if isinstance(elem, Group) and elem.id
+        ]
+        if not all_layer_ids:
+            all_layer_ids = ["__default__"]
+            raw_geometries_by_layer["__default__"] = (
+                self._convert_svg_to_geometry(svg)
+            )
+        else:
+            for lid in all_layer_ids:
+                temp_geo = Geometry()
+                for element in svg:
+                    if isinstance(element, Group) and element.id == lid:
+                        for shape in element:
+                            try:
+                                path = SvgPath(shape)
+                                self._add_path_to_geometry(path, temp_geo)
+                            except (AttributeError, TypeError):
+                                pass
+                if not temp_geo.is_empty():
+                    raw_geometries_by_layer[lid] = temp_geo
+
+        # Step 8: Calculate content bounds and assemble LayerGeometry objects.
+        layer_geometries: List[LayerGeometry] = []
+        for layer_id, geo in raw_geometries_by_layer.items():
+            if not geo.is_empty():
+                min_x, min_y, max_x, max_y = geo.rect()
+                w = max_x - min_x
+                h = max_y - min_y
+                abs_content_bounds = (page_x + min_x, page_y + min_y, w, h)
+                layer_geometries.append(
+                    LayerGeometry(
+                        layer_id=layer_id,
+                        content_bounds=abs_content_bounds,
+                    )
+                )
+
+        # Step 9: Assemble and return the final ParsingResult.
+        return ParsingResult(
+            page_bounds=page_bounds_px,
+            native_unit_to_mm=unit_to_mm,
+            is_y_down=True,
+            layers=layer_geometries,
+            untrimmed_page_bounds=untrimmed_page_bounds_px,
+            geometry_is_relative_to_bounds=True,
+        )
+
+    def get_doc_items(
+        self, vectorization_spec: Optional[VectorizationSpec] = None
+    ) -> Optional[ImportPayload]:
+        """
+        Generates DocItems from SVG data.
+
+        If a TraceSpec is provided, it renders the SVG to a bitmap and
+        traces it. This is robust but may lose fidelity.
+
+        Otherwise, it attempts to parse the SVG path and shape data
+        directly for a high-fidelity vector import.
+        """
+        spec = vectorization_spec or PassthroughSpec()
+
+        # Phase 2: Parse
+        parse_result = self.parse()
+        if not parse_result:
+            return None
+
+        # Create Source Asset
+        source = self.create_source_asset(parse_result, spec)
+
+        # Phase 3: Vectorize
+        vec_result = self.vectorize(source, parse_result, spec)
+        if vec_result is None:
+            return None
+
+        logger.debug(
+            "Phase 4: Calculating layout plan with NormalizationEngine."
+        )
+        engine = NormalizationEngine()
+        plan = engine.calculate_layout(vec_result, spec)
+
+        if not plan:
+            logger.info(
+                "SVG import resulted in empty layout plan. No items created."
+            )
+            items: List["DocItem"] = []
+        else:
+            geometries: Dict[Optional[str], Geometry]
+            if (
+                not isinstance(spec, TraceSpec)
+                and len(plan) == 1
+                and plan[0].layer_id is None
+            ):
+                if not self.svg:
+                    items = []
+                else:
+                    geometries = {
+                        None: self._convert_svg_to_geometry(
+                            self.svg, translate_to_origin=True
+                        )
+                    }
+                    logger.debug("Phase 5: Assembling DocItems.")
+                    assembler = ItemAssembler()
+                    items = assembler.create_items(
+                        source_asset=source,
+                        layout_plan=plan,
+                        spec=spec,
+                        source_name=self.source_file.stem,
+                        geometries=geometries,
+                        layer_manifest=extract_layer_manifest(self.raw_data),
+                        page_bounds=parse_result.page_bounds,
+                    )
+            else:
+                geometries = vec_result.geometries_by_layer
+
+                logger.debug("Phase 5: Assembling DocItems.")
+                assembler = ItemAssembler()
+                items = assembler.create_items(
+                    source_asset=source,
+                    layout_plan=plan,
+                    spec=spec,
+                    source_name=self.source_file.stem,
+                    geometries=geometries,
+                    layer_manifest=extract_layer_manifest(self.raw_data),
+                    page_bounds=vec_result.source_parse_result.page_bounds,
+                )
+
+        # If items is an empty list, it's a valid file with no content.
+        # Return a payload with the source but no items.
+        return ImportPayload(source=source, items=items)
 
     def _analytical_trim(self, data: bytes) -> bytes:
         """
@@ -259,188 +454,154 @@ class SvgImporter(Importer):
             logger.warning(f"Analytical trim failed: {e}")
             return data
 
-    def _get_doc_items_from_trace(
-        self, source: SourceAsset, vectorization_spec: TraceSpec
-    ) -> Optional[List[DocItem]]:
+    def _vectorize_trace(
+        self,
+        source: SourceAsset,
+        result: ParsingResult,
+        spec: TraceSpec,
+    ) -> Optional[VectorizationResult]:
         """
-        Renders the original SVG data to a bitmap, traces it, and creates a
-        single masked WorkPiece.
+        Renders the SVG to a bitmap, traces it, and returns a
+        VectorizationResult containing the traced geometry.
         """
-        size_mm = get_natural_size(source.original_data)
-        if not size_mm or not size_mm[0] or not size_mm[1]:
+        page_bounds = (
+            result.untrimmed_page_bounds
+            if result.untrimmed_page_bounds
+            else result.page_bounds
+        )
+        native_unit_to_mm = result.native_unit_to_mm
+
+        w_px = page_bounds[2]
+        h_px = page_bounds[3]
+        w_mm = w_px * native_unit_to_mm
+        h_mm = h_px * native_unit_to_mm
+
+        if w_mm <= 0 or h_mm <= 0:
             logger.warning("Cannot trace SVG: failed to determine size.")
             return None
 
-        # Populate intrinsic dimensions
-        source.width_mm, source.height_mm = size_mm
+        source.width_mm, source.height_mm = w_mm, h_mm
 
-        # Calculate render dimensions that preserve the original aspect ratio,
-        # maximizing the render resolution for better tracing quality.
-        w_mm, h_mm = size_mm
         aspect = w_mm / h_mm if h_mm > 0 else 1.0
         TARGET_DIM = math.sqrt(VTRACER_PIXEL_LIMIT)
 
-        if aspect >= 1.0:  # Landscape or square
+        if aspect >= 1.0:
             w_px = int(TARGET_DIM)
             h_px = int(TARGET_DIM / aspect)
-        else:  # Portrait
+        else:
             h_px = int(TARGET_DIM)
             w_px = int(TARGET_DIM * aspect)
         w_px, h_px = max(1, w_px), max(1, h_px)
 
-        vips_image = SVG_RENDERER.render_base_image(
-            source.original_data, width=w_px, height=h_px
+        logger.debug(
+            f"Rendering SVG: w_px={w_px}, h_px={h_px}, aspect={aspect}"
         )
+
+        vips_image = SVG_RENDERER.render_base_image(
+            self.raw_data, width=w_px, height=h_px
+        )
+
+        if vips_image:
+            logger.debug(
+                f"Rendered image: width={vips_image.width}, "
+                f"height={vips_image.height}"
+            )
         if not vips_image:
             logger.error("Failed to render SVG to vips image for tracing.")
             return None
 
-        # Manually set the resolution metadata on the rendered image. This is
-        # crucial for create_single_workpiece_from_trace to calculate the
-        # correct physical size of the cropped area.
         if w_mm > 0 and h_mm > 0:
-            xres = w_px / w_mm  # pixels per mm
-            yres = h_px / h_mm  # pixels per mm
+            xres = w_px / w_mm
+            yres = h_px / h_mm
             vips_image = vips_image.copy(xres=xres, yres=yres)
 
-        # This makes the high-res raster available to the preview dialog.
-        source.base_render_data = vips_image.pngsave_buffer()
+        png_data = vips_image.pngsave_buffer()
+        logger.debug(
+            f"Setting base_render_data: len={len(png_data)}, "
+            f"original_data_len={len(source.original_data)}"
+        )
+        source.base_render_data = png_data
 
         normalized_vips = image_util.normalize_to_rgba(vips_image)
         if not normalized_vips:
             return None
         surface = image_util.vips_rgba_to_cairo_surface(normalized_vips)
 
-        geometries = trace_surface(surface, vectorization_spec)
+        logger.debug("Phase 3: Vectorizing (tracing) geometry.")
+        geometries = trace_surface(surface, spec)
 
-        # Use the standard helper for creating a single, masked workpiece
-        return image_util.create_single_workpiece_from_trace(
-            geometries,
-            source,
-            vips_image,
-            vectorization_spec,
-            self.source_file.stem,
+        combined_geo = Geometry()
+        if geometries:
+            for geo in geometries:
+                geo.close_gaps()
+                combined_geo.extend(geo)
+
+        pristine_geo = combined_geo.copy()
+
+        source.width_px = vips_image.width
+        source.height_px = vips_image.height
+
+        rendered_width = w_px
+        rendered_height = h_px
+        mm_per_px_x, mm_per_px_y = image_util.get_mm_per_pixel(vips_image)
+        trace_parse_result = ParsingResult(
+            page_bounds=(
+                0.0,
+                0.0,
+                float(rendered_width),
+                float(rendered_height),
+            ),
+            native_unit_to_mm=mm_per_px_x,
+            is_y_down=True,
+            layers=[],
+            geometry_is_relative_to_bounds=False,
         )
-
-    def _get_doc_items_direct(
-        self,
-        source: SourceAsset,
-        vectorization_spec: Optional[VectorizationSpec] = None,
-    ) -> Optional[List[DocItem]]:
-        """
-        Orchestrates the direct parsing of SVG data into DocItems using the
-        Parse -> Plan -> Assemble pipeline.
-        """
-        if not source.base_render_data:
-            logger.error("source has no data to process for direct import")
-            return None
-
-        # 1. Parse SVG data into an object model first.
-        svg = self._parse_svg_data(source)
-        if svg is None:
-            return None
-
-        # Handle the edge case of a file with no explicit dimensions and no
-        # content.
-        # svgelements will default the size, but we can detect the absence of
-        # original width/height attributes.
-        has_explicit_dims = svg.values is not None and (
-            "width" in svg.values or "height" in svg.values
-        )
-        if not has_explicit_dims:
-            geo = self._convert_svg_to_geometry(svg)
-            if geo.is_empty():
-                return None  # Fails the import as expected by test_edge_cases.
-
-        facts = self._get_svg_parsing_facts(svg)
-        if not facts:
-            return None
-        width_px, height_px, vb = facts
-
-        # Ensure the source asset has pixel dimensions.
-        # These are required for correct viewBox calculation in split/crop
-        # operations.
-        source.width_px = int(width_px)
-        source.height_px = int(height_px)
-
-        # 3. Establish authoritative dimensions in millimeters.
-        final_dims_mm = self._get_final_dimensions(source)
-        if not final_dims_mm:
-            # Fallback: Use dimensions derived from svgelements
-            # svgelements normalizes units to 96 DPI (usually)
-            final_dims_mm = (width_px * MM_PER_PX, height_px * MM_PER_PX)
-
-        spec = vectorization_spec or PassthroughSpec()
-
-        logger.debug("Phase 2: Parsing SVG to native geometry.")
-        parse_result = self._parse_to_result(svg, source, final_dims_mm)
-
-        if not parse_result:
-            logger.error("Failed to parse SVG into a structured result.")
-            return None
-
-        logger.debug("Phase 3: Vectorizing (extracting) geometry.")
-        vec_result = self._vectorize(svg, parse_result)
-
         logger.debug(
-            "Phase 4: Calculating layout plan with NormalizationEngine."
-        )
-        engine = NormalizationEngine()
-        plan = engine.calculate_layout(vec_result, spec)
-
-        if not plan:
-            logger.info(
-                "Direct SVG import resulted in empty layout plan. "
-                "No items created."
-            )
-            return []
-
-        geometries: Dict[Optional[str], Geometry]
-        if len(plan) == 1 and plan[0].layer_id is None:
-            geometries = {
-                None: self._convert_svg_to_geometry(
-                    svg, translate_to_origin=True
-                )
-            }
-        else:
-            geometries = vec_result.geometries_by_layer
-
-        logger.debug("Phase 5: Assembling DocItems.")
-        assembler = ItemAssembler()
-        return assembler.create_items(
-            source_asset=source,
-            layout_plan=plan,
-            spec=spec,
-            source_name=self.source_file.stem,
-            geometries=geometries,
-            layer_manifest=extract_layer_manifest(self.raw_data),
-            # Pass page_bounds to assembler for coordinate translation
-            page_bounds=parse_result.page_bounds,
+            f"trace_parse_result.page_bounds={trace_parse_result.page_bounds}"
         )
 
-    def _vectorize(
-        self, svg: SVG, parse_result: ParsingResult
+        return VectorizationResult(
+            geometries_by_layer={None: pristine_geo},
+            source_parse_result=trace_parse_result,
+        )
+
+    def _vectorize_direct(
+        self,
+        result: ParsingResult,
+        spec: PassthroughSpec,
     ) -> VectorizationResult:
-        """Phase 3: Extract vector geometry and package for layout engine."""
-        all_layer_ids = [layer.layer_id for layer in parse_result.layers]
-        geometries_by_layer = self._parse_geometry_by_layer(svg, all_layer_ids)
+        """Extracts vector geometry from SVG for direct import."""
+        if not self.svg:
+            raise ValueError("self.svg is not set")
 
-        # Handle SVGs that have no layers, just flat geometry
+        all_layer_ids = [layer.layer_id for layer in result.layers]
+        geometries_by_layer = self._parse_geometry_by_layer(
+            self.svg, all_layer_ids
+        )
+
         if not geometries_by_layer:
-            # The '__default__' key is used by the parser for layerless files
-            layer_id = (
-                parse_result.layers[0].layer_id
-                if parse_result.layers
-                else None
-            )
+            layer_id = result.layers[0].layer_id if result.layers else None
             geometries_by_layer[layer_id] = self._convert_svg_to_geometry(
-                svg, translate_to_origin=True
+                self.svg, translate_to_origin=True
             )
 
         return VectorizationResult(
             geometries_by_layer=geometries_by_layer,
-            source_parse_result=parse_result,
+            source_parse_result=result,
         )
+
+    def vectorize(
+        self,
+        source: SourceAsset,
+        result: ParsingResult,
+        spec: VectorizationSpec,
+    ) -> Optional[VectorizationResult]:
+        """Unified vectorization method that dispatches based on spec type."""
+        if isinstance(spec, TraceSpec):
+            return self._vectorize_trace(source, result, spec)
+        if not isinstance(spec, PassthroughSpec):
+            spec = PassthroughSpec()
+        return self._vectorize_direct(result, spec)
 
     def _parse_geometry_by_layer(
         self, svg: SVG, layer_ids: List[str]
@@ -468,7 +629,7 @@ class SvgImporter(Importer):
                 layer_geo = Geometry()
                 for shape in _get_all_shapes(element):
                     try:
-                        path = Path(shape)
+                        path = SvgPath(shape)
                         self._add_path_to_geometry(path, layer_geo)
                     except (AttributeError, TypeError):
                         pass
@@ -484,129 +645,10 @@ class SvgImporter(Importer):
 
         return layer_geoms
 
-    def _parse_to_result(
-        self, svg: SVG, source: SourceAsset, final_dims_mm: Tuple[float, float]
-    ) -> Optional[ParsingResult]:
-        """
-        Performs Phase 1 of the import pipeline: Parsing.
-        It extracts all geometric facts from the SVG into a ParsingResult DTO,
-        using the file's native coordinate system (pixels).
-        """
-        # Step 1: Extract SVG parsing facts
-        facts = self._get_svg_parsing_facts(svg)
-        if not facts:
-            return None
-        width_px, height_px, viewbox = facts
-
-        # Calculate the correct scale factor based on final dimensions.
-        # This aligns the parsing result units (pixels) with physical reality.
-        unit_to_mm = final_dims_mm[0] / width_px if width_px > 0 else 1.0
-
-        # Step 2: Determine the absolute page bounds in pixels. This is the
-        # frame of reference for all other coordinates.
-        page_bounds_px: Tuple[float, float, float, float]
-        if viewbox:
-            # Convert the viewbox (in user units) to pixel bounds.
-            vb_x, vb_y, vb_w, vb_h = viewbox
-            scale_x = width_px / vb_w if vb_w > 0 else 1.0
-            scale_y = height_px / vb_h if vb_h > 0 else 1.0
-            page_bounds_px = (
-                vb_x * scale_x,
-                vb_y * scale_y,
-                vb_w * scale_x,
-                vb_h * scale_y,
-            )
-        else:
-            # No viewbox, the page bounds are simply the pixel dimensions.
-            page_bounds_px = (0.0, 0.0, width_px, height_px)
-        page_x, page_y = page_bounds_px[0], page_bounds_px[1]
-
-        # Step 3: Get untrimmed page bounds for positioning reference
-        untrimmed_page_bounds_px: Optional[
-            Tuple[float, float, float, float]
-        ] = None
-        untrimmed_w_mm = source.metadata.get("untrimmed_width_mm")
-        untrimmed_h_mm = source.metadata.get("untrimmed_height_mm")
-        if untrimmed_w_mm and untrimmed_h_mm and unit_to_mm > 0:
-            untrimmed_w_px = untrimmed_w_mm / unit_to_mm
-            untrimmed_h_px = untrimmed_h_mm / unit_to_mm
-            untrimmed_page_bounds_px = (0, 0, untrimmed_w_px, untrimmed_h_px)
-
-        # Step 4: Parse geometry for all layers to calculate their bounds
-        # Note: We parse the geometry BEFORE translating it to get the
-        # correct bounds within the trimmed SVG's coordinate space.
-        raw_geometries_by_layer: Dict[str, Geometry] = {}
-        all_layer_ids = [
-            elem.id for elem in svg if isinstance(elem, Group) and elem.id
-        ]
-        if not all_layer_ids:
-            all_layer_ids = ["__default__"]
-            raw_geometries_by_layer["__default__"] = (
-                self._convert_svg_to_geometry(svg)
-            )
-        else:
-            for lid in all_layer_ids:
-                temp_geo = Geometry()
-                # This is a bit inefficient, but necessary to isolate layers
-                for element in svg:
-                    if isinstance(element, Group) and element.id == lid:
-                        for shape in element:
-                            try:
-                                path = Path(shape)
-                                self._add_path_to_geometry(path, temp_geo)
-                            except (AttributeError, TypeError):
-                                pass
-                if not temp_geo.is_empty():
-                    raw_geometries_by_layer[lid] = temp_geo
-
-        # Step 5: Calculate content bounds and assemble LayerGeometry objects.
-        # Convert relative geometry bounds to absolute bounds by
-        # adding the page (viewBox) origin.
-        layer_geometries: List[LayerGeometry] = []
-        for layer_id, geo in raw_geometries_by_layer.items():
-            if not geo.is_empty():
-                min_x, min_y, max_x, max_y = geo.rect()
-                w = max_x - min_x
-                h = max_y - min_y
-                # Fulfill the contract: content_bounds must be absolute.
-                abs_content_bounds = (page_x + min_x, page_y + min_y, w, h)
-                layer_geometries.append(
-                    LayerGeometry(
-                        layer_id=layer_id,
-                        content_bounds=abs_content_bounds,
-                    )
-                )
-
-        # Step 6: Assemble the final ParsingResult.
-        return ParsingResult(
-            page_bounds=page_bounds_px,
-            native_unit_to_mm=unit_to_mm,
-            is_y_down=True,
-            layers=layer_geometries,
-            untrimmed_page_bounds=untrimmed_page_bounds_px,
-            geometry_is_relative_to_bounds=True,
-        )
-
-    def _get_final_dimensions(
-        self, source: SourceAsset
-    ) -> Optional[Tuple[float, float]]:
-        """
-        Extracts the final width and height in millimeters from source
-        metadata.
-        """
-        width = source.metadata.get("trimmed_width_mm")
-        height = source.metadata.get("trimmed_height_mm")
-        if width and height:
-            return width, height
-        return None
-
-    def _parse_svg_data(self, source: SourceAsset) -> Optional[SVG]:
+    def _parse_svg_data(self, data: bytes) -> Optional[SVG]:
         """Parses SVG byte data into an svgelements.SVG object."""
-        if not source.base_render_data:
-            logger.error("Source has no working_data to parse.")
-            return None
         try:
-            svg_stream = io.BytesIO(source.base_render_data)
+            svg_stream = io.BytesIO(data)
             return SVG.parse(svg_stream, ppi=PPI)
         except Exception as e:
             logger.error(f"Failed to parse SVG for direct import: {e}")
@@ -668,7 +710,7 @@ class SvgImporter(Importer):
 
         for shape in svg.elements():
             try:
-                path = Path(shape)
+                path = SvgPath(shape)
                 path.reify()  # Apply transforms
                 self._add_path_to_geometry(path, geo)
             except (AttributeError, TypeError):
@@ -681,7 +723,7 @@ class SvgImporter(Importer):
 
         return geo
 
-    def _add_path_to_geometry(self, path: Path, geo: Geometry) -> None:
+    def _add_path_to_geometry(self, path: SvgPath, geo: Geometry) -> None:
         """
         Converts a single Path object's segments to Geometry commands.
         Curves are added as Béziers instead of being linearized.

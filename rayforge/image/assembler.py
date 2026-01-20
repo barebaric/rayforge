@@ -49,6 +49,11 @@ class ItemAssembler:
             (page_bounds[0], page_bounds[1]) if page_bounds else (0.0, 0.0)
         )
 
+        logger.debug(
+            f"ItemAssembler: page_bounds={page_bounds}, page_x={page_x}, "
+            f"page_y={page_y}"
+        )
+
         for item in layout_plan:
             # 1. Create the Segment
             # This links the WorkPiece to the specific subset of the source
@@ -60,6 +65,12 @@ class ItemAssembler:
             # needs a viewBox that is relative to the trimmed file's origin.
             abs_x, abs_y, w, h = item.crop_window
             relative_crop_window = (abs_x - page_x, abs_y - page_y, w, h)
+
+            logger.debug(
+                f"ItemAssembler: item.crop_window={item.crop_window}, "
+                f"relative_crop_window={relative_crop_window}, "
+                f"layer_id={item.layer_id}"
+            )
 
             segment = SourceAssetSegment(
                 source_asset_uid=source_asset.uid,
