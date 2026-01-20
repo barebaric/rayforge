@@ -1,15 +1,19 @@
 from __future__ import annotations
 from abc import ABC, abstractmethod
-from pathlib import Path
-from typing import Optional, List, Tuple, TYPE_CHECKING, Set
 from dataclasses import dataclass, field
 import enum
+from pathlib import Path
+from typing import Optional, List, Tuple, TYPE_CHECKING, Set
+from ..core.vectorization_spec import PassthroughSpec, TraceSpec
+from .assembler import ItemAssembler
+from .engine import NormalizationEngine
 
 if TYPE_CHECKING:
     from ..core.item import DocItem
     from ..core.vectorization_spec import VectorizationSpec
     from ..core.source_asset import SourceAsset
     from ..core.sketcher.sketch import Sketch
+    from .structures import ParsingResult, VectorizationResult
 
 
 class ImporterFeature(enum.Flag):
@@ -124,21 +128,87 @@ class Importer(ABC):
         raise NotImplementedError
 
     @abstractmethod
+    def parse(self) -> Optional["ParsingResult"]:
+        """
+        Parses the raw data and returns a ParsingResult.
+
+        Returns:
+            A ParsingResult containing geometric facts about the file,
+            or None if parsing fails.
+        """
+        raise NotImplementedError
+
+    @abstractmethod
+    def vectorize(
+        self, parse_result: "ParsingResult", spec: "VectorizationSpec"
+    ) -> "VectorizationResult":
+        """
+        Vectorizes parsed data according to spec.
+
+        Args:
+            parse_result: The ParsingResult from the parse() method.
+            spec: The VectorizationSpec describing how to vectorize.
+
+        Returns:
+            A VectorizationResult containing the vectorized geometry.
+        """
+        raise NotImplementedError
+
+    @abstractmethod
+    def create_source_asset(
+        self, parse_result: "ParsingResult"
+    ) -> "SourceAsset":
+        """
+        Creates a SourceAsset from the parse result.
+
+        Args:
+            parse_result: The ParsingResult from the parse() method.
+
+        Returns:
+            A SourceAsset for the imported file.
+        """
+        raise NotImplementedError
+
     def get_doc_items(
         self, vectorization_spec: Optional["VectorizationSpec"] = None
     ) -> Optional[ImportPayload]:
         """
         Parses the raw data and returns a self-contained ImportPayload.
-
-        The payload contains the single SourceAsset for the file and a list
-        of top-level DocItems (WorkPieces and/or Groups). The generated
-        WorkPieces should be linked to the SourceAsset via their
-        `generation_config`.
-
-        The returned items should be fully configured but unparented. Their
-        transformation matrices should represent their position and scale
-        within the document.
-
-        If the importer cannot parse the data, it should return None.
+        This is the template method that orchestrates the import pipeline.
         """
-        raise NotImplementedError
+        # 1. Parse
+        parse_result = self.parse()
+        if not parse_result:
+            return None
+
+        # 2. Create Source
+        source_asset = self.create_source_asset(parse_result)
+
+        # 3. Vectorize
+        spec = vectorization_spec or PassthroughSpec()
+        # For vector formats, if no layers with geometry were found,
+        # return early with no items.
+        if not parse_result.layers and not isinstance(spec, TraceSpec):
+            return ImportPayload(source=source_asset, items=[])
+
+        vec_result = self.vectorize(parse_result, spec)
+
+        # 4. Layout
+        engine = NormalizationEngine()
+        plan = engine.calculate_layout(vec_result, spec)
+
+        if not plan:
+            return ImportPayload(source=source_asset, items=[])
+
+        # 5. Assemble
+        assembler = ItemAssembler()
+        items = assembler.create_items(
+            source_asset=source_asset,
+            layout_plan=plan,
+            spec=spec,
+            source_name=self.source_file.stem,
+            geometries=vec_result.geometries_by_layer,
+            page_bounds=vec_result.source_parse_result.page_bounds,
+        )
+
+        return ImportPayload(source_asset, items)

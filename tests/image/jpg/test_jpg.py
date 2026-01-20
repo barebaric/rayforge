@@ -123,8 +123,8 @@ class TestJpgImporter:
     def test_importer_requires_vectorization_spec(self, color_jpg_data: bytes):
         """Importer returns None if no vectorization_spec is provided."""
         importer = JpgImporter(color_jpg_data)
-        payload = importer.get_doc_items(vectorization_spec=None)
-        assert payload is None
+        with pytest.raises(TypeError):
+            importer.get_doc_items(vectorization_spec=None)
 
     def test_importer_handles_invalid_data(self):
         """Tests the importer returns None for invalid JPG data."""

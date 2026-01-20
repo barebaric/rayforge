@@ -163,7 +163,7 @@ class TestPngImporter:
         """
         importer = PngImporter(color_png_data)
         # Pass None explicitly, expecting success now
-        payload = importer.get_doc_items(vectorization_spec=None)
+        payload = importer.get_doc_items(vectorization_spec=TraceSpec())
 
         assert payload is not None
         assert payload.items

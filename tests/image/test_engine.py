@@ -27,7 +27,7 @@ def create_vec_result(
     VectorizationResult.
     """
     layer_geos = [
-        LayerGeometry(layer_id=lid, content_bounds=bounds)
+        LayerGeometry(layer_id=lid, name=lid, content_bounds=bounds)
         for lid, bounds in layers
     ]
     parse_result = ParsingResult(

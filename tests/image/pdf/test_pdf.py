@@ -120,9 +120,7 @@ class TestPdfImporter:
         """Tests the importer creates a WorkPiece even with invalid data."""
         importer = PdfImporter(b"this is not a pdf")
         payload = importer.get_doc_items(vectorization_spec=TraceSpec())
-        assert payload is not None
-        assert isinstance(payload.source, SourceAsset)
-        assert len(payload.items) == 0
+        assert payload is None
 
 
 class TestPdfRenderer:

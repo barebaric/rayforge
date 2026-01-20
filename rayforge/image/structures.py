@@ -13,6 +13,7 @@ class LayerGeometry:
     """
 
     layer_id: str
+    name: str
 
     # The tight bounding box (x, y, width, height) of the content on this
     # layer.
@@ -63,6 +64,9 @@ class LayoutItem:
 
     # The ID of the layer(s) this item represents.
     layer_id: Optional[str]
+
+    # The name of the layer(s) this item represents.
+    layer_name: Optional[str]
 
     # Matrix to transform the normalized (0-1) WorkPiece geometry
     # into its final Physical World position/scale (in mm).
