@@ -1,5 +1,7 @@
 import logging
-from typing import Optional, Tuple, Dict
+from typing import Optional, Dict
+from pathlib import Path
+
 from ...core.geo import Geometry
 from ...core.vectorization_spec import VectorizationSpec
 from ..base_importer import (
@@ -25,6 +27,11 @@ class RuidaImporter(Importer):
     mime_types = ("application/x-rd-file", "application/octet-stream")
     extensions = (".rd",)
     features = {ImporterFeature.DIRECT_VECTOR}
+
+    def __init__(self, data: bytes, source_file: Optional[Path] = None):
+        super().__init__(data, source_file)
+        self._job: Optional[RuidaJob] = None
+        self._geometries_by_layer: Dict[Optional[str], Geometry] = {}
 
     def scan(self) -> ImportManifest:
         """
@@ -75,11 +82,10 @@ class RuidaImporter(Importer):
     def get_doc_items(
         self, vectorization_spec: Optional[VectorizationSpec] = None
     ) -> Optional[ImportPayload]:
-        try:
-            # Phase 2: Parsing
-            parse_result, geometries_by_layer = self._parse_to_result()
-        except RuidaParseError as e:
-            logger.error("Ruida file parse failed: %s", e)
+        # Phase 2: Parsing
+        parse_result = self.parse()
+        if not parse_result:
+            logger.error("Ruida file parse failed.")
             return None
 
         source = SourceAsset(
@@ -97,7 +103,7 @@ class RuidaImporter(Importer):
         source.height_mm = h
 
         # Phase 3: Vectorize (packaging)
-        vec_result = self._vectorize(parse_result, geometries_by_layer)
+        vec_result = self._vectorize(parse_result, self._geometries_by_layer)
 
         # Phase 4: Layout
         engine = NormalizationEngine()
@@ -108,7 +114,7 @@ class RuidaImporter(Importer):
         # have one item with layer_id=None. The assembler expects the geometry
         # under the `None` key.
         geometries: Dict[Optional[str], Geometry] = {
-            None: list(geometries_by_layer.values())[0]
+            None: list(self._geometries_by_layer.values())[0]
         }
 
         # Phase 5: Assembly
@@ -133,10 +139,16 @@ class RuidaImporter(Importer):
             source_parse_result=parse_result,
         )
 
-    def _parse_to_result(
-        self,
-    ) -> Tuple[ParsingResult, Dict[Optional[str], Geometry]]:
-        job = self._get_job()
+    def parse(self) -> Optional[ParsingResult]:
+        """Phase 2: Parse Ruida file into geometric facts."""
+        try:
+            job = self._get_job()
+            self._job = job
+        except RuidaParseError as e:
+            logger.error("Ruida file parse failed: %s", e)
+            self._job = None
+            return None
+
         pristine_geo = self._get_geometry(job)
         pristine_geo.close_gaps()
 
@@ -148,8 +160,8 @@ class RuidaImporter(Importer):
                 is_y_down=False,
                 layers=[],
             )
-            geometries: Dict[Optional[str], Geometry] = {None: pristine_geo}
-            return empty_result, geometries
+            self._geometries_by_layer = {None: pristine_geo}
+            return empty_result
 
         min_x, min_y, max_x, max_y = job.get_extents()
         width_mm = max_x - min_x
@@ -166,8 +178,8 @@ class RuidaImporter(Importer):
                 LayerGeometry(layer_id=layer_id, content_bounds=page_bounds)
             ],
         )
-        geometries: Dict[Optional[str], Geometry] = {layer_id: pristine_geo}
-        return parse_result, geometries
+        self._geometries_by_layer = {layer_id: pristine_geo}
+        return parse_result
 
     def _get_geometry(self, job: RuidaJob) -> Geometry:
         """

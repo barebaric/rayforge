@@ -7,6 +7,8 @@ from ezdxf import bbox
 from ezdxf.lldxf.const import DXFStructureError
 from ezdxf.addons import text2path
 from ezdxf.path import Command
+from pathlib import Path
+
 from ...core.geo import Geometry
 from ...core.source_asset import SourceAsset
 from ...core.vectorization_spec import VectorizationSpec, PassthroughSpec
@@ -43,6 +45,11 @@ class DxfImporter(Importer):
     mime_types = ("image/vnd.dxf",)
     extensions = (".dxf",)
     features = {ImporterFeature.DIRECT_VECTOR, ImporterFeature.LAYER_SELECTION}
+
+    def __init__(self, data: bytes, source_file: Optional[Path] = None):
+        super().__init__(data, source_file)
+        self._dxf_doc: Optional[ezdxf.document.Drawing] = None  # type: ignore
+        self._geometries_by_layer: Dict[Optional[str], Geometry] = {}
 
     def scan(self) -> ImportManifest:
         """
@@ -86,14 +93,11 @@ class DxfImporter(Importer):
         self, vectorization_spec: Optional[VectorizationSpec] = None
     ) -> Optional[ImportPayload]:
         logger.debug("Starting DXF import process.")
-        try:
-            data_str = self.raw_data.decode("utf-8", errors="replace")
-            normalized_str = data_str.replace("\r\n", "\n")
-            doc = ezdxf.read(io.StringIO(normalized_str))  # type: ignore
-        except DXFStructureError:
-            logger.error(
-                "DXF Importer: Failed to parse DXF file.", exc_info=True
-            )
+
+        # Phase 2: Parsing DXF to native geometry.
+        parse_result = self.parse()
+        if not parse_result or not self._dxf_doc:
+            logger.error("DXF Importer: Failed to parse DXF file.")
             return None
 
         source = SourceAsset(
@@ -104,14 +108,12 @@ class DxfImporter(Importer):
         )
         spec = vectorization_spec or PassthroughSpec()
 
-        logger.debug("Phase 2: Parsing DXF to native geometry.")
-        parse_result, geometries_by_layer = self._parse_to_result(doc)
         if not parse_result.layers:
             logger.warning("DXF contains no valid geometry to import.")
             return ImportPayload(source=source, items=[])
 
         logger.debug("Phase 3: Vectorizing (packaging) parsed data.")
-        vec_result = self._vectorize(parse_result, geometries_by_layer)
+        vec_result = self._vectorize(parse_result, self._geometries_by_layer)
 
         logger.debug(
             "Phase 4: Calculating layout plan with NormalizationEngine."
@@ -127,11 +129,11 @@ class DxfImporter(Importer):
         if len(plan) == 1 and plan[0].layer_id is None:
             logger.debug("Merging all layer geometries into one.")
             merged_geo = Geometry()
-            for geo in geometries_by_layer.values():
+            for geo in self._geometries_by_layer.values():
                 merged_geo.extend(geo)
             geometries = {None: merged_geo}
         else:
-            geometries = geometries_by_layer
+            geometries = self._geometries_by_layer
 
         logger.debug("Phase 5: Assembling DocItems.")
         assembler = ItemAssembler()
@@ -141,7 +143,7 @@ class DxfImporter(Importer):
             spec=spec,
             source_name=self.source_file.stem,
             geometries=geometries,
-            layer_manifest=self._get_layer_manifest(doc),
+            layer_manifest=self._get_layer_manifest(self._dxf_doc),
         )
         logger.debug(f"Assembled {len(items)} top-level item(s).")
 
@@ -165,22 +167,33 @@ class DxfImporter(Importer):
             if layer.dxf.name.lower() != "defpoints"
         ]
 
-    def _parse_to_result(
-        self, doc
-    ) -> Tuple[ParsingResult, Dict[Optional[str], Geometry]]:
-        doc_bounds = self._get_bounds_native(doc)
+    def parse(self) -> Optional[ParsingResult]:
+        """Phase 2: Parse DXF file into geometric facts."""
+        try:
+            data_str = self.raw_data.decode("utf-8", errors="replace")
+            normalized_str = data_str.replace("\r\n", "\n")
+            doc = ezdxf.read(io.StringIO(normalized_str))  # type: ignore
+            self._dxf_doc = doc
+        except DXFStructureError:
+            self._dxf_doc = None
+            return None
+
+        doc_bounds = self._get_bounds_native(self._dxf_doc)
         if not doc_bounds:
             doc_bounds = (0.0, 0.0, 0.0, 0.0)
             logger.warning("DXF appears to be empty, using zero bounds.")
 
         result = ParsingResult(
             page_bounds=doc_bounds,
-            native_unit_to_mm=self._get_scale_to_mm(doc),
+            native_unit_to_mm=self._get_scale_to_mm(self._dxf_doc),
             is_y_down=False,
             layers=[],
         )
 
-        geometries_by_layer = self._extract_geometries(doc, transform=None)
+        geometries_by_layer = self._extract_geometries(
+            self._dxf_doc, transform=None
+        )
+        self._geometries_by_layer = geometries_by_layer
         logger.debug(
             f"Extracted geometries from {len(geometries_by_layer)} layers."
         )
@@ -198,7 +211,7 @@ class DxfImporter(Importer):
                 )
             )
 
-        return result, geometries_by_layer
+        return result
 
     def _extract_geometries(
         self, doc, transform: Optional[ezdxf.math.Matrix44]

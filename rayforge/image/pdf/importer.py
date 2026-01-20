@@ -1,9 +1,16 @@
 import io
 import logging
 from typing import Optional, Tuple
+from pathlib import Path
 from pypdf import PdfReader
 from pypdf.errors import PdfReadError
 import math
+import warnings
+
+with warnings.catch_warnings():
+    warnings.simplefilter("ignore", DeprecationWarning)
+    import pyvips
+
 from ...core.geo import Geometry
 from ...core.source_asset import SourceAsset
 from ...core.vectorization_spec import TraceSpec, VectorizationSpec
@@ -39,6 +46,10 @@ class PdfImporter(Importer):
     features = {ImporterFeature.BITMAP_TRACING}
     _TRACE_PPM = 24.0  # ~600 DPI for tracing
     _MAX_RENDER_DIM = 16384
+
+    def __init__(self, data: bytes, source_file: Optional[Path] = None):
+        super().__init__(data, source_file)
+        self._image: Optional[pyvips.Image] = None
 
     def scan(self) -> ImportManifest:
         """
@@ -86,36 +97,31 @@ class PdfImporter(Importer):
         """
         Retrieve document items from the PDF file.
         """
-        # Phase 2 (Parse): Get ParsingResult and image data
-        parse_result, vips_image = self._parse_to_result()
+        # Phase 2 (Parse): Get ParsingResult and render self._image
+        parse_result = self.parse()
 
-        # Robustness Fix: If parsing fails, return a payload with just the
-        # source asset to satisfy tests expecting a valid return object.
-        if not parse_result or not vips_image:
-            source = SourceAsset(
-                source_file=self.source_file,
-                original_data=self.raw_data,
-                renderer=PDF_RENDERER,
-            )
-            return ImportPayload(source=source, items=[])
-
-        # Create SourceAsset with dimensions
-        _, _, w_px, h_px = parse_result.page_bounds
-        width_mm = w_px * parse_result.native_unit_to_mm
-        height_mm = h_px * parse_result.native_unit_to_mm
-
+        # Create SourceAsset first to handle failure cases gracefully
         source = SourceAsset(
             source_file=self.source_file,
             original_data=self.raw_data,
             renderer=PDF_RENDERER,
-            width_px=int(w_px),
-            height_px=int(h_px),
-            width_mm=width_mm,
-            height_mm=height_mm,
         )
 
+        if not parse_result or not self._image:
+            return ImportPayload(source=source, items=[])
+
+        # Populate SourceAsset with dimensions
+        _, _, w_px, h_px = parse_result.page_bounds
+        width_mm = w_px * parse_result.native_unit_to_mm
+        height_mm = h_px * parse_result.native_unit_to_mm
+
+        source.width_px = int(w_px)
+        source.height_px = int(h_px)
+        source.width_mm = width_mm
+        source.height_mm = height_mm
+
         # Store the rendered image so the preview dialog can use it.
-        source.base_render_data = vips_image.pngsave_buffer()
+        source.base_render_data = self._image.pngsave_buffer()
 
         spec = vectorization_spec
         if not isinstance(spec, TraceSpec):
@@ -125,7 +131,7 @@ class PdfImporter(Importer):
             spec = TraceSpec()
 
         # Phase 3 (Vectorize)
-        vec_result = self._vectorize(parse_result, vips_image, spec)
+        vec_result = self._vectorize(parse_result, self._image, spec)
 
         # Phase 4 (Layout)
         engine = NormalizationEngine()
@@ -149,7 +155,7 @@ class PdfImporter(Importer):
     def _vectorize(
         self,
         parse_result: ParsingResult,
-        image,
+        image: pyvips.Image,
         spec: TraceSpec,
     ) -> VectorizationResult:
         """Phase 3: Generate vector geometry by tracing the bitmap."""
@@ -171,7 +177,7 @@ class PdfImporter(Importer):
             source_parse_result=parse_result,
         )
 
-    def _parse_to_result(self):
+    def parse(self) -> Optional[ParsingResult]:
         """Phase 2: Render PDF to a high-res image and extract facts."""
         try:
             reader = PdfReader(io.BytesIO(self.raw_data))
@@ -181,11 +187,13 @@ class PdfImporter(Importer):
             size_mm = (to_mm(width_pt, "pt"), to_mm(height_pt, "pt"))
         except Exception as e:
             logger.error(f"Failed to read PDF size: {e}")
-            return None, None
+            self._image = None
+            return None
 
         w_mm, h_mm = size_mm
         if w_mm <= 0 or h_mm <= 0:
-            return None, None
+            self._image = None
+            return None
 
         # Calculate render resolution
         render_w_px, render_h_px = self._calculate_render_resolution(
@@ -199,11 +207,12 @@ class PdfImporter(Importer):
         )
         if not vips_image:
             logger.error("Failed to render PDF to an image for processing.")
-            return None, None
+            self._image = None
+            return None
 
         # Set resolution metadata
         px_per_mm = dpi / 25.4
-        vips_image = vips_image.copy(xres=px_per_mm, yres=px_per_mm)
+        self._image = vips_image.copy(xres=px_per_mm, yres=px_per_mm)
 
         page_bounds = (0.0, 0.0, float(render_w_px), float(render_h_px))
 
@@ -218,7 +227,7 @@ class PdfImporter(Importer):
             ],
         )
 
-        return parse_result, vips_image
+        return parse_result
 
     def _calculate_render_resolution(
         self, w_mm: float, h_mm: float

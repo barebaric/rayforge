@@ -1,6 +1,7 @@
 import warnings
 from typing import Optional
 import logging
+from pathlib import Path
 
 with warnings.catch_warnings():
     warnings.simplefilter("ignore", DeprecationWarning)
@@ -30,6 +31,10 @@ class JpgImporter(Importer):
     mime_types = ("image/jpeg",)
     extensions = (".jpg", ".jpeg")
     features = {ImporterFeature.BITMAP_TRACING}
+
+    def __init__(self, data: bytes, source_file: Optional[Path] = None):
+        super().__init__(data, source_file)
+        self._image: Optional[pyvips.Image] = None
 
     def scan(self) -> ImportManifest:
         """
@@ -62,12 +67,12 @@ class JpgImporter(Importer):
             return None
 
         # Phase 2 (Parse): Get ParsingResult and image data
-        parse_result, image = self._parse_to_result()
-        if not parse_result or not image:
+        parse_result = self.parse()
+        if not parse_result or not self._image:
             return None
 
         # Create the SourceAsset
-        metadata = image_util.extract_vips_metadata(image)
+        metadata = image_util.extract_vips_metadata(self._image)
         metadata["image_format"] = "JPEG"
         _, _, w_px, h_px = parse_result.page_bounds
         width_mm = w_px * parse_result.native_unit_to_mm
@@ -85,7 +90,9 @@ class JpgImporter(Importer):
         )
 
         # Phase 3 (Vectorize): Trace the image to get vector geometry
-        vec_result = self._vectorize(parse_result, image, vectorization_spec)
+        vec_result = self._vectorize(
+            parse_result, self._image, vectorization_spec
+        )
 
         # Phase 4 (Layout): Calculate layout plan
         engine = NormalizationEngine()
@@ -131,9 +138,7 @@ class JpgImporter(Importer):
             source_parse_result=parse_result,
         )
 
-    def _parse_to_result(
-        self,
-    ) -> tuple[Optional[ParsingResult], Optional[pyvips.Image]]:
+    def parse(self) -> Optional[ParsingResult]:
         """Phase 2: Parse the JPG into a vips image and extract facts."""
         try:
             image = pyvips.Image.jpegload_buffer(
@@ -143,7 +148,10 @@ class JpgImporter(Importer):
             logger.error(
                 f"pyvips failed to load JPEG buffer: {e}", exc_info=True
             )
-            return None, None
+            self._image = None
+            return None
+
+        self._image = image
 
         # Extract geometric facts
         width_px = float(image.width)
@@ -168,4 +176,4 @@ class JpgImporter(Importer):
                 )
             ],
         )
-        return parse_result, image
+        return parse_result
