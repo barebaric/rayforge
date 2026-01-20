@@ -99,6 +99,10 @@ def import_file_from_bytes(
     Returns:
         An ImportPayload or None on failure.
     """
+    logger.debug(
+        f"import_file_from_bytes: file_data_len={len(file_data)}, "
+        f"source_file_name={source_file_name}, mime_type={mime_type}"
+    )
     importer_class = importer_by_mime_type.get(mime_type)
     if not importer_class:
         logger.error(f"No importer found for MIME type: {mime_type}")
@@ -176,6 +180,11 @@ def import_file(
     else:  # is bytes
         source_file = Path("Untitled")
         file_data = source
+
+    logger.debug(
+        f"import_file: file_data_len={len(file_data)}, "
+        f"source_file={source_file}, mime_type={mime_type}"
+    )
 
     # 3. Execute importer
     try:

@@ -205,6 +205,11 @@ class NormalizationEngine:
             width_mm, height_mm
         )
 
+        logger.debug(
+            f"NormalizationEngine: layer_id={layer_id}, bounds={bounds}, "
+            f"crop_window={bounds}, "
+            f"native_unit_to_mm={result.native_unit_to_mm}"
+        )
         return LayoutItem(
             layer_id=layer_id,
             world_matrix=world_matrix,
