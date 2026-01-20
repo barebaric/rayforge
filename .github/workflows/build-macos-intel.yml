@@ -18,7 +18,7 @@ concurrency:
 jobs:
   build:
     name: Build macOS Bundle (Intel)
-    runs-on: macos-13
+    runs-on: macos-14
     outputs:
       version: ${{ steps.set-version.outputs.version }}
     steps:
