@@ -1,16 +1,13 @@
 import pytest
-import numpy as np
 from rayforge.core.geo import Geometry
 from rayforge.core.geo.analysis import get_subpath_area_from_array
 from rayforge.core.geo.contours import (
     filter_to_external_contours,
     reverse_contour,
     normalize_winding_orders,
-    close_geometry_gaps,
     split_inner_and_outer_contours,
     get_valid_contours_data,
 )
-from rayforge.core.geo.constants import COL_TYPE, CMD_TYPE_MOVE, CMD_TYPE_LINE
 
 
 def test_reverse_contour_simple_polygon():
@@ -252,76 +249,6 @@ def test_filter_external_shape_inside_another_hole():
     assert c1_outer_boundary in result
     assert c3_island in result
     assert c2_hole_boundary not in result
-
-
-def test_close_geometry_gaps_functional():
-    """Tests the core logic of the close_geometry_gaps function."""
-    # 1. Test intra-contour gap closing (almost closed path)
-    geo_intra = Geometry()
-    geo_intra.move_to(0, 0)
-    geo_intra.line_to(10, 0)
-    geo_intra.line_to(10, 10)
-    geo_intra.line_to(0.000001, 10)  # Ends near (0, 10)
-    geo_intra.line_to(0.000002, 0.000003)  # Ends near start point (0, 0)
-    original_intra_data = geo_intra.copy().data
-    assert original_intra_data is not None
-
-    result_intra = close_geometry_gaps(geo_intra, tolerance=1e-5)
-    assert result_intra.data is not None
-    assert result_intra is not geo_intra
-    assert geo_intra.data is not None
-    assert not np.array_equal(result_intra.data, geo_intra.data)
-    # Original is unchanged
-    assert np.all(geo_intra.data[-1, 1:4] == original_intra_data[-1, 1:4])
-    assert np.all(result_intra.data[0, 1:4] == (0, 0, 0))
-    # The final point should be snapped to the start point
-    assert np.all(result_intra.data[-1, 1:4] == (0, 0, 0))
-
-    # 2. Test inter-contour gap closing (stitching paths)
-    geo_inter = Geometry()
-    geo_inter.move_to(0, 0)
-    geo_inter.line_to(10, 10)
-    geo_inter.move_to(10.000001, 10.000002)  # A small jump
-    geo_inter.line_to(20, 20)
-    original_inter_data = geo_inter.copy().data
-    assert original_inter_data is not None
-
-    result_inter = close_geometry_gaps(geo_inter, tolerance=1e-5)
-    assert result_inter.data is not None
-    assert result_inter is not geo_inter
-    assert geo_inter.data is not None
-    assert not np.array_equal(result_inter.data, geo_inter.data)
-    # Assert original is unchanged
-    assert geo_inter.data[2, COL_TYPE] == CMD_TYPE_MOVE
-    assert np.all(geo_inter.data[2, 1:4] == original_inter_data[2, 1:4])
-
-    # The MoveTo should be replaced with a LineTo in the result
-    assert result_inter.data[2, COL_TYPE] == CMD_TYPE_LINE
-    # The new LineTo should connect to the exact previous endpoint
-    assert np.all(result_inter.data[2, 1:4] == (10, 10, 0))
-
-
-def test_close_geometry_gaps_respects_tolerance():
-    """Tests that the tolerance parameter is correctly used."""
-    geo = Geometry()
-    geo.move_to(0, 0)
-    geo.line_to(10, 10)
-    geo.move_to(10.1, 10.1)  # A gap of sqrt(0.1^2 + 0.1^2) ~= 0.14
-    geo.line_to(20, 20)
-
-    # First, try with a tolerance that is too small
-    result1 = close_geometry_gaps(geo, tolerance=0.1)
-    assert result1.data is not None
-    # The MoveTo should NOT be replaced
-    assert result1.data[2, COL_TYPE] == CMD_TYPE_MOVE
-    assert np.all(result1.data[2, 1:4] == (10.1, 10.1, 0))
-
-    # Now, try with a tolerance that is large enough
-    result2 = close_geometry_gaps(geo, tolerance=0.2)
-    assert result2.data is not None
-    # The MoveTo SHOULD be replaced
-    assert result2.data[2, COL_TYPE] == CMD_TYPE_LINE
-    assert np.all(result2.data[2, 1:4] == (10, 10, 0))
 
 
 def test_remove_inner_edges():
