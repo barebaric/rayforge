@@ -495,7 +495,7 @@ def test_load_preserves_uniform_scalable(sample_geometry):
 # underlying stateless functions from other modules.
 
 
-@patch("rayforge.core.geo.contours.close_geometry_gaps")
+@patch("rayforge.core.geo.cleanup.close_geometry_gaps")
 def test_close_gaps_wrapper(mock_close_gaps, sample_geometry):
     """Tests the Geometry.close_gaps() wrapper method."""
     mock_return_geo = Geometry()
@@ -507,6 +507,32 @@ def test_close_gaps_wrapper(mock_close_gaps, sample_geometry):
 
     # The function is called with a COPY of the original geometry.
     # We use ANY to check that it was called with a Geometry object.
+    mock_close_gaps.assert_called_once_with(ANY, tolerance=1e-5)
+
+    # Check that the geometry's data was updated from the result
+    assert sample_geometry == mock_return_geo
+
+
+@patch("rayforge.core.geo.cleanup.close_geometry_gaps")
+@patch("rayforge.core.geo.cleanup.remove_duplicate_segments")
+def test_cleanup_wrapper(
+    mock_remove_duplicates, mock_close_gaps, sample_geometry
+):
+    """Tests the Geometry.cleanup() wrapper method."""
+    mock_remove_duplicates.return_value = sample_geometry.data
+    mock_return_geo = Geometry()
+    mock_return_geo.line_to(1, 1)
+    mock_close_gaps.return_value = mock_return_geo
+
+    result = sample_geometry.cleanup(tolerance=1e-5)
+    assert result is sample_geometry
+
+    # Check that remove_duplicate_segments was called
+    assert sample_geometry.data is not None
+    assert mock_remove_duplicates.called
+    assert mock_remove_duplicates.call_args[1]["tolerance"] == 1e-5
+
+    # Check that close_geometry_gaps was called with ANY (a Geometry object)
     mock_close_gaps.assert_called_once_with(ANY, tolerance=1e-5)
 
     # Check that the geometry's data was updated from the result

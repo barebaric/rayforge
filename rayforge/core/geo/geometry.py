@@ -533,7 +533,7 @@ class Geometry:
         connected paths. This method operates in-place.
 
         This is a convenience wrapper around the `close_geometry_gaps`
-        function in the `contours` module.
+        function in the `cleanup` module.
 
         Args:
             tolerance: The maximum distance between two points to be
@@ -542,20 +542,49 @@ class Geometry:
         Returns:
             The modified Geometry object (self).
         """
-        from . import contours
+        from . import cleanup
 
         if self.is_empty() or self.data is None:
             return self
 
-        new_geo = contours.close_geometry_gaps(
-            self.copy(), tolerance=tolerance
-        )
+        new_geo = cleanup.close_geometry_gaps(self.copy(), tolerance=tolerance)
 
         self.clear()
         self.extend(new_geo)
         self._winding_cache.clear()
 
         return self
+
+    def cleanup(self: T_Geometry, tolerance: float = 1e-6) -> T_Geometry:
+        """
+        Cleans the geometry by removing duplicate segments and closing gaps.
+
+        This method performs two operations:
+        1. Removes duplicate segments within the same path
+        2. Closes small gaps between endpoints to form connected paths
+
+        This is a convenience wrapper that combines `remove_duplicate_segments`
+        and `close_gaps` operations.
+
+        Args:
+            tolerance: The maximum distance for two points to be considered
+                       equal and for gap closing.
+
+        Returns:
+            The modified Geometry object (self).
+        """
+        from . import cleanup
+
+        if self.is_empty() or self.data is None:
+            return self
+
+        self._sync_to_numpy()
+        self._data = cleanup.remove_duplicate_segments(
+            self._data, tolerance=tolerance
+        )
+        self._winding_cache.clear()
+
+        return self.close_gaps(tolerance=tolerance)
 
     def rect(self) -> Tuple[float, float, float, float]:
         """
