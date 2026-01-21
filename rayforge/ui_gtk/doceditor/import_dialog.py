@@ -3,6 +3,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, List, Optional, Set
 
 import cairo
+import numpy as np
 from blinker import Signal
 from gi.repository import Adw, Gdk, GdkPixbuf, Gtk
 
@@ -539,12 +540,38 @@ class ImportDialog(PatchedDialogWindow):
                     xx, yx, xy, yy, x0, y0 = item.matrix.for_cairo()
                     mat = cairo.Matrix(xx, yx, xy, yy, x0, y0)
                     ctx.transform(mat)
-                    px, py = ctx.device_to_user_distance(1.5, 1.5)
-                    ctx.set_line_width(max(abs(px), abs(py)))
+
+                    # The preview logic may stretch the background image
+                    # (non-uniform scaling), causing Cairo's pen to become
+                    # elliptical. We manually transform the geometry to
+                    # device pixels and stroke with a uniform identity
+                    # transform.
+                    full_ctm = ctx.get_matrix()
+                    ctx.identity_matrix()
+
+                    # Convert Cairo matrix to Numpy 4x4 for Geometry transform
+                    transform_matrix = np.array(
+                        [
+                            [full_ctm.xx, full_ctm.xy, 0.0, full_ctm.x0],
+                            [full_ctm.yx, full_ctm.yy, 0.0, full_ctm.y0],
+                            [0.0, 0.0, 1.0, 0.0],
+                            [0.0, 0.0, 0.0, 1.0],
+                        ],
+                        dtype=np.float64,
+                    )
+
+                    # Transform geometry to device space
+                    temp_geo = item.boundaries.copy().transform(
+                        transform_matrix
+                    )
+
+                    # Draw with uniform line width
+                    ctx.set_line_width(1.5)
                     ctx.set_source_rgb(0.1, 0.5, 1.0)
                     ctx.new_path()
-                    item.boundaries.to_cairo(ctx)
+                    temp_geo.to_cairo(ctx)
                     ctx.stroke()
+
                     ctx.restore()
                 elif isinstance(item, Layer):
                     for child in item.children:

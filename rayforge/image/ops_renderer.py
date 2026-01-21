@@ -137,6 +137,9 @@ class OpsRenderer(Renderer):
 
         surface = self._render_to_cairo_surface(boundaries, width, height)
         if not surface:
+            logger.warning(
+                "OpsRenderer: Failed to render boundaries to Cairo surface."
+            )
             return None
 
         h, w = surface.get_height(), surface.get_width()
