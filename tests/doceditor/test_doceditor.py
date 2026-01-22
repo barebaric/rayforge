@@ -152,3 +152,102 @@ async def test_import_svg_export_gcode(
         for key in gen_parts:
             # A tolerance of 1 micron (0.001 mm) is reasonable for CNC
             assert gen_parts[key] == pytest.approx(exp_parts[key], abs=0.1)
+
+
+def test_saved_state_with_undo_redo(editor):
+    """
+    Test that saved state correctly tracks undo/redo operations.
+    If a change is made and then undone, the state should be saved.
+    """
+    # Track saved state changes
+    saved_states = []
+
+    def on_saved_state_changed(sender):
+        saved_states.append(sender.is_saved)
+
+    editor.saved_state_changed.connect(on_saved_state_changed)
+
+    # Initial state should be saved
+    assert editor.is_saved is True
+    assert len(saved_states) == 0
+
+    # Make a change by adding a layer
+    editor.layer.add_layer_and_set_active()
+    assert editor.is_saved is False
+    assert len(saved_states) == 1
+    assert saved_states[-1] is False
+
+    # Mark as saved
+    editor.mark_as_saved()
+    assert editor.is_saved is True
+    assert len(saved_states) == 2
+    assert saved_states[-1] is True
+
+    # Undo the change
+    editor.history_manager.undo()
+    assert editor.is_saved is False
+    assert len(saved_states) == 3
+    assert saved_states[-1] is False
+
+    # Redo the change
+    editor.history_manager.redo()
+    assert editor.is_saved is True
+    assert len(saved_states) == 4
+    assert saved_states[-1] is True
+
+
+def test_saved_state_with_multiple_changes(editor):
+    """
+    Test that saved state correctly handles multiple changes.
+    """
+    saved_states = []
+
+    def on_saved_state_changed(sender):
+        saved_states.append(sender.is_saved)
+
+    editor.saved_state_changed.connect(on_saved_state_changed)
+
+    # Make multiple changes
+    editor.layer.add_layer_and_set_active()
+    editor.layer.add_layer_and_set_active()
+    assert editor.is_saved is False
+
+    # Mark as saved
+    editor.mark_as_saved()
+    assert editor.is_saved is True
+
+    # Make another change
+    editor.layer.add_layer_and_set_active()
+    assert editor.is_saved is False
+
+    # Undo all changes
+    while editor.history_manager.can_undo():
+        editor.history_manager.undo()
+
+    # Should be unsaved since we're not at the checkpoint
+    assert editor.is_saved is False
+
+    # Redo back to checkpoint
+    while not editor.is_saved and editor.history_manager.can_redo():
+        editor.history_manager.redo()
+
+    # Should be saved again
+    assert editor.is_saved is True
+
+
+def test_mark_as_unsaved_clears_checkpoint(editor):
+    """
+    Test that mark_as_unsaved clears the checkpoint.
+    """
+    # Make a change and mark as saved
+    editor.layer.add_layer_and_set_active()
+    editor.mark_as_saved()
+    assert editor.is_saved is True
+
+    # Mark as unsaved
+    editor.mark_as_unsaved()
+    assert editor.is_saved is False
+
+    # Undo should not make it saved
+    editor.history_manager.undo()
+    assert editor.is_saved is False

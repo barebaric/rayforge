@@ -1,0 +1,113 @@
+{
+  "uid": "doc-005",
+  "type": "doc",
+  "active_layer_index": 0,
+  "children": [
+    {
+      "uid": "layer-001",
+      "type": "layer",
+      "name": "Layer 1",
+      "matrix": [
+        [1.0, 0.0, 0.0],
+        [0.0, 1.0, 0.0],
+        [0.0, 0.0, 1.0]
+      ],
+      "visible": true,
+      "stock_item_uid": "stockitem-001",
+      "children": [
+        {
+          "uid": "workflow-001",
+          "type": "workflow",
+          "name": "Layer 1 Workflow",
+          "matrix": [
+            [1.0, 0.0, 0.0],
+            [0.0, 1.0, 0.0],
+            [0.0, 0.0, 1.0]
+          ],
+          "children": []
+        },
+        {
+          "uid": "wp-001",
+          "type": "workpiece",
+          "name": "Workpiece on Stock",
+          "matrix": [
+            [1.0, 0.0, 0.0],
+            [0.0, 10.0, 0.0],
+            [0.0, 0.0, 1.0]
+          ],
+          "width_mm": 50.0,
+          "height_mm": 50.0,
+          "tabs": [],
+          "tabs_enabled": true,
+          "source_segment": null,
+          "edited_boundaries": null,
+          "sketch_uid": null,
+          "sketch_params": {},
+          "source_asset_uid": null
+        }
+      ]
+    },
+    {
+      "uid": "stockitem-001",
+      "type": "stockitem",
+      "name": "Plywood Sheet",
+      "matrix": [
+        [1.0, 0.0, 0.0],
+        [0.0, 1.0, 0.0],
+        [0.0, 0.0, 1.0]
+      ],
+      "stock_asset_uid": "stockasset-001",
+      "visible": true
+    },
+    {
+      "uid": "stockitem-002",
+      "type": "stockitem",
+      "name": "Acrylic Sheet",
+      "matrix": [
+        [1.0, 0.0, 0.0],
+        [0.0, 1.0, 0.0],
+        [0.0, 0.0, 1.0]
+      ],
+      "stock_asset_uid": "stockasset-002",
+      "visible": false
+    }
+  ],
+  "assets": [
+    {
+      "uid": "stockasset-001",
+      "type": "stock",
+      "name": "Plywood Stock",
+      "geometry": {
+        "paths": [
+          [
+            [0, 0],
+            [100, 0],
+            [100, 100],
+            [0, 100]
+          ]
+        ],
+        "fills": []
+      },
+      "thickness": 18.0,
+      "material_uid": null
+    },
+    {
+      "uid": "stockasset-002",
+      "type": "stock",
+      "name": "Acrylic Stock",
+      "geometry": {
+        "paths": [
+          [
+            [0, 0],
+            [80, 0],
+            [80, 80],
+            [0, 80]
+          ]
+        ],
+        "fills": []
+      },
+      "thickness": 5.0,
+      "material_uid": null
+    }
+  ]
+}

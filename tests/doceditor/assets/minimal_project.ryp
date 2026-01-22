@@ -1,0 +1,33 @@
+{
+  "uid": "doc-001",
+  "type": "doc",
+  "active_layer_index": 0,
+  "children": [
+    {
+      "uid": "layer-001",
+      "type": "layer",
+      "name": "Layer 1",
+      "matrix": [
+        [1.0, 0.0, 0.0],
+        [0.0, 1.0, 0.0],
+        [0.0, 0.0, 1.0]
+      ],
+      "visible": true,
+      "stock_item_uid": null,
+      "children": [
+        {
+          "uid": "workflow-001",
+          "type": "workflow",
+          "name": "Layer 1 Workflow",
+          "matrix": [
+            [1.0, 0.0, 0.0],
+            [0.0, 1.0, 0.0],
+            [0.0, 0.0, 1.0]
+          ],
+          "children": []
+        }
+      ]
+    }
+  ],
+  "assets": []
+}

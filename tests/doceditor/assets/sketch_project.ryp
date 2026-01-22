@@ -1,0 +1,76 @@
+{
+  "uid": "doc-006",
+  "type": "doc",
+  "active_layer_index": 0,
+  "children": [
+    {
+      "uid": "layer-001",
+      "type": "layer",
+      "name": "Layer 1",
+      "matrix": [
+        [1.0, 0.0, 0.0],
+        [0.0, 1.0, 0.0],
+        [0.0, 0.0, 1.0]
+      ],
+      "visible": true,
+      "stock_item_uid": null,
+      "children": [
+        {
+          "uid": "workflow-001",
+          "type": "workflow",
+          "name": "Layer 1 Workflow",
+          "matrix": [
+            [1.0, 0.0, 0.0],
+            [0.0, 1.0, 0.0],
+            [0.0, 0.0, 1.0]
+          ],
+          "children": []
+        },
+        {
+          "uid": "wp-001",
+          "type": "workpiece",
+          "name": "Rectangle Sketch",
+          "matrix": [
+            [10.0, 0.0, 0.0],
+            [0.0, 10.0, 0.0],
+            [0.0, 0.0, 1.0]
+          ],
+          "width_mm": 50.0,
+          "height_mm": 30.0,
+          "tabs": [],
+          "tabs_enabled": true,
+          "source_segment": null,
+          "edited_boundaries": null,
+          "sketch_uid": "sketch-001",
+          "sketch_params": {
+            "width": 50.0,
+            "height": 30.0
+          },
+          "source_asset_uid": null
+        }
+      ]
+    }
+  ],
+  "assets": [
+    {
+      "uid": "sketch-001",
+      "type": "sketch",
+      "name": "Rectangle",
+      "input_parameters": {
+        "width": 50.0,
+        "height": 30.0
+      },
+      "params": {
+        "expressions": {}
+      },
+      "registry": {
+        "points": [],
+        "entities": [],
+        "id_counter": 0
+      },
+      "constraints": [],
+      "fills": [],
+      "origin_id": null
+    }
+  ]
+}

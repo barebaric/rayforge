@@ -75,13 +75,22 @@ class DocEditor:
         # commands
         self._busy_task_count: int = 0
 
+        # Track file path and saved state for the document
+        self._file_path: Optional[Path] = None
+        self._is_saved: bool = True
+
         # Signals for monitoring document processing state
         self.processing_state_changed = Signal()
         self.document_settled = Signal()  # Fires when processing finishes
         self.notification_requested = Signal()  # For UI feedback
+        self.saved_state_changed = Signal()  # Fires when saved state changes
+        self.document_changed = Signal()  # Fires when a new document is set
         self.pipeline.processing_state_changed.connect(
             self._on_processing_state_changed
         )
+
+        # Connect to history manager to track undo/redo for saved state
+        self.history_manager.changed.connect(self._on_history_changed)
 
         # Instantiate and link command handlers, passing dependencies.
         self.asset = AssetCmd(self)
@@ -253,9 +262,10 @@ class DocEditor:
 
     def set_doc(self, new_doc: Doc):
         """
-        Assigns a new document to the editor, re-initializing the core
+        Assigns a new document to editor, re-initializing the core
         components like the Pipeline.
         """
+        old_history_manager = self.history_manager
         self.pipeline.processing_state_changed.disconnect(
             self._on_processing_state_changed
         )
@@ -269,6 +279,18 @@ class DocEditor:
         self.pipeline.processing_state_changed.connect(
             self._on_processing_state_changed
         )
+
+        # Reconnect to new history manager
+        if old_history_manager is not self.history_manager:
+            old_history_manager.changed.disconnect(self._on_history_changed)
+            self.history_manager.changed.connect(self._on_history_changed)
+
+        # Notify listeners that document has changed
+        self.document_changed.send(self)
+
+        # Mark document as unsaved when setting a new doc
+        # (unless called from load_project_from_path which will mark as saved)
+        self.mark_as_unsaved()
 
     @property
     def is_processing(self) -> bool:
@@ -311,3 +333,43 @@ class DocEditor:
         self.processing_state_changed.send(self, is_processing=effective_state)
         if not effective_state:
             self.document_settled.send(self)
+
+    def _on_history_changed(self, sender, command):
+        """
+        Handles history manager changes (undo/redo/new commands).
+        Updates saved state based on checkpoint position.
+        """
+        new_is_saved = self.history_manager.is_at_checkpoint()
+        if self._is_saved != new_is_saved:
+            self._is_saved = new_is_saved
+            self.saved_state_changed.send(self)
+
+    @property
+    def file_path(self) -> Optional[Path]:
+        """Returns the current file path of the document."""
+        return self._file_path
+
+    @property
+    def is_saved(self) -> bool:
+        """Returns True if the document has no unsaved changes."""
+        return self._is_saved
+
+    def set_file_path(self, path: Optional[Path]):
+        """Sets the file path for the document."""
+        self._file_path = path
+        self.saved_state_changed.send(self)
+
+    def mark_as_saved(self):
+        """Marks the document as saved."""
+        self.history_manager.set_checkpoint()
+        new_is_saved = self.history_manager.is_at_checkpoint()
+        if self._is_saved != new_is_saved:
+            self._is_saved = new_is_saved
+            self.saved_state_changed.send(self)
+
+    def mark_as_unsaved(self):
+        """Marks the document as having unsaved changes."""
+        self.history_manager.clear_checkpoint()
+        if self._is_saved:
+            self._is_saved = False
+            self.saved_state_changed.send(self)

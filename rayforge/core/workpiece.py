@@ -760,6 +760,7 @@ class WorkPiece(DocItem):
         """
         state = {
             "uid": self.uid,
+            "type": "workpiece",
             "name": self.name,
             "matrix": self._matrix.to_list(),
             "width_mm": self.natural_width_mm,
