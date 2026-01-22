@@ -140,6 +140,13 @@ class SvgImporter(Importer):
         logger.debug(f"SvgImporter delegate returned result with: {item_info}")
         # --- END DIAGNOSTIC ---
 
+        # If we have a result, ensure the facade's errors (if any were
+        # collected before delegation) are merged, though usually facade
+        # does little before delegation.
+        if import_result:
+            import_result.warnings.extend(self._warnings)
+            import_result.errors.extend(self._errors)
+
         return import_result
 
     # These abstract methods must be implemented to satisfy the ABC contract,

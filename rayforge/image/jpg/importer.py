@@ -48,17 +48,18 @@ class JpgImporter(Importer):
             )
             size_mm = image_util.get_physical_size_mm(image)
             return ImportManifest(
-                title=self.source_file.name, natural_size_mm=size_mm
+                title=self.source_file.name,
+                natural_size_mm=size_mm,
+                warnings=self._warnings,
+                errors=self._errors,
             )
         except pyvips.Error as e:
             logger.warning(
                 f"JPEG scan failed for {self.source_file.name}: {e}"
             )
+            self.add_error(_(f"Failed to scan JPEG file: {e}"))
             return ImportManifest(
-                title=self.source_file.name,
-                warnings=[
-                    "Could not read JPEG metadata. File may be corrupt."
-                ],
+                title=self.source_file.name, errors=self._errors
             )
 
     def create_source_asset(self, parse_result: ParsingResult) -> SourceAsset:
@@ -95,6 +96,7 @@ class JpgImporter(Importer):
         normalized_image = image_util.normalize_to_rgba(self._image)
         if not normalized_image:
             logger.error("Failed to normalize image to RGBA format.")
+            self.add_error(_("Failed to process image data."))
             return VectorizationResult(
                 geometries_by_layer={}, source_parse_result=parse_result
             )
@@ -120,6 +122,7 @@ class JpgImporter(Importer):
             logger.error(
                 f"pyvips failed to load JPEG buffer: {e}", exc_info=True
             )
+            self.add_error(_(f"Image load failed: {e}"))
             self._image = None
             return None
 

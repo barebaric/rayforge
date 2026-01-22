@@ -126,8 +126,8 @@ class TestProceduralImporter:
 
     def test_importer_handles_invalid_size_function_path(self):
         """
-        Tests that the importer returns None if the size function cannot be
-        resolved.
+        Tests that the importer returns ImportResult with None payload if the
+        size function cannot be resolved.
         """
         importer = ProceduralImporter(
             drawing_function_path=MOCK_DRAW_FUNC_PATH,
@@ -136,7 +136,10 @@ class TestProceduralImporter:
             name="Bad Item",
         )
         import_result = importer.get_doc_items(ProceduralSpec())
-        assert import_result is None
+        assert import_result is not None
+        assert import_result.payload is None
+        assert import_result.parse_result is None
+        assert len(import_result.errors) > 0
 
 
 class TestProceduralRenderer:

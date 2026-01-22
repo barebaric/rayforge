@@ -232,7 +232,7 @@ class FileCmd:
 
             # Even if no items were created, we might still be able to show a
             # preview of the source asset (e.g., an empty DXF).
-            if not import_result.payload.items:
+            if not import_result.payload or not import_result.payload.items:
                 logger.warning(
                     f"Import of '{filename}' produced no document items, "
                     "but attempting to generate a preview."
@@ -261,6 +261,10 @@ class FileCmd:
         """
         payload = import_result.payload
         parse_result = import_result.parse_result
+
+        if not payload or not parse_result:
+            return None
+
         renderer = payload.source.renderer
         if not renderer:
             return None
@@ -308,7 +312,7 @@ class FileCmd:
         if not vips_image:
             # If background rendering failed or was skipped, but we have
             # vectors, create a blank image to render the vectors on.
-            if payload.items:
+            if payload and payload.items:
                 vips_image = pyvips.Image.black(
                     preview_size_px, preview_size_px
                 )
@@ -555,7 +559,7 @@ class FileCmd:
                 import_result = await self._load_file_async(fn, mt, vec_spec)
 
                 # 2. Validate the result.
-                if not import_result or not import_result.payload.items:
+                if not import_result or not import_result.payload:
                     if mt and mt.startswith("image/"):
                         msg = _(
                             "Failed to import {filename}. The image file "
@@ -587,6 +591,7 @@ class FileCmd:
                 def finalizer_and_callback():
                     """Wraps finalizer to signal future on completion/error."""
                     try:
+                        assert import_result.payload, "Missing import payload"
                         self._finalize_import_on_main_thread(
                             import_result.payload, fn, pos_mm, vec_spec
                         )

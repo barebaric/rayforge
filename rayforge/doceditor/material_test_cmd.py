@@ -65,7 +65,7 @@ class MaterialTestCmd:
                 name=name,
             )
             payload = importer.get_doc_items(ProceduralSpec())
-            if not payload:
+            if not payload or not payload.payload:
                 logger.error("Failed to create material test grid.")
                 return
 

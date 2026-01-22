@@ -102,6 +102,9 @@ class Renderer(ABC):
         Returns:
             A pyvips.Image, or None if rendering fails.
         """
+        if not import_result.payload:
+            return None
+
         source = import_result.payload.source
         # For previews, always prefer the pre-processed (e.g., trimmed) data.
         data_to_render = source.base_render_data or source.original_data

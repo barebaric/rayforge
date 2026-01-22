@@ -134,10 +134,15 @@ class TestJpgImporter:
             importer.get_doc_items(vectorization_spec=PassthroughSpec())
 
     def test_importer_handles_invalid_data(self):
-        """Tests the importer returns None for invalid JPG data."""
+        """Tests importer returns ImportResult with None payload on invalid."""
         importer = JpgImporter(b"this is not a jpg")
-        import_result = importer.get_doc_items(vectorization_spec=TraceSpec())
-        assert import_result is None
+        import_result = importer.get_doc_items(
+            vectorization_spec=TraceSpec()
+        )
+        assert import_result is not None
+        assert import_result.payload is None
+        assert import_result.parse_result is None
+        assert len(import_result.errors) > 0
 
     def test_source_asset_serialization_with_metadata(self):
         """Checks that metadata is correctly serialized and deserialized."""

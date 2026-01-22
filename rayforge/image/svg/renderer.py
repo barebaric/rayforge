@@ -72,6 +72,9 @@ class SvgRenderer(Renderer):
         target_height: int,
     ) -> Optional[pyvips.Image]:
         """Renders the SVG source data at the target preview dimensions."""
+        if not import_result.payload:
+            return None
+
         source = import_result.payload.source
         # For previews, use the pre-trimmed data if available.
         data_to_render = source.base_render_data or source.original_data

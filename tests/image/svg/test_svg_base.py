@@ -89,14 +89,14 @@ def test_scan_no_layers_structure():
 
 
 def test_scan_handles_corrupt_file_gracefully():
-    """Test scanning a malformed file returns warnings instead of crashing."""
+    """Test scanning a malformed file returns errors instead of crashing."""
     importer = ConcreteSvgImporter(SVG_INVALID, Path("bad.svg"))
     manifest = importer.scan()
 
     assert manifest.title == "bad.svg"
     assert manifest.natural_size_mm is None
-    assert len(manifest.warnings) > 0
-    assert any("parse" in w.lower() for w in manifest.warnings)
+    assert len(manifest.errors) > 0
+    assert any("parse" in e.lower() for e in manifest.errors)
 
 
 def test_analytical_trim_logic():

@@ -56,6 +56,9 @@ class DxfRenderer(Renderer):
         if not vec_result:
             return None
 
+        if not import_result.payload:
+            return None
+
         all_geos = Geometry()
         for geo in vec_result.geometries_by_layer.values():
             if geo:
