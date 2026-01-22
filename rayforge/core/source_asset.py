@@ -1,4 +1,5 @@
 from __future__ import annotations
+import base64
 import uuid
 from pathlib import Path
 from typing import Optional, Dict, Any, TYPE_CHECKING
@@ -76,8 +77,14 @@ class SourceAsset(IAsset):
             "type": self.asset_type_name,
             "name": self.name,
             "source_file": str(self.source_file),
-            "original_data": self.original_data,
-            "base_render_data": self.base_render_data,
+            "original_data": base64.b64encode(self.original_data).decode(
+                "utf-8"
+            ),
+            "base_render_data": (
+                base64.b64encode(self.base_render_data).decode("utf-8")
+                if self.base_render_data
+                else None
+            ),
             "renderer_name": self.renderer.__class__.__name__,
             "metadata": self.metadata,
             "width_px": self.width_px,
@@ -93,11 +100,18 @@ class SourceAsset(IAsset):
 
         renderer = renderer_by_name[data["renderer_name"]]
 
+        original_data = base64.b64decode(data["original_data"])
+        base_render_data = (
+            base64.b64decode(data["base_render_data"])
+            if data.get("base_render_data")
+            else None
+        )
+
         instance = cls(
             uid=data["uid"],
             source_file=Path(data["source_file"]),
-            original_data=data["original_data"],
-            base_render_data=data.get("base_render_data"),
+            original_data=original_data,
+            base_render_data=base_render_data,
             renderer=renderer,
             metadata=data.get("metadata", {}),
             width_px=data.get("width_px"),

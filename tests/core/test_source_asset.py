@@ -1,3 +1,4 @@
+import base64
 import pytest
 from pathlib import Path
 from unittest.mock import patch
@@ -48,8 +49,12 @@ class TestSourceAsset:
         assert data_dict["type"] == "source"
         assert data_dict["name"] == "test.svg"
         assert data_dict["source_file"] == "test.svg"
-        assert data_dict["original_data"] == b"SVG_DATA"
-        assert data_dict["base_render_data"] == b"RENDER_DATA"
+        assert data_dict["original_data"] == base64.b64encode(
+            b"SVG_DATA"
+        ).decode("utf-8")
+        assert data_dict["base_render_data"] == base64.b64encode(
+            b"RENDER_DATA"
+        ).decode("utf-8")
         assert data_dict["renderer_name"] == "SvgRenderer"
         assert data_dict["metadata"] == {"key": "value"}
 
@@ -60,8 +65,10 @@ class TestSourceAsset:
             "type": "source",
             "name": "test.png",
             "source_file": "test.png",
-            "original_data": b"PNG_DATA",
-            "base_render_data": b"RENDER_DATA",
+            "original_data": base64.b64encode(b"PNG_DATA").decode("utf-8"),
+            "base_render_data": base64.b64encode(b"RENDER_DATA").decode(
+                "utf-8"
+            ),
             "renderer_name": "SvgRenderer",
             "metadata": {"natural_size": [100, 50]},
         }
