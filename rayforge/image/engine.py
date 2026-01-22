@@ -25,6 +25,78 @@ class NormalizationEngine:
     user intent (VectorizationSpec).
     """
 
+    @staticmethod
+    def calculate_layout_item(
+        bounds: Tuple[float, float, float, float],
+        parse_result: ParsingResult,
+        layer_id: Optional[str] = None,
+        layer_name: Optional[str] = None,
+    ) -> LayoutItem:
+        """
+        Generates the matrices for a specific bounding box (x, y, w, h)
+        in Native Coordinates. This is the central layout algorithm.
+        """
+        bx, by, bw, bh = bounds
+
+        # Protect against degenerate bounds
+        if bw <= 0:
+            bw = 1.0
+        if bh <= 0:
+            bh = 1.0
+
+        # 1. Normalization Matrix: Native -> Unit Square (0-1, Y-Up)
+        scale_matrix = Matrix.scale(1.0 / bw, 1.0 / bh)
+        if parse_result.geometry_is_relative_to_bounds:
+            # Geometry is already at its local origin (0,0) due to trimming.
+            # No translation needed for normalization.
+            norm_matrix = scale_matrix
+        else:
+            # Geometry is in global coords. Translate it to its origin first.
+            norm_matrix = scale_matrix @ Matrix.translation(-bx, -by)
+
+        # The contract is that the normalization_matrix MUST produce a Y-UP,
+        # 0-1 coordinate space for the WorkPiece.
+        if parse_result.is_y_down:
+            # Source (SVG, PNG) is Y-Down. We need to flip it to become Y-Up.
+            flip_matrix = Matrix.translation(0, 1) @ Matrix.scale(1, -1)
+            norm_matrix = flip_matrix @ norm_matrix
+
+        # 2. World Matrix: Unit Square (0-1, Y-Up) -> Physical World (mm, Y-Up)
+        width_mm = bw * parse_result.native_unit_to_mm
+        height_mm = bh * parse_result.native_unit_to_mm
+
+        pos_x_mm = bx * parse_result.native_unit_to_mm
+
+        # The frame of reference for Y-inversion is the original,
+        # untrimmed page.
+        ref_bounds = (
+            parse_result.untrimmed_page_bounds or parse_result.page_bounds
+        )
+        ref_x_native, ref_y_native, ref_w_native, ref_h_native = ref_bounds
+
+        if parse_result.is_y_down:
+            # Native is Y-Down (0 at top). We invert relative to the full page.
+            # The bottom of the content in native coords is by + bh.
+            # The bottom of the reference frame in native coords is
+            # ref_y + ref_h
+            dist_from_bottom_native = (ref_y_native + ref_h_native) - (by + bh)
+            pos_y_mm = dist_from_bottom_native * parse_result.native_unit_to_mm
+        else:
+            # Native is Y-Up (DXF). Origin is already at the bottom.
+            pos_y_mm = by * parse_result.native_unit_to_mm
+
+        world_matrix = Matrix.translation(pos_x_mm, pos_y_mm) @ Matrix.scale(
+            width_mm, height_mm
+        )
+
+        return LayoutItem(
+            layer_id=layer_id,
+            layer_name=layer_name,
+            world_matrix=world_matrix,
+            normalization_matrix=norm_matrix,
+            crop_window=bounds,
+        )
+
     def calculate_layout(
         self,
         vec_result: VectorizationResult,
@@ -67,7 +139,7 @@ class NormalizationEngine:
                 bounds_to_use = self._calculate_union_rect(all_rects)
 
             return [
-                self._create_item_from_bounds(
+                self.calculate_layout_item(
                     bounds_to_use, result, layer_id=None, layer_name=None
                 )
             ]
@@ -96,7 +168,7 @@ class NormalizationEngine:
             if bw <= 1e-6 or bh <= 1e-6:
                 return []
             return [
-                self._create_item_from_bounds(
+                self.calculate_layout_item(
                     result.page_bounds,
                     result,
                     layer_id=None,
@@ -112,7 +184,7 @@ class NormalizationEngine:
                 # Create the item based on its individual bounds to get the
                 # correct world_matrix and normalization_matrix.
                 plan.append(
-                    self._create_item_from_bounds(
+                    self.calculate_layout_item(
                         layer.content_bounds,
                         result,
                         layer_id=layer.layer_id,
@@ -132,7 +204,7 @@ class NormalizationEngine:
                 union_rect = result.page_bounds
 
             return [
-                self._create_item_from_bounds(
+                self.calculate_layout_item(
                     union_rect, result, layer_id=None, layer_name=None
                 )
             ]
@@ -155,77 +227,3 @@ class NormalizationEngine:
             max_y = max(max_y, y + h)
 
         return (min_x, min_y, max_x - min_x, max_y - min_y)
-
-    def _create_item_from_bounds(
-        self,
-        bounds: Tuple[float, float, float, float],
-        result: ParsingResult,
-        layer_id: Optional[str],
-        layer_name: Optional[str],
-    ) -> LayoutItem:
-        """
-        Generates the matrices for a specific bounding box (x, y, w, h)
-        in Native Coordinates.
-        """
-        bx, by, bw, bh = bounds
-
-        # Protect against degenerate bounds
-        if bw <= 0:
-            bw = 1.0
-        if bh <= 0:
-            bh = 1.0
-
-        # 1. Normalization Matrix: Native -> Unit Square (0-1, Y-Up)
-        scale_matrix = Matrix.scale(1.0 / bw, 1.0 / bh)
-        if result.geometry_is_relative_to_bounds:
-            # Geometry is already at its local origin (0,0) due to trimming.
-            # No translation needed for normalization.
-            norm_matrix = scale_matrix
-        else:
-            # Geometry is in global coords. Translate it to its origin first.
-            norm_matrix = scale_matrix @ Matrix.translation(-bx, -by)
-
-        # The contract is that the normalization_matrix MUST produce a Y-UP,
-        # 0-1 coordinate space for the WorkPiece.
-        if result.is_y_down:
-            # Source (SVG, PNG) is Y-Down. We need to flip it to become Y-Up.
-            flip_matrix = Matrix.translation(0, 1) @ Matrix.scale(1, -1)
-            norm_matrix = flip_matrix @ norm_matrix
-
-        # 2. World Matrix: Unit Square (0-1, Y-Up) -> Physical World (mm, Y-Up)
-        width_mm = bw * result.native_unit_to_mm
-        height_mm = bh * result.native_unit_to_mm
-
-        pos_x_mm = bx * result.native_unit_to_mm
-
-        # The frame of reference for Y-inversion is the original,
-        # untrimmed page.
-        ref_bounds = result.untrimmed_page_bounds or result.page_bounds
-        ref_h_native = ref_bounds[3]
-
-        if result.is_y_down:
-            # Native is Y-Down (0 at top). We invert relative to the full page.
-            # Bottom of content in native coords = by + bh.
-            dist_from_bottom_native = ref_h_native - (by + bh)
-            pos_y_mm = dist_from_bottom_native * result.native_unit_to_mm
-        else:
-            # Native is Y-Up (DXF). Origin is already at the bottom.
-            pos_y_mm = by * result.native_unit_to_mm
-
-        world_matrix = Matrix.translation(pos_x_mm, pos_y_mm) @ Matrix.scale(
-            width_mm, height_mm
-        )
-
-        logger.debug(
-            f"NormalizationEngine: layer_id={layer_id}, "
-            f"layer_name={layer_name}, bounds={bounds}, "
-            f"crop_window={bounds}, "
-            f"native_unit_to_mm={result.native_unit_to_mm}"
-        )
-        return LayoutItem(
-            layer_id=layer_id,
-            layer_name=layer_name,
-            world_matrix=world_matrix,
-            normalization_matrix=norm_matrix,
-            crop_window=bounds,
-        )

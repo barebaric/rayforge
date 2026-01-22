@@ -1,9 +1,10 @@
 import io
 import logging
 import math
-from typing import Optional, List, Dict, Tuple, DefaultDict
+from typing import Optional, List, Dict, Tuple, DefaultDict, Iterable
 from pathlib import Path
 from collections import defaultdict
+from dataclasses import replace
 
 import ezdxf
 import ezdxf.math
@@ -19,6 +20,7 @@ from ..base_importer import (
     Importer,
     ImporterFeature,
 )
+from ..engine import NormalizationEngine
 from ..structures import (
     ParsingResult,
     LayerGeometry,
@@ -139,9 +141,96 @@ class DxfImporter(Importer):
                 merged_geo.extend(geo)
             final_geometries = {None: merged_geo}
 
+        # Hack: Updating the parsing result bounds if layers were filtered
+        # is a violation of the pipelines sequential nature. Ideally this
+        # updated window would be communicated back to the layout engine in a
+        # cleaner way. However, for now this ensures that the preview renderer
+        # and layout engine remain in sync when layers are filtered out.
+
+        # If we have filtered layers, we must recalculate the bounds in the
+        # parsing result. Otherwise, the preview renderer (which renders based
+        # on the filtered geometry) and the layout engine (which uses the
+        # original whole-doc parsing result for the background image) will
+        # disagree, causing the vector overlay to drift from the image.
+        final_parse_result = parse_result
+        if active_layers_set:
+            union_bounds = self._calculate_geometry_union(
+                final_geometries.values()
+            )
+            if union_bounds:
+                final_parse_result = self._update_parse_result_bounds(
+                    parse_result, union_bounds
+                )
+
         return VectorizationResult(
             geometries_by_layer=final_geometries,
-            source_parse_result=parse_result,
+            source_parse_result=final_parse_result,
+        )
+
+    def _calculate_geometry_union(
+        self, geometries: Iterable[Geometry]
+    ) -> Optional[Tuple[float, float, float, float]]:
+        """Calculates the bounding box of a collection of geometries."""
+        min_x, min_y, max_x, max_y = (
+            float("inf"),
+            float("inf"),
+            float("-inf"),
+            float("-inf"),
+        )
+        has_content = False
+
+        for geo in geometries:
+            if not geo or geo.is_empty():
+                continue
+            gx1, gy1, gx2, gy2 = geo.rect()
+            if gx1 < min_x:
+                min_x = gx1
+            if gy1 < min_y:
+                min_y = gy1
+            if gx2 > max_x:
+                max_x = gx2
+            if gy2 > max_y:
+                max_y = gy2
+            has_content = True
+
+        if not has_content:
+            return None
+
+        return (min_x, min_y, max_x - min_x, max_y - min_y)
+
+    def _update_parse_result_bounds(
+        self,
+        original: ParsingResult,
+        new_bounds: Tuple[float, float, float, float],
+    ) -> ParsingResult:
+        """
+        Creates a new ParsingResult with updated bounds and transform matrices
+        to reflect a subset of the original document.
+        """
+        x, y, w, h = new_bounds
+        scale = original.native_unit_to_mm
+
+        # Recalculate world frame of reference (mm)
+        new_world_frame = (x * scale, y * scale, w * scale, h * scale)
+
+        # Create a temp result to allow the Engine to calculate the matrix
+        # mapping the new bounds to the new world frame.
+        # Note: We must preserve is_y_down=False for DXF (Y-Up).
+        temp_result = replace(
+            original,
+            page_bounds=new_bounds,
+            world_frame_of_reference=new_world_frame,
+        )
+
+        bg_item = NormalizationEngine.calculate_layout_item(
+            new_bounds, temp_result
+        )
+
+        return replace(
+            original,
+            page_bounds=new_bounds,
+            world_frame_of_reference=new_world_frame,
+            background_world_transform=bg_item.world_matrix,
         )
 
     def _get_layer_manifest(self, doc) -> List[Dict[str, str]]:
@@ -179,12 +268,38 @@ class DxfImporter(Importer):
             if geo and not geo.is_empty():
                 geo.close_gaps(tolerance=adaptive_tolerance)
 
-        # 4. Result
-        result = ParsingResult(
+        # 4. Create temporary result to calculate transforms
+        native_unit_to_mm = self._get_scale_to_mm(self._dxf_doc)
+        temp_result = ParsingResult(
             page_bounds=doc_bounds,
-            native_unit_to_mm=self._get_scale_to_mm(self._dxf_doc),
+            native_unit_to_mm=native_unit_to_mm,
             is_y_down=False,
             layers=[],
+            # Dummy values, will be replaced
+            world_frame_of_reference=(0, 0, 0, 0),
+            background_world_transform=None,  # type: ignore
+        )
+
+        # 5. Calculate authoritative frames using centralized logic
+        x, y, w, h = doc_bounds
+        world_frame = (
+            x * native_unit_to_mm,
+            y * native_unit_to_mm,
+            w * native_unit_to_mm,
+            h * native_unit_to_mm,
+        )
+        bg_layout_item = NormalizationEngine.calculate_layout_item(
+            doc_bounds, temp_result
+        )
+
+        # 6. Final Result
+        result = ParsingResult(
+            page_bounds=doc_bounds,
+            native_unit_to_mm=native_unit_to_mm,
+            is_y_down=False,
+            layers=[],
+            world_frame_of_reference=world_frame,
+            background_world_transform=bg_layout_item.world_matrix,
         )
 
         for layer_name, geo in geometries_by_layer.items():

@@ -364,6 +364,19 @@ class FileCmd:
             importer.get_doc_items, vectorization_spec
         )
 
+    def _get_positionable_content(self, items: List[DocItem]) -> List[DocItem]:
+        """
+        Extracts the actual content (WorkPieces, Groups) from a list of
+        imported items, looking inside any top-level Layer containers.
+        """
+        content = []
+        for item in items:
+            if isinstance(item, Layer):
+                content.extend(item.get_content_items())
+            else:
+                content.append(item)
+        return content
+
     def _position_newly_imported_items(
         self,
         items: List[DocItem],
@@ -378,20 +391,28 @@ class FileCmd:
             f"_position_newly_imported_items: position_mm={position_mm}, "
             f"items={len(items)}"
         )
+
+        # Get the actual content to be transformed, looking inside layers.
+        content_to_transform = self._get_positionable_content(items)
+        if not content_to_transform:
+            return
+
         if position_mm:
+            # Note: PositionAtStrategy needs the top-level items to calculate
+            # the current group position correctly.
             strategy = PositionAtStrategy(items=items, position_mm=position_mm)
             deltas = strategy.calculate_deltas()
             if deltas:
                 # All items get the same delta matrix to move the group
                 delta_matrix = next(iter(deltas.values()))
-                for item in items:
-                    # Pre-multiply to apply translation in world space
+                # Apply the delta to the actual content, not the containers.
+                for item in content_to_transform:
                     item.matrix = delta_matrix @ item.matrix
 
                 target_x, target_y = position_mm
                 logger.info(
-                    f"Positioned {len(items)} imported item(s) at "
-                    f"({target_x:.2f}, {target_y:.2f}) mm"
+                    f"Positioned {len(content_to_transform)} imported "
+                    f"item(s) at ({target_x:.2f}, {target_y:.2f}) mm"
                 )
         else:
             self._fit_and_center_imported_items(items)
@@ -691,8 +712,16 @@ class FileCmd:
             )
             return
 
+        # We must operate on the actual content (WorkPieces, Groups), not the
+        # top-level containers (Layers).
+        content_items = self._get_positionable_content(items)
+        if not content_items:
+            logger.warning("No positionable content found to fit/center.")
+            return
+
         machine = config.machine
-        bbox = self._calculate_items_bbox(items)
+        # Calculate the bounding box of the actual content.
+        bbox = self._calculate_items_bbox(content_items)
         if not bbox:
             logger.warning(
                 "Cannot fit/center imported items: no bounding box."
@@ -725,12 +754,12 @@ class FileCmd:
             t_back = Matrix.translation(bbox_center_x, bbox_center_y)
             transform_matrix = t_back @ s @ t_to_origin
 
-            for item in items:
-                # Pre-multiply to apply the transform in world space
+            # Apply the group transform to each piece of content.
+            for item in content_items:
                 item.matrix = transform_matrix @ item.matrix
 
             # After scaling, recalculate the bounding box for centering
-            bbox = self._calculate_items_bbox(items)
+            bbox = self._calculate_items_bbox(content_items)
             if not bbox:
                 return  # Should not happen, but for safety
             bbox_x, bbox_y, bbox_w, bbox_h = bbox
@@ -743,8 +772,8 @@ class FileCmd:
         # Apply the same translation to all top-level imported items
         if abs(delta_x) > 1e-9 or abs(delta_y) > 1e-9:
             translation_matrix = Matrix.translation(delta_x, delta_y)
-            for item in items:
-                # Pre-multiply to apply translation in world space
+            # Apply the group transform to each piece of content.
+            for item in content_items:
                 item.matrix = translation_matrix @ item.matrix
 
         # 3. Notification with Undo logic
@@ -757,8 +786,8 @@ class FileCmd:
                 Reverts the auto-scaling applied during import.
                 It scales the items back up around their CURRENT center.
                 """
-                # Calculate current bounding box to find the center
-                current_bbox = self._calculate_items_bbox(items)
+                # Use the content items for calculation and transformation
+                current_bbox = self._calculate_items_bbox(content_items)
                 if not current_bbox:
                     return
 
@@ -775,7 +804,7 @@ class FileCmd:
                 )
 
                 changes = []
-                for item in items:
+                for item in content_items:
                     current = item.matrix
                     new_m = undo_matrix @ current
                     changes.append((item, current, new_m))

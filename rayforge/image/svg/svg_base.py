@@ -157,11 +157,13 @@ class SvgImporterBase(Importer):
             Tuple[float, float, float, float],
             float,
             Optional[Tuple[float, float, float, float]],
+            Tuple[float, float, float, float],
         ]
     ]:
         """
         Common parsing logic. Returns:
-        (svg_object, page_bounds, unit_to_mm, untrimmed_page_bounds)
+        (svg_object, page_bounds, unit_to_mm, untrimmed_page_bounds,
+         world_frame_of_reference)
         or None if parsing fails.
 
         Note: page_bounds are in Native Units (ViewBox units if available,
@@ -218,7 +220,17 @@ class SvgImporterBase(Importer):
             untrimmed_h = untrimmed_size_mm[1] / unit_to_mm
             untrimmed_page_bounds = (0, 0, untrimmed_w, untrimmed_h)
 
-        return svg, page_bounds, unit_to_mm, untrimmed_page_bounds
+        # Calculate the authoritative world frame of reference (mm, Y-Up)
+        ref_bounds_native = untrimmed_page_bounds or page_bounds
+        ref_x, _, ref_w, ref_h = ref_bounds_native
+        w_mm = ref_w * unit_to_mm
+        h_mm = ref_h * unit_to_mm
+        x_mm = ref_x * unit_to_mm
+        y_mm = 0.0  # The world frame's origin is at its bottom-left.
+
+        world_frame = (x_mm, y_mm, w_mm, h_mm)
+
+        return svg, page_bounds, unit_to_mm, untrimmed_page_bounds, world_frame
 
     # --- Low-level Helpers ---
 

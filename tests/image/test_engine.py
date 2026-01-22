@@ -1,6 +1,7 @@
 from typing import List, Tuple, Optional, Dict
 import pytest
 
+from rayforge.core.matrix import Matrix
 from rayforge.core.vectorization_spec import PassthroughSpec
 from rayforge.image.engine import NormalizationEngine
 from rayforge.image.structures import (
@@ -30,11 +31,15 @@ def create_vec_result(
         LayerGeometry(layer_id=lid, name=lid, content_bounds=bounds)
         for lid, bounds in layers
     ]
+    x, y, w, h = page_bounds
+    world_frame = (x * unit_scale, 0.0, w * unit_scale, h * unit_scale)
     parse_result = ParsingResult(
         page_bounds=page_bounds,
         native_unit_to_mm=unit_scale,
         is_y_down=is_y_down,
         layers=layer_geos,
+        world_frame_of_reference=world_frame,
+        background_world_transform=Matrix.identity(),
     )
     # The engine currently doesn't use the geometry, so we can mock it.
     geometries: Dict[Optional[str], Geometry] = {

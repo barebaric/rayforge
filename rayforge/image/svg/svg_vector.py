@@ -16,6 +16,7 @@ from ..structures import (
 )
 from .svgutil import extract_layer_manifest
 from .svg_base import SvgImporterBase
+from ..engine import NormalizationEngine
 
 logger = logging.getLogger(__name__)
 
@@ -61,7 +62,13 @@ class SvgVectorImporter(SvgImporterBase):
             return None
 
         # Unpack. Both trimmed and untrimmed bounds are now available.
-        svg_obj, page_bounds, unit_to_mm, untrimmed_page_bounds = basics
+        (
+            svg_obj,
+            page_bounds,
+            unit_to_mm,
+            untrimmed_page_bounds,
+            world_frame,
+        ) = basics
 
         # 2. Extract layers geometry. It will be in pixel coordinates.
         geometries_by_layer_px = self._parse_geometry_by_layer(
@@ -101,6 +108,21 @@ class SvgVectorImporter(SvgImporterBase):
                     )
                 )
 
+        # Create temporary result to calculate background transform
+        temp_result = ParsingResult(
+            page_bounds=page_bounds,
+            native_unit_to_mm=unit_to_mm,
+            is_y_down=True,
+            layers=[],
+            untrimmed_page_bounds=untrimmed_page_bounds,
+            world_frame_of_reference=world_frame,
+            background_world_transform=None,  # type: ignore
+        )
+
+        bg_item = NormalizationEngine.calculate_layout_item(
+            page_bounds, temp_result
+        )
+
         return ParsingResult(
             page_bounds=page_bounds,
             native_unit_to_mm=unit_to_mm,
@@ -109,6 +131,8 @@ class SvgVectorImporter(SvgImporterBase):
             untrimmed_page_bounds=untrimmed_page_bounds,
             geometry_is_relative_to_bounds=False,
             is_cropped_to_content=True,
+            world_frame_of_reference=world_frame,
+            background_world_transform=bg_item.world_matrix,
         )
 
     def vectorize(

@@ -28,6 +28,7 @@ from ..structures import (
 from ..tracing import trace_surface, VTRACER_PIXEL_LIMIT
 from ..util import to_mm
 from .renderer import PDF_RENDERER
+from ..engine import NormalizationEngine
 
 logger = logging.getLogger(__name__)
 
@@ -181,10 +182,33 @@ class PdfImporter(Importer):
         self._image = vips_image.copy(xres=px_per_mm, yres=px_per_mm)
 
         page_bounds = (0.0, 0.0, float(render_w_px), float(render_h_px))
+        native_unit_to_mm = 1.0 / px_per_mm
 
-        parse_result = ParsingResult(
+        x, y, w, h = page_bounds
+        world_frame = (
+            x * native_unit_to_mm,
+            0.0,
+            w * native_unit_to_mm,
+            h * native_unit_to_mm,
+        )
+
+        # Create temporary result to calculate background transform
+        temp_result = ParsingResult(
             page_bounds=page_bounds,
-            native_unit_to_mm=1.0 / px_per_mm,
+            native_unit_to_mm=native_unit_to_mm,
+            is_y_down=True,
+            layers=[],
+            world_frame_of_reference=world_frame,
+            background_world_transform=None,  # type: ignore
+        )
+
+        bg_item = NormalizationEngine.calculate_layout_item(
+            page_bounds, temp_result
+        )
+
+        return ParsingResult(
+            page_bounds=page_bounds,
+            native_unit_to_mm=native_unit_to_mm,
             is_y_down=True,
             layers=[
                 LayerGeometry(
@@ -193,9 +217,9 @@ class PdfImporter(Importer):
                     content_bounds=page_bounds,
                 )
             ],
+            world_frame_of_reference=world_frame,
+            background_world_transform=bg_item.world_matrix,
         )
-
-        return parse_result
 
     def _calculate_render_resolution(
         self, w_mm: float, h_mm: float

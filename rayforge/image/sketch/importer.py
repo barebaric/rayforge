@@ -18,6 +18,7 @@ from ..structures import (
     ImportPayload,
     ImportManifest,
 )
+from ..engine import NormalizationEngine
 
 if TYPE_CHECKING:
     from ...core.vectorization_spec import VectorizationSpec
@@ -134,6 +135,21 @@ class SketchImporter(Importer):
 
         # For Sketch, native units are mm.
         page_bounds = (min_x, min_y, width, height)
+
+        # Create temporary result to calculate background transform
+        temp_result = ParsingResult(
+            page_bounds=page_bounds,
+            native_unit_to_mm=1.0,
+            is_y_down=False,
+            layers=[],
+            world_frame_of_reference=page_bounds,
+            background_world_transform=None,  # type: ignore
+        )
+
+        bg_item = NormalizationEngine.calculate_layout_item(
+            page_bounds, temp_result
+        )
+
         layer_id = "__default__"
 
         return ParsingResult(
@@ -147,6 +163,8 @@ class SketchImporter(Importer):
                     content_bounds=page_bounds,
                 )
             ],
+            world_frame_of_reference=page_bounds,
+            background_world_transform=bg_item.world_matrix,
         )
 
     def vectorize(

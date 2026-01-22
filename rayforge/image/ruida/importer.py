@@ -18,6 +18,7 @@ from ..structures import (
 from .renderer import RUIDA_RENDERER
 from .parser import RuidaParser, RuidaParseError
 from .job import RuidaJob
+from ..engine import NormalizationEngine
 
 logger = logging.getLogger(__name__)
 
@@ -139,7 +140,15 @@ class RuidaImporter(Importer):
                 native_unit_to_mm=1.0,
                 is_y_down=False,
                 layers=[],
+                world_frame_of_reference=(0.0, 0.0, 0.0, 0.0),
+                background_world_transform=None,  # type: ignore
             )
+            # Create a dummy transform for safety
+            bg_item = NormalizationEngine.calculate_layout_item(
+                (0, 0, 0, 0), empty_result
+            )
+            empty_result.background_world_transform = bg_item.world_matrix
+
             self._geometries_by_layer: Dict[Optional[str], Geometry] = {
                 None: pristine_geo
             }
@@ -152,6 +161,21 @@ class RuidaImporter(Importer):
         # Use a virtual layer ID for consistency with other importers
         layer_id = "__default__"
         page_bounds = (min_x, min_y, width_mm, height_mm)
+
+        # Create temporary result to calculate background transform
+        temp_result = ParsingResult(
+            page_bounds=page_bounds,
+            native_unit_to_mm=1.0,
+            is_y_down=False,
+            layers=[],
+            world_frame_of_reference=page_bounds,
+            background_world_transform=None,  # type: ignore
+        )
+
+        bg_item = NormalizationEngine.calculate_layout_item(
+            page_bounds, temp_result
+        )
+
         parse_result = ParsingResult(
             page_bounds=page_bounds,
             native_unit_to_mm=1.0,
@@ -163,6 +187,8 @@ class RuidaImporter(Importer):
                     content_bounds=page_bounds,
                 )
             ],
+            world_frame_of_reference=page_bounds,
+            background_world_transform=bg_item.world_matrix,
         )
         self._geometries_by_layer = {layer_id: pristine_geo}
         return parse_result

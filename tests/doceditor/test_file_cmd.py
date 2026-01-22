@@ -3,10 +3,11 @@ from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 from rayforge.core.doc import Doc
-from rayforge.core.workpiece import WorkPiece
 from rayforge.core.layer import Layer
+from rayforge.core.matrix import Matrix
 from rayforge.core.source_asset import SourceAsset
 from rayforge.core.vectorization_spec import TraceSpec
+from rayforge.core.workpiece import WorkPiece
 from rayforge.doceditor.editor import DocEditor
 from rayforge.doceditor.file_cmd import FileCmd, PreviewResult, ImportAction
 from rayforge.image import (
@@ -72,11 +73,17 @@ def sample_payload(sample_workpiece, sample_source_asset):
 @pytest.fixture
 def sample_parse_result():
     """Provides a sample ParsingResult."""
+    page_bounds = (0, 0, 10, 10)
+    unit_scale = 1.0
+    x, y, w, h = page_bounds
+    world_frame = (x * unit_scale, 0.0, w * unit_scale, h * unit_scale)
     return ParsingResult(
-        page_bounds=(0, 0, 10, 10),
-        native_unit_to_mm=1.0,
+        page_bounds=page_bounds,
+        native_unit_to_mm=unit_scale,
         is_y_down=True,
         layers=[],
+        world_frame_of_reference=world_frame,
+        background_world_transform=Matrix.identity(),
     )
 
 

@@ -17,6 +17,7 @@ from ..structures import ParsingResult, LayerGeometry, VectorizationResult
 from ..tracing import trace_surface, VTRACER_PIXEL_LIMIT
 from .renderer import SVG_RENDERER
 from .svg_base import SvgImporterBase
+from ..engine import NormalizationEngine
 
 logger = logging.getLogger(__name__)
 
@@ -43,7 +44,22 @@ class SvgTraceImporter(SvgImporterBase):
             return None
 
         # Unpack
-        _, page_bounds, unit_to_mm, untrimmed_page_bounds = basics
+        _, page_bounds, unit_to_mm, untrimmed_page_bounds, world_frame = basics
+
+        # Create a temporary result to generate the background transform
+        temp_result = ParsingResult(
+            page_bounds=page_bounds,
+            native_unit_to_mm=unit_to_mm,
+            is_y_down=True,
+            layers=[],
+            untrimmed_page_bounds=untrimmed_page_bounds,
+            world_frame_of_reference=world_frame,
+            background_world_transform=None,  # type: ignore
+        )
+
+        bg_item = NormalizationEngine.calculate_layout_item(
+            page_bounds, temp_result
+        )
 
         # 2. Define single layer (Trace-specific logic)
         # For tracing, we treat the whole content as one "layer"
@@ -63,6 +79,8 @@ class SvgTraceImporter(SvgImporterBase):
             untrimmed_page_bounds=untrimmed_page_bounds,
             geometry_is_relative_to_bounds=True,
             is_cropped_to_content=True,
+            world_frame_of_reference=world_frame,
+            background_world_transform=bg_item.world_matrix,
         )
 
     def vectorize(
@@ -172,6 +190,30 @@ class SvgTraceImporter(SvgImporterBase):
             u_h_px = u_h_mm / mm_per_px_y if mm_per_px_y > 0 else 0
             trace_untrimmed_bounds = (0.0, 0.0, u_w_px, u_h_px)
 
+        # Calculate authoritative world frame for the traced image
+        t_ref_bounds = trace_untrimmed_bounds or trace_page_bounds
+        t_x, t_y, t_w, t_h = t_ref_bounds
+        t_w_mm = t_w * mm_per_px_x
+        t_h_mm = t_h * mm_per_px_x
+        t_x_mm = t_x * mm_per_px_x
+        t_y_mm = (t_h - (t_y + t_h)) * mm_per_px_x  # Invert Y for Y-Up
+        trace_world_frame = (t_x_mm, t_y_mm, t_w_mm, t_h_mm)
+
+        # Create temporary result to calculate background transform
+        temp_trace_result = ParsingResult(
+            page_bounds=trace_page_bounds,
+            native_unit_to_mm=mm_per_px_x,
+            is_y_down=True,
+            layers=[],
+            untrimmed_page_bounds=trace_untrimmed_bounds,
+            world_frame_of_reference=trace_world_frame,
+            background_world_transform=None,  # type: ignore
+        )
+
+        bg_item_trace = NormalizationEngine.calculate_layout_item(
+            trace_page_bounds, temp_trace_result
+        )
+
         trace_parse_result = ParsingResult(
             page_bounds=trace_page_bounds,
             native_unit_to_mm=mm_per_px_x,
@@ -179,6 +221,8 @@ class SvgTraceImporter(SvgImporterBase):
             layers=[],
             geometry_is_relative_to_bounds=False,
             untrimmed_page_bounds=trace_untrimmed_bounds,
+            world_frame_of_reference=trace_world_frame,
+            background_world_transform=bg_item_trace.world_matrix,
         )
 
         return VectorizationResult(

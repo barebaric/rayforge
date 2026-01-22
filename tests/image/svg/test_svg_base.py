@@ -119,7 +119,13 @@ def test_calculate_parsing_basics_success():
     result = importer._calculate_parsing_basics()
 
     assert result is not None
-    svg_obj, page_bounds_units, unit_to_mm, untrimmed_bounds = result
+    (
+        svg_obj,
+        page_bounds_units,
+        unit_to_mm,
+        untrimmed_bounds,
+        world_frame,
+    ) = result
 
     assert unit_to_mm == pytest.approx(1.0, 0.01)
 
@@ -135,3 +141,26 @@ def test_calculate_parsing_basics_success():
     upx, upy, upw, uph = untrimmed_bounds
     assert upw == pytest.approx(100.0)
     assert uph == pytest.approx(100.0)
+
+
+def test_calculate_parsing_basics_world_frame():
+    """Test that the world_frame_of_reference is calculated correctly."""
+    importer = ConcreteSvgImporter(SVG_VALID_LAYERS)
+    result = importer._calculate_parsing_basics()
+
+    assert result is not None
+    _, _, unit_to_mm, untrimmed_bounds, world_frame = result
+
+    assert untrimmed_bounds is not None
+    # The world frame should be based on the untrimmed bounds.
+    # untrimmed_bounds is in native units, which are mm for this SVG.
+    ux, uy, uw, uh = untrimmed_bounds
+    assert uw == pytest.approx(100.0)
+    assert uh == pytest.approx(100.0)
+
+    # World frame is (x_mm, y_mm, w_mm, h_mm), Y-Up
+    fx, fy, fw, fh = world_frame
+    assert fw == pytest.approx(uw * unit_to_mm)
+    assert fh == pytest.approx(uh * unit_to_mm)
+    assert fx == pytest.approx(ux * unit_to_mm)
+    assert fy == pytest.approx(0.0)  # Y should be 0 for a Y-Up frame
