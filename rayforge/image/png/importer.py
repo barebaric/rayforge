@@ -85,9 +85,8 @@ class PngImporter(Importer):
     ) -> VectorizationResult:
         """Phase 3: Generate vector geometry by tracing the bitmap."""
         assert self._image is not None, "parse() must be called first"
-        assert isinstance(spec, TraceSpec), (
-            "PngImporter only supports TraceSpec"
-        )
+        if not isinstance(spec, TraceSpec):
+            raise TypeError("PngImporter only supports TraceSpec")
 
         normalized_image = image_util.normalize_to_rgba(self._image)
         if not normalized_image:

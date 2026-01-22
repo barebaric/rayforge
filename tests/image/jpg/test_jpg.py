@@ -3,7 +3,7 @@ import pytest
 from pathlib import Path
 from typing import cast, Tuple
 from unittest.mock import Mock
-from rayforge.core.vectorization_spec import TraceSpec
+from rayforge.core.vectorization_spec import TraceSpec, PassthroughSpec
 from rayforge.core.workpiece import WorkPiece
 from rayforge.core.source_asset import SourceAsset
 from rayforge.core.matrix import Matrix
@@ -130,7 +130,8 @@ class TestJpgImporter:
         """Importer raises TypeError if wrong spec is provided."""
         importer = JpgImporter(color_jpg_data)
         with pytest.raises(TypeError):
-            importer.get_doc_items(vectorization_spec=None)
+            # Explicitly pass an invalid spec type to trigger the error.
+            importer.get_doc_items(vectorization_spec=PassthroughSpec())
 
     def test_importer_handles_invalid_data(self):
         """Tests the importer returns None for invalid JPG data."""

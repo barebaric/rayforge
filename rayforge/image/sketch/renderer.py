@@ -18,6 +18,7 @@ with warnings.catch_warnings():
 if TYPE_CHECKING:
     from ...core.source_asset_segment import SourceAssetSegment
     from ...core.workpiece import RenderContext
+    from ...image.structures import ImportResult
 
 
 logger = logging.getLogger(__name__)
@@ -112,6 +113,58 @@ class SketchRenderer(Renderer):
             data=source_context.data,  # data is b"" for sketches
             kwargs=kwargs,
             apply_mask=False,
+        )
+
+    def render_preview_image(
+        self,
+        import_result: "ImportResult",
+        target_width: int,
+        target_height: int,
+    ) -> Optional[pyvips.Image]:
+        """
+        Generates a preview by rendering the sketch's vectorized geometry.
+        """
+        from ...core.matrix import Matrix
+
+        vec_result = import_result.vectorization_result
+        if not vec_result:
+            return None
+
+        # The geometry from the importer is in the sketch's native (mm)
+        # coordinate system. We need to normalize it to a 1x1 box for the
+        # SVG path conversion helper.
+        merged_boundaries = Geometry()
+        for geo in vec_result.geometries_by_layer.values():
+            if geo:
+                merged_boundaries.extend(geo)
+
+        if merged_boundaries.is_empty():
+            return None
+
+        # Normalize boundaries
+        min_x, min_y, max_x, max_y = merged_boundaries.rect()
+        width = max(max_x - min_x, 1e-9)
+        height = max(max_y - min_y, 1e-9)
+        norm_matrix = Matrix.scale(
+            1.0 / width, 1.0 / height
+        ) @ Matrix.translation(-min_x, -min_y)
+        normalized_boundaries = merged_boundaries.copy()
+        normalized_boundaries.transform(norm_matrix.to_4x4_numpy())
+
+        # Normalize fills using the same transformation matrix
+        normalized_fills = []
+        for fill_list in vec_result.fills_by_layer.values():
+            for fill_geo in fill_list:
+                norm_fill = fill_geo.copy()
+                norm_fill.transform(norm_matrix.to_4x4_numpy())
+                normalized_fills.append(norm_fill)
+
+        return self.render_base_image(
+            data=b"",  # Data is not used for sketch rendering
+            width=target_width,
+            height=target_height,
+            boundaries=normalized_boundaries,
+            fills=normalized_fills,
         )
 
     def render_base_image(

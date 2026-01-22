@@ -124,6 +124,11 @@ class VectorizationResult:
     # A reference to the original parse facts for context (e.g., page bounds).
     source_parse_result: ParsingResult
 
+    # Optional fill geometry, primarily used by the Sketch importer.
+    fills_by_layer: Dict[Optional[str], List[Geometry]] = field(
+        default_factory=dict
+    )
+
 
 @dataclass
 class LayoutItem:
@@ -161,3 +166,4 @@ class ImportResult:
 
     payload: ImportPayload
     parse_result: ParsingResult
+    vectorization_result: Optional[VectorizationResult] = None

@@ -16,6 +16,7 @@ logger = logging.getLogger(__name__)
 if TYPE_CHECKING:
     from ...core.source_asset_segment import SourceAssetSegment
     from ...core.workpiece import RenderContext
+    from ...image.structures import ImportResult
 
 
 class SvgRenderer(Renderer):
@@ -62,6 +63,25 @@ class SvgRenderer(Renderer):
             # applying a secondary mask based on potentially open-path
             # geometry is incorrect and would hide the content.
             apply_mask=False,
+        )
+
+    def render_preview_image(
+        self,
+        import_result: "ImportResult",
+        target_width: int,
+        target_height: int,
+    ) -> Optional[pyvips.Image]:
+        """Renders the SVG source data at the target preview dimensions."""
+        source = import_result.payload.source
+        # For previews, use the pre-trimmed data if available.
+        data_to_render = source.base_render_data or source.original_data
+        if not data_to_render:
+            return None
+
+        # render_base_image correctly handles setting the width/height on the
+        # SVG data before passing it to the vips loader.
+        return self.render_base_image(
+            data=data_to_render, width=target_width, height=target_height
         )
 
     def render_base_image(

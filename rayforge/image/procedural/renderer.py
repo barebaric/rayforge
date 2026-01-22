@@ -11,7 +11,7 @@ with warnings.catch_warnings():
     import pyvips
 
 if TYPE_CHECKING:
-    pass
+    from ...image.structures import ImportResult
 
 logger = logging.getLogger(__name__)
 
@@ -59,6 +59,19 @@ class ProceduralRenderer(Renderer):
                 f"Failed to load procedural function: {e}", exc_info=True
             )
             return None, None, None
+
+    def render_preview_image(
+        self,
+        import_result: "ImportResult",
+        target_width: int,
+        target_height: int,
+    ) -> Optional[pyvips.Image]:
+        """Renders the procedural recipe at the target preview dimensions."""
+        return self.render_base_image(
+            data=import_result.payload.source.original_data,
+            width=target_width,
+            height=target_height,
+        )
 
     def render_base_image(
         self,

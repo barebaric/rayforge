@@ -4,7 +4,6 @@ from typing import Optional, Tuple
 from pathlib import Path
 from pypdf import PdfReader
 from pypdf.errors import PdfReadError
-import math
 import warnings
 
 with warnings.catch_warnings():
@@ -25,7 +24,7 @@ from ..structures import (
     VectorizationResult,
     ImportManifest,
 )
-from ..tracing import trace_surface, VTRACER_PIXEL_LIMIT
+from ..tracing import trace_surface
 from ..util import to_mm
 from .renderer import PDF_RENDERER
 from ..engine import NormalizationEngine
@@ -240,16 +239,20 @@ class PdfImporter(Importer):
             A tuple of (width, height) in pixels.
         """
         if w_mm <= 0 or h_mm <= 0:
-            aspect = 210 / 297  # A4 Aspect ratio
-        else:
-            aspect = w_mm / h_mm
+            return 1, 1
 
-        TARGET_DIM = math.sqrt(VTRACER_PIXEL_LIMIT)
-        if aspect >= 1.0:  # Landscape or square
-            w_px = int(TARGET_DIM)
-            h_px = int(TARGET_DIM / aspect)
-        else:  # Portrait
-            h_px = int(TARGET_DIM)
-            w_px = int(TARGET_DIM * aspect)
+        # Calculate ideal dimensions based on a target resolution (~600 DPI)
+        ideal_w = w_mm * self._TRACE_PPM
+        ideal_h = h_mm * self._TRACE_PPM
 
-        return max(1, w_px), max(1, h_px)
+        # If the ideal size is too large, scale it down proportionally
+        scale = 1.0
+        if ideal_w > self._MAX_RENDER_DIM:
+            scale = self._MAX_RENDER_DIM / ideal_w
+        if ideal_h > self._MAX_RENDER_DIM:
+            scale = min(scale, self._MAX_RENDER_DIM / ideal_h)
+
+        final_w = int(ideal_w * scale)
+        final_h = int(ideal_h * scale)
+
+        return max(1, final_w), max(1, final_h)
