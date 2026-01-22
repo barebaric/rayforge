@@ -103,13 +103,9 @@ class OpsRenderer(Renderer):
         ctx.set_source_rgb(0, 0, 0)  # Black lines
 
         # Try to use hairlines for crisp rendering independent of scale
-        try:
-            ctx.set_hairline(True)
-        except AttributeError:
-            # Fallback for older cairo
-            lw = 1.0 / max(scale_x, scale_y)
-            ctx.set_line_width(lw)
-            logger.debug(f"Using fallback line width: {lw}")
+        lw = 1.5 / max(scale_x, scale_y)
+        ctx.set_line_width(lw)
+        logger.debug(f"Using fallback line width: {lw}")
 
         ctx.set_line_cap(cairo.LINE_CAP_SQUARE)
 

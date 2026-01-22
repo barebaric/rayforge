@@ -4,12 +4,12 @@ from pathlib import Path
 import ezdxf
 from typing import Optional, Union
 from unittest.mock import Mock
-
-from rayforge.image.dxf.importer import DxfImporter
-from rayforge.core.workpiece import WorkPiece
+from rayforge.core.geo import CMD_TYPE_BEZIER
 from rayforge.core.layer import Layer
 from rayforge.core.matrix import Matrix
-from rayforge.core.geo import CMD_TYPE_BEZIER
+from rayforge.core.vectorization_spec import PassthroughSpec
+from rayforge.core.workpiece import WorkPiece
+from rayforge.image.dxf.importer import DxfImporter
 
 
 # Fixtures
@@ -54,6 +54,32 @@ def inches_dxf_importer():
     return DxfImporter(buffer.getvalue().encode("utf-8"))
 
 
+@pytest.fixture
+def multi_layer_dxf_importer():
+    doc = ezdxf.new()  # type: ignore
+    doc.header["$INSUNITS"] = 4  # Millimeters
+    msp = doc.modelspace()
+
+    # Layer 1: Line
+    doc.layers.new("Layer1")
+    msp.add_line((0, 0), (100, 50), dxfattribs={"layer": "Layer1"})
+
+    # Layer 2: Circle
+    doc.layers.new("Layer2")
+    msp.add_circle(center=(150, 25), radius=25, dxfattribs={"layer": "Layer2"})
+
+    # Layer 3: Rectangle
+    doc.layers.new("Layer3")
+    msp.add_lwpolyline(
+        [(200, 0), (250, 0), (250, 50), (200, 50)],
+        dxfattribs={"layer": "Layer3"},
+    )
+
+    buffer = io.StringIO()
+    doc.write(buffer)
+    return DxfImporter(buffer.getvalue().encode("utf-8"))
+
+
 def _setup_workpiece_with_context(
     importer: DxfImporter,
 ) -> Optional[WorkPiece]:
@@ -61,10 +87,17 @@ def _setup_workpiece_with_context(
     Helper to run importer, correctly link workpiece to its source,
     and mock the document context for rendering tests.
     """
-    payload = importer.get_doc_items(vectorization_spec=None)
-    if not payload or not payload.items:
+    # Force a merge for simplicity in single-entity tests
+    spec = PassthroughSpec(create_new_layers=False)
+    import_result = importer.get_doc_items(vectorization_spec=spec)
+    if (
+        not import_result
+        or not import_result.payload
+        or not import_result.payload.items
+    ):
         return None
 
+    payload = import_result.payload
     # Handle both bare WorkPiece and Layer-wrapped WorkPiece for flexibility
     item = payload.items[0]
     wp: Optional[WorkPiece] = None
@@ -130,10 +163,12 @@ def acdbcircle_dxf_importer_from_file(acdbcircle_dxf_file):
 # Test cases
 class TestDXFImporter:
     def test_empty_dxf(self, empty_dxf_importer):
-        payload = empty_dxf_importer.get_doc_items(vectorization_spec=None)
-        assert payload is not None
-        assert payload.source is not None
-        assert len(payload.items) == 0
+        import_result = empty_dxf_importer.get_doc_items(
+            vectorization_spec=None
+        )
+        assert import_result is not None
+        assert import_result.payload.source is not None
+        assert len(import_result.payload.items) == 0
 
     def test_line_conversion(self, line_workpiece: WorkPiece):
         assert line_workpiece is not None
@@ -206,23 +241,23 @@ class TestDXFImporter:
     def test_invalid_dxf_handling(self):
         invalid_dxf = b"invalid dxf content"
         importer = DxfImporter(invalid_dxf)
-        payload = importer.get_doc_items(vectorization_spec=None)
-        assert payload is None
+        import_result = importer.get_doc_items(vectorization_spec=None)
+        assert import_result is None
 
     def test_circle_dxf_not_linearized(
         self, circle_dxf_importer_from_file: DxfImporter
     ):
-        payload = circle_dxf_importer_from_file.get_doc_items(
-            vectorization_spec=None
+        # Force merge
+        spec = PassthroughSpec(create_new_layers=False)
+        import_result = circle_dxf_importer_from_file.get_doc_items(
+            vectorization_spec=spec
         )
-        assert payload is not None
+        assert import_result is not None
+        payload = import_result.payload
         assert len(payload.items) == 1
         item = payload.items[0]
-        assert isinstance(item, (WorkPiece, Layer))
+        assert isinstance(item, WorkPiece)
         wp: Union[WorkPiece, Layer] = item
-        if isinstance(wp, Layer):
-            assert len(wp.workpieces) > 0
-            wp = wp.workpieces[0]
 
         boundaries = wp.boundaries
         assert boundaries is not None
@@ -237,17 +272,17 @@ class TestDXFImporter:
     def test_acdbcircle_dxf_not_linearized(
         self, acdbcircle_dxf_importer_from_file: DxfImporter
     ):
-        payload = acdbcircle_dxf_importer_from_file.get_doc_items(
-            vectorization_spec=None
+        # Force merge
+        spec = PassthroughSpec(create_new_layers=False)
+        import_result = acdbcircle_dxf_importer_from_file.get_doc_items(
+            vectorization_spec=spec
         )
-        assert payload is not None
+        assert import_result is not None
+        payload = import_result.payload
         assert len(payload.items) == 1
         item = payload.items[0]
-        assert isinstance(item, (WorkPiece, Layer))
+        assert isinstance(item, WorkPiece)
         wp: Union[WorkPiece, Layer] = item
-        if isinstance(wp, Layer):
-            assert len(wp.workpieces) > 0
-            wp = wp.workpieces[0]
 
         boundaries = wp.boundaries
         assert boundaries is not None
@@ -258,3 +293,44 @@ class TestDXFImporter:
         assert has_bezier_commands, (
             "ACDB circle should contain bezier commands, not be linearized"
         )
+
+    def test_multi_layer_dxf(self, multi_layer_dxf_importer: DxfImporter):
+        """Test that multi-layer DXF files are imported correctly."""
+        # Force a merge strategy to test the original intent of the test
+        spec = PassthroughSpec(create_new_layers=False)
+        import_result = multi_layer_dxf_importer.get_doc_items(
+            vectorization_spec=spec
+        )
+        assert import_result is not None
+        payload = import_result.payload
+
+        # With merge strategy, all layers are merged into one workpiece
+        assert len(payload.items) == 1
+        item = payload.items[0]
+        assert isinstance(item, WorkPiece)
+        wp = item
+        assert wp is not None
+
+    def test_multi_layer_dxf_with_layer_selection(
+        self, multi_layer_dxf_importer: DxfImporter
+    ):
+        """Test that layer selection works correctly for multi-layer DXF."""
+
+        # Import only Layer1 and Layer3, creating separate layers
+        spec = PassthroughSpec(
+            active_layer_ids=["Layer1", "Layer3"], create_new_layers=True
+        )
+        import_result = multi_layer_dxf_importer.get_doc_items(
+            vectorization_spec=spec
+        )
+        assert import_result is not None
+        payload = import_result.payload
+        assert len(payload.items) == 2
+
+        # Verify only Layer1 and Layer3 are imported
+        layer_names = set()
+        for item in payload.items:
+            if isinstance(item, Layer):
+                layer_names.add(item.name)
+
+        assert layer_names == {"Layer1", "Layer3"}

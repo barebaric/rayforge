@@ -36,35 +36,39 @@ class NormalizationEngine:
         result = vec_result.source_parse_result
         spec = spec or PassthroughSpec()
 
-        # For traced results, the definitive bounds come from the new geometry.
         if isinstance(spec, TraceSpec):
-            all_rects = []
-            for geo in vec_result.geometries_by_layer.values():
-                if geo and not geo.is_empty():
-                    min_x, min_y, max_x, max_y = geo.rect()
-                    all_rects.append(
-                        (min_x, min_y, max_x - min_x, max_y - min_y)
-                    )
+            # Check if we have any valid geometries
+            has_valid_geo = any(
+                geo and not geo.is_empty()
+                for geo in vec_result.geometries_by_layer.values()
+            )
+            if not has_valid_geo:
+                return []
 
-            if not all_rects:
-                # Fallback to page bounds if tracing produced no geometry
-                return [
-                    self._create_item_from_bounds(
-                        result.page_bounds,
-                        result,
-                        layer_id=None,
-                        layer_name=None,
-                    )
-                ]
+            # For traced results, the coordinate system and overall bounds are
+            # defined by the bitmap that was rendered for tracing. This is
+            # described in the source_parse_result. The actual vector geometry
+            # is just content within that frame. Using the page_bounds ensures
+            # the final workpiece size matches the background image size.
+            bounds_to_use = result.page_bounds
 
-            union_rect = self._calculate_union_rect(all_rects)
-
-            if union_rect[2] <= 0 or union_rect[3] <= 0:
-                union_rect = result.page_bounds
+            # Fallback in case the page bounds are invalid
+            if bounds_to_use[2] <= 1e-6 or bounds_to_use[3] <= 1e-6:
+                all_rects = []
+                for geo in vec_result.geometries_by_layer.values():
+                    if geo and not geo.is_empty():
+                        min_x, min_y, max_x, max_y = geo.rect()
+                        all_rects.append(
+                            (min_x, min_y, max_x - min_x, max_y - min_y)
+                        )
+                if not all_rects:
+                    # No geometry and no valid page bounds, return empty plan
+                    return []
+                bounds_to_use = self._calculate_union_rect(all_rects)
 
             return [
                 self._create_item_from_bounds(
-                    union_rect, result, layer_id=None, layer_name=None
+                    bounds_to_use, result, layer_id=None, layer_name=None
                 )
             ]
 
@@ -73,8 +77,9 @@ class NormalizationEngine:
         split_layers = False
         active_layers = None
         if isinstance(spec, PassthroughSpec):
+            # The decision to split is now based on the spec flag.
+            split_layers = spec.create_new_layers
             if spec.active_layer_ids:
-                split_layers = True
                 active_layers = set(spec.active_layer_ids)
 
         # Filter relevant layers
@@ -86,6 +91,10 @@ class NormalizationEngine:
 
         if not target_layers:
             # Fallback for empty files or no matching layers: use page bounds.
+            # But if page bounds are effectively zero-sized, return empty plan.
+            bx, by, bw, bh = result.page_bounds
+            if bw <= 1e-6 or bh <= 1e-6:
+                return []
             return [
                 self._create_item_from_bounds(
                     result.page_bounds,
@@ -166,9 +175,7 @@ class NormalizationEngine:
         if bh <= 0:
             bh = 1.0
 
-        # 1. Normalization Matrix: Native -> Unit Square (0-1)
-        # Scale to 1, and only translate if the geometry is in the global
-        # coordinate system.
+        # 1. Normalization Matrix: Native -> Unit Square (0-1, Y-Up)
         scale_matrix = Matrix.scale(1.0 / bw, 1.0 / bh)
         if result.geometry_is_relative_to_bounds:
             # Geometry is already at its local origin (0,0) due to trimming.
@@ -178,39 +185,33 @@ class NormalizationEngine:
             # Geometry is in global coords. Translate it to its origin first.
             norm_matrix = scale_matrix @ Matrix.translation(-bx, -by)
 
-        # If the source coordinate system is Y-Up, we
-        # must flip the normalized output to match the Y-Down contract
-        # expected by the WorkPiece.
-        if not result.is_y_down:
+        # The contract is that the normalization_matrix MUST produce a Y-UP,
+        # 0-1 coordinate space for the WorkPiece.
+        if result.is_y_down:
+            # Source (SVG, PNG) is Y-Down. We need to flip it to become Y-Up.
             flip_matrix = Matrix.translation(0, 1) @ Matrix.scale(1, -1)
             norm_matrix = flip_matrix @ norm_matrix
 
-        # 2. World Matrix: Unit Square (0-1) -> Physical World (mm)
-
-        # Calculate physical dimensions of the content
+        # 2. World Matrix: Unit Square (0-1, Y-Up) -> Physical World (mm, Y-Up)
         width_mm = bw * result.native_unit_to_mm
         height_mm = bh * result.native_unit_to_mm
 
-        # X Position is a direct scaling of the absolute X coordinate.
         pos_x_mm = bx * result.native_unit_to_mm
 
-        # Y Position depends on the coordinate system and the reference frame.
-        # Rayforge World is Y-Up (0 at bottom).
+        # The frame of reference for Y-inversion is the original,
+        # untrimmed page.
         ref_bounds = result.untrimmed_page_bounds or result.page_bounds
         ref_h_native = ref_bounds[3]
 
         if result.is_y_down:
             # Native is Y-Down (0 at top). We invert relative to the full page.
             # Bottom of content in native coords = by + bh.
-            # Distance from page bottom = ref_h_native - (by + bh).
             dist_from_bottom_native = ref_h_native - (by + bh)
             pos_y_mm = dist_from_bottom_native * result.native_unit_to_mm
         else:
             # Native is Y-Up (DXF). Origin is already at the bottom.
             pos_y_mm = by * result.native_unit_to_mm
 
-        # World Matrix combines scale and the absolute calculated position.
-        # Note: WorkPiece applies this matrix to a Y-Up 0-1 geometry.
         world_matrix = Matrix.translation(pos_x_mm, pos_y_mm) @ Matrix.scale(
             width_mm, height_mm
         )

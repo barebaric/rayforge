@@ -438,11 +438,7 @@ class WorkPiece(DocItem):
             # Path for UI rendering: normalize the pristine data
             norm_geo = self.source_segment.pristine_geometry.copy()
             norm_matrix = self.source_segment.normalization_matrix
-            # Apply ONLY the normalization matrix.
             norm_geo.transform(norm_matrix.to_4x4_numpy())
-            # Convert Y-down native to Y-up normalized for the contract
-            flip_matrix = Matrix.translation(0, 1) @ Matrix.scale(1, -1)
-            norm_geo.transform(flip_matrix.to_4x4_numpy())
             self._boundaries_cache = norm_geo
             return self._boundaries_cache
 
@@ -650,14 +646,20 @@ class WorkPiece(DocItem):
             self.source_segment.vectorization_spec, TraceSpec
         )
 
+        renderer = self._active_renderer
+        is_svg_renderer = renderer.__class__.__name__ == "SvgRenderer"
+
         # If cropping a non-vector image, we must render the *original* full
         # image at a scaled-up resolution such that the crop window matches
         # the target dimensions.
         # Vector sources handle cropping via ViewBox overrides in
         # _build_renderer_kwargs, so they skip this expensive path.
+        # Also skip this path for SvgRenderer used in trace mode, as
+        # the base_render_data is already a trimmed SVG.
         if (
             is_cropped
             and not is_vector
+            and not is_svg_renderer
             and self.original_data
             and source_px_dims
         ):
@@ -724,53 +726,15 @@ class WorkPiece(DocItem):
             ):
                 kwargs["visible_layer_ids"] = [self.source_segment.layer_id]
 
-            # For vector splitting/cropping, we calculate a ViewBox override
-            # based on the crop window.
-            if self.source_segment.crop_window_px and self.source:
-                is_vector = self.source_segment is not None and not isinstance(
+            # For vector sources, the `crop_window_px` field contains the
+            # absolute viewbox (in native user units) of the content to render.
+            # We can pass this directly to the SVG renderer.
+            if self.source_segment.crop_window_px:
+                is_vector = not isinstance(
                     self.source_segment.vectorization_spec, TraceSpec
                 )
-                if not is_vector:
-                    return kwargs
-
-                crop_px = self.source_segment.crop_window_px
-                vb_orig = self.source.metadata.get("viewbox")
-
-                # We need source pixel dims to map crop_px to user units
-                src_w_px = self.source.width_px
-                src_h_px = self.source.height_px
-
-                if vb_orig:
-                    vb_x, vb_y, vb_w, vb_h = vb_orig
-
-                    # Calculate scale factors (User Units per Pixel)
-                    # Note: We assume uniform scale if w/h ratio matches,
-                    # but calculate independently to be safe.
-                    scale_x = (
-                        vb_w / src_w_px if (src_w_px and src_w_px > 0) else 1.0
-                    )
-                    scale_y = (
-                        vb_h / src_h_px if (src_h_px and src_h_px > 0) else 1.0
-                    )
-
-                    # Map crop window (pixels) to new ViewBox (user units)
-                    # Crop X/Y are relative to the top-left of the original
-                    # image (0,0 in px space)
-                    # Orig ViewBox X/Y is the user-unit coordinate of (0,0) px.
-
-                    cx, cy, cw, ch = crop_px
-
-                    new_vb_x = vb_x + (cx * scale_x)
-                    new_vb_y = vb_y + (cy * scale_y)
-                    new_vb_w = cw * scale_x
-                    new_vb_h = ch * scale_y
-
-                    kwargs["viewbox"] = (
-                        new_vb_x,
-                        new_vb_y,
-                        new_vb_w,
-                        new_vb_h,
-                    )
+                if is_vector:
+                    kwargs["viewbox"] = self.source_segment.crop_window_px
 
         return kwargs
 
@@ -1403,8 +1367,8 @@ class WorkPiece(DocItem):
         fragments. Each fragment represents a subset of this workpiece's
         current geometry.
 
-        The new workpieces will have their own independent SourceAssetSegment
-        containing only the specific fragment geometry.
+        The new workpieces inherit the source segment but override their
+        geometry with the specific fragment.
 
         Args:
             fragments: A list of Geometry objects. Each must be a subset of
@@ -1422,7 +1386,6 @@ class WorkPiece(DocItem):
         source = self.source
 
         # Get current physical dimensions to filter noise.
-        # self.size returns (width_mm, height_mm).
         phys_w, phys_h = self.size
 
         for frag_geo in fragments:
@@ -1432,15 +1395,10 @@ class WorkPiece(DocItem):
             h = max(max_y - min_y, 1e-9)
 
             # 2. Filter out noise / dust.
-            # Calculate physical dimensions of the fragment.
-            # Fragments smaller than 0.1mm in both dimensions are discarded
-            # to prevent creating hundreds of invisible workpieces that clog
-            # the renderer and UI.
             if (w * phys_w < 0.1) and (h * phys_h < 0.1):
                 continue
 
-            # 3. Normalize the fragment geometry.
-            # We shift it to (0,0) and scale it to fit a 1x1 box.
+            # 3. Normalize the fragment geometry to its own 1x1 box.
             # This becomes the new canonical shape for this piece.
             normalized_frag = frag_geo.copy()
             norm_matrix = Matrix.scale(1.0 / w, 1.0 / h) @ Matrix.translation(
@@ -1448,65 +1406,71 @@ class WorkPiece(DocItem):
             )
             normalized_frag.transform(norm_matrix.to_4x4_numpy())
 
-            # 4. Create the new segment using the cleaner API.
+            # 4. Create a lightweight copy of the segment
+            #    containing only metadata.
+            # This avoids the expensive deepcopy of the large
+            # pristine_geometry.
             new_segment = None
             if self.source_segment:
-                # Convert Y-up to Y-down format expected by storage
-                y_down_frag = normalized_frag.copy()
-                flip_matrix = Matrix.translation(0, 1) @ Matrix.scale(1, -1)
-                y_down_frag.transform(flip_matrix.to_4x4_numpy())
-
-                # The clone method to efficiently creates a separate segment
-                new_segment = self.source_segment.clone_with_geometry(
-                    y_down_frag
+                # Manually construct a new segment instead of deepcopying.
+                # We explicitly set pristine_geometry to None because the new
+                # workpiece will use _edited_boundaries for its shape.
+                mtx = self.source_segment.normalization_matrix
+                new_segment = SourceAssetSegment(
+                    source_asset_uid=self.source_segment.source_asset_uid,
+                    vectorization_spec=self.source_segment.vectorization_spec,
+                    layer_id=self.source_segment.layer_id,
+                    pristine_geometry=None,  # Prevents massive array copy
+                    normalization_matrix=mtx,
+                    crop_window_px=self.source_segment.crop_window_px,
                 )
 
-                # Calculate the new crop window relative to the parent's.
-                # This must account for the Y-up geometry vs Y-down pixels.
-                # Enabled for ALL sources (vectors included) to allow correct
-                # split rendering.
-                if source:
-                    parent_crop = self.source_segment.crop_window_px
-                    pc_x, pc_y, pc_w, pc_h = 0, 0, 0, 0
-
-                    if parent_crop:
-                        pc_x, pc_y, pc_w, pc_h = parent_crop
-                    elif source.width_px and source.height_px:
-                        pc_x, pc_y, pc_w, pc_h = (
-                            0,
-                            0,
-                            source.width_px,
-                            source.height_px,
-                        )
-
-                    # Calculate new crop window relative to the parent's.
-                    # This must account for the Y-up geometry vs Y-down pixels.
-                    new_crop_x_px = pc_x + (min_x * pc_w)
-                    new_crop_y_px = pc_y + ((1 - min_y - h) * pc_h)
-                    new_crop_w_px = w * pc_w
-                    new_crop_h_px = h * pc_h
-
-                    new_segment.crop_window_px = (
-                        new_crop_x_px,
-                        new_crop_y_px,
-                        new_crop_w_px,
-                        new_crop_h_px,
-                    )
-                    new_segment.cropped_width_mm = w * phys_w
-                    new_segment.cropped_height_mm = h * phys_h
-
-            # Initialize the new workpiece with the lightweight segment
             new_wp = WorkPiece(self.name, new_segment)
             new_wp.tabs_enabled = self.tabs_enabled
 
-            # 5. Set natural size and calculate the matrix for the new piece.
+            # 5. Set the edited_boundaries override. This gives the workpiece
+            # its final, correct, Y-Up geometry directly.
+            new_wp._edited_boundaries = normalized_frag
+
+            # 6. Update the new segment's crop window to match the fragment.
+            # This ensures the renderer draws the correct background portion.
+            if new_segment and source and self.source_segment:
+                parent_crop = self.source_segment.crop_window_px
+                pc_x, pc_y, pc_w, pc_h = 0, 0, 0, 0
+
+                if parent_crop:
+                    pc_x, pc_y, pc_w, pc_h = parent_crop
+                elif source.width_px and source.height_px:
+                    pc_x, pc_y, pc_w, pc_h = (
+                        0,
+                        0,
+                        source.width_px,
+                        source.height_px,
+                    )
+
+                # Calculate new crop window relative to the parent's.
+                # The geometry is Y-Up (0 at bottom), but the pixel crop window
+                # is Y-Down (0 at top), so we must invert the Y calculation.
+                new_crop_x_px = pc_x + (min_x * pc_w)
+                new_crop_y_px = pc_y + ((1 - max_y) * pc_h)
+                new_crop_w_px = w * pc_w
+                new_crop_h_px = h * pc_h
+
+                new_segment.crop_window_px = (
+                    new_crop_x_px,
+                    new_crop_y_px,
+                    new_crop_w_px,
+                    new_crop_h_px,
+                )
+                new_segment.cropped_width_mm = w * phys_w
+                new_segment.cropped_height_mm = h * phys_h
+
+            # 7. Set natural size and calculate the matrix for the new piece.
             new_wp.natural_width_mm = w * phys_w
             new_wp.natural_height_mm = h * phys_h
 
-            # It must be positioned such that it aligns with where this
-            # fragment was in the original object.
-            # Matrix op order: parent @ child.
-            # Compose: M_orig @ T_local_offset @ S_local_scale.
+            # The new matrix must position and scale the new 1x1 workpiece
+            # to match where the fragment was in the original object.
             offset_matrix = original_matrix @ Matrix.translation(min_x, min_y)
             final_matrix = offset_matrix @ Matrix.scale(w, h)
 

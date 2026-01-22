@@ -3,10 +3,10 @@ from pathlib import Path
 from typing import TYPE_CHECKING, List, Optional, Set
 
 import cairo
-import numpy as np
 from blinker import Signal
 from gi.repository import Adw, Gdk, GdkPixbuf, Gtk
 
+from ...core.item import DocItem
 from ...core.layer import Layer
 from ...core.vectorization_spec import (
     PassthroughSpec,
@@ -15,7 +15,8 @@ from ...core.vectorization_spec import (
 )
 from ...core.workpiece import WorkPiece
 from ...doceditor.file_cmd import PreviewResult
-from ...image.base_importer import ImportManifest, ImporterFeature
+from ...image.base_importer import ImporterFeature
+from ...image.structures import ImportManifest
 from ..shared.patched_dialog_window import PatchedDialogWindow
 
 if TYPE_CHECKING:
@@ -389,9 +390,15 @@ class ImportDialog(PatchedDialogWindow):
             ImporterFeature.DIRECT_VECTOR in self.features
             and self.use_vectors_switch.get_active()
         )
-        failed_generation = self._preview_result is None
+        failed_generation = (
+            self._preview_result is None
+            or self._preview_result.payload is None
+            or not self._preview_result.payload.items
+        )
+        can_trace = ImporterFeature.BITMAP_TRACING in self.features
+        # Only show warning if switching to trace mode is possible
         self.warning_banner.set_revealed(
-            is_direct_vector and failed_generation
+            is_direct_vector and failed_generation and can_trace
         )
 
     def _draw_checkerboard_background(
@@ -426,161 +433,131 @@ class ImportDialog(PatchedDialogWindow):
         ctx.set_source(pattern)
         ctx.paint()
 
+    # ... inside the ImportDialog class in import_dialog.py ...
+
     def _on_draw_preview(
         self, area: Gtk.DrawingArea, ctx: cairo.Context, w, h
     ):
-        """Draws the background image and vectors onto the preview area."""
+        """
+        Draws the background image and vectors onto the preview area using a
+        unified strategy that aligns vectors to the background image's frame
+        of reference.
+        """
         self._draw_checkerboard_background(ctx, w, h)
 
-        if not self._preview_result or not self._background_pixbuf:
+        if (
+            not self._preview_result
+            or not self._background_pixbuf
+            or not self._preview_result.parse_result
+            or not self._preview_result.payload
+        ):
             return
 
-        aspect_w = self._background_pixbuf.get_width()
-        aspect_h = self._background_pixbuf.get_height()
-
-        if aspect_w <= 0 or aspect_h <= 0:
+        # --- 1. Calculate Preview Area Geometry ---
+        # The drawing area is based on the aspect ratio of the background
+        # image pixbuf
+        bg_w_px = self._background_pixbuf.get_width()
+        bg_h_px = self._background_pixbuf.get_height()
+        if bg_w_px <= 0 or bg_h_px <= 0:
             return
 
-        # Calculate drawing area
         margin = 20
         view_w, view_h = w - 2 * margin, h - 2 * margin
         if view_w <= 0 or view_h <= 0:
             return
 
-        scale = min(view_w / aspect_w, view_h / aspect_h)
-        draw_w = aspect_w * scale
-        draw_h = aspect_h * scale
+        scale = min(view_w / bg_w_px, view_h / bg_h_px)
+        draw_w = bg_w_px * scale
+        draw_h = bg_h_px * scale
         draw_x = (w - draw_w) / 2
         draw_y = (h - draw_h) / 2
 
-        # 1. Draw Background Image
+        # --- 2. Draw Background Image ---
         ctx.save()
         ctx.translate(draw_x, draw_y)
-        ctx.scale(draw_w / aspect_w, draw_h / aspect_h)
+        ctx.scale(draw_w / bg_w_px, draw_h / bg_h_px)
         Gdk.cairo_set_source_pixbuf(ctx, self._background_pixbuf, 0, 0)
         ctx.paint()
         ctx.restore()
 
-        # 2. Draw Vectors
+        # --- 3. Draw Vector Overlay ---
         payload = self._preview_result.payload
-        if not payload or not payload.items:
+        if not payload.items:
             return
 
-        is_trace_mode = isinstance(self._get_current_spec(), TraceSpec)
+        # Find a reference WorkPiece to determine the physical size and
+        # world position of the background image content.
+        def find_first_workpiece(items: List[DocItem]) -> Optional[WorkPiece]:
+            for item in items:
+                if isinstance(item, WorkPiece):
+                    return item
+                if hasattr(item, "children"):
+                    res = find_first_workpiece(item.children)
+                    if res:
+                        return res
+            return None
 
-        if is_trace_mode:
-            # --- SIMPLIFIED PATH FOR TRACING ---
-            # In trace mode, the background is the cropped content, and the
-            # workpiece boundaries are normalized to that content. We just
-            # need to scale the 0-1 geometry to the preview drawing area.
-            ctx.save()
-            ctx.translate(draw_x, draw_y)
-            # Scale to the drawing area. Y is flipped because Cairo is Y-down.
-            ctx.scale(draw_w, draw_h)
-            ctx.translate(0, 1)
-            ctx.scale(1, -1)
+        ref_wp = find_first_workpiece(payload.items)
+        if not ref_wp:
+            return
 
-            def draw_item_trace(item):
-                if isinstance(item, WorkPiece) and item.boundaries:
-                    ctx.save()
-                    # We are drawing the pure, normalized shape.
-                    # The workpiece matrix is NOT applied.
-                    px, py = ctx.device_to_user_distance(1.5, 1.5)
-                    ctx.set_line_width(max(abs(px), abs(py)))
-                    ctx.set_source_rgb(0.1, 0.5, 1.0)
-                    ctx.new_path()
-                    item.boundaries.to_cairo(ctx)
-                    ctx.stroke()
-                    ctx.restore()
-                elif isinstance(item, Layer):
-                    for child in item.children:
-                        draw_item_trace(child)
+        # This is the physical rectangle in world space (mm) that the
+        # background image represents.
+        bg_dims_mm = (ref_wp.natural_width_mm, ref_wp.natural_height_mm)
+        bg_origin_mm = ref_wp.matrix.get_translation()
 
-            for item in payload.items:
-                draw_item_trace(item)
+        if bg_dims_mm[0] <= 1e-9 or bg_dims_mm[1] <= 1e-9:
+            return
 
-            ctx.restore()
-        else:
-            # --- EXISTING COMPLEX PATH FOR DIRECT VECTOR (SVG, etc.) ---
-            # This logic is correct and should be preserved.
-            meta = payload.source.metadata
-            page_w_mm = payload.source.width_mm
-            page_h_mm = payload.source.height_mm
+        ctx.save()
 
-            trimmed_w = meta.get("trimmed_width_mm")
-            trimmed_h = meta.get("trimmed_height_mm")
-            viewbox = meta.get("viewbox")
+        # Step A: Transform context to match the background's physical space.
+        # 1. Move to where the background image is drawn.
+        ctx.translate(draw_x, draw_y)
+        # 2. Scale so 1 unit = 1mm of the background's content.
+        ctx.scale(draw_w / bg_dims_mm[0], draw_h / bg_dims_mm[1])
+        # 3. Flip to a Y-Up coordinate system.
+        ctx.translate(0, bg_dims_mm[1])
+        ctx.scale(1, -1)
 
-            offset_x_mm = 0.0
-            offset_y_mm = 0.0
-            if trimmed_w and trimmed_h and viewbox:
-                page_w_mm = trimmed_w
-                page_h_mm = trimmed_h
-                vx, vy, vw, vh = viewbox
-                if vw > 0:
-                    unit_to_mm = trimmed_w / vw
-                    untrimmed_h = meta.get("untrimmed_height_mm", page_h_mm)
-                    offset_x_mm = vx * unit_to_mm
-                    offset_y_mm = untrimmed_h - (vy + vh) * unit_to_mm
+        # Step B: Align the absolute world with our background-relative
+        # context.
+        # We translate our context by the inverse of the background's
+        # world position. This brings any item at `bg_origin_mm` to `(0,0)`
+        # in our current context, perfectly aligning it.
+        ctx.translate(-bg_origin_mm[0], -bg_origin_mm[1])
 
-            sx = 1.0 / page_w_mm if page_w_mm > 0 else 1.0
-            sy = 1.0 / page_h_mm if page_h_mm > 0 else 1.0
+        # The context is now set up. Any WorkPiece drawn with its world matrix
+        # will appear in the correct position relative to the background.
 
-            ctx.save()
-            ctx.translate(draw_x, draw_y)
-            ctx.scale(draw_w, draw_h)
-            ctx.translate(0, 1)
-            ctx.scale(1, -1)
+        # --- 3c. Draw each item ---
+        def draw_item(item):
+            if isinstance(item, WorkPiece) and item.boundaries:
+                ctx.save()
 
-            def draw_item(item):
-                if isinstance(item, WorkPiece) and item.boundaries:
-                    ctx.save()
-                    ctx.scale(sx, sy)
-                    ctx.translate(-offset_x_mm, -offset_y_mm)
-                    xx, yx, xy, yy, x0, y0 = item.matrix.for_cairo()
-                    mat = cairo.Matrix(xx, yx, xy, yy, x0, y0)
-                    ctx.transform(mat)
+                # Apply the item's full world transformation matrix.
+                xx, yx, xy, yy, x0, y0 = item.get_world_transform().for_cairo()
+                mat = cairo.Matrix(xx, yx, xy, yy, x0, y0)
+                ctx.transform(mat)
 
-                    # The preview logic may stretch the background image
-                    # (non-uniform scaling), causing Cairo's pen to become
-                    # elliptical. We manually transform the geometry to
-                    # device pixels and stroke with a uniform identity
-                    # transform.
-                    full_ctm = ctx.get_matrix()
-                    ctx.identity_matrix()
+                # Set line width in device space for a consistent 1.5px stroke.
+                px, py = ctx.device_to_user_distance(1.5, 1.5)
+                ctx.set_line_width(max(abs(px), abs(py)))
 
-                    # Convert Cairo matrix to Numpy 4x4 for Geometry transform
-                    transform_matrix = np.array(
-                        [
-                            [full_ctm.xx, full_ctm.xy, 0.0, full_ctm.x0],
-                            [full_ctm.yx, full_ctm.yy, 0.0, full_ctm.y0],
-                            [0.0, 0.0, 1.0, 0.0],
-                            [0.0, 0.0, 0.0, 1.0],
-                        ],
-                        dtype=np.float64,
-                    )
+                ctx.set_source_rgb(0.1, 0.5, 1.0)  # Blue color for vectors
+                ctx.new_path()
+                item.boundaries.to_cairo(ctx)
+                ctx.stroke()
 
-                    # Transform geometry to device space
-                    temp_geo = item.boundaries.copy().transform(
-                        transform_matrix
-                    )
+                ctx.restore()
+            elif isinstance(item, Layer):
+                for child in item.children:
+                    draw_item(child)
 
-                    # Draw with uniform line width
-                    ctx.set_line_width(1.5)
-                    ctx.set_source_rgb(0.1, 0.5, 1.0)
-                    ctx.new_path()
-                    temp_geo.to_cairo(ctx)
-                    ctx.stroke()
+        for item in payload.items:
+            draw_item(item)
 
-                    ctx.restore()
-                elif isinstance(item, Layer):
-                    for child in item.children:
-                        draw_item(child)
-
-            for item in payload.items:
-                draw_item(item)
-
-            ctx.restore()
+        ctx.restore()
 
     def _on_import_clicked(self, button):
         final_spec = self._get_current_spec()

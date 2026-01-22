@@ -4,6 +4,7 @@ from pathlib import Path
 from rayforge.core.sketcher import Sketch
 from rayforge.core.workpiece import WorkPiece
 from rayforge.image.sketch.importer import SketchImporter
+from rayforge.core.vectorization_spec import PassthroughSpec
 
 
 @pytest.fixture
@@ -65,8 +66,12 @@ def test_sketch_importer_round_trip(complex_sketch: Sketch):
     )
 
     # 3. Call get_doc_items() to get the payload
-    payload = importer.get_doc_items()
-    assert payload is not None, "Importer failed to return payload"
+    # Force a merge strategy
+    spec = PassthroughSpec(create_new_layers=False)
+    import_result = importer.get_doc_items(spec)
+    assert import_result is not None, "Importer failed to return result"
+    payload = import_result.payload
+
     assert importer.parsed_sketch is not None
     assert len(payload.sketches) == 1
     imported_sketch_template = payload.sketches[0]
@@ -112,7 +117,10 @@ def test_sketch_importer_naming_logic_serialized_priority(
 
     # Pass a conflicting filename
     importer = SketchImporter(data=data, source_file=Path("Filename.rfs"))
-    payload = importer.get_doc_items()
+    spec = PassthroughSpec(create_new_layers=False)
+    import_result = importer.get_doc_items(spec)
+    assert import_result is not None
+    payload = import_result.payload
 
     assert payload is not None
     # Should use the name from JSON
@@ -133,7 +141,10 @@ def test_sketch_importer_naming_logic_filename_fallback(
     data = json.dumps(d).encode("utf-8")
 
     importer = SketchImporter(data=data, source_file=Path("MyDesign.rfs"))
-    payload = importer.get_doc_items()
+    spec = PassthroughSpec(create_new_layers=False)
+    import_result = importer.get_doc_items(spec)
+    assert import_result is not None
+    payload = import_result.payload
 
     assert payload is not None
     # Should fall back to file stem
@@ -152,7 +163,10 @@ def test_sketch_importer_naming_logic_default_fallback(complex_sketch: Sketch):
     data = json.dumps(d).encode("utf-8")
 
     importer = SketchImporter(data=data, source_file=None)
-    payload = importer.get_doc_items()
+    spec = PassthroughSpec(create_new_layers=False)
+    import_result = importer.get_doc_items(spec)
+    assert import_result is not None
+    payload = import_result.payload
 
     assert payload is not None
     # Should fall back to the default name "Untitled".
@@ -192,8 +206,11 @@ def test_sketch_importer_round_trip_mouse():
     importer = SketchImporter(data=original_data, source_file=mouse_file)
 
     # 4. Call get_doc_items() to get the payload
-    payload = importer.get_doc_items()
-    assert payload is not None, "Importer failed to return payload"
+    spec = PassthroughSpec(create_new_layers=False)
+    import_result = importer.get_doc_items(spec)
+    assert import_result is not None, "Importer failed to return payload"
+    payload = import_result.payload
+
     assert importer.parsed_sketch is not None
     assert len(payload.sketches) == 1
     imported_sketch_template = payload.sketches[0]

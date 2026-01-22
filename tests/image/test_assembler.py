@@ -18,7 +18,10 @@ class TestItemAssembler(unittest.TestCase):
         self.source = MagicMock(spec=SourceAsset)
         self.source.uid = "test-uid"
         self.spec = PassthroughSpec()
-        self.mock_geo = MagicMock(spec=Geometry)
+        # Use a real geometry object to ensure methods like extend work
+        self.mock_geo = Geometry()
+        self.mock_geo.move_to(0, 0)
+        self.mock_geo.line_to(1, 1)
 
     def test_single_item_creation(self):
         """
@@ -33,7 +36,7 @@ class TestItemAssembler(unittest.TestCase):
                 crop_window=(0, 0, 100, 100),
             )
         ]
-        geometries: Dict[str | None, Geometry] = {None: self.mock_geo}
+        geometries: Dict[str | None, Geometry] = {"some_layer": self.mock_geo}
 
         items = self.assembler.create_items(
             self.source, plan, self.spec, "TestFile", geometries
@@ -51,7 +54,11 @@ class TestItemAssembler(unittest.TestCase):
             self.assertEqual(
                 wp.source_segment.crop_window_px, (0, 0, 100, 100)
             )
-            self.assertIs(wp.source_segment.pristine_geometry, self.mock_geo)
+            # In a merge, the assembler creates a NEW geometry object
+            self.assertIsNotNone(wp.source_segment.pristine_geometry)
+            self.assertIsNot(
+                wp.source_segment.pristine_geometry, self.mock_geo
+            )
 
     def test_split_layers_creation(self):
         """
@@ -60,6 +67,7 @@ class TestItemAssembler(unittest.TestCase):
         """
         mock_geo_a = MagicMock(spec=Geometry)
         mock_geo_b = MagicMock(spec=Geometry)
+        spec = PassthroughSpec(create_new_layers=True)
         plan = [
             LayoutItem(
                 layer_id="LayerA",
@@ -82,7 +90,7 @@ class TestItemAssembler(unittest.TestCase):
         }
 
         items = self.assembler.create_items(
-            self.source, plan, self.spec, "TestFile", geometries
+            self.source, plan, spec, "TestFile", geometries
         )
 
         self.assertEqual(len(items), 2)
@@ -92,8 +100,10 @@ class TestItemAssembler(unittest.TestCase):
         self.assertIsInstance(layer_a, Layer)
         if isinstance(layer_a, Layer):
             self.assertEqual(layer_a.name, "LayerA")
-            self.assertEqual(len(layer_a.workpieces), 1)
-            wp_a = layer_a.workpieces[0]
+            self.assertEqual(len(layer_a.children), 2)  # WP + Workflow
+            wp_a = next(
+                c for c in layer_a.children if isinstance(c, WorkPiece)
+            )
             if wp_a.source_segment:
                 self.assertEqual(wp_a.source_segment.layer_id, "LayerA")
                 self.assertIs(
@@ -107,7 +117,9 @@ class TestItemAssembler(unittest.TestCase):
             self.assertEqual(layer_b.name, "LayerB")
 
             # Verify matrices applied to WorkPieces
-            wp_b = layer_b.workpieces[0]
+            wp_b = next(
+                c for c in layer_b.children if isinstance(c, WorkPiece)
+            )
             if wp_b.source_segment:
                 self.assertIs(
                     wp_b.source_segment.pristine_geometry, mock_geo_b

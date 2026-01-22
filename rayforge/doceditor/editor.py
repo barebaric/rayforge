@@ -188,10 +188,10 @@ class DocEditor:
         to complete.
         """
         # Step 1: Run the importer
-        payload = await self.file._load_file_async(
+        import_result = await self.file._load_file_async(
             filename, mime_type, vectorization_spec
         )
-        if not payload or not payload.items:
+        if not import_result or not import_result.payload.items:
             logger.warning(
                 f"Test import of {filename.name} produced no items."
             )
@@ -199,7 +199,7 @@ class DocEditor:
 
         # Step 2: Run the finalizer on the main thread.
         self.file._finalize_import_on_main_thread(
-            payload, filename, position_mm=None
+            import_result.payload, filename, position_mm=None
         )
 
     async def export_gcode_to_path(self, output_path: "Path") -> None:

@@ -7,12 +7,18 @@ from typing import Optional, Dict
 from ...core.geo import Geometry
 from ...core.source_asset import SourceAsset
 from ...core.vectorization_spec import VectorizationSpec, ProceduralSpec
+from ...core.workpiece import WorkPiece
 from ..base_importer import (
     Importer,
     ImporterFeature,
+)
+from ..structures import (
+    ImportPayload,
+    ParsingResult,
+    LayerGeometry,
+    VectorizationResult,
     ImportManifest,
 )
-from ..structures import ParsingResult, LayerGeometry, VectorizationResult
 from .renderer import PROCEDURAL_RENDERER
 
 logger = logging.getLogger(__name__)
@@ -61,7 +67,7 @@ class ProceduralImporter(Importer):
         }
         recipe_data = json.dumps(recipe_dict).encode("utf-8")
 
-        # Initialize the base class. The recipe data serves as the "raw_data".
+        # Initialize the base class. The recipe data serves as "raw_data".
         super().__init__(data=recipe_data, source_file=Path(f"[{self.name}]"))
 
     def scan(self) -> ImportManifest:
@@ -99,6 +105,18 @@ class ProceduralImporter(Importer):
             width_mm=width_mm,
             height_mm=height_mm,
         )
+
+    def _post_process_payload(self, payload) -> "ImportPayload":
+        """
+        Overrides the base importer hook to fix WorkPiece names.
+        The source_file has brackets like "[Name]" but the WorkPiece
+        should use the clean name without brackets.
+        """
+        for item in payload.items:
+            if isinstance(item, WorkPiece):
+                item.name = self.name
+
+        return payload
 
     def parse(self) -> Optional[ParsingResult]:
         """

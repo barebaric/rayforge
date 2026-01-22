@@ -32,7 +32,11 @@ def _setup_workpiece_with_context(
     importer: PdfImporter, vectorization_spec=None
 ) -> WorkPiece:
     """Helper to run importer and correctly link workpiece to its source."""
-    payload = importer.get_doc_items(vectorization_spec=vectorization_spec)
+    import_result = importer.get_doc_items(
+        vectorization_spec=vectorization_spec
+    )
+    assert import_result is not None, "Importer returned None"
+    payload = import_result.payload
     assert payload is not None
     source = payload.source
     # Handle cases where importer returns no items (e.g., invalid data)
@@ -95,7 +99,9 @@ class TestPdfImporter:
         Tests the importer creates a WorkPiece with the correct initial size.
         """
         importer = PdfImporter(basic_pdf_data)
-        payload = importer.get_doc_items(vectorization_spec=TraceSpec())
+        import_result = importer.get_doc_items(vectorization_spec=TraceSpec())
+        assert import_result is not None
+        payload = import_result.payload
 
         assert payload
         assert isinstance(payload.source, SourceAsset)
@@ -117,10 +123,10 @@ class TestPdfImporter:
         assert wp.size[1] == pytest.approx(expected_height, rel=1e-3)
 
     def test_importer_handles_invalid_data(self):
-        """Tests the importer creates a WorkPiece even with invalid data."""
+        """Tests the importer returns None for invalid data."""
         importer = PdfImporter(b"this is not a pdf")
-        payload = importer.get_doc_items(vectorization_spec=TraceSpec())
-        assert payload is None
+        import_result = importer.get_doc_items(vectorization_spec=TraceSpec())
+        assert import_result is None
 
 
 class TestPdfRenderer:

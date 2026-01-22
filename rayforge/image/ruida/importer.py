@@ -6,15 +6,15 @@ from ...core.geo import Geometry
 from ...core.vectorization_spec import VectorizationSpec
 from ..base_importer import (
     Importer,
-    ImportPayload,
     ImporterFeature,
-    ImportManifest,
 )
 from ...core.source_asset import SourceAsset
-from ...core.vectorization_spec import PassthroughSpec
-from ..assembler import ItemAssembler
-from ..engine import NormalizationEngine
-from ..structures import ParsingResult, LayerGeometry, VectorizationResult
+from ..structures import (
+    ParsingResult,
+    LayerGeometry,
+    VectorizationResult,
+    ImportManifest,
+)
 from .renderer import RUIDA_RENDERER
 from .parser import RuidaParser, RuidaParseError
 from .job import RuidaJob
@@ -79,47 +79,6 @@ class RuidaImporter(Importer):
         parser = RuidaParser(self.raw_data)
         return parser.parse()
 
-    def get_doc_items(
-        self, vectorization_spec: Optional[VectorizationSpec] = None
-    ) -> Optional[ImportPayload]:
-        # Phase 2: Parsing
-        parse_result = self.parse()
-        if not parse_result:
-            logger.error("Ruida file parse failed.")
-            return None
-
-        source = self.create_source_asset(parse_result)
-
-        if not parse_result.layers:
-            return ImportPayload(source=source, items=[])
-
-        spec = vectorization_spec or PassthroughSpec()
-
-        # Phase 3: Vectorize (packaging)
-        vec_result = self.vectorize(parse_result, spec)
-
-        # Phase 4: Layout
-        engine = NormalizationEngine()
-        plan = engine.calculate_layout(vec_result, spec)
-
-        # Since Ruida files are always a single merged entity, the plan will
-        # have one item with layer_id=None. The assembler expects the geometry
-        # under the `None` key.
-        geometries: Dict[Optional[str], Geometry] = {
-            None: list(self._geometries_by_layer.values())[0]
-        }
-
-        # Phase 5: Assembly
-        assembler = ItemAssembler()
-        items = assembler.create_items(
-            source_asset=source,
-            layout_plan=plan,
-            spec=spec,
-            source_name=self.source_file.stem,
-            geometries=geometries,
-        )
-        return ImportPayload(source=source, items=items)
-
     def create_source_asset(self, parse_result: ParsingResult) -> SourceAsset:
         """
         Creates a SourceAsset for Ruida import.
@@ -140,9 +99,23 @@ class RuidaImporter(Importer):
         parse_result: ParsingResult,
         spec: VectorizationSpec,
     ) -> VectorizationResult:
-        """Phase 3: Package parsed data for the layout engine."""
+        """
+        Phase 3: Package parsed data for the layout engine.
+        Since Ruida files are always a single merged entity, we package the
+        geometry under the `None` key for the layout engine and assembler.
+        """
+        # A Ruida file is conceptually a single "layer" or entity.
+        # We merge all geometries into one entry for the layout engine.
+        merged_geo = Geometry()
+        for geo in self._geometries_by_layer.values():
+            merged_geo.extend(geo)
+
+        geometries_for_layout: Dict[Optional[str], Geometry] = {
+            None: merged_geo
+        }
+
         return VectorizationResult(
-            geometries_by_layer=self._geometries_by_layer,
+            geometries_by_layer=geometries_for_layout,
             source_parse_result=parse_result,
         )
 
@@ -167,7 +140,9 @@ class RuidaImporter(Importer):
                 is_y_down=False,
                 layers=[],
             )
-            self._geometries_by_layer = {None: pristine_geo}
+            self._geometries_by_layer: Dict[Optional[str], Geometry] = {
+                None: pristine_geo
+            }
             return empty_result
 
         min_x, min_y, max_x, max_y = job.get_extents()

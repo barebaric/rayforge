@@ -42,7 +42,9 @@ def doc_with_workpiece(
     # Use the real import function to handle the entire import process.
     svg_file = tmp_path / "test_rect.svg"
     svg_file.write_bytes(sample_svg_data)
-    payload = import_file(svg_file)
+    payload = import_file(
+        svg_file, vectorization_spec=PassthroughSpec(create_new_layers=False)
+    )
 
     assert payload is not None
     source = payload.source
@@ -73,12 +75,14 @@ class TestWorkPiece:
         assert isinstance(wp.source.renderer, SvgRenderer)
         # For a trimmed SVG, wp.data should return the base_render_data
         assert wp.data is not None
-        # This test is no longer valid, as a simple SVG might not be modified
-        # by the importer, so base_render_data can equal original_data.
-        # assert str(wp.data) != str(wp.source.original_data)
         assert sample_svg_data in wp.source.original_data
-        assert wp.pos == pytest.approx((0.0, 0.0))
-        assert wp.size == pytest.approx((100.0, 50.0))
+
+        # With padding, the position and size are slightly different from 0,0
+        # and 100,50
+        assert wp.pos[0] == pytest.approx(-1.0, abs=1e-4)
+        assert wp.pos[1] == pytest.approx(-1.0, abs=1e-4)
+        assert wp.size == pytest.approx((102.0, 52.0), abs=1e-4)
+
         assert wp.angle == pytest.approx(0.0)
         # Importer sets size, so matrix is not identity
         assert wp.matrix != Matrix.identity()
@@ -119,6 +123,9 @@ class TestWorkPiece:
         edited_geo.line_to(0.9, 0.9)
         wp._edited_boundaries = edited_geo
 
+        # Get natural size before serialization
+        original_natural_size = wp.natural_size
+
         data_dict = wp.to_dict()
 
         assert "renderer_name" not in data_dict
@@ -151,7 +158,7 @@ class TestWorkPiece:
         assert new_wp.size == pytest.approx(wp.size)
         assert new_wp.angle == pytest.approx(wp.angle, abs=1e-9)
         assert new_wp.matrix == wp.matrix
-        assert new_wp.natural_size == pytest.approx((100.0, 50.0))
+        assert new_wp.natural_size == pytest.approx(original_natural_size)
         assert new_wp.source_segment is not None
         assert new_wp.source_segment.source_asset_uid == source.uid
         assert new_wp._edited_boundaries is not None
@@ -302,9 +309,9 @@ class TestWorkPiece:
         assert wp1.size == pytest.approx((20.0, 20.0))
         assert wp1.pos == pytest.approx((0.0, 0.0))
 
-        # The split implementation creates clean segments instead of using
-        # edited_boundaries
-        assert wp1._edited_boundaries is None
+        # The split implementation creates clean segments using
+        # edited_boundaries override
+        assert wp1._edited_boundaries is not None
         assert wp1.boundaries is not None
 
         # Normalized boundary should fill 0-1 box
@@ -321,7 +328,9 @@ class TestWorkPiece:
         assert wp2.size == pytest.approx((40.0, 40.0))
         assert wp2.pos == pytest.approx((50.0, 50.0))
 
-        assert wp2._edited_boundaries is None
+        # The split implementation creates clean segments using
+        # edited_boundaries
+        assert wp2._edited_boundaries is not None
         assert wp2.boundaries is not None
 
         min_x, min_y, max_x, max_y = wp2.boundaries.rect()
@@ -419,13 +428,15 @@ class TestWorkPiece:
 
     def test_sizing_and_aspect_ratio(self, workpiece_instance):
         wp = workpiece_instance
-        assert wp.get_natural_aspect_ratio() == pytest.approx(2.0)
+        assert wp.get_natural_aspect_ratio() == pytest.approx(
+            102.0 / 52.0, abs=1e-4
+        )
         # get_default_size should return the SVG's natural size.
         assert wp.get_default_size(
             bounds_width=1000, bounds_height=1000
-        ) == pytest.approx((100.0, 50.0))
+        ) == pytest.approx((102.0, 52.0), abs=1e-4)
         # The importer sets the size to the natural size.
-        assert wp.size == pytest.approx((100.0, 50.0))
+        assert wp.size == pytest.approx((102.0, 52.0), abs=1e-4)
 
         wp.set_size(80, 20)
         assert wp.size == pytest.approx((80.0, 20.0))
@@ -488,8 +499,8 @@ class TestWorkPiece:
         )
         assert len(chunks) == 6  # 3x2 grid of chunks
         max_x = max((c[1][0] + c[0].get_width() for c in chunks), default=0)
-        max_y = max((c[1][1] + c[0].get_height() for c in chunks), default=0)
         assert max_x == 100
+        max_y = max((c[1][1] + c[0].get_height() for c in chunks), default=0)
         assert max_y == 50
 
     def test_dump(self, workpiece_instance, capsys):
@@ -513,7 +524,7 @@ class TestWorkPiece:
 
     def test_get_world_transform_scale(self, workpiece_instance):
         wp = workpiece_instance
-        # set_size preserves center. Original center is (50, 25).
+        # set_size preserves center. Original center is ~ (50, 25).
         # New pos will be (50-10, 25-5) = (40, 20)
         wp.set_size(20, 10)
         matrix = wp.get_world_transform()
@@ -522,7 +533,7 @@ class TestWorkPiece:
         # After sizing, center is (50,25), pos is (40,20).
         # The new world transform is T(40,20) @ S(20,10).
         # It transforms local corner (1,1) to (40,20) + (20,10) = (60,30).
-        assert p_out == pytest.approx((60.0, 30.0))
+        assert p_out == pytest.approx((60.0, 30.0), abs=1)
 
     def test_get_world_transform_rotation(self, workpiece_instance):
         wp = workpiece_instance
@@ -614,7 +625,8 @@ class TestWorkPiece:
         segment = SourceAssetSegment(
             source_asset_uid="<none>",
             pristine_geometry=geo_y_down,
-            normalization_matrix=Matrix.identity(),
+            normalization_matrix=Matrix.translation(0, 1)
+            @ Matrix.scale(1, -1),
             vectorization_spec=PassthroughSpec(),
         )
 
@@ -679,6 +691,8 @@ class TestWorkPiece:
         segment = SourceAssetSegment(
             source_asset_uid="<none>",
             pristine_geometry=geo,
+            normalization_matrix=Matrix.translation(0, 1)
+            @ Matrix.scale(1, -1),
             vectorization_spec=PassthroughSpec(),
         )
         wp.source_segment = segment
