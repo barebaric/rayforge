@@ -1,12 +1,13 @@
 import cairo
-from typing import Optional, TYPE_CHECKING
+from typing import Optional, TYPE_CHECKING, Tuple
 import logging
 
 if TYPE_CHECKING:
-    pass
+    from ..core.source_asset_segment import SourceAssetSegment
+    from ..core.workpiece import RenderContext
 
 from ..core.geo import Geometry
-from .base_renderer import Renderer
+from .base_renderer import Renderer, RenderSpecification
 import warnings
 
 with warnings.catch_warnings():
@@ -24,6 +25,25 @@ class OpsRenderer(Renderer):
     """
     Renders vector geometry (Geometry) to an image.
     """
+
+    def compute_render_spec(
+        self,
+        segment: Optional["SourceAssetSegment"],
+        target_size: Tuple[int, int],
+        source_context: "RenderContext",
+    ) -> "RenderSpecification":
+        """
+        Specifies that the 'boundaries' geometry from the context is required
+        for rendering.
+        """
+        kwargs = {"boundaries": source_context.boundaries}
+        return RenderSpecification(
+            width=target_size[0],
+            height=target_size[1],
+            data=source_context.data,
+            kwargs=kwargs,
+            apply_mask=False,  # Vector renderers don't need a post-mask
+        )
 
     def _render_to_cairo_surface(
         self, boundaries: Geometry, width: int, height: int

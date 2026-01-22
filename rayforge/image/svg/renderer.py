@@ -2,8 +2,10 @@ import warnings
 import logging
 from typing import Optional, TYPE_CHECKING, List, Tuple
 from xml.etree import ElementTree as ET
-from ..base_renderer import Renderer
+from ..base_renderer import Renderer, RenderSpecification
 from .svgutil import filter_svg_layers
+from ...core.vectorization_spec import TraceSpec
+
 
 with warnings.catch_warnings():
     warnings.simplefilter("ignore", DeprecationWarning)
@@ -12,11 +14,55 @@ with warnings.catch_warnings():
 logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
-    pass
+    from ...core.source_asset_segment import SourceAssetSegment
+    from ...core.workpiece import RenderContext
 
 
 class SvgRenderer(Renderer):
     """Renders SVG data."""
+
+    def compute_render_spec(
+        self,
+        segment: Optional["SourceAssetSegment"],
+        target_size: Tuple[int, int],
+        source_context: "RenderContext",
+    ) -> "RenderSpecification":
+        """
+        Calculates the render specification for an SVG source. This method
+        populates the kwargs with `viewbox` or `visible_layer_ids` as needed.
+        """
+        kwargs = {}
+        target_width, target_height = target_size
+
+        # A segment is required for any special SVG handling.
+        if segment:
+            # Handle layer visibility
+            if segment.layer_id:
+                kwargs["visible_layer_ids"] = [segment.layer_id]
+
+            # Handle viewbox cropping for direct vector imports
+            if segment.crop_window_px:
+                # The upscale-then-crop logic of rasters does not apply to
+                # vectors. Instead, we pass a `viewbox` to the renderer, but
+                # ONLY if it's a direct vector import (PassthroughSpec). If
+                # it's a TraceSpec, we must render the full SVG as a bitmap,
+                # so we don't pass a viewbox.
+                is_vector = not isinstance(
+                    segment.vectorization_spec, TraceSpec
+                )
+                if is_vector:
+                    kwargs["viewbox"] = segment.crop_window_px
+
+        return RenderSpecification(
+            width=target_width,
+            height=target_height,
+            data=source_context.data,
+            kwargs=kwargs,
+            # Vector renders from SVG are pre-masked by their nature;
+            # applying a secondary mask based on potentially open-path
+            # geometry is incorrect and would hide the content.
+            apply_mask=False,
+        )
 
     def render_base_image(
         self,

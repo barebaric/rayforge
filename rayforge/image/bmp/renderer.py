@@ -1,6 +1,6 @@
 import warnings
 from typing import Optional, TYPE_CHECKING
-from ..base_renderer import Renderer
+from ..base_renderer import RasterRenderer
 from .parser import parse_bmp
 
 with warnings.catch_warnings():
@@ -10,7 +10,7 @@ if TYPE_CHECKING:
     pass
 
 
-class BmpRenderer(Renderer):
+class BmpRenderer(RasterRenderer):
     """Renders BMP data."""
 
     def render_base_image(
