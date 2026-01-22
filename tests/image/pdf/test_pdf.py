@@ -125,9 +125,7 @@ class TestPdfImporter:
     def test_importer_handles_invalid_data(self):
         """Tests importer returns ImportResult with None payload on invalid."""
         importer = PdfImporter(b"this is not a pdf")
-        import_result = importer.get_doc_items(
-            vectorization_spec=TraceSpec()
-        )
+        import_result = importer.get_doc_items(vectorization_spec=TraceSpec())
         assert import_result is not None
         assert import_result.payload is None
         assert import_result.parse_result is None

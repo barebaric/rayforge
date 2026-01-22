@@ -193,13 +193,13 @@ class VarRowFactory:
             value=initial_percent,
             lower=0.0,
             upper=100.0,
-            step_increment=1,
+            step_increment=0.1,
             page_increment=10,
         )
         scale = Gtk.Scale(
             orientation=Gtk.Orientation.HORIZONTAL,
             adjustment=adj,
-            digits=0,
+            digits=1,
             draw_value=var.show_value,
             hexpand=True,
         )
