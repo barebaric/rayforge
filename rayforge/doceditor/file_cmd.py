@@ -312,9 +312,14 @@ class FileCmd:
         )
 
         if isinstance(spec, TraceSpec) and spec.invert:
-            preview_vips = preview_vips.flatten(
-                background=[255, 255, 255]
-            ).invert()
+            bands = preview_vips.bands
+            if bands == 2:
+                background = [255]
+            elif bands == 4:
+                background = [255, 255, 255]
+            else:
+                background = [255, 255, 255]
+            preview_vips = preview_vips.flatten(background=background).invert()
 
         png_bytes = preview_vips.pngsave_buffer()
 
