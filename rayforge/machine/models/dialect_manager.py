@@ -1,9 +1,13 @@
 import logging
+from typing import List, TYPE_CHECKING
 import yaml
 from pathlib import Path
 from blinker import Signal
 from .dialect import GcodeDialect, _DIALECT_REGISTRY, register_dialect
 from .dialect_builtins import BUILTIN_DIALECTS
+
+if TYPE_CHECKING:
+    from .machine import Machine
 
 
 logger = logging.getLogger(__name__)
@@ -87,7 +91,13 @@ class DialectManager:
         self._save_dialect_to_file(dialect)
         self.dialects_changed.send(self)
 
-    def delete_dialect(self, dialect: GcodeDialect):
+    def get_machines_using_dialect(
+        self, dialect: GcodeDialect, machines: List["Machine"]
+    ) -> List["Machine"]:
+        """Returns a list of machines that use the given dialect."""
+        return [m for m in machines if m.dialect_uid == dialect.uid]
+
+    def delete_dialect(self, dialect: GcodeDialect, machines: List["Machine"]):
         """Deletes a custom dialect, saves, and signals."""
         if not dialect.is_custom:
             raise ValueError("Cannot delete a built-in dialect.")
@@ -95,6 +105,10 @@ class DialectManager:
         uid_key = dialect.uid.lower()
         if uid_key not in _DIALECT_REGISTRY:
             return  # Already gone
+
+        machines_using = self.get_machines_using_dialect(dialect, machines)
+        if machines_using:
+            raise ValueError("Dialect is in use by one or more machines.")
 
         del _DIALECT_REGISTRY[uid_key]
         self._delete_dialect_file(dialect)
