@@ -2,7 +2,7 @@ from __future__ import annotations
 import uuid
 from dataclasses import dataclass, field, asdict, replace
 from typing import List, Dict, Optional, Any
-from ...core.varset import VarSet, Var, TextAreaVar
+from ...core.varset import VarSet, Var, TextAreaVar, BoolVar
 
 
 _DIALECT_REGISTRY: Dict[str, "GcodeDialect"] = {}
@@ -75,6 +75,9 @@ class GcodeDialect:
     preamble: List[str] = field(default_factory=list)
     postscript: List[str] = field(default_factory=list)
 
+    # Behavior Flags
+    inject_wcs_after_preamble: bool = True
+
     uid: str = field(default_factory=lambda: str(uuid.uuid4()))
     is_custom: bool = False
     parent_uid: Optional[str] = None
@@ -128,6 +131,18 @@ class GcodeDialect:
             templates_vs.add(Var(key, label, str, value=getattr(self, key)))
 
         scripts_vs = VarSet(title=_("Scripts"))
+        scripts_vs.add(
+            BoolVar(
+                "inject_wcs_after_preamble",
+                default=self.inject_wcs_after_preamble,
+                label=_("Inject WCS after Preamble"),
+                description=_(
+                    "Inject the active WCS command (e.g., G54) after "
+                    "the preamble script. When disabled, you can use "
+                    "{machine.active_wcs} in the preamble instead."
+                ),
+            )
+        )
         scripts_vs.add(
             TextAreaVar(
                 "preamble",
@@ -207,4 +222,10 @@ class GcodeDialect:
         merged_data["is_custom"] = data.get("is_custom", False)
         merged_data["parent_uid"] = data.get("parent_uid")
 
-        return cls(**merged_data)
+        # 5. Filter to only include valid dataclass fields
+        valid_fields = {f.name for f in cls.__dataclass_fields__.values()}
+        filtered_data = {
+            k: v for k, v in merged_data.items() if k in valid_fields
+        }
+
+        return cls(**filtered_data)

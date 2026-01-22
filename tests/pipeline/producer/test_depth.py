@@ -284,3 +284,63 @@ def test_multi_pass_generates_correct_ops_and_texture(
     gray_col = artifact.texture_data.power_texture_data[:, 1]
     assert np.all(np.isclose(black_col, 255))
     assert np.all(np.isclose(gray_col, 191, atol=1))
+
+
+def test_power_modulation_respects_step_power_setting(
+    laser: Laser, mock_workpiece: WorkPiece
+):
+    """
+    Tests that power modulation correctly scales power values by the step's
+    power setting. When step power is 20%, maximum power in the
+    output should be 20% of the modulation range.
+    """
+    surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, 3, 1)
+    ctx = cairo.Context(surface)
+    ctx.set_source_rgb(0, 0, 0)
+    ctx.rectangle(0, 0, 1, 1)
+    ctx.fill()
+    ctx.set_source_rgb(128 / 255, 128 / 255, 128 / 255)
+    ctx.rectangle(1, 0, 1, 1)
+    ctx.fill()
+    ctx.set_source_rgb(1, 1, 1)
+    ctx.rectangle(2, 0, 1, 1)
+    ctx.fill()
+
+    mock_workpiece.set_size(0.3, 0.1)
+    producer = DepthEngraver(min_power=0.0, max_power=1.0)
+    step_power = 0.2  # 20% power setting
+    settings = {"power": step_power}
+
+    artifact = producer.run(
+        laser, surface, (10, 10), workpiece=mock_workpiece, settings=settings
+    )
+
+    assert isinstance(artifact, WorkPieceArtifact)
+
+    # Expected values calculation WITH step power scaling:
+    # Without scaling:
+    # Black (gray_factor=1.0): (0.0 + 1.0 * 1.0) * 255 = 255
+    # Gray (gray_factor~0.5): (0.0 + (1-128/255)*1.0) * 255 = 127
+    # White (gray_factor=0.0): (0.0 + 0.0 * 1.0) * 255 = 0
+    # With step_power=0.2 scaling:
+    # Black: 255 * 0.2 = 51
+    # Gray: 127 * 0.2 = 25.4
+    # White: 0 * 0.2 = 0
+    expected_texture_row = [51, 25, 0]
+
+    # Note: Zero-power pixels are filtered out from scan commands,
+    # so only 2 values are present in the scan command
+    scan_cmd = next(
+        c for c in artifact.ops if isinstance(c, ScanLinePowerCommand)
+    )
+    power_vals = scan_cmd.power_values
+    assert len(power_vals) == 2
+    assert power_vals[0] == pytest.approx(expected_texture_row[0], 1)
+    assert power_vals[1] == pytest.approx(expected_texture_row[1], 1)
+
+    # Texture data contains all 3 values
+    assert artifact.texture_data is not None
+    texture_row = artifact.texture_data.power_texture_data[0]
+    assert texture_row[0] == pytest.approx(51, 1)
+    assert texture_row[1] == pytest.approx(25, 1)
+    assert texture_row[2] == pytest.approx(0, 1)

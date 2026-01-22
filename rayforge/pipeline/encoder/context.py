@@ -31,9 +31,21 @@ class GcodeContext:
         """The (x, y, z) offset for the currently active WCS."""
         return self.machine.get_active_wcs_offset()
 
+    @property
+    def wcs_name(self) -> str:
+        """The name of the currently active WCS (e.g., 'G54')."""
+        return self.machine.active_wcs
+
     # --- Static Variable Documentation ---
     _DOCS = {
         "job": [
+            (
+                "machine.active_wcs",
+                _(
+                    "The name of the currently active coordinate system "
+                    "(e.g. 'G54')."
+                ),
+            ),
             ("machine.name", _("The name of the current machine profile.")),
             (
                 "machine.dimensions[0]",

@@ -261,9 +261,10 @@ class GcodeEncoder(OpsEncoder):
                 # preamble to guarantee the correct coordinate system is
                 # active for the job, treating the preamble as a black box
                 # that may have changed state.
-                wcs_cmd = context.machine.active_wcs
-                if wcs_cmd in ["G54", "G55", "G56", "G57", "G58", "G59"]:
-                    gcode.append(wcs_cmd)
+                if self.dialect.inject_wcs_after_preamble:
+                    wcs_cmd = context.machine.active_wcs
+                    if wcs_cmd in ["G54", "G55", "G56", "G57", "G58", "G59"]:
+                        gcode.append(wcs_cmd)
 
             case JobEndCommand():
                 # This is the single point of truth for job cleanup.
