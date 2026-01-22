@@ -222,4 +222,10 @@ class GcodeDialect:
         merged_data["is_custom"] = data.get("is_custom", False)
         merged_data["parent_uid"] = data.get("parent_uid")
 
-        return cls(**merged_data)
+        # 5. Filter to only include valid dataclass fields
+        valid_fields = {f.name for f in cls.__dataclass_fields__.values()}
+        filtered_data = {
+            k: v for k, v in merged_data.items() if k in valid_fields
+        }
+
+        return cls(**filtered_data)
