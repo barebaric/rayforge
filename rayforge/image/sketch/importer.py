@@ -2,7 +2,8 @@ from __future__ import annotations
 import json
 import logging
 from pathlib import Path
-from typing import Optional, TYPE_CHECKING
+from typing import Iterator, List, Optional, TYPE_CHECKING
+from ...core.item import DocItem
 from ...core.sketcher.sketch import Sketch
 from ...core.source_asset import SourceAsset
 from ...core.workpiece import WorkPiece
@@ -67,10 +68,17 @@ class SketchImporter(Importer):
         if not self.parsed_sketch:
             return payload
 
-        for item in payload.items:
-            if isinstance(item, WorkPiece):
-                item.sketch_uid = self.parsed_sketch.uid
-                item.name = self.parsed_sketch.name
+        def find_workpieces(items: List[DocItem]) -> Iterator[WorkPiece]:
+            """Recursively find all WorkPiece objects in a list of items."""
+            for item in items:
+                if isinstance(item, WorkPiece):
+                    yield item
+                elif item.children:
+                    yield from find_workpieces(item.children)
+
+        for wp in find_workpieces(payload.items):
+            wp.sketch_uid = self.parsed_sketch.uid
+            wp.name = self.parsed_sketch.name
 
         payload.sketches = [self.parsed_sketch]
         return payload

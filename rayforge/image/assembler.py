@@ -76,7 +76,6 @@ class ItemAssembler:
                 vectorization_spec=spec,
                 layer_id=item.layer_id,
                 pristine_geometry=geo,
-                # Geometry Normalization
                 normalization_matrix=item.normalization_matrix,
                 crop_window_px=item.crop_window,
             )
@@ -103,8 +102,11 @@ class ItemAssembler:
             wp.natural_height_mm = h_mm
 
             # 4. Wrap in Layer if splitting is active and meaningful
+            # Hack: Sketches (layer_id="__default__") should never be wrapped
+            # in a layer
             if (
                 item.layer_id
+                and item.layer_id != "__default__"
                 and isinstance(spec, PassthroughSpec)
                 and spec.create_new_layers
             ):
