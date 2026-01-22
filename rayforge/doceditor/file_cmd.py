@@ -227,15 +227,16 @@ class FileCmd:
             )
             import_result = importer.get_doc_items(spec)
 
-            if not import_result or not import_result.payload.items:
-                # Still return a result if the source asset was created but
-                # no items
-                # (e.g., for showing a background image with no vectors).
-                if import_result and import_result.payload.source:
-                    return self._generate_rich_preview_result(
-                        import_result, file_bytes, spec, preview_size_px
-                    )
+            if not import_result:
                 return None
+
+            # Even if no items were created, we might still be able to show a
+            # preview of the source asset (e.g., an empty DXF).
+            if not import_result.payload.items:
+                logger.warning(
+                    f"Import of '{filename}' produced no document items, "
+                    "but attempting to generate a preview."
+                )
 
             return self._generate_rich_preview_result(
                 import_result, file_bytes, spec, preview_size_px
@@ -260,50 +261,60 @@ class FileCmd:
         """
         payload = import_result.payload
         parse_result = import_result.parse_result
+        renderer = payload.source.renderer
+        if not renderer:
+            return None
 
-        # 1. Generate high-res base image for the background
+        # 1. Generate high-res base image for the background by delegating
+        # to the source's specialized renderer.
         vips_image = None
         content_bounds = None
+        target_dim = 2048  # Target for the longest edge of the hi-res preview
 
-        if payload.source.base_render_data:
-            # Use the pre-rendered/trimmed data if available (SVG, Traced PNG)
-            vips_image = pyvips.Image.new_from_buffer(
-                payload.source.base_render_data, "", scale=4.0
+        _, _, w_native, h_native = parse_result.page_bounds
+        if w_native <= 1e-9 or h_native <= 1e-9:
+            # If there's no page size, we can't render a background.
+            # This is not necessarily an error; a file might have vector
+            # content but no defined canvas.
+            pass
+        else:
+            aspect = w_native / h_native
+            if aspect >= 1.0:
+                render_width = target_dim
+                render_height = max(1, int(target_dim / aspect))
+            else:
+                render_height = target_dim
+                render_width = max(1, int(target_dim * aspect))
+
+            vips_image = renderer.render_preview_image(
+                import_result, render_width, render_height
             )
-        elif payload.source.renderer:
-            # For formats that need on-the-fly rendering (DXF)
-            _, _, w_native, h_native = parse_result.page_bounds
-            if w_native <= 1e-9 or h_native <= 1e-9:
-                return None
 
-            render_width = 2048
-            render_height = int(render_width * h_native / w_native)
-
+        # 2. Calculate content bounds for vector overlays from the
+        # intermediate vectorization result.
+        if import_result.vectorization_result:
             all_geos = Geometry()
-            for item in payload.items:
-                if (
-                    isinstance(item, WorkPiece)
-                    and item.source_segment
-                    and item.source_segment.pristine_geometry
-                ):
-                    all_geos.extend(item.source_segment.pristine_geometry)
-
-            vips_image = payload.source.renderer.render_base_image(
-                data=original_file_bytes,
-                width=render_width,
-                height=render_height,
-                boundaries=all_geos,
-                source_metadata=payload.source.metadata,
-            )
+            for geo in (
+                import_result.vectorization_result.geometries_by_layer.values()
+            ):
+                if geo:
+                    all_geos.extend(geo)
 
             if not all_geos.is_empty():
                 min_x, min_y, max_x, max_y = all_geos.rect()
                 content_bounds = (min_x, min_y, max_x, max_y)
 
+        # 3. Create a thumbnail for the UI.
         if not vips_image:
-            return None
+            # If background rendering failed or was skipped, but we have
+            # vectors, create a blank image to render the vectors on.
+            if payload.items:
+                vips_image = pyvips.Image.black(
+                    preview_size_px, preview_size_px
+                )
+            else:
+                return None  # No background and no items, nothing to show.
 
-        # 2. Create thumbnail
         aspect_ratio = (
             vips_image.width / vips_image.height if vips_image.height else 1.0
         )

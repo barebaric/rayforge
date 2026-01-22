@@ -3,6 +3,7 @@ import logging
 from ..base_renderer import Renderer, RenderSpecification
 from ..ops_renderer import OPS_RENDERER
 import warnings
+from ...core.geo import Geometry
 
 with warnings.catch_warnings():
     warnings.simplefilter("ignore", DeprecationWarning)
@@ -11,6 +12,7 @@ with warnings.catch_warnings():
 if TYPE_CHECKING:
     from ...core.source_asset_segment import SourceAssetSegment
     from ...core.workpiece import RenderContext
+    from ...image.structures import ImportResult
 
 logger = logging.getLogger(__name__)
 
@@ -41,6 +43,33 @@ class DxfRenderer(Renderer):
             data=source_context.data,
             kwargs=kwargs,
             apply_mask=False,
+        )
+
+    def render_preview_image(
+        self,
+        import_result: "ImportResult",
+        target_width: int,
+        target_height: int,
+    ) -> Optional[pyvips.Image]:
+        """Generates a preview by rendering the vectorized geometry."""
+        vec_result = import_result.vectorization_result
+        if not vec_result:
+            return None
+
+        all_geos = Geometry()
+        for geo in vec_result.geometries_by_layer.values():
+            if geo:
+                all_geos.extend(geo)
+
+        if all_geos.is_empty():
+            return None
+
+        return self.render_base_image(
+            data=import_result.payload.source.original_data,
+            width=target_width,
+            height=target_height,
+            boundaries=all_geos,
+            source_metadata=import_result.payload.source.metadata,
         )
 
     def render_base_image(

@@ -179,9 +179,14 @@ class SketchImporter(Importer):
         geometry.close_gaps()
         geometry.upgrade_to_scalable()
 
+        fills = self.parsed_sketch.get_fill_geometries()
+        for fill_geo in fills:
+            fill_geo.upgrade_to_scalable()
+
         # We treat the sketch as a single layer
         layer_id = parse_result.layers[0].layer_id
         return VectorizationResult(
             geometries_by_layer={layer_id: geometry},
+            fills_by_layer={layer_id: fills},
             source_parse_result=parse_result,
         )

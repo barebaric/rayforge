@@ -14,6 +14,7 @@ with warnings.catch_warnings():
 if TYPE_CHECKING:
     from ..core.source_asset_segment import SourceAssetSegment
     from ..core.workpiece import RenderContext
+    from ..image.structures import ImportResult
 
 
 logger = logging.getLogger(__name__)
@@ -79,6 +80,40 @@ class Renderer(ABC):
             A pyvips.Image, or None if rendering fails.
         """
         raise NotImplementedError
+
+    def render_preview_image(
+        self,
+        import_result: "ImportResult",
+        target_width: int,
+        target_height: int,
+    ) -> Optional[pyvips.Image]:
+        """
+        Generates a high-resolution preview image from a full ImportResult.
+        This allows a renderer to use context from parsing and vectorization
+        to create the most accurate background image for the import dialog.
+
+        The base implementation is a fallback for simple raster renderers.
+
+        Args:
+            import_result: The complete result of the import operation.
+            target_width: The target pixel width for the preview.
+            target_height: The target pixel height for the preview.
+
+        Returns:
+            A pyvips.Image, or None if rendering fails.
+        """
+        source = import_result.payload.source
+        # For previews, always prefer the pre-processed (e.g., trimmed) data.
+        data_to_render = source.base_render_data or source.original_data
+        if not data_to_render:
+            return None
+
+        # Delegate directly to render_base_image, which is expected to handle
+        # rendering to the target dimensions. This is more efficient than
+        # loading a full-res image and then thumbnailing.
+        return self.render_base_image(
+            data=data_to_render, width=target_width, height=target_height
+        )
 
 
 class RasterRenderer(Renderer):

@@ -103,7 +103,8 @@ class RuidaImporter(Importer):
         """
         Phase 3: Package parsed data for the layout engine.
         Since Ruida files are always a single merged entity, we package the
-        geometry under the `None` key for the layout engine and assembler.
+        geometry under the `__default__` key (matching parse()) so the
+        assembler can find it when splitting layers is active.
         """
         # A Ruida file is conceptually a single "layer" or entity.
         # We merge all geometries into one entry for the layout engine.
@@ -111,8 +112,11 @@ class RuidaImporter(Importer):
         for geo in self._geometries_by_layer.values():
             merged_geo.extend(geo)
 
+        # Key must match the layer_id declared in parse() ("__default__")
+        # so that ItemAssembler can find it when layout items request that
+        # layer.
         geometries_for_layout: Dict[Optional[str], Geometry] = {
-            None: merged_geo
+            "__default__": merged_geo
         }
 
         return VectorizationResult(
@@ -150,7 +154,7 @@ class RuidaImporter(Importer):
             empty_result.background_world_transform = bg_item.world_matrix
 
             self._geometries_by_layer: Dict[Optional[str], Geometry] = {
-                None: pristine_geo
+                "__default__": pristine_geo
             }
             return empty_result
 

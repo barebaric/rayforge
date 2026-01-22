@@ -143,7 +143,11 @@ class Importer(ABC):
         This is the template method that orchestrates the import pipeline.
         """
         # (Needed for downstream type hints)
-        from .structures import ImportPayload, ImportResult
+        from .structures import (
+            ImportPayload,
+            ImportResult,
+            VectorizationResult,
+        )
 
         # 1. Parse
         parse_result = self.parse()
@@ -163,6 +167,9 @@ class Importer(ABC):
             return ImportResult(
                 payload=ImportPayload(source=source_asset, items=[]),
                 parse_result=parse_result,
+                vectorization_result=VectorizationResult(
+                    geometries_by_layer={}, source_parse_result=parse_result
+                ),
             )
 
         vec_result = self.vectorize(parse_result, spec)
@@ -175,6 +182,7 @@ class Importer(ABC):
             return ImportResult(
                 payload=ImportPayload(source=source_asset, items=[]),
                 parse_result=parse_result,
+                vectorization_result=vec_result,
             )
 
         # 5. Assemble
@@ -198,6 +206,7 @@ class Importer(ABC):
         return ImportResult(
             payload=final_payload,
             parse_result=vec_result.source_parse_result,
+            vectorization_result=vec_result,
         )
 
     def _post_process_payload(

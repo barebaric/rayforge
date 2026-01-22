@@ -100,9 +100,8 @@ class BmpImporter(Importer):
         spec: VectorizationSpec,
     ) -> VectorizationResult:
         assert self._image is not None, "parse() must be called first"
-        assert isinstance(spec, TraceSpec), (
-            "BmpImporter only supports TraceSpec"
-        )
+        if not isinstance(spec, TraceSpec):
+            raise TypeError("BmpImporter only supports TraceSpec")
 
         surface = image_util.vips_rgba_to_cairo_surface(self._image)
         geometries_list = trace_surface(surface, spec)

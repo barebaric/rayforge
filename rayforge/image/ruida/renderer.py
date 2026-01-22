@@ -1,5 +1,15 @@
-from ..ops_renderer import OPS_RENDERER
+from ..dxf.renderer import DxfRenderer
 
-# The RUIDA importer produces vector operations (Ops), so it uses the shared
-# OPS_RENDERER. We create this alias for consistency.
-RUIDA_RENDERER = OPS_RENDERER
+
+class RuidaRenderer(DxfRenderer):
+    """
+    A renderer for Ruida workpieces. Inherits vector rendering logic from
+    DxfRenderer.
+    """
+
+    pass
+
+
+# The RUIDA importer produces vector geometry, so it uses a renderer that
+# can handle it. We create this alias for consistency and future extension.
+RUIDA_RENDERER = RuidaRenderer()

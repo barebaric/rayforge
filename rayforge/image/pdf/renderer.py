@@ -8,13 +8,50 @@ with warnings.catch_warnings():
     import pyvips
 
 if TYPE_CHECKING:
-    pass
+    from ...image.structures import ImportResult
 
 logger = logging.getLogger(__name__)
 
 
 class PdfRenderer(RasterRenderer):
     """Renders PDF data."""
+
+    def render_preview_image(
+        self,
+        import_result: "ImportResult",
+        target_width: int,
+        target_height: int,
+    ) -> Optional[pyvips.Image]:
+        """
+        Generates a preview image from a PDF import.
+
+        This method has special handling for PDFs. The PdfImporter pre-renders
+        the PDF to a PNG and stores it in `base_render_data` as an
+        optimization. This method will use that cached PNG if available,
+        bypassing the expensive PDF rendering.
+        """
+        source = import_result.payload.source
+        if source.base_render_data:
+            try:
+                # The importer has cached a pre-rendered PNG. Load it directly.
+                image = pyvips.Image.new_from_buffer(
+                    source.base_render_data, ""
+                )
+                # Scale it to the final preview size.
+                return image.thumbnail_image(
+                    target_width, height=target_height, size="both"
+                )
+            except pyvips.Error as e:
+                logger.warning(
+                    f"Failed to load cached preview image from "
+                    f"base_render_data: {e}"
+                )
+                # Fall through to rendering the original PDF.
+
+        # Fallback: If no cached data, render the original PDF from scratch.
+        return super().render_preview_image(
+            import_result, target_width, target_height
+        )
 
     def render_base_image(
         self,
@@ -54,7 +91,7 @@ class PdfRenderer(RasterRenderer):
             w_pt = float(media_box.width)
             h_pt = float(media_box.height)
 
-            if w_pt > 0 and h_pt > 0:
+            if w_pt > 0 and h_pt > 0 and width > 0 and height > 0:
                 # Target DPI = (pixels / points) * 72
                 dpi_x = (width / w_pt) * 72.0
                 dpi_y = (height / h_pt) * 72.0
