@@ -18,7 +18,7 @@ def engine():
 
 
 def create_vec_result(
-    page_bounds: Tuple[float, float, float, float],
+    document_bounds: Tuple[float, float, float, float],
     layers: List[Tuple[str, Tuple[float, float, float, float]]],
     is_y_down: bool = True,
     unit_scale: float = 1.0,
@@ -31,10 +31,10 @@ def create_vec_result(
         LayerGeometry(layer_id=lid, name=lid, content_bounds=bounds)
         for lid, bounds in layers
     ]
-    x, y, w, h = page_bounds
+    x, y, w, h = document_bounds
     world_frame = (x * unit_scale, 0.0, w * unit_scale, h * unit_scale)
     parse_result = ParsingResult(
-        page_bounds=page_bounds,
+        document_bounds=document_bounds,
         native_unit_to_mm=unit_scale,
         is_y_down=is_y_down,
         layers=layer_geos,
@@ -61,7 +61,7 @@ def test_single_layer_y_down(engine):
     # Bottom of content is at Y=20.
     # Distance from bottom of page = 100 - 20 = 80.
     vec_result = create_vec_result(
-        page_bounds=(0, 0, 100, 100),
+        document_bounds=(0, 0, 100, 100),
         layers=[("layer1", (10, 10, 10, 10))],
         is_y_down=True,
     )
@@ -109,7 +109,7 @@ def test_single_layer_y_up(engine):
     """
     # Content: 10x10 square at (10, 10) from bottom-left.
     vec_result = create_vec_result(
-        page_bounds=(0, 0, 100, 100),
+        document_bounds=(0, 0, 100, 100),
         layers=[("layer1", (10, 10, 10, 10))],
         is_y_down=False,  # DXF style
     )
@@ -132,7 +132,7 @@ def test_merge_layers_union(engine):
     # Layer B: (20, 20, 10, 10)
     # Union: (0, 0, 30, 30)
     vec_result = create_vec_result(
-        page_bounds=(0, 0, 100, 100),
+        document_bounds=(0, 0, 100, 100),
         layers=[
             ("A", (0, 0, 10, 10)),
             ("B", (20, 20, 10, 10)),
@@ -164,7 +164,7 @@ def test_split_layers_alignment(engine):
     # Layer Bottom: (10, 80, 10, 10). Bottom Y = 90. World Y = 10.
     # Visual distance: 70 units vertically.
     vec_result = create_vec_result(
-        page_bounds=(0, 0, 100, 100),
+        document_bounds=(0, 0, 100, 100),
         layers=[
             ("Top", (10, 10, 10, 10)),
             ("Bottom", (10, 80, 10, 10)),
@@ -196,7 +196,7 @@ def test_unit_conversion(engine):
     """
     # 1 Native Unit = 2.0 mm
     vec_result = create_vec_result(
-        page_bounds=(0, 0, 100, 100),
+        document_bounds=(0, 0, 100, 100),
         layers=[("L1", (0, 0, 10, 10))],
         unit_scale=2.0,
     )
@@ -216,7 +216,7 @@ def test_empty_content_fallback(engine):
     to the page bounds.
     """
     vec_result = create_vec_result(
-        page_bounds=(0, 0, 100, 100),
+        document_bounds=(0, 0, 100, 100),
         layers=[],  # No layers
     )
 

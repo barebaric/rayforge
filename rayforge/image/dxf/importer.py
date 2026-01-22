@@ -86,7 +86,7 @@ class DxfImporter(Importer):
         )
 
     def create_source_asset(self, parse_result: ParsingResult) -> SourceAsset:
-        _, _, w, h = parse_result.page_bounds
+        _, _, w, h = parse_result.document_bounds
         width_mm = w * parse_result.native_unit_to_mm
         height_mm = h * parse_result.native_unit_to_mm
 
@@ -218,7 +218,7 @@ class DxfImporter(Importer):
         # Note: We must preserve is_y_down=False for DXF (Y-Up).
         temp_result = replace(
             original,
-            page_bounds=new_bounds,
+            document_bounds=new_bounds,
             world_frame_of_reference=new_world_frame,
         )
 
@@ -228,7 +228,7 @@ class DxfImporter(Importer):
 
         return replace(
             original,
-            page_bounds=new_bounds,
+            document_bounds=new_bounds,
             world_frame_of_reference=new_world_frame,
             background_world_transform=bg_item.world_matrix,
         )
@@ -271,7 +271,7 @@ class DxfImporter(Importer):
         # 4. Create temporary result to calculate transforms
         native_unit_to_mm = self._get_scale_to_mm(self._dxf_doc)
         temp_result = ParsingResult(
-            page_bounds=doc_bounds,
+            document_bounds=doc_bounds,
             native_unit_to_mm=native_unit_to_mm,
             is_y_down=False,
             layers=[],
@@ -294,7 +294,7 @@ class DxfImporter(Importer):
 
         # 6. Final Result
         result = ParsingResult(
-            page_bounds=doc_bounds,
+            document_bounds=doc_bounds,
             native_unit_to_mm=native_unit_to_mm,
             is_y_down=False,
             layers=[],

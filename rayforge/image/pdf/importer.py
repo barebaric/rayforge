@@ -97,7 +97,7 @@ class PdfImporter(Importer):
         assert self._image is not None, "parse() must have been called first"
 
         # Populate dimensions
-        _, _, w_px, h_px = parse_result.page_bounds
+        _, _, w_px, h_px = parse_result.document_bounds
         width_mm = w_px * parse_result.native_unit_to_mm
         height_mm = h_px * parse_result.native_unit_to_mm
 
@@ -180,10 +180,10 @@ class PdfImporter(Importer):
         px_per_mm = dpi / 25.4
         self._image = vips_image.copy(xres=px_per_mm, yres=px_per_mm)
 
-        page_bounds = (0.0, 0.0, float(render_w_px), float(render_h_px))
+        document_bounds = (0.0, 0.0, float(render_w_px), float(render_h_px))
         native_unit_to_mm = 1.0 / px_per_mm
 
-        x, y, w, h = page_bounds
+        x, y, w, h = document_bounds
         world_frame = (
             x * native_unit_to_mm,
             0.0,
@@ -193,7 +193,7 @@ class PdfImporter(Importer):
 
         # Create temporary result to calculate background transform
         temp_result = ParsingResult(
-            page_bounds=page_bounds,
+            document_bounds=document_bounds,
             native_unit_to_mm=native_unit_to_mm,
             is_y_down=True,
             layers=[],
@@ -202,18 +202,18 @@ class PdfImporter(Importer):
         )
 
         bg_item = NormalizationEngine.calculate_layout_item(
-            page_bounds, temp_result
+            document_bounds, temp_result
         )
 
         return ParsingResult(
-            page_bounds=page_bounds,
+            document_bounds=document_bounds,
             native_unit_to_mm=native_unit_to_mm,
             is_y_down=True,
             layers=[
                 LayerGeometry(
                     layer_id="__default__",
                     name="__default__",
-                    content_bounds=page_bounds,
+                    content_bounds=document_bounds,
                 )
             ],
             world_frame_of_reference=world_frame,

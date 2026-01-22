@@ -80,7 +80,7 @@ class BmpImporter(Importer):
         """
         Creates a SourceAsset for BMP import.
         """
-        _, _, w_px, h_px = parse_result.page_bounds
+        _, _, w_px, h_px = parse_result.document_bounds
         width_mm = w_px * parse_result.native_unit_to_mm
         height_mm = h_px * parse_result.native_unit_to_mm
 
@@ -152,10 +152,10 @@ class BmpImporter(Importer):
         native_unit_to_mm = 25.4 / dpi_x
 
         # Page bounds are the full image dimensions
-        page_bounds = (0.0, 0.0, float(width), float(height))
+        document_bounds = (0.0, 0.0, float(width), float(height))
 
         # World frame is Y-Up, so y-origin is 0. BMPs have no untrimmed bounds.
-        x, y, w, h = page_bounds
+        x, y, w, h = document_bounds
         world_frame = (
             x * native_unit_to_mm,
             0.0,
@@ -165,7 +165,7 @@ class BmpImporter(Importer):
 
         # Create temporary result to calculate background transform
         temp_result = ParsingResult(
-            page_bounds=page_bounds,
+            document_bounds=document_bounds,
             native_unit_to_mm=native_unit_to_mm,
             is_y_down=True,
             layers=[],
@@ -174,21 +174,21 @@ class BmpImporter(Importer):
         )
 
         bg_item = NormalizationEngine.calculate_layout_item(
-            page_bounds, temp_result
+            document_bounds, temp_result
         )
 
         # BMP is a single-layer format, use a default layer ID
         layer_id = "__default__"
 
         return ParsingResult(
-            page_bounds=page_bounds,
+            document_bounds=document_bounds,
             native_unit_to_mm=native_unit_to_mm,
             is_y_down=True,
             layers=[
                 LayerGeometry(
                     layer_id=layer_id,
                     name=layer_id,
-                    content_bounds=page_bounds,
+                    content_bounds=document_bounds,
                 )
             ],
             world_frame_of_reference=world_frame,

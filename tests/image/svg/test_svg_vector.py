@@ -40,7 +40,7 @@ def test_parse_valid_vector_data(vector_importer):
     assert result is not None
 
     # Content 20x20, padding 0.2. New viewbox is padded.
-    px, py, pw, ph = result.page_bounds
+    px, py, pw, ph = result.document_bounds
     assert px == pytest.approx(9.8)
     assert py == pytest.approx(9.8)
     assert pw == pytest.approx(20.4)

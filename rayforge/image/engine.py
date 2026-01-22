@@ -70,7 +70,8 @@ class NormalizationEngine:
         # The frame of reference for Y-inversion is the original,
         # untrimmed page.
         ref_bounds = (
-            parse_result.untrimmed_page_bounds or parse_result.page_bounds
+            parse_result.untrimmed_document_bounds
+            or parse_result.document_bounds
         )
         ref_x_native, ref_y_native, ref_w_native, ref_h_native = ref_bounds
 
@@ -120,11 +121,12 @@ class NormalizationEngine:
             # For traced results, the coordinate system and overall bounds are
             # defined by the bitmap that was rendered for tracing. This is
             # described in the source_parse_result. The actual vector geometry
-            # is just content within that frame. Using the page_bounds ensures
-            # the final workpiece size matches the background image size.
-            bounds_to_use = result.page_bounds
+            # is just content within that frame. Using the document_bounds
+            # ensures the final workpiece size matches the background image
+            # size.
+            bounds_to_use = result.document_bounds
 
-            # Fallback in case the page bounds are invalid
+            # Fallback in case the document bounds are invalid
             if bounds_to_use[2] <= 1e-6 or bounds_to_use[3] <= 1e-6:
                 all_rects = []
                 for geo in vec_result.geometries_by_layer.values():
@@ -164,12 +166,12 @@ class NormalizationEngine:
         if not target_layers:
             # Fallback for empty files or no matching layers: use page bounds.
             # But if page bounds are effectively zero-sized, return empty plan.
-            bx, by, bw, bh = result.page_bounds
+            bx, by, bw, bh = result.document_bounds
             if bw <= 1e-6 or bh <= 1e-6:
                 return []
             return [
                 self.calculate_layout_item(
-                    result.page_bounds,
+                    result.document_bounds,
                     result,
                     layer_id=None,
                     layer_name=None,
@@ -201,7 +203,7 @@ class NormalizationEngine:
 
             # If union is zero/invalid (e.g. empty layers), fallback to page
             if union_rect[2] <= 0 or union_rect[3] <= 0:
-                union_rect = result.page_bounds
+                union_rect = result.document_bounds
 
             return [
                 self.calculate_layout_item(

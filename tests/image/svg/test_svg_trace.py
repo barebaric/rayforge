@@ -31,7 +31,7 @@ def test_parse_returns_single_layer(trace_importer):
 
     # Content is 50x50. Padding is 50*0.01=0.5 on each side.
     # New viewbox is 24.5, 24.5, 51, 51
-    px, py, pw, ph = result.page_bounds
+    px, py, pw, ph = result.document_bounds
     assert px == pytest.approx(24.5)
     assert py == pytest.approx(24.5)
     assert pw == pytest.approx(51.0)
@@ -40,12 +40,12 @@ def test_parse_returns_single_layer(trace_importer):
 
 def test_vectorize_enforces_tracespec(trace_importer):
     """Should raise TypeError if we try to vectorize with non-TraceSpec."""
-    page_bounds = (0, 0, 10, 10)
+    document_bounds = (0, 0, 10, 10)
     unit_scale = 1.0
-    x, y, w, h = page_bounds
+    x, y, w, h = document_bounds
     world_frame = (x * unit_scale, 0.0, w * unit_scale, h * unit_scale)
     dummy_parse = ParsingResult(
-        page_bounds=page_bounds,
+        document_bounds=document_bounds,
         native_unit_to_mm=unit_scale,
         is_y_down=True,
         layers=[],

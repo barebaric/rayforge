@@ -84,7 +84,7 @@ class RuidaImporter(Importer):
         """
         Creates a SourceAsset for Ruida import.
         """
-        _, _, w, h = parse_result.page_bounds
+        _, _, w, h = parse_result.document_bounds
 
         source = SourceAsset(
             source_file=self.source_file,
@@ -140,7 +140,7 @@ class RuidaImporter(Importer):
         if not job.commands or pristine_geo.is_empty():
             # Return empty but valid structures
             empty_result = ParsingResult(
-                page_bounds=(0, 0, 0, 0),
+                document_bounds=(0, 0, 0, 0),
                 native_unit_to_mm=1.0,
                 is_y_down=False,
                 layers=[],
@@ -164,34 +164,34 @@ class RuidaImporter(Importer):
 
         # Use a virtual layer ID for consistency with other importers
         layer_id = "__default__"
-        page_bounds = (min_x, min_y, width_mm, height_mm)
+        document_bounds = (min_x, min_y, width_mm, height_mm)
 
         # Create temporary result to calculate background transform
         temp_result = ParsingResult(
-            page_bounds=page_bounds,
+            document_bounds=document_bounds,
             native_unit_to_mm=1.0,
             is_y_down=False,
             layers=[],
-            world_frame_of_reference=page_bounds,
+            world_frame_of_reference=document_bounds,
             background_world_transform=None,  # type: ignore
         )
 
         bg_item = NormalizationEngine.calculate_layout_item(
-            page_bounds, temp_result
+            document_bounds, temp_result
         )
 
         parse_result = ParsingResult(
-            page_bounds=page_bounds,
+            document_bounds=document_bounds,
             native_unit_to_mm=1.0,
             is_y_down=False,
             layers=[
                 LayerGeometry(
                     layer_id=layer_id,
                     name=layer_id,
-                    content_bounds=page_bounds,
+                    content_bounds=document_bounds,
                 )
             ],
-            world_frame_of_reference=page_bounds,
+            world_frame_of_reference=document_bounds,
             background_world_transform=bg_item.world_matrix,
         )
         self._geometries_by_layer = {layer_id: pristine_geo}

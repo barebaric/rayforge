@@ -271,7 +271,7 @@ class FileCmd:
         content_bounds = None
         target_dim = 2048  # Target for the longest edge of the hi-res preview
 
-        _, _, w_native, h_native = parse_result.page_bounds
+        _, _, w_native, h_native = parse_result.document_bounds
         if w_native <= 1e-9 or h_native <= 1e-9:
             # If there's no page size, we can't render a background.
             # This is not necessarily an error; a file might have vector
