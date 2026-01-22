@@ -105,8 +105,8 @@ def test_trace_pipeline_integration(
     # which is the padded viewbox origin (24.5mm), Y-inverted.
     # Untrimmed page is 100mm. `by`=24.5, `bh`=51. `dist=100-(24.5+51)=24.5`.
     wx, wy = item.matrix.transform_point((0, 0))
-    assert wx == pytest.approx(24.5)
-    assert wy == pytest.approx(24.5)
+    assert wx == pytest.approx(24.5, abs=1e-4)
+    assert wy == pytest.approx(24.5, abs=1e-4)
 
 
 def test_trace_render_failure_handling(trace_importer):

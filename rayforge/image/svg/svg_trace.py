@@ -196,11 +196,15 @@ class SvgTraceImporter(SvgImporterBase):
         if parse_result.untrimmed_document_bounds:
             u_native = parse_result.untrimmed_document_bounds
             # Convert untrimmed native size to trace pixels
+            u_x_mm = u_native[0] * native_unit_to_mm
+            u_y_mm = u_native[1] * native_unit_to_mm
             u_w_mm = u_native[2] * native_unit_to_mm
             u_h_mm = u_native[3] * native_unit_to_mm
+            u_x_px = u_x_mm / mm_per_px_x if mm_per_px_x > 0 else 0
+            u_y_px = u_y_mm / mm_per_px_y if mm_per_px_y > 0 else 0
             u_w_px = u_w_mm / mm_per_px_x if mm_per_px_x > 0 else 0
             u_h_px = u_h_mm / mm_per_px_y if mm_per_px_y > 0 else 0
-            trace_untrimmed_bounds = (0.0, 0.0, u_w_px, u_h_px)
+            trace_untrimmed_bounds = (u_x_px, u_y_px, u_w_px, u_h_px)
 
         # Calculate authoritative world frame for the traced image
         t_ref_bounds = trace_untrimmed_bounds or trace_document_bounds
@@ -208,7 +212,7 @@ class SvgTraceImporter(SvgImporterBase):
         t_w_mm = t_w * mm_per_px_x
         t_h_mm = t_h * mm_per_px_x
         t_x_mm = t_x * mm_per_px_x
-        t_y_mm = (t_h - (t_y + t_h)) * mm_per_px_x  # Invert Y for Y-Up
+        t_y_mm = 0.0  # The world frame's origin is at its bottom-left.
         trace_world_frame = (t_x_mm, t_y_mm, t_w_mm, t_h_mm)
 
         # Create temporary result to calculate background transform

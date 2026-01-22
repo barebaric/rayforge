@@ -206,14 +206,30 @@ class SvgVectorImporter(SvgImporterBase):
         scale_x = vb_w / w_px if w_px > 0 else 1.0
         scale_y = vb_h / h_px if h_px > 0 else 1.0
 
+        logger.debug(
+            f"_convert_pixel_geo_to_user_geo: "
+            f"w_px={w_px}, h_px={h_px}, "
+            f"vb_x={vb_x}, vb_y={vb_y}, vb_w={vb_w}, vb_h={vb_h}, "
+            f"scale_x={scale_x}, scale_y={scale_y}"
+        )
+
         transform = Matrix.translation(vb_x, vb_y) @ Matrix.scale(
             scale_x, scale_y
         )
 
         user_geometries = {}
         for layer_id, geo_px in pixel_geometries.items():
+            if not geo_px.is_empty():
+                r = geo_px.rect()
+                logger.debug(f"Layer {layer_id} pixel bounds: {r}")
+
             geo_user = geo_px.copy()
             geo_user.transform(transform.to_4x4_numpy())
+
+            if not geo_user.is_empty():
+                r = geo_user.rect()
+                logger.debug(f"Layer {layer_id} user bounds: {r}")
+
             user_geometries[layer_id] = geo_user
 
         return user_geometries
