@@ -143,7 +143,7 @@ class CutCapability(Capability):
                     default=0.8,
                     min_val=0.0,
                     max_val=1.0,
-                    show_value=False,
+                    show_value=True,
                 ),
                 IntVar(
                     key="cut_speed",
@@ -190,7 +190,7 @@ class EngraveCapability(Capability):
                     default=0.2,
                     min_val=0.0,
                     max_val=1.0,
-                    show_value=False,
+                    show_value=True,
                 ),
                 IntVar(
                     key="cut_speed",
@@ -237,7 +237,7 @@ class ScoreCapability(Capability):
                     default=0.1,
                     min_val=0.0,
                     max_val=1.0,
-                    show_value=False,
+                    show_value=True,
                 ),
                 IntVar(
                     key="cut_speed",

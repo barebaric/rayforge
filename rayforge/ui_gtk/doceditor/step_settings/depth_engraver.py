@@ -46,13 +46,13 @@ class DepthEngraverSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
         self.min_power_adj = Gtk.Adjustment(
             lower=0,
             upper=100,
-            step_increment=1,
+            step_increment=0.1,
             value=producer.min_power * 100,
         )
         self.min_power_scale = Gtk.Scale(
             orientation=Gtk.Orientation.HORIZONTAL,
             adjustment=self.min_power_adj,
-            digits=0,
+            digits=1,
             draw_value=True,
         )
         self.min_power_scale.set_size_request(200, -1)
@@ -68,13 +68,13 @@ class DepthEngraverSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
         self.max_power_adj = Gtk.Adjustment(
             lower=0,
             upper=100,
-            step_increment=1,
+            step_increment=0.1,
             value=producer.max_power * 100,
         )
         self.max_power_scale = Gtk.Scale(
             orientation=Gtk.Orientation.HORIZONTAL,
             adjustment=self.max_power_adj,
-            digits=0,
+            digits=1,
             draw_value=True,
         )
         self.max_power_scale.set_size_request(200, -1)

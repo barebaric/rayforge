@@ -132,12 +132,12 @@ class MaterialTestGridSettingsWidget(
         # Power Range
         min_power, max_power = producer.power_range
         self.min_power_adj = Gtk.Adjustment(
-            lower=1, upper=100, step_increment=1, value=min_power
+            lower=1, upper=100, step_increment=0.1, value=min_power
         )
         self.min_power_scale = Gtk.Scale(
             orientation=Gtk.Orientation.HORIZONTAL,
             adjustment=self.min_power_adj,
-            digits=0,
+            digits=1,
             draw_value=True,
             width_request=200,
         )
@@ -148,12 +148,12 @@ class MaterialTestGridSettingsWidget(
         group.add(min_power_row)
 
         self.max_power_adj = Gtk.Adjustment(
-            lower=1, upper=100, step_increment=1, value=max_power
+            lower=1, upper=100, step_increment=0.1, value=max_power
         )
         self.max_power_scale = Gtk.Scale(
             orientation=Gtk.Orientation.HORIZONTAL,
             adjustment=self.max_power_adj,
-            digits=0,
+            digits=1,
             draw_value=True,
             width_request=200,
         )
@@ -284,13 +284,13 @@ class MaterialTestGridSettingsWidget(
         power_adj = Gtk.Adjustment(
             lower=1,
             upper=100,
-            step_increment=1,
+            step_increment=0.1,
             value=producer.label_power_percent,
         )
         power_scale = Gtk.Scale(
             orientation=Gtk.Orientation.HORIZONTAL,
             adjustment=power_adj,
-            digits=0,
+            digits=1,
             draw_value=True,
             width_request=200,
         )

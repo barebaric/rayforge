@@ -87,12 +87,12 @@ class GeneralStepSettingsView(Adw.PreferencesPage):
         # Power Slider
         power_row = Adw.ActionRow(title=_("Power (%)"))
         self.power_adjustment = Gtk.Adjustment(
-            upper=100, step_increment=1, page_increment=10
+            upper=100, step_increment=0.1, page_increment=10
         )
         power_scale = Gtk.Scale(
             orientation=Gtk.Orientation.HORIZONTAL,
             adjustment=self.power_adjustment,
-            digits=0,
+            digits=1,
             draw_value=True,
         )
         power_scale.set_size_request(300, -1)
