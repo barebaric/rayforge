@@ -1,6 +1,6 @@
 import warnings
 from typing import Optional, TYPE_CHECKING
-from ..base_renderer import Renderer
+from ..base_renderer import RasterRenderer
 
 with warnings.catch_warnings():
     warnings.simplefilter("ignore", DeprecationWarning)
@@ -10,7 +10,7 @@ if TYPE_CHECKING:
     pass
 
 
-class JpgRenderer(Renderer):
+class JpgRenderer(RasterRenderer):
     """Renders JPEG data."""
 
     def render_base_image(

@@ -102,6 +102,21 @@ class ParsingResult:
 
 
 @dataclass
+class VectorizationResult:
+    """
+    The result of Phase 2 (Vectorization).
+    Contains the final vector geometry that will be used for layout and
+    assembly.
+    """
+
+    # The final, generated vector geometry for each layer.
+    geometries_by_layer: Dict[Optional[str], Geometry]
+
+    # A reference to the original parse facts for context (e.g., page bounds).
+    source_parse_result: ParsingResult
+
+
+@dataclass
 class LayoutItem:
     """
     A single instruction for the Assembler (Phase 3).
@@ -125,21 +140,6 @@ class LayoutItem:
     # The subset of the original file (in Native Coords) this item represents.
     # (x, y, w, h). Used for cropping images or limiting vector scope.
     crop_window: Tuple[float, float, float, float]
-
-
-@dataclass
-class VectorizationResult:
-    """
-    The result of Phase 2 (Vectorization).
-    Contains the final vector geometry that will be used for layout and
-    assembly.
-    """
-
-    # The final, generated vector geometry for each layer.
-    geometries_by_layer: Dict[Optional[str], Geometry]
-
-    # A reference to the original parse facts for context (e.g., page bounds).
-    source_parse_result: ParsingResult
 
 
 @dataclass

@@ -1,7 +1,7 @@
 import warnings
 import logging
 from typing import Optional, TYPE_CHECKING
-from ..base_renderer import Renderer
+from ..base_renderer import RasterRenderer
 
 with warnings.catch_warnings():
     warnings.simplefilter("ignore", DeprecationWarning)
@@ -13,7 +13,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class PdfRenderer(Renderer):
+class PdfRenderer(RasterRenderer):
     """Renders PDF data."""
 
     def render_base_image(

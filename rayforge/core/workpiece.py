@@ -30,10 +30,9 @@ from .item import DocItem
 from .matrix import Matrix
 from .source_asset_segment import SourceAssetSegment
 from .tab import Tab
-from .vectorization_spec import TraceSpec
 
 if TYPE_CHECKING:
-    from ..image.base_renderer import Renderer
+    from ..image.base_renderer import Renderer, RenderSpecification
     from .asset import IAsset
     from .layer import Layer
     from .source_asset import SourceAsset
@@ -49,9 +48,13 @@ class RenderContext(NamedTuple):
     """Encapsulates the resources required for rendering."""
 
     data: Union[bytes, Any]
+    original_data: Optional[bytes]
     renderer: "Renderer"
     source_pixel_dims: Optional[Tuple[int, int]]
     metadata: Dict[str, Any]
+    # Add geometry fields for vector-based renderers
+    boundaries: Optional[Geometry]
+    fills: Optional[List[Geometry]]
 
 
 class WorkPiece(DocItem):
@@ -569,6 +572,11 @@ class WorkPiece(DocItem):
         Resolves the data, renderer, and metadata needed for rendering.
         Unifies logic for transient (subprocess) vs. managed (document) states.
         """
+        # Calling self.boundaries here ensures that the geometry is computed
+        # and cached, which populates both _boundaries_cache and _fills_cache.
+        boundaries = self.boundaries
+        fills = self._fills_cache
+
         # For sketches, the "data" is not needed, as the geometry is generated
         # by the `boundaries` property. We pass empty bytes.
         if self.sketch_uid:
@@ -576,9 +584,12 @@ class WorkPiece(DocItem):
 
             return RenderContext(
                 data=b"",
+                original_data=None,
                 renderer=SKETCH_RENDERER,
                 source_pixel_dims=None,
                 metadata={"is_vector": True},
+                boundaries=boundaries,
+                fills=fills,
             )
 
         # --- Fallback to standard SourceAsset logic ---
@@ -605,186 +616,57 @@ class WorkPiece(DocItem):
                     self.source.height_px,
                 )
 
-        # 4. Metadata
+        # 4. Original Data (for cropping)
+        original_data = self.original_data
+
+        # 5. Metadata
         metadata = self.source.metadata if self.source else {}
 
         return RenderContext(
             data=data_to_render,
+            original_data=original_data,
             renderer=renderer,
             source_pixel_dims=source_px_dims,
             metadata=metadata,
+            boundaries=boundaries,
+            fills=fills,
         )
 
-    def _calculate_render_geometry(
-        self,
-        target_width: int,
-        target_height: int,
-        source_px_dims: Optional[Tuple[int, int]],
-    ) -> Tuple[int, int, Optional[Tuple[int, int, int, int]], Optional[bytes]]:
-        """
-        Calculates the required render dimensions and optional crop rectangle.
-        Handles the logic for high-res rendering of cropped segments.
-
-        Returns:
-            (render_width, render_height, crop_rect, data_override)
-            - render_width/height: The size to ask the renderer for.
-            - crop_rect: The (x, y, w, h) tuple for post-render cropping,
-              or None.
-            - data_override: Specific bytes to use if switching to
-              original_data is required (e.g. for cropping), or None to
-              use default.
-        """
-        render_width, render_height = target_width, target_height
-        crop_rect = None
-        data_override = None
-
-        is_cropped = (
-            self.source_segment
-            and self.source_segment.crop_window_px is not None
-        )
-        is_vector = self.source_segment is not None and not isinstance(
-            self.source_segment.vectorization_spec, TraceSpec
-        )
-
-        renderer = self._active_renderer
-        is_svg_renderer = renderer.__class__.__name__ == "SvgRenderer"
-
-        # If cropping a non-vector image, we must render the *original* full
-        # image at a scaled-up resolution such that the crop window matches
-        # the target dimensions.
-        # Vector sources handle cropping via ViewBox overrides in
-        # _build_renderer_kwargs, so they skip this expensive path.
-        # Also skip this path for SvgRenderer used in trace mode, as
-        # the base_render_data is already a trimmed SVG.
-        if (
-            is_cropped
-            and not is_vector
-            and not is_svg_renderer
-            and self.original_data
-            and source_px_dims
-        ):
-            # We need to switch to the original data for the full render
-            data_override = self.original_data
-            source_w, source_h = source_px_dims
-
-            if self.source_segment and self.source_segment.crop_window_px:
-                crop_x_f, crop_y_f, crop_w_f, crop_h_f = (
-                    self.source_segment.crop_window_px
-                )
-                crop_w = float(crop_w_f)
-                crop_h = float(crop_h_f)
-
-                if crop_w > 0 and crop_h > 0:
-                    scale_x = target_width / crop_w
-                    scale_y = target_height / crop_h
-                    render_width = max(1, int(source_w * scale_x))
-                    render_height = max(1, int(source_h * scale_y))
-
-                    # Calculate the expected crop rectangle in the scaled
-                    # image.
-                    # We return this as integers for the crop function.
-                    # Note: We recalculate this precisely based on the *actual*
-                    # rendered image size in _process_rendered_image to handle
-                    # renderer rounding, but this gives us the intent.
-                    scaled_x = int(crop_x_f * scale_x)
-                    scaled_y = int(crop_y_f * scale_y)
-                    scaled_w = int(crop_w * scale_x)
-                    scaled_h = int(crop_h * scale_y)
-                    crop_rect = (scaled_x, scaled_y, scaled_w, scaled_h)
-
-        return render_width, render_height, crop_rect, data_override
-
-    def _build_renderer_kwargs(
-        self, renderer: "Renderer", metadata: Dict[str, Any]
-    ) -> Dict[str, Any]:
-        """Constructs format-specific arguments for the renderer."""
-        kwargs = {}
-        renderer_name = renderer.__class__.__name__
-
-        # For OpsRenderer, only pass boundaries (strokes).
-        if renderer_name == "OpsRenderer":
-            kwargs["boundaries"] = self.boundaries
-
-        # For SketchRenderer, pass boundaries AND fills. The call to
-        # self.boundaries ensures the fills cache is populated.
-        if renderer_name == "SketchRenderer":
-            kwargs["boundaries"] = self.boundaries
-            if self._fills_cache:
-                kwargs["fills"] = self._fills_cache
-
-        if renderer_name == "DxfRenderer":
-            kwargs["boundaries"] = self.boundaries
-            kwargs["source_metadata"] = metadata
-            kwargs["workpiece_matrix"] = self.matrix
-
-        if renderer_name == "SvgRenderer" and self.source_segment:
-            # Check for layer_id to support rendering individual layers
-            # from a multi-layer SVG source.
-            if (
-                hasattr(self.source_segment, "layer_id")
-                and self.source_segment.layer_id
-            ):
-                kwargs["visible_layer_ids"] = [self.source_segment.layer_id]
-
-            # For vector sources, the `crop_window_px` field contains the
-            # absolute viewbox (in native user units) of the content to render.
-            # We can pass this directly to the SVG renderer.
-            if self.source_segment.crop_window_px:
-                is_vector = not isinstance(
-                    self.source_segment.vectorization_spec, TraceSpec
-                )
-                if is_vector:
-                    kwargs["viewbox"] = self.source_segment.crop_window_px
-
-        return kwargs
-
-    def _process_rendered_image(
+    def _process_rendered_image_from_spec(
         self,
         image: pyvips.Image,
-        crop_rect_hint: Optional[Tuple[int, int, int, int]],
+        spec: "RenderSpecification",
         target_size: Tuple[int, int],
         source_px_dims: Optional[Tuple[int, int]],
     ) -> Optional[pyvips.Image]:
         """
-        Applies post-processing steps: cropping, masking, and final resizing.
+        Applies post-processing based on a RenderSpecification.
         """
         from ..image import image_util
 
         processed_image = image
         target_w, target_h = target_size
 
-        # Check if vector to skip certain raster-only logic
-        is_vector = (self.sketch_uid is not None) or (
-            self.source_segment is not None
-            and not isinstance(
-                self.source_segment.vectorization_spec, TraceSpec
-            )
-        )
-
-        # 1. Apply Crop (Only for non-vectors, or if crop_rect_hint is
-        # explicit) Vector cropping is handled via ViewBox override in
-        # the renderer.
+        # 1. Apply Crop
         if (
-            crop_rect_hint
-            and not is_vector
+            spec.crop_rect
             and self.source_segment
             and self.source_segment.crop_window_px
         ):
+            # Re-calculate the crop rect based on the actual rendered image
+            # dimensions to handle any rounding from the renderer.
             crop_x, crop_y, crop_w, crop_h = map(
                 float, self.source_segment.crop_window_px
             )
-            # Re-calculate the crop rect based on the actual image dimensions.
             actual_w = processed_image.width
             actual_h = processed_image.height
 
-            # Re-derive scale from actual output vs assumed source
             scale_x = 1.0
             scale_y = 1.0
-            if source_px_dims:
-                if source_px_dims[0] > 0:
-                    scale_x = actual_w / source_px_dims[0]
-                if source_px_dims[1] > 0:
-                    scale_y = actual_h / source_px_dims[1]
+            if source_px_dims and source_px_dims[0] > 0:
+                scale_x = actual_w / source_px_dims[0]
+            if source_px_dims and source_px_dims[1] > 0:
+                scale_y = actual_h / source_px_dims[1]
 
             scaled_x = int(crop_x * scale_x)
             scaled_y = int(crop_y * scale_y)
@@ -795,19 +677,10 @@ class WorkPiece(DocItem):
                 processed_image, scaled_x, scaled_y, scaled_w, scaled_h
             )
             if not processed_image:
-                logger.debug("Cropping failed: processed_image is None")
                 return None
-            else:
-                logger.debug(
-                    f"Cropping succeeded: cropped_w={processed_image.width}, "
-                    f"cropped_h={processed_image.height}"
-                )
 
         # 2. Apply Mask
-        # We skip masking for Vector sources because they already render with
-        # correct transparency, and masking with vector geometry (which can
-        # be open lines with zero area) would incorrectly hide the content.
-        if not is_vector:
+        if spec.apply_mask:
             mask_geo = self._boundaries_y_down
             if mask_geo and not mask_geo.is_empty():
                 processed_image = image_util.apply_mask_to_vips_image(
@@ -849,31 +722,22 @@ class WorkPiece(DocItem):
             )
             return None
 
-        # 2. Calculate Geometry
-        (
-            render_w,
-            render_h,
-            crop_rect_hint,
-            data_override,
-        ) = self._calculate_render_geometry(
-            width, height, ctx.source_pixel_dims
+        # 2. Compute Render Specification from Renderer
+        spec = ctx.renderer.compute_render_spec(
+            self.source_segment, (width, height), ctx
         )
-        final_data = data_override if data_override else ctx.data
 
-        # 3. Build Config
-        kwargs = self._build_renderer_kwargs(ctx.renderer, ctx.metadata)
-
-        # 4. Render
+        # 3. Render
         raw_image = ctx.renderer.render_base_image(
-            final_data, render_w, render_h, **kwargs
+            spec.data, spec.width, spec.height, **spec.kwargs
         )
         if not raw_image:
             logger.warning(f"WP {self.uid[:8]}: Renderer returned None.")
             return None
 
-        # 5. Process (Crop/Mask/Resize)
-        final_image = self._process_rendered_image(
-            raw_image, crop_rect_hint, (width, height), ctx.source_pixel_dims
+        # 4. Process (Crop/Mask/Resize) based on the spec
+        final_image = self._process_rendered_image_from_spec(
+            raw_image, spec, (width, height), ctx.source_pixel_dims
         )
 
         if final_image:

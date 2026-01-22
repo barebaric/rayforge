@@ -1,6 +1,6 @@
 import logging
 import math
-from typing import Optional, TYPE_CHECKING, List
+from typing import Optional, TYPE_CHECKING, List, Tuple
 import warnings
 from ...core.geo import Geometry
 from ...core.geo.constants import (
@@ -9,14 +9,16 @@ from ...core.geo.constants import (
     CMD_TYPE_ARC,
     CMD_TYPE_BEZIER,
 )
-from ..base_renderer import Renderer
+from ..base_renderer import Renderer, RenderSpecification
 
 with warnings.catch_warnings():
     warnings.simplefilter("ignore", DeprecationWarning)
     import pyvips
 
 if TYPE_CHECKING:
-    pass
+    from ...core.source_asset_segment import SourceAssetSegment
+    from ...core.workpiece import RenderContext
+
 
 logger = logging.getLogger(__name__)
 
@@ -89,6 +91,28 @@ class SketchRenderer(Renderer):
     Renders a sketch's "design view" by generating an in-memory SVG
     and rasterizing it with Vips. It handles both fills and strokes.
     """
+
+    def compute_render_spec(
+        self,
+        segment: Optional["SourceAssetSegment"],
+        target_size: Tuple[int, int],
+        source_context: "RenderContext",
+    ) -> "RenderSpecification":
+        """
+        Specifies that 'boundaries' and 'fills' geometries are required for
+        rendering sketches.
+        """
+        kwargs = {
+            "boundaries": source_context.boundaries,
+            "fills": source_context.fills,
+        }
+        return RenderSpecification(
+            width=target_size[0],
+            height=target_size[1],
+            data=source_context.data,  # data is b"" for sketches
+            kwargs=kwargs,
+            apply_mask=False,
+        )
 
     def render_base_image(
         self,

@@ -1,6 +1,6 @@
-from typing import Optional, TYPE_CHECKING
+from typing import Optional, TYPE_CHECKING, Tuple
 import logging
-from ..base_renderer import Renderer
+from ..base_renderer import Renderer, RenderSpecification
 from ..ops_renderer import OPS_RENDERER
 import warnings
 
@@ -9,7 +9,8 @@ with warnings.catch_warnings():
     import pyvips
 
 if TYPE_CHECKING:
-    pass
+    from ...core.source_asset_segment import SourceAssetSegment
+    from ...core.workpiece import RenderContext
 
 logger = logging.getLogger(__name__)
 
@@ -19,6 +20,28 @@ class DxfRenderer(Renderer):
     A renderer for DXF workpieces. Uses OpsRenderer for vector outlines
     and overlays solid fills if present.
     """
+
+    def compute_render_spec(
+        self,
+        segment: Optional["SourceAssetSegment"],
+        target_size: Tuple[int, int],
+        source_context: "RenderContext",
+    ) -> "RenderSpecification":
+        """
+        Specifies that 'boundaries' and 'source_metadata' are required for
+        rendering DXF files.
+        """
+        kwargs = {
+            "boundaries": source_context.boundaries,
+            "source_metadata": source_context.metadata,
+        }
+        return RenderSpecification(
+            width=target_size[0],
+            height=target_size[1],
+            data=source_context.data,
+            kwargs=kwargs,
+            apply_mask=False,
+        )
 
     def render_base_image(
         self,
