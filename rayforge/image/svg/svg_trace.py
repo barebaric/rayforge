@@ -41,6 +41,7 @@ class SvgTraceImporter(SvgImporterBase):
         # 1. Use base class to get dimensions and units
         basics = self._calculate_parsing_basics()
         if not basics:
+            # Errors already added by basics
             return None
 
         # Unpack
@@ -110,6 +111,9 @@ class SvgTraceImporter(SvgImporterBase):
 
         if w_mm <= 0 or h_mm <= 0:
             logger.warning("Cannot trace SVG: failed to determine size.")
+            self.add_warning(
+                _("Cannot determine valid dimensions for tracing.")
+            )
             return VectorizationResult({}, parse_result)
 
         aspect = w_mm / h_mm if h_mm > 0 else 1.0
@@ -131,6 +135,7 @@ class SvgTraceImporter(SvgImporterBase):
 
         if not vips_image:
             logger.error("Failed to render SVG to vips image for tracing.")
+            self.add_error(_("Failed to rasterize SVG for tracing."))
             return VectorizationResult({}, parse_result)
 
         if w_mm > 0 and h_mm > 0:
@@ -147,6 +152,7 @@ class SvgTraceImporter(SvgImporterBase):
 
         normalized_vips = image_util.normalize_to_rgba(vips_image)
         if not normalized_vips:
+            self.add_error(_("Failed to normalize image data."))
             return VectorizationResult({}, parse_result)
 
         surface = image_util.vips_rgba_to_cairo_surface(normalized_vips)

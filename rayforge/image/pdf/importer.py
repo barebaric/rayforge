@@ -59,9 +59,9 @@ class PdfImporter(Importer):
         try:
             reader = PdfReader(io.BytesIO(self.raw_data))
             if not reader.pages:
+                self.add_error(_("PDF file contains no pages."))
                 return ImportManifest(
-                    title=self.source_file.name,
-                    warnings=["PDF file contains no pages."],
+                    title=self.source_file.name, errors=self._errors
                 )
             media_box = reader.pages[0].mediabox
             width_pt = float(media_box.width)
@@ -69,15 +69,16 @@ class PdfImporter(Importer):
             size_mm = (to_mm(width_pt, "pt"), to_mm(height_pt, "pt"))
             title = reader.metadata.title if reader.metadata else None
             return ImportManifest(
-                title=title or self.source_file.name, natural_size_mm=size_mm
+                title=title or self.source_file.name,
+                natural_size_mm=size_mm,
+                warnings=self._warnings,
+                errors=self._errors,
             )
         except PdfReadError as e:
             logger.warning(f"PDF scan failed for {self.source_file.name}: {e}")
+            self.add_error(_(f"Could not read PDF: {e}"))
             return ImportManifest(
-                title=self.source_file.name,
-                warnings=[
-                    "Could not read PDF. File may be corrupt or encrypted."
-                ],
+                title=self.source_file.name, errors=self._errors
             )
         except Exception as e:
             logger.error(
@@ -85,11 +86,9 @@ class PdfImporter(Importer):
                 f"{self.source_file.name}: {e}",
                 exc_info=True,
             )
+            self.add_error(_(f"Unexpected error while scanning PDF: {e}"))
             return ImportManifest(
-                title=self.source_file.name,
-                warnings=[
-                    "An unexpected error occurred while scanning the PDF file."
-                ],
+                title=self.source_file.name, errors=self._errors
             )
 
     def create_source_asset(self, parse_result: ParsingResult) -> SourceAsset:
@@ -128,6 +127,7 @@ class PdfImporter(Importer):
         norm_image = image_util.normalize_to_rgba(self._image)
         if not norm_image:
             logger.error("Failed to normalize PDF image for tracing.")
+            self.add_error(_("Failed to process PDF image data."))
             return VectorizationResult(
                 geometries_by_layer={}, source_parse_result=parse_result
             )
@@ -153,12 +153,14 @@ class PdfImporter(Importer):
             size_mm = (to_mm(width_pt, "pt"), to_mm(height_pt, "pt"))
         except Exception as e:
             logger.error(f"Failed to read PDF size: {e}")
+            self.add_error(_(f"Failed to read PDF page dimensions: {e}"))
             self._image = None
             return None
 
         w_mm, h_mm = size_mm
         if w_mm <= 0 or h_mm <= 0:
             self._image = None
+            self.add_error(_("PDF page has zero dimensions"))
             return None
 
         # Calculate render resolution
@@ -172,7 +174,8 @@ class PdfImporter(Importer):
             self.raw_data, width=render_w_px, height=render_h_px
         )
         if not vips_image:
-            logger.error("Failed to render PDF to an image for processing.")
+            logger.error("Failed to render PDF to an image for processing")
+            self.add_error(_("Failed to rasterize PDF"))
             self._image = None
             return None
 

@@ -72,6 +72,7 @@ def test_sketch_importer_round_trip(complex_sketch: Sketch):
     assert import_result is not None, "Importer failed to return result"
     payload = import_result.payload
 
+    assert payload is not None
     assert importer.parsed_sketch is not None
     assert len(payload.sketches) == 1
     imported_sketch_template = payload.sketches[0]
@@ -176,17 +177,26 @@ def test_sketch_importer_naming_logic_default_fallback(complex_sketch: Sketch):
 
 def test_sketch_importer_bad_data():
     """
-    Tests that the importer returns None for invalid or corrupted data.
+    Tests that the importer returns ImportResult with None payload for invalid
+    or corrupted data.
     """
     bad_data_1 = b"this is not json"
     bad_data_2 = b'{"not": "a sketch"}'
 
     importer1 = SketchImporter(data=bad_data_1)
-    assert importer1.get_doc_items() is None
+    import_result1 = importer1.get_doc_items()
+    assert import_result1 is not None
+    assert import_result1.payload is None
+    assert import_result1.parse_result is None
+    assert len(import_result1.errors) > 0
     assert importer1.parsed_sketch is None
 
     importer2 = SketchImporter(data=bad_data_2)
-    assert importer2.get_doc_items() is None
+    import_result2 = importer2.get_doc_items()
+    assert import_result2 is not None
+    assert import_result2.payload is None
+    assert import_result2.parse_result is None
+    assert len(import_result2.errors) > 0
     assert importer2.parsed_sketch is None
 
 
@@ -208,8 +218,9 @@ def test_sketch_importer_round_trip_mouse():
     # 4. Call get_doc_items() to get the payload
     spec = PassthroughSpec(create_new_layers=False)
     import_result = importer.get_doc_items(spec)
-    assert import_result is not None, "Importer failed to return payload"
+    assert import_result is not None, "Importer failed to return result"
     payload = import_result.payload
+    assert payload is not None
 
     assert importer.parsed_sketch is not None
     assert len(payload.sketches) == 1

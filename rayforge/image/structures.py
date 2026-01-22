@@ -32,6 +32,7 @@ class ImportManifest:
     natural_size_mm: Optional[Tuple[float, float]] = None
     title: Optional[str] = None
     warnings: List[str] = field(default_factory=list)
+    errors: List[str] = field(default_factory=list)
 
 
 @dataclass
@@ -166,6 +167,8 @@ class ImportResult:
     previews).
     """
 
-    payload: ImportPayload
-    parse_result: ParsingResult
+    payload: Optional[ImportPayload]
+    parse_result: Optional[ParsingResult]
     vectorization_result: Optional[VectorizationResult] = None
+    warnings: List[str] = field(default_factory=list)
+    errors: List[str] = field(default_factory=list)

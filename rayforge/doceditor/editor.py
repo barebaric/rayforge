@@ -191,7 +191,7 @@ class DocEditor:
         import_result = await self.file._load_file_async(
             filename, mime_type, vectorization_spec
         )
-        if not import_result or not import_result.payload.items:
+        if not import_result or not import_result.payload:
             logger.warning(
                 f"Test import of {filename.name} produced no items."
             )

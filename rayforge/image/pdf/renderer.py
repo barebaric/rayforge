@@ -30,6 +30,9 @@ class PdfRenderer(RasterRenderer):
         optimization. This method will use that cached PNG if available,
         bypassing the expensive PDF rendering.
         """
+        if not import_result.payload:
+            return None
+
         source = import_result.payload.source
         if source.base_render_data:
             try:

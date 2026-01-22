@@ -46,17 +46,14 @@ class BmpImporter(Importer):
         """
         Scans the BMP header to extract dimensions and calculate physical size.
         """
+        fname = self.source_file.name
         try:
             parsed_data = parse_bmp(self.raw_data)
             if not parsed_data:
-                return ImportManifest(
-                    title=self.source_file.name,
-                    warnings=[
-                        "Could not parse BMP header. File may be unsupported."
-                    ],
-                )
+                self.add_error(_(f"Could not parse BMP header in {fname}"))
+                return ImportManifest(title=fname, errors=self._errors)
 
-            _, width, height, dpi_x, dpi_y = parsed_data
+            _ignored, width, height, dpi_x, dpi_y = parsed_data
             dpi_x = dpi_x or 96.0
             dpi_y = dpi_y or 96.0
 
@@ -66,21 +63,19 @@ class BmpImporter(Importer):
             return ImportManifest(
                 title=self.source_file.name,
                 natural_size_mm=(width_mm, height_mm),
+                warnings=self._warnings,
+                errors=self._errors,
             )
         except Exception as e:
-            logger.warning(f"BMP scan failed for {self.source_file.name}: {e}")
-            return ImportManifest(
-                title=self.source_file.name,
-                warnings=[
-                    "An unexpected error occurred while scanning the BMP file."
-                ],
-            )
+            logger.warning(f"BMP scan failed for {fname}: {e}")
+            self.add_error(_(f"Failed to scan BMP file: {e}"))
+            return ImportManifest(title=fname, errors=self._errors)
 
     def create_source_asset(self, parse_result: ParsingResult) -> SourceAsset:
         """
         Creates a SourceAsset for BMP import.
         """
-        _, _, w_px, h_px = parse_result.document_bounds
+        _ignored1, _ignored2, w_px, h_px = parse_result.document_bounds
         width_mm = w_px * parse_result.native_unit_to_mm
         height_mm = h_px * parse_result.native_unit_to_mm
 
@@ -125,6 +120,7 @@ class BmpImporter(Importer):
         parsed_data = parse_bmp(self.raw_data)
         if not parsed_data:
             self._image = None
+            self.add_error(_("Invalid or unsupported BMP data."))
             return None
 
         rgba_bytes, width, height, dpi_x, dpi_y = parsed_data
@@ -146,6 +142,7 @@ class BmpImporter(Importer):
                 "Failed to create pyvips image from parsed BMP data: %s", e
             )
             self._image = None
+            self.add_error(_(f"Image processing failed: {e}"))
             return None
 
         # Calculate unit conversion (pixels to mm)

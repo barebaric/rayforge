@@ -80,15 +80,18 @@ class ProceduralImporter(Importer):
             module = importlib.import_module(module_path)
             size_func = getattr(module, func_name)
             size_mm = size_func(self.params)
-            return ImportManifest(title=self.name, natural_size_mm=size_mm)
+            return ImportManifest(
+                title=self.name,
+                natural_size_mm=size_mm,
+                warnings=self._warnings,
+                errors=self._errors,
+            )
         except (ImportError, AttributeError, ValueError) as e:
             logger.error(
                 f"Failed to calculate procedural size: {e}", exc_info=True
             )
-            return ImportManifest(
-                title=self.name,
-                warnings=["Could not calculate size from procedural recipe."],
-            )
+            self.add_error(_(f"Failed to calculate parameters: {e}"))
+            return ImportManifest(title=self.name, errors=self._errors)
 
     def create_source_asset(self, parse_result: ParsingResult) -> SourceAsset:
         """
@@ -133,6 +136,7 @@ class ProceduralImporter(Importer):
             logger.error(
                 f"Failed to load procedural size function: {e}", exc_info=True
             )
+            self.add_error(_(f"Failed to execute generator: {e}"))
             return None
 
         # Define the native coordinate system as 1 unit = 1 mm.

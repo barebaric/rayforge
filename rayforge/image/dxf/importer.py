@@ -63,15 +63,15 @@ class DxfImporter(Importer):
             doc = ezdxf.read(io.StringIO(normalized_str))  # type: ignore
         except DXFStructureError as e:
             logger.warning(f"DXF scan failed: {e}")
+            self.add_error(_(f"DXF file structure is invalid: {e}"))
             return ImportManifest(
-                title=self.source_file.name,
-                warnings=["File appears to be a corrupt or unsupported DXF."],
+                title=self.source_file.name, errors=self._errors
             )
         except Exception as e:
             logger.error(f"DXF scan error: {e}", exc_info=True)
+            self.add_error(_(f"Unexpected error while scanning DXF: {e}"))
             return ImportManifest(
-                title=self.source_file.name,
-                warnings=["Unexpected error during DXF scan."],
+                title=self.source_file.name, errors=self._errors
             )
 
         manifest_data = self._get_layer_manifest(doc)
@@ -83,6 +83,8 @@ class DxfImporter(Importer):
             title=self.source_file.name,
             layers=layers,
             natural_size_mm=size_mm,
+            warnings=self._warnings,
+            errors=self._errors,
         )
 
     def create_source_asset(self, parse_result: ParsingResult) -> SourceAsset:
@@ -246,8 +248,9 @@ class DxfImporter(Importer):
             normalized_str = data_str.replace("\r\n", "\n")
             doc = ezdxf.read(io.StringIO(normalized_str))  # type: ignore
             self._dxf_doc = doc
-        except DXFStructureError:
+        except DXFStructureError as e:
             self._dxf_doc = None
+            self.add_error(_(f"DXF file is corrupt or invalid: {e}"))
             return None
 
         # 1. Bounds

@@ -2,7 +2,7 @@ import pytest
 import io
 from pathlib import Path
 import ezdxf
-from typing import Optional, Union
+from typing import Optional, Union, cast
 from unittest.mock import Mock
 from rayforge.core.geo import CMD_TYPE_BEZIER
 from rayforge.core.layer import Layer
@@ -10,6 +10,7 @@ from rayforge.core.matrix import Matrix
 from rayforge.core.vectorization_spec import PassthroughSpec
 from rayforge.core.workpiece import WorkPiece
 from rayforge.image.dxf.importer import DxfImporter
+from rayforge.image.structures import ImportPayload
 
 
 # Fixtures
@@ -242,7 +243,10 @@ class TestDXFImporter:
         invalid_dxf = b"invalid dxf content"
         importer = DxfImporter(invalid_dxf)
         import_result = importer.get_doc_items(vectorization_spec=None)
-        assert import_result is None
+        assert import_result is not None
+        assert import_result.payload is None
+        assert import_result.parse_result is None
+        assert len(import_result.errors) > 0
 
     def test_circle_dxf_not_linearized(
         self, circle_dxf_importer_from_file: DxfImporter
@@ -254,6 +258,8 @@ class TestDXFImporter:
         )
         assert import_result is not None
         payload = import_result.payload
+        assert payload is not None
+        payload = cast(ImportPayload, payload)
         assert len(payload.items) == 1
         item = payload.items[0]
         assert isinstance(item, WorkPiece)
@@ -279,6 +285,8 @@ class TestDXFImporter:
         )
         assert import_result is not None
         payload = import_result.payload
+        assert payload is not None
+        payload = cast(ImportPayload, payload)
         assert len(payload.items) == 1
         item = payload.items[0]
         assert isinstance(item, WorkPiece)
@@ -303,6 +311,8 @@ class TestDXFImporter:
         )
         assert import_result is not None
         payload = import_result.payload
+        assert payload is not None
+        payload = cast(ImportPayload, payload)
 
         # With merge strategy, all layers are merged into one workpiece
         assert len(payload.items) == 1
@@ -325,6 +335,8 @@ class TestDXFImporter:
         )
         assert import_result is not None
         payload = import_result.payload
+        assert payload is not None
+        payload = cast(ImportPayload, payload)
         assert len(payload.items) == 2
 
         # Verify only Layer1 and Layer3 are imported

@@ -56,7 +56,6 @@ class SvgImporterBase(Importer):
 
     def scan(self) -> ImportManifest:
         """Shared scan logic."""
-        warnings = []
         layers = []
         size_mm = None
         try:
@@ -75,24 +74,21 @@ class SvgImporterBase(Importer):
             ]
         except ET.ParseError as e:
             logger.warning(f"SVG scan failed for {self.source_file.name}: {e}")
-            warnings.append(
-                "Could not parse SVG. File may be corrupt or invalid."
-            )
+            self.add_error(f"Could not parse SVG. File may be corrupt: {e}")
         except Exception as e:
             logger.error(
                 f"Unexpected error during SVG scan for "
                 f"{self.source_file.name}: {e}",
                 exc_info=True,
             )
-            warnings.append(
-                "An unexpected error occurred while scanning the SVG."
-            )
+            self.add_error(f"Unexpected error while scanning SVG: {e}")
 
         return ImportManifest(
             title=self.source_file.name,
             layers=layers,
             natural_size_mm=size_mm,
-            warnings=warnings,
+            warnings=self._warnings,
+            errors=self._errors,
         )
 
     def create_source_asset(self, parse_result: ParsingResult) -> SourceAsset:
@@ -117,7 +113,7 @@ class SvgImporterBase(Importer):
                     source.metadata["viewbox"] = viewbox
 
         # The physical mm size comes from the layout, which is correct.
-        _, _, w_native, h_native = parse_result.document_bounds
+        _ignored1, _ignored2, w_native, h_native = parse_result.document_bounds
         source.width_mm = w_native * parse_result.native_unit_to_mm
         source.height_mm = h_native * parse_result.native_unit_to_mm
 
@@ -146,6 +142,7 @@ class SvgImporterBase(Importer):
             source.metadata.update(metadata)
         except (ValueError, ET.ParseError):
             logger.warning("Could not calculate SVG metadata.", exc_info=True)
+            self.add_warning(_("Could not calculate SVG metadata."))
 
         return source
 
@@ -172,10 +169,12 @@ class SvgImporterBase(Importer):
         self.trimmed_data = self._analytical_trim(self.raw_data)
         if not self.trimmed_data:
             logger.error("Failed to prepare trimmed SVG data.")
+            self.add_error(_("Failed to prepare trimmed SVG data."))
             return None
 
         svg = self._parse_svg_data(self.trimmed_data)
         if svg is None:
+            # Error already added in _parse_svg_data
             return None
         self.svg = svg
 
@@ -186,10 +185,12 @@ class SvgImporterBase(Importer):
         if not has_explicit_dims:
             geo = self._convert_svg_to_geometry(svg)
             if geo.is_empty():
+                self.add_error(_("SVG contains no geometry or dimensions."))
                 return None
 
         facts = self._get_svg_parsing_facts(svg)
         if not facts:
+            self.add_error(_("Could not determine valid SVG dimensions."))
             return None
         width_px, height_px, viewbox = facts
 
@@ -222,7 +223,7 @@ class SvgImporterBase(Importer):
 
         # Calculate the authoritative world frame of reference (mm, Y-Up)
         ref_bounds_native = untrimmed_document_bounds or document_bounds
-        ref_x, _, ref_w, ref_h = ref_bounds_native
+        ref_x, _ignored3, ref_w, ref_h = ref_bounds_native
         w_mm = ref_w * unit_to_mm
         h_mm = ref_h * unit_to_mm
         x_mm = ref_x * unit_to_mm
@@ -313,6 +314,7 @@ class SvgImporterBase(Importer):
         except (ET.ParseError, ValueError, TypeError) as e:
             # Catch specific, expected errors instead of a generic Exception.
             logger.warning(f"Analytical trim failed: {e}")
+            self.add_warning(f"Optimization (trimming) failed: {e}")
             return data
 
     def _parse_svg_data(self, data: bytes) -> Optional[SVG]:
@@ -321,6 +323,7 @@ class SvgImporterBase(Importer):
             return SVG.parse(svg_stream, ppi=PPI)
         except (ET.ParseError, ValueError, TypeError) as e:
             logger.error(f"Failed to parse SVG for direct import: {e}")
+            self.add_error(_(f"Failed to parse SVG structure: {e}"))
             return None
 
     def _get_svg_parsing_facts(self, svg: SVG) -> ParsingFactsType:

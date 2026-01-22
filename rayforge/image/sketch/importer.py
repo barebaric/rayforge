@@ -49,14 +49,16 @@ class SketchImporter(Importer):
         try:
             sketch_dict = json.loads(self.raw_data.decode("utf-8"))
             name = sketch_dict.get("name") or self.source_file.stem
-            return ImportManifest(title=name)
+            return ImportManifest(
+                title=name, warnings=self._warnings, errors=self._errors
+            )
         except (json.JSONDecodeError, UnicodeDecodeError) as e:
             logger.warning(
                 f"Sketch scan failed for {self.source_file.name}: {e}"
             )
+            self.add_error(_(f"Sketch file is invalid JSON: {e}"))
             return ImportManifest(
-                title=self.source_file.name,
-                warnings=["Could not parse Sketch file. It may be corrupt."],
+                title=self.source_file.name, errors=self._errors
             )
 
     def _post_process_payload(self, payload: ImportPayload) -> ImportPayload:
@@ -110,6 +112,7 @@ class SketchImporter(Importer):
             self.parsed_sketch = Sketch.from_dict(sketch_dict)
         except (json.JSONDecodeError, KeyError, TypeError) as e:
             logger.error(f"Failed to parse sketch data: {e}")
+            self.add_error(_(f"Failed to load sketch structure: {e}"))
             return None
 
         # Determine final name logic here to keep state consistent

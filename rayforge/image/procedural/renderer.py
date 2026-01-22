@@ -67,6 +67,9 @@ class ProceduralRenderer(Renderer):
         target_height: int,
     ) -> Optional[pyvips.Image]:
         """Renders the procedural recipe at the target preview dimensions."""
+        if not import_result.payload:
+            return None
+
         return self.render_base_image(
             data=import_result.payload.source.original_data,
             width=target_width,

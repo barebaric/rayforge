@@ -41,9 +41,9 @@ class RuidaImporter(Importer):
         try:
             job = self._get_job()
             if not job.commands:
+                self.add_error(_("File contains no vector commands."))
                 return ImportManifest(
-                    title=self.source_file.name,
-                    warnings=["File contains no vector data."],
+                    title=self.source_file.name, errors=self._errors
                 )
 
             min_x, min_y, max_x, max_y = job.get_extents()
@@ -52,14 +52,16 @@ class RuidaImporter(Importer):
             return ImportManifest(
                 title=self.source_file.name,
                 natural_size_mm=(width_mm, height_mm),
+                warnings=self._warnings,
+                errors=self._errors,
             )
         except RuidaParseError as e:
             logger.warning(
                 f"Ruida scan failed for {self.source_file.name}: {e}"
             )
+            self.add_error(_(f"Ruida file is invalid: {e}"))
             return ImportManifest(
-                title=self.source_file.name,
-                warnings=["Could not parse Ruida file. It may be corrupt."],
+                title=self.source_file.name, errors=self._errors
             )
         except Exception as e:
             logger.error(
@@ -67,12 +69,11 @@ class RuidaImporter(Importer):
                 f"{self.source_file.name}: {e}",
                 exc_info=True,
             )
+            self.add_error(
+                _(f"Unexpected error while scanning Ruida file: {e}")
+            )
             return ImportManifest(
-                title=self.source_file.name,
-                warnings=[
-                    "An unexpected error occurred while scanning the "
-                    "Ruida file."
-                ],
+                title=self.source_file.name, errors=self._errors
             )
 
     def _get_job(self) -> RuidaJob:
@@ -131,6 +132,7 @@ class RuidaImporter(Importer):
             self._job = job
         except RuidaParseError as e:
             logger.error("Ruida file parse failed: %s", e)
+            self.add_error(_(f"Failed to parse Ruida commands: {e}"))
             self._job = None
             return None
 

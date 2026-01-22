@@ -118,6 +118,7 @@ def test_trace_render_failure_handling(trace_importer):
             vectorization_spec=TraceSpec()
         )
         assert import_result is not None
+        assert len(import_result.errors) > 0
         payload = import_result.payload
 
         assert payload is not None

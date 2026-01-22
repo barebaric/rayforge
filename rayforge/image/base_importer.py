@@ -2,7 +2,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 import enum
 from pathlib import Path
-from typing import Optional, Tuple, TYPE_CHECKING, Set
+from typing import Optional, Tuple, TYPE_CHECKING, Set, List
 from ..core.vectorization_spec import PassthroughSpec, TraceSpec
 from .assembler import ItemAssembler
 from .engine import NormalizationEngine
@@ -78,6 +78,16 @@ class Importer(ABC):
         """
         self.raw_data = data
         self.source_file = source_file or Path("Untitled")
+        self._warnings: List[str] = []
+        self._errors: List[str] = []
+
+    def add_warning(self, message: str) -> None:
+        """Records a warning message to be displayed to the user."""
+        self._warnings.append(message)
+
+    def add_error(self, message: str) -> None:
+        """Records an error message to be displayed to the user."""
+        self._errors.append(message)
 
     @abstractmethod
     def scan(self) -> ImportManifest:
@@ -152,7 +162,12 @@ class Importer(ABC):
         # 1. Parse
         parse_result = self.parse()
         if not parse_result:
-            return None
+            return ImportResult(
+                payload=None,
+                parse_result=None,
+                warnings=self._warnings,
+                errors=self._errors,
+            )
 
         # 2. Create Source
         source_asset = self.create_source_asset(parse_result)
@@ -181,6 +196,8 @@ class Importer(ABC):
                 vectorization_result=VectorizationResult(
                     geometries_by_layer={}, source_parse_result=parse_result
                 ),
+                warnings=self._warnings,
+                errors=self._errors,
             )
 
         vec_result = self.vectorize(parse_result, spec)
@@ -194,6 +211,8 @@ class Importer(ABC):
                 payload=ImportPayload(source=source_asset, items=[]),
                 parse_result=parse_result,
                 vectorization_result=vec_result,
+                warnings=self._warnings,
+                errors=self._errors,
             )
 
         # 5. Assemble
@@ -218,6 +237,8 @@ class Importer(ABC):
             payload=final_payload,
             parse_result=vec_result.source_parse_result,
             vectorization_result=vec_result,
+            warnings=self._warnings,
+            errors=self._errors,
         )
 
     def _post_process_payload(
