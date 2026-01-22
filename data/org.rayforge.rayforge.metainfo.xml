@@ -55,6 +55,41 @@
   </screenshots>
 
   <releases>
+    <release version="0.28.4" date="2026-01-22">
+      <description>
+        <p>Bug fix release</p>
+        <ul>
+          <li>Fixed traceback when dialect contained deprecated attributes</li>
+          <li>Fixed debian package missing asyncudp dependency</li>
+        </ul>
+      </description>
+    </release>
+    <release version="0.28.3" date="2026-01-18">
+      <description>
+        <p>Bug fix release</p>
+        <ul>
+          <li>Added option to enable/disable WCS injection in G-code dialect</li>
+          <li>Fixed depth engraver not respecting master power setting</li>
+          <li>Fixed traceback when using invert image in import dialog</li>
+        </ul>
+      </description>
+    </release>
+    <release version="0.28.2" date="2026-01-17">
+      <description>
+        <p>Bug fix release</p>
+        <ul>
+          <li>Fixed test that depended on specific version string</li>
+        </ul>
+      </description>
+    </release>
+    <release version="0.28.1" date="2026-01-17">
+      <description>
+        <p>Bug fix release</p>
+        <ul>
+          <li>Fixed invalid ampersand in appstream XML</li>
+        </ul>
+      </description>
+    </release>
     <release version="0.28" date="2026-01-17">
       <description>
         <p>Work Coordinate Systems, True Arcs, and a New Package Manager</p>

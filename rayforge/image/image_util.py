@@ -30,7 +30,14 @@ def resize_and_crop_from_full_image(
         The high-resolution cropped image, or None on failure.
     """
     crop_x, crop_y, crop_w, crop_h = map(int, crop_window_px)
-    if crop_w <= 0 or crop_h <= 0:
+    if (
+        crop_w <= 0
+        or crop_h <= 0
+        or crop_x < 0
+        or crop_y < 0
+        or crop_x + crop_w > full_image.width
+        or crop_y + crop_h > full_image.height
+    ):
         return pyvips.Image.black(target_w, target_h, bands=4)
 
     # 1. Calculate scaling factors to determine how large the full image

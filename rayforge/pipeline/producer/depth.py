@@ -112,6 +112,7 @@ class DepthEngraver(OpsProducer):
             ).astype(np.uint8)
 
             if self.depth_mode == DepthMode.POWER_MODULATION:
+                step_power = settings.get("power", 1.0) if settings else 1.0
                 (
                     mode_ops,
                     resampled_power,
@@ -121,6 +122,7 @@ class DepthEngraver(OpsProducer):
                     pixels_per_mm,
                     y_offset_mm,
                     line_interval_mm,
+                    step_power,
                 )
                 # Paint the resampled power data into the texture at the
                 # correct scan lines to ensure perfect alignment.
@@ -195,6 +197,7 @@ class DepthEngraver(OpsProducer):
         pixels_per_mm: Tuple[float, float],
         y_offset_mm: float,
         line_interval_mm: float,
+        step_power: float = 1.0,
     ) -> Tuple[Ops, np.ndarray, np.ndarray]:
         ops = Ops()
         height_px, width_px = gray_image.shape
@@ -236,13 +239,14 @@ class DepthEngraver(OpsProducer):
             + row1_values * y_frac[:, np.newaxis]
         )
 
-        # Interpolate grayscale value into the modulation range. The resulting
-        # power fractions are relative to the step's master power setting,
-        # which is applied by a preceding SetPowerCommand.
+        # Interpolate grayscale value into the modulation range.
         power_range = self.max_power - self.min_power
         power_fractions = (
             self.min_power + (1.0 - resampled_gray / 255.0) * power_range
         )
+
+        # Scale by the step's master power setting to get final power fractions
+        power_fractions = power_fractions * step_power
 
         # Convert power fractions (0.0-1.0) to bytes (0-255) for the command
         power_image = (power_fractions * 255).astype(np.uint8)
