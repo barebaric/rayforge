@@ -55,6 +55,15 @@
   </screenshots>
 
   <releases>
+    <release version="0.28.4" date="2026-01-22">
+      <description>
+        <p>Bug fix release</p>
+        <ul>
+          <li>Fixed traceback when dialect contained deprecated attributes</li>
+          <li>Fixed debian package missing asyncudp dependency</li>
+        </ul>
+      </description>
+    </release>
     <release version="0.28.3" date="2026-01-18">
       <description>
         <p>Bug fix release</p>
