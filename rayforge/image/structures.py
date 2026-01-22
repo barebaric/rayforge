@@ -74,7 +74,7 @@ class ParsingResult:
     # The total canvas/page size defined by the file (x, y, w, h).
     # e.g., SVG ViewBox, PDF MediaBox, or Image Dimensions. For trimmed files,
     # this represents the trimmed viewbox. All coordinates must be absolute.
-    page_bounds: Tuple[float, float, float, float]
+    document_bounds: Tuple[float, float, float, float]
 
     # Multiplier to convert Native units to Millimeters.
     # e.g., for 96 DPI SVG, this is 25.4 / 96.
@@ -93,19 +93,21 @@ class ParsingResult:
     world_frame_of_reference: Tuple[float, float, float, float]
 
     # The final transformation matrix for positioning the background image
-    # (derived from page_bounds) within the world_frame_of_reference.
+    # (derived from document_bounds) within the world_frame_of_reference.
     background_world_transform: Matrix
 
     # The bounds of the original, untrimmed page, if available. This is used
     # as the frame of reference for positioning trimmed content.
-    untrimmed_page_bounds: Optional[Tuple[float, float, float, float]] = None
+    untrimmed_document_bounds: Optional[Tuple[float, float, float, float]] = (
+        None
+    )
 
     # True if the pristine_geometry is already relative to its own
     # content_bounds origin (e.g. for trimmed SVGs). False if it's in the
     # global native coordinate system (e.g. for DXF).
     geometry_is_relative_to_bounds: bool = False
 
-    # True if the page_bounds represent a cropped-to-content view, and the
+    # True if the document_bounds represent a cropped-to-content view, and the
     # workpiece should be sized to these bounds, not the untrimmed bounds.
     is_cropped_to_content: bool = False
 

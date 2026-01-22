@@ -64,9 +64,9 @@ class SvgVectorImporter(SvgImporterBase):
         # Unpack. Both trimmed and untrimmed bounds are now available.
         (
             svg_obj,
-            page_bounds,
+            document_bounds,
             unit_to_mm,
-            untrimmed_page_bounds,
+            untrimmed_document_bounds,
             world_frame,
         ) = basics
 
@@ -110,25 +110,25 @@ class SvgVectorImporter(SvgImporterBase):
 
         # Create temporary result to calculate background transform
         temp_result = ParsingResult(
-            page_bounds=page_bounds,
+            document_bounds=document_bounds,
             native_unit_to_mm=unit_to_mm,
             is_y_down=True,
             layers=[],
-            untrimmed_page_bounds=untrimmed_page_bounds,
+            untrimmed_document_bounds=untrimmed_document_bounds,
             world_frame_of_reference=world_frame,
             background_world_transform=None,  # type: ignore
         )
 
         bg_item = NormalizationEngine.calculate_layout_item(
-            page_bounds, temp_result
+            document_bounds, temp_result
         )
 
         return ParsingResult(
-            page_bounds=page_bounds,
+            document_bounds=document_bounds,
             native_unit_to_mm=unit_to_mm,
             is_y_down=True,
             layers=layer_geometries,
-            untrimmed_page_bounds=untrimmed_page_bounds,
+            untrimmed_document_bounds=untrimmed_document_bounds,
             geometry_is_relative_to_bounds=False,
             is_cropped_to_content=True,
             world_frame_of_reference=world_frame,

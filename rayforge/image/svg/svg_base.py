@@ -117,7 +117,7 @@ class SvgImporterBase(Importer):
                     source.metadata["viewbox"] = viewbox
 
         # The physical mm size comes from the layout, which is correct.
-        _, _, w_native, h_native = parse_result.page_bounds
+        _, _, w_native, h_native = parse_result.document_bounds
         source.width_mm = w_native * parse_result.native_unit_to_mm
         source.height_mm = h_native * parse_result.native_unit_to_mm
 
@@ -162,11 +162,11 @@ class SvgImporterBase(Importer):
     ]:
         """
         Common parsing logic. Returns:
-        (svg_object, page_bounds, unit_to_mm, untrimmed_page_bounds,
+        (svg_object, document_bounds, unit_to_mm, untrimmed_document_bounds,
          world_frame_of_reference)
         or None if parsing fails.
 
-        Note: page_bounds are in Native Units (ViewBox units if available,
+        Note: document_bounds are in Native Units (ViewBox units if available,
         otherwise Pixels).
         """
         self.trimmed_data = self._analytical_trim(self.raw_data)
@@ -202,26 +202,26 @@ class SvgImporterBase(Importer):
             # If ViewBox exists, we use ViewBox units as the Native Units.
             vb_x, vb_y, vb_w, vb_h = viewbox
             # Return absolute bounds of the trimmed ViewBox. This is critical.
-            page_bounds = (vb_x, vb_y, vb_w, vb_h)
+            document_bounds = (vb_x, vb_y, vb_w, vb_h)
             unit_to_mm = final_dims_mm[0] / vb_w if vb_w > 0 else 1.0
         else:
             # No ViewBox: Native Units are Pixels.
-            page_bounds = (0.0, 0.0, width_px, height_px)
+            document_bounds = (0.0, 0.0, width_px, height_px)
             unit_to_mm = final_dims_mm[0] / width_px if width_px > 0 else 1.0
 
         # Calculate untrimmed bounds in the same Native Units
-        untrimmed_page_bounds: Optional[Tuple[float, float, float, float]] = (
-            None
-        )
+        untrimmed_document_bounds: Optional[
+            Tuple[float, float, float, float]
+        ] = None
         untrimmed_size_mm = get_natural_size(self.raw_data)
 
         if untrimmed_size_mm and unit_to_mm > 0:
             untrimmed_w = untrimmed_size_mm[0] / unit_to_mm
             untrimmed_h = untrimmed_size_mm[1] / unit_to_mm
-            untrimmed_page_bounds = (0, 0, untrimmed_w, untrimmed_h)
+            untrimmed_document_bounds = (0, 0, untrimmed_w, untrimmed_h)
 
         # Calculate the authoritative world frame of reference (mm, Y-Up)
-        ref_bounds_native = untrimmed_page_bounds or page_bounds
+        ref_bounds_native = untrimmed_document_bounds or document_bounds
         ref_x, _, ref_w, ref_h = ref_bounds_native
         w_mm = ref_w * unit_to_mm
         h_mm = ref_h * unit_to_mm
@@ -230,7 +230,13 @@ class SvgImporterBase(Importer):
 
         world_frame = (x_mm, y_mm, w_mm, h_mm)
 
-        return svg, page_bounds, unit_to_mm, untrimmed_page_bounds, world_frame
+        return (
+            svg,
+            document_bounds,
+            unit_to_mm,
+            untrimmed_document_bounds,
+            world_frame,
+        )
 
     # --- Low-level Helpers ---
 

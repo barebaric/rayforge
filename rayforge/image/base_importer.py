@@ -204,7 +204,7 @@ class Importer(ABC):
             spec=spec,
             source_name=self.source_file.stem,
             geometries=vec_result.geometries_by_layer,
-            page_bounds=vec_result.source_parse_result.page_bounds,
+            document_bounds=vec_result.source_parse_result.document_bounds,
         )
 
         payload = ImportPayload(source_asset, items)

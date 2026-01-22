@@ -90,7 +90,7 @@ class SketchImporter(Importer):
         """
         from .renderer import SKETCH_RENDERER
 
-        _, _, width, height = parse_result.page_bounds
+        _, _, width, height = parse_result.document_bounds
 
         return SourceAsset(
             source_file=self.source_file
@@ -134,36 +134,36 @@ class SketchImporter(Importer):
             height = max(max_y - min_y, 1e-9)
 
         # For Sketch, native units are mm.
-        page_bounds = (min_x, min_y, width, height)
+        document_bounds = (min_x, min_y, width, height)
 
         # Create temporary result to calculate background transform
         temp_result = ParsingResult(
-            page_bounds=page_bounds,
+            document_bounds=document_bounds,
             native_unit_to_mm=1.0,
             is_y_down=False,
             layers=[],
-            world_frame_of_reference=page_bounds,
+            world_frame_of_reference=document_bounds,
             background_world_transform=None,  # type: ignore
         )
 
         bg_item = NormalizationEngine.calculate_layout_item(
-            page_bounds, temp_result
+            document_bounds, temp_result
         )
 
         layer_id = "__default__"
 
         return ParsingResult(
-            page_bounds=page_bounds,
+            document_bounds=document_bounds,
             native_unit_to_mm=1.0,
             is_y_down=False,  # Sketches are Y-Up
             layers=[
                 LayerGeometry(
                     layer_id=layer_id,
                     name=layer_id,
-                    content_bounds=page_bounds,
+                    content_bounds=document_bounds,
                 )
             ],
-            world_frame_of_reference=page_bounds,
+            world_frame_of_reference=document_bounds,
             background_world_transform=bg_item.world_matrix,
         )
 

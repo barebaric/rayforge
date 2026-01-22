@@ -27,7 +27,7 @@ class ItemAssembler:
         spec: VectorizationSpec,
         source_name: str,
         geometries: Dict[Optional[str], Geometry],
-        page_bounds: Optional[Tuple[float, float, float, float]] = None,
+        document_bounds: Optional[Tuple[float, float, float, float]] = None,
     ) -> List[DocItem]:
         """
         Creates DocItems from the plan.
@@ -39,7 +39,7 @@ class ItemAssembler:
         # requested by spec) or return a list of WorkPieces.
         items: List[DocItem] = []
 
-        logger.debug(f"ItemAssembler: page_bounds={page_bounds}")
+        logger.debug(f"ItemAssembler: document_bounds={document_bounds}")
 
         for item in layout_plan:
             # 1. Create the Segment

@@ -121,7 +121,7 @@ def test_calculate_parsing_basics_success():
     assert result is not None
     (
         svg_obj,
-        page_bounds_units,
+        document_bounds_units,
         unit_to_mm,
         untrimmed_bounds,
         world_frame,
@@ -131,7 +131,7 @@ def test_calculate_parsing_basics_success():
 
     # Content bounds are 0,0 to 60,60. Padding is 60*0.01=0.6 on each side.
     # New viewbox is -0.6, -0.6, 61.2, 61.2
-    px, py, pw, ph = page_bounds_units
+    px, py, pw, ph = document_bounds_units
     assert px == pytest.approx(-0.6)
     assert py == pytest.approx(-0.6)
     assert pw == pytest.approx(61.2)

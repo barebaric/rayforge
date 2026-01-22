@@ -63,7 +63,7 @@ class PngImporter(Importer):
         """
         metadata = image_util.extract_vips_metadata(self._image)
         metadata["image_format"] = "PNG"
-        _, _, w_px, h_px = parse_result.page_bounds
+        _, _, w_px, h_px = parse_result.document_bounds
         width_mm = w_px * parse_result.native_unit_to_mm
         height_mm = h_px * parse_result.native_unit_to_mm
 
@@ -124,7 +124,7 @@ class PngImporter(Importer):
         # Extract geometric facts
         width_px = float(image.width)
         height_px = float(image.height)
-        page_bounds = (0.0, 0.0, width_px, height_px)
+        document_bounds = (0.0, 0.0, width_px, height_px)
 
         if image.xres > 0:
             native_unit_to_mm = 1.0 / image.xres
@@ -132,7 +132,7 @@ class PngImporter(Importer):
             default_dpi = 96.0
             native_unit_to_mm = 25.4 / default_dpi
 
-        x, y, w, h = page_bounds
+        x, y, w, h = document_bounds
         world_frame = (
             x * native_unit_to_mm,
             0.0,
@@ -142,7 +142,7 @@ class PngImporter(Importer):
 
         # Create temporary result to calculate background transform
         temp_result = ParsingResult(
-            page_bounds=page_bounds,
+            document_bounds=document_bounds,
             native_unit_to_mm=native_unit_to_mm,
             is_y_down=True,
             layers=[],
@@ -151,18 +151,18 @@ class PngImporter(Importer):
         )
 
         bg_item = NormalizationEngine.calculate_layout_item(
-            page_bounds, temp_result
+            document_bounds, temp_result
         )
 
         return ParsingResult(
-            page_bounds=page_bounds,
+            document_bounds=document_bounds,
             native_unit_to_mm=native_unit_to_mm,
             is_y_down=True,
             layers=[
                 LayerGeometry(
                     layer_id="__default__",
                     name="__default__",
-                    content_bounds=page_bounds,
+                    content_bounds=document_bounds,
                 )
             ],
             world_frame_of_reference=world_frame,

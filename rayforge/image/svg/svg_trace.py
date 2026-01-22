@@ -44,21 +44,27 @@ class SvgTraceImporter(SvgImporterBase):
             return None
 
         # Unpack
-        _, page_bounds, unit_to_mm, untrimmed_page_bounds, world_frame = basics
+        (
+            _,
+            document_bounds,
+            unit_to_mm,
+            untrimmed_document_bounds,
+            world_frame,
+        ) = basics
 
         # Create a temporary result to generate the background transform
         temp_result = ParsingResult(
-            page_bounds=page_bounds,
+            document_bounds=document_bounds,
             native_unit_to_mm=unit_to_mm,
             is_y_down=True,
             layers=[],
-            untrimmed_page_bounds=untrimmed_page_bounds,
+            untrimmed_document_bounds=untrimmed_document_bounds,
             world_frame_of_reference=world_frame,
             background_world_transform=None,  # type: ignore
         )
 
         bg_item = NormalizationEngine.calculate_layout_item(
-            page_bounds, temp_result
+            document_bounds, temp_result
         )
 
         # 2. Define single layer (Trace-specific logic)
@@ -67,16 +73,16 @@ class SvgTraceImporter(SvgImporterBase):
             LayerGeometry(
                 layer_id="__default__",
                 name="Traced Content",
-                content_bounds=page_bounds,
+                content_bounds=document_bounds,
             )
         ]
 
         return ParsingResult(
-            page_bounds=page_bounds,
+            document_bounds=document_bounds,
             native_unit_to_mm=unit_to_mm,
             is_y_down=True,
             layers=layer_geometries,
-            untrimmed_page_bounds=untrimmed_page_bounds,
+            untrimmed_document_bounds=untrimmed_document_bounds,
             geometry_is_relative_to_bounds=True,
             is_cropped_to_content=True,
             world_frame_of_reference=world_frame,
@@ -94,11 +100,11 @@ class SvgTraceImporter(SvgImporterBase):
         self.traced_artefacts = {}
 
         # Use the TRIMMED data bounds to determine render size.
-        page_bounds = parse_result.page_bounds
+        document_bounds = parse_result.document_bounds
         native_unit_to_mm = parse_result.native_unit_to_mm
 
-        w_native = page_bounds[2]
-        h_native = page_bounds[3]
+        w_native = document_bounds[2]
+        h_native = document_bounds[3]
         w_mm = w_native * native_unit_to_mm
         h_mm = h_native * native_unit_to_mm
 
@@ -157,9 +163,9 @@ class SvgTraceImporter(SvgImporterBase):
         rendered_height = vips_image.height
         mm_per_px_x, mm_per_px_y = image_util.get_mm_per_pixel(vips_image)
 
-        # page_bounds contains the offset (vb_x, vb_y) in native units.
-        offset_x_native = page_bounds[0]
-        offset_y_native = page_bounds[1]
+        # document_bounds contains the offset (vb_x, vb_y) in native units.
+        offset_x_native = document_bounds[0]
+        offset_y_native = document_bounds[1]
 
         offset_x_mm = offset_x_native * native_unit_to_mm
         offset_y_mm = offset_y_native * native_unit_to_mm
@@ -171,7 +177,7 @@ class SvgTraceImporter(SvgImporterBase):
             shift_matrix = Matrix.translation(offset_x_px, offset_y_px)
             combined_geo.transform(shift_matrix.to_4x4_numpy())
 
-        trace_page_bounds = (
+        trace_document_bounds = (
             offset_x_px,
             offset_y_px,
             float(rendered_width),
@@ -181,8 +187,8 @@ class SvgTraceImporter(SvgImporterBase):
         trace_untrimmed_bounds: Optional[Tuple[float, float, float, float]] = (
             None
         )
-        if parse_result.untrimmed_page_bounds:
-            u_native = parse_result.untrimmed_page_bounds
+        if parse_result.untrimmed_document_bounds:
+            u_native = parse_result.untrimmed_document_bounds
             # Convert untrimmed native size to trace pixels
             u_w_mm = u_native[2] * native_unit_to_mm
             u_h_mm = u_native[3] * native_unit_to_mm
@@ -191,7 +197,7 @@ class SvgTraceImporter(SvgImporterBase):
             trace_untrimmed_bounds = (0.0, 0.0, u_w_px, u_h_px)
 
         # Calculate authoritative world frame for the traced image
-        t_ref_bounds = trace_untrimmed_bounds or trace_page_bounds
+        t_ref_bounds = trace_untrimmed_bounds or trace_document_bounds
         t_x, t_y, t_w, t_h = t_ref_bounds
         t_w_mm = t_w * mm_per_px_x
         t_h_mm = t_h * mm_per_px_x
@@ -201,26 +207,26 @@ class SvgTraceImporter(SvgImporterBase):
 
         # Create temporary result to calculate background transform
         temp_trace_result = ParsingResult(
-            page_bounds=trace_page_bounds,
+            document_bounds=trace_document_bounds,
             native_unit_to_mm=mm_per_px_x,
             is_y_down=True,
             layers=[],
-            untrimmed_page_bounds=trace_untrimmed_bounds,
+            untrimmed_document_bounds=trace_untrimmed_bounds,
             world_frame_of_reference=trace_world_frame,
             background_world_transform=None,  # type: ignore
         )
 
         bg_item_trace = NormalizationEngine.calculate_layout_item(
-            trace_page_bounds, temp_trace_result
+            trace_document_bounds, temp_trace_result
         )
 
         trace_parse_result = ParsingResult(
-            page_bounds=trace_page_bounds,
+            document_bounds=trace_document_bounds,
             native_unit_to_mm=mm_per_px_x,
             is_y_down=True,
             layers=[],
             geometry_is_relative_to_bounds=False,
-            untrimmed_page_bounds=trace_untrimmed_bounds,
+            untrimmed_document_bounds=trace_untrimmed_bounds,
             world_frame_of_reference=trace_world_frame,
             background_world_transform=bg_item_trace.world_matrix,
         )

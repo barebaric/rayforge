@@ -94,7 +94,7 @@ class ProceduralImporter(Importer):
         """
         Creates a SourceAsset for Procedural import.
         """
-        _, _, w, h = parse_result.page_bounds
+        _, _, w, h = parse_result.document_bounds
         # For procedural, native units are 1:1 with mm (scale=1.0)
         width_mm = w
         height_mm = h
@@ -137,15 +137,15 @@ class ProceduralImporter(Importer):
 
         # Define the native coordinate system as 1 unit = 1 mm.
         # This preserves the aspect ratio in the parsing result.
-        page_bounds = (0.0, 0.0, float(width_mm), float(height_mm))
-        x, y, w, h = page_bounds
+        document_bounds = (0.0, 0.0, float(width_mm), float(height_mm))
+        x, y, w, h = document_bounds
 
         # World frame is Y-Up and already in mm.
         world_frame = (x, 0.0, w, h)
 
         # Create temporary result to calculate background transform
         temp_result = ParsingResult(
-            page_bounds=page_bounds,
+            document_bounds=document_bounds,
             native_unit_to_mm=1.0,
             is_y_down=True,
             layers=[],
@@ -154,20 +154,20 @@ class ProceduralImporter(Importer):
         )
 
         bg_item = NormalizationEngine.calculate_layout_item(
-            page_bounds, temp_result
+            document_bounds, temp_result
         )
 
         layer_id = "__default__"
 
         return ParsingResult(
-            page_bounds=page_bounds,
+            document_bounds=document_bounds,
             native_unit_to_mm=1.0,  # 1 native unit = 1 mm
             is_y_down=True,  # Standardize on Y-down for generated content
             layers=[
                 LayerGeometry(
                     layer_id=layer_id,
                     name=layer_id,
-                    content_bounds=page_bounds,
+                    content_bounds=document_bounds,
                 )
             ],
             world_frame_of_reference=world_frame,
@@ -183,7 +183,7 @@ class ProceduralImporter(Importer):
         """
         if not isinstance(spec, ProceduralSpec):
             raise TypeError("ProceduralImporter only supports ProceduralSpec.")
-        _, _, w, h = parse_result.page_bounds
+        _, _, w, h = parse_result.document_bounds
 
         frame_geo = Geometry()
         frame_geo.move_to(0, 0)

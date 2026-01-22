@@ -73,12 +73,12 @@ def sample_payload(sample_workpiece, sample_source_asset):
 @pytest.fixture
 def sample_parse_result():
     """Provides a sample ParsingResult."""
-    page_bounds = (0, 0, 10, 10)
+    document_bounds = (0, 0, 10, 10)
     unit_scale = 1.0
-    x, y, w, h = page_bounds
+    x, y, w, h = document_bounds
     world_frame = (x * unit_scale, 0.0, w * unit_scale, h * unit_scale)
     return ParsingResult(
-        page_bounds=page_bounds,
+        document_bounds=document_bounds,
         native_unit_to_mm=unit_scale,
         is_y_down=True,
         layers=[],
