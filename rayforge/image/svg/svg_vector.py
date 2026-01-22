@@ -1,7 +1,7 @@
 from __future__ import annotations
 import logging
-from typing import List, Optional, Dict
-from svgelements import Group, Path as SvgPath, SVG
+from typing import List, Optional, Dict, Any, Generator, Union
+from svgelements import Group, Path as SvgPath, SVG, Length
 from ...core.geo import Geometry
 from ...core.matrix import Matrix
 from ...core.vectorization_spec import (
@@ -18,6 +18,27 @@ from .svgutil import extract_layer_manifest
 from .svg_base import SvgImporterBase
 
 logger = logging.getLogger(__name__)
+
+
+def _length_to_px(value: Optional[Union[Length, float, str]]) -> float:
+    """
+    Safely converts an svgelements Length object or a raw value to pixels.
+    """
+    if isinstance(value, Length):
+        return value.px  # type: ignore
+    if value is not None:
+        try:
+            return float(value)
+        except (ValueError, TypeError):
+            return 1.0
+    return 1.0
+
+
+def _to_float(value: Optional[Any], default: float = 0.0) -> float:
+    """
+    Safely converts a value that may be None to a float.
+    """
+    return float(value) if value is not None else default
 
 
 class SvgVectorImporter(SvgImporterBase):
@@ -101,8 +122,9 @@ class SvgVectorImporter(SvgImporterBase):
         if not isinstance(spec, PassthroughSpec):
             spec = PassthroughSpec()
 
-        if not self.svg:
-            raise ValueError("self.svg is not set")
+        assert self.svg is not None, (
+            "self.svg is not set; parse() must be called before vectorize()"
+        )
 
         all_layer_ids = [layer.layer_id for layer in parse_result.layers]
 
@@ -116,9 +138,9 @@ class SvgVectorImporter(SvgImporterBase):
             self.svg, target_layer_ids
         )
 
-        # If layer-specific parsing found nothing (SVG has no layers),
+        # If layer-specific parsing found nothing (e.g., SVG has no layers),
         # fall back to parsing the whole SVG into a default 'None' layer.
-        # This ensures geometry is always extracted.
+        # This ensures geometry is always extracted from valid files.
         if not geometries_by_layer_px:
             logger.debug(
                 "No layer-specific geometry found, parsing entire SVG as "
@@ -146,24 +168,14 @@ class SvgVectorImporter(SvgImporterBase):
         Transforms a dictionary of Geometries from the pixel-based coordinate
         system of svgelements to the SVG's native user unit system.
         """
-        width_val = getattr(svg.width, "px", svg.width)
-        height_val = getattr(svg.height, "px", svg.height)
-        w_px = float(width_val) if width_val is not None else 1.0
-        h_px = float(height_val) if height_val is not None else 1.0
+        w_px = _length_to_px(svg.width)
+        h_px = _length_to_px(svg.height)
 
         if svg.viewbox:
-            vb_x = float(svg.viewbox.x) if svg.viewbox.x is not None else 0.0
-            vb_y = float(svg.viewbox.y) if svg.viewbox.y is not None else 0.0
-            vb_w = (
-                float(svg.viewbox.width)
-                if svg.viewbox.width is not None
-                else w_px
-            )
-            vb_h = (
-                float(svg.viewbox.height)
-                if svg.viewbox.height is not None
-                else h_px
-            )
+            vb_x = _to_float(svg.viewbox.x)
+            vb_y = _to_float(svg.viewbox.y)
+            vb_w = _to_float(svg.viewbox.width, default=w_px)
+            vb_h = _to_float(svg.viewbox.height, default=h_px)
         else:
             vb_x, vb_y, vb_w, vb_h = 0.0, 0.0, w_px, h_px
 
@@ -182,6 +194,15 @@ class SvgVectorImporter(SvgImporterBase):
 
         return user_geometries
 
+    @staticmethod
+    def _flatten_group_shapes(group: Group) -> Generator[Any, None, None]:
+        """Recursively yields all non-Group shape elements from a group."""
+        for item in group:
+            if isinstance(item, Group):
+                yield from SvgVectorImporter._flatten_group_shapes(item)
+            else:
+                yield item
+
     def _parse_geometry_by_layer(
         self, svg: SVG, layer_ids: List[str]
     ) -> Dict[Optional[str], Geometry]:
@@ -193,16 +214,8 @@ class SvgVectorImporter(SvgImporterBase):
         layer_geoms: Dict[Optional[str], Geometry] = {}
 
         has_explicit_layers = any(isinstance(e, Group) and e.id for e in svg)
-
         if not has_explicit_layers:
             return {}
-
-        def _get_all_shapes(group: Group):
-            for item in group:
-                if isinstance(item, Group):
-                    yield from _get_all_shapes(item)
-                else:
-                    yield item
 
         for element in svg:
             if not isinstance(element, Group):
@@ -211,7 +224,7 @@ class SvgVectorImporter(SvgImporterBase):
             lid = element.id
             if lid and lid in layer_ids:
                 layer_geo = Geometry()
-                for shape in _get_all_shapes(element):
+                for shape in self._flatten_group_shapes(element):
                     try:
                         path = SvgPath(shape)
                         self._add_path_to_geometry(path, layer_geo)
