@@ -4,8 +4,13 @@ import struct
 from pathlib import Path
 from typing import cast
 from unittest.mock import Mock
+from rayforge.core.geo import Geometry
+from rayforge.core.matrix import Matrix
+from rayforge.core.source_asset import SourceAsset
+from rayforge.core.source_asset_segment import SourceAssetSegment
+from rayforge.core.vectorization_spec import TraceSpec
+from rayforge.core.workpiece import WorkPiece
 from rayforge.image import import_file
-from rayforge.image.base_importer import ImportPayload
 from rayforge.image.bmp.renderer import BMP_RENDERER
 from rayforge.image.bmp.parser import (
     parse_bmp,
@@ -13,12 +18,7 @@ from rayforge.image.bmp.parser import (
     _validate_format,
     _get_row_offset,
 )
-from rayforge.core.workpiece import WorkPiece
-from rayforge.core.vectorization_spec import TraceSpec
-from rayforge.core.source_asset import SourceAsset
-from rayforge.core.matrix import Matrix
-from rayforge.core.source_asset_segment import SourceAssetSegment
-from rayforge.core.geo import Geometry
+from rayforge.image.structures import ImportPayload
 
 TEST_DATA_DIR = Path(__file__).parent
 

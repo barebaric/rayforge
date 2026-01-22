@@ -39,30 +39,35 @@ class ItemAssembler:
         # requested by spec) or return a list of WorkPieces.
         items: List[DocItem] = []
 
-        page_x, page_y = (
-            (page_bounds[0], page_bounds[1]) if page_bounds else (0.0, 0.0)
-        )
-
-        logger.debug(
-            f"ItemAssembler: page_bounds={page_bounds}, page_x={page_x}, "
-            f"page_y={page_y}"
-        )
+        logger.debug(f"ItemAssembler: page_bounds={page_bounds}")
 
         for item in layout_plan:
             # 1. Create the Segment
             # This links the WorkPiece to the specific subset of the source
             # file
-            geo = geometries.get(item.layer_id)
+            geo: Optional[Geometry] = None
+            if item.layer_id is not None:
+                # Split strategy: get geometry for the specific layer
+                geo = geometries.get(item.layer_id)
+            else:
+                # Merge strategy: combine all available geometries
+                if geometries:
+                    merged_geo = Geometry()
+                    for g in geometries.values():
+                        if g and not g.is_empty():
+                            merged_geo.extend(g)
+                    if not merged_geo.is_empty():
+                        geo = merged_geo
 
             # The `item.crop_window` is in absolute native coordinates.
             # For rendering trimmed vector files (like SVG), the renderer
-            # needs a viewBox that is relative to the trimmed file's origin.
-            abs_x, abs_y, w, h = item.crop_window
-            relative_crop_window = (abs_x - page_x, abs_y - page_y, w, h)
-
+            # needs an absolute viewBox to render the correct portion of the
+            # source file. We pass this through directly.
+            # NOTE: For raster sources, this field contains pixel coordinates.
+            # For vector sources (SVG), it contains native user-units. The
+            # respective WorkPiece/Renderer logic must handle this distinction.
             logger.debug(
                 f"ItemAssembler: item.crop_window={item.crop_window}, "
-                f"relative_crop_window={relative_crop_window}, "
                 f"layer_id={item.layer_id}"
             )
 
@@ -73,7 +78,7 @@ class ItemAssembler:
                 pristine_geometry=geo,
                 # Geometry Normalization
                 normalization_matrix=item.normalization_matrix,
-                crop_window_px=relative_crop_window,
+                crop_window_px=item.crop_window,
             )
 
             # Note: We should probably store physical dimensions on the segment
@@ -98,7 +103,11 @@ class ItemAssembler:
             wp.natural_height_mm = h_mm
 
             # 4. Wrap in Layer if splitting is active and meaningful
-            if item.layer_id and isinstance(spec, PassthroughSpec):
+            if (
+                item.layer_id
+                and isinstance(spec, PassthroughSpec)
+                and spec.create_new_layers
+            ):
                 layer = Layer(name=name)
                 layer.add_child(wp)
                 items.append(layer)

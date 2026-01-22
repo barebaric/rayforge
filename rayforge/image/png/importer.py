@@ -14,9 +14,13 @@ from .. import image_util
 from ..base_importer import (
     Importer,
     ImporterFeature,
+)
+from ..structures import (
+    ParsingResult,
+    LayerGeometry,
+    VectorizationResult,
     ImportManifest,
 )
-from ..structures import ParsingResult, LayerGeometry, VectorizationResult
 from ..tracing import trace_surface
 from .renderer import PNG_RENDERER
 
@@ -52,9 +56,7 @@ class PngImporter(Importer):
                 warnings=["Could not read PNG metadata. File may be corrupt."],
             )
 
-    def create_source_asset(
-        self, parse_result: ParsingResult
-    ) -> SourceAsset:
+    def create_source_asset(self, parse_result: ParsingResult) -> SourceAsset:
         """
         Creates a SourceAsset for PNG import.
         """

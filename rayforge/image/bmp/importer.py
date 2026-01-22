@@ -16,11 +16,15 @@ from ...core.vectorization_spec import TraceSpec, VectorizationSpec
 from ..base_importer import (
     Importer,
     ImporterFeature,
-    ImportManifest,
 )
 from ..tracing import trace_surface
 from .. import image_util
-from ..structures import ParsingResult, LayerGeometry, VectorizationResult
+from ..structures import (
+    ParsingResult,
+    LayerGeometry,
+    VectorizationResult,
+    ImportManifest,
+)
 from .parser import parse_bmp
 from .renderer import BMP_RENDERER
 

@@ -1,19 +1,22 @@
 from __future__ import annotations
 from abc import ABC, abstractmethod
-from dataclasses import dataclass, field
 import enum
 from pathlib import Path
-from typing import Optional, List, Tuple, TYPE_CHECKING, Set
+from typing import Optional, Tuple, TYPE_CHECKING, Set
 from ..core.vectorization_spec import PassthroughSpec, TraceSpec
 from .assembler import ItemAssembler
 from .engine import NormalizationEngine
 
 if TYPE_CHECKING:
-    from ..core.item import DocItem
     from ..core.vectorization_spec import VectorizationSpec
     from ..core.source_asset import SourceAsset
-    from ..core.sketcher.sketch import Sketch
-    from .structures import ParsingResult, VectorizationResult
+    from .structures import (
+        ParsingResult,
+        VectorizationResult,
+        ImportPayload,
+        ImportResult,
+        ImportManifest,
+    )
 
 
 class ImporterFeature(enum.Flag):
@@ -28,51 +31,14 @@ class ImporterFeature(enum.Flag):
     PROCEDURAL_GENERATION = enum.auto()
 
 
-@dataclass
-class LayerInfo:
-    """
-    A lightweight descriptor for a single layer discovered in a file scan.
-    """
-
-    id: str  # Machine-readable identifier (e.g., SVG group ID)
-    name: str  # User-facing name for the layer
-    color: Optional[Tuple[float, float, float]] = None
-    default_active: bool = True
-
-
-@dataclass
-class ImportManifest:
-    """
-    The result of a file scan, describing the file's contents and structure
-    without performing a full import.
-    """
-
-    layers: List[LayerInfo] = field(default_factory=list)
-    natural_size_mm: Optional[Tuple[float, float]] = None
-    title: Optional[str] = None
-    warnings: List[str] = field(default_factory=list)
-
-
-@dataclass
-class ImportPayload:
-    """
-    A container for the complete result of a file import operation.
-    It's a self-contained package ready for integration into a document.
-    """
-
-    source: "SourceAsset"
-    items: List["DocItem"]
-    sketches: List["Sketch"] = field(default_factory=list)
-
-
 class Importer(ABC):
     """
     An abstract base class that defines the interface for all importers.
 
     An Importer acts as a factory, taking raw file data and producing a
-    self-contained `ImportPayload`. This payload contains the `SourceAsset`
-    (the link to the original file) and a list of `DocItem` objects
-    (typically `WorkPiece` instances) ready to be added to a document.
+    self-contained `ImportResult`. This result contains the `ImportPayload`
+    (the `SourceAsset` and `DocItem`s) and the `ParsingResult` (geometric facts
+    used for contextual rendering).
 
     Architectural Contract:
     -----------------------
@@ -171,11 +137,14 @@ class Importer(ABC):
 
     def get_doc_items(
         self, vectorization_spec: Optional["VectorizationSpec"] = None
-    ) -> Optional[ImportPayload]:
+    ) -> Optional["ImportResult"]:
         """
-        Parses the raw data and returns a self-contained ImportPayload.
+        Parses the raw data and returns a self-contained ImportResult.
         This is the template method that orchestrates the import pipeline.
         """
+        # (Needed for downstream type hints)
+        from .structures import ImportPayload, ImportResult
+
         # 1. Parse
         parse_result = self.parse()
         if not parse_result:
@@ -187,9 +156,14 @@ class Importer(ABC):
         # 3. Vectorize
         spec = vectorization_spec or PassthroughSpec()
         # For vector formats, if no layers with geometry were found,
-        # return early with no items.
-        if not parse_result.layers and not isinstance(spec, TraceSpec):
-            return ImportPayload(source=source_asset, items=[])
+        # return early with no items. Only applies to TraceSpec since
+        # PassthroughSpec's vectorize() has fallback logic for SVGs without
+        # explicit layers.
+        if not parse_result.layers and isinstance(spec, TraceSpec):
+            return ImportResult(
+                payload=ImportPayload(source=source_asset, items=[]),
+                parse_result=parse_result,
+            )
 
         vec_result = self.vectorize(parse_result, spec)
 
@@ -198,7 +172,10 @@ class Importer(ABC):
         plan = engine.calculate_layout(vec_result, spec)
 
         if not plan:
-            return ImportPayload(source=source_asset, items=[])
+            return ImportResult(
+                payload=ImportPayload(source=source_asset, items=[]),
+                parse_result=parse_result,
+            )
 
         # 5. Assemble
         assembler = ItemAssembler()
@@ -211,4 +188,19 @@ class Importer(ABC):
             page_bounds=vec_result.source_parse_result.page_bounds,
         )
 
-        return ImportPayload(source_asset, items)
+        payload = ImportPayload(source_asset, items)
+
+        # Call the post-processing hook before returning the final result
+        final_payload = self._post_process_payload(payload)
+
+        return ImportResult(payload=final_payload, parse_result=parse_result)
+
+    def _post_process_payload(
+        self, payload: "ImportPayload"
+    ) -> "ImportPayload":
+        """
+        An optional hook for subclasses to modify the final payload after
+        assembly. This is useful for importers that need to add extra data
+        or links, like the SketchImporter.
+        """
+        return payload

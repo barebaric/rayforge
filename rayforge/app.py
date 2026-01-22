@@ -123,7 +123,10 @@ def main():
             'map' signal handler to ensure the main window is fully initialized.
             """
             # This import must be inside the method.
-            from rayforge.core.vectorization_spec import TraceSpec
+            from rayforge.core.vectorization_spec import (
+                TraceSpec,
+                PassthroughSpec,
+            )
 
             assert self.win is not None
             # self.args.filenames will be a list of paths
@@ -131,10 +134,12 @@ def main():
                 mime_type, _ = mimetypes.guess_type(filename)
 
                 # Default to tracing any file that supports it. If
-                # --direct-vector is passed, attempt to use vectors
-                # directly by passing a None spec.
+                # --direct-vector is passed, use an empty PassthroughSpec
+                # to signal intent for direct vector import.
                 vectorization_spec = (
-                    None if self.args.direct_vector else TraceSpec()
+                    PassthroughSpec()
+                    if self.args.direct_vector
+                    else TraceSpec()
                 )
                 self.win.doc_editor.file.load_file_from_path(
                     filename=Path(filename),

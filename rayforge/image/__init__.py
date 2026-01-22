@@ -3,15 +3,19 @@ import logging
 import mimetypes
 from pathlib import Path
 from typing import Dict, Optional, Type, Union, List
-from ..core.vectorization_spec import VectorizationSpec
+from ..core.vectorization_spec import VectorizationSpec, PassthroughSpec
 from ..core.workpiece import WorkPiece
 from ..core.item import DocItem
 from ..core.source_asset import SourceAsset
 from .base_importer import (
     Importer,
     ImporterFeature,
-    ImportManifest,
+)
+from .structures import (
     ImportPayload,
+    ImportResult,
+    ParsingResult,
+    ImportManifest,
     LayerInfo,
 )
 from .base_renderer import Renderer
@@ -111,8 +115,16 @@ def import_file_from_bytes(
     try:
         source_file = Path(source_file_name)
         importer = importer_class(file_data, source_file=source_file)
-        payload = importer.get_doc_items(vectorization_spec)
 
+        # If no spec is given (e.g., initial preview), default to Passthrough
+        spec_to_use = vectorization_spec or PassthroughSpec()
+
+        import_result = importer.get_doc_items(spec_to_use)
+
+        if not import_result:
+            return None
+
+        payload = import_result.payload
         # Hydrate the temporary WorkPiece(s) with a direct renderer AND data
         # link so they can be rendered without being part of a full document.
         if payload and payload.source:
@@ -189,7 +201,9 @@ def import_file(
     # 3. Execute importer
     try:
         importer = importer_class(file_data, source_file=source_file)
-        return importer.get_doc_items(vectorization_spec)
+        import_result = importer.get_doc_items(vectorization_spec)
+        # Unpack the result to return only the payload, maintaining the API
+        return import_result.payload if import_result else None
     except Exception as e:
         logger.error(
             f"Importer {importer_class.__name__} failed for {source_file}",
@@ -235,6 +249,9 @@ __all__ = [
     "SvgImporter",
     "ImporterFeature",
     "ImportManifest",
+    "ImportPayload",
+    "ImportResult",
+    "ParsingResult",
     "LayerInfo",
     "import_file",
     "import_file_from_bytes",

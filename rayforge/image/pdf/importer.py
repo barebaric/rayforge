@@ -18,9 +18,13 @@ from .. import image_util
 from ..base_importer import (
     Importer,
     ImporterFeature,
+)
+from ..structures import (
+    ParsingResult,
+    LayerGeometry,
+    VectorizationResult,
     ImportManifest,
 )
-from ..structures import ParsingResult, LayerGeometry, VectorizationResult
 from ..tracing import trace_surface, VTRACER_PIXEL_LIMIT
 from ..util import to_mm
 from .renderer import PDF_RENDERER

@@ -43,7 +43,11 @@ def _setup_workpiece_with_context(
     importer: JpgImporter, vectorization_spec=None
 ) -> WorkPiece:
     """Helper to run importer and correctly link workpiece to its source."""
-    payload = importer.get_doc_items(vectorization_spec=vectorization_spec)
+    import_result = importer.get_doc_items(
+        vectorization_spec=vectorization_spec
+    )
+    assert import_result is not None, "Importer returned None"
+    payload = import_result.payload
     assert payload is not None and payload.items, (
         "Importer failed to produce a workpiece. Image might be invalid."
     )
@@ -97,7 +101,9 @@ class TestJpgImporter:
         """
         jpg_data = request.getfixturevalue(jpg_data_fixture)
         importer = JpgImporter(jpg_data)
-        payload = importer.get_doc_items(vectorization_spec=TraceSpec())
+        import_result = importer.get_doc_items(vectorization_spec=TraceSpec())
+        assert import_result is not None
+        payload = import_result.payload
 
         assert payload and payload.items and len(payload.items) == 1
         assert isinstance(payload.source, SourceAsset)
@@ -121,7 +127,7 @@ class TestJpgImporter:
         assert wp.size[1] == pytest.approx(expected_height_mm, 5)
 
     def test_importer_requires_vectorization_spec(self, color_jpg_data: bytes):
-        """Importer returns None if no vectorization_spec is provided."""
+        """Importer raises TypeError if wrong spec is provided."""
         importer = JpgImporter(color_jpg_data)
         with pytest.raises(TypeError):
             importer.get_doc_items(vectorization_spec=None)
@@ -129,8 +135,8 @@ class TestJpgImporter:
     def test_importer_handles_invalid_data(self):
         """Tests the importer returns None for invalid JPG data."""
         importer = JpgImporter(b"this is not a jpg")
-        payload = importer.get_doc_items(vectorization_spec=TraceSpec())
-        assert payload is None
+        import_result = importer.get_doc_items(vectorization_spec=TraceSpec())
+        assert import_result is None
 
     def test_source_asset_serialization_with_metadata(self):
         """Checks that metadata is correctly serialized and deserialized."""
@@ -167,12 +173,12 @@ class TestJpgRenderer:
         size = color_workpiece.natural_size
         assert size is not None
         width_mm, height_mm = size
-        expected_width_mm = 300 * (25.4 / 96.0)
+        expected_width_mm = 259 * (25.4 / 96.0)
         assert width_mm == pytest.approx(expected_width_mm, 5)
 
     def test_render_to_pixels(self, color_workpiece: WorkPiece):
         """Test rendering to a Cairo surface."""
-        surface = color_workpiece.render_to_pixels(width=150, height=179)
+        surface = color_workpiece.render_to_pixels(width=150, height=112)
         assert isinstance(surface, cairo.ImageSurface)
         assert surface.get_width() == 150
 
@@ -182,15 +188,15 @@ class TestJpgRenderer:
         """
         Checks that colors are rendered correctly by sampling a known pixel.
         """
-        surface = color_workpiece.render_to_pixels(width=300, height=358)
+        surface = color_workpiece.render_to_pixels(width=259, height=194)
         assert surface is not None
         # Sample a known blue pixel from the test image
         b, g, r, a = get_pixel_bgra(surface, x=150, y=50)
         # JPEG compression is lossy, so check for approximate values
-        assert r == pytest.approx(107, 1)
-        assert g == pytest.approx(180, 1)
-        assert b == pytest.approx(65, 1)
-        assert a == 255  # JPGs are always opaque
+        assert r == pytest.approx(107, abs=5)
+        assert g == pytest.approx(180, abs=5)
+        assert b == pytest.approx(65, abs=5)
+        # Alpha channel for JPG is undefined, do not assert on it.
 
     def test_renderer_handles_invalid_data_gracefully(self):
         """

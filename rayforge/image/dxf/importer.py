@@ -1,32 +1,35 @@
 import io
 import logging
-from typing import Optional, List, Dict, Tuple
+import math
+from typing import Optional, List, Dict, Tuple, DefaultDict
+from pathlib import Path
+from collections import defaultdict
+
 import ezdxf
 import ezdxf.math
 from ezdxf import bbox
 from ezdxf.lldxf.const import DXFStructureError
 from ezdxf.addons import text2path
 from ezdxf.path import Command
-from pathlib import Path
 
 from ...core.geo import Geometry
 from ...core.source_asset import SourceAsset
 from ...core.vectorization_spec import VectorizationSpec, PassthroughSpec
-from ..assembler import ItemAssembler
 from ..base_importer import (
     Importer,
-    ImportPayload,
     ImporterFeature,
+)
+from ..structures import (
+    ParsingResult,
+    LayerGeometry,
+    VectorizationResult,
     ImportManifest,
     LayerInfo,
 )
-from ..engine import NormalizationEngine
-from ..structures import ParsingResult, LayerGeometry, VectorizationResult
 from .renderer import DXF_RENDERER
 
 logger = logging.getLogger(__name__)
 
-# Mapping of DXF units to millimeters
 units_to_mm = {
     0: 1.0,
     1: 25.4,
@@ -52,30 +55,21 @@ class DxfImporter(Importer):
         self._geometries_by_layer: Dict[Optional[str], Geometry] = {}
 
     def scan(self) -> ImportManifest:
-        """
-        Scans the DXF file for layer names and overall dimensions.
-        """
         try:
             data_str = self.raw_data.decode("utf-8", errors="replace")
             normalized_str = data_str.replace("\r\n", "\n")
             doc = ezdxf.read(io.StringIO(normalized_str))  # type: ignore
         except DXFStructureError as e:
-            logger.warning(f"DXF scan failed for {self.source_file.name}: {e}")
+            logger.warning(f"DXF scan failed: {e}")
             return ImportManifest(
                 title=self.source_file.name,
                 warnings=["File appears to be a corrupt or unsupported DXF."],
             )
         except Exception as e:
-            logger.error(
-                f"Unexpected error during DXF scan for "
-                f"{self.source_file.name}: {e}",
-                exc_info=True,
-            )
+            logger.error(f"DXF scan error: {e}", exc_info=True)
             return ImportManifest(
                 title=self.source_file.name,
-                warnings=[
-                    "An unexpected error occurred while scanning the DXF file."
-                ],
+                warnings=["Unexpected error during DXF scan."],
             )
 
         manifest_data = self._get_layer_manifest(doc)
@@ -89,64 +83,7 @@ class DxfImporter(Importer):
             natural_size_mm=size_mm,
         )
 
-    def get_doc_items(
-        self, vectorization_spec: Optional[VectorizationSpec] = None
-    ) -> Optional[ImportPayload]:
-        logger.debug("Starting DXF import process.")
-
-        # Phase 2: Parsing DXF to native geometry.
-        parse_result = self.parse()
-        if not parse_result or not self._dxf_doc:
-            logger.error("DXF Importer: Failed to parse DXF file.")
-            return None
-
-        source = self.create_source_asset(parse_result)
-        spec = vectorization_spec or PassthroughSpec()
-
-        if not parse_result.layers:
-            logger.warning("DXF contains no valid geometry to import.")
-            return ImportPayload(source=source, items=[])
-
-        logger.debug("Phase 3: Vectorizing (packaging) parsed data.")
-        vec_result = self.vectorize(parse_result, spec)
-
-        logger.debug(
-            "Phase 4: Calculating layout plan with NormalizationEngine."
-        )
-        engine = NormalizationEngine()
-        plan = engine.calculate_layout(vec_result, spec)
-        if not plan:
-            logger.warning("Layout plan is empty; no items will be created.")
-            return ImportPayload(source=source, items=[])
-
-        logger.debug(f"Layout plan created with {len(plan)} item(s).")
-        geometries: Dict[Optional[str], Geometry]
-        if len(plan) == 1 and plan[0].layer_id is None:
-            logger.debug("Merging all layer geometries into one.")
-            merged_geo = Geometry()
-            for geo in self._geometries_by_layer.values():
-                merged_geo.extend(geo)
-            geometries = {None: merged_geo}
-        else:
-            geometries = self._geometries_by_layer
-
-        logger.debug("Phase 5: Assembling DocItems.")
-        assembler = ItemAssembler()
-        items = assembler.create_items(
-            source_asset=source,
-            layout_plan=plan,
-            spec=spec,
-            source_name=self.source_file.stem,
-            geometries=geometries,
-        )
-        logger.debug(f"Assembled {len(items)} top-level item(s).")
-
-        return ImportPayload(source=source, items=items)
-
     def create_source_asset(self, parse_result: ParsingResult) -> SourceAsset:
-        """
-        Creates a SourceAsset for DXF import.
-        """
         _, _, w, h = parse_result.page_bounds
         width_mm = w * parse_result.native_unit_to_mm
         height_mm = h * parse_result.native_unit_to_mm
@@ -166,9 +103,44 @@ class DxfImporter(Importer):
         parse_result: ParsingResult,
         spec: VectorizationSpec,
     ) -> VectorizationResult:
-        """Phase 3: Package parsed data for the layout engine."""
+        """
+        Prepares the final vector geometry based on the user's specification.
+        This method is "spec-aware" and handles the merging of geometries
+        if requested.
+        """
+        split_layers = False
+        active_layers_set = None
+        if isinstance(spec, PassthroughSpec):
+            split_layers = spec.create_new_layers
+            if spec.active_layer_ids:
+                active_layers_set = set(spec.active_layer_ids)
+
+        # Filter geometries based on the active layers in the spec
+        geometries_to_process: Dict[Optional[str], Geometry]
+        if active_layers_set:
+            geometries_to_process = {
+                layer_id: geo
+                for layer_id, geo in self._geometries_by_layer.items()
+                if layer_id in active_layers_set
+            }
+        else:
+            geometries_to_process = self._geometries_by_layer
+
+        final_geometries: Dict[Optional[str], Geometry]
+        if split_layers:
+            # For a "split" strategy, return the dictionary of individual
+            # layer geometries.
+            final_geometries = geometries_to_process
+        else:
+            # For a "merge" strategy, combine all active geometries into a
+            # single Geometry object under the `None` key.
+            merged_geo = Geometry()
+            for geo in geometries_to_process.values():
+                merged_geo.extend(geo)
+            final_geometries = {None: merged_geo}
+
         return VectorizationResult(
-            geometries_by_layer=self._geometries_by_layer,
+            geometries_by_layer=final_geometries,
             source_parse_result=parse_result,
         )
 
@@ -180,7 +152,6 @@ class DxfImporter(Importer):
         ]
 
     def parse(self) -> Optional[ParsingResult]:
-        """Phase 2: Parse DXF file into geometric facts."""
         try:
             data_str = self.raw_data.decode("utf-8", errors="replace")
             normalized_str = data_str.replace("\r\n", "\n")
@@ -190,11 +161,25 @@ class DxfImporter(Importer):
             self._dxf_doc = None
             return None
 
+        # 1. Bounds
         doc_bounds = self._get_bounds_native(self._dxf_doc)
         if not doc_bounds:
             doc_bounds = (0.0, 0.0, 0.0, 0.0)
-            logger.warning("DXF appears to be empty, using zero bounds.")
 
+        # 2. Extract with Flattening & Sorting
+        geometries_by_layer = self._extract_geometries(self._dxf_doc)
+        self._geometries_by_layer = geometries_by_layer
+
+        # 3. Consolidate (Adaptive Tolerance)
+        w, h = doc_bounds[2], doc_bounds[3]
+        diag = math.hypot(w, h)
+        adaptive_tolerance = max(0.01, diag / 20000.0)
+
+        for layer_name, geo in geometries_by_layer.items():
+            if geo and not geo.is_empty():
+                geo.close_gaps(tolerance=adaptive_tolerance)
+
+        # 4. Result
         result = ParsingResult(
             page_bounds=doc_bounds,
             native_unit_to_mm=self._get_scale_to_mm(self._dxf_doc),
@@ -202,97 +187,196 @@ class DxfImporter(Importer):
             layers=[],
         )
 
-        geometries_by_layer = self._extract_geometries(
-            self._dxf_doc, transform=None
-        )
-        self._geometries_by_layer = geometries_by_layer
-        logger.debug(
-            f"Extracted geometries from {len(geometries_by_layer)} layers."
-        )
-
         for layer_name, geo in geometries_by_layer.items():
-            if layer_name is None:
+            if layer_name is None or geo.is_empty():
                 continue
+
             min_x, min_y, max_x, max_y = geo.rect()
             w = max_x - min_x
             h = max_y - min_y
-            content_bounds = (min_x, min_y, w, h)
+
             result.layers.append(
                 LayerGeometry(
                     layer_id=layer_name,
                     name=layer_name,
-                    content_bounds=content_bounds,
+                    content_bounds=(min_x, min_y, w, h),
                 )
             )
 
         return result
 
-    def _extract_geometries(
-        self, doc, transform: Optional[ezdxf.math.Matrix44]
-    ) -> Dict[Optional[str], Geometry]:
-        layer_map: Dict[str, List] = {}
+    def _extract_geometries(self, doc) -> Dict[Optional[str], Geometry]:
+        """
+        Recursively extracts, flattens, sorts, and consumes DXF entities.
+        Sorting is critical for creating continuous paths from scrambled
+        modelspace entities.
+        """
+        raw_paths_by_layer: DefaultDict[str, List] = defaultdict(list)
+
+        def process_entity(entity, parent_transform: ezdxf.math.Matrix44):
+            # Transform Composition
+            if hasattr(entity, "matrix44"):
+                transform = parent_transform @ entity.matrix44()
+            else:
+                transform = parent_transform
+
+            if entity.dxftype() == "INSERT":
+                # Recurse into blocks (Flattening)
+                block_name = entity.dxf.name
+                if block_name in doc.blocks:
+                    block_def = doc.blocks.get(block_name)
+                    for sub_entity in block_def:
+                        process_entity(sub_entity, transform)
+                return
+
+            layer_name = entity.dxf.layer
+            if layer_name.lower() == "defpoints":
+                return
+
+            try:
+                # Convert entities to ezdxf Paths
+                if entity.dxftype() in ("TEXT", "MTEXT"):
+                    paths = text2path.make_paths_from_entity(entity)
+                    for path in paths:
+                        raw_paths_by_layer[layer_name].append(
+                            path.transform(transform)
+                        )
+                else:
+                    path = ezdxf.path.make_path(entity)  # type: ignore
+                    raw_paths_by_layer[layer_name].append(
+                        path.transform(transform)
+                    )
+            except Exception:
+                pass
+
+        # 1. Collect all paths (Disordered)
+        identity = ezdxf.math.Matrix44()
         for entity in doc.modelspace():
-            layer = entity.dxf.layer
-            if layer not in layer_map:
-                layer_map[layer] = []
-            layer_map[layer].append(entity)
+            process_entity(entity, identity)
 
-        geometries_by_layer: Dict[Optional[str], Geometry] = {}
-        for layer_name, entities in layer_map.items():
-            layer_geo = Geometry()
-            for entity in entities:
-                if entity.dxftype() == "INSERT":
-                    continue
-                self._entity_to_native_geo(
-                    layer_geo,
-                    entity,
-                    doc,
-                    transform=transform,
-                    tolerance_mm=0.01,
-                )
-            if not layer_geo.is_empty():
-                geometries_by_layer[layer_name] = layer_geo
-        return geometries_by_layer
+        # 2. Sort/Chain paths and Consume
+        final_geometries = {}
+        for layer_name, paths in raw_paths_by_layer.items():
+            if not paths:
+                continue
 
-    def _entity_to_native_geo(
-        self, geo, entity, doc, transform, tolerance_mm: float = 0.01
-    ):
-        handler_map = {
-            "LINE": self._line_to_native_geo,
-            "CIRCLE": self._circle_to_native_geo,
-            "ARC": self._arc_to_native_geo,
-            "LWPOLYLINE": self._poly_approx_to_native_geo,
-            "ELLIPSE": self._poly_approx_to_native_geo,
-            "SPLINE": self._poly_approx_to_native_geo,
-            "POLYLINE": self._poly_approx_to_native_geo,
-            "HATCH": self._hatch_to_native_geo,
-            "TEXT": self._text_to_native_geo,
-            "MTEXT": self._text_to_native_geo,
-        }
-        handler = handler_map.get(entity.dxftype())
-        if handler:
-            handler(geo, entity, doc, transform, tolerance_mm)
-        else:
-            logger.warning(
-                f"Unsupported DXF entity type: {entity.dxftype()}. Skipping."
-            )
+            # Sort paths so end[i] approx== start[i+1]
+            sorted_paths = self._chain_paths(paths)
+
+            geo = Geometry()
+            for path in sorted_paths:
+                self._consume_native_path(geo, path)
+
+            if not geo.is_empty():
+                final_geometries[layer_name] = geo
+
+        return final_geometries
+
+    def _chain_paths(self, paths: List) -> List:
+        """
+        Greedy sorting of paths to restore continuity.
+        Groups paths that share endpoints into contiguous chains.
+        """
+        if not paths:
+            return []
+
+        # Index start points for O(1) lookups
+        # Precision: 3 decimal places ensures visual continuity matches
+        start_map: DefaultDict[Tuple[int, int], List[int]] = defaultdict(list)
+
+        for i, p in enumerate(paths):
+            s = p.start
+            key = (int(s.x * 1000), int(s.y * 1000))
+            start_map[key].append(i)
+
+        ordered = []
+        visited = [False] * len(paths)
+
+        for i in range(len(paths)):
+            if visited[i]:
+                continue
+
+            # Start a new chain
+            current_idx = i
+            while True:
+                visited[current_idx] = True
+                p = paths[current_idx]
+                ordered.append(p)
+
+                # Look for a path starting where this one ends
+                e = p.end
+                end_key = (int(e.x * 1000), int(e.y * 1000))
+
+                candidates = start_map.get(end_key)
+                next_idx = -1
+
+                if candidates:
+                    for c_idx in candidates:
+                        if not visited[c_idx]:
+                            next_idx = c_idx
+                            break
+
+                if next_idx != -1:
+                    current_idx = next_idx
+                else:
+                    # Chain broken
+                    break
+
+        return ordered
+
+    def _consume_native_path(self, geo: Geometry, path):
+        if not path:
+            return
+
+        start = path.start
+
+        # Check continuity with the *internal* geometry cursor
+        is_continuous = False
+        if not geo.is_empty():
+            lx, ly, lz = geo._get_last_point()
+            if (lx - start.x) ** 2 + (ly - start.y) ** 2 + (
+                lz - start.z
+            ) ** 2 < 1e-8:
+                is_continuous = True
+
+        if not is_continuous:
+            geo.move_to(start.x, start.y, start.z)
+
+        for cmd in path.commands():
+            end = cmd.end
+            if cmd.type == Command.LINE_TO:
+                geo.line_to(end.x, end.y, end.z)
+            elif cmd.type == Command.CURVE4_TO:
+                c1, c2 = cmd.ctrl1, cmd.ctrl2
+                geo.bezier_to(end.x, end.y, c1.x, c1.y, c2.x, c2.y, end.z)
+            elif cmd.type == Command.CURVE3_TO:
+                start_x, start_y, _ = geo._get_last_point()
+                ctrl = cmd.ctrl
+                c1x = start_x + (2 / 3) * (ctrl.x - start_x)
+                c1y = start_y + (2 / 3) * (ctrl.y - start_y)
+                c2x = end.x + (2 / 3) * (ctrl.x - end.x)
+                c2y = end.y + (2 / 3) * (ctrl.y - end.y)
+                geo.bezier_to(end.x, end.y, c1x, c1y, c2x, c2y, end.z)
+            elif cmd.type == Command.MOVE_TO:
+                # Check internal continuity of the path object itself
+                cx, cy, cz = geo._get_last_point()
+                if (cx - end.x) ** 2 + (cy - end.y) ** 2 + (
+                    cz - end.z
+                ) ** 2 > 1e-8:
+                    geo.move_to(end.x, end.y, end.z)
 
     def _get_scale_to_mm(self, doc, default: float = 1.0) -> float:
         insunits = doc.header.get("$INSUNITS", 0)
         return units_to_mm.get(insunits, default) or default
 
-    def _get_bounds_native(
-        self, doc
-    ) -> Optional[Tuple[float, float, float, float]]:
+    def _get_bounds_native(self, doc):
         entity_bbox = bbox.extents(doc.modelspace(), fast=True)
         if not entity_bbox.has_data:
             return None
         min_p, max_p = entity_bbox.extmin, entity_bbox.extmax
         return (min_p.x, min_p.y, (max_p.x - min_p.x), (max_p.y - min_p.y))
 
-    def _get_bounds_mm(
-        self, doc
-    ) -> Optional[Tuple[float, float, float, float]]:
+    def _get_bounds_mm(self, doc):
         entity_bbox = bbox.extents(doc.modelspace(), fast=True)
         if not entity_bbox.has_data:
             return None
@@ -304,126 +388,3 @@ class DxfImporter(Importer):
             (max_p.x - min_p.x) * scale,
             (max_p.y - min_p.y) * scale,
         )
-
-    def _line_to_native_geo(
-        self, geo, entity, doc, transform, tolerance_mm: float = 0.01
-    ):
-        points = [entity.dxf.start, entity.dxf.end]
-        if transform:
-            points = list(transform.transform_vertices(points))
-        start_vec, end_vec = points
-        geo.move_to(start_vec.x, start_vec.y, start_vec.z)
-        geo.line_to(end_vec.x, end_vec.y, end_vec.z)
-
-    def _circle_to_native_geo(
-        self, geo, entity, doc, transform, tolerance_mm: float = 0.01
-    ):
-        temp_entity = entity.copy()
-        if transform:
-            try:
-                temp_entity.transform(transform)
-            except (NotImplementedError, AttributeError):
-                self._poly_approx_to_native_geo(
-                    geo, entity, doc, transform, tolerance_mm
-                )
-                return
-        if temp_entity.dxftype() == "ELLIPSE":
-            self._poly_approx_to_native_geo(
-                geo, temp_entity, doc, None, tolerance_mm
-            )
-            return
-        center, radius = temp_entity.dxf.center, temp_entity.dxf.radius
-        start_point = (center.x + radius, center.y, center.z)
-        mid_point = (center.x - radius, center.y, center.z)
-        geo.move_to(start_point[0], start_point[1], start_point[2])
-        geo.arc_to_as_bezier(
-            mid_point[0], mid_point[1], -radius, 0, clockwise=False, z=center.z
-        )
-        geo.arc_to_as_bezier(
-            start_point[0],
-            start_point[1],
-            radius,
-            0,
-            clockwise=False,
-            z=center.z,
-        )
-
-    def _arc_to_native_geo(
-        self, geo, entity, doc, transform, tolerance_mm: float = 0.01
-    ):
-        self._poly_approx_to_native_geo(
-            geo, entity, doc, transform, tolerance_mm
-        )
-
-    def _poly_approx_to_native_geo(
-        self, geo, entity, doc, transform, tolerance_mm: float = 0.01
-    ):
-        try:
-            path_obj = ezdxf.path.make_path(  # type: ignore
-                entity, flattening=tolerance_mm / 4.0
-            )
-            if transform:
-                path_obj = path_obj.transform(transform)
-            self._consume_native_path(geo, path_obj)
-        except ezdxf.path.EmptyPathError:  # type: ignore
-            logger.debug(
-                f"Skipping empty path from entity {entity.dxftype()}."
-            )
-        except Exception as e:
-            logger.error(
-                f"Failed to convert entity {entity.dxftype()} to path: {e}",
-                exc_info=True,
-            )
-
-    def _hatch_to_native_geo(
-        self, geo, entity, doc, transform, tolerance_mm: float = 0.01
-    ):
-        try:
-            for path in entity.paths:
-                path_obj = path.to_path()
-                if transform:
-                    path_obj = path_obj.transform(transform)
-                self._consume_native_path(geo, path_obj)
-        except Exception as e:
-            logger.error(f"Failed to process HATCH entity: {e}", exc_info=True)
-
-    def _text_to_native_geo(
-        self, geo, entity, doc, transform, tolerance_mm: float = 0.01
-    ):
-        try:
-            paths = text2path.make_paths_from_entity(entity)
-            for path in paths:
-                if transform:
-                    path = path.transform(transform)
-                self._consume_native_path(geo, path)
-        except Exception as e:
-            logger.error(f"Failed to convert TEXT entity: {e}", exc_info=True)
-
-    def _consume_native_path(self, geo: Geometry, path):
-        if not path:
-            return
-        start_vec = path.start
-        geo.move_to(start_vec.x, start_vec.y, start_vec.z)
-        current_x, current_y = start_vec.x, start_vec.y
-        for cmd in path.commands():
-            end_x, end_y, end_z = cmd.end.x, cmd.end.y, cmd.end.z
-            if cmd.type == Command.MOVE_TO:
-                geo.move_to(end_x, end_y, end_z)
-            elif cmd.type == Command.LINE_TO:
-                geo.line_to(end_x, end_y, end_z)
-            elif cmd.type == Command.CURVE3_TO:
-                ctrl_x, ctrl_y = cmd.ctrl.x, cmd.ctrl.y
-                c1x, c1y = (
-                    current_x + 2 / 3 * (ctrl_x - current_x),
-                    current_y + 2 / 3 * (ctrl_y - current_y),
-                )
-                c2x, c2y = (
-                    end_x + 2 / 3 * (ctrl_x - end_x),
-                    end_y + 2 / 3 * (ctrl_y - end_y),
-                )
-                geo.bezier_to(end_x, end_y, c1x, c1y, c2x, c2y, end_z)
-            elif cmd.type == Command.CURVE4_TO:
-                c1x, c1y = cmd.ctrl1.x, cmd.ctrl1.y
-                c2x, c2y = cmd.ctrl2.x, cmd.ctrl2.y
-                geo.bezier_to(end_x, end_y, c1x, c1y, c2x, c2y, end_z)
-            current_x, current_y = end_x, end_y

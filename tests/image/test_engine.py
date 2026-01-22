@@ -61,7 +61,10 @@ def test_single_layer_y_down(engine):
         is_y_down=True,
     )
 
-    plan = engine.calculate_layout(vec_result, None)
+    # By default, should merge into one item
+    plan = engine.calculate_layout(
+        vec_result, PassthroughSpec(create_new_layers=False)
+    )
 
     assert len(plan) == 1
     item = plan[0]
@@ -69,16 +72,16 @@ def test_single_layer_y_down(engine):
     # 1. Check Crop Window (should match content)
     assert item.crop_window == (10, 10, 10, 10)
 
-    # 2. Check Normalization (Native -> 0-1)
-    # Top-Left of content (10, 10) should map to (0, 0)
+    # 2. Check Normalization (Native -> 0-1 Y-up)
+    # Top-Left of content (10, 10) should map to (0, 1) in Y-up
     p_norm = item.normalization_matrix.transform_point((10, 10))
     assert p_norm[0] == pytest.approx(0.0)
-    assert p_norm[1] == pytest.approx(0.0)
+    assert p_norm[1] == pytest.approx(1.0)
 
-    # Bottom-Right of content (20, 20) should map to (1, 1)
+    # Bottom-Right of content (20, 20) should map to (1, 0) in Y-up
     p_norm_end = item.normalization_matrix.transform_point((20, 20))
     assert p_norm_end[0] == pytest.approx(1.0)
-    assert p_norm_end[1] == pytest.approx(1.0)
+    assert p_norm_end[1] == pytest.approx(0.0)
 
     # 3. Check World Position (0-1 -> mm)
     # WorkPiece origin (0,0) in Rayforge is Bottom-Left.
@@ -105,8 +108,8 @@ def test_single_layer_y_up(engine):
         layers=[("layer1", (10, 10, 10, 10))],
         is_y_down=False,  # DXF style
     )
-
-    plan = engine.calculate_layout(vec_result, None)
+    spec = PassthroughSpec(create_new_layers=False)
+    plan = engine.calculate_layout(vec_result, spec)
     item = plan[0]
 
     # Y position should be 10 directly
@@ -118,7 +121,7 @@ def test_single_layer_y_up(engine):
 def test_merge_layers_union(engine):
     """
     Verifies that multiple layers are merged into a single item
-    representing their union bounding box by default.
+    representing their union bounding box when specified.
     """
     # Layer A: (0, 0, 10, 10)
     # Layer B: (20, 20, 10, 10)
@@ -131,7 +134,8 @@ def test_merge_layers_union(engine):
         ],
     )
 
-    plan = engine.calculate_layout(vec_result, None)
+    spec = PassthroughSpec(create_new_layers=False)
+    plan = engine.calculate_layout(vec_result, spec)
 
     assert len(plan) == 1
     item = plan[0]
@@ -162,7 +166,9 @@ def test_split_layers_alignment(engine):
         ],
     )
 
-    spec = PassthroughSpec(active_layer_ids=["Top", "Bottom"])
+    spec = PassthroughSpec(
+        active_layer_ids=["Top", "Bottom"], create_new_layers=True
+    )
     plan = engine.calculate_layout(vec_result, spec)
 
     assert len(plan) == 2
@@ -189,8 +195,8 @@ def test_unit_conversion(engine):
         layers=[("L1", (0, 0, 10, 10))],
         unit_scale=2.0,
     )
-
-    plan = engine.calculate_layout(vec_result, None)
+    spec = PassthroughSpec(create_new_layers=False)
+    plan = engine.calculate_layout(vec_result, spec)
     item = plan[0]
 
     # Size should be 10 * 2.0 = 20mm

@@ -43,7 +43,11 @@ def _setup_workpiece_with_context(
     importer: PngImporter, vectorization_spec=None
 ) -> WorkPiece:
     """Helper to run importer and correctly link workpiece to its source."""
-    payload = importer.get_doc_items(vectorization_spec=vectorization_spec)
+    import_result = importer.get_doc_items(
+        vectorization_spec=vectorization_spec
+    )
+    assert import_result is not None, "Importer returned None"
+    payload = import_result.payload
     assert payload is not None and payload.items, (
         "Importer failed to produce a workpiece. Surface was likely blank."
     )
@@ -134,7 +138,9 @@ class TestPngImporter:
         """
         png_data = request.getfixturevalue(png_data_fixture)
         importer = PngImporter(png_data)
-        payload = importer.get_doc_items(vectorization_spec=TraceSpec())
+        import_result = importer.get_doc_items(vectorization_spec=TraceSpec())
+        assert import_result is not None
+        payload = import_result.payload
 
         assert payload and payload.items and len(payload.items) == 1
         assert isinstance(payload.source, SourceAsset)
@@ -163,7 +169,9 @@ class TestPngImporter:
         """
         importer = PngImporter(color_png_data)
         # Pass None explicitly, expecting success now
-        payload = importer.get_doc_items(vectorization_spec=TraceSpec())
+        import_result = importer.get_doc_items(vectorization_spec=TraceSpec())
+        assert import_result is not None
+        payload = import_result.payload
 
         assert payload is not None
         assert payload.items
@@ -177,8 +185,8 @@ class TestPngImporter:
     def test_importer_handles_invalid_data(self):
         """Tests the importer returns None for invalid PNG data."""
         importer = PngImporter(b"this is not a png")
-        payload = importer.get_doc_items(vectorization_spec=TraceSpec())
-        assert payload is None
+        import_result = importer.get_doc_items(vectorization_spec=TraceSpec())
+        assert import_result is None
 
     def test_source_asset_serialization_with_metadata(self):
         """Checks that metadata is correctly serialized and deserialized."""

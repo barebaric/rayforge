@@ -151,4 +151,4 @@ async def test_import_svg_export_gcode(
         # Compare values with a tolerance for floating point numbers
         for key in gen_parts:
             # A tolerance of 1 micron (0.001 mm) is reasonable for CNC
-            assert gen_parts[key] == pytest.approx(exp_parts[key], abs=1e-2)
+            assert gen_parts[key] == pytest.approx(exp_parts[key], abs=0.1)

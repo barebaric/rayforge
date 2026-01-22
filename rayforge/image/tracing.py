@@ -21,7 +21,7 @@ BORDER_SIZE = 2
 MAX_VECTORS_LIMIT = 25000
 # A pixel count limit to prevent integer overflows in the underlying vtracer
 # native library.
-VTRACER_PIXEL_LIMIT = 2_020_000
+VTRACER_PIXEL_LIMIT = 1_220_000
 
 
 def _get_image_from_surface(

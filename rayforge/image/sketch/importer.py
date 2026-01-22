@@ -6,17 +6,17 @@ from typing import Optional, TYPE_CHECKING
 from ...core.sketcher.sketch import Sketch
 from ...core.source_asset import SourceAsset
 from ...core.workpiece import WorkPiece
-from ...core.vectorization_spec import PassthroughSpec
-from ..assembler import ItemAssembler
 from ..base_importer import (
     Importer,
-    ImportPayload,
     ImporterFeature,
+)
+from ..structures import (
+    ParsingResult,
+    LayerGeometry,
+    VectorizationResult,
+    ImportPayload,
     ImportManifest,
 )
-from ..engine import NormalizationEngine
-from ..structures import ParsingResult, LayerGeometry, VectorizationResult
-from .renderer import SKETCH_RENDERER
 
 if TYPE_CHECKING:
     from ...core.vectorization_spec import VectorizationSpec
@@ -37,7 +37,7 @@ class SketchImporter(Importer):
 
     def __init__(self, data: bytes, source_file: Optional[Path] = None):
         super().__init__(data, source_file)
-        self.renderer = SKETCH_RENDERER
+        # Note: renderer is looked up by name from the SourceAsset now
         self.parsed_sketch: Optional[Sketch] = None
 
     def scan(self) -> ImportManifest:
@@ -57,72 +57,30 @@ class SketchImporter(Importer):
                 warnings=["Could not parse Sketch file. It may be corrupt."],
             )
 
-    def get_doc_items(
-        self, vectorization_spec: Optional["VectorizationSpec"] = None
-    ) -> Optional[ImportPayload]:
+    def _post_process_payload(self, payload: ImportPayload) -> ImportPayload:
         """
-        Deserializes the raw sketch data and converts it into a WorkPiece.
+        Overrides the base importer hook to add sketch-specific data.
+        This links the generated WorkPieces back to the Sketch definition
+        and includes the Sketch itself in the payload for the document to
+        register.
         """
-        # Phase 2: Parse
-        parse_result = self.parse()
-        if not parse_result or not self.parsed_sketch:
-            return None
+        if not self.parsed_sketch:
+            return payload
 
-        # Create SourceAsset
-        source_asset = self.create_source_asset(parse_result)
-
-        spec = vectorization_spec or PassthroughSpec()
-
-        # Phase 3: Vectorize
-        vec_result = self.vectorize(parse_result, spec)
-
-        # Phase 4: Layout
-        engine = NormalizationEngine()
-        plan = engine.calculate_layout(vec_result, spec)
-        if not plan:
-            return ImportPayload(source=source_asset, items=[])
-
-        # Phase 5: Assembly
-        assembler = ItemAssembler()
-        # Use the sketch name for the item
-        final_name = self.parsed_sketch.name or "Untitled"
-        items = assembler.create_items(
-            source_asset=source_asset,
-            layout_plan=plan,
-            spec=spec,
-            source_name=final_name,
-            geometries=vec_result.geometries_by_layer,
-        )
-
-        # Post-Processing: Link WorkPieces to the Sketch object
-        # The assembler creates standard WorkPieces linked to the source
-        # segment. For Sketch items, we also need to link them to the
-        # Sketch asset itself.
-        for item in items:
+        for item in payload.items:
             if isinstance(item, WorkPiece):
                 item.sketch_uid = self.parsed_sketch.uid
-                # Pre-populate caches to prevent immediate re-solve.
-                # The geometry from _vectorize is in native units (mm), but the
-                # cache expects normalized 0-1 geometry. The assembler created
-                # the WorkPiece with the correct matrix.
-                # We can re-use the logic from WorkPiece.from_sketch or simply
-                # let the WorkPiece solve itself on first render. Since
-                # WorkPiece.from_sketch logic is complex, letting it self-heal
-                # is safer than duplicating normalization logic here.
-                # However, to match previous behavior, we can try to set it if
-                # simple.
-                pass
+                item.name = self.parsed_sketch.name
 
-        return ImportPayload(
-            source=source_asset,
-            items=items,
-            sketches=[self.parsed_sketch],
-        )
+        payload.sketches = [self.parsed_sketch]
+        return payload
 
     def create_source_asset(self, parse_result: ParsingResult) -> SourceAsset:
         """
         Creates a SourceAsset for Sketch import.
         """
+        from .renderer import SKETCH_RENDERER
+
         _, _, width, height = parse_result.page_bounds
 
         return SourceAsset(
@@ -130,7 +88,7 @@ class SketchImporter(Importer):
             if self.source_file
             else Path("sketch.rfs"),
             original_data=self.raw_data,
-            renderer=self.renderer,
+            renderer=SKETCH_RENDERER,
             metadata={"is_vector": True},
             width_mm=width,
             height_mm=height,
@@ -157,7 +115,6 @@ class SketchImporter(Importer):
         self.parsed_sketch.solve()
         geometry = self.parsed_sketch.to_geometry()
         # Note: Sketch geometry is Y-Up (mathematical).
-        # We need to standardize on Y-Down for the pipeline or flag it.
         # The pipeline assumes native_is_y_down=False means Y-Up.
 
         if geometry.is_empty():

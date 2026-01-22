@@ -1,7 +1,7 @@
 from pathlib import Path
 import pytest
 from rayforge.image import import_file
-from rayforge.core.vectorization_spec import TraceSpec
+from rayforge.core.vectorization_spec import TraceSpec, PassthroughSpec
 from rayforge.core.workpiece import WorkPiece
 
 
@@ -44,9 +44,11 @@ class TestSegmentMaskGeometry:
     ):
         """Test that vector import (SVG) populates segment_mask_geometry."""
         svg_path = tests_root / "image/svg/nested-rect.svg"
+        # Force merge strategy
         payload = import_file(
-            svg_path
-        )  # No vectorization_spec for direct import
+            svg_path,
+            vectorization_spec=PassthroughSpec(create_new_layers=False),
+        )
 
         assert payload is not None
         assert payload.source is not None
@@ -72,9 +74,11 @@ class TestSegmentMaskGeometry:
     ):
         """Test that DXF import populates segment_mask_geometry."""
         dxf_path = tests_root / "image/dxf/circle.dxf"
+        # Force merge strategy
         payload = import_file(
-            dxf_path
-        )  # No vectorization_spec for direct import
+            dxf_path,
+            vectorization_spec=PassthroughSpec(create_new_layers=False),
+        )
 
         assert payload is not None
         assert payload.source is not None
@@ -83,14 +87,16 @@ class TestSegmentMaskGeometry:
         assert len(payload.items) >= 1
 
         # Check the first workpiece
-        wp = payload.items[0]
-        assert isinstance(wp, WorkPiece)
+        item = payload.items[0]
+        # With merge strategy, we expect a WorkPiece directly
+        assert isinstance(item, WorkPiece)
+        wp = item
         assert wp.source_segment is not None
         assert wp.source_segment.pristine_geometry is not None
 
         # The boundaries property returns a Y-up version, while the source
-        # segment stores the original Y-down version. They should not be
-        # identical.
+        # segment stores the original Y-up version (since DXF is Y-up). They
+        # should not be identical because of the normalization flip logic.
         assert wp.boundaries is not None
         assert not wp.boundaries.is_empty()
         assert wp.boundaries.to_dict() != (
@@ -116,7 +122,10 @@ class TestSegmentMaskGeometry:
 
         # Test with vector import
         svg_path = tests_root / "image/svg/nested-rect.svg"
-        vector_payload = import_file(svg_path)
+        vector_payload = import_file(
+            svg_path,
+            vectorization_spec=PassthroughSpec(create_new_layers=False),
+        )
 
         assert vector_payload is not None
         wp_vector = vector_payload.items[0]

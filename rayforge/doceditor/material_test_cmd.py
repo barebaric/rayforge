@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING
 from ..core.item import DocItem
 from ..core.step import Step
 from ..core.undo import ListItemCommand
+from ..core.vectorization_spec import ProceduralSpec
 from ..core.workpiece import WorkPiece
 from ..image.procedural import ProceduralImporter
 from ..pipeline.producer.material_test_grid import (
@@ -63,13 +64,13 @@ class MaterialTestCmd:
                 params=params,
                 name=name,
             )
-            payload = importer.get_doc_items()
+            payload = importer.get_doc_items(ProceduralSpec())
             if not payload:
                 logger.error("Failed to create material test grid.")
                 return
 
-            source = payload.source
-            workpiece = payload.items[0]
+            source = payload.payload.source
+            workpiece = payload.payload.items[0]
             assert isinstance(workpiece, WorkPiece)
 
             self._doc.add_asset(source)

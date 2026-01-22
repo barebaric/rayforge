@@ -1,7 +1,49 @@
-from dataclasses import dataclass
-from typing import List, Tuple, Optional, Dict
+from dataclasses import dataclass, field
+from typing import List, Tuple, Optional, Dict, TYPE_CHECKING
 from ..core.geo import Geometry
 from ..core.matrix import Matrix
+
+if TYPE_CHECKING:
+    from ..core.item import DocItem
+    from ..core.source_asset import SourceAsset
+    from ..core.sketcher.sketch import Sketch
+
+
+@dataclass
+class LayerInfo:
+    """
+    A lightweight descriptor for a single layer discovered in a file scan.
+    """
+
+    id: str
+    name: str
+    color: Optional[Tuple[float, float, float]] = None
+    default_active: bool = True
+
+
+@dataclass
+class ImportManifest:
+    """
+    The result of a file scan, describing the file's contents and structure
+    without performing a full import.
+    """
+
+    layers: List[LayerInfo] = field(default_factory=list)
+    natural_size_mm: Optional[Tuple[float, float]] = None
+    title: Optional[str] = None
+    warnings: List[str] = field(default_factory=list)
+
+
+@dataclass
+class ImportPayload:
+    """
+    A container for the complete result of a file import operation.
+    It's a self-contained package ready for integration into a document.
+    """
+
+    source: "SourceAsset"
+    items: List["DocItem"]
+    sketches: List["Sketch"] = field(default_factory=list)
 
 
 @dataclass
@@ -54,6 +96,10 @@ class ParsingResult:
     # global native coordinate system (e.g. for DXF).
     geometry_is_relative_to_bounds: bool = False
 
+    # True if the page_bounds represent a cropped-to-content view, and the
+    # workpiece should be sized to these bounds, not the untrimmed bounds.
+    is_cropped_to_content: bool = False
+
 
 @dataclass
 class LayoutItem:
@@ -94,3 +140,15 @@ class VectorizationResult:
 
     # A reference to the original parse facts for context (e.g., page bounds).
     source_parse_result: ParsingResult
+
+
+@dataclass
+class ImportResult:
+    """
+    The complete, rich result of a file import operation, containing both the
+    final payload and the intermediate parsing facts for contextual use (like
+    previews).
+    """
+
+    payload: ImportPayload
+    parse_result: ParsingResult

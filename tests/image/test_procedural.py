@@ -16,7 +16,6 @@ from rayforge.image.procedural.renderer import PROCEDURAL_RENDERER
 
 # --- Mock Procedural Functions for Testing ---
 
-# FIX: Use a list for color to match JSON's array type.
 MOCK_PARAMS = {"width": 80.0, "height": 40.0, "color": [0.0, 1.0, 0.0]}
 
 
@@ -50,7 +49,9 @@ def _setup_workpiece_with_context(
     importer: ProceduralImporter,
 ) -> WorkPiece:
     """Helper to run importer and correctly link workpiece to its source."""
-    payload = importer.get_doc_items(ProceduralSpec())
+    import_result = importer.get_doc_items(ProceduralSpec())
+    assert import_result is not None, "Importer returned None"
+    payload = import_result.payload
     assert payload is not None
     source = payload.source
     wp = cast(WorkPiece, payload.items[0])
@@ -92,7 +93,9 @@ class TestProceduralImporter:
             params=MOCK_PARAMS,
             name="Test Procedural Item",
         )
-        payload = importer.get_doc_items(ProceduralSpec())
+        import_result = importer.get_doc_items(ProceduralSpec())
+        assert import_result is not None
+        payload = import_result.payload
 
         assert payload is not None
         assert len(payload.items) == 1
@@ -112,7 +115,9 @@ class TestProceduralImporter:
         # 2. Test the WorkPiece
         wp = cast(WorkPiece, payload.items[0])
         assert isinstance(wp, WorkPiece)
-        assert wp.name == "[Test Procedural Item]"
+        assert (
+            wp.name == "Test Procedural Item"
+        )  # Name is now passed through from importer
         assert wp.source_segment is not None
         assert wp.source_segment.source_asset_uid == source.uid
 
@@ -130,8 +135,8 @@ class TestProceduralImporter:
             params={},
             name="Bad Item",
         )
-        payload = importer.get_doc_items()
-        assert payload is None
+        import_result = importer.get_doc_items(ProceduralSpec())
+        assert import_result is None
 
 
 class TestProceduralRenderer:

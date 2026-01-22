@@ -11,6 +11,8 @@ from rayforge.doceditor.editor import DocEditor
 from rayforge.doceditor.file_cmd import FileCmd, PreviewResult, ImportAction
 from rayforge.image import (
     ImportPayload,
+    ImportResult,
+    ParsingResult,
     ImporterFeature,
     ImportManifest,
     LayerInfo,
@@ -64,6 +66,25 @@ def sample_payload(sample_workpiece, sample_source_asset):
     return ImportPayload(
         source=sample_source_asset,
         items=[sample_workpiece],
+    )
+
+
+@pytest.fixture
+def sample_parse_result():
+    """Provides a sample ParsingResult."""
+    return ParsingResult(
+        page_bounds=(0, 0, 10, 10),
+        native_unit_to_mm=1.0,
+        is_y_down=True,
+        layers=[],
+    )
+
+
+@pytest.fixture
+def sample_import_result(sample_payload, sample_parse_result):
+    """Provides a sample ImportResult."""
+    return ImportResult(
+        payload=sample_payload, parse_result=sample_parse_result
     )
 
 
@@ -132,8 +153,6 @@ class TestScanImportFile:
         mock_importer_instance.scan.side_effect = ValueError("Parsing failed")
 
         mock_importer_class = MagicMock()
-        # --- FIX ---
-        # Configure the __name__ attribute on the mock class itself.
         mock_importer_class.__name__ = "MockSvgImporter"
         mock_importer_class.return_value = mock_importer_instance
 
@@ -413,23 +432,27 @@ class TestFinalizeImportOnMainThread:
 class TestPreviewResult:
     """Tests for PreviewResult dataclass."""
 
-    def test_preview_result_creation(self):
+    def test_preview_result_creation(self, sample_parse_result):
         """Test creating a PreviewResult instance."""
         result = PreviewResult(
             image_bytes=b"fake png data",
             payload=None,
+            parse_result=sample_parse_result,
             aspect_ratio=1.5,
             warnings=["warning 1"],
         )
 
         assert result.image_bytes == b"fake png data"
         assert result.payload is None
+        assert result.parse_result is sample_parse_result
         assert result.aspect_ratio == 1.5
         assert result.warnings == ["warning 1"]
 
     def test_preview_result_defaults(self):
         """Test PreviewResult default values."""
-        result = PreviewResult(image_bytes=b"data", payload=None)
+        result = PreviewResult(
+            image_bytes=b"data", payload=None, parse_result=None
+        )
 
         assert result.aspect_ratio == 1.0
         assert result.warnings == []
@@ -444,7 +467,9 @@ class TestGeneratePreview:
         with patch.object(
             file_cmd,
             "_generate_preview_impl",
-            return_value=PreviewResult(image_bytes=b"png", payload=None),
+            return_value=PreviewResult(
+                image_bytes=b"png", payload=None, parse_result=None
+            ),
         ):
             result = await file_cmd.generate_preview(
                 b"data", "test.png", "image/png", TraceSpec(), 256
@@ -469,76 +494,65 @@ class TestGeneratePreview:
 class TestGeneratePreviewImpl:
     """Tests for _generate_preview_impl method."""
 
-    def test_preview_impl_no_payload(self, file_cmd):
-        """Test preview when no payload is generated."""
+    def test_preview_impl_no_import_result(self, file_cmd):
+        """Test preview when importer returns None."""
         with patch(
-            "rayforge.doceditor.file_cmd.import_file_from_bytes",
+            "rayforge.image.base_importer.Importer.get_doc_items",
             return_value=None,
         ):
             result = file_cmd._generate_preview_impl(
                 b"data", "test.png", "image/png", TraceSpec(), 256
             )
-
             assert result is None
 
-    def test_preview_impl_no_workpiece(self, file_cmd):
-        """Test preview when no WorkPiece is found."""
-        payload = ImportPayload(
-            source=SourceAsset(
-                source_file=Path("test.svg"),
-                original_data=b"<svg></svg>",
-                renderer=SVG_RENDERER,
-            ),
-            items=[],
-        )
-
+    def test_preview_impl_no_workpiece(self, file_cmd, sample_import_result):
+        """Test preview when no WorkPiece is found in the payload."""
+        sample_import_result.payload.items = []
         with patch(
-            "rayforge.doceditor.file_cmd.import_file_from_bytes",
-            return_value=payload,
+            "rayforge.image.base_importer.Importer.get_doc_items",
+            return_value=sample_import_result,
         ):
-            result = file_cmd._generate_preview_impl(
-                b"data", "test.png", "image/png", TraceSpec(), 256
-            )
-
-            assert result is None
+            with patch.object(
+                file_cmd, "_generate_rich_preview_result"
+            ) as mock_gen:
+                file_cmd._generate_preview_impl(
+                    b"data", "test.png", "image/png", TraceSpec(), 256
+                )
+                # Should still call the generator, which can handle empty items
+                mock_gen.assert_called_once()
 
 
 class TestLoadFileAsync:
     """Tests for _load_file_async method."""
 
     @pytest.mark.asyncio
-    async def test_load_file_async_success(self, file_cmd):
+    async def test_load_file_async_success(
+        self, file_cmd, sample_import_result
+    ):
         """Test successful async file load."""
-        payload = ImportPayload(
-            source=SourceAsset(
-                source_file=Path("test.svg"),
-                original_data=b"<svg></svg>",
-                renderer=SVG_RENDERER,
-            ),
-            items=[WorkPiece(name="Test")],
-        )
-
         with patch(
-            "rayforge.doceditor.file_cmd.import_file",
-            return_value=payload,
+            "rayforge.image.base_importer.Importer.get_doc_items",
+            return_value=sample_import_result,
         ):
             result = await file_cmd._load_file_async(
-                Path("test.svg"), "image/svg+xml", None
+                Path("tests") / "image" / "svg" / "o.svg",
+                "image/svg+xml",
+                None,
             )
-
-            assert result is payload
+            assert result is sample_import_result
 
     @pytest.mark.asyncio
     async def test_load_file_async_failure(self, file_cmd):
         """Test async file load failure."""
         with patch(
-            "rayforge.doceditor.file_cmd.import_file",
+            "rayforge.image.base_importer.Importer.get_doc_items",
             return_value=None,
         ):
             result = await file_cmd._load_file_async(
-                Path("test.svg"), "image/svg+xml", None
+                Path("tests") / "image" / "svg" / "o.svg",
+                "image/svg+xml",
+                None,
             )
-
             assert result is None
 
 

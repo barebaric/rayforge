@@ -23,6 +23,7 @@ with warnings.catch_warnings():
     import pyvips
 
 from ..context import get_context
+from ..core.geo import Geometry
 from ..core.item import DocItem
 from ..core.layer import Layer
 from ..core.matrix import Matrix
@@ -35,9 +36,6 @@ from ..core.vectorization_spec import (
 )
 from ..core.workpiece import WorkPiece
 from ..image import (
-    ImportPayload,
-    import_file,
-    import_file_from_bytes,
     importer_by_extension,
     importer_by_mime_type,
     importers,
@@ -45,6 +43,7 @@ from ..image import (
     ImportManifest,
     Importer,
 )
+from ..image.structures import ImportPayload, ImportResult, ParsingResult
 from ..pipeline.artifact import JobArtifact, JobArtifactHandle
 from .layout.align import PositionAtStrategy
 
@@ -61,13 +60,16 @@ logger = logging.getLogger(__name__)
 class PreviewResult:
     """
     Result of a preview generation operation.
-    Contains the rendered image bytes and the document items to display.
+    Contains the rendered image bytes, the document items to display, and the
+    parsing context needed for correct rendering.
     """
 
     image_bytes: bytes
     payload: Optional[ImportPayload]
+    parse_result: Optional[ParsingResult]  # Context for rendering
     aspect_ratio: float = 1.0
     warnings: List[str] = field(default_factory=list)
+    content_bounds: Optional[Tuple[float, float, float, float]] = None
 
 
 class ImportAction(Enum):
@@ -215,81 +217,28 @@ class FileCmd:
         preview_size_px: int,
     ) -> Optional[PreviewResult]:
         """Blocking implementation of preview generation."""
+        importer_cls, _ = self.get_importer_info(Path(filename), mime_type)
+        if not importer_cls:
+            return None
+
         try:
-            # 1. Get vector geometry and metadata
-            payload = import_file_from_bytes(
-                file_bytes,
-                filename,
-                mime_type,
-                spec,
+            importer = importer_cls(
+                data=file_bytes, source_file=Path(filename)
             )
+            import_result = importer.get_doc_items(spec)
 
-            if not payload or not payload.items:
-                return None
-
-            # Helper to find reference workpiece for crop/size logic
-            reference_wp = self._extract_first_workpiece(payload.items)
-            if not reference_wp:
-                return None
-
-            # 2. Generate high-res base image
-            vips_image = None
-            if isinstance(spec, TraceSpec):
-                # For tracing, use pre-rendered data (SVG trace) or raw bytes
-                image_bytes = payload.source.base_render_data or file_bytes
-                if not image_bytes:
-                    return None
-
-                full_image = pyvips.Image.new_from_buffer(image_bytes, "")
-
-                # Apply cropping if importer specified it
-                if (
-                    reference_wp.source_segment
-                    and reference_wp.source_segment.crop_window_px
-                ):
-                    x, y, w, h = map(
-                        int, reference_wp.source_segment.crop_window_px
+            if not import_result or not import_result.payload.items:
+                # Still return a result if the source asset was created but
+                # no items
+                # (e.g., for showing a background image with no vectors).
+                if import_result and import_result.payload.source:
+                    return self._generate_rich_preview_result(
+                        import_result, file_bytes, spec, preview_size_px
                     )
-                    vips_image = full_image.crop(x, y, w, h)
-                else:
-                    vips_image = full_image
-
-            elif isinstance(spec, PassthroughSpec):
-                # For direct SVG, render vector data at high resolution
-                if not payload.source.base_render_data:
-                    return None
-
-                vips_image = pyvips.Image.new_from_buffer(
-                    payload.source.base_render_data, "", scale=4.0
-                )
-
-            if not vips_image:
                 return None
 
-            # 3. Create thumbnail
-            aspect_ratio = (
-                vips_image.width / vips_image.height
-                if vips_image.height
-                else 1.0
-            )
-
-            preview_vips = vips_image.thumbnail_image(
-                preview_size_px,
-                height=preview_size_px,
-                size="both",
-            )
-
-            if isinstance(spec, TraceSpec) and spec.invert:
-                preview_vips = preview_vips.flatten(
-                    background=[255, 255, 255]
-                ).invert()
-
-            png_bytes = preview_vips.pngsave_buffer()
-
-            return PreviewResult(
-                image_bytes=png_bytes,
-                payload=payload,
-                aspect_ratio=aspect_ratio,
+            return self._generate_rich_preview_result(
+                import_result, file_bytes, spec, preview_size_px
             )
 
         except Exception as e:
@@ -298,6 +247,85 @@ class FileCmd:
             )
             return None
 
+    def _generate_rich_preview_result(
+        self,
+        import_result: ImportResult,
+        original_file_bytes: bytes,
+        spec: VectorizationSpec,
+        preview_size_px: int,
+    ) -> Optional[PreviewResult]:
+        """
+        Generates the final PreviewResult from a rich ImportResult.
+        This is the new central logic for creating preview bitmaps.
+        """
+        payload = import_result.payload
+        parse_result = import_result.parse_result
+
+        # 1. Generate high-res base image for the background
+        vips_image = None
+        content_bounds = None
+
+        if payload.source.base_render_data:
+            # Use the pre-rendered/trimmed data if available (SVG, Traced PNG)
+            vips_image = pyvips.Image.new_from_buffer(
+                payload.source.base_render_data, "", scale=4.0
+            )
+        elif payload.source.renderer:
+            # For formats that need on-the-fly rendering (DXF)
+            _, _, w_native, h_native = parse_result.page_bounds
+            if w_native <= 1e-9 or h_native <= 1e-9:
+                return None
+
+            render_width = 2048
+            render_height = int(render_width * h_native / w_native)
+
+            all_geos = Geometry()
+            for item in payload.items:
+                if (
+                    isinstance(item, WorkPiece)
+                    and item.source_segment
+                    and item.source_segment.pristine_geometry
+                ):
+                    all_geos.extend(item.source_segment.pristine_geometry)
+
+            vips_image = payload.source.renderer.render_base_image(
+                data=original_file_bytes,
+                width=render_width,
+                height=render_height,
+                boundaries=all_geos,
+                source_metadata=payload.source.metadata,
+            )
+
+            if not all_geos.is_empty():
+                min_x, min_y, max_x, max_y = all_geos.rect()
+                content_bounds = (min_x, min_y, max_x, max_y)
+
+        if not vips_image:
+            return None
+
+        # 2. Create thumbnail
+        aspect_ratio = (
+            vips_image.width / vips_image.height if vips_image.height else 1.0
+        )
+        preview_vips = vips_image.thumbnail_image(
+            preview_size_px, height=preview_size_px, size="both"
+        )
+
+        if isinstance(spec, TraceSpec) and spec.invert:
+            preview_vips = preview_vips.flatten(
+                background=[255, 255, 255]
+            ).invert()
+
+        png_bytes = preview_vips.pngsave_buffer()
+
+        return PreviewResult(
+            image_bytes=png_bytes,
+            payload=payload,
+            parse_result=parse_result,
+            aspect_ratio=aspect_ratio,
+            content_bounds=content_bounds,
+        )
+
     def _extract_first_workpiece(
         self, items: List[DocItem]
     ) -> Optional[WorkPiece]:
@@ -305,12 +333,10 @@ class FileCmd:
         for item in items:
             if isinstance(item, WorkPiece):
                 return item
-            if isinstance(item, Layer):
-                # Check direct children
-                for child in item.children:
-                    res = self._extract_first_workpiece([child])
-                    if res:
-                        return res
+            if hasattr(item, "children"):
+                res = self._extract_first_workpiece(item.children)
+                if res:
+                    return res
         return None
 
     async def _load_file_async(
@@ -318,13 +344,19 @@ class FileCmd:
         filename: Path,
         mime_type: Optional[str],
         vectorization_spec: Optional[VectorizationSpec],
-    ) -> Optional[ImportPayload]:
+    ) -> Optional[ImportResult]:
         """
         Runs the blocking import function in a background thread and returns
-        the resulting payload.
+        the resulting rich ImportResult.
         """
+        importer_cls, _ = self.get_importer_info(filename, mime_type)
+        if not importer_cls:
+            return None
+
+        file_data = filename.read_bytes()
+        importer = importer_cls(file_data, source_file=filename)
         return await asyncio.to_thread(
-            import_file, filename, mime_type, vectorization_spec
+            importer.get_doc_items, vectorization_spec
         )
 
     def _position_newly_imported_items(
@@ -422,6 +454,12 @@ class FileCmd:
         This includes positioning items (which may send UI notifications) and
         committing them to the document (which fires signals that update UI).
         """
+        item_info = (
+            f"{len(payload.items)} items"
+            if payload and payload.items
+            else "0 items"
+        )
+        logger.debug(f"Item_info: {item_info} position_mm: {position_mm}")
         # 1. Position the new items. This is now safe as it runs on the main
         #    thread, so any notifications it sends are valid.
         self._position_newly_imported_items(payload.items, position_mm)
@@ -457,6 +495,11 @@ class FileCmd:
                 to center the imported item.
                         If None, items are centered on the workspace.
         """
+        logger.debug(
+            f"Loading file: {filename} "
+            f"vectorization_spec: {vectorization_spec} "
+            f"position_mm: {position_mm}"
+        )
 
         # This wrapper adapts our clean async method to the TaskManager,
         # which expects a coroutine that accepts a 'ctx' argument.
@@ -468,10 +511,10 @@ class FileCmd:
                 )
 
                 # 1. Run blocking I/O and CPU work in a background thread.
-                payload = await self._load_file_async(fn, mt, vec_spec)
+                import_result = await self._load_file_async(fn, mt, vec_spec)
 
                 # 2. Validate the result.
-                if not payload or not payload.items:
+                if not import_result or not import_result.payload.items:
                     if mt and mt.startswith("image/"):
                         msg = _(
                             "Failed to import {filename}. The image file "
@@ -504,7 +547,7 @@ class FileCmd:
                     """Wraps finalizer to signal future on completion/error."""
                     try:
                         self._finalize_import_on_main_thread(
-                            payload, fn, pos_mm, vec_spec
+                            import_result.payload, fn, pos_mm, vec_spec
                         )
                         if not main_thread_done.done():
                             loop.call_soon_threadsafe(
@@ -570,22 +613,59 @@ class FileCmd:
         """
         Calculates the world-space bounding box that encloses a list of
         DocItems by taking the union of their individual bboxes.
+        This is more robust than item.bbox for un-parented items.
         """
         if not items:
             return None
 
-        # Get the bbox of the first item to initialize the bounds.
-        min_x, min_y, w, h = items[0].bbox
+        all_rects = []
+        for item in items:
+            # FIX: Use the item's matrix directly. This is robust for
+            # items not yet in the document tree, as their matrix IS their
+            # world transform at this point.
+            item_transform = item.matrix
+            item_bbox_local = item.get_local_bbox()
+
+            if item_bbox_local:
+                # Transform the four corners of the local bounding box
+                corners = [
+                    (item_bbox_local[0], item_bbox_local[1]),
+                    (
+                        item_bbox_local[0] + item_bbox_local[2],
+                        item_bbox_local[1],
+                    ),
+                    (
+                        item_bbox_local[0] + item_bbox_local[2],
+                        item_bbox_local[1] + item_bbox_local[3],
+                    ),
+                    (
+                        item_bbox_local[0],
+                        item_bbox_local[1] + item_bbox_local[3],
+                    ),
+                ]
+                world_corners = [
+                    item_transform.transform_point(p) for p in corners
+                ]
+
+                min_x = min(p[0] for p in world_corners)
+                min_y = min(p[1] for p in world_corners)
+                max_x = max(p[0] for p in world_corners)
+                max_y = max(p[1] for p in world_corners)
+                all_rects.append((min_x, min_y, max_x - min_x, max_y - min_y))
+
+        if not all_rects:
+            return None
+
+        # Calculate the union of all collected rectangles
+        min_x, min_y, w, h = all_rects[0]
         max_x = min_x + w
         max_y = min_y + h
 
-        # Expand the bounds with the bboxes of the other items.
-        for item in items[1:]:
-            ix, iy, iw, ih = item.bbox
-            min_x = min(min_x, ix)
-            min_y = min(min_y, iy)
-            max_x = max(max_x, ix + iw)
-            max_y = max(max_y, iy + ih)
+        for x, y, w, h in all_rects[1:]:
+            min_x = min(min_x, x)
+            min_y = min(min_y, y)
+            max_x = max(max_x, x + w)
+            max_y = max(max_y, y + h)
 
         return min_x, min_y, max_x - min_x, max_y - min_y
 
@@ -596,16 +676,13 @@ class FileCmd:
         workspace.
         """
         config = get_context().config
-        if not config:
-            return
-        machine = config.machine
-        if not machine:
-            # Cannot scale or center if machine dimensions are unknown
+        if not config or not config.machine:
             logger.warning(
                 "Cannot fit/center imported items: machine dimensions unknown."
             )
             return
 
+        machine = config.machine
         bbox = self._calculate_items_bbox(items)
         if not bbox:
             return
