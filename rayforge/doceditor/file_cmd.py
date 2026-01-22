@@ -369,6 +369,10 @@ class FileCmd:
         them at a specific point or fitting and centering them.
         This method modifies the items' matrices in-place.
         """
+        logger.debug(
+            f"_position_newly_imported_items: position_mm={position_mm}, "
+            f"items={len(items)}"
+        )
         if position_mm:
             strategy = PositionAtStrategy(items=items, position_mm=position_mm)
             deltas = strategy.calculate_deltas()
@@ -685,10 +689,18 @@ class FileCmd:
         machine = config.machine
         bbox = self._calculate_items_bbox(items)
         if not bbox:
+            logger.warning(
+                "Cannot fit/center imported items: no bounding box."
+            )
             return
 
         bbox_x, bbox_y, bbox_w, bbox_h = bbox
         machine_w, machine_h = machine.dimensions
+        logger.debug(
+            f"_fit_and_center_imported_items: bbox=({bbox_x:.2f}, "
+            f"{bbox_y:.2f}, {bbox_w:.2f}, {bbox_h:.2f}), "
+            f"machine=({machine_w:.2f}, {machine_h:.2f})"
+        )
 
         # 1. Scale to fit if necessary, preserving aspect ratio
         scale_factor = 1.0
