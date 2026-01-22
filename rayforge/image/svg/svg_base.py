@@ -218,12 +218,46 @@ class SvgImporterBase(Importer):
         untrimmed_document_bounds: Optional[
             Tuple[float, float, float, float]
         ] = None
-        untrimmed_size_mm = get_natural_size(self.raw_data)
 
-        if untrimmed_size_mm and unit_to_mm > 0:
-            untrimmed_w = untrimmed_size_mm[0] / unit_to_mm
-            untrimmed_h = untrimmed_size_mm[1] / unit_to_mm
-            untrimmed_document_bounds = (0, 0, untrimmed_w, untrimmed_h)
+        # First, try to get the authoritative untrimmed viewbox by parsing
+        # the original, untrimmed SVG data. This is the correct frame of
+        # reference for positioning.
+        untrimmed_svg_for_vb = self._parse_svg_data(self.raw_data)
+        if untrimmed_svg_for_vb:
+            untrimmed_facts = self._get_svg_parsing_facts(untrimmed_svg_for_vb)
+            if untrimmed_facts:
+                _w, _h, untrimmed_vb = untrimmed_facts
+                if untrimmed_vb:
+                    untrimmed_document_bounds = untrimmed_vb
+                    logger.debug(f"Found untrimmed viewBox: {untrimmed_vb}")
+                else:
+                    # Fallback for SVGs without a viewbox, use pixel dims
+                    untrimmed_document_bounds = (
+                        0.0,
+                        0.0,
+                        float(_w),
+                        float(_h),
+                    )
+                logger.debug(
+                    f"Using untrimmed viewBox: {untrimmed_document_bounds}"
+                )
+
+        # If parsing failed, fall back to calculating from physical size
+        if not untrimmed_document_bounds:
+            untrimmed_size_mm = get_natural_size(self.raw_data)
+            if untrimmed_size_mm and unit_to_mm > 0:
+                untrimmed_w = untrimmed_size_mm[0] / unit_to_mm
+                untrimmed_h = untrimmed_size_mm[1] / unit_to_mm
+                untrimmed_document_bounds = (
+                    0,
+                    0,
+                    untrimmed_w,
+                    untrimmed_h,
+                )
+                logger.debug(
+                    "Calculated untrimmed bounds from physical size: "
+                    f"{untrimmed_document_bounds}"
+                )
 
         # Calculate the authoritative world frame of reference (mm, Y-Up)
         ref_bounds_native = untrimmed_document_bounds or document_bounds
@@ -269,6 +303,11 @@ class SvgImporterBase(Importer):
             else:
                 vb_x, vb_y, orig_vb_w, orig_vb_h = 0, 0, orig_w_px, orig_h_px
 
+            logger.debug(
+                f"_analytical_trim: OrigPx={orig_w_px}x{orig_h_px}, "
+                f"VB=({vb_x}, {vb_y}, {orig_vb_w}, {orig_vb_h})"
+            )
+
             scale_x = orig_vb_w / orig_w_px if orig_w_px > 0 else 1.0
             scale_y = orig_vb_h / orig_h_px if orig_h_px > 0 else 1.0
 
@@ -282,6 +321,12 @@ class SvgImporterBase(Importer):
             geo_user_units.transform(final_transform.to_4x4_numpy())
 
             min_x, min_y, max_x, max_y = geo_user_units.rect()
+
+            logger.debug(
+                f"_analytical_trim: Content Bounds (User Units): "
+                f"min_x={min_x:.4f}, min_y={min_y:.4f}, "
+                f"max_x={max_x:.4f}, max_y={max_y:.4f}"
+            )
 
             # 3. Calculate new viewBox with padding to prevent clipping
             width = max_x - min_x
