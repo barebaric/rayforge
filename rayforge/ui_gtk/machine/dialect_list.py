@@ -97,7 +97,26 @@ class DialectRow(Gtk.Box):
 
     def _on_delete_response(self, dialog: Adw.MessageDialog, response_id: str):
         if response_id == "delete":
-            self.dialect_mgr.delete_dialect(self.dialect)
+            machines = get_context().machine_mgr.get_machines()
+            machines_using = self.dialect_mgr.get_machines_using_dialect(
+                self.dialect, machines
+            )
+            if machines_using:
+                machine_names = ", ".join(m.name for m in machines_using)
+                parent = cast(Gtk.Window, self.get_ancestor(Gtk.Window))
+                error_dialog = Adw.MessageDialog(
+                    transient_for=parent,
+                    heading=_("Cannot Delete Dialect"),
+                    body=_(
+                        "This dialect is still used by the following "
+                        "machine(s): {machines}"
+                    ).format(machines=machine_names),
+                )
+                error_dialog.add_response("ok", _("OK"))
+                error_dialog.set_default_response("ok")
+                error_dialog.present()
+                return
+            self.dialect_mgr.delete_dialect(self.dialect, machines)
 
 
 class DialectListEditor(PreferencesGroupWithButton):
