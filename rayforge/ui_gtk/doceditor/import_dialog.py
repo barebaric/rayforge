@@ -72,6 +72,11 @@ class ImportDialog(PatchedDialogWindow):
         header_bar = Adw.HeaderBar()
         main_box.append(header_bar)
 
+        # Banner for errors (e.g. SVG parse errors)
+        self.error_banner = Adw.Banner(title="")
+        self.error_banner.set_revealed(False)
+        main_box.append(self.error_banner)
+
         # Banner for warnings (e.g. SVG empty content)
         self.warning_banner = Adw.Banner(
             title=_(
@@ -269,6 +274,15 @@ class ImportDialog(PatchedDialogWindow):
                 for warning in self._manifest.warnings:
                     logger.warning(
                         f"Scan warning for {self.file_path.name}: {warning}"
+                    )
+            # Display any errors from the scan
+            if self._manifest and self._manifest.errors:
+                error_text = "\n".join(self._manifest.errors)
+                self.error_banner.set_title(error_text)
+                self.error_banner.set_revealed(True)
+                for error in self._manifest.errors:
+                    logger.error(
+                        f"Scan error for {self.file_path.name}: {error}"
                     )
             self._populate_layers_ui()
         except Exception:
