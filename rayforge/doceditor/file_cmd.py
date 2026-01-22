@@ -1,4 +1,5 @@
 import asyncio
+import json
 import logging
 import mimetypes
 import warnings
@@ -903,3 +904,71 @@ class FileCmd:
                     artifact_store.release(handle)
 
         self.assemble_job_in_background(when_done=_on_export_assembly_done)
+
+    def save_project_to_path(self, file_path: Path):
+        """
+        Saves the current document to a .ryp project file.
+        This is a synchronous method for the UI.
+        """
+        try:
+            doc_dict = self._editor.doc.to_dict()
+            file_path.write_text(
+                json.dumps(doc_dict, indent=2), encoding="utf-8"
+            )
+            self._editor.set_file_path(file_path)
+            self._editor.mark_as_saved()
+            logger.info(f"Successfully saved project to {file_path}")
+            msg = _("Project saved: {name}").format(name=file_path.name)
+            self._editor.notification_requested.send(self, message=msg)
+            return True
+        except Exception as e:
+            logger.error(f"Failed to save project to {file_path}", exc_info=e)
+            self._editor.notification_requested.send(
+                self, message=_("Save failed: {error}").format(error=str(e))
+            )
+            return False
+
+    def load_project_from_path(self, file_path: Path):
+        """
+        Loads a .ryp project file and replaces the current document.
+        This is a synchronous method for the UI.
+        """
+        try:
+            if not file_path.exists():
+                msg = _("File not found: {name}").format(name=file_path.name)
+                self._editor.notification_requested.send(self, message=msg)
+                return False
+
+            file_content = file_path.read_text(encoding="utf-8")
+            doc_dict = json.loads(file_content)
+
+            from ..core.doc import Doc
+
+            new_doc = Doc.from_dict(doc_dict)
+
+            self._editor.set_doc(new_doc)
+            self._editor.set_file_path(file_path)
+            self._editor.mark_as_saved()
+            self._editor.doc.updated.send(self._editor.doc)
+
+            logger.info(f"Successfully loaded project from {file_path}")
+            msg = _("Project loaded: {name}").format(name=file_path.name)
+            self._editor.notification_requested.send(self, message=msg)
+            return True
+        except json.JSONDecodeError as e:
+            logger.error(
+                f"Failed to parse project file {file_path}: {e}",
+                exc_info=e,
+            )
+            self._editor.notification_requested.send(
+                self, message=_("Invalid project file format")
+            )
+            return False
+        except Exception as e:
+            logger.error(
+                f"Failed to load project from {file_path}", exc_info=e
+            )
+            self._editor.notification_requested.send(
+                self, message=_("Load failed: {error}").format(error=str(e))
+            )
+            return False

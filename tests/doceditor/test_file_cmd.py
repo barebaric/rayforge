@@ -741,3 +741,321 @@ class TestExecuteBatchImport:
             # Verify calls
             mock_load.assert_any_call(files[0], "image/png", spec, pos)
             mock_load.assert_any_call(files[1], "image/jpeg", spec, pos)
+
+
+class TestProjectRoundTrip:
+    """Tests for save_project_to_path and load_project_from_path round trip."""
+
+    def _compare_docs(self, doc1, doc2):
+        """Compare two documents for equality."""
+        assert doc1.uid == doc2.uid
+        assert doc1._active_layer_index == doc2._active_layer_index
+        assert len(doc1.children) == len(doc2.children)
+        assert len(doc1.assets) == len(doc2.assets)
+        assert len(doc1.asset_order) == len(doc2.asset_order)
+
+    def _compare_layers(self, layer1, layer2):
+        """Compare two layers for equality."""
+        assert layer1.uid == layer2.uid
+        assert layer1.name == layer2.name
+        assert layer1.visible == layer2.visible
+        assert layer1.stock_item_uid == layer2.stock_item_uid
+        assert len(layer1.children) == len(layer2.children)
+
+    def _compare_workpieces(self, wp1, wp2):
+        """Compare two workpieces for equality."""
+        assert wp1.uid == wp2.uid
+        assert wp1.name == wp2.name
+        assert wp1.natural_width_mm == wp2.natural_width_mm
+        assert wp1.natural_height_mm == wp2.natural_height_mm
+        assert wp1.tabs_enabled == wp2.tabs_enabled
+        assert wp1.sketch_uid == wp2.sketch_uid
+        assert wp1.source_asset_uid == wp2.source_asset_uid
+        assert len(wp1.tabs) == len(wp2.tabs)
+
+    def _compare_groups(self, group1, group2):
+        """Compare two groups for equality."""
+        assert group1.uid == group2.uid
+        assert group1.name == group2.name
+        assert len(group1.children) == len(group2.children)
+
+    def _compare_stock_items(self, item1, item2):
+        """Compare two stock items for equality."""
+        assert item1.uid == item2.uid
+        assert item1.name == item2.name
+        assert item1.stock_asset_uid == item2.stock_asset_uid
+        assert item1.visible == item2.visible
+
+    def _compare_assets(self, asset1, asset2):
+        """Compare two assets for equality."""
+        assert asset1.uid == asset2.uid
+        assert asset1.name == asset2.name
+        assert asset1.asset_type_name == asset2.asset_type_name
+
+    def test_round_trip_minimal_project(self, file_cmd, tmp_path):
+        """Test round trip for minimal project with single layer."""
+        import_file = Path(__file__).parent / "assets" / "minimal_project.ryp"
+        export_file = tmp_path / "minimal_export.ryp"
+
+        # Import project
+        result = file_cmd.load_project_from_path(import_file)
+        assert result is True
+
+        # Export project
+        result = file_cmd.save_project_to_path(export_file)
+        assert result is True
+        assert export_file.exists()
+
+        # Import exported project
+        result = file_cmd.load_project_from_path(export_file)
+        assert result is True
+
+    def test_round_trip_multiple_layers(self, file_cmd, tmp_path):
+        """Test round trip for project with multiple layers."""
+        import_file = Path(__file__).parent / "assets" / "multiple_layers.ryp"
+        export_file = tmp_path / "multiple_layers_export.ryp"
+
+        # Import project
+        result = file_cmd.load_project_from_path(import_file)
+        assert result is True
+
+        # Verify layers loaded correctly
+        assert len(file_cmd._editor.doc.layers) == 3
+        assert file_cmd._editor.doc.layers[0].name == "Layer 1"
+        assert file_cmd._editor.doc.layers[1].name == "Layer 2"
+        assert file_cmd._editor.doc.layers[2].name == "Layer 3"
+        assert file_cmd._editor.doc.layers[2].visible is False
+
+        # Export project
+        result = file_cmd.save_project_to_path(export_file)
+        assert result is True
+        assert export_file.exists()
+
+        # Import exported project
+        result = file_cmd.load_project_from_path(export_file)
+        assert result is True
+
+        # Verify layers after round trip
+        assert len(file_cmd._editor.doc.layers) == 3
+        assert file_cmd._editor.doc.layers[2].visible is False
+
+    def test_round_trip_workpieces(self, file_cmd, tmp_path):
+        """Test round trip for project with workpieces."""
+        import_file = (
+            Path(__file__).parent / "assets" / "workpieces_project.ryp"
+        )
+        export_file = tmp_path / "workpieces_export.ryp"
+
+        # Import project
+        result = file_cmd.load_project_from_path(import_file)
+        assert result is True
+
+        # Verify workpieces loaded
+        workpieces = file_cmd._editor.doc.all_workpieces
+        assert len(workpieces) == 2
+        assert workpieces[0].name == "Rectangle"
+        assert workpieces[1].name == "Circle"
+
+        # Export project
+        result = file_cmd.save_project_to_path(export_file)
+        assert result is True
+        assert export_file.exists()
+
+        # Import exported project
+        result = file_cmd.load_project_from_path(export_file)
+        assert result is True
+
+        # Verify workpieces after round trip
+        workpieces = file_cmd._editor.doc.all_workpieces
+        assert len(workpieces) == 2
+        assert workpieces[0].natural_width_mm == 10.0
+        assert workpieces[1].natural_width_mm == 20.0
+
+    def test_round_trip_groups(self, file_cmd, tmp_path):
+        """Test round trip for project with groups."""
+        import_file = Path(__file__).parent / "assets" / "groups_project.ryp"
+        export_file = tmp_path / "groups_export.ryp"
+
+        # Import project
+        result = file_cmd.load_project_from_path(import_file)
+        assert result is True
+
+        # Verify groups loaded
+        from rayforge.core.group import Group
+
+        groups = [
+            c
+            for c in file_cmd._editor.doc.get_descendants()
+            if isinstance(c, Group)
+        ]
+        assert len(groups) == 3
+
+        # Export project
+        result = file_cmd.save_project_to_path(export_file)
+        assert result is True
+        assert export_file.exists()
+
+        # Import exported project
+        result = file_cmd.load_project_from_path(export_file)
+        assert result is True
+
+        # Verify groups after round trip
+        groups = [
+            c
+            for c in file_cmd._editor.doc.get_descendants()
+            if isinstance(c, Group)
+        ]
+        assert len(groups) == 3
+
+    def test_round_trip_stock(self, file_cmd, tmp_path):
+        """Test round trip for project with stock items."""
+        import_file = Path(__file__).parent / "assets" / "stock_project.ryp"
+        export_file = tmp_path / "stock_export.ryp"
+
+        # Import project
+        result = file_cmd.load_project_from_path(import_file)
+        assert result is True
+
+        # Verify stock items loaded
+        stock_items = file_cmd._editor.doc.stock_items
+        assert len(stock_items) == 2
+        assert stock_items[0].name == "Plywood Sheet"
+        assert stock_items[1].name == "Acrylic Sheet"
+        assert stock_items[1].visible is False
+
+        # Verify stock assets loaded
+        from rayforge.core.stock_asset import StockAsset
+
+        stock_assets = [
+            a
+            for a in file_cmd._editor.doc.get_all_assets()
+            if isinstance(a, StockAsset)
+        ]
+        assert len(stock_assets) == 2
+        assert stock_assets[0].thickness == 18.0
+        assert stock_assets[1].thickness == 5.0
+
+        # Export project
+        result = file_cmd.save_project_to_path(export_file)
+        assert result is True
+        assert export_file.exists()
+
+        # Import exported project
+        result = file_cmd.load_project_from_path(export_file)
+        assert result is True
+
+        # Verify stock after round trip
+        stock_items = file_cmd._editor.doc.stock_items
+        assert len(stock_items) == 2
+        assert stock_items[1].visible is False
+
+    def test_round_trip_sketch(self, file_cmd, tmp_path):
+        """Test round trip for project with sketches."""
+        import_file = Path(__file__).parent / "assets" / "sketch_project.ryp"
+        export_file = tmp_path / "sketch_export.ryp"
+
+        # Import project
+        result = file_cmd.load_project_from_path(import_file)
+        assert result is True
+
+        # Verify sketches loaded
+        from rayforge.core.sketcher.sketch import Sketch
+
+        sketches = [
+            a
+            for a in file_cmd._editor.doc.get_all_assets()
+            if isinstance(a, Sketch)
+        ]
+        assert len(sketches) == 1
+        assert sketches[0].name == "Rectangle"
+
+        # Verify workpieces with sketches
+        workpieces = file_cmd._editor.doc.all_workpieces
+        assert len(workpieces) == 1
+        assert workpieces[0].sketch_uid is not None
+
+        # Export project
+        result = file_cmd.save_project_to_path(export_file)
+        assert result is True
+        assert export_file.exists()
+
+        # Import exported project
+        result = file_cmd.load_project_from_path(export_file)
+        assert result is True
+
+        # Verify sketches after round trip
+        sketches = [
+            a
+            for a in file_cmd._editor.doc.get_all_assets()
+            if isinstance(a, Sketch)
+        ]
+        assert len(sketches) == 1
+
+    def test_round_trip_comprehensive(self, file_cmd, tmp_path):
+        """Test round trip for comprehensive project with all features."""
+        import_file = (
+            Path(__file__).parent / "assets" / "comprehensive_project.ryp"
+        )
+        export_file = tmp_path / "comprehensive_export.ryp"
+
+        # Import project
+        result = file_cmd.load_project_from_path(import_file)
+        assert result is True
+
+        # Verify comprehensive features loaded
+        assert len(file_cmd._editor.doc.layers) == 2
+        assert file_cmd._editor.doc._active_layer_index == 1
+        assert len(file_cmd._editor.doc.stock_items) == 2
+        assert len(file_cmd._editor.doc.all_workpieces) == 2
+
+        # Export project
+        result = file_cmd.save_project_to_path(export_file)
+        assert result is True
+        assert export_file.exists()
+
+        # Import exported project
+        result = file_cmd.load_project_from_path(export_file)
+        assert result is True
+
+        # Verify comprehensive features after round trip
+        assert len(file_cmd._editor.doc.layers) == 2
+        assert file_cmd._editor.doc._active_layer_index == 1
+        assert len(file_cmd._editor.doc.stock_items) == 2
+        assert len(file_cmd._editor.doc.all_workpieces) == 2
+
+    def test_round_trip_all_project_files(self, file_cmd, tmp_path):
+        """Test round trip for all project files in assets directory."""
+        assets_dir = Path(__file__).parent / "assets"
+        project_files = list(assets_dir.glob("*.ryp"))
+
+        assert len(project_files) > 0, "No .ryp files found in assets"
+
+        for project_file in project_files:
+            export_file = tmp_path / f"{project_file.stem}_export.ryp"
+
+            # Import project
+            result = file_cmd.load_project_from_path(project_file)
+            assert result is True, f"Failed to load {project_file.name}"
+
+            # Capture document state before round trip
+            doc_dict_before = file_cmd._editor.doc.to_dict()
+
+            # Export project
+            result = file_cmd.save_project_to_path(export_file)
+            assert result is True, f"Failed to save {project_file.name}"
+            assert export_file.exists()
+
+            # Import exported project (round trip)
+            result = file_cmd.load_project_from_path(export_file)
+            assert result is True, (
+                f"Failed to load exported {project_file.stem}"
+            )
+
+            # Capture document state after round trip
+            doc_dict_after = file_cmd._editor.doc.to_dict()
+
+            # Compare documents as a whole
+            assert doc_dict_before == doc_dict_after, (
+                f"Document state changed after round trip for "
+                f"{project_file.name}"
+            )
