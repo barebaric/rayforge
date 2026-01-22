@@ -288,7 +288,22 @@ class ImportDialog(PatchedDialogWindow):
 
         for layer_info in self._manifest.layers:
             row = Adw.ActionRow(title=layer_info.name)
-            switch = Gtk.Switch(active=True, valign=Gtk.Align.CENTER)
+
+            count = layer_info.feature_count
+            is_empty = count is not None and count == 0
+
+            # Configure row subtitle based on content
+            if is_empty:
+                row.set_subtitle(_("Layer is empty"))
+                row.set_sensitive(False)
+            elif count is not None:
+                row.set_subtitle(_("Layer with {n} vectors").format(n=count))
+
+            switch = Gtk.Switch(
+                active=not is_empty,
+                valign=Gtk.Align.CENTER,
+            )
+            switch.set_sensitive(not is_empty)
             switch._layer_id = layer_info.id  # type: ignore
             switch.connect("notify::active", self._schedule_preview_update)
 

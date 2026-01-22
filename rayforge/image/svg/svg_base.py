@@ -69,7 +69,11 @@ class SvgImporterBase(Importer):
             size_mm = get_natural_size(self.raw_data)
             layer_data = extract_layer_manifest(self.raw_data)
             layers = [
-                LayerInfo(id=layer["id"], name=layer["name"])
+                LayerInfo(
+                    id=layer["id"],
+                    name=layer["name"],
+                    feature_count=layer.get("count"),
+                )
                 for layer in layer_data
             ]
         except ET.ParseError as e:

@@ -1,5 +1,5 @@
 import warnings
-from typing import Tuple, Optional, List, Dict
+from typing import Tuple, Optional, List, Dict, Any
 from xml.etree import ElementTree as ET
 import logging
 
@@ -20,6 +20,20 @@ MM_PER_PX: float = 25.4 / PPI
 
 INKSCAPE_NS = "http://www.inkscape.org/namespaces/inkscape"
 SVG_NS = "http://www.w3.org/2000/svg"
+
+# Tags that represent vector geometry
+SHAPE_TAGS = {
+    "path",
+    "rect",
+    "circle",
+    "ellipse",
+    "line",
+    "polyline",
+    "polygon",
+    "text",
+    "image",
+}
+
 
 # Register namespaces to prevent ElementTree from mangling them (ns0:tags)
 try:
@@ -221,9 +235,10 @@ def _get_local_tag_name(element: ET.Element) -> str:
     return element.tag.rsplit("}", 1)[-1]
 
 
-def extract_layer_manifest(data: bytes) -> List[Dict[str, str]]:
+def extract_layer_manifest(data: bytes) -> List[Dict[str, Any]]:
     """
     Parses the SVG to find top-level groups with IDs, treating them as layers.
+    Also counts the number of geometric elements in each layer.
     """
     if not data:
         return []
@@ -238,8 +253,24 @@ def extract_layer_manifest(data: bytes) -> List[Dict[str, str]]:
 
             if tag == "g" and layer_id:
                 label = child.get(f"{{{INKSCAPE_NS}}}label") or layer_id
-                layers.append({"id": layer_id, "name": label})
-                logger.debug(f"Found layer: ID='{layer_id}', Name='{label}'")
+
+                # Count visual elements recursively to detect empty layers
+                feature_count = 0
+                for elem in child.iter():
+                    if _get_local_tag_name(elem) in SHAPE_TAGS:
+                        feature_count += 1
+
+                layers.append(
+                    {
+                        "id": layer_id,
+                        "name": label,
+                        "count": feature_count,
+                    }
+                )
+                logger.debug(
+                    f"Found layer: ID='{layer_id}', "
+                    f"Name='{label}', Count={feature_count}"
+                )
     except ET.ParseError as e:
         logger.error(f"Failed to parse SVG for layer extraction: {e}")
         return []
