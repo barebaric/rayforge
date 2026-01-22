@@ -74,8 +74,21 @@ class DxfImporter(Importer):
                 title=self.source_file.name, errors=self._errors
             )
 
+        # Count entities per layer to detect empty layers
+        counts: DefaultDict[str, int] = defaultdict(int)
+        if doc.modelspace():
+            for e in doc.modelspace():
+                counts[e.dxf.layer] += 1
+
         manifest_data = self._get_layer_manifest(doc)
-        layers = [LayerInfo(id=m["id"], name=m["name"]) for m in manifest_data]
+        layers = []
+        for m in manifest_data:
+            lid = m["id"]
+            count = counts.get(lid, 0)
+            layers.append(
+                LayerInfo(id=lid, name=m["name"], feature_count=count)
+            )
+
         bounds = self._get_bounds_mm(doc)
         size_mm = (bounds[2], bounds[3]) if bounds else None
 

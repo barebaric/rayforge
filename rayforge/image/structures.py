@@ -19,6 +19,7 @@ class LayerInfo:
     name: str
     color: Optional[Tuple[float, float, float]] = None
     default_active: bool = True
+    feature_count: Optional[int] = None
 
 
 @dataclass
