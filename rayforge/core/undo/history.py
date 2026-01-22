@@ -50,6 +50,12 @@ class HistoryManager:
         self.transaction_commands: List[Command] = []
         self.transaction_name: str = ""
 
+        # Track a checkpoint: None means the current state is at the
+        # checkpoint (no changes since checkpoint was set).
+        # A Command reference means that command and all commands below it
+        # in the undo stack represent the checkpointed state.
+        self._checkpoint: Optional[Command] = None
+
     def execute(self, command: Command):
         """
         Executes a command and adds it to the history, possibly coalescing
@@ -245,4 +251,43 @@ class HistoryManager:
         self.redo_stack.clear()
         self.in_transaction = False
         self.transaction_commands.clear()
+        self._checkpoint = None
         self.changed.send(self, command=None)
+
+    def set_checkpoint(self):
+        """
+        Marks the current state as a checkpoint.
+        The checkpoint is used to track whether the current state
+        matches the checkpointed state.
+        """
+        if self.undo_stack:
+            self._checkpoint = self.undo_stack[-1]
+        else:
+            self._checkpoint = None
+
+    def is_at_checkpoint(self) -> bool:
+        """
+        Returns True if the current state matches the checkpointed state.
+
+        The state is considered at the checkpoint if:
+        - There is no checkpoint set (None) AND undo stack is empty,
+          meaning we're at the initial state, or
+        - The top of the undo stack is the checkpoint command
+
+        This allows the caller to determine if undoing/redoing has brought
+        the state back to the checkpointed position.
+        """
+        if self._checkpoint is None:
+            return not self.undo_stack
+
+        if not self.undo_stack:
+            return False
+
+        return self.undo_stack[-1] is self._checkpoint
+
+    def clear_checkpoint(self):
+        """Clears the checkpoint, treating current state as checkpointed."""
+        if self.undo_stack:
+            self._checkpoint = self.undo_stack[-1]
+        else:
+            self._checkpoint = None
