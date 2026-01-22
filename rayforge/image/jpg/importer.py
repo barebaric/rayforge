@@ -23,6 +23,7 @@ from ..structures import (
 )
 from ..tracing import trace_surface
 from .renderer import JPG_RENDERER
+from ..engine import NormalizationEngine
 
 logger = logging.getLogger(__name__)
 
@@ -137,7 +138,30 @@ class JpgImporter(Importer):
             default_dpi = 96.0
             native_unit_to_mm = 25.4 / default_dpi
 
-        parse_result = ParsingResult(
+        # World frame is Y-Up, so y-origin is 0.
+        x, y, w, h = page_bounds
+        world_frame = (
+            x * native_unit_to_mm,
+            0.0,
+            w * native_unit_to_mm,
+            h * native_unit_to_mm,
+        )
+
+        # Create temporary result to calculate background transform
+        temp_result = ParsingResult(
+            page_bounds=page_bounds,
+            native_unit_to_mm=native_unit_to_mm,
+            is_y_down=True,
+            layers=[],
+            world_frame_of_reference=world_frame,
+            background_world_transform=None,  # type: ignore
+        )
+
+        bg_item = NormalizationEngine.calculate_layout_item(
+            page_bounds, temp_result
+        )
+
+        return ParsingResult(
             page_bounds=page_bounds,
             native_unit_to_mm=native_unit_to_mm,
             is_y_down=True,
@@ -148,5 +172,6 @@ class JpgImporter(Importer):
                     content_bounds=page_bounds,
                 )
             ],
+            world_frame_of_reference=world_frame,
+            background_world_transform=bg_item.world_matrix,
         )
-        return parse_result

@@ -13,12 +13,13 @@ with warnings.catch_warnings():
 from ...core.geo import Geometry
 from ...core.source_asset import SourceAsset
 from ...core.vectorization_spec import TraceSpec, VectorizationSpec
+from .. import image_util
 from ..base_importer import (
     Importer,
     ImporterFeature,
 )
+from ..engine import NormalizationEngine
 from ..tracing import trace_surface
-from .. import image_util
 from ..structures import (
     ParsingResult,
     LayerGeometry,
@@ -154,14 +155,33 @@ class BmpImporter(Importer):
         # Page bounds are the full image dimensions
         page_bounds = (0.0, 0.0, float(width), float(height))
 
-        # For tracing, geometries are traced from the full image, so content
-        # bounds should match page bounds to ensure correct alignment.
-        content_bounds = page_bounds
+        # World frame is Y-Up, so y-origin is 0. BMPs have no untrimmed bounds.
+        x, y, w, h = page_bounds
+        world_frame = (
+            x * native_unit_to_mm,
+            0.0,
+            w * native_unit_to_mm,
+            h * native_unit_to_mm,
+        )
+
+        # Create temporary result to calculate background transform
+        temp_result = ParsingResult(
+            page_bounds=page_bounds,
+            native_unit_to_mm=native_unit_to_mm,
+            is_y_down=True,
+            layers=[],
+            world_frame_of_reference=world_frame,
+            background_world_transform=None,  # type: ignore
+        )
+
+        bg_item = NormalizationEngine.calculate_layout_item(
+            page_bounds, temp_result
+        )
 
         # BMP is a single-layer format, use a default layer ID
         layer_id = "__default__"
 
-        parse_result = ParsingResult(
+        return ParsingResult(
             page_bounds=page_bounds,
             native_unit_to_mm=native_unit_to_mm,
             is_y_down=True,
@@ -169,9 +189,9 @@ class BmpImporter(Importer):
                 LayerGeometry(
                     layer_id=layer_id,
                     name=layer_id,
-                    content_bounds=content_bounds,
+                    content_bounds=page_bounds,
                 )
             ],
+            world_frame_of_reference=world_frame,
+            background_world_transform=bg_item.world_matrix,
         )
-
-        return parse_result

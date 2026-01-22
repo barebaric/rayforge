@@ -18,6 +18,7 @@ from ...doceditor.file_cmd import PreviewResult
 from ...image.base_importer import ImporterFeature
 from ...image.structures import ImportManifest
 from ..shared.patched_dialog_window import PatchedDialogWindow
+from ...core.matrix import Matrix
 
 if TYPE_CHECKING:
     from ...doceditor.editor import DocEditor
@@ -433,15 +434,13 @@ class ImportDialog(PatchedDialogWindow):
         ctx.set_source(pattern)
         ctx.paint()
 
-    # ... inside the ImportDialog class in import_dialog.py ...
-
     def _on_draw_preview(
-        self, area: Gtk.DrawingArea, ctx: cairo.Context, w, h
+        self, area: Gtk.DrawingArea, ctx: cairo.Context, w: int, h: int
     ):
         """
-        Draws the background image and vectors onto the preview area using a
-        unified strategy that aligns vectors to the background image's frame
-        of reference.
+        Draws the preview using the authoritative frame of reference and
+        pre-calculated transforms provided by the backend. This method
+        contains no format-specific logic.
         """
         self._draw_checkerboard_background(ctx, w, h)
 
@@ -453,12 +452,18 @@ class ImportDialog(PatchedDialogWindow):
         ):
             return
 
-        # --- 1. Calculate Preview Area Geometry ---
-        # The drawing area is based on the aspect ratio of the background
-        # image pixbuf
-        bg_w_px = self._background_pixbuf.get_width()
-        bg_h_px = self._background_pixbuf.get_height()
-        if bg_w_px <= 0 or bg_h_px <= 0:
+        parse_result = self._preview_result.parse_result
+        payload = self._preview_result.payload
+
+        # The backend MUST provide the frame and background transform.
+        assert parse_result.world_frame_of_reference is not None
+        assert parse_result.background_world_transform is not None
+
+        # --- 1. Establish the World-to-Canvas Transform ---
+        frame_x, frame_y, frame_w, frame_h = (
+            parse_result.world_frame_of_reference
+        )
+        if frame_w <= 1e-9 or frame_h <= 1e-9:
             return
 
         margin = 20
@@ -466,89 +471,67 @@ class ImportDialog(PatchedDialogWindow):
         if view_w <= 0 or view_h <= 0:
             return
 
-        scale = min(view_w / bg_w_px, view_h / bg_h_px)
-        draw_w = bg_w_px * scale
-        draw_h = bg_h_px * scale
-        draw_x = (w - draw_w) / 2
-        draw_y = (h - draw_h) / 2
+        scale = min(view_w / frame_w, view_h / frame_h)
 
-        # --- 2. Draw Background Image ---
+        # This matrix maps the Y-Up world space to the Y-Down canvas space,
+        # centering the world frame in the drawing area.
+        world_to_canvas = (
+            Matrix.translation(w / 2, h / 2)
+            @ Matrix.scale(scale, -scale)
+            @ Matrix.translation(
+                -(frame_x + frame_w / 2), -(frame_y + frame_h / 2)
+            )
+        )
+
+        # --- 2. Draw the Background Image ---
         ctx.save()
-        ctx.translate(draw_x, draw_y)
-        ctx.scale(draw_w / bg_w_px, draw_h / bg_h_px)
+
+        # The background's transform maps a 1x1 unit square to its place
+        # in the Y-Up world. We compose it with the master transform to get
+        # its final position on the Y-Down canvas.
+        final_bg_transform = (
+            world_to_canvas @ parse_result.background_world_transform
+        )
+
+        # The transform positions a 1x1 unit square. We need to find the
+        # top-left corner and the size on the canvas.
+        top_left = final_bg_transform.transform_point((0, 1))
+        top_right = final_bg_transform.transform_point((1, 1))
+        bottom_left = final_bg_transform.transform_point((0, 0))
+
+        canvas_w = top_right[0] - top_left[0]
+        canvas_h = bottom_left[1] - top_left[1]
+
+        # Draw the pixbuf directly into its calculated canvas rectangle.
+        ctx.translate(top_left[0], top_left[1])
+        ctx.scale(
+            canvas_w / self._background_pixbuf.get_width(),
+            canvas_h / self._background_pixbuf.get_height(),
+        )
         Gdk.cairo_set_source_pixbuf(ctx, self._background_pixbuf, 0, 0)
         ctx.paint()
         ctx.restore()
 
-        # --- 3. Draw Vector Overlay ---
-        payload = self._preview_result.payload
-        if not payload.items:
-            return
-
-        # Find a reference WorkPiece to determine the physical size and
-        # world position of the background image content.
-        def find_first_workpiece(items: List[DocItem]) -> Optional[WorkPiece]:
-            for item in items:
-                if isinstance(item, WorkPiece):
-                    return item
-                if hasattr(item, "children"):
-                    res = find_first_workpiece(item.children)
-                    if res:
-                        return res
-            return None
-
-        ref_wp = find_first_workpiece(payload.items)
-        if not ref_wp:
-            return
-
-        # This is the physical rectangle in world space (mm) that the
-        # background image represents.
-        bg_dims_mm = (ref_wp.natural_width_mm, ref_wp.natural_height_mm)
-        bg_origin_mm = ref_wp.matrix.get_translation()
-
-        if bg_dims_mm[0] <= 1e-9 or bg_dims_mm[1] <= 1e-9:
-            return
-
+        # --- 3. Draw Vector Overlays ---
         ctx.save()
+        # Set the master transform for all vector drawing.
+        ctx.transform(cairo.Matrix(*world_to_canvas.for_cairo()))
 
-        # Step A: Transform context to match the background's physical space.
-        # 1. Move to where the background image is drawn.
-        ctx.translate(draw_x, draw_y)
-        # 2. Scale so 1 unit = 1mm of the background's content.
-        ctx.scale(draw_w / bg_dims_mm[0], draw_h / bg_dims_mm[1])
-        # 3. Flip to a Y-Up coordinate system.
-        ctx.translate(0, bg_dims_mm[1])
-        ctx.scale(1, -1)
-
-        # Step B: Align the absolute world with our background-relative
-        # context.
-        # We translate our context by the inverse of the background's
-        # world position. This brings any item at `bg_origin_mm` to `(0,0)`
-        # in our current context, perfectly aligning it.
-        ctx.translate(-bg_origin_mm[0], -bg_origin_mm[1])
-
-        # The context is now set up. Any WorkPiece drawn with its world matrix
-        # will appear in the correct position relative to the background.
-
-        # --- 3c. Draw each item ---
-        def draw_item(item):
+        def draw_item(item: DocItem):
             if isinstance(item, WorkPiece) and item.boundaries:
                 ctx.save()
+                # Apply the item's personal world matrix.
+                ctx.transform(
+                    cairo.Matrix(*item.get_world_transform().for_cairo())
+                )
 
-                # Apply the item's full world transformation matrix.
-                xx, yx, xy, yy, x0, y0 = item.get_world_transform().for_cairo()
-                mat = cairo.Matrix(xx, yx, xy, yy, x0, y0)
-                ctx.transform(mat)
-
-                # Set line width in device space for a consistent 1.5px stroke.
+                # Set line width to a consistent 1.5px in device space.
                 px, py = ctx.device_to_user_distance(1.5, 1.5)
                 ctx.set_line_width(max(abs(px), abs(py)))
-
-                ctx.set_source_rgb(0.1, 0.5, 1.0)  # Blue color for vectors
+                ctx.set_source_rgb(0.1, 0.5, 1.0)  # Blue for vectors
                 ctx.new_path()
                 item.boundaries.to_cairo(ctx)
                 ctx.stroke()
-
                 ctx.restore()
             elif isinstance(item, Layer):
                 for child in item.children:
@@ -556,7 +539,6 @@ class ImportDialog(PatchedDialogWindow):
 
         for item in payload.items:
             draw_item(item)
-
         ctx.restore()
 
     def _on_import_clicked(self, button):

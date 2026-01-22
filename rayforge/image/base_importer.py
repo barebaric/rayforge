@@ -193,7 +193,12 @@ class Importer(ABC):
         # Call the post-processing hook before returning the final result
         final_payload = self._post_process_payload(payload)
 
-        return ImportResult(payload=final_payload, parse_result=parse_result)
+        # We return the parsing result from the vectorization phase, as it
+        # may have been updated (e.g. bounds calculation for subset of layers)
+        return ImportResult(
+            payload=final_payload,
+            parse_result=vec_result.source_parse_result,
+        )
 
     def _post_process_payload(
         self, payload: "ImportPayload"

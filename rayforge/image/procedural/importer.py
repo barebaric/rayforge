@@ -20,6 +20,7 @@ from ..structures import (
     ImportManifest,
 )
 from .renderer import PROCEDURAL_RENDERER
+from ..engine import NormalizationEngine
 
 logger = logging.getLogger(__name__)
 
@@ -137,6 +138,25 @@ class ProceduralImporter(Importer):
         # Define the native coordinate system as 1 unit = 1 mm.
         # This preserves the aspect ratio in the parsing result.
         page_bounds = (0.0, 0.0, float(width_mm), float(height_mm))
+        x, y, w, h = page_bounds
+
+        # World frame is Y-Up and already in mm.
+        world_frame = (x, 0.0, w, h)
+
+        # Create temporary result to calculate background transform
+        temp_result = ParsingResult(
+            page_bounds=page_bounds,
+            native_unit_to_mm=1.0,
+            is_y_down=True,
+            layers=[],
+            world_frame_of_reference=world_frame,
+            background_world_transform=None,  # type: ignore
+        )
+
+        bg_item = NormalizationEngine.calculate_layout_item(
+            page_bounds, temp_result
+        )
+
         layer_id = "__default__"
 
         return ParsingResult(
@@ -150,6 +170,8 @@ class ProceduralImporter(Importer):
                     content_bounds=page_bounds,
                 )
             ],
+            world_frame_of_reference=world_frame,
+            background_world_transform=bg_item.world_matrix,
         )
 
     def vectorize(

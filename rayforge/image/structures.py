@@ -87,6 +87,15 @@ class ParsingResult:
     # Detailed geometry per layer.
     layers: List[LayerGeometry]
 
+    # An authoritative frame of reference (x, y, w, h) in world coordinates
+    # (mm, Y-Up) that encompasses the entire import operation. The preview
+    # UI uses this to establish a stable coordinate system.
+    world_frame_of_reference: Tuple[float, float, float, float]
+
+    # The final transformation matrix for positioning the background image
+    # (derived from page_bounds) within the world_frame_of_reference.
+    background_world_transform: Matrix
+
     # The bounds of the original, untrimmed page, if available. This is used
     # as the frame of reference for positioning trimmed content.
     untrimmed_page_bounds: Optional[Tuple[float, float, float, float]] = None

@@ -4,8 +4,9 @@ from pathlib import Path
 from rayforge.image.svg.svg_trace import SvgTraceImporter
 from rayforge.core.vectorization_spec import TraceSpec
 from rayforge.core.geo import Geometry
-from rayforge.image.structures import ParsingResult
+from rayforge.core.matrix import Matrix
 from rayforge.core.workpiece import WorkPiece
+from rayforge.image.structures import ParsingResult
 
 SVG_CONTENT = b"""
 <svg width="100mm" height="100mm" viewBox="0 0 100 100"
@@ -39,7 +40,18 @@ def test_parse_returns_single_layer(trace_importer):
 
 def test_vectorize_enforces_tracespec(trace_importer):
     """Should raise TypeError if we try to vectorize with non-TraceSpec."""
-    dummy_parse = ParsingResult((0, 0, 10, 10), 1.0, True, [])
+    page_bounds = (0, 0, 10, 10)
+    unit_scale = 1.0
+    x, y, w, h = page_bounds
+    world_frame = (x * unit_scale, 0.0, w * unit_scale, h * unit_scale)
+    dummy_parse = ParsingResult(
+        page_bounds=page_bounds,
+        native_unit_to_mm=unit_scale,
+        is_y_down=True,
+        layers=[],
+        world_frame_of_reference=world_frame,
+        background_world_transform=Matrix.identity(),
+    )
     with pytest.raises(TypeError):
         trace_importer.vectorize(dummy_parse, None)  # type: ignore
 
