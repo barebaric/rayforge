@@ -158,7 +158,18 @@ class Importer(ABC):
         source_asset = self.create_source_asset(parse_result)
 
         # 3. Vectorize
-        spec = vectorization_spec or PassthroughSpec()
+        spec = vectorization_spec
+        if not spec:
+            # Smart default: Choose spec based on importer features.
+            # Prefer direct vector if available, otherwise fall back to trace.
+            if ImporterFeature.DIRECT_VECTOR in self.features:
+                spec = PassthroughSpec()
+            elif ImporterFeature.BITMAP_TRACING in self.features:
+                spec = TraceSpec()
+            else:
+                # Fallback for importers that may not declare features yet
+                spec = PassthroughSpec()
+
         # For vector formats, if no layers with geometry were found,
         # return early with no items. Only applies to TraceSpec since
         # PassthroughSpec's vectorize() has fallback logic for SVGs without

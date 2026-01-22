@@ -122,27 +122,51 @@ def main():
             Loads files passed via the command line. This is called from the
             'map' signal handler to ensure the main window is fully initialized.
             """
-            # This import must be inside the method.
+            # These imports must be inside the method.
             from rayforge.core.vectorization_spec import (
                 TraceSpec,
                 PassthroughSpec,
             )
+            from rayforge.image import ImporterFeature
 
             assert self.win is not None
+            editor = self.win.doc_editor
+
             # self.args.filenames will be a list of paths
             for filename in self.args.filenames:
-                mime_type, _ = mimetypes.guess_type(filename)
+                file_path = Path(filename)
+                mime_type, _ = mimetypes.guess_type(file_path)
 
-                # Default to tracing any file that supports it. If
-                # --direct-vector is passed, use an empty PassthroughSpec
-                # to signal intent for direct vector import.
-                vectorization_spec = (
-                    PassthroughSpec()
-                    if self.args.direct_vector
-                    else TraceSpec()
+                importer_cls, features = editor.file.get_importer_info(
+                    file_path, mime_type
                 )
-                self.win.doc_editor.file.load_file_from_path(
-                    filename=Path(filename),
+                if not importer_cls:
+                    logger.warning(
+                        f"No importer found for '{file_path.name}'. Skipping."
+                    )
+                    continue
+
+                vectorization_spec = None
+                if self.args.trace:
+                    if ImporterFeature.BITMAP_TRACING not in features:
+                        logger.error(
+                            f"Error: The importer for '{file_path.name}' does "
+                            "not support tracing."
+                        )
+                        sys.exit(1)
+                    vectorization_spec = TraceSpec()
+                elif self.args.vector:
+                    if ImporterFeature.DIRECT_VECTOR not in features:
+                        logger.warning(
+                            f"Warning: The importer for '{file_path.name}' "
+                            "may not support direct vector import."
+                        )
+                    vectorization_spec = PassthroughSpec()
+
+                # If no flag is passed, vectorization_spec remains None,
+                # allowing the importer to use its smart default.
+                editor.file.load_file_from_path(
+                    filename=file_path,
                     mime_type=mime_type,
                     vectorization_spec=vectorization_spec,
                 )
@@ -163,11 +187,26 @@ def main():
         help=_("Paths to one or more input SVG or image files."),
         nargs="*",
     )
-    parser.add_argument(
-        "--direct-vector",
+
+    # Create a mutually exclusive group for import mode flags
+    import_mode_group = parser.add_mutually_exclusive_group()
+    import_mode_group.add_argument(
+        "--vector",
         action="store_true",
-        help=_("Import SVG files as direct vectors instead of tracing them."),
+        help=_(
+            "Force import as direct vectors. This is the default for "
+            "supported files."
+        ),
     )
+    import_mode_group.add_argument(
+        "--trace",
+        action="store_true",
+        help=_(
+            "Force import by tracing the file's bitmap representation. "
+            "Aborts if not supported."
+        ),
+    )
+
     parser.add_argument(
         "--loglevel",
         default="INFO",
