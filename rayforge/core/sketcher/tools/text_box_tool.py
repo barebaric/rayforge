@@ -1,15 +1,10 @@
 import logging
-from typing import Optional, List, cast
+from typing import Optional, cast
 from enum import Enum, auto
 import cairo
 from blinker import Signal
-from ..commands import AddItemsCommand
+from ..commands import TextBoxCommand
 from ..entities import Line, Point, TextBoxEntity
-from ..constraints import (
-    AspectRatioConstraint,
-    HorizontalConstraint,
-    VerticalConstraint,
-)
 from .base import SketchTool, SketcherKey
 from ...geo import primitives
 
@@ -83,58 +78,11 @@ class TextBoxTool(SketchTool):
         return False
 
     def _handle_idle_press(self, mx: float, my: float) -> bool:
-        default_width = 10.0
-        default_height = 10.0
-
-        # Create all objects with temporary negative IDs.
-        # The AddItemsCommand will resolve them to final, unique IDs.
-        p_origin = Point(-1, mx, my)
-        p_width = Point(-2, mx + default_width, my)
-        p_height = Point(-3, mx, my + default_height)
-        p4 = Point(-4, mx + default_width, my + default_height)
-
-        points_to_add: List[Point] = [p_origin, p_width, p_height, p4]
-
-        lines_to_add: List[Line] = [
-            Line(-5, p_origin.id, p_width.id, construction=True),
-            Line(-6, p_width.id, p4.id, construction=True),
-            Line(-7, p4.id, p_height.id, construction=True),
-            Line(-8, p_height.id, p_origin.id, construction=True),
-        ]
-        line_ids = [line.id for line in lines_to_add]
-
-        text_box = TextBoxEntity(
-            -9,
-            p_origin.id,
-            p_width.id,
-            p_height.id,
-            content="",
-            construction_line_ids=line_ids,
-        )
-
-        entities_to_add: List[Line | TextBoxEntity] = [*lines_to_add, text_box]
-
-        constraints_to_add = [
-            HorizontalConstraint(p_origin.id, p_width.id),
-            VerticalConstraint(p_width.id, p4.id),
-            HorizontalConstraint(p_height.id, p4.id),
-            VerticalConstraint(p_origin.id, p_height.id),
-            AspectRatioConstraint(
-                p_origin.id, p_width.id, p_origin.id, p_height.id, 1.0
-            ),
-        ]
-
-        cmd = AddItemsCommand(
-            self.element.sketch,
-            _("Add Text"),
-            points=points_to_add,
-            entities=entities_to_add,
-            constraints=constraints_to_add,
-        )
+        cmd = TextBoxCommand(self.element.sketch, origin=(mx, my))
         self.element.execute_command(cmd)
 
-        # The TextBoxEntity was the last entity added
-        self.start_editing(self.element.sketch.registry.entities[-1].id)
+        if cmd.text_box_id is not None:
+            self.start_editing(cmd.text_box_id)
         return True
 
     def _handle_editing_press(self, mx: float, my: float) -> bool:
@@ -161,14 +109,16 @@ class TextBoxTool(SketchTool):
         p_width = self.element.sketch.registry.get_point(entity.width_id)
         p_height = self.element.sketch.registry.get_point(entity.height_id)
 
-        p4_x = p_width.x + p_height.x - p_origin.x
-        p4_y = p_width.y + p_height.y - p_origin.y
+        p4_id = entity.get_fourth_corner_id(self.element.sketch.registry)
+        if not p4_id:
+            return False
+        p4 = self.element.sketch.registry.get_point(p4_id)
 
         # Define the polygon for the text box
         polygon = [
             (p_origin.x, p_origin.y),
             (p_width.x, p_width.y),
-            (p4_x, p4_y),
+            (p4.x, p4.y),
             (p_height.x, p_height.y),
         ]
 
@@ -329,8 +279,9 @@ class TextBoxTool(SketchTool):
         p_height.y = p_origin.y + natural_height
 
         # Manually update the 4th corner to keep the box rectangular
-        p4 = self._find_opposite_corner(entity)
-        if p4:
+        p4_id = entity.get_fourth_corner_id(self.element.sketch.registry)
+        if p4_id:
+            p4 = self.element.sketch.registry.get_point(p4_id)
             p4.x = p_width.x
             p4.y = p_height.y
 

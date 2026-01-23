@@ -9,6 +9,7 @@ from .point import MovePointCommand, UnstickJunctionCommand
 from .rectangle import RectangleCommand
 from .rounded_rect import RoundedRectCommand
 from .text_property import ModifyTextPropertyCommand
+from .text_box import TextBoxCommand
 
 
 __all__ = [
@@ -24,6 +25,7 @@ __all__ = [
     "RectangleCommand",
     "RoundedRectCommand",
     "SketchChangeCommand",
+    "TextBoxCommand",
     "ToggleConstructionCommand",
     "UnstickJunctionCommand",
 ]
