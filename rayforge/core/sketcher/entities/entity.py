@@ -1,4 +1,5 @@
 from typing import List, Tuple, Dict, Any, Sequence, TYPE_CHECKING
+from ...geo.geometry import Geometry
 
 if TYPE_CHECKING:
     from ..constraints import Constraint
@@ -56,6 +57,10 @@ class Entity:
         Used for Crossing Selection.
         """
         return False
+
+    def to_geometry(self, registry: "EntityRegistry") -> Geometry:
+        """Converts the entity to a Geometry object."""
+        return Geometry()
 
     def to_dict(self) -> Dict[str, Any]:
         """Base serialization method for entities."""

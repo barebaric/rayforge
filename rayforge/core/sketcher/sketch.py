@@ -981,6 +981,26 @@ class Sketch(IAsset):
 
         return success
 
+    def _generate_text_geometry(self, entity: TextBoxEntity) -> Geometry:
+        p_origin = self.registry.get_point(entity.origin_id)
+        p_width = self.registry.get_point(entity.width_id)
+        p_height = self.registry.get_point(entity.height_id)
+
+        txt_geo = Geometry.from_text(
+            entity.content,
+            font_family=entity.font_params.get("family", "sans-serif"),
+            font_size=entity.font_params.get("size", 10.0),
+            is_bold=entity.font_params.get("bold", False),
+            is_italic=entity.font_params.get("italic", False),
+        )
+        txt_geo.flip_y()
+
+        return txt_geo.map_to_frame(
+            (p_origin.x, p_origin.y),
+            (p_width.x, p_width.y),
+            (p_height.x, p_height.y),
+        )
+
     def to_geometry(self) -> Geometry:
         """
         Converts the solved sketch into a Geometry object.
@@ -988,75 +1008,10 @@ class Sketch(IAsset):
         """
         geo = Geometry()
 
-        # Simple export: MoveTo -> LineTo/ArcTo for every entity.
         for entity in self.registry.entities:
-            # Skip construction geometry (helper lines)
             if entity.construction:
                 continue
-
-            if isinstance(entity, Line):
-                p1 = self.registry.get_point(entity.p1_idx)
-                p2 = self.registry.get_point(entity.p2_idx)
-
-                geo.move_to(p1.x, p1.y)
-                geo.line_to(p2.x, p2.y)
-
-            elif isinstance(entity, Arc):
-                start = self.registry.get_point(entity.start_idx)
-                end = self.registry.get_point(entity.end_idx)
-                center = self.registry.get_point(entity.center_idx)
-
-                # Geometry.arc_to requires center_offset (i, j) relative
-                # to the current point (start)
-                i = center.x - start.x
-                j = center.y - start.y
-
-                geo.move_to(start.x, start.y)
-                geo.arc_to(end.x, end.y, i, j, clockwise=entity.clockwise)
-
-            elif isinstance(entity, Circle):
-                center = self.registry.get_point(entity.center_idx)
-                radius_pt = self.registry.get_point(entity.radius_pt_idx)
-
-                # Draw as two semi-circles
-                dx = radius_pt.x - center.x
-                dy = radius_pt.y - center.y
-                opposite_pt_x = center.x - dx
-                opposite_pt_y = center.y - dy
-
-                # Center offset relative to start point
-                i1, j1 = -dx, -dy
-                # Center offset relative to mid-point
-                i2, j2 = dx, dy
-
-                geo.move_to(radius_pt.x, radius_pt.y)
-                # First semi-circle
-                geo.arc_to(
-                    opposite_pt_x, opposite_pt_y, i1, j1, clockwise=False
-                )
-                # Second semi-circle
-                geo.arc_to(radius_pt.x, radius_pt.y, i2, j2, clockwise=False)
-
-            elif isinstance(entity, TextBoxEntity):
-                p_origin = self.registry.get_point(entity.origin_id)
-                p_width = self.registry.get_point(entity.width_id)
-                p_height = self.registry.get_point(entity.height_id)
-
-                txt_geo = Geometry.from_text(
-                    entity.content,
-                    font_family=entity.font_params.get("family", "sans-serif"),
-                    font_size=entity.font_params.get("size", 10.0),
-                    is_bold=entity.font_params.get("bold", False),
-                    is_italic=entity.font_params.get("italic", False),
-                )
-                txt_geo.flip_y()
-
-                mapped_geo = txt_geo.map_to_frame(
-                    (p_origin.x, p_origin.y),
-                    (p_width.x, p_width.y),
-                    (p_height.x, p_height.y),
-                )
-                geo.extend(mapped_geo)
+            geo.extend(entity.to_geometry(self.registry))
 
         return geo
 
@@ -1173,5 +1128,10 @@ class Sketch(IAsset):
 
             except (IndexError, AttributeError):
                 continue
+
+        # Add text fills for non-construction text entities
+        for entity in self.registry.entities:
+            if isinstance(entity, TextBoxEntity) and not entity.construction:
+                fill_geometries.append(self._generate_text_geometry(entity))
 
         return fill_geometries

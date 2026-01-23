@@ -1,6 +1,7 @@
 import pytest
 from rayforge.core.sketcher.entities import Circle
 from rayforge.core.sketcher.registry import EntityRegistry
+from rayforge.core.geo.geometry import Geometry
 
 
 @pytest.fixture
@@ -167,8 +168,22 @@ def test_circle_is_contained_by(selection_setup):
 
 
 def test_circle_intersects_rect(selection_setup):
-    """Test the intersects_rect method for Circle entities."""
+    """Test of intersects_rect method for Circle entities."""
     registry, rect, entities = selection_setup
     assert entities["circle_in"].intersects_rect(rect, registry) is True
     assert entities["circle_cross"].intersects_rect(rect, registry) is True
     assert entities["circle_out"].intersects_rect(rect, registry) is False
+
+
+def test_circle_to_geometry(registry):
+    """Test Circle.to_geometry method."""
+    center = registry.add_point(0, 0)
+    radius_pt = registry.add_point(10, 0)
+    circle = registry.get_entity(registry.add_circle(center, radius_pt))
+    geo = circle.to_geometry(registry)
+    assert isinstance(geo, Geometry)
+    assert len(geo) == 3
+    assert geo.data is not None
+    assert geo.data[0][0] == 1.0  # Move command
+    assert geo.data[1][0] == 3.0  # Arc command (first semi-circle)
+    assert geo.data[2][0] == 3.0  # Arc command (second semi-circle)

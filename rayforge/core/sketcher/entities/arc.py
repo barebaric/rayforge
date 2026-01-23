@@ -1,6 +1,7 @@
 import math
 from typing import List, Tuple, Dict, Optional, Any, Sequence, TYPE_CHECKING
 from ...geo import primitives
+from ...geo.geometry import Geometry
 from .entity import Entity
 
 if TYPE_CHECKING:
@@ -75,6 +76,18 @@ class Arc(Entity):
         return primitives.arc_intersects_rect(
             start.pos(), end.pos(), center.pos(), self.clockwise, rect
         )
+
+    def to_geometry(self, registry: "EntityRegistry") -> Geometry:
+        """Converts the arc to a Geometry object."""
+        geo = Geometry()
+        start = registry.get_point(self.start_idx)
+        end = registry.get_point(self.end_idx)
+        center = registry.get_point(self.center_idx)
+        i = center.x - start.x
+        j = center.y - start.y
+        geo.move_to(start.x, start.y)
+        geo.arc_to(end.x, end.y, i, j, clockwise=self.clockwise)
+        return geo
 
     def to_dict(self) -> Dict[str, Any]:
         """Serializes the Arc to a dictionary."""

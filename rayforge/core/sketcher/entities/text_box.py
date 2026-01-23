@@ -1,5 +1,6 @@
 from typing import List, Tuple, Dict, Any, Sequence, Optional, TYPE_CHECKING
 from ...geo import primitives
+from ...geo.geometry import Geometry
 from .entity import Entity
 
 if TYPE_CHECKING:
@@ -100,6 +101,25 @@ class TextBoxEntity(Entity):
         return any(
             rect[0] <= px <= rect[2] and rect[1] <= py <= rect[3]
             for px, py in points
+        )
+
+    def to_geometry(self, registry: "EntityRegistry") -> Geometry:
+        """Converts the text box to a Geometry object."""
+        p_origin = registry.get_point(self.origin_id)
+        p_width = registry.get_point(self.width_id)
+        p_height = registry.get_point(self.height_id)
+        txt_geo = Geometry.from_text(
+            self.content,
+            font_family=self.font_params.get("family", "sans-serif"),
+            font_size=self.font_params.get("size", 10.0),
+            is_bold=self.font_params.get("bold", False),
+            is_italic=self.font_params.get("italic", False),
+        )
+        txt_geo.flip_y()
+        return txt_geo.map_to_frame(
+            (p_origin.x, p_origin.y),
+            (p_width.x, p_width.y),
+            (p_height.x, p_height.y),
         )
 
     def to_dict(self) -> Dict[str, Any]:
