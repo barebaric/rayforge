@@ -65,6 +65,54 @@ Section "MainSection" SEC01
   WriteRegStr HKCR "Rayforge.ProjectFile" "" "Rayforge Project File"
   WriteRegStr HKCR "Rayforge.ProjectFile\DefaultIcon" "" "$INSTDIR\${EXECUTABLE_NAME},0"
   WriteRegStr HKCR "Rayforge.ProjectFile\shell\open\command" "" '"$INSTDIR\${EXECUTABLE_NAME}" "%1"'
+
+  ; Register .rfs file type
+  WriteRegStr HKCR ".rfs" "" "Rayforge.SketchFile"
+  WriteRegStr HKCR "Rayforge.SketchFile" "" "Rayforge Sketch File"
+  WriteRegStr HKCR "Rayforge.SketchFile\DefaultIcon" "" "$INSTDIR\${EXECUTABLE_NAME},0"
+  WriteRegStr HKCR "Rayforge.SketchFile\shell\open\command" "" '"$INSTDIR\${EXECUTABLE_NAME}" "%1"'
+
+  ; Register .rd file type (Ruida)
+  WriteRegStr HKCR ".rd" "" "Rayforge.RuidaFile"
+  WriteRegStr HKCR "Rayforge.RuidaFile" "" "Ruida Laser Cutter File"
+  WriteRegStr HKCR "Rayforge.RuidaFile\DefaultIcon" "" "$INSTDIR\${EXECUTABLE_NAME},0"
+  WriteRegStr HKCR "Rayforge.RuidaFile\shell\open\command" "" '"$INSTDIR\${EXECUTABLE_NAME}" "%1"'
+
+  ; Register .png file type
+  WriteRegStr HKCR ".png" "" "Rayforge.PngFile"
+  WriteRegStr HKCR "Rayforge.PngFile" "" "PNG Image"
+  WriteRegStr HKCR "Rayforge.PngFile\DefaultIcon" "" "$INSTDIR\${EXECUTABLE_NAME},0"
+  WriteRegStr HKCR "Rayforge.PngFile\shell\open\command" "" '"$INSTDIR\${EXECUTABLE_NAME}" "%1"'
+
+  ; Register .bmp file type
+  WriteRegStr HKCR ".bmp" "" "Rayforge.BmpFile"
+  WriteRegStr HKCR "Rayforge.BmpFile" "" "BMP Image"
+  WriteRegStr HKCR "Rayforge.BmpFile\DefaultIcon" "" "$INSTDIR\${EXECUTABLE_NAME},0"
+  WriteRegStr HKCR "Rayforge.BmpFile\shell\open\command" "" '"$INSTDIR\${EXECUTABLE_NAME}" "%1"'
+
+  ; Register .jpeg file type
+  WriteRegStr HKCR ".jpeg" "" "Rayforge.JpegFile"
+  WriteRegStr HKCR "Rayforge.JpegFile" "" "JPEG Image"
+  WriteRegStr HKCR "Rayforge.JpegFile\DefaultIcon" "" "$INSTDIR\${EXECUTABLE_NAME},0"
+  WriteRegStr HKCR "Rayforge.JpegFile\shell\open\command" "" '"$INSTDIR\${EXECUTABLE_NAME}" "%1"'
+
+  ; Register .jpg file type
+  WriteRegStr HKCR ".jpg" "" "Rayforge.JpgFile"
+  WriteRegStr HKCR "Rayforge.JpgFile" "" "JPEG Image"
+  WriteRegStr HKCR "Rayforge.JpgFile\DefaultIcon" "" "$INSTDIR\${EXECUTABLE_NAME},0"
+  WriteRegStr HKCR "Rayforge.JpgFile\shell\open\command" "" '"$INSTDIR\${EXECUTABLE_NAME}" "%1"'
+
+  ; Register .svg file type
+  WriteRegStr HKCR ".svg" "" "Rayforge.SvgFile"
+  WriteRegStr HKCR "Rayforge.SvgFile" "" "SVG Image"
+  WriteRegStr HKCR "Rayforge.SvgFile\DefaultIcon" "" "$INSTDIR\${EXECUTABLE_NAME},0"
+  WriteRegStr HKCR "Rayforge.SvgFile\shell\open\command" "" '"$INSTDIR\${EXECUTABLE_NAME}" "%1"'
+
+  ; Register .dxf file type
+  WriteRegStr HKCR ".dxf" "" "Rayforge.DxfFile"
+  WriteRegStr HKCR "Rayforge.DxfFile" "" "DXF Drawing"
+  WriteRegStr HKCR "Rayforge.DxfFile\DefaultIcon" "" "$INSTDIR\${EXECUTABLE_NAME},0"
+  WriteRegStr HKCR "Rayforge.DxfFile\shell\open\command" "" '"$INSTDIR\${EXECUTABLE_NAME}" "%1"'
   
   ; Create Start Menu shortcuts
   CreateDirectory "$SMPROGRAMS\${PRODUCT_NAME}"
@@ -83,6 +131,38 @@ Section "Uninstall"
   ; Unregister .ryp file type
   DeleteRegKey HKCR ".ryp"
   DeleteRegKey HKCR "Rayforge.ProjectFile"
+
+  ; Unregister .rfs file type
+  DeleteRegKey HKCR ".rfs"
+  DeleteRegKey HKCR "Rayforge.SketchFile"
+
+  ; Unregister .rd file type (Ruida)
+  DeleteRegKey HKCR ".rd"
+  DeleteRegKey HKCR "Rayforge.RuidaFile"
+
+  ; Unregister .png file type
+  DeleteRegKey HKCR ".png"
+  DeleteRegKey HKCR "Rayforge.PngFile"
+
+  ; Unregister .bmp file type
+  DeleteRegKey HKCR ".bmp"
+  DeleteRegKey HKCR "Rayforge.BmpFile"
+
+  ; Unregister .jpeg file type
+  DeleteRegKey HKCR ".jpeg"
+  DeleteRegKey HKCR "Rayforge.JpegFile"
+
+  ; Unregister .jpg file type
+  DeleteRegKey HKCR ".jpg"
+  DeleteRegKey HKCR "Rayforge.JpgFile"
+
+  ; Unregister .svg file type
+  DeleteRegKey HKCR ".svg"
+  DeleteRegKey HKCR "Rayforge.SvgFile"
+
+  ; Unregister .dxf file type
+  DeleteRegKey HKCR ".dxf"
+  DeleteRegKey HKCR "Rayforge.DxfFile"
 
   ; Remove the entire installation directory
   ; We delete the uninstaller first, then recursively remove its parent directory.

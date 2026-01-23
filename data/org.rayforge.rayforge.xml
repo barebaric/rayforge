@@ -1,7 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <mime-info xmlns="http://www.freedesktop.org/standards/shared-mime-info">
-  <mime-type type="application/x-rayforge">
+  <mime-type type="application/x-rayforge-project">
     <comment>Rayforge project file</comment>
     <glob pattern="*.ryp"/>
+  </mime-type>
+  <mime-type type="application/x-rayforge-sketch">
+    <comment>Rayforge sketch file</comment>
+    <glob pattern="*.rfs"/>
+  </mime-type>
+  <mime-type type="application/x-ruida">
+    <comment>Ruida laser cutter file</comment>
+    <glob pattern="*.rd"/>
   </mime-type>
 </mime-info>

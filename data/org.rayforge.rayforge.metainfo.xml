@@ -34,6 +34,17 @@
   
   <launchable type="desktop-id">org.rayforge.rayforge.desktop</launchable>
 
+  <mimetypes>
+    <mimetype>application/x-rayforge-project</mimetype>
+    <mimetype>application/x-rayforge-sketch</mimetype>
+    <mimetype>application/x-ruida</mimetype>
+    <mimetype>image/png</mimetype>
+    <mimetype>image/bmp</mimetype>
+    <mimetype>image/jpeg</mimetype>
+    <mimetype>image/svg+xml</mimetype>
+    <mimetype>image/vnd.dxf</mimetype>
+  </mimetypes>
+
   <recommends>
     <control>keyboard</control>
     <control>pointing</control>
