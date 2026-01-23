@@ -58,6 +58,7 @@ parts:
     stage-packages:
       - libvips42t64
       - adwaita-icon-theme
+      - hicolor-icon-theme
     organize:
       data/org.rayforge.rayforge.desktop: share/applications/org.rayforge.rayforge.desktop
       data/org.rayforge.rayforge.metainfo.xml: share/metainfo/org.rayforge.rayforge.metainfo.xml
