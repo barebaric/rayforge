@@ -6,6 +6,7 @@ from .fill_tool import FillTool
 from .select_tool import SelectTool
 from .rounded_rect_tool import RoundedRectTool
 from .rectangle_tool import RectangleTool
+from .text_box_tool import TextBoxTool
 
 __all__ = [
     "ArcTool",
@@ -16,4 +17,5 @@ __all__ = [
     "SketchTool",
     "RoundedRectTool",
     "RectangleTool",
+    "TextBoxTool",
 ]

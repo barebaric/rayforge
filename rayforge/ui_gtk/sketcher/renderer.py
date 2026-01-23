@@ -1,8 +1,8 @@
 import cairo
 import math
 from collections import defaultdict
+from ...core.geo import Geometry
 from ...core.geo.primitives import find_closest_point_on_line
-from ...core.sketcher.entities import Line, Arc, Circle
 from ...core.sketcher.constraints import (
     DistanceConstraint,
     RadiusConstraint,
@@ -17,6 +17,8 @@ from ...core.sketcher.constraints import (
     SymmetryConstraint,
 )
 from ...core.sketcher.constraints.base import ConstraintStatus
+from ...core.sketcher.entities import Line, Arc, Circle, TextBoxEntity
+from ...core.sketcher.tools import TextBoxTool
 
 
 class SketchRenderer:
@@ -127,8 +129,20 @@ class SketchRenderer:
     ):
         is_sketch_fully_constrained = self.element.sketch.is_fully_constrained
         entities = self.element.sketch.registry.entities or []
+        text_tool = self.element.tools.get("text_box")
 
         for entity in entities:
+            # If a text box is being actively edited, its tool overlay will
+            # draw it, so we skip the main render pass to avoid flicker.
+            is_being_edited = (
+                isinstance(entity, TextBoxEntity)
+                and self.element.active_tool_name == "text_box"
+                and isinstance(text_tool, TextBoxTool)
+                and text_tool.editing_entity_id == entity.id
+            )
+            if is_being_edited:
+                continue
+
             # If not in edit mode, skip drawing construction geometry.
             if not is_editing and entity.construction:
                 continue
@@ -144,6 +158,8 @@ class SketchRenderer:
                 has_path = self._define_arc_path(ctx, entity)
             elif isinstance(entity, Circle):
                 has_path = self._define_circle_path(ctx, entity)
+            elif isinstance(entity, TextBoxEntity):
+                has_path = self._define_text_box_path(ctx, entity)
 
             if not has_path:
                 ctx.restore()
@@ -152,36 +168,44 @@ class SketchRenderer:
             # 2. Draw Selection Underlay (Blurry Glow)
             if is_sel:
                 ctx.save()
-                # Remove dash pattern for the glow so it's solid
                 ctx.set_dash([])
-                # Semi-transparent blue for selection
                 ctx.set_source_rgba(0.2, 0.6, 1.0, 0.4)
-                # Thicker line for the glow effect
-                ctx.set_line_width(base_line_width * 3.0)
+                if isinstance(entity, TextBoxEntity):
+                    ctx.set_line_width(base_line_width * 2.0)
+                else:
+                    ctx.set_line_width(base_line_width * 3.0)
                 ctx.stroke_preserve()
                 ctx.restore()
 
             # 3. Draw Actual Entity
-            if entity.construction:
-                # Calculate scale to convert screen pixels to world coords
+            if isinstance(entity, TextBoxEntity):
+                # The selection glow is a stroke. To make the text readable,
+                # we fill it with its standard color, not the selection color.
+                self._set_standard_color(
+                    ctx,
+                    False,  # Selection handled by the glow underlay
+                    entity.constrained,
+                    is_sketch_fully_constrained,
+                )
+                ctx.fill()
+            elif entity.construction:
                 scale = self.element.line_width / base_line_width
-                # Set dash pattern in screen pixels (5 on, 5 off)
                 ctx.set_dash([5.0 / scale, 5.0 / scale])
-                # Reduce width for construction lines
                 ctx.set_line_width(base_line_width * 0.8)
                 if entity.constrained:
                     ctx.set_source_rgb(0.2, 0.3, 0.6)  # Dark Blue
                 else:
                     ctx.set_source_rgb(0.3, 0.5, 0.8)  # Light Blue
+                ctx.stroke()
             else:
                 self._set_standard_color(
                     ctx,
-                    False,  # Selection handled by underlay
+                    is_sel,
                     entity.constrained,
                     is_sketch_fully_constrained,
                 )
+                ctx.stroke()
 
-            ctx.stroke()
             ctx.restore()
 
     def _set_standard_color(
@@ -247,6 +271,37 @@ class SketchRenderer:
         radius = math.hypot(radius_pt.x - center.x, radius_pt.y - center.y)
         ctx.new_sub_path()
         ctx.arc(center.x, center.y, radius, 0, 2 * math.pi)
+        return True
+
+    def _define_text_box_path(
+        self, ctx: cairo.Context, entity: TextBoxEntity
+    ) -> bool:
+        if not entity.content:
+            return False
+
+        p_origin = self._safe_get_point(entity.origin_id)
+        p_width = self._safe_get_point(entity.width_id)
+        p_height = self._safe_get_point(entity.height_id)
+
+        if not (p_origin and p_width and p_height):
+            return False
+
+        natural_geo = Geometry.from_text(
+            entity.content,
+            font_family=entity.font_params.get("family", "sans-serif"),
+            font_size=entity.font_params.get("size", 10.0),
+            is_bold=entity.font_params.get("bold", False),
+            is_italic=entity.font_params.get("italic", False),
+        )
+        natural_geo.flip_y()
+
+        transformed_geo = natural_geo.map_to_frame(
+            (p_origin.x, p_origin.y),
+            (p_width.x, p_width.y),
+            (p_height.x, p_height.y),
+        )
+
+        transformed_geo.to_cairo(ctx)
         return True
 
     # --- Overlays (Constraints & Junctions) ---
@@ -834,6 +889,10 @@ class SketchRenderer:
             elif isinstance(ent, Circle):
                 entity_points.add(ent.center_idx)
                 entity_points.add(ent.radius_pt_idx)
+            elif isinstance(ent, TextBoxEntity):
+                entity_points.add(ent.origin_id)
+                entity_points.add(ent.width_id)
+                entity_points.add(ent.height_id)
 
         for p in points:
             sx, sy = to_screen.transform_point((p.x, p.y))

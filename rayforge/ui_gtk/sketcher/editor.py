@@ -3,7 +3,9 @@ from typing import Union, Optional, TYPE_CHECKING
 from gi.repository import Gtk, Gdk, GLib
 from ...core.sketcher.entities import Point, Entity
 from ...core.sketcher.constraints import Constraint
-from ...core.sketcher.tools import SelectTool
+from ...core.sketcher.tools import SelectTool, TextBoxTool
+from ...core.sketcher.tools.base import SketcherKey
+from ...core.sketcher.tools.text_box_tool import TextBoxState
 from ...core.undo import HistoryManager
 from ..canvas.cursor import get_tool_cursor
 from .piemenu import SketchPieMenu
@@ -36,6 +38,7 @@ class SketchEditor:
         # 1. Key Press Handling State
         self.key_sequence = []
         self.key_sequence_timer_id: Optional[int] = None
+        self.text_edit_cursor_timer_id: Optional[int] = None
         self._init_shortcuts()
 
         # 2. Pie Menu Setup
@@ -90,11 +93,28 @@ class SketchEditor:
         self.sketch_element = sketch_element
         self.sketch_element.editor = self
 
+        # Connect to TextBoxTool signals for UI management
+        text_tool = self.sketch_element.tools.get("text_box")
+        if isinstance(text_tool, TextBoxTool):
+            text_tool.editing_started.connect(self._on_text_editing_started)
+            text_tool.editing_finished.connect(self._on_text_editing_finished)
+
     def deactivate(self):
         """Ends the current editing session."""
         logger.debug("Deactivating SketchEditor")
         self._reset_key_sequence()
+        self._stop_text_cursor_timer()
         if self.sketch_element:
+            # Disconnect signals
+            text_tool = self.sketch_element.tools.get("text_box")
+            if isinstance(text_tool, TextBoxTool):
+                text_tool.editing_started.disconnect(
+                    self._on_text_editing_started
+                )
+                text_tool.editing_finished.disconnect(
+                    self._on_text_editing_finished
+                )
+
             # Clean up any in-progress tool state
             self.sketch_element.current_tool.on_deactivate()
             if self.sketch_element.canvas:
@@ -136,6 +156,8 @@ class SketchEditor:
             return get_tool_cursor("sketch-rect-symbolic")
         if tool == "rounded_rect":
             return get_tool_cursor("sketch-rounded-rect-symbolic")
+        if tool == "text_box":
+            return get_tool_cursor("sketch-text-symbolic")
 
         # Default cursor for 'select' tool or any other case.
         return Gdk.Cursor.new_from_name("default")
@@ -323,6 +345,40 @@ class SketchEditor:
         if self.sketch_element.canvas:
             self.sketch_element.canvas.grab_focus()
 
+    # --- Text Box UI Management ---
+
+    def _on_text_editing_started(self, sender: TextBoxTool):
+        """Starts the cursor blinking timer when text editing begins."""
+        self._stop_text_cursor_timer()  # Ensure no old timer is running
+
+        def toggle_cursor_callback():
+            # This callback continues as long as the tool that started it
+            # is still in the editing state.
+            if sender.state == TextBoxState.EDITING:
+                sender.toggle_cursor_visibility()
+                return GLib.SOURCE_CONTINUE  # Keep timer running
+
+            # If state is no longer editing, the timer should stop.
+            # This is a safety net; the timer is usually stopped explicitly.
+            self.text_edit_cursor_timer_id = None
+            return GLib.SOURCE_REMOVE
+
+        self.text_edit_cursor_timer_id = GLib.timeout_add(
+            500, toggle_cursor_callback
+        )
+
+    def _on_text_editing_finished(self, sender: TextBoxTool):
+        """Stops the cursor blinking timer."""
+        self._stop_text_cursor_timer()
+
+    def _stop_text_cursor_timer(self):
+        """Safely removes the GLib timer source."""
+        if self.text_edit_cursor_timer_id is not None:
+            GLib.source_remove(self.text_edit_cursor_timer_id)
+            self.text_edit_cursor_timer_id = None
+
+    # --- Key Handling ---
+
     def _on_key_sequence_timeout(self) -> bool:
         """Callback to reset the key sequence after a delay."""
         logger.debug("Key sequence timed out.")
@@ -343,6 +399,28 @@ class SketchEditor:
         """Handles key press events for the sketcher session."""
         if not self.sketch_element:
             return False
+
+        # Priority 0: Active text editing
+        tool = self.sketch_element.current_tool
+        if (
+            isinstance(tool, TextBoxTool)
+            and tool.state == TextBoxState.EDITING
+        ):
+            key_map = {
+                Gdk.KEY_BackSpace: SketcherKey.BACKSPACE,
+                Gdk.KEY_Delete: SketcherKey.DELETE,
+                Gdk.KEY_Left: SketcherKey.ARROW_LEFT,
+                Gdk.KEY_Right: SketcherKey.ARROW_RIGHT,
+                Gdk.KEY_Return: SketcherKey.RETURN,
+                Gdk.KEY_Escape: SketcherKey.ESCAPE,
+            }
+            if keyval in key_map:
+                return tool.handle_key_event(key_map[keyval])
+
+            key_unicode = Gdk.keyval_to_unicode(keyval)
+            if key_unicode != 0:
+                return tool.handle_text_input(chr(key_unicode))
+            return False  # Unhandled key during text edit
 
         is_ctrl = state & Gdk.ModifierType.CONTROL_MASK
 
