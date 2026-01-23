@@ -1,3 +1,4 @@
+import logging
 from typing import Optional, List, cast
 from enum import Enum, auto
 import cairo
@@ -10,6 +11,8 @@ from ..constraints import (
     VerticalConstraint,
 )
 from .base import SketchTool, SketcherKey
+
+logger = logging.getLogger(__name__)
 
 
 class TextBoxState(Enum):
@@ -384,12 +387,22 @@ class TextBoxTool(SketchTool):
         }
         natural_geo = Geometry.from_text(self.text_buffer, **font_params)
         natural_geo.flip_y()
+        logger.debug(f"Natural geometry: {natural_geo.rect()}")
+
+        nat_min_x, nat_min_y, nat_max_x, nat_max_y = natural_geo.rect()
+
+        # Handle empty text case for frame mapping logic
+        if not self.text_buffer:
+            nat_min_x, nat_min_y = 0.0, 0.0
+            nat_max_x = 10.0
+            nat_max_y = font_params["font_size"]
 
         transformed_geo = natural_geo.map_to_frame(
             (p_origin.x, p_origin.y),
             (p_width.x, p_width.y),
             (p_height.x, p_height.y),
         )
+        logger.debug(f"Transformed text geometry: {transformed_geo.rect()}")
 
         ctx.save()
         model_to_screen_matrix = (
@@ -403,43 +416,71 @@ class TextBoxTool(SketchTool):
         ctx.fill()
 
         if self.cursor_visible:
+            # Calculate view scale for consistent cursor size
+            scale = 1.0
+            if self.element.canvas:
+                scale_x, _ = self.element.canvas.get_view_scale()
+                scale = scale_x if scale_x > 1e-13 else 1.0
+            cursor_width = 3.0 / scale
+
+            # Calculate cursor geometry in Natural Space
             sub_geo = Geometry.from_text(
                 self.text_buffer[: self.cursor_pos], **font_params
             )
             sub_geo.flip_y()
-            _, min_y, sub_max_x, max_y = sub_geo.rect()
-            if self.cursor_pos == 0:
-                full_rect = natural_geo.rect()
-                sub_max_x = full_rect[0]
-                min_y, max_y = full_rect[1], full_rect[3]
+            _, _, sub_max_x, _ = sub_geo.rect()
 
-            natural_cursor_pos = (sub_max_x, (min_y + max_y) / 2)
-            cursor_height = max_y - min_y
+            if self.cursor_pos == 0:
+                sub_max_x = nat_min_x
+            else:
+                # Add a small margin to "unglue" the cursor from the last
+                # character. Margin = half cursor width + 1 visual pixel gap
+                sub_max_x += (cursor_width / 2) + (3.0 / scale)
+
+            cursor_height = nat_max_y - nat_min_y
             if cursor_height <= 0:
                 cursor_height = font_params["font_size"]
 
-            cursor_geo = Geometry()
-            cursor_geo.move_to(
-                natural_cursor_pos[0],
-                natural_cursor_pos[1] - cursor_height / 2,
-            )
-            cursor_geo.line_to(
-                natural_cursor_pos[0],
-                natural_cursor_pos[1] + cursor_height / 2,
-            )
+            c_center_y = (nat_min_y + nat_max_y) / 2
 
-            transformed_cursor_geo = cursor_geo.map_to_frame(
-                (p_origin.x, p_origin.y),
-                (p_width.x, p_width.y),
-                (p_height.x, p_height.y),
-            )
-            transformed_cursor_geo.to_cairo(ctx)
+            c_half_w = cursor_width / 2
+            c_half_h = cursor_height / 2
+
+            # Cursor corners in natural space
+            pts_nat = [
+                (sub_max_x - c_half_w, c_center_y - c_half_h),
+                (sub_max_x + c_half_w, c_center_y - c_half_h),
+                (sub_max_x + c_half_w, c_center_y + c_half_h),
+                (sub_max_x - c_half_w, c_center_y + c_half_h),
+            ]
+
+            # Prepare transformation to Model Space
+            src_w = nat_max_x - nat_min_x
+            src_h = nat_max_y - nat_min_y
+            if abs(src_w) < 1e-9:
+                src_w = 1.0
+            if abs(src_h) < 1e-9:
+                src_h = 1.0
+
+            u = (p_width.x - p_origin.x, p_width.y - p_origin.y)
+            v = (p_height.x - p_origin.x, p_height.y - p_origin.y)
+            origin = (p_origin.x, p_origin.y)
+
+            def trans(px, py):
+                xn = (px - nat_min_x) / src_w
+                yn = (py - nat_min_y) / src_h
+                return (
+                    origin[0] + xn * u[0] + yn * v[0],
+                    origin[1] + xn * u[1] + yn * v[1],
+                )
+
+            pts_model = [trans(*p) for p in pts_nat]
+
+            ctx.move_to(*pts_model[0])
+            for p in pts_model[1:]:
+                ctx.line_to(*p)
+            ctx.close_path()
             ctx.set_source_rgba(0.0, 0.0, 0.0, 1.0)
+            ctx.fill()
 
-            scale = 1.0
-            if self.element.canvas:
-                scale_x, _ = self.element.canvas.get_view_scale()
-                scale = scale_x if scale_x > 1e-9 else 1.0
-            ctx.set_line_width(1.0 / scale)
-            ctx.stroke()
         ctx.restore()
