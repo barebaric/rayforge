@@ -123,3 +123,28 @@ def test_line_to_geometry(registry):
     assert geo.data is not None
     assert geo.data[0][0] == 1.0  # Move command
     assert geo.data[1][0] == 2.0  # Line command
+
+
+def test_line_append_to_geometry(registry):
+    """Test Line.append_to_geometry method."""
+    p1 = registry.add_point(0, 0)
+    p2 = registry.add_point(10, 0)
+    line = registry.get_entity(registry.add_line(p1, p2))
+    pt1 = registry.get_point(p1)
+    pt2 = registry.get_point(p2)
+    geo = Geometry()
+    geo.move_to(pt1.x, pt1.y)
+
+    line.append_to_geometry(geo, registry, forward=True)
+    assert len(geo) == 2
+    assert geo.data is not None
+    assert geo.data[0][0] == 1.0  # Move command
+    assert geo.data[1][0] == 2.0  # Line command to p2
+
+    geo2 = Geometry()
+    geo2.move_to(pt2.x, pt2.y)
+    line.append_to_geometry(geo2, registry, forward=False)
+    assert geo2.data is not None
+    assert len(geo2) == 2
+    assert geo2.data[0][0] == 1.0  # Move command
+    assert geo2.data[1][0] == 2.0  # Line command to p1
