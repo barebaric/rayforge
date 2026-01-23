@@ -4,13 +4,14 @@ from pathlib import Path
 import ezdxf
 from typing import Optional, Union, cast
 from unittest.mock import Mock
-from rayforge.core.geo import CMD_TYPE_BEZIER
+from rayforge.core.geo import CMD_TYPE_BEZIER, Geometry
 from rayforge.core.layer import Layer
 from rayforge.core.matrix import Matrix
 from rayforge.core.vectorization_spec import PassthroughSpec
 from rayforge.core.workpiece import WorkPiece
 from rayforge.image.dxf.importer import DxfImporter
 from rayforge.image.structures import ImportPayload
+from rayforge.image.base_importer import ImporterFeature
 
 
 # Fixtures
@@ -159,6 +160,114 @@ def circle_dxf_importer_from_file(circle_dxf_file):
 def acdbcircle_dxf_importer_from_file(acdbcircle_dxf_file):
     data = acdbcircle_dxf_file.read_bytes()
     return DxfImporter(data)
+
+
+class TestDXFImporterContract:
+    """Tests for the Importer contract compliance of DxfImporter."""
+
+    def test_class_attributes(self):
+        """Tests that importer class has required attributes."""
+        assert DxfImporter.label == "DXF files (2D)"
+        assert DxfImporter.mime_types == ("image/vnd.dxf",)
+        assert DxfImporter.extensions == (".dxf",)
+        assert DxfImporter.features == {
+            ImporterFeature.DIRECT_VECTOR,
+            ImporterFeature.LAYER_SELECTION,
+        }
+
+    def test_scan_returns_manifest(self, line_dxf_importer):
+        """Tests that scan() returns ImportManifest with correct data."""
+        manifest = line_dxf_importer.scan()
+
+        assert manifest.title == "Untitled"
+        assert manifest.natural_size_mm is not None
+        width_mm, height_mm = manifest.natural_size_mm
+        assert width_mm > 0
+        assert height_mm > 0
+        assert len(manifest.layers) > 0
+        assert len(manifest.warnings) == 0
+        assert len(manifest.errors) == 0
+
+    def test_scan_handles_invalid_data(self):
+        """Tests that scan() handles invalid DXF data gracefully."""
+        importer = DxfImporter(b"not a dxf")
+        manifest = importer.scan()
+
+        assert manifest.title == "Untitled"
+        assert len(manifest.errors) > 0
+
+    def test_parse_returns_parsing_result(self, line_dxf_importer):
+        """Tests that parse() returns ParsingResult with correct data."""
+        parse_result = line_dxf_importer.parse()
+
+        assert parse_result is not None
+        x, y, width, height = parse_result.document_bounds
+        assert x == 0.0
+        assert y == 0.0
+        assert width == 100.0
+        assert height == 50.0
+        assert parse_result.is_y_down is False
+        assert parse_result.native_unit_to_mm == 1.0
+        assert len(parse_result.layers) > 0
+        assert parse_result.world_frame_of_reference is not None
+        assert parse_result.background_world_transform is not None
+
+    def test_parse_handles_invalid_data(self):
+        """Tests that parse() returns None for invalid DXF data."""
+        importer = DxfImporter(b"not a dxf")
+        parse_result = importer.parse()
+
+        assert parse_result is None
+        assert len(importer._errors) > 0
+
+    def test_vectorize_returns_vectorization_result(
+        self, line_dxf_importer
+    ):
+        """Tests that vectorize() returns VectorizationResult."""
+        parse_result = line_dxf_importer.parse()
+        assert parse_result is not None
+
+        spec = PassthroughSpec(create_new_layers=False)
+        vec_result = line_dxf_importer.vectorize(parse_result, spec)
+
+        assert vec_result is not None
+        assert vec_result.source_parse_result is parse_result
+        assert None in vec_result.geometries_by_layer
+        assert isinstance(vec_result.geometries_by_layer[None], Geometry)
+
+    def test_vectorize_with_layer_selection(
+        self, multi_layer_dxf_importer: DxfImporter
+    ):
+        """Tests that vectorize() respects layer selection."""
+        parse_result = multi_layer_dxf_importer.parse()
+        assert parse_result is not None
+
+        spec = PassthroughSpec(
+            active_layer_ids=["Layer1", "Layer3"],
+            create_new_layers=True,
+        )
+        vec_result = multi_layer_dxf_importer.vectorize(
+            parse_result, spec
+        )
+
+        assert vec_result is not None
+        assert "Layer1" in vec_result.geometries_by_layer
+        assert "Layer3" in vec_result.geometries_by_layer
+        assert "Layer2" not in vec_result.geometries_by_layer
+
+    def test_create_source_asset(self, line_dxf_importer):
+        """Tests that create_source_asset() returns SourceAsset."""
+        parse_result = line_dxf_importer.parse()
+        assert parse_result is not None
+
+        source_asset = line_dxf_importer.create_source_asset(
+            parse_result
+        )
+
+        assert source_asset.width_mm == 100.0
+        assert source_asset.height_mm == 50.0
+        assert source_asset.metadata is not None
+        assert source_asset.metadata["is_vector"] is True
 
 
 # Test cases

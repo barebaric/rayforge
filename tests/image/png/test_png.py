@@ -12,6 +12,7 @@ from rayforge.core.geo import Geometry
 from rayforge.image.png.importer import PngImporter
 from rayforge.image.png.renderer import PNG_RENDERER
 from rayforge.image import renderer_by_name
+from rayforge.image.base_importer import ImporterFeature
 
 # Assume the test PNGs are in the same directory as this test file
 TEST_DATA_DIR = Path(__file__).parent
@@ -114,6 +115,112 @@ def grayscale_workpiece(grayscale_png_data: bytes) -> WorkPiece:
     return _setup_workpiece_with_context(
         importer, vectorization_spec=TraceSpec()
     )
+
+
+class TestPngImporterContract:
+    """Tests for the Importer contract compliance of PngImporter."""
+
+    def test_class_attributes(self):
+        """Tests that importer class has required attributes."""
+        assert PngImporter.label == "PNG files"
+        assert PngImporter.mime_types == ("image/png",)
+        assert PngImporter.extensions == (".png",)
+        assert PngImporter.features == {ImporterFeature.BITMAP_TRACING}
+
+    def test_scan_returns_manifest(self, color_png_data: bytes):
+        """Tests that scan() returns ImportManifest with correct data."""
+        importer = PngImporter(color_png_data, Path("test.png"))
+        manifest = importer.scan()
+
+        assert manifest.title == "test.png"
+        assert manifest.natural_size_mm is not None
+        width_mm, height_mm = manifest.natural_size_mm
+        assert width_mm > 0
+        assert height_mm > 0
+        assert len(manifest.warnings) == 0
+        assert len(manifest.errors) == 0
+
+    def test_scan_handles_invalid_data(self):
+        """Tests that scan() handles invalid PNG data gracefully."""
+        importer = PngImporter(b"not a png", Path("invalid.png"))
+        manifest = importer.scan()
+
+        assert manifest.title == "invalid.png"
+        assert manifest.natural_size_mm is None
+        assert len(manifest.errors) > 0
+
+    def test_parse_returns_parsing_result(self, color_png_data: bytes):
+        """Tests that parse() returns ParsingResult with correct data."""
+        importer = PngImporter(color_png_data)
+        parse_result = importer.parse()
+
+        assert parse_result is not None
+        x, y, width, height = parse_result.document_bounds
+        assert x == 0.0
+        assert y == 0.0
+        assert width == 300.0
+        assert height == 358.0
+        assert parse_result.is_y_down is True
+        assert parse_result.native_unit_to_mm == pytest.approx(
+            25.4 / 300.0, rel=1e-5
+        )
+        assert len(parse_result.layers) == 1
+        assert parse_result.layers[0].layer_id == "__default__"
+        assert parse_result.layers[0].name == "__default__"
+        assert parse_result.world_frame_of_reference is not None
+        assert parse_result.background_world_transform is not None
+
+    def test_parse_handles_invalid_data(self):
+        """Tests that parse() returns None for invalid PNG data."""
+        importer = PngImporter(b"not a png")
+        parse_result = importer.parse()
+
+        assert parse_result is None
+        assert len(importer._errors) > 0
+
+    def test_vectorize_returns_vectorization_result(
+        self, color_png_data: bytes
+    ):
+        """Tests that vectorize() returns VectorizationResult."""
+        importer = PngImporter(color_png_data)
+        parse_result = importer.parse()
+        assert parse_result is not None
+
+        spec = TraceSpec()
+        vec_result = importer.vectorize(parse_result, spec)
+
+        assert vec_result is not None
+        assert vec_result.source_parse_result is parse_result
+        assert None in vec_result.geometries_by_layer
+        assert isinstance(vec_result.geometries_by_layer[None], Geometry)
+
+    def test_vectorize_raises_type_error_for_wrong_spec(
+        self, color_png_data: bytes
+    ):
+        """Tests that vectorize() raises TypeError for non-TraceSpec."""
+        importer = PngImporter(color_png_data)
+        parse_result = importer.parse()
+        assert parse_result is not None
+
+        from rayforge.core.vectorization_spec import PassthroughSpec
+        with pytest.raises(TypeError):
+            importer.vectorize(parse_result, PassthroughSpec())
+
+    def test_create_source_asset(self, color_png_data: bytes):
+        """Tests that create_source_asset() returns SourceAsset."""
+        importer = PngImporter(color_png_data)
+        parse_result = importer.parse()
+        assert parse_result is not None
+
+        source_asset = importer.create_source_asset(parse_result)
+
+        assert isinstance(source_asset, SourceAsset)
+        assert source_asset.renderer is PNG_RENDERER
+        assert source_asset.original_data == color_png_data
+        assert source_asset.width_px == 300
+        assert source_asset.height_px == 358
+        assert source_asset.metadata is not None
+        assert source_asset.metadata["image_format"] == "PNG"
 
 
 class TestPngImporter:
