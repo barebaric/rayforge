@@ -14,10 +14,33 @@ logger = logging.getLogger(__name__)
 
 class ItemAssembler:
     """
-    Phase 3: Object Assembly.
+    Phase 5: Object Assembly.
 
     Factory that instantiates Rayforge domain objects (WorkPieces, Layers)
-    based on the LayoutPlan calculated by the Engine.
+    based on the LayoutPlan calculated by the NormalizationEngine.
+
+    Coordinate System Contract:
+    --------------------------
+    Input (LayoutItem):
+    - crop_window: Native Coordinates (file-specific units)
+    - normalization_matrix: Transforms Native -> Normalized (0-1, Y-Up)
+    - world_matrix: Transforms Normalized (0-1, Y-Up) -> World (mm, Y-Up)
+
+    Output (DocItems):
+    - WorkPieces and Layers are positioned in World Coordinates (mm, Y-Up)
+    - The transformation matrices are applied to the WorkPiece.matrix
+    - Origin (0,0) is at the bottom-left of the workpiece
+
+    Frame of Reference:
+    ------------------
+    - crop_window is absolute in the document's native coordinate space
+    - The world_matrix positions the workpiece in the world coordinate system
+    - All output DocItems are ready for insertion into the document
+
+    Error Handling:
+    ---------------
+    This class does not collect errors. It assumes valid input from the
+    NormalizationEngine. Invalid inputs may produce undefined results.
     """
 
     def create_items(
@@ -30,7 +53,50 @@ class ItemAssembler:
         document_bounds: Optional[Tuple[float, float, float, float]] = None,
     ) -> List[DocItem]:
         """
-        Creates DocItems from the plan.
+        Creates DocItems from the layout plan.
+
+        Instantiates WorkPieces and Layers based on the LayoutItem
+        configurations calculated by the NormalizationEngine.
+
+        Coordinate System:
+        ------------------
+        Input:
+        - layout_plan: LayoutItems with transformation matrices
+        - geometries: Geometry in Native Coordinates
+        - document_bounds: Optional bounds in Native Coordinates
+
+        Output:
+        - DocItems (WorkPieces or Layers) positioned in World Coordinates
+          (mm, Y-Up) with transformation matrices applied
+
+        Args:
+            source_asset: The SourceAsset representing the imported file.
+            layout_plan: List of LayoutItem configurations from
+                         NormalizationEngine. Each contains transformation
+                         matrices and crop windows.
+            spec: VectorizationSpec describing the vectorization approach.
+                  Determines whether to create Layers for split items.
+            source_name: Base name for the resulting DocItems.
+            geometries: Dict of Geometry objects keyed by layer ID.
+                        Geometry is in Native Coordinates.
+            document_bounds: Optional document bounds in Native Coordinates.
+                            Used for debugging and reference.
+
+        Returns:
+            List of DocItems (WorkPieces or Layers) ready for insertion
+            into the document. May be empty if layout_plan is empty.
+
+        Frame of Reference:
+        ------------------
+        - crop_window in LayoutItem is absolute in native coordinate space
+        - For raster sources: crop_window contains pixel coordinates
+        - For vector sources (SVG): crop_window contains native user-units
+        - The WorkPiece/Renderer logic handles the distinction
+
+        Error Handling:
+        ---------------
+        This method assumes valid input from the NormalizationEngine.
+        Invalid inputs may produce undefined results.
         """
         if not layout_plan:
             return []

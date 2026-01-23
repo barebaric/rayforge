@@ -91,6 +91,7 @@ nav:
       - Architecture:
           - docs/developer/architecture.md
           - Document Model: docs/developer/docmodel.md
+          - Importer: docs/developer/importer.md
           - Pipeline: docs/developer/pipeline.md
           - Task Manager: docs/developer/tasker.md
           - Drivers: docs/developer/driver.md
