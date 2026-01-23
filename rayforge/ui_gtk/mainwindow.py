@@ -1,6 +1,7 @@
 import asyncio
 import logging
 import shutil
+import sys
 import webbrowser
 from concurrent.futures import Future
 from pathlib import Path
@@ -8,6 +9,7 @@ from typing import Callable, Coroutine, List, Optional, cast
 from gi.repository import Adw, Gdk, Gio, GLib, Gtk
 
 from .. import __version__
+from .. import const
 from ..context import get_context
 from ..core.group import Group
 from ..core.item import DocItem
@@ -138,7 +140,7 @@ def _get_monitor_geometry() -> Optional[Gdk.Rectangle]:
 class MainWindow(Adw.ApplicationWindow):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.set_title(_("Rayforge"))
+        self.set_title(const.APP_NAME)
         self._current_machine: Optional[Machine] = None  # For signal handling
         self._last_gcode_previewer_width = 350
         self._last_control_panel_height = 200
@@ -194,6 +196,11 @@ class MainWindow(Adw.ApplicationWindow):
         self.menubar = Gtk.PopoverMenuBar.new_from_model(self.menu_model)
         self.menubar.add_css_class("in-header-menubar")
         self.header_bar.pack_start(self.menubar)
+
+        # Set up Recent Files manager
+        self.recent_manager = Gtk.RecentManager.get_default()
+        self.recent_manager.connect("changed", self._update_recent_files_menu)
+        self._update_recent_files_menu()  # Initial population
 
         # Create and set the centered title widget
         window_title = Adw.WindowTitle(
@@ -824,10 +831,7 @@ class MainWindow(Adw.ApplicationWindow):
             if not file:
                 return
             file_path = Path(file.get_path())
-
-            success = self.doc_editor.file.load_project_from_path(file_path)
-            if success:
-                self.on_doc_changed(self.doc_editor.doc)
+            self._do_open_project(file_path)
         except GLib.Error as e:
             logger.error(f"Error opening file: {e.message}")
             return
@@ -839,6 +843,7 @@ class MainWindow(Adw.ApplicationWindow):
             success = self.doc_editor.file.save_project_to_path(file_path)
             if success:
                 self.on_doc_changed(self.doc_editor.doc)
+                self._add_to_recent_manager(file_path)
         else:
             self.on_save_project_as(action, param)
 
@@ -863,9 +868,99 @@ class MainWindow(Adw.ApplicationWindow):
             success = self.doc_editor.file.save_project_to_path(file_path)
             if success:
                 self.on_doc_changed(self.doc_editor.doc)
+                self._add_to_recent_manager(file_path)
         except GLib.Error as e:
             logger.error(f"Error saving file: {e.message}")
             return
+
+    def _do_open_project(self, file_path: Path):
+        """Loads a project from a given path and updates recent files."""
+        success = self.doc_editor.file.load_project_from_path(file_path)
+        if success:
+            self.on_doc_changed(self.doc_editor.doc)
+            self._add_to_recent_manager(file_path)
+
+    def on_open_recent(self, action, param):
+        """Action handler for opening a file from the recent menu."""
+        uri = param.get_string()
+        file = Gio.File.new_for_uri(uri)
+        path = file.get_path()
+        if path is None:
+            return
+        file_path = Path(path)
+
+        if self.doc_editor.is_saved:
+            self._do_open_project(file_path)
+        else:
+            # Create a new callback that knows which file to open
+            def on_response(response_id):
+                self._on_open_recent_dialog_response(response_id, file_path)
+
+            self._show_unsaved_changes_dialog(on_response)
+
+    def _on_open_recent_dialog_response(self, response, file_path: Path):
+        """Callback for unsaved changes dialog when opening a recent file."""
+        if response == "cancel":
+            return
+        if response == "save":
+            self.on_save_project(None, None)
+            # If save fails (e.g., user cancels "Save As" dialog), stop here.
+            if not self.doc_editor.is_saved:
+                return
+        self._do_open_project(file_path)
+
+    def _add_to_recent_manager(self, file_path: Path):
+        """Adds a project file path to the Gtk.RecentManager with metadata."""
+        uri = file_path.as_uri()
+        app = self.get_application()
+        if not app:
+            logger.warning(
+                "Could not get application to register recent file."
+            )
+            return
+
+        app_id = app.get_application_id()
+        if not app_id:
+            logger.warning(
+                "Application ID is not set, cannot register recent file."
+            )
+            return
+
+        # Create an empty Gtk.RecentData struct and set its fields.
+        recent_data = Gtk.RecentData()
+        recent_data.display_name = file_path.name
+        recent_data.mime_type = const.MIME_TYPE_PROJECT
+        recent_data.app_name = app_id
+        # Use sys.executable for a reliable path, even at startup.
+        # Quoting is important for paths with spaces.
+        recent_data.app_exec = f'"{sys.executable}" %f'
+
+        self.recent_manager.add_full(uri, recent_data)
+
+    def _update_recent_files_menu(self, *args):
+        """
+        Updates the 'Open Recent' submenu based on the contents of the
+        Gtk.RecentManager.
+        """
+        app = self.get_application()
+        if not app:
+            self.menu_model.update_recent_files_menu([])
+            return
+
+        app_id = app.get_application_id()
+        if not app_id:
+            self.menu_model.update_recent_files_menu([])
+            return
+
+        items = self.recent_manager.get_items()
+        # Filter for our project files by checking the application ID
+        ryp_items = [
+            info
+            for info in items
+            if info.get_uri().endswith(".ryp")
+            and app_id in info.get_applications()
+        ]
+        self.menu_model.update_recent_files_menu(ryp_items)
 
     def _on_saved_state_changed(self, sender):
         """Handles saved state changes from DocEditor."""
@@ -879,9 +974,9 @@ class MainWindow(Adw.ApplicationWindow):
 
         doc_title = file_path.name if file_path else _("Untitled")
         if is_saved:
-            title = f"{doc_title} - Rayforge"
+            title = f"{doc_title} - {const.APP_NAME}"
         else:
-            title = f"{doc_title}* - Rayforge"
+            title = f"{doc_title}* - {const.APP_NAME}"
 
         subtitle = __version__ or ""
 

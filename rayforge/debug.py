@@ -9,6 +9,7 @@ from datetime import datetime
 from enum import Enum
 from pathlib import Path
 from typing import Any, Optional, Dict
+from . import const
 
 logger = logging.getLogger(__name__)
 
@@ -129,7 +130,9 @@ class DebugDumpManager:
                 # 3. Write system info to system_info.txt
                 dep_info = get_dependency_info()
                 with open(tmp_path / "system_info.txt", "w") as f:
-                    f.write(f"## Rayforge {__version__ or 'Unknown'}\n\n")
+                    f.write(
+                        f"## {const.APP_NAME} {__version__ or 'Unknown'}\n\n"
+                    )
                     for category, deps in dep_info.items():
                         f.write(f"### {category}\n")
                         for name, ver in deps:

@@ -1,4 +1,4 @@
-from gi.repository import Gio
+from gi.repository import Gio, Gtk, GLib
 from typing import List
 from ..machine.models.macro import Macro
 
@@ -20,6 +20,14 @@ class MainMenu(Gio.Menu):
         file_io_group.append(_("Save"), "win.save")
         file_io_group.append(_("Save As..."), "win.save-as")
         file_menu.append_section(None, file_io_group)
+
+        # New "Open Recent" submenu
+        self.recent_files_menu = Gio.Menu()
+        self.dynamic_recent_files_section = Gio.Menu()
+        self.recent_files_menu.append_section(
+            None, self.dynamic_recent_files_section
+        )
+        file_menu.append_submenu(_("Open Recent"), self.recent_files_menu)
 
         import_export_group = Gio.Menu()
         import_export_group.append(_("Import..."), "win.import")
@@ -206,3 +214,22 @@ class MainMenu(Gio.Menu):
         for macro in macros:
             action_name = f"win.execute-macro('{macro.uid}')"
             self.dynamic_macros_section.append(macro.name, action_name)
+
+    def update_recent_files_menu(self, recent_infos: List[Gtk.RecentInfo]):
+        """Clears and rebuilds the dynamic recent files menu."""
+        self.dynamic_recent_files_section.remove_all()
+
+        if not recent_infos:
+            # Action is None, so it will appear insensitive
+            self.dynamic_recent_files_section.append(
+                _("(No Recent Items)"), None
+            )
+            return
+
+        for info in recent_infos:
+            # Use Glib.markup_escape to prevent issues with special chars
+            # in filenames.
+            display_name = GLib.markup_escape_text(info.get_display_name())
+            uri = info.get_uri()
+            action_name = f"win.open-recent('{uri}')"
+            self.dynamic_recent_files_section.append(display_name, action_name)

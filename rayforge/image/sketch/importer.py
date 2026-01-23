@@ -19,6 +19,7 @@ from ..structures import (
     ImportManifest,
 )
 from ..engine import NormalizationEngine
+from ... import const
 
 if TYPE_CHECKING:
     from ...core.vectorization_spec import VectorizationSpec
@@ -32,9 +33,9 @@ class SketchImporter(Importer):
     integration into a document.
     """
 
-    label = "Rayforge Sketch"
+    label = _("{app_name} Sketch").format(app_name=const.APP_NAME)
     extensions = (".rfs",)
-    mime_types = ("application/vnd.rayforge-sketch",)
+    mime_types = (const.MIME_TYPE_SKETCH,)
     features = {ImporterFeature.DIRECT_VECTOR}
 
     def __init__(self, data: bytes, source_file: Optional[Path] = None):

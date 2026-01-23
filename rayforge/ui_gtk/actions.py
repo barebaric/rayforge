@@ -35,6 +35,12 @@ class ActionManager:
         self._add_action("open", self.win.on_open_project)
         self._add_action("save", self.win.on_save_project)
         self._add_action("save-as", self.win.on_save_project_as)
+        # New actions for recent files
+        self._add_action(
+            "open-recent",
+            self.win.on_open_recent,
+            GLib.VariantType.new("s"),
+        )
         self._add_action("import", self.win.on_menu_import)
         self._add_action("export", self.win.on_export_clicked)
         self._add_action("about", self.win.show_about_dialog)

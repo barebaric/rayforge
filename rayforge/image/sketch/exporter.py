@@ -2,6 +2,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 import json
 from ..base_exporter import Exporter
+from ... import const
 
 if TYPE_CHECKING:
     from ...core.workpiece import WorkPiece
@@ -12,9 +13,9 @@ class SketchExporter(Exporter):
     Exports the parametric source data of a sketch-based WorkPiece.
     """
 
-    label = "Rayforge Sketch"
+    label = _("{app_name} Sketch").format(app_name=const.APP_NAME)
     extensions = (".rfs",)
-    mime_types = ("application/vnd.rayforge-sketch",)
+    mime_types = (const.MIME_TYPE_SKETCH,)
 
     def __init__(self, doc_item: "WorkPiece"):
         """

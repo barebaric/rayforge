@@ -6,7 +6,7 @@ Name=Rayforge
 Comment=Laser cutting and engraving
 Categories=Graphics;2DGraphics;VectorGraphics;Engineering;
 StartupNotify=true
-MimeType=application/x-rayforge;
+MimeType=application/x-rayforge-project;application/x-rayforge-sketch;application/x-ruida;image/png;image/bmp;image/jpeg;image/svg+xml;image/vnd.dxf;
 
 Icon=org.rayforge.rayforge
 Exec=rayforge

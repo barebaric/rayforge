@@ -7,6 +7,7 @@ from importlib.metadata import PackageNotFoundError, version
 from gi.repository import Adw, GLib, Gtk
 
 from .. import __version__
+from .. import const
 from .icons import get_icon
 from .shared.patched_dialog_window import PatchedDialogWindow
 
@@ -148,7 +149,7 @@ class AboutDialog(PatchedDialogWindow):
         self._build_ui()
 
     def _on_copy_info_clicked(self, button: Gtk.Button):
-        lines = [f"## Rayforge {__version__ or _not_found_str}", ""]
+        lines = [f"## {const.APP_NAME} {__version__ or _not_found_str}", ""]
         dep_info = get_dependency_info()
         for category, deps in dep_info.items():
             lines.append(f"### {category}")
@@ -205,7 +206,9 @@ class AboutDialog(PatchedDialogWindow):
         hero_box.append(icon)
 
         title = Gtk.Label()
-        title.set_markup("<span size='xx-large' weight='bold'>Rayforge</span>")
+        title.set_markup(
+            f"<span size='xx-large' weight='bold'>{const.APP_NAME}</span>"
+        )
         title.set_margin_top(6)
         hero_box.append(title)
 
@@ -389,7 +392,9 @@ class AboutDialog(PatchedDialogWindow):
 
     def _build_ui(self):
         self.header_bar = Adw.HeaderBar()
-        self.main_title = Adw.WindowTitle(title=_("About Rayforge"))
+        self.main_title = Adw.WindowTitle(
+            title=_("About {app_name}").format(app_name=const.APP_NAME)
+        )
         self.sysinfo_title = Adw.WindowTitle(title=_("System Information"))
         self.supporters_title = Adw.WindowTitle(title=_("Supporters"))
 
