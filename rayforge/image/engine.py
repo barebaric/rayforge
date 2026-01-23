@@ -18,11 +18,46 @@ logger = logging.getLogger(__name__)
 
 class NormalizationEngine:
     """
-    Phase 2: Layout Engine.
+    Phase 4: Layout Engine.
 
     Pure logic component that calculates how to map Native Coordinates
     (ParsingResult) to Rayforge World Coordinates (LayoutPlan) based on
     user intent (VectorizationSpec).
+
+    Coordinate System Contract:
+    --------------------------
+    All inputs and outputs follow a strict coordinate system convention:
+
+    **Native Coordinates (Input):**
+    - File-specific coordinate system (e.g., SVG user units, DXF units)
+    - Y-axis orientation varies by format (is_y_down flag indicates this)
+    - Bounds are always absolute within the document's coordinate space
+    - Units are converted to mm via native_unit_to_mm factor
+
+    **World Coordinates (Output):**
+    - Physical world coordinates in millimeters (mm)
+    - Y-axis points UP (Y-Up convention)
+    - Origin (0,0) is at the bottom-left of the workpiece
+    - All positions are absolute in the world coordinate system
+
+    **Normalized Coordinates (Intermediate):**
+    - Unit square from (0,0) to (1,1)
+    - Y-axis points UP (Y-Up convention)
+    - Used as intermediate representation between native and world
+
+    Frame of Reference:
+    ------------------
+    - Native bounds are relative to the document's origin
+    - For Y-Down formats (SVG, images): origin is at top-left
+    - For Y-Up formats (DXF): origin is at bottom-left
+    - World positions preserve the original document's spatial relationships
+    - untrimmed_document_bounds provides reference for Y-inversion
+
+    Error Handling:
+    ---------------
+    This class does not collect errors. It assumes valid input and handles
+    edge cases gracefully (e.g., degenerate bounds by normalizing to minimum
+    size). Invalid inputs may produce undefined results.
     """
 
     @staticmethod
@@ -33,8 +68,37 @@ class NormalizationEngine:
         layer_name: Optional[str] = None,
     ) -> LayoutItem:
         """
-        Generates the matrices for a specific bounding box (x, y, w, h)
-        in Native Coordinates. This is the central layout algorithm.
+        Generates the transformation matrices for a specific bounding box.
+
+        This is the central layout algorithm that maps Native Coordinates to
+        World Coordinates through Normalized Coordinates.
+
+        Args:
+            bounds: Bounding box (x, y, width, height) in Native Coordinates.
+                    These are absolute coordinates within the document's native
+                    coordinate system.
+            parse_result: ParsingResult containing coordinate system metadata.
+            layer_id: Optional layer identifier for this item.
+            layer_name: Optional human-readable layer name.
+
+        Returns:
+            LayoutItem containing:
+            - normalization_matrix: Native -> Unit Square (0-1, Y-Up)
+            - world_matrix: Unit Square (0-1, Y-Up) -> World (mm, Y-Up)
+            - crop_window: The bounds in Native Coordinates
+
+        Coordinate Transformations:
+        ---------------------------
+        1. Normalization Matrix:
+           - Scales content to fit within unit square (0-1)
+           - Translates content to origin if geometry_is_relative_to_bounds
+           - Flips Y-axis if is_y_down to ensure Y-Up output
+
+        2. World Matrix:
+           - Scales unit square to physical dimensions (mm)
+           - Translates to correct world position based on Y-inversion
+           - For Y-Down: position measured from bottom of reference frame
+           - For Y-Up: position measured from origin directly
         """
         bx, by, bw, bh = bounds
 
@@ -104,7 +168,33 @@ class NormalizationEngine:
         spec: Optional[VectorizationSpec],
     ) -> List[LayoutItem]:
         """
-        Calculates the layout plan.
+        Calculates the layout plan for creating WorkPieces.
+
+        Determines how vector geometry should be positioned and sized in the
+        world based on the VectorizationSpec.
+
+        Args:
+            vec_result: VectorizationResult containing vectorized geometry
+                        and source parse metadata.
+            spec: Optional VectorizationSpec specifying layout strategy.
+                  Defaults to PassthroughSpec if None.
+
+        Returns:
+            List of LayoutItem objects, each representing one WorkPiece
+            configuration. May be empty if no valid geometry exists.
+
+        Layout Strategies:
+        ------------------
+        For TraceSpec:
+        - Single WorkPiece sized to document_bounds
+        - Uses the bitmap's coordinate system as reference
+        - Fallback to union of geometry bounds if document invalid
+
+        For PassthroughSpec:
+        - If create_new_layers: One WorkPiece per layer, sized to content
+        - Otherwise: Single WorkPiece sized to union of all layer bounds
+        - Respects active_layer_ids filter if specified
+        - Falls back to document_bounds if no layers or geometry
         """
         result = vec_result.source_parse_result
         spec = spec or PassthroughSpec()
