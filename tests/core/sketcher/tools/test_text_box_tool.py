@@ -70,16 +70,23 @@ def test_text_box_tool_on_press_outside_box_finalizes(
 
     mock_element.hittester.screen_to_model.return_value = (1000, 1000)
     mock_element.content_transform.transform_point.return_value = (1000, 1000)
-    mock_entity = TextBoxEntity(
-        5, 0, 1, 2, content="Test Text", construction_line_ids=[]
-    )
+
+    mock_entity = MagicMock(spec=TextBoxEntity)
+    mock_entity.origin_id = 0
+    mock_entity.width_id = 1
+    mock_entity.height_id = 2
+    mock_entity.content = "Test Text"
     mock_entity.font_params = {"family": "sans-serif", "size": 10.0}
+
     mock_element.sketch.registry.get_entity.return_value = mock_entity
-    mock_element.sketch.registry.get_point.side_effect = [
-        Mock(x=0, y=0),
-        Mock(x=50, y=0),
-        Mock(x=0, y=10),
-    ]
+
+    def get_point_side_effect(pid):
+        vals = {0: (0, 0), 1: (50, 0), 2: (0, 10)}
+        if pid in vals:
+            return Mock(x=vals[pid][0], y=vals[pid][1])
+        return Mock(x=0, y=0)
+
+    mock_element.sketch.registry.get_point.side_effect = get_point_side_effect
 
     result = text_box_tool.on_press(100, 200, 1)
 
@@ -303,17 +310,22 @@ def test_text_box_tool_is_click_outside_box(text_box_tool, mock_element):
     """Test checking if click is outside box bounds."""
     text_box_tool.editing_entity_id = 5
 
-    mock_entity = Mock()
+    mock_entity = MagicMock(spec=TextBoxEntity)
     mock_entity.origin_id = 0
     mock_entity.width_id = 1
     mock_entity.height_id = 2
 
     mock_element.sketch.registry.get_entity.return_value = mock_entity
-    mock_element.sketch.registry.get_point.side_effect = [
-        Mock(x=0, y=0),
-        Mock(x=50, y=0),
-        Mock(x=0, y=10),
-    ]
+
+    # Robust get_point mock
+    def get_point_side_effect(pid):
+        vals = {0: (0, 0), 1: (50, 0), 2: (0, 10)}
+        if pid in vals:
+            return Mock(x=vals[pid][0], y=vals[pid][1])
+        return Mock(x=0, y=0)
+
+    mock_element.sketch.registry.get_point.side_effect = get_point_side_effect
+
     mock_element.hittester.screen_to_model.return_value = (100, 100)
 
     result = text_box_tool._is_click_outside_box(100, 200)
@@ -328,13 +340,17 @@ def test_text_box_tool_is_click_inside_box(text_box_tool, mock_element):
     mock_entity = TextBoxEntity(
         5, 0, 1, 2, content="", construction_line_ids=[]
     )
+    mock_entity.font_params = {"family": "sans-serif", "size": 10.0}
 
-    mock_element.sketch.registry.get_entity.return_value = mock_entity
-    mock_element.sketch.registry.get_point.side_effect = [
-        Mock(x=0, y=0),
-        Mock(x=50, y=0),
-        Mock(x=0, y=10),
-    ]
+    mock_element.sketch.registry.get_entity = Mock(return_value=mock_entity)
+
+    def get_point_side_effect(pid):
+        vals = {0: (0, 0), 1: (50, 0), 2: (0, 10)}
+        if pid in vals:
+            return Mock(x=vals[pid][0], y=vals[pid][1])
+        return Mock(x=0, y=0)
+
+    mock_element.sketch.registry.get_point.side_effect = get_point_side_effect
     mock_element.hittester.screen_to_model.return_value = (25, 5)
 
     result = text_box_tool._is_click_outside_box(25, 5)
