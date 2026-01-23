@@ -1,5 +1,6 @@
 from typing import List, Tuple, Dict, Any, Sequence, TYPE_CHECKING
 from ...geo import primitives
+from ...geo.geometry import Geometry
 from .entity import Entity
 
 if TYPE_CHECKING:
@@ -45,6 +46,15 @@ class Line(Entity):
         return primitives.line_segment_intersects_rect(
             p1.pos(), p2.pos(), rect
         )
+
+    def to_geometry(self, registry: "EntityRegistry") -> Geometry:
+        """Converts the line to a Geometry object."""
+        geo = Geometry()
+        p1 = registry.get_point(self.p1_idx)
+        p2 = registry.get_point(self.p2_idx)
+        geo.move_to(p1.x, p1.y)
+        geo.line_to(p2.x, p2.y)
+        return geo
 
     def to_dict(self) -> Dict[str, Any]:
         """Serializes the Line to a dictionary."""

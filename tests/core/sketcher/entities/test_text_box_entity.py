@@ -1,6 +1,7 @@
 import pytest
 from rayforge.core.sketcher.entities import TextBoxEntity
 from rayforge.core.sketcher.registry import EntityRegistry
+from rayforge.core.geo.geometry import Geometry
 
 
 @pytest.fixture
@@ -140,8 +141,21 @@ def test_text_box_is_contained_by(selection_setup):
 
 
 def test_text_box_intersects_rect(selection_setup):
-    """Test intersects_rect method for TextBox entities."""
+    """Test of intersects_rect method for TextBox entities."""
     registry, rect, entities = selection_setup
     assert entities["box_in"].intersects_rect(rect, registry) is True
     assert entities["box_cross"].intersects_rect(rect, registry) is True
     assert entities["box_out"].intersects_rect(rect, registry) is False
+
+
+def test_text_box_to_geometry(registry):
+    """Test TextBoxEntity.to_geometry method."""
+    p1 = registry.add_point(0, 0)
+    p2 = registry.add_point(10, 0)
+    p3 = registry.add_point(0, 10)
+    box = registry.get_entity(
+        registry.add_text_box(p1, p2, p3, "Test", {})
+    )
+    geo = box.to_geometry(registry)
+    assert isinstance(geo, Geometry)
+    assert len(geo) > 0
