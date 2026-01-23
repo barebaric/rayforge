@@ -143,6 +143,7 @@ class MainWindow(Adw.ApplicationWindow):
         self._last_gcode_previewer_width = 350
         self._last_control_panel_height = 200
         self._live_3d_view_connected = False
+        self._old_doc = None  # Track previous document for signal reconnection
 
         # The ToastOverlay will wrap the main content box
         self.toast_overlay = Adw.ToastOverlay()
@@ -185,21 +186,20 @@ class MainWindow(Adw.ApplicationWindow):
             self.set_default_size(1100, 800)
 
         # HeaderBar with left-aligned menu and centered title
-        # MOVED: Now direct child of vbox to persist across views
-        header_bar = Adw.HeaderBar()
-        vbox.append(header_bar)
+        self.header_bar = Adw.HeaderBar()
+        vbox.append(self.header_bar)
 
         # Create the menu model and the popover menubar
         self.menu_model = MainMenu()
         self.menubar = Gtk.PopoverMenuBar.new_from_model(self.menu_model)
         self.menubar.add_css_class("in-header-menubar")
-        header_bar.pack_start(self.menubar)
+        self.header_bar.pack_start(self.menubar)
 
         # Create and set the centered title widget
         window_title = Adw.WindowTitle(
             title=self.get_title() or "", subtitle=__version__ or ""
         )
-        header_bar.set_title_widget(window_title)
+        self.header_bar.set_title_widget(window_title)
 
         # Create a vertical paned for main content and bottom control panel
         self.vertical_paned = Gtk.Paned(orientation=Gtk.Orientation.VERTICAL)
@@ -297,6 +297,7 @@ class MainWindow(Adw.ApplicationWindow):
 
         # Connect document signals
         doc = self.doc_editor.doc
+        self._old_doc = doc  # Track initial document for signal reconnection
         self._initialize_document()
         doc.updated.connect(self.on_doc_changed)
         doc.descendant_added.connect(self.on_doc_changed)
@@ -309,6 +310,10 @@ class MainWindow(Adw.ApplicationWindow):
             self._on_editor_notification
         )
         self.doc_editor.document_settled.connect(self._on_document_settled)
+        self.doc_editor.saved_state_changed.connect(
+            self._on_saved_state_changed
+        )
+        self.doc_editor.document_changed.connect(self._on_document_changed)
 
         # Connect to Pipeline signals
         self.doc_editor.pipeline.job_time_updated.connect(
@@ -724,6 +729,164 @@ class MainWindow(Adw.ApplicationWindow):
             self._on_editor_notification(
                 self, _("Error exporting sketch: {error}").format(error=str(e))
             )
+
+    def _show_unsaved_changes_dialog(self, callback):
+        """
+        Shows a dialog asking the user what to do with unsaved changes.
+        The callback will be called with the response: 'save', 'discard',
+        or 'cancel'.
+        """
+        dialog = Adw.MessageDialog(
+            transient_for=self,
+            heading=_("Unsaved Changes"),
+            body=_(
+                "The current project has unsaved changes. "
+                "Do you want to save them?"
+            ),
+        )
+        dialog.add_response("cancel", _("_Cancel"))
+        dialog.add_response("discard", _("_Don't Save"))
+        dialog.add_response("save", _("_Save"))
+        dialog.set_default_response("save")
+        dialog.set_close_response("cancel")
+        dialog.set_response_appearance(
+            "save", Adw.ResponseAppearance.SUGGESTED
+        )
+        dialog.set_response_appearance(
+            "discard", Adw.ResponseAppearance.DESTRUCTIVE
+        )
+
+        def on_response(d, response_id):
+            d.destroy()
+            callback(response_id)
+
+        dialog.connect("response", on_response)
+        dialog.present()
+
+    def on_new_project(self, action, param):
+        """Action handler for creating a new project."""
+        if self.doc_editor.is_saved:
+            self._do_create_new_project(action, param)
+        else:
+            self._show_unsaved_changes_dialog(
+                self._on_new_project_dialog_response
+            )
+
+    def _on_new_project_dialog_response(self, response):
+        """Callback for unsaved changes dialog in on_new_project."""
+        if response == "cancel":
+            return
+        if response == "save":
+            self.on_save_project(None, None)
+            if not self.doc_editor.is_saved:
+                return
+        self._do_create_new_project(None, None)
+
+    def _do_create_new_project(self, action, param):
+        """Actually creates a new project."""
+        from ..core.doc import Doc
+
+        new_doc = Doc()
+        self.doc_editor.set_doc(new_doc)
+        self.doc_editor.set_file_path(None)
+        self.doc_editor.mark_as_saved()
+
+        logger.info("Created new project")
+        self._on_editor_notification(self, message=_("New project created"))
+
+    def on_open_project(self, action, param):
+        """Action handler for opening a project file."""
+        if self.doc_editor.is_saved:
+            file_dialogs.show_open_project_dialog(
+                self, self._on_open_project_response
+            )
+        else:
+            self._show_unsaved_changes_dialog(
+                self._on_open_project_dialog_response
+            )
+
+    def _on_open_project_dialog_response(self, response):
+        """Callback for unsaved changes dialog in on_open_project."""
+        if response == "cancel":
+            return
+        if response == "save":
+            self.on_save_project(None, None)
+            if not self.doc_editor.is_saved:
+                return
+        file_dialogs.show_open_project_dialog(
+            self, self._on_open_project_response
+        )
+
+    def _on_open_project_response(self, dialog, result, user_data):
+        """Callback for the open project dialog."""
+        try:
+            file = dialog.open_finish(result)
+            if not file:
+                return
+            file_path = Path(file.get_path())
+
+            success = self.doc_editor.file.load_project_from_path(file_path)
+            if success:
+                self.on_doc_changed(self.doc_editor.doc)
+        except GLib.Error as e:
+            logger.error(f"Error opening file: {e.message}")
+            return
+
+    def on_save_project(self, action, param):
+        """Action handler for saving the current project."""
+        file_path = self.doc_editor.file_path
+        if file_path:
+            success = self.doc_editor.file.save_project_to_path(file_path)
+            if success:
+                self.on_doc_changed(self.doc_editor.doc)
+        else:
+            self.on_save_project_as(action, param)
+
+    def on_save_project_as(self, action, param):
+        """Action handler for saving the project with a new name."""
+        initial_name = None
+        if self.doc_editor.file_path:
+            initial_name = self.doc_editor.file_path.name
+
+        file_dialogs.show_save_project_dialog(
+            self, self._on_save_project_response, initial_name
+        )
+
+    def _on_save_project_response(self, dialog, result, user_data):
+        """Callback for the save project dialog."""
+        try:
+            file = dialog.save_finish(result)
+            if not file:
+                return
+            file_path = Path(file.get_path())
+
+            success = self.doc_editor.file.save_project_to_path(file_path)
+            if success:
+                self.on_doc_changed(self.doc_editor.doc)
+        except GLib.Error as e:
+            logger.error(f"Error saving file: {e.message}")
+            return
+
+    def _on_saved_state_changed(self, sender):
+        """Handles saved state changes from DocEditor."""
+        self._update_window_title()
+        self.action_manager.update_action_states()
+
+    def _update_window_title(self):
+        """Updates the window title based on file name and saved state."""
+        file_path = self.doc_editor.file_path
+        is_saved = self.doc_editor.is_saved
+
+        doc_title = file_path.name if file_path else _("Untitled")
+        if is_saved:
+            title = f"{doc_title} - Rayforge"
+        else:
+            title = f"{doc_title}* - Rayforge"
+
+        subtitle = __version__ or ""
+
+        window_title = Adw.WindowTitle(title=title, subtitle=subtitle)
+        self.header_bar.set_title_widget(window_title)
 
     def _update_macros_menu(self, *args):
         """Rebuilds the dynamic 'Macros' menu."""
@@ -1165,6 +1328,45 @@ class MainWindow(Adw.ApplicationWindow):
             # For regular layers, update the workflow view with the
             # new workflow
             self.workflowview.set_workflow(activated_layer.workflow)
+
+    def _on_document_changed(self, sender):
+        """
+        Handles when a new document is set on the DocEditor.
+        Reconnects signal handlers to the new document and updates the UI.
+        """
+        new_doc = self.doc_editor.doc
+
+        # Disconnect from old document signals if they were connected
+        # We need to track the old doc to disconnect properly
+        if self._old_doc is not None:
+            self._old_doc.updated.disconnect(self.on_doc_changed)
+            self._old_doc.descendant_added.disconnect(self.on_doc_changed)
+            self._old_doc.descendant_removed.disconnect(self.on_doc_changed)
+            self._old_doc.active_layer_changed.disconnect(
+                self._on_active_layer_changed
+            )
+            self._old_doc.history_manager.changed.disconnect(
+                self.on_history_changed
+            )
+
+        # Connect to new document's signals
+        new_doc.updated.connect(self.on_doc_changed)
+        new_doc.descendant_added.connect(self.on_doc_changed)
+        new_doc.descendant_removed.connect(self.on_doc_changed)
+        new_doc.active_layer_changed.connect(self._on_active_layer_changed)
+        new_doc.history_manager.changed.connect(self.on_history_changed)
+
+        # Store reference to current doc for future disconnection
+        self._old_doc = new_doc
+
+        # Initialize new document
+        self._initialize_document()
+
+        # Trigger update to sync UI with new document
+        self.on_doc_changed(new_doc)
+
+        # Update the UI with the new document's content
+        self.on_doc_changed(new_doc)
 
     def _on_editor_notification(
         self,
@@ -1721,6 +1923,32 @@ class MainWindow(Adw.ApplicationWindow):
 
     def on_quit_action(self, action, parameter):
         self.close()
+
+    def do_close_request(self):
+        """
+        Handles the 'close-request' signal to check for unsaved changes.
+        For GTK signals, returning True PREVENTS the default handler from
+        running (i.e., stops the close). Returning False allows it.
+        """
+        if self.doc_editor.is_saved:
+            return False  # Allow the window to close
+
+        self._show_unsaved_changes_dialog(
+            self._on_close_request_dialog_response
+        )
+        return True  # Prevent the window from closing until user responds
+
+    def _on_close_request_dialog_response(self, response):
+        """Callback for unsaved changes dialog in do_close_request."""
+        if response == "cancel":
+            return  # Do nothing, window remains open.
+
+        if response == "discard":
+            self.destroy()
+            return
+
+        if response == "save":
+            self.on_save_project(None, None)
 
     def on_menu_import(self, action, param=None):
         start_interactive_import(self, self.doc_editor)

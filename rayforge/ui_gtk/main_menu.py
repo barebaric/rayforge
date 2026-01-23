@@ -15,9 +15,16 @@ class MainMenu(Gio.Menu):
         # File Menu
         file_menu = Gio.Menu()
         file_io_group = Gio.Menu()
-        file_io_group.append(_("Import..."), "win.import")
-        file_io_group.append(_("Export G-code..."), "win.export")
+        file_io_group.append(_("New"), "win.new")
+        file_io_group.append(_("Open..."), "win.open")
+        file_io_group.append(_("Save"), "win.save")
+        file_io_group.append(_("Save As..."), "win.save-as")
         file_menu.append_section(None, file_io_group)
+
+        import_export_group = Gio.Menu()
+        import_export_group.append(_("Import..."), "win.import")
+        import_export_group.append(_("Export G-code..."), "win.export")
+        file_menu.append_section(None, import_export_group)
 
         quit_group = Gio.Menu()
         quit_group.append(_("Quit"), "win.quit")

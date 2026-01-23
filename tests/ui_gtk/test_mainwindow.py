@@ -94,7 +94,7 @@ def test_file_path(assets_path: Path) -> Path:
 
 
 @pytest.fixture
-def app_and_window(ui_context_initializer):
+def app_and_window(ui_context_initializer, request):
     """Sets up the Adw.Application and MainWindow without blocking."""
     from rayforge.ui_gtk import canvas3d
 
@@ -110,7 +110,9 @@ def app_and_window(ui_context_initializer):
             win.set_default_size(1280, 800)
             self.win = win
 
-    app = TestApp(application_id="org.rayforge.rayforge.test")
+    test_name = request.node.name.replace("_", "-")
+    app_id = f"org.rayforge.rayforge.test.{test_name}"
+    app = TestApp(application_id=app_id)
     app.register(None)
     app.activate()
     process_events_for_duration(0.5)
