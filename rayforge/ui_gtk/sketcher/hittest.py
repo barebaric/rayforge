@@ -2,7 +2,13 @@ import math
 import cairo
 from collections import defaultdict
 from typing import Optional, Tuple, Any, List
-from rayforge.core.sketcher.entities import Line, Arc, Circle, Entity
+from rayforge.core.sketcher.entities import (
+    Line,
+    Arc,
+    Circle,
+    Entity,
+    TextBoxEntity,
+)
 from rayforge.core.sketcher.constraints import Constraint
 from rayforge.core.geo import primitives
 from rayforge.core.geo.primitives import (
@@ -382,4 +388,24 @@ class SketchHitTester:
                             angle_mouse, element.sketch.registry
                         ):
                             return entity
+            elif isinstance(entity, TextBoxEntity):
+                p_origin = safe_get(entity.origin_id)
+                p_width = safe_get(entity.width_id)
+                p_height = safe_get(entity.height_id)
+                if not (p_origin and p_width and p_height):
+                    continue
+
+                # Reconstruct the parallelogram for point-in-polygon test
+                p4_x = p_width.x + p_height.x - p_origin.x
+                p4_y = p_width.y + p_height.y - p_origin.y
+
+                polygon = [
+                    (p_origin.x, p_origin.y),
+                    (p_width.x, p_width.y),
+                    (p4_x, p4_y),
+                    (p_height.x, p_height.y),
+                ]
+
+                if primitives.is_point_in_polygon((mx, my), polygon):
+                    return entity
         return None

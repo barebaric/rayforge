@@ -4,8 +4,14 @@ from .entities.entity import Entity
 from .entities.line import Line
 from .entities.arc import Arc
 from .entities.circle import Circle
+from .entities.text_box import TextBoxEntity
 
-_ENTITY_CLASSES = {"line": Line, "arc": Arc, "circle": Circle}
+_ENTITY_CLASSES = {
+    "line": Line,
+    "arc": Arc,
+    "circle": Circle,
+    "text_box": TextBoxEntity,
+}
 
 
 class EntityRegistry:
@@ -83,6 +89,28 @@ class EntityRegistry:
         eid = self._id_counter
         entity = Circle(
             eid, center_idx, radius_pt_idx, construction=construction
+        )
+        self.entities.append(entity)
+        self._entity_map[eid] = entity
+        self._id_counter += 1
+        return eid
+
+    def add_text_box(
+        self,
+        origin_id: int,
+        width_id: int,
+        height_id: int,
+        content: str = "",
+        font_params: Optional[Dict[str, Any]] = None,
+    ) -> int:
+        eid = self._id_counter
+        entity = TextBoxEntity(
+            eid,
+            origin_id,
+            width_id,
+            height_id,
+            content=content,
+            font_params=font_params,
         )
         self.entities.append(entity)
         self._entity_map[eid] = entity

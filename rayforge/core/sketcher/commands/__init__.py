@@ -8,6 +8,7 @@ from .items import AddItemsCommand, RemoveItemsCommand
 from .point import MovePointCommand, UnstickJunctionCommand
 from .rectangle import RectangleCommand
 from .rounded_rect import RoundedRectCommand
+from .text_property import ModifyTextPropertyCommand
 
 
 __all__ = [
@@ -16,6 +17,7 @@ __all__ = [
     "ChamferCommand",
     "FilletCommand",
     "ModifyConstraintCommand",
+    "ModifyTextPropertyCommand",
     "MovePointCommand",
     "RemoveFillCommand",
     "RemoveItemsCommand",

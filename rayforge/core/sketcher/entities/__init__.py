@@ -3,6 +3,7 @@ from .entity import Entity
 from .line import Line
 from .arc import Arc
 from .circle import Circle
+from .text_box import TextBoxEntity
 
 __all__ = [
     "Point",
@@ -10,4 +11,5 @@ __all__ = [
     "Line",
     "Arc",
     "Circle",
+    "TextBoxEntity",
 ]
