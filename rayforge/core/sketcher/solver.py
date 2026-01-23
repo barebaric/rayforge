@@ -136,6 +136,7 @@ class Solver:
             jac=jacobian,  # type: ignore
             method="trf",
             ftol=tolerance,
+            xtol=1e-8,
         )
 
         # 6. Final Update to ensure registry matches result
