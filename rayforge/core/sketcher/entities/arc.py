@@ -89,6 +89,33 @@ class Arc(Entity):
         geo.arc_to(end.x, end.y, i, j, clockwise=self.clockwise)
         return geo
 
+    def append_to_geometry(
+        self,
+        geo: Geometry,
+        registry: "EntityRegistry",
+        forward: bool,
+    ) -> None:
+        """Appends this arc to an existing geometry object."""
+        arc_start_pt = registry.get_point(self.start_idx)
+        arc_end_pt = registry.get_point(self.end_idx)
+        center_pt = registry.get_point(self.center_idx)
+
+        target_pt = arc_end_pt if forward else arc_start_pt
+        current_pt = arc_start_pt if forward else arc_end_pt
+
+        offset_x = center_pt.x - current_pt.x
+        offset_y = center_pt.y - current_pt.y
+
+        is_cw = self.clockwise if forward else not self.clockwise
+
+        geo.arc_to(
+            target_pt.x,
+            target_pt.y,
+            offset_x,
+            offset_y,
+            clockwise=is_cw,
+        )
+
     def to_dict(self) -> Dict[str, Any]:
         """Serializes the Arc to a dictionary."""
         data = super().to_dict()

@@ -101,6 +101,22 @@ class Circle(Entity):
         geo.arc_to(radius_pt.x, radius_pt.y, i2, j2, clockwise=False)
         return geo
 
+    def create_fill_geometry(
+        self, registry: "EntityRegistry"
+    ) -> Optional[Geometry]:
+        """Creates a fill geometry for a single-entity circle loop."""
+        geo = Geometry()
+        center = registry.get_point(self.center_idx)
+        radius_pt = registry.get_point(self.radius_pt_idx)
+        dx = radius_pt.x - center.x
+        dy = radius_pt.y - center.y
+        opposite_pt_x = center.x - dx
+        opposite_pt_y = center.y - dy
+        geo.move_to(radius_pt.x, radius_pt.y)
+        geo.arc_to(opposite_pt_x, opposite_pt_y, -dx, -dy, clockwise=False)
+        geo.arc_to(radius_pt.x, radius_pt.y, dx, dy, clockwise=False)
+        return geo
+
     def to_dict(self) -> Dict[str, Any]:
         """Serializes the Circle to a dictionary."""
         data = super().to_dict()

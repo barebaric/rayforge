@@ -159,3 +159,16 @@ def test_text_box_to_geometry(registry):
     geo = box.to_geometry(registry)
     assert isinstance(geo, Geometry)
     assert len(geo) > 0
+
+
+def test_text_box_create_text_fill_geometry(registry):
+    """Test TextBoxEntity.create_text_fill_geometry method."""
+    p1 = registry.add_point(0, 0)
+    p2 = registry.add_point(10, 0)
+    p3 = registry.add_point(0, 10)
+    box = registry.get_entity(
+        registry.add_text_box(p1, p2, p3, "Test", {})
+    )
+    geo = box.create_text_fill_geometry(registry)
+    assert isinstance(geo, Geometry)
+    assert len(geo) > 0

@@ -56,6 +56,18 @@ class Line(Entity):
         geo.line_to(p2.x, p2.y)
         return geo
 
+    def append_to_geometry(
+        self,
+        geo: Geometry,
+        registry: "EntityRegistry",
+        forward: bool,
+    ) -> None:
+        """Appends this line to an existing geometry object."""
+        p_ids = self.get_point_ids()
+        end_pid = p_ids[1] if forward else p_ids[0]
+        end_pt = registry.get_point(end_pid)
+        geo.line_to(end_pt.x, end_pt.y)
+
     def to_dict(self) -> Dict[str, Any]:
         """Serializes the Line to a dictionary."""
         data = super().to_dict()

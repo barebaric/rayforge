@@ -201,3 +201,45 @@ def test_arc_to_geometry(registry):
     assert geo.data is not None
     assert geo.data[0][0] == 1.0  # Move command
     assert geo.data[1][0] == 3.0  # Arc command
+
+
+def test_arc_append_to_geometry(registry):
+    """Test Arc.append_to_geometry method."""
+    center = registry.add_point(0, 0)
+    start = registry.add_point(10, 0)
+    end = registry.add_point(-10, 0)
+    arc_ccw = registry.get_entity(
+        registry.add_arc(start, end, center, cw=False)
+    )
+    arc_cw = registry.get_entity(registry.add_arc(start, end, center, cw=True))
+
+    pt_start = registry.get_point(start)
+    pt_end = registry.get_point(end)
+
+    geo = Geometry()
+    geo.move_to(pt_start.x, pt_start.y)
+    assert geo.data is not None
+
+    arc_ccw.append_to_geometry(geo, registry, forward=True)
+    assert len(geo) == 2
+    assert geo.data[0][0] == 1.0  # Move command
+    assert geo.data[1][0] == 3.0  # Arc command
+    assert geo.data[1][6] == 0.0  # CCW arc
+
+    geo2 = Geometry()
+    geo2.move_to(pt_end.x, pt_end.y)
+    assert geo2.data is not None
+    arc_cw.append_to_geometry(geo2, registry, forward=True)
+    assert len(geo2) == 2
+    assert geo2.data[0][0] == 1.0  # Move command
+    assert geo2.data[1][0] == 3.0  # Arc command
+    assert geo2.data[1][6] == 1.0  # CW arc
+
+    geo3 = Geometry()
+    geo3.move_to(pt_start.x, pt_start.y)
+    assert geo3.data is not None
+    arc_ccw.append_to_geometry(geo3, registry, forward=False)
+    assert len(geo3) == 2
+    assert geo3.data[0][0] == 1.0  # Move command
+    assert geo3.data[1][0] == 3.0  # Arc command
+    assert geo3.data[1][6] == 1.0  # CCW arc traversed backward = CW

@@ -24,7 +24,7 @@ from .constraints import (
     SymmetryConstraint,
     CollinearConstraint,
 )
-from .entities import Line, Arc, Circle, Entity, TextBoxEntity
+from .entities import Line, Arc, Circle, Entity
 from .params import ParameterContext
 from .registry import EntityRegistry
 from .solver import Solver
@@ -981,26 +981,6 @@ class Sketch(IAsset):
 
         return success
 
-    def _generate_text_geometry(self, entity: TextBoxEntity) -> Geometry:
-        p_origin = self.registry.get_point(entity.origin_id)
-        p_width = self.registry.get_point(entity.width_id)
-        p_height = self.registry.get_point(entity.height_id)
-
-        txt_geo = Geometry.from_text(
-            entity.content,
-            font_family=entity.font_params.get("family", "sans-serif"),
-            font_size=entity.font_params.get("size", 10.0),
-            is_bold=entity.font_params.get("bold", False),
-            is_italic=entity.font_params.get("italic", False),
-        )
-        txt_geo.flip_y()
-
-        return txt_geo.map_to_frame(
-            (p_origin.x, p_origin.y),
-            (p_width.x, p_width.y),
-            (p_height.x, p_height.y),
-        )
-
     def to_geometry(self) -> Geometry:
         """
         Converts the solved sketch into a Geometry object.
@@ -1025,54 +1005,28 @@ class Sketch(IAsset):
             if not fill.boundary:
                 continue
 
-            geo = Geometry()
-
             # Case 1: Single entity loop (Circle)
             if len(fill.boundary) == 1:
                 eid, _ = fill.boundary[0]
                 entity = self.registry.get_entity(eid)
-                if isinstance(entity, Circle):
-                    center = self.registry.get_point(entity.center_idx)
-                    radius_pt = self.registry.get_point(entity.radius_pt_idx)
-
-                    # Draw as two semi-circles to form a closed loop
-                    dx = radius_pt.x - center.x
-                    dy = radius_pt.y - center.y
-
-                    # Start at radius point
-                    geo.move_to(radius_pt.x, radius_pt.y)
-
-                    # To opposite point
-                    opposite_x = center.x - dx
-                    opposite_y = center.y - dy
-
-                    # Offset from start (radius_pt) to center is (-dx, -dy)
-                    geo.arc_to(
-                        opposite_x, opposite_y, -dx, -dy, clockwise=False
-                    )
-
-                    # Back to start. Offset from opposite to center is (dx, dy)
-                    geo.arc_to(
-                        radius_pt.x, radius_pt.y, dx, dy, clockwise=False
-                    )
-
-                    fill_geometries.append(geo)
+                if entity:
+                    fill_geo = entity.create_fill_geometry(self.registry)
+                    if fill_geo:
+                        fill_geometries.append(fill_geo)
                 continue
 
             # Case 2: Multi-segment loop
             try:
-                # 1. Start point
                 first_eid, first_fwd = fill.boundary[0]
                 first_ent = self.registry.get_entity(first_eid)
                 if not first_ent:
                     continue
 
                 p_ids = first_ent.get_point_ids()
-                # If forward: Start -> End. Start is p_ids[0].
-                # If backward: End -> Start. Start is p_ids[1].
                 start_pid = p_ids[0] if first_fwd else p_ids[1]
                 start_pt = self.registry.get_point(start_pid)
 
+                geo = Geometry()
                 geo.move_to(start_pt.x, start_pt.y)
 
                 valid_loop = True
@@ -1083,45 +1037,7 @@ class Sketch(IAsset):
                         valid_loop = False
                         break
 
-                    if isinstance(entity, Line):
-                        p_ids = entity.get_point_ids()
-                        # If fwd, end is p2 (index 1).
-                        # If back, end is p1 (index 0).
-                        end_pid = p_ids[1] if fwd else p_ids[0]
-                        end_pt = self.registry.get_point(end_pid)
-                        geo.line_to(end_pt.x, end_pt.y)
-
-                    elif isinstance(entity, Arc):
-                        arc_start_pt = self.registry.get_point(
-                            entity.start_idx
-                        )
-                        arc_end_pt = self.registry.get_point(entity.end_idx)
-                        center_pt = self.registry.get_point(entity.center_idx)
-
-                        # Target point of this segment
-                        target_pt = arc_end_pt if fwd else arc_start_pt
-
-                        # Current point (start of this segment)
-                        current_pt = arc_start_pt if fwd else arc_end_pt
-
-                        # Center offset relative to current point
-                        offset_x = center_pt.x - current_pt.x
-                        offset_y = center_pt.y - current_pt.y
-
-                        # Determine direction for geometry
-                        # If traversing fwd (S->E), use entity direction.
-                        # If traversing back (E->S), invert entity direction.
-                        is_cw = (
-                            entity.clockwise if fwd else not entity.clockwise
-                        )
-
-                        geo.arc_to(
-                            target_pt.x,
-                            target_pt.y,
-                            offset_x,
-                            offset_y,
-                            clockwise=is_cw,
-                        )
+                    entity.append_to_geometry(geo, self.registry, fwd)
 
                 if valid_loop:
                     fill_geometries.append(geo)
@@ -1131,7 +1047,9 @@ class Sketch(IAsset):
 
         # Add text fills for non-construction text entities
         for entity in self.registry.entities:
-            if isinstance(entity, TextBoxEntity) and not entity.construction:
-                fill_geometries.append(self._generate_text_geometry(entity))
+            if not entity.construction:
+                text_geo = entity.create_text_fill_geometry(self.registry)
+                if text_geo:
+                    fill_geometries.append(text_geo)
 
         return fill_geometries

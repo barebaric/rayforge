@@ -187,3 +187,17 @@ def test_circle_to_geometry(registry):
     assert geo.data[0][0] == 1.0  # Move command
     assert geo.data[1][0] == 3.0  # Arc command (first semi-circle)
     assert geo.data[2][0] == 3.0  # Arc command (second semi-circle)
+
+
+def test_circle_create_fill_geometry(registry):
+    """Test Circle.create_fill_geometry method."""
+    center = registry.add_point(0, 0)
+    radius_pt = registry.add_point(10, 0)
+    circle = registry.get_entity(registry.add_circle(center, radius_pt))
+    geo = circle.create_fill_geometry(registry)
+    assert isinstance(geo, Geometry)
+    assert len(geo) == 3
+    assert geo.data is not None
+    assert geo.data[0][0] == 1.0  # Move command
+    assert geo.data[1][0] == 3.0  # Arc command (first semi-circle)
+    assert geo.data[2][0] == 3.0  # Arc command (second semi-circle)
