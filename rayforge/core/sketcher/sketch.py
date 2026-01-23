@@ -9,20 +9,21 @@ from ..geo import Geometry
 from ..varset import VarSet
 from ..asset import IAsset
 from .constraints import (
+    CoincidentConstraint,
+    CollinearConstraint,
     Constraint,
+    DiameterConstraint,
     DistanceConstraint,
     EqualDistanceConstraint,
-    HorizontalConstraint,
-    VerticalConstraint,
-    CoincidentConstraint,
-    RadiusConstraint,
-    DiameterConstraint,
-    PointOnLineConstraint,
-    PerpendicularConstraint,
-    TangentConstraint,
     EqualLengthConstraint,
+    HorizontalConstraint,
+    ParallelogramConstraint,
+    PerpendicularConstraint,
+    PointOnLineConstraint,
+    RadiusConstraint,
     SymmetryConstraint,
-    CollinearConstraint,
+    TangentConstraint,
+    VerticalConstraint,
 )
 from .entities import Line, Arc, Circle, Entity
 from .params import ParameterContext
@@ -37,19 +38,20 @@ _DEFAULT_VARSET_DESCRIPTION = _(
 
 
 _CONSTRAINT_CLASSES = {
+    "CoincidentConstraint": CoincidentConstraint,
+    "CollinearConstraint": CollinearConstraint,
+    "DiameterConstraint": DiameterConstraint,
     "DistanceConstraint": DistanceConstraint,
     "EqualDistanceConstraint": EqualDistanceConstraint,
-    "HorizontalConstraint": HorizontalConstraint,
-    "VerticalConstraint": VerticalConstraint,
-    "CoincidentConstraint": CoincidentConstraint,
-    "RadiusConstraint": RadiusConstraint,
-    "DiameterConstraint": DiameterConstraint,
-    "PointOnLineConstraint": PointOnLineConstraint,
-    "PerpendicularConstraint": PerpendicularConstraint,
-    "TangentConstraint": TangentConstraint,
     "EqualLengthConstraint": EqualLengthConstraint,
+    "HorizontalConstraint": HorizontalConstraint,
+    "ParallelogramConstraint": ParallelogramConstraint,
+    "PerpendicularConstraint": PerpendicularConstraint,
+    "PointOnLineConstraint": PointOnLineConstraint,
+    "RadiusConstraint": RadiusConstraint,
     "SymmetryConstraint": SymmetryConstraint,
-    "CollinearConstraint": CollinearConstraint,
+    "TangentConstraint": TangentConstraint,
+    "VerticalConstraint": VerticalConstraint,
 }
 
 
