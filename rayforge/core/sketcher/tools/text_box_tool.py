@@ -11,6 +11,7 @@ from ..constraints import (
     VerticalConstraint,
 )
 from .base import SketchTool, SketcherKey
+from ...geo import primitives
 
 logger = logging.getLogger(__name__)
 
@@ -30,10 +31,12 @@ class TextBoxTool(SketchTool):
         self.text_buffer = ""
         self.cursor_pos: int = 0
         self.cursor_visible = True
+        self.is_hovering = False
 
         # Signals for the UI layer to manage timers, etc.
         self.editing_started = Signal()
         self.editing_finished = Signal()
+        self.cursor_moved = Signal()
 
     def start_editing(self, entity_id: int):
         """Public method to begin editing an existing text box."""
@@ -60,6 +63,7 @@ class TextBoxTool(SketchTool):
         self.editing_entity_id = None
         self.text_buffer = ""
         self.cursor_pos = 0
+        self.is_hovering = False
 
     def toggle_cursor_visibility(self):
         """Called by the UI timer to toggle the cursor's visual state."""
@@ -134,10 +138,7 @@ class TextBoxTool(SketchTool):
         return True
 
     def _handle_editing_press(self, mx: float, my: float) -> bool:
-        world_x, world_y = self.element.content_transform.transform_point(
-            (mx, my)
-        )
-        if self._is_click_outside_box(world_x, world_y):
+        if not self._is_point_inside_box(mx, my):
             self.on_deactivate()
             # Allow the click to fall through to the SelectTool
             return False
@@ -146,15 +147,15 @@ class TextBoxTool(SketchTool):
         self._update_cursor_from_click(mx, my)
         return True
 
-    def _is_click_outside_box(self, world_x: float, world_y: float) -> bool:
+    def _is_point_inside_box(self, mx: float, my: float) -> bool:
         if self.editing_entity_id is None:
-            return True
+            return False
 
         entity = self.element.sketch.registry.get_entity(
             self.editing_entity_id
         )
         if not isinstance(entity, TextBoxEntity):
-            return True
+            return False
 
         p_origin = self.element.sketch.registry.get_point(entity.origin_id)
         p_width = self.element.sketch.registry.get_point(entity.width_id)
@@ -163,16 +164,17 @@ class TextBoxTool(SketchTool):
         p4_x = p_width.x + p_height.x - p_origin.x
         p4_y = p_width.y + p_height.y - p_origin.y
 
-        mx, my = self.element.hittester.screen_to_model(
-            world_x, world_y, self.element
-        )
+        # Define the polygon for the text box
+        polygon = [
+            (p_origin.x, p_origin.y),
+            (p_width.x, p_width.y),
+            (p4_x, p4_y),
+            (p_height.x, p_height.y),
+        ]
 
-        x_min = min(p_origin.x, p_width.x, p_height.x, p4_x)
-        x_max = max(p_origin.x, p_width.x, p_height.x, p4_x)
-        y_min = min(p_origin.y, p_width.y, p_height.y, p4_y)
-        y_max = max(p_origin.y, p_width.y, p_height.y, p4_y)
-
-        return not (x_min <= mx <= x_max and y_min <= my <= y_max)
+        # Use point-in-polygon check for accurate hit testing (handles
+        # rotation)
+        return primitives.is_point_in_polygon((mx, my), polygon)
 
     def _finalize_edit(self):
         from ..commands.text_property import ModifyTextPropertyCommand
@@ -197,6 +199,16 @@ class TextBoxTool(SketchTool):
     def on_release(self, world_x: float, world_y: float):
         pass
 
+    def on_hover_motion(self, world_x: float, world_y: float):
+        if self.state != TextBoxState.EDITING:
+            self.is_hovering = False
+            return
+
+        mx, my = self.element.hittester.screen_to_model(
+            world_x, world_y, self.element
+        )
+        self.is_hovering = self._is_point_inside_box(mx, my)
+
     def handle_text_input(self, text: str) -> bool:
         if self.state != TextBoxState.EDITING:
             return False
@@ -209,6 +221,7 @@ class TextBoxTool(SketchTool):
         )
         self.cursor_pos += 1
         self._resize_box_to_fit_text()
+        self.cursor_moved.send(self)
         return True
 
     def handle_key_event(self, key: SketcherKey) -> bool:
@@ -225,6 +238,7 @@ class TextBoxTool(SketchTool):
                 )
                 self.cursor_pos -= 1
                 self._resize_box_to_fit_text()
+                self.cursor_moved.send(self)
             return True
         elif key == SketcherKey.DELETE:
             if self.cursor_pos < len(self.text_buffer):
@@ -233,14 +247,17 @@ class TextBoxTool(SketchTool):
                     + self.text_buffer[self.cursor_pos + 1 :]
                 )
                 self._resize_box_to_fit_text()
+                self.cursor_moved.send(self)
             return True
         elif key == SketcherKey.ARROW_LEFT:
             self.cursor_pos = max(0, self.cursor_pos - 1)
             self.element.mark_dirty()
+            self.cursor_moved.send(self)
             return True
         elif key == SketcherKey.ARROW_RIGHT:
             self.cursor_pos = min(len(self.text_buffer), self.cursor_pos + 1)
             self.element.mark_dirty()
+            self.cursor_moved.send(self)
             return True
         elif key == SketcherKey.RETURN or key == SketcherKey.ESCAPE:
             self.on_deactivate()
@@ -325,6 +342,8 @@ class TextBoxTool(SketchTool):
         p_width = self.element.sketch.registry.get_point(entity.width_id)
         p_height = self.element.sketch.registry.get_point(entity.height_id)
 
+        # 1. Project the click point onto the width vector (u) of the box.
+        # This handles rotated and scaled text boxes correctly.
         u_vec = (p_width.x - p_origin.x, p_width.y - p_origin.y)
         v_vec = (p_height.x - p_origin.x, p_height.y - p_origin.y)
         det = u_vec[0] * v_vec[1] - u_vec[1] * v_vec[0]
@@ -333,6 +352,8 @@ class TextBoxTool(SketchTool):
 
         inv_det = 1.0 / det
         click_vec = (mx - p_origin.x, my - p_origin.y)
+
+        # alpha is the normalized coordinate (0..1) along the width axis
         alpha = (click_vec[0] * v_vec[1] - click_vec[1] * v_vec[0]) * inv_det
 
         font_params = {
@@ -341,23 +362,52 @@ class TextBoxTool(SketchTool):
             "is_bold": entity.font_params.get("bold", False),
             "is_italic": entity.font_params.get("italic", False),
         }
+
+        # 2. Get bounds of full text to determine coordinate space range
         natural_geo = Geometry.from_text(self.text_buffer, **font_params)
         natural_geo.flip_y()
         min_x, _, max_x, _ = natural_geo.rect()
-        src_width = max_x - min_x if max_x > min_x else 1.0
+
+        if not self.text_buffer:
+            self.cursor_pos = 0
+            self.cursor_visible = True
+            self.element.mark_dirty()
+            self.cursor_moved.send(self)
+            return
+
+        src_width = max_x - min_x
+        if src_width < 1e-9:
+            src_width = 1.0
+
+        # Map normalized alpha to geometry x-coordinate
         target_x_natural = min_x + alpha * src_width
 
+        # 3. Find closest character break
         best_i, min_dist = 0, float("inf")
+
+        # Iterate through all possible cursor positions
+        # (before first char ... after last char)
         for i in range(len(self.text_buffer) + 1):
-            sub_geo = Geometry.from_text(self.text_buffer[:i], **font_params)
-            sub_geo.flip_y()
-            _, _, sub_max_x, _ = sub_geo.rect()
+            if i == 0:
+                # The start of the text corresponds to min_x
+                sub_max_x = min_x
+            else:
+                # Measure width of substring to find character boundary
+                sub_geo = Geometry.from_text(
+                    self.text_buffer[:i], **font_params
+                )
+                sub_geo.flip_y()
+                _, _, sub_max_x, _ = sub_geo.rect()
+
             dist = abs(sub_max_x - target_x_natural)
             if dist < min_dist:
                 min_dist = dist
                 best_i = i
+
         self.cursor_pos = best_i
+        self.cursor_visible = True
         self.element.mark_dirty()
+        self.cursor_moved.send(self)
 
     def draw_overlay(self, ctx: cairo.Context):
         if (

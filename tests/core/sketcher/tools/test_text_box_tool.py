@@ -328,9 +328,9 @@ def test_text_box_tool_is_click_outside_box(text_box_tool, mock_element):
 
     mock_element.hittester.screen_to_model.return_value = (100, 100)
 
-    result = text_box_tool._is_click_outside_box(100, 200)
+    result = text_box_tool._is_point_inside_box(100, 200)
 
-    assert result is True
+    assert result is False
 
 
 def test_text_box_tool_is_click_inside_box(text_box_tool, mock_element):
@@ -353,9 +353,9 @@ def test_text_box_tool_is_click_inside_box(text_box_tool, mock_element):
     mock_element.sketch.registry.get_point.side_effect = get_point_side_effect
     mock_element.hittester.screen_to_model.return_value = (25, 5)
 
-    result = text_box_tool._is_click_outside_box(25, 5)
+    result = text_box_tool._is_point_inside_box(25, 5)
 
-    assert result is False
+    assert result is True
 
 
 def test_text_box_tool_draw_overlay_idle_state(text_box_tool, mock_element):

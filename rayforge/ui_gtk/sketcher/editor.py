@@ -98,6 +98,7 @@ class SketchEditor:
         if isinstance(text_tool, TextBoxTool):
             text_tool.editing_started.connect(self._on_text_editing_started)
             text_tool.editing_finished.connect(self._on_text_editing_finished)
+            text_tool.cursor_moved.connect(self._on_text_cursor_moved)
 
     def deactivate(self):
         """Ends the current editing session."""
@@ -114,6 +115,7 @@ class SketchEditor:
                 text_tool.editing_finished.disconnect(
                     self._on_text_editing_finished
                 )
+                text_tool.cursor_moved.disconnect(self._on_text_cursor_moved)
 
             # Clean up any in-progress tool state
             self.sketch_element.current_tool.on_deactivate()
@@ -141,6 +143,15 @@ class SketchEditor:
             and select_tool.hovered_point_id is not None
         ):
             return Gdk.Cursor.new_from_name("move")
+
+        # Priority 1.5: Text Editing Cursor
+        current_tool = self.sketch_element.current_tool
+        if (
+            isinstance(current_tool, TextBoxTool)
+            and current_tool.state == TextBoxState.EDITING
+            and current_tool.is_hovering
+        ):
+            return Gdk.Cursor.new_from_name("text")
 
         # Priority 2: Return a tool-specific cursor.
         tool = self.sketch_element.active_tool_name
@@ -370,6 +381,13 @@ class SketchEditor:
     def _on_text_editing_finished(self, sender: TextBoxTool):
         """Stops the cursor blinking timer."""
         self._stop_text_cursor_timer()
+
+    def _on_text_cursor_moved(self, sender: TextBoxTool):
+        """
+        Resets the cursor blink timer to ensure visibility immediately
+        after moving.
+        """
+        self._on_text_editing_started(sender)
 
     def _stop_text_cursor_timer(self):
         """Safely removes the GLib timer source."""
