@@ -2,6 +2,7 @@ import pytest
 import math
 from rayforge.core.sketcher.entities import Arc
 from rayforge.core.sketcher.registry import EntityRegistry
+from rayforge.core.geo.geometry import Geometry
 
 
 @pytest.fixture
@@ -181,8 +182,22 @@ def test_arc_is_contained_by(selection_setup):
 
 
 def test_arc_intersects_rect(selection_setup):
-    """Test the intersects_rect method for Arc entities."""
+    """Test of intersects_rect method for Arc entities."""
     registry, rect, entities = selection_setup
     assert entities["arc_in"].intersects_rect(rect, registry) is True
     assert entities["arc_cross"].intersects_rect(rect, registry) is True
     assert entities["arc_out"].intersects_rect(rect, registry) is False
+
+
+def test_arc_to_geometry(registry):
+    """Test Arc.to_geometry method."""
+    center = registry.add_point(0, 0)
+    start = registry.add_point(10, 0)
+    end = registry.add_point(-10, 0)
+    arc = registry.get_entity(registry.add_arc(start, end, center, cw=False))
+    geo = arc.to_geometry(registry)
+    assert isinstance(geo, Geometry)
+    assert len(geo) == 2
+    assert geo.data is not None
+    assert geo.data[0][0] == 1.0  # Move command
+    assert geo.data[1][0] == 3.0  # Arc command
