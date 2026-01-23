@@ -19,7 +19,10 @@ if TYPE_CHECKING:
 class PointOnLineConstraint(Constraint):
     """Enforces a point lies on the infinite geometry of a shape."""
 
-    def __init__(self, point_id: int, shape_id: int):
+    def __init__(
+        self, point_id: int, shape_id: int, user_visible: bool = True
+    ):
+        super().__init__(user_visible=user_visible)
         self.point_id = point_id
         self.shape_id = shape_id
 
@@ -28,11 +31,16 @@ class PointOnLineConstraint(Constraint):
             "type": "PointOnLineConstraint",
             "point_id": self.point_id,
             "shape_id": self.shape_id,
+            "user_visible": self.user_visible,
         }
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "PointOnLineConstraint":
-        return cls(point_id=data["point_id"], shape_id=data["shape_id"])
+        return cls(
+            point_id=data["point_id"],
+            shape_id=data["shape_id"],
+            user_visible=data.get("user_visible", True),
+        )
 
     def constrains_radius(
         self, registry: "EntityRegistry", entity_id: int

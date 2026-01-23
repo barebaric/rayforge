@@ -10,7 +10,8 @@ if TYPE_CHECKING:
 class CollinearConstraint(Constraint):
     """Enforces that three points (p1, p2, p3) lie on the same line."""
 
-    def __init__(self, p1: int, p2: int, p3: int):
+    def __init__(self, p1: int, p2: int, p3: int, user_visible: bool = True):
+        super().__init__(user_visible=user_visible)
         self.p1 = p1
         self.p2 = p2
         self.p3 = p3
@@ -21,11 +22,17 @@ class CollinearConstraint(Constraint):
             "p1": self.p1,
             "p2": self.p2,
             "p3": self.p3,
+            "user_visible": self.user_visible,
         }
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "CollinearConstraint":
-        return cls(p1=data["p1"], p2=data["p2"], p3=data["p3"])
+        return cls(
+            p1=data["p1"],
+            p2=data["p2"],
+            p3=data["p3"],
+            user_visible=data.get("user_visible", True),
+        )
 
     def error(
         self, reg: "EntityRegistry", params: "ParameterContext"

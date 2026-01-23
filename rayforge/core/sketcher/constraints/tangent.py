@@ -23,7 +23,8 @@ class TangentConstraint(Constraint):
     Logic: Distance from shape center to Line equals shape Radius.
     """
 
-    def __init__(self, line_id: int, shape_id: int):
+    def __init__(self, line_id: int, shape_id: int, user_visible: bool = True):
+        super().__init__(user_visible=user_visible)
         self.line_id = line_id
         self.shape_id = shape_id
 
@@ -32,11 +33,16 @@ class TangentConstraint(Constraint):
             "type": "TangentConstraint",
             "line_id": self.line_id,
             "shape_id": self.shape_id,
+            "user_visible": self.user_visible,
         }
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "TangentConstraint":
-        return cls(line_id=data["line_id"], shape_id=data["shape_id"])
+        return cls(
+            line_id=data["line_id"],
+            shape_id=data["shape_id"],
+            user_visible=data.get("user_visible", True),
+        )
 
     def error(
         self, reg: "EntityRegistry", params: "ParameterContext"

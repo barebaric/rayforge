@@ -27,10 +27,24 @@ def test_radius_constraint(setup_env):
     # Current radius is 10. Target is 10. Error = 10 - 10 = 0
     c = RadiusConstraint(arc_id, 10.0)
     assert c.error(reg, params) == pytest.approx(0.0)
+    assert c.user_visible is True
 
     # Target is 5. Error = 10 - 5 = 5
     c2 = RadiusConstraint(arc_id, 5.0)
     assert c2.error(reg, params) == pytest.approx(5.0)
+
+
+def test_radius_constraint_user_visible(setup_env):
+    reg, params = setup_env
+    center = reg.add_point(0, 0)
+    radius_pt = reg.add_point(10, 0)
+    circ_id = reg.add_circle(center, radius_pt)
+
+    c = RadiusConstraint(circ_id, 10.0, user_visible=False)
+    assert c.user_visible is False
+
+    c2 = RadiusConstraint(circ_id, 10.0, user_visible=True)
+    assert c2.user_visible is True
 
 
 def test_radius_constraint_on_circle(setup_env):
@@ -131,6 +145,7 @@ def test_radius_constraint_serialization_round_trip(setup_env):
 
     # Check that the restored constraint has the same error
     assert original.error(reg, params) == restored.error(reg, params)
+    assert original.user_visible == restored.user_visible
 
 
 def test_radius_constraint_with_expression(setup_env):

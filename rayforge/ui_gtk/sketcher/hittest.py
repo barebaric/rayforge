@@ -316,6 +316,8 @@ class SketchHitTester:
         """Iterates through constraints and checks for hits polymorphically."""
         click_radius = 13.0
         for idx, constr in enumerate(constraints):
+            if not constr.user_visible:
+                continue
             if constr.is_hit(
                 sx,
                 sy,

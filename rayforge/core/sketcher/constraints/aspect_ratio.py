@@ -17,7 +17,16 @@ if TYPE_CHECKING:
 class AspectRatioConstraint(Constraint):
     """Enforces that distance(p1, p2) / distance(p3, p4) equals ratio."""
 
-    def __init__(self, p1: int, p2: int, p3: int, p4: int, ratio: float):
+    def __init__(
+        self,
+        p1: int,
+        p2: int,
+        p3: int,
+        p4: int,
+        ratio: float,
+        user_visible: bool = True,
+    ):
+        super().__init__(user_visible=user_visible)
         self.p1 = p1
         self.p2 = p2
         self.p3 = p3
@@ -32,6 +41,7 @@ class AspectRatioConstraint(Constraint):
             "p3": self.p3,
             "p4": self.p4,
             "ratio": self.ratio,
+            "user_visible": self.user_visible,
         }
 
     @classmethod
@@ -42,6 +52,7 @@ class AspectRatioConstraint(Constraint):
             p3=data["p3"],
             p4=data["p4"],
             ratio=data["ratio"],
+            user_visible=data.get("user_visible", True),
         )
 
     def error(

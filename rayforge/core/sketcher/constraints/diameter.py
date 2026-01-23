@@ -27,7 +27,9 @@ class DiameterConstraint(Constraint):
         circle_id: int,
         value: Union[str, float],
         expression: Optional[str] = None,
+        user_visible: bool = True,
     ):
+        super().__init__(user_visible=user_visible)
         self.circle_id = circle_id
 
         if expression is not None:
@@ -45,6 +47,7 @@ class DiameterConstraint(Constraint):
             "type": "DiameterConstraint",
             "circle_id": self.circle_id,
             "value": self.value,
+            "user_visible": self.user_visible,
         }
         if self.expression:
             data["expression"] = self.expression
@@ -56,6 +59,7 @@ class DiameterConstraint(Constraint):
             circle_id=data["circle_id"],
             value=data["value"],
             expression=data.get("expression"),
+            user_visible=data.get("user_visible", True),
         )
 
     def constrains_radius(

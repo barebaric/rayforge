@@ -32,7 +32,9 @@ class SymmetryConstraint(Constraint):
         p2: int,
         center: Optional[int] = None,
         axis: Optional[int] = None,
+        user_visible: bool = True,
     ):
+        super().__init__(user_visible=user_visible)
         self.p1 = p1
         self.p2 = p2
         self.center = center
@@ -45,6 +47,7 @@ class SymmetryConstraint(Constraint):
             "p2": self.p2,
             "center": self.center,
             "axis": self.axis,
+            "user_visible": self.user_visible,
         }
 
     @classmethod
@@ -54,6 +57,7 @@ class SymmetryConstraint(Constraint):
             p2=data["p2"],
             center=data.get("center"),
             axis=data.get("axis"),
+            user_visible=data.get("user_visible", True),
         )
 
     def error(
