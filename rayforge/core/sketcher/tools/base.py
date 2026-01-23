@@ -13,6 +13,8 @@ class SketcherKey(Enum):
     ARROW_RIGHT = auto()
     RETURN = auto()
     ESCAPE = auto()
+    HOME = auto()
+    END = auto()
 
 
 class SketchTool(ABC):
