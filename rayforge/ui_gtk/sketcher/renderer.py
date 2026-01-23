@@ -110,7 +110,19 @@ class SketchRenderer:
 
     def _draw_fills(self, ctx: cairo.Context):
         """Draws the filled regions of the sketch."""
-        fill_geometries = self.element.sketch.get_fill_geometries()
+        # Identify the text box being edited to exclude its fill
+        exclude_ids = set()
+        text_tool = self.element.tools.get("text_box")
+        if (
+            self.element.active_tool_name == "text_box"
+            and isinstance(text_tool, TextBoxTool)
+            and text_tool.editing_entity_id is not None
+        ):
+            exclude_ids.add(text_tool.editing_entity_id)
+
+        fill_geometries = self.element.sketch.get_fill_geometries(
+            exclude_ids=exclude_ids
+        )
 
         for geo in fill_geometries:
             ctx.new_path()
