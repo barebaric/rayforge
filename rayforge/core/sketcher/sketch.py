@@ -24,7 +24,7 @@ from .constraints import (
     SymmetryConstraint,
     CollinearConstraint,
 )
-from .entities import Line, Arc, Circle, Entity
+from .entities import Line, Arc, Circle, Entity, TextBoxEntity
 from .params import ParameterContext
 from .registry import EntityRegistry
 from .solver import Solver
@@ -1036,6 +1036,27 @@ class Sketch(IAsset):
                 )
                 # Second semi-circle
                 geo.arc_to(radius_pt.x, radius_pt.y, i2, j2, clockwise=False)
+
+            elif isinstance(entity, TextBoxEntity):
+                p_origin = self.registry.get_point(entity.origin_id)
+                p_width = self.registry.get_point(entity.width_id)
+                p_height = self.registry.get_point(entity.height_id)
+
+                txt_geo = Geometry.from_text(
+                    entity.content,
+                    font_family=entity.font_params.get("family", "sans-serif"),
+                    font_size=entity.font_params.get("size", 10.0),
+                    is_bold=entity.font_params.get("bold", False),
+                    is_italic=entity.font_params.get("italic", False),
+                )
+                txt_geo.flip_y()
+
+                mapped_geo = txt_geo.map_to_frame(
+                    (p_origin.x, p_origin.y),
+                    (p_width.x, p_width.y),
+                    (p_height.x, p_height.y),
+                )
+                geo.extend(mapped_geo)
 
         return geo
 
