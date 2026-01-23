@@ -127,7 +127,8 @@ def show_export_sketch_dialog(
     filter_list = Gio.ListStore.new(Gtk.FileFilter)
     sketch_filter = Gtk.FileFilter()
     sketch_filter.set_name(
-        _("{app_name} Sketch").format(app_name=const.APP_NAME))
+        _("{app_name} Sketch").format(app_name=const.APP_NAME)
+    )
     sketch_filter.add_pattern("*.rfs")
     sketch_filter.add_mime_type(const.MIME_TYPE_SKETCH)
     filter_list.append(sketch_filter)
@@ -149,12 +150,14 @@ def show_open_project_dialog(win: "MainWindow", callback: Callable):
     """
     dialog = Gtk.FileDialog.new()
     dialog.set_title(
-        _("Open {app_name} Project").format(app_name=const.APP_NAME))
+        _("Open {app_name} Project").format(app_name=const.APP_NAME)
+    )
 
     filter_list = Gio.ListStore.new(Gtk.FileFilter)
     project_filter = Gtk.FileFilter()
     project_filter.set_name(
-        _("{app_name} Project").format(app_name=const.APP_NAME))
+        _("{app_name} Project").format(app_name=const.APP_NAME)
+    )
     project_filter.add_pattern("*.ryp")
     filter_list.append(project_filter)
 
@@ -180,7 +183,8 @@ def show_save_project_dialog(
     """
     dialog = Gtk.FileDialog.new()
     dialog.set_title(
-        _("Save {app_name} Project").format(app_name=const.APP_NAME))
+        _("Save {app_name} Project").format(app_name=const.APP_NAME)
+    )
 
     if initial_name:
         dialog.set_initial_name(initial_name)

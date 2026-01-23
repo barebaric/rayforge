@@ -14,9 +14,7 @@ class MockTarget:
 
 def test_setter_initialization():
     target = MockTarget()
-    cmd = SetterCommand(
-        target, "set_value", (10,), (0,), name="set_value_cmd"
-    )
+    cmd = SetterCommand(target, "set_value", (10,), (0,), name="set_value_cmd")
     assert cmd.target is target
     assert cmd.setter_method_name == "set_value"
     assert cmd.new_args == (10,)
@@ -25,18 +23,14 @@ def test_setter_initialization():
 
 def test_setter_execute():
     target = MockTarget()
-    cmd = SetterCommand(
-        target, "set_value", (10,), (0,), name="set_value_cmd"
-    )
+    cmd = SetterCommand(target, "set_value", (10,), (0,), name="set_value_cmd")
     cmd.execute()
     assert target.value == 10
 
 
 def test_setter_undo():
     target = MockTarget()
-    cmd = SetterCommand(
-        target, "set_value", (10,), (0,), name="set_value_cmd"
-    )
+    cmd = SetterCommand(target, "set_value", (10,), (0,), name="set_value_cmd")
     cmd.execute()
     assert target.value == 10
     cmd.undo()
