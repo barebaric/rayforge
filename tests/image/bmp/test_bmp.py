@@ -8,9 +8,10 @@ from rayforge.core.geo import Geometry
 from rayforge.core.matrix import Matrix
 from rayforge.core.source_asset import SourceAsset
 from rayforge.core.source_asset_segment import SourceAssetSegment
-from rayforge.core.vectorization_spec import TraceSpec
+from rayforge.core.vectorization_spec import TraceSpec, PassthroughSpec
 from rayforge.core.workpiece import WorkPiece
 from rayforge.image import import_file
+from rayforge.image.bmp.importer import BmpImporter
 from rayforge.image.bmp.renderer import BMP_RENDERER
 from rayforge.image.bmp.parser import (
     parse_bmp,
@@ -19,6 +20,7 @@ from rayforge.image.bmp.parser import (
     _get_row_offset,
 )
 from rayforge.image.structures import ImportPayload
+from rayforge.image.base_importer import ImporterFeature
 
 TEST_DATA_DIR = Path(__file__).parent
 
@@ -253,6 +255,107 @@ class TestBmpParserHelpers:
             )
             == 100 + 9 * 20
         )
+
+
+class TestBmpImporterContract:
+    """Tests for the Importer contract compliance of BmpImporter."""
+
+    def test_class_attributes(self):
+        """Tests that importer class has required attributes."""
+        assert BmpImporter.label == "BMP files"
+        assert BmpImporter.mime_types == ("image/bmp",)
+        assert BmpImporter.extensions == (".bmp",)
+        assert BmpImporter.features == {ImporterFeature.BITMAP_TRACING}
+
+    def test_scan_returns_manifest(self, bmp_8bit_data: bytes):
+        """Tests that scan() returns ImportManifest with correct data."""
+        importer = BmpImporter(bmp_8bit_data, Path("test.bmp"))
+        manifest = importer.scan()
+
+        assert manifest.title == "test.bmp"
+        assert manifest.natural_size_mm is not None
+        width_mm, height_mm = manifest.natural_size_mm
+        assert width_mm > 0
+        assert height_mm > 0
+        assert len(manifest.warnings) == 0
+        assert len(manifest.errors) == 0
+
+    def test_scan_handles_invalid_data(self):
+        """Tests that scan() handles invalid BMP data gracefully."""
+        importer = BmpImporter(b"not a bmp", Path("invalid.bmp"))
+        manifest = importer.scan()
+
+        assert manifest.title == "invalid.bmp"
+        assert manifest.natural_size_mm is None
+        assert len(manifest.errors) > 0
+
+    def test_parse_returns_parsing_result(self, bmp_8bit_data: bytes):
+        """Tests that parse() returns ParsingResult with correct data."""
+        importer = BmpImporter(bmp_8bit_data)
+        parse_result = importer.parse()
+
+        assert parse_result is not None
+        x, y, width, height = parse_result.document_bounds
+        assert x == 0.0
+        assert y == 0.0
+        assert width == 72.0
+        assert height == 48.0
+        assert parse_result.is_y_down is True
+        assert parse_result.native_unit_to_mm == pytest.approx(25.4 / 96.0)
+        assert len(parse_result.layers) == 1
+        assert parse_result.layers[0].layer_id == "__default__"
+        assert parse_result.layers[0].name == "__default__"
+        assert parse_result.world_frame_of_reference is not None
+        assert parse_result.background_world_transform is not None
+
+    def test_parse_handles_invalid_data(self):
+        """Tests that parse() returns None for invalid BMP data."""
+        importer = BmpImporter(b"not a bmp")
+        parse_result = importer.parse()
+
+        assert parse_result is None
+        assert len(importer._errors) > 0
+
+    def test_vectorize_returns_vectorization_result(
+        self, bmp_8bit_data: bytes
+    ):
+        """Tests that vectorize() returns VectorizationResult."""
+        importer = BmpImporter(bmp_8bit_data)
+        parse_result = importer.parse()
+        assert parse_result is not None
+
+        spec = TraceSpec()
+        vec_result = importer.vectorize(parse_result, spec)
+
+        assert vec_result is not None
+        assert vec_result.source_parse_result is parse_result
+        assert None in vec_result.geometries_by_layer
+        assert isinstance(vec_result.geometries_by_layer[None], Geometry)
+
+    def test_vectorize_raises_type_error_for_wrong_spec(
+        self, bmp_8bit_data: bytes
+    ):
+        """Tests that vectorize() raises TypeError for non-TraceSpec."""
+        importer = BmpImporter(bmp_8bit_data)
+        parse_result = importer.parse()
+        assert parse_result is not None
+
+        with pytest.raises(TypeError):
+            importer.vectorize(parse_result, PassthroughSpec())
+
+    def test_create_source_asset(self, bmp_8bit_data: bytes):
+        """Tests that create_source_asset() returns SourceAsset."""
+        importer = BmpImporter(bmp_8bit_data)
+        parse_result = importer.parse()
+        assert parse_result is not None
+
+        source_asset = importer.create_source_asset(parse_result)
+
+        assert isinstance(source_asset, SourceAsset)
+        assert source_asset.renderer is BMP_RENDERER
+        assert source_asset.original_data == bmp_8bit_data
+        assert source_asset.width_px == 72
+        assert source_asset.height_px == 48
 
 
 class TestBmpImporter:

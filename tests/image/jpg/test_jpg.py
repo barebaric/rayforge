@@ -12,6 +12,7 @@ from rayforge.image.jpg.renderer import JPG_RENDERER
 from rayforge.image import renderer_by_name
 from rayforge.core.source_asset_segment import SourceAssetSegment
 from rayforge.core.geo import Geometry
+from rayforge.image.base_importer import ImporterFeature
 
 # Assume the test JPGs are in the same directory as this test file
 TEST_DATA_DIR = Path(__file__).parent
@@ -79,6 +80,109 @@ def color_workpiece(color_jpg_data: bytes) -> WorkPiece:
     return _setup_workpiece_with_context(
         importer, vectorization_spec=TraceSpec()
     )
+
+
+class TestJpgImporterContract:
+    """Tests for the Importer contract compliance of JpgImporter."""
+
+    def test_class_attributes(self):
+        """Tests that importer class has required attributes."""
+        assert JpgImporter.label == "JPEG files"
+        assert JpgImporter.mime_types == ("image/jpeg",)
+        assert JpgImporter.extensions == (".jpg", ".jpeg")
+        assert JpgImporter.features == {ImporterFeature.BITMAP_TRACING}
+
+    def test_scan_returns_manifest(self, color_jpg_data: bytes):
+        """Tests that scan() returns ImportManifest with correct data."""
+        importer = JpgImporter(color_jpg_data, Path("test.jpg"))
+        manifest = importer.scan()
+
+        assert manifest.title == "test.jpg"
+        assert manifest.natural_size_mm is not None
+        width_mm, height_mm = manifest.natural_size_mm
+        assert width_mm > 0
+        assert height_mm > 0
+        assert len(manifest.warnings) == 0
+        assert len(manifest.errors) == 0
+
+    def test_scan_handles_invalid_data(self):
+        """Tests that scan() handles invalid JPEG data gracefully."""
+        importer = JpgImporter(b"not a jpg", Path("invalid.jpg"))
+        manifest = importer.scan()
+
+        assert manifest.title == "invalid.jpg"
+        assert manifest.natural_size_mm is None
+        assert len(manifest.errors) > 0
+
+    def test_parse_returns_parsing_result(self, color_jpg_data: bytes):
+        """Tests that parse() returns ParsingResult with correct data."""
+        importer = JpgImporter(color_jpg_data)
+        parse_result = importer.parse()
+
+        assert parse_result is not None
+        x, y, width, height = parse_result.document_bounds
+        assert x == 0.0
+        assert y == 0.0
+        assert width == 259.0
+        assert height == 194.0
+        assert parse_result.is_y_down is True
+        assert parse_result.native_unit_to_mm == pytest.approx(25.4 / 72.0)
+        assert len(parse_result.layers) == 1
+        assert parse_result.layers[0].layer_id == "__default__"
+        assert parse_result.layers[0].name == "__default__"
+        assert parse_result.world_frame_of_reference is not None
+        assert parse_result.background_world_transform is not None
+
+    def test_parse_handles_invalid_data(self):
+        """Tests that parse() returns None for invalid JPEG data."""
+        importer = JpgImporter(b"not a jpg")
+        parse_result = importer.parse()
+
+        assert parse_result is None
+        assert len(importer._errors) > 0
+
+    def test_vectorize_returns_vectorization_result(
+        self, color_jpg_data: bytes
+    ):
+        """Tests that vectorize() returns VectorizationResult."""
+        importer = JpgImporter(color_jpg_data)
+        parse_result = importer.parse()
+        assert parse_result is not None
+
+        spec = TraceSpec()
+        vec_result = importer.vectorize(parse_result, spec)
+
+        assert vec_result is not None
+        assert vec_result.source_parse_result is parse_result
+        assert None in vec_result.geometries_by_layer
+        assert isinstance(vec_result.geometries_by_layer[None], Geometry)
+
+    def test_vectorize_raises_type_error_for_wrong_spec(
+        self, color_jpg_data: bytes
+    ):
+        """Tests that vectorize() raises TypeError for non-TraceSpec."""
+        importer = JpgImporter(color_jpg_data)
+        parse_result = importer.parse()
+        assert parse_result is not None
+
+        with pytest.raises(TypeError):
+            importer.vectorize(parse_result, PassthroughSpec())
+
+    def test_create_source_asset(self, color_jpg_data: bytes):
+        """Tests that create_source_asset() returns SourceAsset."""
+        importer = JpgImporter(color_jpg_data)
+        parse_result = importer.parse()
+        assert parse_result is not None
+
+        source_asset = importer.create_source_asset(parse_result)
+
+        assert isinstance(source_asset, SourceAsset)
+        assert source_asset.renderer is JPG_RENDERER
+        assert source_asset.original_data == color_jpg_data
+        assert source_asset.width_px == 259
+        assert source_asset.height_px == 194
+        assert source_asset.metadata is not None
+        assert source_asset.metadata["image_format"] == "JPEG"
 
 
 class TestJpgImporter:

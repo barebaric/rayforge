@@ -5,6 +5,8 @@ from rayforge.core.sketcher import Sketch
 from rayforge.core.workpiece import WorkPiece
 from rayforge.image.sketch.importer import SketchImporter
 from rayforge.core.vectorization_spec import PassthroughSpec
+from rayforge.image.base_importer import ImporterFeature
+from rayforge.core.geo import Geometry
 
 
 @pytest.fixture
@@ -47,6 +49,115 @@ def complex_sketch() -> Sketch:
 
     s.solve()  # Solve it to ensure a consistent state
     return s
+
+
+class TestSketchImporterContract:
+    """Tests for the Importer contract compliance of SketchImporter."""
+
+    def test_class_attributes(self):
+        """Tests that importer class has required attributes."""
+        assert SketchImporter.label == "Rayforge Sketch"
+        assert SketchImporter.extensions == (".rfs",)
+        assert SketchImporter.features == {ImporterFeature.DIRECT_VECTOR}
+
+    def test_scan_returns_manifest(self, complex_sketch: Sketch):
+        """Tests that scan() returns ImportManifest with correct data."""
+        sketch_dict = complex_sketch.to_dict()
+        sketch_bytes = json.dumps(
+            sketch_dict, sort_keys=True, separators=(",", ":")
+        ).encode("utf-8")
+
+        importer = SketchImporter(
+            data=sketch_bytes, source_file=Path("test.rfs")
+        )
+        manifest = importer.scan()
+
+        assert manifest.title == "Complex Sketch"
+        assert manifest.natural_size_mm is None
+        assert len(manifest.warnings) == 0
+        assert len(manifest.errors) == 0
+
+    def test_scan_handles_invalid_data(self):
+        """Tests that scan() handles invalid JSON gracefully."""
+        importer = SketchImporter(b"not json", Path("invalid.rfs"))
+        manifest = importer.scan()
+
+        assert manifest.title == "invalid.rfs"
+        assert len(manifest.errors) > 0
+
+    def test_parse_returns_parsing_result(self, complex_sketch: Sketch):
+        """Tests that parse() returns ParsingResult with correct data."""
+        sketch_dict = complex_sketch.to_dict()
+        sketch_bytes = json.dumps(
+            sketch_dict, sort_keys=True, separators=(",", ":")
+        ).encode("utf-8")
+
+        importer = SketchImporter(
+            data=sketch_bytes, source_file=Path("test.rfs")
+        )
+        parse_result = importer.parse()
+
+        assert parse_result is not None
+        assert parse_result.is_y_down is False
+        assert parse_result.native_unit_to_mm == 1.0
+        assert len(parse_result.layers) == 1
+        assert parse_result.layers[0].layer_id == "__default__"
+        assert parse_result.layers[0].name == "__default__"
+        assert parse_result.world_frame_of_reference is not None
+        assert parse_result.background_world_transform is not None
+
+    def test_parse_handles_invalid_data(self):
+        """Tests that parse() returns None for invalid JSON."""
+        importer = SketchImporter(b"not json")
+        parse_result = importer.parse()
+
+        assert parse_result is None
+        assert len(importer._errors) > 0
+
+    def test_vectorize_returns_vectorization_result(
+        self, complex_sketch: Sketch
+    ):
+        """Tests that vectorize() returns VectorizationResult."""
+        sketch_dict = complex_sketch.to_dict()
+        sketch_bytes = json.dumps(
+            sketch_dict, sort_keys=True, separators=(",", ":")
+        ).encode("utf-8")
+
+        importer = SketchImporter(
+            data=sketch_bytes, source_file=Path("test.rfs")
+        )
+        parse_result = importer.parse()
+        assert parse_result is not None
+
+        spec = PassthroughSpec(create_new_layers=False)
+        vec_result = importer.vectorize(parse_result, spec)
+
+        assert vec_result is not None
+        assert vec_result.source_parse_result is parse_result
+        assert "__default__" in vec_result.geometries_by_layer
+        assert isinstance(
+            vec_result.geometries_by_layer["__default__"], Geometry
+        )
+        assert "__default__" in vec_result.fills_by_layer
+
+    def test_create_source_asset(self, complex_sketch: Sketch):
+        """Tests that create_source_asset() returns SourceAsset."""
+        sketch_dict = complex_sketch.to_dict()
+        sketch_bytes = json.dumps(
+            sketch_dict, sort_keys=True, separators=(",", ":")
+        ).encode("utf-8")
+
+        importer = SketchImporter(
+            data=sketch_bytes, source_file=Path("test.rfs")
+        )
+        parse_result = importer.parse()
+        assert parse_result is not None
+
+        source_asset = importer.create_source_asset(parse_result)
+
+        assert source_asset.original_data == sketch_bytes
+        assert source_asset.metadata is not None
+        assert source_asset.metadata["is_vector"] is True
 
 
 def test_sketch_importer_round_trip(complex_sketch: Sketch):
