@@ -225,7 +225,7 @@ def test_text_box_rendering_produces_visible_output(
 
     mock_cairo_context.save.assert_called()
     mock_cairo_context.restore.assert_called()
-    mock_cairo_context.stroke.assert_called()
+    mock_cairo_context.fill.assert_called()
 
 
 def test_text_box_rendering_with_different_font_params(
