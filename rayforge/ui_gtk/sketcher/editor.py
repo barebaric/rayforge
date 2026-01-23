@@ -431,6 +431,10 @@ class SketchEditor:
                 Gdk.KEY_Right: SketcherKey.ARROW_RIGHT,
                 Gdk.KEY_Return: SketcherKey.RETURN,
                 Gdk.KEY_Escape: SketcherKey.ESCAPE,
+                Gdk.KEY_Home: SketcherKey.HOME,
+                Gdk.KEY_End: SketcherKey.END,
+                Gdk.KEY_KP_Home: SketcherKey.HOME,
+                Gdk.KEY_KP_End: SketcherKey.END,
             }
             if keyval in key_map:
                 return tool.handle_key_event(key_map[keyval])
