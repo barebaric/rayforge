@@ -30,13 +30,28 @@ class MainToolbar(Gtk.Box):
         self.set_margin_start(12)
         self.set_margin_end(12)
 
-        # File related buttons (import, export)
-        open_button = Gtk.Button(child=get_icon("open-symbolic"))
+        # File related buttons (open, save, import, export)
+        self.open_button = Gtk.Button(child=get_icon("open-symbolic"))
+        self.open_button.set_tooltip_text(_("Open Project"))
+        self.open_button.set_action_name("win.open")
+        self.append(self.open_button)
+
+        self.save_button = Gtk.Button(child=get_icon("save-symbolic"))
+        self.save_button.set_tooltip_text(_("Save"))
+        self.save_button.set_action_name("win.save")
+        self.append(self.save_button)
+
+        self.save_as_button = Gtk.Button(child=get_icon("save-as-symbolic"))
+        self.save_as_button.set_tooltip_text(_("Save As..."))
+        self.save_as_button.set_action_name("win.save-as")
+        self.append(self.save_as_button)
+
+        open_button = Gtk.Button(child=get_icon("download-symbolic"))
         open_button.set_tooltip_text(_("Import image"))
         open_button.set_action_name("win.import")
         self.append(open_button)
 
-        self.export_button = Gtk.Button(child=get_icon("save-symbolic"))
+        self.export_button = Gtk.Button(child=get_icon("export-symbolic"))
         self.export_button.set_tooltip_text(_("Generate G-code"))
         self.export_button.set_action_name("win.export")
         self.append(self.export_button)

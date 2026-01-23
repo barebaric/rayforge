@@ -47,7 +47,6 @@ class WorkSurface(WorldSurface):
     ):
         logger.debug("WorkSurface.__init__ called")
         self.editor = editor
-        self.doc = self.editor.doc
         self.machine = None  # will be assigned by set_machine() below
         self._show_travel_moves = False
         self._workpieces_visible = True
@@ -140,6 +139,11 @@ class WorkSurface(WorldSurface):
         # Drag-drop command will be initialized by MainWindow after
         # construction
         self.drag_drop_cmd: Optional["DragDropCmd"] = None
+
+    @property
+    def doc(self):
+        """Returns the current document from the editor."""
+        return self.editor.doc
 
     @property
     def show_travel_moves(self) -> bool:

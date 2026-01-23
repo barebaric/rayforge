@@ -134,3 +134,61 @@ def show_export_sketch_dialog(
     dialog.set_default_filter(sketch_filter)
 
     dialog.save(win, None, callback, win)
+
+
+def show_open_project_dialog(win: "MainWindow", callback: Callable):
+    """
+    Shows file chooser dialog for opening Rayforge project files.
+
+    Args:
+        win: The parent Gtk.Window.
+        callback: The function to call with (dialog, result, user_data) upon
+                  response.
+    """
+    dialog = Gtk.FileDialog.new()
+    dialog.set_title(_("Open Rayforge Project"))
+
+    filter_list = Gio.ListStore.new(Gtk.FileFilter)
+    project_filter = Gtk.FileFilter()
+    project_filter.set_name(_("Rayforge Project"))
+    project_filter.add_pattern("*.ryp")
+    filter_list.append(project_filter)
+
+    dialog.set_filters(filter_list)
+    dialog.set_default_filter(project_filter)
+
+    dialog.open(win, None, callback, win)
+
+
+def show_save_project_dialog(
+    win: "MainWindow",
+    callback: Callable,
+    initial_name: Optional[str] = None,
+):
+    """
+    Shows save file dialog for saving Rayforge project files.
+
+    Args:
+        win: The parent Gtk.Window.
+        callback: The function to call with (dialog, result, user_data) upon
+                  response.
+        initial_name: Optional initial file name for the dialog.
+    """
+    dialog = Gtk.FileDialog.new()
+    dialog.set_title(_("Save Rayforge Project"))
+
+    if initial_name:
+        dialog.set_initial_name(initial_name)
+    else:
+        dialog.set_initial_name("untitled.ryp")
+
+    filter_list = Gio.ListStore.new(Gtk.FileFilter)
+    project_filter = Gtk.FileFilter()
+    project_filter.set_name(_("Rayforge Project"))
+    project_filter.add_pattern("*.ryp")
+    filter_list.append(project_filter)
+
+    dialog.set_filters(filter_list)
+    dialog.set_default_filter(project_filter)
+
+    dialog.save(win, None, callback, win)

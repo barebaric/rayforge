@@ -31,6 +31,10 @@ class ActionManager:
         """Creates all Gio.SimpleActions and adds them to the window."""
         # Menu & File Actions
         self._add_action("quit", self.win.on_quit_action)
+        self._add_action("new", self.win.on_new_project)
+        self._add_action("open", self.win.on_open_project)
+        self._add_action("save", self.win.on_save_project)
+        self._add_action("save-as", self.win.on_save_project_as)
         self._add_action("import", self.win.on_menu_import)
         self._add_action("export", self.win.on_export_clicked)
         self._add_action("about", self.win.show_about_dialog)
@@ -196,6 +200,10 @@ class ActionManager:
         self.actions["add_stock"].set_enabled(True)
         self.actions["new_sketch"].set_enabled(True)
 
+        # Update save action state based on saved state
+        is_unsaved = not self.editor.is_saved
+        self.actions["save"].set_enabled(is_unsaved)
+
         target_workpieces = self._get_workpieces_for_tabbing()
         can_add_tabs = any(wp.boundaries for wp in target_workpieces)
         self.actions["add-tabs-equidistant"].set_enabled(can_add_tabs)
@@ -335,6 +343,10 @@ class ActionManager:
         """
         shortcuts = {
             # File
+            "win.new": "<Primary>n",
+            "win.open": "<Primary>o",
+            "win.save": "<Primary>s",
+            "win.save-as": "<Primary><Shift>s",
             "win.import": "<Primary>i",
             "win.export": "<Primary>e",
             "win.quit": "<Primary>q",

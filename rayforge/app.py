@@ -135,6 +135,11 @@ def main():
             # self.args.filenames will be a list of paths
             for filename in self.args.filenames:
                 file_path = Path(filename)
+
+                if file_path.suffix.lower() == ".ryp":
+                    editor.file.load_project_from_path(file_path)
+                    continue
+
                 mime_type, _ = mimetypes.guess_type(file_path)
 
                 importer_cls, features = editor.file.get_importer_info(
