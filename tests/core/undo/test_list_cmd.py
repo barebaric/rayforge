@@ -109,9 +109,7 @@ def test_reorder_list_with_setter():
         items = property(get_items, set_items)
 
     target = Target()
-    cmd = ReorderListCommand(
-        target, "items", [3, 2, 1], "set_items"
-    )
+    cmd = ReorderListCommand(target, "items", [3, 2, 1], "set_items")
     cmd.execute()
     assert target.items == [3, 2, 1]
     cmd.undo()

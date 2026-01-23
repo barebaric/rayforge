@@ -203,6 +203,7 @@ class TestPngImporterContract:
         assert parse_result is not None
 
         from rayforge.core.vectorization_spec import PassthroughSpec
+
         with pytest.raises(TypeError):
             importer.vectorize(parse_result, PassthroughSpec())
 

@@ -52,9 +52,7 @@ def test_dict_item_with_callback():
         callback_called.append(True)
 
     target = {"key1": "value1"}
-    cmd = DictItemCommand(
-        target, "key1", "new_value", "test_cmd", callback
-    )
+    cmd = DictItemCommand(target, "key1", "new_value", "test_cmd", callback)
     cmd.execute()
     assert len(callback_called) == 1
     cmd.undo()
