@@ -31,11 +31,25 @@ def test_symmetry_constraint_point(setup_env):
     # x: (-5 + 5) - 0 = 0
     # y: (-2 + 2) - 0 = 0
     assert c.error(reg, params) == [0.0, 0.0]
+    assert c.user_visible is True
 
     # Move P2 to (6, 2)
     # x: (-5 + 6) - 0 = 1
     reg.get_point(p2).x = 6.0
     assert c.error(reg, params) == [1.0, 0.0]
+
+
+def test_symmetry_constraint_user_visible(setup_env):
+    reg, params = setup_env
+    pc = reg.add_point(0, 0)
+    p1 = reg.add_point(-5, -2)
+    p2 = reg.add_point(5, 2)
+
+    c = SymmetryConstraint(p1, p2, center=pc, user_visible=False)
+    assert c.user_visible is False
+
+    c2 = SymmetryConstraint(p1, p2, center=pc, user_visible=True)
+    assert c2.user_visible is True
 
 
 def test_symmetry_constraint_line(setup_env):
@@ -180,6 +194,7 @@ def test_symmetry_constraint_serialization_round_trip(setup_env):
 
     # Check that the restored constraint has the same error
     assert original.error(reg, params) == restored.error(reg, params)
+    assert original.user_visible == restored.user_visible
 
 
 def test_symmetry_constraint_line_serialization_round_trip(setup_env):
@@ -193,6 +208,7 @@ def test_symmetry_constraint_line_serialization_round_trip(setup_env):
     serialized = original.to_dict()
     restored = SymmetryConstraint.from_dict(serialized)
     assert original.error(reg, params) == restored.error(reg, params)
+    assert original.user_visible == restored.user_visible
 
 
 def test_symmetry_is_hit(setup_env):

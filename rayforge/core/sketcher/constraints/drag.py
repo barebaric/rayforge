@@ -26,7 +26,9 @@ class DragConstraint(Constraint):
         target_x: float,
         target_y: float,
         weight: float = 0.1,
+        user_visible: bool = True,
     ):
+        super().__init__(user_visible=user_visible)
         self.point_id = point_id
         self.target_x = target_x
         self.target_y = target_y

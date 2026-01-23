@@ -27,7 +27,9 @@ class DistanceConstraint(Constraint):
         p2: int,
         value: Union[str, float],
         expression: Optional[str] = None,
+        user_visible: bool = True,
     ):
+        super().__init__(user_visible=user_visible)
         self.p1 = p1
         self.p2 = p2
 
@@ -48,6 +50,7 @@ class DistanceConstraint(Constraint):
             "p1": self.p1,
             "p2": self.p2,
             "value": self.value,
+            "user_visible": self.user_visible,
         }
         if self.expression:
             data["expression"] = self.expression
@@ -60,6 +63,7 @@ class DistanceConstraint(Constraint):
             p2=data["p2"],
             value=data["value"],
             expression=data.get("expression"),
+            user_visible=data.get("user_visible", True),
         )
 
     def error(

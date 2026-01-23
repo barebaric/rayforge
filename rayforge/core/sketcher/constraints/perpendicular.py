@@ -32,7 +32,8 @@ class PerpendicularConstraint(Constraint):
     - Arc/Arc, Arc/Circle, Circle/Circle: Shapes intersect at a right angle.
     """
 
-    def __init__(self, e1_id: int, e2_id: int):
+    def __init__(self, e1_id: int, e2_id: int, user_visible: bool = True):
+        super().__init__(user_visible=user_visible)
         self.e1_id = e1_id
         self.e2_id = e2_id
 
@@ -41,11 +42,16 @@ class PerpendicularConstraint(Constraint):
             "type": "PerpendicularConstraint",
             "e1_id": self.e1_id,
             "e2_id": self.e2_id,
+            "user_visible": self.user_visible,
         }
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "PerpendicularConstraint":
-        return cls(e1_id=data["e1_id"], e2_id=data["e2_id"])
+        return cls(
+            e1_id=data["e1_id"],
+            e2_id=data["e2_id"],
+            user_visible=data.get("user_visible", True),
+        )
 
     def _get_radius_sq(
         self, shape: Union[Arc, Circle], reg: "EntityRegistry"

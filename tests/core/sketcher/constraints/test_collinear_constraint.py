@@ -17,12 +17,28 @@ def test_collinear_constraint_serialization():
     """Test that the constraint can be serialized and deserialized."""
     constraint = CollinearConstraint(1, 2, 3)
     data = constraint.to_dict()
-    assert data == {"type": "CollinearConstraint", "p1": 1, "p2": 2, "p3": 3}
+    assert data == {
+        "type": "CollinearConstraint",
+        "p1": 1,
+        "p2": 2,
+        "p3": 3,
+        "user_visible": True,
+    }
     new_constraint = CollinearConstraint.from_dict(data)
     assert isinstance(new_constraint, CollinearConstraint)
     assert new_constraint.p1 == 1
     assert new_constraint.p2 == 2
     assert new_constraint.p3 == 3
+    assert new_constraint.user_visible is True
+
+
+def test_collinear_constraint_user_visible():
+    """Test that user_visible can be set."""
+    c = CollinearConstraint(1, 2, 3, user_visible=False)
+    assert c.user_visible is False
+
+    c2 = CollinearConstraint(1, 2, 3, user_visible=True)
+    assert c2.user_visible is True
 
 
 def test_collinear_constraint_error_zero(sketch_with_points):

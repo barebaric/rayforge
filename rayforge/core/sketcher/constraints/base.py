@@ -33,6 +33,10 @@ class Constraint:
     value: float = 0.0
     expression: Optional[str] = None
     status: ConstraintStatus = ConstraintStatus.VALID
+    user_visible: bool = True
+
+    def __init__(self, user_visible: bool = True):
+        self.user_visible = user_visible
 
     def error(
         self, reg: "EntityRegistry", params: "ParameterContext"

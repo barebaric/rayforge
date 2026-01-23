@@ -17,7 +17,7 @@ def setup_env():
 
 
 def test_equal_length_constraint(setup_env):
-    """Tests the error calculation for EqualLengthConstraint."""
+    """Tests error calculation for EqualLengthConstraint."""
     reg, params = setup_env
     # Line 1: length 10
     p1 = reg.add_point(0, 0)
@@ -43,6 +43,7 @@ def test_equal_length_constraint(setup_env):
     # Test Line-Line (error is [len2 - len1])
     c = EqualLengthConstraint([l1, l2])
     assert c.error(reg, params) == pytest.approx([5.0 - 10.0])
+    assert c.user_visible is True
 
     # Test Line-Arc (error is [rad1 - len1])
     c2 = EqualLengthConstraint([l1, a1])
@@ -62,6 +63,23 @@ def test_equal_length_constraint(setup_env):
     # Test edge cases (no error for < 2 entities)
     assert EqualLengthConstraint([]).error(reg, params) == []
     assert EqualLengthConstraint([l1]).error(reg, params) == []
+
+
+def test_equal_length_constraint_user_visible(setup_env):
+    reg, params = setup_env
+    p1 = reg.add_point(0, 0)
+    p2 = reg.add_point(10, 0)
+    l1 = reg.add_line(p1, p2)
+
+    p3 = reg.add_point(0, 10)
+    p4 = reg.add_point(5, 10)
+    l2 = reg.add_line(p3, p4)
+
+    c = EqualLengthConstraint([l1, l2], user_visible=False)
+    assert c.user_visible is False
+
+    c2 = EqualLengthConstraint([l1, l2], user_visible=True)
+    assert c2.user_visible is True
 
 
 def test_equal_length_constrains_radius_method(setup_env):
@@ -154,6 +172,7 @@ def test_equal_length_constraint_serialization_round_trip(setup_env):
 
     # Check that the restored constraint has the same error
     assert original.error(reg, params) == restored.error(reg, params)
+    assert original.user_visible == restored.user_visible
 
 
 def test_equal_length_is_hit(setup_env):

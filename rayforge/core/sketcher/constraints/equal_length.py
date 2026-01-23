@@ -25,18 +25,23 @@ class EqualLengthConstraint(Constraint):
     - Arc/Circle: Radius
     """
 
-    def __init__(self, entity_ids: List[int]):
+    def __init__(self, entity_ids: List[int], user_visible: bool = True):
+        super().__init__(user_visible=user_visible)
         self.entity_ids = entity_ids
 
     def to_dict(self) -> Dict[str, Any]:
         return {
             "type": "EqualLengthConstraint",
             "entity_ids": self.entity_ids,
+            "user_visible": self.user_visible,
         }
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "EqualLengthConstraint":
-        return cls(entity_ids=data["entity_ids"])
+        return cls(
+            entity_ids=data["entity_ids"],
+            user_visible=data.get("user_visible", True),
+        )
 
     def constrains_radius(
         self, registry: "EntityRegistry", entity_id: int
