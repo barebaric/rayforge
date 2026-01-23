@@ -138,6 +138,7 @@ def main():
 
                 if file_path.suffix.lower() == ".ryp":
                     editor.file.load_project_from_path(file_path)
+                    self.win.add_to_recent_manager(file_path)
                     continue
 
                 mime_type, _ = mimetypes.guess_type(file_path)
