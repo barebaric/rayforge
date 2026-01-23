@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mime-info xmlns="http://www.freedesktop.org/standards/shared-mime-info">
+  <mime-type type="application/x-rayforge">
+    <comment>Rayforge project file</comment>
+    <glob pattern="*.ryp"/>
+  </mime-type>
+</mime-info>

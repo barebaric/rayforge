@@ -60,6 +60,12 @@ Section "MainSection" SEC01
   WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${PRODUCT_NAME}" "NoModify" 1
   WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${PRODUCT_NAME}" "NoRepair" 1
   
+  ; Register .ryp file type
+  WriteRegStr HKCR ".ryp" "" "Rayforge.ProjectFile"
+  WriteRegStr HKCR "Rayforge.ProjectFile" "" "Rayforge Project File"
+  WriteRegStr HKCR "Rayforge.ProjectFile\DefaultIcon" "" "$INSTDIR\${EXECUTABLE_NAME},0"
+  WriteRegStr HKCR "Rayforge.ProjectFile\shell\open\command" "" '"$INSTDIR\${EXECUTABLE_NAME}" "%1"'
+  
   ; Create Start Menu shortcuts
   CreateDirectory "$SMPROGRAMS\${PRODUCT_NAME}"
   CreateShortCut "$SMPROGRAMS\${PRODUCT_NAME}\${PRODUCT_NAME}.lnk" "$INSTDIR\${EXECUTABLE_NAME}"
@@ -73,6 +79,10 @@ Section "Uninstall"
   ; Remove registry keys
   DeleteRegKey HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${PRODUCT_NAME}"
   DeleteRegKey HKLM "Software\${PRODUCT_NAME}"
+  
+  ; Unregister .ryp file type
+  DeleteRegKey HKCR ".ryp"
+  DeleteRegKey HKCR "Rayforge.ProjectFile"
 
   ; Remove the entire installation directory
   ; We delete the uninstaller first, then recursively remove its parent directory.

@@ -59,6 +59,7 @@ mypy_path = "stubs"
 [tool.setuptools.data-files]
 "share/applications" = ["data/org.rayforge.rayforge.desktop"]
 "share/metainfo" = ["data/org.rayforge.rayforge.metainfo.xml"]
+"share/mime/packages" = ["data/org.rayforge.rayforge.xml"]
 "share/icons/hicolor/scalable/apps" = ["rayforge/resources/icons/org.rayforge.rayforge.svg"]
 
 [project.optional-dependencies]

@@ -54,10 +54,12 @@ parts:
       - python3-setuptools
       - libvips-dev
       - git  # Required for git describe
-      - gtk-update-icon-cache 
+      - gtk-update-icon-cache
     stage-packages:
       - libvips42t64
       - adwaita-icon-theme
+    stage:
+      - share/mime/packages/org.rayforge.rayforge.xml
     parse-info: [share/metainfo/org.rayforge.rayforge.metainfo.xml]
     override-pull: |
       craftctl default

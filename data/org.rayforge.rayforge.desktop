@@ -6,6 +6,7 @@ Name=Rayforge
 Comment=Laser cutting and engraving
 Categories=Graphics;2DGraphics;VectorGraphics;Engineering;
 StartupNotify=true
+MimeType=application/x-rayforge;
 
 Icon=org.rayforge.rayforge
 Exec=rayforge
