@@ -12,6 +12,7 @@ from .drag import DragConstraint
 from .equal_distance import EqualDistanceConstraint
 from .equal_length import EqualLengthConstraint
 from .horizontal import HorizontalConstraint
+from .parallelogram import ParallelogramConstraint
 from .perpendicular import PerpendicularConstraint
 from .point_on_line import PointOnLineConstraint
 from .radius import RadiusConstraint
@@ -31,6 +32,7 @@ __all__ = [
     "EqualDistanceConstraint",
     "EqualLengthConstraint",
     "HorizontalConstraint",
+    "ParallelogramConstraint",
     "PerpendicularConstraint",
     "PointOnLineConstraint",
     "RadiusConstraint",
