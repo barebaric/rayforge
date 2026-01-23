@@ -259,6 +259,16 @@ class TextBoxTool(SketchTool):
             self.element.mark_dirty()
             self.cursor_moved.send(self)
             return True
+        elif key == SketcherKey.HOME:
+            self.cursor_pos = 0
+            self.element.mark_dirty()
+            self.cursor_moved.send(self)
+            return True
+        elif key == SketcherKey.END:
+            self.cursor_pos = len(self.text_buffer)
+            self.element.mark_dirty()
+            self.cursor_moved.send(self)
+            return True
         elif key == SketcherKey.RETURN or key == SketcherKey.ESCAPE:
             self.on_deactivate()
             return True
