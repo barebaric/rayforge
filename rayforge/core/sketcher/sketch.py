@@ -995,11 +995,20 @@ class Sketch(IAsset):
 
         return geo
 
-    def get_fill_geometries(self) -> List[Geometry]:
+    def get_fill_geometries(
+        self, exclude_ids: Optional[Set[int]] = None
+    ) -> List[Geometry]:
         """
         Generates Geometry objects for all defined fills.
         Each geometry object represents a single closed filled region.
+
+        Args:
+            exclude_ids: Optional set of entity IDs to exclude from fill
+                generation (e.g., text boxes being edited).
         """
+        if exclude_ids is None:
+            exclude_ids = set()
+
         fill_geometries = []
         for fill in self.fills:
             if not fill.boundary:
@@ -1008,6 +1017,8 @@ class Sketch(IAsset):
             # Case 1: Single entity loop (Circle)
             if len(fill.boundary) == 1:
                 eid, _ = fill.boundary[0]
+                if eid in exclude_ids:
+                    continue
                 entity = self.registry.get_entity(eid)
                 if entity:
                     fill_geo = entity.create_fill_geometry(self.registry)
@@ -1018,6 +1029,8 @@ class Sketch(IAsset):
             # Case 2: Multi-segment loop
             try:
                 first_eid, first_fwd = fill.boundary[0]
+                if first_eid in exclude_ids:
+                    continue
                 first_ent = self.registry.get_entity(first_eid)
                 if not first_ent:
                     continue
@@ -1032,6 +1045,9 @@ class Sketch(IAsset):
                 valid_loop = True
 
                 for eid, fwd in fill.boundary:
+                    if eid in exclude_ids:
+                        valid_loop = False
+                        break
                     entity = self.registry.get_entity(eid)
                     if not entity:
                         valid_loop = False
@@ -1047,6 +1063,8 @@ class Sketch(IAsset):
 
         # Add text fills for non-construction text entities
         for entity in self.registry.entities:
+            if entity.id in exclude_ids:
+                continue
             if not entity.construction:
                 text_geo = entity.create_text_fill_geometry(self.registry)
                 if text_geo:
