@@ -57,4 +57,5 @@ def test_coalesce_with_default():
 
 def test_command_abstract_methods():
     from abc import ABC
+
     assert issubclass(Command, ABC)

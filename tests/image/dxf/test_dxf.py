@@ -220,9 +220,7 @@ class TestDXFImporterContract:
         assert parse_result is None
         assert len(importer._errors) > 0
 
-    def test_vectorize_returns_vectorization_result(
-        self, line_dxf_importer
-    ):
+    def test_vectorize_returns_vectorization_result(self, line_dxf_importer):
         """Tests that vectorize() returns VectorizationResult."""
         parse_result = line_dxf_importer.parse()
         assert parse_result is not None
@@ -246,9 +244,7 @@ class TestDXFImporterContract:
             active_layer_ids=["Layer1", "Layer3"],
             create_new_layers=True,
         )
-        vec_result = multi_layer_dxf_importer.vectorize(
-            parse_result, spec
-        )
+        vec_result = multi_layer_dxf_importer.vectorize(parse_result, spec)
 
         assert vec_result is not None
         assert "Layer1" in vec_result.geometries_by_layer
@@ -260,9 +256,7 @@ class TestDXFImporterContract:
         parse_result = line_dxf_importer.parse()
         assert parse_result is not None
 
-        source_asset = line_dxf_importer.create_source_asset(
-            parse_result
-        )
+        source_asset = line_dxf_importer.create_source_asset(parse_result)
 
         assert source_asset.width_mm == 100.0
         assert source_asset.height_mm == 50.0
