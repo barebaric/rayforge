@@ -1,5 +1,18 @@
+from __future__ import annotations
 from abc import ABC, abstractmethod
+from enum import Enum, auto
 import cairo
+
+
+class SketcherKey(Enum):
+    """UI-agnostic special key identifiers."""
+
+    BACKSPACE = auto()
+    DELETE = auto()
+    ARROW_LEFT = auto()
+    ARROW_RIGHT = auto()
+    RETURN = auto()
+    ESCAPE = auto()
 
 
 class SketchTool(ABC):
@@ -37,3 +50,11 @@ class SketchTool(ABC):
         transient UI (like selection boxes) in screen space.
         """
         pass
+
+    def handle_text_input(self, text: str) -> bool:
+        """Optional hook for handling printable character input."""
+        return False
+
+    def handle_key_event(self, key: SketcherKey) -> bool:
+        """Optional hook for handling special (non-character) key events."""
+        return False

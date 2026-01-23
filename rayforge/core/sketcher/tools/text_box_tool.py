@@ -1,0 +1,445 @@
+from typing import Optional, List, cast
+from enum import Enum, auto
+import cairo
+from blinker import Signal
+from ..commands import AddItemsCommand
+from ..entities import Line, Point, TextBoxEntity
+from ..constraints import (
+    AspectRatioConstraint,
+    HorizontalConstraint,
+    VerticalConstraint,
+)
+from .base import SketchTool, SketcherKey
+
+
+class TextBoxState(Enum):
+    """Defines the state of the TextBoxTool."""
+
+    IDLE = auto()
+    EDITING = auto()
+
+
+class TextBoxTool(SketchTool):
+    def __init__(self, element):
+        super().__init__(element)
+        self.state = TextBoxState.IDLE
+        self.editing_entity_id: Optional[int] = None
+        self.text_buffer = ""
+        self.cursor_pos: int = 0
+        self.cursor_visible = True
+
+        # Signals for the UI layer to manage timers, etc.
+        self.editing_started = Signal()
+        self.editing_finished = Signal()
+
+    def start_editing(self, entity_id: int):
+        """Public method to begin editing an existing text box."""
+        from ..entities import TextBoxEntity
+
+        entity = self.element.sketch.registry.get_entity(entity_id)
+        if not isinstance(entity, TextBoxEntity):
+            return
+
+        self.editing_entity_id = entity_id
+        self.text_buffer = entity.content
+        self.cursor_pos = len(self.text_buffer)  # Cursor at the end
+        self.state = TextBoxState.EDITING
+        self.cursor_visible = True
+        self.element.mark_dirty()
+        self.editing_started.send(self)
+
+    def on_deactivate(self):
+        if self.state == TextBoxState.EDITING:
+            self.editing_finished.send(self)
+            self._finalize_edit()
+
+        self.state = TextBoxState.IDLE
+        self.editing_entity_id = None
+        self.text_buffer = ""
+        self.cursor_pos = 0
+
+    def toggle_cursor_visibility(self):
+        """Called by the UI timer to toggle the cursor's visual state."""
+        if self.state == TextBoxState.EDITING:
+            self.cursor_visible = not self.cursor_visible
+            self.element.mark_dirty()
+
+    def on_press(self, world_x: float, world_y: float, n_press: int) -> bool:
+        mx, my = self.element.hittester.screen_to_model(
+            world_x, world_y, self.element
+        )
+
+        if self.state == TextBoxState.IDLE:
+            return self._handle_idle_press(mx, my)
+        elif self.state == TextBoxState.EDITING:
+            return self._handle_editing_press(mx, my)
+        return False
+
+    def _handle_idle_press(self, mx: float, my: float) -> bool:
+        default_width = 10.0
+        default_height = 10.0
+
+        # Create all objects with temporary negative IDs.
+        # The AddItemsCommand will resolve them to final, unique IDs.
+        p_origin = Point(-1, mx, my)
+        p_width = Point(-2, mx + default_width, my)
+        p_height = Point(-3, mx, my + default_height)
+        p4 = Point(-4, mx + default_width, my + default_height)
+
+        points_to_add: List[Point] = [p_origin, p_width, p_height, p4]
+
+        lines_to_add: List[Line] = [
+            Line(-5, p_origin.id, p_width.id, construction=True),
+            Line(-6, p_width.id, p4.id, construction=True),
+            Line(-7, p4.id, p_height.id, construction=True),
+            Line(-8, p_height.id, p_origin.id, construction=True),
+        ]
+        line_ids = [line.id for line in lines_to_add]
+
+        text_box = TextBoxEntity(
+            -9,
+            p_origin.id,
+            p_width.id,
+            p_height.id,
+            content="",
+            construction_line_ids=line_ids,
+        )
+
+        entities_to_add: List[Line | TextBoxEntity] = [*lines_to_add, text_box]
+
+        constraints_to_add = [
+            HorizontalConstraint(p_origin.id, p_width.id),
+            VerticalConstraint(p_width.id, p4.id),
+            HorizontalConstraint(p_height.id, p4.id),
+            VerticalConstraint(p_origin.id, p_height.id),
+            AspectRatioConstraint(
+                p_origin.id, p_width.id, p_origin.id, p_height.id, 1.0
+            ),
+        ]
+
+        cmd = AddItemsCommand(
+            self.element.sketch,
+            _("Add Text"),
+            points=points_to_add,
+            entities=entities_to_add,
+            constraints=constraints_to_add,
+        )
+        self.element.execute_command(cmd)
+
+        # The TextBoxEntity was the last entity added
+        self.start_editing(self.element.sketch.registry.entities[-1].id)
+        return True
+
+    def _handle_editing_press(self, mx: float, my: float) -> bool:
+        world_x, world_y = self.element.content_transform.transform_point(
+            (mx, my)
+        )
+        if self._is_click_outside_box(world_x, world_y):
+            self.on_deactivate()
+            # Allow the click to fall through to the SelectTool
+            return False
+
+        # If inside, update cursor position
+        self._update_cursor_from_click(mx, my)
+        return True
+
+    def _is_click_outside_box(self, world_x: float, world_y: float) -> bool:
+        if self.editing_entity_id is None:
+            return True
+
+        entity = self.element.sketch.registry.get_entity(
+            self.editing_entity_id
+        )
+        if not isinstance(entity, TextBoxEntity):
+            return True
+
+        p_origin = self.element.sketch.registry.get_point(entity.origin_id)
+        p_width = self.element.sketch.registry.get_point(entity.width_id)
+        p_height = self.element.sketch.registry.get_point(entity.height_id)
+
+        p4_x = p_width.x + p_height.x - p_origin.x
+        p4_y = p_width.y + p_height.y - p_origin.y
+
+        mx, my = self.element.hittester.screen_to_model(
+            world_x, world_y, self.element
+        )
+
+        x_min = min(p_origin.x, p_width.x, p_height.x, p4_x)
+        x_max = max(p_origin.x, p_width.x, p_height.x, p4_x)
+        y_min = min(p_origin.y, p_width.y, p_height.y, p4_y)
+        y_max = max(p_origin.y, p_width.y, p_height.y, p4_y)
+
+        return not (x_min <= mx <= x_max and y_min <= my <= y_max)
+
+    def _finalize_edit(self):
+        from ..commands.text_property import ModifyTextPropertyCommand
+
+        if self.editing_entity_id is not None:
+            entity = self.element.sketch.registry.get_entity(
+                self.editing_entity_id
+            )
+            if entity:
+                # Use a command to make the final text and size change undoable
+                cmd = ModifyTextPropertyCommand(
+                    self.element.sketch,
+                    self.editing_entity_id,
+                    self.text_buffer,
+                    entity.font_params,
+                )
+                self.element.execute_command(cmd)
+
+    def on_drag(self, world_dx: float, world_dy: float):
+        pass
+
+    def on_release(self, world_x: float, world_y: float):
+        pass
+
+    def handle_text_input(self, text: str) -> bool:
+        if self.state != TextBoxState.EDITING:
+            return False
+
+        self.cursor_visible = True
+        self.text_buffer = (
+            self.text_buffer[: self.cursor_pos]
+            + text
+            + self.text_buffer[self.cursor_pos :]
+        )
+        self.cursor_pos += 1
+        self._resize_box_to_fit_text()
+        return True
+
+    def handle_key_event(self, key: SketcherKey) -> bool:
+        if self.state != TextBoxState.EDITING:
+            return False
+
+        self.cursor_visible = True  # Make cursor visible on keypress
+
+        if key == SketcherKey.BACKSPACE:
+            if self.cursor_pos > 0:
+                self.text_buffer = (
+                    self.text_buffer[: self.cursor_pos - 1]
+                    + self.text_buffer[self.cursor_pos :]
+                )
+                self.cursor_pos -= 1
+                self._resize_box_to_fit_text()
+            return True
+        elif key == SketcherKey.DELETE:
+            if self.cursor_pos < len(self.text_buffer):
+                self.text_buffer = (
+                    self.text_buffer[: self.cursor_pos]
+                    + self.text_buffer[self.cursor_pos + 1 :]
+                )
+                self._resize_box_to_fit_text()
+            return True
+        elif key == SketcherKey.ARROW_LEFT:
+            self.cursor_pos = max(0, self.cursor_pos - 1)
+            self.element.mark_dirty()
+            return True
+        elif key == SketcherKey.ARROW_RIGHT:
+            self.cursor_pos = min(len(self.text_buffer), self.cursor_pos + 1)
+            self.element.mark_dirty()
+            return True
+        elif key == SketcherKey.RETURN or key == SketcherKey.ESCAPE:
+            self.on_deactivate()
+            return True
+
+        return False
+
+    def _find_opposite_corner(
+        self, text_entity: TextBoxEntity
+    ) -> Optional[Point]:
+        """Finds the 4th point of the bounding box parallelogram."""
+        p_w = text_entity.width_id
+        for eid in text_entity.construction_line_ids:
+            line = self.element.sketch.registry.get_entity(eid)
+            if isinstance(line, Line):
+                if line.p1_idx == p_w and line.p2_idx != text_entity.origin_id:
+                    return self.element.sketch.registry.get_point(line.p2_idx)
+                if line.p2_idx == p_w and line.p1_idx != text_entity.origin_id:
+                    return self.element.sketch.registry.get_point(line.p1_idx)
+        return None
+
+    def _resize_box_to_fit_text(self):
+        """Live-updates the box points to match the current text buffer."""
+        from ....core.geo.geometry import Geometry
+
+        if self.editing_entity_id is None:
+            return
+
+        entity = self.element.sketch.registry.get_entity(
+            self.editing_entity_id
+        )
+        if not isinstance(entity, TextBoxEntity):
+            return
+
+        if not self.text_buffer:
+            natural_width = 10.0
+            natural_height = entity.font_params.get("size", 10.0)
+        else:
+            natural_geo = Geometry.from_text(
+                self.text_buffer,
+                font_family=entity.font_params.get("family", "sans-serif"),
+                font_size=entity.font_params.get("size", 10.0),
+                is_bold=entity.font_params.get("bold", False),
+                is_italic=entity.font_params.get("italic", False),
+            )
+            natural_geo.flip_y()
+            min_x, min_y, max_x, max_y = natural_geo.rect()
+            natural_width = max(max_x - min_x, 1.0)
+            natural_height = max(max_y - min_y, 1.0)
+
+        p_origin = self.element.sketch.registry.get_point(entity.origin_id)
+        p_width = self.element.sketch.registry.get_point(entity.width_id)
+        p_height = self.element.sketch.registry.get_point(entity.height_id)
+
+        # Update point positions based on origin and natural size
+        p_width.x = p_origin.x + natural_width
+        p_width.y = p_origin.y
+        p_height.x = p_origin.x
+        p_height.y = p_origin.y + natural_height
+
+        # Manually update the 4th corner to keep the box rectangular
+        p4 = self._find_opposite_corner(entity)
+        if p4:
+            p4.x = p_width.x
+            p4.y = p_height.y
+
+        self.element.mark_dirty()
+
+    def _update_cursor_from_click(self, mx: float, my: float):
+        """Finds the best cursor position based on a click in model space."""
+        from ....core.geo.geometry import Geometry
+
+        if self.editing_entity_id is None:
+            return
+        entity = self.element.sketch.registry.get_entity(
+            self.editing_entity_id
+        )
+        if not isinstance(entity, TextBoxEntity):
+            return
+
+        p_origin = self.element.sketch.registry.get_point(entity.origin_id)
+        p_width = self.element.sketch.registry.get_point(entity.width_id)
+        p_height = self.element.sketch.registry.get_point(entity.height_id)
+
+        u_vec = (p_width.x - p_origin.x, p_width.y - p_origin.y)
+        v_vec = (p_height.x - p_origin.x, p_height.y - p_origin.y)
+        det = u_vec[0] * v_vec[1] - u_vec[1] * v_vec[0]
+        if abs(det) < 1e-9:
+            return
+
+        inv_det = 1.0 / det
+        click_vec = (mx - p_origin.x, my - p_origin.y)
+        alpha = (click_vec[0] * v_vec[1] - click_vec[1] * v_vec[0]) * inv_det
+
+        font_params = {
+            "font_family": entity.font_params.get("family", "sans-serif"),
+            "font_size": entity.font_params.get("size", 10.0),
+            "is_bold": entity.font_params.get("bold", False),
+            "is_italic": entity.font_params.get("italic", False),
+        }
+        natural_geo = Geometry.from_text(self.text_buffer, **font_params)
+        natural_geo.flip_y()
+        min_x, _, max_x, _ = natural_geo.rect()
+        src_width = max_x - min_x if max_x > min_x else 1.0
+        target_x_natural = min_x + alpha * src_width
+
+        best_i, min_dist = 0, float("inf")
+        for i in range(len(self.text_buffer) + 1):
+            sub_geo = Geometry.from_text(self.text_buffer[:i], **font_params)
+            sub_geo.flip_y()
+            _, _, sub_max_x, _ = sub_geo.rect()
+            dist = abs(sub_max_x - target_x_natural)
+            if dist < min_dist:
+                min_dist = dist
+                best_i = i
+        self.cursor_pos = best_i
+        self.element.mark_dirty()
+
+    def draw_overlay(self, ctx: cairo.Context):
+        if (
+            self.state != TextBoxState.EDITING
+            or self.editing_entity_id is None
+        ):
+            return
+
+        entity = cast(
+            TextBoxEntity,
+            self.element.sketch.registry.get_entity(self.editing_entity_id),
+        )
+        if not entity:
+            return
+
+        p_origin = self.element.sketch.registry.get_point(entity.origin_id)
+        p_width = self.element.sketch.registry.get_point(entity.width_id)
+        p_height = self.element.sketch.registry.get_point(entity.height_id)
+
+        from ....core.geo.geometry import Geometry
+
+        font_params = {
+            "font_family": entity.font_params.get("family", "sans-serif"),
+            "font_size": entity.font_params.get("size", 10.0),
+            "is_bold": entity.font_params.get("bold", False),
+            "is_italic": entity.font_params.get("italic", False),
+        }
+        natural_geo = Geometry.from_text(self.text_buffer, **font_params)
+        natural_geo.flip_y()
+
+        transformed_geo = natural_geo.map_to_frame(
+            (p_origin.x, p_origin.y),
+            (p_width.x, p_width.y),
+            (p_height.x, p_height.y),
+        )
+
+        ctx.save()
+        model_to_screen_matrix = (
+            self.element.hittester.get_model_to_screen_transform(self.element)
+        )
+        cairo_mat = cairo.Matrix(*model_to_screen_matrix.for_cairo())
+        ctx.transform(cairo_mat)
+
+        transformed_geo.to_cairo(ctx)
+        ctx.set_source_rgba(0.0, 0.0, 0.0, 1.0)
+        ctx.fill()
+
+        if self.cursor_visible:
+            sub_geo = Geometry.from_text(
+                self.text_buffer[: self.cursor_pos], **font_params
+            )
+            sub_geo.flip_y()
+            _, min_y, sub_max_x, max_y = sub_geo.rect()
+            if self.cursor_pos == 0:
+                full_rect = natural_geo.rect()
+                sub_max_x = full_rect[0]
+                min_y, max_y = full_rect[1], full_rect[3]
+
+            natural_cursor_pos = (sub_max_x, (min_y + max_y) / 2)
+            cursor_height = max_y - min_y
+            if cursor_height <= 0:
+                cursor_height = font_params["font_size"]
+
+            cursor_geo = Geometry()
+            cursor_geo.move_to(
+                natural_cursor_pos[0],
+                natural_cursor_pos[1] - cursor_height / 2,
+            )
+            cursor_geo.line_to(
+                natural_cursor_pos[0],
+                natural_cursor_pos[1] + cursor_height / 2,
+            )
+
+            transformed_cursor_geo = cursor_geo.map_to_frame(
+                (p_origin.x, p_origin.y),
+                (p_width.x, p_width.y),
+                (p_height.x, p_height.y),
+            )
+            transformed_cursor_geo.to_cairo(ctx)
+            ctx.set_source_rgba(0.0, 0.0, 0.0, 1.0)
+
+            scale = 1.0
+            if self.element.canvas:
+                scale_x, _ = self.element.canvas.get_view_scale()
+                scale = scale_x if scale_x > 1e-9 else 1.0
+            ctx.set_line_width(1.0 / scale)
+            ctx.stroke()
+        ctx.restore()

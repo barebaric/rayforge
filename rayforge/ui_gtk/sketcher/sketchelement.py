@@ -36,6 +36,7 @@ from ...core.sketcher.tools import (
     FillTool,
     RoundedRectTool,
     RectangleTool,
+    TextBoxTool,
 )
 from ..canvas import CanvasElement
 from .hittest import SketchHitTester
@@ -94,6 +95,7 @@ class SketchElement(CanvasElement):
             "fill": FillTool(self),
             "rounded_rect": RoundedRectTool(self),
             "rectangle": RectangleTool(self),
+            "text_box": TextBoxTool(self),
         }
         self.active_tool_name = "select"
 

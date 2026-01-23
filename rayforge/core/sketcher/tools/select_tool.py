@@ -12,8 +12,9 @@ from ..constraints import (
     CoincidentConstraint,
     PointOnLineConstraint,
 )
-from ..entities import Entity, Line, Arc, Circle
+from ..entities import Entity, Line, Arc, Circle, TextBoxEntity
 from .base import SketchTool
+from .text_box_tool import TextBoxTool
 
 if TYPE_CHECKING:
     from ..selection import SketchSelection
@@ -189,6 +190,12 @@ class SelectTool(SketchTool):
                         self.element.constraint_edit_requested.send(
                             self.element, constraint=new_constr
                         )
+                return True
+            elif isinstance(entity, TextBoxEntity):
+                text_tool = self.element.tools.get("text_box")
+                if isinstance(text_tool, TextBoxTool):
+                    self.element.set_tool("text_box")
+                    text_tool.start_editing(entity.id)
                 return True
 
         # Double click edits constraint value
@@ -558,6 +565,10 @@ class SelectTool(SketchTool):
             elif isinstance(entity, Circle):
                 points_to_drag.add(entity.center_idx)
                 points_to_drag.add(entity.radius_pt_idx)
+            elif isinstance(entity, TextBoxEntity):
+                points_to_drag.add(entity.origin_id)
+                points_to_drag.add(entity.width_id)
+                points_to_drag.add(entity.height_id)
 
         # 2. Build drag constraints for these points
         drag_constraints = []

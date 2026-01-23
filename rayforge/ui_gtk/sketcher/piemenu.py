@@ -43,6 +43,7 @@ class SketchPieMenu(PieMenu):
             "rounded_rect": "set_tool:rounded_rect",
             "rectangle": "set_tool:rectangle",
             "fill": "set_tool:fill",
+            "text_box": "set_tool:text_box",
             # Actions
             "construction": "toggle_construction_on_selection",
             "chamfer": "add_chamfer_action",
@@ -104,6 +105,11 @@ class SketchPieMenu(PieMenu):
 
         label = f"{_('Arc')}{get_shortcut_label('arc')}"
         item = PieMenuItem("sketch-arc-symbolic", label, data="arc")
+        item.on_click.connect(self._on_tool_clicked, weak=False)
+        self.add_item(item)
+
+        label = f"{_('Text Box')}{get_shortcut_label('text_box')}"
+        item = PieMenuItem("sketch-text-symbolic", label, data="text_box")
         item.on_click.connect(self._on_tool_clicked, weak=False)
         self.add_item(item)
 
@@ -265,6 +271,7 @@ class SketchPieMenu(PieMenu):
                     "rounded_rect",
                     "rectangle",
                     "fill",
+                    "text_box",
                 ):
                     item.visible = not has_target
 

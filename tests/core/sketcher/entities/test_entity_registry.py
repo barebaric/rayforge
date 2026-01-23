@@ -4,6 +4,7 @@ from rayforge.core.sketcher.entities import (
     Line,
     Arc,
     Circle,
+    TextBoxEntity,
 )
 from rayforge.core.sketcher.registry import EntityRegistry
 
@@ -185,3 +186,56 @@ def test_registry_is_point_used(registry):
     assert registry.is_point_used(p1) is True
     assert registry.is_point_used(p4) is True
     assert registry.is_point_used(p_unused) is False
+
+
+def test_add_text_box(registry):
+    """Test that add_text_box creates a TextBoxEntity correctly."""
+    p1 = registry.add_point(0, 0)
+    p2 = registry.add_point(50, 0)
+    p3 = registry.add_point(0, 10)
+
+    tb_id = registry.add_text_box(
+        p1,
+        p2,
+        p3,
+        content="Hello World",
+        font_params={"family": "sans-serif", "size": 10.0},
+    )
+
+    tb = registry.get_entity(tb_id)
+    assert isinstance(tb, TextBoxEntity)
+    assert tb.origin_id == p1
+    assert tb.width_id == p2
+    assert tb.height_id == p3
+    assert tb.content == "Hello World"
+    assert tb.font_params == {"family": "sans-serif", "size": 10.0}
+
+
+def test_add_text_box_with_default_font_params(registry):
+    """Test that add_text_box provides default font_params."""
+    p1 = registry.add_point(0, 0)
+    p2 = registry.add_point(50, 0)
+    p3 = registry.add_point(0, 10)
+
+    tb_id = registry.add_text_box(p1, p2, p3, content="Test", font_params={})
+
+    tb = registry.get_entity(tb_id)
+    assert isinstance(tb, TextBoxEntity)
+    assert tb.content == "Test"
+    assert tb.font_params == {
+        "family": "sans-serif",
+        "size": 10.0,
+        "bold": False,
+        "italic": False,
+    }
+
+
+def test_add_text_box_increments_id_counter(registry):
+    """Test that add_text_box increments the ID counter correctly."""
+    p1 = registry.add_point(0, 0)
+    p2 = registry.add_point(50, 0)
+    p3 = registry.add_point(0, 10)
+
+    tb_id = registry.add_text_box(p1, p2, p3, content="Test", font_params={})
+
+    assert tb_id == 3
