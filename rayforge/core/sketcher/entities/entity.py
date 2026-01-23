@@ -1,4 +1,4 @@
-from typing import List, Tuple, Dict, Any, Sequence, TYPE_CHECKING
+from typing import List, Tuple, Dict, Any, Sequence, TYPE_CHECKING, Optional
 from ...geo.geometry import Geometry
 
 if TYPE_CHECKING:
@@ -61,6 +61,36 @@ class Entity:
     def to_geometry(self, registry: "EntityRegistry") -> Geometry:
         """Converts the entity to a Geometry object."""
         return Geometry()
+
+    def create_fill_geometry(
+        self, registry: "EntityRegistry"
+    ) -> Optional[Geometry]:
+        """
+        Creates a fill geometry for single-entity loops.
+        Returns None if the entity does not support fill geometry.
+        """
+        return None
+
+    def append_to_geometry(
+        self,
+        geo: Geometry,
+        registry: "EntityRegistry",
+        forward: bool,
+    ) -> None:
+        """
+        Appends this entity to an existing geometry object.
+        Used for multi-segment loops.
+        """
+        pass
+
+    def create_text_fill_geometry(
+        self, registry: "EntityRegistry"
+    ) -> Optional[Geometry]:
+        """
+        Creates a fill geometry for text entities.
+        Returns None if the entity does not support text fill geometry.
+        """
+        return None
 
     def to_dict(self) -> Dict[str, Any]:
         """Base serialization method for entities."""
