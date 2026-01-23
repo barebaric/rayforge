@@ -843,7 +843,7 @@ class MainWindow(Adw.ApplicationWindow):
             success = self.doc_editor.file.save_project_to_path(file_path)
             if success:
                 self.on_doc_changed(self.doc_editor.doc)
-                self._add_to_recent_manager(file_path)
+                self.add_to_recent_manager(file_path)
         else:
             self.on_save_project_as(action, param)
 
@@ -868,7 +868,7 @@ class MainWindow(Adw.ApplicationWindow):
             success = self.doc_editor.file.save_project_to_path(file_path)
             if success:
                 self.on_doc_changed(self.doc_editor.doc)
-                self._add_to_recent_manager(file_path)
+                self.add_to_recent_manager(file_path)
         except GLib.Error as e:
             logger.error(f"Error saving file: {e.message}")
             return
@@ -878,7 +878,7 @@ class MainWindow(Adw.ApplicationWindow):
         success = self.doc_editor.file.load_project_from_path(file_path)
         if success:
             self.on_doc_changed(self.doc_editor.doc)
-            self._add_to_recent_manager(file_path)
+            self.add_to_recent_manager(file_path)
 
     def on_open_recent(self, action, param):
         """Action handler for opening a file from the recent menu."""
@@ -909,7 +909,7 @@ class MainWindow(Adw.ApplicationWindow):
                 return
         self._do_open_project(file_path)
 
-    def _add_to_recent_manager(self, file_path: Path):
+    def add_to_recent_manager(self, file_path: Path):
         """Adds a project file path to the Gtk.RecentManager with metadata."""
         uri = file_path.as_uri()
         app = self.get_application()
