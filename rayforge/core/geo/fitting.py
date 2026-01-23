@@ -501,10 +501,33 @@ def fit_points_recursive(
             raise ValueError(f"Point must have at least 2 coordinates: {pt}")
         return [create_line_cmd(cast(Point2DOr3D, pt))]
 
+    # Check for sharp corner at split_idx to prevent aggressive smoothing.
+    # If the point of max deviation is a sharp corner, we skip arc fitting
+    # and split immediately.
+    is_sharp = False
+    if start < split_idx < end:
+        p_prev = points[split_idx - 1]
+        p_curr = points[split_idx]
+        p_next = points[split_idx + 1]
+
+        dx1, dy1 = p_curr[0] - p_prev[0], p_curr[1] - p_prev[1]
+        dx2, dy2 = p_next[0] - p_curr[0], p_next[1] - p_curr[1]
+
+        len1 = math.hypot(dx1, dy1)
+        len2 = math.hypot(dx2, dy2)
+
+        if len1 > 1e-9 and len2 > 1e-9:
+            dot = (dx1 * dx2 + dy1 * dy2) / (len1 * len2)
+            # Threshold: ~60 degrees deflection (120 degree internal angle).
+            # Points from linearization are dense, so any large deflection
+            # indicates a geometric corner.
+            if dot < 0.5:
+                is_sharp = True
+
     # --- Fast path for 3-point segments ---
     # Use a faster analytical method instead of the general-purpose,
     # expensive least-squares solver for this common case.
-    if end - start == 2:  # Segment has 3 points: start, start+1, end
+    if not is_sharp and end - start == 2:
         p1, p2, p3 = points[start], points[start + 1], points[end]
         fast_fit = fit_circle_3_points(p1, p2, p3)
         if fast_fit:
@@ -531,39 +554,42 @@ def fit_points_recursive(
 
     # --- General case for > 3 points ---
     # If a line doesn't fit, try to fit a circular arc.
-    subset = points[start : end + 1]
-    fit_result = fit_circle_to_points(subset)
-    if fit_result:
-        center, _, _ = fit_result
+    if not is_sharp:
+        subset = points[start : end + 1]
+        fit_result = fit_circle_to_points(subset)
+        if fit_result:
+            center, _, _ = fit_result
 
-        # Project center to bisector to guarantee R_start == R_end.
-        # This prevents G-code error 33 ("invalid target") on strict
-        # controllers.
-        center = project_circle_center_to_bisector(
-            points[start], points[end], center
-        )
-        # Recalculate radius based on start point and corrected center
-        radius = math.hypot(
-            points[start][0] - center[0], points[start][1] - center[1]
-        )
-
-        # Check deviation against the *corrected* arc
-        arc_dev = get_arc_to_polyline_deviation(subset, center, radius)
-
-        if arc_dev < tolerance:
-            end_pt = points[end]
-            start_pt = points[start]
-            if len(end_pt) < 2 or len(start_pt) < 2:
-                raise ValueError(
-                    f"Points must have at least 2 coordinates: "
-                    f"start={start_pt}, end={end_pt}"
-                )
-            row = create_arc_cmd(
-                cast(Point2DOr3D, end_pt), center, cast(Point2DOr3D, start_pt)
+            # Project center to bisector to guarantee R_start == R_end.
+            # This prevents G-code error 33 ("invalid target") on strict
+            # controllers.
+            center = project_circle_center_to_bisector(
+                points[start], points[end], center
             )
-            is_cw = arc_direction_is_clockwise(subset, center)
-            row[COL_CW] = 1.0 if is_cw else 0.0
-            return [row]
+            # Recalculate radius based on start point and corrected center
+            radius = math.hypot(
+                points[start][0] - center[0], points[start][1] - center[1]
+            )
+
+            # Check deviation against the *corrected* arc
+            arc_dev = get_arc_to_polyline_deviation(subset, center, radius)
+
+            if arc_dev < tolerance:
+                end_pt = points[end]
+                start_pt = points[start]
+                if len(end_pt) < 2 or len(start_pt) < 2:
+                    raise ValueError(
+                        f"Points must have at least 2 coordinates: "
+                        f"start={start_pt}, end={end_pt}"
+                    )
+                row = create_arc_cmd(
+                    cast(Point2DOr3D, end_pt),
+                    center,
+                    cast(Point2DOr3D, start_pt),
+                )
+                is_cw = arc_direction_is_clockwise(subset, center)
+                row[COL_CW] = 1.0 if is_cw else 0.0
+                return [row]
 
     # If neither a line nor an arc fits, split the segment and recurse.
     if split_idx == start or split_idx == end:
