@@ -195,6 +195,7 @@ modules:
     post-install:
       - install -Dm644 rayforge/resources/icons/${FLATPAK_ID}.svg /app/share/icons/hicolor/scalable/apps/${FLATPAK_ID}.svg
       - install -Dm644 data/${FLATPAK_ID}.desktop /app/share/applications/${FLATPAK_ID}.desktop
+      - install -Dm644 data/${FLATPAK_ID}.xml /app/share/mime/packages/${FLATPAK_ID}.xml
       - echo $(git describe --exact-match --tags) > ${FLATPAK_DEST}/lib/python$(python -c
         'import sys; print("%s.%s" %sys.version_info[0:2])')/site-packages/rayforge/version.txt
     sources:

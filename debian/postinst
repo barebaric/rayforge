@@ -6,6 +6,7 @@ set -e
 if [ "$1" = "configure" ]; then
     update-desktop-database -q || true
     gtk-update-icon-cache -q /usr/share/icons/hicolor || true
+    update-mime-database /usr/share/mime || true
 fi
 
 exit 0
