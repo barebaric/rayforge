@@ -35,7 +35,11 @@ class DictItemCommand(Command):
         self.target_dict = target_dict
         self.key = key
         self.new_value = new_value
-        self.old_value = self.target_dict.get(self.key)
+        self.key_existed = self.key in self.target_dict
+        if self.key_existed:
+            self.old_value = self.target_dict.get(self.key)
+        else:
+            self.old_value = None
 
     def execute(self) -> None:
         """Sets the new value in the dictionary."""
@@ -45,14 +49,9 @@ class DictItemCommand(Command):
 
     def undo(self) -> None:
         """Restores the old value in the dictionary."""
-        if (
-            self.key in self.target_dict
-            and self.target_dict[self.key] == self.new_value
-        ):
+        if self.key_existed:
             self.target_dict[self.key] = self.old_value
-        elif self.old_value is not None:
-            self.target_dict[self.key] = self.old_value
-        else:  # old value was none, so the key didn't exist
+        else:
             if self.key in self.target_dict:
                 del self.target_dict[self.key]
 
