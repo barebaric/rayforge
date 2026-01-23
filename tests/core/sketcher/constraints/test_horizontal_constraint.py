@@ -22,6 +22,19 @@ def test_horizontal_constraint(setup_env):
 
     c = HorizontalConstraint(p1, p2)
     assert c.error(reg, params) == pytest.approx(-5.0)
+    assert c.user_visible is True
+
+
+def test_horizontal_constraint_user_visible(setup_env):
+    reg, params = setup_env
+    p1 = reg.add_point(0, 0)
+    p2 = reg.add_point(10, 5)
+
+    c = HorizontalConstraint(p1, p2, user_visible=False)
+    assert c.user_visible is False
+
+    c2 = HorizontalConstraint(p1, p2, user_visible=True)
+    assert c2.user_visible is True
 
 
 def test_horizontal_constraint_gradient(setup_env):
@@ -77,6 +90,7 @@ def test_horizontal_constraint_serialization_round_trip(setup_env):
 
     # Check that the restored constraint has the same error
     assert original.error(reg, params) == restored.error(reg, params)
+    assert original.user_visible == restored.user_visible
 
 
 def test_horizontal_is_hit(setup_env):

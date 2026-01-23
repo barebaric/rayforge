@@ -358,6 +358,8 @@ class SketchRenderer:
         constraints = self.element.sketch.constraints or []
         for idx, constr in enumerate(constraints):
             if isinstance(constr, EqualLengthConstraint):
+                if not constr.user_visible:
+                    continue
                 for eid in constr.entity_ids:
                     equality_groups[eid] = idx
 
@@ -365,6 +367,8 @@ class SketchRenderer:
         for idx, constr in enumerate(constraints):
             # Skip drawing EqualLengthConstraint here, it's handled below.
             if isinstance(constr, EqualLengthConstraint):
+                continue
+            if not constr.user_visible:
                 continue
 
             is_sel = idx == self.element.selection.constraint_idx

@@ -25,6 +25,18 @@ def test_drag_constraint(setup_env):
     err_x, err_y = c.error(reg, params)
     assert err_x == pytest.approx(-10.0)
     assert err_y == pytest.approx(0.0)
+    assert c.user_visible is True
+
+
+def test_drag_constraint_user_visible(setup_env):
+    reg, params = setup_env
+    p1 = reg.add_point(0, 0)
+
+    c = DragConstraint(p1, 100.0, 0.0, weight=0.1, user_visible=False)
+    assert c.user_visible is False
+
+    c2 = DragConstraint(p1, 100.0, 0.0, weight=0.1, user_visible=True)
+    assert c2.user_visible is True
 
 
 def test_drag_constraint_gradient(setup_env):

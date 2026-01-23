@@ -20,16 +20,26 @@ if TYPE_CHECKING:
 class VerticalConstraint(Constraint):
     """Enforces two points have the same X coordinate."""
 
-    def __init__(self, p1: int, p2: int):
+    def __init__(self, p1: int, p2: int, user_visible: bool = True):
+        super().__init__(user_visible=user_visible)
         self.p1 = p1
         self.p2 = p2
 
     def to_dict(self) -> Dict[str, Any]:
-        return {"type": "VerticalConstraint", "p1": self.p1, "p2": self.p2}
+        return {
+            "type": "VerticalConstraint",
+            "p1": self.p1,
+            "p2": self.p2,
+            "user_visible": self.user_visible,
+        }
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "VerticalConstraint":
-        return cls(p1=data["p1"], p2=data["p2"])
+        return cls(
+            p1=data["p1"],
+            p2=data["p2"],
+            user_visible=data.get("user_visible", True),
+        )
 
     def error(
         self, reg: "EntityRegistry", params: "ParameterContext"

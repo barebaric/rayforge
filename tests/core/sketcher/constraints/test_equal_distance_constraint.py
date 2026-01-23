@@ -27,6 +27,21 @@ def test_equal_distance_constraint(setup_env):
 
     # Error should be 10 - 4 = 6
     assert c.error(reg, params) == pytest.approx(6.0)
+    assert c.user_visible is True
+
+
+def test_equal_distance_constraint_user_visible(setup_env):
+    reg, params = setup_env
+    p1 = reg.add_point(0, 0)
+    p2 = reg.add_point(10, 0)
+    p3 = reg.add_point(0, 10)
+    p4 = reg.add_point(0, 14)
+
+    c = EqualDistanceConstraint(p1, p2, p3, p4, user_visible=False)
+    assert c.user_visible is False
+
+    c2 = EqualDistanceConstraint(p1, p2, p3, p4, user_visible=True)
+    assert c2.user_visible is True
 
 
 def test_equal_distance_constraint_gradient(setup_env):
@@ -88,3 +103,4 @@ def test_equal_distance_constraint_serialization_round_trip(setup_env):
 
     # Check that the restored constraint has the same error
     assert original.error(reg, params) == restored.error(reg, params)
+    assert original.user_visible == restored.user_visible

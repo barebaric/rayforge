@@ -26,7 +26,9 @@ class RadiusConstraint(Constraint):
         entity_id: int,
         value: Union[str, float],
         expression: Optional[str] = None,
+        user_visible: bool = True,
     ):
+        super().__init__(user_visible=user_visible)
         self.entity_id = entity_id
 
         if expression is not None:
@@ -44,6 +46,7 @@ class RadiusConstraint(Constraint):
             "type": "RadiusConstraint",
             "entity_id": self.entity_id,
             "value": self.value,
+            "user_visible": self.user_visible,
         }
         if self.expression:
             data["expression"] = self.expression
@@ -55,6 +58,7 @@ class RadiusConstraint(Constraint):
             entity_id=data["entity_id"],
             value=data["value"],
             expression=data.get("expression"),
+            user_visible=data.get("user_visible", True),
         )
 
     def constrains_radius(
