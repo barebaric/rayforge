@@ -2,6 +2,7 @@ from typing import List, Tuple, Dict, Any, Sequence, Optional, TYPE_CHECKING
 from ...geo import primitives
 from ...geo.geometry import Geometry
 from .entity import Entity
+from .line import Line
 
 if TYPE_CHECKING:
     from ..constraints import Constraint
@@ -36,6 +37,25 @@ class TextBoxEntity(Entity):
 
     def get_point_ids(self) -> List[int]:
         return [self.origin_id, self.width_id, self.height_id]
+
+    def get_fourth_corner_id(
+        self, registry: "EntityRegistry"
+    ) -> Optional[int]:
+        """Finds the 4th point ID of the text box."""
+        for eid in self.construction_line_ids:
+            entity = registry.get_entity(eid)
+            if isinstance(entity, Line):
+                if entity.p1_idx == self.width_id and (
+                    entity.p2_idx != self.origin_id
+                    and entity.p2_idx != self.height_id
+                ):
+                    return entity.p2_idx
+                if entity.p2_idx == self.width_id and (
+                    entity.p1_idx != self.origin_id
+                    and entity.p1_idx != self.height_id
+                ):
+                    return entity.p1_idx
+        return None
 
     def update_constrained_status(
         self, registry: "EntityRegistry", constraints: Sequence["Constraint"]
