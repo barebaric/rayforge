@@ -27,13 +27,13 @@ flowchart TD
     raw --> parse
     scan[Scan<br/>Importer.scan<br/>for metadata] -->|ImportManifest| manifest
     manifest["ImportManifest"]
-    
+
     parse[Phase 1: Parse<br/>Importer.parse] -->|ParsingResult| vectorize
     vectorize[Phase 2: Vectorize<br/>Importer.vectorize] -->|VectorizationResult| layout
     layout[Phase 3: Layout<br/>NormalizationEngine] -->|List of LayoutItem| assemble
     assemble[Phase 4: Assemble<br/>ItemAssembler] -->|ImportPayload| result
     result["ImportResult<br/>final output"]
-    
+
     style scan fill:#f3e5f5
     style manifest fill:#f3e5f5
     style parse fill:#e1f5fe
@@ -48,22 +48,23 @@ flowchart TD
 
 ### Phase 1: Parse
 
-**Method:** [`Importer.parse()`](../../rayforge/image/base_importer.py:188)
+**Method:** `Importer.parse()`
 
 Extracts geometric facts from the file including bounds, coordinate system
 details, and layer information.
 
-**Output:** [`ParsingResult`](../../rayforge/image/structures.py:105)
+**Output:** `ParsingResult`
 
 - `document_bounds`: Total canvas size in Native Coordinates
 - `native_unit_to_mm`: Conversion factor to millimeters
 - `is_y_down`: Y-axis orientation flag
-- `layers`: List of [`LayerGeometry`](../../rayforge/image/structures.py:71)
+- `layers`: List of `LayerGeometry`
 - `world_frame_of_reference`: World Coordinates (mm, Y-Up)
 - `background_world_transform`: Matrix for background positioning
 - `untrimmed_document_bounds`: Reference for Y-inversion
 
 **Coordinate System:**
+
 - `document_bounds`: Native Coordinates (file-specific)
 - `world_frame_of_reference`: World Coordinates (mm, Y-Up)
 
@@ -71,12 +72,12 @@ details, and layer information.
 
 ### Phase 2: Vectorize
 
-**Method:** [`Importer.vectorize()`](../../rayforge/image/base_importer.py:225)
+**Method:** `Importer.vectorize()`
 
-Converts parsed data into vector [`Geometry`](../../rayforge/core/geo/__init__.py)
-objects according to the [`VectorizationSpec`](../../rayforge/core/vectorization_spec/__init__.py).
+Converts parsed data into vector `Geometry` objects according to the
+`VectorizationSpec`.
 
-**Output:** [`VectorizationResult`](../../rayforge/image/structures.py:176)
+**Output:** `VectorizationResult`
 
 - `geometries_by_layer`: Vector geometry per layer (Native Coordinates)
 - `source_parse_result`: Reference to original ParsingResult
@@ -88,20 +89,22 @@ objects according to the [`VectorizationSpec`](../../rayforge/core/vectorization
 
 ### Phase 3: Layout
 
-**Class:** [`NormalizationEngine`](../../rayforge/image/engine.py:19)
+**Class:** `NormalizationEngine`
 
 Calculates transformation matrices to map Native Coordinates to World
 Coordinates based on user intent.
 
-**Output:** `List[`[`LayoutItem`](../../rayforge/image/structures.py:217)`]`
+**Output:** `List[LayoutItem]`
 
 Each `LayoutItem` contains:
+
 - `world_matrix`: Normalized (0-1, Y-Up) → World (mm, Y-Up)
 - `normalization_matrix`: Native → Normalized (0-1, Y-Up)
 - `crop_window`: Subset of original file in Native Coordinates
 - `layer_id`, `layer_name`: Layer identification
 
 **Coordinate System:**
+
 - Input: Native Coordinates
 - Output: World Coordinates (mm, Y-Up) via intermediate Normalized space
 
@@ -109,16 +112,16 @@ Each `LayoutItem` contains:
 
 ### Phase 4: Assemble
 
-**Class:** [`ItemAssembler`](../../rayforge/image/assembler.py:15)
+**Class:** `ItemAssembler`
 
-Instantiates Rayforge domain objects ([`WorkPiece`](../../rayforge/core/workpiece/__init__.py),
-[`Layer`](../../rayforge/core/layer/__init__.py)) based on the layout plan.
+Instantiates Rayforge domain objects (`WorkPiece`, `Layer`) based on the
+layout plan.
 
-**Output:** [`ImportPayload`](../../rayforge/image/structures.py:265)
+**Output:** `ImportPayload`
 
-- `source`: The [`SourceAsset`](../../rayforge/core/source_asset/__init__.py)
-- `items`: List of [`DocItem`](../../rayforge/core/item/__init__.py) ready for insertion
-- `sketches`: Optional list of [`Sketch`](../../rayforge/core/sketcher/sketch/__init__.py) objects
+- `source`: The `SourceAsset`
+- `items`: List of `DocItem` ready for insertion
+- `sketches`: Optional list of `Sketch` objects
 
 **Coordinate System:** All DocItems in World Coordinates (mm, Y-Up)
 
@@ -126,15 +129,15 @@ Instantiates Rayforge domain objects ([`WorkPiece`](../../rayforge/core/workpiec
 
 ## Scan Method
 
-**Method:** [`Importer.scan()`](../../rayforge/image/base_importer.py:161)
+**Method:** `Importer.scan()`
 
 A lightweight scan that extracts metadata without full processing. Used for
 building the UI for an importer, including layer selection list.
 This is NOT part of the main import pipeline executed by `get_doc_items()`.
 
-**Output:** [`ImportManifest`](../../rayforge/image/structures.py:36)
+**Output:** `ImportManifest`
 
-- `layers`: List of [`LayerInfo`](../../rayforge/image/structures.py:13) objects
+- `layers`: List of `LayerInfo` objects
 - `natural_size_mm`: Physical dimensions in millimeters (Y-Up)
 - `title`: Optional document title
 - `warnings`, `errors`: Non-critical issues discovered
@@ -181,13 +184,12 @@ transformation:
 
 ### Importer (Base Class)
 
-[`rayforge/image/base_importer.py`](../../rayforge/image/base_importer.py:34)
-
 Abstract base class defining the interface for all importers. Subclasses must
 implement the pipeline methods and declare their capabilities via the
 `features` attribute.
 
 **Features:**
+
 - `BITMAP_TRACING`: Can trace raster images to vectors
 - `DIRECT_VECTOR`: Can extract vector geometry directly
 - `LAYER_SELECTION`: Supports layer-based imports
@@ -195,26 +197,21 @@ implement the pipeline methods and declare their capabilities via the
 
 ### Data Structures
 
-All data structures are defined in
-[`rayforge/image/structures.py`](../../rayforge/image/structures.py):
-
-| Class | Phase | Purpose |
-|-------|-------|---------|
-| [`LayerInfo`](../../rayforge/image/structures.py:13) | Scan | Lightweight layer metadata |
-| [`ImportManifest`](../../rayforge/image/structures.py:36) | Scan | Scan phase result |
-| [`LayerGeometry`](../../rayforge/image/structures.py:71) | Parse | Geometric layer info |
-| [`ParsingResult`](../../rayforge/image/structures.py:105) | Parse | Geometric facts |
-| [`VectorizationResult`](../../rayforge/image/structures.py:176) | Vectorize | Vector geometry |
-| [`LayoutItem`](../../rayforge/image/structures.py:217) | Layout | Transformation config |
-| [`ImportPayload`](../../rayforge/image/structures.py:265) | Assemble | Final output |
-| [`ImportResult`](../../rayforge/image/structures.py:294) | Final | Complete result wrapper |
+| Class                 | Phase     | Purpose                    |
+| --------------------- | --------- | -------------------------- |
+| `LayerInfo`           | Scan      | Lightweight layer metadata |
+| `ImportManifest`      | Scan      | Scan phase result          |
+| `LayerGeometry`       | Parse     | Geometric layer info       |
+| `ParsingResult`       | Parse     | Geometric facts            |
+| `VectorizationResult` | Vectorize | Vector geometry            |
+| `LayoutItem`          | Layout    | Transformation config      |
+| `ImportPayload`       | Assemble  | Final output               |
+| `ImportResult`        | Final     | Complete result wrapper    |
 
 ### Supporting Components
 
-- [`NormalizationEngine`](../../rayforge/image/engine.py:19): Phase 3 layout
-  calculations
-- [`ItemAssembler`](../../rayforge/image/assembler.py:15): Phase 4 object
-  creation
+- `NormalizationEngine`: Phase 3 layout calculations
+- `ItemAssembler`: Phase 4 object creation
 
 ---
 
@@ -285,8 +282,3 @@ class MyFormatImporter(Importer):
             metadata={},
         )
 ```
-
-**See also:** [`rayforge/image/dxf/importer.py`](../../rayforge/image/dxf/importer.py)
-for a complete example of a vector importer, or
-[`rayforge/image/jpg/importer.py`](../../rayforge/image/jpg/importer.py)
-for a raster importer with bitmap tracing.
