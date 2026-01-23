@@ -514,7 +514,7 @@ class SelectTool(SketchTool):
         # Apply a strong drag constraint to ALL points in the group.
         for pid in coincident_group:
             drag_constraints.append(
-                DragConstraint(pid, target_x, target_y, weight=0.05)
+                DragConstraint(pid, target_x, target_y, weight=0.1)
             )
 
         base_hold_weight = 0.01
@@ -572,7 +572,7 @@ class SelectTool(SketchTool):
 
         # 2. Build drag constraints for these points
         drag_constraints = []
-        strong_drag_weight = 0.05
+        strong_drag_weight = 1.0
         for pid in points_to_drag:
             p = self._safe_get_point(pid)
             if not p or p.fixed:
