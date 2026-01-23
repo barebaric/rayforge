@@ -97,6 +97,6 @@ parts:
       icon-theme='Adwaita'
       EOF
       gtk-update-icon-cache -q -t -f $SNAPCRAFT_PART_INSTALL/usr/share/icons/Adwaita
-      gdk-pixbuf-query-loaders --update-cache
+      $SNAPCRAFT_PART_INSTALL/usr/lib/x86_64-linux-gnu/gdk-pixbuf-2.0/gdk-pixbuf-query-loaders --update-cache
 
       snapcraftctl build
