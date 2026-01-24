@@ -447,8 +447,10 @@ class Canvas(Gtk.DrawingArea):
 
         # Edit mode logic
         if self.edit_context:
-            handled = self.edit_context.handle_edit_press(world_x, world_y)
-            # If press was not handled by element, check for background click
+            handled = self.edit_context.handle_edit_press(
+                world_x, world_y, n_press
+            )
+            # If press was not handled by element, check for background
             if not handled and self._hovered_elem is None:
                 self.leave_edit_mode()
             self.queue_draw()
