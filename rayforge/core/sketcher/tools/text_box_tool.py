@@ -5,6 +5,7 @@ import cairo
 from blinker import Signal
 from ...geo import Geometry, primitives
 from ..commands import TextBoxCommand
+from ..commands.live_text_edit import LiveTextEditCommand
 from ..entities import Line, Point, TextBoxEntity
 from .base import SketchTool, SketcherKey
 
@@ -27,6 +28,7 @@ class TextBoxTool(SketchTool):
         self.cursor_pos: int = 0
         self.cursor_visible = True
         self.is_hovering = False
+        self.live_edit_cmd: Optional[LiveTextEditCommand] = None
 
         # Signals for the UI layer to manage timers, etc.
         self.editing_started = Signal()
@@ -49,9 +51,19 @@ class TextBoxTool(SketchTool):
         self.element.mark_dirty()
         self.editing_started.send(self)
 
+        self.live_edit_cmd = LiveTextEditCommand(
+            self.element.sketch, entity_id
+        )
+        self.live_edit_cmd.capture_state(self.text_buffer, self.cursor_pos)
+
     def on_deactivate(self):
         if self.state == TextBoxState.EDITING:
             self.editing_finished.send(self)
+
+            if self.live_edit_cmd:
+                self.element.execute_command(self.live_edit_cmd)
+                self.live_edit_cmd = None
+
             self._finalize_edit()
 
         self.state = TextBoxState.IDLE
@@ -220,6 +232,10 @@ class TextBoxTool(SketchTool):
         self.cursor_pos += 1
         self._resize_box_to_fit_text()
         self.cursor_moved.send(self)
+
+        if self.live_edit_cmd:
+            self.live_edit_cmd.capture_state(self.text_buffer, self.cursor_pos)
+
         return True
 
     def handle_key_event(self, key: SketcherKey) -> bool:
@@ -228,7 +244,25 @@ class TextBoxTool(SketchTool):
 
         self.cursor_visible = True  # Make cursor visible on keypress
 
-        if key == SketcherKey.BACKSPACE:
+        if key == SketcherKey.UNDO:
+            if self.live_edit_cmd:
+                self.live_edit_cmd.undo()
+                self.text_buffer = self.live_edit_cmd.get_current_content()
+                self.cursor_pos = self.live_edit_cmd.get_current_cursor_pos()
+                self._resize_box_to_fit_text()
+                self.element.mark_dirty()
+                self.cursor_moved.send(self)
+            return True
+        elif key == SketcherKey.REDO:
+            if self.live_edit_cmd:
+                self.live_edit_cmd.redo()
+                self.text_buffer = self.live_edit_cmd.get_current_content()
+                self.cursor_pos = self.live_edit_cmd.get_current_cursor_pos()
+                self._resize_box_to_fit_text()
+                self.element.mark_dirty()
+                self.cursor_moved.send(self)
+            return True
+        elif key == SketcherKey.BACKSPACE:
             if self.cursor_pos > 0:
                 self.text_buffer = (
                     self.text_buffer[: self.cursor_pos - 1]
@@ -237,6 +271,12 @@ class TextBoxTool(SketchTool):
                 self.cursor_pos -= 1
                 self._resize_box_to_fit_text()
                 self.cursor_moved.send(self)
+
+                if self.live_edit_cmd:
+                    self.live_edit_cmd.capture_state(
+                        self.text_buffer, self.cursor_pos
+                    )
+
             return True
         elif key == SketcherKey.DELETE:
             if self.cursor_pos < len(self.text_buffer):
@@ -246,6 +286,12 @@ class TextBoxTool(SketchTool):
                 )
                 self._resize_box_to_fit_text()
                 self.cursor_moved.send(self)
+
+                if self.live_edit_cmd:
+                    self.live_edit_cmd.capture_state(
+                        self.text_buffer, self.cursor_pos
+                    )
+
             return True
         elif key == SketcherKey.ARROW_LEFT:
             self.cursor_pos = max(0, self.cursor_pos - 1)

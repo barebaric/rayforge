@@ -15,6 +15,8 @@ class SketcherKey(Enum):
     ESCAPE = auto()
     HOME = auto()
     END = auto()
+    UNDO = auto()
+    REDO = auto()
 
 
 class SketchTool(ABC):
