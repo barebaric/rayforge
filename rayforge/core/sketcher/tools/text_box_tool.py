@@ -128,16 +128,27 @@ class TextBoxTool(SketchTool):
         )
 
         if self.state == TextBoxState.IDLE:
-            return self._handle_idle_press(mx, my)
+            return self._handle_idle_press(mx, my, world_x, world_y)
         elif self.state == TextBoxState.EDITING:
             return self._handle_editing_press(mx, my, world_x, world_y)
         return False
 
-    def _handle_idle_press(self, mx: float, my: float) -> bool:
+    def _handle_idle_press(
+        self, mx: float, my: float, world_x: float, world_y: float
+    ) -> bool:
         clicked_entity_id = self._find_text_box_at_point(mx, my)
         if clicked_entity_id is not None:
             self.start_editing(clicked_entity_id)
-            return True
+            # Initialize drag selection state to allow immediate selection
+            # without requiring a second click.
+            self._update_cursor_from_click(mx, my)
+            self.is_drag_selecting = True
+            self.drag_start_pos = self.cursor_pos
+            self.selection_start = self.cursor_pos
+            self.selection_end = self.cursor_pos
+            self._drag_start_world_x = world_x
+            self._drag_start_world_y = world_y
+            return False  # Don't claim gesture, allow drag events
 
         cmd = TextBoxCommand(self.element.sketch, origin=(mx, my))
         self.element.execute_command(cmd)
@@ -169,10 +180,17 @@ class TextBoxTool(SketchTool):
             self.on_deactivate()
             self.start_editing(clicked_entity_id)
             self._update_cursor_from_click(mx, my)
-            return True
+            # Initialize drag state and return False to allow drag to start
+            self.is_drag_selecting = True
+            self.drag_start_pos = self.cursor_pos
+            self.selection_start = self.cursor_pos
+            self.selection_end = self.cursor_pos
+            self._drag_start_world_x = world_x
+            self._drag_start_world_y = world_y
+            return False
 
         self.on_deactivate()
-        return self._handle_idle_press(mx, my)
+        return self._handle_idle_press(mx, my, world_x, world_y)
 
     def _is_point_inside_box(self, mx: float, my: float) -> bool:
         if self.editing_entity_id is None:
