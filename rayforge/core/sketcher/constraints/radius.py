@@ -42,6 +42,11 @@ class RadiusConstraint(Constraint):
             self.expression = None
             self.value = float(value)
 
+    def targets_segment(
+        self, p1: int, p2: int, entity_id: Optional[int]
+    ) -> bool:
+        return entity_id is not None and self.entity_id == entity_id
+
     def to_dict(self) -> Dict[str, Any]:
         data = {
             "type": "RadiusConstraint",

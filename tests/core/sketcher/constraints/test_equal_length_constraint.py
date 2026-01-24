@@ -104,6 +104,29 @@ def test_equal_length_constrains_radius_method(setup_env):
     assert c.constrains_radius(reg, 999) is False
 
 
+def test_equal_length_targets_segment(setup_env):
+    reg, params = setup_env
+    p1 = reg.add_point(0, 0)
+    p2 = reg.add_point(10, 0)
+    l1 = reg.add_line(p1, p2)
+
+    p3 = reg.add_point(0, 10)
+    p4 = reg.add_point(5, 10)
+    l2 = reg.add_line(p3, p4)
+
+    l3 = reg.add_line(p1, p3)
+
+    c = EqualLengthConstraint([l1, l2])
+
+    # Should match entities in the list
+    assert c.targets_segment(0, 0, l1) is True
+    assert c.targets_segment(0, 0, l2) is True
+
+    # Should not match entities not in the list or None
+    assert c.targets_segment(0, 0, l3) is False
+    assert c.targets_segment(0, 0, None) is False
+
+
 def test_equal_length_constraint_gradient(setup_env):
     reg, params = setup_env
     p0 = reg.add_point(0, 0)

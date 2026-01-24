@@ -151,6 +151,20 @@ def test_parallelogram_constraint_user_visible_true(setup_env):
     assert c.user_visible is True
 
 
+def test_parallelogram_targets_segment(setup_env):
+    reg, params = setup_env
+    p1 = reg.add_point(0, 0)
+    p2 = reg.add_point(10, 0)
+    p3 = reg.add_point(0, 5)
+    p4 = reg.add_point(10, 5)
+
+    c = ParallelogramConstraint(p1, p2, p3, p4)
+
+    # Default implementation returns False
+    assert c.targets_segment(p1, p2, None) is False
+    assert c.targets_segment(0, 0, 999) is False
+
+
 def test_parallelogram_constraint_serialization_round_trip(setup_env):
     reg, params = setup_env
     p_origin = reg.add_point(0, 0)

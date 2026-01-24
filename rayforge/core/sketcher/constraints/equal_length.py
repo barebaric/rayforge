@@ -1,6 +1,7 @@
 from __future__ import annotations
 import math
 from typing import (
+    Optional,
     Union,
     Tuple,
     Dict,
@@ -29,6 +30,13 @@ class EqualLengthConstraint(Constraint):
     def __init__(self, entity_ids: List[int], user_visible: bool = True):
         super().__init__(user_visible=user_visible)
         self.entity_ids = entity_ids
+
+    def targets_segment(
+        self, p1: int, p2: int, entity_id: Optional[int]
+    ) -> bool:
+        if entity_id is not None:
+            return entity_id in self.entity_ids
+        return False
 
     def to_dict(self) -> Dict[str, Any]:
         return {

@@ -45,6 +45,29 @@ def test_equal_distance_constraint_user_visible(setup_env):
     assert c2.user_visible is True
 
 
+def test_equal_distance_targets_segment(setup_env):
+    reg, params = setup_env
+    p1 = reg.add_point(0, 0)
+    p2 = reg.add_point(10, 0)
+    p3 = reg.add_point(0, 10)
+    p4 = reg.add_point(0, 14)
+    p5 = reg.add_point(5, 5)
+
+    c = EqualDistanceConstraint(p1, p2, p3, p4)
+
+    # Matches pair 1 (order independent)
+    assert c.targets_segment(p1, p2, None) is True
+    assert c.targets_segment(p2, p1, None) is True
+
+    # Matches pair 2 (order independent)
+    assert c.targets_segment(p3, p4, None) is True
+    assert c.targets_segment(p4, p3, None) is True
+
+    # No match
+    assert c.targets_segment(p1, p3, None) is False
+    assert c.targets_segment(p1, p5, None) is False
+
+
 def test_equal_distance_constraint_gradient(setup_env):
     reg, params = setup_env
     p1 = reg.add_point(0, 0)

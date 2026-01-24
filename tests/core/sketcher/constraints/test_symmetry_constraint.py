@@ -53,6 +53,19 @@ def test_symmetry_constraint_user_visible(setup_env):
     assert c2.user_visible is True
 
 
+def test_symmetry_targets_segment(setup_env):
+    reg, params = setup_env
+    pc = reg.add_point(0, 0)
+    p1 = reg.add_point(-5, -2)
+    p2 = reg.add_point(5, 2)
+
+    c = SymmetryConstraint(p1, p2, center=pc)
+
+    # Base implementation returns False
+    assert c.targets_segment(p1, p2, None) is False
+    assert c.targets_segment(0, 0, 999) is False
+
+
 def test_symmetry_constraint_line(setup_env):
     """Test symmetry between two points with respect to an axis line."""
     reg, params = setup_env

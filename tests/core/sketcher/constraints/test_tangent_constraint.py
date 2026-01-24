@@ -99,6 +99,25 @@ def test_tangent_constraint_zero_length_line(setup_env):
     assert c_tan.error(reg, params) == pytest.approx(-10.0)
 
 
+def test_tangent_targets_segment(setup_env):
+    reg, params = setup_env
+    start = reg.add_point(10, 0)
+    end = reg.add_point(0, 10)
+    center = reg.add_point(0, 0)
+    arc_id = reg.add_arc(start, end, center)
+
+    lp1 = reg.add_point(-5, 10)
+    lp2 = reg.add_point(5, 10)
+    line_id = reg.add_line(lp1, lp2)
+
+    c = TangentConstraint(line_id, arc_id)
+
+    # Base implementation returns False
+    assert c.targets_segment(0, 0, line_id) is False
+    assert c.targets_segment(0, 0, arc_id) is False
+    assert c.targets_segment(0, 0, 999) is False
+
+
 def test_tangent_constraint_gradient(setup_env):
     reg, params = setup_env
     lp1 = reg.add_point(0, 12)

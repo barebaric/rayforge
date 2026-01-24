@@ -107,6 +107,20 @@ def test_point_on_line_constrains_radius(setup_env):
     assert c1.constrains_radius(reg, 999) is False
 
 
+def test_point_on_line_targets_segment(setup_env):
+    reg, params = setup_env
+    p1 = reg.add_point(0, 0)
+    p2 = reg.add_point(10, 0)
+    line_id = reg.add_line(p1, p2)
+    p3 = reg.add_point(5, 5)
+
+    c = PointOnLineConstraint(p3, line_id)
+
+    # Base implementation returns False
+    assert c.targets_segment(p1, p2, line_id) is False
+    assert c.targets_segment(0, 0, 999) is False
+
+
 def test_point_on_line_invalid_entity(setup_env):
     """Ensure it doesn't crash if passed a non-line ID."""
     reg, params = setup_env

@@ -42,6 +42,14 @@ def test_collinear_constraint_user_visible():
     assert c2.user_visible is True
 
 
+def test_collinear_targets_segment():
+    """Test targets_segment default behavior."""
+    c = CollinearConstraint(1, 2, 3)
+    # Default implementation returns False (Collinear is topological)
+    assert c.targets_segment(1, 2, None) is False
+    assert c.targets_segment(0, 0, 999) is False
+
+
 def test_collinear_constraint_error_zero(sketch_with_points):
     """Test the error is zero for perfectly collinear points."""
     sketch, p1, p2, p3 = sketch_with_points
