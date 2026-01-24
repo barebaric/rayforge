@@ -176,8 +176,8 @@ def map_geometry_to_frame(
     # 1. Get the source geometry's bounding box
     min_x, min_y, max_x, max_y = geometry.rect()
     src_width = max_x - min_x
-    src_height = stable_src_height if stable_src_height is not None else (
-        max_y - min_y
+    src_height = (
+        stable_src_height if stable_src_height is not None else (max_y - min_y)
     )
 
     # Use anchor_y if provided, otherwise use bounding box min_y

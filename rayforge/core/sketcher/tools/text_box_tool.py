@@ -4,6 +4,7 @@ from enum import Enum, auto
 import cairo
 from blinker import Signal
 from ...geo import Geometry, primitives
+from ...geo.text import get_text_width
 from ..commands import TextBoxCommand
 from ..commands.live_text_edit import LiveTextEditCommand
 from ..entities import Line, Point, TextBoxEntity
@@ -439,12 +440,10 @@ class TextBoxTool(SketchTool):
                 # The start of the text corresponds to min_x
                 sub_max_x = min_x
             else:
-                # Measure width of substring to find character boundary
-                sub_geo = Geometry.from_text(
+                # Measure width of substring including spaces
+                sub_max_x = get_text_width(
                     self.text_buffer[:i], **entity.font_params
                 )
-                sub_geo.flip_y()
-                _, _, sub_max_x, _ = sub_geo.rect()
 
             dist = abs(sub_max_x - target_x_natural)
             if dist < min_dist:
@@ -518,19 +517,13 @@ class TextBoxTool(SketchTool):
                 scale = scale_x if scale_x > 1e-13 else 1.0
             cursor_width = 3.0 / scale
 
-            # Calculate cursor geometry in Natural Space
-            sub_geo = Geometry.from_text(
-                self.text_buffer[: self.cursor_pos], **entity.font_params
-            )
-            sub_geo.flip_y()
-            _, _, sub_max_x, _ = sub_geo.rect()
-
+            # Calculate cursor position using text width (includes spaces)
             if self.cursor_pos == 0:
                 sub_max_x = nat_min_x
             else:
-                # Add a small margin to "unglue" the cursor from the last
-                # character. Margin = half cursor width + 1 visual pixel gap
-                sub_max_x += (cursor_width / 2) + (3.0 / scale)
+                sub_max_x = get_text_width(
+                    self.text_buffer[: self.cursor_pos], **entity.font_params
+                )
 
             cursor_height = nat_max_y - nat_min_y
             if cursor_height <= 0:
