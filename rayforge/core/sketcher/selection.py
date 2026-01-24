@@ -1,4 +1,5 @@
 from typing import List, Optional
+from blinker import Signal
 
 
 class SketchSelection:
@@ -9,6 +10,7 @@ class SketchSelection:
         self.entity_ids: List[int] = []
         self.constraint_idx: Optional[int] = None
         self.junction_pid: Optional[int] = None
+        self.changed = Signal()
 
     def clear(self):
         """Clears all selections."""
@@ -16,6 +18,7 @@ class SketchSelection:
         self.entity_ids.clear()
         self.constraint_idx = None
         self.junction_pid = None
+        self.changed.send(self)
 
     def copy(self) -> "SketchSelection":
         """Creates a shallow copy of the selection state."""
@@ -33,6 +36,7 @@ class SketchSelection:
             self.point_ids.clear()
             self.entity_ids.clear()
             self.junction_pid = None
+        self.changed.send(self)
 
     def select_junction(self, pid: int, is_multi: bool):
         """Selects an implicit junction point."""
@@ -41,6 +45,7 @@ class SketchSelection:
             self.point_ids.clear()
             self.entity_ids.clear()
             self.constraint_idx = None
+        self.changed.send(self)
 
     def select_point(self, pid: int, is_multi: bool):
         """Selects a point by ID."""
@@ -49,6 +54,7 @@ class SketchSelection:
             self.entity_ids.clear()
             self.constraint_idx = None
             self.junction_pid = None
+        self.changed.send(self)
 
     def select_entity(self, entity, is_multi: bool):
         """Selects a geometric entity (Line or Arc)."""
@@ -63,6 +69,7 @@ class SketchSelection:
             self.point_ids.clear()
             self.constraint_idx = None
             self.junction_pid = None
+        self.changed.send(self)
 
     def _update_list(
         self, collection: List[int], item_id: int, is_multi: bool
