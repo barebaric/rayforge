@@ -1,4 +1,5 @@
 import pytest
+from rayforge.core.geo.font_config import FontConfig
 from rayforge.core.sketcher.entities import (
     Point,
     Line,
@@ -199,7 +200,7 @@ def test_add_text_box(registry):
         p2,
         p3,
         content="Hello World",
-        font_params={"font_family": "sans-serif", "font_size": 10.0},
+        font_config=FontConfig(font_family="sans-serif", font_size=10.0),
     )
 
     tb = registry.get_entity(tb_id)
@@ -208,26 +209,23 @@ def test_add_text_box(registry):
     assert tb.width_id == p2
     assert tb.height_id == p3
     assert tb.content == "Hello World"
-    assert tb.font_params == {"font_family": "sans-serif", "font_size": 10.0}
+    assert tb.font_config == FontConfig(
+        font_family="sans-serif", font_size=10.0
+    )
 
 
 def test_add_text_box_with_default_font_params(registry):
-    """Test that add_text_box provides default font_params."""
+    """Test that add_text_box provides default font_config."""
     p1 = registry.add_point(0, 0)
     p2 = registry.add_point(50, 0)
     p3 = registry.add_point(0, 10)
 
-    tb_id = registry.add_text_box(p1, p2, p3, content="Test", font_params={})
+    tb_id = registry.add_text_box(p1, p2, p3, content="Test")
 
     tb = registry.get_entity(tb_id)
     assert isinstance(tb, TextBoxEntity)
     assert tb.content == "Test"
-    assert tb.font_params == {
-        "font_family": "sans-serif",
-        "font_size": 10.0,
-        "bold": False,
-        "italic": False,
-    }
+    assert tb.font_config == FontConfig()
 
 
 def test_add_text_box_increments_id_counter(registry):
@@ -236,6 +234,6 @@ def test_add_text_box_increments_id_counter(registry):
     p2 = registry.add_point(50, 0)
     p3 = registry.add_point(0, 10)
 
-    tb_id = registry.add_text_box(p1, p2, p3, content="Test", font_params={})
+    tb_id = registry.add_text_box(p1, p2, p3, content="Test")
 
     assert tb_id == 3

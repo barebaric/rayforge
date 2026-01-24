@@ -44,6 +44,7 @@ from .fitting import (
     fit_arcs,
     optimize_path_from_array,
 )
+from .font_config import FontConfig
 from .linearize import linearize_geometry
 from .primitives import (
     find_closest_point_on_line_segment,
@@ -1210,38 +1211,29 @@ class Geometry:
     def from_text(
         cls: Type[T_Geometry],
         text: str,
-        font_family: str = "sans-serif",
-        font_size: float = 10.0,
-        bold: bool = False,
-        italic: bool = False,
+        font_config: Optional[FontConfig] = None,
     ) -> T_Geometry:
         """
         Creates a Geometry instance from a string of text. Text is inserted
         in Y-down!
 
-        This is a convenience wrapper around the `text_to_geometry` function.
+        This is a convenience wrapper around `text_to_geometry` function.
         The resulting geometry is generated at the origin with natural font
         dimensions.
 
         Args:
             text: The string content to render.
-            font_family: The font family name.
-            font_size: The font size in geometry units.
-            bold: Whether to use a bold weight.
-            italic: Whether to use an italic slant.
+            font_config: The font configuration to use.
 
         Returns:
             A new Geometry instance representing the text path.
         """
         from .text import text_to_geometry
 
-        base_geo = text_to_geometry(
-            text,
-            font_family=font_family,
-            font_size=font_size,
-            bold=bold,
-            italic=italic,
-        )
+        if font_config is None:
+            font_config = FontConfig()
+
+        base_geo = text_to_geometry(text, font_config=font_config)
         new_geo = cls()
         new_geo.extend(base_geo)
         return new_geo

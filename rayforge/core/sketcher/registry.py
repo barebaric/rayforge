@@ -1,4 +1,5 @@
 from typing import List, Dict, Optional, Any
+from ..geo.font_config import FontConfig
 from .entities.point import Point
 from .entities.entity import Entity
 from .entities.line import Line
@@ -101,7 +102,7 @@ class EntityRegistry:
         width_id: int,
         height_id: int,
         content: str = "",
-        font_params: Optional[Dict[str, Any]] = None,
+        font_config: Optional[FontConfig] = None,
     ) -> int:
         eid = self._id_counter
         entity = TextBoxEntity(
@@ -110,7 +111,7 @@ class EntityRegistry:
             width_id,
             height_id,
             content=content,
-            font_params=font_params,
+            font_config=font_config,
         )
         self.entities.append(entity)
         self._entity_map[eid] = entity

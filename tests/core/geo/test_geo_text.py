@@ -4,6 +4,7 @@ from rayforge.core.geo.constants import (
     CMD_TYPE_BEZIER,
     COL_TYPE,
 )
+from rayforge.core.geo.font_config import FontConfig
 
 
 def test_text_to_geometry_basic():
@@ -25,7 +26,8 @@ def test_text_to_geometry_contains_curves():
     Test that letters with curves (like 'O') generate Bezier commands.
     This ensures we are using copy_path() and not copy_path_flat().
     """
-    geo = text_to_geometry("O", font_family="sans-serif")
+    config = FontConfig(font_family="sans-serif")
+    geo = text_to_geometry("O", font_config=config)
     geo._sync_to_numpy()
 
     assert geo.data is not None
@@ -39,10 +41,12 @@ def test_text_to_geometry_font_size():
     Test that changing font size affects the resulting geometry dimensions.
     """
     # Create text with size 10
-    geo_small = text_to_geometry("I", font_size=10.0)
+    config_small = FontConfig(font_size=10.0)
+    geo_small = text_to_geometry("I", font_config=config_small)
 
     # Create text with size 20
-    geo_large = text_to_geometry("I", font_size=20.0)
+    config_large = FontConfig(font_size=20.0)
+    geo_large = text_to_geometry("I", font_config=config_large)
 
     # Get bounds
     min_x_s, min_y_s, max_x_s, max_y_s = geo_small.rect()

@@ -298,7 +298,7 @@ class SketchRenderer:
         if not (p_origin and p_width and p_height):
             return False
 
-        natural_geo = Geometry.from_text(entity.content, **entity.font_params)
+        natural_geo = Geometry.from_text(entity.content, entity.font_config)
         natural_geo.flip_y()
 
         _, descent, font_height = entity.get_font_metrics()

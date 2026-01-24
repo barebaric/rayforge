@@ -1,6 +1,6 @@
 from unittest.mock import MagicMock, Mock
 import pytest
-
+from rayforge.core.geo.font_config import FontConfig
 from rayforge.core.sketcher.tools import TextBoxTool
 from rayforge.core.sketcher.tools.base import SketcherKey
 from rayforge.core.sketcher.tools.text_box_tool import TextBoxState
@@ -91,7 +91,9 @@ def test_text_box_tool_on_press_outside_box_creates_new(
     mock_entity.width_id = 1
     mock_entity.height_id = 2
     mock_entity.content = "Test Text"
-    mock_entity.font_params = {"family": "sans-serif", "size": 10.0}
+    mock_entity.font_config = FontConfig(
+        font_family="sans-serif", font_size=10.0
+    )
 
     new_entity = TextBoxEntity(
         6, 0, 1, 2, content="", construction_line_ids=[]
@@ -222,7 +224,9 @@ def test_text_box_tool_handle_key_event_return(text_box_tool, mock_element):
 
     mock_entity = Mock()
     mock_entity.id = 5
-    mock_entity.font_params = {"family": "sans-serif", "size": 10.0}
+    mock_entity.font_config = FontConfig(
+        font_family="sans-serif", font_size=10.0
+    )
     mock_element.sketch.registry.get_entity = Mock(return_value=mock_entity)
 
     result = text_box_tool.handle_key_event(SketcherKey.RETURN)
@@ -282,7 +286,9 @@ def test_text_box_tool_start_editing(text_box_tool, mock_element):
     mock_entity = TextBoxEntity(
         5, 0, 1, 2, content="Existing text", construction_line_ids=[]
     )
-    mock_entity.font_params = {"family": "sans-serif", "size": 10.0}
+    mock_entity.font_config = FontConfig(
+        font_family="sans-serif", font_size=10.0
+    )
     mock_element.sketch.registry.get_entity = Mock(return_value=mock_entity)
 
     text_box_tool.start_editing(5)
@@ -373,7 +379,9 @@ def test_text_box_tool_is_click_inside_box(text_box_tool, mock_element):
     mock_entity = TextBoxEntity(
         5, 0, 1, 2, content="", construction_line_ids=[]
     )
-    mock_entity.font_params = {"family": "sans-serif", "size": 10.0}
+    mock_entity.font_config = FontConfig(
+        font_family="sans-serif", font_size=10.0
+    )
 
     mock_element.sketch.registry.get_entity = Mock(return_value=mock_entity)
 
@@ -412,21 +420,13 @@ def test_text_box_tool_draw_overlay_editing_state(text_box_tool, mock_element):
     mock_entity.origin_id = 0
     mock_entity.width_id = 1
     mock_entity.height_id = 2
-    mock_entity.font_params = {
-        "font_family": "sans-serif",
-        "font_size": 10.0,
-        "bold": False,
-        "italic": False,
-    }
-    mock_entity.get_font_metrics = Mock(return_value=(10.0, -2.0, 12.0))
-    mock_entity.get_font_params = Mock(
-        return_value={
-            "font_family": "sans-serif",
-            "font_size": 10.0,
-            "bold": False,
-            "italic": False,
-        }
+    mock_entity.font_config = FontConfig(
+        font_family="sans-serif",
+        font_size=10.0,
+        bold=False,
+        italic=False,
     )
+    mock_entity.get_font_metrics = Mock(return_value=(10.0, -2.0, 12.0))
 
     mock_element.sketch.registry.get_entity = Mock(return_value=mock_entity)
     mock_element.sketch.registry.get_point.side_effect = [

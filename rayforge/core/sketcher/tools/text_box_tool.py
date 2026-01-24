@@ -4,7 +4,6 @@ from enum import Enum, auto
 import cairo
 from blinker import Signal
 from ...geo import Geometry, primitives
-from ...geo.text import get_text_width
 from ..commands import TextBoxCommand
 from ..commands.live_text_edit import LiveTextEditCommand
 from ..entities import Line, Point, TextBoxEntity
@@ -278,7 +277,7 @@ class TextBoxTool(SketchTool):
                     self.element.sketch,
                     self.editing_entity_id,
                     self.text_buffer,
-                    entity.font_params,
+                    entity.font_config,
                 )
                 self.element.execute_command(cmd)
 
@@ -585,7 +584,7 @@ class TextBoxTool(SketchTool):
             natural_width = 10.0
         else:
             natural_geo = Geometry.from_text(
-                self.text_buffer, **entity.font_params
+                self.text_buffer, entity.font_config
             )
             natural_geo.flip_y()
             min_x, _, max_x, _ = natural_geo.rect()
@@ -644,9 +643,7 @@ class TextBoxTool(SketchTool):
         alpha = (click_vec[0] * v_vec[1] - click_vec[1] * v_vec[0]) * inv_det
 
         # 2. Get bounds of full text to determine coordinate space range
-        natural_geo = Geometry.from_text(
-            self.text_buffer, **entity.font_params
-        )
+        natural_geo = Geometry.from_text(self.text_buffer, entity.font_config)
         natural_geo.flip_y()
         min_x, _, max_x, _ = natural_geo.rect()
 
@@ -675,8 +672,8 @@ class TextBoxTool(SketchTool):
                 sub_max_x = min_x
             else:
                 # Measure width of substring including spaces
-                sub_max_x = get_text_width(
-                    self.text_buffer[:i], **entity.font_params
+                sub_max_x = entity.font_config.get_text_width(
+                    self.text_buffer[:i]
                 )
 
             dist = abs(sub_max_x - target_x_natural)
@@ -707,9 +704,7 @@ class TextBoxTool(SketchTool):
         p_width = self.element.sketch.registry.get_point(entity.width_id)
         p_height = self.element.sketch.registry.get_point(entity.height_id)
 
-        natural_geo = Geometry.from_text(
-            self.text_buffer, **entity.font_params
-        )
+        natural_geo = Geometry.from_text(self.text_buffer, entity.font_config)
         natural_geo.flip_y()
         logger.debug(f"Natural geometry: {natural_geo.rect()}")
 
@@ -719,7 +714,7 @@ class TextBoxTool(SketchTool):
         if not self.text_buffer:
             nat_min_x, nat_min_y = 0.0, 0.0
             nat_max_x = 10.0
-            nat_max_y = entity.font_params.get("font_size", 10.0)
+            nat_max_y = entity.font_config.font_size
 
         _, descent, font_height = entity.get_font_metrics()
 
@@ -761,13 +756,13 @@ class TextBoxTool(SketchTool):
             if self.cursor_pos == 0:
                 sub_max_x = nat_min_x
             else:
-                sub_max_x = get_text_width(
-                    self.text_buffer[: self.cursor_pos], **entity.font_params
+                sub_max_x = entity.font_config.get_text_width(
+                    self.text_buffer[: self.cursor_pos]
                 )
 
             cursor_height = nat_max_y - nat_min_y
             if cursor_height <= 0:
-                cursor_height = entity.font_params.get("font_size", 10.0)
+                cursor_height = entity.font_config.font_size
 
             c_center_y = (nat_min_y + nat_max_y) / 2
 
@@ -864,7 +859,7 @@ class TextBoxTool(SketchTool):
             """Get the x-coordinate of a cursor position."""
             if pos == 0:
                 return nat_min_x
-            return get_text_width(self.text_buffer[:pos], **entity.font_params)
+            return entity.font_config.get_text_width(self.text_buffer[:pos])
 
         start_x = get_char_x(start)
         end_x = get_char_x(end)
