@@ -11,9 +11,10 @@ from typing import (
     TYPE_CHECKING,
 )
 from ...geo.primitives import find_closest_point_on_line_segment
-from .base import Constraint
+from .base import Constraint, ConstraintStatus
 
 if TYPE_CHECKING:
+    import cairo
     from ..params import ParameterContext
     from ..registry import EntityRegistry
 
@@ -150,3 +151,76 @@ class DistanceConstraint(Constraint):
 
             return x_min <= sx <= x_max and y_min <= sy <= y_max
         return False
+
+    def draw(
+        self,
+        ctx: "cairo.Context",
+        registry: "EntityRegistry",
+        to_screen: Callable[[Tuple[float, float]], Tuple[float, float]],
+        is_selected: bool = False,
+        is_hovered: bool = False,
+        point_radius: float = 5.0,
+    ) -> None:
+        from ..entities import Line
+
+        try:
+            p1 = registry.get_point(self.p1)
+            p2 = registry.get_point(self.p2)
+        except IndexError:
+            return
+
+        s1 = to_screen((p1.x, p1.y))
+        s2 = to_screen((p2.x, p2.y))
+        mx, my = (s1[0] + s2[0]) / 2, (s1[1] + s2[1]) / 2
+
+        label = self._format_value()
+        ext = ctx.text_extents(label)
+
+        ctx.save()
+        # Set background color based on selection, hover, and status
+        if is_selected:
+            ctx.set_source_rgba(0.2, 0.6, 1.0, 0.4)  # Blue selection
+        elif is_hovered:
+            ctx.set_source_rgba(1.0, 0.95, 0.85, 0.9)  # Light yellow hover
+        elif self.status == ConstraintStatus.ERROR:
+            ctx.set_source_rgba(1.0, 0.8, 0.8, 0.9)  # Light red background
+        elif self.status == ConstraintStatus.EXPRESSION_BASED:
+            ctx.set_source_rgba(1.0, 0.9, 0.7, 0.9)  # Light orange background
+        else:  # VALID
+            ctx.set_source_rgba(1, 1, 1, 0.8)  # Default white background
+
+        # Draw label background
+        bg_x = mx - ext.width / 2 - 4
+        bg_y = my - ext.height / 2 - 4
+        ctx.rectangle(bg_x, bg_y, ext.width + 8, ext.height + 8)
+        ctx.fill()
+        ctx.new_path()
+
+        # Set text color based on status
+        if self.status == ConstraintStatus.ERROR:
+            ctx.set_source_rgb(0.8, 0.0, 0.0)  # Red text for error
+        else:
+            ctx.set_source_rgb(0, 0, 0.5)  # Dark blue otherwise
+
+        ctx.move_to(mx - ext.width / 2, my + ext.height / 2 - 2)
+        ctx.show_text(label)
+        ctx.new_path()
+
+        # Draw Dash Line - only if no solid line entity connects these points
+        has_geometry = False
+        entities = registry.entities or []
+        for entity in entities:
+            if isinstance(entity, Line):
+                if {entity.p1_idx, entity.p2_idx} == {self.p1, self.p2}:
+                    has_geometry = True
+                    break
+
+        if not has_geometry:
+            self._set_color(ctx, is_hovered)
+            ctx.set_line_width(1)
+            ctx.set_dash([4, 4])
+            ctx.move_to(s1[0], s1[1])
+            ctx.line_to(s2[0], s2[1])
+            ctx.stroke()
+
+        ctx.restore()

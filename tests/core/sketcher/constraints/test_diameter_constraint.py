@@ -150,7 +150,7 @@ def test_diameter_is_hit(setup_env):
 
     c = DiameterConstraint(circ_id, 200)
 
-    # Mock the canvas and element
+    # Mock canvas and element
     mock_canvas = MagicMock()
     mock_canvas.get_view_scale.return_value = (1.0, 1.0)
     mock_element = SimpleNamespace(canvas=mock_canvas)
@@ -173,3 +173,22 @@ def test_diameter_is_hit(setup_env):
     )
     # Miss
     assert c.is_hit(0, 0, reg, to_screen, mock_element, threshold) is False
+
+
+def test_diameter_draw(setup_env):
+    reg, params = setup_env
+    center = reg.add_point(0, 0)
+    radius_pt = reg.add_point(5, 0)
+    circ_id = reg.add_circle(center, radius_pt)
+
+    c = DiameterConstraint(circ_id, 10.0)
+
+    ctx = MagicMock()
+
+    def to_screen(pos):
+        return pos
+
+    c.draw(ctx, reg, to_screen)
+    c.draw(ctx, reg, to_screen, is_selected=True)
+    c.draw(ctx, reg, to_screen, is_hovered=True)
+    c.draw(ctx, reg, to_screen, point_radius=10.0)

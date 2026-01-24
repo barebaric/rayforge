@@ -1,7 +1,6 @@
-# constraints/symmetry.py
-
 from __future__ import annotations
 import math
+import cairo
 from typing import (
     Tuple,
     Dict,
@@ -185,3 +184,62 @@ class SymmetryConstraint(Constraint):
         if math.hypot(sx - rx, sy - ry) < threshold:
             return True
         return False
+
+    def draw(
+        self,
+        ctx: "cairo.Context",
+        registry: "EntityRegistry",
+        to_screen: Callable[[Tuple[float, float]], Tuple[float, float]],
+        is_selected: bool = False,
+        is_hovered: bool = False,
+        point_radius: float = 5.0,
+    ) -> None:
+        try:
+            p1 = registry.get_point(self.p1)
+            p2 = registry.get_point(self.p2)
+        except IndexError:
+            return
+
+        s1 = to_screen((p1.x, p1.y))
+        s2 = to_screen((p2.x, p2.y))
+
+        mx = (s1[0] + s2[0]) / 2.0
+        my = (s1[1] + s2[1]) / 2.0
+
+        angle = math.atan2(s2[1] - s1[1], s2[0] - s1[0])
+
+        offset = 12.0
+
+        ctx.save()
+        ctx.set_line_width(1.5)
+
+        ctx.new_sub_path()
+
+        lx = mx - offset * math.cos(angle)
+        ly = my - offset * math.sin(angle)
+
+        ctx.save()
+        ctx.translate(lx, ly)
+        ctx.rotate(angle)
+        ctx.move_to(-3, -4)
+        ctx.line_to(3, 0)
+        ctx.line_to(-3, 4)
+        ctx.restore()
+
+        rx = mx + offset * math.cos(angle)
+        ry = my + offset * math.sin(angle)
+
+        ctx.save()
+        ctx.translate(rx, ry)
+        ctx.rotate(angle)
+        ctx.move_to(3, -4)
+        ctx.line_to(-3, 0)
+        ctx.line_to(3, 4)
+        ctx.restore()
+
+        if is_selected:
+            self._draw_selection_underlay(ctx)
+
+        self._set_color(ctx, is_hovered)
+        ctx.stroke()
+        ctx.restore()

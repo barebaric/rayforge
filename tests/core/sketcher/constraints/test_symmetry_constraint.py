@@ -3,6 +3,7 @@ import numpy as np
 from scipy.optimize import check_grad
 from functools import partial
 from types import SimpleNamespace
+from unittest.mock import MagicMock
 from rayforge.core.sketcher.constraints import SymmetryConstraint
 from rayforge.core.sketcher.params import ParameterContext
 from rayforge.core.sketcher.registry import EntityRegistry
@@ -231,3 +232,20 @@ def test_symmetry_is_hit(setup_env):
     assert c.is_hit(12, 0, reg, to_screen, mock_element, threshold) is True
     # Miss
     assert c.is_hit(50, 50, reg, to_screen, mock_element, threshold) is False
+
+
+def test_symmetry_draw(setup_env):
+    reg, params = setup_env
+    p1 = reg.add_point(-50, 0)
+    p2 = reg.add_point(50, 0)
+    c = SymmetryConstraint(p1, p2)
+
+    ctx = MagicMock()
+
+    def to_screen(pos):
+        return pos
+
+    c.draw(ctx, reg, to_screen)
+    c.draw(ctx, reg, to_screen, is_selected=True)
+    c.draw(ctx, reg, to_screen, is_hovered=True)
+    c.draw(ctx, reg, to_screen, point_radius=10.0)

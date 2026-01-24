@@ -2,7 +2,7 @@ import pytest
 import numpy as np
 from scipy.optimize import check_grad
 from types import SimpleNamespace
-
+from unittest.mock import MagicMock
 from rayforge.core.sketcher.constraints import PointOnLineConstraint
 from rayforge.core.sketcher.params import ParameterContext
 from rayforge.core.sketcher.registry import EntityRegistry
@@ -249,3 +249,23 @@ def test_point_on_line_is_hit(setup_env):
     assert c.is_hit(10, 20, reg, to_screen, mock_element, threshold) is True
     # Miss the point
     assert c.is_hit(30, 20, reg, to_screen, mock_element, threshold) is False
+
+
+def test_point_on_line_draw(setup_env):
+    reg, params = setup_env
+    p1 = reg.add_point(0, 0)
+    p2 = reg.add_point(10, 0)
+    p3 = reg.add_point(5, 5)
+    line_id = reg.add_line(p1, p2)
+
+    c = PointOnLineConstraint(p3, line_id)
+
+    ctx = MagicMock()
+
+    def to_screen(pos):
+        return pos
+
+    c.draw(ctx, reg, to_screen)
+    c.draw(ctx, reg, to_screen, is_selected=True)
+    c.draw(ctx, reg, to_screen, is_hovered=True)
+    c.draw(ctx, reg, to_screen, point_radius=10.0)

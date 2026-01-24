@@ -1,4 +1,5 @@
 import pytest
+from unittest.mock import MagicMock
 import numpy as np
 from scipy.optimize import check_grad
 from rayforge.core.sketcher.constraints import AspectRatioConstraint
@@ -249,3 +250,23 @@ def test_aspect_ratio_depends_on_entities(setup_env):
 
     assert c.depends_on_entities({999}) is False
     assert c.depends_on_entities(set()) is False
+
+
+def test_aspect_ratio_draw(setup_env):
+    reg, params = setup_env
+    p1 = reg.add_point(0, 0)
+    p2 = reg.add_point(10, 0)
+    p3 = reg.add_point(0, 10)
+    p4 = reg.add_point(5, 10)
+
+    c = AspectRatioConstraint(p1, p2, p3, p4, 2.0)
+
+    ctx = MagicMock()
+
+    def to_screen(pos):
+        return pos
+
+    c.draw(ctx, reg, to_screen)
+    c.draw(ctx, reg, to_screen, is_selected=True)
+    c.draw(ctx, reg, to_screen, is_hovered=True)
+    c.draw(ctx, reg, to_screen, point_radius=10.0)

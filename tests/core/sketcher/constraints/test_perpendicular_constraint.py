@@ -3,6 +3,7 @@ import numpy as np
 from scipy.optimize import check_grad
 import math
 from types import SimpleNamespace
+from unittest.mock import MagicMock
 from rayforge.core.sketcher.constraints import PerpendicularConstraint
 from rayforge.core.sketcher.params import ParameterContext
 from rayforge.core.sketcher.registry import EntityRegistry
@@ -282,6 +283,7 @@ def test_perpendicular_is_hit(setup_env):
     l2p1 = reg.add_point(50, 0)
     l2p2 = reg.add_point(50, 100)
     l2 = reg.add_line(l2p1, l2p2)
+
     c_ll = PerpendicularConstraint(l1, l2)
 
     # Visuals are centered at intersection (50, 50)
@@ -311,3 +313,25 @@ def test_perpendicular_is_hit(setup_env):
         c_lc.is_hit(150, 50, reg, to_screen, mock_element, threshold) is True
     )
     assert c_lc.is_hit(0, 0, reg, to_screen, mock_element, threshold) is False
+
+
+def test_perpendicular_draw(setup_env):
+    reg, params = setup_env
+    p1 = reg.add_point(0, 0)
+    p2 = reg.add_point(10, 0)
+    p3 = reg.add_point(5, 5)
+    p4 = reg.add_point(5, 15)
+    l1 = reg.add_line(p1, p2)
+    l2 = reg.add_line(p3, p4)
+
+    c = PerpendicularConstraint(l1, l2)
+
+    ctx = MagicMock()
+
+    def to_screen(pos):
+        return pos
+
+    c.draw(ctx, reg, to_screen)
+    c.draw(ctx, reg, to_screen, is_selected=True)
+    c.draw(ctx, reg, to_screen, is_hovered=True)
+    c.draw(ctx, reg, to_screen, point_radius=10.0)
