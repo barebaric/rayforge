@@ -2,6 +2,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Dict, Any, Tuple, Optional
 from ....core.geo.geometry import Geometry
 from ..constraints import AspectRatioConstraint
+from ..entities.text_box import TextBoxEntity
 from .base import SketchChangeCommand
 
 if TYPE_CHECKING:
@@ -27,8 +28,6 @@ class ModifyTextPropertyCommand(SketchChangeCommand):
         self.aspect_ratio_constraint_idx: Optional[int] = None
 
     def _do_execute(self) -> None:
-        from ..entities.text_box import TextBoxEntity
-
         entity = self.sketch.registry.get_entity(self.text_entity_id)
         if not isinstance(entity, TextBoxEntity):
             return
@@ -61,40 +60,36 @@ class ModifyTextPropertyCommand(SketchChangeCommand):
         text_entity.content = self.new_content
         text_entity.font_params = self.new_font_params.copy()
 
-        # --- Resize box to fit new content ---
+        # Resize box to fit new content
+        ascent, descent, font_height = text_entity.get_font_metrics()
 
         if not text_entity.content:
             # Provide a minimal size for empty text to avoid collapse
             natural_width = 10.0
-            natural_height = text_entity.font_params.get("size", 10.0)
         else:
             natural_geo = Geometry.from_text(
-                text_entity.content,
-                font_family=text_entity.font_params.get(
-                    "family", "sans-serif"
-                ),
-                font_size=text_entity.font_params.get("size", 10.0),
-                is_bold=text_entity.font_params.get("bold", False),
-                is_italic=text_entity.font_params.get("italic", False),
+                text_entity.content, **text_entity.font_params
             )
             natural_geo.flip_y()
-            min_x, min_y, max_x, max_y = natural_geo.rect()
+            min_x, _, max_x, _ = natural_geo.rect()
             natural_width = max(max_x - min_x, 1.0)
-            natural_height = max(max_y - min_y, 1.0)
 
         p_origin = self.sketch.registry.get_point(text_entity.origin_id)
         p_width = self.sketch.registry.get_point(text_entity.width_id)
         p_height = self.sketch.registry.get_point(text_entity.height_id)
 
         # Update point positions as a starting guess for the solver
+        # Origin is at bottom-left corner of box
+        # Text baseline is offset by descent within the box
+        # Box extends from origin.y to origin.y + font_height
         p_width.x = p_origin.x + natural_width
         p_width.y = p_origin.y
         p_height.x = p_origin.x
-        p_height.y = p_origin.y + natural_height
+        p_height.y = p_origin.y + font_height
 
         # Update aspect ratio constraint with new text dimensions
         if self.aspect_ratio_constraint_idx is not None:
-            new_ratio = natural_width / natural_height
+            new_ratio = natural_width / font_height
             constr = self.sketch.constraints[self.aspect_ratio_constraint_idx]
             assert isinstance(constr, AspectRatioConstraint)
             constr.ratio = new_ratio

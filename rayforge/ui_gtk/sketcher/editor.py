@@ -148,7 +148,6 @@ class SketchEditor:
         current_tool = self.sketch_element.current_tool
         if (
             isinstance(current_tool, TextBoxTool)
-            and current_tool.state == TextBoxState.EDITING
             and current_tool.is_hovering
         ):
             return Gdk.Cursor.new_from_name("text")

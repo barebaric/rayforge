@@ -368,8 +368,8 @@ def test_from_text_wrapper(mock_text_to_geometry):
         "test",
         font_family="Arial",
         font_size=12,
-        is_bold=True,
-        is_italic=False,
+        bold=True,
+        italic=False,
     )
 
     # Assert the low-level function was called correctly
@@ -377,8 +377,8 @@ def test_from_text_wrapper(mock_text_to_geometry):
         "test",
         font_family="Arial",
         font_size=12,
-        is_bold=True,
-        is_italic=False,
+        bold=True,
+        italic=False,
     )
 
     # Assert the result has the correct data from the mock
@@ -389,7 +389,7 @@ def test_from_text_wrapper(mock_text_to_geometry):
 
 @patch("rayforge.core.geo.transform.map_geometry_to_frame")
 def test_map_to_frame_wrapper(mock_map_to_frame):
-    """Tests that the map_to_frame() instance method delegates correctly."""
+    """Tests that map_to_frame() instance method delegates correctly."""
     geo = Geometry.from_points([(0, 0), (1, 1)])
     mock_map_to_frame.return_value = "Success"  # Mock return value
 
@@ -403,7 +403,10 @@ def test_map_to_frame_wrapper(mock_map_to_frame):
     assert result == "Success"
 
     # Assert the low-level function was called with the correct arguments
-    mock_map_to_frame.assert_called_once_with(geo, origin, p_width, p_height)
+    mock_map_to_frame.assert_called_once_with(
+        geo, origin, p_width, p_height, anchor_y=None,
+        stable_src_height=None
+    )
 
 
 # --- Force Bezier Conversion Tests ---

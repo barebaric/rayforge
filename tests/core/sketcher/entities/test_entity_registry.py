@@ -199,7 +199,7 @@ def test_add_text_box(registry):
         p2,
         p3,
         content="Hello World",
-        font_params={"family": "sans-serif", "size": 10.0},
+        font_params={"font_family": "sans-serif", "font_size": 10.0},
     )
 
     tb = registry.get_entity(tb_id)
@@ -208,7 +208,7 @@ def test_add_text_box(registry):
     assert tb.width_id == p2
     assert tb.height_id == p3
     assert tb.content == "Hello World"
-    assert tb.font_params == {"family": "sans-serif", "size": 10.0}
+    assert tb.font_params == {"font_family": "sans-serif", "font_size": 10.0}
 
 
 def test_add_text_box_with_default_font_params(registry):
@@ -223,8 +223,8 @@ def test_add_text_box_with_default_font_params(registry):
     assert isinstance(tb, TextBoxEntity)
     assert tb.content == "Test"
     assert tb.font_params == {
-        "family": "sans-serif",
-        "size": 10.0,
+        "font_family": "sans-serif",
+        "font_size": 10.0,
         "bold": False,
         "italic": False,
     }

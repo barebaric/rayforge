@@ -19,8 +19,8 @@ def sketch_with_text_box():
         p_height,
         content="Original Text",
         font_params={
-            "family": "sans-serif",
-            "size": 10.0,
+            "font_family": "sans-serif",
+            "font_size": 10.0,
             "bold": False,
             "italic": False,
         },
@@ -37,8 +37,8 @@ def test_modify_text_property_command_initialization(
 
     new_content = "New Text"
     new_font_params = {
-        "family": "serif",
-        "size": 14.0,
+        "font_family": "serif",
+        "font_size": 14.0,
         "bold": True,
         "italic": False,
     }
@@ -61,8 +61,8 @@ def test_modify_text_property_command_execute(sketch_with_text_box):
 
     new_content = "New Text"
     new_font_params = {
-        "family": "serif",
-        "size": 14.0,
+        "font_family": "serif",
+        "font_size": 14.0,
         "bold": True,
         "italic": False,
     }
@@ -73,14 +73,14 @@ def test_modify_text_property_command_execute(sketch_with_text_box):
 
     tb = sketch.registry.get_entity(tb_id)
     assert tb.content == "Original Text"
-    assert tb.font_params["family"] == "sans-serif"
+    assert tb.font_params["font_family"] == "sans-serif"
 
     cmd.execute()
 
     assert tb.content == new_content
     assert tb.font_params == new_font_params
     assert cmd.old_content == "Original Text"
-    assert cmd.old_font_params["family"] == "sans-serif"
+    assert cmd.old_font_params["font_family"] == "sans-serif"
 
 
 def test_modify_text_property_command_undo(sketch_with_text_box):
@@ -89,8 +89,8 @@ def test_modify_text_property_command_undo(sketch_with_text_box):
 
     new_content = "New Text"
     new_font_params = {
-        "family": "serif",
-        "size": 14.0,
+        "font_family": "serif",
+        "font_size": 14.0,
         "bold": True,
         "italic": False,
     }
@@ -108,8 +108,8 @@ def test_modify_text_property_command_undo(sketch_with_text_box):
     cmd.undo()
 
     assert tb.content == "Original Text"
-    assert tb.font_params["family"] == "sans-serif"
-    assert tb.font_params["size"] == 10.0
+    assert tb.font_params["font_family"] == "sans-serif"
+    assert tb.font_params["font_size"] == 10.0
 
 
 def test_modify_text_property_command_execute_undo_cycle(sketch_with_text_box):
@@ -118,8 +118,8 @@ def test_modify_text_property_command_execute_undo_cycle(sketch_with_text_box):
 
     new_content = "New Text"
     new_font_params = {
-        "family": "serif",
-        "size": 14.0,
+        "font_family": "serif",
+        "font_size": 14.0,
         "bold": True,
         "italic": False,
     }
@@ -137,7 +137,7 @@ def test_modify_text_property_command_execute_undo_cycle(sketch_with_text_box):
         cmd.undo()
         tb = sketch.registry.get_entity(tb_id)
         assert tb.content == "Original Text"
-        assert tb.font_params["family"] == "sans-serif"
+        assert tb.font_params["font_family"] == "sans-serif"
 
 
 def test_modify_text_property_command_with_missing_entity(
@@ -164,8 +164,8 @@ def test_modify_text_property_command_full_font_update(
     sketch, tb_id = sketch_with_text_box
 
     new_font_params = {
-        "family": "serif",
-        "size": 14.0,
+        "font_family": "serif",
+        "font_size": 14.0,
         "bold": True,
         "italic": True,
     }
@@ -175,7 +175,7 @@ def test_modify_text_property_command_full_font_update(
     cmd.execute()
 
     tb = sketch.registry.get_entity(tb_id)
-    assert tb.font_params["family"] == "serif"
-    assert tb.font_params["size"] == 14.0
+    assert tb.font_params["font_family"] == "serif"
+    assert tb.font_params["font_size"] == 14.0
     assert tb.font_params["bold"] is True
     assert tb.font_params["italic"] is True
