@@ -129,7 +129,9 @@ class TextBoxTool(SketchTool):
         if self.state == TextBoxState.IDLE:
             return self._handle_idle_press(mx, my, world_x, world_y)
         elif self.state == TextBoxState.EDITING:
-            return self._handle_editing_press(mx, my, world_x, world_y)
+            return self._handle_editing_press(
+                mx, my, world_x, world_y, n_press
+            )
         return False
 
     def _handle_idle_press(
@@ -157,10 +159,25 @@ class TextBoxTool(SketchTool):
         return True
 
     def _handle_editing_press(
-        self, mx: float, my: float, world_x: float, world_y: float
+        self,
+        mx: float,
+        my: float,
+        world_x: float,
+        world_y: float,
+        n_press: int = 1,
     ) -> bool:
         if self._is_point_inside_box(mx, my):
             self._update_cursor_from_click(mx, my)
+            if n_press == 2:
+                self._select_word_at_cursor()
+                self.is_drag_selecting = False
+                self.element.mark_dirty()
+                return True
+            elif n_press == 3:
+                self._select_line_at_cursor()
+                self.is_drag_selecting = False
+                self.element.mark_dirty()
+                return True
             self.is_drag_selecting = True
             self.drag_start_pos = self.cursor_pos
             self.selection_start = self.cursor_pos
@@ -179,6 +196,16 @@ class TextBoxTool(SketchTool):
             self.on_deactivate()
             self.start_editing(clicked_entity_id)
             self._update_cursor_from_click(mx, my)
+            if n_press == 2:
+                self._select_word_at_cursor()
+                self.is_drag_selecting = False
+                self.element.mark_dirty()
+                return True
+            elif n_press == 3:
+                self._select_line_at_cursor()
+                self.is_drag_selecting = False
+                self.element.mark_dirty()
+                return True
             # Initialize drag state and return False to allow drag to start
             self.is_drag_selecting = True
             self.drag_start_pos = self.cursor_pos
@@ -263,6 +290,32 @@ class TextBoxTool(SketchTool):
         ]
 
         return primitives.is_point_in_polygon((mx, my), polygon)
+
+    def _select_word_at_cursor(self):
+        """Selects the word at the current cursor position."""
+        if not self.text_buffer:
+            return
+
+        pos = self.cursor_pos
+        text = self.text_buffer
+
+        # Find word start (find first non-alphanumeric char before cursor)
+        start = pos
+        while start > 0 and not text[start - 1].isspace():
+            start -= 1
+
+        # Find word end (find first space or end after cursor)
+        end = pos
+        while end < len(text) and not text[end].isspace():
+            end += 1
+
+        self.set_selection(start, end)
+        self.cursor_pos = end
+
+    def _select_line_at_cursor(self):
+        """Selects the entire line at the current cursor position."""
+        self.set_selection(0, len(self.text_buffer))
+        self.cursor_pos = len(self.text_buffer)
 
     def _finalize_edit(self):
         from ..commands.text_property import ModifyTextPropertyCommand
