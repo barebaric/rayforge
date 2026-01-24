@@ -2,6 +2,7 @@ import logging
 from typing import Optional, TYPE_CHECKING
 from gi.repository import Adw, Gtk
 from ...core.geo.font_config import FontConfig
+from ...core.geo.text import get_available_font_families
 from ...core.sketcher.commands.text_property import ModifyTextPropertyCommand
 from ...core.sketcher.entities.text_box import TextBoxEntity
 from ..shared.adwfix import get_spinrow_float
@@ -10,25 +11,6 @@ if TYPE_CHECKING:
     from .editor import SketchEditor
 
 logger = logging.getLogger(__name__)
-
-COMMON_FONT_FAMILIES = [
-    "sans-serif",
-    "serif",
-    "monospace",
-    "Arial",
-    "Helvetica",
-    "Times New Roman",
-    "Courier New",
-    "Verdana",
-    "Georgia",
-    "Palatino",
-    "Garamond",
-    "Bookman",
-    "Comic Sans MS",
-    "Trebuchet MS",
-    "Arial Black",
-    "Impact",
-]
 
 
 class FontPropertiesWidget(Adw.PreferencesGroup):
@@ -51,7 +33,7 @@ class FontPropertiesWidget(Adw.PreferencesGroup):
     def _build_ui(self):
         """Builds the UI for font properties."""
         font_family_model = Gtk.StringList()
-        for family in COMMON_FONT_FAMILIES:
+        for family in get_available_font_families():
             font_family_model.append(family)
 
         self.font_family_row = Adw.ComboRow()
