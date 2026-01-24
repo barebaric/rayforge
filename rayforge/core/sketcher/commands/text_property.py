@@ -1,9 +1,11 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING, Dict, Any, Tuple, Optional, List
+import math
 from ....core.geo.geometry import Geometry
 from ....core.geo.font_config import FontConfig
-from ..constraints import AspectRatioConstraint
+from ..constraints import AspectRatioConstraint, EqualLengthConstraint
 from ..entities.point import Point
+from ..entities.line import Line
 from ..entities.text_box import TextBoxEntity
 from .base import SketchChangeCommand
 
@@ -35,6 +37,49 @@ class ModifyTextPropertyCommand(SketchChangeCommand):
         self._removed_points: List[Point] = []
         self._removed_entities: List[Any] = []
         self._removed_constraints: List[Constraint] = []
+        self._modified_equal_length_constraints: List[
+            Tuple[int, List[int]]
+        ] = []
+
+    def _calculate_natural_metrics(
+        self, content: str, font_config: FontConfig
+    ) -> Tuple[float, float]:
+        """Calculates the natural width and height from font properties."""
+        _, _, font_height = font_config.get_font_metrics()
+
+        if not content:
+            natural_width = 10.0
+        else:
+            natural_geo = Geometry.from_text(content, font_config)
+            natural_geo.flip_y()
+            min_x, _, max_x, _ = natural_geo.rect()
+            natural_width = max(max_x - min_x, 1.0)
+
+        return natural_width, font_height
+
+    def _shed_size_constraints(self, text_entity: TextBoxEntity) -> None:
+        """Removes constraints that lock the text box dimensions."""
+        for eid in text_entity.construction_line_ids:
+            entity = self.sketch.registry.get_entity(eid)
+            if not isinstance(entity, Line):
+                continue
+
+            for idx, constr in enumerate(self.sketch.constraints):
+                if constr in self._removed_constraints:
+                    continue
+
+                if isinstance(constr, EqualLengthConstraint):
+                    if eid in constr.entity_ids:
+                        self._modified_equal_length_constraints.append(
+                            (idx, list(constr.entity_ids))
+                        )
+                        constr.entity_ids.remove(eid)
+                elif constr.targets_segment(entity.p1_idx, entity.p2_idx, eid):
+                    self._removed_constraints.append(constr)
+
+        for c in self._removed_constraints:
+            if c in self.sketch.constraints:
+                self.sketch.constraints.remove(c)
 
     def _do_execute(self) -> None:
         entity = self.sketch.registry.get_entity(self.text_entity_id)
@@ -74,36 +119,42 @@ class ModifyTextPropertyCommand(SketchChangeCommand):
             self._remove_text_entity(text_entity)
             return
 
-        # Resize box to fit new content
-        ascent, descent, font_height = text_entity.get_font_metrics()
+        # --- Iteration 2: "Content as Truth" Reset ---
+        natural_width, natural_height = self._calculate_natural_metrics(
+            self.new_content, self.new_font_config
+        )
 
-        if not text_entity.content:
-            # Provide a minimal size for empty text to avoid collapse
-            natural_width = 10.0
-        else:
-            natural_geo = Geometry.from_text(
-                text_entity.content, text_entity.font_config
-            )
-            natural_geo.flip_y()
-            min_x, _, max_x, _ = natural_geo.rect()
-            natural_width = max(max_x - min_x, 1.0)
+        # --- Iteration 3: Shed size constraints ---
+        self._shed_size_constraints(text_entity)
 
         p_origin = self.sketch.registry.get_point(text_entity.origin_id)
         p_width = self.sketch.registry.get_point(text_entity.width_id)
         p_height = self.sketch.registry.get_point(text_entity.height_id)
 
-        # Update point positions as a starting guess for the solver
-        # Origin is at bottom-left corner of box
-        # Text baseline is offset by descent within the box
-        # Box extends from origin.y to origin.y + font_height
-        p_width.x = p_origin.x + natural_width
-        p_width.y = p_origin.y
-        p_height.x = p_origin.x
-        p_height.y = p_origin.y + font_height
+        # 1. Preserve orientation from current geometry
+        dx = p_width.x - p_origin.x
+        dy = p_width.y - p_origin.y
+        current_len = math.hypot(dx, dy)
+        ux, uy = (1.0, 0.0)
+        if current_len > 1e-9:
+            ux, uy = dx / current_len, dy / current_len
+
+        # Perpendicular vector for height
+        vx, vy = -uy, ux
+
+        # 2. Force-update point positions to their natural state
+        p_width.x = p_origin.x + natural_width * ux
+        p_width.y = p_origin.y + natural_width * uy
+        p_height.x = p_origin.x + natural_height * vx
+        p_height.y = p_origin.y + natural_height * vy
 
         # Update aspect ratio constraint with new text dimensions
-        if self.aspect_ratio_constraint_idx is not None:
-            new_ratio = natural_width / font_height
+        # The constraint must exist for a text box.
+        if (
+            self.aspect_ratio_constraint_idx is not None
+            and natural_height > 1e-9
+        ):
+            new_ratio = natural_width / natural_height
             constr = self.sketch.constraints[self.aspect_ratio_constraint_idx]
             assert isinstance(constr, AspectRatioConstraint)
             constr.ratio = new_ratio
@@ -188,6 +239,19 @@ class ModifyTextPropertyCommand(SketchChangeCommand):
             constr = self.sketch.constraints[self.aspect_ratio_constraint_idx]
             assert isinstance(constr, AspectRatioConstraint)
             constr.ratio = self.old_aspect_ratio
+
+        # Restore removed constraints
+        for c in self._removed_constraints:
+            self.sketch.constraints.append(c)
+
+        # Restore modified EqualLength constraints
+        for idx, old_entity_ids in reversed(
+            self._modified_equal_length_constraints
+        ):
+            if idx < len(self.sketch.constraints):
+                constr = self.sketch.constraints[idx]
+                if isinstance(constr, EqualLengthConstraint):
+                    constr.entity_ids = old_entity_ids
 
     def _restore_text_entity(self) -> None:
         """Restores the text entity and its associated points/constraints."""
