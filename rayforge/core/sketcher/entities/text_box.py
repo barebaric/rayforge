@@ -34,6 +34,14 @@ class TextBoxEntity(Entity):
     def get_point_ids(self) -> List[int]:
         return [self.origin_id, self.width_id, self.height_id]
 
+    def get_all_frame_point_ids(self, registry: "EntityRegistry") -> List[int]:
+        """Returns all 4 corner points of the text box frame."""
+        ids = [self.origin_id, self.width_id, self.height_id]
+        p4_id = self.get_fourth_corner_id(registry)
+        if p4_id is not None:
+            ids.append(p4_id)
+        return ids
+
     def get_font_metrics(self) -> Tuple[float, float, float]:
         return self.font_config.get_font_metrics()
 

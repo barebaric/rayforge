@@ -352,6 +352,16 @@ class SketchRenderer:
             select_tool.hovered_constraint_idx if select_tool else None
         )
 
+        # Collect all points associated with text boxes to hide their overlays
+        text_box_point_ids = set()
+        for entity in self.element.sketch.registry.entities:
+            if isinstance(entity, TextBoxEntity):
+                text_box_point_ids.update(
+                    entity.get_all_frame_point_ids(
+                        self.element.sketch.registry
+                    )
+                )
+
         # --- Stage 1: Collect Grouped Constraints (like Equality) ---
         equality_groups = {}  # Map entity_id -> group_id
         constraints = self.element.sketch.constraints or []
@@ -396,6 +406,12 @@ class SketchRenderer:
                     ctx, constr, is_sel, is_hovered, to_screen
                 )
             elif isinstance(constr, CoincidentConstraint):
+                # Hide constraint if its points are part of a text box
+                if (
+                    constr.p1 in text_box_point_ids
+                    or constr.p2 in text_box_point_ids
+                ):
+                    continue
                 origin_id = getattr(self.element.sketch, "origin_id", -1)
                 pid_to_draw = constr.p1
                 if constr.p1 == origin_id and origin_id != -1:
@@ -404,6 +420,9 @@ class SketchRenderer:
                     ctx, constr, pid_to_draw, to_screen, is_sel, is_hovered
                 )
             elif isinstance(constr, PointOnLineConstraint):
+                # Hide constraint if its point is part of a text box
+                if constr.point_id in text_box_point_ids:
+                    continue
                 self._draw_point_constraint(
                     ctx,
                     constr,
@@ -435,7 +454,7 @@ class SketchRenderer:
                 )
 
         # Draw implicit junction constraints
-        self._draw_junctions(ctx, to_screen)
+        self._draw_junctions(ctx, to_screen, text_box_point_ids)
 
     def _draw_equality_symbol(
         self, ctx, entity, constraint_idx, is_selected, is_hovered, to_screen
@@ -479,7 +498,7 @@ class SketchRenderer:
         ctx.restore()
         ctx.new_path()
 
-    def _draw_junctions(self, ctx, to_screen):
+    def _draw_junctions(self, ctx, to_screen, text_box_point_ids):
         registry = self.element.sketch.registry
         select_tool = self.element.tools.get("select")
         hovered_junction_pid = (
@@ -501,6 +520,10 @@ class SketchRenderer:
 
         for pid, count in point_counts.items():
             if count > 1:
+                # Hide junction visuals for text box points
+                if pid in text_box_point_ids:
+                    continue
+
                 is_sel = pid == self.element.selection.junction_pid
                 is_hovered = pid == hovered_junction_pid
                 p = self._safe_get_point(pid)
@@ -909,9 +932,10 @@ class SketchRenderer:
                 entity_points.add(ent.center_idx)
                 entity_points.add(ent.radius_pt_idx)
             elif isinstance(ent, TextBoxEntity):
-                entity_points.add(ent.origin_id)
-                entity_points.add(ent.width_id)
-                entity_points.add(ent.height_id)
+                # Highlight the points if the text box is selected
+                entity_points.update(
+                    ent.get_all_frame_point_ids(self.element.sketch.registry)
+                )
 
         for p in points:
             sx, sy = to_screen.transform_point((p.x, p.y))
