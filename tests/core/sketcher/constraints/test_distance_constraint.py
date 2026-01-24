@@ -53,6 +53,26 @@ def test_distance_constrains_radius_method(setup_env):
     assert c.constrains_radius(reg, p1) is False
 
 
+def test_distance_targets_segment(setup_env):
+    reg, params = setup_env
+    p1 = reg.add_point(0, 0)
+    p2 = reg.add_point(10, 0)
+    p3 = reg.add_point(5, 5)
+
+    c = DistanceConstraint(p1, p2, 10.0)
+
+    # Should match exact pair (order independent)
+    assert c.targets_segment(p1, p2, None) is True
+    assert c.targets_segment(p2, p1, None) is True
+
+    # Should not match subset or disjoint
+    assert c.targets_segment(p1, p3, None) is False
+    assert c.targets_segment(p3, p2, None) is False
+
+    # Entity ID is ignored by DistanceConstraint logic (it only tracks points)
+    assert c.targets_segment(p1, p2, 999) is True
+
+
 def test_distance_constraint_with_expression(setup_env):
     reg, params = setup_env
     # Mimic context values

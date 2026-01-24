@@ -61,6 +61,23 @@ def test_diameter_constrains_radius_method(setup_env):
     assert c.constrains_radius(reg, 999) is False
 
 
+def test_diameter_targets_segment(setup_env):
+    reg, params = setup_env
+    center = reg.add_point(0, 0)
+    radius_pt = reg.add_point(5, 0)
+    circ_id = reg.add_circle(center, radius_pt)
+    other_circ_id = reg.add_circle(center, radius_pt)
+
+    c = DiameterConstraint(circ_id, 10.0)
+
+    # Should match based on entity ID (points ignored for this check)
+    assert c.targets_segment(0, 0, circ_id) is True
+
+    # Should not match other entities or None
+    assert c.targets_segment(0, 0, other_circ_id) is False
+    assert c.targets_segment(0, 0, None) is False
+
+
 def test_diameter_constraint_serialization_round_trip(setup_env):
     reg, params = setup_env
     center = reg.add_point(0, 0)

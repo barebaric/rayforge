@@ -120,6 +120,23 @@ def test_perpendicular_constraint_invalid_type(setup_env):
     assert c.error(reg, params) == 0.0
 
 
+def test_perpendicular_targets_segment(setup_env):
+    reg, params = setup_env
+    p1 = reg.add_point(0, 0)
+    p2 = reg.add_point(10, 0)
+    l1 = reg.add_line(p1, p2)
+
+    p3 = reg.add_point(5, 5)
+    p4 = reg.add_point(5, 15)
+    l2 = reg.add_line(p3, p4)
+
+    c = PerpendicularConstraint(l1, l2)
+
+    # Default implementation returns False
+    assert c.targets_segment(p1, p2, l1) is False
+    assert c.targets_segment(0, 0, l1) is False
+
+
 def test_perpendicular_constraint_gradient(setup_env):
     reg, params = setup_env
     p0 = reg.add_point(0, 0)

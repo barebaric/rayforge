@@ -45,6 +45,11 @@ class DistanceConstraint(Constraint):
             self.expression = None
             self.value = float(value)
 
+    def targets_segment(
+        self, p1: int, p2: int, entity_id: Optional[int]
+    ) -> bool:
+        return {self.p1, self.p2} == {p1, p2}
+
     def to_dict(self) -> Dict[str, Any]:
         data = {
             "type": "DistanceConstraint",

@@ -3,6 +3,7 @@
 from __future__ import annotations
 import math
 from typing import (
+    Optional,
     Tuple,
     Dict,
     Any,
@@ -27,6 +28,12 @@ class EqualDistanceConstraint(Constraint):
         self.p2 = p2
         self.p3 = p3
         self.p4 = p4
+
+    def targets_segment(
+        self, p1: int, p2: int, entity_id: Optional[int]
+    ) -> bool:
+        target = {p1, p2}
+        return target == {self.p1, self.p2} or target == {self.p3, self.p4}
 
     def to_dict(self) -> Dict[str, Any]:
         return {

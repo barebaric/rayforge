@@ -39,6 +39,15 @@ class Constraint:
     def __init__(self, user_visible: bool = True):
         self.user_visible = user_visible
 
+    def targets_segment(
+        self, p1: int, p2: int, entity_id: Optional[int]
+    ) -> bool:
+        """
+        Returns True if this constraint restricts the length/distance of the
+        segment defined by points (p1, p2) or the given entity_id.
+        """
+        return False
+
     def error(
         self, reg: "EntityRegistry", params: "ParameterContext"
     ) -> Union[float, Tuple[float, ...], List[float]]:
