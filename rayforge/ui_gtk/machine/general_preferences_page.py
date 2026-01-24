@@ -311,7 +311,8 @@ class GeneralPreferencesPage(Adw.PreferencesPage):
         acceleration_row = Adw.SpinRow(
             title=_("Acceleration"),
             subtitle=_(
-                "Machine acceleration. Used only for time estimations."
+                "Used for time estimations and calculating the "
+                "default overscan distance"
             ),
             adjustment=acceleration_adjustment,
         )
