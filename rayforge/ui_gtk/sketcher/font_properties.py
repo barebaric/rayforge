@@ -1,11 +1,11 @@
 import logging
 from typing import Optional, TYPE_CHECKING
-from gi.repository import Adw, Gtk
+from gi.repository import Adw, Gtk, Pango
 from ...core.geo.font_config import FontConfig
-from ...core.geo.text import get_available_font_families
 from ...core.sketcher.commands.text_property import ModifyTextPropertyCommand
 from ...core.sketcher.entities.text_box import TextBoxEntity
 from ..shared.adwfix import get_spinrow_float
+from ..icons import get_icon
 
 if TYPE_CHECKING:
     from .editor import SketchEditor
@@ -24,6 +24,7 @@ class FontPropertiesWidget(Adw.PreferencesGroup):
         self.editor = editor
         self._text_entity_id: Optional[int] = None
         self._in_update = False
+        self._current_font_family = "sans-serif"
 
         self.set_title(_("Font Properties"))
         self.set_visible(False)
@@ -32,16 +33,14 @@ class FontPropertiesWidget(Adw.PreferencesGroup):
 
     def _build_ui(self):
         """Builds the UI for font properties."""
-        font_family_model = Gtk.StringList()
-        for family in get_available_font_families():
-            font_family_model.append(family)
-
-        self.font_family_row = Adw.ComboRow()
+        self.font_family_row = Adw.ActionRow()
         self.font_family_row.set_title(_("Font Family"))
-        self.font_family_row.set_model(font_family_model)
+        self.font_family_row.set_subtitle(self._current_font_family)
+        self.font_family_row.set_activatable(True)
         self.font_family_row.connect(
-            "notify::selected-item", self._on_font_family_changed
+            "activated", self._on_font_family_row_activated
         )
+        self.font_family_row.add_suffix(get_icon("go-next-symbolic"))
         self.add(self.font_family_row)
 
         adj = Gtk.Adjustment(
@@ -109,42 +108,25 @@ class FontPropertiesWidget(Adw.PreferencesGroup):
             self.font_size_row.set_value(font_config.font_size)
             self.bold_switch.set_active(font_config.bold)
             self.italic_switch.set_active(font_config.italic)
-
-            model = self.font_family_row.get_model()
-            if isinstance(model, Gtk.StringList):
-                family = font_config.font_family
-                for i in range(model.get_n_items()):
-                    if model.get_string(i) == family:
-                        self.font_family_row.set_selected(i)
-                        break
-                else:
-                    self.font_family_row.set_selected(0)
+            self._current_font_family = font_config.font_family
+            self.font_family_row.set_subtitle(self._current_font_family)
         finally:
             self._in_update = False
 
     def _get_font_config_from_ui(self) -> FontConfig:
         """Creates a FontConfig from the current UI values."""
-        model = self.font_family_row.get_model()
-        font_family = "sans-serif"
-        if isinstance(model, Gtk.StringList):
-            selected = self.font_family_row.get_selected()
-            if 0 <= selected < model.get_n_items():
-                family = model.get_string(selected)
-                if family is not None:
-                    font_family = family
-
         return FontConfig(
-            font_family=font_family,
+            font_family=self._current_font_family,
             font_size=get_spinrow_float(self.font_size_row),
             bold=self.bold_switch.get_active(),
             italic=self.italic_switch.get_active(),
         )
 
-    def _on_font_family_changed(self, row, *args):
-        """Handles font family selection change."""
+    def _on_font_family_row_activated(self, row, *args):
+        """Handles font family row activation to open font chooser."""
         if self._in_update or self._text_entity_id is None:
             return
-        self._apply_font_config()
+        self._open_font_chooser_dialog()
 
     def _on_font_size_changed(self, row, *args):
         """Handles font size change."""
@@ -163,6 +145,74 @@ class FontPropertiesWidget(Adw.PreferencesGroup):
         if self._in_update or self._text_entity_id is None:
             return
         self._apply_font_config()
+
+    def _open_font_chooser_dialog(self):
+        """Opens a Gtk font chooser dialog for font selection."""
+        dialog = Gtk.FontChooserDialog(
+            title=_("Select Font"),
+            transient_for=self.editor.parent_window
+        )
+        font_desc = self._get_font_description_from_ui()
+        dialog.set_font_desc(font_desc)
+
+        def on_response(dialog, response):
+            logger.debug(f"Font chooser dialog response: {response}")
+            if response == Gtk.ResponseType.OK:
+                font_desc = dialog.get_font_desc()
+                logger.debug(f"Selected font description: {font_desc}")
+                if font_desc is not None:
+                    self._update_ui_from_font_description(font_desc)
+                    self._apply_font_config()
+            dialog.destroy()
+
+        dialog.connect("response", on_response)
+        dialog.present()
+
+    def _get_font_description_from_ui(self) -> Pango.FontDescription:
+        """Creates a Pango.FontDescription from current UI values."""
+        font_desc = Pango.FontDescription()
+        font_desc.set_family(self._current_font_family)
+        font_size_pt = get_spinrow_float(self.font_size_row)
+        font_desc.set_size(int(font_size_pt * Pango.SCALE))
+        style = (
+            Pango.Style.ITALIC
+            if self.italic_switch.get_active()
+            else Pango.Style.NORMAL
+        )
+        font_desc.set_style(style)
+        weight = (
+            Pango.Weight.BOLD
+            if self.bold_switch.get_active()
+            else Pango.Weight.NORMAL
+        )
+        font_desc.set_weight(weight)
+        return font_desc
+
+    def _update_ui_from_font_description(
+        self, font_desc: Pango.FontDescription
+    ):
+        """Updates UI widgets from a Pango.FontDescription."""
+        self._in_update = True
+        try:
+            family = font_desc.get_family()
+            if family:
+                self._current_font_family = family
+                self.font_family_row.set_subtitle(self._current_font_family)
+
+            size = font_desc.get_size()
+            if size > 0:
+                font_size_pt = size / Pango.SCALE
+                self.font_size_row.set_value(font_size_pt)
+
+            style = font_desc.get_style()
+            is_italic = style == Pango.Style.ITALIC
+            self.italic_switch.set_active(is_italic)
+
+            weight = font_desc.get_weight()
+            is_bold = weight >= Pango.Weight.BOLD
+            self.bold_switch.set_active(is_bold)
+        finally:
+            self._in_update = False
 
     def _apply_font_config(self):
         """Applies the current font configuration to the text entity."""
