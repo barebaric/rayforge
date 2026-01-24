@@ -106,6 +106,20 @@ def test_aspect_ratio_constrains_radius_method(setup_env):
     assert c.constrains_radius(reg, p1) is False
 
 
+def test_aspect_ratio_targets_segment(setup_env):
+    reg, params = setup_env
+    p1 = reg.add_point(0, 0)
+    p2 = reg.add_point(10, 0)
+    p3 = reg.add_point(0, 10)
+    p4 = reg.add_point(5, 10)
+
+    c = AspectRatioConstraint(p1, p2, p3, p4, 2.0)
+
+    # Base implementation returns False
+    assert c.targets_segment(p1, p2, None) is False
+    assert c.targets_segment(0, 0, 999) is False
+
+
 def test_aspect_ratio_constraint_gradient(setup_env):
     reg, params = setup_env
     p1_id = reg.add_point(1, 2)

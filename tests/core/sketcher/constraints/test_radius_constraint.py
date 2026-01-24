@@ -78,6 +78,24 @@ def test_radius_constrains_radius_method(setup_env):
     assert c.constrains_radius(reg, 999) is False
 
 
+def test_radius_targets_segment(setup_env):
+    reg, params = setup_env
+    start = reg.add_point(10, 0)
+    end = reg.add_point(0, 10)
+    center = reg.add_point(0, 0)
+    arc_id = reg.add_arc(start, end, center)
+    other_id = reg.add_arc(start, end, center)
+
+    c = RadiusConstraint(arc_id, 10.0)
+
+    # Should match based on entity ID
+    assert c.targets_segment(0, 0, arc_id) is True
+
+    # Should not match others
+    assert c.targets_segment(0, 0, other_id) is False
+    assert c.targets_segment(0, 0, None) is False
+
+
 def test_radius_constraint_invalid_entity(setup_env):
     reg, params = setup_env
     # Add a line, try to constrain radius (should fail gracefully/return 0)
