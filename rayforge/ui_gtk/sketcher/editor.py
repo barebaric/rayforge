@@ -437,13 +437,18 @@ class SketchEditor:
                 Gdk.KEY_z: SketcherKey.UNDO,
                 Gdk.KEY_y: SketcherKey.REDO,
                 Gdk.KEY_c: SketcherKey.COPY,
+                Gdk.KEY_x: SketcherKey.CUT,
                 Gdk.KEY_v: SketcherKey.PASTE,
-                Gdk.KEY_a: SketcherKey.SELECT_ALL,
             }
+            if is_ctrl:
+                key_map[Gdk.KEY_a] = SketcherKey.SELECT_ALL
             if keyval in key_map:
                 return tool.handle_key_event(
                     key_map[keyval], shift=is_shift, ctrl=is_ctrl
                 )
+
+            if is_ctrl:
+                return False
 
             key_unicode = Gdk.keyval_to_unicode(keyval)
             if key_unicode != 0:
