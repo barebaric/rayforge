@@ -911,7 +911,7 @@ class MainWindow(Adw.ApplicationWindow):
 
     def add_to_recent_manager(self, file_path: Path):
         """Adds a project file path to the Gtk.RecentManager with metadata."""
-        uri = file_path.as_uri()
+        uri = file_path.resolve().as_uri()
         app = self.get_application()
         if not app:
             logger.warning(
