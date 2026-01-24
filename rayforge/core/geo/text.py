@@ -1,7 +1,78 @@
+# flake8: noqa: E402
 import cairo
+import logging
+import gi
+
+gi.require_version("PangoCairo", "1.0")
+
+from gi.repository import PangoCairo
 from .geometry import Geometry
 from .font_config import FontConfig
-from typing import Optional
+from typing import Optional, List
+
+logger = logging.getLogger(__name__)
+
+
+def get_available_font_families() -> List[str]:
+    """
+    Get a list of available font families from the system.
+
+    This function uses Pango to discover available fonts in a
+    platform-independent way. It returns a sorted list of font family
+    names including generic font families (sans-serif, serif, monospace)
+    and all available system fonts.
+
+    Returns:
+        A sorted list of font family names available on the system.
+    """
+    font_map = PangoCairo.font_map_get_default()
+    families = []
+
+    try:
+        font_families = font_map.list_families()
+        for family in font_families:
+            name = family.get_name()
+            if name and name not in families:
+                families.append(name)
+    except Exception as e:
+        logger.warning(f"Error getting font families: {e}")
+        return _get_fallback_fonts()
+
+    families.sort(key=str.lower)
+
+    generic_fonts = ["sans-serif", "serif", "monospace"]
+    for generic in generic_fonts:
+        if generic not in families:
+            families.insert(0, generic)
+
+    return families
+
+
+def _get_fallback_fonts() -> List[str]:
+    """
+    Get a fallback list of fonts when system font discovery fails.
+
+    Returns:
+        A list of common font family names as fallback.
+    """
+    return [
+        "sans-serif",
+        "serif",
+        "monospace",
+        "Arial",
+        "Helvetica",
+        "Times New Roman",
+        "Courier New",
+        "Verdana",
+        "Georgia",
+        "Palatino",
+        "Garamond",
+        "Bookman",
+        "Comic Sans MS",
+        "Trebuchet MS",
+        "Arial Black",
+        "Impact",
+    ]
 
 
 def text_to_geometry(
