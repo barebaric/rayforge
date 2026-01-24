@@ -131,3 +131,45 @@ def get_font_metrics(
     ascent, descent, height, _, _ = ctx.font_extents()
 
     return ascent, descent, height
+
+
+def get_text_width(
+    text: str,
+    font_family: str = "sans-serif",
+    font_size: float = 10.0,
+    bold: bool = False,
+    italic: bool = False,
+) -> float:
+    """
+    Gets the width of the text including spaces.
+
+    Unlike geometry-based measurement which ignores spaces, this function
+    uses Cairo's text extents to get the actual advance width, which
+    properly accounts for whitespace characters.
+
+    Args:
+        text: The string to measure.
+        font_family: The font family name.
+        font_size: The font size in geometry units.
+        bold: Whether to use a bold weight.
+        italic: Whether to use an italic slant.
+
+    Returns:
+        The width of the text in geometry units.
+    """
+    if not text:
+        return 0.0
+
+    surface = cairo.RecordingSurface(cairo.CONTENT_COLOR_ALPHA, None)
+    ctx = cairo.Context(surface)
+
+    slant = cairo.FONT_SLANT_ITALIC if italic else cairo.FONT_SLANT_NORMAL
+    weight = cairo.FONT_WEIGHT_BOLD if bold else cairo.FONT_WEIGHT_NORMAL
+    ctx.select_font_face(font_family, slant, weight)
+    ctx.set_font_size(font_size)
+
+    x_bearing, y_bearing, width, height, x_advance, y_advance = (
+        ctx.text_extents(text)
+    )
+
+    return x_advance
