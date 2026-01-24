@@ -75,6 +75,19 @@ class RasterizerSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
         )
         self.add(self.cross_hatch_row)
 
+        self.invert_row = Adw.SwitchRow(
+            title=_("Invert"),
+            subtitle=_("Engrave white areas instead of black areas"),
+        )
+        self.invert_row.set_active(params.get("invert", False))
+        self.invert_row.connect(
+            "notify::active",
+            lambda w, pspec: self._on_param_changed(
+                "invert", w.get_active(), _("Toggle Invert")
+            ),
+        )
+        self.add(self.invert_row)
+
     def _on_param_changed(self, key: str, new_value: Any, name: str):
         params_dict = self.target_dict.setdefault("params", {})
         if new_value == params_dict.get(key):

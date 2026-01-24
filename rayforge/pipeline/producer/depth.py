@@ -40,6 +40,7 @@ class DepthEngraver(OpsProducer):
         max_power: float = 1.0,
         num_depth_levels: int = 5,
         z_step_down: float = 0.0,
+        invert: bool = False,
     ):
         self.scan_angle = scan_angle
         self.bidirectional = bidirectional
@@ -49,6 +50,7 @@ class DepthEngraver(OpsProducer):
         self.max_power = max_power
         self.num_depth_levels = num_depth_levels
         self.z_step_down = z_step_down
+        self.invert = invert
 
     def run(
         self,
@@ -110,6 +112,10 @@ class DepthEngraver(OpsProducer):
             gray_image = (
                 0.2989 * r_blended + 0.5870 * g_blended + 0.1140 * b_blended
             ).astype(np.uint8)
+
+            if self.invert:
+                alpha_mask = alpha > 0
+                gray_image[alpha_mask] = 255 - gray_image[alpha_mask]
 
             if self.depth_mode == DepthMode.POWER_MODULATION:
                 step_power = settings.get("power", 1.0) if settings else 1.0
@@ -434,6 +440,7 @@ class DepthEngraver(OpsProducer):
                 "max_power": self.max_power,
                 "num_depth_levels": self.num_depth_levels,
                 "z_step_down": self.z_step_down,
+                "invert": self.invert,
             },
         }
 
@@ -453,6 +460,7 @@ class DepthEngraver(OpsProducer):
             "max_power": 100.0,
             "num_depth_levels": 5,
             "z_step_down": 0.0,
+            "invert": False,
         }
         init_args.update(params_in)
 
