@@ -201,3 +201,22 @@ def test_circle_create_fill_geometry(registry):
     assert geo.data[0][0] == 1.0  # Move command
     assert geo.data[1][0] == 3.0  # Arc command (first semi-circle)
     assert geo.data[2][0] == 3.0  # Arc command (second semi-circle)
+
+
+def test_circle_get_set_state(registry):
+    """Test state capture and restoration for Undo/Redo."""
+    c = registry.add_point(0, 0)
+    r = registry.add_point(10, 0)
+    cid = registry.add_circle(c, r)
+    circle = registry.get_entity(cid)
+
+    # Verify initial state
+    state = circle.get_state()
+    assert state == {"construction": False}
+
+    # Modify state
+    circle.construction = True
+
+    # Restore state
+    circle.set_state(state)
+    assert circle.construction is False

@@ -1,7 +1,7 @@
 import logging
 import math
 import cairo
-from typing import Optional, Tuple, Dict, cast, TYPE_CHECKING
+from typing import Optional, Tuple, Dict, cast, Any, TYPE_CHECKING
 from ...matrix import Matrix
 from ..commands import AddItemsCommand, MovePointCommand
 from ..constraints import (
@@ -46,10 +46,14 @@ class SelectTool(SketchTool):
         self.dragged_entity: Optional[Entity] = None
         self.drag_start_model_pos: Optional[Tuple[float, float]] = None
 
-        # Common state for stabilizing drag calculations
+        # State for stabilizing drag calculations and undo snapshots
         self.drag_start_wt_inv: Optional[Matrix] = None
         self.drag_start_ct_inv: Optional[Matrix] = None
+
+        # Snapshots taken at start of drag
         self.drag_initial_positions: Dict[int, Tuple[float, float]] = {}
+        self.drag_initial_entity_states: Dict[int, Any] = {}
+
         self.drag_point_distances: Dict[int, int] = {}
 
     def on_press(self, world_x: float, world_y: float, n_press: int) -> bool:
@@ -324,16 +328,19 @@ class SelectTool(SketchTool):
 
                 # Only create a command if the point actually moved
                 if abs(start_x - end_x) > 1e-6 or abs(start_y - end_y) > 1e-6:
-                    # Pass the full snapshot of initial positions to the
-                    # command. This ensures that when undo is pressed, ALL
-                    # points return to their pre-drag state, not just the
-                    # single dragged point.
+                    # Pass the full snapshot (points + entities)
+                    # We must copy because self.drag_initial_* are cleared
+                    # below
+                    snapshot = (
+                        self.drag_initial_positions.copy(),
+                        self.drag_initial_entity_states.copy(),
+                    )
                     cmd = MovePointCommand(
                         self.element.sketch,
                         self.dragged_point_id,
                         (start_x, start_y),
                         (end_x, end_y),
-                        snapshot=self.drag_initial_positions,
+                        snapshot=snapshot,
                     )
                     self.element.execute_command(cmd)
 
@@ -343,6 +350,7 @@ class SelectTool(SketchTool):
         self.dragged_entity = None
         self.drag_start_model_pos = None
         self.drag_initial_positions.clear()
+        self.drag_initial_entity_states.clear()
         self.drag_point_distances.clear()
         self.drag_start_wt_inv = None
         self.drag_start_ct_inv = None
@@ -555,22 +563,9 @@ class SelectTool(SketchTool):
         points_to_drag = set()
         for eid in self.element.selection.entity_ids:
             entity = self.element.sketch.registry.get_entity(eid)
-            if isinstance(entity, Line):
-                points_to_drag.add(entity.p1_idx)
-                points_to_drag.add(entity.p2_idx)
-            elif isinstance(entity, Arc):
-                points_to_drag.add(entity.start_idx)
-                points_to_drag.add(entity.end_idx)
-                points_to_drag.add(entity.center_idx)
-            elif isinstance(entity, Circle):
-                points_to_drag.add(entity.center_idx)
-                points_to_drag.add(entity.radius_pt_idx)
-            elif isinstance(entity, TextBoxEntity):
-                points_to_drag.add(entity.origin_id)
-                points_to_drag.add(entity.width_id)
-                points_to_drag.add(entity.height_id)
+            if entity:
+                points_to_drag.update(entity.get_point_ids())
 
-        # 2. Build drag constraints for these points
         drag_constraints = []
         strong_drag_weight = 1.0
         for pid in points_to_drag:
@@ -630,14 +625,23 @@ class SelectTool(SketchTool):
         self._cache_drag_start_state()
 
     def _cache_drag_start_state(self):
-        """Caches transforms and point positions at the start of any drag."""
+        """
+        Caches transforms and ALL state (points + entities) at start of drag.
+        """
         self.drag_start_wt_inv = self.element.get_world_transform().invert()
         self.drag_start_ct_inv = self.element.content_transform.invert()
+
+        # Capture Points
         self.drag_initial_positions = {
             pt.id: (pt.x, pt.y) for pt in self.element.sketch.registry.points
         }
 
-    # --- Helpers ---
+        # Capture Entity States
+        self.drag_initial_entity_states = {}
+        for e in self.element.sketch.registry.entities:
+            state = e.get_state()
+            if state is not None:
+                self.drag_initial_entity_states[e.id] = state
 
     def _safe_get_point(self, pid):
         try:

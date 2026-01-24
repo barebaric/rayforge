@@ -148,3 +148,22 @@ def test_line_append_to_geometry(registry):
     assert len(geo2) == 2
     assert geo2.data[0][0] == 1.0  # Move command
     assert geo2.data[1][0] == 2.0  # Line command to p1
+
+
+def test_line_get_set_state(registry):
+    """Test state capture and restoration for Undo/Redo."""
+    p1 = registry.add_point(0, 0)
+    p2 = registry.add_point(10, 10)
+    lid = registry.add_line(p1, p2)
+    line = registry.get_entity(lid)
+
+    # Verify initial state
+    state = line.get_state()
+    assert state == {"construction": False}
+
+    # Modify state
+    line.construction = True
+
+    # Restore state
+    line.set_state(state)
+    assert line.construction is False

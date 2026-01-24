@@ -188,7 +188,11 @@ class RoundedRectCommand(SketchChangeCommand):
     def _do_undo(self) -> None:
         if self.add_cmd:
             self.add_cmd._do_undo()
-            if self.is_start_temp and self.start_pid in self._state_snapshot:
-                start_x, start_y = self._state_snapshot[self.start_pid]
+            if (
+                self.is_start_temp
+                and self._snapshot is not None
+                and self.start_pid in self._snapshot[0]
+            ):
+                start_x, start_y = self._snapshot[0][self.start_pid]
                 new_p = Point(self.start_pid, start_x, start_y)
                 self.sketch.registry.points.append(new_p)
