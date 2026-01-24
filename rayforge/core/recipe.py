@@ -32,6 +32,9 @@ class Recipe:
     # A single dictionary of settings to be applied.
     settings: Dict[str, Any] = field(default_factory=dict)
 
+    # Forward compatibility: store unknown attributes
+    extra: Dict[str, Any] = field(default_factory=dict)
+
     @property
     def capability(self) -> Capability:
         """Returns the capability instance for this recipe."""
@@ -153,11 +156,26 @@ class Recipe:
 
     def to_dict(self) -> Dict[str, Any]:
         """Serializes the Recipe to a dictionary suitable for YAML."""
-        return asdict(self)
+        result = asdict(self)
+        result.update(self.extra)
+        return result
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "Recipe":
         """Deserializes a Recipe from a dictionary."""
+        known_keys = {
+            "uid",
+            "name",
+            "description",
+            "target_capability_name",
+            "target_machine_id",
+            "material_uid",
+            "min_thickness_mm",
+            "max_thickness_mm",
+            "settings",
+        }
+        extra = {k: v for k, v in data.items() if k not in known_keys}
+
         return cls(
             uid=data.get("uid", str(uuid.uuid4())),
             name=data.get("name", "Unnamed Recipe"),
@@ -170,4 +188,5 @@ class Recipe:
             min_thickness_mm=data.get("min_thickness_mm"),
             max_thickness_mm=data.get("max_thickness_mm"),
             settings=data.get("settings", {}),
+            extra=extra,
         )

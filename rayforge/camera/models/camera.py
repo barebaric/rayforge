@@ -29,7 +29,7 @@ class Camera:
         # 2. Capture 10 or so calibration images of the grid (camera static,
         #    grid in different positions/rotations)
         # 3. Detect checkerboard corners: cv2.findChessboardCorners()
-        # 4. Perform camera calibration: cv2.calibrateCamera
+        # 4. Perform camera calibration: cv2.calibrateCamera()
         self._camera_matrix: Optional[np.ndarray] = None
         self._dist_coeffs: Optional[np.ndarray] = None
 
@@ -46,6 +46,7 @@ class Camera:
         # Signals
         self.changed = Signal()
         self.settings_changed = Signal()
+        self.extra: Dict[str, Any] = {}
 
     @property
     def name(self) -> str:
@@ -266,10 +267,23 @@ class Camera:
             ]
         else:
             data["image_to_world"] = None
+        data.update(self.extra)
         return data
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "Camera":
+        known_keys = {
+            "name",
+            "device_id",
+            "enabled",
+            "white_balance",
+            "contrast",
+            "brightness",
+            "transparency",
+            "image_to_world",
+        }
+        extra = {k: v for k, v in data.items() if k not in known_keys}
+
         camera = cls(data["name"], data["device_id"])
         camera.enabled = data.get("enabled", camera.enabled)
         camera.white_balance = data.get("white_balance", None)
@@ -293,6 +307,8 @@ class Camera:
             camera.image_to_world = (image_points, world_points)
         else:
             camera.image_to_world = None
+
+        camera.extra = extra
         return camera
 
     def to_json(self) -> str:

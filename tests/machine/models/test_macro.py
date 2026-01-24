@@ -54,3 +54,60 @@ def test_from_dict_with_defaults():
     assert macro.code == []
     assert macro.enabled is True
     assert isinstance(macro.uid, str)
+
+
+def test_forward_compatibility_unknown_fields():
+    """
+    Test that unknown fields are preserved during serialization and
+    deserialization for forward compatibility.
+    """
+    original_macro = Macro(name="Test Macro", code=["G21"])
+
+    data = original_macro.to_dict()
+
+    # Simulate future version with additional fields
+    future_fields = {
+        "future_feature_enabled": True,
+        "future_setting": "some_value",
+        "future_list": [1, 2, 3],
+    }
+    data.update(future_fields)
+
+    # Deserialize with unknown fields
+    deserialized = Macro.from_dict(data)
+
+    # Unknown fields should be in extra
+    assert deserialized.extra == future_fields
+
+    # Known fields should be preserved
+    assert deserialized.name == "Test Macro"
+    assert deserialized.code == ["G21"]
+
+    # Reserialize should include unknown fields
+    reserialized = deserialized.to_dict()
+    assert reserialized["future_feature_enabled"] is True
+    assert reserialized["future_setting"] == "some_value"
+    assert reserialized["future_list"] == [1, 2, 3]
+
+
+def test_forward_compatibility_roundtrip():
+    """
+    Test that a complete round-trip through to_dict and from_dict
+    preserves all data including unknown fields.
+    """
+    original_data = {
+        "uid": "test-uid-456",
+        "name": "Roundtrip Test",
+        "code": ["G21", "G90"],
+        "enabled": False,
+        "future_bool": False,
+        "future_string": "test",
+        "future_number": 42,
+    }
+
+    macro = Macro.from_dict(original_data)
+    result = macro.to_dict()
+
+    # All original fields should be preserved
+    for key, value in original_data.items():
+        assert result[key] == value

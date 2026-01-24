@@ -335,3 +335,56 @@ def test_layer_roundtrip_serialization():
     assert restored.stock_item_uid == original.stock_item_uid
     # Layer always has at least a workflow child
     assert len(restored.children) >= 1
+
+
+def test_layer_forward_compatibility_with_extra_fields():
+    """
+    Tests that from_dict() preserves extra fields from newer versions
+    and to_dict() re-serializes them.
+    """
+    layer_dict = {
+        "uid": "layer-forward-456",
+        "type": "layer",
+        "name": "Future Layer",
+        "matrix": Matrix.identity().to_list(),
+        "visible": True,
+        "stock_item_uid": None,
+        "children": [],
+        "future_field_string": "some value",
+        "future_field_number": 42,
+        "future_field_dict": {"nested": "data"},
+    }
+
+    layer = Layer.from_dict(layer_dict)
+
+    # Verify extra fields are stored
+    assert layer.extra["future_field_string"] == "some value"
+    assert layer.extra["future_field_number"] == 42
+    assert layer.extra["future_field_dict"] == {"nested": "data"}
+
+    # Verify extra fields are re-serialized
+    data = layer.to_dict()
+    assert data["future_field_string"] == "some value"
+    assert data["future_field_number"] == 42
+    assert data["future_field_dict"] == {"nested": "data"}
+
+
+def test_layer_backward_compatibility_with_missing_optional_fields():
+    """
+    Tests that from_dict() handles missing optional fields gracefully
+    (simulating data from an older version).
+    """
+    minimal_dict = {
+        "uid": "layer-backward-789",
+        "type": "layer",
+        "matrix": Matrix.identity().to_list(),
+        "children": [],
+    }
+
+    layer = Layer.from_dict(minimal_dict)
+
+    # Verify defaults are applied for missing optional fields
+    assert layer.name == "Layer"
+    assert layer.visible is True
+    assert layer.stock_item_uid is None
+    assert layer.extra == {}

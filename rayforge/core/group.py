@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import List, Dict, Optional, Tuple, Sequence, TYPE_CHECKING
+from typing import List, Dict, Optional, Tuple, Sequence, TYPE_CHECKING, Any
 from dataclasses import dataclass
 from .item import DocItem
 from .matrix import Matrix
@@ -27,6 +27,7 @@ class Group(DocItem):
     def __init__(self, name: str = "Group"):
         """Initializes a Group instance."""
         super().__init__(name=name)
+        self.extra: Dict[str, Any] = {}
 
     @property
     def layer(self) -> Optional["Layer"]:
@@ -50,20 +51,26 @@ class Group(DocItem):
 
     def to_dict(self) -> Dict:
         """Serializes the Group and its children to a dictionary."""
-        return {
+        result = {
             "uid": self.uid,
             "type": "group",  # Discriminator for deserialization
             "name": self.name,
             "matrix": self.matrix.to_list(),
             "children": [child.to_dict() for child in self.children],
         }
+        result.update(self.extra)
+        return result
 
     @classmethod
     def from_dict(cls, data: Dict) -> "Group":
         """Deserializes a dictionary into a Group instance."""
+        known_keys = {"uid", "type", "name", "matrix", "children"}
+        extra = {k: v for k, v in data.items() if k not in known_keys}
+
         new_group = cls(name=data.get("name", "Group"))
         new_group.uid = data["uid"]
         new_group.matrix = Matrix.from_list(data["matrix"])
+        new_group.extra = extra
 
         for child_data in data.get("children", []):
             child_type = child_data.get("type")

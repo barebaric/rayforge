@@ -16,18 +16,25 @@ class MaterialAppearance:
 
     color: str = "#f0f0f0"
     pattern: str = "solid"
+    extra: Dict[str, Any] = field(default_factory=dict)
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "MaterialAppearance":
         """Create an instance from a dictionary."""
+        known_keys = {"color", "pattern"}
+        extra = {k: v for k, v in data.items() if k not in known_keys}
+
         return cls(
             color=data.get("color", cls.color),
             pattern=data.get("pattern", "solid"),
+            extra=extra,
         )
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert the appearance to a dictionary."""
-        return {"color": self.color, "pattern": self.pattern}
+        result = {"color": self.color, "pattern": self.pattern}
+        result.update(self.extra)
+        return result
 
 
 @dataclass
@@ -45,6 +52,7 @@ class Material:
     category: str = ""
     appearance: MaterialAppearance = field(default_factory=MaterialAppearance)
     file_path: Optional[Path] = None
+    extra: Dict[str, Any] = field(default_factory=dict)
 
     def __post_init__(self):
         """Post-initialization validation and setup."""
@@ -87,6 +95,15 @@ class Material:
         uid = data.get("uid", file_path.stem)
 
         # Create material instance
+        known_keys = {
+            "uid",
+            "name",
+            "description",
+            "category",
+            "appearance",
+        }
+        extra = {k: v for k, v in data.items() if k not in known_keys}
+
         material = cls(
             uid=uid,
             name=data.get("name", uid),
@@ -96,6 +113,7 @@ class Material:
                 data.get("appearance", {})
             ),
             file_path=file_path,
+            extra=extra,
         )
 
         return material
@@ -107,13 +125,15 @@ class Material:
         Returns:
             Dictionary containing all material data
         """
-        return {
+        result = {
             "uid": self.uid,
             "name": self.name,
             "description": self.description,
             "category": self.category,
             "appearance": self.appearance.to_dict(),
         }
+        result.update(self.extra)
+        return result
 
     def save_to_file(self, file_path: Optional[Path] = None) -> None:
         """

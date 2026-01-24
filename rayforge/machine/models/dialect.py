@@ -81,6 +81,7 @@ class GcodeDialect:
     uid: str = field(default_factory=lambda: str(uuid.uuid4()))
     is_custom: bool = False
     parent_uid: Optional[str] = None
+    extra: Dict[str, Any] = field(default_factory=dict)
 
     def get_editor_varsets(self) -> Dict[str, VarSet]:
         """
@@ -181,13 +182,15 @@ class GcodeDialect:
 
     def to_dict(self) -> Dict[str, Any]:
         """Serializes the dialect to a dictionary."""
-        return asdict(self)
+        result = asdict(self)
+        result.update(self.extra)
+        return result
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "GcodeDialect":
         """
         Creates a dialect instance from a dictionary, correctly handling
-        missing fields by inheriting from the parent dialect.
+        missing fields by inheriting from parent dialect.
         """
         # 1. Determine the base dialect to inherit defaults from
         parent_uid = data.get("parent_uid")
@@ -228,4 +231,9 @@ class GcodeDialect:
             k: v for k, v in merged_data.items() if k in valid_fields
         }
 
-        return cls(**filtered_data)
+        # 6. Extract unknown attributes for forward compatibility
+        extra = {k: v for k, v in merged_data.items() if k not in valid_fields}
+
+        instance = cls(**filtered_data)
+        instance.extra = extra
+        return instance

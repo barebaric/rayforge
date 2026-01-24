@@ -30,6 +30,7 @@ class StockAsset(IAsset):
         self.thickness: Optional[float] = None
         self.material_uid: Optional[str] = None
         self.updated = Signal()
+        self.extra: Dict[str, Any] = {}
 
     @property
     def name(self) -> str:
@@ -65,7 +66,7 @@ class StockAsset(IAsset):
 
     def to_dict(self) -> Dict[str, Any]:
         """Serializes the StockAsset to a dictionary."""
-        return {
+        result = {
             "uid": self.uid,
             "type": self.asset_type_name,  # For polymorphic deserialization
             "name": self.name,
@@ -73,10 +74,22 @@ class StockAsset(IAsset):
             "thickness": self.thickness,
             "material_uid": self.material_uid,
         }
+        result.update(self.extra)
+        return result
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "StockAsset":
         """Deserializes a dictionary into a StockAsset instance."""
+        known_keys = {
+            "uid",
+            "type",
+            "name",
+            "geometry",
+            "thickness",
+            "material_uid",
+        }
+        extra = {k: v for k, v in data.items() if k not in known_keys}
+
         geometry = (
             Geometry.from_dict(data["geometry"])
             if "geometry" in data and data["geometry"]
@@ -86,6 +99,7 @@ class StockAsset(IAsset):
         asset.uid = data["uid"]
         asset.thickness = data.get("thickness")
         asset.material_uid = data.get("material_uid")
+        asset.extra = extra
         return asset
 
     def set_thickness(self, value: Optional[float]):

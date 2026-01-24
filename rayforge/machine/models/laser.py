@@ -13,6 +13,7 @@ class Laser:
         self.focus_power_percent: float = 0  # in percent (0-1.0)
         self.spot_size_mm: Tuple[float, float] = 0.1, 0.1  # millimeters
         self.changed = Signal()
+        self.extra: Dict[str, Any] = {}
 
     def set_name(self, name: str):
         self.name = name
@@ -51,7 +52,7 @@ class Laser:
         self.changed.send(self)
 
     def to_dict(self) -> Dict[str, Any]:
-        return {
+        result = {
             "uid": self.uid,
             "name": self.name,
             "tool_number": self.tool_number,
@@ -60,9 +61,24 @@ class Laser:
             "focus_power_percent": self.focus_power_percent * 100,
             "spot_size_mm": self.spot_size_mm,
         }
+        result.update(self.extra)
+        return result
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "Laser":
+        known_keys = {
+            "uid",
+            "name",
+            "tool_number",
+            "max_power",
+            "frame_power_percent",
+            "focus_power_percent",
+            "spot_size_mm",
+            "frame_power",
+            "focus_power",
+        }
+        extra = {k: v for k, v in data.items() if k not in known_keys}
+
         lh = cls()
         lh.uid = data.get("uid", str(uuid.uuid4()))
         lh.name = data.get("name", _("Laser Head"))
@@ -86,6 +102,7 @@ class Laser:
             lh.focus_power_percent = focus_power / lh.max_power
 
         lh.spot_size_mm = data.get("spot_size_mm", lh.spot_size_mm)
+        lh.extra = extra
         return lh
 
     def __getstate__(self):

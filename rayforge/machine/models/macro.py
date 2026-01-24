@@ -22,22 +22,29 @@ class Macro:
     code: List[str] = field(default_factory=list)
     enabled: bool = True
     uid: str = field(default_factory=lambda: str(uuid.uuid4()))
+    extra: Dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> Dict[str, Any]:
         """Serializes the macro to a dictionary."""
-        return {
+        result = {
             "uid": self.uid,
             "name": self.name,
             "code": self.code,
             "enabled": self.enabled,
         }
+        result.update(self.extra)
+        return result
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "Macro":
         """Creates a macro instance from a dictionary."""
-        return cls(
+        known_keys = {"uid", "name", "code", "enabled"}
+        extra = {k: v for k, v in data.items() if k not in known_keys}
+        instance = cls(
             uid=data.get("uid", str(uuid.uuid4())),
             name=data.get("name", _("Unnamed Macro")),
             code=data.get("code", []),
             enabled=data.get("enabled", True),
         )
+        instance.extra = extra
+        return instance

@@ -22,6 +22,7 @@ class StockItem(DocItem):
         super().__init__(name=name)
         self.stock_asset_uid: str = stock_asset_uid
         self.visible: bool = True
+        self.extra: Dict[str, Any] = {}
 
     def depends_on_asset(self, asset: "IAsset") -> bool:
         """Checks if this stock item is an instance of the given asset."""
@@ -51,7 +52,7 @@ class StockItem(DocItem):
 
     def to_dict(self) -> Dict[str, Any]:
         """Serializes the StockItem to a dictionary."""
-        return {
+        result = {
             "uid": self.uid,
             "type": "stockitem",  # Discriminator for deserialization
             "name": self.name,
@@ -59,6 +60,8 @@ class StockItem(DocItem):
             "stock_asset_uid": self.stock_asset_uid,
             "visible": self.visible,
         }
+        result.update(self.extra)
+        return result
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "StockItem":
@@ -67,6 +70,16 @@ class StockItem(DocItem):
         Assumes the new format with 'stock_asset_uid'. Legacy file handling
         is performed in Doc.from_dict.
         """
+        known_keys = {
+            "uid",
+            "type",
+            "name",
+            "matrix",
+            "stock_asset_uid",
+            "visible",
+        }
+        extra = {k: v for k, v in data.items() if k not in known_keys}
+
         new_item = cls(
             name=data.get("name", "Stock"),
             stock_asset_uid=data["stock_asset_uid"],
@@ -74,6 +87,7 @@ class StockItem(DocItem):
         new_item.uid = data["uid"]
         new_item.matrix = Matrix.from_list(data["matrix"])
         new_item.visible = data.get("visible", True)
+        new_item.extra = extra
 
         return new_item
 

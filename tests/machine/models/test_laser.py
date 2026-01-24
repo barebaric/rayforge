@@ -185,3 +185,55 @@ class TestLaser:
         # Old gcode fields should not be in serialization
         assert "frame_power" not in data
         assert "focus_power" not in data
+
+    def test_laser_forward_compatibility_with_extra_fields(self):
+        """
+        Tests that from_dict() preserves extra fields from newer versions
+        and to_dict() re-serializes them.
+        """
+        laser_dict = {
+            "uid": "laser-forward-456",
+            "name": "Future Laser",
+            "tool_number": 1,
+            "max_power": 1500,
+            "frame_power_percent": 20,
+            "focus_power_percent": 35,
+            "spot_size_mm": [0.15, 0.15],
+            "future_field_string": "some value",
+            "future_field_number": 42,
+            "future_field_dict": {"nested": "data"},
+        }
+
+        laser = Laser.from_dict(laser_dict)
+
+        # Verify extra fields are stored
+        assert laser.extra["future_field_string"] == "some value"
+        assert laser.extra["future_field_number"] == 42
+        assert laser.extra["future_field_dict"] == {"nested": "data"}
+
+        # Verify extra fields are re-serialized
+        data = laser.to_dict()
+        assert data["future_field_string"] == "some value"
+        assert data["future_field_number"] == 42
+        assert data["future_field_dict"] == {"nested": "data"}
+
+    def test_laser_backward_compat_missing_optional_fields(self):
+        """
+        Tests that from_dict() handles missing optional fields gracefully
+        (simulating data from an older version).
+        """
+        minimal_dict = {
+            "uid": "laser-backward-789",
+            "name": "Old Laser",
+            "tool_number": 0,
+            "max_power": 1000,
+        }
+
+        laser = Laser.from_dict(minimal_dict)
+
+        # Verify defaults are applied for missing optional fields
+        assert laser.name == "Old Laser"
+        assert laser.frame_power_percent == 0
+        assert laser.focus_power_percent == 0
+        assert laser.spot_size_mm == (0.1, 0.1)
+        assert laser.extra == {}
