@@ -3,10 +3,10 @@ from typing import Optional, cast
 from enum import Enum, auto
 import cairo
 from blinker import Signal
+from ...geo import Geometry, primitives
 from ..commands import TextBoxCommand
 from ..entities import Line, Point, TextBoxEntity
 from .base import SketchTool, SketcherKey
-from ...geo import primitives
 
 logger = logging.getLogger(__name__)
 
@@ -78,6 +78,11 @@ class TextBoxTool(SketchTool):
         return False
 
     def _handle_idle_press(self, mx: float, my: float) -> bool:
+        clicked_entity_id = self._find_text_box_at_point(mx, my)
+        if clicked_entity_id is not None:
+            self.start_editing(clicked_entity_id)
+            return True
+
         cmd = TextBoxCommand(self.element.sketch, origin=(mx, my))
         self.element.execute_command(cmd)
 
@@ -86,14 +91,19 @@ class TextBoxTool(SketchTool):
         return True
 
     def _handle_editing_press(self, mx: float, my: float) -> bool:
-        if not self._is_point_inside_box(mx, my):
-            self.on_deactivate()
-            # Allow the click to fall through to the SelectTool
-            return False
+        if self._is_point_inside_box(mx, my):
+            self._update_cursor_from_click(mx, my)
+            return True
 
-        # If inside, update cursor position
-        self._update_cursor_from_click(mx, my)
-        return True
+        clicked_entity_id = self._find_text_box_at_point(mx, my)
+        if clicked_entity_id is not None:
+            self.on_deactivate()
+            self.start_editing(clicked_entity_id)
+            self._update_cursor_from_click(mx, my)
+            return True
+
+        self.on_deactivate()
+        return self._handle_idle_press(mx, my)
 
     def _is_point_inside_box(self, mx: float, my: float) -> bool:
         if self.editing_entity_id is None:
@@ -110,20 +120,62 @@ class TextBoxTool(SketchTool):
         p_height = self.element.sketch.registry.get_point(entity.height_id)
 
         p4_id = entity.get_fourth_corner_id(self.element.sketch.registry)
-        if not p4_id:
-            return False
-        p4 = self.element.sketch.registry.get_point(p4_id)
+        if p4_id:
+            p4 = self.element.sketch.registry.get_point(p4_id)
+            p4_x, p4_y = p4.x, p4.y
+        else:
+            # Calculate fourth corner from origin, width, and height points
+            p4_x = p_width.x + p_height.x - p_origin.x
+            p4_y = p_width.y + p_height.y - p_origin.y
 
         # Define the polygon for the text box
         polygon = [
             (p_origin.x, p_origin.y),
             (p_width.x, p_width.y),
-            (p4.x, p4.y),
+            (p4_x, p4_y),
             (p_height.x, p_height.y),
         ]
 
         # Use point-in-polygon check for accurate hit testing (handles
         # rotation)
+        return primitives.is_point_in_polygon((mx, my), polygon)
+
+    def _is_point_inside_any_text_box(self, mx: float, my: float) -> bool:
+        for entity in self.element.sketch.registry.entities:
+            if isinstance(entity, TextBoxEntity):
+                if self._is_point_inside_entity_box(entity, mx, my):
+                    return True
+        return False
+
+    def _find_text_box_at_point(self, mx: float, my: float) -> Optional[int]:
+        for entity in reversed(self.element.sketch.registry.entities):
+            if isinstance(entity, TextBoxEntity):
+                if self._is_point_inside_entity_box(entity, mx, my):
+                    return entity.id
+        return None
+
+    def _is_point_inside_entity_box(
+        self, entity: TextBoxEntity, mx: float, my: float
+    ) -> bool:
+        p_origin = self.element.sketch.registry.get_point(entity.origin_id)
+        p_width = self.element.sketch.registry.get_point(entity.width_id)
+        p_height = self.element.sketch.registry.get_point(entity.height_id)
+
+        p4_id = entity.get_fourth_corner_id(self.element.sketch.registry)
+        if p4_id:
+            p4 = self.element.sketch.registry.get_point(p4_id)
+            p4_x, p4_y = p4.x, p4.y
+        else:
+            p4_x = p_width.x + p_height.x - p_origin.x
+            p4_y = p_width.y + p_height.y - p_origin.y
+
+        polygon = [
+            (p_origin.x, p_origin.y),
+            (p_width.x, p_width.y),
+            (p4_x, p4_y),
+            (p_height.x, p_height.y),
+        ]
+
         return primitives.is_point_in_polygon((mx, my), polygon)
 
     def _finalize_edit(self):
@@ -150,14 +202,10 @@ class TextBoxTool(SketchTool):
         pass
 
     def on_hover_motion(self, world_x: float, world_y: float):
-        if self.state != TextBoxState.EDITING:
-            self.is_hovering = False
-            return
-
         mx, my = self.element.hittester.screen_to_model(
             world_x, world_y, self.element
         )
-        self.is_hovering = self._is_point_inside_box(mx, my)
+        self.is_hovering = self._is_point_inside_any_text_box(mx, my)
 
     def handle_text_input(self, text: str) -> bool:
         if self.state != TextBoxState.EDITING:
@@ -241,8 +289,6 @@ class TextBoxTool(SketchTool):
 
     def _resize_box_to_fit_text(self):
         """Live-updates the box points to match the current text buffer."""
-        from ....core.geo.geometry import Geometry
-
         if self.editing_entity_id is None:
             return
 
@@ -252,31 +298,30 @@ class TextBoxTool(SketchTool):
         if not isinstance(entity, TextBoxEntity):
             return
 
+        ascent, descent, font_height = entity.get_font_metrics()
+
         if not self.text_buffer:
             natural_width = 10.0
-            natural_height = entity.font_params.get("size", 10.0)
         else:
             natural_geo = Geometry.from_text(
-                self.text_buffer,
-                font_family=entity.font_params.get("family", "sans-serif"),
-                font_size=entity.font_params.get("size", 10.0),
-                is_bold=entity.font_params.get("bold", False),
-                is_italic=entity.font_params.get("italic", False),
+                self.text_buffer, **entity.font_params
             )
             natural_geo.flip_y()
-            min_x, min_y, max_x, max_y = natural_geo.rect()
+            min_x, _, max_x, _ = natural_geo.rect()
             natural_width = max(max_x - min_x, 1.0)
-            natural_height = max(max_y - min_y, 1.0)
 
         p_origin = self.element.sketch.registry.get_point(entity.origin_id)
         p_width = self.element.sketch.registry.get_point(entity.width_id)
         p_height = self.element.sketch.registry.get_point(entity.height_id)
 
         # Update point positions based on origin and natural size
+        # Origin is at bottom-left corner of box
+        # Text baseline is offset by descent within the box
+        # Box extends from origin.y to origin.y + font_height
         p_width.x = p_origin.x + natural_width
         p_width.y = p_origin.y
         p_height.x = p_origin.x
-        p_height.y = p_origin.y + natural_height
+        p_height.y = p_origin.y + font_height
 
         # Manually update the 4th corner to keep the box rectangular
         p4_id = entity.get_fourth_corner_id(self.element.sketch.registry)
@@ -317,15 +362,10 @@ class TextBoxTool(SketchTool):
         # alpha is the normalized coordinate (0..1) along the width axis
         alpha = (click_vec[0] * v_vec[1] - click_vec[1] * v_vec[0]) * inv_det
 
-        font_params = {
-            "font_family": entity.font_params.get("family", "sans-serif"),
-            "font_size": entity.font_params.get("size", 10.0),
-            "is_bold": entity.font_params.get("bold", False),
-            "is_italic": entity.font_params.get("italic", False),
-        }
-
         # 2. Get bounds of full text to determine coordinate space range
-        natural_geo = Geometry.from_text(self.text_buffer, **font_params)
+        natural_geo = Geometry.from_text(
+            self.text_buffer, **entity.font_params
+        )
         natural_geo.flip_y()
         min_x, _, max_x, _ = natural_geo.rect()
 
@@ -355,7 +395,7 @@ class TextBoxTool(SketchTool):
             else:
                 # Measure width of substring to find character boundary
                 sub_geo = Geometry.from_text(
-                    self.text_buffer[:i], **font_params
+                    self.text_buffer[:i], **entity.font_params
                 )
                 sub_geo.flip_y()
                 _, _, sub_max_x, _ = sub_geo.rect()
@@ -388,15 +428,9 @@ class TextBoxTool(SketchTool):
         p_width = self.element.sketch.registry.get_point(entity.width_id)
         p_height = self.element.sketch.registry.get_point(entity.height_id)
 
-        from ....core.geo.geometry import Geometry
-
-        font_params = {
-            "font_family": entity.font_params.get("family", "sans-serif"),
-            "font_size": entity.font_params.get("size", 10.0),
-            "is_bold": entity.font_params.get("bold", False),
-            "is_italic": entity.font_params.get("italic", False),
-        }
-        natural_geo = Geometry.from_text(self.text_buffer, **font_params)
+        natural_geo = Geometry.from_text(
+            self.text_buffer, **entity.font_params
+        )
         natural_geo.flip_y()
         logger.debug(f"Natural geometry: {natural_geo.rect()}")
 
@@ -406,12 +440,16 @@ class TextBoxTool(SketchTool):
         if not self.text_buffer:
             nat_min_x, nat_min_y = 0.0, 0.0
             nat_max_x = 10.0
-            nat_max_y = font_params["font_size"]
+            nat_max_y = entity.font_params.get("font_size", 10.0)
+
+        _, descent, font_height = entity.get_font_metrics()
 
         transformed_geo = natural_geo.map_to_frame(
             (p_origin.x, p_origin.y),
             (p_width.x, p_width.y),
             (p_height.x, p_height.y),
+            anchor_y=-descent,
+            stable_src_height=font_height,
         )
         logger.debug(f"Transformed text geometry: {transformed_geo.rect()}")
 
@@ -436,7 +474,7 @@ class TextBoxTool(SketchTool):
 
             # Calculate cursor geometry in Natural Space
             sub_geo = Geometry.from_text(
-                self.text_buffer[: self.cursor_pos], **font_params
+                self.text_buffer[: self.cursor_pos], **entity.font_params
             )
             sub_geo.flip_y()
             _, _, sub_max_x, _ = sub_geo.rect()
@@ -450,7 +488,7 @@ class TextBoxTool(SketchTool):
 
             cursor_height = nat_max_y - nat_min_y
             if cursor_height <= 0:
-                cursor_height = font_params["font_size"]
+                cursor_height = entity.font_params.get("font_size", 10.0)
 
             c_center_y = (nat_min_y + nat_max_y) / 2
 

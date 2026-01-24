@@ -139,6 +139,8 @@ def map_geometry_to_frame(
     origin: Tuple[float, float],
     p_width: Tuple[float, float],
     p_height: Tuple[float, float],
+    anchor_y: Optional[float] = None,
+    stable_src_height: Optional[float] = None,
 ) -> T_Geometry:
     """
     Transforms a Geometry object to fit into an affine frame defined by three
@@ -156,6 +158,14 @@ def map_geometry_to_frame(
                  target frame, defining the local X-axis.
         p_height: The (x, y) coordinate for the top-left corner of the
                   target frame, defining the local Y-axis.
+        anchor_y: Optional y-coordinate to use as vertical anchor instead of
+                  the bounding box minimum. Useful for text where the baseline
+                  should remain fixed. If None, uses min_y from bounding box.
+        stable_src_height: Optional stable source height to use for scaling
+                          instead of the bounding box height. Useful for text
+                          where the height should remain stable regardless of
+                          descenders. If None, uses max_y - min_y from
+                          bounding box.
 
     Returns:
         A new, transformed Geometry object.
@@ -166,7 +176,12 @@ def map_geometry_to_frame(
     # 1. Get the source geometry's bounding box
     min_x, min_y, max_x, max_y = geometry.rect()
     src_width = max_x - min_x
-    src_height = max_y - min_y
+    src_height = stable_src_height if stable_src_height is not None else (
+        max_y - min_y
+    )
+
+    # Use anchor_y if provided, otherwise use bounding box min_y
+    anchor_y_value = anchor_y if anchor_y is not None else min_y
 
     # Handle degenerate source geometry
     if src_width < 1e-9 or src_height < 1e-9:
@@ -185,7 +200,7 @@ def map_geometry_to_frame(
     t1 = np.array(
         [
             [1, 0, 0, -min_x],
-            [0, 1, 0, -min_y],
+            [0, 1, 0, -anchor_y_value],
             [0, 0, 1, 0],
             [0, 0, 0, 1],
         ]

@@ -35,7 +35,7 @@ def sketch_with_text_box():
         p_width,
         p_height,
         content="Hello",
-        font_params={"family": "sans-serif", "size": 10.0},
+        font_params={"font_family": "sans-serif", "font_size": 10.0},
     )
 
     return sketch, tb_id
@@ -55,7 +55,7 @@ def sketch_with_empty_text_box():
         p_width,
         p_height,
         content="",
-        font_params={"family": "sans-serif", "size": 10.0},
+        font_params={"font_family": "sans-serif", "font_size": 10.0},
     )
 
     return sketch, tb_id
@@ -237,8 +237,8 @@ def test_text_box_rendering_with_different_font_params(
 
     tb = sketch.registry.get_entity(tb_id)
     tb.font_params = {
-        "family": "serif",
-        "size": 14.0,
+        "font_family": "serif",
+        "font_size": 14.0,
         "bold": True,
         "italic": False,
     }
@@ -246,8 +246,8 @@ def test_text_box_rendering_with_different_font_params(
     renderer = SketchRenderer(mock_element)
     renderer.draw(mock_cairo_context)
 
-    assert tb.font_params["family"] == "serif"
-    assert tb.font_params["size"] == 14.0
+    assert tb.font_params["font_family"] == "serif"
+    assert tb.font_params["font_size"] == 14.0
     assert tb.font_params["bold"] is True
 
 

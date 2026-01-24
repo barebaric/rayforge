@@ -1,6 +1,7 @@
 from typing import List, Tuple, Dict, Any, Sequence, Optional, TYPE_CHECKING
 from ...geo import primitives
 from ...geo.geometry import Geometry
+from ...geo.text import get_font_metrics
 from .entity import Entity
 from .line import Line
 
@@ -27,8 +28,8 @@ class TextBoxEntity(Entity):
         self.height_id = height_id
         self.content = content
         self.font_params = font_params or {
-            "family": "sans-serif",
-            "size": 10.0,
+            "font_family": "sans-serif",
+            "font_size": 10.0,
             "bold": False,
             "italic": False,
         }
@@ -37,6 +38,9 @@ class TextBoxEntity(Entity):
 
     def get_point_ids(self) -> List[int]:
         return [self.origin_id, self.width_id, self.height_id]
+
+    def get_font_metrics(self) -> Tuple[float, float, float]:
+        return get_font_metrics(**self.font_params)
 
     def get_fourth_corner_id(
         self, registry: "EntityRegistry"
@@ -128,18 +132,17 @@ class TextBoxEntity(Entity):
         p_origin = registry.get_point(self.origin_id)
         p_width = registry.get_point(self.width_id)
         p_height = registry.get_point(self.height_id)
-        txt_geo = Geometry.from_text(
-            self.content,
-            font_family=self.font_params.get("family", "sans-serif"),
-            font_size=self.font_params.get("size", 10.0),
-            is_bold=self.font_params.get("bold", False),
-            is_italic=self.font_params.get("italic", False),
-        )
+        txt_geo = Geometry.from_text(self.content, **self.font_params)
         txt_geo.flip_y()
+
+        _, descent, font_height = self.get_font_metrics()
+
         return txt_geo.map_to_frame(
             (p_origin.x, p_origin.y),
             (p_width.x, p_width.y),
             (p_height.x, p_height.y),
+            anchor_y=-descent,
+            stable_src_height=font_height,
         )
 
     def create_text_fill_geometry(
@@ -150,19 +153,17 @@ class TextBoxEntity(Entity):
         p_width = registry.get_point(self.width_id)
         p_height = registry.get_point(self.height_id)
 
-        txt_geo = Geometry.from_text(
-            self.content,
-            font_family=self.font_params.get("family", "sans-serif"),
-            font_size=self.font_params.get("size", 10.0),
-            is_bold=self.font_params.get("bold", False),
-            is_italic=self.font_params.get("italic", False),
-        )
+        txt_geo = Geometry.from_text(self.content, **self.font_params)
         txt_geo.flip_y()
+
+        _, descent, font_height = self.get_font_metrics()
 
         return txt_geo.map_to_frame(
             (p_origin.x, p_origin.y),
             (p_width.x, p_width.y),
             (p_height.x, p_height.y),
+            anchor_y=-descent,
+            stable_src_height=font_height,
         )
 
     def to_dict(self) -> Dict[str, Any]:
