@@ -9,6 +9,7 @@ from ..geo import Geometry
 from ..varset import VarSet
 from ..asset import IAsset
 from .constraints import (
+    AspectRatioConstraint,
     CoincidentConstraint,
     CollinearConstraint,
     Constraint,
@@ -38,6 +39,7 @@ _DEFAULT_VARSET_DESCRIPTION = _(
 
 
 _CONSTRAINT_CLASSES = {
+    "AspectRatioConstraint": AspectRatioConstraint,
     "CoincidentConstraint": CoincidentConstraint,
     "CollinearConstraint": CollinearConstraint,
     "DiameterConstraint": DiameterConstraint,
@@ -781,6 +783,11 @@ class Sketch(IAsset):
             if n_pts == 2 and n_lines == 1 and n_ents == 1:
                 return True
             return False
+
+        # 9. Aspect Ratio
+        if constraint_type == "aspect_ratio":
+            # Valid for 2 lines (to get 4 points for aspect ratio)
+            return n_lines == 2 and n_ents == 2 and n_pts == 0
 
         return False
 

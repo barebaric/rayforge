@@ -14,6 +14,7 @@ from ...core.sketcher.commands import (
     FilletCommand,
 )
 from ...core.sketcher.constraints import (
+    AspectRatioConstraint,
     PerpendicularConstraint,
     TangentConstraint,
     RadiusConstraint,
@@ -769,6 +770,54 @@ class SketchElement(CanvasElement):
                 self.sketch, _("Add Symmetry Constraint"), constraints=[constr]
             )
             self.execute_command(cmd)
+
+    def add_aspect_ratio_constraint(self):
+        """
+        Adds an aspect ratio constraint for two selected lines.
+        The constraint enforces that the ratio of the lengths of the two lines
+        equals the current ratio.
+        """
+        if not self.is_constraint_supported("aspect_ratio") or not self.editor:
+            logger.warning(
+                "Aspect ratio constraint requires exactly 2 lines."
+            )
+            return
+
+        if len(self.selection.entity_ids) != 2:
+            return
+
+        e1_id = self.selection.entity_ids[0]
+        e2_id = self.selection.entity_ids[1]
+
+        e1 = self._get_entity_by_id(e1_id)
+        e2 = self._get_entity_by_id(e2_id)
+
+        if not isinstance(e1, Line) or not isinstance(e2, Line):
+            logger.warning("Aspect ratio constraint requires 2 lines.")
+            return
+
+        p1 = self.sketch.registry.get_point(e1.p1_idx)
+        p2 = self.sketch.registry.get_point(e1.p2_idx)
+        p3 = self.sketch.registry.get_point(e2.p1_idx)
+        p4 = self.sketch.registry.get_point(e2.p2_idx)
+
+        if not all([p1, p2, p3, p4]):
+            logger.warning("Could not resolve all points for aspect ratio.")
+            return
+
+        dist1 = math.hypot(p2.x - p1.x, p2.y - p1.y)
+        dist2 = math.hypot(p4.x - p3.x, p4.y - p3.y)
+
+        if dist2 < 1e-9:
+            logger.warning("Second line has zero length.")
+            return
+
+        ratio = dist1 / dist2
+        constr = AspectRatioConstraint(p1.id, p2.id, p3.id, p4.id, ratio)
+        cmd = AddItemsCommand(
+            self.sketch, _("Add Aspect Ratio Constraint"), constraints=[constr]
+        )
+        self.execute_command(cmd)
 
     def add_chamfer_action(self):
         """Creates a chamfer at the selected corner junction."""

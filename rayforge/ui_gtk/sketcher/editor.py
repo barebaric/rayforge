@@ -81,6 +81,7 @@ class SketchEditor:
             "kd": "add_distance_constraint",
             "kr": "add_radius_constraint",
             "ko": "add_diameter_constraint",
+            "ka": "add_aspect_ratio_constraint",
         }
         # A set of all prefixes for quick checking (e.g., "g", "k")
         self.shortcut_prefixes = {
@@ -330,6 +331,8 @@ class SketchEditor:
             ctx.add_equal_constraint()
         elif constraint_type == "symmetry":
             ctx.add_symmetry_constraint()
+        elif constraint_type == "aspect_ratio":
+            ctx.add_aspect_ratio_constraint()
 
         if self.sketch_element.canvas:
             self.sketch_element.canvas.grab_focus()

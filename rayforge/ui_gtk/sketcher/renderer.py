@@ -4,6 +4,7 @@ from collections import defaultdict
 from ...core.geo import Geometry
 from ...core.geo.primitives import find_closest_point_on_line
 from ...core.sketcher.constraints import (
+    AspectRatioConstraint,
     DistanceConstraint,
     RadiusConstraint,
     DiameterConstraint,
@@ -410,6 +411,10 @@ class SketchRenderer:
                     to_screen,
                     is_sel,
                     is_hovered,
+                )
+            elif isinstance(constr, AspectRatioConstraint):
+                self._draw_aspect_ratio_constraint(
+                    ctx, constr, is_sel, is_hovered, to_screen
                 )
             elif isinstance(constr, SymmetryConstraint):
                 self._draw_symmetry_constraint(
@@ -959,3 +964,53 @@ class SketchRenderer:
 
     def _get_entity_by_id(self, eid):
         return self.element.sketch.registry.get_entity(eid)
+
+    def _draw_aspect_ratio_constraint(
+        self, ctx, constr, is_selected, is_hovered, to_screen
+    ):
+        # Delegate position calculation to the constraint itself
+        icon_pos = constr._get_icon_pos(
+            self.element.sketch.registry, to_screen.transform_point
+        )
+        if not icon_pos:
+            return
+
+        cx, cy = icon_pos
+
+        ctx.save()
+
+        icon_size = 16.0
+
+        # Draw a circular underlay for selection, similar to other icons
+        if is_selected:
+            ctx.set_source_rgba(0.2, 0.6, 1.0, 0.4)
+            # Use a slightly larger radius for the glow effect
+            ctx.arc(cx, cy, icon_size / 2.0 + 4.0, 0, 2 * math.pi)
+            ctx.fill()
+
+        # Translate to the icon's anchor point for easier drawing
+        ctx.translate(cx, cy)
+
+        hs = icon_size / 2.0
+
+        ctx.set_line_width(2.0)
+        ctx.set_line_cap(cairo.LINE_CAP_ROUND)
+        ctx.set_line_join(cairo.LINE_JOIN_ROUND)
+
+        ctx.new_path()
+
+        # Top-right corner bracket (L-shape pointing into the corner)
+        ctx.move_to(hs * 0.4, hs)
+        ctx.line_to(hs, hs)
+        ctx.line_to(hs, hs * 0.4)
+
+        # Bottom-left corner bracket
+        ctx.move_to(-hs * 0.4, -hs)
+        ctx.line_to(-hs, -hs)
+        ctx.line_to(-hs, -hs * 0.4)
+
+        # Set color and draw the icon
+        self._set_constraint_color(ctx, constr, is_hovered)
+        ctx.stroke()
+
+        ctx.restore()
