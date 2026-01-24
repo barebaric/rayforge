@@ -80,6 +80,9 @@ class HistoryManager:
         This is the single entry point for a command to be placed on the
         undo stack.
         """
+        if command.should_skip_undo():
+            return
+
         last_command = self.undo_stack[-1] if self.undo_stack else None
 
         if last_command:

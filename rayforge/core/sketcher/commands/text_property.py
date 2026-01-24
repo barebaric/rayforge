@@ -1,11 +1,13 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING, Dict, Any, Tuple, Optional
+from typing import TYPE_CHECKING, Dict, Any, Tuple, Optional, List
 from ....core.geo.geometry import Geometry
 from ..constraints import AspectRatioConstraint
+from ..entities.point import Point
 from ..entities.text_box import TextBoxEntity
 from .base import SketchChangeCommand
 
 if TYPE_CHECKING:
+    from ..constraints import Constraint
     from ..sketch import Sketch
 
 
@@ -26,6 +28,12 @@ class ModifyTextPropertyCommand(SketchChangeCommand):
         self.old_point_positions: Dict[int, Tuple[float, float]] = {}
         self.old_aspect_ratio: Optional[float] = None
         self.aspect_ratio_constraint_idx: Optional[int] = None
+
+        self._entity_was_removed = False
+        self._removed_entity: Optional[TextBoxEntity] = None
+        self._removed_points: List[Point] = []
+        self._removed_entities: List[Any] = []
+        self._removed_constraints: List[Constraint] = []
 
     def _do_execute(self) -> None:
         entity = self.sketch.registry.get_entity(self.text_entity_id)
@@ -59,6 +67,11 @@ class ModifyTextPropertyCommand(SketchChangeCommand):
 
         text_entity.content = self.new_content
         text_entity.font_params = self.new_font_params.copy()
+
+        # If the content is empty after editing, remove the entity
+        if not self.new_content:
+            self._remove_text_entity(text_entity)
+            return
 
         # Resize box to fit new content
         ascent, descent, font_height = text_entity.get_font_metrics()
@@ -94,10 +107,63 @@ class ModifyTextPropertyCommand(SketchChangeCommand):
             assert isinstance(constr, AspectRatioConstraint)
             constr.ratio = new_ratio
 
-        # The base class execute() will call notify_update(), which
-        # triggers the final solve.
+    def _remove_text_entity(self, text_entity: TextBoxEntity) -> None:
+        """Removes the text entity and its associated points/constraints."""
+        registry = self.sketch.registry
+
+        self._removed_entity = text_entity
+
+        p_origin = registry.get_point(text_entity.origin_id)
+        p_width = registry.get_point(text_entity.width_id)
+        p_height = registry.get_point(text_entity.height_id)
+
+        self._removed_points = [p_origin, p_width, p_height]
+
+        p4_id = text_entity.get_fourth_corner_id(registry)
+        if p4_id:
+            p4 = registry.get_point(p4_id)
+            self._removed_points.append(p4)
+
+        for eid in text_entity.construction_line_ids:
+            e = registry.get_entity(eid)
+            if e:
+                self._removed_entities.append(e)
+
+        if self.aspect_ratio_constraint_idx is not None:
+            constr = self.sketch.constraints[self.aspect_ratio_constraint_idx]
+            self._removed_constraints.append(constr)
+
+        point_ids = {pt.id for pt in self._removed_points}
+
+        for constr in self.sketch.constraints:
+            if constr not in self._removed_constraints:
+                if constr.depends_on_points(point_ids):
+                    self._removed_constraints.append(constr)
+
+        registry.entities = [
+            e for e in registry.entities if e.id != text_entity.id
+        ]
+        registry._entity_map = {e.id: e for e in registry.entities}
+
+        registry.points = [p for p in registry.points if p.id not in point_ids]
+
+        for e in self._removed_entities:
+            registry.entities = [
+                ent for ent in registry.entities if ent.id != e.id
+            ]
+        registry._entity_map = {e.id: e for e in registry.entities}
+
+        for c in self._removed_constraints:
+            if c in self.sketch.constraints:
+                self.sketch.constraints.remove(c)
+
+        self._entity_was_removed = True
 
     def _do_undo(self) -> None:
+        if self._entity_was_removed:
+            self._restore_text_entity()
+            return
+
         entity = self.sketch.registry.get_entity(self.text_entity_id)
         if not isinstance(entity, TextBoxEntity):
             return
@@ -120,3 +186,30 @@ class ModifyTextPropertyCommand(SketchChangeCommand):
             constr = self.sketch.constraints[self.aspect_ratio_constraint_idx]
             assert isinstance(constr, AspectRatioConstraint)
             constr.ratio = self.old_aspect_ratio
+
+    def _restore_text_entity(self) -> None:
+        """Restores the text entity and its associated points/constraints."""
+        registry = self.sketch.registry
+
+        for p in self._removed_points:
+            registry.points.append(p)
+
+        for e in self._removed_entities:
+            registry.entities.append(e)
+
+        if self._removed_entity:
+            registry.entities.append(self._removed_entity)
+
+        registry._entity_map = {e.id: e for e in registry.entities}
+
+        for c in self._removed_constraints:
+            self.sketch.constraints.append(c)
+
+        self._entity_was_removed = False
+
+    def should_skip_undo(self) -> bool:
+        """
+        Returns True if the text was empty before and after editing,
+        indicating this is a no-op that should not be added to the undo stack.
+        """
+        return not self.old_content and not self.new_content
