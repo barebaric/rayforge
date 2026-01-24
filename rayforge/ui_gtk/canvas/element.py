@@ -1085,13 +1085,16 @@ class CanvasElement:
         """Called when this element is no longer the Canvas's edit_context."""
         pass
 
-    def handle_edit_press(self, world_x: float, world_y: float) -> bool:
+    def handle_edit_press(
+        self, world_x: float, world_y: float, n_press: int = 1
+    ) -> bool:
         """
         Handles a mouse press event while in edit mode.
 
         Args:
-            world_x: The x-coordinate of the press in world space.
-            world_y: The y-coordinate of the press in world space.
+            world_x: The x-coordinate of press in world space.
+            world_y: The y-coordinate of press in world space.
+            n_press: The number of clicks (1=click, 2=double, 3=triple).
 
         Returns:
             True if the event was handled, False otherwise.
