@@ -44,32 +44,47 @@ def test_text_box_tool_initialization(text_box_tool):
 def test_text_box_tool_on_press_creates_box(text_box_tool, mock_element):
     """Test that first press creates a text box and enters EDITING state."""
     mock_element.hittester.screen_to_model.return_value = (10, 20)
+    mock_element.sketch.registry.entities = []
+
     mock_entity = TextBoxEntity(
         5, 0, 1, 2, content="", construction_line_ids=[]
     )
-    mock_element.sketch.registry.entities = [mock_entity]
-    mock_element.sketch.registry.get_entity = Mock(return_value=mock_entity)
+
+    def mock_execute(cmd):
+        cmd.text_box_id = 5
+
+    mock_element.execute_command.side_effect = mock_execute
+
+    def get_entity_side_effect(eid):
+        if eid == 5:
+            return mock_entity
+        return None
+
+    mock_element.sketch.registry.get_entity.side_effect = (
+        get_entity_side_effect
+    )
 
     result = text_box_tool.on_press(100, 200, 1)
 
     assert result is True
     assert text_box_tool.state == TextBoxState.EDITING
-    assert text_box_tool.editing_entity_id is not None
+    assert text_box_tool.editing_entity_id == 5
     assert text_box_tool.text_buffer == ""
     assert mock_element.execute_command.call_count == 1
     mock_element.mark_dirty.assert_called()
 
 
-def test_text_box_tool_on_press_outside_box_finalizes(
+def test_text_box_tool_on_press_outside_box_creates_new(
     text_box_tool, mock_element
 ):
-    """Test that clicking outside the box finalizes the edit."""
+    """Test that clicking outside box creates a new text box."""
     text_box_tool.state = TextBoxState.EDITING
     text_box_tool.editing_entity_id = 5
     text_box_tool.text_buffer = "Test Text"
 
     mock_element.hittester.screen_to_model.return_value = (1000, 1000)
     mock_element.content_transform.transform_point.return_value = (1000, 1000)
+    mock_element.sketch.registry.entities = []
 
     mock_entity = MagicMock(spec=TextBoxEntity)
     mock_entity.origin_id = 0
@@ -78,7 +93,20 @@ def test_text_box_tool_on_press_outside_box_finalizes(
     mock_entity.content = "Test Text"
     mock_entity.font_params = {"family": "sans-serif", "size": 10.0}
 
-    mock_element.sketch.registry.get_entity.return_value = mock_entity
+    new_entity = TextBoxEntity(
+        6, 0, 1, 2, content="", construction_line_ids=[]
+    )
+
+    def get_entity_side_effect(eid):
+        if eid == 5:
+            return mock_entity
+        if eid == 6:
+            return new_entity
+        return None
+
+    mock_element.sketch.registry.get_entity.side_effect = (
+        get_entity_side_effect
+    )
 
     def get_point_side_effect(pid):
         vals = {0: (0, 0), 1: (50, 0), 2: (0, 10)}
@@ -88,13 +116,18 @@ def test_text_box_tool_on_press_outside_box_finalizes(
 
     mock_element.sketch.registry.get_point.side_effect = get_point_side_effect
 
+    def mock_execute(cmd):
+        cmd.text_box_id = 6
+
+    mock_element.execute_command.side_effect = mock_execute
+
     result = text_box_tool.on_press(100, 200, 1)
 
-    assert result is False
-    assert text_box_tool.state == TextBoxState.IDLE
-    assert text_box_tool.editing_entity_id is None
+    assert result is True
+    assert text_box_tool.state == TextBoxState.EDITING
+    assert text_box_tool.editing_entity_id == 6
     assert text_box_tool.text_buffer == ""
-    mock_element.execute_command.assert_called_once()
+    assert mock_element.execute_command.call_count == 2
 
 
 def test_text_box_tool_handle_text_input_appends_character(
@@ -380,11 +413,20 @@ def test_text_box_tool_draw_overlay_editing_state(text_box_tool, mock_element):
     mock_entity.width_id = 1
     mock_entity.height_id = 2
     mock_entity.font_params = {
-        "family": "sans-serif",
-        "size": 10.0,
+        "font_family": "sans-serif",
+        "font_size": 10.0,
         "bold": False,
         "italic": False,
     }
+    mock_entity.get_font_metrics = Mock(return_value=(10.0, -2.0, 12.0))
+    mock_entity.get_font_params = Mock(
+        return_value={
+            "font_family": "sans-serif",
+            "font_size": 10.0,
+            "bold": False,
+            "italic": False,
+        }
+    )
 
     mock_element.sketch.registry.get_entity = Mock(return_value=mock_entity)
     mock_element.sketch.registry.get_point.side_effect = [

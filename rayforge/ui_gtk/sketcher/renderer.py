@@ -298,19 +298,17 @@ class SketchRenderer:
         if not (p_origin and p_width and p_height):
             return False
 
-        natural_geo = Geometry.from_text(
-            entity.content,
-            font_family=entity.font_params.get("family", "sans-serif"),
-            font_size=entity.font_params.get("size", 10.0),
-            is_bold=entity.font_params.get("bold", False),
-            is_italic=entity.font_params.get("italic", False),
-        )
+        natural_geo = Geometry.from_text(entity.content, **entity.font_params)
         natural_geo.flip_y()
+
+        _, descent, font_height = entity.get_font_metrics()
 
         transformed_geo = natural_geo.map_to_frame(
             (p_origin.x, p_origin.y),
             (p_width.x, p_width.y),
             (p_height.x, p_height.y),
+            anchor_y=-descent,
+            stable_src_height=font_height,
         )
 
         transformed_geo.to_cairo(ctx)
