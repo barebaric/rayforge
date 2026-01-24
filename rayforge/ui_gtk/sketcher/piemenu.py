@@ -60,6 +60,8 @@ class SketchPieMenu(PieMenu):
             "dist": "add_distance_constraint",
             "radius": "add_radius_constraint",
             "diameter": "add_diameter_constraint",
+            # Aspect ratio constraint
+            "aspect_ratio": "add_aspect_ratio_constraint",
         }
 
         # 2. Invert the editor's shortcut map to group keys by action
@@ -220,6 +222,13 @@ class SketchPieMenu(PieMenu):
         label = f"{_('Symmetry')}{get_shortcut_label('symmetry')}"
         item = PieMenuItem(
             "sketch-constrain-symmetric-symbolic", label, data="symmetry"
+        )
+        item.on_click.connect(self._on_constraint_clicked, weak=False)
+        self.add_item(item)
+
+        label = f"{_('Aspect Ratio')}{get_shortcut_label('aspect_ratio')}"
+        item = PieMenuItem(
+            "sketch-constrain-aspect-symbolic", label, data="aspect_ratio"
         )
         item.on_click.connect(self._on_constraint_clicked, weak=False)
         self.add_item(item)

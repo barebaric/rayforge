@@ -74,7 +74,7 @@ def test_text_box_calculate_geometry_constraints():
     ]
 
     assert len(aspect_ratio) == 1
-    assert aspect_ratio[0].user_visible is False
+    assert aspect_ratio[0].user_visible is True
 
     assert len(parallelogram) == 1
     assert parallelogram[0].user_visible is False
