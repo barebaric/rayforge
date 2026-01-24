@@ -17,6 +17,9 @@ class SketcherKey(Enum):
     END = auto()
     UNDO = auto()
     REDO = auto()
+    COPY = auto()
+    PASTE = auto()
+    SELECT_ALL = auto()
 
 
 class SketchTool(ABC):

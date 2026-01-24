@@ -689,6 +689,10 @@ class Canvas(Gtk.DrawingArea):
         """
         # Edit mode logic
         if self.edit_context:
+            logger.debug(
+                f"on_mouse_drag: edit_context exists, "
+                f"offset_x={offset_x}, offset_y={offset_y}"
+            )
             ok, start_x, start_y = self._drag_gesture.get_start_point()
             if not ok:
                 return
@@ -701,6 +705,10 @@ class Canvas(Gtk.DrawingArea):
             )
             world_dx = current_world_x - start_world_x
             world_dy = current_world_y - start_world_y
+            logger.debug(
+                f"on_mouse_drag: calling handle_edit_drag with "
+                f"dx={world_dx}, dy={world_dy}"
+            )
             self.edit_context.handle_edit_drag(world_dx, world_dy)
             self.queue_draw()
             return  # Stop further processing
