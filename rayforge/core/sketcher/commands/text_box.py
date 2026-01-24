@@ -68,14 +68,14 @@ class TextBoxCommand(SketchChangeCommand):
         entities_to_add = [*lines_to_add, text_box]
 
         constraints_to_add = [
-            # Internal constraint for live text resizing (hidden)
+            # Aspect ratio constraint for live text resizing
             AspectRatioConstraint(
                 p_origin.id,
                 p_width.id,
                 p_origin.id,
                 p_height.id,
                 1.0,
-                user_visible=False,
+                user_visible=True,
             ),
             # Structural integrity constraint (hidden)
             ParallelogramConstraint(
