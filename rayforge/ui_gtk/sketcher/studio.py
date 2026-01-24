@@ -119,7 +119,7 @@ class SketchStudio(Gtk.Box):
         main_paned.set_start_child(side_panel_scroller)
 
         side_panel_box = Gtk.Box(
-            orientation=Gtk.Orientation.VERTICAL, spacing=12
+            orientation=Gtk.Orientation.VERTICAL, spacing=24
         )
         side_panel_box.set_margin_top(12)
         side_panel_box.set_margin_bottom(12)
@@ -130,6 +130,9 @@ class SketchStudio(Gtk.Box):
         # Properties Group (Name)
         properties_group = Adw.PreferencesGroup()
         properties_group.set_title(_("Properties"))
+        properties_group.set_description(
+            _("Configure the sketch name and basic properties")
+        )
         self.name_row = Adw.EntryRow(title=_("Name"))
         self.name_row.connect("changed", self._on_name_changed)
         properties_group.add(self.name_row)
