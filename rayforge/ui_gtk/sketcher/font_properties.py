@@ -149,8 +149,7 @@ class FontPropertiesWidget(Adw.PreferencesGroup):
     def _open_font_chooser_dialog(self):
         """Opens a Gtk font chooser dialog for font selection."""
         dialog = Gtk.FontChooserDialog(
-            title=_("Select Font"),
-            transient_for=self.editor.parent_window
+            title=_("Select Font"), transient_for=self.editor.parent_window
         )
         font_desc = self._get_font_description_from_ui()
         dialog.set_font_desc(font_desc)

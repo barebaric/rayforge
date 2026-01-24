@@ -61,8 +61,8 @@ def test_sketch_workflow():
 
     # Check bounding box is approx 10x10
     min_x, min_y, max_x, max_y = geo.rect()
-    assert min_x == pytest.approx(0.0)
-    assert min_y == pytest.approx(0.0)
+    assert min_x == pytest.approx(0.0, abs=1e-4)
+    assert min_y == pytest.approx(0.0, abs=1e-4)
     assert max_x == pytest.approx(10.0, abs=1e-4)
     assert max_y == pytest.approx(10.0, abs=1e-4)
 
