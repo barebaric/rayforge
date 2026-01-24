@@ -9,7 +9,11 @@ from rayforge.core.sketcher.entities import (
     Entity,
     TextBoxEntity,
 )
-from rayforge.core.sketcher.constraints import Constraint
+from rayforge.core.sketcher.constraints import (
+    Constraint,
+    CoincidentConstraint,
+    PointOnLineConstraint,
+)
 from rayforge.core.geo import primitives
 from rayforge.core.geo.primitives import (
     find_closest_point_on_line_segment,
@@ -264,27 +268,38 @@ class SketchHitTester:
     def _hit_test_overlays(self, wx, wy, element) -> Tuple[Optional[str], Any]:
         if not element.canvas:
             return None, None
+
+        # Collect all points associated with text boxes to hide their overlays
+        text_box_point_ids = set()
+        for entity in element.sketch.registry.entities:
+            if isinstance(entity, TextBoxEntity):
+                text_box_point_ids.update(
+                    entity.get_all_frame_point_ids(element.sketch.registry)
+                )
+
         to_screen = self.get_model_to_screen_transform(element)
         sx_in, sy_in = element.canvas.view_transform.transform_point((wx, wy))
 
         # Test explicit constraints first
         constraints = element.sketch.constraints or []
         constraint_idx = self._is_constraint_hit(
-            constraints, sx_in, sy_in, to_screen, element
+            constraints, sx_in, sy_in, to_screen, element, text_box_point_ids
         )
         if constraint_idx is not None:
             return "constraint", constraint_idx
 
         # Test implicit junction constraints
         junction_pid = self._hit_test_junctions(
-            sx_in, sy_in, to_screen, element
+            sx_in, sy_in, to_screen, element, text_box_point_ids
         )
         if junction_pid is not None:
             return "junction", junction_pid
 
         return None, None
 
-    def _hit_test_junctions(self, sx, sy, to_screen, element) -> Optional[int]:
+    def _hit_test_junctions(
+        self, sx, sy, to_screen, element, text_box_point_ids
+    ) -> Optional[int]:
         registry = element.sketch.registry
         point_counts = defaultdict(int)
         for entity in registry.entities:
@@ -301,6 +316,9 @@ class SketchHitTester:
 
         for pid, count in point_counts.items():
             if count > 1:
+                # Ignore junctions that are part of a text box frame
+                if pid in text_box_point_ids:
+                    continue
                 try:
                     p = registry.get_point(pid)
                     spx, spy = to_screen.transform_point((p.x, p.y))
@@ -311,13 +329,31 @@ class SketchHitTester:
         return None
 
     def _is_constraint_hit(
-        self, constraints: list[Constraint], sx, sy, to_screen, element
+        self,
+        constraints: list[Constraint],
+        sx,
+        sy,
+        to_screen,
+        element,
+        text_box_point_ids,
     ) -> Optional[int]:
         """Iterates through constraints and checks for hits polymorphically."""
         click_radius = 13.0
         for idx, constr in enumerate(constraints):
             if not constr.user_visible:
                 continue
+
+            # Skip hit-testing point-based constraints on text box points
+            if isinstance(constr, CoincidentConstraint):
+                if (
+                    constr.p1 in text_box_point_ids
+                    or constr.p2 in text_box_point_ids
+                ):
+                    continue
+            elif isinstance(constr, PointOnLineConstraint):
+                if constr.point_id in text_box_point_ids:
+                    continue
+
             if constr.is_hit(
                 sx,
                 sy,

@@ -61,6 +61,24 @@ def test_text_box_get_point_ids(registry):
     assert set(box.get_point_ids()) == {p1, p2, p3}
 
 
+def test_text_box_get_all_frame_point_ids(registry):
+    """Tests that a text box correctly reports all frame point IDs."""
+    p1 = registry.add_point(0, 0)
+    p2 = registry.add_point(10, 0)
+    p3 = registry.add_point(0, 10)
+    box = registry.get_entity(
+        registry.add_text_box(p1, p2, p3, "Test", FontConfig())
+    )
+
+    assert set(box.get_all_frame_point_ids(registry)) == {p1, p2, p3}
+
+    p4 = registry.add_point(10, 10)
+    line_id = registry.add_line(p2, p4, construction=True)
+    box.construction_line_ids = [line_id]
+
+    assert set(box.get_all_frame_point_ids(registry)) == {p1, p2, p3, p4}
+
+
 def test_text_box_update_constrained_status(registry):
     """Test TextBoxEntity.update_constrained_status logic."""
     p1 = registry.add_point(0, 0)

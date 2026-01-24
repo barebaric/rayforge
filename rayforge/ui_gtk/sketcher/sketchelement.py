@@ -778,9 +778,7 @@ class SketchElement(CanvasElement):
         equals the current ratio.
         """
         if not self.is_constraint_supported("aspect_ratio") or not self.editor:
-            logger.warning(
-                "Aspect ratio constraint requires exactly 2 lines."
-            )
+            logger.warning("Aspect ratio constraint requires exactly 2 lines.")
             return
 
         if len(self.selection.entity_ids) != 2:
