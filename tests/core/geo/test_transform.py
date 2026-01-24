@@ -21,6 +21,7 @@ from rayforge.core.geo.constants import (
 from rayforge.core.geo import (
     Geometry,
 )
+from rayforge.core.geo.font_config import FontConfig
 from rayforge.core.geo.text import text_to_geometry
 from rayforge.core.geo.transform import (
     apply_affine_transform_to_array,
@@ -462,7 +463,8 @@ def test_map_geometry_to_frame_translate_scale():
 def test_map_geometry_to_frame_non_uniform_scale():
     """Tests mapping (stretching) a geometry non-uniformly."""
     # Source is text "I", which has a non-square aspect ratio
-    text_geo = text_to_geometry("I", font_size=10)
+    config = FontConfig(font_size=10)
+    text_geo = text_to_geometry("I", font_config=config)
     min_x_s, min_y_s, max_x_s, max_y_s = text_geo.rect()
     # The text is not at (0,0), so this is a good test case
 

@@ -3,6 +3,7 @@ import math
 import numpy as np
 from unittest.mock import patch, ANY
 
+from rayforge.core.geo.font_config import FontConfig
 from rayforge.core.geo import (
     Geometry,
 )
@@ -353,7 +354,7 @@ def test_dump_and_load(sample_geometry):
 
 @patch("rayforge.core.geo.text.text_to_geometry")
 def test_from_text_wrapper(mock_text_to_geometry):
-    """Tests that Geometry.from_text() delegates to the text module."""
+    """Tests that Geometry.from_text() delegates to text module."""
     # Mock the return of the low-level function
     mock_geo = Geometry()
     mock_geo.line_to(1, 1)
@@ -364,21 +365,18 @@ def test_from_text_wrapper(mock_text_to_geometry):
         pass
 
     # Call the class method on the subclass
-    result_geo = MySubClass.from_text(
-        "test",
+    font_config = FontConfig(
         font_family="Arial",
         font_size=12,
         bold=True,
         italic=False,
     )
+    result_geo = MySubClass.from_text("test", font_config=font_config)
 
     # Assert the low-level function was called correctly
     mock_text_to_geometry.assert_called_once_with(
         "test",
-        font_family="Arial",
-        font_size=12,
-        bold=True,
-        italic=False,
+        font_config=font_config,
     )
 
     # Assert the result has the correct data from the mock

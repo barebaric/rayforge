@@ -1,14 +1,12 @@
 import cairo
 from .geometry import Geometry
-from typing import Tuple
+from .font_config import FontConfig
+from typing import Optional
 
 
 def text_to_geometry(
     text: str,
-    font_family: str = "sans-serif",
-    font_size: float = 10.0,
-    bold: bool = False,
-    italic: bool = False,
+    font_config: Optional[FontConfig] = None,
 ) -> Geometry:
     """
     Generates a Geometry object representing the vector path of the given text.
@@ -19,14 +17,14 @@ def text_to_geometry(
 
     Args:
         text: The string content to render.
-        font_family: The font family name (e.g., "Arial", "sans-serif").
-        font_size: The font size in geometry units (typically mm).
-        bold: Whether to use a bold weight.
-        italic: Whether to use an italic slant.
+        font_config: The font configuration to use.
 
     Returns:
         A Geometry object containing the vector contours of the text.
     """
+    if font_config is None:
+        font_config = FontConfig()
+
     if not text:
         return Geometry()
 
@@ -36,10 +34,18 @@ def text_to_geometry(
     ctx = cairo.Context(surface)
 
     # Configure font selection
-    slant = cairo.FONT_SLANT_ITALIC if italic else cairo.FONT_SLANT_NORMAL
-    weight = cairo.FONT_WEIGHT_BOLD if bold else cairo.FONT_WEIGHT_NORMAL
-    ctx.select_font_face(font_family, slant, weight)
-    ctx.set_font_size(font_size)
+    slant = (
+        cairo.FONT_SLANT_ITALIC
+        if font_config.italic
+        else cairo.FONT_SLANT_NORMAL
+    )
+    weight = (
+        cairo.FONT_WEIGHT_BOLD
+        if font_config.bold
+        else cairo.FONT_WEIGHT_NORMAL
+    )
+    ctx.select_font_face(font_config.font_family, slant, weight)
+    ctx.set_font_size(font_config.font_size)
 
     # Position at origin. Text is drawn relative to the baseline.
     ctx.move_to(0, 0)
@@ -95,81 +101,3 @@ def text_to_geometry(
             geo.close_path()
 
     return geo
-
-
-def get_font_metrics(
-    font_family: str = "sans-serif",
-    font_size: float = 10.0,
-    bold: bool = False,
-    italic: bool = False,
-) -> Tuple[float, float, float]:
-    """
-    Gets the font metrics for the specified font.
-
-    Returns a tuple of (ascent, descent, height) where:
-    - ascent: distance from baseline to top of ascenders
-    - descent: distance from baseline to bottom of descenders (negative)
-    - height: total vertical extent (ascent - descent)
-
-    Args:
-        font_family: The font family name.
-        font_size: The font size in geometry units.
-        bold: Whether to use a bold weight.
-        italic: Whether to use an italic slant.
-
-    Returns:
-        A tuple (ascent, descent, height).
-    """
-    surface = cairo.RecordingSurface(cairo.CONTENT_COLOR_ALPHA, None)
-    ctx = cairo.Context(surface)
-
-    slant = cairo.FONT_SLANT_ITALIC if italic else cairo.FONT_SLANT_NORMAL
-    weight = cairo.FONT_WEIGHT_BOLD if bold else cairo.FONT_WEIGHT_NORMAL
-    ctx.select_font_face(font_family, slant, weight)
-    ctx.set_font_size(font_size)
-
-    ascent, descent, height, _, _ = ctx.font_extents()
-
-    return ascent, descent, height
-
-
-def get_text_width(
-    text: str,
-    font_family: str = "sans-serif",
-    font_size: float = 10.0,
-    bold: bool = False,
-    italic: bool = False,
-) -> float:
-    """
-    Gets the width of the text including spaces.
-
-    Unlike geometry-based measurement which ignores spaces, this function
-    uses Cairo's text extents to get the actual advance width, which
-    properly accounts for whitespace characters.
-
-    Args:
-        text: The string to measure.
-        font_family: The font family name.
-        font_size: The font size in geometry units.
-        bold: Whether to use a bold weight.
-        italic: Whether to use an italic slant.
-
-    Returns:
-        The width of the text in geometry units.
-    """
-    if not text:
-        return 0.0
-
-    surface = cairo.RecordingSurface(cairo.CONTENT_COLOR_ALPHA, None)
-    ctx = cairo.Context(surface)
-
-    slant = cairo.FONT_SLANT_ITALIC if italic else cairo.FONT_SLANT_NORMAL
-    weight = cairo.FONT_WEIGHT_BOLD if bold else cairo.FONT_WEIGHT_NORMAL
-    ctx.select_font_face(font_family, slant, weight)
-    ctx.set_font_size(font_size)
-
-    x_bearing, y_bearing, width, height, x_advance, y_advance = (
-        ctx.text_extents(text)
-    )
-
-    return x_advance
