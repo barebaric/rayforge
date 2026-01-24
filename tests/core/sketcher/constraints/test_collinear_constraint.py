@@ -1,4 +1,5 @@
 import pytest
+from unittest.mock import MagicMock
 from rayforge.core.sketcher import Sketch
 from rayforge.core.sketcher.constraints import CollinearConstraint
 
@@ -114,3 +115,19 @@ def test_collinear_solver_integration(sketch_with_points):
     # We verify the error is now zero.
     error = constraint.error(sketch.registry, sketch.params)
     assert abs(error) < 1e-6
+
+
+def test_collinear_draw(sketch_with_points):
+    """Test that the draw method can be called without errors."""
+    sketch, p1, p2, p3 = sketch_with_points
+    constraint = CollinearConstraint(p1, p2, p3)
+
+    ctx = MagicMock()
+
+    def to_screen(pos):
+        return pos
+
+    constraint.draw(ctx, sketch.registry, to_screen)
+    constraint.draw(ctx, sketch.registry, to_screen, is_selected=True)
+    constraint.draw(ctx, sketch.registry, to_screen, is_hovered=True)
+    constraint.draw(ctx, sketch.registry, to_screen, point_radius=10.0)

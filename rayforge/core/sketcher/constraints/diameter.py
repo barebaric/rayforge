@@ -11,10 +11,11 @@ from typing import (
     TYPE_CHECKING,
 )
 from ..entities import Circle
-from .base import Constraint
+from .base import Constraint, ConstraintStatus
 from .radius import RadiusConstraint
 
 if TYPE_CHECKING:
+    import cairo
     from ..params import ParameterContext
     from ..registry import EntityRegistry
 
@@ -142,3 +143,85 @@ class DiameterConstraint(Constraint):
 
             return x_min <= sx <= x_max and y_min <= sy <= y_max
         return False
+
+    def draw(
+        self,
+        ctx: "cairo.Context",
+        registry: "EntityRegistry",
+        to_screen: Callable[[Tuple[float, float]], Tuple[float, float]],
+        is_selected: bool = False,
+        is_hovered: bool = False,
+        point_radius: float = 5.0,
+    ) -> None:
+        p0 = to_screen((0, 0))
+        p1 = to_screen((1, 0))
+        scale = math.hypot(p1[0] - p0[0], p1[1] - p0[1])
+        if scale < 1e-9:
+            scale = 1.0
+
+        # Logic from RadiusConstraint.get_label_pos adapted here
+        entity = registry.get_entity(self.circle_id)
+        if not isinstance(entity, Circle):
+            return
+
+        center = registry.get_point(entity.center_idx)
+        radius_pt = registry.get_point(entity.radius_pt_idx)
+        if not (center and radius_pt):
+            return
+
+        radius = math.hypot(radius_pt.x - center.x, radius_pt.y - center.y)
+        mid_angle = math.atan2(radius_pt.y - center.y, radius_pt.x - center.x)
+
+        if radius == 0.0:
+            return
+
+        label_dist_screen = 20.0  # Pixels
+        label_dist_model = label_dist_screen / scale
+        total_dist_model = radius + label_dist_model
+
+        label_mx = center.x + total_dist_model * math.cos(mid_angle)
+        label_my = center.y + total_dist_model * math.sin(mid_angle)
+        sx, sy = to_screen((label_mx, label_my))
+
+        arc_mid_mx = center.x + radius * math.cos(mid_angle)
+        arc_mid_my = center.y + radius * math.sin(mid_angle)
+        arc_mid_sx, arc_mid_sy = to_screen((arc_mid_mx, arc_mid_my))
+
+        label = f"Ø{self._format_value()}"
+        ext = ctx.text_extents(label)
+
+        ctx.save()
+        # Set background color based on selection, hover, and status
+        if is_selected:
+            ctx.set_source_rgba(0.2, 0.6, 1.0, 0.4)  # Blue selection
+        elif is_hovered:
+            ctx.set_source_rgba(1.0, 0.95, 0.85, 0.9)  # Light yellow hover
+        elif self.status == ConstraintStatus.ERROR:
+            ctx.set_source_rgba(1.0, 0.8, 0.8, 0.9)  # Light red background
+        elif self.status == ConstraintStatus.EXPRESSION_BASED:
+            ctx.set_source_rgba(1.0, 0.9, 0.7, 0.9)  # Light orange background
+        else:  # VALID
+            ctx.set_source_rgba(1, 1, 1, 0.8)  # Default white background
+
+        bg_x = sx - ext.width / 2 - 4
+        bg_y = sy - ext.height / 2 - 4
+        ctx.rectangle(bg_x, bg_y, ext.width + 8, ext.height + 8)
+        ctx.fill()
+        ctx.new_path()
+
+        # Set text color based on status
+        if self.status == ConstraintStatus.ERROR:
+            ctx.set_source_rgb(0.8, 0.0, 0.0)  # Red text for error
+        else:
+            ctx.set_source_rgb(0, 0, 0.5)  # Dark blue otherwise
+
+        ctx.move_to(sx - ext.width / 2, sy + ext.height / 2 - 2)
+        ctx.show_text(label)
+
+        self._set_color(ctx, is_hovered)
+        ctx.set_line_width(1)
+        ctx.set_dash([4, 4])
+        ctx.move_to(sx, sy)
+        ctx.line_to(arc_mid_sx, arc_mid_sy)
+        ctx.stroke()
+        ctx.restore()

@@ -14,6 +14,7 @@ from .base import Constraint
 from ..entities import Line, Arc, Circle
 
 if TYPE_CHECKING:
+    import cairo
     from ..params import ParameterContext
     from ..registry import EntityRegistry
 
@@ -154,7 +155,6 @@ class EqualLengthConstraint(Constraint):
         entity,
         reg: "EntityRegistry",
         to_screen: Callable[[Tuple[float, float]], Tuple[float, float]],
-        element: Any,
     ):
         """Calculates screen pos for an equality symbol on an entity."""
         # 1. Get anchor point (mid_x, mid_y) and normal_angle in MODEL space
@@ -175,10 +175,13 @@ class EqualLengthConstraint(Constraint):
             center = reg.get_point(entity.center_idx)
             normal_angle = math.atan2(mid_y - center.y, mid_x - center.x)
 
-        scale = 1.0
-        if element.canvas and hasattr(element.canvas, "get_view_scale"):
-            scale, _ = element.canvas.get_view_scale()
-            scale = max(scale, 1e-9)
+        # Estimate scale from transform
+        p0 = to_screen((0, 0))
+        p1 = to_screen((1, 0))
+        scale = math.hypot(p1[0] - p0[0], p1[1] - p0[1])
+        if scale < 1e-9:
+            scale = 1.0
+
         offset_dist_model = 15.0 / scale
         final_x = mid_x + offset_dist_model * math.cos(normal_angle)
         final_y = mid_y + offset_dist_model * math.sin(normal_angle)
@@ -197,9 +200,43 @@ class EqualLengthConstraint(Constraint):
             entity = reg.get_entity(entity_id)
             if not entity:
                 continue
-            pos = self._get_symbol_pos(entity, reg, to_screen, element)
+            pos = self._get_symbol_pos(entity, reg, to_screen)
             if pos:
                 esx, esy = pos
                 if math.hypot(sx - esx, sy - esy) < threshold:
                     return True
         return False
+
+    def draw(
+        self,
+        ctx: "cairo.Context",
+        registry: "EntityRegistry",
+        to_screen: Callable[[Tuple[float, float]], Tuple[float, float]],
+        is_selected: bool = False,
+        is_hovered: bool = False,
+        point_radius: float = 5.0,
+    ) -> None:
+        for entity_id in self.entity_ids:
+            entity = registry.get_entity(entity_id)
+            if not entity:
+                continue
+
+            pos = self._get_symbol_pos(entity, registry, to_screen)
+            if not pos:
+                continue
+
+            sx, sy = pos
+            ctx.save()
+
+            if is_selected:
+                ctx.set_source_rgba(0.2, 0.6, 1.0, 0.4)
+                ctx.arc(sx, sy, 10, 0, 2 * math.pi)
+                ctx.fill()
+
+            self._set_color(ctx, is_hovered)
+            ctx.set_font_size(16)
+            ext = ctx.text_extents("=")
+            ctx.move_to(sx - ext.width / 2, sy + ext.height / 2)
+            ctx.show_text("=")
+            ctx.restore()
+            ctx.new_path()
