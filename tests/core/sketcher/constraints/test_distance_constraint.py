@@ -2,6 +2,7 @@ import pytest
 import numpy as np
 from scipy.optimize import check_grad
 from types import SimpleNamespace
+from unittest.mock import MagicMock
 from rayforge.core.sketcher.constraints import DistanceConstraint
 from rayforge.core.sketcher.params import ParameterContext
 from rayforge.core.sketcher.registry import EntityRegistry
@@ -72,7 +73,7 @@ def test_distance_constraint_with_expression(setup_env):
 def test_distance_constraint_gradient(setup_env):
     """
     Uses scipy.optimize.check_grad to numerically verify the analytical
-    gradient of the DistanceConstraint.
+    gradient of DistanceConstraint.
     """
     reg, params = setup_env
     p1_id = reg.add_point(1, 2)
@@ -177,3 +178,20 @@ def test_distance_is_hit(setup_env):
 
     # Miss - far from the line segment (beyond threshold)
     assert c.is_hit(50, 20, reg, to_screen, mock_element, threshold) is False
+
+
+def test_distance_draw(setup_env):
+    reg, params = setup_env
+    p1 = reg.add_point(0, 0)
+    p2 = reg.add_point(100, 0)
+    c = DistanceConstraint(p1, p2, 100)
+
+    ctx = MagicMock()
+
+    def to_screen(pos):
+        return pos
+
+    c.draw(ctx, reg, to_screen)
+    c.draw(ctx, reg, to_screen, is_selected=True)
+    c.draw(ctx, reg, to_screen, is_hovered=True)
+    c.draw(ctx, reg, to_screen, point_radius=10.0)

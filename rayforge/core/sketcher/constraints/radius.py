@@ -1,5 +1,6 @@
 from __future__ import annotations
 import math
+import cairo
 from typing import (
     Union,
     Tuple,
@@ -11,7 +12,7 @@ from typing import (
     TYPE_CHECKING,
 )
 from ..entities import Arc, Circle
-from .base import Constraint
+from .base import Constraint, ConstraintStatus
 
 if TYPE_CHECKING:
     from ..params import ParameterContext
@@ -165,9 +166,17 @@ class RadiusConstraint(Constraint):
             return None
 
         scale = 1.0
-        if element.canvas and hasattr(element.canvas, "get_view_scale"):
+        if element and element.canvas:
             scale_x, _ = element.canvas.get_view_scale()
             scale = scale_x if scale_x > 1e-9 else 1.0
+        elif element is None:
+            # Try to infer scale from to_screen if element is not passed
+            # This is a fallback
+            p0 = to_screen((0, 0))
+            p1 = to_screen((1, 0))
+            scale = math.hypot(p1[0] - p0[0], p1[1] - p0[1])
+            if scale < 1e-9:
+                scale = 1.0
 
         label_dist = radius + 20 / scale
         label_mx = center.x + label_dist * math.cos(mid_angle)
@@ -210,3 +219,60 @@ class RadiusConstraint(Constraint):
 
             return x_min <= sx <= x_max and y_min <= sy <= y_max
         return False
+
+    def draw(
+        self,
+        ctx: "cairo.Context",
+        registry: "EntityRegistry",
+        to_screen: Callable[[Tuple[float, float]], Tuple[float, float]],
+        is_selected: bool = False,
+        is_hovered: bool = False,
+        point_radius: float = 5.0,
+    ) -> None:
+        pos_data = self.get_label_pos(
+            registry,
+            to_screen,
+            None,  # Pass None as element, get_label_pos will infer scale
+        )
+        if not pos_data:
+            return
+        sx, sy, arc_mid_sx, arc_mid_sy = pos_data
+
+        label = f"R{self._format_value()}"
+        ext = ctx.text_extents(label)
+
+        ctx.save()
+        # Set background color based on selection, hover, and status
+        if is_selected:
+            ctx.set_source_rgba(0.2, 0.6, 1.0, 0.4)  # Blue selection
+        elif is_hovered:
+            ctx.set_source_rgba(1.0, 0.95, 0.85, 0.9)  # Light yellow hover
+        elif self.status == ConstraintStatus.ERROR:
+            ctx.set_source_rgba(1.0, 0.8, 0.8, 0.9)  # Light red background
+        elif self.status == ConstraintStatus.EXPRESSION_BASED:
+            ctx.set_source_rgba(1.0, 0.9, 0.7, 0.9)  # Light orange background
+        else:  # VALID
+            ctx.set_source_rgba(1, 1, 1, 0.8)  # Default white background
+
+        bg_x = sx - ext.width / 2 - 4
+        bg_y = sy - ext.height / 2 - 4
+        ctx.rectangle(bg_x, bg_y, ext.width + 8, ext.height + 8)
+        ctx.fill()
+        ctx.new_path()
+
+        # Set text color based on status
+        if self.status == ConstraintStatus.ERROR:
+            ctx.set_source_rgb(0.8, 0.0, 0.0)  # Red text for error
+        else:
+            ctx.set_source_rgb(0, 0, 0.5)  # Dark blue otherwise
+
+        ctx.move_to(sx - ext.width / 2, sy + ext.height / 2 - 2)
+        ctx.show_text(label)
+
+        self._set_color(ctx, is_hovered)
+        ctx.set_line_width(1)
+        ctx.set_dash([4, 4])
+        ctx.move_to(sx, sy)
+        ctx.line_to(arc_mid_sx, arc_mid_sy)
+        ctx.stroke()
+        ctx.restore()

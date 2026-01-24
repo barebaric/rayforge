@@ -1,5 +1,6 @@
 from __future__ import annotations
 import math
+import cairo
 from typing import (
     Tuple,
     Dict,
@@ -212,3 +213,67 @@ class TangentConstraint(Constraint):
         symbol_sy = sy_tangent + offset * math.sin(angle)
 
         return math.hypot(sx - symbol_sx, sy - symbol_sy) < threshold
+
+    def draw(
+        self,
+        ctx: "cairo.Context",
+        registry: "EntityRegistry",
+        to_screen: Callable[[Tuple[float, float]], Tuple[float, float]],
+        is_selected: bool = False,
+        is_hovered: bool = False,
+        point_radius: float = 5.0,
+    ) -> None:
+        line = registry.get_entity(self.line_id)
+        shape = registry.get_entity(self.shape_id)
+
+        if not (
+            line
+            and shape
+            and isinstance(line, Line)
+            and isinstance(shape, (Arc, Circle))
+        ):
+            return
+
+        p1 = registry.get_point(line.p1_idx)
+        p2 = registry.get_point(line.p2_idx)
+        center = registry.get_point(shape.center_idx)
+
+        # Find closest point on infinite line from center (in model space)
+        tangent_mx, tangent_my = find_closest_point_on_line(
+            (p1.x, p1.y), (p2.x, p2.y), center.x, center.y
+        )
+
+        sx_tangent, sy_tangent = to_screen((tangent_mx, tangent_my))
+        sx_center, sy_center = to_screen((center.x, center.y))
+
+        angle = math.atan2(sy_tangent - sy_center, sx_tangent - sx_center)
+
+        offset = 15.0
+        sx = sx_tangent + offset * math.cos(angle)
+        sy = sy_tangent + offset * math.sin(angle)
+
+        ctx.save()
+        ctx.set_line_width(1.5)
+
+        ctx.translate(sx, sy)
+        ctx.rotate(angle + math.pi / 2.0)
+
+        radius = 6.0
+
+        ctx.new_sub_path()
+        ctx.arc(
+            0,
+            -radius,
+            radius,
+            math.pi / 2 - math.pi / 3,
+            math.pi / 2 + math.pi / 3,
+        )
+        ctx.move_to(-radius * 1.2, 0)
+        ctx.line_to(radius * 1.2, 0)
+
+        if is_selected:
+            self._draw_selection_underlay(ctx)
+
+        self._set_color(ctx, is_hovered)
+        ctx.stroke()
+        ctx.restore()

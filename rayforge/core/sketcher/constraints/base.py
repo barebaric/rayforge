@@ -14,6 +14,7 @@ from typing import (
 from ...expression import safe_evaluate
 
 if TYPE_CHECKING:
+    import cairo
     from ..params import ParameterContext
     from ..registry import EntityRegistry
 
@@ -81,6 +82,49 @@ class Constraint:
     ) -> bool:
         """Checks if the constraint's visual representation is hit."""
         return False
+
+    def _set_color(self, ctx: "cairo.Context", is_hovered: bool) -> None:
+        """
+        Sets the standard drawing color for constraints based on hover and
+        status.
+        """
+        if is_hovered:
+            ctx.set_source_rgb(1.0, 0.8, 0.0)  # Yellow for hover
+        elif self.status == ConstraintStatus.ERROR:
+            ctx.set_source_rgb(1.0, 0.2, 0.2)  # Red for error
+        elif self.status == ConstraintStatus.EXPRESSION_BASED:
+            ctx.set_source_rgb(1.0, 0.6, 0.0)  # Orange for expression
+        else:  # VALID
+            ctx.set_source_rgb(0.0, 0.6, 0.0)  # Green for valid
+
+    def _draw_selection_underlay(
+        self, ctx: "cairo.Context", width_scale: float = 3.0
+    ) -> None:
+        """Draws a semi-transparent blue underlay for the current path."""
+        ctx.save()
+        ctx.set_source_rgba(0.2, 0.6, 1.0, 0.4)
+        ctx.set_line_width(ctx.get_line_width() * width_scale)
+        ctx.stroke_preserve()
+        ctx.restore()
+
+    def _format_value(self) -> str:
+        """Helper to format the value string for constraints."""
+        return f"{float(self.value):.1f}"
+
+    def draw(
+        self,
+        ctx: "cairo.Context",
+        registry: "EntityRegistry",
+        to_screen: Callable[[Tuple[float, float]], Tuple[float, float]],
+        is_selected: bool = False,
+        is_hovered: bool = False,
+        point_radius: float = 5.0,
+    ) -> None:
+        """
+        Draws the visual representation of the constraint on the canvas.
+        Default implementation does nothing.
+        """
+        pass
 
     def update_from_context(self, context: Dict[str, Any]):
         """

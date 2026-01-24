@@ -96,11 +96,11 @@ def test_equal_length_constrains_radius_method(setup_env):
 
     c = EqualLengthConstraint([l1, l2])
 
-    # Should return True for entities in the list
+    # Should return True for entities in list
     assert c.constrains_radius(reg, l1) is True
     assert c.constrains_radius(reg, l2) is True
 
-    # Should return False for entities not in the list
+    # Should return False for entities not in list
     assert c.constrains_radius(reg, 999) is False
 
 
@@ -220,3 +220,26 @@ def test_equal_length_is_hit(setup_env):
     )
     # Miss both
     assert c.is_hit(0, 0, reg, to_screen, mock_element, threshold) is False
+
+
+def test_equal_length_draw(setup_env):
+    reg, params = setup_env
+    p1 = reg.add_point(0, 0)
+    p2 = reg.add_point(10, 0)
+    l1 = reg.add_line(p1, p2)
+
+    p3 = reg.add_point(0, 10)
+    p4 = reg.add_point(5, 10)
+    l2 = reg.add_line(p3, p4)
+
+    c = EqualLengthConstraint([l1, l2])
+
+    ctx = MagicMock()
+
+    def to_screen(pos):
+        return pos
+
+    c.draw(ctx, reg, to_screen)
+    c.draw(ctx, reg, to_screen, is_selected=True)
+    c.draw(ctx, reg, to_screen, is_hovered=True)
+    c.draw(ctx, reg, to_screen, point_radius=10.0)

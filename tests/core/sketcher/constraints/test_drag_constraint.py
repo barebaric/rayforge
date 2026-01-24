@@ -2,6 +2,7 @@ import pytest
 import numpy as np
 from scipy.optimize import check_grad
 from functools import partial
+from unittest.mock import MagicMock
 from rayforge.core.sketcher.constraints import DragConstraint
 from rayforge.core.sketcher.params import ParameterContext
 from rayforge.core.sketcher.registry import EntityRegistry
@@ -94,3 +95,20 @@ def test_drag_constraint_serialization_round_trip(setup_env):
     # DragConstraint returns empty dict from to_dict() as it's not meant to be
     # serialized
     assert serialized == {}
+
+
+def test_drag_draw(setup_env):
+    reg, params = setup_env
+    p1 = reg.add_point(0, 0)
+
+    c = DragConstraint(p1, 100.0, 0.0, weight=0.1)
+
+    ctx = MagicMock()
+
+    def to_screen(pos):
+        return pos
+
+    c.draw(ctx, reg, to_screen)
+    c.draw(ctx, reg, to_screen, is_selected=True)
+    c.draw(ctx, reg, to_screen, is_hovered=True)
+    c.draw(ctx, reg, to_screen, point_radius=10.0)

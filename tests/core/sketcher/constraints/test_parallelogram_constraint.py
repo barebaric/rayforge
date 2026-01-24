@@ -1,6 +1,7 @@
 import pytest
 import numpy as np
 from scipy.optimize import check_grad
+from unittest.mock import MagicMock
 from rayforge.core.sketcher.constraints import ParallelogramConstraint
 from rayforge.core.sketcher.params import ParameterContext
 from rayforge.core.sketcher.registry import EntityRegistry
@@ -168,7 +169,6 @@ def test_parallelogram_constraint_serialization_round_trip(setup_env):
     assert original.p_width == restored.p_width
     assert original.p_height == restored.p_height
     assert original.p4 == restored.p4
-
     assert original.error(reg, params) == restored.error(reg, params)
 
 
@@ -186,3 +186,23 @@ def test_parallelogram_constraint_serialization_includes_user_visible(
 
     assert "user_visible" in serialized
     assert serialized["user_visible"] is False
+
+
+def test_parallelogram_draw(setup_env):
+    reg, params = setup_env
+    p_origin = reg.add_point(0, 0)
+    p_width = reg.add_point(10, 0)
+    p_height = reg.add_point(0, 5)
+    p4 = reg.add_point(10, 5)
+
+    c = ParallelogramConstraint(p_origin, p_width, p_height, p4)
+
+    ctx = MagicMock()
+
+    def to_screen(pos):
+        return pos
+
+    c.draw(ctx, reg, to_screen)
+    c.draw(ctx, reg, to_screen, is_selected=True)
+    c.draw(ctx, reg, to_screen, is_hovered=True)
+    c.draw(ctx, reg, to_screen, point_radius=10.0)
