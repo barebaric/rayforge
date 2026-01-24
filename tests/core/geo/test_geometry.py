@@ -404,8 +404,7 @@ def test_map_to_frame_wrapper(mock_map_to_frame):
 
     # Assert the low-level function was called with the correct arguments
     mock_map_to_frame.assert_called_once_with(
-        geo, origin, p_width, p_height, anchor_y=None,
-        stable_src_height=None
+        geo, origin, p_width, p_height, anchor_y=None, stable_src_height=None
     )
 
 

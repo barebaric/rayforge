@@ -146,10 +146,7 @@ class SketchEditor:
 
         # Priority 1.5: Text Editing Cursor
         current_tool = self.sketch_element.current_tool
-        if (
-            isinstance(current_tool, TextBoxTool)
-            and current_tool.is_hovering
-        ):
+        if isinstance(current_tool, TextBoxTool) and current_tool.is_hovering:
             return Gdk.Cursor.new_from_name("text")
 
         # Priority 2: Return a tool-specific cursor.
@@ -434,6 +431,8 @@ class SketchEditor:
                 Gdk.KEY_End: SketcherKey.END,
                 Gdk.KEY_KP_Home: SketcherKey.HOME,
                 Gdk.KEY_KP_End: SketcherKey.END,
+                Gdk.KEY_z: SketcherKey.UNDO,
+                Gdk.KEY_y: SketcherKey.REDO,
             }
             if keyval in key_map:
                 return tool.handle_key_event(key_map[keyval])
