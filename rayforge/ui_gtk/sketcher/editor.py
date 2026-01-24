@@ -437,13 +437,13 @@ class SketchEditor:
                 Gdk.KEY_End: SketcherKey.END,
                 Gdk.KEY_KP_Home: SketcherKey.HOME,
                 Gdk.KEY_KP_End: SketcherKey.END,
-                Gdk.KEY_z: SketcherKey.UNDO,
-                Gdk.KEY_y: SketcherKey.REDO,
-                Gdk.KEY_c: SketcherKey.COPY,
-                Gdk.KEY_x: SketcherKey.CUT,
-                Gdk.KEY_v: SketcherKey.PASTE,
             }
             if is_ctrl:
+                key_map[Gdk.KEY_z] = SketcherKey.UNDO
+                key_map[Gdk.KEY_y] = SketcherKey.REDO
+                key_map[Gdk.KEY_c] = SketcherKey.COPY
+                key_map[Gdk.KEY_x] = SketcherKey.CUT
+                key_map[Gdk.KEY_v] = SketcherKey.PASTE
                 key_map[Gdk.KEY_a] = SketcherKey.SELECT_ALL
             if keyval in key_map:
                 return tool.handle_key_event(
