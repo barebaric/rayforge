@@ -1,7 +1,7 @@
 from typing import List, Tuple, Dict, Any, Sequence, Optional, TYPE_CHECKING
 from ...geo import primitives
 from ...geo.geometry import Geometry
-from ...geo.text import get_font_metrics
+from ...geo.font_config import FontConfig
 from .entity import Entity
 from .line import Line
 
@@ -18,7 +18,7 @@ class TextBoxEntity(Entity):
         width_id: int,
         height_id: int,
         content: str = "",
-        font_params: Optional[Dict[str, Any]] = None,
+        font_config: Optional[FontConfig] = None,
         construction: bool = False,
         construction_line_ids: Optional[List[int]] = None,
     ):
@@ -27,12 +27,7 @@ class TextBoxEntity(Entity):
         self.width_id = width_id
         self.height_id = height_id
         self.content = content
-        self.font_params = font_params or {
-            "font_family": "sans-serif",
-            "font_size": 10.0,
-            "bold": False,
-            "italic": False,
-        }
+        self.font_config = font_config or FontConfig()
         self.construction_line_ids = construction_line_ids or []
         self.type = "text_box"
 
@@ -40,7 +35,7 @@ class TextBoxEntity(Entity):
         return [self.origin_id, self.width_id, self.height_id]
 
     def get_font_metrics(self) -> Tuple[float, float, float]:
-        return get_font_metrics(**self.font_params)
+        return self.font_config.get_font_metrics()
 
     def get_fourth_corner_id(
         self, registry: "EntityRegistry"
@@ -132,7 +127,7 @@ class TextBoxEntity(Entity):
         p_origin = registry.get_point(self.origin_id)
         p_width = registry.get_point(self.width_id)
         p_height = registry.get_point(self.height_id)
-        txt_geo = Geometry.from_text(self.content, **self.font_params)
+        txt_geo = Geometry.from_text(self.content, self.font_config)
         txt_geo.flip_y()
 
         _, descent, font_height = self.get_font_metrics()
@@ -153,7 +148,7 @@ class TextBoxEntity(Entity):
         p_width = registry.get_point(self.width_id)
         p_height = registry.get_point(self.height_id)
 
-        txt_geo = Geometry.from_text(self.content, **self.font_params)
+        txt_geo = Geometry.from_text(self.content, self.font_config)
         txt_geo.flip_y()
 
         _, descent, font_height = self.get_font_metrics()
@@ -174,7 +169,7 @@ class TextBoxEntity(Entity):
                 "width_id": self.width_id,
                 "height_id": self.height_id,
                 "content": self.content,
-                "font_params": self.font_params,
+                "font_config": self.font_config.to_dict(),
                 "construction_line_ids": self.construction_line_ids,
             }
         )
@@ -188,7 +183,7 @@ class TextBoxEntity(Entity):
             width_id=data["width_id"],
             height_id=data["height_id"],
             content=data.get("content", ""),
-            font_params=data.get("font_params"),
+            font_config=FontConfig.from_dict(data.get("font_config")),
             construction=data.get("construction", False),
             construction_line_ids=data.get("construction_line_ids"),
         )

@@ -31,6 +31,7 @@ from .constants import (
     COL_C2Y,
     GEO_ARRAY_COLS,
 )
+from .font_config import FontConfig
 from .geometry import Geometry
 
 __all__ = [
@@ -43,6 +44,7 @@ __all__ = [
     "query",
     "text",
     "transform",
+    "FontConfig",
     "Geometry",
     "CMD_TYPE_MOVE",
     "CMD_TYPE_LINE",

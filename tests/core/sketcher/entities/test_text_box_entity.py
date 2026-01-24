@@ -1,6 +1,7 @@
 import pytest
 from rayforge.core.sketcher.entities import TextBoxEntity
 from rayforge.core.sketcher.registry import EntityRegistry
+from rayforge.core.geo.font_config import FontConfig
 from rayforge.core.geo.geometry import Geometry
 
 
@@ -17,12 +18,12 @@ def test_text_box_serialization_round_trip():
         width_id=2,
         height_id=3,
         content="Hello World",
-        font_params={
-            "family": "sans-serif",
-            "size": 10.0,
-            "bold": False,
-            "italic": False,
-        },
+        font_config=FontConfig(
+            font_family="sans-serif",
+            font_size=10.0,
+            bold=False,
+            italic=False,
+        ),
     )
 
     data = original_box.to_dict()
@@ -32,9 +33,9 @@ def test_text_box_serialization_round_trip():
     assert data["width_id"] == 2
     assert data["height_id"] == 3
     assert data["content"] == "Hello World"
-    assert data["font_params"] == {
-        "family": "sans-serif",
-        "size": 10.0,
+    assert data["font_config"] == {
+        "font_family": "sans-serif",
+        "font_size": 10.0,
         "bold": False,
         "italic": False,
     }
@@ -46,7 +47,7 @@ def test_text_box_serialization_round_trip():
     assert new_box.width_id == original_box.width_id
     assert new_box.height_id == original_box.height_id
     assert new_box.content == original_box.content
-    assert new_box.font_params == original_box.font_params
+    assert new_box.font_config == original_box.font_config
 
 
 def test_text_box_get_point_ids(registry):
@@ -54,7 +55,9 @@ def test_text_box_get_point_ids(registry):
     p1 = registry.add_point(0, 0)
     p2 = registry.add_point(10, 0)
     p3 = registry.add_point(0, 10)
-    box = registry.get_entity(registry.add_text_box(p1, p2, p3, "Test", {}))
+    box = registry.get_entity(
+        registry.add_text_box(p1, p2, p3, "Test", FontConfig())
+    )
     assert set(box.get_point_ids()) == {p1, p2, p3}
 
 
@@ -63,7 +66,9 @@ def test_text_box_update_constrained_status(registry):
     p1 = registry.add_point(0, 0)
     p2 = registry.add_point(10, 0)
     p3 = registry.add_point(0, 10)
-    box = registry.get_entity(registry.add_text_box(p1, p2, p3, "Test", {}))
+    box = registry.get_entity(
+        registry.add_text_box(p1, p2, p3, "Test", FontConfig())
+    )
 
     pt1 = registry.get_point(p1)
     pt2 = registry.get_point(p2)
@@ -153,7 +158,9 @@ def test_text_box_to_geometry(registry):
     p1 = registry.add_point(0, 0)
     p2 = registry.add_point(10, 0)
     p3 = registry.add_point(0, 10)
-    box = registry.get_entity(registry.add_text_box(p1, p2, p3, "Test", {}))
+    box = registry.get_entity(
+        registry.add_text_box(p1, p2, p3, "Test", FontConfig())
+    )
     geo = box.to_geometry(registry)
     assert isinstance(geo, Geometry)
     assert len(geo) > 0
@@ -164,7 +171,9 @@ def test_text_box_create_text_fill_geometry(registry):
     p1 = registry.add_point(0, 0)
     p2 = registry.add_point(10, 0)
     p3 = registry.add_point(0, 10)
-    box = registry.get_entity(registry.add_text_box(p1, p2, p3, "Test", {}))
+    box = registry.get_entity(
+        registry.add_text_box(p1, p2, p3, "Test", FontConfig())
+    )
     geo = box.create_text_fill_geometry(registry)
     assert isinstance(geo, Geometry)
     assert len(geo) > 0

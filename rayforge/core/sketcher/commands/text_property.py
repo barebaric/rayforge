@@ -1,6 +1,7 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING, Dict, Any, Tuple, Optional, List
 from ....core.geo.geometry import Geometry
+from ....core.geo.font_config import FontConfig
 from ..constraints import AspectRatioConstraint
 from ..entities.point import Point
 from ..entities.text_box import TextBoxEntity
@@ -17,14 +18,14 @@ class ModifyTextPropertyCommand(SketchChangeCommand):
         sketch: Sketch,
         text_entity_id: int,
         new_content: str,
-        new_font_params: Dict[str, Any],
+        new_font_config: FontConfig,
     ):
         super().__init__(sketch, _("Modify Text Property"))
         self.text_entity_id = text_entity_id
         self.new_content = new_content
-        self.new_font_params = new_font_params
+        self.new_font_config = new_font_config
         self.old_content = ""
-        self.old_font_params: Dict[str, Any] = {}
+        self.old_font_config: Optional[FontConfig] = None
         self.old_point_positions: Dict[int, Tuple[float, float]] = {}
         self.old_aspect_ratio: Optional[float] = None
         self.aspect_ratio_constraint_idx: Optional[int] = None
@@ -44,7 +45,7 @@ class ModifyTextPropertyCommand(SketchChangeCommand):
 
         if not self.old_content and not self.old_point_positions:
             self.old_content = text_entity.content
-            self.old_font_params = text_entity.font_params.copy()
+            self.old_font_config = text_entity.font_config.copy()
             p_width = self.sketch.registry.get_point(text_entity.width_id)
             p_height = self.sketch.registry.get_point(text_entity.height_id)
             self.old_point_positions = {
@@ -66,7 +67,7 @@ class ModifyTextPropertyCommand(SketchChangeCommand):
                         break
 
         text_entity.content = self.new_content
-        text_entity.font_params = self.new_font_params.copy()
+        text_entity.font_config = self.new_font_config.copy()
 
         # If the content is empty after editing, remove the entity
         if not self.new_content:
@@ -81,7 +82,7 @@ class ModifyTextPropertyCommand(SketchChangeCommand):
             natural_width = 10.0
         else:
             natural_geo = Geometry.from_text(
-                text_entity.content, **text_entity.font_params
+                text_entity.content, text_entity.font_config
             )
             natural_geo.flip_y()
             min_x, _, max_x, _ = natural_geo.rect()
@@ -171,7 +172,8 @@ class ModifyTextPropertyCommand(SketchChangeCommand):
         text_entity = entity
 
         text_entity.content = self.old_content
-        text_entity.font_params = self.old_font_params.copy()
+        if self.old_font_config is not None:
+            text_entity.font_config = self.old_font_config.copy()
 
         for pid, (x, y) in self.old_point_positions.items():
             p = self.sketch.registry.get_point(pid)
