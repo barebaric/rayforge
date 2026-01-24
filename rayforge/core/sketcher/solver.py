@@ -14,12 +14,14 @@ class Solver:
         registry: EntityRegistry,
         params: ParameterContext,
         constraints: Sequence[Constraint],
+        auxiliary_constraints: Sequence[Constraint] = (),
     ):
         self.registry = registry
         self.params = params
         self.constraints = constraints
+        self.auxiliary_constraints = auxiliary_constraints
 
-    def solve(self, tolerance: float = 1e-6, update_dof: bool = True) -> bool:
+    def solve(self, tolerance: float = 1e-5, update_dof: bool = True) -> bool:
         """
         Runs the least_squares optimizer to satisfy constraints.
         Returns True if successful.
@@ -44,6 +46,10 @@ class Solver:
                 self._update_entity_constraints()
             return True  # Nothing to solve
 
+        all_constraints = list(self.constraints) + list(
+            self.auxiliary_constraints
+        )
+
         # 2. Extract initial state vector [x0, y0, x1, y1, ...]
         x0_list = []
         for p in mutable_points:
@@ -65,7 +71,7 @@ class Solver:
 
             # Calculate errors
             residuals = []
-            for const in self.constraints:
+            for const in all_constraints:
                 err = const.error(self.registry, self.params)
                 # Flatten the error result into the residuals list
                 if isinstance(err, (tuple, list)):
@@ -80,16 +86,10 @@ class Solver:
 
             return np.array(residuals)
 
-        # 4. Define the Jacobian function
-        def jacobian(x_state):
-            # Ensure registry is up-to-date (least_squares might call jac with
-            # the same x as obj, or different)
-            update_registry(x_state)
-
-            n_vars = len(x0)
+        # Helper to build Jacobian rows for a specific set of constraints
+        def build_jacobian_rows(constraint_list, n_vars):
             rows = []
-
-            for const in self.constraints:
+            for const in constraint_list:
                 grad_map = const.gradient(self.registry, self.params)
 
                 # Determine how many residuals this constraint produces
@@ -122,6 +122,16 @@ class Solver:
                             current_row[idx] = dx
                             current_row[idx + 1] = dy
 
+            return rows
+
+        # 4. Define the Jacobian function
+        def jacobian(x_state):
+            # Ensure registry is up-to-date
+            update_registry(x_state)
+            n_vars = len(x0)
+
+            rows = build_jacobian_rows(all_constraints, n_vars)
+
             if not rows:
                 return np.zeros((1, n_vars))
 
@@ -142,11 +152,20 @@ class Solver:
         # 6. Final Update to ensure registry matches result
         update_registry(result.x)
 
-        success = bool(result.success and result.cost < tolerance)
+        success = bool(result.success and result.cost <= tolerance)
 
         # 7. Analyze Degrees of Freedom (DOF) - CONDITIONALLY
         if success and update_dof:
-            self._analyze_dof(result.jac, mutable_points)
+            # Re-compute Jacobian using ONLY hard constraints for DOF
+            # analysis. Stabilizer constraints (auxiliary) should not count
+            # towards DOF.
+            hard_rows = build_jacobian_rows(self.constraints, len(x0))
+            if hard_rows:
+                hard_jac = np.vstack(hard_rows)
+            else:
+                hard_jac = np.zeros((1, len(x0)))
+
+            self._analyze_dof(hard_jac, mutable_points)
             self._update_entity_constraints()
 
         return success
