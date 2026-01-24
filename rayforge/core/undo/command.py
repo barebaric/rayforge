@@ -51,3 +51,14 @@ class Command(ABC):
             True if merging was successful, False otherwise.
         """
         return False
+
+    def should_skip_undo(self) -> bool:
+        """
+        Checks if this command should be skipped from being added to the
+        undo stack. This is useful for no-op operations that don't change
+        the state.
+
+        Returns:
+            True if the command should be skipped, False otherwise.
+        """
+        return False

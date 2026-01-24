@@ -1,10 +1,30 @@
 from rayforge.core.undo import HistoryManager
+from rayforge.core.undo.command import Command
 from rayforge.core.undo.property_cmd import ChangePropertyCommand
 
 
 class MockObj:
     def __init__(self):
         self.value = 0
+        self.other_value = 0
+
+
+class SkipUndoCommand(Command):
+    """Command that should be skipped from undo stack."""
+
+    def __init__(self, skip=False):
+        super().__init__()
+        self._skip = skip
+        self.executed = False
+
+    def execute(self):
+        self.executed = True
+
+    def undo(self):
+        pass
+
+    def should_skip_undo(self):
+        return self._skip
 
 
 def test_checkpoint_initial_state():
@@ -161,3 +181,72 @@ def test_checkpoint_with_transactions():
     hm.redo()
     assert hm.is_at_checkpoint() is True
     assert obj.value == 2
+
+
+def test_should_skip_undo_not_skipped():
+    """Test that commands with should_skip_undo=False are added to history."""
+    hm = HistoryManager()
+    cmd = SkipUndoCommand(skip=False)
+    hm.execute(cmd)
+
+    assert hm.can_undo() is True
+    assert len(hm.undo_stack) == 1
+    assert cmd.executed is True
+
+
+def test_should_skip_undo_skipped():
+    """Test commands with should_skip_undo=True are not added to history."""
+    hm = HistoryManager()
+    cmd = SkipUndoCommand(skip=True)
+    hm.execute(cmd)
+
+    assert hm.can_undo() is False
+    assert len(hm.undo_stack) == 0
+    assert cmd.executed is True
+
+
+def test_should_skip_undo_mixed_commands():
+    """Test history with mix of skip and non-skip commands."""
+    hm = HistoryManager()
+    obj = MockObj()
+
+    cmd1 = ChangePropertyCommand(obj, "value", 1)
+    hm.execute(cmd1)
+
+    skip_cmd = SkipUndoCommand(skip=True)
+    hm.execute(skip_cmd)
+
+    cmd2 = ChangePropertyCommand(obj, "other_value", 2)
+    hm.execute(cmd2)
+
+    assert len(hm.undo_stack) == 2
+    assert hm.can_undo() is True
+    assert obj.value == 1
+    assert obj.other_value == 2
+
+
+def test_should_skip_undo_with_transactions():
+    """Test that skip-undo commands in transactions are handled correctly."""
+    hm = HistoryManager()
+    obj = MockObj()
+
+    with hm.transaction("Mixed") as t:
+        t.execute(ChangePropertyCommand(obj, "value", 1))
+        t.execute(SkipUndoCommand(skip=True))
+        t.execute(ChangePropertyCommand(obj, "value", 2))
+
+    assert len(hm.undo_stack) == 1
+    assert hm.can_undo() is True
+    assert obj.value == 2
+
+
+def test_should_skip_undo_all_skipped_in_transaction():
+    """Test transaction with only skip-undo commands."""
+    hm = HistoryManager()
+
+    with hm.transaction("All Skip") as t:
+        t.execute(SkipUndoCommand(skip=True))
+        t.execute(SkipUndoCommand(skip=True))
+
+    assert len(hm.undo_stack) == 1
+    assert hm.can_undo() is True
