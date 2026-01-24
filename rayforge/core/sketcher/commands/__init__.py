@@ -5,6 +5,7 @@ from .construction import ToggleConstructionCommand
 from .fill import AddFillCommand, RemoveFillCommand
 from .fillet import FilletCommand
 from .items import AddItemsCommand, RemoveItemsCommand
+from .live_text_edit import LiveTextEditCommand
 from .point import MovePointCommand, UnstickJunctionCommand
 from .rectangle import RectangleCommand
 from .rounded_rect import RoundedRectCommand
@@ -17,6 +18,7 @@ __all__ = [
     "AddItemsCommand",
     "ChamferCommand",
     "FilletCommand",
+    "LiveTextEditCommand",
     "ModifyConstraintCommand",
     "ModifyTextPropertyCommand",
     "MovePointCommand",
