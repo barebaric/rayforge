@@ -36,7 +36,7 @@ def test_sketch_change_command_initialization(sketch):
     cmd = ConcreteSketchChangeCommand(sketch, "Test Command")
     assert cmd.sketch is sketch
     assert cmd.name == "Test Command"
-    assert cmd._state_snapshot == {}
+    assert cmd._snapshot is None
     assert not cmd.executed
     assert not cmd.undone
 
@@ -48,9 +48,12 @@ def test_capture_snapshot(sketch, command):
 
     command.capture_snapshot()
 
-    assert len(command._state_snapshot) == 3
-    assert command._state_snapshot[p1_id] == (10.0, 20.0)
-    assert command._state_snapshot[p2_id] == (30.0, 40.0)
+    assert command._snapshot is not None
+    points, entities = command._snapshot
+    # Origin point (created by Sketch init) + 2 added points = 3
+    assert len(points) == 3
+    assert points[p1_id] == (10.0, 20.0)
+    assert points[p2_id] == (30.0, 40.0)
 
 
 def test_restore_snapshot(sketch, command):
@@ -89,11 +92,13 @@ def test_execute_captures_snapshot_if_empty(sketch, command):
     """Test that execute captures snapshot if not already done."""
     p1_id = sketch.add_point(10.0, 20.0)
 
-    assert command._state_snapshot == {}
+    assert command._snapshot is None
 
     command.execute()
 
-    assert command._state_snapshot[p1_id] == (10.0, 20.0)
+    assert command._snapshot is not None
+    points, entities = command._snapshot
+    assert points[p1_id] == (10.0, 20.0)
     assert command.executed
 
 
@@ -107,7 +112,9 @@ def test_execute_uses_existing_snapshot(sketch):
 
     cmd.execute()
 
-    assert cmd._state_snapshot[p1_id] == (10.0, 20.0)
+    assert cmd._snapshot is not None
+    points, entities = cmd._snapshot
+    assert points[p1_id] == (10.0, 20.0)
     assert cmd.executed
 
 

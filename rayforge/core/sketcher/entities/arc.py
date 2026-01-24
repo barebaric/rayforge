@@ -26,6 +26,16 @@ class Arc(Entity):
         self.clockwise = clockwise
         self.type = "arc"
 
+    def get_state(self) -> Optional[Dict[str, Any]]:
+        state = super().get_state() or {}
+        state["clockwise"] = self.clockwise
+        return state
+
+    def set_state(self, state: Dict[str, Any]) -> None:
+        super().set_state(state)
+        if "clockwise" in state:
+            self.clockwise = state["clockwise"]
+
     def get_point_ids(self) -> List[int]:
         return [self.start_idx, self.end_idx, self.center_idx]
 

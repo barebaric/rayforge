@@ -16,6 +16,22 @@ class Entity:
         # Constrained state is calculated by solver
         self.constrained = False
 
+    def get_state(self) -> Optional[Dict[str, Any]]:
+        """
+        Returns a dictionary of solver-relevant discrete state (e.g. winding),
+        or None if the entity has no mutable discrete state.
+        Used for Undo/Redo snapshots.
+        """
+        # Construction state affects solver topology/rendering, so we capture
+        # it. Subclasses should call super().get_state() or merge dicts if
+        # they have more state.
+        return {"construction": self.construction}
+
+    def set_state(self, state: Dict[str, Any]) -> None:
+        """Restores state from a snapshot."""
+        if "construction" in state:
+            self.construction = state["construction"]
+
     def update_constrained_status(
         self, registry: "EntityRegistry", constraints: Sequence["Constraint"]
     ) -> None:

@@ -243,3 +243,25 @@ def test_arc_append_to_geometry(registry):
     assert geo3.data[0][0] == 1.0  # Move command
     assert geo3.data[1][0] == 3.0  # Arc command
     assert geo3.data[1][6] == 1.0  # CCW arc traversed backward = CW
+
+
+def test_arc_get_set_state(registry):
+    """Test state capture and restoration for Undo/Redo."""
+    s = registry.add_point(10, 0)
+    e = registry.add_point(0, 10)
+    c = registry.add_point(0, 0)
+    aid = registry.add_arc(s, e, c, cw=False)
+    arc = registry.get_entity(aid)
+
+    # Verify initial state
+    state = arc.get_state()
+    assert state == {"construction": False, "clockwise": False}
+
+    # Modify state
+    arc.construction = True
+    arc.clockwise = True
+
+    # Restore state
+    arc.set_state(state)
+    assert arc.construction is False
+    assert arc.clockwise is False

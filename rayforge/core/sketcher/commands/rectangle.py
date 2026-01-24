@@ -137,7 +137,11 @@ class RectangleCommand(SketchChangeCommand):
             # If the start point was temporary, it was removed from the sketch
             # before the command ran. The command's undo removes the *new*
             # version. We must restore the original temp point.
-            if self.is_start_temp and self.start_pid in self._state_snapshot:
-                start_x, start_y = self._state_snapshot[self.start_pid]
+            if (
+                self.is_start_temp
+                and self._snapshot is not None
+                and self.start_pid in self._snapshot[0]
+            ):
+                start_x, start_y = self._snapshot[0][self.start_pid]
                 new_p = Point(self.start_pid, start_x, start_y)
                 self.sketch.registry.points.append(new_p)
