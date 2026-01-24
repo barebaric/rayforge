@@ -1,9 +1,12 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING, Dict, Any, Tuple, Optional, List
-import math
 from ....core.geo.geometry import Geometry
 from ....core.geo.font_config import FontConfig
-from ..constraints import AspectRatioConstraint, EqualLengthConstraint
+from ..constraints import (
+    AspectRatioConstraint,
+    EqualLengthConstraint,
+    DistanceConstraint,
+)
 from ..entities.point import Point
 from ..entities.line import Line
 from ..entities.text_box import TextBoxEntity
@@ -31,6 +34,7 @@ class ModifyTextPropertyCommand(SketchChangeCommand):
         self.old_point_positions: Dict[int, Tuple[float, float]] = {}
         self.old_aspect_ratio: Optional[float] = None
         self.aspect_ratio_constraint_idx: Optional[int] = None
+        self._added_constraints: List[Constraint] = []
 
         self._entity_was_removed = False
         self._removed_entity: Optional[TextBoxEntity] = None
@@ -119,6 +123,8 @@ class ModifyTextPropertyCommand(SketchChangeCommand):
             self._remove_text_entity(text_entity)
             return
 
+        self._added_constraints.clear()
+
         # --- Iteration 2: "Content as Truth" Reset ---
         natural_width, natural_height = self._calculate_natural_metrics(
             self.new_content, self.new_font_config
@@ -127,26 +133,21 @@ class ModifyTextPropertyCommand(SketchChangeCommand):
         # --- Iteration 3: Shed size constraints ---
         self._shed_size_constraints(text_entity)
 
-        p_origin = self.sketch.registry.get_point(text_entity.origin_id)
-        p_width = self.sketch.registry.get_point(text_entity.width_id)
-        p_height = self.sketch.registry.get_point(text_entity.height_id)
-
-        # 1. Preserve orientation from current geometry
-        dx = p_width.x - p_origin.x
-        dy = p_width.y - p_origin.y
-        current_len = math.hypot(dx, dy)
-        ux, uy = (1.0, 0.0)
-        if current_len > 1e-9:
-            ux, uy = dx / current_len, dy / current_len
-
-        # Perpendicular vector for height
-        vx, vy = -uy, ux
-
-        # 2. Force-update point positions to their natural state
-        p_width.x = p_origin.x + natural_width * ux
-        p_width.y = p_origin.y + natural_width * uy
-        p_height.x = p_origin.x + natural_height * vx
-        p_height.y = p_origin.y + natural_height * vy
+        # Create and add new implicit distance constraints to enforce size
+        width_constr = DistanceConstraint(
+            text_entity.origin_id,
+            text_entity.width_id,
+            natural_width,
+            user_visible=False,
+        )
+        height_constr = DistanceConstraint(
+            text_entity.origin_id,
+            text_entity.height_id,
+            natural_height,
+            user_visible=False,
+        )
+        self._added_constraints.extend([width_constr, height_constr])
+        self.sketch.constraints.extend(self._added_constraints)
 
         # Update aspect ratio constraint with new text dimensions
         # The constraint must exist for a text box.
@@ -239,6 +240,12 @@ class ModifyTextPropertyCommand(SketchChangeCommand):
             constr = self.sketch.constraints[self.aspect_ratio_constraint_idx]
             assert isinstance(constr, AspectRatioConstraint)
             constr.ratio = self.old_aspect_ratio
+
+        # Remove constraints added by this command
+        for c in self._added_constraints:
+            if c in self.sketch.constraints:
+                self.sketch.constraints.remove(c)
+        self._added_constraints.clear()
 
         # Restore removed constraints
         for c in self._removed_constraints:
