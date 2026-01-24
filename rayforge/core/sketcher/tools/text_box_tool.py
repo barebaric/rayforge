@@ -31,10 +31,50 @@ class TextBoxTool(SketchTool):
         self.is_hovering = False
         self.live_edit_cmd: Optional[LiveTextEditCommand] = None
 
+        # Text selection state
+        self.selection_start: Optional[int] = None
+        self.selection_end: Optional[int] = None
+        self.is_drag_selecting = False
+        self.drag_start_pos: int = 0
+        self._drag_start_world_x: float = 0.0
+        self._drag_start_world_y: float = 0.0
+
         # Signals for the UI layer to manage timers, etc.
         self.editing_started = Signal()
         self.editing_finished = Signal()
         self.cursor_moved = Signal()
+
+    def _get_selection_range(self) -> tuple[int, int]:
+        """Returns normalized selection range (start, end)."""
+        if self.selection_start is None or self.selection_end is None:
+            return 0, 0
+        return (
+            min(self.selection_start, self.selection_end),
+            max(self.selection_start, self.selection_end),
+        )
+
+    def get_selected_text(self) -> str:
+        """Returns the currently selected text."""
+        start, end = self._get_selection_range()
+        if start == end:
+            return ""
+        return self.text_buffer[start:end]
+
+    def clear_selection(self):
+        """Clears the current selection."""
+        self.selection_start = None
+        self.selection_end = None
+
+    def set_selection(self, start: int, end: int):
+        """Sets the selection range."""
+        self.selection_start = start
+        self.selection_end = end
+
+    def extend_selection(self, new_pos: int):
+        """Extends the selection to a new position."""
+        if self.selection_start is None:
+            self.selection_start = self.cursor_pos
+        self.selection_end = new_pos
 
     def start_editing(self, entity_id: int):
         """Public method to begin editing an existing text box."""
@@ -47,6 +87,7 @@ class TextBoxTool(SketchTool):
         self.editing_entity_id = entity_id
         self.text_buffer = entity.content
         self.cursor_pos = len(self.text_buffer)  # Cursor at the end
+        self.clear_selection()
         self.state = TextBoxState.EDITING
         self.cursor_visible = True
         self.element.mark_dirty()
@@ -71,6 +112,8 @@ class TextBoxTool(SketchTool):
         self.editing_entity_id = None
         self.text_buffer = ""
         self.cursor_pos = 0
+        self.clear_selection()
+        self.is_drag_selecting = False
         self.is_hovering = False
 
     def toggle_cursor_visibility(self):
@@ -87,7 +130,7 @@ class TextBoxTool(SketchTool):
         if self.state == TextBoxState.IDLE:
             return self._handle_idle_press(mx, my)
         elif self.state == TextBoxState.EDITING:
-            return self._handle_editing_press(mx, my)
+            return self._handle_editing_press(mx, my, world_x, world_y)
         return False
 
     def _handle_idle_press(self, mx: float, my: float) -> bool:
@@ -103,10 +146,23 @@ class TextBoxTool(SketchTool):
             self.start_editing(cmd.text_box_id)
         return True
 
-    def _handle_editing_press(self, mx: float, my: float) -> bool:
+    def _handle_editing_press(
+        self, mx: float, my: float, world_x: float, world_y: float
+    ) -> bool:
         if self._is_point_inside_box(mx, my):
             self._update_cursor_from_click(mx, my)
-            return True
+            self.is_drag_selecting = True
+            self.drag_start_pos = self.cursor_pos
+            self.selection_start = self.cursor_pos
+            self.selection_end = self.cursor_pos
+            self._drag_start_world_x = world_x
+            self._drag_start_world_y = world_y
+            logger.debug(
+                f"_handle_editing_press: is_drag_selecting=True, "
+                f"cursor_pos={self.cursor_pos}, "
+                f"start=({world_x}, {world_y})"
+            )
+            return False  # Don't claim gesture, allow drag events
 
         clicked_entity_id = self._find_text_box_at_point(mx, my)
         if clicked_entity_id is not None:
@@ -209,10 +265,41 @@ class TextBoxTool(SketchTool):
                 self.element.execute_command(cmd)
 
     def on_drag(self, world_dx: float, world_dy: float):
-        pass
+        if self.state == TextBoxState.EDITING and self.is_drag_selecting:
+            logger.debug(
+                f"on_drag: state=EDITING, is_drag_selecting=True, "
+                f"dx={world_dx}, dy={world_dy}"
+            )
+            current_world_x = self._drag_start_world_x + world_dx
+            current_world_y = self._drag_start_world_y + world_dy
+            mx, my = self.element.hittester.screen_to_model(
+                current_world_x, current_world_y, self.element
+            )
+            self._update_cursor_from_click(mx, my)
+            self.selection_end = self.cursor_pos
+            logger.debug(
+                f"on_drag: cursor_pos={self.cursor_pos}, "
+                f"selection_start={self.selection_start}, "
+                f"selection_end={self.selection_end}"
+            )
+            self.element.mark_dirty()
+        else:
+            logger.debug(
+                f"on_drag: state={self.state}, "
+                f"is_drag_selecting={self.is_drag_selecting}"
+            )
 
     def on_release(self, world_x: float, world_y: float):
-        pass
+        if self.is_drag_selecting:
+            self.is_drag_selecting = False
+            start, end = self._get_selection_range()
+            logger.debug(
+                f"on_release: start={start}, end={end}, "
+                f"is_drag_selecting=False"
+            )
+            if start == end:
+                self.clear_selection()
+            self.element.mark_dirty()
 
     def on_hover_motion(self, world_x: float, world_y: float):
         mx, my = self.element.hittester.screen_to_model(
@@ -225,12 +312,22 @@ class TextBoxTool(SketchTool):
             return False
 
         self.cursor_visible = True
-        self.text_buffer = (
-            self.text_buffer[: self.cursor_pos]
-            + text
-            + self.text_buffer[self.cursor_pos :]
-        )
-        self.cursor_pos += 1
+
+        start, end = self._get_selection_range()
+        if start != end:
+            self.text_buffer = (
+                self.text_buffer[:start] + text + self.text_buffer[end:]
+            )
+            self.cursor_pos = start + 1
+            self.clear_selection()
+        else:
+            self.text_buffer = (
+                self.text_buffer[: self.cursor_pos]
+                + text
+                + self.text_buffer[self.cursor_pos :]
+            )
+            self.cursor_pos += 1
+
         self._resize_box_to_fit_text()
         self.cursor_moved.send(self)
 
@@ -239,7 +336,9 @@ class TextBoxTool(SketchTool):
 
         return True
 
-    def handle_key_event(self, key: SketcherKey) -> bool:
+    def handle_key_event(
+        self, key: SketcherKey, shift: bool = False, ctrl: bool = False
+    ) -> bool:
         if self.state != TextBoxState.EDITING:
             return False
 
@@ -264,55 +363,147 @@ class TextBoxTool(SketchTool):
                 self.cursor_moved.send(self)
             return True
         elif key == SketcherKey.BACKSPACE:
-            if self.cursor_pos > 0:
+            start, end = self._get_selection_range()
+            if start != end:
+                self.text_buffer = (
+                    self.text_buffer[:start] + self.text_buffer[end:]
+                )
+                self.cursor_pos = start
+                self.clear_selection()
+            elif self.cursor_pos > 0:
                 self.text_buffer = (
                     self.text_buffer[: self.cursor_pos - 1]
                     + self.text_buffer[self.cursor_pos :]
                 )
                 self.cursor_pos -= 1
-                self._resize_box_to_fit_text()
-                self.cursor_moved.send(self)
 
-                if self.live_edit_cmd:
-                    self.live_edit_cmd.capture_state(
-                        self.text_buffer, self.cursor_pos
-                    )
+            self._resize_box_to_fit_text()
+            self.cursor_moved.send(self)
+
+            if self.live_edit_cmd:
+                self.live_edit_cmd.capture_state(
+                    self.text_buffer, self.cursor_pos
+                )
 
             return True
         elif key == SketcherKey.DELETE:
-            if self.cursor_pos < len(self.text_buffer):
+            start, end = self._get_selection_range()
+            if start != end:
+                self.text_buffer = (
+                    self.text_buffer[:start] + self.text_buffer[end:]
+                )
+                self.cursor_pos = start
+                self.clear_selection()
+            elif self.cursor_pos < len(self.text_buffer):
                 self.text_buffer = (
                     self.text_buffer[: self.cursor_pos]
                     + self.text_buffer[self.cursor_pos + 1 :]
                 )
-                self._resize_box_to_fit_text()
-                self.cursor_moved.send(self)
 
-                if self.live_edit_cmd:
-                    self.live_edit_cmd.capture_state(
-                        self.text_buffer, self.cursor_pos
-                    )
+            self._resize_box_to_fit_text()
+            self.cursor_moved.send(self)
+
+            if self.live_edit_cmd:
+                self.live_edit_cmd.capture_state(
+                    self.text_buffer, self.cursor_pos
+                )
 
             return True
         elif key == SketcherKey.ARROW_LEFT:
-            self.cursor_pos = max(0, self.cursor_pos - 1)
+            new_pos = max(0, self.cursor_pos - 1)
+            if shift:
+                self.extend_selection(new_pos)
+            else:
+                self.clear_selection()
+            self.cursor_pos = new_pos
             self.element.mark_dirty()
             self.cursor_moved.send(self)
             return True
         elif key == SketcherKey.ARROW_RIGHT:
-            self.cursor_pos = min(len(self.text_buffer), self.cursor_pos + 1)
+            new_pos = min(len(self.text_buffer), self.cursor_pos + 1)
+            if shift:
+                self.extend_selection(new_pos)
+            else:
+                self.clear_selection()
+            self.cursor_pos = new_pos
             self.element.mark_dirty()
             self.cursor_moved.send(self)
             return True
         elif key == SketcherKey.HOME:
-            self.cursor_pos = 0
+            new_pos = 0
+            if shift:
+                self.extend_selection(new_pos)
+            else:
+                self.clear_selection()
+            self.cursor_pos = new_pos
             self.element.mark_dirty()
             self.cursor_moved.send(self)
             return True
         elif key == SketcherKey.END:
-            self.cursor_pos = len(self.text_buffer)
+            new_pos = len(self.text_buffer)
+            if shift:
+                self.extend_selection(new_pos)
+            else:
+                self.clear_selection()
+            self.cursor_pos = new_pos
             self.element.mark_dirty()
             self.cursor_moved.send(self)
+            return True
+        elif key == SketcherKey.SELECT_ALL:
+            self.set_selection(0, len(self.text_buffer))
+            self.cursor_pos = len(self.text_buffer)
+            self.element.mark_dirty()
+            return True
+        elif key == SketcherKey.COPY and ctrl:
+            from gi.repository import Gdk
+
+            display = Gdk.Display.get_default()
+            if display is None:
+                return True
+            clipboard = display.get_clipboard()
+            clipboard.set(self.get_selected_text())
+            return True
+        elif key == SketcherKey.PASTE and ctrl:
+            from gi.repository import Gdk
+
+            display = Gdk.Display.get_default()
+            if display is None:
+                return True
+            clipboard = display.get_clipboard()
+
+            def on_paste_ready(clipboard, result):
+                try:
+                    text = clipboard.read_text_finish(result)
+                    if text:
+                        start, end = self._get_selection_range()
+                        if start != end:
+                            self.text_buffer = (
+                                self.text_buffer[:start]
+                                + text
+                                + self.text_buffer[end:]
+                            )
+                            self.cursor_pos = start + len(text)
+                            self.clear_selection()
+                        else:
+                            self.text_buffer = (
+                                self.text_buffer[: self.cursor_pos]
+                                + text
+                                + self.text_buffer[self.cursor_pos :]
+                            )
+                            self.cursor_pos += len(text)
+
+                        self._resize_box_to_fit_text()
+                        self.element.mark_dirty()
+                        self.cursor_moved.send(self)
+
+                        if self.live_edit_cmd:
+                            self.live_edit_cmd.capture_state(
+                                self.text_buffer, self.cursor_pos
+                            )
+                except Exception:
+                    pass
+
+            clipboard.read_text_async(None, on_paste_ready)
             return True
         elif key == SketcherKey.RETURN or key == SketcherKey.ESCAPE:
             self.on_deactivate()
@@ -509,6 +700,12 @@ class TextBoxTool(SketchTool):
         ctx.set_source_rgba(0.0, 0.0, 0.0, 1.0)
         ctx.fill()
 
+        start, end = self._get_selection_range()
+        if start != end:
+            self._draw_selection_highlight(
+                ctx, nat_min_x, nat_min_y, nat_max_x, nat_max_y
+            )
+
         if self.cursor_visible:
             # Calculate view scale for consistent cursor size
             scale = 1.0
@@ -571,4 +768,79 @@ class TextBoxTool(SketchTool):
             ctx.set_source_rgba(0.0, 0.0, 0.0, 1.0)
             ctx.fill()
 
+        ctx.restore()
+
+    def _draw_selection_highlight(
+        self,
+        ctx: cairo.Context,
+        nat_min_x: float,
+        nat_min_y: float,
+        nat_max_x: float,
+        nat_max_y: float,
+    ):
+        """Draws the selection highlight for selected text."""
+        if self.editing_entity_id is None:
+            return
+
+        entity = self.element.sketch.registry.get_entity(
+            self.editing_entity_id
+        )
+        if not entity:
+            return
+
+        p_origin = self.element.sketch.registry.get_point(entity.origin_id)
+        p_width = self.element.sketch.registry.get_point(entity.width_id)
+        p_height = self.element.sketch.registry.get_point(entity.height_id)
+
+        _, descent, font_height = entity.get_font_metrics()
+
+        start, end = self._get_selection_range()
+        if start == end:
+            return
+
+        src_w = nat_max_x - nat_min_x
+        src_h = nat_max_y - nat_min_y
+        if abs(src_w) < 1e-9:
+            src_w = 1.0
+        if abs(src_h) < 1e-9:
+            src_h = 1.0
+
+        u = (p_width.x - p_origin.x, p_width.y - p_origin.y)
+        v = (p_height.x - p_origin.x, p_height.y - p_origin.y)
+        origin = (p_origin.x, p_origin.y)
+
+        def trans(px, py):
+            xn = (px - nat_min_x) / src_w
+            yn = (py - nat_min_y) / src_h
+            return (
+                origin[0] + xn * u[0] + yn * v[0],
+                origin[1] + xn * u[1] + yn * v[1],
+            )
+
+        def get_char_x(pos: int) -> float:
+            """Get the x-coordinate of a cursor position."""
+            if pos == 0:
+                return nat_min_x
+            return get_text_width(self.text_buffer[:pos], **entity.font_params)
+
+        start_x = get_char_x(start)
+        end_x = get_char_x(end)
+
+        # Draw selection highlight as a rectangle
+        sel_nat_pts = [
+            (start_x, nat_min_y),
+            (end_x, nat_min_y),
+            (end_x, nat_max_y),
+            (start_x, nat_max_y),
+        ]
+
+        sel_model_pts = [trans(*p) for p in sel_nat_pts]
+
+        ctx.save()
+        ctx.move_to(*sel_model_pts[0])
+        for p in sel_model_pts[1:]:
+            ctx.line_to(*p)
+        ctx.close_path()
+        ctx.set_source_rgba(0.2, 0.6, 1.0, 0.3)
+        ctx.fill()
         ctx.restore()

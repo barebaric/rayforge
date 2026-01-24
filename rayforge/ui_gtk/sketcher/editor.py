@@ -414,6 +414,9 @@ class SketchEditor:
         if not self.sketch_element:
             return False
 
+        is_ctrl = state & Gdk.ModifierType.CONTROL_MASK
+        is_shift = state & Gdk.ModifierType.SHIFT_MASK
+
         # Priority 0: Active text editing
         tool = self.sketch_element.current_tool
         if (
@@ -433,9 +436,14 @@ class SketchEditor:
                 Gdk.KEY_KP_End: SketcherKey.END,
                 Gdk.KEY_z: SketcherKey.UNDO,
                 Gdk.KEY_y: SketcherKey.REDO,
+                Gdk.KEY_c: SketcherKey.COPY,
+                Gdk.KEY_v: SketcherKey.PASTE,
+                Gdk.KEY_a: SketcherKey.SELECT_ALL,
             }
             if keyval in key_map:
-                return tool.handle_key_event(key_map[keyval])
+                return tool.handle_key_event(
+                    key_map[keyval], shift=is_shift, ctrl=is_ctrl
+                )
 
             key_unicode = Gdk.keyval_to_unicode(keyval)
             if key_unicode != 0:
