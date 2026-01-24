@@ -304,3 +304,92 @@ def test_step_roundtrip_serialization():
     assert restored.capabilities == original.capabilities
     assert restored.opsproducer_dict == original.opsproducer_dict
     assert restored.matrix == original.matrix
+
+
+def test_step_forward_compatibility_with_extra_fields():
+    """
+    Tests that from_dict() preserves extra fields from newer versions
+    and to_dict() re-serializes them.
+    """
+    # Simulate data from a newer version with unknown fields
+    step_dict = {
+        "uid": "step-forward-123",
+        "type": "step",
+        "name": "Future Step",
+        "matrix": Matrix.identity().to_list(),
+        "typelabel": "FutureType",
+        "visible": True,
+        "selected_laser_uid": None,
+        "generated_workpiece_uid": None,
+        "applied_recipe_uid": None,
+        "capabilities": [],
+        "modifiers_dicts": [],
+        "opsproducer_dict": None,
+        "per_workpiece_transformers_dicts": [],
+        "per_step_transformers_dicts": [],
+        "pixels_per_mm": (50, 50),
+        "power": 1.0,
+        "max_power": 1000,
+        "cut_speed": 500,
+        "max_cut_speed": 10000,
+        "travel_speed": 5000,
+        "max_travel_speed": 10000,
+        "air_assist": False,
+        "kerf_mm": 0.0,
+        "children": [],
+        "future_field_string": "some value",
+        "future_field_number": 42,
+        "future_field_dict": {"nested": "data"},
+    }
+
+    step = Step.from_dict(step_dict)
+
+    # Verify extra fields are stored
+    assert step.extra["future_field_string"] == "some value"
+    assert step.extra["future_field_number"] == 42
+    assert step.extra["future_field_dict"] == {"nested": "data"}
+
+    # Verify extra fields are re-serialized
+    data = step.to_dict()
+    assert data["future_field_string"] == "some value"
+    assert data["future_field_number"] == 42
+    assert data["future_field_dict"] == {"nested": "data"}
+
+
+def test_step_backward_compatibility_with_missing_optional_fields():
+    """
+    Tests that from_dict() handles missing optional fields gracefully
+    (simulating data from an older version).
+    """
+    # Minimal dictionary with only required fields
+    minimal_dict = {
+        "uid": "step-backward-123",
+        "type": "step",
+        "name": "Old Step",
+        "matrix": Matrix.identity().to_list(),
+        "typelabel": "OldType",
+        "visible": True,
+        "modifiers_dicts": [],
+        "opsproducer_dict": None,
+        "per_workpiece_transformers_dicts": [],
+        "per_step_transformers_dicts": [],
+        "children": [],
+    }
+
+    step = Step.from_dict(minimal_dict)
+
+    # Verify defaults are applied for missing optional fields
+    assert step.selected_laser_uid is None
+    assert step.generated_workpiece_uid is None
+    assert step.applied_recipe_uid is None
+    assert step.capabilities == set()
+    assert step.pixels_per_mm == (50, 50)
+    assert step.power == 1.0
+    assert step.max_power == 1000
+    assert step.cut_speed == 500
+    assert step.max_cut_speed == 10000
+    assert step.travel_speed == 5000
+    assert step.max_travel_speed == 10000
+    assert step.air_assist is False
+    assert step.kerf_mm == 0.0
+    assert step.extra == {}

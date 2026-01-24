@@ -43,6 +43,7 @@ class OpsTransformer(ABC):
     def __init__(self, enabled: bool = True, **kwargs):
         self._enabled = enabled
         self.changed = Signal()
+        self.extra: Dict[str, Any] = {}
 
     @property
     def enabled(self) -> bool:
@@ -95,10 +96,12 @@ class OpsTransformer(ABC):
 
     def to_dict(self) -> Dict[str, Any]:
         """Serializes the transformer's configuration to a dictionary."""
-        return {
+        result = {
             "name": self.__class__.__name__,
             "enabled": self.enabled,
         }
+        result.update(self.extra)
+        return result
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "OpsTransformer":
@@ -128,4 +131,11 @@ class OpsTransformer(ABC):
             raise ValueError(f"Unknown transformer name: '{name}'")
 
         # Dispatch to the specific class's from_dict method
-        return target_cls.from_dict(data)
+        instance = target_cls.from_dict(data)
+
+        # Extract unknown attributes for forward compatibility
+        known_keys = {"name", "enabled"}
+        extra = {k: v for k, v in data.items() if k not in known_keys}
+        instance.extra = extra
+
+        return instance

@@ -62,9 +62,12 @@ class Step(DocItem, ABC):
         self.air_assist = False
         self.kerf_mm: float = 0.0
 
+        # Forward compatibility: store unknown attributes
+        self.extra: Dict[str, Any] = {}
+
     def to_dict(self) -> Dict:
         """Serializes the step and its configuration to a dictionary."""
-        return {
+        result = {
             "uid": self.uid,
             "type": "step",
             "name": self.name,
@@ -92,10 +95,40 @@ class Step(DocItem, ABC):
             "kerf_mm": self.kerf_mm,
             "children": [child.to_dict() for child in self.children],
         }
+        result.update(self.extra)
+        return result
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "Step":
         """Deserializes a Step instance from a dictionary."""
+        known_keys = {
+            "uid",
+            "type",
+            "name",
+            "matrix",
+            "typelabel",
+            "visible",
+            "selected_laser_uid",
+            "generated_workpiece_uid",
+            "applied_recipe_uid",
+            "capabilities",
+            "modifiers_dicts",
+            "opsproducer_dict",
+            "per_workpiece_transformers_dicts",
+            "per_step_transformers_dicts",
+            "pixels_per_mm",
+            "power",
+            "max_power",
+            "cut_speed",
+            "max_cut_speed",
+            "travel_speed",
+            "max_travel_speed",
+            "air_assist",
+            "kerf_mm",
+            "children",
+        }
+        extra = {k: v for k, v in data.items() if k not in known_keys}
+
         step = cls(typelabel=data["typelabel"], name=data.get("name"))
         step.uid = data["uid"]
         step.matrix = Matrix.from_list(data["matrix"])
@@ -127,6 +160,7 @@ class Step(DocItem, ABC):
         step.max_travel_speed = data.get("max_travel_speed", 10000)
         step.air_assist = data.get("air_assist", False)
         step.kerf_mm = data.get("kerf_mm", 0.0)
+        step.extra = extra
         return step
 
     def get_settings(self) -> Dict[str, Any]:

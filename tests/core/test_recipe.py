@@ -310,3 +310,56 @@ class TestRecipe:
         mock_step_bad_type.kerf_mm = 0.15
         mock_step_bad_type.air_assist = True
         assert recipe.matches_step_settings(mock_step_bad_type) is False
+
+    def test_recipe_forward_compatibility_with_extra_fields(self):
+        """
+        Tests that from_dict() preserves extra fields from newer versions
+        and to_dict() re-serializes them.
+        """
+        recipe_dict = {
+            "uid": "recipe-forward-456",
+            "name": "Future Recipe",
+            "description": "A future recipe",
+            "target_capability_name": CUT.name,
+            "target_machine_id": None,
+            "material_uid": None,
+            "min_thickness_mm": None,
+            "max_thickness_mm": None,
+            "settings": {},
+            "future_field_string": "some value",
+            "future_field_number": 42,
+            "future_field_dict": {"nested": "data"},
+        }
+
+        recipe = Recipe.from_dict(recipe_dict)
+
+        # Verify extra fields are stored
+        assert recipe.extra["future_field_string"] == "some value"
+        assert recipe.extra["future_field_number"] == 42
+        assert recipe.extra["future_field_dict"] == {"nested": "data"}
+
+        # Verify extra fields are re-serialized
+        data = recipe.to_dict()
+        assert data["future_field_string"] == "some value"
+        assert data["future_field_number"] == 42
+        assert data["future_field_dict"] == {"nested": "data"}
+
+    def test_recipe_backward_compatibility_with_missing_optional_fields(self):
+        """
+        Tests that from_dict() handles missing optional fields gracefully
+        (simulating data from an older version).
+        """
+        minimal_dict = {"name": "Old Recipe"}
+
+        recipe = Recipe.from_dict(minimal_dict)
+
+        # Verify defaults are applied for missing optional fields
+        assert recipe.name == "Old Recipe"
+        assert recipe.description == ""
+        assert recipe.target_capability_name == CUT.name
+        assert recipe.target_machine_id is None
+        assert recipe.material_uid is None
+        assert recipe.min_thickness_mm is None
+        assert recipe.max_thickness_mm is None
+        assert recipe.settings == {}
+        assert recipe.extra == {}

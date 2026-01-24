@@ -30,6 +30,7 @@ class VarSet:
         self.description = description
         self._vars: Dict[str, Var] = {}
         self._order: List[str] = []  # Explicit order tracking
+        self.extra: Dict[str, Any] = {}
 
         self.var_added = Signal()
         self.var_removed = Signal()
@@ -208,11 +209,15 @@ class VarSet:
         if include_metadata:
             data["title"] = self.title
             data["description"] = self.description
+        data.update(self.extra)
         return data
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "VarSet":
         """Deserializes a dictionary into a full VarSet instance."""
+        known_keys = {"vars", "title", "description"}
+        extra = {k: v for k, v in data.items() if k not in known_keys}
+
         new_set = cls(
             title=data.get("title"), description=data.get("description")
         )
@@ -223,6 +228,7 @@ class VarSet:
                 new_set.add(new_var)
             except Exception as e:
                 print(f"Warning: Could not deserialize var: {e}")
+        new_set.extra = extra
         return new_set
 
     def __getitem__(self, key: str) -> Var:

@@ -110,6 +110,9 @@ class WorkPiece(DocItem):
         # (e.g. Grouping) but is not serialized to disk.
         self._view_cache: Dict[str, Any] = {}
 
+        # Forward compatibility: store unknown attributes
+        self.extra: Dict[str, Any] = {}
+
     def depends_on_asset(self, asset: "IAsset") -> bool:
         """
         Checks if this workpiece depends on the given asset, either through
@@ -779,7 +782,6 @@ class WorkPiece(DocItem):
             "sketch_params": self._sketch_params,
             "source_asset_uid": self.source_asset_uid,
         }
-        # Include hydrated data for subprocesses
         if self._data is not None:
             state["data"] = self._data
         if self._original_data is not None:
@@ -792,6 +794,8 @@ class WorkPiece(DocItem):
             state["transient_sketch_definition"] = (
                 self._transient_sketch_definition.to_dict()
             )
+        # Include unknown attributes for forward compatibility
+        state.update(self.extra)
         return state
 
     @classmethod
@@ -799,6 +803,29 @@ class WorkPiece(DocItem):
         """
         Restores a WorkPiece instance from a dictionary.
         """
+        known_keys = {
+            "uid",
+            "type",
+            "name",
+            "matrix",
+            "width_mm",
+            "height_mm",
+            "tabs",
+            "tabs_enabled",
+            "source_segment",
+            "edited_boundaries",
+            "sketch_uid",
+            "sketch_params",
+            "source_asset_uid",
+            "data",
+            "original_data",
+            "source_px_dims",
+            "renderer_name",
+            "transient_sketch_definition",
+            "_sketch_params",
+        }
+        extra = {k: v for k, v in data.items() if k not in known_keys}
+
         config_data = data.get("source_segment")
         source_segment = (
             SourceAssetSegment.from_dict(config_data) if config_data else None
@@ -850,6 +877,9 @@ class WorkPiece(DocItem):
             wp._sketch_params = data.get("sketch_params", {})
         else:
             wp._sketch_params = data.get("_sketch_params", {})
+
+        # Store unknown attributes for forward compatibility
+        wp.extra = extra
 
         return wp
 

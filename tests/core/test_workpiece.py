@@ -836,3 +836,67 @@ class TestWorkPiece:
 
             # Check cache was populated
             assert wp._boundaries_cache is bounds
+
+    def test_workpiece_forward_compatibility_with_extra_fields(self):
+        """
+        Tests that from_dict() preserves extra fields from newer versions
+        and to_dict() re-serializes them.
+        """
+        wp_dict = {
+            "uid": "wp-forward-456",
+            "type": "workpiece",
+            "name": "Future WorkPiece",
+            "matrix": Matrix.identity().to_list(),
+            "width_mm": 100.0,
+            "height_mm": 50.0,
+            "tabs": [],
+            "tabs_enabled": True,
+            "source_segment": None,
+            "edited_boundaries": None,
+            "sketch_uid": None,
+            "sketch_params": {},
+            "source_asset_uid": None,
+            "future_field_string": "some value",
+            "future_field_number": 42,
+            "future_field_dict": {"nested": "data"},
+        }
+
+        wp = WorkPiece.from_dict(wp_dict)
+
+        # Verify extra fields are stored
+        assert wp.extra["future_field_string"] == "some value"
+        assert wp.extra["future_field_number"] == 42
+        assert wp.extra["future_field_dict"] == {"nested": "data"}
+
+        # Verify extra fields are re-serialized
+        data = wp.to_dict()
+        assert data["future_field_string"] == "some value"
+        assert data["future_field_number"] == 42
+        assert data["future_field_dict"] == {"nested": "data"}
+
+    def test_workpiece_backward_compat_missing_optional_fields(self):
+        """
+        Tests that from_dict() handles missing optional fields gracefully
+        (simulating data from an older version).
+        """
+        minimal_dict = {
+            "uid": "wp-backward-789",
+            "type": "workpiece",
+            "name": "Old WorkPiece",
+            "matrix": Matrix.identity().to_list(),
+            "width_mm": 100.0,
+            "height_mm": 50.0,
+            "tabs": [],
+            "tabs_enabled": True,
+            "source_segment": None,
+            "edited_boundaries": None,
+            "sketch_uid": None,
+            "sketch_params": {},
+            "source_asset_uid": None,
+        }
+
+        wp = WorkPiece.from_dict(minimal_dict)
+
+        # Verify defaults are applied for missing optional fields
+        assert wp.name == "Old WorkPiece"
+        assert wp.extra == {}

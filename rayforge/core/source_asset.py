@@ -29,6 +29,7 @@ class SourceAsset(IAsset):
     height_mm: float = 0.0
     uid: str = field(default_factory=lambda: str(uuid.uuid4()))
     _name: str = field(init=False, repr=False)
+    extra: Dict[str, Any] = field(default_factory=dict)
 
     def __post_init__(self):
         self._name = self.source_file.name
@@ -71,8 +72,8 @@ class SourceAsset(IAsset):
         return True
 
     def to_dict(self) -> Dict[str, Any]:
-        """Serializes the SourceAsset to a dictionary."""
-        return {
+        """Serializes SourceAsset to a dictionary."""
+        result = {
             "uid": self.uid,
             "type": self.asset_type_name,
             "name": self.name,
@@ -92,11 +93,29 @@ class SourceAsset(IAsset):
             "width_mm": self.width_mm,
             "height_mm": self.height_mm,
         }
+        result.update(self.extra)
+        return result
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "SourceAsset":
         """Deserializes a dictionary into a SourceAsset instance."""
         from ..image import renderer_by_name
+
+        known_keys = {
+            "uid",
+            "type",
+            "name",
+            "source_file",
+            "original_data",
+            "base_render_data",
+            "renderer_name",
+            "metadata",
+            "width_px",
+            "height_px",
+            "width_mm",
+            "height_mm",
+        }
+        extra = {k: v for k, v in data.items() if k not in known_keys}
 
         renderer = renderer_by_name[data["renderer_name"]]
 
@@ -121,4 +140,5 @@ class SourceAsset(IAsset):
         )
         if "name" in data:
             instance.name = data["name"]
+        instance.extra = extra
         return instance

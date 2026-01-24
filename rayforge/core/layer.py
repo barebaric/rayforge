@@ -57,13 +57,16 @@ class Layer(DocItem):
         # This one is special and is bubbled manually.
         self.per_step_transformer_changed = Signal()
 
+        # Forward compatibility: store unknown attributes
+        self.extra: Dict[str, Any] = {}
+
         # A new layer gets a workflow automatically.
         workflow = Workflow(f"{name} Workflow")
         self.add_child(workflow)
 
     def to_dict(self) -> Dict:
         """Serializes the layer and its children to a dictionary."""
-        return {
+        result = {
             "uid": self.uid,
             "type": "layer",
             "name": self.name,
@@ -72,15 +75,29 @@ class Layer(DocItem):
             "stock_item_uid": self.stock_item_uid,
             "children": [child.to_dict() for child in self.children],
         }
+        result.update(self.extra)
+        return result
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "Layer":
         """Deserializes a dictionary into a Layer instance."""
+        known_keys = {
+            "uid",
+            "type",
+            "name",
+            "matrix",
+            "visible",
+            "stock_item_uid",
+            "children",
+        }
+        extra = {k: v for k, v in data.items() if k not in known_keys}
+
         layer = cls(name=data.get("name", "Layer"))
         layer.uid = data["uid"]
         layer.matrix = Matrix.from_list(data["matrix"])
         layer.visible = data.get("visible", True)
         layer.stock_item_uid = data.get("stock_item_uid")
+        layer.extra = extra
 
         children = []
         for child_data in data.get("children", []):

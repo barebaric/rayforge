@@ -18,7 +18,7 @@ class ResettableCounter:
         name: Display name for the counter (e.g., "Laser Tube", "Lubrication").
         value: Current counter value in hours.
         notify_at: Optional threshold value (hours) for notification.
-        notification_sent: True if the notification has already been triggered.
+        notification_sent: True if notification has already been triggered.
     """
 
     uid: str = field(default_factory=lambda: str(uuid.uuid4()))
@@ -26,25 +26,32 @@ class ResettableCounter:
     value: float = 0.0
     notify_at: Optional[float] = None
     notification_sent: bool = False
+    extra: Dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> Dict[str, Any]:
         """Serialize counter to dictionary."""
-        return {
+        result = {
             "uid": self.uid,
             "name": self.name,
             "value": self.value,
             "notify_at": self.notify_at,
         }
+        result.update(self.extra)
+        return result
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "ResettableCounter":
         """Deserialize counter from dictionary."""
-        return cls(
+        known_keys = {"uid", "name", "value", "notify_at"}
+        extra = {k: v for k, v in data.items() if k not in known_keys}
+        instance = cls(
             uid=data.get("uid", str(uuid.uuid4())),
             name=data.get("name", "Counter"),
             value=data.get("value", 0.0),
             notify_at=data.get("notify_at"),
         )
+        instance.extra = extra
+        return instance
 
     def add_hours(self, hours: float) -> None:
         """Add hours to the counter value."""
@@ -78,6 +85,7 @@ class MachineHours:
         self.total_hours: float = 0.0
         self.counters: Dict[str, ResettableCounter] = {}
         self.changed = Signal()
+        self.extra: Dict[str, Any] = {}
 
     def add_hours(self, hours: float) -> None:
         """
@@ -174,17 +182,22 @@ class MachineHours:
 
     def to_dict(self) -> Dict[str, Any]:
         """Serialize to dictionary."""
-        return {
+        result = {
             "total_hours": self.total_hours,
             "counters": {
                 uid: counter.to_dict()
                 for uid, counter in self.counters.items()
             },
         }
+        result.update(self.extra)
+        return result
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "MachineHours":
         """Deserialize from dictionary."""
+        known_keys = {"total_hours", "counters"}
+        extra = {k: v for k, v in data.items() if k not in known_keys}
+
         machine_hours = cls()
         machine_hours.total_hours = data.get("total_hours", 0.0)
 
@@ -193,6 +206,7 @@ class MachineHours:
             counter = ResettableCounter.from_dict(counter_data)
             machine_hours.counters[uid] = counter
 
+        machine_hours.extra = extra
         return machine_hours
 
     def get_counters_due_for_notification(self) -> list[ResettableCounter]:

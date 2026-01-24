@@ -88,3 +88,54 @@ def test_stock_item_from_dict_deserialization():
     assert item.matrix == Matrix.translation(10, 20)
     assert item.stock_asset_uid == "asset-xyz"
     assert item.visible is True
+
+
+def test_stock_item_forward_compatibility_with_extra_fields():
+    """
+    Tests that from_dict() preserves extra fields from newer versions
+    and to_dict() re-serializes them.
+    """
+    item_dict = {
+        "uid": "item-forward-456",
+        "type": "stockitem",
+        "name": "Future Stock",
+        "matrix": Matrix.identity().to_list(),
+        "stock_asset_uid": "asset-future",
+        "visible": True,
+        "future_field_string": "some value",
+        "future_field_number": 42,
+        "future_field_dict": {"nested": "data"},
+    }
+
+    item = StockItem.from_dict(item_dict)
+
+    # Verify extra fields are stored
+    assert item.extra["future_field_string"] == "some value"
+    assert item.extra["future_field_number"] == 42
+    assert item.extra["future_field_dict"] == {"nested": "data"}
+
+    # Verify extra fields are re-serialized
+    data = item.to_dict()
+    assert data["future_field_string"] == "some value"
+    assert data["future_field_number"] == 42
+    assert data["future_field_dict"] == {"nested": "data"}
+
+
+def test_stock_item_backward_compatibility_with_missing_optional_fields():
+    """
+    Tests that from_dict() handles missing optional fields gracefully
+    (simulating data from an older version).
+    """
+    minimal_dict = {
+        "uid": "item-backward-789",
+        "type": "stockitem",
+        "matrix": Matrix.identity().to_list(),
+        "stock_asset_uid": "asset-old",
+    }
+
+    item = StockItem.from_dict(minimal_dict)
+
+    # Verify defaults are applied for missing optional fields
+    assert item.name == "Stock"
+    assert item.visible is True
+    assert item.extra == {}

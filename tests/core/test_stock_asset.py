@@ -86,3 +86,60 @@ def test_property_setters_fire_updated_signal():
 
     asset.set_material("new-material-uid")
     handler.assert_called_once_with(asset)
+
+
+def test_stock_asset_forward_compatibility_with_extra_fields():
+    """
+    Tests that from_dict() preserves extra fields from newer versions
+    and to_dict() re-serializes them.
+    """
+    asset_dict = {
+        "uid": "asset-forward-456",
+        "name": "Future Asset",
+        "thickness": 5.0,
+        "material_uid": "future-material",
+        "geometry": {
+            "commands": [["M", 0.0, 0.0, 0.0]],
+            "last_move_to": [0.0, 0.0, 0.0],
+        },
+        "type": "stock",
+        "future_field_string": "some value",
+        "future_field_number": 42,
+        "future_field_dict": {"nested": "data"},
+    }
+
+    asset = StockAsset.from_dict(asset_dict)
+
+    # Verify extra fields are stored
+    assert asset.extra["future_field_string"] == "some value"
+    assert asset.extra["future_field_number"] == 42
+    assert asset.extra["future_field_dict"] == {"nested": "data"}
+
+    # Verify extra fields are re-serialized
+    data = asset.to_dict()
+    assert data["future_field_string"] == "some value"
+    assert data["future_field_number"] == 42
+    assert data["future_field_dict"] == {"nested": "data"}
+
+
+def test_stock_asset_backward_compatibility_with_missing_optional_fields():
+    """
+    Tests that from_dict() handles missing optional fields gracefully
+    (simulating data from an older version).
+    """
+    minimal_dict = {
+        "uid": "asset-backward-789",
+        "type": "stock",
+        "geometry": {
+            "commands": [["M", 0.0, 0.0, 0.0]],
+            "last_move_to": [0.0, 0.0, 0.0],
+        },
+    }
+
+    asset = StockAsset.from_dict(minimal_dict)
+
+    # Verify defaults are applied for missing optional fields
+    assert asset.name == "Stock"
+    assert asset.thickness is None
+    assert asset.material_uid is None
+    assert asset.extra == {}

@@ -255,3 +255,100 @@ def test_inject_wcs_after_preamble_serialization():
     data = dialect.to_dict()
 
     assert data["inject_wcs_after_preamble"] is False
+
+
+def test_forward_compatibility_unknown_fields():
+    """
+    Test that unknown fields are preserved during serialization and
+    deserialization for forward compatibility.
+    """
+    original_dialect = GcodeDialect(
+        label="Test Dialect",
+        description="A test description",
+        laser_on="M3",
+        laser_off="M5",
+        tool_change="T1",
+        set_speed="",
+        travel_move="G0",
+        linear_move="G1",
+        arc_cw="G2",
+        arc_ccw="G3",
+        air_assist_on="",
+        air_assist_off="",
+        home_all="$H",
+        home_axis="",
+        move_to="",
+        jog="",
+        clear_alarm="",
+        set_wcs_offset="",
+        probe_cycle="",
+    )
+
+    data = original_dialect.to_dict()
+
+    # Simulate future version with additional fields
+    future_fields = {
+        "future_feature_enabled": True,
+        "future_setting": "some_value",
+        "future_list": [1, 2, 3],
+    }
+    data.update(future_fields)
+
+    # Deserialize with unknown fields
+    deserialized = GcodeDialect.from_dict(data)
+
+    # Unknown fields should be in extra
+    assert deserialized.extra == future_fields
+
+    # Known fields should be preserved
+    assert deserialized.label == "Test Dialect"
+    assert deserialized.laser_on == "M3"
+
+    # Reserialize should include unknown fields
+    reserialized = deserialized.to_dict()
+    assert reserialized["future_feature_enabled"] is True
+    assert reserialized["future_setting"] == "some_value"
+    assert reserialized["future_list"] == [1, 2, 3]
+
+
+def test_forward_compatibility_roundtrip():
+    """
+    Test that a complete round-trip through to_dict and from_dict
+    preserves all data including unknown fields.
+    """
+    original_data = {
+        "label": "Roundtrip Test",
+        "description": "Testing roundtrip",
+        "laser_on": "M3",
+        "laser_off": "M5",
+        "tool_change": "",
+        "set_speed": "",
+        "travel_move": "",
+        "linear_move": "",
+        "arc_cw": "",
+        "arc_ccw": "",
+        "air_assist_on": "",
+        "air_assist_off": "",
+        "home_all": "",
+        "home_axis": "",
+        "move_to": "",
+        "jog": "",
+        "clear_alarm": "",
+        "set_wcs_offset": "",
+        "probe_cycle": "",
+        "preamble": ["G21"],
+        "postscript": ["M5"],
+        "uid": "test-uid-456",
+        "is_custom": True,
+        "parent_uid": GRBL_DIALECT.uid,
+        "future_bool": False,
+        "future_string": "test",
+        "future_number": 42,
+    }
+
+    dialect = GcodeDialect.from_dict(original_data)
+    result = dialect.to_dict()
+
+    # All original fields should be preserved
+    for key, value in original_data.items():
+        assert result[key] == value

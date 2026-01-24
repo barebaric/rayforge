@@ -37,22 +37,31 @@ class Workflow(DocItem):
         super().__init__(name=name)
         self.per_step_transformer_changed = Signal()
 
+        # Forward compatibility: store unknown attributes
+        self.extra: Dict[str, Any] = {}
+
     def to_dict(self) -> Dict:
         """Serializes the workflow and its children to a dictionary."""
-        return {
+        result = {
             "uid": self.uid,
             "type": "workflow",
             "name": self.name,
             "matrix": self.matrix.to_list(),
             "children": [child.to_dict() for child in self.children],
         }
+        result.update(self.extra)
+        return result
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "Workflow":
         """Deserializes a dictionary into a Workflow instance."""
+        known_keys = {"uid", "type", "name", "matrix", "children"}
+        extra = {k: v for k, v in data.items() if k not in known_keys}
+
         workflow = cls(name=data.get("name", "Workflow"))
         workflow.uid = data["uid"]
         workflow.matrix = Matrix.from_list(data["matrix"])
+        workflow.extra = extra
 
         steps = [
             Step.from_dict(d)

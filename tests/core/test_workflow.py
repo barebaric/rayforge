@@ -199,3 +199,52 @@ def test_workflow_roundtrip_serialization():
     # Verify the second step (with default values) is also correct
     assert restored_step2.uid == step2.uid
     assert restored_step2.power == 1.0  # Default value
+
+
+def test_workflow_forward_compatibility_with_extra_fields():
+    """
+    Tests that from_dict() preserves extra fields from newer versions
+    and to_dict() re-serializes them.
+    """
+    workflow_dict = {
+        "uid": "workflow-forward-456",
+        "type": "workflow",
+        "name": "Future Workflow",
+        "matrix": Matrix.identity().to_list(),
+        "children": [],
+        "future_field_string": "some value",
+        "future_field_number": 42,
+        "future_field_dict": {"nested": "data"},
+    }
+
+    workflow = Workflow.from_dict(workflow_dict)
+
+    # Verify extra fields are stored
+    assert workflow.extra["future_field_string"] == "some value"
+    assert workflow.extra["future_field_number"] == 42
+    assert workflow.extra["future_field_dict"] == {"nested": "data"}
+
+    # Verify extra fields are re-serialized
+    data = workflow.to_dict()
+    assert data["future_field_string"] == "some value"
+    assert data["future_field_number"] == 42
+    assert data["future_field_dict"] == {"nested": "data"}
+
+
+def test_workflow_backward_compatibility_with_missing_optional_fields():
+    """
+    Tests that from_dict() handles missing optional fields gracefully
+    (simulating data from an older version).
+    """
+    minimal_dict = {
+        "uid": "workflow-backward-789",
+        "type": "workflow",
+        "matrix": Matrix.identity().to_list(),
+        "children": [],
+    }
+
+    workflow = Workflow.from_dict(minimal_dict)
+
+    # Verify defaults are applied for missing optional fields
+    assert workflow.name == "Workflow"
+    assert workflow.extra == {}
