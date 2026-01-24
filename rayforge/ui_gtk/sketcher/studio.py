@@ -2,12 +2,14 @@ import logging
 from gi.repository import Gtk, Gio, Adw, GLib
 from blinker import Signal
 from ...core.sketcher import Sketch
+from ...core.sketcher.entities.text_box import TextBoxEntity
 from ...core.varset import IntVar, FloatVar, SliderFloatVar
 from ..icons import get_icon
 from ..varset.varset_editor import VarSetEditorWidget
 from ...core.undo.property_cmd import ChangePropertyCommand
 from .menu import SketchMenu
 from .sketchcanvas import SketchCanvas
+from .font_properties import FontPropertiesWidget
 
 logger = logging.getLogger(__name__)
 
@@ -134,7 +136,7 @@ class SketchStudio(Gtk.Box):
         side_panel_box.append(properties_group)
 
         # VarSet Editor Group
-        # Limit the types of variables the user can add to the sketch
+        # Limit that types of variables that user can add to the sketch
         self.varset_editor = VarSetEditorWidget(
             vartypes={IntVar, FloatVar, SliderFloatVar}
         )
@@ -155,6 +157,10 @@ class SketchStudio(Gtk.Box):
             self.varset_editor.undo_manager = (
                 self.canvas.sketch_editor.history_manager
             )
+
+        # Font Properties Group (shows when a text box is selected)
+        self.font_properties = FontPropertiesWidget(self.canvas.sketch_editor)
+        side_panel_box.append(self.font_properties)
 
         # Initialize the VarSetEditor with the default sketch's parameters
         # This ensures variables added before 'set_sketch' are attached to
@@ -249,6 +255,23 @@ class SketchStudio(Gtk.Box):
         self.name_row.set_text(sketch.name)
         self.varset_editor.populate(sketch.input_parameters)
 
+        # Connect to selection changes to show/hide font properties
+        if self.canvas.sketch_element:
+            self.canvas.sketch_element.selection.changed.connect(
+                self._on_selection_changed
+            )
+            self._on_selection_changed(self.canvas.sketch_element.selection)
+
+            # Connect to text editing signals to show font properties
+            text_tool = self.canvas.sketch_element.tools.get("text_box")
+            if text_tool:
+                text_tool.editing_started.connect(
+                    self._on_text_editing_started
+                )
+                text_tool.editing_finished.connect(
+                    self._on_text_editing_finished
+                )
+
         # Ensure the element bounds are updated for the new content
         self.canvas.sketch_element.update_bounds_from_sketch()
         # Reset view to center content
@@ -288,12 +311,38 @@ class SketchStudio(Gtk.Box):
             sketch.name = new_name
 
     def _sync_name_ui(self):
-        """Updates the UI to match the underlying sketch object (for Undo)."""
+        """Updates to UI to match the underlying sketch object (for Undo)."""
         if not self.canvas or not self.canvas.sketch_element:
             return
         sketch = self.canvas.sketch_element.sketch
         if self.name_row.get_text() != sketch.name:
             self.name_row.set_text(sketch.name)
+
+    def _on_selection_changed(self, selection):
+        """Handles selection changes to show/hide font properties."""
+        if not self.canvas or not self.canvas.sketch_element:
+            self.font_properties.set_text_entity(None)
+            return
+
+        text_entity_id = None
+        if len(selection.entity_ids) == 1:
+            entity_id = selection.entity_ids[0]
+            entity = self.canvas.sketch_element.sketch.registry.get_entity(
+                entity_id
+            )
+            if isinstance(entity, TextBoxEntity):
+                text_entity_id = entity_id
+
+        self.font_properties.set_text_entity(text_entity_id)
+
+    def _on_text_editing_started(self, sender):
+        """Shows font properties when text editing begins."""
+        if sender.editing_entity_id is not None:
+            self.font_properties.set_text_entity(sender.editing_entity_id)
+
+    def _on_text_editing_finished(self, sender):
+        """Hides font properties when text editing ends."""
+        self.font_properties.set_text_entity(None)
 
     def _on_undo(self, action, param):
         if self.canvas.sketch_editor:
