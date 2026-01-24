@@ -9,11 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Project save/load support
-- Recent files menu entry
-- Support for setting a checkpoint in HistoryManager
-- All installers now register .ryp file extension for project files
-- Project files added to recent projects list even when opened via CLI
+- Major: Project save/load support
+- Major: The sketcher now supports text, with many bells and whistles
+- Sketcher supports aspect ratio constraints
+- A recent files menu entry was added
+- Installers for all platforms now register the .ryp (project) and .rfs (sketch) file extensions
 
 ### Changed
 
@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   falling back to trace if not supported
 - Import errors now collected and displayed in import dialog
 - Importers almost completely rewritten for testability
+- Sketcher: The solver now biases points to their previous position for more stable dragging
 
 ### Fixed
 
