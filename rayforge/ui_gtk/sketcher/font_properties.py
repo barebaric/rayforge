@@ -27,6 +27,9 @@ class FontPropertiesWidget(Adw.PreferencesGroup):
         self._current_font_family = "sans-serif"
 
         self.set_title(_("Font Properties"))
+        self.set_description(
+            _("Configure font family, size, and style for text boxes")
+        )
         self.set_visible(False)
 
         self._build_ui()
