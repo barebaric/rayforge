@@ -1,4 +1,5 @@
 import logging
+import math
 from typing import Optional, cast
 from enum import Enum, auto
 import cairo
@@ -6,6 +7,7 @@ from blinker import Signal
 from ...geo import Geometry, primitives
 from ..commands import TextBoxCommand
 from ..commands.live_text_edit import LiveTextEditCommand
+from ..constraints import AspectRatioConstraint, DragConstraint
 from ..entities import Line, Point, TextBoxEntity
 from .base import SketchTool, SketcherKey
 
@@ -631,7 +633,7 @@ class TextBoxTool(SketchTool):
         if not isinstance(entity, TextBoxEntity):
             return
 
-        ascent, descent, font_height = entity.get_font_metrics()
+        _, _, font_height = entity.get_font_metrics()
 
         if not self.text_buffer:
             natural_width = 10.0
@@ -643,25 +645,60 @@ class TextBoxTool(SketchTool):
             min_x, _, max_x, _ = natural_geo.rect()
             natural_width = max(max_x - min_x, 1.0)
 
+        natural_height = font_height
+
         p_origin = self.element.sketch.registry.get_point(entity.origin_id)
         p_width = self.element.sketch.registry.get_point(entity.width_id)
-        p_height = self.element.sketch.registry.get_point(entity.height_id)
 
-        # Update point positions based on origin and natural size
-        # Origin is at bottom-left corner of box
-        # Text baseline is offset by descent within the box
-        # Box extends from origin.y to origin.y + font_height
-        p_width.x = p_origin.x + natural_width
-        p_width.y = p_origin.y
-        p_height.x = p_origin.x
-        p_height.y = p_origin.y + font_height
+        # 1. Preserve orientation from current geometry
+        dx = p_width.x - p_origin.x
+        dy = p_width.y - p_origin.y
+        current_len = math.hypot(dx, dy)
+        ux, uy = (1.0, 0.0)
+        if current_len > 1e-9:
+            ux, uy = dx / current_len, dy / current_len
 
-        # Manually update the 4th corner to keep the box rectangular
-        p4_id = entity.get_fourth_corner_id(self.element.sketch.registry)
-        if p4_id:
-            p4 = self.element.sketch.registry.get_point(p4_id)
-            p4.x = p_width.x
-            p4.y = p_height.y
+        # Perpendicular vector for height
+        vx, vy = -uy, ux
+
+        # 2. Calculate target positions
+        target_width_x = p_origin.x + natural_width * ux
+        target_width_y = p_origin.y + natural_width * uy
+        target_height_x = p_origin.x + natural_height * vx
+        target_height_y = p_origin.y + natural_height * vy
+
+        # 3. Create strong drag constraints to pull points into position
+        drag_constraints = [
+            DragConstraint(
+                entity.width_id, target_width_x, target_width_y, weight=10.0
+            ),
+            DragConstraint(
+                entity.height_id,
+                target_height_x,
+                target_height_y,
+                weight=10.0,
+            ),
+        ]
+
+        # 4. Update aspect ratio constraint value
+        if natural_height > 1e-9:
+            new_ratio = natural_width / natural_height
+            for constr in self.element.sketch.constraints:
+                if (
+                    isinstance(constr, AspectRatioConstraint)
+                    and constr.p1 == entity.origin_id
+                    and constr.p2 == entity.width_id
+                    and constr.p3 == entity.origin_id
+                    and constr.p4 == entity.height_id
+                ):
+                    constr.ratio = new_ratio
+                    break
+
+        # 5. Solve with temporary constraints
+        self.element.sketch.solve(
+            extra_constraints=drag_constraints,
+            update_constraint_status=False,
+        )
 
         self.element.mark_dirty()
 
