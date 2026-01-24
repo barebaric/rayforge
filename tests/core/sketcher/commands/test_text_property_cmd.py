@@ -341,3 +341,256 @@ def test_text_property_command_multiple_edits_with_history():
     assert isinstance(tb, TextBoxEntity)
     assert tb.content == "First Edit"
     assert tb.font_params["font_family"] == "serif"
+
+
+def test_should_skip_undo_both_empty():
+    """Test should_skip_undo returns True when both contents empty."""
+    sketch = Sketch()
+
+    p_origin = sketch.add_point(0, 0)
+    p_width = sketch.add_point(50, 0)
+    p_height = sketch.add_point(0, 10)
+
+    tb_id = sketch.registry.add_text_box(
+        p_origin,
+        p_width,
+        p_height,
+        content="",
+        font_params={"font_family": "sans-serif", "font_size": 10.0},
+    )
+
+    cmd = ModifyTextPropertyCommand(sketch, tb_id, "", {})
+
+    assert cmd.should_skip_undo() is True
+
+
+def test_should_skip_undo_old_empty_new_not_empty():
+    """Test should_skip_undo returns False when old empty, new not empty."""
+    sketch = Sketch()
+
+    p_origin = sketch.add_point(0, 0)
+    p_width = sketch.add_point(50, 0)
+    p_height = sketch.add_point(0, 10)
+
+    tb_id = sketch.registry.add_text_box(
+        p_origin,
+        p_width,
+        p_height,
+        content="",
+        font_params={"font_family": "sans-serif", "font_size": 10.0},
+    )
+
+    cmd = ModifyTextPropertyCommand(sketch, tb_id, "New Text", {})
+
+    assert cmd.should_skip_undo() is False
+
+
+def test_should_skip_undo_old_not_empty_new_empty():
+    """Test should_skip_undo returns False when old not empty, new empty."""
+    sketch = Sketch()
+
+    p_origin = sketch.add_point(0, 0)
+    p_width = sketch.add_point(50, 0)
+    p_height = sketch.add_point(0, 10)
+
+    tb_id = sketch.registry.add_text_box(
+        p_origin,
+        p_width,
+        p_height,
+        content="Original",
+        font_params={"font_family": "sans-serif", "font_size": 10.0},
+    )
+
+    cmd = ModifyTextPropertyCommand(sketch, tb_id, "", {})
+    cmd.execute()
+
+    assert cmd.should_skip_undo() is False
+
+
+def test_should_skip_undo_both_not_empty():
+    """Test should_skip_undo returns False when both contents not empty."""
+    sketch = Sketch()
+
+    p_origin = sketch.add_point(0, 0)
+    p_width = sketch.add_point(50, 0)
+    p_height = sketch.add_point(0, 10)
+
+    tb_id = sketch.registry.add_text_box(
+        p_origin,
+        p_width,
+        p_height,
+        content="Original",
+        font_params={"font_family": "sans-serif", "font_size": 10.0},
+    )
+
+    cmd = ModifyTextPropertyCommand(sketch, tb_id, "New Text", {})
+
+    assert cmd.should_skip_undo() is False
+
+
+def test_empty_text_box_removed_on_execute():
+    """Test that text box is removed when content becomes empty."""
+    sketch = Sketch()
+
+    p_origin = sketch.add_point(0, 0)
+    p_width = sketch.add_point(50, 0)
+    p_height = sketch.add_point(0, 10)
+
+    tb_id = sketch.registry.add_text_box(
+        p_origin,
+        p_width,
+        p_height,
+        content="Original Text",
+        font_params={"font_family": "sans-serif", "font_size": 10.0},
+    )
+
+    cmd = ModifyTextPropertyCommand(sketch, tb_id, "", {})
+    cmd.execute()
+
+    assert cmd._entity_was_removed is True
+    assert cmd._removed_entity is not None
+    assert cmd._removed_entity.id == tb_id
+
+    tb = sketch.registry.get_entity(tb_id)
+    assert tb is None
+
+
+def test_empty_text_box_points_removed():
+    """Test that associated points are removed when text box is removed."""
+    sketch = Sketch()
+
+    p_origin = sketch.add_point(0, 0)
+    p_width = sketch.add_point(50, 0)
+    p_height = sketch.add_point(0, 10)
+
+    tb_id = sketch.registry.add_text_box(
+        p_origin,
+        p_width,
+        p_height,
+        content="Original Text",
+        font_params={"font_family": "sans-serif", "font_size": 10.0},
+    )
+
+    cmd = ModifyTextPropertyCommand(sketch, tb_id, "", {})
+    cmd.execute()
+
+    assert len(cmd._removed_points) == 3
+
+    point_ids = {pt.id for pt in cmd._removed_points}
+    for pt in sketch.registry.points:
+        assert pt.id not in point_ids
+
+
+def test_empty_text_box_constraints_removed():
+    """Test that constraints depending on removed points are removed."""
+    sketch = Sketch()
+
+    p_origin = sketch.add_point(0, 0)
+    p_width = sketch.add_point(50, 0)
+    p_height = sketch.add_point(0, 10)
+
+    tb_id = sketch.registry.add_text_box(
+        p_origin,
+        p_width,
+        p_height,
+        content="Original Text",
+        font_params={"font_family": "sans-serif", "font_size": 10.0},
+    )
+
+    cmd = ModifyTextPropertyCommand(sketch, tb_id, "", {})
+    cmd.execute()
+
+    point_ids = {pt.id for pt in cmd._removed_points}
+
+    for constr in sketch.constraints or []:
+        assert not constr.depends_on_points(point_ids)
+
+
+def test_empty_text_box_undo_restores_entity():
+    """Test that undo restores the removed text entity."""
+    sketch = Sketch()
+
+    p_origin = sketch.add_point(0, 0)
+    p_width = sketch.add_point(50, 0)
+    p_height = sketch.add_point(0, 10)
+
+    tb_id = sketch.registry.add_text_box(
+        p_origin,
+        p_width,
+        p_height,
+        content="Original Text",
+        font_params={"font_family": "sans-serif", "font_size": 10.0},
+    )
+
+    cmd = ModifyTextPropertyCommand(sketch, tb_id, "", {})
+    cmd.execute()
+
+    assert sketch.registry.get_entity(tb_id) is None
+
+    cmd.undo()
+
+    tb = sketch.registry.get_entity(tb_id)
+    assert tb is not None
+    assert isinstance(tb, TextBoxEntity)
+
+
+def test_empty_text_box_undo_restores_points():
+    """Test that undo restores the removed points."""
+    sketch = Sketch()
+
+    p_origin = sketch.add_point(0, 0)
+    p_width = sketch.add_point(50, 0)
+    p_height = sketch.add_point(0, 10)
+
+    tb_id = sketch.registry.add_text_box(
+        p_origin,
+        p_width,
+        p_height,
+        content="Original Text",
+        font_params={"font_family": "sans-serif", "font_size": 10.0},
+    )
+
+    cmd = ModifyTextPropertyCommand(sketch, tb_id, "", {})
+    cmd.execute()
+
+    point_ids = {pt.id for pt in cmd._removed_points}
+    for pt in sketch.registry.points:
+        assert pt.id not in point_ids
+
+    cmd.undo()
+
+    for pt in cmd._removed_points:
+        restored = sketch.registry.get_point(pt.id)
+        assert restored is not None
+        assert restored.id == pt.id
+
+
+def test_empty_text_box_with_history_manager():
+    """Test empty text box removal works with history manager."""
+    sketch = Sketch()
+
+    p_origin = sketch.add_point(0, 0)
+    p_width = sketch.add_point(50, 0)
+    p_height = sketch.add_point(0, 10)
+
+    tb_id = sketch.registry.add_text_box(
+        p_origin,
+        p_width,
+        p_height,
+        content="Original Text",
+        font_params={"font_family": "sans-serif", "font_size": 10.0},
+    )
+
+    history = HistoryManager()
+
+    cmd = ModifyTextPropertyCommand(sketch, tb_id, "", {})
+    history.execute(cmd)
+
+    assert history.can_undo() is True
+    assert sketch.registry.get_entity(tb_id) is None
+
+    history.undo()
+
+    assert history.can_redo() is True
+    tb = sketch.registry.get_entity(tb_id)
+    assert tb is not None
