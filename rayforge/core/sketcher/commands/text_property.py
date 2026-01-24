@@ -98,8 +98,6 @@ class ModifyTextPropertyCommand(SketchChangeCommand):
         # triggers the final solve.
 
     def _do_undo(self) -> None:
-        from ..entities.text_box import TextBoxEntity
-
         entity = self.sketch.registry.get_entity(self.text_entity_id)
         if not isinstance(entity, TextBoxEntity):
             return
