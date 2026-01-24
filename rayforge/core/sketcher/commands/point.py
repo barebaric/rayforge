@@ -1,6 +1,6 @@
 from __future__ import annotations
 import logging
-from typing import TYPE_CHECKING, Tuple, Optional, Dict
+from typing import TYPE_CHECKING, Tuple, Optional, Dict, Any
 
 from .base import SketchChangeCommand
 from ..entities import Line, Arc, Circle, Point
@@ -21,7 +21,10 @@ class MovePointCommand(SketchChangeCommand):
         point_id: int,
         start_pos: Tuple[float, float],
         end_pos: Tuple[float, float],
-        snapshot: Optional[Dict[int, Tuple[float, float]]] = None,
+        # snapshot is: (points_dict, entities_dict)
+        snapshot: Optional[
+            Tuple[Dict[int, Tuple[float, float]], Dict[int, Any]]
+        ] = None,
     ):
         super().__init__(sketch, _("Move Point"))
         self.point_id = point_id
@@ -33,7 +36,7 @@ class MovePointCommand(SketchChangeCommand):
         # This is critical because the drag operation changes coordinates
         # *before* the command is executed.
         if snapshot:
-            self._state_snapshot = snapshot
+            self._snapshot = snapshot
 
     def _get_point(self) -> Optional["Point"]:
         """Gets a live reference to the point object."""
@@ -74,8 +77,8 @@ class MovePointCommand(SketchChangeCommand):
         # Update our end position to the newest position
         self.end_pos = next_command.end_pos  # type: ignore
         self.timestamp = next_command.timestamp
-        # Note: We do NOT update self._state_snapshot, because we want to
-        # preserve the state from before the *first* move in the sequence.
+        # We do NOT update self._snapshot; we keep the state from before
+        # the FIRST move.
         return True
 
 

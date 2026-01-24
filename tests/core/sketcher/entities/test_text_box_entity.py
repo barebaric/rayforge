@@ -168,3 +168,22 @@ def test_text_box_create_text_fill_geometry(registry):
     geo = box.create_text_fill_geometry(registry)
     assert isinstance(geo, Geometry)
     assert len(geo) > 0
+
+
+def test_text_box_get_set_state(registry):
+    """Test state capture and restoration for Undo/Redo."""
+    p1 = registry.add_point(0, 0)
+    p2 = registry.add_point(10, 0)
+    p3 = registry.add_point(0, 10)
+    tb = registry.get_entity(registry.add_text_box(p1, p2, p3, "Test", {}))
+
+    # Verify initial state (Inherited from Entity)
+    state = tb.get_state()
+    assert state == {"construction": False}
+
+    # Modify state
+    tb.construction = True
+
+    # Restore state
+    tb.set_state(state)
+    assert tb.construction is False

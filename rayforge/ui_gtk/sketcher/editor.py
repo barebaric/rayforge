@@ -414,8 +414,8 @@ class SketchEditor:
         if not self.sketch_element:
             return False
 
-        is_ctrl = state & Gdk.ModifierType.CONTROL_MASK
-        is_shift = state & Gdk.ModifierType.SHIFT_MASK
+        is_ctrl = bool(state & Gdk.ModifierType.CONTROL_MASK)
+        is_shift = bool(state & Gdk.ModifierType.SHIFT_MASK)
 
         # Priority 0: Active text editing
         tool = self.sketch_element.current_tool
@@ -450,7 +450,7 @@ class SketchEditor:
                 return tool.handle_text_input(chr(key_unicode))
             return False  # Unhandled key during text edit
 
-        is_ctrl = state & Gdk.ModifierType.CONTROL_MASK
+        is_ctrl = bool(state & Gdk.ModifierType.CONTROL_MASK)
 
         # Priority 1: Immediate actions (Undo/Redo, Delete)
         if is_ctrl:
