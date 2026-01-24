@@ -57,7 +57,7 @@ class DepthEngraverSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
         )
         self.min_power_scale.set_size_request(200, -1)
         self.min_power_row = Adw.ActionRow(
-            title=_("Min Power (White)"),
+            title=_("Min Power"),
             subtitle=_(
                 "Power for lightest areas, as a % of the step's main power"
             ),
@@ -79,13 +79,15 @@ class DepthEngraverSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
         )
         self.max_power_scale.set_size_request(200, -1)
         self.max_power_row = Adw.ActionRow(
-            title=_("Max Power (Black)"),
+            title=_("Max Power"),
             subtitle=_(
                 "Power for darkest areas, as a % of the step's main power"
             ),
         )
         self.max_power_row.add_suffix(self.max_power_scale)
         self.add(self.max_power_row)
+
+        self._update_power_labels(producer.invert)
 
         # --- Multi-Pass Settings ---
         levels_adj = Gtk.Adjustment(
@@ -133,6 +135,14 @@ class DepthEngraverSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
                 self._on_param_changed, "z_step_down", get_spinrow_float(r)
             ),
         )
+
+        self.invert_row = Adw.SwitchRow(
+            title=_("Invert"),
+            subtitle=_("Engrave white areas instead of black areas"),
+        )
+        self.invert_row.set_active(producer.invert)
+        self.invert_row.connect("notify::active", self._on_invert_changed)
+        self.add(self.invert_row)
 
         self._on_mode_changed(mode_row, None)
 
@@ -213,6 +223,32 @@ class DepthEngraverSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
         self.z_step_row.set_visible(not is_power_mode)
 
         self._on_param_changed("depth_mode", selected_mode.name)
+
+    def _update_power_labels(self, invert: bool):
+        """Update min/max power labels based on invert setting."""
+        lightest_subtitle = _(
+            "Power for lightest areas, as a % of the step's main power"
+        )
+        darkest_subtitle = _(
+            "Power for darkest areas, as a % of the step's main power"
+        )
+
+        if invert:
+            self.min_power_row.set_title(_("Min Power (Black)"))
+            self.min_power_row.set_subtitle(darkest_subtitle)
+            self.max_power_row.set_title(_("Max Power (White)"))
+            self.max_power_row.set_subtitle(lightest_subtitle)
+        else:
+            self.min_power_row.set_title(_("Min Power (White)"))
+            self.min_power_row.set_subtitle(lightest_subtitle)
+            self.max_power_row.set_title(_("Max Power (Black)"))
+            self.max_power_row.set_subtitle(darkest_subtitle)
+
+    def _on_invert_changed(self, w, pspec):
+        """Handle invert switch toggle."""
+        invert = w.get_active()
+        self._update_power_labels(invert)
+        self._on_param_changed("invert", invert)
 
     def _on_param_changed(self, key: str, value: Any):
         target_dict = self.target_dict.setdefault("params", {})

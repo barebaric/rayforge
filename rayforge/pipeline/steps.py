@@ -77,7 +77,6 @@ def create_raster_step(
     step.capabilities = {ENGRAVE}
     step.opsproducer_dict = Rasterizer().to_dict()
     step.modifiers_dicts = [
-        MakeTransparent().to_dict(),
         ToGrayscale().to_dict(),
     ]
     step.per_workpiece_transformers_dicts = [
@@ -116,10 +115,7 @@ def create_depth_engrave_step(
     )
     step.capabilities = {ENGRAVE}
     step.opsproducer_dict = DepthEngraver().to_dict()
-    step.modifiers_dicts = [
-        MakeTransparent().to_dict(),
-        ToGrayscale().to_dict(),
-    ]
+    step.modifiers_dicts = []
     step.per_workpiece_transformers_dicts = [
         OverscanTransformer(
             enabled=True, distance_mm=auto_distance, auto=True

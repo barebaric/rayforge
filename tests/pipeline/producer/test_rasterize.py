@@ -102,14 +102,16 @@ def test_rasterize_vertically_black(black_surface):
 
 def test_rasterizer_serialization():
     """Tests serialization and deserialization of the Rasterizer producer."""
-    original_producer = Rasterizer(cross_hatch=True)
+    original_producer = Rasterizer(cross_hatch=True, invert=True)
     data = original_producer.to_dict()
     recreated_producer = OpsProducer.from_dict(data)
 
     assert data["type"] == "Rasterizer"
     assert data["params"]["cross_hatch"] is True
+    assert data["params"]["invert"] is True
     assert isinstance(recreated_producer, Rasterizer)
     assert recreated_producer.cross_hatch is True
+    assert recreated_producer.invert is True
 
 
 def test_rasterizer_run_requires_workpiece(white_surface):
@@ -189,3 +191,66 @@ def test_rasterizer_cross_hatch(black_surface, mock_workpiece):
 
     assert horizontal_lines == 10
     assert vertical_lines == 10
+
+
+def test_rasterizer_invert_white_surface(white_surface, mock_workpiece):
+    """Tests that invert=True on a white surface produces raster ops."""
+    laser = MagicMock()
+    laser.spot_size_mm = (0.1, 0.1)
+    rasterizer = Rasterizer(invert=True)
+    artifact = rasterizer.run(
+        laser, white_surface, (10, 10), workpiece=mock_workpiece, settings={}
+    )
+
+    horizontal_lines = 0
+    for cmd in artifact.ops.commands:
+        if isinstance(cmd, LineToCommand):
+            horizontal_lines += 1
+
+    assert horizontal_lines == 10
+
+
+def test_rasterizer_invert_black_surface(black_surface, mock_workpiece):
+    """Tests that invert=True on a black surface produces no ops."""
+    laser = MagicMock()
+    laser.spot_size_mm = (0.1, 0.1)
+    rasterizer = Rasterizer(invert=True)
+    artifact = rasterizer.run(
+        laser, black_surface, (10, 10), workpiece=mock_workpiece, settings={}
+    )
+
+    horizontal_lines = 0
+    for cmd in artifact.ops.commands:
+        if isinstance(cmd, LineToCommand):
+            horizontal_lines += 1
+
+    assert horizontal_lines == 0
+
+
+def test_rasterizer_invert_respects_alpha():
+    """Tests that invert=True still respects alpha transparency."""
+    surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, 10, 10)
+    ctx = cairo.Context(surface)
+    ctx.set_source_rgb(1, 1, 1)
+    ctx.paint()
+    ctx.set_source_rgba(1, 1, 1, 0)
+    ctx.rectangle(2, 2, 6, 6)
+    ctx.fill()
+
+    laser = MagicMock()
+    laser.spot_size_mm = (0.1, 0.1)
+    rasterizer = Rasterizer(invert=True)
+    mock_workpiece = WorkPiece(name="test_wp")
+    mock_workpiece.uid = "wp_test_123"
+    mock_workpiece.set_size(1.0, 1.0)
+
+    artifact = rasterizer.run(
+        laser, surface, (10, 10), workpiece=mock_workpiece, settings={}
+    )
+
+    horizontal_lines = 0
+    for cmd in artifact.ops.commands:
+        if isinstance(cmd, LineToCommand):
+            horizontal_lines += 1
+
+    assert horizontal_lines > 0

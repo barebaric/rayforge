@@ -59,6 +59,7 @@ def test_initialization_defaults(producer: DepthEngraver):
     assert producer.min_power == 0.0
     assert producer.max_power == 1.0
     assert producer.num_depth_levels == 5
+    assert producer.invert is False
 
 
 def test_is_vector_producer_is_false(producer: DepthEngraver):
@@ -76,6 +77,7 @@ def test_serialization_and_deserialization():
         depth_mode=DepthMode.MULTI_PASS,
         num_depth_levels=8,
         z_step_down=0.2,
+        invert=True,
     )
     data = original.to_dict()
     recreated = OpsProducer.from_dict(data)
@@ -85,6 +87,7 @@ def test_serialization_and_deserialization():
     assert recreated.depth_mode == DepthMode.MULTI_PASS
     assert recreated.num_depth_levels == 8
     assert recreated.z_step_down == 0.2
+    assert recreated.invert is True
 
 
 def test_deserialization_with_invalid_enum_falls_back():
@@ -344,3 +347,76 @@ def test_power_modulation_respects_step_power_setting(
     assert texture_row[0] == pytest.approx(51, 1)
     assert texture_row[1] == pytest.approx(25, 1)
     assert texture_row[2] == pytest.approx(0, 1)
+
+
+def test_invert_inverts_grayscale_values(
+    laser: Laser, mock_workpiece: WorkPiece
+):
+    """
+    Tests that invert=True correctly inverts the grayscale values.
+    White becomes black (max power) and black becomes white (min power).
+    """
+    surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, 3, 1)
+    ctx = cairo.Context(surface)
+    ctx.set_source_rgb(0, 0, 0)
+    ctx.rectangle(0, 0, 1, 1)
+    ctx.fill()
+    ctx.set_source_rgb(128 / 255, 128 / 255, 128 / 255)
+    ctx.rectangle(1, 0, 1, 1)
+    ctx.fill()
+    ctx.set_source_rgb(1, 1, 1)
+    ctx.rectangle(2, 0, 1, 1)
+    ctx.fill()
+
+    mock_workpiece.set_size(0.3, 0.1)
+    producer = DepthEngraver(min_power=0.1, max_power=0.9, invert=True)
+
+    artifact = producer.run(laser, surface, (10, 10), workpiece=mock_workpiece)
+
+    assert isinstance(artifact, WorkPieceArtifact)
+
+    # With invert=True:
+    # Black (gray=0) -> inverted to 255 -> (0.1 + 0.0 * 0.8) * 255 = 25.5
+    # Gray (gray=128) -> inverted to 127 -> (0.1 + 0.5 * 0.8) * 255 = 127
+    # White (gray=255) -> inverted to 0 -> (0.1 + 1.0 * 0.8) * 255 = 229.5
+    expected_texture_row = [26, 127, 229]
+
+    scan_cmd = next(
+        c for c in artifact.ops if isinstance(c, ScanLinePowerCommand)
+    )
+    power_vals = scan_cmd.power_values
+    assert len(power_vals) == 3
+    assert power_vals[0] == pytest.approx(expected_texture_row[0], 1)
+    assert power_vals[1] == pytest.approx(expected_texture_row[1], 1)
+    assert power_vals[2] == pytest.approx(expected_texture_row[2], 1)
+
+
+def test_invert_respects_alpha(laser: Laser, mock_workpiece: WorkPiece):
+    """
+    Tests that invert=True still respects alpha transparency.
+    Transparent pixels should remain not rastered.
+    """
+    surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, 3, 1)
+    ctx = cairo.Context(surface)
+    ctx.set_source_rgba(1, 1, 1, 0)
+    ctx.rectangle(0, 0, 3, 1)
+    ctx.fill()
+    ctx.set_source_rgb(1, 1, 1)
+    ctx.rectangle(0, 0, 1, 1)
+    ctx.fill()
+    ctx.rectangle(2, 0, 1, 1)
+    ctx.fill()
+
+    mock_workpiece.set_size(0.3, 0.1)
+    producer = DepthEngraver(invert=True)
+
+    artifact = producer.run(laser, surface, (10, 10), workpiece=mock_workpiece)
+
+    assert isinstance(artifact, WorkPieceArtifact)
+    assert artifact.texture_data is not None
+    texture_row = artifact.texture_data.power_texture_data[0]
+    # Middle pixel should be 0 (transparent)
+    assert texture_row[1] == 0
+    # Other pixels should be > 0 (white with invert)
+    assert texture_row[0] > 0
+    assert texture_row[2] > 0
