@@ -200,6 +200,11 @@ class SelectTool(SketchTool):
                 if isinstance(text_tool, TextBoxTool):
                     self.element.set_tool("text_box")
                     text_tool.start_editing(entity.id)
+                    # Delegate the press to the new tool so it can
+                    # initialize its own drag state, then return False to
+                    # allow the gesture to continue into a drag.
+                    text_tool.on_press(world_x, world_y, 1)
+                    return False
                 return True
 
         # Double click edits constraint value
