@@ -26,6 +26,7 @@ from .constraints import (
     TangentConstraint,
     VerticalConstraint,
 )
+from .constraints.drag import DragConstraint
 from .entities import Line, Arc, Circle, Entity
 from .params import ParameterContext
 from .registry import EntityRegistry
@@ -967,6 +968,26 @@ class Sketch(IAsset):
             solve_params.evaluate_all(initial_values=initial_values)
             ctx = solve_params.get_all_values()
 
+            # --- Solver Stabilization ---
+            # Add weak, temporary constraints to every non-fixed point,
+            # pulling it towards its current location. This acts as an
+            # "inertia" term, encouraging the solver to find the solution
+            # closest to the current state and preventing large, unexpected
+            # geometric jumps.
+            stabilizer_constraints = []
+            hold_weight = 1e-4
+            for p in self.registry.points:
+                if not p.fixed:
+                    stabilizer_constraints.append(
+                        DragConstraint(
+                            p.id,
+                            p.x,
+                            p.y,
+                            weight=hold_weight,
+                            user_visible=False,
+                        )
+                    )
+
             # Step 4: Update constraints with the final, resolved values.
             all_constraints = self.constraints
             if extra_constraints:
@@ -975,9 +996,14 @@ class Sketch(IAsset):
                 if hasattr(c, "update_from_context"):
                     c.update_from_context(ctx)
 
-            # Step 5: Run the solver with the disposable, correctly evaluated
-            # context.
-            solver = Solver(self.registry, solve_params, all_constraints)
+            # Step 5: Run the solver with the disposable, correctly
+            # evaluated context.
+            solver = Solver(
+                self.registry,
+                solve_params,
+                all_constraints,
+                auxiliary_constraints=stabilizer_constraints,
+            )
             success = solver.solve(update_dof=update_constraint_status)
 
         except Exception as e:
