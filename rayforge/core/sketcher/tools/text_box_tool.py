@@ -481,6 +481,31 @@ class TextBoxTool(SketchTool):
             clipboard = display.get_clipboard()
             clipboard.set(self.get_selected_text())
             return True
+        elif key == SketcherKey.CUT and ctrl:
+            from gi.repository import Gdk
+
+            display = Gdk.Display.get_default()
+            if display is None:
+                return True
+            clipboard = display.get_clipboard()
+            clipboard.set(self.get_selected_text())
+
+            start, end = self._get_selection_range()
+            if start != end:
+                self.text_buffer = (
+                    self.text_buffer[:start] + self.text_buffer[end:]
+                )
+                self.cursor_pos = start
+                self.clear_selection()
+                self._resize_box_to_fit_text()
+                self.element.mark_dirty()
+                self.cursor_moved.send(self)
+
+                if self.live_edit_cmd:
+                    self.live_edit_cmd.capture_state(
+                        self.text_buffer, self.cursor_pos
+                    )
+            return True
         elif key == SketcherKey.PASTE and ctrl:
             from gi.repository import Gdk
 

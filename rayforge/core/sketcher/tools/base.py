@@ -19,6 +19,7 @@ class SketcherKey(Enum):
     REDO = auto()
     COPY = auto()
     PASTE = auto()
+    CUT = auto()
     SELECT_ALL = auto()
 
 
