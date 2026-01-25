@@ -35,6 +35,7 @@ class SketchPropertiesWidget(Expander):
 
         self.set_title(_("Sketch Parameters"))
         self.set_expanded(True)
+        self.set_visible(False)
 
         self._list_box = Gtk.ListBox()
         self._list_box.set_selection_mode(Gtk.SelectionMode.NONE)
