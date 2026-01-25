@@ -376,6 +376,13 @@ class SketchStudio(Gtk.Box):
 
     def _on_finish_clicked(self, btn, *args):
         logger.info("SketchStudio: Finish clicked")
+
+        # Ensure any active tool commits its pending state (e.g. text editing)
+        if self.canvas and self.canvas.sketch_element:
+            # Switching to 'select' ensures the current tool's on_deactivate()
+            # is called, which finalizes edits.
+            self.canvas.sketch_element.set_tool("select")
+
         # Retrieve the modified sketch from the canvas element
         if self.canvas.sketch_element:
             sketch = self.canvas.sketch_element.sketch
