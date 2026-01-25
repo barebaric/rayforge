@@ -3,9 +3,12 @@ from typing import List, cast
 from gi.repository import Gtk, Adw, GLib, Gdk
 from blinker import Signal
 from ...context import get_context
-from ..varset.varsetwidget import VarSetWidget, VarSet
 from ..icons import get_icon
-from ...machine.driver.driver import ResourceBusyError
+from ...machine.driver.driver import (
+    ResourceBusyError,
+    DeviceStatus,
+)
+from ..varset.varsetwidget import VarSetWidget, VarSet
 
 logger = logging.getLogger(__name__)
 
@@ -125,6 +128,7 @@ class DeviceSettingsPage(Adw.PreferencesPage):
         self.machine.connection_status_changed.connect(
             self._on_connection_status_changed
         )
+        self.machine.state_changed.connect(self._on_state_changed)
         self.machine.settings_updated.connect(self._on_settings_op_success)
         self.machine.setting_applied.connect(self._on_setting_applied)
         self.machine.settings_error.connect(self._on_settings_op_error)
@@ -142,6 +146,7 @@ class DeviceSettingsPage(Adw.PreferencesPage):
         self.machine.connection_status_changed.disconnect(
             self._on_connection_status_changed
         )
+        self.machine.state_changed.disconnect(self._on_state_changed)
         self.machine.settings_updated.disconnect(self._on_settings_op_success)
         self.machine.setting_applied.disconnect(self._on_setting_applied)
         self.machine.settings_error.disconnect(self._on_settings_op_error)
@@ -159,6 +164,10 @@ class DeviceSettingsPage(Adw.PreferencesPage):
     def _on_connection_status_changed(self, sender, **kwargs):
         logger.debug("_on_connection_status_changed: Updating UI.")
         self._not_connected_warning_dismissed = False
+        self._update_ui_state()
+
+    def _on_state_changed(self, sender, state, **kwargs):
+        logger.debug("_on_state_changed: Updating UI.")
         self._update_ui_state()
 
     def _rebuild_settings_widgets(self, var_sets: List[VarSet]):
@@ -186,6 +195,7 @@ class DeviceSettingsPage(Adw.PreferencesPage):
         logger.debug(f"_update_ui_state: Starting (is_busy={self._is_busy}).")
         is_supported = self.machine.driver.supports_settings
         is_connected = self.machine.is_connected()
+        is_running = self.machine.device_state.status == DeviceStatus.RUN
         has_settings_to_show = is_supported and len(self._varset_widgets) > 0
 
         # Control banners
@@ -250,7 +260,12 @@ class DeviceSettingsPage(Adw.PreferencesPage):
             self.read_button.set_sensitive(False)
         else:
             self.spinner.stop()
-            self.read_button.set_sensitive(is_connected)
+            self.read_button.set_sensitive(is_connected and not is_running)
+
+        for widget in self._varset_widgets:
+            widget.set_apply_buttons_sensitive(
+                is_connected and not is_running and not self._is_busy
+            )
         logger.debug("_update_ui_state: Finished.")
 
     def _on_settings_op_success(self, sender, var_sets: List[VarSet]):
