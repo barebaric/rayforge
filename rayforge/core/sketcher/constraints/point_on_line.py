@@ -27,6 +27,11 @@ class PointOnLineConstraint(Constraint):
         self.point_id = point_id
         self.shape_id = shape_id
 
+    @staticmethod
+    def get_type_name() -> str:
+        """Returns to human-readable name of this constraint type."""
+        return _("Point on Line")
+
     def to_dict(self) -> Dict[str, Any]:
         return {
             "type": "PointOnLineConstraint",

@@ -16,6 +16,11 @@ class CollinearConstraint(Constraint):
         self.p2 = p2
         self.p3 = p3
 
+    @staticmethod
+    def get_type_name() -> str:
+        """Returns to human-readable name of this constraint type."""
+        return _("Collinear")
+
     def to_dict(self) -> Dict[str, Any]:
         return {
             "type": "CollinearConstraint",

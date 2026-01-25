@@ -38,6 +38,11 @@ class PerpendicularConstraint(Constraint):
         self.e1_id = e1_id
         self.e2_id = e2_id
 
+    @staticmethod
+    def get_type_name() -> str:
+        """Returns to human-readable name of this constraint type."""
+        return _("Perpendicular")
+
     def to_dict(self) -> Dict[str, Any]:
         return {
             "type": "PerpendicularConstraint",
