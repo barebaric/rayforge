@@ -1454,6 +1454,14 @@ class MainWindow(Adw.ApplicationWindow):
         # Store reference to current doc for future disconnection
         self._old_doc = new_doc
 
+        # Update Undo/Redo buttons to listen to the new history manager
+        self.toolbar.undo_button.set_history_manager(new_doc.history_manager)
+        self.toolbar.redo_button.set_history_manager(new_doc.history_manager)
+
+        # Update child views to point to the new document
+        self.asset_list_view.set_doc(new_doc)
+        self.layer_list_view.set_doc(new_doc)
+
         # Initialize new document
         self._initialize_document()
 

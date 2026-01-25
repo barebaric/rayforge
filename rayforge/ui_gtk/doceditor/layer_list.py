@@ -3,6 +3,7 @@ from gi.repository import Gtk
 from blinker import Signal
 from typing import cast, TYPE_CHECKING
 
+from ...core.doc import Doc
 from ...core.layer import Layer
 from ..shared.draglist import DragListBox
 from .layer_view import LayerView
@@ -65,11 +66,30 @@ class LayerListView(Expander):
         add_button.set_child(button_box)
 
         # Connect to document changes and perform initial population
+        self._connect_signals()
+        self.on_doc_changed(self.doc)
+
+    def set_doc(self, doc: Doc):
+        """Updates the widget to track a new document instance."""
+        if self.doc == doc:
+            return
+
+        self._disconnect_signals()
+        self.doc = doc
+        self._connect_signals()
+        self.on_doc_changed(self.doc)
+
+    def _connect_signals(self):
         self.doc.updated.connect(self.on_doc_changed)
         self.doc.descendant_added.connect(self.on_doc_changed)
         self.doc.descendant_removed.connect(self.on_doc_changed)
         self.doc.active_layer_changed.connect(self.on_active_layer_changed)
-        self.on_doc_changed(self.doc)
+
+    def _disconnect_signals(self):
+        self.doc.updated.disconnect(self.on_doc_changed)
+        self.doc.descendant_added.disconnect(self.on_doc_changed)
+        self.doc.descendant_removed.disconnect(self.on_doc_changed)
+        self.doc.active_layer_changed.disconnect(self.on_active_layer_changed)
 
     def on_doc_changed(self, sender, **kwargs):
         """
