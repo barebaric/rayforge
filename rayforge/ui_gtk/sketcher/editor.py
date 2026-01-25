@@ -64,6 +64,7 @@ class SketchEditor:
             "gr": "set_tool:rectangle",
             "go": "set_tool:rounded_rect",
             "gf": "set_tool:fill",
+            "gt": "set_tool:text_box",
             "gn": "toggle_construction_on_selection",
             # Actions
             "ch": "add_chamfer_action",
