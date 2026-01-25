@@ -35,6 +35,14 @@ class OverscanSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
             **kwargs,
         )
 
+        self._previous_cut_speed = step.cut_speed
+        step.updated.connect(self._on_step_updated)
+
+        # Listen to machine changes to catch acceleration updates immediately
+        machine = get_context().machine
+        if machine:
+            machine.changed.connect(self._on_machine_changed)
+
         # Main toggle switch
         switch_row = Adw.SwitchRow(title=_("Enable Overscan"))
         switch_row.set_active(transformer.enabled)
@@ -148,6 +156,20 @@ class OverscanSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
 
         # Update the UI
         self.distance_helper.set_value_in_base_units(new_distance)
+
+    def _on_step_updated(self, step: "Step"):
+        """Handle step updates to recalculate overscan distance if needed."""
+        if self.target_dict.get("auto", True):
+            if step.cut_speed != self._previous_cut_speed:
+                self._previous_cut_speed = step.cut_speed
+                self._recalculate_distance()
+
+    def _on_machine_changed(self, machine):
+        """
+        Handle machine updates (e.g. acceleration) to recalculate overscan.
+        """
+        if self.target_dict.get("auto", True):
+            self._recalculate_distance()
 
     def _on_distance_changed(self, spin_row):
         # Get the value in base units directly from the helper
