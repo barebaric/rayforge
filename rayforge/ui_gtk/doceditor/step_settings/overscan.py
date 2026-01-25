@@ -98,6 +98,16 @@ class OverscanSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
             lambda w, _: self._update_sensitivity(),
         )
 
+    def _set_step_param(self, key, new_value, name):
+        """Helper method to set a step parameter with standard callback."""
+        self.editor.step.set_step_param(
+            target_dict=self.target_dict,
+            key=key,
+            new_value=new_value,
+            name=name,
+            on_change_callback=lambda: self.step.updated.send(self.step),
+        )
+
     def _update_sensitivity(self):
         """Update the sensitivity of UI elements based on current state."""
         enabled = self.target_dict.get("enabled", True)
@@ -109,24 +119,12 @@ class OverscanSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
 
     def _on_enable_toggled(self, row, pspec):
         new_value = row.get_active()
-        self.editor.step.set_step_param(
-            target_dict=self.target_dict,
-            key="enabled",
-            new_value=new_value,
-            name=_("Toggle Overscan"),
-            on_change_callback=lambda: self.step.updated.send(self.step),
-        )
+        self._set_step_param("enabled", new_value, _("Toggle Overscan"))
         self._update_sensitivity()
 
     def _on_auto_toggled(self, row, pspec):
         new_value = row.get_active()
-        self.editor.step.set_step_param(
-            target_dict=self.target_dict,
-            key="auto",
-            new_value=new_value,
-            name=_("Toggle Auto Overscan"),
-            on_change_callback=lambda: self.step.updated.send(self.step),
-        )
+        self._set_step_param("auto", new_value, _("Toggle Auto Overscan"))
 
         # If auto is enabled, recalculate the distance
         if new_value:
@@ -146,12 +144,8 @@ class OverscanSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
         )
 
         # Update the distance
-        self.editor.step.set_step_param(
-            target_dict=self.target_dict,
-            key="distance_mm",
-            new_value=new_distance,
-            name=_("Auto Calculate Overscan Distance"),
-            on_change_callback=lambda: self.step.updated.send(self.step),
+        self._set_step_param(
+            "distance_mm", new_distance, _("Auto Calculate Overscan Distance")
         )
 
         # Update the UI
@@ -175,10 +169,11 @@ class OverscanSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
         # Get the value in base units directly from the helper
         new_value = self.distance_helper.get_value_in_base_units()
 
-        self.editor.step.set_step_param(
-            target_dict=self.target_dict,
-            key="distance_mm",
-            new_value=new_value,
-            name=_("Change Overscan Distance"),
-            on_change_callback=lambda: self.step.updated.send(self.step),
+        # If auto is currently enabled, disable it when user manually changes
+        # the distance (via +/- buttons or typing)
+        if self.target_dict.get("auto", True):
+            self._set_step_param("auto", False, _("Disable Auto Overscan"))
+
+        self._set_step_param(
+            "distance_mm", new_value, _("Change Overscan Distance")
         )
