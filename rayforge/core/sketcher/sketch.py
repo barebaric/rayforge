@@ -1023,10 +1023,147 @@ class Sketch(IAsset):
         """
         geo = Geometry()
 
-        for entity in self.registry.entities:
-            if entity.construction:
+        # 1. Identify chainable vs standalone
+        chainable = []
+        standalone = []
+
+        for e in self.registry.entities:
+            if e.construction:
                 continue
-            geo.extend(entity.to_geometry(self.registry))
+            if isinstance(e, (Line, Arc)):
+                chainable.append(e)
+            else:
+                standalone.append(e)
+
+        # 2. Add standalone geometry (Circles, Text)
+        for e in standalone:
+            geo.extend(e.to_geometry(self.registry))
+
+        if not chainable:
+            return geo
+
+        # 3. Build Connectivity Graph for Lines/Arcs
+        # Use simple Union-Find to group coincident points
+        parent = {p.id: p.id for p in self.registry.points}
+
+        def find(i):
+            path = []
+            while parent[i] != i:
+                path.append(i)
+                i = parent[i]
+            for node in path:
+                parent[node] = i
+            return i
+
+        def union(i, j):
+            root_i = find(i)
+            root_j = find(j)
+            if root_i != root_j:
+                parent[root_i] = root_j
+
+        # Apply Coincident Constraints
+        for c in self.constraints:
+            if isinstance(c, CoincidentConstraint):
+                # Ensure points exist (sanity check)
+                if c.p1 in parent and c.p2 in parent:
+                    union(c.p1, c.p2)
+
+        adj = defaultdict(list)
+        for e in chainable:
+            if isinstance(e, Line):
+                u, v = e.p1_idx, e.p2_idx
+            elif isinstance(e, Arc):
+                u, v = e.start_idx, e.end_idx
+            else:
+                continue
+
+            root_u = find(u)
+            root_v = find(v)
+            adj[root_u].append((e, root_v))
+            adj[root_v].append((e, root_u))
+
+        # 4. Traverse Graph to build continuous paths
+        visited = set()
+
+        # Helper to get start/end group IDs
+        def get_endpoints(ent):
+            if isinstance(ent, Line):
+                return find(ent.p1_idx), find(ent.p2_idx)
+            if isinstance(ent, Arc):
+                return find(ent.start_idx), find(ent.end_idx)
+            return -1, -1
+
+        for start_e in chainable:
+            if start_e.id in visited:
+                continue
+
+            # Start a new chain
+            visited.add(start_e.id)
+
+            # Seed direction
+            u, v = get_endpoints(start_e)
+
+            # Grow Right (from v)
+            right_list = []
+            curr = v
+            while True:
+                found = None
+                for cand, neighbor in adj[curr]:
+                    if cand.id not in visited:
+                        found = (cand, neighbor)
+                        break
+                if found:
+                    cand, next_node = found
+                    visited.add(cand.id)
+                    # Direction check: if c_u == curr, then Forward (u->v)
+                    c_u, _ = get_endpoints(cand)
+                    is_fwd = c_u == curr
+                    right_list.append((cand, is_fwd))
+                    curr = next_node
+                else:
+                    break
+
+            # Grow Left (from u)
+            left_list = []
+            curr = u
+            while True:
+                found = None
+                for cand, neighbor in adj[curr]:
+                    if cand.id not in visited:
+                        found = (cand, neighbor)
+                        break
+                if found:
+                    cand, next_node = found
+                    visited.add(cand.id)
+                    # We are growing backwards from u.
+                    # cand connects next_node <-> curr(u).
+                    # We want flow: next_node -> curr.
+                    # If cand is Forward (c_u -> c_v), then c_u must be
+                    # next_node.
+                    c_u, _ = get_endpoints(cand)
+                    is_fwd = c_u == next_node
+                    left_list.append((cand, is_fwd))
+                    curr = next_node
+                else:
+                    break
+
+            # Assemble: Reversed(Left) -> Seed -> Right
+            final_chain = (
+                list(reversed(left_list)) + [(start_e, True)] + right_list
+            )
+
+            # Generate Geometry
+            first_e, first_fwd = final_chain[0]
+            if isinstance(first_e, Line):
+                s_id = first_e.p1_idx if first_fwd else first_e.p2_idx
+            else:  # Arc
+                s_id = first_e.start_idx if first_fwd else first_e.end_idx
+
+            start_pt = self.registry.get_point(s_id)
+            geo.move_to(start_pt.x, start_pt.y)
+
+            for ent, fwd in final_chain:
+                ent.append_to_geometry(geo, self.registry, fwd)
 
         return geo
 
