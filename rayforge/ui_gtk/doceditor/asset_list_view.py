@@ -124,10 +124,28 @@ class AssetListView(Expander):
         button_box.append(add_label)
         add_button.set_child(button_box)
 
+        self._connect_signals()
+        self.on_doc_changed(self.doc)
+
+    def set_doc(self, doc: Doc):
+        """Updates the widget to track a new document instance."""
+        if self.doc == doc:
+            return
+
+        self._disconnect_signals()
+        self.doc = doc
+        self._connect_signals()
+        self.on_doc_changed(self.doc)
+
+    def _connect_signals(self):
         self.doc.updated.connect(self.on_doc_changed)
         self.doc.descendant_added.connect(self.on_doc_changed)
         self.doc.descendant_removed.connect(self.on_doc_changed)
-        self.on_doc_changed(self.doc)
+
+    def _disconnect_signals(self):
+        self.doc.updated.disconnect(self.on_doc_changed)
+        self.doc.descendant_added.disconnect(self.on_doc_changed)
+        self.doc.descendant_removed.disconnect(self.on_doc_changed)
 
     def on_add_button_clicked(self, button: Gtk.Button):
         """Shows a popup to select and add a new asset type."""
