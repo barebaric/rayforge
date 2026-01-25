@@ -304,7 +304,7 @@ class GeneralPreferencesPage(Adw.PreferencesPage):
         # Acceleration
         acceleration_adjustment = Gtk.Adjustment(
             lower=1,
-            upper=10000,
+            upper=100000,
             step_increment=10,
             page_increment=100,
         )
