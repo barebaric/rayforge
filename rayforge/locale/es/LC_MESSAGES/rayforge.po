@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-01-18 22:20+0100\n"
+"POT-Creation-Date: 2026-01-24 23:41+0100\n"
 "PO-Revision-Date: 2025-08-08 10:00+0200\n"
 "Last-Translator: Samuel Abels\n"
 "Language-Team: Spanish <LL@li.org>\n"
@@ -235,6 +235,10 @@ msgstr "Añadir línea"
 msgid "Add Fillet"
 msgstr "Añadir redondeo"
 
+#: rayforge/core/sketcher/commands/text_box.py
+msgid "Add Text Box"
+msgstr "Añadir cuadro de texto"
+
 #: rayforge/core/sketcher/commands/fill.py
 msgid "Add Fill"
 msgstr "Añadir relleno"
@@ -260,6 +264,10 @@ msgstr "Añadir rectángulo redondeado"
 msgid "Add Rectangle"
 msgstr "Añadir rectángulo"
 
+#: rayforge/core/sketcher/commands/text_property.py
+msgid "Modify Text Property"
+msgstr "Modificar propiedad de texto"
+
 #: rayforge/core/sketcher/commands/point.py
 msgid "Move Point"
 msgstr "Mover punto"
@@ -267,6 +275,10 @@ msgstr "Mover punto"
 #: rayforge/core/sketcher/commands/point.py
 msgid "Unstick Junction"
 msgstr "Despegar unión"
+
+#: rayforge/core/sketcher/commands/live_text_edit.py
+msgid "Edit Text"
+msgstr "Editar texto"
 
 #: rayforge/machine/driver/grbl_util.py
 msgid "Missing Command Letter"
@@ -1061,8 +1073,8 @@ msgid ""
 "disabled, you can use {machine.active_wcs} in the preamble instead."
 msgstr ""
 "Inyectar el comando WCS activo (p. ej., G54) después del script de "
-"preámbulo. Cuando está deshabilitado, puedes usar {machine.active_wcs} en "
-"el preámbulo en su lugar."
+"preámbulo. Cuando está deshabilitado, puedes usar {machine.active_wcs} en el "
+"preámbulo en su lugar."
 
 #: rayforge/machine/models/dialect.py
 msgid "Preamble"
@@ -1686,7 +1698,8 @@ msgstr "Nuevo contador"
 #: rayforge/ui_gtk/machine/machine_hours_page.py
 #: rayforge/ui_gtk/machine/jog_dialog.py
 #: rayforge/ui_gtk/machine/dialect_editor.py
-#: rayforge/ui_gtk/machine/gcode_editor.py
+#: rayforge/ui_gtk/machine/gcode_editor.py rayforge/ui_gtk/main_menu.py
+#: rayforge/ui_gtk/toolbar.py
 #: rayforge/ui_gtk/doceditor/material_library_list.py
 #: rayforge/ui_gtk/doceditor/edit_recipe_dialog.py
 #: rayforge/ui_gtk/doceditor/add_material_dialog.py
@@ -2168,6 +2181,25 @@ msgstr ""
 "puede deshacer."
 
 #: rayforge/ui_gtk/machine/dialect_list.py
+msgid "Cannot Delete Dialect"
+msgstr "No se puede eliminar el dialecto"
+
+#: rayforge/ui_gtk/machine/dialect_list.py
+#, python-brace-format
+msgid "This dialect is still used by the following machine(s): {machines}"
+msgstr ""
+"Este dialecto todavía está siendo utilizado por la(s) siguiente(s) "
+"máquina(s): {machines}"
+
+#: rayforge/ui_gtk/machine/dialect_list.py
+#: rayforge/ui_gtk/package_manager/package_list.py
+#: rayforge/ui_gtk/doceditor/material_library_list.py
+#: rayforge/ui_gtk/doceditor/material_list.py
+#: rayforge/ui_gtk/sketcher/sketchcanvas.py
+msgid "OK"
+msgstr "Aceptar"
+
+#: rayforge/ui_gtk/machine/dialect_list.py
 msgid "Add New Dialect"
 msgstr "Añadir nuevo dialecto"
 
@@ -2292,6 +2324,7 @@ msgid "G-code tool number (e.g., T0, T1)"
 msgstr "Número de herramienta de G-code (p. ej., T0, T1)"
 
 #: rayforge/ui_gtk/machine/laser_preferences_page.py
+#: rayforge/ui_gtk/doceditor/step_settings/depth_engraver.py
 msgid "Max Power"
 msgstr "Potencia máxima"
 
@@ -2500,8 +2533,10 @@ msgid "Maximum cutting speed"
 msgstr "Velocidad máxima de corte"
 
 #: rayforge/ui_gtk/machine/general_preferences_page.py
-msgid "Machine acceleration. Used only for time estimations."
-msgstr "Aceleración de la máquina. Se usa solo para estimaciones de tiempo."
+msgid "Used for time estimations and calculating the default overscan distance"
+msgstr ""
+"Utilizado para estimaciones de tiempo y cálculo de la distancia de sobrescan "
+"predeterminada"
 
 #: rayforge/ui_gtk/machine/general_preferences_page.py
 #, python-brace-format
@@ -2630,6 +2665,23 @@ msgstr "Rehacer la última acción"
 #: rayforge/ui_gtk/shared/splitbutton.py
 msgid "Show all options"
 msgstr "Mostrar todas las opciones"
+
+#: rayforge/ui_gtk/main_menu.py
+msgid "New"
+msgstr "Nuevo"
+
+#: rayforge/ui_gtk/main_menu.py
+msgid "Open..."
+msgstr "Abrir..."
+
+#: rayforge/ui_gtk/main_menu.py rayforge/ui_gtk/toolbar.py
+#: rayforge/ui_gtk/doceditor/recipe_control_widget.py
+msgid "Save As..."
+msgstr "Guardar como..."
+
+#: rayforge/ui_gtk/main_menu.py
+msgid "Open Recent"
+msgstr "Abrir recientes"
 
 #: rayforge/ui_gtk/main_menu.py
 msgid "Import..."
@@ -2881,9 +2933,9 @@ msgstr "Guardar registro de depuración"
 msgid "_Help"
 msgstr "_Ayuda"
 
-#: rayforge/ui_gtk/mainwindow.py
-msgid "Rayforge"
-msgstr "Rayforge"
+#: rayforge/ui_gtk/main_menu.py
+msgid "(No Recent Items)"
+msgstr "(Sin elementos recientes)"
 
 #: rayforge/ui_gtk/mainwindow.py
 msgid "Create Sketch Definition"
@@ -2913,6 +2965,34 @@ msgstr "Error al guardar el archivo de boceto."
 #, python-brace-format
 msgid "Error exporting sketch: {error}"
 msgstr "Error al exportar el boceto: {error}"
+
+#: rayforge/ui_gtk/mainwindow.py
+msgid "Unsaved Changes"
+msgstr "Cambios no guardados"
+
+#: rayforge/ui_gtk/mainwindow.py
+msgid "The current project has unsaved changes. Do you want to save them?"
+msgstr "El proyecto actual tiene cambios no guardados. ¿Deseas guardarlos?"
+
+#: rayforge/ui_gtk/mainwindow.py
+msgid "_Cancel"
+msgstr "_Cancelar"
+
+#: rayforge/ui_gtk/mainwindow.py
+msgid "_Don't Save"
+msgstr "_No guardar"
+
+#: rayforge/ui_gtk/mainwindow.py
+msgid "_Save"
+msgstr "_Guardar"
+
+#: rayforge/ui_gtk/mainwindow.py
+msgid "New project created"
+msgstr "Nuevo proyecto creado"
+
+#: rayforge/ui_gtk/mainwindow.py
+msgid "Untitled"
+msgstr "Sin título"
 
 #: rayforge/ui_gtk/mainwindow.py
 #, python-brace-format
@@ -3024,13 +3104,6 @@ msgstr "Desinstalar"
 msgid "Error deleting package."
 msgstr "Error al eliminar el paquete."
 
-#: rayforge/ui_gtk/package_manager/package_list.py
-#: rayforge/ui_gtk/doceditor/material_library_list.py
-#: rayforge/ui_gtk/doceditor/material_list.py
-#: rayforge/ui_gtk/sketcher/sketchcanvas.py
-msgid "OK"
-msgstr "Aceptar"
-
 #: rayforge/ui_gtk/package_manager/dialog.py
 msgid "Package Registry"
 msgstr "Registro de paquetes"
@@ -3093,6 +3166,10 @@ msgstr "Instalación manual"
 #: rayforge/ui_gtk/package_manager/dialog.py
 msgid "Enter the Git URL."
 msgstr "Introduce la URL de Git."
+
+#: rayforge/ui_gtk/toolbar.py
+msgid "Open Project"
+msgstr "Abrir proyecto"
 
 #: rayforge/ui_gtk/toolbar.py
 msgid "Import image"
@@ -3240,14 +3317,13 @@ msgstr "Importar imagen"
 
 #: rayforge/ui_gtk/doceditor/import_dialog.py
 msgid ""
-"SVG produced no output in direct vector mode. SVGs containing text or other "
-"non-path elements should be converted to paths before importing (e.g., in "
-"Inkscape: Path > Object to Path)."
+"The file produced no output in direct vector mode. Files containing text or "
+"other non-path elements should be converted to paths before importing (e.g., "
+"in Inkscape: Path > Object to Path)."
 msgstr ""
-"El SVG no produjo resultados en modo vectorial directo. Los SVG que "
-"contienen texto u otros elementos que no son trayectorias deben convertirse "
-"a trayectorias antes de importar (p. ej., en Inkscape: Trayecto > Objeto a "
-"trayecto)."
+"El archivo no produjo ninguna salida en modo de vector directo. Los archivos "
+"que contienen texto u otros elementos que no son rutas deben convertirse a "
+"rutas antes de importar (por ejemplo, en Inkscape: Ruta > Objeto a Ruta)."
 
 #: rayforge/ui_gtk/doceditor/import_dialog.py
 msgid "Switch to Trace Mode"
@@ -3266,8 +3342,8 @@ msgid "Use Original Vectors"
 msgstr "Usar vectores originales"
 
 #: rayforge/ui_gtk/doceditor/import_dialog.py
-msgid "Import vector data directly (SVG only)"
-msgstr "Importar datos vectoriales directamente (solo SVG)"
+msgid "Import vector data directly"
+msgstr "Importar datos de vectores directamente"
 
 #: rayforge/ui_gtk/doceditor/import_dialog.py
 msgid "Layers"
@@ -3303,6 +3379,8 @@ msgid "Trace objects darker than this value"
 msgstr "Trazar objetos más oscuros que este valor"
 
 #: rayforge/ui_gtk/doceditor/import_dialog.py
+#: rayforge/ui_gtk/doceditor/step_settings/rasterizer.py
+#: rayforge/ui_gtk/doceditor/step_settings/depth_engraver.py
 msgid "Invert"
 msgstr "Invertir"
 
@@ -3313,6 +3391,15 @@ msgstr "Trazar objetos claros sobre fondo oscuro"
 #: rayforge/ui_gtk/doceditor/import_dialog.py
 msgid "Select Layers"
 msgstr "Seleccionar capas"
+
+#: rayforge/ui_gtk/doceditor/import_dialog.py
+msgid "Layer is empty"
+msgstr "La capa está vacía"
+
+#: rayforge/ui_gtk/doceditor/import_dialog.py
+#, python-brace-format
+msgid "Layer with {n} vectors"
+msgstr "Capa con {n} vectores"
 
 #: rayforge/ui_gtk/doceditor/import_dialog.py
 msgid "Generating preview..."
@@ -3510,6 +3597,15 @@ msgstr "Realizar una segunda pasada a 90 grados para un relleno más denso"
 msgid "Toggle Cross-Hatch"
 msgstr "Alternar trama cruzada"
 
+#: rayforge/ui_gtk/doceditor/step_settings/rasterizer.py
+#: rayforge/ui_gtk/doceditor/step_settings/depth_engraver.py
+msgid "Engrave white areas instead of black areas"
+msgstr "Grabar áreas blancas en lugar de áreas negras"
+
+#: rayforge/ui_gtk/doceditor/step_settings/rasterizer.py
+msgid "Toggle Invert"
+msgstr "Invertir"
+
 #: rayforge/ui_gtk/doceditor/step_settings/optimize.py
 msgid "Enable Optimization"
 msgstr "Habilitar optimización"
@@ -3633,18 +3729,14 @@ msgid "Mode"
 msgstr "Modo"
 
 #: rayforge/ui_gtk/doceditor/step_settings/depth_engraver.py
-msgid "Min Power (White)"
-msgstr "Potencia mín. (Blanco)"
+msgid "Min Power"
+msgstr "Potencia mínima"
 
 #: rayforge/ui_gtk/doceditor/step_settings/depth_engraver.py
 #, python-format
 msgid "Power for lightest areas, as a % of the step's main power"
 msgstr ""
 "Potencia para las áreas más claras, como % de la potencia principal del paso."
-
-#: rayforge/ui_gtk/doceditor/step_settings/depth_engraver.py
-msgid "Max Power (Black)"
-msgstr "Potencia máx. (Negro)"
 
 #: rayforge/ui_gtk/doceditor/step_settings/depth_engraver.py
 #, python-format
@@ -3668,6 +3760,22 @@ msgstr "Cambiar potencia mínima"
 #: rayforge/ui_gtk/doceditor/step_settings/depth_engraver.py
 msgid "Change Max Power"
 msgstr "Cambiar potencia máxima"
+
+#: rayforge/ui_gtk/doceditor/step_settings/depth_engraver.py
+msgid "Min Power (Black)"
+msgstr "Potencia mínima (Negro)"
+
+#: rayforge/ui_gtk/doceditor/step_settings/depth_engraver.py
+msgid "Max Power (White)"
+msgstr "Potencia máxima (Blanco)"
+
+#: rayforge/ui_gtk/doceditor/step_settings/depth_engraver.py
+msgid "Min Power (White)"
+msgstr "Potencia mín. (Blanco)"
+
+#: rayforge/ui_gtk/doceditor/step_settings/depth_engraver.py
+msgid "Max Power (Black)"
+msgstr "Potencia máx. (Negro)"
 
 #: rayforge/ui_gtk/doceditor/step_settings/depth_engraver.py
 msgid "Change Depth Engraving setting"
@@ -3947,9 +4055,26 @@ msgstr "Archivos G-code"
 msgid "Export Sketch"
 msgstr "Exportar boceto"
 
+#: rayforge/ui_gtk/doceditor/file_dialogs.py rayforge/image/sketch/exporter.py
+#: rayforge/image/sketch/importer.py
+#, python-brace-format
+msgid "{app_name} Sketch"
+msgstr "Boceto {app_name}"
+
 #: rayforge/ui_gtk/doceditor/file_dialogs.py
-msgid "Rayforge Sketch"
-msgstr "Boceto de Rayforge"
+#, python-brace-format
+msgid "Open {app_name} Project"
+msgstr "Abrir proyecto {app_name}"
+
+#: rayforge/ui_gtk/doceditor/file_dialogs.py
+#, python-brace-format
+msgid "{app_name} Project"
+msgstr "Proyecto {app_name}"
+
+#: rayforge/ui_gtk/doceditor/file_dialogs.py
+#, python-brace-format
+msgid "Save {app_name} Project"
+msgstr "Guardar proyecto {app_name}"
 
 #: rayforge/ui_gtk/doceditor/add_material_dialog.py
 msgid "Edit Material"
@@ -4274,10 +4399,6 @@ msgid "Choose..."
 msgstr "Elegir..."
 
 #: rayforge/ui_gtk/doceditor/recipe_control_widget.py
-msgid "Save As..."
-msgstr "Guardar como..."
-
-#: rayforge/ui_gtk/doceditor/recipe_control_widget.py
 msgid "Manual Settings"
 msgstr "Ajustes manuales"
 
@@ -4490,6 +4611,10 @@ msgstr "{tasks} tareas"
 msgid "Arc"
 msgstr "Arco"
 
+#: rayforge/ui_gtk/sketcher/piemenu.py
+msgid "Text Box"
+msgstr "Cuadro de texto"
+
 #: rayforge/ui_gtk/sketcher/piemenu.py rayforge/ui_gtk/sketcher/menu.py
 msgid "Circle"
 msgstr "Círculo"
@@ -4554,6 +4679,10 @@ msgstr "Igual"
 msgid "Symmetry"
 msgstr "Simetría"
 
+#: rayforge/ui_gtk/sketcher/piemenu.py
+msgid "Aspect Ratio"
+msgstr "Relación de aspecto"
+
 #: rayforge/ui_gtk/sketcher/sketchelement.py rayforge/ui_gtk/sketcher/menu.py
 msgid "Toggle Construction"
 msgstr "Alternar construcción"
@@ -4606,6 +4735,10 @@ msgstr "Añadir restricción de igualdad"
 msgid "Add Symmetry Constraint"
 msgstr "Añadir restricción de simetría"
 
+#: rayforge/ui_gtk/sketcher/sketchelement.py
+msgid "Add Aspect Ratio Constraint"
+msgstr "Añadir restricción de relación de aspecto"
+
 #: rayforge/ui_gtk/sketcher/studio.py rayforge/ui_gtk/sketcher/menu.py
 msgid "Cancel Sketch"
 msgstr "Cancelar boceto"
@@ -4629,6 +4762,10 @@ msgstr "Finalizar"
 #: rayforge/ui_gtk/sketcher/studio.py
 msgid "Properties"
 msgstr "Propiedades"
+
+#: rayforge/ui_gtk/sketcher/studio.py
+msgid "Configure the sketch name and basic properties"
+msgstr "Configurar el nombre y las propiedades básicas del boceto"
 
 #: rayforge/ui_gtk/sketcher/studio.py
 msgid "Rename Sketch"
@@ -4661,6 +4798,34 @@ msgstr "_Boceto"
 #: rayforge/ui_gtk/sketcher/menu.py
 msgid "Fit View"
 msgstr "Ajustar vista"
+
+#: rayforge/ui_gtk/sketcher/font_properties.py
+msgid "Font Properties"
+msgstr "Propiedades de fuente"
+
+#: rayforge/ui_gtk/sketcher/font_properties.py
+msgid "Configure font family, size, and style for text boxes"
+msgstr "Configurar la familia de fuente, tamaño y estilo para cuadros de texto"
+
+#: rayforge/ui_gtk/sketcher/font_properties.py
+msgid "Font Family"
+msgstr "Familia de fuente"
+
+#: rayforge/ui_gtk/sketcher/font_properties.py
+msgid "Font Size"
+msgstr "Tamaño de fuente"
+
+#: rayforge/ui_gtk/sketcher/font_properties.py
+msgid "Bold"
+msgstr "Negrita"
+
+#: rayforge/ui_gtk/sketcher/font_properties.py
+msgid "Italic"
+msgstr "Cursiva"
+
+#: rayforge/ui_gtk/sketcher/font_properties.py
+msgid "Select Font"
+msgstr "Seleccionar fuente"
 
 #: rayforge/ui_gtk/sketcher/sketchcanvas.py
 msgid "Enter radius or expression (e.g. 'width/2')."
@@ -4747,8 +4912,9 @@ msgstr ""
 "Rayforge! ¡Mantenéis el café y los tokens de AI fluyendo!"
 
 #: rayforge/ui_gtk/about.py
-msgid "About Rayforge"
-msgstr "Acerca de Rayforge"
+#, python-brace-format
+msgid "About {app_name}"
+msgstr "Acerca de {app_name}"
 
 #: rayforge/shared/units/definitions.py
 msgid "mm/min"
@@ -4824,8 +4990,19 @@ msgid "Paths to one or more input SVG or image files."
 msgstr "Rutas a uno o más archivos de entrada SVG o de imagen."
 
 #: rayforge/app.py
-msgid "Import SVG files as direct vectors instead of tracing them."
-msgstr "Importar archivos SVG como vectores directos en lugar de trazarlos."
+msgid ""
+"Force import as direct vectors. This is the default for supported files."
+msgstr ""
+"Forzar importación como vectores directos. Esto es lo predeterminado para "
+"archivos compatibles."
+
+#: rayforge/app.py
+msgid ""
+"Force import by tracing the file's bitmap representation. Aborts if not "
+"supported."
+msgstr ""
+"Forzar importación trazando la representación de mapa de bits del archivo. "
+"Se aborta si no es compatible."
 
 #: rayforge/app.py
 msgid "Set the logging level (default: INFO)"
@@ -4993,7 +5170,8 @@ msgstr "Repite la trayectoria varias veces, opcionalmente bajando en el eje Z."
 
 #: rayforge/pipeline/encoder/context.py
 msgid "The name of the currently active coordinate system (e.g. 'G54')."
-msgstr "El nombre del sistema de coordenadas actualmente activo (p. ej., 'G54')."
+msgstr ""
+"El nombre del sistema de coordenadas actualmente activo (p. ej., 'G54')."
 
 #: rayforge/pipeline/encoder/context.py
 msgid "The name of the current machine profile."
@@ -5158,6 +5336,35 @@ msgstr "Exportación exitosa: {name}"
 msgid "Export failed: {error}"
 msgstr "Exportación fallida: {error}"
 
+#: rayforge/doceditor/file_cmd.py
+#, python-brace-format
+msgid "Project saved: {name}"
+msgstr "Proyecto guardado: {name}"
+
+#: rayforge/doceditor/file_cmd.py
+#, python-brace-format
+msgid "Save failed: {error}"
+msgstr "Error al guardar: {error}"
+
+#: rayforge/doceditor/file_cmd.py
+#, python-brace-format
+msgid "File not found: {name}"
+msgstr "Archivo no encontrado: {name}"
+
+#: rayforge/doceditor/file_cmd.py
+#, python-brace-format
+msgid "Project loaded: {name}"
+msgstr "Proyecto cargado: {name}"
+
+#: rayforge/doceditor/file_cmd.py
+msgid "Invalid project file format"
+msgstr "Formato de archivo de proyecto no válido"
+
+#: rayforge/doceditor/file_cmd.py
+#, python-brace-format
+msgid "Load failed: {error}"
+msgstr "Error al cargar: {error}"
+
 #: rayforge/doceditor/layout/auto.py
 #, python-brace-format
 msgid "Could not fit the following items: {item_names}"
@@ -5288,3 +5495,59 @@ msgstr "Añadir instancia de boceto"
 #: rayforge/doceditor/layout_cmd.py
 msgid "Position at Point"
 msgstr "Posicionar en punto"
+
+#: rayforge/image/png/importer.py rayforge/image/jpg/importer.py
+msgid "Failed to process image data."
+msgstr "Error al procesar datos de imagen."
+
+#: rayforge/image/svg/svg_base.py
+msgid "Could not calculate SVG metadata."
+msgstr "No se pudieron calcular los metadatos SVG."
+
+#: rayforge/image/svg/svg_base.py
+msgid "Failed to prepare trimmed SVG data."
+msgstr "Error al preparar datos SVG recortados."
+
+#: rayforge/image/svg/svg_base.py
+msgid "SVG contains no geometry or dimensions."
+msgstr "El SVG no contiene geometría ni dimensiones."
+
+#: rayforge/image/svg/svg_base.py
+msgid "Could not determine valid SVG dimensions."
+msgstr "No se pudieron determinar dimensiones SVG válidas."
+
+#: rayforge/image/svg/svg_trace.py
+msgid "Cannot determine valid dimensions for tracing."
+msgstr "No se pudieron determinar dimensiones válidas para trazar."
+
+#: rayforge/image/svg/svg_trace.py
+msgid "Failed to rasterize SVG for tracing."
+msgstr "Error al rasterizar SVG para trazar."
+
+#: rayforge/image/svg/svg_trace.py
+msgid "Failed to normalize image data."
+msgstr "Error al normalizar datos de imagen."
+
+#: rayforge/image/pdf/importer.py
+msgid "PDF file contains no pages."
+msgstr "El archivo PDF no contiene páginas."
+
+#: rayforge/image/pdf/importer.py
+msgid "Failed to process PDF image data."
+msgstr "Error al procesar datos de imagen PDF."
+
+#: rayforge/image/pdf/importer.py
+msgid "PDF page has zero dimensions"
+msgstr "La página PDF tiene dimensiones cero"
+
+#: rayforge/image/pdf/importer.py
+msgid "Failed to rasterize PDF"
+msgstr "Error al rasterizar PDF"
+
+#: rayforge/image/bmp/importer.py
+msgid "Invalid or unsupported BMP data."
+msgstr "Datos BMP no válidos o no compatibles."
+
+#: rayforge/image/ruida/importer.py
+msgid "File contains no vector commands."
+msgstr "El archivo no contiene comandos de vector."
