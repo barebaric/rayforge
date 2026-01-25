@@ -31,6 +31,11 @@ class EqualLengthConstraint(Constraint):
         super().__init__(user_visible=user_visible)
         self.entity_ids = entity_ids
 
+    @staticmethod
+    def get_type_name() -> str:
+        """Returns to human-readable name of this constraint type."""
+        return _("Equal Length")
+
     def targets_segment(
         self, p1: int, p2: int, entity_id: Optional[int]
     ) -> bool:

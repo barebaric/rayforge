@@ -4,6 +4,19 @@ from blinker import Signal
 from gi.repository import Gtk
 
 from rayforge.ui_gtk.shared.piemenu import PieMenu, PieMenuItem
+from rayforge.core.sketcher.constraints import (
+    AspectRatioConstraint,
+    CoincidentConstraint,
+    DiameterConstraint,
+    DistanceConstraint,
+    EqualDistanceConstraint,
+    HorizontalConstraint,
+    PerpendicularConstraint,
+    RadiusConstraint,
+    SymmetryConstraint,
+    TangentConstraint,
+    VerticalConstraint,
+)
 
 if TYPE_CHECKING:
     from rayforge.ui_gtk.sketcher.sketchelement import SketchElement
@@ -19,6 +32,147 @@ class SketchPieMenu(PieMenu):
     Maps menu item clicks to high-level signals.
     """
 
+    _MENU_ITEMS = {
+        "select": {
+            "icon": "sketch-select-symbolic",
+            "label_key": "Select",
+            "action": "set_tool:select",
+            "handler": "_on_tool_clicked",
+        },
+        "line": {
+            "icon": "sketch-line-symbolic",
+            "label_key": "Line",
+            "action": "set_tool:line",
+            "handler": "_on_tool_clicked",
+        },
+        "arc": {
+            "icon": "sketch-arc-symbolic",
+            "label_key": "Arc",
+            "action": "set_tool:arc",
+            "handler": "_on_tool_clicked",
+        },
+        "text_box": {
+            "icon": "sketch-text-symbolic",
+            "label_key": "Text Box",
+            "action": "set_tool:text_box",
+            "handler": "_on_tool_clicked",
+        },
+        "circle": {
+            "icon": "sketch-circle-symbolic",
+            "label_key": "Circle",
+            "action": "set_tool:circle",
+            "handler": "_on_tool_clicked",
+        },
+        "rectangle": {
+            "icon": "sketch-rect-symbolic",
+            "label_key": "Rectangle",
+            "action": "set_tool:rectangle",
+            "handler": "_on_tool_clicked",
+        },
+        "rounded_rect": {
+            "icon": "sketch-rounded-rect-symbolic",
+            "label_key": "Rounded Rectangle",
+            "action": "set_tool:rounded_rect",
+            "handler": "_on_tool_clicked",
+        },
+        "fill": {
+            "icon": "sketch-fill-symbolic",
+            "label_key": "Fill",
+            "action": "set_tool:fill",
+            "handler": "_on_tool_clicked",
+        },
+        "construction": {
+            "icon": "sketch-construction-symbolic",
+            "label_key": "Construction",
+            "action": "toggle_construction_on_selection",
+            "handler": "_on_action_clicked",
+        },
+        "chamfer": {
+            "icon": "sketch-chamfer-symbolic",
+            "label_key": "Chamfer",
+            "action": "add_chamfer_action",
+            "handler": "_on_action_clicked",
+        },
+        "fillet": {
+            "icon": "sketch-fillet-symbolic",
+            "label_key": "Fillet",
+            "action": "add_fillet_action",
+            "handler": "_on_action_clicked",
+        },
+        "delete": {
+            "icon": "delete-symbolic",
+            "label_key": "Delete",
+            "action": None,
+            "handler": "_on_action_clicked",
+        },
+        "dist": {
+            "icon": "sketch-distance-symbolic",
+            "constraint_class": DistanceConstraint,
+            "action": "add_distance_constraint",
+            "handler": "_on_constraint_clicked",
+        },
+        "horiz": {
+            "icon": "sketch-constrain-horizontal-symbolic",
+            "constraint_class": HorizontalConstraint,
+            "action": "add_horizontal_constraint",
+            "handler": "_on_constraint_clicked",
+        },
+        "vert": {
+            "icon": "sketch-constrain-vertical-symbolic",
+            "constraint_class": VerticalConstraint,
+            "action": "add_vertical_constraint",
+            "handler": "_on_constraint_clicked",
+        },
+        "radius": {
+            "icon": "sketch-radius-symbolic",
+            "constraint_class": RadiusConstraint,
+            "action": "add_radius_constraint",
+            "handler": "_on_constraint_clicked",
+        },
+        "diameter": {
+            "icon": "sketch-diameter-symbolic",
+            "constraint_class": DiameterConstraint,
+            "action": "add_diameter_constraint",
+            "handler": "_on_constraint_clicked",
+        },
+        "perp": {
+            "icon": "sketch-constrain-perpendicular-symbolic",
+            "constraint_class": PerpendicularConstraint,
+            "action": "add_perpendicular",
+            "handler": "_on_constraint_clicked",
+        },
+        "tangent": {
+            "icon": "sketch-constrain-tangential-symbolic",
+            "constraint_class": TangentConstraint,
+            "action": "add_tangent",
+            "handler": "_on_constraint_clicked",
+        },
+        "align": {
+            "icon": "sketch-constrain-point-symbolic",
+            "constraint_class": CoincidentConstraint,
+            "action": "add_alignment_constraint",
+            "handler": "_on_constraint_clicked",
+        },
+        "equal": {
+            "icon": "sketch-constrain-equal-symbolic",
+            "constraint_class": EqualDistanceConstraint,
+            "action": "add_equal_constraint",
+            "handler": "_on_constraint_clicked",
+        },
+        "symmetry": {
+            "icon": "sketch-constrain-symmetric-symbolic",
+            "constraint_class": SymmetryConstraint,
+            "action": "add_symmetry_constraint",
+            "handler": "_on_constraint_clicked",
+        },
+        "aspect_ratio": {
+            "icon": "sketch-constrain-aspect-symbolic",
+            "constraint_class": AspectRatioConstraint,
+            "action": "add_aspect_ratio_constraint",
+            "handler": "_on_constraint_clicked",
+        },
+    }
+
     def __init__(self, parent_widget: Gtk.Widget, shortcuts: dict):
         super().__init__(parent_widget)
 
@@ -32,206 +186,45 @@ class SketchPieMenu(PieMenu):
         self.constraint_selected = Signal()
         self.action_triggered = Signal()
 
-        # --- Shortcut Label Generation ---
-        # 1. Map pie menu item 'data' to the action string from editor.py
-        data_to_action = {
-            # Tools
-            "select": "set_tool:select",
-            "line": "set_tool:line",
-            "arc": "set_tool:arc",
-            "circle": "set_tool:circle",
-            "rounded_rect": "set_tool:rounded_rect",
-            "rectangle": "set_tool:rectangle",
-            "fill": "set_tool:fill",
-            "text_box": "set_tool:text_box",
-            # Actions
-            "construction": "toggle_construction_on_selection",
-            "chamfer": "add_chamfer_action",
-            "fillet": "add_fillet_action",
-            # Constraints (Single Key)
-            "horiz": "add_horizontal_constraint",
-            "vert": "add_vertical_constraint",
-            "perp": "add_perpendicular",
-            "tangent": "add_tangent",
-            "equal": "add_equal_constraint",
-            "align": "add_alignment_constraint",
-            "symmetry": "add_symmetry_constraint",
-            # Constraints (K prefix)
-            "dist": "add_distance_constraint",
-            "radius": "add_radius_constraint",
-            "diameter": "add_diameter_constraint",
-            # Aspect ratio constraint
-            "aspect_ratio": "add_aspect_ratio_constraint",
-        }
-
-        # 2. Invert the editor's shortcut map to group keys by action
+        # Invert the editor's shortcut map to group keys by action
         action_to_keys = {}
         for key, action in shortcuts.items():
             if action not in action_to_keys:
                 action_to_keys[action] = []
-            # Use 'Space' for display purposes
             display_key = "Space" if key == " " else key.upper()
             action_to_keys[action].append(display_key)
 
-        # 3. Helper function to create the label string
         def get_shortcut_label(data_key: str) -> str:
-            action = data_to_action.get(data_key)
-            if not action:
+            config = self._MENU_ITEMS.get(data_key)
+            if not config or not config["action"]:
                 return ""
-            keys = action_to_keys.get(action)
+            keys = action_to_keys.get(config["action"])
             if not keys:
                 return ""
 
-            # Format each key, e.g., "GC" -> "G-C", " " -> "Space"
             formatted_keys = []
             for key in sorted(keys):
                 if len(key) > 1 and key != "Space":
-                    # Insert hyphens between characters for sequences
                     formatted_keys.append("-".join(key))
                 else:
                     formatted_keys.append(key)
 
-            # Format as (KEY) or (KEY-1, KEY-2)
             return f" ({', '.join(formatted_keys)})"
 
-        # Tools
-        label = f"{_('Select')}{get_shortcut_label('select')}"
-        item = PieMenuItem("sketch-select-symbolic", label, data="select")
-        item.on_click.connect(self._on_tool_clicked, weak=False)
-        self.add_item(item)
-
-        label = f"{_('Line')}{get_shortcut_label('line')}"
-        item = PieMenuItem("sketch-line-symbolic", label, data="line")
-        item.on_click.connect(self._on_tool_clicked, weak=False)
-        self.add_item(item)
-
-        label = f"{_('Arc')}{get_shortcut_label('arc')}"
-        item = PieMenuItem("sketch-arc-symbolic", label, data="arc")
-        item.on_click.connect(self._on_tool_clicked, weak=False)
-        self.add_item(item)
-
-        label = f"{_('Text Box')}{get_shortcut_label('text_box')}"
-        item = PieMenuItem("sketch-text-symbolic", label, data="text_box")
-        item.on_click.connect(self._on_tool_clicked, weak=False)
-        self.add_item(item)
-
-        label = f"{_('Circle')}{get_shortcut_label('circle')}"
-        item = PieMenuItem("sketch-circle-symbolic", label, data="circle")
-        item.on_click.connect(self._on_tool_clicked, weak=False)
-        self.add_item(item)
-
-        label = f"{_('Rectangle')}{get_shortcut_label('rectangle')}"
-        item = PieMenuItem("sketch-rect-symbolic", label, data="rectangle")
-        item.on_click.connect(self._on_tool_clicked, weak=False)
-        self.add_item(item)
-
-        label = f"{_('Rounded Rectangle')}{get_shortcut_label('rounded_rect')}"
-        item = PieMenuItem(
-            "sketch-rounded-rect-symbolic", label, data="rounded_rect"
-        )
-        item.on_click.connect(self._on_tool_clicked, weak=False)
-        self.add_item(item)
-
-        label = f"{_('Fill')}{get_shortcut_label('fill')}"
-        item = PieMenuItem("sketch-fill-symbolic", label, data="fill")
-        item.on_click.connect(self._on_tool_clicked, weak=False)
-        self.add_item(item)
-
-        # Actions
-        label = f"{_('Construction')}{get_shortcut_label('construction')}"
-        item = PieMenuItem(
-            "sketch-construction-symbolic", label, data="construction"
-        )
-        item.on_click.connect(self._on_action_clicked, weak=False)
-        self.add_item(item)
-
-        label = f"{_('Chamfer')}{get_shortcut_label('chamfer')}"
-        item = PieMenuItem("sketch-chamfer-symbolic", label, data="chamfer")
-        item.on_click.connect(self._on_action_clicked, weak=False)
-        self.add_item(item)
-
-        label = f"{_('Fillet')}{get_shortcut_label('fillet')}"
-        item = PieMenuItem("sketch-fillet-symbolic", label, data="fillet")
-        item.on_click.connect(self._on_action_clicked, weak=False)
-        self.add_item(item)
-
-        item = PieMenuItem("delete-symbolic", _("Delete"), data="delete")
-        item.on_click.connect(self._on_action_clicked, weak=False)
-        self.add_item(item)
-
-        # Constraints
-        label = f"{_('Distance')}{get_shortcut_label('dist')}"
-        item = PieMenuItem("sketch-distance-symbolic", label, data="dist")
-        item.on_click.connect(self._on_constraint_clicked, weak=False)
-        self.add_item(item)
-
-        label = f"{_('Horizontal')}{get_shortcut_label('horiz')}"
-        item = PieMenuItem(
-            "sketch-constrain-horizontal-symbolic", label, data="horiz"
-        )
-        item.on_click.connect(self._on_constraint_clicked, weak=False)
-        self.add_item(item)
-
-        label = f"{_('Vertical')}{get_shortcut_label('vert')}"
-        item = PieMenuItem(
-            "sketch-constrain-vertical-symbolic", label, data="vert"
-        )
-        item.on_click.connect(self._on_constraint_clicked, weak=False)
-        self.add_item(item)
-
-        label = f"{_('Radius')}{get_shortcut_label('radius')}"
-        item = PieMenuItem("sketch-radius-symbolic", label, data="radius")
-        item.on_click.connect(self._on_constraint_clicked, weak=False)
-        self.add_item(item)
-
-        label = f"{_('Diameter')}{get_shortcut_label('diameter')}"
-        item = PieMenuItem("sketch-diameter-symbolic", label, data="diameter")
-        item.on_click.connect(self._on_constraint_clicked, weak=False)
-        self.add_item(item)
-
-        label = f"{_('Perpendicular')}{get_shortcut_label('perp')}"
-        item = PieMenuItem(
-            "sketch-constrain-perpendicular-symbolic",
-            label,
-            data="perp",
-        )
-        item.on_click.connect(self._on_constraint_clicked, weak=False)
-        self.add_item(item)
-
-        label = f"{_('Tangent')}{get_shortcut_label('tangent')}"
-        item = PieMenuItem(
-            "sketch-constrain-tangential-symbolic", label, data="tangent"
-        )
-        item.on_click.connect(self._on_constraint_clicked, weak=False)
-        self.add_item(item)
-
-        label = f"{_('Align')}{get_shortcut_label('align')}"
-        item = PieMenuItem(
-            "sketch-constrain-point-symbolic", label, data="align"
-        )
-        item.on_click.connect(self._on_constraint_clicked, weak=False)
-        self.add_item(item)
-
-        label = f"{_('Equal')}{get_shortcut_label('equal')}"
-        item = PieMenuItem(
-            "sketch-constrain-equal-symbolic", label, data="equal"
-        )
-        item.on_click.connect(self._on_constraint_clicked, weak=False)
-        self.add_item(item)
-
-        label = f"{_('Symmetry')}{get_shortcut_label('symmetry')}"
-        item = PieMenuItem(
-            "sketch-constrain-symmetric-symbolic", label, data="symmetry"
-        )
-        item.on_click.connect(self._on_constraint_clicked, weak=False)
-        self.add_item(item)
-
-        label = f"{_('Aspect Ratio')}{get_shortcut_label('aspect_ratio')}"
-        item = PieMenuItem(
-            "sketch-constrain-aspect-symbolic", label, data="aspect_ratio"
-        )
-        item.on_click.connect(self._on_constraint_clicked, weak=False)
-        self.add_item(item)
+        for data_key, config in self._MENU_ITEMS.items():
+            if "constraint_class" in config:
+                label = (
+                    f"{config['constraint_class'].get_type_name()}"
+                    f"{get_shortcut_label(data_key)}"
+                )
+            else:
+                label = (
+                    f"{_(config['label_key'])}{get_shortcut_label(data_key)}"
+                )
+            item = PieMenuItem(config["icon"], label, data=data_key)
+            handler = getattr(self, config["handler"])
+            item.on_click.connect(handler, weak=False)
+            self.add_item(item)
 
     def set_context(
         self,

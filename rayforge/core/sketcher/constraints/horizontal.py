@@ -26,6 +26,11 @@ class HorizontalConstraint(Constraint):
         self.p1 = p1
         self.p2 = p2
 
+    @staticmethod
+    def get_type_name() -> str:
+        """Returns to human-readable name of this constraint type."""
+        return _("Horizontal")
+
     def to_dict(self) -> Dict[str, Any]:
         return {
             "type": "HorizontalConstraint",

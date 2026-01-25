@@ -45,6 +45,7 @@ class SketchCanvas(WorldSurface):
         )
         self.parent_window = parent_window
         self.single_mode = single_mode
+        self.set_has_tooltip(True)
 
         # This will hold a reference to the active dialog to prevent it from
         # being garbage-collected prematurely.
@@ -357,6 +358,9 @@ class SketchCanvas(WorldSurface):
         if self.sketch_element:
             self.sketch_element.on_hover_motion(world_x, world_y)
 
+        # Update tooltip based on constraint hover state
+        self._update_constraint_tooltip()
+
         # Set the cursor based on the complete state from the editor
         self.update_sketch_cursor()
 
@@ -364,6 +368,26 @@ class SketchCanvas(WorldSurface):
         """Resets hover state and cursor when the mouse leaves the canvas."""
         super().on_motion_leave(controller)
         self.set_cursor(None)  # Reset to default cursor
+        self.set_tooltip_text("")  # Clear tooltip
+
+    def _update_constraint_tooltip(self):
+        """Updates the tooltip based on the hovered constraint."""
+        if not self.sketch_element:
+            return
+
+        select_tool = self.sketch_element.tools.get("select")
+        if not select_tool:
+            return
+
+        hovered_idx = select_tool.hovered_constraint_idx
+        if hovered_idx is not None and 0 <= hovered_idx < len(
+            self.sketch_element.sketch.constraints
+        ):
+            constraint = self.sketch_element.sketch.constraints[hovered_idx]
+            tooltip_text = constraint.get_type_name()
+            self.set_tooltip_text(tooltip_text)
+        else:
+            self.set_tooltip_text("")
 
     def on_button_press(
         self, gesture: Gtk.GestureClick, n_press: int, x: float, y: float

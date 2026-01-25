@@ -30,6 +30,11 @@ class ParallelogramConstraint(Constraint):
         self.p_height = p_height
         self.p4 = p4
 
+    @staticmethod
+    def get_type_name() -> str:
+        """Returns to human-readable name of this constraint type."""
+        return _("Parallelogram")
+
     def to_dict(self) -> Dict[str, Any]:
         return {
             "type": "ParallelogramConstraint",

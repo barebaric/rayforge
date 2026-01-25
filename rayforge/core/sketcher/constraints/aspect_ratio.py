@@ -36,6 +36,11 @@ class AspectRatioConstraint(Constraint):
         self.p4 = p4
         self.ratio = ratio
 
+    @staticmethod
+    def get_type_name() -> str:
+        """Returns to human-readable name of this constraint type."""
+        return _("Aspect Ratio")
+
     def to_dict(self) -> Dict[str, Any]:
         return {
             "type": "AspectRatioConstraint",

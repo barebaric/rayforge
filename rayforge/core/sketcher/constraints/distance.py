@@ -45,6 +45,11 @@ class DistanceConstraint(Constraint):
             self.expression = None
             self.value = float(value)
 
+    @staticmethod
+    def get_type_name() -> str:
+        """Returns to human-readable name of this constraint type."""
+        return _("Distance")
+
     def targets_segment(
         self, p1: int, p2: int, entity_id: Optional[int]
     ) -> bool:

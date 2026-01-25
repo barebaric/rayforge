@@ -29,6 +29,11 @@ class TangentConstraint(Constraint):
         self.line_id = line_id
         self.shape_id = shape_id
 
+    @staticmethod
+    def get_type_name() -> str:
+        """Returns to human-readable name of this constraint type."""
+        return _("Tangent")
+
     def to_dict(self) -> Dict[str, Any]:
         return {
             "type": "TangentConstraint",

@@ -39,6 +39,11 @@ class SymmetryConstraint(Constraint):
         self.center = center
         self.axis = axis
 
+    @staticmethod
+    def get_type_name() -> str:
+        """Returns to human-readable name of this constraint type."""
+        return _("Symmetry")
+
     def to_dict(self) -> Dict[str, Any]:
         return {
             "type": "SymmetryConstraint",
