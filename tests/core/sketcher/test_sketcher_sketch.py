@@ -57,7 +57,9 @@ def test_sketch_workflow():
     # 5. Check geometry export
     geo = s.to_geometry()
     assert isinstance(geo, Geometry)
-    assert len(geo) == 8  # 4 moves + 4 lines (simple export)
+    # The implementation should chain the lines into one continuous
+    # path: 1 MoveTo + 4 LineTo commands.
+    assert len(geo) == 5
 
     # Check bounding box is approx 10x10
     min_x, min_y, max_x, max_y = geo.rect()
