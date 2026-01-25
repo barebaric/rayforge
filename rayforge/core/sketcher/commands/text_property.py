@@ -62,25 +62,44 @@ class ModifyTextPropertyCommand(SketchChangeCommand):
         return natural_width, font_height
 
     def _shed_size_constraints(self, text_entity: TextBoxEntity) -> None:
-        """Removes constraints that lock the text box dimensions."""
+        """
+        Removes previously added hidden distance constraints and any user-added
+        dimensional constraints on the text box frame to prevent over-
+        constraining.
+        """
+        self._removed_constraints.clear()
+        self._modified_equal_length_constraints.clear()
+
+        # Find any constraints that define the length of the box sides.
+        constraints_to_remove = []
         for eid in text_entity.construction_line_ids:
             entity = self.sketch.registry.get_entity(eid)
             if not isinstance(entity, Line):
                 continue
 
-            for idx, constr in enumerate(self.sketch.constraints):
-                if constr in self._removed_constraints:
+            for constr in self.sketch.constraints:
+                if constr in constraints_to_remove:
                     continue
 
+                is_target = False
                 if isinstance(constr, EqualLengthConstraint):
                     if eid in constr.entity_ids:
                         self._modified_equal_length_constraints.append(
-                            (idx, list(constr.entity_ids))
+                            (
+                                self.sketch.constraints.index(constr),
+                                list(constr.entity_ids),
+                            )
                         )
                         constr.entity_ids.remove(eid)
+                # This specifically targets hidden constraints added by this
+                # command, or user-added distance constraints.
                 elif constr.targets_segment(entity.p1_idx, entity.p2_idx, eid):
-                    self._removed_constraints.append(constr)
+                    is_target = True
 
+                if is_target:
+                    constraints_to_remove.append(constr)
+
+        self._removed_constraints.extend(constraints_to_remove)
         for c in self._removed_constraints:
             if c in self.sketch.constraints:
                 self.sketch.constraints.remove(c)
@@ -101,7 +120,6 @@ class ModifyTextPropertyCommand(SketchChangeCommand):
                 text_entity.width_id: (p_width.x, p_width.y),
                 text_entity.height_id: (p_height.x, p_height.y),
             }
-
             # Find and store the old aspect ratio constraint
             for idx, constr in enumerate(self.sketch.constraints or []):
                 if isinstance(constr, AspectRatioConstraint):
@@ -115,50 +133,54 @@ class ModifyTextPropertyCommand(SketchChangeCommand):
                         self.old_aspect_ratio = constr.ratio
                         break
 
+        # Update the entity's content first.
         text_entity.content = self.new_content
         text_entity.font_config = self.new_font_config.copy()
 
-        # If the content is empty after editing, remove the entity
+        # If the content is now empty, remove the entire entity.
         if not self.new_content:
             self._remove_text_entity(text_entity)
             return
 
+        # Always clear any temporary constraints added by this command.
         self._added_constraints.clear()
 
-        # --- Iteration 2: "Content as Truth" Reset ---
+        # Remove any existing dimensional constraints on the box frame to
+        # prevent conflicts before we re-establish the width.
+        self._shed_size_constraints(text_entity)
+
+        # Get natural dimensions of the new text.
         natural_width, natural_height = self._calculate_natural_metrics(
             self.new_content, self.new_font_config
         )
 
-        # --- Iteration 3: Shed size constraints ---
-        self._shed_size_constraints(text_entity)
-
-        # Create and add new implicit distance constraints to enforce size
+        # Always add a hidden constraint for the width. This is authoritative.
         width_constr = DistanceConstraint(
             text_entity.origin_id,
             text_entity.width_id,
             natural_width,
             user_visible=False,
         )
-        height_constr = DistanceConstraint(
-            text_entity.origin_id,
-            text_entity.height_id,
-            natural_height,
-            user_visible=False,
-        )
-        self._added_constraints.extend([width_constr, height_constr])
-        self.sketch.constraints.extend(self._added_constraints)
+        self._added_constraints.append(width_constr)
+        self.sketch.constraints.append(width_constr)
 
-        # Update aspect ratio constraint with new text dimensions
-        # The constraint must exist for a text box.
-        if (
-            self.aspect_ratio_constraint_idx is not None
-            and natural_height > 1e-9
-        ):
-            new_ratio = natural_width / natural_height
-            constr = self.sketch.constraints[self.aspect_ratio_constraint_idx]
-            assert isinstance(constr, AspectRatioConstraint)
-            constr.ratio = new_ratio
+        # Find the Aspect Ratio constraint, if it exists.
+        active_ar_constraint = None
+        for constr in self.sketch.constraints:
+            if (
+                isinstance(constr, AspectRatioConstraint)
+                and constr.p1 == text_entity.origin_id
+                and constr.p2 == text_entity.width_id
+            ):
+                active_ar_constraint = constr
+                break
+
+        # If the AR constraint exists, update its ratio. The solver will handle
+        # the height automatically. If not, the height remains unconstrained.
+        if active_ar_constraint:
+            if natural_height > 1e-9:
+                new_ratio = natural_width / natural_height
+                active_ar_constraint.ratio = new_ratio
 
     def _remove_text_entity(self, text_entity: TextBoxEntity) -> None:
         """Removes the text entity and its associated points/constraints."""
@@ -237,9 +259,12 @@ class ModifyTextPropertyCommand(SketchChangeCommand):
             self.aspect_ratio_constraint_idx is not None
             and self.old_aspect_ratio is not None
         ):
-            constr = self.sketch.constraints[self.aspect_ratio_constraint_idx]
-            assert isinstance(constr, AspectRatioConstraint)
-            constr.ratio = self.old_aspect_ratio
+            if self.aspect_ratio_constraint_idx < len(self.sketch.constraints):
+                constr = self.sketch.constraints[
+                    self.aspect_ratio_constraint_idx
+                ]
+                if isinstance(constr, AspectRatioConstraint):
+                    constr.ratio = self.old_aspect_ratio
 
         # Remove constraints added by this command
         for c in self._added_constraints:
@@ -248,8 +273,7 @@ class ModifyTextPropertyCommand(SketchChangeCommand):
         self._added_constraints.clear()
 
         # Restore removed constraints
-        for c in self._removed_constraints:
-            self.sketch.constraints.append(c)
+        self.sketch.constraints.extend(self._removed_constraints)
 
         # Restore modified EqualLength constraints
         for idx, old_entity_ids in reversed(
