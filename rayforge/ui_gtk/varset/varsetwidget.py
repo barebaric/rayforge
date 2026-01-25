@@ -31,6 +31,7 @@ class VarSetWidget(Adw.PreferencesGroup):
         self.explicit_apply = explicit_apply
         self.widget_map: dict[str, tuple[Adw.PreferencesRow, Var]] = {}
         self._created_rows = []
+        self._apply_buttons: list[Gtk.Button] = []
         self._factory = VarRowFactory()
         self.data_changed = Signal()
 
@@ -39,6 +40,7 @@ class VarSetWidget(Adw.PreferencesGroup):
         for row in self._created_rows:
             self.remove(row)
         self._created_rows.clear()
+        self._apply_buttons.clear()
         self.widget_map.clear()
 
     def populate(self, var_set: VarSet):
@@ -236,6 +238,7 @@ class VarSetWidget(Adw.PreferencesGroup):
         apply_button.set_valign(Gtk.Align.CENTER)
         apply_button.connect("clicked", lambda b: self._on_data_changed(key))
         row.add_suffix(apply_button)
+        self._apply_buttons.append(apply_button)
 
     def _wire_up_row(self, row: Adw.PreferencesRow, var: Var):
         """Connects signals for the row based on the explicit_apply setting."""
@@ -276,3 +279,8 @@ class VarSetWidget(Adw.PreferencesGroup):
 
             row.connect("changed", on_validate)
             on_validate(row)
+
+    def set_apply_buttons_sensitive(self, sensitive: bool):
+        """Set the sensitivity of all apply buttons."""
+        for button in self._apply_buttons:
+            button.set_sensitive(sensitive)
