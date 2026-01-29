@@ -6,6 +6,7 @@ import xml.etree.ElementTree as ET
 import re
 from typing import Tuple, List, Optional
 import logging
+import threading
 from ..core.geo import Geometry
 from ..core.vectorization_spec import VectorizationSpec, TraceSpec
 from ..core.matrix import Matrix
@@ -14,6 +15,8 @@ from .denoise import denoise_boolean_image
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
+
+_vtracer_lock = threading.Lock()
 
 BORDER_SIZE = 2
 # A safety limit to prevent processing pathologically complex images.
@@ -517,14 +520,15 @@ def _encode_image_to_png(
 def _convert_png_to_svg_with_vtracer(png_bytes: bytes) -> str:
     """Converts PNG bytes to SVG string using vtracer."""
     logger.debug("Entering _convert_png_to_svg_with_vtracer")
-    return vtracer.convert_raw_image_to_svg(
-        img_bytes=png_bytes,
-        img_format="png",
-        colormode="binary",
-        mode="polygon",
-        filter_speckle=0,
-        length_threshold=3.5,
-    )
+    with _vtracer_lock:
+        return vtracer.convert_raw_image_to_svg(
+            img_bytes=png_bytes,
+            img_format="png",
+            colormode="binary",
+            mode="polygon",
+            filter_speckle=0,
+            length_threshold=3.5,
+        )
 
 
 def _extract_svg_from_raw_output(raw_output: str) -> str:
