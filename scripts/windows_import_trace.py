@@ -30,11 +30,15 @@ try:
         print(
             "=== Calling vtracer.convert_raw_image_to_svg... ===", flush=True
         )
+        # Use positional arguments to avoid ABI crash in pyo3
+        # extract_arguments_fastcall
+        # Signature: (img_bytes, img_format, colormode, hierarchical, mode, ...)
         out = vtracer.convert_raw_image_to_svg(
-            img_bytes=buf.tobytes(),
-            img_format="bmp",
-            colormode="binary",
-            mode="polygon",
+            buf.tobytes(),  # img_bytes
+            "bmp",  # img_format
+            "binary",  # colormode
+            "stacked",  # hierarchical
+            "polygon",  # mode
         )
         print(
             f"=== vtracer returned length: {len(out) if out else 0} ===",
