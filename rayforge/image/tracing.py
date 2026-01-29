@@ -26,9 +26,10 @@ MAX_VECTORS_LIMIT = 25000
 # A pixel count limit to prevent integer overflows in the underlying vtracer
 # native library.
 VTRACER_PIXEL_LIMIT = 1_220_000
-# On Windows, vtracer has memory alignment issues that cause access violations
-# with images larger than this threshold, even if below VTRACER_PIXEL_LIMIT.
-VTRACER_WINDOWS_SAFE_LIMIT = 900_000
+# On Windows, we use a dedicated thread with increased stack size (8MB)
+# so we can maintain high resolution without stack overflows.
+# We set a limit slightly lower than the absolute max to ensure stability.
+VTRACER_WINDOWS_SAFE_LIMIT = 1_000_000
 
 
 def _get_image_from_surface(
@@ -527,7 +528,9 @@ def _convert_buffer_to_svg_with_vtracer(
 ) -> str:
     """Converts image bytes to SVG string using vtracer."""
     logger.debug("Entering _convert_buffer_to_svg_with_vtracer")
-    with _vtracer_lock:
+
+    # Inner function to be run
+    def _call_native():
         return vtracer.convert_raw_image_to_svg(
             img_bytes=img_bytes,
             img_format=img_format,
@@ -536,6 +539,47 @@ def _convert_buffer_to_svg_with_vtracer(
             filter_speckle=0,
             length_threshold=3.5,
         )
+
+    with _vtracer_lock:
+        if sys.platform == "win32":
+            # Windows has a small default stack (1MB). vtracer recursive
+            # algorithms can exceed this on large images (Access Violation
+            # / Stack Overflow).
+            # Workaround: Run in a separate thread with an increased stack
+            # size (8MB).
+            result = [None]
+            error = [None]
+
+            def thread_target():
+                try:
+                    result[0] = _call_native()
+                except Exception as e:
+                    error[0] = e
+
+            # 8MB stack size (matching typical Linux default)
+            stack_size = 8 * 1024 * 1024
+
+            # Global stack_size setting affects new threads only.
+            # We must be careful not to affect other parts of the application
+            # indefinitely.
+            try:
+                old_stack = threading.stack_size(stack_size)
+                t = threading.Thread(target=thread_target)
+                t.start()
+                # Restore immediately
+                threading.stack_size(old_stack)
+                t.join()
+            except Exception as e:
+                # If stack adjustment fails (e.g. platform doesn't support it),
+                # try direct call and hope for the best.
+                logger.warning(f"Could not adjust stack size for vtracer: {e}")
+                return _call_native()
+
+            if error[0]:
+                raise error[0]
+            return result[0]
+        else:
+            return _call_native()
 
 
 def _extract_svg_from_raw_output(raw_output: str) -> str:
