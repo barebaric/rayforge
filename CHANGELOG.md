@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Major: Project save/load support
 - Major: The sketcher now supports text, with many bells and whistles
+- Major: The jog dialog has been merged together with the log view into a bottom panel
 - Sketcher supports aspect ratio constraints
 - Engraving steps now have an invert setting
 - A recent files menu entry was added

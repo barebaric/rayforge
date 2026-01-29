@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-01-25 00:46+0100\n"
+"POT-Creation-Date: 2026-01-29 20:29+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -205,6 +205,66 @@ msgstr ""
 
 #: rayforge/core/sketcher/sketch.py
 msgid "Parameters that control this sketch's geometry"
+msgstr ""
+
+#: rayforge/core/sketcher/constraints/equal_length.py
+msgid "Equal Length"
+msgstr ""
+
+#: rayforge/core/sketcher/constraints/parallelogram.py
+msgid "Parallelogram"
+msgstr ""
+
+#: rayforge/core/sketcher/constraints/point_on_line.py
+msgid "Point on Line"
+msgstr ""
+
+#: rayforge/core/sketcher/constraints/collinear.py
+msgid "Collinear"
+msgstr ""
+
+#: rayforge/core/sketcher/constraints/tangent.py
+msgid "Tangent"
+msgstr ""
+
+#: rayforge/core/sketcher/constraints/distance.py
+msgid "Distance"
+msgstr ""
+
+#: rayforge/core/sketcher/constraints/vertical.py
+msgid "Vertical"
+msgstr ""
+
+#: rayforge/core/sketcher/constraints/equal_distance.py
+msgid "Equal Distance"
+msgstr ""
+
+#: rayforge/core/sketcher/constraints/perpendicular.py
+msgid "Perpendicular"
+msgstr ""
+
+#: rayforge/core/sketcher/constraints/symmetry.py
+msgid "Symmetry"
+msgstr ""
+
+#: rayforge/core/sketcher/constraints/horizontal.py
+msgid "Horizontal"
+msgstr ""
+
+#: rayforge/core/sketcher/constraints/diameter.py
+msgid "Diameter"
+msgstr ""
+
+#: rayforge/core/sketcher/constraints/coincident.py
+msgid "Coincident"
+msgstr ""
+
+#: rayforge/core/sketcher/constraints/radius.py
+msgid "Radius"
+msgstr ""
+
+#: rayforge/core/sketcher/constraints/aspect_ratio.py
+msgid "Aspect Ratio"
 msgstr ""
 
 #: rayforge/core/sketcher/tools/select_tool.py
@@ -955,7 +1015,7 @@ msgstr ""
 msgid "Air Off"
 msgstr ""
 
-#: rayforge/machine/models/dialect.py rayforge/ui_gtk/machine/jog_dialog.py
+#: rayforge/machine/models/dialect.py rayforge/ui_gtk/machine/jog_widget.py
 msgid "Home All"
 msgstr ""
 
@@ -1173,8 +1233,8 @@ msgstr ""
 #: rayforge/ui_gtk/camera/selection_dialog.py
 #: rayforge/ui_gtk/camera/alignment_dialog.py
 #: rayforge/ui_gtk/machine/machine_hours_page.py
-#: rayforge/ui_gtk/machine/jog_dialog.py
 #: rayforge/ui_gtk/machine/dialect_editor.py
+#: rayforge/ui_gtk/machine/control_panel.py
 #: rayforge/ui_gtk/machine/hook_list.py rayforge/ui_gtk/machine/gcode_editor.py
 #: rayforge/ui_gtk/machine/dialect_list.py
 #: rayforge/ui_gtk/machine/profile_selector.py
@@ -1198,8 +1258,7 @@ msgstr ""
 #: rayforge/ui_gtk/machine/dialect_list.py
 #: rayforge/ui_gtk/doceditor/material_library_list.py
 #: rayforge/ui_gtk/doceditor/recipe_list.py
-#: rayforge/ui_gtk/doceditor/material_list.py
-#: rayforge/ui_gtk/sketcher/piemenu.py rayforge/ui_gtk/sketcher/menu.py
+#: rayforge/ui_gtk/doceditor/material_list.py rayforge/ui_gtk/sketcher/menu.py
 msgid "Delete"
 msgstr ""
 
@@ -1263,6 +1322,18 @@ msgid "Dark"
 msgstr ""
 
 #: rayforge/ui_gtk/settings/general_preferences_page.py
+msgid "Open nothing"
+msgstr ""
+
+#: rayforge/ui_gtk/settings/general_preferences_page.py
+msgid "Open last project"
+msgstr ""
+
+#: rayforge/ui_gtk/settings/general_preferences_page.py
+msgid "Open specific project"
+msgstr ""
+
+#: rayforge/ui_gtk/settings/general_preferences_page.py
 #: rayforge/ui_gtk/machine/settings_dialog.py
 #: rayforge/ui_gtk/machine/general_preferences_page.py
 #: rayforge/ui_gtk/doceditor/edit_recipe_dialog.py
@@ -1301,6 +1372,28 @@ msgstr ""
 #: rayforge/ui_gtk/settings/general_preferences_page.py
 #: rayforge/ui_gtk/machine/general_preferences_page.py
 msgid "Acceleration"
+msgstr ""
+
+#: rayforge/ui_gtk/settings/general_preferences_page.py
+msgid "Startup"
+msgstr ""
+
+#: rayforge/ui_gtk/settings/general_preferences_page.py
+msgid ""
+"Configure what happens when you start the application. Files specified on "
+"the command line will always override these settings."
+msgstr ""
+
+#: rayforge/ui_gtk/settings/general_preferences_page.py
+msgid "Startup behavior"
+msgstr ""
+
+#: rayforge/ui_gtk/settings/general_preferences_page.py
+msgid "Project path"
+msgstr ""
+
+#: rayforge/ui_gtk/settings/general_preferences_page.py
+msgid "Browse..."
 msgstr ""
 
 #: rayforge/ui_gtk/canvas2d/elements/tab_handle.py
@@ -1345,7 +1438,7 @@ msgid "Remove Tab"
 msgstr ""
 
 #: rayforge/ui_gtk/canvas2d/simulation_controls.py
-#: rayforge/ui_gtk/sketcher/piemenu.py rayforge/ui_gtk/sketcher/menu.py
+#: rayforge/ui_gtk/sketcher/menu.py
 msgid "Line"
 msgstr ""
 
@@ -1585,8 +1678,8 @@ msgid "New Counter"
 msgstr ""
 
 #: rayforge/ui_gtk/machine/machine_hours_page.py
-#: rayforge/ui_gtk/machine/jog_dialog.py
 #: rayforge/ui_gtk/machine/dialect_editor.py
+#: rayforge/ui_gtk/machine/control_panel.py
 #: rayforge/ui_gtk/machine/gcode_editor.py rayforge/ui_gtk/main_menu.py
 #: rayforge/ui_gtk/toolbar.py
 #: rayforge/ui_gtk/doceditor/material_library_list.py
@@ -1662,123 +1755,6 @@ msgstr ""
 msgid "New Macro"
 msgstr ""
 
-#: rayforge/ui_gtk/machine/jog_dialog.py
-msgid "Machine Jog Control"
-msgstr ""
-
-#: rayforge/ui_gtk/machine/jog_dialog.py
-msgid "Homing"
-msgstr ""
-
-#: rayforge/ui_gtk/machine/jog_dialog.py
-msgid "Home X"
-msgstr ""
-
-#: rayforge/ui_gtk/machine/jog_dialog.py
-msgid "Home Y"
-msgstr ""
-
-#: rayforge/ui_gtk/machine/jog_dialog.py
-msgid "Home Z"
-msgstr ""
-
-#: rayforge/ui_gtk/machine/jog_dialog.py
-msgid "Work Coordinates"
-msgstr ""
-
-#: rayforge/ui_gtk/machine/jog_dialog.py
-msgid "Active System"
-msgstr ""
-
-#: rayforge/ui_gtk/machine/jog_dialog.py
-msgid "Current Offsets"
-msgstr ""
-
-#: rayforge/ui_gtk/machine/jog_dialog.py
-msgid "Set Work Zero at Current Position"
-msgstr ""
-
-#: rayforge/ui_gtk/machine/jog_dialog.py
-msgid "Edit Offsets Manually"
-msgstr ""
-
-#: rayforge/ui_gtk/machine/jog_dialog.py
-msgid "Current Position"
-msgstr ""
-
-#: rayforge/ui_gtk/machine/jog_dialog.py
-msgid "Zero X"
-msgstr ""
-
-#: rayforge/ui_gtk/machine/jog_dialog.py
-msgid "Set current X position as 0 for active WCS"
-msgstr ""
-
-#: rayforge/ui_gtk/machine/jog_dialog.py
-msgid "Zero Y"
-msgstr ""
-
-#: rayforge/ui_gtk/machine/jog_dialog.py
-msgid "Set current Y position as 0 for active WCS"
-msgstr ""
-
-#: rayforge/ui_gtk/machine/jog_dialog.py
-msgid "Zero Z"
-msgstr ""
-
-#: rayforge/ui_gtk/machine/jog_dialog.py
-msgid "Set current Z position as 0 for active WCS"
-msgstr ""
-
-#: rayforge/ui_gtk/machine/jog_dialog.py
-msgid "Jog Settings"
-msgstr ""
-
-#: rayforge/ui_gtk/machine/jog_dialog.py
-msgid "Jog Speed"
-msgstr ""
-
-#: rayforge/ui_gtk/machine/jog_dialog.py
-msgid "Speed in mm/min"
-msgstr ""
-
-#: rayforge/ui_gtk/machine/jog_dialog.py
-msgid "Jog Distance"
-msgstr ""
-
-#: rayforge/ui_gtk/machine/jog_dialog.py
-msgid "Distance in mm"
-msgstr ""
-
-#: rayforge/ui_gtk/machine/jog_dialog.py
-msgid "Edit Work Offsets"
-msgstr ""
-
-#: rayforge/ui_gtk/machine/jog_dialog.py
-msgid "Enter the offset from Machine Zero to Work Zero for the active WCS."
-msgstr ""
-
-#: rayforge/ui_gtk/machine/jog_dialog.py
-msgid "Offline - Position Unknown"
-msgstr ""
-
-#: rayforge/ui_gtk/machine/jog_dialog.py
-#, python-brace-format
-msgid "Offsets cannot be set in Machine Coordinate Mode ({wcs})"
-msgstr ""
-
-#: rayforge/ui_gtk/machine/jog_dialog.py
-msgid "Machine must be connected to set Zero Here"
-msgstr ""
-
-#: rayforge/ui_gtk/machine/jog_dialog.py
-msgid "Set current position as 0"
-msgstr ""
-
-#: rayforge/ui_gtk/machine/jog_dialog.py
-msgid "Single axis homing is disabled in machine settings"
-msgstr ""
-
 #: rayforge/ui_gtk/machine/dialect_editor.py
 msgid "Escaped braces {{ or }} are not supported."
 msgstr ""
@@ -1816,6 +1792,95 @@ msgstr ""
 
 #: rayforge/ui_gtk/machine/dialect_editor.py
 msgid "Label cannot be empty."
+msgstr ""
+
+#: rayforge/ui_gtk/machine/control_panel.py
+msgid "Active System"
+msgstr ""
+
+#: rayforge/ui_gtk/machine/control_panel.py
+msgid "Current Offsets"
+msgstr ""
+
+#: rayforge/ui_gtk/machine/control_panel.py
+msgid "Edit Offsets Manually"
+msgstr ""
+
+#: rayforge/ui_gtk/machine/control_panel.py
+msgid "Current Position"
+msgstr ""
+
+#: rayforge/ui_gtk/machine/control_panel.py
+msgid "Zero Axes"
+msgstr ""
+
+#: rayforge/ui_gtk/machine/control_panel.py
+msgid "X"
+msgstr ""
+
+#: rayforge/ui_gtk/machine/control_panel.py
+msgid "Set current X position as 0 for active WCS"
+msgstr ""
+
+#: rayforge/ui_gtk/machine/control_panel.py
+msgid "Y"
+msgstr ""
+
+#: rayforge/ui_gtk/machine/control_panel.py
+msgid "Set current Y position as 0 for active WCS"
+msgstr ""
+
+#: rayforge/ui_gtk/machine/control_panel.py
+msgid "Z"
+msgstr ""
+
+#: rayforge/ui_gtk/machine/control_panel.py
+msgid "Set current Z position as 0 for active WCS"
+msgstr ""
+
+#: rayforge/ui_gtk/machine/control_panel.py
+msgid "Set Work Zero at Current Position"
+msgstr ""
+
+#: rayforge/ui_gtk/machine/control_panel.py
+msgid "Jog Speed"
+msgstr ""
+
+#: rayforge/ui_gtk/machine/control_panel.py
+msgid "Speed in mm/min"
+msgstr ""
+
+#: rayforge/ui_gtk/machine/control_panel.py
+msgid "Jog Distance"
+msgstr ""
+
+#: rayforge/ui_gtk/machine/control_panel.py
+msgid "Distance in mm"
+msgstr ""
+
+#: rayforge/ui_gtk/machine/control_panel.py
+msgid "Edit Work Offsets"
+msgstr ""
+
+#: rayforge/ui_gtk/machine/control_panel.py
+msgid "Enter the offset from Machine Zero to Work Zero for the active WCS."
+msgstr ""
+
+#: rayforge/ui_gtk/machine/control_panel.py
+msgid "Offline - Position Unknown"
+msgstr ""
+
+#: rayforge/ui_gtk/machine/control_panel.py
+#, python-brace-format
+msgid "Offsets cannot be set in Machine Coordinate Mode ({wcs})"
+msgstr ""
+
+#: rayforge/ui_gtk/machine/control_panel.py
+msgid "Machine must be connected to set Zero Here"
+msgstr ""
+
+#: rayforge/ui_gtk/machine/control_panel.py
+msgid "Set current position as 0"
 msgstr ""
 
 #: rayforge/ui_gtk/machine/hook_list.py
@@ -2076,7 +2141,7 @@ msgid "No driver selected"
 msgstr ""
 
 #: rayforge/ui_gtk/machine/jog_widget.py
-msgid "Manual Jog"
+msgid "Home X"
 msgstr ""
 
 #: rayforge/ui_gtk/machine/jog_widget.py
@@ -2092,11 +2157,19 @@ msgid "Move North-East"
 msgstr ""
 
 #: rayforge/ui_gtk/machine/jog_widget.py
+msgid "Home Y"
+msgstr ""
+
+#: rayforge/ui_gtk/machine/jog_widget.py
 msgid "Move West (Left)"
 msgstr ""
 
 #: rayforge/ui_gtk/machine/jog_widget.py
 msgid "Move East (Right)"
+msgstr ""
+
+#: rayforge/ui_gtk/machine/jog_widget.py
+msgid "Home Z"
 msgstr ""
 
 #: rayforge/ui_gtk/machine/jog_widget.py
@@ -2112,11 +2185,11 @@ msgid "Move South-East"
 msgstr ""
 
 #: rayforge/ui_gtk/machine/jog_widget.py
-msgid "Move Up"
+msgid "Increase Z-Distance"
 msgstr ""
 
 #: rayforge/ui_gtk/machine/jog_widget.py
-msgid "Move Down"
+msgid "Decrease Z-Distance"
 msgstr ""
 
 #: rayforge/ui_gtk/machine/profile_selector.py
@@ -2692,7 +2765,7 @@ msgstr ""
 msgid "Vertically Center"
 msgstr ""
 
-#: rayforge/ui_gtk/main_menu.py rayforge/ui_gtk/sketcher/piemenu.py
+#: rayforge/ui_gtk/main_menu.py
 msgid "Align"
 msgstr ""
 
@@ -2742,10 +2815,6 @@ msgstr ""
 
 #: rayforge/ui_gtk/main_menu.py
 msgid "Frame"
-msgstr ""
-
-#: rayforge/ui_gtk/main_menu.py
-msgid "Jog Controls..."
 msgstr ""
 
 #: rayforge/ui_gtk/main_menu.py
@@ -3048,6 +3117,10 @@ msgid "Toggle G-code Preview"
 msgstr ""
 
 #: rayforge/ui_gtk/toolbar.py
+msgid "Toggle control panel"
+msgstr ""
+
+#: rayforge/ui_gtk/toolbar.py
 msgid "Toggle tab visibility"
 msgstr ""
 
@@ -3101,10 +3174,6 @@ msgstr ""
 
 #: rayforge/ui_gtk/toolbar.py
 msgid "Clear machine alarm (unlock)"
-msgstr ""
-
-#: rayforge/ui_gtk/toolbar.py
-msgid "Manual jog control"
 msgstr ""
 
 #: rayforge/ui_gtk/toolbar.py
@@ -3274,6 +3343,10 @@ msgstr ""
 
 #: rayforge/ui_gtk/doceditor/step_settings/overscan.py
 msgid "Auto Calculate Overscan Distance"
+msgstr ""
+
+#: rayforge/ui_gtk/doceditor/step_settings/overscan.py
+msgid "Disable Auto Overscan"
 msgstr ""
 
 #: rayforge/ui_gtk/doceditor/step_settings/overscan.py
@@ -3970,7 +4043,7 @@ msgid "Material thickness"
 msgstr ""
 
 #: rayforge/ui_gtk/doceditor/stock_properties_dialog.py
-#: rayforge/ui_gtk/sketcher/piemenu.py rayforge/ui_gtk/sketcher/menu.py
+#: rayforge/ui_gtk/sketcher/menu.py
 msgid "Select"
 msgstr ""
 
@@ -4418,82 +4491,6 @@ msgstr ""
 msgid "{tasks} tasks"
 msgstr ""
 
-#: rayforge/ui_gtk/sketcher/piemenu.py rayforge/ui_gtk/sketcher/menu.py
-msgid "Arc"
-msgstr ""
-
-#: rayforge/ui_gtk/sketcher/piemenu.py
-msgid "Text Box"
-msgstr ""
-
-#: rayforge/ui_gtk/sketcher/piemenu.py rayforge/ui_gtk/sketcher/menu.py
-msgid "Circle"
-msgstr ""
-
-#: rayforge/ui_gtk/sketcher/piemenu.py rayforge/ui_gtk/sketcher/menu.py
-msgid "Rectangle"
-msgstr ""
-
-#: rayforge/ui_gtk/sketcher/piemenu.py rayforge/ui_gtk/sketcher/menu.py
-msgid "Rounded Rectangle"
-msgstr ""
-
-#: rayforge/ui_gtk/sketcher/piemenu.py
-msgid "Fill"
-msgstr ""
-
-#: rayforge/ui_gtk/sketcher/piemenu.py
-msgid "Construction"
-msgstr ""
-
-#: rayforge/ui_gtk/sketcher/piemenu.py
-msgid "Chamfer"
-msgstr ""
-
-#: rayforge/ui_gtk/sketcher/piemenu.py
-msgid "Fillet"
-msgstr ""
-
-#: rayforge/ui_gtk/sketcher/piemenu.py
-msgid "Distance"
-msgstr ""
-
-#: rayforge/ui_gtk/sketcher/piemenu.py
-msgid "Horizontal"
-msgstr ""
-
-#: rayforge/ui_gtk/sketcher/piemenu.py
-msgid "Vertical"
-msgstr ""
-
-#: rayforge/ui_gtk/sketcher/piemenu.py
-msgid "Radius"
-msgstr ""
-
-#: rayforge/ui_gtk/sketcher/piemenu.py
-msgid "Diameter"
-msgstr ""
-
-#: rayforge/ui_gtk/sketcher/piemenu.py
-msgid "Perpendicular"
-msgstr ""
-
-#: rayforge/ui_gtk/sketcher/piemenu.py
-msgid "Tangent"
-msgstr ""
-
-#: rayforge/ui_gtk/sketcher/piemenu.py
-msgid "Equal"
-msgstr ""
-
-#: rayforge/ui_gtk/sketcher/piemenu.py
-msgid "Symmetry"
-msgstr ""
-
-#: rayforge/ui_gtk/sketcher/piemenu.py
-msgid "Aspect Ratio"
-msgstr ""
-
 #: rayforge/ui_gtk/sketcher/sketchelement.py rayforge/ui_gtk/sketcher/menu.py
 msgid "Toggle Construction"
 msgstr ""
@@ -4582,6 +4579,22 @@ msgstr ""
 
 #: rayforge/ui_gtk/sketcher/menu.py
 msgid "Finish Sketch"
+msgstr ""
+
+#: rayforge/ui_gtk/sketcher/menu.py
+msgid "Circle"
+msgstr ""
+
+#: rayforge/ui_gtk/sketcher/menu.py
+msgid "Arc"
+msgstr ""
+
+#: rayforge/ui_gtk/sketcher/menu.py
+msgid "Rectangle"
+msgstr ""
+
+#: rayforge/ui_gtk/sketcher/menu.py
+msgid "Rounded Rectangle"
 msgstr ""
 
 #: rayforge/ui_gtk/sketcher/menu.py
