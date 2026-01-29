@@ -45,7 +45,7 @@ jobs:
         uses: msys2/setup-msys2@v2
         with:
           msystem: MINGW64
-          update: true
+          #update: true
           # Minimal packages required to run the setup script itself
           install: base-devel git unzip wget zip
 

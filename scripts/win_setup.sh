@@ -129,8 +129,8 @@ if [[ "$1" == "pacman" || -z "$1" ]]; then
       mingw-w64-x86_64-python-yaml
     )
 
-    echo "Updating MSYS2 database and system..."
-    pacman -Syyu --noconfirm || true
+    echo "Refreshing MSYS2 database..."
+    pacman -Sy --noconfirm
 
     echo "Installing required system packages..."
     pacman -S --needed --noconfirm "${PACKAGES[@]}"
