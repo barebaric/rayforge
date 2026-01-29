@@ -7,6 +7,7 @@ import re
 from typing import Tuple, List, Optional
 import logging
 import threading
+import sys
 from ..core.geo import Geometry
 from ..core.vectorization_spec import VectorizationSpec, TraceSpec
 from ..core.matrix import Matrix
@@ -25,6 +26,9 @@ MAX_VECTORS_LIMIT = 25000
 # A pixel count limit to prevent integer overflows in the underlying vtracer
 # native library.
 VTRACER_PIXEL_LIMIT = 1_220_000
+# On Windows, vtracer has memory alignment issues that cause access violations
+# with images larger than this threshold, even if below VTRACER_PIXEL_LIMIT.
+VTRACER_WINDOWS_SAFE_LIMIT = 1_100_000
 
 
 def _get_image_from_surface(
@@ -580,12 +584,24 @@ def _handle_oversized_image(
     returning the new image, upscaling factors, and new content height.
     """
     h_bordered, w_bordered = image.shape
-    if h_bordered * w_bordered <= VTRACER_PIXEL_LIMIT:
+    pixel_limit = (
+        VTRACER_WINDOWS_SAFE_LIMIT
+        if sys.platform == "win32"
+        else VTRACER_PIXEL_LIMIT
+    )
+    if h_bordered * w_bordered <= pixel_limit:
         return image, 1.0, 1.0, original_height
 
-    scale = (VTRACER_PIXEL_LIMIT / (h_bordered * w_bordered)) ** 0.5
+    scale = (pixel_limit / (h_bordered * w_bordered)) ** 0.5
     new_w = max(1, int(w_bordered * scale))
     new_h = max(1, int(h_bordered * scale))
+
+    # Ensure dimensions are multiples of 4 for better memory alignment
+    new_w = (new_w // 4) * 4
+    new_h = (new_h // 4) * 4
+    new_w = max(4, new_w)
+    new_h = max(4, new_h)
+
     logger.warning(
         f"Image is too large for vtracer ({w_bordered}x{h_bordered}px). "
         f"Downscaling to {new_w}x{new_h}px to prevent overflow."
