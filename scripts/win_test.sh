@@ -15,9 +15,9 @@ source .msys2_env
 PYTHON_EXEC="$MSYS2_PATH/mingw64/bin/python"
 
 echo "--- Running Backend Tests ---"
-$PYTHON_EXEC -m pytest -v -ra -m "not ui"
+$PYTHON_EXEC -m pytest -v -ra -m "not ui" --log-cli-level=DEBUG --log-cli-format='%(asctime)s [%(levelname)8s] %(message)s' --log-cli-date-format='%Y-%m-%d %H:%M:%S'
 
 echo "--- Running UI Tests ---"
-$PYTHON_EXEC -m pytest -v -ra -m "ui"
+$PYTHON_EXEC -m pytest -v -ra -m "ui" --log-cli-level=DEBUG --log-cli-format='%(asctime)s [%(levelname)8s] %(message)s' --log-cli-date-format='%Y-%m-%d %H:%M:%S'
 
 echo "✅ All tests passed."

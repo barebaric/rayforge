@@ -98,6 +98,11 @@ jobs:
       - name: Run Test Suite (win_test.sh)
         shell: msys2 {0}
         run: |
+          # Enable debug logging for Python
+          export PYTHONUNBUFFERED=1
+          export PYTHONFAULTHANDLER=1
+          # Enable RUST backtrace for vtracer
+          export RUST_BACKTRACE=1
           # The test script will source .msys2_env internally.
           bash scripts/win_test.sh
 
