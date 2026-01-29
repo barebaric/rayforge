@@ -109,6 +109,10 @@ def main():
             if self.args.filenames:
                 # We connect a one-shot handler to the 'map' event.
                 self.win.connect("map", self._load_initial_files)
+            else:
+                # No files specified on command line, check config for
+                # startup behavior
+                self.win.connect("map", self._load_startup_files)
 
             self.win.present()
 
@@ -121,6 +125,7 @@ def main():
             """
             Loads files passed via the command line. This is called from the
             'map' signal handler to ensure the main window is fully initialized.
+            Command line files always override the startup behavior setting.
             """
             # These imports must be inside the method.
             from rayforge.core.vectorization_spec import (
@@ -137,8 +142,7 @@ def main():
                 file_path = Path(filename)
 
                 if file_path.suffix.lower() == ".ryp":
-                    editor.file.load_project_from_path(file_path)
-                    self.win.add_to_recent_manager(file_path)
+                    self.win.load_project(file_path)
                     continue
 
                 mime_type, _ = mimetypes.guess_type(file_path)
@@ -178,6 +182,42 @@ def main():
                 )
 
             return GLib.SOURCE_REMOVE  # ensure this handler only runs once
+
+        def _load_startup_files(self, widget):
+            """
+            Loads files based on the startup behavior setting when no files
+            are specified on the command line.
+            """
+            from rayforge.core.config import StartupBehavior
+
+            assert self.win is not None
+            context = get_context()
+            config = context.config
+
+            startup_behavior = config.startup_behavior
+            project_path = None
+
+            if startup_behavior == StartupBehavior.LAST_PROJECT.value:
+                project_path = config.last_opened_project
+            elif startup_behavior == StartupBehavior.SPECIFIC_PROJECT.value:
+                project_path = config.startup_project_path
+
+            if project_path and project_path.exists():
+                if project_path.suffix.lower() == ".ryp":
+                    logger.info(
+                        f"Loading startup project from {project_path}"
+                    )
+                    self.win.load_project(project_path)
+                else:
+                    logger.warning(
+                        f"Startup project path {project_path} is not a .ryp file"
+                    )
+            elif project_path:
+                logger.warning(
+                    f"Startup project path {project_path} does not exist"
+                )
+
+            return GLib.SOURCE_REMOVE
 
     # Import version for the --version flag.
     from rayforge import __version__
