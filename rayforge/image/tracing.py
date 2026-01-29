@@ -27,8 +27,7 @@ MAX_VECTORS_LIMIT = 25000
 # native library.
 VTRACER_PIXEL_LIMIT = 1_220_000
 # On Windows, we use a dedicated thread with increased stack size (8MB)
-# so we can maintain high resolution without stack overflows.
-# We set a limit slightly lower than the absolute max to ensure stability.
+# allowing us to maintain high resolution without stack overflows.
 VTRACER_WINDOWS_SAFE_LIMIT = 1_000_000
 
 
@@ -512,10 +511,11 @@ def _fallback_to_enclosing_hull(
 def _encode_image_to_buffer(
     cleaned_boolean_image: np.ndarray,
 ) -> Tuple[bool, bytes, str]:
-    """Encodes a boolean image to BMP bytes (less stack usage than PNG)."""
+    """Encodes a boolean image to BMP bytes (robust format for vtracer)."""
     logger.debug("Entering _encode_image_to_buffer")
     img_uint8 = (~cleaned_boolean_image * 255).astype(np.uint8)
     # Use BMP to minimize decoding overhead (stack usage) in vtracer on Windows
+    # and avoid potential library mismatches with other formats.
     success, buffer = cv2.imencode(".bmp", img_uint8)
     if not success:
         logger.error("Failed to encode boolean image to BMP for vtracer.")
@@ -529,16 +529,28 @@ def _convert_buffer_to_svg_with_vtracer(
     """Converts image bytes to SVG string using vtracer."""
     logger.debug("Entering _convert_buffer_to_svg_with_vtracer")
 
-    # Inner function to be run
+    # Arguments for vtracer. We use POSITIONAL arguments here to bypass
+    # a crash in the PyO3 keyword argument parser (extract_arguments_fastcall)
+    # occurring on Windows with Python 3.14 + vtracer 0.6.11 (old PyO3).
+    # Signature:
+    # convert_raw_image_to_svg(bytes, fmt, colormode, hierarchical, mode,
+    #                          speckle, color_prec, layer_diff, corner,
+    #                          length, max_iter, splice, path_prec)
+    args = (
+        img_bytes,  # 1. img_bytes
+        img_format,  # 2. img_format
+        "binary",  # 3. colormode
+        "stacked",  # 4. hierarchical (default)
+        "polygon",  # 5. mode
+        0,  # 6. filter_speckle
+        6,  # 7. color_precision (default)
+        16,  # 8. layer_difference (default)
+        60,  # 9. corner_threshold (default)
+        3.5,  # 10. length_threshold
+    )
+
     def _call_native():
-        return vtracer.convert_raw_image_to_svg(
-            img_bytes=img_bytes,
-            img_format=img_format,
-            colormode="binary",
-            mode="polygon",
-            filter_speckle=0,
-            length_threshold=3.5,
-        )
+        return vtracer.convert_raw_image_to_svg(*args)
 
     with _vtracer_lock:
         if sys.platform == "win32":
