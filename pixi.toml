@@ -8,6 +8,7 @@ platforms = ["linux-64"]
 default = { features = ["app", "test"], solve-group = "default" }
 website = { features = ["website"], solve-group = "default" }
 build = { features = ["build-tools"], solve-group = "build" }
+video = { features = ["video-tools"], solve-group = "video" }
 
 [feature.app.dependencies]
 adwaita-icon-theme = "*"
@@ -97,6 +98,13 @@ pillow = "*"
 cairosvg = "*"
 hugo = "*"
 
+[feature.video-tools.dependencies]
+ffmpeg = "*"
+python = ">=3.11"
+
+[feature.video-tools.pypi-dependencies]
+pillow = "*"
+
 [tool.pixi]
 workdir = "."
 
@@ -129,7 +137,7 @@ cmd = "pytest -v -m ui"
 
 [tasks.screenshot]
 env = { GI_TYPELIB_PATH = "$(pkgconf --variable=typelibdir gobject-introspection-1.0)"}
-cmd = "scripts/with_gdk.sh scripts/take_screenshot.py"
+cmd = "scripts/with_gdk.sh scripts/media/take_screenshot.py"
 
 [tasks.wheel]
 cmd = "python3 -m build"
@@ -150,3 +158,9 @@ depends-on = ["compile-translations"]
 site-serve = "mkdocs serve -f website/mkdocs.yml --livereload --watch-theme"
 site-build = "mkdocs build -f website/mkdocs.yml --strict --clean"
 site-deploy = "bash scripts/deploy_website.sh"
+
+# Tasks for video processing
+[feature.video-tools.tasks]
+process-audio = "python3 scripts/media/process_audio.py"
+generate-blender-setup = "python3 scripts/media/generate_blender_setup.py"
+generate-thumbnail = "python3 scripts/media/generate_thumbnail.py"
