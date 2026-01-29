@@ -6,7 +6,7 @@ __pycache__
 
 dist
 build
-media
+/media
 *.egg-info
 .msys2_env
 
