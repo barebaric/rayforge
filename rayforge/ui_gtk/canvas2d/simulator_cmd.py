@@ -107,11 +107,6 @@ class SimulatorCmd:
             self._on_simulation_step_changed
         )
         self.preview_controls.close_requested.connect(self._on_close_requested)
-        # Ensure G-code preview is also visible
-        gcode_action = win.action_manager.get_action("toggle_gcode_preview")
-        state = gcode_action.get_state()
-        if not (state and state.get_boolean()):
-            gcode_action.change_state(GLib.Variant.new_boolean(True))
 
         # Call the public method on MainWindow to trigger the async data load.
         win.refresh_previews()
