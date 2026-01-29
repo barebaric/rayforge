@@ -178,7 +178,6 @@ class ActionManager:
         self._add_action(
             "machine-clear-alarm", self.win.on_clear_alarm_clicked
         )
-        self._add_action("machine-jog", self.win.on_jog_clicked)
 
         # Stateful action for the hold/pause button
         self._add_stateful_action(
@@ -404,7 +403,6 @@ class ActionManager:
             "win.flip-vertical": "<Shift>v",
             # Machine & Help
             "win.machine-settings": "<Primary>less",
-            "win.machine-jog": "<Primary>j",
             "win.about": "F1",
         }
 

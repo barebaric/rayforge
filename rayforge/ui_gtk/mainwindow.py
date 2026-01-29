@@ -49,7 +49,6 @@ from .doceditor.stock_properties_dialog import StockPropertiesDialog
 from .doceditor.sketch_properties import SketchPropertiesWidget
 from .doceditor.workflow_view import WorkflowView
 from .machine.control_panel import MachineControlPanel
-from .machine.jog_dialog import JogDialog
 from .machine.settings_dialog import MachineSettingsDialog
 from .main_menu import MainMenu
 from .settings.settings_dialog import SettingsWindow
@@ -499,7 +498,9 @@ class MainWindow(Adw.ApplicationWindow):
 
         # Create the control panel
         config = get_context().config
-        self.control_panel = MachineControlPanel(config.machine)
+        self.control_panel = MachineControlPanel(
+            config.machine, self.machine_cmd
+        )
         self.control_panel.set_size_request(
             -1, self._last_control_panel_height
         )
@@ -2189,19 +2190,6 @@ class MainWindow(Adw.ApplicationWindow):
             self.toolbar.focus_button.set_child(self.toolbar.focus_off_icon)
         else:
             self.toolbar.focus_button.set_child(self.toolbar.focus_on_icon)
-
-    def on_jog_clicked(self, action, param):
-        """Show the jog control dialog."""
-        config = get_context().config
-        if not config.machine:
-            return
-
-        dialog = JogDialog(
-            machine=config.machine,
-            machine_cmd=self.machine_cmd,
-        )
-        dialog.set_transient_for(self)
-        dialog.present()
 
     def on_elements_deleted(self, sender, elements: List[CanvasElement]):
         """Handles the deletion signal from the WorkSurface."""
