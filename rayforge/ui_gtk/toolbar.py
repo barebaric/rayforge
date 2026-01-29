@@ -145,6 +145,14 @@ class MainToolbar(Gtk.Box):
         self.gcode_preview_button.set_action_name("win.toggle_gcode_preview")
         self.append(self.gcode_preview_button)
 
+        # Add a button to toggle the control panel.
+        self.control_panel_button = Gtk.ToggleButton()
+        self.control_panel_button.set_child(get_icon("jog-symbolic"))
+        self.control_panel_button.set_active(False)
+        self.control_panel_button.set_tooltip_text(_("Toggle control panel"))
+        self.control_panel_button.set_action_name("win.toggle_control_panel")
+        self.append(self.control_panel_button)
+
         # Add a button to toggle tab visibility.
         self.show_tabs_button = Gtk.ToggleButton()
         self.show_tabs_button.set_child(get_icon("tabs-visible-symbolic"))
@@ -261,11 +269,6 @@ class MainToolbar(Gtk.Box):
         )
         self.clear_alarm_button.set_action_name("win.machine-clear-alarm")
         self.append(self.clear_alarm_button)
-
-        self.jog_button = Gtk.Button(child=get_icon("jog-symbolic"))
-        self.jog_button.set_tooltip_text(_("Manual jog control"))
-        self.jog_button.set_action_name("win.machine-jog")
-        self.append(self.jog_button)
 
         self.focus_on_icon = get_icon("laser-on-symbolic")
         self.focus_off_icon = get_icon("laser-off-symbolic")
