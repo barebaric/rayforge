@@ -874,12 +874,22 @@ class MainWindow(Adw.ApplicationWindow):
             logger.error(f"Error saving file: {e.message}")
             return
 
-    def _do_open_project(self, file_path: Path):
-        """Loads a project from a given path and updates recent files."""
+    def load_project(self, file_path: Path):
+        """
+        Public method to load a project from a given path.
+        Updates recent files and tracks the last opened project.
+        """
         success = self.doc_editor.file.load_project_from_path(file_path)
         if success:
             self.on_doc_changed(self.doc_editor.doc)
             self.add_to_recent_manager(file_path)
+            # Track the last opened project for startup behavior
+            context = get_context()
+            context.config.set_last_opened_project(file_path)
+
+    def _do_open_project(self, file_path: Path):
+        """Loads a project from a given path and updates recent files."""
+        self.load_project(file_path)
 
     def on_open_recent(self, action, param):
         """Action handler for opening a file from the recent menu."""

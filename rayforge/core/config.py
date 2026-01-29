@@ -1,12 +1,21 @@
 import yaml
 import logging
-from typing import Dict, Any, Optional
 from blinker import Signal
+from enum import Enum
 from pathlib import Path
+from typing import Dict, Any, Optional
 from ..machine.models.machine import Machine
 
 
 logger = logging.getLogger(__name__)
+
+
+class StartupBehavior(Enum):
+    """Enum for application startup behavior options."""
+
+    NONE = "none"
+    LAST_PROJECT = "last_project"
+    SPECIFIC_PROJECT = "specific_project"
 
 
 class Config:
@@ -20,6 +29,13 @@ class Config:
             "speed": "mm/min",
             "acceleration": "mm/s²",
         }
+        # Startup behavior: "none", "last_project", or "specific_project"
+        self.startup_behavior: str = StartupBehavior.NONE.value
+        # Path to the specific project to open on startup (when
+        # startup_behavior is SPECIFIC_PROJECT)
+        self.startup_project_path: Optional[Path] = None
+        # Track the last opened project path
+        self.last_opened_project: Optional[Path] = None
         self.changed = Signal()
 
     def set_machine(self, machine: Optional[Machine]):
@@ -46,11 +62,44 @@ class Config:
         self.unit_preferences[quantity] = unit_name
         self.changed.send(self)
 
+    def set_startup_behavior(self, behavior: StartupBehavior):
+        """Sets the startup behavior preference."""
+        behavior_value = behavior.value
+        if self.startup_behavior == behavior_value:
+            return
+        self.startup_behavior = behavior_value
+        self.changed.send(self)
+
+    def set_startup_project_path(self, path: Optional[Path]):
+        """Sets the specific project path to open on startup."""
+        if self.startup_project_path == path:
+            return
+        self.startup_project_path = path
+        self.changed.send(self)
+
+    def set_last_opened_project(self, path: Optional[Path]):
+        """Sets the last opened project path."""
+        if self.last_opened_project == path:
+            return
+        self.last_opened_project = path
+        self.changed.send(self)
+
     def to_dict(self) -> Dict[str, Any]:
         return {
             "machine": self.machine.id if self.machine else None,
             "theme": self.theme,
             "unit_preferences": self.unit_preferences,
+            "startup_behavior": self.startup_behavior,
+            "startup_project_path": (
+                str(self.startup_project_path)
+                if self.startup_project_path
+                else None
+            ),
+            "last_opened_project": (
+                str(self.last_opened_project)
+                if self.last_opened_project
+                else None
+            ),
         }
 
     @classmethod
@@ -68,6 +117,29 @@ class Config:
         # Ensure all default keys are present
         default_prefs.update(loaded_prefs)
         config.unit_preferences = default_prefs
+
+        # Load startup behavior
+        default_behavior = StartupBehavior.NONE.value
+        startup_behavior = data.get("startup_behavior", default_behavior)
+        try:
+            StartupBehavior(startup_behavior)
+            config.startup_behavior = startup_behavior
+        except ValueError:
+            logger.warning(
+                f"Invalid startup behavior in config: {startup_behavior}. "
+                f"Using default: {default_behavior}"
+            )
+            config.startup_behavior = default_behavior
+
+        # Load startup project path
+        startup_project_path_str = data.get("startup_project_path")
+        if startup_project_path_str:
+            config.startup_project_path = Path(startup_project_path_str)
+
+        # Load last opened project path
+        last_opened_project_str = data.get("last_opened_project")
+        if last_opened_project_str:
+            config.last_opened_project = Path(last_opened_project_str)
 
         # Get the machine by ID. add fallbacks in case the machines
         # no longer exist.

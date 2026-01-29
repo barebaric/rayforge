@@ -1,9 +1,16 @@
-from gi.repository import Adw, Gtk
+import logging
+from gi.repository import Adw, Gtk, GLib
+from pathlib import Path
 from ...context import get_context
 from ...shared.units.definitions import (
     get_units_for_quantity,
     get_base_unit_for_quantity,
 )
+from ...core.config import StartupBehavior
+from ...ui_gtk.doceditor import file_dialogs
+
+
+logger = logging.getLogger(__name__)
 
 
 class GeneralPreferencesPage(Adw.PreferencesPage):
@@ -15,6 +22,18 @@ class GeneralPreferencesPage(Adw.PreferencesPage):
     # Map for converting between UI index and config string
     THEME_MAP = ["system", "light", "dark"]
     THEME_LABELS = [_("System"), _("Light"), _("Dark")]
+
+    # Map for startup behavior options
+    STARTUP_BEHAVIOR_MAP = [
+        StartupBehavior.NONE.value,
+        StartupBehavior.LAST_PROJECT.value,
+        StartupBehavior.SPECIFIC_PROJECT.value,
+    ]
+    STARTUP_BEHAVIOR_LABELS = [
+        _("Open nothing"),
+        _("Open last project"),
+        _("Open specific project"),
+    ]
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -141,6 +160,81 @@ class GeneralPreferencesPage(Adw.PreferencesPage):
         )
         units_group.add(self.acceleration_unit_row)
 
+        # Startup Preferences
+        startup_group = Adw.PreferencesGroup()
+        startup_group.set_title(_("Startup"))
+        startup_group.set_description(
+            _(
+                "Configure what happens when you start the application. "
+                "Files specified on the command line will always override "
+                "these settings."
+            )
+        )
+        self.add(startup_group)
+
+        # Startup behavior selector
+        self.startup_behavior_row = Adw.ComboRow(
+            title=_("Startup behavior"),
+            model=Gtk.StringList.new(self.STARTUP_BEHAVIOR_LABELS),
+        )
+        config = get_context().config
+        try:
+            selected_index = self.STARTUP_BEHAVIOR_MAP.index(
+                config.startup_behavior
+            )
+        except ValueError:
+            selected_index = 0
+        self.startup_behavior_row.set_selected(selected_index)
+
+        self.startup_behavior_row.connect(
+            "notify::selected", self.on_startup_behavior_changed
+        )
+        startup_group.add(self.startup_behavior_row)
+
+        # Specific project file selector (only shown when needed)
+        project_path_text = (
+            str(config.startup_project_path)
+            if config.startup_project_path
+            else ""
+        )
+        self.startup_project_row = Adw.EntryRow(
+            title=_("Project path"),
+            text=project_path_text,
+        )
+        self.startup_project_row.set_show_apply_button(True)
+        self.startup_project_row.connect(
+            "apply", self.on_startup_project_path_apply
+        )
+        startup_group.add(self.startup_project_row)
+
+        # File picker button for the specific project
+        self.startup_project_button = Gtk.Button(
+            label=_("Browse..."),
+            halign=Gtk.Align.END,
+        )
+        self.startup_project_button.set_valign(Gtk.Align.CENTER)
+        self.startup_project_button.connect(
+            "clicked", self.on_startup_project_browse_clicked
+        )
+        self.startup_project_row.add_suffix(self.startup_project_button)
+
+        # Bind the visibility of the project path row to the selection
+        self.startup_behavior_row.connect(
+            "notify::selected", self._update_startup_project_visibility
+        )
+        self._update_startup_project_visibility()
+
+    def _update_startup_project_visibility(self, *args):
+        """Show/hide the project path row based on startup behavior."""
+        selected_index = self.startup_behavior_row.get_selected()
+        should_show = (
+            selected_index
+            == self.STARTUP_BEHAVIOR_MAP.index(
+                StartupBehavior.SPECIFIC_PROJECT.value
+            )
+        )
+        self.startup_project_row.set_visible(should_show)
+
     def on_theme_changed(self, combo_row, _):
         """Called when the user selects a new theme."""
         selected_index = combo_row.get_selected()
@@ -173,3 +267,44 @@ class GeneralPreferencesPage(Adw.PreferencesPage):
             get_context().config.set_unit_preference(
                 "acceleration", selected_unit.name
             )
+
+    def on_startup_behavior_changed(self, combo_row, _):
+        """Called when the user selects a new startup behavior."""
+        selected_index = combo_row.get_selected()
+        if selected_index >= 0:
+            behavior_string = self.STARTUP_BEHAVIOR_MAP[selected_index]
+            behavior = StartupBehavior(behavior_string)
+            get_context().config.set_startup_behavior(behavior)
+
+    def on_startup_project_path_apply(self, entry_row, *args):
+        """Called when the user applies the project path entry."""
+        path_text = entry_row.get_text()
+        if path_text:
+            path = Path(path_text)
+            get_context().config.set_startup_project_path(path)
+        else:
+            get_context().config.set_startup_project_path(None)
+
+    def on_startup_project_browse_clicked(self, button):
+        """Called when the user clicks the browse button."""
+        window = button.get_ancestor(Adw.PreferencesWindow)
+        if not window:
+            window = button.get_ancestor(Gtk.Window)
+
+        file_dialogs.show_open_project_dialog(
+            window, self._on_startup_project_dialog_response
+        )
+
+    def _on_startup_project_dialog_response(
+        self, dialog, result, user_data
+    ):
+        """Callback for the startup project file dialog."""
+        try:
+            file = dialog.open_finish(result)
+            if not file:
+                return
+            file_path = Path(file.get_path())
+            self.startup_project_row.set_text(str(file_path))
+            get_context().config.set_startup_project_path(file_path)
+        except GLib.Error as e:
+            logger.error(f"Error selecting file: {e.message}")
