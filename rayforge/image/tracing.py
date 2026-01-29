@@ -28,7 +28,6 @@ MAX_VECTORS_LIMIT = 25000
 VTRACER_PIXEL_LIMIT = 1_220_000
 # On Windows, vtracer has memory alignment issues that cause access violations
 # with images larger than this threshold, even if below VTRACER_PIXEL_LIMIT.
-# Reduced to 900k to provide a larger safety margin.
 VTRACER_WINDOWS_SAFE_LIMIT = 900_000
 
 
@@ -509,26 +508,29 @@ def _fallback_to_enclosing_hull(
     return [geo] if geo else []
 
 
-def _encode_image_to_png(
+def _encode_image_to_buffer(
     cleaned_boolean_image: np.ndarray,
-) -> Tuple[bool, bytes]:
-    """Encodes a boolean image to PNG bytes."""
-    logger.debug("Entering _encode_image_to_png")
+) -> Tuple[bool, bytes, str]:
+    """Encodes a boolean image to BMP bytes (less stack usage than PNG)."""
+    logger.debug("Entering _encode_image_to_buffer")
     img_uint8 = (~cleaned_boolean_image * 255).astype(np.uint8)
-    success, png_bytes_buffer = cv2.imencode(".png", img_uint8)
+    # Use BMP to minimize decoding overhead (stack usage) in vtracer on Windows
+    success, buffer = cv2.imencode(".bmp", img_uint8)
     if not success:
-        logger.error("Failed to encode boolean image to PNG for vtracer.")
-        return False, b""
-    return True, png_bytes_buffer.tobytes()
+        logger.error("Failed to encode boolean image to BMP for vtracer.")
+        return False, b"", ""
+    return True, buffer.tobytes(), "bmp"
 
 
-def _convert_png_to_svg_with_vtracer(png_bytes: bytes) -> str:
-    """Converts PNG bytes to SVG string using vtracer."""
-    logger.debug("Entering _convert_png_to_svg_with_vtracer")
+def _convert_buffer_to_svg_with_vtracer(
+    img_bytes: bytes, img_format: str
+) -> str:
+    """Converts image bytes to SVG string using vtracer."""
+    logger.debug("Entering _convert_buffer_to_svg_with_vtracer")
     with _vtracer_lock:
         return vtracer.convert_raw_image_to_svg(
-            img_bytes=png_bytes,
-            img_format="png",
+            img_bytes=img_bytes,
+            img_format=img_format,
             colormode="binary",
             mode="polygon",
             filter_speckle=0,
@@ -632,7 +634,7 @@ def _get_geometries_from_image(
     Performs the core vectorization of a boolean image using vtracer,
     including complexity checks and fallbacks to hull generation.
     """
-    success, png_bytes = _encode_image_to_png(image_to_trace)
+    success, img_bytes, img_fmt = _encode_image_to_buffer(image_to_trace)
     if not success:
         return _fallback_to_enclosing_hull(
             image_to_trace,
@@ -642,7 +644,7 @@ def _get_geometries_from_image(
         )
 
     try:
-        raw_output = _convert_png_to_svg_with_vtracer(png_bytes)
+        raw_output = _convert_buffer_to_svg_with_vtracer(img_bytes, img_fmt)
         svg_str = _extract_svg_from_raw_output(raw_output)
     except Exception as e:
         logger.error(f"vtracer failed: {e}")
