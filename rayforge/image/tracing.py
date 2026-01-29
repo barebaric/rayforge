@@ -28,7 +28,8 @@ MAX_VECTORS_LIMIT = 25000
 VTRACER_PIXEL_LIMIT = 1_220_000
 # On Windows, vtracer has memory alignment issues that cause access violations
 # with images larger than this threshold, even if below VTRACER_PIXEL_LIMIT.
-VTRACER_WINDOWS_SAFE_LIMIT = 1_100_000
+# Reduced to 900k to provide a larger safety margin.
+VTRACER_WINDOWS_SAFE_LIMIT = 900_000
 
 
 def _get_image_from_surface(
