@@ -50,27 +50,21 @@ Output: `media/[release]/processed/` with processed video files
 
 ### Phase 5: Blender Project Generation
 
-Generate the Blender setup script:
+Generate the Blender project:
 
 ```bash
-pixi run generate_blender_setup \
+pixi run generate-blender-setup \
     media/[release]/processed/ \
     -o media/[release]/draft_edit.blend \
     -c CHANGELOG.md \
     -r 1920x1080 \
     -f 30 \
-    -s media/[release]/setup_project.py
+    --auto-find
 ```
 
 The script:
 - Uses the blender video from the previous release as a template.
 - Adds the thumbnail as the first frame.
 - Adds video and audio clips to timeline
-
-Execute the generated script:
-
-```bash
-blender --background --python media/[release]/setup_project.py
-```
 
 Output: `media/[release]/draft_edit.blend`

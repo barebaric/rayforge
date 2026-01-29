@@ -1,13 +1,15 @@
 #!/usr/bin/env python3
-"""Generate Blender setup script for video project assembly.
+"""Generate Blender setup for video project assembly.
 
-This script creates a Blender Python script that sets up a video editing
-project with clips, audio tracks, and text overlays from a CHANGELOG.md.
+This script directly creates a Blender .blend file with clips, audio tracks,
+and text overlays from a CHANGELOG.md.
 """
 
 import argparse
 import sys
 from pathlib import Path
+
+import bpy
 
 
 def parse_changelog(changelog_path):
@@ -118,7 +120,137 @@ def find_thumbnail(release_dir):
     return None
 
 
-def generate_blender_script(
+def load_template(template_path):
+    """Load template blend file.
+
+    Args:
+        template_path: Path to template .blend file.
+
+    Returns:
+        True if template was loaded, False otherwise.
+    """
+    if template_path and Path(template_path).exists():
+        bpy.ops.wm.open_mainfile(filepath=str(template_path))
+        return True
+    return False
+
+
+def clear_sequencer():
+    """Clear all strips from the video sequencer."""
+    if bpy.context.scene.sequence_editor is None:
+        bpy.context.scene.sequence_editor_create()
+
+    seq_editor = bpy.context.scene.sequence_editor
+    strips = list(seq_editor.strips)
+    for strip in strips:
+        seq_editor.strips.remove(strip)
+
+
+def setup_scene_settings(res_x, res_y, fps_val):
+    """Configure render settings.
+
+    Args:
+        res_x: Resolution width in pixels.
+        res_y: Resolution height in pixels.
+        fps_val: Frames per second.
+    """
+    bpy.context.scene.render.resolution_x = res_x
+    bpy.context.scene.render.resolution_y = res_y
+    bpy.context.scene.render.fps = fps_val
+
+
+def add_thumbnail(thumbnail_path):
+    """Add thumbnail as first frame.
+
+    Args:
+        thumbnail_path: Path to thumbnail image.
+
+    Returns:
+        Frame number to start video clips from.
+    """
+    if not thumbnail_path or not Path(thumbnail_path).exists():
+        return 1
+
+    seq_editor = bpy.context.scene.sequence_editor
+    seq_editor.strips.new_image(
+        name="thumbnail",
+        filepath=str(thumbnail_path),
+        channel=1,
+        frame_start=1,
+    )
+    strip = seq_editor.strips["thumbnail"]
+    strip.frame_final_duration = 1
+    return 2
+
+
+def add_video_clips(video_files, start_frame):
+    """Add video clips to the timeline.
+
+    Args:
+        video_files: List of video file paths.
+        start_frame: Frame number to start adding clips.
+
+    Returns:
+        Last frame number after all clips.
+    """
+    current_frame = start_frame
+    track_video = 1
+    seq_editor = bpy.context.scene.sequence_editor
+
+    for i, filepath in enumerate(video_files):
+        full_path = str(filepath)
+        strip_name = f"video_{i}"
+
+        seq_editor.strips.new_movie(
+            name=strip_name,
+            filepath=full_path,
+            channel=track_video,
+            frame_start=current_frame,
+        )
+
+        strip = seq_editor.strips[strip_name]
+        current_frame += strip.frame_final_duration
+
+    return current_frame - 1
+
+
+def add_text_overlays(sections, start_frame, duration=180):
+    """Add text strips from changelog sections.
+
+    Args:
+        sections: List of (version, content) tuples.
+        start_frame: Frame number to start adding text overlays.
+        duration: Duration of each text overlay in frames.
+    """
+    if not sections:
+        return
+
+    track_text = 3
+    current_frame = start_frame
+    seq_editor = bpy.context.scene.sequence_editor
+
+    for i, (version, _) in enumerate(sections):
+        title_text = f"Release {version}"
+        strip_name = f"text_{version}"
+
+        seq_editor.strips.new_effect(
+            name=strip_name,
+            type="TEXT",
+            channel=track_text,
+            frame_start=current_frame,
+            length=duration,
+        )
+
+        strip = seq_editor.strips[strip_name]
+        strip.text = title_text
+        strip.location = (0.5, 0.7)
+        strip.font_size = 150
+        strip.color = (1.0, 1.0, 1.0, 1.0)
+
+        current_frame += duration
+
+
+def generate_blender_file(
     media_dir,
     output_blend,
     changelog_path=None,
@@ -128,7 +260,7 @@ def generate_blender_script(
     template_path=None,
     thumbnail_path=None,
 ):
-    """Generate Blender Python script content.
+    """Generate Blender .blend file directly.
 
     Args:
         media_dir: Path to media directory containing video files.
@@ -139,9 +271,6 @@ def generate_blender_script(
         fps: Frames per second.
         template_path: Path to template .blend file.
         thumbnail_path: Path to thumbnail image.
-
-    Returns:
-        String containing the Blender Python script.
     """
     media_dir = Path(media_dir).resolve()
     output_blend = Path(output_blend).resolve()
@@ -155,170 +284,51 @@ def generate_blender_script(
     if changelog_path:
         changelog_sections = parse_changelog(changelog_path)
 
-    script_lines = [
-        '"""Blender setup script generated by generate_blender_setup.py."""',
-        "",
-        "import bpy",
-        "import os",
-        "",
-        "",
-        "def load_template(template_path):",
-        '    """Load template blend file."""',
-        "    if template_path and os.path.exists(template_path):",
-        "        bpy.ops.wm.open_mainfile(filepath=template_path)",
-        "        return True",
-        "    return False",
-        "",
-        "",
-        "def clear_sequencer():",
-        '    """Clear all strips from the video sequencer."""',
-        "    if bpy.context.scene.sequence_editor is None:",
-        "        bpy.context.scene.sequence_editor_create()",
-        "    ",
-        "    bpy.ops.sequencer.select_all(action='SELECT')",
-        "    bpy.ops.sequencer.delete()",
-        "",
-        "",
-        "def setup_scene_settings(res_x, res_y, fps_val):",
-        '    """Configure render settings."""',
-        "    bpy.context.scene.render.resolution_x = res_x",
-        "    bpy.context.scene.render.resolution_y = res_y",
-        "    bpy.context.scene.render.fps = fps_val",
-        "    bpy.context.scene.render.image_settings.file_format = 'FFMPEG'",
-        "    bpy.context.scene.render.ffmpeg.format = 'MPEG4'",
-        "    bpy.context.scene.render.ffmpeg.codec = 'H264'",
-        "",
-        "",
-        "def add_thumbnail(thumbnail_path):",
-        '    """Add thumbnail as first frame."""',
-        "    if not thumbnail_path or not os.path.exists(thumbnail_path):",
-        "        return 1",
-        "    ",
-        "    bpy.ops.sequencer.image_strip_add(",
-        "        filepath=thumbnail_path,",
-        "        frame_start=1,",
-        "        channel=1,",
-        "        frame_end=1,",
-        "    )",
-        "    return 2",
-        "",
-        "",
-        "def add_video_clips(media_dir, video_files, start_frame):",
-        '    """Add video clips to the timeline."""',
-        "    current_frame = start_frame",
-        "    track_video = 1",
-        "    track_audio = 2",
-        "    ",
-        "    for filepath in video_files:",
-        "        filename = os.path.basename(filepath)",
-        "        full_path = os.path.join(media_dir, filename)",
-        "        ",
-        "        # Add movie strip (video + audio)",
-        "        bpy.ops.sequencer.movie_strip_add(",
-        "            filepath=full_path,",
-        "            frame_start=current_frame,",
-        "            channel=track_video,",
-        "            sound=True,",
-        "        )",
-        "        ",
-        "        # Move audio to separate track",
-        "        strip = bpy.context.scene.sequence_editor.active_strip",
-        "        if strip.sound:",
-        "            audio_strip = strip.sound",
-        "            audio_strip.channel = track_audio",
-        "        ",
-        "        # Update current frame for next clip",
-        "        current_frame += strip.frame_final_duration",
-        "    ",
-        "    return current_frame - 1",
-        "",
-        "",
-        "def add_text_overlays(sections, start_frame, duration=180):",
-        '    """Add text strips from changelog sections."""',
-        "    if not sections:",
-        "        return",
-        "    ",
-        "    track_text = 3",
-        "    current_frame = start_frame",
-        "    ",
-        "    for version, content in sections:",
-        "        # Create title text",
-        '        title_text = f"Release {version}"',
-        "        ",
-        "        bpy.ops.sequencer.text_strip_add(",
-        "            frame_start=current_frame,",
-        "            channel=track_text,",
-        "        )",
-        "        ",
-        "        strip = bpy.context.scene.sequence_editor.active_strip",
-        "        strip.text = title_text",
-        "        strip.location = (0.5, 0.7)",
-        "        strip.align_y = 'TOP'",
-        "        strip.align_x = 'CENTER'",
-        "        strip.font_size = 150",
-        "        strip.color = (1.0, 1.0, 1.0)",
-        "        strip.frame_final_duration = duration",
-        "        ",
-        "        current_frame += duration",
-        "",
-        "",
-        "def main():",
-        f'    media_dir = r"{media_dir}"',
-        f'    output_path = r"{output_blend}"',
-    ]
-
-    if template_path:
-        script_lines.append(f'    template_path = r"{template_path}"')
+    loaded = load_template(template_path)
+    if not loaded:
+        clear_sequencer()
     else:
-        script_lines.append("    template_path = None")
+        if bpy.context.scene.sequence_editor is None:
+            bpy.context.scene.sequence_editor_create()
 
-    if thumbnail_path:
-        script_lines.append(f'    thumbnail_path = r"{thumbnail_path}"')
-    else:
-        script_lines.append("    thumbnail_path = None")
+    setup_scene_settings(resolution_x, resolution_y, fps)
 
-    script_lines.extend([
-        f"    changelog_sections = {repr(changelog_sections)}",
-        "",
-        "    loaded = load_template(template_path)",
-        "    if not loaded:",
-        "        clear_sequencer()",
-        f"    setup_scene_settings({resolution_x}, {resolution_y}, {fps})",
-        "",
-        "    start_frame = add_thumbnail(thumbnail_path)",
-        "",
-        "    video_files = [",
-    ])
+    start_frame = add_thumbnail(thumbnail_path)
 
-    for video in video_files:
-        script_lines.append(f'        r"{video}",')
+    end_frame = add_video_clips(video_files, start_frame)
 
-    script_lines.extend(
-        [
-            "    ]",
-            "",
-            "    end_frame = add_video_clips(media_dir, video_files, "
-            "start_frame)",
-            "    ",
-            "    if changelog_sections:",
-            "        add_text_overlays(changelog_sections, end_frame + 30)",
-            "    ",
-            "    bpy.ops.wm.save_as_mainfile(filepath=output_path)",
-            '    print(f"Blender project saved to: {output_path}")',
-            "",
-            "",
-            "if __name__ == '__main__':",
-            "    main()",
-        ]
-    )
+    if changelog_sections:
+        add_text_overlays(changelog_sections, end_frame + 30)
 
-    return "\n".join(script_lines)
+    bpy.ops.wm.save_as_mainfile(filepath=str(output_blend))
+    print(f"Blender project saved to: {output_blend}")
 
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Generate Blender setup script for video project."
+        description="Generate Blender .blend file for video project."
     )
+
+    # Filter out Blender's arguments from sys.argv
+    # When run with Blender, sys.argv contains Blender's arguments first
+    # We need to find where our script's arguments start
+    argv = sys.argv
+    if "--" in argv:
+        # Arguments after -- are for our script
+        argv = argv[argv.index("--") + 1 :]
+    elif len(argv) > 1 and argv[0].endswith("generate_blender_setup.py"):
+        # Script is first argument, rest are our arguments
+        argv = argv[1:]
+    else:
+        # Try to find our script in the path
+        for i, arg in enumerate(argv):
+            if "generate_blender_setup.py" in arg:
+                argv = argv[i + 1 :]
+                break
+
+    # Get the script's directory to resolve relative paths
+    script_dir = Path(__file__).parent.resolve()
+    project_dir = script_dir.parent.parent
     parser.add_argument(
         "media_dir",
         help="Directory containing video files",
@@ -349,12 +359,6 @@ def main():
         default=30,
     )
     parser.add_argument(
-        "-s",
-        "--script-output",
-        help="Output path for generated Blender Python script",
-        default="setup_project.py",
-    )
-    parser.add_argument(
         "-t",
         "--template",
         help="Path to template .blend file",
@@ -371,12 +375,13 @@ def main():
         help="Automatically find template and thumbnail from media dir",
     )
 
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
 
     resolution_parts = args.resolution.lower().split("x")
     if len(resolution_parts) != 2:
         print(
-            "Error: Resolution must be in WIDTHxHEIGHT format", file=sys.stderr
+            "Error: Resolution must be in WIDTHxHEIGHT format",
+            file=sys.stderr,
         )
         sys.exit(1)
 
@@ -387,9 +392,24 @@ def main():
         print("Error: Resolution values must be integers", file=sys.stderr)
         sys.exit(1)
 
+    # Resolve paths relative to project directory
+    media_dir = Path(args.media_dir)
+    if not media_dir.is_absolute():
+        media_dir = project_dir / media_dir
+
+    output_blend = Path(args.output)
+    if not output_blend.is_absolute():
+        output_blend = project_dir / output_blend
+
     changelog_path = args.changelog
-    if changelog_path is None:
-        changelog_path = Path("CHANGELOG.md")
+    if changelog_path is not None:
+        changelog_path = Path(changelog_path)
+        if not changelog_path.is_absolute():
+            changelog_path = project_dir / changelog_path
+        if not changelog_path.exists():
+            changelog_path = None
+    else:
+        changelog_path = project_dir / "CHANGELOG.md"
         if not changelog_path.exists():
             changelog_path = None
 
@@ -397,19 +417,18 @@ def main():
     thumbnail_path = args.thumbnail
 
     if args.auto_find:
-        media_dir_path = Path(args.media_dir)
         if not template_path:
-            template_path = find_previous_blend_file(media_dir_path)
+            template_path = find_previous_blend_file(media_dir)
             if template_path:
                 print(f"Found template: {template_path}")
         if not thumbnail_path:
-            thumbnail_path = find_thumbnail(media_dir_path)
+            thumbnail_path = find_thumbnail(media_dir)
             if thumbnail_path:
                 print(f"Found thumbnail: {thumbnail_path}")
 
-    script_content = generate_blender_script(
-        media_dir=args.media_dir,
-        output_blend=args.output,
+    generate_blender_file(
+        media_dir=media_dir,
+        output_blend=output_blend,
         changelog_path=changelog_path,
         resolution_x=res_x,
         resolution_y=res_y,
@@ -417,12 +436,6 @@ def main():
         template_path=template_path,
         thumbnail_path=thumbnail_path,
     )
-
-    script_path = Path(args.script_output)
-    script_path.write_text(script_content, encoding="utf-8")
-
-    print(f"Generated Blender setup script: {script_path}")
-    print(f"Run with: blender --background --python {script_path}")
 
 
 if __name__ == "__main__":
