@@ -62,7 +62,7 @@ class MachineManager:
         A single, sequenced task that rebuilds a machine's driver and then
         connects if auto_connect is on.
         """
-        await machine._rebuild_driver_instance()
+        await machine.controller._rebuild_driver_instance()
         if machine.auto_connect:
             await self._safe_connect(machine)
 

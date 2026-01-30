@@ -1688,7 +1688,7 @@ class TestMachine:
         add_coroutine_spy = mocker.spy(task_mgr, "add_coroutine")
 
         # Simulate driver connection status change to CONNECTED
-        machine._on_driver_connection_status_changed(
+        machine.controller._on_driver_connection_status_changed(
             machine.driver, TransportStatus.CONNECTED
         )
 
@@ -1716,7 +1716,7 @@ class TestMachine:
         add_coroutine_spy = mocker.spy(task_mgr, "add_coroutine")
 
         # Simulate driver connection status change to CONNECTED
-        machine._on_driver_connection_status_changed(
+        machine.controller._on_driver_connection_status_changed(
             machine.driver, TransportStatus.CONNECTED
         )
 
@@ -1744,7 +1744,7 @@ class TestMachine:
         add_coroutine_spy = mocker.spy(task_mgr, "add_coroutine")
 
         # Simulate driver connection status change to DISCONNECTED
-        machine._on_driver_connection_status_changed(
+        machine.controller._on_driver_connection_status_changed(
             machine.driver, TransportStatus.DISCONNECTED
         )
 
@@ -1752,7 +1752,7 @@ class TestMachine:
         add_coroutine_spy.assert_not_called()
 
         # Simulate driver connection status change to CONNECTING
-        machine._on_driver_connection_status_changed(
+        machine.controller._on_driver_connection_status_changed(
             machine.driver, TransportStatus.CONNECTING
         )
 

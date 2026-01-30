@@ -1748,6 +1748,9 @@ class MainWindow(Adw.ApplicationWindow):
         # Update the status monitor to observe the new machine
         self.status_monitor.set_machine(config.machine)
 
+        # Update the control panel to use the new machine
+        self.control_panel.set_machine(config.machine, self.machine_cmd)
+
         # Update the main WorkSurface AND the SketchStudio to use the new size
         self.surface.set_machine(config.machine)
         self.sketch_studio.set_world_size(width_mm, height_mm)

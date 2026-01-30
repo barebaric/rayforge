@@ -156,7 +156,9 @@ class JogWidget(Adw.PreferencesGroup):
         # Set initial sensitivity
         self._update_button_sensitivity()
 
-    def set_machine(self, machine: Machine, machine_cmd: MachineCmd):
+    def set_machine(
+        self, machine: Optional[Machine], machine_cmd: Optional[MachineCmd]
+    ):
         """Set the machine this widget controls."""
         # Disconnect from previous machine if any
         if self.machine:
