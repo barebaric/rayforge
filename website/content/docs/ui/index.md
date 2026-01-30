@@ -1,6 +1,7 @@
 # User Interface
 
-Rayforge features a modern, intuitive interface built with GTK4 and Libadwaita. This section covers all the UI elements and how to use them effectively.
+Rayforge features a modern, intuitive interface built with GTK4 and Libadwaita.
+This section covers all the UI elements and how to use them effectively.
 
 ## Interface Overview
 
@@ -12,14 +13,14 @@ The Rayforge interface consists of several key areas:
 2. **Canvas**: The main work area where you arrange and edit designs
 3. **Layers Panel**: Manage operations and layer assignments
 4. **Properties Panel**: Configure operation settings
-5. **Status Bar**: Monitor job progress and machine status
+5. **Control Panel**: Manual machine control, status, and log view
 
 ## Sections
 
 - **[Main Window](main-window.md)**: Overview of the main interface elements
 - **[Canvas Tools](canvas-tools.md)**: Tools for manipulating designs on the canvas
 - **[3D Preview](3d-preview.md)**: Visualize G-code toolpaths in 3D
-- **[Jog Dialog](jog-dialog.md)**: Manual machine control and positioning
+- **[Control Panel](control-panel.md)**: Manual machine control, status, and logs
 - **[Work Coordinate Systems (WCS)](work-coordinate-systems.md)**: Managing WCS
 - **[Settings & Preferences](settings.md)**: Customize Rayforge to your workflow
 

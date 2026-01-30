@@ -11,13 +11,16 @@ Complete reference of keyboard shortcuts in Rayforge.
 
 ## File Operations
 
-| Shortcut | Action      | Description             |
-| -------- | ----------- | ----------------------- |
-| `Ctrl+N` | New Sketch  | Create new sketch       |
-| `Ctrl+I` | Import      | Open file import dialog |
-| `Ctrl+E` | Export      | Export G-code           |
-| `Ctrl+Q` | Quit        | Exit Rayforge           |
-| `Ctrl+,` | Preferences | Open preferences dialog |
+| Shortcut       | Action      | Description              |
+| -------------- | ----------- | ------------------------ |
+| `Ctrl+N`       | New Sketch  | Create new sketch        |
+| `Ctrl+O`       | Open        | Open existing project    |
+| `Ctrl+S`       | Save        | Save current project     |
+| `Ctrl+Shift+S` | Save As     | Save project as new file |
+| `Ctrl+I`       | Import      | Open file import dialog  |
+| `Ctrl+E`       | Export      | Export G-code            |
+| `Ctrl+Q`       | Quit        | Exit Rayforge            |
+| `Ctrl+,`       | Preferences | Open preferences dialog  |
 
 ---
 
@@ -46,7 +49,7 @@ Complete reference of keyboard shortcuts in Rayforge.
 | `T`            | Toggle Tabs       | Show/hide holding tabs         |
 | `Alt+C`        | Toggle Camera     | Show/hide camera overlay       |
 | `F12`          | 3D View           | Toggle 3D preview window       |
-| `Ctrl+Shift+S` | Simulation Mode   | Toggle simulation mode         |
+| `Ctrl+Shift+R` | Simulation Mode   | Toggle simulation mode         |
 
 ### 3D View Controls
 
@@ -119,11 +122,11 @@ Complete reference of keyboard shortcuts in Rayforge.
 
 ## Machine Control
 
-| Shortcut | Action           | Description                    |
-| -------- | ---------------- | ------------------------------ |
-| `Ctrl+J` | Jog Dialog       | Open manual jog control dialog |
-| `Ctrl+<` | Machine Settings | Open machine settings dialog   |
-| `F1`     | About            | Show about dialog              |
+| Shortcut | Action           | Description                     |
+| -------- | ---------------- | ------------------------------- |
+| `Ctrl+L` | Control Panel    | Toggle control panel visibility |
+| `Ctrl+<` | Machine Settings | Open machine settings dialog    |
+| `F1`     | About            | Show about dialog               |
 
 !!! note "Machine Operations"
     Machine control operations (Home, Frame, Send, etc.) currently don't have default shortcuts but can be accessed via toolbar buttons or menus.
@@ -178,8 +181,8 @@ When editing G-code or text fields:
 4. `Delete` - Remove
 5. `Ctrl+A` - Select All
 6. `Ctrl+N` - New Sketch
-7. `Ctrl+I` - Import
-8. `Ctrl+E` - Export
+7. `Ctrl+O` - Open
+8. `Ctrl+S` - Save
 9. `H` - Toggle Workpieces
 10. `F12` - 3D View
 
@@ -189,7 +192,7 @@ When editing G-code or text fields:
 - `T` - Hide/show tabs
 - `Alt+C` - Toggle camera
 - `F12` - 3D view
-- `Ctrl+Shift+S` - Simulation mode
+- `F11` - Simulation mode
 - `1`, `2`, `7` - 3D view presets
 - `P` - Perspective toggle
 
@@ -241,12 +244,12 @@ When editing G-code or text fields:
 **Quick edit cycle:**
 
 ```
-1. New Sketch (Ctrl+N) or Import (Ctrl+I)
+1. New Sketch (Ctrl+N) or Open (Ctrl+O)
 2. Arrange items (arrow keys, Shift+Arrow for alignment)
 3. Duplicate parts (Ctrl+D)
 4. Check in 3D (F12)
-5. Simulate (Ctrl+Shift+S)
-6. Export (Ctrl+E)
+5. Simulate (F11)
+6. Save (Ctrl+S) or Export (Ctrl+E)
 ```
 
 **Precision positioning:**
@@ -332,6 +335,9 @@ Some lesser-known shortcuts:
 | Category      | Shortcut     | Action           |
 | ------------- | ------------ | ---------------- |
 | **File**      | Ctrl+N       | New Sketch       |
+|               | Ctrl+O       | Open             |
+|               | Ctrl+S       | Save             |
+|               | Ctrl+Shift+S | Save As          |
 |               | Ctrl+I       | Import           |
 |               | Ctrl+E       | Export           |
 |               | Ctrl+Q       | Quit             |
@@ -354,12 +360,12 @@ Some lesser-known shortcuts:
 |               | Shift+Down   | Align Bottom     |
 |               | Shift+Home   | H-Center         |
 |               | Shift+End    | V-Center         |
-| **Simulate**  | Ctrl+Shift+S | Mode             |
+| **Simulate**  | F11          | Mode             |
 | **Transform** | Shift+H      | Flip H           |
 |               | Shift+V      | Flip V           |
 |               | Ctrl+G       | Group            |
 |               | Ctrl+U       | Ungroup          |
-| **Machine**   | Ctrl+J       | Jog Dialog       |
+| **Machine**   | Ctrl+L       | Control Panel    |
 |               | Ctrl+<       | Machine Settings |
 |               | F1           | About            |
 
