@@ -167,7 +167,13 @@ class WorkPiecePipelineStage(PipelineStage):
         """
         logger.debug(f"WorkPiecePipelineStage: Cleaning up entry {key}.")
         s_uid, w_uid = key
-        self._generation_id_map.pop(key, None)
+
+        # NOTE: We do NOT pop the generation ID here. If we remove it, the next
+        # task starts at 1. If an event from the old task (ID 1) arrives late,
+        # it matches the new ID (1) and corrupts the state. By keeping the
+        # ID in the map, the next task becomes 2, correctly invalidating 1.
+        # self._generation_id_map.pop(key, None)
+
         self._cleanup_task(key)
         self._artifact_cache.invalidate_for_workpiece(s_uid, w_uid)
 
@@ -259,13 +265,12 @@ class WorkPiecePipelineStage(PipelineStage):
 
         try:
             handle = create_handle_from_dict(handle_dict)
-            if not isinstance(handle, WorkPieceArtifactHandle):
-                raise TypeError("Expected a WorkPieceArtifactHandle")
-
             # Adopt the memory block as soon as we know about it.
             get_context().artifact_store.adopt(handle)
 
             if event_name == "artifact_created":
+                if not isinstance(handle, WorkPieceArtifactHandle):
+                    raise TypeError("Expected a WorkPieceArtifactHandle")
                 self._artifact_cache.put_workpiece_handle(s_uid, w_uid, handle)
                 return
 
