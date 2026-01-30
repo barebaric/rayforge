@@ -204,9 +204,7 @@ def main():
 
             if project_path and project_path.exists():
                 if project_path.suffix.lower() == ".ryp":
-                    logger.info(
-                        f"Loading startup project from {project_path}"
-                    )
+                    logger.info(f"Loading startup project from {project_path}")
                     self.win.load_project(project_path)
                 else:
                     logger.warning(

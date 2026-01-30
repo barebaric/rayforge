@@ -1,6 +1,7 @@
 # Main Window
 
-The Rayforge main window is your primary workspace for creating and managing laser jobs.
+The Rayforge main window is your primary workspace for creating and managing
+laser jobs.
 
 ## Window Layout
 
@@ -28,9 +29,9 @@ Quick access to frequently used tools:
 - **Alignment tools**: Align and distribute objects
 - **WCS dropdown**: Select the active Work Coordinate System (G53-G59)
 
-The WCS dropdown allows you to quickly switch between coordinate systems
-without opening the Jog Dialog. See [Work Coordinate Systems (WCS)]
-(work-coordinate-systems.md) for more information.
+The WCS dropdown allows you to quickly switch between coordinate systems.
+See [Work Coordinate Systems (WCS)](work-coordinate-systems.md) for more
+information.
 
 ### 3. Canvas
 
@@ -66,14 +67,16 @@ Configure settings for selected objects or operations:
 - Number of passes
 - Advanced options (overscan, kerf, tabs)
 
-### 6. Status Bar
+### 6. Control Panel
 
-Monitor real-time information organized in three sections:
+The Control Panel at the bottom of the window provides:
 
-- **Left Section**: Connection status and machine status
-- **Middle Section**: Status messages for ongoing tasks
-- **Right Section**: Progress of current job execution and total execution
-  time estimate for current document
+- **Jog Controls**: Manual machine movement and positioning
+- **Machine Status**: Real-time position and connection state
+- **Log View**: G-code communication and operation history
+- **WCS Management**: Work coordinate system selection and zeroing
+
+See [Control Panel](control-panel.md) for detailed information.
 
 ## Window Management
 
@@ -107,5 +110,5 @@ Customize the interface in **Edit → Preferences**:
 
 - [Work Coordinate Systems (WCS)](work-coordinate-systems.md) - Managing WCS
 - [Canvas Tools](canvas-tools.md) - Tools for manipulating designs
-- [Jog Dialog](jog-dialog.md) - Manual machine control
+- [Control Panel](control-panel.md) - Manual machine control, status, and logs
 - [3D Preview](3d-preview.md) - Visualize toolpaths in 3D

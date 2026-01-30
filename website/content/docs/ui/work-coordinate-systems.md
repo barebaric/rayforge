@@ -90,10 +90,10 @@ selected work coordinate system.
 2. Click to see the available coordinate systems
 3. Select the WCS you want to use
 
-### Via the Jog Dialog
+### Via the Control Panel
 
-1. Open the Jog Dialog (Machine → Jog Controls or Ctrl+J)
-2. Find the "Active System" row in the Work Coordinates section
+1. Open the Control Panel (View → Control Panel or Ctrl+L)
+2. Find the WCS dropdown in the machine status section
 3. Select the desired WCS from the dropdown
 
 ## Setting WCS Offsets
@@ -105,7 +105,7 @@ You can define where each WCS origin is located on your machine.
 1. Connect to your machine
 2. Select the WCS you want to configure (e.g., G54)
 3. Jog the laser head to the position you want to be (0, 0)
-4. In the Jog Dialog, click the zero buttons:
+4. In the Control Panel, click the zero buttons:
    - **Zero X**: Sets current X position as 0 for the active WCS
    - **Zero Y**: Sets current Y position as 0 for the active WCS
    - **Zero Z**: Sets current Z position as 0 for the active WCS
@@ -115,7 +115,7 @@ sessions.
 
 ### Viewing Current Offsets
 
-The Jog Dialog shows the current offsets for the active WCS:
+The Control Panel shows the current offsets for the active WCS:
 
 - **Current Offsets**: Displays the (X, Y, Z) offset from machine origin
 - **Current Position**: Shows the laser head's position in the active WCS
@@ -192,6 +192,6 @@ Not all machines support all WCS features:
 
 - [Coordinate Systems and Origins](../concepts/coordinates-and-origin.md) -
   Understanding coordinate systems
-- [Jog Dialog](jog-dialog.md) - Manual control and WCS management
+- [Control Panel](control-panel.md) - Manual control and WCS management
 - [Machine Setup](../machine/index.md) - Configure your machine
 - [3D Preview](3d-preview.md) - Visualizing your jobs

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Script to start Rayforge and take a screenshot of the main window.
-The screenshot is saved to docs/ss-main.png.
+Script to start Rayforge and take screenshots.
+Supports capturing the main window and machine dialog pages.
 """
 
 import logging
@@ -9,9 +9,12 @@ import sys
 import time
 import threading
 from pathlib import Path
+from typing import Optional
 
 # Add the project root to the Python path
-project_root = Path(__file__).parent.parent
+# __file__ is scripts/media/take_screenshot.py, so we need to go up two levels
+# to get to the project root (rayforge directory)
+project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root))
 
 # Set up logging
@@ -21,9 +24,12 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-def take_screenshot() -> bool:
+def take_screenshot(output_name: str = "ss-main.png") -> bool:
     """
-    Take a screenshot of the main window using gnome-screenshot or import.
+    Take a screenshot using gnome-screenshot or import.
+
+    Args:
+        output_name: Name of the output file.
 
     Returns:
         bool: True if screenshot was taken successfully, False otherwise.
@@ -31,7 +37,8 @@ def take_screenshot() -> bool:
     import subprocess
 
     try:
-        output_path = project_root / "docs" / "ss-main.png"
+        output_dir = project_root / "website" / "content" / "docs" / "images"
+        output_path = output_dir / output_name
         output_path.parent.mkdir(parents=True, exist_ok=True)
 
         # Wait for the window to fully render
@@ -233,17 +240,25 @@ def activate_simulation_mode(window) -> bool:
     return False
 
 
-def setup_application():
-    """Set up the application with necessary imports and configurations."""
+def setup_application(include_test_file: bool = True):
+    """
+    Set up the application with necessary imports and configurations.
+
+    Args:
+        include_test_file: Whether to include the test file in sys.argv.
+    """
     import gi
 
     gi.require_version("Gtk", "4.0")
     gi.require_version("Gdk", "4.0")
     gi.require_version("Adw", "1")
 
-    # Override sys.argv to pass the file path
-    test_file = str(project_root / "tests/image/png/color.png")
-    sys.argv = ["rayforge", test_file]
+    # Override sys.argv to pass the file path (only for main screenshots)
+    if include_test_file:
+        test_file = str(project_root / "tests/image/png/color.png")
+        sys.argv = ["rayforge", test_file]
+    else:
+        sys.argv = ["rayforge"]
 
     # Set environment variables for Linux
     import os
@@ -256,16 +271,22 @@ def setup_application():
     return rayforge.app
 
 
-def create_patched_app_class():
+def create_patched_app_class(
+    screenshot_type: str = "main", machine_page: Optional[str] = None
+):
     """
     Create a patched App class that activates simulation mode and takes a
     screenshot.
 
+    Args:
+        screenshot_type: Type of screenshot to take ("main" or "machine").
+        machine_page: Machine dialog page to capture (for "machine" type).
+
     Returns:
         The patched App class.
     """
-    from gi.repository import GLib, Adw
-    from rayforge.mainwindow import MainWindow
+    from gi.repository import Adw
+    from rayforge.ui_gtk.mainwindow import MainWindow
 
     class PatchedApp(Adw.Application):
         def __init__(self, args):
@@ -273,36 +294,8 @@ def create_patched_app_class():
             self.set_accels_for_action("win.quit", ["<Ctrl>Q"])
             self.args = args
             self._screenshot_taken = False
-
-        def do_activate(self):
-            """Activate the application and set up the window."""
-            from rayforge.core.vectorization_config import TraceConfig
-            import mimetypes
-            from rayforge.context import get_context
-
-            # Initialize the full context before creating the window
-            get_context().initialize_full_context()
-
-            win = MainWindow(application=self)
-            win.set_default_size(1600, 1100)
-            logger.info("Window size set to 1600x1100")
-
-            # Load the test file
-            if self.args.filenames:
-                for filename in self.args.filenames:
-                    mime_type, _ = mimetypes.guess_type(filename)
-                    vector_config = (
-                        None if self.args.direct_vector else TraceConfig()
-                    )
-                    win.doc_editor.file.load_file_from_path(
-                        filename=Path(filename),
-                        mime_type=mime_type,
-                        vector_config=vector_config,
-                    )
-            win.present()
-
-            # Schedule the screenshot and simulation activation
-            self._schedule_delayed_actions(win)
+            self._screenshot_type = screenshot_type
+            self._machine_page = machine_page
 
         def _schedule_delayed_actions(self, win):
             """Schedule delayed actions for simulation activation and
@@ -337,9 +330,104 @@ def create_patched_app_class():
             thread = threading.Thread(target=delayed_actions, daemon=True)
             thread.start()
 
+        def _schedule_machine_dialog_screenshot(self, win):
+            """Schedule delayed actions for machine dialog screenshot."""
+            from gi.repository import GLib
+
+            def open_dialog():
+                """Open the machine settings dialog."""
+                if not self._open_machine_dialog(win):
+                    logger.error("Failed to open machine dialog")
+                    self._quit_application()
+                    return False
+                return False
+
+            def take_screenshot_and_quit():
+                """Take the screenshot and quit."""
+                if not self._screenshot_taken:
+                    output_name = f"machine-{self._machine_page}.png"
+                    take_screenshot(output_name)
+                    self._screenshot_taken = True
+                self._quit_application()
+                return False
+
+            # Schedule actions with delays
+            GLib.timeout_add_seconds(3, open_dialog)
+            GLib.timeout_add_seconds(5, take_screenshot_and_quit)
+
+        def do_activate(self):
+            """Activate the application and set up the window."""
+            from rayforge.core.vectorization_spec import TraceSpec
+            import mimetypes
+            from rayforge.context import get_context
+
+            # Initialize the full context before creating the window
+            get_context().initialize_full_context()
+
+            win = MainWindow(application=self)
+            win.set_default_size(1600, 1100)
+            logger.info("Window size set to 1600x1100")
+
+            # For machine screenshots, don't load a file
+            if (
+                self._screenshot_type != "machine"
+                and self.args.filenames
+                and self.args.filenames[0]
+                not in ("--screenshot-type", "--machine-page")
+            ):
+                for filename in self.args.filenames:
+                    if filename.startswith("--"):
+                        continue
+                    mime_type, _ = mimetypes.guess_type(filename)
+                    vector_spec = (
+                        None if self.args.direct_vector else TraceSpec()
+                    )
+                    win.doc_editor.file.load_file_from_path(
+                        filename=Path(filename),
+                        mime_type=mime_type,
+                        vectorization_spec=vector_spec,
+                    )
+            win.present()
+
+            # Schedule the screenshot and simulation activation
+            if self._screenshot_type == "machine":
+                self._schedule_machine_dialog_screenshot(win)
+            else:
+                self._schedule_delayed_actions(win)
+
+        def _open_machine_dialog(self, win) -> bool:
+            """Open the machine settings dialog on the specified page."""
+            from rayforge.context import get_context
+
+            try:
+                config = get_context().config
+                machine = config.machine
+                if not machine:
+                    logger.error("No default machine found")
+                    return False
+
+                from rayforge.ui_gtk.machine.settings_dialog import (
+                    MachineSettingsDialog,
+                )
+
+                dialog = MachineSettingsDialog(
+                    machine=machine,
+                    transient_for=win,
+                    initial_page=self._machine_page,
+                )
+                dialog.present()
+                msg = f"Opened machine dialog on page: {self._machine_page}"
+                logger.info(msg)
+                return True
+
+            except Exception as e:
+                logger.error(f"Failed to open machine dialog: {e}")
+                return False
+
         def _quit_application(self):
             """Quit the application."""
-            GLib.idle_add(lambda: sys.exit(0))
+            logger.info("Quitting application...")
+            self.quit()
 
     return PatchedApp
 
@@ -365,7 +453,7 @@ def initialize_logging_and_imports():
     gi.require_version("GdkPixbuf", "2.0")
 
     # Initialize the 3D canvas module
-    from rayforge.workbench import canvas3d
+    from rayforge.ui_gtk import canvas3d
 
     canvas3d.initialize()
 
@@ -385,7 +473,7 @@ def shutdown_application():
         await context.shutdown()
         logger.info("Async shutdown complete.")
 
-    loop = rayforge.shared.tasker.task_mgr._loop
+    loop = rayforge.shared.tasker.task_mgr.loop
     if loop.is_running():
         future = asyncio.run_coroutine_threadsafe(shutdown_async(), loop)
         try:
@@ -408,70 +496,82 @@ def shutdown_application():
 
 def main():
     """Main function to start the app and take a screenshot."""
-    # Store the original main function
-    rayforge_app = setup_application()
+    import argparse
+    from rayforge import __version__
 
-    # Create a new main function that patches the App class
-    def patched_main():
-        """Patched main function that activates simulation mode."""
-        import argparse
-        from rayforge import __version__
+    parser = argparse.ArgumentParser(
+        description="A GCode generator for laser cutters."
+    )
+    parser.add_argument(
+        "--version", action="version", version=f"%(prog)s {__version__}"
+    )
+    parser.add_argument(
+        "filenames",
+        help="Paths to one or more input SVG or image files.",
+        nargs="*",
+    )
+    parser.add_argument(
+        "--direct-vector",
+        action="store_true",
+        help="Import SVG files as direct vectors instead of tracing them.",
+    )
+    parser.add_argument(
+        "--loglevel",
+        default="INFO",
+        choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
+        help="Set the logging level (default: INFO)",
+    )
+    parser.add_argument(
+        "--screenshot-type",
+        default="main",
+        choices=["main", "machine"],
+        help="Type of screenshot to take (default: main)",
+    )
+    parser.add_argument(
+        "--machine-page",
+        default="settings",
+        choices=[
+            "settings",
+            "advanced",
+            "device",
+            "laser",
+            "camera",
+            "hours",
+        ],
+        help="Machine dialog page to capture (default: settings)",
+    )
 
-        parser = argparse.ArgumentParser(
-            description="A GCode generator for laser cutters."
-        )
-        parser.add_argument(
-            "--version", action="version", version=f"%(prog)s {__version__}"
-        )
-        parser.add_argument(
-            "filenames",
-            help="Paths to one or more input SVG or image files.",
-            nargs="*",
-        )
-        parser.add_argument(
-            "--direct-vector",
-            action="store_true",
-            help="Import SVG files as direct vectors instead of tracing them.",
-        )
-        parser.add_argument(
-            "--loglevel",
-            default="INFO",
-            choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
-            help="Set the logging level (default: INFO)",
-        )
+    args = parser.parse_args()
 
-        args = parser.parse_args()
+    # Set logging level based on the command-line argument
+    log_level = getattr(logging, args.loglevel.upper(), logging.INFO)
+    logging.getLogger().setLevel(log_level)
+    logger.info(f"Application starting with log level {args.loglevel.upper()}")
 
-        # Set logging level based on the command-line argument
-        log_level = getattr(logging, args.loglevel.upper(), logging.INFO)
-        logging.getLogger().setLevel(log_level)
-        logger.info(
-            f"Application starting with log level {args.loglevel.upper()}"
-        )
+    # Set up application with or without test file based on screenshot type
+    include_test_file = args.screenshot_type != "machine"
+    setup_application(include_test_file)
 
-        # Initialize logging and imports
-        initialize_logging_and_imports()
+    # Initialize logging and imports
+    initialize_logging_and_imports()
 
-        # Create and run the patched application
-        PatchedApp = create_patched_app_class()
-        app = PatchedApp(args)
-        exit_code = app.run(None)
+    # Create and run the patched application
+    PatchedApp = create_patched_app_class(
+        screenshot_type=args.screenshot_type,
+        machine_page=args.machine_page,
+    )
+    app = PatchedApp(args)
+    exit_code = app.run(None)
 
-        # Shutdown sequence
-        shutdown_application()
+    # Shutdown sequence
+    shutdown_application()
 
-        return exit_code
-
-    # Replace the main function
-    rayforge_app.main = patched_main
-
-    # Start the application
-    try:
-        patched_main()
-    except SystemExit:
-        # This is expected when we quit the app
-        pass
+    return exit_code
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except SystemExit:
+        # This is expected when we quit the app
+        pass

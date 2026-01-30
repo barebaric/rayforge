@@ -1,32 +1,41 @@
-# Jog Dialog
+# Control Panel
 
-The Jog Dialog provides manual control over your laser cutter's position,
-allowing you to precisely move the laser head for setup, alignment, and
-testing purposes.
+The Control Panel at the bottom of the Rayforge window provides manual control
+over your laser cutter's position, real-time machine status, and a log view
+for monitoring operations.
 
-## Accessing the Jog Dialog
+## Overview
 
-You can access the Jog Dialog in several ways:
+The Control Panel combines several functions into one convenient interface:
 
-- **Menu**: Machine → Jog Controls...
-- **Toolbar**: Click the jog button (joystick icon)
-- **Keyboard Shortcut**: `Ctrl+J`
+1. **Jog Controls**: Manual movement and positioning
+2. **Machine Status**: Real-time position and connection state
+3. **Log View**: G-code communication and operation history
+4. **Work Coordinate System (WCS)**: Quick WCS selection
+
+![Control Panel](../images/control-panel.png)
+
+## Accessing the Control Panel
+
+The Control Panel is always visible at the bottom of the main window. It can
+be toggled via:
+
+- **Menu**: View → Control Panel
+- **Keyboard Shortcut**: Ctrl+L
 
 !!! note "Connection Required"
     The jog controls are only available when connected to a machine
     that supports jogging operations.
 
-## Dialog Layout
+## Jog Controls
 
-The jog dialog consists of three main sections:
+The jog controls provide manual control over your laser cutter's position,
+allowing you to precisely move the laser head for setup, alignment, and
+testing purposes.
 
-1. **Homing Controls**: Home individual axes or all axes at once
-2. **Manual Jog Controls**: Directional buttons for precise movement
-3. **Jog Settings**: Configure speed and distance for jog operations
+### Homing Controls
 
-## Homing Controls
-
-The homing section provides buttons to home your machine's axes:
+Home your machine's axes to establish a reference position:
 
 | Button   | Function       | Description                       |
 | -------- | -------------- | --------------------------------- |
@@ -39,13 +48,9 @@ The homing section provides buttons to home your machine's axes:
     It's recommended to home all axes before starting any job to ensure
     accurate positioning.
 
-## Manual Jog Controls
-
-The jog controls provide a visual interface for moving the laser head:
-
 ### Directional Movement
 
-The jog controls are arranged in a grid pattern:
+The jog controls provide buttons for directional movement:
 
 ```
   ↖  ↑  ↗
@@ -67,8 +72,7 @@ The jog controls are arranged in a grid pattern:
 | Z-               | Z axis down                     | Page Down         |
 
 !!! note "Focus Required"
-    Keyboard shortcuts only work when the jog dialog has focus. Click anywhere in
-    the dialog to ensure it has focus.
+    Keyboard shortcuts only work when the main window has focus.
 
 ### Visual Feedback
 
@@ -76,38 +80,61 @@ The jog buttons provide visual feedback:
 
 - **Normal**: Button is enabled and safe to use
 - **Warning (orange)**: Movement would approach or exceed soft limits
-- **Disabled**: Movement is not supported by the machine or machine is not connected
+- **Disabled**: Movement is not supported or machine is not connected
 
-## Jog Settings
+### Jog Settings
 
 Configure the behavior of jog operations:
 
-### Jog Speed
-
+**Jog Speed:**
 - **Range**: 1-10,000 mm/min
 - **Default**: 1,000 mm/min
-- **Purpose**: Controls how fast the laser head moves during jog operations
+- **Purpose**: Controls how fast the laser head moves
 
 !!! tip "Speed Selection"
     - Use lower speeds (100-500 mm/min) for precise positioning
     - Use higher speeds (1,000-3,000 mm/min) for larger movements
     - Very high speeds may cause missed steps on some machines
 
-### Jog Distance
-
+**Jog Distance:**
 - **Range**: 0.1-1,000 mm
 - **Default**: 10.0 mm
-- **Purpose**: Controls how far the laser head moves with each button press
+- **Purpose**: Controls how far the laser head moves per button press
 
 !!! tip "Distance Selection"
     - Use small distances (0.1-1.0 mm) for fine-tuning
     - Use medium distances (5-20 mm) for general positioning
     - Use large distances (50-100 mm) for quick repositioning
 
+## Machine Status Display
+
+The Control Panel displays real-time information about your machine:
+
+### Current Position
+
+Shows the laser head's position in the active coordinate system:
+
+- Coordinates are relative to the selected WCS origin
+- Updates in real-time as you jog or run jobs
+- Format: X, Y, Z values in millimeters
+
+### Connection Status
+
+- **Connected**: Green indicator, machine is responding
+- **Disconnected**: Gray indicator, no machine connection
+- **Error**: Red indicator, connection or communication problem
+
+### Machine State
+
+- **Idle**: Machine is ready for commands
+- **Run**: Job is currently executing
+- **Hold**: Job is paused
+- **Alarm**: Machine is in alarm state
+- **Home**: Homing cycle is in progress
+
 ## Work Coordinate System (WCS)
 
-The jog dialog provides controls for managing Work Coordinate Systems, allowing
-you to define custom reference points on your machine's work area.
+The Control Panel provides quick access to Work Coordinate System management.
 
 ### Active System Selection
 
@@ -131,13 +158,6 @@ Displays the offset values for the active WCS:
 - Represents the distance from machine origin to WCS origin
 - Updates automatically when WCS offsets change
 
-### Current Position
-
-Shows the laser head's position in the active WCS:
-
-- Coordinates are relative to the selected WCS origin
-- Updates in real-time as you jog the machine
-
 ### Setting WCS Zero
 
 Define where the origin of the active WCS should be:
@@ -159,17 +179,72 @@ Define where the origin of the active WCS should be:
     4. Click Zero X and Zero Y to set this position as (0, 0)
     5. The offset is stored in your machine's controller
 
-### WCS Button Sensitivity
+## Log View
 
-The zero buttons are only enabled when:
+The Log View displays G-code communication and operation history:
 
-- Connected to a machine
-- A mutable WCS is selected (G54-G59)
-- No job is currently running
+### Log Contents
+
+- **Sent Commands**: G-code commands sent to the machine
+- **Responses**: Replies and status from the controller
+- **Error Messages**: Any errors or warnings from the machine
+- **System Messages**: Connection status and other system events
+
+### Log Features
+
+- **Auto-scroll**: Automatically scrolls to show latest messages
+- **Search**: Filter log messages by text
+- **Clear**: Clear the log history
+- **Copy**: Copy selected log text to clipboard
+
+### Using the Log for Troubleshooting
+
+The log view is invaluable for diagnosing issues:
+
+- Verify commands are being sent correctly
+- Check for error messages from the controller
+- Monitor connection status and stability
+- Review job execution progress
+
+## Machine Hours
+
+Rayforge tracks your machine's usage time to help with maintenance scheduling
+and usage tracking.
+
+### Viewing Machine Hours
+
+The machine hours display shows:
+
+- **Total Hours**: Cumulative time the machine has been in operation
+- **Job Time**: Time spent executing jobs
+- **Jog Time**: Time spent jogging/moving the laser head
+
+![Machine Hours](../images/machine-hours.png)
+
+### Maintenance Tracking
+
+Use machine hours to schedule maintenance:
+
+- **Clean Optics**: Every 50-100 hours of use
+- **Check Belts**: Every 200-300 hours of use
+- **Lubricate Rails**: Every 100-200 hours of use
+- **Replace Tube**: Per manufacturer's specification
+
+### Resetting Hours
+
+Machine hours can be reset when:
+
+- Performing major maintenance
+- Replacing laser tube or diode
+- Setting up a new machine profile
+
+!!! caution "Data Loss"
+    Resetting machine hours will clear all historical usage data. Record
+    the value before resetting if you need it for maintenance records.
 
 ## Machine Compatibility
 
-The jog dialog adapts to your machine's capabilities:
+The Control Panel adapts to your machine's capabilities:
 
 ### Axis Support
 
@@ -224,6 +299,13 @@ When soft limits are enabled in your machine profile:
 3. Verify alignment with workpiece
 4. Adjust position as needed
 
+### Monitoring Jobs
+
+1. Watch the log view for command execution
+2. Monitor machine status during operation
+3. Check position updates for accuracy
+4. Review error messages if issues occur
+
 ## Troubleshooting
 
 ### Jog Controls Not Working
@@ -237,7 +319,7 @@ When soft limits are enabled in your machine profile:
 
 **Solutions:**
 
-- Check connection status in main window
+- Check connection status
 - Verify machine supports jog commands
 - Reset machine if in alarm state
 - Check soft limit configuration
@@ -246,13 +328,13 @@ When soft limits are enabled in your machine profile:
 
 **Possible Causes:**
 
-- Dialog doesn't have focus
+- Main window doesn't have focus
 - Another window is active
 - System shortcuts intercepting keys
 
 **Solutions:**
 
-- Click on the jog dialog to give it focus
+- Click on the main window to give it focus
 - Close other windows that might capture keys
 - Check system keyboard shortcut settings
 
@@ -268,6 +350,20 @@ When soft limits are enabled in your machine profile:
 - Check Y-axis direction in machine profile
 - Adjust "Y-axis down" setting if needed
 - Test with small movements first
+
+### Log Not Updating
+
+**Possible Causes:**
+
+- Connection not established
+- Log view disabled or hidden
+- Filter settings hiding messages
+
+**Solutions:**
+
+- Verify machine is connected
+- Check log view is visible
+- Clear any active filters
 
 ---
 

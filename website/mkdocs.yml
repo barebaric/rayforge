@@ -36,7 +36,7 @@ nav:
           - Main Window: docs/ui/main-window.md
           - Canvas Tools: docs/ui/canvas-tools.md
           - 3D Preview: docs/ui/3d-preview.md
-          - Jog Controls: docs/ui/jog-dialog.md
+          - Control Panel: docs/ui/control-panel.md
           - Work Coordinate Systems: docs/ui/work-coordinate-systems.md
           - Settings: docs/ui/settings.md
       - Features:

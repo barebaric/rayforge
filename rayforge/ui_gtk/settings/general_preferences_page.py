@@ -227,11 +227,8 @@ class GeneralPreferencesPage(Adw.PreferencesPage):
     def _update_startup_project_visibility(self, *args):
         """Show/hide the project path row based on startup behavior."""
         selected_index = self.startup_behavior_row.get_selected()
-        should_show = (
-            selected_index
-            == self.STARTUP_BEHAVIOR_MAP.index(
-                StartupBehavior.SPECIFIC_PROJECT.value
-            )
+        should_show = selected_index == self.STARTUP_BEHAVIOR_MAP.index(
+            StartupBehavior.SPECIFIC_PROJECT.value
         )
         self.startup_project_row.set_visible(should_show)
 
@@ -295,9 +292,7 @@ class GeneralPreferencesPage(Adw.PreferencesPage):
             window, self._on_startup_project_dialog_response
         )
 
-    def _on_startup_project_dialog_response(
-        self, dialog, result, user_data
-    ):
+    def _on_startup_project_dialog_response(self, dialog, result, user_data):
         """Callback for the startup project file dialog."""
         try:
             file = dialog.open_finish(result)
