@@ -527,6 +527,9 @@ class MainWindow(Adw.ApplicationWindow):
         # Set initial state
         self.on_config_changed(None)
 
+        # Apply saved visibility state
+        self._apply_saved_visibility_state()
+
         # Trigger startup tasks when window is shown
         self.connect("map", self._trigger_startup_tasks)
 
@@ -539,6 +542,23 @@ class MainWindow(Adw.ApplicationWindow):
 
         # Trigger the non-blocking check for package updates
         self.update_cmd.check_for_updates_on_startup()
+
+    def _apply_saved_visibility_state(self):
+        """
+        Applies the saved visibility state for G-code preview and control
+        panel. This should be called after actions are registered.
+        """
+        config = get_context().config
+
+        gcode_action = self.action_manager.get_action("toggle_gcode_preview")
+        if gcode_action and config.gcode_preview_visible:
+            gcode_action.change_state(GLib.Variant.new_boolean(True))
+
+        control_panel_action = self.action_manager.get_action(
+            "toggle_control_panel"
+        )
+        if control_panel_action and config.control_panel_visible:
+            control_panel_action.change_state(GLib.Variant.new_boolean(True))
 
     def on_add_child(self, sender):
         """Handler for adding a new stock item, called from AssetListView."""
@@ -1204,6 +1224,8 @@ class MainWindow(Adw.ApplicationWindow):
             self.refresh_previews()
         else:
             self.left_content_pane.set_position(0)
+
+        get_context().config.set_gcode_preview_visible(is_visible)
 
     def on_view_top(self, action, param):
         """Action handler to set the 3D view to top-down."""
@@ -2029,6 +2051,8 @@ class MainWindow(Adw.ApplicationWindow):
             )
         else:
             self.control_panel.set_visible(False)
+
+        get_context().config.set_control_panel_visible(is_visible)
 
     def _on_dialog_notification(self, sender, message: str = ""):
         """Shows a toast when requested by a child dialog."""
