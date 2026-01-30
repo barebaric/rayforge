@@ -248,7 +248,8 @@ class Machine:
     ):
         """
         Instantiates and sets up the driver based on the machine's current
-        configuration. It does NOT connect it.
+        configuration. Connects if auto_connect is enabled and the new driver
+        is not NoDeviceDriver.
         """
         logger.info(
             f"Machine '{self.name}' (id:{self.id}) rebuilding driver to "
@@ -285,6 +286,16 @@ class Machine:
         # Now it is safe to clean up the old driver.
         if old_driver:
             await old_driver.cleanup()
+
+        # Connect if auto_connect is enabled and the new driver is not
+        # NoDeviceDriver. This ensures that driver config changes take effect
+        # without requiring the user to manually disconnect/reconnect.
+        if self.auto_connect and not isinstance(new_driver, NoDeviceDriver):
+            logger.info(
+                f"Machine '{self.name}' (id:{self.id}) connecting after "
+                f"driver rebuild"
+            )
+            await self.driver.connect()
 
     def _reset_status(self):
         """Resets status to a disconnected/unknown state and signals it."""
