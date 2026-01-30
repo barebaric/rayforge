@@ -968,7 +968,8 @@ class TestMachine:
         self, machine: Machine, task_mgr: TaskManager
     ):
         await wait_for_tasks_to_finish(task_mgr)
-        assert machine.can_g0_with_speed()
+        # Default machine uses grbl dialect which doesn't support G0 with speed
+        assert not machine.dialect.can_g0_with_speed
 
     @pytest.mark.asyncio
     async def test_new_driver_methods_smoothie(
@@ -977,12 +978,13 @@ class TestMachine:
         """Test new driver methods for SmoothieDriver."""
         from rayforge.machine.driver.smoothie import SmoothieDriver
 
+        machine.set_dialect_uid("smoothieware")
         machine.set_driver(SmoothieDriver, {"host": "test", "port": 23})
         # Wait for the async set_driver operation to complete
         await wait_for_tasks_to_finish(task_mgr)
 
         # Test G0 with speed support
-        assert machine.can_g0_with_speed()
+        assert machine.dialect.can_g0_with_speed
 
         # Test homing support
         assert machine.can_home()
@@ -1003,12 +1005,12 @@ class TestMachine:
         """Test new driver methods for GrblNetworkDriver."""
         from rayforge.machine.driver.grbl import GrblNetworkDriver
 
-        # Create driver directly to avoid setup issues
+        machine.set_dialect_uid("grbl")
         machine.set_driver(GrblNetworkDriver, {"host": "test"})
         await wait_for_tasks_to_finish(task_mgr)
 
         # Test G0 with speed support (GRBL doesn't support this)
-        assert not machine.can_g0_with_speed()
+        assert not machine.dialect.can_g0_with_speed
 
         # Test homing support
         assert machine.can_home()
@@ -1029,14 +1031,14 @@ class TestMachine:
         """Test new driver methods for GrblSerialDriver."""
         from rayforge.machine.driver.grbl_serial import GrblSerialDriver
 
-        # Create driver directly to avoid setup issues
+        machine.set_dialect_uid("grbl")
         machine.set_driver(
             GrblSerialDriver, {"port": "/dev/test", "baudrate": 115200}
         )
         await wait_for_tasks_to_finish(task_mgr)
 
         # Test G0 with speed support (GRBL doesn't support this)
-        assert not machine.can_g0_with_speed()
+        assert not machine.dialect.can_g0_with_speed
 
         # Test homing support
         assert machine.can_home()

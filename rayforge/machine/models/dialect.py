@@ -77,6 +77,7 @@ class GcodeDialect:
 
     # Behavior Flags
     inject_wcs_after_preamble: bool = True
+    can_g0_with_speed: bool = False
 
     uid: str = field(default_factory=lambda: str(uuid.uuid4()))
     is_custom: bool = False

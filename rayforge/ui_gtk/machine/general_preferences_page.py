@@ -503,11 +503,11 @@ class GeneralPreferencesPage(Adw.PreferencesPage):
         self.machine.set_offsets(x_offset, y_offset)
 
     def _update_travel_speed_state(self):
-        """Update the travel speed row based on driver features."""
+        """Update the travel speed row based on dialect features."""
         if self._is_initializing:
             return
 
-        if self.machine.can_g0_with_speed():
+        if self.machine.dialect.can_g0_with_speed:
             self.travel_speed_row.set_sensitive(True)
             self.travel_speed_row.set_subtitle(
                 _("Maximum rapid movement speed")

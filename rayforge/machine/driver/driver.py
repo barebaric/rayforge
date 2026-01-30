@@ -450,15 +450,6 @@ class Driver(ABC):
         """
         pass
 
-    def can_g0_with_speed(self) -> bool:
-        """
-        Check if this device supports speed parameter in G0 commands.
-
-        Returns:
-            True if the device supports G0 with speed, False otherwise
-        """
-        return False
-
     @abstractmethod
     async def set_wcs_offset(
         self, wcs_slot: str, x: float, y: float, z: float

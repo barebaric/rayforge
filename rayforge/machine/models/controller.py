@@ -441,12 +441,6 @@ class MachineController:
                     f"Failed to sync active WCS: connection error: {e}"
                 )
 
-    def can_g0_with_speed(self) -> bool:
-        """Check if the machine's driver supports G0 with speed."""
-        if self.driver is None:
-            return False
-        return self.driver.can_g0_with_speed()
-
     @property
     def reports_granular_progress(self) -> bool:
         """Check if the machine's driver reports granular progress."""

@@ -489,10 +489,6 @@ class Machine:
 
         return adjusted_distance
 
-    def can_g0_with_speed(self) -> bool:
-        """Check if the machine's driver supports G0 with speed."""
-        return self.controller.can_g0_with_speed()
-
     @property
     def reports_granular_progress(self) -> bool:
         """Check if the machine's driver reports granular progress."""

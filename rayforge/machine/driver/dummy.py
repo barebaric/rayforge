@@ -201,10 +201,6 @@ class NoDeviceDriver(Driver):
     async def jog(self, speed: int, **deltas: float) -> None:
         pass
 
-    def can_g0_with_speed(self) -> bool:
-        """Dummy driver supports G0 with speed."""
-        return True
-
     async def set_wcs_offset(
         self, wcs_slot: str, x: float, y: float, z: float
     ) -> None:
