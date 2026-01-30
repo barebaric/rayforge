@@ -188,7 +188,7 @@ class SketchEditor:
             sketch_element.canvas, x, y
         )
         if canvas_coords:
-            canvas_x, canvas_y = canvas_coords
+            canvas_x, canvas_y = canvas_coords[:2]
             self.handle_right_click(gesture, n_press, canvas_x, canvas_y)
 
     def handle_right_click(
@@ -291,7 +291,7 @@ class SketchEditor:
             self.parent_window, x, y
         )
         if win_coords:
-            win_x, win_y = win_coords
+            win_x, win_y = win_coords[:2]
             logger.info(
                 f"Opening Pie Menu at {win_x}, {win_y} (Type: {target_type})"
             )
