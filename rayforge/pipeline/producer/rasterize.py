@@ -400,9 +400,7 @@ def rasterize_at_angle(
         )
 
         if segment_coords:
-            ops = _add_segments_to_ops(
-                ops, segment_coords, ymax, None
-            )[0]
+            ops = _add_segments_to_ops(ops, segment_coords, ymax, None)[0]
 
     return ops
 

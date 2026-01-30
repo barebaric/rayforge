@@ -23,6 +23,7 @@ class TestMachineModel:
     def test_machine_initialization(self, context_initializer):
         """Test that a Machine can be initialized with a context."""
         machine = Machine(context_initializer)
+        context_initializer.machine_mgr.add_machine(machine)
         assert machine is not None
         assert machine.context == context_initializer
         assert machine.controller is not None
@@ -31,19 +32,23 @@ class TestMachineModel:
     def test_machine_id_generation(self, context_initializer):
         """Test that each machine gets a unique ID."""
         machine1 = Machine(context_initializer)
+        context_initializer.machine_mgr.add_machine(machine1)
         machine2 = Machine(context_initializer)
+        context_initializer.machine_mgr.add_machine(machine2)
         assert machine1.id != machine2.id
         assert isinstance(machine1.id, str)
 
     def test_machine_dimensions(self, context_initializer):
         """Test setting and getting machine dimensions."""
         machine = Machine(context_initializer)
+        context_initializer.machine_mgr.add_machine(machine)
         machine.set_dimensions(200, 150)
         assert machine.dimensions == (200, 150)
 
     def test_machine_origin(self, context_initializer):
         """Test setting and getting machine origin."""
         machine = Machine(context_initializer)
+        context_initializer.machine_mgr.add_machine(machine)
         machine.set_origin(Origin.TOP_LEFT)
         assert machine.origin == Origin.TOP_LEFT
 
@@ -53,16 +58,19 @@ class TestMachineModel:
     def test_machine_driver_property(self, context_initializer):
         """Test that the driver property delegates to controller."""
         machine = Machine(context_initializer)
+        context_initializer.machine_mgr.add_machine(machine)
         assert machine.driver == machine.controller.driver
 
     def test_machine_connection_status(self, context_initializer):
         """Test machine connection status property."""
         machine = Machine(context_initializer)
+        context_initializer.machine_mgr.add_machine(machine)
         assert machine.connection_status == TransportStatus.DISCONNECTED
 
     def test_machine_wcs_properties(self, context_initializer):
         """Test machine WCS (Work Coordinate System) properties."""
         machine = Machine(context_initializer)
+        context_initializer.machine_mgr.add_machine(machine)
         assert machine.machine_space_wcs is not None
         assert isinstance(machine.machine_space_wcs_display_name, str)
 

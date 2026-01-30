@@ -256,13 +256,21 @@ class Driver(ABC):
         """
         pass
 
+    @classmethod
     @abstractmethod
-    def get_encoder(self) -> "OpsEncoder":
+    def create_encoder(cls, machine: "Machine") -> "OpsEncoder":
         """
-        Returns an OpsEncoder instance suitable for this driver and its
-        configured machine.
+        Factory method to return an OpsEncoder instance suitable for this
+        driver class and the specific machine configuration.
         """
         pass
+
+    def get_encoder(self) -> "OpsEncoder":
+        """
+        Convenience wrapper to get the encoder for this driver instance's
+        machine. Delegates to the static factory method.
+        """
+        return self.create_encoder(self._machine)
 
     @abstractmethod
     def get_setting_vars(self) -> List["VarSet"]:

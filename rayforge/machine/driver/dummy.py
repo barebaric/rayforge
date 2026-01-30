@@ -80,9 +80,10 @@ class NoDeviceDriver(Driver):
     def get_setup_vars(cls) -> "VarSet":
         return VarSet(title=_("No settings"))
 
-    def get_encoder(self) -> "OpsEncoder":
+    @classmethod
+    def create_encoder(cls, machine: "Machine") -> "OpsEncoder":
         """Returns a GcodeEncoder configured for the machine's dialect."""
-        return GcodeEncoder(self._machine.dialect)
+        return GcodeEncoder(machine.dialect)
 
     def get_setting_vars(self) -> List["VarSet"]:
         return [VarSet(title=_("No settings"))]

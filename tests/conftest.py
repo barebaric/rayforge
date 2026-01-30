@@ -212,6 +212,7 @@ async def machine(context_initializer) -> AsyncGenerator["Machine", None]:
     from rayforge.machine.models.machine import Machine
 
     m = Machine(context_initializer)
+    context_initializer.machine_mgr.add_machine(m)
     yield m
     # Proper async teardown is handled here by the fixture runner
     await m.shutdown()

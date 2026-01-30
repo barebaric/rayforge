@@ -125,9 +125,10 @@ class GrblNetworkDriver(Driver):
             ]
         )
 
-    def get_encoder(self) -> "OpsEncoder":
+    @classmethod
+    def create_encoder(cls, machine: "Machine") -> "OpsEncoder":
         """Returns a GcodeEncoder configured for the machine's dialect."""
-        return GcodeEncoder(self._machine.dialect)
+        return GcodeEncoder(machine.dialect)
 
     def _setup_implementation(self, **kwargs: Any) -> None:
         host = cast(str, kwargs.get("host", ""))

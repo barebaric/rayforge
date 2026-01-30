@@ -19,7 +19,6 @@ from ..driver.driver import (
     DeviceState,
 )
 from ..transport import TransportStatus
-from .controller import MachineController
 from .dialect import GcodeDialect, get_dialect
 from .laser import Laser
 from .machine_hours import MachineHours
@@ -31,6 +30,7 @@ if TYPE_CHECKING:
     from ...core.ops import Ops
     from ...core.varset import VarSet
     from ..driver.driver import Driver
+    from .controller import MachineController
 
 
 class Origin(Enum):
@@ -142,28 +142,36 @@ class Machine:
             self._on_dialects_changed
         )
 
-        # Create the controller which manages the driver
-        self.controller = MachineController(self, context)
-        # Connect to controller's signals and re-emit them
-        self._connect_controller_signals()
         self.add_head(Laser())
+
+    @property
+    def controller(self) -> "MachineController":
+        """
+        Dynamically retrieves the controller for this machine from the
+        MachineManager. This enables lazy instantiation.
+        """
+        return self.context.machine_mgr.get_controller(self.id)
 
     @property
     def driver(self) -> "Driver":
         """Property to access the driver through the controller."""
         return self.controller.driver
 
-    def _connect_controller_signals(self):
-        """Connect to controller's signals and re-emit them."""
-        self.controller.connection_status_changed.connect(
+    def _connect_controller_signals(self, controller: "MachineController"):
+        """
+        Connects this machine's signal proxies to the controller's signals.
+        This is now called by the MachineManager when the controller is
+        created.
+        """
+        controller.connection_status_changed.connect(
             self.connection_status_changed.send
         )
-        self.controller.state_changed.connect(self.state_changed.send)
-        self.controller.job_finished.connect(self.job_finished.send)
-        self.controller.command_status_changed.connect(
+        controller.state_changed.connect(self.state_changed.send)
+        controller.job_finished.connect(self.job_finished.send)
+        controller.command_status_changed.connect(
             self.command_status_changed.send
         )
-        self.controller.wcs_updated.connect(self.wcs_updated.send)
+        controller.wcs_updated.connect(self.wcs_updated.send)
 
     @property
     def supported_wcs(self) -> List[str]:
@@ -201,7 +209,18 @@ class Machine:
         Gracefully shuts down the machine's active driver and resources.
         """
         logger.info(f"Shutting down machine '{self.name}' (id:{self.id})")
-        await self.controller.shutdown()
+        # We only shut down the controller if it exists to avoid creating
+        # it during shutdown if it wasn't used.
+        try:
+            # Check for existence via manager without triggering creation
+            # if possible, or just call the manager's shutdown for this ID.
+            # But simpler here is to let the manager handle bulk shutdown.
+            # If we are shutting down a specific machine instance:
+            if self.id in self.context.machine_mgr.controllers:
+                await self.controller.shutdown()
+        except Exception as e:
+            logger.warning(f"Error shutting down controller: {e}")
+
         self.context.dialect_mgr.dialects_changed.disconnect(
             self._on_dialects_changed
         )
@@ -788,8 +807,8 @@ class Machine:
     ) -> Tuple[str, "MachineCodeOpMap"]:
         """
         Encodes an Ops object into machine code (G-code) and a corresponding
-        operation map, specific to this machine's configuration.
-        Delegates to the controller for the actual encoding.
+        operation map. This method is safe to run in a worker process as it
+        uses static driver instantiation to get the encoder.
 
         Args:
             ops: The Ops object to encode.
@@ -800,19 +819,38 @@ class Machine:
             - A string of machine code (G-code).
             - A MachineCodeOpMap object.
         """
-        return self.controller.encode_ops(ops, doc)
+        # 1. Prepare ops (pure math)
+        ops_for_encoder = self._prepare_ops_for_encoding(ops)
+
+        # 2. Instantiate the correct encoder via the driver factory
+        from ..driver import get_driver_cls
+        from ..driver.dummy import NoDeviceDriver
+
+        if self.driver_name:
+            try:
+                driver_cls = get_driver_cls(self.driver_name)
+            except (ValueError, ImportError):
+                # Fallback if driver class is missing
+                driver_cls = NoDeviceDriver
+        else:
+            driver_cls = NoDeviceDriver
+
+        encoder = driver_cls.create_encoder(self)
+
+        # 3. Perform encoding
+        return encoder.encode(ops_for_encoder, self, doc)
 
     def refresh_settings(self):
         """Public API for the UI to request a settings refresh."""
         task_mgr.add_coroutine(
-            lambda ctx: self._read_from_device(),
+            lambda ctx: self.controller._read_from_device(),
             key=(self.id, "device-settings-read"),
         )
 
     def apply_setting(self, key: str, value: Any):
         """Public API for the UI to apply a single setting."""
         task_mgr.add_coroutine(
-            lambda ctx: self._write_setting_to_device(key, value),
+            lambda ctx: self.controller._write_setting_to_device(key, value),
             key=(
                 self.id,
                 "device-settings-write",
@@ -827,20 +865,6 @@ class Machine:
         """
         return self.controller.get_setting_vars()
 
-    async def _read_from_device(self):
-        """
-        Task entry point for reading settings. This handles locking and
-        all errors.
-        """
-        await self.controller._read_from_device()
-
-    async def _write_setting_to_device(self, key: str, value: Any):
-        """
-        Writes a single setting to the device and signals success or failure.
-        It no longer triggers an automatic re-read.
-        """
-        await self.controller._write_setting_to_device(key, value)
-
     def to_dict(self, include_frozen_dialect: bool = True) -> Dict[str, Any]:
         data = {
             "machine": {
@@ -850,7 +874,7 @@ class Machine:
                 "auto_connect": self.auto_connect,
                 "clear_alarm_on_connect": self.clear_alarm_on_connect,
                 "home_on_start": self.home_on_start,
-                "single_axis_homing_enabled": self.single_axis_homing_enabled,  # noqa: E501
+                "single_axis_homing_enabled": self.single_axis_homing_enabled,
                 "dialect_uid": self.dialect_uid,
                 "active_wcs": self.active_wcs,
                 "wcs_offsets": self.wcs_offsets,

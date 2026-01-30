@@ -9,6 +9,7 @@ from blinker import Signal
 from ...context import get_context
 from ...shared.tasker import task_mgr
 from ..driver.driver import ResourceBusyError
+from .controller import MachineController
 from .machine import Machine
 
 
@@ -19,6 +20,7 @@ class MachineManager:
     def __init__(self, base_dir: Path):
         base_dir.mkdir(parents=True, exist_ok=True)
         self.base_dir = base_dir
+        self.controllers: Dict[str, MachineController] = dict()
         self.machines: Dict[str, Machine] = dict()
         self._machine_ref_for_pyreverse: Machine
         self.machine_added = Signal()
@@ -26,44 +28,67 @@ class MachineManager:
         self.machine_updated = Signal()
         self.load()
 
-    async def shutdown(self):
-        """
-        Shuts down all managed machines and their drivers gracefully.
-        """
-        logger.info("Shutting down all machines.")
-        tasks = [machine.shutdown() for machine in self.machines.values()]
-        if tasks:
-            await asyncio.gather(*tasks)
-        logger.info("All machines shut down.")
-
     def initialize_connections(self):
         """
-        Initializes machine connections on startup by rebuilding all drivers
-        and then connecting, prioritizing the active machine.
+        Triggers initial connection for all machines with auto_connect enabled.
+        This is called after the UI is fully initialized to ensure proper
+        signal handling during connection attempts.
         """
-        context = get_context()
-        active_machine = context.config.machine
-
-        # Define a lambda to use with add_coroutine that captures the machine
-        def connect_task(m):
-            return lambda ctx: self._rebuild_and_connect_machine(m)
-
-        # First, schedule the task for the active machine
-        if active_machine:
-            task_mgr.add_coroutine(connect_task(active_machine))
-
-        # Then, schedule tasks for the rest
         for machine in self.machines.values():
-            if machine is not active_machine:
-                task_mgr.add_coroutine(connect_task(machine))
+            if machine.auto_connect and not machine.is_connected():
+                task_mgr.add_coroutine(
+                    lambda ctx, m=machine: self._rebuild_and_connect_machine(
+                        m
+                    ),
+                    key=(machine.id, "initial-connect"),
+                )
+
+    async def shutdown(self):
+        """
+        Shuts down all managed machine controllers and their drivers
+        gracefully.
+        """
+        logger.info("Shutting down all machine controllers.")
+        tasks = [
+            controller.shutdown() for controller in self.controllers.values()
+        ]
+        if tasks:
+            await asyncio.gather(*tasks)
+        logger.info("All machine controllers shut down.")
+
+    def get_controller(self, machine_id: str) -> "MachineController":
+        """
+        Gets the controller for a machine, creating it if it doesn't exist.
+        This enables lazy instantiation of controllers.
+        """
+        if machine_id in self.controllers:
+            return self.controllers[machine_id]
+
+        machine = self.get_machine_by_id(machine_id)
+        if not machine:
+            raise ValueError(f"No machine found with ID {machine_id}")
+
+        logger.debug(
+            f"Creating controller for machine '{machine.name}' on first use."
+        )
+        controller = MachineController(machine, get_context())
+
+        # Wire up the machine's signal proxies to the new controller
+        machine._connect_controller_signals(controller)
+
+        self.controllers[machine_id] = controller
+        return controller
 
     async def _rebuild_and_connect_machine(self, machine: "Machine"):
         """
         A single, sequenced task that rebuilds a machine's driver and then
         connects if auto_connect is on.
         """
-        await machine.controller._rebuild_driver_instance()
-        if machine.auto_connect:
+        controller = self.get_controller(machine.id)
+        # Only rebuild if not already connected to avoid disconnecting
+        if not machine.is_connected():
+            await controller._rebuild_driver_instance()
+        if machine.auto_connect and not machine.is_connected():
             await self._safe_connect(machine)
 
     async def _safe_connect(self, machine: "Machine"):
@@ -139,6 +164,12 @@ class MachineManager:
         machine = self.machines.get(machine_id)
         if not machine:
             return
+
+        # Shut down and remove the associated controller if it exists
+        if machine_id in self.controllers:
+            controller = self.controllers.pop(machine_id)
+            # Shutdown is async, so schedule it
+            task_mgr.add_coroutine(lambda ctx: controller.shutdown())
 
         machine.changed.disconnect(self.on_machine_changed)
         del self.machines[machine_id]

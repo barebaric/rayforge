@@ -221,6 +221,7 @@ class ConfigManager:
 
     def load(self) -> "Config":
         if not self.filepath.exists():
+            logger.info("Config file does not exist, creating default config.")
             self.config = Config()
             return self.config
 
@@ -228,11 +229,26 @@ class ConfigManager:
             with open(self.filepath, "r") as f:
                 data = yaml.safe_load(f)
                 if not data:
+                    logger.info(
+                        "Config file is empty, creating default config."
+                    )
                     self.config = Config()
                 else:
+                    machine_id = data.get("machine")
+                    logger.info(
+                        f"Loading config with machine_id: {machine_id}"
+                    )
                     self.config = Config.from_dict(
                         data, self.machine_mgr.get_machine_by_id
                     )
+                    if self.config.machine:
+                        logger.info(
+                            f"Config loaded with machine: "
+                            f"{self.config.machine.id} "
+                            f"({self.config.machine.name})"
+                        )
+                    else:
+                        logger.info("Config loaded but no machine set.")
         except (IOError, yaml.YAMLError) as e:
             logger.error(
                 f"Failed to load config file: {e}. Creating a default config."
