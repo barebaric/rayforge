@@ -45,9 +45,8 @@ class MachineCmd:
         head = machine.heads[head_index]
         tool_number = head.tool_number
 
-        driver = machine.driver
         self._editor.task_manager.add_coroutine(
-            lambda ctx: driver.select_tool(tool_number), key="select-head"
+            lambda ctx: machine.select_tool(tool_number), key="select-head"
         )
 
     def _progress_handler(self, sender, metrics):

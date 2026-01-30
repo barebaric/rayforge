@@ -212,6 +212,32 @@ class MachineControlPanel(Gtk.Box):
             self.machine.wcs_updated.connect(self._on_wcs_updated)
             self.machine.state_changed.connect(self._on_machine_state_changed)
 
+    def _disconnect_machine_signals(self):
+        """Disconnect from machine signals."""
+        if self.machine:
+            self.machine.wcs_updated.disconnect(self._on_wcs_updated)
+            self.machine.state_changed.disconnect(
+                self._on_machine_state_changed
+            )
+
+    def set_machine(
+        self,
+        machine: Optional[Machine],
+        machine_cmd: Optional[MachineCmd] = None,
+    ):
+        """Update the machine this panel controls."""
+        self._disconnect_machine_signals()
+
+        self.machine = machine
+        self.machine_cmd = machine_cmd
+
+        if self.machine:
+            self._connect_machine_signals()
+            self._update_wcs_ui()
+
+        if self.machine and self.machine_cmd:
+            self.jog_widget.set_machine(self.machine, self.machine_cmd)
+
     def _on_wcs_selection_changed(self, combo_row, _pspec):
         """Handle WCS ComboRow selection change."""
         if not self.machine:
