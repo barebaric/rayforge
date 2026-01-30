@@ -22,6 +22,7 @@ class TestMachineController:
     def test_controller_initialization(self, context_initializer):
         """Test that MachineController can be initialized."""
         machine = Machine(context_initializer)
+        context_initializer.machine_mgr.add_machine(machine)
         controller = MachineController(machine, context_initializer)
         assert controller is not None
         assert controller.machine == machine
@@ -31,12 +32,14 @@ class TestMachineController:
     def test_controller_driver_property(self, context_initializer):
         """Test that the controller has a driver property."""
         machine = Machine(context_initializer)
+        context_initializer.machine_mgr.add_machine(machine)
         controller = machine.controller
         assert controller.driver is not None
 
     def test_controller_signals_exist(self, context_initializer):
         """Test that controller has all required signals."""
         machine = Machine(context_initializer)
+        context_initializer.machine_mgr.add_machine(machine)
         controller = machine.controller
         assert hasattr(controller, "connection_status_changed")
         assert hasattr(controller, "state_changed")

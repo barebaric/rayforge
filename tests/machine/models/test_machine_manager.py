@@ -27,9 +27,7 @@ class TestMachineManager:
         assert manager.base_dir == tmp_path
         assert isinstance(manager.machines, dict)
 
-    def test_manager_add_machine(
-        self, context_initializer, tmp_path
-    ):
+    def test_manager_add_machine(self, context_initializer, tmp_path):
         """Test adding a machine to the manager."""
         manager = MachineManager(tmp_path)
         machine = Machine(context_initializer)
@@ -38,9 +36,7 @@ class TestMachineManager:
         assert len(manager.machines) == 1
         assert manager.machines[machine.id] == machine
 
-    def test_manager_get_machine_by_id(
-        self, context_initializer, tmp_path
-    ):
+    def test_manager_get_machine_by_id(self, context_initializer, tmp_path):
         """Test getting a machine by its ID."""
         manager = MachineManager(tmp_path)
         machine = Machine(context_initializer)
@@ -57,9 +53,7 @@ class TestMachineManager:
         found = manager.get_machine_by_id("non-existent-id")
         assert found is None
 
-    def test_manager_signals_exist(
-        self, context_initializer, tmp_path
-    ):
+    def test_manager_signals_exist(self, context_initializer, tmp_path):
         """Test that manager has all required signals."""
         manager = MachineManager(tmp_path)
         assert hasattr(manager, "machine_added")

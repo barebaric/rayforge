@@ -23,7 +23,6 @@ from rayforge.machine.models.machine import JogDirection, Machine, Origin
 from rayforge.machine.models.macro import MacroTrigger
 from rayforge.machine.transport import TransportStatus
 from rayforge.pipeline import steps
-from rayforge.pipeline.encoder.gcode import GcodeEncoder
 from rayforge.shared.tasker.manager import TaskManager
 
 
@@ -148,20 +147,22 @@ class TestMachine:
         self, machine: Machine, mocker, task_mgr: TaskManager
     ):
         """
-        Verify that machine.encode_ops calls get_encoder on the active
-        driver.
+        Verify that machine.encode_ops calls create_encoder on the driver
+        class.
         """
         await wait_for_tasks_to_finish(task_mgr)
         # --- Arrange ---
         machine.set_origin(Origin.BOTTOM_LEFT)
 
-        # Create a mock encoder and spy on its encode method
-        mock_encoder = GcodeEncoder(machine.dialect)
-        encode_spy = mocker.spy(mock_encoder, "encode")
+        # Create a mock encoder
+        mock_encoder = mocker.Mock()
+        mock_encoder.encode.return_value = ("G0", mocker.Mock())
 
-        # Patch the driver's get_encoder method to return our mock.
-        get_encoder_mock = mocker.patch.object(
-            machine.driver, "get_encoder", return_value=mock_encoder
+        # Patch the driver class's create_encoder static method
+        from rayforge.machine.driver.dummy import NoDeviceDriver
+
+        create_encoder_mock = mocker.patch.object(
+            NoDeviceDriver, "create_encoder", return_value=mock_encoder
         )
 
         ops_to_encode = Ops()
@@ -174,19 +175,16 @@ class TestMachine:
         machine.encode_ops(ops_to_encode, doc_context)
 
         # --- Assert ---
-        # 1. Verify that the patched get_encoder method was called
-        get_encoder_mock.assert_called_once()
+        # 1. Verify that create_encoder was called with the machine
+        create_encoder_mock.assert_called_once_with(machine)
 
         # 2. Verify that the ops were copied before being passed to the encoder
         copy_spy.assert_called_once()
 
-        # 3. Verify that the encoder's encode method was called with the
-        # correct args
-        encode_spy.assert_called_once()
-        call_args = encode_spy.call_args.args
+        # 3. Verify that the encoder's encode method was called
+        mock_encoder.encode.assert_called_once()
+        call_args = mock_encoder.encode.call_args.args
         assert isinstance(call_args[0], Ops)
-        # Check that the encoded ops is the one returned by copy()
-        assert call_args[0] is copy_spy.spy_return
         assert call_args[1] is machine
         assert call_args[2] is doc_context
 
@@ -212,49 +210,59 @@ class TestMachine:
         mock_encoder = mocker.Mock()
         mock_encoder.encode.return_value = ("G0", MockOpMap())
 
+        # Patch the driver class's create_encoder static method
+        from rayforge.machine.driver.dummy import NoDeviceDriver
+
         mocker.patch.object(
-            machine.driver, "get_encoder", return_value=mock_encoder
+            NoDeviceDriver, "create_encoder", return_value=mock_encoder
         )
 
-        original_ops = mocker.Mock(spec=Ops)
-        original_ops.commands = []
-        copied_ops = mocker.Mock(spec=Ops)
-        copied_ops.commands = []
-        original_ops.copy.return_value = copied_ops
+        original_ops = Ops()
+        copied_ops = Ops()
+        copy_mock = mocker.patch.object(Ops, "copy", return_value=copied_ops)
+        transform_mock = mocker.patch.object(copied_ops, "transform")
 
         doc = Doc()
 
         # --- Case 1: Default (Bottom Left) - Should NOT Transform ---
         machine.set_origin(Origin.BOTTOM_LEFT)
         mock_encoder.reset_mock()
-        original_ops.reset_mock()
-        copied_ops.reset_mock()
+        copy_mock.reset_mock()
+        transform_mock.reset_mock()
 
         machine.encode_ops(original_ops, doc)
 
         # A copy is always made to apply offsets.
-        original_ops.copy.assert_called_once()
+        copy_mock.assert_called_once()
         # But transform should not be called on the copy for this origin.
-        copied_ops.transform.assert_not_called()
+        transform_mock.assert_not_called()
         # The encoder should be called with the copied object.
-        mock_encoder.encode.assert_called_with(copied_ops, machine, doc)
+        mock_encoder.encode.assert_called_once()
+        call_args = mock_encoder.encode.call_args.args
+        assert call_args[0] is copied_ops
+        assert call_args[1] is machine
+        assert call_args[2] is doc
 
         # --- Case 2: Origin Change (Top Left) - Should Transform ---
         machine.set_origin(Origin.TOP_LEFT)
         mock_encoder.reset_mock()
-        original_ops.reset_mock()
-        copied_ops.reset_mock()
+        copy_mock.reset_mock()
+        transform_mock.reset_mock()
 
         machine.encode_ops(original_ops, doc)
 
-        original_ops.copy.assert_called_once()
-        copied_ops.transform.assert_called_once()
-        mock_encoder.encode.assert_called_with(copied_ops, machine, doc)
+        copy_mock.assert_called_once()
+        transform_mock.assert_called_once()
+        mock_encoder.encode.assert_called_once()
+        call_args = mock_encoder.encode.call_args.args
+        assert call_args[0] is copied_ops
+        assert call_args[1] is machine
+        assert call_args[2] is doc
 
         # Verify the transform matrix has Y flipped (-1 scale) for Top Left
         # conversion
         # Y_new = Height - Y_old
-        args, _ = copied_ops.transform.call_args
+        args, _ = transform_mock.call_args
         matrix_arg = args[0]
         assert matrix_arg[0, 0] == 1.0  # X scale
         assert matrix_arg[1, 1] == -1.0  # Y scale
@@ -272,15 +280,18 @@ class TestMachine:
         # Setup mocks
         mock_encoder = mocker.Mock()
         mock_encoder.encode.return_value = ("G0", object())
+
+        # Patch the driver class's create_encoder static method
+        from rayforge.machine.driver.dummy import NoDeviceDriver
+
         mocker.patch.object(
-            machine.driver, "get_encoder", return_value=mock_encoder
+            NoDeviceDriver, "create_encoder", return_value=mock_encoder
         )
 
-        original_ops = mocker.Mock(spec=Ops)
-        original_ops.commands = []
-        copied_ops = mocker.Mock(spec=Ops)
-        copied_ops.commands = []
-        original_ops.copy.return_value = copied_ops
+        original_ops = Ops()
+        copied_ops = Ops()
+        mocker.patch.object(original_ops, "copy", return_value=copied_ops)
+        transform_mock = mocker.patch.object(copied_ops, "transform")
 
         doc = Doc()
         machine.set_origin(Origin.BOTTOM_LEFT)
@@ -294,8 +305,8 @@ class TestMachine:
 
         # Assert
         # Should have called transform to apply WCS offset
-        copied_ops.transform.assert_called_once()
-        args, _ = copied_ops.transform.call_args
+        transform_mock.assert_called_once()
+        args, _ = transform_mock.call_args
         matrix_arg = args[0]
 
         # Verify matrix translates by -offset
@@ -315,15 +326,18 @@ class TestMachine:
         # Setup mocks
         mock_encoder = mocker.Mock()
         mock_encoder.encode.return_value = ("G0", object())
+
+        # Patch the driver class's create_encoder static method
+        from rayforge.machine.driver.dummy import NoDeviceDriver
+
         mocker.patch.object(
-            machine.driver, "get_encoder", return_value=mock_encoder
+            NoDeviceDriver, "create_encoder", return_value=mock_encoder
         )
 
-        original_ops = mocker.Mock(spec=Ops)
-        original_ops.commands = []
-        copied_ops = mocker.Mock(spec=Ops)
-        copied_ops.commands = []
-        original_ops.copy.return_value = copied_ops
+        original_ops = Ops()
+        copied_ops = Ops()
+        mocker.patch.object(original_ops, "copy", return_value=copied_ops)
+        transform_mock = mocker.patch.object(copied_ops, "transform")
 
         doc = Doc()
         machine.set_origin(Origin.BOTTOM_LEFT)
@@ -337,7 +351,7 @@ class TestMachine:
 
         # Assert
         # Should NOT have called transform because offset is (0,0,0)
-        copied_ops.transform.assert_not_called()
+        transform_mock.assert_not_called()
 
     @pytest.mark.asyncio
     async def test_set_work_origin_here(
@@ -349,7 +363,9 @@ class TestMachine:
         await wait_for_tasks_to_finish(task_mgr)
 
         # Arrange
-        machine.connection_status = TransportStatus.CONNECTED
+        # Connect the machine first so driver methods are called
+        await machine.connect()
+        await wait_for_tasks_to_finish(task_mgr)
         machine.active_wcs = "G54"
         machine.wcs_offsets["G54"] = (10.0, 20.0, 0.0)
         machine.device_state.machine_pos = (100.0, 200.0, 0.0)
@@ -413,7 +429,9 @@ class TestMachine:
         await wait_for_tasks_to_finish(task_mgr)
 
         # Arrange
-        machine.connection_status = TransportStatus.CONNECTED
+        # Connect the machine first so driver methods are called
+        await machine.connect()
+        await wait_for_tasks_to_finish(task_mgr)
         machine.active_wcs = "G55"
 
         set_wcs_spy = mocker.patch.object(

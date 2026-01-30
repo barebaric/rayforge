@@ -136,9 +136,10 @@ class GrblSerialDriver(Driver):
             ]
         )
 
-    def get_encoder(self) -> "OpsEncoder":
+    @classmethod
+    def create_encoder(cls, machine: "Machine") -> "OpsEncoder":
         """Returns a GcodeEncoder configured for the machine's dialect."""
-        return GcodeEncoder(self._machine.dialect)
+        return GcodeEncoder(machine.dialect)
 
     def _setup_implementation(self, **kwargs: Any) -> None:
         port = cast(str, kwargs.get("port", ""))

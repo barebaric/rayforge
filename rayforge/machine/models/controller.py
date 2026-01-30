@@ -5,7 +5,6 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
 from blinker import Signal
 
 from ...core.varset import ValidationError
-from ...pipeline.encoder.gcode import MachineCodeOpMap
 from ...shared.tasker import task_mgr
 from ..driver import get_driver_cls
 from ..driver.driver import (
@@ -22,8 +21,6 @@ from ..transport import TransportStatus
 
 if TYPE_CHECKING:
     from ...context import RayforgeContext
-    from ...core.doc import Doc
-    from ...core.ops import Ops
     from ...core.varset import VarSet
     from ...shared.tasker.context import ExecutionContext
     from .laser import Laser
@@ -547,34 +544,6 @@ class MachineController:
             )
         finally:
             logger.debug(f"_write_setting_to_device(key={key}): Done.")
-
-    def encode_ops(
-        self, ops: "Ops", doc: "Doc"
-    ) -> Tuple[str, "MachineCodeOpMap"]:
-        """
-        Encodes an Ops object into machine code (G-code) and a corresponding
-        operation map. Delegates the math transformations to the Machine
-        and handles the actual encoding call.
-
-        Args:
-            ops: The Ops object to encode.
-            doc: The document context for the job.
-
-        Returns:
-            A tuple containing:
-            - A string of machine code (G-code).
-            - A MachineCodeOpMap object.
-        """
-        encoder = self.driver.get_encoder()
-
-        # Get the transformed ops from the machine (all math is done here)
-        ops_for_encoder = self.machine._prepare_ops_for_encoding(ops)
-
-        gcode_str, op_map_obj = encoder.encode(
-            ops_for_encoder, self.machine, doc
-        )
-
-        return gcode_str, op_map_obj
 
     def validate_driver_setup(self) -> Tuple[bool, Optional[str]]:
         """
