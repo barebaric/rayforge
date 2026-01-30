@@ -1,8 +1,7 @@
 import cairo
 import pytest
 from rayforge.pipeline.producer.rasterize import (
-    rasterize_horizontally,
-    rasterize_vertically,
+    rasterize_at_angle,
     Rasterizer,
 )
 from rayforge.core.ops import (
@@ -66,8 +65,12 @@ def test_rasterize_horizontally_white(white_surface):
     """
     Tests horizontal rasterization on a white surface should produce no ops.
     """
-    ops = rasterize_horizontally(
-        white_surface, ymax=1.0, pixels_per_mm=(10, 10), raster_size_mm=0.1
+    ops = rasterize_at_angle(
+        white_surface,
+        ymax=1.0,
+        pixels_per_mm=(10, 10),
+        raster_size_mm=0.1,
+        direction_degrees=0,
     )
     assert len(ops.commands) == 0
 
@@ -76,16 +79,24 @@ def test_rasterize_vertically_white(white_surface):
     """
     Tests vertical rasterization on a white surface should produce no ops.
     """
-    ops = rasterize_vertically(
-        white_surface, ymax=1.0, pixels_per_mm=(10, 10), raster_size_mm=0.1
+    ops = rasterize_at_angle(
+        white_surface,
+        ymax=1.0,
+        pixels_per_mm=(10, 10),
+        raster_size_mm=0.1,
+        direction_degrees=90,
     )
     assert len(ops.commands) == 0
 
 
 def test_rasterize_horizontally_black(black_surface):
     """Tests horizontal rasterization on a black surface."""
-    ops = rasterize_horizontally(
-        black_surface, ymax=1.0, pixels_per_mm=(10, 10), raster_size_mm=0.1
+    ops = rasterize_at_angle(
+        black_surface,
+        ymax=1.0,
+        pixels_per_mm=(10, 10),
+        raster_size_mm=0.1,
+        direction_degrees=0,
     )
     assert len(ops.commands) > 0
     # More specific assertions can be added here based on expected output
@@ -93,8 +104,12 @@ def test_rasterize_horizontally_black(black_surface):
 
 def test_rasterize_vertically_black(black_surface):
     """Tests vertical rasterization on a black surface."""
-    ops = rasterize_vertically(
-        black_surface, ymax=1.0, pixels_per_mm=(10, 10), raster_size_mm=0.1
+    ops = rasterize_at_angle(
+        black_surface,
+        ymax=1.0,
+        pixels_per_mm=(10, 10),
+        raster_size_mm=0.1,
+        direction_degrees=90,
     )
     assert len(ops.commands) > 0
     # More specific assertions can be added here based on expected output
