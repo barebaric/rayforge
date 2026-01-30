@@ -29,6 +29,39 @@ class RasterizerSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
 
         params = self.target_dict.setdefault("params", {})
 
+        # Direction slider
+        direction_row = Adw.ActionRow(
+            title=_("Direction"),
+            subtitle=_(
+                "Raster direction in degrees (0°=horizontal, 90°=vertical)"
+            ),
+        )
+        direction_adjustment = Gtk.Adjustment(
+            lower=0,
+            upper=179,
+            step_increment=1,
+            page_increment=15,
+            value=params.get("direction_degrees", 0),
+        )
+        direction_scale = Gtk.Scale(
+            orientation=Gtk.Orientation.HORIZONTAL,
+            adjustment=direction_adjustment,
+            digits=0,
+            draw_value=True,
+        )
+        direction_scale.set_size_request(200, -1)
+        direction_scale.connect(
+            "value-changed",
+            lambda scale: self._debounce(
+                self._on_param_changed,
+                "direction_degrees",
+                float(scale.get_value()),
+                _("Change Raster Direction"),
+            ),
+        )
+        direction_row.add_suffix(direction_scale)
+        self.add(direction_row)
+
         # Threshold slider
         threshold_row = Adw.ActionRow(
             title=_("Threshold"),

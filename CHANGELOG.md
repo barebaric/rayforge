@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Major: The jog dialog has been merged together with the log view into a bottom panel
 - Sketcher supports aspect ratio constraints
 - Engraving steps now have an invert setting
+- The raster engraver now supports setting the engraving angle in degrees
 - A recent files menu entry was added
 - Installers for all platforms now register the .ryp (project) and .rfs (sketch) file extensions
 
