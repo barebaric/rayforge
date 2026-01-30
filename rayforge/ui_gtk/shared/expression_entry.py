@@ -200,7 +200,7 @@ class ExpressionEntry(Gtk.Box):
 
     def set_text(self, text: str):
         """Sets the text content of the entry."""
-        self._buffer.set_text(text)
+        self._buffer.set_text(text, len(text))
 
     def _on_buffer_changed(self, buffer: Gtk.TextBuffer):
         self._validate_and_highlight()
