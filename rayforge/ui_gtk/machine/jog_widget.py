@@ -160,13 +160,12 @@ class JogWidget(Adw.PreferencesGroup):
         """Set the machine this widget controls."""
         # Disconnect from previous machine if any
         if self.machine:
-            try:
-                self.machine.state_changed.disconnect(
-                    self._on_machine_state_changed
-                )
-            except (TypeError, RuntimeError):
-                # Signal might not be connected or already disconnected
-                pass
+            self.machine.state_changed.disconnect(
+                self._on_machine_state_changed
+            )
+            self.machine.connection_status_changed.disconnect(
+                self._on_connection_status_changed
+            )
 
         self.machine = machine
         self.machine_cmd = machine_cmd
@@ -174,6 +173,9 @@ class JogWidget(Adw.PreferencesGroup):
         # Connect to state changes
         if self.machine:
             self.machine.state_changed.connect(self._on_machine_state_changed)
+            self.machine.connection_status_changed.connect(
+                self._on_connection_status_changed
+            )
 
         self._update_button_sensitivity()
         self._update_limit_status()
@@ -309,6 +311,10 @@ class JogWidget(Adw.PreferencesGroup):
     def _on_machine_state_changed(self, machine, state):
         """Handle machine state changes to update limit status."""
         self._update_limit_status()
+
+    def _on_connection_status_changed(self, sender, **kwargs):
+        """Handle connection status changes to update button sensitivity."""
+        self._update_button_sensitivity()
 
     def _perform_jog(self, x: float = 0.0, y: float = 0.0, z: float = 0.0):
         """
