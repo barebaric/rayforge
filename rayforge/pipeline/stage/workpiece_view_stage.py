@@ -1,17 +1,15 @@
 from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING, Dict, Tuple
-
 from blinker import Signal
-
-from .base import PipelineStage
+from ...context import get_context
+from ..artifact import create_handle_from_dict, BaseArtifactHandle
 from ..artifact.workpiece_view import (
     RenderContext,
     WorkPieceViewArtifactHandle,
 )
-from ..artifact import create_handle_from_dict
+from .base import PipelineStage
 from .workpiece_view_runner import make_workpiece_view_artifact_in_subprocess
-from ...context import get_context
 
 if TYPE_CHECKING:
     from ...core.doc import Doc
@@ -39,6 +37,11 @@ class WorkPieceViewPipelineStage(PipelineStage):
         super().__init__(task_manager, artifact_cache)
         self._active_tasks: Dict[ViewKey, "Task"] = {}
         self._last_context_cache: Dict[ViewKey, RenderContext] = {}
+
+        # Track the currently active handle for each view so we can release
+        # it when it is replaced or when the stage shuts down.
+        self._current_view_handles: Dict[ViewKey, BaseArtifactHandle] = {}
+
         self.view_artifact_ready = Signal()
         self.view_artifact_created = Signal()
         self.view_artifact_updated = Signal()
@@ -54,12 +57,17 @@ class WorkPieceViewPipelineStage(PipelineStage):
         pass
 
     def shutdown(self):
-        """Cancels any active rendering tasks."""
+        """Cancels any active rendering tasks and releases held handles."""
         logger.debug("WorkPieceViewPipelineStage shutting down.")
         for key in list(self._active_tasks.keys()):
             task = self._active_tasks.pop(key, None)
             if task:
                 self._task_manager.cancel_task(task.key)
+
+        # Release all currently held view handles
+        for handle in self._current_view_handles.values():
+            get_context().artifact_store.release(handle)
+        self._current_view_handles.clear()
 
     def request_view_render(
         self,
@@ -123,6 +131,15 @@ class WorkPieceViewPipelineStage(PipelineStage):
                     raise TypeError("Expected WorkPieceViewArtifactHandle")
 
                 get_context().artifact_store.adopt(handle)
+
+                # Release the previous handle for this key if one exists,
+                # as it is now obsolete.
+                old_handle = self._current_view_handles.get(key)
+                if old_handle:
+                    get_context().artifact_store.release(old_handle)
+
+                # Store the new handle as the current one
+                self._current_view_handles[key] = handle
 
                 self.view_artifact_created.send(
                     self,
