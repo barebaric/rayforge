@@ -12,7 +12,8 @@ if TYPE_CHECKING:
     from .core.config import Config, ConfigManager
     from .core.library_manager import LibraryManager
     from .core.recipe_manager import RecipeManager
-    from .machine.models.machine import Machine, MachineManager
+    from .machine.models.machine import Machine
+    from .machine.models.manager import MachineManager
     from .machine.models.dialect_manager import DialectManager
     from .debug import DebugDumpManager
 
@@ -138,7 +139,7 @@ class RayforgeContext:
         from .camera.manager import CameraManager
         from .core.library_manager import LibraryManager
         from .core.recipe_manager import RecipeManager
-        from .machine.models.machine import MachineManager
+        from .machine.models.manager import MachineManager
         from .config import (
             CONFIG_DIR,
             MACHINE_DIR,
