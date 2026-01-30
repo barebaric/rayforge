@@ -456,7 +456,3 @@ class SmoothieDriver(Driver):
         raise NotImplementedError(
             "Probing is not implemented for the Smoothie driver via Telnet."
         )
-
-    def can_g0_with_speed(self) -> bool:
-        """Smoothie supports speed parameter in G0 commands."""
-        return True

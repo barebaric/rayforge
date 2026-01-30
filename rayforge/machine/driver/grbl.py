@@ -751,10 +751,6 @@ class GrblNetworkDriver(Driver):
         self.probe_status_changed.send(self, message="Probe failed")
         return None
 
-    def can_g0_with_speed(self) -> bool:
-        """GRBL doesn't support speed parameter in G0 commands."""
-        return False
-
     def _update_command_status(
         self, status: TransportStatus, message: Optional[str] = None
     ):

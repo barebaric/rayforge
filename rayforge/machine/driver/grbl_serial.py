@@ -1179,10 +1179,6 @@ class GrblSerialDriver(Driver):
             # This could be a welcome message or other unsolicited info
             logger.debug(f"Received informational line: {line}")
 
-    def can_g0_with_speed(self) -> bool:
-        """GRBL doesn't support speed parameter in G0 commands."""
-        return False
-
     def get_error(self, error_code: str) -> Optional[DeviceError]:
         """
         Returns error details for a given GRBL error code.
