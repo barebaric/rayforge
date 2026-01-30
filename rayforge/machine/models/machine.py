@@ -961,15 +961,43 @@ class Machine:
     async def sync_wcs_from_device(self):
         """Queries the device for current WCS offsets and updates state."""
         if self.is_connected():
-            await self.driver.read_wcs_offsets()
+            try:
+                await self.driver.read_wcs_offsets()
+            except asyncio.TimeoutError:
+                logger.error(
+                    "Failed to sync WCS offsets: device timed out "
+                    "while responding to $# command."
+                )
+            except asyncio.CancelledError:
+                logger.debug("WCS offset sync cancelled by task manager.")
+                raise
+            except DeviceConnectionError as e:
+                logger.error(
+                    f"Failed to sync WCS offsets: connection error: {e}"
+                )
 
     async def sync_active_wcs_from_device(self):
         """Queries the device for its active WCS and updates state."""
         if self.is_connected():
-            active_wcs = await self.driver.read_parser_state()
-            if active_wcs:
-                logger.info(f"Synced active WCS from device: '{active_wcs}'")
-                self.set_active_wcs(active_wcs)
+            try:
+                active_wcs = await self.driver.read_parser_state()
+                if active_wcs:
+                    logger.info(
+                        f"Synced active WCS from device: '{active_wcs}'"
+                    )
+                    self.set_active_wcs(active_wcs)
+            except asyncio.TimeoutError:
+                logger.error(
+                    "Failed to sync active WCS: device timed out "
+                    "while responding to $G command."
+                )
+            except asyncio.CancelledError:
+                logger.debug("Active WCS sync cancelled by task manager.")
+                raise
+            except DeviceConnectionError as e:
+                logger.error(
+                    f"Failed to sync active WCS: connection error: {e}"
+                )
 
     def encode_ops(
         self, ops: "Ops", doc: "Doc"
