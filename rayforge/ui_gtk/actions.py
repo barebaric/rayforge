@@ -1,5 +1,6 @@
 from typing import TYPE_CHECKING, Dict, Callable, Optional, cast
 from gi.repository import Gtk, Gio, GLib
+from ..context import get_context
 from ..core.group import Group
 from ..core.item import DocItem
 from ..core.layer import Layer
@@ -73,15 +74,16 @@ class ActionManager:
             self.win.on_toggle_travel_view_state_change,
             GLib.Variant.new_boolean(False),
         )
+        config = get_context().config
         self._add_stateful_action(
             "toggle_gcode_preview",
             self.win.on_toggle_gcode_preview_state_change,
-            GLib.Variant.new_boolean(False),
+            GLib.Variant.new_boolean(config.gcode_preview_visible),
         )
         self._add_stateful_action(
             "toggle_control_panel",
             self.win.on_toggle_control_panel_state_change,
-            GLib.Variant.new_boolean(False),
+            GLib.Variant.new_boolean(config.control_panel_visible),
         )
 
         self._add_stateful_action(

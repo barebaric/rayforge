@@ -36,6 +36,9 @@ class Config:
         self.startup_project_path: Optional[Path] = None
         # Track the last opened project path
         self.last_opened_project: Optional[Path] = None
+        # UI visibility states
+        self.gcode_preview_visible: bool = False
+        self.control_panel_visible: bool = False
         self.changed = Signal()
 
     def set_machine(self, machine: Optional[Machine]):
@@ -84,6 +87,20 @@ class Config:
         self.last_opened_project = path
         self.changed.send(self)
 
+    def set_gcode_preview_visible(self, visible: bool):
+        """Sets the G-code preview visibility state."""
+        if self.gcode_preview_visible == visible:
+            return
+        self.gcode_preview_visible = visible
+        self.changed.send(self)
+
+    def set_control_panel_visible(self, visible: bool):
+        """Sets the control panel visibility state."""
+        if self.control_panel_visible == visible:
+            return
+        self.control_panel_visible = visible
+        self.changed.send(self)
+
     def to_dict(self) -> Dict[str, Any]:
         return {
             "machine": self.machine.id if self.machine else None,
@@ -100,6 +117,8 @@ class Config:
                 if self.last_opened_project
                 else None
             ),
+            "gcode_preview_visible": self.gcode_preview_visible,
+            "control_panel_visible": self.control_panel_visible,
         }
 
     @classmethod
@@ -140,6 +159,10 @@ class Config:
         last_opened_project_str = data.get("last_opened_project")
         if last_opened_project_str:
             config.last_opened_project = Path(last_opened_project_str)
+
+        # Load UI visibility states
+        config.gcode_preview_visible = data.get("gcode_preview_visible", False)
+        config.control_panel_visible = data.get("control_panel_visible", False)
 
         # Get the machine by ID. add fallbacks in case the machines
         # no longer exist.

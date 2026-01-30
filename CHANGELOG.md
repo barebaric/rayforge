@@ -26,10 +26,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Importers almost completely rewritten for testability
 - Sketcher: The solver now biases points to their previous position for more stable dragging
 - Simulation mode keyboard shortcut changed to F11 to avoid conflic with "Save as..."
+- Remember G-code view and control panel visibility across sessions
 
 ### Fixed
 
 - Traceback in the sketcher when adding a constraint (affected Windows build only)
+- Fixed a potential memory leak and stale ops display
 - Multi layer DXF import
 - Numerous alignment bugs in importers
 - Traceback when using invert switch in import dialog
