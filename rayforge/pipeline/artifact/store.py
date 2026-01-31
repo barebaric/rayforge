@@ -184,9 +184,18 @@ class ArtifactStore:
             # Refcount reached zero, release the block
             del self._refcounts[shm_name]
         else:
+            # Refcount is 0 or not in refcounts
+            # Check if block is still managed before warning
+            if shm_name not in self._managed_shms:
+                # Block was already released, this is fine
+                logger.debug(
+                    f"Shared memory block {shm_name} already released."
+                )
+                return
+            # Block is managed but has no refcount, this is unusual
             logger.warning(
-                f"Attempted to release block {shm_name}, which is not "
-                f"managed or has already been released."
+                f"Attempted to release block {shm_name}, which is "
+                f"managed but has no refcount."
             )
             return
 

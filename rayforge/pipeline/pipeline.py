@@ -200,11 +200,13 @@ class Pipeline:
             self._step_invalidation_timer.cancel()
             self._step_invalidation_timer = None
         logger.info("Pipeline shutting down...")
-        self._artifact_cache.shutdown()
+        # Shutdown stages first to release retained handles
         self._workpiece_stage.shutdown()
         self._step_stage.shutdown()
         self._job_stage.shutdown()
         self._workpiece_view_stage.shutdown()
+        # Then shutdown cache to release any remaining cached artifacts
+        self._artifact_cache.shutdown()
         logger.info("All pipeline resources released.")
         logger.debug(f"[{id(self)}] Pipeline shutdown finished")
 

@@ -53,6 +53,10 @@ class WorkPieceViewPipelineStage(PipelineStage):
         # it when it is replaced or when the stage shuts down.
         self._current_view_handles: Dict[ViewKey, BaseArtifactHandle] = {}
 
+        # Track retained source workpiece handles for borrower pattern.
+        # These are retained when a render starts and released when complete.
+        self._retained_source_handles: Dict[ViewKey, BaseArtifactHandle] = {}
+
         # Live render context for progressive chunk rendering.
         # Tracks the view artifact being progressively built from chunks.
         self._live_render_contexts: Dict[ViewKey, Dict[str, Any]] = {}
@@ -89,6 +93,11 @@ class WorkPieceViewPipelineStage(PipelineStage):
         for handle in self._current_view_handles.values():
             get_context().artifact_store.release(handle)
         self._current_view_handles.clear()
+
+        # Release all retained source handles
+        for handle in self._retained_source_handles.values():
+            get_context().artifact_store.release(handle)
+        self._retained_source_handles.clear()
 
         # Clear live render contexts
         self._live_render_contexts.clear()
@@ -140,6 +149,11 @@ class WorkPieceViewPipelineStage(PipelineStage):
             )
             return
 
+        # Retain the source handle to prevent premature release while
+        # the render task is using it (borrower pattern)
+        get_context().artifact_store.retain(source_handle)
+        self._retained_source_handles[key] = source_handle
+
         self._last_context_cache[key] = context
 
         def when_done_callback(task: "Task"):
@@ -175,6 +189,10 @@ class WorkPieceViewPipelineStage(PipelineStage):
                     f"for key {key}"
                 )
                 get_context().artifact_store.adopt(handle)
+
+                # Retain the handle to keep it alive while this stage
+                # holds a reference to it (borrower pattern)
+                get_context().artifact_store.retain(handle)
 
                 # Release the previous handle for this key if one exists,
                 # as it is now obsolete.
@@ -381,6 +399,13 @@ class WorkPieceViewPipelineStage(PipelineStage):
                 f"View render for {key} failed with status: "
                 f"{task.get_status()}"
             )
+
+        # Release the retained source handle after task completes
+        # (success, failure, or cancellation)
+        source_handle = self._retained_source_handles.pop(key, None)
+        if source_handle:
+            get_context().artifact_store.release(source_handle)
+
         # The old `view_artifact_ready` signal is now fired on the
         # `view_artifact_created` event to enable progressive rendering.
         # This callback now only signals the end of the task.
