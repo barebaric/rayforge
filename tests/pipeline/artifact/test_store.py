@@ -2,6 +2,7 @@ from typing import cast
 import unittest
 import json
 import numpy as np
+import multiprocessing as mp
 from multiprocessing import shared_memory
 from rayforge.context import get_context
 from rayforge.core.ops import Ops
@@ -277,6 +278,103 @@ class TestArtifactStore(unittest.TestCase):
 
         # 7. Verify the block is no longer tracked by the main store.
         self.assertNotIn(handle.shm_name, main_store._managed_shms)
+
+    def test_forget_and_adopt_across_processes(self):
+        """
+        Tests the adoption handshake between two processes:
+        1. Process A (worker) creates an artifact
+        2. Process B (main) adopts it
+        3. Process A forgets it (closes handle without unlinking)
+        4. Process B should still be able to read data
+        5. Process B releases it, and data is gone
+        """
+        ctx = mp.get_context("spawn")
+        queue = ctx.Queue()
+
+        worker = ctx.Process(target=_worker_create_and_forget, args=(queue,))
+        worker.start()
+
+        # Main process logic
+        store = ArtifactStore()
+
+        # Receive handle from worker
+        handle_dict = queue.get()
+        from rayforge.pipeline.artifact import create_handle_from_dict
+        handle = create_handle_from_dict(handle_dict)
+
+        # Adopt the artifact
+        store.adopt(handle)
+
+        # Signal worker to proceed with forgetting
+        queue.put("adopted")
+
+        # Wait for worker to confirm forgetting
+        result = queue.get()
+        self.assertEqual(result, "forgotten")
+
+        # Verify we can still read the data
+        retrieved = cast(WorkPieceArtifact, store.get(handle))
+        self.assertEqual(
+            (50, 50),
+            retrieved.generation_size
+        )
+
+        # Release the artifact
+        store.release(handle)
+
+        # Verify memory is gone
+        with self.assertRaises(FileNotFoundError):
+            shared_memory.SharedMemory(name=handle.shm_name)
+
+        worker.join(timeout=5)
+        self.assertFalse(worker.is_alive())
+        self.assertEqual(worker.exitcode, 0)
+
+
+# --- Helper functions for multiprocessing tests ---
+
+
+def _worker_create_and_forget(queue: mp.Queue):
+    """
+    Process A: Creates an artifact and forgets it after
+    signaling Process B.
+    """
+    store = ArtifactStore()
+    ops = Ops()
+    ops.move_to(0, 0, 0)
+    ops.line_to(10, 0, 0)
+    ops.arc_to(0, 10, i=-10, j=0, clockwise=False, z=0)
+
+    vertex_data = VertexData(
+        powered_vertices=np.array(
+            [[0, 0, 0], [10, 0, 0]], dtype=np.float32
+        ),
+        powered_colors=np.array(
+            [[1, 1, 1, 1], [1, 1, 1, 1]], dtype=np.float32
+        ),
+    )
+
+    artifact = WorkPieceArtifact(
+        ops=ops,
+        is_scalable=True,
+        source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
+        source_dimensions=(100, 100),
+        generation_size=(50, 50),
+        vertex_data=vertex_data,
+    )
+    handle = store.put(artifact)
+
+    # Send handle dict to main process
+    queue.put(handle.to_dict())
+
+    # Wait for main process to signal adoption
+    queue.get()
+
+    # Forget the artifact - closes handle without unlinking
+    store.forget(handle)
+
+    # Signal that forgetting is complete
+    queue.put("forgotten")
 
 
 if __name__ == "__main__":
