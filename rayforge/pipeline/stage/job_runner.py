@@ -1,7 +1,7 @@
 from __future__ import annotations
 import logging
 from dataclasses import dataclass, asdict
-from typing import Dict, Any
+from typing import Dict, Any, TYPE_CHECKING, Optional
 import numpy as np
 import json
 from ...context import get_context
@@ -15,6 +15,9 @@ from ..artifact import (
     StepOpsArtifact,
 )
 from ..encoder.vertexencoder import VertexEncoder
+
+if TYPE_CHECKING:
+    import threading
 
 
 logger = logging.getLogger(__name__)
@@ -33,6 +36,7 @@ def make_job_artifact_in_subprocess(
     proxy: ExecutionContextProxy,
     job_description_dict: Dict[str, Any],
     creator_tag: str,
+    adoption_event: Optional["threading.Event"] = None,
 ) -> None:
     """
     The main entry point for assembling, post-processing, and encoding a
@@ -133,6 +137,20 @@ def make_job_artifact_in_subprocess(
     proxy.send_event(
         "artifact_created", {"handle_dict": final_handle.to_dict()}
     )
+
+    # Wait for main process to adopt the artifact before forgetting it
+    if adoption_event is not None:
+        logger.debug("Waiting for main process to adopt job artifact...")
+        if adoption_event.wait(timeout=10):
+            logger.debug("Main process adopted job artifact. Forgetting...")
+            artifact_store.forget(final_handle)
+            logger.info("Worker disowned job artifact successfully")
+        else:
+            logger.warning(
+                "Main process failed to adopt job artifact within timeout. "
+                "Releasing to prevent leak."
+            )
+            artifact_store.release(final_handle)
 
     proxy.set_progress(1.0)
     proxy.set_message(_("Job finalization complete"))

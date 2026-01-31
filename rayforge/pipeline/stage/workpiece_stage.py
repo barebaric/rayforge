@@ -1,6 +1,7 @@
 from __future__ import annotations
 import logging
 import math
+import multiprocessing as mp
 from typing import TYPE_CHECKING, Dict, Tuple, Optional
 from blinker import Signal
 from copy import deepcopy
@@ -16,6 +17,7 @@ from ..artifact import (
 from .workpiece_runner import make_workpiece_artifact_in_subprocess
 
 if TYPE_CHECKING:
+    import threading
     from ...core.doc import Doc
     from ...core.matrix import Matrix
     from ...core.step import Step
@@ -40,6 +42,7 @@ class WorkPiecePipelineStage(PipelineStage):
         super().__init__(task_manager, artifact_cache)
         self._generation_id_map: Dict[WorkpieceKey, int] = {}
         self._active_tasks: Dict[WorkpieceKey, "Task"] = {}
+        self._adoption_events: Dict[WorkpieceKey, "threading.Event"] = {}
 
         # Signals for notifying the pipeline of generation progress
         self.generation_starting = Signal()
@@ -69,6 +72,7 @@ class WorkPiecePipelineStage(PipelineStage):
         for key in list(self._active_tasks.keys()):
             self._cleanup_task(key)
         self._active_tasks.clear()
+        self._adoption_events.clear()
 
     def reconcile(self, doc: "Doc"):
         """
@@ -159,6 +163,7 @@ class WorkPiecePipelineStage(PipelineStage):
             task = self._active_tasks[key]
             logger.debug(f"Requesting cancellation for active task {key}")
             self._task_manager.cancel_task(task.key)
+        self._adoption_events.pop(key, None)
 
     def _cleanup_entry(self, key: WorkpieceKey):
         """
@@ -221,6 +226,11 @@ class WorkPiecePipelineStage(PipelineStage):
         world_workpiece = workpiece.in_world()
         workpiece_dict = world_workpiece.to_dict()
 
+        # Create an adoption event for the handshake protocol
+        manager = mp.Manager()
+        adoption_event = manager.Event()
+        self._adoption_events[key] = adoption_event
+
         task = self._task_manager.run_process(
             make_workpiece_artifact_in_subprocess,
             workpiece_dict,
@@ -232,6 +242,7 @@ class WorkPiecePipelineStage(PipelineStage):
             generation_id,
             workpiece.size,
             "workpiece",
+            adoption_event=adoption_event,
             key=key,
             when_done=when_done_callback,
             when_event=self._on_task_event_received,
@@ -272,6 +283,11 @@ class WorkPiecePipelineStage(PipelineStage):
                 if not isinstance(handle, WorkPieceArtifactHandle):
                     raise TypeError("Expected a WorkPieceArtifactHandle")
                 self._artifact_cache.put_workpiece_handle(s_uid, w_uid, handle)
+
+                # Signal the worker that we've adopted the artifact
+                adoption_event = self._adoption_events.get(key)
+                if adoption_event is not None:
+                    adoption_event.set()
                 return
 
             if event_name == "visual_chunk_ready":
@@ -285,6 +301,10 @@ class WorkPiecePipelineStage(PipelineStage):
             logger.error(
                 f"Failed to process event '{event_name}': {e}", exc_info=True
             )
+            # Still set the event to unblock the worker
+            adoption_event = self._adoption_events.get(key)
+            if adoption_event is not None:
+                adoption_event.set()
 
     def _on_task_complete(
         self,
@@ -310,6 +330,7 @@ class WorkPiecePipelineStage(PipelineStage):
 
         if self._active_tasks.get(key) is task:
             self._active_tasks.pop(key, None)
+            self._adoption_events.pop(key, None)
             logger.debug(
                 f"[{key}] Popped active task {id(task)} from tracking."
             )

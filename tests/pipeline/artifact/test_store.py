@@ -7,6 +7,7 @@ from multiprocessing import shared_memory
 from rayforge.context import get_context
 from rayforge.core.ops import Ops
 from rayforge.pipeline import CoordinateSystem
+from rayforge.pipeline.artifact import create_handle_from_dict
 from rayforge.pipeline.artifact.store import ArtifactStore
 from rayforge.pipeline.artifact.workpiece import (
     WorkPieceArtifact,
@@ -299,7 +300,6 @@ class TestArtifactStore(unittest.TestCase):
 
         # Receive handle from worker
         handle_dict = queue.get()
-        from rayforge.pipeline.artifact import create_handle_from_dict
         handle = create_handle_from_dict(handle_dict)
 
         # Adopt the artifact
@@ -314,10 +314,7 @@ class TestArtifactStore(unittest.TestCase):
 
         # Verify we can still read the data
         retrieved = cast(WorkPieceArtifact, store.get(handle))
-        self.assertEqual(
-            (50, 50),
-            retrieved.generation_size
-        )
+        self.assertEqual((50, 50), retrieved.generation_size)
 
         # Release the artifact
         store.release(handle)
@@ -346,9 +343,7 @@ def _worker_create_and_forget(queue: mp.Queue):
     ops.arc_to(0, 10, i=-10, j=0, clockwise=False, z=0)
 
     vertex_data = VertexData(
-        powered_vertices=np.array(
-            [[0, 0, 0], [10, 0, 0]], dtype=np.float32
-        ),
+        powered_vertices=np.array([[0, 0, 0], [10, 0, 0]], dtype=np.float32),
         powered_colors=np.array(
             [[1, 1, 1, 1], [1, 1, 1, 1]], dtype=np.float32
         ),

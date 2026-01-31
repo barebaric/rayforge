@@ -2,6 +2,7 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING, Optional, Callable
 from blinker import Signal
+import multiprocessing as mp
 
 from .base import PipelineStage
 from ..artifact import JobArtifactHandle, create_handle_from_dict
@@ -9,6 +10,7 @@ from .job_runner import JobDescription
 from ...context import get_context
 
 if TYPE_CHECKING:
+    import threading
     from ...core.doc import Doc
     from ...shared.tasker.task import Task
     from ..artifact.cache import ArtifactCache
@@ -29,6 +31,7 @@ class JobPipelineStage(PipelineStage):
     ):
         super().__init__(task_manager, artifact_cache)
         self._active_task: Optional["Task"] = None
+        self._adoption_event: Optional["threading.Event"] = None
         self.generation_finished = Signal()
         self.generation_failed = Signal()
 
@@ -48,6 +51,7 @@ class JobPipelineStage(PipelineStage):
         if self._active_task:
             self._task_manager.cancel_task(self._active_task.key)
             self._active_task = None
+        self._adoption_event = None
 
     def generate_job(self, doc: "Doc", on_done: Optional[Callable] = None):
         """
@@ -92,6 +96,10 @@ class JobPipelineStage(PipelineStage):
         logger.info(f"Starting job generation with {len(step_handles)} steps.")
 
         self._artifact_cache.invalidate_for_job()
+
+        # Create an adoption event for the handshake protocol
+        manager = mp.Manager()
+        self._adoption_event = manager.Event()
 
         job_desc = JobDescription(
             step_artifact_handles_by_uid=step_handles,
@@ -156,6 +164,7 @@ class JobPipelineStage(PipelineStage):
             key=JobKey,
             when_done=when_done_callback,
             when_event=self._on_job_task_event,
+            adoption_event=self._adoption_event,
         )
         self._active_task = task
 
@@ -172,5 +181,15 @@ class JobPipelineStage(PipelineStage):
                 # add the handle to the cache, as it's invalid.
                 get_context().artifact_store.adopt(handle)
                 self._artifact_cache.put_job_handle(handle)
+
+                # Signal the worker that we've adopted the artifact
+                if self._adoption_event is not None:
+                    self._adoption_event.set()
+                    logger.debug(
+                        "Adoption handshake completed for job artifact"
+                    )
             except Exception as e:
                 logger.error(f"Error handling job artifact event: {e}")
+                # Still set the event to unblock the worker
+                if self._adoption_event is not None:
+                    self._adoption_event.set()
