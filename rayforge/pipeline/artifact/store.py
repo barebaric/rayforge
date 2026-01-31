@@ -171,3 +171,34 @@ class ArtifactStore:
         needed to prevent memory leaks.
         """
         self._release_by_name(handle.shm_name)
+
+    def forget(self, handle: BaseArtifactHandle) -> None:
+        """
+        Closes the handle to a shared memory block without destroying the
+        underlying data.
+
+        This is used when a worker process has transferred ownership of an
+        artifact to another process (e.g., the main process). The worker
+        closes its handle but does not unlink the shared memory, allowing
+        the adopting process to continue accessing the data.
+
+        Args:
+            handle: The handle of the artifact whose shared memory block is
+                    to be forgotten.
+        """
+        shm_name = handle.shm_name
+        shm_obj = self._managed_shms.pop(shm_name, None)
+        if not shm_obj:
+            logger.warning(
+                f"Attempted to forget block {shm_name}, which is not "
+                f"managed or has already been released/forgotten."
+            )
+            return
+
+        try:
+            shm_obj.close()
+            logger.debug(f"Forgot shared memory block: {shm_name}")
+        except Exception as e:
+            logger.warning(
+                f"Error forgetting shared memory block {shm_name}: {e}"
+            )
