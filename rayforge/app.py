@@ -9,6 +9,7 @@ import os
 import gettext
 import asyncio
 from pathlib import Path
+from typing import cast
 from rayforge.logging_setup import setup_logging
 
 # ===================================================================
@@ -312,6 +313,20 @@ def main():
 
     # Import modules that depend on GTK or manage global state
     import rayforge.shared.tasker
+    from rayforge.shared.tasker.manager import TaskManagerProxy
+    from rayforge.worker_init import initialize_worker
+
+    # Get the context first to ensure the ArtifactStore is created
+    # before the TaskManager is initialized. This breaks the circular
+    # dependency chain (app -> config -> machine -> task_manager).
+    get_context()
+
+    # Initialize the TaskManager with the worker initializer.
+    # This MUST happen before initialize_full_context() because the
+    # MachineManager creates machines which import task_mgr, which
+    # would trigger the creation of the TaskManager.
+    task_mgr_proxy = cast(TaskManagerProxy, rayforge.shared.tasker.task_mgr)
+    task_mgr_proxy.initialize(worker_initializer=initialize_worker)
 
     # Initialize the full application context. This creates all managers
     # and sets up the backward-compatibility shim for old code.
