@@ -107,6 +107,7 @@ class Pipeline:
         self.workpiece_starting = Signal()
         self.workpiece_visual_chunk_ready = Signal()
         self.workpiece_artifact_ready = Signal()
+        self.workpiece_artifact_adopted = Signal()
         self.step_render_ready = Signal()
         self.step_time_updated = Signal()
         self.job_time_updated = Signal()
@@ -151,6 +152,9 @@ class Pipeline:
         )
         self._workpiece_stage.generation_finished.connect(
             self._on_workpiece_generation_finished
+        )
+        self._workpiece_stage.workpiece_artifact_adopted.connect(
+            self._on_workpiece_artifact_adopted
         )
         self._step_stage.generation_finished.connect(
             self._on_step_task_completed
@@ -549,6 +553,21 @@ class Pipeline:
             self._check_and_update_processing_state
         )
 
+    def _on_workpiece_artifact_adopted(
+        self,
+        sender: WorkPiecePipelineStage,
+        *,
+        step_uid: str,
+        workpiece_uid: str,
+    ) -> None:
+        """
+        Handles the signal that a workpiece artifact has been adopted.
+        Relays the signal to notify workpiece elements.
+        """
+        self.workpiece_artifact_adopted.send(
+            self, step_uid=step_uid, workpiece_uid=workpiece_uid
+        )
+
     def _on_step_render_artifact_ready(
         self, sender: StepPipelineStage, *, step: Step
     ) -> None:
@@ -663,12 +682,14 @@ class Pipeline:
         *,
         step_uid: str,
         workpiece_uid: str,
+        handle: BaseArtifactHandle,
     ):
         """Relays signal that a view artifact has been updated."""
         self.workpiece_view_updated.send(
             self,
             step_uid=step_uid,
             workpiece_uid=workpiece_uid,
+            handle=handle,
         )
 
     def _on_workpiece_view_ready(
@@ -846,11 +867,19 @@ class Pipeline:
         step_uid: str,
         workpiece_uid: str,
         context: RenderContext,
+        force: bool = False,
     ):
         """
         Forwards a request to the view generator stage to render a new
         bitmap for a workpiece view.
+
+        Args:
+            step_uid: The unique identifier of the step.
+            workpiece_uid: The unique identifier of the workpiece.
+            context: The render context to use.
+            force: If True, force re-rendering even if the context appears
+                unchanged.
         """
         self._workpiece_view_stage.request_view_render(
-            step_uid, workpiece_uid, context
+            step_uid, workpiece_uid, context, force=force
         )

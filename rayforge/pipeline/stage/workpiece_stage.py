@@ -48,6 +48,7 @@ class WorkPiecePipelineStage(PipelineStage):
         self.generation_starting = Signal()
         self.visual_chunk_available = Signal()
         self.generation_finished = Signal()
+        self.workpiece_artifact_adopted = Signal()
 
     def _sizes_are_close(
         self,
@@ -288,6 +289,12 @@ class WorkPiecePipelineStage(PipelineStage):
                 adoption_event = self._adoption_events.get(key)
                 if adoption_event is not None:
                     adoption_event.set()
+
+                # Signal that a workpiece artifact has been adopted, which
+                # triggers view rendering for this step
+                self.workpiece_artifact_adopted.send(
+                    self, step_uid=s_uid, workpiece_uid=w_uid
+                )
                 return
 
             if event_name == "visual_chunk_ready":

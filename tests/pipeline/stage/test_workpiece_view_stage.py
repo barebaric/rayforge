@@ -1,6 +1,5 @@
 import unittest
 from unittest.mock import MagicMock, patch
-from typing import Any, cast
 
 from rayforge.pipeline.stage.workpiece_view_stage import (
     WorkPieceViewPipelineStage,
@@ -58,10 +57,6 @@ class TestWorkPieceViewStage(unittest.TestCase):
         self.assertEqual(
             call_args.kwargs["render_context_dict"], context.to_dict()
         )
-        # Verify that an adoption_event is passed
-        self.assertIn("adoption_event", call_args.kwargs)
-        # The event is a multiprocessing Event proxy
-        self.assertTrue(hasattr(call_args.kwargs["adoption_event"], "is_set"))
 
     @patch("rayforge.pipeline.stage.workpiece_view_stage.get_context")
     def test_stage_handles_events_and_completion(self, mock_get_context):
@@ -118,7 +113,7 @@ class TestWorkPieceViewStage(unittest.TestCase):
             mock_task, "view_artifact_created", {"handle_dict": handle_dict}
         )
 
-        # Assert 1: `adopt` is called, adoption event is set, and signals fire
+        # Assert 1: `adopt` is called and signals fire
         mock_get_context.return_value.artifact_store.adopt.assert_called_once()
         created_handler.assert_called_once()
         ready_handler.assert_called_once()
@@ -130,10 +125,6 @@ class TestWorkPieceViewStage(unittest.TestCase):
             ready_handler.call_args.kwargs["handle"],
             WorkPieceViewArtifactHandle,
         )
-        # Verify the adoption event was set
-        adoption_event = cast(Any, self.stage._adoption_events.get(key))
-        self.assertIsNotNone(adoption_event)
-        self.assertTrue(adoption_event.is_set())
 
         # Act 2: Simulate "updated" event
         when_event_cb(mock_task, "view_artifact_updated", {})
@@ -147,19 +138,17 @@ class TestWorkPieceViewStage(unittest.TestCase):
         # Act 3: Simulate task completion
         when_done_cb(mock_task)
 
-        # Assert 3: adoption event is cleaned up
+        # Assert 3: Task completion is signaled
         finished_handler.assert_called_once()
         self.assertEqual(finished_handler.call_args.kwargs["key"], key)
         # `ready` handler should NOT be called again on completion
         ready_handler.assert_called_once()
-        # Adoption event should be removed from tracking
-        self.assertNotIn(key, self.stage._adoption_events)
 
     @patch("rayforge.pipeline.stage.workpiece_view_stage.get_context")
-    def test_adoption_event_set_on_error(self, mock_get_context):
+    def test_adoption_failure_does_not_crash(self, mock_get_context):
         """
-        Tests that the adoption event is set even when adoption fails,
-        to prevent the worker from hanging.
+        Tests that adoption failures are handled gracefully without
+        crashing the stage.
         """
         step_uid, wp_uid = "s1", "w1"
         key = (step_uid, wp_uid)
@@ -192,9 +181,66 @@ class TestWorkPieceViewStage(unittest.TestCase):
             Exception("Adoption failed")
         )
 
+        # Mock signal handler to verify no crash
+        created_handler = MagicMock()
+        self.stage.view_artifact_created.connect(created_handler)
+
         # Act: Simulate "created" event with adoption failure
         handle_dict = {
             "shm_name": "test",
+            "bbox_mm": (0, 0, 1, 1),
+            "handle_class_name": "WorkPieceViewArtifactHandle",
+            "artifact_type_name": "WorkPieceViewArtifact",
+        }
+
+        when_event_cb(
+            mock_task, "view_artifact_created", {"handle_dict": handle_dict}
+        )
+
+        # Assert: Created signal was not sent due to adoption failure
+        created_handler.assert_not_called()
+
+    @patch("rayforge.pipeline.stage.workpiece_view_stage.get_context")
+    def test_multiple_view_artifact_updated_events(self, mock_get_context):
+        """
+        Tests that multiple view_artifact_updated events are sent and
+        processed correctly for progressive rendering.
+        """
+        step_uid, wp_uid = "s1", "w1"
+        key = (step_uid, wp_uid)
+        source_handle = WorkPieceArtifactHandle(
+            shm_name="source_shm",
+            handle_class_name="WorkPieceArtifactHandle",
+            artifact_type_name="WorkPieceArtifact",
+            is_scalable=True,
+            source_coordinate_system_name="MILLIMETER_SPACE",
+            source_dimensions=(10, 10),
+            generation_size=(10, 10),
+        )
+        self.mock_artifact_cache.get_workpiece_handle.return_value = (
+            source_handle
+        )
+        context = RenderContext((10.0, 10.0), False, 0, {})
+
+        self.stage.request_view_render(step_uid, wp_uid, context)
+
+        # Get the callbacks from the task manager call
+        self.mock_task_manager.run_process.assert_called_once()
+        call_kwargs = self.mock_task_manager.run_process.call_args.kwargs
+        when_event_cb = call_kwargs["when_event"]
+
+        mock_task = MagicMock()
+        mock_task.key = key
+
+        # Mock signal handlers
+        created_handler = MagicMock()
+        updated_handler = MagicMock()
+        self.stage.view_artifact_created.connect(created_handler)
+        self.stage.view_artifact_updated.connect(updated_handler)
+
+        # Act 1: Simulate "created" event
+        handle_dict = {
+            "shm_name": "test_view",
             "bbox_mm": (0, 0, 1, 1),
             "handle_class_name": "WorkPieceViewArtifactHandle",
             "artifact_type_name": "WorkPieceViewArtifact",
@@ -203,11 +249,93 @@ class TestWorkPieceViewStage(unittest.TestCase):
             mock_task, "view_artifact_created", {"handle_dict": handle_dict}
         )
 
-        # Assert: The adoption event should still be set to unblock worker
-        # even though adoption raised an exception
-        adoption_event = cast(Any, self.stage._adoption_events.get(key))
-        self.assertIsNotNone(adoption_event)
-        self.assertTrue(adoption_event.is_set())
+        # Assert 1: Created signal fired
+        created_handler.assert_called_once()
+
+        # Act 2: Simulate multiple "updated" events (progressive rendering)
+        when_event_cb(mock_task, "view_artifact_updated", {})
+        when_event_cb(mock_task, "view_artifact_updated", {})
+        when_event_cb(mock_task, "view_artifact_updated", {})
+
+        # Assert 2: All updated signals should be fired
+        self.assertEqual(updated_handler.call_count, 3)
+        # Each call should have the correct step_uid
+        for call in updated_handler.call_args_list:
+            self.assertEqual(call.kwargs["step_uid"], step_uid)
+            self.assertEqual(call.kwargs["workpiece_uid"], wp_uid)
+
+    @patch("rayforge.pipeline.stage.workpiece_view_stage.get_context")
+    def test_progressive_rendering_sends_multiple_updates(
+        self, mock_get_context
+    ):
+        """
+        Tests that the workpiece view stage correctly handles multiple
+        view_artifact_updated events for progressive rendering.
+        Verifies that each update is relayed correctly.
+        """
+        step_uid, wp_uid = "s1", "w1"
+        key = (step_uid, wp_uid)
+        source_handle = WorkPieceArtifactHandle(
+            shm_name="source_shm",
+            handle_class_name="WorkPieceArtifactHandle",
+            artifact_type_name="WorkPieceArtifact",
+            is_scalable=True,
+            source_coordinate_system_name="MILLIMETER_SPACE",
+            source_dimensions=(10, 10),
+            generation_size=(10, 10),
+        )
+        self.mock_artifact_cache.get_workpiece_handle.return_value = (
+            source_handle
+        )
+        context = RenderContext((10.0, 10.0), False, 0, {})
+
+        self.stage.request_view_render(step_uid, wp_uid, context)
+
+        # Get the callbacks from the task manager call
+        self.mock_task_manager.run_process.assert_called_once()
+        call_kwargs = self.mock_task_manager.run_process.call_args.kwargs
+        when_event_cb = call_kwargs["when_event"]
+
+        mock_task = MagicMock()
+        mock_task.key = key
+
+        # Mock signal handlers to track calls
+        created_handler = MagicMock()
+        updated_handler = MagicMock()
+        self.stage.view_artifact_created.connect(created_handler)
+        self.stage.view_artifact_updated.connect(updated_handler)
+
+        # Act 1: Simulate "created" event
+        handle_dict = {
+            "shm_name": "test_progressive",
+            "bbox_mm": (0, 0, 1, 1),
+            "handle_class_name": "WorkPieceViewArtifactHandle",
+            "artifact_type_name": "WorkPieceViewArtifact",
+        }
+        when_event_cb(
+            mock_task,
+            "view_artifact_created",
+            {"handle_dict": handle_dict},
+        )
+
+        # Assert 1: Created signal fired once
+        created_handler.assert_called_once()
+
+        # Act 2: Simulate multiple "updated" events (progressive rendering)
+        # This simulates the worker sending updates after drawing texture,
+        # after drawing vertices, etc.
+        when_event_cb(mock_task, "view_artifact_updated", {})
+        when_event_cb(mock_task, "view_artifact_updated", {})
+        when_event_cb(mock_task, "view_artifact_updated", {})
+
+        # Assert 2: All updated signals should be fired
+        self.assertEqual(updated_handler.call_count, 3)
+        # Each call should have the correct step_uid and workpiece_uid
+        for call in updated_handler.call_args_list:
+            self.assertEqual(call.kwargs["step_uid"], step_uid)
+            self.assertEqual(call.kwargs["workpiece_uid"], wp_uid)
+            # The handle should be the same for all updates (same artifact)
+            self.assertIsNotNone(call.kwargs["handle"])
 
 
 if __name__ == "__main__":

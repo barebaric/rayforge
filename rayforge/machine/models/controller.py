@@ -107,8 +107,10 @@ class MachineController:
         current_driver_name = self.machine.driver_name
         current_driver_args = self.machine.driver_args
 
-        if (current_driver_name != self._last_driver_name or
-                current_driver_args != self._last_driver_args):
+        if (
+            current_driver_name != self._last_driver_name
+            or current_driver_args != self._last_driver_args
+        ):
             self._last_driver_name = current_driver_name
             self._last_driver_args = current_driver_args.copy()
             task_mgr.add_coroutine(
