@@ -1,9 +1,12 @@
-from typing import Any, List, Tuple, Iterator, Optional, Dict
+from typing import Any, List, Tuple, Iterator, Optional, Dict, TYPE_CHECKING
 import numpy as np
 from ...shared.tasker.proxy import ExecutionContextProxy, BaseExecutionContext
 from ..encoder.vertexencoder import VertexEncoder
 from ...context import get_context
 from ..artifact import WorkPieceArtifact
+
+if TYPE_CHECKING:
+    import threading
 
 MAX_VECTOR_TRACE_PIXELS = 16 * 1024 * 1024
 
@@ -21,6 +24,7 @@ def make_workpiece_artifact_in_subprocess(
     generation_id: int,
     generation_size: Tuple[float, float],
     creator_tag: str,
+    adoption_event: Optional["threading.Event"] = None,
 ) -> int:
     """
     The main entry point for generating operations for a single (Step,
@@ -501,4 +505,21 @@ def make_workpiece_artifact_in_subprocess(
         "artifact_created",
         {"handle_dict": handle.to_dict(), "generation_id": generation_id},
     )
+
+    # Wait for main process to adopt the artifact before forgetting it
+    if adoption_event is not None:
+        logger.debug("Waiting for main process to adopt workpiece artifact...")
+        if adoption_event.wait(timeout=10):
+            logger.debug(
+                "Main process adopted workpiece artifact. Forgetting..."
+            )
+            artifact_store.forget(handle)
+            logger.info("Worker disowned workpiece artifact successfully")
+        else:
+            logger.warning(
+                "Main process failed to adopt workpiece artifact within "
+                "timeout. Releasing to prevent leak."
+            )
+            artifact_store.release(handle)
+
     return generation_id

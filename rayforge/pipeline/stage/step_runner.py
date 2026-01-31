@@ -1,7 +1,7 @@
 from __future__ import annotations
 import logging
 import math
-from typing import List, Dict, Any
+from typing import List, Dict, Any, TYPE_CHECKING, Optional
 from ...context import get_context
 from ...core.ops import Ops
 from ...core.matrix import Matrix
@@ -16,6 +16,9 @@ from ..artifact import (
 from ..artifact.base import TextureInstance
 from ..encoder.vertexencoder import VertexEncoder
 from ..transformer import OpsTransformer, transformer_by_name
+
+if TYPE_CHECKING:
+    import threading
 
 logger = logging.getLogger(__name__)
 
@@ -51,6 +54,7 @@ def make_step_artifact_in_subprocess(
     travel_speed: float,
     acceleration: float,
     creator_tag: str,
+    adoption_event: Optional["threading.Event"] = None,
 ) -> int:
     """
     Aggregates WorkPieceArtifacts, creates a StepArtifact, sends its handle
@@ -184,6 +188,30 @@ def make_step_artifact_in_subprocess(
             "generation_id": generation_id,
         },
     )
+
+    # Wait for main process to adopt both artifacts before forgetting them
+    if adoption_event is not None:
+        logger.debug(
+            "Waiting for main process to adopt step artifacts for "
+            f"{step_uid}..."
+        )
+        if adoption_event.wait(timeout=10):
+            logger.debug(
+                "Main process adopted step artifacts for "
+                f"{step_uid}. Forgetting..."
+            )
+            artifact_store.forget(render_handle)
+            artifact_store.forget(ops_handle)
+            logger.info(
+                f"Worker disowned step artifacts for {step_uid} successfully"
+            )
+        else:
+            logger.warning(
+                "Main process failed to adopt step artifacts for "
+                f"{step_uid} within timeout. Releasing to prevent leak."
+            )
+            artifact_store.release(render_handle)
+            artifact_store.release(ops_handle)
 
     # 7. Calculate time estimate
     proxy.set_message(_("Calculating time estimate..."))

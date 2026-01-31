@@ -1,8 +1,8 @@
 from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING, Dict, Optional
+import multiprocessing as mp
 from blinker import Signal
-
 from ...context import get_context
 from ..artifact import (
     StepRenderArtifactHandle,
@@ -12,6 +12,7 @@ from ..artifact import (
 from .base import PipelineStage
 
 if TYPE_CHECKING:
+    import threading
     from ...core.doc import Doc
     from ...core.step import Step
     from ...shared.tasker.manager import TaskManager
@@ -36,6 +37,7 @@ class StepPipelineStage(PipelineStage):
         super().__init__(task_manager, artifact_cache)
         self._generation_id_map: Dict[StepKey, int] = {}
         self._active_tasks: Dict[StepKey, "Task"] = {}
+        self._adoption_events: Dict[StepKey, "threading.Event"] = {}
         # Local cache for the accurate, post-transformer time estimates
         self._time_cache: Dict[StepKey, Optional[float]] = {}
 
@@ -56,6 +58,7 @@ class StepPipelineStage(PipelineStage):
         logger.debug("StepPipelineStage shutting down.")
         for key in list(self._active_tasks.keys()):
             self._cleanup_task(key)
+        self._adoption_events.clear()
 
     def reconcile(self, doc: "Doc"):
         """
@@ -106,6 +109,7 @@ class StepPipelineStage(PipelineStage):
             if task:
                 logger.debug(f"Cancelling active step task for {key}")
                 self._task_manager.cancel_task(task.key)
+        self._adoption_events.pop(key, None)
 
     def _cleanup_entry(self, key: StepKey, full_invalidation: bool):
         """Removes a step artifact, clears time cache, and cancels its task."""
@@ -180,6 +184,13 @@ class StepPipelineStage(PipelineStage):
         def when_event_callback(task: "Task", event_name: str, data: dict):
             self._on_task_event(task, event_name, data, step)
 
+        # Create an adoption event for the handshake protocol
+        # Use Manager to create a picklable Event that can be passed
+        # through queues
+        manager = mp.Manager()
+        adoption_event = manager.Event()
+        self._adoption_events[step.uid] = adoption_event
+
         task = self._task_manager.run_process(
             make_step_artifact_in_subprocess,
             assembly_info,
@@ -190,6 +201,7 @@ class StepPipelineStage(PipelineStage):
             machine.max_travel_speed,
             machine.acceleration,
             "step",
+            adoption_event=adoption_event,
             key=step.uid,
             when_done=when_done_callback,
             when_event=when_event_callback,  # Connect event listener
@@ -227,6 +239,11 @@ class StepPipelineStage(PipelineStage):
                 get_context().artifact_store.adopt(handle)
                 self._artifact_cache.put_step_ops_handle(step_uid, handle)
 
+                # Signal the worker that we've adopted both artifacts
+                adoption_event = self._adoption_events.get(step_uid)
+                if adoption_event is not None:
+                    adoption_event.set()
+
             elif event_name == "time_estimate_ready":
                 time_estimate = data["time_estimate"]
                 self._time_cache[step_uid] = time_estimate
@@ -235,6 +252,10 @@ class StepPipelineStage(PipelineStage):
                 )
         except Exception as e:
             logger.error(f"Error handling task event '{event_name}': {e}")
+            # Still set the event to unblock the worker
+            adoption_event = self._adoption_events.get(step_uid)
+            if adoption_event is not None:
+                adoption_event.set()
 
     def _on_assembly_complete(
         self, task: "Task", step: "Step", task_generation_id: int
@@ -242,6 +263,7 @@ class StepPipelineStage(PipelineStage):
         """Callback for when a step assembly task finishes."""
         step_uid = step.uid
         self._active_tasks.pop(step_uid, None)
+        self._adoption_events.pop(step_uid, None)
 
         if self._generation_id_map.get(step_uid) != task_generation_id:
             return
