@@ -2,7 +2,7 @@ import pytest
 from unittest.mock import MagicMock, AsyncMock
 from rayforge.machine.models.machine import Machine, Origin
 from rayforge.machine.driver.driver import Axis, DeviceState
-from rayforge.machine.transport import TransportStatus  # <-- Import added
+from rayforge.machine.transport import TransportStatus
 
 # Jog distance and speed for testing
 JOG_DISTANCE = 10.0
@@ -102,6 +102,8 @@ def test_jog_button_direction(
     machine.set_reverse_x_axis(expected_axis == Axis.X and reversed)
     machine.set_reverse_y_axis(expected_axis == Axis.Y and reversed)
     machine.set_reverse_z_axis(expected_axis == Axis.Z and reversed)
+    # Register the machine with the manager so controller can be accessed
+    ui_context_initializer.machine_mgr.add_machine(machine)
 
     # 2. Mock MachineCmd
     mock_machine_cmd = MagicMock()
@@ -228,19 +230,30 @@ def test_jog_button_limit_warning(
     machine.set_reverse_x_axis(reverse_x)
     machine.set_reverse_y_axis(reverse_y)
     machine.set_soft_limits_enabled(True)
-    # THIS IS THE FIX: The widget only checks limits if machine is connected
+    # Register the machine with the manager so controller can be accessed
+    ui_context_initializer.machine_mgr.add_machine(machine)
+
+    # 2. Create JogWidget and set its machine
+    # This creates the controller which resets device_state and
+    # connection_status
+    jog_widget = JogWidget()
+    jog_widget.jog_distance = JOG_DISTANCE
+    jog_widget.set_machine(machine, MagicMock())
+
+    # 3. Set connection status AFTER controller creation
+    # The controller's __init__ calls _reset_status() which resets to
+    # DISCONNECTED
     machine.connection_status = TransportStatus.CONNECTED
 
-    # 2. Mock current position by setting device state
+    # 4. Mock current position by setting device state AFTER controller
+    # creation. The controller's __init__ calls _reset_status() which
+    # resets device_state
     mock_state = DeviceState()
     mock_state.machine_pos = (current_pos[0], current_pos[1], 0.0)
     machine.device_state = mock_state
 
-    # 3. Create JogWidget and set its machine
-    # This automatically calls _update_limit_status
-    jog_widget = JogWidget()
-    jog_widget.jog_distance = JOG_DISTANCE
-    jog_widget.set_machine(machine, MagicMock())
+    # 5. Trigger limit status update since we changed the device state
+    jog_widget._update_limit_status()
 
     # 4. Collect all buttons that have the warning class
     buttons = {
