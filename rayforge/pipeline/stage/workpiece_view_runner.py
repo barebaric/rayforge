@@ -3,7 +3,7 @@ import logging
 import math
 import numpy as np
 import cairo
-from typing import Optional, Tuple, Dict, Any, List
+from typing import TYPE_CHECKING, Optional, Tuple, Dict, Any, List
 from multiprocessing import shared_memory
 from ...shared.tasker.proxy import ExecutionContextProxy
 from ...context import get_context
@@ -16,6 +16,9 @@ from ..artifact.workpiece_view import (
     WorkPieceViewArtifact,
 )
 from ...shared.util.colors import ColorSet
+
+if TYPE_CHECKING:
+    import threading
 
 logger = logging.getLogger(__name__)
 
@@ -174,6 +177,7 @@ def make_workpiece_view_artifact_in_subprocess(
     workpiece_artifact_handle_dict: Dict[str, Any],
     render_context_dict: Dict[str, Any],
     creator_tag: str,
+    adoption_event: Optional["threading.Event"] = None,
 ) -> Optional[Dict[str, Any]]:
     """
     Renders a WorkPieceArtifact to a bitmap in a background process.
@@ -252,6 +256,20 @@ def make_workpiece_view_artifact_in_subprocess(
     finally:
         if shm:
             shm.close()
+
+    # Wait for main process to adopt the artifact before forgetting it
+    if adoption_event is not None:
+        logger.debug("Waiting for main process to adopt view artifact...")
+        if adoption_event.wait(timeout=10):
+            logger.debug("Main process adopted view artifact. Forgetting...")
+            artifact_store.forget(view_handle)
+            logger.info("Worker disowned view artifact successfully")
+        else:
+            logger.warning(
+                "Main process failed to adopt view artifact within "
+                "timeout. Releasing to prevent leak."
+            )
+            artifact_store.release(view_handle)
 
     proxy.set_progress(1.0)
     # The result is communicated via events; return None.
