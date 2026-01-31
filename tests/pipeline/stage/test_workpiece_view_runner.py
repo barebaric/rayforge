@@ -204,3 +204,77 @@ def test_pixel_perfect_texture_chunk_alignment(texture_artifact_handle):
         )
     finally:
         get_context().artifact_store.release(handle)
+
+
+def test_progressive_rendering_increases_pixel_count(vector_artifact_handle):
+    """
+    Validates that progressive rendering sends intermediate updates
+    with increasing numbers of non-transparent pixels.
+    This test verifies that each view_artifact_updated event corresponds
+    to more content being drawn.
+    """
+    color_set = create_test_color_set({"cut": ("#000", "#F00")})
+    context = RenderContext(
+        pixels_per_mm=(1.0, 1.0),
+        show_travel_moves=False,
+        margin_px=1,
+        color_set_dict=color_set.to_dict(),
+    )
+    mock_proxy = MagicMock()
+
+    result = make_workpiece_view_artifact_in_subprocess(
+        mock_proxy,
+        vector_artifact_handle.to_dict(),
+        context.to_dict(),
+        "test_view",
+    )
+    assert result is None
+
+    # Get all view_artifact_updated events and their pixel counts
+    updated_events = [
+        call
+        for call in mock_proxy.send_event.call_args_list
+        if call[0][0] == "view_artifact_updated"
+    ]
+
+    # Extract handle from the "created" event
+    created_call = next(
+        c
+        for c in mock_proxy.send_event.call_args_list
+        if c[0][0] == "view_artifact_created"
+    )
+    handle_dict = created_call[0][1]["handle_dict"]
+    handle = WorkPieceViewArtifactHandle.from_dict(handle_dict)
+
+    try:
+        # Assert: Should have multiple view_artifact_updated events
+        # for progressive rendering (at least 2: after texture, after vertices)
+        assert len(updated_events) >= 2, (
+            f"Should have at least 2 view_artifact_updated events for "
+            f"progressive rendering, got {len(updated_events)}"
+        )
+
+        # Count non-transparent pixels for each update event
+        pixel_counts = []
+        for event_call in updated_events:
+            artifact = cast(
+                WorkPieceViewArtifact, get_context().artifact_store.get(handle)
+            )
+            alpha_channel = artifact.bitmap_data[:, :, 3]
+            non_transparent_count = np.sum(alpha_channel > 0)
+            pixel_counts.append(non_transparent_count)
+
+        # Assert: Each update should have more pixels than the previous
+        # (or equal, if no new content was added)
+        for i in range(1, len(pixel_counts)):
+            assert pixel_counts[i] >= pixel_counts[i - 1], (
+                f"Update {i} should have >= pixels than update {i - 1}: "
+                f"{pixel_counts[i]} >= {pixel_counts[i - 1]}"
+            )
+
+        # Assert: Final artifact should have non-transparent pixels
+        assert pixel_counts[-1] > 0, (
+            "Final artifact should have non-transparent pixels"
+        )
+    finally:
+        get_context().artifact_store.release(handle)

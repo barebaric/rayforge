@@ -747,6 +747,88 @@ class TestPipeline:
         finally:
             get_context().artifact_store.release(wp_handle)
 
+    def test_workpiece_visual_chunk_ready_signal_emitted(
+        self, doc, real_workpiece, mock_task_mgr, context_initializer
+    ):
+        """
+        Tests that the workpiece_visual_chunk_ready signal is emitted
+        correctly when a visual_chunk_ready event is received.
+        """
+        # Arrange
+        layer = self._setup_doc_with_workpiece(doc, real_workpiece)
+        assert layer.workflow is not None
+        step = create_contour_step(context_initializer)
+        layer.workflow.add_step(step)
+
+        pipeline = Pipeline(doc, mock_task_mgr)
+        mock_task_mgr.run_process.assert_called_once()
+        task_info = mock_task_mgr.created_tasks[0]
+
+        # Track signal emissions
+        received_signals = []
+
+        def on_chunk_ready(sender, *, workpiece, chunk_handle, generation_id):
+            received_signals.append(
+                {
+                    "sender": sender,
+                    "workpiece": workpiece,
+                    "chunk_handle": chunk_handle,
+                    "generation_id": generation_id,
+                }
+            )
+
+        pipeline.workpiece_visual_chunk_ready.connect(on_chunk_ready)
+
+        # Create a mock chunk artifact
+        chunk_ops = Ops()
+        chunk_ops.move_to(0, 0, 0)
+        chunk_ops.line_to(1, 1, 0)
+
+        chunk_vertex_data = VertexData(
+            powered_vertices=np.array([[0, 0, 0], [1, 1, 0]]),
+            powered_colors=np.array([[1, 1, 1, 1], [1, 1, 1, 1]]),
+        )
+
+        chunk_artifact = WorkPieceArtifact(
+            ops=chunk_ops,
+            is_scalable=True,
+            source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
+            source_dimensions=real_workpiece.size,
+            generation_size=real_workpiece.size,
+            vertex_data=chunk_vertex_data,
+        )
+
+        chunk_handle = get_context().artifact_store.put(
+            chunk_artifact, creator_tag="test_chunk"
+        )
+
+        gen_id = 1
+
+        task_obj_for_stage = task_info.returned_task_obj
+        task_obj_for_stage.key = task_info.key
+
+        try:
+            # Simulate receiving a visual_chunk_ready event
+            chunk_event_data = {
+                "handle_dict": chunk_handle.to_dict(),
+                "generation_id": gen_id,
+            }
+            task_info.when_event(
+                task_obj_for_stage, "visual_chunk_ready", chunk_event_data
+            )
+
+            # Assert
+            assert len(received_signals) == 1
+            signal_data = received_signals[0]
+            assert signal_data["sender"] is step
+            assert signal_data["workpiece"] is real_workpiece
+            assert signal_data["generation_id"] == gen_id
+            assert (
+                signal_data["chunk_handle"].to_dict() == chunk_handle.to_dict()
+            )
+        finally:
+            get_context().artifact_store.release(chunk_handle)
+
     def test_get_artifact_handle(
         self, doc, real_workpiece, mock_task_mgr, context_initializer
     ):
