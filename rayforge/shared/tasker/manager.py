@@ -597,15 +597,10 @@ class TaskManager:
 
         def on_update(sender, tasks, **kwargs):
             """Signal handler that checks if the manager is idle."""
-            if not tasks:
-                # The manager is now idle. Set the event and disconnect.
+            if not self.has_tasks():
+                # The manager is now idle. Set the event.
                 settled_event.set()
-                try:
-                    self.tasks_updated.disconnect(on_update)
-                except (ValueError, KeyError):
-                    # Signal might have been disconnected by the main thread
-                    # or another cleanup call. This is expected.
-                    pass
+                self.tasks_updated.disconnect(on_update)
 
         # Connect the handler FIRST to avoid race conditions where the
         # signal is fired after has_tasks() check but before connect().
@@ -615,24 +610,31 @@ class TaskManager:
         # Check this AFTER connecting to ensure we don't miss a signal
         # that fires immediately after the check.
         if not self.has_tasks():
-            try:
-                self.tasks_updated.disconnect(on_update)
-            except (ValueError, KeyError):
-                pass
+            self.tasks_updated.disconnect(on_update)
             return True
 
-        # Wait for the event to be set by the callback. This is a blocking
-        # call, but it does NOT block the main_thread_scheduler's event loop,
-        # allowing the cleanup callbacks to run and trigger our on_update.
-        event_was_set = settled_event.wait(timeout=timeout_seconds)
+        # Wait for the event to be set by the callback, polling periodically
+        # to handle cases where the signal dispatch might be blocked.
+        poll_interval = 0.01
+        total_waited = 0.0
+        event_was_set = False
+
+        while total_waited < timeout_seconds:
+            remaining = timeout_seconds - total_waited
+            wait_time = min(poll_interval, remaining)
+
+            if settled_event.wait(timeout=wait_time):
+                event_was_set = True
+                break
+
+            if not self.has_tasks():
+                break
+
+            total_waited += wait_time
 
         # Always try to disconnect in case of a timeout to prevent leaks.
-        try:
-            self.tasks_updated.disconnect(on_update)
-        except (ValueError, KeyError):
-            pass
-
-        return event_was_set
+        self.tasks_updated.disconnect(on_update)
+        return event_was_set or not self.has_tasks()
 
 
 class TaskManagerProxy:
