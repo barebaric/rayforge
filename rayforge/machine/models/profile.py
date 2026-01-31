@@ -221,7 +221,7 @@ PROFILES: List[MachineProfile] = [
     ),
     MachineProfile(
         name="Sculpfun iCube",
-        driver_class_name="GrblDriver",
+        driver_class_name="GrblSerialDriver",
         dialect_uid="grbl",
         gcode_precision=3,
         dimensions=(120, 120),
@@ -292,7 +292,7 @@ PROFILES: List[MachineProfile] = [
     ),
     MachineProfile(
         name=_("Other Device"),
-        driver_class_name="GrblDriver",
+        driver_class_name="GrblSerialDriver",
         dialect_uid="grbl",
         origin=Origin.BOTTOM_LEFT,
     ),

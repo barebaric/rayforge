@@ -3,7 +3,7 @@ from gi.repository import Adw, Gtk
 from ..shared.adwfix import get_spinrow_int
 from ..shared.unit_spin_row import UnitSpinRowHelper
 from ..varset.varsetwidget import VarSetWidget
-from ...machine.driver import drivers
+from ...machine.driver import drivers, get_driver_cls
 from ...machine.driver.driver import Axis
 from ...machine.models.machine import Machine, Origin
 
@@ -53,7 +53,6 @@ class GeneralPreferencesPage(Adw.PreferencesPage):
         self.driver_store = Gtk.StringList()
         for d in drivers:
             self.driver_store.append(d.label)
-        driver_cls = machine.driver.__class__
 
         self.combo_row = Adw.ComboRow(
             title=_("Select driver"),
@@ -69,10 +68,20 @@ class GeneralPreferencesPage(Adw.PreferencesPage):
         factory.connect("bind", self.on_factory_bind)
         self.combo_row.set_factory(factory)
 
+        # Get the driver class from driver_name (not from driver instance
+        # which may not be ready yet)
+        driver_cls = None
+        if self.machine.driver_name:
+            driver_cls = get_driver_cls(self.machine.driver_name)
+
         # Perform the initial population of the driver VarSet
-        initial_var_set = driver_cls.get_setup_vars()
-        initial_var_set.set_values(self.machine.driver_args)
-        self.driver_group.populate(initial_var_set)
+        if driver_cls:
+            initial_var_set = driver_cls.get_setup_vars()
+            initial_var_set.set_values(self.machine.driver_args)
+            self.driver_group.populate(initial_var_set)
+        else:
+            # No driver selected yet, clear the widget
+            self.driver_group.clear_dynamic_rows()
 
         # Connect to the machine's changed signal to get updates
         self.machine.changed.connect(self._on_machine_changed)
