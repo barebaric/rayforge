@@ -150,6 +150,9 @@ class Pipeline:
         self._workpiece_stage.visual_chunk_available.connect(
             self._on_workpiece_visual_chunk_available
         )
+        self._workpiece_stage.visual_chunk_available.connect(
+            self._workpiece_view_stage._on_workpiece_chunk_available
+        )
         self._workpiece_stage.generation_finished.connect(
             self._on_workpiece_generation_finished
         )

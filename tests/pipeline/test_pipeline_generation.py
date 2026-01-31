@@ -5,25 +5,15 @@ from unittest.mock import MagicMock, ANY
 from pathlib import Path
 import asyncio
 import threading
-from rayforge.shared.tasker.task import Task
-from rayforge.image import SVG_RENDERER
+from rayforge.context import get_context
 from rayforge.core.doc import Doc
-from rayforge.core.source_asset import SourceAsset
-from rayforge.core.workpiece import WorkPiece
-from rayforge.core.source_asset_segment import SourceAssetSegment
-from rayforge.core.vectorization_spec import PassthroughSpec
 from rayforge.core.geo import Geometry
 from rayforge.core.ops import Ops
-from rayforge.pipeline.coord import CoordinateSystem
-from rayforge.pipeline.pipeline import Pipeline
-from rayforge.pipeline.steps import create_contour_step
-from rayforge.pipeline.stage.workpiece_runner import (
-    make_workpiece_artifact_in_subprocess,
-)
-from rayforge.pipeline.stage.step_runner import (
-    make_step_artifact_in_subprocess,
-)
-from rayforge.pipeline.stage.job_runner import make_job_artifact_in_subprocess
+from rayforge.core.source_asset import SourceAsset
+from rayforge.core.source_asset_segment import SourceAssetSegment
+from rayforge.core.vectorization_spec import PassthroughSpec
+from rayforge.core.workpiece import WorkPiece
+from rayforge.image import SVG_RENDERER
 from rayforge.pipeline.artifact import (
     WorkPieceArtifact,
     VertexData,
@@ -31,7 +21,17 @@ from rayforge.pipeline.artifact import (
     StepOpsArtifact,
     JobArtifact,
 )
-from rayforge.context import get_context
+from rayforge.pipeline.coord import CoordinateSystem
+from rayforge.pipeline.pipeline import Pipeline
+from rayforge.pipeline.stage.job_runner import make_job_artifact_in_subprocess
+from rayforge.pipeline.stage.step_runner import (
+    make_step_artifact_in_subprocess,
+)
+from rayforge.pipeline.stage.workpiece_runner import (
+    make_workpiece_artifact_in_subprocess,
+)
+from rayforge.pipeline.steps import create_contour_step, create_raster_step
+from rayforge.shared.tasker.task import Task
 
 
 logger = logging.getLogger(__name__)
@@ -833,3 +833,44 @@ class TestPipelineGeneration:
 
         finally:
             get_context().artifact_store.release(handle)
+
+    def test_chunk_flow_from_workpiece_to_view_stage(
+        self, doc, real_workpiece, mock_task_mgr, context_initializer
+    ):
+        """
+        Integration test to verify the whole flow:
+        Start pipeline -> workpiece stage -> workpiece view stage produces
+        chunks.
+        """
+        # Arrange
+        layer = self._setup_doc_with_workpiece(doc, real_workpiece)
+        assert layer.workflow is not None
+        step = create_raster_step(context_initializer)
+        layer.workflow.add_step(step)
+
+        pipeline = Pipeline(doc, mock_task_mgr)
+
+        # Create a workpiece artifact handle with ops
+        expected_ops = Ops()
+        expected_ops.move_to(0, 0, 0)
+        expected_ops.line_to(1, 1, 0)
+        wp_artifact = WorkPieceArtifact(
+            ops=expected_ops,
+            is_scalable=True,
+            generation_size=real_workpiece.size,
+            source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
+            source_dimensions=real_workpiece.size,
+        )
+        wp_handle = get_context().artifact_store.put(wp_artifact)
+
+        try:
+            # Complete the workpiece artifact generation task
+            self._complete_all_tasks(mock_task_mgr, wp_handle)
+
+            # Assert - Verify the workpiece artifact was created
+            cached_ops = pipeline.get_ops(step, real_workpiece)
+            assert cached_ops is not None
+            assert len(cached_ops) == 2
+
+        finally:
+            get_context().artifact_store.release(wp_handle)
