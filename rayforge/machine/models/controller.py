@@ -51,6 +51,22 @@ class MachineController:
         self.driver: Driver = NoDeviceDriver(context, machine)
         self._connect_driver_signals()
 
+        # Track the last driver configuration to detect changes
+        self._last_driver_name = self.machine.driver_name
+        self._last_driver_args = self.machine.driver_args.copy()
+
+        # Listen to machine's changed signal to rebuild driver when
+        # driver configuration changes
+        self.machine.changed.connect(self._on_machine_changed)
+
+        # If the machine already has a driver_name configured, rebuild
+        # the driver instance to match
+        if self.machine.driver_name:
+            task_mgr.add_coroutine(
+                self._rebuild_driver_instance,
+                key=(self.machine.id, "rebuild-driver-on-init"),
+            )
+
     async def connect(self):
         """Public method to connect the driver."""
         if self.driver is not None:
@@ -78,9 +94,27 @@ class MachineController:
         if self.driver is not None:
             await self.driver.cleanup()
         self._disconnect_driver_signals()
+        self.machine.changed.disconnect(self._on_machine_changed)
         self.context.dialect_mgr.dialects_changed.disconnect(
             self._on_dialects_changed
         )
+
+    def _on_machine_changed(self, sender=None, **kwargs):
+        """
+        Callback when the machine's configuration changes.
+        Triggers driver rebuild only if the driver configuration has changed.
+        """
+        current_driver_name = self.machine.driver_name
+        current_driver_args = self.machine.driver_args
+
+        if (current_driver_name != self._last_driver_name or
+                current_driver_args != self._last_driver_args):
+            self._last_driver_name = current_driver_name
+            self._last_driver_args = current_driver_args.copy()
+            task_mgr.add_coroutine(
+                self._rebuild_driver_instance,
+                key=(self.machine.id, "rebuild-driver-on-change"),
+            )
 
     def _connect_driver_signals(self):
         if self.driver is None:
