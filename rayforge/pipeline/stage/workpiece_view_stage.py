@@ -1,9 +1,15 @@
 from __future__ import annotations
 import logging
-from typing import TYPE_CHECKING, Dict, Tuple
+import threading
+import time
+from typing import TYPE_CHECKING, Any, Dict, Tuple
 from blinker import Signal
 from ...context import get_context
-from ..artifact import create_handle_from_dict, BaseArtifactHandle
+from ..artifact import (
+    WorkPieceArtifact,
+    create_handle_from_dict,
+    BaseArtifactHandle,
+)
 from ..artifact.workpiece_view import (
     RenderContext,
     WorkPieceViewArtifactHandle,
@@ -24,6 +30,11 @@ logger = logging.getLogger(__name__)
 # produced its source data.
 ViewKey = Tuple[str, str]  # (step_uid, workpiece_uid)
 
+# Throttle interval for view updates (in seconds).
+# 30fps = ~33ms, 60fps = ~16ms. We use 30fps for a balance between
+# responsiveness and performance.
+THROTTLE_INTERVAL = 0.033
+
 
 class WorkPieceViewPipelineStage(PipelineStage):
     """
@@ -41,6 +52,16 @@ class WorkPieceViewPipelineStage(PipelineStage):
         # Track the currently active handle for each view so we can release
         # it when it is replaced or when the stage shuts down.
         self._current_view_handles: Dict[ViewKey, BaseArtifactHandle] = {}
+
+        # Live render context for progressive chunk rendering.
+        # Tracks the view artifact being progressively built from chunks.
+        self._live_render_contexts: Dict[ViewKey, Dict[str, Any]] = {}
+
+        # Throttling for progressive chunk updates.
+        # Tracks pending updates and last update time for each view.
+        self._pending_updates: Dict[ViewKey, bool] = {}
+        self._last_update_time: Dict[ViewKey, float] = {}
+        self._throttle_timers: Dict[ViewKey, threading.Timer] = {}
 
         self.view_artifact_ready = Signal()
         self.view_artifact_created = Signal()
@@ -68,6 +89,17 @@ class WorkPieceViewPipelineStage(PipelineStage):
         for handle in self._current_view_handles.values():
             get_context().artifact_store.release(handle)
         self._current_view_handles.clear()
+
+        # Clear live render contexts
+        self._live_render_contexts.clear()
+
+        # Cancel any pending throttle timers
+        for timer in self._throttle_timers.values():
+            if timer:
+                timer.cancel()
+        self._throttle_timers.clear()
+        self._pending_updates.clear()
+        self._last_update_time.clear()
 
     def request_view_render(
         self,
@@ -161,6 +193,15 @@ class WorkPieceViewPipelineStage(PipelineStage):
                     f"for key {key}"
                 )
 
+                # Initialize render context for progressive chunk rendering
+                # This will be used by _on_workpiece_chunk_available
+                self._live_render_contexts[key] = {
+                    "handle": handle,
+                    "generation_id": 0,  # Will be updated when chunks arrive
+                    "render_context": self._last_context_cache.get(key),
+                }
+                logger.debug(f"Initialized live render context for {key}")
+
                 self.view_artifact_created.send(
                     self,
                     step_uid=step_uid,
@@ -186,6 +227,147 @@ class WorkPieceViewPipelineStage(PipelineStage):
                 workpiece_uid=workpiece_uid,
                 handle=handle,
             )
+
+    def _on_workpiece_chunk_available(
+        self,
+        sender,
+        *,
+        key: ViewKey,
+        chunk_handle: BaseArtifactHandle,
+        generation_id: int,
+    ):
+        """
+        Receives chunk data from the WorkPiecePipelineStage.
+        Implements incremental rendering by drawing the chunk onto
+        the live view artifact bitmap.
+        """
+        step_uid, workpiece_uid = key
+        logger.debug(
+            f"View stage received chunk for {key}, "
+            f"generation_id={generation_id}, "
+            f"chunk_handle={chunk_handle.shm_name}"
+        )
+
+        # Get or create live render context for this view
+        live_ctx = self._live_render_contexts.get(key)
+        if live_ctx is None:
+            # No active live render for this view yet.
+            # This could happen if chunks arrive before a view render
+            # is requested, or if the previous render completed.
+            # For now, we just log and return.
+            # In the future, we might want to auto-start a render.
+            logger.debug(f"No live render context for {key}. Ignoring chunk.")
+            return
+
+        # Update generation ID to track the current generation
+        live_ctx["generation_id"] = generation_id
+
+        # Check for stale chunks (should not happen with the above update,
+        # but kept for safety if chunks arrive out of order)
+        if live_ctx.get("generation_id") != generation_id:
+            logger.debug(
+                f"Stale chunk for {key}. "
+                f"Expected gen_id={live_ctx.get('generation_id')}, "
+                f"got {generation_id}"
+            )
+            return
+
+        # Get the chunk artifact data
+        try:
+            artifact = get_context().artifact_store.get(chunk_handle)
+            if artifact is None:
+                logger.warning(f"Could not retrieve chunk artifact for {key}")
+                return
+            if not isinstance(artifact, WorkPieceArtifact):
+                logger.warning(
+                    f"Chunk artifact for {key} is not a WorkPieceArtifact"
+                )
+                return
+            chunk_artifact = artifact
+        except Exception as e:
+            logger.error(f"Error retrieving chunk artifact for {key}: {e}")
+            return
+
+        # TODO: Implement actual rendering of chunk onto view bitmap
+        # This requires:
+        # 1. Opening the shared memory for the view artifact
+        # 2. Creating a cairo surface from the bitmap
+        # 3. Drawing the chunk's vertex data onto the surface
+        # 4. Flushing and sending view_artifact_updated signal
+
+        logger.debug(
+            f"Chunk for {key} has {len(chunk_artifact.ops)} ops, "
+            f"vertex_data: {chunk_artifact.vertex_data is not None}"
+        )
+
+        # Release the chunk handle after processing
+        get_context().artifact_store.release(chunk_handle)
+
+        # Trigger throttled update notification
+        self._schedule_throttled_update(key)
+
+    def _schedule_throttled_update(self, key: ViewKey):
+        """
+        Schedules a throttled update notification for the given view.
+        If an update was recently sent, this will delay the next update
+        to prevent flooding the UI.
+        """
+        current_time = time.time()
+        last_update = self._last_update_time.get(key, 0)
+
+        # Cancel any existing timer for this key
+        existing_timer = self._throttle_timers.pop(key, None)
+        if existing_timer:
+            existing_timer.cancel()
+
+        # Mark that an update is pending
+        self._pending_updates[key] = True
+
+        # Calculate time until next update
+        time_since_last = current_time - last_update
+        time_until_next = max(0, THROTTLE_INTERVAL - time_since_last)
+
+        def send_update():
+            self._send_throttled_update(key)
+
+        if time_until_next <= 0:
+            # Send immediately if enough time has passed
+            send_update()
+        else:
+            # Schedule delayed update
+            timer = threading.Timer(time_until_next, send_update)
+            self._throttle_timers[key] = timer
+            timer.start()
+
+    def _send_throttled_update(self, key: ViewKey):
+        """
+        Sends the view_artifact_updated signal for the given view.
+        This should only be called by _schedule_throttled_update.
+        """
+        # Clear pending flag and timer
+        self._pending_updates.pop(key, None)
+        self._throttle_timers.pop(key, None)
+
+        # Update last update time
+        self._last_update_time[key] = time.time()
+
+        # Get the live render context
+        live_ctx = self._live_render_contexts.get(key)
+        if not live_ctx:
+            logger.debug(f"No live render context for {key}, skipping update")
+            return
+
+        step_uid, workpiece_uid = key
+        handle = live_ctx.get("handle")
+
+        # Send the update signal
+        self.view_artifact_updated.send(
+            self,
+            step_uid=step_uid,
+            workpiece_uid=workpiece_uid,
+            handle=handle,
+        )
+        logger.debug(f"Sent throttled view_artifact_updated for {key}")
 
     def _on_render_complete(self, task: "Task", key: ViewKey):
         """

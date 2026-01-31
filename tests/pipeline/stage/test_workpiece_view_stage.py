@@ -1,4 +1,5 @@
 import unittest
+import numpy as np
 from unittest.mock import MagicMock, patch
 
 from rayforge.pipeline.stage.workpiece_view_stage import (
@@ -6,9 +7,13 @@ from rayforge.pipeline.stage.workpiece_view_stage import (
 )
 from rayforge.pipeline.artifact import (
     RenderContext,
+    WorkPieceArtifact,
     WorkPieceArtifactHandle,
     WorkPieceViewArtifactHandle,
+    VertexData,
 )
+from rayforge.core.ops import Ops
+from rayforge.pipeline.coord import CoordinateSystem
 
 
 class TestWorkPieceViewStage(unittest.TestCase):
@@ -336,6 +341,193 @@ class TestWorkPieceViewStage(unittest.TestCase):
             self.assertEqual(call.kwargs["workpiece_uid"], wp_uid)
             # The handle should be the same for all updates (same artifact)
             self.assertIsNotNone(call.kwargs["handle"])
+
+    def test_on_workpiece_chunk_available_receives_chunks(self):
+        """
+        Tests that _on_workpiece_chunk_available is called when a chunk
+        is available from the workpiece stage.
+        """
+        step_uid, wp_uid = "s1", "w1"
+        key = (step_uid, wp_uid)
+
+        # Create a mock chunk handle
+        chunk_handle = WorkPieceArtifactHandle(
+            shm_name="chunk_shm",
+            handle_class_name="WorkPieceArtifactHandle",
+            artifact_type_name="WorkPieceArtifact",
+            is_scalable=True,
+            source_coordinate_system_name="MILLIMETER_SPACE",
+            source_dimensions=(10, 10),
+            generation_size=(10, 10),
+        )
+
+        generation_id = 1
+
+        # Act: Call _on_workpiece_chunk_available directly
+        self.stage._on_workpiece_chunk_available(
+            sender=None,
+            key=key,
+            chunk_handle=chunk_handle,
+            generation_id=generation_id,
+        )
+
+        # Assert: The method should complete without errors
+        # For now, it just logs, so we just verify it doesn't crash
+
+    @patch("rayforge.pipeline.stage.workpiece_view_stage.get_context")
+    def test_live_render_context_established_on_view_creation(
+        self, mock_get_context
+    ):
+        """
+        Tests that a live render context is established when a view
+        artifact is created, enabling progressive chunk rendering.
+        """
+        step_uid, wp_uid = "s1", "w1"
+        key = (step_uid, wp_uid)
+        source_handle = WorkPieceArtifactHandle(
+            shm_name="source_shm",
+            handle_class_name="WorkPieceArtifactHandle",
+            artifact_type_name="WorkPieceArtifact",
+            is_scalable=True,
+            source_coordinate_system_name="MILLIMETER_SPACE",
+            source_dimensions=(10, 10),
+            generation_size=(10, 10),
+        )
+        self.mock_artifact_cache.get_workpiece_handle.return_value = (
+            source_handle
+        )
+        context = RenderContext((10.0, 10.0), False, 0, {})
+
+        self.stage.request_view_render(step_uid, wp_uid, context)
+
+        # Get the callbacks from the task manager call
+        self.mock_task_manager.run_process.assert_called_once()
+        call_kwargs = self.mock_task_manager.run_process.call_args.kwargs
+        when_event_cb = call_kwargs["when_event"]
+
+        mock_task = MagicMock()
+        mock_task.key = key
+
+        # Act: Simulate "created" event
+        handle_dict = {
+            "shm_name": "test_live_render",
+            "bbox_mm": (0, 0, 1, 1),
+            "handle_class_name": "WorkPieceViewArtifactHandle",
+            "artifact_type_name": "WorkPieceViewArtifact",
+        }
+        when_event_cb(
+            mock_task, "view_artifact_created", {"handle_dict": handle_dict}
+        )
+
+        # Assert: Live render context should be established
+        self.assertIn(key, self.stage._live_render_contexts)
+        live_ctx = self.stage._live_render_contexts[key]
+        self.assertIn("handle", live_ctx)
+        self.assertIn("generation_id", live_ctx)
+        self.assertIn("render_context", live_ctx)
+        self.assertEqual(live_ctx["render_context"], context)
+
+    @patch("rayforge.pipeline.stage.workpiece_view_stage.get_context")
+    def test_throttled_notification_limits_update_frequency(
+        self, mock_get_context
+    ):
+        """
+        Tests that throttled notification limits the frequency of
+        view_artifact_updated signals when many chunks arrive quickly.
+        """
+        step_uid, wp_uid = "s1", "w1"
+        key = (step_uid, wp_uid)
+        source_handle = WorkPieceArtifactHandle(
+            shm_name="source_shm",
+            handle_class_name="WorkPieceArtifactHandle",
+            artifact_type_name="WorkPieceArtifact",
+            is_scalable=True,
+            source_coordinate_system_name="MILLIMETER_SPACE",
+            source_dimensions=(10, 10),
+            generation_size=(10, 10),
+        )
+        self.mock_artifact_cache.get_workpiece_handle.return_value = (
+            source_handle
+        )
+        context = RenderContext((10.0, 10.0), False, 0, {})
+
+        self.stage.request_view_render(step_uid, wp_uid, context)
+
+        # Get the callbacks from the task manager call
+        self.mock_task_manager.run_process.assert_called_once()
+        call_kwargs = self.mock_task_manager.run_process.call_args.kwargs
+        when_event_cb = call_kwargs["when_event"]
+
+        mock_task = MagicMock()
+        mock_task.key = key
+
+        # Act 1: Create view artifact to establish live render context
+        handle_dict = {
+            "shm_name": "test_throttle",
+            "bbox_mm": (0, 0, 1, 1),
+            "handle_class_name": "WorkPieceViewArtifactHandle",
+            "artifact_type_name": "WorkPieceViewArtifact",
+        }
+        when_event_cb(
+            mock_task, "view_artifact_created", {"handle_dict": handle_dict}
+        )
+
+        # Track update signal calls
+        update_handler = MagicMock()
+        self.stage.view_artifact_updated.connect(update_handler)
+
+        # Mock artifact store.get to return a real WorkPieceArtifact
+        chunk_ops = Ops()
+        chunk_ops.move_to(0, 0, 0)
+        chunk_ops.line_to(1, 1, 0)
+
+        chunk_vertex_data = VertexData(
+            powered_vertices=np.array([[0, 0, 0], [1, 1, 0]]),
+            powered_colors=np.array([[1, 1, 1, 1], [1, 1, 1, 1]]),
+        )
+
+        chunk_artifact = WorkPieceArtifact(
+            ops=chunk_ops,
+            is_scalable=True,
+            source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
+            source_dimensions=(10.0, 10.0),
+            generation_size=(10.0, 10.0),
+            vertex_data=chunk_vertex_data,
+        )
+        mock_get_context.return_value.artifact_store.get.return_value = (
+            chunk_artifact
+        )
+
+        # Act 2: Flood with 10 chunk updates (simulating rapid chunk arrival)
+        chunk_handle = WorkPieceArtifactHandle(
+            shm_name="chunk_shm",
+            handle_class_name="WorkPieceArtifactHandle",
+            artifact_type_name="WorkPieceArtifact",
+            is_scalable=True,
+            source_coordinate_system_name="MILLIMETER_SPACE",
+            source_dimensions=(10, 10),
+            generation_size=(10, 10),
+        )
+
+        for i in range(10):
+            self.stage._on_workpiece_chunk_available(
+                sender=None,
+                key=key,
+                chunk_handle=chunk_handle,
+                generation_id=1,
+            )
+
+        # Wait for any pending timers to complete
+        import time
+
+        time.sleep(0.1)
+
+        # Assert: Should have far fewer than 10 update signals due to
+        # throttling.
+        # With 10 rapid chunks and ~33ms throttle interval, we expect
+        # only 1-2 updates to be sent
+        self.assertLess(update_handler.call_count, 5)
+        self.assertGreater(update_handler.call_count, 0)
 
 
 if __name__ == "__main__":
