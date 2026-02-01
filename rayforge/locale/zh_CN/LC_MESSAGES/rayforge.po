@@ -1,1051 +1,1048 @@
-# SOME DESCRIPTIVE TITLE.
-# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
-# This file is distributed under the same license as the PACKAGE package.
-# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+# Chinese (Simplified) translations for Rayforge package.
+# Copyright (C) 2025 THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the Rayforge package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2025.
 #
-#, fuzzy
 msgid ""
 msgstr ""
-"Project-Id-Version: PACKAGE VERSION\n"
+"Project-Id-Version: Rayforge VERSION\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2026-02-01 04:39+0100\n"
-"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"PO-Revision-Date: 2025-07-13 11:49+0200\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
-"Language-Team: LANGUAGE <LL@li.org>\n"
-"Language: \n"
+"Language-Team: Chinese (Simplified)\n"
+"Language: zh_CN\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
 
 #: rayforge/package_mgr/update_cmd.py
 msgid "Checking for package updates..."
-msgstr ""
+msgstr "正在检查软件包更新..."
 
 #: rayforge/package_mgr/update_cmd.py
 #, python-brace-format
 msgid "An update is available for {name}."
-msgstr ""
+msgstr "{name} 有可用更新。"
 
 #: rayforge/package_mgr/update_cmd.py
 #, python-brace-format
 msgid "Updates are available for {name1} and {name2}."
-msgstr ""
+msgstr "{name1} 和 {name2} 有可用更新。"
 
 #: rayforge/package_mgr/update_cmd.py
 #, python-brace-format
 msgid "Updates are available for {name1}, {name2}, and {num} others."
-msgstr ""
+msgstr "{name1}、{name2} 和其他 {num} 个项目有可用更新。"
 
 #: rayforge/package_mgr/update_cmd.py
 msgid "Install All"
-msgstr ""
+msgstr "全部安装"
 
 #: rayforge/package_mgr/update_cmd.py
 msgid "Package updates found."
-msgstr ""
+msgstr "发现软件包更新。"
 
 #: rayforge/package_mgr/update_cmd.py
 msgid "Packages are up to date."
-msgstr ""
+msgstr "软件包已是最新版本。"
 
 #: rayforge/package_mgr/update_cmd.py
 msgid "Update check failed."
-msgstr ""
+msgstr "更新检查失败。"
 
 #: rayforge/package_mgr/update_cmd.py
 msgid "Installing package updates..."
-msgstr ""
+msgstr "正在安装软件包更新..."
 
 #: rayforge/package_mgr/update_cmd.py
 #, python-brace-format
 msgid "Package successfully updated."
 msgid_plural "{num} packages successfully updated."
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "软件包更新成功。"
 
 #: rayforge/package_mgr/update_cmd.py
 #, python-brace-format
 msgid "{num_s} packages updated, {num_f} failed."
-msgstr ""
+msgstr "{num_s} 个软件包已更新，{num_f} 个失败。"
 
 #: rayforge/package_mgr/update_cmd.py
 #, python-brace-format
 msgid "Failed to update package."
 msgid_plural "Failed to update {num} packages."
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "软件包更新失败。"
 
 #: rayforge/package_mgr/update_cmd.py
 #, python-brace-format
 msgid "Finished with {num_failed} errors."
-msgstr ""
+msgstr "完成，但有 {num_failed} 个错误。"
 
 #: rayforge/package_mgr/update_cmd.py
 msgid "All package updates installed!"
-msgstr ""
+msgstr "所有软件包更新已安装！"
 
 #: rayforge/core/doc.py
 msgid "Layer 1"
-msgstr ""
+msgstr "图层 1"
 
 #: rayforge/core/varset/baudratevar.py
 msgid "Baud rate cannot be empty."
-msgstr ""
+msgstr "波特率不能为空。"
 
 #: rayforge/core/varset/baudratevar.py
 #, python-brace-format
 msgid "'{rate}' is not a standard baud rate."
-msgstr ""
+msgstr "'{rate}' 不是标准波特率。"
 
 #: rayforge/core/varset/baudratevar.py
 msgid "Baud Rate"
-msgstr ""
+msgstr "波特率"
 
 #: rayforge/core/varset/baudratevar.py
 msgid "Connection speed in bits per second"
-msgstr ""
+msgstr "连接速度（位/秒）"
 
 #: rayforge/core/varset/hostnamevar.py
 msgid "Hostname or IP address cannot be empty."
-msgstr ""
+msgstr "主机名或IP地址不能为空。"
 
 #: rayforge/core/varset/hostnamevar.py
 msgid "Invalid hostname or IP address format."
-msgstr ""
+msgstr "无效的主机名或IP地址格式。"
 
 #: rayforge/core/varset/intvar.py rayforge/core/varset/floatvar.py
 #, python-brace-format
 msgid "Value must be at least {min_val}."
-msgstr ""
+msgstr "值必须至少为 {min_val}。"
 
 #: rayforge/core/varset/intvar.py rayforge/core/varset/floatvar.py
 #, python-brace-format
 msgid "Value must be at most {max_val}."
-msgstr ""
+msgstr "值最多为 {max_val}。"
 
 #: rayforge/core/varset/portvar.py
 msgid "Port cannot be empty."
-msgstr ""
+msgstr "端口不能为空。"
 
 #: rayforge/core/varset/portvar.py
 msgid "Port must be a number."
-msgstr ""
+msgstr "端口必须是数字。"
 
 #: rayforge/core/varset/serialportvar.py
 msgid "Serial port cannot be empty."
-msgstr ""
+msgstr "串口不能为空。"
 
 #: rayforge/core/capability.py rayforge/ui_gtk/main_menu.py
 msgid "Cut"
-msgstr ""
+msgstr "切割"
 
 #: rayforge/core/capability.py
 msgid "Optionally force a specific laser head"
-msgstr ""
+msgstr "可选地强制使用特定的激光头"
 
 #: rayforge/core/capability.py rayforge/ui_gtk/canvas2d/simulation_controls.py
 msgid "Power"
-msgstr ""
+msgstr "功率"
 
 #: rayforge/core/capability.py
 #: rayforge/ui_gtk/doceditor/step_settings_dialog.py
 msgid "Cut Speed"
-msgstr ""
+msgstr "切割速度"
 
 #: rayforge/core/capability.py
 #: rayforge/ui_gtk/doceditor/step_settings_dialog.py
 msgid "Air Assist"
-msgstr ""
+msgstr "辅助吹气"
 
 #: rayforge/core/capability.py
 msgid "Kerf"
-msgstr ""
+msgstr "切口宽度"
 
 #: rayforge/core/capability.py
 msgid "The effective width of the laser beam"
-msgstr ""
+msgstr "激光光束的有效宽度"
 
 #: rayforge/core/capability.py
 msgid "Engrave"
-msgstr ""
+msgstr "雕刻"
 
 #: rayforge/core/capability.py
 msgid "Engrave Speed"
-msgstr ""
+msgstr "雕刻速度"
 
 #: rayforge/core/capability.py
 msgid "Score"
-msgstr ""
+msgstr "划线"
 
 #: rayforge/core/capability.py
 msgid "Score Speed"
-msgstr ""
+msgstr "划线速度"
 
 #: rayforge/core/expression/errors.py
 #, python-brace-format
 msgid "Syntax Error: {message}"
-msgstr ""
+msgstr "语法错误：{message}"
 
 #: rayforge/core/expression/errors.py
 #, python-brace-format
 msgid "Unknown variable or function: '{name}'"
-msgstr ""
+msgstr "未知的变量或函数：'{name}'"
 
 #: rayforge/core/expression/errors.py
 #, python-brace-format
 msgid "Cannot use operator '{op}' between types '{left}' and '{right}'"
-msgstr ""
+msgstr "不能在类型 '{left}' 和 '{right}' 之间使用运算符 '{op}'"
 
 #: rayforge/core/sketcher/sketch.py
 #: rayforge/ui_gtk/doceditor/sketch_properties.py
 #: rayforge/ui_gtk/doceditor/property_providers/sketch.py
 msgid "Sketch Parameters"
-msgstr ""
+msgstr "草图参数"
 
 #: rayforge/core/sketcher/sketch.py
 msgid "Parameters that control this sketch's geometry"
-msgstr ""
+msgstr "控制此草图几何形状的参数"
 
 #: rayforge/core/sketcher/constraints/equal_length.py
 msgid "Equal Length"
-msgstr ""
+msgstr "等长"
 
 #: rayforge/core/sketcher/constraints/parallelogram.py
 msgid "Parallelogram"
-msgstr ""
+msgstr "平行四边形"
 
 #: rayforge/core/sketcher/constraints/point_on_line.py
 msgid "Point on Line"
-msgstr ""
+msgstr "点在线上"
 
 #: rayforge/core/sketcher/constraints/collinear.py
 msgid "Collinear"
-msgstr ""
+msgstr "共线"
 
 #: rayforge/core/sketcher/constraints/tangent.py
 msgid "Tangent"
-msgstr ""
+msgstr "相切"
 
 #: rayforge/core/sketcher/constraints/distance.py
 msgid "Distance"
-msgstr ""
+msgstr "距离"
 
 #: rayforge/core/sketcher/constraints/vertical.py
 msgid "Vertical"
-msgstr ""
+msgstr "垂直"
 
 #: rayforge/core/sketcher/constraints/equal_distance.py
 msgid "Equal Distance"
-msgstr ""
+msgstr "等距"
 
 #: rayforge/core/sketcher/constraints/perpendicular.py
 msgid "Perpendicular"
-msgstr ""
+msgstr "垂直"
 
 #: rayforge/core/sketcher/constraints/symmetry.py
 msgid "Symmetry"
-msgstr ""
+msgstr "对称"
 
 #: rayforge/core/sketcher/constraints/horizontal.py
 msgid "Horizontal"
-msgstr ""
+msgstr "水平"
 
 #: rayforge/core/sketcher/constraints/diameter.py
 msgid "Diameter"
-msgstr ""
+msgstr "直径"
 
 #: rayforge/core/sketcher/constraints/coincident.py
 msgid "Coincident"
-msgstr ""
+msgstr "重合"
 
 #: rayforge/core/sketcher/constraints/radius.py
 msgid "Radius"
-msgstr ""
+msgstr "半径"
 
 #: rayforge/core/sketcher/constraints/aspect_ratio.py
 msgid "Aspect Ratio"
-msgstr ""
+msgstr "宽高比"
 
 #: rayforge/core/sketcher/tools/select_tool.py
 msgid "Add Radius"
-msgstr ""
+msgstr "添加半径"
 
 #: rayforge/core/sketcher/tools/select_tool.py
 msgid "Add Distance"
-msgstr ""
+msgstr "添加距离"
 
 #: rayforge/core/sketcher/tools/select_tool.py
 msgid "Add Diameter"
-msgstr ""
+msgstr "添加直径"
 
 #: rayforge/core/sketcher/tools/arc_tool.py
 msgid "Add Arc"
-msgstr ""
+msgstr "添加圆弧"
 
 #: rayforge/core/sketcher/tools/circle_tool.py
 msgid "Add Circle"
-msgstr ""
+msgstr "添加圆形"
 
 #: rayforge/core/sketcher/tools/line_tool.py
 msgid "Add Line"
-msgstr ""
+msgstr "添加直线"
 
 #: rayforge/core/sketcher/commands/fillet.py
 msgid "Add Fillet"
-msgstr ""
+msgstr "添加圆角"
 
 #: rayforge/core/sketcher/commands/text_box.py
 msgid "Add Text Box"
-msgstr ""
+msgstr "添加文本框"
 
 #: rayforge/core/sketcher/commands/fill.py
 msgid "Add Fill"
-msgstr ""
+msgstr "添加填充"
 
 #: rayforge/core/sketcher/commands/fill.py
 msgid "Remove Fill"
-msgstr ""
+msgstr "移除填充"
 
 #: rayforge/core/sketcher/commands/constraint.py
 #: rayforge/ui_gtk/sketcher/sketchcanvas.py
 msgid "Edit Constraint"
-msgstr ""
+msgstr "编辑约束"
 
 #: rayforge/core/sketcher/commands/chamfer.py
 msgid "Add Chamfer"
-msgstr ""
+msgstr "添加倒角"
 
 #: rayforge/core/sketcher/commands/rounded_rect.py
 msgid "Add Rounded Rectangle"
-msgstr ""
+msgstr "添加圆角矩形"
 
 #: rayforge/core/sketcher/commands/rectangle.py
 msgid "Add Rectangle"
-msgstr ""
+msgstr "添加矩形"
 
 #: rayforge/core/sketcher/commands/text_property.py
 msgid "Modify Text Property"
-msgstr ""
+msgstr "修改文本属性"
 
 #: rayforge/core/sketcher/commands/point.py
 msgid "Move Point"
-msgstr ""
+msgstr "移动点"
 
 #: rayforge/core/sketcher/commands/point.py
 msgid "Unstick Junction"
-msgstr ""
+msgstr "取消连接点"
 
 #: rayforge/core/sketcher/commands/live_text_edit.py
 msgid "Edit Text"
-msgstr ""
+msgstr "编辑文本"
 
 #: rayforge/machine/driver/grbl_util.py
 msgid "Missing Command Letter"
-msgstr ""
+msgstr "缺少命令字母"
 
 #: rayforge/machine/driver/grbl_util.py
 msgid ""
 "G-code commands need a letter followed by a value. The command letter was "
 "not found."
-msgstr ""
+msgstr "G代码命令需要一个字母后跟一个值。未找到命令字母。"
 
 #: rayforge/machine/driver/grbl_util.py
 msgid "Invalid Number Format"
-msgstr ""
+msgstr "无效的数字格式"
 
 #: rayforge/machine/driver/grbl_util.py
 msgid ""
 "The value is missing or not in the correct numeric format. Check your G-code "
 "syntax."
-msgstr ""
+msgstr "值缺失或格式不正确。请检查您的G代码语法。"
 
 #: rayforge/machine/driver/grbl_util.py
 msgid "Unknown Command"
-msgstr ""
+msgstr "未知命令"
 
 #: rayforge/machine/driver/grbl_util.py
 msgid ""
 "This Grbl setting command is not recognized or supported. Check the command "
 "syntax."
-msgstr ""
+msgstr "此Grbl设置命令未被识别或支持。请检查命令语法。"
 
 #: rayforge/machine/driver/grbl_util.py
 msgid "Negative Value"
-msgstr ""
+msgstr "负值"
 
 #: rayforge/machine/driver/grbl_util.py
 msgid "A positive number is required here, but a negative value was received."
-msgstr ""
+msgstr "此处需要正数，但接收到负值。"
 
 #: rayforge/machine/driver/grbl_util.py
 msgid "Homing Disabled"
-msgstr ""
+msgstr "回原点已禁用"
 
 #: rayforge/machine/driver/grbl_util.py
 msgid ""
 "Homing is not enabled in settings. Enable homing ($22=1) to use this feature."
-msgstr ""
+msgstr "设置中未启用回原点。启用回原点（$22=1）以使用此功能。"
 
 #: rayforge/machine/driver/grbl_util.py
 msgid "Pulse Time Too Short"
-msgstr ""
+msgstr "脉冲时间太短"
 
 #: rayforge/machine/driver/grbl_util.py
 msgid ""
 "Minimum step pulse time must be greater than 3 microseconds. Check setting "
 "$0."
-msgstr ""
+msgstr "最小步进脉冲时间必须大于3微秒。请检查设置$0。"
 
 #: rayforge/machine/driver/grbl_util.py
 msgid "Memory Error"
-msgstr ""
+msgstr "内存错误"
 
 #: rayforge/machine/driver/grbl_util.py
 msgid ""
 "Settings reset to defaults due to a memory read failure. Reconfigure your "
 "settings if needed."
-msgstr ""
+msgstr "由于内存读取失败，设置已重置为默认值。如需要，请重新配置您的设置。"
 
 #: rayforge/machine/driver/grbl_util.py
 msgid "Machine Busy"
-msgstr ""
+msgstr "机器忙碌"
 
 #: rayforge/machine/driver/grbl_util.py
 msgid ""
 "This command can only be used when the machine is idle. Wait for the current "
 "job to finish."
-msgstr ""
+msgstr "此命令只能在机器空闲时使用。请等待当前作业完成。"
 
 #: rayforge/machine/driver/grbl_util.py
 msgid "Commands Locked"
-msgstr ""
+msgstr "命令已锁定"
 
 #: rayforge/machine/driver/grbl_util.py
 msgid ""
 "Cannot send commands while in alarm or jog mode. Clear the alarm state first."
-msgstr ""
+msgstr "在报警或点动模式下无法发送命令。请先清除报警状态。"
 
 #: rayforge/machine/driver/grbl_util.py
 msgid "Homing Required"
-msgstr ""
+msgstr "需要回原点"
 
 #: rayforge/machine/driver/grbl_util.py
 msgid ""
 "Soft limits cannot be enabled without homing also enabled. Enable homing "
 "first ($22=1)."
-msgstr ""
+msgstr "不启用回原点就无法启用软限位。请先启用回原点（$22=1）。"
 
 #: rayforge/machine/driver/grbl_util.py
 msgid "Line Too Long"
-msgstr ""
+msgstr "行太长"
 
 #: rayforge/machine/driver/grbl_util.py
 msgid ""
 "The command line has too many characters and was ignored. Check your file "
 "formatting."
-msgstr ""
+msgstr "命令行字符太多，已被忽略。请检查您的文件格式。"
 
 #: rayforge/machine/driver/grbl_util.py
 msgid "Setting Too High"
-msgstr ""
+msgstr "设置值过高"
 
 #: rayforge/machine/driver/grbl_util.py
 msgid ""
 "This setting exceeds the maximum step rate supported. Use a lower value."
-msgstr ""
+msgstr "此设置超过了支持的最大步进速率。请使用较低的值。"
 
 #: rayforge/machine/driver/grbl_util.py
 msgid "Door Open"
-msgstr ""
+msgstr "门已打开"
 
 #: rayforge/machine/driver/grbl_util.py
 msgid ""
 "The safety door was detected as open. Close the door and resume operation."
-msgstr ""
+msgstr "检测到安全门已打开。请关闭门并恢复操作。"
 
 #: rayforge/machine/driver/grbl_util.py
 msgid "Build info or startup line exceeds storage limit. Shorten the line."
-msgstr ""
+msgstr "构建信息或启动行超出存储限制。请缩短该行。"
 
 #: rayforge/machine/driver/grbl_util.py
 msgid "Target Out of Range"
-msgstr ""
+msgstr "目标超出范围"
 
 #: rayforge/machine/driver/grbl_util.py
 msgid ""
 "Jog target is beyond the machine's travel limits. Move to a position within "
 "range."
-msgstr ""
+msgstr "点动目标超出了机器的行程限制。请移动到范围内的位置。"
 
 #: rayforge/machine/driver/grbl_util.py
 msgid "Invalid Jog Command"
-msgstr ""
+msgstr "无效的点动命令"
 
 #: rayforge/machine/driver/grbl_util.py
 msgid ""
 "Jog command is missing '=' or contains prohibited G-code. Check the jog "
 "syntax."
-msgstr ""
+msgstr "点动命令缺少'='或包含禁止的G代码。请检查点动语法。"
 
 #: rayforge/machine/driver/grbl_util.py
 msgid "Laser Mode Error"
-msgstr ""
+msgstr "激光模式错误"
 
 #: rayforge/machine/driver/grbl_util.py
 msgid ""
 "Laser mode requires PWM output to work. Check your hardware configuration."
-msgstr ""
+msgstr "激光模式需要PWM输出才能工作。请检查您的硬件配置。"
 
 #: rayforge/machine/driver/grbl_util.py
 msgid "Unsupported Command"
-msgstr ""
+msgstr "不支持的命令"
 
 #: rayforge/machine/driver/grbl_util.py
 msgid ""
 "This G-code command is not supported by the machine. Check your post-"
 "processor settings."
-msgstr ""
+msgstr "此G代码命令不被机器支持。请检查您的后处理器设置。"
 
 #: rayforge/machine/driver/grbl_util.py
 msgid "Conflicting Commands"
-msgstr ""
+msgstr "冲突的命令"
 
 #: rayforge/machine/driver/grbl_util.py
 msgid ""
 "Multiple commands from the same group found on one line. Remove the "
 "duplicate command."
-msgstr ""
+msgstr "在一行中发现了来自同一组的多个命令。请删除重复的命令。"
 
 #: rayforge/machine/driver/grbl_util.py
 msgid "Feed Rate Missing"
-msgstr ""
+msgstr "缺少进给速率"
 
 #: rayforge/machine/driver/grbl_util.py
 msgid ""
 "Set a feed rate before using motion commands. Add an F command to specify "
 "speed."
-msgstr ""
+msgstr "在使用运动命令之前设置进给速率。添加F命令以指定速度。"
 
 #: rayforge/machine/driver/grbl_util.py
 msgid "Integer Required"
-msgstr ""
+msgstr "需要整数"
 
 #: rayforge/machine/driver/grbl_util.py
 msgid "This command requires a whole number value. Remove any decimal points."
-msgstr ""
+msgstr "此命令需要整数值。请删除任何小数点。"
 
 #: rayforge/machine/driver/grbl_util.py
 msgid "Axis Conflict"
-msgstr ""
+msgstr "轴冲突"
 
 #: rayforge/machine/driver/grbl_util.py
 msgid "Multiple commands trying to use the same axis. Simplify the command."
-msgstr ""
+msgstr "多个命令试图使用同一轴。请简化命令。"
 
 #: rayforge/machine/driver/grbl_util.py
 msgid "Duplicate Word"
-msgstr ""
+msgstr "重复的字"
 
 #: rayforge/machine/driver/grbl_util.py
 msgid "The same G-code word appears more than once. Remove the duplicate."
-msgstr ""
+msgstr "相同的G代码字出现多次。请删除重复项。"
 
 #: rayforge/machine/driver/grbl_util.py
 msgid "Missing Axis"
-msgstr ""
+msgstr "缺少轴"
 
 #: rayforge/machine/driver/grbl_util.py
 msgid ""
 "This command requires XYZ axis coordinates. Add the missing axis values."
-msgstr ""
+msgstr "此命令需要XYZ轴坐标。请添加缺失的轴值。"
 
 #: rayforge/machine/driver/grbl_util.py
 msgid "Line Number Out of Range"
-msgstr ""
+msgstr "行号超出范围"
 
 #: rayforge/machine/driver/grbl_util.py
 msgid "Line number must be between 1 and 9,999,999. Use a valid line number."
-msgstr ""
+msgstr "行号必须在1到9,999,999之间。请使用有效的行号。"
 
 #: rayforge/machine/driver/grbl_util.py
 msgid "Missing Value"
-msgstr ""
+msgstr "缺少值"
 
 #: rayforge/machine/driver/grbl_util.py
 msgid "This command requires a P or L value. Add the missing parameter."
-msgstr ""
+msgstr "此命令需要P或L值。请添加缺失的参数。"
 
 #: rayforge/machine/driver/grbl_util.py
 msgid "Unsupported Coordinate"
-msgstr ""
+msgstr "不支持的坐标系"
 
 #: rayforge/machine/driver/grbl_util.py
 msgid ""
 "Only G54-G59 coordinate systems are supported. Use one of these instead."
-msgstr ""
+msgstr "仅支持G54-G59坐标系。请使用其中之一。"
 
 #: rayforge/machine/driver/grbl_util.py
 msgid "Wrong Motion Mode"
-msgstr ""
+msgstr "错误的运动模式"
 
 #: rayforge/machine/driver/grbl_util.py
 msgid ""
 "G53 command requires G0 or G1 motion mode. Set the correct motion mode first."
-msgstr ""
+msgstr "G53命令需要G0或G1运动模式。请先设置正确的运动模式。"
 
 #: rayforge/machine/driver/grbl_util.py
 msgid "Unused Axis Words"
-msgstr ""
+msgstr "未使用的轴字"
 
 #: rayforge/machine/driver/grbl_util.py
 msgid ""
 "Axis words present but G80 cancel is active. Remove the unused axis words."
-msgstr ""
+msgstr "存在轴字但G80取消处于活动状态。请删除未使用的轴字。"
 
 #: rayforge/machine/driver/grbl_util.py
 msgid "Missing Arc Data"
-msgstr ""
+msgstr "缺少圆弧数据"
 
 #: rayforge/machine/driver/grbl_util.py
 msgid ""
 "G2/G3 arc command needs XYZ coordinates. Add the axis values for the "
 "selected plane."
-msgstr ""
+msgstr "G2/G3圆弧命令需要XYZ坐标。请为所选平面添加轴值。"
 
 #: rayforge/machine/driver/grbl_util.py
 msgid "Invalid Target"
-msgstr ""
+msgstr "无效的目标"
 
 #: rayforge/machine/driver/grbl_util.py
 msgid ""
 "Cannot create this arc or probe to current position. Check the target "
 "coordinates."
-msgstr ""
+msgstr "无法创建此圆弧或探测到当前位置。请检查目标坐标。"
 
 #: rayforge/machine/driver/grbl_util.py
 msgid "Arc Geometry Error"
-msgstr ""
+msgstr "圆弧几何错误"
 
 #: rayforge/machine/driver/grbl_util.py
 msgid ""
 "Arc calculation failed. Try breaking the arc into smaller pieces or use IJK "
 "offset instead."
-msgstr ""
+msgstr "圆弧计算失败。尝试将圆弧分解为较小的部分或使用IJK偏移。"
 
 #: rayforge/machine/driver/grbl_util.py
 msgid "Missing Arc Offset"
-msgstr ""
+msgstr "缺少圆弧偏移"
 
 #: rayforge/machine/driver/grbl_util.py
 msgid ""
 "G2/G3 arc command needs IJK offset values. Add the missing offset for the "
 "selected plane."
-msgstr ""
+msgstr "G2/G3圆弧命令需要IJK偏移值。请为所选平面添加缺失的偏移。"
 
 #: rayforge/machine/driver/grbl_util.py
 msgid "Unused Words"
-msgstr ""
+msgstr "未使用的字"
 
 #: rayforge/machine/driver/grbl_util.py
 msgid ""
 "Some G-code words in this line are not used by any command. Remove the "
 "unused words."
-msgstr ""
+msgstr "此行中的某些G代码字未被任何命令使用。请删除未使用的字。"
 
 #: rayforge/machine/driver/grbl_util.py
 msgid "Wrong Axis for Offset"
-msgstr ""
+msgstr "偏移的轴错误"
 
 #: rayforge/machine/driver/grbl_util.py
 msgid ""
 "Tool length offset only works on the configured axis (usually Z-axis). Check "
 "your settings."
-msgstr ""
+msgstr "刀具长度偏移仅适用于配置的轴（通常是Z轴）。请检查您的设置。"
 
 #: rayforge/machine/driver/grbl_util.py
 msgid "Tool Number Too High"
-msgstr ""
+msgstr "刀具号过高"
 
 #: rayforge/machine/driver/grbl_util.py
 msgid ""
 "Tool number exceeds the maximum supported value. Use a valid tool number."
-msgstr ""
+msgstr "刀具号超过了支持的最大值。请使用有效的刀具号。"
 
 #: rayforge/machine/driver/grbl_util.py
 msgid "Unknown Error"
-msgstr ""
+msgstr "未知错误"
 
 #: rayforge/machine/driver/grbl_util.py
 msgid "Invalid error code reported by machine."
-msgstr ""
+msgstr "机器报告了无效的错误代码。"
 
 #: rayforge/machine/driver/grbl_util.py
 msgid "Stepper Configuration"
-msgstr ""
+msgstr "步进配置"
 
 #: rayforge/machine/driver/grbl_util.py
 msgid "Settings related to stepper motor timing and signal polarity."
-msgstr ""
+msgstr "与步进电机时序和信号极性相关的设置。"
 
 #: rayforge/machine/driver/grbl_util.py
 msgid "Control & Reporting"
-msgstr ""
+msgstr "控制与报告"
 
 #: rayforge/machine/driver/grbl_util.py
 msgid "Settings for GRBL's motion control and status reporting."
-msgstr ""
+msgstr "GRBL的运动控制和状态报告设置。"
 
 #: rayforge/machine/driver/grbl_util.py
 msgid "Limits & Homing"
-msgstr ""
+msgstr "限位与回原点"
 
 #: rayforge/machine/driver/grbl_util.py
 msgid "Settings for soft/hard limits and the homing cycle."
-msgstr ""
+msgstr "软/硬限位和回原点循环的设置。"
 
 #: rayforge/machine/driver/grbl_util.py
 msgid "Spindle & Laser"
-msgstr ""
+msgstr "主轴与激光"
 
 #: rayforge/machine/driver/grbl_util.py
 msgid "Settings for controlling the spindle or laser module."
-msgstr ""
+msgstr "控制主轴或激光模块的设置。"
 
 #: rayforge/machine/driver/grbl_util.py
 msgid "Axis Calibration"
-msgstr ""
+msgstr "轴校准"
 
 #: rayforge/machine/driver/grbl_util.py
 msgid "Defines the steps-per-millimeter for each axis."
-msgstr ""
+msgstr "定义每个轴的每毫米步数。"
 
 #: rayforge/machine/driver/grbl_util.py
 msgid "Axis Kinematics"
-msgstr ""
+msgstr "轴运动学"
 
 #: rayforge/machine/driver/grbl_util.py
 msgid "Defines the maximum rate and acceleration for each axis."
-msgstr ""
+msgstr "定义每个轴的最大速率和加速度。"
 
 #: rayforge/machine/driver/grbl_util.py
 msgid "Axis Travel"
-msgstr ""
+msgstr "轴行程"
 
 #: rayforge/machine/driver/grbl_util.py
 msgid "Defines the maximum travel distance for each axis."
-msgstr ""
+msgstr "定义每个轴的最大行程距离。"
 
 #: rayforge/machine/driver/grbl_serial.py
 msgid "GRBL (Serial)"
-msgstr ""
+msgstr "GRBL（串口）"
 
 #: rayforge/machine/driver/grbl_serial.py
 msgid "GRBL-compatible serial connection"
-msgstr ""
+msgstr "GRBL兼容的串口连接"
 
 #: rayforge/machine/driver/grbl_serial.py rayforge/machine/driver/smoothie.py
 #: rayforge/machine/driver/grbl.py
 msgid "Machine Coordinates (G53)"
-msgstr ""
+msgstr "机器坐标（G53）"
 
 #: rayforge/machine/driver/grbl_serial.py rayforge/machine/driver/smoothie.py
 msgid "Port"
-msgstr ""
+msgstr "端口"
 
 #: rayforge/machine/driver/grbl_serial.py
 msgid "Serial port for the device"
-msgstr ""
+msgstr "设备的串口"
 
 #: rayforge/machine/driver/grbl_serial.py
 msgid "Enable status polling during running jobs"
-msgstr ""
+msgstr "在运行作业期间启用状态轮询"
 
 #: rayforge/machine/driver/grbl_serial.py
 msgid ""
 "Whether to query status during jobs. Disabling can help reduce load on slow "
 "machines"
-msgstr ""
+msgstr "是否在作业期间查询状态。禁用可以帮助减少慢速机器上的负载。"
 
 #: rayforge/machine/driver/grbl_serial.py
 msgid "Port must be configured."
-msgstr ""
+msgstr "必须配置端口。"
 
 #: rayforge/machine/driver/grbl_serial.py
 msgid "Baud rate must be configured."
-msgstr ""
+msgstr "必须配置波特率。"
 
 #: rayforge/machine/driver/grbl_serial.py
 msgid "Port not configured"
-msgstr ""
+msgstr "端口未配置"
 
 #: rayforge/machine/driver/grbl_serial.py rayforge/machine/driver/grbl.py
 msgid "Unknown Settings"
-msgstr ""
+msgstr "未知设置"
 
 #: rayforge/machine/driver/grbl_serial.py rayforge/machine/driver/grbl.py
 msgid "Settings reported by the device not in the standard list."
-msgstr ""
+msgstr "设备报告的设置不在标准列表中。"
 
 #: rayforge/machine/driver/grbl_serial.py rayforge/machine/driver/grbl.py
 msgid "Unknown setting from device"
-msgstr ""
+msgstr "来自设备的未知设置"
 
 #: rayforge/machine/driver/dummy.py
 msgid "No driver"
-msgstr ""
+msgstr "无驱动"
 
 #: rayforge/machine/driver/dummy.py
 msgid "No connection"
-msgstr ""
+msgstr "无连接"
 
 #: rayforge/machine/driver/dummy.py
 msgid "Machine Coordinates"
-msgstr ""
+msgstr "机器坐标"
 
 #: rayforge/machine/driver/dummy.py
 msgid "No settings"
-msgstr ""
+msgstr "无设置"
 
 #: rayforge/machine/driver/driver.py
 #, python-brace-format
 msgid "Resource '{resource}' is currently in use by '{owner}'."
-msgstr ""
+msgstr "资源'{resource}'当前正被'{owner}'使用。"
 
 #: rayforge/machine/driver/driver.py rayforge/machine/transport/transport.py
 #: rayforge/ui_gtk/machine/status_widget.py
 msgid "Unknown"
-msgstr ""
+msgstr "未知"
 
 #: rayforge/machine/driver/driver.py rayforge/machine/transport/transport.py
 msgid "Idle"
-msgstr ""
+msgstr "空闲"
 
 #: rayforge/machine/driver/driver.py
 msgid "Run"
-msgstr ""
+msgstr "运行"
 
 #: rayforge/machine/driver/driver.py
 msgid "Hold"
-msgstr ""
+msgstr "暂停"
 
 #: rayforge/machine/driver/driver.py rayforge/machine/models/dialect.py
 msgid "Jog"
-msgstr ""
+msgstr "点动"
 
 #: rayforge/machine/driver/driver.py
 msgid "Alarm"
-msgstr ""
+msgstr "报警"
 
 #: rayforge/machine/driver/driver.py
 msgid "Door"
-msgstr ""
+msgstr "门"
 
 #: rayforge/machine/driver/driver.py
 msgid "Check"
-msgstr ""
+msgstr "检查"
 
 #: rayforge/machine/driver/driver.py rayforge/ui_gtk/main_menu.py
 msgid "Home"
-msgstr ""
+msgstr "回原点"
 
 #: rayforge/machine/driver/driver.py
 msgid "Sleep"
-msgstr ""
+msgstr "休眠"
 
 #: rayforge/machine/driver/driver.py
 msgid "Tool"
-msgstr ""
+msgstr "刀具"
 
 #: rayforge/machine/driver/driver.py
 msgid "Queue"
-msgstr ""
+msgstr "队列"
 
 #: rayforge/machine/driver/driver.py
 msgid "Lock"
-msgstr ""
+msgstr "锁定"
 
 #: rayforge/machine/driver/driver.py
 msgid "Unlock"
-msgstr ""
+msgstr "解锁"
 
 #: rayforge/machine/driver/driver.py
 msgid "Cycle"
-msgstr ""
+msgstr "循环"
 
 #: rayforge/machine/driver/driver.py
 msgid "Test"
-msgstr ""
+msgstr "测试"
 
 #: rayforge/machine/driver/driver.py
 msgid "Error during setup. You may need to edit device settings."
-msgstr ""
+msgstr "设置期间出错。您可能需要编辑设备设置。"
 
 #: rayforge/machine/driver/smoothie.py
 msgid "Smoothie"
-msgstr ""
+msgstr "Smoothie"
 
 #: rayforge/machine/driver/smoothie.py
 msgid "Smoothieware via a Telnet connection"
-msgstr ""
+msgstr "通过Telnet连接的Smoothieware"
 
 #: rayforge/machine/driver/smoothie.py rayforge/machine/driver/grbl.py
 #, python-brace-format
 msgid "Invalid hostname or IP address: '{host}'"
-msgstr ""
+msgstr "无效的主机名或IP地址：'{host}'"
 
 #: rayforge/machine/driver/smoothie.py rayforge/machine/driver/grbl.py
 msgid "Hostname"
-msgstr ""
+msgstr "主机名"
 
 #: rayforge/machine/driver/smoothie.py rayforge/machine/driver/grbl.py
 msgid "The IP address or hostname of the device"
-msgstr ""
+msgstr "设备的IP地址或主机名"
 
 #: rayforge/machine/driver/smoothie.py
 msgid "The Telnet port number"
-msgstr ""
+msgstr "Telnet端口号"
 
 #: rayforge/machine/driver/smoothie.py rayforge/machine/driver/grbl.py
 msgid "Hostname must be configured."
-msgstr ""
+msgstr "必须配置主机名。"
 
 #: rayforge/machine/driver/grbl.py
 msgid "GRBL (Network)"
-msgstr ""
+msgstr "GRBL（网络）"
 
 #: rayforge/machine/driver/grbl.py
 msgid "Connect to a GRBL-compatible device over the network"
-msgstr ""
+msgstr "通过网络连接到GRBL兼容设备"
 
 #: rayforge/machine/driver/grbl.py
 msgid "HTTP Port"
-msgstr ""
+msgstr "HTTP端口"
 
 #: rayforge/machine/driver/grbl.py
 msgid "The HTTP port for the device"
-msgstr ""
+msgstr "设备的HTTP端口"
 
 #: rayforge/machine/driver/grbl.py
 msgid "WebSocket Port"
-msgstr ""
+msgstr "WebSocket端口"
 
 #: rayforge/machine/driver/grbl.py
 msgid "The WebSocket port for the device"
-msgstr ""
+msgstr "设备的WebSocket端口"
 
 #: rayforge/machine/driver/grbl.py
 msgid "Host is not configured. Please set a valid IP address or hostname."
-msgstr ""
+msgstr "主机未配置。请设置有效的IP地址或主机名。"
 
 #: rayforge/machine/driver/grbl.py
 #, python-brace-format
 msgid ""
 "Could not connect to host '{host}'. Check the IP address and network "
 "connection."
-msgstr ""
+msgstr "无法连接到主机'{host}'。请检查IP地址和网络连接。"
 
 #: rayforge/machine/models/laser.py
 #: rayforge/ui_gtk/doceditor/step_settings_dialog.py
 msgid "Laser Head"
-msgstr ""
+msgstr "激光头"
 
 #: rayforge/machine/models/dialect.py
 msgid "General Information"
-msgstr ""
+msgstr "常规信息"
 
 #: rayforge/machine/models/dialect.py rayforge/ui_gtk/varset/varset_editor.py
 msgid "Label"
-msgstr ""
+msgstr "标签"
 
 #: rayforge/machine/models/dialect.py
 msgid "User-facing name"
-msgstr ""
+msgstr "面向用户的名称"
 
 #: rayforge/machine/models/dialect.py rayforge/ui_gtk/varset/varset_editor.py
 #: rayforge/ui_gtk/doceditor/edit_recipe_dialog.py
 msgid "Description"
-msgstr ""
+msgstr "描述"
 
 #: rayforge/machine/models/dialect.py
 msgid "Short description"
-msgstr ""
+msgstr "简短描述"
 
 #: rayforge/machine/models/dialect.py
 msgid "Command Templates"
-msgstr ""
+msgstr "命令模板"
 
 #: rayforge/machine/models/dialect.py
 msgid "Laser On"
-msgstr ""
+msgstr "激光开启"
 
 #: rayforge/machine/models/dialect.py
 msgid "Laser Off"
-msgstr ""
+msgstr "激光关闭"
 
 #: rayforge/machine/models/dialect.py
 msgid "Travel Move"
-msgstr ""
+msgstr "移动"
 
 #: rayforge/machine/models/dialect.py
 msgid "Linear Move"
-msgstr ""
+msgstr "直线移动"
 
 #: rayforge/machine/models/dialect.py
 msgid "Arc (CW)"
-msgstr ""
+msgstr "圆弧（顺时针）"
 
 #: rayforge/machine/models/dialect.py
 msgid "Arc (CCW)"
-msgstr ""
+msgstr "圆弧（逆时针）"
 
 #: rayforge/machine/models/dialect.py
 msgid "Tool Change"
-msgstr ""
+msgstr "换刀"
 
 #: rayforge/machine/models/dialect.py
 msgid "Set Speed"
-msgstr ""
+msgstr "设置速度"
 
 #: rayforge/machine/models/dialect.py
 msgid "Air On"
-msgstr ""
+msgstr "吹气开启"
 
 #: rayforge/machine/models/dialect.py
 msgid "Air Off"
-msgstr ""
+msgstr "吹气关闭"
 
 #: rayforge/machine/models/dialect.py rayforge/ui_gtk/machine/jog_widget.py
 msgid "Home All"
-msgstr ""
+msgstr "全部回原点"
 
 #: rayforge/machine/models/dialect.py
 msgid "Home Axis"
-msgstr ""
+msgstr "轴回原点"
 
 #: rayforge/machine/models/dialect.py
 msgid "Move To"
-msgstr ""
+msgstr "移动到"
 
 #: rayforge/machine/models/dialect.py rayforge/ui_gtk/main_menu.py
 msgid "Clear Alarm"
-msgstr ""
+msgstr "清除报警"
 
 #: rayforge/machine/models/dialect.py
 msgid "Set WCS Offset"
-msgstr ""
+msgstr "设置WCS偏移"
 
 #: rayforge/machine/models/dialect.py
 msgid "Probe Cycle"
-msgstr ""
+msgstr "探测循环"
 
 #: rayforge/machine/models/dialect.py
 msgid "Scripts"
-msgstr ""
+msgstr "脚本"
 
 #: rayforge/machine/models/dialect.py
 msgid "Inject WCS after Preamble"
-msgstr ""
+msgstr "在前言后注入WCS"
 
 #: rayforge/machine/models/dialect.py
 #, python-brace-format
@@ -1053,98 +1050,100 @@ msgid ""
 "Inject the active WCS command (e.g., G54) after the preamble script. When "
 "disabled, you can use {machine.active_wcs} in the preamble instead."
 msgstr ""
+"在前言脚本后注入活动的WCS命令（例如G54）。禁用时，您可以在前言中使用"
+"{machine.active_wcs}代替。"
 
 #: rayforge/machine/models/dialect.py
 msgid "Preamble"
-msgstr ""
+msgstr "前言"
 
 #: rayforge/machine/models/dialect.py
 msgid "Preamble script"
-msgstr ""
+msgstr "前言脚本"
 
 #: rayforge/machine/models/dialect.py
 msgid "Postscript"
-msgstr ""
+msgstr "后记"
 
 #: rayforge/machine/models/dialect.py
 msgid "Postscript script"
-msgstr ""
+msgstr "后记脚本"
 
 #: rayforge/machine/models/machine.py
 msgid "Default Machine"
-msgstr ""
+msgstr "默认机器"
 
 #: rayforge/machine/models/machine.py rayforge/machine/models/profile.py
 #, python-brace-format
 msgid "{label} (for {machine_name})"
-msgstr ""
+msgstr "{label}（用于{machine_name}）"
 
 #: rayforge/machine/models/profile.py
 msgid "Custom dialect for the Carvera Air machine."
-msgstr ""
+msgstr "Carvera Air机器的自定义方言。"
 
 #: rayforge/machine/models/profile.py
 msgid "Custom preamble for the xTool D1 Pro machine."
-msgstr ""
+msgstr "xTool D1 Pro机器的自定义前言。"
 
 #: rayforge/machine/models/profile.py
 msgid "Other Device"
-msgstr ""
+msgstr "其他设备"
 
 #: rayforge/machine/models/controller.py
 msgid "No driver selected for this machine."
-msgstr ""
+msgstr "未为此机器选择驱动。"
 
 #: rayforge/machine/models/controller.py
 #, python-brace-format
 msgid "Driver '{driver}' not found."
-msgstr ""
+msgstr "未找到驱动'{driver}'。"
 
 #: rayforge/machine/models/controller.py
 #, python-brace-format
 msgid "An unexpected error occurred during validation: {error}"
-msgstr ""
+msgstr "验证期间发生意外错误：{error}"
 
 #: rayforge/machine/models/macro.py
 msgid "Unnamed Macro"
-msgstr ""
+msgstr "未命名宏"
 
 #: rayforge/machine/models/dialect_builtins.py
 msgid "GRBL (universal)"
-msgstr ""
+msgstr "GRBL（通用）"
 
 #: rayforge/machine/models/dialect_builtins.py
 msgid "Standard GRBL for most diode lasers and hobby CNCs."
-msgstr ""
+msgstr "适用于大多数二极管激光和业余CNC的标准GRBL。"
 
 #: rayforge/machine/models/dialect_builtins.py
 msgid "GRBL (no Z axis)"
-msgstr ""
+msgstr "GRBL（无Z轴）"
 
 #: rayforge/machine/models/dialect_builtins.py
 msgid "Standard GRBL, but removes Z axis commands for more efficient G-code."
-msgstr ""
+msgstr "标准GRBL，但移除Z轴命令以生成更高效的G代码。"
 
 #: rayforge/machine/models/dialect_builtins.py
 msgid "Smoothieware"
-msgstr ""
+msgstr "Smoothieware"
 
 #: rayforge/machine/models/dialect_builtins.py
 msgid "G-code dialect for Smoothieware-based controllers."
-msgstr ""
+msgstr "基于Smoothieware控制器的G代码方言。"
 
 #: rayforge/machine/models/dialect_builtins.py
 msgid "Marlin"
-msgstr ""
+msgstr "Marlin"
 
 #: rayforge/machine/models/dialect_builtins.py
 msgid "G-code for Marlin-based controllers, common in 3D printers."
-msgstr ""
+msgstr "基于Marlin控制器的G代码，常见于3D打印机。"
 
 #: rayforge/machine/cmd.py
 #, python-brace-format
 msgid "{job_name} failed: {error}"
-msgstr ""
+msgstr "{job_name}失败：{error}"
 
 #: rayforge/machine/transport/serial.py
 #, python-brace-format
@@ -1155,6 +1154,10 @@ msgid ""
 "sudo snap set system experimental.hotplug=true\n"
 "sudo snap connect {snap_name}:serial-port"
 msgstr ""
+"由于Snap限制而无法列出串口！请确保设备通过USB连接并运行：\n"
+"\n"
+"sudo snap set system experimental.hotplug=true\n"
+"sudo snap connect {snap_name}:serial-port"
 
 #: rayforge/machine/transport/serial.py
 #, python-brace-format
@@ -1165,69 +1168,73 @@ msgid ""
 "sudo snap set system experimental.hotplug=true\n"
 "sudo snap connect {snap_name}:serial-port"
 msgstr ""
+"找到串口，但无法访问。请确保您的Snap已连接'serial-port'接口，运行：\n"
+"\n"
+"sudo snap set system experimental.hotplug=true\n"
+"sudo snap connect {snap_name}:serial-port"
 
 #: rayforge/machine/transport/transport.py
 msgid "Connecting"
-msgstr ""
+msgstr "正在连接"
 
 #: rayforge/machine/transport/transport.py
 msgid "Connected"
-msgstr ""
+msgstr "已连接"
 
 #: rayforge/machine/transport/transport.py
 #: rayforge/ui_gtk/package_manager/package_list.py
 #: rayforge/ui_gtk/doceditor/material_library_list.py
 #: rayforge/ui_gtk/doceditor/material_list.py
 msgid "Error"
-msgstr ""
+msgstr "错误"
 
 #: rayforge/machine/transport/transport.py
 msgid "Closing"
-msgstr ""
+msgstr "正在关闭"
 
 #: rayforge/machine/transport/transport.py
 #: rayforge/ui_gtk/machine/connection_status_widget.py
 msgid "Disconnected"
-msgstr ""
+msgstr "已断开"
 
 #: rayforge/machine/transport/transport.py
 msgid "Sleeping"
-msgstr ""
+msgstr "休眠中"
 
 #: rayforge/ui_gtk/settings/machine_settings_page.py
 msgid "Machines"
-msgstr ""
+msgstr "机器"
 
 #: rayforge/ui_gtk/settings/machine_settings_page.py
 msgid "Configured Machines"
-msgstr ""
+msgstr "已配置的机器"
 
 #: rayforge/ui_gtk/settings/machine_settings_page.py
 msgid "Add or remove machines."
-msgstr ""
+msgstr "添加或移除机器。"
 
 #: rayforge/ui_gtk/settings/machine_settings_page.py
 msgid "+"
-msgstr ""
+msgstr "+"
 
 #: rayforge/ui_gtk/settings/machine_settings_page.py
 msgid "This machine has an invalid configuration."
-msgstr ""
+msgstr "此机器配置无效。"
 
 #: rayforge/ui_gtk/settings/machine_settings_page.py
 msgid "This is the active machine."
-msgstr ""
+msgstr "这是当前活动的机器。"
 
 #: rayforge/ui_gtk/settings/machine_settings_page.py
 #, python-brace-format
 msgid "Delete ‘{name}’?"
-msgstr ""
+msgstr "删除 '{name}'？"
 
 #: rayforge/ui_gtk/settings/machine_settings_page.py
 msgid ""
 "This machine profile and all its settings will be permanently removed. This "
 "action cannot be undone."
-msgstr ""
+msgstr "此机器配置文件及其所有设置将被永久删除。此操作无法撤销。"
 
 #: rayforge/ui_gtk/settings/machine_settings_page.py
 #: rayforge/ui_gtk/camera/selection_dialog.py
@@ -1252,7 +1259,7 @@ msgstr ""
 #: rayforge/ui_gtk/doceditor/import_handler.py
 #: rayforge/ui_gtk/sketcher/sketchcanvas.py
 msgid "Cancel"
-msgstr ""
+msgstr "取消"
 
 #: rayforge/ui_gtk/settings/machine_settings_page.py
 #: rayforge/ui_gtk/machine/dialect_list.py
@@ -1260,267 +1267,268 @@ msgstr ""
 #: rayforge/ui_gtk/doceditor/recipe_list.py
 #: rayforge/ui_gtk/doceditor/material_list.py rayforge/ui_gtk/sketcher/menu.py
 msgid "Delete"
-msgstr ""
+msgstr "删除"
 
 #: rayforge/ui_gtk/settings/package_manager_page.py
 msgid "Packages"
-msgstr ""
+msgstr "软件包"
 
 #: rayforge/ui_gtk/settings/package_manager_page.py
 msgid "Installed Packages"
-msgstr ""
+msgstr "已安装的软件包"
 
 #: rayforge/ui_gtk/settings/package_manager_page.py
 msgid "Install, update, and remove packages and plugins."
-msgstr ""
+msgstr "安装、更新和移除软件包及插件。"
 
 #: rayforge/ui_gtk/settings/recipe_manager_page.py
 msgid "Recipes"
-msgstr ""
+msgstr "配方"
 
 #: rayforge/ui_gtk/settings/recipe_manager_page.py
 msgid "Manage your saved recipes for different materials and processes."
-msgstr ""
+msgstr "管理您为不同材料和工艺保存的配方。"
 
 #: rayforge/ui_gtk/settings/material_manager_page.py
 msgid "Materials"
-msgstr ""
+msgstr "材料"
 
 #: rayforge/ui_gtk/settings/material_manager_page.py
 msgid "Material Libraries"
-msgstr ""
+msgstr "材料库"
 
 #: rayforge/ui_gtk/settings/material_manager_page.py
 msgid "Manage your material libraries. Select a library to view its materials."
-msgstr ""
+msgstr "管理您的材料库。选择一个库以查看其材料。"
 
 #: rayforge/ui_gtk/settings/material_manager_page.py
 msgid "Materials in the selected library."
-msgstr ""
+msgstr "所选库中的材料。"
 
 #: rayforge/ui_gtk/settings/settings_dialog.py rayforge/ui_gtk/main_menu.py
 #: rayforge/ui_gtk/doceditor/edit_recipe_dialog.py
 msgid "Settings"
-msgstr ""
+msgstr "设置"
 
 #: rayforge/ui_gtk/settings/settings_dialog.py
 #: rayforge/ui_gtk/machine/settings_dialog.py
 msgid "Categories"
-msgstr ""
+msgstr "类别"
 
 #: rayforge/ui_gtk/settings/general_preferences_page.py
 #: rayforge/ui_gtk/about.py
 msgid "System"
-msgstr ""
+msgstr "系统"
 
 #: rayforge/ui_gtk/settings/general_preferences_page.py
 msgid "Light"
-msgstr ""
+msgstr "浅色"
 
 #: rayforge/ui_gtk/settings/general_preferences_page.py
 msgid "Dark"
-msgstr ""
+msgstr "深色"
 
 #: rayforge/ui_gtk/settings/general_preferences_page.py
 msgid "Open nothing"
-msgstr ""
+msgstr "不打开任何内容"
 
 #: rayforge/ui_gtk/settings/general_preferences_page.py
 msgid "Open last project"
-msgstr ""
+msgstr "打开上次项目"
 
 #: rayforge/ui_gtk/settings/general_preferences_page.py
 msgid "Open specific project"
-msgstr ""
+msgstr "打开指定项目"
 
 #: rayforge/ui_gtk/settings/general_preferences_page.py
 #: rayforge/ui_gtk/machine/settings_dialog.py
 #: rayforge/ui_gtk/machine/general_preferences_page.py
 #: rayforge/ui_gtk/doceditor/edit_recipe_dialog.py
 msgid "General"
-msgstr ""
+msgstr "常规"
 
 #: rayforge/ui_gtk/settings/general_preferences_page.py
 msgid "Appearance"
-msgstr ""
+msgstr "外观"
 
 #: rayforge/ui_gtk/settings/general_preferences_page.py
 msgid "Settings related to the application's look and feel."
-msgstr ""
+msgstr "与应用程序外观和感觉相关的设置。"
 
 #: rayforge/ui_gtk/settings/general_preferences_page.py
 msgid "Theme"
-msgstr ""
+msgstr "主题"
 
 #: rayforge/ui_gtk/settings/general_preferences_page.py
 msgid "Units"
-msgstr ""
+msgstr "单位"
 
 #: rayforge/ui_gtk/settings/general_preferences_page.py
 msgid "Set the display units for various values throughout the application."
-msgstr ""
+msgstr "为应用程序中的各种值设置显示单位。"
 
 #: rayforge/ui_gtk/settings/general_preferences_page.py
 msgid "Length"
-msgstr ""
+msgstr "长度"
 
 #: rayforge/ui_gtk/settings/general_preferences_page.py
 #: rayforge/ui_gtk/canvas2d/simulation_controls.py
 msgid "Speed"
-msgstr ""
+msgstr "速度"
 
 #: rayforge/ui_gtk/settings/general_preferences_page.py
 #: rayforge/ui_gtk/machine/general_preferences_page.py
 msgid "Acceleration"
-msgstr ""
+msgstr "加速度"
 
 #: rayforge/ui_gtk/settings/general_preferences_page.py
 msgid "Startup"
-msgstr ""
+msgstr "启动"
 
 #: rayforge/ui_gtk/settings/general_preferences_page.py
 msgid ""
 "Configure what happens when you start the application. Files specified on "
 "the command line will always override these settings."
-msgstr ""
+msgstr "配置启动应用程序时发生的情况。命令行上指定的文件将始终覆盖这些设置。"
 
 #: rayforge/ui_gtk/settings/general_preferences_page.py
 msgid "Startup behavior"
-msgstr ""
+msgstr "启动行为"
 
 #: rayforge/ui_gtk/settings/general_preferences_page.py
 msgid "Project path"
-msgstr ""
+msgstr "项目路径"
 
 #: rayforge/ui_gtk/settings/general_preferences_page.py
 msgid "Browse..."
-msgstr ""
+msgstr "浏览..."
 
 #: rayforge/ui_gtk/canvas2d/elements/tab_handle.py
 msgid "Move Tab"
-msgstr ""
+msgstr "移动标签"
 
 #: rayforge/ui_gtk/canvas2d/context_menu.py
 msgid "Move Up a Layer"
-msgstr ""
+msgstr "向上移动一层"
 
 #: rayforge/ui_gtk/canvas2d/context_menu.py
 msgid "Move Down a Layer"
-msgstr ""
+msgstr "向下移动一层"
 
 #: rayforge/ui_gtk/canvas2d/context_menu.py rayforge/ui_gtk/main_menu.py
 msgid "Group"
-msgstr ""
+msgstr "编组"
 
 #: rayforge/ui_gtk/canvas2d/context_menu.py rayforge/ui_gtk/main_menu.py
 msgid "Ungroup"
-msgstr ""
+msgstr "取消编组"
 
 #: rayforge/ui_gtk/canvas2d/context_menu.py
 #: rayforge/ui_gtk/machine/machine_hours_page.py rayforge/ui_gtk/main_menu.py
 msgid "Remove"
-msgstr ""
+msgstr "移除"
 
 #: rayforge/ui_gtk/canvas2d/context_menu.py rayforge/ui_gtk/toolbar.py
 msgid "Edit Sketch"
-msgstr ""
+msgstr "编辑草图"
 
 #: rayforge/ui_gtk/canvas2d/context_menu.py rayforge/ui_gtk/main_menu.py
 msgid "Export Sketch..."
-msgstr ""
+msgstr "导出草图..."
 
 #: rayforge/ui_gtk/canvas2d/context_menu.py
 msgid "Add Tab Here"
-msgstr ""
+msgstr "在此添加标签"
 
 #: rayforge/ui_gtk/canvas2d/context_menu.py rayforge/doceditor/tab_cmd.py
 msgid "Remove Tab"
-msgstr ""
+msgstr "移除标签"
 
 #: rayforge/ui_gtk/canvas2d/simulation_controls.py
 #: rayforge/ui_gtk/sketcher/menu.py
 msgid "Line"
-msgstr ""
+msgstr "直线"
 
 #: rayforge/ui_gtk/canvas2d/drag_drop_cmd.py
 msgid "Drop files to import"
-msgstr ""
+msgstr "拖放文件以导入"
 
 #: rayforge/ui_gtk/canvas2d/drag_drop_cmd.py
 msgid "Image imported from clipboard"
-msgstr ""
+msgstr "从剪贴板导入的图像"
 
 #: rayforge/ui_gtk/canvas2d/drag_drop_cmd.py
 msgid "Failed to import image from clipboard"
-msgstr ""
+msgstr "从剪贴板导入图像失败"
 
 #: rayforge/ui_gtk/canvas2d/drag_drop_cmd.py
 msgid "Empty Sketch"
-msgstr ""
+msgstr "空草图"
 
 #: rayforge/ui_gtk/canvas2d/drag_drop_cmd.py
 msgid ""
 "The selected sketch contains no geometry. Please edit the sketch to add "
 "lines or shapes before placing on the canvas."
 msgstr ""
+"所选草图不包含几何图形。请编辑草图以添加线条或形状，然后再放置到画布上。"
 
 #: rayforge/ui_gtk/canvas2d/drag_drop_cmd.py
 #: rayforge/ui_gtk/camera/image_settings_dialog.py
 msgid "Close"
-msgstr ""
+msgstr "关闭"
 
 #: rayforge/ui_gtk/view_mode_cmd.py
 msgid "3D view is not available due to missing dependencies."
-msgstr ""
+msgstr "由于缺少依赖项，3D视图不可用。"
 
 #: rayforge/ui_gtk/view_mode_cmd.py
 msgid "Select a machine to open the 3D view."
-msgstr ""
+msgstr "选择一台机器以打开3D视图。"
 
 #: rayforge/ui_gtk/camera/selection_dialog.py
 msgid "Select Camera"
-msgstr ""
+msgstr "选择摄像头"
 
 #: rayforge/ui_gtk/camera/selection_dialog.py
 msgid "Please select an available camera device"
-msgstr ""
+msgstr "请选择可用的摄像头设备"
 
 #: rayforge/ui_gtk/camera/selection_dialog.py
 msgid "No cameras found."
-msgstr ""
+msgstr "未找到摄像头。"
 
 #: rayforge/ui_gtk/camera/selection_dialog.py
 #: rayforge/ui_gtk/machine/settings_dialog.py
 #, python-brace-format
 msgid "Camera {device_id}"
-msgstr ""
+msgstr "摄像头 {device_id}"
 
 #: rayforge/ui_gtk/camera/selection_dialog.py
 #, python-brace-format
 msgid "Failed to load image for Device ID: {device_id}"
-msgstr ""
+msgstr "无法加载设备ID的图像：{device_id}"
 
 #: rayforge/ui_gtk/camera/selection_dialog.py
 #: rayforge/ui_gtk/camera/camera_preferences_page.py
 #, python-brace-format
 msgid "Device ID: {device_id}"
-msgstr ""
+msgstr "设备ID：{device_id}"
 
 #: rayforge/ui_gtk/camera/point_bubble_widget.py
 msgid "Delete this point"
-msgstr ""
+msgstr "删除此点"
 
 #: rayforge/ui_gtk/camera/properties_widget.py
 msgid "Camera Properties"
-msgstr ""
+msgstr "摄像头属性"
 
 #: rayforge/ui_gtk/camera/properties_widget.py
 msgid "Configure the selected camera"
-msgstr ""
+msgstr "配置所选摄像头"
 
 #: rayforge/ui_gtk/camera/properties_widget.py
 msgid "Device ID"
-msgstr ""
+msgstr "设备ID"
 
 #: rayforge/ui_gtk/camera/properties_widget.py
 #: rayforge/ui_gtk/machine/machine_hours_page.py
@@ -1532,150 +1540,150 @@ msgstr ""
 #: rayforge/ui_gtk/doceditor/stock_properties_dialog.py
 #: rayforge/ui_gtk/sketcher/studio.py
 msgid "Name"
-msgstr ""
+msgstr "名称"
 
 #: rayforge/ui_gtk/camera/properties_widget.py
 msgid "Enabled"
-msgstr ""
+msgstr "已启用"
 
 #: rayforge/ui_gtk/camera/properties_widget.py
 msgid "Configure"
-msgstr ""
+msgstr "配置"
 
 #: rayforge/ui_gtk/camera/properties_widget.py
 msgid "Image Settings"
-msgstr ""
+msgstr "图像设置"
 
 #: rayforge/ui_gtk/camera/properties_widget.py
 msgid "Image Alignment"
-msgstr ""
+msgstr "图像对齐"
 
 #: rayforge/ui_gtk/camera/alignment_dialog.py
 #, python-brace-format
 msgid "{camera_name} – Image Alignment"
-msgstr ""
+msgstr "{camera_name} – 图像对齐"
 
 #: rayforge/ui_gtk/camera/alignment_dialog.py
 msgid ""
 "Click the image to add new reference points. Click or drag existing points "
 "to edit them."
-msgstr ""
+msgstr "点击图像以添加新的参考点。单击或拖动现有点以编辑它们。"
 
 #: rayforge/ui_gtk/camera/alignment_dialog.py
 msgid "Reset Points"
-msgstr ""
+msgstr "重置点"
 
 #: rayforge/ui_gtk/camera/alignment_dialog.py
 msgid "Clear All Points"
-msgstr ""
+msgstr "清除所有点"
 
 #: rayforge/ui_gtk/camera/alignment_dialog.py
 msgid "Apply"
-msgstr ""
+msgstr "应用"
 
 #: rayforge/ui_gtk/camera/image_settings_dialog.py
 #, python-brace-format
 msgid "{camera_name} - Camera Image Settings"
-msgstr ""
+msgstr "{camera_name} - 摄像头图像设置"
 
 #: rayforge/ui_gtk/camera/image_settings_dialog.py
 msgid "Camera Image Settings"
-msgstr ""
+msgstr "摄像头图像设置"
 
 #: rayforge/ui_gtk/camera/image_settings_dialog.py
 msgid "Auto White Balance"
-msgstr ""
+msgstr "自动白平衡"
 
 #: rayforge/ui_gtk/camera/image_settings_dialog.py
 msgid "Automatically adjust white balance"
-msgstr ""
+msgstr "自动调整白平衡"
 
 #: rayforge/ui_gtk/camera/image_settings_dialog.py
 msgid "White Balance (Kelvin)"
-msgstr ""
+msgstr "白平衡（开尔文）"
 
 #: rayforge/ui_gtk/camera/image_settings_dialog.py
 msgid "Contrast"
-msgstr ""
+msgstr "对比度"
 
 #: rayforge/ui_gtk/camera/image_settings_dialog.py
 msgid "Brightness"
-msgstr ""
+msgstr "亮度"
 
 #: rayforge/ui_gtk/camera/image_settings_dialog.py
 msgid "Transparency"
-msgstr ""
+msgstr "透明度"
 
 #: rayforge/ui_gtk/camera/image_settings_dialog.py
 msgid "Transparency on the worksurface"
-msgstr ""
+msgstr "工作台上的透明度"
 
 #: rayforge/ui_gtk/camera/camera_preferences_page.py
 msgid "Add New Camera"
-msgstr ""
+msgstr "添加新摄像头"
 
 #: rayforge/ui_gtk/camera/camera_preferences_page.py
 msgid "No cameras configured"
-msgstr ""
+msgstr "未配置摄像头"
 
 #: rayforge/ui_gtk/camera/camera_preferences_page.py
 #: rayforge/ui_gtk/machine/settings_dialog.py
 msgid "Camera"
-msgstr ""
+msgstr "摄像头"
 
 #: rayforge/ui_gtk/camera/camera_preferences_page.py
 msgid "Cameras"
-msgstr ""
+msgstr "摄像头"
 
 #: rayforge/ui_gtk/camera/camera_preferences_page.py
 msgid "Stream a camera image directly onto the work surface."
-msgstr ""
+msgstr "将摄像头图像直接流式传输到工作台。"
 
 #: rayforge/ui_gtk/machine/machine_hours_page.py
 msgid "Reset Counter"
-msgstr ""
+msgstr "重置计数器"
 
 #: rayforge/ui_gtk/machine/machine_hours_page.py
 msgid "Edit Counter"
-msgstr ""
+msgstr "编辑计数器"
 
 #: rayforge/ui_gtk/machine/machine_hours_page.py
 msgid "Remove Counter"
-msgstr ""
+msgstr "移除计数器"
 
 #: rayforge/ui_gtk/machine/machine_hours_page.py
 msgid "Reset Counter?"
-msgstr ""
+msgstr "重置计数器？"
 
 #: rayforge/ui_gtk/machine/machine_hours_page.py
 msgid "This will reset the accumulated hours to zero."
-msgstr ""
+msgstr "这将把累计小时数重置为零。"
 
 #: rayforge/ui_gtk/machine/machine_hours_page.py
 #: rayforge/ui_gtk/machine/hook_list.py rayforge/doceditor/file_cmd.py
 msgid "Reset"
-msgstr ""
+msgstr "重置"
 
 #: rayforge/ui_gtk/machine/machine_hours_page.py
 msgid "Remove Counter?"
-msgstr ""
+msgstr "移除计数器？"
 
 #: rayforge/ui_gtk/machine/machine_hours_page.py
 msgid ""
 "Are you sure you want to remove this counter? This action cannot be undone."
-msgstr ""
+msgstr "您确定要移除此计数器吗？此操作无法撤销。"
 
 #: rayforge/ui_gtk/machine/machine_hours_page.py
 msgid "Add Counter"
-msgstr ""
+msgstr "添加计数器"
 
 #: rayforge/ui_gtk/machine/machine_hours_page.py
 msgid "No counters configured"
-msgstr ""
+msgstr "未配置计数器"
 
 #: rayforge/ui_gtk/machine/machine_hours_page.py
 msgid "New Counter"
-msgstr ""
+msgstr "新计数器"
 
 #: rayforge/ui_gtk/machine/machine_hours_page.py
 #: rayforge/ui_gtk/machine/dialect_editor.py
@@ -1686,434 +1694,436 @@ msgstr ""
 #: rayforge/ui_gtk/doceditor/edit_recipe_dialog.py
 #: rayforge/ui_gtk/doceditor/add_material_dialog.py
 msgid "Save"
-msgstr ""
+msgstr "保存"
 
 #: rayforge/ui_gtk/machine/machine_hours_page.py
 msgid "Notification Interval"
-msgstr ""
+msgstr "通知间隔"
 
 #: rayforge/ui_gtk/machine/machine_hours_page.py
 msgid ""
 "Show notification when counter reaches this value (hours). Set to 0 to "
 "disable."
-msgstr ""
+msgstr "当计数器达到此值（小时）时显示通知。设置为0以禁用。"
 
 #: rayforge/ui_gtk/machine/machine_hours_page.py
 msgid "Machine Hours"
-msgstr ""
+msgstr "机器工时"
 
 #: rayforge/ui_gtk/machine/machine_hours_page.py
 msgid "Total Hours"
-msgstr ""
+msgstr "总工时"
 
 #: rayforge/ui_gtk/machine/machine_hours_page.py
 msgid "Total Operating Hours"
-msgstr ""
+msgstr "总运行工时"
 
 #: rayforge/ui_gtk/machine/machine_hours_page.py
 msgid "Cumulative machine operating time"
-msgstr ""
+msgstr "累计机器运行时间"
 
 #: rayforge/ui_gtk/machine/machine_hours_page.py
 msgid "Reset Total Hours"
-msgstr ""
+msgstr "重置总工时"
 
 #: rayforge/ui_gtk/machine/machine_hours_page.py
 msgid "Maintenance Counters"
-msgstr ""
+msgstr "维护计数器"
 
 #: rayforge/ui_gtk/machine/machine_hours_page.py
 msgid ""
 "Track maintenance intervals with resettable counters. Use for laser tubes, "
 "lubrication, etc."
-msgstr ""
+msgstr "使用可重置的计数器跟踪维护间隔。用于激光管、润滑等。"
 
 #: rayforge/ui_gtk/machine/machine_hours_page.py
 #, python-brace-format
 msgid "{time} total"
-msgstr ""
+msgstr "总计 {time}"
 
 #: rayforge/ui_gtk/machine/machine_hours_page.py
 msgid "Reset Total Hours?"
-msgstr ""
+msgstr "重置总工时？"
 
 #: rayforge/ui_gtk/machine/machine_hours_page.py
 msgid ""
 "This will reset the total cumulative operating hours to zero. Maintenance "
 "counters will not be affected."
-msgstr ""
+msgstr "这将把总累计运行工时重置为零。维护计数器将不受影响。"
 
 #: rayforge/ui_gtk/machine/macro_list.py
 msgid "Add New Macro"
-msgstr ""
+msgstr "添加新宏"
 
 #: rayforge/ui_gtk/machine/macro_list.py
 msgid "No macros configured"
-msgstr ""
+msgstr "未配置宏"
 
 #: rayforge/ui_gtk/machine/macro_list.py
 msgid "New Macro"
-msgstr ""
+msgstr "新宏"
 
 #: rayforge/ui_gtk/machine/dialect_editor.py
 msgid "Escaped braces {{ or }} are not supported."
-msgstr ""
+msgstr "不支持转义大括号 {{ 或 }}。"
 
 #: rayforge/ui_gtk/machine/dialect_editor.py
 msgid "Nested braces are not allowed."
-msgstr ""
+msgstr "不允许嵌套大括号。"
 
 #: rayforge/ui_gtk/machine/dialect_editor.py
 msgid "Unmatched closing brace '}' found."
-msgstr ""
+msgstr "发现不匹配的闭合大括号 '}'。"
 
 #: rayforge/ui_gtk/machine/dialect_editor.py
 msgid "Unmatched opening brace '{' found."
-msgstr ""
+msgstr "发现不匹配的开放大括号 '{'。"
 
 #: rayforge/ui_gtk/machine/dialect_editor.py
 msgid "Empty braces '{}' are not allowed."
-msgstr ""
+msgstr "不允许空大括号 '{}'。"
 
 #: rayforge/ui_gtk/machine/dialect_editor.py
 #, python-brace-format
 msgid "Unsupported variable(s): {vars}"
-msgstr ""
+msgstr "不支持的变量：{vars}"
 
 #: rayforge/ui_gtk/machine/dialect_editor.py
 #, python-brace-format
 msgid "Edit Dialect: {label}"
-msgstr ""
+msgstr "编辑方言：{label}"
 
 #: rayforge/ui_gtk/machine/dialect_editor.py
 #: rayforge/ui_gtk/machine/dialect_list.py
 msgid "New Dialect"
-msgstr ""
+msgstr "新方言"
 
 #: rayforge/ui_gtk/machine/dialect_editor.py
 msgid "Label cannot be empty."
-msgstr ""
+msgstr "标签不能为空。"
 
 #: rayforge/ui_gtk/machine/control_panel.py
 msgid "Active System"
-msgstr ""
+msgstr "活动系统"
 
 #: rayforge/ui_gtk/machine/control_panel.py
 msgid "Current Offsets"
-msgstr ""
+msgstr "当前偏移"
 
 #: rayforge/ui_gtk/machine/control_panel.py
 msgid "Edit Offsets Manually"
-msgstr ""
+msgstr "手动编辑偏移"
 
 #: rayforge/ui_gtk/machine/control_panel.py
 msgid "Current Position"
-msgstr ""
+msgstr "当前位置"
 
 #: rayforge/ui_gtk/machine/control_panel.py
 msgid "Zero Axes"
-msgstr ""
+msgstr "归零轴"
 
 #: rayforge/ui_gtk/machine/control_panel.py
 msgid "X"
-msgstr ""
+msgstr "X"
 
 #: rayforge/ui_gtk/machine/control_panel.py
 msgid "Set current X position as 0 for active WCS"
-msgstr ""
+msgstr "将当前X位置设置为活动WCS的0"
 
 #: rayforge/ui_gtk/machine/control_panel.py
 msgid "Y"
-msgstr ""
+msgstr "Y"
 
 #: rayforge/ui_gtk/machine/control_panel.py
 msgid "Set current Y position as 0 for active WCS"
-msgstr ""
+msgstr "将当前Y位置设置为活动WCS的0"
 
 #: rayforge/ui_gtk/machine/control_panel.py
 msgid "Z"
-msgstr ""
+msgstr "Z"
 
 #: rayforge/ui_gtk/machine/control_panel.py
 msgid "Set current Z position as 0 for active WCS"
-msgstr ""
+msgstr "将当前Z位置设置为活动WCS的0"
 
 #: rayforge/ui_gtk/machine/control_panel.py
 msgid "Set Work Zero at Current Position"
-msgstr ""
+msgstr "在当前位置设置工件零点"
 
 #: rayforge/ui_gtk/machine/control_panel.py
 msgid "Jog Speed"
-msgstr ""
+msgstr "点动速度"
 
 #: rayforge/ui_gtk/machine/control_panel.py
 msgid "Speed in mm/min"
-msgstr ""
+msgstr "速度（毫米/分钟）"
 
 #: rayforge/ui_gtk/machine/control_panel.py
 msgid "Jog Distance"
-msgstr ""
+msgstr "点动距离"
 
 #: rayforge/ui_gtk/machine/control_panel.py
 msgid "Distance in mm"
-msgstr ""
+msgstr "距离（毫米）"
 
 #: rayforge/ui_gtk/machine/control_panel.py
 msgid "Edit Work Offsets"
-msgstr ""
+msgstr "编辑工件偏移"
 
 #: rayforge/ui_gtk/machine/control_panel.py
 msgid "Enter the offset from Machine Zero to Work Zero for the active WCS."
-msgstr ""
+msgstr "输入从机器零点到工件零点的偏移，用于活动WCS。"
 
 #: rayforge/ui_gtk/machine/control_panel.py
 msgid "Offline - Position Unknown"
-msgstr ""
+msgstr "离线 - 位置未知"
 
 #: rayforge/ui_gtk/machine/control_panel.py
 #, python-brace-format
 msgid "Offsets cannot be set in Machine Coordinate Mode ({wcs})"
-msgstr ""
+msgstr "无法在机器坐标模式（{wcs}）下设置偏移"
 
 #: rayforge/ui_gtk/machine/control_panel.py
 msgid "Machine must be connected to set Zero Here"
-msgstr ""
+msgstr "必须连接机器才能在此处归零"
 
 #: rayforge/ui_gtk/machine/control_panel.py
 msgid "Set current position as 0"
-msgstr ""
+msgstr "将当前位置设置为0"
 
 #: rayforge/ui_gtk/machine/hook_list.py
 msgid "G-code Hooks"
-msgstr ""
+msgstr "G代码钩子"
 
 #: rayforge/ui_gtk/machine/hook_list.py
 msgid "Add custom G-code to be executed at specific points in the job."
-msgstr ""
+msgstr "添加自定义G代码，在作业中的特定点执行。"
 
 #: rayforge/ui_gtk/machine/hook_list.py
 msgid "Reset to Default"
-msgstr ""
+msgstr "重置为默认值"
 
 #: rayforge/ui_gtk/machine/hook_list.py
 #, python-brace-format
 msgid "Reset '{hook_name}' to Default?"
-msgstr ""
+msgstr "将'{hook_name}'重置为默认值？"
 
 #: rayforge/ui_gtk/machine/hook_list.py
 msgid ""
 "This will remove your custom G-code for this hook. The machine will revert "
 "to using its built-in default macro. This action cannot be undone."
 msgstr ""
+"这将移除此钩子的自定义G代码。机器将恢复使用其内置的默认宏。此操作无法撤销。"
 
 #: rayforge/ui_gtk/machine/hook_list.py
 msgid "# Your G-code here"
-msgstr ""
+msgstr "# 您的G代码在此"
 
 #: rayforge/ui_gtk/machine/gcode_editor.py
 msgid "Edit Macro"
-msgstr ""
+msgstr "编辑宏"
 
 #: rayforge/ui_gtk/machine/gcode_editor.py
 msgid "Insert Variable"
-msgstr ""
+msgstr "插入变量"
 
 #: rayforge/ui_gtk/machine/gcode_editor.py
 msgid "Include Macro"
-msgstr ""
+msgstr "包含宏"
 
 #: rayforge/ui_gtk/machine/gcode_editor.py
 #, python-brace-format
 msgid "Edit Macro for {name}"
-msgstr ""
+msgstr "编辑{name}的宏"
 
 #: rayforge/ui_gtk/machine/gcode_editor.py
 msgid "Available Variables"
-msgstr ""
+msgstr "可用变量"
 
 #: rayforge/ui_gtk/machine/gcode_editor.py
 msgid "No other macros to include."
-msgstr ""
+msgstr "没有其他宏可包含。"
 
 #: rayforge/ui_gtk/machine/gcode_editor.py
 msgid "Name cannot be empty."
-msgstr ""
+msgstr "名称不能为空。"
 
 #: rayforge/ui_gtk/machine/gcode_editor.py
 #, python-brace-format
 msgid "Name contains invalid characters: {chars}"
-msgstr ""
+msgstr "名称包含无效字符：{chars}"
 
 #: rayforge/ui_gtk/machine/gcode_editor.py
 msgid "This name is already used by another macro."
-msgstr ""
+msgstr "此名称已被另一个宏使用。"
 
 #: rayforge/ui_gtk/machine/device_settings_page.py
 #: rayforge/ui_gtk/machine/settings_dialog.py
 msgid "Device"
-msgstr ""
+msgstr "设备"
 
 #: rayforge/ui_gtk/machine/device_settings_page.py
 msgid "Device Settings"
-msgstr ""
+msgstr "设备设置"
 
 #: rayforge/ui_gtk/machine/device_settings_page.py
 msgid "Read or apply settings directly to the device."
-msgstr ""
+msgstr "直接读取或应用设置到设备。"
 
 #: rayforge/ui_gtk/machine/device_settings_page.py
 msgid "Read from Device"
-msgstr ""
+msgstr "从设备读取"
 
 #: rayforge/ui_gtk/machine/device_settings_page.py
 msgid "The current driver does not support reading device settings."
-msgstr ""
+msgstr "当前驱动不支持读取设备设置。"
 
 #: rayforge/ui_gtk/machine/device_settings_page.py
 msgid "Copy Error Details"
-msgstr ""
+msgstr "复制错误详情"
 
 #: rayforge/ui_gtk/machine/device_settings_page.py
 msgid "Dismiss Error"
-msgstr ""
+msgstr "忽略错误"
 
 #: rayforge/ui_gtk/machine/device_settings_page.py
 msgid ""
 "Editing these values can be dangerous and may render your machine inoperable!"
-msgstr ""
+msgstr "编辑这些值可能很危险，并可能导致您的机器无法操作！"
 
 #: rayforge/ui_gtk/machine/device_settings_page.py
 msgid ""
 "The device may restart or temporarily disconnect after a setting is changed."
-msgstr ""
+msgstr "更改设置后，设备可能会重启或暂时断开连接。"
 
 #: rayforge/ui_gtk/machine/device_settings_page.py
 msgid "Dismiss Warning"
-msgstr ""
+msgstr "忽略警告"
 
 #: rayforge/ui_gtk/machine/device_settings_page.py
 msgid "Click the refresh button to load settings from the device."
-msgstr ""
+msgstr "点击刷新按钮从设备加载设置。"
 
 #: rayforge/ui_gtk/machine/device_settings_page.py
 msgid "Operation failed"
-msgstr ""
+msgstr "操作失败"
 
 #: rayforge/ui_gtk/machine/device_settings_page.py
 msgid "Machine Not Connected"
-msgstr ""
+msgstr "机器未连接"
 
 #: rayforge/ui_gtk/machine/device_settings_page.py
 msgid "The machine is not connected."
-msgstr ""
+msgstr "机器未连接。"
 
 #: rayforge/ui_gtk/machine/device_settings_page.py
 msgid "Setting applied successfully."
-msgstr ""
+msgstr "设置应用成功。"
 
 #: rayforge/ui_gtk/machine/device_settings_page.py
 #, python-brace-format
 msgid "Cannot connect: Used by '{machine}'"
-msgstr ""
+msgstr "无法连接：正被'{machine}'使用"
 
 #: rayforge/ui_gtk/machine/device_settings_page.py
 msgid "Machine activated."
-msgstr ""
+msgstr "机器已激活。"
 
 #: rayforge/ui_gtk/machine/advanced_preferences_page.py
 #: rayforge/ui_gtk/machine/settings_dialog.py
 msgid "Advanced"
-msgstr ""
+msgstr "高级"
 
 #: rayforge/ui_gtk/machine/advanced_preferences_page.py
 msgid "Output"
-msgstr ""
+msgstr "输出"
 
 #: rayforge/ui_gtk/machine/advanced_preferences_page.py
 msgid "Configure G-code flavor and format for your machine"
-msgstr ""
+msgstr "为您的机器配置G代码风格和格式"
 
 #: rayforge/ui_gtk/machine/advanced_preferences_page.py
 msgid "G-Code Dialect"
-msgstr ""
+msgstr "G代码方言"
 
 #: rayforge/ui_gtk/machine/advanced_preferences_page.py
 msgid "G-code Precision"
-msgstr ""
+msgstr "G代码精度"
 
 #: rayforge/ui_gtk/machine/advanced_preferences_page.py
 msgid "Number of decimal places for coordinates (e.g., 3 for mm, 6 for µm)"
-msgstr ""
+msgstr "坐标的小数位数（例如，毫米为3，微米为6）"
 
 #: rayforge/ui_gtk/machine/advanced_preferences_page.py
 msgid "Support Arcs"
-msgstr ""
+msgstr "支持圆弧"
 
 #: rayforge/ui_gtk/machine/advanced_preferences_page.py
 msgid ""
 "Generate G2/G3 arc commands for smoother paths. Disable if your machine does "
 "not support arcs"
-msgstr ""
+msgstr "生成G2/G3圆弧命令以获得更平滑的路径。如果您的机器不支持圆弧，请禁用。"
 
 #: rayforge/ui_gtk/machine/advanced_preferences_page.py
 msgid "Arc Tolerance"
-msgstr ""
+msgstr "圆弧容差"
 
 #: rayforge/ui_gtk/machine/advanced_preferences_page.py
 msgid ""
 "Maximum deviation from original path when fitting arcs (in mm). Lower values "
 "drastically increase processing time and job size"
 msgstr ""
+"拟合圆弧时与原始路径的最大偏差（毫米）。较低的值会大幅增加处理时间和作业大小"
 
 #: rayforge/ui_gtk/machine/advanced_preferences_page.py
 #: rayforge/ui_gtk/main_menu.py
 msgid "Macros"
-msgstr ""
+msgstr "宏"
 
 #: rayforge/ui_gtk/machine/advanced_preferences_page.py
 msgid "Create and manage reusable G-code snippets."
-msgstr ""
+msgstr "创建和管理可重用的G代码片段。"
 
 #: rayforge/ui_gtk/machine/advanced_preferences_page.py
 msgid "Dialect Management"
-msgstr ""
+msgstr "方言管理"
 
 #: rayforge/ui_gtk/machine/advanced_preferences_page.py
 msgid "Create and manage custom G-code dialect definitions."
-msgstr ""
+msgstr "创建和管理自定义G代码方言定义。"
 
 #: rayforge/ui_gtk/machine/advanced_preferences_page.py
 msgid "No dialects available."
-msgstr ""
+msgstr "没有可用的方言。"
 
 #: rayforge/ui_gtk/machine/dialect_list.py
 msgid "Copy & Edit"
-msgstr ""
+msgstr "复制和编辑"
 
 #: rayforge/ui_gtk/machine/dialect_list.py
 #, python-brace-format
 msgid "{label} (Copy)"
-msgstr ""
+msgstr "{label}（副本）"
 
 #: rayforge/ui_gtk/machine/dialect_list.py
 #, python-brace-format
 msgid "Delete '{label}'?"
-msgstr ""
+msgstr "删除'{label}'？"
 
 #: rayforge/ui_gtk/machine/dialect_list.py
 msgid ""
 "This custom dialect will be permanently removed. This action cannot be "
 "undone."
-msgstr ""
+msgstr "此自定义方言将被永久删除。此操作无法撤销。"
 
 #: rayforge/ui_gtk/machine/dialect_list.py
 msgid "Cannot Delete Dialect"
-msgstr ""
+msgstr "无法删除方言"
 
 #: rayforge/ui_gtk/machine/dialect_list.py
 #, python-brace-format
 msgid "This dialect is still used by the following machine(s): {machines}"
-msgstr ""
+msgstr "此方言仍被以下机器使用：{machines}"
 
 #: rayforge/ui_gtk/machine/dialect_list.py
 #: rayforge/ui_gtk/package_manager/package_list.py
@@ -2121,1110 +2131,1110 @@ msgstr ""
 #: rayforge/ui_gtk/doceditor/material_list.py
 #: rayforge/ui_gtk/sketcher/sketchcanvas.py
 msgid "OK"
-msgstr ""
+msgstr "确定"
 
 #: rayforge/ui_gtk/machine/dialect_list.py
 msgid "Add New Dialect"
-msgstr ""
+msgstr "添加新方言"
 
 #: rayforge/ui_gtk/machine/dialect_list.py
 msgid "No custom dialects configured"
-msgstr ""
+msgstr "未配置自定义方言"
 
 #: rayforge/ui_gtk/machine/dialect_list.py
 msgid "A new custom dialect"
-msgstr ""
+msgstr "新的自定义方言"
 
 #: rayforge/ui_gtk/machine/connection_status_widget.py
 #: rayforge/ui_gtk/machine/status_widget.py
 msgid "No driver selected"
-msgstr ""
+msgstr "未选择驱动程序"
 
 #: rayforge/ui_gtk/machine/jog_widget.py
 msgid "Home X"
-msgstr ""
+msgstr "X轴归零"
 
 #: rayforge/ui_gtk/machine/jog_widget.py
 msgid "Move North-West"
-msgstr ""
+msgstr "向西北移动"
 
 #: rayforge/ui_gtk/machine/jog_widget.py
 msgid "Move North"
-msgstr ""
+msgstr "向北移动"
 
 #: rayforge/ui_gtk/machine/jog_widget.py
 msgid "Move North-East"
-msgstr ""
+msgstr "向东北移动"
 
 #: rayforge/ui_gtk/machine/jog_widget.py
 msgid "Home Y"
-msgstr ""
+msgstr "Y轴归零"
 
 #: rayforge/ui_gtk/machine/jog_widget.py
 msgid "Move West (Left)"
-msgstr ""
+msgstr "向西（左）移动"
 
 #: rayforge/ui_gtk/machine/jog_widget.py
 msgid "Move East (Right)"
-msgstr ""
+msgstr "向东（右）移动"
 
 #: rayforge/ui_gtk/machine/jog_widget.py
 msgid "Home Z"
-msgstr ""
+msgstr "Z轴归零"
 
 #: rayforge/ui_gtk/machine/jog_widget.py
 msgid "Move South-West"
-msgstr ""
+msgstr "向西南移动"
 
 #: rayforge/ui_gtk/machine/jog_widget.py
 msgid "Move South"
-msgstr ""
+msgstr "向南移动"
 
 #: rayforge/ui_gtk/machine/jog_widget.py
 msgid "Move South-East"
-msgstr ""
+msgstr "向东南移动"
 
 #: rayforge/ui_gtk/machine/jog_widget.py
 msgid "Increase Z-Distance"
-msgstr ""
+msgstr "增加Z距离"
 
 #: rayforge/ui_gtk/machine/jog_widget.py
 msgid "Decrease Z-Distance"
-msgstr ""
+msgstr "减少Z距离"
 
 #: rayforge/ui_gtk/machine/profile_selector.py
 msgid "Add a New Machine"
-msgstr ""
+msgstr "添加新机器"
 
 #: rayforge/ui_gtk/machine/profile_selector.py
 msgid "Select a machine profile to use as a template."
-msgstr ""
+msgstr "选择一个机器配置文件作为模板。"
 
 #: rayforge/ui_gtk/machine/machine_selector.py
 msgid "Select Machine"
-msgstr ""
+msgstr "选择机器"
 
 #: rayforge/ui_gtk/machine/machine_selector.py
 msgid "Select active machine"
-msgstr ""
+msgstr "选择活动机器"
 
 #: rayforge/ui_gtk/machine/laser_preferences_page.py
 #, python-brace-format
 msgid "Tool {tool_number}, max power {max_power}, spot size {spot_x}x{spot_y}"
-msgstr ""
+msgstr "工具 {tool_number}，最大功率 {max_power}，光斑大小 {spot_x}x{spot_y}"
 
 #: rayforge/ui_gtk/machine/laser_preferences_page.py
 msgid "Add New Laser Head"
-msgstr ""
+msgstr "添加新激光头"
 
 #: rayforge/ui_gtk/machine/laser_preferences_page.py
 msgid "No laser heads configured"
-msgstr ""
+msgstr "未配置激光头"
 
 #: rayforge/ui_gtk/machine/laser_preferences_page.py
 msgid "At least one laser head is required"
-msgstr ""
+msgstr "至少需要一个激光头"
 
 #: rayforge/ui_gtk/machine/laser_preferences_page.py
 msgid "New Laser"
-msgstr ""
+msgstr "新激光"
 
 #: rayforge/ui_gtk/machine/laser_preferences_page.py
 msgid "Laser Heads"
-msgstr ""
+msgstr "激光头"
 
 #: rayforge/ui_gtk/machine/laser_preferences_page.py
 msgid "You can configure multiple laser heads if your machine supports it."
-msgstr ""
+msgstr "如果您的机器支持，可以配置多个激光头。"
 
 #: rayforge/ui_gtk/machine/laser_preferences_page.py
 msgid "Laser Properties"
-msgstr ""
+msgstr "激光属性"
 
 #: rayforge/ui_gtk/machine/laser_preferences_page.py
 msgid "Configure the selected laser"
-msgstr ""
+msgstr "配置选定的激光"
 
 #: rayforge/ui_gtk/machine/laser_preferences_page.py
 msgid "Tool Number"
-msgstr ""
+msgstr "工具编号"
 
 #: rayforge/ui_gtk/machine/laser_preferences_page.py
 msgid "G-code tool number (e.g., T0, T1)"
-msgstr ""
+msgstr "G代码工具编号（例如：T0、T1）"
 
 #: rayforge/ui_gtk/machine/laser_preferences_page.py
 #: rayforge/ui_gtk/doceditor/step_settings/depth_engraver.py
 msgid "Max Power"
-msgstr ""
+msgstr "最大功率"
 
 #: rayforge/ui_gtk/machine/laser_preferences_page.py
 msgid "Maximum power value in GCode"
-msgstr ""
+msgstr "G代码中的最大功率值"
 
 #: rayforge/ui_gtk/machine/laser_preferences_page.py
 msgid "Frame Power"
-msgstr ""
+msgstr "边框功率"
 
 #: rayforge/ui_gtk/machine/laser_preferences_page.py
 msgid "Power value in percent to use when framing. 0 to disable"
-msgstr ""
+msgstr "边框时使用的功率百分比。0表示禁用"
 
 #: rayforge/ui_gtk/machine/laser_preferences_page.py
 msgid "Focus Power"
-msgstr ""
+msgstr "聚焦功率"
 
 #: rayforge/ui_gtk/machine/laser_preferences_page.py
 msgid "Power value in percent to use when focusing. 0 to disable"
-msgstr ""
+msgstr "聚焦时使用的功率百分比。0表示禁用"
 
 #: rayforge/ui_gtk/machine/laser_preferences_page.py
 msgid "Spot Size X"
-msgstr ""
+msgstr "光斑大小 X"
 
 #: rayforge/ui_gtk/machine/laser_preferences_page.py
 msgid "Size of the laser spot in the X direction"
-msgstr ""
+msgstr "X方向上的激光光斑大小"
 
 #: rayforge/ui_gtk/machine/laser_preferences_page.py
 msgid "Spot Size Y"
-msgstr ""
+msgstr "光斑大小 Y"
 
 #: rayforge/ui_gtk/machine/laser_preferences_page.py
 msgid "Size of the laser spot in the Y direction"
-msgstr ""
+msgstr "Y方向上的激光光斑大小"
 
 #: rayforge/ui_gtk/machine/settings_dialog.py
 #, python-brace-format
 msgid "{machine_name} - Machine Settings"
-msgstr ""
+msgstr "{machine_name} - 机器设置"
 
 #: rayforge/ui_gtk/machine/settings_dialog.py rayforge/ui_gtk/main_menu.py
 msgid "Machine Settings"
-msgstr ""
+msgstr "机器设置"
 
 #: rayforge/ui_gtk/machine/settings_dialog.py
 msgid "Laser"
-msgstr ""
+msgstr "激光"
 
 #: rayforge/ui_gtk/machine/settings_dialog.py
 msgid "Hours"
-msgstr ""
+msgstr "小时"
 
 #: rayforge/ui_gtk/machine/general_preferences_page.py
 #: rayforge/ui_gtk/doceditor/edit_recipe_dialog.py
 msgid "Machine"
-msgstr ""
+msgstr "机器"
 
 #: rayforge/ui_gtk/machine/general_preferences_page.py
 msgid "Driver Settings"
-msgstr ""
+msgstr "驱动程序设置"
 
 #: rayforge/ui_gtk/machine/general_preferences_page.py
 msgid "Select driver"
-msgstr ""
+msgstr "选择驱动程序"
 
 #: rayforge/ui_gtk/machine/general_preferences_page.py
 msgid "Startup Behavior"
-msgstr ""
+msgstr "启动行为"
 
 #: rayforge/ui_gtk/machine/general_preferences_page.py
 msgid "Home On Start"
-msgstr ""
+msgstr "启动时回原点"
 
 #: rayforge/ui_gtk/machine/general_preferences_page.py
 msgid "Send a homing command when the application starts"
-msgstr ""
+msgstr "应用程序启动时发送回原点命令"
 
 #: rayforge/ui_gtk/machine/general_preferences_page.py
 msgid "Clear Alarm On Connect"
-msgstr ""
+msgstr "连接时清除报警"
 
 #: rayforge/ui_gtk/machine/general_preferences_page.py
 msgid "Automatically send an unlock command if connected in an ALARM state"
-msgstr ""
+msgstr "如果在报警状态下连接，自动发送解锁命令"
 
 #: rayforge/ui_gtk/machine/general_preferences_page.py
 msgid "Axes &amp; Dimensions"
-msgstr ""
+msgstr "轴与尺寸"
 
 #: rayforge/ui_gtk/machine/general_preferences_page.py
 #: rayforge/ui_gtk/doceditor/property_providers/transform.py
 msgid "Width"
-msgstr ""
+msgstr "宽度"
 
 #: rayforge/ui_gtk/machine/general_preferences_page.py
 msgid "Width of the machine work area in mm"
-msgstr ""
+msgstr "机器工作区域的宽度（毫米）"
 
 #: rayforge/ui_gtk/machine/general_preferences_page.py
 #: rayforge/ui_gtk/doceditor/property_providers/transform.py
 msgid "Height"
-msgstr ""
+msgstr "高度"
 
 #: rayforge/ui_gtk/machine/general_preferences_page.py
 msgid "Height of the machine work area in mm"
-msgstr ""
+msgstr "机器工作区域的高度（毫米）"
 
 #: rayforge/ui_gtk/machine/general_preferences_page.py
 msgid "X Offset"
-msgstr ""
+msgstr "X轴偏移"
 
 #: rayforge/ui_gtk/machine/general_preferences_page.py
 msgid "Offset to add to each gcode command on x axis."
-msgstr ""
+msgstr "添加到X轴每个G代码命令的偏移量。"
 
 #: rayforge/ui_gtk/machine/general_preferences_page.py
 msgid "Y Offset"
-msgstr ""
+msgstr "Y轴偏移"
 
 #: rayforge/ui_gtk/machine/general_preferences_page.py
 msgid "Offset to add to each gcode command on y axis."
-msgstr ""
+msgstr "添加到Y轴每个G代码命令的偏移量。"
 
 #: rayforge/ui_gtk/machine/general_preferences_page.py
 msgid "Bottom Left"
-msgstr ""
+msgstr "左下"
 
 #: rayforge/ui_gtk/machine/general_preferences_page.py
 msgid "Top Left"
-msgstr ""
+msgstr "左上"
 
 #: rayforge/ui_gtk/machine/general_preferences_page.py
 msgid "Top Right"
-msgstr ""
+msgstr "右上"
 
 #: rayforge/ui_gtk/machine/general_preferences_page.py
 msgid "Bottom Right"
-msgstr ""
+msgstr "右下"
 
 #: rayforge/ui_gtk/machine/general_preferences_page.py
 msgid "Coordinate Origin (0,0)"
-msgstr ""
+msgstr "坐标原点 (0,0)"
 
 #: rayforge/ui_gtk/machine/general_preferences_page.py
 msgid "The physical corner where coordinates are zero after homing"
-msgstr ""
+msgstr "回原点后坐标为零的物理角落"
 
 #: rayforge/ui_gtk/machine/general_preferences_page.py
 msgid "Reverse X-Axis Direction"
-msgstr ""
+msgstr "反转X轴方向"
 
 #: rayforge/ui_gtk/machine/general_preferences_page.py
 msgid "Makes coordinate values negative"
-msgstr ""
+msgstr "使坐标值为负"
 
 #: rayforge/ui_gtk/machine/general_preferences_page.py
 msgid "Reverse Y-Axis Direction"
-msgstr ""
+msgstr "反转Y轴方向"
 
 #: rayforge/ui_gtk/machine/general_preferences_page.py
 msgid "Reverse Z-Axis Direction"
-msgstr ""
+msgstr "反转Z轴方向"
 
 #: rayforge/ui_gtk/machine/general_preferences_page.py
 msgid "Enable if a positive Z command (e.g., G0 Z10) moves the head down"
-msgstr ""
+msgstr "如果正Z命令（例如 G0 Z10）使激光头向下移动，请启用此项"
 
 #: rayforge/ui_gtk/machine/general_preferences_page.py
 msgid "Allow Single Axis Homing"
-msgstr ""
+msgstr "允许单轴回原点"
 
 #: rayforge/ui_gtk/machine/general_preferences_page.py
 msgid "Enable individual axis homing controls in the jog dialog"
-msgstr ""
+msgstr "在点动对话框中启用单独的轴回原点控制"
 
 #: rayforge/ui_gtk/machine/general_preferences_page.py
 msgid "Speeds &amp; Acceleration"
-msgstr ""
+msgstr "速度和加速度"
 
 #: rayforge/ui_gtk/machine/general_preferences_page.py
 msgid "Max Travel Speed"
-msgstr ""
+msgstr "最大移动速度"
 
 #: rayforge/ui_gtk/machine/general_preferences_page.py
 msgid "Maximum rapid movement speed"
-msgstr ""
+msgstr "最大快速移动速度"
 
 #: rayforge/ui_gtk/machine/general_preferences_page.py
 msgid "Max Cut Speed"
-msgstr ""
+msgstr "最大切割速度"
 
 #: rayforge/ui_gtk/machine/general_preferences_page.py
 msgid "Maximum cutting speed"
-msgstr ""
+msgstr "最大切割速度"
 
 #: rayforge/ui_gtk/machine/general_preferences_page.py
 msgid "Used for time estimations and calculating the default overscan distance"
-msgstr ""
+msgstr "用于时间估算和计算默认过冲距离"
 
 #: rayforge/ui_gtk/machine/general_preferences_page.py
 #, python-brace-format
 msgid "<b>Configuration required:</b> {error}"
-msgstr ""
+msgstr "<b>需要配置：</b> {error}"
 
 #: rayforge/ui_gtk/machine/general_preferences_page.py
 #, python-brace-format
 msgid "<b>Error:</b> {error}"
-msgstr ""
+msgstr "<b>错误：</b> {error}"
 
 #: rayforge/ui_gtk/machine/general_preferences_page.py
 msgid "Not supported by the driver"
-msgstr ""
+msgstr "驱动程序不支持"
 
 #: rayforge/ui_gtk/varset/varset_editor.py
 msgid "Drag to reorder"
-msgstr ""
+msgstr "拖动以重新排序"
 
 #: rayforge/ui_gtk/varset/varset_editor.py
 msgid "Delete Variable"
-msgstr ""
+msgstr "删除变量"
 
 #: rayforge/ui_gtk/varset/varset_editor.py
 msgid "Key"
-msgstr ""
+msgstr "键"
 
 #: rayforge/ui_gtk/varset/varset_editor.py
 msgid "Default Value"
-msgstr ""
+msgstr "默认值"
 
 #: rayforge/ui_gtk/varset/varset_editor.py
 msgid "Start Value"
-msgstr ""
+msgstr "起始值"
 
 #: rayforge/ui_gtk/varset/varset_editor.py
 msgid "Minimum Value"
-msgstr ""
+msgstr "最小值"
 
 #: rayforge/ui_gtk/varset/varset_editor.py
 msgid "End Value"
-msgstr ""
+msgstr "结束值"
 
 #: rayforge/ui_gtk/varset/varset_editor.py
 msgid "Maximum Value"
-msgstr ""
+msgstr "最大值"
 
 #: rayforge/ui_gtk/varset/varset_editor.py
 msgid "Adjust Value"
-msgstr ""
+msgstr "调整值"
 
 #: rayforge/ui_gtk/varset/varset_editor.py
 msgid "Adjust Slider Range"
-msgstr ""
+msgstr "调整滑块范围"
 
 #: rayforge/ui_gtk/varset/varset_editor.py
 msgid "Integer"
-msgstr ""
+msgstr "整数"
 
 #: rayforge/ui_gtk/varset/varset_editor.py
 msgid "Boolean (Switch)"
-msgstr ""
+msgstr "布尔值 (开关)"
 
 #: rayforge/ui_gtk/varset/varset_editor.py
 msgid "Floating Point"
-msgstr ""
+msgstr "浮点数"
 
 #: rayforge/ui_gtk/varset/varset_editor.py
 msgid "Slider (0-100%)"
-msgstr ""
+msgstr "滑块 (0-100%)"
 
 #: rayforge/ui_gtk/varset/varset_editor.py
 msgid "Text (Single Line)"
-msgstr ""
+msgstr "文本 (单行)"
 
 #: rayforge/ui_gtk/varset/varset_editor.py
 msgid "Text (Multi-Line)"
-msgstr ""
+msgstr "文本 (多行)"
 
 #: rayforge/ui_gtk/varset/varset_editor.py
 msgid "Choice"
-msgstr ""
+msgstr "选择"
 
 #: rayforge/ui_gtk/varset/varset_editor.py
 msgid "Hostname / IP"
-msgstr ""
+msgstr "主机名 / IP"
 
 #: rayforge/ui_gtk/varset/varset_editor.py
 msgid "Serial Port"
-msgstr ""
+msgstr "串口"
 
 #: rayforge/ui_gtk/varset/varset_editor.py
 msgid "Add Parameter"
-msgstr ""
+msgstr "添加参数"
 
 #: rayforge/ui_gtk/varset/var_row_factory.py
 #: rayforge/ui_gtk/varset/varsetwidget.py
 msgid "None Selected"
-msgstr ""
+msgstr "未选择"
 
 #: rayforge/ui_gtk/varset/var_row_factory.py
 #, python-brace-format
 msgid "Unsupported type: {t}"
-msgstr ""
+msgstr "不支持的类型：{t}"
 
 #: rayforge/ui_gtk/varset/varsetwidget.py
 msgid "Apply Change"
-msgstr ""
+msgstr "应用更改"
 
 #: rayforge/ui_gtk/shared/undo_button.py
 msgid "Show History"
-msgstr ""
+msgstr "显示历史记录"
 
 #: rayforge/ui_gtk/shared/undo_button.py
 msgid "Unnamed Action"
-msgstr ""
+msgstr "未命名操作"
 
 #: rayforge/ui_gtk/shared/undo_button.py
 msgid "Undo the last action"
-msgstr ""
+msgstr "撤销上一步操作"
 
 #: rayforge/ui_gtk/shared/undo_button.py
 msgid "Redo the last action"
-msgstr ""
+msgstr "重做上一步操作"
 
 #: rayforge/ui_gtk/shared/splitbutton.py
 msgid "Show all options"
-msgstr ""
+msgstr "显示所有选项"
 
 #: rayforge/ui_gtk/main_menu.py
 msgid "New"
-msgstr ""
+msgstr "新建"
 
 #: rayforge/ui_gtk/main_menu.py
 msgid "Open..."
-msgstr ""
+msgstr "打开..."
 
 #: rayforge/ui_gtk/main_menu.py rayforge/ui_gtk/toolbar.py
 #: rayforge/ui_gtk/doceditor/recipe_control_widget.py
 msgid "Save As..."
-msgstr ""
+msgstr "另存为..."
 
 #: rayforge/ui_gtk/main_menu.py
 msgid "Open Recent"
-msgstr ""
+msgstr "打开最近的文件"
 
 #: rayforge/ui_gtk/main_menu.py
 msgid "Import..."
-msgstr ""
+msgstr "导入..."
 
 #: rayforge/ui_gtk/main_menu.py
 msgid "Export G-code..."
-msgstr ""
+msgstr "导出G代码..."
 
 #: rayforge/ui_gtk/main_menu.py
 msgid "Quit"
-msgstr ""
+msgstr "退出"
 
 #: rayforge/ui_gtk/main_menu.py rayforge/ui_gtk/sketcher/menu.py
 msgid "_File"
-msgstr ""
+msgstr "文件(_F)"
 
 #: rayforge/ui_gtk/main_menu.py rayforge/ui_gtk/toolbar.py
 #: rayforge/ui_gtk/sketcher/menu.py
 msgid "Undo"
-msgstr ""
+msgstr "撤销"
 
 #: rayforge/ui_gtk/main_menu.py rayforge/ui_gtk/toolbar.py
 #: rayforge/ui_gtk/sketcher/menu.py
 msgid "Redo"
-msgstr ""
+msgstr "重做"
 
 #: rayforge/ui_gtk/main_menu.py
 msgid "Copy"
-msgstr ""
+msgstr "复制"
 
 #: rayforge/ui_gtk/main_menu.py
 msgid "Paste"
-msgstr ""
+msgstr "粘贴"
 
 #: rayforge/ui_gtk/main_menu.py
 msgid "Duplicate"
-msgstr ""
+msgstr "创建副本"
 
 #: rayforge/ui_gtk/main_menu.py
 msgid "Select All"
-msgstr ""
+msgstr "全选"
 
 #: rayforge/ui_gtk/main_menu.py
 msgid "Clear Document"
-msgstr ""
+msgstr "清空文档"
 
 #: rayforge/ui_gtk/main_menu.py rayforge/ui_gtk/sketcher/menu.py
 msgid "_Edit"
-msgstr ""
+msgstr "编辑(_E)"
 
 #: rayforge/ui_gtk/main_menu.py
 msgid "Show Workpieces"
-msgstr ""
+msgstr "显示工件"
 
 #: rayforge/ui_gtk/main_menu.py
 msgid "Show Tabs"
-msgstr ""
+msgstr "显示标签"
 
 #: rayforge/ui_gtk/main_menu.py
 msgid "Show Camera Image"
-msgstr ""
+msgstr "显示摄像头图像"
 
 #: rayforge/ui_gtk/main_menu.py
 msgid "Show Travel Moves"
-msgstr ""
+msgstr "显示移动路径"
 
 #: rayforge/ui_gtk/main_menu.py
 msgid "Show G-code Preview"
-msgstr ""
+msgstr "显示G代码预览"
 
 #: rayforge/ui_gtk/main_menu.py
 msgid "Show Control Panel"
-msgstr ""
+msgstr "显示控制面板"
 
 #: rayforge/ui_gtk/main_menu.py
 msgid "Simulate Execution"
-msgstr ""
+msgstr "模拟运行"
 
 #: rayforge/ui_gtk/main_menu.py
 msgid "3D View"
-msgstr ""
+msgstr "3D视图"
 
 #: rayforge/ui_gtk/main_menu.py
 msgid "Top View"
-msgstr ""
+msgstr "顶视图"
 
 #: rayforge/ui_gtk/main_menu.py
 msgid "Front View"
-msgstr ""
+msgstr "前视图"
 
 #: rayforge/ui_gtk/main_menu.py
 msgid "Isometric View"
-msgstr ""
+msgstr "等轴测视图"
 
 #: rayforge/ui_gtk/main_menu.py
 msgid "Toggle Perspective"
-msgstr ""
+msgstr "切换透视"
 
 #: rayforge/ui_gtk/main_menu.py rayforge/ui_gtk/sketcher/menu.py
 msgid "_View"
-msgstr ""
+msgstr "视图(_V)"
 
 #: rayforge/ui_gtk/main_menu.py rayforge/doceditor/stock_cmd.py
 msgid "Add Stock"
-msgstr ""
+msgstr "添加毛坯"
 
 #: rayforge/ui_gtk/main_menu.py rayforge/ui_gtk/mainwindow.py
 msgid "New Sketch"
-msgstr ""
+msgstr "新建草图"
 
 #: rayforge/ui_gtk/main_menu.py
 msgid "Split"
-msgstr ""
+msgstr "分割"
 
 #: rayforge/ui_gtk/main_menu.py rayforge/ui_gtk/toolbar.py
 msgid "Add Equidistant Tabs…"
-msgstr ""
+msgstr "添加等距标签…"
 
 #: rayforge/ui_gtk/main_menu.py rayforge/doceditor/tab_cmd.py
 msgid "Add Cardinal Tabs"
-msgstr ""
+msgstr "添加方位标签"
 
 #: rayforge/ui_gtk/main_menu.py rayforge/doceditor/tab_cmd.py
 msgid "Add Tabs"
-msgstr ""
+msgstr "添加标签"
 
 #: rayforge/ui_gtk/main_menu.py
 msgid "_Object"
-msgstr ""
+msgstr "对象(_O)"
 
 #: rayforge/ui_gtk/main_menu.py
 msgid "Move Selection to Layer Above"
-msgstr ""
+msgstr "将选中项移至上层"
 
 #: rayforge/ui_gtk/main_menu.py
 msgid "Move Selection to Layer Below"
-msgstr ""
+msgstr "将选中项移至下层"
 
 #: rayforge/ui_gtk/main_menu.py
 msgid "Left"
-msgstr ""
+msgstr "左"
 
 #: rayforge/ui_gtk/main_menu.py
 msgid "Right"
-msgstr ""
+msgstr "右"
 
 #: rayforge/ui_gtk/main_menu.py
 msgid "Top"
-msgstr ""
+msgstr "顶"
 
 #: rayforge/ui_gtk/main_menu.py
 msgid "Bottom"
-msgstr ""
+msgstr "底"
 
 #: rayforge/ui_gtk/main_menu.py
 msgid "Horizontally Center"
-msgstr ""
+msgstr "水平居中"
 
 #: rayforge/ui_gtk/main_menu.py
 msgid "Vertically Center"
-msgstr ""
+msgstr "垂直居中"
 
 #: rayforge/ui_gtk/main_menu.py
 msgid "Align"
-msgstr ""
+msgstr "对齐"
 
 #: rayforge/ui_gtk/main_menu.py rayforge/ui_gtk/toolbar.py
 #: rayforge/doceditor/layout_cmd.py
 msgid "Spread Horizontally"
-msgstr ""
+msgstr "水平分布"
 
 #: rayforge/ui_gtk/main_menu.py rayforge/ui_gtk/toolbar.py
 #: rayforge/doceditor/layout_cmd.py
 msgid "Spread Vertically"
-msgstr ""
+msgstr "垂直分布"
 
 #: rayforge/ui_gtk/main_menu.py
 msgid "Distribute"
-msgstr ""
+msgstr "分布"
 
 #: rayforge/ui_gtk/main_menu.py rayforge/ui_gtk/toolbar.py
 #: rayforge/doceditor/transform_cmd.py
 msgid "Flip Horizontal"
-msgstr ""
+msgstr "水平翻转"
 
 #: rayforge/ui_gtk/main_menu.py rayforge/ui_gtk/toolbar.py
 #: rayforge/doceditor/transform_cmd.py
 msgid "Flip Vertical"
-msgstr ""
+msgstr "垂直翻转"
 
 #: rayforge/ui_gtk/main_menu.py
 msgid "Flip"
-msgstr ""
+msgstr "翻转"
 
 #: rayforge/ui_gtk/main_menu.py rayforge/doceditor/layout_cmd.py
 msgid "Auto Layout"
-msgstr ""
+msgstr "自动布局"
 
 #: rayforge/ui_gtk/main_menu.py
 msgid "Arrange"
-msgstr ""
+msgstr "排列"
 
 #: rayforge/ui_gtk/main_menu.py
 msgid "Create Material Test Grid"
-msgstr ""
+msgstr "创建材料测试网格"
 
 #: rayforge/ui_gtk/main_menu.py
 msgid "_Tools"
-msgstr ""
+msgstr "工具(_T)"
 
 #: rayforge/ui_gtk/main_menu.py
 msgid "Frame"
-msgstr ""
+msgstr "走边框"
 
 #: rayforge/ui_gtk/main_menu.py
 msgid "Send Job"
-msgstr ""
+msgstr "发送作业"
 
 #: rayforge/ui_gtk/main_menu.py
 msgid "Pause / Resume Job"
-msgstr ""
+msgstr "暂停/恢复作业"
 
 #: rayforge/ui_gtk/main_menu.py
 msgid "Cancel Job"
-msgstr ""
+msgstr "取消作业"
 
 #: rayforge/ui_gtk/main_menu.py
 msgid "_Machine"
-msgstr ""
+msgstr "机器(_M)"
 
 #: rayforge/ui_gtk/main_menu.py
 msgid "About"
-msgstr ""
+msgstr "关于"
 
 #: rayforge/ui_gtk/main_menu.py rayforge/ui_gtk/about.py
 msgid "Donate"
-msgstr ""
+msgstr "捐赠"
 
 #: rayforge/ui_gtk/main_menu.py rayforge/ui_gtk/mainwindow.py
 msgid "Save Debug Log"
-msgstr ""
+msgstr "保存调试日志"
 
 #: rayforge/ui_gtk/main_menu.py
 msgid "_Help"
-msgstr ""
+msgstr "帮助(_H)"
 
 #: rayforge/ui_gtk/main_menu.py
 msgid "(No Recent Items)"
-msgstr ""
+msgstr "(无最近项目)"
 
 #: rayforge/ui_gtk/mainwindow.py
 msgid "Create Sketch Definition"
-msgstr ""
+msgstr "创建草图定义"
 
 #: rayforge/ui_gtk/mainwindow.py
 msgid "Selected item is not an editable sketch."
-msgstr ""
+msgstr "选定的项目不是可编辑的草图。"
 
 #: rayforge/ui_gtk/mainwindow.py
 msgid "Please select a single sketch to edit."
-msgstr ""
+msgstr "请选择一个草图进行编辑。"
 
 #: rayforge/ui_gtk/mainwindow.py
 msgid "Please select a single sketch to export."
-msgstr ""
+msgstr "请选择一个草图进行导出。"
 
 #: rayforge/ui_gtk/mainwindow.py
 msgid "Sketch exported successfully."
-msgstr ""
+msgstr "草图导出成功。"
 
 #: rayforge/ui_gtk/mainwindow.py
 msgid "Failed to save sketch file."
-msgstr ""
+msgstr "保存草图文件失败。"
 
 #: rayforge/ui_gtk/mainwindow.py
 #, python-brace-format
 msgid "Error exporting sketch: {error}"
-msgstr ""
+msgstr "导出草图错误：{error}"
 
 #: rayforge/ui_gtk/mainwindow.py
 msgid "Unsaved Changes"
-msgstr ""
+msgstr "未保存的更改"
 
 #: rayforge/ui_gtk/mainwindow.py
 msgid "The current project has unsaved changes. Do you want to save them?"
-msgstr ""
+msgstr "当前项目有未保存的更改。您想保存吗？"
 
 #: rayforge/ui_gtk/mainwindow.py
 msgid "_Cancel"
-msgstr ""
+msgstr "取消(_C)"
 
 #: rayforge/ui_gtk/mainwindow.py
 msgid "_Don't Save"
-msgstr ""
+msgstr "不保存(_D)"
 
 #: rayforge/ui_gtk/mainwindow.py
 msgid "_Save"
-msgstr ""
+msgstr "保存(_S)"
 
 #: rayforge/ui_gtk/mainwindow.py
 msgid "New project created"
-msgstr ""
+msgstr "新项目已创建"
 
 #: rayforge/ui_gtk/mainwindow.py
 msgid "Untitled"
-msgstr ""
+msgstr "未命名"
 
 #: rayforge/ui_gtk/mainwindow.py
 #, python-brace-format
 msgid "Maintenance Alert: {name} has reached its limit ({curr} / {limit})"
-msgstr ""
+msgstr "维护警报：{name}已达到其限制 ({curr} / {limit})"
 
 #: rayforge/ui_gtk/mainwindow.py
 msgid "View Counters"
-msgstr ""
+msgstr "查看计数器"
 
 #: rayforge/ui_gtk/mainwindow.py
 msgid "Select a machine to enable G-code export"
-msgstr ""
+msgstr "选择机器以启用G代码导出"
 
 #: rayforge/ui_gtk/mainwindow.py rayforge/ui_gtk/toolbar.py
 msgid "Generate G-code"
-msgstr ""
+msgstr "生成G代码"
 
 #: rayforge/ui_gtk/mainwindow.py
 msgid "Cannot export while other tasks are running"
-msgstr ""
+msgstr "无法在其他任务运行时导出"
 
 #: rayforge/ui_gtk/mainwindow.py
 msgid "Add a workpiece to enable export"
-msgstr ""
+msgstr "添加工件以启用导出"
 
 #: rayforge/ui_gtk/mainwindow.py
 msgid "Add or enable a processing step to enable export"
-msgstr ""
+msgstr "添加或启用处理步骤以启用导出"
 
 #: rayforge/ui_gtk/mainwindow.py
 msgid "Configure frame power to enable"
-msgstr ""
+msgstr "配置边框功率以启用"
 
 #: rayforge/ui_gtk/mainwindow.py rayforge/ui_gtk/toolbar.py
 msgid "Cycle laser head around the occupied area"
-msgstr ""
+msgstr "沿占用区域循环移动激光头"
 
 #: rayforge/ui_gtk/mainwindow.py rayforge/ui_gtk/toolbar.py
 msgid "Send to machine"
-msgstr ""
+msgstr "发送到机器"
 
 #: rayforge/ui_gtk/mainwindow.py
 msgid "Resume machine"
-msgstr ""
+msgstr "恢复机器"
 
 #: rayforge/ui_gtk/mainwindow.py rayforge/ui_gtk/toolbar.py
 msgid "Pause machine"
-msgstr ""
+msgstr "暂停机器"
 
 #: rayforge/ui_gtk/mainwindow.py
 msgid "Failed to create debug archive."
-msgstr ""
+msgstr "创建调试归档失败。"
 
 #: rayforge/ui_gtk/mainwindow.py
 #, python-brace-format
 msgid "Debug log saved to {path}"
-msgstr ""
+msgstr "调试日志已保存至 {path}"
 
 #: rayforge/ui_gtk/mainwindow.py
 #, python-brace-format
 msgid "Error saving file: {msg}"
-msgstr ""
+msgstr "保存文件错误：{msg}"
 
 #: rayforge/ui_gtk/mainwindow.py
 #, python-brace-format
 msgid "An unexpected error occurred: {error}"
-msgstr ""
+msgstr "发生意外错误：{error}"
 
 #: rayforge/ui_gtk/package_manager/package_list.py
 msgid "Uninstall Package"
-msgstr ""
+msgstr "卸载软件包"
 
 #: rayforge/ui_gtk/package_manager/package_list.py
 msgid "Install New Package..."
-msgstr ""
+msgstr "安装新软件包..."
 
 #: rayforge/ui_gtk/package_manager/package_list.py
 msgid "No packages installed."
-msgstr ""
+msgstr "未安装软件包。"
 
 #: rayforge/ui_gtk/package_manager/package_list.py
 #, python-brace-format
 msgid "Installing {name}..."
-msgstr ""
+msgstr "正在安装 {name}..."
 
 #: rayforge/ui_gtk/package_manager/package_list.py
 msgid "Failed to install package."
-msgstr ""
+msgstr "安装软件包失败。"
 
 #: rayforge/ui_gtk/package_manager/package_list.py
 #, python-brace-format
 msgid "Uninstall {name}?"
-msgstr ""
+msgstr "卸载 {name}？"
 
 #: rayforge/ui_gtk/package_manager/package_list.py
 msgid ""
 "The package files will be removed. Restart recommended to fully clear memory."
-msgstr ""
+msgstr "软件包文件将被删除。建议重启以完全清除内存。"
 
 #: rayforge/ui_gtk/package_manager/package_list.py
 msgid "Uninstall"
-msgstr ""
+msgstr "卸载"
 
 #: rayforge/ui_gtk/package_manager/package_list.py
 msgid "Error deleting package."
-msgstr ""
+msgstr "删除软件包错误。"
 
 #: rayforge/ui_gtk/package_manager/dialog.py
 msgid "Package Registry"
-msgstr ""
+msgstr "软件包注册表"
 
 #: rayforge/ui_gtk/package_manager/dialog.py
 msgid "Fetching registry..."
-msgstr ""
+msgstr "正在获取注册表..."
 
 #: rayforge/ui_gtk/package_manager/dialog.py
 msgid "Install from URL..."
-msgstr ""
+msgstr "从URL安装..."
 
 #: rayforge/ui_gtk/package_manager/dialog.py
 msgid "Connection Failed"
-msgstr ""
+msgstr "连接失败"
 
 #: rayforge/ui_gtk/package_manager/dialog.py
 msgid "Could not reach the registry."
-msgstr ""
+msgstr "无法连接到注册表。"
 
 #: rayforge/ui_gtk/package_manager/dialog.py
 msgid "No packages found in registry."
-msgstr ""
+msgstr "在注册表中未找到软件包。"
 
 #: rayforge/ui_gtk/package_manager/dialog.py
 msgid "Install"
-msgstr ""
+msgstr "安装"
 
 #: rayforge/ui_gtk/package_manager/dialog.py
 #: rayforge/ui_gtk/doceditor/recipe_control_widget.py
 msgid "Update"
-msgstr ""
+msgstr "更新"
 
 #: rayforge/ui_gtk/package_manager/dialog.py
 msgid "Installed"
-msgstr ""
+msgstr "已安装"
 
 #: rayforge/ui_gtk/package_manager/dialog.py
 #, python-brace-format
 msgid "Version {v} already installed"
-msgstr ""
+msgstr "版本 {v} 已安装"
 
 #: rayforge/ui_gtk/package_manager/dialog.py
 msgid "Incompatible"
-msgstr ""
+msgstr "不兼容"
 
 #: rayforge/ui_gtk/package_manager/dialog.py
 #, python-brace-format
 msgid "Requires {deps}, but current rayforge version is {current}"
-msgstr ""
+msgstr "需要 {deps}，但当前Rayforge版本是 {current}"
 
 #: rayforge/ui_gtk/package_manager/dialog.py
 msgid "Unavailable"
-msgstr ""
+msgstr "不可用"
 
 #: rayforge/ui_gtk/package_manager/dialog.py
 msgid "Manual Install"
-msgstr ""
+msgstr "手动安装"
 
 #: rayforge/ui_gtk/package_manager/dialog.py
 msgid "Enter the Git URL."
-msgstr ""
+msgstr "输入Git URL。"
 
 #: rayforge/ui_gtk/toolbar.py
 msgid "Open Project"
-msgstr ""
+msgstr "打开项目"
 
 #: rayforge/ui_gtk/toolbar.py
 msgid "Import image"
-msgstr ""
+msgstr "导入图像"
 
 #: rayforge/ui_gtk/toolbar.py
 msgid "Toggle workpiece visibility"
-msgstr ""
+msgstr "切换工件可见性"
 
 #: rayforge/ui_gtk/toolbar.py
 msgid "Toggle camera image visibility"
-msgstr ""
+msgstr "切换摄像头图像可见性"
 
 #: rayforge/ui_gtk/toolbar.py
 msgid "Toggle travel move visibility"
-msgstr ""
+msgstr "切换移动路径可见性"
 
 #: rayforge/ui_gtk/toolbar.py
 msgid "3D view disabled (missing dependencies like PyOpenGL)"
-msgstr ""
+msgstr "3D视图已禁用（缺少PyOpenGL等依赖项）"
 
 #: rayforge/ui_gtk/toolbar.py
 msgid "Show 3D Preview"
-msgstr ""
+msgstr "显示3D预览"
 
 #: rayforge/ui_gtk/toolbar.py
 msgid "Toggle execution simulation"
-msgstr ""
+msgstr "切换执行模拟"
 
 #: rayforge/ui_gtk/toolbar.py
 msgid "Toggle G-code Preview"
-msgstr ""
+msgstr "切换G代码预览"
 
 #: rayforge/ui_gtk/toolbar.py
 msgid "Toggle control panel"
-msgstr ""
+msgstr "切换控制面板"
 
 #: rayforge/ui_gtk/toolbar.py
 msgid "Toggle tab visibility"
-msgstr ""
+msgstr "切换标签可见性"
 
 #: rayforge/ui_gtk/toolbar.py rayforge/doceditor/layout_cmd.py
 msgid "Center Horizontally"
-msgstr ""
+msgstr "水平居中"
 
 #: rayforge/ui_gtk/toolbar.py rayforge/doceditor/layout_cmd.py
 msgid "Center Vertically"
-msgstr ""
+msgstr "垂直居中"
 
 #: rayforge/ui_gtk/toolbar.py rayforge/doceditor/layout_cmd.py
 msgid "Align Left"
-msgstr ""
+msgstr "左对齐"
 
 #: rayforge/ui_gtk/toolbar.py rayforge/doceditor/layout_cmd.py
 msgid "Align Right"
-msgstr ""
+msgstr "右对齐"
 
 #: rayforge/ui_gtk/toolbar.py rayforge/doceditor/layout_cmd.py
 msgid "Align Top"
-msgstr ""
+msgstr "顶对齐"
 
 #: rayforge/ui_gtk/toolbar.py rayforge/doceditor/layout_cmd.py
 msgid "Align Bottom"
-msgstr ""
+msgstr "底对齐"
 
 #: rayforge/ui_gtk/toolbar.py
 msgid "Auto Layout (pack workpieces)"
-msgstr ""
+msgstr "自动布局 (排列工件)"
 
 #: rayforge/ui_gtk/toolbar.py
 msgid "Arrange selection"
-msgstr ""
+msgstr "排列选中项"
 
 #: rayforge/ui_gtk/toolbar.py
 msgid "Add Cardinal Tabs (N,S,E,W)"
-msgstr ""
+msgstr "添加方位标签 (北,南,东,西)"
 
 #: rayforge/ui_gtk/toolbar.py
 msgid "Add Tabs to selection"
-msgstr ""
+msgstr "添加标签到选中项"
 
 #: rayforge/ui_gtk/toolbar.py
 msgid "Home the machine"
-msgstr ""
+msgstr "机器回原点"
 
 #: rayforge/ui_gtk/toolbar.py
 msgid "Cancel running job"
-msgstr ""
+msgstr "取消运行中的作业"
 
 #: rayforge/ui_gtk/toolbar.py
 msgid "Clear machine alarm (unlock)"
-msgstr ""
+msgstr "清除机器报警 (解锁)"
 
 #: rayforge/ui_gtk/toolbar.py
 msgid "Toggle focus laser"
-msgstr ""
+msgstr "切换聚焦激光"
 
 #: rayforge/ui_gtk/toolbar.py
 msgid "Work Coordinate System"
-msgstr ""
+msgstr "工件坐标系"
 
 #: rayforge/ui_gtk/toolbar.py
 msgid "Machine not fully configured"
-msgstr ""
+msgstr "机器未完全配置"
 
 #: rayforge/ui_gtk/toolbar.py
 msgid "Machine driver is missing required settings. Click to edit."
-msgstr ""
+msgstr "机器驱动程序缺少必要设置。点击以编辑。"
 
 #: rayforge/ui_gtk/doceditor/layer_view.py rayforge/doceditor/layer_cmd.py
 msgid "Assign stock material"
-msgstr ""
+msgstr "分配毛坯材料"
 
 #: rayforge/ui_gtk/doceditor/layer_view.py
 msgid "Delete this layer"
-msgstr ""
+msgstr "删除此图层"
 
 #: rayforge/ui_gtk/doceditor/layer_view.py
 #, python-brace-format
 msgid "{count} workpiece"
-msgstr ""
+msgstr "{count} 个工件"
 
 #: rayforge/ui_gtk/doceditor/layer_view.py
 #, python-brace-format
 msgid "{count} workpieces"
-msgstr ""
+msgstr "{count} 个工件"
 
 #: rayforge/ui_gtk/doceditor/layer_view.py
 msgid "Whole Surface"
-msgstr ""
+msgstr "整个表面"
 
 #: rayforge/ui_gtk/doceditor/import_dialog.py
 msgid "Create New Layers"
-msgstr ""
+msgstr "创建新图层"
 
 #: rayforge/ui_gtk/doceditor/import_dialog.py
 msgid "Create a new layer for each imported layer"
-msgstr ""
+msgstr "为每个导入的图层创建一个新图层"
 
 #: rayforge/ui_gtk/doceditor/import_dialog.py
 msgid "Import Image"
-msgstr ""
+msgstr "导入图像"
 
 #: rayforge/ui_gtk/doceditor/import_dialog.py
 msgid ""
@@ -3232,1183 +3242,1185 @@ msgid ""
 "other non-path elements should be converted to paths before importing (e.g., "
 "in Inkscape: Path > Object to Path)."
 msgstr ""
+"该文件在直接矢量模式下没有产生输出。包含文本或其他非路径元素的文件应在导入前"
+"转换为路径（例如，在 Inkscape 中：路径 > 对象转路径）。"
 
 #: rayforge/ui_gtk/doceditor/import_dialog.py
 msgid "Switch to Trace Mode"
-msgstr ""
+msgstr "切换到描摹模式"
 
 #: rayforge/ui_gtk/doceditor/import_dialog.py
 msgid "Import"
-msgstr ""
+msgstr "导入"
 
 #: rayforge/ui_gtk/doceditor/import_dialog.py
 msgid "Import Mode"
-msgstr ""
+msgstr "导入模式"
 
 #: rayforge/ui_gtk/doceditor/import_dialog.py
 msgid "Use Original Vectors"
-msgstr ""
+msgstr "使用原始矢量"
 
 #: rayforge/ui_gtk/doceditor/import_dialog.py
 msgid "Import vector data directly"
-msgstr ""
+msgstr "直接导入矢量数据"
 
 #: rayforge/ui_gtk/doceditor/import_dialog.py
 msgid "Layers"
-msgstr ""
+msgstr "图层"
 
 #: rayforge/ui_gtk/doceditor/import_dialog.py
 msgid "Trace Settings"
-msgstr ""
+msgstr "描摹设置"
 
 #: rayforge/ui_gtk/doceditor/import_dialog.py
 msgid "Import Whole Image"
-msgstr ""
+msgstr "导入整个图像"
 
 #: rayforge/ui_gtk/doceditor/import_dialog.py
 msgid "Import the entire image without tracing"
-msgstr ""
+msgstr "导入整个图像而不进行描摹"
 
 #: rayforge/ui_gtk/doceditor/import_dialog.py
 msgid "Auto Threshold"
-msgstr ""
+msgstr "自动阈值"
 
 #: rayforge/ui_gtk/doceditor/import_dialog.py
 msgid "Automatically determine the trace threshold"
-msgstr ""
+msgstr "自动确定描摹阈值"
 
 #: rayforge/ui_gtk/doceditor/import_dialog.py
 #: rayforge/ui_gtk/doceditor/step_settings/rasterizer.py
 msgid "Threshold"
-msgstr ""
+msgstr "阈值"
 
 #: rayforge/ui_gtk/doceditor/import_dialog.py
 msgid "Trace objects darker than this value"
-msgstr ""
+msgstr "描摹暗于此值的对象"
 
 #: rayforge/ui_gtk/doceditor/import_dialog.py
 #: rayforge/ui_gtk/doceditor/step_settings/rasterizer.py
 #: rayforge/ui_gtk/doceditor/step_settings/depth_engraver.py
 msgid "Invert"
-msgstr ""
+msgstr "反转"
 
 #: rayforge/ui_gtk/doceditor/import_dialog.py
 msgid "Trace light objects on a dark background"
-msgstr ""
+msgstr "描摹深色背景上的浅色对象"
 
 #: rayforge/ui_gtk/doceditor/import_dialog.py
 msgid "Select Layers"
-msgstr ""
+msgstr "选择图层"
 
 #: rayforge/ui_gtk/doceditor/import_dialog.py
 msgid "Layer is empty"
-msgstr ""
+msgstr "图层为空"
 
 #: rayforge/ui_gtk/doceditor/import_dialog.py
 #, python-brace-format
 msgid "Layer with {n} vectors"
-msgstr ""
+msgstr "包含 {n} 个矢量的图层"
 
 #: rayforge/ui_gtk/doceditor/import_dialog.py
 msgid "Generating preview..."
-msgstr ""
+msgstr "正在生成预览..."
 
 #: rayforge/ui_gtk/doceditor/step_settings/overscan.py
 msgid "Enable Overscan"
-msgstr ""
+msgstr "启用过冲"
 
 #: rayforge/ui_gtk/doceditor/step_settings/overscan.py
 msgid "Automatic Distance"
-msgstr ""
+msgstr "自动距离"
 
 #: rayforge/ui_gtk/doceditor/step_settings/overscan.py
 msgid "Calculate distance based on speed and acceleration with safety factor"
-msgstr ""
+msgstr "基于速度、加速度和安全系数计算距离"
 
 #: rayforge/ui_gtk/doceditor/step_settings/overscan.py
 msgid "Overscan Distance"
-msgstr ""
+msgstr "过冲距离"
 
 #: rayforge/ui_gtk/doceditor/step_settings/overscan.py
 msgid "Manual distance setting"
-msgstr ""
+msgstr "手动距离设置"
 
 #: rayforge/ui_gtk/doceditor/step_settings/overscan.py
 msgid "Toggle Overscan"
-msgstr ""
+msgstr "切换过冲"
 
 #: rayforge/ui_gtk/doceditor/step_settings/overscan.py
 msgid "Toggle Auto Overscan"
-msgstr ""
+msgstr "切换自动过冲"
 
 #: rayforge/ui_gtk/doceditor/step_settings/overscan.py
 msgid "Auto Calculate Overscan Distance"
-msgstr ""
+msgstr "自动计算过冲距离"
 
 #: rayforge/ui_gtk/doceditor/step_settings/overscan.py
 msgid "Disable Auto Overscan"
-msgstr ""
+msgstr "禁用自动过冲"
 
 #: rayforge/ui_gtk/doceditor/step_settings/overscan.py
 msgid "Change Overscan Distance"
-msgstr ""
+msgstr "更改过冲距离"
 
 #: rayforge/ui_gtk/doceditor/step_settings/frame.py
 #: rayforge/ui_gtk/doceditor/step_settings/contour.py
 #: rayforge/ui_gtk/doceditor/step_settings/shrinkwrap.py
 msgid "Cut Side"
-msgstr ""
+msgstr "切割侧"
 
 #: rayforge/ui_gtk/doceditor/step_settings/frame.py
 #: rayforge/ui_gtk/doceditor/step_settings/contour.py
 #: rayforge/ui_gtk/doceditor/step_settings/shrinkwrap.py
 msgid "Path Offset (mm)"
-msgstr ""
+msgstr "路径偏移 (mm)"
 
 #: rayforge/ui_gtk/doceditor/step_settings/frame.py
 msgid "Absolute distance from content boundary"
-msgstr ""
+msgstr "距离内容边界的绝对距离"
 
 #: rayforge/ui_gtk/doceditor/step_settings/frame.py
 msgid "Change Frame Setting"
-msgstr ""
+msgstr "更改边框设置"
 
 #: rayforge/ui_gtk/doceditor/step_settings/material_test_grid.py
 msgid "Presets"
-msgstr ""
+msgstr "预设"
 
 #: rayforge/ui_gtk/doceditor/step_settings/material_test_grid.py
 msgid "Load common test configurations"
-msgstr ""
+msgstr "加载常用测试配置"
 
 #: rayforge/ui_gtk/doceditor/step_settings/material_test_grid.py
 msgid "Test Type"
-msgstr ""
+msgstr "测试类型"
 
 #: rayforge/ui_gtk/doceditor/step_settings/material_test_grid.py
 msgid "Cut: outlines; Engrave: fills with raster lines"
-msgstr ""
+msgstr "切割：轮廓；雕刻：用光栅线填充"
 
 #: rayforge/ui_gtk/doceditor/step_settings/material_test_grid.py
 msgid "Speed &amp; Power"
-msgstr ""
+msgstr "速度和功率"
 
 #: rayforge/ui_gtk/doceditor/step_settings/material_test_grid.py
 msgid "Define the range of speeds and powers for the test grid"
-msgstr ""
+msgstr "定义测试网格的速度和功率范围"
 
 #: rayforge/ui_gtk/doceditor/step_settings/material_test_grid.py
 msgid "Minimum Power (%)"
-msgstr ""
+msgstr "最小功率 (%)"
 
 #: rayforge/ui_gtk/doceditor/step_settings/material_test_grid.py
 msgid "For first column"
-msgstr ""
+msgstr "第一列"
 
 #: rayforge/ui_gtk/doceditor/step_settings/material_test_grid.py
 msgid "Maximum Power (%)"
-msgstr ""
+msgstr "最大功率 (%)"
 
 #: rayforge/ui_gtk/doceditor/step_settings/material_test_grid.py
 msgid "For last column"
-msgstr ""
+msgstr "最后一列"
 
 #: rayforge/ui_gtk/doceditor/step_settings/material_test_grid.py
 msgid "Minimum Speed"
-msgstr ""
+msgstr "最小速度"
 
 #: rayforge/ui_gtk/doceditor/step_settings/material_test_grid.py
 msgid "Starting speed (mm/min)"
-msgstr ""
+msgstr "起始速度 (毫米/分钟)"
 
 #: rayforge/ui_gtk/doceditor/step_settings/material_test_grid.py
 msgid "Maximum Speed"
-msgstr ""
+msgstr "最大速度"
 
 #: rayforge/ui_gtk/doceditor/step_settings/material_test_grid.py
 msgid "Ending speed (mm/min)"
-msgstr ""
+msgstr "结束速度 (毫米/分钟)"
 
 #: rayforge/ui_gtk/doceditor/step_settings/material_test_grid.py
 msgid "Columns (Power Steps)"
-msgstr ""
+msgstr "列 (功率阶梯)"
 
 #: rayforge/ui_gtk/doceditor/step_settings/material_test_grid.py
 msgid "Number of power variations"
-msgstr ""
+msgstr "功率变化的数量"
 
 #: rayforge/ui_gtk/doceditor/step_settings/material_test_grid.py
 msgid "Rows (Speed Steps)"
-msgstr ""
+msgstr "行 (速度阶梯)"
 
 #: rayforge/ui_gtk/doceditor/step_settings/material_test_grid.py
 msgid "Number of speed variations"
-msgstr ""
+msgstr "速度变化的数量"
 
 #: rayforge/ui_gtk/doceditor/step_settings/material_test_grid.py
 msgid "Shape Size"
-msgstr ""
+msgstr "形状大小"
 
 #: rayforge/ui_gtk/doceditor/step_settings/material_test_grid.py
 msgid "Size of each test square (mm)"
-msgstr ""
+msgstr "每个测试方块的大小 (毫米)"
 
 #: rayforge/ui_gtk/doceditor/step_settings/material_test_grid.py
 msgid "Spacing"
-msgstr ""
+msgstr "间距"
 
 #: rayforge/ui_gtk/doceditor/step_settings/material_test_grid.py
 msgid "Gap between test squares (mm)"
-msgstr ""
+msgstr "测试方块之间的间隙 (毫米)"
 
 #: rayforge/ui_gtk/doceditor/step_settings/material_test_grid.py
 msgid "Include Labels"
-msgstr ""
+msgstr "包含标签"
 
 #: rayforge/ui_gtk/doceditor/step_settings/material_test_grid.py
 msgid "Add speed/power annotations to the grid"
-msgstr ""
+msgstr "向网格添加速度/功率注释"
 
 #: rayforge/ui_gtk/doceditor/step_settings/material_test_grid.py
 msgid "Label Engrave Power (%)"
-msgstr ""
+msgstr "标签雕刻功率 (%)"
 
 #: rayforge/ui_gtk/doceditor/step_settings/material_test_grid.py
 #: rayforge/ui_gtk/doceditor/step_settings/depth_engraver.py
 msgid "Change Power Range"
-msgstr ""
+msgstr "更改功率范围"
 
 #: rayforge/ui_gtk/doceditor/step_settings/material_test_grid.py
 #, python-brace-format
 msgid "Change {param_name}"
-msgstr ""
+msgstr "更改 {param_name}"
 
 #: rayforge/ui_gtk/doceditor/step_settings/material_test_grid.py
 msgid "Change Grid Dimensions"
-msgstr ""
+msgstr "更改网格尺寸"
 
 #: rayforge/ui_gtk/doceditor/step_settings/rasterizer.py
 msgid "Direction"
-msgstr ""
+msgstr "方向"
 
 #: rayforge/ui_gtk/doceditor/step_settings/rasterizer.py
 msgid "Raster direction in degrees (0°=horizontal, 90°=vertical)"
-msgstr ""
+msgstr "光栅方向（度，0°=水平，90°=垂直）"
 
 #: rayforge/ui_gtk/doceditor/step_settings/rasterizer.py
 msgid "Change Raster Direction"
-msgstr ""
+msgstr "更改光栅方向"
 
 #: rayforge/ui_gtk/doceditor/step_settings/rasterizer.py
 msgid "Pixel brightness value to consider black (0-255)"
-msgstr ""
+msgstr "视为黑色的像素亮度值 (0-255)"
 
 #: rayforge/ui_gtk/doceditor/step_settings/rasterizer.py
 msgid "Change Raster Threshold"
-msgstr ""
+msgstr "更改光栅阈值"
 
 #: rayforge/ui_gtk/doceditor/step_settings/rasterizer.py
 msgid "Cross-Hatch"
-msgstr ""
+msgstr "交叉填充"
 
 #: rayforge/ui_gtk/doceditor/step_settings/rasterizer.py
 msgid "Perform a second pass at 90 degrees for a denser fill"
-msgstr ""
+msgstr "以90度执行第二次扫描以获得更密集的填充"
 
 #: rayforge/ui_gtk/doceditor/step_settings/rasterizer.py
 msgid "Toggle Cross-Hatch"
-msgstr ""
+msgstr "切换交叉填充"
 
 #: rayforge/ui_gtk/doceditor/step_settings/rasterizer.py
 #: rayforge/ui_gtk/doceditor/step_settings/depth_engraver.py
 msgid "Engrave white areas instead of black areas"
-msgstr ""
+msgstr "雕刻白色区域而不是黑色区域"
 
 #: rayforge/ui_gtk/doceditor/step_settings/rasterizer.py
 msgid "Toggle Invert"
-msgstr ""
+msgstr "切换反转"
 
 #: rayforge/ui_gtk/doceditor/step_settings/optimize.py
 msgid "Enable Optimization"
-msgstr ""
+msgstr "启用优化"
 
 #: rayforge/ui_gtk/doceditor/step_settings/optimize.py
 msgid "Toggle Path Optimization"
-msgstr ""
+msgstr "切换路径优化"
 
 #: rayforge/ui_gtk/doceditor/step_settings/smooth.py
 msgid "Enable Smoothing"
-msgstr ""
+msgstr "启用平滑"
 
 #: rayforge/ui_gtk/doceditor/step_settings/smooth.py
 msgid "Smoothness"
-msgstr ""
+msgstr "平滑度"
 
 #: rayforge/ui_gtk/doceditor/step_settings/smooth.py
 msgid "Corner Angle Threshold"
-msgstr ""
+msgstr "拐角角度阈值"
 
 #: rayforge/ui_gtk/doceditor/step_settings/smooth.py
 msgid "Angles sharper than this are kept as corners (degrees)"
-msgstr ""
+msgstr "锐于此角度的角保留为拐角（度）"
 
 #: rayforge/ui_gtk/doceditor/step_settings/smooth.py
 msgid "Toggle Smoothing"
-msgstr ""
+msgstr "切换平滑"
 
 #: rayforge/ui_gtk/doceditor/step_settings/smooth.py
 msgid "Change smoothness"
-msgstr ""
+msgstr "更改平滑度"
 
 #: rayforge/ui_gtk/doceditor/step_settings/smooth.py
 msgid "Change corner angle"
-msgstr ""
+msgstr "更改拐角角度"
 
 #: rayforge/ui_gtk/doceditor/step_settings/contour.py
 msgid "Remove Inner Paths"
-msgstr ""
+msgstr "移除内部路径"
 
 #: rayforge/ui_gtk/doceditor/step_settings/contour.py
 msgid "If enabled, only trace the outer outline of shapes"
-msgstr ""
+msgstr "如果启用，仅描摹形状的外部轮廓"
 
 #: rayforge/ui_gtk/doceditor/step_settings/contour.py
 msgid "Cut Order"
-msgstr ""
+msgstr "切割顺序"
 
 #: rayforge/ui_gtk/doceditor/step_settings/contour.py
 msgid "Processing order for nested paths"
-msgstr ""
+msgstr "嵌套路径的处理顺序"
 
 #: rayforge/ui_gtk/doceditor/step_settings/contour.py
 #: rayforge/ui_gtk/doceditor/step_settings/shrinkwrap.py
 msgid ""
 "Absolute distance from original path, direction is controlled by Cut Side"
-msgstr ""
+msgstr "距离原始路径的绝对距离，方向由切割侧控制"
 
 #: rayforge/ui_gtk/doceditor/step_settings/contour.py
 msgid "Rescan Content"
-msgstr ""
+msgstr "重新扫描内容"
 
 #: rayforge/ui_gtk/doceditor/step_settings/contour.py
 msgid "Ignore source geometry and re-trace within the workpiece"
-msgstr ""
+msgstr "忽略源几何图形并在工件内重新描摹"
 
 #: rayforge/ui_gtk/doceditor/step_settings/contour.py
 msgid "Tracing Threshold"
-msgstr ""
+msgstr "描摹阈值"
 
 #: rayforge/ui_gtk/doceditor/step_settings/contour.py
 msgid "Brightness level (0.0-1.0) to define edges"
-msgstr ""
+msgstr "定义边缘的亮度级别 (0.0-1.0)"
 
 #: rayforge/ui_gtk/doceditor/step_settings/contour.py
 msgid "Change Edge Tracer Setting"
-msgstr ""
+msgstr "更改边缘描摹器设置"
 
 #: rayforge/ui_gtk/doceditor/step_settings/shrinkwrap.py
 msgid "Gravity"
-msgstr ""
+msgstr "重力"
 
 #: rayforge/ui_gtk/doceditor/step_settings/shrinkwrap.py
 msgid "Pulls the hull inward. 0.0 is a standard convex hull"
-msgstr ""
+msgstr "向内拉动外壳。0.0 是标准的凸包"
 
 #: rayforge/ui_gtk/doceditor/step_settings/shrinkwrap.py
 msgid "Change Shrinkwrap Setting"
-msgstr ""
+msgstr "更改收缩包裹设置"
 
 #: rayforge/ui_gtk/doceditor/step_settings/multipass.py
 msgid "Number of Passes"
-msgstr ""
+msgstr "轮次/遍数"
 
 #: rayforge/ui_gtk/doceditor/step_settings/multipass.py
 msgid "How often to repeat the entire step"
-msgstr ""
+msgstr "重复整个步骤的次数"
 
 #: rayforge/ui_gtk/doceditor/step_settings/multipass.py
 msgid "Z Step-Down per Pass (mm)"
-msgstr ""
+msgstr "每轮Z轴下刀量 (mm)"
 
 #: rayforge/ui_gtk/doceditor/step_settings/multipass.py
 msgid "Distance to lower Z-axis for each subsequent pass"
-msgstr ""
+msgstr "每次后续扫描Z轴降低的距离"
 
 #: rayforge/ui_gtk/doceditor/step_settings/multipass.py
 msgid "Change number of passes"
-msgstr ""
+msgstr "更改轮次"
 
 #: rayforge/ui_gtk/doceditor/step_settings/multipass.py
 msgid "Change Z Step-Down"
-msgstr ""
+msgstr "更改Z轴下刀量"
 
 #: rayforge/ui_gtk/doceditor/step_settings/depth_engraver.py
 msgid "Mode"
-msgstr ""
+msgstr "模式"
 
 #: rayforge/ui_gtk/doceditor/step_settings/depth_engraver.py
 msgid "Min Power"
-msgstr ""
+msgstr "最小功率"
 
 #: rayforge/ui_gtk/doceditor/step_settings/depth_engraver.py
 #, python-format
 msgid "Power for lightest areas, as a % of the step's main power"
-msgstr ""
+msgstr "最亮区域的功率，占该步骤主功率的百分比"
 
 #: rayforge/ui_gtk/doceditor/step_settings/depth_engraver.py
 #, python-format
 msgid "Power for darkest areas, as a % of the step's main power"
-msgstr ""
+msgstr "最暗区域的功率，占该步骤主功率的百分比"
 
 #: rayforge/ui_gtk/doceditor/step_settings/depth_engraver.py
 msgid "Number of Depth Levels"
-msgstr ""
+msgstr "深度层级数"
 
 #: rayforge/ui_gtk/doceditor/step_settings/depth_engraver.py
 msgid "Z Step-Down per Level (mm)"
-msgstr ""
+msgstr "每层Z轴下刀量 (mm)"
 
 #: rayforge/ui_gtk/doceditor/step_settings/depth_engraver.py
 msgid "Change Min Power"
-msgstr ""
+msgstr "更改最小功率"
 
 #: rayforge/ui_gtk/doceditor/step_settings/depth_engraver.py
 msgid "Change Max Power"
-msgstr ""
+msgstr "更改最大功率"
 
 #: rayforge/ui_gtk/doceditor/step_settings/depth_engraver.py
 msgid "Min Power (Black)"
-msgstr ""
+msgstr "最小功率 (黑)"
 
 #: rayforge/ui_gtk/doceditor/step_settings/depth_engraver.py
 msgid "Max Power (White)"
-msgstr ""
+msgstr "最大功率 (白)"
 
 #: rayforge/ui_gtk/doceditor/step_settings/depth_engraver.py
 msgid "Min Power (White)"
-msgstr ""
+msgstr "最小功率 (白)"
 
 #: rayforge/ui_gtk/doceditor/step_settings/depth_engraver.py
 msgid "Max Power (Black)"
-msgstr ""
+msgstr "最大功率 (黑)"
 
 #: rayforge/ui_gtk/doceditor/step_settings/depth_engraver.py
 msgid "Change Depth Engraving setting"
-msgstr ""
+msgstr "更改深度雕刻设置"
 
 #: rayforge/ui_gtk/doceditor/material_library_list.py
 #: rayforge/ui_gtk/doceditor/material_selector.py
 msgid "Core Materials"
-msgstr ""
+msgstr "核心材料"
 
 #: rayforge/ui_gtk/doceditor/material_library_list.py
 msgid "Read-only core library"
-msgstr ""
+msgstr "只读核心库"
 
 #: rayforge/ui_gtk/doceditor/material_library_list.py
 msgid "1 material"
-msgstr ""
+msgstr "1 种材料"
 
 #: rayforge/ui_gtk/doceditor/material_library_list.py
 #, python-brace-format
 msgid "{count} materials"
-msgstr ""
+msgstr "{count} 种材料"
 
 #: rayforge/ui_gtk/doceditor/material_library_list.py
 #, python-brace-format
 msgid "Library from package: ({source})"
-msgstr ""
+msgstr "来自软件包的库：({source})"
 
 #: rayforge/ui_gtk/doceditor/material_library_list.py
 msgid "Add New Library"
-msgstr ""
+msgstr "添加新库"
 
 #: rayforge/ui_gtk/doceditor/material_library_list.py
 msgid "No user libraries found."
-msgstr ""
+msgstr "未找到用户库。"
 
 #: rayforge/ui_gtk/doceditor/material_library_list.py
 #: rayforge/ui_gtk/doceditor/recipe_list.py
 #: rayforge/ui_gtk/doceditor/material_list.py
 #, python-brace-format
 msgid "Delete '{name}'?"
-msgstr ""
+msgstr "删除 '{name}'？"
 
 #: rayforge/ui_gtk/doceditor/material_library_list.py
 msgid ""
 "The library folder and all its materials will be permanently removed. This "
 "action cannot be undone."
-msgstr ""
+msgstr "该库文件夹及其所有材料将被永久删除。此操作无法撤销。"
 
 #: rayforge/ui_gtk/doceditor/material_library_list.py
 msgid "Edit Library"
-msgstr ""
+msgstr "编辑库"
 
 #: rayforge/ui_gtk/doceditor/material_library_list.py
 msgid "Enter a new name for the library:"
-msgstr ""
+msgstr "输入库的新名称："
 
 #: rayforge/ui_gtk/doceditor/material_library_list.py
 msgid "Library name"
-msgstr ""
+msgstr "库名称"
 
 #: rayforge/ui_gtk/doceditor/material_library_list.py
 msgid "Failed to rename library."
-msgstr ""
+msgstr "重命名库失败。"
 
 #: rayforge/ui_gtk/doceditor/material_library_list.py
 msgid "Enter a name for the new library folder:"
-msgstr ""
+msgstr "输入新库文件夹的名称："
 
 #: rayforge/ui_gtk/doceditor/material_library_list.py
 #: rayforge/ui_gtk/doceditor/edit_recipe_dialog.py
 #: rayforge/ui_gtk/doceditor/add_material_dialog.py
 msgid "Add"
-msgstr ""
+msgstr "添加"
 
 #: rayforge/ui_gtk/doceditor/material_library_list.py
 msgid "Failed to create library. A folder with that name may already exist."
-msgstr ""
+msgstr "创建库失败。具有该名称的文件夹可能已存在。"
 
 #: rayforge/ui_gtk/doceditor/step_settings_dialog.py
 msgid "General Settings"
-msgstr ""
+msgstr "常规设置"
 
 #: rayforge/ui_gtk/doceditor/step_settings_dialog.py
 msgid "Power (%)"
-msgstr ""
+msgstr "功率 (%)"
 
 #: rayforge/ui_gtk/doceditor/step_settings_dialog.py
 #, python-brace-format
 msgid "Max: {max_speed}"
-msgstr ""
+msgstr "最大：{max_speed}"
 
 #: rayforge/ui_gtk/doceditor/step_settings_dialog.py
 msgid "Travel Speed"
-msgstr ""
+msgstr "移动速度"
 
 #: rayforge/ui_gtk/doceditor/step_settings_dialog.py
 msgid "Beam Width (Kerf)"
-msgstr ""
+msgstr "光束宽度 (割缝)"
 
 #: rayforge/ui_gtk/doceditor/step_settings_dialog.py
 msgid "Effective laser cut width in machine units"
-msgstr ""
+msgstr "机器单位的有效激光切割宽度"
 
 #: rayforge/ui_gtk/doceditor/step_settings_dialog.py
 msgid "Change Laser"
-msgstr ""
+msgstr "更改激光"
 
 #: rayforge/ui_gtk/doceditor/step_settings_dialog.py
 msgid "Change Kerf"
-msgstr ""
+msgstr "更改割缝"
 
 #: rayforge/ui_gtk/doceditor/step_settings_dialog.py
 msgid "Change laser power"
-msgstr ""
+msgstr "更改激光功率"
 
 #: rayforge/ui_gtk/doceditor/step_settings_dialog.py
 msgid "Change cut speed"
-msgstr ""
+msgstr "更改切割速度"
 
 #: rayforge/ui_gtk/doceditor/step_settings_dialog.py
 msgid "Change Travel Speed"
-msgstr ""
+msgstr "更改移动速度"
 
 #: rayforge/ui_gtk/doceditor/step_settings_dialog.py
 msgid "Toggle air assist"
-msgstr ""
+msgstr "切换辅助吹气"
 
 #: rayforge/ui_gtk/doceditor/step_settings_dialog.py
 msgid "No post-processing options available for this step."
-msgstr ""
+msgstr "此步骤无可用的后处理选项。"
 
 #: rayforge/ui_gtk/doceditor/step_settings_dialog.py
 #, python-brace-format
 msgid "{name} Settings"
-msgstr ""
+msgstr "{name} 设置"
 
 #: rayforge/ui_gtk/doceditor/step_settings_dialog.py
 msgid "Step Settings"
-msgstr ""
+msgstr "步骤设置"
 
 #: rayforge/ui_gtk/doceditor/step_settings_dialog.py
 msgid "Post Processing"
-msgstr ""
+msgstr "后处理"
 
 #: rayforge/ui_gtk/doceditor/edit_recipe_dialog.py
 msgid "Edit Recipe"
-msgstr ""
+msgstr "编辑配方"
 
 #: rayforge/ui_gtk/doceditor/edit_recipe_dialog.py
 #: rayforge/ui_gtk/doceditor/recipe_list.py
 msgid "Add New Recipe"
-msgstr ""
+msgstr "添加新配方"
 
 #: rayforge/ui_gtk/doceditor/edit_recipe_dialog.py
 msgid "Applicability"
-msgstr ""
+msgstr "适用性"
 
 #: rayforge/ui_gtk/doceditor/edit_recipe_dialog.py
 #: rayforge/ui_gtk/doceditor/recipe_control_widget.py
 msgid "Recipe"
-msgstr ""
+msgstr "配方"
 
 #: rayforge/ui_gtk/doceditor/edit_recipe_dialog.py
 msgid "A named preset of settings that can be automatically applied later."
-msgstr ""
+msgstr "一组命名的设置预设，稍后可自动应用。"
 
 #: rayforge/ui_gtk/doceditor/edit_recipe_dialog.py
 msgid ""
 "Define when this recipe should be suggested. Leave fields blank to match any "
 "value."
-msgstr ""
+msgstr "定义何时建议此配方。留空字段以匹配任何值。"
 
 #: rayforge/ui_gtk/doceditor/edit_recipe_dialog.py
 msgid "Any Machine"
-msgstr ""
+msgstr "任何机器"
 
 #: rayforge/ui_gtk/doceditor/edit_recipe_dialog.py
 msgid "Task Type"
-msgstr ""
+msgstr "任务类型"
 
 #: rayforge/ui_gtk/doceditor/edit_recipe_dialog.py
 #: rayforge/ui_gtk/doceditor/stock_properties_dialog.py
 msgid "Material"
-msgstr ""
+msgstr "材料"
 
 #: rayforge/ui_gtk/doceditor/edit_recipe_dialog.py
 msgid "Select..."
-msgstr ""
+msgstr "选择..."
 
 #: rayforge/ui_gtk/doceditor/edit_recipe_dialog.py
 msgid "Clear Material Selection"
-msgstr ""
+msgstr "清除材料选择"
 
 #: rayforge/ui_gtk/doceditor/edit_recipe_dialog.py
 msgid "Min Thickness"
-msgstr ""
+msgstr "最小厚度"
 
 #: rayforge/ui_gtk/doceditor/edit_recipe_dialog.py
 msgid "Minimum stock thickness for this recipe to apply"
-msgstr ""
+msgstr "应用此配方的最小毛坯厚度"
 
 #: rayforge/ui_gtk/doceditor/edit_recipe_dialog.py
 msgid "Max Thickness"
-msgstr ""
+msgstr "最大厚度"
 
 #: rayforge/ui_gtk/doceditor/edit_recipe_dialog.py
 msgid "Maximum stock thickness for this recipe to apply"
-msgstr ""
+msgstr "应用此配方的最大毛坯厚度"
 
 #: rayforge/ui_gtk/doceditor/edit_recipe_dialog.py
 msgid "The process settings that will be applied by this recipe."
-msgstr ""
+msgstr "此配方将应用的工艺设置。"
 
 #: rayforge/ui_gtk/doceditor/edit_recipe_dialog.py
 msgid "Not Found"
-msgstr ""
+msgstr "未找到"
 
 #: rayforge/ui_gtk/doceditor/edit_recipe_dialog.py
 msgid "Any"
-msgstr ""
+msgstr "任何"
 
 #: rayforge/ui_gtk/doceditor/asset_list_view.py
 msgid "Reorder Assets"
-msgstr ""
+msgstr "重新排序资产"
 
 #: rayforge/ui_gtk/doceditor/asset_list_view.py
 msgid "Assets"
-msgstr ""
+msgstr "资产"
 
 #: rayforge/ui_gtk/doceditor/asset_list_view.py
 msgid "Add Asset"
-msgstr ""
+msgstr "添加资产"
 
 #: rayforge/ui_gtk/doceditor/asset_list_view.py
 msgid "Add Stock Material"
-msgstr ""
+msgstr "添加毛坯材料"
 
 #: rayforge/ui_gtk/doceditor/asset_list_view.py
 msgid "Add Sketch"
-msgstr ""
+msgstr "添加草图"
 
 #: rayforge/ui_gtk/doceditor/asset_list_view.py
 #, python-brace-format
 msgid "{count} asset"
-msgstr ""
+msgstr "{count} 个资产"
 
 #: rayforge/ui_gtk/doceditor/asset_list_view.py
 #, python-brace-format
 msgid "{count} assets"
-msgstr ""
+msgstr "{count} 个资产"
 
 #: rayforge/ui_gtk/doceditor/file_dialogs.py
 msgid "Open File"
-msgstr ""
+msgstr "打开文件"
 
 #: rayforge/ui_gtk/doceditor/file_dialogs.py
 msgid "All supported"
-msgstr ""
+msgstr "所有支持的格式"
 
 #: rayforge/ui_gtk/doceditor/file_dialogs.py
 msgid "Save G-code File"
-msgstr ""
+msgstr "保存G代码文件"
 
 #: rayforge/ui_gtk/doceditor/file_dialogs.py
 msgid "G-code files"
-msgstr ""
+msgstr "G代码文件"
 
 #: rayforge/ui_gtk/doceditor/file_dialogs.py
 msgid "Export Sketch"
-msgstr ""
+msgstr "导出草图"
 
 #: rayforge/ui_gtk/doceditor/file_dialogs.py rayforge/image/sketch/exporter.py
 #: rayforge/image/sketch/importer.py
 #, python-brace-format
 msgid "{app_name} Sketch"
-msgstr ""
+msgstr "{app_name} 草图"
 
 #: rayforge/ui_gtk/doceditor/file_dialogs.py
 #, python-brace-format
 msgid "Open {app_name} Project"
-msgstr ""
+msgstr "打开 {app_name} 项目"
 
 #: rayforge/ui_gtk/doceditor/file_dialogs.py
 #, python-brace-format
 msgid "{app_name} Project"
-msgstr ""
+msgstr "{app_name} 项目"
 
 #: rayforge/ui_gtk/doceditor/file_dialogs.py
 #, python-brace-format
 msgid "Save {app_name} Project"
-msgstr ""
+msgstr "保存 {app_name} 项目"
 
 #: rayforge/ui_gtk/doceditor/add_material_dialog.py
 msgid "Edit Material"
-msgstr ""
+msgstr "编辑材料"
 
 #: rayforge/ui_gtk/doceditor/add_material_dialog.py
 msgid "Update the material details:"
-msgstr ""
+msgstr "更新材料详情："
 
 #: rayforge/ui_gtk/doceditor/add_material_dialog.py
 #: rayforge/ui_gtk/doceditor/material_list.py
 msgid "Add New Material"
-msgstr ""
+msgstr "添加新材料"
 
 #: rayforge/ui_gtk/doceditor/add_material_dialog.py
 msgid "Enter the details for the new material:"
-msgstr ""
+msgstr "输入新材料的详细信息："
 
 #: rayforge/ui_gtk/doceditor/add_material_dialog.py
 msgid "Category"
-msgstr ""
+msgstr "类别"
 
 #: rayforge/ui_gtk/doceditor/add_material_dialog.py
 msgid "Color"
-msgstr ""
+msgstr "颜色"
 
 #: rayforge/ui_gtk/doceditor/add_material_dialog.py
 msgid "Custom"
-msgstr ""
+msgstr "自定义"
 
 #: rayforge/ui_gtk/doceditor/recipe_list.py
 msgid "Unknown Machine"
-msgstr ""
+msgstr "未知机器"
 
 #: rayforge/ui_gtk/doceditor/recipe_list.py
 msgid "Unknown Material"
-msgstr ""
+msgstr "未知材料"
 
 #: rayforge/ui_gtk/doceditor/recipe_list.py
 msgid "No recipes found."
-msgstr ""
+msgstr "未找到配方。"
 
 #: rayforge/ui_gtk/doceditor/recipe_list.py
 msgid "The recipe will be permanently removed. This action cannot be undone."
-msgstr ""
+msgstr "配方将被永久删除。此操作无法撤销。"
 
 #: rayforge/ui_gtk/doceditor/recipe_selector_dialog.py
 msgid "Select Recipe"
-msgstr ""
+msgstr "选择配方"
 
 #: rayforge/ui_gtk/doceditor/recipe_selector_dialog.py
 msgid "Choose a recipe to apply to the current step."
-msgstr ""
+msgstr "选择要应用于当前步骤的配方。"
 
 #: rayforge/ui_gtk/doceditor/recipe_selector_dialog.py
 msgid "Show only compatible recipes"
-msgstr ""
+msgstr "仅显示兼容的配方"
 
 #: rayforge/ui_gtk/doceditor/stock_properties_dialog.py
 #: rayforge/ui_gtk/doceditor/item_properties.py
 msgid "Stock Properties"
-msgstr ""
+msgstr "毛坯属性"
 
 #: rayforge/ui_gtk/doceditor/stock_properties_dialog.py
 msgid "Thickness"
-msgstr ""
+msgstr "厚度"
 
 #: rayforge/ui_gtk/doceditor/stock_properties_dialog.py
 msgid "Material thickness"
-msgstr ""
+msgstr "材料厚度"
 
 #: rayforge/ui_gtk/doceditor/stock_properties_dialog.py
 #: rayforge/ui_gtk/sketcher/menu.py
 msgid "Select"
-msgstr ""
+msgstr "选择"
 
 #: rayforge/ui_gtk/doceditor/stock_properties_dialog.py
 msgid "None"
-msgstr ""
+msgstr "无"
 
 #: rayforge/ui_gtk/doceditor/sketch_properties.py
 msgid "Change Sketch Parameter"
-msgstr ""
+msgstr "更改草图参数"
 
 #: rayforge/ui_gtk/doceditor/asset_row_widget.py
 msgid "Edit this sketch"
-msgstr ""
+msgstr "编辑此草图"
 
 #: rayforge/ui_gtk/doceditor/asset_row_widget.py
 msgid "Delete this sketch"
-msgstr ""
+msgstr "删除此草图"
 
 #: rayforge/ui_gtk/doceditor/asset_row_widget.py
 msgid "No parameters"
-msgstr ""
+msgstr "无参数"
 
 #: rayforge/ui_gtk/doceditor/asset_row_widget.py
 msgid "1 parameter"
-msgstr ""
+msgstr "1 个参数"
 
 #: rayforge/ui_gtk/doceditor/asset_row_widget.py
 #, python-brace-format
 msgid "{count} parameters"
-msgstr ""
+msgstr "{count} 个参数"
 
 #: rayforge/ui_gtk/doceditor/asset_row_widget.py
 msgid "Edit stock properties"
-msgstr ""
+msgstr "编辑毛坯属性"
 
 #: rayforge/ui_gtk/doceditor/asset_row_widget.py
 msgid "Delete this stock asset"
-msgstr ""
+msgstr "删除此毛坯资产"
 
 #: rayforge/ui_gtk/doceditor/asset_row_widget.py
 #, python-brace-format
 msgid "Thickness: {thickness}"
-msgstr ""
+msgstr "厚度：{thickness}"
 
 #: rayforge/ui_gtk/doceditor/asset_row_widget.py
 msgid "No thickness specified"
-msgstr ""
+msgstr "未指定厚度"
 
 #: rayforge/ui_gtk/doceditor/material_selector.py
 msgid "Select Material"
-msgstr ""
+msgstr "选择材料"
 
 #: rayforge/ui_gtk/doceditor/material_selector.py
 msgid "Choose a material from the available libraries."
-msgstr ""
+msgstr "从可用库中选择材料。"
 
 #: rayforge/ui_gtk/doceditor/property_providers/sketch.py
 msgid "Mixed Values"
-msgstr ""
+msgstr "混合值"
 
 #: rayforge/ui_gtk/doceditor/property_providers/transform.py
 msgid "Zero is on the right"
-msgstr ""
+msgstr "零点在右侧"
 
 #: rayforge/ui_gtk/doceditor/property_providers/transform.py
 msgid "Zero is on the left"
-msgstr ""
+msgstr "零点在左侧"
 
 #: rayforge/ui_gtk/doceditor/property_providers/transform.py
 msgid "Zero is at the top"
-msgstr ""
+msgstr "零点在顶部"
 
 #: rayforge/ui_gtk/doceditor/property_providers/transform.py
 msgid "Zero is at the bottom"
-msgstr ""
+msgstr "零点在底部"
 
 #: rayforge/ui_gtk/doceditor/property_providers/transform.py
 msgid "X Position"
-msgstr ""
+msgstr "X位置"
 
 #: rayforge/ui_gtk/doceditor/property_providers/transform.py
 msgid "Zero is on the left side"
-msgstr ""
+msgstr "零点在左侧"
 
 #: rayforge/ui_gtk/doceditor/property_providers/transform.py
 msgid "Reset X position to 0"
-msgstr ""
+msgstr "重置X位置为0"
 
 #: rayforge/ui_gtk/doceditor/property_providers/transform.py
 msgid "Y Position"
-msgstr ""
+msgstr "Y位置"
 
 #: rayforge/ui_gtk/doceditor/property_providers/transform.py
 msgid "Reset Y position to 0"
-msgstr ""
+msgstr "重置Y位置为0"
 
 #: rayforge/ui_gtk/doceditor/property_providers/transform.py
 msgid "Fixed Ratio"
-msgstr ""
+msgstr "固定比例"
 
 #: rayforge/ui_gtk/doceditor/property_providers/transform.py
 msgid "Reset to natural width"
-msgstr ""
+msgstr "重置为自然宽度"
 
 #: rayforge/ui_gtk/doceditor/property_providers/transform.py
 msgid "Reset to natural height"
-msgstr ""
+msgstr "重置为自然高度"
 
 #: rayforge/ui_gtk/doceditor/property_providers/transform.py
 msgid "Reset to natural aspect ratio"
-msgstr ""
+msgstr "重置为自然宽高比"
 
 #: rayforge/ui_gtk/doceditor/property_providers/transform.py
 msgid "Angle"
-msgstr ""
+msgstr "角度"
 
 #: rayforge/ui_gtk/doceditor/property_providers/transform.py
 msgid "Clockwise is positive"
-msgstr ""
+msgstr "顺时针为正"
 
 #: rayforge/ui_gtk/doceditor/property_providers/transform.py
 msgid "Shear"
-msgstr ""
+msgstr "剪切"
 
 #: rayforge/ui_gtk/doceditor/property_providers/transform.py
 msgid "Horizontal shear angle"
-msgstr ""
+msgstr "水平剪切角"
 
 #: rayforge/ui_gtk/doceditor/property_providers/transform.py
 msgid "Reset angle to 0°"
-msgstr ""
+msgstr "重置角度为0°"
 
 #: rayforge/ui_gtk/doceditor/property_providers/transform.py
 msgid "Reset shear to 0°"
-msgstr ""
+msgstr "重置剪切为0°"
 
 #: rayforge/ui_gtk/doceditor/property_providers/transform.py
 #, python-brace-format
 msgid "Natural: {val:.2f}"
-msgstr ""
+msgstr "自然：{val:.2f}"
 
 #: rayforge/ui_gtk/doceditor/property_providers/workpiece.py
 msgid "Source File"
-msgstr ""
+msgstr "源文件"
 
 #: rayforge/ui_gtk/doceditor/property_providers/workpiece.py
 msgid "Show Image Metadata"
-msgstr ""
+msgstr "显示图像元数据"
 
 #: rayforge/ui_gtk/doceditor/property_providers/workpiece.py
 msgid "Show in File Browser"
-msgstr ""
+msgstr "在文件浏览器中显示"
 
 #: rayforge/ui_gtk/doceditor/property_providers/workpiece.py
 msgid "Vector Commands"
-msgstr ""
+msgstr "矢量命令"
 
 #: rayforge/ui_gtk/doceditor/property_providers/workpiece.py
 #, python-brace-format
 msgid "{name} (not found)"
-msgstr ""
+msgstr "{name} (未找到)"
 
 #: rayforge/ui_gtk/doceditor/property_providers/workpiece.py
 msgid "(No source file)"
-msgstr ""
+msgstr "(无源文件)"
 
 #: rayforge/ui_gtk/doceditor/property_providers/workpiece.py
 #: rayforge/pipeline/transformer/tabs.py
 msgid "Tabs"
-msgstr ""
+msgstr "标签"
 
 #: rayforge/ui_gtk/doceditor/property_providers/workpiece.py
 msgid "Remove all tabs"
-msgstr ""
+msgstr "移除所有标签"
 
 #: rayforge/ui_gtk/doceditor/property_providers/workpiece.py
 msgid "Tab Width"
-msgstr ""
+msgstr "标签宽度"
 
 #: rayforge/ui_gtk/doceditor/property_providers/workpiece.py
 msgid "Length along the path"
-msgstr ""
+msgstr "沿路径的长度"
 
 #: rayforge/ui_gtk/doceditor/property_providers/workpiece.py
 msgid "Reset tab width to default (1.0 mm)"
-msgstr ""
+msgstr "重置标签宽度为默认值 (1.0 mm)"
 
 #: rayforge/ui_gtk/doceditor/property_providers/workpiece.py
 #, python-brace-format
 msgid "{num_tabs} tabs"
-msgstr ""
+msgstr "{num_tabs} 个标签"
 
 #: rayforge/ui_gtk/doceditor/property_providers/workpiece.py
 msgid "Mixed values"
-msgstr ""
+msgstr "混合值"
 
 #: rayforge/ui_gtk/doceditor/add_tabs_popover.py
 msgid "Number of Tabs"
-msgstr ""
+msgstr "标签数量"
 
 #: rayforge/ui_gtk/doceditor/add_tabs_popover.py
 msgid "Tab Width (mm)"
-msgstr ""
+msgstr "标签宽度 (mm)"
 
 #: rayforge/ui_gtk/doceditor/add_tabs_popover.py
 msgid "Adjust Equidistant Tabs"
-msgstr ""
+msgstr "调整等距标签"
 
 #: rayforge/ui_gtk/doceditor/step_box.py
 msgid "Toggle step visibility"
-msgstr ""
+msgstr "切换步骤可见性"
 
 #: rayforge/ui_gtk/doceditor/image_metadata_dialog.py
 msgid "Image Metadata"
-msgstr ""
+msgstr "图像元数据"
 
 #: rayforge/ui_gtk/doceditor/image_metadata_dialog.py
 msgid "Copy Metadata"
-msgstr ""
+msgstr "复制元数据"
 
 #: rayforge/ui_gtk/doceditor/image_metadata_dialog.py
 msgid "No metadata available"
-msgstr ""
+msgstr "无可用元数据"
 
 #: rayforge/ui_gtk/doceditor/image_metadata_dialog.py
 msgid "Basic Information"
-msgstr ""
+msgstr "基本信息"
 
 #: rayforge/ui_gtk/doceditor/image_metadata_dialog.py
 msgid "Basic image properties like dimensions and format."
-msgstr ""
+msgstr "图像的基本属性，如尺寸和格式。"
 
 #: rayforge/ui_gtk/doceditor/image_metadata_dialog.py
 msgid "Metadata"
-msgstr ""
+msgstr "元数据"
 
 #: rayforge/ui_gtk/doceditor/image_metadata_dialog.py
 msgid "All metadata extracted from the image."
-msgstr ""
+msgstr "从图像中提取的所有元数据。"
 
 #: rayforge/ui_gtk/doceditor/image_metadata_dialog.py
 msgid "Metadata copied to clipboard"
-msgstr ""
+msgstr "元数据已复制到剪贴板"
 
 #: rayforge/ui_gtk/doceditor/recipe_control_widget.py
 msgid "Choose..."
-msgstr ""
+msgstr "选择..."
 
 #: rayforge/ui_gtk/doceditor/recipe_control_widget.py
 msgid "Manual Settings"
-msgstr ""
+msgstr "手动设置"
 
 #: rayforge/ui_gtk/doceditor/recipe_control_widget.py
 #, python-brace-format
 msgid "Apply Recipe '{name}'"
-msgstr ""
+msgstr "应用配方 '{name}'"
 
 #: rayforge/ui_gtk/doceditor/recipe_control_widget.py
 #, python-brace-format
 msgid "New {cap} Recipe"
-msgstr ""
+msgstr "新 {cap} 配方"
 
 #: rayforge/ui_gtk/doceditor/recipe_control_widget.py
 msgid "Set Applied Recipe"
-msgstr ""
+msgstr "设置应用的配方"
 
 #: rayforge/ui_gtk/doceditor/recipe_control_widget.py
 #, python-brace-format
 msgid "Update Recipe '{name}'?"
-msgstr ""
+msgstr "更新配方 '{name}'？"
 
 #: rayforge/ui_gtk/doceditor/recipe_control_widget.py
 msgid ""
 "This will permanently overwrite the saved recipe with the current step "
 "settings. This action cannot be undone."
-msgstr ""
+msgstr "这将用当前步骤设置永久覆盖保存的配方。此操作无法撤销。"
 
 #: rayforge/ui_gtk/doceditor/item_properties.py
 msgid "Item Properties"
-msgstr ""
+msgstr "项目属性"
 
 #: rayforge/ui_gtk/doceditor/item_properties.py
 msgid "1 item selected"
-msgstr ""
+msgstr "选择了 1 个项目"
 
 #: rayforge/ui_gtk/doceditor/item_properties.py
 #, python-brace-format
 msgid "{count} items selected"
-msgstr ""
+msgstr "选择了 {count} 个项目"
 
 #: rayforge/ui_gtk/doceditor/item_properties.py
 msgid "Multiple Items"
-msgstr ""
+msgstr "多个项目"
 
 #: rayforge/ui_gtk/doceditor/item_properties.py
 msgid "Workpiece Properties"
-msgstr ""
+msgstr "工件属性"
 
 #: rayforge/ui_gtk/doceditor/item_properties.py
 msgid "Group Properties"
-msgstr ""
+msgstr "组属性"
 
 #: rayforge/ui_gtk/doceditor/layer_list.py
 msgid "Workpiece Layers"
-msgstr ""
+msgstr "工件图层"
 
 #: rayforge/ui_gtk/doceditor/layer_list.py
 msgid "Add New Layer"
-msgstr ""
+msgstr "添加新图层"
 
 #: rayforge/ui_gtk/doceditor/layer_list.py
 #, python-brace-format
 msgid "{count} layer"
-msgstr ""
+msgstr "{count} 个图层"
 
 #: rayforge/ui_gtk/doceditor/layer_list.py
 #, python-brace-format
 msgid "{count} Layers"
-msgstr ""
+msgstr "{count} 个图层"
 
 #: rayforge/ui_gtk/doceditor/material_list.py
 msgid "No materials in selected library."
-msgstr ""
+msgstr "所选库中无材料。"
 
 #: rayforge/ui_gtk/doceditor/material_list.py
 msgid "Cannot Delete Material"
-msgstr ""
+msgstr "无法删除材料"
 
 #: rayforge/ui_gtk/doceditor/material_list.py
 msgid ""
 "This material is currently used by one or more recipes. Please remove the "
 "recipes that use this material before deleting it."
-msgstr ""
+msgstr "此材料目前正被一个或多个配方使用。请在删除之前移除使用此材料的配方。"
 
 #: rayforge/ui_gtk/doceditor/material_list.py
 msgid ""
 "The material will be permanently removed from the library. This action "
 "cannot be undone."
-msgstr ""
+msgstr "材料将从库中永久删除。此操作无法撤销。"
 
 #: rayforge/ui_gtk/doceditor/material_list.py
 msgid "Failed to update material."
-msgstr ""
+msgstr "更新材料失败。"
 
 #: rayforge/ui_gtk/doceditor/material_list.py
 msgid "Failed to add material to library."
-msgstr ""
+msgstr "添加材料到库失败。"
 
 #: rayforge/ui_gtk/doceditor/import_handler.py
 #, python-brace-format
 msgid "Batch Import {file_count} Images"
-msgstr ""
+msgstr "批量导入 {file_count} 个图像"
 
 #: rayforge/ui_gtk/doceditor/import_handler.py
 #, python-brace-format
@@ -4419,951 +4431,955 @@ msgid ""
 "All images will be traced using the default tracing settings and positioned "
 "at the drop location."
 msgstr ""
+"导入 {file_count} 个图像：\n"
+"{file_names}\n"
+"\n"
+"所有图像将使用默认描摹设置进行描摹，并定位在拖放位置。"
 
 #: rayforge/ui_gtk/doceditor/import_handler.py
 msgid "Import All"
-msgstr ""
+msgstr "全部导入"
 
 #: rayforge/ui_gtk/doceditor/workflow_view.py
 msgid "Add New Step..."
-msgstr ""
+msgstr "添加新步骤..."
 
 #: rayforge/ui_gtk/doceditor/workflow_view.py
 #, python-brace-format
 msgid "{count} step"
-msgstr ""
+msgstr "{count} 个步骤"
 
 #: rayforge/ui_gtk/doceditor/workflow_view.py
 #, python-brace-format
 msgid "{count} steps"
-msgstr ""
+msgstr "{count} 个步骤"
 
 #: rayforge/ui_gtk/doceditor/workflow_view.py
 #, python-brace-format
 msgid "Step {seq}: "
-msgstr ""
+msgstr "步骤 {seq}： "
 
 #: rayforge/ui_gtk/doceditor/workflow_view.py
 #, python-brace-format
 msgid "Add step '{name}'"
-msgstr ""
+msgstr "添加步骤 '{name}'"
 
 #: rayforge/ui_gtk/doceditor/workflow_view.py
 #, python-brace-format
 msgid "Remove step '{name}'"
-msgstr ""
+msgstr "移除步骤 '{name}'"
 
 #: rayforge/ui_gtk/doceditor/workflow_view.py
 msgid "Reorder steps"
-msgstr ""
+msgstr "重新排序步骤"
 
 #: rayforge/ui_gtk/task_bar.py
 msgid "{:.0f}s"
-msgstr ""
+msgstr "{:.0f}秒"
 
 #: rayforge/ui_gtk/task_bar.py
 msgid "{}m {}s"
-msgstr ""
+msgstr "{}分 {}秒"
 
 #: rayforge/ui_gtk/task_bar.py
 msgid "{}h {}m"
-msgstr ""
+msgstr "{}小时 {}分"
 
 #: rayforge/ui_gtk/task_bar.py
 msgid "<b>Machine:</b>"
-msgstr ""
+msgstr "<b>机器：</b>"
 
 #: rayforge/ui_gtk/task_bar.py
 msgid "<b>Connection:</b>"
-msgstr ""
+msgstr "<b>连接：</b>"
 
 #: rayforge/ui_gtk/task_bar.py
 msgid "Job Sent"
-msgstr ""
+msgstr "作业已发送"
 
 #: rayforge/ui_gtk/task_bar.py
 msgid "<b>Est. time:</b>"
-msgstr ""
+msgstr "<b>预计时间：</b>"
 
 #: rayforge/ui_gtk/task_bar.py
 msgid "No operations"
-msgstr ""
+msgstr "无操作"
 
 #: rayforge/ui_gtk/task_bar.py
 msgid "Calculating..."
-msgstr ""
+msgstr "正在计算..."
 
 #: rayforge/ui_gtk/task_bar.py
 #, python-brace-format
 msgid " (+{tasks} more)"
-msgstr ""
+msgstr " (+{tasks} 更多)"
 
 #: rayforge/ui_gtk/task_bar.py
 #, python-brace-format
 msgid "{tasks} tasks"
-msgstr ""
+msgstr "{tasks} 个任务"
 
 #: rayforge/ui_gtk/sketcher/sketchelement.py rayforge/ui_gtk/sketcher/menu.py
 msgid "Toggle Construction"
-msgstr ""
+msgstr "切换构造线"
 
 #: rayforge/ui_gtk/sketcher/sketchelement.py
 msgid "Delete Selection"
-msgstr ""
+msgstr "删除选中项"
 
 #: rayforge/ui_gtk/sketcher/sketchelement.py
 msgid "Add Horizontal Constraint"
-msgstr ""
+msgstr "添加水平约束"
 
 #: rayforge/ui_gtk/sketcher/sketchelement.py
 msgid "Add Vertical Constraint"
-msgstr ""
+msgstr "添加垂直约束"
 
 #: rayforge/ui_gtk/sketcher/sketchelement.py
 msgid "Add Distance Constraint"
-msgstr ""
+msgstr "添加距离约束"
 
 #: rayforge/ui_gtk/sketcher/sketchelement.py
 msgid "Add Radius Constraint"
-msgstr ""
+msgstr "添加半径约束"
 
 #: rayforge/ui_gtk/sketcher/sketchelement.py
 msgid "Add Diameter Constraint"
-msgstr ""
+msgstr "添加直径约束"
 
 #: rayforge/ui_gtk/sketcher/sketchelement.py
 msgid "Add Coincident Constraint"
-msgstr ""
+msgstr "添加重合约束"
 
 #: rayforge/ui_gtk/sketcher/sketchelement.py
 msgid "Add Point On Shape"
-msgstr ""
+msgstr "添加点在形状上"
 
 #: rayforge/ui_gtk/sketcher/sketchelement.py
 msgid "Add Perpendicular Constraint"
-msgstr ""
+msgstr "添加垂直约束"
 
 #: rayforge/ui_gtk/sketcher/sketchelement.py
 msgid "Add Tangent Constraint"
-msgstr ""
+msgstr "添加相切约束"
 
 #: rayforge/ui_gtk/sketcher/sketchelement.py
 msgid "Add Equal Constraint"
-msgstr ""
+msgstr "添加相等约束"
 
 #: rayforge/ui_gtk/sketcher/sketchelement.py
 msgid "Add Symmetry Constraint"
-msgstr ""
+msgstr "添加对称约束"
 
 #: rayforge/ui_gtk/sketcher/sketchelement.py
 msgid "Add Aspect Ratio Constraint"
-msgstr ""
+msgstr "添加宽高比约束"
 
 #: rayforge/ui_gtk/sketcher/studio.py rayforge/ui_gtk/sketcher/menu.py
 msgid "Cancel Sketch"
-msgstr ""
+msgstr "取消草图"
 
 #: rayforge/ui_gtk/sketcher/studio.py
 msgid "Sketch Studio"
-msgstr ""
+msgstr "草图工作室"
 
 #: rayforge/ui_gtk/sketcher/studio.py
 msgid ""
 "Right-click background to draw, objects to edit. Double-click dimensions to "
 "edit values."
-msgstr ""
+msgstr "右键单击背景进行绘制，右键单击对象进行编辑。双击尺寸以编辑值。"
 
 #: rayforge/ui_gtk/sketcher/studio.py
 msgid "Finish"
-msgstr ""
+msgstr "完成"
 
 #: rayforge/ui_gtk/sketcher/studio.py
 msgid "Properties"
-msgstr ""
+msgstr "属性"
 
 #: rayforge/ui_gtk/sketcher/studio.py
 msgid "Configure the sketch name and basic properties"
-msgstr ""
+msgstr "配置草图名称和基本属性"
 
 #: rayforge/ui_gtk/sketcher/studio.py
 msgid "Rename Sketch"
-msgstr ""
+msgstr "重命名草图"
 
 #: rayforge/ui_gtk/sketcher/menu.py
 msgid "Finish Sketch"
-msgstr ""
+msgstr "完成草图"
 
 #: rayforge/ui_gtk/sketcher/menu.py
 msgid "Circle"
-msgstr ""
+msgstr "圆形"
 
 #: rayforge/ui_gtk/sketcher/menu.py
 msgid "Arc"
-msgstr ""
+msgstr "圆弧"
 
 #: rayforge/ui_gtk/sketcher/menu.py
 msgid "Rectangle"
-msgstr ""
+msgstr "矩形"
 
 #: rayforge/ui_gtk/sketcher/menu.py
 msgid "Rounded Rectangle"
-msgstr ""
+msgstr "圆角矩形"
 
 #: rayforge/ui_gtk/sketcher/menu.py
 msgid "Fill Area"
-msgstr ""
+msgstr "填充区域"
 
 #: rayforge/ui_gtk/sketcher/menu.py
 msgid "Tools"
-msgstr ""
+msgstr "工具"
 
 #: rayforge/ui_gtk/sketcher/menu.py
 msgid "Chamfer Corner"
-msgstr ""
+msgstr "倒角"
 
 #: rayforge/ui_gtk/sketcher/menu.py
 msgid "Modify"
-msgstr ""
+msgstr "修改"
 
 #: rayforge/ui_gtk/sketcher/menu.py
 msgid "_Sketch"
-msgstr ""
+msgstr "草图(_S)"
 
 #: rayforge/ui_gtk/sketcher/menu.py
 msgid "Fit View"
-msgstr ""
+msgstr "适应视图"
 
 #: rayforge/ui_gtk/sketcher/font_properties.py
 msgid "Font Properties"
-msgstr ""
+msgstr "字体属性"
 
 #: rayforge/ui_gtk/sketcher/font_properties.py
 msgid "Configure font family, size, and style for text boxes"
-msgstr ""
+msgstr "配置文本框的字体系列、大小和样式"
 
 #: rayforge/ui_gtk/sketcher/font_properties.py
 msgid "Font Family"
-msgstr ""
+msgstr "字体系列"
 
 #: rayforge/ui_gtk/sketcher/font_properties.py
 msgid "Font Size"
-msgstr ""
+msgstr "字体大小"
 
 #: rayforge/ui_gtk/sketcher/font_properties.py
 msgid "Bold"
-msgstr ""
+msgstr "粗体"
 
 #: rayforge/ui_gtk/sketcher/font_properties.py
 msgid "Italic"
-msgstr ""
+msgstr "斜体"
 
 #: rayforge/ui_gtk/sketcher/font_properties.py
 msgid "Select Font"
-msgstr ""
+msgstr "选择字体"
 
 #: rayforge/ui_gtk/sketcher/sketchcanvas.py
 msgid "Enter radius or expression (e.g. 'width/2')."
-msgstr ""
+msgstr "输入半径或表达式（例如 'width/2'）。"
 
 #: rayforge/ui_gtk/sketcher/sketchcanvas.py
 msgid "Enter diameter or expression."
-msgstr ""
+msgstr "输入直径或表达式。"
 
 #: rayforge/ui_gtk/sketcher/sketchcanvas.py
 msgid "Enter length or expression."
-msgstr ""
+msgstr "输入长度或表达式。"
 
 #: rayforge/ui_gtk/sketcher/sketchcanvas.py
 msgid "Enter value or expression."
-msgstr ""
+msgstr "输入值或表达式。"
 
 #: rayforge/ui_gtk/about.py
 msgid "Not found"
-msgstr ""
+msgstr "未找到"
 
 #: rayforge/ui_gtk/about.py
 msgid "UI Toolkit"
-msgstr ""
+msgstr "UI工具包"
 
 #: rayforge/ui_gtk/about.py
 msgid "Graphics & Imaging"
-msgstr ""
+msgstr "图形与成像"
 
 #: rayforge/ui_gtk/about.py
 msgid "File Formats & Communication"
-msgstr ""
+msgstr "文件格式与通信"
 
 #: rayforge/ui_gtk/about.py
 msgid "Website"
-msgstr ""
+msgstr "网站"
 
 #: rayforge/ui_gtk/about.py
 msgid "Report an Issue"
-msgstr ""
+msgstr "报告问题"
 
 #: rayforge/ui_gtk/about.py
 msgid "Version"
-msgstr ""
+msgstr "版本"
 
 #: rayforge/ui_gtk/about.py
 msgid "Copy Version"
-msgstr ""
+msgstr "复制版本"
 
 #: rayforge/ui_gtk/about.py
 msgid "Lead Developer"
-msgstr ""
+msgstr "首席开发者"
 
 #: rayforge/ui_gtk/about.py
 msgid "License"
-msgstr ""
+msgstr "许可证"
 
 #: rayforge/ui_gtk/about.py
 msgid "System Information"
-msgstr ""
+msgstr "系统信息"
 
 #: rayforge/ui_gtk/about.py
 msgid "Versions of libraries and components"
-msgstr ""
+msgstr "库和组件的版本"
 
 #: rayforge/ui_gtk/about.py
 msgid "Copy System Information"
-msgstr ""
+msgstr "复制系统信息"
 
 #: rayforge/ui_gtk/about.py
 msgid "Supporters"
-msgstr ""
+msgstr "支持者"
 
 #: rayforge/ui_gtk/about.py
 msgid "People who donated to the project"
-msgstr ""
+msgstr "捐赠给项目的人"
 
 #: rayforge/ui_gtk/about.py
 msgid ""
 "Special thanks go to everyone who has donated to support Rayforge! You keep "
 "the coffee and the AI tokens flowing!"
-msgstr ""
+msgstr "特别感谢所有捐款支持Rayforge的人！你们让咖啡和AI代币源源不断！"
 
 #: rayforge/ui_gtk/about.py
 #, python-brace-format
 msgid "About {app_name}"
-msgstr ""
+msgstr "关于 {app_name}"
 
 #: rayforge/shared/units/definitions.py
 msgid "mm/min"
-msgstr ""
+msgstr "毫米/分钟"
 
 #: rayforge/shared/units/definitions.py
 msgid "mm/s"
-msgstr ""
+msgstr "毫米/秒"
 
 #: rayforge/shared/units/definitions.py
 msgid "in/min"
-msgstr ""
+msgstr "英寸/分钟"
 
 #: rayforge/shared/units/definitions.py
 msgid "in/s"
-msgstr ""
+msgstr "英寸/秒"
 
 #: rayforge/shared/units/definitions.py
 msgid "mm"
-msgstr ""
+msgstr "毫米"
 
 #: rayforge/shared/units/definitions.py
 msgid "cm"
-msgstr ""
+msgstr "厘米"
 
 #: rayforge/shared/units/definitions.py
 msgid "m"
-msgstr ""
+msgstr "米"
 
 #: rayforge/shared/units/definitions.py
 msgid "in"
-msgstr ""
+msgstr "英寸"
 
 #: rayforge/shared/units/definitions.py
 msgid "ft"
-msgstr ""
+msgstr "英尺"
 
 #: rayforge/shared/units/definitions.py
 msgid "mm/s²"
-msgstr ""
+msgstr "毫米/秒²"
 
 #: rayforge/shared/units/definitions.py
 msgid "cm/s²"
-msgstr ""
+msgstr "厘米/秒²"
 
 #: rayforge/shared/units/definitions.py
 msgid "m/s²"
-msgstr ""
+msgstr "米/秒²"
 
 #: rayforge/shared/units/definitions.py
 msgid "in/s²"
-msgstr ""
+msgstr "英寸/秒²"
 
 #: rayforge/shared/units/definitions.py
 msgid "ft/s²"
-msgstr ""
+msgstr "英尺/秒²"
 
 #: rayforge/shared/gcodeedit/viewer.py
 msgid "G-code too large to preview."
-msgstr ""
+msgstr "G代码太大，无法预览。"
 
 #: rayforge/shared/gcodeedit/viewer.py
 #, python-brace-format
 msgid "({line_count} lines > 20,000 line limit)"
-msgstr ""
+msgstr "({line_count} 行 > 20,000 行限制)"
 
 #: rayforge/app.py
 msgid "A GCode generator for laser cutters."
-msgstr ""
+msgstr "激光切割机的G代码生成器。"
 
 #: rayforge/app.py
 msgid "Paths to one or more input SVG or image files."
-msgstr ""
+msgstr "一个或多个输入SVG或图像文件的路径。"
 
 #: rayforge/app.py
 msgid ""
 "Force import as direct vectors. This is the default for supported files."
-msgstr ""
+msgstr "强制导入为直接矢量。这是支持文件的默认设置。"
 
 #: rayforge/app.py
 msgid ""
 "Force import by tracing the file's bitmap representation. Aborts if not "
 "supported."
-msgstr ""
+msgstr "通过描摹文件的位图表示强制导入。如果不支持则中止。"
 
 #: rayforge/app.py
 msgid "Set the logging level (default: INFO)"
-msgstr ""
+msgstr "设置日志记录级别 (默认: INFO)"
 
 #: rayforge/pipeline/steps.py
 msgid "Contour"
-msgstr ""
+msgstr "轮廓"
 
 #: rayforge/pipeline/steps.py
 msgid "Engrave (Raster)"
-msgstr ""
+msgstr "雕刻 (光栅)"
 
 #: rayforge/pipeline/steps.py
 msgid "Engrave (Depth-Aware)"
-msgstr ""
+msgstr "雕刻 (深度感知)"
 
 #: rayforge/pipeline/steps.py
 msgid "Shrink Wrap"
-msgstr ""
+msgstr "收缩包裹"
 
 #: rayforge/pipeline/steps.py
 msgid "Frame Outline"
-msgstr ""
+msgstr "边框轮廓"
 
 #: rayforge/pipeline/steps.py rayforge/doceditor/material_test_cmd.py
 msgid "Material Test Grid"
-msgstr ""
+msgstr "材料测试网格"
 
 #: rayforge/pipeline/stage/workpiece_view_runner.py
 msgid "Preparing 2D preview..."
-msgstr ""
+msgstr "正在准备2D预览..."
 
 #: rayforge/pipeline/stage/step_runner.py
 msgid "Assembling step..."
-msgstr ""
+msgstr "正在组装步骤..."
 
 #: rayforge/pipeline/stage/step_runner.py
 #, python-brace-format
 msgid "Applying '{t}'"
-msgstr ""
+msgstr "正在应用 '{t}'"
 
 #: rayforge/pipeline/stage/step_runner.py
 msgid "Encoding for 3D preview..."
-msgstr ""
+msgstr "正在为3D预览编码..."
 
 #: rayforge/pipeline/stage/step_runner.py
 msgid "Storing step data..."
-msgstr ""
+msgstr "正在存储步骤数据..."
 
 #: rayforge/pipeline/stage/step_runner.py
 msgid "Calculating time estimate..."
-msgstr ""
+msgstr "正在计算时间估算..."
 
 #: rayforge/pipeline/stage/job_runner.py
 msgid "Assembling final job..."
-msgstr ""
+msgstr "正在组装最终作业..."
 
 #: rayforge/pipeline/stage/job_runner.py
 #, python-brace-format
 msgid "Processing final ops for '{step}'"
-msgstr ""
+msgstr "正在处理 '{step}' 的最终操作"
 
 #: rayforge/pipeline/stage/job_runner.py
 msgid "Calculating final time and distance estimates..."
-msgstr ""
+msgstr "正在计算最终时间和距离估算..."
 
 #: rayforge/pipeline/stage/job_runner.py
 msgid "Generating G-code..."
-msgstr ""
+msgstr "正在生成G代码..."
 
 #: rayforge/pipeline/stage/job_runner.py
 msgid "Encoding paths for preview..."
-msgstr ""
+msgstr "正在为预览编码路径..."
 
 #: rayforge/pipeline/stage/job_runner.py
 msgid "Storing final job artifact..."
-msgstr ""
+msgstr "正在存储最终作业制品..."
 
 #: rayforge/pipeline/stage/job_runner.py
 msgid "Job finalization complete"
-msgstr ""
+msgstr "作业定稿完成"
 
 #: rayforge/pipeline/stage/workpiece_runner.py
 #, python-brace-format
 msgid "Generating path for '{name}'"
-msgstr ""
+msgstr "正在为 '{name}' 生成路径"
 
 #: rayforge/pipeline/stage/workpiece_runner.py
 #, python-brace-format
 msgid "Applying '{transformer}' on '{workpiece}'"
-msgstr ""
+msgstr "正在对 '{workpiece}' 应用 '{transformer}'"
 
 #: rayforge/pipeline/stage/workpiece_runner.py
 #, python-brace-format
 msgid "Finalizing '{workpiece}'"
-msgstr ""
+msgstr "正在定稿 '{workpiece}'"
 
 #: rayforge/pipeline/transformer/overscan.py
 msgid "Overscan"
-msgstr ""
+msgstr "过冲"
 
 #: rayforge/pipeline/transformer/overscan.py
 msgid "Extends raster lines to ensure constant engraving speed."
-msgstr ""
+msgstr "延长光栅线以确保恒定的雕刻速度。"
 
 #: rayforge/pipeline/transformer/optimize.py
 msgid "Optimize Path"
-msgstr ""
+msgstr "优化路径"
 
 #: rayforge/pipeline/transformer/optimize.py
 msgid "Minimizes travel distance by reordering segments."
-msgstr ""
+msgstr "通过重新排序线段来最小化移动距离。"
 
 #: rayforge/pipeline/transformer/optimize.py
 msgid "Preprocessing for optimization..."
-msgstr ""
+msgstr "正在为优化进行预处理..."
 
 #: rayforge/pipeline/transformer/optimize.py
 msgid "Analyzing and bucketing path segments..."
-msgstr ""
+msgstr "正在分析和分组路径线段..."
 
 #: rayforge/pipeline/transformer/optimize.py
 #, python-brace-format
 msgid "Optimizing segment {i}/{total}..."
-msgstr ""
+msgstr "正在优化线段 {i}/{total}..."
 
 #: rayforge/pipeline/transformer/optimize.py
 msgid "Finding nearest paths..."
-msgstr ""
+msgstr "正在查找最近路径..."
 
 #: rayforge/pipeline/transformer/optimize.py
 msgid "Applying 2-opt refinement..."
-msgstr ""
+msgstr "正在应用2-opt细化..."
 
 #: rayforge/pipeline/transformer/optimize.py
 msgid "Reassembling optimized paths..."
-msgstr ""
+msgstr "正在重新组装优化后的路径..."
 
 #: rayforge/pipeline/transformer/optimize.py
 msgid "Optimization complete"
-msgstr ""
+msgstr "优化完成"
 
 #: rayforge/pipeline/transformer/smooth.py
 msgid "Smooth Path"
-msgstr ""
+msgstr "平滑路径"
 
 #: rayforge/pipeline/transformer/smooth.py
 msgid "Smooths the path by applying a Gaussian filter."
-msgstr ""
+msgstr "通过应用高斯滤波器平滑路径。"
 
 #: rayforge/pipeline/transformer/tabs.py
 msgid "Creates holding tabs by adding gaps to cut paths"
-msgstr ""
+msgstr "通过在切割路径中添加间隙来创建固定标签"
 
 #: rayforge/pipeline/transformer/multipass.py
 msgid "Multi-Pass"
-msgstr ""
+msgstr "多轮"
 
 #: rayforge/pipeline/transformer/multipass.py
 msgid "Repeats the path multiple times, optionally stepping down in Z."
-msgstr ""
+msgstr "重复路径多次，可选择在Z轴上逐层下降。"
 
 #: rayforge/pipeline/encoder/context.py
 msgid "The name of the currently active coordinate system (e.g. 'G54')."
-msgstr ""
+msgstr "当前活动坐标系的名称（例如 'G54'）。"
 
 #: rayforge/pipeline/encoder/context.py
 msgid "The name of the current machine profile."
-msgstr ""
+msgstr "当前机器配置文件的名称。"
 
 #: rayforge/pipeline/encoder/context.py
 msgid "The width (X-axis) of the machine work area in mm."
-msgstr ""
+msgstr "机器工作区域的宽度（X轴，毫米）。"
 
 #: rayforge/pipeline/encoder/context.py
 msgid "The height (Y-axis) of the machine work area in mm."
-msgstr ""
+msgstr "机器工作区域的高度（Y轴，毫米）。"
 
 #: rayforge/pipeline/encoder/context.py
 msgid "The name of the current document file (if saved)."
-msgstr ""
+msgstr "当前文档文件的名称（如果已保存）。"
 
 #: rayforge/pipeline/encoder/context.py
 msgid "The minimum X coordinate of the entire job."
-msgstr ""
+msgstr "整个作业的最小X坐标。"
 
 #: rayforge/pipeline/encoder/context.py
 msgid "The minimum Y coordinate of the entire job."
-msgstr ""
+msgstr "整个作业的最小Y坐标。"
 
 #: rayforge/pipeline/encoder/context.py
 msgid "The maximum X coordinate of the entire job."
-msgstr ""
+msgstr "整个作业的最大X坐标。"
 
 #: rayforge/pipeline/encoder/context.py
 msgid "The maximum Y coordinate of the entire job."
-msgstr ""
+msgstr "整个作业的最大Y坐标。"
 
 #: rayforge/pipeline/encoder/context.py
 msgid "The X offset of the currently active WCS."
-msgstr ""
+msgstr "当前活动WCS的X偏移。"
 
 #: rayforge/pipeline/encoder/context.py
 msgid "The Y offset of the currently active WCS."
-msgstr ""
+msgstr "当前活动WCS的Y偏移。"
 
 #: rayforge/pipeline/encoder/context.py
 msgid "The Z offset of the currently active WCS."
-msgstr ""
+msgstr "当前活动WCS的Z偏移。"
 
 #: rayforge/pipeline/encoder/context.py
 msgid "The name of the current layer being processed."
-msgstr ""
+msgstr "当前正在处理的图层名称。"
 
 #: rayforge/pipeline/encoder/context.py
 msgid "The name of the current workpiece being processed."
-msgstr ""
+msgstr "当前正在处理的工件名称。"
 
 #: rayforge/pipeline/encoder/context.py
 msgid "The X position of the workpiece."
-msgstr ""
+msgstr "工件的X位置。"
 
 #: rayforge/pipeline/encoder/context.py
 msgid "The Y position of the workpiece."
-msgstr ""
+msgstr "工件的Y位置。"
 
 #: rayforge/pipeline/encoder/context.py
 msgid "The width of the workpiece."
-msgstr ""
+msgstr "工件的宽度。"
 
 #: rayforge/pipeline/encoder/context.py
 msgid "The height of the workpiece."
-msgstr ""
+msgstr "工件的高度。"
 
 #: rayforge/doceditor/material_test_cmd.py
 msgid "Add Material Test"
-msgstr ""
+msgstr "添加材料测试"
 
 #: rayforge/doceditor/transform_cmd.py
 msgid "Transform item(s)"
-msgstr ""
+msgstr "变换项目"
 
 #: rayforge/doceditor/transform_cmd.py
 msgid "Move item(s)"
-msgstr ""
+msgstr "移动项目"
 
 #: rayforge/doceditor/transform_cmd.py
 msgid "Resize item(s)"
-msgstr ""
+msgstr "调整项目大小"
 
 #: rayforge/doceditor/transform_cmd.py
 msgid "Change item angle"
-msgstr ""
+msgstr "更改项目角度"
 
 #: rayforge/doceditor/transform_cmd.py
 msgid "Change item shear"
-msgstr ""
+msgstr "更改项目剪切"
 
 #: rayforge/doceditor/sketch_cmd.py
 msgid "Change Sketch Parameters"
-msgstr ""
+msgstr "更改草图参数"
 
 #: rayforge/doceditor/asset_cmd.py
 msgid "Rename Asset"
-msgstr ""
+msgstr "重命名资产"
 
 #: rayforge/doceditor/asset_cmd.py
 #, python-brace-format
 msgid "Delete Asset '{name}'"
-msgstr ""
+msgstr "删除资产 '{name}'"
 
 #: rayforge/doceditor/asset_cmd.py
 msgid "Remove dependent item"
-msgstr ""
+msgstr "移除依赖项"
 
 #: rayforge/doceditor/asset_cmd.py
 msgid "Remove asset definition"
-msgstr ""
+msgstr "移除资产定义"
 
 #: rayforge/doceditor/file_cmd.py
 #, python-brace-format
 msgid "Import {filename}"
-msgstr ""
+msgstr "导入 {filename}"
 
 #: rayforge/doceditor/file_cmd.py
 #, python-brace-format
 msgid "Importing {filename}..."
-msgstr ""
+msgstr "正在导入 {filename}..."
 
 #: rayforge/doceditor/file_cmd.py
 #, python-brace-format
 msgid ""
 "Failed to import {filename}. The image file may be corrupted or in an "
 "unsupported format."
-msgstr ""
+msgstr "导入 {filename} 失败。图像文件可能已损坏或格式不支持。"
 
 #: rayforge/doceditor/file_cmd.py
 #, python-brace-format
 msgid "Import failed: No items were created from {filename}"
-msgstr ""
+msgstr "导入失败：未从 {filename} 创建任何项目"
 
 #: rayforge/doceditor/file_cmd.py
 msgid "Import failed."
-msgstr ""
+msgstr "导入失败。"
 
 #: rayforge/doceditor/file_cmd.py
 msgid "Import complete!"
-msgstr ""
+msgstr "导入完成！"
 
 #: rayforge/doceditor/file_cmd.py
 msgid ""
 "⚠️ Imported item was larger than the work area and has been scaled down to "
 "fit."
-msgstr ""
+msgstr "⚠️ 导入的项目大于工作区域，已缩加以适应。"
 
 #: rayforge/doceditor/file_cmd.py
 #, python-brace-format
 msgid "Export successful: {name}"
-msgstr ""
+msgstr "导出成功：{name}"
 
 #: rayforge/doceditor/file_cmd.py
 #, python-brace-format
 msgid "Export failed: {error}"
-msgstr ""
+msgstr "导出失败：{error}"
 
 #: rayforge/doceditor/file_cmd.py
 #, python-brace-format
 msgid "Project saved: {name}"
-msgstr ""
+msgstr "项目已保存：{name}"
 
 #: rayforge/doceditor/file_cmd.py
 #, python-brace-format
 msgid "Save failed: {error}"
-msgstr ""
+msgstr "保存失败：{error}"
 
 #: rayforge/doceditor/file_cmd.py
 #, python-brace-format
 msgid "File not found: {name}"
-msgstr ""
+msgstr "文件未找到：{name}"
 
 #: rayforge/doceditor/file_cmd.py
 msgid "Invalid project file format"
-msgstr ""
+msgstr "无效的项目文件格式"
 
 #: rayforge/doceditor/file_cmd.py
 #, python-brace-format
 msgid "Load failed: {error}"
-msgstr ""
+msgstr "加载失败：{error}"
 
 #: rayforge/doceditor/layout/auto.py
 #, python-brace-format
 msgid "Could not fit the following items: {item_names}"
-msgstr ""
+msgstr "无法容纳以下项目：{item_names}"
 
 #: rayforge/doceditor/stock_cmd.py
 #, python-brace-format
 msgid "Stock {count}"
-msgstr ""
+msgstr "毛坯 {count}"
 
 #: rayforge/doceditor/stock_cmd.py
 msgid "Toggle stock visibility"
-msgstr ""
+msgstr "切换毛坯可见性"
 
 #: rayforge/doceditor/stock_cmd.py
 msgid "Rename Stock Asset"
-msgstr ""
+msgstr "重命名毛坯资产"
 
 #: rayforge/doceditor/stock_cmd.py
 msgid "Change stock thickness"
-msgstr ""
+msgstr "更改毛坯厚度"
 
 #: rayforge/doceditor/stock_cmd.py
 msgid "Change stock material"
-msgstr ""
+msgstr "更改毛坯材料"
 
 #: rayforge/doceditor/tab_cmd.py
 msgid "Add Tab"
-msgstr ""
+msgstr "添加标签"
 
 #: rayforge/doceditor/tab_cmd.py
 msgid "Clear Tabs"
-msgstr ""
+msgstr "清除标签"
 
 #: rayforge/doceditor/tab_cmd.py
 msgid "Toggle Tabs"
-msgstr ""
+msgstr "切换标签"
 
 #: rayforge/doceditor/tab_cmd.py
 msgid "Change Tab Width"
-msgstr ""
+msgstr "更改标签宽度"
 
 #: rayforge/doceditor/layer_cmd.py
 msgid "Move to another layer"
-msgstr ""
+msgstr "移动到另一图层"
 
 #: rayforge/doceditor/layer_cmd.py
 msgid "Layer"
-msgstr ""
+msgstr "图层"
 
 #: rayforge/doceditor/layer_cmd.py
 msgid "Rename layer"
-msgstr ""
+msgstr "重命名图层"
 
 #: rayforge/doceditor/layer_cmd.py
 msgid "Toggle layer visibility"
-msgstr ""
+msgstr "切换图层可见性"
 
 #: rayforge/doceditor/layer_cmd.py
 msgid "Set active layer"
-msgstr ""
+msgstr "设置活动图层"
 
 #: rayforge/doceditor/layer_cmd.py
 #, python-brace-format
 msgid "Remove layer '{name}'"
-msgstr ""
+msgstr "移除图层 '{name}'"
 
 #: rayforge/doceditor/layer_cmd.py
 msgid "Reorder layers"
-msgstr ""
+msgstr "重新排序图层"
 
 #: rayforge/doceditor/group_cmd.py
 msgid "Grouping items..."
-msgstr ""
+msgstr "正在分组项目..."
 
 #: rayforge/doceditor/group_cmd.py
 msgid "Ungrouping items..."
-msgstr ""
+msgstr "正在取消分组项目..."
 
 #: rayforge/doceditor/split_cmd.py
 msgid "Split item(s)"
-msgstr ""
+msgstr "分割项目"
 
 #: rayforge/doceditor/split_cmd.py
 msgid "Remove original item"
-msgstr ""
+msgstr "移除原始项目"
 
 #: rayforge/doceditor/split_cmd.py
 msgid "Add split fragments"
-msgstr ""
+msgstr "添加分割片段"
 
 #: rayforge/doceditor/edit_cmd.py
 msgid "Paste item(s)"
-msgstr ""
+msgstr "粘贴项目"
 
 #: rayforge/doceditor/edit_cmd.py
 msgid "Paste item"
-msgstr ""
+msgstr "粘贴项目"
 
 #: rayforge/doceditor/edit_cmd.py
 msgid "Duplicate item(s)"
-msgstr ""
+msgstr "创建项目副本"
 
 #: rayforge/doceditor/edit_cmd.py
 msgid "Duplicate item"
-msgstr ""
+msgstr "创建项目副本"
 
 #: rayforge/doceditor/edit_cmd.py
 msgid "Add item"
-msgstr ""
+msgstr "添加项目"
 
 #: rayforge/doceditor/edit_cmd.py
 msgid "Remove item"
-msgstr ""
+msgstr "移除项目"
 
 #: rayforge/doceditor/edit_cmd.py
 msgid "Remove all workpieces"
-msgstr ""
+msgstr "移除所有工件"
 
 #: rayforge/doceditor/edit_cmd.py
 msgid "Clear Layer Items"
-msgstr ""
+msgstr "清除图层项目"
 
 #: rayforge/doceditor/edit_cmd.py
 msgid "Add Sketch Instance"
-msgstr ""
+msgstr "添加草图实例"
 
 #: rayforge/doceditor/layout_cmd.py
 msgid "Position at Point"
-msgstr ""
+msgstr "定位在点"
 
 #: rayforge/image/png/importer.py rayforge/image/jpg/importer.py
 msgid "Failed to process image data."
-msgstr ""
+msgstr "处理图像数据失败。"
 
 #: rayforge/image/svg/svg_base.py
 msgid "Could not calculate SVG metadata."
-msgstr ""
+msgstr "无法计算SVG元数据。"
 
 #: rayforge/image/svg/svg_base.py
 msgid "Failed to prepare trimmed SVG data."
-msgstr ""
+msgstr "准备修剪的SVG数据失败。"
 
 #: rayforge/image/svg/svg_base.py
 msgid "SVG contains no geometry or dimensions."
-msgstr ""
+msgstr "SVG不包含几何图形或尺寸。"
 
 #: rayforge/image/svg/svg_base.py
 msgid "Could not determine valid SVG dimensions."
-msgstr ""
+msgstr "无法确定有效的SVG尺寸。"
 
 #: rayforge/image/svg/svg_trace.py
 msgid "Cannot determine valid dimensions for tracing."
-msgstr ""
+msgstr "无法确定描摹的有效尺寸。"
 
 #: rayforge/image/svg/svg_trace.py
 msgid "Failed to rasterize SVG for tracing."
-msgstr ""
+msgstr "光栅化SVG以进行描摹失败。"
 
 #: rayforge/image/svg/svg_trace.py
 msgid "Failed to normalize image data."
-msgstr ""
+msgstr "归一化图像数据失败。"
 
 #: rayforge/image/pdf/importer.py
 msgid "PDF file contains no pages."
-msgstr ""
+msgstr "PDF文件不包含页面。"
 
 #: rayforge/image/pdf/importer.py
 msgid "Failed to process PDF image data."
-msgstr ""
+msgstr "处理PDF图像数据失败。"
 
 #: rayforge/image/pdf/importer.py
 msgid "PDF page has zero dimensions"
-msgstr ""
+msgstr "PDF页面尺寸为零"
 
 #: rayforge/image/pdf/importer.py
 msgid "Failed to rasterize PDF"
-msgstr ""
+msgstr "光栅化PDF失败"
 
 #: rayforge/image/bmp/importer.py
 msgid "Invalid or unsupported BMP data."
-msgstr ""
+msgstr "无效或不支持的BMP数据。"
 
 #: rayforge/image/ruida/importer.py
 msgid "File contains no vector commands."
-msgstr ""
+msgstr "文件不包含矢量命令。"
