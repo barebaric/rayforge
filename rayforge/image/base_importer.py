@@ -344,11 +344,12 @@ class Importer(ABC):
         spec = vectorization_spec
         if not spec:
             # Smart default: Choose spec based on importer features.
-            # Prefer direct vector if available, otherwise fall back to trace.
+            # Prefer direct vector if available, otherwise use whole image
+            # mode for bitmap formats.
             if ImporterFeature.DIRECT_VECTOR in self.features:
                 spec = PassthroughSpec()
             elif ImporterFeature.BITMAP_TRACING in self.features:
-                spec = TraceSpec()
+                spec = TraceSpec(threshold=1.0, auto_threshold=False)
             else:
                 # Fallback for importers that may not declare features yet
                 spec = PassthroughSpec()
