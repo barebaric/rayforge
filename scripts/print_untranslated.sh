@@ -42,5 +42,9 @@ if [ ! -f "$PO_FILE" ]; then
   exit 1
 fi
 
-# Print untranslated strings
-msgattrib --untranslated --no-obsolete "$PO_FILE"
+# Print untranslated strings (limited to 100 entries by default)
+msgattrib --untranslated --no-obsolete "$PO_FILE" | awk '
+    /^msgid/ && entry_count >= 100 { exit }
+    /^msgid/ { entry_count++ }
+    { print }
+'
