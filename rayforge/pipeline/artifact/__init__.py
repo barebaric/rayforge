@@ -1,7 +1,7 @@
 from .base import BaseArtifact, TextureData, VertexData, TextureInstance
-from .cache import ArtifactCache
 from .handle import BaseArtifactHandle, create_handle_from_dict
 from .job import JobArtifact, JobArtifactHandle
+from .manager import ArtifactManager
 from .store import ArtifactStore
 from .step_ops import StepOpsArtifact, StepOpsArtifactHandle
 from .step_render import StepRenderArtifact, StepRenderArtifactHandle
@@ -14,7 +14,7 @@ from .workpiece_view import (
 
 
 __all__ = [
-    "ArtifactCache",
+    "ArtifactManager",
     "ArtifactStore",
     "BaseArtifact",
     "BaseArtifactHandle",

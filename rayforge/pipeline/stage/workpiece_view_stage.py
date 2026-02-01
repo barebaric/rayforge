@@ -11,7 +11,6 @@ from ...context import get_context
 from ...shared.util.colors import ColorSet
 from ..artifact import (
     WorkPieceArtifact,
-    create_handle_from_dict,
     BaseArtifactHandle,
 )
 from ..artifact.workpiece_view import (
@@ -28,7 +27,7 @@ if TYPE_CHECKING:
     from ...core.workpiece import WorkPiece
     from ...shared.tasker.manager import TaskManager
     from ...shared.tasker.task import Task
-    from ..artifact.cache import ArtifactCache
+    from ..artifact.manager import ArtifactManager
 
 
 logger = logging.getLogger(__name__)
@@ -50,9 +49,9 @@ class WorkPieceViewPipelineStage(PipelineStage):
     """
 
     def __init__(
-        self, task_manager: "TaskManager", artifact_cache: "ArtifactCache"
+        self, task_manager: "TaskManager", artifact_manager: "ArtifactManager"
     ):
-        super().__init__(task_manager, artifact_cache)
+        super().__init__(task_manager, artifact_manager)
         self._active_tasks: Dict[ViewKey, "Task"] = {}
         self._last_context_cache: Dict[ViewKey, RenderContext] = {}
 
@@ -176,7 +175,7 @@ class WorkPieceViewPipelineStage(PipelineStage):
             logger.debug(f"View for {key} is already being generated.")
             return
 
-        source_handle = self._artifact_cache.get_workpiece_handle(
+        source_handle = self._artifact_manager.get_workpiece_handle(
             step_uid, workpiece_uid
         )
         if not source_handle:
@@ -217,7 +216,9 @@ class WorkPieceViewPipelineStage(PipelineStage):
         if event_name == "view_artifact_created":
             try:
                 handle_dict = data["handle_dict"]
-                handle = create_handle_from_dict(handle_dict)
+                handle = self._artifact_manager.adopt_artifact(
+                    key, handle_dict
+                )
                 if not isinstance(handle, WorkPieceViewArtifactHandle):
                     raise TypeError("Expected WorkPieceViewArtifactHandle")
 
@@ -225,7 +226,6 @@ class WorkPieceViewPipelineStage(PipelineStage):
                     f"Adopting new view artifact: {handle.shm_name} "
                     f"for key {key}"
                 )
-                get_context().artifact_store.adopt(handle)
 
                 # Retain the handle to keep it alive while this stage
                 # holds a reference to it (borrower pattern)

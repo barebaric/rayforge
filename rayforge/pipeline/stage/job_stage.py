@@ -4,18 +4,17 @@ from typing import TYPE_CHECKING, Optional, Callable
 from blinker import Signal
 import multiprocessing as mp
 from asyncio.exceptions import CancelledError
-
-from .base import PipelineStage
-from ..artifact import JobArtifactHandle, create_handle_from_dict
-from .job_runner import JobDescription
 from ...context import get_context
+from ..artifact import JobArtifactHandle
+from .base import PipelineStage
+from .job_runner import JobDescription
 
 if TYPE_CHECKING:
     import threading
     from ...core.doc import Doc
-    from ...shared.tasker.task import Task
-    from ..artifact.cache import ArtifactCache
     from ...shared.tasker.manager import TaskManager
+    from ...shared.tasker.task import Task
+    from ..artifact.manager import ArtifactManager
 
 
 logger = logging.getLogger(__name__)
@@ -28,9 +27,9 @@ class JobPipelineStage(PipelineStage):
     """A pipeline stage that assembles the final job artifact."""
 
     def __init__(
-        self, task_manager: "TaskManager", artifact_cache: "ArtifactCache"
+        self, task_manager: "TaskManager", artifact_manager: "ArtifactManager"
     ):
-        super().__init__(task_manager, artifact_cache)
+        super().__init__(task_manager, artifact_manager)
         self._active_task: Optional["Task"] = None
         self._adoption_event: Optional["threading.Event"] = None
         self._retained_handles: list = []
@@ -96,7 +95,7 @@ class JobPipelineStage(PipelineStage):
             for step in layer.workflow.steps:
                 if not step.visible:
                     continue
-                handle = self._artifact_cache.get_step_ops_handle(step.uid)
+                handle = self._artifact_manager.get_step_ops_handle(step.uid)
                 if handle is None:
                     continue
                 step_handles[step.uid] = handle.to_dict()
@@ -109,7 +108,7 @@ class JobPipelineStage(PipelineStage):
         # produce a job with only a preamble and postscript.
         logger.info(f"Starting job generation with {len(step_handles)} steps.")
 
-        self._artifact_cache.invalidate_for_job()
+        self._artifact_manager.invalidate_for_job()
 
         # Create an adoption event for the handshake protocol
         manager = mp.Manager()
@@ -141,7 +140,7 @@ class JobPipelineStage(PipelineStage):
             error = None
 
             if task_status == "completed":
-                final_handle = self._artifact_cache.get_job_handle()
+                final_handle = self._artifact_manager.get_job_handle()
                 if final_handle:
                     logger.info("Job generation successful.")
                 else:
@@ -157,7 +156,7 @@ class JobPipelineStage(PipelineStage):
                 logger.error(
                     f"Job generation failed with status: {task_status}"
                 )
-                self._artifact_cache.invalidate_for_job()
+                self._artifact_manager.invalidate_for_job()
                 try:
                     task.result()
                 except CancelledError as e:
@@ -207,14 +206,13 @@ class JobPipelineStage(PipelineStage):
 
             try:
                 handle_dict = data["handle_dict"]
-                handle = create_handle_from_dict(handle_dict)
+                handle = self._artifact_manager.adopt_artifact(
+                    JobKey, handle_dict
+                )
                 if not isinstance(handle, JobArtifactHandle):
                     raise TypeError("Expected a JobArtifactHandle")
 
-                # Attempt to adopt the shared memory. If this fails, do not
-                # add the handle to the cache, as it's invalid.
-                get_context().artifact_store.adopt(handle)
-                self._artifact_cache.put_job_handle(handle)
+                self._artifact_manager.put_job_handle(handle)
 
                 # Signal the worker that we've adopted the artifact
                 if self._adoption_event is not None:

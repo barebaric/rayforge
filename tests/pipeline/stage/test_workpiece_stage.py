@@ -18,8 +18,8 @@ def mock_task_mgr():
 
 
 @pytest.fixture
-def mock_artifact_cache():
-    """Provides a mock ArtifactCache."""
+def mock_artifact_manager():
+    """Provides a mock ArtifactManager."""
     return MagicMock()
 
 
@@ -30,27 +30,27 @@ def mock_doc():
 
 
 class TestWorkPiecePipelineStage:
-    def test_instantiation(self, mock_task_mgr, mock_artifact_cache):
+    def test_instantiation(self, mock_task_mgr, mock_artifact_manager):
         """Test that WorkPiecePipelineStage can be created."""
-        stage = WorkPiecePipelineStage(mock_task_mgr, mock_artifact_cache)
+        stage = WorkPiecePipelineStage(mock_task_mgr, mock_artifact_manager)
         assert isinstance(stage, PipelineStage)
         assert stage._task_manager is mock_task_mgr
-        assert stage._artifact_cache is mock_artifact_cache
+        assert stage._artifact_manager is mock_artifact_manager
 
     def test_interface_compliance(
-        self, mock_task_mgr, mock_artifact_cache, mock_doc
+        self, mock_task_mgr, mock_artifact_manager, mock_doc
     ):
         """Test that the stage implements all required abstract methods."""
-        stage = WorkPiecePipelineStage(mock_task_mgr, mock_artifact_cache)
+        stage = WorkPiecePipelineStage(mock_task_mgr, mock_artifact_manager)
         # These should not raise NotImplementedError
         stage.reconcile(mock_doc)
         stage.shutdown()
 
     def test_visual_chunk_available_signal_emitted_on_chunk_ready(
-        self, mock_task_mgr, mock_artifact_cache
+        self, mock_task_mgr, mock_artifact_manager
     ):
         """Test that visual_chunk_available signal is emitted correctly."""
-        stage = WorkPiecePipelineStage(mock_task_mgr, mock_artifact_cache)
+        stage = WorkPiecePipelineStage(mock_task_mgr, mock_artifact_manager)
 
         # Track signal emissions
         received_signals = []
@@ -97,6 +97,9 @@ class TestWorkPiecePipelineStage:
 
             # Set up the generation ID map to make the event valid
             stage._generation_id_map[key] = 1
+
+            # Configure mock to return the actual handle
+            mock_artifact_manager.adopt_artifact.return_value = handle
 
             # Simulate receiving a visual_chunk_ready event
             event_data = {

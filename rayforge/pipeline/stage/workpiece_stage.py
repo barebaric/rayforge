@@ -12,7 +12,6 @@ from ...core.ops import Ops, ScanLinePowerCommand
 from ..artifact import (
     WorkPieceArtifact,
     WorkPieceArtifactHandle,
-    create_handle_from_dict,
 )
 from .workpiece_runner import make_workpiece_artifact_in_subprocess
 
@@ -24,7 +23,7 @@ if TYPE_CHECKING:
     from ...core.workpiece import WorkPiece
     from ...shared.tasker.manager import TaskManager
     from ...shared.tasker.task import Task
-    from ..artifact.cache import ArtifactCache
+    from ..artifact.manager import ArtifactManager
 
 logger = logging.getLogger(__name__)
 
@@ -37,9 +36,9 @@ class WorkPiecePipelineStage(PipelineStage):
     """
 
     def __init__(
-        self, task_manager: "TaskManager", artifact_cache: "ArtifactCache"
+        self, task_manager: "TaskManager", artifact_manager: "ArtifactManager"
     ):
-        super().__init__(task_manager, artifact_cache)
+        super().__init__(task_manager, artifact_manager)
         self._generation_id_map: Dict[WorkpieceKey, int] = {}
         self._active_tasks: Dict[WorkpieceKey, "Task"] = {}
         self._adoption_events: Dict[WorkpieceKey, "threading.Event"] = {}
@@ -88,7 +87,7 @@ class WorkPiecePipelineStage(PipelineStage):
             for step in layer.workflow.steps
             for workpiece in layer.all_workpieces
         }
-        cached_pairs = self._artifact_cache.get_all_workpiece_keys()
+        cached_pairs = self._artifact_manager.get_all_workpiece_keys()
 
         # Clean up artifacts for (step, workpiece) pairs that no longer exist
         for s_uid, w_uid in cached_pairs - all_current_pairs:
@@ -110,7 +109,7 @@ class WorkPiecePipelineStage(PipelineStage):
         Checks if the artifact for a (step, workpiece) pair is missing
         or invalid.
         """
-        handle = self._artifact_cache.get_workpiece_handle(
+        handle = self._artifact_manager.get_workpiece_handle(
             step.uid, workpiece.uid
         )
         if handle is None:
@@ -138,7 +137,7 @@ class WorkPiecePipelineStage(PipelineStage):
         logger.debug(f"Invalidating workpiece artifacts for step '{step_uid}'")
         keys_to_clean = [
             k
-            for k in self._artifact_cache.get_all_workpiece_keys()
+            for k in self._artifact_manager.get_all_workpiece_keys()
             if k[0] == step_uid
         ]
         for key in keys_to_clean:
@@ -149,7 +148,7 @@ class WorkPiecePipelineStage(PipelineStage):
         logger.debug(f"Invalidating artifacts for workpiece '{workpiece_uid}'")
         keys_to_clean = [
             k
-            for k in self._artifact_cache.get_all_workpiece_keys()
+            for k in self._artifact_manager.get_all_workpiece_keys()
             if k[1] == workpiece_uid
         ]
         for key in keys_to_clean:
@@ -181,7 +180,7 @@ class WorkPiecePipelineStage(PipelineStage):
         # self._generation_id_map.pop(key, None)
 
         self._cleanup_task(key)
-        self._artifact_cache.invalidate_for_workpiece(s_uid, w_uid)
+        self._artifact_manager.invalidate_for_workpiece(s_uid, w_uid)
 
     def _launch_task(self, step: "Step", workpiece: "WorkPiece"):
         """Starts the asynchronous task to generate operations."""
@@ -268,22 +267,25 @@ class WorkPiecePipelineStage(PipelineStage):
                 "Cleaning up orphaned artifact."
             )
             try:
-                stale_handle = create_handle_from_dict(handle_dict)
-                get_context().artifact_store.adopt(stale_handle)
+                stale_handle = self._artifact_manager.adopt_artifact(
+                    (s_uid, w_uid), handle_dict
+                )
                 get_context().artifact_store.release(stale_handle)
             except Exception as e:
                 logger.error(f"Error cleaning up stale artifact: {e}")
             return
 
         try:
-            handle = create_handle_from_dict(handle_dict)
-            # Adopt the memory block as soon as we know about it.
-            get_context().artifact_store.adopt(handle)
+            handle = self._artifact_manager.adopt_artifact(
+                (s_uid, w_uid), handle_dict
+            )
 
             if event_name == "artifact_created":
                 if not isinstance(handle, WorkPieceArtifactHandle):
                     raise TypeError("Expected a WorkPieceArtifactHandle")
-                self._artifact_cache.put_workpiece_handle(s_uid, w_uid, handle)
+                self._artifact_manager.put_workpiece_handle(
+                    s_uid, w_uid, handle
+                )
 
                 # Signal the worker that we've adopted the artifact
                 adoption_event = self._adoption_events.get(key)
@@ -388,7 +390,7 @@ class WorkPiecePipelineStage(PipelineStage):
                     self._cleanup_entry(key)
                     return
 
-                handle = self._artifact_cache.get_workpiece_handle(
+                handle = self._artifact_manager.get_workpiece_handle(
                     s_uid, w_uid
                 )
                 if handle and not handle.is_scalable:
@@ -436,7 +438,7 @@ class WorkPiecePipelineStage(PipelineStage):
         workpiece_size: Tuple[float, float],
     ) -> Optional[WorkPieceArtifact]:
         """Retrieves the complete, validated artifact from the cache."""
-        handle = self._artifact_cache.get_workpiece_handle(
+        handle = self._artifact_manager.get_workpiece_handle(
             step_uid, workpiece_uid
         )
         if handle is None:

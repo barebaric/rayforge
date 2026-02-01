@@ -3,9 +3,9 @@ from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from ..artifact.cache import ArtifactCache
-    from ...shared.tasker.manager import TaskManager
     from ...core.doc import Doc
+    from ...shared.tasker.manager import TaskManager
+    from ..artifact.manager import ArtifactManager
 
 
 class PipelineStage(ABC):
@@ -14,10 +14,10 @@ class PipelineStage(ABC):
     """
 
     def __init__(
-        self, task_manager: "TaskManager", artifact_cache: "ArtifactCache"
+        self, task_manager: "TaskManager", artifact_manager: "ArtifactManager"
     ):
         self._task_manager = task_manager
-        self._artifact_cache = artifact_cache
+        self._artifact_manager = artifact_manager
 
     @property
     def is_busy(self) -> bool:

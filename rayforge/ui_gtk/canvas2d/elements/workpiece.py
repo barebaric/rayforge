@@ -252,17 +252,8 @@ class WorkPieceElement(CanvasElement):
                 unchanged.
         """
         if step_uid is None:
-            logger.debug(
-                f"Requesting view render for ALL steps of workpiece "
-                f"'{self.data.name}'"
-            )
             self._pending_view_update_all = True
         else:
-            cached = step_uid in self._progressive_view_surfaces
-            logger.debug(
-                f"Requesting view render for step '{step_uid}' of workpiece "
-                f"'{self.data.name}' (cached={cached})"
-            )
             self._pending_view_update_steps.add(step_uid)
 
         # Store the force flag for the callback
@@ -292,10 +283,6 @@ class WorkPieceElement(CanvasElement):
             self._pending_view_update_all = False
             self._pending_view_update_steps.clear()
             return False
-
-        logger.debug(
-            f"Executing view render request for workpiece '{self.data.name}'"
-        )
 
         self._resolve_colors_if_needed()
         if not self._color_set:
@@ -338,10 +325,6 @@ class WorkPieceElement(CanvasElement):
         # Get the force flag that was stored when the request was made
         force = getattr(self, "_pending_view_force", False)
 
-        logger.debug(
-            f"Requesting view render for {len(steps_to_process)} steps: "
-            f"{steps_to_process}"
-        )
         for uid in steps_to_process:
             self.pipeline.request_view_render(
                 uid, self.data.uid, context, force=force
@@ -403,14 +386,6 @@ class WorkPieceElement(CanvasElement):
                 stride,
             )
 
-            # Check if surface has any non-transparent content
-            alpha_channel = buffer_ref[:, :, 3]
-            has_content = np.any(alpha_channel > 0)
-            logger.debug(
-                f"Caching new view artifact for step '{step_uid}': "
-                f"surface={w}x{h}, has_content={has_content}, "
-                f"non_translucent_pixels={np.sum(alpha_channel > 0)}"
-            )
             # Store surface, bbox, handle, AND the buffer reference
             self._progressive_view_surfaces[step_uid] = (
                 surface,
@@ -452,10 +427,6 @@ class WorkPieceElement(CanvasElement):
         if workpiece_uid != self.data.uid or not self.canvas:
             return
 
-        logger.debug(
-            f"_on_view_artifact_updated called for step '{step_uid}': "
-            f"handle={handle.shm_name}"
-        )
         self._process_view_artifact(step_uid, handle)
 
     def _on_workpiece_artifact_adopted(
@@ -670,9 +641,6 @@ class WorkPieceElement(CanvasElement):
         """
         if not self.canvas:
             return
-        logger.debug(
-            f"Transform changed for '{workpiece.name}', updating view."
-        )
 
         # Check if the size has changed significantly since the last sync.
         # We cannot rely on comparing self.transform vs workpiece.matrix here,
@@ -711,18 +679,13 @@ class WorkPieceElement(CanvasElement):
         """Handler for when ops generation for a step begins."""
         if workpiece is not self.data:
             return
-        logger.debug(
-            f"START _on_ops_generation_starting for step '{sender.uid}'"
-        )
+
         step_uid = sender.uid
         self._ops_generation_ids[step_uid] = (
             generation_id  # Sets the ID when generation starts.
         )
         self.clear_ops_surface(step_uid)
         self._steps_with_progressive_render.discard(step_uid)
-        logger.debug(
-            f"END _on_ops_generation_starting for step '{sender.uid}'"
-        )
 
     def _on_ops_generation_finished(
         self, sender: Step, workpiece: WorkPiece, generation_id: int, **kwargs
@@ -734,9 +697,7 @@ class WorkPieceElement(CanvasElement):
         """
         if workpiece is not self.data:
             return
-        logger.debug(
-            f"START _on_ops_generation_finished for step '{sender.uid}'"
-        )
+
         artifact = self.pipeline.get_artifact(sender, workpiece)
         GLib.idle_add(
             self._on_ops_generation_finished_main_thread,
@@ -761,10 +722,7 @@ class WorkPieceElement(CanvasElement):
         if workpiece is not self.data:
             return
         step = sender
-        logger.debug(
-            f"Ops generation finished for step '{step.uid}'. "
-            f"Scheduling async recording of drawing commands."
-        )
+
         self._ops_generation_ids[step.uid] = generation_id
 
         # Fetch and cache the final artifact, making it available to all paths.
@@ -781,10 +739,6 @@ class WorkPieceElement(CanvasElement):
 
         if self.canvas:
             self.canvas.queue_draw()
-        logger.debug(
-            f"END _on_ops_generation_finished_main_thread for "
-            f"step '{sender.uid}'"
-        )
 
     def _draw_vertices_to_context(
         self,
@@ -905,36 +859,15 @@ class WorkPieceElement(CanvasElement):
         if world_w < 1e-9 or world_h < 1e-9:
             return
 
-        count = len(self._progressive_view_surfaces)
-        logger.debug(
-            f"Drawing progressive views: {count} cached for workpiece "
-            f"'{self.data.name}'"
-        )
         for step_uid, surface_tuple in self._progressive_view_surfaces.items():
-            logger.debug(
-                f"Processing step '{step_uid}': "
-                f"visible={self._ops_visibility.get(step_uid, True)}, "
-                f"has_tuple={surface_tuple is not None}"
-            )
             if (
                 not self._ops_visibility.get(step_uid, True)
                 or not surface_tuple
             ):
-                logger.debug(
-                    f"Skipping step '{step_uid}': "
-                    f"visible={self._ops_visibility.get(step_uid, True)}, "
-                    f"has_tuple={surface_tuple is not None}"
-                )
                 continue
 
             surface, bbox_mm, _, _ = surface_tuple
             view_x, view_y, view_w, view_h = cast(Tuple[float, ...], bbox_mm)
-
-            logger.debug(
-                f"Step '{step_uid}': bbox=({view_x:.3f}, {view_y:.3f}, "
-                f"{view_w:.3f}, {view_h:.3f}), "
-                f"surface={surface.get_width()}x{surface.get_height()}px"
-            )
 
             if view_w < 1e-9 or view_h < 1e-9:
                 logger.debug(f"Skipping step '{step_uid}': bbox too small")
@@ -998,7 +931,6 @@ class WorkPieceElement(CanvasElement):
 
             ctx.set_source_surface(surface, 0, 0)
             ctx.paint()
-            logger.debug(f"Painted progressive view for step '{step_uid}'")
 
             ctx.restore()
 
@@ -1035,17 +967,11 @@ class WorkPieceElement(CanvasElement):
         """Triggers a re-render of all applicable ops for this workpiece."""
         if not self.data.layer or not self.data.layer.workflow:
             return
-        logger.debug(
-            f"Triggering ops rerender for '{self.data.name}'. "
-            f"Progressive rendering will handle display."
-        )
+
+        logger.debug(f"Triggering ops rerender for '{self.data.name}'.")
         applicable_steps = self.data.layer.workflow.steps
         for step in applicable_steps:
-            gen_id = self._ops_generation_ids.get(step.uid, 0)
-            logger.debug(
-                f"Step '{step.uid}': Progressive rendering will handle "
-                f"display with gen_id={gen_id}."
-            )
+            self._ops_generation_ids.get(step.uid, 0)
 
     def set_tabs_visible_override(self, visible: bool):
         """Sets the global visibility override for tab handles."""

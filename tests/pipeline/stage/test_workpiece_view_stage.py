@@ -20,10 +20,10 @@ class TestWorkPieceViewStage(unittest.TestCase):
     """Test suite for the WorkPieceViewPipelineStage."""
 
     def setUp(self):
-        self.mock_artifact_cache = MagicMock()
+        self.mock_artifact_manager = MagicMock()
         self.mock_task_manager = MagicMock()
         self.stage = WorkPieceViewPipelineStage(
-            self.mock_task_manager, self.mock_artifact_cache
+            self.mock_task_manager, self.mock_artifact_manager
         )
 
     def test_stage_requests_vector_render(self):
@@ -41,7 +41,7 @@ class TestWorkPieceViewStage(unittest.TestCase):
             source_dimensions=(10, 10),
             generation_size=(10, 10),
         )
-        self.mock_artifact_cache.get_workpiece_handle.return_value = (
+        self.mock_artifact_manager.get_workpiece_handle.return_value = (
             source_handle
         )
         context = RenderContext(
@@ -80,7 +80,7 @@ class TestWorkPieceViewStage(unittest.TestCase):
             source_dimensions=(10, 10),
             generation_size=(10, 10),
         )
-        self.mock_artifact_cache.get_workpiece_handle.return_value = (
+        self.mock_artifact_manager.get_workpiece_handle.return_value = (
             source_handle
         )
         context = RenderContext((10.0, 10.0), False, 0, {})
@@ -114,12 +114,19 @@ class TestWorkPieceViewStage(unittest.TestCase):
             "handle_class_name": "WorkPieceViewArtifactHandle",
             "artifact_type_name": "WorkPieceViewArtifact",
         }
+        view_handle = WorkPieceViewArtifactHandle(
+            shm_name="test",
+            bbox_mm=(0, 0, 1, 1),
+            handle_class_name="WorkPieceViewArtifactHandle",
+            artifact_type_name="WorkPieceViewArtifact",
+        )
+        self.mock_artifact_manager.adopt_artifact.return_value = view_handle
         when_event_cb(
             mock_task, "view_artifact_created", {"handle_dict": handle_dict}
         )
 
         # Assert 1: `adopt` is called and signals fire
-        mock_get_context.return_value.artifact_store.adopt.assert_called_once()
+        self.mock_artifact_manager.adopt_artifact.assert_called_once()
         created_handler.assert_called_once()
         ready_handler.assert_called_once()
         self.assertIsInstance(
@@ -166,7 +173,7 @@ class TestWorkPieceViewStage(unittest.TestCase):
             source_dimensions=(10, 10),
             generation_size=(10, 10),
         )
-        self.mock_artifact_cache.get_workpiece_handle.return_value = (
+        self.mock_artifact_manager.get_workpiece_handle.return_value = (
             source_handle
         )
         context = RenderContext((10.0, 10.0), False, 0, {})
@@ -182,7 +189,7 @@ class TestWorkPieceViewStage(unittest.TestCase):
         mock_task.key = key
 
         # Mock adopt to raise an exception
-        mock_get_context.return_value.artifact_store.adopt.side_effect = (
+        self.mock_artifact_manager.adopt_artifact.side_effect = (
             Exception("Adoption failed")
         )
 
@@ -222,7 +229,7 @@ class TestWorkPieceViewStage(unittest.TestCase):
             source_dimensions=(10, 10),
             generation_size=(10, 10),
         )
-        self.mock_artifact_cache.get_workpiece_handle.return_value = (
+        self.mock_artifact_manager.get_workpiece_handle.return_value = (
             source_handle
         )
         context = RenderContext((10.0, 10.0), False, 0, {})
@@ -250,6 +257,13 @@ class TestWorkPieceViewStage(unittest.TestCase):
             "handle_class_name": "WorkPieceViewArtifactHandle",
             "artifact_type_name": "WorkPieceViewArtifact",
         }
+        view_handle = WorkPieceViewArtifactHandle(
+            shm_name="test_view",
+            bbox_mm=(0, 0, 1, 1),
+            handle_class_name="WorkPieceViewArtifactHandle",
+            artifact_type_name="WorkPieceViewArtifact",
+        )
+        self.mock_artifact_manager.adopt_artifact.return_value = view_handle
         when_event_cb(
             mock_task, "view_artifact_created", {"handle_dict": handle_dict}
         )
@@ -289,7 +303,7 @@ class TestWorkPieceViewStage(unittest.TestCase):
             source_dimensions=(10, 10),
             generation_size=(10, 10),
         )
-        self.mock_artifact_cache.get_workpiece_handle.return_value = (
+        self.mock_artifact_manager.get_workpiece_handle.return_value = (
             source_handle
         )
         context = RenderContext((10.0, 10.0), False, 0, {})
@@ -317,6 +331,13 @@ class TestWorkPieceViewStage(unittest.TestCase):
             "handle_class_name": "WorkPieceViewArtifactHandle",
             "artifact_type_name": "WorkPieceViewArtifact",
         }
+        view_handle = WorkPieceViewArtifactHandle(
+            shm_name="test_progressive",
+            bbox_mm=(0, 0, 1, 1),
+            handle_class_name="WorkPieceViewArtifactHandle",
+            artifact_type_name="WorkPieceViewArtifact",
+        )
+        self.mock_artifact_manager.adopt_artifact.return_value = view_handle
         when_event_cb(
             mock_task,
             "view_artifact_created",
@@ -393,7 +414,7 @@ class TestWorkPieceViewStage(unittest.TestCase):
             source_dimensions=(10, 10),
             generation_size=(10, 10),
         )
-        self.mock_artifact_cache.get_workpiece_handle.return_value = (
+        self.mock_artifact_manager.get_workpiece_handle.return_value = (
             source_handle
         )
         context = RenderContext((10.0, 10.0), False, 0, {})
@@ -415,6 +436,13 @@ class TestWorkPieceViewStage(unittest.TestCase):
             "handle_class_name": "WorkPieceViewArtifactHandle",
             "artifact_type_name": "WorkPieceViewArtifact",
         }
+        view_handle = WorkPieceViewArtifactHandle(
+            shm_name="test_live_render",
+            bbox_mm=(0, 0, 1, 1),
+            handle_class_name="WorkPieceViewArtifactHandle",
+            artifact_type_name="WorkPieceViewArtifact",
+        )
+        self.mock_artifact_manager.adopt_artifact.return_value = view_handle
         when_event_cb(
             mock_task, "view_artifact_created", {"handle_dict": handle_dict}
         )
@@ -446,7 +474,7 @@ class TestWorkPieceViewStage(unittest.TestCase):
             source_dimensions=(10, 10),
             generation_size=(10, 10),
         )
-        self.mock_artifact_cache.get_workpiece_handle.return_value = (
+        self.mock_artifact_manager.get_workpiece_handle.return_value = (
             source_handle
         )
         context = RenderContext((10.0, 10.0), False, 0, {})
@@ -468,6 +496,13 @@ class TestWorkPieceViewStage(unittest.TestCase):
             "handle_class_name": "WorkPieceViewArtifactHandle",
             "artifact_type_name": "WorkPieceViewArtifact",
         }
+        view_handle = WorkPieceViewArtifactHandle(
+            shm_name="test_throttle",
+            bbox_mm=(0, 0, 1, 1),
+            handle_class_name="WorkPieceViewArtifactHandle",
+            artifact_type_name="WorkPieceViewArtifact",
+        )
+        self.mock_artifact_manager.adopt_artifact.return_value = view_handle
         when_event_cb(
             mock_task, "view_artifact_created", {"handle_dict": handle_dict}
         )
@@ -550,7 +585,7 @@ class TestWorkPieceViewStage(unittest.TestCase):
             source_dimensions=(10.0, 10.0),
             generation_size=(10.0, 10.0),
         )
-        self.mock_artifact_cache.get_workpiece_handle.return_value = (
+        self.mock_artifact_manager.get_workpiece_handle.return_value = (
             source_handle
         )
         context = RenderContext((10.0, 10.0), False, 0, {})
@@ -588,6 +623,13 @@ class TestWorkPieceViewStage(unittest.TestCase):
             "handle_class_name": "WorkPieceViewArtifactHandle",
             "artifact_type_name": "WorkPieceViewArtifact",
         }
+        view_handle = WorkPieceViewArtifactHandle(
+            shm_name="view_shm",
+            bbox_mm=(0, 0, 10.0, 10.0),
+            handle_class_name="WorkPieceViewArtifactHandle",
+            artifact_type_name="WorkPieceViewArtifact",
+        )
+        self.mock_artifact_manager.adopt_artifact.return_value = view_handle
         when_event_cb(
             mock_task, "view_artifact_created", {"handle_dict": handle_dict}
         )
