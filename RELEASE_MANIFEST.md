@@ -22,7 +22,6 @@ When instructed to "Prepare a release", the agent executes the following pipelin
 
 Generate the following files in `media/[release]/drafts/`:
 
-- `description.txt` - Brief release summary
 - `youtube.txt` - Text for the YouTube release video description
 - `reddit_post.md` - Formatted post for Reddit, following the tone of the previous Reddit posts
 - `patreon_post.md` - Formatted post for Patreon, following the tone of the previous Patreon posts
@@ -30,6 +29,9 @@ Generate the following files in `media/[release]/drafts/`:
 - Update the changelog in the appstream file (`data/org.rayforge.rayforge.metainfo.xml`)
 - Generate five release thumbnails using the MCP tool. Something like "make a YouTube thumbnail for Rayforge 1.1 with ... [something creative]".
   Put the thumbnails into media/[release]/thumbs/
+- Depending on the changes, check that the user documentation on the website is up to date. Check the docs by reading the application code.
+  Update the documentation accordingly, but keep it user-centric - this is not intended as developer documentation.
+- Depending on the changes listed in the changelog, re-create relevant screenshots for the docs using the `scripts/media/take_screenshot.py` tool.
 
 In the text files, use a maximum line length of 100 chars.
 Ensure you use proper links for discord and patreon and the homepage and github, not placeholders.
@@ -47,6 +49,14 @@ pixi run process-audio media/[release]/raw/*.mp4
 ```
 
 Output: `media/[release]/processed/` with processed video files
+
+Remove silent pauses from the processed videos:
+
+```bash
+pixi run remove-silence media/[release]/processed/*.mp4
+```
+
+Output: `media/[release]/processed/` with .nosilence files
 
 ### Phase 5: Blender Project Generation
 
@@ -66,6 +76,6 @@ The script:
 
 - Uses the blender video from the previous release as a template.
 - Adds the thumbnail as the first frame.
-- Adds video and audio clips to timeline
+- Adds video and audio clips to the timeline
 
 Output: `media/[release]/draft_edit.blend`
