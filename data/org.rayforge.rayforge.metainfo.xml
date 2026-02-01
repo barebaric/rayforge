@@ -66,6 +66,68 @@
   </screenshots>
 
   <releases>
+    <release version="1.0" date="2026-02-01">
+      <description>
+        <p>It's Rayforge's Birthday Release!</p>
+        <p>Version 1.0 brings some exciting features and enhancements to the
+        Rayforge experience:</p>
+        <ul>
+          <li><strong>Major Additions:</strong>
+            <ul>
+              <li>Full project save/load support</li>
+              <li>Sketcher now supports text, with advanced options</li>
+              <li>Jog dialog and log view have been merged into a new bottom
+              panel</li>
+              <li>Aspect ratio constraints now available in the sketcher</li>
+              <li>Engraving steps can now be inverted</li>
+              <li>Raster engraver gains support for setting engraving angle in
+              degrees</li>
+              <li>Recent files menu added for easier access to your last
+              projects</li>
+              <li>Installers for all platforms now register .ryp (project) and
+              .rfs (sketch) file extensions</li>
+            </ul>
+          </li>
+          <li><strong>Changes:</strong>
+            <ul>
+              <li>CLI update: `--direct-vector` renamed to `--vector`; added
+              `--trace` to enforce trace mode (vector import is now default)</li>
+              <li>Import errors are now collected and shown in the import
+              dialog</li>
+              <li>Importers rewritten for better testability and stability</li>
+              <li>Sketcher solver now biases points towards their previous
+              position, improving dragging stability</li>
+              <li>Simulation mode keyboard shortcut changed to F11 to avoid
+              conflict with "Save as..."</li>
+              <li>Improved G-code view and control panel state retention across
+              sessions</li>
+              <li>Precision of power sliders and display digits has been
+              increased</li>
+              <li>Import dialog now displays number of vectors per layer</li>
+              <li>Error message added when attempting to delete a dialect in
+              use</li>
+              <li>Chinese translations added to improve localization</li>
+            </ul>
+          </li>
+          <li><strong>Fixed:</strong>
+            <ul>
+              <li>Traceback when adding a constraint in the sketcher
+              (Windows only)</li>
+              <li>Potential memory leak and stale operations display</li>
+              <li>Improved multi-layer DXF import handling</li>
+              <li>Numerous alignment bugs in importers</li>
+              <li>Traceback when using invert switch in the import dialog</li>
+              <li>Sketches not centered on the surface after import</li>
+            </ul>
+          </li>
+          <li><strong>Documentation:</strong>
+            <ul>
+              <li>Updated importer developer documentation</li>
+            </ul>
+          </li>
+        </ul>
+      </description>
+    </release>
     <release version="0.28.4" date="2026-01-22">
       <description>
         <p>Bug fix release</p>

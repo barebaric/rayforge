@@ -9,147 +9,144 @@ Customize Rayforge to match your workflow and preferences.
 
 ## General Settings
 
-### Interface
+### Appearance
 
 - **Theme**: Choose between System, Light, or Dark theme
-- **Language**: Select interface language (English, Portuguese, Spanish, German)
-- **Window Behavior**: Restore window size and position on startup
 
 ### Units
 
-- **Measurement Units**: Millimeters or Inches
-- **Speed Units**: mm/min, mm/sec, or inches/min
-- **Display Precision**: Number of decimal places
+Configure display units for various values throughout the application:
 
-### Canvas
+- **Length**: Millimeters, inches, and other length units
+- **Speed**: mm/min, mm/sec, inches/min, and other speed units
+- **Acceleration**: mm/s² and other acceleration units
 
-- **Grid**:
-  - Show/hide grid
-  - Grid spacing
-  - Grid color and opacity
+### Startup
 
-- **Rulers**:
-  - Show/hide rulers
-  - Ruler units (inherit from general units)
+Configure what happens when you start the application. Files specified on
+the command line will always override these settings.
 
-- **Background Color**: Canvas background color
+- **Startup behavior**:
+  - Open nothing
+  - Open last project
+  - Open specific project
+- **Project path**: Path to the specific project to open on startup
+  (only visible when "Open specific project" is selected)
 
-### Snapping
+## Machines
 
-- **Snap to Grid**: Enable/disable grid snapping
-- **Snap Distance**: Distance threshold for snapping (pixels)
-- **Snap to Objects**: Enable edge and center point snapping
+Manage your machine configurations. See [Machine Setup](../machine/index.md)
+for detailed information on machine configuration.
 
-## Machine Settings
+- **Configured Machines**: Add, edit, or remove machines from your list
+- **Active Machine**: The machine currently selected for use
+- **Machine Status**: Visual indicators show if a machine has an invalid
+  configuration
 
-Configure machine profiles and hardware. See [Machine Setup](../machine/index.md) for detailed information.
+### Machine Settings Dialog
 
-- **Machine Profiles**: Create and manage multiple machine configurations
-- **Default Profile**: Select which profile loads on startup
+Each machine has its own detailed settings dialog with the following pages:
 
-## Recipes and Presets
+#### General
 
-Rayforge's recipe system allows you to create and manage reusable settings presets.
-See [Recipes](../features/recipes.md) for comprehensive coverage of the recipe system.
+- **Machine Name**: Display name for the machine
+- **Driver Settings**: Select and configure the machine driver
+- **Startup Behavior**:
+  - Home On Start: Send a homing command when the application starts
+  - Clear Alarm On Connect: Automatically send an unlock command if
+    connected in an ALARM state
+- **Axes & Dimensions**:
+  - Width: Width of the machine work area in mm
+  - Height: Height of the machine work area in mm
+  - X Offset: Offset to add to each gcode command on x axis
+  - Y Offset: Offset to add to each gcode command on y axis
+  - Coordinate Origin: The physical corner where coordinates are zero
+    after homing (Bottom Left, Top Left, Top Right, Bottom Right)
+
+#### Advanced
+
+- **Output Settings**:
+  - G-Code Dialect: Select the G-code flavor for your machine
+  - G-code Precision: Number of decimal places for coordinates
+    (e.g., 3 for mm, 6 for µm)
+  - Support Arcs: Generate G2/G3 arc commands for smoother paths
+  - Arc Tolerance: Maximum deviation from original path when fitting arcs
+    (in mm). Lower values drastically increase processing time and job size
+- **Hooks**: Configure custom hooks for machine events
+- **Macros**: Manage G-code macros for quick execution
+- **Dialects**: Manage available G-code dialects
+
+#### Device
+
+Read or apply settings directly to the connected device.
+
+- **Read from Device**: Fetch current settings from the machine
+- **Device Settings**: Edit device-specific configuration parameters
+
+!!! warning "Device Settings"
+    Editing these values can be dangerous and may render your machine
+    inoperable! The device may restart or temporarily disconnect after a
+    setting is changed.
+
+#### Laser
+
+- **Laser Heads**: Manage multiple laser heads with their properties:
+  - Tool number
+  - Maximum power
+  - Spot size (X and Y dimensions)
+
+#### Camera
+
+- **Cameras**: Configure cameras for machine monitoring and alignment
+
+#### Machine Hours
+
+Track and manage machine usage:
+
+- **Counters**: Resettable counters for tracking various machine metrics
+- **Reset Counter**: Reset accumulated hours to zero
+- **Edit Counter**: Modify counter settings including notification thresholds
+- **Remove Counter**: Delete a counter from the list
+
+## Materials
+
+Manage your material libraries and materials.
+
+- **Material Libraries**: Create and manage collections of materials
+- **Materials**: View and edit materials in the selected library
+
+See [Material Libraries](../features/material-libraries.md) for comprehensive
+coverage of the material system.
+
+## Recipes
+
+Manage your saved recipes for different materials and processes.
 
 - **Recipe Library**: Access and manage your recipe collection
-- **Material-Based Matching**: Automatic recipe suggestions based on stock material
-- **Step-Level Application**: Apply and fine-tune recipes for individual operations
+- **Material-Based Matching**: Automatic recipe suggestions based on stock
+  material
+- **Step-Level Application**: Apply and fine-tune recipes for individual
+  operations
 
-## Performance
+See [Recipes](../features/recipes.md) for comprehensive coverage of the
+recipe system.
 
-### Rendering
+## Packages
 
-- **Hardware Acceleration**: Enable/disable GPU acceleration
-- **Anti-aliasing**: Smooth line rendering (may impact performance)
-- **Maximum Path Points**: Limit for complex path rendering
+Manage installed packages and plugins.
 
-### G-code Generation
-
-- **Arc Interpolation**: Enable arc (G2/G3) commands vs. line segments
-- **Decimal Places**: Precision for coordinates in G-code
-- **Optimize Path Order**: Reduce travel time by reordering paths
-
-### Preview
-
-- **3D Preview Quality**: Low, Medium, High
-- **Auto-open Preview**: Automatically show 3D preview after G-code generation
-- **Preview Update Frequency**: Real-time vs. manual update
-
-## File Handling
-
-### Import
-
-- **Default DPI**: For raster images without embedded DPI information
-- **SVG Import**:
-  - Flatten layers
-  - Convert text to paths
-  - Import hidden layers
-
-### Export
-
-- **G-code File Encoding**: UTF-8, ASCII
-- **Line Endings**: LF (Linux/Mac) or CRLF (Windows)
-- **Add Comments**: Include operation information in G-code
-
-### Autosave
-
-- **Enable Autosave**: Automatically save project at intervals
-- **Autosave Interval**: Time between autosaves (minutes)
-- **Autosave Location**: Directory for autosave files
+- **Installed Packages**: View all installed packages
+- **Install**: Add new packages from the registry
+- **Update**: Keep packages up to date
+- **Remove**: Uninstall packages that are no longer needed
 
 ## Keyboard Shortcuts
 
-Customize keyboard shortcuts for common actions. See [Keyboard Shortcuts](../reference/shortcuts.md) for the complete list.
+Customize keyboard shortcuts for common actions. See
+[Keyboard Shortcuts](../reference/shortcuts.md) for the complete list.
 
 - **Reset to Defaults**: Restore all shortcuts to default bindings
 - **Import/Export**: Share shortcut configurations
-
-## Advanced
-
-### Logging
-
-- **Log Level**: Debug, Info, Warning, Error
-- **Log Location**: View and change log file directory
-- **Enable Crash Reports**: Help improve Rayforge by sending anonymous crash reports
-
-### Experimental Features
-
-Enable features in development:
-
-- **New Feature Flags**: Access cutting-edge features
-- **Beta Testing**: Opt-in to test new functionality
-
-!!! warning "Experimental Features"
-    Experimental features may be unstable or change without notice. Use with caution in production environments.
-
-### Developer Tools
-
-- **Show Developer Menu**: Access debugging and profiling tools
-- **Enable Debug Output**: Verbose console logging
-- **Performance Metrics**: Display FPS and memory usage
-
-## Resetting Settings
-
-### Reset to Defaults
-
-Restore all settings to default values:
-
-1. Open Preferences
-2. Click "Reset All Settings"
-3. Confirm the action
-4. Restart Rayforge
-
-!!! caution
-    This will reset all preferences, including machine profiles. Export your machine profiles first if you want to keep them.
-
-### Reset Specific Sections
-
-Reset only certain settings:
-
-- **Reset Window Layout**: Restore default panel positions
-- **Reset Keyboard Shortcuts**: Restore default key bindings
-- **Reset Theme**: Return to system theme
 
 ---
 
