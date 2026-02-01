@@ -1992,7 +1992,9 @@ class MainWindow(Adw.ApplicationWindow):
 
         # Update sensitivity for 3D view actions
         is_3d_view_active = self.view_stack.get_visible_child_name() == "3d"
-        can_show_3d = canvas3d_initialized and not task_mgr.has_tasks()
+        can_show_3d = is_3d_view_active or (
+            canvas3d_initialized and not task_mgr.has_tasks()
+        )
         am.get_action("show_3d_view").set_enabled(can_show_3d)
         am.get_action("view_top").set_enabled(is_3d_view_active)
         am.get_action("view_front").set_enabled(is_3d_view_active)
