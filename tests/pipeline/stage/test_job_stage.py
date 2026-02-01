@@ -67,17 +67,26 @@ def real_doc_with_step(context_initializer, test_machine_and_config):
 
 @pytest.mark.usefixtures("context_initializer")
 class TestJobPipelineStage:
-    def test_instantiation(self, mock_task_mgr, artifact_manager):
+    def test_instantiation(
+        self, mock_task_mgr, artifact_manager, test_machine_and_config
+    ):
         """Test that JobPipelineStage can be created."""
-        stage = JobPipelineStage(mock_task_mgr, artifact_manager)
+        machine, _ = test_machine_and_config
+        stage = JobPipelineStage(mock_task_mgr, artifact_manager, machine)
         assert isinstance(stage, PipelineStage)
         assert stage._task_manager is mock_task_mgr
         assert stage._artifact_manager is artifact_manager
+        assert stage._machine is machine
 
     def test_generate_job_triggers_task(
-        self, mock_task_mgr, artifact_manager, real_doc_with_step
+        self,
+        mock_task_mgr,
+        artifact_manager,
+        real_doc_with_step,
+        test_machine_and_config,
     ):
         """Test that generate_job starts a task if steps are available."""
+        machine, _ = test_machine_and_config
         step = real_doc_with_step.active_layer.workflow.steps[0]
         step_ops_handle = StepOpsArtifactHandle(
             shm_name="dummy_step_ops",
@@ -87,12 +96,15 @@ class TestJobPipelineStage:
         )
         artifact_manager.put_step_ops_handle(step.uid, step_ops_handle)
 
-        stage = JobPipelineStage(mock_task_mgr, artifact_manager)
+        stage = JobPipelineStage(mock_task_mgr, artifact_manager, machine)
         stage.generate_job(real_doc_with_step)
 
         mock_task_mgr.run_process.assert_called_once()
         call_args = mock_task_mgr.run_process.call_args
         assert call_args[0][0] is make_job_artifact_in_subprocess
+
+        # Verify artifact_store is passed as second positional argument
+        assert call_args[0][1] is artifact_manager._store
 
         # Access the nested job_description_dict
         job_desc = call_args.kwargs["job_description_dict"]
@@ -105,8 +117,10 @@ class TestJobPipelineStage:
         mock_task_mgr,
         artifact_manager,
         real_doc_with_step,
+        test_machine_and_config,
     ):
         """Tests that full event->completion flow for job generation."""
+        machine, _ = test_machine_and_config
         handle = JobArtifactHandle(
             shm_name="dummy_job_shm",
             handle_class_name="JobArtifactHandle",
@@ -115,7 +129,7 @@ class TestJobPipelineStage:
             distance=0,
         )
 
-        stage = JobPipelineStage(mock_task_mgr, artifact_manager)
+        stage = JobPipelineStage(mock_task_mgr, artifact_manager, machine)
         mock_finished_signal = MagicMock()
         stage.generation_finished.connect(mock_finished_signal)
         stage.generate_job(real_doc_with_step)
@@ -150,8 +164,10 @@ class TestJobPipelineStage:
         mock_task_mgr,
         artifact_manager,
         real_doc_with_step,
+        test_machine_and_config,
     ):
         """Tests that a failed task correctly cleans up the cached handle."""
+        machine, _ = test_machine_and_config
         handle = JobArtifactHandle(
             shm_name="dummy_job_shm",
             handle_class_name="JobArtifactHandle",
@@ -160,7 +176,7 @@ class TestJobPipelineStage:
             distance=0,
         )
 
-        stage = JobPipelineStage(mock_task_mgr, artifact_manager)
+        stage = JobPipelineStage(mock_task_mgr, artifact_manager, machine)
         mock_failed_signal = MagicMock()
         stage.generation_failed.connect(mock_failed_signal)
         stage.generate_job(real_doc_with_step)

@@ -175,7 +175,7 @@ class TestPipelineGeneration:
                         task_info.when_done(task_obj)
 
                 elif task_info.target is make_step_artifact_in_subprocess:
-                    gen_id = task_info.args[2]
+                    gen_id = task_info.args[3]
                     task_obj.result.return_value = gen_id
                     if task_info.when_event:
                         store = get_context().artifact_store
@@ -213,7 +213,7 @@ class TestPipelineGeneration:
                         task_info.when_done(task_obj)
 
                 elif task_info.target is make_workpiece_artifact_in_subprocess:
-                    gen_id = task_info.args[6]
+                    gen_id = task_info.args[7]
                     task_obj.result.return_value = gen_id
                     if task_info.when_event:
                         event_data = {
@@ -240,7 +240,12 @@ class TestPipelineGeneration:
         layer.workflow.add_step(step)
 
         # Act
-        Pipeline(doc, mock_task_mgr)
+        Pipeline(
+            doc,
+            mock_task_mgr,
+            context_initializer.artifact_store,
+            context_initializer.machine,
+        )
 
         # Assert
         mock_task_mgr.run_process.assert_called_once()
@@ -256,7 +261,12 @@ class TestPipelineGeneration:
         step = create_contour_step(context_initializer)
         layer.workflow.add_step(step)
 
-        pipeline = Pipeline(doc, mock_task_mgr)
+        pipeline = Pipeline(
+            doc,
+            mock_task_mgr,
+            context_initializer.artifact_store,
+            context_initializer.machine,
+        )
         mock_task_mgr.run_process.assert_called_once()
         task_info = mock_task_mgr.created_tasks[0]
 
@@ -312,7 +322,12 @@ class TestPipelineGeneration:
         step = create_contour_step(context_initializer)
         layer.workflow.add_step(step)
 
-        pipeline = Pipeline(doc, mock_task_mgr)
+        pipeline = Pipeline(
+            doc,
+            mock_task_mgr,
+            context_initializer.artifact_store,
+            context_initializer.machine,
+        )
         mock_task_mgr.run_process.assert_called_once()
         task_info = mock_task_mgr.created_tasks[0]
 
@@ -334,7 +349,12 @@ class TestPipelineGeneration:
         assert layer.workflow is not None
         step = create_contour_step(context_initializer)
         layer.workflow.add_step(step)
-        pipeline = Pipeline(doc, mock_task_mgr)
+        pipeline = Pipeline(
+            doc,
+            mock_task_mgr,
+            context_initializer.artifact_store,
+            context_initializer.machine,
+        )
 
         artifact = WorkPieceArtifact(
             ops=Ops(),
@@ -375,7 +395,12 @@ class TestPipelineGeneration:
         assert layer.workflow is not None
         step = create_contour_step(context_initializer)
         layer.workflow.add_step(step)
-        Pipeline(doc, mock_task_mgr)
+        Pipeline(
+            doc,
+            mock_task_mgr,
+            context_initializer.artifact_store,
+            context_initializer.machine,
+        )
         artifact = WorkPieceArtifact(
             ops=Ops(),
             is_scalable=True,
@@ -412,7 +437,12 @@ class TestPipelineGeneration:
         assert layer.workflow is not None
         step = create_contour_step(context_initializer)
         layer.workflow.add_step(step)
-        Pipeline(doc, mock_task_mgr)
+        Pipeline(
+            doc,
+            mock_task_mgr,
+            context_initializer.artifact_store,
+            context_initializer.machine,
+        )
         initial_artifact = WorkPieceArtifact(
             ops=Ops(),
             is_scalable=False,
@@ -449,7 +479,12 @@ class TestPipelineGeneration:
         step = create_contour_step(context_initializer)
         layer.workflow.add_step(step)
 
-        pipeline = Pipeline(doc, mock_task_mgr)
+        pipeline = Pipeline(
+            doc,
+            mock_task_mgr,
+            context_initializer.artifact_store,
+            context_initializer.machine,
+        )
 
         # First, complete the prerequisite workpiece and step generation
         wp_artifact = WorkPieceArtifact(
@@ -512,7 +547,12 @@ class TestPipelineGeneration:
         assert layer.workflow is not None
         step = create_contour_step(context_initializer)
         layer.workflow.add_step(step)
-        pipeline = Pipeline(doc, mock_task_mgr)
+        pipeline = Pipeline(
+            doc,
+            mock_task_mgr,
+            context_initializer.artifact_store,
+            context_initializer.machine,
+        )
 
         wp_artifact = WorkPieceArtifact(
             ops=Ops(),
@@ -571,7 +611,12 @@ class TestPipelineGeneration:
         assert layer.workflow is not None
         step = create_contour_step(context_initializer)
         layer.workflow.add_step(step)
-        pipeline = Pipeline(doc, mock_task_mgr)
+        pipeline = Pipeline(
+            doc,
+            mock_task_mgr,
+            context_initializer.artifact_store,
+            context_initializer.machine,
+        )
 
         wp_artifact = WorkPieceArtifact(
             ops=Ops(),
@@ -637,7 +682,12 @@ class TestPipelineGeneration:
         assert layer.workflow is not None
         step = create_contour_step(context_initializer)
         layer.workflow.add_step(step)
-        pipeline = Pipeline(doc, mock_task_mgr)
+        pipeline = Pipeline(
+            doc,
+            mock_task_mgr,
+            context_initializer.artifact_store,
+            context_initializer.machine,
+        )
 
         wp_artifact = WorkPieceArtifact(
             ops=Ops(),
@@ -688,7 +738,12 @@ class TestPipelineGeneration:
         assert layer.workflow is not None
         step = create_contour_step(context_initializer)
         layer.workflow.add_step(step)
-        pipeline = Pipeline(doc, mock_task_mgr)
+        pipeline = Pipeline(
+            doc,
+            mock_task_mgr,
+            context_initializer.artifact_store,
+            context_initializer.machine,
+        )
 
         wp_artifact = WorkPieceArtifact(
             ops=Ops(),
@@ -749,7 +804,12 @@ class TestPipelineGeneration:
         step = create_contour_step(context_initializer)
         layer.workflow.add_step(step)
 
-        pipeline = Pipeline(doc, mock_task_mgr)
+        pipeline = Pipeline(
+            doc,
+            mock_task_mgr,
+            context_initializer.artifact_store,
+            context_initializer.machine,
+        )
 
         # Mock the final signal handler to intercept the call
         mock_signal_handler = MagicMock()
@@ -761,7 +821,7 @@ class TestPipelineGeneration:
         assert len(mock_task_mgr.created_tasks) == 1
         task1_info = mock_task_mgr.created_tasks[0]
         # Generation ID for the first task is 1
-        assert task1_info.args[6] == 1
+        assert task1_info.args[7] == 1
         mock_task_mgr.run_process.reset_mock()
         mock_task_mgr.created_tasks.clear()
 
@@ -780,7 +840,7 @@ class TestPipelineGeneration:
         assert len(mock_task_mgr.created_tasks) == 1
         task2_info = mock_task_mgr.created_tasks[0]
         # Generation ID for the second task should be incremented to 2
-        assert task2_info.args[6] == 2
+        assert task2_info.args[7] == 2
 
         # Act 3: Simulate the CANCELLED task's callback firing.
         # This could happen if the task was already running when cancelled.
@@ -848,7 +908,12 @@ class TestPipelineGeneration:
         step = create_raster_step(context_initializer)
         layer.workflow.add_step(step)
 
-        pipeline = Pipeline(doc, mock_task_mgr)
+        pipeline = Pipeline(
+            doc,
+            mock_task_mgr,
+            context_initializer.artifact_store,
+            context_initializer.machine,
+        )
 
         # Create a workpiece artifact handle with ops
         expected_ops = Ops()

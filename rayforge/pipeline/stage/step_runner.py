@@ -2,7 +2,6 @@ from __future__ import annotations
 import logging
 import math
 from typing import List, Dict, Any, TYPE_CHECKING, Optional
-from ...context import get_context
 from ...core.ops import Ops
 from ...core.matrix import Matrix
 from ...core.workpiece import WorkPiece
@@ -14,6 +13,7 @@ from ..artifact import (
     WorkPieceArtifact,
 )
 from ..artifact.base import TextureInstance
+from ..artifact.store import ArtifactStore
 from ..encoder.vertexencoder import VertexEncoder
 from ..transformer import OpsTransformer, transformer_by_name
 
@@ -46,6 +46,7 @@ def _instantiate_transformers(
 
 def make_step_artifact_in_subprocess(
     proxy: ExecutionContextProxy,
+    artifact_store: ArtifactStore,
     workpiece_assembly_info: List[Dict[str, Any]],
     step_uid: str,
     generation_id: int,
@@ -67,7 +68,6 @@ def make_step_artifact_in_subprocess(
         logger.warning("No workpiece info provided for step assembly.")
         return generation_id
 
-    artifact_store = get_context().artifact_store
     combined_ops = Ops()
     texture_instances = []
     num_items = len(workpiece_assembly_info)

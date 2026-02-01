@@ -60,6 +60,16 @@ def mock_artifact_manager():
 
 
 @pytest.fixture
+def mock_machine():
+    """Provides a mock Machine instance."""
+    machine = MagicMock()
+    machine.max_cut_speed = 5000
+    machine.max_travel_speed = 10000
+    machine.acceleration = 1000
+    return machine
+
+
+@pytest.fixture
 def mock_doc_and_step():
     """Provides a mock Doc object with some structure."""
     doc = MagicMock(spec=Doc)
@@ -124,22 +134,33 @@ def _complete_step_task(task, time=42.0, gen_id=1):
 
 @pytest.mark.usefixtures("context_initializer")
 class TestStepPipelineStage:
-    def test_instantiation(self, mock_task_mgr, mock_artifact_manager):
+    def test_instantiation(
+        self, mock_task_mgr, mock_artifact_manager, mock_machine
+    ):
         """Test that StepPipelineStage can be created."""
-        stage = StepPipelineStage(mock_task_mgr, mock_artifact_manager)
+        stage = StepPipelineStage(
+            mock_task_mgr, mock_artifact_manager, mock_machine
+        )
         assert isinstance(stage, PipelineStage)
         assert stage._task_manager is mock_task_mgr
         assert stage._artifact_manager is mock_artifact_manager
+        assert stage._machine is mock_machine
 
     def test_reconcile_triggers_assembly_for_missing_artifact(
-        self, mock_task_mgr, mock_artifact_manager, mock_doc_and_step
+        self,
+        mock_task_mgr,
+        mock_artifact_manager,
+        mock_machine,
+        mock_doc_and_step,
     ):
         """
         Tests that reconcile() starts a task if a step artifact is missing.
         """
         # Arrange
         doc, step = mock_doc_and_step
-        stage = StepPipelineStage(mock_task_mgr, mock_artifact_manager)
+        stage = StepPipelineStage(
+            mock_task_mgr, mock_artifact_manager, mock_machine
+        )
 
         # Act
         stage.reconcile(doc)
@@ -150,12 +171,18 @@ class TestStepPipelineStage:
         assert called_func is make_step_artifact_in_subprocess
 
     def test_mark_stale_and_trigger_starts_assembly(
-        self, mock_task_mgr, mock_artifact_manager, mock_doc_and_step
+        self,
+        mock_task_mgr,
+        mock_artifact_manager,
+        mock_machine,
+        mock_doc_and_step,
     ):
         """Tests that explicitly marking a step as stale triggers assembly."""
         # Arrange
         doc, step = mock_doc_and_step
-        stage = StepPipelineStage(mock_task_mgr, mock_artifact_manager)
+        stage = StepPipelineStage(
+            mock_task_mgr, mock_artifact_manager, mock_machine
+        )
 
         # Act
         stage.mark_stale_and_trigger(step)
@@ -165,7 +192,11 @@ class TestStepPipelineStage:
         assert len(mock_task_mgr.created_tasks) == 1
 
     def test_assembly_flow_success(
-        self, mock_task_mgr, mock_artifact_manager, mock_doc_and_step
+        self,
+        mock_task_mgr,
+        mock_artifact_manager,
+        mock_machine,
+        mock_doc_and_step,
     ):
         """
         Tests the full successful flow: triggering, receiving the render
@@ -173,7 +204,9 @@ class TestStepPipelineStage:
         """
         # Arrange
         doc, step = mock_doc_and_step
-        stage = StepPipelineStage(mock_task_mgr, mock_artifact_manager)
+        stage = StepPipelineStage(
+            mock_task_mgr, mock_artifact_manager, mock_machine
+        )
 
         render_signal_handler = MagicMock()
         time_signal_handler = MagicMock()
@@ -244,12 +277,18 @@ class TestStepPipelineStage:
         time_signal_handler.assert_called_once()
 
     def test_invalidate_cleans_up_and_invalidates_job(
-        self, mock_task_mgr, mock_artifact_manager, mock_doc_and_step
+        self,
+        mock_task_mgr,
+        mock_artifact_manager,
+        mock_machine,
+        mock_doc_and_step,
     ):
         """Tests that invalidating a step cleans up all its artifacts."""
         # Arrange
         doc, step = mock_doc_and_step
-        stage = StepPipelineStage(mock_task_mgr, mock_artifact_manager)
+        stage = StepPipelineStage(
+            mock_task_mgr, mock_artifact_manager, mock_machine
+        )
         stage.mark_stale_and_trigger(step)
         _complete_step_task(mock_task_mgr.created_tasks[0])
         mock_task_mgr.created_tasks.clear()

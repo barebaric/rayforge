@@ -179,7 +179,7 @@ class TestPipelineMultipass:
                         task_info.when_done(task_obj)
 
                 elif task_info.target is make_step_artifact_in_subprocess:
-                    gen_id = task_info.args[2]
+                    gen_id = task_info.args[3]
                     task_obj.result.return_value = gen_id
                     if task_info.when_event:
                         store = get_context().artifact_store
@@ -217,7 +217,7 @@ class TestPipelineMultipass:
                         task_info.when_done(task_obj)
 
                 elif task_info.target is make_workpiece_artifact_in_subprocess:
-                    gen_id = task_info.args[6]
+                    gen_id = task_info.args[7]
                     task_obj.result.return_value = gen_id
                     if task_info.when_event:
                         event_data = {
@@ -234,7 +234,9 @@ class TestPipelineMultipass:
 
         mock_task_mgr.created_tasks.clear()
 
-    def test_job_assembly_invalidated_signal_connected(self):
+    def test_job_assembly_invalidated_signal_connected(
+        self, mock_task_mgr, context_initializer
+    ):
         """Test pipeline connects to the job_assembly_invalidated signal."""
         doc = Doc()
         layer = Layer(name="Test Layer")
@@ -246,15 +248,18 @@ class TestPipelineMultipass:
         layer.workflow.add_child(step)
         layer.add_child(workpiece)
 
-        task_manager = MagicMock()
-
         with patch("rayforge.pipeline.pipeline.logger"):
             handler_called = MagicMock()
 
             def track_handler(sender):
                 handler_called()
 
-            pipeline = Pipeline(doc, task_manager)
+            pipeline = Pipeline(
+                doc,
+                mock_task_mgr,
+                context_initializer.artifact_store,
+                context_initializer.machine,
+            )
             pipeline._on_job_assembly_invalidated = track_handler
 
         doc.job_assembly_invalidated.disconnect(
@@ -303,7 +308,12 @@ class TestPipelineMultipass:
         assert layer.workflow is not None
         step = create_contour_step(context_initializer)
         layer.workflow.add_step(step)
-        pipeline = Pipeline(doc, mock_task_mgr)
+        pipeline = Pipeline(
+            doc,
+            mock_task_mgr,
+            context_initializer.artifact_store,
+            context_initializer.machine,
+        )
 
         artifact = WorkPieceArtifact(
             ops=Ops(),

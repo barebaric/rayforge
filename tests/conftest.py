@@ -291,3 +291,30 @@ def ui_context_initializer(tmp_path, monkeypatch, ui_task_mgr):
     context = get_context()
     context.initialize_full_context()
     yield context
+
+
+@pytest.fixture
+def mock_machine():
+    """
+    Provides a mock Machine instance for tests that don't need a full context.
+    """
+    from rayforge.machine.models.machine import Machine
+    from unittest.mock import MagicMock
+
+    mock_machine = MagicMock(spec=Machine)
+    mock_machine.dimensions = (200, 150)
+    mock_machine.max_cut_speed = 5000
+    mock_machine.max_travel_speed = 10000
+    return mock_machine
+
+
+@pytest.fixture
+def mock_artifact_store():
+    """
+    Provides a mock ArtifactStore instance for tests.
+    """
+    from rayforge.pipeline.artifact.store import ArtifactStore
+    from unittest.mock import MagicMock
+
+    mock_store = MagicMock(spec=ArtifactStore)
+    return mock_store

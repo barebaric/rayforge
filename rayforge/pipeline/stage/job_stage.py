@@ -4,7 +4,6 @@ from typing import TYPE_CHECKING, Optional, Callable
 from blinker import Signal
 import multiprocessing as mp
 from asyncio.exceptions import CancelledError
-from ...context import get_context
 from ..artifact import JobArtifactHandle
 from .base import PipelineStage
 from .job_runner import JobDescription
@@ -13,6 +12,7 @@ from contextlib import ExitStack
 if TYPE_CHECKING:
     import threading
     from ...core.doc import Doc
+    from ...machine.models.machine import Machine
     from ...shared.tasker.manager import TaskManager
     from ...shared.tasker.task import Task
     from ..artifact.manager import ArtifactManager
@@ -28,9 +28,13 @@ class JobPipelineStage(PipelineStage):
     """A pipeline stage that assembles the final job artifact."""
 
     def __init__(
-        self, task_manager: "TaskManager", artifact_manager: "ArtifactManager"
+        self,
+        task_manager: "TaskManager",
+        artifact_manager: "ArtifactManager",
+        machine: "Machine",
     ):
         super().__init__(task_manager, artifact_manager)
+        self._machine = machine
         self._active_task: Optional["Task"] = None
         self._adoption_event: Optional["threading.Event"] = None
         self.generation_finished = Signal()
@@ -72,7 +76,7 @@ class JobPipelineStage(PipelineStage):
                 )
             return
 
-        machine = get_context().machine
+        machine = self._machine
         if not machine:
             logger.error("Cannot generate job: No machine is configured.")
             # Fire callback with an error if provided
@@ -174,6 +178,7 @@ class JobPipelineStage(PipelineStage):
         # We no longer need _on_job_assembly_complete
         task = self._task_manager.run_process(
             make_job_artifact_in_subprocess,
+            self._artifact_manager._store,
             job_description_dict=job_desc.__dict__,
             creator_tag="job",
             key=JobKey,

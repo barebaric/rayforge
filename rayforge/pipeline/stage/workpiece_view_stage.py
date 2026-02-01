@@ -24,6 +24,7 @@ if TYPE_CHECKING:
     from ...core.doc import Doc
     from ...core.layer import Step
     from ...core.workpiece import WorkPiece
+    from ...machine.models.machine import Machine
     from ...shared.tasker.manager import TaskManager
     from ...shared.tasker.task import Task
     from ..artifact.manager import ArtifactManager
@@ -48,9 +49,13 @@ class WorkPieceViewPipelineStage(PipelineStage):
     """
 
     def __init__(
-        self, task_manager: "TaskManager", artifact_manager: "ArtifactManager"
+        self,
+        task_manager: "TaskManager",
+        artifact_manager: "ArtifactManager",
+        machine: "Machine",
     ):
         super().__init__(task_manager, artifact_manager)
+        self._machine = machine
         self._active_tasks: Dict[ViewKey, "Task"] = {}
         self._last_context_cache: Dict[ViewKey, RenderContext] = {}
 
@@ -196,6 +201,7 @@ class WorkPieceViewPipelineStage(PipelineStage):
 
         task = self._task_manager.run_process(
             make_workpiece_view_artifact_in_subprocess,
+            self._artifact_manager._store,
             workpiece_artifact_handle_dict=source_handle.to_dict(),
             render_context_dict=context.to_dict(),
             creator_tag="workpiece_view",

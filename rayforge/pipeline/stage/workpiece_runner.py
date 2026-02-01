@@ -2,8 +2,8 @@ from typing import Any, List, Tuple, Iterator, Optional, Dict, TYPE_CHECKING
 import numpy as np
 from ...shared.tasker.proxy import ExecutionContextProxy, BaseExecutionContext
 from ..encoder.vertexencoder import VertexEncoder
-from ...context import get_context
 from ..artifact import WorkPieceArtifact
+from ..artifact.store import ArtifactStore
 
 if TYPE_CHECKING:
     import threading
@@ -15,6 +15,7 @@ MAX_VECTOR_TRACE_PIXELS = 16 * 1024 * 1024
 # It is designed to be run in a separate process by the TaskManager.
 def make_workpiece_artifact_in_subprocess(
     proxy: ExecutionContextProxy,
+    artifact_store: ArtifactStore,
     workpiece_dict: dict[str, Any],
     opsproducer_dict: dict[str, Any],
     modifiers_dict: List[dict],
@@ -53,7 +54,6 @@ def make_workpiece_artifact_in_subprocess(
 
     logger.debug("Imports completed")
 
-    artifact_store = get_context().artifact_store
     modifiers = [Modifier.from_dict(m) for m in modifiers_dict]
     opsproducer = OpsProducer.from_dict(opsproducer_dict)
     opstransformers = [

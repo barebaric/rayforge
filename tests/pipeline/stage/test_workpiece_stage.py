@@ -24,33 +24,48 @@ def mock_artifact_manager():
 
 
 @pytest.fixture
+def mock_machine():
+    """Provides a mock Machine."""
+    return MagicMock()
+
+
+@pytest.fixture
 def mock_doc():
     """Provides a mock Doc object."""
     return MagicMock(spec=Doc)
 
 
 class TestWorkPiecePipelineStage:
-    def test_instantiation(self, mock_task_mgr, mock_artifact_manager):
+    def test_instantiation(
+        self, mock_task_mgr, mock_artifact_manager, mock_machine
+    ):
         """Test that WorkPiecePipelineStage can be created."""
-        stage = WorkPiecePipelineStage(mock_task_mgr, mock_artifact_manager)
+        stage = WorkPiecePipelineStage(
+            mock_task_mgr, mock_artifact_manager, mock_machine
+        )
         assert isinstance(stage, PipelineStage)
         assert stage._task_manager is mock_task_mgr
         assert stage._artifact_manager is mock_artifact_manager
+        assert stage._machine is mock_machine
 
     def test_interface_compliance(
-        self, mock_task_mgr, mock_artifact_manager, mock_doc
+        self, mock_task_mgr, mock_artifact_manager, mock_machine, mock_doc
     ):
         """Test that the stage implements all required abstract methods."""
-        stage = WorkPiecePipelineStage(mock_task_mgr, mock_artifact_manager)
+        stage = WorkPiecePipelineStage(
+            mock_task_mgr, mock_artifact_manager, mock_machine
+        )
         # These should not raise NotImplementedError
         stage.reconcile(mock_doc)
         stage.shutdown()
 
     def test_visual_chunk_available_signal_emitted_on_chunk_ready(
-        self, mock_task_mgr, mock_artifact_manager
+        self, mock_task_mgr, mock_artifact_manager, mock_machine
     ):
         """Test that visual_chunk_available signal is emitted correctly."""
-        stage = WorkPiecePipelineStage(mock_task_mgr, mock_artifact_manager)
+        stage = WorkPiecePipelineStage(
+            mock_task_mgr, mock_artifact_manager, mock_machine
+        )
 
         # Track signal emissions
         received_signals = []

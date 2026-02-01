@@ -64,7 +64,12 @@ class DocEditor:
         self.task_manager = task_manager
         self._config_manager = context.config_mgr
         self.doc = doc or Doc()
-        self.pipeline = Pipeline(self.doc, self.task_manager)
+        self.pipeline = Pipeline(
+            self.doc,
+            self.task_manager,
+            context.artifact_store,
+            context.machine,
+        )
         self.history_manager: "HistoryManager" = self.doc.history_manager
 
         # A set to track temporary artifacts (e.g., for job previews)

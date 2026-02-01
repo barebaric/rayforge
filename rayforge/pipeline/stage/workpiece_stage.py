@@ -7,7 +7,6 @@ from blinker import Signal
 from copy import deepcopy
 
 from .base import PipelineStage
-from ...context import get_context
 from ...core.ops import Ops, ScanLinePowerCommand
 from ..artifact import (
     WorkPieceArtifact,
@@ -21,6 +20,7 @@ if TYPE_CHECKING:
     from ...core.matrix import Matrix
     from ...core.step import Step
     from ...core.workpiece import WorkPiece
+    from ...machine.models.machine import Machine
     from ...shared.tasker.manager import TaskManager
     from ...shared.tasker.task import Task
     from ..artifact.manager import ArtifactManager
@@ -36,9 +36,13 @@ class WorkPiecePipelineStage(PipelineStage):
     """
 
     def __init__(
-        self, task_manager: "TaskManager", artifact_manager: "ArtifactManager"
+        self,
+        task_manager: "TaskManager",
+        artifact_manager: "ArtifactManager",
+        machine: "Machine",
     ):
         super().__init__(task_manager, artifact_manager)
+        self._machine = machine
         self._generation_id_map: Dict[WorkpieceKey, int] = {}
         self._active_tasks: Dict[WorkpieceKey, "Task"] = {}
         self._adoption_events: Dict[WorkpieceKey, "threading.Event"] = {}
@@ -208,16 +212,15 @@ class WorkPiecePipelineStage(PipelineStage):
 
         settings = step.get_settings()
 
-        config = get_context().config
-        if not config or not config.machine:
+        if not self._machine:
             logger.error("Cannot generate ops: No machine is configured.")
             return
 
-        settings["machine_supports_arcs"] = config.machine.supports_arcs
-        settings["arc_tolerance"] = config.machine.arc_tolerance
+        settings["machine_supports_arcs"] = self._machine.supports_arcs
+        settings["arc_tolerance"] = self._machine.arc_tolerance
 
         try:
-            selected_laser = step.get_selected_laser(config.machine)
+            selected_laser = step.get_selected_laser(self._machine)
         except ValueError as e:
             logger.error(f"Cannot select laser for step '{step.name}': {e}")
             return
@@ -233,6 +236,7 @@ class WorkPiecePipelineStage(PipelineStage):
 
         task = self._task_manager.run_process(
             make_workpiece_artifact_in_subprocess,
+            self._artifact_manager._store,
             workpiece_dict,
             step.opsproducer_dict,
             step.modifiers_dicts,
