@@ -1,6 +1,6 @@
 import unittest
 import numpy as np
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 from rayforge.pipeline.stage.workpiece_view_stage import (
     WorkPieceViewPipelineStage,
@@ -63,8 +63,7 @@ class TestWorkPieceViewStage(unittest.TestCase):
             call_args.kwargs["render_context_dict"], context.to_dict()
         )
 
-    @patch("rayforge.pipeline.stage.workpiece_view_stage.get_context")
-    def test_stage_handles_events_and_completion(self, mock_get_context):
+    def test_stage_handles_events_and_completion(self):
         """
         Tests that the stage correctly handles events from the runner and
         emits its own signals.
@@ -156,8 +155,7 @@ class TestWorkPieceViewStage(unittest.TestCase):
         # `ready` handler should NOT be called again on completion
         ready_handler.assert_called_once()
 
-    @patch("rayforge.pipeline.stage.workpiece_view_stage.get_context")
-    def test_adoption_failure_does_not_crash(self, mock_get_context):
+    def test_adoption_failure_does_not_crash(self):
         """
         Tests that adoption failures are handled gracefully without
         crashing the stage.
@@ -189,8 +187,8 @@ class TestWorkPieceViewStage(unittest.TestCase):
         mock_task.key = key
 
         # Mock adopt to raise an exception
-        self.mock_artifact_manager.adopt_artifact.side_effect = (
-            Exception("Adoption failed")
+        self.mock_artifact_manager.adopt_artifact.side_effect = Exception(
+            "Adoption failed"
         )
 
         # Mock signal handler to verify no crash
@@ -212,8 +210,7 @@ class TestWorkPieceViewStage(unittest.TestCase):
         # Assert: Created signal was not sent due to adoption failure
         created_handler.assert_not_called()
 
-    @patch("rayforge.pipeline.stage.workpiece_view_stage.get_context")
-    def test_multiple_view_artifact_updated_events(self, mock_get_context):
+    def test_multiple_view_artifact_updated_events(self):
         """
         Tests that multiple view_artifact_updated events are sent and
         processed correctly for progressive rendering.
@@ -283,10 +280,7 @@ class TestWorkPieceViewStage(unittest.TestCase):
             self.assertEqual(call.kwargs["step_uid"], step_uid)
             self.assertEqual(call.kwargs["workpiece_uid"], wp_uid)
 
-    @patch("rayforge.pipeline.stage.workpiece_view_stage.get_context")
-    def test_progressive_rendering_sends_multiple_updates(
-        self, mock_get_context
-    ):
+    def test_progressive_rendering_sends_multiple_updates(self):
         """
         Tests that the workpiece view stage correctly handles multiple
         view_artifact_updated events for progressive rendering.
@@ -395,10 +389,7 @@ class TestWorkPieceViewStage(unittest.TestCase):
         # Assert: The method should complete without errors
         # For now, it just logs, so we just verify it doesn't crash
 
-    @patch("rayforge.pipeline.stage.workpiece_view_stage.get_context")
-    def test_live_render_context_established_on_view_creation(
-        self, mock_get_context
-    ):
+    def test_live_render_context_established_on_view_creation(self):
         """
         Tests that a live render context is established when a view
         artifact is created, enabling progressive chunk rendering.
@@ -455,10 +446,7 @@ class TestWorkPieceViewStage(unittest.TestCase):
         self.assertIn("render_context", live_ctx)
         self.assertEqual(live_ctx["render_context"], context)
 
-    @patch("rayforge.pipeline.stage.workpiece_view_stage.get_context")
-    def test_throttled_notification_limits_update_frequency(
-        self, mock_get_context
-    ):
+    def test_throttled_notification_limits_update_frequency(self):
         """
         Tests that throttled notification limits the frequency of
         view_artifact_updated signals when many chunks arrive quickly.
@@ -511,7 +499,7 @@ class TestWorkPieceViewStage(unittest.TestCase):
         update_handler = MagicMock()
         self.stage.view_artifact_updated.connect(update_handler)
 
-        # Mock artifact store.get to return a real WorkPieceArtifact
+        # Mock artifact_manager.get_artifact to return a real WorkPieceArtifact
         chunk_ops = Ops()
         chunk_ops.move_to(0, 0, 0)
         chunk_ops.line_to(1, 1, 0)
@@ -529,9 +517,7 @@ class TestWorkPieceViewStage(unittest.TestCase):
             generation_size=(10.0, 10.0),
             vertex_data=chunk_vertex_data,
         )
-        mock_get_context.return_value.artifact_store.get.return_value = (
-            chunk_artifact
-        )
+        self.mock_artifact_manager.get_artifact.return_value = chunk_artifact
 
         # Act 2: Flood with 10 chunk updates (simulating rapid chunk arrival)
         chunk_handle = WorkPieceArtifactHandle(
@@ -564,10 +550,7 @@ class TestWorkPieceViewStage(unittest.TestCase):
         self.assertLess(update_handler.call_count, 5)
         self.assertGreater(update_handler.call_count, 0)
 
-    @patch("rayforge.pipeline.stage.workpiece_view_stage.get_context")
-    def test_incremental_bitmap_rendering_draws_chunk_to_view(
-        self, mock_get_context
-    ):
+    def test_incremental_bitmap_rendering_draws_chunk_to_view(self):
         """
         Unit test for Phase 3, Item 6: Incremental Bitmap Updating.
         Feeds a blank bitmap and a mock vector chunk. Verifies the bitmap
@@ -607,14 +590,13 @@ class TestWorkPieceViewStage(unittest.TestCase):
             bitmap_data=blank_bitmap, bbox_mm=(0, 0, 10.0, 10.0)
         )
 
-        # Mock the artifact store to return our artifacts
-        def mock_get(handle):
+        # Mock the artifact_manager to return our artifacts
+        def mock_get_artifact(handle):
             if handle.shm_name == "view_shm":
                 return view_artifact
             return None
 
-        mock_store = mock_get_context.return_value.artifact_store
-        mock_store.get.side_effect = mock_get
+        self.mock_artifact_manager.get_artifact.side_effect = mock_get_artifact
 
         # Act 1: Create view artifact to establish live render context
         handle_dict = {
@@ -643,14 +625,18 @@ class TestWorkPieceViewStage(unittest.TestCase):
         retain_calls = []
         release_calls = []
 
-        def mock_retain(handle):
+        def mock_retain_handle(handle):
             retain_calls.append(handle.shm_name)
 
-        def mock_release(handle):
+        def mock_release_handle(handle):
             release_calls.append(handle.shm_name)
 
-        mock_store.retain.side_effect = mock_retain
-        mock_store.release.side_effect = mock_release
+        self.mock_artifact_manager.retain_handle.side_effect = (
+            mock_retain_handle
+        )
+        self.mock_artifact_manager.release_handle.side_effect = (
+            mock_release_handle
+        )
 
         # Create a mock vector chunk artifact
         chunk_ops = Ops()
@@ -675,15 +661,17 @@ class TestWorkPieceViewStage(unittest.TestCase):
             vertex_data=chunk_vertex_data,
         )
 
-        # Update mock_get to return chunk artifact for chunk_shm
-        def mock_get_with_chunk(handle):
+        # Update mock_get_artifact to return chunk artifact for chunk_shm
+        def mock_get_artifact_with_chunk(handle):
             if handle.shm_name == "view_shm":
                 return view_artifact
             elif handle.shm_name == "chunk_shm":
                 return chunk_artifact
             return None
 
-        mock_store.get.side_effect = mock_get_with_chunk
+        self.mock_artifact_manager.get_artifact.side_effect = (
+            mock_get_artifact_with_chunk
+        )
 
         # Act 2: Send a chunk to be rendered incrementally
         chunk_handle = WorkPieceArtifactHandle(

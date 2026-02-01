@@ -250,6 +250,137 @@ class TestArtifactManager(unittest.TestCase):
         self.assertIs(popped, render_h)
         self.assertIsNone(self.manager.get_step_render_handle("step1"))
 
+    def test_checkout_workpiece_handle(self):
+        """Tests checking out a workpiece handle with reference counting."""
+        wp_h = create_mock_handle(WorkPieceArtifactHandle, "wp1")
+        self.manager._workpiece_handles[("step1", "wp1")] = wp_h
+
+        with self.manager.checkout(("step1", "wp1")) as handle:
+            self.assertIs(handle, wp_h)
+            self.assertEqual(self.manager._ref_counts[("step1", "wp1")], 1)
+            self.mock_store.retain.assert_called_once_with(wp_h)
+
+        self.mock_store.release.assert_called_once_with(wp_h)
+        self.assertNotIn(("step1", "wp1"), self.manager._ref_counts)
+
+    def test_checkout_step_render_handle(self):
+        """Tests checking out a step render handle."""
+        render_h = create_mock_handle(StepRenderArtifactHandle, "step1_render")
+        self.manager._step_render_handles["step1"] = render_h
+
+        with self.manager.checkout("step1") as handle:
+            self.assertIs(handle, render_h)
+            self.assertEqual(self.manager._ref_counts["step1"], 1)
+            self.mock_store.retain.assert_called_once_with(render_h)
+
+        self.mock_store.release.assert_called_once_with(render_h)
+        self.assertNotIn("step1", self.manager._ref_counts)
+
+    def test_checkout_job_handle(self):
+        """Tests checking out the job handle."""
+        job_h = create_mock_handle(JobArtifactHandle, "job")
+        self.manager._job_handle = job_h
+
+        with self.manager.checkout(ArtifactManager.JOB_KEY) as handle:
+            self.assertIs(handle, job_h)
+            self.assertEqual(
+                self.manager._ref_counts[ArtifactManager.JOB_KEY], 1
+            )
+            self.mock_store.retain.assert_called_once_with(job_h)
+
+        self.mock_store.release.assert_called_once_with(job_h)
+        self.assertNotIn(ArtifactManager.JOB_KEY, self.manager._ref_counts)
+
+    def test_checkout_nonexistent_handle_raises_keyerror(self):
+        """Tests that checking out a non-existent handle raises KeyError."""
+        with self.assertRaises(KeyError) as cm:
+            with self.manager.checkout(("step1", "nonexistent")):
+                pass
+        self.assertIn("nonexistent", str(cm.exception))
+
+    def test_checkout_nested_increments_refcount(self):
+        """Tests that nested checkouts increment ref count correctly."""
+        wp_h = create_mock_handle(WorkPieceArtifactHandle, "wp1")
+        self.manager._workpiece_handles[("step1", "wp1")] = wp_h
+
+        with self.manager.checkout(("step1", "wp1")):
+            self.assertEqual(self.manager._ref_counts[("step1", "wp1")], 1)
+            self.mock_store.retain.assert_called_once_with(wp_h)
+
+            with self.manager.checkout(("step1", "wp1")):
+                self.assertEqual(self.manager._ref_counts[("step1", "wp1")], 2)
+                self.assertEqual(self.mock_store.retain.call_count, 2)
+
+            self.assertEqual(self.manager._ref_counts[("step1", "wp1")], 1)
+            self.assertEqual(self.mock_store.release.call_count, 1)
+
+        self.assertEqual(self.mock_store.release.call_count, 2)
+        self.assertNotIn(("step1", "wp1"), self.manager._ref_counts)
+
+    def test_checkout_exception_releases_handle(self):
+        """Tests that handle is released even if exception occurs."""
+        wp_h = create_mock_handle(WorkPieceArtifactHandle, "wp1")
+        self.manager._workpiece_handles[("step1", "wp1")] = wp_h
+
+        with self.assertRaises(ValueError):
+            with self.manager.checkout(("step1", "wp1")):
+                self.assertEqual(self.manager._ref_counts[("step1", "wp1")], 1)
+                raise ValueError("Test exception")
+
+        self.mock_store.release.assert_called_once_with(wp_h)
+        self.assertNotIn(("step1", "wp1"), self.manager._ref_counts)
+
+    def test_shutdown_clears_ref_counts(self):
+        """Tests that shutdown clears the reference counts."""
+        wp_h = create_mock_handle(WorkPieceArtifactHandle, "wp1")
+        self.manager._workpiece_handles[("step1", "wp1")] = wp_h
+        self.manager._ref_counts[("step1", "wp1")] = 1
+
+        self.manager.shutdown()
+
+        self.assertEqual(len(self.manager._ref_counts), 0)
+
+    def test_retain_handle_calls_store_retain(self):
+        """Tests that retain_handle calls store.retain on the handle."""
+        wp_h = create_mock_handle(WorkPieceArtifactHandle, "wp1")
+
+        self.manager.retain_handle(wp_h)
+
+        self.mock_store.retain.assert_called_once_with(wp_h)
+
+    def test_release_handle_calls_store_release(self):
+        """Tests that release_handle calls store.release on the handle."""
+        wp_h = create_mock_handle(WorkPieceArtifactHandle, "wp1")
+
+        self.manager.release_handle(wp_h)
+
+        self.mock_store.release.assert_called_once_with(wp_h)
+
+    def test_release_handle_with_none_does_nothing(self):
+        """Tests that release_handle with None does nothing."""
+        self.manager.release_handle(None)
+
+        self.mock_store.release.assert_not_called()
+
+    def test_retain_release_for_progressive_rendering(self):
+        """
+        Tests that retain_handle and release_handle can be used for
+        progressive rendering scenarios where context managers
+        don't fit the async callback pattern.
+        """
+        wp_h = create_mock_handle(WorkPieceArtifactHandle, "wp1")
+
+        # Simulate progressive rendering: retain for long-lived reference
+        self.manager.retain_handle(wp_h)
+        self.assertEqual(self.mock_store.retain.call_count, 1)
+
+        # Simulate multiple operations while handle is retained
+        self.mock_store.retain.reset_mock()
+
+        # Release when done
+        self.manager.release_handle(wp_h)
+        self.mock_store.release.assert_called_once_with(wp_h)
+
 
 if __name__ == "__main__":
     unittest.main()

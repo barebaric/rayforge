@@ -1563,8 +1563,11 @@ class MainWindow(Adw.ApplicationWindow):
                 "Failed to aggregate ops for preview/simulation",
                 exc_info=error,
             )
+            # Release handle on error if it exists
             if handle:
-                get_context().artifact_store.release(handle)
+                self.doc_editor.pipeline.artifact_manager.release_handle(
+                    handle
+                )
             handle = None
 
         # Schedule the UI update on the main thread, passing the handle.
@@ -1576,14 +1579,13 @@ class MainWindow(Adw.ApplicationWindow):
         Main-thread callback to distribute assembled Ops to all consumers.
         This method is responsible for releasing the artifact handle.
         """
-        final_artifact = None
-        artifact_store = get_context().artifact_store
-        try:
-            if handle:
-                final_artifact = artifact_store.get(handle)
-                assert isinstance(final_artifact, JobArtifact)
+        artifact_manager = self.doc_editor.pipeline.artifact_manager
 
+        with artifact_manager.checkout_handle(handle) as final_artifact:
             # 1. Update Simulation
+            if not isinstance(final_artifact, JobArtifact):
+                logger.error("Final artifact is not a JobArtifact")
+                return
             self.simulator_cmd.reload_simulation(final_artifact)
 
             # 2. Update G-code Preview
@@ -1599,10 +1601,6 @@ class MainWindow(Adw.ApplicationWindow):
                 )
             else:
                 self._update_gcode_preview(None, None)
-
-        finally:
-            if handle:
-                artifact_store.release(handle)
 
         return GLib.SOURCE_REMOVE
 

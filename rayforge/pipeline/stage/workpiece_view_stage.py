@@ -7,7 +7,6 @@ import time
 from multiprocessing import shared_memory
 from typing import TYPE_CHECKING, Any, Dict, Tuple, cast
 from blinker import Signal
-from ...context import get_context
 from ...shared.util.colors import ColorSet
 from ..artifact import (
     WorkPieceArtifact,
@@ -102,12 +101,12 @@ class WorkPieceViewPipelineStage(PipelineStage):
 
         # Release all currently held view handles
         for handle in self._current_view_handles.values():
-            get_context().artifact_store.release(handle)
+            self._artifact_manager.release_handle(handle)
         self._current_view_handles.clear()
 
         # Release all retained source handles
         for handle in self._retained_source_handles.values():
-            get_context().artifact_store.release(handle)
+            self._artifact_manager.release_handle(handle)
         self._retained_source_handles.clear()
 
         # Clear live render contexts
@@ -187,7 +186,7 @@ class WorkPieceViewPipelineStage(PipelineStage):
 
         # Retain the source handle to prevent premature release while
         # the render task is using it (borrower pattern)
-        get_context().artifact_store.retain(source_handle)
+        self._artifact_manager.retain_handle(source_handle)
         self._retained_source_handles[key] = source_handle
 
         self._last_context_cache[key] = context
@@ -229,7 +228,7 @@ class WorkPieceViewPipelineStage(PipelineStage):
 
                 # Retain the handle to keep it alive while this stage
                 # holds a reference to it (borrower pattern)
-                get_context().artifact_store.retain(handle)
+                self._artifact_manager.retain_handle(handle)
 
                 # Release the previous handle for this key if one exists,
                 # as it is now obsolete.
@@ -239,7 +238,7 @@ class WorkPieceViewPipelineStage(PipelineStage):
                         f"Releasing old view artifact: {old_handle.shm_name} "
                         f"for key {key}"
                     )
-                    get_context().artifact_store.release(old_handle)
+                    self._artifact_manager.release_handle(old_handle)
 
                 # Store the new handle as the current one
                 self._current_view_handles[key] = handle
@@ -329,7 +328,7 @@ class WorkPieceViewPipelineStage(PipelineStage):
 
         # Get the chunk artifact data
         try:
-            artifact = get_context().artifact_store.get(chunk_handle)
+            artifact = self._artifact_manager.get_artifact(chunk_handle)
             if artifact is None:
                 logger.warning(f"Could not retrieve chunk artifact for {key}")
                 return
@@ -347,13 +346,13 @@ class WorkPieceViewPipelineStage(PipelineStage):
         render_context = live_ctx.get("render_context")
         if not view_handle or not render_context:
             logger.warning(f"Missing view_handle or render_context for {key}")
-            get_context().artifact_store.release(chunk_handle)
+            self._artifact_manager.release_handle(chunk_handle)
             return
 
         # Only render if the chunk has vertex data
         if not chunk_artifact.vertex_data:
             logger.debug(f"Chunk for {key} has no vertex data, skipping")
-            get_context().artifact_store.release(chunk_handle)
+            self._artifact_manager.release_handle(chunk_handle)
             return
 
         shm = None
@@ -364,7 +363,7 @@ class WorkPieceViewPipelineStage(PipelineStage):
             # Get the view artifact to read its metadata
             view_artifact = cast(
                 WorkPieceViewArtifact,
-                get_context().artifact_store.get(view_handle),
+                self._artifact_manager.get_artifact(view_handle),
             )
             if not view_artifact:
                 logger.warning(f"Could not retrieve view artifact for {key}")
@@ -444,7 +443,7 @@ class WorkPieceViewPipelineStage(PipelineStage):
             if shm:
                 shm.close()
             # Release the chunk handle after processing
-            get_context().artifact_store.release(chunk_handle)
+            self._artifact_manager.release_handle(chunk_handle)
 
         # Trigger throttled update notification
         self._schedule_throttled_update(key)
@@ -583,7 +582,7 @@ class WorkPieceViewPipelineStage(PipelineStage):
         # (success, failure, or cancellation)
         source_handle = self._retained_source_handles.pop(key, None)
         if source_handle:
-            get_context().artifact_store.release(source_handle)
+            self._artifact_manager.release_handle(source_handle)
 
         # The old `view_artifact_ready` signal is now fired on the
         # `view_artifact_created` event to enable progressive rendering.

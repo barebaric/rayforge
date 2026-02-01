@@ -215,6 +215,11 @@ class Pipeline:
         logger.debug(f"[{id(self)}] Pipeline shutdown finished")
 
     @property
+    def artifact_manager(self) -> ArtifactManager:
+        """Returns the artifact manager used by this pipeline."""
+        return self._artifact_manager
+
+    @property
     def doc(self) -> Optional[Doc]:
         """The document model this pipeline is observing."""
         return self._doc
