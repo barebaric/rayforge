@@ -4,7 +4,6 @@ from dataclasses import dataclass, asdict
 from typing import Dict, Any, TYPE_CHECKING, Optional
 import numpy as np
 import json
-from ...context import get_context
 from ...core.ops import Ops
 from ...core.doc import Doc
 from ...machine.models.machine import Machine
@@ -14,6 +13,7 @@ from ..artifact import (
     create_handle_from_dict,
     StepOpsArtifact,
 )
+from ..artifact.store import ArtifactStore
 from ..encoder.vertexencoder import VertexEncoder
 
 if TYPE_CHECKING:
@@ -34,6 +34,7 @@ class JobDescription:
 
 def make_job_artifact_in_subprocess(
     proxy: ExecutionContextProxy,
+    artifact_store: ArtifactStore,
     job_description_dict: Dict[str, Any],
     creator_tag: str,
     adoption_event: Optional["threading.Event"] = None,
@@ -50,7 +51,6 @@ def make_job_artifact_in_subprocess(
     machine = Machine.from_dict(job_desc.machine_dict, is_inert=True)
     doc = Doc.from_dict(job_desc.doc_dict)
     handles_by_uid = job_desc.step_artifact_handles_by_uid
-    artifact_store = get_context().artifact_store
 
     proxy.set_message(_("Assembling final job..."))
     final_ops = Ops()

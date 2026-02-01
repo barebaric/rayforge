@@ -115,6 +115,7 @@ def test_pixel_perfect_vector_render(vector_artifact_handle):
 
     result = make_workpiece_view_artifact_in_subprocess(
         mock_proxy,
+        get_context().artifact_store,
         vector_artifact_handle.to_dict(),
         context.to_dict(),
         "test_view",
@@ -165,6 +166,7 @@ def test_pixel_perfect_texture_chunk_alignment(texture_artifact_handle):
 
     result = make_workpiece_view_artifact_in_subprocess(
         mock_proxy,
+        get_context().artifact_store,
         texture_artifact_handle.to_dict(),
         context.to_dict(),
         "test_view",
@@ -224,6 +226,7 @@ def test_progressive_rendering_increases_pixel_count(vector_artifact_handle):
 
     result = make_workpiece_view_artifact_in_subprocess(
         mock_proxy,
+        get_context().artifact_store,
         vector_artifact_handle.to_dict(),
         context.to_dict(),
         "test_view",

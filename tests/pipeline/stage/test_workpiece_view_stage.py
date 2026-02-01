@@ -22,8 +22,11 @@ class TestWorkPieceViewStage(unittest.TestCase):
     def setUp(self):
         self.mock_artifact_manager = MagicMock()
         self.mock_task_manager = MagicMock()
+        self.mock_machine = MagicMock()
         self.stage = WorkPieceViewPipelineStage(
-            self.mock_task_manager, self.mock_artifact_manager
+            self.mock_task_manager,
+            self.mock_artifact_manager,
+            self.mock_machine,
         )
 
     def test_stage_requests_vector_render(self):

@@ -69,6 +69,7 @@ def test_step_runner_correctly_scales_and_places_ops(machine):
     # Act
     result = make_step_artifact_in_subprocess(
         proxy=mock_proxy,
+        artifact_store=get_context().artifact_store,
         workpiece_assembly_info=assembly_info,
         step_uid="step1",
         generation_id=1,
@@ -159,6 +160,7 @@ def test_step_runner_handles_texture_data(machine):
 
     result = make_step_artifact_in_subprocess(
         proxy=mock_proxy,
+        artifact_store=get_context().artifact_store,
         workpiece_assembly_info=assembly_info,
         step_uid="step1",
         generation_id=1,

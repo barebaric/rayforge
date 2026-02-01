@@ -123,6 +123,7 @@ def test_vector_producer_returns_artifact_with_vertex_data(
         # Act
         result_gen_id = make_workpiece_artifact_in_subprocess(
             mock_proxy,
+            get_context().artifact_store,
             base_workpiece.to_dict(),
             step.opsproducer_dict,
             [],
@@ -188,6 +189,7 @@ def test_raster_producer_returns_artifact_with_raster_data(
         # Act
         result_gen_id = make_workpiece_artifact_in_subprocess(
             mock_proxy,
+            get_context().artifact_store,
             workpiece_dict,
             step.opsproducer_dict,
             modifiers,
@@ -260,6 +262,7 @@ def test_empty_producer_result_returns_none(mock_proxy):
     # Act
     result_gen_id = make_workpiece_artifact_in_subprocess(
         mock_proxy,
+        get_context().artifact_store,
         empty_workpiece.to_dict(),
         step.opsproducer_dict,
         [],
@@ -302,6 +305,7 @@ def test_transformers_are_applied_before_put(mock_proxy, base_workpiece):
         # Act
         _ = make_workpiece_artifact_in_subprocess(
             mock_proxy,
+            get_context().artifact_store,
             base_workpiece.to_dict(),
             step.opsproducer_dict,
             [],

@@ -5,7 +5,6 @@ from typing import TYPE_CHECKING, Dict, Optional
 import multiprocessing as mp
 from contextlib import ExitStack
 from blinker import Signal
-from ...context import get_context
 from ..artifact import (
     StepRenderArtifactHandle,
     StepOpsArtifactHandle,
@@ -16,6 +15,7 @@ if TYPE_CHECKING:
     import threading
     from ...core.doc import Doc
     from ...core.step import Step
+    from ...machine.models.machine import Machine
     from ...shared.tasker.manager import TaskManager
     from ...shared.tasker.task import Task
     from ..artifact.manager import ArtifactManager
@@ -33,9 +33,13 @@ class StepPipelineStage(PipelineStage):
     """
 
     def __init__(
-        self, task_manager: "TaskManager", artifact_manager: "ArtifactManager"
+        self,
+        task_manager: "TaskManager",
+        artifact_manager: "ArtifactManager",
+        machine: "Machine",
     ):
         super().__init__(task_manager, artifact_manager)
+        self._machine = machine
         self._generation_id_map: Dict[StepKey, int] = {}
         self._active_tasks: Dict[StepKey, "Task"] = {}
         self._adoption_events: Dict[StepKey, "threading.Event"] = {}
@@ -140,10 +144,7 @@ class StepPipelineStage(PipelineStage):
         if not step.layer or step.uid in self._active_tasks:
             return
 
-        config = get_context().config
-        if not config:
-            return
-        machine = config.machine
+        machine = self._machine
         if not machine:
             logger.warning(
                 f"Cannot assemble step {step.uid}, no machine configured."
@@ -213,6 +214,7 @@ class StepPipelineStage(PipelineStage):
 
         task = self._task_manager.run_process(
             make_step_artifact_in_subprocess,
+            self._artifact_manager._store,
             assembly_info,
             step.uid,
             generation_id,

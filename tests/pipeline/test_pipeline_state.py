@@ -173,7 +173,7 @@ class TestPipelineState:
                         task_info.when_done(task_obj)
 
                 elif task_info.target is make_step_artifact_in_subprocess:
-                    gen_id = task_info.args[2]
+                    gen_id = task_info.args[3]
                     task_obj.result.return_value = gen_id
                     if task_info.when_event:
                         store = get_context().artifact_store
@@ -211,7 +211,7 @@ class TestPipelineState:
                         task_info.when_done(task_obj)
 
                 elif task_info.target is make_workpiece_artifact_in_subprocess:
-                    gen_id = task_info.args[6]
+                    gen_id = task_info.args[7]
                     task_obj.result.return_value = gen_id
                     if task_info.when_event:
                         event_data = {
@@ -237,7 +237,12 @@ class TestPipelineState:
         step = create_contour_step(context_initializer)
         layer.workflow.add_step(step)
 
-        pipeline = Pipeline(doc, mock_task_mgr)
+        pipeline = Pipeline(
+            doc,
+            mock_task_mgr,
+            context_initializer.artifact_store,
+            context_initializer.machine,
+        )
 
         # Simulate completion of a task to populate the cache
         task_info = mock_task_mgr.created_tasks[0]
@@ -282,16 +287,30 @@ class TestPipelineState:
             # handle should already be released by shutdown
             pass
 
-    def test_doc_property_getter(self, doc, mock_task_mgr):
+    def test_doc_property_getter(
+        self, doc, mock_task_mgr, context_initializer
+    ):
         # Arrange
-        pipeline = Pipeline(doc, mock_task_mgr)
+        pipeline = Pipeline(
+            doc,
+            mock_task_mgr,
+            context_initializer.artifact_store,
+            context_initializer.machine,
+        )
 
         # Act & Assert
         assert pipeline.doc is doc
 
-    def test_doc_property_setter_with_same_doc(self, doc, mock_task_mgr):
+    def test_doc_property_setter_with_same_doc(
+        self, doc, mock_task_mgr, context_initializer
+    ):
         # Arrange
-        pipeline = Pipeline(doc, mock_task_mgr)
+        pipeline = Pipeline(
+            doc,
+            mock_task_mgr,
+            context_initializer.artifact_store,
+            context_initializer.machine,
+        )
 
         # Act - setting the same document should not cause issues
         pipeline.doc = doc
@@ -299,9 +318,16 @@ class TestPipelineState:
         # Assert
         assert pipeline.doc is doc
 
-    def test_doc_property_setter_with_different_doc(self, doc, mock_task_mgr):
+    def test_doc_property_setter_with_different_doc(
+        self, doc, mock_task_mgr, context_initializer
+    ):
         # Arrange
-        pipeline = Pipeline(doc, mock_task_mgr)
+        pipeline = Pipeline(
+            doc,
+            mock_task_mgr,
+            context_initializer.artifact_store,
+            context_initializer.machine,
+        )
         new_doc = Doc()
 
         # Act
@@ -319,7 +345,12 @@ class TestPipelineState:
         step = create_contour_step(context_initializer)
         layer.workflow.add_step(step)
 
-        pipeline = Pipeline(doc, mock_task_mgr)
+        pipeline = Pipeline(
+            doc,
+            mock_task_mgr,
+            context_initializer.artifact_store,
+            context_initializer.machine,
+        )
 
         # Initial state - should be busy with one task
         assert pipeline.is_busy is True
@@ -347,7 +378,12 @@ class TestPipelineState:
         step = create_contour_step(context_initializer)
         layer.workflow.add_step(step)
 
-        pipeline = Pipeline(doc, mock_task_mgr)
+        pipeline = Pipeline(
+            doc,
+            mock_task_mgr,
+            context_initializer.artifact_store,
+            context_initializer.machine,
+        )
         mock_task_mgr.run_process.reset_mock()  # Reset after initialization
 
         # Act - pause the pipeline
@@ -376,7 +412,12 @@ class TestPipelineState:
         step = create_contour_step(context_initializer)
         layer.workflow.add_step(step)
 
-        pipeline = Pipeline(doc, mock_task_mgr)
+        pipeline = Pipeline(
+            doc,
+            mock_task_mgr,
+            context_initializer.artifact_store,
+            context_initializer.machine,
+        )
         mock_task_mgr.run_process.reset_mock()  # Reset after initialization
 
         # Act - use context manager
@@ -392,9 +433,14 @@ class TestPipelineState:
         # Reconciliation should happen after resume
         mock_task_mgr.run_process.assert_called()
 
-    def test_is_paused_property(self, doc, mock_task_mgr):
+    def test_is_paused_property(self, doc, mock_task_mgr, context_initializer):
         # Arrange
-        pipeline = Pipeline(doc, mock_task_mgr)
+        pipeline = Pipeline(
+            doc,
+            mock_task_mgr,
+            context_initializer.artifact_store,
+            context_initializer.machine,
+        )
 
         # Initial state
         assert pipeline.is_paused is False
@@ -419,7 +465,12 @@ class TestPipelineState:
         assert layer.workflow is not None
         step = create_contour_step(context_initializer)
         layer.workflow.add_step(step)
-        pipeline = Pipeline(doc, mock_task_mgr)
+        pipeline = Pipeline(
+            doc,
+            mock_task_mgr,
+            context_initializer.artifact_store,
+            context_initializer.machine,
+        )
 
         # Act
         result = pipeline.get_estimated_time(step, real_workpiece)
@@ -440,7 +491,12 @@ class TestPipelineState:
         step = create_contour_step(context_initializer)
         layer.workflow.add_step(step)
 
-        pipeline = Pipeline(doc, mock_task_mgr)
+        pipeline = Pipeline(
+            doc,
+            mock_task_mgr,
+            context_initializer.artifact_store,
+            context_initializer.machine,
+        )
 
         # Create a dummy workpiece artifact to allow the pipeline to proceed
         wp_artifact = WorkPieceArtifact(
@@ -500,7 +556,12 @@ class TestPipelineState:
         mock_task_mgr.run_process.side_effect = side_effect_wrapper
 
         # Act 1: Create pipeline with an empty doc, so it's idle.
-        pipeline = Pipeline(doc=Doc(), task_manager=mock_task_mgr)
+        pipeline = Pipeline(
+            doc=Doc(),
+            task_manager=mock_task_mgr,
+            artifact_store=context_initializer.artifact_store,
+            machine=context_initializer.machine,
+        )
         pipeline.workpiece_artifact_ready.connect(mock_artifact_ready_handler)
         pipeline.processing_state_changed.connect(
             mock_processing_state_handler

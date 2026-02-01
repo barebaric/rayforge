@@ -139,7 +139,12 @@ class TestPipelineArtifacts:
         step = create_contour_step(context_initializer)
         layer.workflow.add_step(step)
 
-        pipeline = Pipeline(doc, mock_task_mgr)
+        pipeline = Pipeline(
+            doc,
+            mock_task_mgr,
+            context_initializer.artifact_store,
+            context_initializer.machine,
+        )
 
         # Act & Assert - No handle initially
         assert (
@@ -190,7 +195,12 @@ class TestPipelineArtifacts:
         step = create_contour_step(context_initializer)
         layer.workflow.add_step(step)
 
-        pipeline = Pipeline(doc, mock_task_mgr)
+        pipeline = Pipeline(
+            doc,
+            mock_task_mgr,
+            context_initializer.artifact_store,
+            context_initializer.machine,
+        )
 
         # Act & Assert - No ops initially
         world_transform = real_workpiece.get_world_transform()
@@ -250,7 +260,12 @@ class TestPipelineArtifacts:
         step = create_contour_step(context_initializer)
         layer.workflow.add_step(step)
 
-        pipeline = Pipeline(doc, mock_task_mgr)
+        pipeline = Pipeline(
+            doc,
+            mock_task_mgr,
+            context_initializer.artifact_store,
+            context_initializer.machine,
+        )
 
         # Simulate a completed task with non-scalable artifact at
         # different size
@@ -299,7 +314,12 @@ class TestPipelineArtifacts:
         step = create_contour_step(context_initializer)
         layer.workflow.add_step(step)
 
-        pipeline = Pipeline(doc, mock_task_mgr)
+        pipeline = Pipeline(
+            doc,
+            mock_task_mgr,
+            context_initializer.artifact_store,
+            context_initializer.machine,
+        )
 
         # Act & Assert - No artifact initially
         assert pipeline.get_artifact(step, real_workpiece) is None
@@ -353,7 +373,12 @@ class TestPipelineArtifacts:
         step = create_contour_step(context_initializer)
         layer.workflow.add_step(step)
 
-        pipeline = Pipeline(doc, mock_task_mgr)
+        pipeline = Pipeline(
+            doc,
+            mock_task_mgr,
+            context_initializer.artifact_store,
+            context_initializer.machine,
+        )
 
         # Simulate a completed task with non-scalable artifact at
         # different size

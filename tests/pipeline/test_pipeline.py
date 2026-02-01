@@ -197,7 +197,7 @@ class TestPipeline:
                         task_info.when_done(task_obj)
 
                 elif task_info.target is make_step_artifact_in_subprocess:
-                    gen_id = task_info.args[2]
+                    gen_id = task_info.args[3]
                     task_obj.result.return_value = gen_id
                     if task_info.when_event:
                         # Create real artifacts and handles so the SHM blocks
@@ -240,7 +240,7 @@ class TestPipeline:
                         task_info.when_done(task_obj)
 
                 elif task_info.target is make_workpiece_artifact_in_subprocess:
-                    gen_id = task_info.args[6]
+                    gen_id = task_info.args[7]
                     task_obj.result.return_value = gen_id
                     if task_info.when_event:
                         event_data = {
@@ -267,7 +267,12 @@ class TestPipeline:
         layer.workflow.add_step(step)
 
         # Act
-        Pipeline(doc, mock_task_mgr)
+        Pipeline(
+            doc,
+            mock_task_mgr,
+            context_initializer.artifact_store,
+            context_initializer.machine,
+        )
 
         # Assert
         mock_task_mgr.run_process.assert_called_once()
@@ -283,7 +288,12 @@ class TestPipeline:
         step = create_contour_step(context_initializer)
         layer.workflow.add_step(step)
 
-        pipeline = Pipeline(doc, mock_task_mgr)
+        pipeline = Pipeline(
+            doc,
+            mock_task_mgr,
+            context_initializer.artifact_store,
+            context_initializer.machine,
+        )
         mock_task_mgr.run_process.assert_called_once()
         task_info = mock_task_mgr.created_tasks[0]
 
@@ -339,7 +349,12 @@ class TestPipeline:
         step = create_contour_step(context_initializer)
         layer.workflow.add_step(step)
 
-        pipeline = Pipeline(doc, mock_task_mgr)
+        pipeline = Pipeline(
+            doc,
+            mock_task_mgr,
+            context_initializer.artifact_store,
+            context_initializer.machine,
+        )
         mock_task_mgr.run_process.assert_called_once()
         task_info = mock_task_mgr.created_tasks[0]
 
@@ -361,7 +376,12 @@ class TestPipeline:
         assert layer.workflow is not None
         step = create_contour_step(context_initializer)
         layer.workflow.add_step(step)
-        pipeline = Pipeline(doc, mock_task_mgr)
+        pipeline = Pipeline(
+            doc,
+            mock_task_mgr,
+            context_initializer.artifact_store,
+            context_initializer.machine,
+        )
 
         artifact = WorkPieceArtifact(
             ops=Ops(),
@@ -402,7 +422,12 @@ class TestPipeline:
         assert layer.workflow is not None
         step = create_contour_step(context_initializer)
         layer.workflow.add_step(step)
-        Pipeline(doc, mock_task_mgr)
+        Pipeline(
+            doc,
+            mock_task_mgr,
+            context_initializer.artifact_store,
+            context_initializer.machine,
+        )
         artifact = WorkPieceArtifact(
             ops=Ops(),
             is_scalable=True,
@@ -439,7 +464,12 @@ class TestPipeline:
         assert layer.workflow is not None
         step = create_contour_step(context_initializer)
         layer.workflow.add_step(step)
-        pipeline = Pipeline(doc, mock_task_mgr)
+        pipeline = Pipeline(
+            doc,
+            mock_task_mgr,
+            context_initializer.artifact_store,
+            context_initializer.machine,
+        )
 
         artifact = WorkPieceArtifact(
             ops=Ops(),
@@ -478,7 +508,12 @@ class TestPipeline:
         assert layer.workflow is not None
         step = create_contour_step(context_initializer)
         layer.workflow.add_step(step)
-        Pipeline(doc, mock_task_mgr)
+        Pipeline(
+            doc,
+            mock_task_mgr,
+            context_initializer.artifact_store,
+            context_initializer.machine,
+        )
         initial_artifact = WorkPieceArtifact(
             ops=Ops(),
             is_scalable=False,
@@ -515,7 +550,12 @@ class TestPipeline:
         step = create_contour_step(context_initializer)
         layer.workflow.add_step(step)
 
-        pipeline = Pipeline(doc, mock_task_mgr)
+        pipeline = Pipeline(
+            doc,
+            mock_task_mgr,
+            context_initializer.artifact_store,
+            context_initializer.machine,
+        )
 
         # Simulate completion of a task to populate the cache
         task_info = mock_task_mgr.created_tasks[0]
@@ -560,16 +600,30 @@ class TestPipeline:
             # handle should already be released by shutdown
             pass
 
-    def test_doc_property_getter(self, doc, mock_task_mgr):
+    def test_doc_property_getter(
+        self, doc, mock_task_mgr, context_initializer
+    ):
         # Arrange
-        pipeline = Pipeline(doc, mock_task_mgr)
+        pipeline = Pipeline(
+            doc,
+            mock_task_mgr,
+            context_initializer.artifact_store,
+            context_initializer.machine,
+        )
 
         # Act & Assert
         assert pipeline.doc is doc
 
-    def test_doc_property_setter_with_same_doc(self, doc, mock_task_mgr):
+    def test_doc_property_setter_with_same_doc(
+        self, doc, mock_task_mgr, context_initializer
+    ):
         # Arrange
-        pipeline = Pipeline(doc, mock_task_mgr)
+        pipeline = Pipeline(
+            doc,
+            mock_task_mgr,
+            context_initializer.artifact_store,
+            context_initializer.machine,
+        )
 
         # Act - setting the same document should not cause issues
         pipeline.doc = doc
@@ -577,9 +631,16 @@ class TestPipeline:
         # Assert
         assert pipeline.doc is doc
 
-    def test_doc_property_setter_with_different_doc(self, doc, mock_task_mgr):
+    def test_doc_property_setter_with_different_doc(
+        self, doc, mock_task_mgr, context_initializer
+    ):
         # Arrange
-        pipeline = Pipeline(doc, mock_task_mgr)
+        pipeline = Pipeline(
+            doc,
+            mock_task_mgr,
+            context_initializer.artifact_store,
+            context_initializer.machine,
+        )
         new_doc = Doc()
 
         # Act
@@ -597,7 +658,12 @@ class TestPipeline:
         step = create_contour_step(context_initializer)
         layer.workflow.add_step(step)
 
-        pipeline = Pipeline(doc, mock_task_mgr)
+        pipeline = Pipeline(
+            doc,
+            mock_task_mgr,
+            context_initializer.artifact_store,
+            context_initializer.machine,
+        )
 
         # Initial state - should be busy with one task
         assert pipeline.is_busy is True
@@ -625,7 +691,12 @@ class TestPipeline:
         step = create_contour_step(context_initializer)
         layer.workflow.add_step(step)
 
-        pipeline = Pipeline(doc, mock_task_mgr)
+        pipeline = Pipeline(
+            doc,
+            mock_task_mgr,
+            context_initializer.artifact_store,
+            context_initializer.machine,
+        )
         mock_task_mgr.run_process.reset_mock()  # Reset after initialization
 
         # Act - pause the pipeline
@@ -654,7 +725,12 @@ class TestPipeline:
         step = create_contour_step(context_initializer)
         layer.workflow.add_step(step)
 
-        pipeline = Pipeline(doc, mock_task_mgr)
+        pipeline = Pipeline(
+            doc,
+            mock_task_mgr,
+            context_initializer.artifact_store,
+            context_initializer.machine,
+        )
         mock_task_mgr.run_process.reset_mock()  # Reset after initialization
 
         # Act - use context manager
@@ -670,9 +746,14 @@ class TestPipeline:
         # Reconciliation should happen after resume
         mock_task_mgr.run_process.assert_called()
 
-    def test_is_paused_property(self, doc, mock_task_mgr):
+    def test_is_paused_property(self, doc, mock_task_mgr, context_initializer):
         # Arrange
-        pipeline = Pipeline(doc, mock_task_mgr)
+        pipeline = Pipeline(
+            doc,
+            mock_task_mgr,
+            context_initializer.artifact_store,
+            context_initializer.machine,
+        )
 
         # Initial state
         assert pipeline.is_paused is False
@@ -697,7 +778,12 @@ class TestPipeline:
         assert layer.workflow is not None
         step = create_contour_step(context_initializer)
         layer.workflow.add_step(step)
-        pipeline = Pipeline(doc, mock_task_mgr)
+        pipeline = Pipeline(
+            doc,
+            mock_task_mgr,
+            context_initializer.artifact_store,
+            context_initializer.machine,
+        )
 
         # Act
         result = pipeline.get_estimated_time(step, real_workpiece)
@@ -718,7 +804,12 @@ class TestPipeline:
         step = create_contour_step(context_initializer)
         layer.workflow.add_step(step)
 
-        pipeline = Pipeline(doc, mock_task_mgr)
+        pipeline = Pipeline(
+            doc,
+            mock_task_mgr,
+            context_initializer.artifact_store,
+            context_initializer.machine,
+        )
 
         # Create a dummy workpiece artifact to allow the pipeline to proceed
         wp_artifact = WorkPieceArtifact(
@@ -760,7 +851,12 @@ class TestPipeline:
         step = create_contour_step(context_initializer)
         layer.workflow.add_step(step)
 
-        pipeline = Pipeline(doc, mock_task_mgr)
+        pipeline = Pipeline(
+            doc,
+            mock_task_mgr,
+            context_initializer.artifact_store,
+            context_initializer.machine,
+        )
         mock_task_mgr.run_process.assert_called_once()
         task_info = mock_task_mgr.created_tasks[0]
 
@@ -838,7 +934,12 @@ class TestPipeline:
         step = create_contour_step(context_initializer)
         layer.workflow.add_step(step)
 
-        pipeline = Pipeline(doc, mock_task_mgr)
+        pipeline = Pipeline(
+            doc,
+            mock_task_mgr,
+            context_initializer.artifact_store,
+            context_initializer.machine,
+        )
 
         # Act & Assert - No handle initially
         assert (
@@ -889,7 +990,12 @@ class TestPipeline:
         step = create_contour_step(context_initializer)
         layer.workflow.add_step(step)
 
-        pipeline = Pipeline(doc, mock_task_mgr)
+        pipeline = Pipeline(
+            doc,
+            mock_task_mgr,
+            context_initializer.artifact_store,
+            context_initializer.machine,
+        )
 
         # Act & Assert - No ops initially
         world_transform = real_workpiece.get_world_transform()
@@ -949,7 +1055,12 @@ class TestPipeline:
         step = create_contour_step(context_initializer)
         layer.workflow.add_step(step)
 
-        pipeline = Pipeline(doc, mock_task_mgr)
+        pipeline = Pipeline(
+            doc,
+            mock_task_mgr,
+            context_initializer.artifact_store,
+            context_initializer.machine,
+        )
 
         # Simulate a completed task with non-scalable artifact at
         # different size
@@ -998,7 +1109,12 @@ class TestPipeline:
         step = create_contour_step(context_initializer)
         layer.workflow.add_step(step)
 
-        pipeline = Pipeline(doc, mock_task_mgr)
+        pipeline = Pipeline(
+            doc,
+            mock_task_mgr,
+            context_initializer.artifact_store,
+            context_initializer.machine,
+        )
 
         # Act & Assert - No artifact initially
         assert pipeline.get_artifact(step, real_workpiece) is None
@@ -1052,7 +1168,12 @@ class TestPipeline:
         step = create_contour_step(context_initializer)
         layer.workflow.add_step(step)
 
-        pipeline = Pipeline(doc, mock_task_mgr)
+        pipeline = Pipeline(
+            doc,
+            mock_task_mgr,
+            context_initializer.artifact_store,
+            context_initializer.machine,
+        )
 
         # Simulate a completed task with non-scalable artifact at
         # different size
@@ -1098,7 +1219,12 @@ class TestPipeline:
         step = create_contour_step(context_initializer)
         layer.workflow.add_step(step)
 
-        pipeline = Pipeline(doc, mock_task_mgr)
+        pipeline = Pipeline(
+            doc,
+            mock_task_mgr,
+            context_initializer.artifact_store,
+            context_initializer.machine,
+        )
 
         # First, complete the prerequisite workpiece and step generation
         wp_artifact = WorkPieceArtifact(
@@ -1161,7 +1287,12 @@ class TestPipeline:
         assert layer.workflow is not None
         step = create_contour_step(context_initializer)
         layer.workflow.add_step(step)
-        pipeline = Pipeline(doc, mock_task_mgr)
+        pipeline = Pipeline(
+            doc,
+            mock_task_mgr,
+            context_initializer.artifact_store,
+            context_initializer.machine,
+        )
 
         wp_artifact = WorkPieceArtifact(
             ops=Ops(),
@@ -1220,7 +1351,12 @@ class TestPipeline:
         assert layer.workflow is not None
         step = create_contour_step(context_initializer)
         layer.workflow.add_step(step)
-        pipeline = Pipeline(doc, mock_task_mgr)
+        pipeline = Pipeline(
+            doc,
+            mock_task_mgr,
+            context_initializer.artifact_store,
+            context_initializer.machine,
+        )
 
         wp_artifact = WorkPieceArtifact(
             ops=Ops(),
@@ -1286,7 +1422,12 @@ class TestPipeline:
         assert layer.workflow is not None
         step = create_contour_step(context_initializer)
         layer.workflow.add_step(step)
-        pipeline = Pipeline(doc, mock_task_mgr)
+        pipeline = Pipeline(
+            doc,
+            mock_task_mgr,
+            context_initializer.artifact_store,
+            context_initializer.machine,
+        )
 
         wp_artifact = WorkPieceArtifact(
             ops=Ops(),
@@ -1337,7 +1478,12 @@ class TestPipeline:
         assert layer.workflow is not None
         step = create_contour_step(context_initializer)
         layer.workflow.add_step(step)
-        pipeline = Pipeline(doc, mock_task_mgr)
+        pipeline = Pipeline(
+            doc,
+            mock_task_mgr,
+            context_initializer.artifact_store,
+            context_initializer.machine,
+        )
 
         wp_artifact = WorkPieceArtifact(
             ops=Ops(),
@@ -1398,7 +1544,12 @@ class TestPipeline:
         step = create_contour_step(context_initializer)
         layer.workflow.add_step(step)
 
-        pipeline = Pipeline(doc, mock_task_mgr)
+        pipeline = Pipeline(
+            doc,
+            mock_task_mgr,
+            context_initializer.artifact_store,
+            context_initializer.machine,
+        )
 
         # Mock the final signal handler to intercept the call
         mock_signal_handler = MagicMock()
@@ -1410,7 +1561,7 @@ class TestPipeline:
         assert len(mock_task_mgr.created_tasks) == 1
         task1_info = mock_task_mgr.created_tasks[0]
         # Generation ID for the first task is 1
-        assert task1_info.args[6] == 1
+        assert task1_info.args[7] == 1
         mock_task_mgr.run_process.reset_mock()
         mock_task_mgr.created_tasks.clear()
 
@@ -1429,7 +1580,7 @@ class TestPipeline:
         assert len(mock_task_mgr.created_tasks) == 1
         task2_info = mock_task_mgr.created_tasks[0]
         # Generation ID for the second task should be incremented to 2
-        assert task2_info.args[6] == 2
+        assert task2_info.args[7] == 2
 
         # Act 3: Simulate the CANCELLED task's callback firing.
         # This could happen if the task was already running when cancelled.
@@ -1514,7 +1665,12 @@ class TestPipeline:
         mock_task_mgr.run_process.side_effect = side_effect_wrapper
 
         # Act 1: Create pipeline with an empty doc, so it's idle.
-        pipeline = Pipeline(doc=Doc(), task_manager=mock_task_mgr)
+        pipeline = Pipeline(
+            doc=Doc(),
+            task_manager=mock_task_mgr,
+            artifact_store=context_initializer.artifact_store,
+            machine=context_initializer.machine,
+        )
         pipeline.workpiece_artifact_ready.connect(mock_artifact_ready_handler)
         pipeline.processing_state_changed.connect(
             mock_processing_state_handler

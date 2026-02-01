@@ -24,7 +24,6 @@ from typing import (
 )
 from blinker import Signal
 from contextlib import contextmanager
-from ..context import get_context
 from ..core.doc import Doc
 from ..core.group import Group
 from ..core.item import DocItem
@@ -51,6 +50,8 @@ from .stage import (
 
 
 if TYPE_CHECKING:
+    from ..machine.models.machine import Machine
+    from ..pipeline.artifact.store import ArtifactStore
     from ..shared.tasker.manager import TaskManager
 
 logger = logging.getLogger(__name__)
@@ -86,17 +87,29 @@ class Pipeline:
 
     RECONCILIATION_DELAY_MS = 200
 
-    def __init__(self, doc: Optional["Doc"], task_manager: "TaskManager"):
+    def __init__(
+        self,
+        doc: Optional["Doc"],
+        task_manager: "TaskManager",
+        artifact_store: "ArtifactStore",
+        machine: Optional["Machine"],
+    ):
         """
         Initializes the Pipeline.
 
         Args:
             doc: The top-level Doc object to monitor for changes.
             task_manager: The TaskManager instance for background jobs.
+            artifact_store: The ArtifactStore for managing artifacts.
+            machine: The Machine instance for laser operations.
         """
+        if machine is None:
+            raise RuntimeError("Machine is not configured in context")
         logger.debug(f"{self.__class__.__name__}.__init__[{id(self)}] called")
         self._doc: Optional[Doc] = doc
         self._task_manager = task_manager
+        self._artifact_store = artifact_store
+        self._machine = machine
         self._pause_count = 0
         self._last_known_busy_state = False
         self._reconciliation_timer: Optional[threading.Timer] = None
@@ -127,22 +140,21 @@ class Pipeline:
     def _initialize_stages_and_connections(self):
         """A new helper method to contain all stage setup logic."""
         logger.debug(f"[{id(self)}] Initializing stages and connections.")
-        store = get_context().artifact_store
-        self._artifact_manager = ArtifactManager(store)
+        self._artifact_manager = ArtifactManager(self._artifact_store)
         self._last_known_busy_state = False
 
         # Stages
         self._workpiece_stage = WorkPiecePipelineStage(
-            self._task_manager, self._artifact_manager
+            self._task_manager, self._artifact_manager, self._machine
         )
         self._step_stage = StepPipelineStage(
-            self._task_manager, self._artifact_manager
+            self._task_manager, self._artifact_manager, self._machine
         )
         self._job_stage = JobPipelineStage(
-            self._task_manager, self._artifact_manager
+            self._task_manager, self._artifact_manager, self._machine
         )
         self._workpiece_view_stage = WorkPieceViewPipelineStage(
-            self._task_manager, self._artifact_manager
+            self._task_manager, self._artifact_manager, self._machine
         )
 
         # Connect signals from stages

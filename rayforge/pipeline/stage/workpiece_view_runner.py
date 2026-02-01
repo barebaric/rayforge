@@ -6,13 +6,13 @@ import numpy as np
 import time
 from typing import TYPE_CHECKING, Optional, Tuple, Dict, Any, List
 from multiprocessing import shared_memory
-from ...context import get_context
 from ...shared.tasker.proxy import ExecutionContextProxy
 from ...shared.util.colors import ColorSet
 from ..artifact import (
     WorkPieceArtifact,
     create_handle_from_dict,
 )
+from ..artifact.store import ArtifactStore
 from ..artifact.workpiece_view import (
     RenderContext,
     WorkPieceViewArtifact,
@@ -279,6 +279,7 @@ def _get_content_bbox(
 
 def make_workpiece_view_artifact_in_subprocess(
     proxy: ExecutionContextProxy,
+    artifact_store: ArtifactStore,
     workpiece_artifact_handle_dict: Dict[str, Any],
     render_context_dict: Dict[str, Any],
     creator_tag: str,
@@ -292,7 +293,6 @@ def make_workpiece_view_artifact_in_subprocess(
     context = RenderContext.from_dict(render_context_dict)
     handle = create_handle_from_dict(workpiece_artifact_handle_dict)
     logger.debug(f"Worker: Retrieved handle {handle.shm_name}")
-    artifact_store = get_context().artifact_store
     artifact = artifact_store.get(handle)
     if not isinstance(artifact, WorkPieceArtifact):
         logger.error("Runner received incorrect artifact type.")

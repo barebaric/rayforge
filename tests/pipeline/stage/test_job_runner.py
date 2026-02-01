@@ -72,7 +72,10 @@ def test_jobrunner_assembles_step_artifacts_correctly(
 
     # Act
     result = make_job_artifact_in_subprocess(
-        mock_proxy, asdict(job_desc), "test_job"
+        mock_proxy,
+        get_context().artifact_store,
+        asdict(job_desc),
+        "test_job",
     )
 
     # Assert
