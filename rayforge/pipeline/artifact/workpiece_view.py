@@ -27,6 +27,34 @@ class RenderContext:
         """Deserializes a RenderContext from a dictionary."""
         return cls(**data)
 
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, RenderContext):
+            return False
+        return (
+            self.pixels_per_mm == other.pixels_per_mm
+            and self.show_travel_moves == other.show_travel_moves
+            and self.margin_px == other.margin_px
+            and self._compare_color_sets(
+                self.color_set_dict, other.color_set_dict
+            )
+        )
+
+    def _compare_color_sets(
+        self, dict1: Dict[str, Any], dict2: Dict[str, Any]
+    ) -> bool:
+        """Compare two color set dictionaries for equality."""
+        if dict1.keys() != dict2.keys():
+            return False
+        for key in dict1:
+            val1 = dict1[key]
+            val2 = dict2.get(key)
+            if isinstance(val1, dict) and isinstance(val2, dict):
+                if not self._compare_color_sets(val1, val2):
+                    return False
+            elif val1 != val2:
+                return False
+        return True
+
 
 class WorkPieceViewArtifactHandle(BaseArtifactHandle):
     """A handle for a WorkPieceViewArtifact."""

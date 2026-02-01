@@ -147,6 +147,9 @@ class Pipeline:
         self._workpiece_stage.generation_starting.connect(
             self._on_workpiece_generation_starting
         )
+        self._workpiece_stage.generation_starting.connect(
+            self._workpiece_view_stage._on_generation_starting
+        )
         self._workpiece_stage.visual_chunk_available.connect(
             self._on_workpiece_visual_chunk_available
         )
@@ -567,11 +570,13 @@ class Pipeline:
     ) -> None:
         """
         Handles the signal that a workpiece artifact has been adopted.
-        Relays the signal to notify workpiece elements.
+        Relays the signal to notify workpiece elements and triggers
+        step assembly to ensure step ops artifacts are created promptly.
         """
         self.workpiece_artifact_adopted.send(
             self, step_uid=step_uid, workpiece_uid=workpiece_uid
         )
+        self._schedule_reconciliation()
 
     def _on_step_render_artifact_ready(
         self, sender: StepPipelineStage, *, step: Step

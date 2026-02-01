@@ -361,7 +361,14 @@ class WorkPiecePipelineStage(PipelineStage):
 
         if task_status == "canceled":
             logger.debug(
-                f"[{key}] Task was canceled. Not sending 'finished' signal."
+                f"[{key}] Task was canceled. Sending 'finished' signal "
+                "with canceled status to trigger cleanup."
+            )
+            self.generation_finished.send(
+                self,
+                step=step,
+                workpiece=workpiece,
+                generation_id=task_generation_id,
             )
             return
 
