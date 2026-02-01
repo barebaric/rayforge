@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-01-29 20:29+0100\n"
+"POT-Creation-Date: 2026-02-01 04:36+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -1074,20 +1074,6 @@ msgstr ""
 msgid "Default Machine"
 msgstr ""
 
-#: rayforge/machine/models/machine.py
-msgid "No driver selected for this machine."
-msgstr ""
-
-#: rayforge/machine/models/machine.py
-#, python-brace-format
-msgid "Driver '{driver}' not found."
-msgstr ""
-
-#: rayforge/machine/models/machine.py
-#, python-brace-format
-msgid "An unexpected error occurred during validation: {error}"
-msgstr ""
-
 #: rayforge/machine/models/machine.py rayforge/machine/models/profile.py
 #, python-brace-format
 msgid "{label} (for {machine_name})"
@@ -1103,6 +1089,20 @@ msgstr ""
 
 #: rayforge/machine/models/profile.py
 msgid "Other Device"
+msgstr ""
+
+#: rayforge/machine/models/controller.py
+msgid "No driver selected for this machine."
+msgstr ""
+
+#: rayforge/machine/models/controller.py
+#, python-brace-format
+msgid "Driver '{driver}' not found."
+msgstr ""
+
+#: rayforge/machine/models/controller.py
+#, python-brace-format
+msgid "An unexpected error occurred during validation: {error}"
 msgstr ""
 
 #: rayforge/machine/models/macro.py
@@ -3488,6 +3488,18 @@ msgid "Change Grid Dimensions"
 msgstr ""
 
 #: rayforge/ui_gtk/doceditor/step_settings/rasterizer.py
+msgid "Direction"
+msgstr ""
+
+#: rayforge/ui_gtk/doceditor/step_settings/rasterizer.py
+msgid "Raster direction in degrees (0°=horizontal, 90°=vertical)"
+msgstr ""
+
+#: rayforge/ui_gtk/doceditor/step_settings/rasterizer.py
+msgid "Change Raster Direction"
+msgstr ""
+
+#: rayforge/ui_gtk/doceditor/step_settings/rasterizer.py
 msgid "Pixel brightness value to consider black (0-255)"
 msgstr ""
 
@@ -5158,11 +5170,6 @@ msgstr ""
 #: rayforge/doceditor/file_cmd.py
 #, python-brace-format
 msgid "File not found: {name}"
-msgstr ""
-
-#: rayforge/doceditor/file_cmd.py
-#, python-brace-format
-msgid "Project loaded: {name}"
 msgstr ""
 
 #: rayforge/doceditor/file_cmd.py
