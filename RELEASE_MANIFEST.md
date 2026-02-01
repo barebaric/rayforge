@@ -15,7 +15,8 @@ When instructed to "Prepare a release", the agent executes the following pipelin
 1. **Read CHANGELOG.md** to extract version information and release notes
 2. **Read git log** to identify commit history and changes
 3. **Identify media assets** in `media/[release]/` directory to learn about the style and language of the content on each platform (reddit, github, patreon)
-4. Research the web using the webReader tool, for any recent mentions of Rayforge, to identify criticism or praise. See if you can incorporate this into the
+4. **Fetch Patreon supporters** using `pixi run list-supporters` to get the current list of supporters
+5. Research the web using the webReader tool, for any recent mentions of Rayforge, to identify criticism or praise. See if you can incorporate this into the
    content in phase 2 - not by directly adressing it, but to understand what users care about.
 
 ### Phase 2: Content Drafting
@@ -23,9 +24,10 @@ When instructed to "Prepare a release", the agent executes the following pipelin
 Generate the following files in `media/[release]/drafts/`:
 
 - `youtube.txt` - Text for the YouTube release video description
-- `reddit_post.md` - Formatted post for Reddit, following the tone of the previous Reddit posts
+- `reddit_post.md` - Formatted post for Reddit, following the tone of the previous Reddit posts. Include credits to paying Patreon supporters.
 - `patreon_post.md` - Formatted post for Patreon, following the tone of the previous Patreon posts
-- `blog_post.md` - Formatted post for the website blog. Don't store this in the drafts, store it in `website/content/blog/posts/`
+- `blog_post.md` - Formatted post for the website blog. Don't store this in the drafts, store it in `website/content/blog/posts/`.
+  Give credits to paying Patreon supporters.
 - Update the changelog in the appstream file (`data/org.rayforge.rayforge.metainfo.xml`)
 - Generate five release thumbnails using the MCP tool. Something like "make a YouTube thumbnail for Rayforge 1.1 with ... [something creative]".
   Put the thumbnails into media/[release]/thumbs/
