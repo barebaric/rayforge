@@ -28,6 +28,8 @@ class ArtifactStore:
         # blocks for which this ArtifactStore instance has ownership. An open
         # handle is stored for each block this instance creates or adopts.
         self._managed_shms: Dict[str, shared_memory.SharedMemory] = {}
+        # Track reference counts for shared memory blocks
+        self._refcounts: Dict[str, int] = {}
 
     def shutdown(self):
         for shm_name in list(self._managed_shms.keys()):
@@ -49,12 +51,18 @@ class ArtifactStore:
         """
         shm_name = handle.shm_name
         if shm_name in self._managed_shms:
-            logger.debug(f"Shared memory block {shm_name} is already managed.")
+            # Increment refcount for already-managed block
+            self._refcounts[shm_name] = self._refcounts.get(shm_name, 1) + 1
+            logger.debug(
+                f"Shared memory block {shm_name} refcount incremented to "
+                f"{self._refcounts[shm_name]}"
+            )
             return
 
         try:
             shm_obj = shared_memory.SharedMemory(name=shm_name)
             self._managed_shms[shm_name] = shm_obj
+            self._refcounts[shm_name] = 1
             logger.debug(f"Adopted shared memory block: {shm_name}")
         except FileNotFoundError:
             logger.error(
@@ -107,6 +115,7 @@ class ArtifactStore:
         # handle open to manage its lifecycle. This unified approach works
         # on all platforms and is required for the adoption model.
         self._managed_shms[shm_name] = shm
+        self._refcounts[shm_name] = 1
 
         # Delegate handle creation to the artifact instance
         handle = artifact.create_handle(shm_name, array_metadata)
@@ -116,7 +125,21 @@ class ArtifactStore:
         """
         Reconstructs an artifact from a shared memory block using its handle.
         """
-        shm = shared_memory.SharedMemory(name=handle.shm_name)
+        # If we manage this block, use our persistent handle to keep the
+        # buffer valid.
+        if handle.shm_name in self._managed_shms:
+            shm = self._managed_shms[handle.shm_name]
+            close_after = False
+        else:
+            # Otherwise, open a temporary handle. Warning: The buffer may
+            # become invalid when this handle is closed!
+            try:
+                shm = shared_memory.SharedMemory(name=handle.shm_name)
+                close_after = True
+            except FileNotFoundError:
+                raise RuntimeError(
+                    f"Shared memory block '{handle.shm_name}' not found."
+                )
 
         # Reconstruct views into the shared memory without copying data
         arrays = {}
@@ -137,19 +160,47 @@ class ArtifactStore:
         # Delegate reconstruction to the class
         artifact = artifact_class.from_storage(handle, arrays)
 
-        shm.close()
+        if close_after:
+            shm.close()
+
         return artifact
 
     def _release_by_name(self, shm_name: str) -> None:
         """
         Closes and unlinks a managed shared memory block by its name.
+        Uses reference counting to ensure the block is not released while
+        still in use.
         """
+        refcount = self._refcounts.get(shm_name, 0)
+        if refcount > 1:
+            # Decrement refcount and keep the block
+            self._refcounts[shm_name] = refcount - 1
+            logger.debug(
+                f"Decremented refcount for {shm_name} to "
+                f"{self._refcounts[shm_name]}"
+            )
+            return
+        elif refcount == 1:
+            # Refcount reached zero, release the block
+            del self._refcounts[shm_name]
+        else:
+            # Refcount is 0 or not in refcounts
+            # Check if block is still managed before warning
+            if shm_name not in self._managed_shms:
+                # Block was already released, this is fine
+                logger.debug(
+                    f"Shared memory block {shm_name} already released."
+                )
+                return
+            # Block is managed but has no refcount, this is unusual
+            logger.warning(
+                f"Attempted to release block {shm_name}, which is "
+                f"managed but has no refcount."
+            )
+            return
+
         shm_obj = self._managed_shms.pop(shm_name, None)
         if not shm_obj:
-            logger.warning(
-                f"Attempted to release block {shm_name}, which is not "
-                f"managed or has already been released."
-            )
             return
 
         try:
@@ -172,6 +223,30 @@ class ArtifactStore:
         """
         self._release_by_name(handle.shm_name)
 
+    def retain(self, handle: BaseArtifactHandle) -> bool:
+        """
+        Increments the reference count for a shared memory block.
+
+        This is used to indicate that the block will be used by a subprocess
+        and should not be released until the subprocess is done with it.
+
+        Args:
+            handle: The handle of the artifact whose shared memory block is
+                    to be retained.
+
+        Returns:
+            True if the block was successfully retained, False otherwise.
+        """
+        shm_name = handle.shm_name
+        if shm_name in self._managed_shms:
+            self._refcounts[shm_name] = self._refcounts.get(shm_name, 1) + 1
+            logger.debug(
+                f"Retained {shm_name}, refcount now "
+                f"{self._refcounts[shm_name]}"
+            )
+            return True
+        return False
+
     def forget(self, handle: BaseArtifactHandle) -> None:
         """
         Closes the handle to a shared memory block without destroying the
@@ -187,6 +262,10 @@ class ArtifactStore:
                     to be forgotten.
         """
         shm_name = handle.shm_name
+        logger.debug(
+            f"forget() called for {shm_name}, refcount="
+            f"{self._refcounts.get(shm_name, 0)}"
+        )
         shm_obj = self._managed_shms.pop(shm_name, None)
         if not shm_obj:
             logger.warning(
@@ -194,6 +273,9 @@ class ArtifactStore:
                 f"managed or has already been released/forgotten."
             )
             return
+
+        # Also remove from refcounts
+        self._refcounts.pop(shm_name, None)
 
         try:
             shm_obj.close()

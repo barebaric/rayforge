@@ -43,10 +43,10 @@ def mock_task_mgr():
 
 
 @pytest.fixture
-def mock_artifact_cache():
-    """Provides a mock ArtifactCache."""
-    cache = MagicMock()
-    cache.get_workpiece_handle.return_value = WorkPieceArtifactHandle(
+def mock_artifact_manager():
+    """Provides a mock ArtifactManager."""
+    manager = MagicMock()
+    manager.get_workpiece_handle.return_value = WorkPieceArtifactHandle(
         is_scalable=True,
         source_coordinate_system_name="MILLIMETER_SPACE",
         source_dimensions=(10, 10),
@@ -55,8 +55,8 @@ def mock_artifact_cache():
         handle_class_name="WorkPieceArtifactHandle",
         artifact_type_name="WorkPieceArtifact",
     )
-    cache.has_step_render_handle.return_value = False
-    return cache
+    manager.has_step_render_handle.return_value = False
+    return manager
 
 
 @pytest.fixture
@@ -124,22 +124,22 @@ def _complete_step_task(task, time=42.0, gen_id=1):
 
 @pytest.mark.usefixtures("context_initializer")
 class TestStepPipelineStage:
-    def test_instantiation(self, mock_task_mgr, mock_artifact_cache):
+    def test_instantiation(self, mock_task_mgr, mock_artifact_manager):
         """Test that StepPipelineStage can be created."""
-        stage = StepPipelineStage(mock_task_mgr, mock_artifact_cache)
+        stage = StepPipelineStage(mock_task_mgr, mock_artifact_manager)
         assert isinstance(stage, PipelineStage)
         assert stage._task_manager is mock_task_mgr
-        assert stage._artifact_cache is mock_artifact_cache
+        assert stage._artifact_manager is mock_artifact_manager
 
     def test_reconcile_triggers_assembly_for_missing_artifact(
-        self, mock_task_mgr, mock_artifact_cache, mock_doc_and_step
+        self, mock_task_mgr, mock_artifact_manager, mock_doc_and_step
     ):
         """
         Tests that reconcile() starts a task if a step artifact is missing.
         """
         # Arrange
         doc, step = mock_doc_and_step
-        stage = StepPipelineStage(mock_task_mgr, mock_artifact_cache)
+        stage = StepPipelineStage(mock_task_mgr, mock_artifact_manager)
 
         # Act
         stage.reconcile(doc)
@@ -150,12 +150,12 @@ class TestStepPipelineStage:
         assert called_func is make_step_artifact_in_subprocess
 
     def test_mark_stale_and_trigger_starts_assembly(
-        self, mock_task_mgr, mock_artifact_cache, mock_doc_and_step
+        self, mock_task_mgr, mock_artifact_manager, mock_doc_and_step
     ):
         """Tests that explicitly marking a step as stale triggers assembly."""
         # Arrange
         doc, step = mock_doc_and_step
-        stage = StepPipelineStage(mock_task_mgr, mock_artifact_cache)
+        stage = StepPipelineStage(mock_task_mgr, mock_artifact_manager)
 
         # Act
         stage.mark_stale_and_trigger(step)
@@ -165,7 +165,7 @@ class TestStepPipelineStage:
         assert len(mock_task_mgr.created_tasks) == 1
 
     def test_assembly_flow_success(
-        self, mock_task_mgr, mock_artifact_cache, mock_doc_and_step
+        self, mock_task_mgr, mock_artifact_manager, mock_doc_and_step
     ):
         """
         Tests the full successful flow: triggering, receiving the render
@@ -173,7 +173,7 @@ class TestStepPipelineStage:
         """
         # Arrange
         doc, step = mock_doc_and_step
-        stage = StepPipelineStage(mock_task_mgr, mock_artifact_cache)
+        stage = StepPipelineStage(mock_task_mgr, mock_artifact_manager)
 
         render_signal_handler = MagicMock()
         time_signal_handler = MagicMock()
@@ -196,6 +196,7 @@ class TestStepPipelineStage:
             handle_class_name="StepRenderArtifactHandle",
             artifact_type_name="StepRenderArtifact",
         )
+        mock_artifact_manager.adopt_artifact.return_value = render_handle
         task.when_event(
             mock_task_obj,
             "render_artifact_ready",
@@ -208,6 +209,7 @@ class TestStepPipelineStage:
             artifact_type_name="StepOpsArtifact",
             time_estimate=None,
         )
+        mock_artifact_manager.adopt_artifact.return_value = ops_handle
         task.when_event(
             mock_task_obj,
             "ops_artifact_ready",
@@ -221,10 +223,10 @@ class TestStepPipelineStage:
         )
 
         # Assert event phase worked
-        mock_artifact_cache.put_step_render_handle.assert_called_once_with(
+        mock_artifact_manager.put_step_render_handle.assert_called_once_with(
             step.uid, render_handle
         )
-        mock_artifact_cache.put_step_ops_handle.assert_called_once_with(
+        mock_artifact_manager.put_step_ops_handle.assert_called_once_with(
             step.uid, ops_handle
         )
         render_signal_handler.assert_called_once_with(stage, step=step)
@@ -242,12 +244,12 @@ class TestStepPipelineStage:
         time_signal_handler.assert_called_once()
 
     def test_invalidate_cleans_up_and_invalidates_job(
-        self, mock_task_mgr, mock_artifact_cache, mock_doc_and_step
+        self, mock_task_mgr, mock_artifact_manager, mock_doc_and_step
     ):
         """Tests that invalidating a step cleans up all its artifacts."""
         # Arrange
         doc, step = mock_doc_and_step
-        stage = StepPipelineStage(mock_task_mgr, mock_artifact_cache)
+        stage = StepPipelineStage(mock_task_mgr, mock_artifact_manager)
         stage.mark_stale_and_trigger(step)
         _complete_step_task(mock_task_mgr.created_tasks[0])
         mock_task_mgr.created_tasks.clear()
@@ -256,6 +258,8 @@ class TestStepPipelineStage:
         stage.invalidate(step.uid)
 
         # Assert
-        mock_artifact_cache.pop_step_ops_handle.assert_called_with(step.uid)
-        mock_artifact_cache.pop_step_render_handle.assert_called_with(step.uid)
-        mock_artifact_cache.invalidate_for_job.assert_called()
+        mock_artifact_manager.pop_step_ops_handle.assert_called_with(step.uid)
+        mock_artifact_manager.pop_step_render_handle.assert_called_with(
+            step.uid
+        )
+        mock_artifact_manager.invalidate_for_job.assert_called()

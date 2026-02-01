@@ -863,7 +863,7 @@ class FileCmd:
         Asynchronously generates and exports G-code to a specific path.
         This is a non-blocking, fire-and-forget method for the UI.
         """
-        artifact_store = get_context().artifact_store
+        artifact_manager = self._editor.pipeline.artifact_manager
 
         def _on_export_assembly_done(
             handle: Optional[JobArtifactHandle], error: Optional[Exception]
@@ -871,26 +871,29 @@ class FileCmd:
             try:
                 if error:
                     raise error
-                if not handle:
-                    raise ValueError("Assembly process returned no artifact.")
 
-                # Get artifact, decode G-code, and write to file
-                artifact = artifact_store.get(handle)
-                if not isinstance(artifact, JobArtifact):
-                    raise ValueError("Expected a JobArtifact for export.")
-                if artifact.machine_code_bytes is None:
-                    raise ValueError("Final artifact is missing G-code data.")
+                with artifact_manager.checkout_handle(handle) as artifact:
+                    if not artifact:
+                        raise ValueError(
+                            "Assembly process returned no artifact."
+                        )
+                    if not isinstance(artifact, JobArtifact):
+                        raise ValueError("Expected a JobArtifact for export.")
+                    if artifact.machine_code_bytes is None:
+                        raise ValueError(
+                            "Final artifact is missing G-code data."
+                        )
 
-                gcode_str = artifact.machine_code_bytes.tobytes().decode(
-                    "utf-8"
-                )
-                file_path.write_text(gcode_str, encoding="utf-8")
+                    gcode_str = artifact.machine_code_bytes.tobytes().decode(
+                        "utf-8"
+                    )
+                    file_path.write_text(gcode_str, encoding="utf-8")
 
-                logger.info(f"Successfully exported G-code to {file_path}")
-                msg = _("Export successful: {name}").format(
-                    name=file_path.name
-                )
-                self._editor.notification_requested.send(self, message=msg)
+                    logger.info(f"Successfully exported G-code to {file_path}")
+                    msg = _("Export successful: {name}").format(
+                        name=file_path.name
+                    )
+                    self._editor.notification_requested.send(self, message=msg)
 
             except Exception as e:
                 logger.error(
@@ -899,9 +902,6 @@ class FileCmd:
                 self._editor.notification_requested.send(
                     self, message=_("Export failed: {error}").format(error=e)
                 )
-            finally:
-                if handle:
-                    artifact_store.release(handle)
 
         self.assemble_job_in_background(when_done=_on_export_assembly_done)
 
