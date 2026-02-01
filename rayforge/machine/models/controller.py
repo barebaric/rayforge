@@ -91,6 +91,8 @@ class MachineController:
             f"(id:{self.machine.id})"
         )
         task_mgr.cancel_task((self.machine.id, "driver-connect"))
+        task_mgr.cancel_task((self.machine.id, "rebuild-driver"))
+        task_mgr.cancel_task((self.machine.id, "rebuild-driver-on-change"))
         if self.driver is not None:
             await self.driver.cleanup()
         self._disconnect_driver_signals()
@@ -186,6 +188,9 @@ class MachineController:
 
         self.driver = new_driver
         self._connect_driver_signals()
+
+        self._last_driver_name = self.machine.driver_name
+        self._last_driver_args = self.machine.driver_args.copy()
 
         self.machine._scheduler(self.machine.changed.send, self.machine)
 

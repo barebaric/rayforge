@@ -1,3 +1,6 @@
+import sys
+import multiprocessing
+
 import pytest
 import gettext
 import asyncio
@@ -57,7 +60,8 @@ def pytest_configure(config):
     Configure test-only components.
     This hook is called early in the pytest process after initial imports.
     """
-    pass
+    if sys.platform.startswith("linux"):
+        multiprocessing.set_start_method("spawn", force=True)
 
 
 @pytest.fixture(scope="function", autouse=True)
@@ -201,6 +205,11 @@ async def context_initializer(tmp_path, task_mgr, monkeypatch):
 
     await context.shutdown()
     context_module._context_instance = None
+
+    # 5. Clean up config file to prevent errors in subsequent tests
+    config_file = temp_config_dir / "config.yaml"
+    if config_file.exists():
+        config_file.unlink()
 
 
 @pytest_asyncio.fixture
