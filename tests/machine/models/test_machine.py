@@ -86,10 +86,6 @@ async def wait_for_tasks_to_finish(task_mgr: TaskManager):
     This is the correct way to wait inside an `async def` test.
     It will fail the test on timeout.
     """
-    # Yield to the loop to ensure pending callbacks (like adding tasks) run
-    # first
-    await asyncio.sleep(0)
-
     # Use the now-correct, thread-safe wait_until_settled in a non-blocking way
     if await asyncio.to_thread(task_mgr.wait_until_settled, 2000):
         return
