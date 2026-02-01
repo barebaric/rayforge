@@ -5,15 +5,11 @@ from unittest.mock import MagicMock, PropertyMock
 from functools import partial
 from rayforge.core.doc import Doc
 from rayforge.core.ops import Ops, MoveToCommand, LineToCommand
+from rayforge.doceditor.editor import DocEditor
 from rayforge.machine.cmd import MachineCmd
 from rayforge.machine.models.machine import Machine
 from rayforge.machine.driver.driver import Axis
-from rayforge.doceditor.editor import DocEditor
-from rayforge.pipeline.artifact import (
-    ArtifactStore,
-    JobArtifact,
-    JobArtifactHandle,
-)
+from rayforge.pipeline.artifact import JobArtifact
 from rayforge.shared.tasker.manager import TaskManager
 
 
@@ -124,9 +120,6 @@ class TestMachineCmdJobMonitoring:
         assert machine.driver.reports_granular_progress is True
 
         # --- Arrange ---
-        # Mock the artifact store to return our pre-made artifact
-        mocker.patch.object(ArtifactStore, "get", return_value=job_artifact)
-
         job_started_spy = MagicMock()
         progress_updated_spy = MagicMock()
         job_finished_spy = MagicMock()
@@ -135,15 +128,6 @@ class TestMachineCmdJobMonitoring:
         machine.job_finished.connect(job_finished_spy)
 
         # --- Act ---
-        # The handle is just a placeholder; artifact_store.get is mocked
-        dummy_handle = JobArtifactHandle(
-            shm_name="dummy",
-            handle_class_name="JobArtifactHandle",
-            artifact_type_name="JobArtifact",
-            time_estimate=0,
-            distance=0,
-        )
-
         # Setup progress spy AFTER the job starts and monitor is created
         def on_job_started(sender):
             monitor = machine_cmd._current_monitor
@@ -153,7 +137,7 @@ class TestMachineCmdJobMonitoring:
         job_started_spy.side_effect = on_job_started
 
         await machine_cmd._run_send_action(
-            dummy_handle, machine, on_progress=lambda metrics: None
+            job_artifact, machine, on_progress=lambda metrics: None
         )
 
         # Yield control to the event loop to allow signal handlers
@@ -200,8 +184,6 @@ class TestMachineCmdJobMonitoring:
             machine.driver, "run", side_effect=mock_run_and_finish
         )
 
-        mocker.patch.object(ArtifactStore, "get", return_value=job_artifact)
-
         # Use an asyncio.Event for robust synchronization
         job_finished_event = asyncio.Event()
         job_finished_spy = MagicMock(
@@ -211,16 +193,8 @@ class TestMachineCmdJobMonitoring:
         machine.job_finished.connect(job_finished_spy)
 
         # --- Act ---
-        dummy_handle = JobArtifactHandle(
-            shm_name="dummy",
-            handle_class_name="JobArtifactHandle",
-            artifact_type_name="JobArtifact",
-            time_estimate=0,
-            distance=0,
-        )
-
         await machine_cmd._run_send_action(
-            dummy_handle, machine, on_progress=lambda metrics: None
+            job_artifact, machine, on_progress=lambda metrics: None
         )
 
         # Explicitly wait for the job_finished signal

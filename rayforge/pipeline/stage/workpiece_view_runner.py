@@ -1,12 +1,14 @@
 from __future__ import annotations
+import cairo
 import logging
 import math
 import numpy as np
-import cairo
+import time
 from typing import TYPE_CHECKING, Optional, Tuple, Dict, Any, List
 from multiprocessing import shared_memory
-from ...shared.tasker.proxy import ExecutionContextProxy
 from ...context import get_context
+from ...shared.tasker.proxy import ExecutionContextProxy
+from ...shared.util.colors import ColorSet
 from ..artifact import (
     WorkPieceArtifact,
     create_handle_from_dict,
@@ -15,7 +17,6 @@ from ..artifact.workpiece_view import (
     RenderContext,
     WorkPieceViewArtifact,
 )
-from ...shared.util.colors import ColorSet
 
 if TYPE_CHECKING:
     import threading
@@ -77,6 +78,110 @@ def _draw_vertices(
                 ctx.move_to(start[0], start[1])
                 ctx.line_to(end[0], end[1])
             ctx.stroke()
+    ctx.restore()
+
+
+def _draw_vertices_progressive(
+    ctx: cairo.Context,
+    vertex_data,
+    color_set: ColorSet,
+    show_travel: bool,
+    line_width_mm: float,
+    surface,
+    proxy: ExecutionContextProxy,
+    num_batches: int = 3,
+):
+    """
+    Draws vertex data in multiple batches for progressive rendering.
+    Sends view_artifact_updated events after each batch.
+    """
+    ctx.save()
+    ctx.set_line_width(line_width_mm)
+    ctx.set_line_cap(cairo.LINE_CAP_SQUARE)
+
+    batch_num = 0
+
+    # --- Batch 1: Draw Travel & Zero-Power Moves ---
+    if show_travel:
+        if vertex_data.travel_vertices.size > 0:
+            travel_v = vertex_data.travel_vertices.reshape(-1, 2, 3)
+            ctx.set_source_rgba(*color_set.get_rgba("travel"))
+            for start, end in travel_v:
+                ctx.move_to(start[0], start[1])
+                ctx.line_to(end[0], end[1])
+            ctx.stroke()
+
+        if vertex_data.zero_power_vertices.size > 0:
+            zero_v = vertex_data.zero_power_vertices.reshape(-1, 2, 3)
+            ctx.set_source_rgba(*color_set.get_rgba("zero_power"))
+            for start, end in zero_v:
+                ctx.move_to(start[0], start[1])
+                ctx.line_to(end[0], end[1])
+            ctx.stroke()
+
+        surface.flush()
+        proxy.send_event("view_artifact_updated")
+        logger.debug("Worker: Sent view_artifact_updated after travel/zero")
+        batch_num += 1
+
+    # --- Draw Powered Moves in Batches ---
+    if vertex_data.powered_vertices.size > 0:
+        powered_v = vertex_data.powered_vertices.reshape(-1, 2, 3)
+        powered_c = vertex_data.powered_colors
+        cut_lut = color_set.get_lut("cut")
+
+        # Use power from the first vertex of each segment for color.
+        power_indices = (powered_c[::2, 0] * 255.0).astype(np.uint8)
+        themed_colors_per_segment = cut_lut[power_indices]
+        unique_colors, inverse_indices = np.unique(
+            themed_colors_per_segment, axis=0, return_inverse=True
+        )
+
+        # Calculate remaining batches
+        remaining_batches = num_batches - batch_num
+        if remaining_batches < 1:
+            remaining_batches = 1
+
+        # Calculate total number of segments
+        total_segments = len(powered_v)
+
+        # Split segments into batches (not colors)
+        segments_per_batch = max(1, total_segments // remaining_batches)
+
+        for batch_idx in range(remaining_batches):
+            start_seg = batch_idx * segments_per_batch
+            end_seg = (
+                start_seg + segments_per_batch
+                if batch_idx < remaining_batches - 1
+                else total_segments
+            )
+
+            # Skip if start_seg is beyond the available segments
+            if start_seg >= total_segments:
+                continue
+
+            # Draw all segments in this batch
+            for seg_idx in range(start_seg, end_seg):
+                start, end = powered_v[seg_idx]
+                # Get color for this segment
+                color_idx = inverse_indices[seg_idx]
+                color = unique_colors[color_idx]
+                ctx.set_source_rgba(*color)
+                ctx.move_to(start[0], start[1])
+                ctx.line_to(end[0], end[1])
+                ctx.stroke()
+
+            surface.flush()
+            proxy.send_event("view_artifact_updated")
+            logger.debug(
+                f"Worker: Sent view_artifact_updated after powered "
+                f"batch {batch_idx + 1}/{remaining_batches} "
+                f"(segments {start_seg}-{end_seg}/{total_segments})"
+            )
+            # Small delay to ensure each event gets processed in a separate
+            # GTK frame, enabling progressive rendering
+            time.sleep(0.05)
+
     ctx.restore()
 
 
@@ -182,40 +287,62 @@ def make_workpiece_view_artifact_in_subprocess(
     """
     Renders a WorkPieceArtifact to a bitmap in a background process.
     """
+    logger.debug("Worker: Starting view artifact rendering...")
     proxy.set_message(_("Preparing 2D preview..."))
     context = RenderContext.from_dict(render_context_dict)
     handle = create_handle_from_dict(workpiece_artifact_handle_dict)
+    logger.debug(f"Worker: Retrieved handle {handle.shm_name}")
     artifact_store = get_context().artifact_store
     artifact = artifact_store.get(handle)
     if not isinstance(artifact, WorkPieceArtifact):
         logger.error("Runner received incorrect artifact type.")
         return None
 
+    logger.debug("Worker: Calculating content bbox...")
     bbox = _get_content_bbox(artifact, context.show_travel_moves)
     if not bbox or bbox[2] <= 1e-9 or bbox[3] <= 1e-9:
+        logger.warning(
+            f"Worker: No content to render (bbox={bbox}). Returning None."
+        )
         return None  # No content to render
+    logger.debug(f"Worker: Content bbox calculated: {bbox}")
 
     x_mm, y_mm, w_mm, h_mm = bbox
     ppm_x, ppm_y = context.pixels_per_mm
     margin = context.margin_px
-    width_px = min(round(w_mm * ppm_x) + 2 * margin, CAIRO_MAX_DIMENSION)
-    height_px = min(round(h_mm * ppm_y) + 2 * margin, CAIRO_MAX_DIMENSION)
+
+    # Calculate requested pixel dimensions
+    requested_width_px = round(w_mm * ppm_x) + 2 * margin
+    requested_height_px = round(h_mm * ppm_y) + 2 * margin
+
+    # Clamp dimensions to Cairo limit
+    width_px = min(requested_width_px, CAIRO_MAX_DIMENSION)
+    height_px = min(requested_height_px, CAIRO_MAX_DIMENSION)
+
     if width_px <= 2 * margin or height_px <= 2 * margin:
         return None
 
-    # --- Phase 1: Create and emit the shared artifact upfront ---
+    # Calculate effective PPM based on the final (possibly clamped) dimensions.
+    # This ensures the content is scaled down to fit if the max dimension is
+    # hit.
+    effective_ppm_x = (width_px - 2 * margin) / w_mm if w_mm > 0 else ppm_x
+    effective_ppm_y = (height_px - 2 * margin) / h_mm if h_mm > 0 else ppm_y
+
+    # --- Phase 1: Create the shared artifact upfront ---
+    # (don't send event yet - wait until drawing is complete)
+    logger.debug(
+        f"Worker: Creating view artifact with dimensions "
+        f"{width_px}x{height_px}"
+    )
     bitmap = np.zeros(shape=(height_px, width_px, 4), dtype=np.uint8)
     view_artifact = WorkPieceViewArtifact(bitmap_data=bitmap, bbox_mm=bbox)
     view_handle = artifact_store.put(view_artifact, creator_tag=creator_tag)
-
-    proxy.send_event(
-        "view_artifact_created",
-        {"handle_dict": view_handle.to_dict()},
-    )
+    logger.debug(f"Worker: Created view artifact {view_handle.shm_name}")
 
     shm = None
     try:
         # --- Phase 2: Render directly into the shared memory buffer ---
+        logger.debug("Worker: Opening shared memory for rendering...")
         shm = shared_memory.SharedMemory(name=view_handle.shm_name)
         shm_bitmap = np.ndarray(
             shape=(height_px, width_px, 4),
@@ -227,50 +354,68 @@ def make_workpiece_view_artifact_in_subprocess(
         )
         ctx = cairo.Context(surface)
 
-        # Set up transform: Y-down pixel space from Y-up mm space
+        # Set up transform: Y-down pixel space from Y-up mm space.
         ctx.translate(margin, height_px - margin)
-        ctx.scale(ppm_x, -ppm_y)
+        ctx.scale(effective_ppm_x, -effective_ppm_y)
         ctx.translate(-x_mm, -y_mm)
 
         color_set = ColorSet.from_dict(context.color_set_dict)
 
-        # --- Phase 3: Signal updates after each chunk of work ---
+        # --- Phase 3: Draw all content progressively ---
+        # Send created event AFTER first drawing phase (if texture exists)
+        # or BEFORE drawing (if no texture) so the stage adopts the artifact
         if artifact.texture_data:
+            logger.debug("Worker: Drawing texture...")
             _draw_texture(ctx, artifact.texture_data, color_set)
             surface.flush()
+            # Send created event after texture is drawn
+            proxy.send_event(
+                "view_artifact_created",
+                {"handle_dict": view_handle.to_dict()},
+            )
+            logger.debug("Worker: Sent view_artifact_created after texture")
+            # Send intermediate update after texture
             proxy.send_event("view_artifact_updated")
+            logger.debug("Worker: Sent view_artifact_updated after texture")
+        else:
+            # No texture, send created event before drawing vertices
+            proxy.send_event(
+                "view_artifact_created",
+                {"handle_dict": view_handle.to_dict()},
+            )
+            logger.debug("Worker: Sent view_artifact_created before vertices")
 
         if artifact.vertex_data:
+            logger.debug(
+                f"Worker: Drawing vertices progressively... "
+                f"show_travel={context.show_travel_moves}"
+            )
             # Set line width to be 1 pixel wide in device space
-            line_width_mm = 1.0 / ppm_x if ppm_x > 0 else 1.0
-            _draw_vertices(
+            line_width_mm = (
+                1.0 / effective_ppm_x if effective_ppm_x > 0 else 1.0
+            )
+            logger.debug("Worker: About to call _draw_vertices_progressive")
+            _draw_vertices_progressive(
                 ctx,
                 artifact.vertex_data,
                 color_set,
                 context.show_travel_moves,
                 line_width_mm,
+                surface,
+                proxy,
+                num_batches=3,
             )
-            surface.flush()
-            proxy.send_event("view_artifact_updated")
+            logger.debug("Worker: _draw_vertices_progressive returned")
 
     finally:
         if shm:
             shm.close()
 
-    # Wait for main process to adopt the artifact before forgetting it
-    if adoption_event is not None:
-        logger.debug("Waiting for main process to adopt view artifact...")
-        if adoption_event.wait(timeout=10):
-            logger.debug("Main process adopted view artifact. Forgetting...")
-            artifact_store.forget(view_handle)
-            logger.info("Worker disowned view artifact successfully")
-        else:
-            logger.warning(
-                "Main process failed to adopt view artifact within "
-                "timeout. Releasing to prevent leak."
-            )
-            artifact_store.release(view_handle)
+    # Send final update event after all drawing is complete
+    proxy.send_event("view_artifact_updated")
+    logger.debug("Worker: Sent final view_artifact_updated event")
 
+    logger.debug("Worker: View artifact rendering complete.")
     proxy.set_progress(1.0)
     # The result is communicated via events; return None.
     return None

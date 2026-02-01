@@ -146,12 +146,11 @@ class MachineCmd:
 
     async def _run_frame_action(
         self,
-        handle: JobArtifactHandle,
+        artifact: JobArtifact,
         machine: "Machine",
         on_progress: Optional[Callable[[dict], None]],
     ):
         """The specific machine action for a framing job."""
-        artifact = get_context().artifact_store.get(handle)
         if not isinstance(artifact, JobArtifact):
             raise ValueError("_run_frame_action received a non-JobArtifact")
         ops = artifact.ops
@@ -170,8 +169,6 @@ class MachineCmd:
         frame_with_laser.set_laser(head.uid)
         frame_with_laser += frame_ops * 20
 
-        # We need to generate G-code specifically for this framing Ops to avoid
-        # the driver doing it.
         machine_code, op_map = machine.encode_ops(
             frame_with_laser, self._editor.doc
         )
@@ -186,12 +183,11 @@ class MachineCmd:
 
     async def _run_send_action(
         self,
-        handle: JobArtifactHandle,
+        artifact: JobArtifact,
         machine: "Machine",
         on_progress: Optional[Callable[[dict], None]],
     ):
         """The specific machine action for a send job."""
-        artifact = get_context().artifact_store.get(handle)
         if not isinstance(artifact, JobArtifact):
             raise ValueError("_run_send_action received a non-JobArtifact")
 
@@ -215,6 +211,8 @@ class MachineCmd:
         execution.
         """
         handle: Optional[JobArtifactHandle] = None
+        artifact_manager = self._editor.pipeline.artifact_manager
+
         try:
             # 1. Await the job artifact generation from the pipeline
             handle = await self._editor.pipeline.generate_job_artifact_async()
@@ -225,8 +223,15 @@ class MachineCmd:
                 )
                 return
 
-            # 2. Await the machine action (send/frame)
-            await final_job_action(handle, machine, on_progress)
+            # 2. Use the safe context manager to acquire and release the
+            # artifact
+            with artifact_manager.checkout_handle(handle) as artifact:
+                if not artifact:
+                    raise ValueError(
+                        "Failed to retrieve artifact from handle."
+                    )
+
+                await final_job_action(artifact, machine, on_progress)
 
         except Exception as e:
             logger.error(
@@ -238,12 +243,10 @@ class MachineCmd:
                     job_name=job_name.capitalize(), error=e
                 ),
             )
-            # Re-raise the exception so the awaiting caller fails.
+            # Manually release handle on error if checkout was not entered
+            if handle and "artifact" not in locals():
+                artifact_manager.release_handle(handle)
             raise
-        finally:
-            # 3. Always release the artifact to prevent memory leaks
-            if handle:
-                get_context().artifact_store.release(handle)
 
     async def frame_job(
         self,

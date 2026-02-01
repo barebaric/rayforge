@@ -3,23 +3,24 @@ import logging
 from typing import TYPE_CHECKING, Optional, Callable
 from blinker import Signal
 import multiprocessing as mp
-
-from .base import PipelineStage
-from ..artifact import JobArtifactHandle, create_handle_from_dict
-from .job_runner import JobDescription
+from asyncio.exceptions import CancelledError
 from ...context import get_context
+from ..artifact import JobArtifactHandle
+from .base import PipelineStage
+from .job_runner import JobDescription
+from contextlib import ExitStack
 
 if TYPE_CHECKING:
     import threading
     from ...core.doc import Doc
-    from ...shared.tasker.task import Task
-    from ..artifact.cache import ArtifactCache
     from ...shared.tasker.manager import TaskManager
+    from ...shared.tasker.task import Task
+    from ..artifact.manager import ArtifactManager
 
 
 logger = logging.getLogger(__name__)
 
-# The constant key for the single, final job artifact in the cache
+# The constant key for the single, final job artifact in cache
 JobKey = "final_job"
 
 
@@ -27,9 +28,9 @@ class JobPipelineStage(PipelineStage):
     """A pipeline stage that assembles the final job artifact."""
 
     def __init__(
-        self, task_manager: "TaskManager", artifact_cache: "ArtifactCache"
+        self, task_manager: "TaskManager", artifact_manager: "ArtifactManager"
     ):
-        super().__init__(task_manager, artifact_cache)
+        super().__init__(task_manager, artifact_manager)
         self._active_task: Optional["Task"] = None
         self._adoption_event: Optional["threading.Event"] = None
         self.generation_finished = Signal()
@@ -46,7 +47,7 @@ class JobPipelineStage(PipelineStage):
         pass
 
     def shutdown(self):
-        """Cancels the active job generation task."""
+        """Cancels active job generation task."""
         logger.debug("JobPipelineStage shutting down.")
         if self._active_task:
             self._task_manager.cancel_task(self._active_task.key)
@@ -82,20 +83,31 @@ class JobPipelineStage(PipelineStage):
         # Hydrate the machine to capture the current dialect state
         machine.hydrate()
 
-        step_handles = {
-            step.uid: handle.to_dict()
-            for layer in doc.layers
-            if layer.workflow
-            for step in layer.workflow.steps
-            if step.visible
-            and (handle := self._artifact_cache.get_step_ops_handle(step.uid))
-        }
+        step_handles = {}
+        with ExitStack() as stack:
+            for layer in doc.layers:
+                if not layer.workflow:
+                    continue
+                for step in layer.workflow.steps:
+                    if not step.visible:
+                        continue
+                    handle = self._artifact_manager.get_step_ops_handle(
+                        step.uid
+                    )
+                    if handle is None:
+                        continue
+                    step_handles[step.uid] = handle.to_dict()
+                    # Checkout the handle so it won't be released while job
+                    # runs
+                    stack.enter_context(
+                        self._artifact_manager.checkout(step.uid)
+                    )
 
         # Allow job generation to continue even with no steps. The runner will
         # produce a job with only a preamble and postscript.
         logger.info(f"Starting job generation with {len(step_handles)} steps.")
 
-        self._artifact_cache.invalidate_for_job()
+        self._artifact_manager.invalidate_for_job()
 
         # Create an adoption event for the handshake protocol
         manager = mp.Manager()
@@ -122,7 +134,7 @@ class JobPipelineStage(PipelineStage):
             error = None
 
             if task_status == "completed":
-                final_handle = self._artifact_cache.get_job_handle()
+                final_handle = self._artifact_manager.get_job_handle()
                 if final_handle:
                     logger.info("Job generation successful.")
                 else:
@@ -138,9 +150,12 @@ class JobPipelineStage(PipelineStage):
                 logger.error(
                     f"Job generation failed with status: {task_status}"
                 )
-                self._artifact_cache.invalidate_for_job()
+                self._artifact_manager.invalidate_for_job()
                 try:
                     task.result()
+                except CancelledError as e:
+                    error = e
+                    logger.info(f"Job generation was cancelled: {e}")
                 except Exception as e:
                     error = e
 
@@ -171,16 +186,27 @@ class JobPipelineStage(PipelineStage):
     def _on_job_task_event(self, task: "Task", event_name: str, data: dict):
         """Handles events broadcast from the job runner subprocess."""
         if event_name == "artifact_created":
+            # Ignore artifact events from tasks that are no longer active
+            # (e.g., cancelled tasks). This prevents stale artifacts from
+            # being added to the cache after cancellation.
+            if self._active_task is not task:
+                logger.debug(
+                    "Ignoring artifact_created event from inactive task"
+                )
+                # Still set the adoption event to unblock the worker
+                if self._adoption_event is not None:
+                    self._adoption_event.set()
+                return
+
             try:
                 handle_dict = data["handle_dict"]
-                handle = create_handle_from_dict(handle_dict)
+                handle = self._artifact_manager.adopt_artifact(
+                    JobKey, handle_dict
+                )
                 if not isinstance(handle, JobArtifactHandle):
                     raise TypeError("Expected a JobArtifactHandle")
 
-                # Attempt to adopt the shared memory. If this fails, do not
-                # add the handle to the cache, as it's invalid.
-                get_context().artifact_store.adopt(handle)
-                self._artifact_cache.put_job_handle(handle)
+                self._artifact_manager.put_job_handle(handle)
 
                 # Signal the worker that we've adopted the artifact
                 if self._adoption_event is not None:
