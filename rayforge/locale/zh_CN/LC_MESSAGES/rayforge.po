@@ -5,9 +5,9 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Rayforge VERSION\n"
+"Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-02-01 04:39+0100\n"
+"POT-Creation-Date: 2026-02-01 19:01+0100\n"
 "PO-Revision-Date: 2025-07-13 11:49+0200\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: Chinese (Simplified)\n"
@@ -82,9 +82,19 @@ msgstr "完成，但有 {num_failed} 个错误。"
 msgid "All package updates installed!"
 msgstr "所有软件包更新已安装！"
 
+#: rayforge/core/layer.py
+#, python-brace-format
+msgid "{name} Workflow"
+msgstr "{name} 工作流"
+
 #: rayforge/core/doc.py
 msgid "Layer 1"
 msgstr "图层 1"
+
+#: rayforge/core/step.py
+#, python-brace-format
+msgid "{power_percent}% power, {speed} mm/min"
+msgstr "{power_percent}% 功率, {speed} mm/min"
 
 #: rayforge/core/varset/baudratevar.py
 msgid "Baud rate cannot be empty."
@@ -1105,6 +1115,38 @@ msgid "An unexpected error occurred during validation: {error}"
 msgstr "验证期间发生意外错误：{error}"
 
 #: rayforge/machine/models/macro.py
+msgid "Layer Start"
+msgstr "图层开始"
+
+#: rayforge/machine/models/macro.py
+msgid "Layer End"
+msgstr "图层结束"
+
+#: rayforge/machine/models/macro.py
+msgid "Workpiece Start"
+msgstr "工件开始"
+
+#: rayforge/machine/models/macro.py
+msgid "Workpiece End"
+msgstr "工件结束"
+
+#: rayforge/machine/models/macro.py
+msgid "Before processing a layer"
+msgstr "处理图层之前"
+
+#: rayforge/machine/models/macro.py
+msgid "After processing a layer"
+msgstr "处理图层之后"
+
+#: rayforge/machine/models/macro.py
+msgid "Before processing a workpiece"
+msgstr "处理工件之前"
+
+#: rayforge/machine/models/macro.py
+msgid "After processing a workpiece"
+msgstr "处理工件之后"
+
+#: rayforge/machine/models/macro.py
 msgid "Unnamed Macro"
 msgstr "未命名宏"
 
@@ -1265,7 +1307,8 @@ msgstr "取消"
 #: rayforge/ui_gtk/machine/dialect_list.py
 #: rayforge/ui_gtk/doceditor/material_library_list.py
 #: rayforge/ui_gtk/doceditor/recipe_list.py
-#: rayforge/ui_gtk/doceditor/material_list.py rayforge/ui_gtk/sketcher/menu.py
+#: rayforge/ui_gtk/doceditor/material_list.py
+#: rayforge/ui_gtk/sketcher/piemenu.py rayforge/ui_gtk/sketcher/menu.py
 msgid "Delete"
 msgstr "删除"
 
@@ -1445,7 +1488,7 @@ msgid "Remove Tab"
 msgstr "移除标签"
 
 #: rayforge/ui_gtk/canvas2d/simulation_controls.py
-#: rayforge/ui_gtk/sketcher/menu.py
+#: rayforge/ui_gtk/sketcher/piemenu.py rayforge/ui_gtk/sketcher/menu.py
 msgid "Line"
 msgstr "直线"
 
@@ -2562,6 +2605,10 @@ msgstr "串口"
 msgid "Add Parameter"
 msgstr "添加参数"
 
+#: rayforge/ui_gtk/varset/varset_editor.py
+msgid "New Parameter"
+msgstr "新参数"
+
 #: rayforge/ui_gtk/varset/var_row_factory.py
 #: rayforge/ui_gtk/varset/varsetwidget.py
 msgid "None Selected"
@@ -2591,6 +2638,11 @@ msgstr "撤销上一步操作"
 #: rayforge/ui_gtk/shared/undo_button.py
 msgid "Redo the last action"
 msgstr "重做上一步操作"
+
+#: rayforge/ui_gtk/shared/preferences_group.py
+#: rayforge/ui_gtk/doceditor/asset_row_widget.py
+msgid "No parameters"
+msgstr "无参数"
 
 #: rayforge/ui_gtk/shared/splitbutton.py
 msgid "Show all options"
@@ -4067,7 +4119,7 @@ msgid "Material thickness"
 msgstr "材料厚度"
 
 #: rayforge/ui_gtk/doceditor/stock_properties_dialog.py
-#: rayforge/ui_gtk/sketcher/menu.py
+#: rayforge/ui_gtk/sketcher/piemenu.py rayforge/ui_gtk/sketcher/menu.py
 msgid "Select"
 msgstr "选择"
 
@@ -4086,10 +4138,6 @@ msgstr "编辑此草图"
 #: rayforge/ui_gtk/doceditor/asset_row_widget.py
 msgid "Delete this sketch"
 msgstr "删除此草图"
-
-#: rayforge/ui_gtk/doceditor/asset_row_widget.py
-msgid "No parameters"
-msgstr "无参数"
 
 #: rayforge/ui_gtk/doceditor/asset_row_widget.py
 msgid "1 parameter"
@@ -4225,6 +4273,11 @@ msgstr "在文件浏览器中显示"
 #: rayforge/ui_gtk/doceditor/property_providers/workpiece.py
 msgid "Vector Commands"
 msgstr "矢量命令"
+
+#: rayforge/ui_gtk/doceditor/property_providers/workpiece.py
+#, python-brace-format
+msgid "{count} commands"
+msgstr "{count} 个命令"
 
 #: rayforge/ui_gtk/doceditor/property_providers/workpiece.py
 #, python-brace-format
@@ -4519,6 +4572,42 @@ msgstr " (+{tasks} 更多)"
 msgid "{tasks} tasks"
 msgstr "{tasks} 个任务"
 
+#: rayforge/ui_gtk/sketcher/piemenu.py rayforge/ui_gtk/sketcher/menu.py
+msgid "Arc"
+msgstr "圆弧"
+
+#: rayforge/ui_gtk/sketcher/piemenu.py
+msgid "Text Box"
+msgstr "文本框"
+
+#: rayforge/ui_gtk/sketcher/piemenu.py rayforge/ui_gtk/sketcher/menu.py
+msgid "Circle"
+msgstr "圆形"
+
+#: rayforge/ui_gtk/sketcher/piemenu.py rayforge/ui_gtk/sketcher/menu.py
+msgid "Rectangle"
+msgstr "矩形"
+
+#: rayforge/ui_gtk/sketcher/piemenu.py rayforge/ui_gtk/sketcher/menu.py
+msgid "Rounded Rectangle"
+msgstr "圆角矩形"
+
+#: rayforge/ui_gtk/sketcher/piemenu.py
+msgid "Fill"
+msgstr "填充"
+
+#: rayforge/ui_gtk/sketcher/piemenu.py
+msgid "Construction"
+msgstr "构造"
+
+#: rayforge/ui_gtk/sketcher/piemenu.py
+msgid "Chamfer"
+msgstr "倒角"
+
+#: rayforge/ui_gtk/sketcher/piemenu.py
+msgid "Fillet"
+msgstr "圆角"
+
 #: rayforge/ui_gtk/sketcher/sketchelement.py rayforge/ui_gtk/sketcher/menu.py
 msgid "Toggle Construction"
 msgstr "切换构造线"
@@ -4608,22 +4697,6 @@ msgstr "重命名草图"
 #: rayforge/ui_gtk/sketcher/menu.py
 msgid "Finish Sketch"
 msgstr "完成草图"
-
-#: rayforge/ui_gtk/sketcher/menu.py
-msgid "Circle"
-msgstr "圆形"
-
-#: rayforge/ui_gtk/sketcher/menu.py
-msgid "Arc"
-msgstr "圆弧"
-
-#: rayforge/ui_gtk/sketcher/menu.py
-msgid "Rectangle"
-msgstr "矩形"
-
-#: rayforge/ui_gtk/sketcher/menu.py
-msgid "Rounded Rectangle"
-msgstr "圆角矩形"
 
 #: rayforge/ui_gtk/sketcher/menu.py
 msgid "Fill Area"
@@ -4875,6 +4948,26 @@ msgstr "边框轮廓"
 #: rayforge/pipeline/steps.py rayforge/doceditor/material_test_cmd.py
 msgid "Material Test Grid"
 msgstr "材料测试网格"
+
+#: rayforge/pipeline/producer/contour.py
+msgid "Inside-Outside"
+msgstr "内-外"
+
+#: rayforge/pipeline/producer/contour.py
+msgid "Outside-Inside"
+msgstr "外-内"
+
+#: rayforge/pipeline/producer/base.py
+msgid "Centerline"
+msgstr "中心线"
+
+#: rayforge/pipeline/producer/base.py
+msgid "Inside"
+msgstr "内部"
+
+#: rayforge/pipeline/producer/base.py
+msgid "Outside"
+msgstr "外部"
 
 #: rayforge/pipeline/stage/workpiece_view_runner.py
 msgid "Preparing 2D preview..."

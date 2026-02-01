@@ -61,7 +61,7 @@ class Layer(DocItem):
         self.extra: Dict[str, Any] = {}
 
         # A new layer gets a workflow automatically.
-        workflow = Workflow(f"{name} Workflow")
+        workflow = Workflow(_("{name} Workflow").format(name=name))
         self.add_child(workflow)
 
     def to_dict(self) -> Dict:
@@ -208,7 +208,7 @@ class Layer(DocItem):
         self.name = name
         wf = self.workflow
         if wf:
-            wf.name = f"{name} Workflow"
+            wf.name = _("{name} Workflow").format(name=name)
         self.updated.send(self)
 
     def set_visible(self, visible: bool):

@@ -265,7 +265,9 @@ class Step(DocItem, ABC):
     def get_summary(self) -> str:
         power_percent = int(self.power * 100)
         speed = int(self.cut_speed)
-        return f"{power_percent}% power, {speed} mm/min"
+        return _("{power_percent}% power, {speed} mm/min").format(
+            power_percent=power_percent, speed=speed
+        )
 
     def dump(self, indent: int = 0):
         print("  " * indent, self.name)

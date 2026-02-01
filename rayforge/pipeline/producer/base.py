@@ -21,6 +21,15 @@ class CutSide(Enum):
     OUTSIDE = auto()
     """The final cut will be outside the original path."""
 
+    def label(self) -> str:
+        """Return a translatable label for this cut side."""
+        labels = {
+            self.CENTERLINE: _("Centerline"),
+            self.INSIDE: _("Inside"),
+            self.OUTSIDE: _("Outside"),
+        }
+        return labels[self]
+
 
 class OpsProducer(ABC):
     """

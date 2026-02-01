@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-02-01 04:36+0100\n"
+"POT-Creation-Date: 2026-02-01 19:01+0100\n"
 "PO-Revision-Date: 2025-07-24 22:09+0200\n"
 "Last-Translator: Samuel Abels <knipkap@gmail.com>\n"
 "Language-Team: Portuguese <LL@li.org>\n"
@@ -84,9 +84,19 @@ msgstr "Concluído com {num_failed} erros."
 msgid "All package updates installed!"
 msgstr "Todas as atualizações de pacotes foram instaladas!"
 
+#: rayforge/core/layer.py
+#, python-brace-format
+msgid "{name} Workflow"
+msgstr "{name} Fluxo de trabalho"
+
 #: rayforge/core/doc.py
 msgid "Layer 1"
 msgstr "Camada 1"
+
+#: rayforge/core/step.py
+#, python-brace-format
+msgid "{power_percent}% power, {speed} mm/min"
+msgstr "{power_percent}% potência, {speed} mm/min"
 
 #: rayforge/core/varset/baudratevar.py
 msgid "Baud rate cannot be empty."
@@ -1186,6 +1196,38 @@ msgid "An unexpected error occurred during validation: {error}"
 msgstr "Ocorreu um erro inesperado durante a validação: {error}"
 
 #: rayforge/machine/models/macro.py
+msgid "Layer Start"
+msgstr "Início de camada"
+
+#: rayforge/machine/models/macro.py
+msgid "Layer End"
+msgstr "Fim de camada"
+
+#: rayforge/machine/models/macro.py
+msgid "Workpiece Start"
+msgstr "Início da peça"
+
+#: rayforge/machine/models/macro.py
+msgid "Workpiece End"
+msgstr "Fim da peça"
+
+#: rayforge/machine/models/macro.py
+msgid "Before processing a layer"
+msgstr "Antes de processar uma camada"
+
+#: rayforge/machine/models/macro.py
+msgid "After processing a layer"
+msgstr "Após processar uma camada"
+
+#: rayforge/machine/models/macro.py
+msgid "Before processing a workpiece"
+msgstr "Antes de processar uma peça"
+
+#: rayforge/machine/models/macro.py
+msgid "After processing a workpiece"
+msgstr "Após processar uma peça"
+
+#: rayforge/machine/models/macro.py
 msgid "Unnamed Macro"
 msgstr "Macro Sem Nome"
 
@@ -1352,7 +1394,8 @@ msgstr "Cancelar"
 #: rayforge/ui_gtk/machine/dialect_list.py
 #: rayforge/ui_gtk/doceditor/material_library_list.py
 #: rayforge/ui_gtk/doceditor/recipe_list.py
-#: rayforge/ui_gtk/doceditor/material_list.py rayforge/ui_gtk/sketcher/menu.py
+#: rayforge/ui_gtk/doceditor/material_list.py
+#: rayforge/ui_gtk/sketcher/piemenu.py rayforge/ui_gtk/sketcher/menu.py
 msgid "Delete"
 msgstr "Excluir"
 
@@ -1538,7 +1581,7 @@ msgid "Remove Tab"
 msgstr "Remover Aba de Fixação"
 
 #: rayforge/ui_gtk/canvas2d/simulation_controls.py
-#: rayforge/ui_gtk/sketcher/menu.py
+#: rayforge/ui_gtk/sketcher/piemenu.py rayforge/ui_gtk/sketcher/menu.py
 msgid "Line"
 msgstr "Linha"
 
@@ -2693,6 +2736,10 @@ msgstr "Porta Serial"
 msgid "Add Parameter"
 msgstr "Adicionar Parâmetro"
 
+#: rayforge/ui_gtk/varset/varset_editor.py
+msgid "New Parameter"
+msgstr "Novo parâmetro"
+
 #: rayforge/ui_gtk/varset/var_row_factory.py
 #: rayforge/ui_gtk/varset/varsetwidget.py
 msgid "None Selected"
@@ -2722,6 +2769,11 @@ msgstr "Desfazer a última ação"
 #: rayforge/ui_gtk/shared/undo_button.py
 msgid "Redo the last action"
 msgstr "Refazer a última ação"
+
+#: rayforge/ui_gtk/shared/preferences_group.py
+#: rayforge/ui_gtk/doceditor/asset_row_widget.py
+msgid "No parameters"
+msgstr "Sem parâmetros"
 
 #: rayforge/ui_gtk/shared/splitbutton.py
 msgid "Show all options"
@@ -4217,7 +4269,7 @@ msgid "Material thickness"
 msgstr "Espessura do material"
 
 #: rayforge/ui_gtk/doceditor/stock_properties_dialog.py
-#: rayforge/ui_gtk/sketcher/menu.py
+#: rayforge/ui_gtk/sketcher/piemenu.py rayforge/ui_gtk/sketcher/menu.py
 msgid "Select"
 msgstr "Selecionar"
 
@@ -4236,10 +4288,6 @@ msgstr "Editar este esboço"
 #: rayforge/ui_gtk/doceditor/asset_row_widget.py
 msgid "Delete this sketch"
 msgstr "Excluir este esboço"
-
-#: rayforge/ui_gtk/doceditor/asset_row_widget.py
-msgid "No parameters"
-msgstr "Sem parâmetros"
 
 #: rayforge/ui_gtk/doceditor/asset_row_widget.py
 msgid "1 parameter"
@@ -4375,6 +4423,11 @@ msgstr "Mostrar no Explorador de Arquivos"
 #: rayforge/ui_gtk/doceditor/property_providers/workpiece.py
 msgid "Vector Commands"
 msgstr "Comandos Vetoriais"
+
+#: rayforge/ui_gtk/doceditor/property_providers/workpiece.py
+#, python-brace-format
+msgid "{count} commands"
+msgstr "{count} comandos"
 
 #: rayforge/ui_gtk/doceditor/property_providers/workpiece.py
 #, python-brace-format
@@ -4676,6 +4729,42 @@ msgstr " (+{tasks} mais)"
 msgid "{tasks} tasks"
 msgstr "{tasks} tarefas"
 
+#: rayforge/ui_gtk/sketcher/piemenu.py rayforge/ui_gtk/sketcher/menu.py
+msgid "Arc"
+msgstr "Arco"
+
+#: rayforge/ui_gtk/sketcher/piemenu.py
+msgid "Text Box"
+msgstr "Caixa de texto"
+
+#: rayforge/ui_gtk/sketcher/piemenu.py rayforge/ui_gtk/sketcher/menu.py
+msgid "Circle"
+msgstr "Círculo"
+
+#: rayforge/ui_gtk/sketcher/piemenu.py rayforge/ui_gtk/sketcher/menu.py
+msgid "Rectangle"
+msgstr "Retângulo"
+
+#: rayforge/ui_gtk/sketcher/piemenu.py rayforge/ui_gtk/sketcher/menu.py
+msgid "Rounded Rectangle"
+msgstr "Retângulo Arredondado"
+
+#: rayforge/ui_gtk/sketcher/piemenu.py
+msgid "Fill"
+msgstr "Preenchimento"
+
+#: rayforge/ui_gtk/sketcher/piemenu.py
+msgid "Construction"
+msgstr "Construção"
+
+#: rayforge/ui_gtk/sketcher/piemenu.py
+msgid "Chamfer"
+msgstr "Chanfro"
+
+#: rayforge/ui_gtk/sketcher/piemenu.py
+msgid "Fillet"
+msgstr "Arredondamento"
+
 #: rayforge/ui_gtk/sketcher/sketchelement.py rayforge/ui_gtk/sketcher/menu.py
 msgid "Toggle Construction"
 msgstr "Alternar Construção"
@@ -4767,22 +4856,6 @@ msgstr "Renomear Esboço"
 #: rayforge/ui_gtk/sketcher/menu.py
 msgid "Finish Sketch"
 msgstr "Concluir Esboço"
-
-#: rayforge/ui_gtk/sketcher/menu.py
-msgid "Circle"
-msgstr "Círculo"
-
-#: rayforge/ui_gtk/sketcher/menu.py
-msgid "Arc"
-msgstr "Arco"
-
-#: rayforge/ui_gtk/sketcher/menu.py
-msgid "Rectangle"
-msgstr "Retângulo"
-
-#: rayforge/ui_gtk/sketcher/menu.py
-msgid "Rounded Rectangle"
-msgstr "Retângulo Arredondado"
 
 #: rayforge/ui_gtk/sketcher/menu.py
 msgid "Fill Area"
@@ -5040,6 +5113,26 @@ msgstr "Contorno de Enquadramento"
 #: rayforge/pipeline/steps.py rayforge/doceditor/material_test_cmd.py
 msgid "Material Test Grid"
 msgstr "Grade de Teste de Material"
+
+#: rayforge/pipeline/producer/contour.py
+msgid "Inside-Outside"
+msgstr "Interno-Externo"
+
+#: rayforge/pipeline/producer/contour.py
+msgid "Outside-Inside"
+msgstr "Externo-Interno"
+
+#: rayforge/pipeline/producer/base.py
+msgid "Centerline"
+msgstr "Linha central"
+
+#: rayforge/pipeline/producer/base.py
+msgid "Inside"
+msgstr "Interno"
+
+#: rayforge/pipeline/producer/base.py
+msgid "Outside"
+msgstr "Externo"
 
 #: rayforge/pipeline/stage/workpiece_view_runner.py
 msgid "Preparing 2D preview..."

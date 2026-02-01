@@ -68,7 +68,9 @@ class WorkpieceInfoProvider(PropertyProvider):
         self.vector_count_row.set_visible(is_debug_and_has_vectors)
         if is_debug_and_has_vectors:
             vectors = len(workpiece.boundaries) if workpiece.boundaries else 0
-            self.vector_count_row.set_subtitle(f"{vectors} commands")
+            self.vector_count_row.set_subtitle(
+                _("{count} commands").format(count=vectors)
+            )
 
     def _update_source_file_row(self, workpiece: WorkPiece):
         file_path = workpiece.source_file

@@ -740,7 +740,7 @@ class VarSetEditorWidget(PreferencesGroupWithButton):
         """Handler for when a user selects a Var type to add."""
         self._add_counter += 1
         # Create a placeholder label/key that matches the validation rules
-        label = "New Parameter"
+        label = _("New Parameter")
         key = "new_parameter"
 
         new_var: Var

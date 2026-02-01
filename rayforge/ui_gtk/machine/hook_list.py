@@ -35,7 +35,7 @@ class HookList(Adw.PreferencesGroup):
 
         for trigger in MacroTrigger:
             row = Adw.ActionRow()
-            row.set_title(trigger.name.replace("_", " ").title())
+            row.set_title(trigger.label())
 
             # Switch to enable/disable
             switch = Gtk.Switch(valign=Gtk.Align.CENTER)
@@ -68,7 +68,7 @@ class HookList(Adw.PreferencesGroup):
         """Sets the row's subtitle and widget visibility."""
         row, reset_button, switch = self.trigger_widgets[trigger]
 
-        row.set_subtitle(trigger.value)
+        row.set_subtitle(trigger.description())
 
         # A hook is considered "customized" if its key exists in the
         # dictionary,
@@ -99,7 +99,7 @@ class HookList(Adw.PreferencesGroup):
     def _on_reset_clicked(self, button: Gtk.Button, trigger: MacroTrigger):
         """Shows a confirmation dialog before resetting a hook macro."""
         parent = cast(Gtk.Window, self.get_ancestor(Gtk.Window))
-        hook_name = trigger.name.replace("_", " ").title()
+        hook_name = trigger.label()
 
         dialog = Adw.MessageDialog(
             transient_for=parent,
@@ -146,7 +146,7 @@ class HookList(Adw.PreferencesGroup):
             macro_to_edit = existing_macro
         else:
             macro_to_edit = Macro(
-                name=trigger.name.replace("_", " ").title(),
+                name=trigger.label(),
                 code=[_("# Your G-code here")],
             )
 
