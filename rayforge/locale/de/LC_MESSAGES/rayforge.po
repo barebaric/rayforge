@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-01-29 20:29+0100\n"
+"POT-Creation-Date: 2026-02-01 04:36+0100\n"
 "PO-Revision-Date: 2025-07-24 22:08+0200\n"
 "Last-Translator: Samuel Abels <knipknap@gmail.com>\n"
 "Language-Team: none\n"
@@ -1160,21 +1160,6 @@ msgstr "Nachspann"
 msgid "Default Machine"
 msgstr "Standardmaschine"
 
-#: rayforge/machine/models/machine.py
-msgid "No driver selected for this machine."
-msgstr "Für diese Maschine ist kein Treiber ausgewählt."
-
-#: rayforge/machine/models/machine.py
-#, python-brace-format
-msgid "Driver '{driver}' not found."
-msgstr "Treiber „{driver}“ nicht gefunden."
-
-#: rayforge/machine/models/machine.py
-#, python-brace-format
-msgid "An unexpected error occurred during validation: {error}"
-msgstr ""
-"Während der Validierung ist ein unerwarteter Fehler aufgetreten: {error}"
-
 #: rayforge/machine/models/machine.py rayforge/machine/models/profile.py
 #, python-brace-format
 msgid "{label} (for {machine_name})"
@@ -1191,6 +1176,21 @@ msgstr "Benutzerdefinierter Vorspann für xTool D1 Pro."
 #: rayforge/machine/models/profile.py
 msgid "Other Device"
 msgstr "Anderes Gerät"
+
+#: rayforge/machine/models/controller.py
+msgid "No driver selected for this machine."
+msgstr "Für diese Maschine ist kein Treiber ausgewählt."
+
+#: rayforge/machine/models/controller.py
+#, python-brace-format
+msgid "Driver '{driver}' not found."
+msgstr "Treiber „{driver}“ nicht gefunden."
+
+#: rayforge/machine/models/controller.py
+#, python-brace-format
+msgid "An unexpected error occurred during validation: {error}"
+msgstr ""
+"Während der Validierung ist ein unerwarteter Fehler aufgetreten: {error}"
 
 #: rayforge/machine/models/macro.py
 msgid "Unnamed Macro"
@@ -3660,6 +3660,18 @@ msgid "Change Grid Dimensions"
 msgstr "Gitterabmessungen ändern"
 
 #: rayforge/ui_gtk/doceditor/step_settings/rasterizer.py
+msgid "Direction"
+msgstr "Richtung"
+
+#: rayforge/ui_gtk/doceditor/step_settings/rasterizer.py
+msgid "Raster direction in degrees (0°=horizontal, 90°=vertical)"
+msgstr "Rasterrichtung in Grad (0°=horizontal, 90°=vertikal)"
+
+#: rayforge/ui_gtk/doceditor/step_settings/rasterizer.py
+msgid "Change Raster Direction"
+msgstr "Rasterrichtung ändern"
+
+#: rayforge/ui_gtk/doceditor/step_settings/rasterizer.py
 msgid "Pixel brightness value to consider black (0-255)"
 msgstr "Pixel-Helligkeitswert, der als Schwarz gilt (0-255)"
 
@@ -5377,11 +5389,6 @@ msgstr "Speichern fehlgeschlagen: {error}"
 #, python-brace-format
 msgid "File not found: {name}"
 msgstr "Datei nicht gefunden: {name}"
-
-#: rayforge/doceditor/file_cmd.py
-#, python-brace-format
-msgid "Project loaded: {name}"
-msgstr "Projekt geladen: {name}"
 
 #: rayforge/doceditor/file_cmd.py
 msgid "Invalid project file format"

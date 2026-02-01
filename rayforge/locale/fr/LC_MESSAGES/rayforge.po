@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-01-29 20:29+0100\n"
+"POT-Creation-Date: 2026-02-01 04:36+0100\n"
 "PO-Revision-Date: 2025-10-15 07:10+0200\n"
 "Last-Translator: Samuel <knipknap@gmail.com>\n"
 "Language-Team: French\n"
@@ -1161,20 +1161,6 @@ msgstr "Script post-scriptum"
 msgid "Default Machine"
 msgstr "Machine par défaut"
 
-#: rayforge/machine/models/machine.py
-msgid "No driver selected for this machine."
-msgstr "Aucun pilote sélectionné pour cette machine."
-
-#: rayforge/machine/models/machine.py
-#, python-brace-format
-msgid "Driver '{driver}' not found."
-msgstr "Pilote « {driver} » introuvable."
-
-#: rayforge/machine/models/machine.py
-#, python-brace-format
-msgid "An unexpected error occurred during validation: {error}"
-msgstr "Une erreur inattendue est survenue lors de la validation : {error}"
-
 #: rayforge/machine/models/machine.py rayforge/machine/models/profile.py
 #, python-brace-format
 msgid "{label} (for {machine_name})"
@@ -1191,6 +1177,20 @@ msgstr "Préambule personnalisé pour la machine xTool D1 Pro."
 #: rayforge/machine/models/profile.py
 msgid "Other Device"
 msgstr "Autre périphérique"
+
+#: rayforge/machine/models/controller.py
+msgid "No driver selected for this machine."
+msgstr "Aucun pilote sélectionné pour cette machine."
+
+#: rayforge/machine/models/controller.py
+#, python-brace-format
+msgid "Driver '{driver}' not found."
+msgstr "Pilote « {driver} » introuvable."
+
+#: rayforge/machine/models/controller.py
+#, python-brace-format
+msgid "An unexpected error occurred during validation: {error}"
+msgstr "Une erreur inattendue est survenue lors de la validation : {error}"
 
 #: rayforge/machine/models/macro.py
 msgid "Unnamed Macro"
@@ -1490,9 +1490,8 @@ msgid ""
 "Configure what happens when you start the application. Files specified on "
 "the command line will always override these settings."
 msgstr ""
-"Configurez ce qui se passe lorsque vous démarrez l'application. Les "
-"fichiers spécifiés dans la ligne de commande remplaceront toujours ces "
-"paramètres."
+"Configurez ce qui se passe lorsque vous démarrez l'application. Les fichiers "
+"spécifiés dans la ligne de commande remplaceront toujours ces paramètres."
 
 #: rayforge/ui_gtk/settings/general_preferences_page.py
 msgid "Startup behavior"
@@ -3665,6 +3664,18 @@ msgid "Change Grid Dimensions"
 msgstr "Modifier les dimensions de la grille"
 
 #: rayforge/ui_gtk/doceditor/step_settings/rasterizer.py
+msgid "Direction"
+msgstr "Direction"
+
+#: rayforge/ui_gtk/doceditor/step_settings/rasterizer.py
+msgid "Raster direction in degrees (0°=horizontal, 90°=vertical)"
+msgstr "Direction de la trame en degrés (0°=horizontal, 90°=vertical)"
+
+#: rayforge/ui_gtk/doceditor/step_settings/rasterizer.py
+msgid "Change Raster Direction"
+msgstr "Changer la direction de la trame"
+
+#: rayforge/ui_gtk/doceditor/step_settings/rasterizer.py
 msgid "Pixel brightness value to consider black (0-255)"
 msgstr "Valeur de luminosité du pixel à considérer comme noir (0-255)"
 
@@ -5387,11 +5398,6 @@ msgstr "Échec de l'enregistrement : {error}"
 #, python-brace-format
 msgid "File not found: {name}"
 msgstr "Fichier non trouvé : {name}"
-
-#: rayforge/doceditor/file_cmd.py
-#, python-brace-format
-msgid "Project loaded: {name}"
-msgstr "Projet chargé : {name}"
 
 #: rayforge/doceditor/file_cmd.py
 msgid "Invalid project file format"
