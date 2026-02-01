@@ -8,6 +8,7 @@ from ...context import get_context
 from ..artifact import JobArtifactHandle
 from .base import PipelineStage
 from .job_runner import JobDescription
+from contextlib import ExitStack
 
 if TYPE_CHECKING:
     import threading
@@ -19,7 +20,7 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-# The constant key for the single, final job artifact in the cache
+# The constant key for the single, final job artifact in cache
 JobKey = "final_job"
 
 
@@ -32,7 +33,6 @@ class JobPipelineStage(PipelineStage):
         super().__init__(task_manager, artifact_manager)
         self._active_task: Optional["Task"] = None
         self._adoption_event: Optional["threading.Event"] = None
-        self._retained_handles: list = []
         self.generation_finished = Signal()
         self.generation_failed = Signal()
 
@@ -47,16 +47,12 @@ class JobPipelineStage(PipelineStage):
         pass
 
     def shutdown(self):
-        """Cancels the active job generation task."""
+        """Cancels active job generation task."""
         logger.debug("JobPipelineStage shutting down.")
         if self._active_task:
             self._task_manager.cancel_task(self._active_task.key)
             self._active_task = None
         self._adoption_event = None
-        # Release all retained step handles
-        for handle in list(self._retained_handles):
-            get_context().artifact_store.release(handle)
-        self._retained_handles.clear()
 
     def generate_job(self, doc: "Doc", on_done: Optional[Callable] = None):
         """
@@ -88,21 +84,24 @@ class JobPipelineStage(PipelineStage):
         machine.hydrate()
 
         step_handles = {}
-        retained_handles = []
-        for layer in doc.layers:
-            if not layer.workflow:
-                continue
-            for step in layer.workflow.steps:
-                if not step.visible:
+        with ExitStack() as stack:
+            for layer in doc.layers:
+                if not layer.workflow:
                     continue
-                handle = self._artifact_manager.get_step_ops_handle(step.uid)
-                if handle is None:
-                    continue
-                step_handles[step.uid] = handle.to_dict()
-                # Retain the handle so it won't be released while job runs
-                if get_context().artifact_store.retain(handle):
-                    retained_handles.append(handle)
-        self._retained_handles = retained_handles
+                for step in layer.workflow.steps:
+                    if not step.visible:
+                        continue
+                    handle = self._artifact_manager.get_step_ops_handle(
+                        step.uid
+                    )
+                    if handle is None:
+                        continue
+                    step_handles[step.uid] = handle.to_dict()
+                    # Checkout the handle so it won't be released while job
+                    # runs
+                    stack.enter_context(
+                        self._artifact_manager.checkout(step.uid)
+                    )
 
         # Allow job generation to continue even with no steps. The runner will
         # produce a job with only a preamble and postscript.
@@ -129,11 +128,6 @@ class JobPipelineStage(PipelineStage):
             """
             # This is now the ONLY place self._active_task is reset to None
             self._active_task = None
-
-            # Release all step handles that were retained for this job
-            for handle in self._retained_handles:
-                get_context().artifact_store.release(handle)
-            self._retained_handles.clear()
 
             task_status = task.get_status()
             final_handle = None

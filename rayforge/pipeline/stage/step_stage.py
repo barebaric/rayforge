@@ -1,8 +1,9 @@
 from __future__ import annotations
 import logging
-import math  # Added import
+import math
 from typing import TYPE_CHECKING, Dict, Optional
 import multiprocessing as mp
+from contextlib import ExitStack
 from blinker import Signal
 from ...context import get_context
 from ..artifact import (
@@ -38,10 +39,8 @@ class StepPipelineStage(PipelineStage):
         self._generation_id_map: Dict[StepKey, int] = {}
         self._active_tasks: Dict[StepKey, "Task"] = {}
         self._adoption_events: Dict[StepKey, "threading.Event"] = {}
-        # Local cache for the accurate, post-transformer time estimates
+        # Local cache for accurate, post-transformer time estimates
         self._time_cache: Dict[StepKey, Optional[float]] = {}
-        # Track retained workpiece handles for borrower pattern
-        self._retained_workpiece_handles: Dict[StepKey, list] = {}
 
         # Signals
         self.generation_finished = Signal()
@@ -61,15 +60,10 @@ class StepPipelineStage(PipelineStage):
         for key in list(self._active_tasks.keys()):
             self._cleanup_task(key)
         self._adoption_events.clear()
-        # Release any retained handles
-        for handles in self._retained_workpiece_handles.values():
-            for handle in handles:
-                get_context().artifact_store.release(handle)
-        self._retained_workpiece_handles.clear()
 
     def reconcile(self, doc: "Doc"):
         """
-        Triggers assembly for steps where dependencies are met and the
+        Triggers assembly for steps where dependencies are met and
         artifact is missing or stale.
         """
         if not doc:
@@ -91,7 +85,7 @@ class StepPipelineStage(PipelineStage):
                 for step in layer.workflow.steps:
                     if not step.visible:
                         continue
-                    # Trigger assembly if the render artifact is missing.
+                    # Trigger assembly if render artifact is missing.
                     if not self._artifact_manager.has_step_render_handle(
                         step.uid
                     ):
@@ -117,38 +111,29 @@ class StepPipelineStage(PipelineStage):
                 logger.debug(f"Cancelling active step task for {key}")
                 self._task_manager.cancel_task(task.key)
         self._adoption_events.pop(key, None)
-        # Release retained handles for this step
-        self._release_retained_handles(key)
 
     def _cleanup_entry(self, key: StepKey, full_invalidation: bool):
         """Removes a step artifact, clears time cache, and cancels its task."""
         logger.debug(f"StepPipelineStage: Cleaning up entry {key}.")
         self._generation_id_map.pop(key, None)
-        self._time_cache.pop(key, None)  # Clear the time cache
+        self._time_cache.pop(key, None)
         self._cleanup_task(key)
 
         # The ops artifact is always stale and can be removed.
         ops_handle = self._artifact_manager.pop_step_ops_handle(key)
-        if ops_handle:
-            get_context().artifact_store.release(ops_handle)
+        self._artifact_manager.release_handle(ops_handle)
 
-        # Only remove the render artifact if this is a full invalidation
-        # (e.g., the step was deleted), not a simple regeneration.
+        # Only remove render artifact if this is a full invalidation
+        # (e.g., step was deleted), not a simple regeneration.
         if full_invalidation:
             render_handle = self._artifact_manager.pop_step_render_handle(key)
             if render_handle:
                 logger.debug(
                     f"Popped and released stale render handle for step {key}."
                 )
-                get_context().artifact_store.release(render_handle)
+                self._artifact_manager.release_handle(render_handle)
 
         self._artifact_manager.invalidate_for_job()
-
-    def _release_retained_handles(self, key: StepKey):
-        """Releases all retained workpiece handles for a step."""
-        handles = self._retained_workpiece_handles.pop(key, [])
-        for handle in handles:
-            get_context().artifact_store.release(handle)
 
     def _trigger_assembly(self, step: "Step"):
         """Checks dependencies and launches the assembly task if ready."""
@@ -166,46 +151,39 @@ class StepPipelineStage(PipelineStage):
             return
 
         assembly_info = []
-        retained_handles = []
-        for wp in step.layer.all_workpieces:
-            handle = self._artifact_manager.get_workpiece_handle(
-                step.uid, wp.uid
-            )
-            if handle is None:
-                # Release any handles we already retained before aborting
-                for h in retained_handles:
-                    get_context().artifact_store.release(h)
-                return  # A dependency is not ready; abort.
+        with ExitStack() as stack:
+            for wp in step.layer.all_workpieces:
+                handle = self._artifact_manager.get_workpiece_handle(
+                    step.uid, wp.uid
+                )
+                if handle is None:
+                    return  # A dependency is not ready; abort.
 
-            # Validation: Ensure the handle in the cache actually matches the
-            # current geometry of the workpiece. If the user is resizing,
-            # the cache might hold the *old* artifact while the new one is
-            # generating. We must wait for the new one.
-            if not handle.is_scalable:
-                hw, hh = handle.generation_size
-                ww, wh = wp.size
-                if not (
-                    math.isclose(hw, ww, abs_tol=1e-6)
-                    and math.isclose(hh, wh, abs_tol=1e-6)
-                ):
-                    # Stale dependency. Abort assembly until cache updates.
-                    for h in retained_handles:
-                        get_context().artifact_store.release(h)
-                    return
+                # Ensure the handle in the cache actually matches the
+                # current geometry of the workpiece. If the user is resizing,
+                # the cache might hold the *old* artifact while the new one is
+                # generating. We must wait for the new one.
+                if not handle.is_scalable:
+                    hw, hh = handle.generation_size
+                    ww, wh = wp.size
+                    if not (
+                        math.isclose(hw, ww, abs_tol=1e-6)
+                        and math.isclose(hh, wh, abs_tol=1e-6)
+                    ):
+                        # Stale dependency. Abort assembly until cache updates.
+                        return
 
-            # Retain the handle to prevent premature release
-            get_context().artifact_store.retain(handle)
-            retained_handles.append(handle)
+                # Checkout the handle to prevent premature release
+                stack.enter_context(
+                    self._artifact_manager.checkout((step.uid, wp.uid))
+                )
 
-            info = {
-                "artifact_handle_dict": handle.to_dict(),
-                "world_transform_list": wp.get_world_transform().to_list(),
-                "workpiece_dict": wp.in_world().to_dict(),
-            }
-            assembly_info.append(info)
-
-        # Store retained handles for release in completion callback
-        self._retained_workpiece_handles[step.uid] = retained_handles
+                info = {
+                    "artifact_handle_dict": handle.to_dict(),
+                    "world_transform_list": wp.get_world_transform().to_list(),
+                    "workpiece_dict": wp.in_world().to_dict(),
+                }
+                assembly_info.append(info)
 
         if not assembly_info:
             self._cleanup_entry(step.uid, full_invalidation=True)
@@ -310,8 +288,6 @@ class StepPipelineStage(PipelineStage):
         self._adoption_events.pop(step_uid, None)
 
         if self._generation_id_map.get(step_uid) != task_generation_id:
-            # Release retained handles even for stale tasks
-            self._release_retained_handles(step_uid)
             return
 
         if task.get_status() == "completed":
@@ -329,9 +305,6 @@ class StepPipelineStage(PipelineStage):
         else:
             logger.warning(f"Step assembly for {step_uid} failed.")
             self._time_cache[step_uid] = -1.0  # Mark error
-
-        # Release retained handles after task completes
-        self._release_retained_handles(step_uid)
 
         self.generation_finished.send(
             self, step=step, generation_id=task_generation_id

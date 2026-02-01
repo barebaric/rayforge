@@ -270,7 +270,7 @@ class WorkPiecePipelineStage(PipelineStage):
                 stale_handle = self._artifact_manager.adopt_artifact(
                     (s_uid, w_uid), handle_dict
                 )
-                get_context().artifact_store.release(stale_handle)
+                self._artifact_manager.release_handle(stale_handle)
             except Exception as e:
                 logger.error(f"Error cleaning up stale artifact: {e}")
             return
@@ -452,7 +452,7 @@ class WorkPiecePipelineStage(PipelineStage):
             ):
                 return None
 
-        artifact = get_context().artifact_store.get(handle)
+        artifact = self._artifact_manager.get_artifact(handle)
         return artifact if isinstance(artifact, WorkPieceArtifact) else None
 
     def get_scaled_ops(

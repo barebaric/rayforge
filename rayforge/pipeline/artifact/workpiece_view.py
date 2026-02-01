@@ -1,6 +1,6 @@
 from __future__ import annotations
 import numpy as np
-from typing import Tuple, Dict, Any, Type
+from typing import Tuple, Dict, Any, Type, Union
 from dataclasses import dataclass, asdict
 from .base import BaseArtifact
 from .handle import BaseArtifactHandle
@@ -65,7 +65,7 @@ class WorkPieceViewArtifactHandle(BaseArtifactHandle):
         shm_name: str,
         handle_class_name: str,
         artifact_type_name: str,
-        array_metadata: Dict[str, Any] | None = None,
+        array_metadata: Union[Dict[str, Any], None] = None,
         **_kwargs,
     ):
         super().__init__(

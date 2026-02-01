@@ -118,9 +118,12 @@ class DocEditor:
             f"Releasing {len(self._transient_artifact_handles)} "
             "transient job artifacts..."
         )
-        artifact_store = self.context.artifact_store
-        for handle in list(self._transient_artifact_handles):
-            artifact_store.release(handle)
+
+        if self.pipeline:
+            manager = self.pipeline.artifact_manager
+            for handle in list(self._transient_artifact_handles):
+                manager.release_handle(handle)
+
         self._transient_artifact_handles.clear()
 
         self.pipeline.shutdown()
@@ -218,7 +221,7 @@ class DocEditor:
         useful for tests.
         """
         export_future = asyncio.get_running_loop().create_future()
-        artifact_store = self.context.artifact_store
+        artifact_manager = self.pipeline.artifact_manager
 
         def _on_export_assembly_done(
             handle: Optional[JobArtifactHandle], error: Optional[Exception]
@@ -227,32 +230,29 @@ class DocEditor:
                 if error:
                     export_future.set_exception(error)
                     return
-                if not handle:
-                    exc = ValueError("Assembly process returned no artifact.")
-                    export_future.set_exception(exc)
-                    return
 
-                artifact = artifact_store.get(handle)
-                assert isinstance(artifact, JobArtifact)
-                if artifact.machine_code_bytes is None:
-                    exc = ValueError("Final artifact is missing G-code data.")
-                    export_future.set_exception(exc)
-                    return
+                with artifact_manager.checkout_handle(handle) as artifact:
+                    if not artifact:
+                        raise ValueError(
+                            "Assembly process returned no artifact."
+                        )
+                    assert isinstance(artifact, JobArtifact)
+                    if artifact.machine_code_bytes is None:
+                        raise ValueError(
+                            "Final artifact is missing G-code data."
+                        )
 
-                gcode_str = artifact.machine_code_bytes.tobytes().decode(
-                    "utf-8"
-                )
-                output_path.write_text(gcode_str, encoding="utf-8")
+                    gcode_str = artifact.machine_code_bytes.tobytes().decode(
+                        "utf-8"
+                    )
+                    output_path.write_text(gcode_str, encoding="utf-8")
 
-                logger.info(f"Test export successful to {output_path}")
-                export_future.set_result(True)
+                    logger.info(f"Test export successful to {output_path}")
+                    export_future.set_result(True)
 
             except Exception as e:
                 if not export_future.done():
                     export_future.set_exception(e)
-            finally:
-                if handle:
-                    artifact_store.release(handle)
 
         # Call the non-blocking method and provide our callback to bridge it
         self.file.assemble_job_in_background(
