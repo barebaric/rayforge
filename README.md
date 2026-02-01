@@ -29,7 +29,7 @@ We also have a [Discord](https://discord.gg/sTHNdTtpQJ).
 | Feature                      | Description                                                                                                      |
 | :--------------------------- | :--------------------------------------------------------------------------------------------------------------- |
 | **Modern UI**                | Polished and modern UI built with Gtk4 and Libadwaita. Supports system, light, and dark themes.                  |
-| **Parametric Sketch Editor** | Create precise, constraint-based 2D designs with geometric and dimensional constraints.                         |
+| **Parametric Sketch Editor** | Create precise, constraint-based 2D designs with geometric and dimensional constraints.                          |
 | **Multi-Layer Operations**   | Assign different operations (e.g., engrave then cut) to layers in your design.                                   |
 | **Versatile Operations**     | Supports Contour, Raster Engraving (with cross-hatch fill), Shrink Wrap, and Depth Engraving.                    |
 | **Overscan & Kerf Comp.**    | Improve engraving quality with overscan and ensure dimensional accuracy with kerf compensation.                  |
@@ -46,7 +46,7 @@ We also have a [Discord](https://discord.gg/sTHNdTtpQJ).
 | **Camera Integration**       | Use a USB camera for workpiece alignment, positioning, and background tracing.                                   |
 | **Cross-Platform**           | Native builds for Linux and Windows.                                                                             |
 | **Extensible**               | Open development model makes it easy to [add support for new devices](website/content/docs/developer/driver.md). |
-| **Multi-Language**           | Available in English, Portuguese, Spanish, and German.                                                           |
+| **Multi-Language**           | Available in English, Portuguese, Spanish, German, French, and Chinese.                                          |
 | **G-code Dialects**          | Supports GRBL, Smoothieware, and other GRBL-compatible firmwares.                                                |
 
 ## Device Support

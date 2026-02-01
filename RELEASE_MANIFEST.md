@@ -27,12 +27,12 @@ Generate the following files in `media/[release]/drafts/`:
 - `reddit_post.md` - Formatted post for Reddit, following the tone of the previous Reddit posts
 - `patreon_post.md` - Formatted post for Patreon, following the tone of the previous Patreon posts
 - `blog_post.md` - Formatted post for the website blog. Don't store this in the drafts, store it in `website/content/blog/posts/`
+- Update the changelog in the appstream file (`data/org.rayforge.rayforge.metainfo.xml`)
 - Generate five release thumbnails using the MCP tool. Something like "make a YouTube thumbnail for Rayforge 1.1 with ... [something creative]".
   Put the thumbnails into media/[release]/thumbs/
 
 In the text files, use a maximum line length of 100 chars.
 Ensure you use proper links for discord and patreon and the homepage and github, not placeholders.
-
 
 ### Phase 3: User manually creates clips with audio
 
@@ -63,6 +63,7 @@ pixi run generate-blender-setup \
 ```
 
 The script:
+
 - Uses the blender video from the previous release as a template.
 - Adds the thumbnail as the first frame.
 - Adds video and audio clips to timeline

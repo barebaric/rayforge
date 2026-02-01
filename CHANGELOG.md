@@ -5,7 +5,7 @@ All notable changes to Rayforge will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## 1.0
 
 ### Added
 
@@ -28,6 +28,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Sketcher: The solver now biases points to their previous position for more stable dragging
 - Simulation mode keyboard shortcut changed to F11 to avoid conflic with "Save as..."
 - Remember G-code view and control panel visibility across sessions
+- Increased precision of power sliders and display digits everywhere
+- Import dialog now shows number of vectors per layer
+- Error message shown when attempting to delete a dialect that is in use
+- Chinese translations were added
+- When opening bitmap images from CLI, default to import the whole image, not tracing
 
 ### Fixed
 
@@ -37,12 +42,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Numerous alignment bugs in importers
 - Traceback when using invert switch in import dialog
 - Sketches not properly centered on the surface after import
-
-### User Interface
-
-- Increased precision of power sliders and display digits everywhere
-- Import dialog now shows number of vectors per layer
-- Error message shown when attempting to delete a dialect that is in use
 
 ### Documentation
 

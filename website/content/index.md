@@ -31,7 +31,7 @@ Rayforge transforms your laser cutter or engraver into a powerful creative tool.
 | **Camera Integration**       | Use a USB camera for workpiece alignment, positioning, and background tracing.                     |
 | **Cross-Platform**           | Native builds for Linux and Windows.                                                               |
 | **Extensible**               | Open development model makes it easy to add support for new devices.                               |
-| **Multi-Language**           | Available in English, Portuguese, Spanish, and German.                                             |
+| **Multi-Language**           | Available in English, Portuguese, Spanish, German, French, and Chinese.                            |
 | **G-code Dialects**          | Supports GRBL, Smoothieware, and other GRBL-compatible firmwares.                                  |
 
 ---
