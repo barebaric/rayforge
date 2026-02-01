@@ -25,6 +25,14 @@ class CutOrder(Enum):
     INSIDE_OUTSIDE = auto()
     OUTSIDE_INSIDE = auto()
 
+    def label(self) -> str:
+        """Return a translatable label for this cut order."""
+        labels = {
+            self.INSIDE_OUTSIDE: _("Inside-Outside"),
+            self.OUTSIDE_INSIDE: _("Outside-Inside"),
+        }
+        return labels[self]
+
 
 class ContourProducer(OpsProducer):
     """

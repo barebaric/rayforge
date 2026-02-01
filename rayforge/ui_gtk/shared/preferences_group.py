@@ -76,7 +76,7 @@ class PreferencesGroupWithButton(Adw.PreferencesGroup):
         item_list = list(items)
 
         if not item_list:
-            placeholder_label = Gtk.Label(label="No parameters")
+            placeholder_label = Gtk.Label(label=_("No parameters"))
             placeholder_label.add_css_class("dim-label")
             placeholder_label.set_halign(Gtk.Align.CENTER)
             placeholder_label.set_margin_top(12)

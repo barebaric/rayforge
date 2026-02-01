@@ -4,7 +4,6 @@ from blinker import Signal
 from ...core.step import Step
 from ..icons import get_icon
 from ...core.undo.property_cmd import ChangePropertyCommand
-from ...shared.units.formatter import format_value
 from ...context import get_context
 from .step_settings_dialog import StepSettingsDialog
 
@@ -66,9 +65,7 @@ class StepBox(Adw.ActionRow):
         # Update title and subtitle
         self.set_title(f"{self.prefix}{self.step.name}")
 
-        power_percent = int(self.step.power * 100)
-        formatted_speed = format_value(self.step.cut_speed, "speed")
-        self.set_subtitle(f"{power_percent}% power, {formatted_speed}")
+        self.set_subtitle(self.step.get_summary())
 
         # Sync the visibility switch's state with the model.
         is_visible = self.step.visible

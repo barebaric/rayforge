@@ -35,73 +35,73 @@ class SketchPieMenu(PieMenu):
     _MENU_ITEMS = {
         "select": {
             "icon": "sketch-select-symbolic",
-            "label_key": "Select",
+            "label": _("Select"),
             "action": "set_tool:select",
             "handler": "_on_tool_clicked",
         },
         "line": {
             "icon": "sketch-line-symbolic",
-            "label_key": "Line",
+            "label": _("Line"),
             "action": "set_tool:line",
             "handler": "_on_tool_clicked",
         },
         "arc": {
             "icon": "sketch-arc-symbolic",
-            "label_key": "Arc",
+            "label": _("Arc"),
             "action": "set_tool:arc",
             "handler": "_on_tool_clicked",
         },
         "text_box": {
             "icon": "sketch-text-symbolic",
-            "label_key": "Text Box",
+            "label": _("Text Box"),
             "action": "set_tool:text_box",
             "handler": "_on_tool_clicked",
         },
         "circle": {
             "icon": "sketch-circle-symbolic",
-            "label_key": "Circle",
+            "label": _("Circle"),
             "action": "set_tool:circle",
             "handler": "_on_tool_clicked",
         },
         "rectangle": {
             "icon": "sketch-rect-symbolic",
-            "label_key": "Rectangle",
+            "label": _("Rectangle"),
             "action": "set_tool:rectangle",
             "handler": "_on_tool_clicked",
         },
         "rounded_rect": {
             "icon": "sketch-rounded-rect-symbolic",
-            "label_key": "Rounded Rectangle",
+            "label": _("Rounded Rectangle"),
             "action": "set_tool:rounded_rect",
             "handler": "_on_tool_clicked",
         },
         "fill": {
             "icon": "sketch-fill-symbolic",
-            "label_key": "Fill",
+            "label": _("Fill"),
             "action": "set_tool:fill",
             "handler": "_on_tool_clicked",
         },
         "construction": {
             "icon": "sketch-construction-symbolic",
-            "label_key": "Construction",
+            "label": _("Construction"),
             "action": "toggle_construction_on_selection",
             "handler": "_on_action_clicked",
         },
         "chamfer": {
             "icon": "sketch-chamfer-symbolic",
-            "label_key": "Chamfer",
+            "label": _("Chamfer"),
             "action": "add_chamfer_action",
             "handler": "_on_action_clicked",
         },
         "fillet": {
             "icon": "sketch-fillet-symbolic",
-            "label_key": "Fillet",
+            "label": _("Fillet"),
             "action": "add_fillet_action",
             "handler": "_on_action_clicked",
         },
         "delete": {
             "icon": "delete-symbolic",
-            "label_key": "Delete",
+            "label": _("Delete"),
             "action": None,
             "handler": "_on_action_clicked",
         },
@@ -218,9 +218,7 @@ class SketchPieMenu(PieMenu):
                     f"{get_shortcut_label(data_key)}"
                 )
             else:
-                label = (
-                    f"{_(config['label_key'])}{get_shortcut_label(data_key)}"
-                )
+                label = f"{config['label']}{get_shortcut_label(data_key)}"
             item = PieMenuItem(config["icon"], label, data=data_key)
             handler = getattr(self, config["handler"])
             item.on_click.connect(handler, weak=False)

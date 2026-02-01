@@ -13,6 +13,26 @@ class MacroTrigger(Enum):
     WORKPIECE_START = "Before processing a workpiece"
     WORKPIECE_END = "After processing a workpiece"
 
+    def label(self) -> str:
+        """Return a translatable label for this trigger."""
+        labels = {
+            self.LAYER_START: _("Layer Start"),
+            self.LAYER_END: _("Layer End"),
+            self.WORKPIECE_START: _("Workpiece Start"),
+            self.WORKPIECE_END: _("Workpiece End"),
+        }
+        return labels[self]
+
+    def description(self) -> str:
+        """Return a translatable description for this trigger."""
+        labels = {
+            self.LAYER_START: _("Before processing a layer"),
+            self.LAYER_END: _("After processing a layer"),
+            self.WORKPIECE_START: _("Before processing a workpiece"),
+            self.WORKPIECE_END: _("After processing a workpiece"),
+        }
+        return labels[self]
+
 
 @dataclass
 class Macro:

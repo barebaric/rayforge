@@ -45,9 +45,7 @@ class ContourProducerSettingsWidget(
         self.add(switch_row)
 
         # Cut Side
-        cut_side_choices = [
-            _(cs.name.replace("_", " ").title()) for cs in CutSide
-        ]
+        cut_side_choices = [cs.label() for cs in CutSide]
         cut_side_row = Adw.ComboRow(
             title=_("Cut Side"), model=Gtk.StringList.new(cut_side_choices)
         )
@@ -55,9 +53,7 @@ class ContourProducerSettingsWidget(
         self.add(cut_side_row)
 
         # Cut Order
-        cut_order_choices = [
-            _(co.name.replace("_", "-").title()) for co in CutOrder
-        ]
+        cut_order_choices = [co.label() for co in CutOrder]
         cut_order_row = Adw.ComboRow(
             title=_("Cut Order"),
             subtitle=_("Processing order for nested paths"),
