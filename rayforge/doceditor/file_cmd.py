@@ -952,8 +952,6 @@ class FileCmd:
             self._editor.doc.updated.send(self._editor.doc)
 
             logger.info(f"Successfully loaded project from {file_path}")
-            msg = _("Project loaded: {name}").format(name=file_path.name)
-            self._editor.notification_requested.send(self, message=msg)
             return True
         except json.JSONDecodeError as e:
             logger.error(
