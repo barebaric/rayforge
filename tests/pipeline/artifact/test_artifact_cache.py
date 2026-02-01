@@ -1,12 +1,13 @@
 import unittest
-from unittest.mock import Mock, patch
+from unittest.mock import Mock
 from rayforge.pipeline.artifact import (
-    ArtifactCache,
+    ArtifactManager,
     WorkPieceArtifactHandle,
     StepRenderArtifactHandle,
     StepOpsArtifactHandle,
     JobArtifactHandle,
 )
+from rayforge.pipeline.artifact.store import ArtifactStore
 
 
 def create_mock_handle(handle_class, name: str) -> Mock:
@@ -16,37 +17,20 @@ def create_mock_handle(handle_class, name: str) -> Mock:
     return handle
 
 
-class TestArtifactCache(unittest.TestCase):
-    """Test suite for the ArtifactCache."""
+class TestArtifactManager(unittest.TestCase):
+    """Test suite for ArtifactManager."""
 
     def setUp(self):
-        """Set up a fresh cache and mock the new context-based dependency."""
-        # Patch the `get_context` function in the module where it is used
-        # (i.e., cache.py).
-        self.mock_get_context_patch = patch(
-            "rayforge.pipeline.artifact.cache.get_context"
-        )
-        mock_get_context = self.mock_get_context_patch.start()
-
-        # Configure the mock context to return a mock artifact_store that has
-        # our mock release method.
-        mock_context = Mock()
-        mock_artifact_store = Mock()
-        self.mock_release = mock_artifact_store.release
-        mock_context.artifact_store = mock_artifact_store
-        mock_get_context.return_value = mock_context
-
-        self.cache = ArtifactCache()
-
-    def tearDown(self):
-        """Stop the patcher after each test."""
-        self.mock_get_context_patch.stop()
+        """Set up a fresh manager and mock store."""
+        self.mock_store = Mock(spec=ArtifactStore)
+        self.mock_release = self.mock_store.release
+        self.manager = ArtifactManager(self.mock_store)
 
     def test_put_and_get_workpiece(self):
         """Tests basic storage and retrieval of a workpiece handle."""
         handle = create_mock_handle(WorkPieceArtifactHandle, "wp1")
-        self.cache.put_workpiece_handle("step1", "wp1", handle)
-        retrieved = self.cache.get_workpiece_handle("step1", "wp1")
+        self.manager.put_workpiece_handle("step1", "wp1", handle)
+        retrieved = self.manager.get_workpiece_handle("step1", "wp1")
         self.assertIs(retrieved, handle)
         self.mock_release.assert_not_called()
 
@@ -57,11 +41,11 @@ class TestArtifactCache(unittest.TestCase):
         )
         ops_handle = create_mock_handle(StepOpsArtifactHandle, "step1_ops")
 
-        self.cache.put_step_render_handle("step1", render_handle)
-        self.cache.put_step_ops_handle("step1", ops_handle)
+        self.manager.put_step_render_handle("step1", render_handle)
+        self.manager.put_step_ops_handle("step1", ops_handle)
 
-        retrieved_render = self.cache.get_step_render_handle("step1")
-        retrieved_ops = self.cache.get_step_ops_handle("step1")
+        retrieved_render = self.manager.get_step_render_handle("step1")
+        retrieved_ops = self.manager.get_step_ops_handle("step1")
 
         self.assertIs(retrieved_render, render_handle)
         self.assertIs(retrieved_ops, ops_handle)
@@ -70,8 +54,8 @@ class TestArtifactCache(unittest.TestCase):
     def test_put_and_get_job(self):
         """Tests basic storage and retrieval of a job handle."""
         handle = create_mock_handle(JobArtifactHandle, "job")
-        self.cache.put_job_handle(handle)
-        retrieved = self.cache.get_job_handle()
+        self.manager.put_job_handle(handle)
+        retrieved = self.manager.get_job_handle()
         self.assertIs(retrieved, handle)
         self.mock_release.assert_not_called()
 
@@ -85,168 +69,186 @@ class TestArtifactCache(unittest.TestCase):
         ops_h = create_mock_handle(StepOpsArtifactHandle, "step1_ops")
         job_h = create_mock_handle(JobArtifactHandle, "job")
 
-        # Manually populate cache to bypass put methods' invalidation
-        self.cache._workpiece_handles[("step1", "wp1")] = wp_h
-        self.cache._step_render_handles["step1"] = render_h
-        self.cache._step_ops_handles["step1"] = ops_h
-        self.cache._job_handle = job_h
+        # Manually populate manager to bypass put methods' invalidation
+        self.manager._workpiece_handles[("step1", "wp1")] = wp_h
+        self.manager._step_render_handles["step1"] = render_h
+        self.manager._step_ops_handles["step1"] = ops_h
+        self.manager._job_handle = job_h
 
-        self.cache.invalidate_for_workpiece("step1", "wp1")
+        self.manager.invalidate_for_workpiece("step1", "wp1")
 
         # Assert correct artifacts were removed
-        self.assertIsNone(self.cache.get_workpiece_handle("step1", "wp1"))
-        self.assertIsNone(self.cache.get_step_ops_handle("step1"))
-        self.assertIsNone(self.cache.get_job_handle())
+        self.assertIsNone(self.manager.get_workpiece_handle("step1", "wp1"))
+        self.assertIsNone(self.manager.get_step_ops_handle("step1"))
+        self.assertIsNone(self.manager.get_job_handle())
         # Assert render handle remains for UI stability
-        self.assertIsNotNone(self.cache.get_step_render_handle("step1"))
-
-        # Assert release was called for wp, ops, and job handles
-        self.assertEqual(self.mock_release.call_count, 3)
+        self.assertIs(self.manager.get_step_render_handle("step1"), render_h)
+        # Assert only workpiece and ops were released
         self.mock_release.assert_any_call(wp_h)
         self.mock_release.assert_any_call(ops_h)
         self.mock_release.assert_any_call(job_h)
+        self.assertEqual(self.mock_release.call_count, 3)
 
     def test_invalidate_step_cascades_correctly(self):
-        """Tests that invalidating a step removes all its related artifacts."""
-        wp1_h = create_mock_handle(WorkPieceArtifactHandle, "s1_wp1")
+        """
+        Tests that invalidating a step cascades to all dependent
+        artifacts (workpieces, step artifacts, and job).
+        """
+        wp1_h = create_mock_handle(WorkPieceArtifactHandle, "wp1")
+        wp2_h = create_mock_handle(WorkPieceArtifactHandle, "wp2")
         render_h = create_mock_handle(StepRenderArtifactHandle, "step1_render")
         ops_h = create_mock_handle(StepOpsArtifactHandle, "step1_ops")
         job_h = create_mock_handle(JobArtifactHandle, "job")
 
-        # Populate cache
-        self.cache._workpiece_handles[("step1", "wp1")] = wp1_h
-        self.cache._step_render_handles["step1"] = render_h
-        self.cache._step_ops_handles["step1"] = ops_h
-        self.cache._job_handle = job_h
+        self.manager._workpiece_handles[("step1", "wp1")] = wp1_h
+        self.manager._workpiece_handles[("step1", "wp2")] = wp2_h
+        self.manager._step_render_handles["step1"] = render_h
+        self.manager._step_ops_handles["step1"] = ops_h
+        self.manager._job_handle = job_h
 
-        self.cache.invalidate_for_step("step1")
+        self.manager.invalidate_for_step("step1")
 
-        # Assert all items were removed
-        self.assertIsNone(self.cache.get_workpiece_handle("step1", "wp1"))
-        self.assertIsNone(self.cache.get_step_render_handle("step1"))
-        self.assertIsNone(self.cache.get_step_ops_handle("step1"))
-        self.assertIsNone(self.cache.get_job_handle())
-
-        # 1 workpiece + 2 step handles + 1 job = 4 releases
-        self.assertEqual(self.mock_release.call_count, 4)
+        # Assert all step-related artifacts were removed
+        self.assertIsNone(self.manager.get_workpiece_handle("step1", "wp1"))
+        self.assertIsNone(self.manager.get_workpiece_handle("step1", "wp2"))
+        self.assertIsNone(self.manager.get_step_render_handle("step1"))
+        self.assertIsNone(self.manager.get_step_ops_handle("step1"))
+        self.assertIsNone(self.manager.get_job_handle())
+        # Assert all artifacts were released
         self.mock_release.assert_any_call(wp1_h)
+        self.mock_release.assert_any_call(wp2_h)
         self.mock_release.assert_any_call(render_h)
         self.mock_release.assert_any_call(ops_h)
         self.mock_release.assert_any_call(job_h)
+        self.assertEqual(self.mock_release.call_count, 5)
 
-    def test_put_workpiece_invalidates_ops_and_job(self):
-        """Putting a new workpiece handle should invalidate ops/job."""
-        wp_h = create_mock_handle(WorkPieceArtifactHandle, "wp1")
-        ops_h = create_mock_handle(StepOpsArtifactHandle, "step1_ops")
-        job_h = create_mock_handle(JobArtifactHandle, "job")
+    def test_put_workpiece_replaces_old_handle(self):
+        """
+        Tests that putting a workpiece handle releases the old handle
+        and invalidates dependent artifacts.
+        """
+        old_wp_h = create_mock_handle(WorkPieceArtifactHandle, "wp1_old")
+        old_ops_h = create_mock_handle(StepOpsArtifactHandle, "step1_ops_old")
+        old_job_h = create_mock_handle(JobArtifactHandle, "job_old")
+        new_wp_h = create_mock_handle(WorkPieceArtifactHandle, "wp1_new")
 
-        # Pre-populate step and job
-        self.cache._step_ops_handles["step1"] = ops_h
-        self.cache._job_handle = job_h
+        self.manager._workpiece_handles[("step1", "wp1")] = old_wp_h
+        self.manager._step_ops_handles["step1"] = old_ops_h
+        self.manager._job_handle = old_job_h
 
-        self.cache.put_workpiece_handle("step1", "wp1", wp_h)
+        self.manager.put_workpiece_handle("step1", "wp1", new_wp_h)
 
-        # Ops and job should be gone
-        self.assertIsNone(self.cache.get_step_ops_handle("step1"))
-        self.assertIsNone(self.cache.get_job_handle())
-
-        # The new workpiece handle should exist
-        self.assertIsNotNone(self.cache.get_workpiece_handle("step1", "wp1"))
-
+        # Assert new handle is stored
+        self.assertIs(
+            self.manager.get_workpiece_handle("step1", "wp1"), new_wp_h
+        )
         # Assert old handles were released
-        self.assertEqual(self.mock_release.call_count, 2)
-        self.mock_release.assert_any_call(ops_h)
-        self.mock_release.assert_any_call(job_h)
+        self.mock_release.assert_any_call(old_wp_h)
+        self.mock_release.assert_any_call(old_ops_h)
+        self.mock_release.assert_any_call(old_job_h)
+        self.assertEqual(self.mock_release.call_count, 3)
 
-    def test_shutdown_clears_all_and_releases(self):
-        """Tests that shutdown releases all stored handles."""
+    def test_put_step_ops_replaces_and_invalidates(self):
+        """
+        Tests that putting a step ops handle releases the old handle
+        and invalidates the job.
+        """
+        old_ops_h = create_mock_handle(StepOpsArtifactHandle, "step1_ops_old")
+        old_job_h = create_mock_handle(JobArtifactHandle, "job_old")
+        new_ops_h = create_mock_handle(StepOpsArtifactHandle, "step1_ops_new")
+
+        self.manager._step_ops_handles["step1"] = old_ops_h
+        self.manager._job_handle = old_job_h
+
+        self.manager.put_step_ops_handle("step1", new_ops_h)
+
+        self.assertIs(self.manager.get_step_ops_handle("step1"), new_ops_h)
+        self.mock_release.assert_any_call(old_ops_h)
+        self.mock_release.assert_any_call(old_job_h)
+        self.assertEqual(self.mock_release.call_count, 2)
+
+    def test_put_job_replaces_old_handle(self):
+        """Tests that putting a job handle releases the old handle."""
+        old_job_h = create_mock_handle(JobArtifactHandle, "job_old")
+        new_job_h = create_mock_handle(JobArtifactHandle, "job_new")
+
+        self.manager._job_handle = old_job_h
+        self.manager.put_job_handle(new_job_h)
+
+        self.assertIs(self.manager.get_job_handle(), new_job_h)
+        self.mock_release.assert_called_once_with(old_job_h)
+
+    def test_shutdown_releases_all_artifacts(self):
+        """Tests that shutdown releases all cached artifacts."""
         wp_h = create_mock_handle(WorkPieceArtifactHandle, "wp1")
         render_h = create_mock_handle(StepRenderArtifactHandle, "step1_render")
         ops_h = create_mock_handle(StepOpsArtifactHandle, "step1_ops")
         job_h = create_mock_handle(JobArtifactHandle, "job")
 
-        self.cache._workpiece_handles[("step1", "wp1")] = wp_h
-        self.cache._step_render_handles["step1"] = render_h
-        self.cache._step_ops_handles["step1"] = ops_h
-        self.cache._job_handle = job_h
+        self.manager._workpiece_handles[("step1", "wp1")] = wp_h
+        self.manager._step_render_handles["step1"] = render_h
+        self.manager._step_ops_handles["step1"] = ops_h
+        self.manager._job_handle = job_h
 
-        self.cache.shutdown()
+        self.manager.shutdown()
 
-        self.assertIsNone(self.cache.get_workpiece_handle("step1", "wp1"))
-        self.assertIsNone(self.cache.get_step_render_handle("step1"))
-        self.assertIsNone(self.cache.get_step_ops_handle("step1"))
-        self.assertIsNone(self.cache.get_job_handle())
-        self.assertEqual(len(self.cache._workpiece_handles), 0)
-        self.assertEqual(len(self.cache._step_render_handles), 0)
-        self.assertEqual(len(self.cache._step_ops_handles), 0)
-
-        self.assertEqual(self.mock_release.call_count, 4)
+        # Assert all handles were released
         self.mock_release.assert_any_call(wp_h)
         self.mock_release.assert_any_call(render_h)
         self.mock_release.assert_any_call(ops_h)
         self.mock_release.assert_any_call(job_h)
-
-    def test_has_step_render_handle(self):
-        """Tests the has_step_render_handle method."""
-        self.assertFalse(self.cache.has_step_render_handle("step1"))
-        handle = create_mock_handle(StepRenderArtifactHandle, "step1_render")
-        self.cache.put_step_render_handle("step1", handle)
-        self.assertTrue(self.cache.has_step_render_handle("step1"))
-        self.cache.invalidate_for_step("step1")
-        self.assertFalse(self.cache.has_step_render_handle("step1"))
-
-    def test_get_all_step_render_uids(self):
-        """Tests getting all step UIDs with render handles."""
-        self.assertEqual(self.cache.get_all_step_render_uids(), set())
-        h1 = create_mock_handle(StepRenderArtifactHandle, "step1_render")
-        h2 = create_mock_handle(StepRenderArtifactHandle, "step2_render")
-        self.cache.put_step_render_handle("step1", h1)
-        self.cache.put_step_render_handle("step2", h2)
-        self.assertEqual(
-            self.cache.get_all_step_render_uids(), {"step1", "step2"}
-        )
+        self.assertEqual(self.mock_release.call_count, 4)
+        # Assert all caches are cleared
+        self.assertEqual(len(self.manager._workpiece_handles), 0)
+        self.assertEqual(len(self.manager._step_render_handles), 0)
+        self.assertEqual(len(self.manager._step_ops_handles), 0)
+        self.assertIsNone(self.manager._job_handle)
 
     def test_get_all_workpiece_keys(self):
         """Tests getting all workpiece keys."""
-        self.assertEqual(self.cache.get_all_workpiece_keys(), set())
-        h1 = create_mock_handle(WorkPieceArtifactHandle, "wp1")
-        h2 = create_mock_handle(WorkPieceArtifactHandle, "wp2")
-        self.cache.put_workpiece_handle("step1", "wp1", h1)
-        self.cache.put_workpiece_handle("step2", "wp2", h2)
-        expected_keys = {("step1", "wp1"), ("step2", "wp2")}
-        self.assertEqual(self.cache.get_all_workpiece_keys(), expected_keys)
+        self.manager._workpiece_handles[("step1", "wp1")] = Mock()
+        self.manager._workpiece_handles[("step1", "wp2")] = Mock()
+        self.manager._workpiece_handles[("step2", "wp1")] = Mock()
+
+        keys = self.manager.get_all_workpiece_keys()
+        self.assertEqual(len(keys), 3)
+        self.assertIn(("step1", "wp1"), keys)
+        self.assertIn(("step1", "wp2"), keys)
+        self.assertIn(("step2", "wp1"), keys)
+
+    def test_get_all_step_render_uids(self):
+        """Tests getting all step render UIDs."""
+        self.manager._step_render_handles["step1"] = Mock()
+        self.manager._step_render_handles["step2"] = Mock()
+
+        uids = self.manager.get_all_step_render_uids()
+        self.assertEqual(len(uids), 2)
+        self.assertIn("step1", uids)
+        self.assertIn("step2", uids)
+
+    def test_has_step_render_handle(self):
+        """Tests checking if a step render handle exists."""
+        self.manager._step_render_handles["step1"] = Mock()
+        self.assertTrue(self.manager.has_step_render_handle("step1"))
+        self.assertFalse(self.manager.has_step_render_handle("step2"))
 
     def test_pop_step_ops_handle(self):
-        """Tests popping a step ops handle from the cache."""
-        handle = create_mock_handle(StepOpsArtifactHandle, "step1_ops")
-        self.cache.put_step_ops_handle("step1", handle)
+        """Tests popping a step ops handle."""
+        ops_h = create_mock_handle(StepOpsArtifactHandle, "step1_ops")
+        self.manager._step_ops_handles["step1"] = ops_h
 
-        # Pop should return the handle and remove it
-        popped_handle = self.cache.pop_step_ops_handle("step1")
-        self.assertIs(popped_handle, handle)
-        self.assertIsNone(self.cache.get_step_ops_handle("step1"))
-
-        # Popping again should return None
-        self.assertIsNone(self.cache.pop_step_ops_handle("step1"))
-
-        # Pop should not trigger a release
-        self.mock_release.assert_not_called()
+        popped = self.manager.pop_step_ops_handle("step1")
+        self.assertIs(popped, ops_h)
+        self.assertIsNone(self.manager.get_step_ops_handle("step1"))
 
     def test_pop_step_render_handle(self):
-        """Tests popping a step render handle from the cache."""
-        handle = create_mock_handle(StepRenderArtifactHandle, "step1_render")
-        self.cache.put_step_render_handle("step1", handle)
+        """Tests popping a step render handle."""
+        render_h = create_mock_handle(StepRenderArtifactHandle, "step1_render")
+        self.manager._step_render_handles["step1"] = render_h
 
-        # Pop should return the handle and remove it
-        popped_handle = self.cache.pop_step_render_handle("step1")
-        self.assertIs(popped_handle, handle)
-        self.assertIsNone(self.cache.get_step_render_handle("step1"))
-
-        # Popping again should return None
-        self.assertIsNone(self.cache.pop_step_render_handle("step1"))
-
-        # Pop should not trigger a release
-        self.mock_release.assert_not_called()
+        popped = self.manager.pop_step_render_handle("step1")
+        self.assertIs(popped, render_h)
+        self.assertIsNone(self.manager.get_step_render_handle("step1"))
 
 
 if __name__ == "__main__":

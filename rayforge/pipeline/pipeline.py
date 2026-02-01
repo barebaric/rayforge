@@ -24,27 +24,28 @@ from typing import (
 )
 from blinker import Signal
 from contextlib import contextmanager
+from ..context import get_context
 from ..core.doc import Doc
-from ..core.layer import Layer
-from ..core.step import Step
-from ..core.workpiece import WorkPiece
 from ..core.group import Group
 from ..core.item import DocItem
-from ..core.ops import Ops
+from ..core.layer import Layer
 from ..core.matrix import Matrix
+from ..core.ops import Ops
+from ..core.step import Step
+from ..core.workpiece import WorkPiece
 from .artifact import (
-    WorkPieceArtifact,
+    ArtifactManager,
     BaseArtifactHandle,
+    JobArtifactHandle,
+    RenderContext,
     StepRenderArtifactHandle,
     StepOpsArtifactHandle,
-    JobArtifactHandle,
-    ArtifactCache,
-    RenderContext,
+    WorkPieceArtifact,
 )
 from .stage import (
-    WorkPiecePipelineStage,
-    StepPipelineStage,
     JobPipelineStage,
+    StepPipelineStage,
+    WorkPiecePipelineStage,
     WorkPieceViewPipelineStage,
 )
 
@@ -126,21 +127,22 @@ class Pipeline:
     def _initialize_stages_and_connections(self):
         """A new helper method to contain all stage setup logic."""
         logger.debug(f"[{id(self)}] Initializing stages and connections.")
-        self._artifact_cache = ArtifactCache()
+        store = get_context().artifact_store
+        self._artifact_manager = ArtifactManager(store)
         self._last_known_busy_state = False
 
         # Stages
         self._workpiece_stage = WorkPiecePipelineStage(
-            self._task_manager, self._artifact_cache
+            self._task_manager, self._artifact_manager
         )
         self._step_stage = StepPipelineStage(
-            self._task_manager, self._artifact_cache
+            self._task_manager, self._artifact_manager
         )
         self._job_stage = JobPipelineStage(
-            self._task_manager, self._artifact_cache
+            self._task_manager, self._artifact_manager
         )
         self._workpiece_view_stage = WorkPieceViewPipelineStage(
-            self._task_manager, self._artifact_cache
+            self._task_manager, self._artifact_manager
         )
 
         # Connect signals from stages
@@ -208,8 +210,7 @@ class Pipeline:
         self._step_stage.shutdown()
         self._job_stage.shutdown()
         self._workpiece_view_stage.shutdown()
-        # Then shutdown cache to release any remaining cached artifacts
-        self._artifact_cache.shutdown()
+        self._artifact_manager.shutdown()
         logger.info("All pipeline resources released.")
         logger.debug(f"[{id(self)}] Pipeline shutdown finished")
 
@@ -769,7 +770,7 @@ class Pipeline:
         self, step_uid: str, workpiece_uid: str
     ) -> Optional[BaseArtifactHandle]:
         """Retrieves the handle for a generated artifact from the cache."""
-        return self._artifact_cache.get_workpiece_handle(
+        return self._artifact_manager.get_workpiece_handle(
             step_uid, workpiece_uid
         )
 
@@ -780,7 +781,7 @@ class Pipeline:
         Retrieves the handle for a generated step render artifact. This is
         the lightweight artifact intended for UI consumption.
         """
-        return self._artifact_cache.get_step_render_handle(step_uid)
+        return self._artifact_manager.get_step_render_handle(step_uid)
 
     def get_step_ops_artifact_handle(
         self, step_uid: str
@@ -789,7 +790,7 @@ class Pipeline:
         Retrieves the handle for a generated step ops artifact. This is
         intended for the job assembly process.
         """
-        return self._artifact_cache.get_step_ops_handle(step_uid)
+        return self._artifact_manager.get_step_ops_handle(step_uid)
 
     def get_scaled_ops(
         self, step_uid: str, workpiece_uid: str, world_transform: Matrix
