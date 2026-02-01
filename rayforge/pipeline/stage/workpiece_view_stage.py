@@ -1,10 +1,14 @@
 from __future__ import annotations
+import cairo
 import logging
+import numpy as np
 import threading
 import time
-from typing import TYPE_CHECKING, Any, Dict, Tuple
+from multiprocessing import shared_memory
+from typing import TYPE_CHECKING, Any, Dict, Tuple, cast
 from blinker import Signal
 from ...context import get_context
+from ...shared.util.colors import ColorSet
 from ..artifact import (
     WorkPieceArtifact,
     create_handle_from_dict,
@@ -12,6 +16,7 @@ from ..artifact import (
 )
 from ..artifact.workpiece_view import (
     RenderContext,
+    WorkPieceViewArtifact,
     WorkPieceViewArtifactHandle,
 )
 from .base import PipelineStage
@@ -19,6 +24,8 @@ from .workpiece_view_runner import make_workpiece_view_artifact_in_subprocess
 
 if TYPE_CHECKING:
     from ...core.doc import Doc
+    from ...core.layer import Step
+    from ...core.workpiece import WorkPiece
     from ...shared.tasker.manager import TaskManager
     from ...shared.tasker.task import Task
     from ..artifact.cache import ArtifactCache
@@ -60,6 +67,11 @@ class WorkPieceViewPipelineStage(PipelineStage):
         # Live render context for progressive chunk rendering.
         # Tracks the view artifact being progressively built from chunks.
         self._live_render_contexts: Dict[ViewKey, Dict[str, Any]] = {}
+
+        # Track generation IDs to detect stale chunks.
+        # When a new generation starts, we increment the ID and ignore
+        # chunks from the previous generation.
+        self._generation_ids: Dict[ViewKey, int] = {}
 
         # Throttling for progressive chunk updates.
         # Tracks pending updates and last update time for each view.
@@ -109,6 +121,31 @@ class WorkPieceViewPipelineStage(PipelineStage):
         self._throttle_timers.clear()
         self._pending_updates.clear()
         self._last_update_time.clear()
+        self._generation_ids.clear()
+
+    def _on_generation_starting(
+        self,
+        sender,
+        *,
+        step: "Step",
+        workpiece: "WorkPiece",
+        generation_id: int,
+    ):
+        """
+        Handler for when workpiece generation starts.
+        Clears live render contexts to prevent chunks from being drawn
+        to stale view artifacts from the previous generation.
+        """
+        key = (step.uid, workpiece.uid)
+        logger.debug(
+            f"View stage: Generation {generation_id} starting for {key}. "
+            f"Clearing live render context."
+        )
+        # Clear the live render context for this view
+        if key in self._live_render_contexts:
+            del self._live_render_contexts[key]
+        # Update the generation ID
+        self._generation_ids[key] = generation_id
 
     def request_view_render(
         self,
@@ -306,23 +343,165 @@ class WorkPieceViewPipelineStage(PipelineStage):
             logger.error(f"Error retrieving chunk artifact for {key}: {e}")
             return
 
-        # TODO: Implement actual rendering of chunk onto view bitmap
-        # This requires:
-        # 1. Opening the shared memory for the view artifact
-        # 2. Creating a cairo surface from the bitmap
-        # 3. Drawing the chunk's vertex data onto the surface
-        # 4. Flushing and sending view_artifact_updated signal
+        view_handle = live_ctx.get("handle")
+        render_context = live_ctx.get("render_context")
+        if not view_handle or not render_context:
+            logger.warning(f"Missing view_handle or render_context for {key}")
+            get_context().artifact_store.release(chunk_handle)
+            return
 
-        logger.debug(
-            f"Chunk for {key} has {len(chunk_artifact.ops)} ops, "
-            f"vertex_data: {chunk_artifact.vertex_data is not None}"
-        )
+        # Only render if the chunk has vertex data
+        if not chunk_artifact.vertex_data:
+            logger.debug(f"Chunk for {key} has no vertex data, skipping")
+            get_context().artifact_store.release(chunk_handle)
+            return
 
-        # Release the chunk handle after processing
-        get_context().artifact_store.release(chunk_handle)
+        shm = None
+        try:
+            # Open the shared memory for the view artifact
+            shm = shared_memory.SharedMemory(name=view_handle.shm_name)
+
+            # Get the view artifact to read its metadata
+            view_artifact = cast(
+                WorkPieceViewArtifact,
+                get_context().artifact_store.get(view_handle),
+            )
+            if not view_artifact:
+                logger.warning(f"Could not retrieve view artifact for {key}")
+                return
+
+            bitmap_data = view_artifact.bitmap_data
+            height_px, width_px = bitmap_data.shape[:2]
+
+            # Create a numpy array view into the shared memory
+            shm_bitmap = np.ndarray(
+                shape=(height_px, width_px, 4),
+                dtype=np.uint8,
+                buffer=shm.buf,
+            )
+
+            # Create a cairo surface from the shared memory bitmap
+            surface = cairo.ImageSurface.create_for_data(
+                memoryview(shm_bitmap),
+                cairo.FORMAT_ARGB32,
+                width_px,
+                height_px,
+            )
+
+            # Create a cairo context
+            ctx = cairo.Context(surface)
+
+            # Set up transform to match the worker's coordinate system
+            # The worker uses: translate(margin, height_px - margin)
+            #                   scale(effective_ppm_x, -effective_ppm_y)
+            #                   translate(-x_mm, -y_mm)
+            bbox_mm = view_artifact.bbox_mm
+            x_mm, y_mm, w_mm, h_mm = bbox_mm
+            margin = render_context.margin_px
+            ppm_x, ppm_y = render_context.pixels_per_mm
+
+            # Calculate effective PPM (may be clamped due to Cairo limits)
+            effective_ppm_x = (
+                (width_px - 2 * margin) / w_mm if w_mm > 0 else ppm_x
+            )
+            effective_ppm_y = (
+                (height_px - 2 * margin) / h_mm if h_mm > 0 else ppm_y
+            )
+
+            # Set up transform (Y-down pixel space from Y-up mm space)
+            ctx.translate(margin, height_px - margin)
+            ctx.scale(effective_ppm_x, -effective_ppm_y)
+            ctx.translate(-x_mm, -y_mm)
+
+            # Get the color set from the render context
+            color_set = ColorSet.from_dict(render_context.color_set_dict)
+
+            # Draw the chunk's vertex data
+            line_width_mm = (
+                1.0 / effective_ppm_x if effective_ppm_x > 0 else 1.0
+            )
+            self._draw_vertices(
+                ctx,
+                chunk_artifact.vertex_data,
+                color_set,
+                render_context.show_travel_moves,
+                line_width_mm,
+            )
+
+            # Flush the surface to ensure changes are written to shared memory
+            surface.flush()
+
+            logger.debug(
+                f"Successfully drew chunk for {key} to shared memory "
+                f"bitmap {view_handle.shm_name}"
+            )
+
+        except Exception as e:
+            logger.error(
+                f"Error rendering chunk for {key}: {e}", exc_info=True
+            )
+        finally:
+            if shm:
+                shm.close()
+            # Release the chunk handle after processing
+            get_context().artifact_store.release(chunk_handle)
 
         # Trigger throttled update notification
         self._schedule_throttled_update(key)
+
+    def _draw_vertices(
+        self,
+        ctx: cairo.Context,
+        vertex_data,
+        color_set: ColorSet,
+        show_travel: bool,
+        line_width_mm: float,
+    ):
+        """Draws all vertex data onto the provided cairo context."""
+        ctx.save()
+        ctx.set_line_width(line_width_mm)
+        ctx.set_line_cap(cairo.LINE_CAP_SQUARE)
+
+        # Draw Travel & Zero-Power Moves
+        if show_travel:
+            if vertex_data.travel_vertices.size > 0:
+                travel_v = vertex_data.travel_vertices.reshape(-1, 2, 3)
+                ctx.set_source_rgba(*color_set.get_rgba("travel"))
+                for start, end in travel_v:
+                    ctx.move_to(start[0], start[1])
+                    ctx.line_to(end[0], end[1])
+                ctx.stroke()
+
+            if vertex_data.zero_power_vertices.size > 0:
+                zero_v = vertex_data.zero_power_vertices.reshape(-1, 2, 3)
+                ctx.set_source_rgba(*color_set.get_rgba("zero_power"))
+                for start, end in zero_v:
+                    ctx.move_to(start[0], start[1])
+                    ctx.line_to(end[0], end[1])
+                ctx.stroke()
+
+        # Draw Powered Moves (Grouped by Color for performance)
+        if vertex_data.powered_vertices.size > 0:
+            powered_v = vertex_data.powered_vertices.reshape(-1, 2, 3)
+            powered_c = vertex_data.powered_colors
+            cut_lut = color_set.get_lut("cut")
+
+            # Use power from the first vertex of each segment for color
+            power_indices = (powered_c[::2, 0] * 255.0).astype(np.uint8)
+            themed_colors_per_segment = cut_lut[power_indices]
+            unique_colors, inverse_indices = np.unique(
+                themed_colors_per_segment, axis=0, return_inverse=True
+            )
+
+            for i, color in enumerate(unique_colors):
+                ctx.set_source_rgba(*color)
+                segment_indices = np.where(inverse_indices == i)[0]
+                for seg_idx in segment_indices:
+                    start, end = powered_v[seg_idx]
+                    ctx.move_to(start[0], start[1])
+                    ctx.line_to(end[0], end[1])
+                ctx.stroke()
+        ctx.restore()
 
     def _schedule_throttled_update(self, key: ViewKey):
         """

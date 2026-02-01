@@ -3,6 +3,7 @@ import logging
 from typing import TYPE_CHECKING, Optional, Callable
 from blinker import Signal
 import multiprocessing as mp
+from asyncio.exceptions import CancelledError
 
 from .base import PipelineStage
 from ..artifact import JobArtifactHandle, create_handle_from_dict
@@ -159,6 +160,9 @@ class JobPipelineStage(PipelineStage):
                 self._artifact_cache.invalidate_for_job()
                 try:
                     task.result()
+                except CancelledError as e:
+                    error = e
+                    logger.info(f"Job generation was cancelled: {e}")
                 except Exception as e:
                     error = e
 
@@ -189,6 +193,18 @@ class JobPipelineStage(PipelineStage):
     def _on_job_task_event(self, task: "Task", event_name: str, data: dict):
         """Handles events broadcast from the job runner subprocess."""
         if event_name == "artifact_created":
+            # Ignore artifact events from tasks that are no longer active
+            # (e.g., cancelled tasks). This prevents stale artifacts from
+            # being added to the cache after cancellation.
+            if self._active_task is not task:
+                logger.debug(
+                    "Ignoring artifact_created event from inactive task"
+                )
+                # Still set the adoption event to unblock the worker
+                if self._adoption_event is not None:
+                    self._adoption_event.set()
+                return
+
             try:
                 handle_dict = data["handle_dict"]
                 handle = create_handle_from_dict(handle_dict)

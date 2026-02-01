@@ -120,10 +120,10 @@ class TestJobPipelineStage:
         assert len(mock_task_mgr.created_tasks) == 1
         task = mock_task_mgr.created_tasks[0]
 
-        mock_task_obj = MagicMock()
-        mock_task_obj.key = task.key
-        mock_task_obj.get_status.return_value = "completed"
-        mock_task_obj.result.return_value = None  # Runner returns None
+        # Use the actual task object and patch methods onto it, because
+        # the stage checks identity (self._active_task is task).
+        task.get_status = MagicMock(return_value="completed")
+        task.result = MagicMock(return_value=None)
 
         # 1. Simulate the event
         handle = JobArtifactHandle(
@@ -134,14 +134,16 @@ class TestJobPipelineStage:
             distance=456.0,
         )
         event_data = {"handle_dict": handle.to_dict()}
-        task.when_event(mock_task_obj, "artifact_created", event_data)
+
+        # Pass the task object itself to satisfy identity check
+        task.when_event(task, "artifact_created", event_data)
 
         # Assert event was processed correctly
         mock_store.adopt.assert_called_once_with(handle)
         assert artifact_cache.get_job_handle() == handle
 
         # 2. Simulate task completion
-        task.when_done(mock_task_obj)
+        task.when_done(task)
 
         # Assert completion was processed
         mock_finished_signal.assert_called_once_with(
@@ -175,10 +177,10 @@ class TestJobPipelineStage:
         stage.generate_job(real_doc_with_step)
 
         task = mock_task_mgr.created_tasks[0]
-        mock_task_obj = MagicMock()
-        mock_task_obj.key = task.key
-        mock_task_obj.get_status.return_value = "failed"
-        mock_task_obj.result.side_effect = RuntimeError("Task failed")
+
+        # Patch methods onto the actual task object
+        task.get_status = MagicMock(return_value="failed")
+        task.result = MagicMock(side_effect=RuntimeError("Task failed"))
 
         # Simulate event, which places a handle in the cache
         handle = JobArtifactHandle(
@@ -188,8 +190,9 @@ class TestJobPipelineStage:
             time_estimate=0,
             distance=0,
         )
+        # Pass the task object itself
         task.when_event(
-            mock_task_obj,
+            task,
             "artifact_created",
             {"handle_dict": handle.to_dict()},
         )
@@ -198,7 +201,7 @@ class TestJobPipelineStage:
         assert artifact_cache.get_job_handle() == handle
 
         # Act
-        task.when_done(mock_task_obj)
+        task.when_done(task)
 
         # Assert cleanup
         assert artifact_cache.get_job_handle() is None

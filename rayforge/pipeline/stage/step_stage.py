@@ -1,5 +1,6 @@
 from __future__ import annotations
 import logging
+import math  # Added import
 from typing import TYPE_CHECKING, Dict, Optional
 import multiprocessing as mp
 from blinker import Signal
@@ -176,6 +177,22 @@ class StepPipelineStage(PipelineStage):
                 for h in retained_handles:
                     get_context().artifact_store.release(h)
                 return  # A dependency is not ready; abort.
+
+            # Validation: Ensure the handle in the cache actually matches the
+            # current geometry of the workpiece. If the user is resizing,
+            # the cache might hold the *old* artifact while the new one is
+            # generating. We must wait for the new one.
+            if not handle.is_scalable:
+                hw, hh = handle.generation_size
+                ww, wh = wp.size
+                if not (
+                    math.isclose(hw, ww, abs_tol=1e-6)
+                    and math.isclose(hh, wh, abs_tol=1e-6)
+                ):
+                    # Stale dependency. Abort assembly until cache updates.
+                    for h in retained_handles:
+                        get_context().artifact_store.release(h)
+                    return
 
             # Retain the handle to prevent premature release
             get_context().artifact_store.retain(handle)
