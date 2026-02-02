@@ -53,7 +53,12 @@ trap cleanup EXIT
 
 python -m pip install --upgrade pip
 python -m pip install --upgrade build pyinstaller
-python -m pip install -r requirements.txt
+TMP_REQUIREMENTS=$(mktemp)
+grep -v -i '^PyOpenGL_accelerate' requirements.txt > "$TMP_REQUIREMENTS"
+python -m pip install -r "$TMP_REQUIREMENTS"
+rm -f "$TMP_REQUIREMENTS"
+python -m pip install PyOpenGL_accelerate==3.1.9 || \
+    echo "PyOpenGL_accelerate install failed; continuing."
 
 bash scripts/update_translations.sh --compile-only
 
@@ -63,7 +68,30 @@ echo "$VERSION" > rayforge/version.txt
 
 python -m build
 
+if (( BUNDLE == 0 )) && [ -d "dist/Rayforge.app" ]; then
+    echo "Note: dist/Rayforge.app exists but was not rebuilt." >&2
+    echo "Run ./scripts/mac_build.sh --bundle to refresh the app bundle." >&2
+fi
+
 if (( BUNDLE == 1 )); then
+    python - <<'PY'
+import os
+import shutil
+import stat
+from pathlib import Path
+
+def _onerror(func, path, exc_info):
+    try:
+        os.chmod(path, stat.S_IWRITE | stat.S_IREAD | stat.S_IEXEC)
+        func(path)
+    except Exception:
+        pass
+
+for target in ("dist/Rayforge", "dist/Rayforge.app"):
+    path = Path(target)
+    if path.exists():
+        shutil.rmtree(path, onerror=_onerror)
+PY
     # Generate macOS icon if it doesn't exist or if SVG is newer
     if [ ! -f "rayforge/resources/icons/icon.icns" ] || \
        [ "website/content/assets/icon.svg" -nt "rayforge/resources/icons/icon.icns" ]; then

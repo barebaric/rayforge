@@ -3,7 +3,7 @@
 
 a = Analysis(
     ['rayforge/app.py'],
-    pathex=[],
+    pathex=['.'],
     binaries=[],
     datas=[('rayforge/version.txt', 'rayforge'), ('rayforge/resources', 'rayforge/resources'), ('rayforge/locale', 'rayforge/locale')],
     hiddenimports=['gi._gi_cairo', 'cairosvg'],

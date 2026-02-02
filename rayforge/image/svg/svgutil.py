@@ -1,5 +1,5 @@
 import warnings
-from typing import Tuple, Optional
+from typing import Tuple, Optional, List, Dict, Any
 from xml.etree import ElementTree as ET
 
 with warnings.catch_warnings():
@@ -14,6 +14,80 @@ PPI: float = 96.0
 
 MM_PER_PX: float = 25.4 / PPI
 """Conversion factor for pixels to millimeters, based on 96 PPI."""
+
+INKSCAPE_NS = "http://www.inkscape.org/namespaces/inkscape"
+
+
+def extract_layer_manifest(data: bytes) -> List[Dict[str, Any]]:
+    """
+    Extracts layer metadata from an SVG.
+
+    Returns a list of dicts containing:
+    - id: The layer group id
+    - name: The layer label
+    - count: Number of direct child elements in the layer
+    """
+    if not data:
+        return []
+
+    try:
+        root = ET.fromstring(data)
+    except ET.ParseError:
+        return []
+
+    layers: List[Dict[str, Any]] = []
+    layer_attr = f"{{{INKSCAPE_NS}}}groupmode"
+    label_attr = f"{{{INKSCAPE_NS}}}label"
+
+    for elem in root.iter():
+        if elem.get(layer_attr) != "layer":
+            continue
+        layer_id = elem.get("id")
+        if not layer_id:
+            continue
+        label = elem.get(label_attr) or layer_id
+        layers.append(
+            {
+                "id": layer_id,
+                "name": label,
+                "count": len(list(elem)),
+            }
+        )
+
+    return layers
+
+
+def filter_svg_layers(data: bytes, visible_layer_ids: List[str]) -> bytes:
+    """
+    Filters an SVG to only include the specified layer ids.
+    """
+    if not data or not visible_layer_ids:
+        return data
+
+    try:
+        root = ET.fromstring(data)
+    except ET.ParseError:
+        return data
+
+    layer_attr = f"{{{INKSCAPE_NS}}}groupmode"
+    layer_groups = [
+        elem for elem in root.iter() if elem.get(layer_attr) == "layer"
+    ]
+    if not layer_groups:
+        return data
+
+    visible = set(visible_layer_ids)
+    for group in layer_groups:
+        layer_id = group.get("id")
+        if layer_id and layer_id not in visible:
+            parent = root
+            for parent in root.iter():
+                if group in list(parent):
+                    parent.remove(group)
+                    break
+
+    filtered = ET.tostring(root)
+    return filtered
 
 
 def _get_margins_from_data(
