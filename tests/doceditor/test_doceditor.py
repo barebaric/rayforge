@@ -5,7 +5,6 @@ import pytest
 import re
 from rayforge.context import get_context
 from rayforge.core.vectorization_spec import TraceSpec
-from rayforge.doceditor.editor import DocEditor
 from rayforge.machine.models.machine import Origin
 from rayforge.pipeline import steps
 
@@ -41,26 +40,9 @@ def assets_path() -> Path:
     return path
 
 
-@pytest.fixture
-def editor(task_mgr, context_initializer):
-    """
-    Provides a fully configured DocEditor, using the initialized context.
-    """
-    from rayforge.context import get_context
-
-    # The context_initializer fixture ensures that get_context() returns
-    # a fully configured context.
-    context = get_context()
-    # Ensure config_mgr is not None
-    assert context.config_mgr is not None, (
-        "ConfigManager was not initialized by context_initializer"
-    )
-    return DocEditor(task_mgr, context_initializer)
-
-
 @pytest.mark.asyncio
 async def test_import_svg_export_gcode(
-    context_initializer, editor, tmp_path, assets_path
+    context_initializer, doc_editor, tmp_path, assets_path
 ):
     """Full end-to-end test using a real subprocess for ops generation."""
     # The expected G-code was generated assuming "Identity" transformation (no flip).
@@ -77,8 +59,7 @@ async def test_import_svg_export_gcode(
     step.set_power(0.5)
     step.set_cut_speed(3000)
 
-    # Safely access the workflow from the active layer
-    workflow = editor.doc.active_layer.workflow
+    workflow = doc_editor.doc.active_layer.workflow
     assert workflow is not None, (
         "Active layer must have a workflow for this test"
     )
@@ -96,27 +77,21 @@ async def test_import_svg_export_gcode(
     # Create a TraceSpec instance to trigger tracing behavior.
     trace_spec = TraceSpec()
 
-    await editor.import_file_from_path(
+    await doc_editor.import_file_from_path(
         svg_path, mime_type="image/svg+xml", vectorization_spec=trace_spec
     )
     logger.info("Import task has finished.")
 
-    # Assert state after the import task has mutated the document
-    assert len(editor.doc.all_workpieces) == 1
-    # FIX: Assert against the file stem, which is the new default name.
-    assert editor.doc.all_workpieces[0].name == "10x10_square"
-    assert editor.is_processing, "Pipeline should be busy after import"
+    assert len(doc_editor.doc.all_workpieces) == 1
+    assert doc_editor.doc.all_workpieces[0].name == "10x10_square"
+    assert doc_editor.is_processing, "Pipeline should be busy after import"
 
     # Wait 1: Await the reactive processing triggered by the load.
     # Increase timeout as real subprocesses are slower.
-    logger.info("Waiting for Pipeline to process the imported file...")
-    await editor.wait_until_settled(timeout=10)
-    logger.info("Document has settled after import.")
+    await doc_editor.wait_until_settled(timeout=10)
 
     # Action 2 & Wait 2: Export the G-code and await its completion.
-    logger.info(f"Exporting G-code to: {output_gcode_path}")
-    await editor.export_gcode_to_path(output_gcode_path)
-    logger.info("Export task has finished.")
+    await doc_editor.export_gcode_to_path(output_gcode_path)
 
     # --- 3. ASSERT ---
     assert output_gcode_path.exists()
@@ -154,7 +129,7 @@ async def test_import_svg_export_gcode(
             assert gen_parts[key] == pytest.approx(exp_parts[key], abs=0.1)
 
 
-def test_saved_state_with_undo_redo(editor):
+def test_saved_state_with_undo_redo(doc_editor):
     """
     Test that saved state correctly tracks undo/redo operations.
     If a change is made and then undone, the state should be saved.
@@ -165,38 +140,33 @@ def test_saved_state_with_undo_redo(editor):
     def on_saved_state_changed(sender):
         saved_states.append(sender.is_saved)
 
-    editor.saved_state_changed.connect(on_saved_state_changed)
+    doc_editor.saved_state_changed.connect(on_saved_state_changed)
 
-    # Initial state should be saved
-    assert editor.is_saved is True
+    assert doc_editor.is_saved is True
     assert len(saved_states) == 0
 
-    # Make a change by adding a layer
-    editor.layer.add_layer_and_set_active()
-    assert editor.is_saved is False
+    doc_editor.layer.add_layer_and_set_active()
+    assert doc_editor.is_saved is False
     assert len(saved_states) == 1
     assert saved_states[-1] is False
 
-    # Mark as saved
-    editor.mark_as_saved()
-    assert editor.is_saved is True
+    doc_editor.mark_as_saved()
+    assert doc_editor.is_saved is True
     assert len(saved_states) == 2
     assert saved_states[-1] is True
 
-    # Undo the change
-    editor.history_manager.undo()
-    assert editor.is_saved is False
+    doc_editor.history_manager.undo()
+    assert doc_editor.is_saved is False
     assert len(saved_states) == 3
     assert saved_states[-1] is False
 
-    # Redo the change
-    editor.history_manager.redo()
-    assert editor.is_saved is True
+    doc_editor.history_manager.redo()
+    assert doc_editor.is_saved is True
     assert len(saved_states) == 4
     assert saved_states[-1] is True
 
 
-def test_saved_state_with_multiple_changes(editor):
+def test_saved_state_with_multiple_changes(doc_editor):
     """
     Test that saved state correctly handles multiple changes.
     """
@@ -205,49 +175,39 @@ def test_saved_state_with_multiple_changes(editor):
     def on_saved_state_changed(sender):
         saved_states.append(sender.is_saved)
 
-    editor.saved_state_changed.connect(on_saved_state_changed)
+    doc_editor.saved_state_changed.connect(on_saved_state_changed)
 
-    # Make multiple changes
-    editor.layer.add_layer_and_set_active()
-    editor.layer.add_layer_and_set_active()
-    assert editor.is_saved is False
+    doc_editor.layer.add_layer_and_set_active()
+    doc_editor.layer.add_layer_and_set_active()
+    assert doc_editor.is_saved is False
 
-    # Mark as saved
-    editor.mark_as_saved()
-    assert editor.is_saved is True
+    doc_editor.mark_as_saved()
+    assert doc_editor.is_saved is True
 
-    # Make another change
-    editor.layer.add_layer_and_set_active()
-    assert editor.is_saved is False
+    doc_editor.layer.add_layer_and_set_active()
+    assert doc_editor.is_saved is False
 
-    # Undo all changes
-    while editor.history_manager.can_undo():
-        editor.history_manager.undo()
+    while doc_editor.history_manager.can_undo():
+        doc_editor.history_manager.undo()
 
-    # Should be unsaved since we're not at the checkpoint
-    assert editor.is_saved is False
+    assert doc_editor.is_saved is False
 
-    # Redo back to checkpoint
-    while not editor.is_saved and editor.history_manager.can_redo():
-        editor.history_manager.redo()
+    while not doc_editor.is_saved and doc_editor.history_manager.can_redo():
+        doc_editor.history_manager.redo()
 
-    # Should be saved again
-    assert editor.is_saved is True
+    assert doc_editor.is_saved is True
 
 
-def test_mark_as_unsaved_clears_checkpoint(editor):
+def test_mark_as_unsaved_clears_checkpoint(doc_editor):
     """
     Test that mark_as_unsaved clears the checkpoint.
     """
-    # Make a change and mark as saved
-    editor.layer.add_layer_and_set_active()
-    editor.mark_as_saved()
-    assert editor.is_saved is True
+    doc_editor.layer.add_layer_and_set_active()
+    doc_editor.mark_as_saved()
+    assert doc_editor.is_saved is True
 
-    # Mark as unsaved
-    editor.mark_as_unsaved()
-    assert editor.is_saved is False
+    doc_editor.mark_as_unsaved()
+    assert doc_editor.is_saved is False
 
-    # Undo should not make it saved
-    editor.history_manager.undo()
-    assert editor.is_saved is False
+    doc_editor.history_manager.undo()
+    assert doc_editor.is_saved is False

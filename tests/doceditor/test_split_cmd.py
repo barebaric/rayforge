@@ -1,9 +1,7 @@
 import pytest
 from unittest.mock import MagicMock
 from typing import List
-from rayforge.doceditor.editor import DocEditor
 from rayforge.doceditor.split_cmd import SplitCmd, SplitStrategy
-from rayforge.core.doc import Doc
 from rayforge.core.workpiece import WorkPiece
 from rayforge.core.geo import Geometry
 from rayforge.core.matrix import Matrix
@@ -40,21 +38,14 @@ class SingleFragmentStrategy(SplitStrategy):
 
 
 @pytest.fixture
-def mock_editor(context_initializer):
-    task_manager = MagicMock()
-    doc = Doc()
-    return DocEditor(task_manager, context_initializer, doc)
+def split_cmd(doc_editor):
+    return SplitCmd(doc_editor)
 
 
 @pytest.fixture
-def split_cmd(mock_editor):
-    return SplitCmd(mock_editor)
-
-
-@pytest.fixture
-def workpiece_on_layer(mock_editor):
+def workpiece_on_layer(doc_editor):
     """Creates a workpiece on the active layer."""
-    layer = mock_editor.doc.active_layer
+    layer = doc_editor.doc.active_layer
 
     # Create dummy geometry for the workpiece so it has something to split
     geo = Geometry()
@@ -78,7 +69,7 @@ def workpiece_on_layer(mock_editor):
     return wp
 
 
-def test_split_success(split_cmd, workpiece_on_layer, mock_editor):
+def test_split_success(split_cmd, workpiece_on_layer, doc_editor):
     """
     Test that a workpiece is successfully split into multiple items,
     removed, and replaced in the document using the undo/redo system.
@@ -104,8 +95,7 @@ def test_split_success(split_cmd, workpiece_on_layer, mock_editor):
     for item in new_items:
         assert item in layer.children
 
-    # Verify undo works
-    mock_editor.history_manager.undo()
+    doc_editor.history_manager.undo()
     assert len(layer.children) == initial_count
 
     # The workpiece should be back. Since we don't know the exact index (it
@@ -132,11 +122,9 @@ def test_split_no_op(split_cmd, workpiece_on_layer):
     assert original_wp in layer.children
 
 
-def test_split_ignores_non_workpiece(split_cmd, mock_editor):
-    """Test that split command ignores items that are not WorkPieces."""
-    # Create a mock object that mimics a DocItem but isn't a WorkPiece
+def test_split_ignores_non_workpiece(split_cmd, doc_editor):
     non_wp_item = MagicMock()
-    non_wp_item.parent = mock_editor.doc.active_layer
+    non_wp_item.parent = doc_editor.doc.active_layer
     # It needs to not be an instance of WorkPiece
     assert not isinstance(non_wp_item, WorkPiece)
 
@@ -145,12 +133,12 @@ def test_split_ignores_non_workpiece(split_cmd, mock_editor):
     assert len(new_items) == 0
 
 
-def test_connectivity_strategy_real_split(split_cmd, mock_editor):
+def test_connectivity_strategy_real_split(split_cmd, doc_editor):
     """
     Test that the real ConnectivitySplitStrategy actually splits a disjoint
     geometry and correctly sizes/positions the fragments.
     """
-    layer = mock_editor.doc.active_layer
+    layer = doc_editor.doc.active_layer
 
     # Construct a geometry with two disjoint components in a normalized 0-1
     # space. Imagine a 30x10 bounding box.

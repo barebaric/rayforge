@@ -1,29 +1,17 @@
 import pytest
-from unittest.mock import MagicMock
 
-from rayforge.core.doc import Doc
 from rayforge.core.layer import Layer
-from rayforge.doceditor.editor import DocEditor
 from rayforge.doceditor.layer_cmd import LayerCmd, AddLayerAndSetActiveCommand
-from rayforge.shared.tasker.manager import TaskManager
 
 
 @pytest.fixture
-def mock_editor(context_initializer):
-    """Provides a DocEditor instance with mocked dependencies."""
-    task_manager = MagicMock(spec=TaskManager)
-    doc = Doc()
-    return DocEditor(task_manager, context_initializer, doc)
-
-
-@pytest.fixture
-def layer_cmd(mock_editor):
+def layer_cmd(doc_editor):
     """Provides a LayerCmd instance."""
-    return LayerCmd(mock_editor)
+    return LayerCmd(doc_editor)
 
 
 @pytest.fixture
-def sample_layer(mock_editor):
+def sample_layer(doc_editor):
     """Provides a sample Layer instance."""
     return Layer(name="Test Layer")
 

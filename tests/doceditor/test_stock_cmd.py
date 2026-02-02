@@ -1,39 +1,27 @@
 import pytest
 from unittest.mock import MagicMock
 
-from rayforge.core.doc import Doc
 from rayforge.core.stock import StockItem
 from rayforge.core.stock_asset import StockAsset
 from rayforge.core.geo import Geometry
-from rayforge.doceditor.editor import DocEditor
 from rayforge.doceditor.stock_cmd import StockCmd
-from rayforge.shared.tasker.manager import TaskManager
 
 
 @pytest.fixture
-def mock_editor(context_initializer):
-    """Provides a DocEditor instance with mocked dependencies."""
-    task_manager = MagicMock(spec=TaskManager)
-    doc = Doc()
-    # Mock machine for add_stock, which uses machine dimensions
+def stock_cmd(doc_editor, context_initializer):
+    """Provides a StockCmd instance."""
     mock_machine = MagicMock()
     mock_machine.dimensions = (200.0, 200.0)
     context_initializer.config.machine = mock_machine
-    return DocEditor(task_manager, context_initializer, doc)
+    return StockCmd(doc_editor)
 
 
 @pytest.fixture
-def stock_cmd(mock_editor):
-    """Provides a StockCmd instance."""
-    return StockCmd(mock_editor)
-
-
-@pytest.fixture
-def sample_stock_item_and_asset(mock_editor):
+def sample_stock_item_and_asset(doc_editor):
     """
     Adds a sample StockAsset and StockItem to the doc and returns both.
     """
-    doc = mock_editor.doc
+    doc = doc_editor.doc
     geometry = Geometry()
     geometry.move_to(0, 0)
     geometry.line_to(10, 10)

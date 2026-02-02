@@ -3,9 +3,7 @@ import pytest_asyncio
 import asyncio
 from unittest.mock import MagicMock, PropertyMock
 from functools import partial
-from rayforge.core.doc import Doc
 from rayforge.core.ops import Ops, MoveToCommand, LineToCommand
-from rayforge.doceditor.editor import DocEditor
 from rayforge.machine.cmd import MachineCmd
 from rayforge.machine.models.machine import Machine
 from rayforge.machine.driver.driver import Axis
@@ -56,18 +54,6 @@ def machine(context_initializer):
     m = Machine(context_initializer)
     context_initializer.machine_mgr.add_machine(m)
     return m
-
-
-@pytest.fixture
-def doc():
-    """Provides a fresh Doc instance for each test."""
-    return Doc()
-
-
-@pytest.fixture
-def doc_editor(doc, task_mgr, context_initializer):
-    """Provides a DocEditor instance."""
-    return DocEditor(task_mgr, context_initializer, doc)
 
 
 @pytest.fixture

@@ -1,33 +1,21 @@
 import pytest
-from unittest.mock import MagicMock
 
 from rayforge.doceditor.editor import DocEditor
 from rayforge.doceditor.edit_cmd import EditCmd
-from rayforge.core.doc import Doc
 from rayforge.core.workpiece import WorkPiece
 from rayforge.core.group import Group
 from rayforge.core.item import DocItem
 from rayforge.core.layer import Layer
-from rayforge.shared.tasker.manager import TaskManager
 
 
 @pytest.fixture
-def mock_editor(context_initializer):
-    """Provides a DocEditor instance with a clean document."""
-    task_manager = MagicMock(spec=TaskManager)
-    # Using a real Doc and HistoryManager is better for these tests
-    doc = Doc()
-    return DocEditor(task_manager, context_initializer, doc)
+def edit_cmd(doc_editor):
+    """Provides an EditCmd instance linked to the doc_editor."""
+    return EditCmd(doc_editor)
 
 
 @pytest.fixture
-def edit_cmd(mock_editor):
-    """Provides an EditCmd instance linked to the mock_editor."""
-    return EditCmd(mock_editor)
-
-
-@pytest.fixture
-def items_on_layer(mock_editor):
+def items_on_layer(doc_editor):
     """
     Creates a set of nested items on the default layer for testing.
     Structure:
@@ -40,7 +28,7 @@ def items_on_layer(mock_editor):
       - wp4 (WorkPiece)
     Returns a dictionary of these items.
     """
-    layer = mock_editor.doc.active_layer
+    layer = doc_editor.doc.active_layer
     wp1 = WorkPiece(name="wp1")
     wp1.pos = (10, 10)
     group1 = Group(name="group1")
@@ -120,9 +108,8 @@ def test_get_top_level_items(edit_cmd: EditCmd, items_on_layer):
     assert edit_cmd._get_top_level_items([]) == []
 
 
-def test_copy_paste(edit_cmd: EditCmd, mock_editor: DocEditor):
-    """Test basic copy and multiple paste operations."""
-    layer = mock_editor.doc.active_layer
+def test_copy_paste(edit_cmd: EditCmd, doc_editor: DocEditor):
+    layer = doc_editor.doc.active_layer
     wp1 = WorkPiece(name="wp1")
     wp1.pos = (10, 20)
     edit_cmd.add_items([wp1])
@@ -192,9 +179,8 @@ def test_copy_paste_nested(edit_cmd: EditCmd, items_on_layer):
     assert all(isinstance(item, DocItem) for item in all_descendants)
 
 
-def test_cut_paste_with_undo(edit_cmd: EditCmd, mock_editor: DocEditor):
-    """Test cut, paste, and undo cycle."""
-    layer = mock_editor.doc.active_layer
+def test_cut_paste_with_undo(edit_cmd: EditCmd, doc_editor: DocEditor):
+    layer = doc_editor.doc.active_layer
     wp1 = WorkPiece(name="wp1")
     wp1.pos = (100, 200)
     edit_cmd.add_items([wp1])
@@ -217,22 +203,19 @@ def test_cut_paste_with_undo(edit_cmd: EditCmd, mock_editor: DocEditor):
     assert pasted1.pos == pytest.approx((100, 200))
     assert edit_cmd._paste_counter == 1  # Incremented for next paste
 
-    # 3. Undo Paste
-    mock_editor.history_manager.undo()
+    doc_editor.history_manager.undo()
     assert len(layer.get_content_items()) == original_count - 1
     assert pasted1 not in layer.children
 
-    # 4. Undo Cut
-    mock_editor.history_manager.undo()
+    doc_editor.history_manager.undo()
     assert len(layer.get_content_items()) == original_count
     restored_item = layer.children[-1]
     assert restored_item.uid == original_item_uid
     assert restored_item.pos == pytest.approx((100, 200))
 
 
-def test_duplicate(edit_cmd: EditCmd, mock_editor: DocEditor):
-    """Test duplicating items, which should create copies in the same place."""
-    layer = mock_editor.doc.active_layer
+def test_duplicate(edit_cmd: EditCmd, doc_editor: DocEditor):
+    layer = doc_editor.doc.active_layer
     wp1 = WorkPiece(name="wp1")
     wp1.pos = (50, -50)
     edit_cmd.add_items([wp1])
@@ -253,7 +236,7 @@ def test_duplicate(edit_cmd: EditCmd, mock_editor: DocEditor):
 
 
 def test_remove_items_with_undo(
-    edit_cmd: EditCmd, items_on_layer, mock_editor: DocEditor
+    edit_cmd: EditCmd, items_on_layer, doc_editor: DocEditor
 ):
     """Test removing a top-level item and ensure its children are detached."""
     layer = items_on_layer["layer"]
@@ -276,8 +259,7 @@ def test_remove_items_with_undo(
     # The internal structure of the removed group remains intact.
     assert wp2.parent == group1
 
-    # Test undo
-    mock_editor.history_manager.undo()
+    doc_editor.history_manager.undo()
     assert len(layer.get_content_items()) == initial_count
     assert set(layer.get_content_items()) == set(initial_content)
     # The parent pointers are correctly restored.
@@ -286,12 +268,10 @@ def test_remove_items_with_undo(
     assert wp2.parent == group1  # Child's parent is still the group
 
 
-def test_clear_all_items(edit_cmd: EditCmd, mock_editor: DocEditor):
-    """Test removing all items from all layers."""
-    # Setup: two layers with items
-    layer1 = mock_editor.doc.layers[0]
+def test_clear_all_items(edit_cmd: EditCmd, doc_editor: DocEditor):
+    layer1 = doc_editor.doc.layers[0]
     layer2 = Layer(name="Layer 2")
-    mock_editor.doc.add_layer(layer2)
+    doc_editor.doc.add_layer(layer2)
 
     wp1 = WorkPiece(name="L1 WP1")
     g1 = Group(name="L1 G1")
@@ -316,8 +296,7 @@ def test_clear_all_items(edit_cmd: EditCmd, mock_editor: DocEditor):
     assert layer2.workflow is not None
     assert len(layer2.children) == 1
 
-    # Test undo
-    mock_editor.history_manager.undo()
+    doc_editor.history_manager.undo()
     assert len(layer1.get_content_items()) == 2
     assert len(layer2.get_content_items()) == 1
     assert wp1 in layer1.children

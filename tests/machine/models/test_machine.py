@@ -1,6 +1,6 @@
 import asyncio
 from pathlib import Path
-from typing import Tuple
+from typing import Tuple, Generator
 
 import pytest
 
@@ -47,7 +47,7 @@ def doc() -> Doc:
 @pytest.fixture
 def doc_editor(
     doc: Doc, context_initializer, task_mgr: TaskManager
-) -> DocEditor:
+) -> Generator[DocEditor, None, None]:
     """
     Provides a DocEditor instance with real dependencies, configured
     to use the test's `doc` and `task_mgr` instances.
@@ -58,7 +58,9 @@ def doc_editor(
     assert config_manager is not None, (
         "ConfigManager was not initialized in context"
     )
-    return DocEditor(task_mgr, context_initializer, doc)
+    editor = DocEditor(task_mgr, context_initializer, doc)
+    yield editor
+    editor.cleanup()
 
 
 def create_test_workpiece_and_source() -> Tuple[WorkPiece, SourceAsset]:

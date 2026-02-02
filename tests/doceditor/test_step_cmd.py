@@ -1,22 +1,12 @@
 import pytest
-from unittest.mock import MagicMock
 
 from rayforge.doceditor.step_cmd import StepCmd
-from rayforge.doceditor.editor import DocEditor
-from rayforge.shared.tasker.manager import TaskManager
 
 
 @pytest.fixture
-def mock_editor(context_initializer):
-    """Provides a DocEditor instance with mocked dependencies."""
-    task_manager = MagicMock(spec=TaskManager)
-    return DocEditor(task_manager, context_initializer)
-
-
-@pytest.fixture
-def step_cmd(mock_editor):
+def step_cmd(doc_editor):
     """Provides a StepCmd instance."""
-    return StepCmd(mock_editor)
+    return StepCmd(doc_editor)
 
 
 def test_set_step_param(step_cmd):
