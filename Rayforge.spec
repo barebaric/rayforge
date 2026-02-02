@@ -1,12 +1,23 @@
 # -*- mode: python ; coding: utf-8 -*-
 
 
+from PyInstaller.utils.hooks import collect_submodules
+
+hiddenimports = ['gi._gi_cairo', 'cairosvg']
+hiddenimports += collect_submodules('rayforge.ui_gtk.canvas2d')
+hiddenimports += collect_submodules('rayforge.ui_gtk.canvas2d.elements')
+hiddenimports.append('rayforge.ui_gtk.canvas2d.elements.workpiece')
+
 a = Analysis(
     ['rayforge/app.py'],
     pathex=['.'],
     binaries=[],
-    datas=[('rayforge/version.txt', 'rayforge'), ('rayforge/resources', 'rayforge/resources'), ('rayforge/locale', 'rayforge/locale')],
-    hiddenimports=['gi._gi_cairo', 'cairosvg'],
+    datas=[
+        ('rayforge/version.txt', 'rayforge'),
+        ('rayforge/resources', 'rayforge/resources'),
+        ('rayforge/locale', 'rayforge/locale'),
+    ],
+    hiddenimports=hiddenimports,
     hookspath=['hooks'],
     hooksconfig={
         'gi': {

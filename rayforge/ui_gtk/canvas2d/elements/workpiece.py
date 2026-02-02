@@ -1,5 +1,6 @@
 import logging
 import math
+from concurrent.futures import Future
 from typing import Optional, TYPE_CHECKING, Dict, Tuple, cast, List, Set, Any
 import cairo
 import numpy as np
@@ -64,10 +65,16 @@ class WorkPieceElement(CanvasElement):
         self._base_image_visible = True
         self._surface: Optional[cairo.ImageSurface] = None
 
+        self._ops_surfaces: Dict[
+            str, Optional[Tuple[cairo.ImageSurface, Tuple[float, ...]]]
+        ] = {}
+        self._ops_recordings: Dict[str, Optional[cairo.RecordingSurface]] = {}
         self._ops_visibility: Dict[str, bool] = {}
+        self._ops_render_futures: Dict[str, Future] = {}
         self._ops_generation_ids: Dict[
             str, int
         ] = {}  # Tracks the *expected* generation ID of the *next* render.
+        self._texture_surfaces: Dict[str, cairo.ImageSurface] = {}
         # Cached artifacts to avoid re-fetching from pipeline on every draw.
         self._artifact_cache: Dict[str, Optional[WorkPieceArtifact]] = {}
 
@@ -182,6 +189,9 @@ class WorkPieceElement(CanvasElement):
         # Restore caches. We copy the dictionaries to avoid modification
         # issues, but the heavy objects (Surfaces) are shared references.
         self._surface = cache.get("surface")
+        self._ops_surfaces = cache.get("ops_surfaces", {}).copy()
+        self._ops_recordings = cache.get("ops_recordings", {}).copy()
+        self._texture_surfaces = cache.get("texture_surfaces", {}).copy()
         self._artifact_cache = cache.get("artifact_cache", {}).copy()
         self._ops_generation_ids = cache.get("ops_generation_ids", {}).copy()
 
@@ -190,7 +200,11 @@ class WorkPieceElement(CanvasElement):
         # to manage across view lifecycles.
 
         # Consider hydrated if we have a base surface or artifacts
-        return self._surface is not None or len(self._artifact_cache) > 0
+        return (
+            self._surface is not None
+            or len(self._artifact_cache) > 0
+            or len(self._ops_surfaces) > 0
+        )
 
     def _update_model_view_cache(self):
         """
@@ -198,6 +212,9 @@ class WorkPieceElement(CanvasElement):
         """
         cache = self.data._view_cache
         cache["surface"] = self._surface
+        cache["ops_surfaces"] = self._ops_surfaces
+        cache["ops_recordings"] = self._ops_recordings
+        cache["texture_surfaces"] = self._texture_surfaces
         cache["artifact_cache"] = self._artifact_cache
         cache["ops_generation_ids"] = self._ops_generation_ids
 
@@ -730,15 +747,6 @@ class WorkPieceElement(CanvasElement):
         self._artifact_cache[step.uid] = artifact
         self._update_model_view_cache()
 
-<<<<<<< HEAD
-        # Trigger a view render for this step if progressive rendering
-        # was not already done. If progressive rendering was used, the view
-        # artifact was already created and chunks were drawn to it during
-        # generation, so we don't need to re-render.
-        if step.uid not in self._steps_with_progressive_render:
-            self._request_view_render(step.uid, force=True)
-        self._steps_with_progressive_render.discard(step.uid)
-=======
         if logger.isEnabledFor(logging.DEBUG) and artifact and artifact.vertex_data:
             v_data = artifact.vertex_data
             counts = (
@@ -790,13 +798,20 @@ class WorkPieceElement(CanvasElement):
                 f"POST-submit _prepare_texture_surface_async for '{step.uid}'"
             )
 
+        # Trigger a view render for this step if progressive rendering
+        # was not already done. If progressive rendering was used, the view
+        # artifact was already created and chunks were drawn to it during
+        # generation, so we don't need to re-render.
+        if step.uid not in self._steps_with_progressive_render:
+            self._request_view_render(step.uid, force=True)
+        self._steps_with_progressive_render.discard(step.uid)
+
         if self.canvas:
             self.canvas.queue_draw()
         logger.debug(
             f"END _on_ops_generation_finished_main_thread for "
             f"step '{sender.uid}'"
         )
-
     def _prepare_texture_surface_async(
         self, step_uid: str, artifact: WorkPieceArtifact
     ) -> Optional[Tuple[str, cairo.ImageSurface]]:
@@ -855,7 +870,6 @@ class WorkPieceElement(CanvasElement):
         step_uid, texture_surface = result
         self._texture_surfaces[step_uid] = texture_surface
         self._update_model_view_cache()
->>>>>>> 6f2cbbcf (trace all objects (paths) independently even if they are overlapped)
 
         if self.canvas:
             self.canvas.queue_draw()
@@ -939,8 +953,6 @@ class WorkPieceElement(CanvasElement):
                 ctx.stroke()
         ctx.restore()
 
-<<<<<<< HEAD
-=======
     def _record_ops_drawing_async(
         self, step: Step, generation_id: int
     ) -> Optional[Tuple[str, cairo.RecordingSurface, int]]:
@@ -1448,7 +1460,6 @@ class WorkPieceElement(CanvasElement):
             # This call is now safe because we are on the main thread.
             self.canvas.queue_draw()
 
->>>>>>> 6f2cbbcf (trace all objects (paths) independently even if they are overlapped)
     def render_to_surface(
         self, width: int, height: int
     ) -> Optional[cairo.ImageSurface]:
