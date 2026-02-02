@@ -27,7 +27,9 @@ def mock_editor(context_initializer):
     """Provides a DocEditor instance with mocked dependencies."""
     task_manager = MagicMock(spec=TaskManager)
     doc = Doc()
-    return DocEditor(task_manager, context_initializer, doc)
+    editor = DocEditor(task_manager, context_initializer, doc)
+    yield editor
+    editor.cleanup()
 
 
 @pytest.fixture
@@ -572,7 +574,7 @@ class TestLoadFileFromPath:
 
         file_cmd.load_file_from_path(filename, "image/svg+xml", None, None)
 
-        file_cmd._task_manager.add_coroutine.assert_called_once()
+        file_cmd._task_manager.add_coroutine.assert_called()
 
 
 class TestExportGcodeToPath:

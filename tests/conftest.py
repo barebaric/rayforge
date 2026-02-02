@@ -9,7 +9,7 @@ import gc
 from functools import partial
 import pytest_asyncio
 from typing import TYPE_CHECKING, AsyncGenerator
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
 from gi.repository import GLib
 from rayforge.worker_init import initialize_worker
 from rayforge import context as rayforge_context
@@ -299,7 +299,6 @@ def mock_machine():
     Provides a mock Machine instance for tests that don't need a full context.
     """
     from rayforge.machine.models.machine import Machine
-    from unittest.mock import MagicMock
 
     mock_machine = MagicMock(spec=Machine)
     mock_machine.dimensions = (200, 150)
@@ -314,7 +313,18 @@ def mock_artifact_store():
     Provides a mock ArtifactStore instance for tests.
     """
     from rayforge.pipeline.artifact.store import ArtifactStore
-    from unittest.mock import MagicMock
 
     mock_store = MagicMock(spec=ArtifactStore)
     return mock_store
+
+
+@pytest_asyncio.fixture
+async def doc_editor(task_mgr, context_initializer):
+    """
+    Provides a DocEditor instance with proper cleanup.
+    """
+    from rayforge.doceditor.editor import DocEditor
+
+    editor = DocEditor(task_manager=task_mgr, context=context_initializer)
+    yield editor
+    editor.cleanup()

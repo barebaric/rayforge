@@ -1,28 +1,16 @@
 import pytest
-from unittest.mock import MagicMock
 
-from rayforge.core.doc import Doc
 from rayforge.core.stock import StockItem
 from rayforge.core.stock_asset import StockAsset
 from rayforge.core.sketcher.sketch import Sketch
 from rayforge.core.workpiece import WorkPiece
-from rayforge.doceditor.editor import DocEditor
 from rayforge.doceditor.asset_cmd import AssetCmd
-from rayforge.shared.tasker.manager import TaskManager
 
 
 @pytest.fixture
-def mock_editor(context_initializer):
-    """Provides a DocEditor instance with mocked dependencies."""
-    task_manager = MagicMock(spec=TaskManager)
-    doc = Doc()
-    return DocEditor(task_manager, context_initializer, doc)
-
-
-@pytest.fixture
-def asset_cmd(mock_editor):
+def asset_cmd(doc_editor):
     """Provides an AssetCmd instance."""
-    return AssetCmd(mock_editor)
+    return AssetCmd(doc_editor)
 
 
 def test_rename_stock_asset(asset_cmd: AssetCmd):

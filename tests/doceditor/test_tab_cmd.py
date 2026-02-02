@@ -1,34 +1,22 @@
 import pytest
-from unittest.mock import MagicMock
 
-from rayforge.core.doc import Doc
 from rayforge.core.workpiece import WorkPiece
 from rayforge.core.layer import Layer
 from rayforge.core.tab import Tab
-from rayforge.doceditor.editor import DocEditor
 from rayforge.doceditor.tab_cmd import TabCmd
-from rayforge.shared.tasker.manager import TaskManager
 
 
 @pytest.fixture
-def mock_editor(context_initializer):
-    """Provides a DocEditor instance with mocked dependencies."""
-    task_manager = MagicMock(spec=TaskManager)
-    doc = Doc()
-    return DocEditor(task_manager, context_initializer, doc)
-
-
-@pytest.fixture
-def tab_cmd(mock_editor):
+def tab_cmd(doc_editor):
     """Provides a TabCmd instance."""
-    return TabCmd(mock_editor)
+    return TabCmd(doc_editor)
 
 
 @pytest.fixture
-def sample_workpiece(mock_editor):
+def sample_workpiece(doc_editor):
     """Provides a sample WorkPiece instance."""
     layer = Layer(name="Test Layer")
-    mock_editor.doc.add_child(layer)
+    doc_editor.doc.add_child(layer)
     workpiece = WorkPiece(name="Test WP")
     layer.add_child(workpiece)
     return workpiece

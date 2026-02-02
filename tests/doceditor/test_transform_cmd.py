@@ -1,33 +1,22 @@
 import pytest
 from unittest.mock import MagicMock, patch
 
-from rayforge.core.doc import Doc
 from rayforge.core.workpiece import WorkPiece
 from rayforge.core.layer import Layer
-from rayforge.doceditor.editor import DocEditor
 from rayforge.doceditor.transform_cmd import TransformCmd
-from rayforge.shared.tasker.manager import TaskManager
 
 
 @pytest.fixture
-def mock_editor(context_initializer):
-    """Provides a DocEditor instance with mocked dependencies."""
-    task_manager = MagicMock(spec=TaskManager)
-    doc = Doc()
-    return DocEditor(task_manager, context_initializer, doc)
-
-
-@pytest.fixture
-def transform_cmd(mock_editor):
+def transform_cmd(doc_editor):
     """Provides a TransformCmd instance."""
-    return TransformCmd(mock_editor)
+    return TransformCmd(doc_editor)
 
 
 @pytest.fixture
-def sample_items(mock_editor):
+def sample_items(doc_editor):
     """Provides sample DocItem instances."""
     layer = Layer(name="Test Layer")
-    mock_editor.doc.add_child(layer)
+    doc_editor.doc.add_child(layer)
     item1 = WorkPiece(name="Item 1")
     item2 = WorkPiece(name="Item 2")
     item1.set_size(10, 10)
