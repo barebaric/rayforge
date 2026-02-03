@@ -12,8 +12,9 @@ from ..artifact import (
     create_handle_from_dict,
     WorkPieceArtifact,
 )
-from ..artifact.base import TextureInstance
+from ..artifact.base import TextureData, TextureInstance
 from ..artifact.store import ArtifactStore
+from ..encoder.textureencoder import TextureEncoder
 from ..encoder.vertexencoder import VertexEncoder
 from ..transformer import OpsTransformer, transformer_by_name
 
@@ -110,6 +111,38 @@ def make_step_artifact_in_subprocess(
         # 3. FOR TEXTURES: The renderer draws a 1x1 unit quad. We must
         # build a transform to scale it to the chunk's physical size,
         # place it locally, and then place it in the world.
+        # Generate texture_data on-demand if missing (for raster ops)
+        if artifact.texture_data is None and not artifact.is_scalable:
+            encoder_texture = TextureEncoder()
+            # Use source_dimensions if available to match original
+            # resolution
+            if artifact.source_dimensions:
+                width_px = int(artifact.source_dimensions[0])
+                height_px = int(artifact.source_dimensions[1])
+                px_per_mm_x = width_px / artifact.generation_size[0]
+                px_per_mm_y = height_px / artifact.generation_size[1]
+            else:
+                px_per_mm_x = px_per_mm_y = 50.0
+                width_px = int(
+                    round(artifact.generation_size[0] * px_per_mm_x)
+                )
+                height_px = int(
+                    round(artifact.generation_size[1] * px_per_mm_y)
+                )
+
+            if width_px > 0 and height_px > 0:
+                texture_buffer = encoder_texture.encode(
+                    artifact.ops,
+                    width_px,
+                    height_px,
+                    (px_per_mm_x, px_per_mm_y),
+                )
+                artifact.texture_data = TextureData(
+                    power_texture_data=texture_buffer,
+                    dimensions_mm=artifact.generation_size,
+                    position_mm=(0.0, 0.0),
+                )
+
         if artifact.texture_data:
             chunk_w_mm, chunk_h_mm = artifact.texture_data.dimensions_mm
             chunk_x_off, chunk_y_off = artifact.texture_data.position_mm

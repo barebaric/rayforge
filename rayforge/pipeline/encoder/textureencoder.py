@@ -100,7 +100,10 @@ class TextureEncoder(OpsEncoder):
                 ]
 
                 # Use advanced indexing to efficiently set pixel values
-                buffer[valid_y, valid_x] = valid_power
+                # Additive approach: take maximum power at each pixel
+                buffer[valid_y, valid_x] = np.maximum(
+                    buffer[valid_y, valid_x], valid_power
+                )
 
                 current_pos_mm = end_mm
         return buffer

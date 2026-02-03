@@ -12,11 +12,14 @@ from ..artifact import (
     WorkPieceArtifact,
     create_handle_from_dict,
 )
+from ..artifact.base import TextureData
 from ..artifact.store import ArtifactStore
 from ..artifact.workpiece_view import (
     RenderContext,
     WorkPieceViewArtifact,
 )
+from ..encoder.textureencoder import TextureEncoder
+from ..encoder.vertexencoder import VertexEncoder
 
 if TYPE_CHECKING:
     import threading
@@ -297,6 +300,36 @@ def make_workpiece_view_artifact_in_subprocess(
     if not isinstance(artifact, WorkPieceArtifact):
         logger.error("Runner received incorrect artifact type.")
         return None
+
+    # Initialize encoders
+    encoder_vertex = VertexEncoder()
+    encoder_texture = TextureEncoder()
+
+    # Generate vertex_data on-demand if missing
+    if artifact.vertex_data is None:
+        logger.debug("Worker: Encoding ops to vertex data...")
+        artifact.vertex_data = encoder_vertex.encode(artifact.ops)
+
+    # Generate texture_data on-demand if missing (for raster operations)
+    if artifact.texture_data is None and not artifact.is_scalable:
+        logger.debug("Worker: Encoding ops to texture data...")
+        # Use render context's pixels_per_mm for zoom support
+        px_per_mm_x, px_per_mm_y = context.pixels_per_mm
+        width_px = int(round(artifact.generation_size[0] * px_per_mm_x))
+        height_px = int(round(artifact.generation_size[1] * px_per_mm_y))
+
+        if width_px > 0 and height_px > 0:
+            texture_buffer = encoder_texture.encode(
+                artifact.ops,
+                width_px,
+                height_px,
+                context.pixels_per_mm,
+            )
+            artifact.texture_data = TextureData(
+                power_texture_data=texture_buffer,
+                dimensions_mm=artifact.generation_size,
+                position_mm=(0.0, 0.0),
+            )
 
     logger.debug("Worker: Calculating content bbox...")
     bbox = _get_content_bbox(artifact, context.show_travel_moves)

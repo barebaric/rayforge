@@ -281,3 +281,103 @@ def test_progressive_rendering_increases_pixel_count(vector_artifact_handle):
         )
     finally:
         get_context().artifact_store.release(handle)
+
+
+def test_on_demand_vertex_encoding(context_initializer):
+    """Test that vertex data is encoded on-demand when missing."""
+    ops = Ops()
+    ops.set_power(1.0)
+    ops.move_to(0.0, 0.0, 0.0)
+    ops.line_to(10.0, 10.0, 0.0)
+    artifact = WorkPieceArtifact(
+        ops=ops,
+        is_scalable=True,
+        source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
+        generation_size=(20.0, 20.0),
+        vertex_data=None,
+        texture_data=None,
+    )
+    handle = get_context().artifact_store.put(artifact)
+    color_set = create_test_color_set({"cut": ("#000", "#F00")})
+    context = RenderContext(
+        pixels_per_mm=(1.0, 1.0),
+        show_travel_moves=False,
+        margin_px=0,
+        color_set_dict=color_set.to_dict(),
+    )
+    mock_proxy = MagicMock()
+
+    result = make_workpiece_view_artifact_in_subprocess(
+        mock_proxy, get_context().artifact_store,
+        handle.to_dict(), context.to_dict(), "test_view",
+    )
+    assert result is None
+
+    mock_proxy.send_event.assert_any_call("view_artifact_created", ANY)
+    created_call = next(
+        c
+        for c in mock_proxy.send_event.call_args_list
+        if c[0][0] == "view_artifact_created"
+    )
+    handle_dict = created_call[0][1]["handle_dict"]
+    assert handle_dict is not None
+    view_handle = WorkPieceViewArtifactHandle.from_dict(handle_dict)
+    try:
+        view_artifact = cast(
+            WorkPieceViewArtifact,
+            get_context().artifact_store.get(view_handle),
+        )
+        assert view_artifact.bbox_mm == (0.0, 0.0, 10.0, 10.0)
+        assert view_artifact.bitmap_data.shape == (10, 10, 4)
+    finally:
+        get_context().artifact_store.release(view_handle)
+    get_context().artifact_store.release(handle)
+
+
+def test_on_demand_texture_encoding(context_initializer):
+    """Test that texture data is encoded on-demand when missing."""
+    ops = Ops()
+    ops.scan_to(10.0, 0.0, 0.0, bytearray([100, 150, 200]))
+    artifact = WorkPieceArtifact(
+        ops=ops,
+        is_scalable=False,
+        source_coordinate_system=CoordinateSystem.PIXEL_SPACE,
+        generation_size=(10.0, 10.0),
+        vertex_data=None,
+        texture_data=None,
+    )
+    handle = get_context().artifact_store.put(artifact)
+    color_set = create_test_color_set({"engrave": ("#000", "#FFF")})
+    context = RenderContext(
+        pixels_per_mm=(1.0, 1.0),
+        show_travel_moves=False,
+        margin_px=0,
+        color_set_dict=color_set.to_dict(),
+    )
+    mock_proxy = MagicMock()
+
+    result = make_workpiece_view_artifact_in_subprocess(
+        mock_proxy, get_context().artifact_store,
+        handle.to_dict(), context.to_dict(), "test_view",
+    )
+    assert result is None
+
+    mock_proxy.send_event.assert_any_call("view_artifact_created", ANY)
+    created_call = next(
+        c
+        for c in mock_proxy.send_event.call_args_list
+        if c[0][0] == "view_artifact_created"
+    )
+    handle_dict = created_call[0][1]["handle_dict"]
+    assert handle_dict is not None
+    view_handle = WorkPieceViewArtifactHandle.from_dict(handle_dict)
+    try:
+        view_artifact = cast(
+            WorkPieceViewArtifact,
+            get_context().artifact_store.get(view_handle),
+        )
+        assert view_artifact.bbox_mm == (0.0, 0.0, 10.0, 10.0)
+        assert view_artifact.bitmap_data.shape == (10, 10, 4)
+    finally:
+        get_context().artifact_store.release(view_handle)
+    get_context().artifact_store.release(handle)

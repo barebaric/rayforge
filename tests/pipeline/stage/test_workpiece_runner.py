@@ -1,6 +1,5 @@
 import pytest
 from unittest.mock import MagicMock
-import numpy as np
 import logging
 from pathlib import Path
 
@@ -219,11 +218,11 @@ def test_raster_producer_returns_artifact_with_raster_data(
         reconstructed_artifact = get_context().artifact_store.get(handle)
 
         assert isinstance(reconstructed_artifact, WorkPieceArtifact)
-        assert reconstructed_artifact.texture_data is not None
+        # Producer no longer returns texture_data
+        assert reconstructed_artifact.texture_data is None
+        # vertex_data is generated from Ops (contains travel/overscan moves)
         assert reconstructed_artifact.vertex_data is not None
-
-        texture = reconstructed_artifact.texture_data.power_texture_data
-        assert isinstance(texture, np.ndarray)
+        assert not reconstructed_artifact.ops.is_empty()
         assert reconstructed_artifact.generation_size == generation_size
         assert result_gen_id == generation_id
 
@@ -231,6 +230,7 @@ def test_raster_producer_returns_artifact_with_raster_data(
         # texture), but travel/zero-power moves (like overscan) should exist.
         assert reconstructed_artifact.vertex_data.powered_vertices.size == 0
         assert reconstructed_artifact.vertex_data.powered_colors.size == 0
+        assert reconstructed_artifact.vertex_data.travel_vertices.size > 0
     finally:
         # Cleanup
         if handle:
