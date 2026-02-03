@@ -120,6 +120,9 @@ compile-translations = "bash scripts/update_translations.sh --compile-only"
 print-untranslated = "bash scripts/print_untranslated.sh"
 list-supporters = "python3 scripts/fetch_patreon_supporters.py"
 
+[tasks.clean]
+cmd = "find . -type d \\( -name __pycache__ -o -name \"*.egg-info\" \\) -print0 | xargs -0 rm -rf"
+
 [tasks.rayforge]
 env = { GI_TYPELIB_PATH = "$(pkgconf --variable=typelibdir gobject-introspection-1.0)"}
 cmd = "scripts/with_gdk.sh rayforge"
