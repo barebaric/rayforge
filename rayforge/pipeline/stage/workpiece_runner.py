@@ -1,6 +1,8 @@
 from typing import Any, List, Tuple, Iterator, Optional, Dict, TYPE_CHECKING
 import numpy as np
+from ...context import get_context
 from ...shared.tasker.proxy import ExecutionContextProxy, BaseExecutionContext
+from ..encoder import TextureEncoder
 from ..encoder.vertexencoder import VertexEncoder
 from ..artifact import WorkPieceArtifact
 from ..artifact.store import ArtifactStore
@@ -54,6 +56,7 @@ def make_workpiece_artifact_in_subprocess(
 
     logger.debug("Imports completed")
 
+    artifact_store = get_context().artifact_store
     modifiers = [Modifier.from_dict(m) for m in modifiers_dict]
     opsproducer = OpsProducer.from_dict(opsproducer_dict)
     opstransformers = [
@@ -298,9 +301,6 @@ def make_workpiece_artifact_in_subprocess(
     initial_ops = _create_initial_ops()
     final_artifact: Optional[WorkPieceArtifact] = None
 
-    # This will hold the assembled texture for hybrid artifacts
-    full_power_texture: Optional[np.ndarray] = None
-
     is_vector = opsproducer.is_vector_producer()
     encoder = VertexEncoder()
 
@@ -326,66 +326,8 @@ def make_workpiece_artifact_in_subprocess(
             new_ops = initial_ops.copy()
             new_ops.extend(final_artifact.ops)
             final_artifact.ops = new_ops
-
-            # If dealing with a chunked raster, prepare the full texture buffer
-            if not is_vector and final_artifact.texture_data:
-                size_mm = workpiece.size
-                px_per_mm_x, px_per_mm_y = settings["pixels_per_mm"]
-                # Use round() to match WorkPiece.render_chunk calculation logic
-                # to ensure buffer is large enough for all chunks.
-                full_width_px = int(round(size_mm[0] * px_per_mm_x))
-                full_height_px = int(round(size_mm[1] * px_per_mm_y))
-                if full_width_px > 0 and full_height_px > 0:
-                    full_power_texture = np.zeros(
-                        (full_height_px, full_width_px), dtype=np.uint8
-                    )
         else:
             final_artifact.ops.extend(chunk_artifact.ops)
-
-        # For all chunks, paint their texture into the full buffer
-        if (
-            full_power_texture is not None
-            and chunk_artifact.texture_data is not None
-        ):
-            px_per_mm_x, px_per_mm_y = settings["pixels_per_mm"]
-            texture_data = chunk_artifact.texture_data.power_texture_data
-            chunk_h_px, chunk_w_px = texture_data.shape
-
-            # y-offset from top in mm, convert to pixels
-            y_start_px = int(
-                round(chunk_artifact.texture_data.position_mm[1] * px_per_mm_y)
-            )
-            x_start_px = 0  # Chunks are full width
-
-            y_end_px = y_start_px + chunk_h_px
-            x_end_px = x_start_px + chunk_w_px
-
-            # Safe copy with slicing to handle minor rounding differences
-            dest_h, dest_w = full_power_texture.shape
-
-            # Clip source and destination coordinates to valid ranges
-            dst_y_start = max(0, y_start_px)
-            dst_y_end = min(dest_h, y_end_px)
-            dst_x_start = max(0, x_start_px)
-            dst_x_end = min(dest_w, x_end_px)
-
-            # Calculate corresponding source offsets
-            src_y_start = dst_y_start - y_start_px
-            src_y_end = src_y_start + (dst_y_end - dst_y_start)
-            src_x_start = dst_x_start - x_start_px
-            src_x_end = src_x_start + (dst_x_end - dst_x_start)
-
-            if dst_y_end > dst_y_start and dst_x_end > dst_x_start:
-                full_power_texture[
-                    dst_y_start:dst_y_end, dst_x_start:dst_x_end
-                ] = texture_data[src_y_start:src_y_end, src_x_start:src_x_end]
-            else:
-                logger.debug(
-                    f"Chunk texture out of bounds or empty intersection. "
-                    f"Chunk: "
-                    f"[{y_start_px}:{y_end_px}, {x_start_px}:{x_end_px}], "
-                    f"Buffer: {full_power_texture.shape}"
-                )
 
         # Send intermediate chunks for raster operations
         if not is_vector:
@@ -416,8 +358,23 @@ def make_workpiece_artifact_in_subprocess(
         # to return the generation_id to signal completion.
         return generation_id
 
-    # If we aggregated a hybrid, update the final artifact with the complete
-    # data
+    # If we generated a raster, reconstruct the full texture from the final Ops
+    full_power_texture: Optional[np.ndarray] = None
+    if not is_vector:
+        size_mm = workpiece.size
+        px_per_mm_x, px_per_mm_y = settings["pixels_per_mm"]
+        full_width_px = int(round(size_mm[0] * px_per_mm_x))
+        full_height_px = int(round(size_mm[1] * px_per_mm_y))
+
+        if full_width_px > 0 and full_height_px > 0:
+            texture_encoder = TextureEncoder()
+            full_power_texture = texture_encoder.encode(
+                final_artifact.ops,
+                full_width_px,
+                full_height_px,
+                (px_per_mm_x, px_per_mm_y),
+            )
+
     if full_power_texture is not None and final_artifact.texture_data:
         final_artifact.texture_data.power_texture_data = full_power_texture
         # The final artifact represents the whole workpiece, at its origin
