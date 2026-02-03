@@ -246,7 +246,7 @@ class WorkPieceElement(CanvasElement):
         # 1. Invalidate the base image buffer.
         self._surface = None
 
-        # 2. Invalidate only the rasterized ops surfaces, not the recordings.
+        self._ops_recordings.clear()
 
         # Note: We do NOT clear the model cache here, as view updates
         # (like zooming) shouldn't erase the persistent data needed by
@@ -880,6 +880,7 @@ class WorkPieceElement(CanvasElement):
         ctx: cairo.Context,
         scale: Tuple[float, float],
         drawable_height: float,
+        line_width: Optional[float] = None,
     ):
         """
         Draws vertex data to a Cairo context, handling scaling, theming,
@@ -890,10 +891,18 @@ class WorkPieceElement(CanvasElement):
 
         work_surface = cast("WorkSurface", self.canvas)
         show_travel = work_surface.show_travel_moves
+        view_ppm_x, view_ppm_y = work_surface.get_view_scale()
+        line_width_mm = None
+        if view_ppm_x > 1e-9 and view_ppm_y > 1e-9:
+            line_width_mm = 1.0 / max(view_ppm_x, view_ppm_y)
         scale_x, scale_y = scale
 
         ctx.save()
-        ctx.set_hairline(True)
+        if line_width is None:
+            ctx.set_hairline(True)
+        else:
+            ctx.set_hairline(False)
+            ctx.set_line_width(line_width)
         ctx.set_line_cap(cairo.LINE_CAP_SQUARE)
 
         # --- Draw Travel & Zero-Power Moves ---
@@ -1023,7 +1032,11 @@ class WorkPieceElement(CanvasElement):
         # relative to the content we are drawing.
         drawable_height_mm = union_y2 + union_y1
         self._draw_vertices_to_context(
-            artifact.vertex_data, ctx, (1.0, 1.0), drawable_height_mm
+            artifact.vertex_data,
+            ctx,
+            (1.0, 1.0),
+            drawable_height_mm,
+            line_width=line_width_mm,
         )
 
         return step.uid, surface, generation_id
@@ -1212,7 +1225,11 @@ class WorkPieceElement(CanvasElement):
             # Y-flip height must be workpiece height in pixels.
             drawable_h_px = world_h * encoder_ppm_y
             self._draw_vertices_to_context(
-                artifact.vertex_data, ctx, ppms, drawable_h_px
+                artifact.vertex_data,
+                ctx,
+                ppms,
+                drawable_h_px,
+                line_width=1.0,
             )
 
         return step_uid, surface, generation_id, bbox_mm
@@ -1329,6 +1346,7 @@ class WorkPieceElement(CanvasElement):
                         ctx,
                         ppms,
                         content_h_px,
+                        line_width=1.0,
                     )
         finally:
             # IMPORTANT: Release the handle in the subprocess to free memory
