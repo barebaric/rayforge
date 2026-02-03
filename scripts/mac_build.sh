@@ -112,6 +112,18 @@ PY
     # Remove conflicting libiconv bundled by cv2.
     rm -f "$FW_DIR/libiconv.2.dylib"
 
+    BREW_PREFIX=""
+    if command -v brew >/dev/null 2>&1; then
+        BREW_PREFIX=$(brew --prefix)
+    fi
+    if [ -z "$BREW_PREFIX" ]; then
+        if [ -d "/opt/homebrew" ]; then
+            BREW_PREFIX="/opt/homebrew"
+        else
+            BREW_PREFIX="/usr/local"
+        fi
+    fi
+
     # Ship critical libs from Homebrew and fix their IDs.
     for lib in \
         libpng16.16.dylib \
@@ -119,13 +131,103 @@ PY
         libfreetype.6.dylib \
         libintl.8.dylib \
         libvips.42.dylib \
-        libvips-cpp.42.dylib
+        libvips-cpp.42.dylib \
+        libOpenEXR-3_4.33.dylib \
+        libImath-3_2.30.dylib \
+        libarchive.13.dylib \
+        libcfitsio.10.dylib \
+        libexif.12.dylib \
+        libfftw3.3.dylib \
+        libhwy.1.dylib \
+        libopenjp2.7.dylib
     do
-        if [ -f "/usr/local/lib/$lib" ]; then
+        if [ -f "$BREW_PREFIX/lib/$lib" ]; then
             rm -f "$FW_DIR/$lib"
-            cp "/usr/local/lib/$lib" "$FW_DIR/"
+            cp "$BREW_PREFIX/lib/$lib" "$FW_DIR/"
             install_name_tool -id "@rpath/$lib" "$FW_DIR/$lib"
         fi
+    done
+    if [ ! -f "$FW_DIR/libpng16.16.dylib" ]; then
+        for lib_dir in \
+            "$BREW_PREFIX/opt/libpng/lib" \
+            "/usr/local/opt/libpng/lib" \
+            "/opt/homebrew/opt/libpng/lib"
+        do
+            if [ -f "$lib_dir/libpng16.16.dylib" ]; then
+                rm -f "$FW_DIR/libpng16.16.dylib"
+                cp "$lib_dir/libpng16.16.dylib" "$FW_DIR/"
+                install_name_tool -id "@rpath/libpng16.16.dylib" \
+                    "$FW_DIR/libpng16.16.dylib"
+                break
+            fi
+        done
+    fi
+    if [ ! -f "$FW_DIR/libarchive.13.dylib" ]; then
+        for lib_dir in \
+            "$BREW_PREFIX/opt/libarchive/lib" \
+            "/usr/local/opt/libarchive/lib" \
+            "/opt/homebrew/opt/libarchive/lib"
+        do
+            if [ -f "$lib_dir/libarchive.13.dylib" ]; then
+                rm -f "$FW_DIR/libarchive.13.dylib"
+                cp "$lib_dir/libarchive.13.dylib" "$FW_DIR/"
+                install_name_tool -id "@rpath/libarchive.13.dylib" \
+                    "$FW_DIR/libarchive.13.dylib"
+                break
+            fi
+        done
+    fi
+
+    copy_missing_deps() {
+        local changed=0
+        local dep
+        local libname
+        local candidate
+        local search_dirs=("$BREW_PREFIX/lib" "/usr/local/lib" "/opt/homebrew/lib")
+
+        while read -r dep; do
+            libname=$(basename "$dep")
+            if [ -f "$FW_DIR/$libname" ]; then
+                continue
+            fi
+            candidate=""
+            for base in "${search_dirs[@]}"; do
+                if [ -f "$base/$libname" ]; then
+                    candidate="$base/$libname"
+                    break
+                fi
+            done
+            if [ -z "$candidate" ]; then
+                for base in "$BREW_PREFIX/opt" "/usr/local/opt" "/opt/homebrew/opt"; do
+                    if [ -d "$base" ]; then
+                        for opt_lib in "$base"/*/lib; do
+                            if [ -f "$opt_lib/$libname" ]; then
+                                candidate="$opt_lib/$libname"
+                                break
+                            fi
+                        done
+                    fi
+                    if [ -n "$candidate" ]; then
+                        break
+                    fi
+                done
+            fi
+            if [ -n "$candidate" ]; then
+                rm -f "$FW_DIR/$libname"
+                cp "$candidate" "$FW_DIR/"
+                install_name_tool -id "@rpath/$libname" \
+                    "$FW_DIR/$libname"
+                changed=1
+            fi
+        done < <(otool -L "$BIN_DIR/Rayforge" "$FW_DIR"/*.dylib 2>/dev/null | \
+            awk '{print $1}' | grep -E '^/usr/local/|^/opt/homebrew/' | sort -u)
+
+        return $changed
+    }
+
+    # Iteratively pull in any Homebrew deps referenced by bundled binaries.
+    for _ in 1 2 3; do
+        copy_missing_deps || break
     done
 
     # Fix all library references to use @rpath instead of absolute paths
@@ -133,7 +235,7 @@ PY
     for dylib in "$FW_DIR"/*.dylib; do
         [ -f "$dylib" ] || continue
         # Get all dependencies
-        otool -L "$dylib" | grep '/usr/local/' | awk '{print $1}' | while read dep; do
+        otool -L "$dylib" | grep -E '/usr/local/|/opt/homebrew/' | awk '{print $1}' | while read dep; do
             libname=$(basename "$dep")
             # Only rewrite if we've bundled this library
             if [ -f "$FW_DIR/$libname" ]; then
@@ -141,6 +243,25 @@ PY
             fi
         done
     done
+
+    # Force libpng references to @rpath to avoid runtime lookups in Homebrew.
+    for target in "$FW_DIR"/*.dylib "$BIN_DIR/Rayforge.bin"; do
+        [ -f "$target" ] || continue
+        otool -L "$target" | awk '{print $1}' | \
+            grep -E '/opt/homebrew/opt/libpng/|/usr/local/opt/libpng/' | \
+            while read dep; do
+                install_name_tool -change "$dep" "@rpath/libpng16.16.dylib" \
+                    "$target" 2>/dev/null || true
+            done
+    done
+    if [ -f "$FW_DIR/libfreetype.6.dylib" ]; then
+        otool -L "$FW_DIR/libfreetype.6.dylib" | awk '{print $1}' | \
+            grep -E '/opt/homebrew/opt/libpng/|/usr/local/opt/libpng/' | \
+            while read dep; do
+                install_name_tool -change "$dep" "@rpath/libpng16.16.dylib" \
+                    "$FW_DIR/libfreetype.6.dylib" 2>/dev/null || true
+            done
+    fi
 
     # Refresh cv2 dylib symlinks to the parent copies.
     if [ -d "$FW_DIR/cv2/__dot__dylibs" ]; then
