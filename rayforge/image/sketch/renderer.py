@@ -222,9 +222,38 @@ class SketchRenderer(Renderer):
         svg_string = "".join(svg_parts)
 
         try:
-            # Use svgload_buffer which is highly optimized
-            image = pyvips.Image.svgload_buffer(svg_string.encode("utf-8"))
-            return image
+            try:
+                import cairosvg
+
+                png_bytes = cairosvg.svg2png(
+                    bytestring=svg_string.encode("utf-8"),
+                    output_width=width,
+                    output_height=height,
+                )
+                return pyvips.Image.pngload_buffer(
+                    png_bytes, access=pyvips.Access.RANDOM
+                )
+            except ImportError:
+                logger.error("CairoSVG is not available for sketch rendering.")
+            except (pyvips.Error, ValueError, TypeError, Exception) as e:
+                logger.error(
+                    "CairoSVG fallback failed to render sketch SVG: %s",
+                    e,
+                    exc_info=True,
+                )
+
+            try:
+                svg_loader = getattr(pyvips.Image, "svgload_buffer")
+            except AttributeError:
+                svg_loader = None
+
+            if svg_loader:
+                return svg_loader(svg_string.encode("utf-8"))
+
+            logger.error(
+                "No SVG renderer succeeded for sketch "
+                "(CairoSVG/libvips unavailable)."
+            )
         except pyvips.Error as e:
             logger.error(f"Failed to render sketch SVG with Vips: {e}")
             logger.debug(f"Failed SVG content:\n{svg_string}")
