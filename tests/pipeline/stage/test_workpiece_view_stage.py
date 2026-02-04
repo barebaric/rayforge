@@ -10,7 +10,6 @@ from rayforge.pipeline.artifact import (
     WorkPieceArtifact,
     WorkPieceArtifactHandle,
     WorkPieceViewArtifactHandle,
-    VertexData,
 )
 from rayforge.core.ops import Ops
 from rayforge.pipeline.coord import CoordinateSystem
@@ -507,18 +506,12 @@ class TestWorkPieceViewStage(unittest.TestCase):
         chunk_ops.move_to(0, 0, 0)
         chunk_ops.line_to(1, 1, 0)
 
-        chunk_vertex_data = VertexData(
-            powered_vertices=np.array([[0, 0, 0], [1, 1, 0]]),
-            powered_colors=np.array([[1, 1, 1, 1], [1, 1, 1, 1]]),
-        )
-
         chunk_artifact = WorkPieceArtifact(
             ops=chunk_ops,
             is_scalable=True,
             source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
             source_dimensions=(10.0, 10.0),
             generation_size=(10.0, 10.0),
-            vertex_data=chunk_vertex_data,
         )
         self.mock_artifact_manager.get_artifact.return_value = chunk_artifact
 
@@ -646,22 +639,12 @@ class TestWorkPieceViewStage(unittest.TestCase):
         chunk_ops.move_to(2.0, 2.0, 0)
         chunk_ops.line_to(8.0, 8.0, 0)
 
-        chunk_vertex_data = VertexData(
-            powered_vertices=np.array(
-                [[2.0, 2.0, 0], [8.0, 8.0, 0]], dtype=np.float32
-            ),
-            powered_colors=np.array(
-                [[1.0, 1.0, 1.0, 1.0], [1.0, 1.0, 1.0, 1.0]], dtype=np.float32
-            ),
-        )
-
         chunk_artifact = WorkPieceArtifact(
             ops=chunk_ops,
             is_scalable=True,
             source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
             source_dimensions=(10.0, 10.0),
             generation_size=(10.0, 10.0),
-            vertex_data=chunk_vertex_data,
         )
 
         # Update mock_get_artifact to return chunk artifact for chunk_shm

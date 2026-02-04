@@ -4,9 +4,14 @@ from typing import cast
 import numpy as np
 
 from rayforge.context import get_context
-from rayforge.core.ops import Ops
+from rayforge.core.ops import (
+    Ops,
+    MoveToCommand,
+    LineToCommand,
+    SetPowerCommand,
+    ScanLinePowerCommand,
+)
 from rayforge.pipeline import CoordinateSystem
-from rayforge.pipeline.artifact.base import VertexData, TextureData
 from rayforge.pipeline.artifact import (
     RenderContext,
     WorkPieceArtifact,
@@ -43,26 +48,17 @@ def create_test_color_set(spec: dict) -> ColorSet:
 def vector_artifact_handle(context_initializer):
     """Creates and stores a simple vector-based WorkPieceArtifact."""
     # A 10x10mm red square at (5,5)
-    verts = np.array(
-        [
-            [5, 5, 0],
-            [15, 5, 0],
-            [15, 5, 0],
-            [15, 15, 0],
-            [15, 15, 0],
-            [5, 15, 0],
-            [5, 15, 0],
-            [5, 5, 0],
-        ],
-        dtype=np.float32,
-    )
-    # Full power (red)
-    colors = np.full((verts.shape[0], 4), [1, 0, 0, 1], np.float32)
+    ops = Ops()
+    ops.add(SetPowerCommand(1.0))  # Full power (red)
+    ops.add(MoveToCommand((5.0, 5.0, 0.0)))
+    ops.add(LineToCommand((15.0, 5.0, 0.0)))
+    ops.add(LineToCommand((15.0, 15.0, 0.0)))
+    ops.add(LineToCommand((5.0, 15.0, 0.0)))
+    ops.add(LineToCommand((5.0, 5.0, 0.0)))
     artifact = WorkPieceArtifact(
-        ops=Ops(),
+        ops=ops,
         is_scalable=True,
         source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
-        vertex_data=VertexData(powered_vertices=verts, powered_colors=colors),
         generation_size=(20, 20),
     )
     handle = get_context().artifact_store.put(artifact)
@@ -73,25 +69,21 @@ def vector_artifact_handle(context_initializer):
 @pytest.fixture
 def texture_artifact_handle(context_initializer):
     """Creates and stores a texture-based WorkPieceArtifact."""
-    # Y=0 in numpy is the top of the workpiece.
-    # Top 30 rows are gray (power 128)
-    top_chunk_data = np.full((30, 50), 128, dtype=np.uint8)
-    # Bottom 20 rows are white (power 255)
-    bottom_chunk_data = np.full((20, 50), 255, dtype=np.uint8)
-
-    full_texture_data = np.zeros((50, 50), dtype=np.uint8)
-    full_texture_data[0:30, :] = top_chunk_data
-    full_texture_data[30:50, :] = bottom_chunk_data
-
+    # TextureEncoder converts Y-up (mm) to Y-down (pixel) space.
+    # To get top 30 rows (pixel y 0-29) to be gray (power 128),
+    # we need scan lines at mm y 50-21 (which convert to pixel y 0-29).
+    ops = Ops()
+    # Create 50 scan lines, each 50 pixels wide
+    for mm_y in range(1, 51):
+        pixel_y = 50 - mm_y
+        power = 128 if pixel_y < 30 else 255
+        power_values = bytearray([power] * 50)
+        ops.add(MoveToCommand((0.0, float(mm_y), 0.0)))
+        ops.add(ScanLinePowerCommand((50.0, float(mm_y), 0.0), power_values))
     artifact = WorkPieceArtifact(
-        ops=Ops(),
+        ops=ops,
         is_scalable=False,
         source_coordinate_system=CoordinateSystem.PIXEL_SPACE,
-        texture_data=TextureData(
-            power_texture_data=full_texture_data,
-            dimensions_mm=(50.0, 50.0),
-            position_mm=(0.0, 0.0),
-        ),
         generation_size=(50, 50),
     )
     handle = get_context().artifact_store.put(artifact)
@@ -294,8 +286,6 @@ def test_on_demand_vertex_encoding(context_initializer):
         is_scalable=True,
         source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
         generation_size=(20.0, 20.0),
-        vertex_data=None,
-        texture_data=None,
     )
     handle = get_context().artifact_store.put(artifact)
     color_set = create_test_color_set({"cut": ("#000", "#F00")})
@@ -308,8 +298,11 @@ def test_on_demand_vertex_encoding(context_initializer):
     mock_proxy = MagicMock()
 
     result = make_workpiece_view_artifact_in_subprocess(
-        mock_proxy, get_context().artifact_store,
-        handle.to_dict(), context.to_dict(), "test_view",
+        mock_proxy,
+        get_context().artifact_store,
+        handle.to_dict(),
+        context.to_dict(),
+        "test_view",
     )
     assert result is None
 
@@ -343,8 +336,6 @@ def test_on_demand_texture_encoding(context_initializer):
         is_scalable=False,
         source_coordinate_system=CoordinateSystem.PIXEL_SPACE,
         generation_size=(10.0, 10.0),
-        vertex_data=None,
-        texture_data=None,
     )
     handle = get_context().artifact_store.put(artifact)
     color_set = create_test_color_set({"engrave": ("#000", "#FFF")})
@@ -357,8 +348,11 @@ def test_on_demand_texture_encoding(context_initializer):
     mock_proxy = MagicMock()
 
     result = make_workpiece_view_artifact_in_subprocess(
-        mock_proxy, get_context().artifact_store,
-        handle.to_dict(), context.to_dict(), "test_view",
+        mock_proxy,
+        get_context().artifact_store,
+        handle.to_dict(),
+        context.to_dict(),
+        "test_view",
     )
     assert result is None
 

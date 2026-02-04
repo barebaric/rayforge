@@ -12,11 +12,14 @@ from ..artifact import (
     WorkPieceArtifact,
     BaseArtifactHandle,
 )
+from ..artifact.base import TextureData
 from ..artifact.workpiece_view import (
     RenderContext,
     WorkPieceViewArtifact,
     WorkPieceViewArtifactHandle,
 )
+from ..encoder.vertexencoder import VertexEncoder
+from ..encoder.textureencoder import TextureEncoder
 from .base import PipelineStage
 from .workpiece_view_runner import make_workpiece_view_artifact_in_subprocess
 
@@ -355,11 +358,55 @@ class WorkPieceViewPipelineStage(PipelineStage):
             self._artifact_manager.release_handle(chunk_handle)
             return
 
-        # Only render if the chunk has vertex data
-        if not chunk_artifact.vertex_data:
-            logger.debug(f"Chunk for {key} has no vertex data, skipping")
+        # Only render if the chunk has Ops
+        if not chunk_artifact.ops or chunk_artifact.ops.is_empty():
+            logger.debug(f"Chunk for {key} has no Ops, skipping")
             self._artifact_manager.release_handle(chunk_handle)
             return
+
+        # Encode Ops to vertex_data on-demand for this chunk
+        logger.debug(f"Encoding chunk Ops to vertex_data for {key}")
+        encoder_vertex = VertexEncoder()
+        chunk_vertex_data = encoder_vertex.encode(chunk_artifact.ops)
+
+        # For raster chunks, also encode texture data on-demand
+        chunk_texture_data = None
+        if not chunk_artifact.is_scalable:
+            logger.debug(f"Encoding chunk Ops to texture data for {key}")
+            # Use source_dimensions if available for consistent resolution
+            if chunk_artifact.source_dimensions:
+                px_per_mm_x = (
+                    chunk_artifact.source_dimensions[0]
+                    / chunk_artifact.generation_size[0]
+                )
+                px_per_mm_y = (
+                    chunk_artifact.source_dimensions[1]
+                    / chunk_artifact.generation_size[1]
+                )
+                width_px = int(chunk_artifact.source_dimensions[0])
+                height_px = int(chunk_artifact.source_dimensions[1])
+            else:
+                px_per_mm_x, px_per_mm_y = 50.0, 50.0  # Default
+                width_px = int(
+                    round(chunk_artifact.generation_size[0] * px_per_mm_x)
+                )
+                height_px = int(
+                    round(chunk_artifact.generation_size[1] * px_per_mm_y)
+                )
+
+            if width_px > 0 and height_px > 0:
+                texture_encoder = TextureEncoder()
+                texture_buffer = texture_encoder.encode(
+                    chunk_artifact.ops,
+                    width_px,
+                    height_px,
+                    (px_per_mm_x, px_per_mm_y),
+                )
+                chunk_texture_data = TextureData(
+                    power_texture_data=texture_buffer,
+                    dimensions_mm=chunk_artifact.generation_size,
+                    position_mm=(0.0, 0.0),
+                )
 
         shm = None
         try:
@@ -397,9 +444,6 @@ class WorkPieceViewPipelineStage(PipelineStage):
             ctx = cairo.Context(surface)
 
             # Set up transform to match the worker's coordinate system
-            # The worker uses: translate(margin, height_px - margin)
-            #                   scale(effective_ppm_x, -effective_ppm_y)
-            #                   translate(-x_mm, -y_mm)
             bbox_mm = view_artifact.bbox_mm
             x_mm, y_mm, w_mm, h_mm = bbox_mm
             margin = render_context.margin_px
@@ -421,13 +465,19 @@ class WorkPieceViewPipelineStage(PipelineStage):
             # Get the color set from the render context
             color_set = ColorSet.from_dict(render_context.color_set_dict)
 
+            # Draw texture if available (for raster chunks)
+            if chunk_texture_data:
+                from ..stage.workpiece_view_runner import _draw_texture
+
+                _draw_texture(ctx, chunk_texture_data, color_set)
+
             # Draw the chunk's vertex data
             line_width_mm = (
                 1.0 / effective_ppm_x if effective_ppm_x > 0 else 1.0
             )
             self._draw_vertices(
                 ctx,
-                chunk_artifact.vertex_data,
+                chunk_vertex_data,
                 color_set,
                 render_context.show_travel_moves,
                 line_width_mm,

@@ -1,9 +1,6 @@
 from typing import Any, List, Tuple, Iterator, Optional, Dict, TYPE_CHECKING
-import numpy as np
 from ...context import get_context
 from ...shared.tasker.proxy import ExecutionContextProxy, BaseExecutionContext
-from ..encoder import TextureEncoder
-from ..encoder.vertexencoder import VertexEncoder
 from ..artifact import WorkPieceArtifact
 from ..artifact.store import ArtifactStore
 
@@ -302,7 +299,6 @@ def make_workpiece_artifact_in_subprocess(
     final_artifact: Optional[WorkPieceArtifact] = None
 
     is_vector = opsproducer.is_vector_producer()
-    encoder = VertexEncoder()
 
     execute_weight = 0.20
     transform_weight = 1.0 - execute_weight
@@ -331,13 +327,8 @@ def make_workpiece_artifact_in_subprocess(
 
         # Send intermediate chunks for raster operations
         if not is_vector:
-            # For progressive rendering, we need to encode vertices for
-            # the current chunk and send them back via a handle.
-            ops_for_chunk_render = initial_ops.copy()
-            ops_for_chunk_render.extend(chunk_artifact.ops)
-            chunk_artifact.vertex_data = encoder.encode(ops_for_chunk_render)
-
-            # Store in shared memory and get a handle
+            # For progressive rendering, send the chunk with Ops (not encoded)
+            # The view stage will encode on-demand
             chunk_handle = artifact_store.put(
                 chunk_artifact, creator_tag=f"{creator_tag}_chunk"
             )
@@ -357,34 +348,6 @@ def make_workpiece_artifact_in_subprocess(
         # If no artifact was produced (e.g., empty image), we still need
         # to return the generation_id to signal completion.
         return generation_id
-
-    # If we generated a raster, reconstruct the full texture from the final Ops
-    full_power_texture: Optional[np.ndarray] = None
-    if not is_vector:
-        size_mm = workpiece.size
-        px_per_mm_x, px_per_mm_y = settings["pixels_per_mm"]
-        full_width_px = int(round(size_mm[0] * px_per_mm_x))
-        full_height_px = int(round(size_mm[1] * px_per_mm_y))
-
-        if full_width_px > 0 and full_height_px > 0:
-            texture_encoder = TextureEncoder()
-            full_power_texture = texture_encoder.encode(
-                final_artifact.ops,
-                full_width_px,
-                full_height_px,
-                (px_per_mm_x, px_per_mm_y),
-            )
-
-    if full_power_texture is not None and final_artifact.texture_data:
-        final_artifact.texture_data.power_texture_data = full_power_texture
-        # The final artifact represents the whole workpiece, at its origin
-        final_artifact.texture_data.position_mm = (0.0, 0.0)
-        final_artifact.texture_data.dimensions_mm = workpiece.size
-        # The source dimensions should also reflect the full pixel buffer
-        final_artifact.source_dimensions = (
-            full_power_texture.shape[1],
-            full_power_texture.shape[0],
-        )
 
     # --- Transform phase ---
     enabled_transformers = [t for t in opstransformers if t.enabled]
@@ -435,10 +398,9 @@ def make_workpiece_artifact_in_subprocess(
     if settings["air_assist"]:
         final_artifact.ops.disable_air_assist()
 
-    # After all transformations, encode the final Ops into vertex data and
-    # create the final artifact for storage.
-    logger.debug("Encoding final ops into vertex data for rendering.")
-    vertex_data = encoder.encode(final_artifact.ops)
+    # After all transformations, create the final artifact for storage.
+    # The view stage will encode on-demand.
+    logger.debug("Creating final artifact with Ops (not encoded).")
 
     final_artifact_to_store = WorkPieceArtifact(
         ops=final_artifact.ops,
@@ -446,8 +408,6 @@ def make_workpiece_artifact_in_subprocess(
         source_coordinate_system=final_artifact.source_coordinate_system,
         source_dimensions=final_artifact.source_dimensions,
         generation_size=generation_size,
-        vertex_data=vertex_data,
-        texture_data=final_artifact.texture_data,
     )
 
     proxy.set_message(

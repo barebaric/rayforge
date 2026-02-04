@@ -242,14 +242,14 @@ def _draw_texture(
 
 
 def _get_content_bbox(
-    artifact: WorkPieceArtifact, show_travel: bool
+    vertex_data, texture_data, show_travel: bool
 ) -> Optional[Tuple[float, float, float, float]]:
     """Calculate the union bounding box of all visual content."""
     all_vertices: List[np.ndarray] = []
     has_content = False
 
-    if artifact.vertex_data:
-        v_data = artifact.vertex_data
+    if vertex_data:
+        v_data = vertex_data
         if v_data.powered_vertices.size > 0:
             all_vertices.append(v_data.powered_vertices)
         if show_travel:
@@ -266,8 +266,8 @@ def _get_content_bbox(
     else:
         v_x1, v_y1, v_x2, v_y2 = math.inf, math.inf, -math.inf, -math.inf
 
-    if artifact.texture_data:
-        tex = artifact.texture_data
+    if texture_data:
+        tex = texture_data
         t_x1, t_y1 = tex.position_mm
         t_x2, t_y2 = t_x1 + tex.dimensions_mm[0], t_y1 + tex.dimensions_mm[1]
         v_x1, v_x2 = min(v_x1, t_x1), max(v_x2, t_x2)
@@ -305,13 +305,14 @@ def make_workpiece_view_artifact_in_subprocess(
     encoder_vertex = VertexEncoder()
     encoder_texture = TextureEncoder()
 
-    # Generate vertex_data on-demand if missing
-    if artifact.vertex_data is None:
-        logger.debug("Worker: Encoding ops to vertex data...")
-        artifact.vertex_data = encoder_vertex.encode(artifact.ops)
+    # Generate vertex_data locally (not on the artifact)
+    logger.debug("Worker: Encoding ops to vertex data...")
+    vertex_data = encoder_vertex.encode(artifact.ops)
 
-    # Generate texture_data on-demand if missing (for raster operations)
-    if artifact.texture_data is None and not artifact.is_scalable:
+    # Generate texture_data locally (not on the artifact) for raster
+    # operations
+    texture_data = None
+    if not artifact.is_scalable:
         logger.debug("Worker: Encoding ops to texture data...")
         # Use render context's pixels_per_mm for zoom support
         px_per_mm_x, px_per_mm_y = context.pixels_per_mm
@@ -325,14 +326,16 @@ def make_workpiece_view_artifact_in_subprocess(
                 height_px,
                 context.pixels_per_mm,
             )
-            artifact.texture_data = TextureData(
+            texture_data = TextureData(
                 power_texture_data=texture_buffer,
                 dimensions_mm=artifact.generation_size,
                 position_mm=(0.0, 0.0),
             )
 
     logger.debug("Worker: Calculating content bbox...")
-    bbox = _get_content_bbox(artifact, context.show_travel_moves)
+    bbox = _get_content_bbox(
+        vertex_data, texture_data, context.show_travel_moves
+    )
     if not bbox or bbox[2] <= 1e-9 or bbox[3] <= 1e-9:
         logger.warning(
             f"Worker: No content to render (bbox={bbox}). Returning None."
@@ -397,9 +400,9 @@ def make_workpiece_view_artifact_in_subprocess(
         # --- Phase 3: Draw all content progressively ---
         # Send created event AFTER first drawing phase (if texture exists)
         # or BEFORE drawing (if no texture) so the stage adopts the artifact
-        if artifact.texture_data:
+        if texture_data:
             logger.debug("Worker: Drawing texture...")
-            _draw_texture(ctx, artifact.texture_data, color_set)
+            _draw_texture(ctx, texture_data, color_set)
             surface.flush()
             # Send created event after texture is drawn
             proxy.send_event(
@@ -418,7 +421,7 @@ def make_workpiece_view_artifact_in_subprocess(
             )
             logger.debug("Worker: Sent view_artifact_created before vertices")
 
-        if artifact.vertex_data:
+        if vertex_data:
             logger.debug(
                 f"Worker: Drawing vertices progressively... "
                 f"show_travel={context.show_travel_moves}"
@@ -430,7 +433,7 @@ def make_workpiece_view_artifact_in_subprocess(
             logger.debug("Worker: About to call _draw_vertices_progressive")
             _draw_vertices_progressive(
                 ctx,
-                artifact.vertex_data,
+                vertex_data,
                 color_set,
                 context.show_travel_moves,
                 line_width_mm,

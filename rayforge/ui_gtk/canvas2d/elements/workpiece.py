@@ -1,7 +1,6 @@
 import logging
 from typing import Optional, TYPE_CHECKING, Dict, Tuple, cast, List, Set, Any
 import cairo
-import numpy as np
 from gi.repository import GLib
 from ....context import get_context
 from ....core.workpiece import WorkPiece
@@ -21,7 +20,6 @@ from .tab_handle import TabHandleElement
 if TYPE_CHECKING:
     from ..surface import WorkSurface
     from ....pipeline.pipeline import Pipeline
-    from ....pipeline.artifact.base import VertexData
 
 logger = logging.getLogger(__name__)
 
@@ -739,85 +737,6 @@ class WorkPieceElement(CanvasElement):
 
         if self.canvas:
             self.canvas.queue_draw()
-
-    def _draw_vertices_to_context(
-        self,
-        vertex_data: "VertexData",
-        ctx: cairo.Context,
-        scale: Tuple[float, float],
-        drawable_height: float,
-    ):
-        """
-        Draws vertex data to a Cairo context, handling scaling, theming,
-        and Y-coordinate inversion.
-        """
-        if not self.canvas or not self._color_set:
-            return
-
-        work_surface = cast("WorkSurface", self.canvas)
-        show_travel = work_surface.show_travel_moves
-        scale_x, scale_y = scale
-
-        ctx.save()
-        ctx.set_hairline(True)
-        ctx.set_line_cap(cairo.LINE_CAP_SQUARE)
-
-        # --- Draw Travel & Zero-Power Moves ---
-        if show_travel:
-            if vertex_data.travel_vertices.size > 0:
-                travel_v = vertex_data.travel_vertices.reshape(-1, 2, 3)
-                ctx.set_source_rgba(*self._color_set.get_rgba("travel"))
-                for start, end in travel_v:
-                    ctx.move_to(
-                        start[0] * scale_x,
-                        drawable_height - start[1] * scale_y,
-                    )
-                    ctx.line_to(
-                        end[0] * scale_x, drawable_height - end[1] * scale_y
-                    )
-                ctx.stroke()
-
-            if vertex_data.zero_power_vertices.size > 0:
-                zero_v = vertex_data.zero_power_vertices.reshape(-1, 2, 3)
-                ctx.set_source_rgba(*self._color_set.get_rgba("zero_power"))
-                for start, end in zero_v:
-                    ctx.move_to(
-                        start[0] * scale_x,
-                        drawable_height - start[1] * scale_y,
-                    )
-                    ctx.line_to(
-                        end[0] * scale_x, drawable_height - end[1] * scale_y
-                    )
-                ctx.stroke()
-
-        # --- Draw Powered Moves (Grouped by Color for performance) ---
-        if vertex_data.powered_vertices.size > 0:
-            powered_v = vertex_data.powered_vertices.reshape(-1, 2, 3)
-            powered_c = vertex_data.powered_colors
-            cut_lut = self._color_set.get_lut("cut")
-
-            # Use power from the first vertex of each segment for color.
-            power_indices = (powered_c[::2, 0] * 255.0).astype(np.uint8)
-            themed_colors_per_segment = cut_lut[power_indices]
-
-            unique_colors, inverse_indices = np.unique(
-                themed_colors_per_segment, axis=0, return_inverse=True
-            )
-
-            for i, color in enumerate(unique_colors):
-                ctx.set_source_rgba(*color)
-                segment_indices = np.where(inverse_indices == i)[0]
-                for seg_idx in segment_indices:
-                    start, end = powered_v[seg_idx]
-                    ctx.move_to(
-                        start[0] * scale_x,
-                        drawable_height - start[1] * scale_y,
-                    )
-                    ctx.line_to(
-                        end[0] * scale_x, drawable_height - end[1] * scale_y
-                    )
-                ctx.stroke()
-        ctx.restore()
 
     def render_to_surface(
         self, width: int, height: int

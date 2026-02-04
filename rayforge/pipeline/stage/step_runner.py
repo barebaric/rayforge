@@ -111,8 +111,9 @@ def make_step_artifact_in_subprocess(
         # 3. FOR TEXTURES: The renderer draws a 1x1 unit quad. We must
         # build a transform to scale it to the chunk's physical size,
         # place it locally, and then place it in the world.
-        # Generate texture_data on-demand if missing (for raster ops)
-        if artifact.texture_data is None and not artifact.is_scalable:
+        # Generate texture data locally for non-scalable artifacts
+        chunk_texture_data = None
+        if not artifact.is_scalable:
             encoder_texture = TextureEncoder()
             # Use source_dimensions if available to match original
             # resolution
@@ -137,15 +138,15 @@ def make_step_artifact_in_subprocess(
                     height_px,
                     (px_per_mm_x, px_per_mm_y),
                 )
-                artifact.texture_data = TextureData(
+                chunk_texture_data = TextureData(
                     power_texture_data=texture_buffer,
                     dimensions_mm=artifact.generation_size,
                     position_mm=(0.0, 0.0),
                 )
 
-        if artifact.texture_data:
-            chunk_w_mm, chunk_h_mm = artifact.texture_data.dimensions_mm
-            chunk_x_off, chunk_y_off = artifact.texture_data.position_mm
+        if chunk_texture_data is not None:
+            chunk_w_mm, chunk_h_mm = chunk_texture_data.dimensions_mm
+            chunk_x_off, chunk_y_off = chunk_texture_data.position_mm
 
             # a) Create a matrix to scale the 1x1 unit quad to the chunk's
             # physical size in millimeters.
@@ -168,7 +169,7 @@ def make_step_artifact_in_subprocess(
             )
 
             instance = TextureInstance(
-                texture_data=artifact.texture_data,
+                texture_data=chunk_texture_data,
                 world_transform=final_transform.to_4x4_numpy(),
             )
             texture_instances.append(instance)

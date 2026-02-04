@@ -14,7 +14,6 @@ from rayforge.pipeline.artifact.workpiece import (
     WorkPieceArtifactHandle,
 )
 from rayforge.pipeline.artifact.job import JobArtifact, JobArtifactHandle
-from rayforge.pipeline.artifact.base import VertexData, TextureData
 
 
 class TestArtifactStore(unittest.TestCase):
@@ -38,22 +37,12 @@ class TestArtifactStore(unittest.TestCase):
         ops.line_to(10, 0, 0)
         ops.arc_to(0, 10, i=-10, j=0, clockwise=False, z=0)
 
-        vertex_data = VertexData(
-            powered_vertices=np.array(
-                [[0, 0, 0], [10, 0, 0]], dtype=np.float32
-            ),
-            powered_colors=np.array(
-                [[1, 1, 1, 1], [1, 1, 1, 1]], dtype=np.float32
-            ),
-        )
-
         return WorkPieceArtifact(
             ops=ops,
             is_scalable=True,
             source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
             source_dimensions=(100, 100),
             generation_size=(50, 50),
-            vertex_data=vertex_data,
         )
 
     def _create_sample_hybrid_artifact(self) -> WorkPieceArtifact:
@@ -61,22 +50,12 @@ class TestArtifactStore(unittest.TestCase):
         ops = Ops()
         ops.move_to(0, 0, 0)
         ops.scan_to(10, 0, 0, power_values=bytearray(range(256)))
-        texture = np.arange(10000, dtype=np.uint8).reshape((100, 100))
-
-        texture_data = TextureData(
-            power_texture_data=texture,
-            dimensions_mm=(50.0, 50.0),
-            position_mm=(5.0, 10.0),
-        )
-        vertex_data = VertexData()
         return WorkPieceArtifact(
             ops=ops,
             is_scalable=False,
             source_coordinate_system=CoordinateSystem.PIXEL_SPACE,
             source_dimensions=(200, 200),
             generation_size=(50, 50),
-            vertex_data=vertex_data,
-            texture_data=texture_data,
         )
 
     def _create_sample_final_job_artifact(self) -> JobArtifact:
@@ -94,7 +73,6 @@ class TestArtifactStore(unittest.TestCase):
             distance=15.0,
             machine_code_bytes=machine_code_bytes,
             op_map_bytes=op_map_bytes,
-            vertex_data=VertexData(),  # Final jobs have vertex data
         )
 
     def test_put_get_release_vertex_artifact(self):
@@ -115,8 +93,6 @@ class TestArtifactStore(unittest.TestCase):
         # 3. Verify the retrieved data
         assert isinstance(retrieved_artifact, WorkPieceArtifact)
         self.assertEqual(retrieved_artifact.artifact_type, "WorkPieceArtifact")
-        self.assertIsNotNone(retrieved_artifact.vertex_data)
-        self.assertIsNone(retrieved_artifact.texture_data)
         self.assertEqual(
             len(original_artifact.ops.commands),
             len(retrieved_artifact.ops.commands),
@@ -140,7 +116,7 @@ class TestArtifactStore(unittest.TestCase):
         """
         original_artifact = self._create_sample_hybrid_artifact()
 
-        # 1. Put
+        # 1. Put artifact into shared memory
         handle = get_context().artifact_store.put(original_artifact)
         self.handles_to_release.append(handle)
         self.assertIsInstance(handle, WorkPieceArtifactHandle)
@@ -151,25 +127,12 @@ class TestArtifactStore(unittest.TestCase):
         # 3. Verify hybrid-specific attributes
         assert isinstance(retrieved_artifact, WorkPieceArtifact)
         self.assertEqual(retrieved_artifact.artifact_type, "WorkPieceArtifact")
-        self.assertIsNotNone(retrieved_artifact.texture_data)
-        self.assertIsNotNone(original_artifact.texture_data)
-        assert retrieved_artifact.texture_data is not None
-        assert original_artifact.texture_data is not None
-
-        self.assertEqual(
-            original_artifact.texture_data.dimensions_mm,
-            retrieved_artifact.texture_data.dimensions_mm,
-        )
-        np.testing.assert_array_equal(
-            original_artifact.texture_data.power_texture_data,
-            retrieved_artifact.texture_data.power_texture_data,
-        )
         self.assertEqual(
             len(original_artifact.ops.commands),
             len(retrieved_artifact.ops.commands),
         )
 
-        # 4. Release
+        # 4. Release: memory
         get_context().artifact_store.release(handle)
 
         # 5. Verify release
@@ -196,37 +159,27 @@ class TestArtifactStore(unittest.TestCase):
         self.assertEqual(retrieved_artifact.artifact_type, "JobArtifact")
         self.assertIsNotNone(retrieved_artifact.machine_code_bytes)
         self.assertIsNotNone(retrieved_artifact.op_map_bytes)
-        self.assertIsNotNone(retrieved_artifact.vertex_data)
-
-        # Add assertions to satisfy the type checker
-        assert retrieved_artifact.machine_code_bytes is not None
-        assert retrieved_artifact.op_map_bytes is not None
 
         # Decode and verify content
+        self.assertIsNotNone(retrieved_artifact.machine_code_bytes)
+        assert retrieved_artifact.machine_code_bytes is not None
         gcode_str = retrieved_artifact.machine_code_bytes.tobytes().decode(
             "utf-8"
         )
-        op_map_str = retrieved_artifact.op_map_bytes.tobytes().decode("utf-8")
-        raw_op_map = json.loads(op_map_str)
-
-        # Reconstruct the map with integer keys, just like the app does.
-        op_map = {
-            "op_to_machine_code": {
-                int(k): v for k, v in raw_op_map["op_to_machine_code"].items()
-            },
-            "machine_code_to_op": {
-                int(k): v for k, v in raw_op_map["machine_code_to_op"].items()
-            },
-        }
+        # Verify op_map from the artifact
+        op_map = retrieved_artifact.op_map
+        self.assertIsNotNone(op_map)
 
         self.assertEqual(gcode_str, "G1 X10 Y20")
-        self.assertDictEqual(
-            op_map,
-            {
-                "op_to_machine_code": {0: [0, 1]},
-                "machine_code_to_op": {0: 0, 1: 0},
-            },
-        )
+        if op_map:
+            self.assertDictEqual(
+                op_map.op_to_machine_code,
+                {0: [0, 1]},
+            )
+            self.assertDictEqual(
+                op_map.machine_code_to_op,
+                {0: 0, 1: 0},
+            )
 
         # 4. Release
         get_context().artifact_store.release(handle)
@@ -304,6 +257,7 @@ class TestArtifactStore(unittest.TestCase):
 
         # Adopt the artifact
         store.adopt(handle)
+        self.assertIn(handle.shm_name, store._managed_shms)
 
         # Signal worker to proceed with forgetting
         queue.put("adopted")
@@ -319,7 +273,7 @@ class TestArtifactStore(unittest.TestCase):
         # Release the artifact
         store.release(handle)
 
-        # Verify memory is gone
+        # Verify that the memory is gone
         with self.assertRaises(FileNotFoundError):
             shared_memory.SharedMemory(name=handle.shm_name)
 
@@ -342,20 +296,12 @@ def _worker_create_and_forget(queue: mp.Queue):
     ops.line_to(10, 0, 0)
     ops.arc_to(0, 10, i=-10, j=0, clockwise=False, z=0)
 
-    vertex_data = VertexData(
-        powered_vertices=np.array([[0, 0, 0], [10, 0, 0]], dtype=np.float32),
-        powered_colors=np.array(
-            [[1, 1, 1, 1], [1, 1, 1, 1]], dtype=np.float32
-        ),
-    )
-
     artifact = WorkPieceArtifact(
         ops=ops,
         is_scalable=True,
         source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
         source_dimensions=(100, 100),
         generation_size=(50, 50),
-        vertex_data=vertex_data,
     )
     handle = store.put(artifact)
 

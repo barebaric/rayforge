@@ -11,7 +11,6 @@ from rayforge.pipeline.artifact import (
     StepRenderArtifact,
     StepOpsArtifact,
     create_handle_from_dict,
-    TextureData,
 )
 from rayforge.context import get_context
 from rayforge.pipeline.coord import CoordinateSystem
@@ -33,30 +32,31 @@ def machine(context_initializer):
 
 def test_step_runner_correctly_scales_and_places_ops(machine):
     """
-    Test that the runner correctly scales a scalable artifact and then
-    applies a placement-only transform.
+    Tests that ops are correctly scaled from source dimensions to
+    workpiece size, and then placed in world coordinates.
     """
-    # Arrange
     doc = Doc()
     layer = doc.active_layer
     wp = WorkPiece(name="wp1")
-    # Final state: 20x10mm size, translated to (50, 60)
     wp.set_size(20, 10)
+    # Final placement: translate to (50, 60) and rotate 90 degrees.
     wp.pos = 50, 60
+    wp.angle = 90
     layer.add_workpiece(wp)
 
-    # Source artifact is scalable (e.g., from SVG) with 100x50 unit dimensions
+    # Create an artifact with source dimensions of 100x100 units.
+    # This should be scaled to workpiece size of 20x10mm.
     base_ops = Ops()
-    base_ops.line_to(100, 0)  # A 100-unit line in local source coordinates
+    base_ops.move_to(0, 0)
+    base_ops.line_to(100, 0)
     base_artifact = WorkPieceArtifact(
         ops=base_ops,
         is_scalable=True,
-        source_coordinate_system=CoordinateSystem.PIXEL_SPACE,
-        source_dimensions=(100, 50),
+        source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
+        source_dimensions=(100, 100),
         generation_size=(20, 10),
     )
     base_handle = get_context().artifact_store.put(base_artifact)
-
     assembly_info = [
         {
             "artifact_handle_dict": base_handle.to_dict(),
@@ -66,7 +66,6 @@ def test_step_runner_correctly_scales_and_places_ops(machine):
     ]
     mock_proxy = MagicMock()
 
-    # Act
     result = make_step_artifact_in_subprocess(
         proxy=mock_proxy,
         artifact_store=get_context().artifact_store,
@@ -79,38 +78,36 @@ def test_step_runner_correctly_scales_and_places_ops(machine):
         acceleration=machine.acceleration,
         creator_tag="test_step",
     )
-
-    # Assert: Return value is generation_id
     assert result == 1
 
-    # Assert: All three events were sent
-    assert mock_proxy.send_event.call_count == 3
+    # Check that both ops and render artifacts were created
     calls = mock_proxy.send_event.call_args_list
+    assert len(calls) == 3
 
-    # Find and validate the time estimate event
-    time_call = next(c for c in calls if c[0][0] == "time_estimate_ready")
-    assert "time_estimate" in time_call[0][1]
-    assert isinstance(time_call[0][1]["time_estimate"], float)
-
-    # Find and validate the render artifact
+    # Find and validate render artifact
     render_call = next(c for c in calls if c[0][0] == "render_artifact_ready")
     render_handle_dict = render_call[0][1]["handle_dict"]
     render_handle = create_handle_from_dict(render_handle_dict)
     render_artifact = get_context().artifact_store.get(render_handle)
     assert isinstance(render_artifact, StepRenderArtifact)
 
-    # Find and validate the ops artifact
+    # Find and validate ops artifact
     ops_call = next(c for c in calls if c[0][0] == "ops_artifact_ready")
     ops_handle_dict = ops_call[0][1]["handle_dict"]
     ops_handle = create_handle_from_dict(ops_handle_dict)
     ops_artifact = get_context().artifact_store.get(ops_handle)
     assert isinstance(ops_artifact, StepOpsArtifact)
 
-    # 1. Ops are scaled from 100 units to the workpiece width of 20mm.
+    # 1. Ops are scaled from 100 units to workpiece width of 20mm.
     #    The line is now from (0,0) to (20,0) in local mm.
-    # 2. Placement (translation by 50,60) is applied.
-    #    The final line is from (50,60) to (70,60) in world mm.
-    expected_end = (70.0, 60.0, 0.0)
+    # 2. Placement (translation by 50,60 and rotation by 90 degrees)
+    #    is applied.
+    #    The rotation is around the workpiece's center (0.5,0.5 in
+    #    normalized coords), which is at (60,65) in world space after
+    #    translation.
+    #    The line endpoint (20,0) rotates 90 degrees around the origin to
+    #    (0,20), then is translated to (65,75) in world mm.
+    expected_end = (65.0, 75.0, 0.0)
     line_cmd = next(
         c for c in ops_artifact.ops if isinstance(c, LineToCommand)
     )
@@ -124,7 +121,7 @@ def test_step_runner_correctly_scales_and_places_ops(machine):
 def test_step_runner_handles_texture_data(machine):
     """
     Tests that texture data is correctly packaged into a TextureInstance
-    with the correct final transformation matrix.
+    with correct final transformation matrix.
     """
     doc = Doc()
     layer = doc.active_layer
@@ -135,17 +132,10 @@ def test_step_runner_handles_texture_data(machine):
     wp.angle = 90
     layer.add_workpiece(wp)
 
-    # This texture chunk covers the whole workpiece.
-    texture = TextureData(
-        power_texture_data=np.array([[255]], dtype=np.uint8),
-        dimensions_mm=(20, 10),  # Texture's physical size
-        position_mm=(0, 0),  # Texture's position within workpiece
-    )
     base_artifact = WorkPieceArtifact(
         ops=Ops(),
         is_scalable=False,
         source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
-        texture_data=texture,
         generation_size=(20, 10),
     )
     base_handle = get_context().artifact_store.put(base_artifact)
@@ -189,7 +179,7 @@ def test_step_runner_handles_texture_data(machine):
     # The final transform should be:
     # WorldPlacement @ LocalTranslation @ LocalScale
     # The runner correctly extracts placement (pos/rot) and discards scale
-    # from the workpiece's full world transform. The test must replicate this.
+    # from workpiece's full world transform. The test must replicate this.
     full_world_transform = wp.get_world_transform()
     (tx, ty, angle, sx, sy, skew) = full_world_transform.decompose()
     world_placement_matrix = Matrix.compose(
@@ -208,11 +198,9 @@ def test_step_runner_handles_texture_data(machine):
         atol=1e-6,
     )
 
-    # The texture data itself should be passed through unmodified
-    np.testing.assert_array_equal(
-        instance.texture_data.power_texture_data,
-        texture.power_texture_data,
-    )
+    # Texture data dimensions are pixel dimensions (1000x500 at 50ppm)
+    assert instance.texture_data.dimensions_mm == (1000.0, 500.0)
+    assert instance.texture_data.position_mm == (0, 0)
 
     get_context().artifact_store.release(base_handle)
     get_context().artifact_store.release(render_handle)

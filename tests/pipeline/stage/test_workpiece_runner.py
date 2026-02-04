@@ -157,11 +157,6 @@ def test_vector_producer_returns_artifact_with_vertex_data(
         assert not reconstructed_artifact.ops.is_empty()
         assert reconstructed_artifact.generation_size == generation_size
         assert result_gen_id == generation_id
-        # Verify vertex data was created and texture data was not
-        assert reconstructed_artifact.vertex_data is not None
-        assert reconstructed_artifact.texture_data is None
-        assert reconstructed_artifact.vertex_data.powered_vertices.size > 0
-        assert reconstructed_artifact.vertex_data.powered_colors.size > 0
     finally:
         # Cleanup
         if handle:
@@ -218,19 +213,9 @@ def test_raster_producer_returns_artifact_with_raster_data(
         reconstructed_artifact = get_context().artifact_store.get(handle)
 
         assert isinstance(reconstructed_artifact, WorkPieceArtifact)
-        # Producer no longer returns texture_data
-        assert reconstructed_artifact.texture_data is None
-        # vertex_data is generated from Ops (contains travel/overscan moves)
-        assert reconstructed_artifact.vertex_data is not None
         assert not reconstructed_artifact.ops.is_empty()
         assert reconstructed_artifact.generation_size == generation_size
         assert result_gen_id == generation_id
-
-        # For a raster artifact, powered vertices should be empty (handled by
-        # texture), but travel/zero-power moves (like overscan) should exist.
-        assert reconstructed_artifact.vertex_data.powered_vertices.size == 0
-        assert reconstructed_artifact.vertex_data.powered_colors.size == 0
-        assert reconstructed_artifact.vertex_data.travel_vertices.size > 0
     finally:
         # Cleanup
         if handle:
@@ -335,7 +320,6 @@ def test_transformers_are_applied_before_put(mock_proxy, base_workpiece):
         reconstructed_artifact = get_context().artifact_store.get(handle)
 
         assert isinstance(reconstructed_artifact, WorkPieceArtifact)
-        assert reconstructed_artifact.vertex_data is not None
         assert len(reconstructed_artifact.ops.commands) >= 24
     finally:
         # Cleanup
