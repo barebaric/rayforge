@@ -246,8 +246,6 @@ class WorkPieceElement(CanvasElement):
         # 1. Invalidate the base image buffer.
         self._surface = None
 
-        self._ops_recordings.clear()
-
         # Note: We do NOT clear the model cache here, as view updates
         # (like zooming) shouldn't erase the persistent data needed by
         # other views or future rebuilds.
@@ -1504,8 +1502,8 @@ class WorkPieceElement(CanvasElement):
             return
 
         if self.data.layer and self.data.layer.workflow:
-            # Draw the new progressive bitmaps if available (Phase 4)
-            self._draw_progressive_views(ctx)
+            # Draw vector overlay lines with device-stable thickness
+            self._draw_vector_overlay(ctx)
 
     def _draw_progressive_views(self, ctx: cairo.Context):
         """
@@ -1592,6 +1590,51 @@ class WorkPieceElement(CanvasElement):
             ctx.paint()
 
             ctx.restore()
+
+    def _draw_vector_overlay(self, ctx: cairo.Context):
+        """
+        Draws vector ops directly at the current zoom with constant pixel
+        thickness. This avoids re-recording on zoom changes.
+        """
+        if (
+            not self.canvas
+            or not self.data.layer
+            or not self.data.layer.workflow
+        ):
+            return
+
+        self._resolve_colors_if_needed()
+        if not self._color_set:
+            return
+
+        world_w, world_h = self.data.size
+        if world_w <= 1e-9 or world_h <= 1e-9:
+            return
+
+        work_surface = cast("WorkSurface", self.canvas)
+        view_ppm_x, view_ppm_y = work_surface.get_view_scale()
+        if view_ppm_x <= 1e-9 or view_ppm_y <= 1e-9:
+            return
+
+        line_width_norm = 1.0 / max(
+            view_ppm_x * world_w, view_ppm_y * world_h
+        )
+
+        ctx.save()
+        for step in self.data.layer.workflow.steps:
+            if not self._ops_visibility.get(step.uid, True):
+                continue
+            artifact = self._artifact_cache.get(step.uid)
+            if not artifact or not artifact.vertex_data:
+                continue
+            self._draw_vertices_to_context(
+                artifact.vertex_data,
+                ctx,
+                (1.0 / world_w, -1.0 / world_h),
+                0.0,
+                line_width=line_width_norm,
+            )
+        ctx.restore()
 
     def push_transform_to_model(self):
         """Updates the data model's matrix with the view's transform."""
