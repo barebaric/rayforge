@@ -12,7 +12,6 @@ from .job_runner import JobDescription
 from contextlib import ExitStack
 
 if TYPE_CHECKING:
-    import threading
     from ...core.doc import Doc
     from ...machine.models.machine import Machine
     from ...shared.tasker.manager import TaskManager
@@ -39,6 +38,7 @@ class JobPipelineStage(PipelineStage):
         self._machine = machine
         self._active_task: Optional["Task"] = None
         self._adoption_event: Optional["threading.Event"] = None
+        self._use_thread = False
         self.generation_finished = Signal()
         self.generation_failed = Signal()
 
@@ -116,8 +116,9 @@ class JobPipelineStage(PipelineStage):
         self._artifact_manager.invalidate_for_job()
 
         use_thread = sys.platform == "darwin" and hasattr(sys, "_MEIPASS")
+        self._use_thread = use_thread
         if use_thread:
-            self._adoption_event = threading.Event()
+            self._adoption_event = None
         else:
             manager = mp.Manager()
             self._adoption_event = manager.Event()
@@ -223,7 +224,9 @@ class JobPipelineStage(PipelineStage):
             try:
                 handle_dict = data["handle_dict"]
                 handle = self._artifact_manager.adopt_artifact(
-                    JobKey, handle_dict
+                    JobKey,
+                    handle_dict,
+                    in_process=self._use_thread,
                 )
                 if not isinstance(handle, JobArtifactHandle):
                     raise TypeError("Expected a JobArtifactHandle")

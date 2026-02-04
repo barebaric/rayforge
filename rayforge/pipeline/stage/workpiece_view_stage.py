@@ -4,6 +4,7 @@ import logging
 import numpy as np
 import threading
 import time
+import sys
 from multiprocessing import shared_memory
 from typing import TYPE_CHECKING, Any, Dict, Tuple, cast
 from blinker import Signal
@@ -58,6 +59,7 @@ class WorkPieceViewPipelineStage(PipelineStage):
         self._machine = machine
         self._active_tasks: Dict[ViewKey, "Task"] = {}
         self._last_context_cache: Dict[ViewKey, RenderContext] = {}
+        self._thread_tasks: Dict[ViewKey, bool] = {}
 
         # Track the currently active handle for each view so we can release
         # it when it is replaced or when the stage shuts down.
@@ -103,6 +105,7 @@ class WorkPieceViewPipelineStage(PipelineStage):
             task = self._active_tasks.pop(key, None)
             if task:
                 self._task_manager.cancel_task(task.key)
+            self._thread_tasks.pop(key, None)
 
         # Release all currently held view handles
         for handle in self._current_view_handles.values():
@@ -199,16 +202,30 @@ class WorkPieceViewPipelineStage(PipelineStage):
         def when_done_callback(task: "Task"):
             self._on_render_complete(task, key)
 
-        task = self._task_manager.run_process(
-            make_workpiece_view_artifact_in_subprocess,
-            self._artifact_manager._store,
-            workpiece_artifact_handle_dict=source_handle.to_dict(),
-            render_context_dict=context.to_dict(),
-            creator_tag="workpiece_view",
-            key=key,
-            when_done=when_done_callback,
-            when_event=self._on_render_event_received,
-        )
+        use_thread = sys.platform == "darwin" and hasattr(sys, "_MEIPASS")
+        self._thread_tasks[key] = use_thread
+        if use_thread:
+            task = self._task_manager.run_thread_with_proxy(
+                make_workpiece_view_artifact_in_subprocess,
+                self._artifact_manager._store,
+                workpiece_artifact_handle_dict=source_handle.to_dict(),
+                render_context_dict=context.to_dict(),
+                creator_tag="workpiece_view",
+                key=key,
+                when_done=when_done_callback,
+                when_event=self._on_render_event_received,
+            )
+        else:
+            task = self._task_manager.run_process(
+                make_workpiece_view_artifact_in_subprocess,
+                self._artifact_manager._store,
+                workpiece_artifact_handle_dict=source_handle.to_dict(),
+                render_context_dict=context.to_dict(),
+                creator_tag="workpiece_view",
+                key=key,
+                when_done=when_done_callback,
+                when_event=self._on_render_event_received,
+            )
         self._active_tasks[key] = task
 
     def _on_render_event_received(
@@ -222,7 +239,9 @@ class WorkPieceViewPipelineStage(PipelineStage):
             try:
                 handle_dict = data["handle_dict"]
                 handle = self._artifact_manager.adopt_artifact(
-                    key, handle_dict
+                    key,
+                    handle_dict,
+                    in_process=self._thread_tasks.get(key, False),
                 )
                 if not isinstance(handle, WorkPieceViewArtifactHandle):
                     raise TypeError("Expected WorkPieceViewArtifactHandle")
@@ -577,6 +596,7 @@ class WorkPieceViewPipelineStage(PipelineStage):
         cleanup and state management.
         """
         self._active_tasks.pop(key, None)
+        self._thread_tasks.pop(key, None)
 
         if task.get_status() != "completed":
             logger.error(

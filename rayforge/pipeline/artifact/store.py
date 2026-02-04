@@ -33,9 +33,11 @@ class ArtifactStore:
 
     def shutdown(self):
         for shm_name in list(self._managed_shms.keys()):
-            self._release_by_name(shm_name)
+            self._force_release_by_name(shm_name)
 
-    def adopt(self, handle: BaseArtifactHandle) -> None:
+    def adopt(
+        self, handle: BaseArtifactHandle, increment_refcount: bool = True
+    ) -> None:
         """
         Takes ownership of a shared memory block created by another process.
 
@@ -51,12 +53,15 @@ class ArtifactStore:
         """
         shm_name = handle.shm_name
         if shm_name in self._managed_shms:
-            # Increment refcount for already-managed block
-            self._refcounts[shm_name] = self._refcounts.get(shm_name, 1) + 1
-            logger.debug(
-                f"Shared memory block {shm_name} refcount incremented to "
-                f"{self._refcounts[shm_name]}"
-            )
+            if increment_refcount:
+                # Increment refcount for already-managed block
+                self._refcounts[shm_name] = (
+                    self._refcounts.get(shm_name, 1) + 1
+                )
+                logger.debug(
+                    f"Shared memory block {shm_name} refcount incremented to "
+                    f"{self._refcounts[shm_name]}"
+                )
             return
 
         try:
@@ -211,6 +216,23 @@ class ArtifactStore:
             logger.debug(f"Released shared memory block: {shm_name}")
         except FileNotFoundError:
             # The block was already released externally, which is fine.
+            logger.debug(f"SHM block {shm_name} was already unlinked.")
+        except Exception as e:
+            logger.warning(
+                f"Error releasing shared memory block {shm_name}: {e}"
+            )
+
+    def _force_release_by_name(self, shm_name: str) -> None:
+        shm_obj = self._managed_shms.pop(shm_name, None)
+        if not shm_obj:
+            return
+        self._refcounts.pop(shm_name, None)
+
+        try:
+            shm_obj.close()
+            shm_obj.unlink()
+            logger.debug(f"Released shared memory block: {shm_name}")
+        except FileNotFoundError:
             logger.debug(f"SHM block {shm_name} was already unlinked.")
         except Exception as e:
             logger.warning(

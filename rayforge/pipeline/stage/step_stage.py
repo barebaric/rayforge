@@ -44,6 +44,7 @@ class StepPipelineStage(PipelineStage):
         self._generation_id_map: Dict[StepKey, int] = {}
         self._active_tasks: Dict[StepKey, "Task"] = {}
         self._adoption_events: Dict[StepKey, "threading.Event"] = {}
+        self._thread_tasks: Dict[StepKey, bool] = {}
         # Local cache for accurate, post-transformer time estimates
         self._time_cache: Dict[StepKey, Optional[float]] = {}
 
@@ -116,6 +117,7 @@ class StepPipelineStage(PipelineStage):
                 logger.debug(f"Cancelling active step task for {key}")
                 self._task_manager.cancel_task(task.key)
         self._adoption_events.pop(key, None)
+        self._thread_tasks.pop(key, None)
 
     def _cleanup_entry(self, key: StepKey, full_invalidation: bool):
         """Removes a step artifact, clears time cache, and cancels its task."""
@@ -208,11 +210,13 @@ class StepPipelineStage(PipelineStage):
 
         use_thread = sys.platform == "darwin" and hasattr(sys, "_MEIPASS")
         if use_thread:
-            adoption_event = threading.Event()
+            adoption_event = None
         else:
             manager = mp.Manager()
             adoption_event = manager.Event()
-        self._adoption_events[step.uid] = adoption_event
+        if adoption_event is not None:
+            self._adoption_events[step.uid] = adoption_event
+        self._thread_tasks[step.uid] = use_thread
 
         if use_thread:
             task = self._task_manager.run_thread_with_proxy(
@@ -265,7 +269,9 @@ class StepPipelineStage(PipelineStage):
             if event_name == "render_artifact_ready":
                 handle_dict = data["handle_dict"]
                 handle = self._artifact_manager.adopt_artifact(
-                    step_uid, handle_dict
+                    step_uid,
+                    handle_dict,
+                    in_process=self._thread_tasks.get(step_uid, False),
                 )
                 if not isinstance(handle, StepRenderArtifactHandle):
                     raise TypeError("Expected a StepRenderArtifactHandle")
@@ -276,7 +282,9 @@ class StepPipelineStage(PipelineStage):
             elif event_name == "ops_artifact_ready":
                 handle_dict = data["handle_dict"]
                 handle = self._artifact_manager.adopt_artifact(
-                    step_uid, handle_dict
+                    step_uid,
+                    handle_dict,
+                    in_process=self._thread_tasks.get(step_uid, False),
                 )
                 if not isinstance(handle, StepOpsArtifactHandle):
                     raise TypeError("Expected a StepOpsArtifactHandle")
@@ -308,6 +316,7 @@ class StepPipelineStage(PipelineStage):
         step_uid = step.uid
         self._active_tasks.pop(step_uid, None)
         self._adoption_events.pop(step_uid, None)
+        self._thread_tasks.pop(step_uid, None)
 
         if self._generation_id_map.get(step_uid) != task_generation_id:
             return

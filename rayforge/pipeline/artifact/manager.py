@@ -110,6 +110,7 @@ class ArtifactManager:
         self,
         key: Union[WorkPieceKey, StepKey, JobKey],
         handle_dict: Dict[str, Any],
+        in_process: bool = False,
     ) -> BaseArtifactHandle:
         """
         Adopts an artifact from a subprocess and deserializes the handle.
@@ -127,7 +128,7 @@ class ArtifactManager:
             The adopted, deserialized handle.
         """
         handle = create_handle_from_dict(handle_dict)
-        self._store.adopt(handle)
+        self._store.adopt(handle, increment_refcount=not in_process)
         return handle
 
     def retain_handle(self, handle: BaseArtifactHandle):

@@ -48,6 +48,7 @@ class WorkPiecePipelineStage(PipelineStage):
         self._generation_id_map: Dict[WorkpieceKey, int] = {}
         self._active_tasks: Dict[WorkpieceKey, "Task"] = {}
         self._adoption_events: Dict[WorkpieceKey, "threading.Event"] = {}
+        self._thread_tasks: Dict[WorkpieceKey, bool] = {}
 
         # Signals for notifying the pipeline of generation progress
         self.generation_starting = Signal()
@@ -170,6 +171,7 @@ class WorkPiecePipelineStage(PipelineStage):
             logger.debug(f"Requesting cancellation for active task {key}")
             self._task_manager.cancel_task(task.key)
         self._adoption_events.pop(key, None)
+        self._thread_tasks.pop(key, None)
 
     def _cleanup_entry(self, key: WorkpieceKey):
         """
@@ -233,11 +235,13 @@ class WorkPiecePipelineStage(PipelineStage):
 
         use_thread = sys.platform == "darwin" and hasattr(sys, "_MEIPASS")
         if use_thread:
-            adoption_event = threading.Event()
+            adoption_event = None
         else:
             manager = mp.Manager()
             adoption_event = manager.Event()
-        self._adoption_events[key] = adoption_event
+        if adoption_event is not None:
+            self._adoption_events[key] = adoption_event
+        self._thread_tasks[key] = use_thread
 
         if use_thread:
             task = self._task_manager.run_thread_with_proxy(
@@ -296,7 +300,9 @@ class WorkPiecePipelineStage(PipelineStage):
             )
             try:
                 stale_handle = self._artifact_manager.adopt_artifact(
-                    (s_uid, w_uid), handle_dict
+                    (s_uid, w_uid),
+                    handle_dict,
+                    in_process=self._thread_tasks.get(key, False),
                 )
                 self._artifact_manager.release_handle(stale_handle)
             except Exception as e:
@@ -305,7 +311,9 @@ class WorkPiecePipelineStage(PipelineStage):
 
         try:
             handle = self._artifact_manager.adopt_artifact(
-                (s_uid, w_uid), handle_dict
+                (s_uid, w_uid),
+                handle_dict,
+                in_process=self._thread_tasks.get(key, False),
             )
 
             if event_name == "artifact_created":
@@ -368,6 +376,7 @@ class WorkPiecePipelineStage(PipelineStage):
         if self._active_tasks.get(key) is task:
             self._active_tasks.pop(key, None)
             self._adoption_events.pop(key, None)
+            self._thread_tasks.pop(key, None)
             logger.debug(
                 f"[{key}] Popped active task {id(task)} from tracking."
             )
