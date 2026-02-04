@@ -1,6 +1,5 @@
 import pytest
 import logging
-import numpy as np
 from unittest.mock import MagicMock, ANY
 from pathlib import Path
 import asyncio
@@ -16,7 +15,6 @@ from rayforge.core.workpiece import WorkPiece
 from rayforge.image import SVG_RENDERER
 from rayforge.pipeline.artifact import (
     WorkPieceArtifact,
-    VertexData,
     StepRenderArtifact,
     StepOpsArtifact,
     JobArtifact,
@@ -275,18 +273,12 @@ class TestPipelineGeneration:
         expected_ops.move_to(0, 0, 0)
         expected_ops.line_to(1, 1, 0)
 
-        vertex_data = VertexData(
-            powered_vertices=np.array([[0, 0, 0], [1, 1, 0]]),
-            powered_colors=np.array([[1, 1, 1, 1], [1, 1, 1, 1]]),
-        )
-
         expected_artifact = WorkPieceArtifact(
             ops=expected_ops,
             is_scalable=True,
             source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
             source_dimensions=real_workpiece.size,
             generation_size=real_workpiece.size,
-            vertex_data=vertex_data,
         )
         handle = get_context().artifact_store.put(expected_artifact)
         gen_id = 1

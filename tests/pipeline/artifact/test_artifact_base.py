@@ -4,7 +4,6 @@ import numpy as np
 from rayforge.core.ops import Ops
 from rayforge.pipeline.artifact import WorkPieceArtifact
 from rayforge.pipeline.artifact import JobArtifact
-from rayforge.pipeline.artifact import VertexData, TextureData
 from rayforge.pipeline import CoordinateSystem
 
 
@@ -56,79 +55,46 @@ class TestArtifact(unittest.TestCase):
         )
         self.assertEqual(reconstructed.source_dimensions, (100, 200))
         self.assertEqual(reconstructed.generation_size, (50, 100))
-        self.assertIsNone(reconstructed.vertex_data)
-        self.assertIsNone(reconstructed.texture_data)
 
     def test_vertex_serialization_round_trip(self):
         """Tests serialization for a vertex-like artifact."""
-        vertex_data = VertexData(
-            powered_vertices=np.array([[1, 2, 3]], dtype=np.float32),
-            powered_colors=np.array([[0, 0, 0, 1]], dtype=np.float32),
-            travel_vertices=np.array([[4, 5, 6]], dtype=np.float32),
-        )
         artifact = WorkPieceArtifact(
             ops=Ops(),
             is_scalable=True,
             source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
-            vertex_data=vertex_data,
             generation_size=(1, 1),
         )
 
         artifact_dict = artifact.to_dict()
         reconstructed = WorkPieceArtifact.from_dict(artifact_dict)
 
-        self.assertIsNotNone(reconstructed.vertex_data)
-        self.assertIsNone(reconstructed.texture_data)
-
-        assert reconstructed.vertex_data is not None
-        np.testing.assert_array_equal(
-            reconstructed.vertex_data.powered_vertices,
-            vertex_data.powered_vertices,
+        self.assertEqual(reconstructed.artifact_type, "WorkPieceArtifact")
+        self.assertTrue(reconstructed.is_scalable)
+        self.assertEqual(
+            reconstructed.source_coordinate_system,
+            CoordinateSystem.MILLIMETER_SPACE,
         )
-        np.testing.assert_array_equal(
-            reconstructed.vertex_data.powered_colors,
-            vertex_data.powered_colors,
-        )
-        np.testing.assert_array_equal(
-            reconstructed.vertex_data.travel_vertices,
-            vertex_data.travel_vertices,
-        )
+        self.assertEqual(reconstructed.generation_size, (1, 1))
 
     def test_hybrid_serialization_round_trip(self):
         """Tests serialization for a hybrid raster artifact."""
-        vertex_data = VertexData(
-            powered_vertices=np.array([[1, 2, 3]], dtype=np.float32),
-            powered_colors=np.array([[0, 0, 0, 1]], dtype=np.float32),
-        )
-        texture_data = TextureData(
-            power_texture_data=np.array(
-                [[0, 128], [128, 255]], dtype=np.uint8
-            ),
-            dimensions_mm=(10, 20),
-            position_mm=(1, 2),
-        )
         artifact = WorkPieceArtifact(
             ops=Ops(),
             is_scalable=False,
             source_coordinate_system=CoordinateSystem.PIXEL_SPACE,
-            vertex_data=vertex_data,
-            texture_data=texture_data,
             generation_size=(1, 1),
         )
 
         artifact_dict = artifact.to_dict()
         reconstructed = WorkPieceArtifact.from_dict(artifact_dict)
 
-        self.assertIsNotNone(reconstructed.vertex_data)
-        self.assertIsNotNone(reconstructed.texture_data)
-
-        assert reconstructed.texture_data is not None
-        np.testing.assert_array_equal(
-            reconstructed.texture_data.power_texture_data,
-            texture_data.power_texture_data,
+        self.assertEqual(reconstructed.artifact_type, "WorkPieceArtifact")
+        self.assertFalse(reconstructed.is_scalable)
+        self.assertEqual(
+            reconstructed.source_coordinate_system,
+            CoordinateSystem.PIXEL_SPACE,
         )
-        self.assertEqual(reconstructed.texture_data.dimensions_mm, (10, 20))
-        self.assertEqual(reconstructed.texture_data.position_mm, (1, 2))
+        self.assertEqual(reconstructed.generation_size, (1, 1))
 
     def test_final_job_serialization_round_trip(self):
         """Tests serialization for a final_job artifact."""

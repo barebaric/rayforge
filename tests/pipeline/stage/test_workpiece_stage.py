@@ -6,9 +6,8 @@ from rayforge.pipeline.stage.base import PipelineStage
 from rayforge.pipeline.stage.workpiece_stage import WorkPiecePipelineStage
 from rayforge.context import get_context
 from rayforge.core.ops import Ops
-from rayforge.pipeline.artifact import WorkPieceArtifact, VertexData
+from rayforge.pipeline.artifact import WorkPieceArtifact
 from rayforge.pipeline.coord import CoordinateSystem
-import numpy as np
 
 
 @pytest.fixture
@@ -86,18 +85,12 @@ class TestWorkPiecePipelineStage:
         ops.move_to(0, 0, 0)
         ops.line_to(1, 1, 0)
 
-        vertex_data = VertexData(
-            powered_vertices=np.array([[0, 0, 0], [1, 1, 0]]),
-            powered_colors=np.array([[1, 1, 1, 1], [1, 1, 1, 1]]),
-        )
-
         chunk_artifact = WorkPieceArtifact(
             ops=ops,
             is_scalable=True,
             source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
             source_dimensions=(10.0, 10.0),
             generation_size=(10.0, 10.0),
-            vertex_data=vertex_data,
         )
 
         handle = get_context().artifact_store.put(
