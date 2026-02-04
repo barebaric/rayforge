@@ -201,10 +201,11 @@ class SimulationOverlay(CanvasElement):
             return
 
         min_speed, max_speed = self.timeline.speed_range
+        line_width = self._get_line_width_mm()
 
         # Draw each operation with heatmap color and power transparency
         for cmd, state, start_pos in steps:
-            ctx.set_line_width(0.2)
+            ctx.set_line_width(line_width)
             ctx.set_dash([])
 
             if cmd.is_travel_command():
@@ -233,7 +234,7 @@ class SimulationOverlay(CanvasElement):
                     ctx.line_to(seg_end[0], seg_end[1])
                     ctx.stroke()
             elif isinstance(cmd, ScanLinePowerCommand):
-                self._draw_scanline(ctx, cmd, start_pos, state)
+                self._draw_scanline(ctx, cmd, start_pos, state, line_width)
             elif cmd.end:  # This handles LineToCommand
                 ctx.move_to(start_pos[0], start_pos[1])
                 ctx.line_to(cmd.end[0], cmd.end[1])
@@ -242,7 +243,7 @@ class SimulationOverlay(CanvasElement):
         # Draw laser head position indicator
         current_pos = self.get_current_position()
         if current_pos:
-            self._draw_laser_head(ctx, current_pos)
+            self._draw_laser_head(ctx, current_pos, line_width)
 
     def _draw_scanline(
         self,
@@ -250,6 +251,7 @@ class SimulationOverlay(CanvasElement):
         cmd: ScanLinePowerCommand,
         start_pos: tuple,
         state: State,
+        line_width: float,
     ):
         """Draws a ScanLinePowerCommand as a series of colored segments."""
         if cmd.end is None:
@@ -278,34 +280,59 @@ class SimulationOverlay(CanvasElement):
             seg_end_pt = p_start + t_end * line_vec
 
             ctx.set_source_rgba(r, g, b, alpha)
+            ctx.set_line_width(line_width)
             ctx.move_to(seg_start_pt[0], seg_start_pt[1])
             ctx.line_to(seg_end_pt[0], seg_end_pt[1])
             ctx.stroke()
 
-    def _draw_laser_head(self, ctx: cairo.Context, pos: Tuple[float, float]):
+    def _draw_laser_head(
+        self,
+        ctx: cairo.Context,
+        pos: Tuple[float, float],
+        line_width: float,
+    ):
         """Draws the laser head indicator at the given position in mm."""
         x, y = pos
 
         # Draw a crosshair with circle
         ctx.set_source_rgba(1.0, 0.0, 0.0, 0.8)  # Red with transparency
-        ctx.set_line_width(0.2)
+        ctx.set_line_width(line_width)
 
-        # Circle (3mm radius)
-        ctx.arc(x, y, 3.0, 0, 2 * 3.14159)
+        radius = self._get_px_to_mm(9.0)
+        arm = self._get_px_to_mm(18.0)
+        dot = self._get_px_to_mm(1.5)
+
+        ctx.arc(x, y, radius, 0, 2 * 3.14159)
         ctx.stroke()
 
-        # Crosshair lines (6mm each direction)
-        ctx.move_to(x - 6.0, y)
-        ctx.line_to(x + 6.0, y)
+        ctx.move_to(x - arm, y)
+        ctx.line_to(x + arm, y)
         ctx.stroke()
 
-        ctx.move_to(x, y - 6.0)
-        ctx.line_to(x, y + 6.0)
+        ctx.move_to(x, y - arm)
+        ctx.line_to(x, y + arm)
         ctx.stroke()
 
         # Center dot
-        ctx.arc(x, y, 0.5, 0, 2 * 3.14159)
+        ctx.arc(x, y, dot, 0, 2 * 3.14159)
         ctx.fill()
+
+    def _get_line_width_mm(self) -> float:
+        if not self.canvas:
+            return 0.2
+        view_ppm_x, view_ppm_y = self.canvas.get_view_scale()
+        if view_ppm_x <= 1e-9 or view_ppm_y <= 1e-9:
+            return 0.2
+        return 2.0 / max(view_ppm_x, view_ppm_y)
+
+    def _get_px_to_mm(self, px: float) -> float:
+        if not self.canvas:
+            return px
+        view_ppm_x, view_ppm_y = self.canvas.get_view_scale()
+        ppm = max(view_ppm_x, view_ppm_y)
+        if ppm <= 1e-9:
+            return px
+        return px / ppm
 
     def draw_overlay(self, ctx: cairo.Context):
         """
