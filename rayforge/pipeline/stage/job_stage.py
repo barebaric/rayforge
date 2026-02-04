@@ -1,5 +1,7 @@
 from __future__ import annotations
 import logging
+import sys
+import threading
 from typing import TYPE_CHECKING, Optional, Callable
 from blinker import Signal
 import multiprocessing as mp
@@ -113,9 +115,12 @@ class JobPipelineStage(PipelineStage):
 
         self._artifact_manager.invalidate_for_job()
 
-        # Create an adoption event for the handshake protocol
-        manager = mp.Manager()
-        self._adoption_event = manager.Event()
+        use_thread = sys.platform == "darwin" and hasattr(sys, "_MEIPASS")
+        if use_thread:
+            self._adoption_event = threading.Event()
+        else:
+            manager = mp.Manager()
+            self._adoption_event = manager.Event()
 
         job_desc = JobDescription(
             step_artifact_handles_by_uid=step_handles,
@@ -176,16 +181,28 @@ class JobPipelineStage(PipelineStage):
                     )
 
         # We no longer need _on_job_assembly_complete
-        task = self._task_manager.run_process(
-            make_job_artifact_in_subprocess,
-            self._artifact_manager._store,
-            job_description_dict=job_desc.__dict__,
-            creator_tag="job",
-            key=JobKey,
-            when_done=when_done_callback,
-            when_event=self._on_job_task_event,
-            adoption_event=self._adoption_event,
-        )
+        if use_thread:
+            task = self._task_manager.run_thread_with_proxy(
+                make_job_artifact_in_subprocess,
+                self._artifact_manager._store,
+                job_description_dict=job_desc.__dict__,
+                creator_tag="job",
+                key=JobKey,
+                when_done=when_done_callback,
+                when_event=self._on_job_task_event,
+                adoption_event=self._adoption_event,
+            )
+        else:
+            task = self._task_manager.run_process(
+                make_job_artifact_in_subprocess,
+                self._artifact_manager._store,
+                job_description_dict=job_desc.__dict__,
+                creator_tag="job",
+                key=JobKey,
+                when_done=when_done_callback,
+                when_event=self._on_job_task_event,
+                adoption_event=self._adoption_event,
+            )
         self._active_task = task
 
     def _on_job_task_event(self, task: "Task", event_name: str, data: dict):

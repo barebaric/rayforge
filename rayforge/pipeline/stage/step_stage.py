@@ -1,6 +1,8 @@
 from __future__ import annotations
 import logging
 import math
+import sys
+import threading
 from typing import TYPE_CHECKING, Dict, Optional
 import multiprocessing as mp
 from contextlib import ExitStack
@@ -12,7 +14,6 @@ from ..artifact import (
 from .base import PipelineStage
 
 if TYPE_CHECKING:
-    import threading
     from ...core.doc import Doc
     from ...core.step import Step
     from ...machine.models.machine import Machine
@@ -205,29 +206,48 @@ class StepPipelineStage(PipelineStage):
         def when_event_callback(task: "Task", event_name: str, data: dict):
             self._on_task_event(task, event_name, data, step)
 
-        # Create an adoption event for the handshake protocol
-        # Use Manager to create a picklable Event that can be passed
-        # through queues
-        manager = mp.Manager()
-        adoption_event = manager.Event()
+        use_thread = sys.platform == "darwin" and hasattr(sys, "_MEIPASS")
+        if use_thread:
+            adoption_event = threading.Event()
+        else:
+            manager = mp.Manager()
+            adoption_event = manager.Event()
         self._adoption_events[step.uid] = adoption_event
 
-        task = self._task_manager.run_process(
-            make_step_artifact_in_subprocess,
-            self._artifact_manager._store,
-            assembly_info,
-            step.uid,
-            generation_id,
-            step.per_step_transformers_dicts,
-            machine.max_cut_speed,
-            machine.max_travel_speed,
-            machine.acceleration,
-            "step",
-            adoption_event=adoption_event,
-            key=step.uid,
-            when_done=when_done_callback,
-            when_event=when_event_callback,  # Connect event listener
-        )
+        if use_thread:
+            task = self._task_manager.run_thread_with_proxy(
+                make_step_artifact_in_subprocess,
+                self._artifact_manager._store,
+                assembly_info,
+                step.uid,
+                generation_id,
+                step.per_step_transformers_dicts,
+                machine.max_cut_speed,
+                machine.max_travel_speed,
+                machine.acceleration,
+                "step",
+                adoption_event=adoption_event,
+                key=step.uid,
+                when_done=when_done_callback,
+                when_event=when_event_callback,
+            )
+        else:
+            task = self._task_manager.run_process(
+                make_step_artifact_in_subprocess,
+                self._artifact_manager._store,
+                assembly_info,
+                step.uid,
+                generation_id,
+                step.per_step_transformers_dicts,
+                machine.max_cut_speed,
+                machine.max_travel_speed,
+                machine.acceleration,
+                "step",
+                adoption_event=adoption_event,
+                key=step.uid,
+                when_done=when_done_callback,
+                when_event=when_event_callback,  # Connect event listener
+            )
         self._active_tasks[step.uid] = task
 
     def _on_task_event(

@@ -2,6 +2,8 @@ from __future__ import annotations
 import logging
 import math
 import multiprocessing as mp
+import sys
+import threading
 from typing import TYPE_CHECKING, Dict, Tuple, Optional
 from blinker import Signal
 from copy import deepcopy
@@ -229,28 +231,50 @@ class WorkPiecePipelineStage(PipelineStage):
         world_workpiece = workpiece.in_world()
         workpiece_dict = world_workpiece.to_dict()
 
-        # Create an adoption event for the handshake protocol
-        manager = mp.Manager()
-        adoption_event = manager.Event()
+        use_thread = sys.platform == "darwin" and hasattr(sys, "_MEIPASS")
+        if use_thread:
+            adoption_event = threading.Event()
+        else:
+            manager = mp.Manager()
+            adoption_event = manager.Event()
         self._adoption_events[key] = adoption_event
 
-        task = self._task_manager.run_process(
-            make_workpiece_artifact_in_subprocess,
-            self._artifact_manager._store,
-            workpiece_dict,
-            step.opsproducer_dict,
-            step.modifiers_dicts,
-            step.per_workpiece_transformers_dicts,
-            selected_laser.to_dict(),
-            settings,
-            generation_id,
-            workpiece.size,
-            "workpiece",
-            adoption_event=adoption_event,
-            key=key,
-            when_done=when_done_callback,
-            when_event=self._on_task_event_received,
-        )
+        if use_thread:
+            task = self._task_manager.run_thread_with_proxy(
+                make_workpiece_artifact_in_subprocess,
+                self._artifact_manager._store,
+                workpiece_dict,
+                step.opsproducer_dict,
+                step.modifiers_dicts,
+                step.per_workpiece_transformers_dicts,
+                selected_laser.to_dict(),
+                settings,
+                generation_id,
+                workpiece.size,
+                "workpiece",
+                adoption_event=adoption_event,
+                key=key,
+                when_done=when_done_callback,
+                when_event=self._on_task_event_received,
+            )
+        else:
+            task = self._task_manager.run_process(
+                make_workpiece_artifact_in_subprocess,
+                self._artifact_manager._store,
+                workpiece_dict,
+                step.opsproducer_dict,
+                step.modifiers_dicts,
+                step.per_workpiece_transformers_dicts,
+                selected_laser.to_dict(),
+                settings,
+                generation_id,
+                workpiece.size,
+                "workpiece",
+                adoption_event=adoption_event,
+                key=key,
+                when_done=when_done_callback,
+                when_event=self._on_task_event_received,
+            )
         self._active_tasks[key] = task
 
     def _on_task_event_received(

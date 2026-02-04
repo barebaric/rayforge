@@ -17,11 +17,63 @@ from typing import (
 from blinker import Signal
 from ..util.glib import idle_add
 from .context import ExecutionContext
+from .proxy import BaseExecutionContext
 from .task import Task
 from .pool import WorkerPoolManager
 
 
 logger = logging.getLogger(__name__)
+
+
+class ThreadExecutionProxy(BaseExecutionContext):
+    def __init__(
+        self,
+        context: ExecutionContext,
+        event_callback: Optional[Callable[[str, dict], None]] = None,
+        base_progress: float = 0.0,
+        progress_range: float = 1.0,
+        total: float = 1.0,
+    ):
+        super().__init__(
+            base_progress=base_progress,
+            progress_range=progress_range,
+            total=total,
+        )
+        self._context = context
+        self._event_callback = event_callback
+
+    def _report_normalized_progress(self, progress: float):
+        progress = max(0.0, min(1.0, progress))
+        scaled_progress = self._base + (progress * self._range)
+        self._context.set_progress(scaled_progress)
+
+    def set_message(self, message: str):
+        self._context.set_message(message)
+
+    def send_event(self, name: str, data: Optional[dict] = None):
+        if self._event_callback is not None:
+            self._event_callback(name, data if data is not None else {})
+
+    def _create_sub_context(
+        self,
+        base_progress: float,
+        progress_range: float,
+        total: float,
+        **kwargs,
+    ) -> "ThreadExecutionProxy":
+        return ThreadExecutionProxy(
+            self._context,
+            event_callback=self._event_callback,
+            base_progress=base_progress,
+            progress_range=progress_range,
+            total=total,
+        )
+
+    def is_cancelled(self) -> bool:
+        return self._context.is_cancelled()
+
+    def flush(self):
+        self._context.flush()
 
 
 class TaskManager:
@@ -195,6 +247,37 @@ class TaskManager:
 
         # We create a task with the async wrapper.
         # The original sync function's args/kwargs are passed through.
+        task = Task(
+            thread_wrapper, *args, key=key, when_done=when_done, **kwargs
+        )
+        self.add_task(task)
+        return task
+
+    def run_thread_with_proxy(
+        self,
+        func: Callable[..., Any],
+        *args: Any,
+        key: Optional[Any] = None,
+        when_done: Optional[Callable[[Task], None]] = None,
+        when_event: Optional[Callable[[Task, str, dict], None]] = None,
+        **kwargs: Any,
+    ) -> Task:
+        async def thread_wrapper(
+            context: ExecutionContext, *args: Any, **kwargs: Any
+        ) -> Any:
+            task = context.task
+
+            def send_event(name: str, data: dict):
+                if when_event and task is not None:
+                    self.schedule_on_main_thread(
+                        when_event, task, name, data
+                    )
+
+            proxy = ThreadExecutionProxy(context, event_callback=send_event)
+            bound_func = lambda: func(proxy, *args, **kwargs)
+            result = await self.run_in_executor(bound_func)
+            return result
+
         task = Task(
             thread_wrapper, *args, key=key, when_done=when_done, **kwargs
         )
