@@ -57,7 +57,7 @@ TMP_REQUIREMENTS=$(mktemp)
 grep -v -i '^PyOpenGL_accelerate' requirements.txt > "$TMP_REQUIREMENTS"
 python -m pip install -r "$TMP_REQUIREMENTS"
 rm -f "$TMP_REQUIREMENTS"
-python -m pip install PyOpenGL_accelerate==3.1.9 || \
+python -m pip install PyOpenGL_accelerate==3.1.10 || \
     echo "PyOpenGL_accelerate install failed; continuing."
 
 bash scripts/update_translations.sh --compile-only
