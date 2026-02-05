@@ -157,6 +157,9 @@ SH
         libvips.42.dylib \
         libvips-cpp.42.dylib \
         libOpenEXR-3_4.33.dylib \
+        libOpenEXRCore-3_4.33.dylib \
+        libIex-3_4.33.dylib \
+        libIlmThread-3_4.33.dylib \
         libImath-3_2.30.dylib \
         libarchive.13.dylib \
         libcfitsio.10.dylib \
@@ -198,6 +201,26 @@ SH
         "$BREW_PREFIX/opt/gettext/lib" \
         "/usr/local/opt/gettext/lib" \
         "/opt/homebrew/opt/gettext/lib"
+    copy_keg_lib libOpenEXR-3_4.33.dylib \
+        "$BREW_PREFIX/opt/openexr/lib" \
+        "/usr/local/opt/openexr/lib" \
+        "/opt/homebrew/opt/openexr/lib"
+    copy_keg_lib libOpenEXRCore-3_4.33.dylib \
+        "$BREW_PREFIX/opt/openexr/lib" \
+        "/usr/local/opt/openexr/lib" \
+        "/opt/homebrew/opt/openexr/lib"
+    copy_keg_lib libIex-3_4.33.dylib \
+        "$BREW_PREFIX/opt/openexr/lib" \
+        "/usr/local/opt/openexr/lib" \
+        "/opt/homebrew/opt/openexr/lib"
+    copy_keg_lib libIlmThread-3_4.33.dylib \
+        "$BREW_PREFIX/opt/openexr/lib" \
+        "/usr/local/opt/openexr/lib" \
+        "/opt/homebrew/opt/openexr/lib"
+    copy_keg_lib libImath-3_2.30.dylib \
+        "$BREW_PREFIX/opt/imath/lib" \
+        "/usr/local/opt/imath/lib" \
+        "/opt/homebrew/opt/imath/lib"
     if [ ! -f "$FW_DIR/libpng16.16.dylib" ]; then
         for lib_dir in \
             "$BREW_PREFIX/opt/libpng/lib" \
