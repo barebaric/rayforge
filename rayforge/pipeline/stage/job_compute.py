@@ -11,34 +11,28 @@ from ...core.ops import Ops
 from ...machine.models.machine import Machine
 from ...shared.tasker.progress import ProgressContext
 from ..artifact import JobArtifact, StepOpsArtifact
+from ..artifact.base import VertexData
 from ..encoder.vertexencoder import VertexEncoder
 
 logger = logging.getLogger(__name__)
 
 
-def compute_job_artifact(
+def _assemble_final_ops(
     doc: Doc,
     step_artifacts_by_uid: Dict[str, StepOpsArtifact],
-    machine: Machine,
     context: Optional[ProgressContext] = None,
-) -> JobArtifact:
+) -> Ops:
     """
-    Computes a JobArtifact from a Doc and StepOpsArtifacts.
-
-    This function aggregates pre-computed StepOpsArtifacts, combines their
-    Ops, and encodes the result into a final JobArtifact containing G-code
-    and preview data.
+    Assembles final ops from step artifacts across layers.
 
     Args:
         doc: The document containing layers and workflow steps.
         step_artifacts_by_uid: Dictionary mapping step UIDs to their
             StepOpsArtifacts.
-        machine: The machine model for encoding and parameters.
         context: Optional ProgressContext for progress reporting.
 
     Returns:
-        A JobArtifact containing the final G-code, vertex data, and
-        metadata.
+        An Ops object containing the assembled operations.
     """
 
     def _set_progress(progress: float, message: str = ""):
@@ -87,13 +81,75 @@ def compute_job_artifact(
             "Generating G-code with preamble/postscript only."
         )
 
+    return final_ops
+
+
+def _calculate_time_estimate(
+    final_ops: Ops,
+    machine: Machine,
+    context: Optional[ProgressContext] = None,
+) -> Optional[float]:
+    """
+    Calculates time estimate from operations.
+
+    Args:
+        final_ops: The operations to estimate time for.
+        machine: The machine model for parameters.
+        context: Optional ProgressContext for progress reporting.
+
+    Returns:
+        Estimated time in seconds, or None if not calculable.
+    """
+
+    def _set_progress(progress: float, message: str = ""):
+        if context:
+            context.set_progress(progress)
+            context.set_message(message)
+
     _set_progress(0.7, _("Calculating final time and distance estimates..."))
-    final_time = final_ops.estimate_time(
+    return final_ops.estimate_time(
         default_cut_speed=machine.max_cut_speed,
         default_travel_speed=machine.max_travel_speed,
         acceleration=machine.acceleration,
     )
-    final_distance = final_ops.distance()
+
+
+def _calculate_distance(final_ops: Ops) -> float:
+    """
+    Calculates total distance from operations.
+
+    Args:
+        final_ops: The operations to calculate distance for.
+
+    Returns:
+        Total distance traveled.
+    """
+    return final_ops.distance()
+
+
+def _encode_gcode_and_opmap(
+    final_ops: Ops,
+    doc: Doc,
+    machine: Machine,
+    context: Optional[ProgressContext] = None,
+) -> tuple[np.ndarray, np.ndarray]:
+    """
+    Encodes operations to G-code and operation map.
+
+    Args:
+        final_ops: The operations to encode.
+        doc: The document for encoding context.
+        machine: The machine model for encoding.
+        context: Optional ProgressContext for progress reporting.
+
+    Returns:
+        A tuple of (machine_code_bytes, op_map_bytes).
+    """
+
+    def _set_progress(progress: float, message: str = ""):
+        if context:
+            context.set_progress(progress)
+            context.set_message(message)
 
     _set_progress(0.8, _("Generating G-code..."))
     gcode_str, op_map_obj = machine.encode_ops(final_ops, doc)
@@ -104,9 +160,74 @@ def compute_job_artifact(
     op_map_str = json.dumps(asdict(op_map_obj))
     op_map_bytes = np.frombuffer(op_map_str.encode("utf-8"), dtype=np.uint8)
 
+    return machine_code_bytes, op_map_bytes
+
+
+def _encode_vertex_data(
+    final_ops: Ops,
+    context: Optional[ProgressContext] = None,
+) -> VertexData:
+    """
+    Encodes operations to vertex data for preview.
+
+    Args:
+        final_ops: The operations to encode.
+        context: Optional ProgressContext for progress reporting.
+
+    Returns:
+        VertexData object containing vertex arrays for preview rendering.
+    """
+
+    def _set_progress(progress: float, message: str = ""):
+        if context:
+            context.set_progress(progress)
+            context.set_message(message)
+
     _set_progress(0.9, _("Encoding paths for preview..."))
     vertex_encoder = VertexEncoder()
-    vertex_data = vertex_encoder.encode(final_ops)
+    return vertex_encoder.encode(final_ops)
+
+
+def compute_job_artifact(
+    doc: Doc,
+    step_artifacts_by_uid: Dict[str, StepOpsArtifact],
+    machine: Machine,
+    context: Optional[ProgressContext] = None,
+) -> JobArtifact:
+    """
+    Computes a JobArtifact from a Doc and StepOpsArtifacts.
+
+    This function aggregates pre-computed StepOpsArtifacts, combines their
+    Ops, and encodes the result into a final JobArtifact containing G-code
+    and preview data.
+
+    Args:
+        doc: The document containing layers and workflow steps.
+        step_artifacts_by_uid: Dictionary mapping step UIDs to their
+            StepOpsArtifacts.
+        machine: The machine model for encoding and parameters.
+        context: Optional ProgressContext for progress reporting.
+
+    Returns:
+        A JobArtifact containing the final G-code, vertex data, and
+        metadata.
+    """
+
+    def _set_progress(progress: float, message: str = ""):
+        if context:
+            context.set_progress(progress)
+            context.set_message(message)
+
+    final_ops = _assemble_final_ops(doc, step_artifacts_by_uid, context)
+
+    final_time = _calculate_time_estimate(final_ops, machine, context)
+    final_distance = _calculate_distance(final_ops)
+
+    machine_code_bytes, op_map_bytes = _encode_gcode_and_opmap(
+        final_ops, doc, machine, context
+    )
+
+    vertex_data = _encode_vertex_data(final_ops, context)
 
     _set_progress(1.0, _("Job finalization complete"))
 

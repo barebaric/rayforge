@@ -136,10 +136,10 @@ class WorkPieceElement(CanvasElement):
             self._on_ops_generation_finished
         )
         # Only process view_artifact_updated, not view_artifact_created.
-        # The worker sends view_artifact_created BEFORE drawing to the bitmap,
-        # so processing it would read an empty/transparent bitmap.
-        # We wait for view_artifact_updated which is sent AFTER drawing
-        # completes.
+        # The worker sends view_artifact_created BEFORE rendering starts,
+        # and view_artifact_updated events are sent DURING rendering for
+        # progressive updates and AFTER rendering completes.
+        # We process view_artifact_updated to support progressive rendering.
         self.pipeline.workpiece_view_updated.connect(
             self._on_view_artifact_updated
         )

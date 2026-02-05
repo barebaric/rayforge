@@ -36,7 +36,7 @@ class StepPipelineStage(PipelineStage):
         self,
         task_manager: "TaskManager",
         artifact_manager: "ArtifactManager",
-        machine: "Machine",
+        machine: Optional["Machine"],
     ):
         super().__init__(task_manager, artifact_manager)
         self._machine = machine
@@ -139,18 +139,38 @@ class StepPipelineStage(PipelineStage):
 
         self._artifact_manager.invalidate_for_job()
 
-    def _trigger_assembly(self, step: "Step"):
-        """Checks dependencies and launches the assembly task if ready."""
-        if not step.layer or step.uid in self._active_tasks:
-            return
-
-        machine = self._machine
-        if not machine:
+    def _validate_assembly_dependencies(self, step: "Step") -> bool:
+        """Validates that assembly dependencies are met."""
+        if not step.layer:
+            return False
+        if step.uid in self._active_tasks:
+            return False
+        if not self._machine:
             logger.warning(
                 f"Cannot assemble step {step.uid}, no machine configured."
             )
-            return
+            return False
+        return True
 
+    def _validate_handle_geometry_match(self, handle, workpiece) -> bool:
+        """
+        Validates that handle geometry matches current workpiece size.
+        Returns True if geometry matches or handle is scalable.
+        """
+        if handle.is_scalable:
+            return True
+        hw, hh = handle.generation_size
+        ww, wh = workpiece.size
+        return math.isclose(hw, ww, abs_tol=1e-6) and math.isclose(
+            hh, wh, abs_tol=1e-6
+        )
+
+    def _collect_assembly_info(self, step: "Step") -> Optional[list]:
+        """
+        Collects assembly info from all workpieces.
+        Returns None if any dependency is not ready.
+        """
+        assert step.layer is not None
         assembly_info = []
         with ExitStack() as stack:
             for wp in step.layer.all_workpieces:
@@ -158,23 +178,11 @@ class StepPipelineStage(PipelineStage):
                     step.uid, wp.uid
                 )
                 if handle is None:
-                    return  # A dependency is not ready; abort.
+                    return None
 
-                # Ensure the handle in the cache actually matches the
-                # current geometry of the workpiece. If the user is resizing,
-                # the cache might hold the *old* artifact while the new one is
-                # generating. We must wait for the new one.
-                if not handle.is_scalable:
-                    hw, hh = handle.generation_size
-                    ww, wh = wp.size
-                    if not (
-                        math.isclose(hw, ww, abs_tol=1e-6)
-                        and math.isclose(hh, wh, abs_tol=1e-6)
-                    ):
-                        # Stale dependency. Abort assembly until cache updates.
-                        return
+                if not self._validate_handle_geometry_match(handle, wp):
+                    return None
 
-                # Checkout the handle to prevent premature release
                 stack.enter_context(
                     self._artifact_manager.checkout((step.uid, wp.uid))
                 )
@@ -185,32 +193,49 @@ class StepPipelineStage(PipelineStage):
                     "workpiece_dict": wp.in_world().to_dict(),
                 }
                 assembly_info.append(info)
+        return assembly_info
 
-        if not assembly_info:
-            self._cleanup_entry(step.uid, full_invalidation=True)
-            return
-
+    def _prepare_assembly_task(
+        self, step: "Step", assembly_info: list
+    ) -> tuple:
+        """
+        Prepares generation ID, callbacks, and adoption event.
+        Returns (generation_id, when_done, when_event, adoption_event).
+        """
         generation_id = self._generation_id_map.get(step.uid, 0) + 1
         self._generation_id_map[step.uid] = generation_id
-
-        # Mark time as pending in the cache
         self._time_cache[step.uid] = None
-
-        from .step_runner import make_step_artifact_in_subprocess
 
         def when_done_callback(task: "Task"):
             self._on_assembly_complete(task, step, generation_id)
 
-        # Define callback for events from subprocess
         def when_event_callback(task: "Task", event_name: str, data: dict):
             self._on_task_event(task, event_name, data, step)
 
-        # Create an adoption event for the handshake protocol
-        # Use Manager to create a picklable Event that can be passed
-        # through queues
         manager = mp.Manager()
         adoption_event = manager.Event()
         self._adoption_events[step.uid] = adoption_event
+
+        return (
+            generation_id,
+            when_done_callback,
+            when_event_callback,
+            adoption_event,
+        )
+
+    def _launch_assembly_task(
+        self,
+        step: "Step",
+        assembly_info: list,
+        generation_id: int,
+        when_done,
+        when_event,
+        adoption_event,
+    ):
+        """Launches the subprocess assembly task."""
+        machine = self._machine
+        assert machine is not None
+        from .step_runner import make_step_artifact_in_subprocess
 
         task = self._task_manager.run_process(
             make_step_artifact_in_subprocess,
@@ -225,10 +250,71 @@ class StepPipelineStage(PipelineStage):
             "step",
             adoption_event=adoption_event,
             key=step.uid,
-            when_done=when_done_callback,
-            when_event=when_event_callback,  # Connect event listener
+            when_done=when_done,
+            when_event=when_event,
         )
         self._active_tasks[step.uid] = task
+
+    def _trigger_assembly(self, step: "Step"):
+        """Checks dependencies and launches the assembly task if ready."""
+        if not self._validate_assembly_dependencies(step):
+            return
+
+        assembly_info = self._collect_assembly_info(step)
+        if not assembly_info:
+            self._cleanup_entry(step.uid, full_invalidation=True)
+            return
+
+        generation_id, when_done, when_event, adoption_event = (
+            self._prepare_assembly_task(step, assembly_info)
+        )
+
+        self._launch_assembly_task(
+            step,
+            assembly_info,
+            generation_id,
+            when_done,
+            when_event,
+            adoption_event,
+        )
+
+    def _is_stale_generation_id(
+        self, step_uid: str, generation_id: Optional[int]
+    ) -> bool:
+        """Checks if the generation ID is stale."""
+        return self._generation_id_map.get(step_uid) != generation_id
+
+    def _handle_render_artifact_ready(
+        self, step_uid: str, step: "Step", handle_dict: dict
+    ):
+        """Handles the render artifact ready event."""
+        handle = self._artifact_manager.adopt_artifact(step_uid, handle_dict)
+        if not isinstance(handle, StepRenderArtifactHandle):
+            raise TypeError("Expected a StepRenderArtifactHandle")
+
+        self._artifact_manager.put_step_render_handle(step_uid, handle)
+        self.render_artifact_ready.send(self, step=step)
+
+    def _handle_ops_artifact_ready(self, step_uid: str, handle_dict: dict):
+        """Handles the ops artifact ready event."""
+        handle = self._artifact_manager.adopt_artifact(step_uid, handle_dict)
+        if not isinstance(handle, StepOpsArtifactHandle):
+            raise TypeError("Expected a StepOpsArtifactHandle")
+
+        self._artifact_manager.put_step_ops_handle(step_uid, handle)
+
+    def _handle_time_estimate_ready(
+        self, step_uid: str, step: "Step", time_estimate: float
+    ):
+        """Handles the time estimate ready event."""
+        self._time_cache[step_uid] = time_estimate
+        self.time_estimate_ready.send(self, step=step, time=time_estimate)
+
+    def _set_adoption_event(self, step_uid: str):
+        """Sets the adoption event to unblock the worker."""
+        adoption_event = self._adoption_events.get(step_uid)
+        if adoption_event is not None:
+            adoption_event.set()
 
     def _on_task_event(
         self, task: "Task", event_name: str, data: dict, step: "Step"
@@ -236,50 +322,28 @@ class StepPipelineStage(PipelineStage):
         """Handles events broadcast from the subprocess."""
         step_uid = step.uid
         generation_id = data.get("generation_id")
-        # Ignore events from stale tasks
-        if self._generation_id_map.get(step_uid) != generation_id:
+
+        if self._is_stale_generation_id(step_uid, generation_id):
             logger.debug(f"Ignoring stale event '{event_name}' for {step_uid}")
             return
 
         try:
             if event_name == "render_artifact_ready":
-                handle_dict = data["handle_dict"]
-                handle = self._artifact_manager.adopt_artifact(
-                    step_uid, handle_dict
+                self._handle_render_artifact_ready(
+                    step_uid, step, data["handle_dict"]
                 )
-                if not isinstance(handle, StepRenderArtifactHandle):
-                    raise TypeError("Expected a StepRenderArtifactHandle")
-
-                self._artifact_manager.put_step_render_handle(step_uid, handle)
-                self.render_artifact_ready.send(self, step=step)
 
             elif event_name == "ops_artifact_ready":
-                handle_dict = data["handle_dict"]
-                handle = self._artifact_manager.adopt_artifact(
-                    step_uid, handle_dict
-                )
-                if not isinstance(handle, StepOpsArtifactHandle):
-                    raise TypeError("Expected a StepOpsArtifactHandle")
-
-                self._artifact_manager.put_step_ops_handle(step_uid, handle)
-
-                # Signal the worker that we've adopted both artifacts
-                adoption_event = self._adoption_events.get(step_uid)
-                if adoption_event is not None:
-                    adoption_event.set()
+                self._handle_ops_artifact_ready(step_uid, data["handle_dict"])
+                self._set_adoption_event(step_uid)
 
             elif event_name == "time_estimate_ready":
-                time_estimate = data["time_estimate"]
-                self._time_cache[step_uid] = time_estimate
-                self.time_estimate_ready.send(
-                    self, step=step, time=time_estimate
+                self._handle_time_estimate_ready(
+                    step_uid, step, data["time_estimate"]
                 )
         except Exception as e:
             logger.error(f"Error handling task event '{event_name}': {e}")
-            # Still set the event to unblock the worker
-            adoption_event = self._adoption_events.get(step_uid)
-            if adoption_event is not None:
-                adoption_event.set()
+            self._set_adoption_event(step_uid)
 
     def _on_assembly_complete(
         self, task: "Task", step: "Step", task_generation_id: int

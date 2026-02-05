@@ -220,74 +220,103 @@ class WorkPieceViewPipelineStage(PipelineStage):
         step_uid, workpiece_uid = key
 
         if event_name == "view_artifact_created":
-            try:
-                handle_dict = data["handle_dict"]
-                handle = self._artifact_manager.adopt_artifact(
-                    key, handle_dict
-                )
-                if not isinstance(handle, WorkPieceViewArtifactHandle):
-                    raise TypeError("Expected WorkPieceViewArtifactHandle")
-
-                logger.debug(
-                    f"Adopting new view artifact: {handle.shm_name} "
-                    f"for key {key}"
-                )
-
-                # Retain the handle to keep it alive while this stage
-                # holds a reference to it (borrower pattern)
-                self._artifact_manager.retain_handle(handle)
-
-                # Release the previous handle for this key if one exists,
-                # as it is now obsolete.
-                old_handle = self._current_view_handles.get(key)
-                if old_handle:
-                    logger.debug(
-                        f"Releasing old view artifact: {old_handle.shm_name} "
-                        f"for key {key}"
-                    )
-                    self._artifact_manager.release_handle(old_handle)
-
-                # Store the new handle as the current one
-                self._current_view_handles[key] = handle
-                logger.debug(
-                    f"Stored new view artifact: {handle.shm_name} "
-                    f"for key {key}"
-                )
-
-                # Initialize render context for progressive chunk rendering
-                # This will be used by _on_workpiece_chunk_available
-                self._live_render_contexts[key] = {
-                    "handle": handle,
-                    "generation_id": 0,  # Will be updated when chunks arrive
-                    "render_context": self._last_context_cache.get(key),
-                }
-                logger.debug(f"Initialized live render context for {key}")
-
-                self.view_artifact_created.send(
-                    self,
-                    step_uid=step_uid,
-                    workpiece_uid=workpiece_uid,
-                    handle=handle,
-                )
-                # Fire old signal for backward compatibility, enabling
-                # progressive rendering for existing UI code.
-                self.view_artifact_ready.send(
-                    self,
-                    step_uid=step_uid,
-                    workpiece_uid=workpiece_uid,
-                    handle=handle,
-                )
-            except Exception as e:
-                logger.error(f"Failed to process view_artifact_created: {e}")
-
-        elif event_name == "view_artifact_updated":
-            handle = self._current_view_handles.get(key)
-            self.view_artifact_updated.send(
-                self,
-                step_uid=step_uid,
-                workpiece_uid=workpiece_uid,
-                handle=handle,
+            self._handle_view_artifact_created(
+                key, step_uid, workpiece_uid, data
             )
+        elif event_name == "view_artifact_updated":
+            self._handle_view_artifact_updated(key, step_uid, workpiece_uid)
+
+    def _handle_view_artifact_created(
+        self, key: ViewKey, step_uid: str, workpiece_uid: str, data: dict
+    ):
+        """Handles the view_artifact_created event."""
+        try:
+            handle = self._adopt_view_handle(key, data)
+            if handle is None:
+                return
+
+            self._replace_current_view_handle(key, handle)
+            self._initialize_live_render_context(key, handle)
+            self._send_view_artifact_created_signals(
+                step_uid, workpiece_uid, handle
+            )
+        except Exception as e:
+            logger.error(f"Failed to process view_artifact_created: {e}")
+
+    def _adopt_view_handle(
+        self, key: ViewKey, data: dict
+    ) -> WorkPieceViewArtifactHandle | None:
+        """Adopts a view artifact from the worker process."""
+        handle_dict = data["handle_dict"]
+        handle = self._artifact_manager.adopt_artifact(key, handle_dict)
+        if not isinstance(handle, WorkPieceViewArtifactHandle):
+            raise TypeError("Expected WorkPieceViewArtifactHandle")
+
+        logger.debug(
+            f"Adopting new view artifact: {handle.shm_name} for key {key}"
+        )
+        return handle
+
+    def _replace_current_view_handle(
+        self, key: ViewKey, handle: WorkPieceViewArtifactHandle
+    ):
+        """Replaces the current view handle with a new one."""
+        old_handle = self._current_view_handles.get(key)
+        if old_handle:
+            logger.debug(
+                f"Releasing old view artifact: {old_handle.shm_name} "
+                f"for key {key}"
+            )
+            self._artifact_manager.release_handle(old_handle)
+
+        self._artifact_manager.retain_handle(handle)
+        self._current_view_handles[key] = handle
+        logger.debug(
+            f"Stored new view artifact: {handle.shm_name} for key {key}"
+        )
+
+    def _initialize_live_render_context(
+        self, key: ViewKey, handle: WorkPieceViewArtifactHandle
+    ):
+        """Initializes the live render context for progressive rendering."""
+        self._live_render_contexts[key] = {
+            "handle": handle,
+            "generation_id": 0,
+            "render_context": self._last_context_cache.get(key),
+        }
+        logger.debug(f"Initialized live render context for {key}")
+
+    def _send_view_artifact_created_signals(
+        self,
+        step_uid: str,
+        workpiece_uid: str,
+        handle: WorkPieceViewArtifactHandle,
+    ):
+        """Sends signals when a view artifact is created."""
+        self.view_artifact_created.send(
+            self,
+            step_uid=step_uid,
+            workpiece_uid=workpiece_uid,
+            handle=handle,
+        )
+        self.view_artifact_ready.send(
+            self,
+            step_uid=step_uid,
+            workpiece_uid=workpiece_uid,
+            handle=handle,
+        )
+
+    def _handle_view_artifact_updated(
+        self, key: ViewKey, step_uid: str, workpiece_uid: str
+    ):
+        """Handles the view_artifact_updated event."""
+        handle = self._current_view_handles.get(key)
+        self.view_artifact_updated.send(
+            self,
+            step_uid=step_uid,
+            workpiece_uid=workpiece_uid,
+            handle=handle,
+        )
 
     def _on_workpiece_chunk_available(
         self,
@@ -309,61 +338,108 @@ class WorkPieceViewPipelineStage(PipelineStage):
             f"chunk_handle={chunk_handle.shm_name}"
         )
 
-        # Get or create live render context for this view
-        live_ctx = self._live_render_contexts.get(key)
+        live_ctx = self._get_live_render_context(key)
         if live_ctx is None:
-            # No active live render for this view yet.
-            # This could happen if chunks arrive before a view render
-            # is requested, or if the previous render completed.
-            # For now, we just log and return.
-            # In the future, we might want to auto-start a render.
-            logger.debug(f"No live render context for {key}. Ignoring chunk.")
             return
 
-        # Update generation ID to track the current generation
-        live_ctx["generation_id"] = generation_id
+        if not self._validate_generation_id(live_ctx, key, generation_id):
+            return
 
-        # Check for stale chunks (should not happen with the above update,
-        # but kept for safety if chunks arrive out of order)
+        chunk_artifact = self._get_chunk_artifact(key, chunk_handle)
+        if chunk_artifact is None:
+            return
+
+        view_handle, render_context = self._get_render_components(
+            live_ctx, key, chunk_handle
+        )
+        if view_handle is None or render_context is None:
+            return
+
+        if not self._should_render_chunk(chunk_artifact, key, chunk_handle):
+            return
+
+        self._render_chunk_to_view(
+            key, chunk_handle, view_handle, render_context
+        )
+        self._schedule_throttled_update(key)
+
+    def _get_live_render_context(self, key: ViewKey) -> Dict[str, Any] | None:
+        """Gets the live render context for the given view key."""
+        live_ctx = self._live_render_contexts.get(key)
+        if live_ctx is None:
+            logger.debug(f"No live render context for {key}. Ignoring chunk.")
+        return live_ctx
+
+    def _validate_generation_id(
+        self, live_ctx: Dict[str, Any], key: ViewKey, generation_id: int
+    ) -> bool:
+        """Validates the generation ID for the chunk."""
+        live_ctx["generation_id"] = generation_id
         if live_ctx.get("generation_id") != generation_id:
             logger.debug(
                 f"Stale chunk for {key}. "
                 f"Expected gen_id={live_ctx.get('generation_id')}, "
                 f"got {generation_id}"
             )
-            return
+            return False
+        return True
 
-        # Get the chunk artifact data
+    def _get_chunk_artifact(
+        self, key: ViewKey, chunk_handle: BaseArtifactHandle
+    ) -> WorkPieceArtifact | None:
+        """Retrieves and validates the chunk artifact."""
         try:
             artifact = self._artifact_manager.get_artifact(chunk_handle)
             if artifact is None:
                 logger.warning(f"Could not retrieve chunk artifact for {key}")
-                return
+                return None
             if not isinstance(artifact, WorkPieceArtifact):
                 logger.warning(
                     f"Chunk artifact for {key} is not a WorkPieceArtifact"
                 )
-                return
-            chunk_artifact = artifact
+                return None
+            return artifact
         except Exception as e:
             logger.error(f"Error retrieving chunk artifact for {key}: {e}")
-            return
+            return None
 
+    def _get_render_components(
+        self,
+        live_ctx: Dict[str, Any],
+        key: ViewKey,
+        chunk_handle: BaseArtifactHandle,
+    ) -> tuple[WorkPieceViewArtifactHandle | None, RenderContext | None]:
+        """Gets the view handle and render context from live context."""
         view_handle = live_ctx.get("handle")
         render_context = live_ctx.get("render_context")
         if not view_handle or not render_context:
             logger.warning(f"Missing view_handle or render_context for {key}")
             self._artifact_manager.release_handle(chunk_handle)
-            return
+            return None, None
+        return view_handle, render_context
 
-        # Only render if the chunk has Ops
+    def _should_render_chunk(
+        self,
+        chunk_artifact: WorkPieceArtifact,
+        key: ViewKey,
+        chunk_handle: BaseArtifactHandle,
+    ) -> bool:
+        """Checks if the chunk should be rendered based on its Ops."""
         if not chunk_artifact.ops or chunk_artifact.ops.is_empty():
             logger.debug(f"Chunk for {key} has no Ops, skipping")
             self._artifact_manager.release_handle(chunk_handle)
-            return
+            return False
+        return True
 
+    def _render_chunk_to_view(
+        self,
+        key: ViewKey,
+        chunk_handle: BaseArtifactHandle,
+        view_handle: WorkPieceViewArtifactHandle,
+        render_context: RenderContext,
+    ):
+        """Renders the chunk to the view artifact."""
         try:
-            # Use the Runner function to render the chunk to the view
             success = render_chunk_to_view(
                 self._artifact_manager,
                 chunk_handle.to_dict(),
@@ -385,11 +461,7 @@ class WorkPieceViewPipelineStage(PipelineStage):
                 f"Error rendering chunk for {key}: {e}", exc_info=True
             )
         finally:
-            # Release the chunk handle after processing
             self._artifact_manager.release_handle(chunk_handle)
-
-        # Trigger throttled update notification
-        self._schedule_throttled_update(key)
 
     def _draw_vertices(
         self,
@@ -404,46 +476,62 @@ class WorkPieceViewPipelineStage(PipelineStage):
         ctx.set_line_width(line_width_mm)
         ctx.set_line_cap(cairo.LINE_CAP_SQUARE)
 
-        # Draw Travel & Zero-Power Moves
         if show_travel:
-            if vertex_data.travel_vertices.size > 0:
-                travel_v = vertex_data.travel_vertices.reshape(-1, 2, 3)
-                ctx.set_source_rgba(*color_set.get_rgba("travel"))
-                for start, end in travel_v:
-                    ctx.move_to(start[0], start[1])
-                    ctx.line_to(end[0], end[1])
-                ctx.stroke()
+            self._draw_travel_vertices(ctx, vertex_data, color_set)
+            self._draw_zero_power_vertices(ctx, vertex_data, color_set)
 
-            if vertex_data.zero_power_vertices.size > 0:
-                zero_v = vertex_data.zero_power_vertices.reshape(-1, 2, 3)
-                ctx.set_source_rgba(*color_set.get_rgba("zero_power"))
-                for start, end in zero_v:
-                    ctx.move_to(start[0], start[1])
-                    ctx.line_to(end[0], end[1])
-                ctx.stroke()
-
-        # Draw Powered Moves (Grouped by Color for performance)
-        if vertex_data.powered_vertices.size > 0:
-            powered_v = vertex_data.powered_vertices.reshape(-1, 2, 3)
-            powered_c = vertex_data.powered_colors
-            cut_lut = color_set.get_lut("cut")
-
-            # Use power from the first vertex of each segment for color
-            power_indices = (powered_c[::2, 0] * 255.0).astype(np.uint8)
-            themed_colors_per_segment = cut_lut[power_indices]
-            unique_colors, inverse_indices = np.unique(
-                themed_colors_per_segment, axis=0, return_inverse=True
-            )
-
-            for i, color in enumerate(unique_colors):
-                ctx.set_source_rgba(*color)
-                segment_indices = np.where(inverse_indices == i)[0]
-                for seg_idx in segment_indices:
-                    start, end = powered_v[seg_idx]
-                    ctx.move_to(start[0], start[1])
-                    ctx.line_to(end[0], end[1])
-                ctx.stroke()
+        self._draw_powered_vertices(ctx, vertex_data, color_set)
         ctx.restore()
+
+    def _draw_travel_vertices(
+        self, ctx: cairo.Context, vertex_data, color_set: ColorSet
+    ):
+        """Draws travel vertices onto the cairo context."""
+        if vertex_data.travel_vertices.size > 0:
+            travel_v = vertex_data.travel_vertices.reshape(-1, 2, 3)
+            ctx.set_source_rgba(*color_set.get_rgba("travel"))
+            for start, end in travel_v:
+                ctx.move_to(start[0], start[1])
+                ctx.line_to(end[0], end[1])
+            ctx.stroke()
+
+    def _draw_zero_power_vertices(
+        self, ctx: cairo.Context, vertex_data, color_set: ColorSet
+    ):
+        """Draws zero-power vertices onto the cairo context."""
+        if vertex_data.zero_power_vertices.size > 0:
+            zero_v = vertex_data.zero_power_vertices.reshape(-1, 2, 3)
+            ctx.set_source_rgba(*color_set.get_rgba("zero_power"))
+            for start, end in zero_v:
+                ctx.move_to(start[0], start[1])
+                ctx.line_to(end[0], end[1])
+            ctx.stroke()
+
+    def _draw_powered_vertices(
+        self, ctx: cairo.Context, vertex_data, color_set: ColorSet
+    ):
+        """Draws powered vertices grouped by color for performance."""
+        if vertex_data.powered_vertices.size == 0:
+            return
+
+        powered_v = vertex_data.powered_vertices.reshape(-1, 2, 3)
+        powered_c = vertex_data.powered_colors
+        cut_lut = color_set.get_lut("cut")
+
+        power_indices = (powered_c[::2, 0] * 255.0).astype(np.uint8)
+        themed_colors_per_segment = cut_lut[power_indices]
+        unique_colors, inverse_indices = np.unique(
+            themed_colors_per_segment, axis=0, return_inverse=True
+        )
+
+        for i, color in enumerate(unique_colors):
+            ctx.set_source_rgba(*color)
+            segment_indices = np.where(inverse_indices == i)[0]
+            for seg_idx in segment_indices:
+                start, end = powered_v[seg_idx]
+                ctx.move_to(start[0], start[1])
+                ctx.line_to(end[0], end[1])
+            ctx.stroke()
 
     def _schedule_throttled_update(self, key: ViewKey):
         """

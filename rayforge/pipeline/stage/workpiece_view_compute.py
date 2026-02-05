@@ -88,6 +88,167 @@ def compute_view_dimensions(
     return (x_mm, y_mm, w_mm, h_mm, width_px, height_px)
 
 
+def _encode_vertex_and_texture_data(
+    artifact: WorkPieceArtifact,
+    render_context: RenderContext,
+) -> Tuple[VertexData, Optional[TextureData]]:
+    """
+    Encodes vertex and texture data from a WorkPieceArtifact.
+
+    Args:
+        artifact: The WorkPieceArtifact to encode.
+        render_context: The RenderContext containing rendering parameters.
+
+    Returns:
+        A tuple of (vertex_data, texture_data). texture_data is None for
+        scalable artifacts.
+    """
+    encoder_vertex = VertexEncoder()
+    encoder_texture = TextureEncoder()
+
+    vertex_data = encoder_vertex.encode(artifact.ops)
+
+    texture_data = None
+    if not artifact.is_scalable:
+        px_per_mm_x, px_per_mm_y = render_context.pixels_per_mm
+        width_px = int(round(artifact.generation_size[0] * px_per_mm_x))
+        height_px = int(round(artifact.generation_size[1] * px_per_mm_y))
+
+        if width_px > 0 and height_px > 0:
+            texture_buffer = encoder_texture.encode(
+                artifact.ops,
+                width_px,
+                height_px,
+                render_context.pixels_per_mm,
+            )
+            texture_data = TextureData(
+                power_texture_data=texture_buffer,
+                dimensions_mm=artifact.generation_size,
+                position_mm=(0.0, 0.0),
+            )
+
+    return vertex_data, texture_data
+
+
+def _calculate_render_dimensions(
+    bbox: Tuple[float, float, float, float],
+    render_context: RenderContext,
+) -> Optional[Tuple[int, int, float, float]]:
+    """
+    Calculates pixel dimensions and effective pixels-per-mm for rendering.
+
+    Args:
+        bbox: The content bounding box (x, y, width, height) in mm.
+        render_context: The RenderContext containing rendering parameters.
+
+    Returns:
+        A tuple of (width_px, height_px, effective_ppm_x, effective_ppm_y),
+        or None if dimensions are invalid.
+    """
+    x_mm, y_mm, w_mm, h_mm = bbox
+    ppm_x, ppm_y = render_context.pixels_per_mm
+    margin = render_context.margin_px
+
+    requested_width_px = round(w_mm * ppm_x) + 2 * margin
+    requested_height_px = round(h_mm * ppm_y) + 2 * margin
+
+    width_px = min(requested_width_px, CAIRO_MAX_DIMENSION)
+    height_px = min(requested_height_px, CAIRO_MAX_DIMENSION)
+
+    if width_px <= 2 * margin or height_px <= 2 * margin:
+        return None
+
+    effective_ppm_x = (width_px - 2 * margin) / w_mm if w_mm > 0 else ppm_x
+    effective_ppm_y = (height_px - 2 * margin) / h_mm if h_mm > 0 else ppm_y
+
+    return width_px, height_px, effective_ppm_x, effective_ppm_y
+
+
+def _setup_cairo_context(
+    bitmap: np.ndarray,
+    bbox: Tuple[float, float, float, float],
+    render_context: RenderContext,
+) -> Tuple[cairo.Context, float]:
+    """
+    Sets up a cairo context with appropriate transforms for rendering.
+
+    Args:
+        bitmap: The numpy array to create the surface from.
+        bbox: The content bounding box (x, y, width, height) in mm.
+        render_context: The RenderContext containing rendering parameters.
+
+    Returns:
+        A tuple of (cairo_context, line_width_mm).
+    """
+    height_px, width_px = bitmap.shape[:2]
+    x_mm, y_mm, w_mm, h_mm = bbox
+    margin = render_context.margin_px
+    ppm_x, ppm_y = render_context.pixels_per_mm
+
+    effective_ppm_x = (width_px - 2 * margin) / w_mm if w_mm > 0 else ppm_x
+    effective_ppm_y = (height_px - 2 * margin) / h_mm if h_mm > 0 else ppm_y
+
+    surface = cairo.ImageSurface.create_for_data(
+        memoryview(bitmap), cairo.FORMAT_ARGB32, width_px, height_px
+    )
+    ctx = cairo.Context(surface)
+
+    ctx.translate(margin, height_px - margin)
+    ctx.scale(effective_ppm_x, -effective_ppm_y)
+    ctx.translate(-x_mm, -y_mm)
+
+    line_width_mm = 1.0 / effective_ppm_x if effective_ppm_x > 0 else 1.0
+
+    return ctx, line_width_mm
+
+
+def _render_to_cairo(
+    ctx: cairo.Context,
+    vertex_data: VertexData,
+    texture_data: Optional[TextureData],
+    color_set: ColorSet,
+    render_context: RenderContext,
+    surface: cairo.ImageSurface,
+    progress_context: Optional[ProgressContext] = None,
+) -> None:
+    """
+    Renders texture and vertices to a cairo context.
+
+    Args:
+        ctx: The cairo context to render to.
+        vertex_data: The vertex data to render.
+        texture_data: Optional texture data to render.
+        color_set: The color set for rendering.
+        render_context: The RenderContext containing rendering parameters.
+        surface: The cairo surface for flushing.
+        progress_context: Optional ProgressContext for progress reporting.
+    """
+
+    def _set_progress(progress: float, message: str = ""):
+        if progress_context:
+            progress_context.set_progress(progress)
+            progress_context.set_message(message)
+
+    if texture_data:
+        _draw_texture(ctx, texture_data, color_set)
+        surface.flush()
+        _set_progress(0.3, _("Rendering vertices..."))
+
+    matrix_xx = ctx.get_matrix().xx
+    line_width_mm = 1.0 / matrix_xx if matrix_xx > 0 else 1.0
+
+    for progress, message in _draw_vertices_progressive(
+        ctx,
+        vertex_data,
+        color_set,
+        render_context.show_travel_moves,
+        line_width_mm,
+        surface,
+        num_batches=3,
+    ):
+        _set_progress(0.3 + 0.7 * progress, message)
+
+
 def compute_workpiece_view(
     artifact: WorkPieceArtifact,
     render_context: RenderContext,
@@ -116,29 +277,9 @@ def compute_workpiece_view(
 
     _set_progress(0.0, _("Preparing 2D preview..."))
 
-    encoder_vertex = VertexEncoder()
-    encoder_texture = TextureEncoder()
-
-    vertex_data = encoder_vertex.encode(artifact.ops)
-
-    texture_data = None
-    if not artifact.is_scalable:
-        px_per_mm_x, px_per_mm_y = render_context.pixels_per_mm
-        width_px = int(round(artifact.generation_size[0] * px_per_mm_x))
-        height_px = int(round(artifact.generation_size[1] * px_per_mm_y))
-
-        if width_px > 0 and height_px > 0:
-            texture_buffer = encoder_texture.encode(
-                artifact.ops,
-                width_px,
-                height_px,
-                render_context.pixels_per_mm,
-            )
-            texture_data = TextureData(
-                power_texture_data=texture_buffer,
-                dimensions_mm=artifact.generation_size,
-                position_mm=(0.0, 0.0),
-            )
+    vertex_data, texture_data = _encode_vertex_and_texture_data(
+        artifact, render_context
+    )
 
     bbox = _get_content_bbox(
         vertex_data, texture_data, render_context.show_travel_moves
@@ -147,27 +288,20 @@ def compute_workpiece_view(
         logger.warning(f"No content to render (bbox={bbox}). Returning None.")
         return None
 
-    x_mm, y_mm, w_mm, h_mm = bbox
-    ppm_x, ppm_y = render_context.pixels_per_mm
-    margin = render_context.margin_px
-
-    requested_width_px = round(w_mm * ppm_x) + 2 * margin
-    requested_height_px = round(h_mm * ppm_y) + 2 * margin
-
-    width_px = min(requested_width_px, CAIRO_MAX_DIMENSION)
-    height_px = min(requested_height_px, CAIRO_MAX_DIMENSION)
-
-    if width_px <= 2 * margin or height_px <= 2 * margin:
+    dimensions = _calculate_render_dimensions(bbox, render_context)
+    if dimensions is None:
         return None
 
-    effective_ppm_x = (width_px - 2 * margin) / w_mm if w_mm > 0 else ppm_x
-    effective_ppm_y = (height_px - 2 * margin) / h_mm if h_mm > 0 else ppm_y
+    width_px, height_px, effective_ppm_x, effective_ppm_y = dimensions
 
     bitmap = np.zeros(shape=(height_px, width_px, 4), dtype=np.uint8)
     surface = cairo.ImageSurface.create_for_data(
         memoryview(bitmap), cairo.FORMAT_ARGB32, width_px, height_px
     )
     ctx = cairo.Context(surface)
+
+    x_mm, y_mm, w_mm, h_mm = bbox
+    margin = render_context.margin_px
 
     ctx.translate(margin, height_px - margin)
     ctx.scale(effective_ppm_x, -effective_ppm_y)
@@ -177,12 +311,12 @@ def compute_workpiece_view(
 
     _set_progress(0.1, _("Rendering texture..."))
 
+    line_width_mm = 1.0 / effective_ppm_x if effective_ppm_x > 0 else 1.0
+
     if texture_data:
         _draw_texture(ctx, texture_data, color_set)
         surface.flush()
         _set_progress(0.3, _("Rendering vertices..."))
-
-    line_width_mm = 1.0 / effective_ppm_x if effective_ppm_x > 0 else 1.0
 
     for progress, message in _draw_vertices_progressive(
         ctx,
@@ -230,29 +364,9 @@ def compute_workpiece_view_to_buffer(
 
     _set_progress(0.0, "Preparing 2D preview...")
 
-    encoder_vertex = VertexEncoder()
-    encoder_texture = TextureEncoder()
-
-    vertex_data = encoder_vertex.encode(artifact.ops)
-
-    texture_data = None
-    if not artifact.is_scalable:
-        px_per_mm_x, px_per_mm_y = render_context.pixels_per_mm
-        width_px = int(round(artifact.generation_size[0] * px_per_mm_x))
-        height_px = int(round(artifact.generation_size[1] * px_per_mm_y))
-
-        if width_px > 0 and height_px > 0:
-            texture_buffer = encoder_texture.encode(
-                artifact.ops,
-                width_px,
-                height_px,
-                render_context.pixels_per_mm,
-            )
-            texture_data = TextureData(
-                power_texture_data=texture_buffer,
-                dimensions_mm=artifact.generation_size,
-                position_mm=(0.0, 0.0),
-            )
+    vertex_data, texture_data = _encode_vertex_and_texture_data(
+        artifact, render_context
+    )
 
     bbox = _get_content_bbox(
         vertex_data, texture_data, render_context.show_travel_moves
@@ -261,21 +375,11 @@ def compute_workpiece_view_to_buffer(
         logger.warning(f"No content to render (bbox={bbox}). Returning None.")
         return None
 
-    x_mm, y_mm, w_mm, h_mm = bbox
-    ppm_x, ppm_y = render_context.pixels_per_mm
-    margin = render_context.margin_px
-
-    requested_width_px = round(w_mm * ppm_x) + 2 * margin
-    requested_height_px = round(h_mm * ppm_y) + 2 * margin
-
-    width_px = min(requested_width_px, CAIRO_MAX_DIMENSION)
-    height_px = min(requested_height_px, CAIRO_MAX_DIMENSION)
-
-    if width_px <= 2 * margin or height_px <= 2 * margin:
+    dimensions = _calculate_render_dimensions(bbox, render_context)
+    if dimensions is None:
         return None
 
-    effective_ppm_x = (width_px - 2 * margin) / w_mm if w_mm > 0 else ppm_x
-    effective_ppm_y = (height_px - 2 * margin) / h_mm if h_mm > 0 else ppm_y
+    width_px, height_px, effective_ppm_x, effective_ppm_y = dimensions
 
     height_px, width_px = bitmap.shape[:2]
 
@@ -283,6 +387,9 @@ def compute_workpiece_view_to_buffer(
         memoryview(bitmap), cairo.FORMAT_ARGB32, width_px, height_px
     )
     ctx = cairo.Context(surface)
+
+    x_mm, y_mm, w_mm, h_mm = bbox
+    margin = render_context.margin_px
 
     ctx.translate(margin, height_px - margin)
     ctx.scale(effective_ppm_x, -effective_ppm_y)
@@ -292,12 +399,12 @@ def compute_workpiece_view_to_buffer(
 
     _set_progress(0.1, "Rendering texture...")
 
+    line_width_mm = 1.0 / effective_ppm_x if effective_ppm_x > 0 else 1.0
+
     if texture_data:
         _draw_texture(ctx, texture_data, color_set)
         surface.flush()
         _set_progress(0.3, "Rendering vertices...")
-
-    line_width_mm = 1.0 / effective_ppm_x if effective_ppm_x > 0 else 1.0
 
     for progress, message in _draw_vertices_progressive(
         ctx,
@@ -366,6 +473,110 @@ def _draw_vertices(
     ctx.restore()
 
 
+def _draw_travel_vertices(
+    ctx: cairo.Context,
+    vertex_data: VertexData,
+    color_set: ColorSet,
+) -> None:
+    """
+    Draws travel vertices to the cairo context.
+
+    Args:
+        ctx: The cairo context to draw to.
+        vertex_data: The vertex data containing travel vertices.
+        color_set: The color set for rendering.
+    """
+    if vertex_data.travel_vertices.size == 0:
+        return
+
+    travel_v = vertex_data.travel_vertices.reshape(-1, 2, 3)
+    ctx.set_source_rgba(*color_set.get_rgba("travel"))
+    for start, end in travel_v:
+        ctx.move_to(start[0], start[1])
+        ctx.line_to(end[0], end[1])
+    ctx.stroke()
+
+
+def _draw_zero_power_vertices(
+    ctx: cairo.Context,
+    vertex_data: VertexData,
+    color_set: ColorSet,
+) -> None:
+    """
+    Draws zero-power vertices to the cairo context.
+
+    Args:
+        ctx: The cairo context to draw to.
+        vertex_data: The vertex data containing zero-power vertices.
+        color_set: The color set for rendering.
+    """
+    if vertex_data.zero_power_vertices.size == 0:
+        return
+
+    zero_v = vertex_data.zero_power_vertices.reshape(-1, 2, 3)
+    ctx.set_source_rgba(*color_set.get_rgba("zero_power"))
+    for start, end in zero_v:
+        ctx.move_to(start[0], start[1])
+        ctx.line_to(end[0], end[1])
+    ctx.stroke()
+
+
+def _prepare_powered_vertices_for_batching(
+    vertex_data: VertexData,
+    color_set: ColorSet,
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """
+    Prepares powered vertices for batched rendering.
+
+    Args:
+        vertex_data: The vertex data containing powered vertices.
+        color_set: The color set for rendering.
+
+    Returns:
+        A tuple of (powered_vertices, unique_colors, inverse_indices).
+    """
+    powered_v = vertex_data.powered_vertices.reshape(-1, 2, 3)
+    powered_c = vertex_data.powered_colors
+    cut_lut = color_set.get_lut("cut")
+
+    power_indices = (powered_c[::2, 0] * 255.0).astype(np.uint8)
+    themed_colors_per_segment = cut_lut[power_indices]
+    unique_colors, inverse_indices = np.unique(
+        themed_colors_per_segment, axis=0, return_inverse=True
+    )
+
+    return powered_v, unique_colors, inverse_indices
+
+
+def _draw_powered_vertices_batch(
+    ctx: cairo.Context,
+    powered_v: np.ndarray,
+    unique_colors: np.ndarray,
+    inverse_indices: np.ndarray,
+    start_seg: int,
+    end_seg: int,
+) -> None:
+    """
+    Draws a batch of powered vertices to the cairo context.
+
+    Args:
+        ctx: The cairo context to draw to.
+        powered_v: The powered vertices array.
+        unique_colors: Array of unique colors.
+        inverse_indices: Indices mapping segments to colors.
+        start_seg: Starting segment index.
+        end_seg: Ending segment index.
+    """
+    for seg_idx in range(start_seg, end_seg):
+        start, end = powered_v[seg_idx]
+        color_idx = inverse_indices[seg_idx]
+        color = unique_colors[color_idx]
+        ctx.set_source_rgba(*color)
+        ctx.move_to(start[0], start[1])
+        ctx.line_to(end[0], end[1])
+        ctx.stroke()
+
+
 def _draw_vertices_progressive(
     ctx: cairo.Context,
     vertex_data: VertexData,
@@ -391,21 +602,8 @@ def _draw_vertices_progressive(
     total_batches = num_batches
 
     if show_travel:
-        if vertex_data.travel_vertices.size > 0:
-            travel_v = vertex_data.travel_vertices.reshape(-1, 2, 3)
-            ctx.set_source_rgba(*color_set.get_rgba("travel"))
-            for start, end in travel_v:
-                ctx.move_to(start[0], start[1])
-                ctx.line_to(end[0], end[1])
-            ctx.stroke()
-
-        if vertex_data.zero_power_vertices.size > 0:
-            zero_v = vertex_data.zero_power_vertices.reshape(-1, 2, 3)
-            ctx.set_source_rgba(*color_set.get_rgba("zero_power"))
-            for start, end in zero_v:
-                ctx.move_to(start[0], start[1])
-                ctx.line_to(end[0], end[1])
-            ctx.stroke()
+        _draw_travel_vertices(ctx, vertex_data, color_set)
+        _draw_zero_power_vertices(ctx, vertex_data, color_set)
 
         surface.flush()
         batch_num += 1
@@ -413,14 +611,8 @@ def _draw_vertices_progressive(
         yield progress, "Rendered travel moves"
 
     if vertex_data.powered_vertices.size > 0:
-        powered_v = vertex_data.powered_vertices.reshape(-1, 2, 3)
-        powered_c = vertex_data.powered_colors
-        cut_lut = color_set.get_lut("cut")
-
-        power_indices = (powered_c[::2, 0] * 255.0).astype(np.uint8)
-        themed_colors_per_segment = cut_lut[power_indices]
-        unique_colors, inverse_indices = np.unique(
-            themed_colors_per_segment, axis=0, return_inverse=True
+        powered_v, unique_colors, inverse_indices = (
+            _prepare_powered_vertices_for_batching(vertex_data, color_set)
         )
 
         remaining_batches = total_batches - batch_num
@@ -441,14 +633,14 @@ def _draw_vertices_progressive(
             if start_seg >= total_segments:
                 continue
 
-            for seg_idx in range(start_seg, end_seg):
-                start, end = powered_v[seg_idx]
-                color_idx = inverse_indices[seg_idx]
-                color = unique_colors[color_idx]
-                ctx.set_source_rgba(*color)
-                ctx.move_to(start[0], start[1])
-                ctx.line_to(end[0], end[1])
-                ctx.stroke()
+            _draw_powered_vertices_batch(
+                ctx,
+                powered_v,
+                unique_colors,
+                inverse_indices,
+                start_seg,
+                end_seg,
+            )
 
             surface.flush()
             batch_num += 1
@@ -528,55 +720,20 @@ def render_chunk_to_buffer(
     Returns:
         True if rendering succeeded, False otherwise.
     """
-    encoder_vertex = VertexEncoder()
-    encoder_texture = TextureEncoder()
-
-    vertex_data = encoder_vertex.encode(artifact.ops)
-
-    texture_data = None
-    if not artifact.is_scalable:
-        px_per_mm_x, px_per_mm_y = render_context.pixels_per_mm
-        width_px = int(round(artifact.generation_size[0] * px_per_mm_x))
-        height_px = int(round(artifact.generation_size[1] * px_per_mm_y))
-
-        if width_px > 0 and height_px > 0:
-            texture_buffer = encoder_texture.encode(
-                artifact.ops,
-                width_px,
-                height_px,
-                render_context.pixels_per_mm,
-            )
-            texture_data = TextureData(
-                power_texture_data=texture_buffer,
-                dimensions_mm=artifact.generation_size,
-                position_mm=(0.0, 0.0),
-            )
-
-    height_px, width_px = bitmap.shape[:2]
-
-    surface = cairo.ImageSurface.create_for_data(
-        memoryview(bitmap), cairo.FORMAT_ARGB32, width_px, height_px
+    vertex_data, texture_data = _encode_vertex_and_texture_data(
+        artifact, render_context
     )
-    ctx = cairo.Context(surface)
 
-    x_mm, y_mm, w_mm, h_mm = view_bbox_mm
-    margin = render_context.margin_px
-    ppm_x, ppm_y = render_context.pixels_per_mm
-
-    effective_ppm_x = (width_px - 2 * margin) / w_mm if w_mm > 0 else ppm_x
-    effective_ppm_y = (height_px - 2 * margin) / h_mm if h_mm > 0 else ppm_y
-
-    ctx.translate(margin, height_px - margin)
-    ctx.scale(effective_ppm_x, -effective_ppm_y)
-    ctx.translate(-x_mm, -y_mm)
+    ctx, line_width_mm = _setup_cairo_context(
+        bitmap, view_bbox_mm, render_context
+    )
 
     color_set = ColorSet.from_dict(render_context.color_set_dict)
 
     if texture_data:
         _draw_texture(ctx, texture_data, color_set)
+        surface = ctx.get_target()
         surface.flush()
-
-    line_width_mm = 1.0 / effective_ppm_x if effective_ppm_x > 0 else 1.0
 
     _draw_vertices(
         ctx,
@@ -586,6 +743,7 @@ def render_chunk_to_buffer(
         line_width_mm,
     )
 
+    surface = ctx.get_target()
     surface.flush()
     return True
 

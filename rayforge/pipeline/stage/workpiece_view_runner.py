@@ -150,6 +150,12 @@ def make_workpiece_view_artifact_in_subprocess(
     view_handle = artifact_store.put(view_artifact, creator_tag=creator_tag)
     logger.debug(f"Worker: Created view artifact {view_handle.shm_name}")
 
+    proxy.send_event(
+        "view_artifact_created",
+        {"handle_dict": view_handle.to_dict()},
+    )
+    logger.debug("Worker: Sent view_artifact_created event")
+
     shm = None
     try:
         logger.debug("Worker: Opening shared memory for rendering...")
@@ -182,12 +188,6 @@ def make_workpiece_view_artifact_in_subprocess(
                 "Worker: compute_workpiece_view_to_buffer returned None."
             )
             return None
-
-        proxy.send_event(
-            "view_artifact_created",
-            {"handle_dict": view_handle.to_dict()},
-        )
-        logger.debug("Worker: Sent view_artifact_created event")
 
     finally:
         if shm:
