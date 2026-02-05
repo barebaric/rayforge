@@ -3,6 +3,7 @@ set -euo pipefail
 
 DO_BUILD=0
 DO_BUNDLE=0
+DO_DMG=0
 VERSION_OVERRIDE=""
 GREEN="\033[0;32m"
 NC="\033[0m"
@@ -31,12 +32,13 @@ print_info "    Rayforge macOS Build Script"
 print_info "======================================"
 echo ""
 echo "Select build option:"
-echo "    1) build"
-echo "    2) app bundle"
-echo "    3) build + app bundle"
-echo "    4) exit"
+echo "    1) Build"
+echo "    2) Bundle (.app)"
+echo "    3) Distribution package (.dmg)"
+echo "    4) All of the above"
+echo "    5) exit"
 echo ""
-read -r -p "Choice (1-3): " BUILD_CHOICE
+read -r -p "Choice (1-5): " BUILD_CHOICE
 case "$BUILD_CHOICE" in
     1)
         DO_BUILD=1
@@ -45,10 +47,14 @@ case "$BUILD_CHOICE" in
         DO_BUNDLE=1
         ;;
     3)
-        DO_BUILD=1
-        DO_BUNDLE=1
+        DO_DMG=1
         ;;
     4)
+        DO_BUILD=1
+        DO_BUNDLE=1
+        DO_DMG=1
+        ;;
+    5)
         exit 0
         ;;
     *)
@@ -70,7 +76,7 @@ fi
 
 echo ""
 echo ""
-print_info "Setup"
+print_info "  Environment Setup"
 print_info "--------------------------------------"
 echo ""
 
@@ -111,7 +117,7 @@ echo "$VERSION" > rayforge/version.txt
 if (( DO_BUILD == 1 )); then
     echo ""
     echo ""
-    print_info "Build"
+    print_info "  Build"
     print_info "--------------------------------------"
     echo ""
     python -m build
@@ -122,7 +128,7 @@ fi
 if (( DO_BUNDLE == 1 )); then
     echo ""
     echo ""
-    print_info ".app Bundle"
+    print_info "  .app Bundle"
     print_info "--------------------------------------"
     echo ""
     python - <<'PY'
@@ -445,14 +451,36 @@ SH
         "$APP_ROOT/Info.plist" 2>/dev/null || true
 fi
 
-if (( DO_BUILD == 1 )) && (( DO_BUNDLE == 1 )); then
+if (( DO_DMG == 1 )); then
+    echo ""
+    echo ""
+    print_info "  .dmg Distribution package"
+    echo "--------------------------------------"
+    echo ""
+    echo "Creating DMG..."
+    if [ ! -d "dist/Rayforge.app" ]; then
+        echo "dist/Rayforge.app not found.\nBuild the app bundle first." >&2
+        exit 1
+    fi
+    DMG_PATH="dist/Rayforge_${VERSION}.dmg"
+    rm -f "$DMG_PATH"
+    hdiutil create -volname "Rayforge" -srcfolder "dist/Rayforge.app" \
+        -ov -format UDZO "$DMG_PATH"
+fi
+
+if (( DO_BUILD == 1 )) && (( DO_BUNDLE == 1 )) && (( DO_DMG == 1 )); then
+    echo "Build artifacts created in dist/, dist/*.whl, dist/Rayforge.app, and dist/Rayforge.dmg"
+elif (( DO_BUILD == 1 )) && (( DO_BUNDLE == 1 )); then
     echo "Build artifacts created in dist/, dist/*.whl, and dist/Rayforge.app"
 elif (( DO_BUILD == 1 )); then
     echo "Build artifacts created in dist/ and dist/*.whl"
 elif (( DO_BUNDLE == 1 )); then
     echo "App bundle created in dist/Rayforge.app"
+elif (( DO_DMG == 1 )); then
+    echo "DMG created in dist/Rayforge.dmg"
 fi
 
 echo ""
-print_info " Finished!"
+echo ""
+print_info "  Finished!"
 echo ""
