@@ -455,7 +455,7 @@ if (( DO_DMG == 1 )); then
     echo ""
     echo ""
     print_info "  .dmg Distribution package"
-    echo "--------------------------------------"
+    print_info "--------------------------------------"
     echo ""
     echo "Creating DMG..."
     if [ ! -d "dist/Rayforge.app" ]; then
