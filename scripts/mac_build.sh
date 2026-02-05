@@ -449,6 +449,9 @@ SH
     # Make sure the plist still points to the wrapper.
     /usr/libexec/PlistBuddy -c "Set :CFBundleExecutable Rayforge" \
         "$APP_ROOT/Info.plist" 2>/dev/null || true
+
+    echo "Cleaning dist/*.whl and dist/*.tar.gz after app bundle..."
+    rm -f dist/*.whl dist/*.tar.gz
 fi
 
 if (( DO_DMG == 1 )); then
