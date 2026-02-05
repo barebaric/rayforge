@@ -3,14 +3,14 @@ import numpy as np
 import math
 import logging
 from enum import Enum, auto
-from typing import Optional, TYPE_CHECKING, Tuple, Dict, Any, Callable
+from typing import Optional, TYPE_CHECKING, Tuple, Dict, Any
 from ...core.ops import (
     Ops,
     SectionType,
 )
+from ...shared.tasker.progress import ProgressContext
 from ..artifact import WorkPieceArtifact
 from ..coord import CoordinateSystem
-from ..progress import ProgressContext
 from .base import OpsProducer
 
 if TYPE_CHECKING:
@@ -62,8 +62,6 @@ class DepthEngraver(OpsProducer):
         settings: Optional[Dict[str, Any]] = None,
         y_offset_mm: float = 0.0,
         context: Optional[ProgressContext] = None,
-        progress_callback: Optional[Callable[[float], None]] = None,
-        message_callback: Optional[Callable[[str], None]] = None,
     ) -> WorkPieceArtifact:
         if workpiece is None:
             raise ValueError("DepthEngraver requires a workpiece context.")

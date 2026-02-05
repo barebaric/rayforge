@@ -4,13 +4,13 @@ import threading
 from typing import List, Dict, Any, Optional, TYPE_CHECKING
 from ...core.matrix import Matrix
 from ...core.workpiece import WorkPiece
+from ...shared.tasker.progress import CallbackProgressContext
 from ...shared.tasker.proxy import ExecutionContextProxy
 from ..artifact import (
     create_handle_from_dict,
     WorkPieceArtifact,
 )
 from ..artifact.store import ArtifactStore
-from ..progress import CallbackProgressContext
 from ..transformer import OpsTransformer, transformer_by_name
 
 if TYPE_CHECKING:

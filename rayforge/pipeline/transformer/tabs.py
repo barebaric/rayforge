@@ -14,7 +14,7 @@ from ...core.ops import (
     OpsSectionEndCommand,
 )
 from ...core.workpiece import WorkPiece
-from ..progress import ProgressContext
+from ...shared.tasker.progress import ProgressContext
 from .base import OpsTransformer, ExecutionPhase
 
 logger = logging.getLogger(__name__)

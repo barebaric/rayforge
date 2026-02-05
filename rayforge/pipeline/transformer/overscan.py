@@ -4,8 +4,6 @@ import logging
 import numpy as np
 from typing import Optional, List, Dict, Any, Sequence, TYPE_CHECKING
 from copy import deepcopy
-
-from .base import OpsTransformer, ExecutionPhase
 from ...core.ops import (
     Ops,
     Command,
@@ -18,7 +16,8 @@ from ...core.ops import (
     OpsSectionStartCommand,
     OpsSectionEndCommand,
 )
-from ..progress import ProgressContext
+from ...shared.tasker.progress import ProgressContext
+from .base import OpsTransformer, ExecutionPhase
 
 if TYPE_CHECKING:
     from ...core.workpiece import WorkPiece

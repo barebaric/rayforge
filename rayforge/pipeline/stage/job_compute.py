@@ -9,9 +9,9 @@ import numpy as np
 from ...core.doc import Doc
 from ...core.ops import Ops
 from ...machine.models.machine import Machine
+from ...shared.tasker.progress import ProgressContext
 from ..artifact import JobArtifact, StepOpsArtifact
 from ..encoder.vertexencoder import VertexEncoder
-from ..progress import ProgressContext
 
 logger = logging.getLogger(__name__)
 

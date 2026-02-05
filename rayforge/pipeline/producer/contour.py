@@ -1,14 +1,14 @@
 import logging
 from enum import Enum, auto
-from typing import Optional, TYPE_CHECKING, Dict, Any, Callable
+from typing import Optional, TYPE_CHECKING, Dict, Any
 from ...image.tracing import trace_surface
 from ...core.geo import contours, Geometry
 from ...core.matrix import Matrix
 from ...core.ops import Ops, SectionType
 from ...core.vectorization_spec import TraceSpec
+from ...shared.tasker.progress import ProgressContext
 from ..artifact import WorkPieceArtifact
 from ..coord import CoordinateSystem
-from ..progress import ProgressContext
 from .base import OpsProducer, CutSide
 
 
@@ -87,8 +87,6 @@ class ContourProducer(OpsProducer):
         settings: Optional[Dict[str, Any]] = None,
         y_offset_mm: float = 0.0,
         context: Optional[ProgressContext] = None,
-        progress_callback: Optional[Callable[[float], None]] = None,
-        message_callback: Optional[Callable[[str], None]] = None,
     ) -> WorkPieceArtifact:
         if workpiece is None:
             raise ValueError("ContourProducer requires a workpiece context.")

@@ -2,41 +2,7 @@ import math
 from unittest.mock import Mock
 from rayforge.core.ops import ArcToCommand, Ops
 from rayforge.pipeline.transformer.smooth import Smooth
-from rayforge.pipeline.progress import ProgressContext
-
-
-class FakeExecutionContext(ProgressContext):
-    """
-    A fake execution context for testing.
-    Implements all abstract methods from the ProgressContext interface.
-    """
-
-    def __init__(self):
-        self._cancelled = False
-        self.progress = 0.0
-
-    def is_cancelled(self) -> bool:
-        return self._cancelled
-
-    def set_progress(self, progress: float) -> None:
-        self.progress = progress
-
-    def cancel(self):
-        self._cancelled = True
-
-    def set_total(self, total: float) -> None:
-        pass
-
-    def set_message(self, message: str) -> None:
-        pass
-
-    def sub_context(
-        self, base_progress: float, progress_range: float, total: float = 1.0
-    ) -> "ProgressContext":
-        return self
-
-    def flush(self) -> None:
-        pass
+from conftest import MockProgressContext
 
 
 def assert_points_almost_equal(p1: tuple, p2: tuple, places=5, msg=None):
@@ -151,7 +117,8 @@ def test_context_cancellation_and_progress():
         ops.move_to(i * 10, 0)
         ops.line_to(i * 10 + 5, 5)
 
-    context = FakeExecutionContext()
+    context = MockProgressContext()
+    context._inner._progress_context.set_wrapper(context._inner)
     smoother = Smooth(amount=50)
 
     original_smooth_segment = smoother._smooth_segment
@@ -160,11 +127,11 @@ def test_context_cancellation_and_progress():
     def cancelling_smooth_segment(points):
         call_count[0] += 1
         if call_count[0] >= 5:
-            context.cancel()
+            context.set_cancelled(True)
         return original_smooth_segment(points)
 
     smoother._smooth_segment = cancelling_smooth_segment
     smoother.run(ops, context=context)
 
     assert len(list(ops.segments())) == 5
-    assert abs(context.progress - 0.5) < 1e-9
+    assert abs(context.progress_calls[-1] - 0.5) < 1e-9

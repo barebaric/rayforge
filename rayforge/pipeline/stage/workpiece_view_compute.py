@@ -11,10 +11,10 @@ from ..artifact.workpiece_view import (
     RenderContext,
     WorkPieceViewArtifact,
 )
+from ...shared.tasker.progress import ProgressContext
+from ...shared.util.colors import ColorSet
 from ..encoder.textureencoder import TextureEncoder
 from ..encoder.vertexencoder import VertexEncoder
-from ...shared.util.colors import ColorSet
-from ..progress import ProgressContext
 
 if TYPE_CHECKING:
     pass

@@ -1,6 +1,7 @@
 import cairo
 import numpy as np
-from typing import Optional, TYPE_CHECKING, Dict, Any, Callable
+from typing import Optional, TYPE_CHECKING, Dict, Any
+from ...core.geo import contours
 from ...core.matrix import Matrix
 from ...core.ops import (
     Ops,
@@ -10,10 +11,9 @@ from ...core.ops import (
 )
 from ...image.hull import get_concave_hull
 from ...image.tracing import prepare_surface
-from ...core.geo import contours
+from ...shared.tasker.progress import ProgressContext
 from ..artifact import WorkPieceArtifact
 from ..coord import CoordinateSystem
-from ..progress import ProgressContext
 from .base import OpsProducer, CutSide
 
 if TYPE_CHECKING:
@@ -63,8 +63,6 @@ class ShrinkWrapProducer(OpsProducer):
         settings: Optional[Dict[str, Any]] = None,
         y_offset_mm: float = 0.0,
         context: Optional[ProgressContext] = None,
-        progress_callback: Optional[Callable[[float], None]] = None,
-        message_callback: Optional[Callable[[str], None]] = None,
     ) -> WorkPieceArtifact:
         if workpiece is None:
             raise ValueError(

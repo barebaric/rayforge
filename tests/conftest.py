@@ -13,6 +13,7 @@ from unittest.mock import patch, MagicMock
 from gi.repository import GLib
 from rayforge.worker_init import initialize_worker
 from rayforge import context as rayforge_context
+from rayforge.shared.tasker.progress import ProgressContext
 
 
 if TYPE_CHECKING:
@@ -339,13 +340,13 @@ def mock_progress_context():
     Allows testing cancellation by setting is_cancelled = True.
     """
 
-    class MockProgressContext:
+    class _SimpleMockProgressContext:
         def __init__(self):
             self.progress_calls: list[tuple[float, str]] = []
             self.message_calls: list[str] = []
             self._is_cancelled = False
             self._total = 1.0
-            self._sub_contexts: list["MockProgressContext"] = []
+            self._sub_contexts: list["_SimpleMockProgressContext"] = []
 
         def is_cancelled(self) -> bool:
             return self._is_cancelled
@@ -370,8 +371,8 @@ def mock_progress_context():
             base_progress: float,
             progress_range: float,
             total: float = 1.0,
-        ) -> "MockProgressContext":
-            sub_ctx = MockProgressContext()
+        ) -> "_SimpleMockProgressContext":
+            sub_ctx = _SimpleMockProgressContext()
             sub_ctx._total = total
             self._sub_contexts.append(sub_ctx)
             return sub_ctx
@@ -379,4 +380,274 @@ def mock_progress_context():
         def flush(self) -> None:
             pass
 
-    return MockProgressContext()
+    return _SimpleMockProgressContext()
+
+
+class MockProgressContext(ProgressContext):
+    """Unified mock ProgressContext for testing.
+
+    This class provides a comprehensive mock implementation that tracks all
+    progress-related calls for verification in tests. It extends
+    ProgressContext and provides cancellation control.
+
+    Attributes:
+        progress_calls: List of normalized progress values reported.
+        message_calls: List of messages set via set_message().
+        total_calls: List of total values set via set_total().
+        flush_calls: Number of times flush() was called.
+        sub_contexts: List of sub-contexts created via sub_context().
+        _cancelled: Internal cancellation state.
+    """
+
+    def __init__(self, cancelled: bool = False):
+        """Initialize the mock progress context.
+
+        Args:
+            cancelled: Initial cancellation state.
+        """
+        self._inner = _MockProgressContextImpl(cancelled)
+        super().__init__(base_progress=0.0, progress_range=1.0, total=1.0)
+        # Clear initialization call from parent constructor
+        self._inner.total_calls.clear()
+
+    def is_cancelled(self) -> bool:
+        """Check if the operation has been cancelled."""
+        return self._inner.is_cancelled()
+
+    def set_progress(self, progress: float) -> None:
+        """Set progress as an absolute value."""
+        self._inner.set_progress(progress)
+
+    def set_message(self, message: str) -> None:
+        """Set a descriptive status message."""
+        self._inner.set_message(message)
+
+    def set_total(self, total: float) -> None:
+        """Set the total value for progress normalization."""
+        self._inner.set_total(total)
+
+    def sub_context(
+        self,
+        base_progress: float,
+        progress_range: float,
+        total: float,
+    ) -> "MockProgressContext":
+        """Create a sub-context for hierarchical progress reporting."""
+        inner_sub = self._inner.sub_context(
+            base_progress, progress_range, total
+        )
+        wrapper = MockProgressContext(
+            cancelled=inner_sub._progress_context._cancelled
+        )
+        wrapper._inner = inner_sub
+        return wrapper
+
+    def flush(self) -> None:
+        """Immediately send any pending updates."""
+        self._inner.flush()
+
+    def set_cancelled(self, cancelled: bool) -> None:
+        """Helper to change cancellation state during tests."""
+        self._inner.set_cancelled(cancelled)
+
+    def _report_normalized_progress(self, progress: float) -> None:
+        """Report a normalized progress value."""
+        pass
+
+    def _create_sub_context(
+        self,
+        base_progress: float,
+        progress_range: float,
+        total: float,
+    ) -> "ProgressContext":
+        """Factory method for creating sub-contexts."""
+        inner_sub = self._inner.sub_context(
+            base_progress, progress_range, total
+        )
+        wrapper = MockProgressContext(
+            cancelled=inner_sub._progress_context._cancelled
+        )
+        wrapper._inner = inner_sub
+        return wrapper
+
+    @property
+    def progress_calls(self) -> list[float]:
+        """Get list of normalized progress values."""
+        return self._inner.progress_calls
+
+    @property
+    def message_calls(self) -> list[str]:
+        """Get list of messages."""
+        return self._inner.message_calls
+
+    @property
+    def total_calls(self) -> list[float]:
+        """Get list of total values."""
+        return self._inner.total_calls
+
+    @property
+    def flush_calls(self) -> int:
+        """Get number of flush calls."""
+        return self._inner.flush_calls
+
+    @property
+    def sub_contexts(self) -> list["_MockProgressContextImpl"]:
+        """Get list of sub-contexts."""
+        return self._inner.sub_contexts
+
+
+class _MockProgressContextImpl:
+    """Internal implementation of MockProgressContext.
+
+    This class extends ProgressContext and provides the actual tracking
+    functionality. The outer MockProgressContext wraps this to provide
+    a cleaner interface and return wrapped sub-contexts.
+    """
+
+    def __init__(self, cancelled: bool = False):
+        """Initialize the mock progress context implementation.
+
+        Args:
+            cancelled: Initial cancellation state.
+        """
+        self._progress_context = _InnerMockProgressContext(cancelled=cancelled)
+        self.progress_calls: list[float] = []
+        self.message_calls: list[str] = []
+        self.total_calls: list[float] = []
+        self.flush_calls: int = 0
+        self.sub_contexts: list["_MockProgressContextImpl"] = []
+
+    def is_cancelled(self) -> bool:
+        """Check if the operation has been cancelled."""
+        return self._progress_context.is_cancelled()
+
+    def set_progress(self, progress: float) -> None:
+        """Set progress as an absolute value."""
+        self._progress_context.set_progress(progress)
+
+    def set_message(self, message: str) -> None:
+        """Set a descriptive status message."""
+        self.message_calls.append(message)
+        self._progress_context.set_message(message)
+
+    def set_total(self, total: float) -> None:
+        """Set the total value for progress normalization."""
+        self.total_calls.append(total)
+        self._progress_context.set_total(total)
+
+    def sub_context(
+        self,
+        base_progress: float,
+        progress_range: float,
+        total: float,
+    ) -> "_MockProgressContextImpl":
+        """Create a sub-context for hierarchical progress reporting."""
+        inner_sub = self._progress_context.sub_context(
+            base_progress, progress_range, total
+        )
+        wrapper = _MockProgressContextImpl(cancelled=inner_sub._cancelled)
+        wrapper._progress_context = inner_sub
+        self.sub_contexts.append(wrapper)
+        return wrapper
+
+    def flush(self) -> None:
+        """Immediately send any pending updates."""
+        self.flush_calls += 1
+        self._progress_context.flush()
+
+    def set_cancelled(self, cancelled: bool) -> None:
+        """Helper to change cancellation state during tests."""
+        self._progress_context.set_cancelled(cancelled)
+
+
+class _InnerMockProgressContext:
+    """Inner class that extends ProgressContext.
+
+    This class implements the ProgressContext abstract methods and
+    delegates to the wrapper for tracking.
+    """
+
+    def __init__(self, cancelled: bool = False):
+        """Initialize the inner mock progress context.
+
+        Args:
+            cancelled: Initial cancellation state.
+        """
+        self._cancelled = cancelled
+        self._wrapper: _MockProgressContextImpl | None = None
+        self._base = 0.0
+        self._range = 1.0
+        self._total = 1.0
+
+    def set_wrapper(self, wrapper: "_MockProgressContextImpl") -> None:
+        """Set the wrapper for tracking calls."""
+        self._wrapper = wrapper
+
+    def is_cancelled(self) -> bool:
+        """Check if the operation has been cancelled."""
+        return self._cancelled
+
+    def set_cancelled(self, cancelled: bool) -> None:
+        """Helper to change cancellation state during tests."""
+        self._cancelled = cancelled
+
+    def set_progress(self, progress: float) -> None:
+        """Set progress as an absolute value."""
+        normalized = progress / self._total if self._total > 0 else progress
+        if self._wrapper:
+            self._wrapper.progress_calls.append(normalized)
+
+    def set_message(self, message: str) -> None:
+        """Set a descriptive status message."""
+        pass
+
+    def flush(self) -> None:
+        """Immediately send any pending updates."""
+        pass
+
+    def set_total(self, total: float) -> None:
+        """Set the total value for progress normalization."""
+        if total <= 0:
+            self._total = 1.0
+        else:
+            self._total = float(total)
+
+    def sub_context(
+        self,
+        base_progress: float,
+        progress_range: float,
+        total: float,
+    ) -> "_InnerMockProgressContext":
+        """Create a sub-context for hierarchical progress reporting."""
+        return self._create_sub_context(base_progress, progress_range, total)
+
+    def _report_normalized_progress(self, progress: float) -> None:
+        """Report a normalized progress value."""
+        pass
+
+    def _create_sub_context(
+        self,
+        base_progress: float,
+        progress_range: float,
+        total: float,
+    ) -> "_InnerMockProgressContext":
+        """Factory method for creating sub-contexts."""
+        sub_ctx = _InnerMockProgressContext(cancelled=self._cancelled)
+        sub_ctx._base = base_progress
+        sub_ctx._range = progress_range
+        sub_ctx._total = total
+        return sub_ctx
+
+
+@pytest.fixture
+def mock_progress_context_v2():
+    """Provides the unified MockProgressContext for testing.
+
+    This fixture returns a new MockProgressContext instance that tracks
+    all progress-related calls for verification in tests.
+    """
+    ctx = MockProgressContext()
+    ctx._inner._progress_context.set_wrapper(ctx._inner)
+    for sub in ctx._inner.sub_contexts:
+        sub._progress_context.set_wrapper(sub)
+    return ctx

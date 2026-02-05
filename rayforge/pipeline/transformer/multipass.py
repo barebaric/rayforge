@@ -5,7 +5,7 @@ from typing import Optional, Dict, Any
 from .base import OpsTransformer, ExecutionPhase
 from ...core.workpiece import WorkPiece
 from ...core.ops import Ops
-from ..progress import ProgressContext
+from ...shared.tasker.progress import ProgressContext
 
 
 class MultiPassTransformer(OpsTransformer):

@@ -1,8 +1,8 @@
 from typing import Any, List, Tuple, Optional, TYPE_CHECKING
 from ...context import get_context
+from ...shared.tasker.progress import CallbackProgressContext
 from ...shared.tasker.proxy import ExecutionContextProxy
 from ..artifact.store import ArtifactStore
-from ..progress import CallbackProgressContext
 from .workpiece_compute import compute_workpiece_artifact
 
 if TYPE_CHECKING:

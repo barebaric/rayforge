@@ -4,7 +4,7 @@ from ...core.workpiece import WorkPiece
 from ...core.ops import Ops, LineToCommand, MoveToCommand
 from ...core.geo.analysis import get_angle_at_vertex
 from ...core.geo.linearize import resample_polyline
-from ..progress import ProgressContext
+from ...shared.tasker.progress import ProgressContext
 from .base import OpsTransformer, ExecutionPhase
 
 
