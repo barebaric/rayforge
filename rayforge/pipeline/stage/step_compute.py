@@ -5,6 +5,7 @@ from typing import List, Tuple, Optional, TYPE_CHECKING
 from ...core.ops import Ops
 from ...core.matrix import Matrix
 from ...core.workpiece import WorkPiece
+from ...shared.tasker.progress import ProgressContext
 from ..artifact import (
     StepRenderArtifact,
     StepOpsArtifact,
@@ -13,7 +14,6 @@ from ..artifact import (
 from ..artifact.base import TextureData, TextureInstance
 from ..encoder.textureencoder import TextureEncoder
 from ..encoder.vertexencoder import VertexEncoder
-from ..progress import ProgressContext
 
 if TYPE_CHECKING:
     from ..transformer import OpsTransformer

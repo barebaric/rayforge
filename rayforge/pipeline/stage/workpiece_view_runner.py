@@ -3,6 +3,7 @@ import logging
 import numpy as np
 from multiprocessing import shared_memory
 from typing import TYPE_CHECKING, Optional, Dict, Any
+from ...shared.tasker.progress import CallbackProgressContext
 from ...shared.tasker.proxy import ExecutionContextProxy
 from ..artifact import (
     WorkPieceArtifact,
@@ -14,7 +15,6 @@ from ..artifact.workpiece_view import (
     RenderContext,
     WorkPieceViewArtifact,
 )
-from ..progress import CallbackProgressContext
 from .workpiece_view_compute import (
     compute_workpiece_view_to_buffer,
     compute_view_dimensions,

@@ -5,7 +5,7 @@ from blinker import Signal
 from enum import Enum, auto
 from ...core.ops import Ops
 from ...core.workpiece import WorkPiece
-from ..progress import ProgressContext
+from ...shared.tasker.progress import ProgressContext
 
 
 class ExecutionPhase(Enum):

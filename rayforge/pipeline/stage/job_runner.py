@@ -5,13 +5,13 @@ from typing import Dict, Any, TYPE_CHECKING, Optional
 
 from ...core.doc import Doc
 from ...machine.models.machine import Machine
+from ...shared.tasker.progress import CallbackProgressContext
 from ...shared.tasker.proxy import ExecutionContextProxy
 from ..artifact import (
     create_handle_from_dict,
     StepOpsArtifact,
 )
 from ..artifact.store import ArtifactStore
-from ..progress import CallbackProgressContext
 from .job_compute import compute_job_artifact
 
 if TYPE_CHECKING:
