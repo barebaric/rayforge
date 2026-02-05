@@ -14,7 +14,7 @@ from ...core.ops import (
     OpsSectionEndCommand,
 )
 from ...core.workpiece import WorkPiece
-from ...shared.tasker.proxy import BaseExecutionContext
+from ..progress import ProgressContext
 from .base import OpsTransformer, ExecutionPhase
 
 logger = logging.getLogger(__name__)
@@ -149,7 +149,7 @@ class TabOpsTransformer(OpsTransformer):
         self,
         ops: Ops,
         workpiece: Optional[WorkPiece] = None,
-        context: Optional[BaseExecutionContext] = None,
+        context: Optional[ProgressContext] = None,
     ) -> None:
         if not self.enabled:
             return

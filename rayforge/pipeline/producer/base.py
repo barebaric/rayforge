@@ -1,14 +1,14 @@
 from __future__ import annotations
 from abc import ABC, abstractmethod
-from typing import Optional, TYPE_CHECKING, Dict, Any
+from typing import Optional, TYPE_CHECKING, Dict, Any, Callable
 from enum import Enum, auto
 from ..artifact import WorkPieceArtifact
+from ..progress import ProgressContext
 
 
 if TYPE_CHECKING:
     from ...core.workpiece import WorkPiece
     from ...machine.models.laser import Laser
-    from ...shared.tasker.proxy import BaseExecutionContext
 
 
 class CutSide(Enum):
@@ -50,7 +50,9 @@ class OpsProducer(ABC):
         workpiece: "Optional[WorkPiece]" = None,
         settings: Optional[Dict[str, Any]] = None,
         y_offset_mm: float = 0.0,
-        proxy: Optional["BaseExecutionContext"] = None,
+        context: Optional[ProgressContext] = None,
+        progress_callback: Optional[Callable[[float], None]] = None,
+        message_callback: Optional[Callable[[str], None]] = None,
     ) -> WorkPieceArtifact:
         pass
 

@@ -3,19 +3,19 @@ import numpy as np
 import math
 import logging
 from enum import Enum, auto
-from typing import Optional, TYPE_CHECKING, Tuple, Dict, Any
+from typing import Optional, TYPE_CHECKING, Tuple, Dict, Any, Callable
 from ...core.ops import (
     Ops,
     SectionType,
 )
 from ..artifact import WorkPieceArtifact
 from ..coord import CoordinateSystem
+from ..progress import ProgressContext
 from .base import OpsProducer
 
 if TYPE_CHECKING:
     from ...core.workpiece import WorkPiece
     from ...machine.models.laser import Laser
-    from ...shared.tasker.proxy import BaseExecutionContext
 
 logger = logging.getLogger(__name__)
 
@@ -61,7 +61,9 @@ class DepthEngraver(OpsProducer):
         workpiece: "Optional[WorkPiece]" = None,
         settings: Optional[Dict[str, Any]] = None,
         y_offset_mm: float = 0.0,
-        proxy: Optional["BaseExecutionContext"] = None,
+        context: Optional[ProgressContext] = None,
+        progress_callback: Optional[Callable[[float], None]] = None,
+        message_callback: Optional[Callable[[str], None]] = None,
     ) -> WorkPieceArtifact:
         if workpiece is None:
             raise ValueError("DepthEngraver requires a workpiece context.")

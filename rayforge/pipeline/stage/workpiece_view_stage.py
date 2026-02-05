@@ -4,24 +4,22 @@ import logging
 import numpy as np
 import threading
 import time
-from multiprocessing import shared_memory
-from typing import TYPE_CHECKING, Any, Dict, Tuple, cast
+from typing import TYPE_CHECKING, Any, Dict, Tuple
 from blinker import Signal
 from ...shared.util.colors import ColorSet
 from ..artifact import (
     WorkPieceArtifact,
     BaseArtifactHandle,
 )
-from ..artifact.base import TextureData
 from ..artifact.workpiece_view import (
     RenderContext,
-    WorkPieceViewArtifact,
     WorkPieceViewArtifactHandle,
 )
-from ..encoder.vertexencoder import VertexEncoder
-from ..encoder.textureencoder import TextureEncoder
 from .base import PipelineStage
-from .workpiece_view_runner import make_workpiece_view_artifact_in_subprocess
+from .workpiece_view_runner import (
+    make_workpiece_view_artifact_in_subprocess,
+    render_chunk_to_view,
+)
 
 if TYPE_CHECKING:
     from ...core.doc import Doc
@@ -364,140 +362,29 @@ class WorkPieceViewPipelineStage(PipelineStage):
             self._artifact_manager.release_handle(chunk_handle)
             return
 
-        # Encode Ops to vertex_data on-demand for this chunk
-        logger.debug(f"Encoding chunk Ops to vertex_data for {key}")
-        encoder_vertex = VertexEncoder()
-        chunk_vertex_data = encoder_vertex.encode(chunk_artifact.ops)
-
-        # For raster chunks, also encode texture data on-demand
-        chunk_texture_data = None
-        if not chunk_artifact.is_scalable:
-            logger.debug(f"Encoding chunk Ops to texture data for {key}")
-            # Use source_dimensions if available for consistent resolution
-            if chunk_artifact.source_dimensions:
-                px_per_mm_x = (
-                    chunk_artifact.source_dimensions[0]
-                    / chunk_artifact.generation_size[0]
-                )
-                px_per_mm_y = (
-                    chunk_artifact.source_dimensions[1]
-                    / chunk_artifact.generation_size[1]
-                )
-                width_px = int(chunk_artifact.source_dimensions[0])
-                height_px = int(chunk_artifact.source_dimensions[1])
-            else:
-                px_per_mm_x, px_per_mm_y = 50.0, 50.0  # Default
-                width_px = int(
-                    round(chunk_artifact.generation_size[0] * px_per_mm_x)
-                )
-                height_px = int(
-                    round(chunk_artifact.generation_size[1] * px_per_mm_y)
-                )
-
-            if width_px > 0 and height_px > 0:
-                texture_encoder = TextureEncoder()
-                texture_buffer = texture_encoder.encode(
-                    chunk_artifact.ops,
-                    width_px,
-                    height_px,
-                    (px_per_mm_x, px_per_mm_y),
-                )
-                chunk_texture_data = TextureData(
-                    power_texture_data=texture_buffer,
-                    dimensions_mm=chunk_artifact.generation_size,
-                    position_mm=(0.0, 0.0),
-                )
-
-        shm = None
         try:
-            # Open the shared memory for the view artifact
-            shm = shared_memory.SharedMemory(name=view_handle.shm_name)
-
-            # Get the view artifact to read its metadata
-            view_artifact = cast(
-                WorkPieceViewArtifact,
-                self._artifact_manager.get_artifact(view_handle),
-            )
-            if not view_artifact:
-                logger.warning(f"Could not retrieve view artifact for {key}")
-                return
-
-            bitmap_data = view_artifact.bitmap_data
-            height_px, width_px = bitmap_data.shape[:2]
-
-            # Create a numpy array view into the shared memory
-            shm_bitmap = np.ndarray(
-                shape=(height_px, width_px, 4),
-                dtype=np.uint8,
-                buffer=shm.buf,
+            # Use the Runner function to render the chunk to the view
+            success = render_chunk_to_view(
+                self._artifact_manager,
+                chunk_handle.to_dict(),
+                view_handle.to_dict(),
+                render_context.to_dict(),
             )
 
-            # Create a cairo surface from the shared memory bitmap
-            surface = cairo.ImageSurface.create_for_data(
-                memoryview(shm_bitmap),
-                cairo.FORMAT_ARGB32,
-                width_px,
-                height_px,
-            )
-
-            # Create a cairo context
-            ctx = cairo.Context(surface)
-
-            # Set up transform to match the worker's coordinate system
-            bbox_mm = view_artifact.bbox_mm
-            x_mm, y_mm, w_mm, h_mm = bbox_mm
-            margin = render_context.margin_px
-            ppm_x, ppm_y = render_context.pixels_per_mm
-
-            # Calculate effective PPM (may be clamped due to Cairo limits)
-            effective_ppm_x = (
-                (width_px - 2 * margin) / w_mm if w_mm > 0 else ppm_x
-            )
-            effective_ppm_y = (
-                (height_px - 2 * margin) / h_mm if h_mm > 0 else ppm_y
-            )
-
-            # Set up transform (Y-down pixel space from Y-up mm space)
-            ctx.translate(margin, height_px - margin)
-            ctx.scale(effective_ppm_x, -effective_ppm_y)
-            ctx.translate(-x_mm, -y_mm)
-
-            # Get the color set from the render context
-            color_set = ColorSet.from_dict(render_context.color_set_dict)
-
-            # Draw texture if available (for raster chunks)
-            if chunk_texture_data:
-                from ..stage.workpiece_view_runner import _draw_texture
-
-                _draw_texture(ctx, chunk_texture_data, color_set)
-
-            # Draw the chunk's vertex data
-            line_width_mm = (
-                1.0 / effective_ppm_x if effective_ppm_x > 0 else 1.0
-            )
-            self._draw_vertices(
-                ctx,
-                chunk_vertex_data,
-                color_set,
-                render_context.show_travel_moves,
-                line_width_mm,
-            )
-
-            # Flush the surface to ensure changes are written to shared memory
-            surface.flush()
-
-            logger.debug(
-                f"Successfully drew chunk for {key} to shared memory "
-                f"bitmap {view_handle.shm_name}"
-            )
-
+            if success:
+                logger.debug(
+                    f"Successfully rendered chunk for {key} to view "
+                    f"artifact {view_handle.shm_name}"
+                )
+            else:
+                logger.warning(
+                    f"Failed to render chunk for {key} to view artifact"
+                )
         except Exception as e:
             logger.error(
                 f"Error rendering chunk for {key}: {e}", exc_info=True
             )
         finally:
-            if shm:
-                shm.close()
             # Release the chunk handle after processing
             self._artifact_manager.release_handle(chunk_handle)
 

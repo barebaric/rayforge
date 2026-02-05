@@ -114,3 +114,49 @@ def test_jobrunner_assembles_step_artifacts_correctly(
     # Cleanup
     get_context().artifact_store.release(step_handle)
     get_context().artifact_store.release(final_handle)
+
+
+def test_jobrunner_reconstructs_doc_from_dict(context_initializer, machine):
+    """
+    Test that the jobrunner correctly reconstructs the Doc object from
+    the passed dictionary.
+    """
+    doc = Doc()
+    layer = doc.active_layer
+    assert layer.workflow is not None
+
+    step = create_contour_step(context_initializer)
+    layer.workflow.add_step(step)
+
+    final_ops_for_step = Ops()
+    final_ops_for_step.move_to(50, 90)
+    final_ops_for_step.line_to(50, 50)
+
+    step_artifact = StepOpsArtifact(ops=final_ops_for_step)
+    step_handle = get_context().artifact_store.put(step_artifact)
+
+    job_desc = JobDescription(
+        step_artifact_handles_by_uid={step.uid: step_handle.to_dict()},
+        machine_dict=machine.to_dict(),
+        doc_dict=doc.to_dict(),
+    )
+
+    mock_proxy = MagicMock()
+
+    make_job_artifact_in_subprocess(
+        mock_proxy,
+        get_context().artifact_store,
+        asdict(job_desc),
+        "test_job",
+    )
+
+    event_name, event_data = mock_proxy.send_event.call_args[0]
+    final_handle_dict = event_data["handle_dict"]
+    final_handle = create_handle_from_dict(final_handle_dict)
+    final_artifact = get_context().artifact_store.get(final_handle)
+
+    assert isinstance(final_artifact, JobArtifact)
+    assert final_artifact.ops is not None
+
+    get_context().artifact_store.release(step_handle)
+    get_context().artifact_store.release(final_handle)

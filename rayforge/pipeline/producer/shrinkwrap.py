@@ -1,6 +1,6 @@
 import cairo
 import numpy as np
-from typing import Optional, TYPE_CHECKING, Dict, Any
+from typing import Optional, TYPE_CHECKING, Dict, Any, Callable
 from ...core.matrix import Matrix
 from ...core.ops import (
     Ops,
@@ -13,12 +13,12 @@ from ...image.tracing import prepare_surface
 from ...core.geo import contours
 from ..artifact import WorkPieceArtifact
 from ..coord import CoordinateSystem
+from ..progress import ProgressContext
 from .base import OpsProducer, CutSide
 
 if TYPE_CHECKING:
     from ...core.workpiece import WorkPiece
     from ...machine.models.laser import Laser
-    from ...shared.tasker.proxy import BaseExecutionContext
 
 BORDER_SIZE = 2
 
@@ -62,7 +62,9 @@ class ShrinkWrapProducer(OpsProducer):
         workpiece: "Optional[WorkPiece]" = None,
         settings: Optional[Dict[str, Any]] = None,
         y_offset_mm: float = 0.0,
-        proxy: Optional["BaseExecutionContext"] = None,
+        context: Optional[ProgressContext] = None,
+        progress_callback: Optional[Callable[[float], None]] = None,
+        message_callback: Optional[Callable[[str], None]] = None,
     ) -> WorkPieceArtifact:
         if workpiece is None:
             raise ValueError(
@@ -133,11 +135,13 @@ class ShrinkWrapProducer(OpsProducer):
             )
 
             if allow_arcs and not hull_geometry.is_empty():
-                progress_callback = proxy.set_progress if proxy else None
-                if proxy:
-                    proxy.set_message("Optimizing path with arcs...")
+                if context:
+                    context.set_message(_("Optimizing path with arcs..."))
                 hull_geometry.fit_arcs(
-                    tolerance, on_progress=progress_callback
+                    tolerance,
+                    on_progress=(
+                        lambda p: context.set_progress(p) if context else None
+                    ),
                 )
 
             # 7. Convert to Ops

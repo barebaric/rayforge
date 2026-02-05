@@ -204,3 +204,77 @@ def test_step_runner_handles_texture_data(machine):
 
     get_context().artifact_store.release(base_handle)
     get_context().artifact_store.release(render_handle)
+
+
+def test_step_runner_instantiates_transformers_from_dict(machine):
+    """
+    Tests that the runner correctly instantiates transformers from
+    dictionaries before calling compute.
+    """
+    from unittest.mock import patch
+    from rayforge.pipeline.transformer import Optimize
+
+    doc = Doc()
+    layer = doc.active_layer
+    wp = WorkPiece(name="wp1")
+    wp.set_size(20, 10)
+    wp.pos = 50, 60
+    wp.angle = 90
+    layer.add_workpiece(wp)
+
+    base_ops = Ops()
+    base_ops.move_to(0, 0)
+    base_ops.line_to(100, 0)
+    base_artifact = WorkPieceArtifact(
+        ops=base_ops,
+        is_scalable=True,
+        source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
+        source_dimensions=(100, 100),
+        generation_size=(20, 10),
+    )
+    base_handle = get_context().artifact_store.put(base_artifact)
+    assembly_info = [
+        {
+            "artifact_handle_dict": base_handle.to_dict(),
+            "world_transform_list": wp.get_world_transform().to_list(),
+            "workpiece_dict": wp.in_world().to_dict(),
+        }
+    ]
+
+    transformer_dict = {
+        "name": "Optimize",
+        "enabled": True,
+    }
+
+    mock_proxy = MagicMock()
+
+    with patch(
+        "rayforge.pipeline.stage.step_compute.compute_step_artifacts"
+    ) as mock_compute:
+        mock_compute.return_value = (
+            StepRenderArtifact(),
+            StepOpsArtifact(ops=Ops()),
+        )
+
+        result = make_step_artifact_in_subprocess(
+            proxy=mock_proxy,
+            artifact_store=get_context().artifact_store,
+            workpiece_assembly_info=assembly_info,
+            step_uid="step1",
+            generation_id=1,
+            per_step_transformers_dicts=[transformer_dict],
+            cut_speed=machine.max_cut_speed,
+            travel_speed=machine.max_travel_speed,
+            acceleration=machine.acceleration,
+            creator_tag="test_step",
+        )
+
+        assert result == 1
+        assert mock_compute.called
+
+        call_args = mock_compute.call_args
+        transformers = call_args[1]["transformers"]
+        assert len(transformers) == 1
+        assert isinstance(transformers[0], Optimize)
+
+    get_context().artifact_store.release(base_handle)
