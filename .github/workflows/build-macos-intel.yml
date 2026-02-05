@@ -18,7 +18,7 @@ concurrency:
 jobs:
   build:
     name: Build macOS Bundle (Intel)
-    runs-on: macos-14
+    runs-on: macos-13
     outputs:
       version: ${{ steps.set-version.outputs.version }}
     steps:
@@ -70,8 +70,9 @@ jobs:
       - name: Test
         run: pixi run test
 
-      - name: Build macOS bundle
-        run: bash scripts/mac_build.sh --bundle --version "${{ env.VERSION }}"
+      - name: Build macOS artifacts
+        run: |
+          printf "4\n" | bash scripts/mac_build.sh --version "${{ env.VERSION }}"
 
       - name: Package .app bundle
         run: |
@@ -83,6 +84,16 @@ jobs:
           ZIP_NAME="rayforge-${{ steps.set-version.outputs.version }}-macos-intel-app.zip"
           ditto -c -k --keepParent "$APP_PATH" "$ZIP_NAME"
 
+      - name: Rename DMG
+        run: |
+          DMG_PATH="dist/Rayforge_${{ env.VERSION }}.dmg"
+          if [ ! -f "$DMG_PATH" ]; then
+            echo "DMG not found at $DMG_PATH"
+            exit 1
+          fi
+          OUT_DMG="rayforge-${{ steps.set-version.outputs.version }}-macos-intel.dmg"
+          mv "$DMG_PATH" "$OUT_DMG"
+
       - name: Upload macOS bundle artifact
         uses: actions/upload-artifact@v4
         with:
@@ -90,14 +101,11 @@ jobs:
           path: rayforge-${{ steps.set-version.outputs.version }}-macos-intel-app.zip
           compression-level: 9
 
-      - name: Upload Python distributions
+      - name: Upload DMG artifact
         uses: actions/upload-artifact@v4
         with:
-          name: rayforge-${{ steps.set-version.outputs.version }}-macos-intel-dists
-          path: |
-            dist/*.whl
-            dist/*.tar.gz
-          if-no-files-found: error
+          name: rayforge-${{ steps.set-version.outputs.version }}-macos-intel-dmg
+          path: rayforge-${{ steps.set-version.outputs.version }}-macos-intel.dmg
 
   release:
     name: Create GitHub Release (Intel)
@@ -112,19 +120,17 @@ jobs:
         with:
           name: rayforge-${{ needs.build.outputs.version }}-macos-intel-app.zip
 
-      - name: Download Python distributions
+      - name: Download DMG artifact
         uses: actions/download-artifact@v4
         with:
-          name: rayforge-${{ needs.build.outputs.version }}-macos-intel-dists
-          path: ./dist
+          name: rayforge-${{ needs.build.outputs.version }}-macos-intel-dmg
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            rayforge-${{ needs.build.outputs.version }}-macos-intel.zip
-            dist/*.whl
-            dist/*.tar.gz
+            rayforge-${{ needs.build.outputs.version }}-macos-intel-app.zip
+            rayforge-${{ needs.build.outputs.version }}-macos-intel.dmg
           draft: false
           prerelease: false
           name: Release ${{ needs.build.outputs.version }}
