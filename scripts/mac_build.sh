@@ -1,13 +1,18 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-BUNDLE=0
+DO_BUILD=0
+DO_BUNDLE=0
 VERSION_OVERRIDE=""
+GREEN="\033[0;32m"
+NC="\033[0m"
+
+print_info() {
+    local title=$1
+    printf "${GREEN}%s${NC}\n" "$title"
+}
 while (($#)); do
     case "$1" in
-        --bundle)
-            BUNDLE=1
-            ;;
         --version)
             VERSION_OVERRIDE="$2"
             shift
@@ -20,6 +25,37 @@ while (($#)); do
     shift
 done
 
+echo ""
+print_info "======================================"
+print_info "    Rayforge macOS Build Script"
+print_info "======================================"
+echo ""
+echo "Select build option:"
+echo "    1) build"
+echo "    2) app bundle"
+echo "    3) build + app bundle"
+echo "    4) exit"
+echo ""
+read -r -p "Choice (1-3): " BUILD_CHOICE
+case "$BUILD_CHOICE" in
+    1)
+        DO_BUILD=1
+        ;;
+    2)
+        DO_BUNDLE=1
+        ;;
+    3)
+        DO_BUILD=1
+        DO_BUNDLE=1
+        ;;
+    4)
+        exit 0
+        ;;
+    *)
+        exit 0
+        ;;
+esac
+
 if [ ! -f .mac_env ]; then
     echo ".mac_env not found. Run scripts/mac_setup.sh first." >&2
     exit 1
@@ -31,6 +67,12 @@ if ! command -v python3 >/dev/null 2>&1; then
     echo "python3 is required to build Rayforge on macOS." >&2
     exit 1
 fi
+
+echo ""
+echo ""
+print_info "Setup"
+print_info "--------------------------------------"
+echo ""
 
 VENV_PATH=${VENV_PATH:-.venv-mac}
 if [ ! -d "$VENV_PATH" ]; then
@@ -66,14 +108,23 @@ VERSION=${VERSION_OVERRIDE:-$(git describe --tags --always 2>/dev/null || \
     echo "v0.0.0-local")}
 echo "$VERSION" > rayforge/version.txt
 
-python -m build
-
-if (( BUNDLE == 0 )) && [ -d "dist/Rayforge.app" ]; then
+if (( DO_BUILD == 1 )); then
+    echo ""
+    echo ""
+    print_info "Build"
+    print_info "--------------------------------------"
+    echo ""
+    python -m build
+elif [ -d "dist/Rayforge.app" ] && (( DO_BUNDLE == 0 )); then
     echo "Note: dist/Rayforge.app exists but was not rebuilt." >&2
-    echo "Run ./scripts/mac_build.sh --bundle to refresh the app bundle." >&2
 fi
 
-if (( BUNDLE == 1 )); then
+if (( DO_BUNDLE == 1 )); then
+    echo ""
+    echo ""
+    print_info ".app Bundle"
+    print_info "--------------------------------------"
+    echo ""
     python - <<'PY'
 import os
 import shutil
@@ -394,4 +445,14 @@ SH
         "$APP_ROOT/Info.plist" 2>/dev/null || true
 fi
 
-echo "Build artifacts created in dist/ and dist/*.whl"
+if (( DO_BUILD == 1 )) && (( DO_BUNDLE == 1 )); then
+    echo "Build artifacts created in dist/, dist/*.whl, and dist/Rayforge.app"
+elif (( DO_BUILD == 1 )); then
+    echo "Build artifacts created in dist/ and dist/*.whl"
+elif (( DO_BUNDLE == 1 )); then
+    echo "App bundle created in dist/Rayforge.app"
+fi
+
+echo ""
+print_info " Finished!"
+echo ""
