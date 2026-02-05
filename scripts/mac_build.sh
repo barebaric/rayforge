@@ -112,6 +112,30 @@ PY
     # Remove conflicting libiconv bundled by cv2.
     rm -f "$FW_DIR/libiconv.2.dylib"
 
+    # Replace the launcher with a wrapper that sets env vars,
+    # keeping the Mach-O as Rayforge.bin.
+    if [ -f "$BIN_DIR/Rayforge" ] && [ ! -f "$BIN_DIR/Rayforge.bin" ]; then
+        if file "$BIN_DIR/Rayforge" | grep -q "Mach-O"; then
+            mv "$BIN_DIR/Rayforge" "$BIN_DIR/Rayforge.bin"
+        else
+            cp "$BIN_DIR/Rayforge" "$BIN_DIR/Rayforge.bin"
+        fi
+    fi
+    if [ -f "$BIN_DIR/Rayforge.bin" ]; then
+        cat > "$BIN_DIR/Rayforge" <<'SH'
+#!/bin/bash
+APP_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+export DYLD_LIBRARY_PATH="$APP_DIR/Frameworks"
+export DYLD_FALLBACK_LIBRARY_PATH="$APP_DIR/Frameworks"
+export GI_TYPELIB_PATH="$APP_DIR/Resources/gi_typelibs"
+export GIO_EXTRA_MODULES="$APP_DIR/Frameworks/gio_modules"
+exec "$APP_DIR/MacOS/Rayforge.bin" "$@"
+SH
+        chmod +x "$BIN_DIR/Rayforge"
+        install_name_tool -add_rpath @executable_path/../Frameworks \
+            "$BIN_DIR/Rayforge.bin" 2>/dev/null || true
+    fi
+
     BREW_PREFIX=""
     if command -v brew >/dev/null 2>&1; then
         BREW_PREFIX=$(brew --prefix)
@@ -147,6 +171,33 @@ PY
             install_name_tool -id "@rpath/$lib" "$FW_DIR/$lib"
         fi
     done
+    copy_keg_lib() {
+        local libname=$1
+        shift
+        if [ -f "$FW_DIR/$libname" ]; then
+            return
+        fi
+        for lib_dir in "$@"; do
+            if [ -f "$lib_dir/$libname" ]; then
+                rm -f "$FW_DIR/$libname"
+                cp "$lib_dir/$libname" "$FW_DIR/"
+                install_name_tool -id "@rpath/$libname" "$FW_DIR/$libname"
+                break
+            fi
+        done
+    }
+    copy_keg_lib libfontconfig.1.dylib \
+        "$BREW_PREFIX/opt/fontconfig/lib" \
+        "/usr/local/opt/fontconfig/lib" \
+        "/opt/homebrew/opt/fontconfig/lib"
+    copy_keg_lib libfreetype.6.dylib \
+        "$BREW_PREFIX/opt/freetype/lib" \
+        "/usr/local/opt/freetype/lib" \
+        "/opt/homebrew/opt/freetype/lib"
+    copy_keg_lib libintl.8.dylib \
+        "$BREW_PREFIX/opt/gettext/lib" \
+        "/usr/local/opt/gettext/lib" \
+        "/opt/homebrew/opt/gettext/lib"
     if [ ! -f "$FW_DIR/libpng16.16.dylib" ]; then
         for lib_dir in \
             "$BREW_PREFIX/opt/libpng/lib" \
@@ -220,7 +271,8 @@ PY
                 changed=1
             fi
         done < <(otool -L "$BIN_DIR/Rayforge" "$FW_DIR"/*.dylib 2>/dev/null | \
-            awk '{print $1}' | grep -E '^/usr/local/|^/opt/homebrew/' | sort -u)
+            awk '{print $1}' | grep -E '^/usr/local/|^/opt/homebrew/' | \
+            sort -u || true)
 
         return $changed
     }
@@ -232,16 +284,28 @@ PY
 
     # Fix all library references to use @rpath instead of absolute paths
     echo "Fixing library references..."
-    for dylib in "$FW_DIR"/*.dylib; do
-        [ -f "$dylib" ] || continue
-        # Get all dependencies
-        otool -L "$dylib" | grep -E '/usr/local/|/opt/homebrew/' | awk '{print $1}' | while read dep; do
+    chmod -R u+w "$FW_DIR" "$BIN_DIR" 2>/dev/null || true
+    find "$FW_DIR" -name "*.dylib" -print0 | while IFS= read -r -d '' dylib; do
+        otool -L "$dylib" | grep -E '/usr/local/|/opt/homebrew/' | \
+            awk '{print $1}' | while read dep; do
             libname=$(basename "$dep")
-            # Only rewrite if we've bundled this library
             if [ -f "$FW_DIR/$libname" ]; then
                 install_name_tool -change "$dep" "@rpath/$libname" "$dylib" 2>/dev/null || true
             fi
-        done
+        done || true
+    done
+    for bin in "$BIN_DIR/Rayforge" "$BIN_DIR/Rayforge.bin"; do
+        [ -f "$bin" ] || continue
+        if ! file "$bin" | grep -q "Mach-O"; then
+            continue
+        fi
+        otool -L "$bin" | grep -E '/usr/local/|/opt/homebrew/' | \
+            awk '{print $1}' | while read dep; do
+            libname=$(basename "$dep")
+            if [ -f "$FW_DIR/$libname" ]; then
+                install_name_tool -change "$dep" "@rpath/$libname" "$bin" 2>/dev/null || true
+            fi
+        done || true
     done
 
     # Force libpng references to @rpath to avoid runtime lookups in Homebrew.
@@ -260,7 +324,25 @@ PY
             while read dep; do
                 install_name_tool -change "$dep" "@rpath/libpng16.16.dylib" \
                     "$FW_DIR/libfreetype.6.dylib" 2>/dev/null || true
-            done
+            done || true
+    fi
+    if [ -f "$FW_DIR/libfontconfig.1.dylib" ]; then
+        if [ -f "$FW_DIR/libfreetype.6.dylib" ]; then
+            otool -L "$FW_DIR/libfontconfig.1.dylib" | awk '{print $1}' | \
+                grep -E '/opt/homebrew/opt/freetype/|/usr/local/opt/freetype/' | \
+                while read dep; do
+                    install_name_tool -change "$dep" "@rpath/libfreetype.6.dylib" \
+                        "$FW_DIR/libfontconfig.1.dylib" 2>/dev/null || true
+                done || true
+        fi
+        if [ -f "$FW_DIR/libintl.8.dylib" ]; then
+            otool -L "$FW_DIR/libfontconfig.1.dylib" | awk '{print $1}' | \
+                grep -E '/opt/homebrew/opt/gettext/|/usr/local/opt/gettext/' | \
+                while read dep; do
+                    install_name_tool -change "$dep" "@rpath/libintl.8.dylib" \
+                        "$FW_DIR/libfontconfig.1.dylib" 2>/dev/null || true
+                done || true
+        fi
     fi
 
     # Refresh cv2 dylib symlinks to the parent copies.
@@ -283,26 +365,6 @@ PY
     # if [ -d "/usr/local/lib/gdk-pixbuf-2.0" ]; then
     #     cp -r "/usr/local/lib/gdk-pixbuf-2.0" "$FW_DIR/" || true
     # fi
-
-    # Replace the launcher with a wrapper that sets env vars,
-    # keeping the Mach-O as Rayforge.bin.
-    if [ -f "$BIN_DIR/Rayforge" ]; then
-        mv "$BIN_DIR/Rayforge" "$BIN_DIR/Rayforge.bin"
-    fi
-    cat > "$BIN_DIR/Rayforge" <<'SH'
-#!/bin/bash
-APP_DIR="$(cd "$(dirname "$0")/.." && pwd)"
-export DYLD_LIBRARY_PATH="$APP_DIR/Frameworks"
-export DYLD_FALLBACK_LIBRARY_PATH="$APP_DIR/Frameworks"
-export GI_TYPELIB_PATH="$APP_DIR/Resources/gi_typelibs"
-export GIO_EXTRA_MODULES="$APP_DIR/Frameworks/gio_modules"
-exec "$APP_DIR/MacOS/Rayforge.bin" "$@"
-SH
-    chmod +x "$BIN_DIR/Rayforge"
-
-    # Ensure rpath points to the bundled Frameworks.
-    install_name_tool -add_rpath @executable_path/../Frameworks \
-        "$BIN_DIR/Rayforge.bin" 2>/dev/null || true
 
     # Make sure the plist still points to the wrapper.
     /usr/libexec/PlistBuddy -c "Set :CFBundleExecutable Rayforge" \
