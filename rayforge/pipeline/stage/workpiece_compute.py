@@ -1,4 +1,5 @@
 from typing import Any, List, Tuple, Iterator, Optional
+import logging
 from ...core.ops import Ops
 from ...core.workpiece import WorkPiece
 from ...machine.models.laser import Laser
@@ -673,12 +674,24 @@ def compute_workpiece_artifact(
     if settings["air_assist"]:
         final_artifact.ops.disable_air_assist()
 
+    logger = logging.getLogger(__name__)
+    logger.debug(
+        "compute_workpiece_artifact: Creating final_artifact_to_store: "
+        f"final_artifact.source_dimensions="
+        f"{final_artifact.source_dimensions}, "
+        f"generation_size={generation_size}"
+    )
     final_artifact_to_store = WorkPieceArtifact(
         ops=final_artifact.ops,
         is_scalable=final_artifact.is_scalable,
         source_coordinate_system=final_artifact.source_coordinate_system,
         source_dimensions=final_artifact.source_dimensions,
         generation_size=generation_size,
+    )
+    logger.debug(
+        "compute_workpiece_artifact: Created final_artifact_to_store: "
+        f"source_dimensions={final_artifact_to_store.source_dimensions}, "
+        f"generation_size={final_artifact_to_store.generation_size}"
     )
 
     _set_progress(
