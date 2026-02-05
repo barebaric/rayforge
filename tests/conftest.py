@@ -328,3 +328,55 @@ async def doc_editor(task_mgr, context_initializer):
     editor = DocEditor(task_manager=task_mgr, context=context_initializer)
     yield editor
     editor.cleanup()
+
+
+@pytest.fixture
+def mock_progress_context():
+    """
+    Provides a mock ProgressContext for testing compute functions.
+
+    This mock tracks all progress and message calls for verification.
+    Allows testing cancellation by setting is_cancelled = True.
+    """
+
+    class MockProgressContext:
+        def __init__(self):
+            self.progress_calls: list[tuple[float, str]] = []
+            self.message_calls: list[str] = []
+            self._is_cancelled = False
+            self._total = 1.0
+            self._sub_contexts: list["MockProgressContext"] = []
+
+        def is_cancelled(self) -> bool:
+            return self._is_cancelled
+
+        def set_progress(self, progress: float) -> None:
+            normalized = (
+                progress / self._total if self._total > 0 else progress
+            )
+            self.progress_calls.append((normalized, ""))
+
+        def set_message(self, message: str) -> None:
+            self.message_calls.append(message)
+
+        def set_total(self, total: float) -> None:
+            if total <= 0:
+                self._total = 1.0
+            else:
+                self._total = float(total)
+
+        def sub_context(
+            self,
+            base_progress: float,
+            progress_range: float,
+            total: float = 1.0,
+        ) -> "MockProgressContext":
+            sub_ctx = MockProgressContext()
+            sub_ctx._total = total
+            self._sub_contexts.append(sub_ctx)
+            return sub_ctx
+
+        def flush(self) -> None:
+            pass
+
+    return MockProgressContext()

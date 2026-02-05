@@ -1,6 +1,6 @@
 import logging
 from enum import Enum, auto
-from typing import Optional, TYPE_CHECKING, Dict, Any
+from typing import Optional, TYPE_CHECKING, Dict, Any, Callable
 from ...image.tracing import trace_surface
 from ...core.geo import contours, Geometry
 from ...core.matrix import Matrix
@@ -8,13 +8,13 @@ from ...core.ops import Ops, SectionType
 from ...core.vectorization_spec import TraceSpec
 from ..artifact import WorkPieceArtifact
 from ..coord import CoordinateSystem
+from ..progress import ProgressContext
 from .base import OpsProducer, CutSide
 
 
 if TYPE_CHECKING:
     from ...core.workpiece import WorkPiece
     from ...machine.models.laser import Laser
-    from ...shared.tasker.proxy import BaseExecutionContext
 
 logger = logging.getLogger(__name__)
 
@@ -86,7 +86,9 @@ class ContourProducer(OpsProducer):
         workpiece: "Optional[WorkPiece]" = None,
         settings: Optional[Dict[str, Any]] = None,
         y_offset_mm: float = 0.0,
-        proxy: Optional["BaseExecutionContext"] = None,
+        context: Optional[ProgressContext] = None,
+        progress_callback: Optional[Callable[[float], None]] = None,
+        message_callback: Optional[Callable[[str], None]] = None,
     ) -> WorkPieceArtifact:
         if workpiece is None:
             raise ValueError("ContourProducer requires a workpiece context.")
@@ -205,11 +207,13 @@ class ContourProducer(OpsProducer):
 
         if not final_geometry.is_empty():
             if allow_arcs:
-                progress_callback = proxy.set_progress if proxy else None
-                if proxy:
-                    proxy.set_message("Optimizing path with arcs...")
+                if context:
+                    context.set_message(_("Optimizing path with arcs..."))
                 final_geometry = final_geometry.fit_arcs(
-                    tolerance, on_progress=progress_callback
+                    tolerance,
+                    on_progress=(
+                        lambda p: context.set_progress(p) if context else None
+                    ),
                 )
             else:
                 final_geometry = final_geometry.linearize(tolerance)

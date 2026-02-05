@@ -1,5 +1,5 @@
 import pytest
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 import logging
 from pathlib import Path
 
@@ -325,3 +325,48 @@ def test_transformers_are_applied_before_put(mock_proxy, base_workpiece):
         # Cleanup
         if handle:
             get_context().artifact_store.release(handle)
+
+
+def test_runner_calls_compute_function(mock_proxy, base_workpiece):
+    """Test that the runner correctly calls the compute function."""
+    from rayforge.core.ops import Ops
+
+    step = Step(typelabel="Contour")
+    step.opsproducer_dict = ContourProducer().to_dict()
+    settings = step.get_settings()
+    laser = Laser()
+    generation_id = 1
+    generation_size = (25.0, 25.0)
+
+    mock_artifact = MagicMock(spec=WorkPieceArtifact)
+    mock_artifact.ops = Ops()
+    mock_artifact.is_scalable = True
+    mock_artifact.source_coordinate_system = MagicMock()
+    mock_artifact.source_dimensions = None
+    mock_artifact.generation_size = generation_size
+
+    with patch(
+        "rayforge.pipeline.stage.workpiece_runner.compute_workpiece_artifact",
+        return_value=mock_artifact,
+    ) as mock_compute:
+        result_gen_id = make_workpiece_artifact_in_subprocess(
+            mock_proxy,
+            get_context().artifact_store,
+            base_workpiece.to_dict(),
+            step.opsproducer_dict,
+            [],
+            [],
+            laser.to_dict(),
+            settings,
+            generation_id,
+            generation_size,
+            "test_workpiece",
+        )
+
+        assert result_gen_id == generation_id
+        mock_compute.assert_called_once()
+
+        call_args = mock_compute.call_args
+        assert call_args.kwargs["workpiece"].name == base_workpiece.name
+        assert call_args.kwargs["generation_size"] == generation_size
+        assert call_args.kwargs["settings"] == settings

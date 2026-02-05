@@ -2,9 +2,9 @@ import math
 from typing import Optional, List, Tuple, Dict, Any
 from ...core.workpiece import WorkPiece
 from ...core.ops import Ops, LineToCommand, MoveToCommand
-from ...shared.tasker.proxy import BaseExecutionContext
 from ...core.geo.analysis import get_angle_at_vertex
 from ...core.geo.linearize import resample_polyline
+from ..progress import ProgressContext
 from .base import OpsTransformer, ExecutionPhase
 
 
@@ -122,14 +122,14 @@ class Smooth(OpsTransformer):
         self,
         ops: Ops,
         workpiece: Optional[WorkPiece] = None,
-        context: Optional[BaseExecutionContext] = None,
+        context: Optional[ProgressContext] = None,
     ):
         """
         Executes the smoothing transformation on a set of operations.
 
         Args:
             ops: The operations object containing path data.
-            context: The execution context for cancellation and progress.
+            context: Optional progress context for reporting progress.
         """
         if self.amount == 0:
             return
@@ -140,8 +140,7 @@ class Smooth(OpsTransformer):
 
         for i, segment in enumerate(segments):
             if context and context.is_cancelled():
-                return
-
+                break
             points_to_smooth: Optional[List[Tuple[float, float, float]]] = None
             if self._is_line_only_segment(segment):
                 # Extract points. The `end` property may be typed as Optional.

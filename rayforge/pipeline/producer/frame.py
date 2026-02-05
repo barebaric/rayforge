@@ -1,5 +1,5 @@
 import logging
-from typing import Optional, TYPE_CHECKING, Dict, Any
+from typing import Optional, TYPE_CHECKING, Dict, Any, Callable
 from ...core.geo import Geometry
 from ...core.ops import (
     Ops,
@@ -9,12 +9,12 @@ from ...core.ops import (
 )
 from ..artifact import WorkPieceArtifact
 from ..coord import CoordinateSystem
+from ..progress import ProgressContext
 from .base import OpsProducer, CutSide
 
 if TYPE_CHECKING:
     from ...core.workpiece import WorkPiece
     from ...machine.models.laser import Laser
-    from ...shared.tasker.proxy import BaseExecutionContext
 
 logger = logging.getLogger(__name__)
 
@@ -55,7 +55,9 @@ class FrameProducer(OpsProducer):
         workpiece: "Optional[WorkPiece]" = None,
         settings: Optional[Dict[str, Any]] = None,
         y_offset_mm: float = 0.0,
-        proxy: Optional["BaseExecutionContext"] = None,
+        context: Optional[ProgressContext] = None,
+        progress_callback: Optional[Callable[[float], None]] = None,
+        message_callback: Optional[Callable[[str], None]] = None,
     ) -> WorkPieceArtifact:
         if workpiece is None:
             raise ValueError("FrameProducer requires a workpiece context.")

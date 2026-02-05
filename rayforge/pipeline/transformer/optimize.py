@@ -16,8 +16,8 @@ from ...core.ops.flip import flip_segment
 from ...core.ops.group import (
     group_by_state_continuity,
 )
+from ..progress import ProgressContext
 from .base import OpsTransformer, ExecutionPhase
-from ...shared.tasker.context import BaseExecutionContext, ExecutionContext
 
 
 logger = logging.getLogger(__name__)
@@ -159,7 +159,7 @@ def group_mixed_continuity(
 
 
 def kdtree_order_segments(
-    context: BaseExecutionContext, segments: List[List[MovingCommand]]
+    context: ProgressContext, segments: List[List[MovingCommand]]
 ) -> List[List[MovingCommand]]:
     """
     Orders segments using a nearest-neighbor search accelerated by a k-d tree.
@@ -252,7 +252,7 @@ def kdtree_order_segments(
 
 
 def greedy_order_segments(
-    context: BaseExecutionContext,
+    context: ProgressContext,
     segments: List[List[MovingCommand]],
 ) -> List[List[MovingCommand]]:
     """
@@ -308,7 +308,7 @@ def greedy_order_segments(
 
 
 def two_opt(
-    context: BaseExecutionContext,
+    context: ProgressContext,
     ordered: List[List[MovingCommand]],
     max_iter: int,
 ) -> List[List[MovingCommand]]:
@@ -530,10 +530,10 @@ class Optimize(OpsTransformer):
         self,
         ops: Ops,
         workpiece: Optional[WorkPiece] = None,
-        context: Optional[BaseExecutionContext] = None,
+        context: Optional[ProgressContext] = None,
     ) -> None:
         if context is None:
-            context = ExecutionContext()
+            return
 
         # Thresholds for the smart optimization strategy
         TWO_OPT_SEGMENT_THRESHOLD = 1000

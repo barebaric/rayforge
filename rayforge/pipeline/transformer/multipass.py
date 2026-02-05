@@ -5,7 +5,7 @@ from typing import Optional, Dict, Any
 from .base import OpsTransformer, ExecutionPhase
 from ...core.workpiece import WorkPiece
 from ...core.ops import Ops
-from ...shared.tasker.proxy import BaseExecutionContext
+from ..progress import ProgressContext
 
 
 class MultiPassTransformer(OpsTransformer):
@@ -83,7 +83,7 @@ class MultiPassTransformer(OpsTransformer):
         self,
         ops: Ops,
         workpiece: Optional[WorkPiece] = None,
-        context: Optional[BaseExecutionContext] = None,
+        context: Optional[ProgressContext] = None,
     ) -> None:
         """
         Executes the multi-pass transformation on the Ops object.
