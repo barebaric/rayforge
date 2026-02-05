@@ -6,6 +6,7 @@ from ..core.item import DocItem
 from ..core.layer import Layer
 from ..core.workpiece import WorkPiece
 from .doceditor.add_tabs_popover import AddTabsPopover
+from .shared.keyboard import primary_accel
 
 
 if TYPE_CHECKING:
@@ -348,34 +349,38 @@ class ActionManager:
         """
         Populates the given ShortcutController with all application shortcuts.
         """
+        primary = primary_accel()
+        def with_primary(shortcut: str) -> str:
+            return shortcut.replace("<Primary>", primary)
+
         shortcuts = {
             # File
-            "win.new": "<Primary>n",
-            "win.open": "<Primary>o",
-            "win.save": "<Primary>s",
-            "win.save-as": "<Primary><Shift>s",
-            "win.import": "<Primary>i",
-            "win.export": "<Primary>e",
-            "win.quit": "<Primary>q",
+            "win.new": with_primary("<Primary>n"),
+            "win.open": with_primary("<Primary>o"),
+            "win.save": with_primary("<Primary>s"),
+            "win.save-as": with_primary("<Primary><Shift>s"),
+            "win.import": with_primary("<Primary>i"),
+            "win.export": with_primary("<Primary>e"),
+            "win.quit": with_primary("<Primary>q"),
             # Edit
-            "win.undo": "<Primary>z",
-            "win.redo": "<Primary>y",
-            "win.redo_alt": "<Primary><Shift>z",
-            "win.cut": "<Primary>x",
-            "win.copy": "<Primary>c",
-            "win.paste": "<Primary>v",
-            "win.select_all": "<Primary>a",
-            "win.duplicate": "<Primary>d",
+            "win.undo": with_primary("<Primary>z"),
+            "win.redo": with_primary("<Primary>y"),
+            "win.redo_alt": with_primary("<Primary><Shift>z"),
+            "win.cut": with_primary("<Primary>x"),
+            "win.copy": with_primary("<Primary>c"),
+            "win.paste": with_primary("<Primary>v"),
+            "win.select_all": with_primary("<Primary>a"),
+            "win.duplicate": with_primary("<Primary>d"),
             "win.remove": "Delete",
-            "win.clear": "<Primary><Shift>Delete",
-            "win.settings": "<Primary>comma",
+            "win.clear": with_primary("<Primary><Shift>Delete"),
+            "win.settings": with_primary("<Primary>comma"),
             # View
             "win.show_workpieces": "h",
             "win.show_tabs": "t",
             "win.toggle_camera_view": "<Alt>c",
-            "win.toggle_control_panel": "<Primary>l",
-            "win.toggle_gcode_preview": "<Primary><Shift>g",
-            "win.toggle_travel_view": "<Primary><Shift>t",
+            "win.toggle_control_panel": with_primary("<Primary>l"),
+            "win.toggle_gcode_preview": with_primary("<Primary><Shift>g"),
+            "win.toggle_travel_view": with_primary("<Primary><Shift>t"),
             "win.show_3d_view": "F12",
             "win.simulate_mode": "F11",
             "win.view_top": "1",
@@ -384,27 +389,27 @@ class ActionManager:
             "win.view_toggle_perspective": "p",
             # Object
             "win.add_stock": "<Alt>s",
-            "win.new_sketch": "<Primary>n",
+            "win.new_sketch": with_primary("<Primary>n"),
             "win.add-tabs-equidistant": "<Alt>t",
             # Arrange
-            "win.group": "<Primary>g",
-            "win.ungroup": "<Primary>u",
+            "win.group": with_primary("<Primary>g"),
+            "win.ungroup": with_primary("<Primary>u"),
             "win.split": "<Alt>w",
-            "win.layer-move-up": "<Primary>Page_Up",
-            "win.layer-move-down": "<Primary>Page_Down",
-            "win.align-left": "<Primary><Shift>Left",
-            "win.align-right": "<Primary><Shift>Right",
-            "win.align-top": "<Primary><Shift>Up",
-            "win.align-bottom": "<Primary><Shift>Down",
-            "win.align-h-center": "<Primary><Shift>Home",
-            "win.align-v-center": "<Primary><Shift>End",
-            "win.spread-h": "<Primary><Shift>h",
-            "win.spread-v": "<Primary><Shift>v",
+            "win.layer-move-up": with_primary("<Primary>Page_Up"),
+            "win.layer-move-down": with_primary("<Primary>Page_Down"),
+            "win.align-left": with_primary("<Primary><Shift>Left"),
+            "win.align-right": with_primary("<Primary><Shift>Right"),
+            "win.align-top": with_primary("<Primary><Shift>Up"),
+            "win.align-bottom": with_primary("<Primary><Shift>Down"),
+            "win.align-h-center": with_primary("<Primary><Shift>Home"),
+            "win.align-v-center": with_primary("<Primary><Shift>End"),
+            "win.spread-h": with_primary("<Primary><Shift>h"),
+            "win.spread-v": with_primary("<Primary><Shift>v"),
             "win.layout-pixel-perfect": "<Alt>a",
             "win.flip-horizontal": "<Shift>h",
             "win.flip-vertical": "<Shift>v",
             # Machine & Help
-            "win.machine-settings": "<Primary>less",
+            "win.machine-settings": with_primary("<Primary>less"),
             "win.about": "F1",
         }
 

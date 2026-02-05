@@ -22,6 +22,7 @@ from .elements.work_origin import WorkOriginElement
 from . import context_menu
 from ..sketcher.editor import SketchEditor
 from ..sketcher.sketchelement import SketchElement
+from ..shared.keyboard import is_primary_modifier
 
 if TYPE_CHECKING:
     from ...doceditor.editor import DocEditor
@@ -907,11 +908,11 @@ class WorkSurface(WorldSurface):
         if super().on_key_pressed(controller, keyval, keycode, state):
             return True
 
-        is_ctrl = bool(state & Gdk.ModifierType.CONTROL_MASK)
+        is_primary = is_primary_modifier(state)
         is_shift = bool(state & Gdk.ModifierType.SHIFT_MASK)
 
         # Handle moving workpiece to another layer
-        if is_ctrl and (
+        if is_primary and (
             keyval == Gdk.KEY_Page_Up or keyval == Gdk.KEY_Page_Down
         ):
             direction = -1 if keyval == Gdk.KEY_Page_Up else 1
@@ -919,7 +920,7 @@ class WorkSurface(WorldSurface):
             return True
 
         # Handle clipboard and duplication
-        if is_ctrl:
+        if is_primary:
             selected_items = [e.data for e in self.get_selected_elements()]
             if keyval == Gdk.KEY_x:
                 if selected_items:

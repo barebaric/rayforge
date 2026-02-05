@@ -113,7 +113,11 @@ def main():
     class App(Adw.Application):
         def __init__(self, args):
             super().__init__(application_id="org.rayforge.rayforge")
-            self.set_accels_for_action("win.quit", ["<Ctrl>Q"])
+            from rayforge.ui_gtk.shared.keyboard import primary_accel
+
+            self.set_accels_for_action(
+                "win.quit", [f"{primary_accel()}q"]
+            )
             self.args = args
             self.win = None
 

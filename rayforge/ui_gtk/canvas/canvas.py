@@ -21,6 +21,7 @@ from .cursor import get_cursor_for_region
 from .multiselect import MultiSelectionGroup
 from .overlays import render_selection_handles, render_selection_frame
 from .intersect import obb_intersects_aabb
+from ..shared.keyboard import is_primary_keyval
 
 
 logger = logging.getLogger(__name__)
@@ -1271,7 +1272,7 @@ class Canvas(Gtk.DrawingArea):
         if keyval in (Gdk.KEY_Shift_L, Gdk.KEY_Shift_R):
             self._shift_pressed = True
             # Allow propagation for accelerators
-        elif keyval in (Gdk.KEY_Control_L, Gdk.KEY_Control_R):
+        elif is_primary_keyval(keyval):
             self._ctrl_pressed = True
             # Allow propagation for accelerators
         elif keyval == Gdk.KEY_Delete:
@@ -1289,7 +1290,7 @@ class Canvas(Gtk.DrawingArea):
         """Handles key release events for modifiers."""
         if keyval in (Gdk.KEY_Shift_L, Gdk.KEY_Shift_R):
             self._shift_pressed = False
-        elif keyval in (Gdk.KEY_Control_L, Gdk.KEY_Control_R):
+        elif is_primary_keyval(keyval):
             self._ctrl_pressed = False
 
     def get_active_element(self) -> Optional[CanvasElement]:

@@ -7,6 +7,7 @@ from ...context import get_context
 from ...machine.models.machine import Machine
 from ..camera.camera_preferences_page import CameraPreferencesPage
 from ..icons import get_icon
+from ..shared.keyboard import is_primary_modifier
 from ..shared.patched_dialog_window import PatchedDialogWindow
 from .advanced_preferences_page import AdvancedPreferencesPage
 from .device_settings_page import DeviceSettingsPage
@@ -221,10 +222,10 @@ class MachineSettingsDialog(PatchedDialogWindow):
         self.camera_page.set_controllers(relevant_controllers)
 
     def _on_key_pressed(self, controller, keyval, keycode, state):
-        """Handle key press events, closing the dialog on Escape or Ctrl+W."""
-        has_ctrl = state & Gdk.ModifierType.CONTROL_MASK
+        """Handle key press events, closing the dialog on Escape or Cmd/Ctrl+W."""
+        has_primary = is_primary_modifier(state)
 
-        if keyval == Gdk.KEY_Escape or (has_ctrl and keyval == Gdk.KEY_w):
+        if keyval == Gdk.KEY_Escape or (has_primary and keyval == Gdk.KEY_w):
             self.close()
             return True
         return False
