@@ -19,6 +19,13 @@ from rayforge.pipeline.stage.workpiece_view_compute import (
     compute_workpiece_view_to_buffer,
     _get_content_bbox,
     render_chunk_to_buffer,
+    _encode_vertex_and_texture_data,
+    _calculate_render_dimensions,
+    _setup_cairo_context,
+    _draw_travel_vertices,
+    _draw_zero_power_vertices,
+    _prepare_powered_vertices_for_batching,
+    _draw_powered_vertices_batch,
 )
 from rayforge.shared.util.colors import ColorSet
 
@@ -535,3 +542,228 @@ def test_get_content_bbox_empty():
     result = _get_content_bbox(vertex_data, None, False)
 
     assert result is None
+
+
+def test_encode_vertex_and_texture_data_vector():
+    """Test _encode_vertex_and_texture_data with vector data."""
+    ops = Ops()
+    ops.add(SetPowerCommand(1.0))
+    ops.add(MoveToCommand((0.0, 0.0, 0.0)))
+    ops.add(LineToCommand((10.0, 10.0, 0.0)))
+    artifact = WorkPieceArtifact(
+        ops=ops,
+        is_scalable=True,
+        source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
+        generation_size=(20.0, 20.0),
+    )
+
+    color_set = create_test_color_set({"cut": ("#000", "#F00")})
+    context = RenderContext(
+        pixels_per_mm=(1.0, 1.0),
+        show_travel_moves=False,
+        margin_px=0,
+        color_set_dict=color_set.to_dict(),
+    )
+
+    vertex_data, texture_data = _encode_vertex_and_texture_data(
+        artifact, context
+    )
+
+    assert vertex_data is not None
+    assert vertex_data.powered_vertices.size > 0
+    assert texture_data is None
+
+
+def test_encode_vertex_and_texture_data_texture():
+    """Test _encode_vertex_and_texture_data with texture data."""
+    ops = Ops()
+    for mm_y in range(1, 6):
+        power_values = bytearray([128] * 10)
+        ops.add(MoveToCommand((0.0, float(mm_y), 0.0)))
+        ops.add(ScanLinePowerCommand((10.0, float(mm_y), 0.0), power_values))
+    artifact = WorkPieceArtifact(
+        ops=ops,
+        is_scalable=False,
+        source_coordinate_system=CoordinateSystem.PIXEL_SPACE,
+        generation_size=(10, 10),
+    )
+
+    color_set = create_test_color_set({"engrave": ("#000", "#FFF")})
+    context = RenderContext(
+        pixels_per_mm=(1.0, 1.0),
+        show_travel_moves=False,
+        margin_px=0,
+        color_set_dict=color_set.to_dict(),
+    )
+
+    vertex_data, texture_data = _encode_vertex_and_texture_data(
+        artifact, context
+    )
+
+    assert vertex_data is not None
+    assert texture_data is not None
+    assert texture_data.power_texture_data.size > 0
+
+
+def test_calculate_render_dimensions():
+    """Test _calculate_render_dimensions returns valid dimensions."""
+    bbox = (0.0, 0.0, 10.0, 10.0)
+    color_set = create_test_color_set({"cut": ("#000", "#F00")})
+    context = RenderContext(
+        pixels_per_mm=(1.0, 1.0),
+        show_travel_moves=False,
+        margin_px=1,
+        color_set_dict=color_set.to_dict(),
+    )
+
+    result = _calculate_render_dimensions(bbox, context)
+
+    assert result is not None
+    width_px, height_px, effective_ppm_x, effective_ppm_y = result
+    assert width_px == 12
+    assert height_px == 12
+    assert effective_ppm_x == 1.0
+    assert effective_ppm_y == 1.0
+
+
+def test_calculate_render_dimensions_invalid():
+    """Test _calculate_render_dimensions returns None for invalid bbox."""
+    bbox = (0.0, 0.0, 0.0, 0.0)
+    color_set = create_test_color_set({"cut": ("#000", "#F00")})
+    context = RenderContext(
+        pixels_per_mm=(1.0, 1.0),
+        show_travel_moves=False,
+        margin_px=1,
+        color_set_dict=color_set.to_dict(),
+    )
+
+    result = _calculate_render_dimensions(bbox, context)
+
+    assert result is None
+
+
+def test_setup_cairo_context():
+    """Test _setup_cairo_context creates valid cairo context."""
+    bitmap = np.zeros((10, 10, 4), dtype=np.uint8)
+    bbox = (0.0, 0.0, 10.0, 10.0)
+    color_set = create_test_color_set({"cut": ("#000", "#F00")})
+    context = RenderContext(
+        pixels_per_mm=(1.0, 1.0),
+        show_travel_moves=False,
+        margin_px=0,
+        color_set_dict=color_set.to_dict(),
+    )
+
+    ctx, line_width_mm = _setup_cairo_context(bitmap, bbox, context)
+
+    assert ctx is not None
+    assert line_width_mm == 1.0
+
+
+def test_draw_travel_vertices():
+    """Test _draw_travel_vertices draws travel vertices."""
+    from rayforge.pipeline.artifact.base import VertexData
+    import cairo
+
+    vertex_data = VertexData(
+        powered_vertices=np.array([]),
+        powered_colors=np.array([]),
+        travel_vertices=np.array(
+            [
+                [0.0, 0.0, 0.0],
+                [10.0, 10.0, 0.0],
+            ]
+        ),
+        zero_power_vertices=np.array([]),
+    )
+
+    color_set = create_test_color_set(
+        {"cut": ("#000", "#F00"), "travel": ("#00F", "#00F")}
+    )
+    surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, 20, 20)
+    ctx = cairo.Context(surface)
+
+    _draw_travel_vertices(ctx, vertex_data, color_set)
+
+
+def test_draw_zero_power_vertices():
+    """Test _draw_zero_power_vertices draws zero-power vertices."""
+    from rayforge.pipeline.artifact.base import VertexData
+    import cairo
+
+    vertex_data = VertexData(
+        powered_vertices=np.array([]),
+        powered_colors=np.array([]),
+        travel_vertices=np.array([]),
+        zero_power_vertices=np.array(
+            [
+                [0.0, 0.0, 0.0],
+                [10.0, 10.0, 0.0],
+            ]
+        ),
+    )
+
+    color_set = create_test_color_set(
+        {"cut": ("#000", "#F00"), "zero_power": ("#0F0", "#0F0")}
+    )
+    surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, 20, 20)
+    ctx = cairo.Context(surface)
+
+    _draw_zero_power_vertices(ctx, vertex_data, color_set)
+
+
+def test_prepare_powered_vertices_for_batching():
+    """Test _prepare_powered_vertices_for_batching."""
+    from rayforge.pipeline.artifact.base import VertexData
+
+    vertex_data = VertexData(
+        powered_vertices=np.array(
+            [
+                [0.0, 0.0, 0.0],
+                [10.0, 0.0, 0.0],
+                [10.0, 0.0, 0.0],
+                [10.0, 10.0, 0.0],
+            ]
+        ),
+        powered_colors=np.array(
+            [
+                [1.0, 0.0, 0.0],
+                [1.0, 0.0, 0.0],
+                [0.5, 0.0, 0.0],
+                [0.5, 0.0, 0.0],
+            ]
+        ),
+        travel_vertices=np.array([]),
+        zero_power_vertices=np.array([]),
+    )
+
+    color_set = create_test_color_set({"cut": ("#000", "#F00")})
+
+    powered_v, unique_colors, inverse_indices = (
+        _prepare_powered_vertices_for_batching(vertex_data, color_set)
+    )
+
+    assert powered_v.shape == (2, 2, 3)
+    assert unique_colors.shape[0] > 0
+    assert len(inverse_indices) == 2
+
+
+def test_draw_powered_vertices_batch():
+    """Test _draw_powered_vertices_batch draws a batch of vertices."""
+    import cairo
+
+    powered_v = np.array(
+        [
+            [[0.0, 0.0, 0.0], [10.0, 0.0, 0.0]],
+            [[10.0, 0.0, 0.0], [10.0, 10.0, 0.0]],
+        ]
+    )
+    unique_colors = np.array([[1.0, 0.0, 0.0, 1.0]])
+    inverse_indices = np.array([0, 0])
+
+    surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, 20, 20)
+    ctx = cairo.Context(surface)
+
+    _draw_powered_vertices_batch(
+        ctx, powered_v, unique_colors, inverse_indices, 0, 2
+    )

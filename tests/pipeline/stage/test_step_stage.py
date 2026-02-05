@@ -302,3 +302,366 @@ class TestStepPipelineStage:
             step.uid
         )
         mock_artifact_manager.invalidate_for_job.assert_called()
+
+    def test_validate_assembly_dependencies_missing_layer(
+        self,
+        mock_task_mgr,
+        mock_artifact_manager,
+        mock_machine,
+        mock_doc_and_step,
+    ):
+        """Tests validation fails when step has no layer."""
+        doc, step = mock_doc_and_step
+        type(step).layer = PropertyMock(return_value=None)
+        stage = StepPipelineStage(
+            mock_task_mgr, mock_artifact_manager, mock_machine
+        )
+
+        result = stage._validate_assembly_dependencies(step)
+
+        assert result is False
+
+    def test_validate_assembly_dependencies_active_task(
+        self,
+        mock_task_mgr,
+        mock_artifact_manager,
+        mock_machine,
+        mock_doc_and_step,
+    ):
+        """Tests validation fails when task is already active."""
+        doc, step = mock_doc_and_step
+        stage = StepPipelineStage(
+            mock_task_mgr, mock_artifact_manager, mock_machine
+        )
+        stage._active_tasks[step.uid] = MagicMock()
+
+        result = stage._validate_assembly_dependencies(step)
+
+        assert result is False
+
+    def test_validate_assembly_dependencies_no_machine(
+        self,
+        mock_task_mgr,
+        mock_artifact_manager,
+        mock_doc_and_step,
+    ):
+        """Tests validation fails when no machine is configured."""
+        doc, step = mock_doc_and_step
+        stage = StepPipelineStage(mock_task_mgr, mock_artifact_manager, None)
+
+        result = stage._validate_assembly_dependencies(step)
+
+        assert result is False
+
+    def test_validate_assembly_dependencies_success(
+        self,
+        mock_task_mgr,
+        mock_artifact_manager,
+        mock_machine,
+        mock_doc_and_step,
+    ):
+        """Tests validation succeeds when all dependencies are met."""
+        doc, step = mock_doc_and_step
+        stage = StepPipelineStage(
+            mock_task_mgr, mock_artifact_manager, mock_machine
+        )
+
+        result = stage._validate_assembly_dependencies(step)
+
+        assert result is True
+
+    def test_validate_handle_geometry_match_scalable(
+        self,
+        mock_task_mgr,
+        mock_artifact_manager,
+        mock_machine,
+    ):
+        """Tests geometry validation passes for scalable handles."""
+        stage = StepPipelineStage(
+            mock_task_mgr, mock_artifact_manager, mock_machine
+        )
+        handle = WorkPieceArtifactHandle(
+            is_scalable=True,
+            source_coordinate_system_name="MILLIMETER_SPACE",
+            source_dimensions=(10, 10),
+            generation_size=(10, 10),
+            shm_name="dummy_wp_shm",
+            handle_class_name="WorkPieceArtifactHandle",
+            artifact_type_name="WorkPieceArtifact",
+        )
+        wp = WorkPiece(name="wp1")
+        wp.set_size(20, 20)
+
+        result = stage._validate_handle_geometry_match(handle, wp)
+
+        assert result is True
+
+    def test_validate_handle_geometry_match_non_scalable_match(
+        self,
+        mock_task_mgr,
+        mock_artifact_manager,
+        mock_machine,
+    ):
+        """Tests geometry validation passes for matching non-scalable."""
+        stage = StepPipelineStage(
+            mock_task_mgr, mock_artifact_manager, mock_machine
+        )
+        handle = WorkPieceArtifactHandle(
+            is_scalable=False,
+            source_coordinate_system_name="MILLIMETER_SPACE",
+            source_dimensions=(10, 10),
+            generation_size=(10, 10),
+            shm_name="dummy_wp_shm",
+            handle_class_name="WorkPieceArtifactHandle",
+            artifact_type_name="WorkPieceArtifact",
+        )
+        wp = WorkPiece(name="wp1")
+        wp.set_size(10, 10)
+
+        result = stage._validate_handle_geometry_match(handle, wp)
+
+        assert result is True
+
+    def test_validate_handle_geometry_match_non_scalable_mismatch(
+        self,
+        mock_task_mgr,
+        mock_artifact_manager,
+        mock_machine,
+    ):
+        """Tests geometry validation fails for mismatched non-scalable."""
+        stage = StepPipelineStage(
+            mock_task_mgr, mock_artifact_manager, mock_machine
+        )
+        handle = WorkPieceArtifactHandle(
+            is_scalable=False,
+            source_coordinate_system_name="MILLIMETER_SPACE",
+            source_dimensions=(10, 10),
+            generation_size=(10, 10),
+            shm_name="dummy_wp_shm",
+            handle_class_name="WorkPieceArtifactHandle",
+            artifact_type_name="WorkPieceArtifact",
+        )
+        wp = WorkPiece(name="wp1")
+        wp.set_size(20, 20)
+
+        result = stage._validate_handle_geometry_match(handle, wp)
+
+        assert result is False
+
+    def test_collect_assembly_info_missing_handle(
+        self,
+        mock_task_mgr,
+        mock_artifact_manager,
+        mock_machine,
+        mock_doc_and_step,
+    ):
+        """Tests assembly info collection returns None when handle missing."""
+        doc, step = mock_doc_and_step
+        mock_artifact_manager.get_workpiece_handle.return_value = None
+        stage = StepPipelineStage(
+            mock_task_mgr, mock_artifact_manager, mock_machine
+        )
+
+        result = stage._collect_assembly_info(step)
+
+        assert result is None
+
+    def test_collect_assembly_info_geometry_mismatch(
+        self,
+        mock_task_mgr,
+        mock_artifact_manager,
+        mock_machine,
+        mock_doc_and_step,
+    ):
+        """Tests assembly info returns None on geometry mismatch."""
+        doc, step = mock_doc_and_step
+        mock_artifact_manager.get_workpiece_handle.return_value = (
+            WorkPieceArtifactHandle(
+                is_scalable=False,
+                source_coordinate_system_name="MILLIMETER_SPACE",
+                source_dimensions=(10, 10),
+                generation_size=(10, 10),
+                shm_name="dummy_wp_shm",
+                handle_class_name="WorkPieceArtifactHandle",
+                artifact_type_name="WorkPieceArtifact",
+            )
+        )
+        stage = StepPipelineStage(
+            mock_task_mgr, mock_artifact_manager, mock_machine
+        )
+        step.layer.all_workpieces[0].set_size(20, 20)
+
+        result = stage._collect_assembly_info(step)
+
+        assert result is None
+
+    def test_collect_assembly_info_success(
+        self,
+        mock_task_mgr,
+        mock_artifact_manager,
+        mock_machine,
+        mock_doc_and_step,
+    ):
+        """Tests successful assembly info collection."""
+        doc, step = mock_doc_and_step
+        stage = StepPipelineStage(
+            mock_task_mgr, mock_artifact_manager, mock_machine
+        )
+
+        result = stage._collect_assembly_info(step)
+
+        assert result is not None
+        assert len(result) == 1
+        assert "artifact_handle_dict" in result[0]
+        assert "world_transform_list" in result[0]
+        assert "workpiece_dict" in result[0]
+
+    def test_prepare_assembly_task(
+        self,
+        mock_task_mgr,
+        mock_artifact_manager,
+        mock_machine,
+        mock_doc_and_step,
+    ):
+        """Tests task preparation returns correct components."""
+        doc, step = mock_doc_and_step
+        stage = StepPipelineStage(
+            mock_task_mgr, mock_artifact_manager, mock_machine
+        )
+        assembly_info = [{"test": "data"}]
+
+        gen_id, when_done, when_event, adoption_event = (
+            stage._prepare_assembly_task(step, assembly_info)
+        )
+
+        assert gen_id == 1
+        assert stage._generation_id_map[step.uid] == 1
+        assert stage._time_cache[step.uid] is None
+        assert callable(when_done)
+        assert callable(when_event)
+        assert step.uid in stage._adoption_events
+
+    def test_is_stale_generation_id(
+        self,
+        mock_task_mgr,
+        mock_artifact_manager,
+        mock_machine,
+    ):
+        """Tests stale generation ID detection."""
+        stage = StepPipelineStage(
+            mock_task_mgr, mock_artifact_manager, mock_machine
+        )
+        stage._generation_id_map["step1"] = 2
+
+        assert stage._is_stale_generation_id("step1", 1) is True
+        assert stage._is_stale_generation_id("step1", 2) is False
+        assert stage._is_stale_generation_id("step1", 3) is True
+        assert stage._is_stale_generation_id("unknown", 1) is True
+
+    def test_handle_render_artifact_ready(
+        self,
+        mock_task_mgr,
+        mock_artifact_manager,
+        mock_machine,
+        mock_doc_and_step,
+    ):
+        """Tests render artifact ready event handling."""
+        doc, step = mock_doc_and_step
+        stage = StepPipelineStage(
+            mock_task_mgr, mock_artifact_manager, mock_machine
+        )
+        render_handle = StepRenderArtifactHandle(
+            shm_name="render_shm",
+            handle_class_name="StepRenderArtifactHandle",
+            artifact_type_name="StepRenderArtifact",
+        )
+        mock_artifact_manager.adopt_artifact.return_value = render_handle
+
+        signal_handler = MagicMock()
+        stage.render_artifact_ready.connect(signal_handler)
+
+        stage._handle_render_artifact_ready(
+            step.uid, step, render_handle.to_dict()
+        )
+
+        mock_artifact_manager.put_step_render_handle.assert_called_once_with(
+            step.uid, render_handle
+        )
+        signal_handler.assert_called_once_with(stage, step=step)
+
+    def test_handle_ops_artifact_ready(
+        self,
+        mock_task_mgr,
+        mock_artifact_manager,
+        mock_machine,
+    ):
+        """Tests ops artifact ready event handling."""
+        stage = StepPipelineStage(
+            mock_task_mgr, mock_artifact_manager, mock_machine
+        )
+        ops_handle = StepOpsArtifactHandle(
+            shm_name="ops_shm",
+            handle_class_name="StepOpsArtifactHandle",
+            artifact_type_name="StepOpsArtifact",
+            time_estimate=None,
+        )
+        mock_artifact_manager.adopt_artifact.return_value = ops_handle
+
+        stage._handle_ops_artifact_ready("step1", ops_handle.to_dict())
+
+        mock_artifact_manager.put_step_ops_handle.assert_called_once_with(
+            "step1", ops_handle
+        )
+
+    def test_handle_time_estimate_ready(
+        self,
+        mock_task_mgr,
+        mock_artifact_manager,
+        mock_machine,
+        mock_doc_and_step,
+    ):
+        """Tests time estimate ready event handling."""
+        doc, step = mock_doc_and_step
+        stage = StepPipelineStage(
+            mock_task_mgr, mock_artifact_manager, mock_machine
+        )
+
+        signal_handler = MagicMock()
+        stage.time_estimate_ready.connect(signal_handler)
+
+        stage._handle_time_estimate_ready(step.uid, step, 42.5)
+
+        assert stage.get_estimate(step.uid) == 42.5
+        signal_handler.assert_called_once_with(stage, step=step, time=42.5)
+
+    def test_set_adoption_event(
+        self,
+        mock_task_mgr,
+        mock_artifact_manager,
+        mock_machine,
+    ):
+        """Tests adoption event setting."""
+        stage = StepPipelineStage(
+            mock_task_mgr, mock_artifact_manager, mock_machine
+        )
+        event = MagicMock()
+        stage._adoption_events["step1"] = event
+
+        stage._set_adoption_event("step1")
+
+        event.set.assert_called_once()
+
+    def test_set_adoption_event_unknown_step(
+        self,
+        mock_task_mgr,
+        mock_artifact_manager,
+        mock_machine,
+    ):
+        """Tests adoption event setting for unknown step does nothing."""
+        stage = StepPipelineStage(
+            mock_task_mgr, mock_artifact_manager, mock_machine
+        )
+
+        stage._set_adoption_event("unknown")
+
+        assert "unknown" not in stage._adoption_events

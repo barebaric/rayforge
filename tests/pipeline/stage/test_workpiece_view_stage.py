@@ -696,6 +696,308 @@ class TestWorkPieceViewStage(unittest.TestCase):
         # 2. The chunk handle is properly released (refcount respected)
         # 3. The update signal is triggered (via throttled update)
 
+    def test_adopt_view_handle(self):
+        """Tests that _adopt_view_handle correctly adopts a view handle."""
+        step_uid, wp_uid = "s1", "w1"
+        key = (step_uid, wp_uid)
+
+        handle_dict = {
+            "shm_name": "test_adopt",
+            "bbox_mm": (0, 0, 1, 1),
+            "handle_class_name": "WorkPieceViewArtifactHandle",
+            "artifact_type_name": "WorkPieceViewArtifact",
+        }
+        view_handle = WorkPieceViewArtifactHandle(
+            shm_name="test_adopt",
+            bbox_mm=(0, 0, 1, 1),
+            handle_class_name="WorkPieceViewArtifactHandle",
+            artifact_type_name="WorkPieceViewArtifact",
+        )
+        self.mock_artifact_manager.adopt_artifact.return_value = view_handle
+
+        result = self.stage._adopt_view_handle(
+            key, {"handle_dict": handle_dict}
+        )
+
+        self.assertIsNotNone(result)
+        self.assertIsInstance(result, WorkPieceViewArtifactHandle)
+        self.mock_artifact_manager.adopt_artifact.assert_called_once_with(
+            key, handle_dict
+        )
+
+    def test_adopt_view_handle_wrong_type(self):
+        """Tests that _adopt_view_handle raises on wrong handle type."""
+        step_uid, wp_uid = "s1", "w1"
+        key = (step_uid, wp_uid)
+
+        handle_dict = {
+            "shm_name": "test_wrong",
+            "bbox_mm": (0, 0, 1, 1),
+            "handle_class_name": "WorkPieceArtifactHandle",
+            "artifact_type_name": "WorkPieceArtifact",
+        }
+        wrong_handle = WorkPieceArtifactHandle(
+            shm_name="test_wrong",
+            handle_class_name="WorkPieceArtifactHandle",
+            artifact_type_name="WorkPieceArtifact",
+            is_scalable=True,
+            source_coordinate_system_name="MILLIMETER_SPACE",
+            source_dimensions=(10, 10),
+            generation_size=(10, 10),
+        )
+        self.mock_artifact_manager.adopt_artifact.return_value = wrong_handle
+
+        with self.assertRaises(TypeError):
+            self.stage._adopt_view_handle(key, {"handle_dict": handle_dict})
+
+    def test_replace_current_view_handle(self):
+        """Tests that _replace_current_view_handle replaces handles."""
+        step_uid, wp_uid = "s1", "w1"
+        key = (step_uid, wp_uid)
+
+        old_handle = WorkPieceViewArtifactHandle(
+            shm_name="old",
+            bbox_mm=(0, 0, 1, 1),
+            handle_class_name="WorkPieceViewArtifactHandle",
+            artifact_type_name="WorkPieceViewArtifact",
+        )
+        self.stage._current_view_handles[key] = old_handle
+
+        new_handle = WorkPieceViewArtifactHandle(
+            shm_name="new",
+            bbox_mm=(0, 0, 1, 1),
+            handle_class_name="WorkPieceViewArtifactHandle",
+            artifact_type_name="WorkPieceViewArtifact",
+        )
+
+        self.stage._replace_current_view_handle(key, new_handle)
+
+        self.assertEqual(self.stage._current_view_handles[key], new_handle)
+        self.mock_artifact_manager.release_handle.assert_called_once_with(
+            old_handle
+        )
+        self.mock_artifact_manager.retain_handle.assert_called_once_with(
+            new_handle
+        )
+
+    def test_initialize_live_render_context(self):
+        """Tests that _initialize_live_render_context sets up context."""
+        step_uid, wp_uid = "s1", "w1"
+        key = (step_uid, wp_uid)
+
+        context = RenderContext((10.0, 10.0), False, 0, {})
+        self.stage._last_context_cache[key] = context
+
+        handle = WorkPieceViewArtifactHandle(
+            shm_name="test_ctx",
+            bbox_mm=(0, 0, 1, 1),
+            handle_class_name="WorkPieceViewArtifactHandle",
+            artifact_type_name="WorkPieceViewArtifact",
+        )
+
+        self.stage._initialize_live_render_context(key, handle)
+
+        self.assertIn(key, self.stage._live_render_contexts)
+        live_ctx = self.stage._live_render_contexts[key]
+        self.assertEqual(live_ctx["handle"], handle)
+        self.assertEqual(live_ctx["generation_id"], 0)
+        self.assertEqual(live_ctx["render_context"], context)
+
+    def test_get_live_render_context(self):
+        """Tests that _get_live_render_context returns context or None."""
+        step_uid, wp_uid = "s1", "w1"
+        key = (step_uid, wp_uid)
+
+        context = {"test": "data"}
+        self.stage._live_render_contexts[key] = context
+
+        result = self.stage._get_live_render_context(key)
+        self.assertEqual(result, context)
+
+        result = self.stage._get_live_render_context(("s2", "w2"))
+        self.assertIsNone(result)
+
+    def test_validate_generation_id(self):
+        """Tests that _validate_generation_id validates correctly."""
+        step_uid, wp_uid = "s1", "w1"
+        key = (step_uid, wp_uid)
+
+        live_ctx = {"generation_id": 0}
+
+        # First call updates generation_id and validates
+        self.assertTrue(self.stage._validate_generation_id(live_ctx, key, 1))
+        self.assertEqual(live_ctx["generation_id"], 1)
+
+        # Second call with same generation_id should validate
+        self.assertTrue(self.stage._validate_generation_id(live_ctx, key, 1))
+        self.assertEqual(live_ctx["generation_id"], 1)
+
+    def test_get_chunk_artifact(self):
+        """Tests that _get_chunk_artifact returns valid artifact."""
+        step_uid, wp_uid = "s1", "w1"
+        key = (step_uid, wp_uid)
+
+        chunk_ops = Ops()
+        chunk_ops.move_to(0, 0, 0)
+        chunk_artifact = WorkPieceArtifact(
+            ops=chunk_ops,
+            is_scalable=True,
+            source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
+            source_dimensions=(10.0, 10.0),
+            generation_size=(10.0, 10.0),
+        )
+
+        chunk_handle = WorkPieceArtifactHandle(
+            shm_name="chunk",
+            handle_class_name="WorkPieceArtifactHandle",
+            artifact_type_name="WorkPieceArtifact",
+            is_scalable=True,
+            source_coordinate_system_name="MILLIMETER_SPACE",
+            source_dimensions=(10, 10),
+            generation_size=(10, 10),
+        )
+        self.mock_artifact_manager.get_artifact.return_value = chunk_artifact
+
+        result = self.stage._get_chunk_artifact(key, chunk_handle)
+        self.assertEqual(result, chunk_artifact)
+
+    def test_get_chunk_artifact_none(self):
+        """Tests that _get_chunk_artifact handles None artifact."""
+        step_uid, wp_uid = "s1", "w1"
+        key = (step_uid, wp_uid)
+
+        chunk_handle = WorkPieceArtifactHandle(
+            shm_name="chunk",
+            handle_class_name="WorkPieceArtifactHandle",
+            artifact_type_name="WorkPieceArtifact",
+            is_scalable=True,
+            source_coordinate_system_name="MILLIMETER_SPACE",
+            source_dimensions=(10, 10),
+            generation_size=(10, 10),
+        )
+        self.mock_artifact_manager.get_artifact.return_value = None
+
+        result = self.stage._get_chunk_artifact(key, chunk_handle)
+        self.assertIsNone(result)
+
+    def test_get_render_components(self):
+        """Tests that _get_render_components returns components."""
+        step_uid, wp_uid = "s1", "w1"
+        key = (step_uid, wp_uid)
+
+        context = RenderContext((10.0, 10.0), False, 0, {})
+        handle = WorkPieceViewArtifactHandle(
+            shm_name="test",
+            bbox_mm=(0, 0, 1, 1),
+            handle_class_name="WorkPieceViewArtifactHandle",
+            artifact_type_name="WorkPieceViewArtifact",
+        )
+
+        live_ctx = {"handle": handle, "render_context": context}
+
+        chunk_handle = WorkPieceArtifactHandle(
+            shm_name="chunk",
+            handle_class_name="WorkPieceArtifactHandle",
+            artifact_type_name="WorkPieceArtifact",
+            is_scalable=True,
+            source_coordinate_system_name="MILLIMETER_SPACE",
+            source_dimensions=(10, 10),
+            generation_size=(10, 10),
+        )
+
+        view_handle, render_context = self.stage._get_render_components(
+            live_ctx, key, chunk_handle
+        )
+
+        self.assertEqual(view_handle, handle)
+        self.assertEqual(render_context, context)
+
+    def test_get_render_components_missing(self):
+        """Tests that _get_render_components handles missing components."""
+        step_uid, wp_uid = "s1", "w1"
+        key = (step_uid, wp_uid)
+
+        live_ctx = {"handle": None, "render_context": None}
+
+        chunk_handle = WorkPieceArtifactHandle(
+            shm_name="chunk",
+            handle_class_name="WorkPieceArtifactHandle",
+            artifact_type_name="WorkPieceArtifact",
+            is_scalable=True,
+            source_coordinate_system_name="MILLIMETER_SPACE",
+            source_dimensions=(10, 10),
+            generation_size=(10, 10),
+        )
+
+        view_handle, render_context = self.stage._get_render_components(
+            live_ctx, key, chunk_handle
+        )
+
+        self.assertIsNone(view_handle)
+        self.assertIsNone(render_context)
+        self.mock_artifact_manager.release_handle.assert_called_once_with(
+            chunk_handle
+        )
+
+    def test_should_render_chunk(self):
+        """Tests that _should_render_chunk checks Ops correctly."""
+        step_uid, wp_uid = "s1", "w1"
+        key = (step_uid, wp_uid)
+
+        chunk_ops = Ops()
+        chunk_ops.move_to(0, 0, 0)
+        chunk_artifact = WorkPieceArtifact(
+            ops=chunk_ops,
+            is_scalable=True,
+            source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
+            source_dimensions=(10.0, 10.0),
+            generation_size=(10.0, 10.0),
+        )
+
+        chunk_handle = WorkPieceArtifactHandle(
+            shm_name="chunk",
+            handle_class_name="WorkPieceArtifactHandle",
+            artifact_type_name="WorkPieceArtifact",
+            is_scalable=True,
+            source_coordinate_system_name="MILLIMETER_SPACE",
+            source_dimensions=(10, 10),
+            generation_size=(10, 10),
+        )
+
+        self.assertTrue(
+            self.stage._should_render_chunk(chunk_artifact, key, chunk_handle)
+        )
+
+    def test_should_render_chunk_empty(self):
+        """Tests that _should_render_chunk returns False for empty Ops."""
+        step_uid, wp_uid = "s1", "w1"
+        key = (step_uid, wp_uid)
+
+        chunk_artifact = WorkPieceArtifact(
+            ops=Ops(),
+            is_scalable=True,
+            source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
+            source_dimensions=(10.0, 10.0),
+            generation_size=(10.0, 10.0),
+        )
+
+        chunk_handle = WorkPieceArtifactHandle(
+            shm_name="chunk",
+            handle_class_name="WorkPieceArtifactHandle",
+            artifact_type_name="WorkPieceArtifact",
+            is_scalable=True,
+            source_coordinate_system_name="MILLIMETER_SPACE",
+            source_dimensions=(10, 10),
+            generation_size=(10, 10),
+        )
+
+        self.assertFalse(
+            self.stage._should_render_chunk(chunk_artifact, key, chunk_handle)
+        )
+        self.mock_artifact_manager.release_handle.assert_called_once_with(
+            chunk_handle
+        )
+
 
 if __name__ == "__main__":
     unittest.main()
