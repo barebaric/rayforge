@@ -49,16 +49,29 @@ def compute_view_dimensions(
 
     texture_data = None
     if not artifact.is_scalable:
-        px_per_mm_x, px_per_mm_y = context.pixels_per_mm
-        width_px = int(round(artifact.generation_size[0] * px_per_mm_x))
-        height_px = int(round(artifact.generation_size[1] * px_per_mm_y))
+        if artifact.source_dimensions:
+            width_px = int(artifact.source_dimensions[0])
+            height_px = int(artifact.source_dimensions[1])
+            px_per_mm_x = width_px / artifact.generation_size[0]
+            px_per_mm_y = height_px / artifact.generation_size[1]
+            logger.debug(
+                f"compute_view_dimensions: Using source_dimensions: "
+                f"src_dims={artifact.source_dimensions}, "
+                f"gen_size={artifact.generation_size}, "
+                f"calc_px=({width_px}x{height_px}), "
+                f"calc_ppm=({px_per_mm_x:.2f}, {px_per_mm_y:.2f})"
+            )
+        else:
+            px_per_mm_x, px_per_mm_y = context.pixels_per_mm
+            width_px = int(round(artifact.generation_size[0] * px_per_mm_x))
+            height_px = int(round(artifact.generation_size[1] * px_per_mm_y))
 
         if width_px > 0 and height_px > 0:
             texture_buffer = encoder_texture.encode(
                 artifact.ops,
                 width_px,
                 height_px,
-                context.pixels_per_mm,
+                (px_per_mm_x, px_per_mm_y),
             )
             texture_data = TextureData(
                 power_texture_data=texture_buffer,
@@ -110,16 +123,22 @@ def _encode_vertex_and_texture_data(
 
     texture_data = None
     if not artifact.is_scalable:
-        px_per_mm_x, px_per_mm_y = render_context.pixels_per_mm
-        width_px = int(round(artifact.generation_size[0] * px_per_mm_x))
-        height_px = int(round(artifact.generation_size[1] * px_per_mm_y))
+        if artifact.source_dimensions:
+            width_px = int(artifact.source_dimensions[0])
+            height_px = int(artifact.source_dimensions[1])
+            px_per_mm_x = width_px / artifact.generation_size[0]
+            px_per_mm_y = height_px / artifact.generation_size[1]
+        else:
+            px_per_mm_x, px_per_mm_y = render_context.pixels_per_mm
+            width_px = int(round(artifact.generation_size[0] * px_per_mm_x))
+            height_px = int(round(artifact.generation_size[1] * px_per_mm_y))
 
         if width_px > 0 and height_px > 0:
             texture_buffer = encoder_texture.encode(
                 artifact.ops,
                 width_px,
                 height_px,
-                render_context.pixels_per_mm,
+                (px_per_mm_x, px_per_mm_y),
             )
             texture_data = TextureData(
                 power_texture_data=texture_buffer,

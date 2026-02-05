@@ -4,7 +4,7 @@ import logging
 import numpy as np
 import threading
 import time
-from typing import TYPE_CHECKING, Any, Dict, Tuple
+from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple
 from blinker import Signal
 from ...shared.util.colors import ColorSet
 from ..artifact import (
@@ -59,6 +59,11 @@ class WorkPieceViewPipelineStage(PipelineStage):
         self._machine = machine
         self._active_tasks: Dict[ViewKey, "Task"] = {}
         self._last_context_cache: Dict[ViewKey, RenderContext] = {}
+
+        # Track the source artifact properties for cache invalidation
+        self._last_source_properties: Dict[
+            ViewKey, Tuple[Tuple[float, float], Optional[Tuple[float, float]]]
+        ] = {}
 
         # Track the currently active handle for each view so we can release
         # it when it is replaced or when the stage shuts down.
@@ -126,6 +131,7 @@ class WorkPieceViewPipelineStage(PipelineStage):
         self._pending_updates.clear()
         self._last_update_time.clear()
         self._generation_ids.clear()
+        self._last_source_properties.clear()
 
     def _on_generation_starting(
         self,
@@ -172,14 +178,6 @@ class WorkPieceViewPipelineStage(PipelineStage):
         key = (step_uid, workpiece_uid)
         last_context = self._last_context_cache.get(key)
 
-        if not force and last_context == context:
-            logger.debug(f"View for {key} is already up-to-date.")
-            return
-
-        if key in self._active_tasks:
-            logger.debug(f"View for {key} is already being generated.")
-            return
-
         source_handle = self._artifact_manager.get_workpiece_handle(
             step_uid, workpiece_uid
         )
@@ -190,12 +188,46 @@ class WorkPieceViewPipelineStage(PipelineStage):
             )
             return
 
+        logger.debug(
+            f"[{key}] request_view_render: "
+            f"gen_size={source_handle.generation_size}, "
+            f"src_dims={source_handle.source_dimensions}, "
+            f"ppm={context.pixels_per_mm}"
+        )
+
+        current_source_props = (
+            source_handle.generation_size,
+            source_handle.source_dimensions,
+        )
+        last_source_props = self._last_source_properties.get(key)
+
+        if not force and last_context == context:
+            if last_source_props == current_source_props:
+                logger.debug(
+                    f"View for {key} is already up-to-date. "
+                    f"Context unchanged, source properties unchanged. "
+                    f"source_handle={source_handle.shm_name}"
+                )
+                return
+            else:
+                logger.warning(
+                    f"View for {key} has stale source artifact! "
+                    f"last_source_props={last_source_props}, "
+                    f"current_source_props={current_source_props}. "
+                    f"Re-rendering with new source artifact."
+                )
+
+        if key in self._active_tasks:
+            logger.debug(f"View for {key} is already being generated.")
+            return
+
         # Retain the source handle to prevent premature release while
         # the render task is using it (borrower pattern)
         self._artifact_manager.retain_handle(source_handle)
         self._retained_source_handles[key] = source_handle
 
         self._last_context_cache[key] = context
+        self._last_source_properties[key] = current_source_props
 
         def when_done_callback(task: "Task"):
             self._on_render_complete(task, key)

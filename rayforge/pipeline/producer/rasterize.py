@@ -467,6 +467,9 @@ class Rasterizer(OpsProducer):
         logger.debug(f"Rasterizer received surface: {width}x{height} pixels")
         logger.debug(f"Rasterizer received pixels_per_mm: {pixels_per_mm}")
 
+        surface_width_mm = width / pixels_per_mm[0]
+        surface_height_mm = height / pixels_per_mm[1]
+
         raster_ops = Ops()
         if width > 0 and height > 0:
             ymax = height / pixels_per_mm[1]
@@ -507,10 +510,20 @@ class Rasterizer(OpsProducer):
 
         final_ops.ops_section_end(SectionType.RASTER_FILL)
 
+        logger.debug(
+            f"Rasterizer creating artifact: "
+            f"surface_px=({width}x{height}), "
+            f"surface_mm=({surface_width_mm:.2f}x{surface_height_mm:.2f}), "
+            f"workpiece.size=({workpiece.size[0]:.2f}x"
+            f"{workpiece.size[1]:.2f}), "
+            f"source_dimensions=({surface_width_mm:.2f}x"
+            f"{surface_height_mm:.2f})"
+        )
         return WorkPieceArtifact(
             ops=final_ops,
             is_scalable=False,
             source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
+            source_dimensions=(surface_width_mm, surface_height_mm),
             generation_size=workpiece.size,
         )
 

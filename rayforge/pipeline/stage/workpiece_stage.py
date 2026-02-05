@@ -356,15 +356,36 @@ class WorkPiecePipelineStage(PipelineStage):
             logger.error(f"Error cleaning up stale artifact: {e}")
 
     def _handle_artifact_created_event(
-        self, key: WorkpieceKey, handle: WorkPieceArtifactHandle
+        self,
+        key: WorkpieceKey,
+        handle: WorkPieceArtifactHandle,
+        generation_id: int,
     ):
         """
         Processes artifact_created event.
         """
         s_uid, w_uid = key
+
+        current_generation_id = self._generation_id_map.get(key)
+        logger.debug(
+            f"[{key}] _handle_artifact_created_event: "
+            f"handle.generation_size={handle.generation_size}, "
+            f"handle.source_dimensions={handle.source_dimensions}, "
+            f"event_generation_id={generation_id}, "
+            f"current_generation_id={current_generation_id}"
+        )
+
         self._artifact_manager.put_workpiece_handle(s_uid, w_uid, handle)
 
         self._set_adoption_event(key)
+
+        if current_generation_id != generation_id:
+            logger.warning(
+                f"[{key}] Skipping workpiece_artifact_adopted signal: "
+                f"generation_id {generation_id} does not match "
+                f"current {current_generation_id}"
+            )
+            return
 
         self.workpiece_artifact_adopted.send(
             self, step_uid=s_uid, workpiece_uid=w_uid
@@ -421,7 +442,7 @@ class WorkPiecePipelineStage(PipelineStage):
             if event_name == "artifact_created":
                 if not isinstance(handle, WorkPieceArtifactHandle):
                     raise TypeError("Expected a WorkPieceArtifactHandle")
-                self._handle_artifact_created_event(key, handle)
+                self._handle_artifact_created_event(key, handle, generation_id)
                 return
 
             if event_name == "visual_chunk_ready":
