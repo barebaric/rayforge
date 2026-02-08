@@ -20,7 +20,7 @@ from rayforge.pipeline.stage.workpiece_view_compute import (
     _get_content_bbox,
     render_chunk_to_buffer,
     _encode_vertex_and_texture_data,
-    _calculate_render_dimensions,
+    calculate_render_dimensions,
     _setup_cairo_context,
     _draw_travel_vertices,
     _draw_zero_power_vertices,
@@ -606,7 +606,7 @@ def test_encode_vertex_and_texture_data_texture():
 
 
 def test_calculate_render_dimensions():
-    """Test _calculate_render_dimensions returns valid dimensions."""
+    """Test calculate_render_dimensions returns valid dimensions."""
     bbox = (0.0, 0.0, 10.0, 10.0)
     color_set = create_test_color_set({"cut": ("#000", "#F00")})
     context = RenderContext(
@@ -616,7 +616,7 @@ def test_calculate_render_dimensions():
         color_set_dict=color_set.to_dict(),
     )
 
-    result = _calculate_render_dimensions(bbox, context)
+    result = calculate_render_dimensions(bbox, context)
 
     assert result is not None
     width_px, height_px, effective_ppm_x, effective_ppm_y = result
@@ -627,7 +627,7 @@ def test_calculate_render_dimensions():
 
 
 def test_calculate_render_dimensions_invalid():
-    """Test _calculate_render_dimensions returns None for invalid bbox."""
+    """Test calculate_render_dimensions returns None for invalid bbox."""
     bbox = (0.0, 0.0, 0.0, 0.0)
     color_set = create_test_color_set({"cut": ("#000", "#F00")})
     context = RenderContext(
@@ -637,7 +637,7 @@ def test_calculate_render_dimensions_invalid():
         color_set_dict=color_set.to_dict(),
     )
 
-    result = _calculate_render_dimensions(bbox, context)
+    result = calculate_render_dimensions(bbox, context)
 
     assert result is None
 

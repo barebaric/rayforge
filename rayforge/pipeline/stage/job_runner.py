@@ -1,7 +1,7 @@
 from __future__ import annotations
 import logging
 from dataclasses import dataclass
-from typing import Dict, Any, TYPE_CHECKING, Optional
+from typing import Dict, Any, TYPE_CHECKING
 
 from ...core.doc import Doc
 from ...machine.models.machine import Machine
@@ -15,7 +15,7 @@ from ..artifact.store import ArtifactStore
 from .job_compute import compute_job_artifact
 
 if TYPE_CHECKING:
-    import threading
+    pass
 
 
 logger = logging.getLogger(__name__)
@@ -35,15 +35,13 @@ def make_job_artifact_in_subprocess(
     artifact_store: ArtifactStore,
     job_description_dict: Dict[str, Any],
     creator_tag: str,
-    adoption_event: Optional["threading.Event"] = None,
+    generation_id: int,
 ) -> None:
     """
     The main entry point for assembling, post-processing, and encoding a
     full job in a background process.
 
-    This function hydrates Doc and Machine, loads pre-computed
-    StepOpsArtifacts from the store, and calls compute_job_artifact to
-    generate the final JobArtifact.
+    Implements Fire-and-Forget artifact handover.
     """
     job_desc = JobDescription(**job_description_dict)
     machine = Machine.from_dict(job_desc.machine_dict, is_inert=True)
@@ -75,21 +73,16 @@ def make_job_artifact_in_subprocess(
     final_handle = artifact_store.put(final_artifact, creator_tag=creator_tag)
 
     proxy.send_event(
-        "artifact_created", {"handle_dict": final_handle.to_dict()}
+        "artifact_created",
+        {
+            "handle_dict": final_handle.to_dict(),
+            "generation_id": generation_id,
+        },
     )
 
-    if adoption_event is not None:
-        logger.debug("Waiting for main process to adopt job artifact...")
-        if adoption_event.wait(timeout=10):
-            logger.debug("Main process adopted job artifact. Forgetting...")
-            artifact_store.forget(final_handle)
-            logger.info("Worker disowned job artifact successfully")
-        else:
-            logger.warning(
-                "Main process failed to adopt job artifact within timeout. "
-                "Releasing to prevent leak."
-            )
-            artifact_store.release(final_handle)
+    # Fire and Forget
+    logger.debug("Forgetting job artifact handle after send.")
+    artifact_store.forget(final_handle)
 
     proxy.set_progress(1.0)
     proxy.set_message(_("Job finalization complete"))

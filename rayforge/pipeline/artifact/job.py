@@ -172,7 +172,15 @@ class JobArtifact(BaseArtifact):
         if not isinstance(handle, JobArtifactHandle):
             raise TypeError("JobArtifact requires a JobArtifactHandle")
 
-        ops = Ops.from_numpy_arrays(arrays)
+        # Create a shallow copy of the arrays dictionary for each constructor.
+        # This allows each constructor to safely mutate its copy (e.g., with
+        # .pop()) without affecting others. The underlying numpy arrays are
+        # still views into shared memory.
+        arrays_copy = arrays.copy()
+        ops = Ops.from_numpy_arrays(arrays_copy)
+
+        # The actual numpy data must also be copied out of shared memory
+        # to ensure it remains valid after the SHM handle is closed.
         vertex_data = None
         if all(
             key in arrays

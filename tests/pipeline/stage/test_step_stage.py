@@ -1,5 +1,5 @@
 import pytest
-from unittest.mock import MagicMock, PropertyMock
+from unittest.mock import MagicMock, Mock, PropertyMock
 
 from rayforge.core.doc import Doc
 from rayforge.core.layer import Layer
@@ -10,6 +10,7 @@ from rayforge.pipeline.artifact import (
     StepOpsArtifactHandle,
     WorkPieceArtifactHandle,
 )
+from rayforge.pipeline.artifact.lifecycle import ArtifactLifecycle
 from rayforge.pipeline.stage.base import PipelineStage
 from rayforge.pipeline.stage.step_stage import StepPipelineStage
 from rayforge.pipeline.stage.step_runner import (
@@ -56,6 +57,9 @@ def mock_artifact_manager():
         artifact_type_name="WorkPieceArtifact",
     )
     manager.has_step_render_handle.return_value = False
+    manager.get_all_step_render_uids.return_value = set()
+    manager._ledger = {}
+    manager._dependencies = {}
     return manager
 
 
@@ -158,6 +162,17 @@ class TestStepPipelineStage:
         """
         # Arrange
         doc, step = mock_doc_and_step
+        from rayforge.pipeline.artifact.lifecycle import (
+            ArtifactLifecycle,
+            LedgerEntry,
+        )
+
+        ledger_key = ("step", step.uid)
+        mock_artifact_manager._ledger[ledger_key] = LedgerEntry(
+            state=ArtifactLifecycle.MISSING
+        )
+        mock_artifact_manager.query_work_for_stage.return_value = [ledger_key]
+
         stage = StepPipelineStage(
             mock_task_mgr, mock_artifact_manager, mock_machine
         )
@@ -259,9 +274,6 @@ class TestStepPipelineStage:
         mock_artifact_manager.put_step_render_handle.assert_called_once_with(
             step.uid, render_handle
         )
-        mock_artifact_manager.put_step_ops_handle.assert_called_once_with(
-            step.uid, ops_handle
-        )
         render_signal_handler.assert_called_once_with(stage, step=step)
         time_signal_handler.assert_called_once_with(
             stage, step=step, time=42.5
@@ -297,7 +309,6 @@ class TestStepPipelineStage:
         stage.invalidate(step.uid)
 
         # Assert
-        mock_artifact_manager.pop_step_ops_handle.assert_called_with(step.uid)
         mock_artifact_manager.pop_step_render_handle.assert_called_with(
             step.uid
         )
@@ -333,7 +344,10 @@ class TestStepPipelineStage:
         stage = StepPipelineStage(
             mock_task_mgr, mock_artifact_manager, mock_machine
         )
-        stage._active_tasks[step.uid] = MagicMock()
+        ledger_key = ("step", step.uid)
+        mock_artifact_manager._ledger[ledger_key] = Mock(
+            state=ArtifactLifecycle.PENDING
+        )
 
         result = stage._validate_assembly_dependencies(step)
 
@@ -462,7 +476,7 @@ class TestStepPipelineStage:
             mock_task_mgr, mock_artifact_manager, mock_machine
         )
 
-        result = stage._collect_assembly_info(step)
+        result, retained = stage._collect_assembly_info(step)
 
         assert result is None
 
@@ -491,7 +505,7 @@ class TestStepPipelineStage:
         )
         step.layer.all_workpieces[0].set_size(20, 20)
 
-        result = stage._collect_assembly_info(step)
+        result, retained = stage._collect_assembly_info(step)
 
         assert result is None
 
@@ -508,55 +522,13 @@ class TestStepPipelineStage:
             mock_task_mgr, mock_artifact_manager, mock_machine
         )
 
-        result = stage._collect_assembly_info(step)
+        result, retained = stage._collect_assembly_info(step)
 
         assert result is not None
         assert len(result) == 1
         assert "artifact_handle_dict" in result[0]
         assert "world_transform_list" in result[0]
         assert "workpiece_dict" in result[0]
-
-    def test_prepare_assembly_task(
-        self,
-        mock_task_mgr,
-        mock_artifact_manager,
-        mock_machine,
-        mock_doc_and_step,
-    ):
-        """Tests task preparation returns correct components."""
-        doc, step = mock_doc_and_step
-        stage = StepPipelineStage(
-            mock_task_mgr, mock_artifact_manager, mock_machine
-        )
-        assembly_info = [{"test": "data"}]
-
-        gen_id, when_done, when_event, adoption_event = (
-            stage._prepare_assembly_task(step, assembly_info)
-        )
-
-        assert gen_id == 1
-        assert stage._generation_id_map[step.uid] == 1
-        assert stage._time_cache[step.uid] is None
-        assert callable(when_done)
-        assert callable(when_event)
-        assert step.uid in stage._adoption_events
-
-    def test_is_stale_generation_id(
-        self,
-        mock_task_mgr,
-        mock_artifact_manager,
-        mock_machine,
-    ):
-        """Tests stale generation ID detection."""
-        stage = StepPipelineStage(
-            mock_task_mgr, mock_artifact_manager, mock_machine
-        )
-        stage._generation_id_map["step1"] = 2
-
-        assert stage._is_stale_generation_id("step1", 1) is True
-        assert stage._is_stale_generation_id("step1", 2) is False
-        assert stage._is_stale_generation_id("step1", 3) is True
-        assert stage._is_stale_generation_id("unknown", 1) is True
 
     def test_handle_render_artifact_ready(
         self,
@@ -609,9 +581,7 @@ class TestStepPipelineStage:
 
         stage._handle_ops_artifact_ready("step1", ops_handle.to_dict())
 
-        mock_artifact_manager.put_step_ops_handle.assert_called_once_with(
-            "step1", ops_handle
-        )
+        mock_artifact_manager.adopt_artifact.assert_called_once()
 
     def test_handle_time_estimate_ready(
         self,
@@ -633,35 +603,3 @@ class TestStepPipelineStage:
 
         assert stage.get_estimate(step.uid) == 42.5
         signal_handler.assert_called_once_with(stage, step=step, time=42.5)
-
-    def test_set_adoption_event(
-        self,
-        mock_task_mgr,
-        mock_artifact_manager,
-        mock_machine,
-    ):
-        """Tests adoption event setting."""
-        stage = StepPipelineStage(
-            mock_task_mgr, mock_artifact_manager, mock_machine
-        )
-        event = MagicMock()
-        stage._adoption_events["step1"] = event
-
-        stage._set_adoption_event("step1")
-
-        event.set.assert_called_once()
-
-    def test_set_adoption_event_unknown_step(
-        self,
-        mock_task_mgr,
-        mock_artifact_manager,
-        mock_machine,
-    ):
-        """Tests adoption event setting for unknown step does nothing."""
-        stage = StepPipelineStage(
-            mock_task_mgr, mock_artifact_manager, mock_machine
-        )
-
-        stage._set_adoption_event("unknown")
-
-        assert "unknown" not in stage._adoption_events

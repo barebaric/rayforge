@@ -2,7 +2,7 @@ from __future__ import annotations
 import logging
 import numpy as np
 from multiprocessing import shared_memory
-from typing import TYPE_CHECKING, Optional, Dict, Any
+from typing import Optional, Dict, Any
 from ...shared.tasker.progress import CallbackProgressContext
 from ...shared.tasker.proxy import ExecutionContextProxy
 from ..artifact import (
@@ -20,9 +20,6 @@ from .workpiece_view_compute import (
     compute_view_dimensions,
     render_chunk_to_buffer,
 )
-
-if TYPE_CHECKING:
-    import threading
 
 logger = logging.getLogger(__name__)
 
@@ -72,7 +69,20 @@ def render_chunk_to_view(
 
     shm = None
     try:
-        shm = shared_memory.SharedMemory(name=view_handle.shm_name)
+        # Race Condition Handling:
+        # The view_handle (live buffer) might have been released and unlinked
+        # by the main process (e.g., replaced by a full render) before this
+        # task started. If so, SharedMemory will raise FileNotFoundError.
+        # This is expected and benign; we just skip this obsolete chunk.
+        try:
+            shm = shared_memory.SharedMemory(name=view_handle.shm_name)
+        except FileNotFoundError:
+            logger.warning(
+                f"Target buffer {view_handle.shm_name} disappeared. "
+                "Skipping obsolete chunk."
+            )
+            return False
+
         height_px, width_px = view_artifact.bitmap_data.shape[:2]
         shm_bitmap = np.ndarray(
             shape=(height_px, width_px, 4),
@@ -80,11 +90,23 @@ def render_chunk_to_view(
             buffer=shm.buf,
         )
 
-        return render_chunk_to_buffer(
+        logger.debug(
+            f"Worker rendering chunk to live buffer: {view_handle.shm_name}"
+        )
+        result = render_chunk_to_buffer(
             chunk_artifact, context, shm_bitmap, view_bbox_mm
         )
+        logger.debug(
+            f"[DIAGNOSTIC] Worker finished rendering chunk to live buffer: "
+            f"{view_handle.shm_name}, result={result}"
+        )
+        return result
     finally:
         if shm:
+            logger.debug(
+                f"[DIAGNOSTIC] Worker closing live buffer: "
+                f"{view_handle.shm_name}"
+            )
             shm.close()
 
 
@@ -94,7 +116,6 @@ def make_workpiece_view_artifact_in_subprocess(
     workpiece_artifact_handle_dict: Dict[str, Any],
     render_context_dict: Dict[str, Any],
     creator_tag: str,
-    adoption_event: Optional["threading.Event"] = None,
 ) -> Optional[Dict[str, Any]]:
     """
     Renders a WorkPieceArtifact to a bitmap in a background process.
@@ -113,7 +134,6 @@ def make_workpiece_view_artifact_in_subprocess(
             WorkPieceArtifactHandle to load.
         render_context_dict: Dictionary representation of the RenderContext.
         creator_tag: Tag for artifact creation tracking.
-        adoption_event: Optional event for artifact adoption signaling.
 
     Returns:
         None (result is communicated via events).
@@ -155,6 +175,11 @@ def make_workpiece_view_artifact_in_subprocess(
         {"handle_dict": view_handle.to_dict()},
     )
     logger.debug("Worker: Sent view_artifact_created event")
+
+    # Fire and Forget: Close artifact handle immediately.
+    # Note: We open a NEW shm connection below for rendering, so closing this
+    # specific handle/fd is safe and prevents leaks.
+    artifact_store.forget(view_handle)
 
     shm = None
     try:

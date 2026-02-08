@@ -62,6 +62,7 @@ def mock_task_mgr():
         # Add a mock cancel method to the task object returned to the caller
         mock_returned_task = MagicMock(spec=Task)
         mock_returned_task.key = kwargs.get("key")
+        mock_returned_task.id = id(mock_returned_task)
 
         task = MockTask(target_func, args, kwargs, mock_returned_task)
         created_tasks_info.append(task)

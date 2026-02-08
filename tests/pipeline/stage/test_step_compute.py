@@ -516,7 +516,9 @@ def test_apply_transformers_to_ops_empty_list():
     ops.move_to(0, 0)
     ops.line_to(100, 0)
 
-    _apply_transformers_to_ops(ops, [])
+    wp = WorkPiece(name="test")
+    wp.set_size(10, 10)
+    _apply_transformers_to_ops(ops, [], wp)
 
     assert not ops.is_empty()
 
@@ -532,7 +534,9 @@ def test_apply_transformers_to_ops_with_transformer():
 
     transformer = Optimize()
 
-    _apply_transformers_to_ops(ops, [transformer])
+    wp = WorkPiece(name="test")
+    wp.set_size(10, 10)
+    _apply_transformers_to_ops(ops, [transformer], wp)
 
     assert not ops.is_empty()
 
@@ -549,7 +553,9 @@ def test_apply_transformers_to_ops_with_progress_context(
 
     transformer = Optimize()
 
-    _apply_transformers_to_ops(ops, [transformer], mock_progress_context)
+    wp = WorkPiece(name="test")
+    wp.set_size(10, 10)
+    _apply_transformers_to_ops(ops, [transformer], wp, mock_progress_context)
 
     assert len(mock_progress_context.message_calls) > 0
 

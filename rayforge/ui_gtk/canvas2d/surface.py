@@ -10,18 +10,20 @@ from ...core.layer import Layer
 from ...core.stock import StockItem
 from ...core.workpiece import WorkPiece
 from ...machine.models.machine import Machine
+from ...shared.util.colors import ColorSet
 from ..canvas import WorldSurface, Canvas, CanvasElement
-from .elements.stock import StockElement
-from .elements.workpiece import WorkPieceElement
-from .elements.group import GroupElement
-from .elements.camera_image import CameraImageElement
-from .elements.layer import LayerElement
-from .elements.tab_handle import TabHandleElement
-from .elements.dot import DotElement
-from .elements.work_origin import WorkOriginElement
-from . import context_menu
+from ..shared.gtk_color import GtkColorResolver
 from ..sketcher.editor import SketchEditor
 from ..sketcher.sketchelement import SketchElement
+from .elements.camera_image import CameraImageElement
+from .elements.dot import DotElement
+from .elements.group import GroupElement
+from .elements.layer import LayerElement
+from .elements.stock import StockElement
+from .elements.tab_handle import TabHandleElement
+from .elements.workpiece import WorkPieceElement
+from .elements.work_origin import WorkOriginElement
+from . import context_menu
 
 if TYPE_CHECKING:
     from ...doceditor.editor import DocEditor
@@ -132,6 +134,9 @@ class WorkSurface(WorldSurface):
         # outside of this widget.
         self.doc.history_manager.changed.connect(self._on_history_changed)
 
+        # Connect to view change signals to update pipeline view context
+        self.aspect_ratio_changed.connect(self._on_aspect_ratio_changed)
+
         # --- View State Management ---
         # This property holds the canonical global state for tab visibility.
         self._tabs_globally_visible: bool = True
@@ -139,6 +144,10 @@ class WorkSurface(WorldSurface):
         # Drag-drop command will be initialized by MainWindow after
         # construction
         self.drag_drop_cmd: Optional["DragDropCmd"] = None
+
+        # Initialize pipeline view context to ensure workpiece artifacts
+        # can be rendered immediately when adopted
+        self._update_pipeline_view_context()
 
     @property
     def doc(self):
@@ -575,6 +584,11 @@ class WorkSurface(WorldSurface):
         # if the scale changed.
         scale_changed = super()._rebuild_view_transform()
 
+        logger.debug(
+            f"_rebuild_view_transform: scale_changed={scale_changed}, "
+            f"view_scale={self.get_view_scale()}"
+        )
+
         if scale_changed:
             # Update laser dot size to maintain a constant size in pixels.
             desired_diameter_px = 6.0
@@ -583,11 +597,24 @@ class WorkSurface(WorldSurface):
                 diameter_mm = desired_diameter_px / new_scale_x
                 self._laser_dot.set_size(diameter_mm, diameter_mm)
 
-            # Propagate the view change to elements that depend on it.
+            # Update handle transforms for WorkPieceElements
+            logger.debug(
+                "_rebuild_view_transform: Updating handle transforms "
+                f"for {len(list(self.find_by_type(WorkPieceElement)))} "
+                "WorkPieceElements"
+            )
             for elem in self.find_by_type(WorkPieceElement):
                 wp_view = cast(WorkPieceElement, elem)
                 wp_view.trigger_view_update()
                 wp_view.update_handle_transforms()
+
+            # Update pipeline view context to trigger re-rendering
+            # This is the Phase2 approach: The Pipeline decides when to render
+            logger.debug(
+                "_rebuild_view_transform: Calling "
+                "_update_pipeline_view_context"
+            )
+            self._update_pipeline_view_context()
 
         # Reposition the laser dot after any view change
         self.set_laser_dot_position(
@@ -604,6 +631,70 @@ class WorkSurface(WorldSurface):
             for elem in self.find_by_type(WorkPieceElement):
                 wp_view = cast(WorkPieceElement, elem)
                 wp_view.on_travel_visibility_changed()
+            # Update pipeline view context
+            self._update_pipeline_view_context()
+
+    def _update_pipeline_view_context(self) -> None:
+        """
+        Updates the pipeline view context with the current view settings.
+
+        This method collects all the current view context information
+        (pixels per mm, show travel moves, theme colors) and calls
+        the pipeline's set_view_context method to trigger re-rendering
+        of all cached workpiece views.
+        """
+        if not self.editor or not self.editor.pipeline:
+            logger.debug(
+                "_update_pipeline_view_context: No editor or pipeline"
+            )
+            return
+
+        ppm_x, ppm_y = self.get_view_scale()
+
+        logger.debug(
+            f"_update_pipeline_view_context: ppm=({ppm_x:.2f}, "
+            f"{ppm_y:.2f}), show_travel_moves={self._show_travel_moves}"
+        )
+
+        # Don't request render if scaled too small
+        if ppm_x <= 1e-9 or ppm_y <= 1e-9:
+            logger.debug(
+                "_update_pipeline_view_context: Scale too small, skipping"
+            )
+            return
+
+        # Get the color set from the current theme
+        color_set_dict = self._get_theme_color_dict()
+
+        self.editor.pipeline.set_view_context(
+            pixels_per_mm=(ppm_x, ppm_y),
+            show_travel_moves=self._show_travel_moves,
+            margin_px=5,
+            color_set=color_set_dict,
+        )
+
+    def _get_theme_color_dict(self) -> ColorSet:
+        """
+        Gets the current theme color set as a dictionary.
+
+        This method extracts the color set from the current GTK style
+        context and converts it to a dictionary format suitable for
+        the pipeline.
+        """
+        if not self.get_style_context():
+            return ColorSet()
+
+        style_context = self.get_style_context()
+        color_resolver = GtkColorResolver(style_context)
+
+        spec_dict = {
+            "cut": ("#ffeeff", "#ff00ff"),
+            "engrave": ("#FFFFFF", "#000000"),
+            "travel": ("#FF6600", 0.7),
+            "zero_power": ("@accent_color", 0.5),
+        }
+
+        return color_resolver.resolve(spec_dict)
 
     def _create_and_add_layer_element(self, layer: "Layer"):
         """Creates a new LayerElement and adds it to the canvas root."""
@@ -865,6 +956,17 @@ class WorkSurface(WorldSurface):
         self.aspect_ratio_changed.send(self, ratio=new_ratio)
         self._sync_camera_elements()
         self._on_wcs_updated(self.machine)
+        self._update_pipeline_view_context()
+
+    def _on_aspect_ratio_changed(self, sender, **kwargs) -> None:
+        """
+        Handler for aspect ratio changes (zoom level changes).
+
+        When the zoom level changes, the view context (pixels per mm)
+        changes, so we need to update the pipeline view context to trigger
+        re-rendering of all cached workpiece views.
+        """
+        self._update_pipeline_view_context()
 
     def _sync_camera_elements(self):
         """

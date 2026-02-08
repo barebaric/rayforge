@@ -1,4 +1,4 @@
-from typing import Any, List, Tuple, Iterator, Optional
+from typing import Any, List, Tuple, Iterator, Optional, Callable
 import logging
 from ...core.ops import Ops
 from ...core.workpiece import WorkPiece
@@ -545,6 +545,7 @@ def compute_workpiece_artifact_raster(
     laser: Laser,
     modifiers: List[Modifier],
     settings: dict,
+    on_chunk: Optional[Callable[[WorkPieceArtifact], None]] = None,
     context: Optional[ProgressContext] = None,
 ) -> Optional[WorkPieceArtifact]:
     """
@@ -585,6 +586,10 @@ def compute_workpiece_artifact_raster(
             context,
         )
 
+        # Notify progressive listeners (like the UI view) about this chunk
+        if on_chunk:
+            on_chunk(chunk_artifact)
+
         final_artifact = _merge_artifact_ops(
             final_artifact,
             chunk_artifact,
@@ -611,6 +616,7 @@ def compute_workpiece_artifact(
     settings: dict,
     pixels_per_mm: Tuple[float, float],
     generation_size: Tuple[float, float],
+    on_chunk: Optional[Callable[[WorkPieceArtifact], None]] = None,
     context: Optional[ProgressContext] = None,
 ) -> Optional[WorkPieceArtifact]:
     """
@@ -629,6 +635,7 @@ def compute_workpiece_artifact(
         settings: Dictionary of settings from the Step.
         pixels_per_mm: Tuple of (x, y) pixels per millimeter.
         generation_size: The size of the generation in mm.
+        on_chunk: Optional callback for progressive chunk reporting.
         context: Optional ProgressContext for progress reporting.
 
     Returns:
@@ -653,7 +660,8 @@ def compute_workpiece_artifact(
             laser,
             modifiers,
             settings,
-            context,
+            on_chunk=on_chunk,
+            context=context,
         )
 
     if final_artifact is None:

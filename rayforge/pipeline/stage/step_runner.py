@@ -1,7 +1,6 @@
 from __future__ import annotations
 import logging
-import threading
-from typing import List, Dict, Any, Optional, TYPE_CHECKING
+from typing import List, Dict, Any, TYPE_CHECKING
 from ...core.matrix import Matrix
 from ...core.workpiece import WorkPiece
 from ...shared.tasker.progress import CallbackProgressContext
@@ -51,11 +50,12 @@ def make_step_artifact_in_subprocess(
     travel_speed: float,
     acceleration: float,
     creator_tag: str,
-    adoption_event: Optional[threading.Event] = None,
 ) -> int:
     """
     Aggregates WorkPieceArtifacts, creates a StepArtifact, sends its handle
     back via an event, and then returns the final generation ID.
+
+    Implements Fire-and-Forget artifact handover.
     """
     from .step_compute import compute_step_artifacts
 
@@ -98,11 +98,10 @@ def make_step_artifact_in_subprocess(
 
     proxy.set_message(_("Storing step data..."))
 
+    # 1. Store Render Artifact
     render_handle = artifact_store.put(
         render_artifact, creator_tag=f"{creator_tag}_render"
     )
-
-    # Send render handle back via event for instant UI update
     proxy.send_event(
         "render_artifact_ready",
         {
@@ -110,7 +109,10 @@ def make_step_artifact_in_subprocess(
             "generation_id": generation_id,
         },
     )
+    # Fire and Forget
+    artifact_store.forget(render_handle)
 
+    # 2. Store Ops Artifact
     ops_handle = artifact_store.put(
         ops_artifact, creator_tag=f"{creator_tag}_ops"
     )
@@ -121,32 +123,10 @@ def make_step_artifact_in_subprocess(
             "generation_id": generation_id,
         },
     )
+    # Fire and Forget
+    artifact_store.forget(ops_handle)
 
-    # Wait for main process to adopt both artifacts before forgetting them
-    if adoption_event is not None:
-        logger.debug(
-            "Waiting for main process to adopt step artifacts for "
-            f"{step_uid}..."
-        )
-        if adoption_event.wait(timeout=10):
-            logger.debug(
-                "Main process adopted step artifacts for "
-                f"{step_uid}. Forgetting..."
-            )
-            artifact_store.forget(render_handle)
-            artifact_store.forget(ops_handle)
-            logger.info(
-                f"Worker disowned step artifacts for {step_uid} successfully"
-            )
-        else:
-            logger.warning(
-                "Main process failed to adopt step artifacts for "
-                f"{step_uid} within timeout. Releasing to prevent leak."
-            )
-            artifact_store.release(render_handle)
-            artifact_store.release(ops_handle)
-
-    # 7. Calculate time estimate
+    # 3. Calculate time estimate
     proxy.set_message(_("Calculating time estimate..."))
     final_time = ops_artifact.ops.estimate_time(
         default_cut_speed=cut_speed,
@@ -161,5 +141,4 @@ def make_step_artifact_in_subprocess(
     proxy.set_progress(1.0)
     logger.debug(f"Step assembly for {step_uid} complete.")
 
-    # 8. Return the generation ID to signal completion
     return generation_id

@@ -188,6 +188,7 @@ def _process_artifact(
 def _apply_transformers_to_ops(
     ops: Ops,
     transformers: List["OpsTransformer"],
+    workpiece: WorkPiece,
     context: Optional[ProgressContext] = None,
 ) -> None:
     """
@@ -196,6 +197,7 @@ def _apply_transformers_to_ops(
     Args:
         ops: The ops to transform.
         transformers: List of transformers to apply.
+        workpiece: The workpiece context for the transformers.
         context: Optional progress context.
     """
     for i, transformer in enumerate(transformers):
@@ -205,7 +207,7 @@ def _apply_transformers_to_ops(
             )
             base_progress = 0.5 + (i / len(transformers) * 0.4)
             context.set_progress(base_progress)
-        transformer.run(ops)
+        transformer.run(ops, workpiece=workpiece)
 
 
 def _encode_vertex_data(ops: Ops) -> VertexData:
@@ -242,6 +244,9 @@ def compute_step_artifacts(
     combined_ops = Ops()
     texture_instances = []
     num_items = len(artifacts)
+    # The workpiece context for step-level transformers should be the first
+    # workpiece in the list. This is a simplification but sufficient for now.
+    workpiece_context = artifacts[0][2] if artifacts else None
 
     for i, (artifact, world_matrix, workpiece) in enumerate(artifacts):
         if context:
@@ -254,7 +259,10 @@ def compute_step_artifacts(
         if texture_instance is not None:
             texture_instances.append(texture_instance)
 
-    _apply_transformers_to_ops(combined_ops, transformers, context)
+    if workpiece_context:
+        _apply_transformers_to_ops(
+            combined_ops, transformers, workpiece_context, context
+        )
 
     if context:
         context.set_progress(0.9)

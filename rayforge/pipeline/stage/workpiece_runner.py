@@ -1,12 +1,11 @@
-from typing import Any, List, Tuple, Optional, TYPE_CHECKING
-from ...context import get_context
+from typing import Any, List, Tuple, TYPE_CHECKING
 from ...shared.tasker.progress import CallbackProgressContext
 from ...shared.tasker.proxy import ExecutionContextProxy
 from ..artifact.store import ArtifactStore
 from .workpiece_compute import compute_workpiece_artifact
 
 if TYPE_CHECKING:
-    import threading
+    from ..artifact import WorkPieceArtifact
 
 
 def make_workpiece_artifact_in_subprocess(
@@ -21,7 +20,6 @@ def make_workpiece_artifact_in_subprocess(
     generation_id: int,
     generation_size: Tuple[float, float],
     creator_tag: str,
-    adoption_event: Optional["threading.Event"] = None,
 ) -> int:
     """
     The main entry point for generating operations for a single (Step,
@@ -30,8 +28,12 @@ def make_workpiece_artifact_in_subprocess(
     This function reconstructs the necessary data models from dictionaries and
     calls the compute function to generate the artifact. The final generated
     artifact (containing Ops and metadata) is serialized into a shared memory
-    block using the `ArtifactStore`. This function then returns the
-    generation_id to signal completion.
+    block using the `ArtifactStore`.
+
+    This implementation uses a "Fire and Forget" strategy for artifact
+    handover. The worker stores the artifact, sends the handle to the main
+    process, and immediately "forgets" (closes) its reference. This prevents
+    deadlocks caused by waiting for the main process to adopt.
 
     Args:
         proxy: The execution context proxy for progress reporting and events.
@@ -46,7 +48,6 @@ def make_workpiece_artifact_in_subprocess(
         generation_id: Unique identifier for this generation.
         generation_size: The size of the generation in mm.
         creator_tag: Tag for artifact tracking.
-        adoption_event: Optional event to wait for main process adoption.
 
     Returns:
         The generation_id to signal completion.
@@ -66,7 +67,9 @@ def make_workpiece_artifact_in_subprocess(
 
     logger.debug("Imports completed")
 
-    artifact_store = get_context().artifact_store
+    # In subprocess, we must rely on passed-in store if needed, but here
+    # we use the context's store which is hydrated by the process spawner.
+    # The 'artifact_store' arg is passed by the Tasker machinery.
     modifiers = [Modifier.from_dict(m) for m in modifiers_dict]
     opsproducer = OpsProducer.from_dict(opsproducer_dict)
     opstransformers = [
@@ -83,6 +86,27 @@ def make_workpiece_artifact_in_subprocess(
 
     pixels_per_mm = settings["pixels_per_mm"]
 
+    def on_chunk_callback(chunk_artifact: "WorkPieceArtifact"):
+        """
+        Callback to handle intermediate chunks. Serializes the chunk to
+        shared memory and sends an event to the main process.
+        """
+        if chunk_artifact.ops.is_empty():
+            return
+
+        chunk_handle = artifact_store.put(
+            chunk_artifact, creator_tag=f"{creator_tag}_chunk"
+        )
+        proxy.send_event(
+            "visual_chunk_ready",
+            {
+                "handle_dict": chunk_handle.to_dict(),
+                "generation_id": generation_id,
+            },
+        )
+        # Fire and Forget: Worker shouldn't hold chunk handle
+        artifact_store.forget(chunk_handle)
+
     final_artifact = compute_workpiece_artifact(
         workpiece=workpiece,
         opsproducer=opsproducer,
@@ -92,6 +116,7 @@ def make_workpiece_artifact_in_subprocess(
         settings=settings,
         pixels_per_mm=pixels_per_mm,
         generation_size=generation_size,
+        on_chunk=on_chunk_callback,
         context=context,
     )
 
@@ -100,26 +125,20 @@ def make_workpiece_artifact_in_subprocess(
         # to return the generation_id to signal completion.
         return generation_id
 
+    # 1. Put artifact into Shared Memory
     handle = artifact_store.put(final_artifact, creator_tag=creator_tag)
+
+    # 2. Send handle to Main Process
     proxy.send_event(
         "artifact_created",
         {"handle_dict": handle.to_dict(), "generation_id": generation_id},
     )
 
-    # Wait for main process to adopt the artifact before forgetting it
-    if adoption_event is not None:
-        logger.debug("Waiting for main process to adopt workpiece artifact...")
-        if adoption_event.wait(timeout=10):
-            logger.debug(
-                "Main process adopted workpiece artifact. Forgetting..."
-            )
-            artifact_store.forget(handle)
-            logger.info("Worker disowned workpiece artifact successfully")
-        else:
-            logger.warning(
-                "Main process failed to adopt workpiece artifact within "
-                "timeout. Releasing to prevent leak."
-            )
-            artifact_store.release(handle)
+    # 3. Fire and Forget: Close our reference immediately.
+    # We do NOT wait for the main process. The 'forget' method closes the
+    # file descriptor in this process but does NOT unlink the SHM block,
+    # so the Main process can still open it.
+    logger.debug("Forgetting artifact handle after send (Fire and Forget).")
+    artifact_store.forget(handle)
 
     return generation_id

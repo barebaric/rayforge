@@ -1,3 +1,4 @@
+import time
 import unittest
 import numpy as np
 from unittest.mock import MagicMock
@@ -10,6 +11,10 @@ from rayforge.pipeline.artifact import (
     WorkPieceArtifact,
     WorkPieceArtifactHandle,
     WorkPieceViewArtifactHandle,
+)
+from rayforge.pipeline.artifact.lifecycle import (
+    LedgerEntry,
+    ArtifactLifecycle,
 )
 from rayforge.core.ops import Ops
 from rayforge.pipeline.coord import CoordinateSystem
@@ -27,6 +32,8 @@ class TestWorkPieceViewStage(unittest.TestCase):
             self.mock_artifact_manager,
             self.mock_machine,
         )
+        # Mock cancel_task to do nothing
+        self.mock_task_manager.cancel_task = MagicMock()
 
     def test_stage_requests_vector_render(self):
         """
@@ -71,7 +78,7 @@ class TestWorkPieceViewStage(unittest.TestCase):
         emits its own signals.
         """
         step_uid, wp_uid = "s1", "w1"
-        key = (step_uid, wp_uid)
+        key = ("view", step_uid, wp_uid)
         source_handle = WorkPieceArtifactHandle(
             shm_name="source_shm",
             handle_class_name="WorkPieceArtifactHandle",
@@ -96,7 +103,12 @@ class TestWorkPieceViewStage(unittest.TestCase):
 
         mock_task = MagicMock()
         mock_task.key = key
+        mock_task.id = 123
         mock_task.get_status.return_value = "completed"
+        mock_task.is_final.return_value = False
+
+        # Mock get_task to return our mock task
+        self.mock_task_manager.get_task.return_value = mock_task
 
         # Mock signal handlers
         created_handler = MagicMock()
@@ -153,7 +165,11 @@ class TestWorkPieceViewStage(unittest.TestCase):
 
         # Assert 3: Task completion is signaled
         finished_handler.assert_called_once()
-        self.assertEqual(finished_handler.call_args.kwargs["key"], key)
+        # The signal is sent with internal ViewKey (step_uid, workpiece_uid)
+        internal_key = (step_uid, wp_uid)
+        self.assertEqual(
+            finished_handler.call_args.kwargs["key"], internal_key
+        )
         # `ready` handler should NOT be called again on completion
         ready_handler.assert_called_once()
 
@@ -163,7 +179,7 @@ class TestWorkPieceViewStage(unittest.TestCase):
         crashing the stage.
         """
         step_uid, wp_uid = "s1", "w1"
-        key = (step_uid, wp_uid)
+        key = ("view", step_uid, wp_uid)
         source_handle = WorkPieceArtifactHandle(
             shm_name="source_shm",
             handle_class_name="WorkPieceArtifactHandle",
@@ -218,7 +234,7 @@ class TestWorkPieceViewStage(unittest.TestCase):
         processed correctly for progressive rendering.
         """
         step_uid, wp_uid = "s1", "w1"
-        key = (step_uid, wp_uid)
+        key = ("view", step_uid, wp_uid)
         source_handle = WorkPieceArtifactHandle(
             shm_name="source_shm",
             handle_class_name="WorkPieceArtifactHandle",
@@ -289,7 +305,7 @@ class TestWorkPieceViewStage(unittest.TestCase):
         Verifies that each update is relayed correctly.
         """
         step_uid, wp_uid = "s1", "w1"
-        key = (step_uid, wp_uid)
+        key = ("view", step_uid, wp_uid)
         source_handle = WorkPieceArtifactHandle(
             shm_name="source_shm",
             handle_class_name="WorkPieceArtifactHandle",
@@ -397,7 +413,7 @@ class TestWorkPieceViewStage(unittest.TestCase):
         artifact is created, enabling progressive chunk rendering.
         """
         step_uid, wp_uid = "s1", "w1"
-        key = (step_uid, wp_uid)
+        key = ("view", step_uid, wp_uid)
         source_handle = WorkPieceArtifactHandle(
             shm_name="source_shm",
             handle_class_name="WorkPieceArtifactHandle",
@@ -436,17 +452,24 @@ class TestWorkPieceViewStage(unittest.TestCase):
             artifact_type_name="WorkPieceViewArtifact",
         )
         self.mock_artifact_manager.adopt_artifact.return_value = view_handle
+
+        # Set up mock for _get_ledger_entry to return a proper entry
+        mock_entry = LedgerEntry(
+            state=ArtifactLifecycle.READY,
+            handle=view_handle,
+            metadata={"render_context": context}
+        )
+        self.mock_artifact_manager._get_ledger_entry.return_value = (
+            mock_entry
+        )
+
         when_event_cb(
             mock_task, "view_artifact_created", {"handle_dict": handle_dict}
         )
 
-        # Assert: Live render context should be established
-        self.assertIn(key, self.stage._live_render_contexts)
-        live_ctx = self.stage._live_render_contexts[key]
-        self.assertIn("handle", live_ctx)
-        self.assertIn("generation_id", live_ctx)
-        self.assertIn("render_context", live_ctx)
-        self.assertEqual(live_ctx["render_context"], context)
+        # Assert: Render context should be stored in ledger metadata
+        self.assertIn("render_context", mock_entry.metadata)
+        self.assertEqual(mock_entry.metadata["render_context"], context)
 
     def test_throttled_notification_limits_update_frequency(self):
         """
@@ -454,7 +477,7 @@ class TestWorkPieceViewStage(unittest.TestCase):
         view_artifact_updated signals when many chunks arrive quickly.
         """
         step_uid, wp_uid = "s1", "w1"
-        key = (step_uid, wp_uid)
+        key = ("view", step_uid, wp_uid)
         source_handle = WorkPieceArtifactHandle(
             shm_name="source_shm",
             handle_class_name="WorkPieceArtifactHandle",
@@ -493,6 +516,23 @@ class TestWorkPieceViewStage(unittest.TestCase):
             artifact_type_name="WorkPieceViewArtifact",
         )
         self.mock_artifact_manager.adopt_artifact.return_value = view_handle
+        self.mock_artifact_manager.get_workpiece_view_handle.return_value = (
+            view_handle
+        )
+        self.mock_artifact_manager.put_workpiece_view_handle.return_value = (
+            None
+        )
+
+        # Set up mock for _get_ledger_entry to return a proper entry
+        mock_entry = LedgerEntry(
+            state=ArtifactLifecycle.READY,
+            handle=view_handle,
+            metadata={"render_context": context}
+        )
+        self.mock_artifact_manager._get_ledger_entry.return_value = (
+            mock_entry
+        )
+
         when_event_cb(
             mock_task, "view_artifact_created", {"handle_dict": handle_dict}
         )
@@ -500,6 +540,9 @@ class TestWorkPieceViewStage(unittest.TestCase):
         # Track update signal calls
         update_handler = MagicMock()
         self.stage.view_artifact_updated.connect(update_handler)
+
+        # Wait for view_artifact_created to be processed
+        time.sleep(0.01)
 
         # Mock artifact_manager.get_artifact to return a real WorkPieceArtifact
         chunk_ops = Ops()
@@ -515,6 +558,17 @@ class TestWorkPieceViewStage(unittest.TestCase):
         )
         self.mock_artifact_manager.get_artifact.return_value = chunk_artifact
 
+        # Mock run_thread to execute callback synchronously
+        def mock_run_thread(target, *args, when_done=None, **kwargs):
+            mock_task = MagicMock()
+            mock_task.get_status.return_value = "completed"
+            mock_task.result.return_value = True
+            if when_done:
+                when_done(mock_task)
+            return mock_task
+
+        self.mock_task_manager.run_thread.side_effect = mock_run_thread
+
         # Act 2: Flood with 10 chunk updates (simulating rapid chunk arrival)
         chunk_handle = WorkPieceArtifactHandle(
             shm_name="chunk_shm",
@@ -526,17 +580,19 @@ class TestWorkPieceViewStage(unittest.TestCase):
             generation_size=(10, 10),
         )
 
+        # Use internal ViewKey (step_uid, workpiece_uid) not task key
+        internal_key = (step_uid, wp_uid)
+        # Use generation_id=0 to match the live render context's generation_id
+        # which is set to 0 by _initialize_live_render_context
         for i in range(10):
             self.stage._on_workpiece_chunk_available(
                 sender=None,
-                key=key,
+                key=internal_key,
                 chunk_handle=chunk_handle,
-                generation_id=1,
+                generation_id=0,
             )
 
         # Wait for any pending timers to complete
-        import time
-
         time.sleep(0.1)
 
         # Assert: Should have far fewer than 10 update signals due to
@@ -554,7 +610,7 @@ class TestWorkPieceViewStage(unittest.TestCase):
         respected during this operation.
         """
         step_uid, wp_uid = "s1", "w1"
-        key = (step_uid, wp_uid)
+        key = ("view", step_uid, wp_uid)
         source_handle = WorkPieceArtifactHandle(
             shm_name="source_shm",
             handle_class_name="WorkPieceArtifactHandle",
@@ -608,14 +664,29 @@ class TestWorkPieceViewStage(unittest.TestCase):
             artifact_type_name="WorkPieceViewArtifact",
         )
         self.mock_artifact_manager.adopt_artifact.return_value = view_handle
+        self.mock_artifact_manager.get_workpiece_view_handle.return_value = (
+            view_handle
+        )
+        self.mock_artifact_manager.put_workpiece_view_handle.return_value = (
+            None
+        )
+
+        # Set up mock for _get_ledger_entry to return a proper entry
+        mock_entry = LedgerEntry(
+            state=ArtifactLifecycle.READY,
+            handle=view_handle,
+            metadata={"render_context": context}
+        )
+        self.mock_artifact_manager._get_ledger_entry.return_value = (
+            mock_entry
+        )
+
         when_event_cb(
             mock_task, "view_artifact_created", {"handle_dict": handle_dict}
         )
 
-        # Assert: Live render context should be established
-        self.assertIn(key, self.stage._live_render_contexts)
-        live_ctx = self.stage._live_render_contexts[key]
-        self.assertEqual(live_ctx["handle"].shm_name, "view_shm")
+        # Assert: Render context should be stored in ledger metadata
+        self.assertIn("render_context", mock_entry.metadata)
 
         # Track retain/release calls to verify refcount is respected
         retain_calls = []
@@ -674,17 +745,25 @@ class TestWorkPieceViewStage(unittest.TestCase):
         initial_bitmap = view_artifact.bitmap_data.copy()
         self.assertEqual(np.count_nonzero(initial_bitmap), 0)
 
+        # Mock run_thread to execute callback synchronously
+        def mock_run_thread(target, *args, when_done=None, **kwargs):
+            mock_task = MagicMock()
+            mock_task.get_status.return_value = "completed"
+            mock_task.result.return_value = True
+            if when_done:
+                when_done(mock_task)
+            return mock_task
+
+        self.mock_task_manager.run_thread.side_effect = mock_run_thread
+
+        # Use internal ViewKey (step_uid, workpiece_uid) not task key
+        internal_key = (step_uid, wp_uid)
         self.stage._on_workpiece_chunk_available(
             sender=None,
-            key=key,
+            key=internal_key,
             chunk_handle=chunk_handle,
-            generation_id=1,
+            generation_id=0,
         )
-
-        # Wait for any pending timers
-        import time
-
-        time.sleep(0.1)
 
         # Assert: The chunk handle should be released (refcount respected)
         self.assertIn("chunk_shm", release_calls)
@@ -761,7 +840,9 @@ class TestWorkPieceViewStage(unittest.TestCase):
             handle_class_name="WorkPieceViewArtifactHandle",
             artifact_type_name="WorkPieceViewArtifact",
         )
-        self.stage._current_view_handles[key] = old_handle
+        self.mock_artifact_manager.get_workpiece_view_handle.return_value = (
+            old_handle
+        )
 
         new_handle = WorkPieceViewArtifactHandle(
             shm_name="new",
@@ -772,65 +853,12 @@ class TestWorkPieceViewStage(unittest.TestCase):
 
         self.stage._replace_current_view_handle(key, new_handle)
 
-        self.assertEqual(self.stage._current_view_handles[key], new_handle)
         self.mock_artifact_manager.release_handle.assert_called_once_with(
             old_handle
         )
         self.mock_artifact_manager.retain_handle.assert_called_once_with(
             new_handle
         )
-
-    def test_initialize_live_render_context(self):
-        """Tests that _initialize_live_render_context sets up context."""
-        step_uid, wp_uid = "s1", "w1"
-        key = (step_uid, wp_uid)
-
-        context = RenderContext((10.0, 10.0), False, 0, {})
-        self.stage._last_context_cache[key] = context
-
-        handle = WorkPieceViewArtifactHandle(
-            shm_name="test_ctx",
-            bbox_mm=(0, 0, 1, 1),
-            handle_class_name="WorkPieceViewArtifactHandle",
-            artifact_type_name="WorkPieceViewArtifact",
-        )
-
-        self.stage._initialize_live_render_context(key, handle)
-
-        self.assertIn(key, self.stage._live_render_contexts)
-        live_ctx = self.stage._live_render_contexts[key]
-        self.assertEqual(live_ctx["handle"], handle)
-        self.assertEqual(live_ctx["generation_id"], 0)
-        self.assertEqual(live_ctx["render_context"], context)
-
-    def test_get_live_render_context(self):
-        """Tests that _get_live_render_context returns context or None."""
-        step_uid, wp_uid = "s1", "w1"
-        key = (step_uid, wp_uid)
-
-        context = {"test": "data"}
-        self.stage._live_render_contexts[key] = context
-
-        result = self.stage._get_live_render_context(key)
-        self.assertEqual(result, context)
-
-        result = self.stage._get_live_render_context(("s2", "w2"))
-        self.assertIsNone(result)
-
-    def test_validate_generation_id(self):
-        """Tests that _validate_generation_id validates correctly."""
-        step_uid, wp_uid = "s1", "w1"
-        key = (step_uid, wp_uid)
-
-        live_ctx = {"generation_id": 0}
-
-        # First call updates generation_id and validates
-        self.assertTrue(self.stage._validate_generation_id(live_ctx, key, 1))
-        self.assertEqual(live_ctx["generation_id"], 1)
-
-        # Second call with same generation_id should validate
-        self.assertTrue(self.stage._validate_generation_id(live_ctx, key, 1))
-        self.assertEqual(live_ctx["generation_id"], 1)
 
     def test_get_chunk_artifact(self):
         """Tests that _get_chunk_artifact returns valid artifact."""
@@ -884,6 +912,7 @@ class TestWorkPieceViewStage(unittest.TestCase):
         """Tests that _get_render_components returns components."""
         step_uid, wp_uid = "s1", "w1"
         key = (step_uid, wp_uid)
+        ledger_key = ("view", step_uid, wp_uid)
 
         context = RenderContext((10.0, 10.0), False, 0, {})
         handle = WorkPieceViewArtifactHandle(
@@ -892,8 +921,13 @@ class TestWorkPieceViewStage(unittest.TestCase):
             handle_class_name="WorkPieceViewArtifactHandle",
             artifact_type_name="WorkPieceViewArtifact",
         )
+        self.mock_artifact_manager.get_workpiece_view_handle.return_value = (
+            handle
+        )
 
-        live_ctx = {"handle": handle, "render_context": context}
+        mock_entry = MagicMock()
+        mock_entry.metadata = {"render_context": context}
+        self.mock_artifact_manager._get_ledger_entry.return_value = mock_entry
 
         chunk_handle = WorkPieceArtifactHandle(
             shm_name="chunk",
@@ -906,7 +940,7 @@ class TestWorkPieceViewStage(unittest.TestCase):
         )
 
         view_handle, render_context = self.stage._get_render_components(
-            live_ctx, key, chunk_handle
+            key, ledger_key, chunk_handle
         )
 
         self.assertEqual(view_handle, handle)
@@ -916,8 +950,12 @@ class TestWorkPieceViewStage(unittest.TestCase):
         """Tests that _get_render_components handles missing components."""
         step_uid, wp_uid = "s1", "w1"
         key = (step_uid, wp_uid)
+        ledger_key = ("view", step_uid, wp_uid)
 
-        live_ctx = {"handle": None, "render_context": None}
+        self.mock_artifact_manager.get_workpiece_view_handle.return_value = (
+            None
+        )
+        self.mock_artifact_manager._get_ledger_entry.return_value = None
 
         chunk_handle = WorkPieceArtifactHandle(
             shm_name="chunk",
@@ -930,7 +968,7 @@ class TestWorkPieceViewStage(unittest.TestCase):
         )
 
         view_handle, render_context = self.stage._get_render_components(
-            live_ctx, key, chunk_handle
+            key, ledger_key, chunk_handle
         )
 
         self.assertIsNone(view_handle)

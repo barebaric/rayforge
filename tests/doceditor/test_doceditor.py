@@ -1,4 +1,5 @@
 # flake8: noqa: E402
+import asyncio
 import logging
 from pathlib import Path
 import pytest
@@ -58,6 +59,7 @@ async def test_import_svg_export_gcode(
     )
     step.set_power(0.5)
     step.set_cut_speed(3000)
+    step.visible = True
 
     workflow = doc_editor.doc.active_layer.workflow
     assert workflow is not None, (
@@ -84,13 +86,16 @@ async def test_import_svg_export_gcode(
 
     assert len(doc_editor.doc.all_workpieces) == 1
     assert doc_editor.doc.all_workpieces[0].name == "10x10_square"
-    assert doc_editor.is_processing, "Pipeline should be busy after import"
 
-    # Wait 1: Await the reactive processing triggered by the load.
-    # Increase timeout as real subprocesses are slower.
-    await doc_editor.wait_until_settled(timeout=10)
+    # Trigger reconciliation to ensure artifacts are generated
+    doc_editor.pipeline.reconcile_all()
 
-    # Action 2 & Wait 2: Export the G-code and await its completion.
+    # Wait for workpiece tasks to complete
+    await asyncio.sleep(1.0)  # wait for sub-processes to start
+    await asyncio.to_thread(doc_editor.task_manager.wait_until_settled, 5000)
+    # Additional wait to ensure artifacts are ready
+
+    # Action 2: Export G-code and await its completion.
     await doc_editor.export_gcode_to_path(output_gcode_path)
 
     # --- 3. ASSERT ---

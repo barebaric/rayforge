@@ -3,6 +3,7 @@ from gi.repository import Gtk
 from typing import Optional, List, TYPE_CHECKING, Tuple
 from ...core.group import Group
 from ...core.item import DocItem
+from ...core.matrix import Matrix
 from ...core.stock import StockItem
 from ...core.workpiece import WorkPiece
 from ..shared.expander import Expander
@@ -97,7 +98,9 @@ class DocItemPropertiesWidget(Expander):
 
         self._update_ui()
 
-    def _on_item_data_changed(self, item):
+    def _on_item_data_changed(
+        self, item, *, old_matrix: Optional["Matrix"] = None
+    ):
         """
         Handles data changes from the DocItem model by updating the UI to
         reflect the new state.
