@@ -186,6 +186,9 @@ class MainWindow(Adw.ApplicationWindow):
         else:
             self.set_default_size(1100, 800)
 
+        # Callback on window width change
+        self.connect("notify::default-width", self._on_width_changed)
+
         # HeaderBar with left-aligned menu and centered title
         self.header_bar = Adw.HeaderBar()
         vbox.append(self.header_bar)
@@ -532,6 +535,9 @@ class MainWindow(Adw.ApplicationWindow):
 
         # Trigger startup tasks when window is shown
         self.connect("map", self._trigger_startup_tasks)
+
+    def _on_width_changed(self, widget, param):
+        self.toolbar._on_width_changed(widget, param)
 
     def _trigger_startup_tasks(self, widget):
         """

@@ -21,6 +21,9 @@ class MainToolbar(Gtk.Box):
         super().__init__(
             orientation=Gtk.Orientation.HORIZONTAL, spacing=6, **kwargs
         )
+        # Allow shrinking below natural size to trigger responsive layout
+        self.set_size_request(100, -1)
+
         # Signals for View-State controls (not app actions)
         self.machine_warning_clicked = Signal()
         self.wcs_selected = Signal()
@@ -228,25 +231,56 @@ class MainToolbar(Gtk.Box):
         self.append(self.tab_menu_button)
 
         # Control buttons: home, send, pause, stop
-        sep = Gtk.Separator(orientation=Gtk.Orientation.VERTICAL)
-        self.append(sep)
+        self.machine_sep = Gtk.Separator(orientation=Gtk.Orientation.VERTICAL)
+        self.append(self.machine_sep)
+
+        # Responsive layout logic:
+        # We keep the buttons in a list to reparent them between the horizontal box
+        # and the vertical overflow box.
+        self._is_compact = False
+        self.machine_buttons = []
+
+        # Box for desktop mode (horizontal)
+        self.machine_container = Gtk.Box(
+            orientation=Gtk.Orientation.HORIZONTAL, spacing=6
+        )
+        self.append(self.machine_container)
+
+        # Dropdown button for mobile/compact mode
+        self.machine_overflow_box = Gtk.Box(
+            orientation=Gtk.Orientation.VERTICAL, spacing=6
+        )
+        self.machine_overflow_box.set_margin_top(6)
+        self.machine_overflow_box.set_margin_bottom(6)
+        self.machine_overflow_box.set_margin_start(6)
+        self.machine_overflow_box.set_margin_end(6)
+
+        self.machine_overflow_popover = Gtk.Popover()
+        self.machine_overflow_popover.set_child(self.machine_overflow_box)
+
+        self.machine_overflow_btn = Gtk.MenuButton()
+        self.machine_overflow_btn.set_icon_name("open-menu-symbolic")
+        self.machine_overflow_btn.set_popover(self.machine_overflow_popover)
+        self.machine_overflow_btn.set_tooltip_text(_("Machine Controls"))
+        self.machine_overflow_btn.set_visible(False)  # Hidden by default
+        self.append(self.machine_overflow_btn)
 
         self.home_button = Gtk.Button(child=get_icon("home-symbolic"))
         self.home_button.set_tooltip_text(_("Home the machine"))
         self.home_button.set_action_name("win.machine-home")
-        self.append(self.home_button)
+        self.machine_buttons.append(self.home_button)
 
         self.frame_button = Gtk.Button(child=get_icon("frame-symbolic"))
         self.frame_button.set_tooltip_text(
             _("Cycle laser head around the occupied area")
         )
         self.frame_button.set_action_name("win.machine-frame")
-        self.append(self.frame_button)
+        self.machine_buttons.append(self.frame_button)
 
         self.send_button = Gtk.Button(child=get_icon("send-symbolic"))
         self.send_button.set_tooltip_text(_("Send to machine"))
         self.send_button.set_action_name("win.machine-send")
-        self.append(self.send_button)
+        self.machine_buttons.append(self.send_button)
 
         self.hold_on_icon = get_icon("play-arrow-symbolic")
         self.hold_off_icon = get_icon("pause-symbolic")
@@ -254,12 +288,12 @@ class MainToolbar(Gtk.Box):
         self.hold_button.set_child(self.hold_off_icon)
         self.hold_button.set_tooltip_text(_("Pause machine"))
         self.hold_button.set_action_name("win.machine-hold")
-        self.append(self.hold_button)
+        self.machine_buttons.append(self.hold_button)
 
         self.cancel_button = Gtk.Button(child=get_icon("stop-symbolic"))
         self.cancel_button.set_tooltip_text(_("Cancel running job"))
         self.cancel_button.set_action_name("win.machine-cancel")
-        self.append(self.cancel_button)
+        self.machine_buttons.append(self.cancel_button)
 
         self.clear_alarm_button = Gtk.Button(
             child=get_icon("clear-alarm-symbolic")
@@ -268,7 +302,7 @@ class MainToolbar(Gtk.Box):
             _("Clear machine alarm (unlock)")
         )
         self.clear_alarm_button.set_action_name("win.machine-clear-alarm")
-        self.append(self.clear_alarm_button)
+        self.machine_buttons.append(self.clear_alarm_button)
 
         self.focus_on_icon = get_icon("laser-on-symbolic")
         self.focus_off_icon = get_icon("laser-off-symbolic")
@@ -277,7 +311,11 @@ class MainToolbar(Gtk.Box):
         self.focus_button.set_tooltip_text(_("Toggle focus laser"))
         self.focus_button.set_action_name("win.toggle-focus")
         self.focus_button.connect("toggled", self._on_focus_toggled)
-        self.append(self.focus_button)
+        self.machine_buttons.append(self.focus_button)
+
+        # Initial population (desktop mode)
+        for btn in self.machine_buttons:
+            self.machine_container.append(btn)
 
         # WCS controls
         sep = Gtk.Separator(orientation=Gtk.Orientation.VERTICAL)
@@ -391,3 +429,42 @@ class MainToolbar(Gtk.Box):
         """
         self.warning_label.set_label(f"{error_title} ({error_code})")
         self.machine_warning_box.set_tooltip_text(error_description)
+
+    def _on_width_changed(self, widget, param):
+        """Handles width changes to trigger responsive layout."""
+        width = self.get_width()
+        # Check if state change is needed (threshold: 1100px)
+
+        if self._is_compact:
+            new_compact = width < 1400
+        else:
+            new_compact = width < 1400
+
+        if new_compact != self._is_compact:
+            self._is_compact = new_compact
+            GLib.idle_add(self._update_responsive_layout)
+
+    def _update_responsive_layout(self):
+        """Moves buttons between the main toolbar and the overflow menu."""
+        # Prevent re-entrancy issues
+        if not self.machine_buttons:
+            return GLib.SOURCE_REMOVE
+
+        if self._is_compact:
+            # Move to overflow
+            self.machine_container.set_visible(False)
+            for btn in self.machine_buttons:
+                if btn.get_parent():
+                    btn.unparent()
+                self.machine_overflow_box.append(btn)
+            self.machine_overflow_btn.set_visible(True)
+        else:
+            # Move to desktop bar
+            self.machine_overflow_btn.set_visible(False)
+            for btn in self.machine_buttons:
+                if btn.get_parent():
+                    btn.unparent()
+                self.machine_container.append(btn)
+            self.machine_container.set_visible(True)
+
+        return GLib.SOURCE_REMOVE
