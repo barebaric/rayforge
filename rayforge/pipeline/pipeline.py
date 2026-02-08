@@ -32,6 +32,7 @@ from ..core.matrix import Matrix
 from ..core.ops import Ops
 from ..core.step import Step
 from ..core.workpiece import WorkPiece
+from ..shared.util.colors import ColorSet
 from .artifact import (
     ArtifactManager,
     BaseArtifactHandle,
@@ -41,12 +42,14 @@ from .artifact import (
     StepOpsArtifactHandle,
     WorkPieceArtifact,
 )
+from .artifact.lifecycle import ArtifactLifecycle
 from .stage import (
     JobPipelineStage,
     StepPipelineStage,
     WorkPiecePipelineStage,
     WorkPieceViewPipelineStage,
 )
+from .stage.job_runner import JobDescription
 
 
 if TYPE_CHECKING:
@@ -115,11 +118,11 @@ class Pipeline:
         self._reconciliation_timer: Optional[threading.Timer] = None
         self._step_invalidation_timer: Optional[threading.Timer] = None
         self._pending_step_invalidations: set[str] = set()
+        self._current_view_context: Optional[RenderContext] = None
 
         # Signals for notifying the UI of generation progress
         self.processing_state_changed = Signal()
         self.workpiece_starting = Signal()
-        self.workpiece_visual_chunk_ready = Signal()
         self.workpiece_artifact_ready = Signal()
         self.workpiece_artifact_adopted = Signal()
         self.step_render_ready = Signal()
@@ -163,9 +166,6 @@ class Pipeline:
         )
         self._workpiece_stage.generation_starting.connect(
             self._workpiece_view_stage._on_generation_starting
-        )
-        self._workpiece_stage.visual_chunk_available.connect(
-            self._on_workpiece_visual_chunk_available
         )
         self._workpiece_stage.visual_chunk_available.connect(
             self._workpiece_view_stage._on_workpiece_chunk_available
@@ -260,11 +260,46 @@ class Pipeline:
             self._connect_signals()
             self.reconcile_all()
 
+    def set_view_context(
+        self,
+        pixels_per_mm: Tuple[float, float],
+        show_travel_moves: bool,
+        margin_px: int,
+        color_set: ColorSet,
+    ) -> None:
+        """
+        Sets the global view context for rendering workpiece views.
+
+        When the view context changes (e.g., zoom level, theme), this method
+        triggers re-rendering of all cached workpiece views.
+
+        Args:
+            pixels_per_mm: The current zoom level in pixels per mm.
+            show_travel_moves: Whether to show travel moves.
+            margin_px: The margin in pixels for rendering.
+            color_set: The color set for rendering.
+        """
+        context = RenderContext(
+            pixels_per_mm=pixels_per_mm,
+            show_travel_moves=show_travel_moves,
+            margin_px=margin_px,
+            color_set_dict=color_set.to_dict(),
+        )
+
+        if self._current_view_context == context:
+            logger.debug("set_view_context: Context unchanged, skipping")
+            return
+
+        self._current_view_context = context
+        self._workpiece_view_stage.update_view_context(context)
+
     def _request_step_assembly(self, step_uid: str) -> None:
         """
         Schedules a debounced assembly trigger for the given step.
         """
         self._pending_step_invalidations.add(step_uid)
+        if self.is_paused:
+            return
         if self._step_invalidation_timer is None:
             self._step_invalidation_timer = threading.Timer(
                 0.05, self._on_step_invalidation_timer
@@ -290,17 +325,14 @@ class Pipeline:
     @property
     def is_busy(self) -> bool:
         """
-        Returns True if the pipeline has pending work (debouncing) or if any
-        pipeline stage is currently running tasks.
+        Returns True if the pipeline is currently processing or has pending
+        work.
         """
-        return (
-            self._reconciliation_timer is not None
-            or self._workpiece_stage.is_busy
-            or self._step_stage.is_busy
-            or self._step_invalidation_timer is not None
-            or self._job_stage.is_busy
-            or self._workpiece_view_stage.is_busy
-        )
+        if self._reconciliation_timer is not None:
+            return True
+        if self._step_invalidation_timer is not None:
+            return True
+        return self._artifact_manager.has_pending_work()
 
     def _check_and_update_processing_state(self) -> None:
         """
@@ -309,6 +341,36 @@ class Pipeline:
         avoiding race conditions.
         """
         current_busy_state = self.is_busy
+        logger.debug(
+            f"_check_and_update_processing_state: "
+            f"current_busy={current_busy_state}, "
+            f"last_known={self._last_known_busy_state}, "
+            f"reconciliation_timer={self._reconciliation_timer is not None}, "
+            f"ledger_size={len(self._artifact_manager._ledger)}"
+        )
+        # Don't signal state change if we're transitioning from busy to idle
+        # but there are STALE or MISSING entries (meaning new work is starting)
+        if (
+            self._last_known_busy_state
+            and not current_busy_state
+            and self._artifact_manager._ledger
+        ):
+            stale_or_missing_count = 0
+            for entry in self._artifact_manager._ledger.values():
+                if entry.state in (
+                    ArtifactLifecycle.STALE,
+                    ArtifactLifecycle.MISSING,
+                ):
+                    stale_or_missing_count += 1
+            if stale_or_missing_count > 0:
+                # New work is starting, so don't signal state change
+                logger.debug(
+                    f"Skipping state change: "
+                    f"{stale_or_missing_count} STALE/MISSING entries, "
+                    f"ledger={list(self._artifact_manager._ledger.keys())}"
+                )
+                return
+
         if self._last_known_busy_state != current_busy_state:
             self.processing_state_changed.send(
                 self, is_processing=current_busy_state
@@ -362,6 +424,8 @@ class Pipeline:
         self._pause_count -= 1
         if self._pause_count == 0:
             logger.debug("Pipeline resumed.")
+            if self._pending_step_invalidations:
+                self._execute_pending_step_assemblies()
             self._schedule_reconciliation()
 
     @contextmanager
@@ -385,9 +449,10 @@ class Pipeline:
 
         if self._reconciliation_timer:
             self._reconciliation_timer.cancel()
-        else:
+        elif not self.is_busy:
             # If there was no timer, we are transitioning from idle to busy.
-            # Immediately update the state.
+            # Immediately update the state, but only if we're not already busy
+            # (to avoid spurious state changes during rapid invalidations).
             self._task_manager.schedule_on_main_thread(
                 self._check_and_update_processing_state
             )
@@ -472,6 +537,11 @@ class Pipeline:
         parent_of_origin: DocItem,
     ) -> None:
         """Handles non-transform updates that require regeneration."""
+        logger.debug(
+            f"_on_descendant_updated called with "
+            f"origin={type(origin).__name__}, "
+            f"origin.uid={origin.uid}"
+        )
         if isinstance(origin, Step):
             self._workpiece_stage.invalidate_for_step(origin.uid)
             self._step_stage.invalidate(origin.uid)
@@ -486,6 +556,7 @@ class Pipeline:
         *,
         origin: Union[WorkPiece, Group, Layer],
         parent_of_origin: DocItem,
+        old_matrix: Optional["Matrix"] = None,
     ) -> None:
         """Handles transform changes by invalidating downstream artifacts."""
         workpieces_to_check = []
@@ -496,18 +567,31 @@ class Pipeline:
                 origin.get_descendants(of_type=WorkPiece)
             )
 
+        # Always request step assembly to ensure downstream artifacts are
+        # marked stale. The request itself handles the pause state.
         for wp in workpieces_to_check:
-            # The WorkPieceArtifact is generated based on its size, not its
-            # position. The reconciliation logic in WorkPiecePipelineStage will
-            # check if the size has changed and invalidate if necessary.
-            # We no longer need to invalidate it eagerly here.
-
-            # The StepArtifact, however, depends on the world-space positions
-            # of all its workpieces, so it must be invalidated.
             if wp.layer and wp.layer.workflow:
                 for step in wp.layer.workflow.steps:
                     self._request_step_assembly(step.uid)
 
+        # Check for size changes which require full workpiece regeneration.
+        if isinstance(origin, WorkPiece):
+            size_changed = False
+            if old_matrix is not None:
+                _, _, _, old_sx, old_sy, _ = old_matrix.decompose()
+                _, _, _, new_sx, new_sy, _ = origin.matrix.decompose()
+                size_changed = (
+                    abs(old_sx - new_sx) > 1e-9 or abs(old_sy - new_sy) > 1e-9
+                )
+            else:
+                size_changed = True
+
+            if size_changed and origin.layer and origin.layer.workflow:
+                for step in origin.layer.workflow.steps:
+                    self._workpiece_stage.invalidate_for_step(step.uid)
+
+        # Schedule a single reconciliation for any transform change.
+        # The scheduler itself will handle the pause state.
         self._schedule_reconciliation()
 
     def _on_job_assembly_invalidated(self, sender: Any) -> None:
@@ -540,26 +624,6 @@ class Pipeline:
             self._check_and_update_processing_state
         )
 
-    def _on_workpiece_visual_chunk_available(
-        self,
-        sender: WorkPiecePipelineStage,
-        *,
-        key: Tuple[str, str],
-        chunk_handle: BaseArtifactHandle,
-        generation_id: int,
-    ) -> None:
-        """Relays chunk signal, finding the model objects first."""
-        step_uid, workpiece_uid = key
-        workpiece = self._find_workpiece_by_uid(workpiece_uid)
-        step = self._find_step_by_uid(step_uid)
-        if workpiece and step:
-            self.workpiece_visual_chunk_ready.send(
-                step,
-                workpiece=workpiece,
-                chunk_handle=chunk_handle,
-                generation_id=generation_id,
-            )
-
     def _on_workpiece_generation_finished(
         self,
         sender: WorkPiecePipelineStage,
@@ -567,6 +631,7 @@ class Pipeline:
         step: Step,
         workpiece: WorkPiece,
         generation_id: int,
+        task_status: str = "completed",
     ) -> None:
         """
         Relays signal and triggers downstream step assembly.
@@ -575,9 +640,19 @@ class Pipeline:
             step, workpiece=workpiece, generation_id=generation_id
         )
         self._request_step_assembly(step.uid)
-        self._task_manager.schedule_on_main_thread(
-            self._check_and_update_processing_state
-        )
+        # Only check processing state if we're not already busy
+        # (to avoid spurious state changes during rapid invalidations)
+        # Also skip if reconciliation is in progress to avoid state changes
+        # when a canceled task finishes while a new task is being started
+        # Finally, skip if task was canceled (to avoid spurious state changes)
+        if (
+            not self.is_busy
+            and self._reconciliation_timer is None
+            and task_status != "canceled"
+        ):
+            self._task_manager.schedule_on_main_thread(
+                self._check_and_update_processing_state
+            )
 
     def _on_workpiece_artifact_adopted(
         self,
@@ -590,11 +665,31 @@ class Pipeline:
         Handles the signal that a workpiece artifact has been adopted.
         Relays the signal to notify workpiece elements and triggers
         step assembly to ensure step ops artifacts are created promptly.
+        Also triggers view rendering if a view context is available.
         """
+        key = (step_uid, workpiece_uid)
+        logger.debug(
+            f"_on_workpiece_artifact_adopted: Workpiece artifact adopted "
+            f"for {key}"
+        )
         self.workpiece_artifact_adopted.send(
             self, step_uid=step_uid, workpiece_uid=workpiece_uid
         )
         self._schedule_reconciliation()
+
+        if self._current_view_context is not None:
+            logger.debug(
+                f"_on_workpiece_artifact_adopted: Requesting view render "
+                f"for ({step_uid}, {workpiece_uid})"
+            )
+            self._workpiece_view_stage.request_view_render(
+                step_uid, workpiece_uid, self._current_view_context
+            )
+        else:
+            logger.warning(
+                f"_on_workpiece_artifact_adopted: No view context available, "
+                f"cannot request view render for ({step_uid}, {workpiece_uid})"
+            )
 
     def _on_step_render_artifact_ready(
         self, sender: StepPipelineStage, *, step: Step
@@ -829,10 +924,73 @@ class Pipeline:
         )
 
     def generate_job(self) -> None:
-        """Triggers the final job generation process."""
-        if self.doc:
-            # This method now just calls the stage's method without a callback
-            self._job_stage.generate_job(self.doc)
+        """Triggers the final job generation process as fire-and-forget."""
+
+        def no_op_callback(
+            handle: Optional[JobArtifactHandle], error: Optional[Exception]
+        ):
+            if error:
+                logger.error(f"Fire-and-forget job generation failed: {error}")
+
+        self.generate_job_artifact(when_done=no_op_callback)
+
+    def _validate_job_generation_state(self) -> Optional[RuntimeError]:
+        """
+        Validates the state before job generation.
+
+        Returns:
+            An error if validation fails, None otherwise.
+        """
+        # Check if a job generation is already pending or running
+        entry = self._artifact_manager._get_ledger_entry(
+            self._artifact_manager.JOB_KEY
+        )
+        if entry and entry.state == ArtifactLifecycle.PENDING:
+            msg = "Job generation is already in progress."
+            logger.warning(msg)
+            return RuntimeError(msg)
+
+        if not self._machine:
+            msg = "Cannot generate job: No machine is configured."
+            logger.error(msg)
+            return RuntimeError(msg)
+
+        return None
+
+    def _get_step_uids(self, doc: "Doc") -> list:
+        """
+        Collects step UIDs from document layers.
+
+        Returns:
+            List of step UIDs.
+        """
+        step_uids = []
+        for layer in doc.layers:
+            if not layer.workflow:
+                continue
+            for step in layer.workflow.steps:
+                if not step.visible:
+                    continue
+                step_uids.append(step.uid)
+        return step_uids
+
+    def _create_job_description(
+        self,
+        step_handles: dict,
+        machine: "Machine",
+        doc: "Doc",
+    ) -> JobDescription:
+        """
+        Creates a job description from the provided components.
+
+        Returns:
+            A JobDescription object.
+        """
+        return JobDescription(
+            step_artifact_handles_by_uid=step_handles,
+            machine_dict=machine.to_dict(),
+            doc_dict=doc.to_dict(),
+        )
 
     def generate_job_artifact(
         self,
@@ -850,11 +1008,60 @@ class Pipeline:
                        an ArtifactHandle on success, or (None, error) on
                        failure.
         """
-        # The logic is now much simpler. We just pass the callback along.
-        if self.doc:
-            self._job_stage.generate_job(self.doc, on_done=when_done)
-        else:
+        if not self.doc:
             when_done(None, RuntimeError("No document is loaded."))
+            return
+
+        # 1. Validation
+        validation_error = self._validate_job_generation_state()
+        if validation_error:
+            when_done(None, validation_error)
+            return
+
+        # 2. Get step UIDs and register dependencies
+        step_uids = self._get_step_uids(self.doc)
+        self._artifact_manager.sync_keys(
+            "job", {self._artifact_manager.JOB_KEY}
+        )
+        # Ensure step keys are synced before registering dependencies
+        self._step_stage.reconcile(self.doc)
+        for step_uid in step_uids:
+            step_key = ("step", step_uid)
+            self._artifact_manager._register_dependency(
+                step_key, self._artifact_manager.JOB_KEY
+            )
+
+        # 3. Check if all step artifacts are ready by trying to check them out.
+        try:
+            dep_handles = self._artifact_manager.checkout_dependencies(
+                self._artifact_manager.JOB_KEY
+            )
+        except AssertionError:
+            # This means some dependencies are not READY.
+            # Trigger generation of missing dependencies.
+            self.reconcile_all()
+            when_done(
+                None,
+                RuntimeError(
+                    "Job dependencies are not ready. "
+                    "Please wait and try again."
+                ),
+            )
+            return
+
+        # 4. Assemble the JobDescription
+        step_handles = {}
+        for key, handle in dep_handles.items():
+            step_uid = key[1]
+            step_handles[step_uid] = handle.to_dict()
+
+        self._machine.hydrate()
+        job_desc = self._create_job_description(
+            step_handles, self._machine, self.doc
+        )
+
+        # 5. Call the simplified stage method
+        self._job_stage.generate_job(job_desc, on_done=when_done)
 
     async def generate_job_artifact_async(
         self,

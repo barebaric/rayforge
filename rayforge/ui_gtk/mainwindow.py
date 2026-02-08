@@ -1583,9 +1583,18 @@ class MainWindow(Adw.ApplicationWindow):
 
         with artifact_manager.checkout_handle(handle) as final_artifact:
             # 1. Update Simulation
-            if not isinstance(final_artifact, JobArtifact):
-                logger.error("Final artifact is not a JobArtifact")
+            if final_artifact is None:
+                # If handle was None (e.g. no machine configured), we still
+                # want to clear the previews.
+                if handle is None:
+                    self.simulator_cmd.reload_simulation(None)
+                    self._update_gcode_preview(None, None)
+                    return
+
+                logger.warning("Final artifact is None, not a JobArtifact")
                 return
+
+            assert isinstance(final_artifact, JobArtifact)
             self.simulator_cmd.reload_simulation(final_artifact)
 
             # 2. Update G-code Preview

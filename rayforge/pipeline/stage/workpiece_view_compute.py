@@ -50,12 +50,12 @@ def compute_view_dimensions(
     texture_data = None
     if not artifact.is_scalable:
         if artifact.source_dimensions:
-            width_px = int(artifact.source_dimensions[0])
-            height_px = int(artifact.source_dimensions[1])
-            px_per_mm_x = width_px / artifact.generation_size[0]
-            px_per_mm_y = height_px / artifact.generation_size[1]
+            px_per_mm_x, px_per_mm_y = context.pixels_per_mm
+            width_px = int(round(artifact.generation_size[0] * px_per_mm_x))
+            height_px = int(round(artifact.generation_size[1] * px_per_mm_y))
             logger.debug(
-                f"compute_view_dimensions: Using source_dimensions: "
+                f"compute_view_dimensions: Using generation_size for "
+                f"non-scalable artifact: "
                 f"src_dims={artifact.source_dimensions}, "
                 f"gen_size={artifact.generation_size}, "
                 f"calc_px=({width_px}x{height_px}), "
@@ -86,17 +86,12 @@ def compute_view_dimensions(
         return None
 
     x_mm, y_mm, w_mm, h_mm = bbox
-    ppm_x, ppm_y = context.pixels_per_mm
-    margin = context.margin_px
 
-    requested_width_px = round(w_mm * ppm_x) + 2 * margin
-    requested_height_px = round(h_mm * ppm_y) + 2 * margin
-
-    width_px = min(requested_width_px, CAIRO_MAX_DIMENSION)
-    height_px = min(requested_height_px, CAIRO_MAX_DIMENSION)
-
-    if width_px <= 2 * margin or height_px <= 2 * margin:
+    dimensions = calculate_render_dimensions(bbox, context)
+    if dimensions is None:
         return None
+
+    width_px, height_px, _, _ = dimensions
 
     return (x_mm, y_mm, w_mm, h_mm, width_px, height_px)
 
@@ -149,7 +144,7 @@ def _encode_vertex_and_texture_data(
     return vertex_data, texture_data
 
 
-def _calculate_render_dimensions(
+def calculate_render_dimensions(
     bbox: Tuple[float, float, float, float],
     render_context: RenderContext,
 ) -> Optional[Tuple[int, int, float, float]]:
@@ -307,7 +302,7 @@ def compute_workpiece_view(
         logger.warning(f"No content to render (bbox={bbox}). Returning None.")
         return None
 
-    dimensions = _calculate_render_dimensions(bbox, render_context)
+    dimensions = calculate_render_dimensions(bbox, render_context)
     if dimensions is None:
         return None
 
@@ -394,7 +389,7 @@ def compute_workpiece_view_to_buffer(
         logger.warning(f"No content to render (bbox={bbox}). Returning None.")
         return None
 
-    dimensions = _calculate_render_dimensions(bbox, render_context)
+    dimensions = calculate_render_dimensions(bbox, render_context)
     if dimensions is None:
         return None
 

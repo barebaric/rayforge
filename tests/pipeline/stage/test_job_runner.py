@@ -76,6 +76,7 @@ def test_jobrunner_assembles_step_artifacts_correctly(
         get_context().artifact_store,
         asdict(job_desc),
         "test_job",
+        123,
     )
 
     # Assert
@@ -148,6 +149,7 @@ def test_jobrunner_reconstructs_doc_from_dict(context_initializer, machine):
         get_context().artifact_store,
         asdict(job_desc),
         "test_job",
+        123,
     )
 
     event_name, event_data = mock_proxy.send_event.call_args[0]

@@ -2,10 +2,15 @@ import pytest
 from unittest.mock import MagicMock, ANY
 
 from rayforge.core.doc import Doc
+from rayforge.pipeline.artifact.lifecycle import (
+    ArtifactLifecycle,
+    LedgerEntry,
+)
 from rayforge.pipeline.stage.base import PipelineStage
 from rayforge.pipeline.stage.job_stage import JobPipelineStage
 from rayforge.pipeline.stage.job_runner import (
     make_job_artifact_in_subprocess,
+    JobDescription,
 )
 from rayforge.pipeline.artifact import (
     JobArtifactHandle,
@@ -94,10 +99,20 @@ class TestJobPipelineStage:
             artifact_type_name="StepOpsArtifact",
             time_estimate=10.0,
         )
-        artifact_manager.put_step_ops_handle(step.uid, step_ops_handle)
+
+        artifact_manager._ledger[artifact_manager.JOB_KEY] = LedgerEntry(
+            state=ArtifactLifecycle.MISSING,
+        )
 
         stage = JobPipelineStage(mock_task_mgr, artifact_manager, machine)
-        stage.generate_job(real_doc_with_step)
+
+        job_desc = JobDescription(
+            step_artifact_handles_by_uid={step.uid: step_ops_handle.to_dict()},
+            machine_dict=machine.to_dict(),
+            doc_dict=real_doc_with_step.to_dict(),
+        )
+
+        stage.generate_job(job_desc)
 
         mock_task_mgr.run_process.assert_called_once()
         call_args = mock_task_mgr.run_process.call_args
@@ -107,8 +122,9 @@ class TestJobPipelineStage:
         assert call_args[0][1] is artifact_manager._store
 
         # Access the nested job_description_dict
-        job_desc = call_args.kwargs["job_description_dict"]
-        assert job_desc["step_artifact_handles_by_uid"] == {
+        job_desc_dict = call_args.kwargs["job_description_dict"]
+        assert job_desc_dict == job_desc.__dict__
+        assert job_desc_dict["step_artifact_handles_by_uid"] == {
             step.uid: step_ops_handle.to_dict()
         }
 
@@ -129,22 +145,61 @@ class TestJobPipelineStage:
             distance=0,
         )
 
+        step = real_doc_with_step.active_layer.workflow.steps[0]
+        step_ops_handle = StepOpsArtifactHandle(
+            shm_name="dummy_step_ops",
+            handle_class_name="StepOpsArtifactHandle",
+            artifact_type_name="StepOpsArtifact",
+            time_estimate=10.0,
+        )
+
+        artifact_manager._ledger[artifact_manager.JOB_KEY] = LedgerEntry(
+            state=ArtifactLifecycle.MISSING,
+        )
+
         stage = JobPipelineStage(mock_task_mgr, artifact_manager, machine)
         mock_finished_signal = MagicMock()
         stage.generation_finished.connect(mock_finished_signal)
-        stage.generate_job(real_doc_with_step)
+
+        job_desc = JobDescription(
+            step_artifact_handles_by_uid={step.uid: step_ops_handle.to_dict()},
+            machine_dict=machine.to_dict(),
+            doc_dict=real_doc_with_step.to_dict(),
+        )
+
+        stage.generate_job(job_desc)
 
         task = mock_task_mgr.created_tasks[0]
 
         task.get_status = MagicMock(return_value="completed")
         task.result = MagicMock(return_value=None)
 
-        event_data = {"handle_dict": handle.to_dict()}
+        event_data = {
+            "handle_dict": handle.to_dict(),
+            "generation_id": 123,
+        }
 
         # Directly monkeypatch the method on the instance
         artifact_manager.adopt_artifact = MagicMock(return_value=handle)
+        artifact_manager.commit = MagicMock()
 
         task.when_event(task, "artifact_created", event_data)
+
+        # Manually set the job handle to simulate commit behavior
+        def commit_side_effect(key, h, gen_id):
+            artifact_manager._ledger[key].handle = h
+            artifact_manager._ledger[key].state = ArtifactLifecycle.READY
+
+        # Directly monkeypatch the method on the instance
+        artifact_manager.adopt_artifact = MagicMock(return_value=handle)
+        artifact_manager.commit = MagicMock(side_effect=commit_side_effect)
+
+        task.when_event(task, "artifact_created", event_data)
+
+        # Assert commit was called with correct params
+        artifact_manager.commit.assert_called_once_with(
+            artifact_manager.JOB_KEY, handle, 123
+        )
 
         # Assert handle was cached after adopt_artifact
         assert artifact_manager.get_job_handle() == handle
@@ -168,7 +223,7 @@ class TestJobPipelineStage:
     ):
         """Tests that a failed task correctly cleans up the cached handle."""
         machine, _ = test_machine_and_config
-        handle = JobArtifactHandle(
+        _ = JobArtifactHandle(
             shm_name="dummy_job_shm",
             handle_class_name="JobArtifactHandle",
             artifact_type_name="JobArtifact",
@@ -176,25 +231,37 @@ class TestJobPipelineStage:
             distance=0,
         )
 
+        step = real_doc_with_step.active_layer.workflow.steps[0]
+        step_ops_handle = StepOpsArtifactHandle(
+            shm_name="dummy_step_ops",
+            handle_class_name="StepOpsArtifactHandle",
+            artifact_type_name="StepOpsArtifact",
+            time_estimate=10.0,
+        )
+
+        artifact_manager._ledger[artifact_manager.JOB_KEY] = LedgerEntry(
+            state=ArtifactLifecycle.MISSING,
+        )
+
         stage = JobPipelineStage(mock_task_mgr, artifact_manager, machine)
         mock_failed_signal = MagicMock()
         stage.generation_failed.connect(mock_failed_signal)
-        stage.generate_job(real_doc_with_step)
+
+        job_desc = JobDescription(
+            step_artifact_handles_by_uid={step.uid: step_ops_handle.to_dict()},
+            machine_dict=machine.to_dict(),
+            doc_dict=real_doc_with_step.to_dict(),
+        )
+
+        stage.generate_job(job_desc)
 
         task = mock_task_mgr.created_tasks[0]
 
         task.get_status = MagicMock(return_value="failed")
         task.result = MagicMock(side_effect=RuntimeError("Task failed"))
 
-        event_data = {"handle_dict": handle.to_dict()}
-
-        # Directly monkeypatch the method on the instance
-        artifact_manager.adopt_artifact = MagicMock(return_value=handle)
-
-        task.when_event(task, "artifact_created", event_data)
-
-        # Assert handle was cached after adopt_artifact (simulating it was set
-        # during event)
+        # For failure case, the artifact_created event should not be called
+        # since the task failed before creating the artifact
         task.when_done(task)
 
         # Signal is emitted when task fails
@@ -204,167 +271,6 @@ class TestJobPipelineStage:
 
         # On failure, the handle MUST be cleared
         assert artifact_manager.get_job_handle() is None
-
-    def test_validate_job_generation_state_busy(
-        self, mock_task_mgr, artifact_manager, test_machine_and_config
-    ):
-        """Test validation when job generation is already in progress."""
-        machine, _ = test_machine_and_config
-        stage = JobPipelineStage(mock_task_mgr, artifact_manager, machine)
-
-        # Simulate busy state
-        mock_task = MagicMock()
-        stage._active_task = mock_task
-
-        callback = MagicMock()
-        error = stage._validate_job_generation_state(callback)
-
-        assert error is not None
-        assert "already in progress" in str(error)
-        callback.assert_called_once()
-
-    def test_validate_job_generation_state_no_machine(
-        self, mock_task_mgr, artifact_manager
-    ):
-        """Test validation when no machine is configured."""
-        stage = JobPipelineStage(
-            mock_task_mgr,
-            artifact_manager,
-            None,  # type: ignore[arg-type]
-        )
-
-        callback = MagicMock()
-        error = stage._validate_job_generation_state(callback)
-
-        assert error is not None
-        assert "No machine is configured" in str(error)
-        callback.assert_called_once()
-
-    def test_validate_job_generation_state_success(
-        self, mock_task_mgr, artifact_manager, test_machine_and_config
-    ):
-        """Test validation when state is valid."""
-        machine, _ = test_machine_and_config
-        stage = JobPipelineStage(mock_task_mgr, artifact_manager, machine)
-
-        callback = MagicMock()
-        error = stage._validate_job_generation_state(callback)
-
-        assert error is None
-        callback.assert_not_called()
-
-    def test_collect_step_handles(
-        self,
-        mock_task_mgr,
-        artifact_manager,
-        real_doc_with_step,
-        test_machine_and_config,
-    ):
-        """Test collecting step handles from document layers."""
-        machine, _ = test_machine_and_config
-        stage = JobPipelineStage(mock_task_mgr, artifact_manager, machine)
-
-        step = real_doc_with_step.active_layer.workflow.steps[0]
-        step_ops_handle = StepOpsArtifactHandle(
-            shm_name="dummy_step_ops",
-            handle_class_name="StepOpsArtifactHandle",
-            artifact_type_name="StepOpsArtifact",
-            time_estimate=10.0,
-        )
-        artifact_manager.put_step_ops_handle(step.uid, step_ops_handle)
-
-        step_handles = stage._collect_step_handles(real_doc_with_step)
-
-        assert step.uid in step_handles
-        assert step_handles[step.uid] == step_ops_handle.to_dict()
-
-    def test_collect_step_handles_invisible_step(
-        self,
-        mock_task_mgr,
-        artifact_manager,
-        real_doc_with_step,
-        test_machine_and_config,
-    ):
-        """Test that invisible steps are not collected."""
-        machine, _ = test_machine_and_config
-        stage = JobPipelineStage(mock_task_mgr, artifact_manager, machine)
-
-        step = real_doc_with_step.active_layer.workflow.steps[0]
-        step.visible = False
-
-        step_ops_handle = StepOpsArtifactHandle(
-            shm_name="dummy_step_ops",
-            handle_class_name="StepOpsArtifactHandle",
-            artifact_type_name="StepOpsArtifact",
-            time_estimate=10.0,
-        )
-        artifact_manager.put_step_ops_handle(step.uid, step_ops_handle)
-
-        step_handles = stage._collect_step_handles(real_doc_with_step)
-
-        assert step.uid not in step_handles
-
-    def test_collect_step_handles_no_handle(
-        self,
-        mock_task_mgr,
-        artifact_manager,
-        real_doc_with_step,
-        test_machine_and_config,
-    ):
-        """Test that steps without handles are skipped."""
-        machine, _ = test_machine_and_config
-        stage = JobPipelineStage(mock_task_mgr, artifact_manager, machine)
-
-        step_handles = stage._collect_step_handles(real_doc_with_step)
-
-        assert len(step_handles) == 0
-
-    def test_create_adoption_event(
-        self, mock_task_mgr, artifact_manager, test_machine_and_config
-    ):
-        """Test creation of adoption event."""
-        machine, _ = test_machine_and_config
-        stage = JobPipelineStage(mock_task_mgr, artifact_manager, machine)
-
-        event = stage._create_adoption_event()
-
-        assert event is not None
-        assert not event.is_set()
-
-    def test_create_job_description(
-        self,
-        mock_task_mgr,
-        artifact_manager,
-        real_doc_with_step,
-        test_machine_and_config,
-    ):
-        """Test creation of job description."""
-        machine, _ = test_machine_and_config
-        stage = JobPipelineStage(mock_task_mgr, artifact_manager, machine)
-
-        step_handles = {"step1": {"shm_name": "test"}}
-        job_desc = stage._create_job_description(
-            step_handles, machine, real_doc_with_step
-        )
-
-        assert job_desc.step_artifact_handles_by_uid == step_handles
-        assert "machine_dict" in job_desc.__dict__
-        assert "doc_dict" in job_desc.__dict__
-
-    def test_is_task_active(
-        self, mock_task_mgr, artifact_manager, test_machine_and_config
-    ):
-        """Test checking if task is active."""
-        machine, _ = test_machine_and_config
-        stage = JobPipelineStage(mock_task_mgr, artifact_manager, machine)
-
-        mock_task = MagicMock()
-        stage._active_task = mock_task
-
-        assert stage._is_task_active(mock_task) is True
-
-        other_task = MagicMock()
-        assert stage._is_task_active(other_task) is False
 
     def test_adopt_job_artifact(
         self, mock_task_mgr, artifact_manager, test_machine_and_config
@@ -405,115 +311,3 @@ class TestJobPipelineStage:
 
         with pytest.raises(TypeError, match="Expected a JobArtifactHandle"):
             stage._adopt_job_artifact(data)
-
-    def test_complete_adoption_handshake(
-        self, mock_task_mgr, artifact_manager, test_machine_and_config
-    ):
-        """Test completing the adoption handshake."""
-        machine, _ = test_machine_and_config
-        stage = JobPipelineStage(mock_task_mgr, artifact_manager, machine)
-
-        event = stage._create_adoption_event()
-        stage._adoption_event = event
-
-        assert not event.is_set()
-
-        stage._complete_adoption_handshake()
-
-        assert event.is_set()
-
-    def test_complete_adoption_handshake_no_event(
-        self, mock_task_mgr, artifact_manager, test_machine_and_config
-    ):
-        """Test handshake completion when no event exists."""
-        machine, _ = test_machine_and_config
-        stage = JobPipelineStage(mock_task_mgr, artifact_manager, machine)
-
-        stage._adoption_event = None
-
-        # Should not raise an error
-        stage._complete_adoption_handshake()
-
-    def test_handle_artifact_created_inactive_task(
-        self,
-        mock_task_mgr,
-        artifact_manager,
-        real_doc_with_step,
-        test_machine_and_config,
-    ):
-        """Test handling artifact_created from inactive task."""
-        machine, _ = test_machine_and_config
-        stage = JobPipelineStage(mock_task_mgr, artifact_manager, machine)
-
-        stage._adoption_event = stage._create_adoption_event()
-
-        other_task = MagicMock()
-        data = {"handle_dict": {}}
-
-        stage._handle_artifact_created(other_task, data)
-
-        # Event should still be set to unblock worker
-        assert stage._adoption_event.is_set()
-
-    def test_handle_artifact_created_error(
-        self,
-        mock_task_mgr,
-        artifact_manager,
-        real_doc_with_step,
-        test_machine_and_config,
-    ):
-        """Test handling artifact_created with error."""
-        machine, _ = test_machine_and_config
-        stage = JobPipelineStage(mock_task_mgr, artifact_manager, machine)
-
-        stage.generate_job(real_doc_with_step)
-        task = mock_task_mgr.created_tasks[0]
-
-        artifact_manager.adopt_artifact = MagicMock(
-            side_effect=RuntimeError("Adoption failed")
-        )
-
-        data = {"handle_dict": {}}
-
-        stage._handle_artifact_created(task, data)
-
-        # Event should still be set to unblock worker
-        assert stage._adoption_event is not None
-        assert stage._adoption_event.is_set()
-
-    def test_generate_job_busy_state(
-        self,
-        mock_task_mgr,
-        artifact_manager,
-        real_doc_with_step,
-        test_machine_and_config,
-    ):
-        """Test generate_job when already busy."""
-        machine, _ = test_machine_and_config
-        stage = JobPipelineStage(mock_task_mgr, artifact_manager, machine)
-
-        # Set busy state
-        mock_task = MagicMock()
-        stage._active_task = mock_task
-
-        callback = MagicMock()
-        stage.generate_job(real_doc_with_step, callback)
-
-        callback.assert_called_once()
-        assert "already in progress" in str(callback.call_args[0][1])
-
-    def test_generate_job_no_machine(
-        self, mock_task_mgr, artifact_manager, real_doc_with_step
-    ):
-        """Test generate_job when no machine is configured."""
-        stage = JobPipelineStage(
-            mock_task_mgr,
-            artifact_manager,
-            None,  # type: ignore[arg-type]
-        )
-
-        callback = MagicMock()
-        stage.generate_job(real_doc_with_step, callback)
-
-        callback.assert_called_once()
-        assert "No machine is configured" in str(callback.call_args[0][1])

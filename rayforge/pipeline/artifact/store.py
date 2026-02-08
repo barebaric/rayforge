@@ -205,6 +205,9 @@ class ArtifactStore:
 
         try:
             shm_obj.close()
+            logger.info(
+                f"[DIAGNOSTIC] About to unlink shared memory block: {shm_name}"
+            )
             shm_obj.unlink()  # This actually frees the memory
             logger.debug(f"Released shared memory block: {shm_name}")
         except FileNotFoundError:
@@ -222,6 +225,41 @@ class ArtifactStore:
         needed to prevent memory leaks.
         """
         self._release_by_name(handle.shm_name)
+
+    def close_handle(self, handle: BaseArtifactHandle) -> None:
+        """
+        Closes the shared memory block associated with a handle without
+        unlinking it. This is used when the block might still be
+        in use by other processes (e.g., workers doing progressive rendering).
+        """
+        shm_name = handle.shm_name
+        refcount = self._refcounts.get(shm_name, 0)
+        if refcount > 1:
+            # Decrement refcount and keep block
+            self._refcounts[shm_name] = refcount - 1
+            logger.debug(
+                f"Decremented refcount for {shm_name} to "
+                f"{self._refcounts[shm_name]}"
+            )
+            return
+
+        # Refcount is 1 or less, close without unlinking
+        shm_obj = self._managed_shms.get(shm_name, None)
+        if not shm_obj:
+            return
+
+        try:
+            logger.info(
+                f"[DIAGNOSTIC] Closing shared memory block without unlinking: "
+                f"{shm_name}"
+            )
+            shm_obj.close()
+            # Keep in managed_shms for garbage collection
+            # but don't unlink yet
+        except Exception as e:
+            logger.warning(
+                f"Error closing shared memory block {shm_name}: {e}"
+            )
 
     def retain(self, handle: BaseArtifactHandle) -> bool:
         """
@@ -262,8 +300,8 @@ class ArtifactStore:
                     to be forgotten.
         """
         shm_name = handle.shm_name
-        logger.debug(
-            f"forget() called for {shm_name}, refcount="
+        logger.info(
+            f"[DIAGNOSTIC] forget() called for {shm_name}, refcount="
             f"{self._refcounts.get(shm_name, 0)}"
         )
         shm_obj = self._managed_shms.pop(shm_name, None)
@@ -278,8 +316,11 @@ class ArtifactStore:
         self._refcounts.pop(shm_name, None)
 
         try:
+            logger.info(
+                f"[DIAGNOSTIC] Closing shared memory block: {shm_name}"
+            )
             shm_obj.close()
-            logger.debug(f"Forgot shared memory block: {shm_name}")
+            logger.info(f"[DIAGNOSTIC] Forgot shared memory block: {shm_name}")
         except Exception as e:
             logger.warning(
                 f"Error forgetting shared memory block {shm_name}: {e}"

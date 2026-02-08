@@ -101,10 +101,20 @@ def _worker_main_loop(
 
     while True:
         try:
+            worker_logger.debug(
+                f"Worker {os.getpid()}: Getting job from task_queue..."
+            )
             job = task_queue.get()
-        except (EOFError, OSError):
-            worker_logger.warning(
-                f"Worker {os.getpid()}: Task queue connection lost. Exiting."
+            worker_logger.debug(
+                f"Worker {os.getpid()}: Got job from task_queue"
+            )
+        except (EOFError, OSError) as e:
+            worker_logger.error(
+                f"Worker {os.getpid()}: Task queue connection lost. "
+                f"Exception type: {type(e).__name__}, Exception: {e}"
+            )
+            worker_logger.error(
+                f"Worker {os.getpid()}: Last task was: {last_task_key}"
             )
             break
         except KeyboardInterrupt:
@@ -129,6 +139,10 @@ def _worker_main_loop(
         key, task_id, user_func, user_args, user_kwargs = job
         last_task_key = key
         worker_logger.debug(f"Worker {os.getpid()} starting task '{key}'.")
+        worker_logger.info(
+            f"[DIAGNOSTIC] Worker {os.getpid()} task_id={task_id}, "
+            f"key={key}, last_task_key={last_task_key}"
+        )
 
         # Wrap the result queue to automatically tag all messages from the
         # proxy with this task's unique key.
@@ -239,7 +253,17 @@ class WorkerPoolManager:
             # with UUIDs but good practice.
             self._cancelled_task_ids.discard(task_id)
         job = (key, task_id, target, args, kwargs)
-        self._task_queue.put(job)
+        logger.debug(
+            f"Putting job on task_queue: key={key}, task_id={task_id}"
+        )
+        try:
+            self._task_queue.put(job)
+        except (OSError, BrokenPipeError) as e:
+            logger.error(
+                f"Failed to put job on task_queue: {e}. "
+                f"Task queue may be closed or corrupted."
+            )
+            raise
 
     def cancel(self, key: Any, task_id: int):
         """
