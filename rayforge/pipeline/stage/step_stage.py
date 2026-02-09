@@ -39,7 +39,7 @@ class StepPipelineStage(PipelineStage):
     ):
         super().__init__(task_manager, artifact_manager)
         self._machine = machine
-        self._next_generation_id = 0
+        self._current_generation_id = 0
         # Local cache for accurate, post-transformer time estimates
         self._time_cache: Dict[StepKey, Optional[float]] = {}
 
@@ -55,13 +55,14 @@ class StepPipelineStage(PipelineStage):
     def shutdown(self):
         logger.debug("StepPipelineStage shutting down.")
 
-    def reconcile(self, doc: "Doc"):
+    def reconcile(self, doc: "Doc", generation_id: int):
         """
         Triggers assembly for steps where dependencies are met and
         artifact is missing or stale.
         """
         if not doc:
             return
+        self._current_generation_id = generation_id
 
         all_current_steps = {
             step.uid
@@ -227,8 +228,7 @@ class StepPipelineStage(PipelineStage):
         Prepares generation ID, callbacks.
         Returns (generation_id, when_done, when_event).
         """
-        self._next_generation_id += 1
-        generation_id = self._next_generation_id
+        generation_id = self._current_generation_id
         self._time_cache[step.uid] = None
 
         def when_done_callback(task: "Task"):

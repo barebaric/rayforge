@@ -41,7 +41,7 @@ class WorkPiecePipelineStage(PipelineStage):
     ):
         super().__init__(task_manager, artifact_manager)
         self._machine = machine
-        self._next_generation_id = 0
+        self._current_generation_id = 0
         self.generation_starting = Signal()
         self.visual_chunk_available = Signal()
         self.generation_finished = Signal()
@@ -62,12 +62,13 @@ class WorkPiecePipelineStage(PipelineStage):
             size1[1], size2[1], abs_tol=1e-6
         )
 
-    def reconcile(self, doc: "Doc"):
+    def reconcile(self, doc: "Doc", generation_id: int):
         """
         Synchronizes the cache with the document, generating artifacts
         for new or invalid items and cleaning up obsolete ones.
         """
         logger.debug("WorkPiecePipelineStage reconciling...")
+        self._current_generation_id = generation_id
 
         all_current_pairs = {
             (step.uid, workpiece.uid)
@@ -249,11 +250,10 @@ class WorkPiecePipelineStage(PipelineStage):
         workpiece: "WorkPiece",
     ) -> int:
         """
-        Generates new generation ID and sends generation_starting signal.
-        Returns the new generation ID.
+        Sends generation_starting signal with the current generation ID.
+        Returns the generation ID.
         """
-        self._next_generation_id += 1
-        generation_id = self._next_generation_id
+        generation_id = self._current_generation_id
 
         self.generation_starting.send(
             self, step=step, workpiece=workpiece, generation_id=generation_id

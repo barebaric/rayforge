@@ -75,7 +75,7 @@ class WorkPieceViewPipelineStage(PipelineStage):
         self.view_artifact_updated = Signal()
         self.generation_finished = Signal()
 
-    def reconcile(self, doc: "Doc"):
+    def reconcile(self, doc: "Doc", generation_id: int):
         """
         The View Stage no longer polls the document directly.
         All updates are driven by signals from the WorkPieceStage or

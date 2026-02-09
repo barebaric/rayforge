@@ -25,7 +25,7 @@ class PipelineStage(ABC):
         return False
 
     @abstractmethod
-    def reconcile(self, doc: "Doc"):
+    def reconcile(self, doc: "Doc", generation_id: int):
         """Synchronizes the stage's state with the document."""
         raise NotImplementedError
 
