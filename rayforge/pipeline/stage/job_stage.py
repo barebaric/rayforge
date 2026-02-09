@@ -34,7 +34,7 @@ class JobPipelineStage(PipelineStage):
         self.generation_finished = Signal()
         self.generation_failed = Signal()
 
-    def reconcile(self, doc: "Doc"):
+    def reconcile(self, doc: "Doc", generation_id: int):
         """
         Job generation is triggered on-demand, so reconcile does nothing.
         """

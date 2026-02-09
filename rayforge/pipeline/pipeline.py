@@ -71,6 +71,8 @@ class Pipeline:
 
     Attributes:
         doc (Doc): The document model this pipeline is observing.
+        _current_generation_id (int): The current GlobalDataID representing
+            the authoritative version of the document.
         ops_generation_starting (Signal): Fired when generation begins for a
             (Step, WorkPiece) pair.
         ops_chunk_available (Signal): Fired as chunks of Ops become available
@@ -113,6 +115,7 @@ class Pipeline:
         self._task_manager = task_manager
         self._artifact_store = artifact_store
         self._machine = machine
+        self._current_generation_id = 0
         self._pause_count = 0
         self._last_known_busy_state = False
         self._reconciliation_timer: Optional[threading.Timer] = None
@@ -848,12 +851,15 @@ class Pipeline:
             return
         logger.debug(f"{self.__class__.__name__}.reconcile_all called")
 
+        # Increment the generation ID for this reconciliation cycle
+        self._current_generation_id += 1
+
         # Immediately notify UI that estimates are now stale and recalculating.
         self.job_time_updated.send(self, total_seconds=None)
 
-        self._workpiece_stage.reconcile(self.doc)
-        self._step_stage.reconcile(self.doc)
-        self._job_stage.reconcile(self.doc)
+        self._workpiece_stage.reconcile(self.doc, self._current_generation_id)
+        self._step_stage.reconcile(self.doc, self._current_generation_id)
+        self._job_stage.reconcile(self.doc, self._current_generation_id)
         self._update_and_emit_preview_time()
         self._task_manager.schedule_on_main_thread(
             self._check_and_update_processing_state
@@ -1024,7 +1030,7 @@ class Pipeline:
             "job", {self._artifact_manager.JOB_KEY}
         )
         # Ensure step keys are synced before registering dependencies
-        self._step_stage.reconcile(self.doc)
+        self._step_stage.reconcile(self.doc, self._current_generation_id)
         for step_uid in step_uids:
             step_key = ("step", step_uid)
             self._artifact_manager._register_dependency(

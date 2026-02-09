@@ -178,7 +178,7 @@ class TestStepPipelineStage:
         )
 
         # Act
-        stage.reconcile(doc)
+        stage.reconcile(doc, 1)
 
         # Assert
         mock_task_mgr.run_process.assert_called_once()

@@ -51,7 +51,7 @@ class TestWorkPiecePipelineStage:
             mock_task_mgr, mock_artifact_manager, mock_machine
         )
         # These should not raise NotImplementedError
-        stage.reconcile(mock_doc)
+        stage.reconcile(mock_doc, 1)
         stage.shutdown()
 
     def test_validate_workpiece_for_launch_with_invalid_size(
