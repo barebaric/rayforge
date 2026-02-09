@@ -334,6 +334,24 @@ class StepPipelineStage(PipelineStage):
     ):
         """Handles events broadcast from the subprocess."""
         step_uid = step.uid
+        ledger_key = ("step", step_uid)
+
+        generation_id = data.get("generation_id")
+        if generation_id is None:
+            logger.error(
+                f"[{step_uid}] Task event '{event_name}' missing "
+                f"generation_id. Ignoring."
+            )
+            return
+
+        entry = self._artifact_manager._get_ledger_entry(ledger_key)
+        if entry is not None and entry.generation_id != generation_id:
+            logger.debug(
+                f"[{step_uid}] Stale event '{event_name}' with "
+                f"generation_id {generation_id}, current is "
+                f"{entry.generation_id}. Ignoring."
+            )
+            return
 
         try:
             if event_name == "render_artifact_ready":

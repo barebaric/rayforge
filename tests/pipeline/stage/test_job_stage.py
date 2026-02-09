@@ -31,10 +31,18 @@ def mock_task_mgr():
             self.target = target
             self.args = args
             self.kwargs = kwargs
-            self.when_done = kwargs.get("when_done")
-            self.when_event = kwargs.get("when_event")
+            self._when_done_callback = kwargs.get("when_done")
+            self._when_event_callback = kwargs.get("when_event")
             self.key = kwargs.get("key")
             self.id = id(self)
+
+        def when_done(self, task):
+            if self._when_done_callback:
+                self._when_done_callback(task)
+
+        def when_event(self, task, event_name, data):
+            if self._when_event_callback:
+                self._when_event_callback(task, event_name, data)
 
     def run_process_mock(target_func, *args, **kwargs):
         task = MockTask(target_func, args, kwargs)
@@ -174,16 +182,15 @@ class TestJobPipelineStage:
         task.get_status = MagicMock(return_value="completed")
         task.result = MagicMock(return_value=None)
 
+        # Get the actual generation_id that was set by generate_job
+        generation_id = artifact_manager._ledger[
+            artifact_manager.JOB_KEY
+        ].generation_id
+
         event_data = {
             "handle_dict": handle.to_dict(),
-            "generation_id": 123,
+            "generation_id": generation_id,
         }
-
-        # Directly monkeypatch the method on the instance
-        artifact_manager.adopt_artifact = MagicMock(return_value=handle)
-        artifact_manager.commit = MagicMock()
-
-        task.when_event(task, "artifact_created", event_data)
 
         # Manually set the job handle to simulate commit behavior
         def commit_side_effect(key, h, gen_id):
@@ -198,7 +205,7 @@ class TestJobPipelineStage:
 
         # Assert commit was called with correct params
         artifact_manager.commit.assert_called_once_with(
-            artifact_manager.JOB_KEY, handle, 123
+            artifact_manager.JOB_KEY, handle, generation_id
         )
 
         # Assert handle was cached after adopt_artifact

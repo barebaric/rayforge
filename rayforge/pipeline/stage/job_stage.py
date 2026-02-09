@@ -193,13 +193,29 @@ class JobPipelineStage(PipelineStage):
             data: The event data containing the handle dictionary and
                 generation_id.
         """
+        generation_id = data.get("generation_id")
+        if generation_id is None:
+            logger.error(
+                "Job event 'artifact_created' missing generation_id. "
+                "Ignoring."
+            )
+            return
+
+        entry = self._artifact_manager._get_ledger_entry(
+            self._artifact_manager.JOB_KEY
+        )
+        if entry is not None and entry.generation_id != generation_id:
+            logger.debug(
+                f"Stale job event with generation_id {generation_id}, "
+                f"current is {entry.generation_id}. Ignoring."
+            )
+            return
+
         try:
             handle = self._adopt_job_artifact(data)
-            generation_id = data.get("generation_id")
-            if generation_id is not None:
-                self._artifact_manager.commit(
-                    self._artifact_manager.JOB_KEY, handle, generation_id
-                )
+            self._artifact_manager.commit(
+                self._artifact_manager.JOB_KEY, handle, generation_id
+            )
             logger.debug("Adopted job artifact")
         except Exception as e:
             logger.error(f"Error handling job artifact event: {e}")
