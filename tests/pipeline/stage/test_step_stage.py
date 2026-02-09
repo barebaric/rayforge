@@ -29,10 +29,18 @@ def mock_task_mgr():
             self.target = target
             self.args = args
             self.kwargs = kwargs
-            self.when_done = kwargs.get("when_done")
-            self.when_event = kwargs.get("when_event")
+            self._when_done_callback = kwargs.get("when_done")
+            self._when_event_callback = kwargs.get("when_event")
             self.key = kwargs.get("key")
             self.id = id(self)
+
+        def when_done(self, task):
+            if self._when_done_callback:
+                self._when_done_callback(task)
+
+        def when_event(self, task, event_name, data):
+            if self._when_event_callback:
+                self._when_event_callback(task, event_name, data)
 
     def run_process_mock(target_func, *args, **kwargs):
         task = MockTask(target_func, args, kwargs)
@@ -238,7 +246,10 @@ class TestStepPipelineStage:
         # Simulate Phase 1: Artifact and Time Events
         mock_task_obj = MagicMock()
         mock_task_obj.id = task.id
-        gen_id = 1
+        # Use the actual generation_id set by mark_stale_and_trigger
+        gen_id = stage._current_generation_id
+        # Set up mock to return None for non-existent ledger entries
+        mock_artifact_manager._get_ledger_entry.return_value = None
         render_handle = StepRenderArtifactHandle(
             shm_name="render_shm",
             handle_class_name="StepRenderArtifactHandle",
