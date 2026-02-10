@@ -60,7 +60,9 @@ class TestWorkPieceViewStage(unittest.TestCase):
             color_set_dict={},
         )
 
-        self.stage.request_view_render(step_uid, wp_uid, context)
+        self.stage.request_view_render(
+            step_uid, wp_uid, context, self.stage.current_view_generation_id
+        )
 
         self.mock_task_manager.run_process.assert_called_once()
         call_args = self.mock_task_manager.run_process.call_args
@@ -93,7 +95,9 @@ class TestWorkPieceViewStage(unittest.TestCase):
         )
         context = RenderContext((10.0, 10.0), False, 0, {})
 
-        self.stage.request_view_render(step_uid, wp_uid, context)
+        self.stage.request_view_render(
+            step_uid, wp_uid, context, self.stage.current_view_generation_id
+        )
 
         # Get the callbacks from the task manager call
         self.mock_task_manager.run_process.assert_called_once()
@@ -194,7 +198,9 @@ class TestWorkPieceViewStage(unittest.TestCase):
         )
         context = RenderContext((10.0, 10.0), False, 0, {})
 
-        self.stage.request_view_render(step_uid, wp_uid, context)
+        self.stage.request_view_render(
+            step_uid, wp_uid, context, self.stage.current_view_generation_id
+        )
 
         # Get the callbacks from the task manager call
         self.mock_task_manager.run_process.assert_called_once()
@@ -249,7 +255,9 @@ class TestWorkPieceViewStage(unittest.TestCase):
         )
         context = RenderContext((10.0, 10.0), False, 0, {})
 
-        self.stage.request_view_render(step_uid, wp_uid, context)
+        self.stage.request_view_render(
+            step_uid, wp_uid, context, self.stage.current_view_generation_id
+        )
 
         # Get the callbacks from the task manager call
         self.mock_task_manager.run_process.assert_called_once()
@@ -320,7 +328,9 @@ class TestWorkPieceViewStage(unittest.TestCase):
         )
         context = RenderContext((10.0, 10.0), False, 0, {})
 
-        self.stage.request_view_render(step_uid, wp_uid, context)
+        self.stage.request_view_render(
+            step_uid, wp_uid, context, self.stage.current_view_generation_id
+        )
 
         # Get the callbacks from the task manager call
         self.mock_task_manager.run_process.assert_called_once()
@@ -428,7 +438,9 @@ class TestWorkPieceViewStage(unittest.TestCase):
         )
         context = RenderContext((10.0, 10.0), False, 0, {})
 
-        self.stage.request_view_render(step_uid, wp_uid, context)
+        self.stage.request_view_render(
+            step_uid, wp_uid, context, self.stage.current_view_generation_id
+        )
 
         # Get the callbacks from the task manager call
         self.mock_task_manager.run_process.assert_called_once()
@@ -457,11 +469,9 @@ class TestWorkPieceViewStage(unittest.TestCase):
         mock_entry = LedgerEntry(
             state=ArtifactLifecycle.READY,
             handle=view_handle,
-            metadata={"render_context": context}
+            metadata={"render_context": context},
         )
-        self.mock_artifact_manager._get_ledger_entry.return_value = (
-            mock_entry
-        )
+        self.mock_artifact_manager._get_ledger_entry.return_value = mock_entry
 
         when_event_cb(
             mock_task, "view_artifact_created", {"handle_dict": handle_dict}
@@ -492,7 +502,9 @@ class TestWorkPieceViewStage(unittest.TestCase):
         )
         context = RenderContext((10.0, 10.0), False, 0, {})
 
-        self.stage.request_view_render(step_uid, wp_uid, context)
+        self.stage.request_view_render(
+            step_uid, wp_uid, context, self.stage.current_view_generation_id
+        )
 
         # Get the callbacks from the task manager call
         self.mock_task_manager.run_process.assert_called_once()
@@ -527,11 +539,9 @@ class TestWorkPieceViewStage(unittest.TestCase):
         mock_entry = LedgerEntry(
             state=ArtifactLifecycle.READY,
             handle=view_handle,
-            metadata={"render_context": context}
+            metadata={"render_context": context},
         )
-        self.mock_artifact_manager._get_ledger_entry.return_value = (
-            mock_entry
-        )
+        self.mock_artifact_manager._get_ledger_entry.return_value = mock_entry
 
         when_event_cb(
             mock_task, "view_artifact_created", {"handle_dict": handle_dict}
@@ -625,7 +635,9 @@ class TestWorkPieceViewStage(unittest.TestCase):
         )
         context = RenderContext((10.0, 10.0), False, 0, {})
 
-        self.stage.request_view_render(step_uid, wp_uid, context)
+        self.stage.request_view_render(
+            step_uid, wp_uid, context, self.stage.current_view_generation_id
+        )
 
         # Get the callbacks from the task manager call
         call_kwargs = self.mock_task_manager.run_process.call_args.kwargs
@@ -675,11 +687,9 @@ class TestWorkPieceViewStage(unittest.TestCase):
         mock_entry = LedgerEntry(
             state=ArtifactLifecycle.READY,
             handle=view_handle,
-            metadata={"render_context": context}
+            metadata={"render_context": context},
         )
-        self.mock_artifact_manager._get_ledger_entry.return_value = (
-            mock_entry
-        )
+        self.mock_artifact_manager._get_ledger_entry.return_value = mock_entry
 
         when_event_cb(
             mock_task, "view_artifact_created", {"handle_dict": handle_dict}
@@ -851,7 +861,9 @@ class TestWorkPieceViewStage(unittest.TestCase):
             artifact_type_name="WorkPieceViewArtifact",
         )
 
-        self.stage._replace_current_view_handle(key, new_handle)
+        self.stage._replace_current_view_handle(
+            key, new_handle, self.stage.current_view_generation_id
+        )
 
         self.mock_artifact_manager.release_handle.assert_called_once_with(
             old_handle

@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, Optional, Callable
 from blinker import Signal
 from asyncio.exceptions import CancelledError
 from ..artifact import JobArtifactHandle
-from ..artifact.manager import ArtifactManager
+from ..artifact.manager import ArtifactManager, make_composite_key
 from .base import PipelineStage
 from .job_runner import JobDescription
 
@@ -48,6 +48,7 @@ class JobPipelineStage(PipelineStage):
         self,
         job_description: JobDescription,
         on_done: Optional[Callable] = None,
+        generation_id: Optional[int] = None,
     ):
         """
         Starts the asynchronous task to assemble and encode the final job.
@@ -59,8 +60,12 @@ class JobPipelineStage(PipelineStage):
         Args:
             job_description: A complete description of the job to generate.
             on_done: An optional one-shot callback to execute upon completion.
+            generation_id: The generation ID for this job generation. If not
+                provided, a new one will be created based on the current
+                timestamp.
         """
-        generation_id = int(time.time() * 1000)
+        if generation_id is None:
+            generation_id = int(time.time() * 1000)
         self._artifact_manager.mark_pending(
             self._artifact_manager.JOB_KEY, generation_id
         )
@@ -79,7 +84,7 @@ class JobPipelineStage(PipelineStage):
         )
 
     def _create_when_done_callback(
-        self, on_done: Optional[Callable], generation_id: Optional[int]
+        self, on_done: Optional[Callable], generation_id: int
     ) -> Callable[["Task"], None]:
         """
         Creates a callback function to handle task completion.
@@ -102,7 +107,9 @@ class JobPipelineStage(PipelineStage):
             error = None
 
             if task_status == "completed":
-                final_handle = self._artifact_manager.get_job_handle()
+                final_handle = self._artifact_manager.get_job_handle(
+                    generation_id
+                )
                 if final_handle:
                     logger.info("Job generation successful.")
                 else:
@@ -118,6 +125,7 @@ class JobPipelineStage(PipelineStage):
                 logger.error(
                     f"Job generation failed with status: {task_status}"
                 )
+
                 try:
                     task.result()
                 except CancelledError as e:
@@ -135,7 +143,6 @@ class JobPipelineStage(PipelineStage):
                     )
 
                 self._artifact_manager.invalidate_for_job()
-
                 if on_done:
                     on_done(None, error)
 
@@ -196,14 +203,14 @@ class JobPipelineStage(PipelineStage):
         generation_id = data.get("generation_id")
         if generation_id is None:
             logger.error(
-                "Job event 'artifact_created' missing generation_id. "
-                "Ignoring."
+                "Job event 'artifact_created' missing generation_id. Ignoring."
             )
             return
 
-        entry = self._artifact_manager._get_ledger_entry(
-            self._artifact_manager.JOB_KEY
+        composite_key = make_composite_key(
+            self._artifact_manager.JOB_KEY, generation_id
         )
+        entry = self._artifact_manager._get_ledger_entry(composite_key)
         if entry is not None and entry.generation_id != generation_id:
             logger.debug(
                 f"Stale job event with generation_id {generation_id}, "

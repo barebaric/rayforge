@@ -9,6 +9,7 @@ from ..artifact import (
     BaseArtifactHandle,
 )
 from ..artifact.lifecycle import ArtifactLifecycle
+from ..artifact.manager import extract_base_key, make_composite_key
 from .base import PipelineStage
 
 if TYPE_CHECKING:
@@ -88,10 +89,14 @@ class StepPipelineStage(PipelineStage):
         }
 
         # Sync the ledger with the current valid keys
-        self._artifact_manager.sync_keys("step", valid_keys)
+        self._artifact_manager.sync_keys(
+            "step", valid_keys, self._current_generation_id
+        )
 
         # Query for keys that need generation
-        keys_to_generate = self._artifact_manager.query_work_for_stage("step")
+        keys_to_generate = self._artifact_manager.query_work_for_stage(
+            "step", self._current_generation_id
+        )
 
         # Launch tasks for each key that needs generation
         for key in keys_to_generate:
@@ -164,10 +169,11 @@ class StepPipelineStage(PipelineStage):
             )
             return False
         # Check if the step is already in PENDING state in the ledger
-        ledger_key = ("step", step.uid)
-        entry = self._artifact_manager._ledger.get(ledger_key)
-        if entry and entry.state == ArtifactLifecycle.PENDING:
-            return False
+        base_key = ("step", step.uid)
+        for key, entry in self._artifact_manager._ledger.items():
+            if extract_base_key(key) == base_key:
+                if entry.state == ArtifactLifecycle.PENDING:
+                    return False
         return True
 
     def _validate_handle_geometry_match(self, handle, workpiece) -> bool:
@@ -197,7 +203,7 @@ class StepPipelineStage(PipelineStage):
         try:
             for wp in step.layer.all_workpieces:
                 handle = self._artifact_manager.get_workpiece_handle(
-                    step.uid, wp.uid
+                    step.uid, wp.uid, self._current_generation_id
                 )
                 if handle is None:
                     raise ValueError(f"Missing handle for {wp.uid}")
@@ -282,7 +288,6 @@ class StepPipelineStage(PipelineStage):
 
         assembly_info, retained_handles = self._collect_assembly_info(step)
         if not assembly_info:
-            self._cleanup_entry(step.uid, full_invalidation=True)
             # Release retained handles on failure
             for handle in retained_handles:
                 self._artifact_manager.release_handle(handle)
@@ -320,7 +325,9 @@ class StepPipelineStage(PipelineStage):
         if not isinstance(handle, StepOpsArtifactHandle):
             raise TypeError("Expected a StepOpsArtifactHandle")
         # Store ops artifact in ledger for job generation to use
-        self._artifact_manager.put_step_ops_handle(step_uid, handle)
+        self._artifact_manager.put_step_ops_handle(
+            step_uid, handle, self._current_generation_id
+        )
 
     def _handle_time_estimate_ready(
         self, step_uid: str, step: "Step", time_estimate: float
@@ -344,7 +351,8 @@ class StepPipelineStage(PipelineStage):
             )
             return
 
-        entry = self._artifact_manager._get_ledger_entry(ledger_key)
+        composite_key = make_composite_key(ledger_key, generation_id)
+        entry = self._artifact_manager._get_ledger_entry(composite_key)
         if entry is not None and entry.generation_id != generation_id:
             logger.debug(
                 f"[{step_uid}] Stale event '{event_name}' with "
@@ -376,7 +384,8 @@ class StepPipelineStage(PipelineStage):
         step_uid = step.uid
         ledger_key = ("step", step_uid)
 
-        entry = self._artifact_manager._get_ledger_entry(ledger_key)
+        composite_key = make_composite_key(ledger_key, task_generation_id)
+        entry = self._artifact_manager._get_ledger_entry(composite_key)
         if entry is None or entry.generation_id != task_generation_id:
             logger.debug(f"Ignoring stale step completion for {step_uid}")
             return

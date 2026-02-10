@@ -311,7 +311,7 @@ class TestPipelineGeneration:
             generation_size=real_workpiece.size,
         )
         handle = get_context().artifact_store.put(expected_artifact)
-        gen_id = 1
+        gen_id = task_info.args[7]
 
         task_obj_for_stage = task_info.returned_task_obj
         task_obj_for_stage.key = task_info.key

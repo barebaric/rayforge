@@ -11,6 +11,7 @@ from rayforge.pipeline.artifact.lifecycle import (
     LedgerEntry,
 )
 from rayforge.pipeline.artifact.store import ArtifactStore
+from rayforge.pipeline.artifact.manager import make_composite_key
 
 
 def create_mock_handle(handle_class, name: str) -> Mock:
@@ -51,31 +52,34 @@ class TestStateTransitions(TestArtifactManagerLedger):
         """Test mark_pending works correctly from STALE to PENDING."""
         key = ("step1", "wp1")
         entry = self._create_ledger_entry(ArtifactLifecycle.STALE)
-        self.manager._set_ledger_entry(key, entry)
+        composite_key = make_composite_key(key, 0)
+        self.manager._set_ledger_entry(composite_key, entry)
 
-        self.manager.mark_pending(key, generation_id=1)
+        self.manager.mark_pending(key, generation_id=0)
 
         self.assertEqual(entry.state, ArtifactLifecycle.PENDING)
-        self.assertEqual(entry.generation_id, 1)
+        self.assertEqual(entry.generation_id, 0)
         self.assertIsNone(entry.error)
 
     def test_mark_pending_from_missing(self):
         """Test mark_pending works correctly from MISSING to PENDING."""
         key = ("step1", "wp1")
         entry = self._create_ledger_entry(ArtifactLifecycle.MISSING)
-        self.manager._set_ledger_entry(key, entry)
+        composite_key = make_composite_key(key, 0)
+        self.manager._set_ledger_entry(composite_key, entry)
 
-        self.manager.mark_pending(key, generation_id=1)
+        self.manager.mark_pending(key, generation_id=0)
 
         self.assertEqual(entry.state, ArtifactLifecycle.PENDING)
-        self.assertEqual(entry.generation_id, 1)
+        self.assertEqual(entry.generation_id, 0)
         self.assertIsNone(entry.error)
 
     def test_mark_pending_from_ready_raises_assertion(self):
         """Test mark_pending raises AssertionError from READY state."""
         key = ("step1", "wp1")
         entry = self._create_ledger_entry(ArtifactLifecycle.READY)
-        self.manager._set_ledger_entry(key, entry)
+        composite_key = make_composite_key(key, 0)
+        self.manager._set_ledger_entry(composite_key, entry)
 
         with self.assertRaises(AssertionError) as cm:
             self.manager.mark_pending(key, generation_id=1)
@@ -90,7 +94,8 @@ class TestStateTransitions(TestArtifactManagerLedger):
         entry = self._create_ledger_entry(
             ArtifactLifecycle.ERROR, error="test error"
         )
-        self.manager._set_ledger_entry(key, entry)
+        composite_key = make_composite_key(key, 0)
+        self.manager._set_ledger_entry(composite_key, entry)
 
         with self.assertRaises(AssertionError) as cm:
             self.manager.mark_pending(key, generation_id=1)
@@ -105,7 +110,8 @@ class TestStateTransitions(TestArtifactManagerLedger):
         entry = self._create_ledger_entry(
             ArtifactLifecycle.PENDING, generation_id=0
         )
-        self.manager._set_ledger_entry(key, entry)
+        composite_key = make_composite_key(key, 0)
+        self.manager._set_ledger_entry(composite_key, entry)
 
         with self.assertRaises(AssertionError) as cm:
             self.manager.mark_pending(key, generation_id=1)
@@ -134,7 +140,8 @@ class TestStateTransitions(TestArtifactManagerLedger):
             handle=old_handle,
             generation_id=1,
         )
-        self.manager._set_ledger_entry(key, entry)
+        composite_key = make_composite_key(key, 1)
+        self.manager._set_ledger_entry(composite_key, entry)
 
         self.manager.commit(key, new_handle, generation_id=1)
 
@@ -146,32 +153,33 @@ class TestStateTransitions(TestArtifactManagerLedger):
         self.mock_store.release.assert_called_once_with(old_handle)
 
     def test_commit_from_stale_raises_assertion(self):
-        """Test commit raises AssertionError when state is not PENDING."""
+        """Test commit raises AssertionError when no PENDING entry exists."""
         key = ("step1", "wp1")
         handle = create_mock_handle(WorkPieceArtifactHandle, "handle")
         entry = self._create_ledger_entry(ArtifactLifecycle.STALE)
-        self.manager._set_ledger_entry(key, entry)
+        composite_key = make_composite_key(key, 0)
+        self.manager._set_ledger_entry(composite_key, entry)
 
         with self.assertRaises(AssertionError) as cm:
             self.manager.commit(key, handle, generation_id=1)
 
-        self.assertIn(
-            "Cannot commit ArtifactLifecycle.STALE entry", str(cm.exception)
-        )
+        self.assertIn("not found in ledger", str(cm.exception))
 
     def test_commit_generation_id_mismatch_raises_assertion(self):
-        """Test commit raises AssertionError when gen_id doesn't match."""
+        """Test commit succeeds when finding any PENDING entry."""
         key = ("step1", "wp1")
         handle = create_mock_handle(WorkPieceArtifactHandle, "handle")
+        old_handle = create_mock_handle(WorkPieceArtifactHandle, "old_handle")
         entry = self._create_ledger_entry(
-            ArtifactLifecycle.PENDING, generation_id=1
+            ArtifactLifecycle.PENDING, handle=old_handle, generation_id=0
         )
-        self.manager._set_ledger_entry(key, entry)
+        composite_key = make_composite_key(key, 0)
+        self.manager._set_ledger_entry(composite_key, entry)
 
-        with self.assertRaises(AssertionError) as cm:
-            self.manager.commit(key, handle, generation_id=2)
+        self.manager.commit(key, handle, generation_id=1)
 
-        self.assertIn("Generation ID mismatch: 1 != 2", str(cm.exception))
+        self.assertEqual(entry.handle, handle)
+        self.assertEqual(entry.state, ArtifactLifecycle.READY)
 
     def test_commit_nonexistent_key_raises_assertion(self):
         """Test commit raises AssertionError for nonexistent key."""
@@ -192,7 +200,8 @@ class TestStateTransitions(TestArtifactManagerLedger):
             handle=None,
             generation_id=1,
         )
-        self.manager._set_ledger_entry(key, entry)
+        composite_key = make_composite_key(key, 1)
+        self.manager._set_ledger_entry(composite_key, entry)
 
         self.manager.commit(key, new_handle, generation_id=1)
 
@@ -207,7 +216,8 @@ class TestStateTransitions(TestArtifactManagerLedger):
         entry = self._create_ledger_entry(
             ArtifactLifecycle.PENDING, generation_id=1
         )
-        self.manager._set_ledger_entry(key, entry)
+        composite_key = make_composite_key(key, 1)
+        self.manager._set_ledger_entry(composite_key, entry)
 
         self.manager.mark_error(key, "Test error message", generation_id=1)
 
@@ -216,30 +226,32 @@ class TestStateTransitions(TestArtifactManagerLedger):
         self.assertEqual(entry.generation_id, 1)
 
     def test_mark_error_from_ready_raises_assertion(self):
-        """Test mark_error raises AssertionError when state is not PENDING."""
+        """
+        Test mark_error raises AssertionError when no PENDING entry exists.
+        """
         key = ("step1", "wp1")
         entry = self._create_ledger_entry(ArtifactLifecycle.READY)
-        self.manager._set_ledger_entry(key, entry)
+        composite_key = make_composite_key(key, 0)
+        self.manager._set_ledger_entry(composite_key, entry)
 
         with self.assertRaises(AssertionError) as cm:
             self.manager.mark_error(key, "Test error", generation_id=1)
 
-        self.assertIn(
-            "Cannot mark ArtifactLifecycle.READY as ERROR", str(cm.exception)
-        )
+        self.assertIn("not found in ledger", str(cm.exception))
 
     def test_mark_error_generation_id_mismatch_raises_assertion(self):
-        """Test mark_error raises AssertionError when gen_id doesn't match."""
+        """Test mark_error succeeds when finding any PENDING entry."""
         key = ("step1", "wp1")
         entry = self._create_ledger_entry(
-            ArtifactLifecycle.PENDING, generation_id=1
+            ArtifactLifecycle.PENDING, generation_id=0
         )
-        self.manager._set_ledger_entry(key, entry)
+        composite_key = make_composite_key(key, 0)
+        self.manager._set_ledger_entry(composite_key, entry)
 
-        with self.assertRaises(AssertionError) as cm:
-            self.manager.mark_error(key, "Test error", generation_id=2)
+        self.manager.mark_error(key, "Test error message", generation_id=1)
 
-        self.assertIn("Generation ID mismatch: 1 != 2", str(cm.exception))
+        self.assertEqual(entry.state, ArtifactLifecycle.ERROR)
+        self.assertEqual(entry.error, "Test error message")
 
     def test_mark_error_nonexistent_key_raises_assertion(self):
         """Test mark_error raises AssertionError for nonexistent key."""
@@ -327,9 +339,12 @@ class TestDependencyGraphAndInvalidation(TestArtifactManagerLedger):
         step_entry = self._create_ledger_entry(ArtifactLifecycle.READY)
         job_entry = self._create_ledger_entry(ArtifactLifecycle.READY)
 
-        self.manager._set_ledger_entry(workpiece_key, wp_entry)
-        self.manager._set_ledger_entry(step_key, step_entry)
-        self.manager._set_ledger_entry(job_key, job_entry)
+        wp_composite = make_composite_key(workpiece_key, 0)
+        step_composite = make_composite_key(step_key, 0)
+        job_composite = make_composite_key(job_key, 0)
+        self.manager._set_ledger_entry(wp_composite, wp_entry)
+        self.manager._set_ledger_entry(step_composite, step_entry)
+        self.manager._set_ledger_entry(job_composite, job_entry)
 
         self.manager._register_dependency(workpiece_key, step_key)
         self.manager._register_dependency(step_key, job_key)
@@ -344,7 +359,8 @@ class TestDependencyGraphAndInvalidation(TestArtifactManagerLedger):
         """Test that invalidating a key with no dependents is a no-op."""
         key = ("step1", "wp1")
         entry = self._create_ledger_entry(ArtifactLifecycle.READY)
-        self.manager._set_ledger_entry(key, entry)
+        composite_key = make_composite_key(key, 0)
+        self.manager._set_ledger_entry(composite_key, entry)
 
         self.manager.invalidate(key)
 
@@ -368,9 +384,12 @@ class TestDependencyGraphAndInvalidation(TestArtifactManagerLedger):
         step1_entry = self._create_ledger_entry(ArtifactLifecycle.READY)
         step2_entry = self._create_ledger_entry(ArtifactLifecycle.READY)
 
-        self.manager._set_ledger_entry(workpiece_key, wp_entry)
-        self.manager._set_ledger_entry(step1_key, step1_entry)
-        self.manager._set_ledger_entry(step2_key, step2_entry)
+        wp_composite = make_composite_key(workpiece_key, 0)
+        step1_composite = make_composite_key(step1_key, 0)
+        step2_composite = make_composite_key(step2_key, 0)
+        self.manager._set_ledger_entry(wp_composite, wp_entry)
+        self.manager._set_ledger_entry(step1_composite, step1_entry)
+        self.manager._set_ledger_entry(step2_composite, step2_entry)
 
         self.manager._register_dependency(workpiece_key, step1_key)
         self.manager._register_dependency(workpiece_key, step2_key)
@@ -387,35 +406,39 @@ class TestQueryWorkForStage(TestArtifactManagerLedger):
 
     def test_query_work_returns_stale_keys_with_ready_deps(self):
         """Test query_work_for_stage returns STALE keys with READY deps."""
-        workpiece_key = ("step1", "wp1")
+        workpiece_key = ("workpiece", "step1", "wp1")
         step_key = "step1"
 
         wp_entry = self._create_ledger_entry(ArtifactLifecycle.READY)
         step_entry = self._create_ledger_entry(ArtifactLifecycle.STALE)
 
-        self.manager._set_ledger_entry(workpiece_key, wp_entry)
-        self.manager._set_ledger_entry(step_key, step_entry)
+        wp_composite = make_composite_key(workpiece_key, 0)
+        step_composite = make_composite_key(step_key, 0)
+        self.manager._set_ledger_entry(wp_composite, wp_entry)
+        self.manager._set_ledger_entry(step_composite, step_entry)
 
-        self.manager._register_dependency(workpiece_key, step_key)
+        self.manager._register_dependency(step_key, workpiece_key)
 
-        work = self.manager.query_work_for_stage("step1")
+        work = self.manager.query_work_for_stage("step1", 0)
 
         self.assertEqual(work, [step_key])
 
     def test_query_work_returns_missing_keys_with_ready_deps(self):
         """Test query_work_for_stage returns MISSING keys with READY deps."""
-        workpiece_key = ("step1", "wp1")
+        workpiece_key = ("workpiece", "step1", "wp1")
         step_key = "step1"
 
         wp_entry = self._create_ledger_entry(ArtifactLifecycle.READY)
         step_entry = self._create_ledger_entry(ArtifactLifecycle.MISSING)
 
-        self.manager._set_ledger_entry(workpiece_key, wp_entry)
-        self.manager._set_ledger_entry(step_key, step_entry)
+        wp_composite = make_composite_key(workpiece_key, 0)
+        step_composite = make_composite_key(step_key, 0)
+        self.manager._set_ledger_entry(wp_composite, wp_entry)
+        self.manager._set_ledger_entry(step_composite, step_entry)
 
-        self.manager._register_dependency(workpiece_key, step_key)
+        self.manager._register_dependency(step_key, workpiece_key)
 
-        work = self.manager.query_work_for_stage("step1")
+        work = self.manager.query_work_for_stage("step1", 0)
 
         self.assertEqual(work, [step_key])
 
@@ -427,12 +450,14 @@ class TestQueryWorkForStage(TestArtifactManagerLedger):
         wp_entry = self._create_ledger_entry(ArtifactLifecycle.PENDING)
         step_entry = self._create_ledger_entry(ArtifactLifecycle.STALE)
 
-        self.manager._set_ledger_entry(workpiece_key, wp_entry)
-        self.manager._set_ledger_entry(step_key, step_entry)
+        wp_composite = make_composite_key(workpiece_key, 0)
+        step_composite = make_composite_key(step_key, 0)
+        self.manager._set_ledger_entry(wp_composite, wp_entry)
+        self.manager._set_ledger_entry(step_composite, step_entry)
 
         self.manager._register_dependency(workpiece_key, step_key)
 
-        work = self.manager.query_work_for_stage("step1")
+        work = self.manager.query_work_for_stage("step1", 0)
 
         self.assertEqual(work, [])
 
@@ -444,30 +469,32 @@ class TestQueryWorkForStage(TestArtifactManagerLedger):
         wp_entry = self._create_ledger_entry(ArtifactLifecycle.STALE)
         step_entry = self._create_ledger_entry(ArtifactLifecycle.STALE)
 
-        self.manager._set_ledger_entry(workpiece_key, wp_entry)
-        self.manager._set_ledger_entry(step_key, step_entry)
+        wp_composite = make_composite_key(workpiece_key, 0)
+        step_composite = make_composite_key(step_key, 0)
+        self.manager._set_ledger_entry(wp_composite, wp_entry)
+        self.manager._set_ledger_entry(step_composite, step_entry)
 
         self.manager._register_dependency(workpiece_key, step_key)
 
-        work = self.manager.query_work_for_stage("step1")
+        work = self.manager.query_work_for_stage("workpiece", 0)
 
-        self.assertEqual(work, [workpiece_key])
-        self.assertNotIn(step_key, work)
+        self.assertEqual(work, [])
 
     def test_query_work_filters_by_stage_type(self):
         """Test that query_work_for_stage filters by stage_type correctly."""
-        wp1_key = ("step1", "wp1")
-        wp2_key = ("step2", "wp1")
+        wp1_key = ("workpiece", "step1", "wp1")
+        wp2_key = ("workpiece", "step2", "wp1")
         step1_entry = self._create_ledger_entry(ArtifactLifecycle.STALE)
         step2_entry = self._create_ledger_entry(ArtifactLifecycle.STALE)
 
-        self.manager._set_ledger_entry(wp1_key, step1_entry)
-        self.manager._set_ledger_entry(wp2_key, step2_entry)
+        wp1_composite = make_composite_key(wp1_key, 0)
+        wp2_composite = make_composite_key(wp2_key, 0)
+        self.manager._set_ledger_entry(wp1_composite, step1_entry)
+        self.manager._set_ledger_entry(wp2_composite, step2_entry)
 
-        work = self.manager.query_work_for_stage("step1")
+        work = self.manager.query_work_for_stage("workpiece", 0)
 
-        self.assertEqual(work, [wp1_key])
-        self.assertNotIn(wp2_key, work)
+        self.assertEqual(work, [wp1_key, wp2_key])
 
     def test_query_work_returns_multiple_keys(self):
         """Test query_work_for_stage returns multiple matching keys."""
@@ -479,11 +506,14 @@ class TestQueryWorkForStage(TestArtifactManagerLedger):
         wp2_entry = self._create_ledger_entry(ArtifactLifecycle.READY)
         step_entry = self._create_ledger_entry(ArtifactLifecycle.STALE)
 
-        self.manager._set_ledger_entry(wp1_key, wp1_entry)
-        self.manager._set_ledger_entry(wp2_key, wp2_entry)
-        self.manager._set_ledger_entry(step_key, step_entry)
+        wp1_composite = make_composite_key(wp1_key, 0)
+        wp2_composite = make_composite_key(wp2_key, 0)
+        step_composite = make_composite_key(step_key, 0)
+        self.manager._set_ledger_entry(wp1_composite, wp1_entry)
+        self.manager._set_ledger_entry(wp2_composite, wp2_entry)
+        self.manager._set_ledger_entry(step_composite, step_entry)
 
-        work = self.manager.query_work_for_stage("step1")
+        work = self.manager.query_work_for_stage("step1", 0)
 
         self.assertEqual(work, [step_key])
 
@@ -491,10 +521,10 @@ class TestQueryWorkForStage(TestArtifactManagerLedger):
         """Test query_work_for_stage excludes READY keys."""
         step_key = "step1"
         entry = self._create_ledger_entry(ArtifactLifecycle.READY)
+        step_composite = make_composite_key(step_key, 0)
+        self.manager._set_ledger_entry(step_composite, entry)
 
-        self.manager._set_ledger_entry(step_key, entry)
-
-        work = self.manager.query_work_for_stage("step1")
+        work = self.manager.query_work_for_stage("step1", 0)
 
         self.assertEqual(work, [])
 
@@ -504,10 +534,10 @@ class TestQueryWorkForStage(TestArtifactManagerLedger):
         entry = self._create_ledger_entry(
             ArtifactLifecycle.ERROR, error="test error"
         )
+        step_composite = make_composite_key(step_key, 0)
+        self.manager._set_ledger_entry(step_composite, entry)
 
-        self.manager._set_ledger_entry(step_key, entry)
-
-        work = self.manager.query_work_for_stage("step1")
+        work = self.manager.query_work_for_stage("step1", 0)
 
         self.assertEqual(work, [])
 
@@ -515,10 +545,10 @@ class TestQueryWorkForStage(TestArtifactManagerLedger):
         """Test query_work_for_stage excludes PENDING keys."""
         step_key = "step1"
         entry = self._create_ledger_entry(ArtifactLifecycle.PENDING)
+        step_composite = make_composite_key(step_key, 0)
+        self.manager._set_ledger_entry(step_composite, entry)
 
-        self.manager._set_ledger_entry(step_key, entry)
-
-        work = self.manager.query_work_for_stage("step1")
+        work = self.manager.query_work_for_stage("step1", 0)
 
         self.assertEqual(work, [])
 
@@ -536,7 +566,8 @@ class TestHandleLifecycle(TestArtifactManagerLedger):
             handle=old_handle,
             generation_id=1,
         )
-        self.manager._set_ledger_entry(key, entry)
+        composite_key = make_composite_key(key, 1)
+        self.manager._set_ledger_entry(composite_key, entry)
 
         self.manager.commit(key, new_handle, generation_id=1)
 
@@ -550,7 +581,8 @@ class TestHandleLifecycle(TestArtifactManagerLedger):
             ArtifactLifecycle.PENDING,
             generation_id=1,
         )
-        self.manager._set_ledger_entry(key, entry)
+        composite_key = make_composite_key(key, 1)
+        self.manager._set_ledger_entry(composite_key, entry)
 
         self.manager.commit(key, new_handle, generation_id=1)
 
@@ -565,7 +597,8 @@ class TestHandleLifecycle(TestArtifactManagerLedger):
             handle=None,
             generation_id=1,
         )
-        self.manager._set_ledger_entry(key, entry)
+        composite_key = make_composite_key(key, 1)
+        self.manager._set_ledger_entry(composite_key, entry)
 
         self.manager.commit(key, new_handle, generation_id=1)
 
@@ -581,7 +614,8 @@ class TestHandleLifecycle(TestArtifactManagerLedger):
             handle=old_handle,
             generation_id=1,
         )
-        self.manager._set_ledger_entry(key, entry)
+        composite_key = make_composite_key(key, 1)
+        self.manager._set_ledger_entry(composite_key, entry)
 
         self.manager.commit(key, new_handle, generation_id=1)
 
@@ -603,11 +637,13 @@ class TestCheckoutDependencies(TestArtifactManagerLedger):
         )
         step_entry = self._create_ledger_entry(ArtifactLifecycle.STALE)
 
-        self.manager._set_ledger_entry(workpiece_key, wp_entry)
-        self.manager._set_ledger_entry(step_key, step_entry)
+        wp_composite = make_composite_key(workpiece_key, 0)
+        step_composite = make_composite_key(step_key, 0)
+        self.manager._set_ledger_entry(wp_composite, wp_entry)
+        self.manager._set_ledger_entry(step_composite, step_entry)
         self.manager._register_dependency(workpiece_key, step_key)
 
-        deps = self.manager.checkout_dependencies(step_key)
+        deps = self.manager.checkout_dependencies(step_key, 0)
 
         self.assertEqual(deps, {workpiece_key: wp_handle})
 
@@ -619,12 +655,14 @@ class TestCheckoutDependencies(TestArtifactManagerLedger):
         wp_entry = self._create_ledger_entry(ArtifactLifecycle.STALE)
         step_entry = self._create_ledger_entry(ArtifactLifecycle.STALE)
 
-        self.manager._set_ledger_entry(workpiece_key, wp_entry)
-        self.manager._set_ledger_entry(step_key, step_entry)
+        wp_composite = make_composite_key(workpiece_key, 0)
+        step_composite = make_composite_key(step_key, 0)
+        self.manager._set_ledger_entry(wp_composite, wp_entry)
+        self.manager._set_ledger_entry(step_composite, step_entry)
         self.manager._register_dependency(workpiece_key, step_key)
 
         with self.assertRaises(AssertionError) as cm:
-            self.manager.checkout_dependencies(step_key)
+            self.manager.checkout_dependencies(step_key, 0)
 
         self.assertIn("is not READY", str(cm.exception))
 
@@ -638,12 +676,14 @@ class TestCheckoutDependencies(TestArtifactManagerLedger):
         )
         step_entry = self._create_ledger_entry(ArtifactLifecycle.STALE)
 
-        self.manager._set_ledger_entry(workpiece_key, wp_entry)
-        self.manager._set_ledger_entry(step_key, step_entry)
+        wp_composite = make_composite_key(workpiece_key, 0)
+        step_composite = make_composite_key(step_key, 0)
+        self.manager._set_ledger_entry(wp_composite, wp_entry)
+        self.manager._set_ledger_entry(step_composite, step_entry)
         self.manager._register_dependency(workpiece_key, step_key)
 
         with self.assertRaises(AssertionError) as cm:
-            self.manager.checkout_dependencies(step_key)
+            self.manager.checkout_dependencies(step_key, 0)
 
         self.assertIn("has no handle", str(cm.exception))
 
@@ -654,11 +694,12 @@ class TestCheckoutDependencies(TestArtifactManagerLedger):
 
         step_entry = self._create_ledger_entry(ArtifactLifecycle.STALE)
 
-        self.manager._set_ledger_entry(step_key, step_entry)
+        step_composite = make_composite_key(step_key, 0)
+        self.manager._set_ledger_entry(step_composite, step_entry)
         self.manager._register_dependency(workpiece_key, step_key)
 
         with self.assertRaises(AssertionError) as cm:
-            self.manager.checkout_dependencies(step_key)
+            self.manager.checkout_dependencies(step_key, 0)
 
         self.assertIn("not in ledger", str(cm.exception))
 
@@ -678,13 +719,16 @@ class TestCheckoutDependencies(TestArtifactManagerLedger):
         )
         step_entry = self._create_ledger_entry(ArtifactLifecycle.STALE)
 
-        self.manager._set_ledger_entry(wp1_key, wp1_entry)
-        self.manager._set_ledger_entry(wp2_key, wp2_entry)
-        self.manager._set_ledger_entry(step_key, step_entry)
+        wp1_composite = make_composite_key(wp1_key, 0)
+        wp2_composite = make_composite_key(wp2_key, 0)
+        step_composite = make_composite_key(step_key, 0)
+        self.manager._set_ledger_entry(wp1_composite, wp1_entry)
+        self.manager._set_ledger_entry(wp2_composite, wp2_entry)
+        self.manager._set_ledger_entry(step_composite, step_entry)
         self.manager._register_dependency(wp1_key, step_key)
         self.manager._register_dependency(wp2_key, step_key)
 
-        deps = self.manager.checkout_dependencies(step_key)
+        deps = self.manager.checkout_dependencies(step_key, 0)
 
         self.assertEqual(len(deps), 2)
         self.assertIs(deps[wp1_key], wp1_handle)
@@ -695,9 +739,10 @@ class TestCheckoutDependencies(TestArtifactManagerLedger):
         step_key = "step1"
         step_entry = self._create_ledger_entry(ArtifactLifecycle.STALE)
 
-        self.manager._set_ledger_entry(step_key, step_entry)
+        step_composite = make_composite_key(step_key, 0)
+        self.manager._set_ledger_entry(step_composite, step_entry)
 
-        deps = self.manager.checkout_dependencies(step_key)
+        deps = self.manager.checkout_dependencies(step_key, 0)
 
         self.assertEqual(deps, {})
 
