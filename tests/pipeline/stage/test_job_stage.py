@@ -1,3 +1,4 @@
+import time
 import pytest
 from unittest.mock import MagicMock, ANY
 
@@ -16,6 +17,10 @@ from rayforge.pipeline.artifact import (
     JobArtifactHandle,
     ArtifactManager,
     StepOpsArtifactHandle,
+)
+from rayforge.pipeline.artifact.manager import (
+    make_composite_key,
+    extract_base_key,
 )
 from rayforge.pipeline.steps import create_contour_step
 
@@ -108,8 +113,13 @@ class TestJobPipelineStage:
             time_estimate=10.0,
         )
 
-        artifact_manager._ledger[artifact_manager.JOB_KEY] = LedgerEntry(
+        job_generation_id = int(time.time() * 1000)
+        job_composite = make_composite_key(
+            artifact_manager.JOB_KEY, job_generation_id
+        )
+        artifact_manager._ledger[job_composite] = LedgerEntry(
             state=ArtifactLifecycle.MISSING,
+            generation_id=job_generation_id,
         )
 
         stage = JobPipelineStage(mock_task_mgr, artifact_manager, machine)
@@ -161,7 +171,8 @@ class TestJobPipelineStage:
             time_estimate=10.0,
         )
 
-        artifact_manager._ledger[artifact_manager.JOB_KEY] = LedgerEntry(
+        job_composite = make_composite_key(artifact_manager.JOB_KEY, 0)
+        artifact_manager._ledger[job_composite] = LedgerEntry(
             state=ArtifactLifecycle.MISSING,
         )
 
@@ -182,34 +193,43 @@ class TestJobPipelineStage:
         task.get_status = MagicMock(return_value="completed")
         task.result = MagicMock(return_value=None)
 
-        # Get the actual generation_id that was set by generate_job
-        generation_id = artifact_manager._ledger[
-            artifact_manager.JOB_KEY
-        ].generation_id
+        # Find the PENDING entry created by mark_pending
+        generation_id = None
+        for key, entry in artifact_manager._ledger.items():
+            if (
+                extract_base_key(key) == artifact_manager.JOB_KEY
+                and entry.state == ArtifactLifecycle.PENDING
+            ):
+                generation_id = entry.generation_id
+                break
+        assert generation_id is not None, "No PENDING entry found"
 
         event_data = {
             "handle_dict": handle.to_dict(),
             "generation_id": generation_id,
         }
 
-        # Manually set the job handle to simulate commit behavior
-        def commit_side_effect(key, h, gen_id):
-            artifact_manager._ledger[key].handle = h
-            artifact_manager._ledger[key].state = ArtifactLifecycle.READY
-
         # Directly monkeypatch the method on the instance
         artifact_manager.adopt_artifact = MagicMock(return_value=handle)
-        artifact_manager.commit = MagicMock(side_effect=commit_side_effect)
+
+        # Track the number of times commit is called
+        commit_call_count = [0]
+        original_commit = artifact_manager.commit
+
+        artifact_manager.commit = MagicMock(
+            side_effect=lambda key, h, gen_id: (
+                commit_call_count.__setitem__(0, commit_call_count[0] + 1)
+                or original_commit(key, h, gen_id)
+            )
+        )
 
         task.when_event(task, "artifact_created", event_data)
 
-        # Assert commit was called with correct params
-        artifact_manager.commit.assert_called_once_with(
-            artifact_manager.JOB_KEY, handle, generation_id
-        )
+        # Assert commit was called once
+        assert commit_call_count[0] == 1
 
         # Assert handle was cached after adopt_artifact
-        assert artifact_manager.get_job_handle() == handle
+        assert artifact_manager.get_job_handle(generation_id) == handle
 
         task.when_done(task)
 
@@ -219,7 +239,7 @@ class TestJobPipelineStage:
         )
 
         # The handle SHOULD persist on success
-        assert artifact_manager.get_job_handle() == handle
+        assert artifact_manager.get_job_handle(generation_id) == handle
 
     def test_completion_with_failure(
         self,
@@ -277,7 +297,7 @@ class TestJobPipelineStage:
         )
 
         # On failure, the handle MUST be cleared
-        assert artifact_manager.get_job_handle() is None
+        assert artifact_manager.get_job_handle(0) is None
 
     def test_adopt_job_artifact(
         self, mock_task_mgr, artifact_manager, test_machine_and_config

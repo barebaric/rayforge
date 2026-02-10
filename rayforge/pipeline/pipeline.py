@@ -42,6 +42,7 @@ from .artifact import (
     StepOpsArtifactHandle,
     WorkPieceArtifact,
 )
+from .artifact.manager import make_composite_key
 from .artifact.lifecycle import ArtifactLifecycle
 from .stage import (
     JobPipelineStage,
@@ -639,19 +640,22 @@ class Pipeline:
         """
         Relays signal and triggers downstream step assembly.
         """
-        self.workpiece_artifact_ready.send(
-            step, workpiece=workpiece, generation_id=generation_id
-        )
-        self._request_step_assembly(step.uid)
+        # Only send signal and trigger assembly if task was not canceled
+        # (to avoid spurious updates from stale generations)
+        if task_status != "canceled":
+            self.workpiece_artifact_ready.send(
+                step, workpiece=workpiece, generation_id=generation_id
+            )
+            # Trigger step assembly now that workpiece is ready
+            self._request_step_assembly(step.uid)
+
         # Only check processing state if we're not already busy
         # (to avoid spurious state changes during rapid invalidations)
         # Also skip if reconciliation is in progress to avoid state changes
         # when a canceled task finishes while a new task is being started
-        # Finally, skip if task was canceled (to avoid spurious state changes)
         if (
             not self.is_busy
             and self._reconciliation_timer is None
-            and task_status != "canceled"
         ):
             self._task_manager.schedule_on_main_thread(
                 self._check_and_update_processing_state
@@ -666,8 +670,7 @@ class Pipeline:
     ) -> None:
         """
         Handles the signal that a workpiece artifact has been adopted.
-        Relays the signal to notify workpiece elements and triggers
-        step assembly to ensure step ops artifacts are created promptly.
+        Relays the signal to notify workpiece elements.
         Also triggers view rendering if a view context is available.
         """
         key = (step_uid, workpiece_uid)
@@ -678,7 +681,6 @@ class Pipeline:
         self.workpiece_artifact_adopted.send(
             self, step_uid=step_uid, workpiece_uid=workpiece_uid
         )
-        self._schedule_reconciliation()
 
         if self._current_view_context is not None:
             logger.debug(
@@ -686,7 +688,10 @@ class Pipeline:
                 f"for ({step_uid}, {workpiece_uid})"
             )
             self._workpiece_view_stage.request_view_render(
-                step_uid, workpiece_uid, self._current_view_context
+                step_uid,
+                workpiece_uid,
+                self._current_view_context,
+                self._workpiece_view_stage.current_view_generation_id,
             )
         else:
             logger.warning(
@@ -889,7 +894,7 @@ class Pipeline:
     ) -> Optional[BaseArtifactHandle]:
         """Retrieves the handle for a generated artifact from the cache."""
         return self._artifact_manager.get_workpiece_handle(
-            step_uid, workpiece_uid
+            step_uid, workpiece_uid, self._current_generation_id
         )
 
     def get_step_render_artifact_handle(
@@ -908,7 +913,9 @@ class Pipeline:
         Retrieves the handle for a generated step ops artifact. This is
         intended for the job assembly process.
         """
-        return self._artifact_manager.get_step_ops_handle(step_uid)
+        return self._artifact_manager.get_step_ops_handle(
+            step_uid, self._current_generation_id
+        )
 
     def get_scaled_ops(
         self, step_uid: str, workpiece_uid: str, world_transform: Matrix
@@ -948,9 +955,10 @@ class Pipeline:
             An error if validation fails, None otherwise.
         """
         # Check if a job generation is already pending or running
-        entry = self._artifact_manager._get_ledger_entry(
-            self._artifact_manager.JOB_KEY
+        composite_key = make_composite_key(
+            self._artifact_manager.JOB_KEY, self._current_generation_id
         )
+        entry = self._artifact_manager._get_ledger_entry(composite_key)
         if entry and entry.state == ArtifactLifecycle.PENDING:
             msg = "Job generation is already in progress."
             logger.warning(msg)
@@ -1027,20 +1035,28 @@ class Pipeline:
         # 2. Get step UIDs and register dependencies
         step_uids = self._get_step_uids(self.doc)
         self._artifact_manager.sync_keys(
-            "job", {self._artifact_manager.JOB_KEY}
+            "job",
+            {self._artifact_manager.JOB_KEY},
+            self._current_generation_id,
         )
         # Ensure step keys are synced before registering dependencies
         self._step_stage.reconcile(self.doc, self._current_generation_id)
         for step_uid in step_uids:
             step_key = ("step", step_uid)
+            step_composite_key = make_composite_key(
+                step_key, self._current_generation_id
+            )
+            job_composite_key = make_composite_key(
+                self._artifact_manager.JOB_KEY, self._current_generation_id
+            )
             self._artifact_manager._register_dependency(
-                step_key, self._artifact_manager.JOB_KEY
+                step_composite_key, job_composite_key
             )
 
         # 3. Check if all step artifacts are ready by trying to check them out.
         try:
             dep_handles = self._artifact_manager.checkout_dependencies(
-                self._artifact_manager.JOB_KEY
+                self._artifact_manager.JOB_KEY, self._current_generation_id
             )
         except AssertionError:
             # This means some dependencies are not READY.
@@ -1067,7 +1083,11 @@ class Pipeline:
         )
 
         # 5. Call the simplified stage method
-        self._job_stage.generate_job(job_desc, on_done=when_done)
+        self._job_stage.generate_job(
+            job_desc,
+            on_done=when_done,
+            generation_id=self._current_generation_id,
+        )
 
     async def generate_job_artifact_async(
         self,
@@ -1118,9 +1138,12 @@ class Pipeline:
             step_uid: The unique identifier of the step.
             workpiece_uid: The unique identifier of the workpiece.
             context: The render context to use.
-            force: If True, force re-rendering even if the context appears
-                unchanged.
+            force: If True, force re-rendering even if the context
+            appears unchanged.
         """
         self._workpiece_view_stage.request_view_render(
-            step_uid, workpiece_uid, context, force=force
+            step_uid,
+            workpiece_uid,
+            context,
+            self._workpiece_view_stage.current_view_generation_id,
         )

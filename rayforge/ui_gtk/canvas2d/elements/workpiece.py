@@ -537,7 +537,9 @@ class WorkPieceElement(CanvasElement):
 
                 view_handle = (
                     self.pipeline.artifact_manager.get_workpiece_view_handle(
-                        step_uid, self.data.uid
+                        step_uid,
+                        self.data.uid,
+                        self.pipeline._current_generation_id,
                     )
                 )
                 if view_handle is None:

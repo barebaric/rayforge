@@ -9,6 +9,7 @@ from rayforge.pipeline.artifact import (
 )
 from rayforge.pipeline.artifact.lifecycle import ArtifactLifecycle
 from rayforge.pipeline.artifact.store import ArtifactStore
+from rayforge.pipeline.artifact.manager import make_composite_key
 
 
 def create_mock_handle(handle_class, name: str) -> Mock:
@@ -36,12 +37,13 @@ class TestArtifactManager(unittest.TestCase):
 
         self.manager.put_step_render_handle("step1", render_handle)
         ledger_key = ("step", "step1")
-        self.manager._ledger[ledger_key] = Mock(
+        composite_key = make_composite_key(ledger_key, 0)
+        self.manager._ledger[composite_key] = Mock(
             state=ArtifactLifecycle.READY, handle=ops_handle
         )
 
         retrieved_render = self.manager.get_step_render_handle("step1")
-        retrieved_ops = self.manager.get_step_ops_handle("step1")
+        retrieved_ops = self.manager.get_step_ops_handle("step1", 0)
 
         self.assertIs(retrieved_render, render_handle)
         self.assertIs(retrieved_ops, ops_handle)
@@ -50,10 +52,11 @@ class TestArtifactManager(unittest.TestCase):
     def test_put_and_get_job(self):
         """Tests basic storage and retrieval of a job handle."""
         handle = create_mock_handle(JobArtifactHandle, "job")
-        self.manager._ledger[self.manager.JOB_KEY] = Mock(
+        job_composite = make_composite_key(self.manager.JOB_KEY, 0)
+        self.manager._ledger[job_composite] = Mock(
             state=ArtifactLifecycle.READY, handle=handle
         )
-        retrieved = self.manager.get_job_handle()
+        retrieved = self.manager.get_job_handle(0)
         self.assertIs(retrieved, handle)
         self.mock_release.assert_not_called()
 
@@ -67,25 +70,26 @@ class TestArtifactManager(unittest.TestCase):
         ops_h = create_mock_handle(StepOpsArtifactHandle, "step1_ops")
         job_h = create_mock_handle(JobArtifactHandle, "job")
 
-        ledger_key = ("workpiece", "step1", "wp1")
-        self.manager._ledger[ledger_key] = Mock(
+        wp_composite = make_composite_key(("workpiece", "step1", "wp1"), 0)
+        self.manager._ledger[wp_composite] = Mock(
             state=ArtifactLifecycle.READY, handle=wp_h
         )
         self.manager._step_render_handles["step1"] = render_h
-        ledger_key = ("step", "step1")
-        self.manager._ledger[ledger_key] = Mock(
+        step_composite = make_composite_key(("step", "step1"), 0)
+        self.manager._ledger[step_composite] = Mock(
             state=ArtifactLifecycle.READY, handle=ops_h
         )
-        self.manager._ledger[self.manager.JOB_KEY] = Mock(
+        job_composite = make_composite_key(self.manager.JOB_KEY, 0)
+        self.manager._ledger[job_composite] = Mock(
             state=ArtifactLifecycle.READY, handle=job_h
         )
 
         self.manager.invalidate_for_workpiece("step1", "wp1")
 
         # Assert correct artifacts were removed
-        self.assertIsNone(self.manager.get_workpiece_handle("step1", "wp1"))
-        self.assertIsNone(self.manager.get_step_ops_handle("step1"))
-        self.assertIsNone(self.manager.get_job_handle())
+        self.assertIsNone(self.manager.get_workpiece_handle("step1", "wp1", 0))
+        self.assertIsNone(self.manager.get_step_ops_handle("step1", 0))
+        self.assertIsNone(self.manager.get_job_handle(0))
         # Assert render handle remains for UI stability
         self.assertIs(self.manager.get_step_render_handle("step1"), render_h)
         # Assert only workpiece and ops were released
@@ -105,29 +109,32 @@ class TestArtifactManager(unittest.TestCase):
         ops_h = create_mock_handle(StepOpsArtifactHandle, "step1_ops")
         job_h = create_mock_handle(JobArtifactHandle, "job")
 
-        self.manager._ledger[("workpiece", "step1", "wp1")] = Mock(
+        wp1_composite = make_composite_key(("workpiece", "step1", "wp1"), 0)
+        wp2_composite = make_composite_key(("workpiece", "step1", "wp2"), 0)
+        self.manager._ledger[wp1_composite] = Mock(
             state=ArtifactLifecycle.READY, handle=wp1_h
         )
-        self.manager._ledger[("workpiece", "step1", "wp2")] = Mock(
+        self.manager._ledger[wp2_composite] = Mock(
             state=ArtifactLifecycle.READY, handle=wp2_h
         )
         self.manager._step_render_handles["step1"] = render_h
-        ledger_key = ("step", "step1")
-        self.manager._ledger[ledger_key] = Mock(
+        step_composite = make_composite_key(("step", "step1"), 0)
+        self.manager._ledger[step_composite] = Mock(
             state=ArtifactLifecycle.READY, handle=ops_h
         )
-        self.manager._ledger[self.manager.JOB_KEY] = Mock(
+        job_composite = make_composite_key(self.manager.JOB_KEY, 0)
+        self.manager._ledger[job_composite] = Mock(
             state=ArtifactLifecycle.READY, handle=job_h
         )
 
         self.manager.invalidate_for_step("step1")
 
         # Assert all step-related artifacts were removed
-        self.assertIsNone(self.manager.get_workpiece_handle("step1", "wp1"))
-        self.assertIsNone(self.manager.get_workpiece_handle("step1", "wp2"))
+        self.assertIsNone(self.manager.get_workpiece_handle("step1", "wp1", 0))
+        self.assertIsNone(self.manager.get_workpiece_handle("step1", "wp2", 0))
         self.assertIsNone(self.manager.get_step_render_handle("step1"))
-        self.assertIsNone(self.manager.get_step_ops_handle("step1"))
-        self.assertIsNone(self.manager.get_job_handle())
+        self.assertIsNone(self.manager.get_step_ops_handle("step1", 0))
+        self.assertIsNone(self.manager.get_job_handle(0))
         # Assert all artifacts were released
         self.mock_release.assert_any_call(wp1_h)
         self.mock_release.assert_any_call(wp2_h)
@@ -140,16 +147,17 @@ class TestArtifactManager(unittest.TestCase):
         """Tests that putting a job handle releases of old handle."""
         old_job_h = create_mock_handle(JobArtifactHandle, "job_old")
         new_job_h = create_mock_handle(JobArtifactHandle, "job_new")
-
-        self.manager._ledger[self.manager.JOB_KEY] = Mock(
+        job_composite = make_composite_key(self.manager.JOB_KEY, 0)
+        self.manager._ledger[job_composite] = Mock(
             state=ArtifactLifecycle.READY, handle=old_job_h
         )
-        self.manager._ledger[self.manager.JOB_KEY] = Mock(
+
+        self.manager._ledger[job_composite] = Mock(
             state=ArtifactLifecycle.READY, handle=new_job_h
         )
         self.manager.release_handle(old_job_h)
 
-        self.assertIs(self.manager.get_job_handle(), new_job_h)
+        self.assertIs(self.manager.get_job_handle(0), new_job_h)
         self.mock_release.assert_called_once_with(old_job_h)
 
     def test_shutdown_releases_all_artifacts(self):
@@ -159,16 +167,17 @@ class TestArtifactManager(unittest.TestCase):
         ops_h = create_mock_handle(StepOpsArtifactHandle, "step1_ops")
         job_h = create_mock_handle(JobArtifactHandle, "job")
 
-        ledger_key = ("workpiece", "step1", "wp1")
-        self.manager._ledger[ledger_key] = Mock(
+        wp_composite = make_composite_key(("workpiece", "step1", "wp1"), 0)
+        self.manager._ledger[wp_composite] = Mock(
             state=ArtifactLifecycle.READY, handle=wp_h
         )
         self.manager._step_render_handles["step1"] = render_h
-        ledger_key = ("step", "step1")
-        self.manager._ledger[ledger_key] = Mock(
+        step_composite = make_composite_key(("step", "step1"), 0)
+        self.manager._ledger[step_composite] = Mock(
             state=ArtifactLifecycle.READY, handle=ops_h
         )
-        self.manager._ledger[self.manager.JOB_KEY] = Mock(
+        job_composite = make_composite_key(self.manager.JOB_KEY, 0)
+        self.manager._ledger[job_composite] = Mock(
             state=ArtifactLifecycle.READY, handle=job_h
         )
 
@@ -186,9 +195,12 @@ class TestArtifactManager(unittest.TestCase):
 
     def test_get_all_workpiece_keys(self):
         """Tests getting all workpiece keys."""
-        self.manager._ledger[("workpiece", "step1", "wp1")] = Mock()
-        self.manager._ledger[("workpiece", "step1", "wp2")] = Mock()
-        self.manager._ledger[("workpiece", "step2", "wp1")] = Mock()
+        wp1_composite = make_composite_key(("workpiece", "step1", "wp1"), 0)
+        wp2_composite = make_composite_key(("workpiece", "step1", "wp2"), 0)
+        wp3_composite = make_composite_key(("workpiece", "step2", "wp1"), 0)
+        self.manager._ledger[wp1_composite] = Mock()
+        self.manager._ledger[wp2_composite] = Mock()
+        self.manager._ledger[wp3_composite] = Mock()
 
         keys = self.manager.get_all_workpiece_keys()
         self.assertEqual(len(keys), 3)
@@ -255,25 +267,27 @@ class TestArtifactManager(unittest.TestCase):
         """Tests getting workpiece handle from ledger."""
         wp_h = create_mock_handle(WorkPieceArtifactHandle, "wp1")
         ledger_key = ("workpiece", "step1", "wp1")
-        self.manager._ledger[ledger_key] = Mock(
+        composite_key = make_composite_key(ledger_key, 0)
+        self.manager._ledger[composite_key] = Mock(
             state=ArtifactLifecycle.READY, handle=wp_h
         )
 
-        retrieved = self.manager.get_workpiece_handle("step1", "wp1")
+        retrieved = self.manager.get_workpiece_handle("step1", "wp1", 0)
         self.assertIs(retrieved, wp_h)
 
     def test_get_workpiece_handle_returns_none_when_not_ready(self):
         """Tests getting workpiece handle returns None when not READY."""
         wp_h = create_mock_handle(WorkPieceArtifactHandle, "wp1")
         ledger_key = ("workpiece", "step1", "wp1")
-        self.manager._ledger[ledger_key] = Mock(
+        composite_key = make_composite_key(ledger_key, 0)
+        self.manager._ledger[composite_key] = Mock(
             state=ArtifactLifecycle.PENDING, handle=wp_h
         )
 
-        retrieved = self.manager.get_workpiece_handle("step1", "wp1")
+        retrieved = self.manager.get_workpiece_handle("step1", "wp1", 0)
         self.assertIsNone(retrieved)
 
     def test_get_workpiece_handle_returns_none_when_not_found(self):
         """Tests getting workpiece handle returns None when not found."""
-        retrieved = self.manager.get_workpiece_handle("step1", "wp1")
+        retrieved = self.manager.get_workpiece_handle("step1", "wp1", 0)
         self.assertIsNone(retrieved)

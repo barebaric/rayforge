@@ -10,6 +10,7 @@ from ..artifact import (
     WorkPieceArtifactHandle,
 )
 from ..artifact.lifecycle import ArtifactLifecycle
+from ..artifact.manager import extract_base_key, make_composite_key
 from .base import PipelineStage
 from .workpiece_runner import make_workpiece_artifact_in_subprocess
 
@@ -95,11 +96,13 @@ class WorkPiecePipelineStage(PipelineStage):
         }
 
         # Sync the ledger with the current valid keys
-        self._artifact_manager.sync_keys("workpiece", valid_keys)
+        self._artifact_manager.sync_keys(
+            "workpiece", valid_keys, self._current_generation_id
+        )
 
         # Query for keys that need generation
         keys_to_generate = self._artifact_manager.query_work_for_stage(
-            "workpiece"
+            "workpiece", self._current_generation_id
         )
         logger.debug(
             f"WorkPiecePipelineStage: keys_to_generate={keys_to_generate}"
@@ -165,7 +168,7 @@ class WorkPiecePipelineStage(PipelineStage):
         or invalid.
         """
         handle = self._artifact_manager.get_workpiece_handle(
-            step.uid, workpiece.uid
+            step.uid, workpiece.uid, self._current_generation_id
         )
         if handle is None:
             # Artifact is missing, so it's stale.
@@ -418,13 +421,19 @@ class WorkPiecePipelineStage(PipelineStage):
             )
             return
 
-        # Validate generation_id before processing event to avoid
-        # race conditions during rapid invalidation
-        entry = self._artifact_manager._get_ledger_entry(ledger_key)
-        if entry is not None and entry.generation_id != generation_id:
+        # Validate that there's a PENDING entry for this key.
+        # We don't compare generation_ids because the subprocess sends
+        # back the same generation_id it received. The commit method
+        # handles this by finding any PENDING entry with the same base key.
+        has_pending = any(
+            extract_base_key(k) == ledger_key
+            and e.state == ArtifactLifecycle.PENDING
+            for k, e in self._artifact_manager._ledger.items()
+        )
+        if not has_pending:
             logger.debug(
-                f"[{key}] Stale event '{event_name}' with generation_id "
-                f"{generation_id}, current is {entry.generation_id}. Ignoring."
+                f"[{key}] No PENDING entry found for event '{event_name}'. "
+                f"Ignoring."
             )
             return
 
@@ -460,7 +469,9 @@ class WorkPiecePipelineStage(PipelineStage):
         Validates task completion by checking the generation ID against the
         ledger. Returns True if task should be processed, False otherwise.
         """
-        entry = self._artifact_manager._get_ledger_entry(ledger_key)
+
+        composite_key = make_composite_key(ledger_key, task_generation_id)
+        entry = self._artifact_manager._get_ledger_entry(composite_key)
         if entry is None:
             logger.debug(
                 f"[{key}] Ledger entry missing. Ignoring task completion."
@@ -508,7 +519,9 @@ class WorkPiecePipelineStage(PipelineStage):
         Returns True if stale, False otherwise.
         """
         s_uid, w_uid = key
-        handle = self._artifact_manager.get_workpiece_handle(s_uid, w_uid)
+        handle = self._artifact_manager.get_workpiece_handle(
+            s_uid, w_uid, self._current_generation_id
+        )
 
         if handle and not handle.is_scalable:
             if not self._sizes_are_close(
@@ -546,7 +559,9 @@ class WorkPiecePipelineStage(PipelineStage):
             logger.error(f"[{key}] Error processing result for {key}: {e}")
 
         s_uid, w_uid = key
-        handle = self._artifact_manager.get_workpiece_handle(s_uid, w_uid)
+        handle = self._artifact_manager.get_workpiece_handle(
+            s_uid, w_uid, self._current_generation_id
+        )
         if handle is None:
             self._artifact_manager.invalidate(ledger_key)
 
@@ -636,7 +651,7 @@ class WorkPiecePipelineStage(PipelineStage):
     ) -> Optional[WorkPieceArtifact]:
         """Retrieves the complete, validated artifact from the cache."""
         handle = self._artifact_manager.get_workpiece_handle(
-            step_uid, workpiece_uid
+            step_uid, workpiece_uid, self._current_generation_id
         )
         if handle is None:
             return None
