@@ -320,15 +320,15 @@ class TestDependencyGraphAndInvalidation(TestArtifactManagerLedger):
     """Test dependency graph and invalidation methods."""
 
     def test_register_dependency(self):
-        """Test that _register_dependency correctly establishes deps."""
+        """Test that register_dependency correctly establishes deps."""
         workpiece_key = ArtifactKey.for_workpiece(
             "00000000-0000-4000-8000-000000000001"
         )
         step_key = ArtifactKey.for_step("00000000-0000-4000-8000-000000000003")
         job_key = ArtifactKey.for_job()
 
-        self.manager._register_dependency(workpiece_key, step_key)
-        self.manager._register_dependency(step_key, job_key)
+        self.manager.register_dependency(workpiece_key, step_key)
+        self.manager.register_dependency(step_key, job_key)
 
         deps = self.manager._get_dependencies(job_key, 0)
         self.assertEqual(deps, [(step_key, 0)])
@@ -337,7 +337,7 @@ class TestDependencyGraphAndInvalidation(TestArtifactManagerLedger):
         self.assertEqual(deps, [(workpiece_key, 0)])
 
     def test_register_dependency_idempotent(self):
-        """Test that _register_dependency doesn't duplicate dependencies."""
+        """Test that register_dependency doesn't duplicate dependencies."""
         child_key = ArtifactKey.for_workpiece(
             "00000000-0000-4000-8000-000000000001"
         )
@@ -345,8 +345,8 @@ class TestDependencyGraphAndInvalidation(TestArtifactManagerLedger):
             "00000000-0000-4000-8000-000000000003"
         )
 
-        self.manager._register_dependency(child_key, parent_key)
-        self.manager._register_dependency(child_key, parent_key)
+        self.manager.register_dependency(child_key, parent_key)
+        self.manager.register_dependency(child_key, parent_key)
 
         deps = self.manager._get_dependencies(parent_key, 0)
         self.assertEqual(deps, [(child_key, 0)])
@@ -360,8 +360,8 @@ class TestDependencyGraphAndInvalidation(TestArtifactManagerLedger):
         step_key = ArtifactKey.for_step("00000000-0000-4000-8000-000000000003")
         job_key = ArtifactKey.for_job()
 
-        self.manager._register_dependency(workpiece_key, step_key)
-        self.manager._register_dependency(step_key, job_key)
+        self.manager.register_dependency(workpiece_key, step_key)
+        self.manager.register_dependency(step_key, job_key)
 
         dependents = self.manager._get_dependents(workpiece_key)
         self.assertEqual(dependents, [step_key])
@@ -380,8 +380,8 @@ class TestDependencyGraphAndInvalidation(TestArtifactManagerLedger):
         step_key = ArtifactKey.for_step("00000000-0000-4000-8000-000000000003")
         job_key = ArtifactKey.for_job()
 
-        self.manager._register_dependency(workpiece_key, step_key)
-        self.manager._register_dependency(step_key, job_key)
+        self.manager.register_dependency(workpiece_key, step_key)
+        self.manager.register_dependency(step_key, job_key)
 
         deps = self.manager._get_dependencies(workpiece_key, 0)
         self.assertEqual(deps, [])
@@ -411,8 +411,8 @@ class TestDependencyGraphAndInvalidation(TestArtifactManagerLedger):
         self.manager._set_ledger_entry(step_composite, step_entry)
         self.manager._set_ledger_entry(job_composite, job_entry)
 
-        self.manager._register_dependency(workpiece_key, step_key)
-        self.manager._register_dependency(step_key, job_key)
+        self.manager.register_dependency(workpiece_key, step_key)
+        self.manager.register_dependency(step_key, job_key)
 
         self.manager.invalidate(workpiece_key)
 
@@ -462,8 +462,8 @@ class TestDependencyGraphAndInvalidation(TestArtifactManagerLedger):
         self.manager._set_ledger_entry(step1_composite, step1_entry)
         self.manager._set_ledger_entry(step2_composite, step2_entry)
 
-        self.manager._register_dependency(workpiece_key, step1_key)
-        self.manager._register_dependency(workpiece_key, step2_key)
+        self.manager.register_dependency(workpiece_key, step1_key)
+        self.manager.register_dependency(workpiece_key, step2_key)
 
         self.manager.invalidate(workpiece_key)
 
@@ -490,7 +490,7 @@ class TestQueryWorkForStage(TestArtifactManagerLedger):
         self.manager._set_ledger_entry(wp_composite, wp_entry)
         self.manager._set_ledger_entry(step_composite, step_entry)
 
-        self.manager._register_dependency(workpiece_key, step_key)
+        self.manager.register_dependency(workpiece_key, step_key)
 
         work = self.manager.query_work_for_stage("step", 0)
 
@@ -511,7 +511,7 @@ class TestQueryWorkForStage(TestArtifactManagerLedger):
         self.manager._set_ledger_entry(wp_composite, wp_entry)
         self.manager._set_ledger_entry(step_composite, step_entry)
 
-        self.manager._register_dependency(workpiece_key, step_key)
+        self.manager.register_dependency(workpiece_key, step_key)
 
         work = self.manager.query_work_for_stage("step", 0)
 
@@ -532,7 +532,7 @@ class TestQueryWorkForStage(TestArtifactManagerLedger):
         self.manager._set_ledger_entry(wp_composite, wp_entry)
         self.manager._set_ledger_entry(step_composite, step_entry)
 
-        self.manager._register_dependency(workpiece_key, step_key)
+        self.manager.register_dependency(workpiece_key, step_key)
 
         work = self.manager.query_work_for_stage("step", 0)
 
@@ -709,7 +709,7 @@ class TestCheckoutDependencies(TestArtifactManagerLedger):
         step_composite = make_composite_key(step_key, 0)
         self.manager._set_ledger_entry(wp_composite, wp_entry)
         self.manager._set_ledger_entry(step_composite, step_entry)
-        self.manager._register_dependency(workpiece_key, step_key)
+        self.manager.register_dependency(workpiece_key, step_key)
 
         deps = self.manager.checkout_dependencies(step_key, 0)
 
@@ -729,7 +729,7 @@ class TestCheckoutDependencies(TestArtifactManagerLedger):
         step_composite = make_composite_key(step_key, 0)
         self.manager._set_ledger_entry(wp_composite, wp_entry)
         self.manager._set_ledger_entry(step_composite, step_entry)
-        self.manager._register_dependency(workpiece_key, step_key)
+        self.manager.register_dependency(workpiece_key, step_key)
 
         with self.assertRaises(AssertionError) as cm:
             self.manager.checkout_dependencies(step_key, 0)
@@ -752,7 +752,7 @@ class TestCheckoutDependencies(TestArtifactManagerLedger):
         step_composite = make_composite_key(step_key, 0)
         self.manager._set_ledger_entry(wp_composite, wp_entry)
         self.manager._set_ledger_entry(step_composite, step_entry)
-        self.manager._register_dependency(workpiece_key, step_key)
+        self.manager.register_dependency(workpiece_key, step_key)
 
         with self.assertRaises(AssertionError) as cm:
             self.manager.checkout_dependencies(step_key, 0)
@@ -770,7 +770,7 @@ class TestCheckoutDependencies(TestArtifactManagerLedger):
 
         step_composite = make_composite_key(step_key, 0)
         self.manager._set_ledger_entry(step_composite, step_entry)
-        self.manager._register_dependency(workpiece_key, step_key)
+        self.manager.register_dependency(workpiece_key, step_key)
 
         with self.assertRaises(AssertionError) as cm:
             self.manager.checkout_dependencies(step_key, 0)
@@ -803,8 +803,8 @@ class TestCheckoutDependencies(TestArtifactManagerLedger):
         self.manager._set_ledger_entry(wp1_composite, wp1_entry)
         self.manager._set_ledger_entry(wp2_composite, wp2_entry)
         self.manager._set_ledger_entry(step_composite, step_entry)
-        self.manager._register_dependency(wp1_key, step_key)
-        self.manager._register_dependency(wp2_key, step_key)
+        self.manager.register_dependency(wp1_key, step_key)
+        self.manager.register_dependency(wp2_key, step_key)
 
         deps = self.manager.checkout_dependencies(step_key, 0)
 

@@ -552,15 +552,15 @@ class ArtifactManager:
         """Sets a LedgerEntry for a key."""
         self._ledger[key] = entry
 
-    def _register_dependency(
+    def register_dependency(
         self, child_key: ArtifactKey, parent_key: ArtifactKey
     ) -> None:
         """
         Registers that parent_key depends on child_key.
 
         Dependencies are stored as {parent: [children]}, so calling
-        _register_dependency(step_key, wp_key) means step_key is a child
-        (i.e., step_key appears in wp_key's children list).
+        register_dependency(child_key, parent_key) means parent_key
+        has child_key as a dependency.
         """
         if parent_key not in self._dependencies:
             self._dependencies[parent_key] = []

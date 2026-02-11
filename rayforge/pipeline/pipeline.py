@@ -865,22 +865,49 @@ class Pipeline:
 
         # --- INTENT DECLARATION PHASE ---
         all_keys: set[ArtifactKey] = set()
+
+        # 1. Declare Step and Workpiece keys
         for layer in self.doc.layers:
             if layer.workflow:
                 for step in layer.workflow.steps:
                     all_keys.add(ArtifactKey.for_step(step.uid))
                 for workpiece in layer.all_workpieces:
                     all_keys.add(ArtifactKey.for_workpiece(workpiece.uid))
+
+        # 2. Declare Job key
         all_keys.add(self._job_key)
+
         self._artifact_manager.declare_generation(all_keys, gen_id)
+
+        # --- DEPENDENCY REGISTRATION PHASE ---
+        # 1. Register Workpiece -> Step dependencies
+        # (This logic mirrors what StepStage previously did implicitly)
+        for layer in self.doc.layers:
+            if layer.workflow:
+                for step in layer.workflow.steps:
+                    step_key = ArtifactKey.for_step(step.uid)
+                    for workpiece in layer.all_workpieces:
+                        wp_key = ArtifactKey.for_workpiece(workpiece.uid)
+                        self._artifact_manager.register_dependency(
+                            child_key=wp_key, parent_key=step_key
+                        )
+
+        # 2. Register Step -> Job dependencies
+        step_uids = self._get_step_uids(self.doc)
+        for step_uid in step_uids:
+            step_key = ArtifactKey.for_step(step_uid)
+            self._artifact_manager.register_dependency(
+                child_key=step_key, parent_key=self._job_key
+            )
 
         # Immediately notify UI that estimates are now stale and recalculating.
         self.job_time_updated.send(self, total_seconds=None)
 
         # --- EXECUTION PHASE ---
+        # Stages now just query the manager for work associated with gen_id
         self._workpiece_stage.reconcile(self.doc, gen_id)
         self._step_stage.reconcile(self.doc, gen_id)
-        self._job_stage.reconcile(self.doc, gen_id)
+        # Job stage is on-demand, so no reconcile needed here for execution
 
         self._update_and_emit_preview_time()
         self._task_manager.schedule_on_main_thread(
@@ -1060,16 +1087,17 @@ class Pipeline:
             when_done(None, validation_error)
             return
 
-        # 2. Get step UIDs and register dependencies
+        # 2. Ensure dependencies are registered.
+        # Even though reconcile_all does this, this method might be called
+        # standalone or after manual changes that don't trigger full reconcile.
+        # But actually, reconcile_all is triggered on any doc change.
+        # We re-register here just to be safe and ensure the graph exists
+        # for the CURRENT global generation ID.
         step_uids = self._get_step_uids(self.doc)
-        # The job's intent is already declared during reconcile_all.
-        # We just need to ensure its dependencies are registered for this
-        # generation.
-        self._step_stage.reconcile(self.doc, self._global_generation_id)
         for step_uid in step_uids:
             step_key = ArtifactKey.for_step(step_uid)
-            self._artifact_manager._register_dependency(
-                step_key, self._job_key
+            self._artifact_manager.register_dependency(
+                child_key=step_key, parent_key=self._job_key
             )
 
         # 3. Check if all step artifacts are ready by trying to check them out.
@@ -1093,6 +1121,7 @@ class Pipeline:
         # 4. Assemble the JobDescription
         step_handles = {}
         for key, handle in dep_handles.items():
+            # key is ArtifactKey, so key.id is the step_uid
             step_handles[key.id] = handle.to_dict()
 
         self._machine.hydrate()
