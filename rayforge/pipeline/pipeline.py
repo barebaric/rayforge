@@ -63,8 +63,8 @@ class Pipeline:
 
     Attributes:
         doc (Doc): The document model this pipeline is observing.
-        _global_generation_id (int): The current GlobalDataID representing
-            the authoritative version of the document.
+        _data_generation_id (int): The current data generation ID.
+        _view_generation_id (int): The current view generation ID.
         ops_generation_starting (Signal): Fired when generation begins for a
             (Step, WorkPiece) pair.
         ops_chunk_available (Signal): Fired as chunks of Ops become available
@@ -107,7 +107,8 @@ class Pipeline:
         self._task_manager = task_manager
         self._artifact_store = artifact_store
         self._machine = machine
-        self._global_generation_id = 0
+        self._data_generation_id = 0
+        self._view_generation_id = 0
         self._docitem_to_artifact_key: Dict[DocItem, ArtifactKey] = {}
         self._job_key = ArtifactKey.for_job()
         self._pause_count = 0
@@ -135,7 +136,7 @@ class Pipeline:
 
         if self._doc:
             self._connect_signals()
-            self.reconcile_all()
+            self.reconcile_data()
 
     def _initialize_stages_and_connections(self):
         """A new helper method to contain all stage setup logic."""
@@ -255,7 +256,7 @@ class Pipeline:
 
         if self._doc:
             self._connect_signals()
-            self.reconcile_all()
+            self.reconcile_data()
 
     def set_view_context(
         self,
@@ -288,7 +289,7 @@ class Pipeline:
             return
 
         self._current_view_context = context
-        self._workpiece_view_stage.update_view_context(context)
+        self.reconcile_view()
 
     def _request_step_assembly(self, step_uid: str) -> None:
         """
@@ -473,7 +474,7 @@ class Pipeline:
     def _execute_reconciliation(self) -> None:
         """The debounced method that actually runs reconciliation."""
         self._reconciliation_timer = None
-        self.reconcile_all()
+        self.reconcile_data()
 
     def _find_step_by_uid(self, uid: str) -> Optional[Step]:
         """Finds a step anywhere in the document by its UID."""
@@ -850,23 +851,38 @@ class Pipeline:
             self._check_and_update_processing_state
         )
 
-    def reconcile_all(self) -> None:
+    def reconcile_data(self) -> None:
         """
-        Synchronizes all stages with the document by declaring the full
-        set of required artifacts for the new generation.
+        Synchronizes data stages with the document by declaring the full
+        set of required artifacts for the new data generation.
         """
         if self.is_paused or not self.doc:
             return
-        logger.debug(f"{self.__class__.__name__}.reconcile_all called")
+        logger.debug(f"{self.__class__.__name__}.reconcile_data called")
 
-        # Increment the generation ID for this reconciliation cycle
-        self._global_generation_id += 1
-        gen_id = self._global_generation_id
+        self._data_generation_id += 1
+        data_gen_id = self._data_generation_id
 
-        # --- INTENT DECLARATION PHASE ---
+        self._declare_data_artifacts(data_gen_id)
+
+        self._register_data_dependencies()
+
+        self.job_time_updated.send(self, total_seconds=None)
+
+        self._workpiece_stage.reconcile(self.doc, data_gen_id)
+        self._step_stage.reconcile(self.doc, data_gen_id)
+
+        self._update_and_emit_preview_time()
+        self._task_manager.schedule_on_main_thread(
+            self._check_and_update_processing_state
+        )
+
+    def _declare_data_artifacts(self, gen_id: int) -> None:
+        """Declares all data artifacts for a generation."""
+        if not self.doc:
+            return
         all_keys: set[ArtifactKey] = set()
 
-        # 1. Declare Step and Workpiece keys
         for layer in self.doc.layers:
             if layer.workflow:
                 for step in layer.workflow.steps:
@@ -874,14 +890,14 @@ class Pipeline:
                 for workpiece in layer.all_workpieces:
                     all_keys.add(ArtifactKey.for_workpiece(workpiece.uid))
 
-        # 2. Declare Job key
         all_keys.add(self._job_key)
 
         self._artifact_manager.declare_generation(all_keys, gen_id)
 
-        # --- DEPENDENCY REGISTRATION PHASE ---
-        # 1. Register Workpiece -> Step dependencies
-        # (This logic mirrors what StepStage previously did implicitly)
+    def _register_data_dependencies(self) -> None:
+        """Registers dependencies between data artifacts."""
+        if not self.doc:
+            return
         for layer in self.doc.layers:
             if layer.workflow:
                 for step in layer.workflow.steps:
@@ -892,7 +908,6 @@ class Pipeline:
                             child_key=wp_key, parent_key=step_key
                         )
 
-        # 2. Register Step -> Job dependencies
         step_uids = self._get_step_uids(self.doc)
         for step_uid in step_uids:
             step_key = ArtifactKey.for_step(step_uid)
@@ -900,16 +915,25 @@ class Pipeline:
                 child_key=step_key, parent_key=self._job_key
             )
 
-        # Immediately notify UI that estimates are now stale and recalculating.
-        self.job_time_updated.send(self, total_seconds=None)
+    def reconcile_view(self) -> None:
+        """
+        Synchronizes view stage by triggering re-rendering for
+        the current view generation.
+        """
+        if self.is_paused or not self.doc:
+            return
+        logger.debug(f"{self.__class__.__name__}.reconcile_view called")
 
-        # --- EXECUTION PHASE ---
-        # Stages now just query the manager for work associated with gen_id
-        self._workpiece_stage.reconcile(self.doc, gen_id)
-        self._step_stage.reconcile(self.doc, gen_id)
-        # Job stage is on-demand, so no reconcile needed here for execution
+        self._view_generation_id += 1
+        view_gen_id = self._view_generation_id
 
-        self._update_and_emit_preview_time()
+        if not self._current_view_context:
+            return
+
+        self._workpiece_view_stage.update_view_context(
+            self._current_view_context, view_gen_id
+        )
+
         self._task_manager.schedule_on_main_thread(
             self._check_and_update_processing_state
         )
@@ -948,7 +972,7 @@ class Pipeline:
         """Retrieves the handle for a generated artifact from the cache."""
         key = ArtifactKey.for_workpiece(workpiece_uid)
         return self._artifact_manager.get_workpiece_handle(
-            key, self._global_generation_id
+            key, self._data_generation_id
         )
 
     def get_step_render_artifact_handle(
@@ -969,7 +993,7 @@ class Pipeline:
         """
         key = ArtifactKey.for_step(step_uid)
         return self._artifact_manager.get_step_ops_handle(
-            key, self._global_generation_id
+            key, self._data_generation_id
         )
 
     def get_scaled_ops(
@@ -1011,7 +1035,7 @@ class Pipeline:
         """
         # Check if a job generation is already pending or running
         composite_key = make_composite_key(
-            self._job_key, self._global_generation_id
+            self._job_key, self._data_generation_id
         )
         entry = self._artifact_manager._get_ledger_entry(composite_key)
         if entry and entry.state == ArtifactLifecycle.PROCESSING:
@@ -1026,13 +1050,15 @@ class Pipeline:
 
         return None
 
-    def _get_step_uids(self, doc: "Doc") -> list:
+    def _get_step_uids(self, doc: Optional["Doc"]) -> list:
         """
         Collects step UIDs from document layers.
 
         Returns:
             List of step UIDs.
         """
+        if not doc:
+            return []
         step_uids = []
         for layer in doc.layers:
             if not layer.workflow:
@@ -1087,28 +1113,15 @@ class Pipeline:
             when_done(None, validation_error)
             return
 
-        # 2. Ensure dependencies are registered.
-        # Even though reconcile_all does this, this method might be called
-        # standalone or after manual changes that don't trigger full reconcile.
-        # But actually, reconcile_all is triggered on any doc change.
-        # We re-register here just to be safe and ensure the graph exists
-        # for the CURRENT global generation ID.
-        step_uids = self._get_step_uids(self.doc)
-        for step_uid in step_uids:
-            step_key = ArtifactKey.for_step(step_uid)
-            self._artifact_manager.register_dependency(
-                child_key=step_key, parent_key=self._job_key
-            )
-
-        # 3. Check if all step artifacts are ready by trying to check them out.
+        # 2. Check if all step artifacts are ready by trying to check them out.
         try:
             dep_handles = self._artifact_manager.checkout_dependencies(
-                self._job_key, self._global_generation_id
+                self._job_key, self._data_generation_id
             )
         except AssertionError:
             # This means some dependencies are not DONE.
             # Trigger generation of missing dependencies.
-            self.reconcile_all()
+            self.reconcile_data()
             when_done(
                 None,
                 RuntimeError(
@@ -1118,7 +1131,7 @@ class Pipeline:
             )
             return
 
-        # 4. Assemble the JobDescription
+        # 3. Assemble the JobDescription
         step_handles = {}
         for key, handle in dep_handles.items():
             # key is ArtifactKey, so key.id is the step_uid
@@ -1129,11 +1142,11 @@ class Pipeline:
             step_handles, self._machine, self.doc
         )
 
-        # 5. Call the simplified stage method
+        # 4. Call the simplified stage method
         self._job_stage.generate_job(
             job_desc,
             on_done=when_done,
-            generation_id=self._global_generation_id,
+            generation_id=self._data_generation_id,
             job_key=self._job_key,
         )
 
@@ -1193,6 +1206,6 @@ class Pipeline:
         self._workpiece_view_stage.request_view_render(
             key,
             context,
-            self._workpiece_view_stage.current_view_generation_id,
+            self._view_generation_id,
             step_uid,
         )

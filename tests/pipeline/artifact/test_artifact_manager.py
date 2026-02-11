@@ -337,3 +337,139 @@ class TestArtifactManager(unittest.TestCase):
             ArtifactKey.for_workpiece(WP1_UID), 0
         )
         self.assertIsNone(retrieved)
+
+    def test_prune_removes_obsolete_data_generation(self):
+        """Tests pruning removes artifacts from non-active data generations."""
+        wp_h = create_mock_handle(WorkPieceArtifactHandle, "wp1")
+        wp_composite = make_composite_key(
+            ArtifactKey.for_workpiece(WP1_UID), 0
+        )
+        self.manager._ledger[wp_composite] = Mock(
+            state=ArtifactLifecycle.DONE, handle=wp_h
+        )
+
+        self.manager.prune(active_data_gen_ids={1}, active_view_gen_ids=set())
+
+        self.assertNotIn(wp_composite, self.manager._ledger)
+        self.mock_release.assert_called_once_with(wp_h)
+
+    def test_prune_keeps_active_data_generation(self):
+        """Tests pruning keeps artifacts from active data generations."""
+        wp_h = create_mock_handle(WorkPieceArtifactHandle, "wp1")
+        wp_composite = make_composite_key(
+            ArtifactKey.for_workpiece(WP1_UID), 0
+        )
+        self.manager._ledger[wp_composite] = Mock(
+            state=ArtifactLifecycle.DONE, handle=wp_h
+        )
+
+        self.manager.prune(active_data_gen_ids={0}, active_view_gen_ids=set())
+
+        self.assertIn(wp_composite, self.manager._ledger)
+        self.mock_release.assert_not_called()
+
+    def test_prune_removes_obsolete_view_generation(self):
+        """Tests pruning removes artifacts from non-active view generations."""
+        from rayforge.pipeline.artifact import WorkPieceViewArtifactHandle
+
+        view_h = create_mock_handle(WorkPieceViewArtifactHandle, "view1")
+        view_composite = make_composite_key(ArtifactKey.for_view(WP1_UID), 0)
+        self.manager._ledger[view_composite] = Mock(
+            state=ArtifactLifecycle.DONE, handle=view_h
+        )
+
+        self.manager.prune(active_data_gen_ids=set(), active_view_gen_ids={1})
+
+        self.assertNotIn(view_composite, self.manager._ledger)
+        self.mock_release.assert_called_once_with(view_h)
+
+    def test_prune_keeps_active_view_generation(self):
+        """Tests pruning keeps artifacts from active view generations."""
+        from rayforge.pipeline.artifact import WorkPieceViewArtifactHandle
+
+        view_h = create_mock_handle(WorkPieceViewArtifactHandle, "view1")
+        view_composite = make_composite_key(ArtifactKey.for_view(WP1_UID), 0)
+        self.manager._ledger[view_composite] = Mock(
+            state=ArtifactLifecycle.DONE, handle=view_h
+        )
+
+        self.manager.prune(active_data_gen_ids=set(), active_view_gen_ids={0})
+
+        self.assertIn(view_composite, self.manager._ledger)
+        self.mock_release.assert_not_called()
+
+    def test_prune_preserves_processing_entries(self):
+        """Tests pruning does not remove entries in PROCESSING state."""
+        wp_h = create_mock_handle(WorkPieceArtifactHandle, "wp1")
+        wp_composite = make_composite_key(
+            ArtifactKey.for_workpiece(WP1_UID), 0
+        )
+        self.manager._ledger[wp_composite] = Mock(
+            state=ArtifactLifecycle.PROCESSING, handle=wp_h
+        )
+
+        self.manager.prune(active_data_gen_ids={1}, active_view_gen_ids=set())
+
+        self.assertIn(wp_composite, self.manager._ledger)
+        self.mock_release.assert_not_called()
+
+    def test_prune_mixed_generations(self):
+        """Tests pruning with multiple generations of mixed types."""
+        wp_h0 = create_mock_handle(WorkPieceArtifactHandle, "wp0")
+        wp_h1 = create_mock_handle(WorkPieceArtifactHandle, "wp1")
+        from rayforge.pipeline.artifact import WorkPieceViewArtifactHandle
+
+        view_h0 = create_mock_handle(WorkPieceViewArtifactHandle, "view0")
+        view_h1 = create_mock_handle(WorkPieceViewArtifactHandle, "view1")
+
+        wp_composite_0 = make_composite_key(
+            ArtifactKey.for_workpiece(WP1_UID), 0
+        )
+        wp_composite_1 = make_composite_key(
+            ArtifactKey.for_workpiece(WP2_UID), 1
+        )
+        view_composite_0 = make_composite_key(ArtifactKey.for_view(WP1_UID), 0)
+        view_composite_1 = make_composite_key(ArtifactKey.for_view(WP2_UID), 1)
+
+        self.manager._ledger[wp_composite_0] = Mock(
+            state=ArtifactLifecycle.DONE, handle=wp_h0
+        )
+        self.manager._ledger[wp_composite_1] = Mock(
+            state=ArtifactLifecycle.DONE, handle=wp_h1
+        )
+        self.manager._ledger[view_composite_0] = Mock(
+            state=ArtifactLifecycle.DONE, handle=view_h0
+        )
+        self.manager._ledger[view_composite_1] = Mock(
+            state=ArtifactLifecycle.DONE, handle=view_h1
+        )
+
+        self.manager.prune(active_data_gen_ids={1}, active_view_gen_ids={0})
+
+        self.assertNotIn(wp_composite_0, self.manager._ledger)
+        self.assertIn(wp_composite_1, self.manager._ledger)
+        self.assertIn(view_composite_0, self.manager._ledger)
+        self.assertNotIn(view_composite_1, self.manager._ledger)
+
+        self.mock_release.assert_any_call(wp_h0)
+        self.mock_release.assert_any_call(view_h1)
+        self.assertEqual(self.mock_release.call_count, 2)
+
+    def test_prune_ledger_size_stays_constant(self):
+        """Tests that ledger size stays constant after cycling generations."""
+        initial_size = 0
+        for gen_id in range(3):
+            wp_h = create_mock_handle(WorkPieceArtifactHandle, f"wp{gen_id}")
+            wp_composite = make_composite_key(
+                ArtifactKey.for_workpiece(WP1_UID), gen_id
+            )
+            self.manager._ledger[wp_composite] = Mock(
+                state=ArtifactLifecycle.DONE, handle=wp_h
+            )
+            initial_size += 1
+
+            self.manager.prune(
+                active_data_gen_ids={gen_id}, active_view_gen_ids=set()
+            )
+
+            self.assertEqual(len(self.manager._ledger), 1)
