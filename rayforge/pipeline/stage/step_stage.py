@@ -353,13 +353,12 @@ class StepPipelineStage(PipelineStage):
             )
             return
 
-        composite_key = make_composite_key(ledger_key, generation_id)
-        entry = self._artifact_manager._get_ledger_entry(composite_key)
-        if entry is not None and entry.generation_id != generation_id:
+        if not self._artifact_manager.is_generation_current(
+            ledger_key, generation_id
+        ):
             logger.debug(
                 f"[{step_uid}] Stale event '{event_name}' with "
-                f"generation_id {generation_id}, current is "
-                f"{entry.generation_id}. Ignoring."
+                f"generation_id {generation_id}. Ignoring."
             )
             return
 
@@ -386,66 +385,26 @@ class StepPipelineStage(PipelineStage):
         step_uid = step.uid
         ledger_key = ArtifactKey.for_step(step_uid)
 
-        composite_key = make_composite_key(ledger_key, task_generation_id)
-        entry = self._artifact_manager._get_ledger_entry(composite_key)
-        if entry is None or entry.generation_id != task_generation_id:
+        if not self._artifact_manager.is_generation_current(
+            ledger_key, task_generation_id
+        ):
             logger.debug(f"Ignoring stale step completion for {step_uid}")
             return
 
         if task.get_status() == "completed":
             try:
-                # The task now only returns the generation ID for validation
                 task.result()
-                # Get the render handle and set to DONE directly
-                # We don't use commit_artifact because it would release
-                # source_handle
                 render_handle = self._artifact_manager.get_step_render_handle(
                     step_uid
                 )
                 logger.debug(
                     f"_on_assembly_complete: render_handle={render_handle}"
                 )
-                if render_handle:
-                    # Directly set the entry to DONE state
-                    # This keeps the render_handle in the entry for later
-                    # retrieval
-                    composite_key = make_composite_key(
-                        ledger_key, task_generation_id
-                    )
-                    entry = self._artifact_manager._get_ledger_entry(
-                        composite_key
-                    )
-                    if entry:
-                        entry.state = ArtifactLifecycle.DONE
-                        entry.generation_id = task_generation_id
-                        entry.error = None
-                    logger.debug(
-                        "_on_assembly_complete: render_handle set to DONE"
-                    )
-                # Get the ops handle directly from ledger and set to DONE
-                # The ops handle is in PROCESSING state from
-                # put_step_ops_handle,
-                # so we need to access it directly and set to DONE
-                composite_key = make_composite_key(
-                    ledger_key, task_generation_id
+                self._artifact_manager.complete_generation(
+                    ledger_key,
+                    task_generation_id,
                 )
-                entry = self._artifact_manager._get_ledger_entry(composite_key)
-                logger.debug(
-                    f"_on_assembly_complete: ops_entry={entry}, "
-                    f"handle={entry.handle if entry else None}"
-                )
-                if entry and entry.handle:
-                    # Directly set the entry to DONE state
-                    entry.state = ArtifactLifecycle.DONE
-                    entry.generation_id = task_generation_id
-                    entry.error = None
-                    logger.debug(
-                        "_on_assembly_complete: ops_handle set to DONE"
-                    )
-                else:
-                    logger.debug(
-                        "_on_assembly_complete: ops_entry or handle is None"
-                    )
+                logger.debug("_on_assembly_complete: ops_handle set to DONE")
             except Exception as e:
                 logger.error(f"Error on step assembly result: {e}")
                 self._time_cache[step_uid] = -1.0  # Mark error

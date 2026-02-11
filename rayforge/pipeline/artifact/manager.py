@@ -98,6 +98,26 @@ class ArtifactManager:
     ) -> Optional[StepRenderArtifactHandle]:
         return self._step_render_handles.get(step_uid)
 
+    def is_generation_current(
+        self, key: ArtifactKey, generation_id: GenerationID
+    ) -> bool:
+        """
+        Check if a generation ID is current (not stale).
+
+        Args:
+            key: The ArtifactKey for the entry.
+            generation_id: The generation ID to check.
+
+        Returns:
+            True if the generation is current, False if the entry
+            does not exist or has a different generation ID.
+        """
+        composite_key = make_composite_key(key, generation_id)
+        entry = self._ledger.get(composite_key)
+        if entry is None:
+            return False
+        return entry.generation_id == generation_id
+
     def get_step_ops_handle(
         self, key: ArtifactKey, generation_id: GenerationID
     ) -> Optional[StepOpsArtifactHandle]:
@@ -810,8 +830,8 @@ class ArtifactManager:
         """
         Marks an entry as DONE without providing a handle.
 
-        This is used when an entry cannot be processed (e.g., the
-        workpiece is not found or has no associated step), but we
+        This is used when an entry has nothing to do (e.g., the
+        workpiece is empty or has no associated step), but we
         want to mark it as DONE so the pipeline can finish.
 
         Args:
@@ -840,6 +860,66 @@ class ArtifactManager:
         if entry.handle is not None:
             self._store.release(entry.handle)
             entry.handle = None
+
+    def complete_generation(
+        self,
+        key: ArtifactKey,
+        generation_id: GenerationID,
+        handle: Optional[BaseArtifactHandle] = None,
+    ) -> None:
+        """
+        Marks a generation as DONE without releasing handles.
+
+        This is used when an entry already has a handle set (e.g., from
+        put_step_ops_handle) and we just need to mark it as DONE, or
+        when we need to create a ledger entry from a handle stored elsewhere.
+
+        Args:
+            key: The ArtifactKey for the entry.
+            generation_id: The generation ID for the entry.
+            handle: Optional handle to set on the entry. If not provided,
+                the existing handle is preserved.
+        """
+        composite_key = make_composite_key(key, generation_id)
+        entry = self._ledger.get(composite_key)
+        if entry is None:
+            if handle is None:
+                logger.warning(
+                    f"complete_generation called for {key} "
+                    f"(gen_id={generation_id}) but no ledger entry "
+                    f"was found and no handle provided. Skipping."
+                )
+                return
+            logger.debug(
+                f"complete_generation: Creating new entry for {key} "
+                f"(gen_id={generation_id})"
+            )
+            self._ledger[composite_key] = LedgerEntry(
+                handle=handle,
+                state=ArtifactLifecycle.DONE,
+                generation_id=generation_id,
+                error=None,
+            )
+            return
+
+        if entry.handle is None:
+            logger.warning(
+                f"complete_generation called for {key} "
+                f"(gen_id={generation_id}) but entry has no handle. "
+                f"Skipping."
+            )
+            return
+
+        logger.debug(
+            f"complete_generation: Marking entry {composite_key} as DONE"
+        )
+        entry.state = ArtifactLifecycle.DONE
+        entry.generation_id = generation_id
+        entry.error = None
+        if handle is not None:
+            if entry.handle is not None:
+                self._store.release(entry.handle)
+            entry.handle = handle
 
     def fail_generation(
         self, key: ArtifactKey, error_msg: str, generation_id: GenerationID
