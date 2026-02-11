@@ -12,6 +12,7 @@ from rayforge.pipeline.artifact import (
     JobArtifact,
     create_handle_from_dict,
 )
+from rayforge.pipeline.artifact.key import ArtifactKey
 from rayforge.pipeline.steps import create_contour_step
 from rayforge.pipeline.stage.job_runner import (
     make_job_artifact_in_subprocess,
@@ -70,13 +71,14 @@ def test_jobrunner_assembles_step_artifacts_correctly(
 
     mock_proxy = MagicMock()
 
-    # Act
+    job_key = ArtifactKey.for_job()
     result = make_job_artifact_in_subprocess(
         mock_proxy,
         get_context().artifact_store,
         asdict(job_desc),
         "test_job",
         123,
+        job_key,
     )
 
     # Assert
@@ -144,12 +146,14 @@ def test_jobrunner_reconstructs_doc_from_dict(context_initializer, machine):
 
     mock_proxy = MagicMock()
 
+    job_key = ArtifactKey.for_job()
     make_job_artifact_in_subprocess(
         mock_proxy,
         get_context().artifact_store,
         asdict(job_desc),
         "test_job",
         123,
+        job_key,
     )
 
     event_name, event_data = mock_proxy.send_event.call_args[0]

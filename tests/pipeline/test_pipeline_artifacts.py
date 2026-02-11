@@ -342,7 +342,7 @@ class TestPipelineArtifacts:
         task_obj_for_stage = task_info.returned_task_obj
         task_obj_for_stage.key = task_info.key
         task_obj_for_stage.get_status.return_value = "completed"
-        gen_id = pipeline._current_generation_id
+        gen_id = pipeline._global_generation_id
         task_obj_for_stage.result.return_value = gen_id
 
         try:

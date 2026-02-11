@@ -10,6 +10,7 @@ from ....pipeline.artifact import (
     WorkPieceArtifact,
     BaseArtifactHandle,
     WorkPieceViewArtifact,
+    ArtifactKey,
 )
 from ....shared.util.colors import ColorSet
 from ...shared.gtk_color import GtkColorResolver, ColorSpecDict
@@ -537,9 +538,8 @@ class WorkPieceElement(CanvasElement):
 
                 view_handle = (
                     self.pipeline.artifact_manager.get_workpiece_view_handle(
-                        step_uid,
-                        self.data.uid,
-                        self.pipeline._current_generation_id,
+                        ArtifactKey.for_view(self.data.uid),
+                        self.pipeline._global_generation_id,
                     )
                 )
                 if view_handle is None:

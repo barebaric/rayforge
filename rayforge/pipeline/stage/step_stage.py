@@ -8,6 +8,7 @@ from ..artifact import (
     StepOpsArtifactHandle,
     BaseArtifactHandle,
 )
+from ..artifact.key import ArtifactKey
 from ..artifact.lifecycle import ArtifactLifecycle
 from ..artifact.manager import extract_base_key, make_composite_key
 from .base import PipelineStage
@@ -58,49 +59,21 @@ class StepPipelineStage(PipelineStage):
 
     def reconcile(self, doc: "Doc", generation_id: int):
         """
-        Triggers assembly for steps where dependencies are met and
-        artifact is missing or stale.
+        Queries the ArtifactManager for work and launches generation tasks
+        for any step artifacts that are in the INITIAL state.
         """
         if not doc:
             return
         self._current_generation_id = generation_id
 
-        all_current_steps = {
-            step.uid
-            for layer in doc.layers
-            if layer.workflow
-            for step in layer.workflow.steps
-        }
-        # The source of truth is now the render handle cache.
-        cached_steps = self._artifact_manager.get_all_step_render_uids()
-        for step_uid in cached_steps:
-            if step_uid not in all_current_steps:
-                self._cleanup_entry(
-                    step_uid, full_invalidation=True, invalidate_job=False
-                )
-
-        # Build valid keys for the ledger in format ('step', step_uid)
-        valid_keys = {
-            ("step", step.uid)
-            for layer in doc.layers
-            if layer.workflow
-            for step in layer.workflow.steps
-            if step.visible
-        }
-
-        # Sync the ledger with the current valid keys
-        self._artifact_manager.sync_keys(
-            "step", valid_keys, self._current_generation_id
-        )
-
-        # Query for keys that need generation
+        # Query for keys that need generation, as declared by the Pipeline
         keys_to_generate = self._artifact_manager.query_work_for_stage(
             "step", self._current_generation_id
         )
 
         # Launch tasks for each key that needs generation
         for key in keys_to_generate:
-            _, step_uid = key
+            step_uid = key.id
             step = self._find_step(doc, step_uid)
             if step:
                 self._trigger_assembly(step)
@@ -155,9 +128,9 @@ class StepPipelineStage(PipelineStage):
                 )
                 self._artifact_manager.release_handle(render_handle)
 
-        self._artifact_manager.invalidate(("step", key))
+        self._artifact_manager.invalidate(ArtifactKey.for_step(key))
         if invalidate_job:
-            self._artifact_manager.invalidate_for_job()
+            self._artifact_manager.invalidate_for_job(ArtifactKey.for_job())
 
     def _validate_assembly_dependencies(self, step: "Step") -> bool:
         """Validates that assembly dependencies are met."""
@@ -168,11 +141,11 @@ class StepPipelineStage(PipelineStage):
                 f"Cannot assemble step {step.uid}, no machine configured."
             )
             return False
-        # Check if the step is already in PENDING state in the ledger
-        base_key = ("step", step.uid)
+        # Check if the step is already in PROCESSING state in the ledger
+        base_key = ArtifactKey.for_step(step.uid)
         for key, entry in self._artifact_manager._ledger.items():
             if extract_base_key(key) == base_key:
-                if entry.state == ArtifactLifecycle.PENDING:
+                if entry.state == ArtifactLifecycle.PROCESSING:
                     return False
         return True
 
@@ -203,7 +176,8 @@ class StepPipelineStage(PipelineStage):
         try:
             for wp in step.layer.all_workpieces:
                 handle = self._artifact_manager.get_workpiece_handle(
-                    step.uid, wp.uid, self._current_generation_id
+                    ArtifactKey.for_workpiece(wp.uid),
+                    self._current_generation_id,
                 )
                 if handle is None:
                     raise ValueError(f"Missing handle for {wp.uid}")
@@ -263,7 +237,7 @@ class StepPipelineStage(PipelineStage):
         from .step_runner import make_step_artifact_in_subprocess
 
         # Namespace the task key to prevent collisions
-        task_key = ("step", step.uid)
+        task_key = ArtifactKey.for_step(step.uid)
 
         self._task_manager.run_process(
             make_step_artifact_in_subprocess,
@@ -293,12 +267,32 @@ class StepPipelineStage(PipelineStage):
                 self._artifact_manager.release_handle(handle)
             return
 
-        generation_id, when_done, when_event = self._prepare_assembly_task(
-            step
+        ledger_key = ArtifactKey.for_step(step.uid)
+        composite_key = make_composite_key(
+            ledger_key, self._current_generation_id
         )
+        entry = self._artifact_manager._get_ledger_entry(composite_key)
 
-        ledger_key = ("step", step.uid)
-        self._artifact_manager.mark_pending(ledger_key, generation_id)
+        # The entry should have been created as INITIAL by declare_generation.
+        # If it's STALE, it's from a previous manual invalidation and we
+        # can proceed.
+        if entry is None:
+            logger.warning(
+                f"Step {step.uid} triggered for assembly but has no "
+                f"ledger entry for gen_id={self._current_generation_id}. "
+                f"This may indicate a race condition."
+            )
+            # As a fallback, create the intent now.
+            self._artifact_manager.register_intent(
+                ledger_key, self._current_generation_id
+            )
+
+        (
+            generation_id,
+            when_done,
+            when_event,
+        ) = self._prepare_assembly_task(step)
+        self._artifact_manager.mark_processing(ledger_key, generation_id)
 
         self._launch_assembly_task(
             step,
@@ -312,7 +306,9 @@ class StepPipelineStage(PipelineStage):
         self, step_uid: str, step: "Step", handle_dict: dict
     ):
         """Handles the render artifact ready event."""
-        handle = self._artifact_manager.adopt_artifact(step_uid, handle_dict)
+        handle = self._artifact_manager.adopt_artifact(
+            ArtifactKey.for_step(step_uid), handle_dict
+        )
         if not isinstance(handle, StepRenderArtifactHandle):
             raise TypeError("Expected a StepRenderArtifactHandle")
 
@@ -321,12 +317,14 @@ class StepPipelineStage(PipelineStage):
 
     def _handle_ops_artifact_ready(self, step_uid: str, handle_dict: dict):
         """Handles the ops artifact ready event."""
-        handle = self._artifact_manager.adopt_artifact(step_uid, handle_dict)
+        handle = self._artifact_manager.adopt_artifact(
+            ArtifactKey.for_step(step_uid), handle_dict
+        )
         if not isinstance(handle, StepOpsArtifactHandle):
             raise TypeError("Expected a StepOpsArtifactHandle")
         # Store ops artifact in ledger for job generation to use
         self._artifact_manager.put_step_ops_handle(
-            step_uid, handle, self._current_generation_id
+            ArtifactKey.for_step(step_uid), handle, self._current_generation_id
         )
 
     def _handle_time_estimate_ready(
@@ -341,7 +339,7 @@ class StepPipelineStage(PipelineStage):
     ):
         """Handles events broadcast from the subprocess."""
         step_uid = step.uid
-        ledger_key = ("step", step_uid)
+        ledger_key = ArtifactKey.for_step(step_uid)
 
         generation_id = data.get("generation_id")
         if generation_id is None:
@@ -382,7 +380,7 @@ class StepPipelineStage(PipelineStage):
     ):
         """Callback for when a step assembly task finishes."""
         step_uid = step.uid
-        ledger_key = ("step", step_uid)
+        ledger_key = ArtifactKey.for_step(step_uid)
 
         composite_key = make_composite_key(ledger_key, task_generation_id)
         entry = self._artifact_manager._get_ledger_entry(composite_key)
@@ -399,21 +397,21 @@ class StepPipelineStage(PipelineStage):
                     step_uid
                 )
                 if render_handle:
-                    self._artifact_manager.commit(
+                    self._artifact_manager.commit_artifact(
                         ledger_key, render_handle, task_generation_id
                     )
             except Exception as e:
                 logger.error(f"Error on step assembly result: {e}")
                 self._time_cache[step_uid] = -1.0  # Mark error
                 error_msg = f"Step assembly for '{step.name}' failed: {e}"
-                self._artifact_manager.mark_error(
+                self._artifact_manager.fail_generation(
                     ledger_key, error_msg, task_generation_id
                 )
         else:
             logger.warning(f"Step assembly for {step_uid} failed.")
             self._time_cache[step_uid] = -1.0  # Mark error
             error_msg = f"Step assembly for '{step.name}' failed."
-            self._artifact_manager.mark_error(
+            self._artifact_manager.fail_generation(
                 ledger_key, error_msg, task_generation_id
             )
 

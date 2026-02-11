@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING, Optional, Callable
 from blinker import Signal
 from asyncio.exceptions import CancelledError
 from ..artifact import JobArtifactHandle
+from ..artifact.key import ArtifactKey
 from ..artifact.manager import ArtifactManager, make_composite_key
 from .base import PipelineStage
 from .job_runner import JobDescription
@@ -49,6 +50,7 @@ class JobPipelineStage(PipelineStage):
         job_description: JobDescription,
         on_done: Optional[Callable] = None,
         generation_id: Optional[int] = None,
+        job_key: Optional[ArtifactKey] = None,
     ):
         """
         Starts the asynchronous task to assemble and encode the final job.
@@ -63,12 +65,15 @@ class JobPipelineStage(PipelineStage):
             generation_id: The generation ID for this job generation. If not
                 provided, a new one will be created based on the current
                 timestamp.
+            job_key: The ArtifactKey for this job. If not provided, a new
+                one will be created.
         """
         if generation_id is None:
             generation_id = int(time.time() * 1000)
-        self._artifact_manager.mark_pending(
-            self._artifact_manager.JOB_KEY, generation_id
-        )
+        if job_key is None:
+            job_key = ArtifactKey.for_job()
+
+        self._artifact_manager.mark_processing(job_key, generation_id)
 
         logger.info(
             "Starting job generation with "
@@ -76,15 +81,18 @@ class JobPipelineStage(PipelineStage):
         )
 
         when_done_callback = self._create_when_done_callback(
-            on_done, generation_id
+            on_done, generation_id, job_key
         )
 
         self._launch_job_task(
-            job_description, when_done_callback, generation_id
+            job_description, when_done_callback, generation_id, job_key
         )
 
     def _create_when_done_callback(
-        self, on_done: Optional[Callable], generation_id: int
+        self,
+        on_done: Optional[Callable],
+        generation_id: int,
+        job_key: ArtifactKey,
     ) -> Callable[["Task"], None]:
         """
         Creates a callback function to handle task completion.
@@ -92,6 +100,7 @@ class JobPipelineStage(PipelineStage):
         Args:
             on_done: An optional one-shot callback to execute upon completion.
             generation_id: The generation ID for this job generation.
+            job_key: The ArtifactKey for this job.
 
         Returns:
             A callback function that handles task completion.
@@ -108,7 +117,7 @@ class JobPipelineStage(PipelineStage):
 
             if task_status == "completed":
                 final_handle = self._artifact_manager.get_job_handle(
-                    generation_id
+                    job_key, generation_id
                 )
                 if final_handle:
                     logger.info("Job generation successful.")
@@ -136,13 +145,11 @@ class JobPipelineStage(PipelineStage):
 
                 if generation_id is not None:
                     error_msg = str(error) if error else "Unknown error"
-                    self._artifact_manager.mark_error(
-                        self._artifact_manager.JOB_KEY,
-                        error_msg,
-                        generation_id,
+                    self._artifact_manager.fail_generation(
+                        job_key, error_msg, generation_id
                     )
 
-                self._artifact_manager.invalidate_for_job()
+                self._artifact_manager.invalidate_for_job(job_key)
                 if on_done:
                     on_done(None, error)
 
@@ -162,6 +169,7 @@ class JobPipelineStage(PipelineStage):
         job_desc: JobDescription,
         when_done_callback: Callable,
         generation_id: int,
+        job_key: ArtifactKey,
     ) -> "Task":
         """
         Launches the subprocess task for job generation.
@@ -170,6 +178,7 @@ class JobPipelineStage(PipelineStage):
             job_desc: The job description to use.
             when_done_callback: The callback to execute on completion.
             generation_id: The generation ID for this job generation.
+            job_key: The ArtifactKey for this job.
 
         Returns:
             The created task.
@@ -182,7 +191,8 @@ class JobPipelineStage(PipelineStage):
             job_description_dict=job_desc.__dict__,
             creator_tag="job",
             generation_id=generation_id,
-            key=self._artifact_manager.JOB_KEY,
+            job_key=job_key,
+            key=job_key,
             when_done=when_done_callback,
             when_event=self._on_job_task_event,
         )
@@ -207,9 +217,18 @@ class JobPipelineStage(PipelineStage):
             )
             return
 
-        composite_key = make_composite_key(
-            self._artifact_manager.JOB_KEY, generation_id
+        job_key_dict = data.get("job_key")
+        if job_key_dict is None:
+            logger.error(
+                "Job event 'artifact_created' missing job_key. Ignoring."
+            )
+            return
+
+        job_key = ArtifactKey(
+            id=job_key_dict["id"], group=job_key_dict["group"]
         )
+
+        composite_key = make_composite_key(job_key, generation_id)
         entry = self._artifact_manager._get_ledger_entry(composite_key)
         if entry is not None and entry.generation_id != generation_id:
             logger.debug(
@@ -219,20 +238,23 @@ class JobPipelineStage(PipelineStage):
             return
 
         try:
-            handle = self._adopt_job_artifact(data)
-            self._artifact_manager.commit(
-                self._artifact_manager.JOB_KEY, handle, generation_id
+            handle = self._adopt_job_artifact(data, job_key)
+            self._artifact_manager.commit_artifact(
+                job_key, handle, generation_id
             )
             logger.debug("Adopted job artifact")
         except Exception as e:
             logger.error(f"Error handling job artifact event: {e}")
 
-    def _adopt_job_artifact(self, data: dict) -> JobArtifactHandle:
+    def _adopt_job_artifact(
+        self, data: dict, job_key: ArtifactKey
+    ) -> JobArtifactHandle:
         """
         Adopts a job artifact from the subprocess.
 
         Args:
             data: The event data containing the handle dictionary.
+            job_key: The ArtifactKey for this job.
 
         Returns:
             The adopted JobArtifactHandle.
@@ -241,9 +263,7 @@ class JobPipelineStage(PipelineStage):
             TypeError: If the handle is not a JobArtifactHandle.
         """
         handle_dict = data["handle_dict"]
-        handle = self._artifact_manager.adopt_artifact(
-            self._artifact_manager.JOB_KEY, handle_dict
-        )
+        handle = self._artifact_manager.adopt_artifact(job_key, handle_dict)
         if not isinstance(handle, JobArtifactHandle):
             raise TypeError("Expected a JobArtifactHandle")
         return handle

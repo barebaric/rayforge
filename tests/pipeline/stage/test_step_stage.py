@@ -1,3 +1,5 @@
+import uuid
+
 import pytest
 from unittest.mock import MagicMock, Mock, PropertyMock
 
@@ -88,7 +90,7 @@ def mock_doc_and_step():
     layer = MagicMock(spec=Layer)
     # Use MagicMock for Step to allow mocking the read-only 'layer' property
     step = MagicMock(spec=Step)
-    step.uid = "step1"
+    step.uid = str(uuid.uuid4())
     step.per_step_transformers_dicts = []
     step.visible = True
 
@@ -96,7 +98,7 @@ def mock_doc_and_step():
     type(step).layer = PropertyMock(return_value=layer)
 
     wp_mock = WorkPiece(name="wp1")
-    wp_mock.uid = "wp1"
+    wp_mock.uid = str(uuid.uuid4())
     wp_mock.set_size(10, 10)
 
     layer.workflow.steps = [step]
@@ -170,14 +172,15 @@ class TestStepPipelineStage:
         """
         # Arrange
         doc, step = mock_doc_and_step
+        from rayforge.pipeline.artifact.key import ArtifactKey
         from rayforge.pipeline.artifact.lifecycle import (
             ArtifactLifecycle,
             LedgerEntry,
         )
 
-        ledger_key = ("step", step.uid)
+        ledger_key = ArtifactKey.for_step(step.uid)
         mock_artifact_manager._ledger[ledger_key] = LedgerEntry(
-            state=ArtifactLifecycle.MISSING
+            state=ArtifactLifecycle.INITIAL
         )
         mock_artifact_manager.query_work_for_stage.return_value = [ledger_key]
 
@@ -352,12 +355,14 @@ class TestStepPipelineStage:
     ):
         """Tests validation fails when task is already active."""
         doc, step = mock_doc_and_step
+        from rayforge.pipeline.artifact.key import ArtifactKey
+
         stage = StepPipelineStage(
             mock_task_mgr, mock_artifact_manager, mock_machine
         )
-        ledger_key = ("step", step.uid)
+        ledger_key = ArtifactKey.for_step(step.uid)
         mock_artifact_manager._ledger[ledger_key] = Mock(
-            state=ArtifactLifecycle.PENDING
+            state=ArtifactLifecycle.PROCESSING
         )
 
         result = stage._validate_assembly_dependencies(step)
@@ -590,7 +595,9 @@ class TestStepPipelineStage:
         )
         mock_artifact_manager.adopt_artifact.return_value = ops_handle
 
-        stage._handle_ops_artifact_ready("step1", ops_handle.to_dict())
+        stage._handle_ops_artifact_ready(
+            str(uuid.uuid4()), ops_handle.to_dict()
+        )
 
         mock_artifact_manager.adopt_artifact.assert_called_once()
 

@@ -1,7 +1,9 @@
+import uuid
 import pytest
 from unittest.mock import MagicMock
 
 from rayforge.core.doc import Doc
+from rayforge.pipeline.artifact.key import ArtifactKey
 from rayforge.pipeline.stage.base import PipelineStage
 from rayforge.pipeline.stage.workpiece_stage import WorkPiecePipelineStage
 
@@ -30,6 +32,12 @@ def mock_doc():
     return MagicMock(spec=Doc)
 
 
+@pytest.fixture
+def workpiece_uuid():
+    """Provides a valid UUID for workpiece tests."""
+    return str(uuid.uuid4())
+
+
 class TestWorkPiecePipelineStage:
     def test_instantiation(
         self, mock_task_mgr, mock_artifact_manager, mock_machine
@@ -55,7 +63,11 @@ class TestWorkPiecePipelineStage:
         stage.shutdown()
 
     def test_validate_workpiece_for_launch_with_invalid_size(
-        self, mock_task_mgr, mock_artifact_manager, mock_machine
+        self,
+        mock_task_mgr,
+        mock_artifact_manager,
+        mock_machine,
+        workpiece_uuid,
     ):
         """Test validation rejects workpiece with invalid size."""
         stage = WorkPiecePipelineStage(
@@ -63,17 +75,21 @@ class TestWorkPiecePipelineStage:
         )
         mock_workpiece = MagicMock()
         mock_workpiece.size = (0.0, 10.0)
-        key = ("step_1", "workpiece_1")
+        key = ArtifactKey.for_workpiece(workpiece_uuid)
 
         result = stage._validate_workpiece_for_launch(key, mock_workpiece)
 
         assert result is False
         mock_artifact_manager.invalidate_for_workpiece.assert_called_once_with(
-            key[0], key[1]
+            key
         )
 
     def test_validate_workpiece_for_launch_with_valid_workpiece(
-        self, mock_task_mgr, mock_artifact_manager, mock_machine
+        self,
+        mock_task_mgr,
+        mock_artifact_manager,
+        mock_machine,
+        workpiece_uuid,
     ):
         """Test validation passes for valid workpiece."""
         stage = WorkPiecePipelineStage(
@@ -81,7 +97,7 @@ class TestWorkPiecePipelineStage:
         )
         mock_workpiece = MagicMock()
         mock_workpiece.size = (10.0, 10.0)
-        key = ("step_1", "workpiece_1")
+        key = ArtifactKey.for_workpiece(workpiece_uuid)
 
         result = stage._validate_workpiece_for_launch(key, mock_workpiece)
 
@@ -138,13 +154,17 @@ class TestWorkPiecePipelineStage:
         assert laser_dict == {"power": 50}
 
     def test_handle_canceled_task(
-        self, mock_task_mgr, mock_artifact_manager, mock_machine
+        self,
+        mock_task_mgr,
+        mock_artifact_manager,
+        mock_machine,
+        workpiece_uuid,
     ):
         """Test canceled task handler sends finished signal."""
         stage = WorkPiecePipelineStage(
             mock_task_mgr, mock_artifact_manager, mock_machine
         )
-        key = ("step_1", "workpiece_1")
+        key = ArtifactKey.for_workpiece(workpiece_uuid)
         mock_step = MagicMock()
         mock_workpiece = MagicMock()
 
@@ -161,7 +181,7 @@ class TestWorkPiecePipelineStage:
             )
 
         stage.generation_finished.connect(on_finished)
-        ledger_key = ("workpiece", "step_1", "workpiece_1")
+        ledger_key = ArtifactKey.for_workpiece(workpiece_uuid)
         stage._handle_canceled_task(
             key, ledger_key, mock_step, mock_workpiece, 1
         )
@@ -173,13 +193,17 @@ class TestWorkPiecePipelineStage:
         assert received_signals[0]["task_status"] == "canceled"
 
     def test_check_result_stale_due_to_size_with_scalable(
-        self, mock_task_mgr, mock_artifact_manager, mock_machine
+        self,
+        mock_task_mgr,
+        mock_artifact_manager,
+        mock_machine,
+        workpiece_uuid,
     ):
         """Test stale check returns False for scalable artifacts."""
         stage = WorkPiecePipelineStage(
             mock_task_mgr, mock_artifact_manager, mock_machine
         )
-        key = ("step_1", "workpiece_1")
+        key = ArtifactKey.for_workpiece(workpiece_uuid)
         mock_workpiece = MagicMock()
         mock_workpiece.size = (20.0, 20.0)
         mock_handle = MagicMock()
@@ -191,13 +215,17 @@ class TestWorkPiecePipelineStage:
         assert result is False
 
     def test_check_result_stale_due_to_size_with_size_change(
-        self, mock_task_mgr, mock_artifact_manager, mock_machine
+        self,
+        mock_task_mgr,
+        mock_artifact_manager,
+        mock_machine,
+        workpiece_uuid,
     ):
         """Test stale check detects size change for non-scalable."""
         stage = WorkPiecePipelineStage(
             mock_task_mgr, mock_artifact_manager, mock_machine
         )
-        key = ("step_1", "workpiece_1")
+        key = ArtifactKey.for_workpiece(workpiece_uuid)
         mock_workpiece = MagicMock()
         mock_workpiece.size = (20.0, 20.0)
         mock_handle = MagicMock()
@@ -210,13 +238,17 @@ class TestWorkPiecePipelineStage:
         assert result is True
 
     def test_check_result_stale_due_to_size_no_change(
-        self, mock_task_mgr, mock_artifact_manager, mock_machine
+        self,
+        mock_task_mgr,
+        mock_artifact_manager,
+        mock_machine,
+        workpiece_uuid,
     ):
         """Test stale check returns False when size matches."""
         stage = WorkPiecePipelineStage(
             mock_task_mgr, mock_artifact_manager, mock_machine
         )
-        key = ("step_1", "workpiece_1")
+        key = ArtifactKey.for_workpiece(workpiece_uuid)
         mock_workpiece = MagicMock()
         mock_workpiece.size = (10.0, 10.0)
         mock_handle = MagicMock()
@@ -229,13 +261,17 @@ class TestWorkPiecePipelineStage:
         assert result is False
 
     def test_handle_failed_task(
-        self, mock_task_mgr, mock_artifact_manager, mock_machine
+        self,
+        mock_task_mgr,
+        mock_artifact_manager,
+        mock_machine,
+        workpiece_uuid,
     ):
         """Test failed task handler marks entry as error."""
         stage = WorkPiecePipelineStage(
             mock_task_mgr, mock_artifact_manager, mock_machine
         )
-        ledger_key = ("workpiece", "step_1", "workpiece_1")
+        ledger_key = ArtifactKey.for_workpiece(workpiece_uuid)
         mock_step = MagicMock()
         mock_step.name = "test_step"
         mock_workpiece = MagicMock()
@@ -243,16 +279,20 @@ class TestWorkPiecePipelineStage:
 
         stage._handle_failed_task(ledger_key, mock_step, mock_workpiece, 1)
 
-        mock_artifact_manager.mark_error.assert_called_once()
+        mock_artifact_manager.fail_generation.assert_called_once()
 
     def test_send_generation_finished_signal(
-        self, mock_task_mgr, mock_artifact_manager, mock_machine
+        self,
+        mock_task_mgr,
+        mock_artifact_manager,
+        mock_machine,
+        workpiece_uuid,
     ):
         """Test generation finished signal is sent."""
         stage = WorkPiecePipelineStage(
             mock_task_mgr, mock_artifact_manager, mock_machine
         )
-        key = ("step_1", "workpiece_1")
+        key = ArtifactKey.for_workpiece(workpiece_uuid)
         mock_step = MagicMock()
         mock_workpiece = MagicMock()
 

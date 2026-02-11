@@ -4,14 +4,15 @@ import logging
 import numpy as np
 import threading
 import time
-from typing import TYPE_CHECKING, Dict, Optional, Tuple, cast
+from typing import TYPE_CHECKING, Dict, Optional, cast
 from blinker import Signal
 from ...shared.util.colors import ColorSet
 from ..artifact import (
     WorkPieceArtifact,
     BaseArtifactHandle,
 )
-from ..artifact.lifecycle import ArtifactLifecycle, LedgerEntry
+from ..artifact.key import ArtifactKey
+from ..artifact.lifecycle import ArtifactLifecycle
 from ..artifact.manager import make_composite_key
 from ..artifact.workpiece_view import (
     RenderContext,
@@ -39,10 +40,6 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-# A view artifact is uniquely identified by the step and workpiece that
-# produced its source data.
-ViewKey = Tuple[str, str]  # (step_uid, workpiece_uid)
-
 # Throttle interval for view updates (in seconds).
 # 30fps = ~33ms, 60fps = ~16ms. We use 30fps for a balance between
 # responsiveness and performance.
@@ -69,9 +66,9 @@ class WorkPieceViewPipelineStage(PipelineStage):
 
         # Throttling for progressive chunk updates.
         # Tracks pending updates and last update time for each view.
-        self._pending_updates: Dict[ViewKey, bool] = {}
-        self._last_update_time: Dict[ViewKey, float] = {}
-        self._throttle_timers: Dict[ViewKey, threading.Timer] = {}
+        self._pending_updates: Dict[ArtifactKey, bool] = {}
+        self._last_update_time: Dict[ArtifactKey, float] = {}
+        self._throttle_timers: Dict[ArtifactKey, threading.Timer] = {}
 
         self.view_artifact_ready = Signal()
         self.view_artifact_created = Signal()
@@ -94,18 +91,19 @@ class WorkPieceViewPipelineStage(PipelineStage):
         logger.debug("WorkPieceViewPipelineStage reconciling...")
         self._current_generation_id = generation_id
 
-        all_current_pairs = {
-            (step.uid, workpiece.uid)
+        all_current_workpieces = {
+            workpiece.uid
             for layer in doc.layers
             if layer.workflow is not None
             for step in layer.workflow.steps
             for workpiece in layer.all_workpieces
         }
-        cached_pairs = self._artifact_manager.get_all_workpiece_keys()
+        cached_keys = self._artifact_manager.get_all_workpiece_keys()
+        cached_workpiece_uids = {key.id for key in cached_keys}
 
-        for s_uid, w_uid in cached_pairs - all_current_pairs:
-            logger.debug(f"Cleaning up obsolete view pair: ({s_uid}, {w_uid})")
-            task_key = ("view", s_uid, w_uid)
+        for w_uid in cached_workpiece_uids - all_current_workpieces:
+            logger.debug(f"Cleaning up obsolete view workpiece: {w_uid}")
+            task_key = ArtifactKey.for_view(w_uid)
             self._task_manager.cancel_task(task_key)
 
     def update_view_context(self, context: RenderContext) -> None:
@@ -137,32 +135,29 @@ class WorkPieceViewPipelineStage(PipelineStage):
         logger.debug(f"update_view_context: Found {len(keys)} workpiece keys")
 
         for key in keys:
-            step_uid, workpiece_uid = key
             logger.debug(
                 f"View context changed. Triggering re-render for {key} "
                 f"with view_id={view_id}"
             )
-            self.request_view_render(step_uid, workpiece_uid, context, view_id)
+            self.request_view_render(key, context, view_id)
 
     def set_render_context(
         self,
-        step_uid: str,
         workpiece_uid: str,
         context: RenderContext,
     ) -> None:
         """
-        Sets the render context for a specific (step, workpiece) pair.
+        Sets the render context for a specific workpiece.
 
         This public method allows the pipeline to pre-populate the render
         context in the ArtifactManager before chunks arrive, enabling
         progressive rendering to work correctly.
 
         Args:
-            step_uid: The unique identifier of the step.
             workpiece_uid: The unique identifier of the workpiece.
             context: The render context to use for this view.
         """
-        key = (step_uid, workpiece_uid)
+        key = ArtifactKey.for_view(workpiece_uid)
         logger.debug(
             f"Set render context for {key}: ppm={context.pixels_per_mm}"
         )
@@ -170,9 +165,15 @@ class WorkPieceViewPipelineStage(PipelineStage):
     def shutdown(self):
         """Cancels any active rendering tasks and releases held handles."""
         logger.debug("WorkPieceViewPipelineStage shutting down.")
-        for key in self._artifact_manager.get_all_workpiece_keys():
-            task_key = ("view", key[0], key[1])
-            self._task_manager.cancel_task(task_key)
+        from ..artifact.manager import extract_base_key
+
+        view_keys = {
+            extract_base_key(ledger_key)
+            for ledger_key in self._artifact_manager._ledger.keys()
+            if extract_base_key(ledger_key).group == "view"
+        }
+        for key in view_keys:
+            self._task_manager.cancel_task(key)
 
         # Cancel any pending throttle timers
         for timer in self._throttle_timers.values():
@@ -184,8 +185,9 @@ class WorkPieceViewPipelineStage(PipelineStage):
 
     def _allocate_live_buffer(
         self,
-        key: ViewKey,
+        key: ArtifactKey,
         workpiece: "WorkPiece",
+        step_uid: str,
         view_id: int,
         context: RenderContext,
     ) -> None:
@@ -194,7 +196,7 @@ class WorkPieceViewPipelineStage(PipelineStage):
         current render context, stores it in shared memory, and registers it
         as the live buffer for this generation.
         """
-        step_uid, workpiece_uid = key
+        workpiece_uid = key.id
 
         w_mm, h_mm = workpiece.size
         bbox = (0.0, 0.0, w_mm, h_mm)
@@ -229,12 +231,15 @@ class WorkPieceViewPipelineStage(PipelineStage):
 
             # Commit to Manager immediately
             self._artifact_manager.put_workpiece_view_handle(
-                step_uid, workpiece_uid, view_handle, view_id
+                ArtifactKey.for_view(workpiece_uid),
+                view_handle,
+                view_id,
             )
 
             # Store render context in ledger metadata
-            base_key = ("view", step_uid, workpiece_uid)
-            ledger_key = make_composite_key(base_key, view_id)
+            ledger_key = make_composite_key(
+                ArtifactKey.for_view(workpiece_uid), view_id
+            )
             entry = self._artifact_manager._get_ledger_entry(ledger_key)
             if entry is not None:
                 entry.metadata["render_context"] = context
@@ -266,7 +271,7 @@ class WorkPieceViewPipelineStage(PipelineStage):
         Handler for when workpiece generation starts.
         Pre-allocates the view buffer to enable progressive rendering.
         """
-        key = (step.uid, workpiece.uid)
+        key = ArtifactKey.for_view(workpiece.uid)
 
         # New source data (indicated by a new generation_id) invalidates
         # old views. We must create a new view generation.
@@ -278,7 +283,7 @@ class WorkPieceViewPipelineStage(PipelineStage):
         )
 
         # Cancel any active view render task from previous generations
-        task_key = ("view", step.uid, workpiece.uid)
+        task_key = ArtifactKey.for_view(workpiece.uid)
         task = self._task_manager.get_task(task_key)
         if task and not task.is_final():
             self._task_manager.cancel_task(task_key)
@@ -286,7 +291,9 @@ class WorkPieceViewPipelineStage(PipelineStage):
         # Allocate the live buffer immediately
         context = self._current_view_context
         if context:
-            self._allocate_live_buffer(key, workpiece, view_id, context)
+            self._allocate_live_buffer(
+                key, workpiece, step.uid, view_id, context
+            )
         else:
             logger.warning(
                 f"[{key}] Cannot allocate live buffer: No RenderContext."
@@ -294,26 +301,33 @@ class WorkPieceViewPipelineStage(PipelineStage):
 
     def request_view_render(
         self,
-        step_uid: str,
-        workpiece_uid: str,
+        key: ArtifactKey,
         context: RenderContext,
         view_id: int,
+        step_uid: Optional[str] = None,
     ):
         """
-        Requests an asynchronous render of a workpiece view for a specific
-        step.
+        Requests an asynchronous render of a workpiece view.
 
         Args:
-            step_uid: The unique identifier of the step.
-            workpiece_uid: The unique identifier of the workpiece.
+            key: The ArtifactKey for the workpiece view.
             context: The render context to use.
             view_id: The view generation ID for this render.
+            step_uid: The unique identifier of the step (optional).
         """
-        key = (step_uid, workpiece_uid)
-        ledger_key = ("view", step_uid, workpiece_uid)
+        artifact_key = key
+        ledger_key = make_composite_key(artifact_key, view_id)
+
+        if step_uid is None:
+            logger.warning(
+                f"Cannot render view for {key}: "
+                "step_uid is required but not provided."
+            )
+            return
 
         source_handle = self._artifact_manager.get_workpiece_handle(
-            step_uid, workpiece_uid, self._current_generation_id
+            ArtifactKey.for_workpiece(key.id),
+            self._current_generation_id,
         )
         if not source_handle:
             logger.warning(
@@ -323,8 +337,7 @@ class WorkPieceViewPipelineStage(PipelineStage):
             return
 
         if not self._artifact_manager.is_view_stale(
-            step_uid,
-            workpiece_uid,
+            artifact_key,
             context,
             source_handle,
             view_id,
@@ -336,7 +349,7 @@ class WorkPieceViewPipelineStage(PipelineStage):
 
         # If a task is already running, cancel it. This ensures that new
         # requests (e.g., from zooming) always take precedence.
-        task_key = ("view", step_uid, workpiece_uid)
+        task_key = artifact_key
         task = self._task_manager.get_task(task_key)
         if task and not task.is_final():
             logger.debug(
@@ -348,26 +361,22 @@ class WorkPieceViewPipelineStage(PipelineStage):
         # Get or create ledger entry and mark as pending
         entry = self._artifact_manager._get_ledger_entry(ledger_key)
         if entry is None:
-            self._artifact_manager._set_ledger_entry(
-                ledger_key,
-                LedgerEntry(
-                    state=ArtifactLifecycle.MISSING,
-                    metadata={"render_context": context},
-                ),
-            )
-        elif entry.state != ArtifactLifecycle.PENDING:
-            self._artifact_manager.invalidate(ledger_key)
+            self._artifact_manager.register_intent(artifact_key, view_id)
+            entry = self._artifact_manager._get_ledger_entry(ledger_key)
+            if entry is not None:
+                entry.metadata["render_context"] = context
+        elif entry.state != ArtifactLifecycle.PROCESSING:
+            if entry.state == ArtifactLifecycle.STALE:
+                entry.state = ArtifactLifecycle.INITIAL
 
-        # Only mark as pending if the entry is in a valid state
-        # (MISSING or STALE). If it's already PENDING, we've
-        # already started a render task.
+        # Only mark as pending if the entry is in INITIAL state.
+        # If it's already PROCESSING, we've already started a render task.
         current_entry = self._artifact_manager._get_ledger_entry(ledger_key)
-        if current_entry is not None and current_entry.state in (
-            ArtifactLifecycle.MISSING,
-            ArtifactLifecycle.STALE,
+        if current_entry is not None and current_entry.state == (
+            ArtifactLifecycle.INITIAL
         ):
-            self._artifact_manager.mark_pending(
-                ledger_key, view_id, source_handle
+            self._artifact_manager.mark_processing(
+                artifact_key, view_id, source_handle
             )
 
         def when_done_callback(task: "Task"):
@@ -379,7 +388,7 @@ class WorkPieceViewPipelineStage(PipelineStage):
             self._on_render_complete(task, key, view_id)
 
         # Namespaced key for TaskManager
-        task_key = ("view", step_uid, workpiece_uid)
+        task_key = artifact_key
 
         self._task_manager.run_process(
             make_workpiece_view_artifact_in_subprocess,
@@ -389,6 +398,7 @@ class WorkPieceViewPipelineStage(PipelineStage):
             creator_tag="workpiece_view",
             key=task_key,
             generation_id=view_id,
+            step_uid=step_uid,
             when_done=when_done_callback,
             when_event=self._on_render_event_received,
         )
@@ -397,15 +407,19 @@ class WorkPieceViewPipelineStage(PipelineStage):
         self, task: "Task", event_name: str, data: dict
     ):
         """Handles progressive rendering events from the worker process."""
-        # Unpack the namespaced task key to get the internal ViewKey
-        # Task key format: ("view", step_uid, workpiece_uid)
-        _, step_uid, workpiece_uid = task.key
-        key = (step_uid, workpiece_uid)
+        step_uid = task.kwargs.get("step_uid")
+        if step_uid is None:
+            logger.warning("step_uid is None in _on_render_event_received")
+            return
+        if not isinstance(task.key, ArtifactKey):
+            raise TypeError(f"Expected ArtifactKey, got {type(task.key)}")
+        key = task.key
+        workpiece_uid = key.id
         view_id = task.kwargs.get("generation_id", 0)
 
         if event_name == "view_artifact_created":
             self._handle_view_artifact_created(
-                task, key, step_uid, workpiece_uid, data, view_id
+                task, key, step_uid, data, view_id
             )
         elif event_name == "view_artifact_updated":
             self._handle_view_artifact_updated(
@@ -415,9 +429,8 @@ class WorkPieceViewPipelineStage(PipelineStage):
     def _handle_view_artifact_created(
         self,
         task: "Task",
-        key: ViewKey,
+        key: ArtifactKey,
         step_uid: str,
-        workpiece_uid: str,
         data: dict,
         view_id: int,
     ):
@@ -428,24 +441,22 @@ class WorkPieceViewPipelineStage(PipelineStage):
                 return
 
             self._artifact_manager.put_workpiece_view_handle(
-                step_uid, workpiece_uid, handle, view_id
+                key, handle, view_id
             )
             # Store render context in ledger metadata
             context = self._current_view_context
-            ledger_key = ("view", step_uid, workpiece_uid)
+            ledger_key = make_composite_key(key, view_id)
             entry = self._artifact_manager._get_ledger_entry(ledger_key)
             if entry is not None:
                 entry.metadata["render_context"] = context
-            self._send_view_artifact_created_signals(
-                step_uid, workpiece_uid, handle
-            )
+            self._send_view_artifact_created_signals(step_uid, key.id, handle)
         except Exception as e:
             logger.error(
                 f"Failed to process view_artifact_created: {e}", exc_info=True
             )
 
     def _adopt_view_handle(
-        self, key: ViewKey, data: dict
+        self, key: ArtifactKey, data: dict
     ) -> WorkPieceViewArtifactHandle | None:
         """Adopts a view artifact from the worker process."""
         handle_dict = data["handle_dict"]
@@ -459,12 +470,14 @@ class WorkPieceViewPipelineStage(PipelineStage):
         return handle
 
     def _replace_current_view_handle(
-        self, key: ViewKey, handle: WorkPieceViewArtifactHandle, view_id: int
+        self,
+        key: ArtifactKey,
+        handle: WorkPieceViewArtifactHandle,
+        view_id: int,
     ):
         """Replaces the current view handle with a new one."""
-        step_uid, workpiece_uid = key
         old_handle = self._artifact_manager.get_workpiece_view_handle(
-            step_uid, workpiece_uid, view_id
+            key, view_id
         )
         logger.info(
             f"[DIAGNOSTIC] _replace_current_view_handle called for key {key}, "
@@ -524,12 +537,10 @@ class WorkPieceViewPipelineStage(PipelineStage):
         )
 
     def _handle_view_artifact_updated(
-        self, key: ViewKey, step_uid: str, workpiece_uid: str, view_id: int
+        self, key: ArtifactKey, step_uid: str, workpiece_uid: str, view_id: int
     ):
         """Handles the view_artifact_updated event."""
-        handle = self._artifact_manager.get_workpiece_view_handle(
-            step_uid, workpiece_uid, view_id
-        )
+        handle = self._artifact_manager.get_workpiece_view_handle(key, view_id)
         self.view_artifact_updated.send(
             self,
             step_uid=step_uid,
@@ -541,7 +552,7 @@ class WorkPieceViewPipelineStage(PipelineStage):
         self,
         sender,
         *,
-        key: ViewKey,
+        key: ArtifactKey,
         chunk_handle: BaseArtifactHandle,
         generation_id: int,
     ):
@@ -552,20 +563,25 @@ class WorkPieceViewPipelineStage(PipelineStage):
 
         Args:
             sender: The sender of the signal.
-            key: The view key (step_uid, workpiece_uid).
+            key: The view key (workpiece_uid).
             chunk_handle: Handle to the chunk artifact.
             generation_id: The data generation ID.
         """
-        step_uid, workpiece_uid = key
-        ledger_key = ("view", step_uid, workpiece_uid)
+        base_key = key
         logger.debug(
             f"View stage received chunk for {key}, "
             f"generation_id={generation_id}, "
             f"chunk_handle={chunk_handle.shm_name}"
         )
 
-        # Validate generation ID from ledger entry
-        entry = self._artifact_manager._get_ledger_entry(ledger_key)
+        # Find the ledger entry for this view key
+        entry = None
+        for lk, e in self._artifact_manager._ledger.items():
+            if isinstance(lk, tuple) and len(lk) == 2:
+                lk_base, lk_gen_id = lk
+                if lk_base == base_key:
+                    entry = e
+                    break
         if entry is None:
             self._artifact_manager.release_handle(chunk_handle)
             return
@@ -584,7 +600,7 @@ class WorkPieceViewPipelineStage(PipelineStage):
 
         # Get view handle and render context from ArtifactManager
         view_handle, render_context = self._get_render_components(
-            key, ledger_key, chunk_handle
+            key, base_key, chunk_handle
         )
         if view_handle is None or render_context is None:
             return
@@ -616,7 +632,7 @@ class WorkPieceViewPipelineStage(PipelineStage):
     def _on_stitch_complete(
         self,
         task: "Task",
-        key: ViewKey,
+        key: ArtifactKey,
         chunk_handle: BaseArtifactHandle,
         view_handle: BaseArtifactHandle,
         view_id: int,
@@ -641,7 +657,7 @@ class WorkPieceViewPipelineStage(PipelineStage):
             self._artifact_manager.release_handle(view_handle)
 
     def _get_chunk_artifact(
-        self, key: ViewKey, chunk_handle: BaseArtifactHandle
+        self, key: ArtifactKey, chunk_handle: BaseArtifactHandle
     ) -> WorkPieceArtifact | None:
         """Retrieves and validates the chunk artifact."""
         try:
@@ -661,15 +677,23 @@ class WorkPieceViewPipelineStage(PipelineStage):
 
     def _get_render_components(
         self,
-        key: ViewKey,
-        ledger_key: tuple,
+        key: ArtifactKey,
+        base_key: ArtifactKey,
         chunk_handle: BaseArtifactHandle,
     ) -> tuple[WorkPieceViewArtifactHandle | None, RenderContext | None]:
         """Gets the view handle and render context from ArtifactManager."""
-        step_uid, workpiece_uid = key
-
-        # Get the view generation ID from the ledger entry
-        entry = self._artifact_manager._get_ledger_entry(ledger_key)
+        # Find the ledger entry for this view key
+        entry = None
+        for lk, e in self._artifact_manager._ledger.items():
+            if isinstance(lk, tuple) and len(lk) == 2:
+                lk_base, lk_gen_id = lk
+                if lk_base == base_key:
+                    entry = e
+                    break
+        if entry is None:
+            logger.debug(f"No ledger entry for {key}. Ignoring chunk.")
+            self._artifact_manager.release_handle(chunk_handle)
+            return None, None
         if entry is None:
             logger.debug(f"No ledger entry for {key}. Ignoring chunk.")
             self._artifact_manager.release_handle(chunk_handle)
@@ -677,7 +701,7 @@ class WorkPieceViewPipelineStage(PipelineStage):
 
         view_id = entry.generation_id
         view_handle = self._artifact_manager.get_workpiece_view_handle(
-            step_uid, workpiece_uid, view_id
+            base_key, view_id
         )
         if view_handle is None:
             logger.debug(f"No view handle found for {key}. Ignoring chunk.")
@@ -703,7 +727,7 @@ class WorkPieceViewPipelineStage(PipelineStage):
     def _should_render_chunk(
         self,
         chunk_artifact: WorkPieceArtifact,
-        key: ViewKey,
+        key: ArtifactKey,
         chunk_handle: BaseArtifactHandle,
     ) -> bool:
         """Checks if the chunk should be rendered based on its Ops."""
@@ -715,7 +739,7 @@ class WorkPieceViewPipelineStage(PipelineStage):
 
     def _render_chunk_to_view(
         self,
-        key: ViewKey,
+        key: ArtifactKey,
         chunk_handle: BaseArtifactHandle,
         view_handle: WorkPieceViewArtifactHandle,
         render_context: RenderContext,
@@ -815,7 +839,7 @@ class WorkPieceViewPipelineStage(PipelineStage):
                 ctx.line_to(end[0], end[1])
             ctx.stroke()
 
-    def _schedule_throttled_update(self, key: ViewKey, view_id: int):
+    def _schedule_throttled_update(self, key: ArtifactKey, view_id: int):
         """
         Schedules a throttled update notification for the given view.
         If an update was recently sent, this will delay the next update
@@ -852,13 +876,13 @@ class WorkPieceViewPipelineStage(PipelineStage):
             self._throttle_timers[key] = timer
             timer.start()
 
-    def _send_throttled_update(self, key: ViewKey, view_id: int):
+    def _send_throttled_update(self, key: ArtifactKey, view_id: int):
         """
         Sends the view_artifact_updated signal for the given view.
         This should only be called by _schedule_throttled_update.
 
         Args:
-            key: The view key (step_uid, workpiece_uid).
+            key: The view key (workpiece_uid).
             view_id: The view generation ID.
         """
         # Clear pending flag and timer
@@ -869,10 +893,7 @@ class WorkPieceViewPipelineStage(PipelineStage):
         self._last_update_time[key] = time.time()
 
         # Get the view handle from ArtifactManager
-        step_uid, workpiece_uid = key
-        handle = self._artifact_manager.get_workpiece_view_handle(
-            step_uid, workpiece_uid, view_id
-        )
+        handle = self._artifact_manager.get_workpiece_view_handle(key, view_id)
         if not handle:
             logger.debug(f"No view handle for {key}, skipping update")
             return
@@ -880,20 +901,22 @@ class WorkPieceViewPipelineStage(PipelineStage):
         # Send the update signal
         self.view_artifact_updated.send(
             self,
-            step_uid=step_uid,
-            workpiece_uid=workpiece_uid,
+            step_uid=None,
+            workpiece_uid=key.id,
             handle=handle,
         )
         logger.debug(f"Sent throttled view_artifact_updated for {key}")
 
-    def _on_render_complete(self, task: "Task", key: ViewKey, view_id: int):
+    def _on_render_complete(
+        self, task: "Task", key: ArtifactKey, view_id: int
+    ):
         """
         Callback for when a rendering task finishes. It now only handles
         cleanup and state management.
 
         Args:
             task: The completed task.
-            key: The view key (step_uid, workpiece_uid).
+            key: The view key (workpiece_uid).
             view_id: The view generation ID for this render.
         """
         logger.debug(
@@ -909,10 +932,8 @@ class WorkPieceViewPipelineStage(PipelineStage):
         status = task.get_status()
         if status != "completed" and status != "canceled":
             logger.error(f"View render for {key} failed with status: {status}")
-            step_uid, workpiece_uid = key
-            ledger_key = ("view", step_uid, workpiece_uid)
-            self._artifact_manager.mark_error(
-                ledger_key,
+            self._artifact_manager.fail_generation(
+                key,
                 f"Render failed with status: {status}",
                 view_id,
             )

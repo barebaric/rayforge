@@ -9,6 +9,7 @@ from ..artifact import (
     WorkPieceArtifact,
     WorkPieceArtifactHandle,
 )
+from ..artifact.key import ArtifactKey
 from ..artifact.lifecycle import ArtifactLifecycle
 from ..artifact.manager import extract_base_key, make_composite_key
 from .base import PipelineStage
@@ -25,8 +26,6 @@ if TYPE_CHECKING:
     from ..artifact.manager import ArtifactManager
 
 logger = logging.getLogger(__name__)
-
-WorkpieceKey = Tuple[str, str]  # (step_uid, workpiece_uid)
 
 
 class WorkPiecePipelineStage(PipelineStage):
@@ -65,83 +64,33 @@ class WorkPiecePipelineStage(PipelineStage):
 
     def reconcile(self, doc: "Doc", generation_id: int):
         """
-        Synchronizes the cache with the document, generating artifacts
-        for new or invalid items and cleaning up obsolete ones.
+        Queries the ArtifactManager for work and launches generation tasks
+        for any workpiece artifacts that are in the INITIAL state.
         """
         logger.debug("WorkPiecePipelineStage reconciling...")
         self._current_generation_id = generation_id
 
-        all_current_pairs = {
-            (step.uid, workpiece.uid)
-            for layer in doc.layers
-            if layer.workflow is not None
-            for step in layer.workflow.steps
-            for workpiece in layer.all_workpieces
-        }
-        cached_pairs = self._artifact_manager.get_all_workpiece_keys()
-
-        # Clean up artifacts for (step, workpiece) pairs that no longer exist
-        for s_uid, w_uid in cached_pairs - all_current_pairs:
-            logger.debug(f"Cleaning up obsolete pair: ({s_uid}, {w_uid})")
-            self._cleanup_entry((s_uid, w_uid))
-
-        # Build valid keys for the ledger in format ('workpiece', step_uid,
-        # workpiece_uid)
-        valid_keys = {
-            ("workpiece", step.uid, workpiece.uid)
-            for layer in doc.layers
-            if layer.workflow is not None
-            for step in layer.workflow.steps
-            for workpiece in layer.all_workpieces
-        }
-
-        # Sync the ledger with the current valid keys
-        self._artifact_manager.sync_keys(
-            "workpiece", valid_keys, self._current_generation_id
-        )
-
-        # Query for keys that need generation
+        # Query for keys that need generation, as declared by the Pipeline
         keys_to_generate = self._artifact_manager.query_work_for_stage(
             "workpiece", self._current_generation_id
         )
         logger.debug(
-            f"WorkPiecePipelineStage: keys_to_generate={keys_to_generate}"
+            f"WorkPiecePipelineStage: found {len(keys_to_generate)} keys "
+            f"to generate: {keys_to_generate}"
         )
-
-        # Check existing READY entries for staleness (e.g. size mismatch)
-        for key in self._artifact_manager.get_all_workpiece_keys():
-            s_uid, w_uid = key
-
-            # Skip check if the key is already marked for generation
-            ledger_key = ("workpiece", s_uid, w_uid)
-            if ledger_key in keys_to_generate:
-                continue
-
-            # Only check staleness for items that are currently READY.
-            # If an item is PENDING, we should let the active task finish.
-            entry = self._artifact_manager._get_ledger_entry(ledger_key)
-            if not entry or entry.state != ArtifactLifecycle.READY:
-                continue
-
-            step = self._find_step(doc, s_uid)
-            workpiece = self._find_workpiece(doc, w_uid)
-            if step and workpiece:
-                if self._is_stale(step, workpiece):
-                    self._cleanup_entry(key)
-                    if ledger_key not in keys_to_generate:
-                        keys_to_generate.append(ledger_key)
 
         # Launch tasks for each key that needs generation
         for key in keys_to_generate:
-            _, step_uid, workpiece_uid = key
-            step = self._find_step(doc, step_uid)
-            workpiece = self._find_workpiece(doc, workpiece_uid)
-            if step and workpiece:
-                logger.debug(
-                    f"WorkPiecePipelineStage: Launching task for "
-                    f"step_uid={step_uid}, workpiece_uid={workpiece_uid}"
-                )
-                self._launch_task(step, workpiece)
+            workpiece = self._find_workpiece(doc, key.id)
+            if workpiece:
+                # Find the step associated with this workpiece for context
+                step = self._find_step_for_workpiece(doc, workpiece)
+                if step:
+                    logger.debug(
+                        f"WorkPiecePipelineStage: Launching task for "
+                        f"step_uid={step.uid}, workpiece_uid={key.id}"
+                    )
+                    self._launch_task(step, workpiece)
 
     def _find_step(self, doc: "Doc", step_uid: str) -> Optional["Step"]:
         """Finds a step by its UID in the document."""
@@ -149,6 +98,17 @@ class WorkPiecePipelineStage(PipelineStage):
             if layer.workflow is not None:
                 for step in layer.workflow.steps:
                     if step.uid == step_uid:
+                        return step
+        return None
+
+    def _find_step_for_workpiece(
+        self, doc: "Doc", workpiece: "WorkPiece"
+    ) -> Optional["Step"]:
+        """Finds the step associated with a workpiece in the document."""
+        for layer in doc.layers:
+            if layer.workflow is not None:
+                for step in layer.workflow.steps:
+                    if workpiece in layer.all_workpieces:
                         return step
         return None
 
@@ -168,7 +128,8 @@ class WorkPiecePipelineStage(PipelineStage):
         or invalid.
         """
         handle = self._artifact_manager.get_workpiece_handle(
-            step.uid, workpiece.uid, self._current_generation_id
+            ArtifactKey.for_workpiece(workpiece.uid),
+            self._current_generation_id,
         )
         if handle is None:
             # Artifact is missing, so it's stale.
@@ -197,13 +158,15 @@ class WorkPiecePipelineStage(PipelineStage):
     def invalidate_for_step(self, step_uid: str):
         """Invalidates all workpiece artifacts associated with a step."""
         logger.debug(f"Invalidating workpiece artifacts for step '{step_uid}'")
-        keys_to_clean = [
-            k
-            for k in self._artifact_manager.get_all_workpiece_keys()
-            if k[0] == step_uid
-        ]
+        step_key = ArtifactKey.for_step(step_uid)
+        keys_to_clean = self._artifact_manager._get_dependents(step_key)
+        logger.debug(
+            f"WorkPiecePipelineStage: keys_to_clean for step '{step_uid}': "
+            f"{keys_to_clean}"
+        )
         for key in keys_to_clean:
             self._cleanup_entry(key)
+        self._artifact_manager.invalidate(step_key)
 
     def invalidate_for_workpiece(self, workpiece_uid: str):
         """Invalidates all artifacts for a workpiece across all steps."""
@@ -211,27 +174,25 @@ class WorkPiecePipelineStage(PipelineStage):
         keys_to_clean = [
             k
             for k in self._artifact_manager.get_all_workpiece_keys()
-            if k[1] == workpiece_uid
+            if k.id == workpiece_uid
         ]
         for key in keys_to_clean:
             self._cleanup_entry(key)
 
-    def _cleanup_entry(self, key: WorkpieceKey):
+    def _cleanup_entry(self, key: ArtifactKey):
         """
         Removes a workpiece cache entry, releases its resources, and
         requests cancellation of its task.
         """
         logger.debug(f"WorkPiecePipelineStage: Cleaning up entry {key}.")
-        s_uid, w_uid = key
-        task_key = ("ops", s_uid, w_uid)
-        task = self._task_manager.get_task(task_key)
+        task = self._task_manager.get_task(key)
         if task and task.is_running():
             logger.debug(f"Task {key} is running, canceling it")
-            self._task_manager.cancel_task(task_key)
-        self._artifact_manager.invalidate_for_workpiece(s_uid, w_uid)
+            self._task_manager.cancel_task(key)
+        self._artifact_manager.invalidate_for_workpiece(key)
 
     def _validate_workpiece_for_launch(
-        self, key: WorkpieceKey, workpiece: "WorkPiece"
+        self, key: ArtifactKey, workpiece: "WorkPiece"
     ) -> bool:
         """
         Validates workpiece size and active tasks before launching.
@@ -248,7 +209,7 @@ class WorkPiecePipelineStage(PipelineStage):
 
     def _prepare_generation_id(
         self,
-        key: WorkpieceKey,
+        key: ArtifactKey,
         step: "Step",
         workpiece: "WorkPiece",
     ) -> int:
@@ -296,8 +257,8 @@ class WorkPiecePipelineStage(PipelineStage):
 
     def _create_and_register_task(
         self,
-        key: WorkpieceKey,
-        ledger_key: Tuple[str, str, str],
+        key: ArtifactKey,
+        ledger_key: ArtifactKey,
         workpiece_dict: Dict,
         step: "Step",
         workpiece: "WorkPiece",
@@ -309,9 +270,6 @@ class WorkPiecePipelineStage(PipelineStage):
         """
         Creates subprocess task and registers it in active_tasks.
         """
-        # Namespaced key for TaskManager
-        task_key = ("ops", key[0], key[1])
-
         self._task_manager.run_process(
             make_workpiece_artifact_in_subprocess,
             self._artifact_manager._store,
@@ -324,7 +282,7 @@ class WorkPiecePipelineStage(PipelineStage):
             generation_id,
             workpiece_size,
             "workpiece",
-            key=task_key,
+            key=key,
             when_done=lambda t: self._on_task_complete(
                 t, key, ledger_key, generation_id, step, workpiece
             ),
@@ -333,8 +291,8 @@ class WorkPiecePipelineStage(PipelineStage):
 
     def _launch_task(self, step: "Step", workpiece: "WorkPiece"):
         """Starts the asynchronous task to generate operations."""
-        key = (step.uid, workpiece.uid)
-        ledger_key = ("workpiece", step.uid, workpiece.uid)
+        key = ArtifactKey.for_workpiece(workpiece.uid)
+        ledger_key = key
 
         if not self._validate_workpiece_for_launch(key, workpiece):
             logger.debug(
@@ -356,7 +314,7 @@ class WorkPiecePipelineStage(PipelineStage):
 
         workpiece_dict = self._prepare_workpiece_dict(workpiece)
 
-        self._artifact_manager.mark_pending(ledger_key, generation_id)
+        self._artifact_manager.mark_processing(ledger_key, generation_id)
 
         self._create_and_register_task(
             key,
@@ -372,24 +330,24 @@ class WorkPiecePipelineStage(PipelineStage):
 
     def _handle_artifact_created_event(
         self,
-        key: WorkpieceKey,
-        ledger_key: Tuple[str, str, str],
+        key: ArtifactKey,
+        ledger_key: ArtifactKey,
         handle: WorkPieceArtifactHandle,
         generation_id: int,
     ):
         """
         Processes artifact_created event.
         """
-        s_uid, w_uid = key
-
-        self._artifact_manager.commit(ledger_key, handle, generation_id)
+        self._artifact_manager.commit_artifact(
+            ledger_key, handle, generation_id
+        )
 
         self.workpiece_artifact_adopted.send(
-            self, step_uid=s_uid, workpiece_uid=w_uid
+            self, step_uid=None, workpiece_uid=key.id
         )
 
     def _handle_visual_chunk_ready_event(
-        self, key: WorkpieceKey, handle, generation_id: int
+        self, key: ArtifactKey, handle, generation_id: int
     ):
         """
         Processes visual_chunk_ready event.
@@ -405,11 +363,8 @@ class WorkPiecePipelineStage(PipelineStage):
         self, task: "Task", event_name: str, data: dict
     ):
         """Handles events from a background task."""
-        # Unpack the namespaced task key to get the internal WorkpieceKey
-        # Task key format: ("ops", step_uid, workpiece_uid)
-        _, s_uid, w_uid = task.key
-        key = (s_uid, w_uid)
-        ledger_key = ("workpiece", s_uid, w_uid)
+        key = ArtifactKey.for_workpiece(task.key.id)
+        ledger_key = key
 
         handle_dict = data.get("handle_dict")
         generation_id = data.get("generation_id")
@@ -421,26 +376,24 @@ class WorkPiecePipelineStage(PipelineStage):
             )
             return
 
-        # Validate that there's a PENDING entry for this key.
+        # Validate that there's a PROCESSING entry for this key.
         # We don't compare generation_ids because the subprocess sends
         # back the same generation_id it received. The commit method
-        # handles this by finding any PENDING entry with the same base key.
-        has_pending = any(
+        # handles this by finding any PROCESSING entry with the same base key.
+        has_processing = any(
             extract_base_key(k) == ledger_key
-            and e.state == ArtifactLifecycle.PENDING
+            and e.state == ArtifactLifecycle.PROCESSING
             for k, e in self._artifact_manager._ledger.items()
         )
-        if not has_pending:
+        if not has_processing:
             logger.debug(
-                f"[{key}] No PENDING entry found for event '{event_name}'. "
+                f"[{key}] No PROCESSING entry found for event '{event_name}'. "
                 f"Ignoring."
             )
             return
 
         try:
-            handle = self._artifact_manager.adopt_artifact(
-                (s_uid, w_uid), handle_dict
-            )
+            handle = self._artifact_manager.adopt_artifact(key, handle_dict)
 
             if event_name == "artifact_created":
                 if not isinstance(handle, WorkPieceArtifactHandle):
@@ -461,8 +414,8 @@ class WorkPiecePipelineStage(PipelineStage):
 
     def _validate_task_completion(
         self,
-        key: WorkpieceKey,
-        ledger_key: Tuple[str, str, str],
+        key: ArtifactKey,
+        ledger_key: ArtifactKey,
         task_generation_id: int,
     ) -> bool:
         """
@@ -489,8 +442,8 @@ class WorkPiecePipelineStage(PipelineStage):
 
     def _handle_canceled_task(
         self,
-        key: WorkpieceKey,
-        ledger_key: Tuple[str, str, str],
+        key: ArtifactKey,
+        ledger_key: ArtifactKey,
         step: "Step",
         workpiece: "WorkPiece",
         task_generation_id: int,
@@ -512,15 +465,14 @@ class WorkPiecePipelineStage(PipelineStage):
         )
 
     def _check_result_stale_due_to_size(
-        self, key: WorkpieceKey, workpiece: "WorkPiece"
+        self, key: ArtifactKey, workpiece: "WorkPiece"
     ) -> bool:
         """
         Checks if result is stale due to size change during generation.
         Returns True if stale, False otherwise.
         """
-        s_uid, w_uid = key
         handle = self._artifact_manager.get_workpiece_handle(
-            s_uid, w_uid, self._current_generation_id
+            key, self._current_generation_id
         )
 
         if handle and not handle.is_scalable:
@@ -537,8 +489,8 @@ class WorkPiecePipelineStage(PipelineStage):
 
     def _handle_completed_task(
         self,
-        key: WorkpieceKey,
-        ledger_key: Tuple[str, str, str],
+        key: ArtifactKey,
+        ledger_key: ArtifactKey,
         task: "Task",
         step: "Step",
         workpiece: "WorkPiece",
@@ -558,9 +510,8 @@ class WorkPiecePipelineStage(PipelineStage):
         except Exception as e:
             logger.error(f"[{key}] Error processing result for {key}: {e}")
 
-        s_uid, w_uid = key
         handle = self._artifact_manager.get_workpiece_handle(
-            s_uid, w_uid, self._current_generation_id
+            key, self._current_generation_id
         )
         if handle is None:
             self._artifact_manager.invalidate(ledger_key)
@@ -569,7 +520,7 @@ class WorkPiecePipelineStage(PipelineStage):
 
     def _handle_failed_task(
         self,
-        key: Tuple[str, str, str],
+        key: ArtifactKey,
         step: "Step",
         workpiece: "WorkPiece",
         task_generation_id: int,
@@ -580,11 +531,13 @@ class WorkPiecePipelineStage(PipelineStage):
         wp_name = workpiece.name
         error_msg = f"Ops generation for '{step.name}' on '{wp_name}' failed."
         logger.warning(f"[{key}] {error_msg}")
-        self._artifact_manager.mark_error(key, error_msg, task_generation_id)
+        self._artifact_manager.fail_generation(
+            key, error_msg, task_generation_id
+        )
 
     def _send_generation_finished_signal(
         self,
-        key: WorkpieceKey,
+        key: ArtifactKey,
         step: "Step",
         workpiece: "WorkPiece",
         task_generation_id: int,
@@ -608,8 +561,8 @@ class WorkPiecePipelineStage(PipelineStage):
     def _on_task_complete(
         self,
         task: "Task",
-        key: WorkpieceKey,
-        ledger_key: Tuple[str, str, str],
+        key: ArtifactKey,
+        ledger_key: ArtifactKey,
         task_generation_id: int,
         step: "Step",
         workpiece: "WorkPiece",
@@ -651,7 +604,8 @@ class WorkPiecePipelineStage(PipelineStage):
     ) -> Optional[WorkPieceArtifact]:
         """Retrieves the complete, validated artifact from the cache."""
         handle = self._artifact_manager.get_workpiece_handle(
-            step_uid, workpiece_uid, self._current_generation_id
+            ArtifactKey.for_workpiece(workpiece_uid),
+            self._current_generation_id,
         )
         if handle is None:
             return None
@@ -690,7 +644,7 @@ class WorkPiecePipelineStage(PipelineStage):
             1 for cmd in ops.commands if isinstance(cmd, ScanLinePowerCommand)
         )
         logger.debug(
-            f"Returning final ops for key {(step_uid, workpiece_uid)} with "
+            f"Returning final ops for workpiece '{workpiece_uid}' with "
             f"{scanline_count} ScanLinePowerCommands."
         )
         return ops
