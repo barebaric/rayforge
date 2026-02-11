@@ -1,10 +1,10 @@
 {
-  "uid": "doc-002",
+  "uid": "f81d4fae-7dec-11d0-a765-00a0c91e6bf6",
   "type": "doc",
   "active_layer_index": 1,
   "children": [
     {
-      "uid": "layer-001",
+      "uid": "b1b2c3d4-e5f6-7890-abcd-ef1234567891",
       "type": "layer",
       "name": "Layer 1",
       "matrix": [
@@ -16,7 +16,7 @@
       "stock_item_uid": null,
       "children": [
         {
-          "uid": "workflow-001",
+          "uid": "c47ac10b-58cc-4372-a567-0e02b2c3d47a",
           "type": "workflow",
           "name": "Layer 1 Workflow",
           "matrix": [
@@ -29,7 +29,7 @@
       ]
     },
     {
-      "uid": "layer-002",
+      "uid": "c1b2c3d4-e5f6-7890-abcd-ef1234567892",
       "type": "layer",
       "name": "Layer 2",
       "matrix": [
@@ -41,7 +41,7 @@
       "stock_item_uid": null,
       "children": [
         {
-          "uid": "workflow-002",
+          "uid": "d47ac10b-58cc-4372-a567-0e02b2c3d47b",
           "type": "workflow",
           "name": "Layer 2 Workflow",
           "matrix": [
@@ -54,7 +54,7 @@
       ]
     },
     {
-      "uid": "layer-003",
+      "uid": "d1b2c3d4-e5f6-7890-abcd-ef1234567893",
       "type": "layer",
       "name": "Layer 3",
       "matrix": [
@@ -66,7 +66,7 @@
       "stock_item_uid": null,
       "children": [
         {
-          "uid": "workflow-003",
+          "uid": "e47ac10b-58cc-4372-a567-0e02b2c3d47c",
           "type": "workflow",
           "name": "Layer 3 Workflow",
           "matrix": [

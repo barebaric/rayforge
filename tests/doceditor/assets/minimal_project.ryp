@@ -1,10 +1,10 @@
 {
-  "uid": "doc-001",
+  "uid": "e3b0c442-98fc-1c14-9a7b-4b8d1a5e1c3d",
   "type": "doc",
   "active_layer_index": 0,
   "children": [
     {
-      "uid": "layer-001",
+      "uid": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
       "type": "layer",
       "name": "Layer 1",
       "matrix": [
@@ -16,7 +16,7 @@
       "stock_item_uid": null,
       "children": [
         {
-          "uid": "workflow-001",
+          "uid": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
           "type": "workflow",
           "name": "Layer 1 Workflow",
           "matrix": [
