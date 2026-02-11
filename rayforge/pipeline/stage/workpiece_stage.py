@@ -81,9 +81,17 @@ class WorkPiecePipelineStage(PipelineStage):
 
         # Launch tasks for each key that needs generation
         for key in keys_to_generate:
-            workpiece = self._find_workpiece(doc, key.id)
+            workpiece_uid = key.id
+            # We need to find the WorkPiece object to process it.
+            # In a future refactoring, we might pass only the data needed
+            # instead of the full object, but for now we look it up.
+            workpiece = self._find_workpiece_by_uid(doc, workpiece_uid)
+
             if workpiece:
-                # Find the step associated with this workpiece for context
+                # Find the step associated with this workpiece for context.
+                # Workpieces live in layers, and layers have a workflow with
+                # steps. This relationship is implicit in the document
+                # structure.
                 step = self._find_step_for_workpiece(doc, workpiece)
                 if step:
                     logger.debug(
@@ -91,28 +99,18 @@ class WorkPiecePipelineStage(PipelineStage):
                         f"step_uid={step.uid}, workpiece_uid={key.id}"
                     )
                     self._launch_task(step, workpiece)
+                else:
+                    logger.warning(
+                        f"Workpiece {workpiece_uid} has no associated step. "
+                        "Skipping generation."
+                    )
+            else:
+                logger.warning(
+                    f"Workpiece {workpiece_uid} not found in doc. "
+                    "Skipping generation."
+                )
 
-    def _find_step(self, doc: "Doc", step_uid: str) -> Optional["Step"]:
-        """Finds a step by its UID in the document."""
-        for layer in doc.layers:
-            if layer.workflow is not None:
-                for step in layer.workflow.steps:
-                    if step.uid == step_uid:
-                        return step
-        return None
-
-    def _find_step_for_workpiece(
-        self, doc: "Doc", workpiece: "WorkPiece"
-    ) -> Optional["Step"]:
-        """Finds the step associated with a workpiece in the document."""
-        for layer in doc.layers:
-            if layer.workflow is not None:
-                for step in layer.workflow.steps:
-                    if workpiece in layer.all_workpieces:
-                        return step
-        return None
-
-    def _find_workpiece(
+    def _find_workpiece_by_uid(
         self, doc: "Doc", workpiece_uid: str
     ) -> Optional["WorkPiece"]:
         """Finds a workpiece by its UID in the document."""
@@ -122,38 +120,16 @@ class WorkPiecePipelineStage(PipelineStage):
                     return workpiece
         return None
 
-    def _is_stale(self, step: "Step", workpiece: "WorkPiece") -> bool:
-        """
-        Checks if the artifact for a (step, workpiece) pair is missing
-        or invalid.
-        """
-        handle = self._artifact_manager.get_workpiece_handle(
-            ArtifactKey.for_workpiece(workpiece.uid),
-            self._current_generation_id,
-        )
-        if handle is None:
-            # Artifact is missing, so it's stale.
-            return True
-
-        # If the artifact's content is scalable (e.g., pure vectors), it does
-        # not need to be regenerated when the workpiece is resized. The
-        # scaling is applied dynamically by downstream stages.
-        if handle.is_scalable:
-            return False
-
-        # For non-scalable artifacts (like rasters), the content is baked to a
-        # specific size. It IS stale if the workpiece's current size doesn't
-        # match the size it was generated for.
-        if not self._sizes_are_close(handle.generation_size, workpiece.size):
-            logger.debug(
-                f"Artifact size mismatch for {(step.uid, workpiece.uid)}: "
-                f"handle={handle.generation_size}, wp={workpiece.size}"
-            )
-            return True
-
-        # If we reach here, the artifact exists, is non-scalable, and its
-        # size matches. It is not stale.
-        return False
+    def _find_step_for_workpiece(
+        self, doc: "Doc", workpiece: "WorkPiece"
+    ) -> Optional["Step"]:
+        """Finds the step associated with a workpiece in the document."""
+        # This assumes a workpiece belongs to a layer which has a workflow
+        # containing steps. The first step is usually the relevant one for now.
+        if workpiece.layer and workpiece.layer.workflow:
+            if workpiece.layer.workflow.steps:
+                return workpiece.layer.workflow.steps[0]
+        return None
 
     def invalidate_for_step(self, step_uid: str):
         """Invalidates all workpiece artifacts associated with a step."""

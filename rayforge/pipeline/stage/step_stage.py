@@ -74,9 +74,13 @@ class StepPipelineStage(PipelineStage):
         # Launch tasks for each key that needs generation
         for key in keys_to_generate:
             step_uid = key.id
-            step = self._find_step(doc, step_uid)
+            step = self._find_step_by_uid(doc, step_uid)
             if step:
                 self._trigger_assembly(step)
+            else:
+                logger.warning(
+                    f"Step {step_uid} not found in doc. Skipping assembly."
+                )
 
     def invalidate(self, key: StepKey):
         """Invalidates a step artifact, ensuring it will be regenerated."""
@@ -90,7 +94,7 @@ class StepPipelineStage(PipelineStage):
         self._cleanup_entry(step.uid, full_invalidation=False)
         self._trigger_assembly(step)
 
-    def _find_step(self, doc: "Doc", step_uid: str) -> Optional["Step"]:
+    def _find_step_by_uid(self, doc: "Doc", step_uid: str) -> Optional["Step"]:
         """Finds a step by its UID in the document."""
         for layer in doc.layers:
             if layer.workflow is not None:
