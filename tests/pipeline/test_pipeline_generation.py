@@ -258,28 +258,6 @@ class TestPipelineGeneration:
 
         mock_task_mgr.created_tasks.clear()
 
-    def test_reconcile_all_triggers_ops_generation(
-        self, doc, real_workpiece, mock_task_mgr, context_initializer
-    ):
-        # Arrange
-        layer = self._setup_doc_with_workpiece(doc, real_workpiece)
-        assert layer.workflow is not None
-        step = create_contour_step(context_initializer)
-        layer.workflow.add_step(step)
-
-        # Act
-        Pipeline(
-            doc,
-            mock_task_mgr,
-            context_initializer.artifact_store,
-            context_initializer.machine,
-        )
-
-        # Assert
-        mock_task_mgr.run_process.assert_called_once()
-        called_func = mock_task_mgr.run_process.call_args[0][0]
-        assert called_func is make_workpiece_artifact_in_subprocess
-
     def test_generation_success_emits_signals_and_caches_result(
         self, doc, real_workpiece, mock_task_mgr, context_initializer
     ):

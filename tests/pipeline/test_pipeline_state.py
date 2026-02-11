@@ -145,12 +145,12 @@ class TestPipelineState:
         self, mock_task_mgr, workpiece_handle, step_time=42.0
     ):
         """Helper to find and complete all outstanding tasks."""
-        processed_keys = set()
+        processed_tasks = set()
         while True:
             tasks_to_process = [
                 t
                 for t in mock_task_mgr.created_tasks
-                if t.key not in processed_keys
+                if id(t) not in processed_tasks
             ]
             if not tasks_to_process:
                 break
@@ -225,7 +225,7 @@ class TestPipelineState:
                     if task_info.when_done:
                         task_info.when_done(task_obj)
 
-                processed_keys.add(task_info.key)
+                processed_tasks.add(id(task_info))
 
         mock_task_mgr.created_tasks.clear()
 

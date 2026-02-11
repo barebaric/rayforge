@@ -88,7 +88,7 @@ async def test_import_svg_export_gcode(
     assert doc_editor.doc.all_workpieces[0].name == "10x10_square"
 
     # Trigger reconciliation to ensure artifacts are generated
-    doc_editor.pipeline.reconcile_all()
+    doc_editor.pipeline.reconcile_data()
 
     # Wait for workpiece tasks to complete
     await asyncio.sleep(1.0)  # wait for sub-processes to start

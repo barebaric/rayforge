@@ -106,7 +106,9 @@ class WorkPieceViewPipelineStage(PipelineStage):
             task_key = ArtifactKey.for_view(w_uid)
             self._task_manager.cancel_task(task_key)
 
-    def update_view_context(self, context: RenderContext) -> None:
+    def update_view_context(
+        self, context: RenderContext, view_gen_id: int
+    ) -> None:
         """
         Updates the view context and triggers re-rendering for all cached
         workpiece views if the context has changed.
@@ -117,19 +119,17 @@ class WorkPieceViewPipelineStage(PipelineStage):
 
         Args:
             context: The new render context to apply.
+            view_gen_id: The view generation ID to use for rendering.
         """
         logger.debug(
             f"update_view_context called with context "
             f"ppm={context.pixels_per_mm}, "
-            f"show_travel_moves={context.show_travel_moves}"
+            f"show_travel_moves={context.show_travel_moves}, "
+            f"view_gen_id={view_gen_id}"
         )
 
         self._current_view_context = context
-
-        # A context update means all views are stale.
-        # We create a new generation ID for this new visual state.
-        self._next_view_generation_id += 1
-        view_id = self._next_view_generation_id
+        self._next_view_generation_id = view_gen_id
 
         keys = self._artifact_manager.get_all_workpiece_keys()
         logger.debug(f"update_view_context: Found {len(keys)} workpiece keys")
@@ -137,9 +137,9 @@ class WorkPieceViewPipelineStage(PipelineStage):
         for key in keys:
             logger.debug(
                 f"View context changed. Triggering re-render for {key} "
-                f"with view_id={view_id}"
+                f"with view_id={view_gen_id}"
             )
-            self.request_view_render(key, context, view_id)
+            self.request_view_render(key, context, view_gen_id)
 
     def set_render_context(
         self,

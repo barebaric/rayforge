@@ -888,3 +888,40 @@ class ArtifactManager:
                 )
             # If key exists, we do nothing. It might be PROCESSING or DONE
             # already.
+
+    def prune(
+        self,
+        active_data_gen_ids: Set[int],
+        active_view_gen_ids: Set[int],
+    ) -> None:
+        """
+        Removes artifacts that do not belong to active generations.
+
+        This method performs garbage collection on the ledger, removing
+        entries that are no longer needed. Entries in PROCESSING state
+        are never pruned to prevent crashing active workers.
+
+        Args:
+            active_data_gen_ids: Set of active data generation IDs.
+            active_view_gen_ids: Set of active view generation IDs.
+        """
+        keys_to_remove = []
+        for composite_key, entry in list(self._ledger.items()):
+            base_key = extract_base_key(composite_key)
+            generation_id = extract_generation_id(composite_key)
+
+            is_view = base_key.group == "view"
+            active_gen_ids = (
+                active_view_gen_ids if is_view else active_data_gen_ids
+            )
+
+            if generation_id not in active_gen_ids:
+                if entry.state == ArtifactLifecycle.PROCESSING:
+                    continue
+                keys_to_remove.append(composite_key)
+
+        for composite_key in keys_to_remove:
+            entry = self._ledger.get(composite_key)
+            if entry and entry.handle is not None:
+                self.release_handle(entry.handle)
+            del self._ledger[composite_key]
