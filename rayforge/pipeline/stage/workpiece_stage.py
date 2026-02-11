@@ -104,11 +104,13 @@ class WorkPiecePipelineStage(PipelineStage):
                         f"Workpiece {workpiece_uid} has no associated step. "
                         "Skipping generation."
                     )
+                    self._artifact_manager.mark_done(key, generation_id)
             else:
                 logger.warning(
                     f"Workpiece {workpiece_uid} not found in doc. "
                     "Skipping generation."
                 )
+                self._artifact_manager.mark_done(key, generation_id)
 
     def _find_workpiece_by_uid(
         self, doc: "Doc", workpiece_uid: str

@@ -628,22 +628,23 @@ class ArtifactManager:
         for dependent in self._get_dependents(base_key):
             self.invalidate(dependent)
 
-    def has_processing_work(self) -> bool:
+    def is_finished(self) -> bool:
         """
-        Returns True if any artifact in the ledger is being generated,
-        is stale, or is missing.
+        Returns True if the ledger contains anything the is not DONE
+        or ERROR.
+
+        INITIAL entries are considered "unfinished work".
         """
         if not self._ledger:
-            return False
+            return True
 
         for entry in self._ledger.values():
             if entry.state in (
-                ArtifactLifecycle.PROCESSING,
-                ArtifactLifecycle.STALE,
                 ArtifactLifecycle.INITIAL,
+                ArtifactLifecycle.PROCESSING,
             ):
-                return True
-        return False
+                return False
+        return True
 
     def query_work_for_stage(
         self, stage_type: str, generation_id: GenerationID
@@ -801,6 +802,45 @@ class ArtifactManager:
         if source_handle is not None:
             self._store.release(source_handle)
 
+    def mark_done(
+        self,
+        key: ArtifactKey,
+        generation_id: GenerationID,
+    ) -> None:
+        """
+        Marks an entry as DONE without providing a handle.
+
+        This is used when an entry cannot be processed (e.g., the
+        workpiece is not found or has no associated step), but we
+        want to mark it as DONE so the pipeline can finish.
+
+        Args:
+            key: The ArtifactKey for the entry.
+            generation_id: The generation ID for the entry.
+
+        Raises:
+            AssertionError: If entry not found or not in INITIAL state.
+        """
+        composite_key = make_composite_key(key, generation_id)
+        entry = self._get_ledger_entry(composite_key)
+        if entry is None:
+            logger.warning(
+                f"mark_done called for {key} (gen_id={generation_id}) "
+                f"but no ledger entry was found. Skipping."
+            )
+            return
+
+        assert entry.state == ArtifactLifecycle.INITIAL, (
+            f"Cannot mark {entry.state} as DONE, must be INITIAL"
+        )
+        logger.debug(f"mark_done: Marking entry {composite_key} as DONE")
+        entry.state = ArtifactLifecycle.DONE
+        entry.generation_id = generation_id
+        entry.error = None
+        if entry.handle is not None:
+            self._store.release(entry.handle)
+            entry.handle = None
+
     def fail_generation(
         self, key: ArtifactKey, error_msg: str, generation_id: GenerationID
     ) -> None:
@@ -905,6 +945,11 @@ class ArtifactManager:
             active_data_gen_ids: Set of active data generation IDs.
             active_view_gen_ids: Set of active view generation IDs.
         """
+        logger.debug(
+            f"prune: active_data_gen_ids={active_data_gen_ids}, "
+            f"active_view_gen_ids={active_view_gen_ids}, "
+            f"ledger_size={len(self._ledger)}"
+        )
         keys_to_remove = []
         for composite_key, entry in list(self._ledger.items()):
             base_key = extract_base_key(composite_key)
@@ -918,8 +963,13 @@ class ArtifactManager:
             if generation_id not in active_gen_ids:
                 if entry.state == ArtifactLifecycle.PROCESSING:
                     continue
+                logger.debug(
+                    f"prune: Scheduling removal of {composite_key} "
+                    f"(state={entry.state}, gen_id={generation_id})"
+                )
                 keys_to_remove.append(composite_key)
 
+        logger.debug(f"prune: Removing {len(keys_to_remove)} entries")
         for composite_key in keys_to_remove:
             entry = self._ledger.get(composite_key)
             if entry and entry.handle is not None:

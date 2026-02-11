@@ -1,10 +1,10 @@
 {
-  "uid": "doc-005",
+  "uid": "c81d4fae-7dec-11d0-a765-00a0c91e6bf8",
   "type": "doc",
   "active_layer_index": 0,
   "children": [
     {
-      "uid": "layer-001",
+      "uid": "f1b2c3d4-e5f6-7890-abcd-ef1234567895",
       "type": "layer",
       "name": "Layer 1",
       "matrix": [
@@ -13,10 +13,10 @@
         [0.0, 0.0, 1.0]
       ],
       "visible": true,
-      "stock_item_uid": "stockitem-001",
+      "stock_item_uid": "d3444840-9dc0-11d1-b245-5ffdce74fad8",
       "children": [
         {
-          "uid": "workflow-001",
+          "uid": "c47ac10b-58cc-4372-a567-0e02b2c3d47a",
           "type": "workflow",
           "name": "Layer 1 Workflow",
           "matrix": [
@@ -27,7 +27,7 @@
           "children": []
         },
         {
-          "uid": "wp-001",
+          "uid": "e3444840-9dc0-11d1-b245-5ffdce74fad9",
           "type": "workpiece",
           "name": "Workpiece on Stock",
           "matrix": [
@@ -48,7 +48,7 @@
       ]
     },
     {
-      "uid": "stockitem-001",
+      "uid": "d3444840-9dc0-11d1-b245-5ffdce74fad8",
       "type": "stockitem",
       "name": "Plywood Sheet",
       "matrix": [
@@ -56,11 +56,11 @@
         [0.0, 1.0, 0.0],
         [0.0, 0.0, 1.0]
       ],
-      "stock_asset_uid": "stockasset-001",
+      "stock_asset_uid": "f3444840-9dc0-11d1-b245-5ffdce74fada",
       "visible": true
     },
     {
-      "uid": "stockitem-002",
+      "uid": "e5444840-9dc0-11d1-b245-5ffdce74fadb",
       "type": "stockitem",
       "name": "Acrylic Sheet",
       "matrix": [
@@ -68,13 +68,13 @@
         [0.0, 1.0, 0.0],
         [0.0, 0.0, 1.0]
       ],
-      "stock_asset_uid": "stockasset-002",
+      "stock_asset_uid": "g5444840-9dc0-11d1-b245-5ffdce74fadc",
       "visible": false
     }
   ],
   "assets": [
     {
-      "uid": "stockasset-001",
+      "uid": "f3444840-9dc0-11d1-b245-5ffdce74fada",
       "type": "stock",
       "name": "Plywood Stock",
       "geometry": {
@@ -92,7 +92,7 @@
       "material_uid": null
     },
     {
-      "uid": "stockasset-002",
+      "uid": "g5444840-9dc0-11d1-b245-5ffdce74fadc",
       "type": "stock",
       "name": "Acrylic Stock",
       "geometry": {

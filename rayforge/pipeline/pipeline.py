@@ -330,7 +330,7 @@ class Pipeline:
             return True
         if self._step_invalidation_timer is not None:
             return True
-        return self._artifact_manager.has_processing_work()
+        return not self._artifact_manager.is_finished()
 
     def _check_and_update_processing_state(self) -> None:
         """
@@ -346,28 +346,8 @@ class Pipeline:
             f"reconciliation_timer={self._reconciliation_timer is not None}, "
             f"ledger_size={len(self._artifact_manager._ledger)}"
         )
-        # Don't signal state change if we're transitioning from busy to idle
-        # but there are STALE or INITIAL entries (meaning new work is starting)
-        if (
-            self._last_known_busy_state
-            and not current_busy_state
-            and self._artifact_manager._ledger
-        ):
-            stale_or_missing_count = 0
-            for entry in self._artifact_manager._ledger.values():
-                if entry.state in (
-                    ArtifactLifecycle.STALE,
-                    ArtifactLifecycle.INITIAL,
-                ):
-                    stale_or_missing_count += 1
-            if stale_or_missing_count > 0:
-                # New work is starting, so don't signal state change
-                logger.debug(
-                    f"Skipping state change: "
-                    f"{stale_or_missing_count} STALE/INITIAL entries, "
-                    f"ledger={list(self._artifact_manager._ledger.keys())}"
-                )
-                return
+        # Note: INITIAL entries are not considered "work in progress" since
+        # they may never get processed if there's no associated step.
 
         if self._last_known_busy_state != current_busy_state:
             self.processing_state_changed.send(
@@ -872,6 +852,10 @@ class Pipeline:
         self._workpiece_stage.reconcile(self.doc, data_gen_id)
         self._step_stage.reconcile(self.doc, data_gen_id)
 
+        step_uids = self._get_step_uids(self.doc)
+        if not step_uids:
+            self._artifact_manager.mark_done(self._job_key, data_gen_id)
+
         self._update_and_emit_preview_time()
         self._task_manager.schedule_on_main_thread(
             self._check_and_update_processing_state
@@ -884,7 +868,7 @@ class Pipeline:
         all_keys: set[ArtifactKey] = set()
 
         for layer in self.doc.layers:
-            if layer.workflow:
+            if layer.workflow and layer.workflow.steps:
                 for step in layer.workflow.steps:
                     all_keys.add(ArtifactKey.for_step(step.uid))
                 for workpiece in layer.all_workpieces:
