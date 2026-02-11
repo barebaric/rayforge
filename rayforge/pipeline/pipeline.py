@@ -1,14 +1,3 @@
-"""
-Defines the Pipeline, the central orchestrator for the data
-pipeline.
-
-This module contains the Pipeline class, which acts as a bridge
-between the pure data models in the `core` module (Doc, Layer, Step,
-WorkPiece) and the execution logic of the pipeline. Its primary responsibility
-is to listen for changes in the document and delegate tasks to the
-appropriate pipeline stages.
-"""
-
 from __future__ import annotations
 import logging
 import asyncio
@@ -21,6 +10,7 @@ from typing import (
     Union,
     Any,
     Callable,
+    Dict,
 )
 from blinker import Signal
 from contextlib import contextmanager
@@ -42,6 +32,7 @@ from .artifact import (
     StepOpsArtifactHandle,
     WorkPieceArtifact,
 )
+from .artifact.key import ArtifactKey
 from .artifact.manager import make_composite_key
 from .artifact.lifecycle import ArtifactLifecycle
 from .stage import (
@@ -72,7 +63,7 @@ class Pipeline:
 
     Attributes:
         doc (Doc): The document model this pipeline is observing.
-        _current_generation_id (int): The current GlobalDataID representing
+        _global_generation_id (int): The current GlobalDataID representing
             the authoritative version of the document.
         ops_generation_starting (Signal): Fired when generation begins for a
             (Step, WorkPiece) pair.
@@ -116,7 +107,9 @@ class Pipeline:
         self._task_manager = task_manager
         self._artifact_store = artifact_store
         self._machine = machine
-        self._current_generation_id = 0
+        self._global_generation_id = 0
+        self._docitem_to_artifact_key: Dict[DocItem, ArtifactKey] = {}
+        self._job_key = ArtifactKey.for_job()
         self._pause_count = 0
         self._last_known_busy_state = False
         self._reconciliation_timer: Optional[threading.Timer] = None
@@ -336,7 +329,7 @@ class Pipeline:
             return True
         if self._step_invalidation_timer is not None:
             return True
-        return self._artifact_manager.has_pending_work()
+        return self._artifact_manager.has_processing_work()
 
     def _check_and_update_processing_state(self) -> None:
         """
@@ -353,7 +346,7 @@ class Pipeline:
             f"ledger_size={len(self._artifact_manager._ledger)}"
         )
         # Don't signal state change if we're transitioning from busy to idle
-        # but there are STALE or MISSING entries (meaning new work is starting)
+        # but there are STALE or INITIAL entries (meaning new work is starting)
         if (
             self._last_known_busy_state
             and not current_busy_state
@@ -363,14 +356,14 @@ class Pipeline:
             for entry in self._artifact_manager._ledger.values():
                 if entry.state in (
                     ArtifactLifecycle.STALE,
-                    ArtifactLifecycle.MISSING,
+                    ArtifactLifecycle.INITIAL,
                 ):
                     stale_or_missing_count += 1
             if stale_or_missing_count > 0:
                 # New work is starting, so don't signal state change
                 logger.debug(
                     f"Skipping state change: "
-                    f"{stale_or_missing_count} STALE/MISSING entries, "
+                    f"{stale_or_missing_count} STALE/INITIAL entries, "
                     f"ledger={list(self._artifact_manager._ledger.keys())}"
                 )
                 return
@@ -453,7 +446,8 @@ class Pipeline:
 
         if self._reconciliation_timer:
             self._reconciliation_timer.cancel()
-        elif not self.is_busy:
+
+        if not self._reconciliation_timer:
             # If there was no timer, we are transitioning from idle to busy.
             # Immediately update the state, but only if we're not already busy
             # (to avoid spurious state changes during rapid invalidations).
@@ -547,10 +541,17 @@ class Pipeline:
             f"origin.uid={origin.uid}"
         )
         if isinstance(origin, Step):
+            logger.debug(
+                f"Pipeline: Invalidating workpieces for step {origin.uid}"
+            )
             self._workpiece_stage.invalidate_for_step(origin.uid)
+            logger.debug(f"Pipeline: Invalidating step {origin.uid}")
             self._step_stage.invalidate(origin.uid)
         elif isinstance(origin, WorkPiece):
+            logger.debug(f"Pipeline: Invalidating workpiece {origin.uid}")
             self._workpiece_stage.invalidate_for_workpiece(origin.uid)
+            logger.debug(f"Pipeline: Invalidating step {origin.uid}")
+            self._step_stage.invalidate(origin.uid)
 
         self._schedule_reconciliation()
 
@@ -653,10 +654,7 @@ class Pipeline:
         # (to avoid spurious state changes during rapid invalidations)
         # Also skip if reconciliation is in progress to avoid state changes
         # when a canceled task finishes while a new task is being started
-        if (
-            not self.is_busy
-            and self._reconciliation_timer is None
-        ):
+        if not self.is_busy and self._reconciliation_timer is None:
             self._task_manager.schedule_on_main_thread(
                 self._check_and_update_processing_state
             )
@@ -687,11 +685,13 @@ class Pipeline:
                 f"_on_workpiece_artifact_adopted: Requesting view render "
                 f"for ({step_uid}, {workpiece_uid})"
             )
+
+            key = ArtifactKey.for_view(workpiece_uid)
             self._workpiece_view_stage.request_view_render(
-                step_uid,
-                workpiece_uid,
+                key,
                 self._current_view_context,
                 self._workpiece_view_stage.current_view_generation_id,
+                step_uid,
             )
         else:
             logger.warning(
@@ -851,20 +851,37 @@ class Pipeline:
         )
 
     def reconcile_all(self) -> None:
-        """Synchronizes all stages with the document."""
+        """
+        Synchronizes all stages with the document by declaring the full
+        set of required artifacts for the new generation.
+        """
         if self.is_paused or not self.doc:
             return
         logger.debug(f"{self.__class__.__name__}.reconcile_all called")
 
         # Increment the generation ID for this reconciliation cycle
-        self._current_generation_id += 1
+        self._global_generation_id += 1
+        gen_id = self._global_generation_id
+
+        # --- INTENT DECLARATION PHASE ---
+        all_keys: set[ArtifactKey] = set()
+        for layer in self.doc.layers:
+            if layer.workflow:
+                for step in layer.workflow.steps:
+                    all_keys.add(ArtifactKey.for_step(step.uid))
+                for workpiece in layer.all_workpieces:
+                    all_keys.add(ArtifactKey.for_workpiece(workpiece.uid))
+        all_keys.add(self._job_key)
+        self._artifact_manager.declare_generation(all_keys, gen_id)
 
         # Immediately notify UI that estimates are now stale and recalculating.
         self.job_time_updated.send(self, total_seconds=None)
 
-        self._workpiece_stage.reconcile(self.doc, self._current_generation_id)
-        self._step_stage.reconcile(self.doc, self._current_generation_id)
-        self._job_stage.reconcile(self.doc, self._current_generation_id)
+        # --- EXECUTION PHASE ---
+        self._workpiece_stage.reconcile(self.doc, gen_id)
+        self._step_stage.reconcile(self.doc, gen_id)
+        self._job_stage.reconcile(self.doc, gen_id)
+
         self._update_and_emit_preview_time()
         self._task_manager.schedule_on_main_thread(
             self._check_and_update_processing_state
@@ -889,12 +906,22 @@ class Pipeline:
             step.uid, workpiece.uid, workpiece.get_world_transform()
         )
 
+    def _get_or_create_artifact_key(
+        self, item: DocItem, group: str
+    ) -> ArtifactKey:
+        key = self._docitem_to_artifact_key.get(item)
+        if key is None:
+            key = ArtifactKey(id=item.uid, group=group)
+            self._docitem_to_artifact_key[item] = key
+        return key
+
     def get_artifact_handle(
         self, step_uid: str, workpiece_uid: str
     ) -> Optional[BaseArtifactHandle]:
         """Retrieves the handle for a generated artifact from the cache."""
+        key = ArtifactKey.for_workpiece(workpiece_uid)
         return self._artifact_manager.get_workpiece_handle(
-            step_uid, workpiece_uid, self._current_generation_id
+            key, self._global_generation_id
         )
 
     def get_step_render_artifact_handle(
@@ -913,8 +940,9 @@ class Pipeline:
         Retrieves the handle for a generated step ops artifact. This is
         intended for the job assembly process.
         """
+        key = ArtifactKey.for_step(step_uid)
         return self._artifact_manager.get_step_ops_handle(
-            step_uid, self._current_generation_id
+            key, self._global_generation_id
         )
 
     def get_scaled_ops(
@@ -956,10 +984,10 @@ class Pipeline:
         """
         # Check if a job generation is already pending or running
         composite_key = make_composite_key(
-            self._artifact_manager.JOB_KEY, self._current_generation_id
+            self._job_key, self._global_generation_id
         )
         entry = self._artifact_manager._get_ledger_entry(composite_key)
-        if entry and entry.state == ArtifactLifecycle.PENDING:
+        if entry and entry.state == ArtifactLifecycle.PROCESSING:
             msg = "Job generation is already in progress."
             logger.warning(msg)
             return RuntimeError(msg)
@@ -1034,32 +1062,23 @@ class Pipeline:
 
         # 2. Get step UIDs and register dependencies
         step_uids = self._get_step_uids(self.doc)
-        self._artifact_manager.sync_keys(
-            "job",
-            {self._artifact_manager.JOB_KEY},
-            self._current_generation_id,
-        )
-        # Ensure step keys are synced before registering dependencies
-        self._step_stage.reconcile(self.doc, self._current_generation_id)
+        # The job's intent is already declared during reconcile_all.
+        # We just need to ensure its dependencies are registered for this
+        # generation.
+        self._step_stage.reconcile(self.doc, self._global_generation_id)
         for step_uid in step_uids:
-            step_key = ("step", step_uid)
-            step_composite_key = make_composite_key(
-                step_key, self._current_generation_id
-            )
-            job_composite_key = make_composite_key(
-                self._artifact_manager.JOB_KEY, self._current_generation_id
-            )
+            step_key = ArtifactKey.for_step(step_uid)
             self._artifact_manager._register_dependency(
-                step_composite_key, job_composite_key
+                step_key, self._job_key
             )
 
         # 3. Check if all step artifacts are ready by trying to check them out.
         try:
             dep_handles = self._artifact_manager.checkout_dependencies(
-                self._artifact_manager.JOB_KEY, self._current_generation_id
+                self._job_key, self._global_generation_id
             )
         except AssertionError:
-            # This means some dependencies are not READY.
+            # This means some dependencies are not DONE.
             # Trigger generation of missing dependencies.
             self.reconcile_all()
             when_done(
@@ -1074,8 +1093,7 @@ class Pipeline:
         # 4. Assemble the JobDescription
         step_handles = {}
         for key, handle in dep_handles.items():
-            step_uid = key[1]
-            step_handles[step_uid] = handle.to_dict()
+            step_handles[key.id] = handle.to_dict()
 
         self._machine.hydrate()
         job_desc = self._create_job_description(
@@ -1086,7 +1104,8 @@ class Pipeline:
         self._job_stage.generate_job(
             job_desc,
             on_done=when_done,
-            generation_id=self._current_generation_id,
+            generation_id=self._global_generation_id,
+            job_key=self._job_key,
         )
 
     async def generate_job_artifact_async(
@@ -1125,9 +1144,9 @@ class Pipeline:
 
     def request_view_render(
         self,
-        step_uid: str,
         workpiece_uid: str,
         context: RenderContext,
+        step_uid: str,
         force: bool = False,
     ):
         """
@@ -1135,15 +1154,16 @@ class Pipeline:
         bitmap for a workpiece view.
 
         Args:
-            step_uid: The unique identifier of the step.
             workpiece_uid: The unique identifier of the workpiece.
             context: The render context to use.
+            step_uid: The unique identifier of the step.
             force: If True, force re-rendering even if the context
             appears unchanged.
         """
+        key = ArtifactKey.for_view(workpiece_uid)
         self._workpiece_view_stage.request_view_render(
-            step_uid,
-            workpiece_uid,
+            key,
             context,
             self._workpiece_view_stage.current_view_generation_id,
+            step_uid,
         )

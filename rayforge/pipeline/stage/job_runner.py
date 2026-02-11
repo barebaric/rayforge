@@ -11,6 +11,7 @@ from ..artifact import (
     create_handle_from_dict,
     StepOpsArtifact,
 )
+from ..artifact.key import ArtifactKey
 from ..artifact.store import ArtifactStore
 from .job_compute import compute_job_artifact
 
@@ -36,6 +37,7 @@ def make_job_artifact_in_subprocess(
     job_description_dict: Dict[str, Any],
     creator_tag: str,
     generation_id: int,
+    job_key: ArtifactKey,
 ) -> None:
     """
     The main entry point for assembling, post-processing, and encoding a
@@ -77,6 +79,7 @@ def make_job_artifact_in_subprocess(
         {
             "handle_dict": final_handle.to_dict(),
             "generation_id": generation_id,
+            "job_key": {"id": job_key.id, "group": job_key.group},
         },
     )
 

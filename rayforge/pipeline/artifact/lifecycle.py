@@ -10,10 +10,10 @@ from .handle import BaseArtifactHandle
 class ArtifactLifecycle(Enum):
     """Lifecycle states for artifacts in the ledger."""
 
-    MISSING = "missing"
+    INITIAL = "initial"
+    PROCESSING = "processing"
+    DONE = "done"
     STALE = "stale"
-    PENDING = "pending"
-    READY = "ready"
     ERROR = "error"
 
 

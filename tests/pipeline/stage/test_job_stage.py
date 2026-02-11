@@ -3,10 +3,9 @@ import pytest
 from unittest.mock import MagicMock, ANY
 
 from rayforge.core.doc import Doc
-from rayforge.pipeline.artifact.lifecycle import (
-    ArtifactLifecycle,
-    LedgerEntry,
-)
+from rayforge.pipeline.artifact.lifecycle import ArtifactLifecycle
+from rayforge.pipeline.artifact.key import ArtifactKey
+from rayforge.pipeline.artifact.manager import make_composite_key
 from rayforge.pipeline.stage.base import PipelineStage
 from rayforge.pipeline.stage.job_stage import JobPipelineStage
 from rayforge.pipeline.stage.job_runner import (
@@ -17,10 +16,6 @@ from rayforge.pipeline.artifact import (
     JobArtifactHandle,
     ArtifactManager,
     StepOpsArtifactHandle,
-)
-from rayforge.pipeline.artifact.manager import (
-    make_composite_key,
-    extract_base_key,
 )
 from rayforge.pipeline.steps import create_contour_step
 
@@ -114,13 +109,10 @@ class TestJobPipelineStage:
         )
 
         job_generation_id = int(time.time() * 1000)
-        job_composite = make_composite_key(
-            artifact_manager.JOB_KEY, job_generation_id
-        )
-        artifact_manager._ledger[job_composite] = LedgerEntry(
-            state=ArtifactLifecycle.MISSING,
-            generation_id=job_generation_id,
-        )
+        job_key = ArtifactKey.for_job()
+
+        # Pre-declare the job key as INITIAL (simulating Pipeline behavior)
+        artifact_manager.register_intent(job_key, job_generation_id)
 
         stage = JobPipelineStage(mock_task_mgr, artifact_manager, machine)
 
@@ -130,7 +122,9 @@ class TestJobPipelineStage:
             doc_dict=real_doc_with_step.to_dict(),
         )
 
-        stage.generate_job(job_desc)
+        stage.generate_job(
+            job_desc, generation_id=job_generation_id, job_key=job_key
+        )
 
         mock_task_mgr.run_process.assert_called_once()
         call_args = mock_task_mgr.run_process.call_args
@@ -139,7 +133,17 @@ class TestJobPipelineStage:
         # Verify artifact_store is passed as second positional argument
         assert call_args[0][1] is artifact_manager._store
 
-        # Access the nested job_description_dict
+        # Access job_key passed to subprocess
+        actual_job_key = call_args.kwargs["job_key"]
+        assert actual_job_key == job_key
+
+        # Verify the job_key was registered in the ledger as PROCESSING
+        job_composite = make_composite_key(actual_job_key, job_generation_id)
+        entry = artifact_manager._ledger.get(job_composite)
+        assert entry is not None
+        assert entry.state == ArtifactLifecycle.PROCESSING
+
+        # Access nested job_description_dict
         job_desc_dict = call_args.kwargs["job_description_dict"]
         assert job_desc_dict == job_desc.__dict__
         assert job_desc_dict["step_artifact_handles_by_uid"] == {
@@ -171,10 +175,9 @@ class TestJobPipelineStage:
             time_estimate=10.0,
         )
 
-        job_composite = make_composite_key(artifact_manager.JOB_KEY, 0)
-        artifact_manager._ledger[job_composite] = LedgerEntry(
-            state=ArtifactLifecycle.MISSING,
-        )
+        job_generation_id = 0
+        job_key = ArtifactKey.for_job()
+        artifact_manager.register_intent(job_key, job_generation_id)
 
         stage = JobPipelineStage(mock_task_mgr, artifact_manager, machine)
         mock_finished_signal = MagicMock()
@@ -186,50 +189,32 @@ class TestJobPipelineStage:
             doc_dict=real_doc_with_step.to_dict(),
         )
 
-        stage.generate_job(job_desc)
+        stage.generate_job(
+            job_desc, generation_id=job_generation_id, job_key=job_key
+        )
 
         task = mock_task_mgr.created_tasks[0]
 
         task.get_status = MagicMock(return_value="completed")
         task.result = MagicMock(return_value=None)
 
-        # Find the PENDING entry created by mark_pending
-        generation_id = None
-        for key, entry in artifact_manager._ledger.items():
-            if (
-                extract_base_key(key) == artifact_manager.JOB_KEY
-                and entry.state == ArtifactLifecycle.PENDING
-            ):
-                generation_id = entry.generation_id
-                break
-        assert generation_id is not None, "No PENDING entry found"
-
         event_data = {
             "handle_dict": handle.to_dict(),
-            "generation_id": generation_id,
+            "generation_id": job_generation_id,
+            "job_key": {
+                "id": job_key.id,
+                "group": job_key.group,
+            },
         }
 
-        # Directly monkeypatch the method on the instance
         artifact_manager.adopt_artifact = MagicMock(return_value=handle)
-
-        # Track the number of times commit is called
-        commit_call_count = [0]
-        original_commit = artifact_manager.commit
-
-        artifact_manager.commit = MagicMock(
-            side_effect=lambda key, h, gen_id: (
-                commit_call_count.__setitem__(0, commit_call_count[0] + 1)
-                or original_commit(key, h, gen_id)
-            )
-        )
-
         task.when_event(task, "artifact_created", event_data)
 
-        # Assert commit was called once
-        assert commit_call_count[0] == 1
-
-        # Assert handle was cached after adopt_artifact
-        assert artifact_manager.get_job_handle(generation_id) == handle
+        # Assert handle was cached after event
+        assert (
+            artifact_manager.get_job_handle(job_key, job_generation_id)
+            == handle
+        )
 
         task.when_done(task)
 
@@ -239,7 +224,10 @@ class TestJobPipelineStage:
         )
 
         # The handle SHOULD persist on success
-        assert artifact_manager.get_job_handle(generation_id) == handle
+        assert (
+            artifact_manager.get_job_handle(job_key, job_generation_id)
+            == handle
+        )
 
     def test_completion_with_failure(
         self,
@@ -266,9 +254,9 @@ class TestJobPipelineStage:
             time_estimate=10.0,
         )
 
-        artifact_manager._ledger[artifact_manager.JOB_KEY] = LedgerEntry(
-            state=ArtifactLifecycle.MISSING,
-        )
+        job_generation_id = 0
+        job_key = ArtifactKey.for_job()
+        artifact_manager.register_intent(job_key, job_generation_id)
 
         stage = JobPipelineStage(mock_task_mgr, artifact_manager, machine)
         mock_failed_signal = MagicMock()
@@ -280,15 +268,17 @@ class TestJobPipelineStage:
             doc_dict=real_doc_with_step.to_dict(),
         )
 
-        stage.generate_job(job_desc)
+        stage.generate_job(
+            job_desc, generation_id=job_generation_id, job_key=job_key
+        )
 
         task = mock_task_mgr.created_tasks[0]
 
         task.get_status = MagicMock(return_value="failed")
         task.result = MagicMock(side_effect=RuntimeError("Task failed"))
 
-        # For failure case, the artifact_created event should not be called
-        # since the task failed before creating the artifact
+        # For failure case, artifact_created event should not be called
+        # since the task failed before creating an artifact
         task.when_done(task)
 
         # Signal is emitted when task fails
@@ -297,7 +287,9 @@ class TestJobPipelineStage:
         )
 
         # On failure, the handle MUST be cleared
-        assert artifact_manager.get_job_handle(0) is None
+        assert (
+            artifact_manager.get_job_handle(job_key, job_generation_id) is None
+        )
 
     def test_adopt_job_artifact(
         self, mock_task_mgr, artifact_manager, test_machine_and_config
@@ -316,16 +308,19 @@ class TestJobPipelineStage:
 
         artifact_manager.adopt_artifact = MagicMock(return_value=handle)
 
+        job_key = ArtifactKey.for_job()
         data = {"handle_dict": handle.to_dict()}
-        adopted = stage._adopt_job_artifact(data)
+        adopted = stage._adopt_job_artifact(data, job_key)
 
         assert adopted is handle
-        artifact_manager.adopt_artifact.assert_called_once()
+        artifact_manager.adopt_artifact.assert_called_once_with(
+            job_key, handle.to_dict()
+        )
 
     def test_adopt_job_artifact_wrong_type(
         self, mock_task_mgr, artifact_manager, test_machine_and_config
     ):
-        """Test that adopting wrong artifact type raises TypeError."""
+        """Test that adopting the wrong artifact type raises TypeError."""
         machine, _ = test_machine_and_config
         stage = JobPipelineStage(mock_task_mgr, artifact_manager, machine)
 
@@ -334,7 +329,8 @@ class TestJobPipelineStage:
 
         artifact_manager.adopt_artifact = MagicMock(return_value=wrong_handle)
 
+        job_key = ArtifactKey.for_job()
         data = {"handle_dict": {}}
 
         with pytest.raises(TypeError, match="Expected a JobArtifactHandle"):
-            stage._adopt_job_artifact(data)
+            stage._adopt_job_artifact(data, job_key)
