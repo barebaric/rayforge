@@ -31,6 +31,7 @@ def _trace_and_modify_surface(
     workpiece: WorkPiece,
     settings: dict,
     modifiers: List[Modifier],
+    generation_size: Optional[Tuple[float, float]] = None,
     y_offset_mm: float = 0.0,
     context: Optional[ProgressContext] = None,
 ) -> WorkPieceArtifact:
@@ -47,6 +48,8 @@ def _trace_and_modify_surface(
         workpiece: The WorkPiece to generate operations for.
         settings: Dictionary of settings from the Step.
         modifiers: List of Modifier objects to apply to surfaces.
+        generation_size: The full generation size in mm, or None to use
+            workpiece size.
         y_offset_mm: The vertical offset in mm for the current chunk.
         context: Optional ProgressContext for progress reporting.
 
@@ -56,7 +59,7 @@ def _trace_and_modify_surface(
     for modifier in modifiers:
         if surface:
             modifier.run(surface)
-    return opsproducer.run(
+    artifact = opsproducer.run(
         laser,
         surface,
         render_pixels_per_mm,
@@ -65,6 +68,9 @@ def _trace_and_modify_surface(
         y_offset_mm=y_offset_mm,
         context=context,
     )
+    if generation_size is not None:
+        artifact.generation_size = generation_size
+    return artifact
 
 
 def _create_initial_ops(settings: dict) -> Ops:
@@ -138,6 +144,7 @@ def _process_vector_render_and_trace(
     laser: Laser,
     settings: dict,
     modifiers: List[Modifier],
+    generation_size: Tuple[float, float],
     context: Optional[ProgressContext] = None,
 ) -> Optional[WorkPieceArtifact]:
     """
@@ -149,6 +156,7 @@ def _process_vector_render_and_trace(
         laser: The Laser model with machine parameters.
         settings: Dictionary of settings from the Step.
         modifiers: List of Modifier objects to apply to surfaces.
+        generation_size: The full generation size in mm.
         context: Optional ProgressContext for progress reporting.
 
     Returns:
@@ -173,6 +181,7 @@ def _process_vector_render_and_trace(
         workpiece,
         settings,
         modifiers,
+        generation_size=generation_size,
         context=context,
     )
 
@@ -186,6 +195,7 @@ def _execute_vector(
     laser: Laser,
     settings: dict,
     modifiers: List[Modifier],
+    generation_size: Tuple[float, float],
     context: Optional[ProgressContext] = None,
 ) -> Iterator[Tuple[WorkPieceArtifact, float]]:
     """
@@ -197,6 +207,7 @@ def _execute_vector(
         laser: The Laser model with machine parameters.
         settings: Dictionary of settings from the Step.
         modifiers: List of Modifier objects to apply to surfaces.
+        generation_size: The full generation size in mm.
         context: Optional ProgressContext for progress reporting.
 
     Yields:
@@ -217,6 +228,7 @@ def _execute_vector(
             workpiece=workpiece,
             settings=settings,
             modifiers=modifiers,
+            generation_size=generation_size,
             context=context,
         )
         if artifact:
@@ -224,7 +236,13 @@ def _execute_vector(
         return
 
     artifact = _process_vector_render_and_trace(
-        workpiece, opsproducer, laser, settings, modifiers, context
+        workpiece,
+        opsproducer,
+        laser,
+        settings,
+        modifiers,
+        generation_size,
+        context,
     )
     if artifact:
         yield artifact, 1.0
@@ -236,6 +254,7 @@ def _process_raster_full_render(
     laser: Laser,
     settings: dict,
     modifiers: List[Modifier],
+    generation_size: Tuple[float, float],
     context: Optional[ProgressContext] = None,
 ) -> Optional[WorkPieceArtifact]:
     """
@@ -247,6 +266,7 @@ def _process_raster_full_render(
         laser: The Laser model with machine parameters.
         settings: Dictionary of settings from the Step.
         modifiers: List of Modifier objects to apply to surfaces.
+        generation_size: The full generation size in mm.
         context: Optional ProgressContext for progress reporting.
 
     Returns:
@@ -269,6 +289,7 @@ def _process_raster_full_render(
         workpiece,
         settings,
         modifiers,
+        generation_size=generation_size,
         context=context,
     )
 
@@ -286,6 +307,7 @@ def _process_raster_chunk(
     settings: dict,
     modifiers: List[Modifier],
     total_height_px: float,
+    generation_size: Tuple[float, float],
     context: Optional[ProgressContext] = None,
 ) -> Tuple[WorkPieceArtifact, float]:
     """
@@ -301,6 +323,7 @@ def _process_raster_chunk(
         settings: Dictionary of settings from the Step.
         modifiers: List of Modifier objects to apply to surfaces.
         total_height_px: Total height in pixels for progress calculation.
+        generation_size: The full generation size in mm.
         context: Optional ProgressContext for progress reporting.
 
     Returns:
@@ -323,6 +346,7 @@ def _process_raster_chunk(
         workpiece,
         settings,
         modifiers,
+        generation_size=generation_size,
         y_offset_mm=y_offset_from_top_mm,
         context=context,
     )
@@ -334,6 +358,8 @@ def _process_raster_chunk(
     x_offset_mm = x_offset_px / px_per_mm_x
     chunk_artifact.ops.translate(x_offset_mm, y_offset_mm)
 
+    chunk_artifact.generation_size = generation_size
+
     return chunk_artifact, progress
 
 
@@ -343,6 +369,7 @@ def _execute_raster(
     laser: Laser,
     settings: dict,
     modifiers: List[Modifier],
+    generation_size: Tuple[float, float],
     context: Optional[ProgressContext] = None,
 ) -> Iterator[Tuple[WorkPieceArtifact, float]]:
     """
@@ -354,6 +381,7 @@ def _execute_raster(
         laser: The Laser model with machine parameters.
         settings: Dictionary of settings from the Step.
         modifiers: List of Modifier objects to apply to surfaces.
+        generation_size: The full generation size in mm.
         context: Optional ProgressContext for progress reporting.
 
     Yields:
@@ -368,7 +396,13 @@ def _execute_raster(
 
     if opsproducer.requires_full_render:
         artifact = _process_raster_full_render(
-            workpiece, opsproducer, laser, settings, modifiers, context
+            workpiece,
+            opsproducer,
+            laser,
+            settings,
+            modifiers,
+            generation_size,
+            context,
         )
         if artifact:
             yield artifact, 1.0
@@ -393,6 +427,7 @@ def _execute_raster(
             settings,
             modifiers,
             total_height_px,
+            generation_size,
             context,
         )
 
@@ -482,6 +517,7 @@ def compute_workpiece_artifact_vector(
     laser: Laser,
     modifiers: List[Modifier],
     settings: dict,
+    generation_size: Tuple[float, float],
     context: Optional[ProgressContext] = None,
 ) -> Optional[WorkPieceArtifact]:
     """
@@ -493,6 +529,7 @@ def compute_workpiece_artifact_vector(
         laser: The Laser model with machine parameters.
         modifiers: List of Modifier objects to apply to surfaces.
         settings: Dictionary of settings from the Step.
+        generation_size: The full generation size in mm.
         context: Optional ProgressContext for progress reporting.
 
     Returns:
@@ -512,7 +549,13 @@ def compute_workpiece_artifact_vector(
     execute_weight = 0.20
 
     for chunk_artifact, execute_progress in _execute_vector(
-        workpiece, opsproducer, laser, settings, modifiers, context
+        workpiece,
+        opsproducer,
+        laser,
+        settings,
+        modifiers,
+        generation_size,
+        context,
     ):
         _set_progress(
             execute_progress * execute_weight,
@@ -545,6 +588,7 @@ def compute_workpiece_artifact_raster(
     laser: Laser,
     modifiers: List[Modifier],
     settings: dict,
+    generation_size: Tuple[float, float],
     on_chunk: Optional[Callable[[WorkPieceArtifact], None]] = None,
     context: Optional[ProgressContext] = None,
 ) -> Optional[WorkPieceArtifact]:
@@ -557,6 +601,7 @@ def compute_workpiece_artifact_raster(
         laser: The Laser model with machine parameters.
         modifiers: List of Modifier objects to apply to surfaces.
         settings: Dictionary of settings from the Step.
+        generation_size: The full generation size in mm.
         context: Optional ProgressContext for progress reporting.
 
     Returns:
@@ -576,7 +621,13 @@ def compute_workpiece_artifact_raster(
     execute_weight = 0.20
 
     for chunk_artifact, execute_progress in _execute_raster(
-        workpiece, opsproducer, laser, settings, modifiers, context
+        workpiece,
+        opsproducer,
+        laser,
+        settings,
+        modifiers,
+        generation_size,
+        context,
     ):
         _set_progress(
             execute_progress * execute_weight,
@@ -651,6 +702,7 @@ def compute_workpiece_artifact(
             laser,
             modifiers,
             settings,
+            generation_size,
             context,
         )
     else:
@@ -660,6 +712,7 @@ def compute_workpiece_artifact(
             laser,
             modifiers,
             settings,
+            generation_size,
             on_chunk=on_chunk,
             context=context,
         )
