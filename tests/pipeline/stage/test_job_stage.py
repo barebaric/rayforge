@@ -110,7 +110,7 @@ class TestJobPipelineStage:
         job_generation_id = int(time.time() * 1000)
         job_key = ArtifactKey.for_job()
 
-        # Pre-declare the job key as INITIAL (simulating Pipeline behavior)
+        # Pre-declare the job key as QUEUED (simulating Pipeline behavior)
         artifact_manager.register_intent(job_key, job_generation_id)
 
         stage = JobPipelineStage(mock_task_mgr, artifact_manager, machine)

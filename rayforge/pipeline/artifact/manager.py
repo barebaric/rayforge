@@ -653,14 +653,14 @@ class ArtifactManager:
         Returns True if the ledger contains anything the is not DONE
         or ERROR.
 
-        INITIAL entries are considered "unfinished work".
+        QUEUED entries are considered "unfinished work".
         """
         if not self._ledger:
             return True
 
         for entry in self._ledger.values():
             if entry.state in (
-                ArtifactLifecycle.INITIAL,
+                ArtifactLifecycle.QUEUED,
                 ArtifactLifecycle.PROCESSING,
             ):
                 return False
@@ -670,7 +670,7 @@ class ArtifactManager:
         self, stage_type: str, generation_id: GenerationID
     ) -> List[ArtifactKey]:
         """
-        Returns a list of keys that are INITIAL and whose dependencies
+        Returns a list of keys that are QUEUED and whose dependencies
         are all DONE.
 
         This is the core scheduling logic. Keys are filtered by
@@ -680,7 +680,7 @@ class ArtifactManager:
         for key, entry in self._ledger.items():
             if extract_generation_id(key) != generation_id:
                 continue
-            if entry.state != ArtifactLifecycle.INITIAL:
+            if entry.state != ArtifactLifecycle.QUEUED:
                 continue
             base_key = extract_base_key(key)
             if base_key.group != stage_type:
@@ -702,7 +702,7 @@ class ArtifactManager:
         self, key: ArtifactKey, generation_id: GenerationID
     ) -> None:
         """
-        Creates an entry (key, generation_id) with state INITIAL.
+        Creates an entry (key, generation_id) with state QUEUED.
 
         Fails if the entry already exists.
 
@@ -720,7 +720,7 @@ class ArtifactManager:
                 f"already exists"
             )
         self._ledger[composite_key] = LedgerEntry(
-            state=ArtifactLifecycle.INITIAL,
+            state=ArtifactLifecycle.QUEUED,
             generation_id=generation_id,
         )
 
@@ -731,9 +731,9 @@ class ArtifactManager:
         source_handle: Optional[BaseArtifactHandle] = None,
     ) -> None:
         """
-        Transitions state from INITIAL or STALE to PROCESSING.
+        Transitions state from QUEUED or STALE to PROCESSING.
 
-        Fails if not in INITIAL or STALE state.
+        Fails if not in QUEUED or STALE state.
         Stores the source_handle in metadata for later release.
 
         Args:
@@ -752,9 +752,9 @@ class ArtifactManager:
                 f"not found in ledger"
             )
         assert entry.state in (
-            ArtifactLifecycle.INITIAL,
+            ArtifactLifecycle.QUEUED,
             ArtifactLifecycle.STALE,
-        ), f"Cannot mark {entry.state} as PROCESSING, must be INITIAL or STALE"
+        ), f"Cannot mark {entry.state} as PROCESSING, must be QUEUED or STALE"
         entry.state = ArtifactLifecycle.PROCESSING
         entry.generation_id = generation_id
         entry.error = None
@@ -768,9 +768,9 @@ class ArtifactManager:
         generation_id: GenerationID,
     ) -> None:
         """
-        Transitions state from PROCESSING or INITIAL to DONE.
+        Transitions state from PROCESSING or QUEUED to DONE.
 
-        Fails if not in INITIAL or PROCESSING state.
+        Fails if not in QUEUED or PROCESSING state.
         Adopts the new handle, releases the old handle if one existed,
         updates state to DONE, and clears error message. Releases the
         source_handle from metadata if present.
@@ -781,7 +781,7 @@ class ArtifactManager:
             generation_id: The generation ID for the entry.
 
         Raises:
-            AssertionError: If entry not found or not in INITIAL or
+            AssertionError: If entry not found or not in QUEUED or
                 PROCESSING state.
         """
         logger.debug(
@@ -804,12 +804,9 @@ class ArtifactManager:
             assert entry is not None
 
         assert entry.state in (
-            ArtifactLifecycle.INITIAL,
+            ArtifactLifecycle.QUEUED,
             ArtifactLifecycle.PROCESSING,
-        ), (
-            f"Cannot commit {entry.state} to DONE, "
-            f"must be INITIAL or PROCESSING"
-        )
+        ), f"Cannot commit {entry.state} to DONE, must be QUEUED or PROCESSING"
         logger.debug(f"commit: Committing entry {composite_key}")
         self._store.adopt(handle)
         if entry.handle is not None:
@@ -839,7 +836,7 @@ class ArtifactManager:
             generation_id: The generation ID for the entry.
 
         Raises:
-            AssertionError: If entry not found or not in INITIAL state.
+            AssertionError: If entry not found or not in QUEUED state.
         """
         composite_key = make_composite_key(key, generation_id)
         entry = self._get_ledger_entry(composite_key)
@@ -850,8 +847,8 @@ class ArtifactManager:
             )
             return
 
-        assert entry.state == ArtifactLifecycle.INITIAL, (
-            f"Cannot mark {entry.state} as DONE, must be INITIAL"
+        assert entry.state == ArtifactLifecycle.QUEUED, (
+            f"Cannot mark {entry.state} as DONE, must be QUEUED"
         )
         logger.debug(f"mark_done: Marking entry {composite_key} as DONE")
         entry.state = ArtifactLifecycle.DONE
@@ -985,7 +982,7 @@ class ArtifactManager:
         """
         Declares the expected artifacts for a specific generation.
 
-        Creates INITIAL entries in the ledger for any keys that do not yet
+        Creates QUEUED entries in the ledger for any keys that do not yet
         exist for this generation ID. This method enforces immutable
         generations: it does not modify entries from previous generations
         or reset states.
@@ -1003,7 +1000,7 @@ class ArtifactManager:
             if key not in self._ledger:
                 logger.debug(f"declare_generation: Creating entry at {key}")
                 self._ledger[key] = LedgerEntry(
-                    state=ArtifactLifecycle.INITIAL,
+                    state=ArtifactLifecycle.QUEUED,
                     generation_id=generation_id,
                 )
             # If key exists, we do nothing. It might be PROCESSING or DONE

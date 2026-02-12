@@ -329,7 +329,7 @@ class Pipeline:
             f"reconciliation_timer={self._reconciliation_timer is not None}, "
             f"ledger_size={len(self._artifact_manager._ledger)}"
         )
-        # Note: INITIAL entries are not considered "work in progress" since
+        # Note: QUEUED entries are not considered "work in progress" since
         # they may never get processed if there's no associated step.
 
         if self._last_known_busy_state != current_busy_state:

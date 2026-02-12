@@ -50,7 +50,7 @@ class TestStateTransitions(TestArtifactManagerLedger):
     """Test state transition methods."""
 
     def test_register_intent_creates_entry(self):
-        """Test register_intent creates an entry with INITIAL state."""
+        """Test register_intent creates an entry with QUEUED state."""
         key = ArtifactKey.for_workpiece("00000000-0000-4000-8000-000000000001")
         generation_id = 0
 
@@ -59,7 +59,7 @@ class TestStateTransitions(TestArtifactManagerLedger):
         composite_key = make_composite_key(key, generation_id)
         entry = self.manager._get_ledger_entry(composite_key)
         assert entry is not None
-        self.assertEqual(entry.state, ArtifactLifecycle.INITIAL)
+        self.assertEqual(entry.state, ArtifactLifecycle.QUEUED)
         self.assertEqual(entry.generation_id, generation_id)
 
     def test_register_intent_duplicate_raises_assertion(self):
@@ -85,9 +85,9 @@ class TestStateTransitions(TestArtifactManagerLedger):
         self.assertEqual(entry.state, ArtifactLifecycle.PROCESSING)
 
     def test_mark_processing_from_initial(self):
-        """Test mark_processing works correctly from INITIAL to PROCESSING."""
+        """Test mark_processing works correctly from QUEUED to PROCESSING."""
         key = ArtifactKey.for_workpiece("00000000-0000-4000-8000-000000000001")
-        entry = self._create_ledger_entry(ArtifactLifecycle.INITIAL)
+        entry = self._create_ledger_entry(ArtifactLifecycle.QUEUED)
         composite_key = make_composite_key(key, 0)
         self.manager._set_ledger_entry(composite_key, entry)
 
@@ -108,7 +108,7 @@ class TestStateTransitions(TestArtifactManagerLedger):
             self.manager.mark_processing(key, generation_id=0)
 
         self.assertIn(
-            "must be INITIAL or STALE",
+            "must be QUEUED or STALE",
             str(cm.exception),
         )
 
@@ -125,7 +125,7 @@ class TestStateTransitions(TestArtifactManagerLedger):
             self.manager.mark_processing(key, generation_id=0)
 
         self.assertIn(
-            "must be INITIAL or STALE",
+            "must be QUEUED or STALE",
             str(cm.exception),
         )
 
@@ -142,7 +142,7 @@ class TestStateTransitions(TestArtifactManagerLedger):
             self.manager.mark_processing(key, generation_id=0)
 
         self.assertIn(
-            "must be INITIAL or STALE",
+            "must be QUEUED or STALE",
             str(cm.exception),
         )
 
@@ -178,11 +178,11 @@ class TestStateTransitions(TestArtifactManagerLedger):
         self.mock_store.release.assert_called_once_with(old_handle)
 
     def test_commit_from_initial(self):
-        """Test commit works correctly from INITIAL to DONE."""
+        """Test commit works correctly from QUEUED to DONE."""
         key = ArtifactKey.for_workpiece("00000000-0000-4000-8000-000000000001")
         new_handle = create_mock_handle(WorkPieceArtifactHandle, "new_handle")
         entry = self._create_ledger_entry(
-            ArtifactLifecycle.INITIAL,
+            ArtifactLifecycle.QUEUED,
             handle=None,
             generation_id=1,
         )
@@ -210,7 +210,7 @@ class TestStateTransitions(TestArtifactManagerLedger):
         with self.assertRaises(AssertionError) as cm:
             self.manager.commit_artifact(key, handle, generation_id=0)
 
-        self.assertIn("must be INITIAL or PROCESSING", str(cm.exception))
+        self.assertIn("must be QUEUED or PROCESSING", str(cm.exception))
 
     def test_commit_generation_id_mismatch_creates_new_entry(self):
         """Test commit creates a new entry on generation_id mismatch."""
@@ -476,14 +476,14 @@ class TestQueryWorkForStage(TestArtifactManagerLedger):
     """Test query_work_for_stage method."""
 
     def test_query_work_returns_missing_keys_with_ready_deps(self):
-        """Test query_work_for_stage returns INITIAL keys with DONE deps."""
+        """Test query_work_for_stage returns QUEUED keys with DONE deps."""
         workpiece_key = ArtifactKey.for_workpiece(
             "00000000-0000-4000-8000-000000000001"
         )
         step_key = ArtifactKey.for_step("00000000-0000-4000-8000-000000000003")
 
         wp_entry = self._create_ledger_entry(ArtifactLifecycle.DONE)
-        step_entry = self._create_ledger_entry(ArtifactLifecycle.INITIAL)
+        step_entry = self._create_ledger_entry(ArtifactLifecycle.QUEUED)
 
         wp_composite = make_composite_key(workpiece_key, 0)
         step_composite = make_composite_key(step_key, 0)
@@ -546,8 +546,8 @@ class TestQueryWorkForStage(TestArtifactManagerLedger):
         wp2_key = ArtifactKey.for_workpiece(
             "00000000-0000-4000-8000-000000000002"
         )
-        step1_entry = self._create_ledger_entry(ArtifactLifecycle.INITIAL)
-        step2_entry = self._create_ledger_entry(ArtifactLifecycle.INITIAL)
+        step1_entry = self._create_ledger_entry(ArtifactLifecycle.QUEUED)
+        step2_entry = self._create_ledger_entry(ArtifactLifecycle.QUEUED)
 
         wp1_composite = make_composite_key(wp1_key, 0)
         wp2_composite = make_composite_key(wp2_key, 0)
@@ -570,7 +570,7 @@ class TestQueryWorkForStage(TestArtifactManagerLedger):
 
         wp1_entry = self._create_ledger_entry(ArtifactLifecycle.DONE)
         wp2_entry = self._create_ledger_entry(ArtifactLifecycle.DONE)
-        step_entry = self._create_ledger_entry(ArtifactLifecycle.INITIAL)
+        step_entry = self._create_ledger_entry(ArtifactLifecycle.QUEUED)
 
         wp1_composite = make_composite_key(wp1_key, 0)
         wp2_composite = make_composite_key(wp2_key, 0)

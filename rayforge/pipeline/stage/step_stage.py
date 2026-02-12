@@ -59,7 +59,7 @@ class StepPipelineStage(PipelineStage):
     def reconcile(self, doc: "Doc", generation_id: int):
         """
         Queries the ArtifactManager for work and launches generation tasks
-        for any step artifacts that are in the INITIAL state.
+        for any step artifacts that are in the QUEUED state.
         """
         if not doc:
             return
@@ -275,7 +275,7 @@ class StepPipelineStage(PipelineStage):
         composite_key = make_composite_key(ledger_key, generation_id)
         entry = self._artifact_manager._get_ledger_entry(composite_key)
 
-        # The entry should have been created as INITIAL by declare_generation.
+        # The entry should have been created as QUEUED by declare_generation.
         # If it's STALE, it's from a previous manual invalidation and we
         # can proceed.
         if entry is None:

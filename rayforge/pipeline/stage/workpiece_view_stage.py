@@ -369,13 +369,13 @@ class WorkPieceViewPipelineStage(PipelineStage):
                 entry.metadata["render_context"] = context
         elif entry.state != ArtifactLifecycle.PROCESSING:
             if entry.state == ArtifactLifecycle.STALE:
-                entry.state = ArtifactLifecycle.INITIAL
+                entry.state = ArtifactLifecycle.QUEUED
 
-        # Only mark as pending if the entry is in INITIAL state.
+        # Only mark as pending if the entry is in QUEUED state.
         # If it's already PROCESSING, we've already started a render task.
         current_entry = self._artifact_manager._get_ledger_entry(ledger_key)
         if current_entry is not None and current_entry.state == (
-            ArtifactLifecycle.INITIAL
+            ArtifactLifecycle.QUEUED
         ):
             self._artifact_manager.mark_processing(
                 artifact_key, view_id, source_handle
