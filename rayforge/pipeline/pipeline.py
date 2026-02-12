@@ -130,6 +130,7 @@ class Pipeline:
         self.workpiece_view_ready = Signal()
         self.workpiece_view_created = Signal()
         self.workpiece_view_updated = Signal()
+        self.workpiece_view_generation_starting = Signal()
 
         # Initialize stages and connect signals ONE time during construction.
         self._initialize_stages_and_connections()
@@ -162,11 +163,13 @@ class Pipeline:
         self._workpiece_stage.generation_starting.connect(
             self._on_workpiece_generation_starting
         )
-        self._workpiece_stage.generation_starting.connect(
-            self._workpiece_view_stage._on_generation_starting
-        )
         self._workpiece_stage.visual_chunk_available.connect(
             self._workpiece_view_stage._on_workpiece_chunk_available
+        )
+
+        # Connect pipeline signals to stages
+        self.workpiece_view_generation_starting.connect(
+            self._workpiece_view_stage.on_generation_starting
         )
         self._workpiece_stage.generation_finished.connect(
             self._on_workpiece_generation_finished
@@ -318,7 +321,9 @@ class Pipeline:
         for uid in uids_to_process:
             step = self._find_step_by_uid(uid)
             if step:
-                self._step_stage.mark_stale_and_trigger(step)
+                self._step_stage.mark_stale_and_trigger(
+                    step, self._data_generation_id
+                )
 
     @property
     def is_busy(self) -> bool:
@@ -610,6 +615,13 @@ class Pipeline:
             self._check_and_update_processing_state
         )
 
+        self.workpiece_view_generation_starting.send(
+            step=step,
+            workpiece=workpiece,
+            generation_id=generation_id,
+            view_id=self._view_generation_id,
+        )
+
     def _on_workpiece_generation_finished(
         self,
         sender: WorkPiecePipelineStage,
@@ -671,7 +683,8 @@ class Pipeline:
             self._workpiece_view_stage.request_view_render(
                 key,
                 self._current_view_context,
-                self._workpiece_view_stage.current_view_generation_id,
+                self._view_generation_id,
+                self._data_generation_id,
                 step_uid,
             )
         else:
@@ -915,7 +928,9 @@ class Pipeline:
             return
 
         self._workpiece_view_stage.update_view_context(
-            self._current_view_context, view_gen_id
+            self._current_view_context,
+            view_gen_id,
+            self._data_generation_id,
         )
 
         self._task_manager.schedule_on_main_thread(
@@ -938,7 +953,9 @@ class Pipeline:
         [Compatibility Method] Retrieves ops by wrapping get_scaled_ops.
         """
         return self.get_scaled_ops(
-            step.uid, workpiece.uid, workpiece.get_world_transform()
+            step.uid,
+            workpiece.uid,
+            workpiece.get_world_transform(),
         )
 
     def _get_or_create_artifact_key(
@@ -988,7 +1005,7 @@ class Pipeline:
         final world size.
         """
         return self._workpiece_stage.get_scaled_ops(
-            step_uid, workpiece_uid, world_transform
+            step_uid, workpiece_uid, world_transform, self._data_generation_id
         )
 
     def get_artifact(
@@ -996,7 +1013,7 @@ class Pipeline:
     ) -> Optional[WorkPieceArtifact]:
         """Retrieves the complete artifact from the cache on-demand."""
         return self._workpiece_stage.get_artifact(
-            step.uid, workpiece.uid, workpiece.size
+            step.uid, workpiece.uid, workpiece.size, self._data_generation_id
         )
 
     def generate_job(self) -> None:
@@ -1191,5 +1208,6 @@ class Pipeline:
             key,
             context,
             self._view_generation_id,
+            self._data_generation_id,
             step_uid,
         )

@@ -210,7 +210,7 @@ class TestWorkPiecePipelineStage:
         mock_handle.is_scalable = True
         mock_artifact_manager.get_workpiece_handle.return_value = mock_handle
 
-        result = stage._check_result_stale_due_to_size(key, mock_workpiece)
+        result = stage._check_result_stale_due_to_size(key, mock_workpiece, 1)
 
         assert result is False
 
@@ -233,7 +233,7 @@ class TestWorkPiecePipelineStage:
         mock_handle.generation_size = (10.0, 10.0)
         mock_artifact_manager.get_workpiece_handle.return_value = mock_handle
 
-        result = stage._check_result_stale_due_to_size(key, mock_workpiece)
+        result = stage._check_result_stale_due_to_size(key, mock_workpiece, 1)
 
         assert result is True
 
@@ -256,7 +256,7 @@ class TestWorkPiecePipelineStage:
         mock_handle.generation_size = (10.0, 10.0)
         mock_artifact_manager.get_workpiece_handle.return_value = mock_handle
 
-        result = stage._check_result_stale_due_to_size(key, mock_workpiece)
+        result = stage._check_result_stale_due_to_size(key, mock_workpiece, 1)
 
         assert result is False
 

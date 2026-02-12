@@ -61,8 +61,6 @@ class WorkPieceViewPipelineStage(PipelineStage):
         super().__init__(task_manager, artifact_manager)
         self._machine = machine
         self._current_view_context: Optional[RenderContext] = None
-        self._current_generation_id = 0
-        self._next_view_generation_id = 0
 
         # Throttling for progressive chunk updates.
         # Tracks pending updates and last update time for each view.
@@ -75,11 +73,6 @@ class WorkPieceViewPipelineStage(PipelineStage):
         self.view_artifact_updated = Signal()
         self.generation_finished = Signal()
 
-    @property
-    def current_view_generation_id(self) -> int:
-        """Returns the current view generation ID."""
-        return self._next_view_generation_id
-
     def reconcile(self, doc: "Doc", generation_id: int):
         """
         Synchronizes the cache with the document, cleaning up obsolete
@@ -89,7 +82,6 @@ class WorkPieceViewPipelineStage(PipelineStage):
         so reconcile mainly handles cleanup and ledger synchronization.
         """
         logger.debug("WorkPieceViewPipelineStage reconciling...")
-        self._current_generation_id = generation_id
 
         all_current_workpieces = {
             workpiece.uid
@@ -107,7 +99,10 @@ class WorkPieceViewPipelineStage(PipelineStage):
             self._task_manager.cancel_task(task_key)
 
     def update_view_context(
-        self, context: RenderContext, view_gen_id: int
+        self,
+        context: RenderContext,
+        view_gen_id: int,
+        data_gen_id: int,
     ) -> None:
         """
         Updates the view context and triggers re-rendering for all cached
@@ -120,6 +115,8 @@ class WorkPieceViewPipelineStage(PipelineStage):
         Args:
             context: The new render context to apply.
             view_gen_id: The view generation ID to use for rendering.
+            data_gen_id: The data generation ID to use for retrieving
+                workpiece artifacts.
         """
         logger.debug(
             f"update_view_context called with context "
@@ -129,7 +126,6 @@ class WorkPieceViewPipelineStage(PipelineStage):
         )
 
         self._current_view_context = context
-        self._next_view_generation_id = view_gen_id
 
         keys = self._artifact_manager.get_all_workpiece_keys()
         logger.debug(f"update_view_context: Found {len(keys)} workpiece keys")
@@ -139,7 +135,7 @@ class WorkPieceViewPipelineStage(PipelineStage):
                 f"View context changed. Triggering re-render for {key} "
                 f"with view_id={view_gen_id}"
             )
-            self.request_view_render(key, context, view_gen_id)
+            self.request_view_render(key, context, view_gen_id, data_gen_id)
 
     def set_render_context(
         self,
@@ -259,27 +255,30 @@ class WorkPieceViewPipelineStage(PipelineStage):
                 f"[{key}] Failed to allocate live buffer: {e}", exc_info=True
             )
 
-    def _on_generation_starting(
+    def on_generation_starting(
         self,
         sender,
         *,
         step: "Step",
         workpiece: "WorkPiece",
         generation_id: int,
+        view_id: int,
     ):
         """
-        Handler for when workpiece generation starts.
+        Called when workpiece generation starts.
         Pre-allocates the view buffer to enable progressive rendering.
+
+        Args:
+            step: The step being generated.
+            workpiece: The workpiece being generated.
+            generation_id: The data generation ID.
+            view_id: The view generation ID from the pipeline.
         """
         key = ArtifactKey.for_view(workpiece.uid)
 
-        # New source data (indicated by a new generation_id) invalidates
-        # old views. We must create a new view generation.
-        self._next_view_generation_id += 1
-        view_id = self._next_view_generation_id
         logger.debug(
             f"View stage: Source data gen {generation_id} starting for {key}. "
-            f"Allocating live buffer for new view_id={view_id}."
+            f"Allocating live buffer for view_id={view_id}."
         )
 
         # Cancel any active view render task from previous generations
@@ -304,6 +303,7 @@ class WorkPieceViewPipelineStage(PipelineStage):
         key: ArtifactKey,
         context: RenderContext,
         view_id: int,
+        data_generation_id: int,
         step_uid: Optional[str] = None,
     ):
         """
@@ -313,6 +313,8 @@ class WorkPieceViewPipelineStage(PipelineStage):
             key: The ArtifactKey for the workpiece view.
             context: The render context to use.
             view_id: The view generation ID for this render.
+            data_generation_id: The data generation ID to use for
+                retrieving workpiece artifacts.
             step_uid: The unique identifier of the step (optional).
         """
         artifact_key = key
@@ -327,7 +329,7 @@ class WorkPieceViewPipelineStage(PipelineStage):
 
         source_handle = self._artifact_manager.get_workpiece_handle(
             ArtifactKey.for_workpiece(key.id),
-            self._current_generation_id,
+            data_generation_id,
         )
         if not source_handle:
             logger.warning(
