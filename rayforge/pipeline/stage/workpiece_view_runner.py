@@ -116,6 +116,8 @@ def make_workpiece_view_artifact_in_subprocess(
     workpiece_artifact_handle_dict: Dict[str, Any],
     render_context_dict: Dict[str, Any],
     creator_tag: str,
+    generation_id: int = 0,
+    step_uid: Optional[str] = None,
 ) -> Optional[Dict[str, Any]]:
     """
     Renders a WorkPieceArtifact to a bitmap in a background process.
@@ -134,6 +136,8 @@ def make_workpiece_view_artifact_in_subprocess(
             WorkPieceArtifactHandle to load.
         render_context_dict: Dictionary representation of the RenderContext.
         creator_tag: Tag for artifact creation tracking.
+        generation_id: View generation ID from pipeline.
+        step_uid: Originating Step UID.
 
     Returns:
         None (result is communicated via events).

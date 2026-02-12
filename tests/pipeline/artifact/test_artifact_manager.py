@@ -523,12 +523,25 @@ class TestArtifactManager(unittest.TestCase):
 
         self.assertIs(retrieved, view_h)
 
-    def test_get_workpiece_view_handle_returns_none_when_not_done(self):
-        """Test get_workpiece_view_handle returns None when not DONE."""
+    def test_get_workpiece_view_handle_returns_handle_when_processing(self):
+        """Test get_workpiece_view_handle returns handle when PROCESSING."""
         view_h = create_mock_handle(WorkPieceViewArtifactHandle, "view1")
         view_composite = make_composite_key(ArtifactKey.for_view(WP1_UID), 0)
         self.manager._ledger[view_composite] = Mock(
             state=ArtifactLifecycle.PROCESSING, handle=view_h
+        )
+
+        retrieved = self.manager.get_workpiece_view_handle(
+            ArtifactKey.for_view(WP1_UID), 0
+        )
+
+        self.assertIs(retrieved, view_h)
+
+    def test_get_workpiece_view_handle_returns_none_when_initial(self):
+        """Test get_workpiece_view_handle returns None when QUEUED."""
+        view_composite = make_composite_key(ArtifactKey.for_view(WP1_UID), 0)
+        self.manager._ledger[view_composite] = Mock(
+            state=ArtifactLifecycle.QUEUED, handle=None
         )
 
         retrieved = self.manager.get_workpiece_view_handle(
@@ -558,13 +571,12 @@ class TestArtifactManager(unittest.TestCase):
 
         self.assertTrue(result)
 
-    def test_is_view_stale_returns_true_for_not_done(self):
-        """Test is_view_stale returns True when entry is not DONE."""
-        view_h = create_mock_handle(WorkPieceViewArtifactHandle, "view1")
+    def test_is_view_stale_returns_true_for_not_ready_state(self):
+        """Test is_view_stale returns True when entry is QUEUED."""
         view_composite = make_composite_key(ArtifactKey.for_view(WP1_UID), 0)
         self.manager._ledger[view_composite] = Mock(
-            state=ArtifactLifecycle.PROCESSING,
-            handle=view_h,
+            state=ArtifactLifecycle.QUEUED,
+            handle=None,
             metadata={},
         )
 
@@ -727,8 +739,8 @@ class TestArtifactManager(unittest.TestCase):
         self.assertIs(entry.handle, new_h)
         self.mock_release.assert_called_once_with(old_h)
 
-    def test_put_workpiece_view_handle_creates_done_entry(self):
-        """Test put_workpiece_view_handle creates DONE entry."""
+    def test_put_workpiece_view_handle_creates_processing_entry(self):
+        """Test put_workpiece_view_handle creates PROCESSING entry."""
         handle = create_mock_handle(WorkPieceViewArtifactHandle, "view")
         view_key = ArtifactKey.for_view(WP1_UID)
 
@@ -737,7 +749,7 @@ class TestArtifactManager(unittest.TestCase):
         composite_key = make_composite_key(view_key, 0)
         entry = self.manager._ledger.get(composite_key)
         assert entry is not None
-        self.assertEqual(entry.state, ArtifactLifecycle.DONE)
+        self.assertEqual(entry.state, ArtifactLifecycle.PROCESSING)
         self.assertIs(entry.handle, handle)
         self.assertEqual(entry.generation_id, 0)
 
@@ -953,16 +965,22 @@ class TestArtifactManager(unittest.TestCase):
         self.assertIs(entry.handle, new_h)
         self.mock_release.assert_called_once_with(old_h)
 
-    def test_complete_generation_nonexistent_without_handle_skips(self):
-        """Test complete_generation skips for missing entry without handle."""
+    def test_complete_generation_nonexistent_without_handle_creates_entry(
+        self,
+    ):
+        """Test complete_generation creates done entry when no handle."""
         key = ArtifactKey.for_workpiece(WP1_UID)
 
         self.manager.complete_generation(key, 0)
 
-        self.assertEqual(len(self.manager._ledger), 0)
+        composite_key = make_composite_key(key, 0)
+        entry = self.manager._ledger.get(composite_key)
+        assert entry is not None
+        self.assertEqual(entry.state, ArtifactLifecycle.DONE)
+        self.assertIsNone(entry.handle)
 
-    def test_complete_generation_entry_without_handle_skips(self):
-        """Test complete_generation skips when entry has no handle."""
+    def test_complete_generation_entry_without_handle_marks_done(self):
+        """Test complete_generation marks done when entry has no handle."""
         key = ArtifactKey.for_workpiece(WP1_UID)
         composite_key = make_composite_key(key, 0)
         self.manager._ledger[composite_key] = Mock(
@@ -973,7 +991,7 @@ class TestArtifactManager(unittest.TestCase):
 
         entry = self.manager._ledger.get(composite_key)
         assert entry is not None
-        self.assertEqual(entry.state, ArtifactLifecycle.PROCESSING)
+        self.assertEqual(entry.state, ArtifactLifecycle.DONE)
 
     def test_declare_generation_creates_initial_entries(self):
         """Test declare_generation creates QUEUED entries for new keys."""

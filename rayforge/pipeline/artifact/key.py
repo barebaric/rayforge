@@ -32,9 +32,7 @@ class ArtifactKey:
 
     @classmethod
     def for_job(cls):
-        # The job key is a singleton logical concept, but we give it a UUID
-        # to fit the generic key model.
-        return cls(id="00000000-0000-0000-0000-000000000000", group="job")
+        return cls(id=str(uuid.uuid4()), group="job")
 
     @classmethod
     def for_view(cls, workpiece_uid: str):

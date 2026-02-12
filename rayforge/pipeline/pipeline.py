@@ -33,7 +33,7 @@ from .artifact import (
     WorkPieceArtifact,
 )
 from .artifact.key import ArtifactKey
-from .artifact.manager import make_composite_key
+from .artifact.manager import extract_base_key
 from .artifact.lifecycle import ArtifactLifecycle
 from .stage import (
     JobPipelineStage,
@@ -106,7 +106,6 @@ class Pipeline:
         self._data_generation_id = 0
         self._view_generation_id = 0
         self._docitem_to_artifact_key: Dict[DocItem, ArtifactKey] = {}
-        self._job_key = ArtifactKey.for_job()
         self._pause_count = 0
         self._last_known_busy_state = False
         self._reconciliation_timer: Optional[threading.Timer] = None
@@ -266,7 +265,11 @@ class Pipeline:
         )
 
         if self._current_view_context == context:
-            logger.debug("set_view_context: Context unchanged, skipping")
+            logger.debug(
+                "set_view_context: Context unchanged, skipping "
+                f"(data_gen_id={self._data_generation_id}, "
+                f"view_gen_id={self._view_generation_id})"
+            )
             return
 
         self._current_view_context = context
@@ -322,13 +325,20 @@ class Pipeline:
         avoiding race conditions.
         """
         current_busy_state = self.is_busy
+        ledger_info = [
+            f"{k}={v.state.value}"
+            for k, v in self._artifact_manager._ledger.items()
+        ]
         logger.debug(
             f"_check_and_update_processing_state: "
             f"current_busy={current_busy_state}, "
             f"last_known={self._last_known_busy_state}, "
             f"reconciliation_timer={self._reconciliation_timer is not None}, "
-            f"ledger_size={len(self._artifact_manager._ledger)}"
+            f"ledger_size={len(self._artifact_manager._ledger)}, "
+            f"data_gen_id={self._data_generation_id}, "
+            f"view_gen_id={self._view_generation_id}"
         )
+        logger.debug(f"  Ledger entries: {ledger_info}")
         # Note: QUEUED entries are not considered "work in progress" since
         # they may never get processed if there's no associated step.
 
@@ -785,7 +795,11 @@ class Pipeline:
         """
         if self.is_paused or not self.doc:
             return
-        logger.debug(f"{self.__class__.__name__}.reconcile_data called")
+        logger.debug(
+            f"{self.__class__.__name__}.reconcile_data called "
+            f"(data_gen_id will be {self._data_generation_id + 1}, "
+            f"view_gen_id is {self._view_generation_id})"
+        )
 
         self._data_generation_id += 1
         data_gen_id = self._data_generation_id
@@ -799,11 +813,20 @@ class Pipeline:
         self._workpiece_stage.reconcile(self.doc, data_gen_id)
         self._step_stage.reconcile(self.doc, data_gen_id)
 
-        step_uids = self._get_step_uids(self.doc)
-        if not step_uids:
-            self._artifact_manager.mark_done(self._job_key, data_gen_id)
-
         self._update_and_emit_preview_time()
+
+        # Reconcile view generation to keep view_gen_id in sync.
+        # This ensures the ledger doesn't have mismatched generation IDs
+        # which would cause is_finished() to return False indefinitely.
+        if self._current_view_context is not None:
+            self.reconcile_view()
+
+        # Prune old generations to keep the ledger clean and is_busy accurate
+        self._artifact_manager.prune(
+            active_data_gen_ids={self._data_generation_id},
+            active_view_gen_ids={self._view_generation_id},
+        )
+
         self._task_manager.schedule_on_main_thread(
             self._check_and_update_processing_state
         )
@@ -821,8 +844,6 @@ class Pipeline:
                 for workpiece in layer.all_workpieces:
                     all_keys.add(ArtifactKey.for_workpiece(workpiece.uid))
 
-        all_keys.add(self._job_key)
-
         self._artifact_manager.declare_generation(all_keys, gen_id)
 
     def _register_data_dependencies(self) -> None:
@@ -839,13 +860,6 @@ class Pipeline:
                             child_key=wp_key, parent_key=step_key
                         )
 
-        step_uids = self._get_step_uids(self.doc)
-        for step_uid in step_uids:
-            step_key = ArtifactKey.for_step(step_uid)
-            self._artifact_manager.register_dependency(
-                child_key=step_key, parent_key=self._job_key
-            )
-
     def reconcile_view(self) -> None:
         """
         Synchronizes view stage by triggering re-rendering for
@@ -853,7 +867,12 @@ class Pipeline:
         """
         if self.is_paused or not self.doc:
             return
-        logger.debug(f"{self.__class__.__name__}.reconcile_view called")
+        logger.debug(
+            f"{self.__class__.__name__}.reconcile_view called "
+            f"(will increment view_gen_id from {self._view_generation_id} "
+            f"to {self._view_generation_id + 1}, "
+            f"data_gen_id={self._data_generation_id})"
+        )
 
         self._view_generation_id += 1
         view_gen_id = self._view_generation_id
@@ -969,14 +988,15 @@ class Pipeline:
             An error if validation fails, None otherwise.
         """
         # Check if a job generation is already pending or running
-        composite_key = make_composite_key(
-            self._job_key, self._data_generation_id
-        )
-        entry = self._artifact_manager._get_ledger_entry(composite_key)
-        if entry and entry.state == ArtifactLifecycle.PROCESSING:
-            msg = "Job generation is already in progress."
-            logger.warning(msg)
-            return RuntimeError(msg)
+        for key, entry in self._artifact_manager._ledger.items():
+            base_key = extract_base_key(key)
+            if (
+                base_key.group == "job"
+                and entry.state == ArtifactLifecycle.PROCESSING
+            ):
+                msg = "Job generation is already in progress."
+                logger.warning(msg)
+                return RuntimeError(msg)
 
         if not self._machine:
             msg = "Cannot generate job: No machine is configured."
@@ -1042,18 +1062,43 @@ class Pipeline:
             when_done(None, RuntimeError("No document is loaded."))
             return
 
-        # 1. Validation
+        # 1. Validation (must happen before checking for steps)
         validation_error = self._validate_job_generation_state()
         if validation_error:
             when_done(None, validation_error)
             return
 
-        # 2. Check if all step artifacts are ready by trying to check them out.
-        try:
-            dep_handles = self._artifact_manager.checkout_dependencies(
-                self._job_key, self._data_generation_id
+        step_uids = self._get_step_uids(self.doc)
+        if not step_uids:
+            logger.warning(
+                "generate_job_artifact called with no visible steps. "
+                "Job is empty."
             )
-        except AssertionError:
+            # Signal completion with no artifact, which is a success case.
+            when_done(None, None)
+            return
+
+        job_key = ArtifactKey.for_job()
+        self._artifact_manager.register_intent(
+            job_key, self._data_generation_id
+        )
+
+        # 2. Check if all step artifacts are ready by manually collecting
+        #    handles, since they are no longer in the dependency graph.
+        dep_handles = {}
+        all_deps_ready = True
+        for uid in step_uids:
+            step_key = ArtifactKey.for_step(uid)
+            handle = self._artifact_manager.get_step_ops_handle(
+                step_key, self._data_generation_id
+            )
+            if handle:
+                dep_handles[step_key] = handle
+            else:
+                all_deps_ready = False
+                break
+
+        if not all_deps_ready:
             # This means some dependencies are not DONE.
             # Trigger generation of missing dependencies.
             self.reconcile_data()
@@ -1082,7 +1127,7 @@ class Pipeline:
             job_desc,
             on_done=when_done,
             generation_id=self._data_generation_id,
-            job_key=self._job_key,
+            job_key=job_key,
         )
 
     async def generate_job_artifact_async(

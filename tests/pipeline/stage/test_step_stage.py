@@ -300,7 +300,7 @@ class TestStepPipelineStage:
         # No new signals should fire, just cleanup
         time_signal_handler.assert_called_once()
 
-    def test_invalidate_cleans_up_and_invalidates_job(
+    def test_invalidate_cleans_up_artifacts(
         self,
         mock_task_mgr,
         mock_artifact_manager,
@@ -324,7 +324,9 @@ class TestStepPipelineStage:
         mock_artifact_manager.pop_step_render_handle.assert_called_with(
             step.uid
         )
-        mock_artifact_manager.invalidate_for_job.assert_called()
+        mock_artifact_manager.invalidate.assert_called_with(
+            ArtifactKey.for_step(step.uid)
+        )
 
     def test_validate_assembly_dependencies_missing_layer(
         self,
