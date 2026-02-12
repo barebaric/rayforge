@@ -6,6 +6,7 @@ from pathlib import Path
 from rayforge.context import get_context
 from rayforge.core.geo import Geometry
 from rayforge.core.matrix import Matrix
+from rayforge.core.ops import Ops
 from rayforge.core.step import Step
 from rayforge.core.workpiece import WorkPiece
 from rayforge.core.source_asset import SourceAsset
@@ -329,8 +330,6 @@ def test_transformers_are_applied_before_put(mock_proxy, base_workpiece):
 
 def test_runner_calls_compute_function(mock_proxy, base_workpiece):
     """Test that the runner correctly calls the compute function."""
-    from rayforge.core.ops import Ops
-
     step = Step(typelabel="Contour")
     step.opsproducer_dict = ContourProducer().to_dict()
     settings = step.get_settings()

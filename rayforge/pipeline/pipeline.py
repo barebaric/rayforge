@@ -65,21 +65,17 @@ class Pipeline:
         doc (Doc): The document model this pipeline is observing.
         _data_generation_id (int): The current data generation ID.
         _view_generation_id (int): The current view generation ID.
-        ops_generation_starting (Signal): Fired when generation begins for a
-            (Step, WorkPiece) pair.
-        ops_chunk_available (Signal): Fired as chunks of Ops become available
-            from a background process.
-        ops_generation_finished (Signal): Fired when generation is complete
-            for a (Step, WorkPiece) pair.
-        step_generation_finished (Signal): Fired when a step's visual artifact
-            is fully assembled and ready for rendering. This fires before
-            the full task (e.g., time estimation) is complete.
-        job_generation_finished (Signal): Fired when the final job artifact
-            is ready.
-        time_estimation_updated (Signal): Fired when a time estimate is
-            updated.
         processing_state_changed (Signal): Fired when the busy state of the
             entire pipeline changes.
+        workpiece_starting (Signal): Fired when workpiece generation starts.
+        workpiece_artifact_ready (Signal): Fired when a workpiece artifact is
+            ready.
+        workpiece_artifact_adopted (Signal): Fired when a workpiece artifact
+            has been adopted.
+        job_time_updated (Signal): Fired when the job time estimate is
+            updated.
+        workpiece_view_updated (Signal): Fired when a workpiece view artifact
+            has been updated.
     """
 
     RECONCILIATION_DELAY_MS = 200
@@ -123,14 +119,8 @@ class Pipeline:
         self.workpiece_starting = Signal()
         self.workpiece_artifact_ready = Signal()
         self.workpiece_artifact_adopted = Signal()
-        self.step_render_ready = Signal()
-        self.step_time_updated = Signal()
         self.job_time_updated = Signal()
-        self.job_ready = Signal()
-        self.workpiece_view_ready = Signal()
-        self.workpiece_view_created = Signal()
         self.workpiece_view_updated = Signal()
-        self.workpiece_view_generation_starting = Signal()
 
         # Initialize stages and connect signals ONE time during construction.
         self._initialize_stages_and_connections()
@@ -167,10 +157,7 @@ class Pipeline:
             self._workpiece_view_stage._on_workpiece_chunk_available
         )
 
-        # Connect pipeline signals to stages
-        self.workpiece_view_generation_starting.connect(
-            self._workpiece_view_stage.on_generation_starting
-        )
+        # Connect signals from stages
         self._workpiece_stage.generation_finished.connect(
             self._on_workpiece_generation_finished
         )
@@ -180,9 +167,6 @@ class Pipeline:
         self._step_stage.generation_finished.connect(
             self._on_step_task_completed
         )
-        self._step_stage.render_artifact_ready.connect(
-            self._on_step_render_artifact_ready
-        )
         self._step_stage.time_estimate_ready.connect(
             self._on_step_time_estimate_ready
         )
@@ -191,12 +175,6 @@ class Pipeline:
         )
         self._job_stage.generation_failed.connect(
             self._on_job_generation_failed
-        )
-        self._workpiece_view_stage.view_artifact_ready.connect(
-            self._on_workpiece_view_ready
-        )
-        self._workpiece_view_stage.view_artifact_created.connect(
-            self._on_workpiece_view_created
         )
         self._workpiece_view_stage.view_artifact_updated.connect(
             self._on_workpiece_view_updated
@@ -615,7 +593,8 @@ class Pipeline:
             self._check_and_update_processing_state
         )
 
-        self.workpiece_view_generation_starting.send(
+        self._workpiece_view_stage.on_generation_starting(
+            sender,
             step=step,
             workpiece=workpiece,
             generation_id=generation_id,
@@ -693,16 +672,6 @@ class Pipeline:
                 f"cannot request view render for ({step_uid}, {workpiece_uid})"
             )
 
-    def _on_step_render_artifact_ready(
-        self, sender: StepPipelineStage, *, step: Step
-    ) -> None:
-        """
-        Handles the signal that a step's visual data is ready.
-        This now fires the public `step_generation_finished` signal,
-        triggering fast UI updates.
-        """
-        self.step_render_ready.send(self, step=step, generation_id=0)
-
     def _on_step_task_completed(
         self, sender: StepPipelineStage, *, step: Step, generation_id: int
     ) -> None:
@@ -719,7 +688,6 @@ class Pipeline:
         self, sender: StepPipelineStage, *, step: Step, time: float
     ) -> None:
         """Handles the new, accurate time estimate from the step stage."""
-        self.step_time_updated.send(self)
         self._task_manager.schedule_on_main_thread(
             self._update_and_emit_preview_time
         )
@@ -765,7 +733,6 @@ class Pipeline:
         task_status: str,
     ) -> None:
         """Relays signal from the job stage for successful completion."""
-        self.job_ready.send(self, handle=handle)
         self._task_manager.schedule_on_main_thread(
             self._check_and_update_processing_state
         )
@@ -780,25 +747,8 @@ class Pipeline:
         """Relays signal from the job stage for failed completion."""
         # For now, a failure is treated like a completion with no handle.
         # Future UI could use the error for notifications.
-        self.job_ready.send(self, handle=None)
         self._task_manager.schedule_on_main_thread(
             self._check_and_update_processing_state
-        )
-
-    def _on_workpiece_view_created(
-        self,
-        sender: WorkPieceViewPipelineStage,
-        *,
-        step_uid: str,
-        workpiece_uid: str,
-        handle: BaseArtifactHandle,
-    ):
-        """Relays signal that a new view bitmap artifact has been created."""
-        self.workpiece_view_created.send(
-            self,
-            step_uid=step_uid,
-            workpiece_uid=workpiece_uid,
-            handle=handle,
         )
 
     def _on_workpiece_view_updated(
@@ -811,22 +761,6 @@ class Pipeline:
     ):
         """Relays signal that a view artifact has been updated."""
         self.workpiece_view_updated.send(
-            self,
-            step_uid=step_uid,
-            workpiece_uid=workpiece_uid,
-            handle=handle,
-        )
-
-    def _on_workpiece_view_ready(
-        self,
-        sender: WorkPieceViewPipelineStage,
-        *,
-        step_uid: str,
-        workpiece_uid: str,
-        handle: BaseArtifactHandle,
-    ):
-        """Relays signal that a new view bitmap artifact is ready."""
-        self.workpiece_view_ready.send(
             self,
             step_uid=step_uid,
             workpiece_uid=workpiece_uid,

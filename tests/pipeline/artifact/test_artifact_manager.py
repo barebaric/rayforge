@@ -1,10 +1,12 @@
 import unittest
+import unittest.mock
 import uuid
 from unittest.mock import Mock
 from rayforge.pipeline.artifact import (
     ArtifactManager,
     ArtifactKey,
     WorkPieceArtifactHandle,
+    WorkPieceViewArtifactHandle,
     StepRenderArtifactHandle,
     StepOpsArtifactHandle,
     JobArtifactHandle,
@@ -12,6 +14,7 @@ from rayforge.pipeline.artifact import (
 from rayforge.pipeline.artifact.lifecycle import ArtifactLifecycle
 from rayforge.pipeline.artifact.store import ArtifactStore
 from rayforge.pipeline.artifact.manager import make_composite_key
+from rayforge.pipeline.artifact.workpiece_view import RenderContext
 
 
 STEP1_UID = str(uuid.uuid4())
@@ -370,8 +373,6 @@ class TestArtifactManager(unittest.TestCase):
 
     def test_prune_removes_obsolete_view_generation(self):
         """Tests pruning removes artifacts from non-active view generations."""
-        from rayforge.pipeline.artifact import WorkPieceViewArtifactHandle
-
         view_h = create_mock_handle(WorkPieceViewArtifactHandle, "view1")
         view_composite = make_composite_key(ArtifactKey.for_view(WP1_UID), 0)
         self.manager._ledger[view_composite] = Mock(
@@ -385,8 +386,6 @@ class TestArtifactManager(unittest.TestCase):
 
     def test_prune_keeps_active_view_generation(self):
         """Tests pruning keeps artifacts from active view generations."""
-        from rayforge.pipeline.artifact import WorkPieceViewArtifactHandle
-
         view_h = create_mock_handle(WorkPieceViewArtifactHandle, "view1")
         view_composite = make_composite_key(ArtifactKey.for_view(WP1_UID), 0)
         self.manager._ledger[view_composite] = Mock(
@@ -417,7 +416,6 @@ class TestArtifactManager(unittest.TestCase):
         """Tests pruning with multiple generations of mixed types."""
         wp_h0 = create_mock_handle(WorkPieceArtifactHandle, "wp0")
         wp_h1 = create_mock_handle(WorkPieceArtifactHandle, "wp1")
-        from rayforge.pipeline.artifact import WorkPieceViewArtifactHandle
 
         view_h0 = create_mock_handle(WorkPieceViewArtifactHandle, "view0")
         view_h1 = create_mock_handle(WorkPieceViewArtifactHandle, "view1")
@@ -513,11 +511,7 @@ class TestArtifactManager(unittest.TestCase):
 
     def test_get_workpiece_view_handle_returns_handle(self):
         """Test get_workpiece_view_handle returns the handle when DONE."""
-        from rayforge.pipeline.artifact import (
-            WorkPieceViewArtifactHandle as ViewHandle,
-        )
-
-        view_h = create_mock_handle(ViewHandle, "view1")
+        view_h = create_mock_handle(WorkPieceViewArtifactHandle, "view1")
         view_composite = make_composite_key(ArtifactKey.for_view(WP1_UID), 0)
         self.manager._ledger[view_composite] = Mock(
             state=ArtifactLifecycle.DONE, handle=view_h
@@ -531,11 +525,7 @@ class TestArtifactManager(unittest.TestCase):
 
     def test_get_workpiece_view_handle_returns_none_when_not_done(self):
         """Test get_workpiece_view_handle returns None when not DONE."""
-        from rayforge.pipeline.artifact import (
-            WorkPieceViewArtifactHandle as ViewHandle,
-        )
-
-        view_h = create_mock_handle(ViewHandle, "view1")
+        view_h = create_mock_handle(WorkPieceViewArtifactHandle, "view1")
         view_composite = make_composite_key(ArtifactKey.for_view(WP1_UID), 0)
         self.manager._ledger[view_composite] = Mock(
             state=ArtifactLifecycle.PROCESSING, handle=view_h
@@ -570,11 +560,7 @@ class TestArtifactManager(unittest.TestCase):
 
     def test_is_view_stale_returns_true_for_not_done(self):
         """Test is_view_stale returns True when entry is not DONE."""
-        from rayforge.pipeline.artifact import (
-            WorkPieceViewArtifactHandle as ViewHandle,
-        )
-
-        view_h = create_mock_handle(ViewHandle, "view1")
+        view_h = create_mock_handle(WorkPieceViewArtifactHandle, "view1")
         view_composite = make_composite_key(ArtifactKey.for_view(WP1_UID), 0)
         self.manager._ledger[view_composite] = Mock(
             state=ArtifactLifecycle.PROCESSING,
@@ -590,12 +576,7 @@ class TestArtifactManager(unittest.TestCase):
 
     def test_is_view_stale_returns_true_for_context_mismatch(self):
         """Test is_view_stale returns True when render context changes."""
-        from rayforge.pipeline.artifact import (
-            WorkPieceViewArtifactHandle as ViewHandle,
-        )
-        from rayforge.pipeline.artifact.workpiece_view import RenderContext
-
-        view_h = create_mock_handle(ViewHandle, "view1")
+        view_h = create_mock_handle(WorkPieceViewArtifactHandle, "view1")
         new_context = RenderContext(
             pixels_per_mm=(1.0, 1.0),
             show_travel_moves=True,
@@ -622,11 +603,7 @@ class TestArtifactManager(unittest.TestCase):
 
     def test_is_view_stale_returns_true_for_property_mismatch(self):
         """Test is_view_stale returns True when source properties change."""
-        from rayforge.pipeline.artifact import (
-            WorkPieceViewArtifactHandle as ViewHandle,
-        )
-
-        view_h = create_mock_handle(ViewHandle, "view1")
+        view_h = create_mock_handle(WorkPieceViewArtifactHandle, "view1")
         wp_h = create_mock_handle(WorkPieceArtifactHandle, "wp1")
         wp_h.is_scalable = True
         wp_h.source_coordinate_system_name = "wcs"
@@ -653,12 +630,7 @@ class TestArtifactManager(unittest.TestCase):
 
     def test_is_view_stale_returns_false_for_valid_view(self):
         """Test is_view_stale returns False when view is valid."""
-        from rayforge.pipeline.artifact import (
-            WorkPieceViewArtifactHandle as ViewHandle,
-        )
-        from rayforge.pipeline.artifact.workpiece_view import RenderContext
-
-        view_h = create_mock_handle(ViewHandle, "view1")
+        view_h = create_mock_handle(WorkPieceViewArtifactHandle, "view1")
         wp_h = create_mock_handle(WorkPieceArtifactHandle, "wp1")
         wp_h.is_scalable = True
         wp_h.source_coordinate_system_name = "wcs"
@@ -757,8 +729,6 @@ class TestArtifactManager(unittest.TestCase):
 
     def test_put_workpiece_view_handle_creates_done_entry(self):
         """Test put_workpiece_view_handle creates DONE entry."""
-        from rayforge.pipeline.artifact import WorkPieceViewArtifactHandle
-
         handle = create_mock_handle(WorkPieceViewArtifactHandle, "view")
         view_key = ArtifactKey.for_view(WP1_UID)
 
@@ -773,8 +743,6 @@ class TestArtifactManager(unittest.TestCase):
 
     def test_put_workpiece_view_handle_replaces_old_handle(self):
         """Test put_workpiece_view_handle releases old handle."""
-        from rayforge.pipeline.artifact import WorkPieceViewArtifactHandle
-
         old_h = create_mock_handle(WorkPieceViewArtifactHandle, "old")
         new_h = create_mock_handle(WorkPieceViewArtifactHandle, "new")
         view_key = ArtifactKey.for_view(WP1_UID)
@@ -792,9 +760,6 @@ class TestArtifactManager(unittest.TestCase):
 
     def test_adopt_artifact_creates_and_adopts_handle(self):
         """Test adopt_artifact deserializes and adopts handle."""
-        from rayforge.pipeline.artifact import WorkPieceArtifactHandle
-        import unittest.mock
-
         handle_dict = {
             "type": "workpiece",
             "shm_name": "test_shm",

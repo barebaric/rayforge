@@ -6,6 +6,7 @@ from rayforge.core.doc import Doc
 from rayforge.pipeline.artifact.lifecycle import ArtifactLifecycle
 from rayforge.pipeline.artifact.key import ArtifactKey
 from rayforge.pipeline.artifact.manager import make_composite_key
+from rayforge.pipeline.artifact.store import ArtifactStore
 from rayforge.pipeline.stage.base import PipelineStage
 from rayforge.pipeline.stage.job_stage import JobPipelineStage
 from rayforge.pipeline.stage.job_runner import (
@@ -56,8 +57,6 @@ def mock_task_mgr():
 @pytest.fixture
 def artifact_manager():
     """Provides a real ArtifactManager instance for testing."""
-    from rayforge.pipeline.artifact.store import ArtifactStore
-
     mock_store = MagicMock(spec=ArtifactStore)
     manager = ArtifactManager(mock_store)
     yield manager
