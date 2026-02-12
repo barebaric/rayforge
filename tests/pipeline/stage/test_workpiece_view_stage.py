@@ -76,9 +76,7 @@ def test_stage_requests_vector_render(
         color_set_dict={},
     )
 
-    stage.request_view_render(
-        key, context, stage.current_view_generation_id, step_uid
-    )
+    stage.request_view_render(key, context, 0, 1, step_uid)
 
     mock_task_manager.run_process.assert_called_once()
     call_args = mock_task_manager.run_process.call_args
@@ -112,9 +110,7 @@ def test_stage_handles_events_and_completion(
     mock_artifact_manager.get_workpiece_handle.return_value = source_handle
     context = RenderContext((10.0, 10.0), False, 0, {})
 
-    stage.request_view_render(
-        key, context, stage.current_view_generation_id, step_uid
-    )
+    stage.request_view_render(key, context, 0, 1, step_uid)
 
     mock_task_manager.run_process.assert_called_once()
     call_kwargs = mock_task_manager.run_process.call_args.kwargs
@@ -203,9 +199,7 @@ def test_adoption_failure_does_not_crash(
     mock_artifact_manager.get_workpiece_handle.return_value = source_handle
     context = RenderContext((10.0, 10.0), False, 0, {})
 
-    stage.request_view_render(
-        key, context, stage.current_view_generation_id, step_uid
-    )
+    stage.request_view_render(key, context, 0, 1, step_uid)
 
     mock_task_manager.run_process.assert_called_once()
     call_kwargs = mock_task_manager.run_process.call_args.kwargs
@@ -258,9 +252,7 @@ def test_multiple_view_artifact_updated_events(
     mock_artifact_manager.get_workpiece_handle.return_value = source_handle
     context = RenderContext((10.0, 10.0), False, 0, {})
 
-    stage.request_view_render(
-        key, context, stage.current_view_generation_id, step_uid
-    )
+    stage.request_view_render(key, context, 0, 1, step_uid)
 
     mock_task_manager.run_process.assert_called_once()
     call_kwargs = mock_task_manager.run_process.call_args.kwargs
@@ -327,9 +319,7 @@ def test_progressive_rendering_sends_multiple_updates(
     mock_artifact_manager.get_workpiece_handle.return_value = source_handle
     context = RenderContext((10.0, 10.0), False, 0, {})
 
-    stage.request_view_render(
-        key, context, stage.current_view_generation_id, step_uid
-    )
+    stage.request_view_render(key, context, 0, 1, step_uid)
 
     mock_task_manager.run_process.assert_called_once()
     call_kwargs = mock_task_manager.run_process.call_args.kwargs
@@ -428,9 +418,7 @@ def test_live_render_context_established_on_view_creation(
     mock_artifact_manager.get_workpiece_handle.return_value = source_handle
     context = RenderContext((10.0, 10.0), False, 0, {})
 
-    stage.request_view_render(
-        key, context, stage.current_view_generation_id, step_uid
-    )
+    stage.request_view_render(key, context, 0, 1, step_uid)
 
     mock_task_manager.run_process.assert_called_once()
     call_kwargs = mock_task_manager.run_process.call_args.kwargs
@@ -490,9 +478,7 @@ def test_throttled_notification_limits_update_frequency(
     mock_artifact_manager.get_workpiece_handle.return_value = source_handle
     context = RenderContext((10.0, 10.0), False, 0, {})
 
-    stage.request_view_render(
-        key, context, stage.current_view_generation_id, step_uid
-    )
+    stage.request_view_render(key, context, 0, 1, step_uid)
 
     mock_task_manager.run_process.assert_called_once()
     call_kwargs = mock_task_manager.run_process.call_args.kwargs
@@ -609,9 +595,7 @@ def test_incremental_bitmap_rendering_draws_chunk_to_view(
     mock_artifact_manager.get_workpiece_handle.return_value = source_handle
     context = RenderContext((10.0, 10.0), False, 0, {})
 
-    stage.request_view_render(
-        key, context, stage.current_view_generation_id, step_uid
-    )
+    stage.request_view_render(key, context, 0, 1, step_uid)
 
     call_kwargs = mock_task_manager.run_process.call_args.kwargs
     when_event_cb = call_kwargs["when_event"]
@@ -805,9 +789,7 @@ def test_replace_current_view_handle(stage, mock_artifact_manager):
         artifact_type_name="WorkPieceViewArtifact",
     )
 
-    stage._replace_current_view_handle(
-        key, new_handle, stage.current_view_generation_id
-    )
+    stage._replace_current_view_handle(key, new_handle, 0)
 
     mock_artifact_manager.release_handle.assert_called_once_with(old_handle)
     mock_artifact_manager.retain_handle.assert_called_once_with(new_handle)

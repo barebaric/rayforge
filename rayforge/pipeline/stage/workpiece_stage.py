@@ -41,7 +41,6 @@ class WorkPiecePipelineStage(PipelineStage):
     ):
         super().__init__(task_manager, artifact_manager)
         self._machine = machine
-        self._current_generation_id = 0
         self.generation_starting = Signal()
         self.visual_chunk_available = Signal()
         self.generation_finished = Signal()
@@ -68,11 +67,10 @@ class WorkPiecePipelineStage(PipelineStage):
         for any workpiece artifacts that are in the INITIAL state.
         """
         logger.debug("WorkPiecePipelineStage reconciling...")
-        self._current_generation_id = generation_id
 
         # Query for keys that need generation, as declared by the Pipeline
         keys_to_generate = self._artifact_manager.query_work_for_stage(
-            "workpiece", self._current_generation_id
+            "workpiece", generation_id
         )
         logger.debug(
             f"WorkPiecePipelineStage: found {len(keys_to_generate)} keys "
@@ -98,7 +96,7 @@ class WorkPiecePipelineStage(PipelineStage):
                         f"WorkPiecePipelineStage: Launching task for "
                         f"step_uid={step.uid}, workpiece_uid={key.id}"
                     )
-                    self._launch_task(step, workpiece)
+                    self._launch_task(step, workpiece, generation_id)
                 else:
                     logger.warning(
                         f"Workpiece {workpiece_uid} has no associated step. "
@@ -185,23 +183,19 @@ class WorkPiecePipelineStage(PipelineStage):
 
         return True
 
-    def _prepare_generation_id(
+    def _send_generation_starting_signal(
         self,
         key: ArtifactKey,
         step: "Step",
         workpiece: "WorkPiece",
-    ) -> int:
+        generation_id: int,
+    ) -> None:
         """
-        Sends generation_starting signal with the current generation ID.
-        Returns the generation ID.
+        Sends generation_starting signal with the provided generation ID.
         """
-        generation_id = self._current_generation_id
-
         self.generation_starting.send(
             self, step=step, workpiece=workpiece, generation_id=generation_id
         )
-
-        return generation_id
 
     def _prepare_task_settings(
         self, step: "Step"
@@ -267,7 +261,9 @@ class WorkPiecePipelineStage(PipelineStage):
             when_event=self._on_task_event_received,
         )
 
-    def _launch_task(self, step: "Step", workpiece: "WorkPiece"):
+    def _launch_task(
+        self, step: "Step", workpiece: "WorkPiece", generation_id: int
+    ):
         """Starts the asynchronous task to generate operations."""
         key = ArtifactKey.for_workpiece(workpiece.uid)
         ledger_key = key
@@ -279,7 +275,9 @@ class WorkPiecePipelineStage(PipelineStage):
             )
             return
 
-        generation_id = self._prepare_generation_id(key, step, workpiece)
+        self._send_generation_starting_signal(
+            key, step, workpiece, generation_id
+        )
 
         prep_result = self._prepare_task_settings(step)
         if prep_result is None:
@@ -443,14 +441,14 @@ class WorkPiecePipelineStage(PipelineStage):
         )
 
     def _check_result_stale_due_to_size(
-        self, key: ArtifactKey, workpiece: "WorkPiece"
+        self, key: ArtifactKey, workpiece: "WorkPiece", generation_id: int
     ) -> bool:
         """
         Checks if result is stale due to size change during generation.
         Returns True if stale, False otherwise.
         """
         handle = self._artifact_manager.get_workpiece_handle(
-            key, self._current_generation_id
+            key, generation_id
         )
 
         if handle and not handle.is_scalable:
@@ -473,6 +471,7 @@ class WorkPiecePipelineStage(PipelineStage):
         step: "Step",
         workpiece: "WorkPiece",
         task_generation_id: int,
+        generation_id: int,
     ) -> bool:
         """
         Handles completed task status.
@@ -482,14 +481,16 @@ class WorkPiecePipelineStage(PipelineStage):
         try:
             task.result()
 
-            if self._check_result_stale_due_to_size(key, workpiece):
-                self._launch_task(step, workpiece)
+            if self._check_result_stale_due_to_size(
+                key, workpiece, generation_id
+            ):
+                self._launch_task(step, workpiece, generation_id)
                 return False
         except Exception as e:
             logger.error(f"[{key}] Error processing result for {key}: {e}")
 
         handle = self._artifact_manager.get_workpiece_handle(
-            key, self._current_generation_id
+            key, generation_id
         )
         if handle is None:
             self._artifact_manager.invalidate(ledger_key)
@@ -562,7 +563,13 @@ class WorkPiecePipelineStage(PipelineStage):
 
         if task_status == "completed":
             if not self._handle_completed_task(
-                key, ledger_key, task, step, workpiece, task_generation_id
+                key,
+                ledger_key,
+                task,
+                step,
+                workpiece,
+                task_generation_id,
+                task_generation_id,
             ):
                 return
         else:
@@ -579,11 +586,12 @@ class WorkPiecePipelineStage(PipelineStage):
         step_uid: str,
         workpiece_uid: str,
         workpiece_size: Tuple[float, float],
+        generation_id: int,
     ) -> Optional[WorkPieceArtifact]:
         """Retrieves the complete, validated artifact from the cache."""
         handle = self._artifact_manager.get_workpiece_handle(
             ArtifactKey.for_workpiece(workpiece_uid),
-            self._current_generation_id,
+            generation_id,
         )
         if handle is None:
             return None
@@ -600,7 +608,11 @@ class WorkPiecePipelineStage(PipelineStage):
         return artifact if isinstance(artifact, WorkPieceArtifact) else None
 
     def get_scaled_ops(
-        self, step_uid: str, workpiece_uid: str, world_transform: "Matrix"
+        self,
+        step_uid: str,
+        workpiece_uid: str,
+        world_transform: "Matrix",
+        generation_id: int,
     ) -> Optional[Ops]:
         """
         Retrieves generated operations from the cache and scales them to the
@@ -610,7 +622,9 @@ class WorkPiecePipelineStage(PipelineStage):
         if any(s <= 0 for s in final_size):
             return None
 
-        artifact = self.get_artifact(step_uid, workpiece_uid, final_size)
+        artifact = self.get_artifact(
+            step_uid, workpiece_uid, final_size, generation_id
+        )
         if artifact is None:
             return None
 

@@ -211,7 +211,7 @@ class TestStepPipelineStage:
         )
 
         # Act
-        stage.mark_stale_and_trigger(step)
+        stage.mark_stale_and_trigger(step, 1)
 
         # Assert
         mock_task_mgr.run_process.assert_called_once()
@@ -240,7 +240,7 @@ class TestStepPipelineStage:
         stage.time_estimate_ready.connect(time_signal_handler)
 
         # Act
-        stage.mark_stale_and_trigger(step)
+        stage.mark_stale_and_trigger(step, 1)
 
         # Assert a task was created
         assert len(mock_task_mgr.created_tasks) == 1
@@ -249,8 +249,8 @@ class TestStepPipelineStage:
         # Simulate Phase 1: Artifact and Time Events
         mock_task_obj = MagicMock()
         mock_task_obj.id = task.id
-        # Use the actual generation_id set by mark_stale_and_trigger
-        gen_id = stage._current_generation_id
+        # Use the generation_id passed to mark_stale_and_trigger
+        gen_id = 1
         # Set up mock to return None for non-existent ledger entries
         mock_artifact_manager._get_ledger_entry.return_value = None
         render_handle = StepRenderArtifactHandle(
@@ -315,7 +315,7 @@ class TestStepPipelineStage:
         stage = StepPipelineStage(
             mock_task_mgr, mock_artifact_manager, mock_machine
         )
-        stage.mark_stale_and_trigger(step)
+        stage.mark_stale_and_trigger(step, 1)
         _complete_step_task(mock_task_mgr.created_tasks[0])
         mock_task_mgr.created_tasks.clear()
 
@@ -492,7 +492,7 @@ class TestStepPipelineStage:
             mock_task_mgr, mock_artifact_manager, mock_machine
         )
 
-        result, retained = stage._collect_assembly_info(step)
+        result, retained = stage._collect_assembly_info(step, 1)
 
         assert result is None
 
@@ -521,7 +521,7 @@ class TestStepPipelineStage:
         )
         step.layer.all_workpieces[0].set_size(20, 20)
 
-        result, retained = stage._collect_assembly_info(step)
+        result, retained = stage._collect_assembly_info(step, 1)
 
         assert result is None
 
@@ -538,7 +538,7 @@ class TestStepPipelineStage:
             mock_task_mgr, mock_artifact_manager, mock_machine
         )
 
-        result, retained = stage._collect_assembly_info(step)
+        result, retained = stage._collect_assembly_info(step, 1)
 
         assert result is not None
         assert len(result) == 1
@@ -596,7 +596,7 @@ class TestStepPipelineStage:
         mock_artifact_manager.adopt_artifact.return_value = ops_handle
 
         stage._handle_ops_artifact_ready(
-            str(uuid.uuid4()), ops_handle.to_dict()
+            str(uuid.uuid4()), ops_handle.to_dict(), 1
         )
 
         mock_artifact_manager.adopt_artifact.assert_called_once()
