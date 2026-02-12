@@ -64,7 +64,7 @@ class WorkPiecePipelineStage(PipelineStage):
     def reconcile(self, doc: "Doc", generation_id: int):
         """
         Queries the ArtifactManager for work and launches generation tasks
-        for any workpiece artifacts that are in the INITIAL state.
+        for any workpiece artifacts that are in the QUEUED state.
         """
         logger.debug("WorkPiecePipelineStage reconciling...")
 

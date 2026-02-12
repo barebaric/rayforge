@@ -178,7 +178,7 @@ class TestStepPipelineStage:
         doc, step = mock_doc_and_step
         ledger_key = ArtifactKey.for_step(step.uid)
         mock_artifact_manager._ledger[ledger_key] = LedgerEntry(
-            state=ArtifactLifecycle.INITIAL
+            state=ArtifactLifecycle.QUEUED
         )
         mock_artifact_manager.query_work_for_stage.return_value = [ledger_key]
 

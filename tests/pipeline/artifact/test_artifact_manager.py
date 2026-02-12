@@ -854,12 +854,12 @@ class TestArtifactManager(unittest.TestCase):
         self.mock_store.release.assert_called_once_with(handle)
 
     def test_mark_done_transitions_from_initial(self):
-        """Test mark_done transitions from INITIAL to DONE."""
+        """Test mark_done transitions from QUEUED to DONE."""
         wp_h = create_mock_handle(WorkPieceArtifactHandle, "wp1")
         key = ArtifactKey.for_workpiece(WP1_UID)
         composite_key = make_composite_key(key, 0)
         self.manager._ledger[composite_key] = Mock(
-            state=ArtifactLifecycle.INITIAL, handle=wp_h
+            state=ArtifactLifecycle.QUEUED, handle=wp_h
         )
 
         self.manager.mark_done(key, 0)
@@ -875,7 +875,7 @@ class TestArtifactManager(unittest.TestCase):
         key = ArtifactKey.for_workpiece(WP1_UID)
         composite_key = make_composite_key(key, 0)
         self.manager._ledger[composite_key] = Mock(
-            state=ArtifactLifecycle.INITIAL, handle=None
+            state=ArtifactLifecycle.QUEUED, handle=None
         )
 
         self.manager.mark_done(key, 0)
@@ -894,7 +894,7 @@ class TestArtifactManager(unittest.TestCase):
         self.assertEqual(len(self.manager._ledger), 0)
 
     def test_mark_done_from_non_initial_raises_assertion(self):
-        """Test mark_done raises AssertionError from non-INITIAL state."""
+        """Test mark_done raises AssertionError from non-QUEUED state."""
         wp_h = create_mock_handle(WorkPieceArtifactHandle, "wp1")
         key = ArtifactKey.for_workpiece(WP1_UID)
         composite_key = make_composite_key(key, 0)
@@ -905,7 +905,7 @@ class TestArtifactManager(unittest.TestCase):
         with self.assertRaises(AssertionError) as cm:
             self.manager.mark_done(key, 0)
 
-        self.assertIn("must be INITIAL", str(cm.exception))
+        self.assertIn("must be QUEUED", str(cm.exception))
 
     def test_complete_generation_marks_existing_entry_done(self):
         """Test complete_generation marks existing entry as DONE."""
@@ -976,7 +976,7 @@ class TestArtifactManager(unittest.TestCase):
         self.assertEqual(entry.state, ArtifactLifecycle.PROCESSING)
 
     def test_declare_generation_creates_initial_entries(self):
-        """Test declare_generation creates INITIAL entries for new keys."""
+        """Test declare_generation creates QUEUED entries for new keys."""
         wp1_key = ArtifactKey.for_workpiece(WP1_UID)
         wp2_key = ArtifactKey.for_workpiece(WP2_UID)
 
@@ -988,8 +988,8 @@ class TestArtifactManager(unittest.TestCase):
         entry2 = self.manager._ledger.get(wp2_composite)
         assert entry1 is not None
         assert entry2 is not None
-        self.assertEqual(entry1.state, ArtifactLifecycle.INITIAL)
-        self.assertEqual(entry2.state, ArtifactLifecycle.INITIAL)
+        self.assertEqual(entry1.state, ArtifactLifecycle.QUEUED)
+        self.assertEqual(entry2.state, ArtifactLifecycle.QUEUED)
 
     def test_declare_generation_skips_existing_entries(self):
         """Test declare_generation skips existing entries."""
@@ -1021,7 +1021,7 @@ class TestArtifactManager(unittest.TestCase):
         assert entry_g0 is not None
         assert entry_g1 is not None
         self.assertEqual(entry_g0.state, ArtifactLifecycle.DONE)
-        self.assertEqual(entry_g1.state, ArtifactLifecycle.INITIAL)
+        self.assertEqual(entry_g1.state, ArtifactLifecycle.QUEUED)
 
     def test_is_finished_returns_true_for_empty_ledger(self):
         """Test is_finished returns True when ledger is empty."""
@@ -1036,11 +1036,11 @@ class TestArtifactManager(unittest.TestCase):
         self.assertTrue(self.manager.is_finished())
 
     def test_is_finished_returns_false_for_initial(self):
-        """Test is_finished returns False when any entry is INITIAL."""
+        """Test is_finished returns False when any entry is QUEUED."""
         wp_key = ArtifactKey.for_workpiece(WP1_UID)
         wp_composite = make_composite_key(wp_key, 0)
         self.manager._ledger[wp_composite] = Mock(
-            state=ArtifactLifecycle.INITIAL
+            state=ArtifactLifecycle.QUEUED
         )
 
         self.assertFalse(self.manager.is_finished())
