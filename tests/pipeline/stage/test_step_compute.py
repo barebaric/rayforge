@@ -10,8 +10,9 @@ from rayforge.pipeline.artifact import (
     StepRenderArtifact,
     StepOpsArtifact,
 )
-from rayforge.pipeline.artifact.base import VertexData
+from rayforge.pipeline.artifact.base import TextureData, VertexData
 from rayforge.pipeline.coord import CoordinateSystem
+from rayforge.pipeline.transformer import Optimize, Smooth
 from rayforge.pipeline.stage.step_compute import (
     compute_step_artifacts,
     _apply_artifact_scaling,
@@ -131,8 +132,6 @@ def test_compute_step_artifacts_with_progress_callback(
 
 def test_compute_step_artifacts_with_transformers(setup_two_artifacts):
     """Test that compute_step_artifacts applies transformers."""
-    from rayforge.pipeline.transformer import Optimize
-
     artifacts = setup_two_artifacts
     transformer = Optimize()
 
@@ -163,8 +162,6 @@ def test_compute_step_artifacts_with_message_callback(
     """Test that compute_step_artifacts calls message callback."""
     artifacts = setup_two_artifacts
 
-    from rayforge.pipeline.transformer import Optimize
-
     render_artifact, ops_artifact = compute_step_artifacts(
         artifacts=artifacts,
         transformers=[Optimize()],
@@ -176,8 +173,6 @@ def test_compute_step_artifacts_with_message_callback(
 
 def test_compute_step_artifacts_raster_artifact():
     """Test compute_step_artifacts with non-scalable artifact."""
-    from rayforge.pipeline.coord import CoordinateSystem
-
     doc = Doc()
     layer = doc.active_layer
 
@@ -212,8 +207,6 @@ def test_compute_step_artifacts_multiple_transformers(
     setup_two_artifacts,
 ):
     """Test compute_step_artifacts with multiple transformers."""
-    from rayforge.pipeline.transformer import Optimize, Smooth
-
     artifacts = setup_two_artifacts
     transformers = [Optimize(), Smooth()]
 
@@ -440,8 +433,6 @@ def test_create_texture_data_scalable():
 
 def test_create_texture_instance():
     """Test _create_texture_instance."""
-    from rayforge.pipeline.artifact.base import TextureData
-
     texture_data = TextureData(
         power_texture_data=np.array([1, 2, 3], dtype=np.uint8),
         dimensions_mm=(10.0, 5.0),
@@ -525,8 +516,6 @@ def test_apply_transformers_to_ops_empty_list():
 
 def test_apply_transformers_to_ops_with_transformer():
     """Test _apply_transformers_to_ops with transformer."""
-    from rayforge.pipeline.transformer import Optimize
-
     ops = Ops()
     ops.move_to(0, 0)
     ops.line_to(100, 0)
@@ -545,8 +534,6 @@ def test_apply_transformers_to_ops_with_progress_context(
     mock_progress_context,
 ):
     """Test _apply_transformers_to_ops with progress context."""
-    from rayforge.pipeline.transformer import Optimize
-
     ops = Ops()
     ops.move_to(0, 0)
     ops.line_to(100, 0)

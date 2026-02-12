@@ -1,3 +1,4 @@
+import cairo
 import numpy as np
 
 from rayforge.core.ops import (
@@ -13,6 +14,7 @@ from rayforge.pipeline.artifact import (
     WorkPieceArtifact,
     WorkPieceViewArtifact,
 )
+from rayforge.pipeline.artifact.base import TextureData, VertexData
 from rayforge.pipeline.stage.workpiece_view_compute import (
     compute_view_dimensions,
     compute_workpiece_view,
@@ -443,8 +445,6 @@ def test_render_chunk_to_buffer_texture():
 
 def test_get_content_bbox_powered_vertices():
     """Test _get_content_bbox with powered vertices."""
-    from rayforge.pipeline.artifact.base import VertexData
-
     vertex_data = VertexData(
         powered_vertices=np.array(
             [
@@ -474,8 +474,6 @@ def test_get_content_bbox_powered_vertices():
 
 def test_get_content_bbox_travel_vertices():
     """Test _get_content_bbox with travel vertices."""
-    from rayforge.pipeline.artifact.base import VertexData
-
     vertex_data = VertexData(
         powered_vertices=np.array([]),
         powered_colors=np.array([]),
@@ -500,11 +498,6 @@ def test_get_content_bbox_travel_vertices():
 
 def test_get_content_bbox_texture_data():
     """Test _get_content_bbox with texture data."""
-    from rayforge.pipeline.artifact.base import (
-        VertexData,
-        TextureData,
-    )
-
     vertex_data = VertexData(
         powered_vertices=np.array([]),
         powered_colors=np.array([]),
@@ -530,8 +523,6 @@ def test_get_content_bbox_texture_data():
 
 def test_get_content_bbox_empty():
     """Test _get_content_bbox returns None for empty data."""
-    from rayforge.pipeline.artifact.base import VertexData
-
     vertex_data = VertexData(
         powered_vertices=np.array([]),
         powered_colors=np.array([]),
@@ -662,9 +653,6 @@ def test_setup_cairo_context():
 
 def test_draw_travel_vertices():
     """Test _draw_travel_vertices draws travel vertices."""
-    from rayforge.pipeline.artifact.base import VertexData
-    import cairo
-
     vertex_data = VertexData(
         powered_vertices=np.array([]),
         powered_colors=np.array([]),
@@ -688,9 +676,6 @@ def test_draw_travel_vertices():
 
 def test_draw_zero_power_vertices():
     """Test _draw_zero_power_vertices draws zero-power vertices."""
-    from rayforge.pipeline.artifact.base import VertexData
-    import cairo
-
     vertex_data = VertexData(
         powered_vertices=np.array([]),
         powered_colors=np.array([]),
@@ -714,8 +699,6 @@ def test_draw_zero_power_vertices():
 
 def test_prepare_powered_vertices_for_batching():
     """Test _prepare_powered_vertices_for_batching."""
-    from rayforge.pipeline.artifact.base import VertexData
-
     vertex_data = VertexData(
         powered_vertices=np.array(
             [
@@ -750,8 +733,6 @@ def test_prepare_powered_vertices_for_batching():
 
 def test_draw_powered_vertices_batch():
     """Test _draw_powered_vertices_batch draws a batch of vertices."""
-    import cairo
-
     powered_v = np.array(
         [
             [[0.0, 0.0, 0.0], [10.0, 0.0, 0.0]],

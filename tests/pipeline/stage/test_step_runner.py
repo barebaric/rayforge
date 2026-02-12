@@ -1,5 +1,5 @@
 import pytest
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 import numpy as np
 
 from rayforge.core.doc import Doc
@@ -18,6 +18,7 @@ from rayforge.core.matrix import Matrix
 from rayforge.pipeline.stage.step_runner import (
     make_step_artifact_in_subprocess,
 )
+from rayforge.pipeline.transformer import Optimize
 
 
 @pytest.fixture
@@ -211,9 +212,6 @@ def test_step_runner_instantiates_transformers_from_dict(machine):
     Tests that the runner correctly instantiates transformers from
     dictionaries before calling compute.
     """
-    from unittest.mock import patch
-    from rayforge.pipeline.transformer import Optimize
-
     doc = Doc()
     layer = doc.active_layer
     wp = WorkPiece(name="wp1")
