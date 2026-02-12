@@ -588,28 +588,12 @@ class WorkPieceViewPipelineStage(PipelineStage):
             self._artifact_manager.release_handle(chunk_handle)
             return
 
-        if entry.generation_id != generation_id:
-            logger.debug(
-                f"Stale chunk for {key}. "
-                f"Expected gen_id={entry.generation_id}, "
-                f"got {generation_id}"
-            )
-            self._artifact_manager.release_handle(chunk_handle)
-            return
-
-        # Get the view generation ID from the ledger entry
-        view_id = entry.generation_id
-
         # Get view handle and render context from ArtifactManager
         view_handle, render_context = self._get_render_components(
             key, base_key, chunk_handle
         )
         if view_handle is None or render_context is None:
             return
-
-        # Check if we should render this chunk (might be empty/invalid)
-        # Note: We can't check artifact content here easily without loading
-        # it, so we delegate that to the runner/worker.
 
         # Retain chunk handle for the duration of the stitching task
         self._artifact_manager.retain_handle(chunk_handle)
@@ -627,7 +611,7 @@ class WorkPieceViewPipelineStage(PipelineStage):
             view_handle.to_dict(),
             render_context.to_dict(),
             when_done=lambda t: self._on_stitch_complete(
-                t, key, chunk_handle, view_handle, view_id
+                t, key, chunk_handle, view_handle, entry.generation_id
             ),
         )
 
@@ -932,7 +916,10 @@ class WorkPieceViewPipelineStage(PipelineStage):
         )
 
         status = task.get_status()
-        if status != "completed" and status != "canceled":
+
+        if status == "completed":
+            self._artifact_manager.complete_generation(key, view_id)
+        elif status != "canceled":
             logger.error(f"View render for {key} failed with status: {status}")
             self._artifact_manager.fail_generation(
                 key,

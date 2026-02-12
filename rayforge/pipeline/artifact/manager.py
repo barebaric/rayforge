@@ -147,7 +147,11 @@ class ArtifactManager:
     ) -> Optional[WorkPieceViewArtifactHandle]:
         composite_key = make_composite_key(key, generation_id)
         entry = self._ledger.get(composite_key)
-        if entry is None or entry.state != ArtifactLifecycle.DONE:
+        # View handles are available in PROCESSING state (live buffer)
+        if entry is None or entry.state not in (
+            ArtifactLifecycle.DONE,
+            ArtifactLifecycle.PROCESSING,
+        ):
             return None
         handle = entry.handle
         if isinstance(handle, WorkPieceViewArtifactHandle):
@@ -180,7 +184,11 @@ class ArtifactManager:
         if entry is None:
             return True
 
-        if entry.state != ArtifactLifecycle.DONE:
+        # Views can be valid while PROCESSING (progressive updates)
+        if entry.state not in (
+            ArtifactLifecycle.DONE,
+            ArtifactLifecycle.PROCESSING,
+        ):
             return True
 
         metadata = entry.metadata
@@ -261,14 +269,17 @@ class ArtifactManager:
         handle: WorkPieceViewArtifactHandle,
         generation_id: GenerationID,
     ):
-        """Stores a handle for a WorkPieceViewArtifact."""
+        """
+        Stores a handle for a WorkPieceViewArtifact. This is used for
+        live buffers and sets the state to PROCESSING.
+        """
         composite_key = make_composite_key(key, generation_id)
         entry = self._ledger.get(composite_key)
         if entry is not None and entry.handle is not None:
             self.release_handle(entry.handle)
         self._ledger[composite_key] = LedgerEntry(
             handle=handle,
-            state=ArtifactLifecycle.DONE,
+            state=ArtifactLifecycle.PROCESSING,
             generation_id=generation_id,
             error=None,
         )
@@ -552,7 +563,10 @@ class ArtifactManager:
                 return None
             ledger_key = make_composite_key(key, generation_id)
             entry = self._ledger.get(ledger_key)
-            if entry and entry.state == ArtifactLifecycle.DONE:
+            if entry and entry.state in (
+                ArtifactLifecycle.DONE,
+                ArtifactLifecycle.PROCESSING,
+            ):
                 handle = entry.handle
                 if isinstance(handle, WorkPieceViewArtifactHandle):
                     return handle
@@ -650,10 +664,10 @@ class ArtifactManager:
 
     def is_finished(self) -> bool:
         """
-        Returns True if the ledger contains anything the is not DONE
-        or ERROR.
+        Returns True if the ledger contains anything that is not DONE,
+        ERROR, or STALE.
 
-        QUEUED entries are considered "unfinished work".
+        QUEUED and PROCESSING entries are considered "unfinished work".
         """
         if not self._ledger:
             return True
@@ -881,10 +895,17 @@ class ArtifactManager:
         entry = self._ledger.get(composite_key)
         if entry is None:
             if handle is None:
-                logger.warning(
-                    f"complete_generation called for {key} "
-                    f"(gen_id={generation_id}) but no ledger entry "
-                    f"was found and no handle provided. Skipping."
+                # Allow creating a DONE entry without a handle (for
+                # skipped items)
+                logger.debug(
+                    f"complete_generation: Creating new DONE entry for {key} "
+                    f"(gen_id={generation_id}) with no handle"
+                )
+                self._ledger[composite_key] = LedgerEntry(
+                    handle=None,
+                    state=ArtifactLifecycle.DONE,
+                    generation_id=generation_id,
+                    error=None,
                 )
                 return
             logger.debug(
@@ -896,14 +917,6 @@ class ArtifactManager:
                 state=ArtifactLifecycle.DONE,
                 generation_id=generation_id,
                 error=None,
-            )
-            return
-
-        if entry.handle is None:
-            logger.warning(
-                f"complete_generation called for {key} "
-                f"(gen_id={generation_id}) but entry has no handle. "
-                f"Skipping."
             )
             return
 

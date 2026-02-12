@@ -105,7 +105,6 @@ class StepPipelineStage(PipelineStage):
         self,
         key: StepKey,
         full_invalidation: bool,
-        invalidate_job: bool = True,
     ):
         """
         Removes a step artifact, clears time cache, and cancels its task.
@@ -113,9 +112,6 @@ class StepPipelineStage(PipelineStage):
         Args:
             key: The step key to clean up.
             full_invalidation: Whether to do a full invalidation.
-            invalidate_job: Whether to invalidate the job artifact. Defaults to
-                True. Set to False when cleaning up during job generation
-                to avoid invalidating the job we're trying to create.
         """
         logger.debug(f"StepPipelineStage: Cleaning up entry {key}.")
         self._time_cache.pop(key, None)
@@ -131,8 +127,6 @@ class StepPipelineStage(PipelineStage):
                 self._artifact_manager.release_handle(render_handle)
 
         self._artifact_manager.invalidate(ArtifactKey.for_step(key))
-        if invalidate_job:
-            self._artifact_manager.invalidate_for_job(ArtifactKey.for_job())
 
     def _validate_assembly_dependencies(self, step: "Step") -> bool:
         """Validates that assembly dependencies are met."""

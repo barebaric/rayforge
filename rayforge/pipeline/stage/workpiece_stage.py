@@ -44,7 +44,6 @@ class WorkPiecePipelineStage(PipelineStage):
         self.generation_starting = Signal()
         self.visual_chunk_available = Signal()
         self.generation_finished = Signal()
-        self.generation_finished_with_status = Signal()
         self.workpiece_artifact_adopted = Signal()
 
     def _sizes_are_close(
@@ -258,7 +257,11 @@ class WorkPiecePipelineStage(PipelineStage):
             when_done=lambda t: self._on_task_complete(
                 t, key, ledger_key, generation_id, step, workpiece
             ),
-            when_event=self._on_task_event_received,
+            when_event=lambda task,
+            event_name,
+            data: self._on_task_event_received(
+                task, event_name, data, step.uid
+            ),
         )
 
     def _launch_task(
@@ -310,6 +313,7 @@ class WorkPiecePipelineStage(PipelineStage):
         ledger_key: ArtifactKey,
         handle: WorkPieceArtifactHandle,
         generation_id: int,
+        step_uid: str,
     ):
         """
         Processes artifact_created event.
@@ -319,7 +323,7 @@ class WorkPiecePipelineStage(PipelineStage):
         )
 
         self.workpiece_artifact_adopted.send(
-            self, step_uid=None, workpiece_uid=key.id
+            self, step_uid=step_uid, workpiece_uid=key.id
         )
 
     def _handle_visual_chunk_ready_event(
@@ -336,7 +340,7 @@ class WorkPiecePipelineStage(PipelineStage):
         )
 
     def _on_task_event_received(
-        self, task: "Task", event_name: str, data: dict
+        self, task: "Task", event_name: str, data: dict, step_uid: str
     ):
         """Handles events from a background task."""
         key = ArtifactKey.for_workpiece(task.key.id)
@@ -375,7 +379,7 @@ class WorkPiecePipelineStage(PipelineStage):
                 if not isinstance(handle, WorkPieceArtifactHandle):
                     raise TypeError("Expected a WorkPieceArtifactHandle")
                 self._handle_artifact_created_event(
-                    key, ledger_key, handle, generation_id
+                    key, ledger_key, handle, generation_id, step_uid
                 )
                 return
 
