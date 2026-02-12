@@ -3,6 +3,7 @@ import logging
 from contextlib import contextmanager
 from typing import (
     Any,
+    Callable,
     Dict,
     Generator,
     List,
@@ -15,7 +16,7 @@ from .base import BaseArtifact
 from .handle import BaseArtifactHandle, create_handle_from_dict
 from .job import JobArtifactHandle
 from .key import ArtifactKey
-from .lifecycle import ArtifactLifecycle, LedgerEntry
+from .lifecycle import LedgerEntry
 from .step_ops import StepOpsArtifactHandle
 from .step_render import StepRenderArtifactHandle
 from .store import ArtifactStore
@@ -58,11 +59,19 @@ def extract_generation_id(composite_key: Tuple) -> GenerationID:
 
 class ArtifactManager:
     """
-    A centralized manager for artifact handles that understands the
-    dependency graph between different artifact types.
+    A pure cache manager for artifact handles.
+
+    This class is responsible only for caching and retrieving handles.
+    State tracking is handled by the DAG scheduler via ArtifactNode.
     """
 
-    def __init__(self, store: ArtifactStore):
+    def __init__(
+        self,
+        store: ArtifactStore,
+        dag_state_callback: Optional[
+            Callable[[ArtifactKey, str], None]
+        ] = None,
+    ):
         self._store = store
         self._step_render_handles: Dict[str, StepRenderArtifactHandle] = {}
         self._workpiece_view_handles: Dict[
@@ -71,6 +80,18 @@ class ArtifactManager:
         self._ref_counts: Dict[ArtifactKey, int] = {}
         self._ledger: Dict[Tuple[ArtifactKey, GenerationID], LedgerEntry] = {}
         self._dependencies: Dict[ArtifactKey, List[ArtifactKey]] = {}
+        self._dag_state_callback = dag_state_callback
+
+    def _notify_dag_state_change(self, key: ArtifactKey, state: str) -> None:
+        """
+        Notify the DAG scheduler of a state change.
+
+        Args:
+            key: The ArtifactKey whose state changed.
+            state: The new state as a string (e.g., "valid", "processing").
+        """
+        if self._dag_state_callback is not None:
+            self._dag_state_callback(key, state)
 
     def get_workpiece_handle(
         self, key: ArtifactKey, generation_id: GenerationID
@@ -84,9 +105,9 @@ class ArtifactManager:
         entry = self._ledger.get(composite_key)
         logger.debug(
             f"get_workpiece_handle: entry={entry}, "
-            f"state={entry.state if entry else None}"
+            f"handle={entry.handle if entry else None}"
         )
-        if entry is None or entry.state != ArtifactLifecycle.DONE:
+        if entry is None or entry.handle is None:
             return None
         handle = entry.handle
         if isinstance(handle, WorkPieceArtifactHandle):
@@ -123,7 +144,7 @@ class ArtifactManager:
     ) -> Optional[StepOpsArtifactHandle]:
         composite_key = make_composite_key(key, generation_id)
         entry = self._ledger.get(composite_key)
-        if entry is None or entry.state != ArtifactLifecycle.DONE:
+        if entry is None or entry.handle is None:
             return None
         handle = entry.handle
         if isinstance(handle, StepOpsArtifactHandle):
@@ -135,7 +156,7 @@ class ArtifactManager:
     ) -> Optional[JobArtifactHandle]:
         composite_key = make_composite_key(key, generation_id)
         entry = self._ledger.get(composite_key)
-        if entry is None or entry.state != ArtifactLifecycle.DONE:
+        if entry is None or entry.handle is None:
             return None
         handle = entry.handle
         if isinstance(handle, JobArtifactHandle):
@@ -147,11 +168,7 @@ class ArtifactManager:
     ) -> Optional[WorkPieceViewArtifactHandle]:
         composite_key = make_composite_key(key, generation_id)
         entry = self._ledger.get(composite_key)
-        # View handles are available in PROCESSING state (live buffer)
-        if entry is None or entry.state not in (
-            ArtifactLifecycle.DONE,
-            ArtifactLifecycle.PROCESSING,
-        ):
+        if entry is None or entry.handle is None:
             return None
         handle = entry.handle
         if isinstance(handle, WorkPieceViewArtifactHandle):
@@ -181,14 +198,7 @@ class ArtifactManager:
         composite_key = make_composite_key(key, generation_id)
         entry = self._ledger.get(composite_key)
 
-        if entry is None:
-            return True
-
-        # Views can be valid while PROCESSING (progressive updates)
-        if entry.state not in (
-            ArtifactLifecycle.DONE,
-            ArtifactLifecycle.PROCESSING,
-        ):
+        if entry is None or entry.handle is None:
             return True
 
         metadata = entry.metadata
@@ -239,9 +249,14 @@ class ArtifactManager:
     def put_step_render_handle(
         self, step_uid: str, handle: StepRenderArtifactHandle
     ):
-        """Stores a handle for a StepRenderArtifact."""
-        old_handle = self._step_render_handles.pop(step_uid, None)
-        self.release_handle(old_handle)
+        """
+        Stores a handle for a StepRenderArtifact.
+
+        Note: This does NOT release any existing handle for this step.
+        The old handle will be cleaned up when the step is invalidated
+        or the pipeline is shut down. This prevents race conditions where
+        a handle is released while a worker is still using it.
+        """
         self._step_render_handles[step_uid] = handle
 
     def put_step_ops_handle(
@@ -250,17 +265,17 @@ class ArtifactManager:
         handle: StepOpsArtifactHandle,
         generation_id: GenerationID,
     ):
-        """Stores a handle for a StepOpsArtifact."""
+        """
+        Stores a handle for a StepOpsArtifact.
+
+        Note: This does NOT release any existing handle at this key.
+        The old handle will be cleaned up by prune when the generation
+        is no longer active.
+        """
         composite_key = make_composite_key(key, generation_id)
-        entry = self._ledger.get(composite_key)
-        if entry is not None and entry.handle is not None:
-            self.release_handle(entry.handle)
-        # Don't set to DONE state - let commit handle that
         self._ledger[composite_key] = LedgerEntry(
             handle=handle,
-            state=ArtifactLifecycle.PROCESSING,
             generation_id=generation_id,
-            error=None,
         )
 
     def put_workpiece_view_handle(
@@ -270,18 +285,17 @@ class ArtifactManager:
         generation_id: GenerationID,
     ):
         """
-        Stores a handle for a WorkPieceViewArtifact. This is used for
-        live buffers and sets the state to PROCESSING.
+        Stores a handle for a WorkPieceViewArtifact.
+
+        Note: This does NOT release any existing handle at this key.
+        The old handle will be cleaned up by prune when the generation
+        is no longer active. This prevents race conditions where a
+        live buffer allocation releases a final view that's still in use.
         """
         composite_key = make_composite_key(key, generation_id)
-        entry = self._ledger.get(composite_key)
-        if entry is not None and entry.handle is not None:
-            self.release_handle(entry.handle)
         self._ledger[composite_key] = LedgerEntry(
             handle=handle,
-            state=ArtifactLifecycle.PROCESSING,
             generation_id=generation_id,
-            error=None,
         )
 
     def adopt_artifact(
@@ -373,9 +387,8 @@ class ArtifactManager:
             entry = self._ledger.get(ledger_key)
             if entry and entry.handle is not None:
                 self.release_handle(entry.handle)
-            self.invalidate(ledger_key)
+            self._remove_from_ledger(ledger_key)
 
-        # Invalidate the step ops artifact since it depends on workpieces
         step_key = ArtifactKey.for_step(key.id)
         step_keys_to_invalidate = [
             ledger_key
@@ -386,7 +399,7 @@ class ArtifactManager:
             step_entry = self._ledger.get(ledger_key)
             if step_entry and step_entry.handle is not None:
                 self.release_handle(step_entry.handle)
-            self.invalidate(ledger_key)
+            self._remove_from_ledger(ledger_key)
 
         view_key = ArtifactKey.for_view(key.id)
         view_keys_to_invalidate = [
@@ -398,7 +411,9 @@ class ArtifactManager:
             view_entry = self._ledger.get(ledger_key)
             if view_entry and view_entry.handle is not None:
                 self.release_handle(view_entry.handle)
-            self.invalidate(ledger_key)
+            self._remove_from_ledger(ledger_key)
+
+        self._notify_dag_state_change(key, "stale")
 
     def invalidate_for_step(self, key: ArtifactKey):
         step_keys_to_invalidate = [
@@ -410,7 +425,7 @@ class ArtifactManager:
             step_entry = self._ledger.get(ledger_key)
             if step_entry and step_entry.handle is not None:
                 self.release_handle(step_entry.handle)
-            self.invalidate(ledger_key)
+            self._remove_from_ledger(ledger_key)
 
         keys_to_invalidate = [
             ledger_key
@@ -422,7 +437,7 @@ class ArtifactManager:
             entry = self._ledger.get(ledger_key)
             if entry and entry.handle is not None:
                 self.release_handle(entry.handle)
-            self.invalidate(ledger_key)
+            self._remove_from_ledger(ledger_key)
 
         view_keys_to_invalidate = [
             ledger_key
@@ -434,10 +449,12 @@ class ArtifactManager:
             view_entry = self._ledger.get(view_key)
             if view_entry and view_entry.handle is not None:
                 self.release_handle(view_entry.handle)
-            self.invalidate(view_key)
+            self._remove_from_ledger(view_key)
 
         step_render_handle = self._step_render_handles.pop(key.id, None)
         self.release_handle(step_render_handle)
+
+        self._notify_dag_state_change(key, "stale")
 
     def invalidate_for_job(self, key: ArtifactKey):
         keys_to_invalidate = [
@@ -449,7 +466,26 @@ class ArtifactManager:
             entry = self._ledger.get(ledger_key)
             if entry and entry.handle is not None:
                 self.release_handle(entry.handle)
-            self.invalidate(ledger_key)
+            self._remove_from_ledger(ledger_key)
+
+        self._notify_dag_state_change(key, "stale")
+
+    def _remove_from_ledger(
+        self, key: Union[ArtifactKey, Tuple[ArtifactKey, GenerationID]]
+    ) -> None:
+        """Remove an entry from the ledger."""
+        if isinstance(key, tuple):
+            if key in self._ledger:
+                del self._ledger[key]
+        else:
+            base_key = extract_base_key(key)
+            keys_to_remove = [
+                k
+                for k in self._ledger.keys()
+                if extract_base_key(k) == base_key
+            ]
+            for k in keys_to_remove:
+                del self._ledger[k]
 
     def shutdown(self):
         logger.info(
@@ -535,7 +571,7 @@ class ArtifactManager:
                 return None
             ledger_key = make_composite_key(key, generation_id)
             entry = self._ledger.get(ledger_key)
-            if entry and entry.state == ArtifactLifecycle.DONE:
+            if entry and entry.handle is not None:
                 handle = entry.handle
                 if isinstance(handle, WorkPieceArtifactHandle):
                     return handle
@@ -545,7 +581,7 @@ class ArtifactManager:
                 return None
             ledger_key = make_composite_key(key, generation_id)
             entry = self._ledger.get(ledger_key)
-            if entry and entry.state == ArtifactLifecycle.DONE:
+            if entry and entry.handle is not None:
                 handle = entry.handle
                 if isinstance(handle, StepOpsArtifactHandle):
                     return handle
@@ -555,7 +591,7 @@ class ArtifactManager:
                 return None
             ledger_key = make_composite_key(key, generation_id)
             entry = self._ledger.get(ledger_key)
-            if entry and entry.state == ArtifactLifecycle.DONE:
+            if entry and entry.handle is not None:
                 return entry.handle
             return None
         elif key.group == "view":
@@ -563,10 +599,7 @@ class ArtifactManager:
                 return None
             ledger_key = make_composite_key(key, generation_id)
             entry = self._ledger.get(ledger_key)
-            if entry and entry.state in (
-                ArtifactLifecycle.DONE,
-                ArtifactLifecycle.PROCESSING,
-            ):
+            if entry and entry.handle is not None:
                 handle = entry.handle
                 if isinstance(handle, WorkPieceViewArtifactHandle):
                     return handle
@@ -633,92 +666,11 @@ class ArtifactManager:
             return [make_composite_key(dep, generation_id) for dep in deps]
         return []
 
-    def invalidate(
-        self,
-        key: Union[ArtifactKey, Tuple[ArtifactKey, GenerationID]],
-    ) -> None:
-        """
-        Sets the entry's state to STALE.
-
-        Recursively invalidates all parent dependents found via the
-        dependency graph. If key doesn't exist in ledger, does nothing.
-        Accepts both base keys and composite keys.
-        """
-        base_key = extract_base_key(key)
-        for composite_key, entry in list(self._ledger.items()):
-            current_base = extract_base_key(composite_key)
-            if current_base == base_key:
-                # Check if generation_id matches if key is composite
-                # Only invalidate entries with matching generation_id
-                if isinstance(key, tuple) and len(key) == 2:
-                    key_generation_id = key[1]
-                    entry_generation_id = composite_key[1]
-                    if entry_generation_id != key_generation_id:
-                        continue
-                # Don't invalidate PROCESSING entries - they're actively being
-                # worked on
-                if entry.state != ArtifactLifecycle.PROCESSING:
-                    entry.state = ArtifactLifecycle.STALE
-        for dependent in self._get_dependents(base_key):
-            self.invalidate(dependent)
-
-    def is_finished(self) -> bool:
-        """
-        Returns True if the ledger contains anything that is not DONE,
-        ERROR, or STALE.
-
-        QUEUED and PROCESSING entries are considered "unfinished work".
-        """
-        if not self._ledger:
-            return True
-
-        for entry in self._ledger.values():
-            if entry.state in (
-                ArtifactLifecycle.QUEUED,
-                ArtifactLifecycle.PROCESSING,
-            ):
-                return False
-        return True
-
-    def query_work_for_stage(
-        self, stage_type: str, generation_id: GenerationID
-    ) -> List[ArtifactKey]:
-        """
-        Returns a list of keys that are QUEUED and whose dependencies
-        are all DONE.
-
-        This is the core scheduling logic. Keys are filtered by
-        stage_type (the group attribute of the ArtifactKey).
-        """
-        work_items = []
-        for key, entry in self._ledger.items():
-            if extract_generation_id(key) != generation_id:
-                continue
-            if entry.state != ArtifactLifecycle.QUEUED:
-                continue
-            base_key = extract_base_key(key)
-            if base_key.group != stage_type:
-                continue
-            deps = self._get_dependencies(base_key, generation_id)
-            all_ready = True
-            for dep in deps:
-                dep_entry = self._get_ledger_entry(dep)
-                if dep_entry is None or dep_entry.state != (
-                    ArtifactLifecycle.DONE
-                ):
-                    all_ready = False
-                    break
-            if all_ready:
-                work_items.append(base_key)
-        return work_items
-
     def register_intent(
         self, key: ArtifactKey, generation_id: GenerationID
     ) -> None:
         """
-        Creates an entry (key, generation_id) with state QUEUED.
-
-        Fails if the entry already exists.
+        Creates a placeholder entry (key, generation_id) in the cache.
 
         Args:
             key: The ArtifactKey for the entry.
@@ -734,7 +686,6 @@ class ArtifactManager:
                 f"already exists"
             )
         self._ledger[composite_key] = LedgerEntry(
-            state=ArtifactLifecycle.QUEUED,
             generation_id=generation_id,
         )
 
@@ -745,35 +696,22 @@ class ArtifactManager:
         source_handle: Optional[BaseArtifactHandle] = None,
     ) -> None:
         """
-        Transitions state from QUEUED or STALE to PROCESSING.
-
-        Fails if not in QUEUED or STALE state.
-        Stores the source_handle in metadata for later release.
+        Notifies the DAG that processing has started.
 
         Args:
             key: The ArtifactKey for the entry.
             generation_id: The generation ID for the entry.
             source_handle: Optional handle to store in metadata.
-
-        Raises:
-            AssertionError: If entry not found or not in a valid state.
         """
         composite_key = make_composite_key(key, generation_id)
         entry = self._get_ledger_entry(composite_key)
         if entry is None:
-            raise AssertionError(
-                f"Key {key} with generation_id={generation_id} "
-                f"not found in ledger"
-            )
-        assert entry.state in (
-            ArtifactLifecycle.QUEUED,
-            ArtifactLifecycle.STALE,
-        ), f"Cannot mark {entry.state} as PROCESSING, must be QUEUED or STALE"
-        entry.state = ArtifactLifecycle.PROCESSING
+            entry = LedgerEntry(generation_id=generation_id)
+            self._ledger[composite_key] = entry
         entry.generation_id = generation_id
-        entry.error = None
         if source_handle is not None:
             entry.metadata["source_handle"] = source_handle
+        self._notify_dag_state_change(key, "processing")
 
     def commit_artifact(
         self,
@@ -782,56 +720,30 @@ class ArtifactManager:
         generation_id: GenerationID,
     ) -> None:
         """
-        Transitions state from PROCESSING or QUEUED to DONE.
-
-        Fails if not in QUEUED or PROCESSING state.
-        Adopts the new handle, releases the old handle if one existed,
-        updates state to DONE, and clears error message. Releases the
-        source_handle from metadata if present.
+        Caches an artifact handle and notifies the DAG.
 
         Args:
             key: The ArtifactKey for the entry.
-            handle: The handle to commit.
+            handle: The handle to cache.
             generation_id: The generation ID for the entry.
-
-        Raises:
-            AssertionError: If entry not found or not in QUEUED or
-                PROCESSING state.
         """
-        logger.debug(
-            f"commit: key={key}, generation_id={generation_id}, "
-            f"ledger_keys={list(self._ledger.keys())}, "
-            f"ledger_entries={[(k, v.state) for k, v in self._ledger.items()]}"
-        )
+        logger.debug(f"commit: key={key}, generation_id={generation_id}")
         composite_key = make_composite_key(key, generation_id)
         entry = self._get_ledger_entry(composite_key)
         if entry is None:
-            # It's possible for a task to complete so fast that the event
-            # arrives before the stage has marked it as processing.
-            # In this case, we create the entry.
-            logger.warning(
-                f"commit_artifact called for {key} (gen_id={generation_id}) "
-                f"but no ledger entry was found. Creating one."
-            )
-            self.register_intent(key, generation_id)
-            entry = self._get_ledger_entry(composite_key)
-            assert entry is not None
+            entry = LedgerEntry(generation_id=generation_id)
+            self._ledger[composite_key] = entry
 
-        assert entry.state in (
-            ArtifactLifecycle.QUEUED,
-            ArtifactLifecycle.PROCESSING,
-        ), f"Cannot commit {entry.state} to DONE, must be QUEUED or PROCESSING"
         logger.debug(f"commit: Committing entry {composite_key}")
         self._store.adopt(handle)
         if entry.handle is not None:
             self._store.release(entry.handle)
         entry.handle = handle
-        entry.state = ArtifactLifecycle.DONE
         entry.generation_id = generation_id
-        entry.error = None
         source_handle = entry.metadata.pop("source_handle", None)
         if source_handle is not None:
             self._store.release(source_handle)
+        self._notify_dag_state_change(key, "valid")
 
     def mark_done(
         self,
@@ -839,18 +751,14 @@ class ArtifactManager:
         generation_id: GenerationID,
     ) -> None:
         """
-        Marks an entry as DONE without providing a handle.
+        Marks an entry as done without providing a handle.
 
         This is used when an entry has nothing to do (e.g., the
-        workpiece is empty or has no associated step), but we
-        want to mark it as DONE so the pipeline can finish.
+        workpiece is empty or has no associated step).
 
         Args:
             key: The ArtifactKey for the entry.
             generation_id: The generation ID for the entry.
-
-        Raises:
-            AssertionError: If entry not found or not in QUEUED state.
         """
         composite_key = make_composite_key(key, generation_id)
         entry = self._get_ledger_entry(composite_key)
@@ -861,16 +769,12 @@ class ArtifactManager:
             )
             return
 
-        assert entry.state == ArtifactLifecycle.QUEUED, (
-            f"Cannot mark {entry.state} as DONE, must be QUEUED"
-        )
-        logger.debug(f"mark_done: Marking entry {composite_key} as DONE")
-        entry.state = ArtifactLifecycle.DONE
+        logger.debug(f"mark_done: Marking entry {composite_key} as done")
         entry.generation_id = generation_id
-        entry.error = None
         if entry.handle is not None:
             self._store.release(entry.handle)
             entry.handle = None
+        self._notify_dag_state_change(key, "valid")
 
     def complete_generation(
         self,
@@ -879,10 +783,10 @@ class ArtifactManager:
         handle: Optional[BaseArtifactHandle] = None,
     ) -> None:
         """
-        Marks a generation as DONE without releasing handles.
+        Marks a generation as done.
 
         This is used when an entry already has a handle set (e.g., from
-        put_step_ops_handle) and we just need to mark it as DONE, or
+        put_step_ops_handle) and we just need to mark it as done, or
         when we need to create a ledger entry from a handle stored elsewhere.
 
         Args:
@@ -895,18 +799,15 @@ class ArtifactManager:
         entry = self._ledger.get(composite_key)
         if entry is None:
             if handle is None:
-                # Allow creating a DONE entry without a handle (for
-                # skipped items)
                 logger.debug(
-                    f"complete_generation: Creating new DONE entry for {key} "
+                    f"complete_generation: Creating new entry for {key} "
                     f"(gen_id={generation_id}) with no handle"
                 )
                 self._ledger[composite_key] = LedgerEntry(
                     handle=None,
-                    state=ArtifactLifecycle.DONE,
                     generation_id=generation_id,
-                    error=None,
                 )
+                self._notify_dag_state_change(key, "valid")
                 return
             logger.debug(
                 f"complete_generation: Creating new entry for {key} "
@@ -914,50 +815,44 @@ class ArtifactManager:
             )
             self._ledger[composite_key] = LedgerEntry(
                 handle=handle,
-                state=ArtifactLifecycle.DONE,
                 generation_id=generation_id,
-                error=None,
             )
+            self._notify_dag_state_change(key, "valid")
             return
 
         logger.debug(
-            f"complete_generation: Marking entry {composite_key} as DONE"
+            f"complete_generation: Marking entry {composite_key} as done"
         )
-        entry.state = ArtifactLifecycle.DONE
         entry.generation_id = generation_id
-        entry.error = None
         if handle is not None:
             if entry.handle is not None:
                 self._store.release(entry.handle)
             entry.handle = handle
+        self._notify_dag_state_change(key, "valid")
 
     def fail_generation(
         self, key: ArtifactKey, error_msg: str, generation_id: GenerationID
     ) -> None:
         """
-        Marks a PROCESSING entry as ERROR.
+        Notifies the DAG that generation has failed.
 
         Args:
             key: The ArtifactKey for the entry.
-            error_msg: The error message to store.
+            error_msg: The error message.
             generation_id: The generation ID for the entry.
-
-        Raises:
-            AssertionError: If the entry is not found or not in a valid state.
         """
         composite_key = make_composite_key(key, generation_id)
         entry = self._get_ledger_entry(composite_key)
         if entry is None:
-            raise AssertionError(f"Key {key} not found in ledger")
+            logger.warning(
+                f"fail_generation called for {key} but no entry found"
+            )
+            return
 
-        assert entry.state == ArtifactLifecycle.PROCESSING, (
-            f"Cannot mark {entry.state} as ERROR, must be PROCESSING"
-        )
-        entry.state = ArtifactLifecycle.ERROR
-        entry.error = error_msg
         source_handle = entry.metadata.pop("source_handle", None)
         if source_handle is not None:
             self._store.release(source_handle)
+        self._notify_dag_state_change(key, "error")
 
     def checkout_dependencies(
         self, key: ArtifactKey, generation_id: GenerationID
@@ -966,7 +861,7 @@ class ArtifactManager:
         Returns a dict mapping dependency keys to their handles.
 
         Looks up all children (dependencies) of key and verifies they
-        are all DONE.
+        all have handles.
         """
         deps = self._get_dependencies(key, generation_id)
         result = {}
@@ -978,9 +873,6 @@ class ArtifactManager:
                     f"Ledger keys: {list(self._ledger.keys())}"
                 )
             assert entry is not None, f"Dependency {dep} not in ledger"
-            assert entry.state == ArtifactLifecycle.DONE, (
-                f"Dependency {dep} is not DONE: {entry.state}"
-            )
             assert entry.handle is not None, f"Dependency {dep} has no handle"
             base_key = extract_base_key(dep)
             if isinstance(base_key, ArtifactKey):
@@ -995,10 +887,8 @@ class ArtifactManager:
         """
         Declares the expected artifacts for a specific generation.
 
-        Creates QUEUED entries in the ledger for any keys that do not yet
-        exist for this generation ID. This method enforces immutable
-        generations: it does not modify entries from previous generations
-        or reset states.
+        Creates placeholder entries in the ledger for any keys that do not yet
+        exist for this generation ID.
 
         Args:
             valid_keys: A set of ArtifactKeys that should exist.
@@ -1013,31 +903,35 @@ class ArtifactManager:
             if key not in self._ledger:
                 logger.debug(f"declare_generation: Creating entry at {key}")
                 self._ledger[key] = LedgerEntry(
-                    state=ArtifactLifecycle.QUEUED,
                     generation_id=generation_id,
                 )
-            # If key exists, we do nothing. It might be PROCESSING or DONE
-            # already.
 
     def prune(
         self,
         active_data_gen_ids: Set[int],
         active_view_gen_ids: Set[int],
+        processing_data_gen_ids: Optional[Set[int]] = None,
     ) -> None:
         """
         Removes artifacts that do not belong to active generations.
 
         This method performs garbage collection on the ledger, removing
-        entries that are no longer needed. Entries in PROCESSING state
-        are never pruned to prevent crashing active workers.
+        entries that are no longer needed.
 
         Args:
             active_data_gen_ids: Set of active data generation IDs.
             active_view_gen_ids: Set of active view generation IDs.
+            processing_data_gen_ids: Set of data generation IDs that are
+                currently being processed. View entries for these generations
+                will not be pruned even if not in active_view_gen_ids.
         """
+        if processing_data_gen_ids is None:
+            processing_data_gen_ids = set()
+
         logger.debug(
             f"prune: active_data_gen_ids={active_data_gen_ids}, "
             f"active_view_gen_ids={active_view_gen_ids}, "
+            f"processing_data_gen_ids={processing_data_gen_ids}, "
             f"ledger_size={len(self._ledger)}"
         )
         keys_to_remove = []
@@ -1046,16 +940,25 @@ class ArtifactManager:
             generation_id = extract_generation_id(composite_key)
 
             is_view = base_key.group == "view"
-            active_gen_ids = (
-                active_view_gen_ids if is_view else active_data_gen_ids
-            )
+            is_step = base_key.group == "step"
+            if is_view:
+                active_gen_ids = active_view_gen_ids
+            else:
+                active_gen_ids = active_data_gen_ids
 
-            if generation_id not in active_gen_ids:
-                if entry.state == ArtifactLifecycle.PROCESSING:
-                    continue
+            should_keep = generation_id in active_gen_ids
+            # Keep view entries for processing generations
+            if is_view and generation_id in processing_data_gen_ids:
+                should_keep = True
+            # Keep step entries for processing generations
+            # (workers may still be using them)
+            if is_step and generation_id in processing_data_gen_ids:
+                should_keep = True
+
+            if not should_keep:
                 logger.debug(
                     f"prune: Scheduling removal of {composite_key} "
-                    f"(state={entry.state}, gen_id={generation_id})"
+                    f"(gen_id={generation_id})"
                 )
                 keys_to_remove.append(composite_key)
 

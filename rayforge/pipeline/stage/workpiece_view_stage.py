@@ -12,7 +12,6 @@ from ..artifact import (
     BaseArtifactHandle,
 )
 from ..artifact.key import ArtifactKey
-from ..artifact.lifecycle import ArtifactLifecycle
 from ..artifact.manager import make_composite_key
 from ..artifact.workpiece_view import (
     RenderContext,
@@ -360,26 +359,17 @@ class WorkPieceViewPipelineStage(PipelineStage):
             )
             self._task_manager.cancel_task(task_key)
 
-        # Get or create ledger entry and mark as pending
+        # Get or create ledger entry
         entry = self._artifact_manager._get_ledger_entry(ledger_key)
         if entry is None:
             self._artifact_manager.register_intent(artifact_key, view_id)
             entry = self._artifact_manager._get_ledger_entry(ledger_key)
-            if entry is not None:
-                entry.metadata["render_context"] = context
-        elif entry.state != ArtifactLifecycle.PROCESSING:
-            if entry.state == ArtifactLifecycle.STALE:
-                entry.state = ArtifactLifecycle.QUEUED
+        if entry is not None:
+            entry.metadata["render_context"] = context
 
-        # Only mark as pending if the entry is in QUEUED state.
-        # If it's already PROCESSING, we've already started a render task.
-        current_entry = self._artifact_manager._get_ledger_entry(ledger_key)
-        if current_entry is not None and current_entry.state == (
-            ArtifactLifecycle.QUEUED
-        ):
-            self._artifact_manager.mark_processing(
-                artifact_key, view_id, source_handle
-            )
+        self._artifact_manager.mark_processing(
+            artifact_key, view_id, source_handle
+        )
 
         def when_done_callback(task: "Task"):
             logger.debug(

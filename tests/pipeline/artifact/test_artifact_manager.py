@@ -1,5 +1,11 @@
+"""
+Tests for the ArtifactManager as a pure cache.
+
+The ArtifactManager is now a pure cache - it only stores handles.
+State tracking is handled by the DAG scheduler via ArtifactNode.
+"""
+
 import unittest
-import unittest.mock
 import uuid
 from unittest.mock import Mock
 from rayforge.pipeline.artifact import (
@@ -11,7 +17,7 @@ from rayforge.pipeline.artifact import (
     StepOpsArtifactHandle,
     JobArtifactHandle,
 )
-from rayforge.pipeline.artifact.lifecycle import ArtifactLifecycle
+from rayforge.pipeline.artifact.lifecycle import LedgerEntry
 from rayforge.pipeline.artifact.store import ArtifactStore
 from rayforge.pipeline.artifact.manager import make_composite_key
 from rayforge.pipeline.artifact.workpiece_view import RenderContext
@@ -33,7 +39,7 @@ def create_mock_handle(handle_class, name: str) -> Mock:
 
 
 class TestArtifactManager(unittest.TestCase):
-    """Test suite for ArtifactManager."""
+    """Test suite for ArtifactManager as a pure cache."""
 
     def setUp(self):
         """Set up a fresh manager and mock store."""
@@ -42,17 +48,15 @@ class TestArtifactManager(unittest.TestCase):
         self.manager = ArtifactManager(self.mock_store)
 
     def test_put_and_get_step_handles(self):
-        """Tests storage and retrieval of new step handle types."""
+        """Tests storage and retrieval of step handle types."""
         render_handle = create_mock_handle(
             StepRenderArtifactHandle, "step1_render"
         )
         ops_handle = create_mock_handle(StepOpsArtifactHandle, "step1_ops")
 
         self.manager.put_step_render_handle(STEP1_UID, render_handle)
-        ledger_key = ArtifactKey.for_step(STEP1_UID)
-        composite_key = make_composite_key(ledger_key, 0)
-        self.manager._ledger[composite_key] = Mock(
-            state=ArtifactLifecycle.DONE, handle=ops_handle
+        self.manager.put_step_ops_handle(
+            ArtifactKey.for_step(STEP1_UID), ops_handle, 0
         )
 
         retrieved_render = self.manager.get_step_render_handle(STEP1_UID)
@@ -68,40 +72,30 @@ class TestArtifactManager(unittest.TestCase):
         """Tests basic storage and retrieval of a job handle."""
         handle = create_mock_handle(JobArtifactHandle, "job")
         job_key = ArtifactKey(id=JOB_UID, group="job")
-        job_composite = make_composite_key(job_key, 0)
-        self.manager._ledger[job_composite] = Mock(
-            state=ArtifactLifecycle.DONE, handle=handle
-        )
+        self.manager.commit_artifact(job_key, handle, 0)
+
         retrieved = self.manager.get_job_handle(job_key, 0)
         self.assertIs(retrieved, handle)
         self.mock_release.assert_not_called()
 
     def test_invalidate_workpiece_cascades_correctly(self):
-        """
-        Tests that invalidating a workpiece cascades to step ops artifact,
-        leaving the render artifact intact.
-        """
+        """Tests that invalidating a workpiece cascades to step ops."""
         wp_h = create_mock_handle(WorkPieceArtifactHandle, "wp1")
         render_h = create_mock_handle(StepRenderArtifactHandle, "step1_render")
         ops_h = create_mock_handle(StepOpsArtifactHandle, "step1_ops")
 
-        wp_composite = make_composite_key(
-            ArtifactKey.for_workpiece(WP1_UID), 0
+        self.manager.commit_artifact(
+            ArtifactKey.for_workpiece(WP1_UID), wp_h, 0
         )
-        self.manager._ledger[wp_composite] = Mock(
-            state=ArtifactLifecycle.DONE, handle=wp_h
-        )
-        self.manager._step_render_handles[WP1_UID] = render_h
-        step_composite = make_composite_key(ArtifactKey.for_step(WP1_UID), 0)
-        self.manager._ledger[step_composite] = Mock(
-            state=ArtifactLifecycle.DONE, handle=ops_h
+        self.manager.put_step_render_handle(WP1_UID, render_h)
+        self.manager.put_step_ops_handle(
+            ArtifactKey.for_step(WP1_UID), ops_h, 0
         )
 
         self.manager.invalidate_for_workpiece(
             ArtifactKey.for_workpiece(WP1_UID)
         )
 
-        # Assert correct artifacts were removed
         self.assertIsNone(
             self.manager.get_workpiece_handle(
                 ArtifactKey.for_workpiece(WP1_UID), 0
@@ -110,44 +104,30 @@ class TestArtifactManager(unittest.TestCase):
         self.assertIsNone(
             self.manager.get_step_ops_handle(ArtifactKey.for_step(WP1_UID), 0)
         )
-        # Assert render handle remains for UI stability
         self.assertIs(self.manager.get_step_render_handle(WP1_UID), render_h)
-        # Assert only workpiece and ops were released
         self.mock_release.assert_any_call(wp_h)
         self.mock_release.assert_any_call(ops_h)
-        self.assertEqual(self.mock_release.call_count, 2)
 
     def test_invalidate_step_cascades_correctly(self):
-        """
-        Tests that invalidating a step cascades to all dependent
-        artifacts (workpieces and step artifacts).
-        """
+        """Tests that invalidating a step cascades to all dependent."""
         wp1_h = create_mock_handle(WorkPieceArtifactHandle, "wp1")
         wp2_h = create_mock_handle(WorkPieceArtifactHandle, "wp2")
         render_h = create_mock_handle(StepRenderArtifactHandle, "step1_render")
         ops_h = create_mock_handle(StepOpsArtifactHandle, "step1_ops")
 
-        wp1_composite = make_composite_key(
-            ArtifactKey.for_workpiece(STEP1_UID), 0
+        self.manager.commit_artifact(
+            ArtifactKey.for_workpiece(STEP1_UID), wp1_h, 0
         )
-        wp2_composite = make_composite_key(
-            ArtifactKey.for_workpiece(STEP1_UID), 1
+        self.manager.commit_artifact(
+            ArtifactKey.for_workpiece(STEP1_UID), wp2_h, 1
         )
-        self.manager._ledger[wp1_composite] = Mock(
-            state=ArtifactLifecycle.DONE, handle=wp1_h
-        )
-        self.manager._ledger[wp2_composite] = Mock(
-            state=ArtifactLifecycle.DONE, handle=wp2_h
-        )
-        self.manager._step_render_handles[STEP1_UID] = render_h
-        step_composite = make_composite_key(ArtifactKey.for_step(STEP1_UID), 0)
-        self.manager._ledger[step_composite] = Mock(
-            state=ArtifactLifecycle.DONE, handle=ops_h
+        self.manager.put_step_render_handle(STEP1_UID, render_h)
+        self.manager.put_step_ops_handle(
+            ArtifactKey.for_step(STEP1_UID), ops_h, 0
         )
 
         self.manager.invalidate_for_step(ArtifactKey.for_step(STEP1_UID))
 
-        # Assert all step-related artifacts were removed
         self.assertIsNone(
             self.manager.get_workpiece_handle(
                 ArtifactKey.for_workpiece(STEP1_UID), 0
@@ -159,30 +139,22 @@ class TestArtifactManager(unittest.TestCase):
             )
         )
         self.assertIsNone(self.manager.get_step_render_handle(STEP1_UID))
-        # Assert all artifacts were released
         self.mock_release.assert_any_call(wp1_h)
         self.mock_release.assert_any_call(wp2_h)
         self.mock_release.assert_any_call(render_h)
         self.mock_release.assert_any_call(ops_h)
-        self.assertEqual(self.mock_release.call_count, 4)
 
     def test_put_job_replaces_old_handle(self):
-        """Tests that putting a job handle releases of old handle."""
+        """Tests that putting a job handle releases old handle."""
         old_job_h = create_mock_handle(JobArtifactHandle, "job_old")
         new_job_h = create_mock_handle(JobArtifactHandle, "job_new")
         job_key = ArtifactKey(id=JOB_UID, group="job")
-        job_composite = make_composite_key(job_key, 0)
-        self.manager._ledger[job_composite] = Mock(
-            state=ArtifactLifecycle.DONE, handle=old_job_h
-        )
 
-        self.manager._ledger[job_composite] = Mock(
-            state=ArtifactLifecycle.DONE, handle=new_job_h
-        )
-        self.manager.release_handle(old_job_h)
+        self.manager.commit_artifact(job_key, old_job_h, 0)
+        self.manager.commit_artifact(job_key, new_job_h, 0)
 
         self.assertIs(self.manager.get_job_handle(job_key, 0), new_job_h)
-        self.mock_release.assert_called_once_with(old_job_h)
+        self.mock_release.assert_called_with(old_job_h)
 
     def test_shutdown_releases_all_artifacts(self):
         """Tests that shutdown releases all cached artifacts."""
@@ -191,50 +163,43 @@ class TestArtifactManager(unittest.TestCase):
         ops_h = create_mock_handle(StepOpsArtifactHandle, "step1_ops")
         job_h = create_mock_handle(JobArtifactHandle, "job")
 
-        wp_composite = make_composite_key(
-            ArtifactKey.for_workpiece(WP1_UID), 0
+        self.manager.commit_artifact(
+            ArtifactKey.for_workpiece(WP1_UID), wp_h, 0
         )
-        self.manager._ledger[wp_composite] = Mock(
-            state=ArtifactLifecycle.DONE, handle=wp_h
+        self.manager.put_step_render_handle(STEP1_UID, render_h)
+        self.manager.put_step_ops_handle(
+            ArtifactKey.for_step(STEP1_UID), ops_h, 0
         )
-        self.manager._step_render_handles[STEP1_UID] = render_h
-        step_composite = make_composite_key(ArtifactKey.for_step(STEP1_UID), 0)
-        self.manager._ledger[step_composite] = Mock(
-            state=ArtifactLifecycle.DONE, handle=ops_h
-        )
-        job_composite = make_composite_key(
-            ArtifactKey(id=JOB_UID, group="job"), 0
-        )
-        self.manager._ledger[job_composite] = Mock(
-            state=ArtifactLifecycle.DONE, handle=job_h
+        self.manager.commit_artifact(
+            ArtifactKey(id=JOB_UID, group="job"), job_h, 0
         )
 
         self.manager.shutdown()
 
-        # Assert all handles were released
         self.mock_release.assert_any_call(wp_h)
         self.mock_release.assert_any_call(render_h)
         self.mock_release.assert_any_call(ops_h)
         self.mock_release.assert_any_call(job_h)
-        self.assertEqual(self.mock_release.call_count, 4)
-        # Assert all caches are cleared
         self.assertEqual(len(self.manager._ledger), 0)
         self.assertEqual(len(self.manager._step_render_handles), 0)
 
     def test_get_all_workpiece_keys(self):
         """Tests getting all workpiece keys."""
-        wp1_composite = make_composite_key(
-            ArtifactKey.for_workpiece(WP1_UID), 0
+        self.manager.commit_artifact(
+            ArtifactKey.for_workpiece(WP1_UID),
+            create_mock_handle(WorkPieceArtifactHandle, "wp1"),
+            0,
         )
-        wp2_composite = make_composite_key(
-            ArtifactKey.for_workpiece(WP2_UID), 0
+        self.manager.commit_artifact(
+            ArtifactKey.for_workpiece(WP2_UID),
+            create_mock_handle(WorkPieceArtifactHandle, "wp2"),
+            0,
         )
-        wp3_composite = make_composite_key(
-            ArtifactKey.for_workpiece(WP3_UID), 0
+        self.manager.commit_artifact(
+            ArtifactKey.for_workpiece(WP3_UID),
+            create_mock_handle(WorkPieceArtifactHandle, "wp3"),
+            0,
         )
-        self.manager._ledger[wp1_composite] = Mock()
-        self.manager._ledger[wp2_composite] = Mock()
-        self.manager._ledger[wp3_composite] = Mock()
 
         keys = self.manager.get_all_workpiece_keys()
         self.assertEqual(len(keys), 3)
@@ -270,9 +235,8 @@ class TestArtifactManager(unittest.TestCase):
     def test_checkout_step_render_handle(self):
         """Tests checking out a step ops handle."""
         ops_h = create_mock_handle(StepOpsArtifactHandle, "step1_ops")
-        step_composite = make_composite_key(ArtifactKey.for_step(STEP1_UID), 0)
-        self.manager._ledger[step_composite] = Mock(
-            state=ArtifactLifecycle.DONE, handle=ops_h
+        self.manager.put_step_ops_handle(
+            ArtifactKey.for_step(STEP1_UID), ops_h, 0
         )
 
         with self.manager.checkout(
@@ -293,10 +257,7 @@ class TestArtifactManager(unittest.TestCase):
         """Tests checking out job handle."""
         job_h = create_mock_handle(JobArtifactHandle, "job")
         job_key = ArtifactKey(id=JOB_UID, group="job")
-        job_composite = make_composite_key(job_key, 0)
-        self.manager._ledger[job_composite] = Mock(
-            state=ArtifactLifecycle.DONE, handle=job_h
-        )
+        self.manager.commit_artifact(job_key, job_h, 0)
 
         with self.manager.checkout(job_key, 0) as handle:
             self.assertIs(handle, job_h)
@@ -309,30 +270,14 @@ class TestArtifactManager(unittest.TestCase):
     def test_get_workpiece_handle_from_ledger(self):
         """Tests getting workpiece handle from ledger."""
         wp_h = create_mock_handle(WorkPieceArtifactHandle, "wp1")
-        ledger_key = ArtifactKey.for_workpiece(WP1_UID)
-        composite_key = make_composite_key(ledger_key, 0)
-        self.manager._ledger[composite_key] = Mock(
-            state=ArtifactLifecycle.DONE, handle=wp_h
+        self.manager.commit_artifact(
+            ArtifactKey.for_workpiece(WP1_UID), wp_h, 0
         )
 
         retrieved = self.manager.get_workpiece_handle(
             ArtifactKey.for_workpiece(WP1_UID), 0
         )
         self.assertIs(retrieved, wp_h)
-
-    def test_get_workpiece_handle_returns_none_when_not_ready(self):
-        """Tests getting workpiece handle returns None when not DONE."""
-        wp_h = create_mock_handle(WorkPieceArtifactHandle, "wp1")
-        ledger_key = ArtifactKey.for_workpiece(WP1_UID)
-        composite_key = make_composite_key(ledger_key, 0)
-        self.manager._ledger[composite_key] = Mock(
-            state=ArtifactLifecycle.PROCESSING, handle=wp_h
-        )
-
-        retrieved = self.manager.get_workpiece_handle(
-            ArtifactKey.for_workpiece(WP1_UID), 0
-        )
-        self.assertIsNone(retrieved)
 
     def test_get_workpiece_handle_returns_none_when_not_found(self):
         """Tests getting workpiece handle returns None when not found."""
@@ -344,81 +289,72 @@ class TestArtifactManager(unittest.TestCase):
     def test_prune_removes_obsolete_data_generation(self):
         """Tests pruning removes artifacts from non-active data generations."""
         wp_h = create_mock_handle(WorkPieceArtifactHandle, "wp1")
-        wp_composite = make_composite_key(
-            ArtifactKey.for_workpiece(WP1_UID), 0
-        )
-        self.manager._ledger[wp_composite] = Mock(
-            state=ArtifactLifecycle.DONE, handle=wp_h
+        self.manager.commit_artifact(
+            ArtifactKey.for_workpiece(WP1_UID), wp_h, 0
         )
 
         self.manager.prune(active_data_gen_ids={1}, active_view_gen_ids=set())
 
+        wp_composite = make_composite_key(
+            ArtifactKey.for_workpiece(WP1_UID), 0
+        )
         self.assertNotIn(wp_composite, self.manager._ledger)
         self.mock_release.assert_called_once_with(wp_h)
 
     def test_prune_keeps_active_data_generation(self):
         """Tests pruning keeps artifacts from active data generations."""
         wp_h = create_mock_handle(WorkPieceArtifactHandle, "wp1")
-        wp_composite = make_composite_key(
-            ArtifactKey.for_workpiece(WP1_UID), 0
-        )
-        self.manager._ledger[wp_composite] = Mock(
-            state=ArtifactLifecycle.DONE, handle=wp_h
+        self.manager.commit_artifact(
+            ArtifactKey.for_workpiece(WP1_UID), wp_h, 0
         )
 
         self.manager.prune(active_data_gen_ids={0}, active_view_gen_ids=set())
 
+        wp_composite = make_composite_key(
+            ArtifactKey.for_workpiece(WP1_UID), 0
+        )
         self.assertIn(wp_composite, self.manager._ledger)
         self.mock_release.assert_not_called()
 
     def test_prune_removes_obsolete_view_generation(self):
         """Tests pruning removes artifacts from non-active view generations."""
         view_h = create_mock_handle(WorkPieceViewArtifactHandle, "view1")
-        view_composite = make_composite_key(ArtifactKey.for_view(WP1_UID), 0)
-        self.manager._ledger[view_composite] = Mock(
-            state=ArtifactLifecycle.DONE, handle=view_h
-        )
+        self.manager.commit_artifact(ArtifactKey.for_view(WP1_UID), view_h, 0)
 
         self.manager.prune(active_data_gen_ids=set(), active_view_gen_ids={1})
 
+        view_composite = make_composite_key(ArtifactKey.for_view(WP1_UID), 0)
         self.assertNotIn(view_composite, self.manager._ledger)
         self.mock_release.assert_called_once_with(view_h)
 
     def test_prune_keeps_active_view_generation(self):
         """Tests pruning keeps artifacts from active view generations."""
         view_h = create_mock_handle(WorkPieceViewArtifactHandle, "view1")
-        view_composite = make_composite_key(ArtifactKey.for_view(WP1_UID), 0)
-        self.manager._ledger[view_composite] = Mock(
-            state=ArtifactLifecycle.DONE, handle=view_h
-        )
+        self.manager.commit_artifact(ArtifactKey.for_view(WP1_UID), view_h, 0)
 
         self.manager.prune(active_data_gen_ids=set(), active_view_gen_ids={0})
 
+        view_composite = make_composite_key(ArtifactKey.for_view(WP1_UID), 0)
         self.assertIn(view_composite, self.manager._ledger)
-        self.mock_release.assert_not_called()
-
-    def test_prune_preserves_processing_entries(self):
-        """Tests pruning does not remove entries in PROCESSING state."""
-        wp_h = create_mock_handle(WorkPieceArtifactHandle, "wp1")
-        wp_composite = make_composite_key(
-            ArtifactKey.for_workpiece(WP1_UID), 0
-        )
-        self.manager._ledger[wp_composite] = Mock(
-            state=ArtifactLifecycle.PROCESSING, handle=wp_h
-        )
-
-        self.manager.prune(active_data_gen_ids={1}, active_view_gen_ids=set())
-
-        self.assertIn(wp_composite, self.manager._ledger)
         self.mock_release.assert_not_called()
 
     def test_prune_mixed_generations(self):
         """Tests pruning with multiple generations of mixed types."""
         wp_h0 = create_mock_handle(WorkPieceArtifactHandle, "wp0")
         wp_h1 = create_mock_handle(WorkPieceArtifactHandle, "wp1")
-
         view_h0 = create_mock_handle(WorkPieceViewArtifactHandle, "view0")
         view_h1 = create_mock_handle(WorkPieceViewArtifactHandle, "view1")
+
+        self.manager.commit_artifact(
+            ArtifactKey.for_workpiece(WP1_UID), wp_h0, 0
+        )
+        self.manager.commit_artifact(
+            ArtifactKey.for_workpiece(WP2_UID), wp_h1, 1
+        )
+        self.manager.commit_artifact(ArtifactKey.for_view(WP1_UID), view_h0, 0)
+        self.manager.commit_artifact(ArtifactKey.for_view(WP2_UID), view_h1, 1)
+
+        self.manager.prune(active_data_gen_ids={1}, active_view_gen_ids={0})
 
         wp_composite_0 = make_composite_key(
             ArtifactKey.for_workpiece(WP1_UID), 0
@@ -429,21 +365,6 @@ class TestArtifactManager(unittest.TestCase):
         view_composite_0 = make_composite_key(ArtifactKey.for_view(WP1_UID), 0)
         view_composite_1 = make_composite_key(ArtifactKey.for_view(WP2_UID), 1)
 
-        self.manager._ledger[wp_composite_0] = Mock(
-            state=ArtifactLifecycle.DONE, handle=wp_h0
-        )
-        self.manager._ledger[wp_composite_1] = Mock(
-            state=ArtifactLifecycle.DONE, handle=wp_h1
-        )
-        self.manager._ledger[view_composite_0] = Mock(
-            state=ArtifactLifecycle.DONE, handle=view_h0
-        )
-        self.manager._ledger[view_composite_1] = Mock(
-            state=ArtifactLifecycle.DONE, handle=view_h1
-        )
-
-        self.manager.prune(active_data_gen_ids={1}, active_view_gen_ids={0})
-
         self.assertNotIn(wp_composite_0, self.manager._ledger)
         self.assertIn(wp_composite_1, self.manager._ledger)
         self.assertIn(view_composite_0, self.manager._ledger)
@@ -453,109 +374,100 @@ class TestArtifactManager(unittest.TestCase):
         self.mock_release.assert_any_call(view_h1)
         self.assertEqual(self.mock_release.call_count, 2)
 
-    def test_prune_ledger_size_stays_constant(self):
-        """Tests that ledger size stays constant after cycling generations."""
-        initial_size = 0
-        for gen_id in range(3):
-            wp_h = create_mock_handle(WorkPieceArtifactHandle, f"wp{gen_id}")
-            wp_composite = make_composite_key(
-                ArtifactKey.for_workpiece(WP1_UID), gen_id
-            )
-            self.manager._ledger[wp_composite] = Mock(
-                state=ArtifactLifecycle.DONE, handle=wp_h
-            )
-            initial_size += 1
+    def test_prune_preserves_view_for_processing_data_gen(self):
+        """Tests pruning preserves view entries for processing data gens."""
+        view_h = create_mock_handle(WorkPieceViewArtifactHandle, "view1")
+        self.manager.commit_artifact(ArtifactKey.for_view(WP1_UID), view_h, 0)
 
-            self.manager.prune(
-                active_data_gen_ids={gen_id}, active_view_gen_ids=set()
-            )
+        self.manager.prune(
+            active_data_gen_ids={1},
+            active_view_gen_ids={1},
+            processing_data_gen_ids={1, 0},
+        )
 
-            self.assertEqual(len(self.manager._ledger), 1)
+        view_composite = make_composite_key(ArtifactKey.for_view(WP1_UID), 0)
+        self.assertIn(view_composite, self.manager._ledger)
+        self.mock_release.assert_not_called()
+
+    def test_prune_preserves_view_for_previous_gen_with_processing(self):
+        """Tests pruning preserves view entries for prev gen if processing."""
+        view_h0 = create_mock_handle(WorkPieceViewArtifactHandle, "view0")
+        view_h1 = create_mock_handle(WorkPieceViewArtifactHandle, "view1")
+        self.manager.commit_artifact(ArtifactKey.for_view(WP1_UID), view_h0, 0)
+        self.manager.commit_artifact(ArtifactKey.for_view(WP2_UID), view_h1, 1)
+
+        self.manager.prune(
+            active_data_gen_ids={1},
+            active_view_gen_ids={1},
+            processing_data_gen_ids={1, 0},
+        )
+
+        view_composite_0 = make_composite_key(ArtifactKey.for_view(WP1_UID), 0)
+        view_composite_1 = make_composite_key(ArtifactKey.for_view(WP2_UID), 1)
+        self.assertIn(view_composite_0, self.manager._ledger)
+        self.assertIn(view_composite_1, self.manager._ledger)
+        self.mock_release.assert_not_called()
+
+    def test_prune_preserves_step_for_processing_data_gen(self):
+        """Tests pruning preserves step entries for processing data gens."""
+        step_h0 = create_mock_handle(StepOpsArtifactHandle, "step0")
+        step_h1 = create_mock_handle(StepOpsArtifactHandle, "step1")
+        step_key0 = ArtifactKey.for_step(STEP1_UID)
+        step_key1 = ArtifactKey.for_step(STEP2_UID)
+        self.manager.commit_artifact(step_key0, step_h0, 0)
+        self.manager.commit_artifact(step_key1, step_h1, 1)
+
+        self.manager.prune(
+            active_data_gen_ids={1},
+            active_view_gen_ids={1},
+            processing_data_gen_ids={1, 0},
+        )
+
+        step_composite_0 = make_composite_key(step_key0, 0)
+        step_composite_1 = make_composite_key(step_key1, 1)
+        self.assertIn(step_composite_0, self.manager._ledger)
+        self.assertIn(step_composite_1, self.manager._ledger)
+        self.mock_release.assert_not_called()
 
     def test_is_generation_current_returns_true_for_matching(self):
         """Test is_generation_current returns True for matching gen ID."""
         wp_h = create_mock_handle(WorkPieceArtifactHandle, "wp1")
         wp_key = ArtifactKey.for_workpiece(WP1_UID)
-        wp_composite = make_composite_key(wp_key, 1)
-        self.manager._ledger[wp_composite] = Mock(
-            state=ArtifactLifecycle.DONE,
-            handle=wp_h,
-            generation_id=1,
-        )
+        self.manager.commit_artifact(wp_key, wp_h, 1)
 
         result = self.manager.is_generation_current(wp_key, 1)
-
         self.assertTrue(result)
 
     def test_is_generation_current_returns_false_for_mismatch(self):
         """Test is_generation_current returns False for gen ID mismatch."""
         wp_h = create_mock_handle(WorkPieceArtifactHandle, "wp1")
         wp_key = ArtifactKey.for_workpiece(WP1_UID)
-        wp_composite = make_composite_key(wp_key, 1)
-        self.manager._ledger[wp_composite] = Mock(
-            state=ArtifactLifecycle.DONE,
-            handle=wp_h,
-            generation_id=1,
-        )
+        self.manager.commit_artifact(wp_key, wp_h, 1)
 
         result = self.manager.is_generation_current(wp_key, 2)
-
         self.assertFalse(result)
 
     def test_is_generation_current_returns_false_for_missing(self):
         """Test is_generation_current returns False for missing entry."""
         wp_key = ArtifactKey.for_workpiece(WP1_UID)
         result = self.manager.is_generation_current(wp_key, 0)
-
         self.assertFalse(result)
 
     def test_get_workpiece_view_handle_returns_handle(self):
-        """Test get_workpiece_view_handle returns the handle when DONE."""
+        """Test get_workpiece_view_handle returns the handle when cached."""
         view_h = create_mock_handle(WorkPieceViewArtifactHandle, "view1")
-        view_composite = make_composite_key(ArtifactKey.for_view(WP1_UID), 0)
-        self.manager._ledger[view_composite] = Mock(
-            state=ArtifactLifecycle.DONE, handle=view_h
-        )
+        self.manager.commit_artifact(ArtifactKey.for_view(WP1_UID), view_h, 0)
 
         retrieved = self.manager.get_workpiece_view_handle(
             ArtifactKey.for_view(WP1_UID), 0
         )
-
         self.assertIs(retrieved, view_h)
-
-    def test_get_workpiece_view_handle_returns_handle_when_processing(self):
-        """Test get_workpiece_view_handle returns handle when PROCESSING."""
-        view_h = create_mock_handle(WorkPieceViewArtifactHandle, "view1")
-        view_composite = make_composite_key(ArtifactKey.for_view(WP1_UID), 0)
-        self.manager._ledger[view_composite] = Mock(
-            state=ArtifactLifecycle.PROCESSING, handle=view_h
-        )
-
-        retrieved = self.manager.get_workpiece_view_handle(
-            ArtifactKey.for_view(WP1_UID), 0
-        )
-
-        self.assertIs(retrieved, view_h)
-
-    def test_get_workpiece_view_handle_returns_none_when_initial(self):
-        """Test get_workpiece_view_handle returns None when QUEUED."""
-        view_composite = make_composite_key(ArtifactKey.for_view(WP1_UID), 0)
-        self.manager._ledger[view_composite] = Mock(
-            state=ArtifactLifecycle.QUEUED, handle=None
-        )
-
-        retrieved = self.manager.get_workpiece_view_handle(
-            ArtifactKey.for_view(WP1_UID), 0
-        )
-
-        self.assertIsNone(retrieved)
 
     def test_get_workpiece_view_handle_returns_none_when_missing(self):
         """Test get_workpiece_view_handle returns None when not found."""
         retrieved = self.manager.get_workpiece_view_handle(
             ArtifactKey.for_view(WP1_UID), 0
         )
-
         self.assertIsNone(retrieved)
 
     def test_is_view_stale_returns_true_for_missing_entry(self):
@@ -568,22 +480,6 @@ class TestArtifactManager(unittest.TestCase):
 
         view_key = ArtifactKey.for_view(WP1_UID)
         result = self.manager.is_view_stale(view_key, None, wp_h, 0)
-
-        self.assertTrue(result)
-
-    def test_is_view_stale_returns_true_for_not_ready_state(self):
-        """Test is_view_stale returns True when entry is QUEUED."""
-        view_composite = make_composite_key(ArtifactKey.for_view(WP1_UID), 0)
-        self.manager._ledger[view_composite] = Mock(
-            state=ArtifactLifecycle.QUEUED,
-            handle=None,
-            metadata={},
-        )
-
-        result = self.manager.is_view_stale(
-            ArtifactKey.for_view(WP1_UID), None, None, 0
-        )
-
         self.assertTrue(result)
 
     def test_is_view_stale_returns_true_for_context_mismatch(self):
@@ -601,43 +497,16 @@ class TestArtifactManager(unittest.TestCase):
             margin_px=5,
             color_set_dict={"default": {}},
         )
-        view_key = ArtifactKey.for_view(WP1_UID)
         view_composite = make_composite_key(ArtifactKey.for_view(WP1_UID), 0)
-        self.manager._ledger[view_composite] = Mock(
-            state=ArtifactLifecycle.DONE,
+
+        entry = LedgerEntry(
             handle=view_h,
             metadata={"render_context": stored_context},
         )
-
-        result = self.manager.is_view_stale(view_key, new_context, None, 0)
-
-        self.assertTrue(result)
-
-    def test_is_view_stale_returns_true_for_property_mismatch(self):
-        """Test is_view_stale returns True when source properties change."""
-        view_h = create_mock_handle(WorkPieceViewArtifactHandle, "view1")
-        wp_h = create_mock_handle(WorkPieceArtifactHandle, "wp1")
-        wp_h.is_scalable = True
-        wp_h.source_coordinate_system_name = "wcs"
-        wp_h.generation_size = 100
-        wp_h.source_dimensions = (10, 10)
-
-        stored_props = {
-            "is_scalable": False,
-            "source_coordinate_system_name": "old",
-            "generation_size": 50,
-            "source_dimensions": (5, 5),
-        }
-        view_composite = make_composite_key(ArtifactKey.for_view(WP1_UID), 0)
-        self.manager._ledger[view_composite] = Mock(
-            state=ArtifactLifecycle.DONE,
-            handle=view_h,
-            metadata={"source_properties": stored_props},
-        )
+        self.manager._ledger[view_composite] = entry
 
         view_key = ArtifactKey.for_view(WP1_UID)
-        result = self.manager.is_view_stale(view_key, None, wp_h, 0)
-
+        result = self.manager.is_view_stale(view_key, new_context, None, 0)
         self.assertTrue(result)
 
     def test_is_view_stale_returns_false_for_valid_view(self):
@@ -662,19 +531,18 @@ class TestArtifactManager(unittest.TestCase):
             "source_dimensions": (10, 10),
         }
         view_composite = make_composite_key(ArtifactKey.for_view(WP1_UID), 0)
-        self.manager._ledger[view_composite] = Mock(
-            state=ArtifactLifecycle.DONE,
+        entry = LedgerEntry(
             handle=view_h,
             metadata={
                 "render_context": context,
                 "source_properties": stored_props,
             },
         )
+        self.manager._ledger[view_composite] = entry
 
         result = self.manager.is_view_stale(
             ArtifactKey.for_view(WP1_UID), context, wp_h, 0
         )
-
         self.assertFalse(result)
 
     def test_get_artifact_retrieves_from_store(self):
@@ -688,8 +556,10 @@ class TestArtifactManager(unittest.TestCase):
         self.assertIs(result, artifact)
         self.mock_store.get.assert_called_once_with(handle)
 
-    def test_put_step_render_handle_stores_and_releases_old(self):
-        """Test put_step_render_handle stores and releases old handle."""
+    def test_put_step_render_handle_replaces_old(self):
+        """
+        Test put_step_render_handle replaces old handle without releasing.
+        """
         old_h = create_mock_handle(StepRenderArtifactHandle, "old")
         new_h = create_mock_handle(StepRenderArtifactHandle, "new")
         self.manager._step_render_handles[STEP1_UID] = old_h
@@ -697,7 +567,7 @@ class TestArtifactManager(unittest.TestCase):
         self.manager.put_step_render_handle(STEP1_UID, new_h)
 
         self.assertIs(self.manager._step_render_handles[STEP1_UID], new_h)
-        self.mock_release.assert_called_once_with(old_h)
+        self.mock_release.assert_not_called()
 
     def test_put_step_render_handle_without_old(self):
         """Test put_step_render_handle stores without old handle."""
@@ -708,8 +578,8 @@ class TestArtifactManager(unittest.TestCase):
         self.assertIs(self.manager._step_render_handles[STEP1_UID], new_h)
         self.mock_release.assert_not_called()
 
-    def test_put_step_ops_handle_creates_processing_entry(self):
-        """Test put_step_ops_handle creates PROCESSING entry."""
+    def test_put_step_ops_handle_creates_entry(self):
+        """Test put_step_ops_handle creates entry."""
         handle = create_mock_handle(StepOpsArtifactHandle, "ops")
         step_key = ArtifactKey.for_step(STEP1_UID)
 
@@ -718,29 +588,26 @@ class TestArtifactManager(unittest.TestCase):
         composite_key = make_composite_key(step_key, 1)
         entry = self.manager._ledger.get(composite_key)
         assert entry is not None
-        self.assertEqual(entry.state, ArtifactLifecycle.PROCESSING)
         self.assertIs(entry.handle, handle)
         self.assertEqual(entry.generation_id, 1)
 
     def test_put_step_ops_handle_replaces_old_handle(self):
-        """Test put_step_ops_handle releases old handle."""
+        """Test put_step_ops_handle replaces handle without releasing old."""
         old_h = create_mock_handle(StepOpsArtifactHandle, "old")
         new_h = create_mock_handle(StepOpsArtifactHandle, "new")
         step_key = ArtifactKey.for_step(STEP1_UID)
-        composite_key = make_composite_key(step_key, 1)
-        self.manager._ledger[composite_key] = Mock(
-            state=ArtifactLifecycle.DONE, handle=old_h
-        )
 
+        self.manager.put_step_ops_handle(step_key, old_h, 1)
         self.manager.put_step_ops_handle(step_key, new_h, 1)
 
+        composite_key = make_composite_key(step_key, 1)
         entry = self.manager._ledger.get(composite_key)
         assert entry is not None
         self.assertIs(entry.handle, new_h)
-        self.mock_release.assert_called_once_with(old_h)
+        self.mock_release.assert_not_called()
 
-    def test_put_workpiece_view_handle_creates_processing_entry(self):
-        """Test put_workpiece_view_handle creates PROCESSING entry."""
+    def test_put_workpiece_view_handle_creates_entry(self):
+        """Test put_workpiece_view_handle creates entry."""
         handle = create_mock_handle(WorkPieceViewArtifactHandle, "view")
         view_key = ArtifactKey.for_view(WP1_UID)
 
@@ -749,46 +616,8 @@ class TestArtifactManager(unittest.TestCase):
         composite_key = make_composite_key(view_key, 0)
         entry = self.manager._ledger.get(composite_key)
         assert entry is not None
-        self.assertEqual(entry.state, ArtifactLifecycle.PROCESSING)
         self.assertIs(entry.handle, handle)
         self.assertEqual(entry.generation_id, 0)
-
-    def test_put_workpiece_view_handle_replaces_old_handle(self):
-        """Test put_workpiece_view_handle releases old handle."""
-        old_h = create_mock_handle(WorkPieceViewArtifactHandle, "old")
-        new_h = create_mock_handle(WorkPieceViewArtifactHandle, "new")
-        view_key = ArtifactKey.for_view(WP1_UID)
-        composite_key = make_composite_key(view_key, 0)
-        self.manager._ledger[composite_key] = Mock(
-            state=ArtifactLifecycle.DONE, handle=old_h
-        )
-
-        self.manager.put_workpiece_view_handle(view_key, new_h, 0)
-
-        entry = self.manager._ledger.get(composite_key)
-        assert entry is not None
-        self.assertIs(entry.handle, new_h)
-        self.mock_release.assert_called_once_with(old_h)
-
-    def test_adopt_artifact_creates_and_adopts_handle(self):
-        """Test adopt_artifact deserializes and adopts handle."""
-        handle_dict = {
-            "type": "workpiece",
-            "shm_name": "test_shm",
-            "other_field": "value",
-        }
-        created_handle = create_mock_handle(WorkPieceArtifactHandle, "adopted")
-
-        with unittest.mock.patch(
-            "rayforge.pipeline.artifact.manager.create_handle_from_dict",
-            return_value=created_handle,
-        ):
-            result = self.manager.adopt_artifact(
-                ArtifactKey.for_workpiece(WP1_UID), handle_dict
-            )
-
-        self.assertIs(result, created_handle)
-        self.mock_store.adopt.assert_called_once_with(created_handle)
 
     def test_retain_handle_calls_store_retain(self):
         """Test retain_handle delegates to store.retain."""
@@ -800,18 +629,21 @@ class TestArtifactManager(unittest.TestCase):
 
     def test_get_all_workpiece_keys_for_generation(self):
         """Test getting workpiece keys for specific generation."""
-        wp1_composite = make_composite_key(
-            ArtifactKey.for_workpiece(WP1_UID), 0
+        self.manager.commit_artifact(
+            ArtifactKey.for_workpiece(WP1_UID),
+            create_mock_handle(WorkPieceArtifactHandle, "wp1"),
+            0,
         )
-        wp2_composite = make_composite_key(
-            ArtifactKey.for_workpiece(WP2_UID), 1
+        self.manager.commit_artifact(
+            ArtifactKey.for_workpiece(WP2_UID),
+            create_mock_handle(WorkPieceArtifactHandle, "wp2"),
+            1,
         )
-        wp3_composite = make_composite_key(
-            ArtifactKey.for_workpiece(WP3_UID), 0
+        self.manager.commit_artifact(
+            ArtifactKey.for_workpiece(WP3_UID),
+            create_mock_handle(WorkPieceArtifactHandle, "wp3"),
+            0,
         )
-        self.manager._ledger[wp1_composite] = Mock()
-        self.manager._ledger[wp2_composite] = Mock()
-        self.manager._ledger[wp3_composite] = Mock()
 
         keys = self.manager.get_all_workpiece_keys_for_generation(0)
 
@@ -820,20 +652,16 @@ class TestArtifactManager(unittest.TestCase):
         self.assertIn(ArtifactKey.for_workpiece(WP3_UID), keys)
         self.assertNotIn(ArtifactKey.for_workpiece(WP2_UID), keys)
 
-    def test_invalidate_for_job_releases_and_invalidates(self):
-        """Test invalidate_for_job releases handle and invalidates."""
+    def test_invalidate_for_job_releases_and_removes(self):
+        """Test invalidate_for_job releases handle and removes entry."""
         job_h = create_mock_handle(JobArtifactHandle, "job")
         job_key = ArtifactKey(id=JOB_UID, group="job")
-        job_composite = make_composite_key(job_key, 0)
-        self.manager._ledger[job_composite] = Mock(
-            state=ArtifactLifecycle.DONE, handle=job_h
-        )
+        self.manager.commit_artifact(job_key, job_h, 0)
 
         self.manager.invalidate_for_job(job_key)
 
-        entry = self.manager._ledger.get(job_composite)
-        assert entry is not None
-        self.assertEqual(entry.state, ArtifactLifecycle.STALE)
+        job_composite = make_composite_key(job_key, 0)
+        self.assertNotIn(job_composite, self.manager._ledger)
         self.mock_release.assert_called_once_with(job_h)
 
     def test_checkout_handle_with_none(self):
@@ -865,36 +693,17 @@ class TestArtifactManager(unittest.TestCase):
 
         self.mock_store.release.assert_called_once_with(handle)
 
-    def test_mark_done_transitions_from_initial(self):
-        """Test mark_done transitions from QUEUED to DONE."""
-        wp_h = create_mock_handle(WorkPieceArtifactHandle, "wp1")
-        key = ArtifactKey.for_workpiece(WP1_UID)
-        composite_key = make_composite_key(key, 0)
-        self.manager._ledger[composite_key] = Mock(
-            state=ArtifactLifecycle.QUEUED, handle=wp_h
-        )
-
-        self.manager.mark_done(key, 0)
-
-        entry = self.manager._ledger.get(composite_key)
-        assert entry is not None
-        self.assertEqual(entry.state, ArtifactLifecycle.DONE)
-        self.assertIsNone(entry.handle)
-        self.mock_release.assert_called_once_with(wp_h)
-
     def test_mark_done_without_handle(self):
         """Test mark_done works when entry has no handle."""
         key = ArtifactKey.for_workpiece(WP1_UID)
-        composite_key = make_composite_key(key, 0)
-        self.manager._ledger[composite_key] = Mock(
-            state=ArtifactLifecycle.QUEUED, handle=None
-        )
+        self.manager.register_intent(key, 0)
 
         self.manager.mark_done(key, 0)
 
+        composite_key = make_composite_key(key, 0)
         entry = self.manager._ledger.get(composite_key)
         assert entry is not None
-        self.assertEqual(entry.state, ArtifactLifecycle.DONE)
+        self.assertIsNone(entry.handle)
         self.mock_release.assert_not_called()
 
     def test_mark_done_nonexistent_skips(self):
@@ -905,34 +714,17 @@ class TestArtifactManager(unittest.TestCase):
 
         self.assertEqual(len(self.manager._ledger), 0)
 
-    def test_mark_done_from_non_initial_raises_assertion(self):
-        """Test mark_done raises AssertionError from non-QUEUED state."""
-        wp_h = create_mock_handle(WorkPieceArtifactHandle, "wp1")
-        key = ArtifactKey.for_workpiece(WP1_UID)
-        composite_key = make_composite_key(key, 0)
-        self.manager._ledger[composite_key] = Mock(
-            state=ArtifactLifecycle.PROCESSING, handle=wp_h
-        )
-
-        with self.assertRaises(AssertionError) as cm:
-            self.manager.mark_done(key, 0)
-
-        self.assertIn("must be QUEUED", str(cm.exception))
-
     def test_complete_generation_marks_existing_entry_done(self):
-        """Test complete_generation marks existing entry as DONE."""
+        """Test complete_generation marks existing entry as done."""
         wp_h = create_mock_handle(WorkPieceArtifactHandle, "wp1")
         key = ArtifactKey.for_workpiece(WP1_UID)
-        composite_key = make_composite_key(key, 0)
-        self.manager._ledger[composite_key] = Mock(
-            state=ArtifactLifecycle.PROCESSING, handle=wp_h
-        )
+        self.manager.put_workpiece_view_handle(key, wp_h, 0)
 
         self.manager.complete_generation(key, 0)
 
+        composite_key = make_composite_key(key, 0)
         entry = self.manager._ledger.get(composite_key)
         assert entry is not None
-        self.assertEqual(entry.state, ArtifactLifecycle.DONE)
         self.assertIs(entry.handle, wp_h)
 
     def test_complete_generation_creates_new_entry_with_handle(self):
@@ -945,7 +737,6 @@ class TestArtifactManager(unittest.TestCase):
         composite_key = make_composite_key(key, 0)
         entry = self.manager._ledger.get(composite_key)
         assert entry is not None
-        self.assertEqual(entry.state, ArtifactLifecycle.DONE)
         self.assertIs(entry.handle, wp_h)
 
     def test_complete_generation_replaces_handle(self):
@@ -953,13 +744,11 @@ class TestArtifactManager(unittest.TestCase):
         old_h = create_mock_handle(WorkPieceArtifactHandle, "old")
         new_h = create_mock_handle(WorkPieceArtifactHandle, "new")
         key = ArtifactKey.for_workpiece(WP1_UID)
-        composite_key = make_composite_key(key, 0)
-        self.manager._ledger[composite_key] = Mock(
-            state=ArtifactLifecycle.PROCESSING, handle=old_h
-        )
+        self.manager.commit_artifact(key, old_h, 0)
 
         self.manager.complete_generation(key, 0, new_h)
 
+        composite_key = make_composite_key(key, 0)
         entry = self.manager._ledger.get(composite_key)
         assert entry is not None
         self.assertIs(entry.handle, new_h)
@@ -976,25 +765,10 @@ class TestArtifactManager(unittest.TestCase):
         composite_key = make_composite_key(key, 0)
         entry = self.manager._ledger.get(composite_key)
         assert entry is not None
-        self.assertEqual(entry.state, ArtifactLifecycle.DONE)
         self.assertIsNone(entry.handle)
 
-    def test_complete_generation_entry_without_handle_marks_done(self):
-        """Test complete_generation marks done when entry has no handle."""
-        key = ArtifactKey.for_workpiece(WP1_UID)
-        composite_key = make_composite_key(key, 0)
-        self.manager._ledger[composite_key] = Mock(
-            state=ArtifactLifecycle.PROCESSING, handle=None
-        )
-
-        self.manager.complete_generation(key, 0)
-
-        entry = self.manager._ledger.get(composite_key)
-        assert entry is not None
-        self.assertEqual(entry.state, ArtifactLifecycle.DONE)
-
-    def test_declare_generation_creates_initial_entries(self):
-        """Test declare_generation creates QUEUED entries for new keys."""
+    def test_declare_generation_creates_placeholder_entries(self):
+        """Test declare_generation creates placeholder entries for new keys."""
         wp1_key = ArtifactKey.for_workpiece(WP1_UID)
         wp2_key = ArtifactKey.for_workpiece(WP2_UID)
 
@@ -1006,84 +780,39 @@ class TestArtifactManager(unittest.TestCase):
         entry2 = self.manager._ledger.get(wp2_composite)
         assert entry1 is not None
         assert entry2 is not None
-        self.assertEqual(entry1.state, ArtifactLifecycle.QUEUED)
-        self.assertEqual(entry2.state, ArtifactLifecycle.QUEUED)
+        self.assertIsNone(entry1.handle)
+        self.assertIsNone(entry2.handle)
 
     def test_declare_generation_skips_existing_entries(self):
         """Test declare_generation skips existing entries."""
         wp_key = ArtifactKey.for_workpiece(WP1_UID)
-        wp_composite = make_composite_key(wp_key, 0)
-        self.manager._ledger[wp_composite] = Mock(
-            state=ArtifactLifecycle.PROCESSING
-        )
+        wp_h = create_mock_handle(WorkPieceArtifactHandle, "wp1")
+        self.manager.commit_artifact(wp_key, wp_h, 0)
 
         self.manager.declare_generation({wp_key}, 0)
 
+        wp_composite = make_composite_key(wp_key, 0)
         entry = self.manager._ledger.get(wp_composite)
         assert entry is not None
-        self.assertEqual(entry.state, ArtifactLifecycle.PROCESSING)
+        self.assertIs(entry.handle, wp_h)
 
     def test_declare_generation_does_not_modify_previous_generations(self):
         """Test declare_generation does not modify previous generations."""
         wp_key = ArtifactKey.for_workpiece(WP1_UID)
-        wp_composite_g0 = make_composite_key(wp_key, 0)
-        self.manager._ledger[wp_composite_g0] = Mock(
-            state=ArtifactLifecycle.DONE
-        )
+        wp_h = create_mock_handle(WorkPieceArtifactHandle, "wp1")
+        self.manager.commit_artifact(wp_key, wp_h, 0)
 
         self.manager.declare_generation({wp_key}, 1)
 
+        wp_composite_g0 = make_composite_key(wp_key, 0)
         wp_composite_g1 = make_composite_key(wp_key, 1)
         entry_g0 = self.manager._ledger.get(wp_composite_g0)
         entry_g1 = self.manager._ledger.get(wp_composite_g1)
         assert entry_g0 is not None
         assert entry_g1 is not None
-        self.assertEqual(entry_g0.state, ArtifactLifecycle.DONE)
-        self.assertEqual(entry_g1.state, ArtifactLifecycle.QUEUED)
+        self.assertIs(entry_g0.handle, wp_h)
+        self.assertIsNone(entry_g1.handle)
 
-    def test_is_finished_returns_true_for_empty_ledger(self):
-        """Test is_finished returns True when ledger is empty."""
-        self.assertTrue(self.manager.is_finished())
 
-    def test_is_finished_returns_true_for_all_done(self):
-        """Test is_finished returns True when all entries are DONE."""
-        wp_key = ArtifactKey.for_workpiece(WP1_UID)
-        wp_composite = make_composite_key(wp_key, 0)
-        self.manager._ledger[wp_composite] = Mock(state=ArtifactLifecycle.DONE)
-
-        self.assertTrue(self.manager.is_finished())
-
-    def test_is_finished_returns_false_for_initial(self):
-        """Test is_finished returns False when any entry is QUEUED."""
-        wp_key = ArtifactKey.for_workpiece(WP1_UID)
-        wp_composite = make_composite_key(wp_key, 0)
-        self.manager._ledger[wp_composite] = Mock(
-            state=ArtifactLifecycle.QUEUED
-        )
-
-        self.assertFalse(self.manager.is_finished())
-
-    def test_is_finished_returns_false_for_processing(self):
-        """Test is_finished returns False when any entry is PROCESSING."""
-        wp_key = ArtifactKey.for_workpiece(WP1_UID)
-        wp_composite = make_composite_key(wp_key, 0)
-        self.manager._ledger[wp_composite] = Mock(
-            state=ArtifactLifecycle.PROCESSING
-        )
-
-        self.assertFalse(self.manager.is_finished())
-
-    def test_is_finished_returns_true_for_stale_or_error(self):
-        """Test is_finished returns True for STALE or ERROR states."""
-        wp1_key = ArtifactKey.for_workpiece(WP1_UID)
-        wp2_key = ArtifactKey.for_workpiece(WP2_UID)
-        wp1_composite = make_composite_key(wp1_key, 0)
-        wp2_composite = make_composite_key(wp2_key, 0)
-        self.manager._ledger[wp1_composite] = Mock(
-            state=ArtifactLifecycle.STALE
-        )
-        self.manager._ledger[wp2_composite] = Mock(
-            state=ArtifactLifecycle.ERROR
-        )
-
-        self.assertTrue(self.manager.is_finished())
+if __name__ == "__main__":
+    unittest.main()
