@@ -316,7 +316,14 @@ def test_execute_vector_with_boundaries(base_workpiece):
     }
 
     results = list(
-        _execute_vector(base_workpiece, opsproducer, laser, settings, [])
+        _execute_vector(
+            base_workpiece,
+            opsproducer,
+            laser,
+            settings,
+            [],
+            base_workpiece.size,
+        )
     )
 
     assert len(results) == 1
@@ -381,6 +388,7 @@ def test_compute_workpiece_artifact_vector(base_workpiece):
         laser=laser,
         modifiers=[],
         settings=settings,
+        generation_size=base_workpiece.size,
     )
 
     assert result is not None
@@ -407,6 +415,7 @@ def test_compute_workpiece_artifact_vector_with_progress(
         laser=laser,
         modifiers=[],
         settings=settings,
+        generation_size=base_workpiece.size,
         context=mock_progress_context,
     )
 
@@ -436,6 +445,7 @@ def test_compute_workpiece_artifact_vector_with_boundaries(
         laser=laser,
         modifiers=[],
         settings=settings,
+        generation_size=base_workpiece.size,
     )
 
     assert result is not None
@@ -456,7 +466,14 @@ def test_execute_raster_invalid_size(base_workpiece):
     }
 
     results = list(
-        _execute_raster(base_workpiece, opsproducer, laser, settings, [])
+        _execute_raster(
+            base_workpiece,
+            opsproducer,
+            laser,
+            settings,
+            [],
+            base_workpiece.size,
+        )
     )
 
     assert len(results) == 0
@@ -521,6 +538,7 @@ def test_compute_workpiece_artifact_raster(base_workpiece):
             laser=laser,
             modifiers=[],
             settings=settings,
+            generation_size=base_workpiece.size,
         )
 
     assert result is not None
@@ -555,6 +573,7 @@ def test_compute_workpiece_artifact_raster_with_progress(
             laser=laser,
             modifiers=[],
             settings=settings,
+            generation_size=base_workpiece.size,
             context=mock_progress_context,
         )
 
@@ -592,6 +611,7 @@ def test_compute_workpiece_artifact_raster_empty_workpiece():
         laser=laser,
         modifiers=[],
         settings=settings,
+        generation_size=empty_workpiece.size,
     )
 
     assert result is None
@@ -631,3 +651,43 @@ def test_compute_workpiece_artifact_with_transformers(
 
     assert result is not None
     assert isinstance(result, WorkPieceArtifact)
+
+
+def test_chunk_artifact_has_generation_size(base_workpiece):
+    """Test that chunk artifacts carry the full generation_size."""
+    opsproducer = Rasterizer()
+    laser = Laser()
+    settings = {
+        "pixels_per_mm": (10.0, 10.0),
+        "power": 1.0,
+        "cut_speed": 10,
+        "travel_speed": 20,
+        "air_assist": False,
+    }
+
+    chunks_received = []
+
+    def on_chunk_callback(chunk_artifact):
+        chunks_received.append(chunk_artifact)
+
+    surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, 250, 250)
+    ctx = cairo.Context(surface)
+    ctx.set_source_rgb(0, 0, 0)
+    ctx.paint()
+
+    with patch.object(
+        base_workpiece, "render_chunk", return_value=[(surface, (0, 0))]
+    ):
+        compute_workpiece_artifact_raster(
+            workpiece=base_workpiece,
+            opsproducer=opsproducer,
+            laser=laser,
+            modifiers=[],
+            settings=settings,
+            generation_size=base_workpiece.size,
+            on_chunk=on_chunk_callback,
+        )
+
+    assert len(chunks_received) > 0
+    for chunk in chunks_received:
+        assert chunk.generation_size == base_workpiece.size
