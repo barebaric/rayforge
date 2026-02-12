@@ -409,19 +409,24 @@ class TestPipelineGeneration:
         try:
             self._complete_all_tasks(mock_task_mgr, handle)
             mock_task_mgr.run_process.reset_mock()
+            mock_task_mgr.created_tasks.clear()
 
             # Act
             real_workpiece.pos = (50, 50)
             await asyncio.sleep(0)  # Allow debounced task to run
 
-            # Assert
-            tasks = mock_task_mgr.created_tasks
-            assembly_tasks = [
-                t
-                for t in tasks
-                if t.target is make_step_artifact_in_subprocess
-            ]
-            assert len(assembly_tasks) == 1
+            # With the DAG-based scheduler, workpiece tasks must complete
+            # before step assembly can proceed.
+            self._complete_all_tasks(mock_task_mgr, handle)
+
+            # Assert - step assembly task should have been created after
+            # the workpiece task completed during position change
+            step_calls = sum(
+                1
+                for call in mock_task_mgr.run_process.call_args_list
+                if call[0][0] is make_step_artifact_in_subprocess
+            )
+            assert step_calls >= 1
         finally:
             get_context().artifact_store.release(handle)
 

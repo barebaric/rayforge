@@ -15,10 +15,7 @@ from rayforge.pipeline.artifact import (
     WorkPieceViewArtifactHandle,
     WorkPieceViewArtifact,
 )
-from rayforge.pipeline.artifact.lifecycle import (
-    LedgerEntry,
-    ArtifactLifecycle,
-)
+from rayforge.pipeline.artifact.lifecycle import LedgerEntry
 from rayforge.core.ops import Ops
 from rayforge.pipeline.coord import CoordinateSystem
 
@@ -505,7 +502,6 @@ def test_throttled_notification_limits_update_frequency(
     mock_artifact_manager.put_workpiece_view_handle.return_value = None
 
     mock_entry = LedgerEntry(
-        state=ArtifactLifecycle.DONE,
         handle=view_handle,
         metadata={"render_context": context},
         generation_id=0,
@@ -634,7 +630,6 @@ def test_incremental_bitmap_rendering_draws_chunk_to_view(
     mock_artifact_manager.put_workpiece_view_handle.return_value = None
 
     mock_entry = LedgerEntry(
-        state=ArtifactLifecycle.DONE,
         handle=view_handle,
         metadata={"render_context": context},
     )

@@ -1,5 +1,4 @@
 from __future__ import annotations
-from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -8,9 +7,11 @@ if TYPE_CHECKING:
     from ..artifact.manager import ArtifactManager
 
 
-class PipelineStage(ABC):
+class PipelineStage:
     """
-    Abstract base class for a stage in the artifact generation pipeline.
+    Base class for a stage in the artifact generation pipeline.
+    Stages are now thin wrappers that provide access to artifacts.
+    Task launching is delegated to the DagScheduler.
     """
 
     def __init__(
@@ -24,10 +25,13 @@ class PipelineStage(ABC):
         """Returns True if the stage has any active tasks."""
         return False
 
-    @abstractmethod
     def reconcile(self, doc: "Doc", generation_id: int):
-        """Synchronizes the stage's state with the document."""
-        raise NotImplementedError
+        """
+        Synchronizes the stage's state with the document.
+        Default implementation does nothing; task launching is
+        handled by DagScheduler.
+        """
+        pass
 
     def shutdown(self):
         """Clean up any resources held by this stage."""
