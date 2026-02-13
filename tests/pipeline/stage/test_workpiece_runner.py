@@ -28,13 +28,11 @@ from rayforge.pipeline.transformer.multipass import MultiPassTransformer
 
 
 @pytest.fixture
-def mock_proxy():
+def mock_proxy(adopting_mock_proxy):
     """Mocks the ExecutionContextProxy passed to the subprocess."""
-    proxy = MagicMock()
-    proxy.sub_context.return_value = proxy  # Allow chaining
-    proxy.parent_log_level = logging.DEBUG
-    proxy.send_event_and_wait.return_value = True  # Acknowledge events
-    return proxy
+    adopting_mock_proxy.sub_context.return_value = adopting_mock_proxy
+    adopting_mock_proxy.parent_log_level = logging.DEBUG
+    return adopting_mock_proxy
 
 
 @pytest.fixture
@@ -329,7 +327,7 @@ def test_transformers_are_applied_before_put(mock_proxy, base_workpiece):
             get_context().artifact_store.release(handle)
 
 
-def test_runner_calls_compute_function(mock_proxy, base_workpiece):
+def test_runner_calls_compute_function(base_workpiece):
     """Test that the runner correctly calls the compute function."""
     step = Step(typelabel="Contour")
     step.opsproducer_dict = ContourProducer().to_dict()
@@ -344,6 +342,9 @@ def test_runner_calls_compute_function(mock_proxy, base_workpiece):
     mock_artifact.source_coordinate_system = MagicMock()
     mock_artifact.source_dimensions = None
     mock_artifact.generation_size = generation_size
+
+    mock_proxy = MagicMock()
+    mock_proxy.send_event_and_wait.return_value = True
 
     with patch(
         "rayforge.pipeline.stage.workpiece_runner.compute_workpiece_artifact",

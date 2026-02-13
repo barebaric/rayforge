@@ -648,7 +648,8 @@ class _InnerMockProgressContext:
         return sub_ctx
 
 
-def create_adopting_mock_proxy(artifact_store=None):
+@pytest.fixture
+def adopting_mock_proxy():
     """
     Creates a mock ExecutionContextProxy that adopts artifacts when
     send_event_and_wait is called.
@@ -658,19 +659,12 @@ def create_adopting_mock_proxy(artifact_store=None):
     the runner calls forget() after send_event_and_wait returns, which
     closes the only handle. This mock simulates the main process adopting
     the artifact before the runner forgets it.
-
-    Args:
-        artifact_store: The ArtifactStore to use for adoption. If None,
-            uses get_context().artifact_store.
-
-    Returns:
-        A MagicMock proxy that adopts artifacts on event calls.
     """
+    from unittest.mock import MagicMock
     from rayforge.pipeline.artifact import create_handle_from_dict
     from rayforge.context import get_context
 
-    if artifact_store is None:
-        artifact_store = get_context().artifact_store
+    artifact_store = get_context().artifact_store
 
     def mock_send_event_and_wait(event_name, data, logger=None):
         handle_dict = data.get("handle_dict")

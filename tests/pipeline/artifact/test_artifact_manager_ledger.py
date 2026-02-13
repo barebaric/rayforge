@@ -44,7 +44,7 @@ class TestArtifactManagerCache(unittest.TestCase):
         assert entry is not None
         self.assertIs(entry.handle, handle)
         self.assertEqual(entry.generation_id, 1)
-        self.mock_store.adopt.assert_called_once_with(handle)
+        self.mock_store.retain.assert_called_once_with(handle)
 
     def test_cache_handle_replaces_old_handle(self):
         """Test cache_handle releases old handle and stores new one."""
@@ -59,7 +59,7 @@ class TestArtifactManagerCache(unittest.TestCase):
         entry = self.manager._get_ledger_entry(composite_key)
         assert entry is not None
         self.assertIs(entry.handle, new_handle)
-        self.mock_store.adopt.assert_called_with(new_handle)
+        self.mock_store.retain.assert_called_with(new_handle)
         self.mock_store.release.assert_called_once_with(old_handle)
 
     def test_get_workpiece_handle_returns_cached_handle(self):

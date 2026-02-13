@@ -76,7 +76,7 @@ class TestArtifactManager(unittest.TestCase):
         self.mock_release.assert_not_called()
 
     def test_invalidate_workpiece_cascades_correctly(self):
-        """Tests that invalidating a workpiece cascades to step ops."""
+        """Tests that invalidating a workpiece removes only that workpiece."""
         wp_h = create_mock_handle(WorkPieceArtifactHandle, "wp1")
         render_h = create_mock_handle(StepRenderArtifactHandle, "step1_render")
         ops_h = create_mock_handle(StepOpsArtifactHandle, "step1_ops")
@@ -96,12 +96,12 @@ class TestArtifactManager(unittest.TestCase):
                 ArtifactKey.for_workpiece(WP1_UID), 0
             )
         )
-        self.assertIsNone(
-            self.manager.get_step_ops_handle(ArtifactKey.for_step(WP1_UID), 0)
+        self.assertIs(
+            self.manager.get_step_ops_handle(ArtifactKey.for_step(WP1_UID), 0),
+            ops_h,
         )
         self.assertIs(self.manager.get_step_render_handle(WP1_UID), render_h)
         self.mock_release.assert_any_call(wp_h)
-        self.mock_release.assert_any_call(ops_h)
 
     def test_invalidate_step_cascades_correctly(self):
         """Tests that invalidating a step cascades to all dependent."""
@@ -594,7 +594,6 @@ class TestArtifactManagerCommitRetains(unittest.TestCase):
         """Set up a fresh manager and mock store."""
         self.mock_store = Mock(spec=ArtifactStore)
         self.mock_retain = self.mock_store.retain
-        self.mock_adopt = self.mock_store.adopt
         self.manager = ArtifactManager(self.mock_store)
 
     def test_cache_handle_retains_handle(self):
@@ -604,7 +603,6 @@ class TestArtifactManagerCommitRetains(unittest.TestCase):
 
         self.manager.cache_handle(job_key, handle, 0)
 
-        self.mock_adopt.assert_called_once_with(handle)
         self.mock_retain.assert_called_once_with(handle)
 
     def test_cache_handle_retains_new_handle_releases_old(self):
@@ -615,11 +613,9 @@ class TestArtifactManagerCommitRetains(unittest.TestCase):
 
         self.manager.cache_handle(job_key, old_handle, 0)
         self.mock_retain.reset_mock()
-        self.mock_adopt.reset_mock()
 
         self.manager.cache_handle(job_key, new_handle, 0)
 
-        self.mock_adopt.assert_called_once_with(new_handle)
         self.mock_retain.assert_called_once_with(new_handle)
         self.mock_store.release.assert_called_once_with(old_handle)
 
