@@ -424,36 +424,13 @@ class ArtifactManager:
         generation_id: Optional[GenerationID] = None,
     ) -> Optional[BaseArtifactHandle]:
         """Get the handle for a given key, regardless of key type."""
-        if key.group == "workpiece":
-            if generation_id is None:
-                return None
-            ledger_key = make_composite_key(key, generation_id)
-            entry = self._ledger.get(ledger_key)
-            if entry and entry.handle is not None:
-                handle = entry.handle
-                if isinstance(handle, WorkPieceArtifactHandle):
-                    return handle
+        if generation_id is None:
             return None
-        elif key.group == "step":
-            if generation_id is None:
-                return None
-            ledger_key = make_composite_key(key, generation_id)
-            entry = self._ledger.get(ledger_key)
-            if entry and entry.handle is not None:
-                handle = entry.handle
-                if isinstance(handle, StepOpsArtifactHandle):
-                    return handle
-            return None
-        elif key.group == "job":
-            if generation_id is None:
-                return None
-            ledger_key = make_composite_key(key, generation_id)
-            entry = self._ledger.get(ledger_key)
-            if entry and entry.handle is not None:
-                return entry.handle
-            return None
-        else:
-            return self._step_render_handles.get(key.id)
+        ledger_key = make_composite_key(key, generation_id)
+        entry = self._ledger.get(ledger_key)
+        if entry and entry.handle is not None:
+            return entry.handle
+        return None
 
     def _get_ledger_entry(
         self, key: Tuple[ArtifactKey, GenerationID]
