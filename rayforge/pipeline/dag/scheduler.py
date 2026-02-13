@@ -105,6 +105,17 @@ class DagScheduler:
         rebuild are re-invalidated to preserve the intended state.
         """
         for node in self.graph.get_all_nodes():
+            # If any of this node's dependencies were explicitly invalidated,
+            # then this node cannot be considered VALID from a cache hit,
+            # as its inputs have changed. It must be regenerated.
+            if any(
+                dep.key in self._invalidated_keys for dep in node.dependencies
+            ):
+                logger.debug(
+                    f"Node {node.key} has invalidated dependencies. "
+                    "Skipping sync to VALID."
+                )
+                continue
             if node.key.group == "workpiece":
                 handle = self._artifact_manager.get_workpiece_handle(
                     node.key, self._generation_id
