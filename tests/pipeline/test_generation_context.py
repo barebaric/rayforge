@@ -11,7 +11,10 @@ from rayforge.pipeline.artifact.workpiece import (
     WorkPieceArtifact,
     WorkPieceArtifactHandle,
 )
-from rayforge.pipeline.context import GenerationContext
+from rayforge.pipeline.context import (
+    ContextState,
+    GenerationContext,
+)
 
 
 class TestGenerationContext(unittest.TestCase):
@@ -276,16 +279,15 @@ class TestGenerationContextAutoShutdown(unittest.TestCase):
     def test_task_did_finish_triggers_shutdown_when_superseded(self):
         """Test that task_did_finish triggers shutdown when superseded."""
         release_callback = MagicMock()
-        is_superseded = MagicMock(return_value=True)
         ctx = GenerationContext(
             generation_id=1,
             release_callback=release_callback,
-            is_superseded_callback=is_superseded,
         )
         key = ArtifactKey.for_workpiece(str(uuid.uuid4()))
         handle = MagicMock(spec=BaseArtifactHandle)
         ctx.add_task(key)
         ctx.add_resource(handle)
+        ctx.mark_superseded()
 
         ctx.task_did_finish(key)
 
@@ -295,11 +297,9 @@ class TestGenerationContextAutoShutdown(unittest.TestCase):
     def test_task_did_finish_no_shutdown_when_active(self):
         """Test that task_did_finish does not shutdown when still active."""
         release_callback = MagicMock()
-        is_superseded = MagicMock(return_value=False)
         ctx = GenerationContext(
             generation_id=1,
             release_callback=release_callback,
-            is_superseded_callback=is_superseded,
         )
         key = ArtifactKey.for_workpiece(str(uuid.uuid4()))
         handle = MagicMock(spec=BaseArtifactHandle)
@@ -314,11 +314,9 @@ class TestGenerationContextAutoShutdown(unittest.TestCase):
     def test_task_did_finish_no_shutdown_with_remaining_tasks(self):
         """Test no shutdown when superseded but tasks remain."""
         release_callback = MagicMock()
-        is_superseded = MagicMock(return_value=True)
         ctx = GenerationContext(
             generation_id=1,
             release_callback=release_callback,
-            is_superseded_callback=is_superseded,
         )
         key1 = ArtifactKey.for_workpiece(str(uuid.uuid4()))
         key2 = ArtifactKey.for_step(str(uuid.uuid4()))
@@ -326,6 +324,7 @@ class TestGenerationContextAutoShutdown(unittest.TestCase):
         ctx.add_task(key1)
         ctx.add_task(key2)
         ctx.add_resource(handle)
+        ctx.mark_superseded()
 
         ctx.task_did_finish(key1)
 
@@ -335,11 +334,9 @@ class TestGenerationContextAutoShutdown(unittest.TestCase):
     def test_last_task_finishes_triggers_shutdown(self):
         """Test that the last task finishing triggers shutdown."""
         release_callback = MagicMock()
-        is_superseded = MagicMock(return_value=True)
         ctx = GenerationContext(
             generation_id=1,
             release_callback=release_callback,
-            is_superseded_callback=is_superseded,
         )
         key1 = ArtifactKey.for_workpiece(str(uuid.uuid4()))
         key2 = ArtifactKey.for_step(str(uuid.uuid4()))
@@ -347,6 +344,7 @@ class TestGenerationContextAutoShutdown(unittest.TestCase):
         ctx.add_task(key1)
         ctx.add_task(key2)
         ctx.add_resource(handle)
+        ctx.mark_superseded()
 
         ctx.task_did_finish(key1)
         self.assertFalse(ctx.is_shutdown)
@@ -356,7 +354,7 @@ class TestGenerationContextAutoShutdown(unittest.TestCase):
         release_callback.assert_called_once_with(handle)
 
     def test_no_auto_shutdown_without_callbacks(self):
-        """Test no auto-shutdown when no callbacks are provided."""
+        """Test no auto-shutdown when context is not superseded."""
         ctx = GenerationContext(generation_id=1)
         key = ArtifactKey.for_workpiece(str(uuid.uuid4()))
         handle = MagicMock(spec=BaseArtifactHandle)
@@ -367,19 +365,19 @@ class TestGenerationContextAutoShutdown(unittest.TestCase):
 
         self.assertFalse(ctx.is_shutdown)
 
-    def test_is_superseded_checked_at_task_finish(self):
-        """Test that is_superseded is checked when task finishes."""
-        is_superseded = MagicMock(return_value=False)
-        ctx = GenerationContext(
-            generation_id=1,
-            is_superseded_callback=is_superseded,
-        )
-        key = ArtifactKey.for_workpiece(str(uuid.uuid4()))
-        ctx.add_task(key)
+    def test_state_property_returns_initial_state(self):
+        """Test that state property returns initial ACTIVE state."""
+        ctx = GenerationContext(generation_id=1)
+        self.assertEqual(ctx.state, ContextState.ACTIVE)
 
-        ctx.task_did_finish(key)
+    def test_mark_superseded_changes_state(self):
+        """Test that mark_superseded changes state to SUPERSEDED."""
+        ctx = GenerationContext(generation_id=1)
+        self.assertEqual(ctx.state, ContextState.ACTIVE)
 
-        is_superseded.assert_called_once()
+        ctx.mark_superseded()
+
+        self.assertEqual(ctx.state, ContextState.SUPERSEDED)
 
 
 if __name__ == "__main__":

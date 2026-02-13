@@ -9,6 +9,8 @@ import math
 from asyncio.exceptions import CancelledError
 from typing import List, Optional, TYPE_CHECKING, Tuple, Dict, Callable
 from blinker import Signal
+from ...core.step import Step
+from ...core.workpiece import WorkPiece
 from ..artifact import (
     JobArtifactHandle,
     StepOpsArtifactHandle,
@@ -23,8 +25,6 @@ from .node import ArtifactNode, NodeState
 
 if TYPE_CHECKING:
     from ...core.doc import Doc
-    from ...core.step import Step
-    from ...core.workpiece import WorkPiece
     from ...machine.models.machine import Machine
     from ...shared.tasker.manager import TaskManager
     from ...shared.tasker.task import Task
@@ -301,26 +301,38 @@ class DagScheduler:
         )
 
         for key in keys_to_generate:
-            workpiece_uid = key.id
-            workpiece = self._find_workpiece_by_uid(workpiece_uid)
+            workpiece = (
+                self._doc.find_descendant_by_uid(key.id) if self._doc else None
+            )
 
-            if workpiece:
-                step = self._find_step_for_workpiece(workpiece)
-                if step:
-                    logger.debug(
-                        f"DagScheduler: Launching task for "
-                        f"step_uid={step.uid}, workpiece_uid={key.id}"
-                    )
-                    self._launch_workpiece_task(step, workpiece)
+            if isinstance(workpiece, WorkPiece):
+                if workpiece.layer and workpiece.layer.workflow:
+                    steps = list(workpiece.layer.workflow.steps)
+                    if steps:
+                        for step in steps:
+                            logger.debug(
+                                f"DagScheduler: Launching task for "
+                                f"step_uid={step.uid}, "
+                                f"workpiece_uid={key.id}"
+                            )
+                            self._launch_workpiece_task(step, workpiece)
+                    else:
+                        logger.warning(
+                            f"Workpiece {key.id} has no steps in "
+                            "workflow. Skipping generation."
+                        )
+                        self._artifact_manager.mark_done(
+                            key, self._generation_id
+                        )
                 else:
                     logger.warning(
-                        f"Workpiece {workpiece_uid} has no associated step. "
+                        f"Workpiece {key.id} has no workflow. "
                         "Skipping generation."
                     )
                     self._artifact_manager.mark_done(key, self._generation_id)
             else:
                 logger.warning(
-                    f"Workpiece {workpiece_uid} not found in doc. "
+                    f"Workpiece {key.id} not found in doc. "
                     "Skipping generation."
                 )
                 self._artifact_manager.mark_done(key, self._generation_id)
@@ -346,9 +358,13 @@ class DagScheduler:
 
         for key in step_keys_to_generate:
             step_uid = key.id
-            step = self._find_step_by_uid(step_uid)
+            step = (
+                self._doc.find_descendant_by_uid(step_uid)
+                if self._doc
+                else None
+            )
 
-            if step:
+            if isinstance(step, Step):
                 logger.debug(
                     f"DagScheduler: Launching assembly task for "
                     f"step_uid={step_uid}"
@@ -359,38 +375,6 @@ class DagScheduler:
                     f"Step {step_uid} not found in doc. Skipping assembly."
                 )
                 self._artifact_manager.mark_done(key, self._generation_id)
-
-    def _find_workpiece_by_uid(
-        self, workpiece_uid: str
-    ) -> Optional["WorkPiece"]:
-        """Finds a workpiece by its UID in the document."""
-        if not self._doc:
-            return None
-        for layer in self._doc.layers:
-            for workpiece in layer.all_workpieces:
-                if workpiece.uid == workpiece_uid:
-                    return workpiece
-        return None
-
-    def _find_step_for_workpiece(
-        self, workpiece: "WorkPiece"
-    ) -> Optional["Step"]:
-        """Finds the step associated with a workpiece in the document."""
-        if workpiece.layer and workpiece.layer.workflow:
-            if workpiece.layer.workflow.steps:
-                return workpiece.layer.workflow.steps[0]
-        return None
-
-    def _find_step_by_uid(self, step_uid: str) -> Optional["Step"]:
-        """Finds a step by its UID in the document."""
-        if not self._doc:
-            return None
-        for layer in self._doc.layers:
-            if layer.workflow is not None:
-                for step in layer.workflow.steps:
-                    if step.uid == step_uid:
-                        return step
-        return None
 
     def _sizes_are_close(
         self,
