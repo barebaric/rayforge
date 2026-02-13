@@ -2,12 +2,16 @@
 Tests for the DagScheduler class.
 """
 
+import unittest
+from typing import cast
 from unittest.mock import MagicMock
 
+from rayforge.core.step import Step
 from rayforge.pipeline.artifact import StepOpsArtifactHandle, JobArtifactHandle
 from rayforge.pipeline.artifact.handle import BaseArtifactHandle
 from rayforge.pipeline.artifact.key import ArtifactKey
 from rayforge.pipeline.artifact.manager import ArtifactManager
+from rayforge.pipeline.context import GenerationContext
 from rayforge.pipeline.dag.node import ArtifactNode, NodeState
 from rayforge.pipeline.dag.scheduler import DagScheduler
 
@@ -448,3 +452,231 @@ class TestDagSchedulerJobGeneration:
         call_kwargs["when_event"](MagicMock(), "unknown_event", {})
 
         am.commit_artifact.assert_not_called()  # type: ignore
+
+
+class TestDagSchedulerContextTaskTracking(unittest.TestCase):
+    """Tests for Step 4: Task tracking in GenerationContext."""
+
+    STEP_UID_1 = "550e8400-e29b-41d4-a716-446655440101"
+
+    def _make_scheduler(self, artifact_manager=None):
+        """Helper to create a scheduler with mocked dependencies."""
+        task_manager = MagicMock()
+        if artifact_manager is None:
+            artifact_manager = MagicMock()
+        machine = MagicMock()
+        machine.to_dict.return_value = {"name": "test-machine"}
+        doc = MagicMock()
+        doc.to_dict.return_value = {"layers": []}
+        scheduler = DagScheduler(task_manager, artifact_manager, machine)
+        scheduler.set_doc(doc)
+        scheduler.set_generation_id(1)
+        return scheduler
+
+    def _create_step_ops_handle(self):
+        """Create a mock StepOpsArtifactHandle."""
+        handle = MagicMock(spec=StepOpsArtifactHandle)
+        handle.to_dict.return_value = {
+            "shm_name": "test_shm",
+            "handle_class_name": "StepOpsArtifactHandle",
+            "artifact_type_name": "StepOpsArtifact",
+            "time_estimate": 10.0,
+        }
+        return handle
+
+    def test_job_task_added_to_context(self):
+        """Test that generate_job adds the job key to context.active_tasks."""
+        scheduler = self._make_scheduler()
+        ctx = GenerationContext(generation_id=1)
+        scheduler.set_context(ctx)
+
+        step_handle = self._create_step_ops_handle()
+        am = cast(MagicMock, scheduler._artifact_manager)
+        am.get_step_ops_handle.return_value = step_handle
+
+        self.assertEqual(len(ctx.active_tasks), 0)
+
+        scheduler.generate_job(step_uids=[self.STEP_UID_1])
+
+        self.assertEqual(len(ctx.active_tasks), 1)
+        job_key = list(ctx.active_tasks)[0]
+        self.assertEqual(job_key.group, "job")
+
+    def test_no_context_no_error(self):
+        """Test that launching tasks without a context does not raise."""
+        scheduler = self._make_scheduler()
+        assert scheduler._active_context is None
+
+        step_handle = self._create_step_ops_handle()
+        am = cast(MagicMock, scheduler._artifact_manager)
+        am.get_step_ops_handle.return_value = step_handle
+
+        scheduler.generate_job(step_uids=[self.STEP_UID_1])
+
+        tm = cast(MagicMock, scheduler._task_manager)
+        tm.run_process.assert_called_once()
+
+    def test_multiple_tasks_tracked(self):
+        """Test that multiple jobs are tracked in context.active_tasks."""
+        scheduler = self._make_scheduler()
+        ctx = GenerationContext(generation_id=1)
+        scheduler.set_context(ctx)
+
+        step_handle = self._create_step_ops_handle()
+        am = cast(MagicMock, scheduler._artifact_manager)
+        am.get_step_ops_handle.return_value = step_handle
+
+        scheduler.generate_job(step_uids=[self.STEP_UID_1])
+        scheduler.generate_job(step_uids=[self.STEP_UID_1])
+
+        self.assertEqual(len(ctx.active_tasks), 2)
+
+
+class TestDagSchedulerContextTaskCompletion(unittest.TestCase):
+    """Tests for Step 5: Task completion protocol in GenerationContext."""
+
+    STEP_UID_1 = "550e8400-e29b-41d4-a716-446655440101"
+
+    def _make_scheduler(self, artifact_manager=None):
+        """Helper to create a scheduler with mocked dependencies."""
+        task_manager = MagicMock()
+        if artifact_manager is None:
+            artifact_manager = MagicMock()
+        machine = MagicMock()
+        machine.to_dict.return_value = {"name": "test-machine"}
+        doc = MagicMock()
+        doc.to_dict.return_value = {"layers": []}
+        scheduler = DagScheduler(task_manager, artifact_manager, machine)
+        scheduler.set_doc(doc)
+        scheduler.set_generation_id(1)
+        return scheduler
+
+    def _create_step_ops_handle(self):
+        """Create a mock StepOpsArtifactHandle."""
+        handle = MagicMock(spec=StepOpsArtifactHandle)
+        handle.to_dict.return_value = {
+            "shm_name": "test_shm",
+            "handle_class_name": "StepOpsArtifactHandle",
+            "artifact_type_name": "StepOpsArtifact",
+            "time_estimate": 10.0,
+        }
+        return handle
+
+    def _create_job_handle(self):
+        """Create a mock JobArtifactHandle."""
+        handle = MagicMock(spec=JobArtifactHandle)
+        handle.to_dict.return_value = {
+            "shm_name": "test_shm",
+            "handle_class_name": "JobArtifactHandle",
+            "artifact_type_name": "JobArtifact",
+        }
+        return handle
+
+    def test_job_task_did_finish_called_on_success(self):
+        """Test that task_did_finish is called when job task completes."""
+        scheduler = self._make_scheduler()
+        ctx = GenerationContext(generation_id=1)
+        scheduler.set_context(ctx)
+
+        step_handle = self._create_step_ops_handle()
+        am = cast(MagicMock, scheduler._artifact_manager)
+        am.get_step_ops_handle.return_value = step_handle
+
+        scheduler.generate_job(step_uids=[self.STEP_UID_1])
+
+        self.assertEqual(len(ctx.active_tasks), 1)
+
+        tm = cast(MagicMock, scheduler._task_manager)
+        call_kwargs = tm.run_process.call_args.kwargs
+        when_done_cb = call_kwargs["when_done"]
+
+        mock_task = MagicMock()
+        mock_task.get_status.return_value = "completed"
+        mock_task.result.return_value = None
+
+        job_handle = self._create_job_handle()
+        am.get_job_handle.return_value = job_handle
+
+        when_done_cb(mock_task)
+
+        self.assertEqual(len(ctx.active_tasks), 0)
+
+    def test_job_task_did_finish_called_on_failure(self):
+        """Test that task_did_finish is called when job task fails."""
+        scheduler = self._make_scheduler()
+        ctx = GenerationContext(generation_id=1)
+        scheduler.set_context(ctx)
+
+        step_handle = self._create_step_ops_handle()
+        am = cast(MagicMock, scheduler._artifact_manager)
+        am.get_step_ops_handle.return_value = step_handle
+
+        scheduler.generate_job(step_uids=[self.STEP_UID_1])
+
+        self.assertEqual(len(ctx.active_tasks), 1)
+
+        tm = cast(MagicMock, scheduler._task_manager)
+        call_kwargs = tm.run_process.call_args.kwargs
+        when_done_cb = call_kwargs["when_done"]
+
+        mock_task = MagicMock()
+        mock_task.get_status.return_value = "failed"
+        mock_task.result.side_effect = RuntimeError("Job failed")
+
+        when_done_cb(mock_task)
+
+        self.assertEqual(len(ctx.active_tasks), 0)
+
+    def test_job_task_did_finish_no_context_no_error(self):
+        """Test that task completion without context does not raise."""
+        scheduler = self._make_scheduler()
+        assert scheduler._active_context is None
+
+        step_handle = self._create_step_ops_handle()
+        am = cast(MagicMock, scheduler._artifact_manager)
+        am.get_step_ops_handle.return_value = step_handle
+
+        scheduler.generate_job(step_uids=[self.STEP_UID_1])
+
+        tm = cast(MagicMock, scheduler._task_manager)
+        call_kwargs = tm.run_process.call_args.kwargs
+        when_done_cb = call_kwargs["when_done"]
+
+        mock_task = MagicMock()
+        mock_task.get_status.return_value = "completed"
+        mock_task.result.return_value = None
+
+        job_handle = self._create_job_handle()
+        am.get_job_handle.return_value = job_handle
+
+        try:
+            when_done_cb(mock_task)
+        except AttributeError:
+            self.fail("when_done_cb raised AttributeError with no context")
+
+    def test_step_task_did_finish_called(self):
+        """Test that task_did_finish is called when step task completes."""
+        scheduler = self._make_scheduler()
+        ctx = GenerationContext(generation_id=1)
+        scheduler.set_context(ctx)
+
+        am = cast(MagicMock, scheduler._artifact_manager)
+        am._get_ledger_entry.return_value = None
+        am.is_generation_current.return_value = True
+
+        task_key = ArtifactKey.for_step(self.STEP_UID_1)
+
+        mock_task = MagicMock()
+        mock_task.get_status.return_value = "completed"
+        mock_task.result.return_value = None
+
+        ctx.add_task(task_key)
+        self.assertEqual(len(ctx.active_tasks), 1)
+
+        step = MagicMock(spec=Step)
+        step.uid = self.STEP_UID_1
+        step.name = "Test Step"
+
+        scheduler._on_step_task_complete(mock_task, task_key, step, 1, ctx)
+
+        self.assertEqual(len(ctx.active_tasks), 0)

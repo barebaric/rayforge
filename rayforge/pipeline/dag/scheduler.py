@@ -16,6 +16,7 @@ from ..artifact import (
 )
 from ..artifact.key import ArtifactKey
 from ..artifact.manager import make_composite_key
+from ..context import GenerationContext
 from .graph import PipelineGraph
 from .node import ArtifactNode, NodeState
 
@@ -56,6 +57,7 @@ class DagScheduler:
         self._machine = machine
         self._doc: Optional[Doc] = None
         self._generation_id: int = 0
+        self._active_context: Optional[GenerationContext] = None
         self._job_running: bool = False
         self._step_retained_handles: Dict[str, List["BaseArtifactHandle"]] = {}
         self._invalidated_keys: set = set()
@@ -82,6 +84,11 @@ class DagScheduler:
     def set_generation_id(self, generation_id: int) -> None:
         """Set the current generation ID."""
         self._generation_id = generation_id
+
+    def set_context(self, context: GenerationContext) -> None:
+        """Set the current generation context."""
+        self._active_context = context
+        self._generation_id = context.generation_id
 
     def sync_graph_with_artifact_manager(self) -> None:
         """
@@ -473,6 +480,9 @@ class DagScheduler:
             make_workpiece_artifact_in_subprocess,
         )
 
+        task_key = key
+        context = self._active_context
+
         self._task_manager.run_process(
             make_workpiece_artifact_in_subprocess,
             self._artifact_manager._store,
@@ -485,9 +495,15 @@ class DagScheduler:
             generation_id,
             workpiece_size,
             "workpiece",
-            key=key,
+            key=task_key,
             when_done=lambda t: self._on_task_complete(
-                t, key, ledger_key, generation_id, step, workpiece
+                t,
+                task_key,
+                ledger_key,
+                generation_id,
+                step,
+                workpiece,
+                context,
             ),
             when_event=lambda task,
             event_name,
@@ -527,6 +543,9 @@ class DagScheduler:
         workpiece_dict = self._prepare_workpiece_dict(workpiece)
 
         self._artifact_manager.mark_processing(ledger_key, self._generation_id)
+
+        if self._active_context is not None:
+            self._active_context.add_task(key)
 
         self._create_and_register_task(
             key,
@@ -749,8 +768,12 @@ class DagScheduler:
         task_generation_id: int,
         step: "Step",
         workpiece: "WorkPiece",
+        context: Optional[GenerationContext],
     ):
         """Callback for when an ops generation task finishes."""
+        if context is not None:
+            context.task_did_finish(key)
+
         if not self._validate_task_completion(
             key, ledger_key, task_generation_id
         ):
@@ -906,6 +929,10 @@ class DagScheduler:
         from ..stage.step_runner import make_step_artifact_in_subprocess
 
         task_key = ArtifactKey.for_step(step.uid)
+        context = self._active_context
+
+        if context is not None:
+            context.add_task(task_key)
 
         assert self._machine is not None
 
@@ -922,7 +949,7 @@ class DagScheduler:
             "step",
             key=task_key,
             when_done=lambda t: self._on_step_task_complete(
-                t, step, self._generation_id
+                t, task_key, step, self._generation_id, context
             ),
             when_event=lambda task, event_name, data: self._on_step_task_event(
                 task, event_name, data, step
@@ -1004,9 +1031,17 @@ class DagScheduler:
             logger.error(f"Error handling task event '{event_name}': {e}")
 
     def _on_step_task_complete(
-        self, task: "Task", step: "Step", task_generation_id: int
+        self,
+        task: "Task",
+        task_key: ArtifactKey,
+        step: "Step",
+        task_generation_id: int,
+        context: Optional[GenerationContext],
     ):
         """Callback for when a step assembly task finishes."""
+        if context is not None:
+            context.task_did_finish(task_key)
+
         step_uid = step.uid
         ledger_key = ArtifactKey.for_step(step_uid)
 
@@ -1173,6 +1208,12 @@ class DagScheduler:
         from ..stage.job_runner import make_job_artifact_in_subprocess
 
         self._job_running = True
+
+        context = self._active_context
+
+        if context is not None:
+            context.add_task(job_key)
+
         self._task_manager.run_process(
             make_job_artifact_in_subprocess,
             self._artifact_manager._store,
@@ -1182,7 +1223,7 @@ class DagScheduler:
             job_key=job_key,
             key=job_key,
             when_done=lambda t: self._on_job_task_complete(
-                t, job_key, generation_id, on_done
+                t, job_key, generation_id, on_done, context
             ),
             when_event=lambda task, event_name, data: self._on_job_task_event(
                 task, event_name, data, job_key, generation_id
@@ -1265,8 +1306,12 @@ class DagScheduler:
         job_key: ArtifactKey,
         generation_id: int,
         on_done: Optional[Callable],
+        context: Optional[GenerationContext],
     ):
         """Callback for when a job generation task finishes."""
+        if context is not None:
+            context.task_did_finish(job_key)
+
         task_status = task.get_status()
         final_handle = None
         error = None

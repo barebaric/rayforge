@@ -262,9 +262,9 @@ class TestArtifactManager(unittest.TestCase):
         with self.manager.checkout(job_key, 0) as handle:
             self.assertIs(handle, job_h)
             self.assertEqual(self.manager._ref_counts[job_key], 1)
-            self.mock_store.retain.assert_called_once_with(job_h)
+            self.mock_store.retain.assert_called_with(job_h)
 
-        self.mock_store.release.assert_called_once_with(job_h)
+        self.mock_store.release.assert_called_with(job_h)
         self.assertNotIn(job_key, self.manager._ref_counts)
 
     def test_get_workpiece_handle_from_ledger(self):
@@ -287,7 +287,7 @@ class TestArtifactManager(unittest.TestCase):
         self.assertIsNone(retrieved)
 
     def test_prune_removes_obsolete_data_generation(self):
-        """Tests pruning removes artifacts from non-active data generations."""
+        """Tests pruning removes ledger entries from non-active data gens."""
         wp_h = create_mock_handle(WorkPieceArtifactHandle, "wp1")
         self.manager.commit_artifact(
             ArtifactKey.for_workpiece(WP1_UID), wp_h, 0
@@ -299,7 +299,6 @@ class TestArtifactManager(unittest.TestCase):
             ArtifactKey.for_workpiece(WP1_UID), 0
         )
         self.assertNotIn(wp_composite, self.manager._ledger)
-        self.mock_release.assert_called_once_with(wp_h)
 
     def test_prune_keeps_active_data_generation(self):
         """Tests pruning keeps artifacts from active data generations."""
@@ -317,7 +316,7 @@ class TestArtifactManager(unittest.TestCase):
         self.mock_release.assert_not_called()
 
     def test_prune_removes_obsolete_view_generation(self):
-        """Tests pruning removes artifacts from non-active view generations."""
+        """Tests pruning removes ledger entries from non-active view gens."""
         view_h = create_mock_handle(WorkPieceViewArtifactHandle, "view1")
         self.manager.commit_artifact(ArtifactKey.for_view(WP1_UID), view_h, 0)
 
@@ -325,7 +324,6 @@ class TestArtifactManager(unittest.TestCase):
 
         view_composite = make_composite_key(ArtifactKey.for_view(WP1_UID), 0)
         self.assertNotIn(view_composite, self.manager._ledger)
-        self.mock_release.assert_called_once_with(view_h)
 
     def test_prune_keeps_active_view_generation(self):
         """Tests pruning keeps artifacts from active view generations."""
@@ -369,10 +367,6 @@ class TestArtifactManager(unittest.TestCase):
         self.assertIn(wp_composite_1, self.manager._ledger)
         self.assertIn(view_composite_0, self.manager._ledger)
         self.assertNotIn(view_composite_1, self.manager._ledger)
-
-        self.mock_release.assert_any_call(wp_h0)
-        self.mock_release.assert_any_call(view_h1)
-        self.assertEqual(self.mock_release.call_count, 2)
 
     def test_prune_preserves_view_for_processing_data_gen(self):
         """Tests pruning preserves view entries for processing data gens."""
@@ -812,6 +806,59 @@ class TestArtifactManager(unittest.TestCase):
         assert entry_g1 is not None
         self.assertIs(entry_g0.handle, wp_h)
         self.assertIsNone(entry_g1.handle)
+
+
+class TestArtifactManagerCommitRetains(unittest.TestCase):
+    """Tests for Manager's Claim on commit_artifact."""
+
+    def setUp(self):
+        """Set up a fresh manager and mock store."""
+        self.mock_store = Mock(spec=ArtifactStore)
+        self.mock_retain = self.mock_store.retain
+        self.mock_adopt = self.mock_store.adopt
+        self.manager = ArtifactManager(self.mock_store)
+
+    def test_commit_artifact_retains_handle(self):
+        """Test that commit_artifact calls retain on the handle."""
+        handle = create_mock_handle(JobArtifactHandle, "job")
+        job_key = ArtifactKey(id=JOB_UID, group="job")
+
+        self.manager.commit_artifact(job_key, handle, 0)
+
+        self.mock_adopt.assert_called_once_with(handle)
+        self.mock_retain.assert_called_once_with(handle)
+
+    def test_commit_artifact_retains_new_handle_releases_old(self):
+        """Test that replacing a handle retains new and releases old."""
+        old_handle = create_mock_handle(JobArtifactHandle, "job_old")
+        new_handle = create_mock_handle(JobArtifactHandle, "job_new")
+        job_key = ArtifactKey(id=JOB_UID, group="job")
+
+        self.manager.commit_artifact(job_key, old_handle, 0)
+        self.mock_retain.reset_mock()
+        self.mock_adopt.reset_mock()
+
+        self.manager.commit_artifact(job_key, new_handle, 0)
+
+        self.mock_adopt.assert_called_once_with(new_handle)
+        self.mock_retain.assert_called_once_with(new_handle)
+        self.mock_store.release.assert_called_once_with(old_handle)
+
+    def test_commit_artifact_retains_multiple_commits(self):
+        """Test that each commit_artifact call retains the handle."""
+        handle1 = create_mock_handle(WorkPieceArtifactHandle, "wp1")
+        handle2 = create_mock_handle(WorkPieceArtifactHandle, "wp2")
+
+        wp1_key = ArtifactKey.for_workpiece(WP1_UID)
+        wp2_key = ArtifactKey.for_workpiece(WP2_UID)
+
+        self.manager.commit_artifact(wp1_key, handle1, 0)
+        self.manager.commit_artifact(wp2_key, handle2, 0)
+
+        retain_calls = self.mock_retain.call_args_list
+        self.assertEqual(len(retain_calls), 2)
+        self.assertIn(handle1, [call[0][0] for call in retain_calls])
+        self.assertIn(handle2, [call[0][0] for call in retain_calls])
 
 
 if __name__ == "__main__":

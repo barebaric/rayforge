@@ -1,11 +1,14 @@
 from __future__ import annotations
 import uuid
 import logging
-from typing import Dict
+from typing import Dict, Optional, TYPE_CHECKING
 from multiprocessing import shared_memory
 import numpy as np
 from .base import BaseArtifact
 from .handle import BaseArtifactHandle
+
+if TYPE_CHECKING:
+    from ..context import GenerationContext
 
 
 logger = logging.getLogger(__name__)
@@ -73,11 +76,24 @@ class ArtifactStore:
             logger.error(f"Error adopting shared memory block {shm_name}: {e}")
 
     def put(
-        self, artifact: BaseArtifact, creator_tag: str = "unknown"
+        self,
+        artifact: BaseArtifact,
+        creator_tag: str = "unknown",
+        generation_context: Optional["GenerationContext"] = None,
     ) -> BaseArtifactHandle:
         """
         Serializes an artifact into a new shared memory block and returns a
         handle.
+
+        Args:
+            artifact: The artifact to serialize.
+            creator_tag: A tag identifying the creator for debugging.
+            generation_context: Optional GenerationContext to track the
+                created resource. When provided, the handle is registered
+                with the context for lifecycle management.
+
+        Returns:
+            A handle to the serialized artifact.
         """
         arrays = artifact.get_arrays_for_storage()
         total_bytes = sum(arr.nbytes for arr in arrays.values())
@@ -92,7 +108,11 @@ class ArtifactStore:
             )
         except FileExistsError:
             # Handle rare UUID collision by retrying
-            return self.put(artifact, creator_tag=creator_tag)
+            return self.put(
+                artifact,
+                creator_tag=creator_tag,
+                generation_context=generation_context,
+            )
 
         # Write data and collect metadata for the handle
         offset = 0
@@ -119,6 +139,10 @@ class ArtifactStore:
 
         # Delegate handle creation to the artifact instance
         handle = artifact.create_handle(shm_name, array_metadata)
+
+        if generation_context is not None:
+            generation_context.add_resource(handle)
+
         return handle
 
     def get(self, handle: BaseArtifactHandle) -> BaseArtifact:

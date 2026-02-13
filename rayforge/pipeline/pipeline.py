@@ -33,6 +33,7 @@ from .artifact import (
     WorkPieceArtifact,
 )
 from .artifact.key import ArtifactKey
+from .context import GenerationContext
 from .dag import DagScheduler
 from .stage import (
     JobPipelineStage,
@@ -104,6 +105,8 @@ class Pipeline:
         self._machine = machine
         self._data_generation_id = 0
         self._view_generation_id = 0
+        self._contexts: Dict[int, GenerationContext] = {}
+        self._active_context: Optional[GenerationContext] = None
         self._docitem_to_artifact_key: Dict[DocItem, ArtifactKey] = {}
         self._pause_count = 0
         self._last_known_busy_state = False
@@ -289,10 +292,20 @@ class Pipeline:
         """
         Returns True if the pipeline is currently processing or has pending
         work.
+
+        The pipeline is busy if:
+        1. A reconciliation timer is pending, OR
+        2. The scheduler has pending work (PROCESSING nodes), OR
+        3. Any inactive context has active tasks (old generation cleaning up)
         """
         if self._reconciliation_timer is not None:
             return True
-        return self._scheduler.has_pending_work()
+        if self._scheduler.has_pending_work():
+            return True
+        for ctx in self._contexts.values():
+            if ctx is not self._active_context and ctx.has_active_tasks():
+                return True
+        return False
 
     def _check_and_update_processing_state(self) -> None:
         """
@@ -785,6 +798,15 @@ class Pipeline:
 
         self._data_generation_id += 1
         data_gen_id = self._data_generation_id
+
+        ctx = GenerationContext(
+            generation_id=data_gen_id,
+            release_callback=self._artifact_manager.release_handle,
+            is_superseded_callback=lambda: self._active_context is not ctx,
+        )
+        self._contexts[data_gen_id] = ctx
+        self._active_context = ctx
+        self._scheduler.set_context(ctx)
 
         self._declare_data_artifacts(data_gen_id)
 

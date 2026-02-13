@@ -268,11 +268,13 @@ class ArtifactManager:
         """
         Stores a handle for a StepOpsArtifact.
 
-        Note: This does NOT release any existing handle at this key.
-        The old handle will be cleaned up by prune when the generation
-        is no longer active.
+        If an existing handle exists at this key, it is released before
+        being overwritten.
         """
         composite_key = make_composite_key(key, generation_id)
+        entry = self._ledger.get(composite_key)
+        if entry is not None and entry.handle is not None:
+            self._store.release(entry.handle)
         self._ledger[composite_key] = LedgerEntry(
             handle=handle,
             generation_id=generation_id,
@@ -287,12 +289,13 @@ class ArtifactManager:
         """
         Stores a handle for a WorkPieceViewArtifact.
 
-        Note: This does NOT release any existing handle at this key.
-        The old handle will be cleaned up by prune when the generation
-        is no longer active. This prevents race conditions where a
-        live buffer allocation releases a final view that's still in use.
+        If an existing handle exists at this key, it is released before
+        being overwritten.
         """
         composite_key = make_composite_key(key, generation_id)
+        entry = self._ledger.get(composite_key)
+        if entry is not None and entry.handle is not None:
+            self._store.release(entry.handle)
         self._ledger[composite_key] = LedgerEntry(
             handle=handle,
             generation_id=generation_id,
@@ -722,6 +725,10 @@ class ArtifactManager:
         """
         Caches an artifact handle and notifies the DAG.
 
+        This also retains the handle, creating a "Manager's Claim" on the
+        shared memory. This ensures the data persists even after the
+        GenerationContext releases its "Builder's Claim".
+
         Args:
             key: The ArtifactKey for the entry.
             handle: The handle to cache.
@@ -736,6 +743,7 @@ class ArtifactManager:
 
         logger.debug(f"commit: Committing entry {composite_key}")
         self._store.adopt(handle)
+        self.retain_handle(handle)
         if entry.handle is not None:
             self._store.release(entry.handle)
         entry.handle = handle
@@ -913,10 +921,11 @@ class ArtifactManager:
         processing_data_gen_ids: Optional[Set[int]] = None,
     ) -> None:
         """
-        Removes artifacts that do not belong to active generations.
+        Removes ledger entries that do not belong to active generations.
 
         This method performs garbage collection on the ledger, removing
-        entries that are no longer needed.
+        entries that are no longer needed. It releases the "Manager's Claim"
+        (the retain() call from commit_artifact) when removing entries.
 
         Args:
             active_data_gen_ids: Set of active data generation IDs.
@@ -947,11 +956,8 @@ class ArtifactManager:
                 active_gen_ids = active_data_gen_ids
 
             should_keep = generation_id in active_gen_ids
-            # Keep view entries for processing generations
             if is_view and generation_id in processing_data_gen_ids:
                 should_keep = True
-            # Keep step entries for processing generations
-            # (workers may still be using them)
             if is_step and generation_id in processing_data_gen_ids:
                 should_keep = True
 
@@ -965,6 +971,11 @@ class ArtifactManager:
         logger.debug(f"prune: Removing {len(keys_to_remove)} entries")
         for composite_key in keys_to_remove:
             entry = self._ledger.get(composite_key)
-            if entry and entry.handle is not None:
-                self.release_handle(entry.handle)
+            if entry is not None and entry.handle is not None:
+                base_key = extract_base_key(composite_key)
+                if base_key.group != "view":
+                    logger.debug(
+                        f"prune: Releasing handle for {composite_key}"
+                    )
+                    self._store.release(entry.handle)
             del self._ledger[composite_key]
