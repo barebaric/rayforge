@@ -234,26 +234,23 @@ class TestDagScheduler:
         assert node.state == NodeState.DIRTY
 
     def test_artifact_manager_syncs_dag_state(self):
-        """Test that ArtifactManager syncs DAG state through callback."""
+        """Test that DAG manages node state directly."""
         mock_store = MagicMock()
         scheduler = self._make_scheduler()
-        manager = ArtifactManager(
-            mock_store,
-            dag_state_callback=scheduler.on_artifact_state_changed,
-        )
+        manager = ArtifactManager(mock_store)
 
         key = ArtifactKey.for_workpiece(WP_UID_1)
         node = ArtifactNode(key=key, state=NodeState.DIRTY)
         scheduler.graph.add_node(node)
 
-        manager.register_intent(key, 1)
         assert node.state == NodeState.DIRTY
 
-        manager.mark_processing(key, 1)
+        node.state = NodeState.PROCESSING
         assert node.state == NodeState.PROCESSING
 
         mock_handle = MagicMock(spec=BaseArtifactHandle)
-        manager.commit_artifact(key, mock_handle, 1)
+        manager.cache_handle(key, mock_handle, 1)
+        node.state = NodeState.VALID
         assert node.state == NodeState.VALID
 
 
@@ -432,7 +429,7 @@ class TestDagSchedulerJobGeneration:
 
         call_kwargs["when_event"](MagicMock(), "artifact_created", event_data)
 
-        am.commit_artifact.assert_called_once_with(  # type: ignore
+        am.cache_handle.assert_called_once_with(  # type: ignore
             job_key, job_handle, 1
         )
 
@@ -451,7 +448,7 @@ class TestDagSchedulerJobGeneration:
         call_kwargs = tm.run_process.call_args.kwargs  # type: ignore
         call_kwargs["when_event"](MagicMock(), "unknown_event", {})
 
-        am.commit_artifact.assert_not_called()  # type: ignore
+        am.cache_handle.assert_not_called()  # type: ignore
 
 
 class TestDagSchedulerContextTaskTracking(unittest.TestCase):

@@ -526,8 +526,8 @@ class TestPipeline:
         ledger_key = ArtifactKey.for_workpiece(real_workpiece.uid)
 
         # Note: The pipeline initialization already triggered a task, so the
-        # state is already PROCESSING with generation_id=1. We can just commit.
-        pipeline.artifact_manager.commit_artifact(
+        # state is already PROCESSING with generation_id=1. We can just cache.
+        pipeline.artifact_manager.cache_handle(
             ledger_key, initial_workpiece_handle, 1
         )
 
@@ -566,9 +566,8 @@ class TestPipeline:
             generation_size=(20.0, 20.0),
         )
         ledger_key = ArtifactKey.for_workpiece(real_workpiece.uid)
-        # The stage has already called mark_processing, so we don't call it.
-        # We just commit the result to simulate completion.
-        pipeline.artifact_manager.commit_artifact(
+        # We just cache the result to simulate completion.
+        pipeline.artifact_manager.cache_handle(
             ledger_key, new_workpiece_handle, 2
         )
 

@@ -542,7 +542,9 @@ class DagScheduler:
 
         workpiece_dict = self._prepare_workpiece_dict(workpiece)
 
-        self._artifact_manager.mark_processing(ledger_key, self._generation_id)
+        node = self.graph.find_node(ledger_key)
+        if node is not None:
+            node.state = NodeState.PROCESSING
 
         if self._active_context is not None:
             self._active_context.add_task(key)
@@ -570,9 +572,11 @@ class DagScheduler:
         """
         Processes artifact_created event.
         """
-        self._artifact_manager.commit_artifact(
-            ledger_key, handle, generation_id
-        )
+        self._artifact_manager.cache_handle(ledger_key, handle, generation_id)
+
+        node = self.graph.find_node(ledger_key)
+        if node is not None:
+            node.state = NodeState.VALID
 
         self.workpiece_artifact_adopted.send(
             self, step_uid=step_uid, workpiece_uid=key.id
@@ -767,9 +771,9 @@ class DagScheduler:
         wp_name = workpiece.name
         error_msg = f"Ops generation for '{step.name}' on '{wp_name}' failed."
         logger.warning(f"[{key}] {error_msg}")
-        self._artifact_manager.fail_generation(
-            key, error_msg, task_generation_id
-        )
+        node = self.graph.find_node(key)
+        if node is not None:
+            node.state = NodeState.ERROR
 
     def _on_task_complete(
         self,
@@ -925,20 +929,9 @@ class DagScheduler:
         self._step_retained_handles[step.uid] = retained_handles
 
         ledger_key = ArtifactKey.for_step(step.uid)
-        composite_key = make_composite_key(ledger_key, self._generation_id)
-        entry = self._artifact_manager._get_ledger_entry(composite_key)
-
-        if entry is None:
-            logger.warning(
-                f"Step {step.uid} triggered for assembly but has no "
-                f"ledger entry for gen_id={self._generation_id}. "
-                f"This may indicate a race condition."
-            )
-            self._artifact_manager.register_intent(
-                ledger_key, self._generation_id
-            )
-
-        self._artifact_manager.mark_processing(ledger_key, self._generation_id)
+        node = self.graph.find_node(ledger_key)
+        if node is not None:
+            node.state = NodeState.PROCESSING
 
         from ..stage.step_runner import make_step_artifact_in_subprocess
 
@@ -1083,19 +1076,20 @@ class DagScheduler:
                     ledger_key,
                     task_generation_id,
                 )
+                node = self.graph.find_node(ledger_key)
+                if node is not None:
+                    node.state = NodeState.VALID
                 logger.debug("_on_step_task_complete: ops_handle set to DONE")
             except Exception as e:
                 logger.error(f"Error on step assembly result: {e}")
-                error_msg = f"Step assembly for '{step.name}' failed: {e}"
-                self._artifact_manager.fail_generation(
-                    ledger_key, error_msg, task_generation_id
-                )
+                node = self.graph.find_node(ledger_key)
+                if node is not None:
+                    node.state = NodeState.ERROR
         else:
             logger.warning(f"Step assembly for {step_uid} failed.")
-            error_msg = f"Step assembly for '{step.name}' failed."
-            self._artifact_manager.fail_generation(
-                ledger_key, error_msg, task_generation_id
-            )
+            node = self.graph.find_node(ledger_key)
+            if node is not None:
+                node.state = NodeState.ERROR
 
         self.step_generation_finished.send(
             self, step=step, generation_id=task_generation_id
@@ -1185,8 +1179,9 @@ class DagScheduler:
                 on_done(None, RuntimeError("Failed to collect step handles."))
             return
 
-        self._artifact_manager.register_intent(job_key, self._generation_id)
-        self._artifact_manager.mark_processing(job_key, self._generation_id)
+        node = self.graph.find_node(job_key)
+        if node is not None:
+            node.state = NodeState.PROCESSING
 
         logger.info(f"Starting job generation with {len(step_handles)} steps.")
 
@@ -1285,9 +1280,12 @@ class DagScheduler:
 
         try:
             handle = self._adopt_job_artifact(data, received_job_key)
-            self._artifact_manager.commit_artifact(
+            self._artifact_manager.cache_handle(
                 received_job_key, handle, generation_id
             )
+            node = self.graph.find_node(received_job_key)
+            if node is not None:
+                node.state = NodeState.VALID
             logger.debug("Adopted job artifact")
         except Exception as e:
             logger.error(f"Error handling job artifact event: {e}")
@@ -1336,6 +1334,9 @@ class DagScheduler:
             )
             if final_handle:
                 logger.info("Job generation successful.")
+                node = self.graph.find_node(job_key)
+                if node is not None:
+                    node.state = NodeState.VALID
             else:
                 logger.info(
                     "Job generation finished with no artifact produced."
@@ -1357,10 +1358,9 @@ class DagScheduler:
                 error = e
 
             if generation_id is not None:
-                error_msg = str(error) if error else "Unknown error"
-                self._artifact_manager.fail_generation(
-                    job_key, error_msg, generation_id
-                )
+                node = self.graph.find_node(job_key)
+                if node is not None:
+                    node.state = NodeState.ERROR
 
             self._artifact_manager.invalidate_for_job(job_key)
             if on_done:

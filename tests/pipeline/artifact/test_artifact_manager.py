@@ -1,8 +1,8 @@
 """
-Tests for the ArtifactManager as a pure cache.
+Tests for ArtifactManager as a pure cache.
 
 The ArtifactManager is now a pure cache - it only stores handles.
-State tracking is handled by the DAG scheduler via ArtifactNode.
+State tracking is handled by DAG scheduler via ArtifactNode.
 """
 
 import unittest
@@ -69,7 +69,7 @@ class TestArtifactManager(unittest.TestCase):
         """Tests basic storage and retrieval of a job handle."""
         handle = create_mock_handle(JobArtifactHandle, "job")
         job_key = ArtifactKey(id=JOB_UID, group="job")
-        self.manager.commit_artifact(job_key, handle, 0)
+        self.manager.cache_handle(job_key, handle, 0)
 
         retrieved = self.manager.get_job_handle(job_key, 0)
         self.assertIs(retrieved, handle)
@@ -81,9 +81,7 @@ class TestArtifactManager(unittest.TestCase):
         render_h = create_mock_handle(StepRenderArtifactHandle, "step1_render")
         ops_h = create_mock_handle(StepOpsArtifactHandle, "step1_ops")
 
-        self.manager.commit_artifact(
-            ArtifactKey.for_workpiece(WP1_UID), wp_h, 0
-        )
+        self.manager.cache_handle(ArtifactKey.for_workpiece(WP1_UID), wp_h, 0)
         self.manager.put_step_render_handle(WP1_UID, render_h)
         self.manager.put_step_ops_handle(
             ArtifactKey.for_step(WP1_UID), ops_h, 0
@@ -112,10 +110,10 @@ class TestArtifactManager(unittest.TestCase):
         render_h = create_mock_handle(StepRenderArtifactHandle, "step1_render")
         ops_h = create_mock_handle(StepOpsArtifactHandle, "step1_ops")
 
-        self.manager.commit_artifact(
+        self.manager.cache_handle(
             ArtifactKey.for_workpiece(STEP1_UID), wp1_h, 0
         )
-        self.manager.commit_artifact(
+        self.manager.cache_handle(
             ArtifactKey.for_workpiece(STEP1_UID), wp2_h, 1
         )
         self.manager.put_step_render_handle(STEP1_UID, render_h)
@@ -147,8 +145,8 @@ class TestArtifactManager(unittest.TestCase):
         new_job_h = create_mock_handle(JobArtifactHandle, "job_new")
         job_key = ArtifactKey(id=JOB_UID, group="job")
 
-        self.manager.commit_artifact(job_key, old_job_h, 0)
-        self.manager.commit_artifact(job_key, new_job_h, 0)
+        self.manager.cache_handle(job_key, old_job_h, 0)
+        self.manager.cache_handle(job_key, new_job_h, 0)
 
         self.assertIs(self.manager.get_job_handle(job_key, 0), new_job_h)
         self.mock_release.assert_called_with(old_job_h)
@@ -160,14 +158,12 @@ class TestArtifactManager(unittest.TestCase):
         ops_h = create_mock_handle(StepOpsArtifactHandle, "step1_ops")
         job_h = create_mock_handle(JobArtifactHandle, "job")
 
-        self.manager.commit_artifact(
-            ArtifactKey.for_workpiece(WP1_UID), wp_h, 0
-        )
+        self.manager.cache_handle(ArtifactKey.for_workpiece(WP1_UID), wp_h, 0)
         self.manager.put_step_render_handle(STEP1_UID, render_h)
         self.manager.put_step_ops_handle(
             ArtifactKey.for_step(STEP1_UID), ops_h, 0
         )
-        self.manager.commit_artifact(
+        self.manager.cache_handle(
             ArtifactKey(id=JOB_UID, group="job"), job_h, 0
         )
 
@@ -182,17 +178,17 @@ class TestArtifactManager(unittest.TestCase):
 
     def test_get_all_workpiece_keys(self):
         """Tests getting all workpiece keys."""
-        self.manager.commit_artifact(
+        self.manager.cache_handle(
             ArtifactKey.for_workpiece(WP1_UID),
             create_mock_handle(WorkPieceArtifactHandle, "wp1"),
             0,
         )
-        self.manager.commit_artifact(
+        self.manager.cache_handle(
             ArtifactKey.for_workpiece(WP2_UID),
             create_mock_handle(WorkPieceArtifactHandle, "wp2"),
             0,
         )
-        self.manager.commit_artifact(
+        self.manager.cache_handle(
             ArtifactKey.for_workpiece(WP3_UID),
             create_mock_handle(WorkPieceArtifactHandle, "wp3"),
             0,
@@ -254,7 +250,7 @@ class TestArtifactManager(unittest.TestCase):
         """Tests checking out job handle."""
         job_h = create_mock_handle(JobArtifactHandle, "job")
         job_key = ArtifactKey(id=JOB_UID, group="job")
-        self.manager.commit_artifact(job_key, job_h, 0)
+        self.manager.cache_handle(job_key, job_h, 0)
 
         with self.manager.checkout(job_key, 0) as handle:
             self.assertIs(handle, job_h)
@@ -267,9 +263,7 @@ class TestArtifactManager(unittest.TestCase):
     def test_get_workpiece_handle_from_ledger(self):
         """Tests getting workpiece handle from ledger."""
         wp_h = create_mock_handle(WorkPieceArtifactHandle, "wp1")
-        self.manager.commit_artifact(
-            ArtifactKey.for_workpiece(WP1_UID), wp_h, 0
-        )
+        self.manager.cache_handle(ArtifactKey.for_workpiece(WP1_UID), wp_h, 0)
 
         retrieved = self.manager.get_workpiece_handle(
             ArtifactKey.for_workpiece(WP1_UID), 0
@@ -286,9 +280,7 @@ class TestArtifactManager(unittest.TestCase):
     def test_prune_removes_obsolete_data_generation(self):
         """Tests pruning removes ledger entries from non-active data gens."""
         wp_h = create_mock_handle(WorkPieceArtifactHandle, "wp1")
-        self.manager.commit_artifact(
-            ArtifactKey.for_workpiece(WP1_UID), wp_h, 0
-        )
+        self.manager.cache_handle(ArtifactKey.for_workpiece(WP1_UID), wp_h, 0)
 
         self.manager.prune(active_data_gen_ids={1})
 
@@ -300,9 +292,7 @@ class TestArtifactManager(unittest.TestCase):
     def test_prune_keeps_active_data_generation(self):
         """Tests pruning keeps artifacts from active data generations."""
         wp_h = create_mock_handle(WorkPieceArtifactHandle, "wp1")
-        self.manager.commit_artifact(
-            ArtifactKey.for_workpiece(WP1_UID), wp_h, 0
-        )
+        self.manager.cache_handle(ArtifactKey.for_workpiece(WP1_UID), wp_h, 0)
 
         self.manager.prune(active_data_gen_ids={0})
 
@@ -318,8 +308,8 @@ class TestArtifactManager(unittest.TestCase):
         step_h1 = create_mock_handle(StepOpsArtifactHandle, "step1")
         step_key0 = ArtifactKey.for_step(STEP1_UID)
         step_key1 = ArtifactKey.for_step(STEP2_UID)
-        self.manager.commit_artifact(step_key0, step_h0, 0)
-        self.manager.commit_artifact(step_key1, step_h1, 1)
+        self.manager.cache_handle(step_key0, step_h0, 0)
+        self.manager.cache_handle(step_key1, step_h1, 1)
 
         self.manager.prune(
             active_data_gen_ids={1},
@@ -336,7 +326,7 @@ class TestArtifactManager(unittest.TestCase):
         """Test is_generation_current returns True for matching gen ID."""
         wp_h = create_mock_handle(WorkPieceArtifactHandle, "wp1")
         wp_key = ArtifactKey.for_workpiece(WP1_UID)
-        self.manager.commit_artifact(wp_key, wp_h, 1)
+        self.manager.cache_handle(wp_key, wp_h, 1)
 
         result = self.manager.is_generation_current(wp_key, 1)
         self.assertTrue(result)
@@ -345,7 +335,7 @@ class TestArtifactManager(unittest.TestCase):
         """Test is_generation_current returns False for gen ID mismatch."""
         wp_h = create_mock_handle(WorkPieceArtifactHandle, "wp1")
         wp_key = ArtifactKey.for_workpiece(WP1_UID)
-        self.manager.commit_artifact(wp_key, wp_h, 1)
+        self.manager.cache_handle(wp_key, wp_h, 1)
 
         result = self.manager.is_generation_current(wp_key, 2)
         self.assertFalse(result)
@@ -412,17 +402,17 @@ class TestArtifactManager(unittest.TestCase):
 
     def test_get_all_workpiece_keys_for_generation(self):
         """Test getting workpiece keys for specific generation."""
-        self.manager.commit_artifact(
+        self.manager.cache_handle(
             ArtifactKey.for_workpiece(WP1_UID),
             create_mock_handle(WorkPieceArtifactHandle, "wp1"),
             0,
         )
-        self.manager.commit_artifact(
+        self.manager.cache_handle(
             ArtifactKey.for_workpiece(WP2_UID),
             create_mock_handle(WorkPieceArtifactHandle, "wp2"),
             1,
         )
-        self.manager.commit_artifact(
+        self.manager.cache_handle(
             ArtifactKey.for_workpiece(WP3_UID),
             create_mock_handle(WorkPieceArtifactHandle, "wp3"),
             0,
@@ -439,7 +429,7 @@ class TestArtifactManager(unittest.TestCase):
         """Test invalidate_for_job releases handle and removes entry."""
         job_h = create_mock_handle(JobArtifactHandle, "job")
         job_key = ArtifactKey(id=JOB_UID, group="job")
-        self.manager.commit_artifact(job_key, job_h, 0)
+        self.manager.cache_handle(job_key, job_h, 0)
 
         self.manager.invalidate_for_job(job_key)
 
@@ -479,7 +469,7 @@ class TestArtifactManager(unittest.TestCase):
     def test_mark_done_without_handle(self):
         """Test mark_done works when entry has no handle."""
         key = ArtifactKey.for_workpiece(WP1_UID)
-        self.manager.register_intent(key, 0)
+        self.manager.declare_generation({key}, 0)
 
         self.manager.mark_done(key, 0)
 
@@ -501,7 +491,7 @@ class TestArtifactManager(unittest.TestCase):
         """Test complete_generation marks existing entry as done."""
         wp_h = create_mock_handle(WorkPieceArtifactHandle, "wp1")
         key = ArtifactKey.for_workpiece(WP1_UID)
-        self.manager.commit_artifact(key, wp_h, 0)
+        self.manager.cache_handle(key, wp_h, 0)
 
         self.manager.complete_generation(key, 0)
 
@@ -527,7 +517,7 @@ class TestArtifactManager(unittest.TestCase):
         old_h = create_mock_handle(WorkPieceArtifactHandle, "old")
         new_h = create_mock_handle(WorkPieceArtifactHandle, "new")
         key = ArtifactKey.for_workpiece(WP1_UID)
-        self.manager.commit_artifact(key, old_h, 0)
+        self.manager.cache_handle(key, old_h, 0)
 
         self.manager.complete_generation(key, 0, new_h)
 
@@ -570,7 +560,7 @@ class TestArtifactManager(unittest.TestCase):
         """Test declare_generation skips existing entries."""
         wp_key = ArtifactKey.for_workpiece(WP1_UID)
         wp_h = create_mock_handle(WorkPieceArtifactHandle, "wp1")
-        self.manager.commit_artifact(wp_key, wp_h, 0)
+        self.manager.cache_handle(wp_key, wp_h, 0)
 
         self.manager.declare_generation({wp_key}, 0)
 
@@ -583,7 +573,7 @@ class TestArtifactManager(unittest.TestCase):
         """Test declare_generation does not modify previous generations."""
         wp_key = ArtifactKey.for_workpiece(WP1_UID)
         wp_h = create_mock_handle(WorkPieceArtifactHandle, "wp1")
-        self.manager.commit_artifact(wp_key, wp_h, 0)
+        self.manager.cache_handle(wp_key, wp_h, 0)
 
         self.manager.declare_generation({wp_key}, 1)
 
@@ -598,7 +588,7 @@ class TestArtifactManager(unittest.TestCase):
 
 
 class TestArtifactManagerCommitRetains(unittest.TestCase):
-    """Tests for Manager's Claim on commit_artifact."""
+    """Tests for Manager's Claim on cache_handle."""
 
     def setUp(self):
         """Set up a fresh manager and mock store."""
@@ -607,42 +597,42 @@ class TestArtifactManagerCommitRetains(unittest.TestCase):
         self.mock_adopt = self.mock_store.adopt
         self.manager = ArtifactManager(self.mock_store)
 
-    def test_commit_artifact_retains_handle(self):
-        """Test that commit_artifact calls retain on the handle."""
+    def test_cache_handle_retains_handle(self):
+        """Test that cache_handle calls retain on handle."""
         handle = create_mock_handle(JobArtifactHandle, "job")
         job_key = ArtifactKey(id=JOB_UID, group="job")
 
-        self.manager.commit_artifact(job_key, handle, 0)
+        self.manager.cache_handle(job_key, handle, 0)
 
         self.mock_adopt.assert_called_once_with(handle)
         self.mock_retain.assert_called_once_with(handle)
 
-    def test_commit_artifact_retains_new_handle_releases_old(self):
+    def test_cache_handle_retains_new_handle_releases_old(self):
         """Test that replacing a handle retains new and releases old."""
         old_handle = create_mock_handle(JobArtifactHandle, "job_old")
         new_handle = create_mock_handle(JobArtifactHandle, "job_new")
         job_key = ArtifactKey(id=JOB_UID, group="job")
 
-        self.manager.commit_artifact(job_key, old_handle, 0)
+        self.manager.cache_handle(job_key, old_handle, 0)
         self.mock_retain.reset_mock()
         self.mock_adopt.reset_mock()
 
-        self.manager.commit_artifact(job_key, new_handle, 0)
+        self.manager.cache_handle(job_key, new_handle, 0)
 
         self.mock_adopt.assert_called_once_with(new_handle)
         self.mock_retain.assert_called_once_with(new_handle)
         self.mock_store.release.assert_called_once_with(old_handle)
 
-    def test_commit_artifact_retains_multiple_commits(self):
-        """Test that each commit_artifact call retains the handle."""
+    def test_cache_handle_retains_multiple_commits(self):
+        """Test that each cache_handle call retains handle."""
         handle1 = create_mock_handle(WorkPieceArtifactHandle, "wp1")
         handle2 = create_mock_handle(WorkPieceArtifactHandle, "wp2")
 
         wp1_key = ArtifactKey.for_workpiece(WP1_UID)
         wp2_key = ArtifactKey.for_workpiece(WP2_UID)
 
-        self.manager.commit_artifact(wp1_key, handle1, 0)
-        self.manager.commit_artifact(wp2_key, handle2, 0)
+        self.manager.cache_handle(wp1_key, handle1, 0)
+        self.manager.cache_handle(wp2_key, handle2, 0)
 
         retain_calls = self.mock_retain.call_args_list
         self.assertEqual(len(retain_calls), 2)

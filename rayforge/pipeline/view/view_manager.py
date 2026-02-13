@@ -120,28 +120,57 @@ class ViewManager:
         """Check if a view needs re-rendering."""
         entry = self._view_entries.get(workpiece_uid)
         if entry is None or entry.handle is None:
+            logger.debug(
+                f"_is_view_stale[{workpiece_uid}]: no entry/handle -> STALE"
+            )
             return True
 
         if new_context is not None:
             if entry.render_context is None:
+                logger.debug(
+                    f"_is_view_stale[{workpiece_uid}]: "
+                    f"no render_context -> STALE"
+                )
                 return True
             if entry.render_context != new_context:
+                logger.debug(
+                    f"_is_view_stale[{workpiece_uid}]: "
+                    f"context changed -> STALE"
+                )
                 return True
 
         if source_handle is not None:
             if entry.source_handle is None:
+                logger.debug(
+                    f"_is_view_stale[{workpiece_uid}]: "
+                    f"no entry.source_handle -> STALE"
+                )
                 return True
-            if (
-                entry.source_handle.generation_size
-                != source_handle.generation_size
-            ):
+            entry_gen_size = entry.source_handle.generation_size
+            new_gen_size = source_handle.generation_size
+            if entry_gen_size != new_gen_size:
+                logger.debug(
+                    f"_is_view_stale[{workpiece_uid}]: "
+                    f"gen_size {entry_gen_size} -> {new_gen_size} -> STALE"
+                )
                 return True
-            if (
-                entry.source_handle.source_dimensions
-                != source_handle.source_dimensions
-            ):
+            entry_src_dims = entry.source_handle.source_dimensions
+            new_src_dims = source_handle.source_dimensions
+            if entry_src_dims != new_src_dims:
+                logger.debug(
+                    f"_is_view_stale[{workpiece_uid}]: "
+                    f"src_dims {entry_src_dims} -> {new_src_dims} -> STALE"
+                )
                 return True
 
+        esh = entry.source_handle
+        ssh = source_handle
+        entry_sz = esh.generation_size if esh else None
+        src_sz = ssh.generation_size if ssh else None
+        logger.debug(
+            f"_is_view_stale[{workpiece_uid}]: "
+            f"entry.gen_size={entry_sz}, src.gen_size={src_sz} -> NOT STALE"
+        )
         return False
 
     def update_render_context(
@@ -708,6 +737,9 @@ class ViewManager:
         Called when workpiece generation starts.
         Pre-allocates the view buffer to enable progressive rendering.
 
+        Only allocates a new buffer if the source artifact is actually
+        being regenerated (i.e., we have a new source handle coming).
+
         Args:
             sender: The step being generated (passed as sender).
             workpiece: The workpiece being generated.
@@ -716,26 +748,39 @@ class ViewManager:
         step = sender
         key = ArtifactKey.for_view(workpiece.uid)
 
+        entry = self._view_entries.get(workpiece.uid)
+        existing_handle = entry.handle if entry else None
+
         logger.debug(
-            f"ViewManager: Source data gen {generation_id} starting "
-            f"for {key}. Allocating live buffer for "
-            f"view_id={self._view_generation_id}."
+            f"ViewManager.on_generation_starting: Source data gen "
+            f"{generation_id} starting for {key}, existing view handle: "
+            f"{existing_handle.shm_name if existing_handle else None}"
         )
 
         task_key = ArtifactKey.for_view(workpiece.uid)
         task = self._task_manager.get_task(task_key)
         if task and not task.is_final():
+            logger.debug(f"Cancelling existing task for {task_key}")
             self._task_manager.cancel_task(task_key)
 
         context = self._current_view_context
-        if context:
-            self.allocate_live_buffer(
-                key, workpiece, step.uid, self._view_generation_id, context
-            )
-        else:
+        if not context:
             logger.warning(
                 f"[{key}] Cannot allocate live buffer: No RenderContext."
             )
+            return
+
+        if existing_handle is not None:
+            logger.debug(
+                f"Not allocating live buffer for {key}: "
+                "existing view handle will be reused"
+            )
+            return
+
+        logger.debug(f"Allocating live buffer for {key} (no existing handle)")
+        self.allocate_live_buffer(
+            key, workpiece, step.uid, self._view_generation_id, context
+        )
 
     def reconcile(self, doc: "Doc", generation_id: int):
         """
