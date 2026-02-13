@@ -16,6 +16,13 @@ from rayforge import context as rayforge_context
 from rayforge.shared.tasker.progress import ProgressContext
 
 
+class PyvipsLogFilter(logging.Filter):
+    """Filter to suppress spammy pyvips debug messages."""
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        return not record.name.startswith("pyvips")
+
+
 if TYPE_CHECKING:
     from rayforge.machine.models.machine import Machine
 
@@ -63,6 +70,8 @@ def pytest_configure(config):
     """
     if sys.platform.startswith("linux"):
         multiprocessing.set_start_method("spawn", force=True)
+
+    logging.getLogger().addFilter(PyvipsLogFilter())
 
 
 @pytest.fixture(scope="function", autouse=True)
@@ -637,6 +646,42 @@ class _InnerMockProgressContext:
         sub_ctx._range = progress_range
         sub_ctx._total = total
         return sub_ctx
+
+
+def create_adopting_mock_proxy(artifact_store=None):
+    """
+    Creates a mock ExecutionContextProxy that adopts artifacts when
+    send_event_and_wait is called.
+
+    On Windows, shared memory is destroyed when all handles are closed.
+    When tests run runner functions in-process (not in a real subprocess),
+    the runner calls forget() after send_event_and_wait returns, which
+    closes the only handle. This mock simulates the main process adopting
+    the artifact before the runner forgets it.
+
+    Args:
+        artifact_store: The ArtifactStore to use for adoption. If None,
+            uses get_context().artifact_store.
+
+    Returns:
+        A MagicMock proxy that adopts artifacts on event calls.
+    """
+    from rayforge.pipeline.artifact import create_handle_from_dict
+    from rayforge.context import get_context
+
+    if artifact_store is None:
+        artifact_store = get_context().artifact_store
+
+    def mock_send_event_and_wait(event_name, data, logger=None):
+        handle_dict = data.get("handle_dict")
+        if handle_dict:
+            handle = create_handle_from_dict(handle_dict)
+            artifact_store.adopt(handle)
+        return True
+
+    proxy = MagicMock()
+    proxy.send_event_and_wait.side_effect = mock_send_event_and_wait
+    return proxy
 
 
 @pytest.fixture
