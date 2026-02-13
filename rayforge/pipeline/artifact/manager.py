@@ -277,18 +277,6 @@ class ArtifactManager:
                 self.release_handle(entry.handle)
             self._remove_from_ledger(ledger_key)
 
-        step_key = ArtifactKey.for_step(key.id)
-        step_keys_to_invalidate = [
-            ledger_key
-            for ledger_key in self._ledger.keys()
-            if extract_base_key(ledger_key) == step_key
-        ]
-        for ledger_key in step_keys_to_invalidate:
-            step_entry = self._ledger.get(ledger_key)
-            if step_entry and step_entry.handle is not None:
-                self.release_handle(step_entry.handle)
-            self._remove_from_ledger(ledger_key)
-
     def invalidate_for_step(self, key: ArtifactKey):
         step_keys_to_invalidate = [
             ledger_key

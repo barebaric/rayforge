@@ -556,17 +556,22 @@ class Pipeline:
 
         for wp in workpieces_to_check:
             size_changed = False
-            if isinstance(origin, WorkPiece) and old_matrix is not None:
+            # Only check for size changes on the actual origin of the transform
+            if (
+                wp is origin
+                and isinstance(origin, WorkPiece)
+                and old_matrix is not None
+            ):
                 _, _, _, old_sx, old_sy, _ = old_matrix.decompose()
                 _, _, _, new_sx, new_sy, _ = origin.matrix.decompose()
                 size_changed = (
                     abs(old_sx - new_sx) > 1e-9 or abs(old_sy - new_sy) > 1e-9
                 )
 
-            wp_key = ArtifactKey.for_workpiece(wp.uid)
             if size_changed:
-                self._invalidate_node(wp_key)
-            elif wp.layer and wp.layer.workflow:
+                self._invalidate_node(ArtifactKey.for_workpiece(wp.uid))
+
+            if wp.layer and wp.layer.workflow:
                 for step in wp.layer.workflow.steps:
                     step_key = ArtifactKey.for_step(step.uid)
                     self._invalidate_node(step_key)
