@@ -123,17 +123,12 @@ class Pipeline:
         logger.debug(f"[{id(self)}] Initializing stages and connections.")
         self._last_known_busy_state = False
 
-        # Initialize artifact manager first (without DAG callback initially)
+        # Initialize artifact manager
         self._artifact_manager = ArtifactManager(self._artifact_store)
 
         # Initialize DAG scheduler with required dependencies
         self._scheduler = DagScheduler(
             self._task_manager, self._artifact_manager, self._machine
-        )
-
-        # Now set the DAG callback on artifact manager
-        self._artifact_manager._dag_state_callback = (
-            self._scheduler.on_artifact_state_changed
         )
 
         # Stages

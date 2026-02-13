@@ -484,6 +484,10 @@ class WorkPieceElement(CanvasElement):
 
                 view_handle = self.view_manager.get_view_handle(self.data.uid)
                 if view_handle is None:
+                    logger.debug(
+                        f"No view handle for workpiece {self.data.uid} "
+                        f"when drawing step {step_uid}"
+                    )
                     continue
                 try:
                     artifact = self.view_manager.store.get(view_handle)

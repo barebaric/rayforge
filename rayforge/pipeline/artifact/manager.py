@@ -3,7 +3,6 @@ import logging
 from contextlib import contextmanager
 from typing import (
     Any,
-    Callable,
     Dict,
     Generator,
     List,
@@ -64,27 +63,12 @@ class ArtifactManager:
     def __init__(
         self,
         store: ArtifactStore,
-        dag_state_callback: Optional[
-            Callable[[ArtifactKey, str], None]
-        ] = None,
     ):
         self._store = store
         self._step_render_handles: Dict[str, StepRenderArtifactHandle] = {}
         self._ref_counts: Dict[ArtifactKey, int] = {}
         self._ledger: Dict[Tuple[ArtifactKey, GenerationID], LedgerEntry] = {}
         self._dependencies: Dict[ArtifactKey, List[ArtifactKey]] = {}
-        self._dag_state_callback = dag_state_callback
-
-    def _notify_dag_state_change(self, key: ArtifactKey, state: str) -> None:
-        """
-        Notify the DAG scheduler of a state change.
-
-        Args:
-            key: The ArtifactKey whose state changed.
-            state: The new state as a string (e.g., "valid", "processing").
-        """
-        if self._dag_state_callback is not None:
-            self._dag_state_callback(key, state)
 
     def get_workpiece_handle(
         self, key: ArtifactKey, generation_id: GenerationID
@@ -305,8 +289,6 @@ class ArtifactManager:
                 self.release_handle(step_entry.handle)
             self._remove_from_ledger(ledger_key)
 
-        self._notify_dag_state_change(key, "stale")
-
     def invalidate_for_step(self, key: ArtifactKey):
         step_keys_to_invalidate = [
             ledger_key
@@ -334,8 +316,6 @@ class ArtifactManager:
         step_render_handle = self._step_render_handles.pop(key.id, None)
         self.release_handle(step_render_handle)
 
-        self._notify_dag_state_change(key, "stale")
-
     def invalidate_for_job(self, key: ArtifactKey):
         keys_to_invalidate = [
             ledger_key
@@ -347,8 +327,6 @@ class ArtifactManager:
             if entry and entry.handle is not None:
                 self.release_handle(entry.handle)
             self._remove_from_ledger(ledger_key)
-
-        self._notify_dag_state_change(key, "stale")
 
     def _remove_from_ledger(
         self, key: Union[ArtifactKey, Tuple[ArtifactKey, GenerationID]]
@@ -536,63 +514,16 @@ class ArtifactManager:
             return [make_composite_key(dep, generation_id) for dep in deps]
         return []
 
-    def register_intent(
-        self, key: ArtifactKey, generation_id: GenerationID
-    ) -> None:
-        """
-        Creates a placeholder entry (key, generation_id) in the cache.
-
-        Args:
-            key: The ArtifactKey for the entry.
-            generation_id: The generation ID for the entry.
-
-        Raises:
-            AssertionError: If the entry already exists.
-        """
-        composite_key = make_composite_key(key, generation_id)
-        if composite_key in self._ledger:
-            raise AssertionError(
-                f"Entry for {key} with generation_id={generation_id} "
-                f"already exists"
-            )
-        self._ledger[composite_key] = LedgerEntry(
-            generation_id=generation_id,
-        )
-
-    def mark_processing(
-        self,
-        key: ArtifactKey,
-        generation_id: GenerationID,
-        source_handle: Optional[BaseArtifactHandle] = None,
-    ) -> None:
-        """
-        Notifies the DAG that processing has started.
-
-        Args:
-            key: The ArtifactKey for the entry.
-            generation_id: The generation ID for the entry.
-            source_handle: Optional handle to store in metadata.
-        """
-        composite_key = make_composite_key(key, generation_id)
-        entry = self._get_ledger_entry(composite_key)
-        if entry is None:
-            entry = LedgerEntry(generation_id=generation_id)
-            self._ledger[composite_key] = entry
-        entry.generation_id = generation_id
-        if source_handle is not None:
-            entry.metadata["source_handle"] = source_handle
-        self._notify_dag_state_change(key, "processing")
-
-    def commit_artifact(
+    def cache_handle(
         self,
         key: ArtifactKey,
         handle: BaseArtifactHandle,
         generation_id: GenerationID,
     ) -> None:
         """
-        Caches an artifact handle and notifies the DAG.
+        Caches an artifact handle.
 
-        This also retains the handle, creating a "Manager's Claim" on the
+        This retains the handle, creating a "Manager's Claim" on the
         shared memory. This ensures the data persists even after the
         GenerationContext releases its "Builder's Claim".
 
@@ -601,24 +532,20 @@ class ArtifactManager:
             handle: The handle to cache.
             generation_id: The generation ID for the entry.
         """
-        logger.debug(f"commit: key={key}, generation_id={generation_id}")
+        logger.debug(f"cache: key={key}, generation_id={generation_id}")
         composite_key = make_composite_key(key, generation_id)
         entry = self._get_ledger_entry(composite_key)
         if entry is None:
             entry = LedgerEntry(generation_id=generation_id)
             self._ledger[composite_key] = entry
 
-        logger.debug(f"commit: Committing entry {composite_key}")
+        logger.debug(f"cache: Caching entry {composite_key}")
         self._store.adopt(handle)
         self.retain_handle(handle)
         if entry.handle is not None:
             self._store.release(entry.handle)
         entry.handle = handle
         entry.generation_id = generation_id
-        source_handle = entry.metadata.pop("source_handle", None)
-        if source_handle is not None:
-            self._store.release(source_handle)
-        self._notify_dag_state_change(key, "valid")
 
     def mark_done(
         self,
@@ -649,7 +576,6 @@ class ArtifactManager:
         if entry.handle is not None:
             self._store.release(entry.handle)
             entry.handle = None
-        self._notify_dag_state_change(key, "valid")
 
     def complete_generation(
         self,
@@ -682,7 +608,6 @@ class ArtifactManager:
                     handle=None,
                     generation_id=generation_id,
                 )
-                self._notify_dag_state_change(key, "valid")
                 return
             logger.debug(
                 f"complete_generation: Creating new entry for {key} "
@@ -692,7 +617,6 @@ class ArtifactManager:
                 handle=handle,
                 generation_id=generation_id,
             )
-            self._notify_dag_state_change(key, "valid")
             return
 
         logger.debug(
@@ -703,31 +627,6 @@ class ArtifactManager:
             if entry.handle is not None:
                 self._store.release(entry.handle)
             entry.handle = handle
-        self._notify_dag_state_change(key, "valid")
-
-    def fail_generation(
-        self, key: ArtifactKey, error_msg: str, generation_id: GenerationID
-    ) -> None:
-        """
-        Notifies the DAG that generation has failed.
-
-        Args:
-            key: The ArtifactKey for the entry.
-            error_msg: The error message.
-            generation_id: The generation ID for the entry.
-        """
-        composite_key = make_composite_key(key, generation_id)
-        entry = self._get_ledger_entry(composite_key)
-        if entry is None:
-            logger.warning(
-                f"fail_generation called for {key} but no entry found"
-            )
-            return
-
-        source_handle = entry.metadata.pop("source_handle", None)
-        if source_handle is not None:
-            self._store.release(source_handle)
-        self._notify_dag_state_change(key, "error")
 
     def checkout_dependencies(
         self, key: ArtifactKey, generation_id: GenerationID
@@ -791,7 +690,7 @@ class ArtifactManager:
 
         This method performs garbage collection on the ledger, removing
         entries that are no longer needed. It releases the "Manager's Claim"
-        (the retain() call from commit_artifact) when removing entries.
+        (the retain() call from cache_handle) when removing entries.
 
         Args:
             active_data_gen_ids: Set of active data generation IDs.
