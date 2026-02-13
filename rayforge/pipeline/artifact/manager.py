@@ -21,10 +21,6 @@ from .step_ops import StepOpsArtifactHandle
 from .step_render import StepRenderArtifactHandle
 from .store import ArtifactStore
 from .workpiece import WorkPieceArtifactHandle
-from .workpiece_view import (
-    WorkPieceViewArtifactHandle,
-    RenderContext,
-)
 
 logger = logging.getLogger(__name__)
 
@@ -74,9 +70,6 @@ class ArtifactManager:
     ):
         self._store = store
         self._step_render_handles: Dict[str, StepRenderArtifactHandle] = {}
-        self._workpiece_view_handles: Dict[
-            ArtifactKey, WorkPieceViewArtifactHandle
-        ] = {}
         self._ref_counts: Dict[ArtifactKey, int] = {}
         self._ledger: Dict[Tuple[ArtifactKey, GenerationID], LedgerEntry] = {}
         self._dependencies: Dict[ArtifactKey, List[ArtifactKey]] = {}
@@ -163,77 +156,6 @@ class ArtifactManager:
             return handle
         return None
 
-    def get_workpiece_view_handle(
-        self, key: ArtifactKey, generation_id: GenerationID
-    ) -> Optional[WorkPieceViewArtifactHandle]:
-        composite_key = make_composite_key(key, generation_id)
-        entry = self._ledger.get(composite_key)
-        if entry is None or entry.handle is None:
-            return None
-        handle = entry.handle
-        if isinstance(handle, WorkPieceViewArtifactHandle):
-            return handle
-        return None
-
-    def is_view_stale(
-        self,
-        key: ArtifactKey,
-        new_context: Optional["RenderContext"],
-        source_handle: Optional[WorkPieceArtifactHandle],
-        generation_id: GenerationID,
-    ) -> bool:
-        """
-        Check if a workpiece view is stale and needs regeneration.
-
-        Args:
-            key: The ArtifactKey for the view.
-            new_context: The new render context to compare against.
-            source_handle: The source workpiece handle to compare properties.
-            generation_id: The generation ID to check.
-
-        Returns:
-            True if the view is missing, stale, or context/properties changed.
-            False if the view is still valid.
-        """
-        composite_key = make_composite_key(key, generation_id)
-        entry = self._ledger.get(composite_key)
-
-        if entry is None or entry.handle is None:
-            return True
-
-        metadata = entry.metadata
-
-        if new_context is not None:
-            stored_context = metadata.get("render_context")
-            if stored_context is None:
-                return True
-            if not isinstance(stored_context, RenderContext):
-                return True
-            if stored_context != new_context:
-                return True
-
-        if source_handle is not None:
-            stored_props = metadata.get("source_properties")
-            if stored_props is None:
-                return True
-            if stored_props.get("is_scalable") != source_handle.is_scalable:
-                return True
-            if (
-                stored_props.get("source_coordinate_system_name")
-                != source_handle.source_coordinate_system_name
-            ):
-                return True
-            if stored_props.get("generation_size") != (
-                source_handle.generation_size
-            ):
-                return True
-            if stored_props.get("source_dimensions") != (
-                source_handle.source_dimensions
-            ):
-                return True
-
-        return False
-
     def get_artifact(self, handle: BaseArtifactHandle) -> BaseArtifact:
         """
         Retrieves an artifact from the store using its handle.
@@ -267,27 +189,6 @@ class ArtifactManager:
     ):
         """
         Stores a handle for a StepOpsArtifact.
-
-        If an existing handle exists at this key, it is released before
-        being overwritten.
-        """
-        composite_key = make_composite_key(key, generation_id)
-        entry = self._ledger.get(composite_key)
-        if entry is not None and entry.handle is not None:
-            self._store.release(entry.handle)
-        self._ledger[composite_key] = LedgerEntry(
-            handle=handle,
-            generation_id=generation_id,
-        )
-
-    def put_workpiece_view_handle(
-        self,
-        key: ArtifactKey,
-        handle: WorkPieceViewArtifactHandle,
-        generation_id: GenerationID,
-    ):
-        """
-        Stores a handle for a WorkPieceViewArtifact.
 
         If an existing handle exists at this key, it is released before
         being overwritten.
@@ -404,18 +305,6 @@ class ArtifactManager:
                 self.release_handle(step_entry.handle)
             self._remove_from_ledger(ledger_key)
 
-        view_key = ArtifactKey.for_view(key.id)
-        view_keys_to_invalidate = [
-            ledger_key
-            for ledger_key in self._ledger.keys()
-            if extract_base_key(ledger_key) == view_key
-        ]
-        for ledger_key in view_keys_to_invalidate:
-            view_entry = self._ledger.get(ledger_key)
-            if view_entry and view_entry.handle is not None:
-                self.release_handle(view_entry.handle)
-            self._remove_from_ledger(ledger_key)
-
         self._notify_dag_state_change(key, "stale")
 
     def invalidate_for_step(self, key: ArtifactKey):
@@ -441,18 +330,6 @@ class ArtifactManager:
             if entry and entry.handle is not None:
                 self.release_handle(entry.handle)
             self._remove_from_ledger(ledger_key)
-
-        view_keys_to_invalidate = [
-            ledger_key
-            for ledger_key in self._ledger.keys()
-            if extract_base_key(ledger_key).group == "view"
-            and extract_base_key(ledger_key).id == key.id
-        ]
-        for view_key in view_keys_to_invalidate:
-            view_entry = self._ledger.get(view_key)
-            if view_entry and view_entry.handle is not None:
-                self.release_handle(view_entry.handle)
-            self._remove_from_ledger(view_key)
 
         step_render_handle = self._step_render_handles.pop(key.id, None)
         self.release_handle(step_render_handle)
@@ -596,16 +473,6 @@ class ArtifactManager:
             entry = self._ledger.get(ledger_key)
             if entry and entry.handle is not None:
                 return entry.handle
-            return None
-        elif key.group == "view":
-            if generation_id is None:
-                return None
-            ledger_key = make_composite_key(key, generation_id)
-            entry = self._ledger.get(ledger_key)
-            if entry and entry.handle is not None:
-                handle = entry.handle
-                if isinstance(handle, WorkPieceViewArtifactHandle):
-                    return handle
             return None
         else:
             return self._step_render_handles.get(key.id)
@@ -917,7 +784,6 @@ class ArtifactManager:
     def prune(
         self,
         active_data_gen_ids: Set[int],
-        active_view_gen_ids: Set[int],
         processing_data_gen_ids: Optional[Set[int]] = None,
     ) -> None:
         """
@@ -929,17 +795,14 @@ class ArtifactManager:
 
         Args:
             active_data_gen_ids: Set of active data generation IDs.
-            active_view_gen_ids: Set of active view generation IDs.
             processing_data_gen_ids: Set of data generation IDs that are
-                currently being processed. View entries for these generations
-                will not be pruned even if not in active_view_gen_ids.
+                currently being processed.
         """
         if processing_data_gen_ids is None:
             processing_data_gen_ids = set()
 
         logger.debug(
             f"prune: active_data_gen_ids={active_data_gen_ids}, "
-            f"active_view_gen_ids={active_view_gen_ids}, "
             f"processing_data_gen_ids={processing_data_gen_ids}, "
             f"ledger_size={len(self._ledger)}"
         )
@@ -948,16 +811,9 @@ class ArtifactManager:
             base_key = extract_base_key(composite_key)
             generation_id = extract_generation_id(composite_key)
 
-            is_view = base_key.group == "view"
             is_step = base_key.group == "step"
-            if is_view:
-                active_gen_ids = active_view_gen_ids
-            else:
-                active_gen_ids = active_data_gen_ids
 
-            should_keep = generation_id in active_gen_ids
-            if is_view and generation_id in processing_data_gen_ids:
-                should_keep = True
+            should_keep = generation_id in active_data_gen_ids
             if is_step and generation_id in processing_data_gen_ids:
                 should_keep = True
 
@@ -973,9 +829,5 @@ class ArtifactManager:
             entry = self._ledger.get(composite_key)
             if entry is not None and entry.handle is not None:
                 base_key = extract_base_key(composite_key)
-                if base_key.group != "view":
-                    logger.debug(
-                        f"prune: Releasing handle for {composite_key}"
-                    )
-                    self._store.release(entry.handle)
+                self._store.release(entry.handle)
             del self._ledger[composite_key]

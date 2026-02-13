@@ -1,160 +1,283 @@
-# **Sequential Pipeline Architecture**
+# **Pipeline Architecture**
 
-This document describes the pipeline in a linear, sequential flow, showing how
-raw design data is progressively transformed into the final outputs used for
-visualization and manufacturing.
+This document describes the pipeline architecture, which uses a Directed Acyclic
+Graph (DAG) to orchestrate artifact generation. The pipeline transforms raw
+design data into final outputs for visualization and manufacturing, with
+dependency-aware scheduling and efficient artifact caching.
 
 ```mermaid
 graph TD
     subgraph "1. Input"
-        Input("Input<br/>Document")
+        Input("Input<br/>Doc Model")
     end
 
-    subgraph "2. Pipeline"
-        subgraph "2a. WorkpieceGenerator"
-            direction LR
-            A(Single WorkPiece + Step Config);
-            A --> B(Modifiers<br/><i>e.g., ToGrayscale</i>);
-            B --> C(Producer<br/><i>e.g., ContourProducer,<br/>Rasterizer</i>);
-            C -- "Creates Artifact" --> D("Toolpaths<br/><i>Ops + Metadata</i>");
-            D --> E(Transformers<br/><i>e.g., Tabs,<br/>Smooth</i>);
-            E -- "Modifies Ops in-place" --> F(Vertex Encoder);
-            F -- "Creates render data" --> G("WorkPieceArtifact<br/><i>Local Ops, Vertices, Textures</i>");
+    subgraph "2. Pipeline Core"
+        Pipeline["Pipeline<br/>(Orchestrator)"]
+        DAG["DagScheduler<br/>(Graph & Task Launching)"]
+        Graph["PipelineGraph<br/>(Dependency Graph)"]
+        AM["ArtifactManager<br/>(Cache)"]
+    end
+
+    subgraph "3. Artifact Generation"
+        subgraph "3a. WorkPiece Nodes"
+            WP["WorkPieceArtifact<br/><i>Local Ops, Vertices, Textures</i>"]
         end
 
-        subgraph "2b. StepGenerator"
-            direction LR
-            H("Multiple WorkPieceArtifacts");
-            H --> I(Assemble & Transform<br/><i>Applies position, rotation</i>);
-            I --> J(Per-Step Transformers<br/><i>e.g., Multi-Pass, Optimize</i>);
-            J -- "Creates render bundle" --> K("StepRenderArtifact<br/><i>World-space Vertices & Textures</i>")
-            J -- "Creates ops bundle" --> L("StepOpsArtifact<br/><i>World-space Ops</i>")
+        subgraph "3b. Step Nodes"
+            SR["StepRenderArtifact<br/><i>World-space Vertices & Textures</i>"]
+            SO["StepOpsArtifact<br/><i>World-space Ops</i>"]
         end
 
-        subgraph "2c. JobGenerator"
-            direction LR
-            M("Multiple StepOpsArtifacts");
-            M --> N(Assemble Ops & Encode);
-            N --> O("JobArtifact<br/><i>Final Ops, Vertices, G-code, Time</i>");
+        subgraph "3c. Job Node"
+            JA["JobArtifact<br/><i>Final G-code, Time</i>"]
         end
     end
 
-    subgraph "3. Consumers"
+    subgraph "4. View Manager (Separated)"
+        VM["ViewManager"]
+        VC["RenderContext<br/>(Zoom, Pan, etc.)"]
+        WV["WorkPieceViewArtifact<br/><i>Rasterized for 2D Canvas</i>"]
+    end
+
+    subgraph "5. Consumers"
         Vis2D("2D Canvas (UI)")
         Vis3D("3D Canvas (UI)")
         Simulator("Simulator (UI)")
         File("G-code File (for Machine)")
     end
 
-    Input --> A;
-    G --> H;
-    G --> Vis2D;
-    K --> Vis3D;
-    L --> M;
-    O --> Simulator;
-    O --> File;
+    Input --> Pipeline
+    Pipeline --> DAG
+    DAG --> Graph
+    DAG --> AM
+
+    Graph -->|"Dirty Nodes"| DAG
+    DAG -->|"Launch Tasks"| WP
+    DAG -->|"Launch Tasks"| SR
+    DAG -->|"Launch Tasks"| SO
+    DAG -->|"Launch Tasks"| JA
+
+    AM -.->|"Cache"| WP
+    AM -.->|"Cache"| SR
+    AM -.->|"Cache"| SO
+    AM -.->|"Cache"| JA
+
+    WP --> Vis2D
+    WP --> VM
+    SR --> Vis3D
+    SO --> DAG
+    JA --> Simulator
+    JA --> File
+
+    VC --> VM
+    VM --> WV
+    WV --> Vis2D
 
     classDef io fill:#a020f0,stroke:#333,stroke-width:2px;
-    classDef output fill:#1e3a8a,stroke:#333,stroke-width:2px,max-width:500px;
+    classDef core fill:#f59e0b,stroke:#333,stroke-width:2px;
+    classDef artifact fill:#1e3a8a,stroke:#333,stroke-width:2px;
+    classDef view fill:#10b981,stroke:#333,stroke-width:2px;
     class Input,Vis2D,Vis3D,Simulator,File io;
-    class A,D,G,H,K,L,M,O output;
+    class Pipeline,DAG,Graph,AM core;
+    class WP,SR,SO,JA,WV artifact;
+    class VM,VC view;
 ```
 
-# **Detailed Breakdown of the Sequence**
+# **Core Concepts**
+
+## **1. Artifact Nodes and the Dependency Graph**
+
+The pipeline uses a **Directed Acyclic Graph (DAG)** to model artifacts and
+their dependencies. Each artifact is represented as an `ArtifactNode` in the
+graph.
+
+### **ArtifactNode**
+
+Each node contains:
+- **ArtifactKey**: A unique identifier consisting of an ID and a group type
+  (`workpiece`, `step`, `job`, or `view`)
+- **State**: The current lifecycle state of the node
+- **Dependencies**: List of nodes this node depends on (children)
+- **Dependents**: List of nodes that depend on this node (parents)
+
+### **Node States**
+
+Nodes progress through four states:
+
+| State | Description |
+|-------|-------------|
+| `DIRTY` | The artifact needs to be regenerated |
+| `PROCESSING` | A task is currently generating the artifact |
+| `VALID` | The artifact is ready and up-to-date |
+| `ERROR` | Generation failed |
+
+When a node is marked as dirty, all its dependents are also marked dirty,
+propagating invalidation up the graph.
+
+### **PipelineGraph**
+
+The `PipelineGraph` is built from the Doc model and contains:
+- One node for each WorkPiece
+- One node for each Step
+- One node for the Job
+
+Dependencies are established:
+- Steps depend on their WorkPieces
+- Job depends on all Steps
+
+## **2. DagScheduler**
+
+The `DagScheduler` is the central orchestrator of the pipeline. It owns the
+`PipelineGraph` and is responsible for:
+
+1. **Building the graph** from the Doc model
+2. **Identifying ready nodes** (DIRTY with all VALID dependencies)
+3. **Launching tasks** to generate artifacts
+4. **Tracking state** through the generation process
+5. **Notifying consumers** when artifacts are ready
+
+The scheduler works with generation IDs to track which artifacts belong to
+which document version, allowing reuse of valid artifacts across generations.
+
+## **3. ArtifactManager**
+
+The `ArtifactManager` is a pure cache manager for artifact handles. It:
+- Stores and retrieves artifact handles
+- Manages reference counting
+- Handles lifecycle (creation, retention, release)
+- Does NOT track state (state is managed by the DAG scheduler)
+
+## **4. Pipeline Stages**
+
+The pipeline stages (`WorkPiecePipelineStage`, `StepPipelineStage`,
+`JobPipelineStage`) now serve as interfaces rather than task launchers:
+
+- They handle invalidation requests from the UI
+- They delegate task launching to the DagScheduler
+- They provide access to cached artifacts
+- They forward signals from the scheduler to the UI
+
+# **Detailed Breakdown**
 
 ## **1. Input**
 
-The process begins with the **Input**, which is the `Doc Model`. This is the
-complete representation of the user's project, containing:
+The process begins with the **Doc Model**, which contains:
+- **WorkPieces:** Individual design elements (SVGs, images) placed on canvas
+- **Steps:** Processing instructions (Contour, Raster) with settings
 
-- **WorkPieces:** The individual design elements (like SVGs or images) that
-  have been placed on the canvas.
-- **Steps:** The specific instructions for how to process those WorkPieces
-  (e.g., a "Contour" cut or a "Raster" engrave), including settings like
-  power and speed.
+## **2. Pipeline Core**
 
-## **2. The Pipeline**
+### **Pipeline (Orchestrator)**
 
-The `Pipeline` is the core processing engine that runs in the background.
-It takes the `Doc Model` as its input and orchestrates a series of distinct
-`PipelineStage`s.
+The `Pipeline` class is the high-level conductor that:
+- Listens to the Doc model for changes
+- Coordinates with the DagScheduler to trigger regeneration
+- Manages the overall processing state
+- Connects signals between components
 
-### **2a. WorkPiecePipelineStage: Per-Item Processing**
+### **DagScheduler**
 
-This stage processes each `(WorkPiece, Step)` combination individually to
-create a cached `WorkPieceArtifact`. This artifact contains toolpaths in the
-**local coordinate system** of the workpiece. Its internal sequence is:
+The `DagScheduler`:
+- Builds and maintains the `PipelineGraph`
+- Identifies nodes ready for processing
+- Launches tasks via the TaskManager
+- Tracks node state transitions
+- Emits signals when artifacts are ready
 
-1.  **Modifiers:** (Optional) If the input is a raster image, modifiers
-    perform initial image conditioning, such as converting it to grayscale.
-2.  **Producer:** A `Producer` (like `ContourProducer` or `Rasterizer`) analyzes
-    the input and creates the raw toolpaths (`Ops`) and metadata.
-3.  **Per-Workpiece Transformers:** The newly generated `Ops` are passed
-    through transformers specific to that workpiece, such as adding
-    holding `Tabs` or `Smooth`ing the geometry.
-4.  **Vertex Encoder:** The processed `Ops` are encoded into GPU-friendly
-    `Vertex Data` (for lines) and `Texture Data` (for raster fills).
+### **ArtifactManager**
 
-The output is a **WorkPieceArtifact** stored in shared memory. This contains
-un-positioned, un-rotated data ready for the next stage and for direct
-consumption by the 2D canvas.
+The `ArtifactManager`:
+- Caches artifact handles in shared memory
+- Manages reference counting for cleanup
+- Provides lookup by ArtifactKey and generation ID
 
-### **2b. StepPipelineStage: Step-Level Assembly**
+## **3. Artifact Generation**
 
-This stage is responsible for assembling final artifacts for an entire step. It
-consumes the `WorkPieceArtifacts` for all workpieces that are part of a given
-step.
+### **WorkPieceArtifacts**
 
-1.  **Assemble & Transform:** The stage retrieves all required
-    `WorkPieceArtifacts` from the cache. It then applies the final world
-    transformations to each one—placing them at their correct X/Y position
-    and applying rotation. All these individual toolpaths and textures are
-    combined.
-2.  **Per-Step Transformers:** The unified `Ops` are then processed
-    by transformers that operate on the step as a whole, such as path
-    `Optimize`ation or `Multi-Pass` operations.
+Generated for each `(WorkPiece, Step)` combination, containing:
+- Toolpaths (`Ops`) in local coordinate system
+- Vertex data for lines
+- Texture data for raster fills
 
-The `StepPipelineStage` produces two distinct outputs:
+Processing sequence:
+1. **Modifiers:** (Optional) Image conditioning (grayscale, etc.)
+2. **Producer:** Creates raw toolpaths (`Ops`)
+3. **Transformers:** Per-workpiece modifications (Tabs, Smooth)
+4. **Vertex Encoder:** Creates GPU-friendly data
 
-- A **StepRenderArtifact**: A lightweight "render bundle" for the 3D canvas,
-  containing all vertex and texture data for the entire step in final
-  **world-space** coordinates. This is delivered as quickly as possible.
-- A **StepOpsArtifact**: An artifact containing only the final, transformed
-  `Ops` for the entire step. This is consumed later by the job generator.
+### **StepArtifacts**
 
-### **2c. JobPipelineStage: Final Job Assembly**
+Generated for each Step, consuming all related WorkPieceArtifacts:
 
-This stage is invoked when the user wants to generate the final G-code. It
-consumes the `StepOpsArtifacts` created by the `StepPipelineStage`.
+**StepRenderArtifact:**
+- Combined vertex and texture data for all workpieces
+- Transformed to world-space coordinates
+- Optimized for 3D canvas rendering
 
-1.  **Assemble Ops & Encode:** The `JobPipelineStage` retrieves all required
-    `StepOpsArtifacts` from the cache and combines their `Ops` into a single,
-    large sequence. It then encodes this sequence into G-code and generates
-    a final set of vertices for simulation, along with a high-fidelity
-    time estimate for the entire job.
+**StepOpsArtifact:**
+- Combined Ops for all workpieces
+- Transformed to world-space coordinates
+- Includes per-step transformers (Optimize, Multi-Pass)
 
-The final output is a **JobArtifact**, which contains the complete G-code,
-final vertex data, the OpMap, and the total time estimate.
+### **JobArtifact**
 
-## **3. Consumers**
+Generated on demand when G-code is needed, consuming all StepOpsArtifacts:
+- Final G-code for the entire job
+- Complete vertex data for simulation
+- High-fidelity time estimate
 
-The data generated by the pipeline is consumed by several clients, each
-using the artifact best suited for its needs:
+## **4. ViewManager (Separated)**
 
-1.  **2D Canvas (UI):** Uses **WorkPieceArtifacts** directly. This allows it
-    to render the local geometry of each workpiece without needing to wait
-    for step-level assembly, providing fast feedback during design.
+The `ViewManager` is **decoupled** from the data pipeline. It handles rendering
+for the 2D canvas based on UI state:
 
-2.  **3D Canvas (UI):** Uses **StepRenderArtifacts**. These are perfect "render
-    bundles" containing all the geometry for an entire step, already in
-    world-space coordinates. This simplifies rendering and ensures an
-    accurate preview of the final assembled output.
+### **RenderContext**
 
-3.  **Simulator (UI):** Uses the **JobArtifact**. The final vertex data
-    within this artifact represents the exact path the machine will take,
-    allowing for an accurate, real-time simulation of the entire job from
-    start to finish. It also uses the final time estimate.
+Contains the current view parameters:
+- Pixels per millimeter (zoom level)
+- Viewport offset (pan)
+- Display options (show travel moves, etc.)
 
-4.  **G-code File (for Machine):** The **G-code** from the `JobArtifact`
-    is saved to a file, which can then be sent to the laser cutter or CNC
-    machine for manufacturing.
+### **WorkPieceViewArtifacts**
+
+The ViewManager creates `WorkPieceViewArtifacts` that:
+- Rasterize WorkPieceArtifacts to screen space
+- Apply the current RenderContext
+- Are cached and updated when context or source changes
+
+### **Lifecycle**
+
+1. ViewManager tracks source `WorkPieceArtifact` handles
+2. When render context changes, ViewManager triggers re-rendering
+3. When source artifact changes, ViewManager triggers re-rendering
+4. Throttling prevents excessive updates during continuous changes
+
+## **5. Consumers**
+
+| Consumer | Uses | Purpose |
+|----------|------|---------|
+| 2D Canvas | WorkPieceViewArtifacts | Renders workpieces in screen space |
+| 3D Canvas | StepRenderArtifacts | Renders full step in world space |
+| Simulator | JobArtifact | Accurate simulation of machine path |
+| Machine | JobArtifact G-code | Manufacturing output |
+
+# **Key Differences from Previous Architecture**
+
+1. **DAG-based Scheduling:** Instead of sequential stages, artifacts are
+   generated as their dependencies become available.
+
+2. **State Management:** Node state is tracked in the DAG graph, not in
+   individual components.
+
+3. **ViewManager Separation:** Rendering for the 2D canvas is now handled
+   by a separate ViewManager, not as part of the data pipeline.
+
+4. **Generation IDs:** Artifacts are tracked with generation IDs, allowing
+   efficient reuse across document versions.
+
+5. **Centralized Orchestration:** The DagScheduler is the single point of
+   control for task launching and state tracking.
+
+6. **Pure Cache Manager:** The ArtifactManager is now a simple cache,
+   delegating all state management to the DAG scheduler.

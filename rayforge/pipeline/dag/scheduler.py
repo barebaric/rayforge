@@ -673,15 +673,26 @@ class DagScheduler:
         """
         Handles canceled task status.
         """
+        handle = self._artifact_manager.get_workpiece_handle(
+            key, task_generation_id
+        )
+        if handle is not None:
+            logger.debug(
+                f"[{key}] Task was canceled but artifact already committed, "
+                "nothing to do."
+            )
+            return
+
         logger.debug(
-            f"[{key}] Task was canceled. Sending 'finished' signal "
-            "with canceled status to trigger cleanup."
+            f"[{key}] Task was canceled. Marking node dirty and "
+            "sending finished signal."
         )
         self.mark_node_dirty(ledger_key)
         self.generation_finished.send(
             self,
             step=step,
             workpiece=workpiece,
+            handle=None,
             generation_id=task_generation_id,
             task_status="canceled",
         )
@@ -718,11 +729,11 @@ class DagScheduler:
         workpiece: "WorkPiece",
         task_generation_id: int,
         generation_id: int,
-    ) -> bool:
+    ) -> tuple[bool, Optional["BaseArtifactHandle"]]:
         """
         Handles completed task status.
-        Returns True if processing should continue, False if task was
-        relaunched due to stale result.
+        Returns (True if processing should continue, handle) or
+        (False, None) if task was relaunched due to stale result.
         """
         try:
             task.result()
@@ -731,7 +742,7 @@ class DagScheduler:
                 key, workpiece, generation_id
             ):
                 self._launch_workpiece_task(step, workpiece)
-                return False
+                return False, None
         except Exception as e:
             logger.error(f"[{key}] Error processing result for {key}: {e}")
 
@@ -741,7 +752,7 @@ class DagScheduler:
         if handle is None:
             self.mark_node_dirty(ledger_key)
 
-        return True
+        return True, handle
 
     def _handle_failed_task(
         self,
@@ -788,8 +799,9 @@ class DagScheduler:
             )
             return
 
+        handle = None
         if task_status == "completed":
-            if not self._handle_completed_task(
+            continue_processing, handle = self._handle_completed_task(
                 key,
                 ledger_key,
                 task,
@@ -797,7 +809,8 @@ class DagScheduler:
                 workpiece,
                 task_generation_id,
                 task_generation_id,
-            ):
+            )
+            if not continue_processing:
                 return
         else:
             self._handle_failed_task(
@@ -808,6 +821,7 @@ class DagScheduler:
             self,
             step=step,
             workpiece=workpiece,
+            handle=handle,
             generation_id=task_generation_id,
             task_status=task_status,
         )

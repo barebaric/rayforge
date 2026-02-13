@@ -10,6 +10,7 @@ from ...core.layer import Layer
 from ...core.stock import StockItem
 from ...core.workpiece import WorkPiece
 from ...machine.models.machine import Machine
+from ...pipeline.artifact import RenderContext
 from ...shared.util.colors import ColorSet
 from ..canvas import WorldSurface, Canvas, CanvasElement
 from ..shared.gtk_color import GtkColorResolver
@@ -636,16 +637,16 @@ class WorkSurface(WorldSurface):
 
     def _update_pipeline_view_context(self) -> None:
         """
-        Updates the pipeline view context with the current view settings.
+        Updates the view manager context with the current view settings.
 
         This method collects all the current view context information
         (pixels per mm, show travel moves, theme colors) and calls
-        the pipeline's set_view_context method to trigger re-rendering
-        of all cached workpiece views.
+        the view_manager's update_render_context method to trigger
+        re-rendering of all cached workpiece views.
         """
-        if not self.editor or not self.editor.pipeline:
+        if not self.editor or not self.editor.view_manager:
             logger.debug(
-                "_update_pipeline_view_context: No editor or pipeline"
+                "_update_pipeline_view_context: No editor or view_manager"
             )
             return
 
@@ -656,22 +657,22 @@ class WorkSurface(WorldSurface):
             f"{ppm_y:.2f}), show_travel_moves={self._show_travel_moves}"
         )
 
-        # Don't request render if scaled too small
         if ppm_x <= 1e-9 or ppm_y <= 1e-9:
             logger.debug(
                 "_update_pipeline_view_context: Scale too small, skipping"
             )
             return
 
-        # Get the color set from the current theme
         color_set_dict = self._get_theme_color_dict()
 
-        self.editor.pipeline.set_view_context(
+        context = RenderContext(
             pixels_per_mm=(ppm_x, ppm_y),
             show_travel_moves=self._show_travel_moves,
             margin_px=5,
-            color_set=color_set_dict,
+            color_set_dict=color_set_dict.to_dict(),
         )
+
+        self.editor.view_manager.update_render_context(context)
 
     def _get_theme_color_dict(self) -> ColorSet:
         """

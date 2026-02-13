@@ -12,15 +12,12 @@ from rayforge.pipeline.artifact import (
     ArtifactManager,
     ArtifactKey,
     WorkPieceArtifactHandle,
-    WorkPieceViewArtifactHandle,
     StepRenderArtifactHandle,
     StepOpsArtifactHandle,
     JobArtifactHandle,
 )
-from rayforge.pipeline.artifact.lifecycle import LedgerEntry
 from rayforge.pipeline.artifact.store import ArtifactStore
 from rayforge.pipeline.artifact.manager import make_composite_key
-from rayforge.pipeline.artifact.workpiece_view import RenderContext
 
 
 STEP1_UID = str(uuid.uuid4())
@@ -293,7 +290,7 @@ class TestArtifactManager(unittest.TestCase):
             ArtifactKey.for_workpiece(WP1_UID), wp_h, 0
         )
 
-        self.manager.prune(active_data_gen_ids={1}, active_view_gen_ids=set())
+        self.manager.prune(active_data_gen_ids={1})
 
         wp_composite = make_composite_key(
             ArtifactKey.for_workpiece(WP1_UID), 0
@@ -307,99 +304,12 @@ class TestArtifactManager(unittest.TestCase):
             ArtifactKey.for_workpiece(WP1_UID), wp_h, 0
         )
 
-        self.manager.prune(active_data_gen_ids={0}, active_view_gen_ids=set())
+        self.manager.prune(active_data_gen_ids={0})
 
         wp_composite = make_composite_key(
             ArtifactKey.for_workpiece(WP1_UID), 0
         )
         self.assertIn(wp_composite, self.manager._ledger)
-        self.mock_release.assert_not_called()
-
-    def test_prune_removes_obsolete_view_generation(self):
-        """Tests pruning removes ledger entries from non-active view gens."""
-        view_h = create_mock_handle(WorkPieceViewArtifactHandle, "view1")
-        self.manager.commit_artifact(ArtifactKey.for_view(WP1_UID), view_h, 0)
-
-        self.manager.prune(active_data_gen_ids=set(), active_view_gen_ids={1})
-
-        view_composite = make_composite_key(ArtifactKey.for_view(WP1_UID), 0)
-        self.assertNotIn(view_composite, self.manager._ledger)
-
-    def test_prune_keeps_active_view_generation(self):
-        """Tests pruning keeps artifacts from active view generations."""
-        view_h = create_mock_handle(WorkPieceViewArtifactHandle, "view1")
-        self.manager.commit_artifact(ArtifactKey.for_view(WP1_UID), view_h, 0)
-
-        self.manager.prune(active_data_gen_ids=set(), active_view_gen_ids={0})
-
-        view_composite = make_composite_key(ArtifactKey.for_view(WP1_UID), 0)
-        self.assertIn(view_composite, self.manager._ledger)
-        self.mock_release.assert_not_called()
-
-    def test_prune_mixed_generations(self):
-        """Tests pruning with multiple generations of mixed types."""
-        wp_h0 = create_mock_handle(WorkPieceArtifactHandle, "wp0")
-        wp_h1 = create_mock_handle(WorkPieceArtifactHandle, "wp1")
-        view_h0 = create_mock_handle(WorkPieceViewArtifactHandle, "view0")
-        view_h1 = create_mock_handle(WorkPieceViewArtifactHandle, "view1")
-
-        self.manager.commit_artifact(
-            ArtifactKey.for_workpiece(WP1_UID), wp_h0, 0
-        )
-        self.manager.commit_artifact(
-            ArtifactKey.for_workpiece(WP2_UID), wp_h1, 1
-        )
-        self.manager.commit_artifact(ArtifactKey.for_view(WP1_UID), view_h0, 0)
-        self.manager.commit_artifact(ArtifactKey.for_view(WP2_UID), view_h1, 1)
-
-        self.manager.prune(active_data_gen_ids={1}, active_view_gen_ids={0})
-
-        wp_composite_0 = make_composite_key(
-            ArtifactKey.for_workpiece(WP1_UID), 0
-        )
-        wp_composite_1 = make_composite_key(
-            ArtifactKey.for_workpiece(WP2_UID), 1
-        )
-        view_composite_0 = make_composite_key(ArtifactKey.for_view(WP1_UID), 0)
-        view_composite_1 = make_composite_key(ArtifactKey.for_view(WP2_UID), 1)
-
-        self.assertNotIn(wp_composite_0, self.manager._ledger)
-        self.assertIn(wp_composite_1, self.manager._ledger)
-        self.assertIn(view_composite_0, self.manager._ledger)
-        self.assertNotIn(view_composite_1, self.manager._ledger)
-
-    def test_prune_preserves_view_for_processing_data_gen(self):
-        """Tests pruning preserves view entries for processing data gens."""
-        view_h = create_mock_handle(WorkPieceViewArtifactHandle, "view1")
-        self.manager.commit_artifact(ArtifactKey.for_view(WP1_UID), view_h, 0)
-
-        self.manager.prune(
-            active_data_gen_ids={1},
-            active_view_gen_ids={1},
-            processing_data_gen_ids={1, 0},
-        )
-
-        view_composite = make_composite_key(ArtifactKey.for_view(WP1_UID), 0)
-        self.assertIn(view_composite, self.manager._ledger)
-        self.mock_release.assert_not_called()
-
-    def test_prune_preserves_view_for_previous_gen_with_processing(self):
-        """Tests pruning preserves view entries for prev gen if processing."""
-        view_h0 = create_mock_handle(WorkPieceViewArtifactHandle, "view0")
-        view_h1 = create_mock_handle(WorkPieceViewArtifactHandle, "view1")
-        self.manager.commit_artifact(ArtifactKey.for_view(WP1_UID), view_h0, 0)
-        self.manager.commit_artifact(ArtifactKey.for_view(WP2_UID), view_h1, 1)
-
-        self.manager.prune(
-            active_data_gen_ids={1},
-            active_view_gen_ids={1},
-            processing_data_gen_ids={1, 0},
-        )
-
-        view_composite_0 = make_composite_key(ArtifactKey.for_view(WP1_UID), 0)
-        view_composite_1 = make_composite_key(ArtifactKey.for_view(WP2_UID), 1)
-        self.assertIn(view_composite_0, self.manager._ledger)
-        self.assertIn(view_composite_1, self.manager._ledger)
         self.mock_release.assert_not_called()
 
     def test_prune_preserves_step_for_processing_data_gen(self):
@@ -413,7 +323,6 @@ class TestArtifactManager(unittest.TestCase):
 
         self.manager.prune(
             active_data_gen_ids={1},
-            active_view_gen_ids={1},
             processing_data_gen_ids={1, 0},
         )
 
@@ -445,98 +354,6 @@ class TestArtifactManager(unittest.TestCase):
         """Test is_generation_current returns False for missing entry."""
         wp_key = ArtifactKey.for_workpiece(WP1_UID)
         result = self.manager.is_generation_current(wp_key, 0)
-        self.assertFalse(result)
-
-    def test_get_workpiece_view_handle_returns_handle(self):
-        """Test get_workpiece_view_handle returns the handle when cached."""
-        view_h = create_mock_handle(WorkPieceViewArtifactHandle, "view1")
-        self.manager.commit_artifact(ArtifactKey.for_view(WP1_UID), view_h, 0)
-
-        retrieved = self.manager.get_workpiece_view_handle(
-            ArtifactKey.for_view(WP1_UID), 0
-        )
-        self.assertIs(retrieved, view_h)
-
-    def test_get_workpiece_view_handle_returns_none_when_missing(self):
-        """Test get_workpiece_view_handle returns None when not found."""
-        retrieved = self.manager.get_workpiece_view_handle(
-            ArtifactKey.for_view(WP1_UID), 0
-        )
-        self.assertIsNone(retrieved)
-
-    def test_is_view_stale_returns_true_for_missing_entry(self):
-        """Test is_view_stale returns True when entry is missing."""
-        wp_h = create_mock_handle(WorkPieceArtifactHandle, "wp1")
-        wp_h.is_scalable = True
-        wp_h.source_coordinate_system_name = "wcs"
-        wp_h.generation_size = 100
-        wp_h.source_dimensions = (10, 10)
-
-        view_key = ArtifactKey.for_view(WP1_UID)
-        result = self.manager.is_view_stale(view_key, None, wp_h, 0)
-        self.assertTrue(result)
-
-    def test_is_view_stale_returns_true_for_context_mismatch(self):
-        """Test is_view_stale returns True when render context changes."""
-        view_h = create_mock_handle(WorkPieceViewArtifactHandle, "view1")
-        new_context = RenderContext(
-            pixels_per_mm=(1.0, 1.0),
-            show_travel_moves=True,
-            margin_px=10,
-            color_set_dict={"default": {}},
-        )
-        stored_context = RenderContext(
-            pixels_per_mm=(0.5, 0.5),
-            show_travel_moves=False,
-            margin_px=5,
-            color_set_dict={"default": {}},
-        )
-        view_composite = make_composite_key(ArtifactKey.for_view(WP1_UID), 0)
-
-        entry = LedgerEntry(
-            handle=view_h,
-            metadata={"render_context": stored_context},
-        )
-        self.manager._ledger[view_composite] = entry
-
-        view_key = ArtifactKey.for_view(WP1_UID)
-        result = self.manager.is_view_stale(view_key, new_context, None, 0)
-        self.assertTrue(result)
-
-    def test_is_view_stale_returns_false_for_valid_view(self):
-        """Test is_view_stale returns False when view is valid."""
-        view_h = create_mock_handle(WorkPieceViewArtifactHandle, "view1")
-        wp_h = create_mock_handle(WorkPieceArtifactHandle, "wp1")
-        wp_h.is_scalable = True
-        wp_h.source_coordinate_system_name = "wcs"
-        wp_h.generation_size = 100
-        wp_h.source_dimensions = (10, 10)
-
-        context = RenderContext(
-            pixels_per_mm=(1.0, 1.0),
-            show_travel_moves=True,
-            margin_px=10,
-            color_set_dict={"default": {}},
-        )
-        stored_props = {
-            "is_scalable": True,
-            "source_coordinate_system_name": "wcs",
-            "generation_size": 100,
-            "source_dimensions": (10, 10),
-        }
-        view_composite = make_composite_key(ArtifactKey.for_view(WP1_UID), 0)
-        entry = LedgerEntry(
-            handle=view_h,
-            metadata={
-                "render_context": context,
-                "source_properties": stored_props,
-            },
-        )
-        self.manager._ledger[view_composite] = entry
-
-        result = self.manager.is_view_stale(
-            ArtifactKey.for_view(WP1_UID), context, wp_h, 0
-        )
         self.assertFalse(result)
 
     def test_get_artifact_retrieves_from_store(self):
@@ -584,34 +401,6 @@ class TestArtifactManager(unittest.TestCase):
         assert entry is not None
         self.assertIs(entry.handle, handle)
         self.assertEqual(entry.generation_id, 1)
-
-    def test_put_step_ops_handle_replaces_old_handle(self):
-        """Test put_step_ops_handle replaces handle without releasing old."""
-        old_h = create_mock_handle(StepOpsArtifactHandle, "old")
-        new_h = create_mock_handle(StepOpsArtifactHandle, "new")
-        step_key = ArtifactKey.for_step(STEP1_UID)
-
-        self.manager.put_step_ops_handle(step_key, old_h, 1)
-        self.manager.put_step_ops_handle(step_key, new_h, 1)
-
-        composite_key = make_composite_key(step_key, 1)
-        entry = self.manager._ledger.get(composite_key)
-        assert entry is not None
-        self.assertIs(entry.handle, new_h)
-        self.mock_release.assert_not_called()
-
-    def test_put_workpiece_view_handle_creates_entry(self):
-        """Test put_workpiece_view_handle creates entry."""
-        handle = create_mock_handle(WorkPieceViewArtifactHandle, "view")
-        view_key = ArtifactKey.for_view(WP1_UID)
-
-        self.manager.put_workpiece_view_handle(view_key, handle, 0)
-
-        composite_key = make_composite_key(view_key, 0)
-        entry = self.manager._ledger.get(composite_key)
-        assert entry is not None
-        self.assertIs(entry.handle, handle)
-        self.assertEqual(entry.generation_id, 0)
 
     def test_retain_handle_calls_store_retain(self):
         """Test retain_handle delegates to store.retain."""
@@ -712,7 +501,7 @@ class TestArtifactManager(unittest.TestCase):
         """Test complete_generation marks existing entry as done."""
         wp_h = create_mock_handle(WorkPieceArtifactHandle, "wp1")
         key = ArtifactKey.for_workpiece(WP1_UID)
-        self.manager.put_workpiece_view_handle(key, wp_h, 0)
+        self.manager.commit_artifact(key, wp_h, 0)
 
         self.manager.complete_generation(key, 0)
 

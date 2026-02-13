@@ -6,7 +6,6 @@ from typing import (
     Optional,
     TYPE_CHECKING,
     Generator,
-    Tuple,
     Union,
     Any,
     Callable,
@@ -22,12 +21,10 @@ from ..core.matrix import Matrix
 from ..core.ops import Ops
 from ..core.step import Step
 from ..core.workpiece import WorkPiece
-from ..shared.util.colors import ColorSet
 from .artifact import (
     ArtifactManager,
     BaseArtifactHandle,
     JobArtifactHandle,
-    RenderContext,
     StepRenderArtifactHandle,
     StepOpsArtifactHandle,
     WorkPieceArtifact,
@@ -39,7 +36,6 @@ from .stage import (
     JobPipelineStage,
     StepPipelineStage,
     WorkPiecePipelineStage,
-    WorkPieceViewPipelineStage,
 )
 from .stage.job_runner import JobDescription
 
@@ -64,7 +60,6 @@ class Pipeline:
     Attributes:
         doc (Doc): The document model this pipeline is observing.
         _data_generation_id (int): The current data generation ID.
-        _view_generation_id (int): The current view generation ID.
         processing_state_changed (Signal): Fired when the busy state of the
             entire pipeline changes.
         workpiece_starting (Signal): Fired when workpiece generation starts.
@@ -74,8 +69,6 @@ class Pipeline:
             has been adopted.
         job_time_updated (Signal): Fired when the job time estimate is
             updated.
-        workpiece_view_updated (Signal): Fired when a workpiece view artifact
-            has been updated.
     """
 
     RECONCILIATION_DELAY_MS = 200
@@ -104,14 +97,12 @@ class Pipeline:
         self._artifact_store = artifact_store
         self._machine = machine
         self._data_generation_id = 0
-        self._view_generation_id = 0
         self._contexts: Dict[int, GenerationContext] = {}
         self._active_context: Optional[GenerationContext] = None
         self._docitem_to_artifact_key: Dict[DocItem, ArtifactKey] = {}
         self._pause_count = 0
         self._last_known_busy_state = False
         self._reconciliation_timer: Optional[threading.Timer] = None
-        self._current_view_context: Optional[RenderContext] = None
 
         # Signals for notifying the UI of generation progress
         self.processing_state_changed = Signal()
@@ -119,7 +110,6 @@ class Pipeline:
         self.workpiece_artifact_ready = Signal()
         self.workpiece_artifact_adopted = Signal()
         self.job_time_updated = Signal()
-        self.workpiece_view_updated = Signal()
 
         # Initialize stages and connect signals ONE time during construction.
         self._initialize_stages_and_connections()
@@ -162,16 +152,10 @@ class Pipeline:
         self._job_stage = JobPipelineStage(
             self._task_manager, self._artifact_manager, self._machine
         )
-        self._workpiece_view_stage = WorkPieceViewPipelineStage(
-            self._task_manager, self._artifact_manager, self._machine
-        )
 
         # Connect signals from scheduler (now handles workpiece generation)
         self._scheduler.generation_starting.connect(
             self._on_workpiece_generation_starting
-        )
-        self._scheduler.visual_chunk_available.connect(
-            self._workpiece_view_stage._on_workpiece_chunk_available
         )
         self._scheduler.generation_finished.connect(
             self._on_workpiece_generation_finished
@@ -191,12 +175,6 @@ class Pipeline:
         self._scheduler.job_generation_failed.connect(
             self._on_job_generation_failed
         )
-        self._workpiece_view_stage.view_artifact_updated.connect(
-            self._on_workpiece_view_updated
-        )
-        self._workpiece_view_stage.generation_finished.connect(
-            self._on_workpiece_view_generation_finished
-        )
 
     def shutdown(self) -> None:
         """
@@ -211,7 +189,6 @@ class Pipeline:
         self._workpiece_stage.shutdown()
         self._step_stage.shutdown()
         self._job_stage.shutdown()
-        self._workpiece_view_stage.shutdown()
         self._artifact_manager.shutdown()
         logger.info("All pipeline resources released.")
         logger.debug(f"[{id(self)}] Pipeline shutdown finished")
@@ -220,6 +197,11 @@ class Pipeline:
     def artifact_manager(self) -> ArtifactManager:
         """Returns the artifact manager used by this pipeline."""
         return self._artifact_manager
+
+    @property
+    def task_manager(self) -> "TaskManager":
+        """Returns the task manager used by this pipeline."""
+        return self._task_manager
 
     @property
     def doc(self) -> Optional[Doc]:
@@ -249,43 +231,6 @@ class Pipeline:
         if self._doc:
             self._connect_signals()
             self.reconcile_data()
-
-    def set_view_context(
-        self,
-        pixels_per_mm: Tuple[float, float],
-        show_travel_moves: bool,
-        margin_px: int,
-        color_set: ColorSet,
-    ) -> None:
-        """
-        Sets the global view context for rendering workpiece views.
-
-        When the view context changes (e.g., zoom level, theme), this method
-        triggers re-rendering of all cached workpiece views.
-
-        Args:
-            pixels_per_mm: The current zoom level in pixels per mm.
-            show_travel_moves: Whether to show travel moves.
-            margin_px: The margin in pixels for rendering.
-            color_set: The color set for rendering.
-        """
-        context = RenderContext(
-            pixels_per_mm=pixels_per_mm,
-            show_travel_moves=show_travel_moves,
-            margin_px=margin_px,
-            color_set_dict=color_set.to_dict(),
-        )
-
-        if self._current_view_context == context:
-            logger.debug(
-                "set_view_context: Context unchanged, skipping "
-                f"(data_gen_id={self._data_generation_id}, "
-                f"view_gen_id={self._view_generation_id})"
-            )
-            return
-
-        self._current_view_context = context
-        self.reconcile_view()
 
     @property
     def is_busy(self) -> bool:
@@ -320,8 +265,7 @@ class Pipeline:
             f"last_known={self._last_known_busy_state}, "
             f"reconciliation_timer={self._reconciliation_timer is not None}, "
             f"graph_nodes={len(self._scheduler.graph.get_all_nodes())}, "
-            f"data_gen_id={self._data_generation_id}, "
-            f"view_gen_id={self._view_generation_id}"
+            f"data_gen_id={self._data_generation_id}"
         )
 
         if self._last_known_busy_state != current_busy_state:
@@ -607,20 +551,13 @@ class Pipeline:
             self._check_and_update_processing_state
         )
 
-        self._workpiece_view_stage.on_generation_starting(
-            sender,
-            step=step,
-            workpiece=workpiece,
-            generation_id=generation_id,
-            view_id=self._view_generation_id,
-        )
-
     def _on_workpiece_generation_finished(
         self,
         sender: WorkPiecePipelineStage,
         *,
         step: Step,
         workpiece: WorkPiece,
+        handle: Optional[BaseArtifactHandle],
         generation_id: int,
         task_status: str = "completed",
     ) -> None:
@@ -628,9 +565,14 @@ class Pipeline:
         Relays signal and triggers downstream step assembly via DAG.
         """
         if task_status != "canceled":
-            self.workpiece_artifact_ready.send(
-                step, workpiece=workpiece, generation_id=generation_id
-            )
+            if handle is not None:
+                self.workpiece_artifact_ready.send(
+                    self,
+                    step=step,
+                    workpiece=workpiece,
+                    handle=handle,
+                    generation_id=generation_id,
+                )
             self._scheduler.process_graph()
 
         if not self.is_busy and self._reconciliation_timer is None:
@@ -648,7 +590,6 @@ class Pipeline:
         """
         Handles the signal that a workpiece artifact has been adopted.
         Relays the signal to notify workpiece elements.
-        Also triggers view rendering if a view context is available.
         """
         key = (step_uid, workpiece_uid)
         logger.debug(
@@ -658,26 +599,6 @@ class Pipeline:
         self.workpiece_artifact_adopted.send(
             self, step_uid=step_uid, workpiece_uid=workpiece_uid
         )
-
-        if self._current_view_context is not None:
-            logger.debug(
-                f"_on_workpiece_artifact_adopted: Requesting view render "
-                f"for ({step_uid}, {workpiece_uid})"
-            )
-
-            key = ArtifactKey.for_view(workpiece_uid)
-            self._workpiece_view_stage.request_view_render(
-                key,
-                self._current_view_context,
-                self._view_generation_id,
-                self._data_generation_id,
-                step_uid,
-            )
-        else:
-            logger.warning(
-                f"_on_workpiece_artifact_adopted: No view context available, "
-                f"cannot request view render for ({step_uid}, {workpiece_uid})"
-            )
 
     def _on_step_task_completed(
         self, sender: StepPipelineStage, *, step: Step, generation_id: int
@@ -756,33 +677,6 @@ class Pipeline:
             self._check_and_update_processing_state
         )
 
-    def _on_workpiece_view_updated(
-        self,
-        sender: WorkPieceViewPipelineStage,
-        *,
-        step_uid: str,
-        workpiece_uid: str,
-        handle: BaseArtifactHandle,
-    ):
-        """Relays signal that a view artifact has been updated."""
-        self.workpiece_view_updated.send(
-            self,
-            step_uid=step_uid,
-            workpiece_uid=workpiece_uid,
-            handle=handle,
-        )
-
-    def _on_workpiece_view_generation_finished(
-        self, sender, *, key: Tuple[str, str]
-    ):
-        """
-        Handles completion of a view render task to update the overall busy
-        state.
-        """
-        self._task_manager.schedule_on_main_thread(
-            self._check_and_update_processing_state
-        )
-
     def reconcile_data(self) -> None:
         """
         Synchronizes data stages with the document by declaring the full
@@ -792,8 +686,7 @@ class Pipeline:
             return
         logger.debug(
             f"{self.__class__.__name__}.reconcile_data called "
-            f"(data_gen_id will be {self._data_generation_id + 1}, "
-            f"view_gen_id is {self._view_generation_id})"
+            f"(data_gen_id will be {self._data_generation_id + 1})"
         )
 
         self._data_generation_id += 1
@@ -824,17 +717,10 @@ class Pipeline:
 
         self._update_and_emit_preview_time()
 
-        # Reconcile view generation to keep view_gen_id in sync.
-        # This ensures the ledger doesn't have mismatched generation IDs
-        # which would cause is_finished() to return False indefinitely.
-        if self._current_view_context is not None:
-            self.reconcile_view()
-
         # Prune old generations to keep the ledger clean and is_busy accurate
         processing_gen_ids = self._scheduler.get_processing_generation_ids()
         self._artifact_manager.prune(
             active_data_gen_ids={self._data_generation_id},
-            active_view_gen_ids={self._view_generation_id},
             processing_data_gen_ids=processing_gen_ids,
         )
 
@@ -870,36 +756,6 @@ class Pipeline:
                         self._artifact_manager.register_dependency(
                             child_key=wp_key, parent_key=step_key
                         )
-
-    def reconcile_view(self) -> None:
-        """
-        Synchronizes view stage by triggering re-rendering for
-        the current view generation.
-        """
-        if self.is_paused or not self.doc:
-            return
-        logger.debug(
-            f"{self.__class__.__name__}.reconcile_view called "
-            f"(will increment view_gen_id from {self._view_generation_id} "
-            f"to {self._view_generation_id + 1}, "
-            f"data_gen_id={self._data_generation_id})"
-        )
-
-        self._view_generation_id += 1
-        view_gen_id = self._view_generation_id
-
-        if not self._current_view_context:
-            return
-
-        self._workpiece_view_stage.update_view_context(
-            self._current_view_context,
-            view_gen_id,
-            self._data_generation_id,
-        )
-
-        self._task_manager.schedule_on_main_thread(
-            self._check_and_update_processing_state
-        )
 
     def get_estimated_time(
         self, step: Step, workpiece: WorkPiece
@@ -1142,30 +998,3 @@ class Pipeline:
         result = await future
         logger.debug(f"[{id(self)}] Await returned with result: {result}.")
         return result
-
-    def request_view_render(
-        self,
-        workpiece_uid: str,
-        context: RenderContext,
-        step_uid: str,
-        force: bool = False,
-    ):
-        """
-        Forwards a request to the view generator stage to render a new
-        bitmap for a workpiece view.
-
-        Args:
-            workpiece_uid: The unique identifier of the workpiece.
-            context: The render context to use.
-            step_uid: The unique identifier of the step.
-            force: If True, force re-rendering even if the context
-            appears unchanged.
-        """
-        key = ArtifactKey.for_view(workpiece_uid)
-        self._workpiece_view_stage.request_view_render(
-            key,
-            context,
-            self._view_generation_id,
-            self._data_generation_id,
-            step_uid,
-        )

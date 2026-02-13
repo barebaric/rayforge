@@ -30,7 +30,6 @@ from rayforge.pipeline.stage.step_runner import (
     make_step_artifact_in_subprocess,
 )
 from rayforge.pipeline.stage.job_runner import make_job_artifact_in_subprocess
-from rayforge.shared.util.colors import ColorSet
 
 
 logger = logging.getLogger(__name__)
@@ -427,11 +426,6 @@ class TestPipeline:
         # starts the first task.
         pipeline.doc = doc
 
-        # Set up view context to allow workpiece view rendering
-        # Must be done after doc is set because doc setter calls shutdown()
-        color_set = ColorSet(_data={})
-        pipeline.set_view_context((10.0, 10.0), False, 0, color_set)
-
         # Wait for the pipeline to become busy and for the first task to start
         await asyncio.sleep(0.5)
         assert pipeline.is_busy is True, (
@@ -536,10 +530,6 @@ class TestPipeline:
         pipeline.artifact_manager.commit_artifact(
             ledger_key, initial_workpiece_handle, 1
         )
-
-        # Arrange: Set initial view context
-        color_set = ColorSet(_data={})
-        pipeline.set_view_context((10.0, 10.0), False, 0, color_set)
 
         # Arrange: Complete initial workpiece task
         # Don't call _complete_all_tasks here because we manually put the

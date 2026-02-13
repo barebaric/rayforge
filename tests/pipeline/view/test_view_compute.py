@@ -15,7 +15,7 @@ from rayforge.pipeline.artifact import (
     WorkPieceViewArtifact,
 )
 from rayforge.pipeline.artifact.base import TextureData, VertexData
-from rayforge.pipeline.stage.workpiece_view_compute import (
+from rayforge.pipeline.view.view_compute import (
     compute_view_dimensions,
     compute_workpiece_view,
     compute_workpiece_view_to_buffer,
