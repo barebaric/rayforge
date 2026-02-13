@@ -93,7 +93,7 @@ class WorkPiecePipelineStage(PipelineStage):
     ) -> Optional[WorkPieceArtifact]:
         """Retrieves the complete, validated artifact from the cache."""
         handle = self._artifact_manager.get_workpiece_handle(
-            ArtifactKey.for_workpiece(workpiece_uid),
+            ArtifactKey.for_workpiece(workpiece_uid, step_uid),
             generation_id,
         )
         if handle is None:

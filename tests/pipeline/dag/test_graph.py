@@ -78,7 +78,7 @@ class TestPipelineGraph:
         assert len(job_nodes) == 1
 
     def test_build_from_doc_with_workpieces(self):
-        """Test building graph with workpieces."""
+        """Test building graph with workpieces but no steps."""
         doc = Doc()
         layer = Layer("Test Layer")
 
@@ -87,6 +87,31 @@ class TestPipelineGraph:
 
         layer.add_child(wp1)
         layer.add_child(wp2)
+
+        doc.set_children([layer])
+
+        graph = PipelineGraph()
+        graph.build_from_doc(doc)
+
+        wp_nodes = graph.get_nodes_by_group("workpiece")
+        assert len(wp_nodes) == 0
+
+    def test_build_from_doc_with_workpieces_and_steps(self):
+        """Test building graph with workpieces and steps."""
+        doc = Doc()
+        layer = Layer("Test Layer")
+
+        wp1 = WorkPiece(name="wp1.svg")
+        wp2 = WorkPiece(name="wp2.svg")
+
+        layer.add_child(wp1)
+        layer.add_child(wp2)
+
+        from rayforge.core.step import Step
+
+        step = Step(typelabel="contour")
+        assert layer.workflow is not None
+        layer.workflow.add_step(step)
 
         doc.set_children([layer])
 

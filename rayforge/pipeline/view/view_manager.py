@@ -3,8 +3,9 @@ import logging
 import numpy as np
 import threading
 import time
+import uuid
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Dict, Optional, cast
+from typing import TYPE_CHECKING, Dict, Optional, cast, Tuple
 
 from blinker import Signal
 
@@ -27,7 +28,7 @@ from .view_runner import (
 
 if TYPE_CHECKING:
     from ...core.doc import Doc
-    from ...core.layer import Step
+    from ...core.step import Step
     from ...core.workpiece import WorkPiece
     from ...machine.models.machine import Machine
     from ...shared.tasker.task import Task
@@ -58,6 +59,9 @@ class ViewManager:
     - Tracking source WorkPieceArtifact handles it is displaying
     - Triggering rendering tasks when source data or render context changes
     - Managing view artifact lifecycle (retain/release handles)
+
+    It indexes views by (workpiece_uid, step_uid) to support visualizing
+    intermediate states of a workpiece across multiple steps.
     """
 
     def __init__(
@@ -73,13 +77,20 @@ class ViewManager:
         self._current_view_context: Optional[RenderContext] = None
         self._view_generation_id = 0
 
-        self._source_artifact_handles: Dict[str, WorkPieceArtifactHandle] = {}
-        self._workpiece_to_step: Dict[str, str] = {}
-        self._view_entries: Dict[str, ViewEntry] = {}
+        # Keys are (workpiece_uid, step_uid)
+        self._source_artifact_handles: Dict[
+            Tuple[str, str], WorkPieceArtifactHandle
+        ] = {}
+        self._view_entries: Dict[Tuple[str, str], ViewEntry] = {}
 
-        self._pending_updates: Dict[ArtifactKey, bool] = {}
-        self._last_update_time: Dict[ArtifactKey, float] = {}
-        self._throttle_timers: Dict[ArtifactKey, threading.Timer] = {}
+        # Mapping from (workpiece_uid, step_uid) to a stable ArtifactKey
+        # used for task management (deduplication/cancellation).
+        self._view_task_keys: Dict[Tuple[str, str], ArtifactKey] = {}
+
+        # Throttling state keyed by the composite key (workpiece_uid, step_uid)
+        self._pending_updates: Dict[Tuple[str, str], bool] = {}
+        self._last_update_time: Dict[Tuple[str, str], float] = {}
+        self._throttle_timers: Dict[Tuple[str, str], threading.Timer] = {}
 
         self.view_artifact_ready = Signal()
         self.view_artifact_created = Signal()
@@ -95,6 +106,9 @@ class ViewManager:
             self.on_workpiece_artifact_ready
         )
         self._pipeline.workpiece_starting.connect(self.on_generation_starting)
+        self._pipeline.step_assembly_starting.connect(
+            self.on_workpiece_artifact_ready
+        )
 
     @property
     def current_view_context(self) -> Optional[RenderContext]:
@@ -111,46 +125,59 @@ class ViewManager:
         """Returns the artifact store."""
         return self._store
 
+    def _get_task_key(self, workpiece_uid: str, step_uid: str) -> ArtifactKey:
+        """
+        Retrieves or creates a stable ArtifactKey for managing tasks associated
+        with a specific (workpiece, step) view.
+        """
+        composite_id = (workpiece_uid, step_uid)
+        if composite_id not in self._view_task_keys:
+            # Create a unique, random ID for this specific view slot.
+            # We don't embed semantics in the ID string to avoid "hacks".
+            # The ViewManager maintains the semantic mapping.
+            self._view_task_keys[composite_id] = ArtifactKey(
+                id=str(uuid.uuid4()), group="view"
+            )
+        return self._view_task_keys[composite_id]
+
     def _is_view_stale(
         self,
         workpiece_uid: str,
+        step_uid: str,
         new_context: Optional[RenderContext],
         source_handle: Optional[WorkPieceArtifactHandle],
     ) -> bool:
         """Check if a view needs re-rendering."""
-        entry = self._view_entries.get(workpiece_uid)
+        composite_id = (workpiece_uid, step_uid)
+        entry = self._view_entries.get(composite_id)
+
         if entry is None or entry.handle is None:
-            logger.debug(
-                f"_is_view_stale[{workpiece_uid}]: no entry/handle -> STALE"
-            )
+            logger.debug(f"_is_view_stale[{composite_id}]: no entry -> STALE")
             return True
 
         if new_context is not None:
             if entry.render_context is None:
                 logger.debug(
-                    f"_is_view_stale[{workpiece_uid}]: "
-                    f"no render_context -> STALE"
+                    f"_is_view_stale[{composite_id}]: no context -> STALE"
                 )
                 return True
             if entry.render_context != new_context:
                 logger.debug(
-                    f"_is_view_stale[{workpiece_uid}]: "
-                    f"context changed -> STALE"
+                    f"_is_view_stale[{composite_id}]: context changed -> STALE"
                 )
                 return True
 
         if source_handle is not None:
             if entry.source_handle is None:
                 logger.debug(
-                    f"_is_view_stale[{workpiece_uid}]: "
-                    f"no entry.source_handle -> STALE"
+                    f"_is_view_stale[{composite_id}]: no src handle -> STALE"
                 )
                 return True
             entry_gen_size = entry.source_handle.generation_size
             new_gen_size = source_handle.generation_size
             if entry_gen_size != new_gen_size:
                 logger.debug(
-                    f"_is_view_stale[{workpiece_uid}]: "
+                    f"_is_view_stale[{composite_id}]: "
                     f"gen_size {entry_gen_size} -> {new_gen_size} -> STALE"
                 )
                 return True
@@ -158,19 +185,11 @@ class ViewManager:
             new_src_dims = source_handle.source_dimensions
             if entry_src_dims != new_src_dims:
                 logger.debug(
-                    f"_is_view_stale[{workpiece_uid}]: "
+                    f"_is_view_stale[{composite_id}]: "
                     f"src_dims {entry_src_dims} -> {new_src_dims} -> STALE"
                 )
                 return True
 
-        esh = entry.source_handle
-        ssh = source_handle
-        entry_sz = esh.generation_size if esh else None
-        src_sz = ssh.generation_size if ssh else None
-        logger.debug(
-            f"_is_view_stale[{workpiece_uid}]: "
-            f"entry.gen_size={entry_sz}, src.gen_size={src_sz} -> NOT STALE"
-        )
         return False
 
     def update_render_context(
@@ -197,9 +216,9 @@ class ViewManager:
         self._current_view_context = context
         self._view_generation_id += 1
 
-        for workpiece_uid in self._source_artifact_handles:
-            step_uid = self._workpiece_to_step.get(workpiece_uid)
-            self.request_view_render(workpiece_uid, step_uid=step_uid)
+        # Iterate over all tracked (workpiece, step) pairs
+        for workpiece_uid, step_uid in self._source_artifact_handles.keys():
+            self.request_view_render(workpiece_uid, step_uid)
 
     def on_workpiece_artifact_ready(
         self,
@@ -231,24 +250,21 @@ class ViewManager:
             )
             return
 
-        workpiece_uid = workpiece.uid
+        composite_id = (workpiece.uid, step.uid)
 
-        old_handle = self._source_artifact_handles.get(workpiece_uid)
+        old_handle = self._source_artifact_handles.get(composite_id)
         if old_handle is not None:
             logger.debug(
-                f"Releasing old source artifact handle for {workpiece_uid}"
+                f"Releasing old source artifact handle for {composite_id}"
             )
             self._store.release(old_handle)
 
         wp_handle = cast(WorkPieceArtifactHandle, handle)
-        self._source_artifact_handles[workpiece_uid] = wp_handle
-        self._workpiece_to_step[workpiece_uid] = step.uid
+        self._source_artifact_handles[composite_id] = wp_handle
         self._store.retain(wp_handle)
-        logger.debug(
-            f"Retained new source artifact handle for {workpiece_uid}"
-        )
+        logger.debug(f"Retained new source artifact handle for {composite_id}")
 
-        self.request_view_render(workpiece_uid, step_uid=step.uid)
+        self.request_view_render(workpiece.uid, step_uid=step.uid)
 
         self.source_artifact_ready.send(
             self,
@@ -260,10 +276,11 @@ class ViewManager:
     def request_view_render(
         self,
         workpiece_uid: str,
-        step_uid: Optional[str] = None,
+        step_uid: str,
     ) -> None:
         """
-        Requests an asynchronous render of a workpiece view.
+        Requests an asynchronous render of a workpiece view for a specific
+        step.
 
         Args:
             workpiece_uid: The unique identifier of the workpiece.
@@ -271,29 +288,34 @@ class ViewManager:
         """
         if self._current_view_context is None:
             logger.debug(
-                f"Cannot render view for {workpiece_uid}: "
+                f"Cannot render view for ({workpiece_uid}, {step_uid}): "
                 "No render context set."
             )
             return
 
         context = self._current_view_context
         view_id = self._view_generation_id
-        key = ArtifactKey.for_view(workpiece_uid)
 
-        source_handle = self._source_artifact_handles.get(workpiece_uid)
+        # Get the unique task key for this specific view slot
+        task_key = self._get_task_key(workpiece_uid, step_uid)
+
+        source_handle = self._source_artifact_handles.get(
+            (workpiece_uid, step_uid)
+        )
         if source_handle is None:
             logger.warning(
-                f"Cannot render view for {workpiece_uid}: "
+                f"Cannot render view for ({workpiece_uid}, {step_uid}): "
                 "No source artifact handle tracked."
             )
             return
 
         self._request_view_render_internal(
-            key,
+            task_key,
             context,
             view_id,
             source_handle,
             step_uid,
+            workpiece_uid,
         )
 
     def _request_view_render_internal(
@@ -302,7 +324,8 @@ class ViewManager:
         context: RenderContext,
         view_id: int,
         source_handle: WorkPieceArtifactHandle,
-        step_uid: Optional[str] = None,
+        step_uid: str,
+        workpiece_uid: str,
     ):
         """
         Internal method to request a view render.
@@ -314,42 +337,33 @@ class ViewManager:
             source_handle: The source WorkPieceArtifact handle.
             step_uid: The unique identifier of the step (optional).
         """
-        workpiece_uid = key.id
-
-        if step_uid is None:
-            logger.warning(
-                f"Cannot render view for {key}: "
-                "step_uid is required but not provided."
-            )
-            return
-
-        if not self._is_view_stale(workpiece_uid, context, source_handle):
-            logger.debug(f"View for {key} is still valid. Skipping render.")
+        if not self._is_view_stale(
+            workpiece_uid, step_uid, context, source_handle
+        ):
+            logger.debug(f"View for ({workpiece_uid}, {step_uid}) is valid.")
             return
 
         self._current_view_context = context
 
-        task_key = key
-        task = self._task_manager.get_task(task_key)
+        task = self._task_manager.get_task(key)
         if task and not task.is_final():
             logger.debug(
-                f"[{key}] View render already in progress. Cancelling "
-                f"to start new one."
+                f"[{key}] View render already in progress. Cancelling."
             )
-            self._task_manager.cancel_task(task_key)
+            self._task_manager.cancel_task(key)
 
-        entry = self._view_entries.get(workpiece_uid)
+        composite_id = (workpiece_uid, step_uid)
+        entry = self._view_entries.get(composite_id)
         if entry is None:
             entry = ViewEntry()
-            self._view_entries[workpiece_uid] = entry
+            self._view_entries[composite_id] = entry
         entry.render_context = context
         entry.source_handle = source_handle
 
         def when_done_callback(task: "Task"):
             logger.debug(
                 f"[{key}] when_done_callback called, "
-                f"task_status={task.get_status()}, "
-                f"task_id={task.id}"
+                f"task_status={task.get_status()}"
             )
             self._on_render_complete(task, key, view_id)
 
@@ -359,9 +373,10 @@ class ViewManager:
             workpiece_artifact_handle_dict=source_handle.to_dict(),
             render_context_dict=context.to_dict(),
             creator_tag="workpiece_view",
-            key=task_key,
+            key=key,
             generation_id=view_id,
             step_uid=step_uid,
+            workpiece_uid=workpiece_uid,
             when_done=when_done_callback,
             when_event=self._on_render_event_received,
         )
@@ -370,12 +385,14 @@ class ViewManager:
         """Cancels any active rendering tasks and releases held handles."""
         logger.debug("ViewManager shutting down.")
 
-        for workpiece_uid, entry in self._view_entries.items():
-            task_key = ArtifactKey.for_view(workpiece_uid)
-            self._task_manager.cancel_task(task_key)
+        # Cancel all managed tasks
+        for key in self._view_task_keys.values():
+            self._task_manager.cancel_task(key)
+        self._view_task_keys.clear()
+
+        for entry in self._view_entries.values():
             if entry.handle is not None:
                 self._store.release(entry.handle)
-
         self._view_entries.clear()
 
         for timer in self._throttle_timers.values():
@@ -394,18 +411,18 @@ class ViewManager:
     ):
         """Handles progressive rendering events from the worker process."""
         step_uid = task.kwargs.get("step_uid")
-        if step_uid is None:
-            logger.warning("step_uid is None in _on_render_event_received")
+        workpiece_uid = task.kwargs.get("workpiece_uid")
+
+        if step_uid is None or workpiece_uid is None:
+            logger.warning("Missing uids in _on_render_event_received")
             return
-        if not isinstance(task.key, ArtifactKey):
-            raise TypeError(f"Expected ArtifactKey, got {type(task.key)}")
+
         key = task.key
-        workpiece_uid = key.id
         view_id = task.kwargs.get("generation_id", 0)
 
         if event_name == "view_artifact_created":
             self._handle_view_artifact_created(
-                task, key, step_uid, data, view_id
+                task, key, step_uid, workpiece_uid, data, view_id
             )
         elif event_name == "view_artifact_updated":
             self._handle_view_artifact_updated(
@@ -417,6 +434,7 @@ class ViewManager:
         task: "Task",
         key: ArtifactKey,
         step_uid: str,
+        workpiece_uid: str,
         data: dict,
         view_id: int,
     ):
@@ -426,14 +444,16 @@ class ViewManager:
             if handle is None:
                 return
 
-            workpiece_uid = key.id
-            entry = self._view_entries.get(workpiece_uid)
+            composite_id = (workpiece_uid, step_uid)
+            entry = self._view_entries.get(composite_id)
             if entry is None:
                 entry = ViewEntry()
-                self._view_entries[workpiece_uid] = entry
+                self._view_entries[composite_id] = entry
             entry.handle = handle
 
-            self._send_view_artifact_created_signals(step_uid, key.id, handle)
+            self._send_view_artifact_created_signals(
+                step_uid, workpiece_uid, handle
+            )
         except Exception as e:
             logger.error(
                 f"Failed to process view_artifact_created: {e}", exc_info=True
@@ -450,7 +470,7 @@ class ViewManager:
             raise TypeError("Expected WorkPieceViewArtifactHandle")
 
         logger.debug(
-            f"Adopting new view artifact: {handle.shm_name} for key {key}"
+            f"Adopting new view artifact: {handle.shm_name} for task {key}"
         )
         return handle
 
@@ -461,19 +481,11 @@ class ViewManager:
         handle: WorkPieceViewArtifactHandle,
     ):
         """Sends signals when a view artifact is created."""
-        logger.debug(
-            f"Sending view_artifact_created for "
-            f"key ({step_uid}, {workpiece_uid})"
-        )
         self.view_artifact_created.send(
             self,
             step_uid=step_uid,
             workpiece_uid=workpiece_uid,
             handle=handle,
-        )
-        logger.debug(
-            f"Sending view_artifact_ready for "
-            f"key ({step_uid}, {workpiece_uid})"
         )
         self.view_artifact_ready.send(
             self,
@@ -486,7 +498,8 @@ class ViewManager:
         self, key: ArtifactKey, step_uid: str, workpiece_uid: str, view_id: int
     ):
         """Handles the view_artifact_updated event."""
-        entry = self._view_entries.get(workpiece_uid)
+        composite_id = (workpiece_uid, step_uid)
+        entry = self._view_entries.get(composite_id)
         handle = entry.handle if entry else None
         self.view_artifact_updated.send(
             self,
@@ -498,20 +511,7 @@ class ViewManager:
     def _on_render_complete(
         self, task: "Task", key: ArtifactKey, view_id: int
     ):
-        """
-        Callback for when a rendering task finishes.
-
-        Args:
-            task: The completed task.
-            key: The view key (workpiece_uid).
-            view_id: The view generation ID for this render.
-        """
-        logger.debug(
-            f"[{key}] _on_render_complete called, "
-            f"task_status={task.get_status()}, "
-            f"task_id={task.id}"
-        )
-
+        """Callback for when a rendering task finishes."""
         self.generation_finished.send(self, key=key)
 
     def on_chunk_available(
@@ -521,32 +521,41 @@ class ViewManager:
         key: ArtifactKey,
         chunk_handle: BaseArtifactHandle,
         generation_id: int,
+        step_uid: Optional[str] = None,
+        **kwargs,
     ):
         """
         Receives chunk data from the pipeline.
         Implements incremental rendering by drawing the chunk onto
         the live view artifact bitmap.
-
-        Args:
-            sender: The sender of the signal.
-            key: The view key (workpiece_uid).
-            chunk_handle: Handle to the chunk artifact.
-            generation_id: The data generation ID.
         """
         workpiece_uid = key.id
+
+        # If step_uid is not provided (e.g. from legacy signal emission),
+        # we cannot reliably identify which view to update in a multi-step
+        # workflow. We log a warning and abort to prevent corruption.
+        if step_uid is None:
+            logger.debug(
+                f"Chunk available for {workpiece_uid} but no step_uid "
+                "provided. Skipping live update."
+            )
+            self._store.release(chunk_handle)
+            return
+
         logger.debug(
-            f"ViewManager received chunk for {key}, "
-            f"generation_id={generation_id}, "
-            f"chunk_handle={chunk_handle.shm_name}"
+            f"ViewManager received chunk for ({workpiece_uid}, {step_uid}), "
+            f"generation_id={generation_id}"
         )
 
-        entry = self._view_entries.get(workpiece_uid)
+        composite_id = (workpiece_uid, step_uid)
+        entry = self._view_entries.get(composite_id)
+
         if entry is None:
             self._store.release(chunk_handle)
             return
 
         view_handle, render_context = self._get_render_components(
-            key, entry, chunk_handle
+            composite_id, entry, chunk_handle
         )
         if view_handle is None or render_context is None:
             return
@@ -561,42 +570,37 @@ class ViewManager:
             view_handle.to_dict(),
             render_context.to_dict(),
             when_done=lambda t: self._on_stitch_complete(
-                t, key, chunk_handle, view_handle, workpiece_uid
+                t, composite_id, chunk_handle, view_handle
             ),
         )
 
     def _on_stitch_complete(
         self,
         task: "Task",
-        key: ArtifactKey,
+        composite_id: Tuple[str, str],
         chunk_handle: BaseArtifactHandle,
         view_handle: BaseArtifactHandle,
-        workpiece_uid: str,
     ):
         """Callback for when stitching completes."""
-        logger.debug(
-            f"Chunk stitch for key {key} completed, "
-            f"status={task.get_status()}, chunk_handle={chunk_handle.shm_name}"
-        )
         try:
             if task.get_status() == "completed" and task.result():
                 view_id = self._view_generation_id
-                self._schedule_throttled_update(key, view_id)
+                self._schedule_throttled_update(composite_id, view_id)
             else:
-                logger.warning(f"Stitching failed for {key}")
+                logger.warning(f"Stitching failed for {composite_id}")
         finally:
             self._store.release(chunk_handle)
             self._store.release(view_handle)
 
     def _get_render_components(
         self,
-        key: ArtifactKey,
+        composite_id: Tuple[str, str],
         entry: ViewEntry,
         chunk_handle: BaseArtifactHandle,
     ) -> tuple[WorkPieceViewArtifactHandle | None, RenderContext | None]:
         """Gets the view handle and render context."""
         if entry.handle is None:
-            logger.debug(f"No view handle for {key}. Ignoring chunk.")
+            logger.debug(f"No view handle for {composite_id}. Ignoring chunk.")
             self._store.release(chunk_handle)
             return None, None
 
@@ -610,66 +614,62 @@ class ViewManager:
 
         render_context = entry.render_context
         if render_context is None:
-            logger.debug(f"No render context for {key}.")
+            logger.debug(f"No render context for {composite_id}.")
             self._store.release(chunk_handle)
             return None, None
 
         return entry.handle, render_context
 
-    def _schedule_throttled_update(self, key: ArtifactKey, view_id: int):
-        """
-        Schedules a throttled update notification for the given view.
-        """
+    def _schedule_throttled_update(
+        self, composite_id: Tuple[str, str], view_id: int
+    ):
+        """Schedules a throttled update notification."""
         current_time = time.time()
-        last_update = self._last_update_time.get(key, 0)
+        last_update = self._last_update_time.get(composite_id, 0)
 
-        existing_timer = self._throttle_timers.pop(key, None)
+        existing_timer = self._throttle_timers.pop(composite_id, None)
         if existing_timer:
             existing_timer.cancel()
 
-        self._pending_updates[key] = True
+        self._pending_updates[composite_id] = True
 
         time_since_last = current_time - last_update
         time_until_next = max(0, THROTTLE_INTERVAL - time_since_last)
 
         def send_update():
-            self._send_throttled_update(key, view_id)
+            self._send_throttled_update(composite_id, view_id)
 
         if time_until_next <= 0:
             send_update()
         else:
             timer = threading.Timer(time_until_next, send_update)
-            self._throttle_timers[key] = timer
+            self._throttle_timers[composite_id] = timer
             timer.start()
 
-    def _send_throttled_update(self, key: ArtifactKey, view_id: int):
-        """
-        Sends the view_artifact_updated signal for the given view.
-        """
-        self._pending_updates.pop(key, None)
-        self._throttle_timers.pop(key, None)
-        self._last_update_time[key] = time.time()
+    def _send_throttled_update(
+        self, composite_id: Tuple[str, str], view_id: int
+    ):
+        """Sends the view_artifact_updated signal."""
+        self._pending_updates.pop(composite_id, None)
+        self._throttle_timers.pop(composite_id, None)
+        self._last_update_time[composite_id] = time.time()
 
-        workpiece_uid = key.id
-        entry = self._view_entries.get(workpiece_uid)
+        workpiece_uid, step_uid = composite_id
+        entry = self._view_entries.get(composite_id)
         handle = entry.handle if entry else None
 
         if not handle:
-            logger.debug(f"No view handle for {key}, skipping update")
             return
 
-        step_uid = self._workpiece_to_step.get(workpiece_uid)
         self.view_artifact_updated.send(
             self,
             step_uid=step_uid,
             workpiece_uid=workpiece_uid,
             handle=handle,
         )
-        logger.debug(f"Sent throttled view_artifact_updated for {key}")
 
     def allocate_live_buffer(
         self,
-        key: ArtifactKey,
         workpiece: "WorkPiece",
         step_uid: str,
         view_id: int,
@@ -677,22 +677,22 @@ class ViewManager:
     ) -> None:
         """
         Allocates a new blank view artifact based on the workpiece size and
-        current render context, stores it in shared memory, and registers it
-        as the live buffer for this generation.
+        registers it as the live buffer for this generation.
         """
-        workpiece_uid = key.id
+        workpiece_uid = workpiece.uid
+        composite_id = (workpiece_uid, step_uid)
 
         w_mm, h_mm = workpiece.size
         bbox = (0.0, 0.0, w_mm, h_mm)
 
         dims = calculate_render_dimensions(bbox, context)
         if dims is None:
-            logger.warning(f"[{key}] Invalid dimensions for live buffer.")
             return
 
         width_px, height_px, _, _ = dims
         logger.debug(
-            f"[{key}] Allocating live buffer: {width_px}x{height_px} px"
+            f"[{composite_id}] Allocating live buffer: "
+            f"{width_px}x{height_px} px"
         )
 
         try:
@@ -706,16 +706,12 @@ class ViewManager:
             )
             view_handle = cast(WorkPieceViewArtifactHandle, handle)
 
-            entry = self._view_entries.get(workpiece_uid)
+            entry = self._view_entries.get(composite_id)
             if entry is None:
                 entry = ViewEntry()
-                self._view_entries[workpiece_uid] = entry
+                self._view_entries[composite_id] = entry
             entry.handle = view_handle
             entry.render_context = context
-
-            logger.debug(
-                f"Allocated live buffer for key {key}: {view_handle.shm_name}"
-            )
 
             self._send_view_artifact_created_signals(
                 step_uid, workpiece_uid, view_handle
@@ -723,63 +719,44 @@ class ViewManager:
 
         except Exception as e:
             logger.error(
-                f"[{key}] Failed to allocate live buffer: {e}", exc_info=True
+                f"[{composite_id}] Failed to allocate live buffer: {e}",
+                exc_info=True,
             )
 
     def on_generation_starting(
         self,
         sender,
         *,
+        step: "Step",
         workpiece: "WorkPiece",
         generation_id: int,
     ):
         """
         Called when workpiece generation starts.
         Pre-allocates the view buffer to enable progressive rendering.
-
-        Only allocates a new buffer if the source artifact is actually
-        being regenerated (i.e., we have a new source handle coming).
-
-        Args:
-            sender: The step being generated (passed as sender).
-            workpiece: The workpiece being generated.
-            generation_id: The data generation ID.
         """
-        step = sender
-        key = ArtifactKey.for_view(workpiece.uid)
-
-        entry = self._view_entries.get(workpiece.uid)
+        composite_id = (workpiece.uid, step.uid)
+        entry = self._view_entries.get(composite_id)
         existing_handle = entry.handle if entry else None
 
-        logger.debug(
-            f"ViewManager.on_generation_starting: Source data gen "
-            f"{generation_id} starting for {key}, existing view handle: "
-            f"{existing_handle.shm_name if existing_handle else None}"
-        )
-
-        task_key = ArtifactKey.for_view(workpiece.uid)
+        task_key = self._get_task_key(workpiece.uid, step.uid)
         task = self._task_manager.get_task(task_key)
         if task and not task.is_final():
-            logger.debug(f"Cancelling existing task for {task_key}")
             self._task_manager.cancel_task(task_key)
 
         context = self._current_view_context
         if not context:
-            logger.warning(
-                f"[{key}] Cannot allocate live buffer: No RenderContext."
-            )
             return
 
         if existing_handle is not None:
-            logger.debug(
-                f"Not allocating live buffer for {key}: "
-                "existing view handle will be reused"
-            )
+            # Reuse existing handle if dimensions match?
+            # For simplicity, we assume new generation = new buffer needed.
+            # But skipping for now as per logic in previous implementation
+            # unless we detect size change. Here we mirror previous logic:
             return
 
-        logger.debug(f"Allocating live buffer for {key} (no existing handle)")
         self.allocate_live_buffer(
-            key, workpiece, step.uid, self._view_generation_id, context
+            workpiece, step.uid, self._view_generation_id, context
         )
 
     def reconcile(self, doc: "Doc", generation_id: int):
@@ -789,38 +766,40 @@ class ViewManager:
         """
         logger.debug("ViewManager reconciling...")
 
-        all_current_workpieces = {
-            workpiece.uid
-            for layer in doc.layers
-            if layer.workflow is not None
-            for step in layer.workflow.steps
-            for workpiece in layer.all_workpieces
-        }
+        all_current_pairs = set()
+        for layer in doc.layers:
+            if layer.workflow and layer.workflow.steps:
+                for step in layer.workflow.steps:
+                    for workpiece in layer.all_workpieces:
+                        all_current_pairs.add((workpiece.uid, step.uid))
 
-        tracked_uids = set(self._source_artifact_handles.keys())
-        obsolete_uids = tracked_uids - all_current_workpieces
+        tracked_pairs = set(self._source_artifact_handles.keys())
+        obsolete_pairs = tracked_pairs - all_current_pairs
 
-        for w_uid in obsolete_uids:
-            logger.debug(f"Cleaning up obsolete view workpiece: {w_uid}")
-            handle = self._source_artifact_handles.pop(w_uid, None)
+        for composite_id in obsolete_pairs:
+            logger.debug(f"Cleaning up obsolete view pair: {composite_id}")
+            handle = self._source_artifact_handles.pop(composite_id, None)
             if handle:
                 self._store.release(handle)
-            task_key = ArtifactKey.for_view(w_uid)
-            self._task_manager.cancel_task(task_key)
 
-            entry = self._view_entries.pop(w_uid, None)
+            task_key = self._view_task_keys.pop(composite_id, None)
+            if task_key:
+                self._task_manager.cancel_task(task_key)
+
+            entry = self._view_entries.pop(composite_id, None)
             if entry and entry.handle:
                 self._store.release(entry.handle)
 
-        self._workpiece_to_step = {
-            w_uid: step_uid
-            for w_uid, step_uid in self._workpiece_to_step.items()
-            if w_uid in all_current_workpieces
-        }
+            self._pending_updates.pop(composite_id, None)
+            timer = self._throttle_timers.pop(composite_id, None)
+            if timer:
+                timer.cancel()
+            self._last_update_time.pop(composite_id, None)
 
     def get_view_handle(
-        self, workpiece_uid: str
+        self, workpiece_uid: str, step_uid: str
     ) -> Optional[WorkPieceViewArtifactHandle]:
-        """Get the view handle for a workpiece."""
-        entry = self._view_entries.get(workpiece_uid)
+        """Get the view handle for a specific workpiece and step."""
+        composite_id = (workpiece_uid, step_uid)
+        entry = self._view_entries.get(composite_id)
         return entry.handle if entry else None

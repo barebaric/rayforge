@@ -129,6 +129,7 @@ class Pipeline:
         self.workpiece_starting = Signal()
         self.workpiece_artifact_ready = Signal()
         self.workpiece_artifact_adopted = Signal()
+        self.step_assembly_starting = Signal()
         self.job_time_updated = Signal()
 
         # Initialize stages and connect signals ONE time during construction.
@@ -177,6 +178,9 @@ class Pipeline:
         )
         self._scheduler.workpiece_artifact_adopted.connect(
             self._on_workpiece_artifact_adopted
+        )
+        self._scheduler.step_assembly_starting.connect(
+            self._on_step_assembly_starting
         )
         self._step_stage.generation_finished.connect(
             self._on_step_task_completed
@@ -498,7 +502,7 @@ class Pipeline:
         re-production of the workpiece artifact.
 
         Uses DAG-based invalidation with FULL_REPRODUCTION scope:
-        - Invalidating a workpiece automatically cascades to steps
+        - Invalidating a workpiece-step pair automatically cascades to steps
         - Steps cascade to the job
         - This ensures all dependent artifacts are regenerated
 
@@ -515,12 +519,16 @@ class Pipeline:
         if isinstance(origin, Step):
             step_key = ArtifactKey.for_step(origin.uid)
             for wp in origin.layer.all_workpieces if origin.layer else []:
-                wp_key = ArtifactKey.for_workpiece(wp.uid)
-                self._invalidate_node(wp_key)
+                wp_step_key = ArtifactKey.for_workpiece(wp.uid, origin.uid)
+                self._invalidate_node(wp_step_key)
             self._invalidate_node(step_key)
         elif isinstance(origin, WorkPiece):
-            wp_key = ArtifactKey.for_workpiece(origin.uid)
-            self._invalidate_node(wp_key)
+            if origin.layer and origin.layer.workflow:
+                for step in origin.layer.workflow.steps:
+                    wp_step_key = ArtifactKey.for_workpiece(
+                        origin.uid, step.uid
+                    )
+                    self._invalidate_node(wp_step_key)
 
         self._schedule_reconciliation()
 
@@ -556,7 +564,6 @@ class Pipeline:
 
         for wp in workpieces_to_check:
             size_changed = False
-            # Only check for size changes on the actual origin of the transform
             if (
                 wp is origin
                 and isinstance(origin, WorkPiece)
@@ -568,11 +575,13 @@ class Pipeline:
                     abs(old_sx - new_sx) > 1e-9 or abs(old_sy - new_sy) > 1e-9
                 )
 
-            if size_changed:
-                self._invalidate_node(ArtifactKey.for_workpiece(wp.uid))
-
             if wp.layer and wp.layer.workflow:
                 for step in wp.layer.workflow.steps:
+                    if size_changed:
+                        wp_step_key = ArtifactKey.for_workpiece(
+                            wp.uid, step.uid
+                        )
+                        self._invalidate_node(wp_step_key)
                     step_key = ArtifactKey.for_step(step.uid)
                     self._invalidate_node(step_key)
 
@@ -604,7 +613,10 @@ class Pipeline:
     ) -> None:
         """Relays signal from the workpiece stage."""
         self.workpiece_starting.send(
-            step, workpiece=workpiece, generation_id=generation_id
+            self,
+            step=step,
+            workpiece=workpiece,
+            generation_id=generation_id,
         )
         self._task_manager.schedule_on_main_thread(
             self._check_and_update_processing_state
@@ -657,6 +669,25 @@ class Pipeline:
         )
         self.workpiece_artifact_adopted.send(
             self, step_uid=step_uid, workpiece_uid=workpiece_uid
+        )
+
+    def _on_step_assembly_starting(
+        self,
+        sender,
+        *,
+        step: Step,
+        workpiece: WorkPiece,
+        handle: BaseArtifactHandle,
+    ) -> None:
+        """
+        Relays signal when step assembly starts with valid workpiece deps.
+
+        This is called when a step is about to be assembled and its workpiece
+        dependencies already have valid handles (e.g., when adding a new step
+        to an existing workpiece).
+        """
+        self.step_assembly_starting.send(
+            self, step=step, workpiece=workpiece, handle=handle
         )
 
     def _on_step_task_completed(
@@ -800,8 +831,10 @@ class Pipeline:
             if layer.workflow and layer.workflow.steps:
                 for step in layer.workflow.steps:
                     all_keys.add(ArtifactKey.for_step(step.uid))
-                for workpiece in layer.all_workpieces:
-                    all_keys.add(ArtifactKey.for_workpiece(workpiece.uid))
+                    for workpiece in layer.all_workpieces:
+                        all_keys.add(
+                            ArtifactKey.for_workpiece(workpiece.uid, step.uid)
+                        )
 
         self._artifact_manager.declare_generation(all_keys, gen_id)
 
@@ -814,9 +847,11 @@ class Pipeline:
                 for step in layer.workflow.steps:
                     step_key = ArtifactKey.for_step(step.uid)
                     for workpiece in layer.all_workpieces:
-                        wp_key = ArtifactKey.for_workpiece(workpiece.uid)
+                        wp_step_key = ArtifactKey.for_workpiece(
+                            workpiece.uid, step.uid
+                        )
                         self._artifact_manager.register_dependency(
-                            child_key=wp_key, parent_key=step_key
+                            child_key=wp_step_key, parent_key=step_key
                         )
 
     def get_estimated_time(
@@ -853,7 +888,7 @@ class Pipeline:
         self, step_uid: str, workpiece_uid: str
     ) -> Optional[BaseArtifactHandle]:
         """Retrieves the handle for a generated artifact from the cache."""
-        key = ArtifactKey.for_workpiece(workpiece_uid)
+        key = ArtifactKey.for_workpiece(workpiece_uid, step_uid)
         return self._artifact_manager.get_workpiece_handle(
             key, self._data_generation_id
         )
