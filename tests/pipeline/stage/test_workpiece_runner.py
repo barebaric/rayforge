@@ -33,6 +33,7 @@ def mock_proxy():
     proxy = MagicMock()
     proxy.sub_context.return_value = proxy  # Allow chaining
     proxy.parent_log_level = logging.DEBUG
+    proxy.send_event_and_wait.return_value = True  # Acknowledge events
     return proxy
 
 
@@ -140,7 +141,7 @@ def test_vector_producer_returns_artifact_with_vertex_data(
         event_call = next(
             (
                 c
-                for c in mock_proxy.send_event.call_args_list
+                for c in mock_proxy.send_event_and_wait.call_args_list
                 if c[0][0] == "artifact_created"
             ),
             None,
@@ -200,7 +201,7 @@ def test_raster_producer_returns_artifact_with_raster_data(
         event_call = next(
             (
                 c
-                for c in mock_proxy.send_event.call_args_list
+                for c in mock_proxy.send_event_and_wait.call_args_list
                 if c[0][0] == "artifact_created"
             ),
             None,
@@ -266,7 +267,7 @@ def test_empty_producer_result_returns_none(mock_proxy):
     # No "artifact_created" event should be sent if no artifact was created.
     was_called = any(
         c[0][0] == "artifact_created"
-        for c in mock_proxy.send_event.call_args_list
+        for c in mock_proxy.send_event_and_wait.call_args_list
     )
     assert not was_called
 
@@ -307,7 +308,7 @@ def test_transformers_are_applied_before_put(mock_proxy, base_workpiece):
         event_call = next(
             (
                 c
-                for c in mock_proxy.send_event.call_args_list
+                for c in mock_proxy.send_event_and_wait.call_args_list
                 if c[0][0] == "artifact_created"
             ),
             None,

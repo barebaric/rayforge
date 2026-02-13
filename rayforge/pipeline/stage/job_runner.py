@@ -43,7 +43,7 @@ def make_job_artifact_in_subprocess(
     The main entry point for assembling, post-processing, and encoding a
     full job in a background process.
 
-    Implements Fire-and-Forget artifact handover.
+    Uses acknowledgment-based handover for shared memory artifacts.
     """
     job_desc = JobDescription(**job_description_dict)
     machine = Machine.from_dict(job_desc.machine_dict, is_inert=True)
@@ -74,18 +74,21 @@ def make_job_artifact_in_subprocess(
     proxy.set_message(_("Storing final job artifact..."))
     final_handle = artifact_store.put(final_artifact, creator_tag=creator_tag)
 
-    proxy.send_event(
+    acked = proxy.send_event_and_wait(
         "artifact_created",
         {
             "handle_dict": final_handle.to_dict(),
             "generation_id": generation_id,
             "job_key": {"id": job_key.id, "group": job_key.group},
         },
+        logger=logger,
     )
 
-    # Fire and Forget
-    logger.debug("Forgetting job artifact handle after send.")
-    artifact_store.forget(final_handle)
+    if acked:
+        logger.debug("Job artifact acknowledged, forgetting handle.")
+        artifact_store.forget(final_handle)
+    else:
+        logger.warning("Job artifact not acknowledged, keeping handle open")
 
     proxy.set_progress(1.0)
     proxy.set_message(_("Job finalization complete"))

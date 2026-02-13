@@ -1,6 +1,9 @@
 import pytest
+import time
+import logging
 from queue import Queue, Full
 from unittest.mock import Mock, call
+from multiprocessing import Manager
 from rayforge.shared.tasker.proxy import ExecutionContextProxy
 
 
@@ -8,6 +11,20 @@ from rayforge.shared.tasker.proxy import ExecutionContextProxy
 def mock_queue():
     """Provides a standard queue for proxy tests."""
     return Queue()
+
+
+@pytest.fixture
+def manager():
+    """Provides a multiprocessing Manager for shared state tests."""
+    mgr = Manager()
+    yield mgr
+    mgr.shutdown()
+
+
+@pytest.fixture
+def logger():
+    """Provides a logger for tests that need it."""
+    return logging.getLogger("test_proxy")
 
 
 class TestExecutionContextProxy:
@@ -159,3 +176,131 @@ class TestExecutionContextProxy:
         # 5. A second flush now does nothing.
         proxy.flush()
         assert mock_queue.empty()
+
+    def test_send_event_and_wait_no_adoption_signals(self, mock_queue):
+        """
+        When no adoption_signals dict is provided, send_event_and_wait
+        should return True immediately (fire-and-forget mode).
+        """
+        proxy = ExecutionContextProxy(mock_queue)
+        result = proxy.send_event_and_wait("test_event", {"data": 1})
+        assert result is True
+        # Event should still be sent
+        assert mock_queue.get_nowait() == (
+            "event",
+            ("test_event", {"data": 1}),
+        )
+
+    def test_send_event_and_wait_with_adoption_signal(
+        self, mock_queue, manager, logger
+    ):
+        """
+        When adoption_signals is provided, send_event_and_wait should
+        wait for the signal to be set before returning True.
+        """
+        adoption_signals = manager.dict()
+        task_id = 12345
+        proxy = ExecutionContextProxy(
+            mock_queue,
+            adoption_signals=adoption_signals,
+            task_id=task_id,
+        )
+
+        # Start the wait in a separate thread
+        import threading
+
+        result_holder = {"result": None}
+
+        def wait_for_event():
+            result_holder["result"] = proxy.send_event_and_wait(  # type: ignore
+                "my_event", {}, timeout=2
+            )
+
+        wait_thread = threading.Thread(target=wait_for_event)
+        wait_thread.start()
+
+        # Give the thread time to start waiting
+        time.sleep(0.1)
+
+        # Signal should not be set yet
+        signal_key = f"{task_id}:my_event"
+        assert signal_key not in adoption_signals
+
+        # Set the signal
+        adoption_signals[signal_key] = True
+
+        # Wait for the thread to complete
+        wait_thread.join(timeout=3)
+        assert not wait_thread.is_alive()
+        assert result_holder["result"] is True
+
+    def test_send_event_and_wait_timeout(self, mock_queue, manager, logger):
+        """
+        When adoption_signals is provided but the signal is never set,
+        send_event_and_wait should return False after timeout.
+        """
+        adoption_signals = manager.dict()
+        proxy = ExecutionContextProxy(
+            mock_queue,
+            adoption_signals=adoption_signals,
+            task_id=99999,
+        )
+
+        # Use a short timeout for the test
+        start_time = time.monotonic()
+        result = proxy.send_event_and_wait(
+            "timeout_event",
+            {"test": "data"},
+            timeout=0.3,
+            logger=logger,
+        )
+        elapsed = time.monotonic() - start_time
+
+        assert result is False
+        # Should have waited at least the timeout duration
+        assert elapsed >= 0.25  # Allow some margin
+        # Event should still have been sent
+        msg = mock_queue.get_nowait()
+        assert msg[0] == "event"
+        assert msg[1][0] == "timeout_event"
+
+    def test_send_event_and_wait_signal_cleanup(
+        self, mock_queue, manager, logger
+    ):
+        """
+        When the signal is received, the signal key should be cleaned up
+        from the adoption_signals dict.
+        """
+        adoption_signals = manager.dict()
+        task_id = 55555
+        proxy = ExecutionContextProxy(
+            mock_queue,
+            adoption_signals=adoption_signals,
+            task_id=task_id,
+        )
+
+        signal_key = f"{task_id}:cleanup_event"
+        adoption_signals[signal_key] = True
+
+        result = proxy.send_event_and_wait("cleanup_event", {}, timeout=1)
+
+        assert result is True
+        # The signal key should have been cleaned up
+        assert signal_key not in adoption_signals
+
+    def test_sub_context_inherits_adoption_signals(self, mock_queue, manager):
+        """
+        Sub-contexts should inherit the adoption_signals and task_id
+        from their parent.
+        """
+        adoption_signals = manager.dict()
+        parent = ExecutionContextProxy(
+            mock_queue,
+            adoption_signals=adoption_signals,
+            task_id=11111,
+        )
+
+        child = parent.sub_context(0.0, 0.5)
+
+        assert child._adoption_signals is adoption_signals
+        assert child._task_id == 11111

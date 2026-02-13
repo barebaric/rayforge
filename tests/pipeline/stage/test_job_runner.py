@@ -70,6 +70,7 @@ def test_jobrunner_assembles_step_artifacts_correctly(
     )
 
     mock_proxy = MagicMock()
+    mock_proxy.send_event_and_wait.return_value = True  # Acknowledge events
 
     job_key = ArtifactKey.for_job()
     result = make_job_artifact_in_subprocess(
@@ -83,8 +84,8 @@ def test_jobrunner_assembles_step_artifacts_correctly(
 
     # Assert
     assert result is None  # Runner returns None now
-    mock_proxy.send_event.assert_called_once()
-    event_name, event_data = mock_proxy.send_event.call_args[0]
+    mock_proxy.send_event_and_wait.assert_called_once()
+    event_name, event_data = mock_proxy.send_event_and_wait.call_args[0]
     assert event_name == "artifact_created"
 
     final_handle_dict = event_data["handle_dict"]
@@ -145,6 +146,7 @@ def test_jobrunner_reconstructs_doc_from_dict(context_initializer, machine):
     )
 
     mock_proxy = MagicMock()
+    mock_proxy.send_event_and_wait.return_value = True  # Acknowledge events
 
     job_key = ArtifactKey.for_job()
     make_job_artifact_in_subprocess(
@@ -156,7 +158,7 @@ def test_jobrunner_reconstructs_doc_from_dict(context_initializer, machine):
         job_key,
     )
 
-    event_name, event_data = mock_proxy.send_event.call_args[0]
+    event_name, event_data = mock_proxy.send_event_and_wait.call_args[0]
     final_handle_dict = event_data["handle_dict"]
     final_handle = create_handle_from_dict(final_handle_dict)
     final_artifact = get_context().artifact_store.get(final_handle)

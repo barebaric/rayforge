@@ -1,5 +1,5 @@
 import pytest
-from unittest.mock import MagicMock, ANY
+from unittest.mock import MagicMock
 from typing import cast
 import numpy as np
 
@@ -104,6 +104,7 @@ def test_pixel_perfect_vector_render(vector_artifact_handle):
         color_set_dict=color_set.to_dict(),
     )
     mock_proxy = MagicMock()
+    mock_proxy.send_event_and_wait.return_value = True  # Acknowledge events
 
     result = make_workpiece_view_artifact_in_subprocess(
         mock_proxy,
@@ -114,14 +115,16 @@ def test_pixel_perfect_vector_render(vector_artifact_handle):
     )
     assert result is None
 
-    # Extract handle from the "created" event
-    mock_proxy.send_event.assert_any_call("view_artifact_created", ANY)
-    created_call = next(
+    # Find the view_artifact_created event
+    created_calls = [
         c
-        for c in mock_proxy.send_event.call_args_list
+        for c in mock_proxy.send_event_and_wait.call_args_list
         if c[0][0] == "view_artifact_created"
+    ]
+    assert len(created_calls) == 1, (
+        f"Expected 1 view_artifact_created event, got {len(created_calls)}"
     )
-    handle_dict = created_call[0][1]["handle_dict"]
+    handle_dict = created_calls[0][0][1]["handle_dict"]
 
     assert handle_dict is not None
     handle = WorkPieceViewArtifactHandle.from_dict(handle_dict)
@@ -155,6 +158,7 @@ def test_pixel_perfect_texture_chunk_alignment(texture_artifact_handle):
         color_set_dict=color_set.to_dict(),
     )
     mock_proxy = MagicMock()
+    mock_proxy.send_event_and_wait.return_value = True  # Acknowledge events
 
     result = make_workpiece_view_artifact_in_subprocess(
         mock_proxy,
@@ -165,14 +169,16 @@ def test_pixel_perfect_texture_chunk_alignment(texture_artifact_handle):
     )
     assert result is None
 
-    # Extract handle from the "created" event
-    mock_proxy.send_event.assert_any_call("view_artifact_created", ANY)
-    created_call = next(
+    # Find the view_artifact_created event
+    created_calls = [
         c
-        for c in mock_proxy.send_event.call_args_list
+        for c in mock_proxy.send_event_and_wait.call_args_list
         if c[0][0] == "view_artifact_created"
+    ]
+    assert len(created_calls) == 1, (
+        f"Expected 1 view_artifact_created event, got {len(created_calls)}"
     )
-    handle_dict = created_call[0][1]["handle_dict"]
+    handle_dict = created_calls[0][0][1]["handle_dict"]
 
     assert handle_dict is not None
     handle = WorkPieceViewArtifactHandle.from_dict(handle_dict)
@@ -215,6 +221,7 @@ def test_progressive_rendering_increases_pixel_count(vector_artifact_handle):
         color_set_dict=color_set.to_dict(),
     )
     mock_proxy = MagicMock()
+    mock_proxy.send_event_and_wait.return_value = True  # Acknowledge events
 
     result = make_workpiece_view_artifact_in_subprocess(
         mock_proxy,
@@ -233,12 +240,15 @@ def test_progressive_rendering_increases_pixel_count(vector_artifact_handle):
     ]
 
     # Extract handle from the "created" event
-    created_call = next(
+    created_calls = [
         c
-        for c in mock_proxy.send_event.call_args_list
+        for c in mock_proxy.send_event_and_wait.call_args_list
         if c[0][0] == "view_artifact_created"
+    ]
+    assert len(created_calls) == 1, (
+        f"Expected 1 view_artifact_created event, got {len(created_calls)}"
     )
-    handle_dict = created_call[0][1]["handle_dict"]
+    handle_dict = created_calls[0][0][1]["handle_dict"]
     handle = WorkPieceViewArtifactHandle.from_dict(handle_dict)
 
     try:
@@ -296,6 +306,7 @@ def test_on_demand_vertex_encoding(context_initializer):
         color_set_dict=color_set.to_dict(),
     )
     mock_proxy = MagicMock()
+    mock_proxy.send_event_and_wait.return_value = True  # Acknowledge events
 
     result = make_workpiece_view_artifact_in_subprocess(
         mock_proxy,
@@ -306,13 +317,16 @@ def test_on_demand_vertex_encoding(context_initializer):
     )
     assert result is None
 
-    mock_proxy.send_event.assert_any_call("view_artifact_created", ANY)
-    created_call = next(
+    # Find the view_artifact_created event
+    created_calls = [
         c
-        for c in mock_proxy.send_event.call_args_list
+        for c in mock_proxy.send_event_and_wait.call_args_list
         if c[0][0] == "view_artifact_created"
+    ]
+    assert len(created_calls) == 1, (
+        f"Expected 1 view_artifact_created event, got {len(created_calls)}"
     )
-    handle_dict = created_call[0][1]["handle_dict"]
+    handle_dict = created_calls[0][0][1]["handle_dict"]
     assert handle_dict is not None
     view_handle = WorkPieceViewArtifactHandle.from_dict(handle_dict)
     try:
@@ -346,6 +360,7 @@ def test_on_demand_texture_encoding(context_initializer):
         color_set_dict=color_set.to_dict(),
     )
     mock_proxy = MagicMock()
+    mock_proxy.send_event_and_wait.return_value = True  # Acknowledge events
 
     result = make_workpiece_view_artifact_in_subprocess(
         mock_proxy,
@@ -356,13 +371,16 @@ def test_on_demand_texture_encoding(context_initializer):
     )
     assert result is None
 
-    mock_proxy.send_event.assert_any_call("view_artifact_created", ANY)
-    created_call = next(
+    # Find the view_artifact_created event
+    created_calls = [
         c
-        for c in mock_proxy.send_event.call_args_list
+        for c in mock_proxy.send_event_and_wait.call_args_list
         if c[0][0] == "view_artifact_created"
+    ]
+    assert len(created_calls) == 1, (
+        f"Expected 1 view_artifact_created event, got {len(created_calls)}"
     )
-    handle_dict = created_call[0][1]["handle_dict"]
+    handle_dict = created_calls[0][0][1]["handle_dict"]
     assert handle_dict is not None
     view_handle = WorkPieceViewArtifactHandle.from_dict(handle_dict)
     try:

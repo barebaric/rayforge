@@ -324,8 +324,8 @@ class ArtifactStore:
                     to be forgotten.
         """
         shm_name = handle.shm_name
-        logger.info(
-            f"[DIAGNOSTIC] forget() called for {shm_name}, refcount="
+        logger.debug(
+            f"forget() called for {shm_name}, refcount="
             f"{self._refcounts.get(shm_name, 0)}"
         )
         shm_obj = self._managed_shms.pop(shm_name, None)
@@ -336,15 +336,12 @@ class ArtifactStore:
             )
             return
 
-        # Also remove from refcounts
         self._refcounts.pop(shm_name, None)
 
         try:
-            logger.info(
-                f"[DIAGNOSTIC] Closing shared memory block: {shm_name}"
-            )
+            logger.debug(f"Closing shared memory block: {shm_name}")
             shm_obj.close()
-            logger.info(f"[DIAGNOSTIC] Forgot shared memory block: {shm_name}")
+            logger.debug(f"Forgot shared memory block: {shm_name}")
         except Exception as e:
             logger.warning(
                 f"Error forgetting shared memory block {shm_name}: {e}"

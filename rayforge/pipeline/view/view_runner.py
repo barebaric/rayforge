@@ -174,16 +174,20 @@ def make_workpiece_view_artifact_in_subprocess(
     view_handle = artifact_store.put(view_artifact, creator_tag=creator_tag)
     logger.debug(f"Worker: Created view artifact {view_handle.shm_name}")
 
-    proxy.send_event(
+    acked = proxy.send_event_and_wait(
         "view_artifact_created",
         {"handle_dict": view_handle.to_dict()},
+        logger=logger,
     )
     logger.debug("Worker: Sent view_artifact_created event")
 
-    # Fire and Forget: Close artifact handle immediately.
+    # Close artifact handle after acknowledgment.
     # Note: We open a NEW shm connection below for rendering, so closing this
     # specific handle/fd is safe and prevents leaks.
-    artifact_store.forget(view_handle)
+    if acked:
+        artifact_store.forget(view_handle)
+    else:
+        logger.warning("View artifact not acknowledged, keeping handle open")
 
     shm = None
     try:

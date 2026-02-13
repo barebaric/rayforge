@@ -97,15 +97,18 @@ def make_workpiece_artifact_in_subprocess(
         chunk_handle = artifact_store.put(
             chunk_artifact, creator_tag=f"{creator_tag}_chunk"
         )
-        proxy.send_event(
+        acked = proxy.send_event_and_wait(
             "visual_chunk_ready",
             {
                 "handle_dict": chunk_handle.to_dict(),
                 "generation_id": generation_id,
             },
+            logger=logger,
         )
-        # Fire and Forget: Worker shouldn't hold chunk handle
-        artifact_store.forget(chunk_handle)
+        if acked:
+            artifact_store.forget(chunk_handle)
+        else:
+            logger.warning("Chunk not acknowledged, keeping handle open")
 
     final_artifact = compute_workpiece_artifact(
         workpiece=workpiece,
@@ -128,17 +131,23 @@ def make_workpiece_artifact_in_subprocess(
     # 1. Put artifact into Shared Memory
     handle = artifact_store.put(final_artifact, creator_tag=creator_tag)
 
-    # 2. Send handle to Main Process
-    proxy.send_event(
+    # 2. Send handle to Main Process and wait for acknowledgment
+    # On Windows, shared memory is destroyed when all handles are closed,
+    # so we must wait for the main process to adopt before closing.
+    acked = proxy.send_event_and_wait(
         "artifact_created",
         {"handle_dict": handle.to_dict(), "generation_id": generation_id},
+        logger=logger,
     )
 
-    # 3. Fire and Forget: Close our reference immediately.
-    # We do NOT wait for the main process. The 'forget' method closes the
-    # file descriptor in this process but does NOT unlink the SHM block,
-    # so the Main process can still open it.
-    logger.debug("Forgetting artifact handle after send (Fire and Forget).")
-    artifact_store.forget(handle)
+    # 3. Close our reference after acknowledgment
+    if acked:
+        logger.debug("Artifact acknowledged, forgetting handle.")
+        artifact_store.forget(handle)
+    else:
+        logger.warning(
+            "Artifact not acknowledged, keeping handle open. "
+            "This may cause memory pressure."
+        )
 
     return generation_id
