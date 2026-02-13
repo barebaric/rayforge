@@ -1,5 +1,5 @@
 import pytest
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 import numpy as np
 
 from rayforge.core.doc import Doc
@@ -31,7 +31,9 @@ def machine(context_initializer):
     return m
 
 
-def test_step_runner_correctly_scales_and_places_ops(machine):
+def test_step_runner_correctly_scales_and_places_ops(
+    machine, adopting_mock_proxy
+):
     """
     Tests that ops are correctly scaled from source dimensions to
     workpiece size, and then placed in world coordinates.
@@ -65,11 +67,9 @@ def test_step_runner_correctly_scales_and_places_ops(machine):
             "workpiece_dict": wp.in_world().to_dict(),
         }
     ]
-    mock_proxy = MagicMock()
-    mock_proxy.send_event_and_wait.return_value = True  # Acknowledge events
 
     result = make_step_artifact_in_subprocess(
-        proxy=mock_proxy,
+        proxy=adopting_mock_proxy,
         artifact_store=get_context().artifact_store,
         workpiece_assembly_info=assembly_info,
         step_uid="step1",
@@ -82,8 +82,7 @@ def test_step_runner_correctly_scales_and_places_ops(machine):
     )
     assert result == 1
 
-    # Check that both ops and render artifacts were created
-    calls = mock_proxy.send_event_and_wait.call_args_list
+    calls = adopting_mock_proxy.send_event_and_wait.call_args_list
     assert len(calls) == 2  # render_artifact_ready and ops_artifact_ready
 
     # Find and validate render artifact
@@ -120,7 +119,7 @@ def test_step_runner_correctly_scales_and_places_ops(machine):
     get_context().artifact_store.release(ops_handle)
 
 
-def test_step_runner_handles_texture_data(machine):
+def test_step_runner_handles_texture_data(machine, adopting_mock_proxy):
     """
     Tests that texture data is correctly packaged into a TextureInstance
     with correct final transformation matrix.
@@ -148,11 +147,9 @@ def test_step_runner_handles_texture_data(machine):
             "workpiece_dict": wp.in_world().to_dict(),
         }
     ]
-    mock_proxy = MagicMock()
-    mock_proxy.send_event_and_wait.return_value = True  # Acknowledge events
 
     result = make_step_artifact_in_subprocess(
-        proxy=mock_proxy,
+        proxy=adopting_mock_proxy,
         artifact_store=get_context().artifact_store,
         workpiece_assembly_info=assembly_info,
         step_uid="step1",
@@ -165,10 +162,10 @@ def test_step_runner_handles_texture_data(machine):
     )
     assert result == 1
 
-    assert mock_proxy.send_event_and_wait.call_count == 2
+    assert adopting_mock_proxy.send_event_and_wait.call_count == 2
     render_call = next(
         c
-        for c in mock_proxy.send_event_and_wait.call_args_list
+        for c in adopting_mock_proxy.send_event_and_wait.call_args_list
         if c[0][0] == "render_artifact_ready"
     )
     render_handle_dict = render_call[0][1]["handle_dict"]
@@ -209,7 +206,9 @@ def test_step_runner_handles_texture_data(machine):
     get_context().artifact_store.release(render_handle)
 
 
-def test_step_runner_instantiates_transformers_from_dict(machine):
+def test_step_runner_instantiates_transformers_from_dict(
+    machine, adopting_mock_proxy
+):
     """
     Tests that the runner correctly instantiates transformers from
     dictionaries before calling compute.
@@ -246,9 +245,6 @@ def test_step_runner_instantiates_transformers_from_dict(machine):
         "enabled": True,
     }
 
-    mock_proxy = MagicMock()
-    mock_proxy.send_event_and_wait.return_value = True  # Acknowledge events
-
     with patch(
         "rayforge.pipeline.stage.step_compute.compute_step_artifacts"
     ) as mock_compute:
@@ -258,7 +254,7 @@ def test_step_runner_instantiates_transformers_from_dict(machine):
         )
 
         result = make_step_artifact_in_subprocess(
-            proxy=mock_proxy,
+            proxy=adopting_mock_proxy,
             artifact_store=get_context().artifact_store,
             workpiece_assembly_info=assembly_info,
             step_uid="step1",

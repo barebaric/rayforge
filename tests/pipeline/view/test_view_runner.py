@@ -1,5 +1,4 @@
 import pytest
-from unittest.mock import MagicMock
 from typing import cast
 import numpy as np
 
@@ -91,23 +90,23 @@ def texture_artifact_handle(context_initializer):
     get_context().artifact_store.release(handle)
 
 
-def test_pixel_perfect_vector_render(vector_artifact_handle):
+def test_pixel_perfect_vector_render(
+    vector_artifact_handle, adopting_mock_proxy
+):
     """
     Validates the runner function produces a pixel-perfect render for
     vector data.
     """
     color_set = create_test_color_set({"cut": ("#000", "#F00")})
     context = RenderContext(
-        pixels_per_mm=(1.0, 1.0),  # 1px per mm
+        pixels_per_mm=(1.0, 1.0),
         show_travel_moves=False,
-        margin_px=1,  # Use a margin
+        margin_px=1,
         color_set_dict=color_set.to_dict(),
     )
-    mock_proxy = MagicMock()
-    mock_proxy.send_event_and_wait.return_value = True  # Acknowledge events
 
     result = make_workpiece_view_artifact_in_subprocess(
-        mock_proxy,
+        adopting_mock_proxy,
         get_context().artifact_store,
         vector_artifact_handle.to_dict(),
         context.to_dict(),
@@ -118,7 +117,7 @@ def test_pixel_perfect_vector_render(vector_artifact_handle):
     # Find the view_artifact_created event
     created_calls = [
         c
-        for c in mock_proxy.send_event_and_wait.call_args_list
+        for c in adopting_mock_proxy.send_event_and_wait.call_args_list
         if c[0][0] == "view_artifact_created"
     ]
     assert len(created_calls) == 1, (
@@ -145,7 +144,9 @@ def test_pixel_perfect_vector_render(vector_artifact_handle):
         get_context().artifact_store.release(handle)
 
 
-def test_pixel_perfect_texture_chunk_alignment(texture_artifact_handle):
+def test_pixel_perfect_texture_chunk_alignment(
+    texture_artifact_handle, adopting_mock_proxy
+):
     """
     Validates the runner correctly renders an artifact that was
     assembled from chunks, ensuring perfect alignment.
@@ -157,11 +158,9 @@ def test_pixel_perfect_texture_chunk_alignment(texture_artifact_handle):
         margin_px=0,
         color_set_dict=color_set.to_dict(),
     )
-    mock_proxy = MagicMock()
-    mock_proxy.send_event_and_wait.return_value = True  # Acknowledge events
 
     result = make_workpiece_view_artifact_in_subprocess(
-        mock_proxy,
+        adopting_mock_proxy,
         get_context().artifact_store,
         texture_artifact_handle.to_dict(),
         context.to_dict(),
@@ -172,7 +171,7 @@ def test_pixel_perfect_texture_chunk_alignment(texture_artifact_handle):
     # Find the view_artifact_created event
     created_calls = [
         c
-        for c in mock_proxy.send_event_and_wait.call_args_list
+        for c in adopting_mock_proxy.send_event_and_wait.call_args_list
         if c[0][0] == "view_artifact_created"
     ]
     assert len(created_calls) == 1, (
@@ -206,7 +205,9 @@ def test_pixel_perfect_texture_chunk_alignment(texture_artifact_handle):
         get_context().artifact_store.release(handle)
 
 
-def test_progressive_rendering_increases_pixel_count(vector_artifact_handle):
+def test_progressive_rendering_increases_pixel_count(
+    vector_artifact_handle, adopting_mock_proxy
+):
     """
     Validates that progressive rendering sends intermediate updates
     with increasing numbers of non-transparent pixels.
@@ -220,11 +221,9 @@ def test_progressive_rendering_increases_pixel_count(vector_artifact_handle):
         margin_px=1,
         color_set_dict=color_set.to_dict(),
     )
-    mock_proxy = MagicMock()
-    mock_proxy.send_event_and_wait.return_value = True  # Acknowledge events
 
     result = make_workpiece_view_artifact_in_subprocess(
-        mock_proxy,
+        adopting_mock_proxy,
         get_context().artifact_store,
         vector_artifact_handle.to_dict(),
         context.to_dict(),
@@ -235,14 +234,14 @@ def test_progressive_rendering_increases_pixel_count(vector_artifact_handle):
     # Get all view_artifact_updated events and their pixel counts
     updated_events = [
         call
-        for call in mock_proxy.send_event.call_args_list
+        for call in adopting_mock_proxy.send_event.call_args_list
         if call[0][0] == "view_artifact_updated"
     ]
 
     # Extract handle from the "created" event
     created_calls = [
         c
-        for c in mock_proxy.send_event_and_wait.call_args_list
+        for c in adopting_mock_proxy.send_event_and_wait.call_args_list
         if c[0][0] == "view_artifact_created"
     ]
     assert len(created_calls) == 1, (
@@ -285,7 +284,7 @@ def test_progressive_rendering_increases_pixel_count(vector_artifact_handle):
         get_context().artifact_store.release(handle)
 
 
-def test_on_demand_vertex_encoding(context_initializer):
+def test_on_demand_vertex_encoding(context_initializer, adopting_mock_proxy):
     """Test that vertex data is encoded on-demand when missing."""
     ops = Ops()
     ops.set_power(1.0)
@@ -305,11 +304,9 @@ def test_on_demand_vertex_encoding(context_initializer):
         margin_px=0,
         color_set_dict=color_set.to_dict(),
     )
-    mock_proxy = MagicMock()
-    mock_proxy.send_event_and_wait.return_value = True  # Acknowledge events
 
     result = make_workpiece_view_artifact_in_subprocess(
-        mock_proxy,
+        adopting_mock_proxy,
         get_context().artifact_store,
         handle.to_dict(),
         context.to_dict(),
@@ -320,7 +317,7 @@ def test_on_demand_vertex_encoding(context_initializer):
     # Find the view_artifact_created event
     created_calls = [
         c
-        for c in mock_proxy.send_event_and_wait.call_args_list
+        for c in adopting_mock_proxy.send_event_and_wait.call_args_list
         if c[0][0] == "view_artifact_created"
     ]
     assert len(created_calls) == 1, (
@@ -341,7 +338,7 @@ def test_on_demand_vertex_encoding(context_initializer):
     get_context().artifact_store.release(handle)
 
 
-def test_on_demand_texture_encoding(context_initializer):
+def test_on_demand_texture_encoding(context_initializer, adopting_mock_proxy):
     """Test that texture data is encoded on-demand when missing."""
     ops = Ops()
     ops.scan_to(10.0, 0.0, 0.0, bytearray([100, 150, 200]))
@@ -359,11 +356,9 @@ def test_on_demand_texture_encoding(context_initializer):
         margin_px=0,
         color_set_dict=color_set.to_dict(),
     )
-    mock_proxy = MagicMock()
-    mock_proxy.send_event_and_wait.return_value = True  # Acknowledge events
 
     result = make_workpiece_view_artifact_in_subprocess(
-        mock_proxy,
+        adopting_mock_proxy,
         get_context().artifact_store,
         handle.to_dict(),
         context.to_dict(),
@@ -374,7 +369,7 @@ def test_on_demand_texture_encoding(context_initializer):
     # Find the view_artifact_created event
     created_calls = [
         c
-        for c in mock_proxy.send_event_and_wait.call_args_list
+        for c in adopting_mock_proxy.send_event_and_wait.call_args_list
         if c[0][0] == "view_artifact_created"
     ]
     assert len(created_calls) == 1, (
