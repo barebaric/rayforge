@@ -2,6 +2,7 @@ from __future__ import annotations
 import logging
 import asyncio
 import threading
+from enum import Enum
 from typing import (
     Optional,
     TYPE_CHECKING,
@@ -10,6 +11,7 @@ from typing import (
     Any,
     Callable,
     Dict,
+    List,
 )
 from blinker import Signal
 from contextlib import contextmanager
@@ -46,6 +48,24 @@ if TYPE_CHECKING:
     from ..shared.tasker.manager import TaskManager
 
 logger = logging.getLogger(__name__)
+
+
+class InvalidationScope(Enum):
+    """Defines the scope of invalidation for downstream artifacts."""
+
+    FULL_REPRODUCTION = "full_reproduction"
+    """
+    Invalidates workpieces, which cascades to steps and then to the job.
+    Used for changes that require artifact regeneration (geometry, parameters,
+    size changes).
+    """
+
+    STEP_ONLY = "step_only"
+    """
+    Invalidates steps directly, which cascades to the job.
+    Used for position/rotation-only transform changes where workpiece
+    geometry remains unchanged.
+    """
 
 
 class Pipeline:
@@ -443,6 +463,26 @@ class Pipeline:
 
         self._schedule_reconciliation()
 
+    def _collect_affected_workpieces(self, origin: DocItem) -> List[WorkPiece]:
+        """
+        Collects all workpieces affected by a transform change.
+
+        Handles WorkPiece, Group, and Layer cases uniformly by collecting
+        either the single workpiece or all descendant workpieces.
+
+        Args:
+            origin: The DocItem whose transform changed (WorkPiece, Group,
+                    or Layer).
+
+        Returns:
+            A list of WorkPiece instances affected by the transform change.
+        """
+        if isinstance(origin, WorkPiece):
+            return [origin]
+        elif isinstance(origin, (Group, Layer)):
+            return list(origin.get_descendants(of_type=WorkPiece))
+        return []
+
     def _on_descendant_updated(
         self,
         sender: Any,
@@ -451,10 +491,21 @@ class Pipeline:
         parent_of_origin: DocItem,
     ) -> None:
         """
-        Handles non-transform updates that require regeneration.
+        Handles property changes that require artifact regeneration.
 
-        Uses DAG-based invalidation: marking a node dirty automatically
-        cascades to all dependents (workpiece -> step -> job).
+        This includes geometry changes, parameter updates, and other
+        non-transform modifications. These changes require full
+        re-production of the workpiece artifact.
+
+        Uses DAG-based invalidation with FULL_REPRODUCTION scope:
+        - Invalidating a workpiece automatically cascades to steps
+        - Steps cascade to the job
+        - This ensures all dependent artifacts are regenerated
+
+        Args:
+            sender: The signal sender.
+            origin: The Step or WorkPiece that was updated.
+            parent_of_origin: The parent of the updated item.
         """
         logger.debug(
             f"_on_descendant_updated called with "
@@ -482,18 +533,26 @@ class Pipeline:
         old_matrix: Optional["Matrix"] = None,
     ) -> None:
         """
-        Handles transform changes by invalidating downstream artifacts.
+        Handles transform changes with selective invalidation.
 
-        Uses DAG-based invalidation: marking workpieces dirty automatically
-        cascades to steps and then to the job.
+        Different transform changes require different invalidation scopes:
+        - Position/rotation only: Use STEP_ONLY scope (skip workpiece
+          regeneration since geometry is unchanged)
+        - Size change: Use FULL_REPRODUCTION scope (workpiece geometry
+          changed, requiring regeneration)
+
+        This selective approach optimizes performance by avoiding
+        unnecessary workpiece regeneration for pure position/rotation
+        changes.
+
+        Args:
+            sender: The signal sender.
+            origin: The WorkPiece, Group, or Layer whose transform changed.
+            parent_of_origin: The parent of the transformed item.
+            old_matrix: The previous transform matrix, used to detect size
+                         changes. Only provided for WorkPiece origins.
         """
-        workpieces_to_check = []
-        if isinstance(origin, WorkPiece):
-            workpieces_to_check.append(origin)
-        elif isinstance(origin, (Group, Layer)):
-            workpieces_to_check.extend(
-                origin.get_descendants(of_type=WorkPiece)
-            )
+        workpieces_to_check = self._collect_affected_workpieces(origin)
 
         for wp in workpieces_to_check:
             size_changed = False
@@ -687,10 +746,13 @@ class Pipeline:
         self._data_generation_id += 1
         data_gen_id = self._data_generation_id
 
+        old_context = self._active_context
+        if old_context is not None:
+            old_context.mark_superseded()
+
         ctx = GenerationContext(
             generation_id=data_gen_id,
             release_callback=self._artifact_manager.release_handle,
-            is_superseded_callback=lambda: self._active_context is not ctx,
         )
         self._contexts[data_gen_id] = ctx
         self._active_context = ctx

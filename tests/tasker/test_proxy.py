@@ -4,6 +4,7 @@ import logging
 from queue import Queue, Full
 from unittest.mock import Mock, call
 from multiprocessing import Manager
+from typing import Any
 from rayforge.shared.tasker.proxy import ExecutionContextProxy
 
 
@@ -209,10 +210,10 @@ class TestExecutionContextProxy:
         # Start the wait in a separate thread
         import threading
 
-        result_holder = {"result": None}
+        result_holder: dict[str, Any] = {"result": None}
 
         def wait_for_event():
-            result_holder["result"] = proxy.send_event_and_wait(  # type: ignore
+            result_holder["result"] = proxy.send_event_and_wait(
                 "my_event", {}, timeout=2
             )
 

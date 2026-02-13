@@ -1,9 +1,17 @@
 from __future__ import annotations
+from enum import Enum, auto
 from typing import TYPE_CHECKING, Set, Callable, Optional
 
 if TYPE_CHECKING:
     from rayforge.pipeline.artifact.key import ArtifactKey
     from rayforge.pipeline.artifact.handle import BaseArtifactHandle
+
+
+class ContextState(Enum):
+    """Represents the state of a GenerationContext."""
+
+    ACTIVE = auto()
+    SUPERSEDED = auto()
 
 
 class GenerationContext:
@@ -28,7 +36,6 @@ class GenerationContext:
         release_callback: Optional[
             Callable[["BaseArtifactHandle"], None]
         ] = None,
-        is_superseded_callback: Optional[Callable[[], bool]] = None,
     ):
         """
         Initialize a new GenerationContext.
@@ -37,14 +44,12 @@ class GenerationContext:
             generation_id: A unique integer identifier for this generation.
             release_callback: Optional callback to release resources. If not
                 provided, resources will not be released on shutdown.
-            is_superseded_callback: Optional callback that returns True if
-                this context is no longer the active one.
         """
         self._generation_id = generation_id
         self._task_keys: Set["ArtifactKey"] = set()
         self._resources: Set["BaseArtifactHandle"] = set()
         self._release_callback = release_callback
-        self._is_superseded_callback = is_superseded_callback
+        self._state = ContextState.ACTIVE
         self._shutdown = False
 
     @property
@@ -66,6 +71,11 @@ class GenerationContext:
     def is_shutdown(self) -> bool:
         """Return True if the context has been shut down."""
         return self._shutdown
+
+    @property
+    def state(self) -> ContextState:
+        """Return the current state of this context."""
+        return self._state
 
     def add_task(self, key: "ArtifactKey") -> None:
         """
@@ -107,9 +117,13 @@ class GenerationContext:
         Returns:
             True if this context is no longer active, False otherwise.
         """
-        if self._is_superseded_callback is None:
-            return False
-        return self._is_superseded_callback()
+        return self._state == ContextState.SUPERSEDED
+
+    def mark_superseded(self) -> None:
+        """
+        Mark this context as superseded by a newer generation.
+        """
+        self._state = ContextState.SUPERSEDED
 
     def add_resource(self, handle: "BaseArtifactHandle") -> None:
         """
