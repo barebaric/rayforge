@@ -626,7 +626,8 @@ class ArtifactManager:
         Declares the expected artifacts for a specific generation.
 
         Creates placeholder entries in the ledger for any keys that do not yet
-        exist for this generation ID.
+        exist for this generation ID. For step keys, copies handles from
+        previous generations to avoid unnecessary regeneration.
 
         Args:
             valid_keys: A set of ArtifactKeys that should exist.
@@ -639,10 +640,60 @@ class ArtifactManager:
         for base_key in valid_keys:
             key = make_composite_key(base_key, generation_id)
             if key not in self._ledger:
+                if base_key.group == "step":
+                    existing_handle = self._find_existing_handle(
+                        base_key, generation_id
+                    )
+                    if existing_handle is not None:
+                        logger.debug(
+                            f"declare_generation: Copying step handle from "
+                            f"previous generation to {key}"
+                        )
+                        self.retain_handle(existing_handle)
+                        self._ledger[key] = LedgerEntry(
+                            handle=existing_handle,
+                            generation_id=generation_id,
+                        )
+                        continue
+
                 logger.debug(f"declare_generation: Creating entry at {key}")
                 self._ledger[key] = LedgerEntry(
                     generation_id=generation_id,
                 )
+
+    def _find_existing_handle(
+        self, key: ArtifactKey, before_generation_id: GenerationID
+    ) -> Optional[BaseArtifactHandle]:
+        """
+        Find the most recent handle for a key before a given generation.
+
+        Searches backwards through the ledger to find the latest handle
+        for the given key at a generation ID less than the specified one.
+
+        Args:
+            key: The ArtifactKey to search for.
+            before_generation_id: Only consider entries with generation ID
+                less than this value.
+
+        Returns:
+            The most recent handle, or None if not found.
+        """
+        best_gen_id = -1
+        best_handle = None
+
+        for composite_key, entry in self._ledger.items():
+            if extract_base_key(composite_key) != key:
+                continue
+            gen_id = extract_generation_id(composite_key)
+            if gen_id >= before_generation_id:
+                continue
+            if entry.handle is None:
+                continue
+            if gen_id > best_gen_id:
+                best_gen_id = gen_id
+                best_handle = entry.handle
+
+        return best_handle
 
     def prune(
         self,

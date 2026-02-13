@@ -4,6 +4,7 @@ import pytest
 from unittest.mock import MagicMock, patch
 from rayforge.core.doc import Doc
 from rayforge.core.group import Group
+from rayforge.core.step import Step
 from rayforge.core.workpiece import WorkPiece
 from rayforge.core.matrix import Matrix
 from rayforge.pipeline.pipeline import Pipeline, InvalidationScope
@@ -52,7 +53,7 @@ def pipeline(mock_task_mgr, mock_machine, mock_artifact_store):
 
 @pytest.fixture
 def doc_with_workpieces():
-    """Creates a doc with workpieces for testing."""
+    """Creates a doc with workpieces and a step for testing."""
     doc = Doc()
     layer = doc.active_layer
 
@@ -62,7 +63,11 @@ def doc_with_workpieces():
     layer.add_workpiece(wp1)
     layer.add_workpiece(wp2)
 
-    return doc, layer, wp1, wp2
+    step = Step(typelabel="contour")
+    assert layer.workflow is not None
+    layer.workflow.add_step(step)
+
+    return doc, layer, wp1, wp2, step
 
 
 @pytest.fixture
@@ -95,7 +100,7 @@ def test_invalidation_scope_step_only_exists():
 
 def test_collect_single_workpiece(doc_with_workpieces, pipeline):
     """Test collecting a single workpiece."""
-    _, _, wp1, _ = doc_with_workpieces
+    _, _, wp1, _, _ = doc_with_workpieces
     result = pipeline._collect_affected_workpieces(wp1)
     assert len(result) == 1
     assert result[0] == wp1
@@ -112,14 +117,14 @@ def test_collect_from_group(doc_with_group, pipeline):
 
 def test_collect_from_layer(doc_with_workpieces, pipeline):
     """Test collecting workpieces from a layer."""
-    doc, layer, _, _ = doc_with_workpieces
+    doc, layer, _, _, _ = doc_with_workpieces
     result = pipeline._collect_affected_workpieces(layer)
     assert len(result) == 2
 
 
 def test_workpiece_update_invalidates_workpiece(doc_with_workpieces, pipeline):
-    """Test that workpiece update invalidates the workpiece."""
-    _, _, wp1, _ = doc_with_workpieces
+    """Test that workpiece update invalidates workpiece-step pairs."""
+    _, _, wp1, _, step = doc_with_workpieces
 
     with patch.object(pipeline, "_invalidate_node") as mock_invalidate:
         with patch.object(
@@ -131,8 +136,8 @@ def test_workpiece_update_invalidates_workpiece(doc_with_workpieces, pipeline):
                 parent_of_origin=wp1.parent,
             )
 
-            wp_key = ArtifactKey.for_workpiece(wp1.uid)
-            mock_invalidate.assert_called_once_with(wp_key)
+            wp_step_key = ArtifactKey.for_workpiece(wp1.uid, step.uid)
+            mock_invalidate.assert_called_once_with(wp_step_key)
             mock_reconcile.assert_called_once()
 
 
@@ -140,7 +145,7 @@ def test_workpiece_position_only_invalidates_steps(
     doc_with_workpieces, pipeline
 ):
     """Test that position-only change invalidates steps, not workpiece."""
-    doc, layer, wp1, _ = doc_with_workpieces
+    doc, layer, wp1, _, _ = doc_with_workpieces
 
     old_matrix = Matrix()
     wp1.matrix = Matrix().set_translation(100, 200)
@@ -156,15 +161,16 @@ def test_workpiece_position_only_invalidates_steps(
                 old_matrix=old_matrix,
             )
 
-            mock_invalidate.assert_not_called()
+            step_key = ArtifactKey.for_step(list(layer.workflow.steps)[0].uid)
+            mock_invalidate.assert_called_once_with(step_key)
             mock_reconcile.assert_called_once()
 
 
 def test_workpiece_scale_change_invalidates_workpiece(
     doc_with_workpieces, pipeline
 ):
-    """Test that scale change invalidates the workpiece."""
-    doc, layer, wp1, _ = doc_with_workpieces
+    """Test that scale change invalidates the workpiece-step pair."""
+    doc, layer, wp1, _, step = doc_with_workpieces
 
     old_matrix = Matrix()
     wp1.matrix = Matrix.scale(2.0, 2.0)
@@ -180,8 +186,9 @@ def test_workpiece_scale_change_invalidates_workpiece(
                 old_matrix=old_matrix,
             )
 
-            wp_key = ArtifactKey.for_workpiece(wp1.uid)
-            mock_invalidate.assert_called_once_with(wp_key)
+            wp_step_key = ArtifactKey.for_workpiece(wp1.uid, step.uid)
+            assert mock_invalidate.call_count == 2
+            mock_invalidate.assert_any_call(wp_step_key)
             mock_reconcile.assert_called_once()
 
 
@@ -208,8 +215,8 @@ def test_group_transform_no_invalidations_without_old_matrix(
 def test_layer_transform_no_invalidations_without_old_matrix(
     doc_with_workpieces, pipeline
 ):
-    """Test that layer transform without old_matrix doesn't invalidate."""
-    doc, layer, wp1, wp2 = doc_with_workpieces
+    """Test that layer transform without old_matrix invalidates steps."""
+    doc, layer, wp1, wp2, _ = doc_with_workpieces
 
     with patch.object(pipeline, "_invalidate_node") as mock_invalidate:
         with patch.object(
@@ -221,7 +228,10 @@ def test_layer_transform_no_invalidations_without_old_matrix(
                 parent_of_origin=layer.parent,
             )
 
-            mock_invalidate.assert_not_called()
+            step_uid = list(layer.workflow.steps)[0].uid
+            step_key = ArtifactKey.for_step(step_uid)
+            assert mock_invalidate.call_count == 2
+            mock_invalidate.assert_any_call(step_key)
             mock_reconcile.assert_called_once()
 
 
@@ -229,7 +239,7 @@ def test_workpiece_rotation_only_invalidates_steps(
     doc_with_workpieces, pipeline
 ):
     """Test that rotation-only change invalidates steps, not workpiece."""
-    doc, layer, wp1, _ = doc_with_workpieces
+    doc, layer, wp1, _, _ = doc_with_workpieces
 
     old_matrix = Matrix()
     wp1.matrix = Matrix.rotation(45.0)
@@ -245,5 +255,7 @@ def test_workpiece_rotation_only_invalidates_steps(
                 old_matrix=old_matrix,
             )
 
-            mock_invalidate.assert_not_called()
+            step_uid = list(layer.workflow.steps)[0].uid
+            step_key = ArtifactKey.for_step(step_uid)
+            mock_invalidate.assert_called_once_with(step_key)
             mock_reconcile.assert_called_once()

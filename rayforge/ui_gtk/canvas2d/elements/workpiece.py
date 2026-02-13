@@ -482,7 +482,9 @@ class WorkPieceElement(CanvasElement):
                 if not self._ops_visibility.get(step_uid, True):
                     continue
 
-                view_handle = self.view_manager.get_view_handle(self.data.uid)
+                view_handle = self.view_manager.get_view_handle(
+                    self.data.uid, step.uid
+                )
                 if view_handle is None:
                     logger.debug(
                         f"No view handle for workpiece {self.data.uid} "

@@ -4,7 +4,7 @@ Defines the PipelineGraph class for managing the dependency graph.
 
 from __future__ import annotations
 import logging
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 from ...core.doc import Doc
 from ...core.layer import Layer
 from ...core.workpiece import WorkPiece
@@ -58,32 +58,30 @@ class PipelineGraph:
         Build the graph from the Doc structure.
 
         This method traverses the document and creates nodes for:
-        - All WorkPieces
+        - All (WorkPiece, Step) pairs
         - All Steps
         - A single Job node
 
         Dependencies are established:
-        - Steps depend on their WorkPieces
+        - Steps depend on their (WorkPiece, Step) pair nodes
         - Job depends on all Steps
         """
         logger.debug("Building pipeline graph from Doc")
 
         self._nodes.clear()
 
-        workpiece_nodes: Dict[str, ArtifactNode] = {}
+        workpiece_step_nodes: Dict[Tuple[str, str], ArtifactNode] = {}
         step_nodes: Dict[str, ArtifactNode] = {}
 
         for layer in doc.children:
             if not isinstance(layer, Layer):
                 continue
 
-            for child in layer.children:
-                if isinstance(child, WorkPiece):
-                    wp_key = ArtifactKey.for_workpiece(child.uid)
-                    wp_node = ArtifactNode(key=wp_key)
-                    self.add_node(wp_node)
-                    workpiece_nodes[child.uid] = wp_node
-                    logger.debug(f"Created WorkPiece node: {wp_key}")
+            workpieces = [
+                child
+                for child in layer.children
+                if isinstance(child, WorkPiece)
+            ]
 
             if layer.workflow is not None:
                 for step in layer.workflow.steps:
@@ -92,6 +90,17 @@ class PipelineGraph:
                     self.add_node(step_node)
                     step_nodes[step.uid] = step_node
                     logger.debug(f"Created Step node: {step_key}")
+
+                    for wp in workpieces:
+                        wp_step_key = ArtifactKey.for_workpiece(
+                            wp.uid, step.uid
+                        )
+                        wp_step_node = ArtifactNode(key=wp_step_key)
+                        self.add_node(wp_step_node)
+                        workpiece_step_nodes[(wp.uid, step.uid)] = wp_step_node
+                        logger.debug(
+                            f"Created WorkPiece-Step node: {wp_step_key}"
+                        )
 
         for layer in doc.children:
             if not isinstance(layer, Layer):
@@ -104,12 +113,14 @@ class PipelineGraph:
                         continue
 
                     for wp in layer.all_workpieces:
-                        wp_node = workpiece_nodes.get(wp.uid)
-                        if wp_node is not None:
-                            step_node.add_dependency(wp_node)
+                        wp_step_node = workpiece_step_nodes.get(
+                            (wp.uid, step.uid)
+                        )
+                        if wp_step_node is not None:
+                            step_node.add_dependency(wp_step_node)
                             logger.debug(
                                 f"Added dependency: Step {step.uid} -> "
-                                f"WorkPiece {wp.uid}"
+                                f"WorkPiece-Step ({wp.uid}, {step.uid})"
                             )
 
         job_key = ArtifactKey.for_job()

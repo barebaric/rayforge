@@ -586,6 +586,24 @@ class TestArtifactManager(unittest.TestCase):
         self.assertIs(entry_g0.handle, wp_h)
         self.assertIsNone(entry_g1.handle)
 
+    def test_declare_generation_copies_step_handle_from_previous(self):
+        """Test declare_generation copies step handles from previous gen."""
+        step_key = ArtifactKey.for_step(STEP1_UID)
+        step_h = create_mock_handle(StepOpsArtifactHandle, "step1_ops")
+        self.manager.cache_handle(step_key, step_h, 0)
+
+        self.manager.declare_generation({step_key}, 1)
+
+        step_composite_g0 = make_composite_key(step_key, 0)
+        step_composite_g1 = make_composite_key(step_key, 1)
+        entry_g0 = self.manager._ledger.get(step_composite_g0)
+        entry_g1 = self.manager._ledger.get(step_composite_g1)
+        assert entry_g0 is not None
+        assert entry_g1 is not None
+        self.assertIs(entry_g0.handle, step_h)
+        self.assertIs(entry_g1.handle, step_h)
+        self.mock_store.retain.assert_called()
+
 
 class TestArtifactManagerCommitRetains(unittest.TestCase):
     """Tests for Manager's Claim on cache_handle."""

@@ -87,10 +87,9 @@ def context():
 def setup_view_manager_with_source(
     view_manager, wp_uid, source_handle, context, step_uid
 ):
-    view_manager._source_artifact_handles[wp_uid] = source_handle
+    view_manager._source_artifact_handles[(wp_uid, step_uid)] = source_handle
     view_manager._current_view_context = context
-    view_manager._workpiece_to_step[wp_uid] = step_uid
-    return ArtifactKey.for_view(wp_uid)
+    return view_manager._get_task_key(wp_uid, step_uid)
 
 
 def test_view_manager_requests_vector_render(
@@ -126,7 +125,7 @@ def test_view_manager_handles_events_and_completion(
     setup_view_manager_with_source(
         view_manager, wp_uid, source_handle, context, step_uid
     )
-    key = ArtifactKey.for_view(wp_uid)
+    key = view_manager._get_task_key(wp_uid, step_uid)
 
     view_manager.request_view_render(wp_uid, step_uid)
 
@@ -138,7 +137,11 @@ def test_view_manager_handles_events_and_completion(
     mock_task = MagicMock()
     mock_task.key = key
     mock_task.id = 123
-    mock_task.kwargs = {"step_uid": step_uid, "generation_id": 0}
+    mock_task.kwargs = {
+        "step_uid": step_uid,
+        "workpiece_uid": wp_uid,
+        "generation_id": 0,
+    }
     mock_task.get_status.return_value = "completed"
     mock_task.is_final.return_value = False
 
@@ -191,8 +194,7 @@ def test_view_manager_handles_events_and_completion(
     when_done_cb(mock_task)
 
     finished_handler.assert_called_once()
-    internal_key = ArtifactKey.for_view(wp_uid)
-    assert finished_handler.call_args.kwargs["key"] == internal_key
+    assert finished_handler.call_args.kwargs["key"] == key
     ready_handler.assert_called_once()
 
 
@@ -207,7 +209,7 @@ def test_adoption_failure_does_not_crash(
     setup_view_manager_with_source(
         view_manager, wp_uid, source_handle, context, step_uid
     )
-    key = ArtifactKey.for_view(wp_uid)
+    key = view_manager._get_task_key(wp_uid, step_uid)
 
     view_manager.request_view_render(wp_uid, step_uid)
 
@@ -217,7 +219,7 @@ def test_adoption_failure_does_not_crash(
 
     mock_task = MagicMock()
     mock_task.key = key
-    mock_task.kwargs = {"step_uid": step_uid}
+    mock_task.kwargs = {"step_uid": step_uid, "workpiece_uid": wp_uid}
 
     mock_store.adopt.side_effect = Exception("Adoption failed")
 
@@ -249,7 +251,7 @@ def test_multiple_view_artifact_updated_events(
     setup_view_manager_with_source(
         view_manager, wp_uid, source_handle, context, step_uid
     )
-    key = ArtifactKey.for_view(wp_uid)
+    key = view_manager._get_task_key(wp_uid, step_uid)
 
     view_manager.request_view_render(wp_uid, step_uid)
 
@@ -259,7 +261,7 @@ def test_multiple_view_artifact_updated_events(
 
     mock_task = MagicMock()
     mock_task.key = key
-    mock_task.kwargs = {"step_uid": step_uid}
+    mock_task.kwargs = {"step_uid": step_uid, "workpiece_uid": wp_uid}
 
     created_handler = MagicMock()
     updated_handler = MagicMock()
@@ -306,7 +308,7 @@ def test_progressive_rendering_sends_multiple_updates(
     setup_view_manager_with_source(
         view_manager, wp_uid, source_handle, context, step_uid
     )
-    key = ArtifactKey.for_view(wp_uid)
+    key = view_manager._get_task_key(wp_uid, step_uid)
 
     view_manager.request_view_render(wp_uid, step_uid)
 
@@ -316,7 +318,7 @@ def test_progressive_rendering_sends_multiple_updates(
 
     mock_task = MagicMock()
     mock_task.key = key
-    mock_task.kwargs = {"step_uid": step_uid}
+    mock_task.kwargs = {"step_uid": step_uid, "workpiece_uid": wp_uid}
 
     created_handler = MagicMock()
     updated_handler = MagicMock()
@@ -357,7 +359,8 @@ def test_progressive_rendering_sends_multiple_updates(
 
 def test_on_chunk_available_receives_chunks(view_manager, mock_store, context):
     wp_uid = str(uuid.uuid4())
-    key = ArtifactKey.for_view(wp_uid)
+    step_uid = str(uuid.uuid4())
+    composite_id = (wp_uid, step_uid)
 
     view_handle = WorkPieceViewArtifactHandle(
         shm_name="view_shm",
@@ -365,7 +368,7 @@ def test_on_chunk_available_receives_chunks(view_manager, mock_store, context):
         handle_class_name="WorkPieceViewArtifactHandle",
         artifact_type_name="WorkPieceViewArtifact",
     )
-    view_manager._view_entries[wp_uid] = ViewEntry(
+    view_manager._view_entries[composite_id] = ViewEntry(
         handle=view_handle,
         render_context=context,
     )
@@ -384,9 +387,10 @@ def test_on_chunk_available_receives_chunks(view_manager, mock_store, context):
 
     view_manager.on_chunk_available(
         sender=None,
-        key=key,
+        key=ArtifactKey(id=wp_uid, group="chunk"),
         chunk_handle=chunk_handle,
         generation_id=generation_id,
+        step_uid=step_uid,
     )
 
 
@@ -401,7 +405,7 @@ def test_live_render_context_established_on_view_creation(
     setup_view_manager_with_source(
         view_manager, wp_uid, source_handle, context, step_uid
     )
-    key = ArtifactKey.for_view(wp_uid)
+    key = view_manager._get_task_key(wp_uid, step_uid)
 
     view_manager.request_view_render(wp_uid, step_uid)
 
@@ -411,7 +415,11 @@ def test_live_render_context_established_on_view_creation(
 
     mock_task = MagicMock()
     mock_task.key = key
-    mock_task.kwargs = {"step_uid": step_uid, "generation_id": 0}
+    mock_task.kwargs = {
+        "step_uid": step_uid,
+        "workpiece_uid": wp_uid,
+        "generation_id": 0,
+    }
 
     handle_dict = {
         "shm_name": "test_live_render",
@@ -431,7 +439,8 @@ def test_live_render_context_established_on_view_creation(
         mock_task, "view_artifact_created", {"handle_dict": handle_dict}
     )
 
-    entry = view_manager._view_entries.get(wp_uid)
+    composite_id = (wp_uid, step_uid)
+    entry = view_manager._view_entries.get(composite_id)
     assert entry is not None
     assert entry.render_context == context
 
@@ -447,7 +456,7 @@ def test_throttled_notification_limits_update_frequency(
     setup_view_manager_with_source(
         view_manager, wp_uid, source_handle, context, step_uid
     )
-    key = ArtifactKey.for_view(wp_uid)
+    key = view_manager._get_task_key(wp_uid, step_uid)
 
     view_manager.request_view_render(wp_uid, step_uid)
 
@@ -457,7 +466,7 @@ def test_throttled_notification_limits_update_frequency(
 
     mock_task = MagicMock()
     mock_task.key = key
-    mock_task.kwargs = {"step_uid": step_uid}
+    mock_task.kwargs = {"step_uid": step_uid, "workpiece_uid": wp_uid}
 
     handle_dict = {
         "shm_name": "test_throttle",
@@ -505,9 +514,10 @@ def test_throttled_notification_limits_update_frequency(
     for i in range(10):
         view_manager.on_chunk_available(
             sender=None,
-            key=key,
+            key=ArtifactKey(id=wp_uid, group="chunk"),
             chunk_handle=chunk_handle,
             generation_id=0,
+            step_uid=step_uid,
         )
 
     time.sleep(0.1)
@@ -527,7 +537,7 @@ def test_incremental_bitmap_rendering_draws_chunk_to_view(
     setup_view_manager_with_source(
         view_manager, wp_uid, source_handle, context, step_uid
     )
-    key = ArtifactKey.for_view(wp_uid)
+    key = view_manager._get_task_key(wp_uid, step_uid)
 
     view_manager.request_view_render(wp_uid, step_uid)
 
@@ -536,7 +546,7 @@ def test_incremental_bitmap_rendering_draws_chunk_to_view(
 
     mock_task = MagicMock()
     mock_task.key = key
-    mock_task.kwargs = {"step_uid": step_uid}
+    mock_task.kwargs = {"step_uid": step_uid, "workpiece_uid": wp_uid}
 
     blank_bitmap = np.zeros((100, 100, 4), dtype=np.uint8)
     view_artifact = WorkPieceViewArtifact(
@@ -622,9 +632,10 @@ def test_incremental_bitmap_rendering_draws_chunk_to_view(
 
     view_manager.on_chunk_available(
         sender=None,
-        key=key,
+        key=ArtifactKey(id=wp_uid, group="chunk"),
         chunk_handle=chunk_handle,
         generation_id=0,
+        step_uid=step_uid,
     )
 
     assert "chunk_shm" in release_calls
@@ -632,7 +643,8 @@ def test_incremental_bitmap_rendering_draws_chunk_to_view(
 
 def test_adopt_view_handle(view_manager, mock_store):
     wp_uid = str(uuid.uuid4())
-    key = ArtifactKey.for_view(wp_uid)
+    step_uid = str(uuid.uuid4())
+    key = view_manager._get_task_key(wp_uid, step_uid)
 
     handle_dict = {
         "shm_name": "test_adopt",
@@ -657,7 +669,8 @@ def test_adopt_view_handle(view_manager, mock_store):
 
 def test_adopt_view_handle_wrong_type(view_manager, mock_store):
     wp_uid = str(uuid.uuid4())
-    key = ArtifactKey.for_view(wp_uid)
+    step_uid = str(uuid.uuid4())
+    key = view_manager._get_task_key(wp_uid, step_uid)
 
     handle_dict = {
         "shm_name": "test_wrong",
@@ -682,7 +695,8 @@ def test_adopt_view_handle_wrong_type(view_manager, mock_store):
 
 def test_get_render_components(view_manager, mock_store, context):
     wp_uid = str(uuid.uuid4())
-    key = ArtifactKey.for_view(wp_uid)
+    step_uid = str(uuid.uuid4())
+    composite_id = (wp_uid, step_uid)
 
     handle = WorkPieceViewArtifactHandle(
         shm_name="test",
@@ -692,7 +706,7 @@ def test_get_render_components(view_manager, mock_store, context):
     )
 
     entry = ViewEntry(handle=handle, render_context=context)
-    view_manager._view_entries[wp_uid] = entry
+    view_manager._view_entries[composite_id] = entry
 
     chunk_handle = WorkPieceArtifactHandle(
         shm_name="chunk",
@@ -705,7 +719,7 @@ def test_get_render_components(view_manager, mock_store, context):
     )
 
     view_handle, render_context = view_manager._get_render_components(
-        key, entry, chunk_handle
+        composite_id, entry, chunk_handle
     )
 
     assert view_handle == handle
@@ -714,10 +728,11 @@ def test_get_render_components(view_manager, mock_store, context):
 
 def test_get_render_components_missing(view_manager, mock_store):
     wp_uid = str(uuid.uuid4())
-    key = ArtifactKey.for_view(wp_uid)
+    step_uid = str(uuid.uuid4())
+    composite_id = (wp_uid, step_uid)
 
     entry = ViewEntry(handle=None, render_context=None)
-    view_manager._view_entries[wp_uid] = entry
+    view_manager._view_entries[composite_id] = entry
 
     chunk_handle = WorkPieceArtifactHandle(
         shm_name="chunk",
@@ -730,7 +745,7 @@ def test_get_render_components_missing(view_manager, mock_store):
     )
 
     view_handle, render_context = view_manager._get_render_components(
-        key, entry, chunk_handle
+        composite_id, entry, chunk_handle
     )
 
     assert view_handle is None
@@ -741,8 +756,8 @@ def test_get_render_components_missing(view_manager, mock_store):
 def test_update_render_context_triggers_renders(view_manager, source_handle):
     wp_uid = str(uuid.uuid4())
     step_uid = str(uuid.uuid4())
-    view_manager._source_artifact_handles[wp_uid] = source_handle
-    view_manager._workpiece_to_step[wp_uid] = step_uid
+    composite_id = (wp_uid, step_uid)
+    view_manager._source_artifact_handles[composite_id] = source_handle
 
     context = RenderContext(
         pixels_per_mm=(10.0, 10.0),
@@ -776,7 +791,8 @@ def test_on_workpiece_artifact_ready_manages_handles(
         handle=source_handle,
     )
 
-    assert wp_uid in view_manager._source_artifact_handles
+    composite_id = (wp_uid, step_uid)
+    assert composite_id in view_manager._source_artifact_handles
     mock_store.retain.assert_called_once_with(source_handle)
 
 
@@ -785,6 +801,7 @@ def test_on_workpiece_artifact_ready_releases_old_handle(
 ):
     wp_uid = str(uuid.uuid4())
     step_uid = str(uuid.uuid4())
+    composite_id = (wp_uid, step_uid)
 
     mock_step = MagicMock()
     mock_step.uid = step_uid
@@ -798,7 +815,7 @@ def test_on_workpiece_artifact_ready_releases_old_handle(
         source_dimensions=(10, 10),
         generation_size=(10, 10),
     )
-    view_manager._source_artifact_handles[wp_uid] = old_handle
+    view_manager._source_artifact_handles[composite_id] = old_handle
 
     mock_workpiece = MagicMock()
     mock_workpiece.uid = wp_uid
@@ -817,8 +834,9 @@ def test_on_workpiece_artifact_ready_releases_old_handle(
 def test_request_view_render_no_context(view_manager, source_handle):
     wp_uid = str(uuid.uuid4())
     step_uid = str(uuid.uuid4())
+    composite_id = (wp_uid, step_uid)
 
-    view_manager._source_artifact_handles[wp_uid] = source_handle
+    view_manager._source_artifact_handles[composite_id] = source_handle
     view_manager._current_view_context = None
 
     view_manager.request_view_render(wp_uid, step_uid)
@@ -905,8 +923,9 @@ def test_on_workpiece_artifact_ready_refcount_increased(
         f"Initial refcount should be 1 after put(), got {initial_refcount}"
     )
 
+    step_uid = str(uuid.uuid4())
     mock_step = MagicMock()
-    mock_step.uid = str(uuid.uuid4())
+    mock_step.uid = step_uid
 
     mock_workpiece = MagicMock()
     mock_workpiece.uid = wp_uid
@@ -924,7 +943,8 @@ def test_on_workpiece_artifact_ready_refcount_increased(
         f"got {final_refcount}"
     )
 
-    assert wp_uid in real_view_manager._source_artifact_handles
+    composite_id = (wp_uid, step_uid)
+    assert composite_id in real_view_manager._source_artifact_handles
 
 
 @pytest.mark.usefixtures("context_initializer")
@@ -1040,51 +1060,64 @@ def test_view_entry_with_values():
 
 
 def test_is_view_stale_no_entry(view_manager):
-    assert view_manager._is_view_stale("wp_uid", None, None) is True
+    assert view_manager._is_view_stale("wp_uid", None, None, None) is True
 
 
 def test_is_view_stale_context_changed(view_manager, context):
     wp_uid = "wp_uid"
+    step_uid = "step_uid"
+    composite_id = (wp_uid, step_uid)
     old_context = RenderContext(
         pixels_per_mm=(5.0, 5.0),
         show_travel_moves=True,
         margin_px=10,
         color_set_dict={},
     )
-    view_manager._view_entries[wp_uid] = ViewEntry(
+    view_manager._view_entries[composite_id] = ViewEntry(
         handle=MagicMock(),
         render_context=old_context,
     )
 
-    assert view_manager._is_view_stale(wp_uid, context, None) is True
+    assert view_manager._is_view_stale(wp_uid, step_uid, context, None) is True
 
 
 def test_is_view_stale_same_context(view_manager, context):
     wp_uid = "wp_uid"
-    view_manager._view_entries[wp_uid] = ViewEntry(
+    step_uid = "step_uid"
+    composite_id = (wp_uid, step_uid)
+    view_manager._view_entries[composite_id] = ViewEntry(
         handle=MagicMock(),
         render_context=context,
     )
 
-    assert view_manager._is_view_stale(wp_uid, context, None) is False
+    assert (
+        view_manager._is_view_stale(wp_uid, step_uid, context, None) is False
+    )
 
 
 def test_is_view_stale_entry_exists_but_no_source_handle(
     view_manager, context, source_handle
 ):
     wp_uid = "wp_uid"
-    view_manager._view_entries[wp_uid] = ViewEntry(
+    step_uid = "step_uid"
+    composite_id = (wp_uid, step_uid)
+    view_manager._view_entries[composite_id] = ViewEntry(
         handle=MagicMock(),
         render_context=context,
         source_handle=None,
     )
 
-    assert view_manager._is_view_stale(wp_uid, context, source_handle) is True
+    assert (
+        view_manager._is_view_stale(wp_uid, step_uid, context, source_handle)
+        is True
+    )
 
 
 def test_shutdown_releases_handles(view_manager, mock_store, source_handle):
     wp_uid = str(uuid.uuid4())
-    view_manager._source_artifact_handles[wp_uid] = source_handle
+    step_uid = str(uuid.uuid4())
+    composite_id = (wp_uid, step_uid)
+    view_manager._source_artifact_handles[composite_id] = source_handle
 
     view_handle = WorkPieceViewArtifactHandle(
         shm_name="test",
@@ -1092,7 +1125,7 @@ def test_shutdown_releases_handles(view_manager, mock_store, source_handle):
         handle_class_name="WorkPieceViewArtifactHandle",
         artifact_type_name="WorkPieceViewArtifact",
     )
-    view_manager._view_entries[wp_uid] = ViewEntry(handle=view_handle)
+    view_manager._view_entries[composite_id] = ViewEntry(handle=view_handle)
 
     view_manager.shutdown()
 
@@ -1103,20 +1136,23 @@ def test_shutdown_releases_handles(view_manager, mock_store, source_handle):
 
 def test_get_view_handle(view_manager):
     wp_uid = "wp_uid"
+    step_uid = "step_uid"
     view_handle = WorkPieceViewArtifactHandle(
         shm_name="test",
         bbox_mm=(0, 0, 1, 1),
         handle_class_name="WorkPieceViewArtifactHandle",
         artifact_type_name="WorkPieceViewArtifact",
     )
-    view_manager._view_entries[wp_uid] = ViewEntry(handle=view_handle)
+    view_manager._view_entries[(wp_uid, step_uid)] = ViewEntry(
+        handle=view_handle
+    )
 
-    result = view_manager.get_view_handle(wp_uid)
+    result = view_manager.get_view_handle(wp_uid, step_uid)
     assert result == view_handle
 
 
 def test_get_view_handle_missing(view_manager):
-    result = view_manager.get_view_handle("nonexistent")
+    result = view_manager.get_view_handle("nonexistent", "step_uid")
     assert result is None
 
 
@@ -1127,8 +1163,9 @@ def test_reconcile_removes_obsolete_entries(
     from rayforge.core.layer import Layer
 
     wp_uid = str(uuid.uuid4())
-    view_manager._source_artifact_handles[wp_uid] = source_handle
-    view_manager._workpiece_to_step[wp_uid] = "step_uid"
+    step_uid = str(uuid.uuid4())
+    composite_id = (wp_uid, step_uid)
+    view_manager._source_artifact_handles[composite_id] = source_handle
 
     view_handle = WorkPieceViewArtifactHandle(
         shm_name="test",
@@ -1136,7 +1173,7 @@ def test_reconcile_removes_obsolete_entries(
         handle_class_name="WorkPieceViewArtifactHandle",
         artifact_type_name="WorkPieceViewArtifact",
     )
-    view_manager._view_entries[wp_uid] = ViewEntry(handle=view_handle)
+    view_manager._view_entries[composite_id] = ViewEntry(handle=view_handle)
 
     doc = Doc()
     layer = Layer(name="Empty Layer")
@@ -1145,5 +1182,5 @@ def test_reconcile_removes_obsolete_entries(
     view_manager.reconcile(doc, generation_id=1)
 
     mock_store.release.assert_called()
-    assert wp_uid not in view_manager._source_artifact_handles
-    assert wp_uid not in view_manager._view_entries
+    assert composite_id not in view_manager._source_artifact_handles
+    assert composite_id not in view_manager._view_entries

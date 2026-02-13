@@ -66,6 +66,7 @@ class DagScheduler:
         self.visual_chunk_available = Signal()
         self.generation_finished = Signal()
         self.workpiece_artifact_adopted = Signal()
+        self.step_assembly_starting = Signal()
         self.step_render_artifact_ready = Signal()
         self.step_time_estimate_ready = Signal()
         self.step_generation_finished = Signal()
@@ -312,39 +313,36 @@ class DagScheduler:
         )
 
         for key in keys_to_generate:
+            if ":" not in key.id:
+                logger.warning(f"Invalid workpiece key format: {key.id}")
+                continue
+            workpiece_uid, step_uid = key.id.split(":", 1)
             workpiece = (
-                self._doc.find_descendant_by_uid(key.id) if self._doc else None
+                self._doc.find_descendant_by_uid(workpiece_uid)
+                if self._doc
+                else None
+            )
+            step = (
+                self._doc.find_descendant_by_uid(step_uid)
+                if self._doc
+                else None
             )
 
-            if isinstance(workpiece, WorkPiece):
-                if workpiece.layer and workpiece.layer.workflow:
-                    steps = list(workpiece.layer.workflow.steps)
-                    if steps:
-                        for step in steps:
-                            logger.debug(
-                                f"DagScheduler: Launching task for "
-                                f"step_uid={step.uid}, "
-                                f"workpiece_uid={key.id}"
-                            )
-                            self._launch_workpiece_task(step, workpiece)
-                    else:
-                        logger.warning(
-                            f"Workpiece {key.id} has no steps in "
-                            "workflow. Skipping generation."
-                        )
-                        self._artifact_manager.mark_done(
-                            key, self._generation_id
-                        )
-                else:
-                    logger.warning(
-                        f"Workpiece {key.id} has no workflow. "
-                        "Skipping generation."
-                    )
-                    self._artifact_manager.mark_done(key, self._generation_id)
-            else:
+            if isinstance(workpiece, WorkPiece) and isinstance(step, Step):
+                logger.debug(
+                    f"DagScheduler: Launching task for "
+                    f"step_uid={step.uid}, workpiece_uid={workpiece.uid}"
+                )
+                self._launch_workpiece_task(step, workpiece)
+            elif not isinstance(workpiece, WorkPiece):
                 logger.warning(
-                    f"Workpiece {key.id} not found in doc. "
+                    f"Workpiece {workpiece_uid} not found in doc. "
                     "Skipping generation."
+                )
+                self._artifact_manager.mark_done(key, self._generation_id)
+            elif not isinstance(step, Step):
+                logger.warning(
+                    f"Step {step_uid} not found in doc. Skipping generation."
                 )
                 self._artifact_manager.mark_done(key, self._generation_id)
 
@@ -509,7 +507,7 @@ class DagScheduler:
 
     def _launch_workpiece_task(self, step: "Step", workpiece: "WorkPiece"):
         """Starts the asynchronous task to generate operations."""
-        key = ArtifactKey.for_workpiece(workpiece.uid)
+        key = ArtifactKey.for_workpiece(workpiece.uid, step.uid)
         ledger_key = key
 
         if not self._validate_workpiece_for_launch(key, workpiece):
@@ -594,7 +592,7 @@ class DagScheduler:
         self, task: "Task", event_name: str, data: dict, step_uid: str
     ):
         """Handles events from a background task."""
-        key = ArtifactKey.for_workpiece(task.key.id)
+        key = task.key
         ledger_key = key
 
         handle_dict = data.get("handle_dict")
@@ -870,16 +868,19 @@ class DagScheduler:
         try:
             for wp in step.layer.all_workpieces:
                 handle = self._artifact_manager.get_workpiece_handle(
-                    ArtifactKey.for_workpiece(wp.uid),
+                    ArtifactKey.for_workpiece(wp.uid, step.uid),
                     self._generation_id,
                 )
                 if handle is None and self._generation_id > 1:
                     handle = self._artifact_manager.get_workpiece_handle(
-                        ArtifactKey.for_workpiece(wp.uid),
+                        ArtifactKey.for_workpiece(wp.uid, step.uid),
                         self._generation_id - 1,
                     )
                 if handle is None:
-                    raise ValueError(f"Missing handle for {wp.uid}")
+                    raise ValueError(
+                        f"Missing handle for workpiece {wp.uid}, "
+                        f"step {step.uid}"
+                    )
 
                 if not self._validate_handle_geometry_match(handle, wp):
                     raise ValueError(f"Geometry mismatch for {wp.uid}")
@@ -920,8 +921,21 @@ class DagScheduler:
             )
             return
 
-        # Store retained handles to be released when task completes
         self._step_retained_handles[step.uid] = retained_handles
+
+        if step.layer:
+            for wp in step.layer.all_workpieces:
+                handle = self._artifact_manager.get_workpiece_handle(
+                    ArtifactKey.for_workpiece(wp.uid, step.uid),
+                    self._generation_id,
+                )
+                if handle:
+                    self.step_assembly_starting.send(
+                        self,
+                        step=step,
+                        workpiece=wp,
+                        handle=handle,
+                    )
 
         ledger_key = ArtifactKey.for_step(step.uid)
         node = self.graph.find_node(ledger_key)

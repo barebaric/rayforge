@@ -8,9 +8,8 @@ class ArtifactKey:
     group: str
 
     def __post_init__(self):
-        # This is not a perfect check for UUID but ensures it's a string
-        # that can be instantiated as a UUID if needed, which is good enough
-        # for serialization boundaries.
+        if self.group == "workpiece":
+            return
         if self.group != "job":
             uuid.UUID(self.id)
 
@@ -23,7 +22,9 @@ class ArtifactKey:
         return self.id == other.id and self.group == other.group
 
     @classmethod
-    def for_workpiece(cls, workpiece_uid: str):
+    def for_workpiece(cls, workpiece_uid: str, step_uid: str = ""):
+        if step_uid:
+            return cls(id=f"{workpiece_uid}:{step_uid}", group="workpiece")
         return cls(id=workpiece_uid, group="workpiece")
 
     @classmethod
