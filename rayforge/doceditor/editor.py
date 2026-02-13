@@ -10,6 +10,7 @@ from ..core.layer import Layer
 from ..core.vectorization_spec import VectorizationSpec
 from ..pipeline.artifact import JobArtifactHandle, JobArtifact
 from ..pipeline.pipeline import Pipeline
+from ..pipeline.view import ViewManager
 from .asset_cmd import AssetCmd
 from .edit_cmd import EditCmd
 from .file_cmd import FileCmd
@@ -67,6 +68,11 @@ class DocEditor:
         self.pipeline = Pipeline(
             self.doc,
             self.task_manager,
+            context.artifact_store,
+            context.machine,
+        )
+        self.view_manager = ViewManager(
+            self.pipeline,
             context.artifact_store,
             context.machine,
         )
@@ -131,6 +137,7 @@ class DocEditor:
 
         self._transient_artifact_handles.clear()
 
+        self.view_manager.shutdown()
         self.pipeline.shutdown()
 
     def add_tab_from_context(self, context: Dict[str, Any]):

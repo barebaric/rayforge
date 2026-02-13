@@ -18,7 +18,7 @@ from rayforge.pipeline.artifact import (
     WorkPieceViewArtifact,
     WorkPieceViewArtifactHandle,
 )
-from rayforge.pipeline.stage.workpiece_view_runner import (
+from rayforge.pipeline.view.view_runner import (
     make_workpiece_view_artifact_in_subprocess,
 )
 from rayforge.shared.util.colors import ColorSet

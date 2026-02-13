@@ -1141,9 +1141,11 @@ class MainWindow(Adw.ApplicationWindow):
 
     def _on_live_3d_view_update(
         self,
-        sender: Optional[Step],
+        sender,
         *,
+        step: Optional[Step],
         workpiece: Optional[WorkPiece],
+        handle,
         generation_id: int,
     ):
         """

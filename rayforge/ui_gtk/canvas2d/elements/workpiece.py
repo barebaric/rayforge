@@ -10,7 +10,6 @@ from ....pipeline.artifact import (
     WorkPieceArtifact,
     BaseArtifactHandle,
     WorkPieceViewArtifact,
-    ArtifactKey,
 )
 from ....shared.util.colors import ColorSet
 from ...shared.gtk_color import GtkColorResolver, ColorSpecDict
@@ -19,7 +18,7 @@ from .tab_handle import TabHandleElement
 
 if TYPE_CHECKING:
     from ..surface import WorkSurface
-    from ....pipeline.pipeline import Pipeline
+    from ....pipeline.view import ViewManager
 
 logger = logging.getLogger(__name__)
 
@@ -45,27 +44,23 @@ class WorkPieceElement(CanvasElement):
     def __init__(
         self,
         workpiece: WorkPiece,
-        pipeline: "Pipeline",
+        view_manager: "ViewManager",
         **kwargs,
     ):
         """Initializes the WorkPieceElement.
 
         Args:
             workpiece: The WorkPiece data model to visualize.
-            pipeline: The generator responsible for creating ops.
+            view_manager: The ViewManager for view rendering.
             **kwargs: Additional arguments for the CanvasElement.
         """
         logger.debug(f"Initializing WorkPieceElement for '{workpiece.name}'")
         self.data: WorkPiece = workpiece
-        self.pipeline = pipeline
+        self.view_manager = view_manager
         self._base_image_visible = True
         self._surface: Optional[cairo.ImageSurface] = None
 
         self._ops_visibility: Dict[str, bool] = {}
-        self._ops_generation_ids: Dict[
-            str, int
-        ] = {}  # Tracks the *expected* generation ID of the *next* render.
-        # Cached artifacts to avoid re-fetching from pipeline on every draw.
         self._artifact_cache: Dict[str, Optional[WorkPieceArtifact]] = {}
 
         self._tab_handles: List[TabHandleElement] = []
@@ -111,23 +106,11 @@ class WorkPieceElement(CanvasElement):
 
         self.data.updated.connect(self._on_model_content_changed)
         self.data.transform_changed.connect(self._on_transform_changed)
-        self.pipeline.workpiece_starting.connect(
-            self._on_ops_generation_starting
+        self.view_manager.source_artifact_ready.connect(
+            self._on_source_artifact_ready
         )
-        self.pipeline.workpiece_artifact_ready.connect(
-            self._on_ops_generation_finished
-        )
-        # Only process view_artifact_updated, not view_artifact_created.
-        # The worker sends view_artifact_created BEFORE rendering starts,
-        # and view_artifact_updated events are sent DURING rendering for
-        # progressive updates and AFTER rendering completes.
-        # We process view_artifact_updated to support progressive rendering.
-        self.pipeline.workpiece_view_updated.connect(
+        self.view_manager.view_artifact_updated.connect(
             self._on_view_artifact_updated
-        )
-        # When a workpiece artifact is adopted, trigger view rendering
-        self.pipeline.workpiece_artifact_adopted.connect(
-            self._on_workpiece_artifact_adopted
         )
 
         # Track the last known model size to detect size changes even when
@@ -156,13 +139,9 @@ class WorkPieceElement(CanvasElement):
         if not cache:
             return False
 
-        # Restore caches. We copy the dictionaries to avoid modification
-        # issues, but the heavy objects (Surfaces) are shared references.
         self._surface = cache.get("surface")
         self._artifact_cache = cache.get("artifact_cache", {}).copy()
-        self._ops_generation_ids = cache.get("ops_generation_ids", {}).copy()
 
-        # Consider hydrated if we have a base surface or artifacts
         return self._surface is not None or len(self._artifact_cache) > 0
 
     def _update_model_view_cache(self):
@@ -172,7 +151,6 @@ class WorkPieceElement(CanvasElement):
         cache = self.data._view_cache
         cache["surface"] = self._surface
         cache["artifact_cache"] = self._artifact_cache
-        cache["ops_generation_ids"] = self._ops_generation_ids
 
     def invalidate_and_rerender(self):
         """
@@ -228,19 +206,6 @@ class WorkPieceElement(CanvasElement):
         if workpiece_uid != self.data.uid or not self.canvas:
             return
         self.canvas.queue_draw()
-
-    def _on_workpiece_artifact_adopted(
-        self, sender, *, step_uid: str, workpiece_uid: str, **kwargs
-    ):
-        """
-        Handler for when a workpiece artifact has been adopted.
-        """
-        if workpiece_uid != self.data.uid:
-            return
-
-        logger.debug(
-            f"_on_workpiece_artifact_adopted called for step '{step_uid}'"
-        )
 
     def get_closest_point_on_path(
         self, world_x: float, world_y: float, threshold_px: float = 5.0
@@ -327,17 +292,11 @@ class WorkPieceElement(CanvasElement):
         logger.debug(f"Removing WorkPieceElement for '{self.data.name}'")
         self.data.updated.disconnect(self._on_model_content_changed)
         self.data.transform_changed.disconnect(self._on_transform_changed)
-        self.pipeline.workpiece_starting.disconnect(
-            self._on_ops_generation_starting
+        self.view_manager.source_artifact_ready.disconnect(
+            self._on_source_artifact_ready
         )
-        self.pipeline.workpiece_artifact_ready.disconnect(
-            self._on_ops_generation_finished
-        )
-        self.pipeline.workpiece_view_updated.disconnect(
+        self.view_manager.view_artifact_updated.disconnect(
             self._on_view_artifact_updated
-        )
-        self.pipeline.workpiece_artifact_adopted.disconnect(
-            self._on_workpiece_artifact_adopted
         )
         super().remove()
 
@@ -440,58 +399,45 @@ class WorkPieceElement(CanvasElement):
             # Size hasn't changed, just sync the transform
             self.set_transform(workpiece.matrix)
 
-    def _on_ops_generation_starting(
-        self, sender: Step, workpiece: WorkPiece, generation_id: int, **kwargs
-    ):
-        """Handler for when ops generation for a step begins."""
-        if workpiece is not self.data:
-            return
-
-        step_uid = sender.uid
-        self._ops_generation_ids[step_uid] = (
-            generation_id  # Sets the ID when generation starts.
-        )
-        self.clear_ops_surface(step_uid)
-
-    def _on_ops_generation_finished(
-        self, sender: Step, workpiece: WorkPiece, generation_id: int, **kwargs
+    def _on_source_artifact_ready(
+        self,
+        sender,
+        *,
+        step: Step,
+        workpiece: WorkPiece,
+        handle,
+        **kwargs,
     ):
         """
-        Signal handler for when ops generation finishes.
+        Signal handler for when source artifact is ready from ViewManager.
         This runs on a background thread, so it schedules the actual work
         on the main thread to prevent UI deadlocks.
         """
         if workpiece is not self.data:
             return
 
-        artifact = self.pipeline.get_artifact(sender, workpiece)
+        artifact = self.view_manager.store.get(handle)
         GLib.idle_add(
-            self._on_ops_generation_finished_main_thread,
-            sender,
+            self._on_source_artifact_ready_main_thread,
+            step,
             workpiece,
-            generation_id,
             artifact,
         )
 
-    def _on_ops_generation_finished_main_thread(
+    def _on_source_artifact_ready_main_thread(
         self,
-        sender: Step,
+        step: Step,
         workpiece: WorkPiece,
-        generation_id: int,
         artifact: WorkPieceArtifact,
     ):
-        """The thread-safe part of the ops generation finished handler."""
+        """The thread-safe part of the source artifact ready handler."""
         logger.debug(
-            f"_on_ops_generation_finished_main_thread called for step "
-            f"'{sender.uid}'"
+            f"_on_source_artifact_ready_main_thread called for step "
+            f"'{step.uid}'"
         )
         if workpiece is not self.data:
             return
-        step = sender
 
-        self._ops_generation_ids[step.uid] = generation_id
-
-        # Fetch and cache the final artifact, making it available to all paths.
         self._artifact_cache[step.uid] = artifact
         self._update_model_view_cache()
 
@@ -536,18 +482,11 @@ class WorkPieceElement(CanvasElement):
                 if not self._ops_visibility.get(step_uid, True):
                     continue
 
-                view_handle = (
-                    self.pipeline.artifact_manager.get_workpiece_view_handle(
-                        ArtifactKey.for_view(self.data.uid),
-                        self.pipeline._view_generation_id,
-                    )
-                )
+                view_handle = self.view_manager.get_view_handle(self.data.uid)
                 if view_handle is None:
                     continue
                 try:
-                    artifact = self.pipeline.artifact_manager.get_artifact(
-                        view_handle
-                    )
+                    artifact = self.view_manager.store.get(view_handle)
                     if not isinstance(artifact, WorkPieceViewArtifact):
                         continue
 
@@ -688,9 +627,6 @@ class WorkPieceElement(CanvasElement):
             return
 
         logger.debug(f"Triggering ops rerender for '{self.data.name}'.")
-        applicable_steps = self.data.layer.workflow.steps
-        for step in applicable_steps:
-            self._ops_generation_ids.get(step.uid, 0)
 
     def set_tabs_visible_override(self, visible: bool):
         """Sets the global visibility override for tab handles."""

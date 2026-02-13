@@ -15,7 +15,7 @@ from ..artifact.workpiece_view import (
     RenderContext,
     WorkPieceViewArtifact,
 )
-from .workpiece_view_compute import (
+from .view_compute import (
     compute_workpiece_view_to_buffer,
     compute_view_dimensions,
     render_chunk_to_buffer,

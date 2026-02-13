@@ -4,15 +4,14 @@ import logging
 import math
 import numpy as np
 from typing import Optional, Tuple, Iterator, TYPE_CHECKING
-
+from ...shared.tasker.progress import ProgressContext
+from ...shared.util.colors import ColorSet
 from ..artifact import WorkPieceArtifact
 from ..artifact.base import TextureData, VertexData
 from ..artifact.workpiece_view import (
     RenderContext,
     WorkPieceViewArtifact,
 )
-from ...shared.tasker.progress import ProgressContext
-from ...shared.util.colors import ColorSet
 from ..encoder.textureencoder import TextureEncoder
 from ..encoder.vertexencoder import VertexEncoder
 
