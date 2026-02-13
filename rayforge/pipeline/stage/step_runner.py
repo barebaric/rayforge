@@ -55,7 +55,7 @@ def make_step_artifact_in_subprocess(
     Aggregates WorkPieceArtifacts, creates a StepArtifact, sends its handle
     back via an event, and then returns the final generation ID.
 
-    Implements Fire-and-Forget artifact handover.
+    Uses acknowledgment-based handover for shared memory artifacts.
     """
     from .step_compute import compute_step_artifacts
 
@@ -102,29 +102,35 @@ def make_step_artifact_in_subprocess(
     render_handle = artifact_store.put(
         render_artifact, creator_tag=f"{creator_tag}_render"
     )
-    proxy.send_event(
+    acked = proxy.send_event_and_wait(
         "render_artifact_ready",
         {
             "handle_dict": render_handle.to_dict(),
             "generation_id": generation_id,
         },
+        logger=logger,
     )
-    # Fire and Forget
-    artifact_store.forget(render_handle)
+    if acked:
+        artifact_store.forget(render_handle)
+    else:
+        logger.warning("Render artifact not acknowledged, keeping handle open")
 
     # 2. Store Ops Artifact
     ops_handle = artifact_store.put(
         ops_artifact, creator_tag=f"{creator_tag}_ops"
     )
-    proxy.send_event(
+    acked = proxy.send_event_and_wait(
         "ops_artifact_ready",
         {
             "handle_dict": ops_handle.to_dict(),
             "generation_id": generation_id,
         },
+        logger=logger,
     )
-    # Fire and Forget
-    artifact_store.forget(ops_handle)
+    if acked:
+        artifact_store.forget(ops_handle)
+    else:
+        logger.warning("Ops artifact not acknowledged, keeping handle open")
 
     # 3. Calculate time estimate
     proxy.set_message(_("Calculating time estimate..."))

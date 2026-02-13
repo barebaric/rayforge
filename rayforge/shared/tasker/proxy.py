@@ -20,7 +20,7 @@ import logging
 import time
 from queue import Full
 from multiprocessing.queues import Queue
-from typing import Optional
+from typing import Any, Optional
 
 from rayforge.shared.tasker.progress import (
     ThrottledProgressContext,
@@ -45,9 +45,13 @@ class ExecutionContextProxy(ThrottledProgressContext):
         base_progress: float = 0.0,
         progress_range: float = 1.0,
         parent_log_level: int = logging.DEBUG,
+        adoption_signals: Any = None,
+        task_id: int = 0,
     ):
         super().__init__(base_progress, progress_range, total=1.0)
         self._queue = progress_queue
+        self._adoption_signals = adoption_signals
+        self._task_id = task_id
         self.parent_log_level = parent_log_level
         self._last_progress_report_time = 0.0
         self._last_reported_progress: Optional[float] = None
@@ -117,7 +121,11 @@ class ExecutionContextProxy(ThrottledProgressContext):
         """
         # The new proxy gets its own total for its own progress calculations
         new_proxy = ExecutionContextProxy(
-            self._queue, base_progress, progress_range
+            self._queue,
+            base_progress,
+            progress_range,
+            adoption_signals=self._adoption_signals,
+            task_id=self._task_id,
         )
         new_proxy.set_total(total)
         return new_proxy
@@ -143,3 +151,46 @@ class ExecutionContextProxy(ThrottledProgressContext):
             self._last_reported_progress = None
         except Full:
             pass
+
+    def send_event_and_wait(
+        self,
+        name: str,
+        data: Optional[dict] = None,
+        timeout: float = 5.0,
+        logger: Optional[logging.Logger] = None,
+    ) -> bool:
+        """
+        Sends a named event and waits for adoption acknowledgment.
+
+        This is used for events that carry shared memory handles. On Windows,
+        shared memory is destroyed when all handles are closed, so the worker
+        must wait for the main process to adopt before closing its handle.
+
+        Args:
+            name: The event name.
+            data: Optional data payload.
+            timeout: Maximum time to wait for acknowledgment in seconds.
+            logger: Optional logger for debug messages.
+
+        Returns:
+            True if acknowledgment was received, False if timed out.
+        """
+        self.send_event(name, data)
+
+        if self._adoption_signals is None:
+            return True
+
+        signal_key = f"{self._task_id}:{name}"
+        deadline = time.monotonic() + timeout
+
+        while time.monotonic() < deadline:
+            if signal_key in self._adoption_signals:
+                del self._adoption_signals[signal_key]
+                return True
+            time.sleep(0.01)
+
+        if logger:
+            logger.warning(
+                f"Timeout waiting for adoption signal for {signal_key}"
+            )
+        return False

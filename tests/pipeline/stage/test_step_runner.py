@@ -66,6 +66,7 @@ def test_step_runner_correctly_scales_and_places_ops(machine):
         }
     ]
     mock_proxy = MagicMock()
+    mock_proxy.send_event_and_wait.return_value = True  # Acknowledge events
 
     result = make_step_artifact_in_subprocess(
         proxy=mock_proxy,
@@ -82,8 +83,8 @@ def test_step_runner_correctly_scales_and_places_ops(machine):
     assert result == 1
 
     # Check that both ops and render artifacts were created
-    calls = mock_proxy.send_event.call_args_list
-    assert len(calls) == 3
+    calls = mock_proxy.send_event_and_wait.call_args_list
+    assert len(calls) == 2  # render_artifact_ready and ops_artifact_ready
 
     # Find and validate render artifact
     render_call = next(c for c in calls if c[0][0] == "render_artifact_ready")
@@ -148,6 +149,7 @@ def test_step_runner_handles_texture_data(machine):
         }
     ]
     mock_proxy = MagicMock()
+    mock_proxy.send_event_and_wait.return_value = True  # Acknowledge events
 
     result = make_step_artifact_in_subprocess(
         proxy=mock_proxy,
@@ -163,10 +165,10 @@ def test_step_runner_handles_texture_data(machine):
     )
     assert result == 1
 
-    assert mock_proxy.send_event.call_count == 3
+    assert mock_proxy.send_event_and_wait.call_count == 2
     render_call = next(
         c
-        for c in mock_proxy.send_event.call_args_list
+        for c in mock_proxy.send_event_and_wait.call_args_list
         if c[0][0] == "render_artifact_ready"
     )
     render_handle_dict = render_call[0][1]["handle_dict"]
@@ -245,6 +247,7 @@ def test_step_runner_instantiates_transformers_from_dict(machine):
     }
 
     mock_proxy = MagicMock()
+    mock_proxy.send_event_and_wait.return_value = True  # Acknowledge events
 
     with patch(
         "rayforge.pipeline.stage.step_compute.compute_step_artifacts"
