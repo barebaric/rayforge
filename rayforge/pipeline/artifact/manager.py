@@ -517,7 +517,6 @@ class ArtifactManager:
             self._ledger[composite_key] = entry
 
         logger.debug(f"cache: Caching entry {composite_key}")
-        self._store.adopt(handle)
         self.retain_handle(handle)
         if entry.handle is not None:
             self._store.release(entry.handle)
@@ -684,14 +683,12 @@ class ArtifactManager:
         )
         keys_to_remove = []
         for composite_key, entry in list(self._ledger.items()):
-            base_key = extract_base_key(composite_key)
             generation_id = extract_generation_id(composite_key)
 
-            is_step = base_key.group == "step"
-
-            should_keep = generation_id in active_data_gen_ids
-            if is_step and generation_id in processing_data_gen_ids:
-                should_keep = True
+            should_keep = (
+                generation_id in active_data_gen_ids
+                or generation_id in processing_data_gen_ids
+            )
 
             if not should_keep:
                 logger.debug(
@@ -704,6 +701,5 @@ class ArtifactManager:
         for composite_key in keys_to_remove:
             entry = self._ledger.get(composite_key)
             if entry is not None and entry.handle is not None:
-                base_key = extract_base_key(composite_key)
                 self._store.release(entry.handle)
             del self._ledger[composite_key]
