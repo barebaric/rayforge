@@ -20,7 +20,25 @@ class PyvipsLogFilter(logging.Filter):
     """Filter to suppress spammy pyvips debug messages."""
 
     def filter(self, record: logging.LogRecord) -> bool:
-        return not record.name.startswith("pyvips")
+        if record.name.startswith("pyvips"):
+            return record.levelno >= logging.WARNING
+        if record.name == "VipsObject":
+            return record.levelno >= logging.WARNING
+        return True
+
+
+def pytest_configure(config):
+    """
+    Configure test-only components.
+    This hook is called early in the pytest process after initial imports.
+    """
+    if sys.platform.startswith("linux"):
+        multiprocessing.set_start_method("spawn", force=True)
+
+    logging.getLogger("pyvips").setLevel(logging.WARNING)
+    logging.getLogger("pyvips.vobject").setLevel(logging.WARNING)
+
+    logging.getLogger().addFilter(PyvipsLogFilter())
 
 
 if TYPE_CHECKING:
@@ -61,17 +79,6 @@ def _test_worker_initializer():
         ):
             # Now call the application's real initializer.
             initialize_worker()
-
-
-def pytest_configure(config):
-    """
-    Configure test-only components.
-    This hook is called early in the pytest process after initial imports.
-    """
-    if sys.platform.startswith("linux"):
-        multiprocessing.set_start_method("spawn", force=True)
-
-    logging.getLogger().addFilter(PyvipsLogFilter())
 
 
 @pytest.fixture(scope="function", autouse=True)
