@@ -37,8 +37,6 @@ class ViewModeCmd:
         if is_3d == request_3d:
             return
 
-        gcode_action = win.action_manager.get_action("toggle_gcode_preview")
-
         if request_3d:
             if not canvas3d_initialized:
                 logger.warning(
@@ -68,14 +66,10 @@ class ViewModeCmd:
                 sim_action.change_state(GLib.Variant.new_boolean(False))
 
             action.set_state(GLib.Variant.new_boolean(True))
-            if gcode_action:
-                gcode_action.change_state(GLib.Variant.new_boolean(True))
             win.view_stack.set_visible_child_name("3d")
 
         else:
             action.set_state(GLib.Variant.new_boolean(False))
-            if gcode_action:
-                gcode_action.change_state(GLib.Variant.new_boolean(False))
             win.view_stack.set_visible_child_name("2d")
             win.surface.grab_focus()
 
