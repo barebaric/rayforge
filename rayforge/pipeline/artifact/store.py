@@ -270,11 +270,11 @@ class ArtifactStore:
 
         try:
             shm_obj.close()
-            msg = f"[DIAGNOSTIC] Unlinking shm: {shm_name}"
+            msg = f"Unlinking shm: {shm_name}"
             if caller_stack:
                 msg += f" (caller: {caller_stack})"
-            logger.info(msg)
-            shm_obj.unlink()  # This actually frees the memory
+            logger.debug(msg)
+            shm_obj.unlink()
             logger.debug(f"Released shared memory block: {shm_name}")
         except FileNotFoundError:
             # The block was already released externally, which is fine.
@@ -315,9 +315,8 @@ class ArtifactStore:
             return
 
         try:
-            logger.info(
-                f"[DIAGNOSTIC] Closing shared memory block without unlinking: "
-                f"{shm_name}"
+            logger.debug(
+                f"Closing shared memory block without unlinking: {shm_name}"
             )
             shm_obj.close()
             # Keep in managed_shms for garbage collection
