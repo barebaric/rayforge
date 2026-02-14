@@ -1701,6 +1701,8 @@ class MainWindow(Adw.ApplicationWindow):
 
         if response == "save":
             self.project_cmd.on_save_project(None, None)
+            if self.doc_editor.is_saved:
+                self.destroy()
 
     def on_menu_import(self, action, param=None):
         start_interactive_import(self, self.doc_editor)
