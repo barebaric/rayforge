@@ -126,6 +126,10 @@ def make_workpiece_artifact_in_subprocess(
     if final_artifact is None:
         # If no artifact was produced (e.g., empty image), we still need
         # to return the generation_id to signal completion.
+        proxy.send_event(
+            "artifact_created",
+            {"handle_dict": None, "generation_id": generation_id},
+        )
         return generation_id
 
     # 1. Put artifact into Shared Memory

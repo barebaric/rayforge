@@ -559,14 +559,21 @@ class DagScheduler:
         self,
         key: ArtifactKey,
         ledger_key: ArtifactKey,
-        handle: "BaseArtifactHandle",
+        handle: Optional["BaseArtifactHandle"],
         generation_id: int,
         step_uid: str,
     ):
         """
         Processes artifact_created event.
         """
-        self._artifact_manager.cache_handle(ledger_key, handle, generation_id)
+        if handle is not None:
+            self._artifact_manager.cache_handle(
+                ledger_key, handle, generation_id
+            )
+        else:
+            self._artifact_manager.complete_generation(
+                ledger_key, generation_id, handle=None
+            )
 
         node = self.graph.find_node(ledger_key)
         if node is not None:
@@ -599,10 +606,16 @@ class DagScheduler:
         handle_dict = data.get("handle_dict")
         generation_id = data.get("generation_id")
 
-        if not handle_dict or generation_id is None:
+        if generation_id is None:
             logger.error(
-                f"[{key}] Task event '{event_name}' missing handle or "
-                f"generation id ({generation_id}). Ignoring."
+                f"[{key}] Task event '{event_name}' missing "
+                f"generation id. Ignoring."
+            )
+            return
+
+        if handle_dict is None and event_name != "artifact_created":
+            logger.error(
+                f"[{key}] Task event '{event_name}' missing handle. Ignoring."
             )
             return
 
@@ -615,7 +628,12 @@ class DagScheduler:
             return
 
         try:
-            handle = self._artifact_manager.adopt_artifact(key, handle_dict)
+            if handle_dict is None:
+                handle = None
+            else:
+                handle = self._artifact_manager.adopt_artifact(
+                    key, handle_dict
+                )
 
             if event_name == "artifact_created":
                 self._handle_artifact_created_event(
@@ -748,7 +766,14 @@ class DagScheduler:
             key, generation_id
         )
         if handle is None:
-            self.mark_node_dirty(ledger_key)
+            node = self.graph.find_node(ledger_key)
+            if node is not None and node.state == NodeState.PROCESSING:
+                logger.debug(
+                    f"[{key}] Handle not yet available, "
+                    f"waiting for artifact_created event."
+                )
+            else:
+                self.mark_node_dirty(ledger_key)
 
         return True, handle
 
