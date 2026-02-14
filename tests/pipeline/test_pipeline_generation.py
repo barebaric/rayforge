@@ -307,7 +307,11 @@ class TestPipelineGeneration:
             )
             task_info.when_done(task_obj_for_stage)
 
-            cached_ops = pipeline.get_ops(step, real_workpiece)
+            cached_ops = pipeline.get_scaled_ops(
+                step.uid,
+                real_workpiece.uid,
+                real_workpiece.get_world_transform(),
+            )
             assert cached_ops is not None
             assert len(cached_ops) == 2
         finally:
@@ -338,7 +342,14 @@ class TestPipelineGeneration:
         task_info.when_done(task_obj_for_stage)
 
         # Assert
-        assert pipeline.get_ops(step, real_workpiece) is None
+        assert (
+            pipeline.get_scaled_ops(
+                step.uid,
+                real_workpiece.uid,
+                real_workpiece.get_world_transform(),
+            )
+            is None
+        )
 
     @pytest.mark.asyncio
     async def test_step_change_triggers_full_regeneration(
@@ -904,7 +915,11 @@ class TestPipelineGeneration:
             self._complete_all_tasks(mock_task_mgr, wp_handle)
 
             # Assert - Verify the workpiece artifact was created
-            cached_ops = pipeline.get_ops(step, real_workpiece)
+            cached_ops = pipeline.get_scaled_ops(
+                step.uid,
+                real_workpiece.uid,
+                real_workpiece.get_world_transform(),
+            )
             assert cached_ops is not None
             assert len(cached_ops) == 2
 
