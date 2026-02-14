@@ -109,6 +109,7 @@ class ViewManager:
         self._pipeline.step_assembly_starting.connect(
             self.on_workpiece_artifact_ready
         )
+        self._pipeline.visual_chunk_available.connect(self.on_chunk_available)
 
     @property
     def current_view_context(self) -> Optional[RenderContext]:
@@ -543,11 +544,11 @@ class ViewManager:
         Implements incremental rendering by drawing the chunk onto
         the live view artifact bitmap.
         """
-        workpiece_uid = key.id
+        if ":" in key.id:
+            workpiece_uid, _ = key.id.split(":", 1)
+        else:
+            workpiece_uid = key.id
 
-        # If step_uid is not provided (e.g. from legacy signal emission),
-        # we cannot reliably identify which view to update in a multi-step
-        # workflow. We log a warning and abort to prevent corruption.
         if step_uid is None:
             logger.debug(
                 f"Chunk available for {workpiece_uid} but no step_uid "
@@ -766,16 +767,18 @@ class ViewManager:
         if not context:
             return
 
-        if existing_handle is not None:
-            # Reuse existing handle if dimensions match?
-            # For simplicity, we assume new generation = new buffer needed.
-            # But skipping for now as per logic in previous implementation
-            # unless we detect size change. Here we mirror previous logic:
-            return
+        need_new_buffer = False
+        if existing_handle is None:
+            need_new_buffer = True
+        else:
+            w_mm, h_mm = workpiece.size
+            if existing_handle.workpiece_size_mm != (w_mm, h_mm):
+                need_new_buffer = True
 
-        self.allocate_live_buffer(
-            workpiece, step.uid, self._view_generation_id, context
-        )
+        if need_new_buffer:
+            self.allocate_live_buffer(
+                workpiece, step.uid, self._view_generation_id, context
+            )
 
     def reconcile(self, doc: "Doc", generation_id: int):
         """
