@@ -17,7 +17,6 @@ from rayforge.pipeline.producer import ContourProducer, Rasterizer
 from rayforge.pipeline.transformer import Optimize
 from rayforge.pipeline.transformer.base import OpsTransformer
 from rayforge.pipeline.stage.workpiece_compute import (
-    _set_progress,
     _create_initial_ops,
     _validate_workpiece_size,
     _calculate_vector_render_size,
@@ -30,6 +29,7 @@ from rayforge.pipeline.stage.workpiece_compute import (
     compute_workpiece_artifact,
     MAX_VECTOR_TRACE_PIXELS,
 )
+from rayforge.shared.tasker.progress import set_progress
 
 
 @pytest.fixture
@@ -171,8 +171,8 @@ def test_compute_workpiece_artifact_with_empty_workpiece():
 
 
 def test_set_progress_with_callback(mock_progress_context):
-    """Test _set_progress calls callback when provided."""
-    _set_progress(0.5, "Test message", mock_progress_context)
+    """Test set_progress calls callback when provided."""
+    set_progress(mock_progress_context, 0.5, "Test message")
 
     assert len(mock_progress_context.progress_calls) == 1
     assert mock_progress_context.progress_calls[0][0] == 0.5
@@ -181,8 +181,8 @@ def test_set_progress_with_callback(mock_progress_context):
 
 
 def test_set_progress_without_callback():
-    """Test _set_progress does not raise when callback is None."""
-    _set_progress(0.5, "Test message", None)
+    """Test set_progress does not raise when callback is None."""
+    set_progress(None, 0.5, "Test message")
 
 
 def test_create_initial_ops():

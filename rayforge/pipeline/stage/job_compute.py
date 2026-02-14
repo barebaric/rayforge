@@ -9,7 +9,7 @@ import numpy as np
 from ...core.doc import Doc
 from ...core.ops import Ops
 from ...machine.models.machine import Machine
-from ...shared.tasker.progress import ProgressContext
+from ...shared.tasker.progress import ProgressContext, set_progress
 from ..artifact import JobArtifact, StepOpsArtifact
 from ..artifact.base import VertexData
 from ..encoder.vertexencoder import VertexEncoder
@@ -34,13 +34,7 @@ def _assemble_final_ops(
     Returns:
         An Ops object containing the assembled operations.
     """
-
-    def _set_progress(progress: float, message: str = ""):
-        if context:
-            context.set_progress(progress)
-            context.set_message(message)
-
-    _set_progress(0.0, _("Assembling final job..."))
+    set_progress(context, 0.0, _("Assembling final job..."))
     final_ops = Ops()
     final_ops.job_start()
 
@@ -58,7 +52,8 @@ def _assemble_final_ops(
 
             processed_steps += 1
             progress = processed_steps / total_steps if total_steps > 0 else 0
-            _set_progress(
+            set_progress(
+                context,
                 progress,
                 _("Processing final ops for '{step}'").format(step=step.name),
             )
@@ -100,13 +95,9 @@ def _calculate_time_estimate(
     Returns:
         Estimated time in seconds, or None if not calculable.
     """
-
-    def _set_progress(progress: float, message: str = ""):
-        if context:
-            context.set_progress(progress)
-            context.set_message(message)
-
-    _set_progress(0.7, _("Calculating final time and distance estimates..."))
+    set_progress(
+        context, 0.7, _("Calculating final time and distance estimates...")
+    )
     return final_ops.estimate_time(
         default_cut_speed=machine.max_cut_speed,
         default_travel_speed=machine.max_travel_speed,
@@ -145,13 +136,7 @@ def _encode_gcode_and_opmap(
     Returns:
         A tuple of (machine_code_bytes, op_map_bytes).
     """
-
-    def _set_progress(progress: float, message: str = ""):
-        if context:
-            context.set_progress(progress)
-            context.set_message(message)
-
-    _set_progress(0.8, _("Generating G-code..."))
+    set_progress(context, 0.8, _("Generating G-code..."))
     gcode_str, op_map_obj = machine.encode_ops(final_ops, doc)
 
     machine_code_bytes = np.frombuffer(
@@ -177,13 +162,7 @@ def _encode_vertex_data(
     Returns:
         VertexData object containing vertex arrays for preview rendering.
     """
-
-    def _set_progress(progress: float, message: str = ""):
-        if context:
-            context.set_progress(progress)
-            context.set_message(message)
-
-    _set_progress(0.9, _("Encoding paths for preview..."))
+    set_progress(context, 0.9, _("Encoding paths for preview..."))
     vertex_encoder = VertexEncoder()
     return vertex_encoder.encode(final_ops)
 
@@ -212,12 +191,6 @@ def compute_job_artifact(
         A JobArtifact containing the final G-code, vertex data, and
         metadata.
     """
-
-    def _set_progress(progress: float, message: str = ""):
-        if context:
-            context.set_progress(progress)
-            context.set_message(message)
-
     final_ops = _assemble_final_ops(doc, step_artifacts_by_uid, context)
 
     final_time = _calculate_time_estimate(final_ops, machine, context)
@@ -229,7 +202,7 @@ def compute_job_artifact(
 
     vertex_data = _encode_vertex_data(final_ops, context)
 
-    _set_progress(1.0, _("Job finalization complete"))
+    set_progress(context, 1.0, _("Job finalization complete"))
 
     return JobArtifact(
         ops=final_ops,

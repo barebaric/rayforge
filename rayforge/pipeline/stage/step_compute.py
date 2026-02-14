@@ -5,7 +5,7 @@ from typing import List, Tuple, Optional, TYPE_CHECKING
 from ...core.ops import Ops
 from ...core.matrix import Matrix
 from ...core.workpiece import WorkPiece
-from ...shared.tasker.progress import ProgressContext
+from ...shared.tasker.progress import ProgressContext, set_progress
 from ..artifact import (
     StepRenderArtifact,
     StepOpsArtifact,
@@ -201,12 +201,12 @@ def _apply_transformers_to_ops(
         context: Optional progress context.
     """
     for i, transformer in enumerate(transformers):
-        if context:
-            context.set_message(
-                _("Applying '{t}'").format(t=transformer.label)
-            )
-            base_progress = 0.5 + (i / len(transformers) * 0.4)
-            context.set_progress(base_progress)
+        base_progress = 0.5 + (i / len(transformers) * 0.4)
+        set_progress(
+            context,
+            base_progress,
+            _("Applying '{t}'").format(t=transformer.label),
+        )
         transformer.run(ops, workpiece=workpiece)
 
 
@@ -249,8 +249,7 @@ def compute_step_artifacts(
     workpiece_context = artifacts[0][2] if artifacts else None
 
     for i, (artifact, world_matrix, workpiece) in enumerate(artifacts):
-        if context:
-            context.set_progress(i / num_items * 0.5)
+        set_progress(context, i / num_items * 0.5)
 
         ops, texture_instance = _process_artifact(
             artifact, world_matrix, workpiece
@@ -264,20 +263,17 @@ def compute_step_artifacts(
             combined_ops, transformers, workpiece_context, context
         )
 
-    if context:
-        context.set_progress(0.9)
+    set_progress(context, 0.9)
 
     vertex_data = _encode_vertex_data(combined_ops)
 
-    if context:
-        context.set_progress(0.95)
+    set_progress(context, 0.95)
 
     render_artifact = StepRenderArtifact(
         vertex_data=vertex_data, texture_instances=texture_instances
     )
     ops_artifact = StepOpsArtifact(ops=combined_ops)
 
-    if context:
-        context.set_progress(1.0)
+    set_progress(context, 1.0)
 
     return render_artifact, ops_artifact

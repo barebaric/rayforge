@@ -3,24 +3,13 @@ import logging
 from ...core.ops import Ops
 from ...core.workpiece import WorkPiece
 from ...machine.models.laser import Laser
-from ...shared.tasker.progress import ProgressContext
+from ...shared.tasker.progress import ProgressContext, set_progress
 from ..artifact import WorkPieceArtifact
 from ..modifier import Modifier
 from ..producer import OpsProducer
 from ..transformer import OpsTransformer, ExecutionPhase
 
 MAX_VECTOR_TRACE_PIXELS = 16 * 1024 * 1024
-
-
-def _set_progress(
-    progress: float,
-    message: str,
-    context: Optional[ProgressContext] = None,
-) -> None:
-    """Report progress and message via context if provided."""
-    if context:
-        context.set_progress(progress)
-        context.set_message(message)
 
 
 def _trace_and_modify_surface(
@@ -472,13 +461,13 @@ def _apply_transformers(
 
     for phase in phase_order:
         for transformer in transformers_by_phase[phase]:
-            _set_progress(
+            set_progress(
+                context,
                 execute_weight
                 + (processed_count / total_to_process) * transform_weight,
                 _("Applying '{transformer}' on '{workpiece}'").format(
                     transformer=transformer.label, workpiece=workpiece.name
                 ),
-                context,
             )
             transformer.run(ops, workpiece=workpiece, context=None)
             processed_count += 1
@@ -535,12 +524,12 @@ def compute_workpiece_artifact_vector(
     Returns:
         A WorkPieceArtifact or None if generation failed.
     """
-    _set_progress(
+    set_progress(
+        context,
         0.0,
         _("Generating path for '{workpiece}'").format(
             workpiece=workpiece.name
         ),
-        context,
     )
 
     initial_ops = _create_initial_ops(settings)
@@ -557,12 +546,12 @@ def compute_workpiece_artifact_vector(
         generation_size,
         context,
     ):
-        _set_progress(
+        set_progress(
+            context,
             execute_progress * execute_weight,
             _("Generating path for '{workpiece}'").format(
                 workpiece=workpiece.name
             ),
-            context,
         )
 
         final_artifact = _merge_artifact_ops(
@@ -571,12 +560,12 @@ def compute_workpiece_artifact_vector(
             initial_ops,
         )
 
-    _set_progress(
+    set_progress(
+        context,
         execute_weight,
         _("Generating path for '{workpiece}'").format(
             workpiece=workpiece.name
         ),
-        context,
     )
 
     return final_artifact
@@ -607,12 +596,12 @@ def compute_workpiece_artifact_raster(
     Returns:
         A WorkPieceArtifact or None if generation failed.
     """
-    _set_progress(
+    set_progress(
+        context,
         0.0,
         _("Generating path for '{workpiece}'").format(
             workpiece=workpiece.name
         ),
-        context,
     )
 
     initial_ops = _create_initial_ops(settings)
@@ -629,12 +618,12 @@ def compute_workpiece_artifact_raster(
         generation_size,
         context,
     ):
-        _set_progress(
+        set_progress(
+            context,
             execute_progress * execute_weight,
             _("Generating path for '{workpiece}'").format(
                 workpiece=workpiece.name
             ),
-            context,
         )
 
         # Notify progressive listeners (like the UI view) about this chunk
@@ -647,12 +636,12 @@ def compute_workpiece_artifact_raster(
             initial_ops,
         )
 
-    _set_progress(
+    set_progress(
+        context,
         execute_weight,
         _("Generating path for '{workpiece}'").format(
             workpiece=workpiece.name
         ),
-        context,
     )
 
     return final_artifact
@@ -755,10 +744,10 @@ def compute_workpiece_artifact(
         f"generation_size={final_artifact_to_store.generation_size}"
     )
 
-    _set_progress(
+    set_progress(
+        context,
         1.0,
         _("Finalizing '{workpiece}'").format(workpiece=workpiece.name),
-        context,
     )
 
     return final_artifact_to_store
