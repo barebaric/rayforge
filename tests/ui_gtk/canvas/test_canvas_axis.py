@@ -111,6 +111,7 @@ def mock_context_with_font_size(mocker) -> MagicMock:
     return mock
 
 
+@pytest.mark.ui
 class TestAxisRendererLayout:
     """Tests for layout calculations and adaptive sizing."""
 
@@ -186,6 +187,7 @@ class TestAxisRendererLayout:
         assert adaptive_size == expected_grid_size
 
 
+@pytest.mark.ui
 class TestAxisRendererDrawing:
     """
     Tests the actual drawing logic by inspecting calls to a mocked context.
@@ -340,6 +342,7 @@ class TestAxisRendererDrawing:
         assert mock_context_with_font_size.font_size == 16.0
 
 
+@pytest.mark.ui
 class TestAxisExpectations:
     """
     Tests for axis rendering expectations under various configurations.
