@@ -326,15 +326,46 @@ class ArtifactStore:
         closes its handle but does not unlink the shared memory, allowing
         the adopting process to continue accessing the data.
 
+        On Windows, shared memory is destroyed when the last handle is closed.
+        This method respects reference counting to ensure the block remains
+        alive if other processes have adopted it.
+
         Args:
             handle: The handle of the artifact whose shared memory block is
                     to be forgotten.
         """
         shm_name = handle.shm_name
-        logger.debug(
-            f"forget() called for {shm_name}, refcount="
-            f"{self._refcounts.get(shm_name, 0)}"
-        )
+        refcount = self._refcounts.get(shm_name, 0)
+        logger.debug(f"forget() called for {shm_name}, refcount={refcount}")
+
+        shm_obj = self._managed_shms.get(shm_name)
+        if not shm_obj:
+            logger.warning(
+                f"Attempted to forget block {shm_name}, which is not "
+                f"managed or has already been released/forgotten."
+            )
+            return
+
+        if refcount > 1:
+            self._refcounts[shm_name] = refcount - 1
+            logger.debug(
+                f"Decremented refcount for {shm_name} to "
+                f"{self._refcounts[shm_name]} in forget()"
+            )
+            self._managed_shms.pop(shm_name)
+            return
+
+        self._refcounts.pop(shm_name, None)
+        self._managed_shms.pop(shm_name)
+
+        try:
+            logger.debug(f"Closing shared memory block: {shm_name}")
+            shm_obj.close()
+            logger.debug(f"Forgot shared memory block: {shm_name}")
+        except Exception as e:
+            logger.warning(
+                f"Error forgetting shared memory block {shm_name}: {e}"
+            )
         shm_obj = self._managed_shms.pop(shm_name, None)
         if not shm_obj:
             logger.warning(
