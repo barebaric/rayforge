@@ -123,9 +123,13 @@ class ActionManager:
         self._add_action("clear", self.win.on_clear_clicked)
 
         # Item Actions
-        self._add_action("new_sketch", self.win.on_new_sketch)
-        self._add_action("edit_sketch", self.win.on_edit_sketch)
-        self._add_action("export_sketch", self.win.on_export_sketch)
+        self._add_action("new_sketch", self.win.sketch_mode_cmd.on_new_sketch)
+        self._add_action(
+            "edit_sketch", self.win.sketch_mode_cmd.on_edit_sketch
+        )
+        self._add_action(
+            "export_sketch", self.win.sketch_mode_cmd.on_export_sketch
+        )
 
         # Layer Management Actions
         self._add_action("layer-move-up", self.on_layer_move_up)
