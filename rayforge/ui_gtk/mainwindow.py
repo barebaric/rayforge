@@ -1634,9 +1634,16 @@ class MainWindow(Adw.ApplicationWindow):
             self._on_previews_ready(None)
             return
 
-        self.doc_editor.file.assemble_job_in_background(
-            when_done=self._on_assembly_for_preview_finished
-        )
+        # Try to use existing job artifact first
+        existing_handle = self.doc_editor.pipeline.get_existing_job_handle()
+        if existing_handle is not None:
+            # Use existing artifact without regenerating
+            self._on_previews_ready(existing_handle)
+        else:
+            # No existing artifact, trigger generation
+            self.doc_editor.file.assemble_job_in_background(
+                when_done=self._on_assembly_for_preview_finished
+            )
 
     def _on_document_settled(self, sender):
         """

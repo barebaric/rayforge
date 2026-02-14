@@ -1095,3 +1095,30 @@ class Pipeline:
         result = await future
         logger.debug(f"[{id(self)}] Await returned with result: {result}.")
         return result
+
+    def get_existing_job_handle(
+        self,
+    ) -> Optional[JobArtifactHandle]:
+        """
+        Returns the most recent job artifact handle if one exists.
+
+        This method checks for existing job artifacts from previous
+        generations and returns the handle without triggering a new
+        generation. Useful for UI operations that need to display
+        existing data without reprocessing.
+
+        Returns:
+            The JobArtifactHandle if a valid one exists, None otherwise.
+        """
+        job_nodes = self._scheduler.graph.get_nodes_by_group("job")
+        for node in job_nodes:
+            handle = self._artifact_manager.get_job_handle(
+                node.key, self._data_generation_id
+            )
+            if handle is None and self._data_generation_id > 1:
+                handle = self._artifact_manager.get_job_handle(
+                    node.key, self._data_generation_id - 1
+                )
+            if handle is not None:
+                return handle
+        return None
