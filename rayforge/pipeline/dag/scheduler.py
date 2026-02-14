@@ -767,13 +767,21 @@ class DagScheduler:
         )
         if handle is None:
             node = self.graph.find_node(ledger_key)
-            if node is not None and node.state == NodeState.PROCESSING:
+            if node is not None and node.state == NodeState.VALID:
+                logger.debug(
+                    f"[{key}] Task completed with no handle, "
+                    f"node already VALID (empty workpiece)."
+                )
+            elif node is not None and node.state == NodeState.PROCESSING:
                 logger.debug(
                     f"[{key}] Handle not yet available, "
                     f"waiting for artifact_created event."
                 )
             else:
-                self.mark_node_dirty(ledger_key)
+                logger.warning(
+                    f"[{key}] Task completed but node in unexpected state: "
+                    f"{node.state if node else 'None'}"
+                )
 
         return True, handle
 
