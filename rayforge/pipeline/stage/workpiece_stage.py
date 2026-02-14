@@ -1,17 +1,24 @@
 from __future__ import annotations
 import logging
 import math
-from typing import TYPE_CHECKING, Tuple, Optional
+from typing import TYPE_CHECKING, Dict, Optional, Tuple
 from copy import deepcopy
 from ...core.ops import Ops, ScanLinePowerCommand
+from ...shared.tasker.task import Task
+from ...shared.util.size import sizes_are_close
 from ..artifact import WorkPieceArtifact
 from ..artifact.key import ArtifactKey
+from ..artifact.manager import make_composite_key
+from ..dag.node import NodeState
 from .base import PipelineStage
 
 if TYPE_CHECKING:
     from ...core.matrix import Matrix
+    from ...core.step import Step
+    from ...core.workpiece import WorkPiece
     from ...machine.models.machine import Machine
     from ...shared.tasker.manager import TaskManager
+    from ..artifact import BaseArtifactHandle
     from ..artifact.manager import ArtifactManager
     from ..dag.scheduler import DagScheduler
 
@@ -34,18 +41,6 @@ class WorkPiecePipelineStage(PipelineStage):
         super().__init__(task_manager, artifact_manager)
         self._machine = machine
         self._scheduler = scheduler
-
-    def _sizes_are_close(
-        self,
-        size1: Optional[Tuple[float, float]],
-        size2: Optional[Tuple[float, float]],
-    ) -> bool:
-        """Compares two size tuples with a safe tolerance for float errors."""
-        if size1 is None or size2 is None:
-            return False
-        return math.isclose(size1[0], size2[0], abs_tol=1e-6) and math.isclose(
-            size1[1], size2[1], abs_tol=1e-6
-        )
 
     def invalidate_for_step(self, step_uid: str):
         """Invalidates all workpiece artifacts associated with a step."""
@@ -84,6 +79,248 @@ class WorkPiecePipelineStage(PipelineStage):
             self._task_manager.cancel_task(key)
         self._artifact_manager.invalidate_for_workpiece(key)
 
+    def validate_for_launch(
+        self, key: ArtifactKey, workpiece: "WorkPiece"
+    ) -> bool:
+        """
+        Validates workpiece size before launching.
+        Returns True if launch should proceed, False otherwise.
+        """
+        if any(s <= 0 for s in workpiece.size):
+            logger.warning(
+                f"Skipping launch for {key}: invalid size {workpiece.size}"
+            )
+            self._cleanup_entry(key)
+            return False
+        return True
+
+    def prepare_task_settings(
+        self, step: "Step"
+    ) -> Optional[Tuple[Dict, Optional[Dict]]]:
+        """
+        Prepares settings with machine parameters and selects laser.
+        Returns (settings_dict, laser_dict) or None if preparation fails.
+        """
+        if not self._machine:
+            logger.error("Cannot generate ops: No machine is configured.")
+            return None
+
+        settings = step.get_settings()
+        settings["machine_supports_arcs"] = self._machine.supports_arcs
+        settings["arc_tolerance"] = self._machine.arc_tolerance
+
+        try:
+            selected_laser = step.get_selected_laser(self._machine)
+        except ValueError as e:
+            logger.error(f"Cannot select laser for step '{step.name}': {e}")
+            return None
+
+        return settings, selected_laser.to_dict()
+
+    def prepare_workpiece_dict(self, workpiece: "WorkPiece") -> Dict:
+        """
+        Prepares the fully-hydrated, serializable WorkPiece dictionary.
+        """
+        world_workpiece = workpiece.in_world()
+        return world_workpiece.to_dict()
+
+    def validate_task_completion(
+        self,
+        key: ArtifactKey,
+        ledger_key: ArtifactKey,
+        task_generation_id: int,
+    ) -> bool:
+        """
+        Validates task completion by checking the generation ID against the
+        ledger. Returns True if task should be processed, False otherwise.
+        """
+        composite_key = make_composite_key(ledger_key, task_generation_id)
+        entry = self._artifact_manager._get_ledger_entry(composite_key)
+        if entry is None:
+            logger.debug(
+                f"[{key}] Ledger entry missing. Ignoring task completion."
+            )
+            return False
+
+        if entry.generation_id != task_generation_id:
+            logger.debug(
+                f"[{key}] Stale generation ID {task_generation_id}. "
+                f"Current: {entry.generation_id}. Ignoring."
+            )
+            return False
+
+        return True
+
+    def check_result_stale(
+        self, key: ArtifactKey, workpiece: "WorkPiece", generation_id: int
+    ) -> bool:
+        """
+        Checks if result is stale due to size change during generation.
+        Returns True if stale, False otherwise.
+        """
+        handle = self._artifact_manager.get_workpiece_handle(
+            key, generation_id
+        )
+
+        if handle and not handle.is_scalable:
+            if not sizes_are_close(handle.generation_size, workpiece.size):
+                logger.info(
+                    f"[{key}] Result for {key} is stale due to size "
+                    "change during generation. Regenerating."
+                )
+                return True
+
+        return False
+
+    def handle_artifact_created(
+        self,
+        key: ArtifactKey,
+        ledger_key: ArtifactKey,
+        handle: Optional["BaseArtifactHandle"],
+        generation_id: int,
+        step_uid: str,
+    ):
+        """
+        Processes artifact_created event.
+        """
+        if handle is not None:
+            self._artifact_manager.cache_handle(
+                ledger_key, handle, generation_id
+            )
+        else:
+            self._artifact_manager.complete_generation(
+                ledger_key, generation_id, handle=None
+            )
+
+        node = self._scheduler.graph.find_node(ledger_key)
+        if node is not None:
+            node.state = NodeState.VALID
+
+        self._scheduler.workpiece_artifact_adopted.send(
+            self._scheduler, step_uid=step_uid, workpiece_uid=key.id
+        )
+
+    def handle_visual_chunk_ready(
+        self, key: ArtifactKey, handle, generation_id: int, step_uid: str
+    ):
+        """
+        Processes visual_chunk_ready event.
+        """
+        self._scheduler.visual_chunk_available.send(
+            self._scheduler,
+            key=key,
+            chunk_handle=handle,
+            generation_id=generation_id,
+            step_uid=step_uid,
+        )
+
+    def handle_canceled_task(
+        self,
+        key: ArtifactKey,
+        ledger_key: ArtifactKey,
+        step: "Step",
+        workpiece: "WorkPiece",
+        task_generation_id: int,
+    ):
+        """
+        Handles canceled task status.
+        """
+        handle = self._artifact_manager.get_workpiece_handle(
+            key, task_generation_id
+        )
+        if handle is not None:
+            logger.debug(
+                f"[{key}] Task was canceled but artifact already committed, "
+                "sending finished signal with handle."
+            )
+            self._scheduler.generation_finished.send(
+                self._scheduler,
+                step=step,
+                workpiece=workpiece,
+                handle=handle,
+                generation_id=task_generation_id,
+                task_status="canceled",
+            )
+            return
+
+        logger.debug(
+            f"[{key}] Task was canceled. Marking node dirty and "
+            "sending finished signal."
+        )
+        self._scheduler.mark_node_dirty(ledger_key)
+        self._scheduler.generation_finished.send(
+            self._scheduler,
+            step=step,
+            workpiece=workpiece,
+            handle=None,
+            generation_id=task_generation_id,
+            task_status="canceled",
+        )
+
+    def handle_completed_task(
+        self,
+        key: ArtifactKey,
+        ledger_key: ArtifactKey,
+        task: "Task",
+        step: "Step",
+        workpiece: "WorkPiece",
+        task_generation_id: int,
+        generation_id: int,
+    ) -> tuple[bool, Optional["BaseArtifactHandle"]]:
+        """
+        Handles completed task status.
+        Returns (True if processing should continue, handle) or
+        (False, None) if task was relaunched due to stale result.
+        """
+        try:
+            task.result()
+
+            if self.check_result_stale(key, workpiece, generation_id):
+                self._scheduler._launch_workpiece_task(step, workpiece)
+                return False, None
+        except Exception as e:
+            logger.error(f"[{key}] Error processing result for {key}: {e}")
+
+        handle = self._artifact_manager.get_workpiece_handle(
+            key, generation_id
+        )
+        if handle is None:
+            node = self._scheduler.graph.find_node(ledger_key)
+            if node is not None and node.state == NodeState.VALID:
+                logger.debug(
+                    f"[{key}] Task completed with no handle, "
+                    f"node already VALID (empty workpiece)."
+                )
+            elif node is not None and node.state == NodeState.PROCESSING:
+                logger.debug(
+                    f"[{key}] Handle not yet available, "
+                    f"waiting for artifact_created event."
+                )
+            else:
+                logger.warning(
+                    f"[{key}] Task completed but node in unexpected state: "
+                    f"{node.state if node else 'None'}"
+                )
+
+        return True, handle
+
+    def handle_failed_task(
+        self,
+        key: ArtifactKey,
+        step: "Step",
+        workpiece: "WorkPiece",
+        task_generation_id: int,
+    ):
+        """
+        Handles failed task status.
+        """
+        wp_name = workpiece.name
+        error_msg = f"Ops generation for '{step.name}' on '{wp_name}' failed."
+        logger.warning(f"[{key}] {error_msg}")
+        node = self._scheduler.graph.find_node(key)
+        if node is not None:
+            node.state = NodeState.ERROR
+
     def get_artifact(
         self,
         step_uid: str,
@@ -100,9 +337,7 @@ class WorkPiecePipelineStage(PipelineStage):
             return None
 
         if not handle.is_scalable:
-            if not self._sizes_are_close(
-                handle.generation_size, workpiece_size
-            ):
+            if not sizes_are_close(handle.generation_size, workpiece_size):
                 return None
 
         artifact = self._artifact_manager.get_artifact(handle)

@@ -7,6 +7,7 @@ from rayforge.pipeline.artifact.key import ArtifactKey
 from rayforge.pipeline.artifact.workpiece import WorkPieceArtifact
 from rayforge.pipeline.stage.base import PipelineStage
 from rayforge.pipeline.stage.workpiece_stage import WorkPiecePipelineStage
+from rayforge.shared.util.size import sizes_are_close
 
 
 @pytest.fixture
@@ -92,14 +93,8 @@ class TestWorkPiecePipelineStage:
         mock_scheduler,
     ):
         """Test size comparison returns True for matching sizes."""
-        stage = WorkPiecePipelineStage(
-            mock_task_mgr,
-            mock_artifact_manager,
-            mock_machine,
-            mock_scheduler,
-        )
-        assert stage._sizes_are_close((10.0, 20.0), (10.0, 20.0)) is True
-        assert stage._sizes_are_close((10.000001, 20.0), (10.0, 20.0)) is True
+        assert sizes_are_close((10.0, 20.0), (10.0, 20.0)) is True
+        assert sizes_are_close((10.000001, 20.0), (10.0, 20.0)) is True
 
     def test_sizes_are_close_mismatch(
         self,
@@ -109,14 +104,8 @@ class TestWorkPiecePipelineStage:
         mock_scheduler,
     ):
         """Test size comparison returns False for mismatched sizes."""
-        stage = WorkPiecePipelineStage(
-            mock_task_mgr,
-            mock_artifact_manager,
-            mock_machine,
-            mock_scheduler,
-        )
-        assert stage._sizes_are_close((10.0, 20.0), (20.0, 10.0)) is False
-        assert stage._sizes_are_close((10.0, 20.0), (10.0, 30.0)) is False
+        assert sizes_are_close((10.0, 20.0), (20.0, 10.0)) is False
+        assert sizes_are_close((10.0, 20.0), (10.0, 30.0)) is False
 
     def test_sizes_are_close_none(
         self,
@@ -126,15 +115,9 @@ class TestWorkPiecePipelineStage:
         mock_scheduler,
     ):
         """Test size comparison returns False for None values."""
-        stage = WorkPiecePipelineStage(
-            mock_task_mgr,
-            mock_artifact_manager,
-            mock_machine,
-            mock_scheduler,
-        )
-        assert stage._sizes_are_close(None, (10.0, 20.0)) is False
-        assert stage._sizes_are_close((10.0, 20.0), None) is False
-        assert stage._sizes_are_close(None, None) is False
+        assert sizes_are_close(None, (10.0, 20.0)) is False
+        assert sizes_are_close((10.0, 20.0), None) is False
+        assert sizes_are_close(None, None) is False
 
     def test_invalidate_for_step(
         self,

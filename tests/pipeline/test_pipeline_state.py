@@ -479,31 +479,6 @@ class TestPipelineState:
         pipeline.resume()
         assert pipeline.is_paused is False
 
-    def test_get_estimated_time_returns_none(
-        self, doc, real_workpiece, mock_task_mgr, context_initializer
-    ):
-        """
-        Tests that the refactored get_estimated_time now correctly
-        returns None as it's no longer per-workpiece.
-        """
-        # Arrange
-        layer = self._setup_doc_with_workpiece(doc, real_workpiece)
-        assert layer.workflow is not None
-        step = create_contour_step(context_initializer)
-        layer.workflow.add_step(step)
-        pipeline = Pipeline(
-            doc,
-            mock_task_mgr,
-            context_initializer.artifact_store,
-            context_initializer.machine,
-        )
-
-        # Act
-        result = pipeline.get_estimated_time(step, real_workpiece)
-
-        # Assert
-        assert result is None
-
     def test_preview_time_updated_signal_is_correct(
         self, doc, real_workpiece, mock_task_mgr, context_initializer
     ):

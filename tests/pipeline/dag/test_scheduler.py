@@ -14,6 +14,11 @@ from rayforge.pipeline.artifact.manager import ArtifactManager
 from rayforge.pipeline.context import GenerationContext
 from rayforge.pipeline.dag.node import ArtifactNode, NodeState
 from rayforge.pipeline.dag.scheduler import DagScheduler
+from rayforge.pipeline.stage import (
+    JobPipelineStage,
+    StepPipelineStage,
+    WorkPiecePipelineStage,
+)
 
 
 WP_UID_1 = "550e8400-e29b-41d4-a716-446655440001"
@@ -28,7 +33,23 @@ class TestDagScheduler:
         task_manager = MagicMock()
         artifact_manager = MagicMock()
         machine = MagicMock()
-        return DagScheduler(task_manager, artifact_manager, machine)
+        scheduler = DagScheduler(task_manager, artifact_manager, machine)
+
+        workpiece_stage = MagicMock(spec=WorkPiecePipelineStage)
+        step_stage = MagicMock(spec=StepPipelineStage)
+        job_stage = MagicMock(spec=JobPipelineStage)
+
+        step_stage.validate_dependencies.return_value = True
+        step_stage.validate_geometry_match.return_value = True
+        job_stage.validate_dependencies.return_value = True
+        workpiece_stage.validate_for_launch.return_value = True
+        workpiece_stage.prepare_task_settings.return_value = ({}, {})
+
+        scheduler.set_workpiece_stage(workpiece_stage)
+        scheduler.set_step_stage(step_stage)
+        scheduler.set_job_stage(job_stage)
+
+        return scheduler
 
     def test_scheduler_initialization(self):
         """Test creating a scheduler."""
@@ -272,6 +293,22 @@ class TestDagSchedulerJobGeneration:
         scheduler = DagScheduler(task_manager, artifact_manager, machine)
         scheduler.set_doc(doc)
         scheduler.set_generation_id(1)
+
+        workpiece_stage = MagicMock(spec=WorkPiecePipelineStage)
+        step_stage = MagicMock(spec=StepPipelineStage)
+        job_stage = MagicMock(spec=JobPipelineStage)
+
+        step_stage.validate_dependencies.return_value = True
+        step_stage.validate_geometry_match.return_value = True
+        job_stage.validate_dependencies.return_value = True
+        job_stage.collect_step_handles.return_value = {}
+        workpiece_stage.validate_for_launch.return_value = True
+        workpiece_stage.prepare_task_settings.return_value = ({}, {})
+
+        scheduler.set_workpiece_stage(workpiece_stage)
+        scheduler.set_step_stage(step_stage)
+        scheduler.set_job_stage(job_stage)
+
         return scheduler
 
     def _create_step_ops_handle(self):
@@ -295,8 +332,8 @@ class TestDagSchedulerJobGeneration:
     def test_generate_job_missing_step_handle(self):
         """Test that generate_job fails when step handles are missing."""
         scheduler = self._make_scheduler()
-        am = scheduler._artifact_manager
-        am.get_step_ops_handle.return_value = None  # type: ignore
+        job_stage = cast(MagicMock, scheduler._job_stage)
+        job_stage.collect_step_handles.return_value = None
 
         callback = MagicMock()
         scheduler.generate_job(step_uids=[self.STEP_UID_1], on_done=callback)
@@ -328,8 +365,11 @@ class TestDagSchedulerJobGeneration:
         scheduler = self._make_scheduler()
 
         step_handle = self._create_step_ops_handle()
-        am = scheduler._artifact_manager
-        am.get_step_ops_handle.return_value = step_handle  # type: ignore
+        job_stage = cast(MagicMock, scheduler._job_stage)
+        job_stage.collect_step_handles.return_value = {
+            self.STEP_UID_1: step_handle.to_dict.return_value,
+            self.STEP_UID_2: step_handle.to_dict.return_value,
+        }
 
         callback = MagicMock()
         scheduler.generate_job(
@@ -468,6 +508,23 @@ class TestDagSchedulerContextTaskTracking(unittest.TestCase):
         scheduler = DagScheduler(task_manager, artifact_manager, machine)
         scheduler.set_doc(doc)
         scheduler.set_generation_id(1)
+
+        workpiece_stage = MagicMock(spec=WorkPiecePipelineStage)
+        step_stage = MagicMock(spec=StepPipelineStage)
+        step_stage.generation_finished = MagicMock()
+        job_stage = MagicMock(spec=JobPipelineStage)
+
+        step_stage.validate_dependencies.return_value = True
+        step_stage.validate_geometry_match.return_value = True
+        job_stage.validate_dependencies.return_value = True
+        job_stage.collect_step_handles.return_value = {}
+        workpiece_stage.validate_for_launch.return_value = True
+        workpiece_stage.prepare_task_settings.return_value = ({}, {})
+
+        scheduler.set_workpiece_stage(workpiece_stage)
+        scheduler.set_step_stage(step_stage)
+        scheduler.set_job_stage(job_stage)
+
         return scheduler
 
     def _create_step_ops_handle(self):
@@ -546,6 +603,23 @@ class TestDagSchedulerContextTaskCompletion(unittest.TestCase):
         scheduler = DagScheduler(task_manager, artifact_manager, machine)
         scheduler.set_doc(doc)
         scheduler.set_generation_id(1)
+
+        workpiece_stage = MagicMock(spec=WorkPiecePipelineStage)
+        step_stage = MagicMock(spec=StepPipelineStage)
+        step_stage.generation_finished = MagicMock()
+        job_stage = MagicMock(spec=JobPipelineStage)
+
+        step_stage.validate_dependencies.return_value = True
+        step_stage.validate_geometry_match.return_value = True
+        job_stage.validate_dependencies.return_value = True
+        job_stage.collect_step_handles.return_value = {}
+        workpiece_stage.validate_for_launch.return_value = True
+        workpiece_stage.prepare_task_settings.return_value = ({}, {})
+
+        scheduler.set_workpiece_stage(workpiece_stage)
+        scheduler.set_step_stage(step_stage)
+        scheduler.set_job_stage(job_stage)
+
         return scheduler
 
     def _create_step_ops_handle(self):

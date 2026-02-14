@@ -7,7 +7,7 @@ from rayforge.core.group import Group
 from rayforge.core.step import Step
 from rayforge.core.workpiece import WorkPiece
 from rayforge.core.matrix import Matrix
-from rayforge.pipeline.pipeline import Pipeline, InvalidationScope
+from rayforge.pipeline.pipeline import Pipeline
 from rayforge.pipeline.artifact import ArtifactKey
 
 
@@ -86,16 +86,6 @@ def doc_with_group():
     layer.add_child(group)
 
     return doc, layer, group, wp1, wp2
-
-
-def test_invalidation_scope_full_reproduction_exists():
-    """Test FULL_REPRODUCTION enum value exists."""
-    assert InvalidationScope.FULL_REPRODUCTION.value == "full_reproduction"
-
-
-def test_invalidation_scope_step_only_exists():
-    """Test STEP_ONLY enum value exists."""
-    assert InvalidationScope.STEP_ONLY.value == "step_only"
 
 
 def test_collect_single_workpiece(doc_with_workpieces, pipeline):
