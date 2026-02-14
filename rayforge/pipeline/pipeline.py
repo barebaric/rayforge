@@ -639,15 +639,16 @@ class Pipeline:
         """
         Relays signal and triggers downstream step assembly via DAG.
         """
+        if handle is not None:
+            self.workpiece_artifact_ready.send(
+                self,
+                step=step,
+                workpiece=workpiece,
+                handle=handle,
+                generation_id=generation_id,
+            )
+
         if task_status != "canceled":
-            if handle is not None:
-                self.workpiece_artifact_ready.send(
-                    self,
-                    step=step,
-                    workpiece=workpiece,
-                    handle=handle,
-                    generation_id=generation_id,
-                )
             self._scheduler.process_graph()
 
         if not self.is_busy and self._reconciliation_timer is None:
