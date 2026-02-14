@@ -420,11 +420,31 @@ class ArtifactManager:
             return entry.handle
         return None
 
-    def _get_ledger_entry(
+    def get_ledger_entry(
         self, key: Tuple[ArtifactKey, GenerationID]
     ) -> Optional[LedgerEntry]:
-        """Returns the LedgerEntry for a key, or None if not found."""
+        """
+        Returns the LedgerEntry for a composite key, or None if not found.
+
+        Args:
+            key: A composite key (ArtifactKey, GenerationID).
+
+        Returns:
+            The LedgerEntry if found, None otherwise.
+        """
         return self._ledger.get(key)
+
+    def get_store(self) -> ArtifactStore:
+        """
+        Returns the artifact store.
+
+        This is needed for subprocess runners that need direct access
+        to the shared memory store for artifact serialization.
+
+        Returns:
+            The ArtifactStore instance.
+        """
+        return self._store
 
     def _set_ledger_entry(
         self, key: Tuple[ArtifactKey, GenerationID], entry: LedgerEntry
@@ -447,23 +467,29 @@ class ArtifactManager:
         if child_key not in self._dependencies[parent_key]:
             self._dependencies[parent_key].append(child_key)
 
-    def _get_dependents(self, key: ArtifactKey) -> List[ArtifactKey]:
+    def get_dependents(self, key: ArtifactKey) -> List[ArtifactKey]:
         """
         Returns all parent keys that depend on this key.
 
         Dependencies are stored as {parent: [children]}, so this method
         finds all parent keys where the given key appears in their children
         list.
+
+        Args:
+            key: The ArtifactKey to find dependents for.
+
+        Returns:
+            A list of parent ArtifactKeys that depend on the given key.
         """
         dependents: List[ArtifactKey] = []
         logger.debug(
-            f"_get_dependents: looking for parents of {key}, "
+            f"get_dependents: looking for parents of {key}, "
             f"dependencies={self._dependencies}"
         )
         for parent_key, children in self._dependencies.items():
             if key in children:
                 dependents.append(parent_key)
-        logger.debug(f"_get_dependents: found {len(dependents)} parents")
+        logger.debug(f"get_dependents: found {len(dependents)} parents")
         return dependents
 
     def cache_handle(
@@ -486,7 +512,7 @@ class ArtifactManager:
         """
         logger.debug(f"cache: key={key}, generation_id={generation_id}")
         composite_key = make_composite_key(key, generation_id)
-        entry = self._get_ledger_entry(composite_key)
+        entry = self.get_ledger_entry(composite_key)
         if entry is None:
             entry = LedgerEntry(generation_id=generation_id)
             self._ledger[composite_key] = entry
@@ -514,7 +540,7 @@ class ArtifactManager:
             generation_id: The generation ID for the entry.
         """
         composite_key = make_composite_key(key, generation_id)
-        entry = self._get_ledger_entry(composite_key)
+        entry = self.get_ledger_entry(composite_key)
         if entry is None:
             logger.warning(
                 f"mark_done called for {key} (gen_id={generation_id}) "

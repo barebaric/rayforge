@@ -136,11 +136,11 @@ class TestWorkPiecePipelineStage:
         )
         step_uid = str(uuid.uuid4())
         wp_key = ArtifactKey.for_workpiece(workpiece_uuid)
-        mock_artifact_manager._get_dependents.return_value = [wp_key]
+        mock_artifact_manager.get_dependents.return_value = [wp_key]
 
         stage.invalidate_for_step(step_uid)
 
-        mock_artifact_manager._get_dependents.assert_called_once()
+        mock_artifact_manager.get_dependents.assert_called_once()
         mock_artifact_manager.invalidate_for_step.assert_called()
         mock_scheduler.mark_node_dirty.assert_called()
 

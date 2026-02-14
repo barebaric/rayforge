@@ -482,7 +482,7 @@ class TestDagSchedulerJobGeneration:
 
         ledger_entry = MagicMock()
         ledger_entry.generation_id = 1
-        am._get_ledger_entry.return_value = ledger_entry  # type: ignore
+        am.get_ledger_entry.return_value = ledger_entry  # type: ignore
 
         event_data = {
             "handle_dict": job_handle.to_dict.return_value,

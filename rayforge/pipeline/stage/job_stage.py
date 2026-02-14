@@ -102,7 +102,7 @@ class JobPipelineStage(PipelineStage):
         )
 
         composite_key = make_composite_key(received_job_key, generation_id)
-        entry = self._artifact_manager._get_ledger_entry(composite_key)
+        entry = self._artifact_manager.get_ledger_entry(composite_key)
         if entry is not None and entry.generation_id != generation_id:
             logger.debug(
                 f"Stale job event with generation_id {generation_id}, "
@@ -325,7 +325,7 @@ class JobPipelineStage(PipelineStage):
 
         self._task_manager.run_process(
             make_job_artifact_in_subprocess,
-            self._artifact_manager._store,
+            self._artifact_manager.get_store(),
             job_description_dict=job_desc_dict,
             creator_tag="job",
             generation_id=generation_id,
