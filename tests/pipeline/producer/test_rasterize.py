@@ -269,3 +269,192 @@ def test_rasterizer_invert_respects_alpha():
             horizontal_lines += 1
 
     assert horizontal_lines > 0
+
+
+def test_rasterize_chunk_alignment_horizontal():
+    """
+    Tests that horizontal raster lines align across chunks with different
+    offsets. Each chunk should place lines at global Y positions that are
+    multiples of raster_size_mm, ensuring consistent spacing.
+    """
+    surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, 10, 10)
+    ctx = cairo.Context(surface)
+    ctx.set_source_rgb(0, 0, 0)
+    ctx.paint()
+
+    raster_size_mm = 0.1
+    pixels_per_mm = (10, 10)
+    ymax = 1.0
+
+    ops_chunk1 = rasterize_at_angle(
+        surface,
+        ymax=ymax,
+        pixels_per_mm=pixels_per_mm,
+        raster_size_mm=raster_size_mm,
+        direction_degrees=0,
+        offset_y_mm=0.0,
+    )
+
+    local_y_chunk1 = set()
+    for cmd in ops_chunk1.commands:
+        if isinstance(cmd, MoveToCommand):
+            local_y_chunk1.add(round(cmd.end[1], 5))
+
+    global_y_chunk1 = {ymax - y for y in local_y_chunk1}
+
+    offset_y = 0.35
+    ops_chunk2 = rasterize_at_angle(
+        surface,
+        ymax=ymax,
+        pixels_per_mm=pixels_per_mm,
+        raster_size_mm=raster_size_mm,
+        direction_degrees=0,
+        offset_y_mm=offset_y,
+    )
+
+    local_y_chunk2 = set()
+    for cmd in ops_chunk2.commands:
+        if isinstance(cmd, MoveToCommand):
+            local_y_chunk2.add(round(cmd.end[1], 5))
+
+    global_y_chunk2 = {ymax - y + offset_y for y in local_y_chunk2}
+
+    for gy in global_y_chunk1:
+        aligned = round(gy / raster_size_mm) * raster_size_mm
+        assert abs(gy - aligned) < 0.001, (
+            f"Chunk1 global Y position {gy} not aligned to 0.1mm grid"
+        )
+
+    for gy in global_y_chunk2:
+        aligned = round(gy / raster_size_mm) * raster_size_mm
+        assert abs(gy - aligned) < 0.001, (
+            f"Chunk2 global Y position {gy} not aligned to 0.1mm grid"
+        )
+
+
+def test_rasterize_chunk_alignment_vertical():
+    """
+    Tests that vertical raster lines align across chunks with different
+    X offsets. Each chunk should place lines at global X positions that
+    are multiples of raster_size_mm.
+    """
+    surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, 10, 10)
+    ctx = cairo.Context(surface)
+    ctx.set_source_rgb(0, 0, 0)
+    ctx.paint()
+
+    raster_size_mm = 0.1
+    pixels_per_mm = (10, 10)
+    ymax = 1.0
+
+    ops_chunk1 = rasterize_at_angle(
+        surface,
+        ymax=ymax,
+        pixels_per_mm=pixels_per_mm,
+        raster_size_mm=raster_size_mm,
+        direction_degrees=90,
+        offset_x_mm=0.0,
+    )
+
+    x_positions_chunk1 = set()
+    for cmd in ops_chunk1.commands:
+        if isinstance(cmd, MoveToCommand):
+            x_positions_chunk1.add(round(cmd.end[0], 5))
+
+    global_x_chunk1 = {x for x in x_positions_chunk1}
+
+    offset_x = 0.37
+    ops_chunk2 = rasterize_at_angle(
+        surface,
+        ymax=ymax,
+        pixels_per_mm=pixels_per_mm,
+        raster_size_mm=raster_size_mm,
+        direction_degrees=90,
+        offset_x_mm=offset_x,
+    )
+
+    x_positions_chunk2 = set()
+    for cmd in ops_chunk2.commands:
+        if isinstance(cmd, MoveToCommand):
+            x_positions_chunk2.add(round(cmd.end[0], 5))
+
+    global_x_chunk2 = {x + offset_x for x in x_positions_chunk2}
+
+    for gx in global_x_chunk1:
+        aligned = round(gx / raster_size_mm) * raster_size_mm
+        assert abs(gx - aligned) < 0.001, (
+            f"Chunk1 global X position {gx} not aligned to 0.1mm grid"
+        )
+
+    for gx in global_x_chunk2:
+        aligned = round(gx / raster_size_mm) * raster_size_mm
+        assert abs(gx - aligned) < 0.001, (
+            f"Chunk2 global X position {gx} not aligned to 0.1mm grid"
+        )
+
+
+def test_rasterize_lines_at_chunk_boundary():
+    """
+    Tests that when content spans a chunk boundary, lines on both sides
+    of the boundary align when mapped to global coordinates.
+    """
+    surface1 = cairo.ImageSurface(cairo.FORMAT_ARGB32, 10, 5)
+    ctx1 = cairo.Context(surface1)
+    ctx1.set_source_rgb(0, 0, 0)
+    ctx1.paint()
+
+    surface2 = cairo.ImageSurface(cairo.FORMAT_ARGB32, 10, 5)
+    ctx2 = cairo.Context(surface2)
+    ctx2.set_source_rgb(0, 0, 0)
+    ctx2.paint()
+
+    raster_size_mm = 0.1
+    pixels_per_mm = (10, 10)
+
+    chunk1_height_mm = 5 / pixels_per_mm[1]
+    ymax1 = chunk1_height_mm
+    ymax2 = chunk1_height_mm * 2
+
+    ops_chunk1 = rasterize_at_angle(
+        surface1,
+        ymax=ymax1,
+        pixels_per_mm=pixels_per_mm,
+        raster_size_mm=raster_size_mm,
+        direction_degrees=0,
+        offset_y_mm=0.0,
+    )
+
+    ops_chunk2 = rasterize_at_angle(
+        surface2,
+        ymax=ymax2,
+        pixels_per_mm=pixels_per_mm,
+        raster_size_mm=raster_size_mm,
+        direction_degrees=0,
+        offset_y_mm=chunk1_height_mm,
+    )
+
+    global_y_chunk1 = sorted(
+        set(
+            round(ymax1 - cmd.end[1] + 0.0, 5)
+            for cmd in ops_chunk1.commands
+            if isinstance(cmd, MoveToCommand)
+        )
+    )
+
+    global_y_chunk2 = sorted(
+        set(
+            round(ymax2 - cmd.end[1] + chunk1_height_mm, 5)
+            for cmd in ops_chunk2.commands
+            if isinstance(cmd, MoveToCommand)
+        )
+    )
+
+    all_global_y = sorted(set(global_y_chunk1 + global_y_chunk2))
+
+    for i in range(len(all_global_y) - 1):
+        gap = all_global_y[i + 1] - all_global_y[i]
+        assert abs(gap - raster_size_mm) < 0.001, (
+            f"Inconsistent spacing: gap of {gap}mm between "
+            f"{all_global_y[i]} and {all_global_y[i + 1]}, "
+            f"expected {raster_size_mm}mm"
+        )
