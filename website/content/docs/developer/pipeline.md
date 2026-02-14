@@ -94,6 +94,7 @@ graph.
 ### **ArtifactNode**
 
 Each node contains:
+
 - **ArtifactKey**: A unique identifier consisting of an ID and a group type
   (`workpiece`, `step`, `job`, or `view`)
 - **State**: The current lifecycle state of the node
@@ -104,12 +105,12 @@ Each node contains:
 
 Nodes progress through four states:
 
-| State | Description |
-|-------|-------------|
-| `DIRTY` | The artifact needs to be regenerated |
+| State        | Description                                 |
+| ------------ | ------------------------------------------- |
+| `DIRTY`      | The artifact needs to be regenerated        |
 | `PROCESSING` | A task is currently generating the artifact |
-| `VALID` | The artifact is ready and up-to-date |
-| `ERROR` | Generation failed |
+| `VALID`      | The artifact is ready and up-to-date        |
+| `ERROR`      | Generation failed                           |
 
 When a node is marked as dirty, all its dependents are also marked dirty,
 propagating invalidation up the graph.
@@ -117,12 +118,14 @@ propagating invalidation up the graph.
 ### **PipelineGraph**
 
 The `PipelineGraph` is built from the Doc model and contains:
-- One node for each WorkPiece
+
+- One node for each `(WorkPiece, Step)` pair
 - One node for each Step
 - One node for the Job
 
 Dependencies are established:
-- Steps depend on their WorkPieces
+
+- Steps depend on their `(WorkPiece, Step)` pair nodes
 - Job depends on all Steps
 
 ## **2. DagScheduler**
@@ -139,11 +142,21 @@ The `DagScheduler` is the central orchestrator of the pipeline. It owns the
 The scheduler works with generation IDs to track which artifacts belong to
 which document version, allowing reuse of valid artifacts across generations.
 
+Key behaviors:
+
+- When the graph is built, the scheduler syncs node states with the
+  artifact manager to identify cached artifacts that can be reused
+- Artifacts from the previous generation can be reused if they remain valid
+- The scheduler tracks which generation IDs have running tasks to preserve
+  artifacts during generation transitions
+- Invalidations are tracked even before graph rebuild and re-applied after
+
 ## **3. ArtifactManager**
 
 The `ArtifactManager` is a pure cache manager for artifact handles. It:
+
 - Stores and retrieves artifact handles
-- Manages reference counting
+- Manages reference counting for cleanup
 - Handles lifecycle (creation, retention, release)
 - Does NOT track state (state is managed by the DAG scheduler)
 
@@ -157,11 +170,22 @@ The pipeline stages (`WorkPiecePipelineStage`, `StepPipelineStage`,
 - They provide access to cached artifacts
 - They forward signals from the scheduler to the UI
 
+## **5. InvalidationScope**
+
+The `InvalidationScope` enum defines the scope of invalidation for downstream
+artifacts:
+
+| Scope               | Description                                                                                                                                                    |
+| ------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `FULL_REPRODUCTION` | Invalidates workpieces, which cascades to steps and then to the job. Used for changes that require artifact regeneration (geometry, parameters, size changes). |
+| `STEP_ONLY`         | Invalidates steps directly, which cascades to the job. Used for position/rotation-only transform changes where workpiece geometry remains unchanged.           |
+
 # **Detailed Breakdown**
 
 ## **1. Input**
 
 The process begins with the **Doc Model**, which contains:
+
 - **WorkPieces:** Individual design elements (SVGs, images) placed on canvas
 - **Steps:** Processing instructions (Contour, Raster) with settings
 
@@ -170,6 +194,7 @@ The process begins with the **Doc Model**, which contains:
 ### **Pipeline (Orchestrator)**
 
 The `Pipeline` class is the high-level conductor that:
+
 - Listens to the Doc model for changes
 - Coordinates with the DagScheduler to trigger regeneration
 - Manages the overall processing state
@@ -178,6 +203,7 @@ The `Pipeline` class is the high-level conductor that:
 ### **DagScheduler**
 
 The `DagScheduler`:
+
 - Builds and maintains the `PipelineGraph`
 - Identifies nodes ready for processing
 - Launches tasks via the TaskManager
@@ -187,6 +213,7 @@ The `DagScheduler`:
 ### **ArtifactManager**
 
 The `ArtifactManager`:
+
 - Caches artifact handles in shared memory
 - Manages reference counting for cleanup
 - Provides lookup by ArtifactKey and generation ID
@@ -196,11 +223,13 @@ The `ArtifactManager`:
 ### **WorkPieceArtifacts**
 
 Generated for each `(WorkPiece, Step)` combination, containing:
+
 - Toolpaths (`Ops`) in local coordinate system
 - Vertex data for lines
 - Texture data for raster fills
 
 Processing sequence:
+
 1. **Modifiers:** (Optional) Image conditioning (grayscale, etc.)
 2. **Producer:** Creates raw toolpaths (`Ops`)
 3. **Transformers:** Per-workpiece modifications (Tabs, Smooth)
@@ -211,11 +240,13 @@ Processing sequence:
 Generated for each Step, consuming all related WorkPieceArtifacts:
 
 **StepRenderArtifact:**
+
 - Combined vertex and texture data for all workpieces
 - Transformed to world-space coordinates
 - Optimized for 3D canvas rendering
 
 **StepOpsArtifact:**
+
 - Combined Ops for all workpieces
 - Transformed to world-space coordinates
 - Includes per-step transformers (Optimize, Multi-Pass)
@@ -223,6 +254,7 @@ Generated for each Step, consuming all related WorkPieceArtifacts:
 ### **JobArtifact**
 
 Generated on demand when G-code is needed, consuming all StepOpsArtifacts:
+
 - Final G-code for the entire job
 - Complete vertex data for simulation
 - High-fidelity time estimate
@@ -235,6 +267,7 @@ for the 2D canvas based on UI state:
 ### **RenderContext**
 
 Contains the current view parameters:
+
 - Pixels per millimeter (zoom level)
 - Viewport offset (pan)
 - Display options (show travel moves, etc.)
@@ -242,6 +275,7 @@ Contains the current view parameters:
 ### **WorkPieceViewArtifacts**
 
 The ViewManager creates `WorkPieceViewArtifacts` that:
+
 - Rasterize WorkPieceArtifacts to screen space
 - Apply the current RenderContext
 - Are cached and updated when context or source changes
@@ -253,14 +287,17 @@ The ViewManager creates `WorkPieceViewArtifacts` that:
 3. When source artifact changes, ViewManager triggers re-rendering
 4. Throttling prevents excessive updates during continuous changes
 
+The ViewManager indexes views by `(workpiece_uid, step_uid)` to support
+visualizing intermediate states of a workpiece across multiple steps.
+
 ## **5. Consumers**
 
-| Consumer | Uses | Purpose |
-|----------|------|---------|
-| 2D Canvas | WorkPieceViewArtifacts | Renders workpieces in screen space |
-| 3D Canvas | StepRenderArtifacts | Renders full step in world space |
-| Simulator | JobArtifact | Accurate simulation of machine path |
-| Machine | JobArtifact G-code | Manufacturing output |
+| Consumer  | Uses                   | Purpose                             |
+| --------- | ---------------------- | ----------------------------------- |
+| 2D Canvas | WorkPieceViewArtifacts | Renders workpieces in screen space  |
+| 3D Canvas | StepRenderArtifacts    | Renders full step in world space    |
+| Simulator | JobArtifact            | Accurate simulation of machine path |
+| Machine   | JobArtifact G-code     | Manufacturing output                |
 
 # **Key Differences from Previous Architecture**
 
@@ -281,3 +318,9 @@ The ViewManager creates `WorkPieceViewArtifacts` that:
 
 6. **Pure Cache Manager:** The ArtifactManager is now a simple cache,
    delegating all state management to the DAG scheduler.
+
+7. **Invalidation Tracking:** Keys marked dirty before graph rebuild are
+   preserved and re-applied after rebuild.
+
+8. **Pending Work Detection:** Only `PROCESSING` nodes count as pending work;
+   `DIRTY` nodes may have unsatisfied dependencies (e.g., no view context).
