@@ -627,7 +627,7 @@ class ViewManager:
             self._store.release(chunk_handle)
             return None, None
 
-        render_context = entry.render_context
+        render_context = entry.render_context or self._current_view_context
         if render_context is None:
             logger.debug(f"No render context for {composite_id}.")
             self._store.release(chunk_handle)
@@ -769,6 +769,8 @@ class ViewManager:
 
         need_new_buffer = False
         if existing_handle is None:
+            need_new_buffer = True
+        elif entry is not None and entry.render_context != context:
             need_new_buffer = True
         else:
             w_mm, h_mm = workpiece.size
