@@ -7,7 +7,7 @@ that require throttling or debouncing of progress updates.
 """
 
 from abc import ABC, abstractmethod
-from typing import Callable
+from typing import Callable, Optional
 
 
 class ProgressContext(ABC):
@@ -155,6 +155,26 @@ class ThrottledProgressContext(ProgressContext):
     """
 
     pass
+
+
+def set_progress(
+    context: Optional[ProgressContext],
+    progress: float,
+    message: str = "",
+) -> None:
+    """Report progress and message via context if provided.
+
+    This helper eliminates the need for null checks at call sites.
+
+    Args:
+        context: Optional ProgressContext for progress reporting.
+        progress: The progress value to set.
+        message: Optional status message to display.
+    """
+    if context is not None:
+        context.set_progress(progress)
+        if message:
+            context.set_message(message)
 
 
 class NoOpProgressContext(ProgressContext):
