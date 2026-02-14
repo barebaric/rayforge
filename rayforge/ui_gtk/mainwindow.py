@@ -1,7 +1,6 @@
 import asyncio
 import logging
 import shutil
-import sys
 import webbrowser
 from concurrent.futures import Future
 from pathlib import Path
@@ -50,6 +49,7 @@ from .machine.control_panel import MachineControlPanel
 from .machine.settings_dialog import MachineSettingsDialog
 from .main_menu import MainMenu
 from .settings.settings_dialog import SettingsWindow
+from .project_cmd import ProjectCmd
 from .sketch_mode_cmd import SketchModeCmd
 from .sketcher.studio import SketchStudio
 from .task_bar import TaskBar
@@ -172,6 +172,7 @@ class MainWindow(Adw.ApplicationWindow):
         self.view_cmd = ViewModeCmd(self.doc_editor, self)
         self.simulator_cmd = SimulatorCmd(self)
         self.sketch_mode_cmd = SketchModeCmd(self, self.doc_editor)
+        self.project_cmd = ProjectCmd(self, self.doc_editor)
 
         # Add a key controller to handle ESC key for exiting simulation mode
         key_controller = Gtk.EventControllerKey()
@@ -198,8 +199,10 @@ class MainWindow(Adw.ApplicationWindow):
 
         # Set up Recent Files manager
         self.recent_manager = Gtk.RecentManager.get_default()
-        self.recent_manager.connect("changed", self._update_recent_files_menu)
-        self._update_recent_files_menu()  # Initial population
+        self.recent_manager.connect(
+            "changed", self.project_cmd.update_recent_files_menu
+        )
+        self.project_cmd.update_recent_files_menu()
 
         # Create and set the centered title widget
         window_title = Adw.WindowTitle(
@@ -319,7 +322,7 @@ class MainWindow(Adw.ApplicationWindow):
         )
         self.doc_editor.document_settled.connect(self._on_document_settled)
         self.doc_editor.saved_state_changed.connect(
-            self._on_saved_state_changed
+            self.project_cmd.on_saved_state_changed
         )
         self.doc_editor.document_changed.connect(self._on_document_changed)
 
@@ -571,261 +574,9 @@ class MainWindow(Adw.ApplicationWindow):
         dialog = StockPropertiesDialog(self, stock_item, self.doc_editor)
         dialog.present()
 
-    def _show_unsaved_changes_dialog(self, callback):
-        """
-        Shows a dialog asking the user what to do with unsaved changes.
-        The callback will be called with the response: 'save', 'discard',
-        or 'cancel'.
-        """
-        dialog = Adw.MessageDialog(
-            transient_for=self,
-            heading=_("Unsaved Changes"),
-            body=_(
-                "The current project has unsaved changes. "
-                "Do you want to save them?"
-            ),
-        )
-        dialog.add_response("cancel", _("_Cancel"))
-        dialog.add_response("discard", _("_Don't Save"))
-        dialog.add_response("save", _("_Save"))
-        dialog.set_default_response("save")
-        dialog.set_close_response("cancel")
-        dialog.set_response_appearance(
-            "save", Adw.ResponseAppearance.SUGGESTED
-        )
-        dialog.set_response_appearance(
-            "discard", Adw.ResponseAppearance.DESTRUCTIVE
-        )
-
-        def on_response(d, response_id):
-            d.destroy()
-            callback(response_id)
-
-        dialog.connect("response", on_response)
-        dialog.present()
-
-    def on_new_project(self, action, param):
-        """Action handler for creating a new project."""
-        if self.doc_editor.is_saved:
-            self._do_create_new_project(action, param)
-        else:
-            self._show_unsaved_changes_dialog(
-                self._on_new_project_dialog_response
-            )
-
-    def _on_new_project_dialog_response(self, response):
-        """Callback for unsaved changes dialog in on_new_project."""
-        if response == "cancel":
-            return
-        if response == "save":
-            self.on_save_project(None, None)
-            if not self.doc_editor.is_saved:
-                return
-        self._do_create_new_project(None, None)
-
-    def _do_create_new_project(self, action, param):
-        """Actually creates a new project."""
-        from ..core.doc import Doc
-
-        new_doc = Doc()
-        self.doc_editor.set_doc(new_doc)
-        self.doc_editor.set_file_path(None)
-        self.doc_editor.mark_as_saved()
-
-        logger.info("Created new project")
-        self._on_editor_notification(self, message=_("New project created"))
-
-    def on_open_project(self, action, param):
-        """Action handler for opening a project file."""
-        if self.doc_editor.is_saved:
-            file_dialogs.show_open_project_dialog(
-                self, self._on_open_project_response
-            )
-        else:
-            self._show_unsaved_changes_dialog(
-                self._on_open_project_dialog_response
-            )
-
-    def _on_open_project_dialog_response(self, response):
-        """Callback for unsaved changes dialog in on_open_project."""
-        if response == "cancel":
-            return
-        if response == "save":
-            self.on_save_project(None, None)
-            if not self.doc_editor.is_saved:
-                return
-        file_dialogs.show_open_project_dialog(
-            self, self._on_open_project_response
-        )
-
-    def _on_open_project_response(self, dialog, result, user_data):
-        """Callback for the open project dialog."""
-        try:
-            file = dialog.open_finish(result)
-            if not file:
-                return
-            file_path = Path(file.get_path())
-            self._do_open_project(file_path)
-        except GLib.Error as e:
-            logger.error(f"Error opening file: {e.message}")
-            return
-
-    def on_save_project(self, action, param):
-        """Action handler for saving the current project."""
-        file_path = self.doc_editor.file_path
-        if file_path:
-            success = self.doc_editor.file.save_project_to_path(file_path)
-            if success:
-                self.on_doc_changed(self.doc_editor.doc)
-                self.add_to_recent_manager(file_path)
-        else:
-            self.on_save_project_as(action, param)
-
-    def on_save_project_as(self, action, param):
-        """Action handler for saving the project with a new name."""
-        initial_name = None
-        if self.doc_editor.file_path:
-            initial_name = self.doc_editor.file_path.name
-
-        file_dialogs.show_save_project_dialog(
-            self, self._on_save_project_response, initial_name
-        )
-
-    def _on_save_project_response(self, dialog, result, user_data):
-        """Callback for the save project dialog."""
-        try:
-            file = dialog.save_finish(result)
-            if not file:
-                return
-            file_path = Path(file.get_path())
-
-            success = self.doc_editor.file.save_project_to_path(file_path)
-            if success:
-                self.on_doc_changed(self.doc_editor.doc)
-                self.add_to_recent_manager(file_path)
-        except GLib.Error as e:
-            logger.error(f"Error saving file: {e.message}")
-            return
-
     def load_project(self, file_path: Path):
-        """
-        Public method to load a project from a given path.
-        Updates recent files and tracks the last opened project.
-        """
-        success = self.doc_editor.file.load_project_from_path(file_path)
-        if success:
-            self.on_doc_changed(self.doc_editor.doc)
-            self.add_to_recent_manager(file_path)
-            # Track the last opened project for startup behavior
-            context = get_context()
-            context.config.set_last_opened_project(file_path)
-
-    def _do_open_project(self, file_path: Path):
-        """Loads a project from a given path and updates recent files."""
-        self.load_project(file_path)
-
-    def on_open_recent(self, action, param):
-        """Action handler for opening a file from the recent menu."""
-        uri = param.get_string()
-        file = Gio.File.new_for_uri(uri)
-        path = file.get_path()
-        if path is None:
-            return
-        file_path = Path(path)
-
-        if self.doc_editor.is_saved:
-            self._do_open_project(file_path)
-        else:
-            # Create a new callback that knows which file to open
-            def on_response(response_id):
-                self._on_open_recent_dialog_response(response_id, file_path)
-
-            self._show_unsaved_changes_dialog(on_response)
-
-    def _on_open_recent_dialog_response(self, response, file_path: Path):
-        """Callback for unsaved changes dialog when opening a recent file."""
-        if response == "cancel":
-            return
-        if response == "save":
-            self.on_save_project(None, None)
-            # If save fails (e.g., user cancels "Save As" dialog), stop here.
-            if not self.doc_editor.is_saved:
-                return
-        self._do_open_project(file_path)
-
-    def add_to_recent_manager(self, file_path: Path):
-        """Adds a project file path to the Gtk.RecentManager with metadata."""
-        uri = file_path.resolve().as_uri()
-        app = self.get_application()
-        if not app:
-            logger.warning(
-                "Could not get application to register recent file."
-            )
-            return
-
-        app_id = app.get_application_id()
-        if not app_id:
-            logger.warning(
-                "Application ID is not set, cannot register recent file."
-            )
-            return
-
-        # Create an empty Gtk.RecentData struct and set its fields.
-        recent_data = Gtk.RecentData()
-        recent_data.display_name = file_path.name
-        recent_data.mime_type = const.MIME_TYPE_PROJECT
-        recent_data.app_name = app_id
-        # Use sys.executable for a reliable path, even at startup.
-        # Quoting is important for paths with spaces.
-        recent_data.app_exec = f'"{sys.executable}" %f'
-
-        self.recent_manager.add_full(uri, recent_data)
-
-    def _update_recent_files_menu(self, *args):
-        """
-        Updates the 'Open Recent' submenu based on the contents of the
-        Gtk.RecentManager.
-        """
-        app = self.get_application()
-        if not app:
-            self.menu_model.update_recent_files_menu([])
-            return
-
-        app_id = app.get_application_id()
-        if not app_id:
-            self.menu_model.update_recent_files_menu([])
-            return
-
-        items = self.recent_manager.get_items()
-        # Filter for our project files by checking the application ID
-        ryp_items = [
-            info
-            for info in items
-            if info.get_uri().endswith(".ryp")
-            and app_id in info.get_applications()
-        ]
-        self.menu_model.update_recent_files_menu(ryp_items)
-
-    def _on_saved_state_changed(self, sender):
-        """Handles saved state changes from DocEditor."""
-        self._update_window_title()
-        self.action_manager.update_action_states()
-
-    def _update_window_title(self):
-        """Updates the window title based on file name and saved state."""
-        file_path = self.doc_editor.file_path
-        is_saved = self.doc_editor.is_saved
-
-        doc_title = file_path.name if file_path else _("Untitled")
-        if is_saved:
-            title = f"{doc_title} - {const.APP_NAME}"
-        else:
-            title = f"{doc_title}* - {const.APP_NAME}"
-
-        subtitle = __version__ or ""
-
-        window_title = Adw.WindowTitle(title=title, subtitle=subtitle)
-        self.header_bar.set_title_widget(window_title)
+        """Public method to load a project from a given path."""
+        self.project_cmd.load_project(file_path)
 
     def _update_macros_menu(self, *args):
         """Rebuilds the dynamic 'Macros' menu."""
@@ -1934,7 +1685,7 @@ class MainWindow(Adw.ApplicationWindow):
         if self.doc_editor.is_saved:
             return False  # Allow the window to close
 
-        self._show_unsaved_changes_dialog(
+        self.project_cmd.show_unsaved_changes_dialog(
             self._on_close_request_dialog_response
         )
         return True  # Prevent the window from closing until user responds
@@ -1949,7 +1700,7 @@ class MainWindow(Adw.ApplicationWindow):
             return
 
         if response == "save":
-            self.on_save_project(None, None)
+            self.project_cmd.on_save_project(None, None)
 
     def on_menu_import(self, action, param=None):
         start_interactive_import(self, self.doc_editor)

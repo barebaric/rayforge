@@ -32,14 +32,14 @@ class ActionManager:
         """Creates all Gio.SimpleActions and adds them to the window."""
         # Menu & File Actions
         self._add_action("quit", self.win.on_quit_action)
-        self._add_action("new", self.win.on_new_project)
-        self._add_action("open", self.win.on_open_project)
-        self._add_action("save", self.win.on_save_project)
-        self._add_action("save-as", self.win.on_save_project_as)
+        self._add_action("new", self.win.project_cmd.on_new_project)
+        self._add_action("open", self.win.project_cmd.on_open_project)
+        self._add_action("save", self.win.project_cmd.on_save_project)
+        self._add_action("save-as", self.win.project_cmd.on_save_project_as)
         # New actions for recent files
         self._add_action(
             "open-recent",
-            self.win.on_open_recent,
+            self.win.project_cmd.on_open_recent,
             GLib.VariantType.new("s"),
         )
         self._add_action("import", self.win.on_menu_import)
