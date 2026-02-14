@@ -695,7 +695,15 @@ class DagScheduler:
         if handle is not None:
             logger.debug(
                 f"[{key}] Task was canceled but artifact already committed, "
-                "nothing to do."
+                "sending finished signal with handle."
+            )
+            self.generation_finished.send(
+                self,
+                step=step,
+                workpiece=workpiece,
+                handle=handle,
+                generation_id=task_generation_id,
+                task_status="canceled",
             )
             return
 
