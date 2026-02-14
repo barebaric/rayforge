@@ -35,6 +35,23 @@ class ArtifactStore:
         # Track reference counts for shared memory blocks
         self._refcounts: Dict[str, int] = {}
 
+    def __getstate__(self):
+        """
+        Exclude unpicklable SharedMemory handles when serializing.
+
+        SharedMemory objects cannot be reliably transferred between
+        processes via pickling after they've been unlinked. Workers
+        should adopt their own handles when receiving artifact dicts.
+        """
+        return {"_refcounts": {}, "_managed_shms": {}}
+
+    def __setstate__(self, state):
+        """
+        Initialize a fresh store when unpickling in a worker process.
+        """
+        self._refcounts = state.get("_refcounts", {})
+        self._managed_shms = state.get("_managed_shms", {})
+
     def shutdown(self):
         for shm_name in list(self._managed_shms.keys()):
             self._release_by_name(shm_name)
@@ -150,14 +167,27 @@ class ArtifactStore:
         """
         Reconstructs an artifact from a shared memory block using its handle.
         """
-        # If we manage this block, use our persistent handle to keep the
-        # buffer valid.
+        shm = None
+        close_after = False
+
         if handle.shm_name in self._managed_shms:
-            shm = self._managed_shms[handle.shm_name]
-            close_after = False
-        else:
-            # Otherwise, open a temporary handle. Warning: The buffer may
-            # become invalid when this handle is closed!
+            managed_shm = self._managed_shms[handle.shm_name]
+            assert managed_shm is not None
+            try:
+                buf = managed_shm.buf
+                if buf is not None:
+                    _ = buf[0]
+                shm = managed_shm
+                close_after = False
+            except (FileNotFoundError, OSError):
+                logger.debug(
+                    f"Managed shared memory block {handle.shm_name} "
+                    f"appears stale, reopening"
+                )
+                del self._managed_shms[handle.shm_name]
+                self._refcounts.pop(handle.shm_name, None)
+
+        if shm is None:
             try:
                 shm = shared_memory.SharedMemory(name=handle.shm_name)
                 close_after = True
@@ -166,24 +196,29 @@ class ArtifactStore:
                     f"Shared memory block '{handle.shm_name}' not found."
                 )
 
-        # Reconstruct views into the shared memory without copying data
-        arrays = {}
-        for name, meta in handle.array_metadata.items():
-            arr_view = np.ndarray(
-                meta["shape"],
-                dtype=np.dtype(meta["dtype"]),
-                buffer=shm.buf,
-                offset=meta["offset"],
+        try:
+            arrays = {}
+            for name, meta in handle.array_metadata.items():
+                arr_view = np.ndarray(
+                    meta["shape"],
+                    dtype=np.dtype(meta["dtype"]),
+                    buffer=shm.buf,
+                    offset=meta["offset"],
+                )
+                arrays[name] = arr_view
+
+            artifact_class = BaseArtifact.get_registered_class(
+                handle.artifact_type_name
             )
-            arrays[name] = arr_view
 
-        # Look up the correct class from the central registry
-        artifact_class = BaseArtifact.get_registered_class(
-            handle.artifact_type_name
-        )
-
-        # Delegate reconstruction to the class
-        artifact = artifact_class.from_storage(handle, arrays)
+            artifact = artifact_class.from_storage(handle, arrays)
+        except (FileNotFoundError, OSError) as e:
+            if close_after:
+                shm.close()
+            raise RuntimeError(
+                f"Shared memory block '{handle.shm_name}' became "
+                f"inaccessible: {e}"
+            )
 
         if close_after:
             shm.close()
