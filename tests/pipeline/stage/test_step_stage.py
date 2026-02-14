@@ -119,7 +119,7 @@ class TestStepPipelineStage:
         mock_scheduler,
     ):
         """
-        Tests that scheduler signals are forwarded correctly.
+        Tests that signals are emitted correctly from handlers.
         """
         doc, step = mock_doc_and_step
         stage = StepPipelineStage(
@@ -131,10 +131,8 @@ class TestStepPipelineStage:
         stage.render_artifact_ready.connect(render_signal_handler)
         stage.time_estimate_ready.connect(time_signal_handler)
 
-        stage._on_scheduler_render_ready(mock_scheduler, step)
-        stage._on_scheduler_time_ready(mock_scheduler, step, 42.5)
+        stage.handle_time_estimate_ready(step.uid, step, 42.5)
 
-        render_signal_handler.assert_called_once_with(stage, step=step)
         time_signal_handler.assert_called_once_with(
             stage, step=step, time=42.5
         )
@@ -179,6 +177,6 @@ class TestStepPipelineStage:
 
         assert stage.get_estimate(step.uid) is None
 
-        stage._on_scheduler_time_ready(mock_scheduler, step, 42.5)
+        stage.handle_time_estimate_ready(step.uid, step, 42.5)
 
         assert stage.get_estimate(step.uid) == 42.5

@@ -2,7 +2,6 @@ from __future__ import annotations
 import logging
 import asyncio
 import threading
-from enum import Enum
 from typing import (
     Optional,
     TYPE_CHECKING,
@@ -48,24 +47,6 @@ if TYPE_CHECKING:
     from ..shared.tasker.manager import TaskManager
 
 logger = logging.getLogger(__name__)
-
-
-class InvalidationScope(Enum):
-    """Defines the scope of invalidation for downstream artifacts."""
-
-    FULL_REPRODUCTION = "full_reproduction"
-    """
-    Invalidates workpieces, which cascades to steps and then to the job.
-    Used for changes that require artifact regeneration (geometry, parameters,
-    size changes).
-    """
-
-    STEP_ONLY = "step_only"
-    """
-    Invalidates steps directly, which cascades to the job.
-    Used for position/rotation-only transform changes where workpiece
-    geometry remains unchanged.
-    """
 
 
 class Pipeline:
@@ -167,8 +148,16 @@ class Pipeline:
             self._scheduler,
         )
         self._job_stage = JobPipelineStage(
-            self._task_manager, self._artifact_manager, self._machine
+            self._task_manager,
+            self._artifact_manager,
+            self._machine,
+            self._scheduler,
         )
+
+        # Inject stages into scheduler for bidirectional references
+        self._scheduler.set_workpiece_stage(self._workpiece_stage)
+        self._scheduler.set_step_stage(self._step_stage)
+        self._scheduler.set_job_stage(self._job_stage)
 
         # Connect signals from scheduler (now handles workpiece generation)
         self._scheduler.generation_starting.connect(
@@ -878,17 +867,6 @@ class Pipeline:
                         self._artifact_manager.register_dependency(
                             child_key=wp_step_key, parent_key=step_key
                         )
-
-    def get_estimated_time(
-        self, step: Step, workpiece: WorkPiece
-    ) -> Optional[float]:
-        """
-        Retrieves a cached time estimate.
-        NOTE: As part of the time estimation refactor, we no longer
-        provide per-workpiece estimates, only per-step. This method will
-        return None.
-        """
-        return None
 
     def get_ops(self, step: Step, workpiece: WorkPiece) -> Optional[Ops]:
         """

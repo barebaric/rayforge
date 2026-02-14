@@ -5,19 +5,12 @@ Defines the DagScheduler class for orchestrating pipeline execution.
 from __future__ import annotations
 
 import logging
-import math
 from asyncio.exceptions import CancelledError
 from typing import List, Optional, TYPE_CHECKING, Tuple, Dict, Callable
 from blinker import Signal
 from ...core.step import Step
 from ...core.workpiece import WorkPiece
-from ..artifact import (
-    JobArtifactHandle,
-    StepOpsArtifactHandle,
-    StepRenderArtifactHandle,
-)
 from ..artifact.key import ArtifactKey
-from ..artifact.manager import make_composite_key
 from ..context import GenerationContext
 from .graph import PipelineGraph
 from .node import ArtifactNode, NodeState
@@ -28,8 +21,12 @@ if TYPE_CHECKING:
     from ...machine.models.machine import Machine
     from ...shared.tasker.manager import TaskManager
     from ...shared.tasker.task import Task
-    from ..artifact import BaseArtifactHandle
     from ..artifact.manager import ArtifactManager
+    from ..stage import (
+        JobPipelineStage,
+        StepPipelineStage,
+        WorkPiecePipelineStage,
+    )
 
 
 logger = logging.getLogger(__name__)
@@ -59,9 +56,11 @@ class DagScheduler:
         self._generation_id: int = 0
         self._active_context: Optional[GenerationContext] = None
         self._job_running: bool = False
-        self._step_retained_handles: Dict[str, List["BaseArtifactHandle"]] = {}
-        self._job_retained_handles: List["BaseArtifactHandle"] = []
         self._invalidated_keys: set = set()
+
+        self._workpiece_stage: Optional["WorkPiecePipelineStage"] = None
+        self._step_stage: Optional["StepPipelineStage"] = None
+        self._job_stage: Optional["JobPipelineStage"] = None
 
         self.generation_starting = Signal()
         self.visual_chunk_available = Signal()
@@ -91,6 +90,18 @@ class DagScheduler:
         """Set the current generation context."""
         self._active_context = context
         self._generation_id = context.generation_id
+
+    def set_workpiece_stage(self, stage: "WorkPiecePipelineStage") -> None:
+        """Set the workpiece pipeline stage."""
+        self._workpiece_stage = stage
+
+    def set_step_stage(self, stage: "StepPipelineStage") -> None:
+        """Set the step pipeline stage."""
+        self._step_stage = stage
+
+    def set_job_stage(self, stage: "JobPipelineStage") -> None:
+        """Set the job pipeline stage."""
+        self._job_stage = stage
 
     def sync_graph_with_artifact_manager(self) -> None:
         """
@@ -386,75 +397,6 @@ class DagScheduler:
                 )
                 self._artifact_manager.mark_done(key, self._generation_id)
 
-    def _sizes_are_close(
-        self,
-        size1: Optional[Tuple[float, float]],
-        size2: Optional[Tuple[float, float]],
-    ) -> bool:
-        """Compares two size tuples with a safe tolerance for float errors."""
-        if size1 is None or size2 is None:
-            return False
-        return math.isclose(size1[0], size2[0], abs_tol=1e-6) and math.isclose(
-            size1[1], size2[1], abs_tol=1e-6
-        )
-
-    def _validate_workpiece_for_launch(
-        self, key: ArtifactKey, workpiece: "WorkPiece"
-    ) -> bool:
-        """
-        Validates workpiece size and active tasks before launching.
-        Returns True if launch should proceed, False otherwise.
-        """
-        if any(s <= 0 for s in workpiece.size):
-            logger.warning(
-                f"Skipping launch for {key}: invalid size {workpiece.size}"
-            )
-            self._cleanup_entry(key)
-            return False
-        return True
-
-    def _cleanup_entry(self, key: ArtifactKey):
-        """
-        Removes a workpiece cache entry, releases its resources, and
-        requests cancellation of its task.
-        """
-        logger.debug(f"DagScheduler: Cleaning up entry {key}.")
-        task = self._task_manager.get_task(key)
-        if task and task.is_running():
-            logger.debug(f"Task {key} is running, canceling it")
-            self._task_manager.cancel_task(key)
-        self._artifact_manager.invalidate_for_workpiece(key)
-
-    def _prepare_task_settings(
-        self, step: "Step"
-    ) -> Optional[Tuple[Dict, Optional[Dict]]]:
-        """
-        Prepares settings with machine parameters and selects laser.
-        Returns (settings_dict, laser_dict) or None if preparation fails.
-        """
-        if not self._machine:
-            logger.error("Cannot generate ops: No machine is configured.")
-            return None
-
-        settings = step.get_settings()
-        settings["machine_supports_arcs"] = self._machine.supports_arcs
-        settings["arc_tolerance"] = self._machine.arc_tolerance
-
-        try:
-            selected_laser = step.get_selected_laser(self._machine)
-        except ValueError as e:
-            logger.error(f"Cannot select laser for step '{step.name}': {e}")
-            return None
-
-        return settings, selected_laser.to_dict()
-
-    def _prepare_workpiece_dict(self, workpiece: "WorkPiece") -> Dict:
-        """
-        Prepares the fully-hydrated, serializable WorkPiece dictionary.
-        """
-        world_workpiece = workpiece.in_world()
-        return world_workpiece.to_dict()
-
     def _create_and_register_task(
         self,
         key: ArtifactKey,
@@ -511,7 +453,8 @@ class DagScheduler:
         key = ArtifactKey.for_workpiece(workpiece.uid, step.uid)
         ledger_key = key
 
-        if not self._validate_workpiece_for_launch(key, workpiece):
+        assert self._workpiece_stage is not None
+        if not self._workpiece_stage.validate_for_launch(key, workpiece):
             logger.debug(
                 f"DagScheduler: Validation failed for "
                 f"step_uid={step.uid}, workpiece_uid={workpiece.uid}"
@@ -525,7 +468,7 @@ class DagScheduler:
             generation_id=self._generation_id,
         )
 
-        prep_result = self._prepare_task_settings(step)
+        prep_result = self._workpiece_stage.prepare_task_settings(step)
         if prep_result is None:
             logger.debug(
                 f"DagScheduler: prep_result is None for "
@@ -534,7 +477,9 @@ class DagScheduler:
             return
         settings, laser_dict = prep_result
 
-        workpiece_dict = self._prepare_workpiece_dict(workpiece)
+        workpiece_dict = self._workpiece_stage.prepare_workpiece_dict(
+            workpiece
+        )
 
         node = self.graph.find_node(ledger_key)
         if node is not None:
@@ -553,48 +498,6 @@ class DagScheduler:
             laser_dict,
             self._generation_id,
             workpiece.size,
-        )
-
-    def _handle_artifact_created_event(
-        self,
-        key: ArtifactKey,
-        ledger_key: ArtifactKey,
-        handle: Optional["BaseArtifactHandle"],
-        generation_id: int,
-        step_uid: str,
-    ):
-        """
-        Processes artifact_created event.
-        """
-        if handle is not None:
-            self._artifact_manager.cache_handle(
-                ledger_key, handle, generation_id
-            )
-        else:
-            self._artifact_manager.complete_generation(
-                ledger_key, generation_id, handle=None
-            )
-
-        node = self.graph.find_node(ledger_key)
-        if node is not None:
-            node.state = NodeState.VALID
-
-        self.workpiece_artifact_adopted.send(
-            self, step_uid=step_uid, workpiece_uid=key.id
-        )
-
-    def _handle_visual_chunk_ready_event(
-        self, key: ArtifactKey, handle, generation_id: int, step_uid: str
-    ):
-        """
-        Processes visual_chunk_ready event.
-        """
-        self.visual_chunk_available.send(
-            self,
-            key=key,
-            chunk_handle=handle,
-            generation_id=generation_id,
-            step_uid=step_uid,
         )
 
     def _on_task_event_received(
@@ -637,179 +540,21 @@ class DagScheduler:
                 )
 
             if event_name == "artifact_created":
-                self._handle_artifact_created_event(
+                assert self._workpiece_stage is not None
+                self._workpiece_stage.handle_artifact_created(
                     key, ledger_key, handle, generation_id, step_uid
                 )
                 return
 
             if event_name == "visual_chunk_ready":
-                self._handle_visual_chunk_ready_event(
+                assert self._workpiece_stage is not None
+                self._workpiece_stage.handle_visual_chunk_ready(
                     key, handle, generation_id, step_uid
                 )
         except Exception as e:
             logger.error(
                 f"Failed to process event '{event_name}': {e}", exc_info=True
             )
-
-    def _validate_task_completion(
-        self,
-        key: ArtifactKey,
-        ledger_key: ArtifactKey,
-        task_generation_id: int,
-    ) -> bool:
-        """
-        Validates task completion by checking the generation ID against the
-        ledger. Returns True if task should be processed, False otherwise.
-        """
-
-        composite_key = make_composite_key(ledger_key, task_generation_id)
-        entry = self._artifact_manager._get_ledger_entry(composite_key)
-        if entry is None:
-            logger.debug(
-                f"[{key}] Ledger entry missing. Ignoring task completion."
-            )
-            return False
-
-        if entry.generation_id != task_generation_id:
-            logger.debug(
-                f"[{key}] Stale generation ID {task_generation_id}. "
-                f"Current: {entry.generation_id}. Ignoring."
-            )
-            return False
-
-        return True
-
-    def _handle_canceled_task(
-        self,
-        key: ArtifactKey,
-        ledger_key: ArtifactKey,
-        step: "Step",
-        workpiece: "WorkPiece",
-        task_generation_id: int,
-    ):
-        """
-        Handles canceled task status.
-        """
-        handle = self._artifact_manager.get_workpiece_handle(
-            key, task_generation_id
-        )
-        if handle is not None:
-            logger.debug(
-                f"[{key}] Task was canceled but artifact already committed, "
-                "sending finished signal with handle."
-            )
-            self.generation_finished.send(
-                self,
-                step=step,
-                workpiece=workpiece,
-                handle=handle,
-                generation_id=task_generation_id,
-                task_status="canceled",
-            )
-            return
-
-        logger.debug(
-            f"[{key}] Task was canceled. Marking node dirty and "
-            "sending finished signal."
-        )
-        self.mark_node_dirty(ledger_key)
-        self.generation_finished.send(
-            self,
-            step=step,
-            workpiece=workpiece,
-            handle=None,
-            generation_id=task_generation_id,
-            task_status="canceled",
-        )
-
-    def _check_result_stale_due_to_size(
-        self, key: ArtifactKey, workpiece: "WorkPiece", generation_id: int
-    ) -> bool:
-        """
-        Checks if result is stale due to size change during generation.
-        Returns True if stale, False otherwise.
-        """
-        handle = self._artifact_manager.get_workpiece_handle(
-            key, generation_id
-        )
-
-        if handle and not handle.is_scalable:
-            if not self._sizes_are_close(
-                handle.generation_size, workpiece.size
-            ):
-                logger.info(
-                    f"[{key}] Result for {key} is stale due to size "
-                    "change during generation. Regenerating."
-                )
-                return True
-
-        return False
-
-    def _handle_completed_task(
-        self,
-        key: ArtifactKey,
-        ledger_key: ArtifactKey,
-        task: "Task",
-        step: "Step",
-        workpiece: "WorkPiece",
-        task_generation_id: int,
-        generation_id: int,
-    ) -> tuple[bool, Optional["BaseArtifactHandle"]]:
-        """
-        Handles completed task status.
-        Returns (True if processing should continue, handle) or
-        (False, None) if task was relaunched due to stale result.
-        """
-        try:
-            task.result()
-
-            if self._check_result_stale_due_to_size(
-                key, workpiece, generation_id
-            ):
-                self._launch_workpiece_task(step, workpiece)
-                return False, None
-        except Exception as e:
-            logger.error(f"[{key}] Error processing result for {key}: {e}")
-
-        handle = self._artifact_manager.get_workpiece_handle(
-            key, generation_id
-        )
-        if handle is None:
-            node = self.graph.find_node(ledger_key)
-            if node is not None and node.state == NodeState.VALID:
-                logger.debug(
-                    f"[{key}] Task completed with no handle, "
-                    f"node already VALID (empty workpiece)."
-                )
-            elif node is not None and node.state == NodeState.PROCESSING:
-                logger.debug(
-                    f"[{key}] Handle not yet available, "
-                    f"waiting for artifact_created event."
-                )
-            else:
-                logger.warning(
-                    f"[{key}] Task completed but node in unexpected state: "
-                    f"{node.state if node else 'None'}"
-                )
-
-        return True, handle
-
-    def _handle_failed_task(
-        self,
-        key: ArtifactKey,
-        step: "Step",
-        workpiece: "WorkPiece",
-        task_generation_id: int,
-    ):
-        """
-        Handles failed task status.
-        """
-        wp_name = workpiece.name
-        error_msg = f"Ops generation for '{step.name}' on '{wp_name}' failed."
-        logger.warning(f"[{key}] {error_msg}")
-        node = self.graph.find_node(key)
-        if node is not None:
-            node.state = NodeState.ERROR
 
     def _on_task_complete(
         self,
@@ -825,7 +570,8 @@ class DagScheduler:
         if context is not None:
             context.task_did_finish(key)
 
-        if not self._validate_task_completion(
+        assert self._workpiece_stage is not None
+        if not self._workpiece_stage.validate_task_completion(
             key, ledger_key, task_generation_id
         ):
             return
@@ -834,26 +580,31 @@ class DagScheduler:
         logger.debug(f"[{key}] Task status is '{task_status}'.")
 
         if task_status == "canceled":
-            self._handle_canceled_task(
+            assert self._workpiece_stage is not None
+            self._workpiece_stage.handle_canceled_task(
                 key, ledger_key, step, workpiece, task_generation_id
             )
             return
 
         handle = None
         if task_status == "completed":
-            continue_processing, handle = self._handle_completed_task(
-                key,
-                ledger_key,
-                task,
-                step,
-                workpiece,
-                task_generation_id,
-                task_generation_id,
+            assert self._workpiece_stage is not None
+            continue_processing, handle = (
+                self._workpiece_stage.handle_completed_task(
+                    key,
+                    ledger_key,
+                    task,
+                    step,
+                    workpiece,
+                    task_generation_id,
+                    task_generation_id,
+                )
             )
             if not continue_processing:
                 return
         else:
-            self._handle_failed_task(
+            assert self._workpiece_stage is not None
+            self._workpiece_stage.handle_failed_task(
                 ledger_key, step, workpiece, task_generation_id
             )
 
@@ -866,95 +617,18 @@ class DagScheduler:
             task_status=task_status,
         )
 
-    def _validate_step_assembly_dependencies(self, step: "Step") -> bool:
-        """Validates that step assembly dependencies are met."""
-        if not step.layer:
-            return False
-        if not self._machine:
-            logger.warning(
-                f"Cannot assemble step {step.uid}, no machine configured."
-            )
-            return False
-        base_key = ArtifactKey.for_step(step.uid)
-        node = self.graph.find_node(base_key)
-        if node is not None and node.state == NodeState.PROCESSING:
-            return False
-        return True
-
-    def _validate_handle_geometry_match(self, handle, workpiece) -> bool:
-        """
-        Validates that handle geometry matches current workpiece size.
-        Returns True if geometry matches or handle is scalable.
-        """
-        if handle.is_scalable:
-            return True
-        hw, hh = handle.generation_size
-        ww, wh = workpiece.size
-        return math.isclose(hw, ww, abs_tol=1e-6) and math.isclose(
-            hh, wh, abs_tol=1e-6
-        )
-
-    def _collect_step_assembly_info(
-        self, step: "Step"
-    ) -> Tuple[Optional[list], List["BaseArtifactHandle"]]:
-        """
-        Collects assembly info from all workpieces and retains handles.
-        Returns (assembly_info, retained_handles).
-
-        Checks both current and previous generation for handles to allow
-        reuse of valid artifacts across generations.
-        """
-        assert step.layer is not None
-        assembly_info = []
-        retained_handles = []
-
-        try:
-            for wp in step.layer.all_workpieces:
-                handle = self._artifact_manager.get_workpiece_handle(
-                    ArtifactKey.for_workpiece(wp.uid, step.uid),
-                    self._generation_id,
-                )
-                if handle is None and self._generation_id > 1:
-                    handle = self._artifact_manager.get_workpiece_handle(
-                        ArtifactKey.for_workpiece(wp.uid, step.uid),
-                        self._generation_id - 1,
-                    )
-                if handle is None:
-                    raise ValueError(
-                        f"Missing handle for workpiece {wp.uid}, "
-                        f"step {step.uid}"
-                    )
-
-                if not self._validate_handle_geometry_match(handle, wp):
-                    raise ValueError(f"Geometry mismatch for {wp.uid}")
-
-                self._artifact_manager.retain_handle(handle)
-                retained_handles.append(handle)
-
-                info = {
-                    "artifact_handle_dict": handle.to_dict(),
-                    "world_transform_list": wp.get_world_transform().to_list(),
-                    "workpiece_dict": wp.in_world().to_dict(),
-                }
-                assembly_info.append(info)
-        except ValueError:
-            for handle in retained_handles:
-                self._artifact_manager.release_handle(handle)
-            return None, []
-
-        return assembly_info, retained_handles
-
     def _launch_step_task(self, step: "Step"):
         """Starts the asynchronous task to assemble a step artifact."""
-        if not self._validate_step_assembly_dependencies(step):
+        assert self._step_stage is not None
+        if not self._step_stage.validate_dependencies(step):
             logger.debug(
                 f"DagScheduler: Step assembly dependencies not met for "
                 f"step_uid={step.uid}"
             )
             return
 
-        assembly_info, retained_handles = self._collect_step_assembly_info(
-            step
+        assembly_info, retained_handles = (
+            self._step_stage.collect_assembly_info(step, self._generation_id)
         )
         if not assembly_info:
             for handle in retained_handles:
@@ -964,7 +638,7 @@ class DagScheduler:
             )
             return
 
-        self._step_retained_handles[step.uid] = retained_handles
+        self._step_stage.store_retained_handles(step.uid, retained_handles)
 
         if step.layer:
             for wp in step.layer.all_workpieces:
@@ -1010,84 +684,14 @@ class DagScheduler:
             when_done=lambda t: self._on_step_task_complete(
                 t, task_key, step, self._generation_id, context
             ),
-            when_event=lambda task, event_name, data: self._on_step_task_event(
-                task, event_name, data, step
+            when_event=lambda task, event_name, data: (
+                self._step_stage.handle_task_event(
+                    task, event_name, data, step
+                )
+                if self._step_stage
+                else None
             ),
         )
-
-    def _handle_step_render_artifact_ready(
-        self, step_uid: str, step: "Step", handle_dict: dict
-    ):
-        """Handles the render artifact ready event."""
-        handle = self._artifact_manager.adopt_artifact(
-            ArtifactKey.for_step(step_uid), handle_dict
-        )
-        if not isinstance(handle, StepRenderArtifactHandle):
-            raise TypeError("Expected a StepRenderArtifactHandle")
-
-        self._artifact_manager.put_step_render_handle(step_uid, handle)
-        self.step_render_artifact_ready.send(self, step=step)
-
-    def _handle_step_ops_artifact_ready(
-        self, step_uid: str, handle_dict: dict, generation_id: int
-    ):
-        """Handles the ops artifact ready event."""
-        handle = self._artifact_manager.adopt_artifact(
-            ArtifactKey.for_step(step_uid), handle_dict
-        )
-        if not isinstance(handle, StepOpsArtifactHandle):
-            raise TypeError("Expected a StepOpsArtifactHandle")
-        self._artifact_manager.put_step_ops_handle(
-            ArtifactKey.for_step(step_uid), handle, generation_id
-        )
-
-    def _handle_step_time_estimate_ready(
-        self, step_uid: str, step: "Step", time_estimate: float
-    ):
-        """Handles the time estimate ready event."""
-        self.step_time_estimate_ready.send(self, step=step, time=time_estimate)
-
-    def _on_step_task_event(
-        self, task: "Task", event_name: str, data: dict, step: "Step"
-    ):
-        """Handles events broadcast from the subprocess."""
-        step_uid = step.uid
-        ledger_key = ArtifactKey.for_step(step_uid)
-
-        generation_id = data.get("generation_id")
-        if generation_id is None:
-            logger.error(
-                f"[{step_uid}] Task event '{event_name}' missing "
-                f"generation_id. Ignoring."
-            )
-            return
-
-        if not self._artifact_manager.is_generation_current(
-            ledger_key, generation_id
-        ):
-            logger.debug(
-                f"[{step_uid}] Stale event '{event_name}' with "
-                f"generation_id {generation_id}. Ignoring."
-            )
-            return
-
-        try:
-            if event_name == "render_artifact_ready":
-                self._handle_step_render_artifact_ready(
-                    step_uid, step, data["handle_dict"]
-                )
-
-            elif event_name == "ops_artifact_ready":
-                self._handle_step_ops_artifact_ready(
-                    step_uid, data["handle_dict"], generation_id
-                )
-
-            elif event_name == "time_estimate_ready":
-                self._handle_step_time_estimate_ready(
-                    step_uid, step, data["time_estimate"]
-                )
-        except Exception as e:
-            logger.error(f"Error handling task event '{event_name}': {e}")
 
     def _on_step_task_complete(
         self,
@@ -1104,10 +708,8 @@ class DagScheduler:
         step_uid = step.uid
         ledger_key = ArtifactKey.for_step(step_uid)
 
-        # Release retained handles for this step
-        retained = self._step_retained_handles.pop(step_uid, [])
-        for handle in retained:
-            self._artifact_manager.release_handle(handle)
+        assert self._step_stage is not None
+        self._step_stage.release_retained_handles(step_uid)
 
         if not self._artifact_manager.is_generation_current(
             ledger_key, task_generation_id
@@ -1143,50 +745,10 @@ class DagScheduler:
             if node is not None:
                 node.state = NodeState.ERROR
 
-        self.step_generation_finished.send(
-            self, step=step, generation_id=task_generation_id
+        assert self._step_stage is not None
+        self._step_stage.generation_finished.send(
+            self._step_stage, step=step, generation_id=task_generation_id
         )
-
-    def _validate_job_dependencies(self, step_uids: List[str]) -> bool:
-        """Validate that all step dependencies are ready for job generation."""
-        if not self._machine:
-            logger.warning("Cannot generate job, no machine configured.")
-            return False
-        for step_uid in step_uids:
-            step_key = ArtifactKey.for_step(step_uid)
-            handle = self._artifact_manager.get_step_ops_handle(
-                step_key, self._generation_id
-            )
-            if handle is None:
-                logger.debug(f"Step {step_uid} not ready for job generation")
-                return False
-        return True
-
-    def _collect_step_handles(
-        self, step_uids: List[str]
-    ) -> Optional[Dict[str, Dict]]:
-        """
-        Collect step artifact handles for job generation.
-
-        Returns a dict mapping step_uid -> handle_dict, or None if any
-        step handle is missing. Also retains handles to prevent premature
-        pruning while the job task is running.
-        """
-        step_handles = {}
-        for step_uid in step_uids:
-            step_key = ArtifactKey.for_step(step_uid)
-            handle = self._artifact_manager.get_step_ops_handle(
-                step_key, self._generation_id
-            )
-            if handle is None:
-                for h in self._job_retained_handles:
-                    self._artifact_manager.release_handle(h)
-                self._job_retained_handles.clear()
-                return None
-            self._artifact_manager.retain_handle(handle)
-            self._job_retained_handles.append(handle)
-            step_handles[step_uid] = handle.to_dict()
-        return step_handles
 
     def generate_job(
         self,
@@ -1218,7 +780,10 @@ class DagScheduler:
             )
             return
 
-        if not self._validate_job_dependencies(step_uids):
+        assert self._job_stage is not None
+        if not self._job_stage.validate_dependencies(
+            step_uids, self._generation_id
+        ):
             logger.warning("Job dependencies not ready.")
             if on_done:
                 on_done(
@@ -1230,7 +795,9 @@ class DagScheduler:
                 )
             return
 
-        step_handles = self._collect_step_handles(step_uids)
+        step_handles = self._job_stage.collect_step_handles(
+            step_uids, self._generation_id
+        )
         if step_handles is None:
             logger.error("Failed to collect step handles for job generation.")
             if on_done:
@@ -1292,83 +859,14 @@ class DagScheduler:
             when_done=lambda t: self._on_job_task_complete(
                 t, job_key, generation_id, on_done, context
             ),
-            when_event=lambda task, event_name, data: self._on_job_task_event(
-                task, event_name, data, job_key, generation_id
+            when_event=lambda task, event_name, data: (
+                self._job_stage.handle_task_event(
+                    task, event_name, data, job_key, generation_id
+                )
+                if self._job_stage
+                else None
             ),
         )
-
-    def _on_job_task_event(
-        self,
-        task: "Task",
-        event_name: str,
-        data: dict,
-        job_key: ArtifactKey,
-        generation_id: int,
-    ):
-        """Handle events broadcast from the job runner subprocess."""
-        if event_name != "artifact_created":
-            return
-
-        received_gen_id = data.get("generation_id")
-        if received_gen_id is None:
-            logger.error(
-                "Job event 'artifact_created' missing generation_id. Ignoring."
-            )
-            return
-
-        job_key_dict = data.get("job_key")
-        if job_key_dict is None:
-            logger.error(
-                "Job event 'artifact_created' missing job_key. Ignoring."
-            )
-            return
-
-        received_job_key = ArtifactKey(
-            id=job_key_dict["id"], group=job_key_dict["group"]
-        )
-
-        composite_key = make_composite_key(received_job_key, generation_id)
-        entry = self._artifact_manager._get_ledger_entry(composite_key)
-        if entry is not None and entry.generation_id != generation_id:
-            logger.debug(
-                f"Stale job event with generation_id {generation_id}, "
-                f"current is {entry.generation_id}. Ignoring."
-            )
-            return
-
-        try:
-            handle = self._adopt_job_artifact(data, received_job_key)
-            self._artifact_manager.cache_handle(
-                received_job_key, handle, generation_id
-            )
-            node = self.graph.find_node(received_job_key)
-            if node is not None:
-                node.state = NodeState.VALID
-            logger.debug("Adopted job artifact")
-        except Exception as e:
-            logger.error(f"Error handling job artifact event: {e}")
-
-    def _adopt_job_artifact(
-        self, data: dict, job_key: ArtifactKey
-    ) -> "BaseArtifactHandle":
-        """
-        Adopt a job artifact from the subprocess.
-
-        Args:
-            data: The event data containing the handle dictionary.
-            job_key: The ArtifactKey for this job.
-
-        Returns:
-            The adopted JobArtifactHandle.
-
-        Raises:
-            TypeError: If the handle is not a JobArtifactHandle.
-        """
-        handle_dict = data["handle_dict"]
-        handle = self._artifact_manager.adopt_artifact(job_key, handle_dict)
-        if not isinstance(handle, JobArtifactHandle):
-            raise TypeError("Expected a JobArtifactHandle")
-        return handle
 
     def _on_job_task_complete(
         self,
@@ -1382,10 +880,8 @@ class DagScheduler:
         if context is not None:
             context.task_did_finish(job_key)
 
-        retained = self._job_retained_handles
-        self._job_retained_handles = []
-        for handle in retained:
-            self._artifact_manager.release_handle(handle)
+        assert self._job_stage is not None
+        self._job_stage.release_retained_handles()
 
         task_status = task.get_status()
         final_handle = None
