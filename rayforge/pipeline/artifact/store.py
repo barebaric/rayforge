@@ -387,7 +387,9 @@ class ArtifactStore:
                 f"Decremented refcount for {shm_name} to "
                 f"{self._refcounts[shm_name]} in forget()"
             )
-            self._managed_shms.pop(shm_name)
+            # We do not pop it from _managed_shms here, because in
+            # Windows this could lead to the garbage collector closing
+            # it, which also destroys the underlying memory block
             return
 
         self._refcounts.pop(shm_name, None)
