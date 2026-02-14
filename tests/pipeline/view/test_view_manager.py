@@ -1132,6 +1132,46 @@ def test_is_view_stale_entry_exists_but_no_source_handle(
     )
 
 
+def test_is_view_stale_source_handle_shm_name_changed(
+    view_manager, context, source_handle
+):
+    wp_uid = "wp_uid"
+    step_uid = "step_uid"
+    composite_id = (wp_uid, step_uid)
+
+    old_source_handle = WorkPieceArtifactHandle(
+        shm_name="old_shm",
+        handle_class_name="WorkPieceArtifactHandle",
+        artifact_type_name="WorkPieceArtifact",
+        is_scalable=True,
+        source_coordinate_system_name="MILLIMETER_SPACE",
+        source_dimensions=(10, 10),
+        generation_size=(10, 10),
+    )
+    new_source_handle = WorkPieceArtifactHandle(
+        shm_name="new_shm",
+        handle_class_name="WorkPieceArtifactHandle",
+        artifact_type_name="WorkPieceArtifact",
+        is_scalable=True,
+        source_coordinate_system_name="MILLIMETER_SPACE",
+        source_dimensions=(10, 10),
+        generation_size=(10, 10),
+    )
+
+    view_manager._view_entries[composite_id] = ViewEntry(
+        handle=MagicMock(),
+        render_context=context,
+        source_handle=old_source_handle,
+    )
+
+    assert (
+        view_manager._is_view_stale(
+            wp_uid, step_uid, context, new_source_handle
+        )
+        is True
+    )
+
+
 def test_shutdown_releases_handles(view_manager, mock_store, source_handle):
     wp_uid = str(uuid.uuid4())
     step_uid = str(uuid.uuid4())

@@ -60,6 +60,7 @@ class DagScheduler:
         self._active_context: Optional[GenerationContext] = None
         self._job_running: bool = False
         self._step_retained_handles: Dict[str, List["BaseArtifactHandle"]] = {}
+        self._job_retained_handles: List["BaseArtifactHandle"] = []
         self._invalidated_keys: set = set()
 
         self.generation_starting = Signal()
@@ -1126,7 +1127,8 @@ class DagScheduler:
         Collect step artifact handles for job generation.
 
         Returns a dict mapping step_uid -> handle_dict, or None if any
-        step handle is missing.
+        step handle is missing. Also retains handles to prevent premature
+        pruning while the job task is running.
         """
         step_handles = {}
         for step_uid in step_uids:
@@ -1135,7 +1137,12 @@ class DagScheduler:
                 step_key, self._generation_id
             )
             if handle is None:
+                for h in self._job_retained_handles:
+                    self._artifact_manager.release_handle(h)
+                self._job_retained_handles.clear()
                 return None
+            self._artifact_manager.retain_handle(handle)
+            self._job_retained_handles.append(handle)
             step_handles[step_uid] = handle.to_dict()
         return step_handles
 
@@ -1332,6 +1339,11 @@ class DagScheduler:
         """Callback for when a job generation task finishes."""
         if context is not None:
             context.task_did_finish(job_key)
+
+        retained = self._job_retained_handles
+        self._job_retained_handles = []
+        for handle in retained:
+            self._artifact_manager.release_handle(handle)
 
         task_status = task.get_status()
         final_handle = None

@@ -48,6 +48,7 @@ class ViewEntry:
     handle: Optional[WorkPieceViewArtifactHandle] = None
     render_context: Optional[RenderContext] = None
     source_handle: Optional[WorkPieceArtifactHandle] = None
+    task_source_refcount: int = 0
 
 
 class ViewManager:
@@ -173,6 +174,12 @@ class ViewManager:
                     f"_is_view_stale[{composite_id}]: no src handle -> STALE"
                 )
                 return True
+            if entry.source_handle.shm_name != source_handle.shm_name:
+                logger.debug(
+                    f"_is_view_stale[{composite_id}]: "
+                    f"shm_name changed -> STALE"
+                )
+                return True
             entry_gen_size = entry.source_handle.generation_size
             new_gen_size = source_handle.generation_size
             if entry_gen_size != new_gen_size:
@@ -233,7 +240,7 @@ class ViewManager:
         Handler for the pipeline.workpiece_artifact_ready signal.
 
         This method manages the source artifact handles:
-        - Releases any old handle for this workpiece
+        - Releases any old handle for this workpiece (if not in use by tasks)
         - Retains the new handle
         - Triggers a view render
 
@@ -254,10 +261,17 @@ class ViewManager:
 
         old_handle = self._source_artifact_handles.get(composite_id)
         if old_handle is not None:
-            logger.debug(
-                f"Releasing old source artifact handle for {composite_id}"
-            )
-            self._store.release(old_handle)
+            entry = self._view_entries.get(composite_id)
+            if entry and entry.task_source_refcount > 0:
+                logger.debug(
+                    f"Old source artifact handle for {composite_id} "
+                    f"in use by {entry.task_source_refcount} task(s)"
+                )
+            else:
+                logger.debug(
+                    f"Releasing old source artifact handle for {composite_id}"
+                )
+                self._store.release(old_handle)
 
         wp_handle = cast(WorkPieceArtifactHandle, handle)
         self._source_artifact_handles[composite_id] = wp_handle
@@ -336,6 +350,7 @@ class ViewManager:
             view_id: The view generation ID for this render.
             source_handle: The source WorkPieceArtifact handle.
             step_uid: The unique identifier of the step (optional).
+            workpiece_uid: The unique identifier of the workpiece.
         """
         if not self._is_view_stale(
             workpiece_uid, step_uid, context, source_handle
@@ -359,6 +374,12 @@ class ViewManager:
             self._view_entries[composite_id] = entry
         entry.render_context = context
         entry.source_handle = source_handle
+        entry.task_source_refcount += 1
+        self._store.retain(source_handle)
+        logger.debug(
+            f"Retained source handle for task, refcount now "
+            f"{entry.task_source_refcount}"
+        )
 
         def when_done_callback(task: "Task"):
             logger.debug(
@@ -366,6 +387,14 @@ class ViewManager:
                 f"task_status={task.get_status()}"
             )
             self._on_render_complete(task, key, view_id)
+            entry = self._view_entries.get(composite_id)
+            if entry and entry.task_source_refcount > 0:
+                entry.task_source_refcount -= 1
+                self._store.release(source_handle)
+                logger.debug(
+                    f"Released source handle for task, refcount now "
+                    f"{entry.task_source_refcount}"
+                )
 
         self._task_manager.run_process(
             make_workpiece_view_artifact_in_subprocess,
@@ -393,6 +422,11 @@ class ViewManager:
         for entry in self._view_entries.values():
             if entry.handle is not None:
                 self._store.release(entry.handle)
+            # Release source handles retained for tasks
+            while entry.task_source_refcount > 0:
+                entry.task_source_refcount -= 1
+                if entry.source_handle is not None:
+                    self._store.release(entry.source_handle)
         self._view_entries.clear()
 
         for timer in self._throttle_timers.values():
