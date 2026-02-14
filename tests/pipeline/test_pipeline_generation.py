@@ -762,7 +762,6 @@ class TestPipelineGeneration:
         finally:
             get_context().artifact_store.release(wp_handle)
 
-    @pytest.mark.skip
     @pytest.mark.asyncio
     async def test_rapid_step_change_emits_correct_final_signal(
         self, doc, real_workpiece, mock_task_mgr, context_initializer
@@ -859,7 +858,7 @@ class TestPipelineGeneration:
             # correct generation ID from the second, successful task.
             mock_signal_handler.assert_called_once()
             call_args, call_kwargs = mock_signal_handler.call_args
-            assert call_args[0] is step
+            assert call_kwargs.get("step") is step
             assert call_kwargs.get("workpiece") is real_workpiece
             assert call_kwargs.get("generation_id") == 2
 
