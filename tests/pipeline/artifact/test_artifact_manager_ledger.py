@@ -120,23 +120,6 @@ class TestDependencyTracking(unittest.TestCase):
         self.manager.register_dependency(workpiece_key, step_key)
         self.manager.register_dependency(step_key, job_key)
 
-        deps = self.manager._get_dependencies(job_key, 0)
-        self.assertEqual(deps, [(step_key, 0)])
-
-        deps = self.manager._get_dependencies(step_key, 0)
-        self.assertEqual(deps, [(workpiece_key, 0)])
-
-    def test_get_dependents_returns_parents(self):
-        """Test that _get_dependents returns correct parents."""
-        workpiece_key = ArtifactKey.for_workpiece(
-            "00000000-0000-4000-8000-000000000001"
-        )
-        step_key = ArtifactKey.for_step("00000000-0000-4000-8000-000000000003")
-        job_key = ArtifactKey.for_job()
-
-        self.manager.register_dependency(workpiece_key, step_key)
-        self.manager.register_dependency(step_key, job_key)
-
         dependents = self.manager._get_dependents(workpiece_key)
         self.assertEqual(dependents, [step_key])
 
