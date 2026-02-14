@@ -294,6 +294,7 @@ def ui_context_initializer(tmp_path, monkeypatch, ui_task_mgr):
     `ui_task_mgr`.
     """
     from rayforge import config
+    from rayforge import context as context_module
     from rayforge.context import get_context
     from rayforge.shared import tasker
 
@@ -308,6 +309,9 @@ def ui_context_initializer(tmp_path, monkeypatch, ui_task_mgr):
     context = get_context()
     context.initialize_full_context()
     yield context
+
+    asyncio.run(context.shutdown())
+    context_module._context_instance = None
 
 
 @pytest.fixture
