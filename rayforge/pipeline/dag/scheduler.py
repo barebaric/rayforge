@@ -584,7 +584,7 @@ class DagScheduler:
         )
 
     def _handle_visual_chunk_ready_event(
-        self, key: ArtifactKey, handle, generation_id: int
+        self, key: ArtifactKey, handle, generation_id: int, step_uid: str
     ):
         """
         Processes visual_chunk_ready event.
@@ -594,6 +594,7 @@ class DagScheduler:
             key=key,
             chunk_handle=handle,
             generation_id=generation_id,
+            step_uid=step_uid,
         )
 
     def _on_task_event_received(
@@ -643,7 +644,7 @@ class DagScheduler:
 
             if event_name == "visual_chunk_ready":
                 self._handle_visual_chunk_ready_event(
-                    key, handle, generation_id
+                    key, handle, generation_id, step_uid
                 )
         except Exception as e:
             logger.error(

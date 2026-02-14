@@ -131,6 +131,7 @@ class Pipeline:
         self.workpiece_artifact_adopted = Signal()
         self.step_assembly_starting = Signal()
         self.job_time_updated = Signal()
+        self.visual_chunk_available = Signal()
 
         # Initialize stages and connect signals ONE time during construction.
         self._initialize_stages_and_connections()
@@ -193,6 +194,9 @@ class Pipeline:
         )
         self._scheduler.job_generation_failed.connect(
             self._on_job_generation_failed
+        )
+        self._scheduler.visual_chunk_available.connect(
+            self._on_visual_chunk_available
         )
 
     def shutdown(self) -> None:
@@ -669,6 +673,26 @@ class Pipeline:
         )
         self.workpiece_artifact_adopted.send(
             self, step_uid=step_uid, workpiece_uid=workpiece_uid
+        )
+
+    def _on_visual_chunk_available(
+        self,
+        sender,
+        *,
+        key,
+        chunk_handle,
+        generation_id: int,
+        step_uid: str,
+    ) -> None:
+        """
+        Relays visual chunk availability from the scheduler.
+        """
+        self.visual_chunk_available.send(
+            self,
+            key=key,
+            chunk_handle=chunk_handle,
+            generation_id=generation_id,
+            step_uid=step_uid,
         )
 
     def _on_step_assembly_starting(

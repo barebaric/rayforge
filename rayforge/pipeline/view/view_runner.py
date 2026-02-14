@@ -9,7 +9,6 @@ from ..artifact import (
     WorkPieceArtifact,
     create_handle_from_dict,
 )
-from ..artifact.manager import ArtifactManager
 from ..artifact.store import ArtifactStore
 from ..artifact.workpiece_view import (
     RenderContext,
@@ -25,7 +24,7 @@ logger = logging.getLogger(__name__)
 
 
 def render_chunk_to_view(
-    artifact_manager: ArtifactManager,
+    artifact_store: ArtifactStore,
     chunk_handle_dict: Dict[str, Any],
     view_handle_dict: Dict[str, Any],
     render_context_dict: Dict[str, Any],
@@ -38,7 +37,7 @@ def render_chunk_to_view(
     and calls the compute function to perform rendering.
 
     Args:
-        artifact_manager: The artifact manager for loading artifacts.
+        artifact_store: The artifact store for loading artifacts.
         chunk_handle_dict: Dictionary representation of the chunk
             WorkPieceArtifactHandle to load.
         view_handle_dict: Dictionary representation of the view
@@ -54,12 +53,12 @@ def render_chunk_to_view(
     chunk_handle = create_handle_from_dict(chunk_handle_dict)
     view_handle = create_handle_from_dict(view_handle_dict)
 
-    chunk_artifact = artifact_manager.get_artifact(chunk_handle)
+    chunk_artifact = artifact_store.get(chunk_handle)
     if not isinstance(chunk_artifact, WorkPieceArtifact):
         logger.error("Runner received incorrect chunk artifact type.")
         return False
 
-    view_artifact = artifact_manager.get_artifact(view_handle)
+    view_artifact = artifact_store.get(view_handle)
     if not isinstance(view_artifact, WorkPieceViewArtifact):
         logger.error("Runner could not retrieve view artifact.")
         return False
