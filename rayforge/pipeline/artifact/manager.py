@@ -466,19 +466,6 @@ class ArtifactManager:
         logger.debug(f"_get_dependents: found {len(dependents)} parents")
         return dependents
 
-    def _get_dependencies(
-        self,
-        key: ArtifactKey,
-        generation_id: Optional[GenerationID] = None,
-    ) -> List[Tuple[ArtifactKey, GenerationID]]:
-        """Returns all child keys this key depends on."""
-        deps = []
-        if key in self._dependencies:
-            deps.extend(self._dependencies[key])
-        if generation_id is not None:
-            return [make_composite_key(dep, generation_id) for dep in deps]
-        return []
-
     def cache_handle(
         self,
         key: ArtifactKey,
@@ -591,31 +578,6 @@ class ArtifactManager:
             if entry.handle is not None:
                 self._store.release(entry.handle)
             entry.handle = handle
-
-    def checkout_dependencies(
-        self, key: ArtifactKey, generation_id: GenerationID
-    ) -> Dict[ArtifactKey, BaseArtifactHandle]:
-        """
-        Returns a dict mapping dependency keys to their handles.
-
-        Looks up all children (dependencies) of key and verifies they
-        all have handles.
-        """
-        deps = self._get_dependencies(key, generation_id)
-        result = {}
-        for dep in deps:
-            entry = self._get_ledger_entry(dep)
-            if entry is None:
-                logger.error(
-                    f"checkout_dependencies: Dependency {dep} not in ledger. "
-                    f"Ledger keys: {list(self._ledger.keys())}"
-                )
-            assert entry is not None, f"Dependency {dep} not in ledger"
-            assert entry.handle is not None, f"Dependency {dep} has no handle"
-            base_key = extract_base_key(dep)
-            if isinstance(base_key, ArtifactKey):
-                result[base_key] = entry.handle
-        return result
 
     def declare_generation(
         self,
