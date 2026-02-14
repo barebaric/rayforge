@@ -12,7 +12,7 @@ A clear and concise description of what the bug is.
 
 IMPORTANT:
 If you are opening an issue related to the connection to your machine, please provide the debug dump!
-See here how to save it: https://github.com/barebaric/rayforge/blob/main/docs/debug.md
+See here how to save it: https://rayforge.org/docs/latest/troubleshooting/debug.html
 
 **To Reproduce**
 Steps to reproduce the behavior:
