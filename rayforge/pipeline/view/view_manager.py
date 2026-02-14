@@ -223,8 +223,10 @@ class ViewManager:
         self._current_view_context = context
         self._view_generation_id += 1
 
-        # Iterate over all tracked (workpiece, step) pairs
-        for workpiece_uid, step_uid in self._source_artifact_handles.keys():
+        all_keys = set(self._source_artifact_handles.keys()) | set(
+            self._view_entries.keys()
+        )
+        for workpiece_uid, step_uid in all_keys:
             self.request_view_render(workpiece_uid, step_uid)
 
     def on_workpiece_artifact_ready(
