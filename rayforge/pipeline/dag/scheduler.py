@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import logging
 from typing import List, Optional, TYPE_CHECKING, Callable
-from blinker import Signal
 from ...core.step import Step
 from ...core.workpiece import WorkPiece
 from ..artifact.key import ArtifactKey
@@ -55,17 +54,6 @@ class DagScheduler:
         self._step_stage: Optional["StepPipelineStage"] = None
         self._job_stage: Optional["JobPipelineStage"] = None
 
-        self.generation_starting = Signal()
-        self.visual_chunk_available = Signal()
-        self.generation_finished = Signal()
-        self.workpiece_artifact_adopted = Signal()
-        self.step_assembly_starting = Signal()
-        self.step_render_artifact_ready = Signal()
-        self.step_time_estimate_ready = Signal()
-        self.step_generation_finished = Signal()
-        self.job_generation_finished = Signal()
-        self.job_generation_failed = Signal()
-
     @property
     def is_job_running(self) -> bool:
         """Check if a job generation is currently in progress."""
@@ -89,47 +77,14 @@ class DagScheduler:
     def set_workpiece_stage(self, stage: "WorkPiecePipelineStage") -> None:
         """Set the workpiece pipeline stage."""
         self._workpiece_stage = stage
-        self._workpiece_stage.generation_finished.connect(
-            self._bridge_workpiece_finished
-        )
-        self._workpiece_stage.generation_starting.connect(
-            self._bridge_workpiece_starting
-        )
 
     def set_step_stage(self, stage: "StepPipelineStage") -> None:
         """Set the step pipeline stage."""
         self._step_stage = stage
-        self._step_stage.assembly_starting.connect(
-            self._bridge_assembly_starting
-        )
 
     def set_job_stage(self, stage: "JobPipelineStage") -> None:
         """Set the job pipeline stage."""
         self._job_stage = stage
-        self._job_stage.job_generation_finished.connect(
-            self._bridge_job_finished
-        )
-        self._job_stage.job_generation_failed.connect(self._bridge_job_failed)
-
-    def _bridge_workpiece_finished(self, sender, **kwargs):
-        """Re-emit workpiece finished signal for Pipeline compatibility."""
-        self.generation_finished.send(self, **kwargs)
-
-    def _bridge_workpiece_starting(self, sender, **kwargs):
-        """Re-emit workpiece starting signal for Pipeline compatibility."""
-        self.generation_starting.send(self, **kwargs)
-
-    def _bridge_assembly_starting(self, sender, **kwargs):
-        """Re-emit assembly starting signal for Pipeline compatibility."""
-        self.step_assembly_starting.send(self, **kwargs)
-
-    def _bridge_job_finished(self, sender, **kwargs):
-        """Re-emit job finished signal for Pipeline compatibility."""
-        self.job_generation_finished.send(self, **kwargs)
-
-    def _bridge_job_failed(self, sender, **kwargs):
-        """Re-emit job failed signal for Pipeline compatibility."""
-        self.job_generation_failed.send(self, **kwargs)
 
     def sync_graph_with_artifact_manager(self) -> None:
         """

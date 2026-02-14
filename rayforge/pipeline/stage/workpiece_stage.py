@@ -45,6 +45,8 @@ class WorkPiecePipelineStage(PipelineStage):
         self._scheduler = scheduler
         self.generation_starting = Signal()
         self.generation_finished = Signal()
+        self.workpiece_artifact_adopted = Signal()
+        self.visual_chunk_available = Signal()
 
     def invalidate_for_step(self, step_uid: str):
         """Invalidates all workpiece artifacts associated with a step."""
@@ -200,8 +202,8 @@ class WorkPiecePipelineStage(PipelineStage):
         if node is not None:
             node.state = NodeState.VALID
 
-        self._scheduler.workpiece_artifact_adopted.send(
-            self._scheduler, step_uid=step_uid, workpiece_uid=key.id
+        self.workpiece_artifact_adopted.send(
+            self, step_uid=step_uid, workpiece_uid=key.id
         )
 
     def handle_visual_chunk_ready(
@@ -210,8 +212,8 @@ class WorkPiecePipelineStage(PipelineStage):
         """
         Processes visual_chunk_ready event.
         """
-        self._scheduler.visual_chunk_available.send(
-            self._scheduler,
+        self.visual_chunk_available.send(
+            self,
             key=key,
             chunk_handle=handle,
             generation_id=generation_id,
