@@ -698,7 +698,9 @@ class ViewManager:
         try:
             bitmap = np.zeros(shape=(height_px, width_px, 4), dtype=np.uint8)
             view_artifact = WorkPieceViewArtifact(
-                bitmap_data=bitmap, bbox_mm=bbox
+                bitmap_data=bitmap,
+                bbox_mm=bbox,
+                workpiece_size_mm=(w_mm, h_mm),
             )
 
             handle = self._store.put(

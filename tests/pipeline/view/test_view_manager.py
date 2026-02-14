@@ -159,6 +159,7 @@ def test_view_manager_handles_events_and_completion(
     view_handle = WorkPieceViewArtifactHandle(
         shm_name="test",
         bbox_mm=(0, 0, 1, 1),
+        workpiece_size_mm=(1.0, 1.0),
         handle_class_name="WorkPieceViewArtifactHandle",
         artifact_type_name="WorkPieceViewArtifact",
     )
@@ -167,6 +168,7 @@ def test_view_manager_handles_events_and_completion(
     handle_dict = {
         "shm_name": "test",
         "bbox_mm": (0, 0, 1, 1),
+        "workpiece_size_mm": (1.0, 1.0),
         "handle_class_name": "WorkPieceViewArtifactHandle",
         "artifact_type_name": "WorkPieceViewArtifact",
     }
@@ -229,6 +231,7 @@ def test_adoption_failure_does_not_crash(
     handle_dict = {
         "shm_name": "test",
         "bbox_mm": (0, 0, 1, 1),
+        "workpiece_size_mm": (1.0, 1.0),
         "handle_class_name": "WorkPieceViewArtifactHandle",
         "artifact_type_name": "WorkPieceViewArtifact",
     }
@@ -271,12 +274,14 @@ def test_multiple_view_artifact_updated_events(
     handle_dict = {
         "shm_name": "test_view",
         "bbox_mm": (0, 0, 1, 1),
+        "workpiece_size_mm": (1.0, 1.0),
         "handle_class_name": "WorkPieceViewArtifactHandle",
         "artifact_type_name": "WorkPieceViewArtifact",
     }
     view_handle = WorkPieceViewArtifactHandle(
         shm_name="test_view",
         bbox_mm=(0, 0, 1, 1),
+        workpiece_size_mm=(1.0, 1.0),
         handle_class_name="WorkPieceViewArtifactHandle",
         artifact_type_name="WorkPieceViewArtifact",
     )
@@ -328,12 +333,14 @@ def test_progressive_rendering_sends_multiple_updates(
     handle_dict = {
         "shm_name": "test_progressive",
         "bbox_mm": (0, 0, 1, 1),
+        "workpiece_size_mm": (1.0, 1.0),
         "handle_class_name": "WorkPieceViewArtifactHandle",
         "artifact_type_name": "WorkPieceViewArtifact",
     }
     view_handle = WorkPieceViewArtifactHandle(
         shm_name="test_progressive",
         bbox_mm=(0, 0, 1, 1),
+        workpiece_size_mm=(1.0, 1.0),
         handle_class_name="WorkPieceViewArtifactHandle",
         artifact_type_name="WorkPieceViewArtifact",
     )
@@ -365,6 +372,7 @@ def test_on_chunk_available_receives_chunks(view_manager, mock_store, context):
     view_handle = WorkPieceViewArtifactHandle(
         shm_name="view_shm",
         bbox_mm=(0, 0, 10, 10),
+        workpiece_size_mm=(10.0, 10.0),
         handle_class_name="WorkPieceViewArtifactHandle",
         artifact_type_name="WorkPieceViewArtifact",
     )
@@ -424,12 +432,14 @@ def test_live_render_context_established_on_view_creation(
     handle_dict = {
         "shm_name": "test_live_render",
         "bbox_mm": (0, 0, 1, 1),
+        "workpiece_size_mm": (1.0, 1.0),
         "handle_class_name": "WorkPieceViewArtifactHandle",
         "artifact_type_name": "WorkPieceViewArtifact",
     }
     view_handle = WorkPieceViewArtifactHandle(
         shm_name="test_live_render",
         bbox_mm=(0, 0, 1, 1),
+        workpiece_size_mm=(1.0, 1.0),
         handle_class_name="WorkPieceViewArtifactHandle",
         artifact_type_name="WorkPieceViewArtifact",
     )
@@ -471,12 +481,14 @@ def test_throttled_notification_limits_update_frequency(
     handle_dict = {
         "shm_name": "test_throttle",
         "bbox_mm": (0, 0, 1, 1),
+        "workpiece_size_mm": (1.0, 1.0),
         "handle_class_name": "WorkPieceViewArtifactHandle",
         "artifact_type_name": "WorkPieceViewArtifact",
     }
     view_handle = WorkPieceViewArtifactHandle(
         shm_name="test_throttle",
         bbox_mm=(0, 0, 1, 1),
+        workpiece_size_mm=(1.0, 1.0),
         handle_class_name="WorkPieceViewArtifactHandle",
         artifact_type_name="WorkPieceViewArtifact",
     )
@@ -552,6 +564,7 @@ def test_incremental_bitmap_rendering_draws_chunk_to_view(
     view_artifact = WorkPieceViewArtifact(
         bitmap_data=blank_bitmap,
         bbox_mm=(0, 0, 10.0, 10.0),
+        workpiece_size_mm=(10.0, 10.0),
     )
 
     mock_store.get.return_value = view_artifact
@@ -559,12 +572,14 @@ def test_incremental_bitmap_rendering_draws_chunk_to_view(
     handle_dict = {
         "shm_name": "view_shm",
         "bbox_mm": (0, 0, 10.0, 10.0),
+        "workpiece_size_mm": (10.0, 10.0),
         "handle_class_name": "WorkPieceViewArtifactHandle",
         "artifact_type_name": "WorkPieceViewArtifact",
     }
     view_handle = WorkPieceViewArtifactHandle(
         shm_name="view_shm",
         bbox_mm=(0, 0, 10.0, 10.0),
+        workpiece_size_mm=(10.0, 10.0),
         handle_class_name="WorkPieceViewArtifactHandle",
         artifact_type_name="WorkPieceViewArtifact",
     )
@@ -649,12 +664,14 @@ def test_adopt_view_handle(view_manager, mock_store):
     handle_dict = {
         "shm_name": "test_adopt",
         "bbox_mm": (0, 0, 1, 1),
+        "workpiece_size_mm": (1.0, 1.0),
         "handle_class_name": "WorkPieceViewArtifactHandle",
         "artifact_type_name": "WorkPieceViewArtifact",
     }
     view_handle = WorkPieceViewArtifactHandle(
         shm_name="test_adopt",
         bbox_mm=(0, 0, 1, 1),
+        workpiece_size_mm=(1.0, 1.0),
         handle_class_name="WorkPieceViewArtifactHandle",
         artifact_type_name="WorkPieceViewArtifact",
     )
@@ -701,6 +718,7 @@ def test_get_render_components(view_manager, mock_store, context):
     handle = WorkPieceViewArtifactHandle(
         shm_name="test",
         bbox_mm=(0, 0, 1, 1),
+        workpiece_size_mm=(1.0, 1.0),
         handle_class_name="WorkPieceViewArtifactHandle",
         artifact_type_name="WorkPieceViewArtifact",
     )
@@ -1045,6 +1063,7 @@ def test_view_entry_with_values():
     handle = WorkPieceViewArtifactHandle(
         shm_name="test",
         bbox_mm=(0, 0, 1, 1),
+        workpiece_size_mm=(1.0, 1.0),
         handle_class_name="WorkPieceViewArtifactHandle",
         artifact_type_name="WorkPieceViewArtifact",
     )
@@ -1122,6 +1141,7 @@ def test_shutdown_releases_handles(view_manager, mock_store, source_handle):
     view_handle = WorkPieceViewArtifactHandle(
         shm_name="test",
         bbox_mm=(0, 0, 1, 1),
+        workpiece_size_mm=(1.0, 1.0),
         handle_class_name="WorkPieceViewArtifactHandle",
         artifact_type_name="WorkPieceViewArtifact",
     )
@@ -1140,6 +1160,7 @@ def test_get_view_handle(view_manager):
     view_handle = WorkPieceViewArtifactHandle(
         shm_name="test",
         bbox_mm=(0, 0, 1, 1),
+        workpiece_size_mm=(1.0, 1.0),
         handle_class_name="WorkPieceViewArtifactHandle",
         artifact_type_name="WorkPieceViewArtifact",
     )
@@ -1170,6 +1191,7 @@ def test_reconcile_removes_obsolete_entries(
     view_handle = WorkPieceViewArtifactHandle(
         shm_name="test",
         bbox_mm=(0, 0, 1, 1),
+        workpiece_size_mm=(1.0, 1.0),
         handle_class_name="WorkPieceViewArtifactHandle",
         artifact_type_name="WorkPieceViewArtifact",
     )
