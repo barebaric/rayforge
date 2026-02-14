@@ -585,3 +585,55 @@ class TestPipeline:
         # Reset mocks to check for view render task
         mock_task_mgr.run_process.reset_mock()
         mock_task_mgr.created_tasks.clear()
+
+    def test_get_existing_job_handle_returns_none_when_no_job_cached(
+        self, doc, real_workpiece, mock_task_mgr, context_initializer
+    ):
+        """
+        Tests that get_existing_job_handle returns None when no job
+        artifact has been cached yet.
+        """
+        # Arrange
+        layer = self._setup_doc_with_workpiece(doc, real_workpiece)
+        assert layer.workflow is not None
+        step = create_contour_step(context_initializer)
+        layer.workflow.add_step(step)
+
+        pipeline = Pipeline(
+            doc,
+            mock_task_mgr,
+            context_initializer.artifact_store,
+            context_initializer.machine,
+        )
+
+        # Act - no job has been generated yet
+        result = pipeline.get_existing_job_handle()
+
+        # Assert
+        assert result is None
+
+    def test_get_existing_job_handle_returns_none_when_no_handle(
+        self, doc, real_workpiece, mock_task_mgr, context_initializer
+    ):
+        """
+        Tests that get_existing_job_handle returns None when no
+        job handle exists.
+        """
+        # Arrange
+        layer = self._setup_doc_with_workpiece(doc, real_workpiece)
+        assert layer.workflow is not None
+        step = create_contour_step(context_initializer)
+        layer.workflow.add_step(step)
+
+        pipeline = Pipeline(
+            doc,
+            mock_task_mgr,
+            context_initializer.artifact_store,
+            context_initializer.machine,
+        )
+
+        # Act - no job handle cached
+        result = pipeline.get_existing_job_handle()
+
+        # Assert
+        assert result is None
