@@ -160,16 +160,19 @@ class Pipeline:
         self._scheduler.set_job_stage(self._job_stage)
 
         # Connect signals from scheduler (now handles workpiece generation)
-        self._scheduler.generation_starting.connect(
+        self._workpiece_stage.generation_starting.connect(
             self._on_workpiece_generation_starting
         )
-        self._scheduler.generation_finished.connect(
+        self._workpiece_stage.generation_finished.connect(
             self._on_workpiece_generation_finished
         )
-        self._scheduler.workpiece_artifact_adopted.connect(
+        self._workpiece_stage.workpiece_artifact_adopted.connect(
             self._on_workpiece_artifact_adopted
         )
-        self._scheduler.step_assembly_starting.connect(
+        self._workpiece_stage.visual_chunk_available.connect(
+            self._on_visual_chunk_available
+        )
+        self._step_stage.assembly_starting.connect(
             self._on_step_assembly_starting
         )
         self._step_stage.generation_finished.connect(
@@ -178,14 +181,11 @@ class Pipeline:
         self._step_stage.time_estimate_ready.connect(
             self._on_step_time_estimate_ready
         )
-        self._scheduler.job_generation_finished.connect(
+        self._job_stage.job_generation_finished.connect(
             self._on_job_generation_finished
         )
-        self._scheduler.job_generation_failed.connect(
+        self._job_stage.job_generation_failed.connect(
             self._on_job_generation_failed
-        )
-        self._scheduler.visual_chunk_available.connect(
-            self._on_visual_chunk_available
         )
 
     def shutdown(self) -> None:

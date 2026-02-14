@@ -418,7 +418,8 @@ class TestDagSchedulerJobGeneration:
         am.get_job_handle.return_value = MagicMock()  # type: ignore
 
         mock_signal = MagicMock()
-        scheduler.job_generation_finished.connect(mock_signal)
+        assert scheduler._job_stage is not None
+        scheduler._job_stage.job_generation_finished.connect(mock_signal)
 
         callback = MagicMock()
         scheduler.generate_job(step_uids=[self.STEP_UID_1], on_done=callback)
@@ -442,7 +443,8 @@ class TestDagSchedulerJobGeneration:
         am.get_step_ops_handle.return_value = step_handle  # type: ignore
 
         mock_signal = MagicMock()
-        scheduler.job_generation_failed.connect(mock_signal)
+        assert scheduler._job_stage is not None
+        scheduler._job_stage.job_generation_failed.connect(mock_signal)
 
         callback = MagicMock()
         scheduler.generate_job(step_uids=[self.STEP_UID_1], on_done=callback)
