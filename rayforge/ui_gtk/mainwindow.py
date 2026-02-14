@@ -145,6 +145,7 @@ class MainWindow(Adw.ApplicationWindow):
         self._last_control_panel_height = 200
         self._live_3d_view_connected = False
         self._old_doc = None  # Track previous document for signal reconnection
+        self.canvas3d: Optional[Canvas3D] = None
 
         # The ToastOverlay will wrap the main content box
         self.toast_overlay = Adw.ToastOverlay()
@@ -381,10 +382,8 @@ class MainWindow(Adw.ApplicationWindow):
         # self.surface_overlay.add_controller(canvas_click_gesture)
 
         if canvas3d_initialized:
-            self.canvas3d = Canvas3D(
+            self._create_canvas3d(
                 context,
-                self.doc_editor.doc,
-                self.doc_editor.pipeline,
                 width_mm=width_mm,
                 depth_mm=height_mm,
                 y_down=y_down,
@@ -392,9 +391,6 @@ class MainWindow(Adw.ApplicationWindow):
                 x_negative=reverse_x,
                 y_negative=reverse_y,
             )
-
-            # Create a stack to switch between 2D and 3D views
-            self.view_stack.add_named(self.canvas3d, "3d")
 
         # Undo/Redo buttons are now connected to the doc via actions.
         self.toolbar.undo_button.set_history_manager(
@@ -1206,7 +1202,7 @@ class MainWindow(Adw.ApplicationWindow):
     ):
         is_visible = value.get_boolean()
         self.surface.set_show_travel_moves(is_visible)
-        if canvas3d_initialized and hasattr(self, "canvas3d"):
+        if self.canvas3d is not None:
             self.canvas3d.set_show_travel_moves(is_visible)
         action.set_state(value)
 
@@ -1645,6 +1641,38 @@ class MainWindow(Adw.ApplicationWindow):
                 when_done=self._on_assembly_for_preview_finished
             )
 
+    def _create_canvas3d(
+        self,
+        context,
+        width_mm: float,
+        depth_mm: float,
+        y_down: bool,
+        x_right: bool,
+        x_negative: bool,
+        y_negative: bool,
+    ):
+        """
+        Creates a Canvas3D instance and adds it to the view stack.
+        Also syncs the travel view state from the action.
+        """
+        self.canvas3d = Canvas3D(
+            context,
+            self.doc_editor.doc,
+            self.doc_editor.pipeline,
+            width_mm=width_mm,
+            depth_mm=depth_mm,
+            y_down=y_down,
+            x_right=x_right,
+            x_negative=x_negative,
+            y_negative=y_negative,
+        )
+        self.view_stack.add_named(self.canvas3d, "3d")
+
+        travel_action = self.action_manager.get_action("toggle_travel_view")
+        travel_state = travel_action.get_state()
+        if travel_state and travel_state.get_boolean():
+            self.canvas3d.set_show_travel_moves(True)
+
     def _on_document_settled(self, sender):
         """
         Called when all background processing is complete. This is the main
@@ -1737,7 +1765,7 @@ class MainWindow(Adw.ApplicationWindow):
             )
 
         # Update the 3D canvas to match the new machine.
-        if canvas3d_initialized and hasattr(self, "view_stack"):
+        if self.canvas3d is not None:
             # Always switch back to 2D view on machine change for simplicity.
             if self.view_stack.get_visible_child_name() == "3d":
                 self.view_stack.set_visible_child_name("2d")
@@ -1748,10 +1776,8 @@ class MainWindow(Adw.ApplicationWindow):
 
             # Replace the 3D canvas with one configured for the new machine.
             self.view_stack.remove(self.canvas3d)
-            self.canvas3d = Canvas3D(
+            self._create_canvas3d(
                 get_context(),
-                self.doc_editor.doc,
-                self.doc_editor.pipeline,
                 width_mm=width_mm,
                 depth_mm=height_mm,
                 y_down=y_down,
@@ -1759,7 +1785,6 @@ class MainWindow(Adw.ApplicationWindow):
                 x_negative=reverse_x,
                 y_negative=reverse_y,
             )
-            self.view_stack.add_named(self.canvas3d, "3d")
 
         # Update the status monitor to observe the new machine
         self.status_monitor.set_machine(config.machine)
