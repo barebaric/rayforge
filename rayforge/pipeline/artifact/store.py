@@ -4,6 +4,7 @@ import logging
 from typing import Dict, Optional, TYPE_CHECKING
 from multiprocessing import shared_memory
 import numpy as np
+from ...shared.util.debug import safe_caller_stack
 from .base import BaseArtifact
 from .handle import BaseArtifactHandle
 
@@ -195,14 +196,16 @@ class ArtifactStore:
         Uses reference counting to ensure the block is not released while
         still in use.
         """
+        caller_stack = safe_caller_stack()
         refcount = self._refcounts.get(shm_name, 0)
         if refcount > 1:
             # Decrement refcount and keep the block
             self._refcounts[shm_name] = refcount - 1
-            logger.debug(
-                f"Decremented refcount for {shm_name} to "
-                f"{self._refcounts[shm_name]}"
-            )
+            if caller_stack:
+                logger.debug(
+                    f"Decremented refcount for {shm_name} to "
+                    f"{self._refcounts[shm_name]} (caller: {caller_stack})"
+                )
             return
         elif refcount == 1:
             # Refcount reached zero, release the block
@@ -217,10 +220,13 @@ class ArtifactStore:
                 )
                 return
             # Block is managed but has no refcount, this is unusual
-            logger.warning(
+            msg = (
                 f"Attempted to release block {shm_name}, which is "
-                f"managed but has no refcount."
+                f"managed but has no refcount"
             )
+            if caller_stack:
+                msg += f" (caller: {caller_stack})"
+            logger.warning(msg)
             return
 
         shm_obj = self._managed_shms.pop(shm_name, None)
@@ -229,9 +235,10 @@ class ArtifactStore:
 
         try:
             shm_obj.close()
-            logger.info(
-                f"[DIAGNOSTIC] About to unlink shared memory block: {shm_name}"
-            )
+            msg = f"[DIAGNOSTIC] Unlinking shm: {shm_name}"
+            if caller_stack:
+                msg += f" (caller: {caller_stack})"
+            logger.info(msg)
             shm_obj.unlink()  # This actually frees the memory
             logger.debug(f"Released shared memory block: {shm_name}")
         except FileNotFoundError:
