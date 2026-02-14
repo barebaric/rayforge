@@ -597,6 +597,93 @@ class TestExportGcodeToPath:
             assert not export_path.exists()
 
 
+class TestExportSketchToPath:
+    """Tests for export_sketch_to_path method."""
+
+    def test_export_sketch_success(self, file_cmd, sample_workpiece, tmp_path):
+        """Test successful sketch export."""
+        export_path = tmp_path / "test_sketch.rfs"
+
+        with patch(
+            "rayforge.doceditor.file_cmd.SketchExporter"
+        ) as mock_exporter_cls:
+            mock_exporter = MagicMock()
+            mock_exporter.export.return_value = b'{"test": "data"}'
+            mock_exporter_cls.return_value = mock_exporter
+
+            result = file_cmd.export_sketch_to_path(
+                export_path, sample_workpiece
+            )
+
+            assert result is True
+            assert export_path.exists()
+            assert export_path.read_bytes() == b'{"test": "data"}'
+            mock_exporter_cls.assert_called_once_with(sample_workpiece)
+            mock_exporter.export.assert_called_once()
+
+    def test_export_sketch_failure(self, file_cmd, sample_workpiece, tmp_path):
+        """Test sketch export failure when exporter raises exception."""
+        export_path = tmp_path / "test_sketch.rfs"
+
+        with patch(
+            "rayforge.doceditor.file_cmd.SketchExporter"
+        ) as mock_exporter_cls:
+            mock_exporter = MagicMock()
+            mock_exporter.export.side_effect = ValueError("No sketch found")
+            mock_exporter_cls.return_value = mock_exporter
+
+            result = file_cmd.export_sketch_to_path(
+                export_path, sample_workpiece
+            )
+
+            assert result is False
+            assert not export_path.exists()
+
+    def test_export_sketch_write_failure(
+        self, file_cmd, sample_workpiece, tmp_path
+    ):
+        """Test sketch export when file write fails."""
+        export_path = tmp_path / "test_sketch.rfs"
+
+        with patch(
+            "rayforge.doceditor.file_cmd.SketchExporter"
+        ) as mock_exporter_cls:
+            mock_exporter = MagicMock()
+            mock_exporter.export.return_value = b'{"test": "data"}'
+            mock_exporter_cls.return_value = mock_exporter
+
+            with patch.object(
+                Path, "write_bytes", side_effect=OSError("Disk full")
+            ):
+                result = file_cmd.export_sketch_to_path(
+                    export_path, sample_workpiece
+                )
+
+                assert result is False
+
+    def test_export_sketch_sends_notification(
+        self, file_cmd, sample_workpiece, tmp_path
+    ):
+        """Test that successful export sends notification."""
+        export_path = tmp_path / "test_sketch.rfs"
+
+        with patch(
+            "rayforge.doceditor.file_cmd.SketchExporter"
+        ) as mock_exporter_cls:
+            mock_exporter = MagicMock()
+            mock_exporter.export.return_value = b'{"test": "data"}'
+            mock_exporter_cls.return_value = mock_exporter
+
+            with patch.object(
+                file_cmd._editor.notification_requested, "send"
+            ) as mock_send:
+                file_cmd.export_sketch_to_path(export_path, sample_workpiece)
+
+                mock_send.assert_called_once()
+                call_args = mock_send.call_args
+                assert "Sketch exported successfully" in str(call_args)
+
+
 class TestGetSupportedImportFilters:
     """Tests for get_supported_import_filters method."""
 
