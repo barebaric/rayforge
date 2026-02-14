@@ -461,6 +461,8 @@ class ViewManager:
             if entry is None:
                 entry = ViewEntry()
                 self._view_entries[composite_id] = entry
+            if entry.handle is not None:
+                self._store.release(entry.handle)
             entry.handle = handle
 
             self._send_view_artifact_created_signals(
@@ -724,6 +726,8 @@ class ViewManager:
             if entry is None:
                 entry = ViewEntry()
                 self._view_entries[composite_id] = entry
+            if entry.handle is not None:
+                self._store.release(entry.handle)
             entry.handle = view_handle
             entry.render_context = context
 
