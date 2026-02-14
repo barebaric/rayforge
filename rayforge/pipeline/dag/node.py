@@ -7,12 +7,9 @@ from __future__ import annotations
 import logging
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import List, TYPE_CHECKING
+from typing import List
 
 from ..artifact.key import ArtifactKey
-
-if TYPE_CHECKING:
-    pass
 
 
 logger = logging.getLogger(__name__)

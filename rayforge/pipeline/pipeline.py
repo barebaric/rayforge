@@ -868,16 +868,6 @@ class Pipeline:
                             child_key=wp_step_key, parent_key=step_key
                         )
 
-    def get_ops(self, step: Step, workpiece: WorkPiece) -> Optional[Ops]:
-        """
-        [Compatibility Method] Retrieves ops by wrapping get_scaled_ops.
-        """
-        return self.get_scaled_ops(
-            step.uid,
-            workpiece.uid,
-            workpiece.get_world_transform(),
-        )
-
     def _get_or_create_artifact_key(
         self, item: DocItem, group: str
     ) -> ArtifactKey:
