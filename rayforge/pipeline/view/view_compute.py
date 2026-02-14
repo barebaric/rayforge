@@ -344,7 +344,11 @@ def compute_workpiece_view(
 
     _set_progress(1.0, _("Rendering complete."))
 
-    return WorkPieceViewArtifact(bitmap_data=bitmap, bbox_mm=bbox)
+    return WorkPieceViewArtifact(
+        bitmap_data=bitmap,
+        bbox_mm=bbox,
+        workpiece_size_mm=artifact.generation_size,
+    )
 
 
 def compute_workpiece_view_to_buffer(

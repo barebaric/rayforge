@@ -172,7 +172,11 @@ def make_workpiece_view_artifact_in_subprocess(
 
     from ..artifact.workpiece_view import WorkPieceViewArtifact
 
-    view_artifact = WorkPieceViewArtifact(bitmap_data=bitmap, bbox_mm=bbox)
+    view_artifact = WorkPieceViewArtifact(
+        bitmap_data=bitmap,
+        bbox_mm=bbox,
+        workpiece_size_mm=artifact.generation_size,
+    )
     view_handle = artifact_store.put(view_artifact, creator_tag=creator_tag)
     logger.debug(f"Worker: Created view artifact {view_handle.shm_name}")
 

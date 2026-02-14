@@ -1,5 +1,4 @@
 import logging
-import math
 from typing import Optional, TYPE_CHECKING, Dict, Tuple, cast, List
 import cairo
 from gi.repository import GLib
@@ -507,20 +506,19 @@ class WorkPieceElement(CanvasElement):
                         )
                         continue
 
-                    # Check if artifact size matches current workpiece size
                     world_w, world_h = self.data.size
-                    size_scale_x = world_w / view_w if view_w > 1e-9 else 1.0
-                    size_scale_y = world_h / view_h if view_h > 1e-9 else 1.0
+                    ref_w, ref_h = artifact.workpiece_size_mm
+
+                    scale_x = world_w / ref_w if ref_w > 1e-9 else 1.0
+                    scale_y = world_h / ref_h if ref_h > 1e-9 else 1.0
 
                     if not (
-                        math.isclose(size_scale_x, 1.0, abs_tol=1e-6)
-                        and math.isclose(size_scale_y, 1.0, abs_tol=1e-6)
+                        abs(scale_x - 1.0) < 1e-6 and abs(scale_y - 1.0) < 1e-6
                     ):
-                        # Adjust bbox_mm to match current workpiece size
-                        view_x = view_x * size_scale_x
-                        view_y = view_y * size_scale_y
-                        view_w = world_w
-                        view_h = world_h
+                        view_x *= scale_x
+                        view_y *= scale_y
+                        view_w *= scale_x
+                        view_h *= scale_y
 
                     height, width, _ = bitmap_data.shape
                     stride = cairo.ImageSurface.format_stride_for_width(

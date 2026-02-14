@@ -62,6 +62,7 @@ class WorkPieceViewArtifactHandle(BaseArtifactHandle):
     def __init__(
         self,
         bbox_mm: Tuple[float, float, float, float],
+        workpiece_size_mm: Tuple[float, float],
         shm_name: str,
         handle_class_name: str,
         artifact_type_name: str,
@@ -75,6 +76,7 @@ class WorkPieceViewArtifactHandle(BaseArtifactHandle):
             array_metadata=array_metadata,
         )
         self.bbox_mm = bbox_mm
+        self.workpiece_size_mm = workpiece_size_mm
 
 
 class WorkPieceViewArtifact(BaseArtifact):
@@ -87,10 +89,12 @@ class WorkPieceViewArtifact(BaseArtifact):
         self,
         bitmap_data: np.ndarray,
         bbox_mm: Tuple[float, float, float, float],
+        workpiece_size_mm: Tuple[float, float],
     ):
         super().__init__()
         self.bitmap_data = bitmap_data
         self.bbox_mm = bbox_mm
+        self.workpiece_size_mm = workpiece_size_mm
 
     def create_handle(
         self,
@@ -104,6 +108,7 @@ class WorkPieceViewArtifact(BaseArtifact):
             artifact_type_name=self.__class__.__name__,
             array_metadata=array_metadata,
             bbox_mm=self.bbox_mm,
+            workpiece_size_mm=self.workpiece_size_mm,
         )
 
     def get_arrays_for_storage(self) -> Dict[str, np.ndarray]:
@@ -131,4 +136,5 @@ class WorkPieceViewArtifact(BaseArtifact):
         return cls(
             bitmap_data=arrays["bitmap_data"].copy(),
             bbox_mm=handle.bbox_mm,
+            workpiece_size_mm=handle.workpiece_size_mm,
         )
