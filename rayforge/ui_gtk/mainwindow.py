@@ -13,10 +13,9 @@ from .. import const
 from ..context import get_context
 from ..core.group import Group
 from ..core.item import DocItem
-from ..core.sketcher import Sketch
 from ..core.step import Step
 from ..core.stock import StockItem
-from ..core.undo import Command, HistoryManager, ListItemCommand
+from ..core.undo import Command, HistoryManager
 from ..core.workpiece import WorkPiece
 from ..doceditor.editor import DocEditor
 from ..machine.cmd import MachineCmd
@@ -51,7 +50,7 @@ from .machine.control_panel import MachineControlPanel
 from .machine.settings_dialog import MachineSettingsDialog
 from .main_menu import MainMenu
 from .settings.settings_dialog import SettingsWindow
-from .sketcher.cmd import UpdateSketchCommand
+from .sketch_mode_cmd import SketchModeCmd
 from .sketcher.studio import SketchStudio
 from .task_bar import TaskBar
 from .toolbar import MainToolbar
@@ -172,6 +171,7 @@ class MainWindow(Adw.ApplicationWindow):
         # Instantiate UI-specific command handlers
         self.view_cmd = ViewModeCmd(self.doc_editor, self)
         self.simulator_cmd = SimulatorCmd(self)
+        self.sketch_mode_cmd = SketchModeCmd(self, self.doc_editor)
 
         # Add a key controller to handle ESC key for exiting simulation mode
         key_controller = Gtk.EventControllerKey()
@@ -270,10 +270,12 @@ class MainWindow(Adw.ApplicationWindow):
             self, width_mm=width_mm, height_mm=height_mm
         )
         self.main_stack.add_named(self.sketch_studio, "sketch")
-        self.active_sketch_workpiece: Optional[WorkPiece] = None
-        self._is_editing_new_sketch = False
-        self.sketch_studio.finished.connect(self._on_sketch_finished)
-        self.sketch_studio.cancelled.connect(self._on_sketch_cancelled)
+        self.sketch_studio.finished.connect(
+            self.sketch_mode_cmd.on_sketch_finished
+        )
+        self.sketch_studio.cancelled.connect(
+            self.sketch_mode_cmd.on_sketch_cancelled
+        )
 
         self.surface = WorkSurface(
             editor=self.doc_editor,
@@ -422,10 +424,12 @@ class MainWindow(Adw.ApplicationWindow):
         self.asset_list_view = AssetListView(self.doc_editor)
         self.asset_list_view.set_margin_end(12)
         right_pane_box.append(self.asset_list_view)
-        self.asset_list_view.add_sketch_clicked.connect(self.on_new_sketch)
+        self.asset_list_view.add_sketch_clicked.connect(
+            self.sketch_mode_cmd.on_new_sketch
+        )
         self.asset_list_view.add_stock_clicked.connect(self.on_add_child)
         self.asset_list_view.sketch_activated.connect(
-            self._on_sketch_definition_activated
+            self.sketch_mode_cmd.on_sketch_definition_activated
         )
 
         # Add the Layer list view
@@ -485,7 +489,7 @@ class MainWindow(Adw.ApplicationWindow):
 
         # Connect new signal from WorkSurface for edit sketch requests
         self.surface.edit_sketch_requested.connect(
-            self._on_edit_sketch_requested
+            self.sketch_mode_cmd.on_edit_sketch_requested
         )
         self.surface.edit_stock_item_requested.connect(
             self._on_edit_stock_item_requested
@@ -559,139 +563,6 @@ class MainWindow(Adw.ApplicationWindow):
         """Handler for adding a new stock item, called from AssetListView."""
         self.doc_editor.stock.add_stock()
 
-    def enter_sketch_mode(
-        self, workpiece: WorkPiece, is_new_sketch: bool = False
-    ):
-        """Switches the view to the SketchStudio to edit a workpiece."""
-        sketch = None
-        if workpiece.sketch_uid:
-            sketch = cast(
-                Optional["Sketch"],
-                self.doc_editor.doc.get_asset_by_uid(workpiece.sketch_uid),
-            )
-
-        if not sketch:
-            logger.warning("Attempted to edit a non-sketch workpiece.")
-            return
-
-        try:
-            self.active_sketch_workpiece = workpiece
-            self._is_editing_new_sketch = is_new_sketch
-            self.sketch_studio.set_sketch(sketch)
-            self.main_stack.set_visible_child_name("sketch")
-
-            # Swap menu and actions
-            self.menubar.set_menu_model(self.sketch_studio.menu_model)
-            self.insert_action_group("sketch", self.sketch_studio.action_group)
-            self.add_controller(self.sketch_studio.shortcut_controller)
-        except Exception as e:
-            logger.error(
-                f"Failed to load sketch for editing: {e}", exc_info=True
-            )
-
-    def exit_sketch_mode(self):
-        """Returns to the main 2D/3D view from the SketchStudio."""
-        # Restore menu and actions
-        self.menubar.set_menu_model(self.menu_model)
-        self.insert_action_group("sketch", None)
-        self.remove_controller(self.sketch_studio.shortcut_controller)
-
-        self.main_stack.set_visible_child_name("main")
-        self.active_sketch_workpiece = None
-        self._is_editing_new_sketch = False
-
-    def enter_sketch_definition_mode(self, sketch: Sketch):
-        """Switches to SketchStudio to edit a sketch definition directly."""
-        try:
-            self.active_sketch_workpiece = None
-            self._is_editing_new_sketch = False
-            self.sketch_studio.set_sketch(sketch)
-            self.main_stack.set_visible_child_name("sketch")
-
-            # Swap menu and actions
-            self.menubar.set_menu_model(self.sketch_studio.menu_model)
-            self.insert_action_group("sketch", self.sketch_studio.action_group)
-            self.add_controller(self.sketch_studio.shortcut_controller)
-        except Exception as e:
-            logger.error(
-                f"Failed to load sketch definition for editing: {e}",
-                exc_info=True,
-            )
-
-    def _on_sketch_definition_activated(self, sender, *, sketch: Sketch):
-        """Handles activation of a sketch definition from the sketch list."""
-        self.enter_sketch_definition_mode(sketch)
-
-    def _on_sketch_finished(self, sender, *, sketch: Sketch):
-        """Handles the 'finished' signal from the SketchStudio."""
-        cmd = UpdateSketchCommand(
-            doc=self.doc_editor.doc,
-            sketch_uid=sketch.uid,
-            new_sketch_dict=sketch.to_dict(),
-        )
-        self.doc_editor.history_manager.execute(cmd)
-
-        if self._is_editing_new_sketch:
-            center_x = self.sketch_studio.width_mm / 2
-            center_y = self.sketch_studio.height_mm / 2
-            self.doc_editor.edit.add_sketch_instance(
-                sketch.uid, (center_x, center_y)
-            )
-
-        self.exit_sketch_mode()
-
-    def _on_sketch_cancelled(self, sender):
-        """Handles the 'cancelled' signal from the SketchStudio."""
-        was_new = self._is_editing_new_sketch
-        self.exit_sketch_mode()
-
-        if was_new:
-            # If we just created this sketch, remove it from the doc by
-            # undoing the creation command.
-            self.doc_editor.history_manager.undo()
-
-    def on_new_sketch(self, action=None, param=None):
-        """Action handler for creating a new sketch definition."""
-        # 1. Create a new, empty sketch object
-        new_sketch = Sketch(name=_("New Sketch"))
-
-        # 2. Create and execute an undoable command to add it to the document
-        command = ListItemCommand(
-            owner_obj=self.doc_editor.doc,
-            item=new_sketch,
-            undo_command="remove_asset",
-            redo_command="add_asset",
-            name=_("Create Sketch Definition"),
-        )
-        self.doc_editor.history_manager.execute(command)
-
-        # 3. Immediately enter edit mode for the new definition
-        self.enter_sketch_definition_mode(new_sketch)
-        self._is_editing_new_sketch = True
-
-    def on_edit_sketch(self, action, param):
-        """Action handler for editing the selected sketch."""
-        selected_items = self.surface.get_selected_workpieces()
-        if len(selected_items) == 1 and isinstance(
-            selected_items[0], WorkPiece
-        ):
-            wp = selected_items[0]
-            if wp.sketch_uid:
-                self.enter_sketch_mode(wp)
-            else:
-                self._on_editor_notification(
-                    self, _("Selected item is not an editable sketch.")
-                )
-        else:
-            self._on_editor_notification(
-                self, _("Please select a single sketch to edit.")
-            )
-
-    def _on_edit_sketch_requested(self, sender, *, workpiece: WorkPiece):
-        """Signal handler for edit sketch requests from the surface."""
-        logger.debug(f"Sketch edit requested for workpiece {workpiece.name}")
-        self.enter_sketch_mode(workpiece)
-
     def _on_edit_stock_item_requested(self, sender, *, stock_item: StockItem):
         """Signal handler for edit stock item requests from the surface."""
         logger.debug(
@@ -699,37 +570,6 @@ class MainWindow(Adw.ApplicationWindow):
         )
         dialog = StockPropertiesDialog(self, stock_item, self.doc_editor)
         dialog.present()
-
-    def on_export_sketch(self, action, param):
-        """Action handler for exporting the selected sketch."""
-        selected_items = self.surface.get_selected_workpieces()
-        if len(selected_items) == 1:
-            # The ActionManager already validates that this is a sketch-based
-            # workpiece
-            file_dialogs.show_export_sketch_dialog(
-                self, self._on_export_sketch_save_response, selected_items[0]
-            )
-        else:
-            self._on_editor_notification(
-                self, _("Please select a single sketch to export.")
-            )
-
-    def _on_export_sketch_save_response(self, dialog, result, user_data):
-        """Callback for the export sketch dialog."""
-        try:
-            file = dialog.save_finish(result)
-            if not file:
-                return
-            file_path = Path(file.get_path())
-
-            selected = self.surface.get_selected_workpieces()
-            if len(selected) != 1:
-                return
-
-            self.doc_editor.file.export_sketch_to_path(file_path, selected[0])
-
-        except GLib.Error as e:
-            logger.error(f"Error saving file: {e.message}")
 
     def _show_unsaved_changes_dialog(self, callback):
         """
