@@ -604,18 +604,21 @@ class WorkSurface(WorldSurface):
                 f"for {len(list(self.find_by_type(WorkPieceElement)))} "
                 "WorkPieceElements"
             )
+            ppm_x, _ = self.get_view_scale()
+            needs_rerender = False
             for elem in self.find_by_type(WorkPieceElement):
                 wp_view = cast(WorkPieceElement, elem)
-                wp_view.trigger_view_update()
+                if wp_view.trigger_view_update(ppm_x):
+                    needs_rerender = True
                 wp_view.update_handle_transforms()
 
-            # Update pipeline view context to trigger re-rendering
-            # This is the Phase2 approach: The Pipeline decides when to render
-            logger.debug(
-                "_rebuild_view_transform: Calling "
-                "_update_pipeline_view_context"
-            )
-            self._update_pipeline_view_context()
+            # Update pipeline view context only if re-rendering is needed
+            if needs_rerender:
+                logger.debug(
+                    "_rebuild_view_transform: Calling "
+                    "_update_pipeline_view_context"
+                )
+                self._update_pipeline_view_context()
 
         # Reposition the laser dot after any view change
         self.set_laser_dot_position(

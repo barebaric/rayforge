@@ -74,6 +74,7 @@ class WorkPieceElement(CanvasElement):
         }
         self._color_set: Optional[ColorSet] = None
         self._last_style_context_hash = -1
+        self._rendered_ppm: float = 0.0
 
         # The element's geometry is a 1x1 unit square.
         # The transform matrix handles all scaling and positioning.
@@ -158,6 +159,7 @@ class WorkPieceElement(CanvasElement):
         element's content or size changes.
         """
         logger.debug(f"Full invalidation for workpiece '{self.data.name}'")
+        self._rendered_ppm = 0.0
         # Clear the local artifact cache to prevent drawing stale vectors
         self._artifact_cache.clear()
 
@@ -169,13 +171,24 @@ class WorkPieceElement(CanvasElement):
                 self.clear_ops_surface(step.uid)
         super().trigger_update()
 
-    def trigger_view_update(self):
+    def trigger_view_update(self, ppm: float = 0.0) -> bool:
         """
         Invalidates resolution-dependent caches (raster surfaces) and
         triggers a re-render. This is called on view changes like zooming.
         It preserves expensive-to-generate data like vector recordings.
+
+        Only re-renders if the new resolution (ppm) is higher than what
+        was previously rendered, since scaling down an existing image
+        doesn't require re-rendering.
+
+        Returns True if a re-render was triggered, False if skipped.
         """
+        if ppm <= self._rendered_ppm:
+            return False
+
         logger.debug(f"View update for workpiece '{self.data.name}'")
+        self._rendered_ppm = ppm
+
         # 1. Invalidate the base image buffer.
         self._surface = None
 
@@ -188,6 +201,7 @@ class WorkPieceElement(CanvasElement):
         # 3. Trigger a re-render of everything at the new resolution.
         self.trigger_ops_rerender()
         super().trigger_update()  # Re-renders the base image.
+        return True
 
     def _on_view_artifact_updated(
         self,
