@@ -40,7 +40,7 @@ class TestArtifactManagerCache(unittest.TestCase):
         self.manager.cache_handle(key, handle, generation_id=1)
 
         composite_key = make_composite_key(key, 1)
-        entry = self.manager._get_ledger_entry(composite_key)
+        entry = self.manager.get_ledger_entry(composite_key)
         assert entry is not None
         self.assertIs(entry.handle, handle)
         self.assertEqual(entry.generation_id, 1)
@@ -56,7 +56,7 @@ class TestArtifactManagerCache(unittest.TestCase):
         self.manager.cache_handle(key, new_handle, generation_id=1)
 
         composite_key = make_composite_key(key, 1)
-        entry = self.manager._get_ledger_entry(composite_key)
+        entry = self.manager.get_ledger_entry(composite_key)
         assert entry is not None
         self.assertIs(entry.handle, new_handle)
         self.mock_store.retain.assert_called_with(new_handle)
@@ -120,10 +120,10 @@ class TestDependencyTracking(unittest.TestCase):
         self.manager.register_dependency(workpiece_key, step_key)
         self.manager.register_dependency(step_key, job_key)
 
-        dependents = self.manager._get_dependents(workpiece_key)
+        dependents = self.manager.get_dependents(workpiece_key)
         self.assertEqual(dependents, [step_key])
 
-        dependents = self.manager._get_dependents(step_key)
+        dependents = self.manager.get_dependents(step_key)
         self.assertEqual(dependents, [job_key])
 
 

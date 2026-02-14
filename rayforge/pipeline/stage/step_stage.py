@@ -233,7 +233,7 @@ class StepPipelineStage(PipelineStage):
 
         self._task_manager.run_process(
             make_step_artifact_in_subprocess,
-            self._artifact_manager._store,
+            self._artifact_manager.get_store(),
             assembly_info,
             step.uid,
             generation_id,

@@ -52,7 +52,7 @@ class WorkPiecePipelineStage(PipelineStage):
         """Invalidates all workpiece artifacts associated with a step."""
         logger.debug(f"Invalidating workpiece artifacts for step '{step_uid}'")
         step_key = ArtifactKey.for_step(step_uid)
-        keys_to_clean = self._artifact_manager._get_dependents(step_key)
+        keys_to_clean = self._artifact_manager.get_dependents(step_key)
         logger.debug(
             f"WorkPiecePipelineStage: keys_to_clean for step '{step_uid}': "
             f"{keys_to_clean}"
@@ -141,7 +141,7 @@ class WorkPiecePipelineStage(PipelineStage):
         ledger. Returns True if task should be processed, False otherwise.
         """
         composite_key = make_composite_key(ledger_key, task_generation_id)
-        entry = self._artifact_manager._get_ledger_entry(composite_key)
+        entry = self._artifact_manager.get_ledger_entry(composite_key)
         if entry is None:
             logger.debug(
                 f"[{key}] Ledger entry missing. Ignoring task completion."
@@ -408,7 +408,7 @@ class WorkPiecePipelineStage(PipelineStage):
 
         self._task_manager.run_process(
             make_workpiece_artifact_in_subprocess,
-            self._artifact_manager._store,
+            self._artifact_manager.get_store(),
             workpiece_dict,
             step.opsproducer_dict,
             step.modifiers_dicts,
