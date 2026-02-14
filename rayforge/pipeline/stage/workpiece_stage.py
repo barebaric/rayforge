@@ -3,6 +3,7 @@ import logging
 import math
 from typing import TYPE_CHECKING, Dict, Optional, Tuple
 from copy import deepcopy
+from blinker import Signal
 from ...core.ops import Ops, ScanLinePowerCommand
 from ...shared.tasker.task import Task
 from ...shared.util.size import sizes_are_close
@@ -18,6 +19,7 @@ if TYPE_CHECKING:
     from ...core.workpiece import WorkPiece
     from ...machine.models.machine import Machine
     from ...shared.tasker.manager import TaskManager
+    from ..context import GenerationContext
     from ..artifact import BaseArtifactHandle
     from ..artifact.manager import ArtifactManager
     from ..dag.scheduler import DagScheduler
@@ -28,7 +30,7 @@ logger = logging.getLogger(__name__)
 class WorkPiecePipelineStage(PipelineStage):
     """
     Provides access to workpiece artifacts and handles invalidation.
-    Task launching is delegated to the DagScheduler.
+    Task launching creation, and completion handling reside here.
     """
 
     def __init__(
@@ -41,6 +43,8 @@ class WorkPiecePipelineStage(PipelineStage):
         super().__init__(task_manager, artifact_manager)
         self._machine = machine
         self._scheduler = scheduler
+        self.generation_starting = Signal()
+        self.generation_finished = Signal()
 
     def invalidate_for_step(self, step_uid: str):
         """Invalidates all workpiece artifacts associated with a step."""
@@ -233,8 +237,8 @@ class WorkPiecePipelineStage(PipelineStage):
                 f"[{key}] Task was canceled but artifact already committed, "
                 "sending finished signal with handle."
             )
-            self._scheduler.generation_finished.send(
-                self._scheduler,
+            self.generation_finished.send(
+                self,
                 step=step,
                 workpiece=workpiece,
                 handle=handle,
@@ -248,8 +252,8 @@ class WorkPiecePipelineStage(PipelineStage):
             "sending finished signal."
         )
         self._scheduler.mark_node_dirty(ledger_key)
-        self._scheduler.generation_finished.send(
-            self._scheduler,
+        self.generation_finished.send(
+            self,
             step=step,
             workpiece=workpiece,
             handle=None,
@@ -266,6 +270,7 @@ class WorkPiecePipelineStage(PipelineStage):
         workpiece: "WorkPiece",
         task_generation_id: int,
         generation_id: int,
+        context: Optional["GenerationContext"],
     ) -> tuple[bool, Optional["BaseArtifactHandle"]]:
         """
         Handles completed task status.
@@ -276,7 +281,7 @@ class WorkPiecePipelineStage(PipelineStage):
             task.result()
 
             if self.check_result_stale(key, workpiece, generation_id):
-                self._scheduler._launch_workpiece_task(step, workpiece)
+                self.launch_task(step, workpiece, generation_id, context)
                 return False, None
         except Exception as e:
             logger.error(f"[{key}] Error processing result for {key}: {e}")
@@ -320,6 +325,221 @@ class WorkPiecePipelineStage(PipelineStage):
         node = self._scheduler.graph.find_node(key)
         if node is not None:
             node.state = NodeState.ERROR
+
+    def launch_task(
+        self,
+        step: "Step",
+        workpiece: "WorkPiece",
+        generation_id: int,
+        context: Optional["GenerationContext"],
+    ):
+        """Starts the asynchronous task to generate operations."""
+        key = ArtifactKey.for_workpiece(workpiece.uid, step.uid)
+        ledger_key = key
+
+        if not self.validate_for_launch(key, workpiece):
+            logger.debug(
+                f"Validation failed for launch "
+                f"step_uid={step.uid}, workpiece_uid={workpiece.uid}"
+            )
+            return
+
+        self.generation_starting.send(
+            self,
+            step=step,
+            workpiece=workpiece,
+            generation_id=generation_id,
+        )
+
+        prep_result = self.prepare_task_settings(step)
+        if prep_result is None:
+            logger.debug(
+                f"prep_result is None for "
+                f"step_uid={step.uid}, workpiece_uid={workpiece.uid}"
+            )
+            return
+        settings, laser_dict = prep_result
+
+        workpiece_dict = self.prepare_workpiece_dict(workpiece)
+
+        node = self._scheduler.graph.find_node(ledger_key)
+        if node is not None:
+            node.state = NodeState.PROCESSING
+
+        if context is not None:
+            context.add_task(key)
+
+        self.create_and_register_task(
+            key,
+            ledger_key,
+            workpiece_dict,
+            step,
+            workpiece,
+            settings,
+            laser_dict,
+            generation_id,
+            workpiece.size,
+            context,
+        )
+
+    def create_and_register_task(
+        self,
+        key: ArtifactKey,
+        ledger_key: ArtifactKey,
+        workpiece_dict: Dict,
+        step: "Step",
+        workpiece: "WorkPiece",
+        settings: Dict,
+        laser_dict: Optional[Dict],
+        generation_id: int,
+        workpiece_size: Tuple[float, float],
+        context: Optional["GenerationContext"],
+    ):
+        """
+        Creates subprocess task and registers it in active_tasks.
+        """
+        from .workpiece_runner import (
+            make_workpiece_artifact_in_subprocess,
+        )
+
+        task_key = key
+
+        self._task_manager.run_process(
+            make_workpiece_artifact_in_subprocess,
+            self._artifact_manager._store,
+            workpiece_dict,
+            step.opsproducer_dict,
+            step.modifiers_dicts,
+            step.per_workpiece_transformers_dicts,
+            laser_dict,
+            settings,
+            generation_id,
+            workpiece_size,
+            "workpiece",
+            key=task_key,
+            when_done=lambda t: self._on_task_complete(
+                t,
+                task_key,
+                ledger_key,
+                generation_id,
+                step,
+                workpiece,
+                context,
+            ),
+            when_event=lambda task, event_name, data: self._on_task_event(
+                task, event_name, data, step.uid
+            ),
+        )
+
+    def _on_task_event(
+        self, task: "Task", event_name: str, data: dict, step_uid: str
+    ):
+        """Handles events from a background task."""
+        key = task.key
+        ledger_key = key
+
+        handle_dict = data.get("handle_dict")
+        generation_id = data.get("generation_id")
+
+        if generation_id is None:
+            logger.error(
+                f"[{key}] Task event '{event_name}' missing "
+                f"generation id. Ignoring."
+            )
+            return
+
+        if handle_dict is None and event_name != "artifact_created":
+            logger.error(
+                f"[{key}] Task event '{event_name}' missing handle. Ignoring."
+            )
+            return
+
+        node = self._scheduler.graph.find_node(ledger_key)
+        if node is None or node.state != NodeState.PROCESSING:
+            logger.debug(
+                f"[{key}] No PROCESSING node found for event '{event_name}'. "
+                f"Ignoring."
+            )
+            return
+
+        try:
+            if handle_dict is None:
+                handle = None
+            else:
+                handle = self._artifact_manager.adopt_artifact(
+                    key, handle_dict
+                )
+
+            if event_name == "artifact_created":
+                self.handle_artifact_created(
+                    key, ledger_key, handle, generation_id, step_uid
+                )
+                return
+
+            if event_name == "visual_chunk_ready":
+                self.handle_visual_chunk_ready(
+                    key, handle, generation_id, step_uid
+                )
+        except Exception as e:
+            logger.error(
+                f"Failed to process event '{event_name}': {e}", exc_info=True
+            )
+
+    def _on_task_complete(
+        self,
+        task: "Task",
+        key: ArtifactKey,
+        ledger_key: ArtifactKey,
+        task_generation_id: int,
+        step: "Step",
+        workpiece: "WorkPiece",
+        context: Optional["GenerationContext"],
+    ):
+        """Callback for when an ops generation task finishes."""
+        if context is not None:
+            context.task_did_finish(key)
+
+        if not self.validate_task_completion(
+            key, ledger_key, task_generation_id
+        ):
+            return
+
+        task_status = task.get_status()
+        logger.debug(f"[{key}] Task status is '{task_status}'.")
+
+        if task_status == "canceled":
+            self.handle_canceled_task(
+                key, ledger_key, step, workpiece, task_generation_id
+            )
+            return
+
+        handle = None
+        if task_status == "completed":
+            continue_processing, handle = self.handle_completed_task(
+                key,
+                ledger_key,
+                task,
+                step,
+                workpiece,
+                task_generation_id,
+                task_generation_id,
+                context,
+            )
+            if not continue_processing:
+                return
+        else:
+            self.handle_failed_task(
+                ledger_key, step, workpiece, task_generation_id
+            )
+
+        self.generation_finished.send(
+            self,
+            step=step,
+            workpiece=workpiece,
+            handle=handle,
+            generation_id=task_generation_id,
+            task_status=task_status,
+        )
 
     def get_artifact(
         self,

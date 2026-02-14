@@ -3,6 +3,7 @@ import logging
 from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
 from blinker import Signal
 from ...shared.util.size import sizes_are_close
+from ...shared.tasker.task import Task
 from ..artifact import StepOpsArtifactHandle, StepRenderArtifactHandle
 from ..artifact.key import ArtifactKey
 from ..dag.node import NodeState
@@ -12,7 +13,7 @@ if TYPE_CHECKING:
     from ...core.step import Step
     from ...core.workpiece import WorkPiece
     from ...machine.models.machine import Machine
-    from ...shared.tasker.task import Task
+    from ..context import GenerationContext
     from ...shared.tasker.manager import TaskManager
     from ..artifact import BaseArtifactHandle
     from ..artifact.manager import ArtifactManager
@@ -27,7 +28,7 @@ StepKey = str
 class StepPipelineStage(PipelineStage):
     """
     Provides access to step artifacts and handles invalidation.
-    Task launching is delegated to the DagScheduler.
+    Task launching, creation, and completion handling reside here.
     """
 
     def __init__(
@@ -44,6 +45,7 @@ class StepPipelineStage(PipelineStage):
         self._retained_handles: Dict[str, List["BaseArtifactHandle"]] = {}
 
         self.generation_finished = Signal()
+        self.assembly_starting = Signal()
         self.render_artifact_ready = Signal()
         self.time_estimate_ready = Signal()
 
@@ -121,6 +123,133 @@ class StepPipelineStage(PipelineStage):
                 )
         except Exception as e:
             logger.error(f"Error handling task event '{event_name}': {e}")
+
+    def on_task_complete(
+        self,
+        task: "Task",
+        task_key: ArtifactKey,
+        step: "Step",
+        task_generation_id: int,
+        context: Optional["GenerationContext"],
+    ):
+        """Callback for when a step assembly task finishes."""
+        if context is not None:
+            context.task_did_finish(task_key)
+
+        step_uid = step.uid
+        ledger_key = ArtifactKey.for_step(step_uid)
+
+        self.release_retained_handles(step_uid)
+
+        if not self._artifact_manager.is_generation_current(
+            ledger_key, task_generation_id
+        ):
+            logger.debug(f"Ignoring stale step completion for {step_uid}")
+            return
+
+        if task.get_status() == "completed":
+            try:
+                task.result()
+                render_handle = self._artifact_manager.get_step_render_handle(
+                    step_uid
+                )
+                logger.debug(
+                    f"_on_step_task_complete: render_handle={render_handle}"
+                )
+                self._artifact_manager.complete_generation(
+                    ledger_key,
+                    task_generation_id,
+                )
+                node = self._scheduler.graph.find_node(ledger_key)
+                if node is not None:
+                    node.state = NodeState.VALID
+                logger.debug("_on_step_task_complete: ops_handle set to DONE")
+            except Exception as e:
+                logger.error(f"Error on step assembly result: {e}")
+                node = self._scheduler.graph.find_node(ledger_key)
+                if node is not None:
+                    node.state = NodeState.ERROR
+        else:
+            logger.warning(f"Step assembly for {step_uid} failed.")
+            node = self._scheduler.graph.find_node(ledger_key)
+            if node is not None:
+                node.state = NodeState.ERROR
+
+        self.generation_finished.send(
+            self, step=step, generation_id=task_generation_id
+        )
+
+    def launch_task(
+        self,
+        step: "Step",
+        generation_id: int,
+        context: Optional["GenerationContext"],
+    ):
+        """Starts the asynchronous task to assemble a step artifact."""
+        if not self.validate_dependencies(step):
+            logger.debug(
+                f"Step assembly dependencies not met for step_uid={step.uid}"
+            )
+            return
+
+        assembly_info, retained_handles = self.collect_assembly_info(
+            step, generation_id
+        )
+        if not assembly_info:
+            for handle in retained_handles:
+                self._artifact_manager.release_handle(handle)
+            logger.debug(f"No assembly info for step_uid={step.uid}")
+            return
+
+        self.store_retained_handles(step.uid, retained_handles)
+
+        if step.layer:
+            for wp in step.layer.all_workpieces:
+                handle = self._artifact_manager.get_workpiece_handle(
+                    ArtifactKey.for_workpiece(wp.uid, step.uid),
+                    generation_id,
+                )
+                if handle:
+                    self.assembly_starting.send(
+                        self,
+                        step=step,
+                        workpiece=wp,
+                        handle=handle,
+                    )
+
+        ledger_key = ArtifactKey.for_step(step.uid)
+        node = self._scheduler.graph.find_node(ledger_key)
+        if node is not None:
+            node.state = NodeState.PROCESSING
+
+        from ..stage.step_runner import make_step_artifact_in_subprocess
+
+        task_key = ArtifactKey.for_step(step.uid)
+
+        if context is not None:
+            context.add_task(task_key)
+
+        assert self._machine is not None
+
+        self._task_manager.run_process(
+            make_step_artifact_in_subprocess,
+            self._artifact_manager._store,
+            assembly_info,
+            step.uid,
+            generation_id,
+            step.per_step_transformers_dicts,
+            self._machine.max_cut_speed,
+            self._machine.max_travel_speed,
+            self._machine.acceleration,
+            "step",
+            key=task_key,
+            when_done=lambda t: self.on_task_complete(
+                t, task_key, step, generation_id, context
+            ),
+            when_event=lambda task, event_name, data: (
+                self.handle_task_event(task, event_name, data, step)
+            ),
+        )
 
     def get_estimate(self, step_uid: StepKey) -> Optional[float]:
         """Retrieves a cached time estimate if available."""
