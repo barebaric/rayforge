@@ -44,6 +44,7 @@ from ..image import (
     ImportManifest,
     Importer,
 )
+from ..image.sketch.exporter import SketchExporter
 from ..image.structures import ImportPayload, ImportResult, ParsingResult
 from ..pipeline.artifact import JobArtifact, JobArtifactHandle
 from .layout.align import PositionAtStrategy
@@ -904,6 +905,26 @@ class FileCmd:
                 )
 
         self.assemble_job_in_background(when_done=_on_export_assembly_done)
+
+    def export_sketch_to_path(self, file_path: Path, workpiece: WorkPiece):
+        """
+        Exports a sketch-based workpiece to a file.
+        This is a synchronous method for the UI.
+        """
+        try:
+            exporter = SketchExporter(workpiece)
+            data = exporter.export()
+            file_path.write_bytes(data)
+            logger.info(f"Successfully exported sketch to {file_path}")
+            msg = _("Sketch exported successfully.")
+            self._editor.notification_requested.send(self, message=msg)
+            return True
+        except Exception as e:
+            logger.error(f"Failed to export sketch to {file_path}", exc_info=e)
+            self._editor.notification_requested.send(
+                self, message=_("Failed to save sketch file.")
+            )
+            return False
 
     def save_project_to_path(self, file_path: Path):
         """

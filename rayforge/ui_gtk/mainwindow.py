@@ -19,7 +19,6 @@ from ..core.stock import StockItem
 from ..core.undo import Command, HistoryManager, ListItemCommand
 from ..core.workpiece import WorkPiece
 from ..doceditor.editor import DocEditor
-from ..image.sketch.exporter import SketchExporter
 from ..machine.cmd import MachineCmd
 from ..machine.driver.driver import DeviceState, DeviceStatus, Axis
 from ..machine.driver.dummy import NoDeviceDriver
@@ -723,36 +722,14 @@ class MainWindow(Adw.ApplicationWindow):
                 return
             file_path = Path(file.get_path())
 
-            # Re-verify selection to be safe
             selected = self.surface.get_selected_workpieces()
             if len(selected) != 1:
                 return
 
-            wp = selected[0]
-            exporter = SketchExporter(wp)
-            data = exporter.export()
-
-            try:
-                file_path.write_bytes(data)
-                self._on_editor_notification(
-                    self, _("Sketch exported successfully.")
-                )
-            except Exception as e:
-                logger.error(
-                    f"Failed to write sketch file: {e}", exc_info=True
-                )
-                self._on_editor_notification(
-                    self, _("Failed to save sketch file.")
-                )
+            self.doc_editor.file.export_sketch_to_path(file_path, selected[0])
 
         except GLib.Error as e:
             logger.error(f"Error saving file: {e.message}")
-            return
-        except ValueError as e:
-            logger.error(f"Error exporting sketch: {e}")
-            self._on_editor_notification(
-                self, _("Error exporting sketch: {error}").format(error=str(e))
-            )
 
     def _show_unsaved_changes_dialog(self, callback):
         """
