@@ -353,8 +353,7 @@ class TestPipeline:
         self, doc, real_workpiece, mock_task_mgr, context_initializer
     ):
         """
-        Tests that job generation fails if step artifacts are not ready,
-        and that it triggers a reconciliation.
+        Tests that job generation fails if step artifacts are not ready.
         """
         # Arrange
         layer = self._setup_doc_with_workpiece(doc, real_workpiece)
@@ -369,10 +368,6 @@ class TestPipeline:
             context_initializer.machine,
         )
 
-        # At this point, workpiece generation has been triggered but not
-        # completed. The step artifact is therefore not DONE.
-        # We wrap reconcile_data to check if it gets called.
-        pipeline.reconcile_data = MagicMock(wraps=pipeline.reconcile_data)
         callback_mock = MagicMock()
 
         # Act
@@ -383,9 +378,6 @@ class TestPipeline:
         error = callback_mock.call_args[0][1]
         assert isinstance(error, RuntimeError)
         assert "Job dependencies are not ready" in str(error)
-
-        # Assert that reconcile_data was called to try and fix dependencies
-        pipeline.reconcile_data.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_rapid_invalidation_does_not_corrupt_busy_state(

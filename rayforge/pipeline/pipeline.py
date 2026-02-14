@@ -1069,7 +1069,6 @@ class Pipeline:
                 break
 
         if not all_deps_ready:
-            self.reconcile_data()
             when_done(
                 None,
                 RuntimeError(
