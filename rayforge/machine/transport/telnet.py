@@ -96,6 +96,29 @@ class TelnetTransport(Transport):
         self.writer.write(data)
         await self.writer.drain()
 
+    async def purge(self) -> None:
+        """
+        Clear any buffered data in the telnet transport.
+
+        Discards any pending data in the receive buffer to resync
+        communications. Does not affect the connection state.
+        """
+        if not self.reader:
+            return
+
+        try:
+            while True:
+                data = await asyncio.wait_for(
+                    self.reader.read(1024), timeout=0.1
+                )
+                if not data:
+                    break
+                logger.debug(f"Purged data: {data!r}")
+        except asyncio.TimeoutError:
+            pass
+        except Exception as e:
+            logger.warning(f"Error during purge: {e}")
+
     async def _receive_loop(self) -> None:
         while self.reader:
             try:

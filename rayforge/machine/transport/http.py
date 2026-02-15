@@ -75,6 +75,15 @@ class HttpTransport(Transport):
                     self.status_changed.send(self, message=err)
                     raise IOError(err)
 
+    async def purge(self) -> None:
+        """
+        Clear any buffered data in the HTTP transport.
+
+        HTTP transport uses a new session for each request and does not
+        maintain a persistent receive buffer. This method is a no-op.
+        """
+        pass
+
     async def _receive_loop(self, session) -> None:
         """
         Listen for server-sent events from streaming endpoint.

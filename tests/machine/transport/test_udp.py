@@ -255,3 +255,53 @@ class TestUdpTransportIntegration:
 
         with pytest.raises(OSError, match="Resolution failed"):
             UdpTransport(host="invalid.hostname", port=1234)
+
+    async def test_purge_on_connected_transport(self, udp_server):
+        """Test that purge clears buffered data from the reader."""
+        host, port = udp_server.host, udp_server.port
+        transport = UdpTransport(host=host, port=port)
+
+        try:
+            await transport.connect()
+            assert transport.is_connected
+
+            # Transport sends "ping" so server knows our address
+            await transport.send(b"ping")
+
+            # Wait for server to register ping
+            for _ in range(20):
+                if udp_server.last_addr:
+                    break
+                await asyncio.sleep(0.05)
+
+            assert udp_server.last_addr is not None
+
+            # Server sends buffered data
+            buffered_msg = b"buffered"
+            await udp_server.send_to_last_client(buffered_msg)
+            await asyncio.sleep(0.1)
+
+            # Purge should read and discard the buffered data
+            await transport.purge()
+
+            # Send new data and verify we receive it (not old buffered data)
+            new_msg = b"new"
+            await udp_server.send_to_last_client(new_msg)
+            received_tracker = SignalTracker(transport.received)
+
+            for _ in range(20):
+                if received_tracker.last_data == new_msg:
+                    break
+                await asyncio.sleep(0.05)
+
+            assert received_tracker.last_data == new_msg
+        finally:
+            await transport.disconnect()
+
+    async def test_purge_on_disconnected_transport(self):
+        """Test that purge on a disconnected transport is a no-op."""
+        transport = UdpTransport(host="127.0.0.1", port=1234)
+        assert not transport.is_connected
+
+        # Should not raise any errors
+        await transport.purge()

@@ -241,3 +241,43 @@ class TestTelnetTransportIntegration:
         assert last_call is not None
         final_status = last_call["kwargs"]["status"]
         assert final_status == TransportStatus.DISCONNECTED
+
+    async def test_purge_on_connected_transport(self, telnet_server):
+        """Test that purge clears buffered data from the reader."""
+        host, port = telnet_server.host, telnet_server.port
+        transport = TelnetTransport(host=host, port=port)
+
+        try:
+            await transport.connect()
+            assert transport.is_connected
+
+            # Send buffered data from server
+            server_message = b"buffered\r\n"
+            await telnet_server.send_to_clients(server_message)
+            await asyncio.sleep(0.1)
+
+            # Purge should read and discard the buffered data
+            await transport.purge()
+
+            # Send new data and verify we receive it (not the old buffered
+            # data)
+            new_message = b"new\r\n"
+            await telnet_server.send_to_clients(new_message)
+            received_tracker = SignalTracker(transport.received)
+
+            for _ in range(10):
+                if received_tracker.last_data == new_message:
+                    break
+                await asyncio.sleep(0.1)
+
+            assert received_tracker.last_data == new_message
+        finally:
+            await transport.disconnect()
+
+    async def test_purge_on_disconnected_transport(self):
+        """Test that purge on a disconnected transport is a no-op."""
+        transport = TelnetTransport(host="127.0.0.1", port=65530)
+        assert not transport.is_connected
+
+        # Should not raise any errors
+        await transport.purge()
