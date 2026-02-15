@@ -10,6 +10,7 @@ from typing import (
     Set,
     Tuple,
     Union,
+    TYPE_CHECKING,
 )
 from .base import BaseArtifact
 from .handle import BaseArtifactHandle, create_handle_from_dict
@@ -20,6 +21,9 @@ from .step_ops import StepOpsArtifactHandle
 from .step_render import StepRenderArtifactHandle
 from .store import ArtifactStore
 from .workpiece import WorkPieceArtifactHandle
+
+if TYPE_CHECKING:
+    from ..dag.node import NodeState
 
 logger = logging.getLogger(__name__)
 
@@ -115,6 +119,63 @@ class ArtifactManager:
         if entry is None:
             return False
         return entry.generation_id == generation_id
+
+    def get_state(
+        self, key: ArtifactKey, generation_id: GenerationID
+    ) -> "NodeState":
+        """
+        Get the state of an artifact entry.
+
+        Args:
+            key: The ArtifactKey for the entry.
+            generation_id: The generation ID for the entry.
+
+        Returns:
+            The NodeState of the entry, or DIRTY if not found.
+        """
+        from ..dag.node import NodeState
+
+        composite_key = make_composite_key(key, generation_id)
+        entry = self._ledger.get(composite_key)
+        if entry is None:
+            return NodeState.DIRTY
+        return entry.state
+
+    def set_state(
+        self,
+        key: ArtifactKey,
+        generation_id: GenerationID,
+        state: "NodeState",
+    ) -> None:
+        """
+        Set the state of an artifact entry.
+
+        Args:
+            key: The ArtifactKey for the entry.
+            generation_id: The generation ID for the entry.
+            state: The new NodeState to set.
+        """
+        composite_key = make_composite_key(key, generation_id)
+        entry = self._ledger.get(composite_key)
+        if entry is not None:
+            entry.state = state
+
+    def has_artifact(
+        self, key: ArtifactKey, generation_id: GenerationID
+    ) -> bool:
+        """
+        Check if an artifact handle exists for the given key and generation.
+
+        Args:
+            key: The ArtifactKey for the entry.
+            generation_id: The generation ID for the entry.
+
+        Returns:
+            True if a handle exists, False otherwise.
+        """
+        composite_key = make_composite_key(key, generation_id)
+        entry = self._ledger.get(composite_key)
+        return entry is not None and entry.handle is not None
 
     def get_step_ops_handle(
         self, key: ArtifactKey, generation_id: GenerationID
@@ -266,6 +327,8 @@ class ArtifactManager:
         return self._step_render_handles.pop(step_uid, None)
 
     def invalidate_for_workpiece(self, key: ArtifactKey):
+        from ..dag.node import NodeState
+
         keys_to_invalidate = [
             ledger_key
             for ledger_key in self._ledger.keys()
@@ -273,11 +336,15 @@ class ArtifactManager:
         ]
         for ledger_key in keys_to_invalidate:
             entry = self._ledger.get(ledger_key)
-            if entry and entry.handle is not None:
-                self.release_handle(entry.handle)
-            self._remove_from_ledger(ledger_key)
+            if entry:
+                if entry.handle is not None:
+                    self.release_handle(entry.handle)
+                    entry.handle = None
+                entry.state = NodeState.DIRTY
 
     def invalidate_for_step(self, key: ArtifactKey):
+        from ..dag.node import NodeState
+
         step_keys_to_invalidate = [
             ledger_key
             for ledger_key in self._ledger.keys()
@@ -285,9 +352,11 @@ class ArtifactManager:
         ]
         for ledger_key in step_keys_to_invalidate:
             step_entry = self._ledger.get(ledger_key)
-            if step_entry and step_entry.handle is not None:
-                self.release_handle(step_entry.handle)
-            self._remove_from_ledger(ledger_key)
+            if step_entry:
+                if step_entry.handle is not None:
+                    self.release_handle(step_entry.handle)
+                    step_entry.handle = None
+                step_entry.state = NodeState.DIRTY
 
         keys_to_invalidate = [
             ledger_key
@@ -297,14 +366,18 @@ class ArtifactManager:
         ]
         for ledger_key in keys_to_invalidate:
             entry = self._ledger.get(ledger_key)
-            if entry and entry.handle is not None:
-                self.release_handle(entry.handle)
-            self._remove_from_ledger(ledger_key)
+            if entry:
+                if entry.handle is not None:
+                    self.release_handle(entry.handle)
+                    entry.handle = None
+                entry.state = NodeState.DIRTY
 
         step_render_handle = self._step_render_handles.pop(key.id, None)
         self.release_handle(step_render_handle)
 
     def invalidate_for_job(self, key: ArtifactKey):
+        from ..dag.node import NodeState
+
         keys_to_invalidate = [
             ledger_key
             for ledger_key in self._ledger.keys()
@@ -312,9 +385,11 @@ class ArtifactManager:
         ]
         for ledger_key in keys_to_invalidate:
             entry = self._ledger.get(ledger_key)
-            if entry and entry.handle is not None:
-                self.release_handle(entry.handle)
-            self._remove_from_ledger(ledger_key)
+            if entry:
+                if entry.handle is not None:
+                    self.release_handle(entry.handle)
+                    entry.handle = None
+                entry.state = NodeState.DIRTY
 
     def _remove_from_ledger(
         self, key: Union[ArtifactKey, Tuple[ArtifactKey, GenerationID]]
@@ -510,6 +585,8 @@ class ArtifactManager:
             handle: The handle to cache.
             generation_id: The generation ID for the entry.
         """
+        from ..dag.node import NodeState
+
         logger.debug(f"cache: key={key}, generation_id={generation_id}")
         composite_key = make_composite_key(key, generation_id)
         entry = self.get_ledger_entry(composite_key)
@@ -523,6 +600,7 @@ class ArtifactManager:
             self._store.release(entry.handle)
         entry.handle = handle
         entry.generation_id = generation_id
+        entry.state = NodeState.VALID
 
     def mark_done(
         self,
@@ -573,6 +651,8 @@ class ArtifactManager:
             handle: Optional handle to set on the entry. If not provided,
                 the existing handle is preserved.
         """
+        from ..dag.node import NodeState
+
         composite_key = make_composite_key(key, generation_id)
         entry = self._ledger.get(composite_key)
         if entry is None:
@@ -584,6 +664,7 @@ class ArtifactManager:
                 self._ledger[composite_key] = LedgerEntry(
                     handle=None,
                     generation_id=generation_id,
+                    state=NodeState.VALID,
                 )
                 return
             logger.debug(
@@ -593,6 +674,7 @@ class ArtifactManager:
             self._ledger[composite_key] = LedgerEntry(
                 handle=handle,
                 generation_id=generation_id,
+                state=NodeState.VALID,
             )
             return
 
@@ -604,6 +686,7 @@ class ArtifactManager:
             if entry.handle is not None:
                 self._store.release(entry.handle)
             entry.handle = handle
+        entry.state = NodeState.VALID
 
     def declare_generation(
         self,

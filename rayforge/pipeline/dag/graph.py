@@ -4,12 +4,16 @@ Defines the PipelineGraph class for managing the dependency graph.
 
 from __future__ import annotations
 import logging
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple, TYPE_CHECKING
 from ...core.doc import Doc
 from ...core.layer import Layer
 from ...core.workpiece import WorkPiece
 from ..artifact.key import ArtifactKey
 from .node import ArtifactNode
+
+
+if TYPE_CHECKING:
+    from ..artifact.manager import ArtifactManager
 
 
 logger = logging.getLogger(__name__)
@@ -53,7 +57,11 @@ class PipelineGraph:
             node for node in self._nodes.values() if node.key.group == group
         ]
 
-    def build_from_doc(self, doc: Doc) -> None:
+    def build_from_doc(
+        self,
+        doc: Doc,
+        artifact_manager: Optional["ArtifactManager"] = None,
+    ) -> None:
         """
         Build the graph from the Doc structure.
 
@@ -65,6 +73,10 @@ class PipelineGraph:
         Dependencies are established:
         - Steps depend on their (WorkPiece, Step) pair nodes
         - Job depends on all Steps
+
+        Args:
+            doc: The document to build the graph from.
+            artifact_manager: Optional ArtifactManager to pass to nodes.
         """
         logger.debug("Building pipeline graph from Doc")
 
@@ -86,7 +98,9 @@ class PipelineGraph:
             if layer.workflow is not None:
                 for step in layer.workflow.steps:
                     step_key = ArtifactKey.for_step(step.uid)
-                    step_node = ArtifactNode(key=step_key)
+                    step_node = ArtifactNode(
+                        key=step_key, _artifact_manager=artifact_manager
+                    )
                     self.add_node(step_node)
                     step_nodes[step.uid] = step_node
                     logger.debug(f"Created Step node: {step_key}")
@@ -95,7 +109,10 @@ class PipelineGraph:
                         wp_step_key = ArtifactKey.for_workpiece(
                             wp.uid, step.uid
                         )
-                        wp_step_node = ArtifactNode(key=wp_step_key)
+                        wp_step_node = ArtifactNode(
+                            key=wp_step_key,
+                            _artifact_manager=artifact_manager,
+                        )
                         self.add_node(wp_step_node)
                         workpiece_step_nodes[(wp.uid, step.uid)] = wp_step_node
                         logger.debug(
@@ -124,7 +141,9 @@ class PipelineGraph:
                             )
 
         job_key = ArtifactKey.for_job()
-        job_node = ArtifactNode(key=job_key)
+        job_node = ArtifactNode(
+            key=job_key, _artifact_manager=artifact_manager
+        )
         self.add_node(job_node)
 
         for step_node in step_nodes.values():

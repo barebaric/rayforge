@@ -24,11 +24,15 @@ from rayforge.pipeline.stage.step_runner import (
 )
 from rayforge.pipeline.stage.job_runner import make_job_artifact_in_subprocess
 from rayforge.pipeline.artifact import (
-    WorkPieceArtifact,
-    StepRenderArtifact,
-    StepOpsArtifact,
+    ArtifactKey,
+    ArtifactManager,
     JobArtifact,
+    StepOpsArtifact,
+    StepRenderArtifact,
+    WorkPieceArtifact,
 )
+from rayforge.pipeline.artifact.store import ArtifactStore
+from rayforge.pipeline.dag.node import ArtifactNode, NodeState
 from rayforge.context import get_context
 
 
@@ -525,3 +529,110 @@ class TestPipelineState:
             assert last_call_kwargs.get("total_seconds") == 55.5
         finally:
             get_context().artifact_store.release(wp_handle)
+
+
+class TestStateConsistency:
+    """Tests for state consistency between DAG nodes and ArtifactManager."""
+
+    @pytest.fixture
+    def manager(self):
+        """Set up a fresh manager and mock store."""
+        mock_store = MagicMock(spec=ArtifactStore)
+        return ArtifactManager(mock_store)
+
+    def test_node_state_queries_manager(self, manager):
+        """Test that node state queries the manager when available."""
+        key = ArtifactKey.for_workpiece("wp1")
+        mock_handle = MagicMock()
+        mock_handle.shm_name = "shm_wp1"
+        manager.cache_handle(key, mock_handle, 1)
+
+        node = ArtifactNode(
+            key=key,
+            generation_id=1,
+            _artifact_manager=manager,
+        )
+
+        assert node.state == NodeState.VALID
+
+    def test_node_state_updates_manager(self, manager):
+        """Test that setting node state updates the manager."""
+        key = ArtifactKey.for_workpiece("wp1")
+        manager.declare_generation({key}, 1)
+
+        node = ArtifactNode(
+            key=key,
+            generation_id=1,
+            _artifact_manager=manager,
+        )
+
+        node.state = NodeState.PROCESSING
+
+        assert manager.get_state(key, 1) == NodeState.PROCESSING
+
+    def test_state_propagates_to_node_after_invalidation(self, manager):
+        """Test that invalidation state is visible through node."""
+        key = ArtifactKey.for_workpiece("wp1")
+        mock_handle = MagicMock()
+        mock_handle.shm_name = "shm_wp1"
+        manager.cache_handle(key, mock_handle, 1)
+
+        node = ArtifactNode(
+            key=key,
+            generation_id=1,
+            _artifact_manager=manager,
+        )
+        assert node.state == NodeState.VALID
+
+        manager.invalidate_for_workpiece(key)
+
+        assert node.state == NodeState.DIRTY
+
+    def test_multiple_nodes_share_state_via_manager(self, manager):
+        """Test that multiple nodes for same key share state via manager."""
+        key = ArtifactKey.for_workpiece("wp1")
+        mock_handle = MagicMock()
+        mock_handle.shm_name = "shm_wp1"
+        manager.cache_handle(key, mock_handle, 1)
+
+        node1 = ArtifactNode(
+            key=key,
+            generation_id=1,
+            _artifact_manager=manager,
+        )
+        node2 = ArtifactNode(
+            key=key,
+            generation_id=1,
+            _artifact_manager=manager,
+        )
+
+        assert node1.state == NodeState.VALID
+        assert node2.state == NodeState.VALID
+
+        node1.state = NodeState.PROCESSING
+
+        assert node1.state == NodeState.PROCESSING
+        assert node2.state == NodeState.PROCESSING
+
+    def test_generation_lifecycle_state_changes(self, manager):
+        """Test state changes through a typical generation lifecycle."""
+        key = ArtifactKey.for_workpiece("wp1")
+
+        manager.declare_generation({key}, 1)
+        node = ArtifactNode(
+            key=key,
+            generation_id=1,
+            _artifact_manager=manager,
+        )
+        assert node.state == NodeState.DIRTY
+
+        node.state = NodeState.PROCESSING
+        assert node.state == NodeState.PROCESSING
+
+        mock_handle = MagicMock()
+        mock_handle.shm_name = "shm_wp1"
+        manager.cache_handle(key, mock_handle, 1)
+        assert node.state == NodeState.VALID
+
+        manager.invalidate_for_workpiece(key)
+        assert node.state == NodeState.DIRTY

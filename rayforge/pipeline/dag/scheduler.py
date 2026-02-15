@@ -70,8 +70,10 @@ class DagScheduler:
         self._doc = doc
 
     def set_generation_id(self, generation_id: int) -> None:
-        """Set the current generation ID."""
+        """Set the current generation ID and propagate to all nodes."""
         self._generation_id = generation_id
+        for node in self.graph.get_all_nodes():
+            node.generation_id = generation_id
 
     def set_context(self, context: GenerationContext) -> None:
         """Set the current generation context."""
@@ -107,6 +109,10 @@ class DagScheduler:
     def sync_graph_with_artifact_manager(self) -> None:
         """
         Sync graph node states with the artifact manager.
+
+        Uses the ArtifactManager as the single source of truth.
+        Nodes with existing artifacts are marked VALID, then
+        invalidations are re-applied.
         """
         for node in self.graph.get_all_nodes():
             if any(
@@ -117,45 +123,18 @@ class DagScheduler:
                     "Skipping sync to VALID."
                 )
                 continue
-            if node.key.group == "workpiece":
-                handle = self._artifact_manager.get_workpiece_handle(
-                    node.key, self._generation_id
+            if self._artifact_manager.has_artifact(
+                node.key, self._generation_id
+            ) or (
+                self._generation_id > 1
+                and self._artifact_manager.has_artifact(
+                    node.key, self._generation_id - 1
                 )
-                if handle is None and self._generation_id > 1:
-                    handle = self._artifact_manager.get_workpiece_handle(
-                        node.key, self._generation_id - 1
-                    )
-                if handle is not None:
-                    node.state = NodeState.VALID
-                    logger.debug(
-                        f"Synced node {node.key} to VALID (handle exists)"
-                    )
-            elif node.key.group == "step":
-                ops_handle = self._artifact_manager.get_step_ops_handle(
-                    node.key, self._generation_id
+            ):
+                node.state = NodeState.VALID
+                logger.debug(
+                    f"Synced node {node.key} to VALID (artifact exists)"
                 )
-                if ops_handle is None and self._generation_id > 1:
-                    ops_handle = self._artifact_manager.get_step_ops_handle(
-                        node.key, self._generation_id - 1
-                    )
-                if ops_handle is not None:
-                    node.state = NodeState.VALID
-                    logger.debug(
-                        f"Synced node {node.key} to VALID (ops handle exists)"
-                    )
-            elif node.key.group == "job":
-                job_handle = self._artifact_manager.get_job_handle(
-                    node.key, self._generation_id
-                )
-                if job_handle is None and self._generation_id > 1:
-                    job_handle = self._artifact_manager.get_job_handle(
-                        node.key, self._generation_id - 1
-                    )
-                if job_handle is not None:
-                    node.state = NodeState.VALID
-                    logger.debug(
-                        f"Synced node {node.key} to VALID (job handle exists)"
-                    )
 
         for key in self._invalidated_keys:
             node = self.graph.find_node(key)
