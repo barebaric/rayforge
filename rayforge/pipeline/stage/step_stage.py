@@ -17,7 +17,6 @@ if TYPE_CHECKING:
     from ...shared.tasker.manager import TaskManager
     from ..artifact import BaseArtifactHandle
     from ..artifact.manager import ArtifactManager
-    from ..dag.scheduler import DagScheduler
 
 
 logger = logging.getLogger(__name__)
@@ -36,11 +35,9 @@ class StepPipelineStage(PipelineStage):
         task_manager: "TaskManager",
         artifact_manager: "ArtifactManager",
         machine: Optional["Machine"],
-        scheduler: "DagScheduler",
     ):
         super().__init__(task_manager, artifact_manager)
         self._machine = machine
-        self._scheduler = scheduler
         self._time_cache: Dict[StepKey, Optional[float]] = {}
         self._retained_handles: Dict[str, List["BaseArtifactHandle"]] = {}
 
@@ -160,20 +157,14 @@ class StepPipelineStage(PipelineStage):
                     ledger_key,
                     task_generation_id,
                 )
-                node = self._scheduler.graph.find_node(ledger_key)
-                if node is not None:
-                    node.state = NodeState.VALID
+                self._emit_node_state(ledger_key, NodeState.VALID)
                 logger.debug("_on_step_task_complete: ops_handle set to DONE")
             except Exception as e:
                 logger.error(f"Error on step assembly result: {e}")
-                node = self._scheduler.graph.find_node(ledger_key)
-                if node is not None:
-                    node.state = NodeState.ERROR
+                self._emit_node_state(ledger_key, NodeState.ERROR)
         else:
             logger.warning(f"Step assembly for {step_uid} failed.")
-            node = self._scheduler.graph.find_node(ledger_key)
-            if node is not None:
-                node.state = NodeState.ERROR
+            self._emit_node_state(ledger_key, NodeState.ERROR)
 
         self.generation_finished.send(
             self, step=step, generation_id=task_generation_id
@@ -218,9 +209,7 @@ class StepPipelineStage(PipelineStage):
                     )
 
         ledger_key = ArtifactKey.for_step(step.uid)
-        node = self._scheduler.graph.find_node(ledger_key)
-        if node is not None:
-            node.state = NodeState.PROCESSING
+        self._emit_node_state(ledger_key, NodeState.PROCESSING)
 
         from ..stage.step_runner import make_step_artifact_in_subprocess
 
@@ -263,10 +252,6 @@ class StepPipelineStage(PipelineStage):
             logger.warning(
                 f"Cannot assemble step {step.uid}, no machine configured."
             )
-            return False
-        base_key = ArtifactKey.for_step(step.uid)
-        node = self._scheduler.graph.find_node(base_key)
-        if node is not None and node.state == NodeState.PROCESSING:
             return False
         return True
 
@@ -347,12 +332,6 @@ class StepPipelineStage(PipelineStage):
     def invalidate(self, key: StepKey):
         """Invalidates a step artifact, ensuring it will be regenerated."""
         self._cleanup_entry(key, full_invalidation=True)
-
-    def mark_stale_and_trigger(self, step: "Step", generation_id: int):
-        """Marks a step as stale and immediately tries to trigger assembly."""
-        self._cleanup_entry(step.uid, full_invalidation=False)
-        self._scheduler.mark_node_dirty(ArtifactKey.for_step(step.uid))
-        self._scheduler.process_graph()
 
     def _cleanup_entry(
         self,

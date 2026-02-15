@@ -17,7 +17,6 @@ if TYPE_CHECKING:
     from ..context import GenerationContext
     from ..artifact import BaseArtifactHandle
     from ..artifact.manager import ArtifactManager
-    from ..dag.scheduler import DagScheduler
 
 
 logger = logging.getLogger(__name__)
@@ -34,11 +33,9 @@ class JobPipelineStage(PipelineStage):
         task_manager: "TaskManager",
         artifact_manager: "ArtifactManager",
         machine: "Machine",
-        scheduler: Optional["DagScheduler"] = None,
     ):
         super().__init__(task_manager, artifact_manager)
         self._machine = machine
-        self._scheduler = scheduler
         self._retained_handles: List["BaseArtifactHandle"] = []
         self._job_running: bool = False
         self.job_generation_finished = Signal()
@@ -115,10 +112,7 @@ class JobPipelineStage(PipelineStage):
             self._artifact_manager.cache_handle(
                 received_job_key, handle, generation_id
             )
-            if self._scheduler is not None:
-                node = self._scheduler.graph.find_node(received_job_key)
-                if node is not None:
-                    node.state = NodeState.VALID
+            self._emit_node_state(received_job_key, NodeState.VALID)
             logger.debug("Adopted job artifact")
         except Exception as e:
             logger.error(f"Error handling job artifact event: {e}")
@@ -147,10 +141,7 @@ class JobPipelineStage(PipelineStage):
             )
             if final_handle:
                 logger.info("Job generation successful.")
-                if self._scheduler:
-                    node = self._scheduler.graph.find_node(job_key)
-                    if node is not None:
-                        node.state = NodeState.VALID
+                self._emit_node_state(job_key, NodeState.VALID)
             else:
                 logger.info(
                     "Job generation finished with no artifact produced."
@@ -171,10 +162,8 @@ class JobPipelineStage(PipelineStage):
             except Exception as e:
                 error = e
 
-            if generation_id is not None and self._scheduler:
-                node = self._scheduler.graph.find_node(job_key)
-                if node is not None:
-                    node.state = NodeState.ERROR
+            if generation_id is not None:
+                self._emit_node_state(job_key, NodeState.ERROR)
 
             self._artifact_manager.invalidate_for_job(job_key)
             if on_done:
@@ -286,10 +275,7 @@ class JobPipelineStage(PipelineStage):
                 on_done(None, RuntimeError("Failed to collect step handles."))
             return
 
-        if self._scheduler:
-            node = self._scheduler.graph.find_node(job_key)
-            if node is not None:
-                node.state = NodeState.PROCESSING
+        self._emit_node_state(job_key, NodeState.PROCESSING)
 
         logger.info(f"Starting job generation with {len(step_handles)} steps.")
 

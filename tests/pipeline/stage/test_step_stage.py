@@ -37,21 +37,6 @@ def mock_machine():
 
 
 @pytest.fixture
-def mock_scheduler():
-    """Provides a mock DagScheduler."""
-    scheduler = MagicMock()
-    scheduler.step_render_artifact_ready = MagicMock()
-    scheduler.step_render_artifact_ready.connect = MagicMock()
-    scheduler.step_time_estimate_ready = MagicMock()
-    scheduler.step_time_estimate_ready.connect = MagicMock()
-    scheduler.step_generation_finished = MagicMock()
-    scheduler.step_generation_finished.connect = MagicMock()
-    scheduler.process_graph = MagicMock()
-    scheduler.mark_node_dirty = MagicMock()
-    return scheduler
-
-
-@pytest.fixture
 def mock_doc_and_step():
     """Provides a mock Doc object with some structure."""
     doc = MagicMock(spec=Doc)
@@ -80,35 +65,15 @@ class TestStepPipelineStage:
         mock_task_mgr,
         mock_artifact_manager,
         mock_machine,
-        mock_scheduler,
     ):
         """Test that StepPipelineStage can be created."""
         stage = StepPipelineStage(
-            mock_task_mgr, mock_artifact_manager, mock_machine, mock_scheduler
+            mock_task_mgr, mock_artifact_manager, mock_machine
         )
         assert isinstance(stage, PipelineStage)
         assert stage._task_manager is mock_task_mgr
         assert stage._artifact_manager is mock_artifact_manager
         assert stage._machine is mock_machine
-
-    def test_mark_stale_and_trigger_starts_assembly(
-        self,
-        mock_task_mgr,
-        mock_artifact_manager,
-        mock_machine,
-        mock_doc_and_step,
-        mock_scheduler,
-    ):
-        """Tests that explicitly marking a step as stale triggers assembly."""
-        doc, step = mock_doc_and_step
-        stage = StepPipelineStage(
-            mock_task_mgr, mock_artifact_manager, mock_machine, mock_scheduler
-        )
-
-        stage.mark_stale_and_trigger(step, 1)
-
-        mock_scheduler.mark_node_dirty.assert_called_once()
-        mock_scheduler.process_graph.assert_called_once()
 
     def test_signal_forwarding(
         self,
@@ -116,14 +81,13 @@ class TestStepPipelineStage:
         mock_artifact_manager,
         mock_machine,
         mock_doc_and_step,
-        mock_scheduler,
     ):
         """
         Tests that signals are emitted correctly from handlers.
         """
         doc, step = mock_doc_and_step
         stage = StepPipelineStage(
-            mock_task_mgr, mock_artifact_manager, mock_machine, mock_scheduler
+            mock_task_mgr, mock_artifact_manager, mock_machine
         )
 
         render_signal_handler = MagicMock()
@@ -144,12 +108,11 @@ class TestStepPipelineStage:
         mock_artifact_manager,
         mock_machine,
         mock_doc_and_step,
-        mock_scheduler,
     ):
         """Tests that invalidating a step cleans up all its artifacts."""
         doc, step = mock_doc_and_step
         stage = StepPipelineStage(
-            mock_task_mgr, mock_artifact_manager, mock_machine, mock_scheduler
+            mock_task_mgr, mock_artifact_manager, mock_machine
         )
 
         stage.invalidate(step.uid)
@@ -167,12 +130,11 @@ class TestStepPipelineStage:
         mock_artifact_manager,
         mock_machine,
         mock_doc_and_step,
-        mock_scheduler,
     ):
         """Tests that time estimates are cached correctly."""
         doc, step = mock_doc_and_step
         stage = StepPipelineStage(
-            mock_task_mgr, mock_artifact_manager, mock_machine, mock_scheduler
+            mock_task_mgr, mock_artifact_manager, mock_machine
         )
 
         assert stage.get_estimate(step.uid) is None
