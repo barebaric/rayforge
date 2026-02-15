@@ -10,6 +10,11 @@ from ...core.geo.constants import (
     CMD_TYPE_BEZIER,
 )
 from ..base_renderer import Renderer, RenderSpecification
+from ..svg.svg_fallback import (
+    SVG_LOAD_AVAILABLE,
+    render_svg_to_cairo,
+    cairo_surface_to_vips,
+)
 
 with warnings.catch_warnings():
     warnings.simplefilter("ignore", DeprecationWarning)
@@ -220,10 +225,21 @@ class SketchRenderer(Renderer):
 
         svg_parts.append("</svg>")
         svg_string = "".join(svg_parts)
+        svg_bytes = svg_string.encode("utf-8")
 
         try:
-            # Use svgload_buffer which is highly optimized
-            image = pyvips.Image.svgload_buffer(svg_string.encode("utf-8"))
+            if SVG_LOAD_AVAILABLE:
+                image = pyvips.Image.svgload_buffer(svg_bytes)
+            else:
+                surface = render_svg_to_cairo(svg_bytes, width, height)
+                if not surface:
+                    logger.error("Failed to render sketch SVG with Cairo.")
+                    logger.debug(f"Failed SVG content:\n{svg_string}")
+                    return None
+                image = cairo_surface_to_vips(surface)
+                if not image:
+                    logger.error("Failed to convert Cairo surface to pyvips.")
+                    return None
             return image
         except pyvips.Error as e:
             logger.error(f"Failed to render sketch SVG with Vips: {e}")

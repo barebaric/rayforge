@@ -8,6 +8,11 @@ with warnings.catch_warnings():
     import pyvips
 
 from ..util import parse_length, to_mm
+from .svg_fallback import (
+    SVG_LOAD_AVAILABLE,
+    render_svg_to_cairo,
+    cairo_surface_to_vips,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -98,7 +103,18 @@ def _get_margins_from_data(
         # accurate margin calculation.
         root.set("style", "overflow: visible")
 
-        img = pyvips.Image.svgload_buffer(ET.tostring(root))
+        if SVG_LOAD_AVAILABLE:
+            img = pyvips.Image.svgload_buffer(ET.tostring(root))
+        else:
+            surface = render_svg_to_cairo(
+                ET.tostring(root), int(render_w), int(render_h)
+            )
+            if not surface:
+                return 0.0, 0.0, 0.0, 0.0
+            img = cairo_surface_to_vips(surface)
+            if not img:
+                return 0.0, 0.0, 0.0, 0.0
+
         if img.bands < 4:
             img = img.bandjoin(255)  # Ensure alpha channel for trimming
 
