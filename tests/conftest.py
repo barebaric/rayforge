@@ -10,7 +10,6 @@ from functools import partial
 import pytest_asyncio
 from typing import TYPE_CHECKING, AsyncGenerator
 from unittest.mock import patch, MagicMock
-from gi.repository import GLib
 from rayforge.worker_init import initialize_worker
 from rayforge import context as rayforge_context
 from rayforge.shared.tasker.progress import ProgressContext
@@ -276,11 +275,12 @@ def test_machine_and_config(context_initializer):
 def ui_task_mgr():
     """
     Provides a test-isolated TaskManager for SYNC UI tests. It uses
-    GLib.idle_add to safely communicate with the main GTK thread.
+    the idle_add wrapper to safely communicate with the main GTK thread.
     """
     from rayforge.shared.tasker.manager import TaskManager
+    from rayforge.shared.util.glib import idle_add
 
-    tm = TaskManager(main_thread_scheduler=GLib.idle_add)
+    tm = TaskManager(main_thread_scheduler=idle_add)
     yield tm
     if tm.has_tasks():
         logger.warning(
