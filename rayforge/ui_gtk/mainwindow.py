@@ -321,11 +321,6 @@ class MainWindow(Adw.ApplicationWindow):
         )
         self.doc_editor.document_changed.connect(self._on_document_changed)
 
-        # Connect to Pipeline signals
-        self.doc_editor.pipeline.job_time_updated.connect(
-            self._on_job_time_updated
-        )
-
         # Create the view stack for 2D and 3D views
         self.view_stack = Gtk.Stack()
         self.view_stack.set_transition_type(
@@ -339,9 +334,6 @@ class MainWindow(Adw.ApplicationWindow):
 
         # Create the G-code previewer
         self.gcode_previewer = GcodeViewer()
-        self.gcode_previewer.set_size_request(
-            self._last_gcode_previewer_width, -1
-        )
         self.gcode_previewer.line_activated.connect(
             self._on_gcode_line_activated
         )
@@ -516,6 +508,10 @@ class MainWindow(Adw.ApplicationWindow):
         self.status_monitor = TaskBar(task_mgr)
         self.status_monitor.log_requested.connect(self.on_status_bar_clicked)
         vbox.append(self.status_monitor)
+
+        self.doc_editor.pipeline.job_time_updated.connect(
+            self._on_job_time_updated
+        )
 
         # Set up config signals.
         config.changed.connect(self.on_config_changed)
