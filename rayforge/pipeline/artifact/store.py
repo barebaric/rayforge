@@ -402,21 +402,3 @@ class ArtifactStore:
             logger.warning(
                 f"Error forgetting shared memory block {shm_name}: {e}"
             )
-        shm_obj = self._managed_shms.pop(shm_name, None)
-        if not shm_obj:
-            logger.warning(
-                f"Attempted to forget block {shm_name}, which is not "
-                f"managed or has already been released/forgotten."
-            )
-            return
-
-        self._refcounts.pop(shm_name, None)
-
-        try:
-            logger.debug(f"Closing shared memory block: {shm_name}")
-            shm_obj.close()
-            logger.debug(f"Forgot shared memory block: {shm_name}")
-        except Exception as e:
-            logger.warning(
-                f"Error forgetting shared memory block {shm_name}: {e}"
-            )
