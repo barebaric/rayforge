@@ -135,16 +135,19 @@ def make_workpiece_artifact_in_subprocess(
     # 1. Put artifact into Shared Memory
     handle = artifact_store.put(final_artifact, creator_tag=creator_tag)
 
-    # 2. Send handle to Main Process and wait for acknowledgment
+    # 2. Inter-process handoff: Send handle to main process and wait.
+    # The main process will adopt the handle via
+    # ArtifactManager.adopt_handle().
     # On Windows, shared memory is destroyed when all handles are closed,
-    # so we must wait for the main process to adopt before closing.
+    # so we must wait for adoption before forgetting our reference.
     acked = proxy.send_event_and_wait(
         "artifact_created",
         {"handle_dict": handle.to_dict(), "generation_id": generation_id},
         logger=logger,
     )
 
-    # 3. Close our reference after acknowledgment
+    # 3. Forget (close without unlinking) after main process has adopted.
+    # This transfers ownership: main process now owns the lifecycle.
     if acked:
         logger.debug("Artifact acknowledged, forgetting handle.")
         artifact_store.forget(handle)
