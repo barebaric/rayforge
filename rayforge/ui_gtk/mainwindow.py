@@ -2101,8 +2101,11 @@ class MainWindow(Adw.ApplicationWindow):
         self.doc_editor.edit.clear_all_items()
 
     def on_export_clicked(self, action, param=None):
+        initial_name = None
+        if self.doc_editor.file_path:
+            initial_name = f"{self.doc_editor.file_path.stem}.gcode"
         file_dialogs.show_export_gcode_dialog(
-            self, self._on_save_dialog_response
+            self, self._on_save_dialog_response, initial_name
         )
 
     def _on_save_dialog_response(self, dialog, result, user_data):
