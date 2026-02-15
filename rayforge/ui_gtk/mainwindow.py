@@ -46,6 +46,7 @@ from .doceditor.stock_properties_dialog import StockPropertiesDialog
 from .doceditor.sketch_properties import SketchPropertiesWidget
 from .doceditor.workflow_view import WorkflowView
 from .machine.control_panel import MachineControlPanel
+from .machine.machine_selector import MachineSelector
 from .machine.settings_dialog import MachineSettingsDialog
 from .main_menu import MainMenu
 from .settings.settings_dialog import SettingsWindow
@@ -209,6 +210,10 @@ class MainWindow(Adw.ApplicationWindow):
             title=self.get_title() or "", subtitle=__version__ or ""
         )
         self.header_bar.set_title_widget(window_title)
+
+        # Add machine selector to the header bar (right side)
+        self.machine_selector = MachineSelector()
+        self.header_bar.pack_end(self.machine_selector)
 
         # Create a vertical paned for main content and bottom control panel
         self.vertical_paned = Gtk.Paned(orientation=Gtk.Orientation.VERTICAL)
@@ -843,7 +848,7 @@ class MainWindow(Adw.ApplicationWindow):
         self.toolbar.machine_warning_clicked.connect(
             self.on_machine_warning_clicked
         )
-        self.toolbar.machine_selector.machine_selected.connect(
+        self.machine_selector.machine_selected.connect(
             self.on_machine_selected_by_selector
         )
         # Connect WCS signal
