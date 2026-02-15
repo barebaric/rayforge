@@ -4,7 +4,6 @@ from gi.repository import GLib, Gtk
 from blinker import Signal
 from .icons import get_icon
 from .shared.undo_button import UndoButton, RedoButton
-from .machine.machine_selector import MachineSelector
 from .shared.splitbutton import SplitMenuButton
 from .canvas3d import initialized as canvas3d_initialized
 
@@ -285,11 +284,6 @@ class MainToolbar(Gtk.Box):
         )
         self.append(self.wcs_dropdown)
 
-        # Add spacer to push machine selector to the right
-        spacer = Gtk.Box()
-        spacer.set_hexpand(True)
-        self.append(spacer)
-
         # Add clickable warning for misconfigured machine
         self.machine_warning_box = Gtk.Box(spacing=6)
         self.machine_warning_box.set_margin_end(12)
@@ -308,10 +302,6 @@ class MainToolbar(Gtk.Box):
         )
         self.machine_warning_box.add_controller(warning_click)
         self.append(self.machine_warning_box)
-
-        # Add machine selector dropdown
-        self.machine_selector = MachineSelector()
-        self.append(self.machine_selector)
 
     def _on_visibility_toggled(self, button: Gtk.ToggleButton):
         """Callback to update the visibility icon when the button's
