@@ -41,15 +41,35 @@ def assets_path() -> Path:
 
 
 @pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "dialect_uid,expected_file",
+    [
+        ("grbl", "expected_square_grbl.gcode"),
+        ("grbl_noz", "expected_square_grbl_noz.gcode"),
+        ("grbl_dynamic", "expected_square_grbl_dynamic.gcode"),
+        ("grbl_dynamic_noz", "expected_square_grbl_dynamic_noz.gcode"),
+        ("smoothieware", "expected_square_smoothieware.gcode"),
+        ("marlin", "expected_square_marlin.gcode"),
+    ],
+)
 async def test_import_svg_export_gcode(
-    context_initializer, doc_editor, tmp_path, assets_path
+    context_initializer,
+    doc_editor,
+    tmp_path,
+    assets_path,
+    dialect_uid,
+    expected_file,
 ):
-    """Full end-to-end test using a real subprocess for ops generation."""
+    """
+    Full end-to-end test using a real subprocess for ops generation.
+    Tests all supported G-code dialects.
+    """
     # The expected G-code was generated assuming "Identity" transformation (no flip).
     # In the updated Machine model, Origin.BOTTOM_LEFT represents the Identity state
     # (matching the internal Y-Up Cartesian coordinates).
     machine = get_context().machine
     assert machine is not None, "Machine should be initialized in context"
+    machine.set_dialect_uid(dialect_uid)
     machine.set_origin(Origin.BOTTOM_LEFT)
 
     # --- 1. ARRANGE ---
@@ -67,7 +87,7 @@ async def test_import_svg_export_gcode(
     workflow.add_step(step)
 
     svg_path = assets_path / "10x10_square.svg"
-    expected_gcode_path = assets_path / "expected_square.gcode"
+    expected_gcode_path = assets_path / expected_file
     output_gcode_path = tmp_path / "output.gcode"
 
     # --- 2. ACT ---
