@@ -288,7 +288,7 @@ class LaserPreferencesPage(Adw.PreferencesPage):
 
         spot_size_x_adjustment = Gtk.Adjustment(
             lower=0.01,
-            upper=0.2,
+            upper=10.0,
             step_increment=0.01,
             page_increment=0.05,
         )
@@ -306,7 +306,7 @@ class LaserPreferencesPage(Adw.PreferencesPage):
 
         spot_size_y_adjustment = Gtk.Adjustment(
             lower=0.01,
-            upper=0.2,
+            upper=10.0,
             step_increment=0.01,
             page_increment=0.05,
         )
