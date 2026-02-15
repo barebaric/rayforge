@@ -176,7 +176,8 @@ async def task_mgr():
     main_loop = asyncio.get_running_loop()
 
     def asyncio_scheduler(callback, *args, **kwargs):
-        main_loop.call_soon_threadsafe(partial(callback, *args, **kwargs))
+        if not main_loop.is_closed():
+            main_loop.call_soon_threadsafe(partial(callback, *args, **kwargs))
 
     tm = TaskManager(
         main_thread_scheduler=asyncio_scheduler,
