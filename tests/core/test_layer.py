@@ -108,12 +108,15 @@ def test_workpiece_transform_change_bubbles_up_to_layer(
 
     # Act: Simulate the .transform_changed signal firing.
     mock_workpiece_with_signals.transform_changed.send(
-        mock_workpiece_with_signals
+        mock_workpiece_with_signals, old_matrix=None
     )
 
     # Assert
     transform_changed_handler.assert_called_once_with(
-        layer, origin=mock_workpiece_with_signals, parent_of_origin=layer
+        layer,
+        origin=mock_workpiece_with_signals,
+        parent_of_origin=layer,
+        old_matrix=None,
     )
 
 

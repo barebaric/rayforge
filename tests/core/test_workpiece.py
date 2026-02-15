@@ -405,7 +405,8 @@ class TestWorkPiece:
             lambda sender: updated_events.append(sender), weak=False
         )
         wp.transform_changed.connect(
-            lambda sender: transform_events.append(sender), weak=False
+            lambda sender, *, old_matrix=None: transform_events.append(sender),
+            weak=False,
         )
 
         # pos setter should fire transform_changed, NOT updated.

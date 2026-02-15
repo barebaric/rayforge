@@ -4,8 +4,8 @@ from typing import Optional, Dict, Any
 from blinker import Signal
 from enum import Enum, auto
 from ...core.ops import Ops
-from ...shared.tasker.proxy import BaseExecutionContext
 from ...core.workpiece import WorkPiece
+from ...shared.tasker.progress import ProgressContext
 
 
 class ExecutionPhase(Enum):
@@ -82,7 +82,7 @@ class OpsTransformer(ABC):
         self,
         ops: Ops,
         workpiece: Optional[WorkPiece] = None,
-        context: Optional[BaseExecutionContext] = None,
+        context: Optional[ProgressContext] = None,
     ) -> None:
         """
         Runs the transformation.
@@ -90,7 +90,8 @@ class OpsTransformer(ABC):
         Args:
             ops: The Ops object to transform in-place.
             workpiece: The WorkPiece model being processed.
-            context: Used for progress and cancellation hooks.
+            context: Optional progress context for reporting progress and
+                    checking cancellation.
         """
         pass
 

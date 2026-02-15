@@ -685,9 +685,11 @@ class DocItem(ABC):
             self, origin=sender, parent_of_origin=self
         )
 
-    def _on_child_transform_changed(self, sender: DocItem):
+    def _on_child_transform_changed(
+        self, sender: DocItem, *, old_matrix: Optional["Matrix"] = None
+    ):
         self.descendant_transform_changed.send(
-            self, origin=sender, parent_of_origin=self
+            self, origin=sender, parent_of_origin=self, old_matrix=old_matrix
         )
 
     def _on_descendant_added(
@@ -712,10 +714,18 @@ class DocItem(ABC):
         )
 
     def _on_descendant_transform_changed(
-        self, sender: DocItem, *, origin: DocItem, parent_of_origin: DocItem
+        self,
+        sender: DocItem,
+        *,
+        origin: DocItem,
+        parent_of_origin: DocItem,
+        old_matrix: Optional["Matrix"] = None,
     ):
         self.descendant_transform_changed.send(
-            self, origin=origin, parent_of_origin=parent_of_origin
+            self,
+            origin=origin,
+            parent_of_origin=parent_of_origin,
+            old_matrix=old_matrix,
         )
 
     @property
@@ -727,8 +737,9 @@ class DocItem(ABC):
     def matrix(self, value: "Matrix"):
         if self._matrix == value:
             return
+        old_matrix = self._matrix
         self._matrix = value
-        self.transform_changed.send(self)
+        self.transform_changed.send(self, old_matrix=old_matrix)
 
     def get_world_transform(self) -> "Matrix":
         """

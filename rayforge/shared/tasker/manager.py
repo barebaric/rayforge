@@ -94,10 +94,6 @@ class TaskManager:
         Atomically adds a task, replacing any existing task with the same key.
         MUST be called with the lock held.
         """
-        # If the manager was idle, this is a new batch of work.
-        if not self._tasks and not self._zombie_tasks:
-            self._progress_map.clear()
-
         # Check for and handle an existing task with the same key.
         old_task = self._tasks.get(task.key)
         if old_task:
@@ -514,6 +510,11 @@ class TaskManager:
                 self, tasks=tasks, progress=progress
             )
         )
+        # Clear progress map only when truly idle (no active tasks and
+        # no zombies finishing up). This ensures the UI sees the final
+        # 100% progress before we reset for the next batch.
+        if not self._tasks and not self._zombie_tasks:
+            self._progress_map.clear()
 
     def get_overall_progress(self) -> float:
         """Calculate overall progress. This method is thread-safe."""
@@ -530,13 +531,13 @@ class TaskManager:
             # populated yet.
             return 0.0
 
-        # Ensure progress map only contains keys for active tasks
-        active_keys = self._tasks.keys()
-        total_progress = sum(
-            self._progress_map.get(k, 0.0) for k in active_keys
-        )
+        # Use all keys in progress_map, including completed tasks that
+        # have been removed from _tasks but still contribute their 1.0
+        # progress. The map is cleared only when a new batch starts.
+        all_keys = self._progress_map.keys()
+        total_progress = sum(self._progress_map.get(k, 0.0) for k in all_keys)
 
-        return total_progress / len(active_keys) if active_keys else 1.0
+        return total_progress / len(all_keys) if all_keys else 1.0
 
     def shutdown(self) -> None:
         """

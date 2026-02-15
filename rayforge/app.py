@@ -182,7 +182,23 @@ def main():
                     vectorization_spec=vectorization_spec,
                 )
 
-            return GLib.SOURCE_REMOVE  # ensure this handler only runs once
+            if self.args.exit:
+                get_context().exit_after_settle = True
+                editor.document_settled.connect(self._on_document_settled_exit)
+
+            return GLib.SOURCE_REMOVE
+
+        def _on_document_settled_exit(self, sender):
+            ctx = get_context()
+            if ctx.exit_pending:
+                return
+            ctx.exit_pending = True
+            assert self.win is not None
+            if self.win.doc_editor.is_processing:
+                ctx.exit_pending = False
+                return
+            logger.info("Document settled, exiting due to --exit flag.")
+            self.quit()
 
         def _load_startup_files(self, widget):
             """
@@ -214,6 +230,12 @@ def main():
             elif project_path:
                 logger.warning(
                     f"Startup project path {project_path} does not exist"
+                )
+
+            if self.args.exit:
+                get_context().exit_after_settle = True
+                self.win.doc_editor.document_settled.connect(
+                    self._on_document_settled_exit
                 )
 
             return GLib.SOURCE_REMOVE
@@ -257,6 +279,15 @@ def main():
         default="INFO",
         choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
         help=_("Set the logging level (default: INFO)"),
+    )
+
+    parser.add_argument(
+        "--exit",
+        action="store_true",
+        help=_(
+            "Exit after importing documents and the editor has settled. "
+            "Useful for testing."
+        ),
     )
 
     args = parser.parse_args()

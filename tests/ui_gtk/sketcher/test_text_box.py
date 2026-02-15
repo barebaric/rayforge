@@ -176,6 +176,7 @@ def test_empty_text_box_cursor_moves_after_typing(
     mock_cairo_context.fill.assert_called()
 
 
+@pytest.mark.ui
 def test_text_box_rendering_in_sketch_renderer(
     sketch_with_text_box, mock_element, mock_cairo_context
 ):
@@ -191,6 +192,7 @@ def test_text_box_rendering_in_sketch_renderer(
     assert tb.content == "Hello"
 
 
+@pytest.mark.ui
 def test_text_box_rendering_with_empty_content(
     sketch_with_empty_text_box, mock_element, mock_cairo_context
 ):
@@ -206,6 +208,7 @@ def test_text_box_rendering_with_empty_content(
     assert tb.content == ""
 
 
+@pytest.mark.ui
 def test_text_box_rendering_produces_visible_output(
     sketch_with_text_box, mock_element, mock_cairo_context
 ):
@@ -229,6 +232,7 @@ def test_text_box_rendering_produces_visible_output(
     mock_cairo_context.fill.assert_called()
 
 
+@pytest.mark.ui
 def test_text_box_rendering_with_different_font_params(
     sketch_with_text_box, mock_element, mock_cairo_context
 ):

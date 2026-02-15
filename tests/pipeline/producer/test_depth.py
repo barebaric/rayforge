@@ -1,6 +1,5 @@
 import pytest
 import cairo
-import numpy as np
 from rayforge.core.ops import (
     OpsSectionStartCommand,
     OpsSectionEndCommand,
@@ -128,12 +127,7 @@ def test_run_returns_hybrid_artifact_with_correct_metadata(
     assert artifact.source_coordinate_system == CoordinateSystem.PIXEL_SPACE
     assert artifact.source_dimensions == (10, 10)
     assert artifact.generation_size == (10.0, 10.0)
-    assert artifact.texture_data is not None
-    assert artifact.texture_data.dimensions_mm == (10.0, 10.0)
-    assert artifact.texture_data.position_mm == (0.0, 0.0)
     assert artifact.ops is not None
-    assert artifact.texture_data.power_texture_data is not None
-    assert artifact.texture_data.power_texture_data.shape == (10, 10)
 
 
 def test_run_wraps_ops_in_section_markers(
@@ -177,12 +171,12 @@ def test_run_with_empty_surface_returns_empty_ops(
     assert isinstance(cmds[1], OpsSectionEndCommand)
 
 
-def test_power_modulation_generates_correct_ops_and_texture(
+def test_power_modulation_generates_correct_ops(
     laser: Laser, mock_workpiece: WorkPiece
 ):
     """
-    Tests that power modulation correctly generates both the ScanLineCommands
-    and the power texture data from a grayscale image.
+    Tests that power modulation correctly generates ScanLineCommands
+    from a grayscale image.
     """
     surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, 3, 1)
     ctx = cairo.Context(surface)
@@ -221,21 +215,12 @@ def test_power_modulation_generates_correct_ops_and_texture(
     assert power_vals[1] == pytest.approx(expected_texture_row[1], 1)
     assert power_vals[2] == pytest.approx(expected_texture_row[2], 1)
 
-    # Assert Texture data
-    assert artifact.texture_data is not None
-    assert artifact.texture_data.power_texture_data.shape == (1, 3)
-    texture_row = artifact.texture_data.power_texture_data[0]
-    assert texture_row[0] == pytest.approx(229, 1)
-    assert texture_row[1] == pytest.approx(127, 1)
-    assert texture_row[2] == pytest.approx(26, 1)
 
-
-def test_multi_pass_generates_correct_ops_and_texture(
+def test_multi_pass_generates_correct_ops(
     laser: Laser, mock_workpiece: WorkPiece
 ):
     """
-    Tests that multi-pass generates correct Z-stepped Ops AND the correct
-    source power texture data.
+    Tests that multi-pass generates correct Z-stepped Ops.
     """
     surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, 2, 10)
     ctx = cairo.Context(surface)
@@ -274,19 +259,6 @@ def test_multi_pass_generates_correct_ops_and_texture(
     assert -0.2 in lines_by_z and lines_by_z[-0.2] > 0
     assert -0.3 in lines_by_z and lines_by_z[-0.3] > 0
     assert -0.4 not in lines_by_z
-
-    # -- Assert Texture Data (Source depth map) --
-    # The texture should represent the source image, but mapped to power
-    # based on the number of passes.
-    # Black (gray=0) -> 4 passes -> power = 4/4 = 1.0 -> 255
-    # Gray (gray=127) -> ceil((1-127/255)*4) = ceil(2.007) = 3 passes
-    #   -> power = 3/4 = 0.75 -> 191.25
-    assert artifact.texture_data is not None
-    assert artifact.texture_data.power_texture_data.shape == (10, 2)
-    black_col = artifact.texture_data.power_texture_data[:, 0]
-    gray_col = artifact.texture_data.power_texture_data[:, 1]
-    assert np.all(np.isclose(black_col, 255))
-    assert np.all(np.isclose(gray_col, 191, atol=1))
 
 
 def test_power_modulation_respects_step_power_setting(
@@ -340,13 +312,6 @@ def test_power_modulation_respects_step_power_setting(
     assert len(power_vals) == 2
     assert power_vals[0] == pytest.approx(expected_texture_row[0], 1)
     assert power_vals[1] == pytest.approx(expected_texture_row[1], 1)
-
-    # Texture data contains all 3 values
-    assert artifact.texture_data is not None
-    texture_row = artifact.texture_data.power_texture_data[0]
-    assert texture_row[0] == pytest.approx(51, 1)
-    assert texture_row[1] == pytest.approx(25, 1)
-    assert texture_row[2] == pytest.approx(0, 1)
 
 
 def test_invert_inverts_grayscale_values(
@@ -413,10 +378,13 @@ def test_invert_respects_alpha(laser: Laser, mock_workpiece: WorkPiece):
     artifact = producer.run(laser, surface, (10, 10), workpiece=mock_workpiece)
 
     assert isinstance(artifact, WorkPieceArtifact)
-    assert artifact.texture_data is not None
-    texture_row = artifact.texture_data.power_texture_data[0]
-    # Middle pixel should be 0 (transparent)
-    assert texture_row[1] == 0
-    # Other pixels should be > 0 (white with invert)
-    assert texture_row[0] > 0
-    assert texture_row[2] > 0
+    # Verify that two scan commands are created (one for each white pixel)
+    scan_cmds = [
+        c for c in artifact.ops if isinstance(c, ScanLinePowerCommand)
+    ]
+    assert len(scan_cmds) == 2
+    # Both scan commands should have > 0 power (white with invert)
+    assert len(scan_cmds[0].power_values) == 1
+    assert scan_cmds[0].power_values[0] > 0
+    assert len(scan_cmds[1].power_values) == 1
+    assert scan_cmds[1].power_values[0] > 0

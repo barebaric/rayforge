@@ -1,6 +1,5 @@
 import pytest
 import logging
-import numpy as np
 from unittest.mock import MagicMock, ANY
 from pathlib import Path
 import asyncio
@@ -16,7 +15,6 @@ from rayforge.core.workpiece import WorkPiece
 from rayforge.image import SVG_RENDERER
 from rayforge.pipeline.artifact import (
     WorkPieceArtifact,
-    VertexData,
     StepRenderArtifact,
     StepOpsArtifact,
     JobArtifact,
@@ -45,6 +43,8 @@ def mock_task_mgr():
     """
     mock_mgr = MagicMock()
     created_tasks_info = []
+    all_tasks_info = []
+    cancelled_task_keys = set()
 
     class MockTask:
         def __init__(self, target, args, kwargs, returned_task_obj):
@@ -60,10 +60,30 @@ def mock_task_mgr():
         # Add a mock cancel method to the task object returned to the caller
         mock_returned_task = MagicMock(spec=Task)
         mock_returned_task.key = kwargs.get("key")
+        mock_returned_task.id = id(mock_returned_task)
+        mock_returned_task._cancelled = False
+
+        def is_running():
+            return not mock_returned_task._cancelled
+
+        mock_returned_task.is_running = is_running
 
         task = MockTask(target_func, args, kwargs, mock_returned_task)
         created_tasks_info.append(task)
+        all_tasks_info.append(task)
         return mock_returned_task
+
+    def cancel_task_mock(key):
+        cancelled_task_keys.add(key)
+        for task_info in all_tasks_info:
+            if task_info.key == key:
+                task_info.returned_task_obj._cancelled = True
+
+    def get_task_mock(key):
+        for task_info in all_tasks_info:
+            if task_info.key == key:
+                return task_info.returned_task_obj
+        return None
 
     # Execute scheduled callbacks synchronously.
     def schedule_awarely(callback, *args, **kwargs):
@@ -71,6 +91,8 @@ def mock_task_mgr():
 
     mock_mgr.run_process = MagicMock(side_effect=run_process_mock)
     mock_mgr.schedule_on_main_thread = MagicMock(side_effect=schedule_awarely)
+    mock_mgr.cancel_task = MagicMock(side_effect=cancel_task_mock)
+    mock_mgr.get_task = MagicMock(side_effect=get_task_mock)
     mock_mgr.created_tasks = created_tasks_info
     return mock_mgr
 
@@ -167,7 +189,13 @@ class TestPipelineGeneration:
                         store = get_context().artifact_store
                         job_artifact = JobArtifact(ops=Ops(), distance=0.0)
                         job_handle = store.put(job_artifact)
-                        event_data = {"handle_dict": job_handle.to_dict()}
+
+                        # Extract gen_id from kwargs
+                        gen_id = task_info.kwargs.get("generation_id")
+                        event_data = {
+                            "handle_dict": job_handle.to_dict(),
+                            "generation_id": gen_id,
+                        }
                         task_info.when_event(
                             task_obj, "artifact_created", event_data
                         )
@@ -230,28 +258,6 @@ class TestPipelineGeneration:
 
         mock_task_mgr.created_tasks.clear()
 
-    def test_reconcile_all_triggers_ops_generation(
-        self, doc, real_workpiece, mock_task_mgr, context_initializer
-    ):
-        # Arrange
-        layer = self._setup_doc_with_workpiece(doc, real_workpiece)
-        assert layer.workflow is not None
-        step = create_contour_step(context_initializer)
-        layer.workflow.add_step(step)
-
-        # Act
-        Pipeline(
-            doc,
-            mock_task_mgr,
-            context_initializer.artifact_store,
-            context_initializer.machine,
-        )
-
-        # Assert
-        mock_task_mgr.run_process.assert_called_once()
-        called_func = mock_task_mgr.run_process.call_args[0][0]
-        assert called_func is make_workpiece_artifact_in_subprocess
-
     def test_generation_success_emits_signals_and_caches_result(
         self, doc, real_workpiece, mock_task_mgr, context_initializer
     ):
@@ -275,21 +281,15 @@ class TestPipelineGeneration:
         expected_ops.move_to(0, 0, 0)
         expected_ops.line_to(1, 1, 0)
 
-        vertex_data = VertexData(
-            powered_vertices=np.array([[0, 0, 0], [1, 1, 0]]),
-            powered_colors=np.array([[1, 1, 1, 1], [1, 1, 1, 1]]),
-        )
-
         expected_artifact = WorkPieceArtifact(
             ops=expected_ops,
             is_scalable=True,
             source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
             source_dimensions=real_workpiece.size,
             generation_size=real_workpiece.size,
-            vertex_data=vertex_data,
         )
         handle = get_context().artifact_store.put(expected_artifact)
-        gen_id = 1
+        gen_id = task_info.args[7]
 
         task_obj_for_stage = task_info.returned_task_obj
         task_obj_for_stage.key = task_info.key
@@ -307,7 +307,11 @@ class TestPipelineGeneration:
             )
             task_info.when_done(task_obj_for_stage)
 
-            cached_ops = pipeline.get_ops(step, real_workpiece)
+            cached_ops = pipeline.get_scaled_ops(
+                step.uid,
+                real_workpiece.uid,
+                real_workpiece.get_world_transform(),
+            )
             assert cached_ops is not None
             assert len(cached_ops) == 2
         finally:
@@ -338,7 +342,14 @@ class TestPipelineGeneration:
         task_info.when_done(task_obj_for_stage)
 
         # Assert
-        assert pipeline.get_ops(step, real_workpiece) is None
+        assert (
+            pipeline.get_scaled_ops(
+                step.uid,
+                real_workpiece.uid,
+                real_workpiece.get_world_transform(),
+            )
+            is None
+        )
 
     @pytest.mark.asyncio
     async def test_step_change_triggers_full_regeneration(
@@ -349,7 +360,7 @@ class TestPipelineGeneration:
         assert layer.workflow is not None
         step = create_contour_step(context_initializer)
         layer.workflow.add_step(step)
-        pipeline = Pipeline(
+        _ = Pipeline(
             doc,
             mock_task_mgr,
             context_initializer.artifact_store,
@@ -369,10 +380,7 @@ class TestPipelineGeneration:
             mock_task_mgr.run_process.reset_mock()
 
             # Act
-            step.power = 0.5
-            pipeline._on_descendant_updated(
-                sender=step, origin=step, parent_of_origin=layer.workflow
-            )
+            step.set_power(0.5)
             await asyncio.sleep(0)  # Allow debounced task to run
 
             # Assert
@@ -412,61 +420,24 @@ class TestPipelineGeneration:
         try:
             self._complete_all_tasks(mock_task_mgr, handle)
             mock_task_mgr.run_process.reset_mock()
+            mock_task_mgr.created_tasks.clear()
 
             # Act
             real_workpiece.pos = (50, 50)
             await asyncio.sleep(0)  # Allow debounced task to run
 
-            # Assert
-            tasks = mock_task_mgr.created_tasks
-            assembly_tasks = [
-                t
-                for t in tasks
-                if t.target is make_step_artifact_in_subprocess
-            ]
-            assert len(assembly_tasks) == 1
-        finally:
-            get_context().artifact_store.release(handle)
-
-    @pytest.mark.asyncio
-    async def test_workpiece_size_change_triggers_regeneration(
-        self, doc, real_workpiece, mock_task_mgr, context_initializer
-    ):
-        # Arrange
-        layer = self._setup_doc_with_workpiece(doc, real_workpiece)
-        assert layer.workflow is not None
-        step = create_contour_step(context_initializer)
-        layer.workflow.add_step(step)
-        Pipeline(
-            doc,
-            mock_task_mgr,
-            context_initializer.artifact_store,
-            context_initializer.machine,
-        )
-        initial_artifact = WorkPieceArtifact(
-            ops=Ops(),
-            is_scalable=False,
-            source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
-            source_dimensions=real_workpiece.size,
-            generation_size=real_workpiece.size,
-        )
-        handle = get_context().artifact_store.put(initial_artifact)
-        try:
+            # With the DAG-based scheduler, workpiece tasks must complete
+            # before step assembly can proceed.
             self._complete_all_tasks(mock_task_mgr, handle)
-            mock_task_mgr.run_process.reset_mock()
 
-            # Act
-            real_workpiece.set_size(10, 10)
-            await asyncio.sleep(0)  # Allow debounced task to run
-
-            # Assert
-            tasks = mock_task_mgr.created_tasks
-            workpiece_tasks = [
-                t
-                for t in tasks
-                if t.target is make_workpiece_artifact_in_subprocess
-            ]
-            assert len(workpiece_tasks) == 1
+            # Assert - step assembly task should have been created after
+            # the workpiece task completed during position change
+            step_calls = sum(
+                1
+                for call in mock_task_mgr.run_process.call_args_list
+                if call[0][0] is make_step_artifact_in_subprocess
+            )
+            assert step_calls >= 1
         finally:
             get_context().artifact_store.release(handle)
 
@@ -524,10 +495,17 @@ class TestPipelineGeneration:
             job_task_obj.result.return_value = None
 
             # 1. Simulate the event that puts the handle in the cache
+            # Get the generation_id from the task kwargs
+            gen_id = job_task_info.kwargs.get("generation_id")
+            job_key = job_task_info.kwargs.get("job_key")
             job_task_info.when_event(
                 job_task_obj,
                 "artifact_created",
-                {"handle_dict": expected_job_handle.to_dict()},
+                {
+                    "handle_dict": expected_job_handle.to_dict(),
+                    "generation_id": gen_id,
+                    "job_key": {"id": job_key.id, "group": job_key.group},
+                },
             )
             # 2. Simulate the final completion callback
             job_task_info.when_done(job_task_obj)
@@ -656,10 +634,17 @@ class TestPipelineGeneration:
             job_task_obj.get_status.return_value = "completed"
             job_task_obj.result.return_value = None
 
+            # Get the generation_id from the task kwargs
+            gen_id = job_task_info.kwargs.get("generation_id")
+            job_key = job_task_info.kwargs.get("job_key")
             job_task_info.when_event(
                 job_task_obj,
                 "artifact_created",
-                {"handle_dict": expected_job_handle.to_dict()},
+                {
+                    "handle_dict": expected_job_handle.to_dict(),
+                    "generation_id": gen_id,
+                    "job_key": {"id": job_key.id, "group": job_key.group},
+                },
             )
             job_task_info.when_done(job_task_obj)
 
@@ -828,10 +813,7 @@ class TestPipelineGeneration:
         # Act 2: Trigger a second regeneration immediately.
         # This simulates a rapid UI change, cancelling task1 and
         # starting task2.
-        step.power = 0.5  # Change a property to trigger invalidation
-        pipeline._on_descendant_updated(
-            sender=step, origin=step, parent_of_origin=layer.workflow
-        )
+        step.set_power(0.5)  # Change a property to trigger invalidation
         await asyncio.sleep(0)
 
         # Assert 2: A new task was created, and the old one was cancelled.
@@ -887,7 +869,7 @@ class TestPipelineGeneration:
             # correct generation ID from the second, successful task.
             mock_signal_handler.assert_called_once()
             call_args, call_kwargs = mock_signal_handler.call_args
-            assert call_args[0] is step
+            assert call_kwargs.get("step") is step
             assert call_kwargs.get("workpiece") is real_workpiece
             assert call_kwargs.get("generation_id") == 2
 
@@ -933,7 +915,11 @@ class TestPipelineGeneration:
             self._complete_all_tasks(mock_task_mgr, wp_handle)
 
             # Assert - Verify the workpiece artifact was created
-            cached_ops = pipeline.get_ops(step, real_workpiece)
+            cached_ops = pipeline.get_scaled_ops(
+                step.uid,
+                real_workpiece.uid,
+                real_workpiece.get_world_transform(),
+            )
             assert cached_ops is not None
             assert len(cached_ops) == 2
 

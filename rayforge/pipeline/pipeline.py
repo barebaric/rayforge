@@ -1,14 +1,3 @@
-"""
-Defines the Pipeline, the central orchestrator for the data
-pipeline.
-
-This module contains the Pipeline class, which acts as a bridge
-between the pure data models in the `core` module (Doc, Layer, Step,
-WorkPiece) and the execution logic of the pipeline. Its primary responsibility
-is to listen for changes in the document and delegate tasks to the
-appropriate pipeline stages.
-"""
-
 from __future__ import annotations
 import logging
 import asyncio
@@ -17,10 +6,11 @@ from typing import (
     Optional,
     TYPE_CHECKING,
     Generator,
-    Tuple,
     Union,
     Any,
     Callable,
+    Dict,
+    List,
 )
 from blinker import Signal
 from contextlib import contextmanager
@@ -36,17 +26,19 @@ from .artifact import (
     ArtifactManager,
     BaseArtifactHandle,
     JobArtifactHandle,
-    RenderContext,
     StepRenderArtifactHandle,
     StepOpsArtifactHandle,
     WorkPieceArtifact,
 )
+from .artifact.key import ArtifactKey
+from .context import GenerationContext
+from .dag import DagScheduler
 from .stage import (
     JobPipelineStage,
     StepPipelineStage,
     WorkPiecePipelineStage,
-    WorkPieceViewPipelineStage,
 )
+from .stage.job_runner import JobDescription
 
 
 if TYPE_CHECKING:
@@ -68,21 +60,16 @@ class Pipeline:
 
     Attributes:
         doc (Doc): The document model this pipeline is observing.
-        ops_generation_starting (Signal): Fired when generation begins for a
-            (Step, WorkPiece) pair.
-        ops_chunk_available (Signal): Fired as chunks of Ops become available
-            from a background process.
-        ops_generation_finished (Signal): Fired when generation is complete
-            for a (Step, WorkPiece) pair.
-        step_generation_finished (Signal): Fired when a step's visual artifact
-            is fully assembled and ready for rendering. This fires before
-            the full task (e.g., time estimation) is complete.
-        job_generation_finished (Signal): Fired when the final job artifact
-            is ready.
-        time_estimation_updated (Signal): Fired when a time estimate is
-            updated.
+        _data_generation_id (int): The current data generation ID.
         processing_state_changed (Signal): Fired when the busy state of the
             entire pipeline changes.
+        workpiece_starting (Signal): Fired when workpiece generation starts.
+        workpiece_artifact_ready (Signal): Fired when a workpiece artifact is
+            ready.
+        workpiece_artifact_adopted (Signal): Fired when a workpiece artifact
+            has been adopted.
+        job_time_updated (Signal): Fired when the job time estimate is
+            updated.
     """
 
     RECONCILIATION_DELAY_MS = 200
@@ -110,65 +97,68 @@ class Pipeline:
         self._task_manager = task_manager
         self._artifact_store = artifact_store
         self._machine = machine
+        self._data_generation_id = 0
+        self._contexts: Dict[int, GenerationContext] = {}
+        self._active_context: Optional[GenerationContext] = None
+        self._docitem_to_artifact_key: Dict[DocItem, ArtifactKey] = {}
         self._pause_count = 0
         self._last_known_busy_state = False
         self._reconciliation_timer: Optional[threading.Timer] = None
-        self._step_invalidation_timer: Optional[threading.Timer] = None
-        self._pending_step_invalidations: set[str] = set()
 
         # Signals for notifying the UI of generation progress
         self.processing_state_changed = Signal()
         self.workpiece_starting = Signal()
-        self.workpiece_visual_chunk_ready = Signal()
         self.workpiece_artifact_ready = Signal()
         self.workpiece_artifact_adopted = Signal()
-        self.step_render_ready = Signal()
-        self.step_time_updated = Signal()
+        self.step_assembly_starting = Signal()
         self.job_time_updated = Signal()
-        self.job_ready = Signal()
-        self.workpiece_view_ready = Signal()
-        self.workpiece_view_created = Signal()
-        self.workpiece_view_updated = Signal()
+        self.visual_chunk_available = Signal()
 
         # Initialize stages and connect signals ONE time during construction.
         self._initialize_stages_and_connections()
 
         if self._doc:
             self._connect_signals()
-            self.reconcile_all()
+            self.reconcile_data()
 
     def _initialize_stages_and_connections(self):
         """A new helper method to contain all stage setup logic."""
         logger.debug(f"[{id(self)}] Initializing stages and connections.")
-        self._artifact_manager = ArtifactManager(self._artifact_store)
         self._last_known_busy_state = False
 
-        # Stages
-        self._workpiece_stage = WorkPiecePipelineStage(
-            self._task_manager, self._artifact_manager, self._machine
-        )
-        self._step_stage = StepPipelineStage(
-            self._task_manager, self._artifact_manager, self._machine
-        )
-        self._job_stage = JobPipelineStage(
-            self._task_manager, self._artifact_manager, self._machine
-        )
-        self._workpiece_view_stage = WorkPieceViewPipelineStage(
+        # Initialize artifact manager
+        self._artifact_manager = ArtifactManager(self._artifact_store)
+
+        # Initialize DAG scheduler with required dependencies
+        self._scheduler = DagScheduler(
             self._task_manager, self._artifact_manager, self._machine
         )
 
-        # Connect signals from stages
+        # Stages - no scheduler reference needed, they emit signals
+        self._workpiece_stage = WorkPiecePipelineStage(
+            self._task_manager,
+            self._artifact_manager,
+            self._machine,
+        )
+        self._step_stage = StepPipelineStage(
+            self._task_manager,
+            self._artifact_manager,
+            self._machine,
+        )
+        self._job_stage = JobPipelineStage(
+            self._task_manager,
+            self._artifact_manager,
+            self._machine,
+        )
+
+        # Inject stages into scheduler (scheduler subscribes to stage signals)
+        self._scheduler.set_workpiece_stage(self._workpiece_stage)
+        self._scheduler.set_step_stage(self._step_stage)
+        self._scheduler.set_job_stage(self._job_stage)
+
+        # Connect signals from stages for pipeline-level handling
         self._workpiece_stage.generation_starting.connect(
             self._on_workpiece_generation_starting
-        )
-        self._workpiece_stage.generation_starting.connect(
-            self._workpiece_view_stage._on_generation_starting
-        )
-        self._workpiece_stage.visual_chunk_available.connect(
-            self._on_workpiece_visual_chunk_available
-        )
-        self._workpiece_stage.visual_chunk_available.connect(
-            self._workpiece_view_stage._on_workpiece_chunk_available
         )
         self._workpiece_stage.generation_finished.connect(
             self._on_workpiece_generation_finished
@@ -176,32 +166,23 @@ class Pipeline:
         self._workpiece_stage.workpiece_artifact_adopted.connect(
             self._on_workpiece_artifact_adopted
         )
+        self._workpiece_stage.visual_chunk_available.connect(
+            self._on_visual_chunk_available
+        )
+        self._step_stage.assembly_starting.connect(
+            self._on_step_assembly_starting
+        )
         self._step_stage.generation_finished.connect(
             self._on_step_task_completed
-        )
-        self._step_stage.render_artifact_ready.connect(
-            self._on_step_render_artifact_ready
         )
         self._step_stage.time_estimate_ready.connect(
             self._on_step_time_estimate_ready
         )
-        self._job_stage.generation_finished.connect(
+        self._job_stage.job_generation_finished.connect(
             self._on_job_generation_finished
         )
-        self._job_stage.generation_failed.connect(
+        self._job_stage.job_generation_failed.connect(
             self._on_job_generation_failed
-        )
-        self._workpiece_view_stage.view_artifact_ready.connect(
-            self._on_workpiece_view_ready
-        )
-        self._workpiece_view_stage.view_artifact_created.connect(
-            self._on_workpiece_view_created
-        )
-        self._workpiece_view_stage.view_artifact_updated.connect(
-            self._on_workpiece_view_updated
-        )
-        self._workpiece_view_stage.generation_finished.connect(
-            self._on_workpiece_view_generation_finished
         )
 
     def shutdown(self) -> None:
@@ -213,15 +194,10 @@ class Pipeline:
         if self._reconciliation_timer:
             self._reconciliation_timer.cancel()
             self._reconciliation_timer = None
-        if self._step_invalidation_timer:
-            self._step_invalidation_timer.cancel()
-            self._step_invalidation_timer = None
         logger.info("Pipeline shutting down...")
-        # Shutdown stages first to release retained handles
         self._workpiece_stage.shutdown()
         self._step_stage.shutdown()
         self._job_stage.shutdown()
-        self._workpiece_view_stage.shutdown()
         self._artifact_manager.shutdown()
         logger.info("All pipeline resources released.")
         logger.debug(f"[{id(self)}] Pipeline shutdown finished")
@@ -230,6 +206,11 @@ class Pipeline:
     def artifact_manager(self) -> ArtifactManager:
         """Returns the artifact manager used by this pipeline."""
         return self._artifact_manager
+
+    @property
+    def task_manager(self) -> "TaskManager":
+        """Returns the task manager used by this pipeline."""
+        return self._task_manager
 
     @property
     def doc(self) -> Optional[Doc]:
@@ -258,49 +239,27 @@ class Pipeline:
 
         if self._doc:
             self._connect_signals()
-            self.reconcile_all()
-
-    def _request_step_assembly(self, step_uid: str) -> None:
-        """
-        Schedules a debounced assembly trigger for the given step.
-        """
-        self._pending_step_invalidations.add(step_uid)
-        if self._step_invalidation_timer is None:
-            self._step_invalidation_timer = threading.Timer(
-                0.05, self._on_step_invalidation_timer
-            )
-            self._step_invalidation_timer.start()
-
-    def _on_step_invalidation_timer(self) -> None:
-        self._task_manager.schedule_on_main_thread(
-            self._execute_pending_step_assemblies
-        )
-
-    def _execute_pending_step_assemblies(self) -> None:
-        self._step_invalidation_timer = None
-        if not self._doc:
-            return
-        uids_to_process = list(self._pending_step_invalidations)
-        self._pending_step_invalidations.clear()
-        for uid in uids_to_process:
-            step = self._find_step_by_uid(uid)
-            if step:
-                self._step_stage.mark_stale_and_trigger(step)
+            self.reconcile_data()
 
     @property
     def is_busy(self) -> bool:
         """
-        Returns True if the pipeline has pending work (debouncing) or if any
-        pipeline stage is currently running tasks.
+        Returns True if the pipeline is currently processing or has pending
+        work.
+
+        The pipeline is busy if:
+        1. A reconciliation timer is pending, OR
+        2. The scheduler has pending work (PROCESSING nodes), OR
+        3. Any context (active or inactive) has active tasks
         """
-        return (
-            self._reconciliation_timer is not None
-            or self._workpiece_stage.is_busy
-            or self._step_stage.is_busy
-            or self._step_invalidation_timer is not None
-            or self._job_stage.is_busy
-            or self._workpiece_view_stage.is_busy
-        )
+        if self._reconciliation_timer is not None:
+            return True
+        if self._scheduler.has_pending_work():
+            return True
+        for ctx in self._contexts.values():
+            if ctx.has_active_tasks():
+                return True
+        return False
 
     def _check_and_update_processing_state(self) -> None:
         """
@@ -309,6 +268,15 @@ class Pipeline:
         avoiding race conditions.
         """
         current_busy_state = self.is_busy
+        logger.debug(
+            f"_check_and_update_processing_state: "
+            f"current_busy={current_busy_state}, "
+            f"last_known={self._last_known_busy_state}, "
+            f"reconciliation_timer={self._reconciliation_timer is not None}, "
+            f"graph_nodes={len(self._scheduler.graph.get_all_nodes())}, "
+            f"data_gen_id={self._data_generation_id}"
+        )
+
         if self._last_known_busy_state != current_busy_state:
             self.processing_state_changed.send(
                 self, is_processing=current_busy_state
@@ -385,9 +353,11 @@ class Pipeline:
 
         if self._reconciliation_timer:
             self._reconciliation_timer.cancel()
-        else:
+
+        if not self._reconciliation_timer:
             # If there was no timer, we are transitioning from idle to busy.
-            # Immediately update the state.
+            # Immediately update the state, but only if we're not already busy
+            # (to avoid spurious state changes during rapid invalidations).
             self._task_manager.schedule_on_main_thread(
                 self._check_and_update_processing_state
             )
@@ -410,7 +380,7 @@ class Pipeline:
     def _execute_reconciliation(self) -> None:
         """The debounced method that actually runs reconciliation."""
         self._reconciliation_timer = None
-        self.reconcile_all()
+        self.reconcile_data()
 
     def _find_step_by_uid(self, uid: str) -> Optional[Step]:
         """Finds a step anywhere in the document by its UID."""
@@ -432,6 +402,31 @@ class Pipeline:
                 return wp
         return None
 
+    def _invalidate_node(self, key: ArtifactKey) -> None:
+        """
+        Centralized invalidation using the DAG.
+
+        This method marks a node as dirty in the DAG, which automatically
+        cascades to all dependents. It also cancels any running tasks
+        and cleans up artifact manager entries.
+
+        Args:
+            key: The ArtifactKey of the node to invalidate.
+        """
+        logger.debug(f"_invalidate_node: Invalidating node {key}")
+
+        task = self._task_manager.get_task(key)
+        if task and task.is_running():
+            logger.debug(f"_invalidate_node: Canceling running task for {key}")
+            self._task_manager.cancel_task(key)
+
+        if key.group == "workpiece":
+            self._artifact_manager.invalidate_for_workpiece(key)
+        elif key.group == "step":
+            self._artifact_manager.invalidate_for_step(key)
+
+        self._scheduler.mark_node_dirty(key)
+
     def _on_descendant_added(
         self, sender: Any, *, origin: DocItem, parent_of_origin: DocItem
     ) -> None:
@@ -441,11 +436,8 @@ class Pipeline:
     def _on_descendant_removed(
         self, sender: Any, *, origin: DocItem, parent_of_origin: DocItem
     ) -> None:
-        """Handles the removal of a model object."""
+        """Handles removal of a model object using DAG-based invalidation."""
         if isinstance(origin, WorkPiece):
-            # The parent_of_origin is the direct parent (Layer or Group)
-            # from which the item was removed. We traverse up the tree from
-            # there to robustly find the containing layer.
             layer: Optional[Layer] = None
             current_item: Optional[DocItem] = parent_of_origin
             while current_item:
@@ -457,12 +449,33 @@ class Pipeline:
             if layer and layer.workflow:
                 logger.debug(
                     f"Workpiece '{origin.name}' removed from layer "
-                    f"'{layer.name}'. Invalidating old step artifacts."
+                    f"'{layer.name}'. Invalidating step artifacts via DAG."
                 )
                 for step in layer.workflow.steps:
-                    self._step_stage.invalidate(step.uid)
+                    step_key = ArtifactKey.for_step(step.uid)
+                    self._invalidate_node(step_key)
 
         self._schedule_reconciliation()
+
+    def _collect_affected_workpieces(self, origin: DocItem) -> List[WorkPiece]:
+        """
+        Collects all workpieces affected by a transform change.
+
+        Handles WorkPiece, Group, and Layer cases uniformly by collecting
+        either the single workpiece or all descendant workpieces.
+
+        Args:
+            origin: The DocItem whose transform changed (WorkPiece, Group,
+                    or Layer).
+
+        Returns:
+            A list of WorkPiece instances affected by the transform change.
+        """
+        if isinstance(origin, WorkPiece):
+            return [origin]
+        elif isinstance(origin, (Group, Layer)):
+            return list(origin.get_descendants(of_type=WorkPiece))
+        return []
 
     def _on_descendant_updated(
         self,
@@ -471,12 +484,41 @@ class Pipeline:
         origin: Union[Step, WorkPiece],
         parent_of_origin: DocItem,
     ) -> None:
-        """Handles non-transform updates that require regeneration."""
+        """
+        Handles property changes that require artifact regeneration.
+
+        This includes geometry changes, parameter updates, and other
+        non-transform modifications. These changes require full
+        re-production of the workpiece artifact.
+
+        Uses DAG-based invalidation with FULL_REPRODUCTION scope:
+        - Invalidating a workpiece-step pair automatically cascades to steps
+        - Steps cascade to the job
+        - This ensures all dependent artifacts are regenerated
+
+        Args:
+            sender: The signal sender.
+            origin: The Step or WorkPiece that was updated.
+            parent_of_origin: The parent of the updated item.
+        """
+        logger.debug(
+            f"_on_descendant_updated called with "
+            f"origin={type(origin).__name__}, "
+            f"origin.uid={origin.uid}"
+        )
         if isinstance(origin, Step):
-            self._workpiece_stage.invalidate_for_step(origin.uid)
-            self._step_stage.invalidate(origin.uid)
+            step_key = ArtifactKey.for_step(origin.uid)
+            for wp in origin.layer.all_workpieces if origin.layer else []:
+                wp_step_key = ArtifactKey.for_workpiece(wp.uid, origin.uid)
+                self._invalidate_node(wp_step_key)
+            self._invalidate_node(step_key)
         elif isinstance(origin, WorkPiece):
-            self._workpiece_stage.invalidate_for_workpiece(origin.uid)
+            if origin.layer and origin.layer.workflow:
+                for step in origin.layer.workflow.steps:
+                    wp_step_key = ArtifactKey.for_workpiece(
+                        origin.uid, step.uid
+                    )
+                    self._invalidate_node(wp_step_key)
 
         self._schedule_reconciliation()
 
@@ -486,33 +528,59 @@ class Pipeline:
         *,
         origin: Union[WorkPiece, Group, Layer],
         parent_of_origin: DocItem,
+        old_matrix: Optional["Matrix"] = None,
     ) -> None:
-        """Handles transform changes by invalidating downstream artifacts."""
-        workpieces_to_check = []
-        if isinstance(origin, WorkPiece):
-            workpieces_to_check.append(origin)
-        elif isinstance(origin, (Group, Layer)):
-            workpieces_to_check.extend(
-                origin.get_descendants(of_type=WorkPiece)
-            )
+        """
+        Handles transform changes with selective invalidation.
+
+        Different transform changes require different invalidation scopes:
+        - Position/rotation only: Use STEP_ONLY scope (skip workpiece
+          regeneration since geometry is unchanged)
+        - Size change: Use FULL_REPRODUCTION scope (workpiece geometry
+          changed, requiring regeneration)
+
+        This selective approach optimizes performance by avoiding
+        unnecessary workpiece regeneration for pure position/rotation
+        changes.
+
+        Args:
+            sender: The signal sender.
+            origin: The WorkPiece, Group, or Layer whose transform changed.
+            parent_of_origin: The parent of the transformed item.
+            old_matrix: The previous transform matrix, used to detect size
+                         changes. Only provided for WorkPiece origins.
+        """
+        workpieces_to_check = self._collect_affected_workpieces(origin)
 
         for wp in workpieces_to_check:
-            # The WorkPieceArtifact is generated based on its size, not its
-            # position. The reconciliation logic in WorkPiecePipelineStage will
-            # check if the size has changed and invalidate if necessary.
-            # We no longer need to invalidate it eagerly here.
+            size_changed = False
+            if (
+                wp is origin
+                and isinstance(origin, WorkPiece)
+                and old_matrix is not None
+            ):
+                _, _, _, old_sx, old_sy, _ = old_matrix.decompose()
+                _, _, _, new_sx, new_sy, _ = origin.matrix.decompose()
+                size_changed = (
+                    abs(old_sx - new_sx) > 1e-9 or abs(old_sy - new_sy) > 1e-9
+                )
 
-            # The StepArtifact, however, depends on the world-space positions
-            # of all its workpieces, so it must be invalidated.
             if wp.layer and wp.layer.workflow:
                 for step in wp.layer.workflow.steps:
-                    self._request_step_assembly(step.uid)
+                    if size_changed:
+                        wp_step_key = ArtifactKey.for_workpiece(
+                            wp.uid, step.uid
+                        )
+                        self._invalidate_node(wp_step_key)
+                    step_key = ArtifactKey.for_step(step.uid)
+                    self._invalidate_node(step_key)
 
         self._schedule_reconciliation()
 
     def _on_job_assembly_invalidated(self, sender: Any) -> None:
         """
         Handles the signal sent when per-step transformers change.
+        Uses DAG-based invalidation for all step artifacts.
         """
         logger.debug(
             "Per-step transformers changed. Invalidating step artifacts."
@@ -521,7 +589,8 @@ class Pipeline:
             for layer in self.doc.layers:
                 if layer.workflow:
                     for step in layer.workflow.steps:
-                        self._request_step_assembly(step.uid)
+                        step_key = ArtifactKey.for_step(step.uid)
+                        self._invalidate_node(step_key)
         self._schedule_reconciliation()
 
     def _on_workpiece_generation_starting(
@@ -534,31 +603,14 @@ class Pipeline:
     ) -> None:
         """Relays signal from the workpiece stage."""
         self.workpiece_starting.send(
-            step, workpiece=workpiece, generation_id=generation_id
+            self,
+            step=step,
+            workpiece=workpiece,
+            generation_id=generation_id,
         )
         self._task_manager.schedule_on_main_thread(
             self._check_and_update_processing_state
         )
-
-    def _on_workpiece_visual_chunk_available(
-        self,
-        sender: WorkPiecePipelineStage,
-        *,
-        key: Tuple[str, str],
-        chunk_handle: BaseArtifactHandle,
-        generation_id: int,
-    ) -> None:
-        """Relays chunk signal, finding the model objects first."""
-        step_uid, workpiece_uid = key
-        workpiece = self._find_workpiece_by_uid(workpiece_uid)
-        step = self._find_step_by_uid(step_uid)
-        if workpiece and step:
-            self.workpiece_visual_chunk_ready.send(
-                step,
-                workpiece=workpiece,
-                chunk_handle=chunk_handle,
-                generation_id=generation_id,
-            )
 
     def _on_workpiece_generation_finished(
         self,
@@ -566,18 +618,29 @@ class Pipeline:
         *,
         step: Step,
         workpiece: WorkPiece,
+        handle: Optional[BaseArtifactHandle],
         generation_id: int,
+        task_status: str = "completed",
     ) -> None:
         """
-        Relays signal and triggers downstream step assembly.
+        Relays signal and triggers downstream step assembly via DAG.
         """
-        self.workpiece_artifact_ready.send(
-            step, workpiece=workpiece, generation_id=generation_id
-        )
-        self._request_step_assembly(step.uid)
-        self._task_manager.schedule_on_main_thread(
-            self._check_and_update_processing_state
-        )
+        if handle is not None:
+            self.workpiece_artifact_ready.send(
+                self,
+                step=step,
+                workpiece=workpiece,
+                handle=handle,
+                generation_id=generation_id,
+            )
+
+        if task_status != "canceled":
+            self._scheduler.process_graph()
+
+        if not self.is_busy and self._reconciliation_timer is None:
+            self._task_manager.schedule_on_main_thread(
+                self._check_and_update_processing_state
+            )
 
     def _on_workpiece_artifact_adopted(
         self,
@@ -588,23 +651,55 @@ class Pipeline:
     ) -> None:
         """
         Handles the signal that a workpiece artifact has been adopted.
-        Relays the signal to notify workpiece elements and triggers
-        step assembly to ensure step ops artifacts are created promptly.
+        Relays the signal to notify workpiece elements.
         """
+        key = (step_uid, workpiece_uid)
+        logger.debug(
+            f"_on_workpiece_artifact_adopted: Workpiece artifact adopted "
+            f"for {key}"
+        )
         self.workpiece_artifact_adopted.send(
             self, step_uid=step_uid, workpiece_uid=workpiece_uid
         )
-        self._schedule_reconciliation()
 
-    def _on_step_render_artifact_ready(
-        self, sender: StepPipelineStage, *, step: Step
+    def _on_visual_chunk_available(
+        self,
+        sender,
+        *,
+        key,
+        chunk_handle,
+        generation_id: int,
+        step_uid: str,
     ) -> None:
         """
-        Handles the signal that a step's visual data is ready.
-        This now fires the public `step_generation_finished` signal,
-        triggering fast UI updates.
+        Relays visual chunk availability from the scheduler.
         """
-        self.step_render_ready.send(self, step=step, generation_id=0)
+        self.visual_chunk_available.send(
+            self,
+            key=key,
+            chunk_handle=chunk_handle,
+            generation_id=generation_id,
+            step_uid=step_uid,
+        )
+
+    def _on_step_assembly_starting(
+        self,
+        sender,
+        *,
+        step: Step,
+        workpiece: WorkPiece,
+        handle: BaseArtifactHandle,
+    ) -> None:
+        """
+        Relays signal when step assembly starts with valid workpiece deps.
+
+        This is called when a step is about to be assembled and its workpiece
+        dependencies already have valid handles (e.g., when adding a new step
+        to an existing workpiece).
+        """
+        self.step_assembly_starting.send(
+            self, step=step, workpiece=workpiece, handle=handle
+        )
 
     def _on_step_task_completed(
         self, sender: StepPipelineStage, *, step: Step, generation_id: int
@@ -622,7 +717,6 @@ class Pipeline:
         self, sender: StepPipelineStage, *, step: Step, time: float
     ) -> None:
         """Handles the new, accurate time estimate from the step stage."""
-        self.step_time_updated.send(self)
         self._task_manager.schedule_on_main_thread(
             self._update_and_emit_preview_time
         )
@@ -662,133 +756,131 @@ class Pipeline:
 
     def _on_job_generation_finished(
         self,
-        sender: JobPipelineStage,
+        sender,
         *,
         handle: Optional[BaseArtifactHandle],
         task_status: str,
     ) -> None:
-        """Relays signal from the job stage for successful completion."""
-        self.job_ready.send(self, handle=handle)
+        """Relays signal from the scheduler for successful job completion."""
         self._task_manager.schedule_on_main_thread(
             self._check_and_update_processing_state
         )
 
     def _on_job_generation_failed(
         self,
-        sender: JobPipelineStage,
+        sender,
         *,
         error: Optional[Exception],
         task_status: str,
     ) -> None:
-        """Relays signal from the job stage for failed completion."""
-        # For now, a failure is treated like a completion with no handle.
-        # Future UI could use the error for notifications.
-        self.job_ready.send(self, handle=None)
+        """Relays signal from the scheduler for failed job completion."""
         self._task_manager.schedule_on_main_thread(
             self._check_and_update_processing_state
         )
 
-    def _on_workpiece_view_created(
-        self,
-        sender: WorkPieceViewPipelineStage,
-        *,
-        step_uid: str,
-        workpiece_uid: str,
-        handle: BaseArtifactHandle,
-    ):
-        """Relays signal that a new view bitmap artifact has been created."""
-        self.workpiece_view_created.send(
-            self,
-            step_uid=step_uid,
-            workpiece_uid=workpiece_uid,
-            handle=handle,
-        )
-
-    def _on_workpiece_view_updated(
-        self,
-        sender: WorkPieceViewPipelineStage,
-        *,
-        step_uid: str,
-        workpiece_uid: str,
-        handle: BaseArtifactHandle,
-    ):
-        """Relays signal that a view artifact has been updated."""
-        self.workpiece_view_updated.send(
-            self,
-            step_uid=step_uid,
-            workpiece_uid=workpiece_uid,
-            handle=handle,
-        )
-
-    def _on_workpiece_view_ready(
-        self,
-        sender: WorkPieceViewPipelineStage,
-        *,
-        step_uid: str,
-        workpiece_uid: str,
-        handle: BaseArtifactHandle,
-    ):
-        """Relays signal that a new view bitmap artifact is ready."""
-        self.workpiece_view_ready.send(
-            self,
-            step_uid=step_uid,
-            workpiece_uid=workpiece_uid,
-            handle=handle,
-        )
-
-    def _on_workpiece_view_generation_finished(
-        self, sender, *, key: Tuple[str, str]
-    ):
+    def reconcile_data(self) -> None:
         """
-        Handles completion of a view render task to update the overall busy
-        state.
+        Synchronizes data stages with the document by declaring the full
+        set of required artifacts for the new data generation.
         """
-        self._task_manager.schedule_on_main_thread(
-            self._check_and_update_processing_state
-        )
-
-    def reconcile_all(self) -> None:
-        """Synchronizes all stages with the document."""
         if self.is_paused or not self.doc:
             return
-        logger.debug(f"{self.__class__.__name__}.reconcile_all called")
+        logger.debug(
+            f"{self.__class__.__name__}.reconcile_data called "
+            f"(data_gen_id will be {self._data_generation_id + 1})"
+        )
 
-        # Immediately notify UI that estimates are now stale and recalculating.
+        self._data_generation_id += 1
+        data_gen_id = self._data_generation_id
+
+        old_context = self._active_context
+        if old_context is not None:
+            old_context.mark_superseded()
+
+        ctx = GenerationContext(
+            generation_id=data_gen_id,
+            release_callback=self._artifact_manager.release_handle,
+        )
+        self._contexts[data_gen_id] = ctx
+        self._active_context = ctx
+        self._scheduler.set_context(ctx)
+
+        self._declare_data_artifacts(data_gen_id)
+
+        self._register_data_dependencies()
+
+        # Build the DAG and set scheduler context before stage reconciliation
+        self._scheduler.set_doc(self.doc)
+        self._scheduler.graph.build_from_doc(self.doc, self._artifact_manager)
+        self._scheduler.set_generation_id(data_gen_id)
+        self._scheduler.sync_graph_with_artifact_manager()
+
         self.job_time_updated.send(self, total_seconds=None)
 
-        self._workpiece_stage.reconcile(self.doc)
-        self._step_stage.reconcile(self.doc)
-        self._job_stage.reconcile(self.doc)
+        self._scheduler.process_graph()
+
         self._update_and_emit_preview_time()
+
+        # Prune old generations to keep the ledger clean and is_busy accurate
+        processing_gen_ids = self._scheduler.get_processing_generation_ids()
+        self._artifact_manager.prune(
+            active_data_gen_ids={self._data_generation_id},
+            processing_data_gen_ids=processing_gen_ids,
+        )
+
         self._task_manager.schedule_on_main_thread(
             self._check_and_update_processing_state
         )
 
-    def get_estimated_time(
-        self, step: Step, workpiece: WorkPiece
-    ) -> Optional[float]:
-        """
-        Retrieves a cached time estimate.
-        NOTE: As part of the time estimation refactor, we no longer
-        provide per-workpiece estimates, only per-step. This method will
-        return None.
-        """
-        return None
+    def _declare_data_artifacts(self, gen_id: int) -> None:
+        """Declares all data artifacts for a generation."""
+        if not self.doc:
+            return
+        all_keys: set[ArtifactKey] = set()
 
-    def get_ops(self, step: Step, workpiece: WorkPiece) -> Optional[Ops]:
-        """
-        [Compatibility Method] Retrieves ops by wrapping get_scaled_ops.
-        """
-        return self.get_scaled_ops(
-            step.uid, workpiece.uid, workpiece.get_world_transform()
-        )
+        for layer in self.doc.layers:
+            if layer.workflow and layer.workflow.steps:
+                for step in layer.workflow.steps:
+                    all_keys.add(ArtifactKey.for_step(step.uid))
+                    for workpiece in layer.all_workpieces:
+                        all_keys.add(
+                            ArtifactKey.for_workpiece(workpiece.uid, step.uid)
+                        )
+
+        self._artifact_manager.declare_generation(all_keys, gen_id)
+
+    def _register_data_dependencies(self) -> None:
+        """Registers dependencies between data artifacts."""
+        if not self.doc:
+            return
+        for layer in self.doc.layers:
+            if layer.workflow:
+                for step in layer.workflow.steps:
+                    step_key = ArtifactKey.for_step(step.uid)
+                    for workpiece in layer.all_workpieces:
+                        wp_step_key = ArtifactKey.for_workpiece(
+                            workpiece.uid, step.uid
+                        )
+                        self._artifact_manager.register_dependency(
+                            child_key=wp_step_key, parent_key=step_key
+                        )
+
+    def _get_or_create_artifact_key(
+        self, item: DocItem, group: str
+    ) -> ArtifactKey:
+        key = self._docitem_to_artifact_key.get(item)
+        if key is None:
+            key = ArtifactKey(id=item.uid, group=group)
+            self._docitem_to_artifact_key[item] = key
+        return key
 
     def get_artifact_handle(
         self, step_uid: str, workpiece_uid: str
     ) -> Optional[BaseArtifactHandle]:
         """Retrieves the handle for a generated artifact from the cache."""
+        key = ArtifactKey.for_workpiece(workpiece_uid, step_uid)
         return self._artifact_manager.get_workpiece_handle(
-            step_uid, workpiece_uid
+            key, self._data_generation_id
         )
 
     def get_step_render_artifact_handle(
@@ -807,7 +899,10 @@ class Pipeline:
         Retrieves the handle for a generated step ops artifact. This is
         intended for the job assembly process.
         """
-        return self._artifact_manager.get_step_ops_handle(step_uid)
+        key = ArtifactKey.for_step(step_uid)
+        return self._artifact_manager.get_step_ops_handle(
+            key, self._data_generation_id
+        )
 
     def get_scaled_ops(
         self, step_uid: str, workpiece_uid: str, world_transform: Matrix
@@ -817,7 +912,7 @@ class Pipeline:
         final world size.
         """
         return self._workpiece_stage.get_scaled_ops(
-            step_uid, workpiece_uid, world_transform
+            step_uid, workpiece_uid, world_transform, self._data_generation_id
         )
 
     def get_artifact(
@@ -825,14 +920,75 @@ class Pipeline:
     ) -> Optional[WorkPieceArtifact]:
         """Retrieves the complete artifact from the cache on-demand."""
         return self._workpiece_stage.get_artifact(
-            step.uid, workpiece.uid, workpiece.size
+            step.uid, workpiece.uid, workpiece.size, self._data_generation_id
         )
 
     def generate_job(self) -> None:
-        """Triggers the final job generation process."""
-        if self.doc:
-            # This method now just calls the stage's method without a callback
-            self._job_stage.generate_job(self.doc)
+        """Triggers the final job generation process as fire-and-forget."""
+
+        def no_op_callback(
+            handle: Optional[JobArtifactHandle], error: Optional[Exception]
+        ):
+            if error:
+                logger.error(f"Fire-and-forget job generation failed: {error}")
+
+        self.generate_job_artifact(when_done=no_op_callback)
+
+    def _validate_job_generation_state(self) -> Optional[RuntimeError]:
+        """
+        Validates the state before job generation.
+
+        Returns:
+            An error if validation fails, None otherwise.
+        """
+        if self._scheduler.is_job_running:
+            msg = "Job generation is already in progress."
+            logger.warning(msg)
+            return RuntimeError(msg)
+
+        if not self._machine:
+            msg = "Cannot generate job: No machine is configured."
+            logger.error(msg)
+            return RuntimeError(msg)
+
+        return None
+
+    def _get_step_uids(self, doc: Optional["Doc"]) -> list:
+        """
+        Collects step UIDs from document layers.
+
+        Returns:
+            List of step UIDs.
+        """
+        if not doc:
+            return []
+        step_uids = []
+        for layer in doc.layers:
+            if not layer.workflow:
+                continue
+            for step in layer.workflow.steps:
+                if not step.visible:
+                    continue
+                step_uids.append(step.uid)
+        return step_uids
+
+    def _create_job_description(
+        self,
+        step_handles: dict,
+        machine: "Machine",
+        doc: "Doc",
+    ) -> JobDescription:
+        """
+        Creates a job description from the provided components.
+
+        Returns:
+            A JobDescription object.
+        """
+        return JobDescription(
+            step_artifact_handles_by_uid=step_handles,
+            machine_dict=machine.to_dict(),
+            doc_dict=doc.to_dict(),
+        )
 
     def generate_job_artifact(
         self,
@@ -850,11 +1006,50 @@ class Pipeline:
                        an ArtifactHandle on success, or (None, error) on
                        failure.
         """
-        # The logic is now much simpler. We just pass the callback along.
-        if self.doc:
-            self._job_stage.generate_job(self.doc, on_done=when_done)
-        else:
+        if not self.doc:
             when_done(None, RuntimeError("No document is loaded."))
+            return
+
+        validation_error = self._validate_job_generation_state()
+        if validation_error:
+            when_done(None, validation_error)
+            return
+
+        step_uids = self._get_step_uids(self.doc)
+        if not step_uids:
+            logger.warning(
+                "generate_job_artifact called with no visible steps. "
+                "Job is empty."
+            )
+            when_done(None, None)
+            return
+
+        all_deps_ready = True
+        for uid in step_uids:
+            step_key = ArtifactKey.for_step(uid)
+            handle = self._artifact_manager.get_step_ops_handle(
+                step_key, self._data_generation_id
+            )
+            if handle is None:
+                all_deps_ready = False
+                break
+
+        if not all_deps_ready:
+            when_done(
+                None,
+                RuntimeError(
+                    "Job dependencies are not ready. "
+                    "Please wait and try again."
+                ),
+            )
+            return
+
+        self._machine.hydrate()
+
+        self._scheduler.generate_job(
+            step_uids=step_uids,
+            on_done=when_done,
+        )
 
     async def generate_job_artifact_async(
         self,
@@ -890,24 +1085,29 @@ class Pipeline:
         logger.debug(f"[{id(self)}] Await returned with result: {result}.")
         return result
 
-    def request_view_render(
+    def get_existing_job_handle(
         self,
-        step_uid: str,
-        workpiece_uid: str,
-        context: RenderContext,
-        force: bool = False,
-    ):
+    ) -> Optional[JobArtifactHandle]:
         """
-        Forwards a request to the view generator stage to render a new
-        bitmap for a workpiece view.
+        Returns the most recent job artifact handle if one exists.
 
-        Args:
-            step_uid: The unique identifier of the step.
-            workpiece_uid: The unique identifier of the workpiece.
-            context: The render context to use.
-            force: If True, force re-rendering even if the context appears
-                unchanged.
+        This method checks for existing job artifacts from previous
+        generations and returns the handle without triggering a new
+        generation. Useful for UI operations that need to display
+        existing data without reprocessing.
+
+        Returns:
+            The JobArtifactHandle if a valid one exists, None otherwise.
         """
-        self._workpiece_view_stage.request_view_render(
-            step_uid, workpiece_uid, context, force=force
-        )
+        job_nodes = self._scheduler.graph.get_nodes_by_group("job")
+        for node in job_nodes:
+            handle = self._artifact_manager.get_job_handle(
+                node.key, self._data_generation_id
+            )
+            if handle is None and self._data_generation_id > 1:
+                handle = self._artifact_manager.get_job_handle(
+                    node.key, self._data_generation_id - 1
+                )
+            if handle is not None:
+                return handle
+        return None

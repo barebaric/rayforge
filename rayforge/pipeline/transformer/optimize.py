@@ -3,7 +3,6 @@ import math
 import logging
 from typing import Optional, List, Dict, Any, Tuple, cast
 from scipy.spatial import cKDTree  # type: ignore
-from ...core.workpiece import WorkPiece
 from ...core.ops import (
     Ops,
     State,
@@ -13,11 +12,10 @@ from ...core.ops import (
     Command,
 )
 from ...core.ops.flip import flip_segment
-from ...core.ops.group import (
-    group_by_state_continuity,
-)
+from ...core.ops.group import group_by_state_continuity
+from ...core.workpiece import WorkPiece
+from ...shared.tasker.progress import ProgressContext
 from .base import OpsTransformer, ExecutionPhase
-from ...shared.tasker.context import BaseExecutionContext, ExecutionContext
 
 
 logger = logging.getLogger(__name__)
@@ -159,7 +157,7 @@ def group_mixed_continuity(
 
 
 def kdtree_order_segments(
-    context: BaseExecutionContext, segments: List[List[MovingCommand]]
+    context: ProgressContext, segments: List[List[MovingCommand]]
 ) -> List[List[MovingCommand]]:
     """
     Orders segments using a nearest-neighbor search accelerated by a k-d tree.
@@ -252,7 +250,7 @@ def kdtree_order_segments(
 
 
 def greedy_order_segments(
-    context: BaseExecutionContext,
+    context: ProgressContext,
     segments: List[List[MovingCommand]],
 ) -> List[List[MovingCommand]]:
     """
@@ -308,7 +306,7 @@ def greedy_order_segments(
 
 
 def two_opt(
-    context: BaseExecutionContext,
+    context: ProgressContext,
     ordered: List[List[MovingCommand]],
     max_iter: int,
 ) -> List[List[MovingCommand]]:
@@ -530,10 +528,10 @@ class Optimize(OpsTransformer):
         self,
         ops: Ops,
         workpiece: Optional[WorkPiece] = None,
-        context: Optional[BaseExecutionContext] = None,
+        context: Optional[ProgressContext] = None,
     ) -> None:
         if context is None:
-            context = ExecutionContext()
+            return
 
         # Thresholds for the smart optimization strategy
         TWO_OPT_SEGMENT_THRESHOLD = 1000
@@ -561,7 +559,7 @@ class Optimize(OpsTransformer):
         # This context covers the main optimization loop over all
         # long_segments.
         optimize_ctx = context.sub_context(
-            base_progress=0.0, progress_range=optimize_weight
+            base_progress=0.0, progress_range=optimize_weight, total=1.0
         )
 
         # Step 3: Categorize and bucket segments into optimization jobs
@@ -590,7 +588,9 @@ class Optimize(OpsTransformer):
                 else 0
             )
             segment_ctx = optimize_ctx.sub_context(
-                base_progress=base_progress, progress_range=progress_range
+                base_progress=base_progress,
+                progress_range=progress_range,
+                total=1.0,
             )
             context.set_message(
                 _("Optimizing segment {i}/{total}...").format(
@@ -611,7 +611,7 @@ class Optimize(OpsTransformer):
                 # All optimizable jobs start with k-d tree
                 kdtree_weight = 0.7 if job_type == "two_opt" else 1.0
                 kdtree_ctx = segment_ctx.sub_context(
-                    base_progress=0.0, progress_range=kdtree_weight
+                    base_progress=0.0, progress_range=kdtree_weight, total=1.0
                 )
                 segment_ctx.set_message(_("Finding nearest paths..."))
                 ordered_segments = kdtree_order_segments(
@@ -626,7 +626,9 @@ class Optimize(OpsTransformer):
                         "applying 2-opt refinement."
                     )
                     two_opt_ctx = segment_ctx.sub_context(
-                        base_progress=kdtree_weight, progress_range=0.3
+                        base_progress=kdtree_weight,
+                        progress_range=0.3,
+                        total=1.0,
                     )
                     segment_ctx.set_message(_("Applying 2-opt refinement..."))
                     final_segments = two_opt(two_opt_ctx, ordered_segments, 10)
@@ -641,7 +643,9 @@ class Optimize(OpsTransformer):
         # Step 5: Re-assemble the Ops object from processed results.
         context.set_message(_("Reassembling optimized paths..."))
         reassemble_ctx = context.sub_context(
-            base_progress=optimize_weight, progress_range=reassemble_weight
+            base_progress=optimize_weight,
+            progress_range=reassemble_weight,
+            total=1.0,
         )
 
         # Reconstruct the result in the original order of long_segments

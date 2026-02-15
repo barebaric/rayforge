@@ -7,6 +7,7 @@ from ...core.ops import (
     OpsSectionEndCommand,
     SectionType,
 )
+from ...shared.tasker.progress import ProgressContext
 from ..artifact import WorkPieceArtifact
 from ..coord import CoordinateSystem
 from .base import OpsProducer, CutSide
@@ -14,7 +15,6 @@ from .base import OpsProducer, CutSide
 if TYPE_CHECKING:
     from ...core.workpiece import WorkPiece
     from ...machine.models.laser import Laser
-    from ...shared.tasker.proxy import BaseExecutionContext
 
 logger = logging.getLogger(__name__)
 
@@ -55,7 +55,7 @@ class FrameProducer(OpsProducer):
         workpiece: "Optional[WorkPiece]" = None,
         settings: Optional[Dict[str, Any]] = None,
         y_offset_mm: float = 0.0,
-        proxy: Optional["BaseExecutionContext"] = None,
+        context: Optional[ProgressContext] = None,
     ) -> WorkPieceArtifact:
         if workpiece is None:
             raise ValueError("FrameProducer requires a workpiece context.")

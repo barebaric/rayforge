@@ -122,7 +122,7 @@ class LayerElement(CanvasElement):
             if isinstance(item_data, WorkPiece):
                 new_elem = WorkPieceElement(
                     workpiece=item_data,
-                    pipeline=work_surface.editor.pipeline,
+                    view_manager=work_surface.editor.view_manager,
                     canvas=self.canvas,
                     selectable=self.data.visible,
                 )

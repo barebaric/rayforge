@@ -13,19 +13,15 @@ from rayforge.pipeline.transformer.optimize import (
     two_opt,
     kdtree_order_segments,
 )
-from rayforge.shared.tasker.context import (
-    BaseExecutionContext,
-    ExecutionContext,
-)
 
 
 @pytest.fixture
-def ctx() -> BaseExecutionContext:
+def ctx(mock_progress_context) -> object:
     """Provides a dummy execution context for functions that require it."""
-    return ExecutionContext()
+    return mock_progress_context
 
 
-def test_greedy_order_segments(ctx):
+def test_greedy_order_segments(mock_progress_context):
     """Test the greedy algorithm for initial segment ordering."""
     # Seg1: (0,0) -> (10,0) - should be chosen first
     # Seg2: (100,100) -> (110,100)
@@ -35,7 +31,7 @@ def test_greedy_order_segments(ctx):
     s3 = [MoveToCommand((10, 0, 0)), LineToCommand((10, 10, 0))]
     segments = [s1, s2, s3]
 
-    ordered = greedy_order_segments(ctx, segments)
+    ordered = greedy_order_segments(mock_progress_context, segments)
     assert len(ordered) == 3
     # Expected order: s1, s3, s2
     assert ordered[0] is s1
@@ -43,7 +39,7 @@ def test_greedy_order_segments(ctx):
     assert ordered[2] is s2
 
 
-def test_greedy_order_with_flip(ctx):
+def test_greedy_order_with_flip(mock_progress_context):
     """Test greedy ordering when flipping a segment is optimal."""
     # Seg1: (0,0) -> (10,0)
     # Seg2: (100,100) -> (110,100)
@@ -53,7 +49,7 @@ def test_greedy_order_with_flip(ctx):
     s3 = [MoveToCommand((10, 10, 0)), LineToCommand((10, 0, 0))]
     segments = [s1, s2, s3]
 
-    ordered = greedy_order_segments(ctx, segments)
+    ordered = greedy_order_segments(mock_progress_context, segments)
 
     # Expected: s1, flipped(s3), s2
     assert ordered[0] is s1
@@ -63,7 +59,7 @@ def test_greedy_order_with_flip(ctx):
     assert ordered[2] is s2
 
 
-def test_kdtree_order_segments(ctx):
+def test_kdtree_order_segments(mock_progress_context):
     """
     Test the k-d tree algorithm for initial segment ordering and flipping.
     """
@@ -75,7 +71,7 @@ def test_kdtree_order_segments(ctx):
     sD = [MoveToCommand((110, 0, 0)), LineToCommand((110, 10, 0))]
     segments = [sA, sB, sC, sD]
 
-    ordered = kdtree_order_segments(ctx, segments)
+    ordered = kdtree_order_segments(mock_progress_context, segments)
 
     assert len(ordered) == 4
     # Expected order: A, flipped(C), B, D
@@ -92,7 +88,7 @@ def test_kdtree_order_segments(ctx):
     assert ordered[3] is sD
 
 
-def test_two_opt(ctx):
+def test_two_opt(mock_progress_context):
     """Test the 2-opt algorithm for un-crossing paths."""
     # A(0,0->1,0), B(10,10->11,10), C(2,0->1,0), D(11,10->12,10)
     # Order A, B, C, D is crossed. Optimal is A, C, B, D.
@@ -104,7 +100,7 @@ def test_two_opt(ctx):
 
     ordered = [sA, sB, sC, sD]
 
-    optimized = two_opt(ctx, ordered, 10)
+    optimized = two_opt(mock_progress_context, ordered, 10)
 
     # 2-opt should reverse [sB, sC] to [sC, sB] and flip each segment.
     # Expected final sequence: [sA, flipped(sC), flipped(sB), sD]
@@ -119,7 +115,7 @@ def _calculate_travel_distance(ops: Ops) -> float:
     return ops.distance() - ops.cut_distance()
 
 
-def test_run_optimization():
+def test_run_optimization(mock_progress_context):
     """Test the full optimization process on a sample Ops object."""
     # Create an inefficient path
     # It draws two separate squares, but jumps between them for each segment
@@ -146,7 +142,7 @@ def test_run_optimization():
 
     # Run the optimizer
     optimizer = Optimize()
-    optimizer.run(ops)
+    optimizer.run(ops, context=mock_progress_context)
 
     # Calculate travel distance after optimization
     ops.preload_state()
@@ -162,7 +158,7 @@ def test_run_optimization():
     assert cuts_after == 4
 
 
-def test_run_with_air_assist_change():
+def test_run_with_air_assist_change(mock_progress_context):
     """
     Verify that segments with different air assist states are not reordered.
     """
@@ -185,7 +181,7 @@ def test_run_with_air_assist_change():
 
     # Run optimizer
     optimizer = Optimize()
-    optimizer.run(ops)
+    optimizer.run(ops, context=mock_progress_context)
 
     ops.preload_state()
 
@@ -215,7 +211,7 @@ def test_run_with_air_assist_change():
             assert cmd.state.air_assist, "State should be air ON"
 
 
-def test_run_preserves_markers():
+def test_run_preserves_markers(mock_progress_context):
     """Verify that marker commands act as optimization boundaries."""
     ops = Ops()
     ops.set_power(1.0)
@@ -232,7 +228,7 @@ def test_run_preserves_markers():
     ops.line_to(110, 110)  # Seg 4
 
     optimizer = Optimize()
-    optimizer.run(ops)
+    optimizer.run(ops, context=mock_progress_context)
 
     # Find the marker
     marker_idx = -1
@@ -267,7 +263,7 @@ def test_run_preserves_markers():
     assert (10, 0, 0) in starts_after or (110, 100, 0) in starts_after
 
 
-def test_run_optimization_with_unsplit_scanline():
+def test_run_optimization_with_unsplit_scanline(mock_progress_context):
     """
     Verify the optimizer can flip a fully "on" ScanLinePowerCommand
     without splitting it.
@@ -284,7 +280,7 @@ def test_run_optimization_with_unsplit_scanline():
     ops.scan_to(10, 0, 0, power_values=bytearray([10, 20, 30]))
 
     optimizer = Optimize()
-    optimizer.run(ops)
+    optimizer.run(ops, context=mock_progress_context)
     ops.preload_state()
     travel_after = _calculate_travel_distance(ops)
 
@@ -311,7 +307,7 @@ def test_run_optimization_with_unsplit_scanline():
     assert flipped_scan_cmd.power_values == bytearray([30, 20, 10])
 
 
-def test_run_optimization_with_split_scanline():
+def test_run_optimization_with_split_scanline(mock_progress_context):
     """
     Verify the optimizer splits a ScanLine with blank areas and optimizes
     the resulting segment. This version uses geometry that forces a reorder.
@@ -331,7 +327,7 @@ def test_run_optimization_with_split_scanline():
     ops.scan_to(110, 5, 0, power_values=bytearray([50, 50, 0, 0, 0, 60, 60]))
 
     optimizer = Optimize()
-    optimizer.run(ops)
+    optimizer.run(ops, context=mock_progress_context)
     ops.preload_state()
 
     moving_cmds = [c for c in ops.commands if isinstance(c, MovingCommand)]
@@ -372,7 +368,7 @@ def test_run_optimization_with_split_scanline():
     assert scan_cmd_2.power_values == bytearray([50, 50])[::-1]
 
 
-def test_optimizer_does_not_split_overscanned_scanline():
+def test_optimizer_does_not_split_overscanned_scanline(mock_progress_context):
     """
     Tests that the optimizer does not split a ScanLinePowerCommand that has
     been padded with zero-power values by the OverscanTransformer.
@@ -398,7 +394,7 @@ def test_optimizer_does_not_split_overscanned_scanline():
 
     # Act: Run the optimizer
     optimizer = Optimize()
-    optimizer.run(ops)
+    optimizer.run(ops, context=mock_progress_context)
 
     # Assert: The optimizer should NOT have split the scanline.
     scan_cmds = [
@@ -422,7 +418,7 @@ def test_optimizer_does_not_split_overscanned_scanline():
     assert final_scan_cmd.power_values == power_values
 
 
-def test_run_optimization_scanline_flip_preserves_state():
+def test_run_optimization_scanline_flip_preserves_state(mock_progress_context):
     """
     Verify that when a ScanLine segment is flipped, the new commands
     (MoveTo, ScanLinePowerCommand) correctly inherit the state.
@@ -441,7 +437,7 @@ def test_run_optimization_scanline_flip_preserves_state():
     ops.scan_to(10, 0, power_values=bytearray([10, 20, 30]))
 
     optimizer = Optimize()
-    optimizer.run(ops)
+    optimizer.run(ops, context=mock_progress_context)
     ops.preload_state()
 
     scan_cmds = [
@@ -467,7 +463,9 @@ def test_run_optimization_scanline_flip_preserves_state():
     assert scan_cmd.state.air_assist is True
 
 
-def test_run_optimization_scanline_split_preserves_state():
+def test_run_optimization_scanline_split_preserves_state(
+    mock_progress_context,
+):
     """
     Verify that when a ScanLine is split, all new sub-segments correctly
     inherit the original state.
@@ -485,7 +483,7 @@ def test_run_optimization_scanline_split_preserves_state():
     ops.line_to(101, 101)
 
     optimizer = Optimize()
-    optimizer.run(ops)
+    optimizer.run(ops, context=mock_progress_context)
     ops.preload_state()
 
     # The original ScanLine should be replaced by two new ones
@@ -512,7 +510,7 @@ def test_run_optimization_scanline_split_preserves_state():
         assert scan_cmd.state.air_assist is False
 
 
-def test_run_with_state_change_and_scanlines():
+def test_run_with_state_change_and_scanlines(mock_progress_context):
     """
     Verify that ScanLine segments with different states are not reordered
     across state boundaries, and that each optimized block has the correct
@@ -537,7 +535,7 @@ def test_run_with_state_change_and_scanlines():
     ops.scan_to(110, 110, power_values=bytearray([40]))
 
     optimizer = Optimize()
-    optimizer.run(ops)
+    optimizer.run(ops, context=mock_progress_context)
     ops.preload_state()
 
     # Find the index where the state changes
@@ -591,7 +589,9 @@ def test_run_with_state_change_and_scanlines():
     )
 
 
-def test_run_optimization_with_overscan_and_flip_preserves_state():
+def test_run_optimization_with_overscan_and_flip_preserves_state(
+    mock_progress_context,
+):
     """
     Tests that an overscanned ScanLine that gets flipped by the optimizer
     correctly preserves its state. This simulates the real-world scenario
@@ -617,7 +617,7 @@ def test_run_optimization_with_overscan_and_flip_preserves_state():
     # point on Path 2, which is its end (15,10), causing a flip.
 
     optimizer = Optimize()
-    optimizer.run(ops)
+    optimizer.run(ops, context=mock_progress_context)
     ops.preload_state()
 
     # Find the scan command after optimization

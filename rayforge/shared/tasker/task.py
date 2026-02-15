@@ -145,6 +145,10 @@ class Task:
         """Returns True if the task is in a terminal state."""
         return self._status in ("completed", "failed", "canceled")
 
+    def is_running(self) -> bool:
+        """Returns True if the task is currently running."""
+        return self._status == "running"
+
     def result(self) -> Any:
         if self._task:  # It's an asyncio-managed task
             if not self._task.done():

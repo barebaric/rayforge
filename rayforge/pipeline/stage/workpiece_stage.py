@@ -1,151 +1,63 @@
 from __future__ import annotations
 import logging
 import math
-import multiprocessing as mp
-from typing import TYPE_CHECKING, Dict, Tuple, Optional
-from blinker import Signal
+from typing import TYPE_CHECKING, Dict, Optional, Tuple
 from copy import deepcopy
-
-from .base import PipelineStage
+from blinker import Signal
 from ...core.ops import Ops, ScanLinePowerCommand
-from ..artifact import (
-    WorkPieceArtifact,
-    WorkPieceArtifactHandle,
-)
-from .workpiece_runner import make_workpiece_artifact_in_subprocess
+from ...shared.tasker.task import Task
+from ...shared.util.size import sizes_are_close
+from ..artifact import WorkPieceArtifact
+from ..artifact.key import ArtifactKey
+from ..artifact.manager import make_composite_key
+from ..dag.node import NodeState
+from .base import PipelineStage
 
 if TYPE_CHECKING:
-    import threading
-    from ...core.doc import Doc
     from ...core.matrix import Matrix
     from ...core.step import Step
     from ...core.workpiece import WorkPiece
     from ...machine.models.machine import Machine
     from ...shared.tasker.manager import TaskManager
-    from ...shared.tasker.task import Task
+    from ..context import GenerationContext
+    from ..artifact import BaseArtifactHandle
     from ..artifact.manager import ArtifactManager
 
 logger = logging.getLogger(__name__)
 
-WorkpieceKey = Tuple[str, str]  # (step_uid, workpiece_uid)
-
 
 class WorkPiecePipelineStage(PipelineStage):
     """
-    Generates and caches base artifacts for (Step, WorkPiece) pairs.
+    Provides access to workpiece artifacts and handles invalidation.
+    Task launching creation, and completion handling reside here.
     """
 
     def __init__(
         self,
         task_manager: "TaskManager",
         artifact_manager: "ArtifactManager",
-        machine: "Machine",
+        machine: Optional["Machine"],
     ):
         super().__init__(task_manager, artifact_manager)
         self._machine = machine
-        self._generation_id_map: Dict[WorkpieceKey, int] = {}
-        self._active_tasks: Dict[WorkpieceKey, "Task"] = {}
-        self._adoption_events: Dict[WorkpieceKey, "threading.Event"] = {}
-
-        # Signals for notifying the pipeline of generation progress
         self.generation_starting = Signal()
-        self.visual_chunk_available = Signal()
         self.generation_finished = Signal()
         self.workpiece_artifact_adopted = Signal()
-
-    def _sizes_are_close(
-        self,
-        size1: Optional[Tuple[float, float]],
-        size2: Optional[Tuple[float, float]],
-    ) -> bool:
-        """Compares two size tuples with a safe tolerance for float errors."""
-        if size1 is None or size2 is None:
-            return False  # If either is None, they can't be close.
-        # Use an absolute tolerance suitable for physical dimensions in mm.
-        # 1e-6 is one-millionth of a millimeter, robust enough for any UI op.
-        return math.isclose(size1[0], size2[0], abs_tol=1e-6) and math.isclose(
-            size1[1], size2[1], abs_tol=1e-6
-        )
-
-    @property
-    def is_busy(self) -> bool:
-        return bool(self._active_tasks)
-
-    def shutdown(self):
-        logger.debug("WorkPiecePipelineStage shutting down.")
-        for key in list(self._active_tasks.keys()):
-            self._cleanup_task(key)
-        self._active_tasks.clear()
-        self._adoption_events.clear()
-
-    def reconcile(self, doc: "Doc"):
-        """
-        Synchronizes the cache with the document, generating artifacts
-        for new or invalid items and cleaning up obsolete ones.
-        """
-        logger.debug("WorkPiecePipelineStage reconciling...")
-        all_current_pairs = {
-            (step.uid, workpiece.uid)
-            for layer in doc.layers
-            if layer.workflow is not None
-            for step in layer.workflow.steps
-            for workpiece in layer.all_workpieces
-        }
-        cached_pairs = self._artifact_manager.get_all_workpiece_keys()
-
-        # Clean up artifacts for (step, workpiece) pairs that no longer exist
-        for s_uid, w_uid in cached_pairs - all_current_pairs:
-            self._cleanup_entry((s_uid, w_uid))
-
-        # Check all valid pairs and generate artifacts for those that are stale
-        for layer in doc.layers:
-            if layer.workflow is None:
-                continue
-            for step in layer.workflow.steps:
-                if not step.visible:
-                    continue
-                for workpiece in layer.all_workpieces:
-                    if self._is_stale(step, workpiece):
-                        self._launch_task(step, workpiece)
-
-    def _is_stale(self, step: "Step", workpiece: "WorkPiece") -> bool:
-        """
-        Checks if the artifact for a (step, workpiece) pair is missing
-        or invalid.
-        """
-        handle = self._artifact_manager.get_workpiece_handle(
-            step.uid, workpiece.uid
-        )
-        if handle is None:
-            # Artifact is missing, so it's stale.
-            return True
-
-        # If the artifact's content is scalable (e.g., pure vectors), it does
-        # not need to be regenerated when the workpiece is resized. The
-        # scaling is applied dynamically by downstream stages.
-        if handle.is_scalable:
-            return False
-
-        # For non-scalable artifacts (like rasters), the content is baked to a
-        # specific size. It IS stale if the workpiece's current size doesn't
-        # match the size it was generated for.
-        if not self._sizes_are_close(handle.generation_size, workpiece.size):
-            return True
-
-        # If we reach here, the artifact exists, is non-scalable, and its
-        # size matches. It is not stale.
-        return False
+        self.visual_chunk_available = Signal()
 
     def invalidate_for_step(self, step_uid: str):
         """Invalidates all workpiece artifacts associated with a step."""
         logger.debug(f"Invalidating workpiece artifacts for step '{step_uid}'")
-        keys_to_clean = [
-            k
-            for k in self._artifact_manager.get_all_workpiece_keys()
-            if k[0] == step_uid
-        ]
+        step_key = ArtifactKey.for_step(step_uid)
+        keys_to_clean = self._artifact_manager.get_dependents(step_key)
+        logger.debug(
+            f"WorkPiecePipelineStage: keys_to_clean for step '{step_uid}': "
+            f"{keys_to_clean}"
+        )
         for key in keys_to_clean:
             self._cleanup_entry(key)
+        self._artifact_manager.invalidate_for_step(step_key)
+        self._emit_node_state(step_key, NodeState.DIRTY)
 
     def invalidate_for_workpiece(self, workpiece_uid: str):
         """Invalidates all artifacts for a workpiece across all steps."""
@@ -153,69 +65,50 @@ class WorkPiecePipelineStage(PipelineStage):
         keys_to_clean = [
             k
             for k in self._artifact_manager.get_all_workpiece_keys()
-            if k[1] == workpiece_uid
+            if k.id == workpiece_uid
         ]
         for key in keys_to_clean:
             self._cleanup_entry(key)
 
-    def _cleanup_task(self, key: WorkpieceKey):
-        """
-        Requests cancellation of an active task but does NOT remove it from
-        the active_tasks dict. The removal is handled by _on_task_complete.
-        """
-        if key in self._active_tasks:
-            task = self._active_tasks[key]
-            logger.debug(f"Requesting cancellation for active task {key}")
-            self._task_manager.cancel_task(task.key)
-        self._adoption_events.pop(key, None)
-
-    def _cleanup_entry(self, key: WorkpieceKey):
+    def _cleanup_entry(self, key: ArtifactKey):
         """
         Removes a workpiece cache entry, releases its resources, and
         requests cancellation of its task.
         """
         logger.debug(f"WorkPiecePipelineStage: Cleaning up entry {key}.")
-        s_uid, w_uid = key
+        task = self._task_manager.get_task(key)
+        if task and task.is_running():
+            logger.debug(f"Task {key} is running, canceling it")
+            self._task_manager.cancel_task(key)
+        self._artifact_manager.invalidate_for_workpiece(key)
 
-        # NOTE: We do NOT pop the generation ID here. If we remove it, the next
-        # task starts at 1. If an event from the old task (ID 1) arrives late,
-        # it matches the new ID (1) and corrupts the state. By keeping the
-        # ID in the map, the next task becomes 2, correctly invalidating 1.
-        # self._generation_id_map.pop(key, None)
-
-        self._cleanup_task(key)
-        self._artifact_manager.invalidate_for_workpiece(s_uid, w_uid)
-
-    def _launch_task(self, step: "Step", workpiece: "WorkPiece"):
-        """Starts the asynchronous task to generate operations."""
-        key = (step.uid, workpiece.uid)
-
+    def validate_for_launch(
+        self, key: ArtifactKey, workpiece: "WorkPiece"
+    ) -> bool:
+        """
+        Validates workpiece size before launching.
+        Returns True if launch should proceed, False otherwise.
+        """
         if any(s <= 0 for s in workpiece.size):
-            self._cleanup_entry(key)
-            return
-
-        if key in self._active_tasks:
-            logger.debug(
-                f"Requesting cancellation of existing task for key {key}."
+            logger.warning(
+                f"Skipping launch for {key}: invalid size {workpiece.size}"
             )
-            self._cleanup_task(key)
+            self._cleanup_entry(key)
+            return False
+        return True
 
-        generation_id = self._generation_id_map.get(key, 0) + 1
-        self._generation_id_map[key] = generation_id
-
-        self.generation_starting.send(
-            self, step=step, workpiece=workpiece, generation_id=generation_id
-        )
-
-        def when_done_callback(task: "Task"):
-            self._on_task_complete(task, key, generation_id, step, workpiece)
-
-        settings = step.get_settings()
-
+    def prepare_task_settings(
+        self, step: "Step"
+    ) -> Optional[Tuple[Dict, Optional[Dict]]]:
+        """
+        Prepares settings with machine parameters and selects laser.
+        Returns (settings_dict, laser_dict) or None if preparation fails.
+        """
         if not self._machine:
             logger.error("Cannot generate ops: No machine is configured.")
-            return
+            return None
 
+        settings = step.get_settings()
         settings["machine_supports_arcs"] = self._machine.supports_arcs
         settings["arc_tolerance"] = self._machine.arc_tolerance
 
@@ -223,216 +116,402 @@ class WorkPiecePipelineStage(PipelineStage):
             selected_laser = step.get_selected_laser(self._machine)
         except ValueError as e:
             logger.error(f"Cannot select laser for step '{step.name}': {e}")
+            return None
+
+        return settings, selected_laser.to_dict()
+
+    def prepare_workpiece_dict(self, workpiece: "WorkPiece") -> Dict:
+        """
+        Prepares the fully-hydrated, serializable WorkPiece dictionary.
+        """
+        world_workpiece = workpiece.in_world()
+        return world_workpiece.to_dict()
+
+    def validate_task_completion(
+        self,
+        key: ArtifactKey,
+        ledger_key: ArtifactKey,
+        task_generation_id: int,
+    ) -> bool:
+        """
+        Validates task completion by checking the generation ID against the
+        ledger. Returns True if task should be processed, False otherwise.
+        """
+        composite_key = make_composite_key(ledger_key, task_generation_id)
+        entry = self._artifact_manager.get_ledger_entry(composite_key)
+        if entry is None:
+            logger.debug(
+                f"[{key}] Ledger entry missing. Ignoring task completion."
+            )
+            return False
+
+        if entry.generation_id != task_generation_id:
+            logger.debug(
+                f"[{key}] Stale generation ID {task_generation_id}. "
+                f"Current: {entry.generation_id}. Ignoring."
+            )
+            return False
+
+        return True
+
+    def check_result_stale(
+        self, key: ArtifactKey, workpiece: "WorkPiece", generation_id: int
+    ) -> bool:
+        """
+        Checks if result is stale due to size change during generation.
+        Returns True if stale, False otherwise.
+        """
+        handle = self._artifact_manager.get_workpiece_handle(
+            key, generation_id
+        )
+
+        if handle and not handle.is_scalable:
+            if not sizes_are_close(handle.generation_size, workpiece.size):
+                logger.info(
+                    f"[{key}] Result for {key} is stale due to size "
+                    "change during generation. Regenerating."
+                )
+                return True
+
+        return False
+
+    def handle_artifact_created(
+        self,
+        key: ArtifactKey,
+        ledger_key: ArtifactKey,
+        handle: Optional["BaseArtifactHandle"],
+        generation_id: int,
+        step_uid: str,
+    ):
+        """
+        Processes artifact_created event.
+        """
+        if handle is not None:
+            self._artifact_manager.cache_handle(
+                ledger_key, handle, generation_id
+            )
+        else:
+            self._artifact_manager.complete_generation(
+                ledger_key, generation_id, handle=None
+            )
+
+        self._emit_node_state(ledger_key, NodeState.VALID)
+
+        self.workpiece_artifact_adopted.send(
+            self, step_uid=step_uid, workpiece_uid=key.id
+        )
+
+    def handle_visual_chunk_ready(
+        self, key: ArtifactKey, handle, generation_id: int, step_uid: str
+    ):
+        """
+        Processes visual_chunk_ready event.
+        """
+        self.visual_chunk_available.send(
+            self,
+            key=key,
+            chunk_handle=handle,
+            generation_id=generation_id,
+            step_uid=step_uid,
+        )
+
+    def handle_canceled_task(
+        self,
+        key: ArtifactKey,
+        ledger_key: ArtifactKey,
+        step: "Step",
+        workpiece: "WorkPiece",
+        task_generation_id: int,
+    ):
+        """
+        Handles canceled task status.
+        """
+        handle = self._artifact_manager.get_workpiece_handle(
+            key, task_generation_id
+        )
+        if handle is not None:
+            logger.debug(
+                f"[{key}] Task was canceled but artifact already committed, "
+                "sending finished signal with handle."
+            )
+            self.generation_finished.send(
+                self,
+                step=step,
+                workpiece=workpiece,
+                handle=handle,
+                generation_id=task_generation_id,
+                task_status="canceled",
+            )
             return
 
-        # Prepare the fully-hydrated, serializable WorkPiece dictionary.
-        world_workpiece = workpiece.in_world()
-        workpiece_dict = world_workpiece.to_dict()
+        logger.debug(
+            f"[{key}] Task was canceled. Marking node dirty and "
+            "sending finished signal."
+        )
+        self._emit_node_state(ledger_key, NodeState.DIRTY)
+        self.generation_finished.send(
+            self,
+            step=step,
+            workpiece=workpiece,
+            handle=None,
+            generation_id=task_generation_id,
+            task_status="canceled",
+        )
 
-        # Create an adoption event for the handshake protocol
-        manager = mp.Manager()
-        adoption_event = manager.Event()
-        self._adoption_events[key] = adoption_event
+    def handle_completed_task(
+        self,
+        key: ArtifactKey,
+        ledger_key: ArtifactKey,
+        task: "Task",
+        step: "Step",
+        workpiece: "WorkPiece",
+        task_generation_id: int,
+        generation_id: int,
+        context: Optional["GenerationContext"],
+    ) -> tuple[bool, Optional["BaseArtifactHandle"]]:
+        """
+        Handles completed task status.
+        Returns (True if processing should continue, handle) or
+        (False, None) if task was relaunched due to stale result.
+        """
+        try:
+            task.result()
 
-        task = self._task_manager.run_process(
+            if self.check_result_stale(key, workpiece, generation_id):
+                self.launch_task(step, workpiece, generation_id, context)
+                return False, None
+        except Exception as e:
+            logger.error(f"[{key}] Error processing result for {key}: {e}")
+
+        handle = self._artifact_manager.get_workpiece_handle(
+            key, generation_id
+        )
+        if handle is None:
+            logger.debug(
+                f"[{key}] Task completed with no handle "
+                f"(empty workpiece or pending artifact_created event)."
+            )
+
+        return True, handle
+
+    def handle_failed_task(
+        self,
+        key: ArtifactKey,
+        step: "Step",
+        workpiece: "WorkPiece",
+        task_generation_id: int,
+    ):
+        """
+        Handles failed task status.
+        """
+        wp_name = workpiece.name
+        error_msg = f"Ops generation for '{step.name}' on '{wp_name}' failed."
+        logger.warning(f"[{key}] {error_msg}")
+        self._emit_node_state(key, NodeState.ERROR)
+
+    def launch_task(
+        self,
+        step: "Step",
+        workpiece: "WorkPiece",
+        generation_id: int,
+        context: Optional["GenerationContext"],
+    ):
+        """Starts the asynchronous task to generate operations."""
+        key = ArtifactKey.for_workpiece(workpiece.uid, step.uid)
+        ledger_key = key
+
+        if not self.validate_for_launch(key, workpiece):
+            logger.debug(
+                f"Validation failed for launch "
+                f"step_uid={step.uid}, workpiece_uid={workpiece.uid}"
+            )
+            return
+
+        self.generation_starting.send(
+            self,
+            step=step,
+            workpiece=workpiece,
+            generation_id=generation_id,
+        )
+
+        prep_result = self.prepare_task_settings(step)
+        if prep_result is None:
+            logger.debug(
+                f"prep_result is None for "
+                f"step_uid={step.uid}, workpiece_uid={workpiece.uid}"
+            )
+            return
+        settings, laser_dict = prep_result
+
+        workpiece_dict = self.prepare_workpiece_dict(workpiece)
+
+        self._emit_node_state(ledger_key, NodeState.PROCESSING)
+
+        if context is not None:
+            context.add_task(key)
+
+        self.create_and_register_task(
+            key,
+            ledger_key,
+            workpiece_dict,
+            step,
+            workpiece,
+            settings,
+            laser_dict,
+            generation_id,
+            workpiece.size,
+            context,
+        )
+
+    def create_and_register_task(
+        self,
+        key: ArtifactKey,
+        ledger_key: ArtifactKey,
+        workpiece_dict: Dict,
+        step: "Step",
+        workpiece: "WorkPiece",
+        settings: Dict,
+        laser_dict: Optional[Dict],
+        generation_id: int,
+        workpiece_size: Tuple[float, float],
+        context: Optional["GenerationContext"],
+    ):
+        """
+        Creates subprocess task and registers it in active_tasks.
+        """
+        from .workpiece_runner import (
             make_workpiece_artifact_in_subprocess,
-            self._artifact_manager._store,
+        )
+
+        task_key = key
+
+        self._task_manager.run_process(
+            make_workpiece_artifact_in_subprocess,
+            self._artifact_manager.get_store(),
             workpiece_dict,
             step.opsproducer_dict,
             step.modifiers_dicts,
             step.per_workpiece_transformers_dicts,
-            selected_laser.to_dict(),
+            laser_dict,
             settings,
             generation_id,
-            workpiece.size,
+            workpiece_size,
             "workpiece",
-            adoption_event=adoption_event,
-            key=key,
-            when_done=when_done_callback,
-            when_event=self._on_task_event_received,
+            key=task_key,
+            when_done=lambda t: self._on_task_complete(
+                t,
+                task_key,
+                ledger_key,
+                generation_id,
+                step,
+                workpiece,
+                context,
+            ),
+            when_event=lambda task, event_name, data: self._on_task_event(
+                task, event_name, data, step.uid
+            ),
         )
-        self._active_tasks[key] = task
 
-    def _on_task_event_received(
-        self, task: "Task", event_name: str, data: dict
+    def _on_task_event(
+        self, task: "Task", event_name: str, data: dict, step_uid: str
     ):
         """Handles events from a background task."""
         key = task.key
-        s_uid, w_uid = key
+        ledger_key = key
+
         handle_dict = data.get("handle_dict")
         generation_id = data.get("generation_id")
-        if not handle_dict or generation_id is None:
+
+        if generation_id is None:
+            logger.error(
+                f"[{key}] Task event '{event_name}' missing "
+                f"generation id. Ignoring."
+            )
             return
 
-        is_stale = self._generation_id_map.get(key) != generation_id
-        if is_stale:
-            logger.debug(
-                f"Received stale event '{event_name}' for {key}. "
-                "Cleaning up orphaned artifact."
+        if handle_dict is None and event_name != "artifact_created":
+            logger.error(
+                f"[{key}] Task event '{event_name}' missing handle. Ignoring."
             )
-            try:
-                stale_handle = self._artifact_manager.adopt_artifact(
-                    (s_uid, w_uid), handle_dict
-                )
-                self._artifact_manager.release_handle(stale_handle)
-            except Exception as e:
-                logger.error(f"Error cleaning up stale artifact: {e}")
             return
 
         try:
-            handle = self._artifact_manager.adopt_artifact(
-                (s_uid, w_uid), handle_dict
-            )
-
-            if event_name == "artifact_created":
-                if not isinstance(handle, WorkPieceArtifactHandle):
-                    raise TypeError("Expected a WorkPieceArtifactHandle")
-                self._artifact_manager.put_workpiece_handle(
-                    s_uid, w_uid, handle
+            if handle_dict is None:
+                handle = None
+            else:
+                handle = self._artifact_manager.adopt_artifact(
+                    key, handle_dict
                 )
 
-                # Signal the worker that we've adopted the artifact
-                adoption_event = self._adoption_events.get(key)
-                if adoption_event is not None:
-                    adoption_event.set()
-
-                # Signal that a workpiece artifact has been adopted, which
-                # triggers view rendering for this step
-                self.workpiece_artifact_adopted.send(
-                    self, step_uid=s_uid, workpiece_uid=w_uid
+            if event_name == "artifact_created":
+                self.handle_artifact_created(
+                    key, ledger_key, handle, generation_id, step_uid
                 )
                 return
 
             if event_name == "visual_chunk_ready":
-                self.visual_chunk_available.send(
-                    self,
-                    key=key,
-                    chunk_handle=handle,
-                    generation_id=generation_id,
+                self.handle_visual_chunk_ready(
+                    key, handle, generation_id, step_uid
                 )
         except Exception as e:
             logger.error(
                 f"Failed to process event '{event_name}': {e}", exc_info=True
             )
-            # Still set the event to unblock the worker
-            adoption_event = self._adoption_events.get(key)
-            if adoption_event is not None:
-                adoption_event.set()
 
     def _on_task_complete(
         self,
         task: "Task",
-        key: WorkpieceKey,
+        key: ArtifactKey,
+        ledger_key: ArtifactKey,
         task_generation_id: int,
         step: "Step",
         workpiece: "WorkPiece",
+        context: Optional["GenerationContext"],
     ):
         """Callback for when an ops generation task finishes."""
-        s_uid, w_uid = key
-        current_expected_id = self._generation_id_map.get(key)
-        active_task = self._active_tasks.get(key)
-        active_task_id = id(active_task) if active_task else "None"
+        if context is not None:
+            context.task_did_finish(key)
 
-        logger.debug(
-            f"[{key}] _on_task_complete called for task {id(task)}. "
-            f"Task Gen ID: {task_generation_id}, "
-            f"Expected Gen ID: {current_expected_id}. "
-            f"Active task in slot: {active_task_id}. "
-            f"Is this the active task? {task is active_task}"
-        )
-
-        if self._active_tasks.get(key) is task:
-            self._active_tasks.pop(key, None)
-            self._adoption_events.pop(key, None)
-            logger.debug(
-                f"[{key}] Popped active task {id(task)} from tracking."
-            )
-        else:
-            logger.debug(
-                f"[{key}] Ignoring 'when_done' for task {id(task)} because it "
-                "is not the currently active task."
-            )
-            return
-
-        if current_expected_id != task_generation_id:
-            logger.debug(
-                f"[{key}] Ignoring stale ops callback. "
-                f"Task ID {task_generation_id} "
-                f"does not match expected ID {current_expected_id}."
-            )
+        if not self.validate_task_completion(
+            key, ledger_key, task_generation_id
+        ):
             return
 
         task_status = task.get_status()
         logger.debug(f"[{key}] Task status is '{task_status}'.")
 
         if task_status == "canceled":
-            logger.debug(
-                f"[{key}] Task was canceled. Sending 'finished' signal "
-                "with canceled status to trigger cleanup."
-            )
-            self.generation_finished.send(
-                self,
-                step=step,
-                workpiece=workpiece,
-                generation_id=task_generation_id,
+            self.handle_canceled_task(
+                key, ledger_key, step, workpiece, task_generation_id
             )
             return
 
+        handle = None
         if task_status == "completed":
-            logger.debug(f"[{key}] Task completed. Processing result.")
-            try:
-                result_gen_id = task.result()
-                logger.debug(
-                    f"[{key}] Task result (gen_id): {result_gen_id}. "
-                    f"Re-checking against expected ID: "
-                    f"{self._generation_id_map.get(key)}"
-                )
-                if self._generation_id_map.get(key) != result_gen_id:
-                    logger.warning(
-                        f"[{key}] Stale result for {key}. Invalidating."
-                    )
-                    self._cleanup_entry(key)
-                    return
-
-                handle = self._artifact_manager.get_workpiece_handle(
-                    s_uid, w_uid
-                )
-                if handle and not handle.is_scalable:
-                    # After a task completes, check if its result is now
-                    # stale because the workpiece was resized while it ran.
-                    if not self._sizes_are_close(
-                        handle.generation_size, workpiece.size
-                    ):
-                        logger.info(
-                            f"[{key}] Result for {key} is stale due to size "
-                            "change during generation. Regenerating."
-                        )
-                        # Don't cleanup, just launch a new task to replace
-                        # the now-stale artifact.
-                        self._launch_task(step, workpiece)
-                        return
-            except Exception as e:
-                logger.error(f"[{key}] Error processing result for {key}: {e}")
-        else:
-            wp_name = workpiece.name
-            logger.warning(
-                f"[{key}] Ops generation for '{step.name}' "
-                f"on '{wp_name}' failed "
-                f"with status: {task_status}."
+            continue_processing, handle = self.handle_completed_task(
+                key,
+                ledger_key,
+                task,
+                step,
+                workpiece,
+                task_generation_id,
+                task_generation_id,
+                context,
             )
-            # The artifact might have been created and put in the cache
-            # before the task failed. Clean it up.
-            self._cleanup_entry(key)
+            if not continue_processing:
+                return
+        else:
+            self.handle_failed_task(
+                ledger_key, step, workpiece, task_generation_id
+            )
 
-        logger.debug(
-            f"[{key}] Sending 'generation_finished' signal for task gen_id "
-            f"{task_generation_id}."
-        )
         self.generation_finished.send(
             self,
             step=step,
             workpiece=workpiece,
+            handle=handle,
             generation_id=task_generation_id,
+            task_status=task_status,
         )
 
     def get_artifact(
@@ -440,27 +519,29 @@ class WorkPiecePipelineStage(PipelineStage):
         step_uid: str,
         workpiece_uid: str,
         workpiece_size: Tuple[float, float],
+        generation_id: int,
     ) -> Optional[WorkPieceArtifact]:
         """Retrieves the complete, validated artifact from the cache."""
         handle = self._artifact_manager.get_workpiece_handle(
-            step_uid, workpiece_uid
+            ArtifactKey.for_workpiece(workpiece_uid, step_uid),
+            generation_id,
         )
         if handle is None:
             return None
 
-        # For non-scalable artifacts, the generation size must match.
-        # For scalable artifacts, this check is skipped.
         if not handle.is_scalable:
-            if not self._sizes_are_close(
-                handle.generation_size, workpiece_size
-            ):
+            if not sizes_are_close(handle.generation_size, workpiece_size):
                 return None
 
         artifact = self._artifact_manager.get_artifact(handle)
         return artifact if isinstance(artifact, WorkPieceArtifact) else None
 
     def get_scaled_ops(
-        self, step_uid: str, workpiece_uid: str, world_transform: "Matrix"
+        self,
+        step_uid: str,
+        workpiece_uid: str,
+        world_transform: "Matrix",
+        generation_id: int,
     ) -> Optional[Ops]:
         """
         Retrieves generated operations from the cache and scales them to the
@@ -470,7 +551,9 @@ class WorkPiecePipelineStage(PipelineStage):
         if any(s <= 0 for s in final_size):
             return None
 
-        artifact = self.get_artifact(step_uid, workpiece_uid, final_size)
+        artifact = self.get_artifact(
+            step_uid, workpiece_uid, final_size, generation_id
+        )
         if artifact is None:
             return None
 
@@ -482,7 +565,7 @@ class WorkPiecePipelineStage(PipelineStage):
             1 for cmd in ops.commands if isinstance(cmd, ScanLinePowerCommand)
         )
         logger.debug(
-            f"Returning final ops for key {(step_uid, workpiece_uid)} with "
+            f"Returning final ops for workpiece '{workpiece_uid}' with "
             f"{scanline_count} ScanLinePowerCommands."
         )
         return ops
