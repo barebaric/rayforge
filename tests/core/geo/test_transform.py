@@ -421,6 +421,128 @@ def test_shrink_to_nothing():
     assert shrunk_past_zero.area() == pytest.approx(0.0, abs=1.0)
 
 
+def test_grow_adjacent_contours_preserved():
+    """
+    Tests that adjacent separate contours remain separate after offsetting.
+
+    When two shapes share an edge or are touching, growing them should NOT
+    merge them into a single shape. Each contour must be offset independently
+    to preserve distinct toolpaths.
+    """
+    square1 = Geometry.from_points([(0, 0), (10, 0), (10, 10), (0, 10)])
+    square2 = Geometry.from_points([(10, 0), (20, 0), (20, 10), (10, 10)])
+    combined = square1.copy()
+    combined.extend(square2)
+
+    # Each square has area 100, total = 200
+    assert combined.area() == pytest.approx(200.0)
+
+    # Grow by 1 unit. If contours are processed together, pyclipper would
+    # merge them into one 22x12 rectangle (area 264). But processing each
+    # contour separately gives two 12x12 squares (area 288 total).
+    grown = grow_geometry(combined, 1.0)
+    assert grown.area() == pytest.approx(288.0)
+
+
+def test_grow_overlapping_contours_preserved():
+    """
+    Tests that overlapping separate contours remain separate after offsetting.
+
+    Two shapes that partially overlap should still be offset independently,
+    not merged into a union.
+    """
+    square1 = Geometry.from_points([(0, 0), (15, 0), (15, 15), (0, 15)])
+    square2 = Geometry.from_points([(10, 0), (25, 0), (25, 15), (10, 15)])
+    combined = square1.copy()
+    combined.extend(square2)
+
+    # area() sums individual contour areas, not the union area
+    assert combined.area() == pytest.approx(450.0)
+
+    # Growing by 1: each 15x15 square becomes 17x17 = 289
+    # If processed independently: 289 + 289 = 578
+    # If merged as union: would be a single larger shape with different area
+    grown = grow_geometry(combined, 1.0)
+    assert grown.area() == pytest.approx(578.0)
+
+
+def test_grow_nested_islands_preserved():
+    """
+    Tests a 3-level hierarchy: Solid -> Hole -> Solid (Island).
+
+    Behavior:
+    1. Outer Solid grows outwards.
+    2. Hole shrinks (because the solid wall expands inwards).
+    3. Inner Island grows outwards.
+    """
+    # 1. Outer Box: 100x100 (Area 10000)
+    outer = Geometry.from_points([(0, 0), (100, 0), (100, 100), (0, 100)])
+
+    # 2. Hole: 60x60 (Area 3600)
+    # Winding is CW, but the system should detect it as a hole regardless of
+    # input winding provided it is inside the outer.
+    hole = Geometry.from_points([(20, 20), (20, 80), (80, 80), (80, 20)])
+
+    # 3. Island: 20x20 (Area 400) inside the hole
+    island = Geometry.from_points([(40, 40), (60, 40), (60, 60), (40, 60)])
+
+    geo = Geometry()
+    geo.extend(outer)
+    geo.extend(hole)
+    geo.extend(island)
+
+    # Initial Area check: 10000 - 3600 + 400 = 6800
+    assert geo.area() == pytest.approx(6800.0)
+
+    # Grow by 1 unit
+    # Outer becomes 102x102 = 10404
+    # Hole shrinks by 1 unit on all sides -> 58x58 = 3364
+    # Island grows by 1 unit on all sides -> 22x22 = 484
+    # Expected: 10404 - 3364 + 484 = 7524
+    grown = grow_geometry(geo, 1.0)
+
+    assert grown.area() == pytest.approx(7524.0)
+
+
+def test_grow_overlapping_solids_with_holes():
+    """
+    Tests that two overlapping solids, each containing their own hole,
+    are processed independently.
+
+    If they were unioned, the overlap area would merge and the holes might
+    interact unpredictably.
+    With the new logic, they should remain two distinct sets of (Solid-Hole).
+    """
+    # Solid A: 40x40 at (0,0) -> Area 1600
+    solid_a = Geometry.from_points([(0, 0), (40, 0), (40, 40), (0, 40)])
+    # Hole A: 10x10 at (15,15) -> Area 100
+    hole_a = Geometry.from_points([(15, 15), (15, 25), (25, 25), (25, 15)])
+
+    # Solid B: 40x40 at (20,0) -> Overlaps A by half. Area 1600.
+    solid_b = Geometry.from_points([(20, 0), (60, 0), (60, 40), (20, 40)])
+    # Hole B: 10x10 at (35,15) -> Area 100
+    hole_b = Geometry.from_points([(35, 15), (35, 25), (45, 25), (45, 15)])
+
+    geo = Geometry()
+    geo.extend(solid_a)
+    geo.extend(hole_a)
+    geo.extend(solid_b)
+    geo.extend(hole_b)
+
+    # Initial area check: (1600 - 100) + (1600 - 100) = 3000
+    # Note: Geometry.area() sums the signed areas of contours.
+    # It does not perform boolean union calculation, which matches the
+    # requirement that these are separate toolpaths.
+    assert geo.area() == pytest.approx(3000.0)
+
+    # Grow by 1.
+    # Solid A -> 42x42 (1764). Hole A -> 8x8 (64). Net A = 1700.
+    # Solid B -> 42x42 (1764). Hole B -> 8x8 (64). Net B = 1700.
+    # Total = 3400.
+    grown = grow_geometry(geo, 1.0)
+    assert grown.area() == pytest.approx(3400.0)
+
+
 # --- Map to Frame Tests ---
 
 
