@@ -257,12 +257,12 @@ class AxisRenderer3D(BaseRenderer):
         # Draw grid and axes
         line_shader.set_mat4("uMVP", grid_mvp)
         line_shader.set_vec4("uColor", self.grid_color)
-        GL.glLineWidth(1.0)
+        self._set_line_width(1.0)
         GL.glBindVertexArray(self.grid_vao)
         GL.glDrawArrays(GL.GL_LINES, 0, self.grid_vertex_count)
 
         line_shader.set_vec4("uColor", self.axis_color)
-        GL.glLineWidth(2.0)
+        self._set_line_width(2.0)
         GL.glBindVertexArray(self.axes_vao)
         GL.glDrawArrays(GL.GL_LINES, 0, self.axes_vertex_count)
 
@@ -291,6 +291,21 @@ class AxisRenderer3D(BaseRenderer):
             y_negative=y_negative,
         )
         GL.glDisable(GL.GL_BLEND)
+
+    def _set_line_width(self, requested: float) -> None:
+        try:
+            width_range = GL.glGetFloatv(GL.GL_ALIASED_LINE_WIDTH_RANGE)
+        except Exception:
+            width_range = None
+
+        if width_range is None or len(width_range) < 2:
+            GL.glLineWidth(requested)
+            return
+
+        min_width = float(width_range[0])
+        max_width = float(width_range[1])
+        clamped = max(min_width, min(requested, max_width))
+        GL.glLineWidth(clamped)
 
     def _render_axis_labels(
         self,
