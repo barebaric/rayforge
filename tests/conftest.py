@@ -14,6 +14,7 @@ from gi.repository import GLib
 from rayforge.worker_init import initialize_worker
 from rayforge import context as rayforge_context
 from rayforge.shared.tasker.progress import ProgressContext
+from rayforge.shared.tasker.task import Task
 
 
 class PyvipsLogFilter(logging.Filter):
@@ -338,6 +339,112 @@ def mock_artifact_store():
 
     mock_store = MagicMock(spec=ArtifactStore)
     return mock_store
+
+
+@pytest.fixture
+def mock_task_mgr():
+    """
+    Provides a synchronous mock TaskManager for pipeline tests.
+
+    This mock executes all callbacks immediately and synchronously,
+    eliminating async complexity in tests. It tracks created tasks
+    and supports the full TaskManager interface used by Pipeline.
+    """
+
+    class MockTask:
+        def __init__(self, target, args, kwargs, returned_task_obj):
+            self.target = target
+            self.args = args
+            self.kwargs = kwargs
+            self.when_done = kwargs.get("when_done")
+            self.when_event = kwargs.get("when_event")
+            self.key = kwargs.get("key")
+            self.returned_task_obj = returned_task_obj
+            self._event_queue = []
+
+        def queue_event(self, task_obj, event_name, event_data):
+            self._event_queue.append((task_obj, event_name, event_data))
+
+        def process_queued_events(self):
+            for task_obj, event_name, event_data in self._event_queue:
+                if self.when_event:
+                    self.when_event(task_obj, event_name, event_data)
+            self._event_queue.clear()
+
+    created_tasks = []
+    all_tasks = []
+    cancelled_keys = set()
+
+    def run_process_impl(target_func, *args, **kwargs):
+        mock_task = MagicMock(spec=Task)
+        mock_task.key = kwargs.get("key")
+        mock_task.id = id(mock_task)
+        mock_task._cancelled = False
+
+        def is_running():
+            return not mock_task._cancelled
+
+        mock_task.is_running = is_running
+
+        task = MockTask(target_func, args, kwargs, mock_task)
+        created_tasks.append(task)
+        all_tasks.append(task)
+        return mock_task
+
+    def get_task_impl(task_key):
+        for task in all_tasks:
+            if task.key == task_key:
+                return task.returned_task_obj
+        return None
+
+    def cancel_task_impl(task_key):
+        cancelled_keys.add(task_key)
+        for task in all_tasks:
+            if task.key == task_key:
+                task.returned_task_obj._cancelled = True
+                task.returned_task_obj.is_running.return_value = False
+                task.returned_task_obj.get_status.return_value = "canceled"
+
+    def schedule_on_main_thread_impl(callback, *args, **kwargs):
+        callback(*args, **kwargs)
+
+    def schedule_delayed_impl(delay_ms, callback, *args, **kwargs):
+        callback(*args, **kwargs)
+        future = MagicMock()
+        future.cancel = MagicMock()
+        return future
+
+    def has_tasks_impl():
+        return len(created_tasks) > 0
+
+    mock_mgr = MagicMock()
+    mock_mgr.run_process = MagicMock(side_effect=run_process_impl)
+    mock_mgr.get_task = MagicMock(side_effect=get_task_impl)
+    mock_mgr.cancel_task = MagicMock(side_effect=cancel_task_impl)
+    mock_mgr.schedule_on_main_thread = MagicMock(
+        side_effect=schedule_on_main_thread_impl
+    )
+    mock_mgr.schedule_delayed_on_main_thread = MagicMock(
+        side_effect=schedule_delayed_impl
+    )
+    mock_mgr.has_tasks = MagicMock(side_effect=has_tasks_impl)
+    mock_mgr.created_tasks = created_tasks
+    return mock_mgr
+
+
+@pytest.fixture
+def zero_debounce_delay(monkeypatch):
+    """
+    Sets the pipeline's debouncing delay to 0ms for testing.
+
+    Use with autouse=True in test files that need synchronous reconciliation:
+        @pytest.fixture(autouse=True)
+        def _zero_debounce_delay(zero_debounce_delay):
+            pass
+    """
+    from rayforge.pipeline.pipeline import Pipeline
+
+    monkeypatch.setattr(Pipeline, "RECONCILIATION_DELAY_MS", 0)
 
 
 @pytest_asyncio.fixture

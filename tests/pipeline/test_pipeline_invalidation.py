@@ -11,17 +11,10 @@ from rayforge.pipeline.pipeline import Pipeline
 from rayforge.pipeline.artifact import ArtifactKey
 
 
-@pytest.fixture
-def mock_task_mgr():
-    """Creates a MagicMock for the TaskManager."""
-    mock_mgr = MagicMock()
-
-    def schedule_awarely(callback, *args, **kwargs):
-        callback(*args, **kwargs)
-
-    mock_mgr.schedule_on_main_thread = MagicMock(side_effect=schedule_awarely)
-    mock_mgr.run_process = MagicMock()
-    return mock_mgr
+@pytest.fixture(autouse=True)
+def _zero_debounce(zero_debounce_delay):
+    """Apply zero debounce delay to all tests in this file."""
+    pass
 
 
 @pytest.fixture

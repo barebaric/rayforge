@@ -3,7 +3,6 @@ import logging
 from unittest.mock import MagicMock, ANY
 from pathlib import Path
 import asyncio
-import threading
 from rayforge.context import get_context
 from rayforge.core.doc import Doc
 from rayforge.core.geo import Geometry
@@ -29,97 +28,15 @@ from rayforge.pipeline.stage.workpiece_runner import (
     make_workpiece_artifact_in_subprocess,
 )
 from rayforge.pipeline.steps import create_contour_step, create_raster_step
-from rayforge.shared.tasker.task import Task
 
 
 logger = logging.getLogger(__name__)
 
 
-@pytest.fixture
-def mock_task_mgr():
-    """
-    Creates a MagicMock for the TaskManager that executes scheduled tasks
-    immediately.
-    """
-    mock_mgr = MagicMock()
-    created_tasks_info = []
-    all_tasks_info = []
-    cancelled_task_keys = set()
-
-    class MockTask:
-        def __init__(self, target, args, kwargs, returned_task_obj):
-            self.target = target
-            self.args = args
-            self.kwargs = kwargs
-            self.when_done = kwargs.get("when_done")
-            self.when_event = kwargs.get("when_event")
-            self.key = kwargs.get("key")
-            self.returned_task_obj = returned_task_obj
-
-    def run_process_mock(target_func, *args, **kwargs):
-        # Add a mock cancel method to the task object returned to the caller
-        mock_returned_task = MagicMock(spec=Task)
-        mock_returned_task.key = kwargs.get("key")
-        mock_returned_task.id = id(mock_returned_task)
-        mock_returned_task._cancelled = False
-
-        def is_running():
-            return not mock_returned_task._cancelled
-
-        mock_returned_task.is_running = is_running
-
-        task = MockTask(target_func, args, kwargs, mock_returned_task)
-        created_tasks_info.append(task)
-        all_tasks_info.append(task)
-        return mock_returned_task
-
-    def cancel_task_mock(key):
-        cancelled_task_keys.add(key)
-        for task_info in all_tasks_info:
-            if task_info.key == key:
-                task_info.returned_task_obj._cancelled = True
-
-    def get_task_mock(key):
-        for task_info in all_tasks_info:
-            if task_info.key == key:
-                return task_info.returned_task_obj
-        return None
-
-    # Execute scheduled callbacks synchronously.
-    def schedule_awarely(callback, *args, **kwargs):
-        callback(*args, **kwargs)
-
-    mock_mgr.run_process = MagicMock(side_effect=run_process_mock)
-    mock_mgr.schedule_on_main_thread = MagicMock(side_effect=schedule_awarely)
-    mock_mgr.cancel_task = MagicMock(side_effect=cancel_task_mock)
-    mock_mgr.get_task = MagicMock(side_effect=get_task_mock)
-    mock_mgr.created_tasks = created_tasks_info
-    return mock_mgr
-
-
 @pytest.fixture(autouse=True)
-def zero_debounce_delay(monkeypatch):
-    monkeypatch.setattr(Pipeline, "RECONCILIATION_DELAY_MS", 0)
-
-
-@pytest.fixture(autouse=True)
-def mock_threading_timer(monkeypatch):
-    class SyncTimer:
-        def __init__(self, interval, function, args=None, kwargs=None):
-            self.interval = interval
-            self.function = function
-            self.args = args or []
-            self.kwargs = kwargs or {}
-            self._cancelled = False
-
-        def start(self):
-            if not self._cancelled:
-                self.function(*self.args, **self.kwargs)
-
-        def cancel(self):
-            self._cancelled = True
-
-    monkeypatch.setattr(threading, "Timer", SyncTimer)
+def _zero_debounce(zero_debounce_delay):
+    """Apply zero debounce delay to all tests in this file."""
+    pass
 
 
 @pytest.fixture
