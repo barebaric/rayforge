@@ -440,9 +440,11 @@ class TestPipeline:
             "Pipeline should remain busy during rapid invalidation"
         )
 
-        await asyncio.to_thread(task_mgr.wait_until_settled, 10000)
-
-        await asyncio.sleep(0.1)
+        deadline = asyncio.get_running_loop().time() + 10.0
+        while (
+            pipeline.is_busy and asyncio.get_running_loop().time() < deadline
+        ):
+            await asyncio.sleep(0.05)
 
         assert pipeline.is_busy is False, (
             "Pipeline should be idle after all tasks complete"
@@ -460,6 +462,8 @@ class TestPipeline:
         assert last_call_kwargs.get("is_processing") is False, (
             "Final state change should be to idle"
         )
+
+        await asyncio.to_thread(task_mgr.wait_until_settled, 5000)
 
     @pytest.mark.asyncio
     async def test_reconcile_data_triggers_view_rerender_on_workpiece_resize(
