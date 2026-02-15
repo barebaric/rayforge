@@ -118,7 +118,7 @@ format = "ruff format rayforge tests"
 update-translations = "bash scripts/update_translations.sh"
 compile-translations = "bash scripts/update_translations.sh --compile-only"
 print-untranslated = "bash scripts/print_untranslated.sh"
-list-supporters = "python3 scripts/fetch_patreon_supporters.py"
+list-supporters = "python3 scripts/media/fetch_patreon_supporters.py"
 
 [tasks.clean]
 cmd = "find . -type d \\( -name __pycache__ -o -name \"*.egg-info\" \\) -print0 | xargs -0 rm -rf"
