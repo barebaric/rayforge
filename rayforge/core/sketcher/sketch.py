@@ -13,6 +13,7 @@ from .constraints import (
     CoincidentConstraint,
     CollinearConstraint,
     Constraint,
+    ConstraintStatus,
     DiameterConstraint,
     DistanceConstraint,
     EqualDistanceConstraint,
@@ -207,6 +208,24 @@ class Sketch(IAsset):
                     return False
 
         return True
+
+    @property
+    def conflicting_constraints(self) -> List[Constraint]:
+        """
+        Returns a list of constraints that are currently marked as CONFLICTING.
+        """
+        return [
+            c
+            for c in self.constraints
+            if c.status == ConstraintStatus.CONFLICTING
+        ]
+
+    @property
+    def has_conflicts(self) -> bool:
+        """Returns True if any constraint has CONFLICTING status."""
+        return any(
+            c.status == ConstraintStatus.CONFLICTING for c in self.constraints
+        )
 
     def to_dict(self, include_input_values: bool = True) -> Dict[str, Any]:
         """Serializes the Sketch to a dictionary."""
@@ -1006,6 +1025,10 @@ class Sketch(IAsset):
             )
             success = solver.solve(update_dof=update_constraint_status)
 
+            # Step 6: Update constraint conflict status
+            if update_constraint_status:
+                self._update_conflict_status(solver)
+
         except Exception as e:
             import logging
 
@@ -1015,6 +1038,20 @@ class Sketch(IAsset):
             success = False
 
         return success
+
+    def _update_conflict_status(self, solver: Solver) -> None:
+        """
+        Updates the conflict status of all constraints based on solver results.
+        Constraints with significant residual error are marked as CONFLICTING.
+        """
+        conflicting_indices = solver.get_conflicting_constraints()
+
+        for idx, constraint in enumerate(self.constraints):
+            if idx in conflicting_indices:
+                if constraint.status != ConstraintStatus.ERROR:
+                    constraint.status = ConstraintStatus.CONFLICTING
+            elif constraint.status == ConstraintStatus.CONFLICTING:
+                constraint.status = ConstraintStatus.VALID
 
     def to_geometry(self) -> Geometry:
         """

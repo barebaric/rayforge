@@ -1,11 +1,13 @@
 import numpy as np
 import scipy.linalg
 from scipy.optimize import least_squares
-from typing import Sequence, List
+from typing import Sequence, List, Set
 from .constraints import Constraint
 from .entities import Point
 from .params import ParameterContext
 from .registry import EntityRegistry
+
+CONFLICT_ERROR_THRESHOLD = 1e-3
 
 
 class Solver:
@@ -220,3 +222,27 @@ class Solver:
         """
         for entity in self.registry.entities:
             entity.update_constrained_status(self.registry, self.constraints)
+
+    def get_conflicting_constraints(
+        self, threshold: float = CONFLICT_ERROR_THRESHOLD
+    ) -> Set[int]:
+        """
+        Identifies constraints that have significant residual error,
+        indicating they conflict with other constraints or cannot be satisfied.
+
+        Returns:
+            Set of constraint indices in self.constraints that are conflicting.
+        """
+        conflicting: Set[int] = set()
+
+        for idx, const in enumerate(self.constraints):
+            err = const.error(self.registry, self.params)
+            if isinstance(err, (tuple, list)):
+                max_err = max(abs(e) for e in err)
+            else:
+                max_err = abs(err)
+
+            if max_err > threshold:
+                conflicting.add(idx)
+
+        return conflicting

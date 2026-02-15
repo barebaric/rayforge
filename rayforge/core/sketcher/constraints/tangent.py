@@ -9,7 +9,7 @@ from typing import (
     Callable,
     TYPE_CHECKING,
 )
-from .base import Constraint
+from .base import Constraint, ConstraintStatus
 from ..entities import Line, Arc, Circle
 from rayforge.core.geo.primitives import find_closest_point_on_line
 
@@ -278,6 +278,9 @@ class TangentConstraint(Constraint):
 
         if is_selected:
             self._draw_selection_underlay(ctx)
+
+        if self.status == ConstraintStatus.CONFLICTING:
+            self._draw_conflict_underlay(ctx)
 
         self._set_color(ctx, is_hovered)
         ctx.stroke()

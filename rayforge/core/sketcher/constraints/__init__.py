@@ -2,7 +2,7 @@
 Geometric constraints for the 2D CAD sketcher.
 """
 
-from .base import Constraint
+from .base import Constraint, ConstraintStatus
 from .aspect_ratio import AspectRatioConstraint
 from .coincident import CoincidentConstraint
 from .collinear import CollinearConstraint
@@ -23,6 +23,7 @@ from .vertical import VerticalConstraint
 
 __all__ = [
     "Constraint",
+    "ConstraintStatus",
     "AspectRatioConstraint",
     "CoincidentConstraint",
     "CollinearConstraint",

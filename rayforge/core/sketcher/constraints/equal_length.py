@@ -11,7 +11,7 @@ from typing import (
     TYPE_CHECKING,
     cast,
 )
-from .base import Constraint
+from .base import Constraint, ConstraintStatus
 from ..entities import Line, Arc, Circle
 
 if TYPE_CHECKING:
@@ -244,6 +244,11 @@ class EqualLengthConstraint(Constraint):
             if is_selected:
                 ctx.set_source_rgba(0.2, 0.6, 1.0, 0.4)
                 ctx.arc(sx, sy, 10, 0, 2 * math.pi)
+                ctx.fill()
+
+            if self.status == ConstraintStatus.CONFLICTING:
+                ctx.set_source_rgba(1.0, 0.2, 0.2, 0.5)
+                ctx.arc(sx, sy, 12, 0, 2 * math.pi)
                 ctx.fill()
 
             self._set_color(ctx, is_hovered)
