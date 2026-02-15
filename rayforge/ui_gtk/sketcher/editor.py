@@ -8,6 +8,7 @@ from ...core.sketcher.tools.base import SketcherKey
 from ...core.sketcher.tools.text_box_tool import TextBoxState
 from ...core.undo import HistoryManager
 from ..canvas.cursor import get_tool_cursor
+from ..shared.keyboard import is_primary_modifier
 from .piemenu import SketchPieMenu
 
 if TYPE_CHECKING:
@@ -418,7 +419,7 @@ class SketchEditor:
         if not self.sketch_element:
             return False
 
-        is_ctrl = bool(state & Gdk.ModifierType.CONTROL_MASK)
+        is_primary = is_primary_modifier(state)
         is_shift = bool(state & Gdk.ModifierType.SHIFT_MASK)
 
         # Priority 0: Active text editing
@@ -439,7 +440,7 @@ class SketchEditor:
                 Gdk.KEY_KP_Home: SketcherKey.HOME,
                 Gdk.KEY_KP_End: SketcherKey.END,
             }
-            if is_ctrl:
+            if is_primary:
                 key_map[Gdk.KEY_z] = SketcherKey.UNDO
                 key_map[Gdk.KEY_y] = SketcherKey.REDO
                 key_map[Gdk.KEY_c] = SketcherKey.COPY
@@ -448,10 +449,10 @@ class SketchEditor:
                 key_map[Gdk.KEY_a] = SketcherKey.SELECT_ALL
             if keyval in key_map:
                 return tool.handle_key_event(
-                    key_map[keyval], shift=is_shift, ctrl=is_ctrl
+                    key_map[keyval], shift=is_shift, ctrl=is_primary
                 )
 
-            if is_ctrl:
+            if is_primary:
                 return False
 
             key_unicode = Gdk.keyval_to_unicode(keyval)
@@ -459,10 +460,10 @@ class SketchEditor:
                 return tool.handle_text_input(chr(key_unicode))
             return False  # Unhandled key during text edit
 
-        is_ctrl = bool(state & Gdk.ModifierType.CONTROL_MASK)
+        is_primary = is_primary_modifier(state)
 
         # Priority 1: Immediate actions (Undo/Redo, Delete)
-        if is_ctrl:
+        if is_primary:
             if keyval == Gdk.KEY_z:
                 self.history_manager.undo()
                 self._reset_key_sequence()
