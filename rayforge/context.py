@@ -62,6 +62,10 @@ class RayforgeContext:
         self._recipe_mgr: Optional["RecipeManager"] = None
         self._debug_dump_manager = DebugDumpManager()
 
+        # Flag to indicate the app should exit after document settles
+        self.exit_after_settle = False
+        self.exit_pending = False
+
     @property
     def machine(self) -> Optional["Machine"]:
         """

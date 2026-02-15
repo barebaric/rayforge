@@ -1184,6 +1184,9 @@ class MainWindow(Adw.ApplicationWindow):
         Public method to trigger a refresh of all data previews, like the
         simulator and G-code view.
         """
+        if get_context().exit_after_settle:
+            return
+
         is_sim_active = self.simulator_cmd.simulation_overlay is not None
         gcode_action = self.action_manager.get_action("toggle_gcode_preview")
         gcode_state = gcode_action.get_state() if gcode_action else None

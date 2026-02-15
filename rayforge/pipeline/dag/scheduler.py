@@ -150,6 +150,8 @@ class DagScheduler:
         for node in self.graph.get_all_nodes():
             if node.state == NodeState.PROCESSING:
                 return True
+        if self.is_job_running:
+            return True
         return False
 
     def get_processing_generation_ids(self) -> set:
