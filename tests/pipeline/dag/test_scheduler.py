@@ -24,6 +24,22 @@ WP_UID_1 = "550e8400-e29b-41d4-a716-446655440001"
 STEP_UID_1 = "550e8400-e29b-41d4-a716-446655440003"
 
 
+def create_node_with_state(
+    key, state, generation_id=1, manager=None
+) -> ArtifactNode:
+    """
+    Helper to create a node with a mock manager returning the given state.
+    """
+    if manager is None:
+        manager = MagicMock()
+        manager.get_state.return_value = state
+    return ArtifactNode(
+        key=key,
+        generation_id=generation_id,
+        _artifact_manager=manager,
+    )
+
+
 class TestDagScheduler:
     """Tests for the DagScheduler class."""
 
@@ -77,8 +93,8 @@ class TestDagScheduler:
         wp_key = ArtifactKey.for_workpiece(WP_UID_1)
         step_key = ArtifactKey.for_step(STEP_UID_1)
 
-        wp_node = ArtifactNode(key=wp_key, state=NodeState.DIRTY)
-        step_node = ArtifactNode(key=step_key, state=NodeState.DIRTY)
+        wp_node = create_node_with_state(wp_key, NodeState.DIRTY)
+        step_node = create_node_with_state(step_key, NodeState.DIRTY)
 
         scheduler.graph.add_node(wp_node)
         scheduler.graph.add_node(step_node)
@@ -96,7 +112,7 @@ class TestDagScheduler:
         scheduler = self._make_scheduler()
 
         wp_key = ArtifactKey.for_workpiece(WP_UID_1)
-        wp_node = ArtifactNode(key=wp_key, state=NodeState.VALID)
+        wp_node = create_node_with_state(wp_key, NodeState.VALID)
 
         scheduler.graph.add_node(wp_node)
 
@@ -110,8 +126,8 @@ class TestDagScheduler:
         wp_key = ArtifactKey.for_workpiece(WP_UID_1)
         step_key = ArtifactKey.for_step(STEP_UID_1)
 
-        wp_node = ArtifactNode(key=wp_key, state=NodeState.DIRTY)
-        step_node = ArtifactNode(key=step_key, state=NodeState.DIRTY)
+        wp_node = create_node_with_state(wp_key, NodeState.DIRTY)
+        step_node = create_node_with_state(step_key, NodeState.DIRTY)
 
         step_node.add_dependency(wp_node)
 
@@ -147,14 +163,16 @@ class TestDagScheduler:
         scheduler = self._make_scheduler()
 
         key = ArtifactKey.for_workpiece(WP_UID_1)
-        node = ArtifactNode(key=key, state=NodeState.DIRTY)
+        manager = MagicMock()
+        manager.get_state.return_value = NodeState.DIRTY
+        node = create_node_with_state(key, NodeState.DIRTY, manager=manager)
 
         scheduler.graph.add_node(node)
 
         result = scheduler.set_node_state(key, NodeState.VALID)
 
         assert result is True
-        assert node.state == NodeState.VALID
+        manager.set_state.assert_called_once_with(key, 1, NodeState.VALID)
 
     def test_set_node_state_not_found(self):
         """Test setting state on non-existent node."""
@@ -170,14 +188,16 @@ class TestDagScheduler:
         scheduler = self._make_scheduler()
 
         key = ArtifactKey.for_workpiece(WP_UID_1)
-        node = ArtifactNode(key=key, state=NodeState.VALID)
+        manager = MagicMock()
+        manager.get_state.return_value = NodeState.VALID
+        node = create_node_with_state(key, NodeState.VALID, manager=manager)
 
         scheduler.graph.add_node(node)
 
         result = scheduler.mark_node_dirty(key)
 
         assert result is True
-        assert node.state == NodeState.DIRTY
+        manager.set_state.assert_called_with(key, 1, NodeState.DIRTY)
 
     def test_mark_node_dirty_propagates(self):
         """Test that marking a node dirty propagates to dependents."""
@@ -186,8 +206,17 @@ class TestDagScheduler:
         wp_key = ArtifactKey.for_workpiece(WP_UID_1)
         step_key = ArtifactKey.for_step(STEP_UID_1)
 
-        wp_node = ArtifactNode(key=wp_key, state=NodeState.VALID)
-        step_node = ArtifactNode(key=step_key, state=NodeState.VALID)
+        wp_manager = MagicMock()
+        wp_manager.get_state.return_value = NodeState.VALID
+        step_manager = MagicMock()
+        step_manager.get_state.return_value = NodeState.VALID
+
+        wp_node = create_node_with_state(
+            wp_key, NodeState.VALID, manager=wp_manager
+        )
+        step_node = create_node_with_state(
+            step_key, NodeState.VALID, manager=step_manager
+        )
 
         step_node.add_dependency(wp_node)
 
@@ -196,8 +225,8 @@ class TestDagScheduler:
 
         scheduler.mark_node_dirty(wp_key)
 
-        assert wp_node.state == NodeState.DIRTY
-        assert step_node.state == NodeState.DIRTY
+        wp_manager.set_state.assert_called_with(wp_key, 1, NodeState.DIRTY)
+        step_manager.set_state.assert_called_with(step_key, 1, NodeState.DIRTY)
 
     def test_mark_node_dirty_not_found(self):
         """Test marking a non-existent node dirty."""
@@ -218,57 +247,70 @@ class TestDagScheduler:
         scheduler = self._make_scheduler()
 
         key = ArtifactKey.for_workpiece(WP_UID_1)
-        node = ArtifactNode(key=key, state=NodeState.DIRTY)
+        manager = MagicMock()
+        manager.get_state.return_value = NodeState.DIRTY
+        node = create_node_with_state(key, NodeState.DIRTY, manager=manager)
         scheduler.graph.add_node(node)
 
         scheduler.on_artifact_state_changed(key, "valid")
 
-        assert node.state == NodeState.VALID
+        manager.set_state.assert_called_once_with(key, 1, NodeState.VALID)
 
     def test_on_artifact_state_changed_processing(self):
         """Test that callback updates node to PROCESSING."""
         scheduler = self._make_scheduler()
 
         key = ArtifactKey.for_workpiece(WP_UID_1)
-        node = ArtifactNode(key=key, state=NodeState.DIRTY)
+        manager = MagicMock()
+        manager.get_state.return_value = NodeState.DIRTY
+        node = create_node_with_state(key, NodeState.DIRTY, manager=manager)
         scheduler.graph.add_node(node)
 
         scheduler.on_artifact_state_changed(key, "processing")
 
-        assert node.state == NodeState.PROCESSING
+        manager.set_state.assert_called_once_with(key, 1, NodeState.PROCESSING)
 
     def test_on_artifact_state_changed_error(self):
         """Test that callback updates node to ERROR."""
         scheduler = self._make_scheduler()
 
         key = ArtifactKey.for_workpiece(WP_UID_1)
-        node = ArtifactNode(key=key, state=NodeState.DIRTY)
+        manager = MagicMock()
+        manager.get_state.return_value = NodeState.DIRTY
+        node = create_node_with_state(key, NodeState.DIRTY, manager=manager)
         scheduler.graph.add_node(node)
 
         scheduler.on_artifact_state_changed(key, "error")
 
-        assert node.state == NodeState.ERROR
+        manager.set_state.assert_called_once_with(key, 1, NodeState.ERROR)
 
     def test_on_artifact_state_changed_unknown_state(self):
         """Test that callback handles unknown state gracefully."""
         scheduler = self._make_scheduler()
 
         key = ArtifactKey.for_workpiece(WP_UID_1)
-        node = ArtifactNode(key=key, state=NodeState.DIRTY)
+        manager = MagicMock()
+        manager.get_state.return_value = NodeState.DIRTY
+        node = create_node_with_state(key, NodeState.DIRTY, manager=manager)
         scheduler.graph.add_node(node)
 
         scheduler.on_artifact_state_changed(key, "unknown")
 
-        assert node.state == NodeState.DIRTY
+        manager.set_state.assert_not_called()
 
     def test_artifact_manager_syncs_dag_state(self):
-        """Test that DAG manages node state directly."""
+        """Test that DAG manages node state via ArtifactManager."""
         mock_store = MagicMock()
         scheduler = self._make_scheduler()
         manager = ArtifactManager(mock_store)
 
         key = ArtifactKey.for_workpiece(WP_UID_1)
-        node = ArtifactNode(key=key, state=NodeState.DIRTY)
+        manager.declare_generation({key}, 1)
+        node = ArtifactNode(
+            key=key,
+            generation_id=1,
+            _artifact_manager=manager,
+        )
         scheduler.graph.add_node(node)
 
         assert node.state == NodeState.DIRTY
@@ -277,8 +319,8 @@ class TestDagScheduler:
         assert node.state == NodeState.PROCESSING
 
         mock_handle = MagicMock(spec=BaseArtifactHandle)
+        mock_handle.shm_name = "test_shm"
         manager.cache_handle(key, mock_handle, 1)
-        node.state = NodeState.VALID
         assert node.state == NodeState.VALID
 
 

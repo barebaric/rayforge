@@ -1,8 +1,8 @@
 """
 Tests for ArtifactManager as a pure cache.
 
-The ArtifactManager is now a pure cache - it only stores handles.
-State tracking is handled by DAG scheduler via ArtifactNode.
+The ArtifactManager stores handles and tracks state.
+State tracking is the single source of truth in the ledger.
 """
 
 import unittest
@@ -18,6 +18,7 @@ from rayforge.pipeline.artifact import (
 )
 from rayforge.pipeline.artifact.store import ArtifactStore
 from rayforge.pipeline.artifact.manager import make_composite_key
+from rayforge.pipeline.dag.node import NodeState
 
 
 STEP1_UID = str(uuid.uuid4())
@@ -425,8 +426,8 @@ class TestArtifactManager(unittest.TestCase):
         self.assertIn(ArtifactKey.for_workpiece(WP3_UID), keys)
         self.assertNotIn(ArtifactKey.for_workpiece(WP2_UID), keys)
 
-    def test_invalidate_for_job_releases_and_removes(self):
-        """Test invalidate_for_job releases handle and removes entry."""
+    def test_invalidate_for_job_releases_and_sets_dirty(self):
+        """Test invalidate_for_job releases handle and sets state DIRTY."""
         job_h = create_mock_handle(JobArtifactHandle, "job")
         job_key = ArtifactKey(id=JOB_UID, group="job")
         self.manager.cache_handle(job_key, job_h, 0)
@@ -434,7 +435,10 @@ class TestArtifactManager(unittest.TestCase):
         self.manager.invalidate_for_job(job_key)
 
         job_composite = make_composite_key(job_key, 0)
-        self.assertNotIn(job_composite, self.manager._ledger)
+        entry = self.manager._ledger.get(job_composite)
+        assert entry is not None
+        self.assertIsNone(entry.handle)
+        self.assertEqual(entry.state, NodeState.DIRTY)
         self.mock_release.assert_called_once_with(job_h)
 
     def test_checkout_handle_with_none(self):
@@ -603,6 +607,67 @@ class TestArtifactManager(unittest.TestCase):
         self.assertIs(entry_g0.handle, step_h)
         self.assertIs(entry_g1.handle, step_h)
         self.mock_store.retain.assert_called()
+
+    def test_get_state_returns_dirty_for_missing_entry(self):
+        """Test get_state returns DIRTY for missing entry."""
+        key = ArtifactKey.for_workpiece(WP1_UID)
+        result = self.manager.get_state(key, 0)
+        self.assertEqual(result, NodeState.DIRTY)
+
+    def test_get_state_returns_entry_state(self):
+        """Test get_state returns the state from the entry."""
+        wp_h = create_mock_handle(WorkPieceArtifactHandle, "wp1")
+        key = ArtifactKey.for_workpiece(WP1_UID)
+        self.manager.cache_handle(key, wp_h, 0)
+        self.manager.set_state(key, 0, NodeState.VALID)
+
+        result = self.manager.get_state(key, 0)
+        self.assertEqual(result, NodeState.VALID)
+
+    def test_set_state_updates_entry(self):
+        """Test set_state updates the state of an entry."""
+        wp_h = create_mock_handle(WorkPieceArtifactHandle, "wp1")
+        key = ArtifactKey.for_workpiece(WP1_UID)
+        self.manager.cache_handle(key, wp_h, 0)
+
+        self.manager.set_state(key, 0, NodeState.PROCESSING)
+
+        composite_key = make_composite_key(key, 0)
+        entry = self.manager._ledger.get(composite_key)
+        assert entry is not None
+        self.assertEqual(entry.state, NodeState.PROCESSING)
+
+    def test_set_state_ignores_missing_entry(self):
+        """Test set_state does nothing for missing entry."""
+        key = ArtifactKey.for_workpiece(WP1_UID)
+
+        self.manager.set_state(key, 0, NodeState.VALID)
+
+        composite_key = make_composite_key(key, 0)
+        self.assertNotIn(composite_key, self.manager._ledger)
+
+    def test_has_artifact_returns_true_for_existing_handle(self):
+        """Test has_artifact returns True when handle exists."""
+        wp_h = create_mock_handle(WorkPieceArtifactHandle, "wp1")
+        key = ArtifactKey.for_workpiece(WP1_UID)
+        self.manager.cache_handle(key, wp_h, 0)
+
+        result = self.manager.has_artifact(key, 0)
+        self.assertTrue(result)
+
+    def test_has_artifact_returns_false_for_missing_entry(self):
+        """Test has_artifact returns False when entry missing."""
+        key = ArtifactKey.for_workpiece(WP1_UID)
+        result = self.manager.has_artifact(key, 0)
+        self.assertFalse(result)
+
+    def test_has_artifact_returns_false_for_none_handle(self):
+        """Test has_artifact returns False when handle is None."""
+        key = ArtifactKey.for_workpiece(WP1_UID)
+        self.manager.declare_generation({key}, 0)
+
+        result = self.manager.has_artifact(key, 0)
+        self.assertFalse(result)
 
 
 class TestArtifactManagerCommitRetains(unittest.TestCase):
