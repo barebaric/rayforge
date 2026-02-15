@@ -1,11 +1,16 @@
 """
-ExecutionContext module for managing task execution context.
+ExecutionContext for managing task execution with throttled progress.
+
+This module provides ExecutionContext, which extends ThrottledProgressContext
+to add threading, debouncing, and scheduler support for progress reporting
+in the stage layer. It manages task execution with cancellation checking
+and progress updates that are throttled to prevent UI flooding.
 """
 
 import logging
 import threading
 from typing import Any, Optional, Callable, TYPE_CHECKING
-from .proxy import BaseExecutionContext
+from .progress import ThrottledProgressContext
 
 if TYPE_CHECKING:
     from .task import Task
@@ -13,7 +18,15 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class ExecutionContext(BaseExecutionContext):
+class ExecutionContext(ThrottledProgressContext):
+    """Context for task execution with throttled progress reporting.
+
+    Extends ThrottledProgressContext to add threading, debouncing,
+    and scheduler support. Progress updates are throttled to prevent
+    UI flooding. Supports hierarchical sub-contexting for nested
+    task execution.
+    """
+
     def __init__(
         self,
         update_callback: Optional[
@@ -156,7 +169,6 @@ class ExecutionContext(BaseExecutionContext):
         base_progress: float,
         progress_range: float,
         total: float,
-        **kwargs,
     ) -> "ExecutionContext":
         """
         Creates a sub-context that reports progress within a specified
@@ -164,8 +176,7 @@ class ExecutionContext(BaseExecutionContext):
         """
         return ExecutionContext(
             _parent_context=self,
-            _base_progress=base_progress,
-            _progress_range=progress_range,
+            _base_progress=self._base + (base_progress * self._range),
+            _progress_range=progress_range * self._range,
             _total=total,
-            check_cancelled=kwargs.get("check_cancelled"),
         )

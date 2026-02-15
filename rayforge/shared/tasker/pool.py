@@ -9,7 +9,7 @@ import threading
 import traceback
 import builtins
 from queue import Empty
-from multiprocessing import get_context
+from multiprocessing import get_context, Manager
 from multiprocessing.process import BaseProcess
 from multiprocessing.queues import Queue as MpQueue
 from typing import Any, Callable, List, Set, Optional, Tuple
@@ -59,6 +59,7 @@ def _worker_main_loop(
     log_level: int,
     initializer: Optional[Callable[..., None]],
     initargs: Tuple[Any, ...],
+    adoption_signals: dict,
 ):
     """
     The main function for a worker process.
@@ -101,10 +102,20 @@ def _worker_main_loop(
 
     while True:
         try:
+            worker_logger.debug(
+                f"Worker {os.getpid()}: Getting job from task_queue..."
+            )
             job = task_queue.get()
-        except (EOFError, OSError):
-            worker_logger.warning(
-                f"Worker {os.getpid()}: Task queue connection lost. Exiting."
+            worker_logger.debug(
+                f"Worker {os.getpid()}: Got job from task_queue"
+            )
+        except (EOFError, OSError) as e:
+            worker_logger.error(
+                f"Worker {os.getpid()}: Task queue connection lost. "
+                f"Exception type: {type(e).__name__}, Exception: {e}"
+            )
+            worker_logger.error(
+                f"Worker {os.getpid()}: Last task was: {last_task_key}"
             )
             break
         except KeyboardInterrupt:
@@ -129,6 +140,10 @@ def _worker_main_loop(
         key, task_id, user_func, user_args, user_kwargs = job
         last_task_key = key
         worker_logger.debug(f"Worker {os.getpid()} starting task '{key}'.")
+        worker_logger.info(
+            f"[DIAGNOSTIC] Worker {os.getpid()} task_id={task_id}, "
+            f"key={key}, last_task_key={last_task_key}"
+        )
 
         # Wrap the result queue to automatically tag all messages from the
         # proxy with this task's unique key.
@@ -139,6 +154,8 @@ def _worker_main_loop(
         proxy = ExecutionContextProxy(
             tagged_queue,  # type: ignore
             parent_log_level=log_level,
+            adoption_signals=adoption_signals,
+            task_id=task_id,
         )
 
         try:
@@ -174,9 +191,11 @@ class WorkerPoolManager:
             f"Initializing WorkerPoolManager with {num_workers} workers."
         )
 
-        mp_context = get_context("spawn")
-        self._task_queue: MpQueue = mp_context.Queue()
-        self._result_queue: MpQueue = mp_context.Queue()
+        self._mp_context = get_context("spawn")
+        self._manager = Manager()
+        self._task_queue: MpQueue = self._mp_context.Queue()
+        self._result_queue: MpQueue = self._mp_context.Queue()
+        self._adoption_signals = self._manager.dict()
         self._workers: List[BaseProcess] = []
         self._cancelled_task_ids: Set[int] = set()
         self._lock = threading.Lock()
@@ -192,7 +211,7 @@ class WorkerPoolManager:
         log_level = logging.getLogger().getEffectiveLevel()
 
         for _ in range(num_workers):
-            process = mp_context.Process(
+            process = self._mp_context.Process(
                 target=_worker_main_loop,
                 # Pass initializer and initargs to the target function
                 args=(
@@ -201,6 +220,7 @@ class WorkerPoolManager:
                     log_level,
                     initializer,
                     initargs,
+                    self._adoption_signals,
                 ),
                 daemon=True,
             )
@@ -239,7 +259,17 @@ class WorkerPoolManager:
             # with UUIDs but good practice.
             self._cancelled_task_ids.discard(task_id)
         job = (key, task_id, target, args, kwargs)
-        self._task_queue.put(job)
+        logger.debug(
+            f"Putting job on task_queue: key={key}, task_id={task_id}"
+        )
+        try:
+            self._task_queue.put(job)
+        except (OSError, BrokenPipeError) as e:
+            logger.error(
+                f"Failed to put job on task_queue: {e}. "
+                f"Task queue may be closed or corrupted."
+            )
+            raise
 
     def cancel(self, key: Any, task_id: int):
         """
@@ -303,6 +333,11 @@ class WorkerPoolManager:
                     event_name=event_name,
                     data=data,
                 )
+                # Signal to the worker that adoption is complete.
+                # This is critical on Windows where shared memory is
+                # destroyed when all handles are closed.
+                signal_key = f"{task_id}:{event_name}"
+                self._adoption_signals[signal_key] = True
                 continue
 
             # For all other message types, we can safely ignore them if the

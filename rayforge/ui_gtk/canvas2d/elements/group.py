@@ -3,6 +3,7 @@ from typing import TYPE_CHECKING, Optional, cast
 from gi.repository import GLib
 from ....core.workpiece import WorkPiece
 from ....core.group import Group
+from ....core.matrix import Matrix
 from ...canvas import ShrinkWrapGroup
 from .workpiece import WorkPieceElement
 
@@ -100,7 +101,9 @@ class GroupElement(ShrinkWrapGroup):
         # If a visual component was hit, the hit is on the group itself.
         return self if hit_candidate else None
 
-    def _on_transform_changed(self, group: Group):
+    def _on_transform_changed(
+        self, group: Group, *, old_matrix: Optional[Matrix] = None
+    ):
         """
         Handles transform changes from the model by applying the model's
         local matrix to this canvas element's transform. (MODEL -> VIEW)
@@ -146,7 +149,7 @@ class GroupElement(ShrinkWrapGroup):
             if isinstance(item_data, WorkPiece):
                 child_elem = WorkPieceElement(
                     workpiece=item_data,
-                    pipeline=work_surface.editor.pipeline,
+                    view_manager=work_surface.editor.view_manager,
                     canvas=self.canvas,
                     selectable=False,  # Children are not selectable
                 )

@@ -1,8 +1,10 @@
 """
-This module defines the base class for execution contexts and a proxy
-for reporting progress from subprocesses. It provides a framework for
-managing task execution, including progress reporting, message handling,
-and sub-contexting.
+Proxy for reporting progress from subprocesses via a queue.
+
+This module provides ExecutionContextProxy, which extends
+ThrottledProgressContext to enable progress reporting from subprocesses
+through a queue. It includes throttling to prevent flooding the IPC
+queue and provides event sending capabilities.
 
 WARNING: This file MUST NOT have any imports that cause any other
 parts of the application to be initialized. It is designed to
@@ -14,130 +16,24 @@ which is not safe during bootstrapping.
 In other words, we cannot use GLib.idle_add or similar.
 """
 
-import abc
 import logging
 import time
 from queue import Full
 from multiprocessing.queues import Queue
-from typing import Optional
+from typing import Any, Optional
+
+from rayforge.shared.tasker.progress import (
+    ThrottledProgressContext,
+)
 
 
-class BaseExecutionContext(abc.ABC):
-    """
-    Abstract base class for execution contexts.
+class ExecutionContextProxy(ThrottledProgressContext):
+    """Pickleable proxy for reporting progress from a subprocess via a queue.
 
-    Provides common functionality for progress reporting, including
-    normalization and sub-contexting. Subclasses must implement the
-    specific reporting mechanism (e.g., via a queue or a debounced
-    callback).
-    """
-
-    def __init__(
-        self,
-        base_progress: float = 0.0,
-        progress_range: float = 1.0,
-        total: float = 1.0,
-    ):
-        self._base = base_progress
-        self._range = progress_range
-        self._total = 1.0  # Default total for normalization
-        self.set_total(total)
-        self.task = None  # Add task attribute
-
-    @abc.abstractmethod
-    def _report_normalized_progress(self, progress: float):
-        """
-        Abstract method for handling a 0.0-1.0 progress value.
-        Subclasses must implement this to either send the progress to a
-        queue or schedule a debounced update.
-        """
-        pass
-
-    def set_total(self, total: float):
-        """
-        Sets or updates the total value for this context's progress
-        calculations.
-        """
-        if total <= 0:
-            self._total = 1.0
-        else:
-            self._total = float(total)
-
-    def set_progress(self, progress: float):
-        """
-        Sets the progress as an absolute value. This value is automatically
-        normalized against the context's total.
-        Example: If total=200, set_progress(20) reports 0.1 progress.
-        """
-        # The code calling this might already be sending normalized progress
-        # if it doesn't call set_total. In that case, total is 1.0, and this
-        # works.
-        normalized_progress = progress / self._total
-        self._report_normalized_progress(normalized_progress)
-
-    @abc.abstractmethod
-    def set_message(self, message: str):
-        """Sets a descriptive message."""
-        pass
-
-    def sub_context(
-        self,
-        base_progress: float,
-        progress_range: float,
-        total: float = 1.0,
-        **kwargs,
-    ) -> "BaseExecutionContext":
-        """
-        Creates a sub-context that reports progress within a specified
-        range of this context's progress.
-
-        Args:
-            base_progress: The normalized (0.0-1.0) progress in the parent
-                           when the sub-task begins.
-            progress_range: The fraction (0.0-1.0) of the parent's progress
-                           that this sub-task represents.
-            total: The total number of steps for the new sub-context.
-                   Defaults to 1.0, treating progress as already normalized.
-            **kwargs: Additional arguments for specific subclass constructors
-                      (e.g., `check_cancelled` for ExecutionContext).
-
-        Returns:
-            A new execution context instance configured as a sub-context.
-        """
-        new_base = self._base + (base_progress * self._range)
-        new_range = self._range * progress_range
-        return self._create_sub_context(new_base, new_range, total, **kwargs)
-
-    @abc.abstractmethod
-    def _create_sub_context(
-        self,
-        base_progress: float,
-        progress_range: float,
-        total: float,
-        **kwargs,
-    ) -> "BaseExecutionContext":
-        """
-        Abstract factory method for creating a sub-context of the
-        correct type.
-        """
-        pass
-
-    @abc.abstractmethod
-    def is_cancelled(self) -> bool:
-        """Checks if the operation has been cancelled."""
-        pass
-
-    @abc.abstractmethod
-    def flush(self):
-        """
-        Immediately sends any pending updates.
-        """
-        pass
-
-
-class ExecutionContextProxy(BaseExecutionContext):
-    """
-    A pickleable proxy for reporting progress from a subprocess via a queue.
+    Extends ThrottledProgressContext to enable progress reporting from
+    subprocesses through an IPC queue. Progress updates are throttled to
+    prevent flooding the queue. Supports event sending for subprocess
+    communication with the parent process.
     """
 
     # Report progress at most ~10 times per second to prevent flooding the UI.
@@ -146,15 +42,20 @@ class ExecutionContextProxy(BaseExecutionContext):
     def __init__(
         self,
         progress_queue: Queue,
-        base_progress=0.0,
-        progress_range=1.0,
+        base_progress: float = 0.0,
+        progress_range: float = 1.0,
         parent_log_level: int = logging.DEBUG,
+        adoption_signals: Any = None,
+        task_id: int = 0,
     ):
         super().__init__(base_progress, progress_range, total=1.0)
         self._queue = progress_queue
+        self._adoption_signals = adoption_signals
+        self._task_id = task_id
         self.parent_log_level = parent_log_level
         self._last_progress_report_time = 0.0
         self._last_reported_progress: Optional[float] = None
+        self.task = None
 
     def _report_normalized_progress(self, progress: float):
         """
@@ -194,6 +95,20 @@ class ExecutionContextProxy(BaseExecutionContext):
         except Full:
             pass
 
+    def sub_context(
+        self,
+        base_progress: float = 0.0,
+        progress_range: float = 1.0,
+        total: float = 1.0,
+        **kwargs,
+    ) -> "ExecutionContextProxy":
+        """
+        Creates a sub-context that reports progress within a specified range.
+        """
+        new_base = self._base + (base_progress * self._range)
+        new_range = self._range * progress_range
+        return self._create_sub_context(new_base, new_range, total, **kwargs)
+
     def _create_sub_context(
         self,
         base_progress: float,
@@ -206,7 +121,11 @@ class ExecutionContextProxy(BaseExecutionContext):
         """
         # The new proxy gets its own total for its own progress calculations
         new_proxy = ExecutionContextProxy(
-            self._queue, base_progress, progress_range
+            self._queue,
+            base_progress,
+            progress_range,
+            adoption_signals=self._adoption_signals,
+            task_id=self._task_id,
         )
         new_proxy.set_total(total)
         return new_proxy
@@ -232,3 +151,46 @@ class ExecutionContextProxy(BaseExecutionContext):
             self._last_reported_progress = None
         except Full:
             pass
+
+    def send_event_and_wait(
+        self,
+        name: str,
+        data: Optional[dict] = None,
+        timeout: float = 5.0,
+        logger: Optional[logging.Logger] = None,
+    ) -> bool:
+        """
+        Sends a named event and waits for adoption acknowledgment.
+
+        This is used for events that carry shared memory handles. On Windows,
+        shared memory is destroyed when all handles are closed, so the worker
+        must wait for the main process to adopt before closing its handle.
+
+        Args:
+            name: The event name.
+            data: Optional data payload.
+            timeout: Maximum time to wait for acknowledgment in seconds.
+            logger: Optional logger for debug messages.
+
+        Returns:
+            True if acknowledgment was received, False if timed out.
+        """
+        self.send_event(name, data)
+
+        if self._adoption_signals is None:
+            return True
+
+        signal_key = f"{self._task_id}:{name}"
+        deadline = time.monotonic() + timeout
+
+        while time.monotonic() < deadline:
+            if signal_key in self._adoption_signals:
+                del self._adoption_signals[signal_key]
+                return True
+            time.sleep(0.01)
+
+        if logger:
+            logger.warning(
+                f"Timeout waiting for adoption signal for {signal_key}"
+            )
+        return False

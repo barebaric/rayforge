@@ -45,6 +45,7 @@ class TestWorkPieceViewArtifact(unittest.TestCase):
             handle_class_name="WorkPieceViewArtifactHandle",
             artifact_type_name="WorkPieceViewArtifact",
             bbox_mm=(10.0, 20.0, 100.0, 50.0),
+            workpiece_size_mm=(100.0, 50.0),
             array_metadata={
                 "bitmap_data": {
                     "dtype": "uint8",
@@ -73,7 +74,9 @@ class TestWorkPieceViewArtifact(unittest.TestCase):
         )
         bbox_mm = (5.0, 5.0, 50.0, 100.0)
         original_artifact = WorkPieceViewArtifact(
-            bitmap_data=bitmap_data, bbox_mm=bbox_mm
+            bitmap_data=bitmap_data,
+            bbox_mm=bbox_mm,
+            workpiece_size_mm=(50.0, 100.0),
         )
 
         # 2. Put the artifact into shared memory

@@ -97,7 +97,9 @@ class StepOpsArtifact(BaseArtifact):
             raise TypeError("StepOpsArtifact requires a StepOpsArtifactHandle")
         from ...core.ops import Ops
 
-        ops = Ops.from_numpy_arrays(arrays)
+        # Create a deep copy of the arrays to break the link to shared memory
+        copied_arrays = {k: v.copy() for k, v in arrays.items()}
+        ops = Ops.from_numpy_arrays(copied_arrays)
         return cls(
             ops=ops,
             time_estimate=handle.time_estimate,

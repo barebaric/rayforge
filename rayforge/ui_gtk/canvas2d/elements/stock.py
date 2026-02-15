@@ -1,7 +1,9 @@
 import logging
 import math
 import cairo
+from typing import Optional
 from ....core.stock import StockItem
+from ....core.matrix import Matrix
 from ....core.geo.constants import (
     CMD_TYPE_MOVE,
     CMD_TYPE_LINE,
@@ -67,7 +69,9 @@ class StockElement(CanvasElement):
         """Handler for when the stock item's visibility changes."""
         self.set_visible(self.data.visible)
 
-    def _on_transform_changed(self, stock_item: StockItem):
+    def _on_transform_changed(
+        self, stock_item: StockItem, *, old_matrix: Optional[Matrix] = None
+    ):
         """Handler for when the stock item's transform changes."""
         if not self.canvas or self.transform == stock_item.matrix:
             return

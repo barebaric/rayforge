@@ -191,7 +191,7 @@ class TestExecutionContext:
     def test_deeply_nested_sub_context_progress(self, mock_timer_factory):
         root = ExecutionContext(scheduler=Mock())
         # sub1: 10% - 90% (base=0.1, range=0.8)
-        sub1 = root.sub_context(0.1, 0.8)
+        sub1 = root.sub_context(0.1, 0.8, total=1.0)
         # sub2: 50% - 75% of sub1's range (base=0.5, range=0.25)
         sub2 = sub1.sub_context(0.5, 0.25, total=10)
 
@@ -211,7 +211,7 @@ class TestExecutionContext:
 
     def test_sub_context_message_reporting(self, mock_timer_factory):
         root = ExecutionContext(scheduler=Mock())
-        sub = root.sub_context(0, 1)
+        sub = root.sub_context(0, 1, total=1.0)
         sub.set_message("From sub-context")
 
         assert root._pending_message == "From sub-context"
@@ -225,29 +225,15 @@ class TestExecutionContext:
         def root_is_cancelled():
             return root_cancelled
 
-        sub_cancelled = False
-
-        def sub_is_cancelled():
-            return sub_cancelled
-
         root = ExecutionContext(
             check_cancelled=root_is_cancelled, scheduler=Mock()
         )
-        sub = root.sub_context(0, 1)
-        sub_override = root.sub_context(0, 1, check_cancelled=sub_is_cancelled)
+        sub = root.sub_context(0, 1, total=1.0)
 
         # Test inheritance
         assert not sub.is_cancelled()
         root_cancelled = True
         assert sub.is_cancelled()
-
-        # Test override
-        assert not sub_override.is_cancelled()
-        sub_cancelled = True
-        assert sub_override.is_cancelled()
-        # Root's state doesn't affect the override
-        root_cancelled = False
-        assert sub_override.is_cancelled()
 
     def test_sub_context_flush(self, mock_timer_factory):
         update_cb = Mock()
@@ -255,7 +241,7 @@ class TestExecutionContext:
         root = ExecutionContext(
             update_callback=update_cb, scheduler=mock_scheduler
         )
-        sub = root.sub_context(0, 1)
+        sub = root.sub_context(0, 1, total=1.0)
 
         sub.set_progress(0.5)
         assert len(mock_timer_factory) == 1

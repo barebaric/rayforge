@@ -35,6 +35,29 @@ def event_sending_func(proxy: ExecutionContextProxy):
     return "event_sent"
 
 
+def event_with_ack_func(proxy: ExecutionContextProxy):
+    """A worker function that sends an event and waits for acknowledgment."""
+    logger = logging.getLogger(__name__)
+    result = proxy.send_event_and_wait(
+        "ack_event",
+        {"payload": "test_data"},
+        logger=logger,
+    )
+    return {"acked": result, "event_sent": True}
+
+
+def event_with_ack_timeout_func(proxy: ExecutionContextProxy):
+    """A worker function that tests acknowledgment timeout."""
+    logger = logging.getLogger(__name__)
+    result = proxy.send_event_and_wait(
+        "nonexistent_event",
+        {"payload": "timeout_test"},
+        timeout=0.5,
+        logger=logger,
+    )
+    return {"acked": result}
+
+
 def worker_init(filepath: Path, init_queue: mp.Queue):
     """
     Initializer function that writes its PID to a file and signals completion.
@@ -167,6 +190,71 @@ class TestWorkerPoolManager:
         assert event_received_event.wait(timeout=2)
         assert received_event_data["name"] == "custom_event"
         assert received_event_data["data"] == {"payload": 42}
+
+    def test_event_with_acknowledgment(self, pool: WorkerPoolManager):
+        """
+        Verify that send_event_and_wait properly waits for acknowledgment
+        from the main process.
+        """
+        completion_event = threading.Event()
+        result_holder = {}
+        event_received = threading.Event()
+
+        def on_event(sender, key, task_id, event_name, data):
+            if key == "ack_task":
+                event_received.set()
+
+        def on_complete(sender, key, task_id, result):
+            if key == "ack_task":
+                result_holder["result"] = result
+                completion_event.set()
+
+        pool.task_event_received.connect(on_event)
+        pool.task_completed.connect(on_complete)
+
+        pool.submit("ack_task", 201, event_with_ack_func)
+
+        # Event should be received quickly
+        assert event_received.wait(timeout=2), "Event not received"
+        # Task should complete after acknowledgment
+        assert completion_event.wait(timeout=5), "Task did not complete"
+
+        assert result_holder["result"]["acked"] is True
+        assert result_holder["result"]["event_sent"] is True
+
+    def test_event_acknowledgment_signal_in_adoption_dict(
+        self, pool: WorkerPoolManager
+    ):
+        """
+        Verify that the adoption signal is properly set in the shared dict
+        after an event is processed.
+        """
+        event_received = threading.Event()
+        signal_key_captured = {}
+
+        def on_event(sender, key, task_id, event_name, data):
+            if key == "signal_task":
+                signal_key = f"{task_id}:{event_name}"
+                signal_key_captured["key"] = signal_key
+                signal_key_captured["task_id"] = task_id
+                event_received.set()
+
+        pool.task_event_received.connect(on_event)
+        pool.submit("signal_task", 301, event_sending_func)
+
+        assert event_received.wait(timeout=2), "Event not received"
+
+        # The signal is set AFTER the callback runs, so we need to
+        # give it a moment to be set
+        import time
+
+        time.sleep(0.1)
+
+        # The signal key should have been set in the adoption dict
+        signal_key = signal_key_captured["key"]
+        assert signal_key in pool._adoption_signals, (
+            f"Signal key {signal_key} not found in adoption_signals"
+        )
 
     def test_multiple_concurrent_tasks(self, pool: WorkerPoolManager):
         """Verify that the pool can handle multiple tasks concurrently."""

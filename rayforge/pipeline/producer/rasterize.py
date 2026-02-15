@@ -4,6 +4,7 @@ import math
 import logging
 from typing import Optional, TYPE_CHECKING, Dict, Any, Tuple
 from ...core.ops import Ops, SectionType
+from ...shared.tasker.progress import ProgressContext
 from ..artifact import WorkPieceArtifact
 from ..coord import CoordinateSystem
 from .base import OpsProducer
@@ -11,7 +12,6 @@ from .base import OpsProducer
 if TYPE_CHECKING:
     from ...core.workpiece import WorkPiece
     from ...machine.models.laser import Laser
-    from ...shared.tasker.proxy import BaseExecutionContext
 
 logger = logging.getLogger(__name__)
 
@@ -150,6 +150,8 @@ def _calculate_raster_params(
     pixels_per_mm: Tuple[float, float],
     raster_size_mm: float,
     direction_degrees: float,
+    offset_x_mm: float = 0.0,
+    offset_y_mm: float = 0.0,
 ) -> Dict[str, Any]:
     """Calculate raster parameters from bounding box and angle.
 
@@ -158,6 +160,8 @@ def _calculate_raster_params(
         pixels_per_mm: Resolution as (x, y) pixels per millimeter.
         raster_size_mm: Distance between raster lines in millimeters.
         direction_degrees: Raster direction in degrees.
+        offset_x_mm: Global X offset for line alignment across chunks.
+        offset_y_mm: Global Y offset for line alignment across chunks.
 
     Returns:
         Dictionary containing calculated parameters:
@@ -169,7 +173,8 @@ def _calculate_raster_params(
             - diag_mm: Diagonal length of bounding box in millimeters.
             - perp_cos: Cosine of perpendicular angle.
             - perp_sin: Sine of perpendicular angle.
-            - num_lines: Number of raster lines to generate.
+            - first_line_index: First line index aligned to global grid.
+            - last_line_index: Last line index aligned to global grid.
     """
     y_min, y_max, x_min, x_max = bbox
     pixels_per_mm_x, pixels_per_mm_y = pixels_per_mm
@@ -190,7 +195,15 @@ def _calculate_raster_params(
     perp_cos = math.cos(perp_angle_rad)
     perp_sin = math.sin(perp_angle_rad)
 
-    num_lines = int(math.ceil(diag_mm / raster_size_mm)) + 2
+    global_center_perp = (center_x_mm + offset_x_mm) * perp_cos + (
+        center_y_mm + offset_y_mm
+    ) * perp_sin
+
+    perp_extent_start = global_center_perp - diag_mm / 2
+    perp_extent_end = global_center_perp + diag_mm / 2
+
+    first_line_global_perp = math.ceil(perp_extent_start / raster_size_mm)
+    last_line_global_perp = math.floor(perp_extent_end / raster_size_mm)
 
     return {
         "angle_rad": angle_rad,
@@ -201,19 +214,27 @@ def _calculate_raster_params(
         "diag_mm": diag_mm,
         "perp_cos": perp_cos,
         "perp_sin": perp_sin,
-        "num_lines": num_lines,
+        "first_line_index": first_line_global_perp,
+        "last_line_index": last_line_global_perp,
+        "global_center_perp": global_center_perp,
     }
 
 
 def _get_raster_line_coords(
-    params: Dict[str, Any], line_index: int, raster_size_mm: float
+    params: Dict[str, Any],
+    line_index: int,
+    raster_size_mm: float,
+    offset_x_mm: float = 0.0,
+    offset_y_mm: float = 0.0,
 ) -> Tuple[float, float, float, float]:
     """Calculate start and end coordinates for a raster line.
 
     Args:
         params: Raster parameters from _calculate_raster_params.
-        line_index: Index of the raster line (can be negative).
+        line_index: Global line index (multiple of raster_size_mm).
         raster_size_mm: Distance between raster lines in millimeters.
+        offset_x_mm: Global X offset for line alignment.
+        offset_y_mm: Global Y offset for line alignment.
 
     Returns:
         Tuple of (start_x_mm, start_y_mm, end_x_mm, end_y_mm).
@@ -225,11 +246,13 @@ def _get_raster_line_coords(
     sin_a = params["sin_a"]
     perp_cos = params["perp_cos"]
     perp_sin = params["perp_sin"]
+    global_center_perp = params["global_center_perp"]
 
-    line_offset_mm = line_index * raster_size_mm
+    line_global_perp = line_index * raster_size_mm
+    line_local_perp = line_global_perp - global_center_perp
 
-    line_center_x_mm = center_x_mm + line_offset_mm * perp_cos
-    line_center_y_mm = center_y_mm + line_offset_mm * perp_sin
+    line_center_x_mm = center_x_mm + line_local_perp * perp_cos
+    line_center_y_mm = center_y_mm + line_local_perp * perp_sin
 
     half_diag = diag_mm / 2
     start_x_mm = line_center_x_mm - half_diag * cos_a
@@ -245,15 +268,22 @@ def _process_raster_segments(
     values: np.ndarray,
     segments: np.ndarray,
     reverse: bool,
+    line_start_mm: Tuple[float, float],
+    line_end_mm: Tuple[float, float],
     pixels_per_mm: Tuple[float, float],
 ) -> list:
     """Process raster segments and convert to millimeter coordinates.
+
+    Uses the line's mm coordinates for the globally-aligned axis and
+    pixel-based coordinates for the local axis to preserve segment accuracy.
 
     Args:
         pixels: Array of (x, y) pixel coordinates along the raster line.
         values: Binary values at each pixel position.
         segments: Array of [start_idx, end_idx] pairs for black segments.
         reverse: If True, swap start/end coordinates for each segment.
+        line_start_mm: (x, y) start of the raster line in mm.
+        line_end_mm: (x, y) end of the raster line in mm.
         pixels_per_mm: Resolution as (x, y) pixels per millimeter.
 
     Returns:
@@ -262,23 +292,32 @@ def _process_raster_segments(
     pixels_per_mm_x, pixels_per_mm_y = pixels_per_mm
     segment_coords = []
 
+    sx, sy = line_start_mm
+    ex, ey = line_end_mm
+
+    is_horizontal = abs(ey - sy) < abs(ex - sx)
+
     for start_idx, end_idx in segments:
         if values[start_idx] == 1:
             if reverse:
-                seg_start_x = pixels[end_idx - 1, 0]
-                seg_start_y = pixels[end_idx - 1, 1]
-                seg_end_x = pixels[start_idx, 0]
-                seg_end_y = pixels[start_idx, 1]
+                seg_start_px = pixels[end_idx - 1]
+                seg_end_px = pixels[start_idx]
             else:
-                seg_start_x = pixels[start_idx, 0]
-                seg_start_y = pixels[start_idx, 1]
-                seg_end_x = pixels[end_idx - 1, 0]
-                seg_end_y = pixels[end_idx - 1, 1]
+                seg_start_px = pixels[start_idx]
+                seg_end_px = pixels[end_idx - 1]
 
-            start_mm_x = (seg_start_x + 0.5) / pixels_per_mm_x
-            start_mm_y = (seg_start_y + 0.5) / pixels_per_mm_y
-            end_mm_x = (seg_end_x + 0.5) / pixels_per_mm_x
-            end_mm_y = (seg_end_y + 0.5) / pixels_per_mm_y
+            if is_horizontal:
+                line_y_mm = sy
+                start_mm_x = seg_start_px[0] / pixels_per_mm_x
+                end_mm_x = seg_end_px[0] / pixels_per_mm_x
+                start_mm_y = line_y_mm
+                end_mm_y = line_y_mm
+            else:
+                line_x_mm = sx
+                start_mm_y = seg_start_px[1] / pixels_per_mm_y
+                end_mm_y = seg_end_px[1] / pixels_per_mm_y
+                start_mm_x = line_x_mm
+                end_mm_x = line_x_mm
 
             segment_coords.append((start_mm_x, start_mm_y, end_mm_x, end_mm_y))
 
@@ -362,15 +401,20 @@ def rasterize_at_angle(
         return Ops()
 
     params = _calculate_raster_params(
-        bbox, pixels_per_mm, raster_size_mm, direction_degrees
+        bbox,
+        pixels_per_mm,
+        raster_size_mm,
+        direction_degrees,
+        offset_x_mm,
+        offset_y_mm,
     )
     pixels_per_mm_x, pixels_per_mm_y = pixels_per_mm
 
     ops = Ops()
 
-    for i in range(-params["num_lines"] // 2, params["num_lines"] // 2 + 1):
+    for i in range(params["first_line_index"], params["last_line_index"] + 1):
         start_x_mm, start_y_mm, end_x_mm, end_y_mm = _get_raster_line_coords(
-            params, i, raster_size_mm
+            params, i, raster_size_mm, offset_x_mm, offset_y_mm
         )
 
         start_x_px = start_x_mm * pixels_per_mm_x
@@ -396,7 +440,13 @@ def rasterize_at_angle(
             segments = segments[::-1]
 
         segment_coords = _process_raster_segments(
-            pixels, values, segments, reverse, pixels_per_mm
+            pixels,
+            values,
+            segments,
+            reverse,
+            (start_x_mm, start_y_mm),
+            (end_x_mm, end_y_mm),
+            pixels_per_mm,
         )
 
         if segment_coords:
@@ -454,7 +504,7 @@ class Rasterizer(OpsProducer):
         workpiece: "Optional[WorkPiece]" = None,
         settings: Optional[Dict[str, Any]] = None,
         y_offset_mm: float = 0.0,
-        proxy: Optional["BaseExecutionContext"] = None,
+        context: Optional[ProgressContext] = None,
     ) -> WorkPieceArtifact:
         if workpiece is None:
             raise ValueError("Rasterizer requires a workpiece context.")
@@ -466,6 +516,9 @@ class Rasterizer(OpsProducer):
         height = surface.get_height()
         logger.debug(f"Rasterizer received surface: {width}x{height} pixels")
         logger.debug(f"Rasterizer received pixels_per_mm: {pixels_per_mm}")
+
+        surface_width_mm = width / pixels_per_mm[0]
+        surface_height_mm = height / pixels_per_mm[1]
 
         raster_ops = Ops()
         if width > 0 and height > 0:
@@ -507,10 +560,20 @@ class Rasterizer(OpsProducer):
 
         final_ops.ops_section_end(SectionType.RASTER_FILL)
 
+        logger.debug(
+            f"Rasterizer creating artifact: "
+            f"surface_px=({width}x{height}), "
+            f"surface_mm=({surface_width_mm:.2f}x{surface_height_mm:.2f}), "
+            f"workpiece.size=({workpiece.size[0]:.2f}x"
+            f"{workpiece.size[1]:.2f}), "
+            f"source_dimensions=({surface_width_mm:.2f}x"
+            f"{surface_height_mm:.2f})"
+        )
         return WorkPieceArtifact(
             ops=final_ops,
             is_scalable=False,
             source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
+            source_dimensions=(surface_width_mm, surface_height_mm),
             generation_size=workpiece.size,
         )
 

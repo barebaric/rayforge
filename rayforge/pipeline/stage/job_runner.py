@@ -1,23 +1,22 @@
 from __future__ import annotations
 import logging
-from dataclasses import dataclass, asdict
-from typing import Dict, Any, TYPE_CHECKING, Optional
-import numpy as np
-import json
-from ...core.ops import Ops
+from dataclasses import dataclass
+from typing import Dict, Any, TYPE_CHECKING
+
 from ...core.doc import Doc
 from ...machine.models.machine import Machine
+from ...shared.tasker.progress import CallbackProgressContext
 from ...shared.tasker.proxy import ExecutionContextProxy
 from ..artifact import (
-    JobArtifact,
     create_handle_from_dict,
     StepOpsArtifact,
 )
+from ..artifact.key import ArtifactKey
 from ..artifact.store import ArtifactStore
-from ..encoder.vertexencoder import VertexEncoder
+from .job_compute import compute_job_artifact
 
 if TYPE_CHECKING:
-    import threading
+    pass
 
 
 logger = logging.getLogger(__name__)
@@ -37,120 +36,61 @@ def make_job_artifact_in_subprocess(
     artifact_store: ArtifactStore,
     job_description_dict: Dict[str, Any],
     creator_tag: str,
-    adoption_event: Optional["threading.Event"] = None,
+    generation_id: int,
+    job_key: ArtifactKey,
 ) -> None:
     """
     The main entry point for assembling, post-processing, and encoding a
     full job in a background process.
 
-    This function consumes pre-computed StepArtifacts, combines their Ops,
-    and encodes the result into a final JobArtifact containing G-code and
-    preview data.
+    Uses acknowledgment-based handover for shared memory artifacts.
     """
     job_desc = JobDescription(**job_description_dict)
     machine = Machine.from_dict(job_desc.machine_dict, is_inert=True)
     doc = Doc.from_dict(job_desc.doc_dict)
     handles_by_uid = job_desc.step_artifact_handles_by_uid
 
-    proxy.set_message(_("Assembling final job..."))
-    final_ops = Ops()
-    final_ops.job_start()
+    step_artifacts_by_uid: Dict[str, StepOpsArtifact] = {}
 
-    total_steps = len(handles_by_uid)
-    processed_steps = 0
+    for step_uid, handle_dict in handles_by_uid.items():
+        handle = create_handle_from_dict(handle_dict)
+        artifact = artifact_store.get(handle)
+        if isinstance(artifact, StepOpsArtifact):
+            step_artifacts_by_uid[step_uid] = artifact
 
-    for layer in doc.layers:
-        if not layer.workflow:
-            continue
-        final_ops.layer_start(layer_uid=layer.uid)
-
-        for step in layer.workflow.steps:
-            if step.uid not in handles_by_uid:
-                continue
-
-            processed_steps += 1
-            proxy.set_progress(
-                processed_steps / total_steps if total_steps > 0 else 0
-            )
-            proxy.set_message(
-                _("Processing final ops for '{step}'").format(step=step.name)
-            )
-
-            handle_dict = handles_by_uid[step.uid]
-            handle = create_handle_from_dict(handle_dict)
-            artifact = artifact_store.get(handle)
-
-            if (
-                isinstance(artifact, StepOpsArtifact)
-                and not artifact.ops.is_empty()
-            ):
-                final_ops.extend(artifact.ops)
-
-        final_ops.layer_end(layer_uid=layer.uid)
-
-    final_ops.job_end()
-
-    # If the final ops are empty, still proceed to encoding to generate a file
-    # with the necessary preamble and postscript.
-    if final_ops.is_empty():
-        logger.info(
-            "Final ops are empty. "
-            "Generating G-code with preamble/postscript only."
-        )
-
-    proxy.set_message(_("Calculating final time and distance estimates..."))
-    final_time = final_ops.estimate_time(
-        default_cut_speed=machine.max_cut_speed,
-        default_travel_speed=machine.max_travel_speed,
-        acceleration=machine.acceleration,
+    context = CallbackProgressContext(
+        is_cancelled_func=proxy.is_cancelled,
+        progress_callback=proxy.set_progress,
+        message_callback=proxy.set_message,
     )
-    final_distance = final_ops.distance()
 
-    proxy.set_message(_("Generating G-code..."))
-    gcode_str, op_map_obj = machine.encode_ops(final_ops, doc)
-
-    # Encode G-code and map to byte arrays for the artifact
-    machine_code_bytes = np.frombuffer(
-        gcode_str.encode("utf-8"), dtype=np.uint8
+    final_artifact = compute_job_artifact(
+        doc,
+        step_artifacts_by_uid,
+        machine,
+        context,
     )
-    op_map_str = json.dumps(asdict(op_map_obj))
-    op_map_bytes = np.frombuffer(op_map_str.encode("utf-8"), dtype=np.uint8)
-
-    # Generate vertex data for UI preview/simulation
-    # NOTE: The preview uses the original Y-Up final_ops. The 3D view camera
-    # handles the visual orientation for Y-down machines.
-    proxy.set_message(_("Encoding paths for preview..."))
-    vertex_encoder = VertexEncoder()
-    vertex_data = vertex_encoder.encode(final_ops)
 
     proxy.set_message(_("Storing final job artifact..."))
-    final_artifact = JobArtifact(
-        ops=final_ops,
-        distance=final_distance,
-        vertex_data=vertex_data,
-        machine_code_bytes=machine_code_bytes,
-        op_map_bytes=op_map_bytes,
-        time_estimate=final_time,
-    )
     final_handle = artifact_store.put(final_artifact, creator_tag=creator_tag)
 
-    proxy.send_event(
-        "artifact_created", {"handle_dict": final_handle.to_dict()}
+    # Inter-process handoff: Send handle to main process and wait for adoption.
+    acked = proxy.send_event_and_wait(
+        "artifact_created",
+        {
+            "handle_dict": final_handle.to_dict(),
+            "generation_id": generation_id,
+            "job_key": {"id": job_key.id, "group": job_key.group},
+        },
+        logger=logger,
     )
 
-    # Wait for main process to adopt the artifact before forgetting it
-    if adoption_event is not None:
-        logger.debug("Waiting for main process to adopt job artifact...")
-        if adoption_event.wait(timeout=10):
-            logger.debug("Main process adopted job artifact. Forgetting...")
-            artifact_store.forget(final_handle)
-            logger.info("Worker disowned job artifact successfully")
-        else:
-            logger.warning(
-                "Main process failed to adopt job artifact within timeout. "
-                "Releasing to prevent leak."
-            )
-            artifact_store.release(final_handle)
+    # Forget (close without unlinking) after main process has adopted.
+    if acked:
+        logger.debug("Job artifact acknowledged, forgetting handle.")
+        artifact_store.forget(final_handle)
+    else:
+        logger.warning("Job artifact not acknowledged, keeping handle open")
 
     proxy.set_progress(1.0)
     proxy.set_message(_("Job finalization complete"))

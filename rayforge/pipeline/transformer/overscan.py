@@ -4,8 +4,6 @@ import logging
 import numpy as np
 from typing import Optional, List, Dict, Any, Sequence, TYPE_CHECKING
 from copy import deepcopy
-
-from .base import OpsTransformer, ExecutionPhase
 from ...core.ops import (
     Ops,
     Command,
@@ -18,10 +16,11 @@ from ...core.ops import (
     OpsSectionStartCommand,
     OpsSectionEndCommand,
 )
+from ...shared.tasker.progress import ProgressContext
+from .base import OpsTransformer, ExecutionPhase
 
 if TYPE_CHECKING:
     from ...core.workpiece import WorkPiece
-    from ...shared.tasker.proxy import BaseExecutionContext
 
 logger = logging.getLogger(__name__)
 
@@ -120,7 +119,7 @@ class OverscanTransformer(OpsTransformer):
         self,
         ops: Ops,
         workpiece: Optional[WorkPiece] = None,
-        context: Optional[BaseExecutionContext] = None,
+        context: Optional[ProgressContext] = None,
     ) -> None:
         if not self.enabled or math.isclose(self.distance_mm, 0.0):
             return

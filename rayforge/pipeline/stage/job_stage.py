@@ -1,31 +1,32 @@
 from __future__ import annotations
 import logging
-from typing import TYPE_CHECKING, Optional, Callable
-from blinker import Signal
-import multiprocessing as mp
+from typing import TYPE_CHECKING, Dict, List, Optional, Callable
 from asyncio.exceptions import CancelledError
+from blinker import Signal
+from ...shared.tasker.task import Task
 from ..artifact import JobArtifactHandle
+from ..artifact.key import ArtifactKey
+from ..artifact.manager import make_composite_key
+from ..dag.node import NodeState
 from .base import PipelineStage
-from .job_runner import JobDescription
-from contextlib import ExitStack
 
 if TYPE_CHECKING:
-    import threading
     from ...core.doc import Doc
     from ...machine.models.machine import Machine
     from ...shared.tasker.manager import TaskManager
-    from ...shared.tasker.task import Task
+    from ..context import GenerationContext
+    from ..artifact import BaseArtifactHandle
     from ..artifact.manager import ArtifactManager
 
 
 logger = logging.getLogger(__name__)
 
-# The constant key for the single, final job artifact in cache
-JobKey = "final_job"
-
 
 class JobPipelineStage(PipelineStage):
-    """A pipeline stage that assembles the final job artifact."""
+    """
+    Provides access to job artifacts and handles invalidation.
+    Task launching, creation, and completion handling reside here.
+    """
 
     def __init__(
         self,
@@ -35,192 +36,293 @@ class JobPipelineStage(PipelineStage):
     ):
         super().__init__(task_manager, artifact_manager)
         self._machine = machine
-        self._active_task: Optional["Task"] = None
-        self._adoption_event: Optional["threading.Event"] = None
-        self.generation_finished = Signal()
-        self.generation_failed = Signal()
+        self._retained_handles: List["BaseArtifactHandle"] = []
+        self._job_running: bool = False
+        self.job_generation_finished = Signal()
+        self.job_generation_failed = Signal()
 
     @property
-    def is_busy(self) -> bool:
-        return self._active_task is not None
+    def is_running(self) -> bool:
+        """Check if a job generation is currently in progress."""
+        return self._job_running
 
-    def reconcile(self, doc: "Doc"):
+    def _adopt_artifact(
+        self, data: dict, job_key: ArtifactKey
+    ) -> "BaseArtifactHandle":
         """
-        Job generation is triggered on-demand, so reconcile does nothing.
-        """
-        pass
-
-    def shutdown(self):
-        """Cancels active job generation task."""
-        logger.debug("JobPipelineStage shutting down.")
-        if self._active_task:
-            self._task_manager.cancel_task(self._active_task.key)
-            self._active_task = None
-        self._adoption_event = None
-
-    def generate_job(self, doc: "Doc", on_done: Optional[Callable] = None):
-        """
-        Starts the asynchronous task to assemble and encode the final job.
+        Adopt a job artifact from the subprocess.
 
         Args:
-            doc: The document to generate the job from.
-            on_done: An optional one-shot callback to execute upon completion.
+            data: The event data containing the handle dictionary.
+            job_key: The ArtifactKey for this job.
+
+        Returns:
+            The adopted JobArtifactHandle.
+
+        Raises:
+            TypeError: If the handle is not a JobArtifactHandle.
         """
-        if self.is_busy:
-            logger.warning("Job generation is already in progress.")
-            # If a callback was provided, immediately call it with an error
+        handle_dict = data["handle_dict"]
+        handle = self._artifact_manager.adopt_artifact(job_key, handle_dict)
+        if not isinstance(handle, JobArtifactHandle):
+            raise TypeError("Expected a JobArtifactHandle")
+        return handle
+
+    def handle_task_event(
+        self,
+        task: "Task",
+        event_name: str,
+        data: dict,
+        job_key: ArtifactKey,
+        generation_id: int,
+    ):
+        """Handle events broadcast from the job runner subprocess."""
+        if event_name != "artifact_created":
+            return
+
+        received_gen_id = data.get("generation_id")
+        if received_gen_id is None:
+            logger.error(
+                "Job event 'artifact_created' missing generation_id. Ignoring."
+            )
+            return
+
+        job_key_dict = data.get("job_key")
+        if job_key_dict is None:
+            logger.error(
+                "Job event 'artifact_created' missing job_key. Ignoring."
+            )
+            return
+
+        received_job_key = ArtifactKey(
+            id=job_key_dict["id"], group=job_key_dict["group"]
+        )
+
+        composite_key = make_composite_key(received_job_key, generation_id)
+        entry = self._artifact_manager.get_ledger_entry(composite_key)
+        if entry is not None and entry.generation_id != generation_id:
+            logger.debug(
+                f"Stale job event with generation_id {generation_id}, "
+                f"current is {entry.generation_id}. Ignoring."
+            )
+            return
+
+        try:
+            handle = self._adopt_artifact(data, received_job_key)
+            self._artifact_manager.cache_handle(
+                received_job_key, handle, generation_id
+            )
+            self._emit_node_state(received_job_key, NodeState.VALID)
+            logger.debug("Adopted job artifact")
+        except Exception as e:
+            logger.error(f"Error handling job artifact event: {e}")
+
+    def on_task_complete(
+        self,
+        task: "Task",
+        job_key: ArtifactKey,
+        generation_id: int,
+        on_done: Optional[Callable],
+        context: Optional["GenerationContext"],
+    ):
+        """Callback for when a job generation task finishes."""
+        if context is not None:
+            context.task_did_finish(job_key)
+
+        self.release_retained_handles()
+
+        task_status = task.get_status()
+        final_handle = None
+        error = None
+
+        if task_status == "completed":
+            final_handle = self._artifact_manager.get_job_handle(
+                job_key, generation_id
+            )
+            if final_handle:
+                logger.info("Job generation successful.")
+                self._emit_node_state(job_key, NodeState.VALID)
+            else:
+                logger.info(
+                    "Job generation finished with no artifact produced."
+                )
+            if on_done:
+                on_done(final_handle, None)
+            self.job_generation_finished.send(
+                self, handle=final_handle, task_status=task_status
+            )
+        else:
+            logger.error(f"Job generation failed with status: {task_status}")
+
+            try:
+                task.result()
+            except CancelledError as e:
+                error = e
+                logger.info(f"Job generation was cancelled: {e}")
+            except Exception as e:
+                error = e
+
+            if generation_id is not None:
+                self._emit_node_state(job_key, NodeState.ERROR)
+
+            self._artifact_manager.invalidate_for_job(job_key)
+            if on_done:
+                on_done(None, error)
+
+            if task_status == "failed":
+                self.job_generation_failed.send(
+                    self, error=error, task_status=task_status
+                )
+            else:
+                self.job_generation_finished.send(
+                    self, handle=None, task_status=task_status
+                )
+        self._job_running = False
+
+    def validate_dependencies(
+        self, step_uids: List[str], generation_id: int
+    ) -> bool:
+        """Validate that all step dependencies are ready for job generation."""
+        if not self._machine:
+            logger.warning("Cannot generate job, no machine configured.")
+            return False
+        for step_uid in step_uids:
+            step_key = ArtifactKey.for_step(step_uid)
+            handle = self._artifact_manager.get_step_ops_handle(
+                step_key, generation_id
+            )
+            if handle is None:
+                logger.debug(f"Step {step_uid} not ready for job generation")
+                return False
+        return True
+
+    def collect_step_handles(
+        self, step_uids: List[str], generation_id: int
+    ) -> Optional[Dict[str, Dict]]:
+        """
+        Collect step artifact handles for job generation.
+
+        Returns a dict mapping step_uid -> handle_dict, or None if any
+        step handle is missing. Also retains handles to prevent premature
+        pruning while the job task is running.
+        """
+        step_handles = {}
+        for step_uid in step_uids:
+            step_key = ArtifactKey.for_step(step_uid)
+            handle = self._artifact_manager.get_step_ops_handle(
+                step_key, generation_id
+            )
+            if handle is None:
+                for h in self._retained_handles:
+                    self._artifact_manager.release_handle(h)
+                self._retained_handles.clear()
+                return None
+            self._artifact_manager.retain_handle(handle)
+            self._retained_handles.append(handle)
+            step_handles[step_uid] = handle.to_dict()
+        return step_handles
+
+    def release_retained_handles(self) -> None:
+        """Release all retained handles after job completion."""
+        retained = self._retained_handles
+        self._retained_handles = []
+        for handle in retained:
+            self._artifact_manager.release_handle(handle)
+
+    def shutdown(self):
+        logger.debug("JobPipelineStage shutting down.")
+
+    def generate_job(
+        self,
+        step_uids: List[str],
+        generation_id: int,
+        context: Optional["GenerationContext"],
+        doc: "Doc",
+        on_done: Optional[Callable] = None,
+        job_key: Optional[ArtifactKey] = None,
+    ):
+        """
+        Start the asynchronous task to assemble and encode the final job.
+        """
+        if job_key is None:
+            job_key = ArtifactKey.for_job()
+
+        if not step_uids:
+            logger.warning("Job generation called with no steps.")
+            if on_done:
+                on_done(None, None)
+            self.job_generation_finished.send(
+                self, handle=None, task_status="completed"
+            )
+            return
+
+        if not self.validate_dependencies(step_uids, generation_id):
+            logger.warning("Job dependencies not ready.")
             if on_done:
                 on_done(
                     None,
-                    RuntimeError("Job generation is already in progress."),
+                    RuntimeError(
+                        "Job dependencies are not ready. "
+                        "Please wait and try again."
+                    ),
                 )
             return
 
-        machine = self._machine
-        if not machine:
-            logger.error("Cannot generate job: No machine is configured.")
-            # Fire callback with an error if provided
+        step_handles = self.collect_step_handles(step_uids, generation_id)
+        if step_handles is None:
+            logger.error("Failed to collect step handles for job generation.")
             if on_done:
-                on_done(None, RuntimeError("No machine is configured."))
+                on_done(None, RuntimeError("Failed to collect step handles."))
             return
 
-        # Hydrate the machine to capture the current dialect state
-        machine.hydrate()
+        self._emit_node_state(job_key, NodeState.PROCESSING)
 
-        step_handles = {}
-        with ExitStack() as stack:
-            for layer in doc.layers:
-                if not layer.workflow:
-                    continue
-                for step in layer.workflow.steps:
-                    if not step.visible:
-                        continue
-                    handle = self._artifact_manager.get_step_ops_handle(
-                        step.uid
-                    )
-                    if handle is None:
-                        continue
-                    step_handles[step.uid] = handle.to_dict()
-                    # Checkout the handle so it won't be released while job
-                    # runs
-                    stack.enter_context(
-                        self._artifact_manager.checkout(step.uid)
-                    )
-
-        # Allow job generation to continue even with no steps. The runner will
-        # produce a job with only a preamble and postscript.
         logger.info(f"Starting job generation with {len(step_handles)} steps.")
 
-        self._artifact_manager.invalidate_for_job()
+        assert self._machine is not None
 
-        # Create an adoption event for the handshake protocol
-        manager = mp.Manager()
-        self._adoption_event = manager.Event()
+        job_desc_dict = {
+            "step_artifact_handles_by_uid": step_handles,
+            "machine_dict": self._machine.to_dict(),
+            "doc_dict": doc.to_dict(),
+        }
 
-        job_desc = JobDescription(
-            step_artifact_handles_by_uid=step_handles,
-            machine_dict=machine.to_dict(),
-            doc_dict=doc.to_dict(),
+        self._launch_task(
+            job_desc_dict, job_key, on_done, generation_id, context
         )
 
-        from .job_runner import make_job_artifact_in_subprocess
+    def _launch_task(
+        self,
+        job_desc_dict: Dict,
+        job_key: ArtifactKey,
+        on_done: Optional[Callable],
+        generation_id: int,
+        context: Optional["GenerationContext"],
+    ):
+        """
+        Launch the subprocess task for job generation.
+        """
+        from ..stage.job_runner import make_job_artifact_in_subprocess
 
-        def when_done_callback(task: "Task"):
-            """
-            This nested function is a closure. It captures the `on_done`
-            callback specific to this `generate_job` call.
-            """
-            # This is now the ONLY place self._active_task is reset to None
-            self._active_task = None
+        self._job_running = True
 
-            task_status = task.get_status()
-            final_handle = None
-            error = None
+        if context is not None:
+            context.add_task(job_key)
 
-            if task_status == "completed":
-                final_handle = self._artifact_manager.get_job_handle()
-                if final_handle:
-                    logger.info("Job generation successful.")
-                else:
-                    logger.info(
-                        "Job generation finished with no artifact produced."
-                    )
-                if on_done:
-                    on_done(final_handle, None)
-                self.generation_finished.send(
-                    self, handle=final_handle, task_status=task_status
-                )
-            else:
-                logger.error(
-                    f"Job generation failed with status: {task_status}"
-                )
-                self._artifact_manager.invalidate_for_job()
-                try:
-                    task.result()
-                except CancelledError as e:
-                    error = e
-                    logger.info(f"Job generation was cancelled: {e}")
-                except Exception as e:
-                    error = e
-
-                if on_done:
-                    on_done(None, error)
-
-                if task_status == "failed":
-                    self.generation_failed.send(
-                        self, error=error, task_status=task_status
-                    )
-                else:
-                    self.generation_finished.send(
-                        self, handle=None, task_status=task_status
-                    )
-
-        # We no longer need _on_job_assembly_complete
-        task = self._task_manager.run_process(
+        self._task_manager.run_process(
             make_job_artifact_in_subprocess,
-            self._artifact_manager._store,
-            job_description_dict=job_desc.__dict__,
+            self._artifact_manager.get_store(),
+            job_description_dict=job_desc_dict,
             creator_tag="job",
-            key=JobKey,
-            when_done=when_done_callback,
-            when_event=self._on_job_task_event,
-            adoption_event=self._adoption_event,
+            generation_id=generation_id,
+            job_key=job_key,
+            key=job_key,
+            when_done=lambda t: self.on_task_complete(
+                t, job_key, generation_id, on_done, context
+            ),
+            when_event=lambda task, event_name, data: (
+                self.handle_task_event(
+                    task, event_name, data, job_key, generation_id
+                )
+            ),
         )
-        self._active_task = task
-
-    def _on_job_task_event(self, task: "Task", event_name: str, data: dict):
-        """Handles events broadcast from the job runner subprocess."""
-        if event_name == "artifact_created":
-            # Ignore artifact events from tasks that are no longer active
-            # (e.g., cancelled tasks). This prevents stale artifacts from
-            # being added to the cache after cancellation.
-            if self._active_task is not task:
-                logger.debug(
-                    "Ignoring artifact_created event from inactive task"
-                )
-                # Still set the adoption event to unblock the worker
-                if self._adoption_event is not None:
-                    self._adoption_event.set()
-                return
-
-            try:
-                handle_dict = data["handle_dict"]
-                handle = self._artifact_manager.adopt_artifact(
-                    JobKey, handle_dict
-                )
-                if not isinstance(handle, JobArtifactHandle):
-                    raise TypeError("Expected a JobArtifactHandle")
-
-                self._artifact_manager.put_job_handle(handle)
-
-                # Signal the worker that we've adopted the artifact
-                if self._adoption_event is not None:
-                    self._adoption_event.set()
-                    logger.debug(
-                        "Adoption handshake completed for job artifact"
-                    )
-            except Exception as e:
-                logger.error(f"Error handling job artifact event: {e}")
-                # Still set the event to unblock the worker
-                if self._adoption_event is not None:
-                    self._adoption_event.set()

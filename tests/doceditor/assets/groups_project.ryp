@@ -1,10 +1,10 @@
 {
-  "uid": "doc-004",
+  "uid": "b81d4fae-7dec-11d0-a765-00a0c91e6bf7",
   "type": "doc",
   "active_layer_index": 0,
   "children": [
     {
-      "uid": "layer-001",
+      "uid": "e1b2c3d4-e5f6-7890-abcd-ef1234567894",
       "type": "layer",
       "name": "Layer 1",
       "matrix": [
@@ -16,7 +16,7 @@
       "stock_item_uid": null,
       "children": [
         {
-          "uid": "workflow-001",
+          "uid": "c47ac10b-58cc-4372-a567-0e02b2c3d47a",
           "type": "workflow",
           "name": "Layer 1 Workflow",
           "matrix": [
@@ -27,7 +27,7 @@
           "children": []
         },
         {
-          "uid": "group-001",
+          "uid": "7d444840-9dc0-11d1-b245-5ffdce74fad2",
           "type": "group",
           "name": "Group 1",
           "matrix": [
@@ -37,7 +37,7 @@
           ],
           "children": [
             {
-              "uid": "wp-001",
+              "uid": "8e444840-9dc0-11d1-b245-5ffdce74fad3",
               "type": "workpiece",
               "name": "Piece 1",
               "matrix": [
@@ -56,7 +56,7 @@
               "source_asset_uid": null
             },
             {
-              "uid": "wp-002",
+              "uid": "9f444840-9dc0-11d1-b245-5ffdce74fad4",
               "type": "workpiece",
               "name": "Piece 2",
               "matrix": [
@@ -77,7 +77,7 @@
           ]
         },
         {
-          "uid": "group-002",
+          "uid": "a0444840-9dc0-11d1-b245-5ffdce74fad5",
           "type": "group",
           "name": "Group 2",
           "matrix": [
@@ -87,7 +87,7 @@
           ],
           "children": [
             {
-              "uid": "group-003",
+              "uid": "b1444840-9dc0-11d1-b245-5ffdce74fad6",
               "type": "group",
               "name": "Nested Group",
               "matrix": [
@@ -97,7 +97,7 @@
               ],
               "children": [
                 {
-                  "uid": "wp-003",
+                  "uid": "c2444840-9dc0-11d1-b245-5ffdce74fad7",
                   "type": "workpiece",
                   "name": "Nested Piece",
                   "matrix": [

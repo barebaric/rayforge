@@ -52,6 +52,13 @@ class BaseArtifactHandle(ABC):
             return NotImplemented
         return self.__dict__ == other.__dict__
 
+    def __hash__(self) -> int:
+        """
+        Provides a hash based on the shared memory name, which is unique
+        per handle.
+        """
+        return hash(self.shm_name)
+
     @classmethod
     def from_dict(
         cls: Type[Any], data: Dict[str, Any]

@@ -1,12 +1,12 @@
 import pytest
-from unittest.mock import MagicMock
-import numpy as np
+from unittest.mock import MagicMock, patch
 import logging
 from pathlib import Path
 
 from rayforge.context import get_context
 from rayforge.core.geo import Geometry
 from rayforge.core.matrix import Matrix
+from rayforge.core.ops import Ops
 from rayforge.core.step import Step
 from rayforge.core.workpiece import WorkPiece
 from rayforge.core.source_asset import SourceAsset
@@ -28,12 +28,11 @@ from rayforge.pipeline.transformer.multipass import MultiPassTransformer
 
 
 @pytest.fixture
-def mock_proxy():
+def mock_proxy(adopting_mock_proxy):
     """Mocks the ExecutionContextProxy passed to the subprocess."""
-    proxy = MagicMock()
-    proxy.sub_context.return_value = proxy  # Allow chaining
-    proxy.parent_log_level = logging.DEBUG
-    return proxy
+    adopting_mock_proxy.sub_context.return_value = adopting_mock_proxy
+    adopting_mock_proxy.parent_log_level = logging.DEBUG
+    return adopting_mock_proxy
 
 
 @pytest.fixture
@@ -140,7 +139,7 @@ def test_vector_producer_returns_artifact_with_vertex_data(
         event_call = next(
             (
                 c
-                for c in mock_proxy.send_event.call_args_list
+                for c in mock_proxy.send_event_and_wait.call_args_list
                 if c[0][0] == "artifact_created"
             ),
             None,
@@ -158,11 +157,6 @@ def test_vector_producer_returns_artifact_with_vertex_data(
         assert not reconstructed_artifact.ops.is_empty()
         assert reconstructed_artifact.generation_size == generation_size
         assert result_gen_id == generation_id
-        # Verify vertex data was created and texture data was not
-        assert reconstructed_artifact.vertex_data is not None
-        assert reconstructed_artifact.texture_data is None
-        assert reconstructed_artifact.vertex_data.powered_vertices.size > 0
-        assert reconstructed_artifact.vertex_data.powered_colors.size > 0
     finally:
         # Cleanup
         if handle:
@@ -205,7 +199,7 @@ def test_raster_producer_returns_artifact_with_raster_data(
         event_call = next(
             (
                 c
-                for c in mock_proxy.send_event.call_args_list
+                for c in mock_proxy.send_event_and_wait.call_args_list
                 if c[0][0] == "artifact_created"
             ),
             None,
@@ -219,18 +213,9 @@ def test_raster_producer_returns_artifact_with_raster_data(
         reconstructed_artifact = get_context().artifact_store.get(handle)
 
         assert isinstance(reconstructed_artifact, WorkPieceArtifact)
-        assert reconstructed_artifact.texture_data is not None
-        assert reconstructed_artifact.vertex_data is not None
-
-        texture = reconstructed_artifact.texture_data.power_texture_data
-        assert isinstance(texture, np.ndarray)
+        assert not reconstructed_artifact.ops.is_empty()
         assert reconstructed_artifact.generation_size == generation_size
         assert result_gen_id == generation_id
-
-        # For a raster artifact, powered vertices should be empty (handled by
-        # texture), but travel/zero-power moves (like overscan) should exist.
-        assert reconstructed_artifact.vertex_data.powered_vertices.size == 0
-        assert reconstructed_artifact.vertex_data.powered_colors.size == 0
     finally:
         # Cleanup
         if handle:
@@ -280,7 +265,7 @@ def test_empty_producer_result_returns_none(mock_proxy):
     # No "artifact_created" event should be sent if no artifact was created.
     was_called = any(
         c[0][0] == "artifact_created"
-        for c in mock_proxy.send_event.call_args_list
+        for c in mock_proxy.send_event_and_wait.call_args_list
     )
     assert not was_called
 
@@ -321,7 +306,7 @@ def test_transformers_are_applied_before_put(mock_proxy, base_workpiece):
         event_call = next(
             (
                 c
-                for c in mock_proxy.send_event.call_args_list
+                for c in mock_proxy.send_event_and_wait.call_args_list
                 if c[0][0] == "artifact_created"
             ),
             None,
@@ -335,9 +320,54 @@ def test_transformers_are_applied_before_put(mock_proxy, base_workpiece):
         reconstructed_artifact = get_context().artifact_store.get(handle)
 
         assert isinstance(reconstructed_artifact, WorkPieceArtifact)
-        assert reconstructed_artifact.vertex_data is not None
         assert len(reconstructed_artifact.ops.commands) >= 24
     finally:
         # Cleanup
         if handle:
             get_context().artifact_store.release(handle)
+
+
+def test_runner_calls_compute_function(base_workpiece):
+    """Test that the runner correctly calls the compute function."""
+    step = Step(typelabel="Contour")
+    step.opsproducer_dict = ContourProducer().to_dict()
+    settings = step.get_settings()
+    laser = Laser()
+    generation_id = 1
+    generation_size = (25.0, 25.0)
+
+    mock_artifact = MagicMock(spec=WorkPieceArtifact)
+    mock_artifact.ops = Ops()
+    mock_artifact.is_scalable = True
+    mock_artifact.source_coordinate_system = MagicMock()
+    mock_artifact.source_dimensions = None
+    mock_artifact.generation_size = generation_size
+
+    mock_proxy = MagicMock()
+    mock_proxy.send_event_and_wait.return_value = True
+
+    with patch(
+        "rayforge.pipeline.stage.workpiece_runner.compute_workpiece_artifact",
+        return_value=mock_artifact,
+    ) as mock_compute:
+        result_gen_id = make_workpiece_artifact_in_subprocess(
+            mock_proxy,
+            get_context().artifact_store,
+            base_workpiece.to_dict(),
+            step.opsproducer_dict,
+            [],
+            [],
+            laser.to_dict(),
+            settings,
+            generation_id,
+            generation_size,
+            "test_workpiece",
+        )
+
+        assert result_gen_id == generation_id
+        mock_compute.assert_called_once()
+
+        call_args = mock_compute.call_args
+        assert call_args.kwargs["workpiece"].name == base_workpiece.name
+        assert call_args.kwargs["generation_size"] == generation_size
+        assert call_args.kwargs["settings"] == settings

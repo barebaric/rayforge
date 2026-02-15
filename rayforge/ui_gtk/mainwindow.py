@@ -1,7 +1,6 @@
 import asyncio
 import logging
 import shutil
-import sys
 import webbrowser
 from concurrent.futures import Future
 from pathlib import Path
@@ -13,13 +12,11 @@ from .. import const
 from ..context import get_context
 from ..core.group import Group
 from ..core.item import DocItem
-from ..core.sketcher import Sketch
 from ..core.step import Step
 from ..core.stock import StockItem
-from ..core.undo import Command, HistoryManager, ListItemCommand
+from ..core.undo import Command, HistoryManager
 from ..core.workpiece import WorkPiece
 from ..doceditor.editor import DocEditor
-from ..image.sketch.exporter import SketchExporter
 from ..machine.cmd import MachineCmd
 from ..machine.driver.driver import DeviceState, DeviceStatus, Axis
 from ..machine.driver.dummy import NoDeviceDriver
@@ -52,7 +49,8 @@ from .machine.control_panel import MachineControlPanel
 from .machine.settings_dialog import MachineSettingsDialog
 from .main_menu import MainMenu
 from .settings.settings_dialog import SettingsWindow
-from .sketcher.cmd import UpdateSketchCommand
+from .project_cmd import ProjectCmd
+from .sketch_mode_cmd import SketchModeCmd
 from .sketcher.studio import SketchStudio
 from .task_bar import TaskBar
 from .toolbar import MainToolbar
@@ -145,6 +143,7 @@ class MainWindow(Adw.ApplicationWindow):
         self._last_control_panel_height = 200
         self._live_3d_view_connected = False
         self._old_doc = None  # Track previous document for signal reconnection
+        self.canvas3d: Optional[Canvas3D] = None
 
         # The ToastOverlay will wrap the main content box
         self.toast_overlay = Adw.ToastOverlay()
@@ -172,6 +171,8 @@ class MainWindow(Adw.ApplicationWindow):
         # Instantiate UI-specific command handlers
         self.view_cmd = ViewModeCmd(self.doc_editor, self)
         self.simulator_cmd = SimulatorCmd(self)
+        self.sketch_mode_cmd = SketchModeCmd(self, self.doc_editor)
+        self.project_cmd = ProjectCmd(self, self.doc_editor)
 
         # Add a key controller to handle ESC key for exiting simulation mode
         key_controller = Gtk.EventControllerKey()
@@ -198,8 +199,10 @@ class MainWindow(Adw.ApplicationWindow):
 
         # Set up Recent Files manager
         self.recent_manager = Gtk.RecentManager.get_default()
-        self.recent_manager.connect("changed", self._update_recent_files_menu)
-        self._update_recent_files_menu()  # Initial population
+        self.recent_manager.connect(
+            "changed", self.project_cmd.update_recent_files_menu
+        )
+        self.project_cmd.update_recent_files_menu()
 
         # Create and set the centered title widget
         window_title = Adw.WindowTitle(
@@ -270,10 +273,12 @@ class MainWindow(Adw.ApplicationWindow):
             self, width_mm=width_mm, height_mm=height_mm
         )
         self.main_stack.add_named(self.sketch_studio, "sketch")
-        self.active_sketch_workpiece: Optional[WorkPiece] = None
-        self._is_editing_new_sketch = False
-        self.sketch_studio.finished.connect(self._on_sketch_finished)
-        self.sketch_studio.cancelled.connect(self._on_sketch_cancelled)
+        self.sketch_studio.finished.connect(
+            self.sketch_mode_cmd.on_sketch_finished
+        )
+        self.sketch_studio.cancelled.connect(
+            self.sketch_mode_cmd.on_sketch_cancelled
+        )
 
         self.surface = WorkSurface(
             editor=self.doc_editor,
@@ -317,7 +322,7 @@ class MainWindow(Adw.ApplicationWindow):
         )
         self.doc_editor.document_settled.connect(self._on_document_settled)
         self.doc_editor.saved_state_changed.connect(
-            self._on_saved_state_changed
+            self.project_cmd.on_saved_state_changed
         )
         self.doc_editor.document_changed.connect(self._on_document_changed)
 
@@ -373,10 +378,8 @@ class MainWindow(Adw.ApplicationWindow):
         # self.surface_overlay.add_controller(canvas_click_gesture)
 
         if canvas3d_initialized:
-            self.canvas3d = Canvas3D(
+            self._create_canvas3d(
                 context,
-                self.doc_editor.doc,
-                self.doc_editor.pipeline,
                 width_mm=width_mm,
                 depth_mm=height_mm,
                 y_down=y_down,
@@ -384,9 +387,6 @@ class MainWindow(Adw.ApplicationWindow):
                 x_negative=reverse_x,
                 y_negative=reverse_y,
             )
-
-            # Create a stack to switch between 2D and 3D views
-            self.view_stack.add_named(self.canvas3d, "3d")
 
         # Undo/Redo buttons are now connected to the doc via actions.
         self.toolbar.undo_button.set_history_manager(
@@ -419,10 +419,12 @@ class MainWindow(Adw.ApplicationWindow):
         self.asset_list_view = AssetListView(self.doc_editor)
         self.asset_list_view.set_margin_end(12)
         right_pane_box.append(self.asset_list_view)
-        self.asset_list_view.add_sketch_clicked.connect(self.on_new_sketch)
+        self.asset_list_view.add_sketch_clicked.connect(
+            self.sketch_mode_cmd.on_new_sketch
+        )
         self.asset_list_view.add_stock_clicked.connect(self.on_add_child)
         self.asset_list_view.sketch_activated.connect(
-            self._on_sketch_definition_activated
+            self.sketch_mode_cmd.on_sketch_definition_activated
         )
 
         # Add the Layer list view
@@ -482,7 +484,7 @@ class MainWindow(Adw.ApplicationWindow):
 
         # Connect new signal from WorkSurface for edit sketch requests
         self.surface.edit_sketch_requested.connect(
-            self._on_edit_sketch_requested
+            self.sketch_mode_cmd.on_edit_sketch_requested
         )
         self.surface.edit_stock_item_requested.connect(
             self._on_edit_stock_item_requested
@@ -560,139 +562,6 @@ class MainWindow(Adw.ApplicationWindow):
         """Handler for adding a new stock item, called from AssetListView."""
         self.doc_editor.stock.add_stock()
 
-    def enter_sketch_mode(
-        self, workpiece: WorkPiece, is_new_sketch: bool = False
-    ):
-        """Switches the view to the SketchStudio to edit a workpiece."""
-        sketch = None
-        if workpiece.sketch_uid:
-            sketch = cast(
-                Optional["Sketch"],
-                self.doc_editor.doc.get_asset_by_uid(workpiece.sketch_uid),
-            )
-
-        if not sketch:
-            logger.warning("Attempted to edit a non-sketch workpiece.")
-            return
-
-        try:
-            self.active_sketch_workpiece = workpiece
-            self._is_editing_new_sketch = is_new_sketch
-            self.sketch_studio.set_sketch(sketch)
-            self.main_stack.set_visible_child_name("sketch")
-
-            # Swap menu and actions
-            self.menubar.set_menu_model(self.sketch_studio.menu_model)
-            self.insert_action_group("sketch", self.sketch_studio.action_group)
-            self.add_controller(self.sketch_studio.shortcut_controller)
-        except Exception as e:
-            logger.error(
-                f"Failed to load sketch for editing: {e}", exc_info=True
-            )
-
-    def exit_sketch_mode(self):
-        """Returns to the main 2D/3D view from the SketchStudio."""
-        # Restore menu and actions
-        self.menubar.set_menu_model(self.menu_model)
-        self.insert_action_group("sketch", None)
-        self.remove_controller(self.sketch_studio.shortcut_controller)
-
-        self.main_stack.set_visible_child_name("main")
-        self.active_sketch_workpiece = None
-        self._is_editing_new_sketch = False
-
-    def enter_sketch_definition_mode(self, sketch: Sketch):
-        """Switches to SketchStudio to edit a sketch definition directly."""
-        try:
-            self.active_sketch_workpiece = None
-            self._is_editing_new_sketch = False
-            self.sketch_studio.set_sketch(sketch)
-            self.main_stack.set_visible_child_name("sketch")
-
-            # Swap menu and actions
-            self.menubar.set_menu_model(self.sketch_studio.menu_model)
-            self.insert_action_group("sketch", self.sketch_studio.action_group)
-            self.add_controller(self.sketch_studio.shortcut_controller)
-        except Exception as e:
-            logger.error(
-                f"Failed to load sketch definition for editing: {e}",
-                exc_info=True,
-            )
-
-    def _on_sketch_definition_activated(self, sender, *, sketch: Sketch):
-        """Handles activation of a sketch definition from the sketch list."""
-        self.enter_sketch_definition_mode(sketch)
-
-    def _on_sketch_finished(self, sender, *, sketch: Sketch):
-        """Handles the 'finished' signal from the SketchStudio."""
-        cmd = UpdateSketchCommand(
-            doc=self.doc_editor.doc,
-            sketch_uid=sketch.uid,
-            new_sketch_dict=sketch.to_dict(),
-        )
-        self.doc_editor.history_manager.execute(cmd)
-
-        if self._is_editing_new_sketch:
-            center_x = self.sketch_studio.width_mm / 2
-            center_y = self.sketch_studio.height_mm / 2
-            self.doc_editor.edit.add_sketch_instance(
-                sketch.uid, (center_x, center_y)
-            )
-
-        self.exit_sketch_mode()
-
-    def _on_sketch_cancelled(self, sender):
-        """Handles the 'cancelled' signal from the SketchStudio."""
-        was_new = self._is_editing_new_sketch
-        self.exit_sketch_mode()
-
-        if was_new:
-            # If we just created this sketch, remove it from the doc by
-            # undoing the creation command.
-            self.doc_editor.history_manager.undo()
-
-    def on_new_sketch(self, action=None, param=None):
-        """Action handler for creating a new sketch definition."""
-        # 1. Create a new, empty sketch object
-        new_sketch = Sketch(name=_("New Sketch"))
-
-        # 2. Create and execute an undoable command to add it to the document
-        command = ListItemCommand(
-            owner_obj=self.doc_editor.doc,
-            item=new_sketch,
-            undo_command="remove_asset",
-            redo_command="add_asset",
-            name=_("Create Sketch Definition"),
-        )
-        self.doc_editor.history_manager.execute(command)
-
-        # 3. Immediately enter edit mode for the new definition
-        self.enter_sketch_definition_mode(new_sketch)
-        self._is_editing_new_sketch = True
-
-    def on_edit_sketch(self, action, param):
-        """Action handler for editing the selected sketch."""
-        selected_items = self.surface.get_selected_workpieces()
-        if len(selected_items) == 1 and isinstance(
-            selected_items[0], WorkPiece
-        ):
-            wp = selected_items[0]
-            if wp.sketch_uid:
-                self.enter_sketch_mode(wp)
-            else:
-                self._on_editor_notification(
-                    self, _("Selected item is not an editable sketch.")
-                )
-        else:
-            self._on_editor_notification(
-                self, _("Please select a single sketch to edit.")
-            )
-
-    def _on_edit_sketch_requested(self, sender, *, workpiece: WorkPiece):
-        """Signal handler for edit sketch requests from the surface."""
-        logger.debug(f"Sketch edit requested for workpiece {workpiece.name}")
-        self.enter_sketch_mode(workpiece)
-
     def _on_edit_stock_item_requested(self, sender, *, stock_item: StockItem):
         """Signal handler for edit stock item requests from the surface."""
         logger.debug(
@@ -701,314 +570,9 @@ class MainWindow(Adw.ApplicationWindow):
         dialog = StockPropertiesDialog(self, stock_item, self.doc_editor)
         dialog.present()
 
-    def on_export_sketch(self, action, param):
-        """Action handler for exporting the selected sketch."""
-        selected_items = self.surface.get_selected_workpieces()
-        if len(selected_items) == 1:
-            # The ActionManager already validates that this is a sketch-based
-            # workpiece
-            file_dialogs.show_export_sketch_dialog(
-                self, self._on_export_sketch_save_response, selected_items[0]
-            )
-        else:
-            self._on_editor_notification(
-                self, _("Please select a single sketch to export.")
-            )
-
-    def _on_export_sketch_save_response(self, dialog, result, user_data):
-        """Callback for the export sketch dialog."""
-        try:
-            file = dialog.save_finish(result)
-            if not file:
-                return
-            file_path = Path(file.get_path())
-
-            # Re-verify selection to be safe
-            selected = self.surface.get_selected_workpieces()
-            if len(selected) != 1:
-                return
-
-            wp = selected[0]
-            exporter = SketchExporter(wp)
-            data = exporter.export()
-
-            try:
-                file_path.write_bytes(data)
-                self._on_editor_notification(
-                    self, _("Sketch exported successfully.")
-                )
-            except Exception as e:
-                logger.error(
-                    f"Failed to write sketch file: {e}", exc_info=True
-                )
-                self._on_editor_notification(
-                    self, _("Failed to save sketch file.")
-                )
-
-        except GLib.Error as e:
-            logger.error(f"Error saving file: {e.message}")
-            return
-        except ValueError as e:
-            logger.error(f"Error exporting sketch: {e}")
-            self._on_editor_notification(
-                self, _("Error exporting sketch: {error}").format(error=str(e))
-            )
-
-    def _show_unsaved_changes_dialog(self, callback):
-        """
-        Shows a dialog asking the user what to do with unsaved changes.
-        The callback will be called with the response: 'save', 'discard',
-        or 'cancel'.
-        """
-        dialog = Adw.MessageDialog(
-            transient_for=self,
-            heading=_("Unsaved Changes"),
-            body=_(
-                "The current project has unsaved changes. "
-                "Do you want to save them?"
-            ),
-        )
-        dialog.add_response("cancel", _("_Cancel"))
-        dialog.add_response("discard", _("_Don't Save"))
-        dialog.add_response("save", _("_Save"))
-        dialog.set_default_response("save")
-        dialog.set_close_response("cancel")
-        dialog.set_response_appearance(
-            "save", Adw.ResponseAppearance.SUGGESTED
-        )
-        dialog.set_response_appearance(
-            "discard", Adw.ResponseAppearance.DESTRUCTIVE
-        )
-
-        def on_response(d, response_id):
-            d.destroy()
-            callback(response_id)
-
-        dialog.connect("response", on_response)
-        dialog.present()
-
-    def on_new_project(self, action, param):
-        """Action handler for creating a new project."""
-        if self.doc_editor.is_saved:
-            self._do_create_new_project(action, param)
-        else:
-            self._show_unsaved_changes_dialog(
-                self._on_new_project_dialog_response
-            )
-
-    def _on_new_project_dialog_response(self, response):
-        """Callback for unsaved changes dialog in on_new_project."""
-        if response == "cancel":
-            return
-        if response == "save":
-            self.on_save_project(None, None)
-            if not self.doc_editor.is_saved:
-                return
-        self._do_create_new_project(None, None)
-
-    def _do_create_new_project(self, action, param):
-        """Actually creates a new project."""
-        from ..core.doc import Doc
-
-        new_doc = Doc()
-        self.doc_editor.set_doc(new_doc)
-        self.doc_editor.set_file_path(None)
-        self.doc_editor.mark_as_saved()
-
-        logger.info("Created new project")
-        self._on_editor_notification(self, message=_("New project created"))
-
-    def on_open_project(self, action, param):
-        """Action handler for opening a project file."""
-        if self.doc_editor.is_saved:
-            file_dialogs.show_open_project_dialog(
-                self, self._on_open_project_response
-            )
-        else:
-            self._show_unsaved_changes_dialog(
-                self._on_open_project_dialog_response
-            )
-
-    def _on_open_project_dialog_response(self, response):
-        """Callback for unsaved changes dialog in on_open_project."""
-        if response == "cancel":
-            return
-        if response == "save":
-            self.on_save_project(None, None)
-            if not self.doc_editor.is_saved:
-                return
-        file_dialogs.show_open_project_dialog(
-            self, self._on_open_project_response
-        )
-
-    def _on_open_project_response(self, dialog, result, user_data):
-        """Callback for the open project dialog."""
-        try:
-            file = dialog.open_finish(result)
-            if not file:
-                return
-            file_path = Path(file.get_path())
-            self._do_open_project(file_path)
-        except GLib.Error as e:
-            logger.error(f"Error opening file: {e.message}")
-            return
-
-    def on_save_project(self, action, param):
-        """Action handler for saving the current project."""
-        file_path = self.doc_editor.file_path
-        if file_path:
-            success = self.doc_editor.file.save_project_to_path(file_path)
-            if success:
-                self.on_doc_changed(self.doc_editor.doc)
-                self.add_to_recent_manager(file_path)
-        else:
-            self.on_save_project_as(action, param)
-
-    def on_save_project_as(self, action, param):
-        """Action handler for saving the project with a new name."""
-        initial_name = None
-        if self.doc_editor.file_path:
-            initial_name = self.doc_editor.file_path.name
-
-        file_dialogs.show_save_project_dialog(
-            self, self._on_save_project_response, initial_name
-        )
-
-    def _on_save_project_response(self, dialog, result, user_data):
-        """Callback for the save project dialog."""
-        try:
-            file = dialog.save_finish(result)
-            if not file:
-                return
-            file_path = Path(file.get_path())
-
-            success = self.doc_editor.file.save_project_to_path(file_path)
-            if success:
-                self.on_doc_changed(self.doc_editor.doc)
-                self.add_to_recent_manager(file_path)
-        except GLib.Error as e:
-            logger.error(f"Error saving file: {e.message}")
-            return
-
     def load_project(self, file_path: Path):
-        """
-        Public method to load a project from a given path.
-        Updates recent files and tracks the last opened project.
-        """
-        success = self.doc_editor.file.load_project_from_path(file_path)
-        if success:
-            self.on_doc_changed(self.doc_editor.doc)
-            self.add_to_recent_manager(file_path)
-            # Track the last opened project for startup behavior
-            context = get_context()
-            context.config.set_last_opened_project(file_path)
-
-    def _do_open_project(self, file_path: Path):
-        """Loads a project from a given path and updates recent files."""
-        self.load_project(file_path)
-
-    def on_open_recent(self, action, param):
-        """Action handler for opening a file from the recent menu."""
-        uri = param.get_string()
-        file = Gio.File.new_for_uri(uri)
-        path = file.get_path()
-        if path is None:
-            return
-        file_path = Path(path)
-
-        if self.doc_editor.is_saved:
-            self._do_open_project(file_path)
-        else:
-            # Create a new callback that knows which file to open
-            def on_response(response_id):
-                self._on_open_recent_dialog_response(response_id, file_path)
-
-            self._show_unsaved_changes_dialog(on_response)
-
-    def _on_open_recent_dialog_response(self, response, file_path: Path):
-        """Callback for unsaved changes dialog when opening a recent file."""
-        if response == "cancel":
-            return
-        if response == "save":
-            self.on_save_project(None, None)
-            # If save fails (e.g., user cancels "Save As" dialog), stop here.
-            if not self.doc_editor.is_saved:
-                return
-        self._do_open_project(file_path)
-
-    def add_to_recent_manager(self, file_path: Path):
-        """Adds a project file path to the Gtk.RecentManager with metadata."""
-        uri = file_path.resolve().as_uri()
-        app = self.get_application()
-        if not app:
-            logger.warning(
-                "Could not get application to register recent file."
-            )
-            return
-
-        app_id = app.get_application_id()
-        if not app_id:
-            logger.warning(
-                "Application ID is not set, cannot register recent file."
-            )
-            return
-
-        # Create an empty Gtk.RecentData struct and set its fields.
-        recent_data = Gtk.RecentData()
-        recent_data.display_name = file_path.name
-        recent_data.mime_type = const.MIME_TYPE_PROJECT
-        recent_data.app_name = app_id
-        # Use sys.executable for a reliable path, even at startup.
-        # Quoting is important for paths with spaces.
-        recent_data.app_exec = f'"{sys.executable}" %f'
-
-        self.recent_manager.add_full(uri, recent_data)
-
-    def _update_recent_files_menu(self, *args):
-        """
-        Updates the 'Open Recent' submenu based on the contents of the
-        Gtk.RecentManager.
-        """
-        app = self.get_application()
-        if not app:
-            self.menu_model.update_recent_files_menu([])
-            return
-
-        app_id = app.get_application_id()
-        if not app_id:
-            self.menu_model.update_recent_files_menu([])
-            return
-
-        items = self.recent_manager.get_items()
-        # Filter for our project files by checking the application ID
-        ryp_items = [
-            info
-            for info in items
-            if info.get_uri().endswith(".ryp")
-            and app_id in info.get_applications()
-        ]
-        self.menu_model.update_recent_files_menu(ryp_items)
-
-    def _on_saved_state_changed(self, sender):
-        """Handles saved state changes from DocEditor."""
-        self._update_window_title()
-        self.action_manager.update_action_states()
-
-    def _update_window_title(self):
-        """Updates the window title based on file name and saved state."""
-        file_path = self.doc_editor.file_path
-        is_saved = self.doc_editor.is_saved
-
-        doc_title = file_path.name if file_path else _("Untitled")
-        if is_saved:
-            title = f"{doc_title} - {const.APP_NAME}"
-        else:
-            title = f"{doc_title}* - {const.APP_NAME}"
-
-        subtitle = __version__ or ""
-
-        window_title = Adw.WindowTitle(title=title, subtitle=subtitle)
-        self.header_bar.set_title_widget(window_title)
+        """Public method to load a project from a given path."""
+        self.project_cmd.load_project(file_path)
 
     def _update_macros_menu(self, *args):
         """Rebuilds the dynamic 'Macros' menu."""
@@ -1137,9 +701,11 @@ class MainWindow(Adw.ApplicationWindow):
 
     def _on_live_3d_view_update(
         self,
-        sender: Optional[Step],
+        sender,
         *,
+        step: Optional[Step],
         workpiece: Optional[WorkPiece],
+        handle,
         generation_id: int,
     ):
         """
@@ -1200,7 +766,7 @@ class MainWindow(Adw.ApplicationWindow):
     ):
         is_visible = value.get_boolean()
         self.surface.set_show_travel_moves(is_visible)
-        if canvas3d_initialized and hasattr(self, "canvas3d"):
+        if self.canvas3d is not None:
             self.canvas3d.set_show_travel_moves(is_visible)
         action.set_state(value)
 
@@ -1579,9 +1145,18 @@ class MainWindow(Adw.ApplicationWindow):
 
         with artifact_manager.checkout_handle(handle) as final_artifact:
             # 1. Update Simulation
-            if not isinstance(final_artifact, JobArtifact):
-                logger.error("Final artifact is not a JobArtifact")
+            if final_artifact is None:
+                # If handle was None (e.g. no machine configured), we still
+                # want to clear the previews.
+                if handle is None:
+                    self.simulator_cmd.reload_simulation(None)
+                    self._update_gcode_preview(None, None)
+                    return
+
+                logger.warning("Final artifact is None, not a JobArtifact")
                 return
+
+            assert isinstance(final_artifact, JobArtifact)
             self.simulator_cmd.reload_simulation(final_artifact)
 
             # 2. Update G-code Preview
@@ -1605,6 +1180,9 @@ class MainWindow(Adw.ApplicationWindow):
         Public method to trigger a refresh of all data previews, like the
         simulator and G-code view.
         """
+        if get_context().exit_after_settle:
+            return
+
         is_sim_active = self.simulator_cmd.simulation_overlay is not None
         gcode_action = self.action_manager.get_action("toggle_gcode_preview")
         gcode_state = gcode_action.get_state() if gcode_action else None
@@ -1619,9 +1197,48 @@ class MainWindow(Adw.ApplicationWindow):
             self._on_previews_ready(None)
             return
 
-        self.doc_editor.file.assemble_job_in_background(
-            when_done=self._on_assembly_for_preview_finished
+        # Try to use existing job artifact first
+        existing_handle = self.doc_editor.pipeline.get_existing_job_handle()
+        if existing_handle is not None:
+            # Use existing artifact without regenerating
+            self._on_previews_ready(existing_handle)
+        else:
+            # No existing artifact, trigger generation
+            self.doc_editor.file.assemble_job_in_background(
+                when_done=self._on_assembly_for_preview_finished
+            )
+
+    def _create_canvas3d(
+        self,
+        context,
+        width_mm: float,
+        depth_mm: float,
+        y_down: bool,
+        x_right: bool,
+        x_negative: bool,
+        y_negative: bool,
+    ):
+        """
+        Creates a Canvas3D instance and adds it to the view stack.
+        Also syncs the travel view state from the action.
+        """
+        self.canvas3d = Canvas3D(
+            context,
+            self.doc_editor.doc,
+            self.doc_editor.pipeline,
+            width_mm=width_mm,
+            depth_mm=depth_mm,
+            y_down=y_down,
+            x_right=x_right,
+            x_negative=x_negative,
+            y_negative=y_negative,
         )
+        self.view_stack.add_named(self.canvas3d, "3d")
+
+        travel_action = self.action_manager.get_action("toggle_travel_view")
+        travel_state = travel_action.get_state()
+        if travel_state and travel_state.get_boolean():
+            self.canvas3d.set_show_travel_moves(True)
 
     def _on_document_settled(self, sender):
         """
@@ -1715,7 +1332,7 @@ class MainWindow(Adw.ApplicationWindow):
             )
 
         # Update the 3D canvas to match the new machine.
-        if canvas3d_initialized and hasattr(self, "view_stack"):
+        if self.canvas3d is not None:
             # Always switch back to 2D view on machine change for simplicity.
             if self.view_stack.get_visible_child_name() == "3d":
                 self.view_stack.set_visible_child_name("2d")
@@ -1726,10 +1343,8 @@ class MainWindow(Adw.ApplicationWindow):
 
             # Replace the 3D canvas with one configured for the new machine.
             self.view_stack.remove(self.canvas3d)
-            self.canvas3d = Canvas3D(
+            self._create_canvas3d(
                 get_context(),
-                self.doc_editor.doc,
-                self.doc_editor.pipeline,
                 width_mm=width_mm,
                 depth_mm=height_mm,
                 y_down=y_down,
@@ -1737,7 +1352,6 @@ class MainWindow(Adw.ApplicationWindow):
                 x_negative=reverse_x,
                 y_negative=reverse_y,
             )
-            self.view_stack.add_named(self.canvas3d, "3d")
 
         # Update the status monitor to observe the new machine
         self.status_monitor.set_machine(config.machine)
@@ -2070,7 +1684,7 @@ class MainWindow(Adw.ApplicationWindow):
         if self.doc_editor.is_saved:
             return False  # Allow the window to close
 
-        self._show_unsaved_changes_dialog(
+        self.project_cmd.show_unsaved_changes_dialog(
             self._on_close_request_dialog_response
         )
         return True  # Prevent the window from closing until user responds
@@ -2085,7 +1699,9 @@ class MainWindow(Adw.ApplicationWindow):
             return
 
         if response == "save":
-            self.on_save_project(None, None)
+            self.project_cmd.on_save_project(None, None)
+            if self.doc_editor.is_saved:
+                self.destroy()
 
     def on_menu_import(self, action, param=None):
         start_interactive_import(self, self.doc_editor)

@@ -235,32 +235,38 @@ class Step(DocItem, ABC):
             self.updated.send(self)
 
     def set_visible(self, visible: bool):
-        self.visible = visible
-        self.visibility_changed.send(self)
-        self.updated.send(self)
+        if self.visible != visible:
+            self.visible = visible
+            self.visibility_changed.send(self)
+            self.updated.send(self)
 
     def set_power(self, power: float):
         if not (0.0 <= power <= 1.0):
             raise ValueError("Power must be between 0.0 and 1.0")
-        self.power = power
-        self.updated.send(self)
+        if self.power != power:
+            self.power = power
+            self.updated.send(self)
 
     def set_cut_speed(self, speed: int):
-        self.cut_speed = int(speed)
-        self.updated.send(self)
+        if self.cut_speed != speed:
+            self.cut_speed = int(speed)
+            self.updated.send(self)
 
     def set_travel_speed(self, speed: int):
-        self.travel_speed = int(speed)
-        self.updated.send(self)
+        if self.travel_speed != speed:
+            self.travel_speed = int(speed)
+            self.updated.send(self)
 
     def set_air_assist(self, enabled: bool):
-        self.air_assist = bool(enabled)
-        self.updated.send(self)
+        if self.air_assist != enabled:
+            self.air_assist = bool(enabled)
+            self.updated.send(self)
 
     def set_kerf_mm(self, kerf: float):
         """Sets the kerf (beam width) in millimeters for this process."""
-        self.kerf_mm = float(kerf)
-        self.updated.send(self)
+        if self.kerf_mm != kerf:
+            self.kerf_mm = float(kerf)
+            self.updated.send(self)
 
     def get_summary(self) -> str:
         power_percent = int(self.power * 100)

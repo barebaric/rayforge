@@ -56,15 +56,6 @@ class MainToolbar(Gtk.Box):
         self.export_button.set_action_name("win.export")
         self.append(self.export_button)
 
-        # Sketch related buttons
-        sep = Gtk.Separator(orientation=Gtk.Orientation.VERTICAL)
-        self.append(sep)
-
-        edit_sketch_button = Gtk.Button(child=get_icon("sketch-edit-symbolic"))
-        edit_sketch_button.set_tooltip_text(_("Edit Sketch"))
-        edit_sketch_button.set_action_name("win.edit_sketch")
-        self.append(edit_sketch_button)
-
         # Undo/Redo Buttons
         sep = Gtk.Separator(orientation=Gtk.Orientation.VERTICAL)
         self.append(sep)

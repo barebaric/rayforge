@@ -41,7 +41,7 @@ jobs:
         run: pixi run lint
 
       - name: Run backend tests
-        run: pixi run test -m "not ui"
+        run: pixi run test -m "not ui" --log-cli-level=DEBUG
 
       - name: Run UI tests
-        run: xvfb-run pixi run uitest
+        run: xvfb-run pixi run uitest --log-cli-level=DEBUG

@@ -1,9 +1,7 @@
 import logging
-from typing import Optional, TYPE_CHECKING, Dict, Tuple, cast, List, Set, Any
+from typing import Optional, TYPE_CHECKING, Dict, Tuple, cast, List
 import cairo
-import numpy as np
 from gi.repository import GLib
-from ....context import get_context
 from ....core.workpiece import WorkPiece
 from ....core.step import Step
 from ....core.matrix import Matrix
@@ -11,7 +9,6 @@ from ....pipeline.artifact import (
     WorkPieceArtifact,
     BaseArtifactHandle,
     WorkPieceViewArtifact,
-    RenderContext,
 )
 from ....shared.util.colors import ColorSet
 from ...shared.gtk_color import GtkColorResolver, ColorSpecDict
@@ -20,8 +17,7 @@ from .tab_handle import TabHandleElement
 
 if TYPE_CHECKING:
     from ..surface import WorkSurface
-    from ....pipeline.pipeline import Pipeline
-    from ....pipeline.artifact.base import VertexData
+    from ....pipeline.view import ViewManager
 
 logger = logging.getLogger(__name__)
 
@@ -47,46 +43,24 @@ class WorkPieceElement(CanvasElement):
     def __init__(
         self,
         workpiece: WorkPiece,
-        pipeline: "Pipeline",
+        view_manager: "ViewManager",
         **kwargs,
     ):
         """Initializes the WorkPieceElement.
 
         Args:
             workpiece: The WorkPiece data model to visualize.
-            pipeline: The generator responsible for creating ops.
+            view_manager: The ViewManager for view rendering.
             **kwargs: Additional arguments for the CanvasElement.
         """
         logger.debug(f"Initializing WorkPieceElement for '{workpiece.name}'")
         self.data: WorkPiece = workpiece
-        self.pipeline = pipeline
+        self.view_manager = view_manager
         self._base_image_visible = True
         self._surface: Optional[cairo.ImageSurface] = None
 
         self._ops_visibility: Dict[str, bool] = {}
-        self._ops_generation_ids: Dict[
-            str, int
-        ] = {}  # Tracks the *expected* generation ID of the *next* render.
-        # Cached artifacts to avoid re-fetching from pipeline on every draw.
         self._artifact_cache: Dict[str, Optional[WorkPieceArtifact]] = {}
-
-        # Unified cache for progressive view artifacts.
-        # Key: step_uid
-        # Value: (CairoSurface, bbox_mm, ArtifactHandle, KeepAliveBufferRef)
-        self._progressive_view_surfaces: Dict[
-            str,
-            Tuple[
-                cairo.ImageSurface, Tuple[float, ...], BaseArtifactHandle, Any
-            ],
-        ] = {}
-
-        # Debouncing state for view render requests
-        self._view_request_timer_id: Optional[int] = None
-        self._pending_view_update_all: bool = False
-        self._pending_view_update_steps: Set[str] = set()
-        # Tracks steps that had view render requested during generation.
-        # Used to avoid double-rendering when generation finishes.
-        self._steps_with_progressive_render: Set[str] = set()
 
         self._tab_handles: List[TabHandleElement] = []
         # Default to False; the correct state will be pulled from the surface.
@@ -100,6 +74,7 @@ class WorkPieceElement(CanvasElement):
         }
         self._color_set: Optional[ColorSet] = None
         self._last_style_context_hash = -1
+        self._rendered_ppm: float = 0.0
 
         # The element's geometry is a 1x1 unit square.
         # The transform matrix handles all scaling and positioning.
@@ -131,23 +106,11 @@ class WorkPieceElement(CanvasElement):
 
         self.data.updated.connect(self._on_model_content_changed)
         self.data.transform_changed.connect(self._on_transform_changed)
-        self.pipeline.workpiece_starting.connect(
-            self._on_ops_generation_starting
+        self.view_manager.source_artifact_ready.connect(
+            self._on_source_artifact_ready
         )
-        self.pipeline.workpiece_artifact_ready.connect(
-            self._on_ops_generation_finished
-        )
-        # Only process view_artifact_updated, not view_artifact_created.
-        # The worker sends view_artifact_created BEFORE drawing to the bitmap,
-        # so processing it would read an empty/transparent bitmap.
-        # We wait for view_artifact_updated which is sent AFTER drawing
-        # completes.
-        self.pipeline.workpiece_view_updated.connect(
+        self.view_manager.view_artifact_updated.connect(
             self._on_view_artifact_updated
-        )
-        # When a workpiece artifact is adopted, trigger view rendering
-        self.pipeline.workpiece_artifact_adopted.connect(
-            self._on_workpiece_artifact_adopted
         )
 
         # Track the last known model size to detect size changes even when
@@ -166,8 +129,6 @@ class WorkPieceElement(CanvasElement):
         else:
             # We recovered state, but verify if a repaint is needed
             super().trigger_update()
-            # If we have artifacts, request view render to get bitmaps
-            self._request_view_render()
 
     def _hydrate_from_cache(self) -> bool:
         """
@@ -178,17 +139,9 @@ class WorkPieceElement(CanvasElement):
         if not cache:
             return False
 
-        # Restore caches. We copy the dictionaries to avoid modification
-        # issues, but the heavy objects (Surfaces) are shared references.
         self._surface = cache.get("surface")
         self._artifact_cache = cache.get("artifact_cache", {}).copy()
-        self._ops_generation_ids = cache.get("ops_generation_ids", {}).copy()
 
-        # Note: We do NOT restore _progressive_view_surfaces because they rely
-        # on shared memory handles which may have been released or are hard
-        # to manage across view lifecycles.
-
-        # Consider hydrated if we have a base surface or artifacts
         return self._surface is not None or len(self._artifact_cache) > 0
 
     def _update_model_view_cache(self):
@@ -198,7 +151,6 @@ class WorkPieceElement(CanvasElement):
         cache = self.data._view_cache
         cache["surface"] = self._surface
         cache["artifact_cache"] = self._artifact_cache
-        cache["ops_generation_ids"] = self._ops_generation_ids
 
     def invalidate_and_rerender(self):
         """
@@ -207,6 +159,7 @@ class WorkPieceElement(CanvasElement):
         element's content or size changes.
         """
         logger.debug(f"Full invalidation for workpiece '{self.data.name}'")
+        self._rendered_ppm = 0.0
         # Clear the local artifact cache to prevent drawing stale vectors
         self._artifact_cache.clear()
 
@@ -218,13 +171,24 @@ class WorkPieceElement(CanvasElement):
                 self.clear_ops_surface(step.uid)
         super().trigger_update()
 
-    def trigger_view_update(self):
+    def trigger_view_update(self, ppm: float = 0.0) -> bool:
         """
         Invalidates resolution-dependent caches (raster surfaces) and
         triggers a re-render. This is called on view changes like zooming.
         It preserves expensive-to-generate data like vector recordings.
+
+        Only re-renders if the new resolution (ppm) is higher than what
+        was previously rendered, since scaling down an existing image
+        doesn't require re-rendering.
+
+        Returns True if a re-render was triggered, False if skipped.
         """
+        if ppm <= self._rendered_ppm:
+            return False
+
         logger.debug(f"View update for workpiece '{self.data.name}'")
+        self._rendered_ppm = ppm
+
         # 1. Invalidate the base image buffer.
         self._surface = None
 
@@ -236,180 +200,8 @@ class WorkPieceElement(CanvasElement):
 
         # 3. Trigger a re-render of everything at the new resolution.
         self.trigger_ops_rerender()
-        self._request_view_render()
         super().trigger_update()  # Re-renders the base image.
-
-    def _request_view_render(
-        self, step_uid: Optional[str] = None, force: bool = False
-    ):
-        """
-        Debounced request for background render of the workpiece view.
-        If step_uid is None, requests render for all visible steps.
-
-        Args:
-            step_uid: The step to render, or None for all visible steps.
-            force: If True, force re-rendering even if the context appears
-                unchanged.
-        """
-        if step_uid is None:
-            self._pending_view_update_all = True
-        else:
-            self._pending_view_update_steps.add(step_uid)
-
-        # Store the force flag for the callback
-        self._pending_view_force = force
-
-        # Remove existing timer to reset the debounce window
-        if self._view_request_timer_id is not None:
-            GLib.source_remove(self._view_request_timer_id)
-
-        # Schedule execution after 50ms of silence
-        self._view_request_timer_id = GLib.timeout_add(
-            50, self._execute_view_render_request
-        )
-
-    def _execute_view_render_request(self) -> bool:
-        """
-        Executes the pending view render requests. This is called by the
-        debounce timer.
-        """
-        self._view_request_timer_id = None
-
-        if (
-            not self.canvas
-            or not self.data.layer
-            or not self.data.layer.workflow
-        ):
-            self._pending_view_update_all = False
-            self._pending_view_update_steps.clear()
-            return False
-
-        self._resolve_colors_if_needed()
-        if not self._color_set:
-            return False
-
-        work_surface = cast("WorkSurface", self.canvas)
-        ppm_x, ppm_y = work_surface.get_view_scale()
-
-        # Don't request render if scaled too small
-        if ppm_x <= 1e-9 or ppm_y <= 1e-9:
-            return False
-
-        steps_to_process = set()
-
-        if self._pending_view_update_all:
-            # Process all visible steps
-            for step in self.data.layer.workflow.steps:
-                if self._ops_visibility.get(step.uid, True):
-                    steps_to_process.add(step.uid)
-        else:
-            # Process specifically requested steps, checking visibility
-            for uid in self._pending_view_update_steps:
-                if self._ops_visibility.get(uid, True):
-                    steps_to_process.add(uid)
-
-        # Clear pending state
-        self._pending_view_update_all = False
-        self._pending_view_update_steps.clear()
-
-        if not steps_to_process:
-            return False
-
-        context = RenderContext(
-            pixels_per_mm=(ppm_x, ppm_y),
-            show_travel_moves=work_surface.show_travel_moves,
-            margin_px=OPS_MARGIN_PX,
-            color_set_dict=self._color_set.to_dict(),
-        )
-
-        # Get the force flag that was stored when the request was made
-        force = getattr(self, "_pending_view_force", False)
-
-        for uid in steps_to_process:
-            self.pipeline.request_view_render(
-                uid, self.data.uid, context, force=force
-            )
-
-        return False  # Stop the timer
-
-    def _process_view_artifact(
-        self,
-        step_uid: str,
-        handle: BaseArtifactHandle,
-    ):
-        """
-        Common helper to process a new or updated view artifact.
-        Always processes the artifact to support progressive rendering,
-        even if the handle is already cached (content may have changed).
-        """
-        # Check if this exact handle is already cached
-        old_tuple = self._progressive_view_surfaces.get(step_uid, None)
-        if old_tuple:
-            _, _, old_handle, _ = old_tuple
-            if old_handle.shm_name == handle.shm_name:
-                # Same handle - content may have changed in shared memory.
-                # Remove the old entry to force creation of a new surface.
-                # This is critical for progressive rendering to work.
-                del self._progressive_view_surfaces[step_uid]
-            else:
-                # Different handle - release the old one
-                store = get_context().artifact_store
-                if old_handle.shm_name in store._refcounts:
-                    store.release(old_handle)
-
-        try:
-            # Retrieve the artifact from shared memory
-            artifact = cast(
-                WorkPieceViewArtifact, get_context().artifact_store.get(handle)
-            )
-            if not artifact:
-                get_context().artifact_store.release(handle)
-                return
-
-            h, w, _ = artifact.bitmap_data.shape
-
-            # Explicitly pass stride. width * 4 bytes/pixel
-            stride = w * 4
-
-            # IMPORTANT: We MUST keep a reference to the numpy array (buffer)
-            # because PyCairo does not copy the data, it just points to it.
-            # If artifact.bitmap_data is GC'd, the surface becomes invalid.
-            # For progressive rendering, we need to ensure we get a fresh copy
-            # of the data each time, not just a reference to the same buffer.
-            buffer_ref = artifact.bitmap_data.copy()
-
-            surface = cairo.ImageSurface.create_for_data(
-                memoryview(buffer_ref),
-                cairo.FORMAT_ARGB32,
-                w,
-                h,
-                stride,
-            )
-
-            # Store surface, bbox, handle, AND the buffer reference
-            self._progressive_view_surfaces[step_uid] = (
-                surface,
-                artifact.bbox_mm,
-                handle,
-                buffer_ref,
-            )
-            if self.canvas:
-                # Use idle_add to ensure the redraw happens on the next
-                # iteration of the main loop, which should allow progressive
-                # rendering to work correctly
-                GLib.idle_add(self._trigger_progressive_redraw)
-
-        except Exception as e:
-            logger.error(
-                f"Failed to process view artifact for '{step_uid}': {e}"
-            )
-            get_context().artifact_store.release(handle)
-
-    def _trigger_progressive_redraw(self):
-        """Triggers a redraw for progressive rendering."""
-        if self.canvas:
-            self.canvas.queue_draw()
-        return False  # Don't call again
+        return True
 
     def _on_view_artifact_updated(
         self,
@@ -421,33 +213,12 @@ class WorkPieceElement(CanvasElement):
         **kwargs,
     ):
         """
-        Handler for when the content of a progressive render artifact has
-        been updated by the background worker.
+        Handler for when the content of a view artifact has been updated
+        by the background worker.
         """
         if workpiece_uid != self.data.uid or not self.canvas:
             return
-
-        self._process_view_artifact(step_uid, handle)
-
-    def _on_workpiece_artifact_adopted(
-        self, sender, *, step_uid: str, workpiece_uid: str, **kwargs
-    ):
-        """
-        Handler for when a workpiece artifact has been adopted.
-        Request view render immediately so the view artifact exists
-        before chunks start arriving during generation.
-        """
-        if workpiece_uid != self.data.uid:
-            return
-
-        logger.debug(
-            f"_on_workpiece_artifact_adopted called for step '{step_uid}'"
-        )
-        # Request view render immediately so the view artifact is created
-        # before chunks start arriving. This enables progressive rendering
-        # where chunks are drawn to the view artifact as they arrive.
-        self._steps_with_progressive_render.add(step_uid)
-        self._request_view_render(step_uid, force=True)
+        self.canvas.queue_draw()
 
     def get_closest_point_on_path(
         self, world_x: float, world_y: float, threshold_px: float = 5.0
@@ -532,29 +303,15 @@ class WorkPieceElement(CanvasElement):
     def remove(self):
         """Disconnects signals and removes the element from the canvas."""
         logger.debug(f"Removing WorkPieceElement for '{self.data.name}'")
-        if self._view_request_timer_id is not None:
-            GLib.source_remove(self._view_request_timer_id)
-            self._view_request_timer_id = None
-
         self.data.updated.disconnect(self._on_model_content_changed)
         self.data.transform_changed.disconnect(self._on_transform_changed)
-        self.pipeline.workpiece_starting.disconnect(
-            self._on_ops_generation_starting
+        self.view_manager.source_artifact_ready.disconnect(
+            self._on_source_artifact_ready
         )
-        self.pipeline.workpiece_artifact_ready.disconnect(
-            self._on_ops_generation_finished
-        )
-        self.pipeline.workpiece_view_updated.disconnect(
+        self.view_manager.view_artifact_updated.disconnect(
             self._on_view_artifact_updated
         )
-        self.pipeline.workpiece_artifact_adopted.disconnect(
-            self._on_workpiece_artifact_adopted
-        )
         super().remove()
-
-        for _, _, handle, _ in self._progressive_view_surfaces.values():
-            get_context().artifact_store.release(handle)
-        self._progressive_view_surfaces.clear()
 
     def set_base_image_visible(self, visible: bool):
         """
@@ -578,8 +335,6 @@ class WorkPieceElement(CanvasElement):
                 f"Setting ops visibility for step '{step_uid}' to {visible}"
             )
             self._ops_visibility[step_uid] = visible
-            if visible:
-                self._request_view_render(step_uid)
             if self.canvas:
                 self.canvas.queue_draw()
 
@@ -588,13 +343,6 @@ class WorkPieceElement(CanvasElement):
         Cancels any pending render and removes the cached surface for a step.
         """
         logger.debug(f"Clearing ops surface for step '{step_uid}'")
-        # Remove any cached progressive view for this step to ensure fresh
-        # start
-        old_tuple = self._progressive_view_surfaces.pop(step_uid, None)
-        if old_tuple is not None:
-            _, _, old_handle, _ = old_tuple
-            get_context().artifact_store.release(old_handle)
-
         if self.canvas:
             self.canvas.queue_draw()
 
@@ -629,7 +377,9 @@ class WorkPieceElement(CanvasElement):
         self._create_or_update_tab_handles()
         self.invalidate_and_rerender()
 
-    def _on_transform_changed(self, workpiece: WorkPiece):
+    def _on_transform_changed(
+        self, workpiece: WorkPiece, *, old_matrix: Optional["Matrix"] = None
+    ):
         """
         Handler for when the workpiece model's transform changes.
 
@@ -652,17 +402,6 @@ class WorkPieceElement(CanvasElement):
 
         if abs(new_w - old_w) > 1e-6 or abs(new_h - old_h) > 1e-6:
             self._last_synced_size = (new_w, new_h)
-            # Invalidate progressive view cache since the old artifacts
-            # are now at the wrong resolution and would appear stretched.
-            for step_uid, (_, _, handle, _) in list(
-                self._progressive_view_surfaces.items()
-            ):
-                get_context().artifact_store.release(handle)
-            self._progressive_view_surfaces.clear()
-            # Clear progressive render tracking so new view renders will be
-            # requested after the size change, preventing chunks from being
-            # drawn to the old-sized view artifact.
-            self._steps_with_progressive_render.clear()
             # Sync the transform immediately
             self.set_transform(workpiece.matrix)
             # Note: We do NOT request view renders here. The pipeline will
@@ -673,151 +412,50 @@ class WorkPieceElement(CanvasElement):
             # Size hasn't changed, just sync the transform
             self.set_transform(workpiece.matrix)
 
-    def _on_ops_generation_starting(
-        self, sender: Step, workpiece: WorkPiece, generation_id: int, **kwargs
-    ):
-        """Handler for when ops generation for a step begins."""
-        if workpiece is not self.data:
-            return
-
-        step_uid = sender.uid
-        self._ops_generation_ids[step_uid] = (
-            generation_id  # Sets the ID when generation starts.
-        )
-        self.clear_ops_surface(step_uid)
-        self._steps_with_progressive_render.discard(step_uid)
-
-    def _on_ops_generation_finished(
-        self, sender: Step, workpiece: WorkPiece, generation_id: int, **kwargs
+    def _on_source_artifact_ready(
+        self,
+        sender,
+        *,
+        step: Step,
+        workpiece: WorkPiece,
+        handle,
+        **kwargs,
     ):
         """
-        Signal handler for when ops generation finishes.
+        Signal handler for when source artifact is ready from ViewManager.
         This runs on a background thread, so it schedules the actual work
         on the main thread to prevent UI deadlocks.
         """
         if workpiece is not self.data:
             return
 
-        artifact = self.pipeline.get_artifact(sender, workpiece)
+        artifact = self.view_manager.store.get(handle)
         GLib.idle_add(
-            self._on_ops_generation_finished_main_thread,
-            sender,
+            self._on_source_artifact_ready_main_thread,
+            step,
             workpiece,
-            generation_id,
             artifact,
         )
 
-    def _on_ops_generation_finished_main_thread(
+    def _on_source_artifact_ready_main_thread(
         self,
-        sender: Step,
+        step: Step,
         workpiece: WorkPiece,
-        generation_id: int,
         artifact: WorkPieceArtifact,
     ):
-        """The thread-safe part of the ops generation finished handler."""
+        """The thread-safe part of the source artifact ready handler."""
         logger.debug(
-            f"_on_ops_generation_finished_main_thread called for step "
-            f"'{sender.uid}'"
+            f"_on_source_artifact_ready_main_thread called for step "
+            f"'{step.uid}'"
         )
         if workpiece is not self.data:
             return
-        step = sender
 
-        self._ops_generation_ids[step.uid] = generation_id
-
-        # Fetch and cache the final artifact, making it available to all paths.
         self._artifact_cache[step.uid] = artifact
         self._update_model_view_cache()
 
-        # Trigger a view render for this step if progressive rendering
-        # was not already done. If progressive rendering was used, the view
-        # artifact was already created and chunks were drawn to it during
-        # generation, so we don't need to re-render.
-        if step.uid not in self._steps_with_progressive_render:
-            self._request_view_render(step.uid, force=True)
-        self._steps_with_progressive_render.discard(step.uid)
-
         if self.canvas:
             self.canvas.queue_draw()
-
-    def _draw_vertices_to_context(
-        self,
-        vertex_data: "VertexData",
-        ctx: cairo.Context,
-        scale: Tuple[float, float],
-        drawable_height: float,
-    ):
-        """
-        Draws vertex data to a Cairo context, handling scaling, theming,
-        and Y-coordinate inversion.
-        """
-        if not self.canvas or not self._color_set:
-            return
-
-        work_surface = cast("WorkSurface", self.canvas)
-        show_travel = work_surface.show_travel_moves
-        scale_x, scale_y = scale
-
-        ctx.save()
-        ctx.set_hairline(True)
-        ctx.set_line_cap(cairo.LINE_CAP_SQUARE)
-
-        # --- Draw Travel & Zero-Power Moves ---
-        if show_travel:
-            if vertex_data.travel_vertices.size > 0:
-                travel_v = vertex_data.travel_vertices.reshape(-1, 2, 3)
-                ctx.set_source_rgba(*self._color_set.get_rgba("travel"))
-                for start, end in travel_v:
-                    ctx.move_to(
-                        start[0] * scale_x,
-                        drawable_height - start[1] * scale_y,
-                    )
-                    ctx.line_to(
-                        end[0] * scale_x, drawable_height - end[1] * scale_y
-                    )
-                ctx.stroke()
-
-            if vertex_data.zero_power_vertices.size > 0:
-                zero_v = vertex_data.zero_power_vertices.reshape(-1, 2, 3)
-                ctx.set_source_rgba(*self._color_set.get_rgba("zero_power"))
-                for start, end in zero_v:
-                    ctx.move_to(
-                        start[0] * scale_x,
-                        drawable_height - start[1] * scale_y,
-                    )
-                    ctx.line_to(
-                        end[0] * scale_x, drawable_height - end[1] * scale_y
-                    )
-                ctx.stroke()
-
-        # --- Draw Powered Moves (Grouped by Color for performance) ---
-        if vertex_data.powered_vertices.size > 0:
-            powered_v = vertex_data.powered_vertices.reshape(-1, 2, 3)
-            powered_c = vertex_data.powered_colors
-            cut_lut = self._color_set.get_lut("cut")
-
-            # Use power from the first vertex of each segment for color.
-            power_indices = (powered_c[::2, 0] * 255.0).astype(np.uint8)
-            themed_colors_per_segment = cut_lut[power_indices]
-
-            unique_colors, inverse_indices = np.unique(
-                themed_colors_per_segment, axis=0, return_inverse=True
-            )
-
-            for i, color in enumerate(unique_colors):
-                ctx.set_source_rgba(*color)
-                segment_indices = np.where(inverse_indices == i)[0]
-                for seg_idx in segment_indices:
-                    start, end = powered_v[seg_idx]
-                    ctx.move_to(
-                        start[0] * scale_x,
-                        drawable_height - start[1] * scale_y,
-                    )
-                    ctx.line_to(
-                        end[0] * scale_x, drawable_height - end[1] * scale_y
-                    )
-                ctx.stroke()
-        ctx.restore()
 
     def render_to_surface(
         self, width: int, height: int
@@ -844,95 +482,135 @@ class WorkPieceElement(CanvasElement):
         if not worksurface or worksurface.is_simulation_mode():
             return
 
-        if self.data.layer and self.data.layer.workflow:
-            # Draw the new progressive bitmaps if available (Phase 4)
-            self._draw_progressive_views(ctx)
-
-    def _draw_progressive_views(self, ctx: cairo.Context):
-        """
-        Draws the new WorkPieceViewArtifact bitmaps if available.
-        This overlays the generated bitmaps onto the canvas.
-        """
+        # Draw view artifacts (complete, pre-rendered bitmaps)
         self._resolve_colors_if_needed()
         world_w, world_h = self.data.size
 
         if world_w < 1e-9 or world_h < 1e-9:
             return
 
-        for step_uid, surface_tuple in self._progressive_view_surfaces.items():
-            if (
-                not self._ops_visibility.get(step_uid, True)
-                or not surface_tuple
-            ):
-                continue
+        if self.data.layer and self.data.layer.workflow:
+            for step in self.data.layer.workflow.steps:
+                step_uid = step.uid
+                if not self._ops_visibility.get(step_uid, True):
+                    continue
 
-            surface, bbox_mm, _, _ = surface_tuple
-            view_x, view_y, view_w, view_h = cast(Tuple[float, ...], bbox_mm)
+                view_handle = self.view_manager.get_view_handle(
+                    self.data.uid, step.uid
+                )
+                if view_handle is None:
+                    logger.debug(
+                        f"No view handle for workpiece {self.data.uid} "
+                        f"when drawing step {step_uid}"
+                    )
+                    continue
+                try:
+                    artifact = self.view_manager.store.get(view_handle)
+                    if not isinstance(artifact, WorkPieceViewArtifact):
+                        continue
 
-            if view_w < 1e-9 or view_h < 1e-9:
-                logger.debug(f"Skipping step '{step_uid}': bbox too small")
-                continue
+                    bitmap_data = artifact.bitmap_data
+                    bbox_mm = artifact.bbox_mm
 
-            ctx.save()
+                    view_x, view_y, view_w, view_h = bbox_mm
 
-            surface_w_px = surface.get_width()
-            surface_h_px = surface.get_height()
+                    if view_w < 1e-9 or view_h < 1e-9:
+                        logger.debug(
+                            f"Skipping step '{step_uid}': bbox too small"
+                        )
+                        continue
 
-            # Reconstruct the scale (ppm) used to generate this image
-            # The runner guarantees width = min(round(w_mm * ppm) + 2 *
-            # margin, MAX) So the effective ppm might be different from the
-            # requested ppm if clamped. effective_ppm = (width - 2*margin)
-            # / w_mm
+                    world_w, world_h = self.data.size
+                    ref_w, ref_h = artifact.workpiece_size_mm
 
-            # Guard against zero division for 1D objects
-            ppm_x = (
-                (surface_w_px - 2 * OPS_MARGIN_PX) / view_w
-                if view_w > 1e-9
-                else 0
-            )
-            ppm_y = (
-                (surface_h_px - 2 * OPS_MARGIN_PX) / view_h
-                if view_h > 1e-9
-                else 0
-            )
+                    scale_x = world_w / ref_w if ref_w > 1e-9 else 1.0
+                    scale_y = world_h / ref_h if ref_h > 1e-9 else 1.0
 
-            if ppm_x <= 0 or ppm_y <= 0:
-                ctx.restore()
-                continue
+                    if not (
+                        abs(scale_x - 1.0) < 1e-6 and abs(scale_y - 1.0) < 1e-6
+                    ):
+                        view_x *= scale_x
+                        view_y *= scale_y
+                        view_w *= scale_x
+                        view_h *= scale_y
 
-            # Calculate the full world dimensions of the surface (content +
-            # margins)
-            surface_w_world = surface_w_px / ppm_x
-            surface_h_world = surface_h_px / ppm_y
+                    height, width, _ = bitmap_data.shape
+                    stride = cairo.ImageSurface.format_stride_for_width(
+                        cairo.FORMAT_ARGB32, width
+                    )
+                    surface = cairo.ImageSurface.create_for_data(
+                        bitmap_data, cairo.FORMAT_ARGB32, width, height, stride
+                    )
 
-            # Calculate the world offset of the surface's bottom-left corner
-            # relative to workpiece origin. The content (view_x, view_y)
-            # starts at (margin, margin) inside the surface (top-left in
-            # pixel, bottom-left in world) So surface origin is at
-            # (view_x - margin_w, view_y - margin_h)
-            margin_w_world = OPS_MARGIN_PX / ppm_x
-            margin_h_world = OPS_MARGIN_PX / ppm_y
+                    surface_w_px = surface.get_width()
+                    surface_h_px = surface.get_height()
 
-            origin_x = view_x - margin_w_world
-            origin_y = view_y - margin_h_world
+                    # Reconstruct the scale (ppm) used to generate
+                    # this image. The runner guarantees width =
+                    # min(round(w_mm * ppm) + 2 * margin, MAX)
+                    # So effective ppm might be different from requested
+                    # ppm if clamped.
+                    # effective_ppm = (width - 2*margin) / w_mm
 
-            # Move to the bottom-left of the IMAGE in normalized space
-            ctx.translate(origin_x / world_w, origin_y / world_h)
+                    # Guard against zero division for 1D objects
+                    ppm_x = (
+                        (surface_w_px - 2 * OPS_MARGIN_PX) / view_w
+                        if view_w > 1e-9
+                        else 0
+                    )
+                    ppm_y = (
+                        (surface_h_px - 2 * OPS_MARGIN_PX) / view_h
+                        if view_h > 1e-9
+                        else 0
+                    )
 
-            # Scale to the size of the IMAGE in normalized space
-            ctx.scale(surface_w_world / world_w, surface_h_world / world_h)
+                    if ppm_x <= 0 or ppm_y <= 0:
+                        continue
 
-            # Flip Y for drawing the raster image
-            ctx.translate(0, 1)
-            ctx.scale(1, -1)
+                    # Calculate the full world dimensions of the surface
+                    # (content + margins)
+                    surface_w_world = surface_w_px / ppm_x
+                    surface_h_world = surface_h_px / ppm_y
 
-            # Scale 1.0/px to draw the image 1:1
-            ctx.scale(1.0 / surface_w_px, 1.0 / surface_h_px)
+                    # Calculate the world offset of the surface's
+                    # bottom-left corner relative to workpiece origin.
+                    # The content (view_x, view_y) starts at (margin,
+                    # margin) inside the surface (top-left in pixel,
+                    # bottom-left in world) So surface origin is at
+                    # (view_x - margin_w, view_y - margin_h)
+                    margin_w_world = OPS_MARGIN_PX / ppm_x
+                    margin_h_world = OPS_MARGIN_PX / ppm_y
 
-            ctx.set_source_surface(surface, 0, 0)
-            ctx.paint()
+                    origin_x = view_x - margin_w_world
+                    origin_y = view_y - margin_h_world
 
-            ctx.restore()
+                    ctx.save()
+
+                    # Move to the bottom-left of the IMAGE in normalized
+                    # space
+                    ctx.translate(origin_x / world_w, origin_y / world_h)
+
+                    # Scale to the size of the IMAGE in normalized space
+                    ctx.scale(
+                        surface_w_world / world_w, surface_h_world / world_h
+                    )
+
+                    # Flip Y for drawing the raster image
+                    ctx.translate(0, 1)
+                    ctx.scale(1, -1)
+
+                    # Scale 1.0/px to draw the image 1:1
+                    ctx.scale(1.0 / surface_w_px, 1.0 / surface_h_px)
+
+                    ctx.set_source_surface(surface, 0, 0)
+                    ctx.paint()
+
+                    ctx.restore()
+                except Exception as e:
+                    logger.warning(
+                        f"Failed to draw view artifact for step "
+                        f"{step_uid}: {e}"
+                    )
 
     def push_transform_to_model(self):
         """Updates the data model's matrix with the view's transform."""
@@ -958,8 +636,6 @@ class WorkPieceElement(CanvasElement):
         # Also clear from persistent cache so they don't reappear on reload
         self._update_model_view_cache()
 
-        self._request_view_render()
-
         if self.canvas:
             self.canvas.queue_draw()
 
@@ -969,9 +645,6 @@ class WorkPieceElement(CanvasElement):
             return
 
         logger.debug(f"Triggering ops rerender for '{self.data.name}'.")
-        applicable_steps = self.data.layer.workflow.steps
-        for step in applicable_steps:
-            self._ops_generation_ids.get(step.uid, 0)
 
     def set_tabs_visible_override(self, visible: bool):
         """Sets the global visibility override for tab handles."""
