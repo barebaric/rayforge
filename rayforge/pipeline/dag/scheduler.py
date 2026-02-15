@@ -32,6 +32,10 @@ class DagScheduler:
     Owns the PipelineGraph and is responsible for identifying
     which nodes are ready to be processed and orchestrating the
     launching of tasks.
+
+    The scheduler calls stage methods to launch tasks, and subscribes
+    to stage signals to update graph state. Stages do not call back
+    to the scheduler.
     """
 
     def __init__(
@@ -75,16 +79,30 @@ class DagScheduler:
         self._generation_id = context.generation_id
 
     def set_workpiece_stage(self, stage: "WorkPiecePipelineStage") -> None:
-        """Set the workpiece pipeline stage."""
+        """Set the workpiece pipeline stage and subscribe to its signals."""
         self._workpiece_stage = stage
+        stage.node_state_changed.connect(self._on_stage_node_state_changed)
 
     def set_step_stage(self, stage: "StepPipelineStage") -> None:
-        """Set the step pipeline stage."""
+        """Set the step pipeline stage and subscribe to its signals."""
         self._step_stage = stage
+        stage.node_state_changed.connect(self._on_stage_node_state_changed)
 
     def set_job_stage(self, stage: "JobPipelineStage") -> None:
-        """Set the job pipeline stage."""
+        """Set the job pipeline stage and subscribe to its signals."""
         self._job_stage = stage
+        stage.node_state_changed.connect(self._on_stage_node_state_changed)
+
+    def _on_stage_node_state_changed(
+        self, sender, key: ArtifactKey, state: NodeState
+    ) -> None:
+        """Handle node state change signals from stages."""
+        node = self.graph.find_node(key)
+        if node is not None:
+            node.state = state
+            logger.debug(
+                f"Updated node {key} state to {state.value} from stage"
+            )
 
     def sync_graph_with_artifact_manager(self) -> None:
         """

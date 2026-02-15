@@ -29,12 +29,6 @@ def mock_machine():
 
 
 @pytest.fixture
-def mock_scheduler():
-    """Provides a mock DagScheduler."""
-    return MagicMock()
-
-
-@pytest.fixture
 def mock_doc():
     """Provides a mock Doc object."""
     return MagicMock(spec=Doc)
@@ -52,27 +46,23 @@ class TestWorkPiecePipelineStage:
         mock_task_mgr,
         mock_artifact_manager,
         mock_machine,
-        mock_scheduler,
     ):
         """Test that WorkPiecePipelineStage can be created."""
         stage = WorkPiecePipelineStage(
             mock_task_mgr,
             mock_artifact_manager,
             mock_machine,
-            mock_scheduler,
         )
         assert isinstance(stage, PipelineStage)
         assert stage._task_manager is mock_task_mgr
         assert stage._artifact_manager is mock_artifact_manager
         assert stage._machine is mock_machine
-        assert stage._scheduler is mock_scheduler
 
     def test_interface_compliance(
         self,
         mock_task_mgr,
         mock_artifact_manager,
         mock_machine,
-        mock_scheduler,
         mock_doc,
     ):
         """Test that stage implements all required methods."""
@@ -80,7 +70,6 @@ class TestWorkPiecePipelineStage:
             mock_task_mgr,
             mock_artifact_manager,
             mock_machine,
-            mock_scheduler,
         )
         stage.reconcile(mock_doc, 1)
         stage.shutdown()
@@ -90,7 +79,6 @@ class TestWorkPiecePipelineStage:
         mock_task_mgr,
         mock_artifact_manager,
         mock_machine,
-        mock_scheduler,
     ):
         """Test size comparison returns True for matching sizes."""
         assert sizes_are_close((10.0, 20.0), (10.0, 20.0)) is True
@@ -101,7 +89,6 @@ class TestWorkPiecePipelineStage:
         mock_task_mgr,
         mock_artifact_manager,
         mock_machine,
-        mock_scheduler,
     ):
         """Test size comparison returns False for mismatched sizes."""
         assert sizes_are_close((10.0, 20.0), (20.0, 10.0)) is False
@@ -112,7 +99,6 @@ class TestWorkPiecePipelineStage:
         mock_task_mgr,
         mock_artifact_manager,
         mock_machine,
-        mock_scheduler,
     ):
         """Test size comparison returns False for None values."""
         assert sizes_are_close(None, (10.0, 20.0)) is False
@@ -124,7 +110,6 @@ class TestWorkPiecePipelineStage:
         mock_task_mgr,
         mock_artifact_manager,
         mock_machine,
-        mock_scheduler,
         workpiece_uuid,
     ):
         """Test invalidating workpieces for a step."""
@@ -132,24 +117,25 @@ class TestWorkPiecePipelineStage:
             mock_task_mgr,
             mock_artifact_manager,
             mock_machine,
-            mock_scheduler,
         )
         step_uid = str(uuid.uuid4())
         wp_key = ArtifactKey.for_workpiece(workpiece_uuid)
         mock_artifact_manager.get_dependents.return_value = [wp_key]
 
+        signal_handler = MagicMock()
+        stage.node_state_changed.connect(signal_handler)
+
         stage.invalidate_for_step(step_uid)
 
         mock_artifact_manager.get_dependents.assert_called_once()
         mock_artifact_manager.invalidate_for_step.assert_called()
-        mock_scheduler.mark_node_dirty.assert_called()
+        signal_handler.assert_called_once()
 
     def test_invalidate_for_workpiece(
         self,
         mock_task_mgr,
         mock_artifact_manager,
         mock_machine,
-        mock_scheduler,
         workpiece_uuid,
     ):
         """Test invalidating a specific workpiece."""
@@ -157,7 +143,6 @@ class TestWorkPiecePipelineStage:
             mock_task_mgr,
             mock_artifact_manager,
             mock_machine,
-            mock_scheduler,
         )
         wp_key = ArtifactKey.for_workpiece(workpiece_uuid)
         mock_artifact_manager.get_all_workpiece_keys.return_value = [wp_key]
@@ -172,7 +157,6 @@ class TestWorkPiecePipelineStage:
         mock_task_mgr,
         mock_artifact_manager,
         mock_machine,
-        mock_scheduler,
         workpiece_uuid,
     ):
         """Test get_artifact returns None when handle is missing."""
@@ -180,7 +164,6 @@ class TestWorkPiecePipelineStage:
             mock_task_mgr,
             mock_artifact_manager,
             mock_machine,
-            mock_scheduler,
         )
         mock_artifact_manager.get_workpiece_handle.return_value = None
 
@@ -193,7 +176,6 @@ class TestWorkPiecePipelineStage:
         mock_task_mgr,
         mock_artifact_manager,
         mock_machine,
-        mock_scheduler,
         workpiece_uuid,
     ):
         """Test get_artifact returns artifact when handle is valid."""
@@ -201,7 +183,6 @@ class TestWorkPiecePipelineStage:
             mock_task_mgr,
             mock_artifact_manager,
             mock_machine,
-            mock_scheduler,
         )
         mock_handle = MagicMock()
         mock_handle.is_scalable = True
@@ -219,7 +200,6 @@ class TestWorkPiecePipelineStage:
         mock_task_mgr,
         mock_artifact_manager,
         mock_machine,
-        mock_scheduler,
         workpiece_uuid,
     ):
         """Test cleanup cancels running task."""
@@ -227,7 +207,6 @@ class TestWorkPiecePipelineStage:
             mock_task_mgr,
             mock_artifact_manager,
             mock_machine,
-            mock_scheduler,
         )
         key = ArtifactKey.for_workpiece(workpiece_uuid)
         mock_task = MagicMock()

@@ -22,7 +22,6 @@ if TYPE_CHECKING:
     from ..context import GenerationContext
     from ..artifact import BaseArtifactHandle
     from ..artifact.manager import ArtifactManager
-    from ..dag.scheduler import DagScheduler
 
 logger = logging.getLogger(__name__)
 
@@ -38,11 +37,9 @@ class WorkPiecePipelineStage(PipelineStage):
         task_manager: "TaskManager",
         artifact_manager: "ArtifactManager",
         machine: Optional["Machine"],
-        scheduler: "DagScheduler",
     ):
         super().__init__(task_manager, artifact_manager)
         self._machine = machine
-        self._scheduler = scheduler
         self.generation_starting = Signal()
         self.generation_finished = Signal()
         self.workpiece_artifact_adopted = Signal()
@@ -60,7 +57,7 @@ class WorkPiecePipelineStage(PipelineStage):
         for key in keys_to_clean:
             self._cleanup_entry(key)
         self._artifact_manager.invalidate_for_step(step_key)
-        self._scheduler.mark_node_dirty(step_key)
+        self._emit_node_state(step_key, NodeState.DIRTY)
 
     def invalidate_for_workpiece(self, workpiece_uid: str):
         """Invalidates all artifacts for a workpiece across all steps."""
@@ -198,9 +195,7 @@ class WorkPiecePipelineStage(PipelineStage):
                 ledger_key, generation_id, handle=None
             )
 
-        node = self._scheduler.graph.find_node(ledger_key)
-        if node is not None:
-            node.state = NodeState.VALID
+        self._emit_node_state(ledger_key, NodeState.VALID)
 
         self.workpiece_artifact_adopted.send(
             self, step_uid=step_uid, workpiece_uid=key.id
@@ -253,7 +248,7 @@ class WorkPiecePipelineStage(PipelineStage):
             f"[{key}] Task was canceled. Marking node dirty and "
             "sending finished signal."
         )
-        self._scheduler.mark_node_dirty(ledger_key)
+        self._emit_node_state(ledger_key, NodeState.DIRTY)
         self.generation_finished.send(
             self,
             step=step,
@@ -292,22 +287,10 @@ class WorkPiecePipelineStage(PipelineStage):
             key, generation_id
         )
         if handle is None:
-            node = self._scheduler.graph.find_node(ledger_key)
-            if node is not None and node.state == NodeState.VALID:
-                logger.debug(
-                    f"[{key}] Task completed with no handle, "
-                    f"node already VALID (empty workpiece)."
-                )
-            elif node is not None and node.state == NodeState.PROCESSING:
-                logger.debug(
-                    f"[{key}] Handle not yet available, "
-                    f"waiting for artifact_created event."
-                )
-            else:
-                logger.warning(
-                    f"[{key}] Task completed but node in unexpected state: "
-                    f"{node.state if node else 'None'}"
-                )
+            logger.debug(
+                f"[{key}] Task completed with no handle "
+                f"(empty workpiece or pending artifact_created event)."
+            )
 
         return True, handle
 
@@ -324,9 +307,7 @@ class WorkPiecePipelineStage(PipelineStage):
         wp_name = workpiece.name
         error_msg = f"Ops generation for '{step.name}' on '{wp_name}' failed."
         logger.warning(f"[{key}] {error_msg}")
-        node = self._scheduler.graph.find_node(key)
-        if node is not None:
-            node.state = NodeState.ERROR
+        self._emit_node_state(key, NodeState.ERROR)
 
     def launch_task(
         self,
@@ -364,9 +345,7 @@ class WorkPiecePipelineStage(PipelineStage):
 
         workpiece_dict = self.prepare_workpiece_dict(workpiece)
 
-        node = self._scheduler.graph.find_node(ledger_key)
-        if node is not None:
-            node.state = NodeState.PROCESSING
+        self._emit_node_state(ledger_key, NodeState.PROCESSING)
 
         if context is not None:
             context.add_task(key)
@@ -453,14 +432,6 @@ class WorkPiecePipelineStage(PipelineStage):
         if handle_dict is None and event_name != "artifact_created":
             logger.error(
                 f"[{key}] Task event '{event_name}' missing handle. Ignoring."
-            )
-            return
-
-        node = self._scheduler.graph.find_node(ledger_key)
-        if node is None or node.state != NodeState.PROCESSING:
-            logger.debug(
-                f"[{key}] No PROCESSING node found for event '{event_name}'. "
-                f"Ignoring."
             )
             return
 

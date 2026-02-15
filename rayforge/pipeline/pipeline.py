@@ -134,32 +134,29 @@ class Pipeline:
             self._task_manager, self._artifact_manager, self._machine
         )
 
-        # Stages
+        # Stages - no scheduler reference needed, they emit signals
         self._workpiece_stage = WorkPiecePipelineStage(
             self._task_manager,
             self._artifact_manager,
             self._machine,
-            self._scheduler,
         )
         self._step_stage = StepPipelineStage(
             self._task_manager,
             self._artifact_manager,
             self._machine,
-            self._scheduler,
         )
         self._job_stage = JobPipelineStage(
             self._task_manager,
             self._artifact_manager,
             self._machine,
-            self._scheduler,
         )
 
-        # Inject stages into scheduler for bidirectional references
+        # Inject stages into scheduler (scheduler subscribes to stage signals)
         self._scheduler.set_workpiece_stage(self._workpiece_stage)
         self._scheduler.set_step_stage(self._step_stage)
         self._scheduler.set_job_stage(self._job_stage)
 
-        # Connect signals from scheduler (now handles workpiece generation)
+        # Connect signals from stages for pipeline-level handling
         self._workpiece_stage.generation_starting.connect(
             self._on_workpiece_generation_starting
         )

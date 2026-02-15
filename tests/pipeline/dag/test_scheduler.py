@@ -37,11 +37,14 @@ class TestDagScheduler:
         workpiece_stage = MagicMock(spec=WorkPiecePipelineStage)
         workpiece_stage.generation_finished = MagicMock()
         workpiece_stage.generation_starting = MagicMock()
+        workpiece_stage.node_state_changed = MagicMock()
         step_stage = MagicMock(spec=StepPipelineStage)
         step_stage.assembly_starting = MagicMock()
+        step_stage.node_state_changed = MagicMock()
         job_stage = MagicMock(spec=JobPipelineStage)
         job_stage.job_generation_finished = MagicMock()
         job_stage.job_generation_failed = MagicMock()
+        job_stage.node_state_changed = MagicMock()
 
         step_stage.validate_dependencies.return_value = True
         step_stage.validate_geometry_match.return_value = True
@@ -298,22 +301,8 @@ class TestDagSchedulerJobGeneration:
         scheduler.set_doc(doc)
         scheduler.set_generation_id(1)
 
-        # Patch _job_stage with a real instance in the test helper
-        # This is necessary for handle_task_event to work as expected
         real_job_stage = JobPipelineStage(
-            task_manager, artifact_manager, machine, scheduler
-        )
-        real_job_stage.validate_dependencies = MagicMock(return_value=True)
-        real_job_stage.collect_step_handles = MagicMock(return_value={})
-
-        workpiece_stage = MagicMock(spec=WorkPiecePipelineStage)
-        step_stage = MagicMock(spec=StepPipelineStage)
-
-        # Create a real JobPipelineStage instance, passing in mocks for its
-        # dependencies. The scheduler instance itself is passed to handle
-        # potential circular dependencies.
-        real_job_stage = JobPipelineStage(
-            task_manager, artifact_manager, machine, scheduler
+            task_manager, artifact_manager, machine
         )
         real_job_stage.validate_dependencies = MagicMock(return_value=True)
         real_job_stage.collect_step_handles = MagicMock(return_value={})
@@ -321,8 +310,10 @@ class TestDagSchedulerJobGeneration:
         workpiece_stage = MagicMock(spec=WorkPiecePipelineStage)
         workpiece_stage.generation_finished = MagicMock()
         workpiece_stage.generation_starting = MagicMock()
+        workpiece_stage.node_state_changed = MagicMock()
         step_stage = MagicMock(spec=StepPipelineStage)
         step_stage.assembly_starting = MagicMock()
+        step_stage.node_state_changed = MagicMock()
 
         step_stage.validate_dependencies.return_value = True
         step_stage.validate_geometry_match.return_value = True
@@ -490,13 +481,11 @@ class TestDagSchedulerJobGeneration:
             "job_key": {"id": job_key.id, "group": job_key.group},
         }
 
-        # This calls the real JobPipelineStage.handle_task_event
         job_stage = cast(JobPipelineStage, scheduler._job_stage)
         job_stage.handle_task_event(
             MagicMock(), "artifact_created", event_data, job_key, 1
         )
 
-        # Assert on the artifact_manager passed to the JobPipelineStage
         am.cache_handle.assert_called_once_with(  # type: ignore
             job_key, job_handle, 1
         )
@@ -538,7 +527,7 @@ class TestDagSchedulerContextTaskTracking(unittest.TestCase):
         scheduler.set_generation_id(1)
 
         real_job_stage = JobPipelineStage(
-            task_manager, artifact_manager, machine, scheduler
+            task_manager, artifact_manager, machine
         )
         real_job_stage.validate_dependencies = MagicMock(return_value=True)
         real_job_stage.collect_step_handles = MagicMock(return_value={})
@@ -546,8 +535,10 @@ class TestDagSchedulerContextTaskTracking(unittest.TestCase):
         workpiece_stage = MagicMock(spec=WorkPiecePipelineStage)
         workpiece_stage.generation_finished = MagicMock()
         workpiece_stage.generation_starting = MagicMock()
+        workpiece_stage.node_state_changed = MagicMock()
         step_stage = MagicMock(spec=StepPipelineStage)
         step_stage.assembly_starting = MagicMock()
+        step_stage.node_state_changed = MagicMock()
 
         step_stage.validate_dependencies.return_value = True
         step_stage.validate_geometry_match.return_value = True
@@ -638,7 +629,7 @@ class TestDagSchedulerContextTaskCompletion(unittest.TestCase):
         scheduler.set_generation_id(1)
 
         real_job_stage = JobPipelineStage(
-            task_manager, artifact_manager, machine, scheduler
+            task_manager, artifact_manager, machine
         )
         real_job_stage.validate_dependencies = MagicMock(return_value=True)
         real_job_stage.collect_step_handles = MagicMock(return_value={})
@@ -646,8 +637,10 @@ class TestDagSchedulerContextTaskCompletion(unittest.TestCase):
         workpiece_stage = MagicMock(spec=WorkPiecePipelineStage)
         workpiece_stage.generation_finished = MagicMock()
         workpiece_stage.generation_starting = MagicMock()
+        workpiece_stage.node_state_changed = MagicMock()
         step_stage = MagicMock(spec=StepPipelineStage)
         step_stage.assembly_starting = MagicMock()
+        step_stage.node_state_changed = MagicMock()
 
         step_stage.validate_dependencies.return_value = True
         step_stage.validate_geometry_match.return_value = True
