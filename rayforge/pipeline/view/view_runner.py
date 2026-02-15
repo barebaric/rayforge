@@ -179,6 +179,7 @@ def make_workpiece_view_artifact_in_subprocess(
     view_handle = artifact_store.put(view_artifact, creator_tag=creator_tag)
     logger.debug(f"Worker: Created view artifact {view_handle.shm_name}")
 
+    # Inter-process handoff: Send handle to main process and wait for adoption.
     acked = proxy.send_event_and_wait(
         "view_artifact_created",
         {"handle_dict": view_handle.to_dict()},
@@ -186,7 +187,7 @@ def make_workpiece_view_artifact_in_subprocess(
     )
     logger.debug("Worker: Sent view_artifact_created event")
 
-    # Close artifact handle after acknowledgment.
+    # Forget (close without unlinking) after main process has adopted.
     # Note: We open a NEW shm connection below for rendering, so closing this
     # specific handle/fd is safe and prevents leaks.
     if acked:

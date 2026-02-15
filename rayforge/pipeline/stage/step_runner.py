@@ -102,6 +102,8 @@ def make_step_artifact_in_subprocess(
     render_handle = artifact_store.put(
         render_artifact, creator_tag=f"{creator_tag}_render"
     )
+
+    # Inter-process handoff: Send handle to main process and wait for adoption.
     acked = proxy.send_event_and_wait(
         "render_artifact_ready",
         {
@@ -119,6 +121,8 @@ def make_step_artifact_in_subprocess(
     ops_handle = artifact_store.put(
         ops_artifact, creator_tag=f"{creator_tag}_ops"
     )
+
+    # Inter-process handoff: Send handle to main process and wait for adoption.
     acked = proxy.send_event_and_wait(
         "ops_artifact_ready",
         {

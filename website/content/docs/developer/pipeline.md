@@ -160,7 +160,30 @@ The `ArtifactManager` is a pure cache manager for artifact handles. It:
 - Handles lifecycle (creation, retention, release)
 - Does NOT track state (state is managed by the DAG scheduler)
 
-## **4. Pipeline Stages**
+## **4. Shared Memory Lifecycle**
+
+Artifacts are stored in shared memory (`multiprocessing.shared_memory`) for
+efficient inter-process communication between worker processes and the main
+process. The `ArtifactStore` manages the lifecycle of these memory blocks.
+
+### Ownership Patterns
+
+**Local Ownership:** The creating process owns the handle and releases it
+when done. This is the simplest pattern.
+
+**Inter-Process Handoff:** A worker creates an artifact, sends it to the
+main process via IPC, and transfers ownership. The worker "forgets" the
+handle (closes its file descriptor without unlinking the memory), while
+the main process "adopts" it and becomes responsible for eventual release.
+
+### Reference Counting
+
+The `ArtifactStore` maintains reference counts for each shared memory block.
+Multiple callers can `retain()` a handle, and the block is only unlinked
+when the count reaches zero. This is used by the `ViewManager` for
+progressive rendering where multiple callbacks may access the same artifact.
+
+## **5. Pipeline Stages**
 
 The pipeline stages (`WorkPiecePipelineStage`, `StepPipelineStage`,
 `JobPipelineStage`) now serve as interfaces rather than task launchers:
@@ -170,7 +193,7 @@ The pipeline stages (`WorkPiecePipelineStage`, `StepPipelineStage`,
 - They provide access to cached artifacts
 - They forward signals from the scheduler to the UI
 
-## **5. InvalidationScope**
+## **6. InvalidationScope**
 
 The `InvalidationScope` enum defines the scope of invalidation for downstream
 artifacts:

@@ -74,6 +74,7 @@ def make_job_artifact_in_subprocess(
     proxy.set_message(_("Storing final job artifact..."))
     final_handle = artifact_store.put(final_artifact, creator_tag=creator_tag)
 
+    # Inter-process handoff: Send handle to main process and wait for adoption.
     acked = proxy.send_event_and_wait(
         "artifact_created",
         {
@@ -84,6 +85,7 @@ def make_job_artifact_in_subprocess(
         logger=logger,
     )
 
+    # Forget (close without unlinking) after main process has adopted.
     if acked:
         logger.debug("Job artifact acknowledged, forgetting handle.")
         artifact_store.forget(final_handle)

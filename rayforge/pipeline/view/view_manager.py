@@ -62,6 +62,18 @@ class ViewManager:
 
     It indexes views by (workpiece_uid, step_uid) to support visualizing
     intermediate states of a workpiece across multiple steps.
+
+    Shared Memory Lifecycle
+    -----------------------
+    The ViewManager retains handles for two purposes:
+
+    1. Source artifact tracking: Handles in _source_artifact_handles are
+       retained when stored and released in shutdown() or reconcile().
+
+    2. Async task execution: Handles are retained before launching a task
+       and released in the task's completion callback (e.g., when_done).
+
+    Every retain() is paired with a release() to prevent memory leaks.
     """
 
     def __init__(

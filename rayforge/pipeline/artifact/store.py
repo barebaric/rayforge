@@ -1,3 +1,47 @@
+"""
+Shared memory artifact storage for inter-process communication.
+
+This module provides the ArtifactStore class which manages the lifecycle of
+artifacts stored in shared memory blocks. The lifecycle is managed through
+reference counting and supports two main ownership patterns:
+
+1. Local Ownership: The creating process owns and releases the handle.
+2. Inter-Process Handoff: A worker creates, transfers ownership to the
+   main process via forget/adopt, and the main process releases.
+
+Lifecycle State Diagram
+-----------------------
+
+                              put()
+    ┌─────────┐         ┌──────────┐
+    │  None   │────────>│ MANAGED  │
+    └─────────┘         └──────────┘
+                             │
+          ┌──────────────────┼──────────────────┐
+          │ adopt()          │ retain()         │ release()
+          ▼                  ▼                  ▼
+    ┌──────────┐       ┌──────────┐        ┌────────────┐
+    │ ADOPTED  │       │ RETAINED │        │ RELEASED   │
+    │ refcnt++ │       │ refcnt++ │        │ (closed    │
+    └──────────┘       └──────────┘        │ + unlinked)│
+          │                  │             └────────────┘
+          │ forget()         │ forget()/release()
+          ▼                  ▼
+    ┌──────────┐       ┌──────────┐
+    │ FORGOTTEN│       │ FORGOTTEN│
+    │ (closed  │       │ or       │
+    │  only)   │       │ RELEASED │
+    └──────────┘       └──────────┘
+
+Method Usage Guide
+------------------
+
+- release(handle): Close and unlink. Use when you own the SHM block.
+- forget(handle): Close without unlinking. Use for inter-process handoff.
+- retain(handle): Increment refcount. Use when multiple code paths need
+  the same handle.
+"""
+
 from __future__ import annotations
 import uuid
 import logging
@@ -287,16 +331,45 @@ class ArtifactStore:
     def release(self, handle: BaseArtifactHandle) -> None:
         """
         Closes and unlinks the shared memory block associated with a handle.
-        This must be called by the owner of the handle when it's no longer
-        needed to prevent memory leaks.
+
+        This is the standard cleanup method when you own the SHM block and no
+        other process needs it. It decrements the reference count and unlinks
+        the memory when the count reaches zero.
+
+        Use when:
+            - You created the handle via put() and are done with it
+            - You adopted a handle and no longer need it
+            - Cleaning up cached artifacts in ArtifactManager
+
+        Typical callers:
+            - ArtifactManager (cache cleanup)
+            - GenerationContext.shutdown()
+            - ViewManager (cleanup old views)
+
+        Args:
+            handle: The handle of the artifact to release.
         """
         self._release_by_name(handle.shm_name)
 
     def close_handle(self, handle: BaseArtifactHandle) -> None:
         """
-        Closes the shared memory block associated with a handle without
-        unlinking it. This is used when the block might still be
-        in use by other processes (e.g., workers doing progressive rendering).
+        Closes the shared memory block without unlinking it.
+
+        Unlike release(), this method closes the file descriptor but leaves
+        the shared memory block intact for other processes. The block will
+        remain until explicitly unlinked or all handles across all processes
+        are closed.
+
+        Use when:
+            - Closing a handle when the block is still needed elsewhere
+            - Platform-specific cleanup where unlink timing matters
+
+        Note:
+            This method is rarely used. Prefer release() for normal cleanup
+            or forget() for inter-process handoff.
+
+        Args:
+            handle: The handle of the artifact to close.
         """
         shm_name = handle.shm_name
         refcount = self._refcounts.get(shm_name, 0)
@@ -330,8 +403,16 @@ class ArtifactStore:
         """
         Increments the reference count for a shared memory block.
 
-        This is used to indicate that the block will be used by a subprocess
-        and should not be released until the subprocess is done with it.
+        Use when multiple code paths need the same handle and you want to
+        prevent premature release. Every retain() must be matched with a
+        release() or forget().
+
+        Use when:
+            - Multiple async callbacks will access the same artifact
+            - Progressive rendering where chunks are reused across frames
+
+        Typical callers:
+            - ViewManager (progressive rendering chunks)
 
         Args:
             handle: The handle of the artifact whose shared memory block is
@@ -352,13 +433,22 @@ class ArtifactStore:
 
     def forget(self, handle: BaseArtifactHandle) -> None:
         """
-        Closes the handle to a shared memory block without destroying the
-        underlying data.
+        Closes the handle without unlinking the shared memory.
 
-        This is used when a worker process has transferred ownership of an
-        artifact to another process (e.g., the main process). The worker
-        closes its handle but does not unlink the shared memory, allowing
-        the adopting process to continue accessing the data.
+        This is used for inter-process handoff: a worker creates an artifact,
+        sends it to the main process via IPC, and calls forget() after
+        receiving acknowledgment. The main process has adopted the handle
+        by then and will call release() when done.
+
+        Use when:
+            - Transferring ownership from worker to main process
+            - After send_event_and_wait() returns successfully
+
+        Typical callers:
+            - workpiece_runner.py (after artifact_created acknowledged)
+            - job_runner.py (after job_artifact_created acknowledged)
+            - view_runner.py (after view_artifact_created acknowledged)
+            - step_runner.py (after step artifacts acknowledged)
 
         On Windows, shared memory is destroyed when the last handle is closed.
         This method respects reference counting to ensure the block remains
