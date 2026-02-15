@@ -359,10 +359,17 @@ class TaskManager:
             self._update_pooled_task, key, task_id, message=message
         )
 
-    def _on_pool_task_event(self, sender, key, task_id, event_name, data):
+    def _on_pool_task_event(
+        self, sender, key, task_id, event_name, data, adoption_signals
+    ):
         # Schedule the event dispatch on the main thread
         self._main_thread_scheduler(
-            self._dispatch_pooled_task_event, key, task_id, event_name, data
+            self._dispatch_pooled_task_event,
+            key,
+            task_id,
+            event_name,
+            data,
+            adoption_signals,
         )
 
     # === Main Thread Update Methods for Pooled Tasks ===
@@ -389,7 +396,12 @@ class TaskManager:
             )
 
     def _dispatch_pooled_task_event(
-        self, key: Any, task_id: int, event_name: str, data: dict
+        self,
+        key: Any,
+        task_id: int,
+        event_name: str,
+        data: dict,
+        adoption_signals: dict,
     ):
         """Dispatches a task event from the main thread."""
         with self._lock:
@@ -410,6 +422,12 @@ class TaskManager:
                 f"Received event '{event_name}' for unknown or fully cleaned "
                 f"up task key '{key}' (id: {task_id}). Ignoring."
             )
+
+        # Signal to the worker that adoption is complete.
+        # This is critical on Windows where shared memory is
+        # destroyed when all handles are closed.
+        signal_key = f"{task_id}:{event_name}"
+        adoption_signals[signal_key] = True
 
     def _finalize_pooled_task(
         self,
