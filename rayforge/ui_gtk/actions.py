@@ -6,6 +6,7 @@ from ..core.item import DocItem
 from ..core.layer import Layer
 from ..core.workpiece import WorkPiece
 from .doceditor.add_tabs_popover import AddTabsPopover
+from .shared.keyboard import PRIMARY_ACCEL
 
 
 if TYPE_CHECKING:
@@ -354,32 +355,32 @@ class ActionManager:
         """
         shortcuts = {
             # File
-            "win.new": "<Primary>n",
-            "win.open": "<Primary>o",
-            "win.save": "<Primary>s",
-            "win.save-as": "<Primary><Shift>s",
-            "win.import": "<Primary>i",
-            "win.export": "<Primary>e",
-            "win.quit": "<Primary>q",
+            "win.new": f"{PRIMARY_ACCEL}n",
+            "win.open": f"{PRIMARY_ACCEL}o",
+            "win.save": f"{PRIMARY_ACCEL}s",
+            "win.save-as": f"{PRIMARY_ACCEL}<Shift>s",
+            "win.import": f"{PRIMARY_ACCEL}i",
+            "win.export": f"{PRIMARY_ACCEL}e",
+            "win.quit": f"{PRIMARY_ACCEL}q",
             # Edit
-            "win.undo": "<Primary>z",
-            "win.redo": "<Primary>y",
-            "win.redo_alt": "<Primary><Shift>z",
-            "win.cut": "<Primary>x",
-            "win.copy": "<Primary>c",
-            "win.paste": "<Primary>v",
-            "win.select_all": "<Primary>a",
-            "win.duplicate": "<Primary>d",
+            "win.undo": f"{PRIMARY_ACCEL}z",
+            "win.redo": f"{PRIMARY_ACCEL}y",
+            "win.redo_alt": f"{PRIMARY_ACCEL}<Shift>z",
+            "win.cut": f"{PRIMARY_ACCEL}x",
+            "win.copy": f"{PRIMARY_ACCEL}c",
+            "win.paste": f"{PRIMARY_ACCEL}v",
+            "win.select_all": f"{PRIMARY_ACCEL}a",
+            "win.duplicate": f"{PRIMARY_ACCEL}d",
             "win.remove": "Delete",
-            "win.clear": "<Primary><Shift>Delete",
-            "win.settings": "<Primary>comma",
+            "win.clear": f"{PRIMARY_ACCEL}<Shift>Delete",
+            "win.settings": f"{PRIMARY_ACCEL}comma",
             # View
             "win.show_workpieces": "h",
             "win.show_tabs": "t",
             "win.toggle_camera_view": "<Alt>c",
-            "win.toggle_control_panel": "<Primary>l",
-            "win.toggle_gcode_preview": "<Primary><Shift>g",
-            "win.toggle_travel_view": "<Primary><Shift>t",
+            "win.toggle_control_panel": f"{PRIMARY_ACCEL}l",
+            "win.toggle_gcode_preview": f"{PRIMARY_ACCEL}<Shift>g",
+            "win.toggle_travel_view": f"{PRIMARY_ACCEL}<Shift>t",
             "win.show_3d_view": "F12",
             "win.simulate_mode": "F11",
             "win.view_top": "1",
@@ -388,27 +389,27 @@ class ActionManager:
             "win.view_toggle_perspective": "p",
             # Object
             "win.add_stock": "<Alt>s",
-            "win.new_sketch": "<Primary>n",
+            "win.new_sketch": f"{PRIMARY_ACCEL}n",
             "win.add-tabs-equidistant": "<Alt>t",
             # Arrange
-            "win.group": "<Primary>g",
-            "win.ungroup": "<Primary>u",
+            "win.group": f"{PRIMARY_ACCEL}g",
+            "win.ungroup": f"{PRIMARY_ACCEL}u",
             "win.split": "<Alt>w",
-            "win.layer-move-up": "<Primary>Page_Up",
-            "win.layer-move-down": "<Primary>Page_Down",
-            "win.align-left": "<Primary><Shift>Left",
-            "win.align-right": "<Primary><Shift>Right",
-            "win.align-top": "<Primary><Shift>Up",
-            "win.align-bottom": "<Primary><Shift>Down",
-            "win.align-h-center": "<Primary><Shift>Home",
-            "win.align-v-center": "<Primary><Shift>End",
-            "win.spread-h": "<Primary><Shift>h",
-            "win.spread-v": "<Primary><Shift>v",
+            "win.layer-move-up": f"{PRIMARY_ACCEL}Page_Up",
+            "win.layer-move-down": f"{PRIMARY_ACCEL}Page_Down",
+            "win.align-left": f"{PRIMARY_ACCEL}<Shift>Left",
+            "win.align-right": f"{PRIMARY_ACCEL}<Shift>Right",
+            "win.align-top": f"{PRIMARY_ACCEL}<Shift>Up",
+            "win.align-bottom": f"{PRIMARY_ACCEL}<Shift>Down",
+            "win.align-h-center": f"{PRIMARY_ACCEL}<Shift>Home",
+            "win.align-v-center": f"{PRIMARY_ACCEL}<Shift>End",
+            "win.spread-h": f"{PRIMARY_ACCEL}<Shift>h",
+            "win.spread-v": f"{PRIMARY_ACCEL}<Shift>v",
             "win.layout-pixel-perfect": "<Alt>a",
             "win.flip-horizontal": "<Shift>h",
             "win.flip-vertical": "<Shift>v",
             # Machine & Help
-            "win.machine-settings": "<Primary>less",
+            "win.machine-settings": f"{PRIMARY_ACCEL}less",
             "win.about": "F1",
         }
 
