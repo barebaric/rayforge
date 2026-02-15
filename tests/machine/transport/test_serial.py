@@ -303,3 +303,38 @@ class TestSerialTransportIntegration:
         transport = SerialTransport(port="/dev/mock", baudrate=9600)
         with pytest.raises(ConnectionError, match="Serial port not open"):
             await transport.send(b"test")
+
+    @pytest.mark.asyncio
+    async def test_purge_on_connected_transport(self, mock_serial_connection):
+        """
+        Test that purge clears buffered data from the reader.
+        """
+        _, mock_reader, _ = mock_serial_connection
+        transport = SerialTransport(port="/dev/mock", baudrate=115200)
+
+        try:
+            await transport.connect()
+            assert transport.is_connected
+
+            # Feed some data to the reader
+            mock_reader.feed_data(b"buffered data")
+            await asyncio.sleep(0)  # Yield to event loop
+
+            # Purge should read and discard the buffered data
+            await transport.purge()
+
+            # Verify that read was called to consume data
+            assert mock_reader.read.call_count > 0
+        finally:
+            await transport.disconnect()
+
+    @pytest.mark.asyncio
+    async def test_purge_on_disconnected_transport(self):
+        """
+        Test that purge on a disconnected transport is a no-op.
+        """
+        transport = SerialTransport(port="/dev/mock", baudrate=9600)
+        assert not transport.is_connected
+
+        # Should not raise any errors
+        await transport.purge()

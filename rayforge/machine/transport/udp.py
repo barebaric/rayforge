@@ -96,6 +96,29 @@ class UdpTransport(Transport):
         # We must not specify the destination address in sendto().
         self.writer.sendto(data)
 
+    async def purge(self) -> None:
+        """
+        Clear any buffered data in the UDP transport.
+
+        Discards any pending data in the receive buffer to resync
+        communications. Does not affect the connection state.
+        """
+        if not self.reader:
+            return
+
+        try:
+            while True:
+                data, _ = await asyncio.wait_for(
+                    self.reader.recvfrom(), timeout=0.1
+                )
+                if not data:
+                    break
+                logger.debug(f"Purged data: {data!r}")
+        except asyncio.TimeoutError:
+            pass
+        except Exception as e:
+            logger.warning(f"Error during purge: {e}")
+
     async def _receive_loop(self) -> None:
         while self.reader:
             try:

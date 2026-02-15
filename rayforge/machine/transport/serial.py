@@ -252,6 +252,29 @@ class SerialTransport(Transport):
                 f"Failed to write to serial port: {e}"
             ) from e
 
+    async def purge(self) -> None:
+        """
+        Clear any buffered data in the serial transport.
+
+        Discards any pending data in the receive buffer to resync
+        communications. Does not affect the connection state.
+        """
+        if not self._reader:
+            return
+
+        try:
+            while True:
+                data = await asyncio.wait_for(
+                    self._reader.read(1024), timeout=0.1
+                )
+                if not data:
+                    break
+                logger.debug(f"Purged data: {data!r}")
+        except asyncio.TimeoutError:
+            pass
+        except Exception as e:
+            logger.warning(f"Error during purge: {e}")
+
     async def _receive_loop(self) -> None:
         """
         Continuous data reception loop.

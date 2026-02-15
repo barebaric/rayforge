@@ -1,8 +1,12 @@
 import asyncio
+import logging
 import websockets
 from typing import Optional
 from websockets.exceptions import ConnectionClosed
 from .transport import Transport, TransportStatus
+
+
+logger = logging.getLogger(__name__)
 
 
 class WebSocketTransport(Transport):
@@ -105,6 +109,31 @@ class WebSocketTransport(Transport):
             # `_receive_loop` and handle the reconnect automatically.
             # We just need to signal that this specific send operation failed.
             raise ConnectionError("Connection lost while sending")
+
+    async def purge(self) -> None:
+        """
+        Clear any buffered data in the WebSocket transport.
+
+        Discards any pending data in the receive buffer to resync
+        communications. Does not affect the connection state.
+        """
+        if self._websocket is None:
+            return
+
+        try:
+            while True:
+                message = await asyncio.wait_for(
+                    self._websocket.recv(), timeout=0.1
+                )
+                if not message:
+                    break
+                logger.debug(f"Purged data: {message!r}")
+        except asyncio.TimeoutError:
+            pass
+        except ConnectionClosed:
+            pass
+        except Exception as e:
+            logger.warning(f"Error during purge: {e}")
 
     async def _receive_loop(self) -> None:
         """

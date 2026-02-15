@@ -66,3 +66,14 @@ class Transport(ABC):
             ConnectionError: If transport is not connected
         """
         pass
+
+    @abstractmethod
+    async def purge(self) -> None:
+        """
+        Clear any buffered data in the transport.
+
+        This method is used to resync communications by discarding any
+        pending data in the receive buffer. It should not affect the
+        connection state.
+        """
+        pass
