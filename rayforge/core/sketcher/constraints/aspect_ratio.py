@@ -10,7 +10,7 @@ from typing import (
     Optional,
 )
 import cairo
-from .base import Constraint
+from .base import Constraint, ConstraintStatus
 
 if TYPE_CHECKING:
     from ..params import ParameterContext
@@ -215,6 +215,11 @@ class AspectRatioConstraint(Constraint):
         if is_selected:
             ctx.set_source_rgba(0.2, 0.6, 1.0, 0.4)
             # Use a slightly larger radius for the glow effect
+            ctx.arc(cx, cy, icon_size / 2.0 + 4.0, 0, 2 * math.pi)
+            ctx.fill()
+
+        if self.status == ConstraintStatus.CONFLICTING:
+            ctx.set_source_rgba(1.0, 0.2, 0.2, 0.5)
             ctx.arc(cx, cy, icon_size / 2.0 + 4.0, 0, 2 * math.pi)
             ctx.fill()
 

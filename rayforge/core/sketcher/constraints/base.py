@@ -25,6 +25,7 @@ class ConstraintStatus(Enum):
     VALID = auto()
     EXPRESSION_BASED = auto()
     ERROR = auto()
+    CONFLICTING = auto()
 
 
 class Constraint:
@@ -104,6 +105,8 @@ class Constraint:
         """
         if is_hovered:
             ctx.set_source_rgb(1.0, 0.8, 0.0)  # Yellow for hover
+        elif self.status == ConstraintStatus.CONFLICTING:
+            ctx.set_source_rgb(1.0, 0.2, 0.2)  # Red for conflicting
         elif self.status == ConstraintStatus.ERROR:
             ctx.set_source_rgb(1.0, 0.2, 0.2)  # Red for error
         elif self.status == ConstraintStatus.EXPRESSION_BASED:
@@ -117,6 +120,16 @@ class Constraint:
         """Draws a semi-transparent blue underlay for the current path."""
         ctx.save()
         ctx.set_source_rgba(0.2, 0.6, 1.0, 0.4)
+        ctx.set_line_width(ctx.get_line_width() * width_scale)
+        ctx.stroke_preserve()
+        ctx.restore()
+
+    def _draw_conflict_underlay(
+        self, ctx: "cairo.Context", width_scale: float = 3.5
+    ) -> None:
+        """Draws a semi-transparent red underlay for conflicting items."""
+        ctx.save()
+        ctx.set_source_rgba(1.0, 0.2, 0.2, 0.5)
         ctx.set_line_width(ctx.get_line_width() * width_scale)
         ctx.stroke_preserve()
         ctx.restore()

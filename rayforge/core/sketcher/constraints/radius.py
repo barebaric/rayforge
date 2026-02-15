@@ -257,6 +257,8 @@ class RadiusConstraint(Constraint):
             ctx.set_source_rgba(0.2, 0.6, 1.0, 0.4)  # Blue selection
         elif is_hovered:
             ctx.set_source_rgba(1.0, 0.95, 0.85, 0.9)  # Light yellow hover
+        elif self.status == ConstraintStatus.CONFLICTING:
+            ctx.set_source_rgba(1.0, 0.6, 0.6, 0.9)  # Red background
         elif self.status == ConstraintStatus.ERROR:
             ctx.set_source_rgba(1.0, 0.8, 0.8, 0.9)  # Light red background
         elif self.status == ConstraintStatus.EXPRESSION_BASED:
@@ -271,18 +273,25 @@ class RadiusConstraint(Constraint):
         ctx.new_path()
 
         # Set text color based on status
-        if self.status == ConstraintStatus.ERROR:
-            ctx.set_source_rgb(0.8, 0.0, 0.0)  # Red text for error
+        if self.status in (
+            ConstraintStatus.ERROR,
+            ConstraintStatus.CONFLICTING,
+        ):
+            ctx.set_source_rgb(0.8, 0.0, 0.0)  # Red text for error/conflict
         else:
             ctx.set_source_rgb(0, 0, 0.5)  # Dark blue otherwise
 
         ctx.move_to(sx - ext.width / 2, sy + ext.height / 2 - 2)
         ctx.show_text(label)
 
-        self._set_color(ctx, is_hovered)
         ctx.set_line_width(1)
         ctx.set_dash([4, 4])
         ctx.move_to(sx, sy)
         ctx.line_to(arc_mid_sx, arc_mid_sy)
+
+        if self.status == ConstraintStatus.CONFLICTING:
+            self._draw_conflict_underlay(ctx)
+
+        self._set_color(ctx, is_hovered)
         ctx.stroke()
         ctx.restore()
