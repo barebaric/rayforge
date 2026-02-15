@@ -250,14 +250,14 @@ class Pipeline:
         The pipeline is busy if:
         1. A reconciliation timer is pending, OR
         2. The scheduler has pending work (PROCESSING nodes), OR
-        3. Any inactive context has active tasks (old generation cleaning up)
+        3. Any context (active or inactive) has active tasks
         """
         if self._reconciliation_timer is not None:
             return True
         if self._scheduler.has_pending_work():
             return True
         for ctx in self._contexts.values():
-            if ctx is not self._active_context and ctx.has_active_tasks():
+            if ctx.has_active_tasks():
                 return True
         return False
 
