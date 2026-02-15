@@ -178,7 +178,7 @@ class TestWorkerPoolManager:
         event_received_event = threading.Event()
         received_event_data = {}
 
-        def on_event(sender, key, task_id, event_name, data):
+        def on_event(sender, key, task_id, event_name, data, **kwargs):
             if key == "event_task":
                 received_event_data["name"] = event_name
                 received_event_data["data"] = data
@@ -200,9 +200,11 @@ class TestWorkerPoolManager:
         result_holder = {}
         event_received = threading.Event()
 
-        def on_event(sender, key, task_id, event_name, data):
+        def on_event(sender, key, task_id, event_name, data, adoption_signals):
             if key == "ack_task":
                 event_received.set()
+                signal_key = f"{task_id}:{event_name}"
+                adoption_signals[signal_key] = True
 
         def on_complete(sender, key, task_id, result):
             if key == "ack_task":
@@ -232,23 +234,18 @@ class TestWorkerPoolManager:
         event_received = threading.Event()
         signal_key_captured = {}
 
-        def on_event(sender, key, task_id, event_name, data):
+        def on_event(sender, key, task_id, event_name, data, adoption_signals):
             if key == "signal_task":
                 signal_key = f"{task_id}:{event_name}"
                 signal_key_captured["key"] = signal_key
                 signal_key_captured["task_id"] = task_id
+                adoption_signals[signal_key] = True
                 event_received.set()
 
         pool.task_event_received.connect(on_event)
         pool.submit("signal_task", 301, event_sending_func)
 
         assert event_received.wait(timeout=2), "Event not received"
-
-        # The signal is set AFTER the callback runs, so we need to
-        # give it a moment to be set
-        import time
-
-        time.sleep(0.1)
 
         # The signal key should have been set in the adoption dict
         signal_key = signal_key_captured["key"]

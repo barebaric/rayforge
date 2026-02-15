@@ -332,12 +332,8 @@ class WorkerPoolManager:
                     task_id=task_id,
                     event_name=event_name,
                     data=data,
+                    adoption_signals=self._adoption_signals,
                 )
-                # Signal to the worker that adoption is complete.
-                # This is critical on Windows where shared memory is
-                # destroyed when all handles are closed.
-                signal_key = f"{task_id}:{event_name}"
-                self._adoption_signals[signal_key] = True
                 continue
 
             # For all other message types, we can safely ignore them if the
