@@ -5,6 +5,7 @@ import pytest
 import re
 from rayforge.context import get_context
 from rayforge.core.vectorization_spec import TraceSpec
+from rayforge.image.svg import svg_fallback
 from rayforge.machine.models.machine import Origin
 from rayforge.pipeline import steps
 
@@ -52,6 +53,9 @@ def assets_path() -> Path:
         ("marlin", "expected_square_marlin.gcode"),
     ],
 )
+@pytest.mark.parametrize(
+    "use_fallback", [False, True], ids=["native", "fallback"]
+)
 async def test_import_svg_export_gcode(
     context_initializer,
     doc_editor,
@@ -59,11 +63,20 @@ async def test_import_svg_export_gcode(
     assets_path,
     dialect_uid,
     expected_file,
+    use_fallback,
+    monkeypatch,
 ):
     """
     Full end-to-end test using a real subprocess for ops generation.
     Tests all supported G-code dialects.
+
+    This test runs twice for each dialect:
+    - "native": Uses the default SVG loading (pyvips.svgload_buffer)
+    - "fallback": Forces the Cairo/Rsvg fallback path
     """
+    if use_fallback:
+        monkeypatch.setattr(svg_fallback, "SVG_LOAD_AVAILABLE", False)
+
     # The expected G-code was generated assuming "Identity" transformation (no flip).
     # In the updated Machine model, Origin.BOTTOM_LEFT represents the Identity state
     # (matching the internal Y-Up Cartesian coordinates).

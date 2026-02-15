@@ -2,9 +2,14 @@ import warnings
 import logging
 from typing import Optional, TYPE_CHECKING, List, Tuple
 from xml.etree import ElementTree as ET
+from ...core.vectorization_spec import TraceSpec
 from ..base_renderer import Renderer, RenderSpecification
 from .svgutil import filter_svg_layers
-from ...core.vectorization_spec import TraceSpec
+from .svg_fallback import (
+    SVG_LOAD_AVAILABLE,
+    render_svg_to_cairo,
+    cairo_surface_to_vips,
+)
 
 
 with warnings.catch_warnings():
@@ -132,12 +137,17 @@ class SvgRenderer(Renderer):
             root.set("style", "overflow: visible")
 
             svg_bytes = ET.tostring(root)
-            image = pyvips.Image.svgload_buffer(svg_bytes)
-            # logger.debug(
-            #    f"SvgRenderer.render_base_image: requested width={width}, "
-            #    f"height={height}, actual image width={image.width}, "
-            #    f"height={image.height}"
-            # )
+
+            if SVG_LOAD_AVAILABLE:
+                image = pyvips.Image.svgload_buffer(svg_bytes)
+            else:
+                surface = render_svg_to_cairo(svg_bytes, width, height)
+                if not surface:
+                    return None
+                image = cairo_surface_to_vips(surface)
+                if not image:
+                    return None
+
             return image
         except (pyvips.Error, ET.ParseError, ValueError, TypeError):
             return None
