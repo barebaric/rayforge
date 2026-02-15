@@ -1,6 +1,6 @@
 import math
 import logging
-from typing import Tuple, Optional, TYPE_CHECKING, TypeVar
+from typing import Tuple, Optional, TYPE_CHECKING, TypeVar, List, Dict
 import numpy as np
 import pyclipper
 from .constants import (
@@ -30,20 +30,223 @@ T_Geometry = TypeVar("T_Geometry", bound="Geometry")
 logger = logging.getLogger(__name__)
 
 
-def _solve_2x2_system(
-    a1: float, b1: float, c1: float, a2: float, b2: float, c2: float
-) -> Optional[Tuple[float, float]]:
+CLIPPER_SCALE = int(1e7)
+
+
+def _prepare_contour_items(
+    contour_data: List[Dict], scale: int = CLIPPER_SCALE
+) -> List[Dict]:
     """
-    Solves a 2x2 system of linear equations:
-    a1*x + b1*y = c1
-    a2*x + b2*y = c2
+    Prepares contour data items for hierarchy analysis.
+
+    Args:
+        contour_data: List of contour data dicts from get_valid_contours_data.
+        scale: Scale factor for clipper integer coordinates.
+
+    Returns:
+        List of dicts with 'geo', 'verts', 'path', 'rect', 'area', 'id'.
     """
-    det = a1 * b2 - a2 * b1
-    if abs(det) < 1e-9:
-        return None  # No unique solution (lines are parallel)
-    x = (c1 * b2 - c2 * b1) / det
-    y = (a1 * c2 - a2 * c1) / det
-    return x, y
+    items = []
+
+    for data in contour_data:
+        if not data["is_closed"]:
+            continue
+
+        data["geo"]._sync_to_numpy()
+
+        verts = list(data["vertices"])
+        if (
+            len(verts) > 1
+            and math.isclose(verts[0][0], verts[-1][0])
+            and math.isclose(verts[0][1], verts[-1][1])
+        ):
+            verts.pop()
+
+        if len(verts) < 3:
+            continue
+
+        area = 0.0
+        for i in range(len(verts)):
+            j = (i + 1) % len(verts)
+            area += verts[i][0] * verts[j][1]
+            area -= verts[j][0] * verts[i][1]
+        area = abs(area) / 2.0
+
+        scaled_path = [(int(v[0] * scale), int(v[1] * scale)) for v in verts]
+
+        items.append(
+            {
+                "geo": data["geo"],
+                "verts": verts,
+                "path": scaled_path,
+                "rect": data["geo"].rect(),
+                "area": area,
+                "id": len(items),
+            }
+        )
+
+    return items
+
+
+def _build_containment_hierarchy(
+    items: List[Dict],
+    check_intersection_fn,
+    is_point_in_polygon_fn,
+) -> List[int]:
+    """
+    Builds a parent map representing containment hierarchy.
+
+    Each contour maps to its immediate parent (smallest enclosing container).
+
+    Args:
+        items: List of contour item dicts.
+        check_intersection_fn: Function to check if two geometries intersect.
+        is_point_in_polygon_fn: Function to check if point is in polygon.
+
+    Returns:
+        List where parent_map[i] = index of immediate parent, or -1 if none.
+    """
+    parent_map = [-1] * len(items)
+
+    for i, item_i in enumerate(items):
+        best_parent = -1
+        best_parent_area = float("inf")
+
+        for j, item_j in enumerate(items):
+            if i == j:
+                continue
+
+            r_i = item_i["rect"]
+            r_j = item_j["rect"]
+            if not (
+                r_j[0] <= r_i[0]
+                and r_j[1] <= r_i[1]
+                and r_j[2] >= r_i[2]
+                and r_j[3] >= r_i[3]
+            ):
+                continue
+
+            if item_j["area"] <= item_i["area"]:
+                continue
+
+            if check_intersection_fn(item_i["geo"].data, item_j["geo"].data):
+                continue
+
+            if is_point_in_polygon_fn(item_i["verts"][0], item_j["verts"]):
+                if item_j["area"] < best_parent_area:
+                    best_parent_area = item_j["area"]
+                    best_parent = j
+
+        parent_map[i] = best_parent
+
+    return parent_map
+
+
+def _calculate_nesting_depths(
+    parent_map: List[int], num_items: int
+) -> List[int]:
+    """
+    Calculates nesting depth for each item based on parent hierarchy.
+
+    Args:
+        parent_map: List mapping each item to its parent index (-1 if none).
+        num_items: Total number of items.
+
+    Returns:
+        List of depths (0 = top-level, 1 = one level deep, etc.).
+    """
+    depths = [0] * num_items
+    for i in range(num_items):
+        d = 0
+        curr = parent_map[i]
+        while curr != -1:
+            d += 1
+            curr = parent_map[curr]
+            if d > num_items:
+                break
+        depths[i] = d
+    return depths
+
+
+def _group_solids_and_holes(
+    depths: List[int], parent_map: List[int]
+) -> Dict[int, List[int]]:
+    """
+    Groups holes with their parent solids.
+
+    Even depth = Solid (0, 2, ...)
+    Odd depth = Hole (1, 3, ...)
+
+    Args:
+        depths: Nesting depth for each item.
+        parent_map: Parent index for each item.
+
+    Returns:
+        Dict mapping solid index -> list of hole indices.
+    """
+    groups: Dict[int, List[int]] = {}
+
+    for i, d in enumerate(depths):
+        if d % 2 == 0:
+            if i not in groups:
+                groups[i] = []
+        else:
+            p = parent_map[i]
+            if p != -1:
+                if p not in groups:
+                    groups[p] = []
+                groups[p].append(i)
+
+    return groups
+
+
+def _offset_contour_group(
+    solid_path: List[Tuple[int, int]],
+    hole_paths: List[List[Tuple[int, int]]],
+    offset: float,
+    scale: int = CLIPPER_SCALE,
+) -> List[List[Tuple[float, float]]]:
+    """
+    Offsets a solid with its holes using pyclipper.
+
+    Args:
+        solid_path: Scaled integer coordinates for solid (will be CCW).
+        hole_paths: List of scaled integer paths for holes (will be CW).
+        offset: Offset distance (positive = grow, negative = shrink).
+        scale: Scale factor used for integer conversion.
+
+    Returns:
+        List of offset contours as float coordinate tuples.
+    """
+    if not pyclipper.Orientation(solid_path):  # type: ignore
+        solid_path = list(reversed(solid_path))
+
+    paths_to_offset = [solid_path]
+
+    for hole_path in hole_paths:
+        if pyclipper.Orientation(hole_path):  # type: ignore
+            hole_path = list(reversed(hole_path))
+        paths_to_offset.append(hole_path)
+
+    try:
+        pco = pyclipper.PyclipperOffset()  # type: ignore
+        pco.AddPaths(
+            paths_to_offset,
+            pyclipper.JT_MITER,  # type: ignore
+            pyclipper.ET_CLOSEDPOLYGON,  # type: ignore
+        )
+        solution = pco.Execute(offset * scale)
+    except Exception as e:
+        logger.error(f"Offset failed: {e}")
+        return []
+
+    result = []
+    for contour in solution:
+        if len(contour) < 3:
+            continue
+        result.append([(p[0] / scale, p[1] / scale) for p in contour])
+
+    return result
 
 
 def grow_geometry(geometry: T_Geometry, offset: float) -> T_Geometry:
@@ -51,10 +254,12 @@ def grow_geometry(geometry: T_Geometry, offset: float) -> T_Geometry:
     Offsets the closed contours of a Geometry object by a given amount.
 
     This function grows (positive offset) or shrinks (negative offset) the
-    area enclosed by closed paths. Arcs are linearized into polylines for the
-    offsetting process. Open paths are currently ignored and not included
-    in the output. This implementation uses the pyclipper library to handle
-    complex cases, including self-intersections.
+    area enclosed by closed paths.
+
+    This implementation processes logically distinct shapes (islands)
+    independently. Holes are associated with their enclosing solids and
+    offset together. Adjacent or overlapping solids remain separate, preserving
+    distinct toolpaths.
 
     Args:
         geometry: The input Geometry object.
@@ -66,69 +271,48 @@ def grow_geometry(geometry: T_Geometry, offset: float) -> T_Geometry:
         the offset shape(s).
     """
     from .contours import get_valid_contours_data
+    from .intersect import check_intersection_from_array
+    from .primitives import is_point_in_polygon
+    from .split import split_into_contours
 
     new_geo = type(geometry)()
-    contour_geometries = geometry.split_into_contours()
-    contour_data = get_valid_contours_data(contour_geometries)
+
+    raw_contours = split_into_contours(geometry)
+    if not raw_contours:
+        return new_geo
+
+    contour_data = get_valid_contours_data(raw_contours)
+    if not contour_data:
+        return new_geo
 
     logger.debug(f"Running grow_geometry with offset: {offset}")
 
-    # Pyclipper works with integers, so we need to scale our coordinates.
-    CLIPPER_SCALE = 1e7
-    pco = pyclipper.PyclipperOffset()  # type: ignore
+    closed_items = _prepare_contour_items(contour_data)
+    if not closed_items:
+        return new_geo
 
-    paths_to_offset = []
-    for i, data in enumerate(contour_data):
-        logger.debug(f"Processing contour #{i} for pyclipper")
-        if not data["is_closed"]:
-            logger.debug("Contour is not closed, skipping.")
-            continue
-
-        vertices = data["vertices"]
-
-        # If the last vertex is a duplicate of the first for closed paths,
-        # remove it.
-        if (
-            len(vertices) > 1
-            and math.isclose(vertices[0][0], vertices[-1][0])
-            and math.isclose(vertices[0][1], vertices[-1][1])
-        ):
-            vertices.pop()
-
-        if len(vertices) < 3:
-            logger.debug("Contour has < 3 vertices, skipping.")
-            continue
-
-        scaled_vertices = [
-            (int(v[0] * CLIPPER_SCALE), int(v[1] * CLIPPER_SCALE))
-            for v in vertices
-        ]
-        paths_to_offset.append(scaled_vertices)
-
-    pco.AddPaths(
-        paths_to_offset,
-        pyclipper.JT_MITER,  # type: ignore
-        pyclipper.ET_CLOSEDPOLYGON,  # type: ignore
+    parent_map = _build_containment_hierarchy(
+        closed_items, check_intersection_from_array, is_point_in_polygon
     )
-    solution = pco.Execute(offset * CLIPPER_SCALE)
 
-    logger.debug(f"Pyclipper generated {len(solution)} offset contours.")
+    depths = _calculate_nesting_depths(parent_map, len(closed_items))
 
-    for new_contour_scaled in solution:
-        if len(new_contour_scaled) < 3:
-            continue
+    solid_groups = _group_solids_and_holes(depths, parent_map)
 
-        new_vertices = [
-            (p[0] / CLIPPER_SCALE, p[1] / CLIPPER_SCALE)
-            for p in new_contour_scaled
-        ]
+    for solid_idx, hole_indices in solid_groups.items():
+        solid_item = closed_items[solid_idx]
+        hole_paths = [closed_items[h_idx]["path"] for h_idx in hole_indices]
 
-        new_contour_geo = type(geometry).from_points(
-            [(v[0], v[1], 0.0) for v in new_vertices], close=True
+        offset_contours = _offset_contour_group(
+            solid_item["path"], hole_paths, offset
         )
 
-        if not new_contour_geo.is_empty():
-            new_geo.extend(new_contour_geo)
+        for new_vertices in offset_contours:
+            new_contour_geo = type(geometry).from_points(
+                [(v[0], v[1], 0.0) for v in new_vertices], close=True
+            )
+            if not new_contour_geo.is_empty():
+                new_geo.extend(new_contour_geo)
 
     logger.debug("Grow_geometry finished")
     return new_geo
