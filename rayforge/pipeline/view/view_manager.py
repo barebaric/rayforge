@@ -242,17 +242,21 @@ class ViewManager:
         # during small zoom adjustments.
         for key, entry in self._view_entries.items():
             old_ppm = 0.0
+            old_show_travel = False
             if entry.render_context is not None:
                 old_ppm = entry.render_context.pixels_per_mm[0]
+                old_show_travel = entry.render_context.show_travel_moves
 
             ppm_changed = (
                 old_ppm <= 0 or abs(new_ppm - old_ppm) / old_ppm > 0.25
             )
+            travel_changed = old_show_travel != context.show_travel_moves
             logger.debug(
                 f"update_render_context: key={key}, old_ppm={old_ppm:.2f}, "
-                f"new_ppm={new_ppm:.2f}, ppm_changed={ppm_changed}"
+                f"new_ppm={new_ppm:.2f}, ppm_changed={ppm_changed}, "
+                f"travel_changed={travel_changed}"
             )
-            if ppm_changed:
+            if ppm_changed or travel_changed:
                 self.request_view_render(key[0], key[1])
 
     def on_workpiece_artifact_ready(
