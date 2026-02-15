@@ -4,6 +4,7 @@ TaskManager module for managing task execution.
 
 from __future__ import annotations
 import asyncio
+import concurrent.futures
 import logging
 import threading
 from typing import (
@@ -153,6 +154,37 @@ class TaskManager:
         safely interact with the main thread (e.g., for UI updates).
         """
         self._main_thread_scheduler(callback, *args, **kwargs)
+
+    def schedule_delayed_on_main_thread(
+        self,
+        delay_ms: int,
+        callback: Callable[..., Any],
+        *args: Any,
+        **kwargs: Any,
+    ) -> concurrent.futures.Future:
+        """
+        Schedules a callback to run on the main thread after a delay.
+
+        Uses the TaskManager's asyncio event loop for timing, then schedules
+        execution on the main thread via the injected scheduler.
+
+        Args:
+            delay_ms: Delay in milliseconds before executing the callback.
+            callback: The callable to execute.
+            *args: Positional arguments to pass to the callback.
+            **kwargs: Keyword arguments to pass to the callback.
+
+        Returns:
+            A concurrent.futures.Future that can be cancelled via its
+            cancel() method. The future completes when the callback has
+            been scheduled (not when it finishes executing).
+        """
+
+        async def delayed_execution():
+            await asyncio.sleep(delay_ms / 1000.0)
+            self._main_thread_scheduler(callback, *args, **kwargs)
+
+        return asyncio.run_coroutine_threadsafe(delayed_execution(), self.loop)
 
     async def run_in_executor(
         self, func: Callable[..., Any], *args: Any

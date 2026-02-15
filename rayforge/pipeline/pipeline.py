@@ -1,7 +1,7 @@
 from __future__ import annotations
+import concurrent.futures
 import logging
 import asyncio
-import threading
 from typing import (
     Optional,
     TYPE_CHECKING,
@@ -103,7 +103,7 @@ class Pipeline:
         self._docitem_to_artifact_key: Dict[DocItem, ArtifactKey] = {}
         self._pause_count = 0
         self._last_known_busy_state = False
-        self._reconciliation_timer: Optional[threading.Timer] = None
+        self._reconciliation_timer: Optional[concurrent.futures.Future] = None
 
         # Signals for notifying the UI of generation progress
         self.processing_state_changed = Signal()
@@ -355,26 +355,15 @@ class Pipeline:
             self._reconciliation_timer.cancel()
 
         if not self._reconciliation_timer:
-            # If there was no timer, we are transitioning from idle to busy.
-            # Immediately update the state, but only if we're not already busy
-            # (to avoid spurious state changes during rapid invalidations).
             self._task_manager.schedule_on_main_thread(
                 self._check_and_update_processing_state
             )
 
-        self._reconciliation_timer = threading.Timer(
-            self.RECONCILIATION_DELAY_MS / 1000.0,
-            self._trigger_main_thread_reconciliation,
-        )
-        self._reconciliation_timer.start()
-
-    def _trigger_main_thread_reconciliation(self) -> None:
-        """
-        This is called by the threading.Timer from a background thread.
-        It uses the task manager to run the actual logic on the main thread.
-        """
-        self._task_manager.schedule_on_main_thread(
-            self._execute_reconciliation
+        self._reconciliation_timer = (
+            self._task_manager.schedule_delayed_on_main_thread(
+                self.RECONCILIATION_DELAY_MS,
+                self._execute_reconciliation,
+            )
         )
 
     def _execute_reconciliation(self) -> None:

@@ -682,3 +682,93 @@ class TestWaitUntilSettled:
 
         # Clean up
         manager.cancel_task("zero_timeout_task")
+
+
+class TestScheduleDelayedOnMainThread:
+    """Tests for the schedule_delayed_on_main_thread method."""
+
+    @pytest.fixture
+    def manager_with_scheduler(self):
+        """
+        Create a manager with a mock main thread scheduler.
+        This avoids dependency on fixture ordering with patch_idle_add.
+        """
+        self.scheduled_calls = []
+
+        def mock_scheduler(callback, *args, **kwargs):
+            self.scheduled_calls.append((callback, args, kwargs))
+            callback(*args, **kwargs)
+
+        tm = TaskManager(main_thread_scheduler=mock_scheduler)
+        yield tm
+        tm.shutdown()
+
+    def test_callback_executed_after_delay(self, manager_with_scheduler):
+        """Verify the callback is executed after the specified delay."""
+        callback_executed = threading.Event()
+        callback_args = []
+
+        def callback(arg1, arg2, kwarg1=None):
+            callback_args.append((arg1, arg2, kwarg1))
+            callback_executed.set()
+
+        start_time = time.time()
+        manager_with_scheduler.schedule_delayed_on_main_thread(
+            100, callback, "a", "b", kwarg1="c"
+        )
+
+        assert callback_executed.wait(timeout=1), (
+            "Callback was not executed in time"
+        )
+        elapsed = time.time() - start_time
+
+        assert elapsed >= 0.1, "Callback executed too early"
+        assert elapsed < 0.5, "Callback took too long to execute"
+        assert callback_args == [("a", "b", "c")]
+
+    def test_callback_can_be_cancelled(self, manager):
+        """Verify the returned handle can cancel the scheduled callback."""
+        callback_executed = threading.Event()
+
+        def callback():
+            callback_executed.set()
+
+        handle = manager.schedule_delayed_on_main_thread(100, callback)
+        handle.cancel()
+
+        assert not callback_executed.wait(timeout=0.3), (
+            "Callback was executed despite being cancelled"
+        )
+
+    def test_zero_delay_executes_immediately(self, manager_with_scheduler):
+        """Verify a zero delay still executes the callback."""
+        callback_executed = threading.Event()
+
+        def callback():
+            callback_executed.set()
+
+        manager_with_scheduler.schedule_delayed_on_main_thread(0, callback)
+
+        assert callback_executed.wait(timeout=0.5), (
+            "Callback with zero delay was not executed"
+        )
+
+    def test_scheduler_receives_correct_arguments(
+        self, manager_with_scheduler
+    ):
+        """Verify the main thread scheduler receives args/kwargs correctly."""
+        callback_executed = threading.Event()
+
+        def callback(a, b, c=None):
+            callback_executed.set()
+
+        manager_with_scheduler.schedule_delayed_on_main_thread(
+            10, callback, "x", "y", c="z"
+        )
+
+        assert callback_executed.wait(timeout=0.5), "Callback was not executed"
+        assert self.scheduled_calls, "Scheduler was not called"
+        cb, args, kwargs = self.scheduled_calls[-1]
+        assert cb is callback
+        assert args == ("x", "y")
+        assert kwargs == {"c": "z"}
