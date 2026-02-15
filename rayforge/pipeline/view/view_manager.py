@@ -204,8 +204,8 @@ class ViewManager:
         context: RenderContext,
     ) -> None:
         """
-        Updates the view context and triggers re-rendering for all tracked
-        workpieces if the context has changed.
+        Updates the view context and triggers re-rendering for tracked
+        workpieces if the context has changed significantly.
 
         Args:
             context: The new render context to apply.
@@ -213,6 +213,8 @@ class ViewManager:
         if self._current_view_context == context:
             logger.debug("update_render_context: Context unchanged, skipping")
             return
+
+        new_ppm = context.pixels_per_mm[0]
 
         logger.debug(
             f"update_render_context called with context "
@@ -223,11 +225,23 @@ class ViewManager:
         self._current_view_context = context
         self._view_generation_id += 1
 
-        all_keys = set(self._source_artifact_handles.keys()) | set(
-            self._view_entries.keys()
-        )
-        for workpiece_uid, step_uid in all_keys:
-            self.request_view_render(workpiece_uid, step_uid)
+        # Re-render each view only if its rendered ppm differs from the
+        # requested ppm by more than 25%. This avoids frequent re-renders
+        # during small zoom adjustments.
+        for key, entry in self._view_entries.items():
+            old_ppm = 0.0
+            if entry.render_context is not None:
+                old_ppm = entry.render_context.pixels_per_mm[0]
+
+            ppm_changed = (
+                old_ppm <= 0 or abs(new_ppm - old_ppm) / old_ppm > 0.25
+            )
+            logger.debug(
+                f"update_render_context: key={key}, old_ppm={old_ppm:.2f}, "
+                f"new_ppm={new_ppm:.2f}, ppm_changed={ppm_changed}"
+            )
+            if ppm_changed:
+                self.request_view_render(key[0], key[1])
 
     def on_workpiece_artifact_ready(
         self,
