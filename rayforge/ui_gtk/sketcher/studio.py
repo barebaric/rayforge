@@ -3,13 +3,14 @@ from gi.repository import Gtk, Gio, Adw, GLib
 from blinker import Signal
 from ...core.sketcher import Sketch
 from ...core.sketcher.entities.text_box import TextBoxEntity
+from ...core.undo.property_cmd import ChangePropertyCommand
 from ...core.varset import IntVar, FloatVar, SliderFloatVar
 from ..icons import get_icon
+from ..shared.keyboard import PRIMARY_ACCEL
 from ..varset.varset_editor import VarSetEditorWidget
-from ...core.undo.property_cmd import ChangePropertyCommand
+from .font_properties import FontPropertiesWidget
 from .menu import SketchMenu
 from .sketchcanvas import SketchCanvas
-from .font_properties import FontPropertiesWidget
 
 logger = logging.getLogger(__name__)
 
@@ -225,8 +226,8 @@ class SketchStudio(Gtk.Box):
         self.shortcut_controller.set_scope(Gtk.ShortcutScope.MANAGED)
 
         shortcuts = {
-            "sketch.undo": ["<Primary>z"],
-            "sketch.redo": ["<Primary>y", "<Primary><Shift>z"],
+            "sketch.undo": [f"{PRIMARY_ACCEL}z"],
+            "sketch.redo": [f"{PRIMARY_ACCEL}y", f"{PRIMARY_ACCEL}<Shift>z"],
             "sketch.delete": ["Delete"],
             "sketch.view_fit": ["f"],
             "sketch.tool_select": ["s"],
@@ -234,7 +235,7 @@ class SketchStudio(Gtk.Box):
             "sketch.tool_circle": ["c"],
             "sketch.tool_arc": ["a"],
             "sketch.tool_fill": ["i"],
-            "sketch.finish": ["<Primary>Return"],
+            "sketch.finish": [f"{PRIMARY_ACCEL}Return"],
         }
 
         for action_name, accels in shortcuts.items():
