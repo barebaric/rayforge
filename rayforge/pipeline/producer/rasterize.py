@@ -566,14 +566,13 @@ class Rasterizer(OpsProducer):
             f"surface_mm=({surface_width_mm:.2f}x{surface_height_mm:.2f}), "
             f"workpiece.size=({workpiece.size[0]:.2f}x"
             f"{workpiece.size[1]:.2f}), "
-            f"source_dimensions=({surface_width_mm:.2f}x"
-            f"{surface_height_mm:.2f})"
+            f"source_dimensions=({width}x{height})"
         )
         return WorkPieceArtifact(
             ops=final_ops,
             is_scalable=False,
-            source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
-            source_dimensions=(surface_width_mm, surface_height_mm),
+            source_coordinate_system=CoordinateSystem.PIXEL_SPACE,
+            source_dimensions=(width, height),
             generation_size=workpiece.size,
         )
 

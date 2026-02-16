@@ -7,6 +7,7 @@ from .modifier import MakeTransparent, ToGrayscale
 from .producer import (
     DepthEngraver,
     ContourProducer,
+    DitherRasterizer,
     FrameProducer,
     MaterialTestGridProducer,
     Rasterizer,
@@ -217,10 +218,40 @@ def create_material_test_step(
     return step
 
 
+def create_dither_raster_step(
+    context: RayforgeContext, name: Optional[str] = None
+) -> Step:
+    """Factory to create and configure a Dither Rasterize step."""
+    machine = context.machine
+    assert machine is not None
+    default_head = machine.get_default_head()
+
+    step = Step(
+        typelabel=_("Engrave (Dither)"),
+        name=name,
+    )
+    step.capabilities = {ENGRAVE}
+    step.opsproducer_dict = DitherRasterizer().to_dict()
+    step.modifiers_dicts = [
+        ToGrayscale().to_dict(),
+    ]
+    step.per_workpiece_transformers_dicts = [
+        Optimize().to_dict(),
+    ]
+    step.per_step_transformers_dicts = [
+        MultiPassTransformer(passes=1, z_step_down=0.0).to_dict(),
+    ]
+    step.selected_laser_uid = default_head.uid
+    step.max_cut_speed = machine.max_cut_speed
+    step.max_travel_speed = machine.max_travel_speed
+    return step
+
+
 STEP_FACTORIES: List[Callable[[RayforgeContext, Optional[str]], Step]] = [
     create_contour_step,
     create_raster_step,
     create_depth_engrave_step,
+    create_dither_raster_step,
     create_shrinkwrap_step,
     create_frame_step,
 ]
