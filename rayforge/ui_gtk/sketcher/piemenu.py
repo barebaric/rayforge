@@ -5,6 +5,7 @@ from gi.repository import Gtk
 
 from rayforge.ui_gtk.shared.piemenu import PieMenu, PieMenuItem
 from rayforge.core.sketcher.constraints import (
+    AngleConstraint,
     AspectRatioConstraint,
     CoincidentConstraint,
     DiameterConstraint,
@@ -139,6 +140,12 @@ class SketchPieMenu(PieMenu):
             "icon": "sketch-constrain-perpendicular-symbolic",
             "constraint_class": PerpendicularConstraint,
             "action": "add_perpendicular",
+            "handler": "_on_constraint_clicked",
+        },
+        "angle": {
+            "icon": "sketch-constrain-angle-symbolic",
+            "constraint_class": AngleConstraint,
+            "action": "add_angle_constraint",
             "handler": "_on_constraint_clicked",
         },
         "tangent": {
