@@ -301,8 +301,10 @@ class SketchPieMenu(PieMenu):
     def _on_constraint_clicked(self, sender):
         """Handle constraint selection signals."""
         if sender.data:
-            logger.info(f"Emitting constraint: {sender.data}")
-            self.constraint_selected.send(self, constraint_type=sender.data)
+            config = self._MENU_ITEMS.get(sender.data)
+            if config and "action" in config:
+                logger.info(f"Emitting constraint action: {config['action']}")
+                self.constraint_selected.send(self, action=config["action"])
 
     def _on_action_clicked(self, sender):
         """Handle generic action signals."""
