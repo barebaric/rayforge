@@ -409,7 +409,9 @@ class ViewManager:
                 f"[{key}] when_done_callback called, "
                 f"task_status={task.get_status()}"
             )
-            self._on_render_complete(task, key, view_id)
+            self._on_render_complete(
+                task, key, view_id, workpiece_uid, step_uid
+            )
             self._store.release(task_source_handle)
 
         self._task_manager.run_process(
@@ -556,10 +558,20 @@ class ViewManager:
         )
 
     def _on_render_complete(
-        self, task: "Task", key: ArtifactKey, view_id: int
+        self,
+        task: "Task",
+        key: ArtifactKey,
+        view_id: int,
+        workpiece_uid: str,
+        step_uid: str,
     ):
         """Callback for when a rendering task finishes."""
-        self.generation_finished.send(self, key=key)
+        self.generation_finished.send(
+            self,
+            key=key,
+            workpiece_uid=workpiece_uid,
+            step_uid=step_uid,
+        )
 
     def on_chunk_available(
         self,

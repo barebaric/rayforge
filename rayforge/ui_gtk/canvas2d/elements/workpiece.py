@@ -1,6 +1,7 @@
 import logging
 from typing import Optional, TYPE_CHECKING, Dict, Tuple, cast, List
 import cairo
+import numpy as np
 from gi.repository import GLib
 from ....core.workpiece import WorkPiece
 from ....core.step import Step
@@ -61,6 +62,11 @@ class WorkPieceElement(CanvasElement):
 
         self._ops_visibility: Dict[str, bool] = {}
         self._artifact_cache: Dict[str, Optional[WorkPieceArtifact]] = {}
+        self._ops_surface_cache: Dict[str, cairo.ImageSurface] = {}
+        self._ops_surface_data_cache: Dict[str, np.ndarray] = {}
+        self._ops_metadata_cache: Dict[
+            str, Tuple
+        ] = {}  # (bbox_mm, workpiece_size_mm)
 
         self._tab_handles: List[TabHandleElement] = []
         # Default to False; the correct state will be pulled from the surface.
@@ -112,6 +118,9 @@ class WorkPieceElement(CanvasElement):
         self.view_manager.view_artifact_updated.connect(
             self._on_view_artifact_updated
         )
+        self.view_manager.generation_finished.connect(
+            self._on_view_generation_finished
+        )
 
         # Track the last known model size to detect size changes even when
         # the transform matrix is pre-synced (e.g. during interactive drags).
@@ -162,6 +171,9 @@ class WorkPieceElement(CanvasElement):
         self._rendered_ppm = 0.0
         # Clear the local artifact cache to prevent drawing stale vectors
         self._artifact_cache.clear()
+        self._ops_surface_cache.clear()
+        self._ops_surface_data_cache.clear()
+        self._ops_metadata_cache.clear()
 
         # Clear the model cache as well, since the data is invalid
         self.data._view_cache.clear()
@@ -189,19 +201,39 @@ class WorkPieceElement(CanvasElement):
         logger.debug(f"View update for workpiece '{self.data.name}'")
         self._rendered_ppm = ppm
 
-        # 1. Invalidate the base image buffer.
-        self._surface = None
-
-        # 2. Invalidate only the rasterized ops surfaces, not the recordings.
+        # Note: We do NOT clear self._surface here to prevent flicker.
+        # The old surface will be replaced once the new one is ready
+        # in _apply_surface().
 
         # Note: We do NOT clear the model cache here, as view updates
         # (like zooming) shouldn't erase the persistent data needed by
         # other views or future rebuilds.
 
-        # 3. Trigger a re-render of everything at the new resolution.
+        # Trigger a re-render of everything at the new resolution.
         self.trigger_ops_rerender()
         super().trigger_update()  # Re-renders the base image.
         return True
+
+    def _apply_surface(
+        self, new_surface: Optional[cairo.ImageSurface]
+    ) -> bool:
+        """
+        Applies the newly rendered surface from the background task.
+
+        This override prevents flicker by only replacing the surface
+        if the new one is valid. If the new surface is None, the old
+        surface is kept as a fallback.
+
+        Args:
+            new_surface: The new surface to apply, or None.
+        """
+        if new_surface is not None:
+            self.surface = new_surface
+            self.mark_dirty(ancestors=True)
+        if self.canvas:
+            self.canvas.queue_draw()
+        self._update_future = None
+        return False
 
     def _on_view_artifact_updated(
         self,
@@ -219,6 +251,58 @@ class WorkPieceElement(CanvasElement):
         if workpiece_uid != self.data.uid or not self.canvas:
             return
         self.canvas.queue_draw()
+
+    def _on_view_generation_finished(
+        self,
+        sender,
+        *,
+        key,
+        workpiece_uid: str,
+        step_uid: str,
+        **kwargs,
+    ):
+        """
+        Handler for when view generation is complete.
+        This is the safe time to update the ops surface cache.
+        """
+        if workpiece_uid != self.data.uid:
+            return
+
+        view_handle = self.view_manager.get_view_handle(
+            self.data.uid, step_uid
+        )
+        if view_handle is None:
+            return
+
+        artifact = self.view_manager.store.get(view_handle)
+        if not isinstance(artifact, WorkPieceViewArtifact):
+            return
+
+        try:
+            new_data = np.copy(artifact.bitmap_data)
+            height, width, _ = new_data.shape
+            stride = cairo.ImageSurface.format_stride_for_width(
+                cairo.FORMAT_ARGB32, width
+            )
+            new_surface = cairo.ImageSurface.create_for_data(
+                new_data,
+                cairo.FORMAT_ARGB32,
+                width,
+                height,
+                stride,
+            )
+            self._ops_surface_cache[step_uid] = new_surface
+            self._ops_surface_data_cache[step_uid] = new_data
+            self._ops_metadata_cache[step_uid] = (
+                artifact.bbox_mm,
+                artifact.workpiece_size_mm,
+            )
+            if self.canvas:
+                self.canvas.queue_draw()
+        except Exception as e:
+            logger.warning(
+                f"Failed to update ops cache for step {step_uid}: {e}"
+            )
 
     def get_closest_point_on_path(
         self, world_x: float, world_y: float, threshold_px: float = 5.0
@@ -310,6 +394,9 @@ class WorkPieceElement(CanvasElement):
         )
         self.view_manager.view_artifact_updated.disconnect(
             self._on_view_artifact_updated
+        )
+        self.view_manager.generation_finished.disconnect(
+            self._on_view_generation_finished
         )
         super().remove()
 
@@ -495,23 +582,49 @@ class WorkPieceElement(CanvasElement):
                 if not self._ops_visibility.get(step_uid, True):
                     continue
 
-                view_handle = self.view_manager.get_view_handle(
-                    self.data.uid, step.uid
-                )
-                if view_handle is None:
-                    logger.debug(
-                        f"No view handle for workpiece {self.data.uid} "
-                        f"when drawing step {step_uid}"
+                # First try cached surface (prevents flicker during zoom)
+                surface = self._ops_surface_cache.get(step_uid)
+                metadata = self._ops_metadata_cache.get(step_uid)
+                bbox_mm = None
+                workpiece_size_mm = None
+
+                if surface is not None and metadata is not None:
+                    bbox_mm, workpiece_size_mm = metadata
+                else:
+                    # No cache - try live artifact for progressive rendering
+                    view_handle = self.view_manager.get_view_handle(
+                        self.data.uid, step.uid
                     )
+                    if view_handle is not None:
+                        artifact = self.view_manager.store.get(view_handle)
+                        if isinstance(artifact, WorkPieceViewArtifact):
+                            try:
+                                new_data = np.copy(artifact.bitmap_data)
+                                height, width, _ = new_data.shape
+                                stride = (
+                                    cairo.ImageSurface.format_stride_for_width(
+                                        cairo.FORMAT_ARGB32, width
+                                    )
+                                )
+                                surface = cairo.ImageSurface.create_for_data(
+                                    new_data,
+                                    cairo.FORMAT_ARGB32,
+                                    width,
+                                    height,
+                                    stride,
+                                )
+                                bbox_mm = artifact.bbox_mm
+                                workpiece_size_mm = artifact.workpiece_size_mm
+                            except Exception:
+                                pass
+
+                if surface is None:
                     continue
+
+                if bbox_mm is None or workpiece_size_mm is None:
+                    continue
+
                 try:
-                    artifact = self.view_manager.store.get(view_handle)
-                    if not isinstance(artifact, WorkPieceViewArtifact):
-                        continue
-
-                    bitmap_data = artifact.bitmap_data
-                    bbox_mm = artifact.bbox_mm
-
                     view_x, view_y, view_w, view_h = bbox_mm
 
                     if view_w < 1e-9 or view_h < 1e-9:
@@ -521,7 +634,7 @@ class WorkPieceElement(CanvasElement):
                         continue
 
                     world_w, world_h = self.data.size
-                    ref_w, ref_h = artifact.workpiece_size_mm
+                    ref_w, ref_h = workpiece_size_mm
 
                     scale_x = world_w / ref_w if ref_w > 1e-9 else 1.0
                     scale_y = world_h / ref_h if ref_h > 1e-9 else 1.0
@@ -533,14 +646,6 @@ class WorkPieceElement(CanvasElement):
                         view_y *= scale_y
                         view_w *= scale_x
                         view_h *= scale_y
-
-                    height, width, _ = bitmap_data.shape
-                    stride = cairo.ImageSurface.format_stride_for_width(
-                        cairo.FORMAT_ARGB32, width
-                    )
-                    surface = cairo.ImageSurface.create_for_data(
-                        bitmap_data, cairo.FORMAT_ARGB32, width, height, stride
-                    )
 
                     surface_w_px = surface.get_width()
                     surface_h_px = surface.get_height()
