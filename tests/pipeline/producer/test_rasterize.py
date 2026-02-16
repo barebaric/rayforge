@@ -198,10 +198,14 @@ def test_rasterizer_cross_hatch(black_surface, mock_workpiece):
             last_pos = cmd.end
         elif isinstance(cmd, LineToCommand):
             if last_pos is not None:
-                if last_pos[0] == cmd.end[0]:  # x is same, so vertical
+                dx = abs(last_pos[0] - cmd.end[0])
+                dy = abs(last_pos[1] - cmd.end[1])
+                if dx < 1e-9:  # x is same, so vertical
                     vertical_lines += 1
-                elif last_pos[1] == cmd.end[1]:  # y is same, so horizontal
+                elif dy < 1e-9:  # y is same, so horizontal
                     horizontal_lines += 1
+                else:
+                    print(f"Diagonal: {last_pos} -> {cmd.end}")
             last_pos = cmd.end
 
     assert horizontal_lines == 10
