@@ -120,7 +120,7 @@ class GcodeContext:
         # Variables for movement commands
         move_vars = {"x", "y", "z", "f_command"}
         # Variables for cutting commands (inherits movement)
-        cut_vars = move_vars.union({"i", "j", "s_command"})
+        cut_vars = move_vars.union({"i", "j", "s_command", "power"})
 
         return {
             # Machine Control

@@ -424,6 +424,7 @@ class GcodeEncoder(OpsEncoder):
         )
 
         s_command = ""
+        power_abs = 0.0
         if self.power is not None and self.power > 0:
             current_laser = self._get_current_laser_head(context)
             power_abs = self.power * current_laser.max_power
@@ -435,6 +436,7 @@ class GcodeEncoder(OpsEncoder):
             "z": self._format_coord(z),
             "f_command": f_command,
             "s_command": s_command,
+            "power": power_abs,
         }
 
         gcode.append(self.dialect.linear_move.format(**template_vars))
@@ -460,6 +462,7 @@ class GcodeEncoder(OpsEncoder):
         )
 
         s_command = ""
+        power_abs = 0.0
         if self.power is not None and self.power > 0:
             current_laser = self._get_current_laser_head(context)
             power_abs = self.power * current_laser.max_power
@@ -474,6 +477,7 @@ class GcodeEncoder(OpsEncoder):
                 j=self._format_coord(j),
                 f_command=f_command,
                 s_command=s_command,
+                power=power_abs,
             )
         )
 
