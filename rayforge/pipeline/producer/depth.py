@@ -69,14 +69,13 @@ class DepthEngraver(OpsProducer):
             raise ValueError("Unsupported Cairo surface format")
 
         final_ops = Ops()
-        # Always start with the section marker
         final_ops.ops_section_start(SectionType.RASTER_FILL, workpiece.uid)
 
         width_px = surface.get_width()
         height_px = surface.get_height()
 
-        # The line interval is now derived from the laser's spot size
         line_interval_mm = laser.spot_size_mm[1]
+        y_offset_mm = workpiece.bbox[1] + y_offset_mm
 
         if width_px > 0 and height_px > 0:
             stride = surface.get_stride()

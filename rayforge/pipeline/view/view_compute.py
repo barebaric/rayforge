@@ -118,10 +118,19 @@ def _encode_vertex_and_texture_data(
     texture_data = None
     if not artifact.is_scalable:
         if artifact.source_dimensions:
-            width_px = int(artifact.source_dimensions[0])
-            height_px = int(artifact.source_dimensions[1])
-            px_per_mm_x = width_px / artifact.generation_size[0]
-            px_per_mm_y = height_px / artifact.generation_size[1]
+            source_px_per_mm_x = (
+                artifact.source_dimensions[0] / artifact.generation_size[0]
+            )
+            source_px_per_mm_y = (
+                artifact.source_dimensions[1] / artifact.generation_size[1]
+            )
+            context_px_per_mm_x, context_px_per_mm_y = (
+                render_context.pixels_per_mm
+            )
+            px_per_mm_x = max(source_px_per_mm_x, context_px_per_mm_x)
+            px_per_mm_y = max(source_px_per_mm_y, context_px_per_mm_y)
+            width_px = int(round(artifact.generation_size[0] * px_per_mm_x))
+            height_px = int(round(artifact.generation_size[1] * px_per_mm_y))
         else:
             px_per_mm_x, px_per_mm_y = render_context.pixels_per_mm
             width_px = int(round(artifact.generation_size[0] * px_per_mm_x))
