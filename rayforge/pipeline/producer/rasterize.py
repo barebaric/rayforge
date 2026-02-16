@@ -274,8 +274,8 @@ def _process_raster_segments(
 ) -> list:
     """Process raster segments and convert to millimeter coordinates.
 
-    Uses the line's mm coordinates for the globally-aligned axis and
-    pixel-based coordinates for the local axis to preserve segment accuracy.
+    Projects pixel positions onto the globally-aligned line to preserve
+    chunk alignment while maintaining accurate segment extents.
 
     Args:
         pixels: Array of (x, y) pixel coordinates along the raster line.
@@ -289,13 +289,35 @@ def _process_raster_segments(
     Returns:
         List of tuples (start_mm_x, start_mm_y, end_mm_x, end_mm_y).
     """
-    pixels_per_mm_x, pixels_per_mm_y = pixels_per_mm
     segment_coords = []
+    pixels_per_mm_x, pixels_per_mm_y = pixels_per_mm
+
+    if len(pixels) == 0:
+        return segment_coords
 
     sx, sy = line_start_mm
     ex, ey = line_end_mm
+    dx_mm = ex - sx
+    dy_mm = ey - sy
+    line_len = math.sqrt(dx_mm**2 + dy_mm**2)
 
-    is_horizontal = abs(ey - sy) < abs(ex - sx)
+    if line_len < 1e-9:
+        return segment_coords
+
+    cos_a = dx_mm / line_len
+    sin_a = dy_mm / line_len
+
+    line_center_x = (sx + ex) / 2
+    line_center_y = (sy + ey) / 2
+
+    def pixel_to_mm(px, py):
+        px_mm = px / pixels_per_mm_x
+        py_mm = py / pixels_per_mm_y
+        t = (px_mm - line_center_x) * cos_a + (py_mm - line_center_y) * sin_a
+        return (
+            line_center_x + t * cos_a,
+            line_center_y + t * sin_a,
+        )
 
     for start_idx, end_idx in segments:
         if values[start_idx] == 1:
@@ -306,18 +328,10 @@ def _process_raster_segments(
                 seg_start_px = pixels[start_idx]
                 seg_end_px = pixels[end_idx - 1]
 
-            if is_horizontal:
-                line_y_mm = sy
-                start_mm_x = seg_start_px[0] / pixels_per_mm_x
-                end_mm_x = seg_end_px[0] / pixels_per_mm_x
-                start_mm_y = line_y_mm
-                end_mm_y = line_y_mm
-            else:
-                line_x_mm = sx
-                start_mm_y = seg_start_px[1] / pixels_per_mm_y
-                end_mm_y = seg_end_px[1] / pixels_per_mm_y
-                start_mm_x = line_x_mm
-                end_mm_x = line_x_mm
+            start_mm_x, start_mm_y = pixel_to_mm(
+                seg_start_px[0], seg_start_px[1]
+            )
+            end_mm_x, end_mm_y = pixel_to_mm(seg_end_px[0], seg_end_px[1])
 
             segment_coords.append((start_mm_x, start_mm_y, end_mm_x, end_mm_y))
 
