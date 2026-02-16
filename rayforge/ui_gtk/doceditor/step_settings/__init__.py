@@ -10,13 +10,15 @@ from .overscan import OverscanSettingsWidget
 from .rasterizer import RasterizerSettingsWidget
 from .shrinkwrap import ShrinkWrapProducerSettingsWidget
 from .smooth import SmoothSettingsWidget
+from .dither_rasterizer import DitherRasterizerSettingsWidget
 
 
 # This registry maps the class names of pipeline components (str)
 # to their corresponding UI widget classes (Type).
 WIDGET_REGISTRY: Dict[str, Type[StepComponentSettingsWidget]] = {
-    "DepthEngraver": DepthEngraverSettingsWidget,
     "ContourProducer": ContourProducerSettingsWidget,
+    "DepthEngraver": DepthEngraverSettingsWidget,
+    "DitherRasterizer": DitherRasterizerSettingsWidget,
     "FrameProducer": FrameProducerSettingsWidget,
     "MaterialTestGridProducer": MaterialTestGridSettingsWidget,
     "MultiPassTransformer": MultiPassSettingsWidget,
@@ -29,8 +31,9 @@ WIDGET_REGISTRY: Dict[str, Type[StepComponentSettingsWidget]] = {
 
 __all__ = [
     "WIDGET_REGISTRY",
-    "DepthEngraverSettingsWidget",
     "ContourProducerSettingsWidget",
+    "DepthEngraverSettingsWidget",
+    "DitherRasterizerSettingsWidget",
     "FrameProducerSettingsWidget",
     "MaterialTestGridSettingsWidget",
     "MultiPassSettingsWidget",
