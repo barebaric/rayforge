@@ -1,9 +1,9 @@
 from typing import cast
-import unittest
 import json
 import numpy as np
 import multiprocessing as mp
 from multiprocessing import shared_memory
+import pytest
 from rayforge.context import get_context
 from rayforge.core.ops import Ops
 from rayforge.pipeline import CoordinateSystem
@@ -16,273 +16,221 @@ from rayforge.pipeline.artifact.workpiece import (
 from rayforge.pipeline.artifact.job import JobArtifact, JobArtifactHandle
 
 
-class TestArtifactStore(unittest.TestCase):
-    """Test suite for the ArtifactStore shared memory manager."""
-
-    def setUp(self):
-        """Initializes a list to track created handles for cleanup."""
-        self.handles_to_release = []
-
-    def tearDown(self):
-        """
-        Ensures all shared memory blocks created during tests are released.
-        """
-        for handle in self.handles_to_release:
-            get_context().artifact_store.release(handle)
-
-    def _create_sample_vertex_artifact(self) -> WorkPieceArtifact:
-        """Helper to generate a consistent vertex artifact for tests."""
-        ops = Ops()
-        ops.move_to(0, 0, 0)
-        ops.line_to(10, 0, 0)
-        ops.arc_to(0, 10, i=-10, j=0, clockwise=False, z=0)
-
-        return WorkPieceArtifact(
-            ops=ops,
-            is_scalable=True,
-            source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
-            source_dimensions=(100, 100),
-            generation_size=(50, 50),
-        )
-
-    def _create_sample_hybrid_artifact(self) -> WorkPieceArtifact:
-        """Helper to generate a consistent hybrid artifact for tests."""
-        ops = Ops()
-        ops.move_to(0, 0, 0)
-        ops.scan_to(10, 0, 0, power_values=bytearray(range(256)))
-        return WorkPieceArtifact(
-            ops=ops,
-            is_scalable=False,
-            source_coordinate_system=CoordinateSystem.PIXEL_SPACE,
-            source_dimensions=(200, 200),
-            generation_size=(50, 50),
-        )
-
-    def _create_sample_final_job_artifact(self) -> JobArtifact:
-        """Helper to generate a final job artifact for tests."""
-        machine_code_bytes = np.frombuffer(b"G1 X10 Y20", dtype=np.uint8)
-        op_map = {
-            "op_to_machine_code": {0: [0, 1]},
-            "machine_code_to_op": {0: 0, 1: 0},
-        }
-        op_map_bytes = np.frombuffer(
-            json.dumps(op_map).encode("utf-8"), dtype=np.uint8
-        )
-        return JobArtifact(
-            ops=Ops(),
-            distance=15.0,
-            machine_code_bytes=machine_code_bytes,
-            op_map_bytes=op_map_bytes,
-        )
-
-    def test_put_get_release_vertex_artifact(self):
-        """
-        Tests the full put -> get -> release lifecycle with a
-        vertex-based Artifact.
-        """
-        original_artifact = self._create_sample_vertex_artifact()
-
-        # 1. Put the artifact into shared memory
-        handle = get_context().artifact_store.put(original_artifact)
-        self.handles_to_release.append(handle)
-        self.assertIsInstance(handle, WorkPieceArtifactHandle)
-
-        # 2. Get the artifact back
-        retrieved_artifact = get_context().artifact_store.get(handle)
-
-        # 3. Verify the retrieved data
-        assert isinstance(retrieved_artifact, WorkPieceArtifact)
-        self.assertEqual(retrieved_artifact.artifact_type, "WorkPieceArtifact")
-        self.assertEqual(
-            len(original_artifact.ops.commands),
-            len(retrieved_artifact.ops.commands),
-        )
-        self.assertEqual(
-            original_artifact.generation_size,
-            retrieved_artifact.generation_size,
-        )
-
-        # 4. Release the memory
+@pytest.fixture
+def handles_to_release():
+    handles = []
+    yield handles
+    for handle in handles:
         get_context().artifact_store.release(handle)
 
-        # 5. Verify that the memory is no longer accessible
-        with self.assertRaises(FileNotFoundError):
-            shared_memory.SharedMemory(name=handle.shm_name)
 
-    def test_put_get_release_hybrid_artifact(self):
-        """
-        Tests the full put -> get -> release lifecycle with a
-        Hybrid-like Artifact.
-        """
-        original_artifact = self._create_sample_hybrid_artifact()
+def _create_sample_vertex_artifact() -> WorkPieceArtifact:
+    """Helper to generate a consistent vertex artifact for tests."""
+    ops = Ops()
+    ops.move_to(0, 0, 0)
+    ops.line_to(10, 0, 0)
+    ops.arc_to(0, 10, i=-10, j=0, clockwise=False, z=0)
 
-        # 1. Put artifact into shared memory
-        handle = get_context().artifact_store.put(original_artifact)
-        self.handles_to_release.append(handle)
-        self.assertIsInstance(handle, WorkPieceArtifactHandle)
-
-        # 2. Get
-        retrieved_artifact = get_context().artifact_store.get(handle)
-
-        # 3. Verify hybrid-specific attributes
-        assert isinstance(retrieved_artifact, WorkPieceArtifact)
-        self.assertEqual(retrieved_artifact.artifact_type, "WorkPieceArtifact")
-        self.assertEqual(
-            len(original_artifact.ops.commands),
-            len(retrieved_artifact.ops.commands),
-        )
-
-        # 4. Release: memory
-        get_context().artifact_store.release(handle)
-
-        # 5. Verify release
-        with self.assertRaises(FileNotFoundError):
-            shared_memory.SharedMemory(name=handle.shm_name)
-
-    def test_put_get_release_final_job_artifact(self):
-        """
-        Tests the full put -> get -> release lifecycle with a
-        final_job Artifact.
-        """
-        original_artifact = self._create_sample_final_job_artifact()
-
-        # 1. Put
-        handle = get_context().artifact_store.put(original_artifact)
-        self.handles_to_release.append(handle)
-        self.assertIsInstance(handle, JobArtifactHandle)
-
-        # 2. Get
-        retrieved_artifact = get_context().artifact_store.get(handle)
-
-        # 3. Verify
-        assert isinstance(retrieved_artifact, JobArtifact)
-        self.assertEqual(retrieved_artifact.artifact_type, "JobArtifact")
-        self.assertIsNotNone(retrieved_artifact.machine_code_bytes)
-        self.assertIsNotNone(retrieved_artifact.op_map_bytes)
-
-        # Decode and verify content
-        self.assertIsNotNone(retrieved_artifact.machine_code_bytes)
-        assert retrieved_artifact.machine_code_bytes is not None
-        gcode_str = retrieved_artifact.machine_code_bytes.tobytes().decode(
-            "utf-8"
-        )
-        # Verify op_map from the artifact
-        op_map = retrieved_artifact.op_map
-        self.assertIsNotNone(op_map)
-
-        self.assertEqual(gcode_str, "G1 X10 Y20")
-        if op_map:
-            self.assertDictEqual(
-                op_map.op_to_machine_code,
-                {0: [0, 1]},
-            )
-            self.assertDictEqual(
-                op_map.machine_code_to_op,
-                {0: 0, 1: 0},
-            )
-
-        # 4. Release
-        get_context().artifact_store.release(handle)
-
-        # 5. Verify release
-        with self.assertRaises(FileNotFoundError):
-            shared_memory.SharedMemory(name=handle.shm_name)
-
-    def test_adopt_and_release(self):
-        """
-        Tests that `adopt` correctly takes ownership of a shared memory
-        block, simulating a handover from a worker process.
-        """
-        original_artifact = self._create_sample_vertex_artifact()
-        main_store = get_context().artifact_store
-
-        # 1. Simulate a worker creating an artifact in its own store instance.
-        worker_store = ArtifactStore()
-        handle = worker_store.put(original_artifact)
-
-        # The main store should not know about this block yet.
-        self.assertNotIn(handle.shm_name, main_store._managed_shms)
-
-        # 2. Simulate the main process receiving an event and adopting the
-        # handle. Now, both the worker and main stores have open handles,
-        # ensuring the block persists.
-        main_store.adopt(handle)
-        self.assertIn(handle.shm_name, main_store._managed_shms)
-
-        # 3. Simulate the worker process transferring ownership by closing
-        # its handle. The main process now holds the only handle.
-        worker_shm = worker_store._managed_shms.pop(handle.shm_name)
-        worker_shm.close()
-
-        # 4. Verify the block is still accessible by getting the artifact.
-        try:
-            retrieved = cast(WorkPieceArtifact, main_store.get(handle))
-            self.assertEqual(
-                original_artifact.generation_size, retrieved.generation_size
-            )
-        except FileNotFoundError:
-            self.fail("Shared memory block was not found after adoption.")
-
-        # 5. Release the memory via the main store's mechanism.
-        main_store.release(handle)
-
-        # 6. Verify that the memory is now gone.
-        with self.assertRaises(FileNotFoundError):
-            shared_memory.SharedMemory(name=handle.shm_name)
-
-        # 7. Verify the block is no longer tracked by the main store.
-        self.assertNotIn(handle.shm_name, main_store._managed_shms)
-
-    def test_forget_and_adopt_across_processes(self):
-        """
-        Tests the adoption handshake between two processes:
-        1. Process A (worker) creates an artifact
-        2. Process B (main) adopts it
-        3. Process A forgets it (closes handle without unlinking)
-        4. Process B should still be able to read data
-        5. Process B releases it, and data is gone
-        """
-        ctx = mp.get_context("spawn")
-        queue = ctx.Queue()
-
-        worker = ctx.Process(target=_worker_create_and_forget, args=(queue,))
-        worker.start()
-
-        # Main process logic
-        store = ArtifactStore()
-
-        # Receive handle from worker
-        handle_dict = queue.get()
-        handle = create_handle_from_dict(handle_dict)
-
-        # Adopt the artifact
-        store.adopt(handle)
-        self.assertIn(handle.shm_name, store._managed_shms)
-
-        # Signal worker to proceed with forgetting
-        queue.put("adopted")
-
-        # Wait for worker to confirm forgetting
-        result = queue.get()
-        self.assertEqual(result, "forgotten")
-
-        # Verify we can still read the data
-        retrieved = cast(WorkPieceArtifact, store.get(handle))
-        self.assertEqual((50, 50), retrieved.generation_size)
-
-        # Release the artifact
-        store.release(handle)
-
-        # Verify that the memory is gone
-        with self.assertRaises(FileNotFoundError):
-            shared_memory.SharedMemory(name=handle.shm_name)
-
-        worker.join(timeout=5)
-        self.assertFalse(worker.is_alive())
-        self.assertEqual(worker.exitcode, 0)
+    return WorkPieceArtifact(
+        ops=ops,
+        is_scalable=True,
+        source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
+        source_dimensions=(100, 100),
+        generation_size=(50, 50),
+    )
 
 
-# --- Helper functions for multiprocessing tests ---
+def _create_sample_hybrid_artifact() -> WorkPieceArtifact:
+    """Helper to generate a consistent hybrid artifact for tests."""
+    ops = Ops()
+    ops.move_to(0, 0, 0)
+    ops.scan_to(10, 0, 0, power_values=bytearray(range(256)))
+    return WorkPieceArtifact(
+        ops=ops,
+        is_scalable=False,
+        source_coordinate_system=CoordinateSystem.PIXEL_SPACE,
+        source_dimensions=(200, 200),
+        generation_size=(50, 50),
+    )
+
+
+def _create_sample_final_job_artifact() -> JobArtifact:
+    """Helper to generate a final job artifact for tests."""
+    machine_code_bytes = np.frombuffer(b"G1 X10 Y20", dtype=np.uint8)
+    op_map = {
+        "op_to_machine_code": {0: [0, 1]},
+        "machine_code_to_op": {0: 0, 1: 0},
+    }
+    op_map_bytes = np.frombuffer(
+        json.dumps(op_map).encode("utf-8"), dtype=np.uint8
+    )
+    return JobArtifact(
+        ops=Ops(),
+        distance=15.0,
+        machine_code_bytes=machine_code_bytes,
+        op_map_bytes=op_map_bytes,
+    )
+
+
+def test_put_get_release_vertex_artifact(handles_to_release):
+    """
+    Tests the full put -> get -> release lifecycle with a
+    vertex-based Artifact.
+    """
+    original_artifact = _create_sample_vertex_artifact()
+
+    handle = get_context().artifact_store.put(original_artifact)
+    handles_to_release.append(handle)
+    assert isinstance(handle, WorkPieceArtifactHandle)
+
+    retrieved_artifact = get_context().artifact_store.get(handle)
+
+    assert isinstance(retrieved_artifact, WorkPieceArtifact)
+    assert retrieved_artifact.artifact_type == "WorkPieceArtifact"
+    assert len(original_artifact.ops.commands) == len(
+        retrieved_artifact.ops.commands
+    )
+    assert (
+        original_artifact.generation_size == retrieved_artifact.generation_size
+    )
+
+    get_context().artifact_store.release(handle)
+
+    with pytest.raises(FileNotFoundError):
+        shared_memory.SharedMemory(name=handle.shm_name)
+
+
+def test_put_get_release_hybrid_artifact(handles_to_release):
+    """
+    Tests the full put -> get -> release lifecycle with a
+    Hybrid-like Artifact.
+    """
+    original_artifact = _create_sample_hybrid_artifact()
+
+    handle = get_context().artifact_store.put(original_artifact)
+    handles_to_release.append(handle)
+    assert isinstance(handle, WorkPieceArtifactHandle)
+
+    retrieved_artifact = get_context().artifact_store.get(handle)
+
+    assert isinstance(retrieved_artifact, WorkPieceArtifact)
+    assert retrieved_artifact.artifact_type == "WorkPieceArtifact"
+    assert len(original_artifact.ops.commands) == len(
+        retrieved_artifact.ops.commands
+    )
+
+    get_context().artifact_store.release(handle)
+
+    with pytest.raises(FileNotFoundError):
+        shared_memory.SharedMemory(name=handle.shm_name)
+
+
+def test_put_get_release_final_job_artifact(handles_to_release):
+    """
+    Tests the full put -> get -> release lifecycle with a
+    final_job Artifact.
+    """
+    original_artifact = _create_sample_final_job_artifact()
+
+    handle = get_context().artifact_store.put(original_artifact)
+    handles_to_release.append(handle)
+    assert isinstance(handle, JobArtifactHandle)
+
+    retrieved_artifact = get_context().artifact_store.get(handle)
+
+    assert isinstance(retrieved_artifact, JobArtifact)
+    assert retrieved_artifact.artifact_type == "JobArtifact"
+    assert retrieved_artifact.machine_code_bytes is not None
+    assert retrieved_artifact.op_map_bytes is not None
+
+    assert retrieved_artifact.machine_code_bytes is not None
+    gcode_str = retrieved_artifact.machine_code_bytes.tobytes().decode("utf-8")
+    op_map = retrieved_artifact.op_map
+    assert op_map is not None
+
+    assert gcode_str == "G1 X10 Y20"
+    if op_map:
+        assert op_map.op_to_machine_code == {0: [0, 1]}
+        assert op_map.machine_code_to_op == {0: 0, 1: 0}
+
+    get_context().artifact_store.release(handle)
+
+    with pytest.raises(FileNotFoundError):
+        shared_memory.SharedMemory(name=handle.shm_name)
+
+
+def test_adopt_and_release():
+    """
+    Tests that `adopt` correctly takes ownership of a shared memory
+    block, simulating a handover from a worker process.
+    """
+    original_artifact = _create_sample_vertex_artifact()
+    main_store = get_context().artifact_store
+
+    worker_store = ArtifactStore()
+    handle = worker_store.put(original_artifact)
+
+    assert handle.shm_name not in main_store._managed_shms
+
+    main_store.adopt(handle)
+    assert handle.shm_name in main_store._managed_shms
+
+    worker_shm = worker_store._managed_shms.pop(handle.shm_name)
+    worker_shm.close()
+
+    try:
+        retrieved = cast(WorkPieceArtifact, main_store.get(handle))
+        assert original_artifact.generation_size == retrieved.generation_size
+    except FileNotFoundError:
+        pytest.fail("Shared memory block was not found after adoption.")
+
+    main_store.release(handle)
+
+    with pytest.raises(FileNotFoundError):
+        shared_memory.SharedMemory(name=handle.shm_name)
+
+    assert handle.shm_name not in main_store._managed_shms
+
+
+def test_forget_and_adopt_across_processes():
+    """
+    Tests the adoption handshake between two processes:
+    1. Process A (worker) creates an artifact
+    2. Process B (main) adopts it
+    3. Process A forgets it (closes handle without unlinking)
+    4. Process B should still be able to read data
+    5. Process B releases it, and data is gone
+    """
+    ctx = mp.get_context("spawn")
+    queue = ctx.Queue()
+
+    worker = ctx.Process(target=_worker_create_and_forget, args=(queue,))
+    worker.start()
+
+    store = ArtifactStore()
+
+    handle_dict = queue.get()
+    handle = create_handle_from_dict(handle_dict)
+
+    store.adopt(handle)
+    assert handle.shm_name in store._managed_shms
+
+    queue.put("adopted")
+
+    result = queue.get()
+    assert result == "forgotten"
+
+    retrieved = cast(WorkPieceArtifact, store.get(handle))
+    assert (50, 50) == retrieved.generation_size
+
+    store.release(handle)
+
+    with pytest.raises(FileNotFoundError):
+        shared_memory.SharedMemory(name=handle.shm_name)
+
+    worker.join(timeout=5)
+    assert not worker.is_alive()
+    assert worker.exitcode == 0
 
 
 def _worker_create_and_forget(queue: mp.Queue):
@@ -305,18 +253,10 @@ def _worker_create_and_forget(queue: mp.Queue):
     )
     handle = store.put(artifact)
 
-    # Send handle dict to main process
     queue.put(handle.to_dict())
 
-    # Wait for main process to signal adoption
     queue.get()
 
-    # Forget the artifact - closes handle without unlinking
     store.forget(handle)
 
-    # Signal that forgetting is complete
     queue.put("forgotten")
-
-
-if __name__ == "__main__":
-    unittest.main()
