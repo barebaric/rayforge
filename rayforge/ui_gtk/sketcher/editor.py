@@ -308,36 +308,14 @@ class SketchEditor:
             if self.sketch_element.canvas:
                 self.sketch_element.canvas.grab_focus()
 
-    def on_constraint_selected(self, sender, constraint_type: str):
-        logger.info(f"Constraint activated: {constraint_type}")
+    def on_constraint_selected(self, sender, action: str):
+        logger.info(f"Constraint activated: {action}")
         if not self.sketch_element:
             return
 
-        ctx = self.sketch_element
-        if constraint_type == "dist":
-            ctx.add_distance_constraint()
-        elif constraint_type == "horiz":
-            ctx.add_horizontal_constraint()
-        elif constraint_type == "vert":
-            ctx.add_vertical_constraint()
-        elif constraint_type == "radius":
-            ctx.add_radius_constraint()
-        elif constraint_type == "diameter":
-            ctx.add_diameter_constraint()
-        elif constraint_type == "perp":
-            ctx.add_perpendicular()
-        elif constraint_type == "angle":
-            ctx.add_angle_constraint()
-        elif constraint_type == "tangent":
-            ctx.add_tangent()
-        elif constraint_type == "align":
-            ctx.add_alignment_constraint()
-        elif constraint_type == "equal":
-            ctx.add_equal_constraint()
-        elif constraint_type == "symmetry":
-            ctx.add_symmetry_constraint()
-        elif constraint_type == "aspect_ratio":
-            ctx.add_aspect_ratio_constraint()
+        method = getattr(self.sketch_element, action, None)
+        if method:
+            method()
 
         if self.sketch_element.canvas:
             self.sketch_element.canvas.grab_focus()
