@@ -36,6 +36,9 @@ The sketcher supports creating the following basic geometric elements:
 - **Lines**: Draw straight line segments between points
 - **Circles**: Create circles by defining a center point and radius
 - **Arcs**: Draw arcs by specifying a center point, start point, and end point
+- **Rectangles**: Draw rectangles by specifying two opposite corners
+- **Rounded Rectangles**: Draw rectangles with rounded corners
+- **Text Boxes**: Add text elements to your sketch
 - **Fills**: Fill closed regions to create solid areas
 
 These elements form the foundation of your 2D designs and can be combined to create
@@ -65,6 +68,9 @@ precise geometric relationships:
 - **Distance**: Sets the exact distance between two points or along a line
 - **Diameter**: Defines the diameter of a circle
 - **Radius**: Sets the radius of a circle or arc
+- **Angle**: Enforces a specific angle between two lines
+- **Aspect Ratio**: Forces the ratio between two distances to be equal to a specified
+  value
 - **Equal Length/Radius**: Forces multiple elements (lines, arcs, or circles) to have
   the same length or radius
 - **Equal Distance**: Forces the distance between two point pairs to be equal
@@ -90,20 +96,29 @@ The sketcher provides keyboard shortcuts for efficient workflow:
 - `G+L`: Line tool
 - `G+A`: Arc tool
 - `G+C`: Circle tool
+- `G+R`: Rectangle tool
+- `G+O`: Rounded Rectangle tool
 - `G+F`: Fill Area tool
+- `G+T`: Text Box tool
 - `G+N`: Toggle construction mode on selection
+
+### Action Shortcuts
+- `C+H`: Add Chamfer corner
+- `C+F`: Add Fillet corner
 
 ### Constraint Shortcuts
 - `H`: Apply Horizontal constraint
 - `V`: Apply Vertical constraint
-- `T`: Apply Tangent constraint
 - `N`: Apply Perpendicular constraint
+- `T`: Apply Tangent constraint
 - `E`: Apply Equal constraint
 - `O` or `C`: Apply Alignment constraint (Coincident)
 - `S`: Apply Symmetry constraint
 - `K+D`: Apply Distance constraint
 - `K+R`: Apply Radius constraint
 - `K+O`: Apply Diameter constraint
+- `K+A`: Apply Angle constraint
+- `K+X`: Apply Aspect Ratio constraint
 
 ### General Shortcuts
 - `Ctrl+Z`: Undo
@@ -127,6 +142,20 @@ Construction entities are useful for:
 - Creating reference lines and circles
 - Defining temporary geometry for alignment
 - Building complex shapes from a framework of guides
+
+## Chamfer and Fillet
+
+The sketcher provides tools to modify corners of your geometry:
+
+- **Chamfer**: Replaces a sharp corner with a beveled edge. Select a junction point
+  (where two lines meet) and apply the chamfer action.
+- **Fillet**: Replaces a sharp corner with a rounded edge. Select a junction point
+  (where two lines meet) and apply the fillet action.
+
+To use chamfer or fillet:
+1. Select a junction point where two lines meet
+2. Press `C+H` for chamfer or `C+F` for fillet
+3. Use the pie menu or keyboard shortcuts to apply the modification
 
 ## Import and Export
 
@@ -157,8 +186,8 @@ dimensional relationships.
 - **Dynamic Cursor**: The cursor changes to reflect the active drawing tool
 - **Constraint Visualization**: Applied constraints are clearly indicated in the interface
 - **Real-time Updates**: Changes to constraints immediately update the geometry
-- **Double-Click Editing**: Double-click on dimensional constraints (Distance, Radius, Diameter)
-  opens a dialog to edit their values
+- **Double-Click Editing**: Double-click on dimensional constraints (Distance, Radius, Diameter,
+  Angle, Aspect Ratio) opens a dialog to edit their values
 - **Parametric Expressions**: Dimensional constraints support expressions, allowing values to be
   calculated from other parameters (e.g., `width/2` for a radius that's half the
   width)

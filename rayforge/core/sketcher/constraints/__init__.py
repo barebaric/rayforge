@@ -3,6 +3,7 @@ Geometric constraints for the 2D CAD sketcher.
 """
 
 from .base import Constraint, ConstraintStatus
+from .angle import AngleConstraint, ANGLE_WEIGHT
 from .aspect_ratio import AspectRatioConstraint
 from .coincident import CoincidentConstraint
 from .collinear import CollinearConstraint
@@ -22,8 +23,10 @@ from .vertical import VerticalConstraint
 
 
 __all__ = [
+    "ANGLE_WEIGHT",
     "Constraint",
     "ConstraintStatus",
+    "AngleConstraint",
     "AspectRatioConstraint",
     "CoincidentConstraint",
     "CollinearConstraint",

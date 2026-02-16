@@ -6,6 +6,7 @@ from ...core.expression import ExpressionContext, safe_evaluate
 from ...core.matrix import Matrix
 from ...core.sketcher.commands import ModifyConstraintCommand
 from ...core.sketcher.constraints import (
+    AngleConstraint,
     Constraint,
     DiameterConstraint,
     DistanceConstraint,
@@ -205,6 +206,8 @@ class SketchCanvas(WorldSurface):
             row_subtitle = _("Enter radius or expression (e.g. 'width/2').")
         elif isinstance(constraint, DiameterConstraint):
             row_subtitle = _("Enter diameter or expression.")
+        elif isinstance(constraint, AngleConstraint):
+            row_subtitle = _("Enter angle in degrees or expression.")
         elif isinstance(
             constraint,
             (DistanceConstraint, HorizontalConstraint, VerticalConstraint),

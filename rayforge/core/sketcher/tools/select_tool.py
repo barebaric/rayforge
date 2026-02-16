@@ -5,6 +5,7 @@ from typing import Optional, Tuple, Dict, cast, Any, TYPE_CHECKING
 from ...matrix import Matrix
 from ..commands import AddItemsCommand, MovePointCommand
 from ..constraints import (
+    AngleConstraint,
     DragConstraint,
     DistanceConstraint,
     RadiusConstraint,
@@ -216,7 +217,12 @@ class SelectTool(SketchTool):
                 constr = constraints[idx]
                 if isinstance(
                     constr,
-                    (DistanceConstraint, RadiusConstraint, DiameterConstraint),
+                    (
+                        AngleConstraint,
+                        DiameterConstraint,
+                        DistanceConstraint,
+                        RadiusConstraint,
+                    ),
                 ):
                     logger.debug(
                         f"Emitting signal for constraint edit: {constr}"

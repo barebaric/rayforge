@@ -83,7 +83,8 @@ class SketchEditor:
             "kd": "add_distance_constraint",
             "kr": "add_radius_constraint",
             "ko": "add_diameter_constraint",
-            "ka": "add_aspect_ratio_constraint",
+            "ka": "add_angle_constraint",
+            "kx": "add_aspect_ratio_constraint",
         }
         # A set of all prefixes for quick checking (e.g., "g", "k")
         self.shortcut_prefixes = {
@@ -325,6 +326,8 @@ class SketchEditor:
             ctx.add_diameter_constraint()
         elif constraint_type == "perp":
             ctx.add_perpendicular()
+        elif constraint_type == "angle":
+            ctx.add_angle_constraint()
         elif constraint_type == "tangent":
             ctx.add_tangent()
         elif constraint_type == "align":
