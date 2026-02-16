@@ -9,10 +9,10 @@ if TYPE_CHECKING:
 
 
 DITHER_ALGORITHMS = [
-    ("floyd_steinberg", "Floyd-Steinberg"),
-    ("bayer2", "Bayer 2x2"),
-    ("bayer4", "Bayer 4x4"),
-    ("bayer8", "Bayer 8x8"),
+    ("floyd_steinberg", _("Floyd-Steinberg")),
+    ("bayer2", _("Bayer 2x2")),
+    ("bayer4", _("Bayer 4x4")),
+    ("bayer8", _("Bayer 8x8")),
 ]
 
 DITHER_ALGORITHM_KEYS = [key for key, _label in DITHER_ALGORITHMS]
