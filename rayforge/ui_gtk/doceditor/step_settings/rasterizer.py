@@ -1,11 +1,109 @@
+import math
 from typing import Any, TYPE_CHECKING
 from gi.repository import Adw, Gtk
+import cairo
 from .base import StepComponentSettingsWidget
 from ....core.undo import DictItemCommand
 from ....shared.util.glib import DebounceMixin
 
 if TYPE_CHECKING:
     from ....doceditor.editor import DocEditor
+
+
+class RasterDirectionPreview(Gtk.DrawingArea):
+    VISUAL_SIZE = 180
+    MARGIN = 10
+    LINE_SPACING = 16
+    ARROW_SIZE = 6
+
+    def __init__(self, direction_degrees: float = 0):
+        super().__init__()
+        self.direction_degrees = direction_degrees
+        self.set_content_width(self.VISUAL_SIZE)
+        self.set_content_height(self.VISUAL_SIZE)
+        self.set_draw_func(self._draw_func)
+
+    def update_direction(self, degrees: float):
+        self.direction_degrees = degrees
+        self.queue_draw()
+
+    TRAVEL_COLOR = (1.0, 0.4, 0.0, 0.7)
+    CUT_COLOR = (1.0, 0.0, 1.0, 1.0)
+
+    def _draw_func(self, area, ctx, width, height):
+        ctx.set_source_rgba(0, 0, 0, 0)
+        ctx.set_operator(cairo.OPERATOR_SOURCE)
+        ctx.paint()
+        ctx.set_operator(cairo.OPERATOR_OVER)
+
+        cx, cy = width / 2, height / 2
+        angle_rad = math.radians(self.direction_degrees)
+        cos_a, sin_a = math.cos(angle_rad), math.sin(angle_rad)
+        perp_cos, perp_sin = -sin_a, cos_a
+
+        num_lines = 7
+        half_extent = (self.VISUAL_SIZE - 2 * self.MARGIN) / 2 - 10
+
+        line_endpoints = []
+        cut_starts = []
+        cut_ends = []
+        for i in range(num_lines):
+            offset = (i - num_lines // 2) * self.LINE_SPACING
+            lx = cx + offset * perp_cos
+            ly = cy + offset * perp_sin
+
+            start_x = lx - half_extent * cos_a + 10 * cos_a
+            start_y = ly - half_extent * sin_a + 10 * sin_a
+            end_x = lx + half_extent * cos_a - 10 * cos_a
+            end_y = ly + half_extent * sin_a - 10 * sin_a
+            line_endpoints.append((start_x, start_y, end_x, end_y))
+
+            direction = 1 if i % 2 == 0 else -1
+            if direction > 0:
+                cut_starts.append((start_x, start_y))
+                cut_ends.append((end_x, end_y))
+            else:
+                cut_starts.append((end_x, end_y))
+                cut_ends.append((start_x, start_y))
+
+        ctx.set_source_rgba(*self.TRAVEL_COLOR)
+        ctx.set_line_width(1.5)
+        ctx.set_line_cap(cairo.LINE_CAP_ROUND)
+        for i in range(len(cut_ends) - 1):
+            curr_x, curr_y = cut_ends[i]
+            next_x, next_y = cut_starts[i + 1]
+            ctx.move_to(curr_x, curr_y)
+            ctx.line_to(next_x, next_y)
+        ctx.stroke()
+
+        ctx.set_source_rgba(*self.CUT_COLOR)
+        ctx.set_line_width(2.0)
+        for i, (start_x, start_y, end_x, end_y) in enumerate(line_endpoints):
+            direction = 1 if i % 2 == 0 else -1
+            arrow_base_x = end_x if direction > 0 else start_x
+            arrow_base_y = end_y if direction > 0 else start_y
+
+            ctx.move_to(start_x, start_y)
+            ctx.line_to(end_x, end_y)
+            ctx.stroke()
+
+            ax = arrow_base_x
+            ay = arrow_base_y
+            ctx.move_to(ax, ay)
+            ctx.line_to(
+                arrow_base_x
+                + direction * self.ARROW_SIZE * (-cos_a - perp_cos * 0.5),
+                arrow_base_y
+                + direction * self.ARROW_SIZE * (-sin_a - perp_sin * 0.5),
+            )
+            ctx.move_to(ax, ay)
+            ctx.line_to(
+                arrow_base_x
+                + direction * self.ARROW_SIZE * (-cos_a + perp_cos * 0.5),
+                arrow_base_y
+                + direction * self.ARROW_SIZE * (-sin_a + perp_sin * 0.5),
+            )
+            ctx.stroke()
 
 
 class RasterizerSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
@@ -28,8 +126,13 @@ class RasterizerSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
         )
 
         params = self.target_dict.setdefault("params", {})
+        current_direction = params.get("direction_degrees", 0)
 
-        # Direction slider
+        self.direction_preview = RasterDirectionPreview(current_direction)
+        preview_row = Adw.ActionRow(title=_("Direction Preview"))
+        preview_row.add_suffix(self.direction_preview)
+        self.add(preview_row)
+
         direction_row = Adw.ActionRow(
             title=_("Direction"),
             subtitle=_(
@@ -41,7 +144,7 @@ class RasterizerSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
             upper=179,
             step_increment=1,
             page_increment=15,
-            value=params.get("direction_degrees", 0),
+            value=current_direction,
         )
         direction_scale = Gtk.Scale(
             orientation=Gtk.Orientation.HORIZONTAL,
@@ -52,12 +155,7 @@ class RasterizerSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
         direction_scale.set_size_request(200, -1)
         direction_scale.connect(
             "value-changed",
-            lambda scale: self._debounce(
-                self._on_param_changed,
-                "direction_degrees",
-                float(scale.get_value()),
-                _("Change Raster Direction"),
-            ),
+            self._on_direction_changed,
         )
         direction_row.add_suffix(direction_scale)
         self.add(direction_row)
@@ -134,3 +232,13 @@ class RasterizerSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
             on_change_callback=lambda: self.step.updated.send(self.step),
         )
         self.history_manager.execute(command)
+
+    def _on_direction_changed(self, scale):
+        value = float(scale.get_value())
+        self.direction_preview.update_direction(value)
+        self._debounce(
+            self._on_param_changed,
+            "direction_degrees",
+            value,
+            _("Change Raster Direction"),
+        )
