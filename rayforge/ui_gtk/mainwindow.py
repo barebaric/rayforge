@@ -1725,6 +1725,26 @@ class MainWindow(Adw.ApplicationWindow):
             self, self._on_save_dialog_response, initial_name
         )
 
+    def on_export_document_clicked(self, action, param=None):
+        initial_name = "document.svg"
+        if self.doc_editor.file_path:
+            initial_name = f"{self.doc_editor.file_path.stem}.svg"
+        file_dialogs.show_export_document_dialog(
+            self, self._on_export_document_response, initial_name
+        )
+
+    def _on_export_document_response(self, dialog, result, user_data):
+        try:
+            file = dialog.save_finish(result)
+            if not file:
+                return
+            file_path = Path(file.get_path())
+        except GLib.Error as e:
+            logger.error(f"Error exporting document: {e.message}")
+            return
+
+        self.doc_editor.file.export_document_to_path(file_path)
+
     def _on_save_dialog_response(self, dialog, result, user_data):
         try:
             file = dialog.save_finish(result)

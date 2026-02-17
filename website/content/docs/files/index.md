@@ -105,6 +105,22 @@ To export a workpiece:
 2. Choose **Object → Export Object...**
 3. Select format and save location
 
+### Document Export
+
+Export all workpieces in a document to a single vector file:
+
+| Format  | Extension | Best For        | Notes                              |
+| :------ | :-------- | :-------------- | :--------------------------------- |
+| **SVG** | `.svg`    | Vector graphics | Widely compatible                  |
+| **DXF** | `.dxf`    | CAD software    | Good for further CAD work          |
+
+To export a document:
+
+1. Choose **File → Export Document...**
+2. Select format and save location
+
+All workpieces from all layers are combined into a single file.
+
 ### G-code Export
 
 Rayforge generates standard G-code for GRBL and Smoothieware:

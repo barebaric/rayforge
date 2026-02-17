@@ -3,7 +3,10 @@ import io
 import ezdxf
 from pathlib import Path
 from rayforge.core.geo import Geometry
-from rayforge.image.dxf.exporter import GeometryDxfExporter
+from rayforge.image.dxf.exporter import (
+    GeometryDxfExporter,
+    MultiGeometryDxfExporter,
+)
 from rayforge.image.dxf.importer import DxfImporter
 from rayforge.core.vectorization_spec import PassthroughSpec
 
@@ -361,3 +364,58 @@ class TestGeometryDxfExporterRoundTrip:
         assert imported_geo.distance() == pytest.approx(
             original_distance, rel=0.05
         )
+
+
+class TestMultiGeometryDxfExporter:
+    """Tests for exporting multiple geometries to a single DXF."""
+
+    def test_export_multiple_geometries(self):
+        """Test that multiple geometries create separate entities."""
+        geo1 = Geometry()
+        geo1.move_to(0, 0)
+        geo1.line_to(10, 10)
+
+        geo2 = Geometry()
+        geo2.move_to(100, 100)
+        geo2.line_to(110, 110)
+
+        exporter = MultiGeometryDxfExporter([geo1, geo2])
+        dxf_bytes = exporter.export()
+
+        buffer = io.StringIO(dxf_bytes.decode("utf-8"))
+        dxf_doc = ezdxf.read(buffer)  # type: ignore
+        msp = dxf_doc.modelspace()
+        entities = list(msp)
+
+        polylines = [e for e in entities if e.dxftype() == "LWPOLYLINE"]
+        assert len(polylines) == 2
+
+    def test_export_combines_into_one_modelspace(self):
+        """Test that all geometries end up in same modelspace."""
+        geo1 = Geometry()
+        geo1.move_to(0, 0)
+        geo1.line_to(10, 0)
+
+        geo2 = Geometry()
+        geo2.move_to(0, 10)
+        geo2.line_to(10, 10)
+
+        from rayforge.image.dxf.exporter import MultiGeometryDxfExporter
+
+        exporter = MultiGeometryDxfExporter([geo1, geo2])
+        dxf_bytes = exporter.export()
+
+        buffer = io.StringIO(dxf_bytes.decode("utf-8"))
+        dxf_doc = ezdxf.read(buffer)  # type: ignore
+        msp = dxf_doc.modelspace()
+        entities = list(msp)
+
+        assert len(entities) >= 2
+
+    def test_export_empty_list_raises(self):
+        """Test that exporting empty geometry list raises."""
+        from rayforge.image.dxf.exporter import MultiGeometryDxfExporter
+
+        exporter = MultiGeometryDxfExporter([])
+        with pytest.raises(ValueError, match="empty"):
+            exporter.export()

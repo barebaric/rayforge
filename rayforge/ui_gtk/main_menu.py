@@ -32,6 +32,9 @@ class MainMenu(Gio.Menu):
         import_export_group = Gio.Menu()
         import_export_group.append(_("Import..."), "win.import")
         import_export_group.append(_("Export G-code..."), "win.export")
+        import_export_group.append(
+            _("Export Document..."), "win.export_document"
+        )
         file_menu.append_section(None, import_export_group)
 
         quit_group = Gio.Menu()

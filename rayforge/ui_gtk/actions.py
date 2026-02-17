@@ -37,6 +37,9 @@ class ActionManager:
         self._add_action("open", self.win.project_cmd.on_open_project)
         self._add_action("save", self.win.project_cmd.on_save_project)
         self._add_action("save-as", self.win.project_cmd.on_save_project_as)
+        self._add_action(
+            "export_document", self.win.on_export_document_clicked
+        )
         # New actions for recent files
         self._add_action(
             "open-recent",

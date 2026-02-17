@@ -413,3 +413,52 @@ class TestGeometrySvgExporterRoundTrip:
         assert imported_geo.distance() == pytest.approx(
             original_distance, rel=0.05
         )
+
+
+class TestMultiGeometrySvgExporter:
+    """Tests for exporting multiple geometries to a single SVG."""
+
+    def test_export_multiple_geometries(self):
+        """Test that multiple geometries create multiple path elements."""
+        geo1 = Geometry()
+        geo1.move_to(0, 0)
+        geo1.line_to(10, 10)
+
+        geo2 = Geometry()
+        geo2.move_to(100, 100)
+        geo2.line_to(110, 110)
+
+        from rayforge.image.svg.exporter import MultiGeometrySvgExporter
+
+        exporter = MultiGeometrySvgExporter([geo1, geo2])
+        svg_bytes = exporter.export()
+        svg_str = svg_bytes.decode("utf-8")
+
+        assert svg_str.count("<path") == 2
+
+    def test_export_calculates_combined_bounds(self):
+        """Test that the viewBox encompasses all geometries."""
+        geo1 = Geometry()
+        geo1.move_to(0, 0)
+        geo1.line_to(10, 10)
+
+        geo2 = Geometry()
+        geo2.move_to(100, 50)
+        geo2.line_to(150, 100)
+
+        from rayforge.image.svg.exporter import MultiGeometrySvgExporter
+
+        exporter = MultiGeometrySvgExporter([geo1, geo2])
+        svg_bytes = exporter.export()
+        svg_str = svg_bytes.decode("utf-8")
+
+        assert 'width="152.000mm"' in svg_str
+        assert 'height="102.000mm"' in svg_str
+
+    def test_export_empty_list_raises(self):
+        """Test that exporting empty geometry list raises."""
+        from rayforge.image.svg.exporter import MultiGeometrySvgExporter
+
+        exporter = MultiGeometrySvgExporter([])
+        with pytest.raises(ValueError, match="empty"):
+            exporter.export()

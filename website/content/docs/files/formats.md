@@ -72,9 +72,6 @@ When exporting a workpiece to SVG, Rayforge exports the geometry as vector paths
 **Software Recommendations:**
 
 - **Inkscape** (free) - Excellent SVG support, native format
-- **Adobe Illustrator** - Professional tool, "Save As SVG" with simplified options
-- **Affinity Designer** - Good SVG export capabilities
-- **Figma** - Web-based, export as SVG
 
 ---
 
@@ -122,42 +119,6 @@ When exporting a workpiece to DXF, Rayforge exports:
 - Arcs as ARC entities
 - Bezier curves as SPLINE entities
 - Millimeter units (INSUNITS = 4)
-
-**Common Issues:**
-
-**1. Wrong scale**
-
-- **Cause:** DXF files don't always specify units clearly
-- **Solution:** Verify units before export, scale manually if needed
-
-**2. Missing entities**
-
-- **Cause:** Unsupported entity types or layers turned off
-- **Solution:** Check layer visibility, convert complex entities to polylines
-
-**3. Segmented curves**
-
-- **Cause:** Splines and ellipses converted to line segments
-- **Solution:** Increase segment count in export settings
-
-**Best Practices:**
-
-1. **Export as R12/LT2 DXF** for maximum compatibility
-2. **Use 2D geometry only** (no 3D)
-3. **Simplify before export:**
-   - Convert splines to polylines
-   - Explode blocks if needed
-   - Remove dimensions and text
-4. **Check units** (mm recommended)
-5. **Test in viewer** before importing to Rayforge
-
-**Software Recommendations:**
-
-- **LibreCAD** (free) - Good DXF support
-- **QCAD** (free community edition) - DXF native format
-- **AutoCAD** - Industry standard
-- **FreeCAD** - Free parametric CAD with DXF export
-- **Fusion 360** - Free for hobbyists, excellent DXF export
 
 ---
 
@@ -300,53 +261,7 @@ All raster formats are **imported by tracing** - converted to vector paths autom
 
 ---
 
-## Output Formats
-
-### G-code
-
-**Extension:** `.gcode`, `.nc`, `.ngc`
-**MIME Type:** `text/plain`
-**Import:** Not supported
-**Export:**  Primary output format
-
-**What is G-code?**
-
-G-code is the **machine control language** used by laser controllers.
-
-**Rayforge G-code Features:**
-
-- **Dialect support:** GRBL (primary)
-- **Optimized toolpaths:** Efficient move ordering
-- **Comments:** Human-readable annotations
-- **Precision control:** Configurable decimal places
-- **Macro insertion:** Custom G-code via hooks
-
-**Export Settings:**
-
-| Setting          | Description                    | Typical Value    |
-| ---------------- | ------------------------------ | ---------------- |
-| **Precision**    | Decimal places for coordinates | 3 (e.g., 12.345) |
-| **Dialect**      | G-code flavor                  | GRBL             |
-| **Line numbers** | Add N line numbers             | Usually off      |
-| **Whitespace**   | Add spaces for readability     | Usually on       |
-
-**File Size:**
-
-- Simple cuts: 1-50 KB
-- Complex engraving: 1-50 MB (large jobs can be >100 MB)
-
-**Compatibility:**
-
--  GRBL 1.1+ (primary target)
--  grblHAL
--  GRBL 0.9 (limited testing)
--  Marlin, Smoothieware (not officially supported)
-
-See [G-code Dialects](../reference/gcode-dialects.md) for details.
-
----
-
 ## Related Pages
 
 - [Importing Files](importing.md) - How to import each format
-- [Exporting G-code](exporting.md) - G-code export options
+- [Exporting](exporting.md) - G-code export options

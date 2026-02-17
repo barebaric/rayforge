@@ -964,6 +964,60 @@ class FileCmd:
             )
             return False
 
+    def export_document_to_path(self, file_path: Path) -> bool:
+        """
+        Exports all workpieces in the document to a file.
+
+        Supports multiple formats based on file extension:
+        - .svg: SVG format
+        - .dxf: DXF format
+
+        This is a synchronous method for the UI.
+        """
+        geometries = []
+        for wp in self._editor.doc.get_descendants(WorkPiece):
+            geo = wp.world_space_boundaries
+            if geo is not None and not geo.is_empty():
+                geometries.append(geo)
+
+        if not geometries:
+            self._editor.notification_requested.send(
+                self,
+                message=_("Cannot export: Document has no geometry."),
+            )
+            return False
+
+        ext = file_path.suffix.lower()
+        if ext == ".svg":
+            from ..image.svg.exporter import MultiGeometrySvgExporter
+
+            exporter = MultiGeometrySvgExporter(geometries)
+        elif ext == ".dxf":
+            from ..image.dxf.exporter import MultiGeometryDxfExporter
+
+            exporter = MultiGeometryDxfExporter(geometries)
+        else:
+            raise ValueError(f"Unsupported export format: {ext}")
+
+        try:
+            data = exporter.export()
+            file_path.write_bytes(data)
+            logger.info(f"Successfully exported document to {file_path}")
+            msg = _("Document exported successfully.")
+            self._editor.notification_requested.send(self, message=msg)
+            return True
+        except Exception as e:
+            logger.error(
+                f"Failed to export document to {file_path}", exc_info=e
+            )
+            self._editor.notification_requested.send(
+                self,
+                message=_("Failed to export document: {error}").format(
+                    error=str(e)
+                ),
+            )
+            return False
+
     def save_project_to_path(self, file_path: Path):
         """
         Saves the current document to a .ryp project file.
