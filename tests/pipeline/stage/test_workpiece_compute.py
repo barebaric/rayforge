@@ -64,7 +64,6 @@ def test_compute_workpiece_artifact_returns_valid_artifact(
     """Test that compute_workpiece_artifact returns a valid artifact."""
     opsproducer = ContourProducer()
     laser = Laser()
-    modifiers = []
     transformers = []
     settings = {
         "pixels_per_mm": (10.0, 10.0),
@@ -80,7 +79,6 @@ def test_compute_workpiece_artifact_returns_valid_artifact(
         workpiece=base_workpiece,
         opsproducer=opsproducer,
         laser=laser,
-        modifiers=modifiers,
         transformers=transformers,
         settings=settings,
         pixels_per_mm=pixels_per_mm,
@@ -99,7 +97,6 @@ def test_compute_workpiece_artifact_with_progress_callback(
     """Test that compute_workpiece_artifact calls progress callback."""
     opsproducer = ContourProducer()
     laser = Laser()
-    modifiers = []
     transformers = []
     settings = {
         "pixels_per_mm": (10.0, 10.0),
@@ -115,7 +112,6 @@ def test_compute_workpiece_artifact_with_progress_callback(
         workpiece=base_workpiece,
         opsproducer=opsproducer,
         laser=laser,
-        modifiers=modifiers,
         transformers=transformers,
         settings=settings,
         pixels_per_mm=pixels_per_mm,
@@ -144,7 +140,6 @@ def test_compute_workpiece_artifact_with_empty_workpiece():
 
     opsproducer = ContourProducer()
     laser = Laser()
-    modifiers = []
     transformers = []
     settings = {
         "pixels_per_mm": (10.0, 10.0),
@@ -160,7 +155,6 @@ def test_compute_workpiece_artifact_with_empty_workpiece():
         workpiece=empty_workpiece,
         opsproducer=opsproducer,
         laser=laser,
-        modifiers=modifiers,
         transformers=transformers,
         settings=settings,
         pixels_per_mm=pixels_per_mm,
@@ -323,7 +317,6 @@ def test_execute_vector_with_boundaries(base_workpiece):
             opsproducer,
             laser,
             settings,
-            [],
             base_workpiece.size,
         )
     )
@@ -385,7 +378,6 @@ def test_compute_workpiece_artifact_vector(base_workpiece):
         workpiece=base_workpiece,
         opsproducer=opsproducer,
         laser=laser,
-        modifiers=[],
         settings=settings,
         generation_size=base_workpiece.size,
     )
@@ -412,7 +404,6 @@ def test_compute_workpiece_artifact_vector_with_progress(
         workpiece=base_workpiece,
         opsproducer=opsproducer,
         laser=laser,
-        modifiers=[],
         settings=settings,
         generation_size=base_workpiece.size,
         context=mock_progress_context,
@@ -442,7 +433,6 @@ def test_compute_workpiece_artifact_vector_with_boundaries(
         workpiece=base_workpiece,
         opsproducer=opsproducer,
         laser=laser,
-        modifiers=[],
         settings=settings,
         generation_size=base_workpiece.size,
     )
@@ -470,7 +460,6 @@ def test_execute_raster_invalid_size(base_workpiece):
             opsproducer,
             laser,
             settings,
-            [],
             base_workpiece.size,
         )
     )
@@ -484,7 +473,6 @@ def test_compute_workpiece_artifact_with_air_assist(
     """Test compute_workpiece_artifact with air assist enabled."""
     opsproducer = ContourProducer()
     laser = Laser()
-    modifiers = []
     transformers = []
     settings = {
         "pixels_per_mm": (10.0, 10.0),
@@ -500,7 +488,6 @@ def test_compute_workpiece_artifact_with_air_assist(
         workpiece=base_workpiece,
         opsproducer=opsproducer,
         laser=laser,
-        modifiers=modifiers,
         transformers=transformers,
         settings=settings,
         pixels_per_mm=pixels_per_mm,
@@ -535,7 +522,6 @@ def test_compute_workpiece_artifact_raster(base_workpiece):
             workpiece=base_workpiece,
             opsproducer=opsproducer,
             laser=laser,
-            modifiers=[],
             settings=settings,
             generation_size=base_workpiece.size,
         )
@@ -570,7 +556,6 @@ def test_compute_workpiece_artifact_raster_with_progress(
             workpiece=base_workpiece,
             opsproducer=opsproducer,
             laser=laser,
-            modifiers=[],
             settings=settings,
             generation_size=base_workpiece.size,
             context=mock_progress_context,
@@ -608,7 +593,6 @@ def test_compute_workpiece_artifact_raster_empty_workpiece():
         workpiece=empty_workpiece,
         opsproducer=opsproducer,
         laser=laser,
-        modifiers=[],
         settings=settings,
         generation_size=empty_workpiece.size,
     )
@@ -622,7 +606,6 @@ def test_compute_workpiece_artifact_with_transformers(
     """Test compute_workpiece_artifact applies transformers."""
     opsproducer = ContourProducer()
     laser = Laser()
-    modifiers = []
     transformers: list[OpsTransformer] = [Optimize()]
     settings = {
         "pixels_per_mm": (10.0, 10.0),
@@ -638,7 +621,6 @@ def test_compute_workpiece_artifact_with_transformers(
         workpiece=base_workpiece,
         opsproducer=opsproducer,
         laser=laser,
-        modifiers=modifiers,
         transformers=transformers,
         settings=settings,
         pixels_per_mm=pixels_per_mm,
@@ -678,7 +660,6 @@ def test_chunk_artifact_has_generation_size(base_workpiece):
             workpiece=base_workpiece,
             opsproducer=opsproducer,
             laser=laser,
-            modifiers=[],
             settings=settings,
             generation_size=base_workpiece.size,
             on_chunk=on_chunk_callback,

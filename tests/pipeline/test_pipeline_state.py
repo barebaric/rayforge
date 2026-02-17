@@ -156,7 +156,7 @@ class TestPipelineState:
                         task_info.when_done(task_obj)
 
                 elif task_info.target is make_workpiece_artifact_in_subprocess:
-                    gen_id = task_info.args[7]
+                    gen_id = task_info.args[6]
                     task_obj.result.return_value = gen_id
                     if task_info.when_event:
                         event_data = {

@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 
 class Step(DocItem, ABC):
     """
-    A set of modifiers and an OpsProducer that operate on WorkPieces.
+    An OpsProducer configuration that operates on WorkPieces.
 
     A Step is a stateless configuration object that defines a single
     operation (e.g., outline, engrave) to be performed. It holds its
@@ -40,8 +40,6 @@ class Step(DocItem, ABC):
         self.applied_recipe_uid: Optional[str] = None
         self.capabilities: Set[Capability] = set()
 
-        # Configuration for the pipeline, stored as dictionaries.
-        self.modifiers_dicts: List[Dict[str, Any]] = []
         self.opsproducer_dict: Optional[Dict[str, Any]] = None
         self.per_workpiece_transformers_dicts: List[Dict[str, Any]] = []
         self.per_step_transformers_dicts: List[Dict[str, Any]] = []
@@ -78,7 +76,6 @@ class Step(DocItem, ABC):
             "generated_workpiece_uid": self.generated_workpiece_uid,
             "applied_recipe_uid": self.applied_recipe_uid,
             "capabilities": [c.name for c in self.capabilities],
-            "modifiers_dicts": self.modifiers_dicts,
             "opsproducer_dict": self.opsproducer_dict,
             "per_workpiece_transformers_dicts": (
                 self.per_workpiece_transformers_dicts
@@ -137,7 +134,6 @@ class Step(DocItem, ABC):
         step.generated_workpiece_uid = data.get("generated_workpiece_uid")
         step.applied_recipe_uid = data.get("applied_recipe_uid")
 
-        # Deserialize capabilities from list of names to instances
         cap_names = data.get("capabilities", [])
         step.capabilities = {
             CAPABILITIES_BY_NAME[name]
@@ -145,7 +141,6 @@ class Step(DocItem, ABC):
             if name in CAPABILITIES_BY_NAME
         }
 
-        step.modifiers_dicts = data["modifiers_dicts"]
         step.opsproducer_dict = data["opsproducer_dict"]
         step.per_workpiece_transformers_dicts = data[
             "per_workpiece_transformers_dicts"

@@ -33,7 +33,6 @@ def test_step_initialization(step):
     assert step.generated_workpiece_uid is None
     assert step.applied_recipe_uid is None
     assert step.capabilities == set()
-    assert step.modifiers_dicts == []
     assert step.opsproducer_dict is None
     assert step.per_workpiece_transformers_dicts == []
     assert step.per_step_transformers_dicts == []
@@ -202,7 +201,6 @@ def test_deserialization_from_dict(step):
         "generated_workpiece_uid": "wp-123",
         "applied_recipe_uid": "recipe-456",
         "capabilities": ["CUT"],
-        "modifiers_dicts": [],
         "opsproducer_dict": {"type": "OutlineProducer"},
         "per_workpiece_transformers_dicts": [],
         "per_step_transformers_dicts": [],
@@ -248,7 +246,6 @@ def test_deserialization_with_missing_keys(step):
         "typelabel": "MinimalType",
         "visible": True,
         "matrix": Matrix.identity().to_list(),
-        "modifiers_dicts": [],
         "opsproducer_dict": None,
         "per_workpiece_transformers_dicts": [],
         "per_step_transformers_dicts": [],
@@ -311,7 +308,6 @@ def test_step_forward_compatibility_with_extra_fields():
     Tests that from_dict() preserves extra fields from newer versions
     and to_dict() re-serializes them.
     """
-    # Simulate data from a newer version with unknown fields
     step_dict = {
         "uid": "step-forward-123",
         "type": "step",
@@ -323,7 +319,6 @@ def test_step_forward_compatibility_with_extra_fields():
         "generated_workpiece_uid": None,
         "applied_recipe_uid": None,
         "capabilities": [],
-        "modifiers_dicts": [],
         "opsproducer_dict": None,
         "per_workpiece_transformers_dicts": [],
         "per_step_transformers_dicts": [],
@@ -344,12 +339,10 @@ def test_step_forward_compatibility_with_extra_fields():
 
     step = Step.from_dict(step_dict)
 
-    # Verify extra fields are stored
     assert step.extra["future_field_string"] == "some value"
     assert step.extra["future_field_number"] == 42
     assert step.extra["future_field_dict"] == {"nested": "data"}
 
-    # Verify extra fields are re-serialized
     data = step.to_dict()
     assert data["future_field_string"] == "some value"
     assert data["future_field_number"] == 42
@@ -361,7 +354,6 @@ def test_step_backward_compatibility_with_missing_optional_fields():
     Tests that from_dict() handles missing optional fields gracefully
     (simulating data from an older version).
     """
-    # Minimal dictionary with only required fields
     minimal_dict = {
         "uid": "step-backward-123",
         "type": "step",
@@ -369,7 +361,6 @@ def test_step_backward_compatibility_with_missing_optional_fields():
         "matrix": Matrix.identity().to_list(),
         "typelabel": "OldType",
         "visible": True,
-        "modifiers_dicts": [],
         "opsproducer_dict": None,
         "per_workpiece_transformers_dicts": [],
         "per_step_transformers_dicts": [],
@@ -378,7 +369,6 @@ def test_step_backward_compatibility_with_missing_optional_fields():
 
     step = Step.from_dict(minimal_dict)
 
-    # Verify defaults are applied for missing optional fields
     assert step.selected_laser_uid is None
     assert step.generated_workpiece_uid is None
     assert step.applied_recipe_uid is None

@@ -18,7 +18,6 @@ from rayforge.pipeline.artifact import (
     create_handle_from_dict,
     WorkPieceArtifact,
 )
-from rayforge.pipeline.modifier import MakeTransparent, ToGrayscale
 from rayforge.pipeline.producer.contour import ContourProducer
 from rayforge.pipeline.producer.depth import DepthEngraver
 from rayforge.pipeline.stage.workpiece_runner import (
@@ -126,7 +125,6 @@ def test_vector_producer_returns_artifact_with_vertex_data(
             base_workpiece.to_dict(),
             step.opsproducer_dict,
             [],
-            [],
             laser.to_dict(),
             settings,
             generation_id,
@@ -169,7 +167,6 @@ def test_raster_producer_returns_artifact_with_raster_data(
     # Arrange
     step = Step(typelabel="Engrave")
     step.opsproducer_dict = DepthEngraver().to_dict()
-    modifiers = [MakeTransparent().to_dict(), ToGrayscale().to_dict()]
     settings = step.get_settings()
     laser = Laser()
     generation_id = 2
@@ -186,7 +183,6 @@ def test_raster_producer_returns_artifact_with_raster_data(
             get_context().artifact_store,
             workpiece_dict,
             step.opsproducer_dict,
-            modifiers,
             [],
             laser.to_dict(),
             settings,
@@ -230,7 +226,7 @@ def test_empty_producer_result_returns_none(mock_proxy):
     )
     empty_segment = SourceAssetSegment(
         source_asset_uid=empty_source.uid,
-        pristine_geometry=Geometry(),  # Empty geometry
+        pristine_geometry=Geometry(),
         vectorization_spec=PassthroughSpec(),
         normalization_matrix=Matrix.identity(),
     )
@@ -250,7 +246,6 @@ def test_empty_producer_result_returns_none(mock_proxy):
         get_context().artifact_store,
         empty_workpiece.to_dict(),
         step.opsproducer_dict,
-        [],
         [],
         laser.to_dict(),
         settings,
@@ -293,7 +288,6 @@ def test_transformers_are_applied_before_put(mock_proxy, base_workpiece):
             get_context().artifact_store,
             base_workpiece.to_dict(),
             step.opsproducer_dict,
-            [],
             transformers,
             laser.to_dict(),
             settings,
@@ -355,7 +349,6 @@ def test_runner_calls_compute_function(base_workpiece):
             get_context().artifact_store,
             base_workpiece.to_dict(),
             step.opsproducer_dict,
-            [],
             [],
             laser.to_dict(),
             settings,
