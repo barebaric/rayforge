@@ -3,7 +3,6 @@ from typing import Optional, List, Callable
 from ..context import RayforgeContext
 from ..core.step import Step
 from ..core.capability import CUT, SCORE, ENGRAVE
-from .modifier import MakeTransparent, ToGrayscale
 from .producer import (
     DepthEngraver,
     ContourProducer,
@@ -35,10 +34,6 @@ def create_contour_step(
     )
     step.capabilities = {CUT, SCORE}
     step.opsproducer_dict = ContourProducer().to_dict()
-    step.modifiers_dicts = [
-        MakeTransparent().to_dict(),
-        ToGrayscale().to_dict(),
-    ]
     step.per_workpiece_transformers_dicts = [
         Smooth(enabled=False, amount=20).to_dict(),
         TabOpsTransformer().to_dict(),
@@ -77,9 +72,6 @@ def create_raster_step(
     )
     step.capabilities = {ENGRAVE}
     step.opsproducer_dict = Rasterizer().to_dict()
-    step.modifiers_dicts = [
-        ToGrayscale().to_dict(),
-    ]
     step.per_workpiece_transformers_dicts = [
         OverscanTransformer(
             enabled=True, distance_mm=auto_distance, auto=True
@@ -116,16 +108,13 @@ def create_depth_engrave_step(
     )
     step.capabilities = {ENGRAVE}
     step.opsproducer_dict = DepthEngraver().to_dict()
-    step.modifiers_dicts = []
     step.per_workpiece_transformers_dicts = [
         OverscanTransformer(
             enabled=True, distance_mm=auto_distance, auto=True
         ).to_dict(),
         Optimize().to_dict(),
     ]
-    step.per_step_transformers_dicts = [
-        # MultiPassTransformer(passes=1, z_step_down=0.0).to_dict()
-    ]
+    step.per_step_transformers_dicts = []
     step.selected_laser_uid = default_head.uid
     step.max_cut_speed = machine.max_cut_speed
     step.max_travel_speed = machine.max_travel_speed
@@ -145,10 +134,6 @@ def create_shrinkwrap_step(
     )
     step.capabilities = {CUT, SCORE}
     step.opsproducer_dict = ShrinkWrapProducer().to_dict()
-    step.modifiers_dicts = [
-        MakeTransparent().to_dict(),
-        ToGrayscale().to_dict(),
-    ]
     step.per_workpiece_transformers_dicts = [
         Smooth(enabled=False, amount=20).to_dict(),
         TabOpsTransformer().to_dict(),
@@ -177,8 +162,6 @@ def create_frame_step(
     )
     step.capabilities = {CUT, SCORE}
     step.opsproducer_dict = FrameProducer().to_dict()
-    # FrameProducer does not use image data, so no modifiers are needed.
-    step.modifiers_dicts = []
     step.per_workpiece_transformers_dicts = [
         TabOpsTransformer().to_dict(),
         Optimize().to_dict(),
@@ -205,11 +188,7 @@ def create_material_test_step(
     )
     step.capabilities = set()
     step.opsproducer_dict = MaterialTestGridProducer().to_dict()
-    # Material test doesn't use image modifiers
-    step.modifiers_dicts = []
-    # No transformers - ops are already optimally ordered
     step.per_workpiece_transformers_dicts = []
-    # No post-step transformers - we don't want path optimization
     step.per_step_transformers_dicts = []
     step.selected_laser_uid = machine.get_default_head().uid
     step.max_cut_speed = machine.max_cut_speed
@@ -232,9 +211,6 @@ def create_dither_raster_step(
     )
     step.capabilities = {ENGRAVE}
     step.opsproducer_dict = DitherRasterizer().to_dict()
-    step.modifiers_dicts = [
-        ToGrayscale().to_dict(),
-    ]
     step.per_workpiece_transformers_dicts = [
         Optimize().to_dict(),
     ]

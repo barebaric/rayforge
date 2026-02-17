@@ -158,7 +158,7 @@ class TestPipelineGeneration:
                         task_info.when_done(task_obj)
 
                 elif task_info.target is make_workpiece_artifact_in_subprocess:
-                    gen_id = task_info.args[7]
+                    gen_id = task_info.args[6]
                     task_obj.result.return_value = gen_id
                     if task_info.when_event:
                         event_data = {
@@ -206,7 +206,7 @@ class TestPipelineGeneration:
             generation_size=real_workpiece.size,
         )
         handle = get_context().artifact_store.put(expected_artifact)
-        gen_id = task_info.args[7]
+        gen_id = task_info.args[6]
 
         task_obj_for_stage = task_info.returned_task_obj
         task_obj_for_stage.key = task_info.key
@@ -723,7 +723,7 @@ class TestPipelineGeneration:
         assert len(mock_task_mgr.created_tasks) == 1
         task1_info = mock_task_mgr.created_tasks[0]
         # Generation ID for the first task is 1
-        assert task1_info.args[7] == 1
+        assert task1_info.args[6] == 1
         mock_task_mgr.run_process.reset_mock()
         mock_task_mgr.created_tasks.clear()
 
@@ -739,7 +739,7 @@ class TestPipelineGeneration:
         assert len(mock_task_mgr.created_tasks) == 1
         task2_info = mock_task_mgr.created_tasks[0]
         # Generation ID for the second task should be incremented to 2
-        assert task2_info.args[7] == 2
+        assert task2_info.args[6] == 2
 
         # Act 3: Simulate the CANCELLED task's callback firing.
         # This could happen if the task was already running when cancelled.

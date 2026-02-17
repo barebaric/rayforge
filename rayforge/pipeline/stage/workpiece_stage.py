@@ -390,7 +390,6 @@ class WorkPiecePipelineStage(PipelineStage):
             self._artifact_manager.get_store(),
             workpiece_dict,
             step.opsproducer_dict,
-            step.modifiers_dicts,
             step.per_workpiece_transformers_dicts,
             laser_dict,
             settings,

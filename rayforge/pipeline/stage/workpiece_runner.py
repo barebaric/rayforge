@@ -13,7 +13,6 @@ def make_workpiece_artifact_in_subprocess(
     artifact_store: ArtifactStore,
     workpiece_dict: dict[str, Any],
     opsproducer_dict: dict[str, Any],
-    modifiers_dict: List[dict],
     per_workpiece_transformers_dicts: List[dict],
     laser_dict: dict[str, Any],
     settings: dict,
@@ -40,7 +39,6 @@ def make_workpiece_artifact_in_subprocess(
         artifact_store: The shared memory artifact store for serialization.
         workpiece_dict: Dictionary representation of the WorkPiece.
         opsproducer_dict: Dictionary representation of the OpsProducer.
-        modifiers_dict: List of dictionaries for Modifiers.
         per_workpiece_transformers_dicts: List of dictionaries for
             OpsTransformers.
         laser_dict: Dictionary representation of the Laser.
@@ -59,18 +57,13 @@ def make_workpiece_artifact_in_subprocess(
     )
     logger.debug(f"Starting step execution with settings: {settings}")
 
-    from ..modifier import Modifier
-    from ..producer import OpsProducer
-    from ..transformer import OpsTransformer
     from ...core.workpiece import WorkPiece
     from ...machine.models.laser import Laser
+    from ..producer import OpsProducer
+    from ..transformer import OpsTransformer
 
     logger.debug("Imports completed")
 
-    # In subprocess, we must rely on passed-in store if needed, but here
-    # we use the context's store which is hydrated by the process spawner.
-    # The 'artifact_store' arg is passed by the Tasker machinery.
-    modifiers = [Modifier.from_dict(m) for m in modifiers_dict]
     opsproducer = OpsProducer.from_dict(opsproducer_dict)
     opstransformers = [
         OpsTransformer.from_dict(m) for m in per_workpiece_transformers_dicts
@@ -114,7 +107,6 @@ def make_workpiece_artifact_in_subprocess(
         workpiece=workpiece,
         opsproducer=opsproducer,
         laser=laser,
-        modifiers=modifiers,
         transformers=opstransformers,
         settings=settings,
         pixels_per_mm=pixels_per_mm,
