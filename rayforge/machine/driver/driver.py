@@ -194,6 +194,13 @@ class Driver(ABC):
         self.did_setup = False
         self.state: DeviceState = DeviceState()
 
+    def _log_extra(self, category: str) -> Dict[str, Optional[str]]:
+        """Helper to create log extra dict with machine_id and category."""
+        return {
+            "log_category": category,
+            "machine_id": self._machine.id if self._machine else None,
+        }
+
     @property
     def resource_uri(self) -> Optional[str]:
         """

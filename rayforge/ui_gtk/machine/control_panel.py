@@ -1,27 +1,19 @@
 from typing import Optional
-from gi.repository import Gtk, GLib, Adw
+import logging
+from gi.repository import Gtk, Adw
 from blinker import Signal
-from ...logging_setup import (
-    ui_log_event_received,
-    get_memory_handler,
-    get_ui_formatter,
-    UILogFilter,
-)
+from ...logging_setup import ui_log_event_received
 from ...machine.models.machine import Machine
 from ...machine.driver.driver import Axis
 from ...machine.driver.dummy import NoDeviceDriver
 from .jog_widget import JogWidget
+from .console import Console
 from ...machine.cmd import MachineCmd
 from ...shared.tasker import task_mgr
 from ..icons import get_icon
 
 
-css = """
-.terminal {
-    font-family: Monospace;
-    font-size: 10pt;
-}
-"""
+logger = logging.getLogger(__name__)
 
 
 class MachineControlPanel(Gtk.Box):
@@ -43,31 +35,19 @@ class MachineControlPanel(Gtk.Box):
         self.hbox.set_spacing(12)
         self.append(self.hbox)
 
-        # Left side: Log view
-        self.terminal = Gtk.TextView()
-        self.terminal.set_editable(False)
-        self.terminal.set_cursor_visible(False)
-        self.terminal.set_wrap_mode(Gtk.WrapMode.WORD_CHAR)
+        self.console = Console()
+        self.console.set_hexpand(True)
+        self.console.set_vexpand(True)
+        if machine:
+            self.console.set_machine(machine)
+        self.console.command_submitted.connect(self._on_command_submitted)
+        self.hbox.append(self.console)
 
-        css_provider = Gtk.CssProvider()
-        css_provider.load_from_string(css)
-        self.terminal.get_style_context().add_provider(
-            css_provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
-        )
-
-        self.scrolled_window = Gtk.ScrolledWindow()
-        self.scrolled_window.set_vexpand(True)
-        self.scrolled_window.set_hexpand(True)
-        self.scrolled_window.set_child(self.terminal)
-        self.hbox.append(self.scrolled_window)
-
-        # Right side: WCS controls and Jog widget (horizontal layout)
         right_hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
         right_hbox.set_spacing(12)
         right_hbox.set_hexpand(False)
         self.hbox.append(right_hbox)
 
-        # Add Work Coordinates section first (left of jog widget)
         if machine:
             self._setup_wcs_controls(right_hbox)
             self._connect_machine_signals()
@@ -84,9 +64,16 @@ class MachineControlPanel(Gtk.Box):
         if machine and machine_cmd:
             self.jog_widget.set_machine(machine, machine_cmd)
 
-        self._populate_history()
+        ui_log_event_received.connect(self.console.on_log_received)
 
-        ui_log_event_received.connect(self.on_ui_log_received)
+    def _on_command_submitted(self, sender, command: str, machine: Machine):
+        async def send_command(ctx):
+            try:
+                await machine.run_raw(command)
+            except Exception as e:
+                logger.error(str(e), extra={"log_category": "ERROR"})
+
+        task_mgr.add_coroutine(send_command)
 
     def _setup_wcs_controls(self, parent):
         """Set up the Work Coordinate System controls."""
@@ -231,6 +218,8 @@ class MachineControlPanel(Gtk.Box):
         self.machine = machine
         self.machine_cmd = machine_cmd
 
+        self.console.set_machine(machine)
+
         if self.machine:
             self._connect_machine_signals()
             self._update_wcs_ui()
@@ -321,6 +310,7 @@ class MachineControlPanel(Gtk.Box):
     def _on_machine_state_changed(self, machine, state):
         """Handle machine state changes."""
         self._update_wcs_ui()
+        self.console.on_machine_state_changed(machine, state)
 
     def _update_wcs_ui(self):
         """Update the WCS group widgets based on machine state."""
@@ -404,50 +394,3 @@ class MachineControlPanel(Gtk.Box):
             msg = _("Set current position as 0")
 
         self.zero_here_btn.set_tooltip_text(msg)
-
-    def _populate_history(self):
-        memory_handler = get_memory_handler()
-        ui_formatter = get_ui_formatter()
-        if not memory_handler or not ui_formatter:
-            return
-
-        ui_filter = UILogFilter()
-        log_records = [
-            record
-            for record in memory_handler.buffer
-            if ui_filter.filter(record)
-        ]
-
-        text_buffer = self.terminal.get_buffer()
-        formatted_lines = [
-            ui_formatter.format(record) + "\n" for record in log_records
-        ]
-        text_buffer.set_text("".join(formatted_lines), -1)
-        GLib.idle_add(self._scroll_to_bottom)
-
-    def _is_at_bottom(self) -> bool:
-        vadjustment = self.scrolled_window.get_vadjustment()
-        max_value = vadjustment.get_upper() - vadjustment.get_page_size()
-        return vadjustment.get_value() >= max_value - 1.0
-
-    def append_to_terminal(self, data: str):
-        should_autoscroll = self._is_at_bottom()
-        formatted_message = f"{data}\n"
-        text_buffer = self.terminal.get_buffer()
-        text_buffer.insert(text_buffer.get_end_iter(), formatted_message, -1)
-
-        if should_autoscroll:
-            GLib.idle_add(self._scroll_to_bottom)
-
-    def _scroll_to_bottom(self):
-        text_buffer = self.terminal.get_buffer()
-        end_iter = text_buffer.get_end_iter()
-        mark = text_buffer.create_mark("end_mark", end_iter, False)
-        self.terminal.scroll_to_mark(mark, 0.0, False, 0.0, 0.0)
-        text_buffer.delete_mark(mark)
-        return False
-
-    def on_ui_log_received(self, sender, message: Optional[str] = None):
-        if not message:
-            return
-        GLib.idle_add(self.append_to_terminal, message)

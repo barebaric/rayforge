@@ -10,7 +10,7 @@ The Control Panel combines several functions into one convenient interface:
 
 1. **Jog Controls**: Manual movement and positioning
 2. **Machine Status**: Real-time position and connection state
-3. **Log View**: G-code communication and operation history
+3. **Console**: Interactive G-code terminal with syntax highlighting
 4. **Work Coordinate System (WCS)**: Quick WCS selection
 
 ![Control Panel](../images/control-panel.png)
@@ -179,32 +179,57 @@ Define where the origin of the active WCS should be:
     4. Click Zero X and Zero Y to set this position as (0, 0)
     5. The offset is stored in your machine's controller
 
-## Log View
+## Console
 
-The Log View displays G-code communication and operation history:
+The Console provides an interactive terminal-style interface for sending G-code
+commands and monitoring machine communication:
 
-### Log Contents
+### Command Input
 
-- **Sent Commands**: G-code commands sent to the machine
-- **Responses**: Replies and status from the controller
-- **Error Messages**: Any errors or warnings from the machine
-- **System Messages**: Connection status and other system events
+The command input box allows you to send raw G-code directly to the machine:
 
-### Log Features
+- **Multi-line Support**: Paste or type multiple commands
+- **Enter**: Sends all commands
+- **Shift+Enter**: Inserts a newline (for editing before sending)
+- **History**: Use Up/Down arrows to navigate previously sent commands
 
-- **Auto-scroll**: Automatically scrolls to show latest messages
-- **Search**: Filter log messages by text
-- **Clear**: Clear the log history
-- **Copy**: Copy selected log text to clipboard
+### Log Display
 
-### Using the Log for Troubleshooting
+The log shows communication between Rayforge and your machine with
+syntax highlighting for easy reading:
 
-The log view is invaluable for diagnosing issues:
+- **User Commands** (blue): Commands you entered or sent during jobs
+- **Timestamps** (gray): Time of each message
+- **Errors** (red): Error messages from the machine
+- **Warnings** (orange): Warning messages
+- **Status Polls** (dim): Real-time position/status reports like
+  `<Idle|WPos:0.000,0.000,0.000|...>`
+
+### Verbose Mode
+
+Click the terminal icon in the top-right corner of the console to toggle
+verbose output:
+
+- **Off** (default): Hides frequent status polls and "ok" responses
+- **On**: Shows all machine communication
+
+### Auto-Scroll Behavior
+
+The console automatically scrolls to show new messages:
+
+- Scrolling up disables auto-scroll so you can review history
+- Scrolling to the bottom re-enables auto-scroll
+- New messages appear immediately when auto-scroll is active
+
+### Using the Console for Troubleshooting
+
+The console is invaluable for diagnosing issues:
 
 - Verify commands are being sent correctly
 - Check for error messages from the controller
 - Monitor connection status and stability
-- Review job execution progress
+- Review job execution progress in real-time
+- Send diagnostic commands (e.g., `$$` to view GRBL settings)
 
 ## Machine Hours
 
@@ -301,10 +326,11 @@ When soft limits are enabled in your machine profile:
 
 ### Monitoring Jobs
 
-1. Watch the log view for command execution
+1. Watch the console for command execution
 2. Monitor machine status during operation
 3. Check position updates for accuracy
 4. Review error messages if issues occur
+5. Use verbose mode for detailed communication logging
 
 ## Troubleshooting
 
@@ -351,19 +377,19 @@ When soft limits are enabled in your machine profile:
 - Adjust "Y-axis down" setting if needed
 - Test with small movements first
 
-### Log Not Updating
+### Console Not Updating
 
 **Possible Causes:**
 
 - Connection not established
-- Log view disabled or hidden
-- Filter settings hiding messages
+- Verbose mode is off (status polls hidden)
+- You scrolled up (auto-scroll disabled)
 
 **Solutions:**
 
 - Verify machine is connected
-- Check log view is visible
-- Clear any active filters
+- Enable verbose mode to see all messages
+- Scroll to the bottom to re-enable auto-scroll
 
 ---
 

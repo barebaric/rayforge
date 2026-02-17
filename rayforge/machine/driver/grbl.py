@@ -426,6 +426,12 @@ class GrblNetworkDriver(Driver):
         if not self.host:
             raise ConnectionError("Driver not configured with a host.")
 
+        lines = [line.strip() for line in gcode.splitlines() if line.strip()]
+        if not lines:
+            return
+        for line in lines:
+            logger.info(line, extra=self._log_extra("USER_COMMAND"))
+
         try:
             await self._upload(gcode, "rayforge_raw.gcode")
             await self._execute("rayforge_raw.gcode")
@@ -444,6 +450,7 @@ class GrblNetworkDriver(Driver):
             if not self.websocket or not self.websocket.is_connected:
                 raise DeviceConnectionError("Device is not connected.")
 
+            logger.info(command, extra=self._log_extra("USER_COMMAND"))
             request = CommandRequest(command=command)
             self._current_request = request
             try:
@@ -590,7 +597,15 @@ class GrblNetworkDriver(Driver):
             return
 
         for line in data_str.splitlines():
-            logger.info(line, extra={"log_category": "MACHINE_EVENT"})
+            is_status_report = line.startswith("<") and line.endswith(">")
+            is_ok = line == "ok"
+            if is_status_report:
+                log_category = "STATUS_POLL"
+            elif is_ok:
+                log_category = "MACHINE_RESPONSE"
+            else:
+                log_category = "MACHINE_EVENT"
+            logger.info(line, extra=self._log_extra(log_category))
             request = self._current_request
 
             # If a command is awaiting a response, collect the lines.
@@ -598,19 +613,18 @@ class GrblNetworkDriver(Driver):
                 request.response_lines.append(line)
 
             # Process line for state updates, regardless of active request.
-            if line.startswith("<") and line.endswith(">"):
+            if is_status_report:
                 state = parse_state(
                     line, self.state, lambda message: logger.info(message)
                 )
+                old_status = self.state.status
                 if state != self.state:
                     self.state = state
-                    logger.info(
-                        f"Device state changed: {self.state.status.name}",
-                        extra={
-                            "log_category": "STATE_CHANGE",
-                            "state": self.state,
-                        },
-                    )
+                    if state.status != old_status:
+                        logger.info(
+                            f"Device state changed: {self.state.status.name}",
+                            extra=self._log_extra("STATE_CHANGE"),
+                        )
                     self.state_changed.send(self, state=self.state)
             elif line == "ok":
                 self._update_command_status(TransportStatus.IDLE)
@@ -758,7 +772,7 @@ class GrblNetworkDriver(Driver):
         log_data = f"Command status: {status.name}"
         if message:
             log_data += f" - {message}"
-        logger.info(log_data, extra={"log_category": "MACHINE_EVENT"})
+        logger.info(log_data, extra=self._log_extra("MACHINE_EVENT"))
         self.command_status_changed.send(self, status=status, message=message)
 
     def _update_connection_status(
@@ -767,7 +781,7 @@ class GrblNetworkDriver(Driver):
         log_data = f"Connection status: {status.name}"
         if message:
             log_data += f" - {message}"
-        logger.info(log_data, extra={"log_category": "MACHINE_EVENT"})
+        logger.info(log_data, extra=self._log_extra("MACHINE_EVENT"))
         self.connection_status_changed.send(
             self, status=status, message=message
         )

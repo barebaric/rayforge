@@ -188,6 +188,9 @@ class SmoothieDriver(Driver):
         if wait_for_ok:
             self._ok_event.clear()
 
+        cmd_str = cmd.decode().strip()
+        if cmd_str:
+            logger.info(cmd_str, extra=self._log_extra("USER_COMMAND"))
         logger.debug(
             f"TX: {cmd!r}",
             extra={"log_category": "RAW_IO", "direction": "TX", "data": cmd},
@@ -258,12 +261,12 @@ class SmoothieDriver(Driver):
         Executes a raw G-code string by sending it line-by-line to the
         device and waiting for an 'ok' after each line.
         """
-        gcode_lines = gcode.splitlines()
+        lines = [line.strip() for line in gcode.splitlines() if line.strip()]
+        if not lines:
+            return
         try:
-            for line in gcode_lines:
-                line = line.strip()
-                if line:
-                    await self._send_and_wait(line.encode())
+            for line in lines:
+                await self._send_and_wait(line.encode())
         except Exception as e:
             self.on_telnet_status_changed(self, TransportStatus.ERROR, str(e))
             raise
@@ -373,14 +376,18 @@ class SmoothieDriver(Driver):
         )
         data_str = data.decode("utf-8")
         for line in data_str.splitlines():
-            logger.info(line, extra={"log_category": "MACHINE_EVENT"})
+            is_status_report = line.startswith("<") and line.endswith(">")
+            log_category = (
+                "STATUS_POLL" if is_status_report else "MACHINE_EVENT"
+            )
+            logger.info(line, extra={"log_category": log_category})
             if "ok" in line:
                 self._ok_event.set()
                 self.command_status_changed.send(
                     self, status=TransportStatus.IDLE
                 )
 
-            if not line.startswith("<") or not line.endswith(">"):
+            if not is_status_report:
                 continue
             state = parse_state(
                 line, self.state, lambda message: logger.info(message)
@@ -389,10 +396,7 @@ class SmoothieDriver(Driver):
                 self.state = state
                 logger.info(
                     f"Device state changed: {self.state.status.name}",
-                    extra={
-                        "log_category": "STATE_CHANGE",
-                        "state": self.state,
-                    },
+                    extra=self._log_extra("STATE_CHANGE"),
                 )
                 self.state_changed.send(self, state=self.state)
 
@@ -402,7 +406,7 @@ class SmoothieDriver(Driver):
         log_data = f"Connection status: {status.name}"
         if message:
             log_data += f" - {message}"
-        logger.info(log_data, extra={"log_category": "MACHINE_EVENT"})
+        logger.info(log_data, extra=self._log_extra("MACHINE_EVENT"))
         self.connection_status_changed.send(
             self, status=status, message=message
         )
@@ -411,10 +415,7 @@ class SmoothieDriver(Driver):
                 self.state.status = DeviceStatus.UNKNOWN
                 logger.info(
                     f"Device state changed: {self.state.status.name}",
-                    extra={
-                        "log_category": "STATE_CHANGE",
-                        "state": self.state,
-                    },
+                    extra=self._log_extra("STATE_CHANGE"),
                 )
                 self.state_changed.send(self, state=self.state)
 
