@@ -99,10 +99,22 @@ class DitherRasterizer(OpsProducer):
         if width_px > 0 and height_px > 0:
             from ...image.dither import DitherAlgorithm
 
+            line_interval = (
+                self.line_interval_mm
+                if self.line_interval_mm is not None
+                else laser.spot_size_mm[1]
+            )
+
+            min_feature_px = max(
+                1,
+                int(round(laser.spot_size_mm[0] * pixels_per_mm[0])),
+            )
+
             dithered_mask = surface_to_dithered_array(
                 surface,
                 DitherAlgorithm(self.dither_algorithm),
                 self.invert,
+                min_feature_px=min_feature_px,
             )
 
             occupied_pixels = np.sum(dithered_mask)
@@ -111,11 +123,6 @@ class DitherRasterizer(OpsProducer):
                 f"occupied pixels (invert={self.invert})"
             )
 
-            line_interval = (
-                self.line_interval_mm
-                if self.line_interval_mm is not None
-                else laser.spot_size_mm[1]
-            )
             x_offset_mm = workpiece.bbox[0]
             adjusted_y_offset_mm = workpiece.bbox[1] + y_offset_mm
 
