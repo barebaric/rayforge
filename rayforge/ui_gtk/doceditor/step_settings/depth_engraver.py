@@ -1,4 +1,4 @@
-from typing import Dict, Any, TYPE_CHECKING, cast
+from typing import Dict, Any, TYPE_CHECKING, cast, Optional
 from gi.repository import Gtk, Adw, GObject
 import cairo
 import numpy as np
@@ -220,6 +220,29 @@ class DepthEngraverSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
         self.invert_row.connect("notify::active", self._on_invert_changed)
         self.add(self.invert_row)
 
+        line_interval_adj = Gtk.Adjustment(
+            lower=0.01,
+            upper=10.0,
+            step_increment=0.01,
+            value=producer.line_interval_mm or 0.1,
+        )
+        self.line_interval_row = Adw.SpinRow(
+            title=_("Line Interval"),
+            subtitle=_(
+                "Distance between scan lines in mm. Leave at 0 to use laser "
+                "spot size."
+            ),
+            adjustment=line_interval_adj,
+            digits=2,
+        )
+        self.line_interval_row.connect(
+            "changed",
+            lambda r: self._debounce(
+                self._on_line_interval_changed, get_spinrow_float(r)
+            ),
+        )
+        self.add(self.line_interval_row)
+
         self.mode_row = mode_row
         self._compute_and_update_histogram(producer.invert)
         self._on_mode_changed(mode_row, None)
@@ -399,6 +422,11 @@ class DepthEngraverSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
         self._update_power_labels(invert)
         self._compute_and_update_histogram(invert)
         self._on_param_changed("invert", invert)
+
+    def _on_line_interval_changed(self, value: Optional[float]):
+        if value is not None and value <= 0:
+            value = None
+        self._on_param_changed("line_interval_mm", value)
 
     def _on_param_changed(self, key: str, value: Any):
         target_dict = self.target_dict.setdefault("params", {})

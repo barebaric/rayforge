@@ -268,6 +268,27 @@ class MaterialTestGridSettingsWidget(
             "changed", lambda r: self._debounce(self._on_spacing_changed, r)
         )
 
+        line_interval_adj = Gtk.Adjustment(
+            lower=0.01,
+            upper=10.0,
+            step_increment=0.01,
+            value=producer.line_interval_mm or 0.1,
+        )
+        self.line_interval_row = Adw.SpinRow(
+            title=_("Line Interval"),
+            subtitle=_(
+                "Distance between scan lines in mm (for Engrave mode). "
+                "Leave at 0 to use laser spot size."
+            ),
+            adjustment=line_interval_adj,
+            digits=2,
+        )
+        self.add(self.line_interval_row)
+        self.line_interval_row.connect(
+            "changed",
+            lambda r: self._debounce(self._on_line_interval_changed, r),
+        )
+
     def _build_label_settings(self, producer: MaterialTestGridProducer):
         """Builds controls for label appearance and behavior."""
         self.include_labels_switch = Gtk.Switch(
@@ -423,6 +444,12 @@ class MaterialTestGridSettingsWidget(
     def _on_spacing_changed(self, spin_row):
         new_value = get_spinrow_float(spin_row)
         self._update_param("spacing", new_value)
+
+    def _on_line_interval_changed(self, spin_row):
+        value = get_spinrow_float(spin_row)
+        if value <= 0:
+            value = None
+        self._update_param("line_interval_mm", value)
 
     def _on_labels_toggled(self, switch, state):
         self.label_power_row.set_sensitive(state)

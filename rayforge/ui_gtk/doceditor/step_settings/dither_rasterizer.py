@@ -90,6 +90,38 @@ class DitherRasterizerSettingsWidget(
         )
         self.add(self.bidirectional_row)
 
+        line_interval_adj = Gtk.Adjustment(
+            lower=0.01,
+            upper=10.0,
+            step_increment=0.01,
+            value=params.get("line_interval_mm") or 0.1,
+        )
+        self.line_interval_row = Adw.SpinRow(
+            title=_("Line Interval"),
+            subtitle=_(
+                "Distance between scan lines in mm. Leave at 0 to use laser "
+                "spot size."
+            ),
+            adjustment=line_interval_adj,
+            digits=2,
+        )
+        self.line_interval_row.connect(
+            "changed",
+            lambda r: self._debounce(
+                self._on_line_interval_changed,
+                r,
+            ),
+        )
+        self.add(self.line_interval_row)
+
+    def _on_line_interval_changed(self, spinrow):
+        value = spinrow.get_value()
+        if value <= 0:
+            value = None
+        self._on_param_changed(
+            "line_interval_mm", value, _("Change Line Interval")
+        )
+
     def _on_algorithm_changed(self, row, pspec):
         selected_index = row.get_selected()
         algorithm_key = DITHER_ALGORITHMS[selected_index][0]

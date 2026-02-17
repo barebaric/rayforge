@@ -1119,29 +1119,49 @@ def test_dither_rasterizer_chunk_alignment_consistency(
     black_surface, mock_workpiece, mock_laser
 ):
     """
-    Validates that scanline Y positions are consistent when the same
-    content is rasterized with different y_offsets (simulating chunks).
+    Validates that scanline Y positions follow global grid alignment
+    when rasterizing with different y_offsets (simulating chunks).
+    With global grid alignment, scanlines are placed at fixed global
+    positions regardless of content offset.
     """
     rasterizer = DitherRasterizer()
+    px_per_mm = (10, 10)
+    height_mm = 10 / px_per_mm[1]
+
+    def extract_global_y_positions(ops, y_offset_mm):
+        positions = []
+        for cmd in ops.commands:
+            if isinstance(cmd, ScanLinePowerCommand):
+                y_mm = cmd.end[1]
+                line_y_mm = height_mm - y_mm
+                global_y = line_y_mm + y_offset_mm
+                positions.append(round(global_y, 3))
+        return sorted(positions)
 
     results = []
     for y_offset in [0.0, 0.05, 0.1, 0.15, 0.2]:
         artifact = rasterizer.run(
             mock_laser,
             black_surface,
-            (10, 10),
+            px_per_mm,
             workpiece=mock_workpiece,
             settings={},
             y_offset_mm=y_offset,
         )
-        rows = _extract_scanline_pixel_rows(artifact.ops, 10, (10, 10))
-        results.append((y_offset, rows))
+        global_positions = extract_global_y_positions(artifact.ops, y_offset)
+        results.append((y_offset, global_positions))
 
-    for y_offset, rows in results:
-        assert rows == {0, 1, 2, 3, 4, 5, 6, 7, 8, 9}, (
-            f"Chunk alignment failed with y_offset={y_offset}. "
-            f"Got rows: {rows}"
+    for y_offset, positions in results:
+        assert len(positions) == 10, (
+            f"Expected 10 scanlines with y_offset={y_offset}, "
+            f"got {len(positions)}"
         )
+        for i in range(len(positions) - 1):
+            spacing = positions[i + 1] - positions[i]
+            assert abs(spacing - 0.1) < 0.001, (
+                f"Inconsistent spacing at y_offset={y_offset}: "
+                f"{spacing}mm between positions {i} and {i + 1}"
+            )
 
 
 def test_dither_rasterizer_bidirectional_across_chunks(
@@ -1217,10 +1237,20 @@ def test_dither_rasterizer_line_spacing_with_offset(
 ):
     """
     Validates that line spacing remains consistent with offsets.
-    Each scanline should target exactly one pixel row.
+    Scanlines should be placed at line_interval spacing on a global grid.
     """
     rasterizer = DitherRasterizer()
     px_per_mm = (10, 10)
+    height_mm = 10 / px_per_mm[1]
+
+    def extract_y_positions(ops):
+        positions = []
+        for cmd in ops.commands:
+            if isinstance(cmd, ScanLinePowerCommand):
+                y_mm = cmd.end[1]
+                line_y_mm = height_mm - y_mm
+                positions.append(round(line_y_mm, 3))
+        return sorted(positions)
 
     for y_offset in [0.0, 0.05, 0.1, 0.15]:
         artifact = rasterizer.run(
@@ -1232,10 +1262,16 @@ def test_dither_rasterizer_line_spacing_with_offset(
             y_offset_mm=y_offset,
         )
 
-        rows = _extract_scanline_pixel_rows(artifact.ops, 10, px_per_mm)
+        positions = extract_y_positions(artifact.ops)
 
-        expected_rows = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9}
-        assert rows == expected_rows, (
-            f"Line spacing failed with y_offset={y_offset}. "
-            f"Expected {expected_rows}, got {rows}"
+        assert len(positions) == 10, (
+            f"Expected 10 scanlines with y_offset={y_offset}, "
+            f"got {len(positions)}: {positions}"
         )
+
+        for i in range(len(positions) - 1):
+            spacing = positions[i + 1] - positions[i]
+            assert abs(spacing - 0.1) < 0.001, (
+                f"Inconsistent spacing at y_offset={y_offset}: "
+                f"{spacing}mm between positions {i} and {i + 1}"
+            )

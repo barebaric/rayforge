@@ -41,6 +41,7 @@ class DepthEngraver(OpsProducer):
         num_depth_levels: int = 5,
         z_step_down: float = 0.0,
         invert: bool = False,
+        line_interval_mm: Optional[float] = None,
     ):
         self.scan_angle = scan_angle
         self.bidirectional = bidirectional
@@ -51,6 +52,7 @@ class DepthEngraver(OpsProducer):
         self.num_depth_levels = num_depth_levels
         self.z_step_down = z_step_down
         self.invert = invert
+        self.line_interval_mm = line_interval_mm
 
     def run(
         self,
@@ -74,7 +76,11 @@ class DepthEngraver(OpsProducer):
         width_px = surface.get_width()
         height_px = surface.get_height()
 
-        line_interval_mm = laser.spot_size_mm[1]
+        line_interval_mm = (
+            self.line_interval_mm
+            if self.line_interval_mm is not None
+            else laser.spot_size_mm[1]
+        )
         y_offset_mm = workpiece.bbox[1] + y_offset_mm
 
         if width_px > 0 and height_px > 0:
@@ -395,6 +401,7 @@ class DepthEngraver(OpsProducer):
                 "num_depth_levels": self.num_depth_levels,
                 "z_step_down": self.z_step_down,
                 "invert": self.invert,
+                "line_interval_mm": self.line_interval_mm,
             },
         }
 
@@ -415,6 +422,7 @@ class DepthEngraver(OpsProducer):
             "num_depth_levels": 5,
             "z_step_down": 0.0,
             "invert": False,
+            "line_interval_mm": None,
         }
         init_args.update(params_in)
 

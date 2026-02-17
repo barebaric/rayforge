@@ -1,5 +1,6 @@
 import cairo
 import numpy as np
+import math
 import logging
 from typing import Optional, TYPE_CHECKING, Dict, Any, Tuple
 from ...core.ops import Ops, SectionType
@@ -27,11 +28,13 @@ class DitherRasterizer(OpsProducer):
         dither_algorithm: str = "floyd_steinberg",
         invert: bool = False,
         bidirectional: bool = True,
+        line_interval_mm: Optional[float] = None,
     ):
         super().__init__()
         self.dither_algorithm = dither_algorithm
         self.invert = invert
         self.bidirectional = bidirectional
+        self.line_interval_mm = line_interval_mm
 
     def to_dict(self):
         return {
@@ -40,6 +43,7 @@ class DitherRasterizer(OpsProducer):
                 "dither_algorithm": self.dither_algorithm,
                 "invert": self.invert,
                 "bidirectional": self.bidirectional,
+                "line_interval_mm": self.line_interval_mm,
             },
         }
 
@@ -50,6 +54,7 @@ class DitherRasterizer(OpsProducer):
             dither_algorithm=params.get("dither_algorithm", "floyd_steinberg"),
             invert=params.get("invert", False),
             bidirectional=params.get("bidirectional", True),
+            line_interval_mm=params.get("line_interval_mm"),
         )
 
     def run(
@@ -99,11 +104,16 @@ class DitherRasterizer(OpsProducer):
                 f"occupied pixels (invert={self.invert})"
             )
 
+            line_interval = (
+                self.line_interval_mm
+                if self.line_interval_mm is not None
+                else laser.spot_size_mm[1]
+            )
             raster_ops = self._rasterize_mask_horizontally(
                 dithered_mask,
                 pixels_per_mm,
                 y_offset_mm,
-                laser.spot_size_mm[1],
+                line_interval,
             )
             final_ops.extend(raster_ops)
 
@@ -139,29 +149,50 @@ class DitherRasterizer(OpsProducer):
         if not np.any(occupied_rows) or not np.any(occupied_cols):
             return ops
 
-        y_min, y_max = np.where(occupied_rows)[0][[0, -1]]
+        y_min_px, y_max_px = np.where(occupied_rows)[0][[0, -1]]
         x_min, x_max = np.where(occupied_cols)[0][[0, -1]]
+
+        y_min_mm = y_min_px / px_per_mm_y
+        y_max_mm = (y_max_px + 1) / px_per_mm_y
+
+        global_y_min_mm = y_offset_mm + y_min_mm
+        num_intervals = math.ceil(global_y_min_mm / line_interval_mm)
+        first_scan_y_mm_global = num_intervals * line_interval_mm
+        first_scan_y_mm_local = first_scan_y_mm_global - y_offset_mm
+
+        scan_y_coords_mm = np.arange(
+            first_scan_y_mm_local, y_max_mm, line_interval_mm
+        )
+        if len(scan_y_coords_mm) == 0:
+            return ops
+
+        scan_y_coords_px = scan_y_coords_mm * px_per_mm_y
+        scan_y_coords_px = np.clip(scan_y_coords_px, 0, height_px - 1)
+
+        y0 = np.floor(scan_y_coords_px).astype(int)
+        y1 = np.clip(np.ceil(scan_y_coords_px).astype(int), 0, height_px - 1)
 
         y_pixel_center_offset_mm = 0.5 / px_per_mm_y
 
-        for y_px in range(y_min, y_max + 1):
-            if not np.any(mask[y_px, x_min : x_max + 1]):
+        for i, y_mm in enumerate(scan_y_coords_mm):
+            row_y0 = mask[y0[i], x_min : x_max + 1]
+            row_y1 = mask[y1[i], x_min : x_max + 1]
+
+            frac = scan_y_coords_px[i] - y0[i]
+            if frac < 0.5:
+                row = row_y0
+            else:
+                row = row_y1
+
+            if not np.any(row):
                 continue
 
-            y_mm = y_px / px_per_mm_y
-            global_y_mm = y_mm + y_offset_mm
-
-            aligned_global_y_mm = (
-                round(global_y_mm / line_interval_mm) * line_interval_mm
-            )
-
             if self.bidirectional:
-                line_index = round(aligned_global_y_mm / line_interval_mm)
+                line_index = round((y_mm + y_offset_mm) / line_interval_mm)
                 is_reversed = (line_index % 2) != 0
             else:
                 is_reversed = False
 
-            row = mask[y_px, x_min : x_max + 1]
             diff = np.diff(np.hstack(([0], row, [0])))
             starts = np.where(diff == 1)[0]
             ends = np.where(diff == -1)[0]

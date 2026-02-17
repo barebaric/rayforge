@@ -88,6 +88,7 @@ class MaterialTestGridProducer(OpsProducer):
         spacing: float = 2.0,
         include_labels: bool = True,
         label_power_percent: float = 10.0,
+        line_interval_mm: Optional[float] = None,
     ):
         super().__init__()
         if isinstance(test_type, str):
@@ -101,6 +102,7 @@ class MaterialTestGridProducer(OpsProducer):
         self.spacing = spacing
         self.include_labels = include_labels
         self.label_power_percent = label_power_percent
+        self.line_interval_mm = line_interval_mm
 
     @property
     def supports_power(self) -> bool:
@@ -160,7 +162,11 @@ class MaterialTestGridProducer(OpsProducer):
             main_ops.set_power(element["power"] / 100.0)
             main_ops.set_cut_speed(element["speed"])
             if self.test_type == MaterialTestGridType.ENGRAVE:
-                line_spacing = laser.spot_size_mm[1]
+                line_spacing = (
+                    self.line_interval_mm
+                    if self.line_interval_mm is not None
+                    else laser.spot_size_mm[1]
+                )
                 self._draw_filled_box(main_ops, line_spacing, **element)
             else:
                 self._draw_rectangle(main_ops, **element)
@@ -458,6 +464,7 @@ class MaterialTestGridProducer(OpsProducer):
                 "spacing": self.spacing,
                 "include_labels": self.include_labels,
                 "label_power_percent": self.label_power_percent,
+                "line_interval_mm": self.line_interval_mm,
             },
         }
 

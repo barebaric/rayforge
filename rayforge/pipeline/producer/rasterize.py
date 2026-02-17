@@ -481,12 +481,14 @@ class Rasterizer(OpsProducer):
         threshold: int = 128,
         invert: bool = False,
         direction_degrees: float = 0.0,
+        line_interval_mm: Optional[float] = None,
     ):
         super().__init__()
         self.cross_hatch = cross_hatch
         self.threshold = threshold
         self.invert = invert
         self.direction_degrees = direction_degrees
+        self.line_interval_mm = line_interval_mm
 
     def to_dict(self):
         return {
@@ -496,6 +498,7 @@ class Rasterizer(OpsProducer):
                 "threshold": self.threshold,
                 "invert": self.invert,
                 "direction_degrees": self.direction_degrees,
+                "line_interval_mm": self.line_interval_mm,
             },
         }
 
@@ -507,6 +510,7 @@ class Rasterizer(OpsProducer):
             threshold=params.get("threshold", 128),
             invert=params.get("invert", False),
             direction_degrees=params.get("direction_degrees", 0.0),
+            line_interval_mm=params.get("line_interval_mm"),
         )
 
     def run(
@@ -538,12 +542,22 @@ class Rasterizer(OpsProducer):
         if width > 0 and height > 0:
             ymax = height / pixels_per_mm[1]
             x_offset_mm = workpiece.bbox[0]
+            line_interval = (
+                self.line_interval_mm
+                if self.line_interval_mm is not None
+                else laser.spot_size_mm[1]
+            )
+            cross_hatch_interval = (
+                self.line_interval_mm
+                if self.line_interval_mm is not None
+                else laser.spot_size_mm[0]
+            )
 
             raster_ops = rasterize_at_angle(
                 surface,
                 ymax,
                 pixels_per_mm,
-                laser.spot_size_mm[1],
+                line_interval,
                 self.direction_degrees,
                 offset_x_mm=x_offset_mm,
                 offset_y_mm=y_offset_mm,
@@ -558,7 +572,7 @@ class Rasterizer(OpsProducer):
                     surface,
                     ymax,
                     pixels_per_mm,
-                    laser.spot_size_mm[0],
+                    cross_hatch_interval,
                     perp_direction,
                     offset_x_mm=x_offset_mm,
                     offset_y_mm=y_offset_mm,

@@ -219,6 +219,38 @@ class RasterizerSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
         )
         self.add(self.invert_row)
 
+        line_interval_adj = Gtk.Adjustment(
+            lower=0.01,
+            upper=10.0,
+            step_increment=0.01,
+            value=params.get("line_interval_mm") or 0.1,
+        )
+        self.line_interval_row = Adw.SpinRow(
+            title=_("Line Interval"),
+            subtitle=_(
+                "Distance between scan lines in mm. Leave at 0 to use laser "
+                "spot size."
+            ),
+            adjustment=line_interval_adj,
+            digits=2,
+        )
+        self.line_interval_row.connect(
+            "changed",
+            lambda r: self._debounce(
+                self._on_line_interval_changed,
+                r,
+            ),
+        )
+        self.add(self.line_interval_row)
+
+    def _on_line_interval_changed(self, spinrow):
+        value = spinrow.get_value()
+        if value <= 0:
+            value = None
+        self._on_param_changed(
+            "line_interval_mm", value, _("Change Line Interval")
+        )
+
     def _on_param_changed(self, key: str, new_value: Any, name: str):
         params_dict = self.target_dict.setdefault("params", {})
         if new_value == params_dict.get(key):
