@@ -18,7 +18,7 @@ class CameraProperties(Adw.PreferencesGroup):
         self._updating_ui: bool = False
 
         self.set_title(_("Camera Properties"))
-        self.set_description(_("Configure the selected camera"))
+        self.set_description(_("Configure the selected camera."))
 
         # Device ID
         self.device_id_row = Adw.ActionRow(title=_("Device ID"))
