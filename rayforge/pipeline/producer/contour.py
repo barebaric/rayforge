@@ -190,12 +190,7 @@ class ContourProducer(OpsProducer):
             final_geometry = composite_geo
 
         # 5. Optimize for machining
-        # Use machine's arc tolerance setting if available, otherwise
-        # fallback to spot size calculation.
-        tolerance = settings.get("arc_tolerance")
-        if tolerance is None:
-            spot_size = laser.spot_size_mm[0]
-            tolerance = spot_size * 0.1 if spot_size > 0 else 0.01
+        tolerance = settings.get("arc_tolerance", 0.03)
 
         # Check if the machine supports arcs. The machine setting takes
         # precedence over the step setting.
