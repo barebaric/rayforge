@@ -39,9 +39,12 @@ class StepCmd:
         """
         # Check if the value is a float and compare with a tolerance
         if isinstance(new_value, float):
-            old_value = target_dict.get(key, 0.0)
-            if abs(new_value - old_value) < 1e-6:
-                return
+            old_value = target_dict.get(key)
+            if old_value is None:
+                pass
+            elif isinstance(old_value, (int, float)):
+                if abs(new_value - old_value) < 1e-6:
+                    return
         elif new_value == target_dict.get(key):
             return
 
