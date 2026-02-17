@@ -147,9 +147,9 @@ class NoDeviceDriver(Driver):
         """
         Dummy implementation that simulates raw G-code execution.
         """
-        gcode_lines = gcode.splitlines()
-        for _ in gcode_lines:
-            # Small delay to simulate execution time
+        lines = [line.strip() for line in gcode.splitlines() if line.strip()]
+        for line in lines:
+            logger.info(line, extra=self._log_extra("USER_COMMAND"))
             await asyncio.sleep(0.01)
         self.job_finished.send(self)
 

@@ -399,7 +399,11 @@ class GrblSerialDriver(Driver):
 
                     self._current_request = request
                     try:
-                        logger.debug(f"Executing command: {request.command}")
+                        cmd_text = request.command.strip()
+                        if cmd_text:
+                            logger.info(
+                                cmd_text, extra=self._log_extra("USER_COMMAND")
+                            )
                         logger.debug(
                             f"TX: {request.payload!r}",
                             extra={
@@ -544,6 +548,7 @@ class GrblSerialDriver(Driver):
                             "data": command_bytes,
                         },
                     )
+                    logger.info(line, extra=self._log_extra("USER_COMMAND"))
 
                     # Add to queue BEFORE sending.
                     # Fast machines can reply with 'ok' before await send()
@@ -642,10 +647,12 @@ class GrblSerialDriver(Driver):
         Executes a raw G-code string using the character-counting streaming
         protocol.
         """
+        lines = [line.strip() for line in gcode.splitlines() if line.strip()]
+        if not lines:
+            return
         self._start_job()
-        gcode_lines = gcode.splitlines()
         try:
-            await self._stream_gcode(gcode_lines)
+            await self._stream_gcode(lines)
         except DeviceConnectionError as e:
             logger.warning(
                 f"Raw G-code terminated due to device error: {e}. "
@@ -1014,7 +1021,7 @@ class GrblSerialDriver(Driver):
         and updates the device state.
         """
         logger.debug(f"Processing received status message: {report}")
-        logger.info(report, extra={"log_category": "MACHINE_EVENT"})
+        logger.info(report, extra=self._log_extra("STATUS_POLL"))
         state = parse_state(
             report, self.state, lambda message: logger.info(message)
         )
@@ -1024,12 +1031,14 @@ class GrblSerialDriver(Driver):
         if self._job_running and state.status == DeviceStatus.IDLE:
             state.status = DeviceStatus.RUN
 
+        old_status = self.state.status
         if state != self.state:
             self.state = state
-            logger.info(
-                f"Device state changed: {self.state.status.name}",
-                extra={"log_category": "STATE_CHANGE", "state": self.state},
-            )
+            if state.status != old_status:
+                logger.info(
+                    f"Device state changed: {self.state.status.name}",
+                    extra=self._log_extra("STATE_CHANGE"),
+                )
             self.state_changed.send(self, state=self.state)
 
     def _handle_general_response(self, line: str):
@@ -1046,7 +1055,8 @@ class GrblSerialDriver(Driver):
             logger.debug(f"Ignoring fragmented status report line: {line}")
             return
 
-        logger.info(line, extra={"log_category": "MACHINE_EVENT"})
+        category = "MACHINE_RESPONSE" if line == "ok" else "MACHINE_EVENT"
+        logger.info(line, extra=self._log_extra(category))
 
         # Logic for single, interactive commands must be checked first
         request = self._current_request
@@ -1199,7 +1209,7 @@ class GrblSerialDriver(Driver):
         log_data = f"Connection status: {status.name}"
         if message:
             log_data += f" - {message}"
-        logger.info(log_data, extra={"log_category": "MACHINE_EVENT"})
+        logger.info(log_data, extra=self._log_extra("MACHINE_EVENT"))
         self.connection_status_changed.send(
             self, status=status, message=message
         )

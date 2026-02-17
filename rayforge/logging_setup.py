@@ -20,12 +20,67 @@ class UILogFilter(logging.Filter):
     """
     This filter only allows log records that are intended for the user-facing
     log dialog, such as machine events, warnings, and errors.
+
+    Log Categories:
+    - MACHINE_EVENT: Important machine responses and events
+    - ERROR: Error messages
+    - WARNING: Warning messages
+    - STATE_CHANGE: Device state changes
+    - USER_COMMAND: Commands entered by user in console
+    - MACHINE_RESPONSE: Responses to user commands
+    - STATUS_POLL: Frequent status poll responses (filtered by default)
+
+    UI_CATEGORIES: Always shown in UI
+    VERBOSE_CATEGORIES: Shown only when verbose mode is enabled
     """
 
-    UI_CATEGORIES = {"MACHINE_EVENT", "ERROR", "WARNING", "STATE_CHANGE"}
+    UI_CATEGORIES = {
+        "MACHINE_EVENT",
+        "ERROR",
+        "WARNING",
+        "STATE_CHANGE",
+        "USER_COMMAND",
+    }
+
+    VERBOSE_CATEGORIES = {"STATUS_POLL", "MACHINE_RESPONSE"}
 
     def filter(self, record: logging.LogRecord) -> bool:
-        return record.__dict__.get("log_category") in self.UI_CATEGORIES
+        category = record.__dict__.get("log_category")
+        return (
+            category in self.UI_CATEGORIES
+            or category in self.VERBOSE_CATEGORIES
+        )
+
+
+class ConsoleFormatter(logging.Formatter):
+    """
+    A formatter for the console UI that formats messages based on their
+    category for better readability.
+
+    Format by category:
+    - USER_COMMAND: "> {message}" (no timestamp)
+    - ERROR: "ERROR {message}"
+    - WARNING: "WARN {message}"
+    - STATUS_POLL: "{timestamp} {message}"
+    - Others: "{timestamp} {message}"
+    """
+
+    def format(self, record: logging.LogRecord) -> str:
+        category = record.__dict__.get("log_category")
+        message = record.getMessage()
+
+        if category == "USER_COMMAND":
+            return f"> {message}"
+        elif category == "ERROR":
+            return f"ERROR {message}"
+        elif category == "WARNING":
+            return f"WARN {message}"
+        elif category == "STATUS_POLL":
+            timestamp = self.formatTime(record, self.datefmt)
+            return f"{timestamp} {message}"
+        else:
+            timestamp = self.formatTime(record, self.datefmt)
+            return f"{timestamp} {message}"
 
 
 class ConsoleLogFilter(logging.Filter):
@@ -48,7 +103,11 @@ class UILogHandler(logging.Handler):
         # We don't need to format the message here, as the dialog will add its
         # own timestamp. We just pass the core message.
         log_entry = self.format(record)
-        ui_log_event_received.send(self, message=log_entry)
+        category = record.__dict__.get("log_category")
+        machine_id = record.__dict__.get("machine_id")
+        ui_log_event_received.send(
+            self, message=log_entry, category=category, machine_id=machine_id
+        )
 
 
 def _cleanup_old_logs(log_dir: Path, keep_count: int):
@@ -158,9 +217,7 @@ def setup_logging(loglevel_str: str):
     ui_handler.setLevel(logging.INFO)  # Don't show DEBUG messages in UI log
     ui_handler.addFilter(UILogFilter())
     # Create the formatter and store it in our global instance
-    _ui_formatter_instance = logging.Formatter(
-        "[%(asctime)s] %(name)s: %(message)s", datefmt="%Y-%m-%d %H:%M:%S"
-    )
+    _ui_formatter_instance = ConsoleFormatter(datefmt="%Y-%m-%d %H:%M:%S")
     ui_handler.setFormatter(_ui_formatter_instance)
     root_logger.addHandler(ui_handler)
 
