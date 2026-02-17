@@ -1,4 +1,4 @@
-from ...shared.util.cairoutil import make_transparent
+from rayforge.image.image_util import make_surface_transparent
 from .modifier import Modifier
 
 
@@ -8,4 +8,4 @@ class MakeTransparent(Modifier):
     """
 
     def run(self, surface):
-        make_transparent(surface)
+        make_surface_transparent(surface)

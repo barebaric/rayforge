@@ -9,6 +9,181 @@ from ..core.matrix import Matrix
 logger = logging.getLogger(__name__)
 
 
+def surface_to_grayscale(
+    surface: cairo.ImageSurface,
+) -> Tuple[numpy.ndarray, numpy.ndarray]:
+    """
+    Convert a Cairo ARGB32 surface to a grayscale array with alpha handling.
+
+    Performs proper unpremultiplication of alpha and blends to white
+    background for grayscale calculation.
+
+    Args:
+        surface: Cairo ImageSurface in FORMAT_ARGB32 format.
+
+    Returns:
+        Tuple of (grayscale_array, alpha_array) as numpy arrays.
+        grayscale_array: uint8 array with values 0-255.
+        alpha_array: float32 array with values 0.0-1.0.
+    """
+    width_px = surface.get_width()
+    height_px = surface.get_height()
+    stride = surface.get_stride()
+    buf = surface.get_data()
+    data_with_padding = numpy.ndarray(
+        shape=(height_px, stride // 4, 4), dtype=numpy.uint8, buffer=buf
+    )
+    data = data_with_padding[:, :width_px, :]
+
+    alpha = data[:, :, 3].astype(numpy.float32) / 255.0
+
+    r = data[:, :, 2].astype(numpy.float32)
+    g = data[:, :, 1].astype(numpy.float32)
+    b = data[:, :, 0].astype(numpy.float32)
+
+    alpha_safe = numpy.maximum(alpha, 1e-6)
+
+    r_unpremult = r / alpha_safe
+    g_unpremult = g / alpha_safe
+    b_unpremult = b / alpha_safe
+
+    r_unpremult = numpy.clip(r_unpremult, 0, 255)
+    g_unpremult = numpy.clip(g_unpremult, 0, 255)
+    b_unpremult = numpy.clip(b_unpremult, 0, 255)
+
+    r_blended = 255.0 - (255.0 - r_unpremult) * alpha
+    g_blended = 255.0 - (255.0 - g_unpremult) * alpha
+    b_blended = 255.0 - (255.0 - b_unpremult) * alpha
+
+    gray_image = (
+        0.2989 * r_blended + 0.5870 * g_blended + 0.1140 * b_blended
+    ).astype(numpy.uint8)
+
+    return gray_image, alpha
+
+
+def surface_to_binary(
+    surface: cairo.ImageSurface,
+    threshold: int = 128,
+    invert: bool = False,
+) -> numpy.ndarray:
+    """
+    Convert a Cairo ARGB32 surface to a binary array using thresholding.
+
+    Converts the surface to grayscale and applies a threshold to produce
+    a binary (0 or 1) output. Transparent pixels are always treated as
+    white (0).
+
+    Args:
+        surface: Cairo ImageSurface in FORMAT_ARGB32 format.
+        threshold: Brightness value (0-255) for binarization. Pixels with
+            grayscale value below this threshold become black (1).
+        invert: If True, invert the binarization logic. Pixels above the
+            threshold become black (1).
+
+    Returns:
+        2D numpy array with values 0 (white/transparent) or 1 (black).
+
+    Raises:
+        ValueError: If the surface format is not ARGB32.
+    """
+    if surface.get_format() != cairo.FORMAT_ARGB32:
+        raise ValueError("Unsupported Cairo surface format")
+
+    width = surface.get_width()
+    height = surface.get_height()
+    data = numpy.frombuffer(surface.get_data(), dtype=numpy.uint8)
+    data = data.reshape((height, width, 4))
+
+    blue = data[:, :, 0]
+    green = data[:, :, 1]
+    red = data[:, :, 2]
+    alpha = data[:, :, 3]
+
+    grayscale = 0.2989 * red + 0.5870 * green + 0.1140 * blue
+
+    if invert:
+        binary = (grayscale > threshold).astype(numpy.uint8)
+    else:
+        binary = (grayscale < threshold).astype(numpy.uint8)
+
+    binary[alpha == 0] = 0
+    return binary
+
+
+def convert_surface_to_grayscale_inplace(surface: cairo.ImageSurface) -> None:
+    """
+    Convert a Cairo ARGB32 surface to grayscale in place.
+
+    Modifies the surface directly, converting RGB channels to grayscale
+    while preserving the alpha channel.
+
+    Args:
+        surface: Cairo ImageSurface in FORMAT_ARGB32 format.
+
+    Raises:
+        ValueError: If the surface format is not ARGB32.
+    """
+    if surface.get_format() != cairo.FORMAT_ARGB32:
+        raise ValueError("Unsupported Cairo surface format")
+
+    width, height = surface.get_width(), surface.get_height()
+    data = surface.get_data()
+    data_array = numpy.frombuffer(data, dtype=numpy.uint8).reshape(
+        (height, width, 4)
+    )
+
+    gray = (
+        0.299 * data_array[:, :, 2]
+        + 0.587 * data_array[:, :, 1]
+        + 0.114 * data_array[:, :, 0]
+    ).astype(numpy.uint8)
+
+    data_array[:, :, :3] = gray[:, :, None]
+
+
+def make_surface_transparent(
+    surface: cairo.ImageSurface, threshold: int = 250
+) -> None:
+    """
+    Make "almost white" pixels transparent in a Cairo ARGB32 surface.
+
+    Modifies the surface in place. Pixels with average brightness above
+    the threshold have their alpha channel set to 0.
+
+    Args:
+        surface: Cairo ImageSurface in FORMAT_ARGB32 format.
+        threshold: Brightness threshold (0-255). Pixels with average
+            RGB value >= threshold become transparent.
+
+    Raises:
+        ValueError: If the surface format is not ARGB32.
+    """
+    if surface.get_format() != cairo.FORMAT_ARGB32:
+        raise ValueError("Surface must be in ARGB32 format.")
+
+    width, height = surface.get_width(), surface.get_height()
+    stride = surface.get_stride()
+
+    data = surface.get_data()
+    buf = numpy.frombuffer(data, dtype=numpy.uint8).reshape((height, stride))
+
+    argb = buf.view(dtype=numpy.uint32)[:, :width]
+
+    r = (argb >> 16) & 0xFF
+    g = (argb >> 8) & 0xFF
+    b = argb & 0xFF
+
+    brightness = (
+        r.astype(numpy.uint16)
+        + g.astype(numpy.uint16)
+        + b.astype(numpy.uint16)
+    ) // 3
+    mask = brightness >= threshold
+
+    argb[mask] = (0x00 << 24) | (r[mask] << 16) | (g[mask] << 8) | b[mask]
+
+
 def resize_and_crop_from_full_image(
     full_image: pyvips.Image,
     target_w: int,
