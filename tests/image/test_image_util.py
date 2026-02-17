@@ -3,6 +3,7 @@ import pytest
 from pathlib import Path
 from typing import Tuple
 import warnings
+import numpy as np
 
 with warnings.catch_warnings():
     warnings.simplefilter("ignore", DeprecationWarning)
@@ -208,3 +209,254 @@ class TestCairoConversion:
 
         # Check that the returned values match the expected RGBA values
         assert (r, g, b, a) == expected_rgba
+
+
+class TestSurfaceToGrayscale:
+    """Tests for `surface_to_grayscale`."""
+
+    def test_black_surface(self):
+        surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, 10, 10)
+        ctx = cairo.Context(surface)
+        ctx.set_source_rgb(0, 0, 0)
+        ctx.paint()
+        gray, alpha = util.surface_to_grayscale(surface)
+        assert gray.shape == (10, 10)
+        assert alpha.shape == (10, 10)
+        assert np.all(gray == 0)
+        assert np.all(alpha == 1.0)
+
+    def test_white_surface(self):
+        surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, 10, 10)
+        ctx = cairo.Context(surface)
+        ctx.set_source_rgb(1, 1, 1)
+        ctx.paint()
+        gray, alpha = util.surface_to_grayscale(surface)
+        assert np.allclose(gray, 255, atol=1)
+        assert np.all(alpha == 1.0)
+
+    def test_transparent_surface(self):
+        surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, 10, 10)
+        ctx = cairo.Context(surface)
+        ctx.set_source_rgba(0.5, 0.5, 0.5, 0)
+        ctx.paint()
+        gray, alpha = util.surface_to_grayscale(surface)
+        assert np.all(alpha == 0.0)
+
+
+class TestSurfaceToBinary:
+    """Tests for `surface_to_binary`."""
+
+    def test_black_surface_becomes_all_ones(self):
+        surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, 10, 10)
+        ctx = cairo.Context(surface)
+        ctx.set_source_rgb(0, 0, 0)
+        ctx.paint()
+        binary = util.surface_to_binary(surface, threshold=128)
+        assert binary.shape == (10, 10)
+        assert np.all(binary == 1)
+
+    def test_white_surface_becomes_all_zeros(self):
+        surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, 10, 10)
+        ctx = cairo.Context(surface)
+        ctx.set_source_rgb(1, 1, 1)
+        ctx.paint()
+        binary = util.surface_to_binary(surface, threshold=128)
+        assert np.all(binary == 0)
+
+    def test_threshold_behavior(self):
+        surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, 2, 2)
+        data = surface.get_data()
+        arr = np.frombuffer(data, dtype=np.uint8).reshape((2, 2, 4))
+        arr[:, :, 0] = 50
+        arr[:, :, 1] = 50
+        arr[:, :, 2] = 50
+        arr[:, :, 3] = 255
+        surface.mark_dirty()
+
+        binary_low = util.surface_to_binary(surface, threshold=40)
+        assert np.all(binary_low == 0)
+
+        binary_high = util.surface_to_binary(surface, threshold=60)
+        assert np.all(binary_high == 1)
+
+    def test_invert_mode(self):
+        surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, 10, 10)
+        ctx = cairo.Context(surface)
+        ctx.set_source_rgb(1, 1, 1)
+        ctx.paint()
+        binary = util.surface_to_binary(surface, threshold=128, invert=True)
+        assert np.all(binary == 1)
+
+        surface2 = cairo.ImageSurface(cairo.FORMAT_ARGB32, 10, 10)
+        ctx2 = cairo.Context(surface2)
+        ctx2.set_source_rgb(0, 0, 0)
+        ctx2.paint()
+        binary2 = util.surface_to_binary(surface2, threshold=128, invert=True)
+        assert np.all(binary2 == 0)
+
+    def test_transparent_becomes_zero(self):
+        surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, 10, 10)
+        ctx = cairo.Context(surface)
+        ctx.set_source_rgba(0, 0, 0, 0)
+        ctx.paint()
+        binary = util.surface_to_binary(surface, threshold=128)
+        assert np.all(binary == 0)
+
+    def test_transparent_ignored_in_invert_mode(self):
+        surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, 10, 10)
+        ctx = cairo.Context(surface)
+        ctx.set_source_rgba(1, 1, 1, 0)
+        ctx.paint()
+        binary = util.surface_to_binary(surface, threshold=128, invert=True)
+        assert np.all(binary == 0)
+
+    def test_raises_for_non_argb32(self):
+        surface = cairo.ImageSurface(cairo.FORMAT_RGB24, 2, 2)
+        with pytest.raises(
+            ValueError, match="Unsupported Cairo surface format"
+        ):
+            util.surface_to_binary(surface)
+
+    def test_partial_opacity_preserved(self):
+        surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, 2, 2)
+        data = surface.get_data()
+        arr = np.frombuffer(data, dtype=np.uint8).reshape((2, 2, 4))
+        arr[:, :, 0] = 0
+        arr[:, :, 1] = 0
+        arr[:, :, 2] = 0
+        arr[:, :, 3] = 128
+        surface.mark_dirty()
+
+        binary = util.surface_to_binary(surface, threshold=128)
+        assert np.all(binary == 1)
+
+    def test_output_is_binary(self):
+        surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, 10, 10)
+        ctx = cairo.Context(surface)
+        gradient = cairo.LinearGradient(0, 0, 10, 10)
+        gradient.add_color_stop_rgb(0, 0, 0, 0)
+        gradient.add_color_stop_rgb(1, 1, 1, 1)
+        ctx.set_source(gradient)
+        ctx.paint()
+        binary = util.surface_to_binary(surface, threshold=128)
+        unique_values = np.unique(binary)
+        assert all(v in [0, 1] for v in unique_values)
+
+
+class TestConvertSurfaceToGrayscaleInplace:
+    """Tests for `convert_surface_to_grayscale_inplace`."""
+
+    def test_converts_to_grayscale(self):
+        surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, 2, 2)
+        data = surface.get_data()
+        arr = np.frombuffer(data, dtype=np.uint8).reshape((2, 2, 4))
+        arr[:, :, 0] = 255
+        arr[:, :, 1] = 0
+        arr[:, :, 2] = 0
+        arr[:, :, 3] = 255
+        surface.mark_dirty()
+
+        util.convert_surface_to_grayscale_inplace(surface)
+
+        data = surface.get_data()
+        arr = np.frombuffer(data, dtype=np.uint8).reshape((2, 2, 4))
+        assert arr[0, 0, 0] == arr[0, 0, 1]
+        assert arr[0, 0, 1] == arr[0, 0, 2]
+
+    def test_raises_for_non_argb32(self):
+        surface = cairo.ImageSurface(cairo.FORMAT_RGB24, 2, 2)
+        with pytest.raises(
+            ValueError, match="Unsupported Cairo surface format"
+        ):
+            util.convert_surface_to_grayscale_inplace(surface)
+
+    def test_preserves_alpha(self):
+        surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, 2, 2)
+        data = surface.get_data()
+        arr = np.frombuffer(data, dtype=np.uint8).reshape((2, 2, 4))
+        arr[:, :, 0] = 100
+        arr[:, :, 1] = 150
+        arr[:, :, 2] = 200
+        arr[:, :, 3] = 128
+        surface.mark_dirty()
+
+        util.convert_surface_to_grayscale_inplace(surface)
+
+        data = surface.get_data()
+        arr = np.frombuffer(data, dtype=np.uint8).reshape((2, 2, 4))
+        assert arr[0, 0, 3] == 128
+
+
+class TestMakeSurfaceTransparent:
+    """Tests for `make_surface_transparent`."""
+
+    def test_makes_white_pixels_transparent(self):
+        surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, 2, 2)
+        data = surface.get_data()
+        arr = np.frombuffer(data, dtype=np.uint8).reshape((2, 2, 4))
+        arr[:, :, 0] = 255
+        arr[:, :, 1] = 255
+        arr[:, :, 2] = 255
+        arr[:, :, 3] = 255
+        surface.mark_dirty()
+
+        util.make_surface_transparent(surface, threshold=250)
+
+        data = surface.get_data()
+        arr = np.frombuffer(data, dtype=np.uint8).reshape((2, 2, 4))
+        assert arr[0, 0, 3] == 0
+
+    def test_keeps_dark_pixels_opaque(self):
+        surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, 2, 2)
+        data = surface.get_data()
+        arr = np.frombuffer(data, dtype=np.uint8).reshape((2, 2, 4))
+        arr[:, :, 0] = 0
+        arr[:, :, 1] = 0
+        arr[:, :, 2] = 0
+        arr[:, :, 3] = 255
+        surface.mark_dirty()
+
+        util.make_surface_transparent(surface, threshold=250)
+
+        data = surface.get_data()
+        arr = np.frombuffer(data, dtype=np.uint8).reshape((2, 2, 4))
+        assert arr[0, 0, 3] == 255
+
+    def test_raises_for_non_argb32(self):
+        surface = cairo.ImageSurface(cairo.FORMAT_RGB24, 2, 2)
+        with pytest.raises(
+            ValueError, match="Surface must be in ARGB32 format"
+        ):
+            util.make_surface_transparent(surface)
+
+    def test_custom_threshold(self):
+        surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, 2, 2)
+        data = surface.get_data()
+        arr = np.frombuffer(data, dtype=np.uint8).reshape((2, 2, 4))
+        arr[:, :, 0] = 200
+        arr[:, :, 1] = 200
+        arr[:, :, 2] = 200
+        arr[:, :, 3] = 255
+        surface.mark_dirty()
+
+        util.make_surface_transparent(surface, threshold=150)
+
+        data = surface.get_data()
+        arr = np.frombuffer(data, dtype=np.uint8).reshape((2, 2, 4))
+        assert arr[0, 0, 3] == 0
+
+    def test_threshold_boundary(self):
+        surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, 2, 2)
+        data = surface.get_data()
+        arr = np.frombuffer(data, dtype=np.uint8).reshape((2, 2, 4))
+        arr[:, :, 0] = 200
+        arr[:, :, 1] = 200
+        arr[:, :, 2] = 200
+        arr[:, :, 3] = 255
+        surface.mark_dirty()
+
+        util.make_surface_transparent(surface, threshold=201)
+
+        data = surface.get_data()
+        arr = np.frombuffer(data, dtype=np.uint8).reshape((2, 2, 4))
+        assert arr[0, 0, 3] == 255

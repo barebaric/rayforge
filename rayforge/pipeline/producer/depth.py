@@ -1,17 +1,23 @@
 import cairo
 import numpy as np
-import math
 import logging
 from enum import Enum, auto
-from typing import Optional, TYPE_CHECKING, Tuple, Dict, Any
-from ...core.ops import (
-    Ops,
-    SectionType,
-)
+from typing import Optional, TYPE_CHECKING, Dict, Any
+from ...core.ops import Ops, SectionType
+from ...image.image_util import surface_to_grayscale
 from ...shared.tasker.progress import ProgressContext
 from ..artifact import WorkPieceArtifact
 from ..coord import CoordinateSystem
 from .base import OpsProducer
+from .raster_util import (
+    find_segments,
+    convert_y_to_output,
+    calculate_ymax_mm,
+    find_bounding_box,
+    find_mask_bounding_box,
+    generate_horizontal_scan_positions,
+    resample_rows,
+)
 
 if TYPE_CHECKING:
     from ...core.workpiece import WorkPiece
@@ -81,39 +87,11 @@ class DepthEngraver(OpsProducer):
             if self.line_interval_mm is not None
             else laser.spot_size_mm[1]
         )
+        x_offset_mm = workpiece.bbox[0]
         y_offset_mm = workpiece.bbox[1] + y_offset_mm
 
         if width_px > 0 and height_px > 0:
-            stride = surface.get_stride()
-            buf = surface.get_data()
-            data_with_padding = np.ndarray(
-                shape=(height_px, stride // 4, 4), dtype=np.uint8, buffer=buf
-            )
-            data = data_with_padding[:, :width_px, :]
-
-            alpha = data[:, :, 3].astype(np.float32) / 255.0
-
-            r = data[:, :, 2].astype(np.float32)
-            g = data[:, :, 1].astype(np.float32)
-            b = data[:, :, 0].astype(np.float32)
-
-            alpha_safe = np.maximum(alpha, 1e-6)
-
-            r_unpremult = r / alpha_safe
-            g_unpremult = g / alpha_safe
-            b_unpremult = b / alpha_safe
-
-            r_unpremult = np.clip(r_unpremult, 0, 255)
-            g_unpremult = np.clip(g_unpremult, 0, 255)
-            b_unpremult = np.clip(b_unpremult, 0, 255)
-
-            r_blended = 255.0 - (255.0 - r_unpremult) * alpha
-            g_blended = 255.0 - (255.0 - g_unpremult) * alpha
-            b_blended = 255.0 - (255.0 - b_unpremult) * alpha
-
-            gray_image = (
-                0.2989 * r_blended + 0.5870 * g_blended + 0.1140 * b_blended
-            ).astype(np.uint8)
+            gray_image, alpha = surface_to_grayscale(surface)
 
             if self.invert:
                 alpha_mask = alpha > 0
@@ -122,22 +100,18 @@ class DepthEngraver(OpsProducer):
             if self.depth_mode == DepthMode.POWER_MODULATION:
                 step_power = settings.get("power", 1.0) if settings else 1.0
                 mode_ops = self._run_power_modulation(
-                    gray_image.astype(np.uint8),
+                    gray_image,
                     pixels_per_mm,
+                    x_offset_mm,
                     y_offset_mm,
                     line_interval_mm,
                     step_power,
                 )
-            else:  # Multi-Pass mode
-                if not np.isclose(self.scan_angle, 0):
-                    logger.warning(
-                        "Angled scanning is not supported for Multi-Pass "
-                        "depth engraving. Defaulting to horizontal "
-                        "(0 degrees)."
-                    )
+            else:
                 mode_ops = self._run_multi_pass(
-                    gray_image.astype(np.uint8),
+                    gray_image,
                     pixels_per_mm,
+                    x_offset_mm,
                     y_offset_mm,
                     line_interval_mm,
                 )
@@ -146,7 +120,6 @@ class DepthEngraver(OpsProducer):
                 final_ops.set_laser(laser.uid)
                 final_ops.extend(mode_ops)
 
-        # Always close with the section end marker
         final_ops.ops_section_end(SectionType.RASTER_FILL)
 
         return WorkPieceArtifact(
@@ -160,114 +133,86 @@ class DepthEngraver(OpsProducer):
     def _run_power_modulation(
         self,
         gray_image: np.ndarray,
-        pixels_per_mm: Tuple[float, float],
-        y_offset_mm: float,
+        pixels_per_mm: tuple,
+        offset_x_mm: float,
+        offset_y_mm: float,
         line_interval_mm: float,
         step_power: float = 1.0,
     ) -> Ops:
         ops = Ops()
         height_px, width_px = gray_image.shape
+        ymax_mm = calculate_ymax_mm((width_px, height_px), pixels_per_mm)
         px_per_mm_x, px_per_mm_y = pixels_per_mm
-        height_mm = height_px / px_per_mm_y
 
-        occupied_rows = np.any(gray_image < 255, axis=1)
-        if not np.any(occupied_rows):
+        bbox = find_bounding_box(gray_image)
+        if bbox is None:
             return ops
 
-        y_min_px, y_max_px = np.where(occupied_rows)[0][[0, -1]]
-
-        y_min_mm = y_min_px / px_per_mm_y
-        y_max_mm = (y_max_px + 1) / px_per_mm_y
-
-        global_y_min_mm = y_offset_mm + y_min_mm
-        num_intervals = math.ceil(global_y_min_mm / line_interval_mm)
-        first_scan_y_mm_global = num_intervals * line_interval_mm
-        first_scan_y_mm_local = first_scan_y_mm_global - y_offset_mm
-
-        scan_y_coords_mm = np.arange(
-            first_scan_y_mm_local, y_max_mm, line_interval_mm
+        y_min_px, y_max_px = bbox[0], bbox[1]
+        y_coords_mm, y_coords_px = generate_horizontal_scan_positions(
+            y_min_px,
+            y_max_px,
+            height_px,
+            pixels_per_mm,
+            line_interval_mm,
+            offset_y_mm,
         )
-        if len(scan_y_coords_mm) == 0:
+
+        if len(y_coords_mm) == 0:
             return ops
 
-        scan_y_coords_px = scan_y_coords_mm * px_per_mm_y
-        scan_y_coords_px = np.clip(scan_y_coords_px, 0, height_px - 1)
+        resampled_gray = resample_rows(gray_image, y_coords_px)
 
-        y0 = np.floor(scan_y_coords_px).astype(int)
-        y1 = np.ceil(scan_y_coords_px).astype(int)
-        y_frac = scan_y_coords_px - y0
-
-        row0_values = gray_image[y0, :]
-        row1_values = gray_image[y1, :]
-
-        resampled_gray = (
-            row0_values * (1 - y_frac[:, np.newaxis])
-            + row1_values * y_frac[:, np.newaxis]
-        )
-
-        # Interpolate grayscale value into the modulation range.
         power_range = self.max_power - self.min_power
         power_fractions = (
             self.min_power + (1.0 - resampled_gray / 255.0) * power_range
         )
-
-        # Scale by the step's master power setting to get final power fractions
         power_fractions = power_fractions * step_power
-
-        # Convert power fractions (0.0-1.0) to bytes (0-255) for the command
         power_image = (power_fractions * 255).astype(np.uint8)
 
         is_reversed = False
         y_pixel_center_offset_mm = 0.5 / px_per_mm_y
 
-        for i, y_mm in enumerate(scan_y_coords_mm):
+        for i, y_mm in enumerate(y_coords_mm):
             row_power_values = power_image[i, :]
 
             if np.any(row_power_values > 0):
-                # Find contiguous segments of "on" pixels and create a separate
-                # ScanLine for each, avoiding long scanlines over empty space.
-                is_on = row_power_values > 0
-                padded = np.concatenate(([False], is_on, [False]))
-                diffs = np.diff(padded.astype(int))
-                starts = np.where(diffs == 1)[0]
-                ends = np.where(diffs == -1)[0]
+                segments = find_segments(row_power_values)
 
-                line_segments = list(zip(starts, ends))
                 if self.bidirectional and is_reversed:
-                    line_segments.reverse()
+                    segments = segments[::-1]
 
                 line_y_mm = y_mm + y_pixel_center_offset_mm
-                final_y_mm = float(height_mm - line_y_mm)
+                final_y_mm = float(convert_y_to_output(line_y_mm, ymax_mm))
 
-                for start_idx, end_idx in line_segments:
+                for start_idx, end_idx in segments:
                     power_slice = row_power_values[start_idx:end_idx]
 
                     start_x = start_idx / px_per_mm_x
                     end_x = end_idx / px_per_mm_x
 
-                    start_pt = (start_x, final_y_mm, 0.0)
-                    end_pt = (end_x, final_y_mm, 0.0)
-
                     if self.bidirectional and is_reversed:
-                        ops.move_to(*end_pt)
+                        ops.move_to(end_x, final_y_mm, 0.0)
                         ops.scan_to(
-                            start_pt[0],
-                            start_pt[1],
-                            start_pt[2],
+                            start_x,
+                            final_y_mm,
+                            0.0,
                             bytearray(power_slice[::-1]),
                         )
                     else:
-                        ops.move_to(*start_pt)
+                        ops.move_to(start_x, final_y_mm, 0.0)
                         ops.scan_to(
-                            end_pt[0],
-                            end_pt[1],
-                            end_pt[2],
+                            end_x,
+                            final_y_mm,
+                            0.0,
                             bytearray(power_slice),
                         )
+
                 if self.bidirectional:
                     is_reversed = not is_reversed
 
         if not np.isclose(self.scan_angle, 0.0):
+            height_mm = height_px / px_per_mm_y
             center_x = (width_px / px_per_mm_x) / 2
             center_y = height_mm / 2
             ops.rotate(self.scan_angle, center_x, center_y)
@@ -277,13 +222,12 @@ class DepthEngraver(OpsProducer):
     def _run_multi_pass(
         self,
         gray_image: np.ndarray,
-        pixels_per_mm: Tuple[float, float],
-        y_offset_mm: float,
+        pixels_per_mm: tuple,
+        offset_x_mm: float,
+        offset_y_mm: float,
         line_interval_mm: float,
     ) -> Ops:
         ops = Ops()
-        height_px = gray_image.shape[0]
-        height_mm = height_px / pixels_per_mm[1]
 
         pass_map = np.ceil(
             ((255 - gray_image) / 255.0) * self.num_depth_levels
@@ -295,93 +239,83 @@ class DepthEngraver(OpsProducer):
                 continue
 
             z_offset = -((pass_level - 1) * self.z_step_down)
-            pass_ops = self._rasterize_mask_horizontally(
+            pass_ops = self._rasterize_mask(
                 mask,
                 pixels_per_mm,
-                height_mm,
-                y_offset_mm,
-                z_offset,
+                offset_x_mm,
+                offset_y_mm,
                 line_interval_mm,
+                z_offset,
             )
             ops.extend(pass_ops)
+
         return ops
 
-    def _rasterize_mask_horizontally(
+    def _rasterize_mask(
         self,
         mask: np.ndarray,
-        pixels_per_mm: Tuple[float, float],
-        height_mm: float,
-        y_offset_mm: float,
-        z: float,
+        pixels_per_mm: tuple,
+        offset_x_mm: float,
+        offset_y_mm: float,
         line_interval_mm: float,
+        z: float,
     ) -> Ops:
         ops = Ops()
         height_px, width_px = mask.shape
+        ymax_mm = calculate_ymax_mm((width_px, height_px), pixels_per_mm)
         px_per_mm_x, px_per_mm_y = pixels_per_mm
+
+        bbox = find_mask_bounding_box(mask)
+        if bbox is None:
+            return ops
+
+        y_min_px, y_max_px, x_min, x_max = bbox
+        y_coords_mm, y_coords_px = generate_horizontal_scan_positions(
+            y_min_px,
+            y_max_px,
+            height_px,
+            pixels_per_mm,
+            line_interval_mm,
+            offset_y_mm,
+        )
+
+        if len(y_coords_mm) == 0:
+            return ops
+
+        resampled_mask = resample_rows(mask, y_coords_px)
+        resampled_mask = (resampled_mask > 0.5).astype(np.uint8)
+
         is_reversed = False
-
-        # Find the bounding box of the occupied area
-        occupied_rows = np.any(mask, axis=1)
-        occupied_cols = np.any(mask, axis=0)
-
-        if not np.any(occupied_rows) or not np.any(occupied_cols):
-            return ops  # No occupied area, return an empty path
-
-        y_min, y_max = np.where(occupied_rows)[0][[0, -1]]
-        x_min, x_max = np.where(occupied_cols)[0][[0, -1]]
-
-        # Calculate dimensions in millimeters
-        y_min_mm = y_min / px_per_mm_y
-
-        # Align to global grid
-        global_y_min_mm = y_offset_mm + y_min_mm
-        num_intervals = math.ceil(global_y_min_mm / line_interval_mm)
-        first_global_y_mm = num_intervals * line_interval_mm
-        y_start_mm = first_global_y_mm - y_offset_mm
-
-        # Correction for vertical alignment: center the raster line in
-        # the pixel.
         y_pixel_center_offset_mm = 0.5 / px_per_mm_y
 
-        # The content ends at the bottom edge of the last occupied pixel row
-        # (y_max).
-        # The loop should include any raster line that starts before this edge.
-        y_extent_mm = (y_max + 1) / px_per_mm_y
+        for i, y_mm in enumerate(y_coords_mm):
+            row = resampled_mask[i, x_min : x_max + 1]
 
-        # Iterate over rows in millimeters (floating-point)
-        y_step_mm = line_interval_mm
-        for y_mm in np.arange(y_start_mm, y_extent_mm, y_step_mm):
-            # Convert y_mm to pixel coordinates (floating-point)
-            y_px = int(round(y_mm * px_per_mm_y))
-            if y_px >= height_px:  # Ensure we don't go out of bounds
+            if not np.any(row):
                 continue
 
-            row = mask[y_px, x_min : x_max + 1]
+            segments = find_segments(row)
 
-            if np.any(row):
-                diff = np.diff(np.hstack(([0], row, [0])))
-                starts = np.where(diff == 1)[0]
-                ends = np.where(diff == -1)[0]
+            if self.bidirectional and is_reversed:
+                segments = segments[::-1]
+
+            line_y_mm = y_mm + y_pixel_center_offset_mm
+            final_y_mm = float(convert_y_to_output(line_y_mm, ymax_mm))
+
+            for start_px, end_px in segments:
+                content_start_mm_x = (x_min + start_px) / px_per_mm_x
+                content_end_mm_x = (x_min + end_px - 1 + 0.5) / px_per_mm_x
 
                 if self.bidirectional and is_reversed:
-                    starts, ends = starts[::-1], ends[::-1]
+                    ops.move_to(content_end_mm_x, final_y_mm, z)
+                    ops.line_to(content_start_mm_x, final_y_mm, z)
+                else:
+                    ops.move_to(content_start_mm_x, final_y_mm, z)
+                    ops.line_to(content_end_mm_x, final_y_mm, z)
 
-                line_y_mm = y_mm + y_pixel_center_offset_mm
-                final_y_mm = float(height_mm - line_y_mm)
+            if self.bidirectional:
+                is_reversed = not is_reversed
 
-                for start_px, end_px in zip(starts, ends):
-                    content_start_mm_x = (x_min + start_px + 0.5) / px_per_mm_x
-                    content_end_mm_x = (x_min + end_px - 1 + 0.5) / px_per_mm_x
-
-                    if self.bidirectional and is_reversed:
-                        ops.move_to(content_end_mm_x, final_y_mm, z)
-                        ops.line_to(content_start_mm_x, final_y_mm, z)
-                    else:
-                        ops.move_to(content_start_mm_x, final_y_mm, z)
-                        ops.line_to(content_end_mm_x, final_y_mm, z)
-
-                if self.bidirectional:
-                    is_reversed = not is_reversed
         return ops
 
     def is_vector_producer(self) -> bool:
@@ -412,7 +346,6 @@ class DepthEngraver(OpsProducer):
         """
         params_in = data.get("params", {})
 
-        # Create a new dictionary with defaults, then update with loaded data
         init_args = {
             "scan_angle": 0.0,
             "bidirectional": True,
@@ -426,7 +359,6 @@ class DepthEngraver(OpsProducer):
         }
         init_args.update(params_in)
 
-        # Handle the enum conversion
         depth_mode_str = init_args.get(
             "depth_mode", DepthMode.POWER_MODULATION.name
         )

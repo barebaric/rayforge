@@ -1,12 +1,19 @@
 import cairo
 import numpy as np
-import math
 import logging
-from typing import Optional, TYPE_CHECKING, Dict, Any, Tuple
+from typing import Optional, TYPE_CHECKING, Dict, Any
 from ...core.ops import Ops, SectionType
 from ..artifact import WorkPieceArtifact
 from ..coord import CoordinateSystem
 from .base import OpsProducer
+from .raster_util import (
+    find_segments,
+    convert_y_to_output,
+    calculate_ymax_mm,
+    find_mask_bounding_box,
+    generate_horizontal_scan_positions,
+    resample_rows,
+)
 
 if TYPE_CHECKING:
     from ...core.workpiece import WorkPiece
@@ -109,10 +116,14 @@ class DitherRasterizer(OpsProducer):
                 if self.line_interval_mm is not None
                 else laser.spot_size_mm[1]
             )
-            raster_ops = self._rasterize_mask_horizontally(
+            x_offset_mm = workpiece.bbox[0]
+            adjusted_y_offset_mm = workpiece.bbox[1] + y_offset_mm
+
+            raster_ops = self._rasterize_mask(
                 dithered_mask,
                 pixels_per_mm,
-                y_offset_mm,
+                x_offset_mm,
+                adjusted_y_offset_mm,
                 line_interval,
             )
             final_ops.extend(raster_ops)
@@ -131,85 +142,63 @@ class DitherRasterizer(OpsProducer):
             generation_size=workpiece.size,
         )
 
-    def _rasterize_mask_horizontally(
+    def _rasterize_mask(
         self,
         mask: np.ndarray,
-        pixels_per_mm: Tuple[float, float],
-        y_offset_mm: float,
+        pixels_per_mm: tuple,
+        offset_x_mm: float,
+        offset_y_mm: float,
         line_interval_mm: float,
     ) -> Ops:
         ops = Ops()
         height_px, width_px = mask.shape
+        ymax_mm = calculate_ymax_mm((width_px, height_px), pixels_per_mm)
         px_per_mm_x, px_per_mm_y = pixels_per_mm
-        height_mm = height_px / px_per_mm_y
 
-        occupied_rows = np.any(mask, axis=1)
-        occupied_cols = np.any(mask, axis=0)
-
-        if not np.any(occupied_rows) or not np.any(occupied_cols):
+        bbox = find_mask_bounding_box(mask)
+        if bbox is None:
             return ops
 
-        y_min_px, y_max_px = np.where(occupied_rows)[0][[0, -1]]
-        x_min, x_max = np.where(occupied_cols)[0][[0, -1]]
-
-        y_min_mm = y_min_px / px_per_mm_y
-        y_max_mm = (y_max_px + 1) / px_per_mm_y
-
-        global_y_min_mm = y_offset_mm + y_min_mm
-        num_intervals = math.ceil(global_y_min_mm / line_interval_mm)
-        first_scan_y_mm_global = num_intervals * line_interval_mm
-        first_scan_y_mm_local = first_scan_y_mm_global - y_offset_mm
-
-        scan_y_coords_mm = np.arange(
-            first_scan_y_mm_local, y_max_mm, line_interval_mm
+        y_min_px, y_max_px, x_min, x_max = bbox
+        y_coords_mm, y_coords_px = generate_horizontal_scan_positions(
+            y_min_px,
+            y_max_px,
+            height_px,
+            pixels_per_mm,
+            line_interval_mm,
+            offset_y_mm,
         )
-        if len(scan_y_coords_mm) == 0:
+
+        if len(y_coords_mm) == 0:
             return ops
 
-        scan_y_coords_px = scan_y_coords_mm * px_per_mm_y
-        scan_y_coords_px = np.clip(scan_y_coords_px, 0, height_px - 1)
+        resampled_mask = resample_rows(mask.astype(np.float32), y_coords_px)
+        resampled_mask = (resampled_mask > 0.5).astype(np.uint8)
 
-        y0 = np.floor(scan_y_coords_px).astype(int)
-        y1 = np.clip(np.ceil(scan_y_coords_px).astype(int), 0, height_px - 1)
-
+        is_reversed = False
         y_pixel_center_offset_mm = 0.5 / px_per_mm_y
 
-        for i, y_mm in enumerate(scan_y_coords_mm):
-            row_y0 = mask[y0[i], x_min : x_max + 1]
-            row_y1 = mask[y1[i], x_min : x_max + 1]
-
-            frac = scan_y_coords_px[i] - y0[i]
-            if frac < 0.5:
-                row = row_y0
-            else:
-                row = row_y1
+        for i, y_mm in enumerate(y_coords_mm):
+            row = resampled_mask[i, x_min : x_max + 1]
 
             if not np.any(row):
                 continue
 
-            if self.bidirectional:
-                line_index = round((y_mm + y_offset_mm) / line_interval_mm)
-                is_reversed = (line_index % 2) != 0
-            else:
-                is_reversed = False
+            segments = find_segments(row)
 
-            diff = np.diff(np.hstack(([0], row, [0])))
-            starts = np.where(diff == 1)[0]
-            ends = np.where(diff == -1)[0]
-
-            if is_reversed:
-                starts, ends = starts[::-1], ends[::-1]
+            if self.bidirectional and is_reversed:
+                segments = segments[::-1]
 
             line_y_mm = y_mm + y_pixel_center_offset_mm
-            final_y_mm = float(height_mm - line_y_mm)
+            final_y_mm = float(convert_y_to_output(line_y_mm, ymax_mm))
 
-            for start_px, end_px in zip(starts, ends):
+            for start_px, end_px in segments:
                 content_start_mm_x = (x_min + start_px) / px_per_mm_x
-                content_end_mm_x = (x_min + end_px) / px_per_mm_x
+                content_end_mm_x = (x_min + end_px - 1 + 0.5) / px_per_mm_x
 
                 power_data = bytearray([255] * (end_px - start_px))
 
-                if is_reversed:
+                if self.bidirectional and is_reversed:
                     ops.move_to(content_end_mm_x, final_y_mm, 0.0)
                     ops.scan_to(
                         content_start_mm_x,
@@ -225,6 +214,9 @@ class DitherRasterizer(OpsProducer):
                         0.0,
                         power_data,
                     )
+
+            if self.bidirectional:
+                is_reversed = not is_reversed
 
         return ops
 

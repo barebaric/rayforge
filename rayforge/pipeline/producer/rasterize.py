@@ -1,13 +1,19 @@
-import cairo
 import numpy as np
-import math
 import logging
-from typing import Optional, TYPE_CHECKING, Dict, Any, Tuple
+from typing import Optional, TYPE_CHECKING, Dict, Any
 from ...core.ops import Ops, SectionType
+from ...image.image_util import surface_to_binary
 from ...shared.tasker.progress import ProgressContext
 from ..artifact import WorkPieceArtifact
 from ..coord import CoordinateSystem
 from .base import OpsProducer
+from .raster_util import (
+    ScanLine,
+    generate_scan_lines,
+    find_segments,
+    convert_y_to_output,
+    find_mask_bounding_box,
+)
 
 if TYPE_CHECKING:
     from ...core.workpiece import WorkPiece
@@ -16,365 +22,63 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-def _validate_surface_format(surface) -> None:
-    """Validate that the surface is in ARGB32 format.
-
-    Args:
-        surface: Cairo surface to validate.
-
-    Raises:
-        ValueError: If the surface format is not ARGB32.
-    """
-    surface_format = surface.get_format()
-    if surface_format != cairo.FORMAT_ARGB32:
-        raise ValueError("Unsupported Cairo surface format")
-
-
-def _surface_to_binarized_array(
-    surface, threshold: int, invert: bool
-) -> np.ndarray:
-    """Convert Cairo surface to binarized grayscale array.
-
-    Args:
-        surface: Cairo surface to convert.
-        threshold: Brightness value (0-255) for binarization.
-        invert: If True, invert the binarization logic.
-
-    Returns:
-        2D numpy array with values 0 (white) or 1 (black).
-    """
-    width = surface.get_width()
-    height = surface.get_height()
-    data = np.frombuffer(surface.get_data(), dtype=np.uint8)
-    data = data.reshape((height, width, 4))
-
-    blue = data[:, :, 0]
-    green = data[:, :, 1]
-    red = data[:, :, 2]
-    alpha = data[:, :, 3]
-
-    grayscale = 0.2989 * red + 0.5870 * green + 0.1140 * blue
-
-    if invert:
-        bw_image = (grayscale > threshold).astype(np.uint8)
-    else:
-        bw_image = (grayscale < threshold).astype(np.uint8)
-
-    bw_image[alpha == 0] = 0
-    return bw_image
-
-
-def _find_bounding_box(
+def _process_segments_for_scan_line(
+    scan_line: ScanLine,
     bw_image: np.ndarray,
-) -> Optional[Tuple[int, int, int, int]]:
-    """Find the bounding box of occupied (black) pixels.
-
-    Args:
-        bw_image: 2D numpy array with binary values.
-
-    Returns:
-        Tuple of (y_min, y_max, x_min, x_max) or None if image is empty.
-    """
-    occupied_rows = np.any(bw_image, axis=1)
-    occupied_cols = np.any(bw_image, axis=0)
-
-    if not np.any(occupied_rows) or not np.any(occupied_cols):
-        return None
-
-    y_min, y_max = np.where(occupied_rows)[0][[0, -1]]
-    x_min, x_max = np.where(occupied_cols)[0][[0, -1]]
-    return y_min, y_max, x_min, x_max
-
-
-def _find_black_segments(line: np.ndarray) -> np.ndarray:
-    """Find start and end indices of black segments in a line.
-
-    Args:
-        line: 1D numpy array with binary values.
-
-    Returns:
-        2D numpy array of shape (n, 2) where each row contains
-        [start_index, end_index] for a black segment.
-    """
-    return np.where(np.diff(np.hstack(([0], line, [0]))))[0].reshape(-1, 2)
-
-
-def _line_pixels(
-    start: Tuple[float, float],
-    end: Tuple[float, float],
-    width: int,
-    height: int,
-) -> np.ndarray:
-    """
-    Get pixel coordinates along a line using Bresenham's algorithm.
-
-    Args:
-        start: (x, y) start coordinates in pixels
-        end: (x, y) end coordinates in pixels
-        width: Image width in pixels
-        height: Image height in pixels
-
-    Returns:
-        Array of (x, y) pixel coordinates along the line
-    """
-    x0, y0 = int(round(start[0])), int(round(start[1]))
-    x1, y1 = int(round(end[0])), int(round(end[1]))
-
-    dx = abs(x1 - x0)
-    dy = abs(y1 - y0)
-    sx = 1 if x0 < x1 else -1
-    sy = 1 if y0 < y1 else -1
-    err = dx - dy
-
-    pixels = []
-    x, y = x0, y0
-
-    while True:
-        if 0 <= x < width and 0 <= y < height:
-            pixels.append((x, y))
-        if x == x1 and y == y1:
-            break
-        e2 = 2 * err
-        if e2 > -dy:
-            err -= dy
-            x += sx
-        if e2 < dx:
-            err += dx
-            y += sy
-
-    return np.array(pixels, dtype=np.int32)
-
-
-def _calculate_raster_params(
-    bbox: Tuple[int, int, int, int],
-    pixels_per_mm: Tuple[float, float],
-    raster_size_mm: float,
-    direction_degrees: float,
-    offset_x_mm: float = 0.0,
-    offset_y_mm: float = 0.0,
-) -> Dict[str, Any]:
-    """Calculate raster parameters from bounding box and angle.
-
-    Args:
-        bbox: Bounding box as (y_min, y_max, x_min, x_max).
-        pixels_per_mm: Resolution as (x, y) pixels per millimeter.
-        raster_size_mm: Distance between raster lines in millimeters.
-        direction_degrees: Raster direction in degrees.
-        offset_x_mm: Global X offset for line alignment across chunks.
-        offset_y_mm: Global Y offset for line alignment across chunks.
-
-    Returns:
-        Dictionary containing calculated parameters:
-            - angle_rad: Direction angle in radians.
-            - cos_a: Cosine of the direction angle.
-            - sin_a: Sine of the direction angle.
-            - center_x_mm: Center X coordinate in millimeters.
-            - center_y_mm: Center Y coordinate in millimeters.
-            - diag_mm: Diagonal length of bounding box in millimeters.
-            - perp_cos: Cosine of perpendicular angle.
-            - perp_sin: Sine of perpendicular angle.
-            - first_line_index: First line index aligned to global grid.
-            - last_line_index: Last line index aligned to global grid.
-    """
-    y_min, y_max, x_min, x_max = bbox
-    pixels_per_mm_x, pixels_per_mm_y = pixels_per_mm
-
-    angle_rad = math.radians(direction_degrees)
-    cos_a = math.cos(angle_rad)
-    sin_a = math.sin(angle_rad)
-
-    bbox_width_mm = (x_max - x_min + 1) / pixels_per_mm_x
-    bbox_height_mm = (y_max - y_min + 1) / pixels_per_mm_y
-
-    center_x_mm = (x_min + x_max + 1) / (2 * pixels_per_mm_x)
-    center_y_mm = (y_min + y_max + 1) / (2 * pixels_per_mm_y)
-
-    diag_mm = math.sqrt(bbox_width_mm**2 + bbox_height_mm**2)
-
-    perp_angle_rad = angle_rad + math.pi / 2
-    perp_cos = math.cos(perp_angle_rad)
-    perp_sin = math.sin(perp_angle_rad)
-
-    global_center_perp = (center_x_mm + offset_x_mm) * perp_cos + (
-        center_y_mm + offset_y_mm
-    ) * perp_sin
-
-    perp_extent_start = global_center_perp - diag_mm / 2
-    perp_extent_end = global_center_perp + diag_mm / 2
-
-    first_line_global_perp = math.ceil(perp_extent_start / raster_size_mm)
-    last_line_global_perp = math.floor(perp_extent_end / raster_size_mm)
-
-    return {
-        "angle_rad": angle_rad,
-        "cos_a": cos_a,
-        "sin_a": sin_a,
-        "center_x_mm": center_x_mm,
-        "center_y_mm": center_y_mm,
-        "diag_mm": diag_mm,
-        "perp_cos": perp_cos,
-        "perp_sin": perp_sin,
-        "first_line_index": first_line_global_perp,
-        "last_line_index": last_line_global_perp,
-        "global_center_perp": global_center_perp,
-    }
-
-
-def _get_raster_line_coords(
-    params: Dict[str, Any],
-    line_index: int,
-    raster_size_mm: float,
-    offset_x_mm: float = 0.0,
-    offset_y_mm: float = 0.0,
-) -> Tuple[float, float, float, float]:
-    """Calculate start and end coordinates for a raster line.
-
-    Args:
-        params: Raster parameters from _calculate_raster_params.
-        line_index: Global line index (multiple of raster_size_mm).
-        raster_size_mm: Distance between raster lines in millimeters.
-        offset_x_mm: Global X offset for line alignment.
-        offset_y_mm: Global Y offset for line alignment.
-
-    Returns:
-        Tuple of (start_x_mm, start_y_mm, end_x_mm, end_y_mm).
-    """
-    center_x_mm = params["center_x_mm"]
-    center_y_mm = params["center_y_mm"]
-    diag_mm = params["diag_mm"]
-    cos_a = params["cos_a"]
-    sin_a = params["sin_a"]
-    perp_cos = params["perp_cos"]
-    perp_sin = params["perp_sin"]
-    global_center_perp = params["global_center_perp"]
-
-    line_global_perp = line_index * raster_size_mm
-    line_local_perp = line_global_perp - global_center_perp
-
-    line_center_x_mm = center_x_mm + line_local_perp * perp_cos
-    line_center_y_mm = center_y_mm + line_local_perp * perp_sin
-
-    half_diag = diag_mm / 2
-    start_x_mm = line_center_x_mm - half_diag * cos_a
-    start_y_mm = line_center_y_mm - half_diag * sin_a
-    end_x_mm = line_center_x_mm + half_diag * cos_a
-    end_y_mm = line_center_y_mm + half_diag * sin_a
-
-    return start_x_mm, start_y_mm, end_x_mm, end_y_mm
-
-
-def _process_raster_segments(
-    pixels: np.ndarray,
-    values: np.ndarray,
-    segments: np.ndarray,
+    pixels_per_mm: tuple,
     reverse: bool,
-    line_start_mm: Tuple[float, float],
-    line_end_mm: Tuple[float, float],
-    pixels_per_mm: Tuple[float, float],
 ) -> list:
-    """Process raster segments and convert to millimeter coordinates.
-
-    Projects pixel positions onto the globally-aligned line to preserve
-    chunk alignment while maintaining accurate segment extents.
+    """Process a scan line and extract segment coordinates in mm.
 
     Args:
-        pixels: Array of (x, y) pixel coordinates along the raster line.
-        values: Binary values at each pixel position.
-        segments: Array of [start_idx, end_idx] pairs for black segments.
-        reverse: If True, swap start/end coordinates for each segment.
-        line_start_mm: (x, y) start of the raster line in mm.
-        line_end_mm: (x, y) end of the raster line in mm.
+        scan_line: The ScanLine to process.
+        bw_image: Binary image array.
         pixels_per_mm: Resolution as (x, y) pixels per millimeter.
+        reverse: If True, reverse segment order.
 
     Returns:
-        List of tuples (start_mm_x, start_mm_y, end_mm_x, end_mm_y).
+        List of (start_x_mm, start_y_mm, end_x_mm, end_y_mm) tuples.
     """
+    if len(scan_line.pixels) == 0:
+        return []
+
+    values = bw_image[scan_line.pixels[:, 1], scan_line.pixels[:, 0]]
+    segments = find_segments(values)
+
+    if len(segments) == 0:
+        return []
+
+    if reverse:
+        segments = segments[::-1]
+
     segment_coords = []
-    pixels_per_mm_x, pixels_per_mm_y = pixels_per_mm
-
-    if len(pixels) == 0:
-        return segment_coords
-
-    sx, sy = line_start_mm
-    ex, ey = line_end_mm
-    dx_mm = ex - sx
-    dy_mm = ey - sy
-    line_len = math.sqrt(dx_mm**2 + dy_mm**2)
-
-    if line_len < 1e-9:
-        return segment_coords
-
-    cos_a = dx_mm / line_len
-    sin_a = dy_mm / line_len
-
-    line_center_x = (sx + ex) / 2
-    line_center_y = (sy + ey) / 2
-
-    def pixel_to_mm(px, py):
-        px_mm = px / pixels_per_mm_x
-        py_mm = py / pixels_per_mm_y
-        t = (px_mm - line_center_x) * cos_a + (py_mm - line_center_y) * sin_a
-        return (
-            line_center_x + t * cos_a,
-            line_center_y + t * sin_a,
-        )
-
     for start_idx, end_idx in segments:
         if values[start_idx] == 1:
             if reverse:
-                seg_start_px = pixels[end_idx - 1]
-                seg_end_px = pixels[start_idx]
+                seg_start_px = scan_line.pixels[end_idx - 1]
+                seg_end_px = scan_line.pixels[start_idx]
             else:
-                seg_start_px = pixels[start_idx]
-                seg_end_px = pixels[end_idx - 1]
+                seg_start_px = scan_line.pixels[start_idx]
+                seg_end_px = scan_line.pixels[end_idx - 1]
 
-            start_mm_x, start_mm_y = pixel_to_mm(
-                seg_start_px[0], seg_start_px[1]
+            start_mm = scan_line.pixel_to_mm(
+                seg_start_px[0], seg_start_px[1], pixels_per_mm
             )
-            end_mm_x, end_mm_y = pixel_to_mm(seg_end_px[0], seg_end_px[1])
+            end_mm = scan_line.pixel_to_mm(
+                seg_end_px[0], seg_end_px[1], pixels_per_mm
+            )
 
-            segment_coords.append((start_mm_x, start_mm_y, end_mm_x, end_mm_y))
+            segment_coords.append(
+                (start_mm[0], start_mm[1], end_mm[0], end_mm[1])
+            )
 
     return segment_coords
-
-
-def _add_segments_to_ops(
-    ops: Ops,
-    segment_coords: list,
-    ymax: float,
-    last_seg_end: Optional[Tuple[float, float]],
-) -> Tuple[Ops, Optional[Tuple[float, float]]]:
-    """Add processed segments to ops with proper coordinate conversion.
-
-    Args:
-        ops: Ops object to add commands to.
-        segment_coords: List of (start_x, start_y, end_x, end_y) tuples.
-        ymax: Maximum Y coordinate for axis inversion.
-        last_seg_end: Previous segment end position for distance checking.
-
-    Returns:
-        Tuple of (updated_ops, new_last_seg_end).
-    """
-    for start_mm_x, start_mm_y, end_mm_x, end_mm_y in segment_coords:
-        if last_seg_end is not None:
-            dist_sq = (start_mm_x - last_seg_end[0]) ** 2 + (
-                start_mm_y - last_seg_end[1]
-            ) ** 2
-            if dist_sq > 0.01:
-                ops.move_to(float(start_mm_x), float(ymax - start_mm_y))
-        else:
-            ops.move_to(float(start_mm_x), float(ymax - start_mm_y))
-
-        ops.line_to(float(end_mm_x), float(ymax - end_mm_y))
-        last_seg_end = (end_mm_x, end_mm_y)
-
-    return ops, last_seg_end
 
 
 def rasterize_at_angle(
     surface,
     ymax: float,
-    pixels_per_mm: Tuple[float, float],
+    pixels_per_mm: tuple,
     raster_size_mm: float,
     direction_degrees: float,
     offset_x_mm: float = 0.0,
@@ -407,64 +111,36 @@ def rasterize_at_angle(
     if width == 0 or height == 0:
         return Ops()
 
-    _validate_surface_format(surface)
-    bw_image = _surface_to_binarized_array(surface, threshold, invert)
+    bw_image = surface_to_binary(surface, threshold, invert)
 
-    bbox = _find_bounding_box(bw_image)
+    bbox = find_mask_bounding_box(bw_image)
     if bbox is None:
         return Ops()
 
-    params = _calculate_raster_params(
-        bbox,
-        pixels_per_mm,
-        raster_size_mm,
-        direction_degrees,
-        offset_x_mm,
-        offset_y_mm,
-    )
-    pixels_per_mm_x, pixels_per_mm_y = pixels_per_mm
-
     ops = Ops()
 
-    for i in range(params["first_line_index"], params["last_line_index"] + 1):
-        start_x_mm, start_y_mm, end_x_mm, end_y_mm = _get_raster_line_coords(
-            params, i, raster_size_mm, offset_x_mm, offset_y_mm
+    for scan_line in generate_scan_lines(
+        bbox=bbox,
+        image_size=(width, height),
+        pixels_per_mm=pixels_per_mm,
+        line_interval_mm=raster_size_mm,
+        direction_degrees=direction_degrees,
+        offset_x_mm=offset_x_mm,
+        offset_y_mm=offset_y_mm,
+    ):
+        reverse = (scan_line.index % 2) != 0
+
+        segment_coords = _process_segments_for_scan_line(
+            scan_line, bw_image, pixels_per_mm, reverse
         )
 
-        start_x_px = start_x_mm * pixels_per_mm_x
-        start_y_px = start_y_mm * pixels_per_mm_y
-        end_x_px = end_x_mm * pixels_per_mm_x
-        end_y_px = end_y_mm * pixels_per_mm_y
-
-        pixels = _line_pixels(
-            (start_x_px, start_y_px), (end_x_px, end_y_px), width, height
-        )
-
-        if len(pixels) == 0:
-            continue
-
-        values = bw_image[pixels[:, 1], pixels[:, 0]]
-        segments = _find_black_segments(values)
-
-        if len(segments) == 0:
-            continue
-
-        reverse = (i % 2) != 0
-        if reverse:
-            segments = segments[::-1]
-
-        segment_coords = _process_raster_segments(
-            pixels,
-            values,
-            segments,
-            reverse,
-            (start_x_mm, start_y_mm),
-            (end_x_mm, end_y_mm),
-            pixels_per_mm,
-        )
-
-        if segment_coords:
-            ops = _add_segments_to_ops(ops, segment_coords, ymax, None)[0]
+        for start_x_mm, start_y_mm, end_x_mm, end_y_mm in segment_coords:
+            ops.move_to(
+                float(start_x_mm), float(convert_y_to_output(start_y_mm, ymax))
+            )
+            ops.line_to(
+                float(end_x_mm), float(convert_y_to_output(end_y_mm, ymax))
+            )
 
     return ops
 
