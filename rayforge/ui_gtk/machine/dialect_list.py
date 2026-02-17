@@ -76,7 +76,8 @@ class DialectRow(Gtk.Box):
         self.select_button.set_child(get_icon("object-select-symbolic"))
         self.select_button.set_tooltip_text(_("Select this dialect"))
         self.select_button.connect("toggled", self._on_select_toggled)
-        self.append(self.select_button)
+        self.select_button.set_valign(Gtk.Align.CENTER)
+        suffix_box.append(self.select_button)
 
         self._update_selection_state()
 
