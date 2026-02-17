@@ -31,7 +31,7 @@ graph TB
 
 ## Operation Types
 
-Rayforge supports four main operation types:
+Rayforge supports five main operation types:
 
 ### [Contour Cutting](contour.md)
 
@@ -68,6 +68,24 @@ Fill areas with back-and-forth engraving lines (bi-directional scanning).
 - Cross-hatch fill for consistent coverage
 - Variable power based on image brightness
 - Line interval (spacing) control
+
+### [Dithered Raster](dither.md)
+
+Engrave images using dithering algorithms for high-quality grayscale reproduction.
+
+**Best For:**
+
+- Photo engraving with fine detail
+- Grayscale images on wood
+- Halftone-style engravings
+- High-contrast reproductions
+
+**Key Features:**
+
+- Floyd-Steinberg error diffusion dithering
+- Bayer ordered dithering (2x2, 4x4, 8x8)
+- Better tonal range than threshold-based raster
+- Ideal for photographs
 
 ### [Depth Engraving](depth.md)
 
@@ -139,14 +157,14 @@ When ready, generate G-code (++ctrl+g++) to create machine instructions.
 
 These settings are available for all operation types:
 
-| Setting | Description | Typical Range |
-|:--------|:------------|:--------------|
-| **Name** | Operation identifier | Any text |
-| **Power** | Laser power percentage | 0-100% |
-| **Speed** | Feed rate in mm/min | 100-6000 mm/min |
-| **Passes** | Number of repetitions | 1-10 |
-| **Enabled** | Enable/disable operation | On/Off |
-| **Layer** | Assign to specific layer | Layer 1-10 |
+| Setting     | Description              | Typical Range   |
+| :---------- | :----------------------- | :-------------- |
+| **Name**    | Operation identifier     | Any text        |
+| **Power**   | Laser power percentage   | 0-100%          |
+| **Speed**   | Feed rate in mm/min      | 100-6000 mm/min |
+| **Passes**  | Number of repetitions    | 1-10            |
+| **Enabled** | Enable/disable operation | On/Off          |
+| **Layer**   | Assign to specific layer | Layer 1-10      |
 
 ### Advanced Settings
 
@@ -202,5 +220,6 @@ Explore each operation type for detailed information and examples:
 
 - **[Contour Cutting →](contour.md)**
 - **[Raster Engraving →](raster.md)**
+- **[Dithered Raster →](dither.md)**
 - **[Depth Engraving →](depth.md)**
 - **[Shrink Wrap →](shrink-wrap.md)**
