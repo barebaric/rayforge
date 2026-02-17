@@ -38,6 +38,18 @@ def show_import_dialog(
     supported_types = editor.file.get_supported_import_filters()
 
     for file_type in supported_types:
+        if file_type["extensions"]:
+            for ext in file_type["extensions"]:
+                pattern = f"*{ext}"
+                all_supported.add_pattern(pattern)
+
+        if file_type["mime_types"]:
+            for mime_type in file_type["mime_types"]:
+                all_supported.add_mime_type(mime_type)
+
+    filter_list.append(all_supported)
+
+    for file_type in supported_types:
         file_filter = Gtk.FileFilter()
         if file_type["label"]:
             file_filter.set_name(_(file_type["label"]))
@@ -46,16 +58,12 @@ def show_import_dialog(
             for ext in file_type["extensions"]:
                 pattern = f"*{ext}"
                 file_filter.add_pattern(pattern)
-                all_supported.add_pattern(pattern)
 
         if file_type["mime_types"]:
             for mime_type in file_type["mime_types"]:
                 file_filter.add_mime_type(mime_type)
-                all_supported.add_mime_type(mime_type)
 
         filter_list.append(file_filter)
-
-    filter_list.append(all_supported)
 
     dialog.set_filters(filter_list)
     dialog.set_default_filter(all_supported)
