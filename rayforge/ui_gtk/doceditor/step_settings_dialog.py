@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Tuple
+from typing import TYPE_CHECKING, Optional, Tuple
 
 from blinker import Signal
 from gi.repository import Adw, Gdk, GLib, Gtk
@@ -436,11 +436,13 @@ class StepSettingsDialog(PatchedDialogWindow):
         self,
         editor: "DocEditor",
         step: Step,
+        initial_page: Optional[str] = None,
         **kwargs,
     ):
         super().__init__(**kwargs)
         self.editor = editor
         self.step = step
+        self._initial_page = initial_page
         self.set_title(_("{name} Settings").format(name=step.name))
 
         # Adw.ToolbarView provides areas for a header, content, and bottom bar.
@@ -509,7 +511,9 @@ class StepSettingsDialog(PatchedDialogWindow):
         switcher_box.append(btn2)
 
         # Set initial state
-        btn1.set_active(True)
+        btn1.set_active(self._initial_page != "post-processing")
+        if self._initial_page == "post-processing":
+            btn2.set_active(True)
         self.general_view._sync_widgets_to_model()
 
     def _on_tab_toggled(self, button, stack, page_name):
