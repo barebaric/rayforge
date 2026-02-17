@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """
 Script to start Rayforge and take screenshots.
-Supports capturing the main window and machine dialog pages.
+Supports capturing the main window, machine dialog pages, and step
+settings dialog pages.
 """
 
 import logging
@@ -272,15 +273,22 @@ def setup_application(include_test_file: bool = True):
 
 
 def create_patched_app_class(
-    screenshot_type: str = "main", machine_page: Optional[str] = None
+    screenshot_type: str = "main",
+    machine_page: Optional[str] = None,
+    step_page: Optional[str] = None,
+    step_index: Optional[int] = None,
 ):
     """
     Create a patched App class that activates simulation mode and takes a
     screenshot.
 
     Args:
-        screenshot_type: Type of screenshot to take ("main" or "machine").
+        screenshot_type: Type of screenshot to take ("main", "machine", or
+            "step-settings").
         machine_page: Machine dialog page to capture (for "machine" type).
+        step_page: Step settings dialog page to capture (for "step-settings"
+            type).
+        step_index: Index of the step to capture (for "step-settings" type).
 
     Returns:
         The patched App class.
@@ -296,6 +304,8 @@ def create_patched_app_class(
             self._screenshot_taken = False
             self._screenshot_type = screenshot_type
             self._machine_page = machine_page
+            self._step_page = step_page
+            self._step_index = step_index
 
         def _schedule_delayed_actions(self, win):
             """Schedule delayed actions for simulation activation and
@@ -355,6 +365,47 @@ def create_patched_app_class(
             GLib.timeout_add_seconds(3, open_dialog)
             GLib.timeout_add_seconds(5, take_screenshot_and_quit)
 
+        def _schedule_step_dialog_screenshot(self, win):
+            """Schedule delayed actions for step settings dialog screenshot."""
+            from gi.repository import GLib
+
+            self._step_dialog = None
+
+            def open_dialog():
+                """Open the step settings dialog."""
+                self._step_dialog = self._open_step_dialog(win)
+                if not self._step_dialog:
+                    logger.error("Failed to open step dialog")
+                    self._quit_application()
+                    return False
+                return False
+
+            def switch_page_and_screenshot():
+                """Switch to the specified page and take screenshot."""
+                # Page is set via initial_page parameter when dialog is created
+                # So we don't need to manually switch pages
+                logger.info(f"Using page: {self._step_page}")
+                if not self._switch_step_page(win):
+                    logger.error("Failed to switch step page")
+                    self._quit_application()
+                    return False
+                return False
+
+            def take_screenshot_and_quit():
+                """Take the screenshot and quit."""
+                if not self._screenshot_taken:
+                    step_type = self._get_step_type_name(win)
+                    output_name = f"step-{step_type}-{self._step_page}.png"
+                    take_screenshot(output_name)
+                    self._screenshot_taken = True
+                self._quit_application()
+                return False
+
+            # Schedule actions with delays
+            GLib.timeout_add_seconds(3, open_dialog)
+            GLib.timeout_add_seconds(4, switch_page_and_screenshot)
+            GLib.timeout_add_seconds(6, take_screenshot_and_quit)
+
         def do_activate(self):
             """Activate the application and set up the window."""
             from rayforge.core.vectorization_spec import TraceSpec
@@ -368,7 +419,9 @@ def create_patched_app_class(
             win.set_default_size(1600, 1100)
             logger.info("Window size set to 1600x1100")
 
-            # For machine screenshots, don't load a file
+            # For machine and step-settings screenshots, load a file if
+            # provided. Use load_project_from_path for .ryp files,
+            # load_file_from_path for others.
             if (
                 self._screenshot_type != "machine"
                 and self.args.filenames
@@ -378,20 +431,26 @@ def create_patched_app_class(
                 for filename in self.args.filenames:
                     if filename.startswith("--"):
                         continue
-                    mime_type, _ = mimetypes.guess_type(filename)
-                    vector_spec = (
-                        None if self.args.direct_vector else TraceSpec()
-                    )
-                    win.doc_editor.file.load_file_from_path(
-                        filename=Path(filename),
-                        mime_type=mime_type,
-                        vectorization_spec=vector_spec,
-                    )
+                    file_path = Path(filename)
+                    if file_path.suffix == ".ryp":
+                        win.doc_editor.file.load_project_from_path(file_path)
+                    else:
+                        mime_type, _ = mimetypes.guess_type(filename)
+                        vector_spec = (
+                            None if self.args.direct_vector else TraceSpec()
+                        )
+                        win.doc_editor.file.load_file_from_path(
+                            filename=file_path,
+                            mime_type=mime_type,
+                            vectorization_spec=vector_spec,
+                        )
             win.present()
 
             # Schedule the screenshot and simulation activation
             if self._screenshot_type == "machine":
                 self._schedule_machine_dialog_screenshot(win)
+            elif self._screenshot_type == "step-settings":
+                self._schedule_step_dialog_screenshot(win)
             else:
                 self._schedule_delayed_actions(win)
 
@@ -423,6 +482,64 @@ def create_patched_app_class(
             except Exception as e:
                 logger.error(f"Failed to open machine dialog: {e}")
                 return False
+
+        def _open_step_dialog(self, win):
+            """Open the step settings dialog for the specified step."""
+            try:
+                step = self._get_step_by_index(win)
+                if not step:
+                    logger.error(
+                        f"Could not find step at index {self._step_index}"
+                    )
+                    return None
+
+                from rayforge.ui_gtk.doceditor.step_settings_dialog import (
+                    StepSettingsDialog,
+                )
+
+                dialog = StepSettingsDialog(
+                    editor=win.doc_editor,
+                    step=step,
+                    transient_for=win,
+                    initial_page=self._step_page,
+                )
+                dialog.present()
+                msg = f"Opened step dialog for step: {step.name}"
+                logger.info(msg)
+                return dialog
+
+            except Exception as e:
+                logger.error(f"Failed to open step dialog: {e}")
+                return None
+
+        def _get_step_by_index(self, win):
+            """Get a step by its index in the document."""
+            try:
+                step_index = self._step_index or 0
+                for layer in win.doc_editor.doc.layers:
+                    if layer.workflow and layer.workflow.steps:
+                        if step_index < len(layer.workflow.steps):
+                            return layer.workflow.steps[step_index]
+                        step_index -= len(layer.workflow.steps)
+                return None
+            except Exception as e:
+                logger.error(f"Error finding step: {e}")
+                return None
+
+        def _get_step_type_name(self, win) -> str:
+            """Get the type name of the current step for the filename."""
+            step = self._get_step_by_index(win)
+            if step:
+                step_type = step.typelabel.lower().replace(" ", "-")
+                return step_type
+            return "unknown"
+
+        def _switch_step_page(self, win) -> bool:
+            """Switch to the specified page in the step settings dialog."""
+            # Page is set via initial_page parameter when dialog is created
+            # So we don't need to manually switch pages
+            logger.info(f"Using page: {self._step_page}")
+            return True
 
         def _quit_application(self):
             """Quit the application."""
@@ -486,9 +603,12 @@ def shutdown_application():
         )
 
     # Save configuration
-    if context.config_mgr:
-        context.config_mgr.save()
-        logger.info("Saved config.")
+    try:
+        if context.config_mgr:
+            context.config_mgr.save()
+            logger.info("Saved config.")
+    except RuntimeError:
+        logger.debug("Config manager already shut down.")
 
     rayforge.shared.tasker.task_mgr.shutdown()
     logger.info("Task manager shut down.")
@@ -524,7 +644,7 @@ def main():
     parser.add_argument(
         "--screenshot-type",
         default="main",
-        choices=["main", "machine"],
+        choices=["main", "machine", "step-settings"],
         help="Type of screenshot to take (default: main)",
     )
     parser.add_argument(
@@ -543,6 +663,18 @@ def main():
         ],
         help="Machine dialog page to capture (default: general)",
     )
+    parser.add_argument(
+        "--step-page",
+        default="step-settings",
+        choices=["step-settings", "post-processing"],
+        help="Step settings dialog page to capture (default: step-settings)",
+    )
+    parser.add_argument(
+        "--step-index",
+        type=int,
+        default=0,
+        help="Index of the step to capture (default: 0)",
+    )
 
     args = parser.parse_args()
 
@@ -552,7 +684,9 @@ def main():
     logger.info(f"Application starting with log level {args.loglevel.upper()}")
 
     # Set up application with or without test file based on screenshot type
-    include_test_file = args.screenshot_type != "machine"
+    # For machine and step-settings screenshots, don't include
+    # default test file
+    include_test_file = args.screenshot_type == "main"
     setup_application(include_test_file)
 
     # Initialize logging and imports
@@ -562,6 +696,8 @@ def main():
     PatchedApp = create_patched_app_class(
         screenshot_type=args.screenshot_type,
         machine_page=args.machine_page,
+        step_page=args.step_page,
+        step_index=args.step_index,
     )
     app = PatchedApp(args)
     exit_code = app.run(None)
