@@ -71,10 +71,50 @@ def apply_floyd_steinberg_dither(
         return (dithered < 128).astype(np.uint8)
 
 
+def apply_minimum_run_length(
+    binary: np.ndarray, min_run_length: int
+) -> np.ndarray:
+    """
+    Ensure all runs of 1s are at least min_run_length pixels long.
+
+    Short runs are removed (set to 0). This prevents the laser from
+    attempting to engrave features smaller than its spot size.
+
+    Args:
+        binary: 2D binary array.
+        min_run_length: Minimum run length in pixels.
+
+    Returns:
+        Binary array with short runs removed.
+    """
+    if min_run_length <= 1:
+        return binary
+
+    result = binary.copy()
+    height, width = binary.shape
+
+    for y in range(height):
+        row = result[y, :]
+        x = 0
+        while x < width:
+            if row[x] == 1:
+                run_start = x
+                while x < width and row[x] == 1:
+                    x += 1
+                run_length = x - run_start
+                if run_length < min_run_length:
+                    row[run_start:x] = 0
+            else:
+                x += 1
+
+    return result
+
+
 def apply_bayer_dither(
     grayscale: np.ndarray,
     bayer_matrix: np.ndarray,
     invert: bool,
+    cell_size: int = 1,
 ) -> np.ndarray:
     """
     Apply ordered dithering using a Bayer matrix.
@@ -83,6 +123,8 @@ def apply_bayer_dither(
         grayscale: 2D array of grayscale values (0-255).
         bayer_matrix: Bayer threshold matrix.
         invert: If True, invert the output (engrave light areas).
+        cell_size: Size of each dither cell in pixels. Values > 1 create
+            larger threshold regions suitable for coarser laser resolution.
 
     Returns:
         Binary image where 1 represents areas to engrave.
@@ -96,7 +138,9 @@ def apply_bayer_dither(
 
     for y in range(height):
         for x in range(width):
-            threshold = normalized_matrix[y % matrix_size, x % matrix_size]
+            cell_x = (x // cell_size) % matrix_size
+            cell_y = (y // cell_size) % matrix_size
+            threshold = normalized_matrix[cell_y, cell_x]
             if invert:
                 result[y, x] = 1 if grayscale[y, x] > threshold else 0
             else:
@@ -109,6 +153,7 @@ def surface_to_dithered_array(
     surface,
     dither_algorithm: DitherAlgorithm,
     invert: bool,
+    min_feature_px: int = 1,
 ) -> np.ndarray:
     """
     Convert Cairo surface to dithered binary array.
@@ -117,6 +162,9 @@ def surface_to_dithered_array(
         surface: Cairo surface in ARGB32 format.
         dither_algorithm: The dithering algorithm to use.
         invert: If True, invert the output (engrave light areas).
+        min_feature_px: Minimum feature size in pixels. Ensures dithered
+            patterns have features no smaller than this size, suitable
+            for the laser's spot size.
 
     Returns:
         Binary image where 1 represents areas to engrave.
@@ -131,20 +179,34 @@ def surface_to_dithered_array(
     )
     data = data_with_padding[:, :width, :]
 
-    blue = data[:, :, 0]
-    green = data[:, :, 1]
-    red = data[:, :, 2]
-    alpha = data[:, :, 3]
+    blue = data[:, :, 0].astype(np.float32)
+    green = data[:, :, 1].astype(np.float32)
+    red = data[:, :, 2].astype(np.float32)
+    alpha = data[:, :, 3].astype(np.float32)
 
-    grayscale = (0.2989 * red + 0.5870 * green + 0.1140 * blue).astype(
-        np.float32
-    )
+    alpha_safe = np.maximum(alpha, 1e-6)
+
+    red_unpremult = np.clip(red * 255.0 / alpha_safe, 0, 255)
+    green_unpremult = np.clip(green * 255.0 / alpha_safe, 0, 255)
+    blue_unpremult = np.clip(blue * 255.0 / alpha_safe, 0, 255)
+
+    alpha_normalized = alpha / 255.0
+    red_blended = 255.0 - (255.0 - red_unpremult) * alpha_normalized
+    green_blended = 255.0 - (255.0 - green_unpremult) * alpha_normalized
+    blue_blended = 255.0 - (255.0 - blue_unpremult) * alpha_normalized
+
+    grayscale = (
+        0.2989 * red_blended + 0.5870 * green_blended + 0.1140 * blue_blended
+    ).astype(np.float32)
 
     if dither_algorithm == DitherAlgorithm.FLOYD_STEINBERG:
         bw_image = apply_floyd_steinberg_dither(grayscale, invert)
+        bw_image = apply_minimum_run_length(bw_image, min_feature_px)
     else:
         bayer_matrix = BAYER_MATRICES[dither_algorithm]
-        bw_image = apply_bayer_dither(grayscale, bayer_matrix, invert)
+        bw_image = apply_bayer_dither(
+            grayscale, bayer_matrix, invert, cell_size=min_feature_px
+        )
 
     bw_image[alpha == 0] = 0
     return bw_image
