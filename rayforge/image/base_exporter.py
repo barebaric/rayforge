@@ -17,7 +17,7 @@ class Exporter(ABC):
     extensions: Tuple[str, ...]
     mime_types: Tuple[str, ...]
 
-    def __init__(self, doc_item: DocItem):
+    def __init__(self, doc_item: "DocItem"):
         """
         Initializes the exporter with the document item to be exported.
 
@@ -25,6 +25,26 @@ class Exporter(ABC):
             doc_item: The DocItem instance to export.
         """
         self.doc_item = doc_item
+
+    @abstractmethod
+    def export(self) -> bytes:
+        """
+        Performs the export operation.
+
+        Returns:
+            The exported data as a bytes object.
+        """
+        raise NotImplementedError
+
+
+class GeometryExporter(ABC):
+    """
+    Abstract base class for exporters that work with Geometry objects.
+    """
+
+    label: str
+    extensions: Tuple[str, ...]
+    mime_types: Tuple[str, ...]
 
     @abstractmethod
     def export(self) -> bytes:

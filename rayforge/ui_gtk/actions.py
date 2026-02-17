@@ -129,7 +129,7 @@ class ActionManager:
             "edit_sketch", self.win.sketch_mode_cmd.on_edit_sketch
         )
         self._add_action(
-            "export_sketch", self.win.sketch_mode_cmd.on_export_sketch
+            "export_object", self.win.sketch_mode_cmd.on_export_object
         )
 
         # Layer Management Actions
@@ -240,21 +240,22 @@ class ActionManager:
         selected_wps = self.win.surface.get_selected_workpieces()
         self.actions["split"].set_enabled(bool(selected_wps))
 
-        # Update edit_sketch and export_sketch action states
-        # Only enable if exactly one workpiece is selected and it is a sketch
-        can_edit_or_export_sketch = False
+        # Update edit_sketch and export_object action states
+        # edit_sketch: Only enable for sketch-based workpieces
+        # export_object: Enable for any workpiece with geometry
+        can_edit_sketch = False
+        can_export_object = False
         if len(selected_wps) == 1:
             wp = selected_wps[0]
-            # Is it a sketch-based WorkPiece?
             if wp.sketch_uid:
-                can_edit_or_export_sketch = True
+                can_edit_sketch = True
+            if wp.boundaries is not None and not wp.boundaries.is_empty():
+                can_export_object = True
 
-        if "export_sketch" in self.actions:
-            self.actions["export_sketch"].set_enabled(
-                can_edit_or_export_sketch
-            )
+        if "export_object" in self.actions:
+            self.actions["export_object"].set_enabled(can_export_object)
         if "edit_sketch" in self.actions:
-            self.actions["edit_sketch"].set_enabled(can_edit_or_export_sketch)
+            self.actions["edit_sketch"].set_enabled(can_edit_sketch)
 
     def on_add_stock(self, action, param):
         """Handler for the 'add_stock' action."""

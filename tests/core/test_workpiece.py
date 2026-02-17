@@ -272,6 +272,39 @@ class TestWorkPiece:
         # Should revert to cached original (y-up version)
         assert wp.boundaries is not edited_geo
 
+    def test_world_space_boundaries(self, workpiece_instance):
+        """
+        Test that world_space_boundaries returns geometry scaled to mm.
+        """
+        wp = workpiece_instance
+
+        # Get normalized boundaries
+        normalized = wp.boundaries
+        assert normalized is not None
+        norm_rect = normalized.rect()
+
+        # Get world-space boundaries
+        world = wp.world_space_boundaries
+        assert world is not None
+        world_rect = world.rect()
+
+        # World rect should be normalized rect scaled by natural size
+        w = wp.natural_width_mm
+        h = wp.natural_height_mm
+
+        assert world_rect[0] == pytest.approx(norm_rect[0] * w, rel=0.01)
+        assert world_rect[1] == pytest.approx(norm_rect[1] * h, rel=0.01)
+        assert world_rect[2] == pytest.approx(norm_rect[2] * w, rel=0.01)
+        assert world_rect[3] == pytest.approx(norm_rect[3] * h, rel=0.01)
+
+    def test_world_space_boundaries_empty_workpiece(self):
+        """
+        Test that world_space_boundaries returns None for empty workpiece.
+        """
+        wp = WorkPiece(name="empty")
+        assert wp.boundaries is None
+        assert wp.world_space_boundaries is None
+
     def test_apply_split(self, workpiece_instance):
         """Test the splitting logic."""
         wp = workpiece_instance

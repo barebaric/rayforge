@@ -455,6 +455,27 @@ class WorkPiece(DocItem):
         return None
 
     @property
+    def world_space_boundaries(self) -> Optional[Geometry]:
+        """
+        The geometry scaled to world-space dimensions (millimeters).
+
+        This transforms the normalized `boundaries` geometry back to
+        actual physical dimensions using natural_width_mm and
+        natural_height_mm.
+
+        Returns None if boundaries is None or empty.
+        """
+        geo = self.boundaries
+        if geo is None or geo.is_empty():
+            return None
+        scaled = geo.copy()
+        w = self.natural_width_mm or 1.0
+        h = self.natural_height_mm or 1.0
+        scale_matrix = Matrix.scale(w, h)
+        scaled.transform(scale_matrix.to_4x4_numpy())
+        return scaled
+
+    @property
     def _boundaries_y_down(self) -> Optional[Geometry]:
         """
         Internal helper to get the Y-DOWN normalized geometry for use in

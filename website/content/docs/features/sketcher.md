@@ -159,6 +159,18 @@ To use chamfer or fillet:
 
 ## Import and Export
 
+### Exporting Objects
+
+You can export any selected workpiece to various vector formats:
+
+1. Select a workpiece on the canvas
+2. Choose **Object → Export Object...** (or right-click and select from context menu)
+3. Choose the export format:
+   - **RFS (.rfs)**: Rayforge's native parametric sketch format - preserves all
+     constraints and can be re-imported for editing
+   - **SVG (.svg)**: Standard vector format - widely compatible with design software
+   - **DXF (.dxf)**: CAD interchange format - compatible with most CAD applications
+
 ### Saving Sketches
 
 You can save your 2D sketches to files for reuse in other projects. All parametric
@@ -176,8 +188,9 @@ dimensional relationships.
 1. **Start with Rough Geometry**: Create basic shapes first, then refine with constraints
 2. **Use Constraints Early**: Apply constraints as you build to maintain design intent
 3. **Check Constraint Status**: The system indicates when sketches are fully constrained
-4. **Utilize Symmetry**: Symmetry constraints can significantly speed up complex designs
-5. **Iterate and Refine**: Don't hesitate to modify constraints to achieve the desired
+4. **Watch for Conflicts**: Constraints that conflict with each other are highlighted in red
+5. **Utilize Symmetry**: Symmetry constraints can significantly speed up complex designs
+6. **Iterate and Refine**: Don't hesitate to modify constraints to achieve the desired
    result
 
 ## Editing Features

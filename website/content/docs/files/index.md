@@ -14,28 +14,28 @@ Rayforge supports a wide variety of file formats for importing designs and expor
 
 Vector formats are ideal for cutting and engraving with sharp, precise paths:
 
-| Format | Extension | Best For | Notes |
-|:-------|:----------|:---------|:------|
-| **SVG** | `.svg` | General use, web graphics | Most common format, fully supported |
-| **DXF** | `.dxf` | CAD drawings, technical designs | AutoCAD and CAD software output |
-| **PDF** | `.pdf` | Documents, print-ready designs | Vector content extracted |
+| Format  | Extension | Best For                        | Notes                               |
+| :------ | :-------- | :------------------------------ | :---------------------------------- |
+| **SVG** | `.svg`    | General use, web graphics       | Most common format, fully supported |
+| **DXF** | `.dxf`    | CAD drawings, technical designs | AutoCAD and CAD software output     |
+| **PDF** | `.pdf`    | Documents, print-ready designs  | Vector content extracted            |
 
 ### Raster Formats
 
 Raster (bitmap) images are best for engraving and photo reproduction:
 
-| Format | Extension | Best For | Notes |
-|:-------|:----------|:---------|:------|
-| **JPEG** | `.jpg`, `.jpeg` | Photos, complex images | Lossy compression |
-| **PNG** | `.png` | Graphics with transparency | Lossless compression |
-| **BMP** | `.bmp` | Simple graphics | Large file sizes |
-| **TIFF** | `.tif`, `.tiff` | High-quality images | Support for multiple layers |
+| Format   | Extension       | Best For                   | Notes                       |
+| :------- | :-------------- | :------------------------- | :-------------------------- |
+| **JPEG** | `.jpg`, `.jpeg` | Photos, complex images     | Lossy compression           |
+| **PNG**  | `.png`          | Graphics with transparency | Lossless compression        |
+| **BMP**  | `.bmp`          | Simple graphics            | Large file sizes            |
+| **TIFF** | `.tif`, `.tiff` | High-quality images        | Support for multiple layers |
 
 ### Specialized Formats
 
-| Format | Extension | Best For | Notes |
-|:-------|:----------|:---------|:------|
-| **Ruida** | `.rd` | Ruida laser controller files | Import existing Ruida jobs |
+| Format    | Extension | Best For                     | Notes                      |
+| :-------- | :-------- | :--------------------------- | :------------------------- |
+| **Ruida** | `.rd`     | Ruida laser controller files | Import existing Ruida jobs |
 
 ## Working with Different File Types
 
@@ -89,7 +89,23 @@ Import jobs created for Ruida controllers:
 
 ## Export Formats
 
-### G-code
+### Object Export
+
+Any workpiece can be exported to vector formats for use in other software:
+
+| Format  | Extension | Best For            | Notes                                |
+| :------ | :-------- | :------------------ | :----------------------------------- |
+| **RFS** | `.rfs`    | Parametric sketches | Preserves constraints, re-importable |
+| **SVG** | `.svg`    | Vector graphics     | Widely compatible                    |
+| **DXF** | `.dxf`    | CAD software        | Good for further CAD work            |
+
+To export a workpiece:
+
+1. Select the workpiece on the canvas
+2. Choose **Object → Export Object...**
+3. Select format and save location
+
+### G-code Export
 
 Rayforge generates standard G-code for GRBL and Smoothieware:
 

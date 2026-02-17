@@ -1,14 +1,68 @@
-# Exporting G-code
+# Exporting from Rayforge
 
-This page explains how to export G-code from Rayforge and customize export settings for your machine.
+Rayforge supports several export options for different purposes:
 
-## Quick Export
+- **G-code** - Machine control output for running jobs
+- **Object Export** - Export workpieces to vector formats for other software
+
+---
+
+## Exporting Objects
+
+You can export any workpiece to vector formats for use in design software, CAD
+applications, or for archiving.
+
+### How to Export
+
+1. **Select a workpiece** on the canvas
+2. **Choose Object → Export Object...** (or right-click → Export Object...)
+3. **Select format** and save location
+
+### Available Formats
+
+| Format  | Extension | Description                                                                                                    |
+| ------- | --------- | -------------------------------------------------------------------------------------------------------------- |
+| **RFS** | `.rfs`    | Rayforge's native parametric sketch format. Preserves all constraints and can be re-imported for editing.      |
+| **SVG** | `.svg`    | Scalable Vector Graphics. Widely compatible with design software like Inkscape, Illustrator, and web browsers. |
+| **DXF** | `.dxf`    | Drawing Exchange Format. Compatible with most CAD applications like AutoCAD, FreeCAD, and LibreCAD.            |
+
+### Export Notes
+
+- **SVG and DXF** export the resolved geometry (not parametric constraints)
+- Exports use **millimeter units**
+- Geometry is scaled to actual dimensions (world space)
+- Multiple subpaths (disconnected shapes) are preserved as separate elements
+
+### Use Cases
+
+**Sharing designs:**
+
+- Export to SVG for sharing with Inkscape users
+- Export to DXF for CAD software users
+
+**Further editing:**
+
+- Export to SVG/DXF, edit in external software, re-import
+
+**Archiving:**
+
+- Use RFS for sketch-based designs to preserve editability
+- Use SVG/DXF for long-term storage or non-Rayforge users
+
+---
+
+## Exporting G-code
+
+This section explains how to export G-code from Rayforge and customize export
+settings for your machine.
+
+### Quick Export
 
 **Generate G-code for your job:**
 
 1. **Design your job** with layers and operations
 2. **Preview in 3D** to verify (optional)
-3. **File  Export G-code** (or Ctrl+E)
+3. **File Export G-code** (or Ctrl+E)
 4. **Choose save location** and filename
 5. **Click Save**
 
@@ -16,11 +70,11 @@ Your G-code file is now ready to send to your machine!
 
 ---
 
-## Export Methods
+### Export Methods
 
 ### Method 1: File Menu
 
-**File  Export G-code** (Ctrl+E)
+**File Export G-code** (Ctrl+E)
 
 - Opens file save dialog
 - Choose location and filename
@@ -28,7 +82,7 @@ Your G-code file is now ready to send to your machine!
 
 ### Method 2: Send to Machine
 
-**Machine  Run Job** or click Run button
+**Machine Run Job** or click Run button
 
 - G-code generated in memory
 - Sent directly to connected machine
@@ -43,18 +97,20 @@ rayforge --export output.gcode input.svg
 
 ---
 
-## G-code Output
+### G-code Output
 
 ### What's Included
 
 Generated G-code contains:
 
 **Header:**
+
 - Comments with job information
 - Setup commands (units, positioning mode)
 - Job start hooks (if configured)
 
 **Body:**
+
 - Toolpath commands for each layer
 - Layer start/end hooks
 - Workpiece start/end hooks
@@ -62,6 +118,7 @@ Generated G-code contains:
 - Feed rate specifications
 
 **Footer:**
+
 - Job end hooks (if configured)
 - Return to origin (if configured)
 - Laser off, air assist off
@@ -110,18 +167,18 @@ G0 X0 Y0              ; Return to origin
 
 ---
 
-## Export Settings
+### Export Settings
 
 ### General Settings
 
-**Access:** Settings  Machine  G-code Settings
+**Access:** Settings Machine G-code Settings
 
-| Setting | Description | Values | Default |
-|---------|-------------|--------|---------|
-| **Precision** | Decimal places for coordinates | 0-5 | 3 |
-| **Dialect** | G-code flavor | GRBL, etc. | GRBL |
-| **Max Speed** | Maximum travel speed (mm/min) | Positive number | 3000 |
-| **Max Cut Speed** | Maximum cutting speed (mm/min) | Positive number | 1000 |
+| Setting           | Description                    | Values          | Default |
+| ----------------- | ------------------------------ | --------------- | ------- |
+| **Precision**     | Decimal places for coordinates | 0-5             | 3       |
+| **Dialect**       | G-code flavor                  | GRBL, etc.      | GRBL    |
+| **Max Speed**     | Maximum travel speed (mm/min)  | Positive number | 3000    |
+| **Max Cut Speed** | Maximum cutting speed (mm/min) | Positive number | 1000    |
 
 ### Coordinate Precision
 
@@ -129,13 +186,13 @@ G0 X0 Y0              ; Return to origin
 
 **Examples:**
 
-| Precision | Example Output | Precision Level |
-|-----------|----------------|-----------------|
-| 0 | `G0 X50 Y100` | 1mm (very coarse) |
-| 1 | `G0 X50.5 Y100.2` | 0.1mm |
-| 2 | `G0 X50.53 Y100.27` | 0.01mm |
-| 3 | `G0 X50.532 Y100.271` | 0.001mm (recommended) |
-| 4 | `G0 X50.5320 Y100.2714` | 0.0001mm (usually unnecessary) |
+| Precision | Example Output          | Precision Level                |
+| --------- | ----------------------- | ------------------------------ |
+| 0         | `G0 X50 Y100`           | 1mm (very coarse)              |
+| 1         | `G0 X50.5 Y100.2`       | 0.1mm                          |
+| 2         | `G0 X50.53 Y100.27`     | 0.01mm                         |
+| 3         | `G0 X50.532 Y100.271`   | 0.001mm (recommended)          |
+| 4         | `G0 X50.5320 Y100.2714` | 0.0001mm (usually unnecessary) |
 
 **Recommendations:**
 
@@ -155,7 +212,7 @@ G0 X0 Y0              ; Return to origin
 **Supported dialects:**
 
 - **GRBL** (default) - For GRBL firmware controllers
-- *Other dialects may be added in future versions*
+- _Other dialects may be added in future versions_
 
 See [G-code Dialects](../reference/gcode-dialects.md) for details.
 
@@ -167,21 +224,22 @@ See [G-code Dialects](../reference/gcode-dialects.md) for details.
 
 Machine settings affect G-code generation:
 
-**Settings  Machine  Profile**
+**Settings Machine Profile**
 
-| Setting | Effect on G-code |
-|---------|------------------|
-| **Work Area Size** | Warns if job exceeds bounds |
+| Setting              | Effect on G-code                |
+| -------------------- | ------------------------------- |
+| **Work Area Size**   | Warns if job exceeds bounds     |
 | **Y-Axis Direction** | Inverts Y coordinates if needed |
-| **Max Speeds** | Enforces speed limits |
+| **Max Speeds**       | Enforces speed limits           |
 
 ### Hooks and Macros
 
 Inject custom G-code at specific points:
 
-**Settings  Machine  Hooks**
+**Settings Machine Hooks**
 
 **Available hooks:**
+
 - **Job Start** - Beginning of file
 - **Job End** - End of file
 - **Layer Start** - Before each layer
@@ -190,6 +248,7 @@ Inject custom G-code at specific points:
 - **Workpiece End** - After each workpiece
 
 **Example Job Start Hook:**
+
 ```gcode
 $H          ; Home machine
 G0 X0 Y0    ; Move to origin
@@ -205,6 +264,7 @@ See [Macros & Hooks](../features/macros-hooks.md) for details.
 ### Recommended Naming Conventions
 
 **Good filenames:**
+
 ```
 project-name_material_date.gcode
 box-3mm-ply_2025-10-03.gcode
@@ -213,40 +273,42 @@ test-grid_CO2_50W.gcode
 ```
 
 **Include:**
+
 - Project or part name
 - Material type/thickness (if relevant)
 - Date or version number
 - Machine or settings identifier
 
 **Avoid:**
+
 - Spaces (use hyphens or underscores)
 - Special characters (some controllers don't support)
 - Very long names (>32 characters may be truncated)
 
 ### Common Extensions
 
-| Extension | Usage | Compatibility |
-|-----------|-------|---------------|
-| `.gcode` | Most common | Widely recognized |
-| `.nc` | Numerical Control | CNC standard |
-| `.ngc` | NGC (Next Generation Controller) | LinuxCNC, some others |
-| `.txt` | Plain text | Universal fallback |
+| Extension | Usage                            | Compatibility         |
+| --------- | -------------------------------- | --------------------- |
+| `.gcode`  | Most common                      | Widely recognized     |
+| `.nc`     | Numerical Control                | CNC standard          |
+| `.ngc`    | NGC (Next Generation Controller) | LinuxCNC, some others |
+| `.txt`    | Plain text                       | Universal fallback    |
 
 **Recommendation:** Use `.gcode` for clarity.
 
 ---
 
-## File Size Considerations
+### File Size Considerations
 
 ### Typical File Sizes
 
-| Job Type | Complexity | File Size |
-|----------|-----------|-----------|
-| **Simple cut** | Square or circle | 1-10 KB |
-| **Logo engrave** | Vector paths | 10-100 KB |
-| **Photo engrave** | Raster, 300 DPI, 1010cm | 5-20 MB |
-| **Detailed cut** | Many small paths | 100 KB - 5 MB |
-| **Large photo** | Raster, 500 DPI, 2020cm | 50-100 MB |
+| Job Type          | Complexity              | File Size     |
+| ----------------- | ----------------------- | ------------- |
+| **Simple cut**    | Square or circle        | 1-10 KB       |
+| **Logo engrave**  | Vector paths            | 10-100 KB     |
+| **Photo engrave** | Raster, 300 DPI, 1010cm | 5-20 MB       |
+| **Detailed cut**  | Many small paths        | 100 KB - 5 MB |
+| **Large photo**   | Raster, 500 DPI, 2020cm | 50-100 MB     |
 
 ### Large Files
 
@@ -281,7 +343,7 @@ test-grid_CO2_50W.gcode
 
 ---
 
-## Verifying G-code
+### Verifying G-code
 
 ### Preview Before Exporting
 
@@ -316,121 +378,14 @@ test-grid_CO2_50W.gcode
 
 ---
 
-## Sending to Machine
-
-### Direct Send
-
-**From Rayforge:**
-
-1. **Connect to machine** (Machine  Connect)
-2. **Click Run Job** or Machine  Run
-3. **G-code generated and streamed** to controller
-
-**Advantages:**
-- No intermediate file needed
-- Immediate execution
-- Real-time monitoring
-
-### Via File
-
-**Export then load to controller:**
-
-1. **Export G-code** (File  Export)
-2. **Transfer to controller:**
-   - SD card (if controller supports)
-   - USB flash drive
-   - Serial upload via UGS or similar
-
-**Advantages:**
-- Keep G-code for re-running jobs
-- Use offline controllers
-- Archive successful jobs
-
-### G-code Senders
-
-**Recommended senders for manual control:**
-
-- **Universal G-code Sender (UGS)** - Popular, cross-platform
-- **LightBurn** - Full laser software (alternative to Rayforge)
-- **LaserGRBL** - Windows, GRBL-specific
-- **bCNC** - Advanced, Linux-focused
-
----
-
-## Troubleshooting Export
-
-### Export Fails or Hangs
-
-**Problem:** Export process doesn't complete.
-
-**Solutions:**
-
-1. **Simplify the job** - Very complex jobs may time out
-2. **Check for errors** - Review console/logs for error messages
-3. **Reduce raster resolution** - Lower DPI
-4. **Close other applications** - Free up system resources
-5. **Save project first** - Ensure work isn't lost
-
-### G-code Has Errors
-
-**Problem:** Exported G-code contains invalid commands or values.
-
-**Diagnosis:**
-
-1. **Check operation settings** - Invalid power/speed values
-2. **Review transformers** - Broken or misconfigured transformers
-3. **Test simple job** - Export a basic square to isolate issue
-4. **Check logs** - Look for warnings during generation
-
-**Solutions:**
-
-- Fix invalid settings
-- Disable problematic transformers
-- Report bug with sample project
-
-### File Won't Load on Controller
-
-**Problem:** Controller rejects or can't read the G-code file.
-
-**Possible causes:**
-
-1. **Wrong dialect** - GRBL vs other firmware
-2. **Unsupported commands** - Custom commands not recognized
-3. **File too large** - Exceeds controller memory
-4. **Filename issues** - Spaces or special characters
-5. **Line ending format** - Windows vs Unix line endings
-
-**Solutions:**
-
-- Verify correct dialect selected
-- Simplify to reduce file size
-- Rename file (no spaces, short name)
-- Convert line endings if needed (dos2unix or unix2dos)
-
-### Coordinates Out of Bounds
-
-**Problem:** G-code tries to move outside machine limits.
-
-**Diagnosis:**
-
-Check the Frame feature or G-code for coordinates exceeding work area.
-
-**Solutions:**
-
-1. **Reposition job** within bounds
-2. **Scale down** if too large
-3. **Check machine dimensions** are correctly configured
-4. **Account for overscan** - Reduces available area
-
----
-
-## Advanced Export Options
+### Advanced Export Options
 
 ### Custom Post-Processors
 
 For advanced users, custom G-code post-processing may be possible:
 
 **Potential customizations:**
+
 - Add custom headers/footers
 - Modify command syntax
 - Insert pauses or prompts

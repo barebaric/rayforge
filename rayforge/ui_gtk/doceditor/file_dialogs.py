@@ -98,13 +98,18 @@ def show_export_gcode_dialog(
     dialog.save(win, None, callback, win)
 
 
-def show_export_sketch_dialog(
+def show_export_object_dialog(
     win: "MainWindow",
     callback: Callable,
     workpiece: Optional["WorkPiece"] = None,
 ):
     """
-    Shows the save file dialog for exporting a Rayforge Sketch (.rfs).
+    Shows the save file dialog for exporting a sketch-based workpiece.
+
+    Supports multiple formats:
+    - Rayforge Sketch (.rfs) - parametric sketch with constraints
+    - SVG (.svg) - scalable vector graphics
+    - DXF (.dxf) - CAD exchange format
 
     Args:
         win: The parent Gtk.Window.
@@ -115,7 +120,7 @@ def show_export_sketch_dialog(
                    location and name of the workpiece.
     """
     dialog = Gtk.FileDialog.new()
-    dialog.set_title(_("Export Sketch"))
+    dialog.set_title(_("Export Object"))
 
     if workpiece and workpiece.source_file:
         dialog.set_initial_name(workpiece.source_file.name)
@@ -130,16 +135,27 @@ def show_export_sketch_dialog(
         dialog.set_initial_name("sketch.rfs")
 
     filter_list = Gio.ListStore.new(Gtk.FileFilter)
-    sketch_filter = Gtk.FileFilter()
-    sketch_filter.set_name(
-        _("{app_name} Sketch").format(app_name=const.APP_NAME)
-    )
-    sketch_filter.add_pattern("*.rfs")
-    sketch_filter.add_mime_type(const.MIME_TYPE_SKETCH)
-    filter_list.append(sketch_filter)
+
+    rfs_filter = Gtk.FileFilter()
+    rfs_filter.set_name(_("{app_name} Sketch").format(app_name=const.APP_NAME))
+    rfs_filter.add_pattern("*.rfs")
+    rfs_filter.add_mime_type(const.MIME_TYPE_SKETCH)
+    filter_list.append(rfs_filter)
+
+    svg_filter = Gtk.FileFilter()
+    svg_filter.set_name(_("SVG (Scalable Vector Graphics)"))
+    svg_filter.add_pattern("*.svg")
+    svg_filter.add_mime_type("image/svg+xml")
+    filter_list.append(svg_filter)
+
+    dxf_filter = Gtk.FileFilter()
+    dxf_filter.set_name(_("DXF (CAD Exchange Format)"))
+    dxf_filter.add_pattern("*.dxf")
+    dxf_filter.add_mime_type("image/vnd.dxf")
+    filter_list.append(dxf_filter)
 
     dialog.set_filters(filter_list)
-    dialog.set_default_filter(sketch_filter)
+    dialog.set_default_filter(rfs_filter)
 
     dialog.save(win, None, callback, win)
 

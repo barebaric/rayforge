@@ -45,7 +45,7 @@ def _create_sketch_item_context_menu() -> Gio.Menu:
     menu = Gio.Menu.new()
     menu.append_item(Gio.MenuItem.new(_("Edit Sketch"), "win.edit_sketch"))
     menu.append_item(
-        Gio.MenuItem.new(_("Export Sketch..."), "win.export_sketch")
+        Gio.MenuItem.new(_("Export Object..."), "win.export_object")
     )
 
     # Separator before standard items
