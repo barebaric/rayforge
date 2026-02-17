@@ -53,6 +53,12 @@ class AdvancedPreferencesPage(Adw.PreferencesPage):
         path_group.add(self.arc_tolerance_row)
 
         homing_group = Adw.PreferencesGroup(title=_("Homing and Startup"))
+        homing_group.set_description(
+            _(
+                "Configure homing behavior and startup settings, "
+                "including automatic homing and alarm handling."
+            )
+        )
         self.add(homing_group)
 
         home_on_start_row = Adw.SwitchRow()

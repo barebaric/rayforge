@@ -214,7 +214,7 @@ class LaserPreferencesPage(Adw.PreferencesPage):
         # Configuration panel for the selected Laser
         self.laserhead_config_group = Adw.PreferencesGroup(
             title=_("Laser Properties"),
-            description=_("Configure the selected laser"),
+            description=_("Configure the selected laser."),
         )
         self.add(self.laserhead_config_group)
 
