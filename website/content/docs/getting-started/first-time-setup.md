@@ -18,28 +18,38 @@ Rayforge supports multiple machine profiles, allowing you to switch between diff
 
 ### General Settings
 
+![General Settings](../images/machine-general.png)
+
 1. **Machine Name**: Give your machine a descriptive name (e.g., "K40 Laser", "Ortur LM2")
-2. **Working Area**:
+2. **Driver Settings**: Select and configure the machine driver (GRBL, Smoothieware, etc.)
+3. **Speeds & Acceleration**:
+   - **Max Travel Speed**: Maximum rapid movement speed
+   - **Max Cut Speed**: Maximum cutting speed
+   - **Acceleration**: Used for time estimations
+
+### Hardware Settings
+
+![Hardware Settings](../images/machine-hardware.png)
+
+4. **Dimensions**:
    - **Width**: Enter the maximum width of your working area in millimeters
    - **Height**: Enter the maximum height of your working area in millimeters
-3. **Origin Position**: Select where your machine's origin (0,0) is located:
-   - Bottom Left (most common for GRBL)
-   - Top Left
-   - Top Right
-   - Bottom Right
+5. **Axes**:
+   - **Coordinate Origin (0,0)**: Select where your machine's origin is located:
+      - Bottom Left (most common for GRBL)
+      - Top Left
+      - Top Right
+      - Bottom Right
 
 ### Laser Configuration
 
-4. **Power Settings**:
-   - **Min Power**: Minimum laser power percentage (typically 0-10%)
-   - **Max Power**: Maximum laser power percentage (typically 80-100%)
+6. **Laser Heads**: Configure your laser module properties:
+   - **Tool number**: Tool number for the laser head
+   - **Maximum power**: Maximum laser power percentage
+   - **Spot size**: Laser spot size (X and Y dimensions)
 
 !!! tip "Power Calibration"
     Start with conservative power settings. You can always increase power later after testing.
-
-5. **Speed Settings**:
-   - **Default Speed**: Your typical engraving/cutting speed in mm/min
-   - **Max Speed**: Maximum speed your machine supports
 
 ## Step 4: Configure Device Connection
 

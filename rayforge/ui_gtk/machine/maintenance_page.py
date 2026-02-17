@@ -305,20 +305,23 @@ class CounterEditDialog(PatchedDialogWindow):
         self.close()
 
 
-class MachineHoursPage(Adw.PreferencesPage):
+class MaintenancePage(Adw.PreferencesPage):
     """
     A preferences page for viewing and managing machine hours.
     """
 
     def __init__(self, machine: Machine, **kwargs):
         super().__init__(
-            title=_("Machine Hours"),
+            title=_("Maintenance"),
             **kwargs,
         )
         self.machine = machine
 
         # Group for Total Hours
         total_group = Adw.PreferencesGroup(title=_("Total Hours"))
+        total_group.set_description(
+            _("Cumulative operating time tracked by the machine.")
+        )
         self.add(total_group)
 
         self.total_hours_row = Adw.ActionRow(

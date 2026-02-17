@@ -157,27 +157,23 @@ class DialectEditorDialog(PatchedDialogWindow):
         self, row: Adw.PreferencesRow, error_msg: Optional[str]
     ):
         """Applies or removes an error state from a row."""
-        # Ensure the error icon widget exists as a suffix.
-        if not hasattr(row, "_error_icon_widget"):
-            icon = get_icon("dialog-error-symbolic")
-            # Adw.ActionRow and Adw.ExpanderRow support add_suffix
-            if isinstance(row, (Adw.ActionRow, Adw.ExpanderRow, Adw.EntryRow)):
-                row.add_suffix(icon)
-            setattr(row, "_error_icon_widget", icon)
-
-        error_widget = cast(
-            Gtk.Image, getattr(row, "_error_icon_widget", None)
-        )
-        if not error_widget:
-            return
+        error_widget = getattr(row, "_error_icon_widget", None)
 
         if error_msg:
+            if not error_widget:
+                error_widget = get_icon("dialog-error-symbolic")
+                if isinstance(
+                    row, (Adw.ActionRow, Adw.ExpanderRow, Adw.EntryRow)
+                ):
+                    row.add_suffix(error_widget)
+                setattr(row, "_error_icon_widget", error_widget)
             row.add_css_class("error")
             error_widget.set_tooltip_text(error_msg)
             error_widget.set_visible(True)
         else:
             row.remove_css_class("error")
-            error_widget.set_visible(False)
+            if error_widget:
+                error_widget.set_visible(False)
 
     def _on_row_changed(
         self, widget, row: Adw.PreferencesRow, key: str, is_script: bool

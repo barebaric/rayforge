@@ -529,16 +529,19 @@ def main():
     )
     parser.add_argument(
         "--machine-page",
-        default="settings",
+        default="general",
         choices=[
-            "settings",
+            "general",
+            "hardware",
             "advanced",
+            "gcode",
+            "hooks-macros",
             "device",
             "laser",
             "camera",
-            "hours",
+            "maintenance",
         ],
-        help="Machine dialog page to capture (default: settings)",
+        help="Machine dialog page to capture (default: general)",
     )
 
     args = parser.parse_args()

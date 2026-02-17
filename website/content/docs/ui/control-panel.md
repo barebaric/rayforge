@@ -231,20 +231,21 @@ The console is invaluable for diagnosing issues:
 - Review job execution progress in real-time
 - Send diagnostic commands (e.g., `$$` to view GRBL settings)
 
-## Machine Hours
+## Maintenance Tracking
 
 Rayforge tracks your machine's usage time to help with maintenance scheduling
-and usage tracking.
+and usage tracking. Open machine settings and navigate to the **Maintenance**
+page to view and manage machine hours.
 
-### Viewing Machine Hours
+### Viewing Maintenance Information
 
-The machine hours display shows:
+The maintenance page displays:
 
-- **Total Hours**: Cumulative time the machine has been in operation
-- **Job Time**: Time spent executing jobs
-- **Jog Time**: Time spent jogging/moving the laser head
+- **Total Operating Hours**: Cumulative time the machine has been in operation
+- **Maintenance Counters**: Resettable counters for tracking various metrics
+  (e.g., laser tube hours, lubrication intervals)
 
-![Machine Hours](../images/machine-hours.png)
+![Maintenance](../images/machine-maintenance.png)
 
 ### Maintenance Tracking
 
@@ -254,6 +255,15 @@ Use machine hours to schedule maintenance:
 - **Check Belts**: Every 200-300 hours of use
 - **Lubricate Rails**: Every 100-200 hours of use
 - **Replace Tube**: Per manufacturer's specification
+
+### Managing Counters
+
+The maintenance page allows you to:
+
+- **Add Counter**: Create a new maintenance counter with notification thresholds
+- **Reset Counter**: Reset accumulated hours to zero
+- **Edit Counter**: Modify counter settings including notification thresholds
+- **Remove Counter**: Delete a counter from the list
 
 ### Resetting Hours
 

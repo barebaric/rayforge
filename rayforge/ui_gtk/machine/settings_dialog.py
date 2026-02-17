@@ -12,8 +12,11 @@ from ..shared.patched_dialog_window import PatchedDialogWindow
 from .advanced_preferences_page import AdvancedPreferencesPage
 from .device_settings_page import DeviceSettingsPage
 from .general_preferences_page import GeneralPreferencesPage
+from .gcode_settings_page import GcodeSettingsPage
+from .hardware_page import HardwarePage
+from .hooks_macros_page import HooksMacrosPage
 from .laser_preferences_page import LaserPreferencesPage
-from .machine_hours_page import MachineHoursPage
+from .maintenance_page import MaintenancePage
 
 
 class MachineSettingsDialog(PatchedDialogWindow):
@@ -74,20 +77,34 @@ class MachineSettingsDialog(PatchedDialogWindow):
         general_page = GeneralPreferencesPage(machine=self.machine)
         self.content_stack.add_titled(general_page, "general", _("General"))
 
-        # --- Page 2: Advanced ---
+        # --- Page 2: Hardware ---
+        hardware_page = HardwarePage(machine=self.machine)
+        self.content_stack.add_titled(hardware_page, "hardware", _("Hardware"))
+
+        # --- Page 3: Advanced ---
         advanced_page = AdvancedPreferencesPage(machine=self.machine)
         self.content_stack.add_titled(advanced_page, "advanced", _("Advanced"))
 
-        # --- Page 3: Device ---
+        # --- Page 4: G-code ---
+        gcode_page = GcodeSettingsPage(machine=self.machine)
+        self.content_stack.add_titled(gcode_page, "gcode", _("G-code"))
+
+        # --- Page 5: Hooks & Macros ---
+        hooks_macros_page = HooksMacrosPage(machine=self.machine)
+        self.content_stack.add_titled(
+            hooks_macros_page, "hooks-macros", _("Hooks & Macros")
+        )
+
+        # --- Page 6: Device ---
         device_page = DeviceSettingsPage(machine=self.machine)
         device_page.show_toast.connect(self._on_show_toast)
         self.content_stack.add_titled(device_page, "device", _("Device"))
 
-        # --- Page 4: Laser ---
+        # --- Page 7: Laser ---
         laser_page = LaserPreferencesPage(machine=self.machine)
         self.content_stack.add_titled(laser_page, "laser", _("Laser"))
 
-        # --- Page 5: Camera ---
+        # --- Page 8: Camera ---
         self.camera_page = CameraPreferencesPage()
         self.camera_page.camera_add_requested.connect(
             self._on_camera_add_requested
@@ -97,9 +114,11 @@ class MachineSettingsDialog(PatchedDialogWindow):
         )
         self.content_stack.add_titled(self.camera_page, "camera", _("Camera"))
 
-        # --- Page 6: Machine Hours ---
-        hours_page = MachineHoursPage(machine=self.machine)
-        self.content_stack.add_titled(hours_page, "hours", _("Hours"))
+        # --- Page 9: Maintenance ---
+        maintenance_page = MaintenancePage(machine=self.machine)
+        self.content_stack.add_titled(
+            maintenance_page, "maintenance", _("Maintenance")
+        )
 
         # Create the content's NavigationPage wrapper
         pages = self.content_stack.get_pages()
@@ -114,13 +133,20 @@ class MachineSettingsDialog(PatchedDialogWindow):
         self._add_sidebar_row(
             _("General"), "machine-settings-general-symbolic", "general"
         )
+        self._add_sidebar_row(_("Hardware"), "hardware-symbolic", "hardware")
         self._add_sidebar_row(
             _("Advanced"), "machine-settings-advanced-symbolic", "advanced"
+        )
+        self._add_sidebar_row(_("G-code"), "gcode-symbolic", "gcode")
+        self._add_sidebar_row(
+            _("Hooks & Macros"), "utilities-terminal-symbolic", "hooks-macros"
         )
         self._add_sidebar_row(_("Device"), "settings-symbolic", "device")
         self._add_sidebar_row(_("Laser"), "laser-on-symbolic", "laser")
         self._add_sidebar_row(_("Camera"), "camera-on-symbolic", "camera")
-        self._add_sidebar_row(_("Hours"), "timer-symbolic", "hours")
+        self._add_sidebar_row(
+            _("Maintenance"), "timer-symbolic", "maintenance"
+        )
 
         # Connect sidebar selection
         self.sidebar_list.connect("row-selected", self._on_row_selected)
