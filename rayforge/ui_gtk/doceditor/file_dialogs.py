@@ -160,6 +160,50 @@ def show_export_object_dialog(
     dialog.save(win, None, callback, win)
 
 
+def show_export_document_dialog(
+    win: "MainWindow",
+    callback: Callable,
+    initial_name: Optional[str] = None,
+):
+    """
+    Shows the save file dialog for exporting a complete document.
+
+    Supports formats:
+    - SVG (.svg) - scalable vector graphics
+    - DXF (.dxf) - CAD exchange format
+
+    Args:
+        win: The parent Gtk.Window.
+        callback: The function to call with (dialog, result, user_data) upon
+                  response.
+        initial_name: Optional initial file name for the dialog.
+    """
+    initial_name = initial_name or "document.svg"
+    dialog = Gtk.FileDialog.new()
+    dialog.set_title(_("Export Document"))
+
+    dialog.set_initial_name(initial_name)
+
+    filter_list = Gio.ListStore.new(Gtk.FileFilter)
+
+    svg_filter = Gtk.FileFilter()
+    svg_filter.set_name(_("SVG (Scalable Vector Graphics)"))
+    svg_filter.add_pattern("*.svg")
+    svg_filter.add_mime_type("image/svg+xml")
+    filter_list.append(svg_filter)
+
+    dxf_filter = Gtk.FileFilter()
+    dxf_filter.set_name(_("DXF (CAD Exchange Format)"))
+    dxf_filter.add_pattern("*.dxf")
+    dxf_filter.add_mime_type("image/vnd.dxf")
+    filter_list.append(dxf_filter)
+
+    dialog.set_filters(filter_list)
+    dialog.set_default_filter(svg_filter)
+
+    dialog.save(win, None, callback, win)
+
+
 def show_open_project_dialog(win: "MainWindow", callback: Callable):
     """
     Shows file chooser dialog for opening Rayforge project files.

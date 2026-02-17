@@ -35,7 +35,14 @@ class GeometryDxfExporter(GeometryExporter):
         doc = ezdxf.new()  # type: ignore[attr-defined]
         doc.header["$INSUNITS"] = 4  # Millimeters
         msp = doc.modelspace()
+        self._add_geometry_to_msp(geometry, msp)
 
+        output = io.StringIO()
+        doc.write(output)
+        return output.getvalue().encode("utf-8")
+
+    def _add_geometry_to_msp(self, geometry: Geometry, msp) -> None:
+        """Add geometry entities to a DXF modelspace."""
         last_x = 0.0
         last_y = 0.0
         poly_points: List[tuple] = []
@@ -110,10 +117,6 @@ class GeometryDxfExporter(GeometryExporter):
 
         flush_polyline()
 
-        output = io.StringIO()
-        doc.write(output)
-        return output.getvalue().encode("utf-8")
-
     def _bezier_to_points(
         self,
         x0: float,
@@ -140,3 +143,33 @@ class GeometryDxfExporter(GeometryExporter):
             points.append((px, py))
         points.append((x1, y1))
         return points
+
+
+class MultiGeometryDxfExporter(GeometryExporter):
+    """
+    Exports multiple Geometry objects to a single DXF file.
+    """
+
+    label = _("DXF (CAD Exchange Format)")
+    extensions = (".dxf",)
+    mime_types = ("image/vnd.dxf",)
+
+    def __init__(self, geometries: List[Geometry]):
+        self.geometries = geometries
+
+    def export(self) -> bytes:
+        non_empty = [g for g in self.geometries if not g.is_empty()]
+        if not non_empty:
+            raise ValueError("Cannot export: All geometries are empty.")
+
+        doc = ezdxf.new()  # type: ignore[attr-defined]
+        doc.header["$INSUNITS"] = 4  # Millimeters
+        msp = doc.modelspace()
+
+        single_exporter = GeometryDxfExporter(Geometry())
+        for geo in non_empty:
+            single_exporter._add_geometry_to_msp(geo, msp)
+
+        output = io.StringIO()
+        doc.write(output)
+        return output.getvalue().encode("utf-8")

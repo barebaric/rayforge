@@ -161,3 +161,73 @@ class GeometrySvgExporter(GeometryExporter):
         if arc_angle > math.pi:
             return 1
         return 0
+
+
+class MultiGeometrySvgExporter(GeometryExporter):
+    """
+    Exports multiple Geometry objects to a single SVG file.
+    """
+
+    label = _("SVG (Scalable Vector Graphics)")
+    extensions = (".svg",)
+    mime_types = ("image/svg+xml",)
+
+    def __init__(self, geometries: List[Geometry]):
+        self.geometries = geometries
+
+    def export(self) -> bytes:
+        non_empty = [g for g in self.geometries if not g.is_empty()]
+        if not non_empty:
+            raise ValueError("Cannot export: All geometries are empty.")
+
+        min_x = min_y = float("inf")
+        max_x = max_y = float("-inf")
+        for geo in non_empty:
+            gx0, gy0, gx1, gy1 = geo.rect()
+            min_x = min(min_x, gx0)
+            min_y = min(min_y, gy0)
+            max_x = max(max_x, gx1)
+            max_y = max(max_y, gy1)
+
+        width = max(max_x - min_x, 1e-9)
+        height = max(max_y - min_y, 1e-9)
+
+        svg_content = self._geometries_to_svg(
+            non_empty, min_x, min_y, width, height
+        )
+        return svg_content.encode("utf-8")
+
+    def _geometries_to_svg(
+        self,
+        geometries: List[Geometry],
+        min_x: float,
+        min_y: float,
+        width: float,
+        height: float,
+    ) -> str:
+        padding = 1.0
+        svg_width = width + 2 * padding
+        svg_height = height + 2 * padding
+
+        vb = (
+            f'viewBox="{-padding} {-padding} {svg_width:.3f} {svg_height:.3f}"'
+        )
+        svg_parts = [
+            f'<svg xmlns="http://www.w3.org/2000/svg" '
+            f'width="{svg_width:.3f}mm" height="{svg_height:.3f}mm" {vb}>'
+        ]
+
+        single_exporter = GeometrySvgExporter(Geometry())
+        for geo in geometries:
+            path_data = single_exporter._geometry_to_svg_path(
+                geo, min_x, min_y
+            )
+            if path_data:
+                svg_parts.append(
+                    f'<path d="{path_data}" fill="none" stroke="black" '
+                    f'stroke-width="0.1" stroke-linecap="round" '
+                    f'stroke-linejoin="round" />'
+                )
+
+        svg_parts.append("</svg>")
+        return "\n".join(svg_parts)
