@@ -31,13 +31,15 @@ First, verify your machine dimensions are configured correctly in Rayforge.
 **Open machine settings:**
 
 1. Navigate to **Settings > Machine > Profile**
-2. Check **Work Area** dimensions:
+2. Check **Hardware > Dimensions**:
    - Width: Should match your laser bed width (e.g., 300mm)
    - Height: Should match your laser bed height (e.g., 400mm)
-3. Check **Origin Position**:
-   - Top-left, bottom-left, or center (must match your actual machine)
-4. Check **Y-axis Direction**:
-   - Does Y increase upward or downward? (must match your machine)
+3. Check **Hardware > Axes > Coordinate Origin (0,0)**:
+   - Top-left, bottom-left, top-right, or bottom-right (must match your
+     actual machine)
+4. Check **Hardware > Axes**:
+   - Y-axis Direction: Does Y increase upward or downward? (must match your
+     machine)
 
 **If dimensions are wrong:** Correct them now and save settings.
 

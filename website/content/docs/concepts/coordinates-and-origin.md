@@ -186,7 +186,7 @@ If you import an SVG logo:
 **Solution:**
 
 1. Check machine settings: **Settings > Machine > Profile**
-2. Verify **Y-axis direction** setting
+2. Navigate to **Hardware > Axes** and verify axis direction settings
 3. Test with a small frame job to confirm
 
 ---
@@ -450,7 +450,7 @@ G0 X70 Y10
 
 **Solutions:**
 
-- **In machine settings:** Toggle Y-axis direction
+- **In machine settings > Hardware > Axes:** Toggle Y-axis direction
 - **In design:** Manually flip the workpiece before export
 - **In G-code:** Edit commands (advanced)
 

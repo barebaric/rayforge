@@ -1,11 +1,9 @@
 from gi.repository import Adw, Gtk
 
-from ..shared.adwfix import get_spinrow_int
 from ..shared.unit_spin_row import UnitSpinRowHelper
 from ..varset.varsetwidget import VarSetWidget
 from ...machine.driver import drivers, get_driver_cls
-from ...machine.driver.driver import Axis
-from ...machine.models.machine import Machine, Origin
+from ...machine.models.machine import Machine
 
 
 class GeneralPreferencesPage(Adw.PreferencesPage):
@@ -37,6 +35,9 @@ class GeneralPreferencesPage(Adw.PreferencesPage):
 
         # Group for Machine Name
         name_group = Adw.PreferencesGroup(title=_("Machine"))
+        name_group.set_description(
+            _("Basic machine identification and configuration.")
+        )
         self.add(name_group)
 
         # Machine Name
@@ -46,6 +47,9 @@ class GeneralPreferencesPage(Adw.PreferencesPage):
         name_group.add(name_row)
 
         self.driver_group = VarSetWidget(title=_("Driver Settings"))
+        self.driver_group.set_description(
+            _("Connection and communication settings for the machine driver.")
+        )
         self.driver_group.data_changed.connect(self.on_driver_param_changed)
         self.add(self.driver_group)
 
@@ -101,167 +105,15 @@ class GeneralPreferencesPage(Adw.PreferencesPage):
             self.combo_row.set_title(_("Select driver"))
             self.combo_row.set_subtitle("")
 
-        # Group for Startup Behavior
-        behavior_group = Adw.PreferencesGroup(title=_("Startup Behavior"))
-        self.add(behavior_group)
-
-        home_on_start_row = Adw.SwitchRow()
-        home_on_start_row.set_title(_("Home On Start"))
-        home_on_start_row.set_subtitle(
-            _("Send a homing command when the application starts")
-        )
-        home_on_start_row.set_active(machine.home_on_start)
-        home_on_start_row.connect(
-            "notify::active", self.on_home_on_start_changed
-        )
-        behavior_group.add(home_on_start_row)
-
-        clear_alarm_row = Adw.SwitchRow()
-        clear_alarm_row.set_title(_("Clear Alarm On Connect"))
-        clear_alarm_row.set_subtitle(
-            _(
-                "Automatically send an unlock command if "
-                "connected in an ALARM state"
-            )
-        )
-        clear_alarm_row.set_active(machine.clear_alarm_on_connect)
-        clear_alarm_row.connect(
-            "notify::active", self.on_clear_alarm_on_connect_changed
-        )
-        behavior_group.add(clear_alarm_row)
-
-        # Group for Axes & Dimensions
-        axes_group = Adw.PreferencesGroup(title=_("Axes &amp; Dimensions"))
-        self.add(axes_group)
-
-        # Width
-        width_adjustment = Gtk.Adjustment(
-            lower=50, upper=10000, step_increment=1, page_increment=10
-        )
-        self.width_row = Adw.SpinRow(
-            title=_("Width"),
-            subtitle=_("Width of the machine work area in mm"),
-            adjustment=width_adjustment,
-        )
-        width_adjustment.set_value(self.machine.dimensions[0])
-        self.width_row.connect("changed", self.on_width_changed)
-        axes_group.add(self.width_row)
-
-        # Height
-        height_adjustment = Gtk.Adjustment(
-            lower=50, upper=10000, step_increment=1, page_increment=10
-        )
-        self.height_row = Adw.SpinRow(
-            title=_("Height"),
-            subtitle=_("Height of the machine work area in mm"),
-            adjustment=height_adjustment,
-        )
-        height_adjustment.set_value(self.machine.dimensions[1])
-        self.height_row.connect("changed", self.on_height_changed)
-        axes_group.add(self.height_row)
-
-        x_offset_adjustment = Gtk.Adjustment(
-            lower=0, upper=10000, step_increment=1, page_increment=10
-        )
-        self.x_offset_row = Adw.SpinRow(
-            title=_("X Offset"),
-            subtitle=_("Offset to add to each gcode command on x axis."),
-            adjustment=x_offset_adjustment,
-        )
-        x_offset_adjustment.set_value(self.machine.offsets[0])
-        self.x_offset_row.connect("changed", self.on_x_offset_changed)
-        axes_group.add(self.x_offset_row)
-
-        y_offset_adjustment = Gtk.Adjustment(
-            lower=0, upper=10000, step_increment=1, page_increment=10
-        )
-        self.y_offset_row = Adw.SpinRow(
-            title=_("Y Offset"),
-            subtitle=_("Offset to add to each gcode command on y axis."),
-            adjustment=y_offset_adjustment,
-        )
-        y_offset_adjustment.set_value(self.machine.offsets[1])
-        self.y_offset_row.connect("changed", self.on_y_offset_changed)
-        axes_group.add(self.y_offset_row)
-
-        # Origin selector
-        origin_store = Gtk.StringList()
-        origin_store.append(_("Bottom Left"))
-        origin_store.append(_("Top Left"))
-        origin_store.append(_("Top Right"))
-        origin_store.append(_("Bottom Right"))
-        origin_combo_row = Adw.ComboRow(
-            title=_("Coordinate Origin (0,0)"),
-            subtitle=_(
-                "The physical corner where coordinates are zero after homing"
-            ),
-            model=origin_store,
-        )
-        origin_combo_row.set_selected(
-            {
-                Origin.BOTTOM_LEFT: 0,
-                Origin.TOP_LEFT: 1,
-                Origin.TOP_RIGHT: 2,
-                Origin.BOTTOM_RIGHT: 3,
-            }.get(self.machine.origin, 0)
-        )
-        origin_combo_row.connect("notify::selected", self.on_origin_changed)
-        self.origin_combo_row = origin_combo_row
-        axes_group.add(origin_combo_row)
-
-        # Reverse X-Axis
-        self.reverse_x_axis_row = Adw.SwitchRow()
-        self.reverse_x_axis_row.set_title(_("Reverse X-Axis Direction"))
-        self.reverse_x_axis_row.set_subtitle(
-            _("Makes coordinate values negative")
-        )
-        self.reverse_x_axis_row.set_active(machine.reverse_x_axis)
-        self.reverse_x_axis_row.connect(
-            "notify::active", self.on_reverse_x_changed
-        )
-        axes_group.add(self.reverse_x_axis_row)
-
-        # Reverse Y-Axis
-        self.reverse_y_axis_row = Adw.SwitchRow()
-        self.reverse_y_axis_row.set_title(_("Reverse Y-Axis Direction"))
-        self.reverse_y_axis_row.set_subtitle(
-            _("Makes coordinate values negative")
-        )
-        self.reverse_y_axis_row.set_active(machine.reverse_y_axis)
-        self.reverse_y_axis_row.connect(
-            "notify::active", self.on_reverse_y_changed
-        )
-        axes_group.add(self.reverse_y_axis_row)
-
-        # Reverse Z-Axis
-        self.reverse_z_axis_row = Adw.SwitchRow()
-        self.reverse_z_axis_row.set_title(_("Reverse Z-Axis Direction"))
-        self.reverse_z_axis_row.set_subtitle(
-            _(
-                "Enable if a positive Z command (e.g., G0 Z10) moves the head "
-                "down"
-            )
-        )
-        self.reverse_z_axis_row.set_active(machine.reverse_z_axis)
-        self.reverse_z_axis_row.connect(
-            "notify::active", self.on_reverse_z_changed
-        )
-        axes_group.add(self.reverse_z_axis_row)
-
-        single_axis_homing_row = Adw.SwitchRow()
-        single_axis_homing_row.set_title(_("Allow Single Axis Homing"))
-        single_axis_homing_row.set_subtitle(
-            _("Enable individual axis homing controls in the jog dialog")
-        )
-        single_axis_homing_row.set_active(machine.single_axis_homing_enabled)
-        single_axis_homing_row.connect(
-            "notify::active", self.on_single_axis_homing_changed
-        )
-        axes_group.add(single_axis_homing_row)
-
         # Group for Speeds
         speeds_group = Adw.PreferencesGroup(
             title=_("Speeds &amp; Acceleration")
+        )
+        speeds_group.set_description(
+            _(
+                "Movement parameters used for job time estimation "
+                "and path optimization."
+            )
         )
         self.add(speeds_group)
 
@@ -343,7 +195,6 @@ class GeneralPreferencesPage(Adw.PreferencesPage):
 
         # Update controls based on driver features
         self._update_travel_speed_state()
-        self._update_z_axis_state()
 
     def _on_machine_changed(self, sender, **kwargs):
         """
@@ -364,7 +215,6 @@ class GeneralPreferencesPage(Adw.PreferencesPage):
 
         # Update controls based on new driver features
         self._update_travel_speed_state()
-        self._update_z_axis_state()
 
     def _on_destroy(self, *args):
         """Disconnects signals to prevent memory leaks."""
@@ -436,38 +286,6 @@ class GeneralPreferencesPage(Adw.PreferencesPage):
         """Update the machine name when the text changes."""
         self.machine.set_name(entry_row.get_text())
 
-    def on_home_on_start_changed(self, row, _):
-        self.machine.set_home_on_start(row.get_active())
-
-    def on_clear_alarm_on_connect_changed(self, row, _):
-        self.machine.set_clear_alarm_on_connect(row.get_active())
-
-    def on_single_axis_homing_changed(self, row, _):
-        self.machine.set_single_axis_homing_enabled(row.get_active())
-
-    def on_origin_changed(self, row, _):
-        selected_index = row.get_selected()
-        origin_map = {
-            0: Origin.BOTTOM_LEFT,
-            1: Origin.TOP_LEFT,
-            2: Origin.TOP_RIGHT,
-            3: Origin.BOTTOM_RIGHT,
-        }
-        origin = origin_map.get(selected_index, Origin.BOTTOM_LEFT)
-        self.machine.set_origin(origin)
-
-    def on_reverse_x_changed(self, row, _):
-        """Handle the Reverse X-Axis switch."""
-        self.machine.set_reverse_x_axis(row.get_active())
-
-    def on_reverse_y_changed(self, row, _):
-        """Handle the Reverse Y-Axis switch."""
-        self.machine.set_reverse_y_axis(row.get_active())
-
-    def on_reverse_z_changed(self, row, _):
-        """Handle the Reverse Z-Axis switch."""
-        self.machine.set_reverse_z_axis(row.get_active())
-
     def on_travel_speed_changed(self, helper: UnitSpinRowHelper):
         """Update the max travel speed when the value changes."""
         if self._is_initializing:
@@ -489,28 +307,6 @@ class GeneralPreferencesPage(Adw.PreferencesPage):
         value = helper.get_value_in_base_units()
         self.machine.set_acceleration(int(value))
 
-    def on_width_changed(self, spinrow):
-        """Update the width when the value changes."""
-        width = get_spinrow_int(spinrow)
-        height = self.machine.dimensions[1]
-        self.machine.set_dimensions(width, height)
-
-    def on_height_changed(self, spinrow):
-        """Update the height when the value changes."""
-        width = self.machine.dimensions[0]
-        height = get_spinrow_int(spinrow)
-        self.machine.set_dimensions(width, height)
-
-    def on_x_offset_changed(self, spinrow):
-        y_offset = self.machine.offsets[1]
-        x_offset = get_spinrow_int(spinrow)
-        self.machine.set_offsets(x_offset, y_offset)
-
-    def on_y_offset_changed(self, spinrow):
-        x_offset = self.machine.offsets[0]
-        y_offset = get_spinrow_int(spinrow)
-        self.machine.set_offsets(x_offset, y_offset)
-
     def _update_travel_speed_state(self):
         """Update the travel speed row based on dialect features."""
         if self._is_initializing:
@@ -526,11 +322,3 @@ class GeneralPreferencesPage(Adw.PreferencesPage):
             self.travel_speed_row.set_subtitle(
                 _("Not supported by the driver")
             )
-
-    def _update_z_axis_state(self):
-        """Update Z-axis controls based on driver features."""
-        if self._is_initializing:
-            return
-
-        has_z = self.machine.can_jog(Axis.Z)
-        self.reverse_z_axis_row.set_visible(has_z)

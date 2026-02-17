@@ -3,8 +3,11 @@ from .dialect import GcodeDialect
 
 GRBL_DIALECT = GcodeDialect(
     uid="grbl",
-    label=_("GRBL (universal)"),
-    description=_("Standard GRBL for most diode lasers and hobby CNCs."),
+    label=_("Grbl (Compat)"),
+    description=_(
+        "Grbl dialect with highest compatibility for most diode lasers "
+        "and hobby CNCs"
+    ),
     can_g0_with_speed=False,
     laser_on="M4 S{power:.0f}",
     laser_off="M5",
@@ -32,9 +35,10 @@ GRBL_DIALECT = GcodeDialect(
 
 GRBL_DIALECT_NOZ = GcodeDialect(
     uid="grbl_noz",
-    label=_("GRBL (no Z axis)"),
+    label=_("Grbl (Compat, no Z axis)"),
     description=_(
-        "Standard GRBL, but removes Z axis commands for more efficient G-code."
+        "Grbl dialect with highest compatibility, "
+        "but removes Z axis commands for more efficient G-code"
     ),
     can_g0_with_speed=False,
     laser_on="M4 S{power:.0f}",
@@ -64,7 +68,7 @@ GRBL_DIALECT_NOZ = GcodeDialect(
 SMOOTHIEWARE_DIALECT = GcodeDialect(
     uid="smoothieware",
     label=_("Smoothieware"),
-    description=_("G-code dialect for Smoothieware-based controllers."),
+    description=_("G-code dialect for Smoothieware-based controllers"),
     can_g0_with_speed=True,
     laser_on="M3 S{power:.0f}",
     laser_off="M5",
@@ -94,7 +98,7 @@ MARLIN_DIALECT = GcodeDialect(
     uid="marlin",
     label=_("Marlin"),
     description=_(
-        "G-code for Marlin-based controllers, common in 3D printers."
+        "G-code for Marlin-based controllers, common in 3D printers"
     ),
     can_g0_with_speed=True,
     laser_on="M4 S{power:.0f}",
@@ -126,7 +130,7 @@ GRBL_DYNAMIC_DIALECT = GcodeDialect(
     label=_("GRBL Dynamic"),
     description=_(
         "GRBL with M4 dynamic power (Depth-Aware) mode. "
-        "S parameter is included in motion commands."
+        "S parameter is included in motion commands"
     ),
     can_g0_with_speed=False,
     laser_on="M4 S0",
@@ -158,7 +162,7 @@ GRBL_DYNAMIC_DIALECT_NOZ = GcodeDialect(
     label=_("GRBL Dynamic (no Z axis)"),
     description=_(
         "GRBL with M4 dynamic power (Depth-Aware) mode, "
-        "but removes Z axis commands for more efficient G-code."
+        "but removes Z axis commands for more efficient G-code"
     ),
     can_g0_with_speed=False,
     laser_on="M4 S0",

@@ -10,10 +10,11 @@ from .dialect_editor import DialectEditorDialog
 class DialectRow(Gtk.Box):
     """A widget representing a single Dialect in a ListBox."""
 
-    def __init__(self, dialect: GcodeDialect):
+    def __init__(self, dialect: GcodeDialect, machine=None):
         super().__init__(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
         self.dialect = dialect
         self.dialect_mgr = get_context().dialect_mgr
+        self.machine = machine
         self._setup_ui()
 
     def _setup_ui(self):
@@ -24,15 +25,31 @@ class DialectRow(Gtk.Box):
 
         if not self.dialect.is_custom:
             lock_icon = get_icon("lock-symbolic")
+            lock_icon.set_tooltip_text(_("Built-in dialect"))
             self.append(lock_icon)
+
+        info_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        info_box.set_hexpand(True)
+        info_box.set_valign(Gtk.Align.CENTER)
+        self.append(info_box)
 
         title_label = Gtk.Label(
             label=self.dialect.label,
             halign=Gtk.Align.START,
-            hexpand=True,
             xalign=0,
         )
-        self.append(title_label)
+        info_box.append(title_label)
+
+        if self.dialect.description:
+            desc_label = Gtk.Label(
+                label=self.dialect.description,
+                halign=Gtk.Align.START,
+                xalign=0,
+                wrap=True,
+            )
+            desc_label.add_css_class("dim-label")
+            desc_label.add_css_class("caption")
+            info_box.append(desc_label)
 
         suffix_box = Gtk.Box(spacing=6, valign=Gtk.Align.CENTER)
         self.append(suffix_box)
@@ -53,6 +70,25 @@ class DialectRow(Gtk.Box):
             copy_button.set_tooltip_text(_("Copy & Edit"))
             copy_button.connect("clicked", self._on_copy_edit_clicked)
             suffix_box.append(copy_button)
+
+        self.select_button = Gtk.ToggleButton()
+        self.select_button.add_css_class("flat")
+        self.select_button.set_child(get_icon("object-select-symbolic"))
+        self.select_button.set_tooltip_text(_("Select this dialect"))
+        self.select_button.connect("toggled", self._on_select_toggled)
+        self.append(self.select_button)
+
+        self._update_selection_state()
+
+    def _update_selection_state(self):
+        if self.machine:
+            is_selected = self.machine.dialect_uid == self.dialect.uid
+            self.select_button.set_active(is_selected)
+
+    def _on_select_toggled(self, button: Gtk.ToggleButton):
+        if button.get_active() and self.machine:
+            if self.machine.dialect_uid != self.dialect.uid:
+                self.machine.set_dialect_uid(self.dialect.uid)
 
     def _on_copy_edit_clicked(self, button: Gtk.Button):
         parent = cast(Gtk.Window, self.get_ancestor(Gtk.Window))
@@ -122,11 +158,15 @@ class DialectRow(Gtk.Box):
 class DialectListEditor(PreferencesGroupWithButton):
     """An Adwaita widget for managing a list of G-code dialects."""
 
-    def __init__(self, **kwargs):
+    def __init__(self, machine=None, **kwargs):
         super().__init__(button_label=_("Add New Dialect"), **kwargs)
+        self.machine = machine
         self.dialect_mgr = get_context().dialect_mgr
+        self._row_widgets: list[DialectRow] = []
         self._setup_ui()
         self.dialect_mgr.dialects_changed.connect(self._on_dialects_changed)
+        if self.machine:
+            self.machine.changed.connect(self._on_machine_changed)
         self.connect("destroy", self._on_destroy)
         self._on_dialects_changed()  # Initial population
 
@@ -143,9 +183,17 @@ class DialectListEditor(PreferencesGroupWithButton):
 
     def _on_destroy(self, *args):
         self.dialect_mgr.dialects_changed.disconnect(self._on_dialects_changed)
+        if self.machine:
+            self.machine.changed.disconnect(self._on_machine_changed)
+
+    def _on_machine_changed(self, sender, **kwargs):
+        """Update selection state when machine changes."""
+        for row in self._row_widgets:
+            row._update_selection_state()
 
     def _on_dialects_changed(self, sender=None, **kwargs):
         """Callback to rebuild the list when the dialect manager signals."""
+        self._row_widgets.clear()
         all_dialects = get_available_dialects()
         # Sort to show built-ins first, then customs alphabetically
         sorted_dialects = sorted(
@@ -155,7 +203,9 @@ class DialectListEditor(PreferencesGroupWithButton):
 
     def create_row_widget(self, item: GcodeDialect) -> Gtk.Widget:
         """Creates a DialectRow for the given dialect item."""
-        return DialectRow(item)
+        row = DialectRow(item, self.machine)
+        self._row_widgets.append(row)
+        return row
 
     def _on_add_clicked(self, button: Gtk.Button):
         """Handles the 'Add New Dialect' button click."""

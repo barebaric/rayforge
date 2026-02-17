@@ -8,14 +8,14 @@ Rayforge is designed primarily for **GRBL-based controllers** but has experiment
 
 ### Compatibility Matrix
 
-| Firmware | Version | Status | Driver | Notes |
-|----------|---------|--------|--------|-------|
-| **GRBL** | 1.1+ |  Fully supported | GRBL Serial | Recommended |
-| **grblHAL** | 2023+ |  Compatible | GRBL Serial | Modern GRBL fork |
-| **GRBL** | 0.9 |  Limited | GRBL Serial | Older, may have issues |
-| **Smoothieware** | All |  Experimental | None (use GRBL driver) | Untested |
-| **Marlin** | 2.0+ |  Experimental | None (use GRBL driver) | Laser mode required |
-| **Other** | - |  Not supported | - | Request support |
+| Firmware         | Version | Status           | Driver                 | Notes                  |
+| ---------------- | ------- | ---------------- | ---------------------- | ---------------------- |
+| **GRBL**         | 1.1+    |  Fully supported | GRBL Serial            | Recommended            |
+| **grblHAL**      | 2023+   |  Compatible      | GRBL Serial            | Modern GRBL fork       |
+| **GRBL**         | 0.9     |  Limited         | GRBL Serial            | Older, may have issues |
+| **Smoothieware** | All     |  Experimental    | None (use GRBL driver) | Untested               |
+| **Marlin**       | 2.0+    |  Experimental    | None (use GRBL driver) | Laser mode required    |
+| **Other**        | -       |  Not supported   | -                      | Request support        |
 
 ---
 
@@ -55,11 +55,13 @@ GRBL 1.1 is the most common firmware for hobby CNC and laser machines. Released 
 **Query version:**
 
 Connect to your controller and send:
+
 ```
 $I
 ```
 
 **Response examples:**
+
 ```
 [VER:1.1h.20190825:]
 [OPT:V,15,128]
@@ -136,15 +138,15 @@ Smoothieware uses different G-code syntax:
 
 **Key differences:**
 
-| Feature | GRBL | Smoothieware |
-|---------|------|--------------|
-| **Laser On** | M4 S{power} | M3 S{power} |
-| **Power Range** | 0-1000 | 0.0-1.0 (float) |
-| **Status** | `<...>` format | Different format |
+| Feature         | GRBL           | Smoothieware     |
+| --------------- | -------------- | ---------------- |
+| **Laser On**    | M4 S{power}    | M3 S{power}      |
+| **Power Range** | 0-1000         | 0.0-1.0 (float)  |
+| **Status**      | `<...>` format | Different format |
 
 **Using Smoothieware with Rayforge:**
 
-1. **Select Smoothieware dialect** in machine settings
+1. **Select Smoothieware dialect** in machine settings > G-code > Dialect
 2. **Test with low power** first
 3. **Verify power range** matches your config
 4. **No real-time status** - limited feedback
@@ -193,7 +195,7 @@ Marlin 2.0+ can control lasers when properly configured.
 
 **Using Marlin with Rayforge:**
 
-1. **Select Marlin dialect** in machine settings
+1. **Select Marlin dialect** in machine settings > G-code > Dialect
 2. **Configure Marlin** for laser use
 3. **Test power range** matches (0-1000 or 0-255)
 4. **Limited testing** - use with caution
@@ -227,6 +229,7 @@ Marlin 2.0+ can control lasers when properly configured.
 3. **Flash firmware:**
 
    **Using Arduino IDE:**
+
    ```
    1. Install Arduino IDE
    2. Open GRBL sketch (grbl.ino)
@@ -235,6 +238,7 @@ Marlin 2.0+ can control lasers when properly configured.
    ```
 
    **Using avrdude:**
+
    ```bash
    avrdude -c arduino -p m328p -P /dev/ttyUSB0 \
            -U flash:w:grbl.hex:i
@@ -265,15 +269,15 @@ Marlin 2.0+ can control lasers when properly configured.
 
 ### Common Controllers
 
-| Board | Typical Firmware | Rayforge Support |
-|-------|------------------|------------------|
-| **Arduino CNC Shield** | GRBL 1.1 |  Excellent |
-| **MKS DLC32** | grblHAL |  Excellent |
-| **Cohesion3D** | Smoothieware |  Limited |
-| **SKR boards** | Marlin/grblHAL |  Varies |
-| **Ruida** | Proprietary |  Not supported |
-| **Trocen** | Proprietary |  Not supported |
-| **TopWisdom** | Proprietary |  Not supported |
+| Board                  | Typical Firmware | Rayforge Support |
+| ---------------------- | ---------------- | ---------------- |
+| **Arduino CNC Shield** | GRBL 1.1         | Excellent        |
+| **MKS DLC32**          | grblHAL          | Excellent        |
+| **Cohesion3D**         | Smoothieware     | Limited          |
+| **SKR boards**         | Marlin/grblHAL   | Varies           |
+| **Ruida**              | Proprietary      | Not supported    |
+| **Trocen**             | Proprietary      | Not supported    |
+| **TopWisdom**          | Proprietary      | Not supported    |
 
 ### Recommended Controllers
 
@@ -333,24 +337,28 @@ $22=1       ; Homing enabled
 **Basic test sequence:**
 
 1. **Connection test:**
+
    ```
    Send: ?
    Expect: <Idle|...>
    ```
 
 2. **Version check:**
+
    ```
    Send: $I
    Expect: [VER:1.1...]
    ```
 
 3. **Settings check:**
+
    ```
    Send: $$
    Expect: $0=..., $1=..., etc.
    ```
 
 4. **Movement test:**
+
    ```
    Send: G91 G0 X10
    Expect: Machine moves 10mm in X
@@ -371,6 +379,7 @@ $22=1       ; Homing enabled
 ### Firmware Not Responding
 
 **Symptoms:**
+
 - No response to commands
 - Connection fails
 - Status not reported
@@ -398,6 +407,7 @@ $22=1       ; Homing enabled
 ### Firmware Crashes
 
 **Symptoms:**
+
 - Controller locks up during job
 - Random disconnections
 - Inconsistent behavior
@@ -419,6 +429,7 @@ $22=1       ; Homing enabled
 ### Wrong Firmware
 
 **Symptoms:**
+
 - Commands rejected
 - Unexpected behavior
 - Error messages

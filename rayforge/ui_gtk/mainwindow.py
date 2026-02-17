@@ -1213,6 +1213,15 @@ class MainWindow(Adw.ApplicationWindow):
                 when_done=self._on_assembly_for_preview_finished
             )
 
+    def _refresh_gcode_preview(self, sender=None, **kwargs):
+        """Refresh G-code preview when machine settings change."""
+        gcode_action = self.action_manager.get_action("toggle_gcode_preview")
+        gcode_state = gcode_action.get_state() if gcode_action else None
+        is_gcode_visible = gcode_state and gcode_state.get_boolean()
+
+        if is_gcode_visible:
+            self.refresh_previews()
+
     def _create_canvas3d(
         self,
         context,
@@ -1294,6 +1303,9 @@ class MainWindow(Adw.ApplicationWindow):
                 self._on_job_finished
             )
             self._current_machine.changed.disconnect(self._update_macros_menu)
+            self._current_machine.changed.disconnect(
+                self._refresh_gcode_preview
+            )
             self._current_machine.machine_hours.changed.disconnect(
                 self._on_machine_hours_changed
             )
@@ -1313,6 +1325,7 @@ class MainWindow(Adw.ApplicationWindow):
             )
             self._current_machine.job_finished.connect(self._on_job_finished)
             self._current_machine.changed.connect(self._update_macros_menu)
+            self._current_machine.changed.connect(self._refresh_gcode_preview)
             self._current_machine.machine_hours.changed.connect(
                 self._on_machine_hours_changed
             )
