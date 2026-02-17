@@ -597,8 +597,8 @@ class TestExportGcodeToPath:
             assert not export_path.exists()
 
 
-class TestExportSketchToPath:
-    """Tests for export_sketch_to_path method."""
+class TestExportObjectToPath:
+    """Tests for export_object_to_path method."""
 
     def test_export_sketch_success(self, file_cmd, sample_workpiece, tmp_path):
         """Test successful sketch export."""
@@ -611,7 +611,7 @@ class TestExportSketchToPath:
             mock_exporter.export.return_value = b'{"test": "data"}'
             mock_exporter_cls.return_value = mock_exporter
 
-            result = file_cmd.export_sketch_to_path(
+            result = file_cmd.export_object_to_path(
                 export_path, sample_workpiece
             )
 
@@ -632,7 +632,7 @@ class TestExportSketchToPath:
             mock_exporter.export.side_effect = ValueError("No sketch found")
             mock_exporter_cls.return_value = mock_exporter
 
-            result = file_cmd.export_sketch_to_path(
+            result = file_cmd.export_object_to_path(
                 export_path, sample_workpiece
             )
 
@@ -655,13 +655,13 @@ class TestExportSketchToPath:
             with patch.object(
                 Path, "write_bytes", side_effect=OSError("Disk full")
             ):
-                result = file_cmd.export_sketch_to_path(
+                result = file_cmd.export_object_to_path(
                     export_path, sample_workpiece
                 )
 
                 assert result is False
 
-    def test_export_sketch_sends_notification(
+    def test_export_object_sends_notification(
         self, file_cmd, sample_workpiece, tmp_path
     ):
         """Test that successful export sends notification."""
@@ -677,11 +677,11 @@ class TestExportSketchToPath:
             with patch.object(
                 file_cmd._editor.notification_requested, "send"
             ) as mock_send:
-                file_cmd.export_sketch_to_path(export_path, sample_workpiece)
+                file_cmd.export_object_to_path(export_path, sample_workpiece)
 
                 mock_send.assert_called_once()
                 call_args = mock_send.call_args
-                assert "Sketch exported successfully" in str(call_args)
+                assert "exported successfully" in str(call_args)
 
 
 class TestGetSupportedImportFilters:

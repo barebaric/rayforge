@@ -165,22 +165,22 @@ class SketchModeCmd:
         logger.debug(f"Sketch edit requested for workpiece {workpiece.name}")
         self.enter_sketch_mode(workpiece)
 
-    def on_export_sketch(self, action, param):
-        """Action handler for exporting the selected sketch."""
+    def on_export_object(self, action, param):
+        """Action handler for exporting the selected object."""
         selected_items = self._win.surface.get_selected_workpieces()
         if len(selected_items) == 1:
-            file_dialogs.show_export_sketch_dialog(
+            file_dialogs.show_export_object_dialog(
                 self._win,
-                self._on_export_sketch_save_response,
+                self._on_export_object_save_response,
                 selected_items[0],
             )
         else:
             self._win._on_editor_notification(
-                self._win, _("Please select a single sketch to export.")
+                self._win, _("Please select a single object to export.")
             )
 
-    def _on_export_sketch_save_response(self, dialog, result, user_data):
-        """Callback for the export sketch dialog."""
+    def _on_export_object_save_response(self, dialog, result, user_data):
+        """Callback for the export object dialog."""
         try:
             file = dialog.save_finish(result)
             if not file:
@@ -191,7 +191,7 @@ class SketchModeCmd:
             if len(selected) != 1:
                 return
 
-            self._editor.file.export_sketch_to_path(file_path, selected[0])
+            self._editor.file.export_object_to_path(file_path, selected[0])
 
         except GLib.Error as e:
             logger.error(f"Error saving file: {e.message}")

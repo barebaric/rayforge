@@ -110,7 +110,7 @@ class MainMenu(Gio.Menu):
 
         sketch_group = Gio.Menu()
         sketch_group.append(_("New Sketch"), "win.new_sketch")
-        sketch_group.append(_("Export Sketch..."), "win.export_sketch")
+        sketch_group.append(_("Export Object..."), "win.export_object")
         object_menu.append_section(None, sketch_group)
 
         other_group = Gio.Menu()

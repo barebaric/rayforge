@@ -44,7 +44,9 @@ from ..image import (
     ImportManifest,
     Importer,
 )
+from ..image.dxf.exporter import GeometryDxfExporter
 from ..image.sketch.exporter import SketchExporter
+from ..image.svg.exporter import GeometrySvgExporter
 from ..image.structures import ImportPayload, ImportResult, ParsingResult
 from ..pipeline.artifact import JobArtifact, JobArtifactHandle
 from .layout.align import PositionAtStrategy
@@ -906,23 +908,59 @@ class FileCmd:
 
         self.assemble_job_in_background(when_done=_on_export_assembly_done)
 
-    def export_sketch_to_path(self, file_path: Path, workpiece: WorkPiece):
+    def export_object_to_path(self, file_path: Path, workpiece: WorkPiece):
         """
-        Exports a sketch-based workpiece to a file.
+        Exports a workpiece to a file.
+
+        Supports multiple formats based on file extension:
+        - .rfs: Rayforge Sketch (parametric, sketch-based only)
+        - .svg: SVG format
+        - .dxf: DXF format
+
         This is a synchronous method for the UI.
         """
+        ext = file_path.suffix.lower()
+        if ext == ".rfs":
+            return self._export_sketch_to_rfs(file_path, workpiece)
+
+        geo = workpiece.world_space_boundaries
+        if geo is None or geo.is_empty():
+            raise ValueError(
+                "Cannot export: The selected item has no geometry."
+            )
+
+        if ext == ".svg":
+            exporter = GeometrySvgExporter(geo)
+        elif ext == ".dxf":
+            exporter = GeometryDxfExporter(geo)
+        else:
+            raise ValueError(f"Unsupported export format: {ext}")
+
+        return self._do_export(file_path, exporter)
+
+    def _export_sketch_to_rfs(
+        self, file_path: Path, workpiece: WorkPiece
+    ) -> bool:
+        """Export a sketch-based workpiece to RFS format."""
+        exporter = SketchExporter(workpiece)
+        return self._do_export(file_path, exporter)
+
+    def _do_export(self, file_path: Path, exporter) -> bool:
+        """Execute the export and handle notifications."""
         try:
-            exporter = SketchExporter(workpiece)
             data = exporter.export()
             file_path.write_bytes(data)
-            logger.info(f"Successfully exported sketch to {file_path}")
-            msg = _("Sketch exported successfully.")
+            logger.info(f"Successfully exported object to {file_path}")
+            msg = _("Object exported successfully.")
             self._editor.notification_requested.send(self, message=msg)
             return True
         except Exception as e:
-            logger.error(f"Failed to export sketch to {file_path}", exc_info=e)
+            logger.error(f"Failed to export object to {file_path}", exc_info=e)
             self._editor.notification_requested.send(
-                self, message=_("Failed to save sketch file.")
+                self,
+                message=_("Failed to export object: {error}").format(
+                    error=str(e)
+                ),
             )
             return False
 

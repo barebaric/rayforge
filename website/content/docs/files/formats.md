@@ -6,16 +6,17 @@ This page provides detailed information about all file formats supported by Rayf
 
 ### Quick Reference
 
-| Format | Type | Import | Export | Recommended Use |
-|--------|------|--------|--------|-----------------|
-| **SVG** | Vector |  Direct |  | Primary design format |
-| **DXF** | Vector |  Direct |  | CAD interchange |
-| **PDF** | Mixed |  Trace |  | Document export (limited) |
-| **PNG** | Raster |  Trace |  | Photos, images |
-| **JPEG** | Raster |  Trace |  | Photos |
-| **BMP** | Raster |  Trace |  | Simple graphics |
-| **G-code** | Control |  |  | Machine output |
-| **Rayforge Project** | Project |  |  | Save/load projects |
+| Format               | Type    | Import   | Export          | Recommended Use           |
+| -------------------- | ------- | -------- | --------------- | ------------------------- |
+| **SVG**              | Vector  | ✓ Direct | ✓ Object export | Primary design format     |
+| **DXF**              | Vector  | ✓ Direct | ✓ Object export | CAD interchange           |
+| **PDF**              | Mixed   | ✓ Trace  | –               | Document export (limited) |
+| **PNG**              | Raster  | ✓ Trace  | –               | Photos, images            |
+| **JPEG**             | Raster  | ✓ Trace  | –               | Photos                    |
+| **BMP**              | Raster  | ✓ Trace  | –               | Simple graphics           |
+| **RFS**              | Sketch  | ✓ Direct | ✓ Object export | Parametric sketches       |
+| **G-code**           | Control | –        | ✓ Primary       | Machine output            |
+| **Rayforge Project** | Project | ✓        | ✓               | Save/load projects        |
 
 ---
 
@@ -26,7 +27,7 @@ This page provides detailed information about all file formats supported by Rayf
 **Extension:** `.svg`
 **MIME Type:** `image/svg+xml`
 **Import:** Direct vector parsing or bitmap trace
-**Export:** Not supported
+**Export:** Object export (geometry only)
 
 **What is SVG?**
 
@@ -34,22 +35,30 @@ SVG is an XML-based vector image format. It's the **preferred format** for impor
 
 **Supported Features:**
 
--  Paths (lines, curves, arcs)
--  Basic shapes (rectangles, circles, ellipses, polygons)
--  Groups and transformations
--  Stroke and fill colors
--  Multiple layers
--  Coordinate transformations (translate, rotate, scale)
+- ✓ Paths (lines, curves, arcs)
+- ✓ Basic shapes (rectangles, circles, ellipses, polygons)
+- ✓ Groups and transformations
+- ✓ Stroke and fill colors
+- ✓ Multiple layers
+- ✓ Coordinate transformations (translate, rotate, scale)
 
 **Unsupported/Limited Features:**
 
--  Text (must be converted to paths first)
--  Gradients (simplified or ignored)
--  Filters and effects (ignored)
--  Masks and clipping paths (may not work correctly)
--  Embedded raster images (imported separately if possible)
--  Complex stroke styles (dashes may be simplified)
--  Symbols and use elements (instances may not update)
+- ✗ Text (must be converted to paths first)
+- ✗ Gradients (simplified or ignored)
+- ✗ Filters and effects (ignored)
+- ✗ Masks and clipping paths (may not work correctly)
+- ✗ Embedded raster images (imported separately if possible)
+- ✗ Complex stroke styles (dashes may be simplified)
+- ✗ Symbols and use elements (instances may not update)
+
+**Export Notes:**
+
+When exporting a workpiece to SVG, Rayforge exports the geometry as vector paths with:
+
+- Stroke-only rendering (no fill)
+- Millimeter units
+- Black stroke color
 
 **Best Practices:**
 
@@ -74,7 +83,7 @@ SVG is an XML-based vector image format. It's the **preferred format** for impor
 **Extension:** `.dxf`
 **MIME Type:** `application/dxf`, `image/vnd.dxf`
 **Import:** Direct vector parsing
-**Export:** Not supported
+**Export:** Object export (geometry only)
 
 **What is DXF?**
 
@@ -82,42 +91,54 @@ DXF is an AutoCAD drawing format, widely used for CAD interchange.
 
 **Supported Versions:**
 
--  **R12/LT2** (recommended - best compatibility)
--  R13, R14
--  R2000 and later (usually works, but R12 is safer)
+- ✓ **R12/LT2** (recommended - best compatibility)
+- ✓ R13, R14
+- ✓ R2000 and later (usually works, but R12 is safer)
 
 **Supported Entities:**
 
--  Lines (LINE)
--  Polylines (LWPOLYLINE, POLYLINE)
--  Arcs (ARC)
--  Circles (CIRCLE)
--  Splines (SPLINE) - converted to polylines
--  Ellipses (ELLIPSE)
--  Layers
+- ✓ Lines (LINE)
+- ✓ Polylines (LWPOLYLINE, POLYLINE)
+- ✓ Arcs (ARC)
+- ✓ Circles (CIRCLE)
+- ✓ Splines (SPLINE) - converted to polylines
+- ✓ Ellipses (ELLIPSE)
+- ✓ Layers
 
 **Unsupported/Limited Features:**
 
--  3D entities (use 2D projection)
--  Dimensions and annotations (ignored)
--  Blocks/inserts (may not instance correctly)
--  Complex line types (simplified to solid)
--  Text (ignored, convert to outlines first)
--  Hatches (may be simplified or ignored)
+- ✗ 3D entities (use 2D projection)
+- ✗ Dimensions and annotations (ignored)
+- ✗ Blocks/inserts (may not instance correctly)
+- ✗ Complex line types (simplified to solid)
+- ✗ Text (ignored, convert to outlines first)
+- ✗ Hatches (may be simplified or ignored)
+
+**Export Notes:**
+
+When exporting a workpiece to DXF, Rayforge exports:
+
+- Lines as LWPOLYLINE entities
+- Arcs as ARC entities
+- Bezier curves as SPLINE entities
+- Millimeter units (INSUNITS = 4)
 
 **Common Issues:**
 
 **1. Wrong scale**
-   - **Cause:** DXF files don't always specify units clearly
-   - **Solution:** Verify units before export, scale manually if needed
+
+- **Cause:** DXF files don't always specify units clearly
+- **Solution:** Verify units before export, scale manually if needed
 
 **2. Missing entities**
-   - **Cause:** Unsupported entity types or layers turned off
-   - **Solution:** Check layer visibility, convert complex entities to polylines
+
+- **Cause:** Unsupported entity types or layers turned off
+- **Solution:** Check layer visibility, convert complex entities to polylines
 
 **3. Segmented curves**
-   - **Cause:** Splines and ellipses converted to line segments
-   - **Solution:** Increase segment count in export settings
+
+- **Cause:** Splines and ellipses converted to line segments
+- **Solution:** Increase segment count in export settings
 
 **Best Practices:**
 
@@ -140,6 +161,34 @@ DXF is an AutoCAD drawing format, widely used for CAD interchange.
 
 ---
 
+### RFS (Rayforge Sketch)
+
+**Extension:** `.rfs`
+**MIME Type:** `application/x-rayforge-sketch`
+**Import:** Direct (sketch-based workpieces)
+**Export:** Object export (sketch-based workpieces)
+
+**What is RFS?**
+
+RFS is Rayforge's native parametric sketch format. It preserves all geometric
+elements and parametric constraints, allowing you to save and share fully
+editable sketches.
+
+**Features:**
+
+- ✓ All geometric elements (lines, arcs, circles, rectangles, etc.)
+- ✓ All parametric constraints
+- ✓ Dimensional values and expressions
+- ✓ Fill areas
+
+**When to Use:**
+
+- Save reusable parametric designs
+- Share editable sketches with other Rayforge users
+- Archive work in progress
+
+---
+
 ### PDF (Portable Document Format)
 
 **Extension:** `.pdf`
@@ -152,6 +201,7 @@ DXF is an AutoCAD drawing format, widely used for CAD interchange.
 Rayforge can import PDF files by rasterizing them first, then tracing to vectors.
 
 **Process:**
+
 1. PDF rendered to raster image (default 300 DPI)
 2. Raster traced to create vector paths
 3. Paths added to document
@@ -273,12 +323,12 @@ G-code is the **machine control language** used by laser controllers.
 
 **Export Settings:**
 
-| Setting | Description | Typical Value |
-|---------|-------------|---------------|
-| **Precision** | Decimal places for coordinates | 3 (e.g., 12.345) |
-| **Dialect** | G-code flavor | GRBL |
-| **Line numbers** | Add N line numbers | Usually off |
-| **Whitespace** | Add spaces for readability | Usually on |
+| Setting          | Description                    | Typical Value    |
+| ---------------- | ------------------------------ | ---------------- |
+| **Precision**    | Decimal places for coordinates | 3 (e.g., 12.345) |
+| **Dialect**      | G-code flavor                  | GRBL             |
+| **Line numbers** | Add N line numbers             | Usually off      |
+| **Whitespace**   | Add spaces for readability     | Usually on       |
 
 **File Size:**
 
@@ -295,7 +345,6 @@ G-code is the **machine control language** used by laser controllers.
 See [G-code Dialects](../reference/gcode-dialects.md) for details.
 
 ---
-
 
 ## Related Pages
 
