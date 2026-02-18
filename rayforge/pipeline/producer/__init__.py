@@ -2,11 +2,14 @@
 import inspect
 from .base import OpsProducer, CutSide
 from .contour import ContourProducer
-from .depth import DepthEngraver
-from .dither_rasterize import DitherRasterizer
+from .raster import (
+    DepthEngraver,
+    DepthMode,
+    DitherRasterizer,
+    Rasterizer,
+)
 from .frame import FrameProducer
 from .material_test_grid import MaterialTestGridProducer, MaterialTestGridType
-from .rasterize import Rasterizer
 from .shrinkwrap import ShrinkWrapProducer
 
 producer_by_name = dict(
@@ -23,6 +26,7 @@ __all__ = [
     "OpsProducer",
     "CutSide",
     "ContourProducer",
+    "DepthMode",
     "DepthEngraver",
     "DitherRasterizer",
     "FrameProducer",

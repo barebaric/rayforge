@@ -11,31 +11,6 @@ Material testing is essential for laser work - different materials require diffe
 - Optimizing execution order for safety (fastest speeds first)
 - Adding labels to identify each test cell's settings
 
-<!-- SCREENSHOT
-id: feature-material-test-grid-example
-type: screenshot
-size: full-window
-description: |
-  Material test grid displayed on canvas showing a 5x5 grid of test squares
-  with speed and power labels. Grid shows gradient shading indicating varying
-  power levels from light (low power) to dark (high power).
-setup:
-  - action: menu_click
-    path: Tools > Material Test Grid
-  - action: set_parameters
-    preset: diode_engrave
-    grid_rows: 5
-    grid_cols: 5
-  - action: click_element
-    text: "Generate"
-  - action: zoom_to_fit
-  - action: capture
-    region: main_window
-filename: Ref-MaterialTestGrid-Example.png
-alt: "Material test grid example showing 5x5 test pattern with labels"
--->
-
-<!-- ![Material test grid example](../../images/Ref-MaterialTestGrid-Example.png) -->
 
 ## Creating a Material Test Grid
 
@@ -59,12 +34,6 @@ Rayforge includes presets for common scenarios:
 
 Presets are starting points - you can adjust all parameters after selecting one.
 
-<!-- SCREENSHOT: feature-material-test-presets
-description: Material Test Grid settings dialog showing preset dropdown with Diode Engrave selected
-filename: UI-MaterialTestGrid-Presets.png
--->
-
-<!-- ![Material test grid presets](../../images/UI-MaterialTestGrid-Presets.png) -->
 
 ### Step 3: Configure Parameters
 
@@ -103,37 +72,6 @@ Adjust the test grid parameters:
 - Labels appear on left and top edges
 - Labels are engraved at 10% power, 1000 mm/min
 
-<!-- SCREENSHOT
-id: feature-material-test-settings
-type: screenshot
-size: dialog
-description: |
-  Material Test Grid settings dialog showing all configuration options:
-  - Preset selector set to "Diode Engrave"
-  - Test type: Engrave
-  - Speed range: 1000-10000 mm/min
-  - Power range: 10-100%
-  - Grid: 5 columns x 5 rows
-  - Shape size: 20mm
-  - Spacing: 5mm
-  - Labels: enabled
-setup:
-  - action: menu_click
-    path: Tools > Material Test Grid
-  - action: set_parameters
-    preset: diode_engrave
-    grid_rows: 5
-    grid_cols: 5
-    shape_size: 20
-    spacing: 5
-    include_labels: true
-  - action: capture
-    region: dialog
-filename: UI-MaterialTestGrid-SettingsDialog.png
-alt: "Material Test Grid settings dialog with all parameters configured"
--->
-
-<!-- ![Material test grid settings](../../images/UI-MaterialTestGrid-SettingsDialog.png) -->
 
 ### Step 4: Generate the Grid
 
@@ -211,16 +149,16 @@ After the test completes, examine each cell:
 
 ### Step 3: Record Settings
 
-Create a material settings reference:
+Document your successful settings for future reference:
 
-| Material        | Thickness | Operation | Speed       | Power | Notes            |
-| --------------- | --------- | --------- | ----------- | ----- | ---------------- |
-| Birch Plywood   | 3mm       | Engrave   | 5000 mm/min | 40%   | Perfect contrast |
-| Birch Plywood   | 3mm       | Cut       | 500 mm/min  | 80%   | 2 passes         |
-| Acrylic (clear) | 3mm       | Cut       | 300 mm/min  | 90%   | Clean edge       |
+- Material type and thickness
+- Operation type (engrave or cut)
+- Speed and power combination
+- Number of passes
+- Any special notes
 
 !!! tip "Material Database"
-Consider documenting your material test results for quick reference in future projects.
+     Consider creating a reference document with your material test results for quick lookup in future projects.
 
 ## Advanced Usage
 
@@ -343,5 +281,5 @@ The test grid parameters are stored as JSON:
 ## Related Topics
 
 - **[Simulation Mode](../simulation-mode.md)** - Preview test execution before running
-- **[Raster Engraving](raster.md)** - Understanding engrave operations
+- **[Engrave](engrave.md)** - Understanding engrave operations
 - **[Contour Cutting](contour.md)** - Understanding cut operations

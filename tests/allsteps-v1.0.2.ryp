@@ -79,6 +79,14 @@
                 "CUT",
                 "SCORE"
               ],
+              "modifiers_dicts": [
+                {
+                  "name": "MakeTransparent"
+                },
+                {
+                  "name": "ToGrayscale"
+                }
+              ],
               "opsproducer_dict": {
                 "type": "ContourProducer",
                 "params": {
@@ -129,9 +137,9 @@
               "children": []
             },
             {
-              "uid": "b2b6369c-5538-47ee-9795-62b37080cd19",
+              "uid": "b097d876-085b-4613-80a2-2df3a560c527",
               "type": "step",
-              "name": "Engrave",
+              "name": "Engrave (Raster)",
               "matrix": [
                 [
                   1.0,
@@ -149,7 +157,7 @@
                   1.0
                 ]
               ],
-              "typelabel": "Engrave",
+              "typelabel": "Engrave (Raster)",
               "visible": true,
               "selected_laser_uid": "46606ac3-7eb1-4979-a379-d44fc2b03911",
               "generated_workpiece_uid": null,
@@ -157,24 +165,19 @@
               "capabilities": [
                 "ENGRAVE"
               ],
+              "modifiers_dicts": [
+                {
+                  "name": "ToGrayscale"
+                }
+              ],
               "opsproducer_dict": {
                 "type": "Rasterizer",
                 "params": {
-                  "scan_angle": 0.0,
-                  "depth_mode": "POWER_MODULATION",
-                  "threshold": 128,
-                  "dither_algorithm": "floyd_steinberg",
                   "cross_hatch": false,
-                  "speed": 3000.0,
-                  "min_power": 0.0,
-                  "max_power": 1.0,
-                  "num_depth_levels": 5,
-                  "z_step_down": 0.0,
+                  "threshold": 128,
                   "invert": false,
-                  "line_interval_mm": null,
-                  "black_point": 0,
-                  "white_point": 255,
-                  "angle_increment": 0.0
+                  "direction_degrees": 0.0,
+                  "line_interval_mm": null
                 }
               },
               "per_workpiece_transformers_dicts": [
@@ -184,6 +187,149 @@
                   "distance_mm": 0.5,
                   "auto": true
                 },
+                {
+                  "name": "Optimize",
+                  "enabled": true
+                }
+              ],
+              "per_step_transformers_dicts": [
+                {
+                  "name": "MultiPassTransformer",
+                  "enabled": true,
+                  "passes": 1,
+                  "z_step_down": 0.0
+                }
+              ],
+              "pixels_per_mm": [
+                50,
+                50
+              ],
+              "power": 1.0,
+              "max_power": 1000,
+              "cut_speed": 500,
+              "max_cut_speed": 1000,
+              "travel_speed": 5000,
+              "max_travel_speed": 3000,
+              "air_assist": false,
+              "kerf_mm": 0.0,
+              "children": []
+            },
+            {
+              "uid": "38247753-19d9-4de7-87a8-85b691b671cf",
+              "type": "step",
+              "name": "Engrave (Depth-Aware)",
+              "matrix": [
+                [
+                  1.0,
+                  0.0,
+                  0.0
+                ],
+                [
+                  0.0,
+                  1.0,
+                  0.0
+                ],
+                [
+                  0.0,
+                  0.0,
+                  1.0
+                ]
+              ],
+              "typelabel": "Engrave (Depth-Aware)",
+              "visible": true,
+              "selected_laser_uid": "46606ac3-7eb1-4979-a379-d44fc2b03911",
+              "generated_workpiece_uid": null,
+              "applied_recipe_uid": null,
+              "capabilities": [
+                "ENGRAVE"
+              ],
+              "modifiers_dicts": [],
+              "opsproducer_dict": {
+                "type": "DepthEngraver",
+                "params": {
+                  "scan_angle": 0.0,
+                  "bidirectional": true,
+                  "depth_mode": "POWER_MODULATION",
+                  "speed": 3000.0,
+                  "min_power": 0.0,
+                  "max_power": 1.0,
+                  "num_depth_levels": 5,
+                  "z_step_down": 0.0,
+                  "invert": false,
+                  "line_interval_mm": null
+                }
+              },
+              "per_workpiece_transformers_dicts": [
+                {
+                  "name": "OverscanTransformer",
+                  "enabled": true,
+                  "distance_mm": 0.5,
+                  "auto": true
+                },
+                {
+                  "name": "Optimize",
+                  "enabled": true
+                }
+              ],
+              "per_step_transformers_dicts": [],
+              "pixels_per_mm": [
+                50,
+                50
+              ],
+              "power": 1.0,
+              "max_power": 1000,
+              "cut_speed": 500,
+              "max_cut_speed": 1000,
+              "travel_speed": 5000,
+              "max_travel_speed": 3000,
+              "air_assist": false,
+              "kerf_mm": 0.0,
+              "children": []
+            },
+            {
+              "uid": "dd003790-6cc5-4f12-87e5-b8552004d95e",
+              "type": "step",
+              "name": "Engrave (Dither)",
+              "matrix": [
+                [
+                  1.0,
+                  0.0,
+                  0.0
+                ],
+                [
+                  0.0,
+                  1.0,
+                  0.0
+                ],
+                [
+                  0.0,
+                  0.0,
+                  1.0
+                ]
+              ],
+              "typelabel": "Engrave (Dither)",
+              "visible": true,
+              "selected_laser_uid": "46606ac3-7eb1-4979-a379-d44fc2b03911",
+              "generated_workpiece_uid": null,
+              "applied_recipe_uid": null,
+              "capabilities": [
+                "ENGRAVE"
+              ],
+              "modifiers_dicts": [
+                {
+                  "name": "ToGrayscale"
+                }
+              ],
+              "opsproducer_dict": {
+                "type": "DitherRasterizer",
+                "params": {
+                  "dither_algorithm": "floyd_steinberg",
+                  "invert": false,
+                  "bidirectional": true,
+                  "line_interval_mm": null
+                }
+              },
+              "per_workpiece_transformers_dicts": [
                 {
                   "name": "Optimize",
                   "enabled": true
@@ -240,6 +386,14 @@
               "capabilities": [
                 "CUT",
                 "SCORE"
+              ],
+              "modifiers_dicts": [
+                {
+                  "name": "MakeTransparent"
+                },
+                {
+                  "name": "ToGrayscale"
+                }
               ],
               "opsproducer_dict": {
                 "type": "ShrinkWrapProducer",
@@ -317,6 +471,7 @@
                 "CUT",
                 "SCORE"
               ],
+              "modifiers_dicts": [],
               "opsproducer_dict": {
                 "type": "FrameProducer",
                 "params": {

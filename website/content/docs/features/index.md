@@ -7,9 +7,9 @@ Rayforge provides a comprehensive set of features for laser cutting and engravin
 Operations define how Rayforge processes your designs. Each operation type is optimized for specific tasks:
 
 - **[Contour Cutting](operations/contour.md)**: Cut along the outline of shapes
-- **[Raster Engraving](operations/raster.md)**: Fill shapes with engraving patterns
-- **[Depth Engraving](operations/depth.md)**: Create 3D relief effects from images
+- **[Engrave](operations/engrave.md)**: Fill shapes with engraving patterns (variable power, dither, multi-pass modes)
 - **[Shrink Wrap](operations/shrink-wrap.md)**: Create efficient cutting paths around multiple objects
+- **[Frame Outline](operations/frame-outline.md)**: Create a rectangular frame around content
 
 ## Workflow Features
 
@@ -47,9 +47,9 @@ Operations define how Rayforge processes your designs. Each operation type is op
 ### Operation Selection
 
 - Use **Contour** for cutting out shapes and profiles
-- Use **Raster** for filling areas with engraving (wood, leather, etc.)
-- Use **Depth Engraving** for 3D effects on materials like acrylic or coated metals
+- Use **Engrave** for filling areas with engraving (variable power, dither, or multi-pass modes for 3D effects)
 - Use **Shrink Wrap** when you need to cut around multiple objects efficiently
+- Use **Frame Outline** to create a rectangular boundary around your design
 
 ### Layer Organization
 
@@ -62,7 +62,7 @@ Organize your designs by operation type:
 ```mermaid
 flowchart TD
     A[Design File] --> B{Select Objects}
-    B --> C[Layer 1: Raster/Depth<br/>Engraving]
+    B --> C[Layer 1: Engrave<br/>Variable/Dither/Multi-pass]
     B --> D[Layer 2: Light Contour<br/>Scoring]
     B --> E[Layer 3: Full Power<br/>Cutting]
 

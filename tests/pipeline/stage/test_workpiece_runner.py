@@ -19,7 +19,7 @@ from rayforge.pipeline.artifact import (
     WorkPieceArtifact,
 )
 from rayforge.pipeline.producer.contour import ContourProducer
-from rayforge.pipeline.producer.depth import DepthEngraver
+from rayforge.pipeline.producer.raster import Rasterizer
 from rayforge.pipeline.stage.workpiece_runner import (
     make_workpiece_artifact_in_subprocess,
 )
@@ -166,7 +166,7 @@ def test_raster_producer_returns_artifact_with_raster_data(
 ):
     # Arrange
     step = Step(typelabel="Engrave")
-    step.opsproducer_dict = DepthEngraver().to_dict()
+    step.opsproducer_dict = Rasterizer().to_dict()
     settings = step.get_settings()
     laser = Laser()
     generation_id = 2

@@ -46,9 +46,11 @@ class DepthMode(Enum):
         return names[self]
 
 
-class DepthEngraver(OpsProducer):
+class Rasterizer(OpsProducer):
     """
-    Generates depth-engraving paths from a grayscale surface.
+    Generates raster engraving paths from a grayscale surface.
+    Supports multiple modes: power modulation, constant power, dithering,
+    and multi-pass engraving with Z stepping.
     """
 
     def __init__(
@@ -99,7 +101,7 @@ class DepthEngraver(OpsProducer):
         context: Optional[ProgressContext] = None,
     ) -> WorkPieceArtifact:
         if workpiece is None:
-            raise ValueError("DepthEngraver requires a workpiece context.")
+            raise ValueError("Rasterizer requires a workpiece context.")
         if surface.get_format() != cairo.FORMAT_ARGB32:
             raise ValueError("Unsupported Cairo surface format")
 
@@ -516,11 +518,20 @@ class DepthEngraver(OpsProducer):
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "DepthEngraver":
+    def from_dict(cls, data: Dict[str, Any]) -> "Rasterizer":
         """
-        Deserializes a dictionary into a DepthEngraver instance.
+        Deserializes a dictionary into a Rasterizer instance.
+        Handles backward compatibility for legacy type names and params.
         """
-        params_in = data.get("params", {})
+        old_type = data.get("type")
+        params_in = dict(data.get("params", {}))
+
+        if old_type == "Rasterizer" and "depth_mode" not in params_in:
+            params_in["depth_mode"] = "CONSTANT_POWER"
+            if "direction_degrees" in params_in:
+                params_in["scan_angle"] = params_in.pop("direction_degrees")
+        elif old_type == "DitherRasterizer":
+            params_in["depth_mode"] = "DITHER"
 
         valid_params = {
             "scan_angle",
@@ -562,3 +573,7 @@ class DepthEngraver(OpsProducer):
             init_args["dither_algorithm"] = None
 
         return cls(**init_args)
+
+
+DepthEngraver = Rasterizer
+DitherRasterizer = Rasterizer

@@ -14,27 +14,6 @@ Machine profiles contain:
 - **Motion settings**: Coordinate system orientation
 - **Optional features**: Home-on-start, alarm clearing, hook scripts
 
-<!-- SCREENSHOT
-id: ui-machine-profile-selection
-type: screenshot
-size: dialog
-description: |
-  Machine profile selection dialog showing:
-  - List of available profiles (Sculpfun iCube, Sculpfun S30, Other Device)
-  - Profile details preview
-  - Create/Edit/Delete buttons
-setup:
-  - action: open_preferences
-  - action: navigate_to
-    section: machine
-  - action: open_profile_selector
-  - action: capture
-    region: dialog
-filename: UI-MachineProfile-Selection.png
-alt: "Machine profile selection dialog"
--->
-
-<!-- ![Machine profile selection](../images/UI-Machine-Profile-Selection.png) -->
 
 ## Using Built-in Profiles
 
@@ -76,21 +55,6 @@ When you first launch Rayforge:
 - **Menu:** Preferences  Machine  Change Profile
 - Or create a new machine instance for different hardware
 
-<!-- SCREENSHOT
-id: ui-first-launch-profile-select
-type: screenshot
-size: full-window
-description: |
-  First launch screen showing profile selection prompt
-setup:
-  - action: simulate_first_launch
-  - action: capture
-    region: window
-filename: UI-FirstLaunch-Profile.png
-alt: "First launch profile selection screen"
--->
-
-<!-- ![First launch profile selection](../images/UI-First-Launch-Profile.png) -->
 
 ## Creating Custom Profiles
 
@@ -104,28 +68,6 @@ For machines not in the built-in list, create a custom profile with your specifi
 
 ### Step 2: Configure Basic Settings
 
-<!-- SCREENSHOT
-id: ui-machine-basic-settings
-type: screenshot
-size: dialog
-description: |
-  Machine configuration dialog showing:
-  - Machine name field
-  - Driver selection dropdown
-  - Dimensions inputs (width x height)
-  - Y-axis orientation toggle
-setup:
-  - action: open_preferences
-  - action: navigate_to
-    section: machine
-  - action: open_basic_settings
-  - action: capture
-    region: dialog
-filename: UI-MachineBasic-Settings.png
-alt: "Machine basic settings dialog"
--->
-
-<!-- ![Machine basic settings](../images/UI-Machine-Basic-Settings.png) -->
 
 **Machine Name:**
 - Descriptive name for this profile
@@ -169,30 +111,6 @@ alt: "Machine basic settings dialog"
 
 Each laser head in your system needs configuration:
 
-<!-- SCREENSHOT
-id: ui-laser-head-config
-type: screenshot
-size: dialog
-description: |
-  Laser head configuration dialog showing:
-  - Head name field
-  - Tool number selector
-  - Max power setting (0-1000)
-  - Frame power setting
-  - Spot size inputs (X, Y in mm)
-setup:
-  - action: open_preferences
-  - action: navigate_to
-    section: machine
-  - action: open_head_config
-    head_index: 0
-  - action: capture
-    region: dialog
-filename: UI-LaserHead-Config.png
-alt: "Laser head configuration dialog"
--->
-
-<!-- ![Laser head configuration](../images/UI-Laser-Head-Config.png) -->
 
 **Head Name:**
 - Descriptive label (e.g., "10W Diode", "CO Tube")
@@ -280,31 +198,6 @@ For different machines or configurations:
 2. Configure settings for the new machine
 3. Switch between machines using the machine selector
 
-<!-- SCREENSHOT
-id: ui-machine-selector-dropdown
-type: screenshot
-size: custom
-region:
-  x: 0
-  y: 0
-  width: 0
-  height: 0
-description: |
-  Machine selector dropdown showing multiple configured machines
-setup:
-  - action: create_test_machines
-    machines:
-      - name: "K40 Laser"
-      - name: "Diode Engraver"
-      - name: "Workshop CO2"
-  - action: open_machine_selector
-  - action: capture
-    region: dropdown
-filename: UI-MachineSelector.png
-alt: "Machine selector dropdown"
--->
-
-<!-- ![Machine selector](../images/UI-Machine-Selector.png) -->
 
 **Use cases for multiple profiles:**
 - Different physical machines
