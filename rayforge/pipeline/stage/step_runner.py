@@ -115,7 +115,11 @@ def make_step_artifact_in_subprocess(
     if acked:
         artifact_store.forget(render_handle)
     else:
-        logger.warning("Render artifact not acknowledged, keeping handle open")
+        logger.warning(
+            "Render artifact not acknowledged (NACK/Timeout). "
+            "Releasing handle."
+        )
+        artifact_store.release(render_handle)
 
     # 2. Store Ops Artifact
     ops_handle = artifact_store.put(
@@ -134,7 +138,10 @@ def make_step_artifact_in_subprocess(
     if acked:
         artifact_store.forget(ops_handle)
     else:
-        logger.warning("Ops artifact not acknowledged, keeping handle open")
+        logger.warning(
+            "Ops artifact not acknowledged (NACK/Timeout). Releasing handle."
+        )
+        artifact_store.release(ops_handle)
 
     # 3. Calculate time estimate
     proxy.set_message(_("Calculating time estimate..."))

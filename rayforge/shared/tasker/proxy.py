@@ -173,7 +173,8 @@ class ExecutionContextProxy(ThrottledProgressContext):
             logger: Optional logger for debug messages.
 
         Returns:
-            True if acknowledgment was received, False if timed out.
+            True if acknowledgment was received and successful, False if NACKed
+            or timed out.
         """
         self.send_event(name, data)
 
@@ -185,8 +186,8 @@ class ExecutionContextProxy(ThrottledProgressContext):
 
         while time.monotonic() < deadline:
             if signal_key in self._adoption_signals:
-                del self._adoption_signals[signal_key]
-                return True
+                result = self._adoption_signals.pop(signal_key)
+                return bool(result)
             time.sleep(0.01)
 
         if logger:

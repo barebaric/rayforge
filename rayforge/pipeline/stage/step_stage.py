@@ -47,12 +47,9 @@ class StepPipelineStage(PipelineStage):
         self.time_estimate_ready = Signal()
 
     def handle_render_artifact_ready(
-        self, step_uid: str, step: "Step", handle_dict: dict
+        self, step_uid: str, step: "Step", handle: BaseArtifactHandle
     ):
         """Handles the render artifact ready event."""
-        handle = self._artifact_manager.adopt_artifact(
-            ArtifactKey.for_step(step_uid), handle_dict
-        )
         if not isinstance(handle, StepRenderArtifactHandle):
             raise TypeError("Expected a StepRenderArtifactHandle")
 
@@ -60,12 +57,9 @@ class StepPipelineStage(PipelineStage):
         self.render_artifact_ready.send(self, step=step)
 
     def handle_ops_artifact_ready(
-        self, step_uid: str, handle_dict: dict, generation_id: int
+        self, step_uid: str, handle: BaseArtifactHandle, generation_id: int
     ):
         """Handles the ops artifact ready event."""
-        handle = self._artifact_manager.adopt_artifact(
-            ArtifactKey.for_step(step_uid), handle_dict
-        )
         if not isinstance(handle, StepOpsArtifactHandle):
             raise TypeError("Expected a StepOpsArtifactHandle")
         self._artifact_manager.put_step_ops_handle(
@@ -105,21 +99,27 @@ class StepPipelineStage(PipelineStage):
 
         try:
             if event_name == "render_artifact_ready":
-                self.handle_render_artifact_ready(
-                    step_uid, step, data["handle_dict"]
-                )
+                with self._artifact_manager.safe_adoption(
+                    ledger_key, data["handle_dict"]
+                ) as handle:
+                    self.handle_render_artifact_ready(step_uid, step, handle)
 
             elif event_name == "ops_artifact_ready":
-                self.handle_ops_artifact_ready(
-                    step_uid, data["handle_dict"], generation_id
-                )
+                with self._artifact_manager.safe_adoption(
+                    ledger_key, data["handle_dict"]
+                ) as handle:
+                    self.handle_ops_artifact_ready(
+                        step_uid, handle, generation_id
+                    )
 
             elif event_name == "time_estimate_ready":
                 self.handle_time_estimate_ready(
                     step_uid, step, data["time_estimate"]
                 )
         except Exception as e:
-            logger.error(f"Error handling task event '{event_name}': {e}")
+            logger.error(
+                f"Error handling task event '{event_name}': {e}", exc_info=True
+            )
 
     def on_task_complete(
         self,

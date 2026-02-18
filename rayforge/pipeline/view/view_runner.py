@@ -193,7 +193,11 @@ def make_workpiece_view_artifact_in_subprocess(
     if acked:
         artifact_store.forget(view_handle)
     else:
-        logger.warning("View artifact not acknowledged, keeping handle open")
+        logger.warning(
+            "View artifact not acknowledged (NACK/Timeout). "
+            "Releasing handle to prevent leak."
+        )
+        artifact_store.release(view_handle)
 
     shm = None
     try:

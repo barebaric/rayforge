@@ -1,5 +1,6 @@
 from typing import cast
 from unittest.mock import MagicMock
+from contextlib import contextmanager
 
 from rayforge.pipeline.artifact import StepOpsArtifactHandle, JobArtifactHandle
 from rayforge.pipeline.artifact.handle import BaseArtifactHandle
@@ -523,7 +524,13 @@ def test_job_task_event_artifact_created():
         "time_estimate": 0,
         "distance": 0,
     }
-    am.adopt_artifact.return_value = job_handle
+
+    # Mock the safe_adoption context manager
+    @contextmanager
+    def mock_safe_adoption(key, handle_dict):
+        yield job_handle
+
+    am.safe_adoption.side_effect = mock_safe_adoption
 
     ledger_entry = MagicMock()
     ledger_entry.generation_id = 1

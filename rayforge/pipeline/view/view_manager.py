@@ -13,7 +13,6 @@ from ..artifact import (
     BaseArtifactHandle,
     WorkPieceArtifactHandle,
 )
-from ..artifact.handle import create_handle_from_dict
 from ..artifact.key import ArtifactKey
 from ..artifact.workpiece_view import (
     RenderContext,
@@ -88,6 +87,7 @@ class ViewManager:
         self._machine = machine
         self._current_view_context: Optional[RenderContext] = None
         self._view_generation_id = 0
+        self._is_shutdown = False
 
         # Keys are (workpiece_uid, step_uid)
         self._source_artifact_handles: Dict[
@@ -431,6 +431,7 @@ class ViewManager:
     def shutdown(self):
         """Cancels any active rendering tasks and releases held handles."""
         logger.debug("ViewManager shutting down.")
+        self._is_shutdown = True
 
         # Cancel all managed tasks
         for key in self._view_task_keys.values():
@@ -487,41 +488,31 @@ class ViewManager:
     ):
         """Handles the view_artifact_created event."""
         try:
-            handle = self._adopt_view_handle(key, data)
-            if handle is None:
-                return
+            with self._store.safe_adoption(data["handle_dict"]) as handle:
+                if not isinstance(handle, WorkPieceViewArtifactHandle):
+                    raise TypeError("Expected WorkPieceViewArtifactHandle")
 
-            composite_id = (workpiece_uid, step_uid)
-            entry = self._view_entries.get(composite_id)
-            if entry is None:
-                entry = ViewEntry()
-                self._view_entries[composite_id] = entry
-            if entry.handle is not None:
-                self._store.release(entry.handle)
-            entry.handle = handle
+                logger.debug(
+                    f"Adopting new view artifact: {handle.shm_name} "
+                    f"for task {key}"
+                )
 
-            self._send_view_artifact_created_signals(
-                step_uid, workpiece_uid, handle
-            )
+                composite_id = (workpiece_uid, step_uid)
+                entry = self._view_entries.get(composite_id)
+                if entry is None:
+                    entry = ViewEntry()
+                    self._view_entries[composite_id] = entry
+                if entry.handle is not None:
+                    self._store.release(entry.handle)
+                entry.handle = handle
+
+                self._send_view_artifact_created_signals(
+                    step_uid, workpiece_uid, handle
+                )
         except Exception as e:
             logger.error(
                 f"Failed to process view_artifact_created: {e}", exc_info=True
             )
-
-    def _adopt_view_handle(
-        self, key: ArtifactKey, data: dict
-    ) -> WorkPieceViewArtifactHandle | None:
-        """Adopts a view artifact from the worker process."""
-        handle_dict = data["handle_dict"]
-        handle = create_handle_from_dict(handle_dict)
-        self._store.adopt(handle)
-        if not isinstance(handle, WorkPieceViewArtifactHandle):
-            raise TypeError("Expected WorkPieceViewArtifactHandle")
-
-        logger.debug(
-            f"Adopting new view artifact: {handle.shm_name} for task {key}"
-        )
-        return handle
 
     def _send_view_artifact_created_signals(
         self,
@@ -641,6 +632,12 @@ class ViewManager:
         view_handle: BaseArtifactHandle,
     ):
         """Callback for when stitching completes."""
+        if self._is_shutdown:
+            # If shutdown occurred while task was running, force clean up
+            self._store.release(chunk_handle)
+            self._store.release(view_handle)
+            return
+
         try:
             if task.get_status() == "completed" and task.result():
                 view_id = self._view_generation_id

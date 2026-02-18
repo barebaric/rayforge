@@ -2,6 +2,7 @@ import time
 import uuid
 import numpy as np
 from unittest.mock import MagicMock, patch
+from contextlib import contextmanager
 import pytest
 
 from rayforge.pipeline.view.view_manager import ViewManager, ViewEntry
@@ -40,6 +41,7 @@ def mock_store():
     store.get = MagicMock()
     store.put = MagicMock()
     store.adopt = MagicMock()
+    store.safe_adoption = MagicMock()
     return store
 
 
@@ -163,7 +165,12 @@ def test_view_manager_handles_events_and_completion(
         handle_class_name="WorkPieceViewArtifactHandle",
         artifact_type_name="WorkPieceViewArtifact",
     )
-    mock_store.adopt.return_value = view_handle
+
+    @contextmanager
+    def mock_safe_adoption(handle_dict):
+        yield view_handle
+
+    mock_store.safe_adoption.side_effect = mock_safe_adoption
 
     handle_dict = {
         "shm_name": "test",
@@ -176,7 +183,7 @@ def test_view_manager_handles_events_and_completion(
         mock_task, "view_artifact_created", {"handle_dict": handle_dict}
     )
 
-    mock_store.adopt.assert_called_once()
+    mock_store.safe_adoption.assert_called_once()
     created_handler.assert_called_once()
     ready_handler.assert_called_once()
     assert isinstance(
@@ -223,7 +230,7 @@ def test_adoption_failure_does_not_crash(
     mock_task.key = key
     mock_task.kwargs = {"step_uid": step_uid, "workpiece_uid": wp_uid}
 
-    mock_store.adopt.side_effect = Exception("Adoption failed")
+    mock_store.safe_adoption.side_effect = Exception("Adoption failed")
 
     created_handler = MagicMock()
     view_manager.view_artifact_created.connect(created_handler)
@@ -285,7 +292,13 @@ def test_multiple_view_artifact_updated_events(
         handle_class_name="WorkPieceViewArtifactHandle",
         artifact_type_name="WorkPieceViewArtifact",
     )
-    mock_store.adopt.return_value = view_handle
+
+    @contextmanager
+    def mock_safe_adoption(handle_dict):
+        yield view_handle
+
+    mock_store.safe_adoption.side_effect = mock_safe_adoption
+
     when_event_cb(
         mock_task, "view_artifact_created", {"handle_dict": handle_dict}
     )
@@ -344,7 +357,13 @@ def test_progressive_rendering_sends_multiple_updates(
         handle_class_name="WorkPieceViewArtifactHandle",
         artifact_type_name="WorkPieceViewArtifact",
     )
-    mock_store.adopt.return_value = view_handle
+
+    @contextmanager
+    def mock_safe_adoption(handle_dict):
+        yield view_handle
+
+    mock_store.safe_adoption.side_effect = mock_safe_adoption
+
     when_event_cb(
         mock_task,
         "view_artifact_created",
@@ -443,7 +462,12 @@ def test_live_render_context_established_on_view_creation(
         handle_class_name="WorkPieceViewArtifactHandle",
         artifact_type_name="WorkPieceViewArtifact",
     )
-    mock_store.adopt.return_value = view_handle
+
+    @contextmanager
+    def mock_safe_adoption(handle_dict):
+        yield view_handle
+
+    mock_store.safe_adoption.side_effect = mock_safe_adoption
 
     when_event_cb(
         mock_task, "view_artifact_created", {"handle_dict": handle_dict}
@@ -492,7 +516,12 @@ def test_throttled_notification_limits_update_frequency(
         handle_class_name="WorkPieceViewArtifactHandle",
         artifact_type_name="WorkPieceViewArtifact",
     )
-    mock_store.adopt.return_value = view_handle
+
+    @contextmanager
+    def mock_safe_adoption(handle_dict):
+        yield view_handle
+
+    mock_store.safe_adoption.side_effect = mock_safe_adoption
 
     when_event_cb(
         mock_task, "view_artifact_created", {"handle_dict": handle_dict}
@@ -583,7 +612,12 @@ def test_incremental_bitmap_rendering_draws_chunk_to_view(
         handle_class_name="WorkPieceViewArtifactHandle",
         artifact_type_name="WorkPieceViewArtifact",
     )
-    mock_store.adopt.return_value = view_handle
+
+    @contextmanager
+    def mock_safe_adoption(handle_dict):
+        yield view_handle
+
+    mock_store.safe_adoption.side_effect = mock_safe_adoption
 
     when_event_cb(
         mock_task, "view_artifact_created", {"handle_dict": handle_dict}
@@ -654,60 +688,6 @@ def test_incremental_bitmap_rendering_draws_chunk_to_view(
     )
 
     assert "chunk_shm" in release_calls
-
-
-def test_adopt_view_handle(view_manager, mock_store):
-    wp_uid = str(uuid.uuid4())
-    step_uid = str(uuid.uuid4())
-    key = view_manager._get_task_key(wp_uid, step_uid)
-
-    handle_dict = {
-        "shm_name": "test_adopt",
-        "bbox_mm": (0, 0, 1, 1),
-        "workpiece_size_mm": (1.0, 1.0),
-        "handle_class_name": "WorkPieceViewArtifactHandle",
-        "artifact_type_name": "WorkPieceViewArtifact",
-    }
-    view_handle = WorkPieceViewArtifactHandle(
-        shm_name="test_adopt",
-        bbox_mm=(0, 0, 1, 1),
-        workpiece_size_mm=(1.0, 1.0),
-        handle_class_name="WorkPieceViewArtifactHandle",
-        artifact_type_name="WorkPieceViewArtifact",
-    )
-    mock_store.adopt.return_value = view_handle
-
-    result = view_manager._adopt_view_handle(key, {"handle_dict": handle_dict})
-
-    assert result is not None
-    assert isinstance(result, WorkPieceViewArtifactHandle)
-    mock_store.adopt.assert_called_once()
-
-
-def test_adopt_view_handle_wrong_type(view_manager, mock_store):
-    wp_uid = str(uuid.uuid4())
-    step_uid = str(uuid.uuid4())
-    key = view_manager._get_task_key(wp_uid, step_uid)
-
-    handle_dict = {
-        "shm_name": "test_wrong",
-        "bbox_mm": (0, 0, 1, 1),
-        "handle_class_name": "WorkPieceArtifactHandle",
-        "artifact_type_name": "WorkPieceArtifact",
-    }
-    wrong_handle = WorkPieceArtifactHandle(
-        shm_name="test_wrong",
-        handle_class_name="WorkPieceArtifactHandle",
-        artifact_type_name="WorkPieceArtifact",
-        is_scalable=True,
-        source_coordinate_system_name="MILLIMETER_SPACE",
-        source_dimensions=(10, 10),
-        generation_size=(10, 10),
-    )
-    mock_store.adopt.return_value = wrong_handle
-
-    with pytest.raises(TypeError):
-        view_manager._adopt_view_handle(key, {"handle_dict": handle_dict})
 
 
 def test_get_render_components(view_manager, mock_store, context):
