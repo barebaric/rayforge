@@ -1,5 +1,5 @@
 import pytest
-from unittest.mock import MagicMock, AsyncMock
+from unittest.mock import MagicMock
 from rayforge.machine.models.machine import Machine, Origin
 from rayforge.machine.driver.driver import Axis, DeviceState
 from rayforge.machine.transport import TransportStatus
@@ -107,7 +107,7 @@ def test_jog_button_direction(
 
     # 2. Mock MachineCmd
     mock_machine_cmd = MagicMock()
-    mock_jog = AsyncMock()
+    mock_jog = MagicMock()
     mock_machine_cmd.jog = mock_jog
 
     # 3. Create JogWidget
