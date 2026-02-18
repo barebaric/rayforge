@@ -43,6 +43,7 @@ Method Usage Guide
 """
 
 from __future__ import annotations
+import re
 import uuid
 import logging
 from contextlib import contextmanager
@@ -58,6 +59,12 @@ if TYPE_CHECKING:
 
 
 logger = logging.getLogger(__name__)
+
+
+def _build_shm_name(creator_tag: str) -> str:
+    clean_tag = re.sub(r"[^a-z0-9]+", "", creator_tag.lower())
+    short_tag = clean_tag[:4] if clean_tag else "unk"
+    return f"rf_{short_tag}_{uuid.uuid4().hex[:16]}"
 
 
 class ArtifactStore:
@@ -196,7 +203,7 @@ class ArtifactStore:
         total_bytes = sum(arr.nbytes for arr in arrays.values())
 
         # Create the shared memory block
-        shm_name = f"rayforge_artifact_{creator_tag}_{uuid.uuid4()}"
+        shm_name = _build_shm_name(creator_tag)
         try:
             # Prevent creating a zero-size block, which raises a ValueError.
             # A 1-byte block is a safe, minimal placeholder.
