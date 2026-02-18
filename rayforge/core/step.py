@@ -146,7 +146,7 @@ class Step(DocItem, ABC):
             "per_workpiece_transformers_dicts"
         ]
         step.per_step_transformers_dicts = data["per_step_transformers_dicts"]
-        step.pixels_per_mm = data.get("pixels_per_mm", (50, 50))
+        step.pixels_per_mm = data.get("pixels_per_mm", (100, 100))
         step.power = data.get("power", 1.0)
         step.max_power = data.get("max_power", 1000)
         step.cut_speed = data.get("cut_speed", 500)
