@@ -15,46 +15,125 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
+def get_backends_for_platform():
+    """Return list of (backend_constant, name) tuples for current platform."""
+    if sys.platform.startswith("linux"):
+        return [
+            (cv2.CAP_V4L2, "V4L2"),
+            (cv2.CAP_ANY, "default"),
+        ]
+    if sys.platform == "win32":
+        return [
+            (cv2.CAP_DSHOW, "DirectShow"),
+            (cv2.CAP_MSMF, "MediaFoundation"),
+            (cv2.CAP_ANY, "default"),
+        ]
+    return [(cv2.CAP_ANY, "default")]
+
+
+def try_open_camera(device_id: int, backend: int, backend_name: str):
+    """Try to open camera with specific backend. Returns cap or None."""
+    logger.debug(f"Opening camera {device_id} with {backend_name} backend")
+    cap = cv2.VideoCapture(device_id, backend)
+    if cap.isOpened():
+        logger.info(f"Camera {device_id} opened with {backend_name} backend")
+        return cap
+    if cap:
+        cap.release()
+    return None
+
+
 class VideoCaptureDevice:
+    """Context manager for safely opening and releasing camera devices."""
+
+    MAX_OPEN_RETRIES = 3
+    RETRY_DELAY = 0.5
+
     def __init__(self, device_id):
         self.device_id = device_id
         self.cap = None
+        self._backend_used = None
 
     def __enter__(self):
-        if isinstance(self.device_id, str) and self.device_id.isdigit():
-            device_id_int = int(self.device_id)
-        else:
-            device_id_int = self.device_id
+        device_id_int = self._parse_device_id()
+        logger.debug(f"Opening camera {device_id_int} on {sys.platform}")
 
-        # On Linux, first attempt to use the more stable V4L2 backend.
-        if sys.platform.startswith("linux"):
-            self.cap = cv2.VideoCapture(device_id_int, cv2.CAP_V4L2)
-            if self.cap.isOpened():
-                # V4L2 succeeded, we can return immediately.
-                return self.cap
-            else:
-                # V4L2 failed, release the handle and fall through to the
-                # default.
-                logger.warning(
-                    "Failed to open camera with V4L2 backend. "
-                    "Falling back to default."
-                )
-                self.cap.release()
+        backends = get_backends_for_platform()
+        last_error = None
 
-        # For non-Linux platforms, or as a fallback for Linux.
-        self.cap = cv2.VideoCapture(device_id_int)
-        if not self.cap.isOpened():
-            raise IOError(
-                f"Cannot open camera with device ID: {self.device_id}"
+        for backend, name in backends:
+            cap = self._try_backend(device_id_int, backend, name)
+            if cap:
+                return cap
+            last_error = self._retry_backend(
+                device_id_int, backend, name, last_error
             )
-        return self.cap
+
+        self._raise_open_error(backends, last_error)
+
+    def _parse_device_id(self):
+        if isinstance(self.device_id, str) and self.device_id.isdigit():
+            return int(self.device_id)
+        return self.device_id
+
+    def _try_backend(self, device_id_int, backend, name):
+        for attempt in range(self.MAX_OPEN_RETRIES):
+            try:
+                cap = try_open_camera(device_id_int, backend, name)
+                if cap:
+                    self._backend_used = name
+                    self.cap = cap
+                    return cap
+            except cv2.error as e:
+                logger.warning(
+                    f"OpenCV error camera {device_id_int} {name} "
+                    f"(attempt {attempt + 1}): {e}"
+                )
+            except Exception as e:
+                logger.warning(
+                    f"Error camera {device_id_int} {name} "
+                    f"(attempt {attempt + 1}): {e}"
+                )
+
+            if attempt < self.MAX_OPEN_RETRIES - 1:
+                time.sleep(self.RETRY_DELAY)
+        return None
+
+    def _retry_backend(self, device_id_int, backend, name, last_error):
+        return last_error
+
+    def _raise_open_error(self, backends, last_error):
+        names = [b[1] for b in backends]
+        msg = (
+            f"Cannot open camera {self.device_id}. "
+            f"Tried: {names}. Last error: {last_error}"
+        )
+        logger.error(msg)
+        raise IOError(msg)
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        if self.cap is not None and self.cap.isOpened():
-            self.cap.release()
+        if self.cap is None:
+            return
+        try:
+            if self.cap.isOpened():
+                logger.debug(
+                    f"Releasing camera {self.device_id} "
+                    f"(backend: {self._backend_used})"
+                )
+                self.cap.release()
+        except Exception as e:
+            logger.warning(f"Error releasing camera {self.device_id}: {e}")
+        finally:
+            self.cap = None
 
 
 class CameraController:
+    """Manages camera capture and provides image data."""
+
+    MAX_CONSECUTIVE_FAILURES = 10
+    FRAME_READ_TIMEOUT = 1 / 30
+    RECONNECT_DELAY = 2.0
+
     def __init__(self, config: Camera):
         self.config = config
         self._image_data: Optional[np.ndarray] = None
@@ -62,6 +141,7 @@ class CameraController:
         self._capture_thread: Optional[threading.Thread] = None
         self._running: bool = False
         self._settings_dirty: bool = True  # Flag to re-apply settings
+        self._consecutive_failures: int = 0
 
         # Signals
         self.image_captured = Signal()
@@ -84,15 +164,26 @@ class CameraController:
         Lists available camera device IDs.
         Returns a list of strings, where each string is a device ID.
         """
-        available_devices = []
-        # Try device IDs from 0 up to a reasonable number (e.g., 10)
+        logger.debug("Scanning for camera devices...")
+        devices = []
+        backends = get_backends_for_platform()
+
         for i in range(10):
-            cap = cv2.VideoCapture(i)
-            if cap.isOpened():
-                available_devices.append(str(i))
-                cap.release()
-        logger.debug(f"Found available camera devices: {available_devices}")
-        return available_devices
+            for backend, name in backends:
+                try:
+                    cap = cv2.VideoCapture(i, backend)
+                    if cap.isOpened():
+                        devices.append(str(i))
+                        cap.release()
+                        logger.debug(f"Found camera {i} via {name}")
+                        break
+                except cv2.error as e:
+                    logger.debug(f"OpenCV error camera {i} {name}: {e}")
+                except Exception as e:
+                    logger.debug(f"Error camera {i}: {e}")
+
+        logger.info(f"Available cameras: {devices}")
+        return devices
 
     @property
     def image_data(self) -> Optional[np.ndarray]:
@@ -143,8 +234,7 @@ class CameraController:
 
     @property
     def aspect(self) -> float:
-        resolution = self.resolution
-        return resolution[1] / resolution[0]
+        return self.resolution[1] / self.resolution[0]
 
     def subscribe(self):
         """
@@ -155,8 +245,8 @@ class CameraController:
         """
         self._active_subscribers += 1
         logger.debug(
-            f"Camera {self.config.name} subscribed. Count: "
-            f"{self._active_subscribers}"
+            f"Camera {self.config.name} subscribed "
+            f"(count: {self._active_subscribers})"
         )
         if self._active_subscribers > 0 and self.config.enabled:
             self._start_capture_stream()
@@ -170,8 +260,8 @@ class CameraController:
         if self._active_subscribers > 0:
             self._active_subscribers -= 1
         logger.debug(
-            f"Camera {self.config.name} unsubscribed. Count: "
-            f"{self._active_subscribers}"
+            f"Camera {self.config.name} unsubscribed "
+            f"(count: {self._active_subscribers})"
         )
         if self._active_subscribers == 0:
             self._stop_capture_stream()
@@ -233,7 +323,7 @@ class CameraController:
         if self.config.image_to_world is None:
             raise ValueError(
                 "Corresponding points must be set before getting the"
-                " the work surface image"
+                " work surface image"
             )
         if self._image_data is None:
             logger.warning("No image data available.")
@@ -330,53 +420,85 @@ class CameraController:
             # We log as a warning because the stream may still work
             logger.warning(f"Could not apply one or more camera settings: {e}")
 
-    def _read_frame_and_update_data(self, cap: cv2.VideoCapture):
-        """
-        Reads a single frame from the given VideoCapture object,
-        updates camera data, and emits the image_captured signal.
-        """
+    def _read_frame(self, cap) -> bool:
+        """Read frame from cap. Returns True on success."""
         try:
             ret, frame = cap.read()
-            if not ret:
+            if not ret or frame is None:
                 logger.warning("Failed to capture frame from camera.")
                 self._image_data = None
-                return
-
+                return False
             self._image_data = frame
             # Emit the signal in a GLib-safe way
             idle_add(self.image_captured.send, self)
+            return True
         except Exception as e:
             logger.error(f"Error reading frame: {e}")
-            self._image_data = None
+            return False
+
+    def _handle_frame_failure(self):
+        """Handle a failed frame read. Returns True if should reconnect."""
+        self._consecutive_failures += 1
+        self._image_data = None
+        logger.warning(
+            f"Frame failure {self._consecutive_failures}/"
+            f"{self.MAX_CONSECUTIVE_FAILURES} for {self.config.name}"
+        )
+        return self._consecutive_failures >= self.MAX_CONSECUTIVE_FAILURES
+
+    def _capture_frames_from_device(self, cap):
+        """Capture frames from an opened device. Returns when should stop."""
+        self._settings_dirty = True
+        self._consecutive_failures = 0
+
+        while self._running and cap is not None:
+            if self._settings_dirty:
+                self._apply_settings(cap)
+
+            if self._read_frame(cap):
+                self._consecutive_failures = 0
+            elif self._handle_frame_failure():
+                logger.error(
+                    f"Too many failures for {self.config.name}, "
+                    "reconnecting..."
+                )
+                return
+
+            time.sleep(self.FRAME_READ_TIMEOUT)
 
     def _capture_loop(self):
         """
         Internal method to continuously capture images from the camera.
         Runs in a separate thread.
         """
+        logger.info(
+            f"Capture loop starting for {self.config.name} "
+            f"(device: {self.config.device_id})"
+        )
+
         while self._running:
             try:
                 # Open the device ONCE
                 with VideoCaptureDevice(self.config.device_id) as cap:
-                    logger.info(
-                        f"Camera {self.config.device_id} opened successfully."
-                    )
-                    # Force settings to be applied on first open
-                    self._settings_dirty = True
-                    # Loop to read frames from the open device
-                    while self._running:
-                        if self._settings_dirty:
-                            self._apply_settings(cap)
-                        self._read_frame_and_update_data(cap)
-                        # Use time.sleep for portability in a non-GUI thread
-                        time.sleep(1 / 30)  # ~30 FPS
+                    if cap is None:
+                        raise IOError("VideoCapture returned None")
+                    self._capture_frames_from_device(cap)
+            except IOError as e:
+                logger.error(f"IO error for {self.config.name}: {e}")
+            except cv2.error as e:
+                logger.error(f"OpenCV error for {self.config.name}: {e}")
             except Exception as e:
                 logger.error(
-                    f"Error in capture loop for camera '{self.config.name}': "
-                    f"{e}. Retrying in 1 second."
+                    f"Unexpected error for {self.config.name}: {e}",
+                    exc_info=True,
                 )
-                if self._running:
-                    time.sleep(1)  # 1 second delay before retrying
+
+            if self._running:
+                logger.info(
+                    f"Waiting {self.RECONNECT_DELAY}s before "
+                    f"reconnecting {self.config.name}..."
+                )
+                time.sleep(self.RECONNECT_DELAY)
 
         logger.debug(
             f"Camera capture loop stopped for camera {self.config.name}."
@@ -422,12 +544,24 @@ class CameraController:
         """
         try:
             with VideoCaptureDevice(self.config.device_id) as cap:
+                if cap is None:
+                    logger.error(
+                        f"Cannot capture: VideoCapture is None for "
+                        f"{self.config.device_id}"
+                    )
+                    self._image_data = None
+                    return
                 # Apply settings before capturing the single frame
                 self._apply_settings(cap)
-                self._read_frame_and_update_data(cap)
+                self._read_frame(cap)
         except IOError as e:
-            logger.error(f"Error capturing image: {e}")
+            logger.error(f"IO error capturing image: {e}")
+            self._image_data = None
+        except cv2.error as e:
+            logger.error(f"OpenCV error capturing image: {e}")
             self._image_data = None
         except Exception as e:
-            logger.error(f"Error capturing image: {e}")
+            logger.error(
+                f"Unexpected error capturing image: {e}", exc_info=True
+            )
             self._image_data = None
