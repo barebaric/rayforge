@@ -112,6 +112,31 @@ class TestGrblSerialDriver:
         assert driver._connection_task is None
 
     @pytest.mark.asyncio
+    async def test_handshake_timeout_on_phantom_port(
+        self, driver: GrblSerialDriver, mock_serial_transport, mocker
+    ):
+        """Test connection fails when device doesn't respond (phantom COM)."""
+        mocker.patch.object(
+            mock_serial_transport,
+            "is_connected",
+            new_callable=PropertyMock,
+            return_value=True,
+        )
+
+        status_mock = MagicMock()
+        driver.connection_status_changed.send = status_mock
+
+        await driver.connect()
+        await asyncio.sleep(2.5)
+
+        sent_statuses = [
+            call[1].get("status") for call in status_mock.call_args_list
+        ]
+        assert TransportStatus.ERROR in sent_statuses
+
+        await driver.cleanup()
+
+    @pytest.mark.asyncio
     async def test_status_report_parsing(
         self, connected_driver: GrblSerialDriver
     ):
