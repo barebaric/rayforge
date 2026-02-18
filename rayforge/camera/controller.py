@@ -1,11 +1,21 @@
+import os
 import sys
 import time
 import threading
+import multiprocessing as mp
 from typing import Optional, List, Tuple, TYPE_CHECKING
-import cv2
-import numpy as np
 import logging
 from blinker import Signal
+
+if sys.platform == "win32":
+    os.environ["OPENCV_VIDEOIO_PRIORITY_MSMF"] = "1"
+    os.environ["OPENCV_VIDEOIO_PRIORITY_DSHOW"] = "1"
+    os.environ["OPENCV_VIDEOIO_PRIORITY_V4L2"] = "0"
+    os.environ["OPENCV_VIDEOIO_PRIORITY_GSTREAMER"] = "0"
+
+import cv2
+import numpy as np
+
 from ..shared.util.glib import idle_add
 from .models.camera import Camera, Pos
 
@@ -13,6 +23,74 @@ if TYPE_CHECKING:
     from gi.repository import GdkPixbuf
 
 logger = logging.getLogger(__name__)
+
+
+def _probe_camera_device(args):
+    """Probe a single camera device. Runs in subprocess."""
+    device_id, backend = args
+    try:
+        cap = cv2.VideoCapture(device_id, backend)
+        if cap.isOpened():
+            cap.release()
+            return device_id
+        if cap:
+            cap.release()
+    except Exception:
+        pass
+    return None
+
+
+def _scan_cameras_in_subprocess() -> List[str]:
+    """Scan for cameras in a separate process to isolate crashes."""
+    if sys.platform.startswith("linux"):
+        backends = [cv2.CAP_V4L2, cv2.CAP_ANY]
+    elif sys.platform == "win32":
+        backends = [cv2.CAP_DSHOW, cv2.CAP_MSMF, cv2.CAP_ANY]
+    else:
+        backends = [cv2.CAP_ANY]
+
+    devices = []
+    work = [(i, b) for i in range(10) for b in backends]
+
+    try:
+        ctx = mp.get_context("spawn")
+        with ctx.Pool(processes=1) as pool:
+            async_result = pool.map_async(_probe_camera_device, work)
+            results = async_result.get(timeout=30)
+            for r in results:
+                if r is not None and str(r) not in devices:
+                    devices.append(str(r))
+    except Exception as e:
+        logger.warning(f"Subprocess camera scan failed: {e}")
+        return _scan_cameras_fallback()
+
+    return devices
+
+
+def _scan_cameras_fallback() -> List[str]:
+    """Fallback camera scan if subprocess fails."""
+    devices = []
+    if sys.platform.startswith("linux"):
+        backends = [(cv2.CAP_V4L2, "V4L2"), (cv2.CAP_ANY, "default")]
+    elif sys.platform == "win32":
+        backends = [(cv2.CAP_DSHOW, "DirectShow"), (cv2.CAP_ANY, "default")]
+    else:
+        backends = [(cv2.CAP_ANY, "default")]
+
+    for i in range(10):
+        for backend, name in backends:
+            try:
+                cap = cv2.VideoCapture(i, backend)
+                if cap.isOpened():
+                    devices.append(str(i))
+                    cap.release()
+                    break
+                if cap:
+                    cap.release()
+            except Exception as e:
+                logger.debug(f"Error probing camera {i}: {e}")
+
+    return devices
 
 
 def get_backends_for_platform():
@@ -163,25 +241,12 @@ class CameraController:
         """
         Lists available camera device IDs.
         Returns a list of strings, where each string is a device ID.
+
+        Uses a subprocess to isolate potential crashes from broken
+        GStreamer backends on Windows.
         """
-        logger.debug("Scanning for camera devices...")
-        devices = []
-        backends = get_backends_for_platform()
-
-        for i in range(10):
-            for backend, name in backends:
-                try:
-                    cap = cv2.VideoCapture(i, backend)
-                    if cap.isOpened():
-                        devices.append(str(i))
-                        cap.release()
-                        logger.debug(f"Found camera {i} via {name}")
-                        break
-                except cv2.error as e:
-                    logger.debug(f"OpenCV error camera {i} {name}: {e}")
-                except Exception as e:
-                    logger.debug(f"Error camera {i}: {e}")
-
+        logger.info("Scanning for camera devices...")
+        devices = _scan_cameras_in_subprocess()
         logger.info(f"Available cameras: {devices}")
         return devices
 
