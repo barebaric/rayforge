@@ -13,7 +13,7 @@ with warnings.catch_warnings():
 from ...core.geo import Geometry
 from ...core.source_asset import SourceAsset
 from ...core.vectorization_spec import TraceSpec, VectorizationSpec
-from .. import image_util
+from .. import util
 from ..base_importer import (
     Importer,
     ImporterFeature,
@@ -98,7 +98,7 @@ class BmpImporter(Importer):
         if not isinstance(spec, TraceSpec):
             raise TypeError("BmpImporter only supports TraceSpec")
 
-        surface = image_util.vips_rgba_to_cairo_surface(self._image)
+        surface = util.vips_rgba_to_cairo_surface(self._image)
         geometries_list = trace_surface(surface, spec)
         merged_geometry = Geometry()
         for geo in geometries_list:

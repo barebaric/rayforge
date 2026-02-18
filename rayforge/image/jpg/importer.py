@@ -10,7 +10,7 @@ with warnings.catch_warnings():
 from ...core.geo import Geometry
 from ...core.source_asset import SourceAsset
 from ...core.vectorization_spec import TraceSpec, VectorizationSpec
-from .. import image_util
+from .. import util
 from ..base_importer import (
     Importer,
     ImporterFeature,
@@ -46,7 +46,7 @@ class JpgImporter(Importer):
             image = pyvips.Image.jpegload_buffer(
                 self.raw_data, access=pyvips.Access.SEQUENTIAL
             )
-            size_mm = image_util.get_physical_size_mm(image)
+            size_mm = util.get_physical_size_mm(image)
             return ImportManifest(
                 title=self.source_file.name,
                 natural_size_mm=size_mm,
@@ -66,7 +66,7 @@ class JpgImporter(Importer):
         """
         Creates a SourceAsset for JPEG import.
         """
-        metadata = image_util.extract_vips_metadata(self._image)
+        metadata = util.extract_vips_metadata(self._image)
         metadata["image_format"] = "JPEG"
         _, _, w_px, h_px = parse_result.document_bounds
         width_mm = w_px * parse_result.native_unit_to_mm
@@ -93,7 +93,7 @@ class JpgImporter(Importer):
         if not isinstance(spec, TraceSpec):
             raise TypeError("JpgImporter only supports TraceSpec")
 
-        normalized_image = image_util.normalize_to_rgba(self._image)
+        normalized_image = util.normalize_to_rgba(self._image)
         if not normalized_image:
             logger.error("Failed to normalize image to RGBA format.")
             self.add_error(_("Failed to process image data."))
@@ -101,7 +101,7 @@ class JpgImporter(Importer):
                 geometries_by_layer={}, source_parse_result=parse_result
             )
 
-        surface = image_util.vips_rgba_to_cairo_surface(normalized_image)
+        surface = util.vips_rgba_to_cairo_surface(normalized_image)
         geometries = trace_surface(surface, spec)
         merged_geo = Geometry()
         for geo in geometries:

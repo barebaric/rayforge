@@ -13,7 +13,7 @@ with warnings.catch_warnings():
 from ...core.geo import Geometry
 from ...core.source_asset import SourceAsset
 from ...core.vectorization_spec import TraceSpec, VectorizationSpec
-from .. import image_util
+from .. import util
 from ..base_importer import (
     Importer,
     ImporterFeature,
@@ -124,7 +124,7 @@ class PdfImporter(Importer):
         if not isinstance(spec, TraceSpec):
             raise TypeError("PdfImporter only supports TraceSpec")
 
-        norm_image = image_util.normalize_to_rgba(self._image)
+        norm_image = util.normalize_to_rgba(self._image)
         if not norm_image:
             logger.error("Failed to normalize PDF image for tracing.")
             self.add_error(_("Failed to process PDF image data."))
@@ -132,7 +132,7 @@ class PdfImporter(Importer):
                 geometries_by_layer={}, source_parse_result=parse_result
             )
 
-        surface = image_util.vips_rgba_to_cairo_surface(norm_image)
+        surface = util.vips_rgba_to_cairo_surface(norm_image)
         geometries = trace_surface(surface, spec)
         merged_geo = Geometry()
         for geo in geometries:

@@ -57,7 +57,7 @@ def test_vectorize_enforces_tracespec(trace_importer):
 
 
 @patch("rayforge.image.svg.svg_trace.trace_surface")
-@patch("rayforge.image.svg.svg_trace.image_util")
+@patch("rayforge.image.svg.svg_trace.util")
 @patch("rayforge.image.svg.svg_trace.SVG_RENDERER")
 def test_trace_pipeline_integration(
     mock_renderer, mock_util, mock_trace, trace_importer

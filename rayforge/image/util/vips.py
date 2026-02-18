@@ -1,0 +1,265 @@
+"""
+PyVips image manipulation utilities.
+"""
+
+from typing import Optional, Tuple, Dict, Any
+import logging
+import cairo
+import numpy
+import pyvips
+
+from ...core.geo import Geometry
+from ...core.matrix import Matrix
+
+logger = logging.getLogger(__name__)
+
+
+def resize_and_crop_from_full_image(
+    full_image: pyvips.Image,
+    target_w: int,
+    target_h: int,
+    crop_window_px: Tuple[float, float, float, float],
+) -> Optional[pyvips.Image]:
+    """
+    Scales a full source image up to a high resolution and then crops a
+    window from it. This preserves maximum detail in the final cropped image.
+
+    Args:
+        full_image: The original, full-resolution pyvips image.
+        target_w: The final desired width of the cropped image in pixels.
+        target_h: The final desired height of the cropped image in pixels.
+        crop_window_px: A tuple (x, y, w, h) defining the crop area in the
+                        *original* full_image's pixel coordinates.
+
+    Returns:
+        The high-resolution cropped image, or None on failure.
+    """
+    crop_x, crop_y, crop_w, crop_h = map(int, crop_window_px)
+    if (
+        crop_w <= 0
+        or crop_h <= 0
+        or crop_x < 0
+        or crop_y < 0
+        or crop_x + crop_w > full_image.width
+        or crop_y + crop_h > full_image.height
+    ):
+        return pyvips.Image.black(target_w, target_h, bands=4)
+
+    scale_x = target_w / crop_w
+    scale_y = target_h / crop_h
+
+    if full_image.get_typeof("orientation") != 0:
+        try:
+            full_image = full_image.autorot()
+        except pyvips.Error:
+            logger.warning("Failed to apply autorotate to image.")
+
+    scaled_full_image = full_image.resize(scale_x, vscale=scale_y)
+
+    scaled_crop_x = int(crop_x * scale_x)
+    scaled_crop_y = int(crop_y * scale_y)
+
+    return safe_crop(
+        scaled_full_image, scaled_crop_x, scaled_crop_y, target_w, target_h
+    )
+
+
+def safe_crop(
+    image: pyvips.Image, x: int, y: int, w: int, h: int
+) -> Optional[pyvips.Image]:
+    """
+    Crops a pyvips image, safely handling cases where the crop window is
+    partially or completely outside the image bounds by calculating the
+    intersection.
+
+    Returns the cropped image, or None if the intersection is empty.
+    """
+    img_w, img_h = image.width, image.height
+    final_x = max(0, x)
+    final_y = max(0, y)
+    end_x = min(x + w, img_w)
+    end_y = min(y + h, img_h)
+    final_w = max(0, end_x - final_x)
+    final_h = max(0, end_y - final_y)
+
+    if final_w > 0 and final_h > 0:
+        return image.crop(final_x, final_y, final_w, final_h)
+
+    return None
+
+
+def extract_vips_metadata(image: pyvips.Image) -> Dict[str, Any]:
+    """
+    Extracts file-based and content-based metadata from a pyvips Image.
+    """
+    metadata = {
+        "width": image.width,
+        "height": image.height,
+        "bands": image.bands,
+        "format": image.format,
+        "interpretation": str(image.interpretation),
+    }
+    all_fields = image.get_fields()
+    for field in all_fields:
+        if field in metadata:
+            continue
+        try:
+            value = image.get(field)
+            if isinstance(value, bytes):
+                if "icc-profile" in field:
+                    value = f"<ICC profile, {len(value)} bytes>"
+                elif len(value) > 256:
+                    value = f"<binary data, {len(value)} bytes>"
+                else:
+                    try:
+                        value = value.decode("utf-8")
+                    except UnicodeDecodeError:
+                        value = f"<binary data, {len(value)} bytes>"
+            elif not isinstance(
+                value, (str, int, float, bool, list, dict, type(None))
+            ):
+                value = str(value)
+            metadata[field] = value
+        except Exception as e:
+            logger.debug(f"Could not read metadata field '{field}': {e}")
+    return metadata
+
+
+def get_mm_per_pixel(image: pyvips.Image) -> Tuple[float, float]:
+    """
+    Determines mm per pixel from a vips image metadata. Falls back to 96 DPI.
+    """
+    try:
+        xres = image.get("xres")
+        yres = image.get("yres")
+
+        if xres == 1.0 and yres == 1.0:
+            raise pyvips.Error(
+                "Default resolution of 1.0 px/mm detected, using fallback."
+            )
+
+        return 1.0 / xres, 1.0 / yres
+    except pyvips.Error:
+        mm_per_inch = 25.4
+        dpi = 96.0
+        return (mm_per_inch / dpi), (mm_per_inch / dpi)
+
+
+def get_physical_size_mm(image: pyvips.Image) -> Tuple[float, float]:
+    """
+    Determines the physical size of a vips image in mm.
+    """
+    mm_per_px_x, mm_per_px_y = get_mm_per_pixel(image)
+    width_mm = image.width * mm_per_px_x
+    height_mm = image.height * mm_per_px_y
+    return width_mm, height_mm
+
+
+def normalize_to_rgba(image: pyvips.Image) -> Optional[pyvips.Image]:
+    """
+    Normalizes a pyvips image to a 4-band, 8-bit sRGB format (uchar RGBA).
+    """
+    try:
+        if image.interpretation != "srgb":
+            image = image.colourspace("srgb")
+        if not image.hasalpha():
+            image = image.addalpha()
+        if image.bands != 4:
+            logger.warning(
+                f"Image normalization had {image.bands} bands, "
+                "cropping to 4."
+            )
+            image = image[0:4]
+        if image.format != "uchar":
+            image = image.cast("uchar")
+        return image if image.bands == 4 else None
+    except pyvips.Error as e:
+        logger.error(f"Failed to normalize image to RGBA: {e}")
+        return None
+
+
+def vips_rgba_to_cairo_surface(image: pyvips.Image) -> cairo.ImageSurface:
+    """
+    Converts a 4-band RGBA pyvips image to a Cairo ARGB32 ImageSurface.
+    """
+    assert image.bands == 4, "Input image must be normalized to RGBA first"
+    assert image.format == "uchar", "Input image must be 8-bit uchar"
+
+    premultiplied_float = image.premultiply()
+
+    premultiplied_uchar = premultiplied_float.cast("uchar")
+
+    rgba_memory = premultiplied_uchar.write_to_memory()
+
+    rgba_array = numpy.frombuffer(rgba_memory, dtype=numpy.uint8).reshape(
+        [premultiplied_uchar.height, premultiplied_uchar.width, 4]
+    )
+    bgra_array = numpy.ascontiguousarray(rgba_array[..., [2, 1, 0, 3]])
+
+    data = memoryview(bgra_array)
+    surface = cairo.ImageSurface.create_for_data(
+        data,
+        cairo.FORMAT_ARGB32,
+        premultiplied_uchar.width,
+        premultiplied_uchar.height,
+    )
+    return surface
+
+
+def _render_geometry_to_vips_mask(
+    geometry: Geometry, width: int, height: int
+) -> pyvips.Image:
+    """Renders a Geometry object to a single-band 8-bit vips mask image."""
+    surface = cairo.ImageSurface(cairo.FORMAT_A8, width, height)
+    ctx = cairo.Context(surface)
+    ctx.set_source_rgba(0, 0, 0, 0)
+    ctx.paint()
+
+    ctx.set_source_rgba(1, 1, 1, 1)
+    geometry.to_cairo(ctx)
+    ctx.fill()
+
+    stride = surface.get_stride()
+    cairo_data = surface.get_data()
+
+    if stride == width:
+        return pyvips.Image.new_from_memory(
+            cairo_data, width, height, 1, "uchar"
+        )
+
+    arr = numpy.frombuffer(cairo_data, dtype=numpy.uint8).reshape(
+        (height, stride)
+    )
+    clean_data = numpy.ascontiguousarray(arr[:, :width]).tobytes()
+
+    return pyvips.Image.new_from_memory(clean_data, width, height, 1, "uchar")
+
+
+def apply_mask_to_vips_image(
+    full_image: pyvips.Image, mask_geo: Geometry
+) -> Optional[pyvips.Image]:
+    """
+    Masks a vips image using a geometry mask, making areas outside the
+    geometry transparent. Does NOT crop the image.
+
+    Expects the mask_geo to be NORMALIZED to a 0-1 Y-DOWN coordinate space.
+    """
+    if mask_geo.is_empty():
+        return full_image
+
+    rgba_image = normalize_to_rgba(full_image)
+    if not rgba_image:
+        return None
+
+    scaled_mask = mask_geo.copy()
+    scale_matrix = Matrix.scale(rgba_image.width, rgba_image.height)
+    scaled_mask.transform(scale_matrix.to_4x4_numpy())
+
+    mask_vips = _render_geometry_to_vips_mask(
+        scaled_mask, rgba_image.width, rgba_image.height
+    )
+
+    original_alpha = rgba_image[3]
+    final_alpha = (mask_vips > 128).ifthenelse(original_alpha, 0)
+
+    return rgba_image[0:3].bandjoin(final_alpha)

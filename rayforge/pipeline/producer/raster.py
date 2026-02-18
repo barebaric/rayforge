@@ -4,7 +4,7 @@ import logging
 from enum import Enum, auto
 from typing import Optional, TYPE_CHECKING, Dict, Any
 from ...core.ops import Ops, SectionType
-from ...image.image_util import (
+from ...image.util import (
     surface_to_grayscale,
     surface_to_binary,
     normalize_grayscale,
