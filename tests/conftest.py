@@ -1,10 +1,14 @@
 # flake8: noqa: E402
 import sys
 import multiprocessing
-import gi
 
-gi.require_version("Gtk", "4.0")
-gi.require_version("Adw", "1")
+try:
+    import gi
+
+    gi.require_version("Gtk", "4.0")
+    gi.require_version("Adw", "1")
+except ValueError:
+    pass
 
 import pytest
 import gettext
