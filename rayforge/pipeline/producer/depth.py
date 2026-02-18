@@ -4,7 +4,11 @@ import logging
 from enum import Enum, auto
 from typing import Optional, TYPE_CHECKING, Dict, Any
 from ...core.ops import Ops, SectionType
-from ...image.image_util import surface_to_grayscale, surface_to_binary
+from ...image.image_util import (
+    surface_to_grayscale,
+    surface_to_binary,
+    normalize_grayscale,
+)
 from ...image.dither import surface_to_dithered_array, DitherAlgorithm
 from ...shared.tasker.progress import ProgressContext
 from ..artifact import WorkPieceArtifact
@@ -31,6 +35,16 @@ class DepthMode(Enum):
     DITHER = auto()
     MULTI_PASS = auto()
 
+    @property
+    def display_name(self) -> str:
+        names = {
+            DepthMode.POWER_MODULATION: _("Variable Power"),
+            DepthMode.CONSTANT_POWER: _("Constant Power"),
+            DepthMode.DITHER: _("Dither"),
+            DepthMode.MULTI_PASS: _("Multiple Depths"),
+        }
+        return names[self]
+
 
 class DepthEngraver(OpsProducer):
     """
@@ -53,6 +67,9 @@ class DepthEngraver(OpsProducer):
         z_step_down: float = 0.0,
         invert: bool = False,
         line_interval_mm: Optional[float] = None,
+        black_point: int = 0,
+        white_point: int = 255,
+        angle_increment: float = 0.0,
     ):
         self.scan_angle = scan_angle
         self.depth_mode = depth_mode
@@ -66,6 +83,9 @@ class DepthEngraver(OpsProducer):
         self.z_step_down = z_step_down
         self.invert = invert
         self.line_interval_mm = line_interval_mm
+        self.black_point = black_point
+        self.white_point = white_point
+        self.angle_increment = angle_increment
 
     def run(
         self,
@@ -103,6 +123,11 @@ class DepthEngraver(OpsProducer):
             if self.invert:
                 alpha_mask = alpha > 0
                 gray_image[alpha_mask] = 255 - gray_image[alpha_mask]
+
+            if self.black_point > 0 or self.white_point < 255:
+                gray_image = normalize_grayscale(
+                    gray_image, self.black_point, self.white_point
+                )
 
             step_power = settings.get("power", 1.0) if settings else 1.0
 
@@ -378,6 +403,7 @@ class DepthEngraver(OpsProducer):
                 continue
 
             z_offset = -((pass_level - 1) * self.z_step_down)
+            pass_angle = angle + (pass_level - 1) * self.angle_increment
             pass_ops = self._rasterize_mask(
                 mask,
                 pixels_per_mm,
@@ -385,7 +411,7 @@ class DepthEngraver(OpsProducer):
                 offset_y_mm,
                 line_interval_mm,
                 z_offset,
-                angle,
+                pass_angle,
             )
             ops.extend(pass_ops)
 
@@ -483,6 +509,9 @@ class DepthEngraver(OpsProducer):
                 "z_step_down": self.z_step_down,
                 "invert": self.invert,
                 "line_interval_mm": self.line_interval_mm,
+                "black_point": self.black_point,
+                "white_point": self.white_point,
+                "angle_increment": self.angle_increment,
             },
         }
 
@@ -506,6 +535,9 @@ class DepthEngraver(OpsProducer):
             "z_step_down",
             "invert",
             "line_interval_mm",
+            "black_point",
+            "white_point",
+            "angle_increment",
         }
 
         init_args = {k: v for k, v in params_in.items() if k in valid_params}

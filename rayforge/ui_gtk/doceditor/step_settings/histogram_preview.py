@@ -1,31 +1,135 @@
 import cairo
 import numpy as np
 from gi.repository import Gtk
+from blinker import Signal
 
 
 class HistogramPreview(Gtk.DrawingArea):
-    SIZE = 200
+    WIDTH = 200
+    HEIGHT = 100
     MARGIN = 5
 
     def __init__(self):
         super().__init__()
         self.histogram: np.ndarray | None = None
-        self.min_threshold: float = 0.0
-        self.max_threshold: float = 1.0
-        self.set_content_width(self.SIZE)
-        self.set_content_height(self.SIZE)
+        self._black_point: int = 0
+        self._white_point: int = 255
+        self._dragging: str | None = None
+        self._hovering: str | None = None
+
+        self.black_point_changed = Signal()
+        self.white_point_changed = Signal()
+
+        self.set_content_width(self.WIDTH)
+        self.set_content_height(self.HEIGHT)
         self.set_draw_func(self._draw_func)
 
-    def update_histogram(
-        self,
-        histogram: np.ndarray | None,
-        min_threshold: float,
-        max_threshold: float,
-    ):
+        click = Gtk.GestureClick.new()
+        click.connect("pressed", self._on_pressed)
+        click.connect("released", self._on_released)
+        self.add_controller(click)
+
+        motion = Gtk.EventControllerMotion.new()
+        motion.connect("motion", self._on_motion)
+        motion.connect("leave", self._on_leave)
+        self.add_controller(motion)
+
+    @property
+    def black_point(self) -> int:
+        return self._black_point
+
+    @black_point.setter
+    def black_point(self, value: int):
+        if self._black_point != value:
+            self._black_point = max(0, min(254, value))
+            self.queue_draw()
+
+    @property
+    def white_point(self) -> int:
+        return self._white_point
+
+    @white_point.setter
+    def white_point(self, value: int):
+        if self._white_point != value:
+            self._white_point = max(1, min(255, value))
+            self.queue_draw()
+
+    def update_histogram(self, histogram: np.ndarray | None):
         self.histogram = histogram
-        self.min_threshold = min_threshold
-        self.max_threshold = max_threshold
         self.queue_draw()
+
+    def set_points(self, black_point: int, white_point: int):
+        self._black_point = max(0, min(254, black_point))
+        self._white_point = max(1, min(255, white_point))
+        self.queue_draw()
+
+    def _value_to_x(self, value: int, width: int) -> float:
+        draw_width = width - 2 * self.MARGIN
+        return self.MARGIN + (value / 255.0) * draw_width
+
+    def _x_to_value(self, x: float, width: int) -> int:
+        draw_width = width - 2 * self.MARGIN
+        ratio = (x - self.MARGIN) / draw_width
+        return int(round(ratio * 255))
+
+    def _get_handle_at(
+        self, x: float, y: float, width: int, height: int
+    ) -> str | None:
+        black_x = self._value_to_x(self._black_point, width)
+        white_x = self._value_to_x(self._white_point, width)
+
+        threshold = 10
+
+        if abs(x - black_x) < threshold:
+            return "black"
+        elif abs(x - white_x) < threshold:
+            return "white"
+        return None
+
+    def _on_pressed(self, gesture, n_press, x, y):
+        width = self.get_width()
+        handle = self._get_handle_at(x, y, width, self.get_height())
+        if handle:
+            self._dragging = handle
+            gesture.set_state(Gtk.EventSequenceState.CLAIMED)
+
+    def _on_released(self, gesture, n_press, x, y):
+        self._dragging = None
+
+    def _on_motion(self, controller, x, y):
+        width = self.get_width()
+        height = self.get_height()
+
+        if self._dragging:
+            value = self._x_to_value(x, width)
+            value = max(0, min(255, value))
+
+            if self._dragging == "black":
+                new_black = min(value, self._white_point - 1)
+                if new_black != self._black_point:
+                    self._black_point = new_black
+                    self.queue_draw()
+                    self.black_point_changed.send(
+                        self, black_point=self._black_point
+                    )
+            else:
+                new_white = max(value, self._black_point + 1)
+                if new_white != self._white_point:
+                    self._white_point = new_white
+                    self.queue_draw()
+                    self.white_point_changed.send(
+                        self, white_point=self._white_point
+                    )
+        else:
+            handle = self._get_handle_at(x, y, width, height)
+            if handle != self._hovering:
+                self._hovering = handle
+                self.queue_draw()
+
+    def _on_leave(self, controller):
+        if self._hovering:
+            self._hovering = None
+            self.queue_draw()
 
     def _draw_func(self, area, ctx: cairo.Context, width: int, height: int):
         ctx.set_source_rgba(0, 0, 0, 0)
@@ -56,16 +160,29 @@ class HistogramPreview(Gtk.DrawingArea):
             )
         ctx.fill()
 
-        min_x = self.MARGIN + self.min_threshold * draw_width
-        max_x = self.MARGIN + self.max_threshold * draw_width
+        black_x = self._value_to_x(self._black_point, width)
+        white_x = self._value_to_x(self._white_point, width)
 
         ctx.set_source_rgba(0.2, 0.6, 1.0, 0.7)
-        ctx.set_line_width(2)
-        ctx.move_to(min_x, self.MARGIN)
-        ctx.line_to(min_x, height - self.MARGIN)
+        if self._hovering == "black" or self._dragging == "black":
+            ctx.set_line_width(3)
+        else:
+            ctx.set_line_width(2)
+        ctx.move_to(black_x, self.MARGIN)
+        ctx.line_to(black_x, height - self.MARGIN)
         ctx.stroke()
 
         ctx.set_source_rgba(1.0, 0.4, 0.2, 0.7)
-        ctx.move_to(max_x, self.MARGIN)
-        ctx.line_to(max_x, height - self.MARGIN)
+        if self._hovering == "white" or self._dragging == "white":
+            ctx.set_line_width(3)
+        else:
+            ctx.set_line_width(2)
+        ctx.move_to(white_x, self.MARGIN)
+        ctx.line_to(white_x, height - self.MARGIN)
         ctx.stroke()
+
+        ctx.set_source_rgba(1.0, 1.0, 1.0, 0.3)
+        ctx.rectangle(
+            black_x, self.MARGIN, white_x - black_x, height - 2 * self.MARGIN
+        )
+        ctx.fill()

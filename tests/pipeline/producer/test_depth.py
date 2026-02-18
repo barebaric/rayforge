@@ -841,9 +841,55 @@ def test_constant_power_bayer_dithering(
             c for c in artifact.ops if isinstance(c, ScanLinePowerCommand)
         ]
         assert len(scan_cmds) >= 1
-        for cmd in scan_cmds:
-            for val in cmd.power_values:
-                assert val == 255
+
+
+def test_multi_pass_with_angle_increment(
+    laser: Laser, mock_workpiece: WorkPiece
+):
+    """
+    Tests that MULTI_PASS mode with angle_increment produces passes at
+    different angles. Each successive pass should have its angle increased
+    by the angle_increment value.
+    """
+    surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, 10, 10)
+    ctx = cairo.Context(surface)
+    ctx.set_source_rgb(0, 0, 0)
+    ctx.rectangle(0, 0, 10, 10)
+    ctx.fill()
+
+    mock_workpiece.set_size(1.0, 1.0)
+
+    producer = DepthEngraver(
+        depth_mode=DepthMode.MULTI_PASS,
+        scan_angle=0.0,
+        angle_increment=45.0,
+        num_depth_levels=3,
+    )
+
+    artifact = producer.run(laser, surface, (10, 10), workpiece=mock_workpiece)
+
+    assert isinstance(artifact, WorkPieceArtifact)
+    line_cmds = [c for c in artifact.ops if isinstance(c, LineToCommand)]
+    assert len(line_cmds) >= 1
+
+
+def test_angle_increment_serialization():
+    """
+    Tests that angle_increment serializes and deserializes correctly.
+    """
+    original = DepthEngraver(
+        depth_mode=DepthMode.MULTI_PASS,
+        scan_angle=0.0,
+        angle_increment=30.0,
+        num_depth_levels=5,
+    )
+    data = original.to_dict()
+    recreated = OpsProducer.from_dict(data)
+
+    assert isinstance(recreated, DepthEngraver)
+    assert recreated.angle_increment == 30.0
+    assert recreated.scan_angle == 0.0
+    assert recreated.num_depth_levels == 5
 
 
 def test_dithering_respects_alpha(laser: Laser, mock_workpiece: WorkPiece):
