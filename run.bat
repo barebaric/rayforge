@@ -50,19 +50,19 @@ goto :usage
 :setup
 echo.
 echo --- Setting up Windows Environment ---
-%MSYS2_SHELL% %MSYS2_ARGS% "bash scripts/win_setup.sh%PAUSE_ON_ERROR%"
+%MSYS2_SHELL% %MSYS2_ARGS% "bash scripts/win/win_setup.sh%PAUSE_ON_ERROR%"
 goto :eof
 
 :test
 echo.
 echo --- Running Test Suite ---
-%MSYS2_SHELL% %MSYS2_ARGS% "bash scripts/win_test.sh%PAUSE_ON_ERROR%"
+%MSYS2_SHELL% %MSYS2_ARGS% "bash scripts/win/win_test.sh%PAUSE_ON_ERROR%"
 goto :eof
 
 :build
 echo.
 echo --- Building Windows Executable ---
-%MSYS2_SHELL% %MSYS2_ARGS% "bash scripts/win_build.sh%PAUSE_ON_ERROR%"
+%MSYS2_SHELL% %MSYS2_ARGS% "bash scripts/win/win_build.sh%PAUSE_ON_ERROR%"
 goto :eof
 
 :app

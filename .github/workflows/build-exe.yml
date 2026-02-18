@@ -67,7 +67,7 @@ jobs:
         run: |
           # The MSYS2_PATH is required by the setup script to generate the .msys2_env file.
           export MSYS2_PATH=${{ env.MSYS2_PATH }}
-          bash scripts/win_setup.sh
+          bash scripts/win/win_setup.sh
 
       - name: Verify GI Typelib Files
         shell: msys2 {0}
@@ -104,13 +104,13 @@ jobs:
           # Enable RUST backtrace for vtracer
           export RUST_BACKTRACE=1
           # The test script will source .msys2_env internally.
-          bash scripts/win_test.sh
+          bash scripts/win/win_test.sh
 
       - name: Run Build Process (win_build.sh)
         shell: msys2 {0}
         run: |
           # The build script will source .msys2_env internally.
-          bash scripts/win_build.sh "${{ env.VERSION }}"
+          bash scripts/win/win_build.sh "${{ env.VERSION }}"
 
       - name: Compress PyInstaller Bundle
         shell: msys2 {0}
