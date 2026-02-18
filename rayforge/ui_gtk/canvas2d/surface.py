@@ -681,14 +681,9 @@ class WorkSurface(WorldSurface):
         Gets the current theme color set as a dictionary.
 
         This method extracts the color set from the current GTK style
-        context and converts it to a dictionary format suitable for
-        the pipeline.
+        and converts it to a dictionary format suitable for the pipeline.
         """
-        if not self.get_style_context():
-            return ColorSet()
-
-        style_context = self.get_style_context()
-        color_resolver = GtkColorResolver(style_context)
+        color_resolver = GtkColorResolver(self)
 
         spec_dict = {
             "cut": ("#ffeeff", "#ff00ff"),

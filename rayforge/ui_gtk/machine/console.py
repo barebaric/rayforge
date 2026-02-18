@@ -10,6 +10,7 @@ from ...logging_setup import (
 from ...machine.models.machine import Machine
 from ...machine.driver.dummy import NoDeviceDriver
 from ..icons import get_icon
+from ..shared.gtk import apply_css
 
 
 logger = logging.getLogger(__name__)
@@ -57,12 +58,8 @@ class Console(Gtk.Box):
         self.terminal.set_editable(False)
         self.terminal.set_cursor_visible(False)
         self.terminal.set_wrap_mode(Gtk.WrapMode.WORD_CHAR)
-
-        css_provider = Gtk.CssProvider()
-        css_provider.load_from_string(css)
-        self.terminal.get_style_context().add_provider(
-            css_provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
-        )
+        self.terminal.add_css_class("terminal")
+        apply_css(css)
 
         self.scrolled_window = Gtk.ScrolledWindow()
         self.scrolled_window.set_vexpand(True)
@@ -113,15 +110,7 @@ class Console(Gtk.Box):
         self.console_input.set_wrap_mode(Gtk.WrapMode.WORD_CHAR)
         self.console_input.add_css_class("console-input")
         self.console_input.set_hexpand(True)
-
-        css_provider_input = Gtk.CssProvider()
-        css_provider_input.load_from_string(css)
-        self.console_input.get_style_context().add_provider(
-            css_provider_input, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
-        )
-        self.input_scrolled.get_style_context().add_provider(
-            css_provider_input, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
-        )
+        apply_css(css)
 
         self.input_buffer = self.console_input.get_buffer()
         self.input_buffer.connect("changed", self._on_input_changed)
