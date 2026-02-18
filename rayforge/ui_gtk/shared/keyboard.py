@@ -4,11 +4,13 @@ from gi.repository import Gdk
 
 
 if sys.platform == "darwin":
-    PRIMARY_MODIFIER_MASK = (
-        Gdk.ModifierType.META_MASK
-        | Gdk.ModifierType.SUPER_MASK
-        | Gdk.ModifierType.MOD2_MASK
-    )
+    PRIMARY_MODIFIER_MASK = Gdk.ModifierType(0)
+    for mask_name in ("META_MASK", "SUPER_MASK", "MOD2_MASK"):
+        mask = getattr(Gdk.ModifierType, mask_name, None)
+        if mask is not None:
+            PRIMARY_MODIFIER_MASK |= mask
+    if PRIMARY_MODIFIER_MASK == 0:
+        PRIMARY_MODIFIER_MASK = Gdk.ModifierType.CONTROL_MASK
     PRIMARY_ACCEL = "<Meta>"
 else:
     PRIMARY_MODIFIER_MASK = Gdk.ModifierType.CONTROL_MASK
