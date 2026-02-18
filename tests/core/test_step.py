@@ -261,7 +261,7 @@ def test_deserialization_with_missing_keys(step):
     assert restored.power == 1.0  # Default value
     assert restored.cut_speed == 500  # Default value
     assert restored.kerf_mm == 0.0  # Default value
-    assert restored.pixels_per_mm == (50, 50)  # Default value
+    assert restored.pixels_per_mm == (100, 100)  # Default value
 
 
 def test_step_roundtrip_serialization():
@@ -373,7 +373,7 @@ def test_step_backward_compatibility_with_missing_optional_fields():
     assert step.generated_workpiece_uid is None
     assert step.applied_recipe_uid is None
     assert step.capabilities == set()
-    assert step.pixels_per_mm == (50, 50)
+    assert step.pixels_per_mm == (100, 100)
     assert step.power == 1.0
     assert step.max_power == 1000
     assert step.cut_speed == 500

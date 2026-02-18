@@ -64,21 +64,18 @@ def _calculate_texture_dimensions(
     """
     Calculates texture dimensions and pixels per mm.
 
+    Uses a fixed resolution for 3D visualization that is independent
+    of the chunked source dimensions.
+
     Args:
         artifact: The workpiece artifact.
 
     Returns:
         Tuple of (width_px, height_px, px_per_mm_x, px_per_mm_y).
     """
-    if artifact.source_dimensions:
-        width_px = int(artifact.source_dimensions[0])
-        height_px = int(artifact.source_dimensions[1])
-        px_per_mm_x = width_px / artifact.generation_size[0]
-        px_per_mm_y = height_px / artifact.generation_size[1]
-    else:
-        px_per_mm_x = px_per_mm_y = 50.0
-        width_px = int(round(artifact.generation_size[0] * px_per_mm_x))
-        height_px = int(round(artifact.generation_size[1] * px_per_mm_y))
+    px_per_mm_x = px_per_mm_y = 50.0
+    width_px = int(round(artifact.generation_size[0] * px_per_mm_x))
+    height_px = int(round(artifact.generation_size[1] * px_per_mm_y))
     return width_px, height_px, px_per_mm_x, px_per_mm_y
 
 

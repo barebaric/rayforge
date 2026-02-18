@@ -4,7 +4,8 @@ import logging
 from enum import Enum, auto
 from typing import Optional, TYPE_CHECKING, Dict, Any
 from ...core.ops import Ops, SectionType
-from ...image.image_util import surface_to_grayscale
+from ...image.image_util import surface_to_grayscale, surface_to_binary
+from ...image.dither import surface_to_dithered_array, DitherAlgorithm
 from ...shared.tasker.progress import ProgressContext
 from ..artifact import WorkPieceArtifact
 from ..coord import CoordinateSystem
@@ -13,10 +14,8 @@ from .raster_util import (
     find_segments,
     convert_y_to_output,
     calculate_ymax_mm,
-    find_bounding_box,
     find_mask_bounding_box,
-    generate_horizontal_scan_positions,
-    resample_rows,
+    generate_scan_lines,
 )
 
 if TYPE_CHECKING:
@@ -28,6 +27,8 @@ logger = logging.getLogger(__name__)
 
 class DepthMode(Enum):
     POWER_MODULATION = auto()
+    CONSTANT_POWER = auto()
+    DITHER = auto()
     MULTI_PASS = auto()
 
 
@@ -39,8 +40,12 @@ class DepthEngraver(OpsProducer):
     def __init__(
         self,
         scan_angle: float = 0.0,
-        bidirectional: bool = True,
         depth_mode: DepthMode = DepthMode.POWER_MODULATION,
+        threshold: int = 128,
+        dither_algorithm: Optional[
+            DitherAlgorithm
+        ] = DitherAlgorithm.FLOYD_STEINBERG,
+        cross_hatch: bool = False,
         speed: float = 3000.0,
         min_power: float = 0.0,
         max_power: float = 1.0,
@@ -50,8 +55,10 @@ class DepthEngraver(OpsProducer):
         line_interval_mm: Optional[float] = None,
     ):
         self.scan_angle = scan_angle
-        self.bidirectional = bidirectional
         self.depth_mode = depth_mode
+        self.threshold = threshold
+        self.dither_algorithm = dither_algorithm
+        self.cross_hatch = cross_hatch
         self.speed = speed
         self.min_power = min_power
         self.max_power = max_power
@@ -97,28 +104,61 @@ class DepthEngraver(OpsProducer):
                 alpha_mask = alpha > 0
                 gray_image[alpha_mask] = 255 - gray_image[alpha_mask]
 
-            if self.depth_mode == DepthMode.POWER_MODULATION:
-                step_power = settings.get("power", 1.0) if settings else 1.0
-                mode_ops = self._run_power_modulation(
-                    gray_image,
-                    pixels_per_mm,
-                    x_offset_mm,
-                    y_offset_mm,
-                    line_interval_mm,
-                    step_power,
-                )
-            else:
-                mode_ops = self._run_multi_pass(
-                    gray_image,
-                    pixels_per_mm,
-                    x_offset_mm,
-                    y_offset_mm,
-                    line_interval_mm,
-                )
+            step_power = settings.get("power", 1.0) if settings else 1.0
 
-            if not mode_ops.is_empty():
-                final_ops.set_laser(laser.uid)
-                final_ops.extend(mode_ops)
+            angles = [self.scan_angle]
+            if self.cross_hatch:
+                angles.append(self.scan_angle + 90.0)
+
+            for angle in angles:
+                if self.depth_mode == DepthMode.POWER_MODULATION:
+                    mode_ops = self._run_power_modulation(
+                        gray_image,
+                        alpha,
+                        pixels_per_mm,
+                        x_offset_mm,
+                        y_offset_mm,
+                        line_interval_mm,
+                        step_power,
+                        angle,
+                    )
+                elif self.depth_mode == DepthMode.CONSTANT_POWER:
+                    mode_ops = self._run_constant_power(
+                        surface,
+                        pixels_per_mm,
+                        x_offset_mm,
+                        y_offset_mm,
+                        line_interval_mm,
+                        laser,
+                        step_power,
+                        angle,
+                        use_dither=False,
+                    )
+                elif self.depth_mode == DepthMode.DITHER:
+                    mode_ops = self._run_constant_power(
+                        surface,
+                        pixels_per_mm,
+                        x_offset_mm,
+                        y_offset_mm,
+                        line_interval_mm,
+                        laser,
+                        step_power,
+                        angle,
+                        use_dither=True,
+                    )
+                else:
+                    mode_ops = self._run_multi_pass(
+                        gray_image,
+                        pixels_per_mm,
+                        x_offset_mm,
+                        y_offset_mm,
+                        line_interval_mm,
+                        angle,
+                    )
+
+                if not mode_ops.is_empty():
+                    final_ops.set_laser(laser.uid)
+                    final_ops.extend(mode_ops)
 
         final_ops.ops_section_end(SectionType.RASTER_FILL)
 
@@ -133,89 +173,187 @@ class DepthEngraver(OpsProducer):
     def _run_power_modulation(
         self,
         gray_image: np.ndarray,
+        alpha: np.ndarray,
         pixels_per_mm: tuple,
         offset_x_mm: float,
         offset_y_mm: float,
         line_interval_mm: float,
         step_power: float = 1.0,
+        angle: float = 0.0,
     ) -> Ops:
         ops = Ops()
         height_px, width_px = gray_image.shape
         ymax_mm = calculate_ymax_mm((width_px, height_px), pixels_per_mm)
         px_per_mm_x, px_per_mm_y = pixels_per_mm
 
-        bbox = find_bounding_box(gray_image)
+        bbox = find_mask_bounding_box(alpha)
         if bbox is None:
             return ops
 
-        y_min_px, y_max_px = bbox[0], bbox[1]
-        y_coords_mm, y_coords_px = generate_horizontal_scan_positions(
-            y_min_px,
-            y_max_px,
-            height_px,
-            pixels_per_mm,
-            line_interval_mm,
-            offset_y_mm,
+        power_range = self.max_power - self.min_power
+
+        for scan_line in generate_scan_lines(
+            bbox=bbox,
+            image_size=(width_px, height_px),
+            pixels_per_mm=pixels_per_mm,
+            line_interval_mm=line_interval_mm,
+            direction_degrees=angle,
+            offset_x_mm=offset_x_mm,
+            offset_y_mm=offset_y_mm,
+        ):
+            if len(scan_line.pixels) == 0:
+                continue
+
+            gray_values = gray_image[
+                scan_line.pixels[:, 1], scan_line.pixels[:, 0]
+            ]
+            alpha_values = alpha[
+                scan_line.pixels[:, 1], scan_line.pixels[:, 0]
+            ]
+            power_fractions = (
+                self.min_power + (1.0 - gray_values / 255.0) * power_range
+            )
+            power_fractions = power_fractions * step_power
+            power_values = (power_fractions * 255).astype(np.uint8)
+            power_values[alpha_values == 0] = 0
+
+            if not np.any(power_values > 0):
+                continue
+
+            segments = find_segments(power_values)
+            if len(segments) == 0:
+                continue
+
+            is_reversed = (scan_line.index % 2) != 0
+            if is_reversed:
+                segments = segments[::-1]
+
+            for start_idx, end_idx in segments:
+                if power_values[start_idx] == 0:
+                    continue
+
+                power_slice = power_values[start_idx:end_idx]
+
+                if is_reversed:
+                    seg_start_px = scan_line.pixels[end_idx - 1]
+                    seg_end_px = scan_line.pixels[start_idx]
+                    power_slice = power_slice[::-1]
+                else:
+                    seg_start_px = scan_line.pixels[start_idx]
+                    seg_end_px = scan_line.pixels[end_idx - 1]
+
+                start_mm = scan_line.pixel_to_mm(
+                    seg_start_px[0], seg_start_px[1], pixels_per_mm
+                )
+                end_mm = scan_line.pixel_to_mm(
+                    seg_end_px[0], seg_end_px[1], pixels_per_mm
+                )
+
+                final_start_y = float(
+                    convert_y_to_output(start_mm[1], ymax_mm)
+                )
+                final_end_y = float(convert_y_to_output(end_mm[1], ymax_mm))
+
+                ops.move_to(start_mm[0], final_start_y, 0.0)
+                ops.scan_to(
+                    end_mm[0], final_end_y, 0.0, bytearray(power_slice)
+                )
+
+        return ops
+
+    def _run_constant_power(
+        self,
+        surface,
+        pixels_per_mm: tuple,
+        offset_x_mm: float,
+        offset_y_mm: float,
+        line_interval_mm: float,
+        laser: "Laser",
+        step_power: float = 1.0,
+        angle: float = 0.0,
+        use_dither: bool = False,
+    ) -> Ops:
+        ops = Ops()
+        width_px = surface.get_width()
+        height_px = surface.get_height()
+        ymax_mm = calculate_ymax_mm((width_px, height_px), pixels_per_mm)
+        px_per_mm_x, px_per_mm_y = pixels_per_mm
+
+        min_feature_px = max(
+            1, int(round(laser.spot_size_mm[0] * pixels_per_mm[0]))
         )
 
-        if len(y_coords_mm) == 0:
+        if use_dither:
+            dither_algo = (
+                self.dither_algorithm or DitherAlgorithm.FLOYD_STEINBERG
+            )
+            mask = surface_to_dithered_array(
+                surface,
+                dither_algo,
+                invert=self.invert,
+                min_feature_px=min_feature_px,
+            )
+        else:
+            mask = surface_to_binary(
+                surface, threshold=self.threshold, invert=self.invert
+            )
+
+        bbox = find_mask_bounding_box(mask)
+        if bbox is None:
             return ops
 
-        resampled_gray = resample_rows(gray_image, y_coords_px)
+        for scan_line in generate_scan_lines(
+            bbox=bbox,
+            image_size=(width_px, height_px),
+            pixels_per_mm=pixels_per_mm,
+            line_interval_mm=line_interval_mm,
+            direction_degrees=angle,
+            offset_x_mm=offset_x_mm,
+            offset_y_mm=offset_y_mm,
+        ):
+            if len(scan_line.pixels) == 0:
+                continue
 
-        power_range = self.max_power - self.min_power
-        power_fractions = (
-            self.min_power + (1.0 - resampled_gray / 255.0) * power_range
-        )
-        power_fractions = power_fractions * step_power
-        power_image = (power_fractions * 255).astype(np.uint8)
+            values = mask[scan_line.pixels[:, 1], scan_line.pixels[:, 0]]
+            segments = find_segments(values)
 
-        is_reversed = False
-        y_pixel_center_offset_mm = 0.5 / px_per_mm_y
+            if len(segments) == 0:
+                continue
 
-        for i, y_mm in enumerate(y_coords_mm):
-            row_power_values = power_image[i, :]
+            is_reversed = (scan_line.index % 2) != 0
+            if is_reversed:
+                segments = segments[::-1]
 
-            if np.any(row_power_values > 0):
-                segments = find_segments(row_power_values)
+            for start_idx, end_idx in segments:
+                if values[start_idx] == 0:
+                    continue
 
-                if self.bidirectional and is_reversed:
-                    segments = segments[::-1]
+                if is_reversed:
+                    seg_start_px = scan_line.pixels[end_idx - 1]
+                    seg_end_px = scan_line.pixels[start_idx]
+                else:
+                    seg_start_px = scan_line.pixels[start_idx]
+                    seg_end_px = scan_line.pixels[end_idx - 1]
 
-                line_y_mm = y_mm + y_pixel_center_offset_mm
-                final_y_mm = float(convert_y_to_output(line_y_mm, ymax_mm))
+                start_mm = scan_line.pixel_to_mm(
+                    seg_start_px[0], seg_start_px[1], pixels_per_mm
+                )
+                end_mm = scan_line.pixel_to_mm(
+                    seg_end_px[0], seg_end_px[1], pixels_per_mm
+                )
 
-                for start_idx, end_idx in segments:
-                    power_slice = row_power_values[start_idx:end_idx]
+                segment_length_px = end_idx - start_idx
+                power_values = bytearray(
+                    [int(255 * step_power)] * segment_length_px
+                )
 
-                    start_x = start_idx / px_per_mm_x
-                    end_x = end_idx / px_per_mm_x
+                final_start_y = float(
+                    convert_y_to_output(start_mm[1], ymax_mm)
+                )
+                final_end_y = float(convert_y_to_output(end_mm[1], ymax_mm))
 
-                    if self.bidirectional and is_reversed:
-                        ops.move_to(end_x, final_y_mm, 0.0)
-                        ops.scan_to(
-                            start_x,
-                            final_y_mm,
-                            0.0,
-                            bytearray(power_slice[::-1]),
-                        )
-                    else:
-                        ops.move_to(start_x, final_y_mm, 0.0)
-                        ops.scan_to(
-                            end_x,
-                            final_y_mm,
-                            0.0,
-                            bytearray(power_slice),
-                        )
-
-                if self.bidirectional:
-                    is_reversed = not is_reversed
-
-        if not np.isclose(self.scan_angle, 0.0):
-            height_mm = height_px / px_per_mm_y
-            center_x = (width_px / px_per_mm_x) / 2
-            center_y = height_mm / 2
-            ops.rotate(self.scan_angle, center_x, center_y)
+                ops.move_to(start_mm[0], final_start_y, 0.0)
+                ops.scan_to(end_mm[0], final_end_y, 0.0, power_values)
 
         return ops
 
@@ -226,6 +364,7 @@ class DepthEngraver(OpsProducer):
         offset_x_mm: float,
         offset_y_mm: float,
         line_interval_mm: float,
+        angle: float = 0.0,
     ) -> Ops:
         ops = Ops()
 
@@ -246,6 +385,7 @@ class DepthEngraver(OpsProducer):
                 offset_y_mm,
                 line_interval_mm,
                 z_offset,
+                angle,
             )
             ops.extend(pass_ops)
 
@@ -259,62 +399,63 @@ class DepthEngraver(OpsProducer):
         offset_y_mm: float,
         line_interval_mm: float,
         z: float,
+        angle: float = 0.0,
     ) -> Ops:
         ops = Ops()
         height_px, width_px = mask.shape
         ymax_mm = calculate_ymax_mm((width_px, height_px), pixels_per_mm)
-        px_per_mm_x, px_per_mm_y = pixels_per_mm
 
         bbox = find_mask_bounding_box(mask)
         if bbox is None:
             return ops
 
-        y_min_px, y_max_px, x_min, x_max = bbox
-        y_coords_mm, y_coords_px = generate_horizontal_scan_positions(
-            y_min_px,
-            y_max_px,
-            height_px,
-            pixels_per_mm,
-            line_interval_mm,
-            offset_y_mm,
-        )
-
-        if len(y_coords_mm) == 0:
-            return ops
-
-        resampled_mask = resample_rows(mask, y_coords_px)
-        resampled_mask = (resampled_mask > 0.5).astype(np.uint8)
-
-        is_reversed = False
-        y_pixel_center_offset_mm = 0.5 / px_per_mm_y
-
-        for i, y_mm in enumerate(y_coords_mm):
-            row = resampled_mask[i, x_min : x_max + 1]
-
-            if not np.any(row):
+        for scan_line in generate_scan_lines(
+            bbox=bbox,
+            image_size=(width_px, height_px),
+            pixels_per_mm=pixels_per_mm,
+            line_interval_mm=line_interval_mm,
+            direction_degrees=angle,
+            offset_x_mm=offset_x_mm,
+            offset_y_mm=offset_y_mm,
+        ):
+            if len(scan_line.pixels) == 0:
                 continue
 
-            segments = find_segments(row)
+            values = mask[scan_line.pixels[:, 1], scan_line.pixels[:, 0]]
+            segments = find_segments(values)
 
-            if self.bidirectional and is_reversed:
+            if len(segments) == 0:
+                continue
+
+            is_reversed = (scan_line.index % 2) != 0
+            if is_reversed:
                 segments = segments[::-1]
 
-            line_y_mm = y_mm + y_pixel_center_offset_mm
-            final_y_mm = float(convert_y_to_output(line_y_mm, ymax_mm))
+            for start_idx, end_idx in segments:
+                if values[start_idx] == 0:
+                    continue
 
-            for start_px, end_px in segments:
-                content_start_mm_x = (x_min + start_px) / px_per_mm_x
-                content_end_mm_x = (x_min + end_px - 1 + 0.5) / px_per_mm_x
-
-                if self.bidirectional and is_reversed:
-                    ops.move_to(content_end_mm_x, final_y_mm, z)
-                    ops.line_to(content_start_mm_x, final_y_mm, z)
+                if is_reversed:
+                    seg_start_px = scan_line.pixels[end_idx - 1]
+                    seg_end_px = scan_line.pixels[start_idx]
                 else:
-                    ops.move_to(content_start_mm_x, final_y_mm, z)
-                    ops.line_to(content_end_mm_x, final_y_mm, z)
+                    seg_start_px = scan_line.pixels[start_idx]
+                    seg_end_px = scan_line.pixels[end_idx - 1]
 
-            if self.bidirectional:
-                is_reversed = not is_reversed
+                start_mm = scan_line.pixel_to_mm(
+                    seg_start_px[0], seg_start_px[1], pixels_per_mm
+                )
+                end_mm = scan_line.pixel_to_mm(
+                    seg_end_px[0], seg_end_px[1], pixels_per_mm
+                )
+
+                final_start_y = float(
+                    convert_y_to_output(start_mm[1], ymax_mm)
+                )
+                final_end_y = float(convert_y_to_output(end_mm[1], ymax_mm))
+
+                ops.move_to(start_mm[0], final_start_y, z)
+                ops.line_to(end_mm[0], final_end_y, z)
 
         return ops
 
@@ -327,8 +468,14 @@ class DepthEngraver(OpsProducer):
             "type": self.__class__.__name__,
             "params": {
                 "scan_angle": self.scan_angle,
-                "bidirectional": self.bidirectional,
                 "depth_mode": self.depth_mode.name,
+                "threshold": self.threshold,
+                "dither_algorithm": (
+                    self.dither_algorithm.value
+                    if self.dither_algorithm
+                    else None
+                ),
+                "cross_hatch": self.cross_hatch,
                 "speed": self.speed,
                 "min_power": self.min_power,
                 "max_power": self.max_power,
@@ -346,18 +493,22 @@ class DepthEngraver(OpsProducer):
         """
         params_in = data.get("params", {})
 
-        init_args = {
-            "scan_angle": 0.0,
-            "bidirectional": True,
-            "speed": 3000.0,
-            "min_power": 0.0,
-            "max_power": 100.0,
-            "num_depth_levels": 5,
-            "z_step_down": 0.0,
-            "invert": False,
-            "line_interval_mm": None,
+        valid_params = {
+            "scan_angle",
+            "depth_mode",
+            "threshold",
+            "dither_algorithm",
+            "cross_hatch",
+            "speed",
+            "min_power",
+            "max_power",
+            "num_depth_levels",
+            "z_step_down",
+            "invert",
+            "line_interval_mm",
         }
-        init_args.update(params_in)
+
+        init_args = {k: v for k, v in params_in.items() if k in valid_params}
 
         depth_mode_str = init_args.get(
             "depth_mode", DepthMode.POWER_MODULATION.name
@@ -366,5 +517,16 @@ class DepthEngraver(OpsProducer):
             init_args["depth_mode"] = DepthMode[depth_mode_str]
         except KeyError:
             init_args["depth_mode"] = DepthMode.POWER_MODULATION
+
+        dither_algorithm_str = init_args.get("dither_algorithm")
+        if dither_algorithm_str is not None:
+            try:
+                init_args["dither_algorithm"] = DitherAlgorithm(
+                    dither_algorithm_str
+                )
+            except ValueError:
+                init_args["dither_algorithm"] = DitherAlgorithm.FLOYD_STEINBERG
+        else:
+            init_args["dither_algorithm"] = None
 
         return cls(**init_args)
