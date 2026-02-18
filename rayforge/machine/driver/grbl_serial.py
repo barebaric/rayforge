@@ -89,6 +89,7 @@ class GrblSerialDriver(Driver):
         self._buffer_has_space = asyncio.Event()
         self._job_exception: Optional[Exception] = None
         self._poll_status_while_running: bool = True
+        self._handshake_received = asyncio.Event()
 
     @property
     def machine_space_wcs(self) -> str:
@@ -303,15 +304,32 @@ class GrblSerialDriver(Driver):
                     raise DriverSetupError("Transport not initialized")
 
                 await transport.connect()
+                logger.debug(
+                    "Serial port opened. Verifying device response..."
+                )
+
+                self._handshake_received.clear()
+                await self._send_command("?", add_newline=False)
+
+                try:
+                    await asyncio.wait_for(
+                        self._handshake_received.wait(), timeout=2.0
+                    )
+                except asyncio.TimeoutError:
+                    logger.warning(
+                        "No response from device. Port may be a phantom "
+                        "COM port without a connected device."
+                    )
+                    await transport.disconnect()
+                    self._update_connection_status(
+                        TransportStatus.ERROR,
+                        _("No response from device"),
+                    )
+                    continue
+
                 logger.info("Connection established successfully.")
                 self._update_connection_status(TransportStatus.CONNECTED)
-                logger.debug(f"is_connected: {transport.is_connected}")
-
-                logger.debug("Sending initial status query")
-                await self._send_command("?", add_newline=False)
-                logger.debug(
-                    "Connection established. Starting status polling."
-                )
+                logger.debug("Connection verified. Starting status polling.")
                 while transport.is_connected and self.keep_running:
                     # Skip status polling during jobs if configured
                     if (
@@ -980,6 +998,7 @@ class GrblSerialDriver(Driver):
             f"RX: {data!r}",
             extra={"log_category": "RAW_IO", "direction": "RX", "data": data},
         )
+        self._handshake_received.set()
         # Buffer bytes directly to avoid decoding errors on split characters
         self._status_buffer.extend(data)
 
