@@ -4,10 +4,10 @@ import cairo
 
 
 class DirectionPreview(Gtk.DrawingArea):
-    VISUAL_SIZE = 160
-    MARGIN = 8
-    LINE_SPACING = 16
-    ARROW_SIZE = 6
+    VISUAL_SIZE = 140
+    MARGIN = 6
+    LINE_SPACING = 15
+    ARROW_SIZE = 5
 
     TRAVEL_COLOR = (1.0, 0.4, 0.0, 0.7)
     CUT_COLOR = (1.0, 0.0, 1.0, 1.0)
@@ -101,7 +101,13 @@ class DirectionPreview(Gtk.DrawingArea):
 
         cx, cy = width / 2, height / 2
 
-        if self.cross_hatch:
-            self._draw_pass(ctx, cx, cy, self.direction_degrees + 90)
+        num_lines = 5 if self.cross_hatch else 7
 
-        self._draw_pass(ctx, cx, cy, self.direction_degrees)
+        if self.cross_hatch:
+            self._draw_pass(
+                ctx, cx, cy, self.direction_degrees + 90, num_lines=num_lines
+            )
+
+        self._draw_pass(
+            ctx, cx, cy, self.direction_degrees, num_lines=num_lines
+        )

@@ -9,6 +9,44 @@ from ..core.matrix import Matrix
 logger = logging.getLogger(__name__)
 
 
+def normalize_grayscale(
+    gray_image: numpy.ndarray,
+    black_point: int = 0,
+    white_point: int = 255,
+) -> numpy.ndarray:
+    """
+    Normalize grayscale values based on black and white points.
+
+    Stretches the histogram so that:
+    - Values at or below black_point become 0 (black)
+    - Values at or above white_point become 255 (white)
+    - Values in between are linearly interpolated
+
+    Args:
+        gray_image: uint8 numpy array with grayscale values (0-255).
+        black_point: Input value that maps to black (0). Default 0.
+        white_point: Input value that maps to white (255). Default 255.
+
+    Returns:
+        Normalized uint8 numpy array with values 0-255.
+
+    Raises:
+        ValueError: If black_point >= white_point.
+    """
+    if black_point >= white_point:
+        raise ValueError(
+            f"black_point ({black_point}) must be less than "
+            f"white_point ({white_point})"
+        )
+
+    clipped = numpy.clip(gray_image, black_point, white_point).astype(
+        numpy.float32
+    )
+    normalized = (clipped - black_point) / (white_point - black_point) * 255.0
+
+    return normalized.astype(numpy.uint8)
+
+
 def surface_to_grayscale(
     surface: cairo.ImageSurface,
 ) -> Tuple[numpy.ndarray, numpy.ndarray]:

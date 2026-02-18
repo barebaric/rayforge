@@ -103,7 +103,7 @@ def create_depth_engrave_step(
     )
 
     step = Step(
-        typelabel=_("Engrave (Depth-Aware)"),
+        typelabel=_("Engraving Settings"),
         name=name,
     )
     step.capabilities = {ENGRAVE}

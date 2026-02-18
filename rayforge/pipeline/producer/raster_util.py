@@ -237,6 +237,7 @@ def generate_scan_lines(
     direction_degrees: float = 0.0,
     offset_x_mm: float = 0.0,
     offset_y_mm: float = 0.0,
+    global_center_mm: Optional[Tuple[float, float]] = None,
 ) -> Iterator[ScanLine]:
     """
     Generate scan lines aligned to a global grid.
@@ -256,6 +257,10 @@ def generate_scan_lines(
             90 = vertical).
         offset_x_mm: Global X offset for line alignment across chunks.
         offset_y_mm: Global Y offset for line alignment across chunks.
+        global_center_mm: Optional (x, y) global center in mm for rotation.
+            When provided, scan lines rotate around this point instead of
+            the bbox center, ensuring alignment across chunks at different
+            angles.
 
     Yields:
         ScanLine objects for each scan line that intersects the bounding box.
@@ -271,8 +276,8 @@ def generate_scan_lines(
     bbox_width_mm = (x_max - x_min + 1) / px_per_mm_x
     bbox_height_mm = (y_max - y_min + 1) / px_per_mm_y
 
-    center_x_mm = (x_min + x_max + 1) / (2 * px_per_mm_x)
-    center_y_mm = (y_min + y_max + 1) / (2 * px_per_mm_y)
+    bbox_center_x_mm = (x_min + x_max + 1) / (2 * px_per_mm_x)
+    bbox_center_y_mm = (y_min + y_max + 1) / (2 * px_per_mm_y)
 
     diag_mm = math.sqrt(bbox_width_mm**2 + bbox_height_mm**2)
 
@@ -280,22 +285,43 @@ def generate_scan_lines(
     perp_cos = math.cos(perp_angle_rad)
     perp_sin = math.sin(perp_angle_rad)
 
-    global_center_perp = (center_x_mm + offset_x_mm) * perp_cos + (
-        center_y_mm + offset_y_mm
-    ) * perp_sin
+    if global_center_mm is not None:
+        rotation_center_x_mm = global_center_mm[0]
+        rotation_center_y_mm = global_center_mm[1]
+    else:
+        rotation_center_x_mm = bbox_center_x_mm + offset_x_mm
+        rotation_center_y_mm = bbox_center_y_mm + offset_y_mm
 
-    perp_extent_start = global_center_perp - diag_mm / 2
-    perp_extent_end = global_center_perp + diag_mm / 2
+    bbox_global_x_mm = bbox_center_x_mm + offset_x_mm
+    bbox_global_y_mm = bbox_center_y_mm + offset_y_mm
+
+    rotation_center_perp = (
+        rotation_center_x_mm * perp_cos + rotation_center_y_mm * perp_sin
+    )
+
+    bbox_center_perp = (
+        bbox_global_x_mm * perp_cos + bbox_global_y_mm * perp_sin
+    )
+
+    perp_extent_start = bbox_center_perp - diag_mm / 2
+    perp_extent_end = bbox_center_perp + diag_mm / 2
 
     first_line_index = math.ceil(perp_extent_start / line_interval_mm)
     last_line_index = math.floor(perp_extent_end / line_interval_mm)
 
     for line_index in range(first_line_index, last_line_index + 1):
         line_global_perp = line_index * line_interval_mm
-        line_local_perp = line_global_perp - global_center_perp
+        line_offset_from_rotation = line_global_perp - rotation_center_perp
 
-        line_center_x_mm = center_x_mm + line_local_perp * perp_cos
-        line_center_y_mm = center_y_mm + line_local_perp * perp_sin
+        line_center_global_x_mm = (
+            rotation_center_x_mm + line_offset_from_rotation * perp_cos
+        )
+        line_center_global_y_mm = (
+            rotation_center_y_mm + line_offset_from_rotation * perp_sin
+        )
+
+        line_center_x_mm = line_center_global_x_mm - offset_x_mm
+        line_center_y_mm = line_center_global_y_mm - offset_y_mm
 
         half_diag = diag_mm / 2
         start_x_mm = line_center_x_mm - half_diag * cos_a
