@@ -8,7 +8,7 @@ APP_VERSION=${1:-$(git describe --tags --always || echo "v0.0.0-local")}
 
 # Ensure the MSYS2 environment is configured.
 if [ ! -f .msys2_env ]; then
-    echo "FATAL: .msys2_env file not found. Please run 'bash scripts/win_setup.sh' first."
+    echo "FATAL: .msys2_env file not found. Please run 'bash scripts/win/win_setup.sh' first."
     exit 1
 fi
 
@@ -29,7 +29,7 @@ echo "${APP_VERSION}" > rayforge/version.txt
 # STEP 1: Generate .ico file from SVG
 # ----------------------------------------------------
 echo "Creating application icon..."
-bash scripts/win_create_icon.sh
+bash scripts/win/win_create_icon.sh
 
 # ----------------------------------------------------
 # STEP 2: Configure GTK Theme for the bundle
@@ -92,6 +92,6 @@ makensis -V2 \
   -DAPP_DIR_NAME="${BUNDLE_NAME}" \
   -DEXECUTABLE_NAME="${BUNDLE_NAME}.exe" \
   -DICON_FILE="rayforge.ico" \
-  scripts/win_installer.nsi
+  scripts/win/win_installer.nsi
 
 echo "✅ Installer build complete: dist/${INSTALLER_EXE_NAME}"

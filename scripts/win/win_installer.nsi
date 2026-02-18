@@ -25,11 +25,11 @@ SetCompressor lzma ; Use modern, efficient compression
 
 ; Installer attributes
 Name "${PRODUCT_NAME} ${APP_VERSION}"
-OutFile "..\dist\rayforge-v${APP_VERSION}-installer.exe"
+OutFile "..\..\dist\rayforge-v${APP_VERSION}-installer.exe"
 InstallDir "$PROGRAMFILES64\${PRODUCT_NAME}"
 InstallDirRegKey HKLM "Software\${PRODUCT_NAME}" "Install_Dir"
-Icon "..\${ICON_FILE}"
-UninstallIcon "..\${ICON_FILE}"
+Icon "..\..\${ICON_FILE}"
+UninstallIcon "..\..\${ICON_FILE}"
 
 ;--------------------------------
 ; Pages
@@ -46,7 +46,7 @@ Section "MainSection" SEC01
   SetOutPath "$INSTDIR"
   
   ; Copy all files from the PyInstaller output directory
-  File /r "..\dist\${APP_DIR_NAME}\*.*"
+  File /r "..\..\dist\${APP_DIR_NAME}\*.*"
   
   ; Store installation folder
   WriteRegStr HKLM "Software\${PRODUCT_NAME}" "Install_Dir" "$INSTDIR"

@@ -4,7 +4,7 @@ set -e
 
 # Ensure the MSYS2 environment is configured.
 if [ ! -f .msys2_env ]; then
-    echo "FATAL: .msys2_env file not found. Please run 'bash scripts/win_setup.sh' first."
+    echo "FATAL: .msys2_env file not found. Please run 'bash scripts/win/win_setup.sh' first."
     exit 1
 fi
 
