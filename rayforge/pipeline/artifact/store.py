@@ -45,7 +45,8 @@ Method Usage Guide
 from __future__ import annotations
 import uuid
 import logging
-from typing import Dict, Optional, TYPE_CHECKING
+from contextlib import contextmanager
+from typing import Dict, Optional, Generator, Any, TYPE_CHECKING
 from multiprocessing import shared_memory
 import numpy as np
 from ...shared.util.debug import safe_caller_stack
@@ -136,6 +137,40 @@ class ArtifactStore:
             )
         except Exception as e:
             logger.error(f"Error adopting shared memory block {shm_name}: {e}")
+
+    @contextmanager
+    def safe_adoption(
+        self, handle_dict: Dict[str, Any]
+    ) -> Generator[BaseArtifactHandle, None, None]:
+        """
+        Adopts a handle from a dictionary with automatic rollback on error.
+
+        If the code executing within this context manager throws an exception,
+        the adopted handle is immediately released (unlinked/destroyed).
+        If the block completes successfully, the handle is kept and remains
+        adopted.
+
+        Args:
+            handle_dict: The serialized handle dictionary.
+
+        Yields:
+            The adopted BaseArtifactHandle.
+        """
+        from .handle import create_handle_from_dict
+
+        handle = create_handle_from_dict(handle_dict)
+        self.adopt(handle)
+        committed = False
+        try:
+            yield handle
+            committed = True
+        finally:
+            if not committed:
+                logger.warning(
+                    f"Safe adoption rolled back (released) "
+                    f"for {handle.shm_name}"
+                )
+                self.release(handle)
 
     def put(
         self,

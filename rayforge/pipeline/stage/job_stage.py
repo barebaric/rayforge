@@ -46,28 +46,6 @@ class JobPipelineStage(PipelineStage):
         """Check if a job generation is currently in progress."""
         return self._job_running
 
-    def _adopt_artifact(
-        self, data: dict, job_key: ArtifactKey
-    ) -> "BaseArtifactHandle":
-        """
-        Adopt a job artifact from the subprocess.
-
-        Args:
-            data: The event data containing the handle dictionary.
-            job_key: The ArtifactKey for this job.
-
-        Returns:
-            The adopted JobArtifactHandle.
-
-        Raises:
-            TypeError: If the handle is not a JobArtifactHandle.
-        """
-        handle_dict = data["handle_dict"]
-        handle = self._artifact_manager.adopt_artifact(job_key, handle_dict)
-        if not isinstance(handle, JobArtifactHandle):
-            raise TypeError("Expected a JobArtifactHandle")
-        return handle
-
     def handle_task_event(
         self,
         task: "Task",
@@ -108,14 +86,20 @@ class JobPipelineStage(PipelineStage):
             return
 
         try:
-            handle = self._adopt_artifact(data, received_job_key)
-            self._artifact_manager.cache_handle(
-                received_job_key, handle, generation_id
-            )
-            self._emit_node_state(received_job_key, NodeState.VALID)
-            logger.debug("Adopted job artifact")
+            with self._artifact_manager.safe_adoption(
+                received_job_key, data["handle_dict"]
+            ) as handle:
+                if not isinstance(handle, JobArtifactHandle):
+                    raise TypeError("Expected a JobArtifactHandle")
+                self._artifact_manager.cache_handle(
+                    received_job_key, handle, generation_id
+                )
+                self._emit_node_state(received_job_key, NodeState.VALID)
+                logger.debug("Adopted job artifact")
         except Exception as e:
-            logger.error(f"Error handling job artifact event: {e}")
+            logger.error(
+                f"Error handling job artifact event: {e}", exc_info=True
+            )
 
     def on_task_complete(
         self,

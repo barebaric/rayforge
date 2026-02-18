@@ -101,7 +101,11 @@ def make_workpiece_artifact_in_subprocess(
         if acked:
             artifact_store.forget(chunk_handle)
         else:
-            logger.warning("Chunk not acknowledged, keeping handle open")
+            logger.warning(
+                "Chunk not acknowledged (NACK/Timeout). "
+                "Releasing handle to prevent leak."
+            )
+            artifact_store.release(chunk_handle)
 
     final_artifact = compute_workpiece_artifact(
         workpiece=workpiece,
@@ -129,7 +133,7 @@ def make_workpiece_artifact_in_subprocess(
 
     # 2. Inter-process handoff: Send handle to main process and wait.
     # The main process will adopt the handle via
-    # ArtifactManager.adopt_handle().
+    # ArtifactManager.safe_adoption().
     # On Windows, shared memory is destroyed when all handles are closed,
     # so we must wait for adoption before forgetting our reference.
     acked = proxy.send_event_and_wait(
@@ -145,8 +149,9 @@ def make_workpiece_artifact_in_subprocess(
         artifact_store.forget(handle)
     else:
         logger.warning(
-            "Artifact not acknowledged, keeping handle open. "
-            "This may cause memory pressure."
+            "Artifact not acknowledged (NACK/Timeout). Releasing handle "
+            "to prevent leak."
         )
+        artifact_store.release(handle)
 
     return generation_id

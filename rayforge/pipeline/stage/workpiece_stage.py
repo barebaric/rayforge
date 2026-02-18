@@ -436,22 +436,23 @@ class WorkPiecePipelineStage(PipelineStage):
 
         try:
             if handle_dict is None:
-                handle = None
-            else:
-                handle = self._artifact_manager.adopt_artifact(
-                    key, handle_dict
-                )
-
-            if event_name == "artifact_created":
-                self.handle_artifact_created(
-                    key, ledger_key, handle, generation_id, step_uid
-                )
+                if event_name == "artifact_created":
+                    self.handle_artifact_created(
+                        key, ledger_key, None, generation_id, step_uid
+                    )
                 return
 
-            if event_name == "visual_chunk_ready":
-                self.handle_visual_chunk_ready(
-                    key, handle, generation_id, step_uid
-                )
+            with self._artifact_manager.safe_adoption(
+                key, handle_dict
+            ) as handle:
+                if event_name == "artifact_created":
+                    self.handle_artifact_created(
+                        key, ledger_key, handle, generation_id, step_uid
+                    )
+                elif event_name == "visual_chunk_ready":
+                    self.handle_visual_chunk_ready(
+                        key, handle, generation_id, step_uid
+                    )
         except Exception as e:
             logger.error(
                 f"Failed to process event '{event_name}': {e}", exc_info=True

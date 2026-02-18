@@ -247,6 +247,30 @@ class ArtifactManager:
             generation_id=generation_id,
         )
 
+    @contextmanager
+    def safe_adoption(
+        self,
+        key: ArtifactKey,
+        handle_dict: Dict[str, Any],
+    ) -> Generator[BaseArtifactHandle, None, None]:
+        """
+        Adopts an artifact from a dictionary with automatic rollback on error.
+
+        If the code executing within this context manager throws an exception,
+        the adopted handle is immediately released (unlinked/destroyed).
+        If the block completes successfully, the handle is kept and remains
+        adopted.
+
+        Args:
+            key: The key context for logging.
+            handle_dict: The serialized handle dictionary.
+
+        Yields:
+            The adopted BaseArtifactHandle.
+        """
+        with self._store.safe_adoption(handle_dict) as handle:
+            yield handle
+
     def adopt_artifact(
         self,
         key: ArtifactKey,
@@ -254,6 +278,9 @@ class ArtifactManager:
     ) -> BaseArtifactHandle:
         """
         Adopts an artifact from a subprocess and deserializes the handle.
+
+        Note: `safe_adoption` context manager is preferred for exception-safe
+        handling, but this remains available for legacy/direct use.
 
         This method does NOT cache the handle. It serves as a
         factory for stages to acquire handles from raw dictionaries.

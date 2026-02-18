@@ -90,7 +90,11 @@ def make_job_artifact_in_subprocess(
         logger.debug("Job artifact acknowledged, forgetting handle.")
         artifact_store.forget(final_handle)
     else:
-        logger.warning("Job artifact not acknowledged, keeping handle open")
+        logger.warning(
+            "Job artifact not acknowledged (NACK/Timeout). "
+            "Releasing handle to prevent leak."
+        )
+        artifact_store.release(final_handle)
 
     proxy.set_progress(1.0)
     proxy.set_message(_("Job finalization complete"))

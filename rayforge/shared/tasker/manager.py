@@ -411,23 +411,23 @@ class TaskManager:
                 # If not, check if it's for a recently replaced (zombie) task.
                 task = self._zombie_tasks.get(task_id)
 
+        signal_key = f"{task_id}:{event_name}"
+
         if task:
             logger.debug(
                 f"TaskManager: Dispatching event '{event_name}' for task "
                 f"'{task.key}' (task_id={task_id})."
             )
             task.event_received.send(task, event_name=event_name, data=data)
+            # Signal to the worker that adoption is complete.
+            adoption_signals[signal_key] = True
         else:
             logger.warning(
                 f"Received event '{event_name}' for unknown or fully cleaned "
-                f"up task key '{key}' (id: {task_id}). Ignoring."
+                f"up task key '{key}' (id: {task_id}). NACKing."
             )
-
-        # Signal to the worker that adoption is complete.
-        # This is critical on Windows where shared memory is
-        # destroyed when all handles are closed.
-        signal_key = f"{task_id}:{event_name}"
-        adoption_signals[signal_key] = True
+            # Signal NACK so the worker knows to release/destroy the resource
+            adoption_signals[signal_key] = False
 
     def _finalize_pooled_task(
         self,
