@@ -26,6 +26,29 @@ class SignalTracker:
         self.calls.append({"sender": sender, "kwargs": kwargs})
 
 
+class StateAwaiter:
+    """Helper to wait for a specific device state."""
+
+    def __init__(self, driver, expected_status):
+        self.driver = driver
+        self.expected_status = expected_status
+        self.event = asyncio.Event()
+        self._signal = driver.state_changed.connect(
+            self._on_state_changed, weak=False
+        )
+
+    def _on_state_changed(self, sender, **kwargs):
+        state = kwargs.get("state")
+        if state and state.status == self.expected_status:
+            self.event.set()
+
+    async def wait(self, timeout=5.0):
+        try:
+            await asyncio.wait_for(self.event.wait(), timeout)
+        finally:
+            self.driver.state_changed.disconnect(self._signal)
+
+
 class MockSmoothieServer:
     """
     A mock Telnet server that behaves like a Smoothieware controller.
@@ -228,14 +251,18 @@ class TestSmoothieDriver:
         assert len(smoothie_server._tasks) == 0
 
         await driver.connect()
-        await asyncio.sleep(0.1)  # Allow time for connection
+
+        awaiter = StateAwaiter(driver, DeviceStatus.IDLE)
+        await awaiter.wait()
 
         assert driver._connection_task is not None
         assert driver.telnet.is_connected
         assert len(smoothie_server._tasks) >= 1
 
         await driver.cleanup()
-        await asyncio.sleep(0.1)  # Allow time for disconnect
+
+        await asyncio.wait_for(driver._connection_task, timeout=5.0)
+
         assert driver._connection_task.done()
 
     @pytest.mark.asyncio

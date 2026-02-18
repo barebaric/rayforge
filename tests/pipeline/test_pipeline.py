@@ -346,6 +346,13 @@ class TestPipeline:
             "Pipeline should be idle after all tasks complete"
         )
 
+        deadline = asyncio.get_running_loop().time() + 1.0
+        while (
+            mock_processing_state_handler.call_count < 2
+            and asyncio.get_running_loop().time() < deadline
+        ):
+            await asyncio.sleep(0.05)
+
         assert mock_processing_state_handler.call_count >= 2, (
             f"Expected at least 2 state changes, got "
             f"{mock_processing_state_handler.call_count}"
