@@ -67,7 +67,12 @@ class GeneralStepSettingsView(Adw.PreferencesPage):
                     )
                     self.add(widget)
 
-        general_group = Adw.PreferencesGroup(title=_("General Settings"))
+        general_group = Adw.PreferencesGroup(
+            title=_("General Settings"),
+            description=_(
+                "Power, speed, and laser head selection for this operation."
+            ),
+        )
         self.add(general_group)
 
         # Recipe Control Widget

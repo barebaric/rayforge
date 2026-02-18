@@ -17,35 +17,6 @@ GRBL settings control:
 
 These settings are stored on your controller (not in Rayforge) and persist across power cycles.
 
-<!-- SCREENSHOT
-id: ui-grbl-settings-panel
-type: screenshot
-size: custom
-region:
-  x: 0
-  y: 0
-  width: 0
-  height: 0
-description: |
-  GRBL settings panel showing:
-  - Category tabs (Stepper, Limits & Homing, Laser, Calibration, etc.)
-  - Settings list with current values
-  - Edit/Reset buttons
-  - Apply changes button
-  - Refresh from device button
-setup:
-  - action: connect_to_device
-  - action: open_preferences
-  - action: navigate_to
-    section: machine
-  - action: open_grbl_settings
-  - action: capture
-    region: settings_panel
-filename: UI-GRBLSettings.png
-alt: "GRBL settings configuration panel"
--->
-
-<!-- ![GRBL settings panel](../images/UI-GRBL-Settings.png) -->
 
 ## Accessing GRBL Settings
 

@@ -277,6 +277,7 @@ def create_patched_app_class(
     machine_page: Optional[str] = None,
     step_page: Optional[str] = None,
     step_index: Optional[int] = None,
+    engrave_mode: Optional[str] = None,
 ):
     """
     Create a patched App class that activates simulation mode and takes a
@@ -289,6 +290,8 @@ def create_patched_app_class(
         step_page: Step settings dialog page to capture (for "step-settings"
             type).
         step_index: Index of the step to capture (for "step-settings" type).
+        engrave_mode: Engrave mode to set for engrave steps (e.g.,
+            "POWER_MODULATION", "CONSTANT_POWER", "DITHER", "MULTI_PASS").
 
     Returns:
         The patched App class.
@@ -306,6 +309,7 @@ def create_patched_app_class(
             self._machine_page = machine_page
             self._step_page = step_page
             self._step_index = step_index
+            self._engrave_mode = engrave_mode
 
         def _schedule_delayed_actions(self, win):
             """Schedule delayed actions for simulation activation and
@@ -395,7 +399,15 @@ def create_patched_app_class(
                 """Take the screenshot and quit."""
                 if not self._screenshot_taken:
                     step_type = self._get_step_type_name(win)
-                    output_name = f"step-{step_type}-{self._step_page}.png"
+                    mode_suffix = (
+                        f"-{self._engrave_mode.lower()}"
+                        if self._engrave_mode and step_type == "engrave"
+                        else ""
+                    )
+                    output_name = (
+                        f"step-{step_type}{mode_suffix}-"
+                        f"{self._step_page}.png"
+                    )
                     take_screenshot(output_name)
                     self._screenshot_taken = True
                 self._quit_application()
@@ -416,8 +428,8 @@ def create_patched_app_class(
             get_context().initialize_full_context()
 
             win = MainWindow(application=self)
-            win.set_default_size(1600, 1100)
-            logger.info("Window size set to 1600x1100")
+            win.set_default_size(2400, 1650)
+            logger.info("Window size set to 2400x1650")
 
             # For machine and step-settings screenshots, load a file if
             # provided. Use load_project_from_path for .ryp files,
@@ -493,6 +505,24 @@ def create_patched_app_class(
                     )
                     return None
 
+                from rayforge.pipeline.producer.raster import DepthMode
+
+                if (
+                    self._engrave_mode
+                    and step.typelabel == _("Engrave")
+                ):
+                    producer_dict = step.opsproducer_dict
+                    params = producer_dict.setdefault("params", {})
+                    try:
+                        mode = DepthMode[self._engrave_mode]
+                        params["depth_mode"] = mode.name
+                        msg = f"Set engrave mode to: {self._engrave_mode}"
+                        logger.info(msg)
+                    except KeyError:
+                        logger.warning(
+                            f"Invalid engrave mode: {self._engrave_mode}"
+                        )
+
                 from rayforge.ui_gtk.doceditor.step_settings_dialog import (
                     StepSettingsDialog,
                 )
@@ -503,6 +533,7 @@ def create_patched_app_class(
                     transient_for=win,
                     initial_page=self._step_page,
                 )
+                dialog.set_default_size(600, 900)
                 dialog.present()
                 msg = f"Opened step dialog for step: {step.name}"
                 logger.info(msg)
@@ -675,6 +706,17 @@ def main():
         default=0,
         help="Index of the step to capture (default: 0)",
     )
+    parser.add_argument(
+        "--engrave-mode",
+        default=None,
+        choices=[
+            "POWER_MODULATION",
+            "CONSTANT_POWER",
+            "DITHER",
+            "MULTI_PASS",
+        ],
+        help="Engrave mode to set for engrave steps",
+    )
 
     args = parser.parse_args()
 
@@ -698,6 +740,7 @@ def main():
         machine_page=args.machine_page,
         step_page=args.step_page,
         step_index=args.step_index,
+        engrave_mode=args.engrave_mode,
     )
     app = PatchedApp(args)
     exit_code = app.run(None)
