@@ -666,7 +666,7 @@ class WorkPiece(DocItem):
         """
         Applies post-processing based on a RenderSpecification.
         """
-        from ..image import image_util
+        from ..image import util
 
         processed_image = image
         target_w, target_h = target_size
@@ -697,7 +697,7 @@ class WorkPiece(DocItem):
             scaled_w = int(crop_w * scale_x)
             scaled_h = int(crop_h * scale_y)
 
-            processed_image = image_util.safe_crop(
+            processed_image = util.safe_crop(
                 processed_image, scaled_x, scaled_y, scaled_w, scaled_h
             )
             if not processed_image:
@@ -707,7 +707,7 @@ class WorkPiece(DocItem):
         if spec.apply_mask:
             mask_geo = self._boundaries_y_down
             if mask_geo and not mask_geo.is_empty():
-                processed_image = image_util.apply_mask_to_vips_image(
+                processed_image = util.apply_mask_to_vips_image(
                     processed_image, mask_geo
                 )
                 if not processed_image:
@@ -960,16 +960,16 @@ class WorkPiece(DocItem):
     def render_to_pixels(
         self, width: int, height: int
     ) -> Optional[cairo.ImageSurface]:
-        from ..image import image_util
+        from ..image import util
 
         # This now uses the central hub for rendering.
         final_image = self.get_vips_image(width, height)
         if not final_image:
             return None
-        normalized_image = image_util.normalize_to_rgba(final_image)
+        normalized_image = util.normalize_to_rgba(final_image)
         if not normalized_image:
             return None
-        return image_util.vips_rgba_to_cairo_surface(normalized_image)
+        return util.vips_rgba_to_cairo_surface(normalized_image)
 
     def render_for_ops(
         self,
@@ -1035,7 +1035,7 @@ class WorkPiece(DocItem):
     ) -> Generator[Tuple[cairo.ImageSurface, Tuple[float, float]], None, None]:
         """Renders in chunks at the workpiece's current size.
         Yields nothing if size is not valid."""
-        from ..image import image_util
+        from ..image import util
 
         # Use the final world-space size for rendering resolution.
         current_size = self.size
@@ -1086,14 +1086,14 @@ class WorkPiece(DocItem):
 
                 chunk: pyvips.Image = vips_image.crop(left, top, width, height)
 
-                normalized_chunk = image_util.normalize_to_rgba(chunk)
+                normalized_chunk = util.normalize_to_rgba(chunk)
                 if not normalized_chunk:
                     logger.warning(
                         f"Could not normalize chunk at ({left},{top})"
                     )
                     continue
 
-                surface = image_util.vips_rgba_to_cairo_surface(
+                surface = util.vips_rgba_to_cairo_surface(
                     normalized_chunk
                 )
                 yield surface, (left, top)

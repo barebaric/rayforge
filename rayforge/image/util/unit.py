@@ -1,8 +1,10 @@
+"""
+Unit conversion and layout utilities.
+"""
+
 import math
 import re
 
-# Cairo has a hard limit on surface dimensions, often 32767.
-# We use a slightly more conservative value to be safe.
 CAIRO_MAX_DIMENSION = 16384
 
 
@@ -35,7 +37,7 @@ def parse_length(s):
 def calculate_chunk_layout(
     real_width, real_height, max_chunk_width, max_chunk_height, max_memory_size
 ):
-    bytes_per_pixel = 4  # cairo.FORMAT_ARGB32
+    bytes_per_pixel = 4
 
     effective_max_width = min(
         max_chunk_width

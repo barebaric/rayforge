@@ -12,7 +12,7 @@ from ...core.vectorization_spec import (
 from ..base_importer import (
     ImporterFeature,
 )
-from .. import image_util
+from .. import util
 from ..structures import ParsingResult, LayerGeometry, VectorizationResult
 from ..tracing import trace_surface, VTRACER_PIXEL_LIMIT
 from .renderer import SVG_RENDERER
@@ -150,12 +150,12 @@ class SvgTraceImporter(SvgImporterBase):
         self.traced_artefacts["width_px"] = vips_image.width
         self.traced_artefacts["height_px"] = vips_image.height
 
-        normalized_vips = image_util.normalize_to_rgba(vips_image)
+        normalized_vips = util.normalize_to_rgba(vips_image)
         if not normalized_vips:
             self.add_error(_("Failed to normalize image data."))
             return VectorizationResult({}, parse_result)
 
-        surface = image_util.vips_rgba_to_cairo_surface(normalized_vips)
+        surface = util.vips_rgba_to_cairo_surface(normalized_vips)
 
         geometries = trace_surface(surface, spec)
 
@@ -167,7 +167,7 @@ class SvgTraceImporter(SvgImporterBase):
 
         rendered_width = vips_image.width
         rendered_height = vips_image.height
-        mm_per_px_x, mm_per_px_y = image_util.get_mm_per_pixel(vips_image)
+        mm_per_px_x, mm_per_px_y = util.get_mm_per_pixel(vips_image)
 
         # document_bounds contains the offset (vb_x, vb_y) in native units.
         offset_x_native = document_bounds[0]
