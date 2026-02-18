@@ -7,6 +7,7 @@ from ...core.undo.list_cmd import ListItemCommand, ReorderListCommand
 from ..shared.draglist import DragListBox
 from ..shared.expander import Expander
 from .step_box import StepBox
+from .step_settings_dialog import StepSettingsDialog
 from ..shared.popover_menu import PopoverMenu
 
 if TYPE_CHECKING:
@@ -185,6 +186,15 @@ class WorkflowView(Expander):
                 name=_("Add step '{name}'").format(name=new_step.name),
             )
             self.workflow.doc.history_manager.execute(command)
+
+            # Open the step settings dialog for the new step
+            parent_window = self.get_root()
+            dialog = StepSettingsDialog(
+                self.editor,
+                new_step,
+                transient_for=parent_window,
+            )
+            dialog.present()
 
     def on_button_delete_clicked(self, sender, step, **kwargs):
         """Handles deletion of a step with an undoable command."""
