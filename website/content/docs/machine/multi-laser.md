@@ -17,29 +17,6 @@ Rayforge handles multi-laser machines through:
 - **Tool selection**: Switch between lasers via G-code commands
 - **Per-operation assignment**: Choose which laser executes each operation
 
-<!-- SCREENSHOT
-id: ui-multi-laser-config
-type: screenshot
-size: dialog
-description: |
-  Multi-laser configuration dialog showing:
-  - List of configured laser heads
-  - Add/Remove head buttons
-  - Head properties for each laser
-  - Tool number assignments
-setup:
-  - action: open_preferences
-  - action: navigate_to
-    section: machine
-  - action: open_heads_config
-  - action: add_second_head
-  - action: capture
-    region: dialog
-filename: UI-MultiLaser-Config.png
-alt: "Multi-laser configuration dialog"
--->
-
-<!-- ![Multi-laser configuration](../images/UI-Multi-Laser-Config.png) -->
 
 ## Common Multi-Laser Configurations
 
@@ -113,31 +90,6 @@ Each laser head needs individual configuration in your machine profile.
 
 ### Laser Head Properties
 
-<!-- SCREENSHOT
-id: ui-single-head-config
-type: screenshot
-size: dialog
-description: |
-  Single laser head configuration showing:
-  - Head name field
-  - Tool number selector (T0, T1, T2, etc.)
-  - Max power setting
-  - Frame power setting
-  - Spot size X/Y inputs
-setup:
-  - action: open_preferences
-  - action: navigate_to
-    section: machine
-  - action: open_heads_config
-  - action: select_head
-    index: 1
-  - action: capture
-    region: dialog
-filename: UI-SingleHead-Config.png
-alt: "Single laser head configuration dialog"
--->
-
-<!-- ![Single head configuration](../images/UI-Single-Head-Config.png) -->
 
 **Head Name:**
 - Descriptive label for this laser
@@ -238,34 +190,6 @@ When creating operations, choose which laser should execute it.
 
 Each operation has a "Laser Head" selector:
 
-<!-- SCREENSHOT
-id: ui-operation-head-selector
-type: screenshot
-size: custom
-region:
-  x: 0
-  y: 0
-  width: 0
-  height: 0
-description: |
-  Operation settings showing laser head selector with:
-  - Dropdown showing available heads
-  - Selected head highlighted
-  - Icon indicating which tool
-setup:
-  - action: create_shape
-    type: rectangle
-  - action: add_operation
-    type: contour
-  - action: open_operation_settings
-  - action: show_head_selector
-  - action: capture
-    region: settings_panel
-filename: UI-OperationHead-Selector.png
-alt: "Laser head selector in operation settings"
--->
-
-<!-- ![Operation head selector](../images/UI-Operation-Head-Selector.png) -->
 
 **Choosing the right head:**
 
@@ -366,20 +290,6 @@ Different lasers may not be perfectly co-located:
 4. Measure offset between patterns
 5. Adjust design placement or configure head offset
 
-<!-- SCREENSHOT
-id: ref-multi-laser-alignment-test
-type: screenshot
-size: full-window
-description: |
-  Test pattern showing alignment check for multi-laser setup:
-  - Crosshairs engraved by Tool 0 (blue)
-  - Crosshairs engraved by Tool 1 (red overlay)
-  - Measurement annotations showing X/Y offset
-filename: Ref-MultiLaser-Alignment.png
-alt: "Multi-laser alignment test pattern"
--->
-
-<!-- ![Alignment test pattern](../images/Ref-Multi-Laser-Alignment.png) -->
 
 ### Power Calibration
 

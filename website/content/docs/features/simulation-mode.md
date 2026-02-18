@@ -13,31 +13,6 @@ Simulation Mode helps you:
 - **Catch errors early** - Spot issues before wasting material
 - **Understand timing** - See how long different operations take
 
-<!-- SCREENSHOT
-id: feature-simulation-mode-overview
-type: screenshot
-size: full-window
-description: |
-  Simulation mode active showing a material test grid with speed heatmap.
-  The visualization shows blue (slow) to red (fast) gradient across the
-  test cells. Laser head indicator is visible at current position.
-  Playback controls overlay shown at bottom with progress slider.
-setup:
-  - action: open_example
-    name: material-test-grid-5x5
-  - action: press_key
-    key: F7
-  - action: play_simulation
-  - action: set_simulation_progress
-    percent: 45
-  - action: pause_simulation
-  - action: capture
-    region: main_window
-filename: Ref-SimulationMode-Overview.png
-alt: "Simulation mode showing speed heatmap with playback controls"
--->
-
-<!-- ![Simulation mode overview](../images/Ref-SimulationMode-Overview.png) -->
 
 ## Activating Simulation Mode
 
@@ -74,34 +49,6 @@ The heatmap is **normalized** to your job's actual speed range:
 - If your job runs 100-1000 mm/min, blue=100, red=1000
 - If your job runs 5000-10000 mm/min, blue=5000, red=10000
 
-<!-- SCREENSHOT
-id: ref-simulation-heatmap-legend
-type: screenshot
-size: custom
-description: |
-  Close-up of simulation heatmap showing the color gradient from blue
-  through cyan, green, yellow to red on a curved path. Include a small
-  legend showing the color mapping.
-region:
-  x: 100
-  y: 100
-  width: 400
-  height: 300
-annotations:
-  - type: text
-    x: 150
-    y: 250
-    text: "Blue → Cyan → Green → Yellow → Red"
-    size: 12
-  - type: arrow
-    from: [120, 240]
-    to: [120, 120]
-    text: "Increasing speed"
-filename: Ref-SimulationMode-HeatmapLegend.png
-alt: "Speed heatmap color gradient legend"
--->
-
-<!-- ![Speed heatmap legend](../images/Ref-SimulationMode-HeatmapLegend.png) -->
 
 ### Power Transparency
 
@@ -130,12 +77,6 @@ The indicator moves during playback, showing exactly where the laser is in the e
 
 When simulation mode is active, playback controls appear at the bottom of the canvas:
 
-<!-- SCREENSHOT: ui-simulation-controls
-description: Simulation playback controls showing play button, progress slider at 50%, and speed range display
-filename: UI-SimulationMode-PlaybackControls.png
--->
-
-<!-- ![Simulation playback controls](../images/UI-SimulationMode-PlaybackControls.png) -->
 
 ### Play/Pause Button
 

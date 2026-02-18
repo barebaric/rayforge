@@ -8,9 +8,9 @@ Operations define how Rayforge processes your designs. Each operation type conve
 graph TB
     A[Select Objects] --> B{Choose Operation}
     B --> C[Contour]
-    B --> D[Raster]
-    B --> E[Depth]
-    B --> F[Shrink Wrap]
+    B --> D[Engrave]
+    B --> E[Shrink Wrap]
+    B --> F[Frame Outline]
 
     C --> G[Configure Settings<br/>Power, Speed, Passes]
     D --> G
@@ -25,7 +25,7 @@ graph TB
     style C fill:#2b6cb0,stroke:#3182ce,color:#fff
     style D fill:#c05621,stroke:#dd6b20,color:#fff
     style E fill:#6b46c1,stroke:#805ad5,color:#fff
-    style F fill:#276749,stroke:#38a169,color:#fff
+    style F fill:#2f855a,stroke:#38a169,color:#fff
     style J fill:#276749,stroke:#38a169,color:#fff
 ```
 
@@ -51,9 +51,9 @@ Cut along the outline of shapes and paths.
 - Holding tabs to keep pieces in place
 - Lead-in/lead-out for smooth starts and stops
 
-### [Raster Engraving](raster.md)
+### [Engrave](engrave.md)
 
-Fill areas with back-and-forth engraving lines (bi-directional scanning).
+Engrave images and filled areas with various raster engraving modes.
 
 **Best For:**
 
@@ -61,49 +61,17 @@ Fill areas with back-and-forth engraving lines (bi-directional scanning).
 - Filling large areas
 - Wood and leather engraving
 - Creating textures and patterns
+- 3D relief effects and embossing
 
 **Key Features:**
 
+- Variable Power mode for smooth grayscale engraving
+- Constant Power mode for clean black/white engraving
+- Dither mode for high-quality photo engraving
+- Multiple Depths mode for 3D relief effects
 - Overscan to eliminate endpoint burn marks
 - Cross-hatch fill for consistent coverage
-- Variable power based on image brightness
 - Line interval (spacing) control
-
-### [Dithered Raster](dither.md)
-
-Engrave images using dithering algorithms for high-quality grayscale reproduction.
-
-**Best For:**
-
-- Photo engraving with fine detail
-- Grayscale images on wood
-- Halftone-style engravings
-- High-contrast reproductions
-
-**Key Features:**
-
-- Floyd-Steinberg error diffusion dithering
-- Bayer ordered dithering (2x2, 4x4, 8x8)
-- Better tonal range than threshold-based raster
-- Ideal for photographs
-
-### [Depth Engraving](depth.md)
-
-Create 3D relief effects by varying power based on image brightness.
-
-**Best For:**
-
-- 3D effects on acrylic or coated metals
-- Grayscale photo engraving with depth
-- Embossing effects
-- Relief sculptures
-
-**Key Features:**
-
-- Depth mapping from image brightness
-- Configurable min/max depth
-- Smooth gradients
-- Compatible with grayscale images
 
 ### [Shrink Wrap](shrink-wrap.md)
 
@@ -121,6 +89,23 @@ Create efficient cutting paths around multiple objects.
 - Automatic hull calculation
 - Configurable offset distance
 - Combines multiple objects into single path
+
+### [Frame Outline](frame-outline.md)
+
+Create a simple rectangular frame around your design.
+
+**Best For:**
+
+- Adding decorative borders
+- Cutting work free from sheet
+- Simple rectangular boundaries
+- Quick framing operations
+
+**Key Features:**
+
+- Automatic bounding box calculation
+- Configurable offset/margin
+- Kerf compensation support
 
 ## Operation Workflow
 
@@ -171,9 +156,9 @@ These settings are available for all operation types:
 Additional settings vary by operation type:
 
 - **Contour**: Kerf, tabs, lead-in/lead-out
-- **Raster**: Overscan, line interval, angle
-- **Depth**: Min/max depth, smoothing
+- **Engrave**: Mode-specific settings (see Engrave page)
 - **Shrink Wrap**: Offset distance, segments
+- **Frame Outline**: Offset, cut side
 
 ## Operation Order
 
@@ -181,7 +166,7 @@ Operations execute in the order they appear in the layers panel. Reorder operati
 
 **Best Practice Order:**
 
-1. **Engraving operations** (Raster, Depth)
+1. **Engraving operations** (Engrave)
 2. **Scoring operations** (Light contour cuts)
 3. **Through-cutting operations** (Contour with full power)
 
@@ -219,7 +204,6 @@ Always test on scrap material:
 Explore each operation type for detailed information and examples:
 
 - **[Contour Cutting →](contour.md)**
-- **[Raster Engraving →](raster.md)**
-- **[Dithered Raster →](dither.md)**
-- **[Depth Engraving →](depth.md)**
+- **[Engrave →](engrave.md)**
 - **[Shrink Wrap →](shrink-wrap.md)**
+- **[Frame Outline →](frame-outline.md)**

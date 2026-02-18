@@ -383,7 +383,7 @@ Some advanced use cases may need different overscan distances:
 
 ## Related Pages
 
-- [Raster Engraving](operations/raster.md) - Raster operations that use overscan
+- [Engrave Operation](operations/engrave.md) - Engrave operations that use overscan
 - [Multi-Layer Workflow](multi-layer.md) - Organizing layers with different overscan settings
 - [Kerf Compensation](kerf.md) - Related feature for cutting accuracy
 - [Power vs Speed](../concepts/power-vs-speed.md) - Understanding speed effects on quality

@@ -1,30 +1,26 @@
 from typing import Dict, Type
 from .base import StepComponentSettingsWidget
-from .depth_engraver import DepthEngraverSettingsWidget
+from .engraver import EngraverSettingsWidget
 from .contour import ContourProducerSettingsWidget
 from .frame import FrameProducerSettingsWidget
 from .material_test_grid import MaterialTestGridSettingsWidget
 from .multipass import MultiPassSettingsWidget
 from .optimize import OptimizeSettingsWidget
 from .overscan import OverscanSettingsWidget
-from .rasterizer import RasterizerSettingsWidget
 from .shrinkwrap import ShrinkWrapProducerSettingsWidget
 from .smooth import SmoothSettingsWidget
-from .dither_rasterizer import DitherRasterizerSettingsWidget
 
 
-# This registry maps the class names of pipeline components (str)
-# to their corresponding UI widget classes (Type).
 WIDGET_REGISTRY: Dict[str, Type[StepComponentSettingsWidget]] = {
     "ContourProducer": ContourProducerSettingsWidget,
-    "DepthEngraver": DepthEngraverSettingsWidget,
-    "DitherRasterizer": DitherRasterizerSettingsWidget,
+    "DepthEngraver": EngraverSettingsWidget,
+    "DitherRasterizer": EngraverSettingsWidget,
     "FrameProducer": FrameProducerSettingsWidget,
     "MaterialTestGridProducer": MaterialTestGridSettingsWidget,
     "MultiPassTransformer": MultiPassSettingsWidget,
     "Optimize": OptimizeSettingsWidget,
     "OverscanTransformer": OverscanSettingsWidget,
-    "Rasterizer": RasterizerSettingsWidget,
+    "Rasterizer": EngraverSettingsWidget,
     "ShrinkWrapProducer": ShrinkWrapProducerSettingsWidget,
     "Smooth": SmoothSettingsWidget,
 }
@@ -32,14 +28,12 @@ WIDGET_REGISTRY: Dict[str, Type[StepComponentSettingsWidget]] = {
 __all__ = [
     "WIDGET_REGISTRY",
     "ContourProducerSettingsWidget",
-    "DepthEngraverSettingsWidget",
-    "DitherRasterizerSettingsWidget",
+    "EngraverSettingsWidget",
     "FrameProducerSettingsWidget",
     "MaterialTestGridSettingsWidget",
     "MultiPassSettingsWidget",
     "OptimizeSettingsWidget",
     "OverscanSettingsWidget",
-    "RasterizerSettingsWidget",
     "ShrinkWrapProducerSettingsWidget",
     "SmoothSettingsWidget",
     "StepComponentSettingsWidget",

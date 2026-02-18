@@ -211,7 +211,7 @@ def test_run_with_variable_power_scanlines_from_depth(
 ):
     """
     Tests overscan on a variable-power scanline, typical of output from
-    the DepthEngraver producer.
+    the Rasterizer producer in POWER_MODULATION mode.
     """
     power_vals = bytearray(range(1, 41))
     ops = Ops()
@@ -247,7 +247,7 @@ def test_preserves_state_for_scanline_commands(
     and power value padding, while preserving preceding state commands.
     """
     # Arrange: A master power setting followed by a raster section with a
-    # single ScanLine. This simulates a DepthEngraver output.
+    # single ScanLine. This simulates a Rasterizer output.
     ops = Ops()
     ops.add(SetPowerCommand(0.5))  # Master power setting
     ops.add(OpsSectionStartCommand(SectionType.RASTER_FILL, "wp_123"))

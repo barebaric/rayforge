@@ -553,3 +553,61 @@ class TestMakeTransparentExceptColor:
         assert arr[0, 0, 1] == 100
         assert arr[0, 0, 2] == 200
         assert arr[0, 0, 3] == 0
+
+
+class TestNormalizeGrayscale:
+    """Tests for `normalize_grayscale`."""
+
+    def test_default_params_no_change(self):
+        gray = np.array([[0, 128, 255]], dtype=np.uint8)
+        result = util.normalize_grayscale(gray)
+        np.testing.assert_array_equal(result, gray)
+
+    def test_stretches_contrast(self):
+        gray = np.array([[50, 100, 150]], dtype=np.uint8)
+        result = util.normalize_grayscale(
+            gray, black_point=50, white_point=150
+        )
+        assert result[0, 0] == 0
+        assert result[0, 1] == 127
+        assert result[0, 2] == 255
+
+    def test_clips_below_black_point(self):
+        gray = np.array([[0, 25, 50]], dtype=np.uint8)
+        result = util.normalize_grayscale(
+            gray, black_point=50, white_point=200
+        )
+        np.testing.assert_array_equal(result[0, :2], [0, 0])
+
+    def test_clips_above_white_point(self):
+        gray = np.array([[200, 225, 255]], dtype=np.uint8)
+        result = util.normalize_grayscale(gray, black_point=0, white_point=200)
+        np.testing.assert_array_equal(result[0, :], [255, 255, 255])
+
+    def test_raises_for_invalid_points(self):
+        gray = np.array([[128]], dtype=np.uint8)
+        with pytest.raises(ValueError, match="must be less than"):
+            util.normalize_grayscale(gray, black_point=128, white_point=128)
+
+        with pytest.raises(ValueError, match="must be less than"):
+            util.normalize_grayscale(gray, black_point=200, white_point=100)
+
+    def test_preserves_shape(self):
+        gray = np.random.randint(0, 256, (10, 20), dtype=np.uint8)
+        result = util.normalize_grayscale(
+            gray, black_point=30, white_point=200
+        )
+        assert result.shape == gray.shape
+
+    def test_extreme_stretch(self):
+        gray = np.array([[100]], dtype=np.uint8)
+        result = util.normalize_grayscale(
+            gray, black_point=100, white_point=101
+        )
+        assert result[0, 0] == 0
+
+        gray2 = np.array([[101]], dtype=np.uint8)
+        result2 = util.normalize_grayscale(
+            gray2, black_point=100, white_point=101
+        )
+        assert result2[0, 0] == 255

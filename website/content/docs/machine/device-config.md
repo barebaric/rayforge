@@ -11,28 +11,6 @@ Device configuration includes:
 - **G-code dialect**: Command language variant (GRBL, Smoothie, Marlin)
 - **Connection behavior**: Auto-homing, alarm clearing, retry logic
 
-<!-- SCREENSHOT
-id: ui-device-config-dialog
-type: screenshot
-size: dialog
-description: |
-  Device configuration dialog showing:
-  - Driver type selector
-  - Connection parameters (varies by driver)
-  - Test connection button
-  - Advanced settings section
-setup:
-  - action: open_preferences
-  - action: navigate_to
-    section: machine
-  - action: open_device_config
-  - action: capture
-    region: dialog
-filename: UI-DeviceConfig.png
-alt: "Device configuration dialog"
--->
-
-<!-- ![Device configuration dialog](../images/UI-Device-Config.png) -->
 
 ## Available Drivers
 
@@ -53,32 +31,6 @@ Rayforge supports multiple communication methods to connect to different control
 
 **Configuration parameters:**
 
-<!-- SCREENSHOT
-id: ui-grbl-serial-settings
-type: screenshot
-size: custom
-region:
-  x: 0
-  y: 0
-  width: 0
-  height: 0
-description: |
-  GRBL Serial driver configuration showing:
-  - Port selection dropdown (/dev/ttyUSB0, /dev/ttyACM0, etc.)
-  - Baud rate selector (115200 selected)
-setup:
-  - action: open_preferences
-  - action: navigate_to
-    section: machine
-  - action: select_driver
-    driver: GrblSerialDriver
-  - action: capture
-    region: driver_settings
-filename: UI-GRBLSerial-Settings.png
-alt: "GRBL Serial driver settings"
--->
-
-<!-- ![GRBL Serial settings](../images/UI-GRBL-Serial-Settings.png) -->
 
 **Port:**
 - Serial port device path
@@ -336,31 +288,6 @@ After configuring driver settings:
 3. Success: Green indicator, "Connected" status
 4. Failure: Error message with diagnostic info
 
-<!-- SCREENSHOT
-id: ui-connection-test-success
-type: screenshot
-size: dialog
-description: |
-  Connection test dialog showing successful connection with:
-  - Green checkmark
-  - "Connected successfully" message
-  - Device info (GRBL version, etc.)
-setup:
-  - action: open_device_config
-  - action: configure_driver
-    driver: GrblSerialDriver
-    port: /dev/ttyUSB0
-    baudrate: 115200
-  - action: click
-    button: test_connection
-  - action: wait_for_connection
-  - action: capture
-    region: dialog
-filename: UI-ConnectionTest-Success.png
-alt: "Successful connection test dialog"
--->
-
-<!-- ![Connection test success](../images/UI-Connection-Test-Success.png) -->
 
 ### Verifying Communication
 
