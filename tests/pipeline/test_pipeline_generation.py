@@ -27,7 +27,7 @@ from rayforge.pipeline.stage.step_runner import (
 from rayforge.pipeline.stage.workpiece_runner import (
     make_workpiece_artifact_in_subprocess,
 )
-from rayforge.pipeline.steps import create_contour_step, create_raster_step
+from rayforge.pipeline.steps import create_contour_step, create_engrave_step
 
 
 logger = logging.getLogger(__name__)
@@ -804,7 +804,7 @@ class TestPipelineGeneration:
         # Arrange
         layer = self._setup_doc_with_workpiece(doc, real_workpiece)
         assert layer.workflow is not None
-        step = create_raster_step(context_initializer)
+        step = create_engrave_step(context_initializer)
         layer.workflow.add_step(step)
 
         pipeline = Pipeline(

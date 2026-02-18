@@ -44,10 +44,9 @@ nav:
           - Operations:
               - docs/features/operations/index.md
               - Contour: docs/features/operations/contour.md
-              - Raster: docs/features/operations/raster.md
-              - Dither: docs/features/operations/dither.md
-              - Depth: docs/features/operations/depth.md
+              - Engrave: docs/features/operations/engrave.md
               - Shrink Wrap: docs/features/operations/shrink-wrap.md
+              - Frame Outline: docs/features/operations/frame-outline.md
               - Material Test Grid: docs/features/operations/material-test-grid.md
           - Parametric 2D Sketcher: docs/features/sketcher.md
           - Multi-Layer: docs/features/multi-layer.md

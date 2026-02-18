@@ -26,6 +26,7 @@ Rayforge is control software - it cannot override the physical safety requiremen
 **Why:** Lasers can ignite materials instantly. A small flame can become a serious fire in seconds.
 
 **Always:**
+
 - Stay within arm's reach of emergency stop
 - Watch the cutting process continuously
 - Keep fire extinguisher accessible
@@ -33,12 +34,14 @@ Rayforge is control software - it cannot override the physical safety requiremen
 ### Fire Safety
 
 **Before every job:**
+
 - Clear workspace of flammable materials
 - Remove debris from cutting bed
 - Have fire extinguisher ready (ABC or CO2 type)
 - Know where emergency stop button is
 
 **If fire occurs:**
+
 1. Press emergency stop immediately
 2. Keep lid closed if fire is small (starves oxygen)
 3. Use fire extinguisher if fire continues
@@ -49,6 +52,7 @@ Rayforge is control software - it cannot override the physical safety requiremen
 **All laser cutting produces toxic fumes.** Proper ventilation is not optional.
 
 **Requirements:**
+
 - Exhaust system venting to outside (not recirculated)
 - Sufficient airflow for your machine size
 - Running during all laser operations
@@ -60,13 +64,13 @@ Rayforge is control software - it cannot override the physical safety requiremen
 
 **Never cut or engrave these materials:**
 
-| Material | Danger |
-|----------|--------|
-| **PVC / Vinyl** | Produces chlorine gas (toxic, corrosive) |
-| **ABS plastic** | Produces cyanide gas (deadly) |
-| **Polycarbonate** | Toxic fumes, poor results |
-| **Fiberglass** | Glass particles damage lungs and optics |
-| **Any material containing chlorine** | Toxic and corrosive |
+| Material                             | Danger                                   |
+| ------------------------------------ | ---------------------------------------- |
+| **PVC / Vinyl**                      | Produces chlorine gas (toxic, corrosive) |
+| **ABS plastic**                      | Produces cyanide gas (deadly)            |
+| **Polycarbonate**                    | Toxic fumes, poor results                |
+| **Fiberglass**                       | Glass particles damage lungs and optics  |
+| **Any material containing chlorine** | Toxic and corrosive                      |
 
 **When in doubt:** Check material safety data sheet (MSDS) or test tiny sample with excellent ventilation.
 
@@ -75,6 +79,7 @@ Rayforge is control software - it cannot override the physical safety requiremen
 Most enclosed laser systems don't require goggles during normal operation **if the enclosure is closed and has proper interlocks.**
 
 **Eye protection required when:**
+
 - Opening enclosure during operation
 - Performing maintenance or alignment
 - Machine has viewing window without laser-safe filtering
@@ -110,6 +115,7 @@ Before every job:
 ### Emergency Stop
 
 **When to use:**
+
 - Fire visible
 - Unusual sounds or smoke
 - Material shifting dangerously
@@ -120,11 +126,13 @@ Before every job:
 ### Fire Response
 
 **Small fire (contained):**
+
 1. Emergency stop
 2. Keep lid closed if possible
 3. Use fire extinguisher if needed
 
 **Large fire:**
+
 1. Emergency stop
 2. Evacuate immediately
 3. Call emergency services
@@ -133,11 +141,13 @@ Before every job:
 ### Medical Emergencies
 
 **Eye exposure:**
+
 - Seek immediate medical attention
 - Do not rub eyes
 - Bring laser specifications to doctor
 
 **Fume inhalation:**
+
 - Move to fresh air
 - Seek medical attention if symptoms persist
 - Call poison control if severe
@@ -145,12 +155,14 @@ Before every job:
 ## Training and Responsibility
 
 **Before operating:**
+
 - Complete any required safety training
 - Read manufacturer's manual completely
 - Understand emergency procedures
 - Know your specific laser's hazard class and requirements
 
 **Ongoing:**
+
 - Review safety procedures periodically
 - Maintain safety equipment
 - Stay informed about new materials and hazards
@@ -170,6 +182,7 @@ Before every job:
 ## Additional Resources
 
 **Your responsibilities:**
+
 - Follow all manufacturer safety requirements
 - Comply with local fire codes and regulations
 - Maintain required safety equipment
@@ -177,12 +190,14 @@ Before every job:
 - Document and report safety incidents
 
 **Manufacturer resources:**
+
 - Machine operating manual
 - Safety data sheets
 - Technical support contact
 - Warranty and safety compliance documentation
 
 **Regulatory standards:**
+
 - ANSI Z136 (North America)
 - EN 60825 (Europe)
 - Local workplace safety regulations

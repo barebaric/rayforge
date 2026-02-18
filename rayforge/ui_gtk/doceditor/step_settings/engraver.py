@@ -3,7 +3,10 @@ from gi.repository import Gtk, Adw, GObject
 import numpy as np
 from ....image.dither import DitherAlgorithm
 from ....pipeline.producer.base import OpsProducer
-from ....pipeline.producer.depth import DepthEngraver, DepthMode
+from ....pipeline.producer.raster import (
+    Rasterizer,
+    DepthMode,
+)
 from ....shared.util.glib import DebounceMixin
 from ...shared.adwfix import get_spinrow_int, get_spinrow_float
 from .base import StepComponentSettingsWidget
@@ -15,8 +18,8 @@ if TYPE_CHECKING:
     from ....doceditor.editor import DocEditor
 
 
-class DepthEngraverSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
-    """UI for configuring the DepthEngraver producer."""
+class EngraverSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
+    """UI for configuring the Rasterizer producer."""
 
     def __init__(
         self,
@@ -27,7 +30,7 @@ class DepthEngraverSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
         step: "Step",
         **kwargs,
     ):
-        producer = cast(DepthEngraver, OpsProducer.from_dict(target_dict))
+        producer = cast(Rasterizer, OpsProducer.from_dict(target_dict))
 
         super().__init__(
             editor,
@@ -234,7 +237,7 @@ class DepthEngraverSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
         self._compute_and_update_histogram(producer.invert)
         self._on_mode_changed(mode_row, None)
 
-    def _build_raster_geometry_group(self, producer: DepthEngraver):
+    def _build_raster_geometry_group(self, producer: Rasterizer):
         """Builds the Engraving Pattern preferences group."""
         group = Adw.PreferencesGroup(
             title=_("Engraving Pattern"),
@@ -528,6 +531,6 @@ class DepthEngraverSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
             target_dict=target_dict,
             key=key,
             new_value=value,
-            name=_("Change Depth Engraving setting"),
+            name=_("Change engraving setting"),
             on_change_callback=lambda: self.step.updated.send(self.step),
         )

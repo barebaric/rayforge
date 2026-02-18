@@ -13,16 +13,16 @@ from rayforge.machine.models.laser import Laser
 from rayforge.pipeline import CoordinateSystem
 from rayforge.pipeline.artifact import WorkPieceArtifact
 from rayforge.pipeline.producer.base import OpsProducer
-from rayforge.pipeline.producer.depth import (
-    DepthEngraver,
+from rayforge.pipeline.producer.raster import (
+    Rasterizer,
     DepthMode,
 )
 
 
 @pytest.fixture
-def producer() -> DepthEngraver:
-    """Returns a default-initialized DepthEngraver instance."""
-    return DepthEngraver()
+def producer() -> Rasterizer:
+    """Returns a default-initialized Rasterizer instance."""
+    return Rasterizer()
 
 
 @pytest.fixture
@@ -53,7 +53,7 @@ def mock_workpiece() -> WorkPiece:
     return wp
 
 
-def test_initialization_defaults(producer: DepthEngraver):
+def test_initialization_defaults(producer: Rasterizer):
     """Verify the producer initializes with expected default values."""
     assert producer.depth_mode == DepthMode.POWER_MODULATION
     assert producer.scan_angle == 0.0
@@ -64,7 +64,7 @@ def test_initialization_defaults(producer: DepthEngraver):
     assert producer.invert is False
 
 
-def test_is_vector_producer_is_false(producer: DepthEngraver):
+def test_is_vector_producer_is_false(producer: Rasterizer):
     """The producer is for rastering, so it should use the chunked path."""
     assert producer.is_vector_producer() is False
 
@@ -74,7 +74,7 @@ def test_serialization_and_deserialization():
     Tests that the producer can be serialized to a dict and recreated,
     including correct enum handling.
     """
-    original = DepthEngraver(
+    original = Rasterizer(
         scan_angle=45.0,
         depth_mode=DepthMode.MULTI_PASS,
         num_depth_levels=8,
@@ -84,7 +84,7 @@ def test_serialization_and_deserialization():
     data = original.to_dict()
     recreated = OpsProducer.from_dict(data)
 
-    assert isinstance(recreated, DepthEngraver)
+    assert isinstance(recreated, Rasterizer)
     assert recreated.scan_angle == 45.0
     assert recreated.depth_mode == DepthMode.MULTI_PASS
     assert recreated.num_depth_levels == 8
@@ -92,21 +92,86 @@ def test_serialization_and_deserialization():
     assert recreated.invert is True
 
 
+def test_deserialization_with_legacy_type_name():
+    """
+    Tests that the legacy 'DepthEngraver' type name is still supported
+    for backward compatibility with existing project files.
+    """
+    data = {
+        "type": "DepthEngraver",
+        "params": {
+            "scan_angle": 30.0,
+            "depth_mode": "DITHER",
+            "invert": True,
+        },
+    }
+    producer = OpsProducer.from_dict(data)
+    assert isinstance(producer, Rasterizer)
+    assert producer.scan_angle == 30.0
+    assert producer.depth_mode == DepthMode.DITHER
+    assert producer.invert is True
+
+
+def test_deserialization_with_legacy_old_rasterizer_format():
+    """
+    Tests backward compatibility with the old Rasterizer format
+    (before it was unified with DepthEngraver).
+    Old Rasterizer used 'direction_degrees' instead of 'scan_angle'
+    and didn't have 'depth_mode' (defaulted to CONSTANT_POWER).
+    """
+    data = {
+        "type": "Rasterizer",
+        "params": {
+            "direction_degrees": 45.0,
+            "threshold": 200,
+            "invert": True,
+            "cross_hatch": True,
+        },
+    }
+    producer = OpsProducer.from_dict(data)
+    assert isinstance(producer, Rasterizer)
+    assert producer.scan_angle == 45.0
+    assert producer.depth_mode == DepthMode.CONSTANT_POWER
+    assert producer.threshold == 200
+    assert producer.invert is True
+    assert producer.cross_hatch is True
+
+
+def test_deserialization_with_legacy_dither_rasterizer_format():
+    """
+    Tests backward compatibility with the old DitherRasterizer format.
+    """
+    data = {
+        "type": "DitherRasterizer",
+        "params": {
+            "dither_algorithm": "bayer4",
+            "invert": True,
+        },
+    }
+    producer = OpsProducer.from_dict(data)
+    assert isinstance(producer, Rasterizer)
+    assert producer.depth_mode == DepthMode.DITHER
+    from rayforge.image.dither import DitherAlgorithm
+
+    assert producer.dither_algorithm == DitherAlgorithm.BAYER4
+    assert producer.invert is True
+
+
 def test_deserialization_with_invalid_enum_falls_back():
     """Tests that an unknown enum value falls back to the default."""
     data = {
-        "type": "DepthEngraver",
+        "type": "Rasterizer",
         "params": {"depth_mode": "INVALID_MODE"},
     }
     producer = OpsProducer.from_dict(data)
-    assert isinstance(producer, DepthEngraver)
+    assert isinstance(producer, Rasterizer)
     assert producer.depth_mode == DepthMode.POWER_MODULATION
 
 
 def test_deserialization_ignores_unknown_params():
     """Tests that unknown params are ignored for forward compatibility."""
     data = {
-        "type": "DepthEngraver",
+        "type": "Rasterizer",
         "params": {
             "bidirectional": True,
             "unknown_future_param": "some_value",
@@ -114,14 +179,16 @@ def test_deserialization_ignores_unknown_params():
         },
     }
     producer = OpsProducer.from_dict(data)
-    assert isinstance(producer, DepthEngraver)
+    assert isinstance(producer, Rasterizer)
     assert producer.depth_mode == DepthMode.CONSTANT_POWER
     assert not hasattr(producer, "bidirectional")
     assert not hasattr(producer, "unknown_future_param")
 
 
 def test_run_requires_workpiece(
-    producer: DepthEngraver, laser: Laser, white_surface: cairo.ImageSurface
+    producer: Rasterizer,
+    laser: Laser,
+    white_surface: cairo.ImageSurface,
 ):
     """Verify run() raises an error if no workpiece is provided."""
     with pytest.raises(ValueError, match="requires a workpiece context"):
@@ -129,7 +196,7 @@ def test_run_requires_workpiece(
 
 
 def test_run_returns_hybrid_artifact_with_correct_metadata(
-    producer: DepthEngraver,
+    producer: Rasterizer,
     laser: Laser,
     white_surface: cairo.ImageSurface,
     mock_workpiece: WorkPiece,
@@ -151,7 +218,7 @@ def test_run_returns_hybrid_artifact_with_correct_metadata(
 
 
 def test_run_wraps_ops_in_section_markers(
-    producer: DepthEngraver,
+    producer: Rasterizer,
     laser: Laser,
     white_surface: cairo.ImageSurface,
     mock_workpiece: WorkPiece,
@@ -175,7 +242,7 @@ def test_run_wraps_ops_in_section_markers(
 
 
 def test_run_with_empty_surface_returns_empty_ops(
-    producer: DepthEngraver, laser: Laser, mock_workpiece: WorkPiece
+    producer: Rasterizer, laser: Laser, mock_workpiece: WorkPiece
 ):
     """
     Test that a zero-dimension surface produces no errors and empty Ops.
@@ -211,7 +278,7 @@ def test_power_modulation_generates_correct_ops(
     ctx.fill()
 
     mock_workpiece.set_size(0.3, 0.1)  # 0.3mm wide, 0.1mm tall
-    producer = DepthEngraver(min_power=0.1, max_power=0.9)
+    producer = Rasterizer(min_power=0.1, max_power=0.9)
 
     artifact = producer.run(laser, surface, (10, 10), workpiece=mock_workpiece)
 
@@ -253,7 +320,7 @@ def test_multi_pass_generates_correct_ops(
 
     mock_workpiece.set_size(0.2, 1.0)  # 0.2mm wide, 1mm tall
     px_per_mm = 10
-    producer = DepthEngraver(
+    producer = Rasterizer(
         depth_mode=DepthMode.MULTI_PASS,
         num_depth_levels=4,
         z_step_down=0.1,
@@ -293,7 +360,7 @@ def test_multi_pass_with_scan_angle(laser: Laser, mock_workpiece: WorkPiece):
 
     mock_workpiece.set_size(1.0, 1.0)
 
-    producer_horizontal = DepthEngraver(
+    producer_horizontal = Rasterizer(
         depth_mode=DepthMode.MULTI_PASS,
         num_depth_levels=2,
         scan_angle=0.0,
@@ -305,7 +372,7 @@ def test_multi_pass_with_scan_angle(laser: Laser, mock_workpiece: WorkPiece):
         c for c in artifact_horizontal.ops if isinstance(c, LineToCommand)
     ]
 
-    producer_angled = DepthEngraver(
+    producer_angled = Rasterizer(
         depth_mode=DepthMode.MULTI_PASS,
         num_depth_levels=2,
         scan_angle=45.0,
@@ -333,7 +400,7 @@ def test_multi_pass_with_cross_hatch(laser: Laser, mock_workpiece: WorkPiece):
 
     mock_workpiece.set_size(1.0, 1.0)
 
-    producer_no_cross = DepthEngraver(
+    producer_no_cross = Rasterizer(
         depth_mode=DepthMode.MULTI_PASS,
         num_depth_levels=2,
         cross_hatch=False,
@@ -345,7 +412,7 @@ def test_multi_pass_with_cross_hatch(laser: Laser, mock_workpiece: WorkPiece):
         c for c in artifact_no_cross.ops if isinstance(c, LineToCommand)
     ]
 
-    producer_cross = DepthEngraver(
+    producer_cross = Rasterizer(
         depth_mode=DepthMode.MULTI_PASS,
         num_depth_levels=2,
         cross_hatch=True,
@@ -382,7 +449,7 @@ def test_power_modulation_respects_step_power_setting(
     ctx.fill()
 
     mock_workpiece.set_size(0.3, 0.1)
-    producer = DepthEngraver(min_power=0.0, max_power=1.0)
+    producer = Rasterizer(min_power=0.0, max_power=1.0)
     step_power = 0.2  # 20% power setting
     settings = {"power": step_power}
 
@@ -428,7 +495,7 @@ def test_invert_inverts_grayscale_values(
     ctx.fill()
 
     mock_workpiece.set_size(1.0, 1.0)
-    producer = DepthEngraver(min_power=0.1, max_power=0.9, invert=True)
+    producer = Rasterizer(min_power=0.1, max_power=0.9, invert=True)
 
     artifact = producer.run(laser, surface, (10, 10), workpiece=mock_workpiece)
 
@@ -459,7 +526,7 @@ def test_invert_respects_alpha(laser: Laser, mock_workpiece: WorkPiece):
     ctx.fill()
 
     mock_workpiece.set_size(1.0, 1.0)
-    producer = DepthEngraver(invert=True)
+    producer = Rasterizer(invert=True)
 
     artifact = producer.run(laser, surface, (10, 10), workpiece=mock_workpiece)
 
@@ -493,7 +560,7 @@ def test_constant_power_threshold_mode(
     ctx.fill()
 
     mock_workpiece.set_size(0.3, 0.1)
-    producer = DepthEngraver(
+    producer = Rasterizer(
         depth_mode=DepthMode.CONSTANT_POWER,
         threshold=128,
     )
@@ -525,7 +592,7 @@ def test_constant_power_threshold_parameter(
 
     mock_workpiece.set_size(0.1, 0.1)
 
-    producer_low_threshold = DepthEngraver(
+    producer_low_threshold = Rasterizer(
         depth_mode=DepthMode.CONSTANT_POWER,
         threshold=100,
     )
@@ -537,7 +604,7 @@ def test_constant_power_threshold_parameter(
     ]
     assert len(scan_cmds_low) == 0
 
-    producer_high_threshold = DepthEngraver(
+    producer_high_threshold = Rasterizer(
         depth_mode=DepthMode.CONSTANT_POWER,
         threshold=200,
     )
@@ -566,7 +633,7 @@ def test_constant_power_invert(laser: Laser, mock_workpiece: WorkPiece):
 
     mock_workpiece.set_size(0.2, 0.1)
 
-    producer_normal = DepthEngraver(
+    producer_normal = Rasterizer(
         depth_mode=DepthMode.DITHER,
         dither_algorithm=DitherAlgorithm.FLOYD_STEINBERG,
         threshold=128,
@@ -580,7 +647,7 @@ def test_constant_power_invert(laser: Laser, mock_workpiece: WorkPiece):
     ]
     assert len(scan_cmds_normal) >= 1
 
-    producer_invert = DepthEngraver(
+    producer_invert = Rasterizer(
         depth_mode=DepthMode.DITHER,
         dither_algorithm=DitherAlgorithm.FLOYD_STEINBERG,
         threshold=128,
@@ -611,7 +678,7 @@ def test_constant_power_respects_alpha(
     ctx.fill()
 
     mock_workpiece.set_size(0.3, 0.1)
-    producer = DepthEngraver(
+    producer = Rasterizer(
         depth_mode=DepthMode.DITHER,
         dither_algorithm=DitherAlgorithm.FLOYD_STEINBERG,
         threshold=128,
@@ -630,7 +697,7 @@ def test_dither_serialization():
     """
     Tests that DITHER mode serializes and deserializes correctly.
     """
-    original = DepthEngraver(
+    original = Rasterizer(
         depth_mode=DepthMode.DITHER,
         dither_algorithm=DitherAlgorithm.FLOYD_STEINBERG,
         threshold=200,
@@ -639,7 +706,7 @@ def test_dither_serialization():
     data = original.to_dict()
     recreated = OpsProducer.from_dict(data)
 
-    assert isinstance(recreated, DepthEngraver)
+    assert isinstance(recreated, Rasterizer)
     assert recreated.depth_mode == DepthMode.DITHER
     assert recreated.dither_algorithm == DitherAlgorithm.FLOYD_STEINBERG
     assert recreated.threshold == 200
@@ -659,7 +726,7 @@ def test_dither_mode_with_floyd_steinberg(
     ctx.fill()
 
     mock_workpiece.set_size(1.0, 1.0)
-    producer = DepthEngraver(
+    producer = Rasterizer(
         depth_mode=DepthMode.DITHER,
         dither_algorithm=DitherAlgorithm.FLOYD_STEINBERG,
     )
@@ -690,7 +757,7 @@ def test_cross_hatch_generates_two_passes(
 
     mock_workpiece.set_size(1.0, 1.0)
 
-    producer_no_cross_hatch = DepthEngraver(
+    producer_no_cross_hatch = Rasterizer(
         depth_mode=DepthMode.DITHER,
         dither_algorithm=DitherAlgorithm.FLOYD_STEINBERG,
         cross_hatch=False,
@@ -704,7 +771,7 @@ def test_cross_hatch_generates_two_passes(
         if isinstance(c, ScanLinePowerCommand)
     ]
 
-    producer_cross_hatch = DepthEngraver(
+    producer_cross_hatch = Rasterizer(
         depth_mode=DepthMode.DITHER,
         dither_algorithm=DitherAlgorithm.FLOYD_STEINBERG,
         cross_hatch=True,
@@ -735,7 +802,7 @@ def test_cross_hatch_perpendicular_angles(
     ctx.fill()
 
     mock_workpiece.set_size(1.0, 1.0)
-    producer = DepthEngraver(
+    producer = Rasterizer(
         depth_mode=DepthMode.DITHER,
         dither_algorithm=DitherAlgorithm.FLOYD_STEINBERG,
         scan_angle=45.0,
@@ -755,7 +822,7 @@ def test_cross_hatch_serialization():
     """
     Tests that cross_hatch serializes and deserializes correctly.
     """
-    original = DepthEngraver(
+    original = Rasterizer(
         depth_mode=DepthMode.DITHER,
         dither_algorithm=DitherAlgorithm.FLOYD_STEINBERG,
         cross_hatch=True,
@@ -764,7 +831,7 @@ def test_cross_hatch_serialization():
     data = original.to_dict()
     recreated = OpsProducer.from_dict(data)
 
-    assert isinstance(recreated, DepthEngraver)
+    assert isinstance(recreated, Rasterizer)
     assert recreated.cross_hatch is True
     assert recreated.scan_angle == 30.0
 
@@ -783,7 +850,7 @@ def test_cross_hatch_with_power_modulation(
 
     mock_workpiece.set_size(1.0, 1.0)
 
-    producer_no_cross = DepthEngraver(
+    producer_no_cross = Rasterizer(
         depth_mode=DepthMode.POWER_MODULATION,
         cross_hatch=False,
     )
@@ -794,7 +861,7 @@ def test_cross_hatch_with_power_modulation(
         c for c in artifact_no_cross.ops if isinstance(c, ScanLinePowerCommand)
     ]
 
-    producer_cross = DepthEngraver(
+    producer_cross = Rasterizer(
         depth_mode=DepthMode.POWER_MODULATION,
         cross_hatch=True,
     )
@@ -827,7 +894,7 @@ def test_constant_power_bayer_dithering(
         DitherAlgorithm.BAYER4,
         DitherAlgorithm.BAYER8,
     ]:
-        producer = DepthEngraver(
+        producer = Rasterizer(
             depth_mode=DepthMode.DITHER,
             dither_algorithm=bayer_method,
         )
@@ -859,7 +926,7 @@ def test_multi_pass_with_angle_increment(
 
     mock_workpiece.set_size(1.0, 1.0)
 
-    producer = DepthEngraver(
+    producer = Rasterizer(
         depth_mode=DepthMode.MULTI_PASS,
         scan_angle=0.0,
         angle_increment=45.0,
@@ -877,7 +944,7 @@ def test_angle_increment_serialization():
     """
     Tests that angle_increment serializes and deserializes correctly.
     """
-    original = DepthEngraver(
+    original = Rasterizer(
         depth_mode=DepthMode.MULTI_PASS,
         scan_angle=0.0,
         angle_increment=30.0,
@@ -886,7 +953,7 @@ def test_angle_increment_serialization():
     data = original.to_dict()
     recreated = OpsProducer.from_dict(data)
 
-    assert isinstance(recreated, DepthEngraver)
+    assert isinstance(recreated, Rasterizer)
     assert recreated.angle_increment == 30.0
     assert recreated.scan_angle == 0.0
     assert recreated.num_depth_levels == 5
@@ -907,7 +974,7 @@ def test_dithering_respects_alpha(laser: Laser, mock_workpiece: WorkPiece):
     ctx.fill()
 
     mock_workpiece.set_size(1.0, 1.0)
-    producer = DepthEngraver(
+    producer = Rasterizer(
         depth_mode=DepthMode.DITHER,
         dither_algorithm=DitherAlgorithm.FLOYD_STEINBERG,
     )
@@ -942,7 +1009,7 @@ def test_dithering_adapts_to_spot_size(mock_workpiece: WorkPiece):
     laser_large_spot.max_power = 1000
     laser_large_spot.spot_size_mm = (0.5, 0.5)
 
-    producer = DepthEngraver(
+    producer = Rasterizer(
         depth_mode=DepthMode.DITHER,
         dither_algorithm=DitherAlgorithm.BAYER4,
     )
@@ -979,7 +1046,7 @@ def test_constant_power_with_scan_angle(
 
     mock_workpiece.set_size(1.0, 1.0)
 
-    producer_horizontal = DepthEngraver(
+    producer_horizontal = Rasterizer(
         depth_mode=DepthMode.DITHER,
         dither_algorithm=DitherAlgorithm.FLOYD_STEINBERG,
         scan_angle=0.0,
@@ -993,7 +1060,7 @@ def test_constant_power_with_scan_angle(
         if isinstance(c, ScanLinePowerCommand)
     ]
 
-    producer_angled = DepthEngraver(
+    producer_angled = Rasterizer(
         depth_mode=DepthMode.DITHER,
         dither_algorithm=DitherAlgorithm.FLOYD_STEINBERG,
         scan_angle=45.0,
@@ -1023,7 +1090,7 @@ def test_power_modulation_with_scan_angle(
 
     mock_workpiece.set_size(1.0, 1.0)
 
-    producer = DepthEngraver(
+    producer = Rasterizer(
         depth_mode=DepthMode.POWER_MODULATION,
         scan_angle=30.0,
     )

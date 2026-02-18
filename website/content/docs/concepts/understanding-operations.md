@@ -56,14 +56,14 @@ Rayforge provides several operation types, each suited for different tasks.
 - **Speed:** Slow for cutting, faster for marking
 - **Passes:** Multiple for thick materials
 
-### Raster (Image Engraving)
+### Engrave (Raster Engraving)
 
-**What it does:** Scans back and forth to engrave images.
+**What it does:** Scans back and forth to engrave images with multiple modes.
 
 **How it works:**
 - Divides area into horizontal scan lines
 - Laser moves left-to-right, then right-to-left
-- Power varies to create shading
+- Supports variable power, constant power, dither, and multi-pass modes
 - Like a printer printing an image
 
 **Best for:**
@@ -71,46 +71,21 @@ Rayforge provides several operation types, each suited for different tasks.
 - Grayscale images
 - Filled areas
 - Textures and patterns
+- 3D relief effects (multi-pass mode)
 
 **Example uses:**
 - Engraving photos on wood
 - Creating gradients
 - Filling shapes with texture
 - Bitmap graphics
+- Lithophanes
 
 **Settings:**
 - **DPI:** Resolution (300-500 typical)
 - **Speed:** Medium to fast
 - **Power:** Varies with image darkness
 - **Line spacing:** Controls density
-
-### Depth (3D Engraving)
-
-**What it does:** Varies engraving depth to create 3D relief.
-
-**How it works:**
-- Similar to raster but controls depth
-- Lighter areas = shallow engraving
-- Darker areas = deeper engraving
-- Creates raised or recessed surfaces
-
-**Best for:**
-- 3D relief carving
-- Topographic maps
-- Embossed text
-- Artistic depth effects
-
-**Example uses:**
-- Carving landscapes in wood
-- Creating textured surfaces
-- Embossing designs
-- Depth-based artwork
-
-**Settings:**
-- **Depth map:** Grayscale image (black=deep, white=shallow)
-- **Max depth:** Maximum engraving depth
-- **Passes:** Multiple passes for depth
-- **Power/Speed:** Control cutting per pass
+- **Mode:** Variable power, constant power, dither, or multi-pass
 
 ### Shrink Wrap
 
@@ -166,8 +141,9 @@ Cut out a shape?
   └─ Raster design → Trace first, then Contour
 
 Engrave an image/photo?
-  ├─ Flat engraving → Raster
-  └─ 3D relief → Depth
+  ├─ Flat engraving → Engrave (variable/constant power)
+  ├─ Photo quality → Engrave (dither mode)
+  └─ 3D relief → Engrave (multi-pass mode)
 
 Mark/score surface?
   → Contour (low power)
@@ -184,10 +160,10 @@ Test material settings?
 | Goal | Operation | Why? |
 |------|-----------|------|
 | **Cut through material** | Contour | Follows edges precisely |
-| **Engrave a photo** | Raster | Variable power for shading |
-| **Create 3D effect** | Depth | Controls engraving depth |
+| **Engrave a photo** | Engrave | Variable power or dither for shading |
+| **Create 3D effect** | Engrave (multi-pass) | Controls engraving depth |
 | **Mark outline only** | Contour | Low power, just surface marking |
-| **Fill shape with pattern** | Raster | Scans fill area |
+| **Fill shape with pattern** | Engrave | Scans fill area |
 | **Test settings** | Material Test Grid | Systematic testing |
 
 ---
@@ -218,7 +194,7 @@ Understanding how operations work helps you prepare files correctly.
 **Process:**
 1. Rasterizes geometry at specified DPI
 2. Divides into scan lines
-3. Converts pixel darkness to laser power
+3. Converts pixel darkness to laser power (or uses dithering)
 4. Generates back-and-forth scanning G-code
 5. Applies overscan if enabled
 
@@ -227,7 +203,7 @@ Understanding how operations work helps you prepare files correctly.
 - Resolution (DPI) specified
 - Power range configured
 
-### Depth Processing
+### Depth/3D Processing (Multi-Pass Mode)
 
 **Input:** Grayscale image (depth map)
 
@@ -255,7 +231,7 @@ You can apply different operations to the same object:
 
 **Layer setup:**
 ```
-Layer 1: Logo Engrave (Raster)
+Layer 1: Logo Engrave (Engrave)
   └─ Logo shape
 
 Layer 2: Logo Cut (Contour)
@@ -323,37 +299,6 @@ See [Multi-Layer Workflow](../features/multi-layer.md) for details.
 - **Engraving:** 20-60%
 - **Marking:** 10-30%
 
-### Speed
-
-**What it controls:** How fast the laser head moves.
-
-**Units:** mm/min (or mm/sec in some systems)
-
-**Guidelines:**
-- **Cutting:** 100-500 mm/min (slow)
-- **Engraving:** 500-3000 mm/min (medium)
-- **Marking:** 1000-5000 mm/min (fast)
-
-### Passes
-
-**What it controls:** How many times to repeat the operation.
-
-**When to use:**
-- Thick materials (can't cut in one pass)
-- Deep engraving
-- Better quality (multiple light passes vs one heavy)
-
-### DPI (Raster Only)
-
-**What it controls:** Resolution of raster engraving.
-
-**Guidelines:**
-- **300 DPI:** Good for most photos
-- **500 DPI:** High detail work
-- **200 DPI:** Fast, lower quality
-
-**Trade-off:** Higher DPI = more detail but larger G-code files and slower execution.
-
 ---
 
 ## Operation Execution Order
@@ -413,8 +358,7 @@ See individual feature pages for details.
 ## Related Pages
 
 - [Contour Operation](../features/operations/contour.md) - Detailed contour docs
-- [Raster Operation](../features/operations/raster.md) - Detailed raster docs
-- [Depth Operation](../features/operations/depth.md) - Detailed depth docs
+- [Engrave Operation](../features/operations/engrave.md) - Detailed engrave docs (variable power, dither, multi-pass)
 - [Material Test Grid](../features/operations/material-test-grid.md) - Testing guide
 - [Multi-Layer Workflow](../features/multi-layer.md) - Organizing operations
 - [Power vs Speed](power-vs-speed.md) - Setting selection

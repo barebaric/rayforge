@@ -60,21 +60,10 @@ Operations define how Rayforge will process your design. Common operations inclu
    - **Speed**: Movement speed in mm/min
    - **Passes**: Number of times to repeat the operation (useful for cutting thick materials)
 
-![Operation Settings](../images/contour-settings.png)
+![Operation Settings](../images/step-contour-step-settings.png)
 
 !!! warning "Start with Low Power"
-    When working with new materials, always start with lower power settings and run test cuts. Gradually increase power until you achieve the desired result.
-
-### Material Testing Recommendations
-
-| Material | Power (%) | Speed (mm/min) | Passes |
-|----------|-----------|----------------|--------|
-| Paper    | 10-20     | 3000-5000      | 1      |
-| Cardboard| 30-50     | 1500-3000      | 1-2    |
-| Plywood (3mm) | 60-80 | 300-600       | 1-3    |
-| Acrylic (3mm) | 70-90 | 200-400       | 1-2    |
-
-*These are starting points only. Always test with your specific machine and materials.*
+    When working with new materials, always start with lower power settings and run test cuts. Gradually increase power until you achieve the desired result. Use the [Material Test Grid](../features/operations/material-test-grid.md) feature to systematically find optimal settings.
 
 ## Step 4: Preview G-code
 
