@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-02-01 19:01+0100\n"
+"POT-Creation-Date: 2026-02-18 21:19+0100\n"
 "PO-Revision-Date: 2025-07-24 22:08+0200\n"
 "Last-Translator: Samuel Abels <knipknap@gmail.com>\n"
 "Language-Team: none\n"
@@ -175,7 +175,7 @@ msgstr "Schnittfuge"
 msgid "The effective width of the laser beam"
 msgstr "Die effektive Breite des Laserstrahls"
 
-#: rayforge/core/capability.py
+#: rayforge/core/capability.py rayforge/pipeline/steps.py
 msgid "Engrave"
 msgstr "Gravieren"
 
@@ -261,6 +261,12 @@ msgstr "Symmetrie"
 #: rayforge/core/sketcher/constraints/horizontal.py
 msgid "Horizontal"
 msgstr "Horizontal"
+
+#: rayforge/core/sketcher/constraints/angle.py
+#: rayforge/ui_gtk/doceditor/step_settings/engraver.py
+#: rayforge/ui_gtk/doceditor/property_providers/transform.py
+msgid "Angle"
+msgstr "Winkel"
 
 #: rayforge/core/sketcher/constraints/diameter.py
 msgid "Diameter"
@@ -864,6 +870,10 @@ msgstr "Baudrate muss konfiguriert werden."
 msgid "Port not configured"
 msgstr "Port nicht konfiguriert."
 
+#: rayforge/machine/driver/grbl_serial.py
+msgid "No response from device"
+msgstr "Keine Antwort vom Gerät"
+
 #: rayforge/machine/driver/grbl_serial.py rayforge/machine/driver/grbl.py
 msgid "Unknown Settings"
 msgstr "Unbekannte Einstellungen"
@@ -1239,37 +1249,67 @@ msgid "Unnamed Macro"
 msgstr "Unbenanntes Makro"
 
 #: rayforge/machine/models/dialect_builtins.py
-msgid "GRBL (universal)"
-msgstr "GRBL (universell)"
+msgid "Grbl (Compat)"
+msgstr "Grbl (Kompatibilität)"
 
 #: rayforge/machine/models/dialect_builtins.py
-msgid "Standard GRBL for most diode lasers and hobby CNCs."
-msgstr "Standard-GRBL für die meisten Diodenlaser und Hobby-CNCs."
-
-#: rayforge/machine/models/dialect_builtins.py
-msgid "GRBL (no Z axis)"
-msgstr "GRBL (ohne Z-Achse)"
-
-#: rayforge/machine/models/dialect_builtins.py
-msgid "Standard GRBL, but removes Z axis commands for more efficient G-code."
+msgid ""
+"Grbl dialect with highest compatibility for most diode lasers and hobby CNCs"
 msgstr ""
-"Standard-GRBL, entfernt jedoch Befehle der Z-Achse für effizienteren G-Code."
+"Grbl-Dialekt mit höchster Kompatibilität für die meisten Diodenlaser und "
+"Hobby-CNCs"
+
+#: rayforge/machine/models/dialect_builtins.py
+msgid "Grbl (Compat, no Z axis)"
+msgstr "Grbl (Kompatibilität, keine Z-Achse)"
+
+#: rayforge/machine/models/dialect_builtins.py
+msgid ""
+"Grbl dialect with highest compatibility, but removes Z axis commands for "
+"more efficient G-code"
+msgstr ""
+"Grbl-Dialekt mit höchster Kompatibilität, entfernt aber Z-Achsen-Befehle für "
+"effizienteren G-Code"
 
 #: rayforge/machine/models/dialect_builtins.py
 msgid "Smoothieware"
 msgstr "Smoothieware"
 
 #: rayforge/machine/models/dialect_builtins.py
-msgid "G-code dialect for Smoothieware-based controllers."
-msgstr "G-Code-Dialekt für Smoothieware-basierte Steuerungen."
+msgid "G-code dialect for Smoothieware-based controllers"
+msgstr "G-Code-Dialekt für Smoothieware-basierte Controller"
 
 #: rayforge/machine/models/dialect_builtins.py
 msgid "Marlin"
 msgstr "Marlin"
 
 #: rayforge/machine/models/dialect_builtins.py
-msgid "G-code for Marlin-based controllers, common in 3D printers."
-msgstr "G-Code für Marlin-basierte Steuerungen, üblich bei 3D-Druckern."
+msgid "G-code for Marlin-based controllers, common in 3D printers"
+msgstr "G-Code für Marlin-basierte Controller, häufig in 3D-Druckern"
+
+#: rayforge/machine/models/dialect_builtins.py
+msgid "GRBL Dynamic"
+msgstr "GRBL Dynamisch"
+
+#: rayforge/machine/models/dialect_builtins.py
+msgid ""
+"GRBL with M4 dynamic power (Depth-Aware) mode. S parameter is included in "
+"motion commands"
+msgstr ""
+"GRBL mit M4 dynamischem Leistungsmodus (Tiefenabhängig). S-Parameter ist in "
+"Bewegungsbefehlen enthalten"
+
+#: rayforge/machine/models/dialect_builtins.py
+msgid "GRBL Dynamic (no Z axis)"
+msgstr "GRBL Dynamisch (keine Z-Achse)"
+
+#: rayforge/machine/models/dialect_builtins.py
+msgid ""
+"GRBL with M4 dynamic power (Depth-Aware) mode, but removes Z axis commands "
+"for more efficient G-code"
+msgstr ""
+"GRBL mit M4 dynamischem Leistungsmodus (Tiefenabhängig), entfernt aber Z-"
+"Achsen-Befehle für effizienteren G-Code"
 
 #: rayforge/machine/cmd.py
 #, python-brace-format
@@ -1376,10 +1416,10 @@ msgstr ""
 #: rayforge/ui_gtk/settings/machine_settings_page.py
 #: rayforge/ui_gtk/camera/selection_dialog.py
 #: rayforge/ui_gtk/camera/alignment_dialog.py
-#: rayforge/ui_gtk/machine/machine_hours_page.py
 #: rayforge/ui_gtk/machine/dialect_editor.py
 #: rayforge/ui_gtk/machine/control_panel.py
 #: rayforge/ui_gtk/machine/hook_list.py rayforge/ui_gtk/machine/gcode_editor.py
+#: rayforge/ui_gtk/machine/maintenance_page.py
 #: rayforge/ui_gtk/machine/dialect_list.py
 #: rayforge/ui_gtk/machine/profile_selector.py
 #: rayforge/ui_gtk/package_manager/package_list.py
@@ -1549,6 +1589,26 @@ msgstr "Projektpfad"
 msgid "Browse..."
 msgstr "Durchsuchen..."
 
+#: rayforge/ui_gtk/sketch_mode_cmd.py rayforge/ui_gtk/main_menu.py
+msgid "New Sketch"
+msgstr "Neue Skizze"
+
+#: rayforge/ui_gtk/sketch_mode_cmd.py
+msgid "Create Sketch Definition"
+msgstr "Skizzendefinition erstellen"
+
+#: rayforge/ui_gtk/sketch_mode_cmd.py
+msgid "Selected item is not an editable sketch."
+msgstr "Das ausgewählte Element ist keine bearbeitbare Skizze."
+
+#: rayforge/ui_gtk/sketch_mode_cmd.py
+msgid "Please select a single sketch to edit."
+msgstr "Bitte wähle eine einzelne Skizze zum Bearbeiten aus."
+
+#: rayforge/ui_gtk/sketch_mode_cmd.py
+msgid "Please select a single object to export."
+msgstr "Bitte wähle ein einzelnes Objekt zum Exportieren aus."
+
 #: rayforge/ui_gtk/canvas2d/elements/tab_handle.py
 msgid "Move Tab"
 msgstr "Haltesteg verschieben"
@@ -1570,17 +1630,17 @@ msgid "Ungroup"
 msgstr "Gruppierung aufheben"
 
 #: rayforge/ui_gtk/canvas2d/context_menu.py
-#: rayforge/ui_gtk/machine/machine_hours_page.py rayforge/ui_gtk/main_menu.py
+#: rayforge/ui_gtk/machine/maintenance_page.py rayforge/ui_gtk/main_menu.py
 msgid "Remove"
 msgstr "Entfernen"
 
-#: rayforge/ui_gtk/canvas2d/context_menu.py rayforge/ui_gtk/toolbar.py
+#: rayforge/ui_gtk/canvas2d/context_menu.py
 msgid "Edit Sketch"
 msgstr "Skizze bearbeiten"
 
 #: rayforge/ui_gtk/canvas2d/context_menu.py rayforge/ui_gtk/main_menu.py
-msgid "Export Sketch..."
-msgstr "Skizze exportieren..."
+msgid "Export Object..."
+msgstr "Objekt exportieren..."
 
 #: rayforge/ui_gtk/canvas2d/context_menu.py
 msgid "Add Tab Here"
@@ -1671,16 +1731,16 @@ msgid "Camera Properties"
 msgstr "Kameraeigenschaften"
 
 #: rayforge/ui_gtk/camera/properties_widget.py
-msgid "Configure the selected camera"
-msgstr "Ausgewählte Kamera konfigurieren"
+msgid "Configure the selected camera."
+msgstr "Konfiguriere die ausgewählte Kamera."
 
 #: rayforge/ui_gtk/camera/properties_widget.py
 msgid "Device ID"
 msgstr "Geräte-ID"
 
 #: rayforge/ui_gtk/camera/properties_widget.py
-#: rayforge/ui_gtk/machine/machine_hours_page.py
 #: rayforge/ui_gtk/machine/gcode_editor.py
+#: rayforge/ui_gtk/machine/maintenance_page.py
 #: rayforge/ui_gtk/machine/laser_preferences_page.py
 #: rayforge/ui_gtk/machine/general_preferences_page.py
 #: rayforge/ui_gtk/doceditor/edit_recipe_dialog.py
@@ -1789,126 +1849,6 @@ msgstr "Kameras"
 msgid "Stream a camera image directly onto the work surface."
 msgstr "Ein Kamerabild direkt auf die Arbeitsfläche streamen."
 
-#: rayforge/ui_gtk/machine/machine_hours_page.py
-msgid "Reset Counter"
-msgstr "Zähler zurücksetzen"
-
-#: rayforge/ui_gtk/machine/machine_hours_page.py
-msgid "Edit Counter"
-msgstr "Zähler bearbeiten"
-
-#: rayforge/ui_gtk/machine/machine_hours_page.py
-msgid "Remove Counter"
-msgstr "Zähler entfernen"
-
-#: rayforge/ui_gtk/machine/machine_hours_page.py
-msgid "Reset Counter?"
-msgstr "Zähler zurücksetzen?"
-
-#: rayforge/ui_gtk/machine/machine_hours_page.py
-msgid "This will reset the accumulated hours to zero."
-msgstr "Dadurch werden die gesammelten Stunden auf Null zurückgesetzt."
-
-#: rayforge/ui_gtk/machine/machine_hours_page.py
-#: rayforge/ui_gtk/machine/hook_list.py rayforge/doceditor/file_cmd.py
-msgid "Reset"
-msgstr "Zurücksetzen"
-
-#: rayforge/ui_gtk/machine/machine_hours_page.py
-msgid "Remove Counter?"
-msgstr "Zähler entfernen?"
-
-#: rayforge/ui_gtk/machine/machine_hours_page.py
-msgid ""
-"Are you sure you want to remove this counter? This action cannot be undone."
-msgstr ""
-"Möchtest du diesen Zähler wirklich entfernen? Diese Aktion kann nicht "
-"rückgängig gemacht werden."
-
-#: rayforge/ui_gtk/machine/machine_hours_page.py
-msgid "Add Counter"
-msgstr "Zähler hinzufügen"
-
-#: rayforge/ui_gtk/machine/machine_hours_page.py
-msgid "No counters configured"
-msgstr "Keine Zähler konfiguriert"
-
-#: rayforge/ui_gtk/machine/machine_hours_page.py
-msgid "New Counter"
-msgstr "Neuer Zähler"
-
-#: rayforge/ui_gtk/machine/machine_hours_page.py
-#: rayforge/ui_gtk/machine/dialect_editor.py
-#: rayforge/ui_gtk/machine/control_panel.py
-#: rayforge/ui_gtk/machine/gcode_editor.py rayforge/ui_gtk/main_menu.py
-#: rayforge/ui_gtk/toolbar.py
-#: rayforge/ui_gtk/doceditor/material_library_list.py
-#: rayforge/ui_gtk/doceditor/edit_recipe_dialog.py
-#: rayforge/ui_gtk/doceditor/add_material_dialog.py
-msgid "Save"
-msgstr "Speichern"
-
-#: rayforge/ui_gtk/machine/machine_hours_page.py
-msgid "Notification Interval"
-msgstr "Benachrichtigungsintervall"
-
-#: rayforge/ui_gtk/machine/machine_hours_page.py
-msgid ""
-"Show notification when counter reaches this value (hours). Set to 0 to "
-"disable."
-msgstr ""
-"Benachrichtigung anzeigen, wenn der Zähler diesen Wert erreicht (Stunden). "
-"Auf 0 setzen, um zu deaktivieren."
-
-#: rayforge/ui_gtk/machine/machine_hours_page.py
-msgid "Machine Hours"
-msgstr "Betriebsstunden"
-
-#: rayforge/ui_gtk/machine/machine_hours_page.py
-msgid "Total Hours"
-msgstr "Gesamtstunden"
-
-#: rayforge/ui_gtk/machine/machine_hours_page.py
-msgid "Total Operating Hours"
-msgstr "Gesamtbetriebsstunden"
-
-#: rayforge/ui_gtk/machine/machine_hours_page.py
-msgid "Cumulative machine operating time"
-msgstr "Kumulierte Maschinenbetriebszeit"
-
-#: rayforge/ui_gtk/machine/machine_hours_page.py
-msgid "Reset Total Hours"
-msgstr "Gesamtstunden zurücksetzen"
-
-#: rayforge/ui_gtk/machine/machine_hours_page.py
-msgid "Maintenance Counters"
-msgstr "Wartungszähler"
-
-#: rayforge/ui_gtk/machine/machine_hours_page.py
-msgid ""
-"Track maintenance intervals with resettable counters. Use for laser tubes, "
-"lubrication, etc."
-msgstr ""
-"Wartungsintervalle mit zurücksetzbaren Zählern verfolgen. Für Laserröhren, "
-"Schmierung usw. verwenden."
-
-#: rayforge/ui_gtk/machine/machine_hours_page.py
-#, python-brace-format
-msgid "{time} total"
-msgstr "{time} gesamt"
-
-#: rayforge/ui_gtk/machine/machine_hours_page.py
-msgid "Reset Total Hours?"
-msgstr "Gesamtstunden zurücksetzen?"
-
-#: rayforge/ui_gtk/machine/machine_hours_page.py
-msgid ""
-"This will reset the total cumulative operating hours to zero. Maintenance "
-"counters will not be affected."
-msgstr ""
-"Dadurch werden die gesamten kumulierten Betriebsstunden auf Null "
-"zurückgesetzt. Wartungszähler sind davon nicht betroffen."
-
 #: rayforge/ui_gtk/machine/macro_list.py
 msgid "Add New Macro"
 msgstr "Neues Makro hinzufügen"
@@ -1920,6 +1860,10 @@ msgstr "Keine Makros konfiguriert"
 #: rayforge/ui_gtk/machine/macro_list.py
 msgid "New Macro"
 msgstr "Neues Makro"
+
+#: rayforge/ui_gtk/machine/console.py
+msgid "Show verbose output (status polls)"
+msgstr "Ausführliche Ausgabe anzeigen (Statusabfragen)"
 
 #: rayforge/ui_gtk/machine/dialect_editor.py
 msgid "Escaped braces {{ or }} are not supported."
@@ -1955,6 +1899,17 @@ msgstr "Dialekt bearbeiten: {label}"
 #: rayforge/ui_gtk/machine/dialect_list.py
 msgid "New Dialect"
 msgstr "Neuer Dialekt"
+
+#: rayforge/ui_gtk/machine/dialect_editor.py
+#: rayforge/ui_gtk/machine/control_panel.py
+#: rayforge/ui_gtk/machine/gcode_editor.py
+#: rayforge/ui_gtk/machine/maintenance_page.py rayforge/ui_gtk/main_menu.py
+#: rayforge/ui_gtk/toolbar.py
+#: rayforge/ui_gtk/doceditor/material_library_list.py
+#: rayforge/ui_gtk/doceditor/edit_recipe_dialog.py
+#: rayforge/ui_gtk/doceditor/add_material_dialog.py
+msgid "Save"
+msgstr "Speichern"
 
 #: rayforge/ui_gtk/machine/dialect_editor.py
 msgid "Label cannot be empty."
@@ -2081,6 +2036,11 @@ msgstr ""
 "kann nicht rückgängig gemacht werden."
 
 #: rayforge/ui_gtk/machine/hook_list.py
+#: rayforge/ui_gtk/machine/maintenance_page.py rayforge/doceditor/file_cmd.py
+msgid "Reset"
+msgstr "Zurücksetzen"
+
+#: rayforge/ui_gtk/machine/hook_list.py
 msgid "# Your G-code here"
 msgstr "# Dein G-Code hier"
 
@@ -2121,6 +2081,115 @@ msgstr "Name enthält ungültige Zeichen: {chars}"
 #: rayforge/ui_gtk/machine/gcode_editor.py
 msgid "This name is already used by another macro."
 msgstr "Dieser Name wird bereits von einem anderen Makro verwendet."
+
+#: rayforge/ui_gtk/machine/maintenance_page.py
+msgid "Reset Counter"
+msgstr "Zähler zurücksetzen"
+
+#: rayforge/ui_gtk/machine/maintenance_page.py
+msgid "Edit Counter"
+msgstr "Zähler bearbeiten"
+
+#: rayforge/ui_gtk/machine/maintenance_page.py
+msgid "Remove Counter"
+msgstr "Zähler entfernen"
+
+#: rayforge/ui_gtk/machine/maintenance_page.py
+msgid "Reset Counter?"
+msgstr "Zähler zurücksetzen?"
+
+#: rayforge/ui_gtk/machine/maintenance_page.py
+msgid "This will reset the accumulated hours to zero."
+msgstr "Dadurch werden die gesammelten Stunden auf Null zurückgesetzt."
+
+#: rayforge/ui_gtk/machine/maintenance_page.py
+msgid "Remove Counter?"
+msgstr "Zähler entfernen?"
+
+#: rayforge/ui_gtk/machine/maintenance_page.py
+msgid ""
+"Are you sure you want to remove this counter? This action cannot be undone."
+msgstr ""
+"Möchtest du diesen Zähler wirklich entfernen? Diese Aktion kann nicht "
+"rückgängig gemacht werden."
+
+#: rayforge/ui_gtk/machine/maintenance_page.py
+msgid "Add Counter"
+msgstr "Zähler hinzufügen"
+
+#: rayforge/ui_gtk/machine/maintenance_page.py
+msgid "No counters configured"
+msgstr "Keine Zähler konfiguriert"
+
+#: rayforge/ui_gtk/machine/maintenance_page.py
+msgid "New Counter"
+msgstr "Neuer Zähler"
+
+#: rayforge/ui_gtk/machine/maintenance_page.py
+msgid "Notification Interval"
+msgstr "Benachrichtigungsintervall"
+
+#: rayforge/ui_gtk/machine/maintenance_page.py
+msgid ""
+"Show notification when counter reaches this value (hours). Set to 0 to "
+"disable."
+msgstr ""
+"Benachrichtigung anzeigen, wenn der Zähler diesen Wert erreicht (Stunden). "
+"Auf 0 setzen, um zu deaktivieren."
+
+#: rayforge/ui_gtk/machine/maintenance_page.py
+#: rayforge/ui_gtk/machine/settings_dialog.py
+msgid "Maintenance"
+msgstr "Wartung"
+
+#: rayforge/ui_gtk/machine/maintenance_page.py
+msgid "Total Hours"
+msgstr "Gesamtstunden"
+
+#: rayforge/ui_gtk/machine/maintenance_page.py
+msgid "Cumulative operating time tracked by the machine."
+msgstr "Kumulierte Betriebszeit, die von der Maschine verfolgt wird."
+
+#: rayforge/ui_gtk/machine/maintenance_page.py
+msgid "Total Operating Hours"
+msgstr "Gesamtbetriebsstunden"
+
+#: rayforge/ui_gtk/machine/maintenance_page.py
+msgid "Cumulative machine operating time"
+msgstr "Kumulierte Maschinenbetriebszeit"
+
+#: rayforge/ui_gtk/machine/maintenance_page.py
+msgid "Reset Total Hours"
+msgstr "Gesamtstunden zurücksetzen"
+
+#: rayforge/ui_gtk/machine/maintenance_page.py
+msgid "Maintenance Counters"
+msgstr "Wartungszähler"
+
+#: rayforge/ui_gtk/machine/maintenance_page.py
+msgid ""
+"Track maintenance intervals with resettable counters. Use for laser tubes, "
+"lubrication, etc."
+msgstr ""
+"Wartungsintervalle mit zurücksetzbaren Zählern verfolgen. Für Laserröhren, "
+"Schmierung usw. verwenden."
+
+#: rayforge/ui_gtk/machine/maintenance_page.py
+#, python-brace-format
+msgid "{time} total"
+msgstr "{time} gesamt"
+
+#: rayforge/ui_gtk/machine/maintenance_page.py
+msgid "Reset Total Hours?"
+msgstr "Gesamtstunden zurücksetzen?"
+
+#: rayforge/ui_gtk/machine/maintenance_page.py
+msgid ""
+"This will reset the total cumulative operating hours to zero. Maintenance "
+"counters will not be affected."
+msgstr ""
+"Dadurch werden die gesamten kumulierten Betriebsstunden auf Null "
+"zurückgesetzt. Wartungszähler sind davon nicht betroffen."
 
 #: rayforge/ui_gtk/machine/device_settings_page.py
 #: rayforge/ui_gtk/machine/settings_dialog.py
@@ -2201,30 +2270,31 @@ msgstr "Verbindung nicht möglich: Wird von '{machine}' verwendet"
 msgid "Machine activated."
 msgstr "Maschine aktiviert."
 
+#: rayforge/ui_gtk/machine/hooks_macros_page.py
+#: rayforge/ui_gtk/machine/settings_dialog.py
+msgid "Hooks & Macros"
+msgstr "Hooks & Makros"
+
+#: rayforge/ui_gtk/machine/hooks_macros_page.py rayforge/ui_gtk/main_menu.py
+msgid "Macros"
+msgstr "Makros"
+
+#: rayforge/ui_gtk/machine/hooks_macros_page.py
+msgid "Create and manage reusable G-code snippets."
+msgstr "Erstellen und verwalten wiederverwendbarer G-Code-Schnipsel."
+
 #: rayforge/ui_gtk/machine/advanced_preferences_page.py
 #: rayforge/ui_gtk/machine/settings_dialog.py
 msgid "Advanced"
 msgstr "Erweitert"
 
 #: rayforge/ui_gtk/machine/advanced_preferences_page.py
-msgid "Output"
-msgstr "Ausgabe"
+msgid "Path Processing"
+msgstr "Pfadverarbeitung"
 
 #: rayforge/ui_gtk/machine/advanced_preferences_page.py
-msgid "Configure G-code flavor and format for your machine"
-msgstr "Konfiguriere die G-Code-Variante und das Format für deine Maschine."
-
-#: rayforge/ui_gtk/machine/advanced_preferences_page.py
-msgid "G-Code Dialect"
-msgstr "G-Code-Dialekt"
-
-#: rayforge/ui_gtk/machine/advanced_preferences_page.py
-msgid "G-code Precision"
-msgstr "G-Code-Genauigkeit"
-
-#: rayforge/ui_gtk/machine/advanced_preferences_page.py
-msgid "Number of decimal places for coordinates (e.g., 3 for mm, 6 for µm)"
-msgstr "Anzahl der Dezimalstellen für Koordinaten (z. B. 3 für mm, 6 für µm)."
+msgid "Configure how paths are processed and optimized."
+msgstr "Konfiguriere, wie Pfade verarbeitet und optimiert werden."
 
 #: rayforge/ui_gtk/machine/advanced_preferences_page.py
 msgid "Support Arcs"
@@ -2232,11 +2302,11 @@ msgstr "Bögen unterstützen"
 
 #: rayforge/ui_gtk/machine/advanced_preferences_page.py
 msgid ""
-"Generate G2/G3 arc commands for smoother paths. Disable if your machine does "
-"not support arcs"
+"Generate arc commands for smoother paths. Disable if your machine does not "
+"support arcs"
 msgstr ""
-"G2/G3-Bogenbefehle für glattere Pfade generieren. Deaktivieren, wenn deine "
-"Maschine keine Bögen unterstützt"
+"Generiere Bogenbefehle für glattere Pfade. Deaktiviere, wenn deine Maschine "
+"keine Bögen unterstützt"
 
 #: rayforge/ui_gtk/machine/advanced_preferences_page.py
 msgid "Arc Tolerance"
@@ -2251,30 +2321,55 @@ msgstr ""
 "Niedrigere Werte erhöhen die Verarbeitungszeit und Auftragsgröße drastisch"
 
 #: rayforge/ui_gtk/machine/advanced_preferences_page.py
-#: rayforge/ui_gtk/main_menu.py
-msgid "Macros"
-msgstr "Makros"
+msgid "Homing and Startup"
+msgstr "Referenzfahrt und Start"
 
 #: rayforge/ui_gtk/machine/advanced_preferences_page.py
-msgid "Create and manage reusable G-code snippets."
-msgstr "Erstellen und verwalten wiederverwendbarer G-Code-Schnipsel."
-
-#: rayforge/ui_gtk/machine/advanced_preferences_page.py
-msgid "Dialect Management"
-msgstr "Dialekt-Verwaltung"
-
-#: rayforge/ui_gtk/machine/advanced_preferences_page.py
-msgid "Create and manage custom G-code dialect definitions."
+msgid ""
+"Configure homing behavior and startup settings, including automatic homing "
+"and alarm handling."
 msgstr ""
-"Erstellen und Verwalten benutzerdefinierter G-Code-Dialektdefinitionen."
+"Konfiguriere das Referenzfahrtverhalten und Starteinstellungen, "
+"einschließlich automatischer Referenzfahrt und Alarmbehandlung."
 
 #: rayforge/ui_gtk/machine/advanced_preferences_page.py
-msgid "No dialects available."
-msgstr "Keine Dialekte verfügbar."
+msgid "Home On Start"
+msgstr "Beim Start referenzieren"
+
+#: rayforge/ui_gtk/machine/advanced_preferences_page.py
+msgid "Send a homing command when the application starts"
+msgstr "Beim Start der Anwendung einen Referenzierungsbefehl senden"
+
+#: rayforge/ui_gtk/machine/advanced_preferences_page.py
+msgid "Allow Single Axis Homing"
+msgstr "Referenzfahrt für einzelne Achsen erlauben"
+
+#: rayforge/ui_gtk/machine/advanced_preferences_page.py
+msgid "Enable individual axis homing controls in the jog dialog"
+msgstr ""
+"Steuerelemente für die Referenzfahrt einzelner Achsen im manuellen "
+"Steuerungsdialog aktivieren"
+
+#: rayforge/ui_gtk/machine/advanced_preferences_page.py
+msgid "Clear Alarm On Connect"
+msgstr "Alarm bei Verbindung löschen"
+
+#: rayforge/ui_gtk/machine/advanced_preferences_page.py
+msgid "Automatically send an unlock command if connected in an ALARM state"
+msgstr ""
+"Automatisch einen Entsperrbefehl senden, wenn im ALARM-Zustand verbunden"
+
+#: rayforge/ui_gtk/machine/dialect_list.py
+msgid "Built-in dialect"
+msgstr "Integrierter Dialekt"
 
 #: rayforge/ui_gtk/machine/dialect_list.py
 msgid "Copy & Edit"
 msgstr "Kopieren & Bearbeiten"
+
+#: rayforge/ui_gtk/machine/dialect_list.py
+msgid "Select this dialect"
+msgstr "Diesen Dialekt auswählen"
 
 #: rayforge/ui_gtk/machine/dialect_list.py
 #, python-brace-format
@@ -2329,6 +2424,35 @@ msgstr "Ein neuer benutzerdefinierter Dialekt"
 #: rayforge/ui_gtk/machine/status_widget.py
 msgid "No driver selected"
 msgstr "Kein Treiber ausgewählt"
+
+#: rayforge/ui_gtk/machine/gcode_settings_page.py
+#: rayforge/ui_gtk/machine/settings_dialog.py
+msgid "G-code"
+msgstr "G-Code"
+
+#: rayforge/ui_gtk/machine/gcode_settings_page.py
+msgid "Precision"
+msgstr "Genauigkeit"
+
+#: rayforge/ui_gtk/machine/gcode_settings_page.py
+msgid "Configure the numeric precision of coordinate output."
+msgstr "Konfiguriere die numerische Genauigkeit der Koordinatenausgabe."
+
+#: rayforge/ui_gtk/machine/gcode_settings_page.py
+msgid "G-code Precision"
+msgstr "G-Code-Genauigkeit"
+
+#: rayforge/ui_gtk/machine/gcode_settings_page.py
+msgid "Number of decimal places for coordinates"
+msgstr "Anzahl der Dezimalstellen für Koordinaten"
+
+#: rayforge/ui_gtk/machine/gcode_settings_page.py
+msgid "Dialect"
+msgstr "Dialekt"
+
+#: rayforge/ui_gtk/machine/gcode_settings_page.py
+msgid "Select, create and manage G-code dialect definitions."
+msgstr "Auswählen, erstellen und verwalten von G-Code-Dialektdefinitionen."
 
 #: rayforge/ui_gtk/machine/jog_widget.py
 msgid "Home X"
@@ -2398,6 +2522,108 @@ msgstr "Maschine auswählen"
 msgid "Select active machine"
 msgstr "Aktive Maschine auswählen"
 
+#: rayforge/ui_gtk/machine/hardware_page.py
+#: rayforge/ui_gtk/machine/settings_dialog.py
+msgid "Hardware"
+msgstr "Hardware"
+
+#: rayforge/ui_gtk/machine/hardware_page.py
+msgid "Dimensions"
+msgstr "Abmessungen"
+
+#: rayforge/ui_gtk/machine/hardware_page.py
+msgid "Configure the physical work area size."
+msgstr "Konfiguriere die physische Größe des Arbeitsbereichs."
+
+#: rayforge/ui_gtk/machine/hardware_page.py
+#: rayforge/ui_gtk/doceditor/property_providers/transform.py
+msgid "Width"
+msgstr "Breite"
+
+#: rayforge/ui_gtk/machine/hardware_page.py
+msgid "Width of the machine work area in mm"
+msgstr "Breite des Maschinenarbeitsbereichs in mm"
+
+#: rayforge/ui_gtk/machine/hardware_page.py
+#: rayforge/ui_gtk/doceditor/property_providers/transform.py
+msgid "Height"
+msgstr "Höhe"
+
+#: rayforge/ui_gtk/machine/hardware_page.py
+msgid "Height of the machine work area in mm"
+msgstr "Höhe des Maschinenarbeitsbereichs in mm"
+
+#: rayforge/ui_gtk/machine/hardware_page.py
+msgid "Axes"
+msgstr "Achsen"
+
+#: rayforge/ui_gtk/machine/hardware_page.py
+msgid "Configure coordinate system and axis orientation."
+msgstr "Konfiguriere das Koordinatensystem und die Achsenorientierung."
+
+#: rayforge/ui_gtk/machine/hardware_page.py
+msgid "Bottom Left"
+msgstr "Unten links"
+
+#: rayforge/ui_gtk/machine/hardware_page.py
+msgid "Top Left"
+msgstr "Oben links"
+
+#: rayforge/ui_gtk/machine/hardware_page.py
+msgid "Top Right"
+msgstr "Oben rechts"
+
+#: rayforge/ui_gtk/machine/hardware_page.py
+msgid "Bottom Right"
+msgstr "Unten rechts"
+
+#: rayforge/ui_gtk/machine/hardware_page.py
+msgid "Coordinate Origin (0,0)"
+msgstr "Koordinatenursprung (0,0)"
+
+#: rayforge/ui_gtk/machine/hardware_page.py
+msgid "The physical corner where coordinates are zero after homing"
+msgstr ""
+"Die physische Ecke, in der die Koordinaten nach der Referenzfahrt Null sind"
+
+#: rayforge/ui_gtk/machine/hardware_page.py
+msgid "Reverse X-Axis Direction"
+msgstr "X-Achsenrichtung umkehren"
+
+#: rayforge/ui_gtk/machine/hardware_page.py
+msgid "Makes coordinate values negative"
+msgstr "Macht Koordinatenwerte negativ"
+
+#: rayforge/ui_gtk/machine/hardware_page.py
+msgid "Reverse Y-Axis Direction"
+msgstr "Y-Achsenrichtung umkehren"
+
+#: rayforge/ui_gtk/machine/hardware_page.py
+msgid "Reverse Z-Axis Direction"
+msgstr "Z-Achsenrichtung umkehren"
+
+#: rayforge/ui_gtk/machine/hardware_page.py
+msgid "Enable if a positive Z command (e.g., G0 Z10) moves the head down"
+msgstr ""
+"Aktivieren, wenn ein positiver Z-Befehl (z. B. G0 Z10) den Kopf nach unten "
+"bewegt"
+
+#: rayforge/ui_gtk/machine/hardware_page.py
+msgid "X Offset"
+msgstr "X-Versatz"
+
+#: rayforge/ui_gtk/machine/hardware_page.py
+msgid "Offset to add to each gcode command on X axis"
+msgstr "Versatz, der jedem G-Code-Befehl auf der X-Achse hinzugefügt wird"
+
+#: rayforge/ui_gtk/machine/hardware_page.py
+msgid "Y Offset"
+msgstr "Y-Versatz"
+
+#: rayforge/ui_gtk/machine/hardware_page.py
+msgid "Offset to add to each gcode command on Y axis"
+msgstr "Versatz, der jedem G-Code-Befehl auf der Y-Achse hinzugefügt wird"
+
 #: rayforge/ui_gtk/machine/laser_preferences_page.py
 #, python-brace-format
 msgid "Tool {tool_number}, max power {max_power}, spot size {spot_x}x{spot_y}"
@@ -2436,8 +2662,8 @@ msgid "Laser Properties"
 msgstr "Lasereigenschaften"
 
 #: rayforge/ui_gtk/machine/laser_preferences_page.py
-msgid "Configure the selected laser"
-msgstr "Ausgewählten Laser konfigurieren"
+msgid "Configure the selected laser."
+msgstr "Konfiguriere den ausgewählten Laser."
 
 #: rayforge/ui_gtk/machine/laser_preferences_page.py
 msgid "Tool Number"
@@ -2448,7 +2674,7 @@ msgid "G-code tool number (e.g., T0, T1)"
 msgstr "G-Code-Werkzeugnummer (z. B. T0, T1)"
 
 #: rayforge/ui_gtk/machine/laser_preferences_page.py
-#: rayforge/ui_gtk/doceditor/step_settings/depth_engraver.py
+#: rayforge/ui_gtk/doceditor/step_settings/engraver.py
 msgid "Max Power"
 msgstr "Max. Leistung"
 
@@ -2501,142 +2727,34 @@ msgstr "Maschineneinstellungen"
 msgid "Laser"
 msgstr "Laser"
 
-#: rayforge/ui_gtk/machine/settings_dialog.py
-msgid "Hours"
-msgstr "Betriebsstunden"
-
 #: rayforge/ui_gtk/machine/general_preferences_page.py
 #: rayforge/ui_gtk/doceditor/edit_recipe_dialog.py
 msgid "Machine"
 msgstr "Maschine"
 
 #: rayforge/ui_gtk/machine/general_preferences_page.py
+msgid "Basic machine identification and configuration."
+msgstr "Grundlegende Maschinenidentifikation und Konfiguration."
+
+#: rayforge/ui_gtk/machine/general_preferences_page.py
 msgid "Driver Settings"
 msgstr "Treiber-Einstellungen"
+
+#: rayforge/ui_gtk/machine/general_preferences_page.py
+msgid "Connection and communication settings for the machine driver."
+msgstr "Verbindungs- und Kommunikationseinstellungen für den Maschinentreiber."
 
 #: rayforge/ui_gtk/machine/general_preferences_page.py
 msgid "Select driver"
 msgstr "Treiber auswählen"
 
 #: rayforge/ui_gtk/machine/general_preferences_page.py
-msgid "Startup Behavior"
-msgstr "Startverhalten"
-
-#: rayforge/ui_gtk/machine/general_preferences_page.py
-msgid "Home On Start"
-msgstr "Beim Start referenzieren"
-
-#: rayforge/ui_gtk/machine/general_preferences_page.py
-msgid "Send a homing command when the application starts"
-msgstr "Beim Start der Anwendung einen Referenzierungsbefehl senden"
-
-#: rayforge/ui_gtk/machine/general_preferences_page.py
-msgid "Clear Alarm On Connect"
-msgstr "Alarm bei Verbindung löschen"
-
-#: rayforge/ui_gtk/machine/general_preferences_page.py
-msgid "Automatically send an unlock command if connected in an ALARM state"
-msgstr ""
-"Automatisch einen Entsperrbefehl senden, wenn im ALARM-Zustand verbunden"
-
-#: rayforge/ui_gtk/machine/general_preferences_page.py
-msgid "Axes &amp; Dimensions"
-msgstr "Achsen &amp; Abmessungen"
-
-#: rayforge/ui_gtk/machine/general_preferences_page.py
-#: rayforge/ui_gtk/doceditor/property_providers/transform.py
-msgid "Width"
-msgstr "Breite"
-
-#: rayforge/ui_gtk/machine/general_preferences_page.py
-msgid "Width of the machine work area in mm"
-msgstr "Breite des Maschinenarbeitsbereichs in mm"
-
-#: rayforge/ui_gtk/machine/general_preferences_page.py
-#: rayforge/ui_gtk/doceditor/property_providers/transform.py
-msgid "Height"
-msgstr "Höhe"
-
-#: rayforge/ui_gtk/machine/general_preferences_page.py
-msgid "Height of the machine work area in mm"
-msgstr "Höhe des Maschinenarbeitsbereichs in mm"
-
-#: rayforge/ui_gtk/machine/general_preferences_page.py
-msgid "X Offset"
-msgstr "X-Versatz"
-
-#: rayforge/ui_gtk/machine/general_preferences_page.py
-msgid "Offset to add to each gcode command on x axis."
-msgstr "Versatz, der zu jedem G-Code-Befehl auf der X-Achse hinzugefügt wird."
-
-#: rayforge/ui_gtk/machine/general_preferences_page.py
-msgid "Y Offset"
-msgstr "Y-Versatz"
-
-#: rayforge/ui_gtk/machine/general_preferences_page.py
-msgid "Offset to add to each gcode command on y axis."
-msgstr "Versatz, der zu jedem G-Code-Befehl auf der Y-Achse hinzugefügt wird."
-
-#: rayforge/ui_gtk/machine/general_preferences_page.py
-msgid "Bottom Left"
-msgstr "Unten links"
-
-#: rayforge/ui_gtk/machine/general_preferences_page.py
-msgid "Top Left"
-msgstr "Oben links"
-
-#: rayforge/ui_gtk/machine/general_preferences_page.py
-msgid "Top Right"
-msgstr "Oben rechts"
-
-#: rayforge/ui_gtk/machine/general_preferences_page.py
-msgid "Bottom Right"
-msgstr "Unten rechts"
-
-#: rayforge/ui_gtk/machine/general_preferences_page.py
-msgid "Coordinate Origin (0,0)"
-msgstr "Koordinatenursprung (0,0)"
-
-#: rayforge/ui_gtk/machine/general_preferences_page.py
-msgid "The physical corner where coordinates are zero after homing"
-msgstr ""
-"Die physische Ecke, in der die Koordinaten nach der Referenzfahrt Null sind"
-
-#: rayforge/ui_gtk/machine/general_preferences_page.py
-msgid "Reverse X-Axis Direction"
-msgstr "X-Achsenrichtung umkehren"
-
-#: rayforge/ui_gtk/machine/general_preferences_page.py
-msgid "Makes coordinate values negative"
-msgstr "Macht Koordinatenwerte negativ"
-
-#: rayforge/ui_gtk/machine/general_preferences_page.py
-msgid "Reverse Y-Axis Direction"
-msgstr "Y-Achsenrichtung umkehren"
-
-#: rayforge/ui_gtk/machine/general_preferences_page.py
-msgid "Reverse Z-Axis Direction"
-msgstr "Z-Achsenrichtung umkehren"
-
-#: rayforge/ui_gtk/machine/general_preferences_page.py
-msgid "Enable if a positive Z command (e.g., G0 Z10) moves the head down"
-msgstr ""
-"Aktivieren, wenn ein positiver Z-Befehl (z. B. G0 Z10) den Kopf nach unten "
-"bewegt"
-
-#: rayforge/ui_gtk/machine/general_preferences_page.py
-msgid "Allow Single Axis Homing"
-msgstr "Referenzfahrt für einzelne Achsen erlauben"
-
-#: rayforge/ui_gtk/machine/general_preferences_page.py
-msgid "Enable individual axis homing controls in the jog dialog"
-msgstr ""
-"Steuerelemente für die Referenzfahrt einzelner Achsen im manuellen "
-"Steuerungsdialog aktivieren"
-
-#: rayforge/ui_gtk/machine/general_preferences_page.py
 msgid "Speeds &amp; Acceleration"
 msgstr "Geschwindigkeiten &amp; Beschleunigung"
+
+#: rayforge/ui_gtk/machine/general_preferences_page.py
+msgid "Movement parameters used for job time estimation and path optimization."
+msgstr "Bewegungsparameter für Auftragszeitschätzung und Pfadoptimierung."
 
 #: rayforge/ui_gtk/machine/general_preferences_page.py
 msgid "Max Travel Speed"
@@ -2822,6 +2940,10 @@ msgid "Export G-code..."
 msgstr "G-Code exportieren..."
 
 #: rayforge/ui_gtk/main_menu.py
+msgid "Export Document..."
+msgstr "Dokument exportieren..."
+
+#: rayforge/ui_gtk/main_menu.py
 msgid "Quit"
 msgstr "Beenden"
 
@@ -2918,10 +3040,6 @@ msgstr "_Ansicht"
 #: rayforge/ui_gtk/main_menu.py rayforge/doceditor/stock_cmd.py
 msgid "Add Stock"
 msgstr "Material hinzufügen"
-
-#: rayforge/ui_gtk/main_menu.py rayforge/ui_gtk/mainwindow.py
-msgid "New Sketch"
-msgstr "Neue Skizze"
 
 #: rayforge/ui_gtk/main_menu.py
 msgid "Split"
@@ -3062,65 +3180,6 @@ msgstr "_Hilfe"
 #: rayforge/ui_gtk/main_menu.py
 msgid "(No Recent Items)"
 msgstr "(Keine kürzlichen Elemente)"
-
-#: rayforge/ui_gtk/mainwindow.py
-msgid "Create Sketch Definition"
-msgstr "Skizzendefinition erstellen"
-
-#: rayforge/ui_gtk/mainwindow.py
-msgid "Selected item is not an editable sketch."
-msgstr "Das ausgewählte Element ist keine bearbeitbare Skizze."
-
-#: rayforge/ui_gtk/mainwindow.py
-msgid "Please select a single sketch to edit."
-msgstr "Bitte wähle eine einzelne Skizze zum Bearbeiten aus."
-
-#: rayforge/ui_gtk/mainwindow.py
-msgid "Please select a single sketch to export."
-msgstr "Bitte wähle eine einzelne Skizze zum Exportieren aus."
-
-#: rayforge/ui_gtk/mainwindow.py
-msgid "Sketch exported successfully."
-msgstr "Skizze erfolgreich exportiert."
-
-#: rayforge/ui_gtk/mainwindow.py
-msgid "Failed to save sketch file."
-msgstr "Fehler beim Speichern der Skizzendatei."
-
-#: rayforge/ui_gtk/mainwindow.py
-#, python-brace-format
-msgid "Error exporting sketch: {error}"
-msgstr "Fehler beim Exportieren der Skizze: {error}"
-
-#: rayforge/ui_gtk/mainwindow.py
-msgid "Unsaved Changes"
-msgstr "Nicht gespeicherte Änderungen"
-
-#: rayforge/ui_gtk/mainwindow.py
-msgid "The current project has unsaved changes. Do you want to save them?"
-msgstr ""
-"Das aktuelle Projekt hat nicht gespeicherte Änderungen. Möchten Sie sie "
-"speichern?"
-
-#: rayforge/ui_gtk/mainwindow.py
-msgid "_Cancel"
-msgstr "_Abbrechen"
-
-#: rayforge/ui_gtk/mainwindow.py
-msgid "_Don't Save"
-msgstr "_Nicht speichern"
-
-#: rayforge/ui_gtk/mainwindow.py
-msgid "_Save"
-msgstr "_Speichern"
-
-#: rayforge/ui_gtk/mainwindow.py
-msgid "New project created"
-msgstr "Neues Projekt erstellt"
-
-#: rayforge/ui_gtk/mainwindow.py
-msgid "Untitled"
-msgstr "Unbenannt"
 
 #: rayforge/ui_gtk/mainwindow.py
 #, python-brace-format
@@ -3410,6 +3469,36 @@ msgstr ""
 "Dem Maschinentreiber fehlen erforderliche Einstellungen. Zum Bearbeiten "
 "klicken."
 
+#: rayforge/ui_gtk/project_cmd.py
+msgid "Unsaved Changes"
+msgstr "Nicht gespeicherte Änderungen"
+
+#: rayforge/ui_gtk/project_cmd.py
+msgid "The current project has unsaved changes. Do you want to save them?"
+msgstr ""
+"Das aktuelle Projekt hat nicht gespeicherte Änderungen. Möchten Sie sie "
+"speichern?"
+
+#: rayforge/ui_gtk/project_cmd.py
+msgid "_Cancel"
+msgstr "_Abbrechen"
+
+#: rayforge/ui_gtk/project_cmd.py
+msgid "_Don't Save"
+msgstr "_Nicht speichern"
+
+#: rayforge/ui_gtk/project_cmd.py
+msgid "_Save"
+msgstr "_Speichern"
+
+#: rayforge/ui_gtk/project_cmd.py
+msgid "New project created"
+msgstr "Neues Projekt erstellt"
+
+#: rayforge/ui_gtk/project_cmd.py
+msgid "Untitled"
+msgstr "Unbenannt"
+
 #: rayforge/ui_gtk/doceditor/layer_view.py rayforge/doceditor/layer_cmd.py
 msgid "Assign stock material"
 msgstr "Material zuweisen"
@@ -3499,7 +3588,7 @@ msgid "Automatically determine the trace threshold"
 msgstr "Nachzeichnungsschwellenwert automatisch ermitteln"
 
 #: rayforge/ui_gtk/doceditor/import_dialog.py
-#: rayforge/ui_gtk/doceditor/step_settings/rasterizer.py
+#: rayforge/ui_gtk/doceditor/step_settings/engraver.py
 msgid "Threshold"
 msgstr "Schwellenwert"
 
@@ -3508,8 +3597,7 @@ msgid "Trace objects darker than this value"
 msgstr "Objekte nachzeichnen, die dunkler als dieser Wert sind"
 
 #: rayforge/ui_gtk/doceditor/import_dialog.py
-#: rayforge/ui_gtk/doceditor/step_settings/rasterizer.py
-#: rayforge/ui_gtk/doceditor/step_settings/depth_engraver.py
+#: rayforge/ui_gtk/doceditor/step_settings/engraver.py
 msgid "Invert"
 msgstr "Invertieren"
 
@@ -3686,6 +3774,18 @@ msgid "Gap between test squares (mm)"
 msgstr "Abstand zwischen Testquadraten (mm)"
 
 #: rayforge/ui_gtk/doceditor/step_settings/material_test_grid.py
+msgid "Line Interval"
+msgstr "Linienabstand"
+
+#: rayforge/ui_gtk/doceditor/step_settings/material_test_grid.py
+msgid ""
+"Distance between scan lines in mm (for Engrave mode). Leave at 0 to use "
+"laser spot size."
+msgstr ""
+"Abstand zwischen Scanlinien in mm (für Gravurmodus). Bei 0 wird die "
+"Laserpunktgröße verwendet."
+
+#: rayforge/ui_gtk/doceditor/step_settings/material_test_grid.py
 msgid "Include Labels"
 msgstr "Beschriftungen einschließen"
 
@@ -3698,7 +3798,7 @@ msgid "Label Engrave Power (%)"
 msgstr "Beschriftungs-Gravurleistung (%)"
 
 #: rayforge/ui_gtk/doceditor/step_settings/material_test_grid.py
-#: rayforge/ui_gtk/doceditor/step_settings/depth_engraver.py
+#: rayforge/ui_gtk/doceditor/step_settings/engraver.py
 msgid "Change Power Range"
 msgstr "Leistungsbereich ändern"
 
@@ -3711,48 +3811,6 @@ msgstr "Ändere {param_name}"
 msgid "Change Grid Dimensions"
 msgstr "Gitterabmessungen ändern"
 
-#: rayforge/ui_gtk/doceditor/step_settings/rasterizer.py
-msgid "Direction"
-msgstr "Richtung"
-
-#: rayforge/ui_gtk/doceditor/step_settings/rasterizer.py
-msgid "Raster direction in degrees (0°=horizontal, 90°=vertical)"
-msgstr "Rasterrichtung in Grad (0°=horizontal, 90°=vertikal)"
-
-#: rayforge/ui_gtk/doceditor/step_settings/rasterizer.py
-msgid "Change Raster Direction"
-msgstr "Rasterrichtung ändern"
-
-#: rayforge/ui_gtk/doceditor/step_settings/rasterizer.py
-msgid "Pixel brightness value to consider black (0-255)"
-msgstr "Pixel-Helligkeitswert, der als Schwarz gilt (0-255)"
-
-#: rayforge/ui_gtk/doceditor/step_settings/rasterizer.py
-msgid "Change Raster Threshold"
-msgstr "Rasterschwellenwert ändern"
-
-#: rayforge/ui_gtk/doceditor/step_settings/rasterizer.py
-msgid "Cross-Hatch"
-msgstr "Kreuzschraffur"
-
-#: rayforge/ui_gtk/doceditor/step_settings/rasterizer.py
-msgid "Perform a second pass at 90 degrees for a denser fill"
-msgstr ""
-"Führe einen zweiten Durchgang bei 90 Grad für eine dichtere Füllung durch"
-
-#: rayforge/ui_gtk/doceditor/step_settings/rasterizer.py
-msgid "Toggle Cross-Hatch"
-msgstr "Kreuzschraffur umschalten"
-
-#: rayforge/ui_gtk/doceditor/step_settings/rasterizer.py
-#: rayforge/ui_gtk/doceditor/step_settings/depth_engraver.py
-msgid "Engrave white areas instead of black areas"
-msgstr "Weiße Bereiche anstelle von schwarzen Bereichen gravieren"
-
-#: rayforge/ui_gtk/doceditor/step_settings/rasterizer.py
-msgid "Toggle Invert"
-msgstr "Invertieren umschalten"
-
 #: rayforge/ui_gtk/doceditor/step_settings/optimize.py
 msgid "Enable Optimization"
 msgstr "Optimierung aktivieren"
@@ -3760,6 +3818,127 @@ msgstr "Optimierung aktivieren"
 #: rayforge/ui_gtk/doceditor/step_settings/optimize.py
 msgid "Toggle Path Optimization"
 msgstr "Pfadoptimierung umschalten"
+
+#: rayforge/ui_gtk/doceditor/step_settings/engraver.py
+msgid "Configure how the laser engraves your image."
+msgstr "Konfiguriere, wie der Laser dein Bild graviert."
+
+#: rayforge/ui_gtk/doceditor/step_settings/engraver.py
+msgid "Mode"
+msgstr "Modus"
+
+#: rayforge/ui_gtk/doceditor/step_settings/engraver.py
+msgid "Brightness cutoff for black/white (0-255)"
+msgstr "Helligkeitsgrenzwert für Schwarz/Weiß (0-255)"
+
+#: rayforge/ui_gtk/doceditor/step_settings/engraver.py
+msgid "Engraving Method"
+msgstr "Gravurmethode"
+
+#: rayforge/ui_gtk/doceditor/step_settings/engraver.py
+msgid "Algorithm for converting grayscale to binary"
+msgstr "Algorithmus zum Konvertieren von Graustufen in Binär"
+
+#: rayforge/ui_gtk/doceditor/step_settings/engraver.py
+msgid "Brightness Range"
+msgstr "Helligkeitsbereich"
+
+#: rayforge/ui_gtk/doceditor/step_settings/engraver.py
+msgid "Drag markers to set black/white points"
+msgstr "Ziehe die Markierungen, um Schwarz-/Weißpunkte festzulegen"
+
+#: rayforge/ui_gtk/doceditor/step_settings/engraver.py
+msgid "Min Power"
+msgstr "Min. Leistung"
+
+#: rayforge/ui_gtk/doceditor/step_settings/engraver.py
+#, python-format
+msgid "Power for lightest areas, as a % of the step's main power"
+msgstr ""
+"Leistung für die hellsten Bereiche, als %% der Hauptleistung des Schritts"
+
+#: rayforge/ui_gtk/doceditor/step_settings/engraver.py
+#, python-format
+msgid "Power for darkest areas, as a % of the step's main power"
+msgstr ""
+"Leistung für die dunkelsten Bereiche, als %% der Hauptleistung des Schritts"
+
+#: rayforge/ui_gtk/doceditor/step_settings/engraver.py
+msgid "Number of Depth Levels"
+msgstr "Anzahl der Tiefenstufen"
+
+#: rayforge/ui_gtk/doceditor/step_settings/engraver.py
+msgid "Z Step-Down per Level (mm)"
+msgstr "Z-Absenkung pro Stufe (mm)"
+
+#: rayforge/ui_gtk/doceditor/step_settings/engraver.py
+msgid "Rotate Angle Per Pass"
+msgstr "Rotationswinkel pro Durchgang"
+
+#: rayforge/ui_gtk/doceditor/step_settings/engraver.py
+msgid "Degrees to rotate each successive pass"
+msgstr "Grad, um die jeder folgende Durchgang rotiert wird"
+
+#: rayforge/ui_gtk/doceditor/step_settings/engraver.py
+msgid "Engraving Pattern"
+msgstr "Gravurmuster"
+
+#: rayforge/ui_gtk/doceditor/step_settings/engraver.py
+msgid "Settings that control the scan line pattern and orientation."
+msgstr "Einstellungen, die das Scanlinienmuster und die Ausrichtung steuern."
+
+#: rayforge/ui_gtk/doceditor/step_settings/engraver.py
+msgid "Angle of scan lines in degrees"
+msgstr "Winkel der Scanlinien in Grad"
+
+#: rayforge/ui_gtk/doceditor/step_settings/engraver.py
+msgid "Cross-Hatch"
+msgstr "Kreuzschraffur"
+
+#: rayforge/ui_gtk/doceditor/step_settings/engraver.py
+msgid "Add a second pass at 90 degrees"
+msgstr "Einen zweiten Durchgang bei 90 Grad hinzufügen"
+
+#: rayforge/ui_gtk/doceditor/step_settings/engraver.py
+msgid "Line Spacing"
+msgstr "Linienabstand"
+
+#: rayforge/ui_gtk/doceditor/step_settings/engraver.py
+msgid "Distance between scan lines in mm. Leave at 0 to use laser spot size"
+msgstr ""
+"Abstand zwischen Scanlinien in mm. Bei 0 wird die Laserpunktgröße verwendet"
+
+#: rayforge/ui_gtk/doceditor/step_settings/engraver.py
+msgid "Engrave white areas instead of black areas"
+msgstr "Weiße Bereiche anstelle von schwarzen Bereichen gravieren"
+
+#: rayforge/ui_gtk/doceditor/step_settings/engraver.py
+msgid "Change Min Power"
+msgstr "Min. Leistung ändern"
+
+#: rayforge/ui_gtk/doceditor/step_settings/engraver.py
+msgid "Change Max Power"
+msgstr "Max. Leistung ändern"
+
+#: rayforge/ui_gtk/doceditor/step_settings/engraver.py
+msgid "Min Power (Black)"
+msgstr "Min. Leistung (Schwarz)"
+
+#: rayforge/ui_gtk/doceditor/step_settings/engraver.py
+msgid "Max Power (White)"
+msgstr "Max. Leistung (Weiß)"
+
+#: rayforge/ui_gtk/doceditor/step_settings/engraver.py
+msgid "Min Power (White)"
+msgstr "Minimale Leistung (Weiß)"
+
+#: rayforge/ui_gtk/doceditor/step_settings/engraver.py
+msgid "Max Power (Black)"
+msgstr "Maximale Leistung (Schwarz)"
+
+#: rayforge/ui_gtk/doceditor/step_settings/engraver.py
+msgid "Change engraving setting"
+msgstr "Gravureinstellung ändern"
 
 #: rayforge/ui_gtk/doceditor/step_settings/smooth.py
 msgid "Enable Smoothing"
@@ -3872,62 +4051,6 @@ msgstr "Anzahl der Durchgänge ändern"
 msgid "Change Z Step-Down"
 msgstr "Z-Absenkung ändern"
 
-#: rayforge/ui_gtk/doceditor/step_settings/depth_engraver.py
-msgid "Mode"
-msgstr "Modus"
-
-#: rayforge/ui_gtk/doceditor/step_settings/depth_engraver.py
-msgid "Min Power"
-msgstr "Min. Leistung"
-
-#: rayforge/ui_gtk/doceditor/step_settings/depth_engraver.py
-#, python-format
-msgid "Power for lightest areas, as a % of the step's main power"
-msgstr ""
-"Leistung für die hellsten Bereiche, als %% der Hauptleistung des Schritts"
-
-#: rayforge/ui_gtk/doceditor/step_settings/depth_engraver.py
-#, python-format
-msgid "Power for darkest areas, as a % of the step's main power"
-msgstr ""
-"Leistung für die dunkelsten Bereiche, als %% der Hauptleistung des Schritts"
-
-#: rayforge/ui_gtk/doceditor/step_settings/depth_engraver.py
-msgid "Number of Depth Levels"
-msgstr "Anzahl der Tiefenstufen"
-
-#: rayforge/ui_gtk/doceditor/step_settings/depth_engraver.py
-msgid "Z Step-Down per Level (mm)"
-msgstr "Z-Absenkung pro Stufe (mm)"
-
-#: rayforge/ui_gtk/doceditor/step_settings/depth_engraver.py
-msgid "Change Min Power"
-msgstr "Min. Leistung ändern"
-
-#: rayforge/ui_gtk/doceditor/step_settings/depth_engraver.py
-msgid "Change Max Power"
-msgstr "Max. Leistung ändern"
-
-#: rayforge/ui_gtk/doceditor/step_settings/depth_engraver.py
-msgid "Min Power (Black)"
-msgstr "Min. Leistung (Schwarz)"
-
-#: rayforge/ui_gtk/doceditor/step_settings/depth_engraver.py
-msgid "Max Power (White)"
-msgstr "Max. Leistung (Weiß)"
-
-#: rayforge/ui_gtk/doceditor/step_settings/depth_engraver.py
-msgid "Min Power (White)"
-msgstr "Minimale Leistung (Weiß)"
-
-#: rayforge/ui_gtk/doceditor/step_settings/depth_engraver.py
-msgid "Max Power (Black)"
-msgstr "Maximale Leistung (Schwarz)"
-
-#: rayforge/ui_gtk/doceditor/step_settings/depth_engraver.py
-msgid "Change Depth Engraving setting"
-msgstr "Einstellung für Tiefengravur ändern"
-
 #: rayforge/ui_gtk/doceditor/material_library_list.py
 #: rayforge/ui_gtk/doceditor/material_selector.py
 msgid "Core Materials"
@@ -4009,6 +4132,10 @@ msgstr ""
 #: rayforge/ui_gtk/doceditor/step_settings_dialog.py
 msgid "General Settings"
 msgstr "Allgemeine Einstellungen"
+
+#: rayforge/ui_gtk/doceditor/step_settings_dialog.py
+msgid "Power, speed, and laser head selection for this operation."
+msgstr "Leistung, Geschwindigkeit und Laserkopfauswahl für diesen Vorgang."
 
 #: rayforge/ui_gtk/doceditor/step_settings_dialog.py
 msgid "Power (%)"
@@ -4199,14 +4326,26 @@ msgid "G-code files"
 msgstr "G-Code-Dateien"
 
 #: rayforge/ui_gtk/doceditor/file_dialogs.py
-msgid "Export Sketch"
-msgstr "Skizze exportieren"
+msgid "Export Object"
+msgstr "Objekt exportieren"
 
 #: rayforge/ui_gtk/doceditor/file_dialogs.py rayforge/image/sketch/exporter.py
 #: rayforge/image/sketch/importer.py
 #, python-brace-format
 msgid "{app_name} Sketch"
 msgstr "{app_name}-Skizze"
+
+#: rayforge/ui_gtk/doceditor/file_dialogs.py rayforge/image/svg/exporter.py
+msgid "SVG (Scalable Vector Graphics)"
+msgstr "SVG (Skalierbare Vektorgrafik)"
+
+#: rayforge/ui_gtk/doceditor/file_dialogs.py rayforge/image/dxf/exporter.py
+msgid "DXF (CAD Exchange Format)"
+msgstr "DXF (CAD-Austauschformat)"
+
+#: rayforge/ui_gtk/doceditor/file_dialogs.py
+msgid "Export Document"
+msgstr "Dokument exportieren"
 
 #: rayforge/ui_gtk/doceditor/file_dialogs.py
 #, python-brace-format
@@ -4406,10 +4545,6 @@ msgstr "Auf natürliche Höhe zurücksetzen"
 #: rayforge/ui_gtk/doceditor/property_providers/transform.py
 msgid "Reset to natural aspect ratio"
 msgstr "Auf natürliches Seitenverhältnis zurücksetzen"
-
-#: rayforge/ui_gtk/doceditor/property_providers/transform.py
-msgid "Angle"
-msgstr "Winkel"
 
 #: rayforge/ui_gtk/doceditor/property_providers/transform.py
 msgid "Clockwise is positive"
@@ -4836,6 +4971,10 @@ msgid "Add Perpendicular Constraint"
 msgstr "Rechtwinklige Bedingung hinzufügen"
 
 #: rayforge/ui_gtk/sketcher/sketchelement.py
+msgid "Add Angle Constraint"
+msgstr "Winkelbedingung hinzufügen"
+
+#: rayforge/ui_gtk/sketcher/sketchelement.py
 msgid "Add Tangent Constraint"
 msgstr "Tangentiale Bedingung hinzufügen"
 
@@ -4946,6 +5085,10 @@ msgstr "Radius oder Ausdruck eingeben (z. B. 'Breite/2')."
 #: rayforge/ui_gtk/sketcher/sketchcanvas.py
 msgid "Enter diameter or expression."
 msgstr "Durchmesser oder Ausdruck eingeben."
+
+#: rayforge/ui_gtk/sketcher/sketchcanvas.py
+msgid "Enter angle in degrees or expression."
+msgstr "Winkel in Grad oder Ausdruck eingeben."
 
 #: rayforge/ui_gtk/sketcher/sketchcanvas.py
 msgid "Enter length or expression."
@@ -5120,17 +5263,17 @@ msgstr ""
 msgid "Set the logging level (default: INFO)"
 msgstr "Logging-Level setzen (Standard: INFO)"
 
+#: rayforge/app.py
+msgid ""
+"Exit after importing documents and the editor has settled. Useful for "
+"testing."
+msgstr ""
+"Beenden nach dem Importieren von Dokumenten und wenn der Editor sich "
+"beruhigt hat. Nützlich zum Testen."
+
 #: rayforge/pipeline/steps.py
 msgid "Contour"
 msgstr "Kontur"
-
-#: rayforge/pipeline/steps.py
-msgid "Engrave (Raster)"
-msgstr "Gravieren (Raster)"
-
-#: rayforge/pipeline/steps.py
-msgid "Engrave (Depth-Aware)"
-msgstr "Gravieren (Tiefenbasiert)"
 
 #: rayforge/pipeline/steps.py
 msgid "Shrink Wrap"
@@ -5144,6 +5287,22 @@ msgstr "Umrissrahmen"
 msgid "Material Test Grid"
 msgstr "Materialtestgitter"
 
+#: rayforge/pipeline/producer/raster.py
+msgid "Variable Power"
+msgstr "Variable Leistung"
+
+#: rayforge/pipeline/producer/raster.py
+msgid "Constant Power"
+msgstr "Konstante Leistung"
+
+#: rayforge/pipeline/producer/raster.py
+msgid "Dither"
+msgstr "Dithering"
+
+#: rayforge/pipeline/producer/raster.py
+msgid "Multiple Depths"
+msgstr "Mehrere Tiefen"
+
 #: rayforge/pipeline/producer/contour.py
 msgid "Inside-Outside"
 msgstr "Innen-Außen"
@@ -5151,6 +5310,11 @@ msgstr "Innen-Außen"
 #: rayforge/pipeline/producer/contour.py
 msgid "Outside-Inside"
 msgstr "Außen-Innen"
+
+#: rayforge/pipeline/producer/contour.py
+#: rayforge/pipeline/producer/shrinkwrap.py
+msgid "Optimizing path with arcs..."
+msgstr "Pfad wird mit Bögen optimiert..."
 
 #: rayforge/pipeline/producer/base.py
 msgid "Centerline"
@@ -5164,22 +5328,9 @@ msgstr "Innen"
 msgid "Outside"
 msgstr "Außen"
 
-#: rayforge/pipeline/stage/workpiece_view_runner.py
-msgid "Preparing 2D preview..."
-msgstr "2D-Vorschau wird vorbereitet..."
-
 #: rayforge/pipeline/stage/step_runner.py
 msgid "Assembling step..."
 msgstr "Schritt wird zusammengestellt..."
-
-#: rayforge/pipeline/stage/step_runner.py
-#, python-brace-format
-msgid "Applying '{t}'"
-msgstr "Wende „{t}“ an"
-
-#: rayforge/pipeline/stage/step_runner.py
-msgid "Encoding for 3D preview..."
-msgstr "Kodierung für 3D-Vorschau..."
 
 #: rayforge/pipeline/stage/step_runner.py
 msgid "Storing step data..."
@@ -5190,48 +5341,69 @@ msgid "Calculating time estimate..."
 msgstr "Zeitschätzung wird berechnet..."
 
 #: rayforge/pipeline/stage/job_runner.py
-msgid "Assembling final job..."
-msgstr "Endgültiger Auftrag wird zusammengestellt..."
-
-#: rayforge/pipeline/stage/job_runner.py
-#, python-brace-format
-msgid "Processing final ops for '{step}'"
-msgstr "Verarbeite letzte Operationen für „{step}“"
-
-#: rayforge/pipeline/stage/job_runner.py
-msgid "Calculating final time and distance estimates..."
-msgstr "Berechne finale Zeit- und Abstandsschätzungen..."
-
-#: rayforge/pipeline/stage/job_runner.py
-msgid "Generating G-code..."
-msgstr "G-Code wird generiert..."
-
-#: rayforge/pipeline/stage/job_runner.py
-msgid "Encoding paths for preview..."
-msgstr "Pfade für Vorschau werden kodiert..."
-
-#: rayforge/pipeline/stage/job_runner.py
 msgid "Storing final job artifact..."
 msgstr "Endgültiges Auftragsartefakt wird gespeichert..."
 
-#: rayforge/pipeline/stage/job_runner.py
+#: rayforge/pipeline/stage/job_runner.py rayforge/pipeline/stage/job_compute.py
 msgid "Job finalization complete"
 msgstr "Auftragsfertigstellung abgeschlossen"
 
-#: rayforge/pipeline/stage/workpiece_runner.py
-#, python-brace-format
-msgid "Generating path for '{name}'"
-msgstr "Pfad für „{name}“ generieren"
-
-#: rayforge/pipeline/stage/workpiece_runner.py
+#: rayforge/pipeline/stage/workpiece_compute.py
 #, python-brace-format
 msgid "Applying '{transformer}' on '{workpiece}'"
 msgstr "Wende „{transformer}“ auf „{workpiece}“ an"
 
-#: rayforge/pipeline/stage/workpiece_runner.py
+#: rayforge/pipeline/stage/workpiece_compute.py
+#, python-brace-format
+msgid "Generating path for '{workpiece}'"
+msgstr "Generiere Pfad für '{workpiece}'"
+
+#: rayforge/pipeline/stage/workpiece_compute.py
 #, python-brace-format
 msgid "Finalizing '{workpiece}'"
 msgstr "„{workpiece}“ wird fertiggestellt"
+
+#: rayforge/pipeline/stage/step_compute.py
+#, python-brace-format
+msgid "Applying '{t}'"
+msgstr "Wende „{t}“ an"
+
+#: rayforge/pipeline/stage/job_compute.py
+msgid "Assembling final job..."
+msgstr "Endgültiger Auftrag wird zusammengestellt..."
+
+#: rayforge/pipeline/stage/job_compute.py
+#, python-brace-format
+msgid "Processing final ops for '{step}'"
+msgstr "Verarbeite letzte Operationen für „{step}“"
+
+#: rayforge/pipeline/stage/job_compute.py
+msgid "Calculating final time and distance estimates..."
+msgstr "Berechne finale Zeit- und Abstandsschätzungen..."
+
+#: rayforge/pipeline/stage/job_compute.py
+msgid "Generating G-code..."
+msgstr "G-Code wird generiert..."
+
+#: rayforge/pipeline/stage/job_compute.py
+msgid "Encoding paths for preview..."
+msgstr "Pfade für Vorschau werden kodiert..."
+
+#: rayforge/pipeline/view/view_compute.py
+msgid "Rendering vertices..."
+msgstr "Vertices werden gerendert..."
+
+#: rayforge/pipeline/view/view_compute.py
+msgid "Preparing 2D preview..."
+msgstr "2D-Vorschau wird vorbereitet..."
+
+#: rayforge/pipeline/view/view_compute.py
+msgid "Rendering texture..."
+msgstr "Textur wird gerendert..."
+
+#: rayforge/pipeline/view/view_compute.py
+msgid "Rendering complete."
+msgstr "Rendering abgeschlossen."
 
 #: rayforge/pipeline/transformer/overscan.py
 msgid "Overscan"
@@ -5467,6 +5639,28 @@ msgstr "Export erfolgreich: {name}"
 #, python-brace-format
 msgid "Export failed: {error}"
 msgstr "Export fehlgeschlagen: {error}"
+
+#: rayforge/doceditor/file_cmd.py
+msgid "Object exported successfully."
+msgstr "Objekt erfolgreich exportiert."
+
+#: rayforge/doceditor/file_cmd.py
+#, python-brace-format
+msgid "Failed to export object: {error}"
+msgstr "Fehler beim Exportieren des Objekts: {error}"
+
+#: rayforge/doceditor/file_cmd.py
+msgid "Cannot export: Document has no geometry."
+msgstr "Export nicht möglich: Dokument hat keine Geometrie."
+
+#: rayforge/doceditor/file_cmd.py
+msgid "Document exported successfully."
+msgstr "Dokument erfolgreich exportiert."
+
+#: rayforge/doceditor/file_cmd.py
+#, python-brace-format
+msgid "Failed to export document: {error}"
+msgstr "Fehler beim Exportieren des Dokuments: {error}"
 
 #: rayforge/doceditor/file_cmd.py
 #, python-brace-format
