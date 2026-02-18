@@ -47,10 +47,13 @@ class GtkColorResolver:
     """
     A GTK-specific resolver that converts a generic ColorSpecDict into a
     render-ready, UI-agnostic ColorSet using a Gtk.StyleContext.
+
+    Note: Uses deprecated get_style_context().lookup_color() because
+    PyGObject doesn't expose gtk_widget_lookup_color() (GTK 4.10+).
     """
 
-    def __init__(self, context: Gtk.StyleContext):
-        self.context = context
+    def __init__(self, widget: Gtk.Widget):
+        self._context = widget.get_style_context()
         self._color_cache: Dict[ColorAtom, Gdk.RGBA] = {}
 
     def resolve(self, spec_dict: ColorSpecDict) -> ColorSet:
@@ -101,15 +104,23 @@ class GtkColorResolver:
         elif isinstance(atom, str):
             if atom.startswith("@"):
                 color_name = atom[1:]
-                found, color = self.context.lookup_color(color_name)
+                found, color = self._context.lookup_color(color_name)
                 if not found:
                     logger.warning(f"Theme color '{color_name}' not found.")
-                    color = Gdk.RGBA(red=1.0, green=0.0, blue=1.0, alpha=1.0)
+                    color = Gdk.RGBA()
+                    color.red = 1.0
+                    color.green = 0.0
+                    color.blue = 1.0
+                    color.alpha = 1.0
             else:
                 color = Gdk.RGBA()
                 if not color.parse(atom):
                     logger.warning(f"Could not parse color string: '{atom}'")
-                    color = Gdk.RGBA(red=1.0, green=0.0, blue=1.0, alpha=1.0)
+                    color = Gdk.RGBA()
+                    color.red = 1.0
+                    color.green = 0.0
+                    color.blue = 1.0
+                    color.alpha = 1.0
             self._color_cache[atom] = color
             rgba = color
         elif isinstance(atom, tuple) and len(atom) in [3, 4]:

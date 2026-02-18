@@ -452,7 +452,7 @@ class WorkPieceElement(CanvasElement):
             logger.debug(
                 "Resolving colors for WorkPieceElement due to theme change."
             )
-            resolver = GtkColorResolver(style_context)
+            resolver = GtkColorResolver(self.canvas)
             self._color_set = resolver.resolve(self._color_spec)
             self._last_style_context_hash = current_hash
 

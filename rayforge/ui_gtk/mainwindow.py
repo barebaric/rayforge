@@ -660,7 +660,7 @@ class MainWindow(Adw.ApplicationWindow):
 
     def _on_vertical_pane_position_changed(self, paned, param):
         position = paned.get_position()
-        full_height = paned.get_allocated_height()
+        full_height = paned.get_height()
         control_panel_height = full_height - position
         if control_panel_height > 1:
             self._last_control_panel_height = control_panel_height
@@ -1676,7 +1676,7 @@ class MainWindow(Adw.ApplicationWindow):
 
         if is_visible:
             self.control_panel.set_visible(True)
-            full_height = self.vertical_paned.get_allocated_height()
+            full_height = self.vertical_paned.get_height()
             self.vertical_paned.set_position(
                 full_height - self._last_control_panel_height
             )

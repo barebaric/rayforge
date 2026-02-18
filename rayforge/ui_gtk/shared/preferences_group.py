@@ -57,7 +57,7 @@ class PreferencesGroupWithButton(Adw.PreferencesGroup):
             selection_mode=selection_mode, show_separators=True
         )
         self.list_box.add_css_class("list-box-in-card")
-        self.list_box.get_style_context().add_class("frame")
+        self.list_box.add_css_class("frame")
         container_box.append(self.list_box)
 
         self.add_button = self._create_add_button(button_label)

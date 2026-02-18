@@ -497,8 +497,7 @@ class Canvas3D(Gtk.GLArea):
         if not self.axis_renderer or not self.texture_renderer:
             return
 
-        style_context = self.get_style_context()
-        resolver = GtkColorResolver(style_context)
+        resolver = GtkColorResolver(self)
         self._color_set = resolver.resolve(self._color_spec)
 
         if self._color_set:
@@ -506,8 +505,7 @@ class Canvas3D(Gtk.GLArea):
                 self._color_set.get_lut("engrave")
             )
 
-        # Get background color and set it for OpenGL. Prioritize the specific
-        # 'view_bg_color', but fall back to the generic 'theme_bg_color'.
+        style_context = self.get_style_context()
         found, bg_rgba = style_context.lookup_color("theme_bg_color")
         if not found:
             found, bg_rgba = style_context.lookup_color("theme_bg_color")
