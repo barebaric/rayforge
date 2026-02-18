@@ -491,14 +491,30 @@ class TransformPropertyProvider(PropertyProvider):
         if not self.items:
             return
 
-        # Reset machine X to 0. Backend handles conversion.
+        machine = get_context().machine
+        if machine:
+            wcs_offset = machine.get_active_wcs_offset()
+            target_x = wcs_offset[0]
+        else:
+            target_x = 0.0
+
         current_y_machine = self.y_row.get_value()
-        self.editor.transform.set_position(self.items, 0.0, current_y_machine)
+        self.editor.transform.set_position(
+            self.items, target_x, current_y_machine
+        )
 
     def _on_reset_y_clicked(self, button):
         if not self.items:
             return
 
-        # Reset machine Y to 0. Backend handles conversion.
+        machine = get_context().machine
+        if machine:
+            wcs_offset = machine.get_active_wcs_offset()
+            target_y = wcs_offset[1]
+        else:
+            target_y = 0.0
+
         current_x_machine = self.x_row.get_value()
-        self.editor.transform.set_position(self.items, current_x_machine, 0.0)
+        self.editor.transform.set_position(
+            self.items, current_x_machine, target_y
+        )
