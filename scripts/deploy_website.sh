@@ -49,7 +49,7 @@ cd ..
 # Post-build: Deploy the final site by merging files
 # This rsync command adds the new build without deleting existing content
 echo "Deploying built site to ${DEPLOY_DIR}"
-rsync -a --delete "${BUILD_DIR}/" "${DEPLOY_DIR}/"
+rsync -a --delete --exclude '.git' "${BUILD_DIR}/" "${DEPLOY_DIR}/"
 
 # Commit and Push to Deployment Repository
 echo "Committing and pushing changes..."
