@@ -148,4 +148,4 @@ Now that you've completed your first job, explore these features:
 
 ---
 
-**Need Help?** Check the [Troubleshooting](../troubleshooting/index) section or visit the [GitHub Issues](https://github.com/barebaric/rayforge/issues) page.
+**Need Help?** Check the [Troubleshooting](../troubleshooting/connection) section or visit the [GitHub Issues](https://github.com/barebaric/rayforge/issues) page.

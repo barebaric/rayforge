@@ -161,7 +161,7 @@ Once aligned, the camera overlay helps position jobs accurately.
    - Rotate/scale as needed
 
 4. **Preview the alignment:**
-   - Use the [Simulation Mode](simulation-mode) to visualize the toolpath
+   - Use the [Simulation Mode](../features/simulation-mode) to visualize
    - Check that cuts/engravings will be where you expect
 
 5. **Frame the job** to verify positioning before running

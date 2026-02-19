@@ -184,6 +184,6 @@ For large or complex jobs:
 
 **Related Pages:**
 
-- [Work Coordinate Systems (WCS)](work-coordinate-systems) - Understanding WCS display
+- [Work Coordinate Systems](../general-info/work-coordinate-systems) - WCS
 - [Main Window](main-window) - Main interface overview
-- [Settings & Preferences](settings) - Configure preview settings
+- [Settings](settings) - Application preferences

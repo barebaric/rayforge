@@ -55,7 +55,7 @@ The Materials page manages your material library.
 - **Import Library**: Import materials from a file
 - **Export Library**: Export your materials for backup or sharing
 
-See [Materials](materials) for more details.
+See [Materials](../application-settings/materials) for more details.
 
 ## Recipes
 

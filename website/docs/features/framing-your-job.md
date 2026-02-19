@@ -94,4 +94,4 @@ See [Camera Integration](../machine/camera) for details.
 ## Related Topics
 
 - [Camera Integration](../machine/camera)
-- [Quick Start Guide](quick-start)
+- [Quick Start Guide](../getting-started/quick-start)
