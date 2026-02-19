@@ -153,6 +153,9 @@ def main():
                 # startup behavior
                 self.win.connect("map", self._load_startup_files)
 
+            if self.args.uiscript:
+                self.win.connect("map", self._run_uiscript)
+
             self.win.present()
 
             # Now that the UI is active, trigger the initial machine connections.
@@ -237,6 +240,17 @@ def main():
                 return
             logger.info("Document settled, exiting due to --exit flag.")
             self.quit()
+
+        def quit_idle(self):
+            """Thread-safe quit for use from background threads."""
+            GLib.idle_add(self.quit)
+
+        def _run_uiscript(self, widget):
+            """Schedule UI script execution after window is mapped."""
+            from rayforge.uiscript import run_script
+
+            run_script(Path(self.args.uiscript), self, self.win)
+            return GLib.SOURCE_REMOVE
 
         def _load_startup_files(self, widget):
             """
@@ -325,6 +339,15 @@ def main():
         help=_(
             "Exit after importing documents and the editor has settled. "
             "Useful for testing."
+        ),
+    )
+
+    parser.add_argument(
+        "--uiscript",
+        metavar="SCRIPT",
+        help=_(
+            "Path to a Python script to execute after the main window "
+            "is fully loaded. Useful for automation and testing."
         ),
     )
 
