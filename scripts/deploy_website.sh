@@ -19,13 +19,18 @@ if [ -z "$IS_TAGGED_RELEASE" ]; then
   exit 1
 fi
 
-# Paths
-BUILD_DIR="website/build"
-DEPLOY_DIR="build/deploy_repo"
-WEBSITE_SRC_DIR="website"
+# Use absolute paths
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
+BUILD_DIR="${PROJECT_ROOT}/website/build"
+DEPLOY_DIR="${PROJECT_ROOT}/build/deploy_repo"
+WEBSITE_SRC_DIR="${PROJECT_ROOT}/website"
 
 echo "Starting website deployment for version: ${DEPLOY_VERSION}"
 echo "Tagged release: ${IS_TAGGED_RELEASE}"
+echo "Project root: ${PROJECT_ROOT}"
+echo "Build directory: ${BUILD_DIR}"
+echo "Deploy directory: ${DEPLOY_DIR}"
 
 # Clone Deployment Repository
 echo "Cloning deployment repository from ${DEPLOY_REPO_URL}..."
@@ -44,34 +49,41 @@ npm install
 
 echo "Building static site..."
 npm run build
-cd ..
 
-# Post-build: Deploy the final site by merging files
-# This rsync command adds the new build without deleting existing content
+# Verify build output
+echo "Build output:"
+ls -la "${BUILD_DIR}/"
+
+# Deploy: sync build output to deployment directory
+# Exclude .git (repo data), .github (workflows), .well-known (domain verification)
 echo "Deploying built site to ${DEPLOY_DIR}"
-rsync -a --delete --exclude '.git' "${BUILD_DIR}/" "${DEPLOY_DIR}/"
+rsync -av --delete --exclude '.git' --exclude '.github' --exclude '.well-known' "${BUILD_DIR}/" "${DEPLOY_DIR}/"
+
+# Verify deployment
+echo "Deployed content:"
+ls -la "${DEPLOY_DIR}/"
 
 # Commit and Push to Deployment Repository
 echo "Committing and pushing changes..."
 (
-  cd "${DEPLOY_DIR}"
-  echo "Changed to folder $(pwd)"
+cd "${DEPLOY_DIR}"
+echo "Changed to folder $(pwd)"
 
-  # Abort if this is not a git repository.
-  if [ ! -d ".git" ]; then
-    echo "CRITICAL ERROR: The deployment directory is not a Git repository. Aborting."
-    exit 1
-  fi
+# Abort if this is not a git repository.
+if [ ! -d ".git" ]; then
+  echo "CRITICAL ERROR: The deployment directory is not a Git repository. Aborting."
+  exit 1
+fi
 
-  # Using --all to stage deletions as well
-  git add --all .
-  if [ -z "$(git status --porcelain)" ]; then
-    echo "No changes to deploy. Exiting."
-    exit 0
-  fi
+# Using --all to stage deletions as well
+git add --all .
+if [ -z "$(git status --porcelain)" ]; then
+  echo "No changes to deploy. Exiting."
+  exit 0
+fi
 
-  git commit -m "Deploy website content for ${DEPLOY_VERSION}"
-  git push origin "${DEPLOY_BRANCH}"
+git commit -m "Deploy website content for ${DEPLOY_VERSION}"
+git push origin "${DEPLOY_BRANCH}"
 )
 
 echo "✅ Deployment successful!"
