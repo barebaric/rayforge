@@ -1,6 +1,7 @@
 from gi.repository import Gtk
 from typing import Optional
 from ..icons import get_icon
+from ...machine.driver.dummy import NoDeviceDriver
 from ...machine.transport.transport import (
     TransportStatus,
     TRANSPORT_STATUS_LABELS,
@@ -98,10 +99,13 @@ class ConnectionStatusWidget(Gtk.Box):
         self._update_display(status)
 
     def _update_display(self, status: Optional[TransportStatus]):
-        is_nodriver = not self.machine or not self.machine.driver
+        is_nodriver = (
+            not self.machine
+            or isinstance(self.machine.driver, NoDeviceDriver)
+        )
 
         if is_nodriver or status is None:
-            self.label.set_label(_("No driver selected"))
+            self.label.set_label(_("Disconnected"))
             self.icon.set_status(TransportStatus.DISCONNECTED)
         else:
             self.label.set_label(
