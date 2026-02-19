@@ -11,7 +11,6 @@ Material testing is essential for laser work - different materials require diffe
 - Optimizing execution order for safety (fastest speeds first)
 - Adding labels to identify each test cell's settings
 
-
 ## Creating a Material Test Grid
 
 ### Step 1: Open the Generator
@@ -34,10 +33,11 @@ Rayforge includes presets for common scenarios:
 
 Presets are starting points - you can adjust all parameters after selecting one.
 
-
 ### Step 3: Configure Parameters
 
-Adjust the test grid parameters:
+Adjust the test grid parameters in the settings dialog:
+
+![Material Test Grid Settings](/images/material-test-grid.png)
 
 #### Test Type
 
@@ -71,7 +71,6 @@ Adjust the test grid parameters:
 - **Include Labels**: Enable/disable axis labels showing speed and power values
 - Labels appear on left and top edges
 - Labels are engraved at 10% power, 1000 mm/min
-
 
 ### Step 4: Generate the Grid
 
@@ -158,9 +157,8 @@ Document your successful settings for future reference:
 - Any special notes
 
 :::tip Material Database
- Consider creating a reference document with your material test results for quick lookup in future projects.
+Consider creating a reference document with your material test results for quick lookup in future projects.
 :::
-
 
 ## Advanced Usage
 
@@ -219,30 +217,11 @@ Run the same grid configuration on different materials to build your material li
 
 ## Troubleshooting
 
-### Grid doesn't appear on canvas
-
-- **Check**: Make sure you clicked "Generate" in the settings dialog
-- **Check**: Zoom out - the grid might be outside the visible area
-- **Try**: Use **View → Zoom to Fit** (<kbd>ctrl+0</kbd>)
-
-### Labels are missing
-
-- **Check**: "Include Labels" checkbox is enabled
-- **Check**: Labels extend beyond the grid - zoom out to see them
-- **Note**: Labels add 15mm margin to left and top
-
 ### Test cells execute in wrong order
 
 - Rayforge uses risk-optimized order (fastest speeds first)
 - This is intentional and cannot be changed
 - See [Execution Order](#execution-order-risk-optimization) above
-
-### Grid is too large for material
-
-- **Reduce**: Number of columns/rows
-- **Reduce**: Shape size (try 15mm or 10mm)
-- **Reduce**: Spacing (try 3mm or 2mm)
-- **Calculate**: Use formula in [Grid Size Calculation](#grid-size-calculation)
 
 ### Results are inconsistent
 
@@ -250,35 +229,6 @@ Run the same grid configuration on different materials to build your material li
 - **Check**: Focus is consistent across entire test area
 - **Check**: Laser power is stable (check power supply)
 - **Try**: Smaller grid to reduce test area
-
-## Technical Details
-
-### File Format
-
-Material test grids are stored as:
-
-- **Import Source**: Virtual path `[material-test]` with JSON parameters
-- **Workpiece**: References the import source
-- **Layer**: Regular layer (can be mixed with other operations)
-
-### Serialization
-
-The test grid parameters are stored as JSON:
-
-```json
-{
-  "type": "MaterialTestGridProducer",
-  "params": {
-    "test_type": "Engrave",
-    "speed_range": [1000, 10000],
-    "power_range": [10, 100],
-    "grid_dimensions": [5, 5],
-    "shape_size": 20.0,
-    "spacing": 5.0,
-    "include_labels": true
-  }
-}
-```
 
 ## Related Topics
 
