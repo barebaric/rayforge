@@ -5,7 +5,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 [![Get it from the Snap Store](https://snapcraft.io/en/light/install.svg)](https://snapcraft.io/rayforge)
-<a href="https://flathub.org/apps/org.rayforge.rayforge"><img alt="Get it from Flathub" src="website/content/docs/images/flathub-badge.svg" height="55"/></a>
+<a href="https://flathub.org/apps/org.rayforge.rayforge"><img alt="Get it from Flathub" src="website/static/images/flathub-badge.svg" height="55"/></a>
 <a href="https://www.patreon.com/c/knipknap"><img src="https://c5.patreon.com/external/logo/become_a_patron_button.png" alt="Become a Patron" height="55"/></a>
 
 # Rayforge
@@ -15,10 +15,10 @@ Built with Gtk4 and Libadwaita, it provides a clean, native interface for Linux 
 for both hobbyists and professionals.
 
 <p align="center">
-  <img src="website/content/assets/icon.svg" />
+  <img src="website/static/assets/icon.svg" />
 </p>
 
-![Screenshot](website/content/docs/images/ss-main.png)
+![Screenshot](website/static/images/ss-main.png)
 
 You can also check the [official Rayforge homepage](https://rayforge.org).
 We also have a [Discord](https://discord.gg/sTHNdTtpQJ).
@@ -45,7 +45,7 @@ We also have a [Discord](https://discord.gg/sTHNdTtpQJ).
 | **Multi-Laser Operations**   | Choose different lasers for each operation in a job                                                              |
 | **Camera Integration**       | Use a USB camera for workpiece alignment, positioning, and background tracing.                                   |
 | **Cross-Platform**           | Native builds for Linux and Windows.                                                                             |
-| **Extensible**               | Open development model makes it easy to [add support for new devices](website/content/docs/developer/driver.md). |
+| **Extensible**               | Open development model makes it easy to [add support for new devices](website/docs/developer/driver.md). |
 | **Multi-Language**           | Available in English, Portuguese, Spanish, German, French, and Chinese.                                          |
 | **G-code Dialects**          | Supports GRBL, Smoothieware, and other GRBL-compatible firmwares.                                                |
 
