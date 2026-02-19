@@ -2,6 +2,7 @@ from typing import Dict, Any, TYPE_CHECKING, cast, Optional
 from gi.repository import Gtk, Adw, GObject
 import numpy as np
 from ....image.dither import DitherAlgorithm
+from ....image.util import compute_auto_levels
 from ....pipeline.producer.base import OpsProducer
 from ....pipeline.producer.raster import (
     Rasterizer,
@@ -104,15 +105,31 @@ class EngraverSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
         self.histogram_preview.set_points(
             producer.black_point, producer.white_point
         )
+        self.histogram_preview.auto_mode = producer.auto_levels
         self.histogram_preview.black_point_changed.connect(
             self._on_black_point_changed
         )
         self.histogram_preview.white_point_changed.connect(
             self._on_white_point_changed
         )
+
+        self.auto_levels_row = Adw.SwitchRow(
+            title=_("Auto Levels"),
+            subtitle=_("Automatically adjust black/white points"),
+        )
+        self.auto_levels_row.set_active(producer.auto_levels)
+        self.auto_levels_row.connect(
+            "notify::active", self._on_auto_levels_changed
+        )
+        self.add(self.auto_levels_row)
+
         self.histogram_row = Adw.ActionRow(
             title=_("Brightness Range"),
-            subtitle=_("Drag markers to set black/white points"),
+            subtitle=(
+                _("Auto-adjusted based on image content")
+                if producer.auto_levels
+                else _("Drag markers to set black/white points")
+            ),
         )
         self.histogram_row.add_suffix(self.histogram_preview)
         self.add(self.histogram_row)
@@ -389,6 +406,9 @@ class EngraverSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
 
         self.histogram_preview.update_histogram(histogram)
 
+        auto_black, auto_white = compute_auto_levels(gray_image[alpha > 0])
+        self.histogram_preview.set_auto_points(auto_black, auto_white)
+
     def _commit_power_range_change(self):
         """Commits the min/max power to the model via command(s)."""
         min_p = self.min_power_adj.get_value() / 100.0
@@ -457,6 +477,7 @@ class EngraverSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
 
         uses_grayscale = is_power_mode or is_multi_pass
         self.histogram_row.set_visible(uses_grayscale)
+        self.auto_levels_row.set_visible(uses_grayscale)
 
         self.threshold_row.set_visible(is_constant_power)
         self.dither_algorithm_row.set_visible(is_dither)
@@ -472,6 +493,19 @@ class EngraverSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
 
     def _on_white_point_changed(self, sender, white_point: int):
         self._on_param_changed("white_point", white_point)
+
+    def _on_auto_levels_changed(self, w, _):
+        auto_levels = w.get_active()
+        self.histogram_preview.auto_mode = auto_levels
+        if auto_levels:
+            self.histogram_row.set_subtitle(
+                _("Auto-adjusted based on image content")
+            )
+        else:
+            self.histogram_row.set_subtitle(
+                _("Drag markers to set black/white points")
+            )
+        self._on_param_changed("auto_levels", auto_levels)
 
     def _on_dither_algorithm_changed(self, row, _):
         selected_idx = row.get_selected()

@@ -375,6 +375,8 @@ def _execute_raster(
             yield artifact, 1.0
         return
 
+    opsproducer.prepare(workpiece, settings)
+
     total_height_px = size[1] * px_per_mm_y
 
     chunk_iter = workpiece.render_chunk(

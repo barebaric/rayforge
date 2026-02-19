@@ -62,6 +62,7 @@ def test_initialization_defaults(producer: Rasterizer):
     assert producer.max_power == 1.0
     assert producer.num_depth_levels == 5
     assert producer.invert is False
+    assert producer.auto_levels is True
 
 
 def test_is_vector_producer_is_false(producer: Rasterizer):
@@ -220,17 +221,17 @@ def test_run_returns_hybrid_artifact_with_correct_metadata(
 def test_run_wraps_ops_in_section_markers(
     producer: Rasterizer,
     laser: Laser,
-    white_surface: cairo.ImageSurface,
     mock_workpiece: WorkPiece,
 ):
     """
     Even with an empty result, output should be wrapped in section commands.
     """
+    transparent_surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, 10, 10)
+
     artifact = producer.run(
-        laser, white_surface, (1.0, 1.0), workpiece=mock_workpiece
+        laser, transparent_surface, (1.0, 1.0), workpiece=mock_workpiece
     )
 
-    # Assert
     cmds = list(artifact.ops)
     assert len(cmds) == 2
     start_cmd, end_cmd = cmds
@@ -908,6 +909,72 @@ def test_constant_power_bayer_dithering(
             c for c in artifact.ops if isinstance(c, ScanLinePowerCommand)
         ]
         assert len(scan_cmds) >= 1
+
+
+def test_prepare_computes_global_auto_levels():
+    """
+    Tests that prepare() computes global auto levels from a preview.
+    """
+    from unittest.mock import MagicMock
+
+    producer = Rasterizer(auto_levels=True)
+
+    assert producer._computed_auto_levels is None
+
+    surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, 10, 10)
+    ctx = cairo.Context(surface)
+    ctx.set_source_rgb(0.5, 0.5, 0.5)
+    ctx.paint()
+
+    mock_wp = MagicMock()
+    mock_wp.size = (10.0, 10.0)
+    mock_wp.render_to_pixels.return_value = surface
+
+    settings = {"pixels_per_mm": (10.0, 10.0)}
+    producer.prepare(mock_wp, settings)
+
+    assert producer._computed_auto_levels is not None
+    black_pt = producer._computed_auto_levels[0]
+    white_pt = producer._computed_auto_levels[1]
+    assert 0 <= black_pt <= 253
+    assert 2 <= white_pt <= 255
+    assert black_pt < white_pt
+
+    surface.flush()
+
+
+def test_prepare_skipped_when_auto_levels_disabled(mock_workpiece: WorkPiece):
+    """
+    Tests that prepare() does nothing when auto_levels is False.
+    """
+    producer = Rasterizer(auto_levels=False)
+
+    settings = {"pixels_per_mm": (10.0, 10.0)}
+    producer.prepare(mock_workpiece, settings)
+
+    assert producer._computed_auto_levels is None
+
+
+def test_auto_levels_uses_precomputed_values(
+    laser: Laser, mock_workpiece: WorkPiece
+):
+    """
+    Tests that run() uses precomputed auto levels from prepare().
+    """
+    producer = Rasterizer(auto_levels=True)
+
+    producer._computed_auto_levels = (50, 200)
+
+    surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, 10, 10)
+    ctx = cairo.Context(surface)
+    ctx.set_source_rgb(0.5, 0.5, 0.5)
+    ctx.paint()
+
+    mock_workpiece.set_size(1.0, 1.0)
+
+    artifact = producer.run(laser, surface, (10, 10), workpiece=mock_workpiece)
+
+    assert isinstance(artifact, WorkPieceArtifact)
 
 
 def test_multi_pass_with_angle_increment(

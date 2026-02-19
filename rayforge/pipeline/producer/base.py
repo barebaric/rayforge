@@ -54,6 +54,25 @@ class OpsProducer(ABC):
     ) -> WorkPieceArtifact:
         pass
 
+    def prepare(
+        self,
+        workpiece: "WorkPiece",
+        settings: Dict[str, Any],
+    ) -> None:
+        """
+        Prepare the producer for chunked processing.
+
+        Called once before processing chunks, allowing producers to compute
+        global state based on the entire workpiece. Override this method
+        if your producer needs to analyze the full image before processing
+        individual chunks.
+
+        Args:
+            workpiece: The WorkPiece to be processed.
+            settings: Dictionary of settings from the Step.
+        """
+        pass
+
     def is_vector_producer(self) -> bool:
         """
         Specifies the generation strategy for the producer.

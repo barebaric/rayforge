@@ -241,3 +241,41 @@ def test_normalize_grayscale_extreme_stretch():
         gray2, black_point=100, white_point=101
     )
     assert result2[0, 0] == 255
+
+
+def test_compute_auto_levels_uniform_image():
+    gray = np.full((10, 10), 128, dtype=np.uint8)
+    black_pt, white_pt = grayscale.compute_auto_levels(gray)
+    assert black_pt == 128
+    assert white_pt == 130
+
+
+def test_compute_auto_levels_full_range():
+    gray = np.array([[0, 255]], dtype=np.uint8)
+    black_pt, white_pt = grayscale.compute_auto_levels(gray)
+    assert 0 <= black_pt <= 253
+    assert black_pt < white_pt
+    assert white_pt <= 255
+
+
+def test_compute_auto_levels_empty_array():
+    gray = np.array([], dtype=np.uint8)
+    black_pt, white_pt = grayscale.compute_auto_levels(gray)
+    assert black_pt == 0
+    assert white_pt == 255
+
+
+def test_compute_auto_levels_with_clip_percent():
+    gray = np.arange(256, dtype=np.uint8).reshape(1, 256)
+    black_pt, white_pt = grayscale.compute_auto_levels(gray, clip_percent=5.0)
+    assert 5 <= black_pt <= 20
+    assert 235 <= white_pt <= 250
+    assert black_pt < white_pt
+
+
+def test_compute_auto_levels_returns_valid_range():
+    gray = np.random.randint(0, 256, (100, 100), dtype=np.uint8)
+    black_pt, white_pt = grayscale.compute_auto_levels(gray)
+    assert 0 <= black_pt <= 253
+    assert 2 <= white_pt <= 255
+    assert black_pt < white_pt
