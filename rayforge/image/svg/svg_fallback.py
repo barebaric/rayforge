@@ -68,6 +68,9 @@ def render_svg_to_cairo(
         A cairo.ImageSurface with the rendered SVG, or None on failure.
     """
     import cairo
+    import gi
+
+    gi.require_version("Rsvg", "2.0")
     from gi.repository import Rsvg
 
     if not svg_data:
@@ -91,7 +94,12 @@ def render_svg_to_cairo(
             scale_y = height / doc_height
             ctx.scale(scale_x, scale_y)
 
-        handle.render_document(ctx, Rsvg.Rectangle())
+        viewport = Rsvg.Rectangle()
+        viewport.x = 0
+        viewport.y = 0
+        viewport.width = width
+        viewport.height = height
+        handle.render_document(ctx, viewport)
         return surface
 
     except Exception as e:
