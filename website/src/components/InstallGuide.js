@@ -480,8 +480,7 @@ sudo apt install python3-pip python3-gi gir1.2-gtk-3.0 gir1.2-adw-1 \\
 }
 
 function WindowsInstall({ version }) {
-  const downloadUrl = `https://github.com/barebaric/rayforge/releases/download/v${version}/rayforge-v${version}-installer.exe`;
-  
+  const downloadUrl = `https://github.com/barebaric/rayforge/releases/download/${version}/rayforge-v${version}-installer.exe`;
   return (
     <div className="install-section">
       <h4>Windows Installation</h4>
