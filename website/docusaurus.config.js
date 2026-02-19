@@ -1,3 +1,20 @@
+const webpack = require('webpack');
+
+function rayforgeVersionPlugin() {
+  return {
+    name: 'rayforge-version-plugin',
+    configureWebpack() {
+      return {
+        plugins: [
+          new webpack.DefinePlugin({
+            RAYFORGE_VERSION: JSON.stringify(process.env.RAYFORGE_VERSION || '0.0.0'),
+          }),
+        ],
+      };
+    },
+  };
+}
+
 module.exports = {
   title: 'Rayforge',
   tagline: 'Modern G-code sender and control software for GRBL-based laser cutters and engravers',
@@ -43,6 +60,7 @@ module.exports = {
   ],
 
   plugins: [
+    rayforgeVersionPlugin,
     [
       '@docusaurus/theme-mermaid',
       {

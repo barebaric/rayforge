@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import CodeBlock from '@theme/CodeBlock';
 import Admonition from '@theme/Admonition';
-import { useThemeConfig } from '@docusaurus/theme-common';
 import './InstallGuide.css';
+
+const VERSION = typeof RAYFORGE_VERSION !== 'undefined' ? RAYFORGE_VERSION : '0.0.0';
 
 function detectOs() {
   if (typeof window === 'undefined') {
@@ -729,8 +730,6 @@ function NeedHelp({ os, linuxMethod }) {
 }
 
 export default function InstallGuide() {
-  const { customFields } = useThemeConfig();
-  const version = customFields?.latestVersion || '0.0.0';
   const hashState = getInitialStateFromHash();
   const [selectedOs, setSelectedOs] = useState(() => hashState.os || detectOs());
   const [linuxMethod, setLinuxMethod] = useState(() => hashState.method || 'snap');
@@ -759,7 +758,7 @@ export default function InstallGuide() {
             onMethodChange={setLinuxMethod}
           />
         )}
-        {selectedOs === 'windows' && <WindowsInstall version={version} />}
+        {selectedOs === 'windows' && <WindowsInstall version={VERSION} />}
         {selectedOs === 'macos' && <MacosInstall />}
 
         <VerifyInstall os={selectedOs} />
