@@ -241,6 +241,18 @@ See [Overscan](../overscan) for details.
 
 Use invert for lithophanes (light areas should be thin) or embossing (raised areas).
 
+**Brightness Range:**
+
+Controls how image brightness values are mapped to laser power. The histogram shows the distribution of brightness values in your image.
+
+- **Auto Levels** (default): Automatically adjusts the black and white points based on image content. Values below the black point are treated as black, values above the white point are treated as white. This stretches the image's contrast to use the full power range.
+- **Manual Mode**: Disable Auto Levels to manually set black and white points by dragging the markers on the histogram.
+
+This is particularly useful for:
+- Low-contrast images that need contrast enhancement
+- Images with limited tonal range
+- Ensuring consistent results across different source images
+
 ### Constant Power Mode Settings
 
 ![Constant Power mode settings](/images/step-engrave-constant_power-step-settings.png)

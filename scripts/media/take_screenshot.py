@@ -907,14 +907,33 @@ def main():
     from rayforge import __version__
 
     parser = argparse.ArgumentParser(
-        description="A GCode generator for laser cutters."
+        description="A GCode generator for laser cutters.",
+        epilog="""
+Examples:
+  Main window with simulation:
+    pixi run screenshot --screenshot-type main image.png
+
+  Step settings for engrave (uses tests/allsteps.ryp):
+    pixi run screenshot --screenshot-type step-settings --step-index 1 \\
+        --engrave-mode POWER_MODULATION tests/allsteps.ryp
+
+  Machine dialog page:
+    pixi run screenshot --screenshot-type machine --machine-page laser
+
+Note: For step-settings screenshots, provide a .ryp project file with
+the required operations. The --step-index is 0-based, so step-index 1
+captures the second step in the project. Use --engrave-mode only when
+capturing an engrave step; it will be ignored for other step types.
+        """,
+        formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     parser.add_argument(
         "--version", action="version", version=f"%(prog)s {__version__}"
     )
     parser.add_argument(
         "filenames",
-        help="Paths to one or more input SVG or image files.",
+        help="Paths to input files. For step-settings screenshots, "
+        "provide a .ryp project file with the required operations.",
         nargs="*",
     )
     parser.add_argument(
@@ -979,7 +998,8 @@ def main():
         "--step-index",
         type=int,
         default=0,
-        help="Index of the step to capture (default: 0)",
+        help="Index of the step to capture, 0-based (default: 0). "
+        "Requires a project file with enough steps at that index.",
     )
     parser.add_argument(
         "--engrave-mode",
@@ -990,7 +1010,8 @@ def main():
             "DITHER",
             "MULTI_PASS",
         ],
-        help="Engrave mode to set for engrave steps",
+        help="Engrave mode to set for engrave steps. Only applies when "
+        "the step at --step-index is an engrave operation.",
     )
     parser.add_argument(
         "--recipe-page",

@@ -14,11 +14,15 @@ class HistogramPreview(Gtk.DrawingArea):
         self.histogram: np.ndarray | None = None
         self._black_point: int = 0
         self._white_point: int = 255
+        self._auto_black_point: int = 0
+        self._auto_white_point: int = 255
+        self._auto_mode: bool = True
         self._dragging: str | None = None
         self._hovering: str | None = None
 
         self.black_point_changed = Signal()
         self.white_point_changed = Signal()
+        self.auto_mode_changed = Signal()
 
         self.set_content_width(self.WIDTH)
         self.set_content_height(self.HEIGHT)
@@ -54,6 +58,24 @@ class HistogramPreview(Gtk.DrawingArea):
             self._white_point = max(1, min(255, value))
             self.queue_draw()
 
+    @property
+    def auto_mode(self) -> bool:
+        return self._auto_mode
+
+    @auto_mode.setter
+    def auto_mode(self, value: bool):
+        if self._auto_mode != value:
+            self._auto_mode = value
+            self.queue_draw()
+
+    def set_auto_points(self, black_point: int, white_point: int):
+        self._auto_black_point = max(0, min(253, black_point))
+        self._auto_white_point = max(
+            self._auto_black_point + 2, min(255, white_point)
+        )
+        if self._auto_mode:
+            self.queue_draw()
+
     def update_histogram(self, histogram: np.ndarray | None):
         self.histogram = histogram
         self.queue_draw()
@@ -75,8 +97,12 @@ class HistogramPreview(Gtk.DrawingArea):
     def _get_handle_at(
         self, x: float, y: float, width: int, height: int
     ) -> str | None:
-        black_x = self._value_to_x(self._black_point, width)
-        white_x = self._value_to_x(self._white_point, width)
+        if self._auto_mode:
+            black_x = self._value_to_x(self._auto_black_point, width)
+            white_x = self._value_to_x(self._auto_white_point, width)
+        else:
+            black_x = self._value_to_x(self._black_point, width)
+            white_x = self._value_to_x(self._white_point, width)
 
         threshold = 10
 
@@ -87,6 +113,8 @@ class HistogramPreview(Gtk.DrawingArea):
         return None
 
     def _on_pressed(self, gesture, n_press, x, y):
+        if self._auto_mode:
+            return
         width = self.get_width()
         handle = self._get_handle_at(x, y, width, self.get_height())
         if handle:
@@ -97,6 +125,9 @@ class HistogramPreview(Gtk.DrawingArea):
         self._dragging = None
 
     def _on_motion(self, controller, x, y):
+        if self._auto_mode:
+            return
+
         width = self.get_width()
         height = self.get_height()
 
@@ -160,10 +191,19 @@ class HistogramPreview(Gtk.DrawingArea):
             )
         ctx.fill()
 
-        black_x = self._value_to_x(self._black_point, width)
-        white_x = self._value_to_x(self._white_point, width)
+        if self._auto_mode:
+            black_x = self._value_to_x(self._auto_black_point, width)
+            white_x = self._value_to_x(self._auto_white_point, width)
+        else:
+            black_x = self._value_to_x(self._black_point, width)
+            white_x = self._value_to_x(self._white_point, width)
 
-        ctx.set_source_rgba(0.2, 0.6, 1.0, 0.7)
+        if self._auto_mode:
+            ctx.set_source_rgba(0.2, 0.6, 1.0, 0.5)
+            ctx.set_dash([4, 4])
+        else:
+            ctx.set_source_rgba(0.2, 0.6, 1.0, 0.7)
+            ctx.set_dash([])
         if self._hovering == "black" or self._dragging == "black":
             ctx.set_line_width(3)
         else:
@@ -172,7 +212,12 @@ class HistogramPreview(Gtk.DrawingArea):
         ctx.line_to(black_x, height - self.MARGIN)
         ctx.stroke()
 
-        ctx.set_source_rgba(1.0, 0.4, 0.2, 0.7)
+        if self._auto_mode:
+            ctx.set_source_rgba(1.0, 0.4, 0.2, 0.5)
+            ctx.set_dash([4, 4])
+        else:
+            ctx.set_source_rgba(1.0, 0.4, 0.2, 0.7)
+            ctx.set_dash([])
         if self._hovering == "white" or self._dragging == "white":
             ctx.set_line_width(3)
         else:

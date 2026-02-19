@@ -7,6 +7,44 @@ import cairo
 import numpy
 
 
+def compute_auto_levels(
+    gray_image: numpy.ndarray,
+    clip_percent: float = 1.0,
+) -> Tuple[int, int]:
+    """
+    Compute black and white points automatically using percentile clipping.
+
+    Uses a heuristic that clips a percentage of pixels at both ends of the
+    histogram to automatically determine the black and white points.
+
+    Args:
+        gray_image: uint8 numpy array with grayscale values (0-255).
+        clip_percent: Percentage of pixels to clip at each end (0-100).
+            Default is 1.0, meaning the bottom 1% and top 1% are clipped.
+
+    Returns:
+        Tuple of (black_point, white_point) as integers in range 0-255.
+        black_point will be at least 1 less than white_point.
+    """
+    if gray_image.size == 0:
+        return 0, 255
+
+    flat = gray_image.flatten()
+    if flat.size == 0:
+        return 0, 255
+
+    lower_percentile = clip_percent
+    upper_percentile = 100.0 - clip_percent
+
+    black_point = int(numpy.percentile(flat, lower_percentile))
+    white_point = int(numpy.percentile(flat, upper_percentile))
+
+    black_point = max(0, min(253, black_point))
+    white_point = max(black_point + 2, min(255, white_point))
+
+    return black_point, white_point
+
+
 def normalize_grayscale(
     gray_image: numpy.ndarray,
     black_point: int = 0,

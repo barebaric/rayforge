@@ -13,6 +13,7 @@ from .grayscale import (
     surface_to_grayscale,
     surface_to_binary,
     convert_surface_to_grayscale_inplace,
+    compute_auto_levels,
 )
 
 from .transparency import (
@@ -43,6 +44,7 @@ __all__ = [
     "surface_to_grayscale",
     "surface_to_binary",
     "convert_surface_to_grayscale_inplace",
+    "compute_auto_levels",
     "make_surface_transparent",
     "make_transparent_except_color",
     "resize_and_crop_from_full_image",

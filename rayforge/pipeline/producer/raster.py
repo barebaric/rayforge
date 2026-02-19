@@ -2,12 +2,13 @@ import cairo
 import numpy as np
 import logging
 from enum import Enum, auto
-from typing import Optional, TYPE_CHECKING, Dict, Any
+from typing import Optional, TYPE_CHECKING, Dict, Any, Tuple
 from ...core.ops import Ops, SectionType
 from ...image.util import (
     surface_to_grayscale,
     surface_to_binary,
     normalize_grayscale,
+    compute_auto_levels,
 )
 from ...image.dither import surface_to_dithered_array, DitherAlgorithm
 from ...shared.tasker.progress import ProgressContext
@@ -71,6 +72,7 @@ class Rasterizer(OpsProducer):
         line_interval_mm: Optional[float] = None,
         black_point: int = 0,
         white_point: int = 255,
+        auto_levels: bool = True,
         angle_increment: float = 0.0,
     ):
         self.scan_angle = scan_angle
@@ -87,7 +89,52 @@ class Rasterizer(OpsProducer):
         self.line_interval_mm = line_interval_mm
         self.black_point = black_point
         self.white_point = white_point
+        self.auto_levels = auto_levels
         self.angle_increment = angle_increment
+        self._computed_auto_levels: Optional[Tuple[int, int]] = None
+
+    def prepare(
+        self,
+        workpiece: "WorkPiece",
+        settings: Dict[str, Any],
+    ) -> None:
+        """
+        Compute global auto levels from a low-resolution preview.
+
+        This ensures consistent black/white points across all chunks
+        when processing large images in chunks.
+        """
+        self._computed_auto_levels = None
+
+        if not self.auto_levels:
+            return
+
+        px_per_mm_x, px_per_mm_y = settings["pixels_per_mm"]
+        size = workpiece.size
+
+        max_preview_pixels = 512
+        scale = min(
+            1.0,
+            max_preview_pixels / (size[0] * px_per_mm_x),
+            max_preview_pixels / (size[1] * px_per_mm_y),
+        )
+
+        preview_width = max(1, int(size[0] * px_per_mm_x * scale))
+        preview_height = max(1, int(size[1] * px_per_mm_y * scale))
+
+        surface = workpiece.render_to_pixels(preview_width, preview_height)
+        if not surface:
+            return
+
+        gray_image, alpha = surface_to_grayscale(surface)
+
+        if self.invert:
+            alpha_mask = alpha > 0
+            gray_image[alpha_mask] = 255 - gray_image[alpha_mask]
+
+        surface.flush()
+
+        self._computed_auto_levels = compute_auto_levels(gray_image[alpha > 0])
 
     def run(
         self,
@@ -126,9 +173,19 @@ class Rasterizer(OpsProducer):
                 alpha_mask = alpha > 0
                 gray_image[alpha_mask] = 255 - gray_image[alpha_mask]
 
-            if self.black_point > 0 or self.white_point < 255:
+            if self.auto_levels:
+                if self._computed_auto_levels is not None:
+                    black_pt, white_pt = self._computed_auto_levels
+                else:
+                    black_pt, white_pt = compute_auto_levels(
+                        gray_image[alpha > 0]
+                    )
+            else:
+                black_pt, white_pt = self.black_point, self.white_point
+
+            if black_pt > 0 or white_pt < 255:
                 gray_image = normalize_grayscale(
-                    gray_image, self.black_point, self.white_point
+                    gray_image, black_pt, white_pt
                 )
 
             step_power = settings.get("power", 1.0) if settings else 1.0
@@ -513,6 +570,7 @@ class Rasterizer(OpsProducer):
                 "line_interval_mm": self.line_interval_mm,
                 "black_point": self.black_point,
                 "white_point": self.white_point,
+                "auto_levels": self.auto_levels,
                 "angle_increment": self.angle_increment,
             },
         }
@@ -548,6 +606,7 @@ class Rasterizer(OpsProducer):
             "line_interval_mm",
             "black_point",
             "white_point",
+            "auto_levels",
             "angle_increment",
         }
 
