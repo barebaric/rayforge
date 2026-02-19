@@ -78,7 +78,7 @@ def test_step_runner_correctly_scales_and_places_ops(
         cut_speed=machine.max_cut_speed,
         travel_speed=machine.max_travel_speed,
         acceleration=machine.acceleration,
-        creator_tag="test_step",
+        creator_tag="tstp",
     )
     assert result == 1
 
@@ -158,7 +158,7 @@ def test_step_runner_handles_texture_data(machine, adopting_mock_proxy):
         cut_speed=machine.max_cut_speed,
         travel_speed=machine.max_travel_speed,
         acceleration=machine.acceleration,
-        creator_tag="test_step",
+        creator_tag="tstp",
     )
     assert result == 1
 
@@ -263,7 +263,7 @@ def test_step_runner_instantiates_transformers_from_dict(
             cut_speed=machine.max_cut_speed,
             travel_speed=machine.max_travel_speed,
             acceleration=machine.acceleration,
-            creator_tag="test_step",
+            creator_tag="tstp",
         )
 
         assert result == 1

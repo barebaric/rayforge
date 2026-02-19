@@ -43,7 +43,6 @@ Method Usage Guide
 """
 
 from __future__ import annotations
-import re
 import uuid
 import logging
 from contextlib import contextmanager
@@ -60,11 +59,7 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-
-def _build_shm_name(creator_tag: str) -> str:
-    clean_tag = re.sub(r"[^a-z0-9]+", "", creator_tag.lower())
-    short_tag = clean_tag[:4] if clean_tag else "unk"
-    return f"rf_{short_tag}_{uuid.uuid4().hex[:16]}"
+MAX_TAG_LENGTH = 11
 
 
 class ArtifactStore:
@@ -192,18 +187,35 @@ class ArtifactStore:
         Args:
             artifact: The artifact to serialize.
             creator_tag: A tag identifying the creator for debugging.
+                Must be alphanumeric and at most 11 characters.
             generation_context: Optional GenerationContext to track the
                 created resource. When provided, the handle is registered
                 with the context for lifecycle management.
 
         Returns:
             A handle to the serialized artifact.
+
+        Raises:
+            ValueError: If creator_tag exceeds MAX_TAG_LENGTH or contains
+                invalid characters.
         """
+        if len(creator_tag) > MAX_TAG_LENGTH:
+            raise ValueError(
+                f"creator_tag '{creator_tag}' exceeds maximum length of "
+                f"{MAX_TAG_LENGTH} characters"
+            )
+        if not creator_tag or not all(
+            c.isalnum() or c == "_" for c in creator_tag
+        ):
+            raise ValueError(
+                f"creator_tag '{creator_tag}' must be non-empty and "
+                f"contain only alphanumeric characters and underscores"
+            )
+
         arrays = artifact.get_arrays_for_storage()
         total_bytes = sum(arr.nbytes for arr in arrays.values())
 
-        # Create the shared memory block
-        shm_name = _build_shm_name(creator_tag)
+        shm_name = f"rf_{creator_tag}_{uuid.uuid4().hex[:16]}"
         try:
             # Prevent creating a zero-size block, which raises a ValueError.
             # A 1-byte block is a safe, minimal placeholder.
