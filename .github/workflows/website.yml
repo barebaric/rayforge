@@ -38,6 +38,9 @@ jobs:
           git config user.name github-actions
           git config user.email github-actions@github.com
 
+      - name: Install website dependencies
+        run: pixi run -e website site-install
+
       - name: Build documentation for PR Preview
         if: github.event_name == 'pull_request'
         run: pixi run -e website site-build
@@ -47,7 +50,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: docs-preview
-          path: build/website/
+          path: website/build/
           retention-days: 7
 
       - name: Determine Version
@@ -85,14 +88,4 @@ jobs:
           DEPLOY_REPO_URL: git@github.com:barebaric/rayforge-website.git
           DEPLOY_BRANCH: main
           IS_TAGGED_RELEASE: ${{ github.ref_type == 'tag' }}
-        run: |
-          # If this is a tagged release, update the versions.json file first.
-          if [[ "${{ env.IS_TAGGED_RELEASE }}" == "true" ]]; then
-            echo "Tagged release detected. Updating versions.json with new version: ${{ env.DEPLOY_VERSION }}"
-            pixi run python website/update_site_versions.py "${{ env.DEPLOY_VERSION }}" website/content/versions.json
-          else
-            echo "Non-tag push detected. Building for 'latest' only."
-          fi
-
-          # The prepare script will now read the IS_TAGGED_RELEASE env var to adapt the build.
-          pixi run site-deploy
+        run: pixi run -e website site-deploy

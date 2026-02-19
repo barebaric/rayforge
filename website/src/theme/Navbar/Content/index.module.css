@@ -1,0 +1,22 @@
+.patreonLink {
+  display: inline-flex;
+  align-items: center;
+  margin-right: 0.5rem;
+  transition: transform 0.2s ease;
+}
+
+.patreonLink:hover {
+  transform: scale(1.05);
+}
+
+.patreonImg {
+  height: 32px;
+  width: auto;
+  display: block;
+}
+
+@media (max-width: 996px) {
+  .patreonLink {
+    display: none;
+  }
+}

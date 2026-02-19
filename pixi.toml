@@ -88,17 +88,7 @@ ruff = "*"
 pre-commit = "*"
 
 [feature.website.dependencies]
-go = "*"
-nodejs = "*"
-
-[feature.website.pypi-dependencies]
-mkdocs-material = ">=9.5"
-mkdocs-glightbox = "*"
-mkdocs-macros-plugin = "*"
-pillow = "*"
-cairosvg = "*"
-hugo = "*"
-
+nodejs = ">=22"
 [feature.video-tools.dependencies]
 ffmpeg = "*"
 python = ">=3.11"
@@ -160,8 +150,9 @@ depends-on = ["compile-translations"]
 
 # Tasks for developing and generating the website
 [feature.website.tasks]
-site-serve = "mkdocs serve -f website/mkdocs.yml --livereload --watch-theme"
-site-build = "mkdocs build -f website/mkdocs.yml --strict --clean"
+site-install = { cmd = "npm install", cwd = "website" }
+site-serve = { cmd = "npm start", cwd = "website" }
+site-build = { cmd = "npm run build", cwd = "website" }
 site-deploy = "bash scripts/deploy_website.sh"
 
 # Tasks for video processing

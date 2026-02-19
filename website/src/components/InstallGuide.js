@@ -1,0 +1,594 @@
+import React, { useState } from 'react';
+import CodeBlock from '@theme/CodeBlock';
+import Admonition from '@theme/Admonition';
+import './InstallGuide.css';
+
+const osOptions = [
+  {
+    id: 'linux',
+    label: 'Linux',
+    icon: '🐧',
+  },
+  {
+    id: 'windows',
+    label: 'Windows',
+    icon: '🪟',
+  },
+  {
+    id: 'macos',
+    label: 'macOS',
+    icon: '🍎',
+  },
+];
+
+const linuxMethods = [
+  { id: 'snap', label: 'Snap (Recommended)' },
+  { id: 'ppa', label: 'Ubuntu 24.04 (PPA)' },
+  { id: 'flatpak', label: 'Flathub' },
+  { id: 'source', label: 'From Source' },
+];
+
+function OsSelector({ selectedOs, onSelectOs }) {
+  return (
+    <div className="install-os-selector">
+      <p><strong>Select your operating system:</strong></p>
+      <div className="install-os-buttons">
+        {osOptions.map((os) => (
+          <button
+            key={os.id}
+            className={`install-os-btn ${
+              selectedOs === os.id ? 'install-os-btn--active' : ''
+            }`}
+            onClick={() => onSelectOs(os.id)}
+          >
+            <span className="install-os-icon">{os.icon}</span>
+            <span>{os.label}</span>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function LinuxInstall({ method, onMethodChange }) {
+  return (
+    <>
+      <div className="install-method-selector">
+        <p><strong>Choose installation method:</strong></p>
+        <div className="install-method-tabs">
+          {linuxMethods.map((m) => (
+            <button
+              key={m.id}
+              className={`install-method-btn ${
+                method === m.id ? 'install-method-btn--active' : ''
+              }`}
+              onClick={() => onMethodChange(m.id)}
+            >
+              {m.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {method === 'ppa' && <LinuxPpaInstall />}
+      {method === 'flatpak' && <LinuxFlatpakInstall />}
+      {method === 'snap' && <LinuxSnapInstall />}
+      {method === 'source' && <LinuxSourceInstall />}
+    </>
+  );
+}
+
+function LinuxPpaInstall() {
+  return (
+    <div className="install-section">
+      <h4>Ubuntu 24.04 LTS</h4>
+      <p>
+        For Ubuntu 24.04 LTS, you can use our official PPA. This method
+        provides automatic updates through your system's package manager.
+      </p>
+
+      <div className="install-step">
+        <div className="install-step-number">1</div>
+        <div className="install-step-content">
+          <h5>Add the Rayforge PPA</h5>
+          <CodeBlock language="bash">
+            {`sudo add-apt-repository ppa:knipknap/rayforge
+sudo apt update`}
+          </CodeBlock>
+        </div>
+      </div>
+
+      <div className="install-step">
+        <div className="install-step-number">2</div>
+        <div className="install-step-content">
+          <h5>Install Rayforge</h5>
+          <CodeBlock language="bash">sudo apt install rayforge</CodeBlock>
+        </div>
+      </div>
+
+      <div className="install-step">
+        <div className="install-step-number">3</div>
+        <div className="install-step-content">
+          <h5>Launch Rayforge</h5>
+          <p>
+            Launch Rayforge from your application menu or by running:
+          </p>
+          <CodeBlock language="bash">rayforge</CodeBlock>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function LinuxFlatpakInstall() {
+  return (
+    <div className="install-section">
+      <h4>Flathub Package</h4>
+      <p>
+        The Flathub package is the easiest way to get started with Rayforge
+        on Linux.
+      </p>
+
+      <div className="install-step">
+        <div className="install-step-number">1</div>
+        <div className="install-step-content">
+          <h5>Install from Flathub</h5>
+          <p>
+            <a
+              href="https://flathub.org/apps/org.rayforge.rayforge"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <img
+                alt="Get it from Flathub"
+                src="/images/flathub-badge.svg"
+                height="55"
+              />
+            </a>
+          </p>
+          <p>Or install via command line:</p>
+          <CodeBlock language="bash">
+            flatpak install flathub org.rayforge.rayforge
+          </CodeBlock>
+        </div>
+      </div>
+
+      <div className="install-step">
+        <div className="install-step-number">2</div>
+        <div className="install-step-content">
+          <h5>Launch Rayforge</h5>
+          <CodeBlock language="bash">
+            flatpak run org.rayforge.rayforge
+          </CodeBlock>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function LinuxSnapInstall() {
+  return (
+    <div className="install-section">
+      <h4>Snap Package</h4>
+      <p>
+        The Snap package works on most Linux distributions and includes all
+        dependencies in a sandboxed environment.
+      </p>
+
+      <div className="install-step">
+        <div className="install-step-number">1</div>
+        <div className="install-step-content">
+          <h5>Install Rayforge</h5>
+          <CodeBlock language="bash">sudo snap install rayforge</CodeBlock>
+        </div>
+      </div>
+
+      <div className="install-step">
+        <div className="install-step-number">2</div>
+        <div className="install-step-content">
+          <h5>Grant Permissions (Important!)</h5>
+          <Admonition type="warning" title="Permissions Required">
+            The Snap version runs in a sandbox and requires manual
+            permission grants for hardware access.
+          </Admonition>
+
+          <p>
+            <strong>For USB Serial Port Access:</strong>
+          </p>
+          <CodeBlock language="bash">
+            {`# Enable experimental hotplug support (one-time setup)
+sudo snap set system experimental.hotplug=true
+
+# Connect your laser via USB, then grant access
+sudo snap connect rayforge:serial-port`}
+          </CodeBlock>
+
+          <p>
+            <strong>For Camera Access:</strong>
+          </p>
+          <CodeBlock language="bash">
+            sudo snap connect rayforge:camera
+          </CodeBlock>
+        </div>
+      </div>
+
+      <div className="install-step">
+        <div className="install-step-number">3</div>
+        <div className="install-step-content">
+          <h5>Verify Permissions</h5>
+          <CodeBlock language="bash">
+            snap connections rayforge
+          </CodeBlock>
+          <p>
+            Look for <code>serial-port</code> in the list. If it shows
+            "connected", you're ready to go.
+          </p>
+        </div>
+      </div>
+
+      <div className="install-troubleshoot">
+        <h5>Troubleshooting Snap Permissions</h5>
+        <details>
+          <summary>Serial port still not working?</summary>
+          <div className="install-troubleshoot-content">
+            <ol>
+              <li>
+                <strong>Replug the USB device:</strong> Unplug your laser
+                controller, wait 5 seconds, plug it back in.
+              </li>
+              <li>
+                <strong>Restart Rayforge:</strong> Close completely and
+                relaunch.
+              </li>
+              <li>
+                <strong>Check the device exists:</strong>
+                <CodeBlock language="bash">
+                  ls -l /dev/ttyUSB* /dev/ttyACM*
+                </CodeBlock>
+              </li>
+              <li>
+                <strong>Reinstall if needed:</strong>
+                <CodeBlock language="bash">
+                  {`sudo snap remove rayforge
+sudo snap install rayforge
+sudo snap connect rayforge:serial-port`}
+                </CodeBlock>
+              </li>
+            </ol>
+          </div>
+        </details>
+      </div>
+    </div>
+  );
+}
+
+function LinuxSourceInstall() {
+  return (
+    <div className="install-section">
+      <h4>Install from Source</h4>
+      <p>
+        For developers and advanced users who want to run the latest
+        development version or contribute to the project.
+      </p>
+
+      <div className="install-step">
+        <div className="install-step-number">1</div>
+        <div className="install-step-content">
+          <h5>Install System Dependencies</h5>
+          <p>On Debian/Ubuntu:</p>
+          <CodeBlock language="bash">
+            {`sudo apt update
+sudo apt install python3-pip python3-gi gir1.2-gtk-3.0 gir1.2-adw-1 \\
+  gir1.2-gdkpixbuf-2.0 libgirepository-1.0-dev libgirepository-2.0-0 \\
+  libvips42t64 libadwaita-1-0 libopencv-dev`}
+          </CodeBlock>
+        </div>
+      </div>
+
+      <div className="install-step">
+        <div className="install-step-number">2</div>
+        <div className="install-step-content">
+          <h5>Install Rayforge from PyPI</h5>
+          <CodeBlock language="bash">pip3 install rayforge</CodeBlock>
+          <Admonition type="note">
+            Package names may differ on other distributions. Refer to your
+            distribution's documentation.
+          </Admonition>
+        </div>
+      </div>
+
+      <div className="install-step">
+        <div className="install-step-number">3</div>
+        <div className="install-step-content">
+          <h5>Add User to dialout Group</h5>
+          <p>Required for serial port access:</p>
+          <CodeBlock language="bash">
+            sudo usermod -a -G dialout $USER
+          </CodeBlock>
+          <p>
+            <strong>Important:</strong> Log out and log back in for this
+            change to take effect.
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function WindowsInstall() {
+  return (
+    <div className="install-section">
+      <h4>Windows Installation</h4>
+
+      <div className="install-step">
+        <div className="install-step-number">1</div>
+        <div className="install-step-content">
+          <h5>Download the Installer</h5>
+          <p>
+            Download the latest installer from the{' '}
+            <a
+              href="https://github.com/barebaric/rayforge/releases/"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Releases Page
+            </a>
+            .
+          </p>
+          <p>
+            Look for <code>rayforge-x.x.x-installer.exe</code>
+          </p>
+        </div>
+      </div>
+
+      <div className="install-step">
+        <div className="install-step-number">2</div>
+        <div className="install-step-content">
+          <h5>Run the Installer</h5>
+          <p>
+            Run the downloaded installer and follow the on-screen
+            instructions.
+          </p>
+          <Admonition type="tip">
+            If you encounter permission errors, try running the installer
+            as Administrator (right-click → Run as Administrator).
+          </Admonition>
+        </div>
+      </div>
+
+      <div className="install-step">
+        <div className="install-step-number">3</div>
+        <div className="install-step-content">
+          <h5>Launch Rayforge</h5>
+          <p>
+            Launch Rayforge from the Start Menu or Desktop shortcut.
+          </p>
+        </div>
+      </div>
+
+      <div className="install-troubleshoot">
+        <h5>Troubleshooting Windows Installation</h5>
+        <details>
+          <summary>Driver Issues?</summary>
+          <div className="install-troubleshoot-content">
+            <p>
+              If your laser controller isn't detected:
+            </p>
+            <ol>
+              <li>
+                Open <strong>Device Manager</strong> (Win+X, then select
+                Device Manager)
+              </li>
+              <li>
+                Look under <strong>Ports (COM & LPT)</strong> for your
+                device
+              </li>
+              <li>
+                If you see a yellow warning icon, update or reinstall the
+                driver
+              </li>
+              <li>
+                Note the COM port number (e.g., COM3) for use in Rayforge
+              </li>
+            </ol>
+            <p>
+              Many laser controllers use the CH340/CH341 chipset. If
+              Windows doesn't automatically install drivers, download them
+              from the manufacturer's website.
+            </p>
+          </div>
+        </details>
+      </div>
+    </div>
+  );
+}
+
+function MacosInstall() {
+  return (
+    <div className="install-section">
+      <h4>macOS Installation</h4>
+
+      <Admonition type="info" title="Community Support">
+        There are currently no official macOS builds. However, Rayforge
+        may run from source using the pip installation method. Community
+        contributions for macOS packaging are welcome!
+      </Admonition>
+
+      <div className="install-step">
+        <div className="install-step-number">1</div>
+        <div className="install-step-content">
+          <h5>Install Dependencies</h5>
+          <p>
+            Using Homebrew, install the required dependencies:
+          </p>
+          <CodeBlock language="bash">
+            brew install python3 gtk4 adwaita-icon-theme libvips opencv
+          </CodeBlock>
+        </div>
+      </div>
+
+      <div className="install-step">
+        <div className="install-step-number">2</div>
+        <div className="install-step-content">
+          <h5>Install Rayforge</h5>
+          <CodeBlock language="bash">pip3 install rayforge</CodeBlock>
+        </div>
+      </div>
+
+      <div className="install-step">
+        <div className="install-step-number">3</div>
+        <div className="install-step-content">
+          <h5>Install USB Drivers (if needed)</h5>
+          <p>
+            If your laser controller uses a CH340/CH341 chipset, install
+            the drivers:
+          </p>
+          <CodeBlock language="bash">
+            brew install --cask wch-ch34x-usb-serial-driver
+          </CodeBlock>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function VerifyInstall({ os }) {
+  return (
+    <div className="install-section">
+      <h4>Verify Installation</h4>
+
+      <div className="install-step">
+        <div className="install-step-number">✓</div>
+        <div className="install-step-content">
+          <h5>Launch Rayforge</h5>
+          <p>
+            Launch Rayforge from your application menu or terminal. You
+            should see the main window with the canvas and toolbar.
+          </p>
+        </div>
+      </div>
+
+      <div className="install-step">
+        <div className="install-step-number">✓</div>
+        <div className="install-step-content">
+          <h5>Check Version</h5>
+          <p>
+            Check <strong>Help → About</strong> to confirm the installed
+            version.
+          </p>
+        </div>
+      </div>
+
+      <div className="install-step">
+        <div className="install-step-number">✓</div>
+        <div className="install-step-content">
+          <h5>Connect Your Machine</h5>
+          <p>
+            Connect your laser controller via USB and verify that the
+            serial port appears in Rayforge's machine settings.
+          </p>
+          {os === 'linux' && (
+            <Admonition type="tip">
+              On Linux, laser controllers typically appear as{' '}
+              <code>/dev/ttyUSB0</code> or <code>/dev/ttyACM0</code>.
+            </Admonition>
+          )}
+          {os === 'windows' && (
+            <Admonition type="tip">
+              On Windows, check Device Manager under "Ports (COM & LPT)"
+              to find your COM port number.
+            </Admonition>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function NeedHelp({ os, linuxMethod }) {
+  return (
+    <div className="install-section">
+      <h4>Need Help?</h4>
+      {os === 'linux' && linuxMethod === 'snap' && (
+        <p>
+          <strong>Snap permissions:</strong> If your device isn't detected,
+          see the{' '}
+          <a href="../troubleshooting/snap-permissions">
+            Snap Permissions Guide
+          </a>.
+        </p>
+      )}
+      {os === 'linux' && linuxMethod !== 'snap' && (
+        <>
+          <p>
+            <strong>Serial port access:</strong> If you get "permission denied"
+            errors, add your user to the <code>dialout</code> group:
+          </p>
+          <CodeBlock language="bash">
+            sudo usermod -a -G dialout $USER
+          </CodeBlock>
+          <p>Then log out and back in for changes to take effect.</p>
+        </>
+      )}
+      {os === 'windows' && (
+        <>
+          <p>
+            <strong>Driver issues:</strong> If your device isn't detected,
+            check Device Manager under "Ports (COM & LPT)" to confirm the
+            COM port number. You may need to install CH340 or CP2102 drivers
+            for your USB-to-serial adapter.
+          </p>
+          <p>
+            <strong>Antivirus:</strong> Some antivirus software may block
+            Rayforge from accessing USB devices. Try adding an exception if
+            you experience connection issues.
+          </p>
+        </>
+      )}
+      {os === 'macos' && (
+        <>
+          <p>
+            <strong>USB devices:</strong> If your device isn't detected, you
+            may need to approve the USB device in System Settings → Privacy
+            & Security.
+          </p>
+          <p>
+            <strong>Driver issues:</strong> Some USB-to-serial adapters
+            require additional drivers. Check if your adapter uses CH340 or
+            CP2102 chips and install the appropriate driver.
+          </p>
+        </>
+      )}
+      <p>
+        For additional help, report an issue on{' '}
+        <a href="https://github.com/barebaric/rayforge/issues">GitHub</a> or
+        join our <a href="https://discord.gg/sTHNdTtpQJ">Discord</a>.
+      </p>
+    </div>
+  );
+}
+
+export default function InstallGuide() {
+  const [selectedOs, setSelectedOs] = useState('linux');
+  const [linuxMethod, setLinuxMethod] = useState('snap');
+
+  return (
+    <div className="install-guide">
+      <OsSelector selectedOs={selectedOs} onSelectOs={setSelectedOs} />
+
+      <div className="install-content">
+        {selectedOs === 'linux' && (
+          <LinuxInstall
+            method={linuxMethod}
+            onMethodChange={setLinuxMethod}
+          />
+        )}
+        {selectedOs === 'windows' && <WindowsInstall />}
+        {selectedOs === 'macos' && <MacosInstall />}
+
+        <VerifyInstall os={selectedOs} />
+        <NeedHelp os={selectedOs} linuxMethod={linuxMethod} />
+      </div>
+    </div>
+  );
+}

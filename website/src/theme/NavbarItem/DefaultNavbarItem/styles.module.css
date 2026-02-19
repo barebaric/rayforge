@@ -1,0 +1,37 @@
+.patreonLink {
+  display: inline-flex;
+  align-items: center;
+  margin-right: 0.5rem;
+  transition: transform 0.2s ease;
+  vertical-align: middle;
+  height: 45px;
+}
+
+.patreonLink:hover {
+  transform: scale(1.05);
+}
+
+.patreonImg {
+  height: 45px;
+  width: auto;
+  display: block;
+}
+
+.discordWrapper,
+.githubWrapper {
+  display: inline-flex;
+}
+
+/* Discord hides first (least important) */
+@media (max-width: 1100px) {
+  .discordWrapper {
+    display: none;
+  }
+}
+
+/* GitHub hides second (medium importance) */
+@media (max-width: 996px) {
+  .githubWrapper {
+    display: none;
+  }
+}

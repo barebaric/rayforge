@@ -1,0 +1,17 @@
+{
+  "name": "website-new",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "start": "docusaurus start",
+    "build": "docusaurus build",
+    "serve": "docusaurus serve"
+  },
+  "dependencies": {
+    "@docusaurus/core": "^3.4.0",
+    "@docusaurus/preset-classic": "^3.4.0",
+    "@docusaurus/theme-mermaid": "^3.9.2",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  }
+}
