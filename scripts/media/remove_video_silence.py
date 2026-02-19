@@ -207,7 +207,9 @@ def extract_segment(
         output_file,
     ]
 
-    result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    result = subprocess.run(
+        cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+    )
 
     if result.returncode != 0:
         raise RuntimeError(f"Segment extraction failed: {result.stderr}")
@@ -254,7 +256,9 @@ def concat_segments(
         output_file,
     ]
 
-    result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    result = subprocess.run(
+        cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+    )
 
     if result.returncode != 0:
         raise RuntimeError(f"Concatenation failed: {result.stderr}")
@@ -341,8 +345,10 @@ def remove_silence(
 
         for i, (start, end) in enumerate(keep_segments):
             seg_file = os.path.join(temp_dir, f"segment_{i:04d}.mkv")
-            print(f"  Extracting segment {i + 1}/{len(keep_segments)} "
-                  f"({start:.2f}s - {end:.2f}s)...")
+            print(
+                f"  Extracting segment {i + 1}/{len(keep_segments)} "
+                f"({start:.2f}s - {end:.2f}s)..."
+            )
             extract_segment(input_file, seg_file, start, end)
             segment_files.append(seg_file)
 
@@ -410,18 +416,15 @@ def main() -> int:
     if len(args.inputs) > 1:
         if args.output:
             print(
-                "Warning: -o/--output ignored when processing "
-                "multiple files",
+                "Warning: -o/--output ignored when processing multiple files",
                 file=sys.stderr,
             )
-        output_files = [
-            get_default_output_file(f) for f in args.inputs
-        ]
+        output_files = [get_default_output_file(f) for f in args.inputs]
     else:
         output_files = [
-            args.output if args.output else get_default_output_file(
-                args.inputs[0]
-            )
+            args.output
+            if args.output
+            else get_default_output_file(args.inputs[0])
         ]
 
     # Process each file

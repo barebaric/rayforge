@@ -64,13 +64,11 @@ def is_paying_supporter(attrs):
 
 
 async def main():
-    parser = argparse.ArgumentParser(
-        description="Fetch Patreon supporters"
-    )
+    parser = argparse.ArgumentParser(description="Fetch Patreon supporters")
     parser.add_argument(
         "--all",
         action="store_true",
-        help="List all supporters, not just paying ones"
+        help="List all supporters, not just paying ones",
     )
     args = parser.parse_args()
 
@@ -83,8 +81,10 @@ async def main():
         print("No access token found in config file.")
         print(f"\nConfig file location: {PATREON_CONFIG_FILE}")
         print("\nTo add an access token:")
-        print("1. Go to: https://www.patreon.com/portal/registration/"
-              "register-creator")
+        print(
+            "1. Go to: https://www.patreon.com/portal/registration/"
+            "register-creator"
+        )
         print("2. Select your app")
         print("3. Click 'Create a Creator's Access Token'")
         print("4. Add the token to the config file as 'access_token'")
@@ -102,7 +102,8 @@ async def main():
 
     if not args.all:
         supporters = [
-            s for s in supporters
+            s
+            for s in supporters
             if is_paying_supporter(s.get("attributes", {}))
         ]
 
@@ -136,4 +137,5 @@ async def main():
 
 if __name__ == "__main__":
     import asyncio
+
     asyncio.run(main())
