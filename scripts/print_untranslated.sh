@@ -7,11 +7,34 @@ set -e
 if [ -z "$1" ]; then
   echo "Error: Language code is required."
   echo "Usage: pixi run print-untranslated <lang>"
+  echo "       pixi run print-untranslated list"
   echo "Example: pixi run print-untranslated de"
+  echo "         pixi run print-untranslated list"
   exit 1
 fi
 
 LANG_CODE="$1"
+
+# List all languages with untranslated strings
+if [ "$LANG_CODE" = "list" ]; then
+  found=0
+  for lang_dir in rayforge/locale/*/; do
+    lang=$(basename "$lang_dir")
+    if [ -d "$lang_dir/LC_MESSAGES" ] && [ -f "$lang_dir/LC_MESSAGES/rayforge.po" ]; then
+      if [ "$lang" != "en" ]; then
+        PO_FILE="$lang_dir/LC_MESSAGES/rayforge.po"
+        if msgattrib --untranslated --no-obsolete "$PO_FILE" 2>/dev/null | grep -q "^msgid"; then
+          echo "$lang"
+          found=1
+        fi
+      fi
+    fi
+  done
+  if [ "$found" -eq 0 ]; then
+    echo "All languages are fully translated."
+  fi
+  exit 0
+fi
 
 # Ignore English language file
 if [ "$LANG_CODE" = "en" ]; then

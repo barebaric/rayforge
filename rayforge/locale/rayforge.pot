@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-02-18 21:19+0100\n"
+"POT-Creation-Date: 2026-02-19 19:39+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -3658,7 +3658,19 @@ msgid "Algorithm for converting grayscale to binary"
 msgstr ""
 
 #: rayforge/ui_gtk/doceditor/step_settings/engraver.py
+msgid "Auto Levels"
+msgstr ""
+
+#: rayforge/ui_gtk/doceditor/step_settings/engraver.py
+msgid "Automatically adjust black/white points"
+msgstr ""
+
+#: rayforge/ui_gtk/doceditor/step_settings/engraver.py
 msgid "Brightness Range"
+msgstr ""
+
+#: rayforge/ui_gtk/doceditor/step_settings/engraver.py
+msgid "Auto-adjusted based on image content"
 msgstr ""
 
 #: rayforge/ui_gtk/doceditor/step_settings/engraver.py
