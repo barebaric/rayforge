@@ -66,7 +66,7 @@ in your system. You can specify:
 - Offset positions (if lasers are mounted at different locations)
 - Material compatibility
 
-See our [Multi-Laser Configuration Guide](/docs/machine/multi-laser)
+See our [Laser Configuration Guide](/docs/machine/laser)
 for detailed instructions.
 
 ### 2. Assign Lasers to Operations

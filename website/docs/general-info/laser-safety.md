@@ -208,9 +208,9 @@ Before every job:
 
 ## Related Pages
 
-- **[Simulation Mode](../features/simulation-mode)** - Preview jobs to identify safety issues
-- **[Material Test Grid](../features/operations/material-test-grid)** - Find safe settings for materials
-- **[Power vs Speed](power-vs-speed)** - Understanding safe power/speed settings
+- **[Simulation Mode](../features/simulation-mode)** - Preview jobs safely
+- **[Material Test Grid](../features/operations/material-test-grid)** - Find safe settings
+- **[G-code Basics](gcode-basics)** - Understanding laser control commands
 
 ---
 

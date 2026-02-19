@@ -125,5 +125,5 @@ The overscan distance should allow the machine to **fully accelerate** to target
 
 ## Related Topics
 
-- [Engraving Operations](engrave) - Configure engraving settings
-- [Material Test Grid](material-test-grid) - Find optimal power/speed settings
+- [Engraving Operations](./operations/engrave) - Configure engraving settings
+- [Material Test Grid](./operations/material-test-grid) - Find optimal power/speed

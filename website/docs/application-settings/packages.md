@@ -62,6 +62,6 @@ Packages can be installed from:
 
 ## Related Topics
 
-- [Settings](settings) - Application preferences
+- [Machines](machines) - Machine configuration
 - [Materials](materials) - Material libraries
 - [Recipes](recipes) - Operation recipes

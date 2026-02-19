@@ -300,7 +300,7 @@ If you've tried everything above and still can't connect:
 
 ## Related Pages
 
-- [Snap Permissions](snap-permissions) - Detailed Linux Snap permission setup
-- [Common Problems](common) - Other common issues and solutions
+- [Snap Permissions](snap-permissions) - Linux Snap permission setup
+- [Debug Mode](debug) - Enable diagnostic logging
 - [General Settings](../machine/general) - Machine setup guide
 - [Device Settings](../machine/device) - GRBL configuration reference
