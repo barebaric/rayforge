@@ -504,6 +504,36 @@ def create_patched_app_class(
             GLib.timeout_add_seconds(6, switch_page)
             GLib.timeout_add_seconds(8, take_screenshot_and_quit)
 
+        def _schedule_material_test_grid_screenshot(self, win):
+            """Schedule delayed actions for material test grid dialog."""
+            from gi.repository import GLib
+
+            self._material_test_dialog = None
+
+            def create_and_open_dialog():
+                """Create a material test grid and open its settings dialog."""
+                logger.info("Creating material test grid...")
+                if not self._create_and_open_material_test_dialog(win):
+                    logger.error(
+                        "Failed to create/open material test grid dialog"
+                    )
+                    self._quit_application()
+                    return False
+                return False
+
+            def take_screenshot_and_quit():
+                """Take the screenshot and quit."""
+                logger.info("Taking screenshot and quitting...")
+                if not self._screenshot_taken:
+                    output_name = "material-test-grid.png"
+                    take_screenshot(output_name)
+                    self._screenshot_taken = True
+                self._quit_application()
+                return False
+
+            GLib.timeout_add_seconds(3, create_and_open_dialog)
+            GLib.timeout_add_seconds(6, take_screenshot_and_quit)
+
         def _schedule_step_dialog_screenshot(self, win):
             """Schedule delayed actions for step settings dialog screenshot."""
             from gi.repository import GLib
@@ -575,7 +605,12 @@ def create_patched_app_class(
             )
             if (
                 self._screenshot_type
-                not in ("machine", "settings", "recipe-editor")
+                not in (
+                    "machine",
+                    "settings",
+                    "recipe-editor",
+                    "material-test-grid",
+                )
                 and self.args.filenames
                 and self.args.filenames[0] not in skip_args
             ):
@@ -607,6 +642,8 @@ def create_patched_app_class(
                 self._schedule_step_dialog_screenshot(win)
             elif self._screenshot_type == "recipe-editor":
                 self._schedule_recipe_editor_screenshot(win)
+            elif self._screenshot_type == "material-test-grid":
+                self._schedule_material_test_grid_screenshot(win)
             else:
                 self._schedule_delayed_actions(win)
 
@@ -689,6 +726,32 @@ def create_patched_app_class(
 
             except Exception as e:
                 logger.error(f"Failed to open recipe editor dialog: {e}")
+                return False
+
+        def _create_and_open_material_test_dialog(self, win) -> bool:
+            """Create a material test grid and open its settings dialog."""
+            try:
+                from rayforge.pipeline.steps import create_material_test_step
+                from rayforge.ui_gtk.doceditor.step_settings_dialog import (
+                    StepSettingsDialog,
+                )
+
+                step = create_material_test_step(win.doc_editor.context)
+                step.name = "Material Test Grid"
+
+                dialog = StepSettingsDialog(
+                    editor=win.doc_editor,
+                    step=step,
+                    transient_for=win,
+                    initial_page="step-settings",
+                )
+                dialog.set_default_size(600, 900)
+                dialog.present()
+                logger.info("Opened material test grid settings dialog")
+                return True
+
+            except Exception as e:
+                logger.error(f"Failed to open material test grid dialog: {e}")
                 return False
 
         def _open_step_dialog(self, win):
@@ -874,6 +937,7 @@ def main():
             "settings",
             "step-settings",
             "recipe-editor",
+            "material-test-grid",
         ],
         help="Type of screenshot to take (default: main)",
     )
