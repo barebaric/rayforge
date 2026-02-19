@@ -419,7 +419,7 @@ class ViewManager:
             self._store,
             workpiece_artifact_handle_dict=source_handle.to_dict(),
             render_context_dict=context.to_dict(),
-            creator_tag="workpiece_view",
+            creator_tag="wp_view",
             key=key,
             generation_id=view_id,
             step_uid=step_uid,
@@ -759,9 +759,7 @@ class ViewManager:
                 workpiece_size_mm=(w_mm, h_mm),
             )
 
-            handle = self._store.put(
-                view_artifact, creator_tag="view_live_buffer"
-            )
+            handle = self._store.put(view_artifact, creator_tag="view_live")
             view_handle = cast(WorkPieceViewArtifactHandle, handle)
 
             entry = self._view_entries.get(composite_id)

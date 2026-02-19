@@ -395,7 +395,7 @@ class WorkPiecePipelineStage(PipelineStage):
             settings,
             generation_id,
             workpiece_size,
-            "workpiece",
+            "wp",
             key=task_key,
             when_done=lambda t: self._on_task_complete(
                 t,
