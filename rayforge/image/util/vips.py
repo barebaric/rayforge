@@ -166,8 +166,7 @@ def normalize_to_rgba(image: pyvips.Image) -> Optional[pyvips.Image]:
             image = image.addalpha()
         if image.bands != 4:
             logger.warning(
-                f"Image normalization had {image.bands} bands, "
-                "cropping to 4."
+                f"Image normalization had {image.bands} bands, cropping to 4."
             )
             image = image[0:4]
         if image.format != "uchar":

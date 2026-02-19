@@ -84,9 +84,7 @@ def test_surface_to_binary_invert_mode():
     ctx2 = cairo.Context(surface2)
     ctx2.set_source_rgb(0, 0, 0)
     ctx2.paint()
-    binary2 = grayscale.surface_to_binary(
-        surface2, threshold=128, invert=True
-    )
+    binary2 = grayscale.surface_to_binary(surface2, threshold=128, invert=True)
     assert np.all(binary2 == 0)
 
 
@@ -110,9 +108,7 @@ def test_surface_to_binary_transparent_ignored_in_invert_mode():
 
 def test_surface_to_binary_raises_for_non_argb32():
     surface = cairo.ImageSurface(cairo.FORMAT_RGB24, 2, 2)
-    with pytest.raises(
-        ValueError, match="Unsupported Cairo surface format"
-    ):
+    with pytest.raises(ValueError, match="Unsupported Cairo surface format"):
         grayscale.surface_to_binary(surface)
 
 
@@ -163,9 +159,7 @@ def test_convert_surface_to_grayscale_inplace_converts_to_grayscale():
 
 def test_convert_surface_to_grayscale_inplace_raises_for_non_argb32():
     surface = cairo.ImageSurface(cairo.FORMAT_RGB24, 2, 2)
-    with pytest.raises(
-        ValueError, match="Unsupported Cairo surface format"
-    ):
+    with pytest.raises(ValueError, match="Unsupported Cairo surface format"):
         grayscale.convert_surface_to_grayscale_inplace(surface)
 
 

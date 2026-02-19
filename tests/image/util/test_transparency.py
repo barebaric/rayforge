@@ -41,9 +41,7 @@ def test_make_surface_transparent_keeps_dark_pixels_opaque():
 
 def test_make_surface_transparent_raises_for_non_argb32():
     surface = cairo.ImageSurface(cairo.FORMAT_RGB24, 2, 2)
-    with pytest.raises(
-        ValueError, match="Surface must be in ARGB32 format"
-    ):
+    with pytest.raises(ValueError, match="Surface must be in ARGB32 format"):
         transparency.make_surface_transparent(surface)
 
 
@@ -117,9 +115,7 @@ def test_make_transparent_except_color_makes_other_colors_transparent():
 
 def test_make_transparent_except_color_raises_for_non_argb32():
     surface = cairo.ImageSurface(cairo.FORMAT_RGB24, 2, 2)
-    with pytest.raises(
-        ValueError, match="Surface must be in ARGB32 format"
-    ):
+    with pytest.raises(ValueError, match="Surface must be in ARGB32 format"):
         transparency.make_transparent_except_color(surface, 255, 0, 0)
 
 

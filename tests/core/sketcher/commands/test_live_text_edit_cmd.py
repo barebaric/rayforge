@@ -35,7 +35,7 @@ def test_live_text_edit_command_initialization():
 def test_live_text_edit_command_execute():
     """Test command execution captures initial state."""
     mock_time = MockTime()
-    with patch('time.time', mock_time.time):
+    with patch("time.time", mock_time.time):
         sketch = Sketch()
         box_cmd = TextBoxCommand(sketch, (0, 0), 10.0, 10.0)
         box_cmd.execute()
@@ -56,7 +56,7 @@ def test_live_text_edit_command_execute():
 def test_live_text_edit_capture_state():
     """Test capturing state updates history."""
     mock_time = MockTime()
-    with patch('time.time', mock_time.time):
+    with patch("time.time", mock_time.time):
         sketch = Sketch()
         box_cmd = TextBoxCommand(sketch, (0, 0), 10.0, 10.0)
         box_cmd.execute()
@@ -77,7 +77,7 @@ def test_live_text_edit_capture_state():
 def test_live_text_edit_undo():
     """Test undo functionality."""
     mock_time = MockTime()
-    with patch('time.time', mock_time.time):
+    with patch("time.time", mock_time.time):
         sketch = Sketch()
         box_cmd = TextBoxCommand(sketch, (0, 0), 10.0, 10.0)
         box_cmd.execute()
@@ -107,7 +107,7 @@ def test_live_text_edit_undo():
 def test_live_text_edit_redo():
     """Test redo functionality."""
     mock_time = MockTime()
-    with patch('time.time', mock_time.time):
+    with patch("time.time", mock_time.time):
         sketch = Sketch()
         box_cmd = TextBoxCommand(sketch, (0, 0), 10.0, 10.0)
         box_cmd.execute()
@@ -135,7 +135,7 @@ def test_live_text_edit_redo():
 def test_live_text_edit_coalesce_rapid_keystrokes():
     """Test that rapid keystrokes are coalesced into one history entry."""
     mock_time = MockTime()
-    with patch('time.time', mock_time.time):
+    with patch("time.time", mock_time.time):
         sketch = Sketch()
         box_cmd = TextBoxCommand(sketch, (0, 0), 10.0, 10.0)
         box_cmd.execute()
@@ -164,7 +164,7 @@ def test_live_text_edit_coalesce_rapid_keystrokes():
 def test_live_text_edit_coalesce_after_pause():
     """Test that a pause creates a new history entry."""
     mock_time = MockTime()
-    with patch('time.time', mock_time.time):
+    with patch("time.time", mock_time.time):
         sketch = Sketch()
         box_cmd = TextBoxCommand(sketch, (0, 0), 10.0, 10.0)
         box_cmd.execute()
@@ -195,7 +195,7 @@ def test_live_text_edit_coalesce_after_pause():
 def test_live_text_edit_coalesce_undo_through_coalesced():
     """Test undo works correctly with coalesced states."""
     mock_time = MockTime()
-    with patch('time.time', mock_time.time):
+    with patch("time.time", mock_time.time):
         sketch = Sketch()
         box_cmd = TextBoxCommand(sketch, (0, 0), 10.0, 10.0)
         box_cmd.execute()
@@ -233,7 +233,7 @@ def test_live_text_edit_coalesce_undo_through_coalesced():
 def test_live_text_edit_coalesce_redo_through_coalesced():
     """Test redo works correctly with coalesced states."""
     mock_time = MockTime()
-    with patch('time.time', mock_time.time):
+    with patch("time.time", mock_time.time):
         sketch = Sketch()
         box_cmd = TextBoxCommand(sketch, (0, 0), 10.0, 10.0)
         box_cmd.execute()
@@ -268,7 +268,7 @@ def test_live_text_edit_coalesce_redo_through_coalesced():
 def test_live_text_edit_restore_state():
     """Test that _restore_state correctly updates entity content."""
     mock_time = MockTime()
-    with patch('time.time', mock_time.time):
+    with patch("time.time", mock_time.time):
         sketch = Sketch()
         box_cmd = TextBoxCommand(sketch, (0, 0), 10.0, 10.0)
         box_cmd.execute()
@@ -320,7 +320,7 @@ def test_live_text_edit_execute_with_invalid_entity():
 def test_live_text_edit_restore_state_with_invalid_entity():
     """Test _restore_state handles invalid entity gracefully."""
     mock_time = MockTime()
-    with patch('time.time', mock_time.time):
+    with patch("time.time", mock_time.time):
         sketch = Sketch()
         cmd = LiveTextEditCommand(sketch, 999)
         cmd.history = [("test", 4, mock_time.time())]
@@ -333,7 +333,7 @@ def test_live_text_edit_restore_state_with_invalid_entity():
 def test_live_text_edit_undo_at_start():
     """Test undo does nothing when at start of history."""
     mock_time = MockTime()
-    with patch('time.time', mock_time.time):
+    with patch("time.time", mock_time.time):
         sketch = Sketch()
         box_cmd = TextBoxCommand(sketch, (0, 0), 10.0, 10.0)
         box_cmd.execute()
@@ -352,7 +352,7 @@ def test_live_text_edit_undo_at_start():
 def test_live_text_edit_redo_at_end():
     """Test redo does nothing when at end of history."""
     mock_time = MockTime()
-    with patch('time.time', mock_time.time):
+    with patch("time.time", mock_time.time):
         sketch = Sketch()
         box_cmd = TextBoxCommand(sketch, (0, 0), 10.0, 10.0)
         box_cmd.execute()
