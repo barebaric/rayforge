@@ -1093,9 +1093,7 @@ class WorkPiece(DocItem):
                     )
                     continue
 
-                surface = util.vips_rgba_to_cairo_surface(
-                    normalized_chunk
-                )
+                surface = util.vips_rgba_to_cairo_surface(normalized_chunk)
                 yield surface, (left, top)
 
     def get_geometry_world_bbox(

@@ -88,8 +88,7 @@ def test_extract_metadata_sanitizes_icc_profile():
     metadata = vips.extract_vips_metadata(image)
     assert "icc-profile-data" in metadata
     assert (
-        metadata["icc-profile-data"]
-        == f"<ICC profile, {len(icc_data)} bytes>"
+        metadata["icc-profile-data"] == f"<ICC profile, {len(icc_data)} bytes>"
     )
 
 
@@ -97,9 +96,7 @@ def test_extract_metadata_decodes_short_binary_data():
     """Tests that short, valid UTF-8 binary data is decoded to a string."""
     image = pyvips.Image.black(10, 10)
     comment_text = "A test comment."
-    image.set_type(
-        GValue.blob_type, "comment", comment_text.encode("utf-8")
-    )
+    image.set_type(GValue.blob_type, "comment", comment_text.encode("utf-8"))
     metadata = vips.extract_vips_metadata(image)
     assert metadata["comment"] == comment_text
 
