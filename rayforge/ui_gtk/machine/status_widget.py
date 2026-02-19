@@ -6,6 +6,7 @@ from ...machine.driver.driver import (
     DeviceState,
     DEVICE_STATUS_LABELS,
 )
+from ...machine.driver.dummy import NoDeviceDriver
 from ...machine.models.machine import Machine
 
 
@@ -105,11 +106,13 @@ class MachineStatusWidget(Gtk.Box):
         self._update_display(state)
 
     def _update_display(self, state: Optional[DeviceState]):
-        is_nodriver = not self.machine or not self.machine.driver
+        is_nodriver = not self.machine or isinstance(
+            self.machine.driver, NoDeviceDriver
+        )
         status = state.status if state else DeviceStatus.UNKNOWN
 
         if is_nodriver:
-            self.label.set_label(_("No driver selected"))
+            self.label.set_label(_("No driver"))
             self.icon.set_status(DeviceStatus.UNKNOWN)
         else:
             self.label.set_label(
