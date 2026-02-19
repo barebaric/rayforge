@@ -243,3 +243,91 @@ def test_mark_as_unsaved_clears_checkpoint(doc_editor):
 
     doc_editor.history_manager.undo()
     assert doc_editor.is_saved is False
+
+
+def test_returns_immediately_when_not_processing(doc_editor):
+    """Test that wait_until_settled_sync returns True immediately
+    when not processing."""
+    assert doc_editor.is_processing is False
+    result = doc_editor.wait_until_settled_sync(timeout=1.0)
+    assert result is True
+
+
+def test_returns_true_when_processing_finishes(doc_editor):
+    """Test that wait_until_settled_sync returns True when
+    processing finishes within timeout."""
+    settled_events = []
+
+    def track_settled(sender, is_processing: bool):
+        settled_events.append(is_processing)
+
+    doc_editor.processing_state_changed.connect(track_settled)
+
+    try:
+        doc_editor.notify_task_started()
+        assert doc_editor.is_processing is True
+
+        import threading
+
+        def finish_after_delay():
+            import time
+
+            time.sleep(0.1)
+            doc_editor.notify_task_ended()
+
+        thread = threading.Thread(target=finish_after_delay)
+        thread.start()
+
+        result = doc_editor.wait_until_settled_sync(timeout=2.0)
+        assert result is True
+        assert doc_editor.is_processing is False
+        assert False in settled_events
+
+        thread.join()
+    finally:
+        doc_editor.processing_state_changed.disconnect(track_settled)
+
+
+def test_returns_false_on_timeout(doc_editor):
+    """Test that wait_until_settled_sync returns False when
+    timeout is reached while still processing."""
+    doc_editor.notify_task_started()
+    assert doc_editor.is_processing is True
+
+    try:
+        result = doc_editor.wait_until_settled_sync(timeout=0.1)
+        assert result is False
+        assert doc_editor.is_processing is True
+    finally:
+        doc_editor.notify_task_ended()
+
+
+def test_handles_multiple_busy_tasks(doc_editor):
+    """Test that wait_until_settled_sync waits until all busy
+    tasks are complete."""
+    doc_editor.notify_task_started()
+    doc_editor.notify_task_started()
+    assert doc_editor.is_processing is True
+
+    import threading
+
+    def finish_tasks():
+        import time
+
+        time.sleep(0.1)
+        doc_editor.notify_task_ended()
+        time.sleep(0.1)
+        doc_editor.notify_task_ended()
+
+    thread = threading.Thread(target=finish_tasks)
+    thread.start()
+
+    try:
+        result = doc_editor.wait_until_settled_sync(timeout=2.0)
+        assert result is True
+        assert doc_editor.is_processing is False
+        thread.join()
+    finally:
+        if doc_editor.is_processing:
+            doc_editor.notify_task_ended()
+            doc_editor.notify_task_ended()
