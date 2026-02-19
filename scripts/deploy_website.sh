@@ -47,7 +47,10 @@ echo "Installing dependencies..."
 cd "${WEBSITE_SRC_DIR}"
 npm install
 
-echo "Building static site..."
+# Strip the 'v' prefix from version for download links (e.g., v1.0.2 -> 1.0.2)
+RAYFORGE_VERSION="${DEPLOY_VERSION#v}"
+export RAYFORGE_VERSION
+echo "Building static site with version: ${RAYFORGE_VERSION}"
 npm run build
 
 # Verify build output

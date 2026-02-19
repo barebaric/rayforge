@@ -9,6 +9,10 @@ module.exports = {
   organizationName: 'barebaric',
   projectName: 'rayforge',
 
+  customFields: {
+    latestVersion: process.env.RAYFORGE_VERSION || '0.0.0',
+  },
+
   i18n: {
     defaultLocale: 'en',
     locales: ['en'],
