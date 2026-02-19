@@ -1,7 +1,49 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import CodeBlock from '@theme/CodeBlock';
 import Admonition from '@theme/Admonition';
+import { useThemeConfig } from '@docusaurus/theme-common';
 import './InstallGuide.css';
+
+function detectOs() {
+  if (typeof window === 'undefined') {
+    return 'linux';
+  }
+
+  const userAgent = window.navigator.userAgent.toLowerCase();
+
+  if (userAgent.includes('win')) {
+    return 'windows';
+  }
+  if (
+    userAgent.includes('mac') ||
+    userAgent.includes('iphone') ||
+    userAgent.includes('ipad')
+  ) {
+    return 'macos';
+  }
+  if (userAgent.includes('linux')) {
+    return 'linux';
+  }
+
+  return 'linux';
+}
+
+function getInitialStateFromHash() {
+  if (typeof window === 'undefined') {
+    return { os: null, method: null };
+  }
+
+  const hash = window.location.hash.slice(1);
+  const parts = hash.split('-');
+  
+  if (parts.length >= 1 && ['linux', 'windows', 'macos'].includes(parts[0])) {
+    const os = parts[0];
+    const method = parts.length >= 2 ? parts[1] : null;
+    return { os, method };
+  }
+  
+  return { os: null, method: null };
+}
 
 const osOptions = [
   {
@@ -25,6 +67,7 @@ const linuxMethods = [
   { id: 'snap', label: 'Snap (Recommended)' },
   { id: 'ppa', label: 'Ubuntu 24.04 (PPA)' },
   { id: 'flatpak', label: 'Flathub' },
+  { id: 'pixi', label: 'Pixi (Developers)' },
   { id: 'source', label: 'From Source' },
 ];
 
@@ -73,6 +116,7 @@ function LinuxInstall({ method, onMethodChange }) {
       {method === 'ppa' && <LinuxPpaInstall />}
       {method === 'flatpak' && <LinuxFlatpakInstall />}
       {method === 'snap' && <LinuxSnapInstall />}
+      {method === 'pixi' && <LinuxPixiInstall />}
       {method === 'source' && <LinuxSourceInstall />}
     </>
   );
@@ -262,6 +306,125 @@ sudo snap connect rayforge:serial-port`}
   );
 }
 
+function LinuxPixiInstall() {
+  return (
+    <div className="install-section">
+      <h4>Pixi (Developer Installation)</h4>
+      <p>
+        <a
+          href="https://pixi.sh"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          Pixi
+        </a>{' '}
+        is a fast package manager for Python projects. This method is
+        recommended for developers who want to contribute to Rayforge or
+        run the latest development version.
+      </p>
+
+      <Admonition type="info" title="Linux Only">
+        Pixi installation is currently only available on Linux.
+      </Admonition>
+
+      <div className="install-step">
+        <div className="install-step-number">1</div>
+        <div className="install-step-content">
+          <h5>Install Pixi</h5>
+          <p>
+            Install Pixi using the official installer:
+          </p>
+          <CodeBlock language="bash">
+            curl -fsSL https://pixi.sh/install.sh | bash
+          </CodeBlock>
+          <p>
+            After installation, restart your shell or run:
+          </p>
+          <CodeBlock language="bash">source ~/.bashrc</CodeBlock>
+        </div>
+      </div>
+
+      <div className="install-step">
+        <div className="install-step-number">2</div>
+        <div className="install-step-content">
+          <h5>Clone the Repository</h5>
+          <CodeBlock language="bash">
+            {`git clone https://github.com/barebaric/rayforge.git
+cd rayforge`}
+          </CodeBlock>
+        </div>
+      </div>
+
+      <div className="install-step">
+        <div className="install-step-number">3</div>
+        <div className="install-step-content">
+          <h5>Install System Dependency</h5>
+          <p>Install the required Gtk/Adwaita package:</p>
+          <CodeBlock language="bash">sudo apt install gir1.2-adw-1</CodeBlock>
+        </div>
+      </div>
+
+      <div className="install-step">
+        <div className="install-step-number">4</div>
+        <div className="install-step-content">
+          <h5>Install Dependencies</h5>
+          <p>
+            Pixi will automatically create a virtual environment and
+            install all dependencies:
+          </p>
+          <CodeBlock language="bash">pixi install</CodeBlock>
+        </div>
+      </div>
+
+      <div className="install-step">
+        <div className="install-step-number">5</div>
+        <div className="install-step-content">
+          <h5>Add User to dialout Group</h5>
+          <p>Required for serial port access:</p>
+          <CodeBlock language="bash">
+            sudo usermod -a -G dialout $USER
+          </CodeBlock>
+          <p>
+            <strong>Important:</strong> Log out and log back in for this
+            change to take effect.
+          </p>
+        </div>
+      </div>
+
+      <div className="install-step">
+        <div className="install-step-number">6</div>
+        <div className="install-step-content">
+          <h5>Run Rayforge</h5>
+          <CodeBlock language="bash">pixi run rayforge</CodeBlock>
+        </div>
+      </div>
+
+      <div className="install-troubleshoot">
+        <h5>Useful Pixi Commands</h5>
+        <details>
+          <summary>Available development commands</summary>
+          <div className="install-troubleshoot-content">
+            <ul>
+              <li>
+                <code>pixi run test</code> - Run the test suite
+              </li>
+              <li>
+                <code>pixi run uitest</code> - Run UI tests
+              </li>
+              <li>
+                <code>pixi run lint</code> - Run linting and static analysis
+              </li>
+              <li>
+                <code>pixi run format</code> - Format code with ruff
+              </li>
+            </ul>
+          </div>
+        </details>
+      </div>
+    </div>
+  );
+}
+
 function LinuxSourceInstall() {
   return (
     <div className="install-section">
@@ -315,7 +478,9 @@ sudo apt install python3-pip python3-gi gir1.2-gtk-3.0 gir1.2-adw-1 \\
   );
 }
 
-function WindowsInstall() {
+function WindowsInstall({ version }) {
+  const downloadUrl = `https://github.com/barebaric/rayforge/releases/download/v${version}/rayforge-v${version}-installer.exe`;
+  
   return (
     <div className="install-section">
       <h4>Windows Installation</h4>
@@ -325,18 +490,13 @@ function WindowsInstall() {
         <div className="install-step-content">
           <h5>Download the Installer</h5>
           <p>
-            Download the latest installer from the{' '}
             <a
-              href="https://github.com/barebaric/rayforge/releases/"
+              href={downloadUrl}
               target="_blank"
               rel="noopener noreferrer"
             >
-              Releases Page
+              <strong>Download Rayforge v{version}</strong>
             </a>
-            .
-          </p>
-          <p>
-            Look for <code>rayforge-x.x.x-installer.exe</code>
           </p>
         </div>
       </div>
@@ -569,8 +729,24 @@ function NeedHelp({ os, linuxMethod }) {
 }
 
 export default function InstallGuide() {
-  const [selectedOs, setSelectedOs] = useState('linux');
-  const [linuxMethod, setLinuxMethod] = useState('snap');
+  const { customFields } = useThemeConfig();
+  const version = customFields?.latestVersion || '0.0.0';
+  const hashState = getInitialStateFromHash();
+  const [selectedOs, setSelectedOs] = useState(() => hashState.os || detectOs());
+  const [linuxMethod, setLinuxMethod] = useState(() => hashState.method || 'snap');
+
+  useEffect(() => {
+    const detected = detectOs();
+    const hashState = getInitialStateFromHash();
+    if (hashState.os) {
+      setSelectedOs(hashState.os);
+      if (hashState.method) {
+        setLinuxMethod(hashState.method);
+      }
+    } else {
+      setSelectedOs(detected);
+    }
+  }, []);
 
   return (
     <div className="install-guide">
@@ -583,7 +759,7 @@ export default function InstallGuide() {
             onMethodChange={setLinuxMethod}
           />
         )}
-        {selectedOs === 'windows' && <WindowsInstall />}
+        {selectedOs === 'windows' && <WindowsInstall version={version} />}
         {selectedOs === 'macos' && <MacosInstall />}
 
         <VerifyInstall os={selectedOs} />

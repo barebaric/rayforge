@@ -6,18 +6,7 @@ This guide covers setting up your development environment for Rayforge.
 
 ### Prerequisites
 
-First, install [Pixi](https://pixi.sh/) by following the instructions on the [official website](https://pixi.sh/latest/installation/).
-
-### Install
-
-Install the Gtk/Adwaita system dependency, and then let Pixi handle the rest:
-
-```bash
-sudo apt install gir1.2-adw-1
-pixi install
-```
-
-This command reads `pixi.toml` and installs all conda and pip dependencies into a local `.pixi` virtual environment.
+See the [Installation Guide](../../getting-started/installation#linux-pixi) for Pixi installation instructions.
 
 ### Pre-commit Hooks (Optional)
 
