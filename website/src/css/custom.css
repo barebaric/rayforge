@@ -1,38 +1,56 @@
-:root {
-  /* Extracting colors from the "R" logo reference image */
-  --color-ref-purple: #5f27cd;
-  --color-ref-cyan: #00d2d3;
-  --color-ref-orange: #ff9f43;
+/* --- START OF FILE src/css/custom.css --- */
 
-  /* Setting Docusaurus primary brand colors to the Deep Purple */
-  --ifm-color-primary: #5f27cd;
+:root {
+  /* Vibrant Palette based on the Mockup */
+  --color-ray-orange: #ff9f43;
+  --color-ray-orange-dark: #ee5253;
+  --color-ray-purple: #5f27cd;
+  --color-ray-purple-light: #a29bfe;
+  --color-ray-cyan: #00d2d3;
+  --color-ray-cyan-dark: #0abde3;
+  
+  /* Global defaults */
+  --ifm-color-primary: var(--color-ray-purple);
   --ifm-color-primary-dark: #481cb5;
   --ifm-color-primary-darker: #3d169e;
   --ifm-color-primary-light: #763ceb;
-  --ifm-color-primary-lighter: #8956f5;
-
-  /* Making links pop with the Orange accent */
-  --ifm-link-color: #e67e22; 
+  --ifm-font-family-base: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  
+  /* Buttons Global Roundness */
+  --ifm-button-border-radius: 50px;
 }
 
-/* Navbar: Clean white with a subtle colorful bottom border */
-[data-theme='light'] .navbar {
-  background-color: rgba(255, 255, 255, 0.9);
-  backdrop-filter: blur(10px);
-  border-bottom: 3px solid transparent;
-  border-image: linear-gradient(to right, #00d2d3, #5f27cd, #ff9f43) 1;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+/* Light Mode Specifics */
+[data-theme='light'] {
+  --ifm-background-color: #f8f9fa;
+  --ifm-navbar-background-color: rgba(255, 255, 255, 0.95);
+  --ifm-link-color: var(--color-ray-orange-dark);
+  --ifm-font-color-base: #2d3436;
 }
 
-/* Footer: Use the dark purple for a strong finish */
-.footer {
-  --ifm-footer-background-color: #2d3436;
-  --ifm-footer-color: #dfe6e9;
-  --ifm-footer-title-color: #fff;
-  border-top: 5px solid #5f27cd;
-}
-
+/* Dark Mode Specifics */
 [data-theme='dark'] {
-  --ifm-color-primary: #a29bfe;
-  --ifm-link-color: #ffeaa7;
+  --ifm-background-color: #121212;
+  --ifm-navbar-background-color: rgba(30, 30, 32, 0.95);
+  --ifm-color-primary: #a29bfe; /* Lighter purple for dark mode contrast */
+  --ifm-link-color: #ff9f43; /* Orange pops well on dark */
+  --ifm-font-color-base: #e0e0e0;
+}
+
+/* Navbar: Glassmorphism effect */
+.navbar {
+  backdrop-filter: blur(10px);
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.05);
+  border-bottom: 1px solid var(--ifm-color-emphasis-100);
+}
+
+.button {
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+/* Footer styling */
+.footer {
+  background: #2d3436;
+  color: #dfe6e9;
 }
