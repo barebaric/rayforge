@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-02-18 21:19+0100\n"
+"POT-Creation-Date: 2026-02-19 19:39+0100\n"
 "PO-Revision-Date: 2025-07-24 22:09+0200\n"
 "Last-Translator: Samuel Abels <knipkap@gmail.com>\n"
 "Language-Team: Portuguese <LL@li.org>\n"
@@ -3819,8 +3819,20 @@ msgid "Algorithm for converting grayscale to binary"
 msgstr "Algoritmo para converter tons de cinza para binário"
 
 #: rayforge/ui_gtk/doceditor/step_settings/engraver.py
+msgid "Auto Levels"
+msgstr "Níveis Automáticos"
+
+#: rayforge/ui_gtk/doceditor/step_settings/engraver.py
+msgid "Automatically adjust black/white points"
+msgstr "Ajustar automaticamente pontos preto/branco"
+
+#: rayforge/ui_gtk/doceditor/step_settings/engraver.py
 msgid "Brightness Range"
 msgstr "Intervalo de Brilho"
+
+#: rayforge/ui_gtk/doceditor/step_settings/engraver.py
+msgid "Auto-adjusted based on image content"
+msgstr "Ajustado automaticamente com base no conteúdo da imagem"
 
 #: rayforge/ui_gtk/doceditor/step_settings/engraver.py
 msgid "Drag markers to set black/white points"

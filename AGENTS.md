@@ -8,6 +8,7 @@
    o `pixi run test`: Run backend tests
    o `pixi run uitest`: Run UI tests
    o `pixi run lint`. Performs linting and static code analysis
+   o `pixi run print-untranslated list`: List languages with untranslated strings
    o `pixi run print-untranslated <lang>`: Print untranslated strings from po file
 
 ## Code style
