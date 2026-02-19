@@ -1,0 +1,24 @@
+.patreonButton {
+  position: absolute;
+  right: 140px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  transition: transform 0.2s ease;
+  z-index: 10;
+}
+
+.patreonButton:hover {
+  transform: translateY(-50%) scale(1.05);
+}
+
+.patreonButton img {
+  vertical-align: middle;
+}
+
+@media (max-width: 996px) {
+  .patreonButton {
+    display: none;
+  }
+}

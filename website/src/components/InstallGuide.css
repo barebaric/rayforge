@@ -1,0 +1,175 @@
+.install-guide {
+  margin: 1rem 0;
+}
+
+.install-os-selector {
+  margin-bottom: 2rem;
+}
+
+.install-os-buttons {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-top: 0.5rem;
+}
+
+.install-os-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  border: 2px solid var(--ifm-color-emphasis-300);
+  border-radius: 8px;
+  background: var(--ifm-background-color);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 1rem;
+  font-weight: 500;
+}
+
+.install-os-btn:hover {
+  border-color: var(--ifm-color-primary);
+  background: var(--ifm-color-primary-lightest);
+}
+
+.install-os-btn--active {
+  border-color: var(--ifm-color-primary);
+  background: var(--ifm-color-primary-lightest);
+  color: var(--ifm-color-primary);
+}
+
+.install-os-icon {
+  font-size: 1.5rem;
+}
+
+.install-method-selector {
+  margin-bottom: 1.5rem;
+}
+
+.install-method-tabs {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-top: 0.5rem;
+}
+
+.install-method-btn {
+  padding: 0.5rem 1rem;
+  border: 1px solid var(--ifm-color-emphasis-300);
+  border-radius: 6px;
+  background: var(--ifm-background-color);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 0.9rem;
+}
+
+.install-method-btn:hover {
+  border-color: var(--ifm-color-primary);
+}
+
+.install-method-btn--active {
+  border-color: var(--ifm-color-primary);
+  background: var(--ifm-color-primary);
+  color: white;
+}
+
+.install-section {
+  margin-top: 2rem;
+}
+
+.install-step {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background: var(--ifm-color-emphasis-100);
+  border-radius: 8px;
+}
+
+.install-step-number {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2rem;
+  height: 2rem;
+  background: var(--ifm-color-primary);
+  color: white;
+  border-radius: 50%;
+  font-weight: bold;
+  font-size: 0.9rem;
+}
+
+.install-step-content {
+  flex: 1;
+}
+
+.install-step-content h5 {
+  margin-top: 0;
+  margin-bottom: 0.5rem;
+  font-size: 1rem;
+}
+
+.install-step-content p {
+  margin-bottom: 0.5rem;
+}
+
+.install-step-content p:last-child {
+  margin-bottom: 0;
+}
+
+.install-troubleshoot {
+  margin-top: 1.5rem;
+  padding: 1rem;
+  background: var(--ifm-color-emphasis-100);
+  border-radius: 8px;
+}
+
+.install-troubleshoot h5 {
+  margin-top: 0;
+  margin-bottom: 0.5rem;
+}
+
+.install-troubleshoot summary {
+  cursor: pointer;
+  font-weight: 500;
+  color: var(--ifm-color-primary);
+}
+
+.install-troubleshoot summary:hover {
+  text-decoration: underline;
+}
+
+.install-troubleshoot-content {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--ifm-color-emphasis-300);
+}
+
+.install-troubleshoot-content ol,
+.install-troubleshoot-content ul {
+  padding-left: 1.5rem;
+}
+
+.install-troubleshoot-content li {
+  margin-bottom: 0.5rem;
+}
+
+[data-theme='dark'] .install-os-btn {
+  border-color: var(--ifm-color-emphasis-200);
+}
+
+[data-theme='dark'] .install-os-btn:hover {
+  background: var(--ifm-color-primary-dark);
+}
+
+[data-theme='dark'] .install-os-btn--active {
+  background: var(--ifm-color-primary-dark);
+}
+
+[data-theme='dark'] .install-step {
+  background: var(--ifm-color-emphasis-200);
+}
+
+[data-theme='dark'] .install-troubleshoot {
+  background: var(--ifm-color-emphasis-200);
+}

@@ -1,0 +1,38 @@
+:root {
+  /* Extracting colors from the "R" logo reference image */
+  --color-ref-purple: #5f27cd;
+  --color-ref-cyan: #00d2d3;
+  --color-ref-orange: #ff9f43;
+
+  /* Setting Docusaurus primary brand colors to the Deep Purple */
+  --ifm-color-primary: #5f27cd;
+  --ifm-color-primary-dark: #481cb5;
+  --ifm-color-primary-darker: #3d169e;
+  --ifm-color-primary-light: #763ceb;
+  --ifm-color-primary-lighter: #8956f5;
+
+  /* Making links pop with the Orange accent */
+  --ifm-link-color: #e67e22; 
+}
+
+/* Navbar: Clean white with a subtle colorful bottom border */
+[data-theme='light'] .navbar {
+  background-color: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(10px);
+  border-bottom: 3px solid transparent;
+  border-image: linear-gradient(to right, #00d2d3, #5f27cd, #ff9f43) 1;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+}
+
+/* Footer: Use the dark purple for a strong finish */
+.footer {
+  --ifm-footer-background-color: #2d3436;
+  --ifm-footer-color: #dfe6e9;
+  --ifm-footer-title-color: #fff;
+  border-top: 5px solid #5f27cd;
+}
+
+[data-theme='dark'] {
+  --ifm-color-primary: #a29bfe;
+  --ifm-link-color: #ffeaa7;
+}
