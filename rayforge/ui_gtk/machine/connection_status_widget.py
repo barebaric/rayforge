@@ -99,9 +99,8 @@ class ConnectionStatusWidget(Gtk.Box):
         self._update_display(status)
 
     def _update_display(self, status: Optional[TransportStatus]):
-        is_nodriver = (
-            not self.machine
-            or isinstance(self.machine.driver, NoDeviceDriver)
+        is_nodriver = not self.machine or isinstance(
+            self.machine.driver, NoDeviceDriver
         )
 
         if is_nodriver or status is None:
