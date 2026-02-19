@@ -275,7 +275,7 @@ environments:
       - pypi: https://files.pythonhosted.org/packages/c2/2f/81d580a0fb83baeb066698975cb14a618bdbed7720678566f1b046a95fe8/pyflakes-3.4.0-py2.py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/16/6e/edcff8b3eb9c65fdfeefb55bb990a872d95797d75b0c0c666d65ccc47018/pygobject_stubs-2.14.0.tar.gz
       - pypi: https://files.pythonhosted.org/packages/10/5e/1aa9a93198c6b64513c9d7752de7422c06402de6600a8767da1524f9570b/pyparsing-3.2.5-py3-none-any.whl
-      - pypi: https://files.pythonhosted.org/packages/7d/be/549aaf1dfa4ab4aed29b09703d2fb02c4366fc1f05e880948c296c5764b9/pypdf-6.6.2-py3-none-any.whl
+      - pypi: https://files.pythonhosted.org/packages/68/77/38bd7744bb9e06d465b0c23879e6d2c187d93a383f8fa485c862822bb8a3/pypdf-6.7.1-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/bd/24/12818598c362d7f300f18e74db45963dbcb85150324092410c8b49405e42/pyproject_hooks-1.2.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/0c/82/a2c93e32800940d9573fb28c346772a14778b84ba7524e691b324620ab89/pyright-1.1.408-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/07/bc/587a445451b253b285629263eb51c2d8e9bcea4fc97826266d186f96f558/pyserial-3.5-py2.py3-none-any.whl
@@ -4223,15 +4223,14 @@ packages:
   - railroad-diagrams ; extra == 'diagrams'
   - jinja2 ; extra == 'diagrams'
   requires_python: '>=3.9'
-- pypi: https://files.pythonhosted.org/packages/7d/be/549aaf1dfa4ab4aed29b09703d2fb02c4366fc1f05e880948c296c5764b9/pypdf-6.6.2-py3-none-any.whl
+- pypi: https://files.pythonhosted.org/packages/68/77/38bd7744bb9e06d465b0c23879e6d2c187d93a383f8fa485c862822bb8a3/pypdf-6.7.1-py3-none-any.whl
   name: pypdf
-  version: 6.6.2
-  sha256: 44c0c9811cfb3b83b28f1c3d054531d5b8b81abaedee0d8cb403650d023832ba
+  version: 6.7.1
+  sha256: a02ccbb06463f7c334ce1612e91b3e68a8e827f3cee100b9941771e6066b094e
   requires_dist:
   - typing-extensions>=4.0 ; python_full_version < '3.11'
   - cryptography ; extra == 'crypto'
   - pycryptodome ; extra == 'cryptodome'
-  - black ; extra == 'dev'
   - flit ; extra == 'dev'
   - pip-tools ; extra == 'dev'
   - pre-commit ; extra == 'dev'
@@ -4443,7 +4442,7 @@ packages:
   timestamp: 1746622023242
 - pypi: ./
   name: rayforge
-  version: 1.0.1.post115+git.0d050778.dirty
+  version: 1.0.1.post165+git.0358ef3d.dirty
   sha256: 659edafe1ddd768051114ece1166546620ffcd9ea14da91f9878b0492331c185
   requires_dist:
   - aiohttp==3.13.3
@@ -4460,7 +4459,7 @@ packages:
   - pygobject==3.50.0
   - pyopengl==3.1.10
   - pyopengl-accelerate==3.1.10
-  - pypdf==6.6.2
+  - pypdf==6.7.1
   - pyserial-asyncio==0.6
   - pyvips==3.0.0
   - pyyaml==6.0.2
