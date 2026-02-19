@@ -132,7 +132,7 @@ cmd = "pytest -v -m ui"
 
 [tasks.screenshot]
 env = { GI_TYPELIB_PATH = "$(pkgconf --variable=typelibdir gobject-introspection-1.0)"}
-cmd = "scripts/with_gdk.sh scripts/media/take_screenshot.py"
+cmd = "scripts/with_gdk.sh scripts/screenshot/cli.py"
 
 [tasks.wheel]
 cmd = "python3 -m build"
