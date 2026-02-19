@@ -46,6 +46,7 @@ from __future__ import annotations
 import re
 import uuid
 import logging
+import zlib
 from typing import Dict, Optional, TYPE_CHECKING
 from multiprocessing import shared_memory
 import numpy as np
@@ -60,10 +61,49 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-def _build_shm_name(creator_tag: str) -> str:
+_CREATOR_TAG_ALIASES = {
+    "job": "job",
+    "step": "step",
+    "workpiece": "wp",
+    "workpiecechunk": "wpc",
+    "workpieceview": "wpv",
+    "viewlivebuffer": "vlb",
+    "render": "rnd",
+    "ops": "ops",
+}
+
+
+def _short_creator_tag(creator_tag: str) -> str:
     clean_tag = re.sub(r"[^a-z0-9]+", "", creator_tag.lower())
-    short_tag = clean_tag[:4] if clean_tag else "unk"
-    return f"rf_{short_tag}_{uuid.uuid4().hex[:16]}"
+    if not clean_tag:
+        return "unk"
+
+    direct = _CREATOR_TAG_ALIASES.get(clean_tag)
+    if direct:
+        return direct
+
+    if clean_tag.endswith("chunk"):
+        return "wpc"
+    if clean_tag.endswith("render"):
+        return "rnd"
+    if clean_tag.endswith("ops"):
+        return "ops"
+    if "workpieceview" in clean_tag:
+        return "wpv"
+    if "viewlivebuffer" in clean_tag:
+        return "vlb"
+    if "workpiece" in clean_tag:
+        return "wp"
+    if "step" in clean_tag:
+        return "step"
+    if "job" in clean_tag:
+        return "job"
+
+    return f"u{zlib.crc32(clean_tag.encode('ascii')):08x}"
+
+
+def _build_shm_name(creator_tag: str) -> str:
+    return f"rf_{_short_creator_tag(creator_tag)}_{uuid.uuid4().hex[:16]}"
 
 
 class ArtifactStore:
