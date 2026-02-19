@@ -16,12 +16,12 @@ function HeroSection() {
         <div className={styles.heroContent}>
           <h1 className={styles.heroTitle}>
             The World's Most <br />
-            <span className={styles.titleGradient}>Powerful Open Source</span> <br />
+            <span className={styles.titleGradient}>Powerful Open Source </span>
             Laser Software
           </h1>
           <p className={styles.heroSubtitle}>
-            Precision laser cutting and engraving for limitless creations.
-            2D CAD. Completely free and open source.
+            Seamless tools for imaginative minds. Rayforge is the open-source power tool for your laser cutter,
+            combining 2D CAD, CAM, and machine control in one vibrant package.
           </p>
           <div className={styles.heroCtaButtons}>
             <Link

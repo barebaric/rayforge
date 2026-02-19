@@ -58,11 +58,11 @@ html[data-theme='dark'] .hero {
 
 .titleGradient {
   /* Vibrant gradient text matching the logo R */
-  background: linear-gradient(135deg, #ff9f43 0%, #ee5253 50%, #5f27ad 100%);
+  background: linear-gradient(135deg, #ff9f43 0%, #fa4f4f 50%, #2843bb 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
-  display: inline-block;
+  display: inline;
 }
 
 .heroSubtitle {
