@@ -201,6 +201,29 @@ class DocEditor:
         finally:
             self.processing_state_changed.disconnect(on_settled)
 
+    def wait_until_settled_sync(self, timeout: float = 10.0) -> bool:
+        """
+        Synchronous version of wait_until_settled for use in scripts.
+
+        Returns True if settled within timeout, False otherwise.
+        """
+        import threading
+
+        if not self.is_processing:
+            return True
+
+        settled_event = threading.Event()
+
+        def on_settled(sender, is_processing: bool):
+            if not is_processing:
+                settled_event.set()
+
+        self.processing_state_changed.connect(on_settled)
+        try:
+            return settled_event.wait(timeout=timeout)
+        finally:
+            self.processing_state_changed.disconnect(on_settled)
+
     async def import_file_from_path(
         self,
         filename: Path,
