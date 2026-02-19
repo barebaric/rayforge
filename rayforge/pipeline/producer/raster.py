@@ -612,6 +612,9 @@ class Rasterizer(OpsProducer):
 
         init_args = {k: v for k, v in params_in.items() if k in valid_params}
 
+        if "num_depth_levels" in init_args:
+            init_args["num_depth_levels"] = int(init_args["num_depth_levels"])
+
         depth_mode_str = init_args.get(
             "depth_mode", DepthMode.POWER_MODULATION.name
         )
