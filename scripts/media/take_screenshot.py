@@ -38,7 +38,8 @@ def take_screenshot(output_name: str = "ss-main.png") -> bool:
     import subprocess
 
     try:
-        output_dir = project_root / "website" / "content" / "docs" / "images"
+        # Save to website-new static images directory
+        output_dir = project_root / "website" / "static" / "images"
         output_path = output_dir / output_name
         output_path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -278,20 +279,25 @@ def create_patched_app_class(
     step_page: Optional[str] = None,
     step_index: Optional[int] = None,
     engrave_mode: Optional[str] = None,
+    settings_page: Optional[str] = None,
+    recipe_page: Optional[str] = None,
 ):
     """
     Create a patched App class that activates simulation mode and takes a
     screenshot.
 
     Args:
-        screenshot_type: Type of screenshot to take ("main", "machine", or
-            "step-settings").
+        screenshot_type: Type of screenshot to take ("main", "machine",
+            "step-settings", or "settings").
         machine_page: Machine dialog page to capture (for "machine" type).
         step_page: Step settings dialog page to capture (for "step-settings"
             type).
         step_index: Index of the step to capture (for "step-settings" type).
         engrave_mode: Engrave mode to set for engrave steps (e.g.,
             "POWER_MODULATION", "CONSTANT_POWER", "DITHER", "MULTI_PASS").
+        settings_page: Application settings page to capture (for "settings"
+            type).
+        recipe_page: Recipe dialog page to capture (for "recipe-editor" type).
 
     Returns:
         The patched App class.
@@ -310,6 +316,10 @@ def create_patched_app_class(
             self._step_page = step_page
             self._step_index = step_index
             self._engrave_mode = engrave_mode
+            self._settings_page = settings_page
+            self._recipe_page = recipe_page
+            self._settings_dialog = None
+            self._recipe_dialog = None
 
         def _schedule_delayed_actions(self, win):
             """Schedule delayed actions for simulation activation and
@@ -369,6 +379,131 @@ def create_patched_app_class(
             GLib.timeout_add_seconds(3, open_dialog)
             GLib.timeout_add_seconds(5, take_screenshot_and_quit)
 
+        def _schedule_settings_dialog_screenshot(self, win):
+            """Schedule delayed actions for settings dialog screenshot."""
+            from gi.repository import GLib
+
+            logger.info(
+                f"Scheduling settings dialog screenshot for page: "
+                f"{self._settings_page}"
+            )
+
+            def open_dialog():
+                """Open the settings dialog."""
+                logger.info("Opening settings dialog...")
+                if not self._open_settings_dialog(win):
+                    logger.error("Failed to open settings dialog")
+                    self._quit_application()
+                    return False
+                return False
+
+            def take_screenshot_and_quit():
+                """Take the screenshot and quit."""
+                logger.info("Taking screenshot and quitting...")
+                if not self._screenshot_taken:
+                    output_name = f"application-{self._settings_page}.png"
+                    take_screenshot(output_name)
+                    self._screenshot_taken = True
+                self._quit_application()
+                return False
+
+            # Schedule actions with delays
+            GLib.timeout_add_seconds(3, open_dialog)
+            GLib.timeout_add_seconds(5, take_screenshot_and_quit)
+
+        def _schedule_recipe_editor_screenshot(self, win):
+            """Schedule delayed actions for recipe editor dialog screenshot."""
+            from gi.repository import GLib
+
+            self._settings_dialog = None
+            self._recipe_dialog = None
+
+            def open_settings_dialog():
+                """Open the settings dialog on recipes page."""
+                logger.info("Opening settings dialog on recipes page...")
+                if not self._open_settings_dialog(win):
+                    logger.error("Failed to open settings dialog")
+                    self._quit_application()
+                    return False
+                return False
+
+            def open_recipe_editor():
+                """Click add recipe button to open the editor."""
+                logger.info("Opening recipe editor dialog...")
+                if not self._open_recipe_editor_from_settings():
+                    logger.error("Failed to open recipe editor dialog")
+                    self._quit_application()
+                    return False
+                return False
+
+            def switch_page():
+                """Switch to the specified recipe dialog page."""
+                if not self._recipe_dialog:
+                    logger.error("Recipe dialog not open")
+                    self._quit_application()
+                    return False
+                page = self._recipe_page or "general"
+                logger.info(f"Switching to recipe page: {page}")
+                try:
+                    from gi.repository import Adw, Gtk
+
+                    # First switch the view stack
+                    self._recipe_dialog.view_stack.set_visible_child_name(page)
+
+                    # Find the header bar through the dialog's widget tree
+                    def find_header_bar(widget, depth=0):
+                        """Recursively find HeaderBar in widget tree."""
+                        if depth > 10:
+                            return None
+                        if isinstance(widget, Adw.HeaderBar):
+                            return widget
+                        child = widget.get_first_child()
+                        while child:
+                            result = find_header_bar(child, depth + 1)
+                            if result:
+                                return result
+                            child = child.get_next_sibling()
+                        return None
+
+                    header_bar = find_header_bar(self._recipe_dialog)
+                    if header_bar:
+                        switcher_box = header_bar.get_title_widget()
+                        if switcher_box and isinstance(switcher_box, Gtk.Box):
+                            button_index = {
+                                "general": 0,
+                                "applicability": 1,
+                                "settings": 2,
+                            }
+                            idx = button_index.get(page, 0)
+                            button = switcher_box.get_first_child()
+                            for i in range(idx):
+                                if button is None:
+                                    break
+                                button = button.get_next_sibling()
+                            if button and isinstance(button, Gtk.ToggleButton):
+                                button.set_active(True)
+                                logger.info(f"Activated button for {page}")
+                except Exception as e:
+                    logger.error(f"Failed to switch page: {e}")
+                return False
+
+            def take_screenshot_and_quit():
+                """Take the screenshot and quit."""
+                logger.info("Taking screenshot and quitting...")
+                if not self._screenshot_taken:
+                    page = self._recipe_page or "general"
+                    output_name = f"recipe-editor-{page}.png"
+                    take_screenshot(output_name)
+                    self._screenshot_taken = True
+                self._quit_application()
+                return False
+
+            # Schedule actions with delays
+            GLib.timeout_add_seconds(3, open_settings_dialog)
+            GLib.timeout_add_seconds(5, open_recipe_editor)
+            GLib.timeout_add_seconds(6, switch_page)
+            GLib.timeout_add_seconds(8, take_screenshot_and_quit)
+
         def _schedule_step_dialog_screenshot(self, win):
             """Schedule delayed actions for step settings dialog screenshot."""
             from gi.repository import GLib
@@ -405,8 +540,7 @@ def create_patched_app_class(
                         else ""
                     )
                     output_name = (
-                        f"step-{step_type}{mode_suffix}-"
-                        f"{self._step_page}.png"
+                        f"step-{step_type}{mode_suffix}-{self._step_page}.png"
                     )
                     take_screenshot(output_name)
                     self._screenshot_taken = True
@@ -431,14 +565,19 @@ def create_patched_app_class(
             win.set_default_size(2400, 1650)
             logger.info("Window size set to 2400x1650")
 
-            # For machine and step-settings screenshots, load a file if
-            # provided. Use load_project_from_path for .ryp files,
+            # For machine, settings and step-settings screenshots, don't load
+            # a file. Use load_project_from_path for .ryp files,
             # load_file_from_path for others.
+            skip_args = (
+                "--screenshot-type",
+                "--machine-page",
+                "--settings-page",
+            )
             if (
-                self._screenshot_type != "machine"
+                self._screenshot_type
+                not in ("machine", "settings", "recipe-editor")
                 and self.args.filenames
-                and self.args.filenames[0]
-                not in ("--screenshot-type", "--machine-page")
+                and self.args.filenames[0] not in skip_args
             ):
                 for filename in self.args.filenames:
                     if filename.startswith("--"):
@@ -459,10 +598,15 @@ def create_patched_app_class(
             win.present()
 
             # Schedule the screenshot and simulation activation
+            logger.info(f"Scheduling screenshot type: {self._screenshot_type}")
             if self._screenshot_type == "machine":
                 self._schedule_machine_dialog_screenshot(win)
+            elif self._screenshot_type == "settings":
+                self._schedule_settings_dialog_screenshot(win)
             elif self._screenshot_type == "step-settings":
                 self._schedule_step_dialog_screenshot(win)
+            elif self._screenshot_type == "recipe-editor":
+                self._schedule_recipe_editor_screenshot(win)
             else:
                 self._schedule_delayed_actions(win)
 
@@ -495,6 +639,58 @@ def create_patched_app_class(
                 logger.error(f"Failed to open machine dialog: {e}")
                 return False
 
+        def _open_settings_dialog(self, win) -> bool:
+            """Open the settings dialog on the specified page."""
+            try:
+                from rayforge.ui_gtk.settings.settings_dialog import (
+                    SettingsWindow,
+                )
+
+                page = self._settings_page or "general"
+                if self._screenshot_type == "recipe-editor":
+                    page = "recipes"
+                dialog = SettingsWindow(initial_page=page)
+                dialog.set_transient_for(win)
+                dialog.present()
+                self._settings_dialog = dialog
+                msg = f"Opened settings dialog on page: {page}"
+                logger.info(msg)
+                return True
+
+            except Exception as e:
+                logger.error(f"Failed to open settings dialog: {e}")
+                return False
+
+        def _open_recipe_editor_from_settings(self) -> bool:
+            """Open the recipe editor from the settings dialog."""
+            try:
+                if not self._settings_dialog:
+                    logger.error("Settings dialog not open")
+                    return False
+
+                from rayforge.core.recipe import Recipe
+                from rayforge.ui_gtk.doceditor.edit_recipe_dialog import (
+                    AddEditRecipeDialog,
+                )
+
+                recipe = Recipe(name="3mm Plywood Cut")
+                recipe.description = (
+                    "A recipe for cutting 3mm plywood with a diode laser"
+                )
+
+                self._recipe_dialog = AddEditRecipeDialog(
+                    parent=self._settings_dialog,
+                    recipe=recipe,
+                )
+                self._recipe_dialog.set_default_size(700, 800)
+                self._recipe_dialog.present()
+                logger.info("Opened recipe editor dialog")
+                return True
+
+            except Exception as e:
+                logger.error(f"Failed to open recipe editor dialog: {e}")
+                return False
+
         def _open_step_dialog(self, win):
             """Open the step settings dialog for the specified step."""
             try:
@@ -507,10 +703,7 @@ def create_patched_app_class(
 
                 from rayforge.pipeline.producer.raster import DepthMode
 
-                if (
-                    self._engrave_mode
-                    and step.typelabel == _("Engrave")
-                ):
+                if self._engrave_mode and step.typelabel == _("Engrave"):
                     producer_dict = step.opsproducer_dict
                     params = producer_dict.setdefault("params", {})
                     try:
@@ -675,7 +868,13 @@ def main():
     parser.add_argument(
         "--screenshot-type",
         default="main",
-        choices=["main", "machine", "step-settings"],
+        choices=[
+            "main",
+            "machine",
+            "settings",
+            "step-settings",
+            "recipe-editor",
+        ],
         help="Type of screenshot to take (default: main)",
     )
     parser.add_argument(
@@ -693,6 +892,18 @@ def main():
             "maintenance",
         ],
         help="Machine dialog page to capture (default: general)",
+    )
+    parser.add_argument(
+        "--settings-page",
+        default="general",
+        choices=[
+            "general",
+            "machines",
+            "materials",
+            "recipes",
+            "packages",
+        ],
+        help="Settings dialog page to capture (default: general)",
     )
     parser.add_argument(
         "--step-page",
@@ -717,6 +928,12 @@ def main():
         ],
         help="Engrave mode to set for engrave steps",
     )
+    parser.add_argument(
+        "--recipe-page",
+        default="general",
+        choices=["general", "applicability", "settings"],
+        help="Recipe dialog page to capture (default: general)",
+    )
 
     args = parser.parse_args()
 
@@ -724,6 +941,8 @@ def main():
     log_level = getattr(logging, args.loglevel.upper(), logging.INFO)
     logging.getLogger().setLevel(log_level)
     logger.info(f"Application starting with log level {args.loglevel.upper()}")
+    logger.info(f"Parsed screenshot_type: {args.screenshot_type}")
+    logger.info(f"Parsed settings_page: {args.settings_page}")
 
     # Set up application with or without test file based on screenshot type
     # For machine and step-settings screenshots, don't include
@@ -741,6 +960,8 @@ def main():
         step_page=args.step_page,
         step_index=args.step_index,
         engrave_mode=args.engrave_mode,
+        settings_page=args.settings_page,
+        recipe_page=args.recipe_page,
     )
     app = PatchedApp(args)
     exit_code = app.run(None)

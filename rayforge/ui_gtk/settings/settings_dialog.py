@@ -14,9 +14,19 @@ class SettingsWindow(PatchedDialogWindow):
     The main, non-modal settings window for the application.
     """
 
-    def __init__(self, **kwargs):
+    # Mapping of page names to indices
+    PAGE_INDICES = {
+        "general": 0,
+        "machines": 1,
+        "materials": 2,
+        "recipes": 3,
+        "packages": 4,
+    }
+
+    def __init__(self, initial_page: str = "general", **kwargs):
         super().__init__(**kwargs)
 
+        self._initial_page = initial_page
         self.set_title(_("Settings"))
         self.set_default_size(800, 800)
         self.set_size_request(-1, -1)
@@ -64,7 +74,10 @@ class SettingsWindow(PatchedDialogWindow):
 
         # Populate
         self.sidebar_list.connect("row-selected", self._on_row_selected)
-        self.sidebar_list.select_row(self.sidebar_list.get_row_at_index(0))
+        # Select the initial page
+        initial_index = self.PAGE_INDICES.get(self._initial_page, 0)
+        initial_row = self.sidebar_list.get_row_at_index(initial_index)
+        self.sidebar_list.select_row(initial_row)
 
         # Key controller
         key_controller = Gtk.EventControllerKey()
