@@ -270,39 +270,6 @@ sudo snap connect rayforge:serial-port`}
           </p>
         </div>
       </div>
-
-      <div className="install-troubleshoot">
-        <h5>Troubleshooting Snap Permissions</h5>
-        <details>
-          <summary>Serial port still not working?</summary>
-          <div className="install-troubleshoot-content">
-            <ol>
-              <li>
-                <strong>Replug the USB device:</strong> Unplug your laser
-                controller, wait 5 seconds, plug it back in.
-              </li>
-              <li>
-                <strong>Restart Rayforge:</strong> Close completely and
-                relaunch.
-              </li>
-              <li>
-                <strong>Check the device exists:</strong>
-                <CodeBlock language="bash">
-                  ls -l /dev/ttyUSB* /dev/ttyACM*
-                </CodeBlock>
-              </li>
-              <li>
-                <strong>Reinstall if needed:</strong>
-                <CodeBlock language="bash">
-                  {`sudo snap remove rayforge
-sudo snap install rayforge
-sudo snap connect rayforge:serial-port`}
-                </CodeBlock>
-              </li>
-            </ol>
-          </div>
-        </details>
-      </div>
     </div>
   );
 }
@@ -525,63 +492,6 @@ function WindowsInstall({ version }) {
           </p>
         </div>
       </div>
-
-      <div className="install-troubleshoot">
-        <h5>Troubleshooting Windows Installation</h5>
-        <details>
-          <summary>Installer crashing or not installing?</summary>
-          <div className="install-troubleshoot-content">
-            <p>
-              If the installer crashes or fails to install, you may be
-              missing the Microsoft Visual C++ Redistributable. Download
-              and install it from Microsoft:
-            </p>
-            <p>
-              <a
-                href="https://aka.ms/vc14/vc_redist.x64.exe"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                <strong>Download C++ Redistributable v14</strong>
-              </a>
-            </p>
-            <p>
-              After installing the redistributable, run the Rayforge
-              installer again.
-            </p>
-          </div>
-        </details>
-        <details>
-          <summary>Driver Issues?</summary>
-          <div className="install-troubleshoot-content">
-            <p>
-              If your laser controller isn't detected:
-            </p>
-            <ol>
-              <li>
-                Open <strong>Device Manager</strong> (Win+X, then select
-                Device Manager)
-              </li>
-              <li>
-                Look under <strong>Ports (COM & LPT)</strong> for your
-                device
-              </li>
-              <li>
-                If you see a yellow warning icon, update or reinstall the
-                driver
-              </li>
-              <li>
-                Note the COM port number (e.g., COM3) for use in Rayforge
-              </li>
-            </ol>
-            <p>
-              Many laser controllers use the CH340/CH341 chipset. If
-              Windows doesn't automatically install drivers, download them
-              from the manufacturer's website.
-            </p>
-          </div>
-        </details>
-      </div>
     </div>
   );
 }
@@ -688,60 +598,151 @@ function VerifyInstall({ os }) {
   );
 }
 
-function NeedHelp({ os, linuxMethod }) {
+function Troubleshooting({ os, linuxMethod }) {
+  return (
+    <div className="install-section">
+      <h4>Troubleshooting</h4>
+      {os === 'linux' && linuxMethod === 'snap' && (
+        <div className="install-troubleshoot">
+          <details>
+            <summary>Permission issues?</summary>
+            <div className="install-troubleshoot-content">
+              <p>
+                If your device isn't detected, see the{' '}
+                <a href="../troubleshooting/snap-permissions">
+                  Snap Permissions Guide
+                </a>.
+              </p>
+            </div>
+          </details>
+          <details>
+            <summary>Serial port still not working?</summary>
+            <div className="install-troubleshoot-content">
+              <ol>
+                <li>
+                  <strong>Replug the USB device:</strong> Unplug your laser
+                  controller, wait 5 seconds, plug it back in.
+                </li>
+                <li>
+                  <strong>Restart Rayforge:</strong> Close completely and
+                  relaunch.
+                </li>
+                <li>
+                  <strong>Check the device exists:</strong>
+                  <CodeBlock language="bash">
+                    ls -l /dev/ttyUSB* /dev/ttyACM*
+                  </CodeBlock>
+                </li>
+                <li>
+                  <strong>Reinstall if needed:</strong>
+                  <CodeBlock language="bash">
+                    {`sudo snap remove rayforge
+sudo snap install rayforge
+sudo snap connect rayforge:serial-port`}
+                  </CodeBlock>
+                </li>
+              </ol>
+            </div>
+          </details>
+        </div>
+      )}
+      {os === 'linux' && linuxMethod !== 'snap' && (
+        <div className="install-troubleshoot">
+          <details>
+            <summary>Permission denied errors?</summary>
+            <div className="install-troubleshoot-content">
+              <p>
+                If you get "permission denied" errors when accessing the
+                serial port, add your user to the <code>dialout</code> group:
+              </p>
+              <CodeBlock language="bash">
+                sudo usermod -a -G dialout $USER
+              </CodeBlock>
+              <p>Then log out and back in for changes to take effect.</p>
+            </div>
+          </details>
+        </div>
+      )}
+      {os === 'windows' && (
+        <div className="install-troubleshoot">
+          <details>
+            <summary>Installer crashing or not installing?</summary>
+            <div className="install-troubleshoot-content">
+              <p>
+                If the installer crashes or fails to install, you may be
+                missing the Microsoft Visual C++ Redistributable. Download
+                and install it from Microsoft:
+              </p>
+              <p>
+                <a
+                  href="https://aka.ms/vc14/vc_redist.x64.exe"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <strong>Download C++ Redistributable v14</strong>
+                </a>
+              </p>
+              <p>
+                After installing the redistributable, run the Rayforge
+                installer again.
+              </p>
+            </div>
+          </details>
+          <details>
+            <summary>Driver issues?</summary>
+            <div className="install-troubleshoot-content">
+              <p>
+                If your laser controller isn't detected, check Device
+                Manager under <strong>Ports (COM & LPT)</strong> to confirm
+                the COM port number. You may need to install CH340 or CP2102
+                drivers for your USB-to-serial adapter.
+              </p>
+            </div>
+          </details>
+          <details>
+            <summary>Antivirus blocking connection?</summary>
+            <div className="install-troubleshoot-content">
+              <p>
+                Some antivirus software may block Rayforge from accessing USB
+                devices. Try adding an exception if you experience connection
+                issues.
+              </p>
+            </div>
+          </details>
+        </div>
+      )}
+      {os === 'macos' && (
+        <div className="install-troubleshoot">
+          <details>
+            <summary>USB device not detected?</summary>
+            <div className="install-troubleshoot-content">
+              <p>
+                If your device isn't detected, you may need to approve the
+                USB device in <strong>System Settings → Privacy &
+                Security</strong>.
+              </p>
+            </div>
+          </details>
+          <details>
+            <summary>Driver issues?</summary>
+            <div className="install-troubleshoot-content">
+              <p>
+                Some USB-to-serial adapters require additional drivers. Check
+                if your adapter uses CH340 or CP2102 chips and install the
+                appropriate driver.
+              </p>
+            </div>
+          </details>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function NeedHelp() {
   return (
     <div className="install-section">
       <h4>Need Help?</h4>
-      {os === 'linux' && linuxMethod === 'snap' && (
-        <p>
-          <strong>Snap permissions:</strong> If your device isn't detected,
-          see the{' '}
-          <a href="../troubleshooting/snap-permissions">
-            Snap Permissions Guide
-          </a>.
-        </p>
-      )}
-      {os === 'linux' && linuxMethod !== 'snap' && (
-        <>
-          <p>
-            <strong>Serial port access:</strong> If you get "permission denied"
-            errors, add your user to the <code>dialout</code> group:
-          </p>
-          <CodeBlock language="bash">
-            sudo usermod -a -G dialout $USER
-          </CodeBlock>
-          <p>Then log out and back in for changes to take effect.</p>
-        </>
-      )}
-      {os === 'windows' && (
-        <>
-          <p>
-            <strong>Driver issues:</strong> If your device isn't detected,
-            check Device Manager under "Ports (COM & LPT)" to confirm the
-            COM port number. You may need to install CH340 or CP2102 drivers
-            for your USB-to-serial adapter.
-          </p>
-          <p>
-            <strong>Antivirus:</strong> Some antivirus software may block
-            Rayforge from accessing USB devices. Try adding an exception if
-            you experience connection issues.
-          </p>
-        </>
-      )}
-      {os === 'macos' && (
-        <>
-          <p>
-            <strong>USB devices:</strong> If your device isn't detected, you
-            may need to approve the USB device in System Settings → Privacy
-            & Security.
-          </p>
-          <p>
-            <strong>Driver issues:</strong> Some USB-to-serial adapters
-            require additional drivers. Check if your adapter uses CH340 or
-            CP2102 chips and install the appropriate driver.
-          </p>
-        </>
-      )}
       <p>
         For additional help, report an issue on{' '}
         <a href="https://github.com/barebaric/rayforge/issues">GitHub</a> or
@@ -784,7 +785,8 @@ export default function InstallGuide() {
         {selectedOs === 'macos' && <MacosInstall />}
 
         <VerifyInstall os={selectedOs} />
-        <NeedHelp os={selectedOs} linuxMethod={linuxMethod} />
+        <Troubleshooting os={selectedOs} linuxMethod={linuxMethod} />
+        <NeedHelp />
       </div>
     </div>
   );
