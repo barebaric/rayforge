@@ -196,7 +196,9 @@ jobs:
             fi
 
             lipo -create -output "$uni_file" "$arm_file" "$intel_file"
-            chmod --reference="$arm_file" "$uni_file"
+            if [ -x "$arm_file" ]; then
+              chmod +x "$uni_file"
+            fi
           done
 
       - name: Set architecture priority
