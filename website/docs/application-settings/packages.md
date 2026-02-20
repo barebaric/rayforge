@@ -1,6 +1,6 @@
 # Packages
 
-![Packages Settings](/images/application-packages.png)
+![Packages Settings](/screenshots/application-packages.png)
 
 The Packages page shows installed extension packages and allows you to
 manage them.

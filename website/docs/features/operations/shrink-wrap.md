@@ -60,7 +60,7 @@ The result is an efficient cutting path that follows the overall shape of your p
 
 ### Step 4: Configure Settings
 
-![Shrink Wrap step settings](/images/step-shrink-wrap-step-settings.png)
+![Shrink Wrap step settings](/screenshots/step-settings-shrink-wrap-general.png)
 
 ## Key Settings
 
@@ -200,7 +200,7 @@ See [Multi-Layer Workflow](../multi-layer) for details.
 
 ## Tips & Best Practices
 
-![Shrink Wrap post-processing settings](/images/step-shrink-wrap-post-processing.png)
+![Shrink Wrap post-processing settings](/screenshots/step-settings-shrink-wrap-post.png)
 
 ### Part Spacing
 

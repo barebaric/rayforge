@@ -5,7 +5,7 @@ laser jobs.
 
 ## Window Layout
 
-![Main Window](/images/main-standard.png)
+![Main Window](/screenshots/main-standard.png)
 
 ### 1. Menu Bar
 

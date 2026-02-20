@@ -5,7 +5,7 @@ authors: rayforge_team
 tags: [introduction, features]
 ---
 
-![Rayforge Main Window](/images/main-standard.png)
+![Rayforge Main Window](/screenshots/main-standard.png)
 
 We're excited to introduce Rayforge, a modern, open-source G-code sender
 and control software designed specifically for GRBL-based laser cutters

@@ -41,7 +41,7 @@ configuration options for all supported file types. The dialog allows you to:
 - **Choose import method** for SVG files (direct vectors or trace)
 - **Adjust parameters** like threshold, invert, and auto-threshold
 
-![Import Dialog](/images/import-dialog.png)
+![Import Dialog](/screenshots/import-dialog.png)
 
 ### Method 1: File Menu
 

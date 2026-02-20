@@ -1,6 +1,6 @@
 # Recipes and Settings
 
-![Recipes Settings](/images/application-recipes.png)
+![Recipes Settings](/screenshots/application-recipes.png)
 
 Rayforge provides a powerful recipe system that allows you to create,
 manage, and apply consistent settings across your laser cutting projects.
@@ -33,7 +33,7 @@ Click "Add New Recipe" to open the recipe editor dialog.
 
 **General Tab** - Set the recipe name and description:
 
-![Recipe Editor - General Tab](/images/recipe-editor-general.png)
+![Recipe Editor - General Tab](/screenshots/recipe-editor-general.png)
 
 Fill in the basic information:
 
@@ -44,7 +44,7 @@ Fill in the basic information:
 
 **Applicability Tab** - Define when this recipe should be suggested:
 
-![Recipe Editor - Applicability Tab](/images/recipe-editor-applicability.png)
+![Recipe Editor - Applicability Tab](/screenshots/recipe-editor-applicability.png)
 
 - **Task Type**: Select the operation type (Cut, Engrave, etc.)
 - **Machine**: Choose a specific machine or leave as "Any Machine"
@@ -55,7 +55,7 @@ Fill in the basic information:
 
 **Settings Tab** - Adjust power, speed, and other parameters:
 
-![Recipe Editor - Settings Tab](/images/recipe-editor-settings.png)
+![Recipe Editor - Settings Tab](/screenshots/recipe-editor-settings.png)
 
 - Adjust power, speed, and other parameters
 - Settings automatically adapt based on the selected task type

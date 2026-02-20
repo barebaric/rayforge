@@ -31,7 +31,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 PROJECT_ROOT = Path(__file__).parent.parent.parent
-OUTPUT_DIR = PROJECT_ROOT / "website" / "static" / "images"
+OUTPUT_DIR = PROJECT_ROOT / "website" / "static" / "screenshots"
 TESTS_DIR = PROJECT_ROOT / "tests"
 
 SCREENSHOT_TOOLS = [
@@ -93,6 +93,72 @@ def take_screenshot(output_name: str) -> bool:
 
     logger.error("Failed to take screenshot with available tools")
     return False
+
+
+def take_cropped_screenshot(
+    output_name: str,
+    *,
+    from_bottom: Optional[int] = None,
+    from_top: Optional[int] = None,
+    from_left: Optional[int] = None,
+    from_right: Optional[int] = None,
+) -> bool:
+    """
+    Take a screenshot of the active window and crop it.
+
+    Args:
+        output_name: Filename (saved to OUTPUT_DIR).
+        from_bottom: Crop this many pixels from the bottom.
+        from_top: Crop this many pixels from the top.
+        from_left: Crop this many pixels from the left.
+        from_right: Crop this many pixels from the right.
+
+    Returns:
+        True if screenshot was saved successfully.
+    """
+    output_path = OUTPUT_DIR / output_name
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+
+    time.sleep(0.5)
+
+    temp_path = output_path.with_suffix(".temp.png")
+
+    success = False
+    for cmd_args, tool_name in SCREENSHOT_TOOLS:
+        result = subprocess.run(
+            [*cmd_args, str(temp_path)],
+            capture_output=True,
+            text=True,
+        )
+        if result.returncode == 0:
+            success = True
+            break
+
+    if not success:
+        logger.error("Failed to take screenshot with available tools")
+        return False
+
+    try:
+        from PIL import Image
+
+        img = Image.open(temp_path)
+        width, height = img.size
+
+        left = from_left or 0
+        top = from_top or 0
+        right = width - (from_right or 0)
+        bottom = height - (from_bottom or 0)
+
+        cropped = img.crop((left, top, right, bottom))
+        cropped.save(output_path)
+        temp_path.unlink()
+        logger.info(f"Cropped screenshot saved to {output_path}")
+        return True
+    except Exception as e:
+        logger.error(f"Failed to crop screenshot: {e}")
+        if temp_path.exists():
+            temp_path.unlink()
+        return False
 
 
 def wait_for_settled(win: "MainWindow", timeout: float = 30.0) -> bool:
@@ -248,14 +314,14 @@ def open_step_settings(
             editor=win.doc_editor,
             step=step,
             transient_for=win,
-            initial_page=page,
         )
         dialog.set_default_size(600, 900)
         dialog.present()
+        dialog.set_initial_page(page)
         return dialog
 
     dialog = _run_on_main_thread(_open)
-    logger.info(f"Opened step settings for: {step.name}")
+    logger.info(f"Opened step settings for: {step.name} on page: {page}")
     return dialog
 
 
@@ -340,7 +406,14 @@ def open_recipe_editor(
         )
         dialog.set_default_size(700, 800)
         dialog.present()
-        dialog.view_stack.set_visible_child_name(page)
+
+        button_map = {
+            "general": dialog.btn_general,
+            "applicability": dialog.btn_applicability,
+            "settings": dialog.btn_settings,
+        }
+        if page in button_map:
+            button_map[page].set_active(True)
         return dialog
 
     dialog = _run_on_main_thread(_open)

@@ -163,30 +163,30 @@ class AddEditRecipeDialog(PatchedDialogWindow):
         header_bar.set_title_widget(switcher_box)
 
         # General Tab
-        btn_general = Gtk.ToggleButton()
-        btn_general.set_child(
+        self.btn_general = Gtk.ToggleButton()
+        self.btn_general.set_child(
             self._create_tab_child(_("General"), "preferences-other-symbolic")
         )
-        btn_general.connect("toggled", self._on_tab_toggled, "general")
-        switcher_box.append(btn_general)
+        self.btn_general.connect("toggled", self._on_tab_toggled, "general")
+        switcher_box.append(self.btn_general)
 
         # Applicability Tab
-        btn_applicability = Gtk.ToggleButton(group=btn_general)
-        btn_applicability.set_child(
+        self.btn_applicability = Gtk.ToggleButton(group=self.btn_general)
+        self.btn_applicability.set_child(
             self._create_tab_child(_("Applicability"), "query-symbolic")
         )
-        btn_applicability.connect(
+        self.btn_applicability.connect(
             "toggled", self._on_tab_toggled, "applicability"
         )
-        switcher_box.append(btn_applicability)
+        switcher_box.append(self.btn_applicability)
 
         # Settings Tab
-        btn_settings = Gtk.ToggleButton(group=btn_general)
-        btn_settings.set_child(
+        self.btn_settings = Gtk.ToggleButton(group=self.btn_general)
+        self.btn_settings.set_child(
             self._create_tab_child(_("Settings"), "step-settings-symbolic")
         )
-        btn_settings.connect("toggled", self._on_tab_toggled, "settings")
-        switcher_box.append(btn_settings)
+        self.btn_settings.connect("toggled", self._on_tab_toggled, "settings")
+        switcher_box.append(self.btn_settings)
 
         # --- Page 1: General ---
         page_general = Adw.PreferencesPage()
@@ -317,7 +317,7 @@ class AddEditRecipeDialog(PatchedDialogWindow):
 
         # --- Final Initialization ---
         # Set default tab
-        btn_general.set_active(True)
+        self.btn_general.set_active(True)
 
         if recipe:
             # Use filtered list for indexing

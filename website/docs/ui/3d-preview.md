@@ -4,7 +4,7 @@ The 3D preview window lets you visualize your G-code toolpaths before
 sending them to your machine. This powerful feature helps you catch errors
 and verify your job setup.
 
-![3D Preview](/images/main-3d.png)
+![3D Preview](/screenshots/main-3d.png)
 
 ## Opening 3D Preview
 

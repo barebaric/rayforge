@@ -85,7 +85,7 @@ The pie menu items dynamically show available options based on what you have sel
 For example, when clicking on empty space, you'll see drawing tools. When clicking on
 selected geometry, you'll see applicable constraints.
 
-![Sketcher Pie Menu](/images/sketcher-pie-menu.png)
+![Sketcher Pie Menu](/screenshots/sketcher-pie-menu.png)
 
 ## Keyboard Shortcuts
 

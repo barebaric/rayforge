@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Optional, Tuple
+from typing import TYPE_CHECKING, Tuple
 
 from blinker import Signal
 from gi.repository import Adw, Gdk, GLib, Gtk
@@ -441,13 +441,11 @@ class StepSettingsDialog(PatchedDialogWindow):
         self,
         editor: "DocEditor",
         step: Step,
-        initial_page: Optional[str] = None,
         **kwargs,
     ):
         super().__init__(**kwargs)
         self.editor = editor
         self.step = step
-        self._initial_page = initial_page
         self.set_title(_("{name} Settings").format(name=step.name))
 
         # Adw.ToolbarView provides areas for a header, content, and bottom bar.
@@ -459,8 +457,8 @@ class StepSettingsDialog(PatchedDialogWindow):
         main_view.add_top_bar(header)
 
         # Gtk.Stack holds the pages.
-        stack = Gtk.Stack()
-        main_view.set_content(stack)
+        self.stack = Gtk.Stack()
+        main_view.set_content(self.stack)
 
         # Set a reasonable default size to avoid being too narrow
         self.set_default_size(600, 750)
@@ -481,7 +479,7 @@ class StepSettingsDialog(PatchedDialogWindow):
             hscrollbar_policy=Gtk.PolicyType.NEVER,
             vscrollbar_policy=Gtk.PolicyType.AUTOMATIC,
         )
-        stack.add_named(scrolled_page1, "step-settings")
+        self.stack.add_named(scrolled_page1, "step-settings")
 
         # --- Page 2: Post Processing Settings ---
         self.post_processing_view = PostProcessingSettingsView(
@@ -492,34 +490,45 @@ class StepSettingsDialog(PatchedDialogWindow):
             hscrollbar_policy=Gtk.PolicyType.NEVER,
             vscrollbar_policy=Gtk.PolicyType.AUTOMATIC,
         )
-        stack.add_named(scrolled_page2, "post-processing")
+        self.stack.add_named(scrolled_page2, "post-processing")
 
         # --- Build the custom switcher ---
         switcher_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
         switcher_box.add_css_class("linked")
         header.set_title_widget(switcher_box)
 
-        btn1 = Gtk.ToggleButton()
-        btn1.set_child(
+        self.btn_step_settings = Gtk.ToggleButton()
+        self.btn_step_settings.set_child(
             self._create_tab_title(_("Step Settings"), "laser-path-symbolic")
         )
-        btn1.connect("toggled", self._on_tab_toggled, stack, "step-settings")
-        switcher_box.append(btn1)
+        self.btn_step_settings.connect(
+            "toggled", self._on_tab_toggled, self.stack, "step-settings"
+        )
+        switcher_box.append(self.btn_step_settings)
 
-        btn2 = Gtk.ToggleButton(group=btn1)
-        btn2.set_child(
+        self.btn_post_processing = Gtk.ToggleButton(
+            group=self.btn_step_settings
+        )
+        self.btn_post_processing.set_child(
             self._create_tab_title(
                 _("Post Processing"), "post-processor-symbolic"
             )
         )
-        btn2.connect("toggled", self._on_tab_toggled, stack, "post-processing")
-        switcher_box.append(btn2)
+        self.btn_post_processing.connect(
+            "toggled", self._on_tab_toggled, self.stack, "post-processing"
+        )
+        switcher_box.append(self.btn_post_processing)
 
-        # Set initial state
-        btn1.set_active(self._initial_page != "post-processing")
-        if self._initial_page == "post-processing":
-            btn2.set_active(True)
+        # Default to step-settings page
+        self.btn_step_settings.set_active(True)
         self.general_view._sync_widgets_to_model()
+
+    def set_initial_page(self, page: str):
+        """Set the initial visible page after dialog construction."""
+        if page == "post-processing":
+            self.btn_post_processing.set_active(True)
+        else:
+            self.btn_step_settings.set_active(True)
 
     def _on_tab_toggled(self, button, stack, page_name):
         """Callback to switch the Gtk.Stack page."""

@@ -1,6 +1,6 @@
 # Machines
 
-![Machines Settings](/images/application-machines.png)
+![Machines Settings](/screenshots/application-machines.png)
 
 The Machines page in Application Settings allows you to manage machine
 profiles. Each profile contains all the configuration for a specific

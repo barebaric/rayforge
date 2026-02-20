@@ -2,7 +2,7 @@
 
 The Advanced page in Machine Settings contains additional configuration options for specialized use cases.
 
-![Advanced Settings](/images/machine-advanced.png)
+![Advanced Settings](/screenshots/machine-advanced.png)
 
 ## Connection Behavior
 

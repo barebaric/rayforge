@@ -1,6 +1,6 @@
 # Materials
 
-![Materials Settings](/images/application-materials.png)
+![Materials Settings](/screenshots/application-materials.png)
 
 Material libraries in Rayforge allow you to organize and manage collections
 of materials for your laser cutting and engraving projects. This guide

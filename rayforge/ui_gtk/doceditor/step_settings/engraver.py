@@ -45,11 +45,11 @@ class EngraverSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
 
         # Mode selection dropdown
         mode_choices = [m.display_name for m in DepthMode]
-        mode_row = Adw.ComboRow(
+        self.mode_row = Adw.ComboRow(
             title=_("Mode"), model=Gtk.StringList.new(mode_choices)
         )
-        mode_row.set_selected(list(DepthMode).index(producer.depth_mode))
-        self.add(mode_row)
+        self.mode_row.set_selected(list(DepthMode).index(producer.depth_mode))
+        self.add(self.mode_row)
 
         # --- Threshold (for Constant Power mode) ---
         threshold_adj = Gtk.Adjustment(
@@ -218,7 +218,7 @@ class EngraverSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
         self.add(self.angle_incr_row)
 
         # Connect signals
-        mode_row.connect("notify::selected", self._on_mode_changed)
+        self.mode_row.connect("notify::selected", self._on_mode_changed)
 
         self.min_power_handler_id = self.min_power_scale.connect(
             "value-changed", self._on_min_power_scale_changed
@@ -250,9 +250,8 @@ class EngraverSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
             ),
         )
 
-        self.mode_row = mode_row
         self._compute_and_update_histogram(producer.invert)
-        self._on_mode_changed(mode_row, None)
+        self._on_mode_changed(self.mode_row, None)
 
     def _build_raster_geometry_group(self, producer: Rasterizer):
         """Builds the Engraving Pattern preferences group."""

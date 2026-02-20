@@ -2,7 +2,7 @@
 
 Rayforge provides two powerful automation features for customizing your workflow: **Macros** and **Hooks**. Both allow you to inject custom G-code into your jobs, but they serve different purposes.
 
-![Hooks & Macros Settings](/images/machine-hooks-macros.png)
+![Hooks & Macros Settings](/screenshots/machine-hooks-macros.png)
 
 ---
 

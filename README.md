@@ -18,7 +18,7 @@ for both hobbyists and professionals.
   <img src="website/static/assets/icon.svg" />
 </p>
 
-![Screenshot](website/static/images/main-standard.png)
+![Screenshot](website/static/screenshots/main-standard.png)
 
 You can also check the [official Rayforge homepage](https://rayforge.org).
 We also have a [Discord](https://discord.gg/sTHNdTtpQJ).

@@ -11,7 +11,7 @@ Frame Outline operations:
 - Support kerf compensation for accurate sizing
 - Work with any combination of objects on the canvas
 
-![Frame Outline step settings](/images/step-frame-outline-step-settings.png)
+![Frame Outline step settings](/screenshots/step-settings-frame-outline-general.png)
 
 ## When to Use Frame Outline
 
@@ -102,7 +102,7 @@ Frame outline supports kerf compensation:
 
 ## Post-Processing Options
 
-![Frame Outline post-processing settings](/images/step-frame-outline-post-processing.png)
+![Frame Outline post-processing settings](/screenshots/step-settings-frame-outline-post.png)
 
 ### Multi-Pass
 

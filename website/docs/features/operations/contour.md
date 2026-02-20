@@ -44,7 +44,7 @@ Use contour cutting for:
 
 ### Step 3: Configure Settings
 
-![Contour step settings](/images/step-contour-step-settings.png)
+![Contour step settings](/screenshots/step-settings-contour-general.png)
 
 ## Key Settings
 
@@ -116,7 +116,7 @@ Controls where the laser cuts relative to the vector path:
 
 ## Advanced Features
 
-![Contour post-processing settings](/images/step-contour-post-processing.png)
+![Contour post-processing settings](/screenshots/step-settings-contour-post.png)
 
 ### Holding Tabs
 

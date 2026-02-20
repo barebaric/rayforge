@@ -13,7 +13,7 @@ The Control Panel combines several functions into one convenient interface:
 3. **Console**: Interactive G-code terminal with syntax highlighting
 4. **Work Coordinate System (WCS)**: Quick WCS selection
 
-![Control Panel](/images/control-panel.png)
+![Control Panel](/screenshots/control-panel.png)
 
 ## Accessing the Control Panel
 

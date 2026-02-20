@@ -2,7 +2,7 @@
 
 The G-code page in Machine Settings configures how Rayforge generates G-code for your machine.
 
-![G-code Settings](/images/machine-gcode.png)
+![G-code Settings](/screenshots/machine-gcode.png)
 
 ## G-code Dialect
 

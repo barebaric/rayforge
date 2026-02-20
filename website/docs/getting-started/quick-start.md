@@ -10,7 +10,7 @@ Rayforge supports various file formats including SVG, DXF, PDF, and raster image
 2. Navigate to your design file and select it
 3. The design will appear on the canvas
 
-![Canvas with imported design](/images/main-standard.png)
+![Canvas with imported design](/screenshots/main-standard.png)
 
 :::tip Don't have a design yet?
 You can create simple shapes using the canvas tools or download free SVG files from sites like [Flaticon](https://www.flaticon.com/) or [SVG Repo](https://www.svgrepo.com/).
@@ -45,7 +45,7 @@ Operations define how Rayforge will process your design. Common operations inclu
    - **Speed**: Movement speed in mm/min
    - **Passes**: Number of times to repeat the operation (useful for cutting thick materials)
 
-![Operation Settings](/images/step-contour-step-settings.png)
+![Operation Settings](/screenshots/step-settings-contour-general.png)
 
 :::warning Start with Low Power
 When working with new materials, always start with lower power settings and run test cuts. Gradually increase power until you achieve the desired result. Use the [Material Test Grid](../features/operations/material-test-grid) feature to systematically find optimal settings.
@@ -61,7 +61,7 @@ Before sending to your machine, preview the toolpath in 3D:
 3. Use your mouse to rotate and zoom the preview
 4. Verify that the path looks correct
 
-![3D Preview](/images/main-3d.png)
+![3D Preview](/screenshots/main-3d.png)
 
 :::tip Catch Errors Early
 The 3D preview helps you spot issues like:
