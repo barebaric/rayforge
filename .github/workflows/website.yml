@@ -1,13 +1,6 @@
 name: Build and deploy website
 
 on:
-  push:
-    # Trigger on new version tags
-    tags:
-      - "v*.*.*"
-    # Trigger on pushes to the main branch to update existing docs
-    branches:
-      - main
   pull_request:
     # Trigger on pull requests targeting the main branch
     branches:
