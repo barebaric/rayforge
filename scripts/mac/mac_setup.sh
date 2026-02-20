@@ -16,7 +16,10 @@ print_info() {
 should_skip_dep() {
     local dep="$1"
     local skip
-    for skip in "${SKIP_DEPS[@]}"; do
+    for skip in "${SKIP_DEPS[@]:-}"; do
+        if [[ -z "$skip" ]]; then
+            continue
+        fi
         if [[ "$skip" == "$dep" ]]; then
             return 0
         fi
