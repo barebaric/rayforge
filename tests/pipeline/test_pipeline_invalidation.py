@@ -1,5 +1,7 @@
 """Tests for pipeline invalidation logic and signal handlers."""
 
+import uuid
+
 import pytest
 from unittest.mock import MagicMock, patch
 from rayforge.core.doc import Doc
@@ -242,3 +244,74 @@ def test_workpiece_rotation_only_invalidates_steps(
             step_key = ArtifactKey.for_step(step_uid)
             mock_invalidate.assert_called_once_with(step_key)
             mock_reconcile.assert_called_once()
+
+
+class TestWorkpieceHandleReuse:
+    """Tests for workpiece handle reuse across generations."""
+
+    @pytest.fixture
+    def mock_artifact_store(self):
+        """Creates a mock artifact store."""
+        store = MagicMock()
+        store.retain = MagicMock()
+        store.release = MagicMock()
+        return store
+
+    @pytest.fixture
+    def artifact_manager(self, mock_artifact_store):
+        """Creates an ArtifactManager for testing."""
+        from rayforge.pipeline.artifact.manager import ArtifactManager
+
+        return ArtifactManager(mock_artifact_store)
+
+    def test_declare_generation_copies_step_handle_from_previous_gen(
+        self, artifact_manager
+    ):
+        """
+        Test that declare_generation copies step handles from previous
+        generations to avoid unnecessary regeneration.
+        """
+        from rayforge.pipeline.artifact import StepOpsArtifactHandle
+
+        step_uid = str(uuid.uuid4())
+        step_key = ArtifactKey.for_step(step_uid)
+
+        mock_handle = MagicMock(spec=StepOpsArtifactHandle)
+
+        artifact_manager.cache_handle(step_key, mock_handle, generation_id=1)
+
+        assert artifact_manager.has_artifact(step_key, 1)
+
+        artifact_manager.declare_generation({step_key}, generation_id=2)
+
+        assert artifact_manager.has_artifact(step_key, 2)
+
+    def test_declare_generation_should_copy_workpiece_handle(
+        self, artifact_manager
+    ):
+        """
+        Test that declare_generation copies workpiece handles from previous
+        generations to avoid unnecessary regeneration.
+
+        This test currently FAILS and demonstrates the bug:
+        When a position-only transform happens, the workpiece artifact
+        should be reused, but declare_generation doesn't copy workpiece
+        handles like it does for step handles.
+        """
+        from rayforge.pipeline.artifact import WorkPieceArtifactHandle
+
+        wp_uid = str(uuid.uuid4())
+        step_uid = str(uuid.uuid4())
+        wp_key = ArtifactKey.for_workpiece(wp_uid, step_uid)
+
+        mock_handle = MagicMock(spec=WorkPieceArtifactHandle)
+
+        artifact_manager.cache_handle(wp_key, mock_handle, generation_id=1)
+
+        assert artifact_manager.has_artifact(wp_key, 1)
+
+        artifact_manager.declare_generation({wp_key}, generation_id=2)
+
+        assert artifact_manager.has_artifact(wp_key, 2), (
+            "Workpiece handle should be copied to new generation"
+        )

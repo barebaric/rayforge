@@ -259,6 +259,31 @@ class ViewManager:
             if ppm_changed or travel_changed:
                 self.request_view_render(key[0], key[1])
 
+    def _handles_represent_same_artifact(
+        self,
+        handle1: Optional[WorkPieceArtifactHandle],
+        handle2: Optional[WorkPieceArtifactHandle],
+    ) -> bool:
+        """
+        Check if two handles represent the same artifact.
+
+        Two handles represent the same artifact if they point to the same
+        shared memory (shm_name), have the same generation_size, and the
+        same source_dimensions.
+
+        Returns True if both handles are None, or if they represent the
+        same artifact.
+        """
+        if handle1 is None and handle2 is None:
+            return True
+        if handle1 is None or handle2 is None:
+            return False
+        return (
+            handle1.shm_name == handle2.shm_name
+            and handle1.generation_size == handle2.generation_size
+            and handle1.source_dimensions == handle2.source_dimensions
+        )
+
     def on_workpiece_artifact_ready(
         self,
         sender,
@@ -276,6 +301,11 @@ class ViewManager:
         - Retains the new handle
         - Triggers a view render
 
+        If the handle represents the same artifact as the existing one
+        (e.g., when step_assembly_starting is emitted during a
+        position-only transform change), no signal is emitted to avoid
+        unnecessary UI redraws.
+
         Args:
             sender: The signal sender.
             step: The step for which the artifact is ready.
@@ -292,25 +322,45 @@ class ViewManager:
         composite_id = (workpiece.uid, step.uid)
 
         old_handle = self._source_artifact_handles.get(composite_id)
-        if old_handle is not None:
-            logger.debug(
-                f"Releasing old source artifact handle for {composite_id}"
-            )
-            self._store.release(old_handle)
-
         wp_handle = cast(WorkPieceArtifactHandle, handle)
-        self._source_artifact_handles[composite_id] = wp_handle
-        self._store.retain(wp_handle)
-        logger.debug(f"Retained new source artifact handle for {composite_id}")
 
-        self.request_view_render(workpiece.uid, step_uid=step.uid)
-
-        self.source_artifact_ready.send(
-            self,
-            step=step,
-            workpiece=workpiece,
-            handle=wp_handle,
+        same_artifact = self._handles_represent_same_artifact(
+            old_handle, wp_handle
         )
+
+        logger.debug(
+            f"on_workpiece_artifact_ready: composite_id={composite_id}, "
+            f"old_handle={old_handle.shm_name if old_handle else None}, "
+            f"new_handle={wp_handle.shm_name}, "
+            f"same_artifact={same_artifact}"
+        )
+
+        if not same_artifact:
+            if old_handle is not None:
+                logger.debug(
+                    f"Releasing old source artifact handle for {composite_id}"
+                )
+                self._store.release(old_handle)
+
+            self._source_artifact_handles[composite_id] = wp_handle
+            self._store.retain(wp_handle)
+            logger.debug(
+                f"Retained new source artifact handle for {composite_id}"
+            )
+
+            self.request_view_render(workpiece.uid, step_uid=step.uid)
+
+            self.source_artifact_ready.send(
+                self,
+                step=step,
+                workpiece=workpiece,
+                handle=wp_handle,
+            )
+        else:
+            logger.debug(
+                f"Same artifact already tracked for {composite_id}, "
+                "skipping signal emission"
+            )
 
     def request_view_render(
         self,
@@ -377,6 +427,10 @@ class ViewManager:
             step_uid: The unique identifier of the step (optional).
             workpiece_uid: The unique identifier of the workpiece.
         """
+        logger.debug(
+            f"_request_view_render_internal: workpiece_uid={workpiece_uid}, "
+            f"step_uid={step_uid}, source_shm={source_handle.shm_name}"
+        )
         if not self._is_view_stale(
             workpiece_uid, step_uid, context, source_handle
         ):
@@ -521,6 +575,10 @@ class ViewManager:
         handle: WorkPieceViewArtifactHandle,
     ):
         """Sends signals when a view artifact is created."""
+        logger.debug(
+            f"_send_view_artifact_created_signals: step_uid={step_uid}, "
+            f"workpiece_uid={workpiece_uid}"
+        )
         self.view_artifact_created.send(
             self,
             step_uid=step_uid,
@@ -538,6 +596,10 @@ class ViewManager:
         self, key: ArtifactKey, step_uid: str, workpiece_uid: str, view_id: int
     ):
         """Handles the view_artifact_updated event."""
+        logger.debug(
+            f"_handle_view_artifact_updated: step_uid={step_uid}, "
+            f"workpiece_uid={workpiece_uid}, view_id={view_id}"
+        )
         composite_id = (workpiece_uid, step_uid)
         entry = self._view_entries.get(composite_id)
         handle = entry.handle if entry else None

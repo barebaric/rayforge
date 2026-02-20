@@ -724,8 +724,8 @@ class ArtifactManager:
         Declares the expected artifacts for a specific generation.
 
         Creates placeholder entries in the ledger for any keys that do not yet
-        exist for this generation ID. For step keys, copies handles from
-        previous generations to avoid unnecessary regeneration.
+        exist for this generation ID. Copies handles from previous generations
+        to avoid unnecessary regeneration for step and workpiece keys.
 
         Args:
             valid_keys: A set of ArtifactKeys that should exist.
@@ -738,14 +738,14 @@ class ArtifactManager:
         for base_key in valid_keys:
             key = make_composite_key(base_key, generation_id)
             if key not in self._ledger:
-                if base_key.group == "step":
+                if base_key.group in ("step", "workpiece"):
                     existing_handle = self._find_existing_handle(
                         base_key, generation_id
                     )
                     if existing_handle is not None:
                         logger.debug(
-                            f"declare_generation: Copying step handle from "
-                            f"previous generation to {key}"
+                            f"declare_generation: Copying {base_key.group} "
+                            f"handle from previous generation to {key}"
                         )
                         self.retain_handle(existing_handle)
                         self._ledger[key] = LedgerEntry(
