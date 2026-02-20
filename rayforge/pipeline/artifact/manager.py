@@ -73,6 +73,8 @@ class ArtifactManager:
         self._ref_counts: Dict[ArtifactKey, int] = {}
         self._ledger: Dict[Tuple[ArtifactKey, GenerationID], LedgerEntry] = {}
         self._dependencies: Dict[ArtifactKey, List[ArtifactKey]] = {}
+        # Set of workpiece UIDs that have been deleted
+        self._deleted_workpieces: Set[str] = set()
 
     def get_workpiece_handle(
         self, key: ArtifactKey, generation_id: GenerationID
@@ -219,11 +221,12 @@ class ArtifactManager:
         """
         Stores a handle for a StepRenderArtifact.
 
-        Note: This does NOT release any existing handle for this step.
-        The old handle will be cleaned up when the step is invalidated
-        or the pipeline is shut down. This prevents race conditions where
-        a handle is released while a worker is still using it.
+        Releases any existing handle for this step before storing the new
+        one to prevent memory leaks during rapid re-renders.
         """
+        old_handle = self._step_render_handles.get(step_uid)
+        if old_handle is not None:
+            self.release_handle(old_handle)
         self._step_render_handles[step_uid] = handle
 
     def put_step_ops_handle(
@@ -368,6 +371,44 @@ class ArtifactManager:
                     self.release_handle(entry.handle)
                     entry.handle = None
                 entry.state = NodeState.DIRTY
+
+    def remove_for_workpiece(self, key: ArtifactKey):
+        """
+        Remove all ledger entries for a workpiece that has been deleted.
+
+        Unlike invalidate_for_workpiece which marks entries as DIRTY for
+        re-rendering, this method permanently removes entries from the
+        ledger and releases all associated handles.
+
+        Args:
+            key: The ArtifactKey for the workpiece to remove.
+        """
+        wp_uid = key.id
+        # Mark this workpiece as deleted so we don't create new entries
+        # for tasks that were already running
+        self._deleted_workpieces.add(wp_uid)
+        # The ledger keys have IDs in format "workpiece_uid:step_uid" or just
+        # "workpiece_uid" for step artifacts. We need to match any key whose
+        # ID starts with the workpiece UID.
+        keys_to_remove = []
+        for ledger_key in list(self._ledger.keys()):
+            base_key = extract_base_key(ledger_key)
+            if base_key.group == "workpiece":
+                # Check if this entry is for the workpiece being removed
+                # ID format is "workpiece_uid" or "workpiece_uid:step_uid"
+                ledger_id = base_key.id
+                if ledger_id == wp_uid or ledger_id.startswith(f"{wp_uid}:"):
+                    keys_to_remove.append(ledger_key)
+        for ledger_key in keys_to_remove:
+            entry = self._ledger.get(ledger_key)
+            if entry:
+                if entry.handle is not None:
+                    self.release_handle(entry.handle)
+            del self._ledger[ledger_key]
+
+    def is_workpiece_deleted(self, wp_uid: str) -> bool:
+        """Check if a workpiece has been deleted."""
+        return wp_uid in self._deleted_workpieces
 
     def invalidate_for_step(self, key: ArtifactKey):
         from ..dag.node import NodeState
@@ -622,7 +663,12 @@ class ArtifactManager:
             self._ledger[composite_key] = entry
 
         logger.debug(f"cache: Caching entry {composite_key}")
-        self.retain_handle(handle)
+        # Only retain if the handle has refcount > 1 (already has other
+        # owners). If refcount is 1, it was just adopted via safe_adoption
+        # and this ledger entry will be the sole owner - no need to retain.
+        refcount = self._store._refcounts.get(handle.shm_name, 0)
+        if refcount > 1:
+            self.retain_handle(handle)
         if entry.handle is not None:
             self._store.release(entry.handle)
         entry.handle = handle

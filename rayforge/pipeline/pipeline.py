@@ -435,6 +435,11 @@ class Pipeline:
                     break
                 current_item = current_item.parent
 
+            # Remove workpiece artifacts permanently (workpiece is deleted)
+            wp_key = ArtifactKey.for_workpiece(origin.uid)
+            self._artifact_manager.remove_for_workpiece(wp_key)
+            self._scheduler.mark_node_dirty(wp_key)
+
             if layer and layer.workflow:
                 logger.debug(
                     f"Workpiece '{origin.name}' removed from layer "
@@ -443,6 +448,15 @@ class Pipeline:
                 for step in layer.workflow.steps:
                     step_key = ArtifactKey.for_step(step.uid)
                     self._invalidate_node(step_key)
+
+        elif isinstance(origin, Step):
+            logger.debug(
+                f"Step '{origin.name}' removed. Releasing resources and "
+                f"invalidating artifacts."
+            )
+            self._step_stage.release_retained_handles(origin.uid)
+            step_key = ArtifactKey.for_step(origin.uid)
+            self._invalidate_node(step_key)
 
         self._schedule_reconciliation()
 
@@ -656,7 +670,7 @@ class Pipeline:
         sender,
         *,
         key,
-        chunk_handle,
+        chunk_handle_dict: dict,
         generation_id: int,
         step_uid: str,
     ) -> None:
@@ -666,7 +680,7 @@ class Pipeline:
         self.visual_chunk_available.send(
             self,
             key=key,
-            chunk_handle=chunk_handle,
+            chunk_handle_dict=chunk_handle_dict,
             generation_id=generation_id,
             step_uid=step_uid,
         )

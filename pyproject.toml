@@ -89,5 +89,6 @@ norecursedirs = [
 ]
 markers = [
     "ui: marks tests as UI tests that require a graphical environment and a real GTK event loop",
+    "stress: marks tests as stress tests that run for extended periods",
 ]
-addopts = "-m 'not ui'"
+addopts = "-m 'not ui and not stress'"

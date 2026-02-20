@@ -39,6 +39,7 @@ def create_mock_handle(handle_class, name: str) -> Mock:
 @pytest.fixture
 def manager():
     mock_store = Mock(spec=ArtifactStore)
+    mock_store._refcounts = {}
     return ArtifactManager(mock_store)
 
 
@@ -350,7 +351,7 @@ def test_get_artifact_retrieves_from_store(manager):
 
 def test_put_step_render_handle_replaces_old(manager):
     """
-    Test put_step_render_handle replaces old handle without releasing.
+    Test put_step_render_handle replaces old handle and releases it.
     """
     old_h = create_mock_handle(StepRenderArtifactHandle, "old")
     new_h = create_mock_handle(StepRenderArtifactHandle, "new")
@@ -359,7 +360,7 @@ def test_put_step_render_handle_replaces_old(manager):
     manager.put_step_render_handle(STEP1_UID, new_h)
 
     assert manager._step_render_handles[STEP1_UID] is new_h
-    manager._store.release.assert_not_called()
+    manager._store.release.assert_called_once_with(old_h)
 
 
 def test_put_step_render_handle_without_old(manager):
@@ -687,36 +688,41 @@ def test_has_artifact_returns_false_for_none_handle(manager):
 @pytest.fixture
 def retain_manager():
     mock_store = Mock(spec=ArtifactStore)
+    mock_store._refcounts = {}
     return ArtifactManager(mock_store)
 
 
 def test_cache_handle_retains_handle(retain_manager):
-    """Test that cache_handle calls retain on handle."""
+    """Test that cache_handle stores handle (no retain when refcount=0)."""
     handle = create_mock_handle(JobArtifactHandle, "job")
     job_key = ArtifactKey(id=JOB_UID, group="job")
 
     retain_manager.cache_handle(job_key, handle, 0)
 
-    retain_manager._store.retain.assert_called_once_with(handle)
+    assert retain_manager.get_job_handle(job_key, 0) is handle
+    retain_manager._store.retain.assert_not_called()
 
 
 def test_cache_handle_retains_new_handle_releases_old(retain_manager):
-    """Test that replacing a handle retains new and releases old."""
+    """
+    Test that replacing a handle releases old (no retain when refcount=0).
+    """
     old_handle = create_mock_handle(JobArtifactHandle, "job_old")
     new_handle = create_mock_handle(JobArtifactHandle, "job_new")
     job_key = ArtifactKey(id=JOB_UID, group="job")
 
     retain_manager.cache_handle(job_key, old_handle, 0)
-    retain_manager._store.retain.reset_mock()
 
     retain_manager.cache_handle(job_key, new_handle, 0)
 
-    retain_manager._store.retain.assert_called_once_with(new_handle)
+    retain_manager._store.retain.assert_not_called()
     retain_manager._store.release.assert_called_once_with(old_handle)
 
 
 def test_cache_handle_retains_multiple_commits(retain_manager):
-    """Test that each cache_handle call retains handle."""
+    """
+    Test that each cache_handle call stores handle (no retain when refcount=0).
+    """
     handle1 = create_mock_handle(WorkPieceArtifactHandle, "wp1")
     handle2 = create_mock_handle(WorkPieceArtifactHandle, "wp2")
 
@@ -726,7 +732,6 @@ def test_cache_handle_retains_multiple_commits(retain_manager):
     retain_manager.cache_handle(wp1_key, handle1, 0)
     retain_manager.cache_handle(wp2_key, handle2, 0)
 
-    retain_calls = retain_manager._store.retain.call_args_list
-    assert len(retain_calls) == 2
-    assert handle1 in [call[0][0] for call in retain_calls]
-    assert handle2 in [call[0][0] for call in retain_calls]
+    assert retain_manager.get_workpiece_handle(wp1_key, 0) is handle1
+    assert retain_manager.get_workpiece_handle(wp2_key, 0) is handle2
+    retain_manager._store.retain.assert_not_called()
