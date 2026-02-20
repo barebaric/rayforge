@@ -5,7 +5,7 @@ authors: rayforge_team
 tags: [engraving, optimization, quality, workflow]
 ---
 
-![3D Preview](/images/3d-preview.png)
+![3D Preview](/images/main-3d.png)
 
 Getting professional-quality laser engraving results requires more than
 just good hardware—your software settings and workflow matter too. Here

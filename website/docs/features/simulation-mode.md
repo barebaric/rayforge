@@ -1,6 +1,6 @@
 # Simulation Mode
 
-![Simulation Mode](/assets/screenshot-simulation.png)
+![Simulation Mode](/images/main-simulation.png)
 
 Simulation Mode provides real-time visualization of your laser job execution before you run it on the actual machine. It shows execution order, speed variations, and power levels through an interactive overlay in the 2D view.
 
