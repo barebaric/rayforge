@@ -529,6 +529,29 @@ function WindowsInstall({ version }) {
       <div className="install-troubleshoot">
         <h5>Troubleshooting Windows Installation</h5>
         <details>
+          <summary>Installer crashing or not installing?</summary>
+          <div className="install-troubleshoot-content">
+            <p>
+              If the installer crashes or fails to install, you may be
+              missing the Microsoft Visual C++ Redistributable. Download
+              and install it from Microsoft:
+            </p>
+            <p>
+              <a
+                href="https://aka.ms/vc14/vc_redist.x64.exe"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <strong>Download C++ Redistributable v14</strong>
+              </a>
+            </p>
+            <p>
+              After installing the redistributable, run the Rayforge
+              installer again.
+            </p>
+          </div>
+        </details>
+        <details>
           <summary>Driver Issues?</summary>
           <div className="install-troubleshoot-content">
             <p>
