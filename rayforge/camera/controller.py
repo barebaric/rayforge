@@ -1,21 +1,12 @@
-import os
 import sys
 import time
 import threading
 import multiprocessing as mp
 from typing import Optional, List, Tuple, TYPE_CHECKING
-import logging
-from blinker import Signal
-
-if sys.platform == "win32":
-    os.environ["OPENCV_VIDEOIO_PRIORITY_MSMF"] = "1"
-    os.environ["OPENCV_VIDEOIO_PRIORITY_DSHOW"] = "1"
-    os.environ["OPENCV_VIDEOIO_PRIORITY_V4L2"] = "0"
-    os.environ["OPENCV_VIDEOIO_PRIORITY_GSTREAMER"] = "0"
-
 import cv2
 import numpy as np
-
+import logging
+from blinker import Signal
 from ..shared.util.glib import idle_add
 from .models.camera import Camera, Pos
 
@@ -241,12 +232,25 @@ class CameraController:
         """
         Lists available camera device IDs.
         Returns a list of strings, where each string is a device ID.
-
-        Uses a subprocess to isolate potential crashes from broken
-        GStreamer backends on Windows.
         """
-        logger.info("Scanning for camera devices...")
-        devices = _scan_cameras_in_subprocess()
+        logger.debug("Scanning for camera devices...")
+        devices = []
+        backends = get_backends_for_platform()
+
+        for i in range(10):
+            for backend, name in backends:
+                try:
+                    cap = cv2.VideoCapture(i, backend)
+                    if cap.isOpened():
+                        devices.append(str(i))
+                        cap.release()
+                        logger.debug(f"Found camera {i} via {name}")
+                        break
+                except cv2.error as e:
+                    logger.debug(f"OpenCV error camera {i} {name}: {e}")
+                except Exception as e:
+                    logger.debug(f"Error camera {i}: {e}")
+
         logger.info(f"Available cameras: {devices}")
         return devices
 
