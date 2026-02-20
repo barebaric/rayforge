@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-02-19 19:39+0100\n"
+"POT-Creation-Date: 2026-02-20 04:50+0100\n"
 "PO-Revision-Date: 2025-07-24 22:09+0200\n"
 "Last-Translator: Samuel Abels <knipkap@gmail.com>\n"
 "Language-Team: Portuguese <LL@li.org>\n"
@@ -883,7 +883,7 @@ msgstr ""
 msgid "Unknown setting from device"
 msgstr "Configuração desconhecida do dispositivo"
 
-#: rayforge/machine/driver/dummy.py
+#: rayforge/machine/driver/dummy.py rayforge/ui_gtk/machine/status_widget.py
 msgid "No driver"
 msgstr "Nenhum driver"
 
@@ -2405,11 +2405,6 @@ msgstr "Nenhum dialeto personalizado configurado"
 #: rayforge/ui_gtk/machine/dialect_list.py
 msgid "A new custom dialect"
 msgstr "Um novo dialeto personalizado"
-
-#: rayforge/ui_gtk/machine/connection_status_widget.py
-#: rayforge/ui_gtk/machine/status_widget.py
-msgid "No driver selected"
-msgstr "Nenhum driver selecionado"
 
 #: rayforge/ui_gtk/machine/gcode_settings_page.py
 #: rayforge/ui_gtk/machine/settings_dialog.py
@@ -5256,6 +5251,14 @@ msgid ""
 msgstr ""
 "Sair após importar documentos e o editor estiver estabilizado. Útil para "
 "testes."
+
+#: rayforge/app.py
+msgid ""
+"Path to a Python script to execute after the main window is fully loaded. "
+"Useful for automation and testing."
+msgstr ""
+"Caminho para um script Python a ser executado após a janela principal ser "
+"totalmente carregada. Útil para automação e testes."
 
 #: rayforge/pipeline/steps.py
 msgid "Contour"
