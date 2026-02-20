@@ -1,6 +1,7 @@
 import logging
 from gi.repository import Gtk
 from typing import Optional, List, TYPE_CHECKING, Tuple
+from ...context import get_context
 from ...core.group import Group
 from ...core.item import DocItem
 from ...core.matrix import Matrix
@@ -62,7 +63,37 @@ class DocItemPropertiesWidget(Expander):
         ] = []
         self._initialize_providers_ui()
 
+        # Connect to machine changes to update when WCS changes
+        self._machine = None
+        self._connect_signals()
+
         self.set_items(items)
+
+    def _connect_signals(self):
+        """Connect to config and machine signals."""
+        config = get_context().config
+        config.changed.connect(self._on_config_changed)
+        self._connect_machine_signals()
+
+    def _connect_machine_signals(self):
+        """Connect to machine signals to update UI when WCS changes."""
+        machine = get_context().machine
+        if machine and machine != self._machine:
+            if self._machine:
+                self._machine.changed.disconnect(self._on_machine_changed)
+            self._machine = machine
+            machine.changed.connect(self._on_machine_changed)
+
+    def _on_config_changed(self, config):
+        """Handle config changes (including machine switching)."""
+        self._connect_machine_signals()
+        if self.items:
+            self._update_ui()
+
+    def _on_machine_changed(self, machine):
+        """Handle machine changes (including WCS selection/offset changes)."""
+        if self.items:
+            self._update_ui()
 
     def _initialize_providers_ui(self):
         """
