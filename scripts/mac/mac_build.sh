@@ -113,6 +113,24 @@ TMP_REQUIREMENTS=$(mktemp)
 grep -Evi '^(PyOpenGL_accelerate|opencv[_-]python)' \
     requirements.txt > "$TMP_REQUIREMENTS"
 
+if [ "$(uname -s)" = "Darwin" ]; then
+    awk '
+        BEGIN { done = 0 }
+        /^numpy==/ {
+            print "numpy==1.26.4"
+            done = 1
+            next
+        }
+        { print }
+        END {
+            if (done == 0) {
+                print "numpy==1.26.4"
+            }
+        }
+    ' "$TMP_REQUIREMENTS" > "$TMP_REQUIREMENTS.patched"
+    mv "$TMP_REQUIREMENTS.patched" "$TMP_REQUIREMENTS"
+fi
+
 if [ "$(uname -s)" = "Darwin" ] && [ "$(uname -m)" = "x86_64" ]; then
     echo "Installing pinned OpenCV wheel for macOS x86_64..."
     "$VENV_PY" -m pip install --only-binary=:all: \
