@@ -312,6 +312,7 @@ def test_on_artifact_state_changed_unknown_state():
 def test_artifact_manager_syncs_dag_state():
     """Test that DAG manages node state via ArtifactManager."""
     mock_store = MagicMock()
+    mock_store._refcounts = {}
     scheduler = _make_scheduler()
     manager = ArtifactManager(mock_store)
 

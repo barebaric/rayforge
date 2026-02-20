@@ -168,7 +168,7 @@ class ArtifactStore:
             committed = True
         finally:
             if not committed:
-                logger.warning(
+                logger.debug(
                     f"Safe adoption rolled back (released) "
                     f"for {handle.shm_name}"
                 )

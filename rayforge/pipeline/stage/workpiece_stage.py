@@ -186,6 +186,19 @@ class WorkPiecePipelineStage(PipelineStage):
         """
         Processes artifact_created event.
         """
+        # Extract workpiece UID from the key (format is "wp_uid:step_uid"
+        # or just "wp_uid")
+        wp_uid = key.id.split(":")[0] if ":" in key.id else key.id
+
+        # Check if this workpiece has been deleted
+        # If so, raise an exception to trigger safe_adoption rollback
+        if self._artifact_manager.is_workpiece_deleted(wp_uid):
+            logger.debug(
+                f"handle_artifact_created: workpiece {wp_uid} "
+                f"deleted, rejecting handle"
+            )
+            raise ValueError(f"Workpiece {wp_uid} has been deleted")
+
         if handle is not None:
             self._artifact_manager.cache_handle(
                 ledger_key, handle, generation_id
@@ -202,15 +215,23 @@ class WorkPiecePipelineStage(PipelineStage):
         )
 
     def handle_visual_chunk_ready(
-        self, key: ArtifactKey, handle, generation_id: int, step_uid: str
+        self,
+        key: ArtifactKey,
+        handle_dict: dict,
+        generation_id: int,
+        step_uid: str,
     ):
         """
         Processes visual_chunk_ready event.
+
+        Passes the handle_dict directly to ViewManager which will adopt
+        and own the lifecycle. This avoids race conditions with adoption
+        and release.
         """
         self.visual_chunk_available.send(
             self,
             key=key,
-            chunk_handle=handle,
+            chunk_handle_dict=handle_dict,
             generation_id=generation_id,
             step_uid=step_uid,
         )
@@ -442,17 +463,21 @@ class WorkPiecePipelineStage(PipelineStage):
                     )
                 return
 
-            with self._artifact_manager.safe_adoption(
-                key, handle_dict
-            ) as handle:
-                if event_name == "artifact_created":
-                    self.handle_artifact_created(
-                        key, ledger_key, handle, generation_id, step_uid
-                    )
-                elif event_name == "visual_chunk_ready":
-                    self.handle_visual_chunk_ready(
-                        key, handle, generation_id, step_uid
-                    )
+            if event_name == "visual_chunk_ready":
+                # For visual chunks, pass handle_dict directly to ViewManager
+                # which will adopt and own the lifecycle. This avoids a race
+                # condition where we might release before ViewManager retains.
+                self.handle_visual_chunk_ready(
+                    key, handle_dict, generation_id, step_uid
+                )
+            else:
+                with self._artifact_manager.safe_adoption(
+                    key, handle_dict
+                ) as handle:
+                    if event_name == "artifact_created":
+                        self.handle_artifact_created(
+                            key, ledger_key, handle, generation_id, step_uid
+                        )
         except Exception as e:
             logger.error(
                 f"Failed to process event '{event_name}': {e}", exc_info=True

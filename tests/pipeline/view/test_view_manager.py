@@ -163,19 +163,18 @@ def test_view_manager_handles_events_and_completion(
     view_manager.view_artifact_ready.connect(ready_handler)
     view_manager.generation_finished.connect(finished_handler)
 
-    view_handle = WorkPieceViewArtifactHandle(
-        shm_name="test",
-        bbox_mm=(0, 0, 1, 1),
-        workpiece_size_mm=(1.0, 1.0),
-        handle_class_name="WorkPieceViewArtifactHandle",
-        artifact_type_name="WorkPieceViewArtifact",
-    )
+    mock_workpiece = MagicMock()
+    mock_workpiece.uid = wp_uid
+    mock_step = MagicMock()
+    mock_step.uid = step_uid
+    mock_layer = MagicMock()
+    mock_layer.workflow.steps = [mock_step]
+    mock_doc = MagicMock()
+    mock_doc.all_workpieces = [mock_workpiece]
+    mock_doc.layers = [mock_layer]
+    view_manager._pipeline.doc = mock_doc
 
-    @contextmanager
-    def mock_safe_adoption(handle_dict):
-        yield view_handle
-
-    mock_store.safe_adoption.side_effect = mock_safe_adoption
+    mock_store.adopt.return_value = None
 
     handle_dict = {
         "shm_name": "test",
@@ -188,7 +187,7 @@ def test_view_manager_handles_events_and_completion(
         mock_task, "view_artifact_created", {"handle_dict": handle_dict}
     )
 
-    mock_store.safe_adoption.assert_called_once()
+    mock_store.adopt.assert_called_once()
     created_handler.assert_called_once()
     ready_handler.assert_called_once()
     assert isinstance(
@@ -290,19 +289,19 @@ def test_multiple_view_artifact_updated_events(
         "handle_class_name": "WorkPieceViewArtifactHandle",
         "artifact_type_name": "WorkPieceViewArtifact",
     }
-    view_handle = WorkPieceViewArtifactHandle(
-        shm_name="test_view",
-        bbox_mm=(0, 0, 1, 1),
-        workpiece_size_mm=(1.0, 1.0),
-        handle_class_name="WorkPieceViewArtifactHandle",
-        artifact_type_name="WorkPieceViewArtifact",
-    )
 
-    @contextmanager
-    def mock_safe_adoption(handle_dict):
-        yield view_handle
+    mock_workpiece = MagicMock()
+    mock_workpiece.uid = wp_uid
+    mock_step = MagicMock()
+    mock_step.uid = step_uid
+    mock_layer = MagicMock()
+    mock_layer.workflow.steps = [mock_step]
+    mock_doc = MagicMock()
+    mock_doc.all_workpieces = [mock_workpiece]
+    mock_doc.layers = [mock_layer]
+    view_manager._pipeline.doc = mock_doc
 
-    mock_store.safe_adoption.side_effect = mock_safe_adoption
+    mock_store.adopt.return_value = None
 
     when_event_cb(
         mock_task, "view_artifact_created", {"handle_dict": handle_dict}
@@ -355,19 +354,19 @@ def test_progressive_rendering_sends_multiple_updates(
         "handle_class_name": "WorkPieceViewArtifactHandle",
         "artifact_type_name": "WorkPieceViewArtifact",
     }
-    view_handle = WorkPieceViewArtifactHandle(
-        shm_name="test_progressive",
-        bbox_mm=(0, 0, 1, 1),
-        workpiece_size_mm=(1.0, 1.0),
-        handle_class_name="WorkPieceViewArtifactHandle",
-        artifact_type_name="WorkPieceViewArtifact",
-    )
 
-    @contextmanager
-    def mock_safe_adoption(handle_dict):
-        yield view_handle
+    mock_workpiece = MagicMock()
+    mock_workpiece.uid = wp_uid
+    mock_step = MagicMock()
+    mock_step.uid = step_uid
+    mock_layer = MagicMock()
+    mock_layer.workflow.steps = [mock_step]
+    mock_doc = MagicMock()
+    mock_doc.all_workpieces = [mock_workpiece]
+    mock_doc.layers = [mock_layer]
+    view_manager._pipeline.doc = mock_doc
 
-    mock_store.safe_adoption.side_effect = mock_safe_adoption
+    mock_store.adopt.return_value = None
 
     when_event_cb(
         mock_task,
@@ -420,7 +419,7 @@ def test_on_chunk_available_receives_chunks(view_manager, mock_store, context):
     view_manager.on_chunk_available(
         sender=None,
         key=ArtifactKey(id=wp_uid, group="chunk"),
-        chunk_handle=chunk_handle,
+        chunk_handle_dict=chunk_handle.to_dict(),
         generation_id=generation_id,
         step_uid=step_uid,
     )
@@ -514,19 +513,19 @@ def test_throttled_notification_limits_update_frequency(
         "handle_class_name": "WorkPieceViewArtifactHandle",
         "artifact_type_name": "WorkPieceViewArtifact",
     }
-    view_handle = WorkPieceViewArtifactHandle(
-        shm_name="test_throttle",
-        bbox_mm=(0, 0, 1, 1),
-        workpiece_size_mm=(1.0, 1.0),
-        handle_class_name="WorkPieceViewArtifactHandle",
-        artifact_type_name="WorkPieceViewArtifact",
-    )
 
-    @contextmanager
-    def mock_safe_adoption(handle_dict):
-        yield view_handle
+    mock_workpiece = MagicMock()
+    mock_workpiece.uid = wp_uid
+    mock_step = MagicMock()
+    mock_step.uid = step_uid
+    mock_layer = MagicMock()
+    mock_layer.workflow.steps = [mock_step]
+    mock_doc = MagicMock()
+    mock_doc.all_workpieces = [mock_workpiece]
+    mock_doc.layers = [mock_layer]
+    view_manager._pipeline.doc = mock_doc
 
-    mock_store.safe_adoption.side_effect = mock_safe_adoption
+    mock_store.adopt.return_value = None
 
     when_event_cb(
         mock_task, "view_artifact_created", {"handle_dict": handle_dict}
@@ -561,7 +560,7 @@ def test_throttled_notification_limits_update_frequency(
         view_manager.on_chunk_available(
             sender=None,
             key=ArtifactKey(id=wp_uid, group="chunk"),
-            chunk_handle=chunk_handle,
+            chunk_handle_dict=chunk_handle.to_dict(),
             generation_id=0,
             step_uid=step_uid,
         )
@@ -687,7 +686,7 @@ def test_incremental_bitmap_rendering_draws_chunk_to_view(
     view_manager.on_chunk_available(
         sender=None,
         key=ArtifactKey(id=wp_uid, group="chunk"),
-        chunk_handle=chunk_handle,
+        chunk_handle_dict=chunk_handle.to_dict(),
         generation_id=0,
         step_uid=step_uid,
     )

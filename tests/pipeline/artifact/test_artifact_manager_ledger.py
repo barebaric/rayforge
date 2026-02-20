@@ -27,12 +27,13 @@ def create_mock_handle(handle_class, name: str) -> Mock:
 @pytest.fixture
 def manager_with_mock_store():
     mock_store = Mock(spec=ArtifactStore)
+    mock_store._refcounts = {}
     manager = ArtifactManager(mock_store)
     return manager, mock_store
 
 
 def test_cache_handle_stores_handle(manager_with_mock_store):
-    """Test cache_handle stores a handle."""
+    """Test cache_handle stores a handle (no retain when refcount=0)."""
     manager, mock_store = manager_with_mock_store
     key = ArtifactKey.for_workpiece("00000000-0000-4000-8000-000000000001")
     handle = create_mock_handle(WorkPieceArtifactHandle, "handle")
@@ -44,7 +45,7 @@ def test_cache_handle_stores_handle(manager_with_mock_store):
     assert entry is not None
     assert entry.handle is handle
     assert entry.generation_id == 1
-    mock_store.retain.assert_called_once_with(handle)
+    mock_store.retain.assert_not_called()
 
 
 def test_cache_handle_replaces_old_handle(manager_with_mock_store):
@@ -61,7 +62,7 @@ def test_cache_handle_replaces_old_handle(manager_with_mock_store):
     entry = manager.get_ledger_entry(composite_key)
     assert entry is not None
     assert entry.handle is new_handle
-    mock_store.retain.assert_called_with(new_handle)
+    mock_store.retain.assert_not_called()
     mock_store.release.assert_called_once_with(old_handle)
 
 

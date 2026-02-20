@@ -5,7 +5,7 @@ import threading
 import time
 import uuid
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Dict, Optional, cast, Tuple
+from typing import TYPE_CHECKING, Dict, Optional, Set, cast, Tuple
 
 from blinker import Signal
 
@@ -13,6 +13,7 @@ from ..artifact import (
     BaseArtifactHandle,
     WorkPieceArtifactHandle,
 )
+from ..artifact.handle import create_handle_from_dict
 from ..artifact.key import ArtifactKey
 from ..artifact.workpiece_view import (
     RenderContext,
@@ -104,6 +105,9 @@ class ViewManager:
         self._last_update_time: Dict[Tuple[str, str], float] = {}
         self._throttle_timers: Dict[Tuple[str, str], threading.Timer] = {}
 
+        # Track in-flight chunk handles for cleanup during shutdown
+        self._inflight_chunk_handles: Set[BaseArtifactHandle] = set()
+
         self.view_artifact_ready = Signal()
         self.view_artifact_created = Signal()
         self.view_artifact_updated = Signal()
@@ -122,6 +126,100 @@ class ViewManager:
             self.on_workpiece_artifact_ready
         )
         self._pipeline.visual_chunk_available.connect(self.on_chunk_available)
+
+        if self._pipeline.doc:
+            self._pipeline.doc.descendant_removed.connect(
+                self._on_doc_item_removed
+            )
+
+    def _disconnect_pipeline_signals(self):
+        """Disconnect from pipeline signals."""
+        self._pipeline.workpiece_artifact_ready.disconnect(
+            self.on_workpiece_artifact_ready
+        )
+        self._pipeline.workpiece_starting.disconnect(
+            self.on_generation_starting
+        )
+        self._pipeline.step_assembly_starting.disconnect(
+            self.on_workpiece_artifact_ready
+        )
+        self._pipeline.visual_chunk_available.disconnect(
+            self.on_chunk_available
+        )
+
+        if self._pipeline.doc:
+            self._pipeline.doc.descendant_removed.disconnect(
+                self._on_doc_item_removed
+            )
+
+    def _on_doc_item_removed(self, sender, *, origin, parent_of_origin):
+        """Handle removal of workpieces and steps from the document."""
+        from ...core.step import Step
+        from ...core.workpiece import WorkPiece
+
+        if isinstance(origin, WorkPiece):
+            self._cleanup_views_for_workpiece(origin.uid)
+        elif isinstance(origin, Step):
+            self._cleanup_views_for_step(origin.uid)
+
+    def _cleanup_views_for_workpiece(self, workpiece_uid: str):
+        """Remove all view entries for a workpiece."""
+        # Collect keys from both _view_entries and _source_artifact_handles
+        all_keys = set(self._view_entries.keys()) | set(
+            self._source_artifact_handles.keys()
+        )
+        keys_to_remove = [
+            composite_id
+            for composite_id in all_keys
+            if composite_id[0] == workpiece_uid
+        ]
+        for composite_id in keys_to_remove:
+            self._remove_view_entry(composite_id)
+        if keys_to_remove:
+            logger.debug(
+                f"Cleaned up {len(keys_to_remove)} view entries for "
+                f"workpiece {workpiece_uid}"
+            )
+
+    def _cleanup_views_for_step(self, step_uid: str):
+        """Remove all view entries for a step."""
+        # Collect keys from both _view_entries and _source_artifact_handles
+        all_keys = set(self._view_entries.keys()) | set(
+            self._source_artifact_handles.keys()
+        )
+        keys_to_remove = [
+            composite_id
+            for composite_id in all_keys
+            if composite_id[1] == step_uid
+        ]
+        for composite_id in keys_to_remove:
+            self._remove_view_entry(composite_id)
+        if keys_to_remove:
+            logger.debug(
+                f"Cleaned up {len(keys_to_remove)} view entries for "
+                f"step {step_uid}"
+            )
+
+    def _remove_view_entry(self, composite_id: tuple):
+        """Remove a view entry and release its resources."""
+        entry = self._view_entries.pop(composite_id, None)
+        if entry:
+            if entry.handle:
+                self._store.release(entry.handle)
+            if entry.source_handle:
+                self._store.release(entry.source_handle)
+
+        source_handle = self._source_artifact_handles.pop(composite_id, None)
+        if source_handle:
+            self._store.release(source_handle)
+
+        self._view_task_keys.pop(composite_id, None)
+
+        timer = self._throttle_timers.pop(composite_id, None)
+        if timer:
+            timer.cancel()
+        self._pending_updates.pop(composite_id, None)
+        self._last_update_time.pop(composite_id, None)
 
     @property
     def current_view_context(self) -> Optional[RenderContext]:
@@ -487,6 +585,8 @@ class ViewManager:
         logger.debug("ViewManager shutting down.")
         self._is_shutdown = True
 
+        self._disconnect_pipeline_signals()
+
         # Cancel all managed tasks
         for key in self._view_task_keys.values():
             self._task_manager.cancel_task(key)
@@ -507,6 +607,11 @@ class ViewManager:
         for handle in self._source_artifact_handles.values():
             self._store.release(handle)
         self._source_artifact_handles.clear()
+
+        # Release any in-flight chunk handles that weren't cleaned up
+        for handle in self._inflight_chunk_handles:
+            self._store.release(handle)
+        self._inflight_chunk_handles.clear()
 
     def _on_render_event_received(
         self, task: "Task", event_name: str, data: dict
@@ -541,32 +646,93 @@ class ViewManager:
         view_id: int,
     ):
         """Handles the view_artifact_created event."""
+        handle_dict = data.get("handle_dict")
+        if handle_dict is None:
+            return
+
+        # Always adopt the handle to prevent SHM leaks - the worker
+        # has already transferred ownership to us
         try:
-            with self._store.safe_adoption(data["handle_dict"]) as handle:
-                if not isinstance(handle, WorkPieceViewArtifactHandle):
-                    raise TypeError("Expected WorkPieceViewArtifactHandle")
+            handle = create_handle_from_dict(handle_dict)
+            self._store.adopt(handle)
+        except Exception as e:
+            logger.error(f"Failed to adopt view handle: {e}")
+            return
 
+        try:
+            # Check if the workpiece and step still exist before storing
+            if self._is_shutdown:
                 logger.debug(
-                    f"Adopting new view artifact: {handle.shm_name} "
-                    f"for task {key}"
+                    f"Releasing view_artifact_created for {workpiece_uid}: "
+                    "ViewManager is shut down"
                 )
+                self._store.release(handle)
+                return
 
-                composite_id = (workpiece_uid, step_uid)
-                entry = self._view_entries.get(composite_id)
-                if entry is None:
-                    entry = ViewEntry()
-                    self._view_entries[composite_id] = entry
-                if entry.handle is not None:
-                    self._store.release(entry.handle)
-                entry.handle = handle
-
-                self._send_view_artifact_created_signals(
-                    step_uid, workpiece_uid, handle
+            doc = self._pipeline.doc
+            if doc is None:
+                logger.debug(
+                    f"Releasing view_artifact_created for {workpiece_uid}: "
+                    "No document"
                 )
+                self._store.release(handle)
+                return
+
+            # Check if workpiece still exists
+            workpiece_exists = any(
+                wp.uid == workpiece_uid for wp in doc.all_workpieces
+            )
+            if not workpiece_exists:
+                logger.debug(
+                    f"Releasing view_artifact_created: workpiece "
+                    f"{workpiece_uid} no longer exists"
+                )
+                self._store.release(handle)
+                return
+
+            # Check if step still exists
+            step_exists = any(
+                step.uid == step_uid
+                for layer in doc.layers
+                if layer.workflow
+                for step in layer.workflow.steps
+            )
+            if not step_exists:
+                logger.debug(
+                    f"Releasing view_artifact_created: step "
+                    f"{step_uid} no longer exists"
+                )
+                self._store.release(handle)
+                return
+
+            if not isinstance(handle, WorkPieceViewArtifactHandle):
+                logger.error(
+                    f"Expected WorkPieceViewArtifactHandle, got {type(handle)}"
+                )
+                self._store.release(handle)
+                return
+
+            logger.debug(
+                f"Adopting new view artifact: {handle.shm_name} for task {key}"
+            )
+
+            composite_id = (workpiece_uid, step_uid)
+            entry = self._view_entries.get(composite_id)
+            if entry is None:
+                entry = ViewEntry()
+                self._view_entries[composite_id] = entry
+            if entry.handle is not None:
+                self._store.release(entry.handle)
+            entry.handle = handle
+
+            self._send_view_artifact_created_signals(
+                step_uid, workpiece_uid, handle
+            )
         except Exception as e:
             logger.error(
                 f"Failed to process view_artifact_created: {e}", exc_info=True
             )
+            self._store.release(handle)
 
     def _send_view_artifact_created_signals(
         self,
@@ -631,7 +797,7 @@ class ViewManager:
         sender,
         *,
         key: ArtifactKey,
-        chunk_handle: BaseArtifactHandle,
+        chunk_handle_dict: dict,
         generation_id: int,
         step_uid: Optional[str] = None,
         **kwargs,
@@ -651,7 +817,6 @@ class ViewManager:
                 f"Chunk available for {workpiece_uid} but no step_uid "
                 "provided. Skipping live update."
             )
-            self._store.release(chunk_handle)
             return
 
         logger.debug(
@@ -662,18 +827,44 @@ class ViewManager:
         composite_id = (workpiece_uid, step_uid)
         entry = self._view_entries.get(composite_id)
 
+        # Adopt the chunk handle - we must always adopt to properly
+        # clean up the SHM block created by the worker
+        try:
+            chunk_handle = create_handle_from_dict(chunk_handle_dict)
+            self._store.adopt(chunk_handle)
+        except Exception as e:
+            logger.error(f"Failed to adopt chunk handle: {e}")
+            return
+
         if entry is None:
+            # No view entry, release the chunk immediately
             self._store.release(chunk_handle)
             return
 
+        try:
+            self._process_chunk(composite_id, entry, chunk_handle)
+        except Exception as e:
+            logger.error(f"Error processing chunk for {composite_id}: {e}")
+            self._store.release(chunk_handle)
+
+    def _process_chunk(
+        self,
+        composite_id: Tuple[str, str],
+        entry: ViewEntry,
+        chunk_handle: BaseArtifactHandle,
+    ):
+        """Process a chunk after adoption."""
         view_handle, render_context = self._get_render_components(
             composite_id, entry, chunk_handle
         )
         if view_handle is None or render_context is None:
+            # _get_render_components already released chunk_handle if needed
             return
 
-        self._store.retain(chunk_handle)
         self._store.retain(view_handle)
+
+        # Track the chunk handle so we can release it if cancelled/shutdown
+        self._inflight_chunk_handles.add(chunk_handle)
 
         self._task_manager.run_thread(
             render_chunk_to_view,
@@ -694,6 +885,9 @@ class ViewManager:
         view_handle: BaseArtifactHandle,
     ):
         """Callback for when stitching completes."""
+        # Remove from tracking first
+        self._inflight_chunk_handles.discard(chunk_handle)
+
         if self._is_shutdown:
             # If shutdown occurred while task was running, force clean up
             self._store.release(chunk_handle)

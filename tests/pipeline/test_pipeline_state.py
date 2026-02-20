@@ -478,6 +478,7 @@ class TestStateConsistency:
     def manager(self):
         """Set up a fresh manager and mock store."""
         mock_store = MagicMock(spec=ArtifactStore)
+        mock_store._refcounts = {}
         return ArtifactManager(mock_store)
 
     def test_node_state_queries_manager(self, manager):

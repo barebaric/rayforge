@@ -17,6 +17,9 @@ PYTHON_EXEC="$MSYS2_PATH/mingw64/bin/python"
 echo "--- Running Backend Tests ---"
 $PYTHON_EXEC -m pytest -v -ra -m "not ui" --log-cli-level=DEBUG --log-cli-format='%(asctime)s [%(levelname)8s] %(message)s' --log-cli-date-format='%Y-%m-%d %H:%M:%S'
 
+echo "--- Running Stress Tests ---"
+$PYTHON_EXEC -m pytest -v -ra -m "stress" --log-cli-level=DEBUG --log-cli-format='%(asctime)s [%(levelname)8s] %(message)s' --log-cli-date-format='%Y-%m-%d %H:%M:%S'
+
 echo "--- Running UI Tests ---"
 $PYTHON_EXEC -m pytest -v -ra -m "ui" --log-cli-level=DEBUG --log-cli-format='%(asctime)s [%(levelname)8s] %(message)s' --log-cli-date-format='%Y-%m-%d %H:%M:%S'
 
