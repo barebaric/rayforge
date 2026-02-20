@@ -2,7 +2,7 @@
 
 The General page in Machine Settings contains basic machine information and speed settings.
 
-![General Settings](/images/machine-general.png)
+![General Settings](/screenshots/machine-general.png)
 
 ## Machine Name
 

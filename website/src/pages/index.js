@@ -48,7 +48,7 @@ function HeroSection() {
           {/* Main Back Layer: Screenshot */}
           <div className={styles.screenshotLayer}>
             <img
-              src="/images/main-standard.png"
+              src="/screenshots/main-standard.png"
               alt="Rayforge application screenshot"
               className={styles.heroImage}
             />
@@ -201,7 +201,7 @@ export default function Home() {
               'Visual simulation of cutting paths',
               'Live 2D preview of all operations while you edit',
             ]}
-            image="/images/main-simulation.png"
+            image="/screenshots/main-simulation.png"
             reverse
           />
 

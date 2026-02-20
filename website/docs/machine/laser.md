@@ -2,7 +2,7 @@
 
 The Laser page in Machine Settings configures your laser head(s) and their properties.
 
-![Laser Settings](/images/machine-laser.png)
+![Laser Settings](/screenshots/machine-laser.png)
 
 ## Laser Heads
 

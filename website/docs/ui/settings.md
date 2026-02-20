@@ -1,6 +1,6 @@
 # Settings
 
-![General Settings](/images/application-general.png)
+![General Settings](/screenshots/application-general.png)
 
 Customize Rayforge to match your workflow and preferences.
 

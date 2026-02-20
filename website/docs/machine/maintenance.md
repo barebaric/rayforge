@@ -2,7 +2,7 @@
 
 The Maintenance page in Machine Settings helps you track machine usage and schedule maintenance tasks.
 
-![Maintenance Settings](/images/machine-maintenance.png)
+![Maintenance Settings](/screenshots/machine-maintenance.png)
 
 ## Hour Counters
 

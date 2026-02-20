@@ -132,7 +132,7 @@ Select the engraving mode that best suits your needs:
 
 ### Step 4: Configure Settings
 
-![Engrave step settings](/images/step-engrave-step-settings.png)
+![Engrave step settings](/screenshots/step-settings-engrave-general-variable.png)
 
 ## Common Settings
 
@@ -212,7 +212,7 @@ See [Overscan](../overscan) for details.
 
 ### Variable Power Mode Settings
 
-![Variable Power mode settings](/images/step-engrave-step-settings.png)
+![Variable Power mode settings](/screenshots/step-settings-engrave-general-variable.png)
 
 **Min Power (%):**
 
@@ -255,7 +255,7 @@ This is particularly useful for:
 
 ### Constant Power Mode Settings
 
-![Constant Power mode settings](/images/step-engrave-constant_power-step-settings.png)
+![Constant Power mode settings](/screenshots/step-settings-engrave-general-constant_power.png)
 
 **Threshold (0-255):**
 
@@ -270,7 +270,7 @@ This is particularly useful for:
 
 ### Dither Mode Settings
 
-![Dither mode settings](/images/step-engrave-dither-step-settings.png)
+![Dither mode settings](/screenshots/step-settings-engrave-general-dither.png)
 
 **Dithering Algorithm:**
 
@@ -289,7 +289,7 @@ Choose the algorithm that best suits your image and material:
 
 ### Multiple Depths Mode Settings
 
-![Multiple Depths mode settings](/images/step-engrave-multi_pass-step-settings.png)
+![Multiple Depths mode settings](/screenshots/step-settings-engrave-general-multi_pass.png)
 
 **Number of Depth Levels:**
 
@@ -318,7 +318,7 @@ Use invert for lithophanes (light areas should be thin) or embossing (raised are
 
 ## Tips & Best Practices
 
-![Engrave post-processing settings](/images/step-engrave-post-processing.png)
+![Engrave post-processing settings](/screenshots/step-settings-engrave-post.png)
 
 ### Material Selection
 

@@ -9,182 +9,115 @@ from pathlib import Path
 
 SCRIPTS_DIR = Path(__file__).parent
 
-APP_SETTINGS_PAGES = [
-    "general",
-    "machines",
-    "materials",
-    "recipes",
-    "packages",
-]
-MACHINE_SETTINGS_PAGES = [
-    "general",
-    "hardware",
-    "advanced",
-    "gcode",
-    "hooks-macros",
-    "device",
-    "laser",
-    "camera",
-    "maintenance",
-]
-RECIPE_PAGES = ["general", "applicability", "settings"]
-STEP_TYPES = [
-    "contour",
-    "engrave",
-    "frame-outline",
-    "shrink-wrap",
-]
-
-HELP_TEXT = """
-Available Targets:
-  main                          All main window screenshots
-  main:standard                 Main window (standard mode)
-  main:simulation               Main window (simulation mode)
-  main:3d                       Main window (3D view)
-  app-settings                  All app settings pages
-  app-settings:general          App settings - General
-  app-settings:machines         App settings - Machines
-  app-settings:materials        App settings - Materials
-  app-settings:recipes          App settings - Recipes
-  app-settings:packages         App settings - Packages
-  machine-settings              All machine settings pages
-  machine-settings:general      Machine settings - General
-  machine-settings:hardware     Machine settings - Hardware
-  machine-settings:advanced     Machine settings - Advanced
-  machine-settings:gcode        Machine settings - G-code
-  machine-settings:hooks-macros Machine settings - Hooks & Macros
-  machine-settings:device       Machine settings - Device
-  machine-settings:laser        Machine settings - Laser
-  machine-settings:camera       Machine settings - Camera
-  machine-settings:maintenance  Machine settings - Maintenance
-  step-settings                 All step settings screenshots
-  step-settings:contour         Step settings - Contour
-  step-settings:engrave         Step settings - Engrave
-  step-settings:frame-outline   Step settings - Frame Outline
-  step-settings:shrink-wrap     Step settings - Shrink Wrap
-  recipe-editor                 Recipe editor - General page
-  recipe-editor:general         Recipe editor - General
-  recipe-editor:applicability   Recipe editor - Applicability
-  recipe-editor:settings        Recipe editor - Settings
-  material-test                 Material test grid dialog
-"""
+TARGETS = {
+    "main:standard": "main_standard",
+    "main:simulation": "main_simulation",
+    "main:3d": "main_3d",
+    "app-settings:general": "app_settings_general",
+    "app-settings:machines": "app_settings_machines",
+    "app-settings:materials": "app_settings_materials",
+    "app-settings:recipes": "app_settings_recipes",
+    "app-settings:packages": "app_settings_packages",
+    "machine-settings:general": "machine_settings_general",
+    "machine-settings:hardware": "machine_settings_hardware",
+    "machine-settings:advanced": "machine_settings_advanced",
+    "machine-settings:gcode": "machine_settings_gcode",
+    "machine-settings:hooks-macros": "machine_settings_hooks_macros",
+    "machine-settings:device": "machine_settings_device",
+    "machine-settings:laser": "machine_settings_laser",
+    "machine-settings:camera": "machine_settings_camera",
+    "machine-settings:maintenance": "machine_settings_maintenance",
+    "step-settings:contour:general": "step_settings",
+    "step-settings:contour:post": "step_settings",
+    "step-settings:engrave:general:constant_power": "step_settings",
+    "step-settings:engrave:general:dither": "step_settings",
+    "step-settings:engrave:general:multi_pass": "step_settings",
+    "step-settings:engrave:general:variable": "step_settings",
+    "step-settings:engrave:post": "step_settings",
+    "step-settings:frame-outline:general": "step_settings",
+    "step-settings:frame-outline:post": "step_settings",
+    "step-settings:shrink-wrap:general": "step_settings",
+    "step-settings:shrink-wrap:post": "step_settings",
+    "recipe-editor:general": "recipe_editor_general",
+    "recipe-editor:applicability": "recipe_editor_applicability",
+    "recipe-editor:settings": "recipe_editor_settings",
+    "material-test": "material_test",
+    "control-panel": "control_panel",
+    "import-dialog": "import_dialog",
+}
 
 
-def get_script_path(name: str) -> Path:
-    return SCRIPTS_DIR / f"{name}.py"
+def get_matching_targets(target: str) -> list[str]:
+    """Find all leaf targets that match the given prefix.
+
+    A leaf target is one with no children.
+    """
+    children = [t for t in TARGETS if t.startswith(target + ":")]
+    if children:
+        leaves = [
+            t
+            for t in children
+            if not any(other.startswith(t + ":") for other in TARGETS)
+        ]
+        return leaves
+    if target in TARGETS:
+        return [target]
+    return []
 
 
-def run_rayforge(script_name: str, env: dict | None = None):
+def run_script(script_name: str, target: str) -> int:
     cmd = [
         "pixi",
         "run",
         "rayforge",
         "--uiscript",
-        str(get_script_path(script_name)),
+        str(SCRIPTS_DIR / f"{script_name}.py"),
     ]
-    print(f"Running: {' '.join(cmd)}")
-    run_env = os.environ.copy()
-    if env:
-        run_env.update(env)
-    return subprocess.run(cmd, env=run_env).returncode
+    print(f"Running: {' '.join(cmd)} (TARGET={target})")
+    env = os.environ.copy()
+    env["TARGET"] = target
+    return subprocess.run(cmd, env=env).returncode
 
 
-def main():
+def generate_help_text() -> str:
+    lines = ["Available leaf targets:"]
+    for target in sorted(TARGETS.keys()):
+        lines.append(f"  {target}")
+    lines.append("")
+    lines.append("Useful prefixes (match all leaves under):")
+    lines.append("  main, app-settings, machine-settings, step-settings")
+    lines.append("  step-settings:engrave, step-settings:engrave:general")
+    lines.append("  recipe-editor, etc.")
+    lines.append("")
+    lines.append("Use 'all' to run everything")
+    return "\n".join(lines)
+
+
+def main() -> int:
     parser = argparse.ArgumentParser(
         description="Take screenshots for Rayforge documentation.",
         formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog=HELP_TEXT,
+        epilog=generate_help_text(),
     )
     parser.add_argument("target", help="Screenshot target")
-
     args = parser.parse_args()
 
-    if ":" in args.target:
-        base, page = args.target.split(":", 1)
+    if args.target == "all":
+        targets = list(TARGETS.keys())
     else:
-        base, page = args.target, None
+        targets = get_matching_targets(args.target)
 
-    if base == "main":
-        if page == "standard":
-            return run_rayforge("main_standard")
-        elif page == "simulation":
-            return run_rayforge("main_simulation")
-        elif page == "3d":
-            return run_rayforge("main_3d")
-        elif page is None:
-            for script in ["main_standard", "main_simulation", "main_3d"]:
-                result = run_rayforge(script)
-                if result != 0:
-                    return result
-            return 0
-        else:
-            print(f"Unknown main subtype: {page}")
-            print("Options: standard, simulation, 3d")
-            return 1
-
-    elif base == "app-settings":
-        if page:
-            if page not in APP_SETTINGS_PAGES:
-                print(f"Unknown app-settings page: {page}")
-                print(f"Options: {', '.join(APP_SETTINGS_PAGES)}")
-                return 1
-            return run_rayforge(f"app_settings_{page}")
-        else:
-            for p in APP_SETTINGS_PAGES:
-                result = run_rayforge(f"app_settings_{p}")
-                if result != 0:
-                    return result
-            return 0
-
-    elif base == "machine-settings":
-        if page:
-            if page not in MACHINE_SETTINGS_PAGES:
-                print(f"Unknown machine-settings page: {page}")
-                print(f"Options: {', '.join(MACHINE_SETTINGS_PAGES)}")
-                return 1
-            return run_rayforge(f"machine_settings_{page}")
-        else:
-            for p in MACHINE_SETTINGS_PAGES:
-                result = run_rayforge(f"machine_settings_{p}")
-                if result != 0:
-                    return result
-            return 0
-
-    elif base == "step-settings":
-        if page:
-            if page not in STEP_TYPES:
-                print(f"Unknown step-settings type: {page}")
-                print(f"Options: {', '.join(STEP_TYPES)}")
-                return 1
-            return run_rayforge("step_settings", env={"STEP_TYPE": page})
-        else:
-            for step_type in STEP_TYPES:
-                result = run_rayforge(
-                    "step_settings", env={"STEP_TYPE": step_type}
-                )
-                if result != 0:
-                    return result
-            return 0
-
-    elif base == "recipe-editor":
-        if page:
-            if page not in RECIPE_PAGES:
-                print(f"Unknown recipe-editor page: {page}")
-                print(f"Options: {', '.join(RECIPE_PAGES)}")
-                return 1
-            return run_rayforge(f"recipe_editor_{page}")
-        return run_rayforge("recipe_editor_general")
-
-    elif base == "material-test":
-        return run_rayforge("material_test")
-
-    else:
-        print(f"Unknown target: {base}")
-        print(
-            "Options: main, app-settings, machine-settings, step-settings, "
-            "recipe-editor, material-test"
-        )
+    if not targets:
+        print(f"No targets match: {args.target}")
         return 1
+
+    for target in targets:
+        script = TARGETS[target]
+        result = run_script(script, target)
+        if result != 0:
+            return result
+
+    return 0
 
 
 if __name__ == "__main__":

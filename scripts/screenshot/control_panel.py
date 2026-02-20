@@ -1,0 +1,62 @@
+#!/usr/bin/env python3
+"""
+Screenshot: Control panel (cropped to just the panel).
+
+Usage: pixi run screenshot control-panel
+"""
+
+import time
+import logging
+from rayforge.uiscript import app, win
+from utils import (
+    load_project,
+    wait_for_settled,
+    show_panel,
+    take_cropped_screenshot,
+    _run_on_main_thread,
+)
+
+logger = logging.getLogger(__name__)
+
+PANEL_HEIGHT = 280
+MARGIN = 10
+STATUS_BAR_HEIGHT = 60
+
+
+def main():
+    _run_on_main_thread(lambda: win.set_default_size(1000, 900))
+    logger.info("Window size set to 1000x900")
+
+    time.sleep(0.3)
+
+    load_project(win, "contour.ryp")
+    logger.info("Waiting for document to settle...")
+    if not wait_for_settled(win, timeout=10):
+        logger.error("Document did not settle in time")
+        app.quit_idle()
+        return
+
+    logger.info("Document settled, showing control panel")
+
+    show_panel(win, "toggle_control_panel", True)
+    show_panel(win, "toggle_gcode_preview", False)
+
+    time.sleep(0.5)
+
+    window_height = _run_on_main_thread(lambda: win.get_height())
+    crop_from_top = window_height - PANEL_HEIGHT - MARGIN - STATUS_BAR_HEIGHT
+
+    logger.info(
+        f"Taking cropped screenshot (window height={window_height}, "
+        f"crop_top={crop_from_top})"
+    )
+    take_cropped_screenshot(
+        "control-panel.png",
+        from_top=crop_from_top,
+    )
+
+    time.sleep(0.25)
+    app.quit_idle()
+
+
+main()

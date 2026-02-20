@@ -2,7 +2,7 @@
 
 The Hardware page in Machine Settings configures the physical dimensions and axis orientation of your machine.
 
-![Hardware Settings](/images/machine-hardware.png)
+![Hardware Settings](/screenshots/machine-hardware.png)
 
 ## Work Area Dimensions
 

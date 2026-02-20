@@ -17,13 +17,13 @@ Click **Add Machine** to create a new machine. You can either:
 
 After selecting, the Machine Settings dialog opens for your new machine.
 
-![Machine Settings](/images/application-machines.png)
+![Machine Settings](/screenshots/application-machines.png)
 
 ## Step 3: Configure General Settings
 
 The **General** page contains basic machine information, driver selection, and connection settings.
 
-![General Settings](/images/machine-general.png)
+![General Settings](/screenshots/machine-general.png)
 
 ### Machine Information
 
@@ -67,7 +67,7 @@ These settings are used for job time estimation and path optimization:
 
 Switch to the **Hardware** tab to set up your machine's physical dimensions.
 
-![Hardware Settings](/images/machine-hardware.png)
+![Hardware Settings](/screenshots/machine-hardware.png)
 
 ### Dimensions
 
@@ -102,7 +102,7 @@ If your machine shows "Connected" status, you're ready to start using Rayforge!
 
 If your machine has multiple laser modules (e.g., diode and CO2), you can configure them in the **Laser** page.
 
-![Laser Settings](/images/machine-laser.png)
+![Laser Settings](/screenshots/machine-laser.png)
 
 See [Laser Configuration](../machine/laser) for details.
 
@@ -110,7 +110,7 @@ See [Laser Configuration](../machine/laser) for details.
 
 If you have a USB camera for alignment and positioning, configure it in the **Camera** page.
 
-![Camera Settings](/images/machine-camera.png)
+![Camera Settings](/screenshots/machine-camera.png)
 
 See [Camera Integration](../machine/camera) for details.
 

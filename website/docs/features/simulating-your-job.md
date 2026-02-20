@@ -1,6 +1,6 @@
 # Simulating Your Job
 
-![Simulation Mode Screenshot](/images/main-simulation.png)
+![Simulation Mode Screenshot](/screenshots/main-simulation.png)
 
 Learn how to use Rayforge's simulation mode to preview your laser job, identify potential issues, and estimate completion time before running on real hardware.
 

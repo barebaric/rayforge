@@ -2,7 +2,7 @@
 
 Rayforge supports USB camera integration for precise material alignment and positioning. The camera overlay feature allows you to see exactly where your laser will cut or engrave on the material, eliminating guesswork and reducing material waste.
 
-![Camera Settings](/images/machine-camera.png)
+![Camera Settings](/screenshots/machine-camera.png)
 
 ## Overview
 
