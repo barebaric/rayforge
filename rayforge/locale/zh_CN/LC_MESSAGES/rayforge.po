@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-02-19 19:39+0100\n"
+"POT-Creation-Date: 2026-02-20 04:50+0100\n"
 "PO-Revision-Date: 2025-07-13 11:49+0200\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: Chinese (Simplified)\n"
@@ -808,7 +808,7 @@ msgstr "设备报告的设置不在标准列表中。"
 msgid "Unknown setting from device"
 msgstr "来自设备的未知设置"
 
-#: rayforge/machine/driver/dummy.py
+#: rayforge/machine/driver/dummy.py rayforge/ui_gtk/machine/status_widget.py
 msgid "No driver"
 msgstr "无驱动"
 
@@ -2271,11 +2271,6 @@ msgstr "未配置自定义方言"
 #: rayforge/ui_gtk/machine/dialect_list.py
 msgid "A new custom dialect"
 msgstr "新的自定义方言"
-
-#: rayforge/ui_gtk/machine/connection_status_widget.py
-#: rayforge/ui_gtk/machine/status_widget.py
-msgid "No driver selected"
-msgstr "未选择驱动程序"
 
 #: rayforge/ui_gtk/machine/gcode_settings_page.py
 #: rayforge/ui_gtk/machine/settings_dialog.py
@@ -5075,6 +5070,13 @@ msgid ""
 "Exit after importing documents and the editor has settled. Useful for "
 "testing."
 msgstr "导入文档并编辑器稳定后退出。用于测试。"
+
+#: rayforge/app.py
+msgid ""
+"Path to a Python script to execute after the main window is fully loaded. "
+"Useful for automation and testing."
+msgstr ""
+"主窗口完全加载后执行的 Python 脚本路径。适用于自动化和测试。"
 
 #: rayforge/pipeline/steps.py
 msgid "Contour"

@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-02-19 19:39+0100\n"
+"POT-Creation-Date: 2026-02-20 04:50+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -811,7 +811,7 @@ msgstr ""
 msgid "Unknown setting from device"
 msgstr ""
 
-#: rayforge/machine/driver/dummy.py
+#: rayforge/machine/driver/dummy.py rayforge/ui_gtk/machine/status_widget.py
 msgid "No driver"
 msgstr ""
 
@@ -2260,11 +2260,6 @@ msgstr ""
 
 #: rayforge/ui_gtk/machine/dialect_list.py
 msgid "A new custom dialect"
-msgstr ""
-
-#: rayforge/ui_gtk/machine/connection_status_widget.py
-#: rayforge/ui_gtk/machine/status_widget.py
-msgid "No driver selected"
 msgstr ""
 
 #: rayforge/ui_gtk/machine/gcode_settings_page.py
@@ -5058,6 +5053,12 @@ msgstr ""
 msgid ""
 "Exit after importing documents and the editor has settled. Useful for "
 "testing."
+msgstr ""
+
+#: rayforge/app.py
+msgid ""
+"Path to a Python script to execute after the main window is fully loaded. "
+"Useful for automation and testing."
 msgstr ""
 
 #: rayforge/pipeline/steps.py
