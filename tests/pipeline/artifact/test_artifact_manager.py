@@ -578,8 +578,8 @@ def test_declare_generation_skips_existing_entries(manager):
     assert entry.handle is wp_h
 
 
-def test_declare_generation_does_not_modify_previous_generations(manager):
-    """Test declare_generation does not modify previous generations."""
+def test_declare_generation_copies_workpiece_handle_from_previous(manager):
+    """Test declare_generation copies workpiece handles from previous gen."""
     wp_key = ArtifactKey.for_workpiece(WP1_UID)
     wp_h = create_mock_handle(WorkPieceArtifactHandle, "wp1")
     manager.cache_handle(wp_key, wp_h, 0)
@@ -593,7 +593,8 @@ def test_declare_generation_does_not_modify_previous_generations(manager):
     assert entry_g0 is not None
     assert entry_g1 is not None
     assert entry_g0.handle is wp_h
-    assert entry_g1.handle is None
+    assert entry_g1.handle is wp_h
+    manager._store.retain.assert_called()
 
 
 def test_declare_generation_copies_step_handle_from_previous(manager):

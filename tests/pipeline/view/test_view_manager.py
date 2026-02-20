@@ -829,6 +829,82 @@ def test_on_workpiece_artifact_ready_releases_old_handle(
     mock_store.retain.assert_called_once_with(source_handle)
 
 
+def test_on_workpiece_artifact_ready_same_handle_no_signal(
+    view_manager, mock_store, source_handle, context
+):
+    """
+    When the same handle is received (e.g., from step_assembly_starting
+    during a position-only transform change), source_artifact_ready
+    signal should NOT be emitted to avoid unnecessary redraws.
+    """
+    wp_uid = str(uuid.uuid4())
+    step_uid = str(uuid.uuid4())
+    composite_id = (wp_uid, step_uid)
+
+    mock_step = MagicMock()
+    mock_step.uid = step_uid
+
+    mock_workpiece = MagicMock()
+    mock_workpiece.uid = wp_uid
+
+    view_manager._source_artifact_handles[composite_id] = source_handle
+    view_manager._current_view_context = context
+
+    signal_handler = MagicMock()
+    view_manager.source_artifact_ready.connect(signal_handler)
+
+    view_manager.on_workpiece_artifact_ready(
+        sender=None,
+        step=mock_step,
+        workpiece=mock_workpiece,
+        handle=source_handle,
+    )
+
+    signal_handler.assert_not_called()
+
+
+def test_on_workpiece_artifact_ready_different_handle_emits_signal(
+    view_manager, mock_store, source_handle, context
+):
+    """
+    When a different handle is received (new artifact generated),
+    source_artifact_ready signal SHOULD be emitted.
+    """
+    wp_uid = str(uuid.uuid4())
+    step_uid = str(uuid.uuid4())
+    composite_id = (wp_uid, step_uid)
+
+    mock_step = MagicMock()
+    mock_step.uid = step_uid
+
+    mock_workpiece = MagicMock()
+    mock_workpiece.uid = wp_uid
+
+    old_handle = WorkPieceArtifactHandle(
+        shm_name="old_shm",
+        handle_class_name="WorkPieceArtifactHandle",
+        artifact_type_name="WorkPieceArtifact",
+        is_scalable=True,
+        source_coordinate_system_name="MILLIMETER_SPACE",
+        source_dimensions=(10, 10),
+        generation_size=(10, 10),
+    )
+    view_manager._source_artifact_handles[composite_id] = old_handle
+    view_manager._current_view_context = context
+
+    signal_handler = MagicMock()
+    view_manager.source_artifact_ready.connect(signal_handler)
+
+    view_manager.on_workpiece_artifact_ready(
+        sender=None,
+        step=mock_step,
+        workpiece=mock_workpiece,
+        handle=source_handle,
+    )
+
+    signal_handler.assert_called_once()
+
+
 def test_request_view_render_no_context(view_manager, source_handle):
     wp_uid = str(uuid.uuid4())
     step_uid = str(uuid.uuid4())
@@ -1149,6 +1225,405 @@ def test_is_view_stale_source_handle_shm_name_changed(
             wp_uid, step_uid, context, new_source_handle
         )
         is True
+    )
+
+
+def test_handles_represent_same_artifact_both_none(view_manager):
+    assert view_manager._handles_represent_same_artifact(None, None) is True
+
+
+def test_handles_represent_same_artifact_one_none(view_manager, source_handle):
+    assert (
+        view_manager._handles_represent_same_artifact(None, source_handle)
+        is False
+    )
+    assert (
+        view_manager._handles_represent_same_artifact(source_handle, None)
+        is False
+    )
+
+
+def test_handles_represent_same_artifact_same_handle(
+    view_manager, source_handle
+):
+    assert (
+        view_manager._handles_represent_same_artifact(
+            source_handle, source_handle
+        )
+        is True
+    )
+
+
+def test_handles_represent_same_artifact_different_shm_name(
+    view_manager, source_handle
+):
+    other_handle = WorkPieceArtifactHandle(
+        shm_name="different_shm",
+        handle_class_name="WorkPieceArtifactHandle",
+        artifact_type_name="WorkPieceArtifact",
+        is_scalable=True,
+        source_coordinate_system_name="MILLIMETER_SPACE",
+        source_dimensions=(10, 10),
+        generation_size=(10, 10),
+    )
+    assert (
+        view_manager._handles_represent_same_artifact(
+            source_handle, other_handle
+        )
+        is False
+    )
+
+
+def test_handles_represent_same_artifact_different_generation_size(
+    view_manager, source_handle
+):
+    other_handle = WorkPieceArtifactHandle(
+        shm_name="source_shm",
+        handle_class_name="WorkPieceArtifactHandle",
+        artifact_type_name="WorkPieceArtifact",
+        is_scalable=True,
+        source_coordinate_system_name="MILLIMETER_SPACE",
+        source_dimensions=(10, 10),
+        generation_size=(20, 20),
+    )
+    assert (
+        view_manager._handles_represent_same_artifact(
+            source_handle, other_handle
+        )
+        is False
+    )
+
+
+def test_handles_represent_same_artifact_different_source_dimensions(
+    view_manager, source_handle
+):
+    other_handle = WorkPieceArtifactHandle(
+        shm_name="source_shm",
+        handle_class_name="WorkPieceArtifactHandle",
+        artifact_type_name="WorkPieceArtifact",
+        is_scalable=True,
+        source_coordinate_system_name="MILLIMETER_SPACE",
+        source_dimensions=(20, 20),
+        generation_size=(10, 10),
+    )
+    assert (
+        view_manager._handles_represent_same_artifact(
+            source_handle, other_handle
+        )
+        is False
+    )
+
+
+def test_multiple_position_only_moves_no_signal(
+    view_manager, mock_store, source_handle, context
+):
+    """
+    Simulates multiple consecutive position-only moves.
+    Each move should NOT emit source_artifact_ready because the handle
+    represents the same artifact.
+    """
+    wp_uid = str(uuid.uuid4())
+    step_uid = str(uuid.uuid4())
+    composite_id = (wp_uid, step_uid)
+
+    mock_step = MagicMock()
+    mock_step.uid = step_uid
+
+    mock_workpiece = MagicMock()
+    mock_workpiece.uid = wp_uid
+
+    view_manager._source_artifact_handles[composite_id] = source_handle
+    view_manager._current_view_context = context
+
+    signal_handler = MagicMock()
+    view_manager.source_artifact_ready.connect(signal_handler)
+
+    for i in range(5):
+        view_manager.on_workpiece_artifact_ready(
+            sender=None,
+            step=mock_step,
+            workpiece=mock_workpiece,
+            handle=source_handle,
+        )
+
+    signal_handler.assert_not_called()
+
+
+def test_alternating_artifact_ready_signals(
+    view_manager, mock_store, source_handle, context
+):
+    """
+    Tests that when the same artifact handle is received multiple times
+    (simulating position-only transform changes that trigger step reassembly
+    but not workpiece regeneration), the source_artifact_ready signal is
+    only emitted once for the first occurrence.
+    """
+    wp_uid = str(uuid.uuid4())
+    step_uid = str(uuid.uuid4())
+
+    mock_step = MagicMock()
+    mock_step.uid = step_uid
+
+    mock_workpiece = MagicMock()
+    mock_workpiece.uid = wp_uid
+
+    view_manager._current_view_context = context
+
+    signal_handler = MagicMock()
+    view_manager.source_artifact_ready.connect(signal_handler)
+    view_render_handler = MagicMock()
+    view_manager.view_artifact_updated.connect(view_render_handler)
+
+    view_manager._task_manager.run_process = MagicMock()
+
+    first_handle = source_handle
+    second_handle = WorkPieceArtifactHandle(
+        shm_name="second_shm",
+        handle_class_name="WorkPieceArtifactHandle",
+        artifact_type_name="WorkPieceArtifact",
+        is_scalable=True,
+        source_coordinate_system_name="MILLIMETER_SPACE",
+        source_dimensions=(10, 10),
+        generation_size=(10, 10),
+    )
+
+    view_manager.on_workpiece_artifact_ready(
+        sender=None,
+        step=mock_step,
+        workpiece=mock_workpiece,
+        handle=first_handle,
+    )
+    assert signal_handler.call_count == 1
+
+    for i in range(5):
+        view_manager.on_workpiece_artifact_ready(
+            sender=None,
+            step=mock_step,
+            workpiece=mock_workpiece,
+            handle=first_handle,
+        )
+    assert signal_handler.call_count == 1
+
+    view_manager.on_workpiece_artifact_ready(
+        sender=None,
+        step=mock_step,
+        workpiece=mock_workpiece,
+        handle=second_handle,
+    )
+    assert signal_handler.call_count == 2
+
+    for i in range(5):
+        view_manager.on_workpiece_artifact_ready(
+            sender=None,
+            step=mock_step,
+            workpiece=mock_workpiece,
+            handle=second_handle,
+        )
+    assert signal_handler.call_count == 2
+
+
+def test_simulated_position_only_transform_changes(
+    view_manager, mock_store, context
+):
+    """
+    Simulates the actual pipeline flow for position-only transform changes:
+    1. Initial workpiece generation stores a handle
+    2. Position-only changes trigger step_assembly_starting with SAME handle
+    3. ViewManager should NOT re-emit source_artifact_ready
+    """
+    wp_uid = str(uuid.uuid4())
+    step_uid = str(uuid.uuid4())
+
+    mock_step = MagicMock()
+    mock_step.uid = step_uid
+
+    mock_workpiece = MagicMock()
+    mock_workpiece.uid = wp_uid
+
+    view_manager._current_view_context = context
+    view_manager._task_manager.run_process = MagicMock()
+
+    signal_handler = MagicMock()
+    view_manager.source_artifact_ready.connect(signal_handler)
+
+    initial_handle = WorkPieceArtifactHandle(
+        shm_name="initial_shm",
+        handle_class_name="WorkPieceArtifactHandle",
+        artifact_type_name="WorkPieceArtifact",
+        is_scalable=True,
+        source_coordinate_system_name="MILLIMETER_SPACE",
+        source_dimensions=(10, 10),
+        generation_size=(10, 10),
+    )
+
+    view_manager.on_workpiece_artifact_ready(
+        sender=None,
+        step=mock_step,
+        workpiece=mock_workpiece,
+        handle=initial_handle,
+    )
+    assert signal_handler.call_count == 1, "First call should emit signal"
+
+    same_artifact_handle = WorkPieceArtifactHandle(
+        shm_name="initial_shm",
+        handle_class_name="WorkPieceArtifactHandle",
+        artifact_type_name="WorkPieceArtifact",
+        is_scalable=True,
+        source_coordinate_system_name="MILLIMETER_SPACE",
+        source_dimensions=(10, 10),
+        generation_size=(10, 10),
+    )
+
+    signal_counts = []
+    for i in range(10):
+        view_manager.on_workpiece_artifact_ready(
+            sender=None,
+            step=mock_step,
+            workpiece=mock_workpiece,
+            handle=same_artifact_handle,
+        )
+        signal_counts.append(signal_handler.call_count)
+
+    assert signal_handler.call_count == 1, (
+        f"Subsequent calls with same artifact should NOT emit signal, "
+        f"signal_counts: {signal_counts}"
+    )
+
+
+def test_alternating_signal_debug(view_manager, mock_store, context, caplog):
+    """
+    Debug test to understand the alternating pattern.
+    """
+    import logging
+
+    caplog.set_level(logging.DEBUG)
+
+    wp_uid = str(uuid.uuid4())
+    step_uid = str(uuid.uuid4())
+
+    mock_step = MagicMock()
+    mock_step.uid = step_uid
+
+    mock_workpiece = MagicMock()
+    mock_workpiece.uid = wp_uid
+
+    view_manager._current_view_context = context
+    view_manager._task_manager.run_process = MagicMock()
+
+    signal_handler = MagicMock()
+    view_manager.source_artifact_ready.connect(signal_handler)
+
+    handles = []
+    for i in range(10):
+        handle = WorkPieceArtifactHandle(
+            shm_name="same_shm",
+            handle_class_name="WorkPieceArtifactHandle",
+            artifact_type_name="WorkPieceArtifact",
+            is_scalable=True,
+            source_coordinate_system_name="MILLIMETER_SPACE",
+            source_dimensions=(10, 10),
+            generation_size=(10, 10),
+        )
+        handles.append(handle)
+
+    view_manager.on_workpiece_artifact_ready(
+        sender=None,
+        step=mock_step,
+        workpiece=mock_workpiece,
+        handle=handles[0],
+    )
+    assert signal_handler.call_count == 1
+
+    call_results = []
+    for i in range(1, 10):
+        view_manager.on_workpiece_artifact_ready(
+            sender=None,
+            step=mock_step,
+            workpiece=mock_workpiece,
+            handle=handles[i],
+        )
+        call_results.append(signal_handler.call_count)
+
+    expected = [1] * 9
+    assert call_results == expected, f"Expected all 1s, got {call_results}"
+
+
+def test_alternating_shm_names_cause_alternating_signals(
+    view_manager, mock_store, context
+):
+    """
+    If the pipeline sends different shm_names on alternating calls,
+    signals will be emitted on alternating calls. This test verifies
+    that our deduplication logic works based on shm_name comparison.
+    """
+    wp_uid = str(uuid.uuid4())
+    step_uid = str(uuid.uuid4())
+
+    mock_step = MagicMock()
+    mock_step.uid = step_uid
+
+    mock_workpiece = MagicMock()
+    mock_workpiece.uid = wp_uid
+
+    view_manager._current_view_context = context
+    view_manager._task_manager.run_process = MagicMock()
+
+    signal_handler = MagicMock()
+    view_manager.source_artifact_ready.connect(signal_handler)
+
+    handle_a = WorkPieceArtifactHandle(
+        shm_name="handle_a_shm",
+        handle_class_name="WorkPieceArtifactHandle",
+        artifact_type_name="WorkPieceArtifact",
+        is_scalable=True,
+        source_coordinate_system_name="MILLIMETER_SPACE",
+        source_dimensions=(10, 10),
+        generation_size=(10, 10),
+    )
+    handle_b = WorkPieceArtifactHandle(
+        shm_name="handle_b_shm",
+        handle_class_name="WorkPieceArtifactHandle",
+        artifact_type_name="WorkPieceArtifact",
+        is_scalable=True,
+        source_coordinate_system_name="MILLIMETER_SPACE",
+        source_dimensions=(10, 10),
+        generation_size=(10, 10),
+    )
+
+    view_manager.on_workpiece_artifact_ready(
+        sender=None,
+        step=mock_step,
+        workpiece=mock_workpiece,
+        handle=handle_a,
+    )
+    assert signal_handler.call_count == 1
+
+    view_manager.on_workpiece_artifact_ready(
+        sender=None,
+        step=mock_step,
+        workpiece=mock_workpiece,
+        handle=handle_b,
+    )
+    assert signal_handler.call_count == 2
+
+    view_manager.on_workpiece_artifact_ready(
+        sender=None,
+        step=mock_step,
+        workpiece=mock_workpiece,
+        handle=handle_a,
+    )
+    assert signal_handler.call_count == 3, (
+        "handle_a is different from handle_b, so signal should be emitted"
+    )
+
+    view_manager.on_workpiece_artifact_ready(
+        sender=None,
+        step=mock_step,
+        workpiece=mock_workpiece,
+        handle=handle_b,
+    )
+    assert signal_handler.call_count == 4, (
+        "handle_b is different from handle_a, so signal should be emitted"
     )
 
 
