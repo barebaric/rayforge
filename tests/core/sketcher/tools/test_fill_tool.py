@@ -1,5 +1,6 @@
 import pytest
 from unittest.mock import Mock
+from rayforge.core.sketcher.sketch import Fill
 from rayforge.core.sketcher.tools.fill_tool import FillTool
 
 
@@ -71,8 +72,6 @@ def test_fill_tool_on_press_with_loop(fill_tool, mock_element):
 
 def test_fill_tool_on_press_existing_fill(fill_tool, mock_element):
     """Test on_press when a fill already exists."""
-    from rayforge.core.sketcher.sketch import Fill
-
     existing_fill = Fill(uid="test", boundary=[(1, True), (2, True)])
     mock_element.sketch.fills = [existing_fill]
     mock_element.sketch._find_all_closed_loops.return_value = []

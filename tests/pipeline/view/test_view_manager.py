@@ -1,3 +1,4 @@
+import logging
 import time
 import uuid
 import numpy as np
@@ -5,6 +6,12 @@ from unittest.mock import MagicMock, patch
 from contextlib import contextmanager
 import pytest
 
+from rayforge.core.doc import Doc
+from rayforge.core.layer import Layer
+from rayforge.core.ops import Ops
+from rayforge.pipeline import CoordinateSystem
+from rayforge.pipeline.pipeline import Pipeline
+from rayforge.pipeline.artifact.manager import ArtifactManager
 from rayforge.pipeline.view.view_manager import ViewManager, ViewEntry
 from rayforge.pipeline.artifact import (
     ArtifactKey,
@@ -14,8 +21,6 @@ from rayforge.pipeline.artifact import (
     WorkPieceViewArtifactHandle,
     WorkPieceViewArtifact,
 )
-from rayforge.core.ops import Ops
-from rayforge.pipeline.coord import CoordinateSystem
 
 
 @pytest.fixture
@@ -931,16 +936,11 @@ def test_request_view_render_no_source_handle(view_manager, context):
 
 @pytest.fixture
 def real_artifact_manager(context_initializer):
-    from rayforge.pipeline.artifact.manager import ArtifactManager
-
     return ArtifactManager(context_initializer.artifact_store)
 
 
 @pytest.fixture
 def real_pipeline(task_mgr, context_initializer):
-    from rayforge.core.doc import Doc
-    from rayforge.pipeline.pipeline import Pipeline
-
     pipeline = Pipeline(
         Doc(),
         task_mgr,
@@ -971,10 +971,6 @@ def test_on_workpiece_artifact_ready_refcount_increased(
     - 1 for the original put() call (GenerationContext)
     - 1 for ViewManager's retain_handle()
     """
-    from rayforge.core.ops import Ops
-    from rayforge.pipeline import CoordinateSystem
-    from rayforge.pipeline.artifact import WorkPieceArtifact
-
     wp_uid = str(uuid.uuid4())
 
     ops = Ops()
@@ -1030,10 +1026,6 @@ def test_on_workpiece_artifact_ready_releases_old_and_refcount_decreased(
     1. The old handle's refcount is decreased (released)
     2. The new handle's refcount is increased (retained)
     """
-    from rayforge.core.ops import Ops
-    from rayforge.pipeline import CoordinateSystem
-    from rayforge.pipeline.artifact import WorkPieceArtifact
-
     wp_uid = str(uuid.uuid4())
 
     ops1 = Ops()
@@ -1494,7 +1486,6 @@ def test_alternating_signal_debug(view_manager, mock_store, context, caplog):
     """
     Debug test to understand the alternating pattern.
     """
-    import logging
 
     caplog.set_level(logging.DEBUG)
 
@@ -1675,9 +1666,6 @@ def test_get_view_handle_missing(view_manager):
 def test_reconcile_removes_obsolete_entries(
     view_manager, mock_store, source_handle
 ):
-    from rayforge.core.doc import Doc
-    from rayforge.core.layer import Layer
-
     wp_uid = str(uuid.uuid4())
     step_uid = str(uuid.uuid4())
     composite_id = (wp_uid, step_uid)

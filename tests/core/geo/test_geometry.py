@@ -1,7 +1,8 @@
 import pytest
 import math
 import numpy as np
-from unittest.mock import patch, ANY
+import cairo
+from unittest.mock import Mock, patch, ANY
 
 from rayforge.core.geo.font_config import FontConfig
 from rayforge.core.geo import (
@@ -765,9 +766,6 @@ def test_flip_y():
 
 def test_to_cairo():
     """Tests the to_cairo() method for drawing geometry to a Cairo context."""
-    from unittest.mock import Mock
-    import cairo
-
     geo = Geometry()
     geo.move_to(5, 5)
     geo.line_to(10, 10)
@@ -785,9 +783,6 @@ def test_to_cairo():
 
 def test_to_cairo_empty_geometry():
     """Tests that to_cairo() handles empty geometry gracefully."""
-    from unittest.mock import Mock
-    import cairo
-
     geo = Geometry()
     ctx = Mock(spec=cairo.Context)
     geo.to_cairo(ctx)
@@ -800,9 +795,6 @@ def test_to_cairo_empty_geometry():
 
 def test_to_cairo_clockwise_arc():
     """Tests that to_cairo() correctly draws clockwise arcs."""
-    from unittest.mock import Mock
-    import cairo
-
     geo = Geometry()
     geo.move_to(10, 10)
     geo.arc_to(15, 10, i=0, j=-5, clockwise=True)

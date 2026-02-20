@@ -1,5 +1,7 @@
 # flake8: noqa: E402
 import logging
+import threading
+import time
 from pathlib import Path
 import pytest
 import re
@@ -267,11 +269,7 @@ def test_returns_true_when_processing_finishes(doc_editor):
         doc_editor.notify_task_started()
         assert doc_editor.is_processing is True
 
-        import threading
-
         def finish_after_delay():
-            import time
-
             time.sleep(0.1)
             doc_editor.notify_task_ended()
 
@@ -309,11 +307,7 @@ def test_handles_multiple_busy_tasks(doc_editor):
     doc_editor.notify_task_started()
     assert doc_editor.is_processing is True
 
-    import threading
-
     def finish_tasks():
-        import time
-
         time.sleep(0.1)
         doc_editor.notify_task_ended()
         time.sleep(0.1)

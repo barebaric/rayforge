@@ -1,5 +1,7 @@
 import pytest
+import cairo
 from unittest.mock import Mock
+from rayforge.core.sketcher.entities import Line
 from rayforge.core.sketcher.tools.select_tool import SelectTool
 
 
@@ -82,8 +84,6 @@ def test_select_tool_on_press_point_hit(select_tool, mock_element):
 
 def test_select_tool_on_press_entity_hit(select_tool, mock_element):
     """Test on_press when an entity is hit."""
-    from rayforge.core.sketcher.entities import Line
-
     mock_entity = Mock(spec=Line)
     mock_entity.id = 10
     mock_entity.p1_idx = 1
@@ -168,8 +168,6 @@ def test_select_tool_prepare_point_drag(select_tool, mock_element):
 
 def test_select_tool_draw_overlay_no_box(select_tool):
     """Test draw_overlay when not box selecting."""
-    import cairo
-
     ctx = Mock(spec=cairo.Context)
     select_tool.is_box_selecting = False
 
@@ -180,8 +178,6 @@ def test_select_tool_draw_overlay_no_box(select_tool):
 
 def test_select_tool_draw_overlay_with_box(select_tool, mock_element):
     """Test draw_overlay when box selecting."""
-    import cairo
-
     ctx = Mock(spec=cairo.Context)
     select_tool.is_box_selecting = True
     select_tool.drag_start_world_pos = (100.0, 200.0)

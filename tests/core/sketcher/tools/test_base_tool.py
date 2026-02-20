@@ -1,4 +1,5 @@
 import pytest
+import cairo
 from unittest.mock import Mock
 from rayforge.core.sketcher.tools.base import SketchTool
 
@@ -46,8 +47,6 @@ def test_sketch_tool_on_deactivate_default(sketch_tool):
 
 def test_sketch_tool_draw_overlay_default(sketch_tool):
     """Test that draw_overlay does nothing by default."""
-    import cairo
-
     ctx = Mock(spec=cairo.Context)
     sketch_tool.draw_overlay(ctx)
     assert True
