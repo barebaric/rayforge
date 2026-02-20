@@ -10,7 +10,7 @@ Rayforge supports various file formats including SVG, DXF, PDF, and raster image
 2. Navigate to your design file and select it
 3. The design will appear on the canvas
 
-![Canvas with imported design](/images/ss-main.png)
+![Canvas with imported design](/images/main-standard.png)
 
 :::tip Don't have a design yet?
 You can create simple shapes using the canvas tools or download free SVG files from sites like [Flaticon](https://www.flaticon.com/) or [SVG Repo](https://www.svgrepo.com/).
@@ -52,7 +52,7 @@ When working with new materials, always start with lower power settings and run 
 :::
 
 
-## Step 4: Preview G-code
+## Step 4: Preview
 
 Before sending to your machine, preview the toolpath in 3D:
 
@@ -61,7 +61,7 @@ Before sending to your machine, preview the toolpath in 3D:
 3. Use your mouse to rotate and zoom the preview
 4. Verify that the path looks correct
 
-![3D Preview](/images/3d-preview.png)
+![3D Preview](/images/main-3d.png)
 
 :::tip Catch Errors Early
 The 3D preview helps you spot issues like:
@@ -73,13 +73,7 @@ The 3D preview helps you spot issues like:
 :::
 
 
-## Step 5: Generate G-code
-
-1. Click **Machine → Generate G-code** or press <kbd>ctrl+g</kbd>
-2. Rayforge will process your operations and generate the G-code
-3. The generated code appears in the G-code viewer
-
-## Step 6: Send to Machine
+## Step 5: Send to Machine
 
 :::danger Safety First
 - Ensure the work area is clear
@@ -98,12 +92,12 @@ The 3D preview helps you spot issues like:
 ### Starting the Job
 
 1. **Position the laser**: Use the jog controls to move the laser to the starting position
-   - Click **Machine → Jog Controls** or press <kbd>ctrl+j</kbd>
+   - Click **View → Control Panel** or press <kbd>ctrl+l</kbd>
    - Use the arrow buttons or keyboard arrows to move the laser
    - Press <kbd>home</kbd> to home the machine
 
 2. **Frame the design**: Run the framing function to verify placement
-   - Click **Machine → Frame Job** or press <kbd>ctrl+f</kbd>
+   - Click **Machine → Frame** or press <kbd>ctrl+f</kbd>
    - The laser will trace the bounding box of your design at low/no power
    - Verify it fits within your material
 
@@ -116,7 +110,7 @@ The 3D preview helps you spot issues like:
 - You can pause the job with <kbd>ctrl+p</kbd> or click the Pause button
 - Press <kbd>esc</kbd> or click Stop to cancel the job (emergency stop)
 
-## Step 7: Finishing Up
+## Step 6: Finishing Up
 
 Once the job completes:
 
