@@ -112,7 +112,7 @@ class HardwarePage(Adw.PreferencesPage):
         axes_group.add(self.reverse_z_axis_row)
 
         x_offset_adjustment = Gtk.Adjustment(
-            lower=0, upper=10000, step_increment=1, page_increment=10
+            lower=-100, upper=100, step_increment=0.01, page_increment=10
         )
         self.x_offset_row = Adw.SpinRow(
             title=_("X Offset"),
@@ -124,7 +124,7 @@ class HardwarePage(Adw.PreferencesPage):
         axes_group.add(self.x_offset_row)
 
         y_offset_adjustment = Gtk.Adjustment(
-            lower=0, upper=10000, step_increment=1, page_increment=10
+            lower=-100, upper=100, step_increment=0.01, page_increment=10
         )
         self.y_offset_row = Adw.SpinRow(
             title=_("Y Offset"),
