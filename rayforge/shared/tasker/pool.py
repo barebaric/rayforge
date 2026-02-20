@@ -186,7 +186,11 @@ class WorkerPoolManager:
         initargs: Tuple[Any, ...] = (),
     ):
         if num_workers is None:
-            num_workers = os.cpu_count() or 1
+            env_max = os.environ.get("RAYFORGE_MAX_WORKERS")
+            if env_max is not None:
+                num_workers = min(int(env_max), os.cpu_count() or 1)
+            else:
+                num_workers = os.cpu_count() or 1
         logger.info(
             f"Initializing WorkerPoolManager with {num_workers} workers."
         )
