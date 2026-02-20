@@ -385,66 +385,68 @@ SH
 
     # Fix all library references to use @rpath instead of absolute paths
     echo "Fixing library references..."
-    chmod -R u+w "$FW_DIR" "$BIN_DIR" 2>/dev/null || true
-    find "$FW_DIR" -name "*.dylib" -print0 | while IFS= read -r -d '' dylib; do
-        otool -L "$dylib" | grep -E '/usr/local/|/opt/homebrew/' | \
-            awk '{print $1}' | while read dep; do
-            libname=$(basename "$dep")
-            if [ -f "$FW_DIR/$libname" ]; then
-                install_name_tool -change "$dep" "@rpath/$libname" "$dylib" 2>/dev/null || true
-            fi
-        done || true
-    done
-    for bin in "$BIN_DIR/Rayforge" "$BIN_DIR/Rayforge.bin"; do
-        [ -f "$bin" ] || continue
-        if ! file "$bin" | grep -q "Mach-O"; then
-            continue
-        fi
-        otool -L "$bin" | grep -E '/usr/local/|/opt/homebrew/' | \
-            awk '{print $1}' | while read dep; do
-            libname=$(basename "$dep")
-            if [ -f "$FW_DIR/$libname" ]; then
-                install_name_tool -change "$dep" "@rpath/$libname" "$bin" 2>/dev/null || true
-            fi
-        done || true
-    done
-
-    # Force libpng references to @rpath to avoid runtime lookups in Homebrew.
-    for target in "$FW_DIR"/*.dylib "$BIN_DIR/Rayforge.bin"; do
-        [ -f "$target" ] || continue
-        otool -L "$target" | awk '{print $1}' | \
-            grep -E '/opt/homebrew/opt/libpng/|/usr/local/opt/libpng/' | \
-            while read dep; do
-                install_name_tool -change "$dep" "@rpath/libpng16.16.dylib" \
-                    "$target" 2>/dev/null || true
-            done
-    done
-    if [ -f "$FW_DIR/libfreetype.6.dylib" ]; then
-        otool -L "$FW_DIR/libfreetype.6.dylib" | awk '{print $1}' | \
-            grep -E '/opt/homebrew/opt/libpng/|/usr/local/opt/libpng/' | \
-            while read dep; do
-                install_name_tool -change "$dep" "@rpath/libpng16.16.dylib" \
-                    "$FW_DIR/libfreetype.6.dylib" 2>/dev/null || true
+    {
+        chmod -R u+w "$FW_DIR" "$BIN_DIR" 2>/dev/null || true
+        find "$FW_DIR" -name "*.dylib" -print0 | while IFS= read -r -d '' dylib; do
+            otool -L "$dylib" | grep -E '/usr/local/|/opt/homebrew/' | \
+                awk '{print $1}' | while read dep; do
+                libname=$(basename "$dep")
+                if [ -f "$FW_DIR/$libname" ]; then
+                    install_name_tool -change "$dep" "@rpath/$libname" "$dylib" 2>/dev/null || true
+                fi
             done || true
-    fi
-    if [ -f "$FW_DIR/libfontconfig.1.dylib" ]; then
+        done
+        for bin in "$BIN_DIR/Rayforge" "$BIN_DIR/Rayforge.bin"; do
+            [ -f "$bin" ] || continue
+            if ! file "$bin" | grep -q "Mach-O"; then
+                continue
+            fi
+            otool -L "$bin" | grep -E '/usr/local/|/opt/homebrew/' | \
+                awk '{print $1}' | while read dep; do
+                libname=$(basename "$dep")
+                if [ -f "$FW_DIR/$libname" ]; then
+                    install_name_tool -change "$dep" "@rpath/$libname" "$bin" 2>/dev/null || true
+                fi
+            done || true
+        done
+
+        # Force libpng references to @rpath to avoid runtime lookups in Homebrew.
+        for target in "$FW_DIR"/*.dylib "$BIN_DIR/Rayforge.bin"; do
+            [ -f "$target" ] || continue
+            otool -L "$target" | awk '{print $1}' | \
+                grep -E '/opt/homebrew/opt/libpng/|/usr/local/opt/libpng/' | \
+                while read dep; do
+                    install_name_tool -change "$dep" "@rpath/libpng16.16.dylib" \
+                        "$target" 2>/dev/null || true
+                done || true
+        done
         if [ -f "$FW_DIR/libfreetype.6.dylib" ]; then
-            otool -L "$FW_DIR/libfontconfig.1.dylib" | awk '{print $1}' | \
-                grep -E '/opt/homebrew/opt/freetype/|/usr/local/opt/freetype/' | \
+            otool -L "$FW_DIR/libfreetype.6.dylib" | awk '{print $1}' | \
+                grep -E '/opt/homebrew/opt/libpng/|/usr/local/opt/libpng/' | \
                 while read dep; do
-                    install_name_tool -change "$dep" "@rpath/libfreetype.6.dylib" \
-                        "$FW_DIR/libfontconfig.1.dylib" 2>/dev/null || true
+                    install_name_tool -change "$dep" "@rpath/libpng16.16.dylib" \
+                        "$FW_DIR/libfreetype.6.dylib" 2>/dev/null || true
                 done || true
         fi
-        if [ -f "$FW_DIR/libintl.8.dylib" ]; then
-            otool -L "$FW_DIR/libfontconfig.1.dylib" | awk '{print $1}' | \
-                grep -E '/opt/homebrew/opt/gettext/|/usr/local/opt/gettext/' | \
-                while read dep; do
-                    install_name_tool -change "$dep" "@rpath/libintl.8.dylib" \
-                        "$FW_DIR/libfontconfig.1.dylib" 2>/dev/null || true
-                done || true
+        if [ -f "$FW_DIR/libfontconfig.1.dylib" ]; then
+            if [ -f "$FW_DIR/libfreetype.6.dylib" ]; then
+                otool -L "$FW_DIR/libfontconfig.1.dylib" | awk '{print $1}' | \
+                    grep -E '/opt/homebrew/opt/freetype/|/usr/local/opt/freetype/' | \
+                    while read dep; do
+                        install_name_tool -change "$dep" "@rpath/libfreetype.6.dylib" \
+                            "$FW_DIR/libfontconfig.1.dylib" 2>/dev/null || true
+                    done || true
+            fi
+            if [ -f "$FW_DIR/libintl.8.dylib" ]; then
+                otool -L "$FW_DIR/libfontconfig.1.dylib" | awk '{print $1}' | \
+                    grep -E '/opt/homebrew/opt/gettext/|/usr/local/opt/gettext/' | \
+                    while read dep; do
+                        install_name_tool -change "$dep" "@rpath/libintl.8.dylib" \
+                            "$FW_DIR/libfontconfig.1.dylib" 2>/dev/null || true
+                    done || true
+            fi
         fi
-    fi
+    } || true
 
     # Refresh cv2 dylib symlinks to the parent copies.
     if [ -d "$FW_DIR/cv2/__dot__dylibs" ]; then
