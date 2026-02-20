@@ -44,8 +44,17 @@ def pytest_configure(config):
     if sys.platform.startswith("linux"):
         multiprocessing.set_start_method("spawn", force=True)
 
-    logging.getLogger("pyvips").setLevel(logging.WARNING)
-    logging.getLogger("pyvips.vobject").setLevel(logging.WARNING)
+    pyvips_loggers = [
+        "pyvips",
+        "pyvips.vobject",
+        "pyvips.voperation",
+        "pyvips.error",
+    ]
+    for name in pyvips_loggers:
+        logger = logging.getLogger(name)
+        logger.setLevel(logging.WARNING)
+        logger.propagate = False
+        logger.handlers = []
 
     logging.getLogger().addFilter(PyvipsLogFilter())
 
