@@ -5,6 +5,7 @@ from typing import Tuple, Generator
 import pytest
 
 import rayforge.machine.driver as driver_module
+from rayforge.context import get_context
 from rayforge.core.doc import Doc
 from rayforge.core.geo import Geometry
 from rayforge.core.matrix import Matrix
@@ -18,6 +19,18 @@ from rayforge.image import SVG_RENDERER
 from rayforge.machine.cmd import MachineCmd
 from rayforge.machine.driver.driver import Axis
 from rayforge.machine.driver.dummy import NoDeviceDriver
+from rayforge.machine.driver.grbl import GrblNetworkDriver
+from rayforge.machine.driver.grbl_serial import GrblSerialDriver
+from rayforge.machine.driver.smoothie import SmoothieDriver
+from rayforge.machine.models.dialect import (
+    _DIALECT_REGISTRY,
+    GcodeDialect,
+    get_dialect,
+)
+from rayforge.machine.models.dialect_builtins import (
+    GRBL_DIALECT,
+    SMOOTHIEWARE_DIALECT,
+)
 from rayforge.machine.models.laser import Laser
 from rayforge.machine.models.machine import JogDirection, Machine, Origin
 from rayforge.machine.models.macro import MacroTrigger
@@ -52,8 +65,6 @@ def doc_editor(
     Provides a DocEditor instance with real dependencies, configured
     to use the test's `doc` and `task_mgr` instances.
     """
-    from rayforge.context import get_context
-
     config_manager = get_context().config_mgr
     assert config_manager is not None, (
         "ConfigManager was not initialized in context"
@@ -161,8 +172,6 @@ class TestMachine:
         mock_encoder.encode.return_value = ("G0", mocker.Mock())
 
         # Patch the driver class's create_encoder static method
-        from rayforge.machine.driver.dummy import NoDeviceDriver
-
         create_encoder_mock = mocker.patch.object(
             NoDeviceDriver, "create_encoder", return_value=mock_encoder
         )
@@ -213,8 +222,6 @@ class TestMachine:
         mock_encoder.encode.return_value = ("G0", MockOpMap())
 
         # Patch the driver class's create_encoder static method
-        from rayforge.machine.driver.dummy import NoDeviceDriver
-
         mocker.patch.object(
             NoDeviceDriver, "create_encoder", return_value=mock_encoder
         )
@@ -284,8 +291,6 @@ class TestMachine:
         mock_encoder.encode.return_value = ("G0", object())
 
         # Patch the driver class's create_encoder static method
-        from rayforge.machine.driver.dummy import NoDeviceDriver
-
         mocker.patch.object(
             NoDeviceDriver, "create_encoder", return_value=mock_encoder
         )
@@ -330,8 +335,6 @@ class TestMachine:
         mock_encoder.encode.return_value = ("G0", object())
 
         # Patch the driver class's create_encoder static method
-        from rayforge.machine.driver.dummy import NoDeviceDriver
-
         mocker.patch.object(
             NoDeviceDriver, "create_encoder", return_value=mock_encoder
         )
@@ -893,14 +896,11 @@ class TestMachine:
     ):
         """Test that dialect property returns correct dialect instance."""
         await wait_for_tasks_to_finish(task_mgr)
-        from rayforge.machine.models.dialect import get_dialect
 
         # Get the dialect through the property
         dialect = machine.dialect
 
         # Verify it's the correct type
-        from rayforge.machine.models.dialect import GcodeDialect
-
         assert isinstance(dialect, GcodeDialect)
 
         # Verify it matches what get_dialect would return
@@ -913,10 +913,6 @@ class TestMachine:
     ):
         """Test that dialect property reflects changes to dialect_uid."""
         await wait_for_tasks_to_finish(task_mgr)
-        from rayforge.machine.models.dialect_builtins import (
-            GRBL_DIALECT,
-            SMOOTHIEWARE_DIALECT,
-        )
 
         # Initial state
         assert machine.dialect_uid == "grbl"
@@ -941,7 +937,6 @@ class TestMachine:
         the machine's changed signal is triggered.
         """
         await wait_for_tasks_to_finish(task_mgr)
-        from rayforge.machine.models.dialect import GcodeDialect
 
         # Spy on machine's changed signal
         changed_spy = mocker.spy(machine.changed, "send")
@@ -996,8 +991,6 @@ class TestMachine:
         self, machine: Machine, task_mgr: TaskManager
     ):
         """Test new driver methods for SmoothieDriver."""
-        from rayforge.machine.driver.smoothie import SmoothieDriver
-
         machine.set_dialect_uid("smoothieware")
         machine.set_driver(SmoothieDriver, {"host": "test", "port": 23})
         # Wait for the async set_driver operation to complete
@@ -1023,8 +1016,6 @@ class TestMachine:
         self, machine: Machine, context_initializer, task_mgr: TaskManager
     ):
         """Test new driver methods for GrblNetworkDriver."""
-        from rayforge.machine.driver.grbl import GrblNetworkDriver
-
         machine.set_dialect_uid("grbl")
         machine.set_driver(GrblNetworkDriver, {"host": "test"})
         await wait_for_tasks_to_finish(task_mgr)
@@ -1049,8 +1040,6 @@ class TestMachine:
         self, machine: Machine, context_initializer, task_mgr: TaskManager
     ):
         """Test new driver methods for GrblSerialDriver."""
-        from rayforge.machine.driver.grbl_serial import GrblSerialDriver
-
         machine.set_dialect_uid("grbl")
         machine.set_driver(
             GrblSerialDriver, {"port": "/dev/test", "baudrate": 115200}
@@ -1079,8 +1068,6 @@ class TestMachine:
         """
         Test that home method accepts multiple axes using binary operators.
         """
-        from rayforge.machine.driver.smoothie import SmoothieDriver
-
         # Mock the _send_and_wait method to avoid connection issues
         mock_send_and_wait = mocker.AsyncMock()
 
@@ -1169,8 +1156,6 @@ class TestMachine:
         self, machine: Machine, context_initializer, task_mgr
     ):
         """Test reports_granular_progress returns True for GrblSerialDriver."""
-        from rayforge.machine.driver.grbl_serial import GrblSerialDriver
-
         machine.set_driver(
             GrblSerialDriver, {"port": "/dev/test", "baudrate": 115200}
         )
@@ -1186,8 +1171,6 @@ class TestMachine:
         """
         Test reports_granular_progress returns False for GrblNetworkDriver.
         """
-        from rayforge.machine.driver.grbl import GrblNetworkDriver
-
         machine.set_driver(GrblNetworkDriver, {"host": "test"})
         await wait_for_tasks_to_finish(task_mgr)
 
@@ -1199,8 +1182,6 @@ class TestMachine:
         self, machine: Machine, context_initializer, task_mgr
     ):
         """Test reports_granular_progress returns True for SmoothieDriver."""
-        from rayforge.machine.driver.smoothie import SmoothieDriver
-
         machine.set_driver(SmoothieDriver, {"host": "test", "port": 23})
         await wait_for_tasks_to_finish(task_mgr)
 
@@ -1213,11 +1194,6 @@ class TestMachine:
         Tests that legacy JOB_START and JOB_END hooks are migrated to a new
         custom dialect upon loading a machine.
         """
-        from rayforge.machine.models.dialect import (
-            _DIALECT_REGISTRY,
-            get_dialect,
-        )
-
         initial_dialect_count = len(_DIALECT_REGISTRY)
         start_code = ["G28 ; Home at start"]
         end_code = ["M2 ; Program End"]
@@ -1258,11 +1234,6 @@ class TestMachine:
         Tests that migration works correctly if only one legacy hook is
         present.
         """
-        from rayforge.machine.models.dialect import (
-            _DIALECT_REGISTRY,
-            get_dialect,
-        )
-
         base_dialect = get_dialect("grbl")
         initial_dialect_count = len(_DIALECT_REGISTRY)
         start_code = ["G21 G90"]
@@ -1296,8 +1267,6 @@ class TestMachine:
         """
         Tests that no migration occurs for a modern machine configuration.
         """
-        from rayforge.machine.models.dialect import _DIALECT_REGISTRY
-
         initial_dialect_count = len(_DIALECT_REGISTRY)
 
         modern_data = {

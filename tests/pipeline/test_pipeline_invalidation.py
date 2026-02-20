@@ -10,7 +10,12 @@ from rayforge.core.step import Step
 from rayforge.core.workpiece import WorkPiece
 from rayforge.core.matrix import Matrix
 from rayforge.pipeline.pipeline import Pipeline
-from rayforge.pipeline.artifact import ArtifactKey
+from rayforge.pipeline.artifact import (
+    ArtifactKey,
+    StepOpsArtifactHandle,
+    WorkPieceArtifactHandle,
+)
+from rayforge.pipeline.artifact.manager import ArtifactManager
 
 
 @pytest.fixture(autouse=True)
@@ -260,8 +265,6 @@ class TestWorkpieceHandleReuse:
     @pytest.fixture
     def artifact_manager(self, mock_artifact_store):
         """Creates an ArtifactManager for testing."""
-        from rayforge.pipeline.artifact.manager import ArtifactManager
-
         return ArtifactManager(mock_artifact_store)
 
     def test_declare_generation_copies_step_handle_from_previous_gen(
@@ -271,8 +274,6 @@ class TestWorkpieceHandleReuse:
         Test that declare_generation copies step handles from previous
         generations to avoid unnecessary regeneration.
         """
-        from rayforge.pipeline.artifact import StepOpsArtifactHandle
-
         step_uid = str(uuid.uuid4())
         step_key = ArtifactKey.for_step(step_uid)
 
@@ -298,8 +299,6 @@ class TestWorkpieceHandleReuse:
         should be reused, but declare_generation doesn't copy workpiece
         handles like it does for step handles.
         """
-        from rayforge.pipeline.artifact import WorkPieceArtifactHandle
-
         wp_uid = str(uuid.uuid4())
         step_uid = str(uuid.uuid4())
         wp_key = ArtifactKey.for_workpiece(wp_uid, step_uid)

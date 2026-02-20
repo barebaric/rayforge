@@ -9,6 +9,7 @@ from rayforge.image.dxf.exporter import (
 )
 from rayforge.image.dxf.importer import DxfImporter
 from rayforge.core.vectorization_spec import PassthroughSpec
+from rayforge.core.workpiece import WorkPiece
 
 
 @pytest.fixture
@@ -173,8 +174,6 @@ class TestGeometryDxfExporterRoundTrip:
         assert import_result.payload is not None
         assert len(import_result.payload.items) == 1
 
-        from rayforge.core.workpiece import WorkPiece
-
         imported_wp = import_result.payload.items[0]
         assert isinstance(imported_wp, WorkPiece)
 
@@ -206,7 +205,6 @@ class TestGeometryDxfExporterRoundTrip:
 
         assert import_result is not None
         assert import_result.payload is not None
-        from rayforge.core.workpiece import WorkPiece
 
         imported_wp = import_result.payload.items[0]
         assert isinstance(imported_wp, WorkPiece)
@@ -239,7 +237,6 @@ class TestGeometryDxfExporterRoundTrip:
 
         assert import_result is not None
         assert import_result.payload is not None
-        from rayforge.core.workpiece import WorkPiece
 
         imported_wp = import_result.payload.items[0]
         assert isinstance(imported_wp, WorkPiece)
@@ -275,7 +272,6 @@ class TestGeometryDxfExporterRoundTrip:
 
         assert import_result is not None
         assert import_result.payload is not None
-        from rayforge.core.workpiece import WorkPiece
 
         imported_wp = import_result.payload.items[0]
         assert isinstance(imported_wp, WorkPiece)
@@ -311,7 +307,6 @@ class TestGeometryDxfExporterRoundTrip:
 
         assert import_result is not None
         assert import_result.payload is not None
-        from rayforge.core.workpiece import WorkPiece
 
         imported_wp = import_result.payload.items[0]
         assert isinstance(imported_wp, WorkPiece)
@@ -352,7 +347,6 @@ class TestGeometryDxfExporterRoundTrip:
 
         assert import_result is not None
         assert import_result.payload is not None
-        from rayforge.core.workpiece import WorkPiece
 
         imported_wp = import_result.payload.items[0]
         assert isinstance(imported_wp, WorkPiece)
@@ -400,8 +394,6 @@ class TestMultiGeometryDxfExporter:
         geo2.move_to(0, 10)
         geo2.line_to(10, 10)
 
-        from rayforge.image.dxf.exporter import MultiGeometryDxfExporter
-
         exporter = MultiGeometryDxfExporter([geo1, geo2])
         dxf_bytes = exporter.export()
 
@@ -414,8 +406,6 @@ class TestMultiGeometryDxfExporter:
 
     def test_export_empty_list_raises(self):
         """Test that exporting empty geometry list raises."""
-        from rayforge.image.dxf.exporter import MultiGeometryDxfExporter
-
         exporter = MultiGeometryDxfExporter([])
         with pytest.raises(ValueError, match="empty"):
             exporter.export()

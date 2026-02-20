@@ -1,7 +1,13 @@
+import json
 import pytest
 from pathlib import Path
 from rayforge.core.geo import Geometry
-from rayforge.image.svg.exporter import GeometrySvgExporter
+from rayforge.core.sketcher import Sketch
+from rayforge.core.workpiece import WorkPiece
+from rayforge.image.svg.exporter import (
+    GeometrySvgExporter,
+    MultiGeometrySvgExporter,
+)
 from rayforge.image.svg.importer import SvgImporter
 from rayforge.core.vectorization_spec import PassthroughSpec
 
@@ -110,9 +116,6 @@ class TestGeometrySvgExporterExport:
 
 class TestGeometrySvgExporterRealWorld:
     def test_export_mouse_sketch(self):
-        import json
-        from rayforge.core.sketcher import Sketch
-
         mouse_file = Path(__file__).parent.parent / "sketch/mouse.rfs"
         data = json.loads(mouse_file.read_text())
 
@@ -193,8 +196,6 @@ class TestGeometrySvgExporterRoundTrip:
         assert import_result.payload is not None
         assert len(import_result.payload.items) == 1
 
-        from rayforge.core.workpiece import WorkPiece
-
         imported_wp = import_result.payload.items[0]
         assert isinstance(imported_wp, WorkPiece)
 
@@ -226,7 +227,6 @@ class TestGeometrySvgExporterRoundTrip:
 
         assert import_result is not None
         assert import_result.payload is not None
-        from rayforge.core.workpiece import WorkPiece
 
         imported_wp = import_result.payload.items[0]
         assert isinstance(imported_wp, WorkPiece)
@@ -259,7 +259,6 @@ class TestGeometrySvgExporterRoundTrip:
 
         assert import_result is not None
         assert import_result.payload is not None
-        from rayforge.core.workpiece import WorkPiece
 
         imported_wp = import_result.payload.items[0]
         assert isinstance(imported_wp, WorkPiece)
@@ -291,7 +290,6 @@ class TestGeometrySvgExporterRoundTrip:
 
         assert import_result is not None
         assert import_result.payload is not None
-        from rayforge.core.workpiece import WorkPiece
 
         imported_wp = import_result.payload.items[0]
         assert isinstance(imported_wp, WorkPiece)
@@ -324,7 +322,6 @@ class TestGeometrySvgExporterRoundTrip:
 
         assert import_result is not None
         assert import_result.payload is not None
-        from rayforge.core.workpiece import WorkPiece
 
         imported_wp = import_result.payload.items[0]
         assert isinstance(imported_wp, WorkPiece)
@@ -360,7 +357,6 @@ class TestGeometrySvgExporterRoundTrip:
 
         assert import_result is not None
         assert import_result.payload is not None
-        from rayforge.core.workpiece import WorkPiece
 
         imported_wp = import_result.payload.items[0]
         assert isinstance(imported_wp, WorkPiece)
@@ -401,7 +397,6 @@ class TestGeometrySvgExporterRoundTrip:
 
         assert import_result is not None
         assert import_result.payload is not None
-        from rayforge.core.workpiece import WorkPiece
 
         imported_wp = import_result.payload.items[0]
         assert isinstance(imported_wp, WorkPiece)
@@ -428,8 +423,6 @@ class TestMultiGeometrySvgExporter:
         geo2.move_to(100, 100)
         geo2.line_to(110, 110)
 
-        from rayforge.image.svg.exporter import MultiGeometrySvgExporter
-
         exporter = MultiGeometrySvgExporter([geo1, geo2])
         svg_bytes = exporter.export()
         svg_str = svg_bytes.decode("utf-8")
@@ -446,8 +439,6 @@ class TestMultiGeometrySvgExporter:
         geo2.move_to(100, 50)
         geo2.line_to(150, 100)
 
-        from rayforge.image.svg.exporter import MultiGeometrySvgExporter
-
         exporter = MultiGeometrySvgExporter([geo1, geo2])
         svg_bytes = exporter.export()
         svg_str = svg_bytes.decode("utf-8")
@@ -457,8 +448,6 @@ class TestMultiGeometrySvgExporter:
 
     def test_export_empty_list_raises(self):
         """Test that exporting empty geometry list raises."""
-        from rayforge.image.svg.exporter import MultiGeometrySvgExporter
-
         exporter = MultiGeometrySvgExporter([])
         with pytest.raises(ValueError, match="empty"):
             exporter.export()

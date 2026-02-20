@@ -3,9 +3,12 @@ from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 from rayforge.core.doc import Doc
+from rayforge.core.group import Group
 from rayforge.core.layer import Layer
 from rayforge.core.matrix import Matrix
+from rayforge.core.sketcher.sketch import Sketch
 from rayforge.core.source_asset import SourceAsset
+from rayforge.core.stock_asset import StockAsset
 from rayforge.core.vectorization_spec import TraceSpec
 from rayforge.core.workpiece import WorkPiece
 from rayforge.doceditor.editor import DocEditor
@@ -404,8 +407,6 @@ class TestCommitItemsToDocument:
 
     def test_commit_with_sketches(self, file_cmd, sample_workpiece):
         """Test committing items with sketches."""
-        from rayforge.core.sketcher.sketch import Sketch
-
         source = SourceAsset(
             source_file=Path("test.svg"),
             original_data=b"<svg></svg>",
@@ -970,8 +971,6 @@ class TestProjectRoundTrip:
         assert result is True
 
         # Verify groups loaded
-        from rayforge.core.group import Group
-
         groups = [
             c
             for c in file_cmd._editor.doc.get_descendants()
@@ -1013,8 +1012,6 @@ class TestProjectRoundTrip:
         assert stock_items[1].visible is False
 
         # Verify stock assets loaded
-        from rayforge.core.stock_asset import StockAsset
-
         stock_assets = [
             a
             for a in file_cmd._editor.doc.get_all_assets()
@@ -1048,8 +1045,6 @@ class TestProjectRoundTrip:
         assert result is True
 
         # Verify sketches loaded
-        from rayforge.core.sketcher.sketch import Sketch
-
         sketches = [
             a
             for a in file_cmd._editor.doc.get_all_assets()

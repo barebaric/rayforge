@@ -1,5 +1,6 @@
 import pytest
 import cairo
+from unittest.mock import MagicMock
 from rayforge.core.ops import (
     OpsSectionStartCommand,
     OpsSectionEndCommand,
@@ -152,7 +153,6 @@ def test_deserialization_with_legacy_dither_rasterizer_format():
     producer = OpsProducer.from_dict(data)
     assert isinstance(producer, Rasterizer)
     assert producer.depth_mode == DepthMode.DITHER
-    from rayforge.image.dither import DitherAlgorithm
 
     assert producer.dither_algorithm == DitherAlgorithm.BAYER4
     assert producer.invert is True
@@ -915,8 +915,6 @@ def test_prepare_computes_global_auto_levels():
     """
     Tests that prepare() computes global auto levels from a preview.
     """
-    from unittest.mock import MagicMock
-
     producer = Rasterizer(auto_levels=True)
 
     assert producer._computed_auto_levels is None

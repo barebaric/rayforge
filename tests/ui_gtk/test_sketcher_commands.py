@@ -20,6 +20,7 @@ gi.require_version("Adw", "1")
 
 from rayforge.core.sketcher import Sketch
 from rayforge.core.sketcher.commands import ChamferCommand, FilletCommand
+from rayforge.core.sketcher.entities import Line
 from rayforge.ui_gtk.sketcher.sketchelement import SketchElement
 
 
@@ -117,7 +118,6 @@ def test_add_chamfer_action_on_short_lines(
     element = element_with_corner
 
     line1 = sketch.registry.get_entity(line1_id)
-    from rayforge.core.sketcher.entities import Line
 
     assert isinstance(line1, Line)
     p1 = sketch.registry.get_point(line1.p1_idx)
@@ -199,7 +199,6 @@ def test_add_fillet_action_on_short_lines(
     element = element_with_corner
 
     line1 = sketch.registry.get_entity(line1_id)
-    from rayforge.core.sketcher.entities import Line
 
     assert isinstance(line1, Line)
     p1 = sketch.registry.get_point(line1.p1_idx)
