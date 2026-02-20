@@ -115,16 +115,24 @@ grep -Evi '^(PyOpenGL_accelerate|opencv[_-]python)' \
 
 if [ "$(uname -s)" = "Darwin" ]; then
     awk '
-        BEGIN { done = 0 }
+        BEGIN { done_numpy = 0; done_scipy = 0 }
         /^numpy==/ {
             print "numpy==1.26.4"
-            done = 1
+            done_numpy = 1
+            next
+        }
+        /^scipy==/ {
+            print "scipy==1.13.1"
+            done_scipy = 1
             next
         }
         { print }
         END {
-            if (done == 0) {
+            if (done_numpy == 0) {
                 print "numpy==1.26.4"
+            }
+            if (done_scipy == 0) {
+                print "scipy==1.13.1"
             }
         }
     ' "$TMP_REQUIREMENTS" > "$TMP_REQUIREMENTS.patched"
