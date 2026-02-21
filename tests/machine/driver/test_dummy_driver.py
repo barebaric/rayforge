@@ -13,15 +13,15 @@ class TestDummyDriverCallback:
     """Test suite for the dummy driver's on_command_done callback."""
 
     @pytest.fixture
-    def driver(self, context_initializer, machine):
+    def driver(self, lite_context, machine):
         """Provides a fresh NoDeviceDriver instance for each test."""
-        return NoDeviceDriver(context_initializer, machine)
+        return NoDeviceDriver(lite_context, machine)
 
     @pytest.fixture
-    def machine(self, context_initializer):
+    def machine(self, lite_context):
         """Provides a default Machine instance."""
-        machine = Machine(context_initializer)
-        machine.dialect_uid = "grbl"  # Set a known dialect for predictability
+        machine = Machine(lite_context)
+        machine.dialect_uid = "grbl"
         return machine
 
     @pytest.fixture
@@ -205,9 +205,7 @@ class TestDummyDriverCallback:
         assert callback_mock.call_count == len(ops)
 
     @pytest.mark.asyncio
-    async def test_set_power_with_head(
-        self, driver, machine, context_initializer
-    ):
+    async def test_set_power_with_head(self, driver):
         """Test that set_power method accepts head parameter."""
         from rayforge.machine.models.laser import Laser
 

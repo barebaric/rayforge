@@ -15,31 +15,31 @@ from rayforge.machine.models.controller import MachineController
 from rayforge.machine.models.machine import Machine
 
 
-@pytest.mark.usefixtures("context_initializer")
+@pytest.mark.usefixtures("lite_context")
 class TestMachineController:
     """Test suite for the MachineController class."""
 
-    def test_controller_initialization(self, context_initializer):
+    def test_controller_initialization(self, lite_context):
         """Test that MachineController can be initialized."""
-        machine = Machine(context_initializer)
-        context_initializer.machine_mgr.add_machine(machine)
-        controller = MachineController(machine, context_initializer)
+        machine = Machine(lite_context)
+        lite_context.machine_mgr.add_machine(machine)
+        controller = MachineController(machine, lite_context)
         assert controller is not None
         assert controller.machine == machine
-        assert controller.context == context_initializer
+        assert controller.context == lite_context
         assert controller.driver is not None
 
-    def test_controller_driver_property(self, context_initializer):
+    def test_controller_driver_property(self, lite_context):
         """Test that the controller has a driver property."""
-        machine = Machine(context_initializer)
-        context_initializer.machine_mgr.add_machine(machine)
+        machine = Machine(lite_context)
+        lite_context.machine_mgr.add_machine(machine)
         controller = machine.controller
         assert controller.driver is not None
 
-    def test_controller_signals_exist(self, context_initializer):
+    def test_controller_signals_exist(self, lite_context):
         """Test that controller has all required signals."""
-        machine = Machine(context_initializer)
-        context_initializer.machine_mgr.add_machine(machine)
+        machine = Machine(lite_context)
+        lite_context.machine_mgr.add_machine(machine)
         controller = machine.controller
         assert hasattr(controller, "connection_status_changed")
         assert hasattr(controller, "state_changed")
