@@ -102,30 +102,26 @@ def test_invalidate_workpiece_cascades_correctly(manager):
     manager._store.release.assert_any_call(wp_h)
 
 
-def test_invalidate_step_cascades_correctly(manager):
-    """Tests that invalidating a step cascades to all dependent."""
+def test_invalidate_step_clears_step_artifacts(manager):
+    """Tests that invalidating a step clears step artifacts only."""
     wp1_h = create_mock_handle(WorkPieceArtifactHandle, "wp1")
     wp2_h = create_mock_handle(WorkPieceArtifactHandle, "wp2")
     render_h = create_mock_handle(StepRenderArtifactHandle, "step1_render")
     ops_h = create_mock_handle(StepOpsArtifactHandle, "step1_ops")
 
-    manager.cache_handle(ArtifactKey.for_workpiece(STEP1_UID), wp1_h, 0)
-    manager.cache_handle(ArtifactKey.for_workpiece(STEP1_UID), wp2_h, 1)
+    wp_key = ArtifactKey.for_workpiece(WP1_UID, STEP1_UID)
+    manager.cache_handle(wp_key, wp1_h, 0)
+    manager.cache_handle(wp_key, wp2_h, 1)
     manager.put_step_render_handle(STEP1_UID, render_h)
     manager.put_step_ops_handle(ArtifactKey.for_step(STEP1_UID), ops_h, 0)
 
     manager.invalidate_for_step(ArtifactKey.for_step(STEP1_UID))
 
-    assert (
-        manager.get_workpiece_handle(ArtifactKey.for_workpiece(STEP1_UID), 0)
-        is None
-    )
+    assert manager.get_workpiece_handle(wp_key, 0) is wp1_h
     assert (
         manager.get_step_ops_handle(ArtifactKey.for_step(STEP1_UID), 0) is None
     )
     assert manager.get_step_render_handle(STEP1_UID) is None
-    manager._store.release.assert_any_call(wp1_h)
-    manager._store.release.assert_any_call(wp2_h)
     manager._store.release.assert_any_call(render_h)
     manager._store.release.assert_any_call(ops_h)
 

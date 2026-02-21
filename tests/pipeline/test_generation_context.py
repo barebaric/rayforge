@@ -198,6 +198,7 @@ def _create_sample_artifact() -> WorkPieceArtifact:
         source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
         source_dimensions=(100, 100),
         generation_size=(50, 50),
+        generation_id=1,
     )
 
 

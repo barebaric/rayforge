@@ -17,6 +17,7 @@ class StepOpsArtifactHandle(BaseArtifactHandle):
         shm_name: str,
         handle_class_name: str,
         artifact_type_name: str,
+        generation_id: int,
         array_metadata: Optional[Dict[str, Any]] = None,
         **_kwargs,
     ):
@@ -24,6 +25,7 @@ class StepOpsArtifactHandle(BaseArtifactHandle):
             shm_name=shm_name,
             handle_class_name=handle_class_name,
             artifact_type_name=artifact_type_name,
+            generation_id=generation_id,
             array_metadata=array_metadata,
         )
         self.time_estimate = time_estimate
@@ -38,16 +40,19 @@ class StepOpsArtifact(BaseArtifact):
     def __init__(
         self,
         ops: "Ops",
+        generation_id: int,
         time_estimate: Optional[float] = None,
     ):
         super().__init__()
         self.ops = ops
+        self.generation_id = generation_id
         self.time_estimate = time_estimate
 
     def to_dict(self) -> Dict[str, Any]:
         """Converts the artifact to a dictionary for serialization."""
         return {
             "ops": self.ops.to_dict(),
+            "generation_id": self.generation_id,
             "time_estimate": self.time_estimate,
         }
 
@@ -59,6 +64,7 @@ class StepOpsArtifact(BaseArtifact):
         ops = Ops.from_dict(data["ops"])
         return cls(
             ops=ops,
+            generation_id=data["generation_id"],
             time_estimate=data.get("time_estimate"),
         )
 
@@ -72,6 +78,7 @@ class StepOpsArtifact(BaseArtifact):
             shm_name=shm_name,
             handle_class_name=StepOpsArtifactHandle.__name__,
             artifact_type_name=self.__class__.__name__,
+            generation_id=self.generation_id,
             time_estimate=self.time_estimate,
             array_metadata=array_metadata,
         )
@@ -102,5 +109,6 @@ class StepOpsArtifact(BaseArtifact):
         ops = Ops.from_numpy_arrays(copied_arrays)
         return cls(
             ops=ops,
+            generation_id=handle.generation_id,
             time_estimate=handle.time_estimate,
         )

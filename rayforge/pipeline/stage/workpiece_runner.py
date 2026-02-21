@@ -115,6 +115,7 @@ def make_workpiece_artifact_in_subprocess(
         settings=settings,
         pixels_per_mm=pixels_per_mm,
         generation_size=generation_size,
+        generation_id=generation_id,
         on_chunk=on_chunk_callback,
         context=context,
     )

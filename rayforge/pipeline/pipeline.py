@@ -456,6 +456,14 @@ class Pipeline:
             )
             self._step_stage.release_retained_handles(origin.uid)
             step_key = ArtifactKey.for_step(origin.uid)
+
+            # Cancel and invalidate all workpiece tasks for this step
+            if self.doc:
+                for wp in self.doc.all_workpieces:
+                    wp_step_key = ArtifactKey.for_workpiece(wp.uid, origin.uid)
+                    self._invalidate_node(wp_step_key)
+
+            self._artifact_manager.remove_for_step(step_key)
             self._invalidate_node(step_key)
 
         self._schedule_reconciliation()
@@ -670,17 +678,20 @@ class Pipeline:
         sender,
         *,
         key,
-        chunk_handle_dict: dict,
+        chunk_handle: BaseArtifactHandle,
         generation_id: int,
         step_uid: str,
     ) -> None:
         """
         Relays visual chunk availability from the scheduler.
+
+        The chunk_handle is passed directly to listeners. Listeners that
+        want to keep the handle must retain it.
         """
         self.visual_chunk_available.send(
             self,
             key=key,
-            chunk_handle_dict=chunk_handle_dict,
+            chunk_handle=chunk_handle,
             generation_id=generation_id,
             step_uid=step_uid,
         )
@@ -1047,11 +1058,17 @@ class Pipeline:
             )
             return
 
+        job_key = ArtifactKey.for_job()
+        self._artifact_manager.declare_generation(
+            {job_key}, self._data_generation_id
+        )
+
         self._machine.hydrate()
 
         self._scheduler.generate_job(
             step_uids=step_uids,
             on_done=when_done,
+            job_key=job_key,
         )
 
     async def generate_job_artifact_async(

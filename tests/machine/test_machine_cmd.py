@@ -75,7 +75,9 @@ def simple_ops():
 @pytest.fixture
 def job_artifact(simple_ops):
     """Creates a JobArtifact containing simple_ops."""
-    return JobArtifact(ops=simple_ops, distance=simple_ops.distance())
+    return JobArtifact(
+        ops=simple_ops, distance=simple_ops.distance(), generation_id=1
+    )
 
 
 async def wait_for_tasks_to_finish(task_mgr: TaskManager):

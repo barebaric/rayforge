@@ -51,7 +51,7 @@ from multiprocessing import shared_memory
 import numpy as np
 from ...shared.util.debug import safe_caller_stack
 from .base import BaseArtifact
-from .handle import BaseArtifactHandle
+from .handle import BaseArtifactHandle, create_handle_from_dict
 
 if TYPE_CHECKING:
     from ..context import GenerationContext
@@ -158,14 +158,15 @@ class ArtifactStore:
         Yields:
             The adopted BaseArtifactHandle.
         """
-        from .handle import create_handle_from_dict
-
         handle = create_handle_from_dict(handle_dict)
         self.adopt(handle)
         committed = False
         try:
             yield handle
             committed = True
+            logger.debug(
+                f"DIAGNOSTIC: adoption committed for {handle.shm_name}"
+            )
         finally:
             if not committed:
                 logger.debug(

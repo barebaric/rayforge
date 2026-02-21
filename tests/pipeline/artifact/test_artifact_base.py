@@ -13,6 +13,7 @@ def test_artifact_type_property():
         is_scalable=True,
         source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
         generation_size=(1, 1),
+        generation_id=1,
     )
     assert isinstance(workpiece_artifact, WorkPieceArtifact)
     assert workpiece_artifact.artifact_type == "WorkPieceArtifact"
@@ -21,6 +22,7 @@ def test_artifact_type_property():
         ops=Ops(),
         distance=0.0,
         machine_code_bytes=np.array([72, 101, 108, 108, 111]),
+        generation_id=1,
     )
     assert isinstance(job_artifact, JobArtifact)
     assert job_artifact.artifact_type == "JobArtifact"
@@ -36,6 +38,7 @@ def test_vector_serialization_round_trip():
         source_coordinate_system=CoordinateSystem.PIXEL_SPACE,
         source_dimensions=(100, 200),
         generation_size=(50, 100),
+        generation_id=1,
     )
 
     artifact_dict = artifact.to_dict()
@@ -58,6 +61,7 @@ def test_vertex_serialization_round_trip():
         is_scalable=True,
         source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
         generation_size=(1, 1),
+        generation_id=1,
     )
 
     artifact_dict = artifact.to_dict()
@@ -79,6 +83,7 @@ def test_hybrid_serialization_round_trip():
         is_scalable=False,
         source_coordinate_system=CoordinateSystem.PIXEL_SPACE,
         generation_size=(1, 1),
+        generation_id=1,
     )
 
     artifact_dict = artifact.to_dict()
@@ -102,6 +107,7 @@ def test_final_job_serialization_round_trip():
         distance=42.5,
         machine_code_bytes=machine_code_bytes,
         op_map_bytes=op_map_bytes,
+        generation_id=1,
     )
 
     reconstructed = JobArtifact.from_dict(artifact.to_dict())

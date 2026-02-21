@@ -6,7 +6,7 @@ from blinker import Signal
 from ...shared.tasker.task import Task
 from ..artifact import JobArtifactHandle
 from ..artifact.key import ArtifactKey
-from ..artifact.manager import make_composite_key
+from ..artifact.manager import StaleGenerationError
 from ..dag.node import NodeState
 from .base import PipelineStage
 
@@ -76,18 +76,14 @@ class JobPipelineStage(PipelineStage):
             id=job_key_dict["id"], group=job_key_dict["group"]
         )
 
-        composite_key = make_composite_key(received_job_key, generation_id)
-        entry = self._artifact_manager.get_ledger_entry(composite_key)
-        if entry is not None and entry.generation_id != generation_id:
-            logger.debug(
-                f"Stale job event with generation_id {generation_id}, "
-                f"current is {entry.generation_id}. Ignoring."
-            )
+        handle_dict = data.get("handle_dict")
+        if not handle_dict:
             return
 
         try:
+            # safe_adoption checks staleness automatically
             with self._artifact_manager.safe_adoption(
-                received_job_key, data["handle_dict"]
+                received_job_key, handle_dict
             ) as handle:
                 if not isinstance(handle, JobArtifactHandle):
                     raise TypeError("Expected a JobArtifactHandle")
@@ -96,6 +92,10 @@ class JobPipelineStage(PipelineStage):
                 )
                 self._emit_node_state(received_job_key, NodeState.VALID)
                 logger.debug("Adopted job artifact")
+        except StaleGenerationError as e:
+            logger.debug(
+                f"Discarding stale job artifact for {received_job_key}: {e}"
+            )
         except Exception as e:
             logger.error(
                 f"Error handling job artifact event: {e}", exc_info=True

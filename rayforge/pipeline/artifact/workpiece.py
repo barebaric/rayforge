@@ -24,6 +24,7 @@ class WorkPieceArtifactHandle(BaseArtifactHandle):
         shm_name: str,
         handle_class_name: str,
         artifact_type_name: str,
+        generation_id: int,
         # Optional arguments
         source_dimensions: Optional[Tuple[float, float]] = None,
         array_metadata: Optional[Dict[str, Any]] = None,
@@ -33,6 +34,7 @@ class WorkPieceArtifactHandle(BaseArtifactHandle):
             shm_name=shm_name,
             handle_class_name=handle_class_name,
             artifact_type_name=artifact_type_name,
+            generation_id=generation_id,
             array_metadata=array_metadata,
         )
         self.is_scalable = is_scalable
@@ -75,6 +77,7 @@ class WorkPieceArtifact(BaseArtifact):
         is_scalable: bool,
         source_coordinate_system: CoordinateSystem,
         generation_size: Tuple[float, float],
+        generation_id: int,
         source_dimensions: Optional[Tuple[float, float]] = None,
     ):
         super().__init__()
@@ -83,6 +86,7 @@ class WorkPieceArtifact(BaseArtifact):
         self.source_coordinate_system = source_coordinate_system
         self.source_dimensions = source_dimensions
         self.generation_size = generation_size
+        self.generation_id = generation_id
 
     def to_dict(self) -> Dict[str, Any]:
         """Converts the artifact to a dictionary for serialization."""
@@ -92,6 +96,7 @@ class WorkPieceArtifact(BaseArtifact):
             "source_coordinate_system": self.source_coordinate_system.name,
             "source_dimensions": self.source_dimensions,
             "generation_size": self.generation_size,
+            "generation_id": self.generation_id,
         }
         return result
 
@@ -114,6 +119,7 @@ class WorkPieceArtifact(BaseArtifact):
             ],
             source_dimensions=data.get("source_dimensions"),
             generation_size=tuple(data["generation_size"]),
+            generation_id=data["generation_id"],
         )
         cls.logger.debug(
             f"WorkPieceArtifact.from_dict: artifact.source_dimensions="
@@ -136,6 +142,7 @@ class WorkPieceArtifact(BaseArtifact):
             shm_name=shm_name,
             handle_class_name=WorkPieceArtifactHandle.__name__,
             artifact_type_name=self.__class__.__name__,
+            generation_id=self.generation_id,
             is_scalable=self.is_scalable,
             source_coordinate_system_name=self.source_coordinate_system.name,
             source_dimensions=self.source_dimensions,
@@ -177,4 +184,5 @@ class WorkPieceArtifact(BaseArtifact):
             ],
             source_dimensions=handle.source_dimensions,
             generation_size=handle.generation_size,
+            generation_id=handle.generation_id,
         )

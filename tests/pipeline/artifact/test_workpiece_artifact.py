@@ -10,6 +10,7 @@ def test_artifact_type_property():
         is_scalable=True,
         source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
         generation_size=(1, 1),
+        generation_id=1,
     )
     assert artifact.artifact_type == "WorkPieceArtifact"
 
@@ -24,6 +25,7 @@ def test_vector_serialization_round_trip():
         source_coordinate_system=CoordinateSystem.PIXEL_SPACE,
         source_dimensions=(100, 200),
         generation_size=(50, 100),
+        generation_id=1,
     )
 
     artifact_dict = artifact.to_dict()
@@ -46,6 +48,7 @@ def test_vertex_serialization_round_trip():
         is_scalable=True,
         source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
         generation_size=(1, 1),
+        generation_id=1,
     )
 
     artifact_dict = artifact.to_dict()
@@ -67,6 +70,7 @@ def test_hybrid_serialization_round_trip():
         is_scalable=False,
         source_coordinate_system=CoordinateSystem.PIXEL_SPACE,
         generation_size=(1, 1),
+        generation_id=1,
     )
 
     artifact_dict = artifact.to_dict()

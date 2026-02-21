@@ -142,6 +142,7 @@ class Rasterizer(OpsProducer):
         surface,
         pixels_per_mm,
         *,
+        generation_id: int,
         workpiece: "Optional[WorkPiece]" = None,
         settings: Optional[Dict[str, Any]] = None,
         y_offset_mm: float = 0.0,
@@ -252,6 +253,7 @@ class Rasterizer(OpsProducer):
             source_coordinate_system=CoordinateSystem.PIXEL_SPACE,
             source_dimensions=(width_px, height_px),
             generation_size=workpiece.size,
+            generation_id=generation_id,
         )
 
     def _run_power_modulation(
