@@ -121,18 +121,18 @@ class TestMachineWorkMargins:
         machine = Machine(context_initializer)
         assert machine.work_margins == (0, 0, 0, 0)
 
-    def test_work_surface_computed_from_margins(self, context_initializer):
-        """Test work_surface is computed from axis_extents and margins."""
+    def test_work_area_computed_from_margins(self, context_initializer):
+        """Test work_area is computed from axis_extents and margins."""
         machine = Machine(context_initializer)
         machine.set_axis_extents(500, 600)
         machine.set_work_margins(50, 100, 75, 125)
-        assert machine.work_surface == (50, 100, 375, 375)
+        assert machine.work_area == (50, 100, 375, 375)
 
-    def test_work_surface_default_no_margins(self, context_initializer):
-        """Test default work_surface equals full axis_extents."""
+    def test_work_area_default_no_margins(self, context_initializer):
+        """Test default work_area equals full axis_extents."""
         machine = Machine(context_initializer)
         machine.set_axis_extents(300, 400)
-        assert machine.work_surface == (0, 0, 300, 400)
+        assert machine.work_area == (0, 0, 300, 400)
 
     def test_offsets_computed_from_margins(self, context_initializer):
         """Test that offsets is computed from left/top margins."""
@@ -165,12 +165,12 @@ class TestMachineWorkMargins:
         machine.set_axis_extents(300, 400)
         assert machine.work_margins == (0, 0, 0, 0)
 
-    def test_work_surface_size_clamped_to_positive(self, context_initializer):
-        """Test that work_surface size is always positive."""
+    def test_work_area_size_clamped_to_positive(self, context_initializer):
+        """Test that work_area size is always positive."""
         machine = Machine(context_initializer)
         machine.set_axis_extents(100, 100)
         machine.set_work_margins(99, 99, 99, 99)
-        _, _, w, h = machine.work_surface
+        _, _, w, h = machine.work_area
         assert w >= 1
         assert h >= 1
 
@@ -258,53 +258,45 @@ class TestMachineVisualExtentFrame:
 
 
 @pytest.mark.usefixtures("context_initializer")
-class TestMachineHasCustomWorkSurface:
-    """Test suite for has_custom_work_surface method."""
+class TestMachineHasCustomWorkArea:
+    """Test suite for has_custom_work_area method."""
 
-    def test_no_custom_work_surface_default(self, context_initializer):
+    def test_no_custom_work_area_default(self, context_initializer):
         """Test returns False when all margins are zero."""
         machine = Machine(context_initializer)
-        assert machine.has_custom_work_surface() is False
+        assert machine.has_custom_work_area() is False
 
-    def test_has_custom_work_surface_with_left_margin(
-        self, context_initializer
-    ):
+    def test_has_custom_work_area_with_left_margin(self, context_initializer):
         """Test returns True with non-zero left margin."""
         machine = Machine(context_initializer)
         machine.set_work_margins(10, 0, 0, 0)
-        assert machine.has_custom_work_surface() is True
+        assert machine.has_custom_work_area() is True
 
-    def test_has_custom_work_surface_with_top_margin(
-        self, context_initializer
-    ):
+    def test_has_custom_work_area_with_top_margin(self, context_initializer):
         """Test returns True with non-zero top margin."""
         machine = Machine(context_initializer)
         machine.set_work_margins(0, 10, 0, 0)
-        assert machine.has_custom_work_surface() is True
+        assert machine.has_custom_work_area() is True
 
-    def test_has_custom_work_surface_with_right_margin(
-        self, context_initializer
-    ):
+    def test_has_custom_work_area_with_right_margin(self, context_initializer):
         """Test returns True with non-zero right margin."""
         machine = Machine(context_initializer)
         machine.set_work_margins(0, 0, 10, 0)
-        assert machine.has_custom_work_surface() is True
+        assert machine.has_custom_work_area() is True
 
-    def test_has_custom_work_surface_with_bottom_margin(
+    def test_has_custom_work_area_with_bottom_margin(
         self, context_initializer
     ):
         """Test returns True with non-zero bottom margin."""
         machine = Machine(context_initializer)
         machine.set_work_margins(0, 0, 0, 10)
-        assert machine.has_custom_work_surface() is True
+        assert machine.has_custom_work_area() is True
 
-    def test_has_custom_work_surface_with_all_margins(
-        self, context_initializer
-    ):
+    def test_has_custom_work_area_with_all_margins(self, context_initializer):
         """Test returns True with all non-zero margins."""
         machine = Machine(context_initializer)
         machine.set_work_margins(10, 20, 30, 40)
-        assert machine.has_custom_work_surface() is True
+        assert machine.has_custom_work_area() is True
 
 
 @pytest.mark.usefixtures("context_initializer")
@@ -434,7 +426,7 @@ class TestMachineSerialization:
         machine = Machine.from_dict(data)
         assert machine.axis_extents == (400, 500)
         assert machine.work_margins == (100, 0, 0, 150)
-        assert machine.work_surface == (100, 0, 300, 350)
+        assert machine.work_area == (100, 0, 300, 350)
 
     def test_from_dict_dimensions_falls_back_to_axis_extents(
         self, context_initializer

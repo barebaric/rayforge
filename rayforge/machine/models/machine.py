@@ -370,7 +370,7 @@ class Machine:
     @property
     def work_margins(self) -> Tuple[int, int, int, int]:
         """
-        The margins around the work surface (left, top, right, bottom).
+        The margins around the work area (left, top, right, bottom).
         These are positive distances from the axis extents edges.
         """
         return self._work_margins
@@ -384,7 +384,7 @@ class Machine:
         self.changed.send(self)
 
     @property
-    def work_surface(self) -> Tuple[int, int, int, int]:
+    def work_area(self) -> Tuple[int, int, int, int]:
         """
         The usable work area within the axis extents (x, y, w, h).
         Computed from axis_extents and work_margins.
@@ -414,7 +414,7 @@ class Machine:
     def soft_limits(self) -> Optional[Tuple[int, int, int, int]]:
         """
         Configurable safety bounds for jogging (x_min, y_min, x_max, y_max).
-        None means use work_surface bounds.
+        None means use work_area bounds.
         """
         return self._soft_limits
 
@@ -743,21 +743,21 @@ class Machine:
     def get_visual_extent_frame(self) -> Tuple[float, float, float, float]:
         """
         Returns the extent frame rectangle (x, y, width, height) in visual
-        coordinates relative to the work surface origin.
+        coordinates relative to the work area origin.
 
-        The work surface is at (0, 0) in its own coordinate system.
+        The work area is at (0, 0) in its own coordinate system.
         The extent frame is positioned at (-margin_left, -margin_bottom)
-        relative to the work surface origin.
+        relative to the work area origin.
 
         Returns:
             Tuple of (x, y, width, height) where x,y is the frame position
-            relative to the work surface origin (0,0).
+            relative to the work area origin (0,0).
         """
         ml, mb = self._work_margins[0], self._work_margins[3]
         extent_w, extent_h = self._axis_extents
         return (float(-ml), float(-mb), float(extent_w), float(extent_h))
 
-    def has_custom_work_surface(self) -> bool:
+    def has_custom_work_area(self) -> bool:
         """
         Returns True if any margin is non-zero.
         """

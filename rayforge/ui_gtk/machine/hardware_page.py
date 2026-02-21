@@ -105,11 +105,11 @@ class HardwarePage(Adw.PreferencesPage):
         )
         axes_group.add(self.reverse_z_axis_row)
 
-        work_surface_group = Adw.PreferencesGroup(title=_("Work Surface"))
-        work_surface_group.set_description(
+        work_area_group = Adw.PreferencesGroup(title=_("Work Area"))
+        work_area_group.set_description(
             _("Margins define the unusable space around the axis extents.")
         )
-        self.add(work_surface_group)
+        self.add(work_area_group)
 
         ml, mt, mr, mb = self.machine.work_margins
 
@@ -123,7 +123,7 @@ class HardwarePage(Adw.PreferencesPage):
         )
         margin_left_adjustment.set_value(ml)
         self.margin_left_row.connect("changed", self.on_margins_changed)
-        work_surface_group.add(self.margin_left_row)
+        work_area_group.add(self.margin_left_row)
 
         margin_top_adjustment = Gtk.Adjustment(
             lower=0, upper=10000, step_increment=1, page_increment=10
@@ -135,7 +135,7 @@ class HardwarePage(Adw.PreferencesPage):
         )
         margin_top_adjustment.set_value(mt)
         self.margin_top_row.connect("changed", self.on_margins_changed)
-        work_surface_group.add(self.margin_top_row)
+        work_area_group.add(self.margin_top_row)
 
         margin_right_adjustment = Gtk.Adjustment(
             lower=0, upper=10000, step_increment=1, page_increment=10
@@ -147,7 +147,7 @@ class HardwarePage(Adw.PreferencesPage):
         )
         margin_right_adjustment.set_value(mr)
         self.margin_right_row.connect("changed", self.on_margins_changed)
-        work_surface_group.add(self.margin_right_row)
+        work_area_group.add(self.margin_right_row)
 
         margin_bottom_adjustment = Gtk.Adjustment(
             lower=0, upper=10000, step_increment=1, page_increment=10
@@ -159,7 +159,7 @@ class HardwarePage(Adw.PreferencesPage):
         )
         margin_bottom_adjustment.set_value(mb)
         self.margin_bottom_row.connect("changed", self.on_margins_changed)
-        work_surface_group.add(self.margin_bottom_row)
+        work_area_group.add(self.margin_bottom_row)
 
         soft_limits_group = Adw.PreferencesGroup(title=_("Soft Limits"))
         soft_limits_group.set_description(
