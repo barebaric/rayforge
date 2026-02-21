@@ -10,8 +10,8 @@ from typing import (
     Set,
     Tuple,
     Union,
-    TYPE_CHECKING,
 )
+from ..dag.node import NodeState
 from .base import BaseArtifact
 from .handle import BaseArtifactHandle, create_handle_from_dict
 from .job import JobArtifactHandle
@@ -21,9 +21,6 @@ from .step_ops import StepOpsArtifactHandle
 from .step_render import StepRenderArtifactHandle
 from .store import ArtifactStore
 from .workpiece import WorkPieceArtifactHandle
-
-if TYPE_CHECKING:
-    from ..dag.node import NodeState
 
 logger = logging.getLogger(__name__)
 
@@ -139,8 +136,6 @@ class ArtifactManager:
         Returns:
             The NodeState of the entry, or DIRTY if not found.
         """
-        from ..dag.node import NodeState
-
         composite_key = make_composite_key(key, generation_id)
         entry = self._ledger.get(composite_key)
         if entry is None:
@@ -419,8 +414,6 @@ class ArtifactManager:
         return self._step_render_handles.pop(step_uid, None)
 
     def invalidate_for_workpiece(self, key: ArtifactKey):
-        from ..dag.node import NodeState
-
         keys_to_invalidate = [
             ledger_key
             for ledger_key in self._ledger.keys()
@@ -495,8 +488,6 @@ class ArtifactManager:
         self.release_handle(step_render_handle)
 
     def invalidate_for_step(self, key: ArtifactKey):
-        from ..dag.node import NodeState
-
         step_keys_to_invalidate = [
             ledger_key
             for ledger_key in self._ledger.keys()
@@ -514,8 +505,6 @@ class ArtifactManager:
         self.release_handle(step_render_handle)
 
     def invalidate_for_job(self, key: ArtifactKey):
-        from ..dag.node import NodeState
-
         keys_to_invalidate = [
             ledger_key
             for ledger_key in self._ledger.keys()
@@ -647,6 +636,166 @@ class ArtifactManager:
         """
         return self._ledger.get(key)
 
+    @contextmanager
+    def report_completion(
+        self,
+        key: ArtifactKey,
+        generation_id: GenerationID,
+    ) -> Generator[Optional[BaseArtifactHandle], None, None]:
+        """
+        Marks generation as complete and yields the handle if available.
+
+        The handle is retained for the duration of the context, allowing
+        signal handlers to access it. Handlers that need to keep the handle
+        must retain it themselves before the context exits.
+
+        If the generation is stale, yields None and does nothing.
+
+        Args:
+            key: The artifact key.
+            generation_id: The generation ID of this generation.
+
+        Yields:
+            The cached handle if available and current, None otherwise.
+        """
+        composite_key = make_composite_key(key, generation_id)
+        entry = self._ledger.get(composite_key)
+
+        if entry is None:
+            logger.debug(f"[{key}] report_completion: entry missing, ignoring")
+            yield None
+            return
+
+        if entry.generation_id != generation_id:
+            logger.debug(
+                f"[{key}] report_completion: stale generation "
+                f"{generation_id}, current is {entry.generation_id}, "
+                "ignoring"
+            )
+            yield None
+            return
+
+        entry.state = NodeState.VALID
+        handle = entry.handle
+        logger.debug(f"[{key}] report_completion: marked VALID")
+
+        if handle is not None:
+            self._store.retain(handle)
+
+        try:
+            yield handle
+        finally:
+            if handle is not None:
+                self._store.release(handle)
+
+    @contextmanager
+    def report_failure(
+        self,
+        key: ArtifactKey,
+        generation_id: GenerationID,
+    ) -> Generator[Optional[BaseArtifactHandle], None, None]:
+        """
+        Reports that artifact generation failed.
+
+        Failed artifacts are marked ERROR and will not be retried until
+        the underlying data changes. Any cached handle is released and
+        yielded for the final signal, then cleaned up.
+
+        If the generation is stale, yields None and does nothing.
+
+        Args:
+            key: The artifact key.
+            generation_id: The generation ID of this generation.
+
+        Yields:
+            The cached handle if available (for final signal), None otherwise.
+        """
+        composite_key = make_composite_key(key, generation_id)
+        entry = self._ledger.get(composite_key)
+
+        if entry is None:
+            logger.debug(f"[{key}] report_failure: entry missing, ignoring")
+            yield None
+            return
+
+        if entry.generation_id != generation_id:
+            logger.debug(f"[{key}] report_failure: stale generation, ignoring")
+            yield None
+            return
+
+        handle = entry.handle
+        entry.handle = None
+        entry.state = NodeState.ERROR
+        logger.debug(f"[{key}] report_failure: marked ERROR")
+
+        if handle is not None:
+            self._store.retain(handle)
+
+        try:
+            yield handle
+        finally:
+            if handle is not None:
+                self._store.release(handle)
+
+    @contextmanager
+    def report_cancellation(
+        self,
+        key: ArtifactKey,
+        generation_id: GenerationID,
+    ) -> Generator[Optional[BaseArtifactHandle], None, None]:
+        """
+        Reports that artifact generation was canceled.
+
+        If a handle exists, it is kept and marked VALID. Otherwise, the
+        entry is marked DIRTY so the scheduler can regenerate it.
+
+        If the generation is stale, yields None and does nothing.
+
+        Args:
+            key: The artifact key.
+            generation_id: The generation ID of this generation.
+
+        Yields:
+            The cached handle if available, None otherwise.
+        """
+        composite_key = make_composite_key(key, generation_id)
+        entry = self._ledger.get(composite_key)
+
+        if entry is None:
+            logger.debug(
+                f"[{key}] report_cancellation: entry missing, ignoring"
+            )
+            yield None
+            return
+
+        if entry.generation_id != generation_id:
+            logger.debug(
+                f"[{key}] report_cancellation: stale generation, ignoring"
+            )
+            yield None
+            return
+
+        handle = entry.handle
+        if handle is not None:
+            entry.state = NodeState.VALID
+            logger.debug(
+                f"[{key}] report_cancellation: handle exists, keeping VALID"
+            )
+        else:
+            entry.state = NodeState.DIRTY
+            logger.debug(
+                f"[{key}] report_cancellation: no handle, marked DIRTY"
+            )
+
+        if handle is not None:
+            self._store.retain(handle)
+
+        try:
+            yield handle
+        finally:
+            if handle is not None:
+                self._store.release(handle)
+
     def get_store(self) -> ArtifactStore:
         """
         Returns the artifact store.
@@ -723,12 +872,16 @@ class ArtifactManager:
             handle: The handle to cache.
             generation_id: The generation ID for the entry.
         """
-        from ..dag.node import NodeState
-
-        logger.debug(f"cache: key={key}, generation_id={generation_id}")
+        logger.debug(
+            f"cache_handle: key={key}, generation_id={generation_id}, "
+            f"shm_name={handle.shm_name}"
+        )
         composite_key = make_composite_key(key, generation_id)
         entry = self.get_ledger_entry(composite_key)
         if entry is None:
+            logger.debug(
+                f"cache_handle: creating new entry for {composite_key}"
+            )
             entry = LedgerEntry(generation_id=generation_id)
             self._ledger[composite_key] = entry
 
@@ -794,8 +947,6 @@ class ArtifactManager:
             handle: Optional handle to set on the entry. If not provided,
                 the existing handle is preserved.
         """
-        from ..dag.node import NodeState
-
         composite_key = make_composite_key(key, generation_id)
         entry = self._ledger.get(composite_key)
         if entry is None:

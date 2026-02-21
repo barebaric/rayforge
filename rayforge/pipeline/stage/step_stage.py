@@ -143,55 +143,47 @@ class StepPipelineStage(PipelineStage):
 
         self.release_retained_handles(step_uid)
 
-        if not self._artifact_manager.is_generation_current(
-            ledger_key, task_generation_id
-        ):
-            logger.debug(f"Ignoring stale step completion for {step_uid}")
+        task_status = task.get_status()
+        logger.debug(f"[{ledger_key}] Task status is '{task_status}'.")
+
+        if task_status == "canceled":
+            self._cleanup_step_render_handle(step_uid)
+            with self._artifact_manager.report_cancellation(
+                ledger_key, task_generation_id
+            ):
+                self.generation_finished.send(
+                    self, step=step, generation_id=task_generation_id
+                )
             return
 
-        if task.get_status() == "completed":
+        if task_status == "completed":
             try:
                 task.result()
-                render_handle = self._artifact_manager.get_step_render_handle(
-                    step_uid
-                )
-                logger.debug(
-                    f"_on_step_task_complete: render_handle={render_handle}"
-                )
-                self._artifact_manager.complete_generation(
-                    ledger_key,
-                    task_generation_id,
-                )
-                self._emit_node_state(ledger_key, NodeState.VALID)
-                logger.debug("_on_step_task_complete: ops_handle set to DONE")
             except Exception as e:
                 logger.error(f"Error on step assembly result: {e}")
-                # Release render handle if task completed with error
-                render_handle = self._artifact_manager.pop_step_render_handle(
-                    step_uid
-                )
-                if render_handle:
-                    logger.debug(
-                        f"Releasing render handle for errored step {step_uid}"
-                    )
-                    self._artifact_manager.release_handle(render_handle)
-                self._emit_node_state(ledger_key, NodeState.ERROR)
-        else:
-            logger.warning(f"Step assembly for {step_uid} failed.")
-            # Release render handle if task failed after producing it
-            render_handle = self._artifact_manager.pop_step_render_handle(
-                step_uid
-            )
-            if render_handle:
-                logger.debug(
-                    f"Releasing render handle for failed step {step_uid}"
-                )
-                self._artifact_manager.release_handle(render_handle)
-            self._emit_node_state(ledger_key, NodeState.ERROR)
+                task_status = "failed"
 
-        self.generation_finished.send(
-            self, step=step, generation_id=task_generation_id
-        )
+        if task_status == "completed":
+            with self._artifact_manager.report_completion(
+                ledger_key, task_generation_id
+            ):
+                self.generation_finished.send(
+                    self, step=step, generation_id=task_generation_id
+                )
+        else:
+            self._cleanup_step_render_handle(step_uid)
+            with self._artifact_manager.report_failure(
+                ledger_key, task_generation_id
+            ):
+                self.generation_finished.send(
+                    self, step=step, generation_id=task_generation_id
+                )
+
+    def _cleanup_step_render_handle(self, step_uid: str):
+        """Release the step render handle if one exists."""
+        render_handle = self._artifact_manager.pop_step_render_handle(step_uid)
+        if render_handle:
+            self._artifact_manager.release_handle(render_handle)
 
     def launch_task(
         self,

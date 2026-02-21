@@ -731,3 +731,142 @@ def test_cache_handle_retains_multiple_commits(retain_manager):
     assert retain_manager.get_workpiece_handle(wp1_key, 0) is handle1
     assert retain_manager.get_workpiece_handle(wp2_key, 0) is handle2
     retain_manager._store.retain.assert_not_called()
+
+
+# Tests for report_completion context manager
+
+
+def test_report_completion_marks_valid(manager):
+    """Test report_completion marks entry as VALID."""
+    key = ArtifactKey.for_workpiece(WP1_UID)
+    manager.declare_generation({key}, 0)
+
+    with manager.report_completion(key, 0) as handle:
+        assert handle is None
+
+    assert manager.get_state(key, 0) == NodeState.VALID
+
+
+def test_report_completion_yields_handle(manager):
+    """Test report_completion yields cached handle."""
+    key = ArtifactKey.for_workpiece(WP1_UID)
+    handle = create_mock_handle(WorkPieceArtifactHandle, "wp1")
+    manager.declare_generation({key}, 0)
+    manager.cache_handle(key, handle, 0)
+
+    with manager.report_completion(key, 0) as yielded:
+        assert yielded is handle
+
+    assert manager.get_state(key, 0) == NodeState.VALID
+    manager._store.retain.assert_called_with(handle)
+    manager._store.release.assert_called_with(handle)
+
+
+def test_report_completion_missing_entry_yields_none(manager):
+    """Test report_completion yields None for missing entry."""
+    key = ArtifactKey.for_workpiece(WP1_UID)
+
+    with manager.report_completion(key, 0) as handle:
+        assert handle is None
+
+    assert manager.get_state(key, 0) == NodeState.DIRTY
+
+
+def test_report_completion_nonexistent_generation_yields_none(manager):
+    """Test report_completion yields None for non-existent generation."""
+    key = ArtifactKey.for_workpiece(WP1_UID)
+
+    with manager.report_completion(key, 99) as handle:
+        assert handle is None
+
+
+# Tests for report_failure context manager
+
+
+def test_report_failure_marks_error(manager):
+    """Test report_failure marks entry as ERROR."""
+    key = ArtifactKey.for_workpiece(WP1_UID)
+    manager.declare_generation({key}, 0)
+
+    with manager.report_failure(key, 0) as handle:
+        assert handle is None
+
+    assert manager.get_state(key, 0) == NodeState.ERROR
+
+
+def test_report_failure_yields_and_clears_handle(manager):
+    """Test report_failure yields handle and clears it from entry."""
+    key = ArtifactKey.for_workpiece(WP1_UID)
+    handle = create_mock_handle(WorkPieceArtifactHandle, "wp1")
+    manager.declare_generation({key}, 0)
+    manager.cache_handle(key, handle, 0)
+
+    with manager.report_failure(key, 0) as yielded:
+        assert yielded is handle
+        assert manager.get_workpiece_handle(key, 0) is None
+
+    assert manager.get_state(key, 0) == NodeState.ERROR
+    manager._store.retain.assert_called_with(handle)
+    manager._store.release.assert_called_with(handle)
+
+
+def test_report_failure_missing_entry_yields_none(manager):
+    """Test report_failure yields None for missing entry."""
+    key = ArtifactKey.for_workpiece(WP1_UID)
+
+    with manager.report_failure(key, 0) as handle:
+        assert handle is None
+
+
+def test_report_failure_nonexistent_generation_yields_none(manager):
+    """Test report_failure yields None for non-existent generation."""
+    key = ArtifactKey.for_workpiece(WP1_UID)
+
+    with manager.report_failure(key, 99) as handle:
+        assert handle is None
+
+
+# Tests for report_cancellation context manager
+
+
+def test_report_cancellation_with_handle_keeps_valid(manager):
+    """Test report_cancellation keeps existing handle and marks VALID."""
+    key = ArtifactKey.for_workpiece(WP1_UID)
+    existing_handle = create_mock_handle(
+        WorkPieceArtifactHandle, "wp_existing"
+    )
+    manager.declare_generation({key}, 0)
+    manager.cache_handle(key, existing_handle, 0)
+
+    with manager.report_cancellation(key, 0) as handle:
+        assert handle is existing_handle
+
+    assert manager.get_state(key, 0) == NodeState.VALID
+    assert manager.get_workpiece_handle(key, 0) is existing_handle
+
+
+def test_report_cancellation_without_handle_marks_dirty(manager):
+    """Test report_cancellation marks DIRTY when no handle exists."""
+    key = ArtifactKey.for_workpiece(WP1_UID)
+    manager.declare_generation({key}, 0)
+
+    with manager.report_cancellation(key, 0) as handle:
+        assert handle is None
+
+    assert manager.get_state(key, 0) == NodeState.DIRTY
+
+
+def test_report_cancellation_missing_entry_yields_none(manager):
+    """Test report_cancellation yields None for missing entry."""
+    key = ArtifactKey.for_workpiece(WP1_UID)
+
+    with manager.report_cancellation(key, 0) as handle:
+        assert handle is None
+
+
+def test_report_cancellation_nonexistent_generation_yields_none(manager):
+    """Test report_cancellation yields None for non-existent generation."""
+    key = ArtifactKey.for_workpiece(WP1_UID)
+
+    with manager.report_cancellation(key, 99) as handle:
+        assert handle is None

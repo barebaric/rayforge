@@ -116,28 +116,25 @@ class JobPipelineStage(PipelineStage):
         self.release_retained_handles()
 
         task_status = task.get_status()
-        final_handle = None
         error = None
+        logger.debug(f"[{job_key}] Task status is '{task_status}'.")
 
         if task_status == "completed":
-            final_handle = self._artifact_manager.get_job_handle(
+            with self._artifact_manager.report_completion(
                 job_key, generation_id
-            )
-            if final_handle:
-                logger.info("Job generation successful.")
-                self._emit_node_state(job_key, NodeState.VALID)
-            else:
-                logger.info(
-                    "Job generation finished with no artifact produced."
+            ) as handle:
+                if handle:
+                    logger.info("Job generation successful.")
+                else:
+                    logger.info(
+                        "Job generation finished with no artifact produced."
+                    )
+                if on_done:
+                    on_done(handle, None)
+                self.job_generation_finished.send(
+                    self, handle=handle, task_status=task_status
                 )
-            if on_done:
-                on_done(final_handle, None)
-            self.job_generation_finished.send(
-                self, handle=final_handle, task_status=task_status
-            )
         else:
-            logger.error(f"Job generation failed with status: {task_status}")
-
             try:
                 task.result()
             except CancelledError as e:
@@ -145,22 +142,27 @@ class JobPipelineStage(PipelineStage):
                 logger.info(f"Job generation was cancelled: {e}")
             except Exception as e:
                 error = e
+                logger.error(f"Job generation failed: {e}")
 
-            if generation_id is not None:
-                self._emit_node_state(job_key, NodeState.ERROR)
-
-            self._artifact_manager.invalidate_for_job(job_key)
-            if on_done:
-                on_done(None, error)
-
-            if task_status == "failed":
-                self.job_generation_failed.send(
-                    self, error=error, task_status=task_status
-                )
+            if task_status == "canceled":
+                with self._artifact_manager.report_cancellation(
+                    job_key, generation_id
+                ):
+                    if on_done:
+                        on_done(None, error)
+                    self.job_generation_finished.send(
+                        self, handle=None, task_status=task_status
+                    )
             else:
-                self.job_generation_finished.send(
-                    self, handle=None, task_status=task_status
-                )
+                with self._artifact_manager.report_failure(
+                    job_key, generation_id
+                ):
+                    if on_done:
+                        on_done(None, error)
+                    self.job_generation_failed.send(
+                        self, error=error, task_status=task_status
+                    )
+
         self._job_running = False
 
     def validate_dependencies(
