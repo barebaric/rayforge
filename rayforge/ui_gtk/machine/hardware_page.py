@@ -15,41 +15,35 @@ class HardwarePage(Adw.PreferencesPage):
         self.machine = machine
         self._is_initializing = True
 
-        dimensions_group = Adw.PreferencesGroup(title=_("Dimensions"))
-        dimensions_group.set_description(
-            _("Configure the physical work area size.")
-        )
-        self.add(dimensions_group)
-
-        width_adjustment = Gtk.Adjustment(
-            lower=50, upper=10000, step_increment=1, page_increment=10
-        )
-        self.width_row = Adw.SpinRow(
-            title=_("Width"),
-            subtitle=_("Width of the machine work area in mm"),
-            adjustment=width_adjustment,
-        )
-        width_adjustment.set_value(self.machine.dimensions[0])
-        self.width_row.connect("changed", self.on_width_changed)
-        dimensions_group.add(self.width_row)
-
-        height_adjustment = Gtk.Adjustment(
-            lower=50, upper=10000, step_increment=1, page_increment=10
-        )
-        self.height_row = Adw.SpinRow(
-            title=_("Height"),
-            subtitle=_("Height of the machine work area in mm"),
-            adjustment=height_adjustment,
-        )
-        height_adjustment.set_value(self.machine.dimensions[1])
-        self.height_row.connect("changed", self.on_height_changed)
-        dimensions_group.add(self.height_row)
-
         axes_group = Adw.PreferencesGroup(title=_("Axes"))
         axes_group.set_description(
-            _("Configure coordinate system and axis orientation.")
+            _("Configure the axis extents and coordinate system.")
         )
         self.add(axes_group)
+
+        x_extent_adjustment = Gtk.Adjustment(
+            lower=50, upper=10000, step_increment=1, page_increment=10
+        )
+        self.x_extent_row = Adw.SpinRow(
+            title=_("X Extent"),
+            subtitle=_("Full X-axis travel range in mm"),
+            adjustment=x_extent_adjustment,
+        )
+        x_extent_adjustment.set_value(self.machine.axis_extents[0])
+        self.x_extent_row.connect("changed", self.on_x_extent_changed)
+        axes_group.add(self.x_extent_row)
+
+        y_extent_adjustment = Gtk.Adjustment(
+            lower=50, upper=10000, step_increment=1, page_increment=10
+        )
+        self.y_extent_row = Adw.SpinRow(
+            title=_("Y Extent"),
+            subtitle=_("Full Y-axis travel range in mm"),
+            adjustment=y_extent_adjustment,
+        )
+        y_extent_adjustment.set_value(self.machine.axis_extents[1])
+        self.y_extent_row.connect("changed", self.on_y_extent_changed)
+        axes_group.add(self.y_extent_row)
 
         origin_store = Gtk.StringList()
         origin_store.append(_("Bottom Left"))
@@ -111,29 +105,135 @@ class HardwarePage(Adw.PreferencesPage):
         )
         axes_group.add(self.reverse_z_axis_row)
 
-        x_offset_adjustment = Gtk.Adjustment(
-            lower=0, upper=10000, step_increment=1, page_increment=10
+        work_surface_group = Adw.PreferencesGroup(title=_("Work Surface"))
+        work_surface_group.set_description(
+            _("Margins define the unusable space around the axis extents.")
         )
-        self.x_offset_row = Adw.SpinRow(
-            title=_("X Offset"),
-            subtitle=_("Offset to add to each gcode command on X axis"),
-            adjustment=x_offset_adjustment,
-        )
-        x_offset_adjustment.set_value(self.machine.offsets[0])
-        self.x_offset_row.connect("changed", self.on_x_offset_changed)
-        axes_group.add(self.x_offset_row)
+        self.add(work_surface_group)
 
-        y_offset_adjustment = Gtk.Adjustment(
+        ml, mt, mr, mb = self.machine.work_margins
+
+        margin_left_adjustment = Gtk.Adjustment(
             lower=0, upper=10000, step_increment=1, page_increment=10
         )
-        self.y_offset_row = Adw.SpinRow(
-            title=_("Y Offset"),
-            subtitle=_("Offset to add to each gcode command on Y axis"),
-            adjustment=y_offset_adjustment,
+        self.margin_left_row = Adw.SpinRow(
+            title=_("Left Margin"),
+            subtitle=_("Unusable space from left edge in mm"),
+            adjustment=margin_left_adjustment,
         )
-        y_offset_adjustment.set_value(self.machine.offsets[1])
-        self.y_offset_row.connect("changed", self.on_y_offset_changed)
-        axes_group.add(self.y_offset_row)
+        margin_left_adjustment.set_value(ml)
+        self.margin_left_row.connect("changed", self.on_margins_changed)
+        work_surface_group.add(self.margin_left_row)
+
+        margin_top_adjustment = Gtk.Adjustment(
+            lower=0, upper=10000, step_increment=1, page_increment=10
+        )
+        self.margin_top_row = Adw.SpinRow(
+            title=_("Top Margin"),
+            subtitle=_("Unusable space from top edge in mm"),
+            adjustment=margin_top_adjustment,
+        )
+        margin_top_adjustment.set_value(mt)
+        self.margin_top_row.connect("changed", self.on_margins_changed)
+        work_surface_group.add(self.margin_top_row)
+
+        margin_right_adjustment = Gtk.Adjustment(
+            lower=0, upper=10000, step_increment=1, page_increment=10
+        )
+        self.margin_right_row = Adw.SpinRow(
+            title=_("Right Margin"),
+            subtitle=_("Unusable space from right edge in mm"),
+            adjustment=margin_right_adjustment,
+        )
+        margin_right_adjustment.set_value(mr)
+        self.margin_right_row.connect("changed", self.on_margins_changed)
+        work_surface_group.add(self.margin_right_row)
+
+        margin_bottom_adjustment = Gtk.Adjustment(
+            lower=0, upper=10000, step_increment=1, page_increment=10
+        )
+        self.margin_bottom_row = Adw.SpinRow(
+            title=_("Bottom Margin"),
+            subtitle=_("Unusable space from bottom edge in mm"),
+            adjustment=margin_bottom_adjustment,
+        )
+        margin_bottom_adjustment.set_value(mb)
+        self.margin_bottom_row.connect("changed", self.on_margins_changed)
+        work_surface_group.add(self.margin_bottom_row)
+
+        soft_limits_group = Adw.PreferencesGroup(title=_("Soft Limits"))
+        soft_limits_group.set_description(
+            _(
+                "Configurable safety bounds for jogging. "
+                "Leave disabled to use work surface bounds."
+            )
+        )
+        self.add(soft_limits_group)
+
+        self.soft_limits_enabled_row = Adw.SwitchRow()
+        self.soft_limits_enabled_row.set_title(_("Enable Custom Soft Limits"))
+        self.soft_limits_enabled_row.set_subtitle(
+            _("Override work surface bounds with custom limits")
+        )
+        has_custom_limits = self.machine.soft_limits is not None
+        self.soft_limits_enabled_row.set_active(has_custom_limits)
+        self.soft_limits_enabled_row.connect(
+            "notify::active", self.on_soft_limits_enabled_changed
+        )
+        soft_limits_group.add(self.soft_limits_enabled_row)
+
+        soft_x_min_adjustment = Gtk.Adjustment(
+            lower=-10000, upper=10000, step_increment=1, page_increment=10
+        )
+        self.soft_x_min_row = Adw.SpinRow(
+            title=_("X Min"),
+            subtitle=_("Minimum X coordinate"),
+            adjustment=soft_x_min_adjustment,
+        )
+        limits = self.machine.soft_limits or (0, 0, *self.machine.axis_extents)
+        soft_x_min_adjustment.set_value(limits[0])
+        self.soft_x_min_row.connect("changed", self.on_soft_limits_changed)
+        self.soft_x_min_row.set_sensitive(has_custom_limits)
+        soft_limits_group.add(self.soft_x_min_row)
+
+        soft_y_min_adjustment = Gtk.Adjustment(
+            lower=-10000, upper=10000, step_increment=1, page_increment=10
+        )
+        self.soft_y_min_row = Adw.SpinRow(
+            title=_("Y Min"),
+            subtitle=_("Minimum Y coordinate"),
+            adjustment=soft_y_min_adjustment,
+        )
+        soft_y_min_adjustment.set_value(limits[1])
+        self.soft_y_min_row.connect("changed", self.on_soft_limits_changed)
+        self.soft_y_min_row.set_sensitive(has_custom_limits)
+        soft_limits_group.add(self.soft_y_min_row)
+
+        soft_x_max_adjustment = Gtk.Adjustment(
+            lower=-10000, upper=10000, step_increment=1, page_increment=10
+        )
+        self.soft_x_max_row = Adw.SpinRow(
+            title=_("X Max"),
+            subtitle=_("Maximum X coordinate"),
+            adjustment=soft_x_max_adjustment,
+        )
+        soft_x_max_adjustment.set_value(limits[2])
+        self.soft_x_max_row.connect("changed", self.on_soft_limits_changed)
+        self.soft_x_max_row.set_sensitive(has_custom_limits)
+        soft_limits_group.add(self.soft_x_max_row)
+
+        soft_y_max_adjustment = Gtk.Adjustment(
+            lower=-10000, upper=10000, step_increment=1, page_increment=10
+        )
+        self.soft_y_max_row = Adw.SpinRow(
+            title=_("Y Max"),
+            subtitle=_("Maximum Y coordinate"),
+            adjustment=soft_y_max_adjustment,
+        )
+        soft_y_max_adjustment.set_value(limits[3])
+        self.soft_y_max_row.connect("changed", self.on_soft_limits_changed)
+        self.soft_y_max_row.set_sensitive(has_custom_limits)
+        soft_limits_group.add(self.soft_y_max_row)
 
         self.machine.changed.connect(self._on_machine_changed)
         self.connect("destroy", self._on_destroy)
@@ -167,25 +267,55 @@ class HardwarePage(Adw.PreferencesPage):
     def on_reverse_z_changed(self, row, _):
         self.machine.set_reverse_z_axis(row.get_active())
 
-    def on_width_changed(self, spinrow):
-        width = get_spinrow_int(spinrow)
-        height = self.machine.dimensions[1]
-        self.machine.set_dimensions(width, height)
+    def on_x_extent_changed(self, spinrow):
+        x = get_spinrow_int(spinrow)
+        y = self.machine.axis_extents[1]
+        self.machine.set_axis_extents(x, y)
 
-    def on_height_changed(self, spinrow):
-        width = self.machine.dimensions[0]
-        height = get_spinrow_int(spinrow)
-        self.machine.set_dimensions(width, height)
+    def on_y_extent_changed(self, spinrow):
+        x = self.machine.axis_extents[0]
+        y = get_spinrow_int(spinrow)
+        self.machine.set_axis_extents(x, y)
 
-    def on_x_offset_changed(self, spinrow):
-        y_offset = self.machine.offsets[1]
-        x_offset = get_spinrow_int(spinrow)
-        self.machine.set_offsets(x_offset, y_offset)
+    def on_margins_changed(self, _spinrow):
+        ml = get_spinrow_int(self.margin_left_row)
+        mt = get_spinrow_int(self.margin_top_row)
+        mr = get_spinrow_int(self.margin_right_row)
+        mb = get_spinrow_int(self.margin_bottom_row)
 
-    def on_y_offset_changed(self, spinrow):
-        x_offset = self.machine.offsets[0]
-        y_offset = get_spinrow_int(spinrow)
-        self.machine.set_offsets(x_offset, y_offset)
+        extent_w, extent_h = self.machine.axis_extents
+        ml = max(0, min(ml, extent_w - 1))
+        mr = max(0, min(mr, extent_w - ml - 1))
+        mt = max(0, min(mt, extent_h - 1))
+        mb = max(0, min(mb, extent_h - mt - 1))
+
+        self.machine.set_work_margins(ml, mt, mr, mb)
+
+    def on_soft_limits_enabled_changed(self, row, _):
+        enabled = row.get_active()
+        self.soft_x_min_row.set_sensitive(enabled)
+        self.soft_y_min_row.set_sensitive(enabled)
+        self.soft_x_max_row.set_sensitive(enabled)
+        self.soft_y_max_row.set_sensitive(enabled)
+
+        if enabled:
+            x_min = get_spinrow_int(self.soft_x_min_row)
+            y_min = get_spinrow_int(self.soft_y_min_row)
+            x_max = get_spinrow_int(self.soft_x_max_row)
+            y_max = get_spinrow_int(self.soft_y_max_row)
+            self.machine.set_soft_limits(x_min, y_min, x_max, y_max)
+        else:
+            self.machine._soft_limits = None
+            self.machine.changed.send(self.machine)
+
+    def on_soft_limits_changed(self, _spinrow):
+        if not self.soft_limits_enabled_row.get_active():
+            return
+        x_min = get_spinrow_int(self.soft_x_min_row)
+        y_min = get_spinrow_int(self.soft_y_min_row)
+        x_max = get_spinrow_int(self.soft_x_max_row)
+        y_max = get_spinrow_int(self.soft_y_max_row)
+        self.machine.set_soft_limits(x_min, y_min, x_max, y_max)
 
     def _update_z_axis_state(self):
         if self._is_initializing:

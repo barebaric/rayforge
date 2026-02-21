@@ -110,8 +110,9 @@ class Machine:
         self.max_travel_speed: int = 3000  # in mm/min
         self.max_cut_speed: int = 1000  # in mm/min
         self.acceleration: int = 1000  # in mm/s²
-        self.dimensions: Tuple[int, int] = 200, 200
-        self.offsets: Tuple[int, int] = 0, 0
+        self._axis_extents: Tuple[int, int] = 200, 200
+        self._work_margins: Tuple[int, int, int, int] = (0, 0, 0, 0)
+        self._soft_limits: Optional[Tuple[int, int, int, int]] = None
         self.origin: Origin = Origin.BOTTOM_LEFT
         self.reverse_x_axis: bool = False
         self.reverse_y_axis: bool = False
@@ -337,12 +338,91 @@ class Machine:
         self.acceleration = acceleration
         self.changed.send(self)
 
-    def set_dimensions(self, width: int, height: int):
-        self.dimensions = (width, height)
+    @property
+    def axis_extents(self) -> Tuple[int, int]:
+        """The full range of machine axis movement (width, height)."""
+        return self._axis_extents
+
+    def set_axis_extents(self, width: int, height: int):
+        if self._axis_extents == (width, height):
+            return
+        self._axis_extents = (width, height)
+        ml, mt, mr, mb = self._work_margins
+        ml = min(ml, width - 1)
+        mr = min(mr, width - ml - 1)
+        mt = min(mt, height - 1)
+        mb = min(mb, height - mt - 1)
+        self._work_margins = (ml, mt, mr, mb)
         self.changed.send(self)
 
+    @property
+    def dimensions(self) -> Tuple[int, int]:
+        """Alias for axis_extents for backward compatibility."""
+        return self._axis_extents
+
+    @dimensions.setter
+    def dimensions(self, value: Tuple[int, int]):
+        self._axis_extents = value
+
+    def set_dimensions(self, width: int, height: int):
+        self.set_axis_extents(width, height)
+
+    @property
+    def work_margins(self) -> Tuple[int, int, int, int]:
+        """
+        The margins around the work surface (left, top, right, bottom).
+        These are positive distances from the axis extents edges.
+        """
+        return self._work_margins
+
+    def set_work_margins(self, left: int, top: int, right: int, bottom: int):
+        new_margins = (left, top, right, bottom)
+        if self._work_margins == new_margins:
+            return
+        self._work_margins = new_margins
+        self._soft_limits = None
+        self.changed.send(self)
+
+    @property
+    def work_surface(self) -> Tuple[int, int, int, int]:
+        """
+        The usable work area within the axis extents (x, y, w, h).
+        Computed from axis_extents and work_margins.
+        """
+        ml, mt, mr, mb = self._work_margins
+        w = self._axis_extents[0] - ml - mr
+        h = self._axis_extents[1] - mt - mb
+        return (ml, mt, max(1, w), max(1, h))
+
+    @property
+    def offsets(self) -> Tuple[int, int]:
+        """Computed from work_margins for backward compatibility."""
+        return (self._work_margins[0], self._work_margins[1])
+
+    @offsets.setter
+    def offsets(self, value: Tuple[int, int]):
+        x, y = value
+        w, h = self._axis_extents
+        self._work_margins = (x, y, w - x, h - y)
+
     def set_offsets(self, x_offset: int, y_offset: int):
-        self.offsets = (x_offset, y_offset)
+        w, h = self._axis_extents
+        self._work_margins = (x_offset, y_offset, w - x_offset, h - y_offset)
+        self.changed.send(self)
+
+    @property
+    def soft_limits(self) -> Optional[Tuple[int, int, int, int]]:
+        """
+        Configurable safety bounds for jogging (x_min, y_min, x_max, y_max).
+        None means use work_surface bounds.
+        """
+        return self._soft_limits
+
+    def set_soft_limits(self, x_min: int, y_min: int, x_max: int, y_max: int):
+        new_limits = (x_min, y_min, x_max, y_max)
+        if self._soft_limits == new_limits:
+            return
+        self._soft_limits = new_limits
         self.changed.send(self)
 
     def set_origin(self, origin: Origin):
@@ -430,9 +510,16 @@ class Machine:
 
     def get_soft_limits(self) -> Tuple[float, float, float, float]:
         """Get the soft limits as (x_min, y_min, x_max, y_max)."""
-        w, h = float(self.dimensions[0]), float(self.dimensions[1])
+        if self._soft_limits is not None:
+            x_min, y_min, x_max, y_max = self._soft_limits
+            if self.reverse_x_axis:
+                x_min, x_max = -x_max, -x_min
+            if self.reverse_y_axis:
+                y_min, y_max = -y_max, -y_min
+            return (float(x_min), float(y_min), float(x_max), float(y_max))
 
-        # If an axis is reversed, the workspace is in the negative domain.
+        w, h = float(self._axis_extents[0]), float(self._axis_extents[1])
+
         x_min = -w if self.reverse_x_axis else 0.0
         x_max = 0.0 if self.reverse_x_axis else w
         y_min = -h if self.reverse_y_axis else 0.0
@@ -652,6 +739,30 @@ class Machine:
         an absolute coordinate system with zero offset.
         """
         return self.wcs_offsets.get(self.active_wcs, (0.0, 0.0, 0.0))
+
+    def get_visual_extent_frame(self) -> Tuple[float, float, float, float]:
+        """
+        Returns the extent frame rectangle (x, y, width, height) in visual
+        coordinates relative to the work surface origin.
+
+        The work surface is at (0, 0) in its own coordinate system.
+        The extent frame is positioned at (-margin_left, -margin_bottom)
+        relative to the work surface origin.
+
+        Returns:
+            Tuple of (x, y, width, height) where x,y is the frame position
+            relative to the work surface origin (0,0).
+        """
+        ml, mb = self._work_margins[0], self._work_margins[3]
+        extent_w, extent_h = self._axis_extents
+        return (float(-ml), float(-mb), float(extent_w), float(extent_h))
+
+    def has_custom_work_surface(self) -> bool:
+        """
+        Returns True if any margin is non-zero.
+        """
+        ml, mt, mr, mb = self._work_margins
+        return ml != 0 or mt != 0 or mr != 0 or mb != 0
 
     def set_active_wcs(self, wcs: str):
         """Sets the active WCS and notifies listeners."""
@@ -880,8 +991,11 @@ class Machine:
                 "wcs_offsets": self.wcs_offsets,
                 "supports_arcs": self.supports_arcs,
                 "arc_tolerance": self.arc_tolerance,
-                "dimensions": list(self.dimensions),
-                "offsets": list(self.offsets),
+                "axis_extents": list(self._axis_extents),
+                "work_margins": list(self._work_margins),
+                "soft_limits": list(self._soft_limits)
+                if self._soft_limits
+                else None,
                 "origin": self.origin.value,
                 "reverse_x_axis": self.reverse_x_axis,
                 "reverse_y_axis": self.reverse_y_axis,
@@ -1009,8 +1123,19 @@ class Machine:
         if "wcs_offsets" in ma_data:
             ma.wcs_offsets = ma_data["wcs_offsets"]
 
-        ma.dimensions = tuple(ma_data.get("dimensions", ma.dimensions))
-        ma.offsets = tuple(ma_data.get("offsets", ma.offsets))
+        ma._axis_extents = tuple(ma_data.get("dimensions", ma._axis_extents))
+        if "axis_extents" in ma_data:
+            ma._axis_extents = tuple(ma_data["axis_extents"])
+
+        if "work_margins" in ma_data:
+            ma._work_margins = tuple(ma_data["work_margins"])
+        elif "offsets" in ma_data:
+            ox, oy = ma_data["offsets"]
+            ma._work_margins = (ox, 0, 0, oy)
+
+        if "soft_limits" in ma_data and ma_data["soft_limits"] is not None:
+            ma._soft_limits = tuple(ma_data["soft_limits"])
+
         origin_value = ma_data.get("origin", None)
         if origin_value is not None:
             ma.origin = Origin(origin_value)

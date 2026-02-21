@@ -48,8 +48,16 @@ class AxisRenderer3D(BaseRenderer):
         self.background_color = 0.8, 0.8, 0.8, 0.1
         self.grid_color = 0.4, 0.4, 0.4, 1.0
         self.axis_color = 1.0, 1.0, 1.0, 1.0
-        self.wcs_marker_color = 1.0, 0.0, 1.0, 1.0  # Magenta
+        self.wcs_marker_color = 0.2, 0.8, 0.2, 0.9
         self.label_color = 0.9, 0.9, 0.9, 1.0
+        self.extent_frame_color = 1.0, 0.0, 0.0, 0.5
+
+        # Extent frame properties
+        self.extent_x_mm: float = 0.0
+        self.extent_y_mm: float = 0.0
+        self.extent_width_mm: float = float(width_mm)
+        self.extent_height_mm: float = float(height_mm)
+        self.show_extent_frame: bool = False
 
         # Composition
         self.background_renderer = PlaneRenderer(
@@ -70,6 +78,11 @@ class AxisRenderer3D(BaseRenderer):
             self.wcs_marker_vbo,
             self.wcs_marker_vertex_count,
         ) = (0, 0, 0)
+        (
+            self.extent_frame_vao,
+            self.extent_frame_vbo,
+            self.extent_frame_vertex_count,
+        ) = (0, 0, 0)
 
     def set_background_color(self, color: Tuple[float, float, float, float]):
         """Sets the color for the background plane."""
@@ -87,6 +100,21 @@ class AxisRenderer3D(BaseRenderer):
     def set_label_color(self, color: Tuple[float, float, float, float]):
         """Sets the color for the axis labels."""
         self.label_color = color
+
+    def set_extent_frame(
+        self,
+        x: float,
+        y: float,
+        width: float,
+        height: float,
+        show: bool = True,
+    ):
+        """Sets the extent frame position, dimensions and visibility."""
+        self.extent_x_mm = float(x)
+        self.extent_y_mm = float(y)
+        self.extent_width_mm = float(width)
+        self.extent_height_mm = float(height)
+        self.show_extent_frame = show
 
     def init_gl(self) -> None:
         """Initializes OpenGL resources for all components."""
@@ -178,6 +206,60 @@ class AxisRenderer3D(BaseRenderer):
         GL.glVertexAttribPointer(0, 3, GL.GL_FLOAT, GL.GL_FALSE, 0, None)
         GL.glEnableVertexAttribArray(0)
 
+        # Create Extent Frame resources (initially empty, updated dynamically)
+        self._update_extent_frame_buffer()
+
+        GL.glBindVertexArray(0)
+
+    def _update_extent_frame_buffer(self):
+        """Creates or updates the VAO/VBO for the extent frame."""
+        extent_z_pos = 0.002
+        x, y = self.extent_x_mm, self.extent_y_mm
+        w, h = self.extent_width_mm, self.extent_height_mm
+
+        # Rectangle outline: 4 lines = 8 vertices
+        extent_verts = [
+            x,
+            y,
+            extent_z_pos,
+            x + w,
+            y,
+            extent_z_pos,
+            x + w,
+            y,
+            extent_z_pos,
+            x + w,
+            y + h,
+            extent_z_pos,
+            x + w,
+            y + h,
+            extent_z_pos,
+            x,
+            y + h,
+            extent_z_pos,
+            x,
+            y + h,
+            extent_z_pos,
+            x,
+            y,
+            extent_z_pos,
+        ]
+
+        if self.extent_frame_vao == 0:
+            self.extent_frame_vao = self._create_vao()
+            self.extent_frame_vbo = self._create_vbo()
+
+        self.extent_frame_vertex_count = len(extent_verts) // 3
+        GL.glBindVertexArray(self.extent_frame_vao)
+        GL.glBindBuffer(GL.GL_ARRAY_BUFFER, self.extent_frame_vbo)
+        GL.glBufferData(
+            GL.GL_ARRAY_BUFFER,
+            np.array(extent_verts, dtype=np.float32).nbytes,
+            np.array(extent_verts, dtype=np.float32),
+            GL.GL_STATIC_DRAW,
+        )
+        GL.glVertexAttribPointer(0, 3, GL.GL_FLOAT, GL.GL_FALSE, 0, None)
+        GL.glEnableVertexAttribArray(0)
         GL.glBindVertexArray(0)
 
     def render(
@@ -275,6 +357,14 @@ class AxisRenderer3D(BaseRenderer):
         line_shader.set_vec4("uColor", self.wcs_marker_color)
         GL.glBindVertexArray(self.wcs_marker_vao)
         GL.glDrawArrays(GL.GL_LINES, 0, self.wcs_marker_vertex_count)
+
+        # 4. Draw the extent frame if enabled
+        if self.show_extent_frame and self.extent_frame_vao:
+            line_shader.set_mat4("uMVP", grid_mvp)
+            line_shader.set_vec4("uColor", self.extent_frame_color)
+            self._set_line_width(2.0)
+            GL.glBindVertexArray(self.extent_frame_vao)
+            GL.glDrawArrays(GL.GL_LINES, 0, self.extent_frame_vertex_count)
 
         GL.glBindVertexArray(0)
 
