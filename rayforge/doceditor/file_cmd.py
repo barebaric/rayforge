@@ -749,19 +749,18 @@ class FileCmd:
             return
 
         bbox_x, bbox_y, bbox_w, bbox_h = bbox
-        surf_x, surf_y, surf_w, surf_h = machine.work_surface
+        area_x, area_y, area_w, area_h = machine.work_area
         logger.debug(
             f"_fit_and_center_imported_items: bbox=({bbox_x:.2f}, "
             f"{bbox_y:.2f}, {bbox_w:.2f}, {bbox_h:.2f}), "
-            f"work_surface="
-            f"({surf_x:.2f}, {surf_y:.2f}, {surf_w:.2f}, {surf_h:.2f})"
+            f"work_area=({area_x:.2f}, {area_y:.2f}, {area_w:.2f}, {area_h:.2f})"
         )
 
         # 1. Scale to fit if necessary, preserving aspect ratio
         scale_factor = 1.0
-        if bbox_w > surf_w or bbox_h > surf_h:
-            scale_w = surf_w / bbox_w if bbox_w > 1e-9 else 1.0
-            scale_h = surf_h / bbox_h if bbox_h > 1e-9 else 1.0
+        if bbox_w > area_w or bbox_h > area_h:
+            scale_w = area_w / bbox_w if bbox_w > 1e-9 else 1.0
+            scale_h = area_h / bbox_h if bbox_h > 1e-9 else 1.0
             scale_factor = min(scale_w, scale_h)
 
         if scale_factor < 1.0:
@@ -786,9 +785,9 @@ class FileCmd:
             bbox_x, bbox_y, bbox_w, bbox_h = bbox
 
         # 2. Center the (possibly scaled) items
-        # Calculate translation to move bbox center to the work surface center
-        delta_x = (surf_w / 2) - (bbox_x + bbox_w / 2)
-        delta_y = (surf_h / 2) - (bbox_y + bbox_h / 2)
+        # Calculate translation to move bbox center to the work area center
+        delta_x = (area_w / 2) - (bbox_x + bbox_w / 2)
+        delta_y = (area_h / 2) - (bbox_y + bbox_h / 2)
 
         # Apply the same translation to all top-level imported items
         if abs(delta_x) > 1e-9 or abs(delta_y) > 1e-9:

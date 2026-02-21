@@ -58,7 +58,7 @@ class WorkSurface(WorldSurface):
         self._tracked_axis_extents: Tuple[int, int] = (0, 0)
         if machine:
             self._tracked_axis_extents = machine.axis_extents
-            surf_x, surf_y, surf_w, surf_h = machine.work_surface
+            surf_x, surf_y, surf_w, surf_h = machine.work_area
             width_mm, height_mm = float(surf_w), float(surf_h)
             y_axis_down = machine.y_axis_down
             x_axis_right = machine.x_axis_right
@@ -897,7 +897,7 @@ class WorkSurface(WorldSurface):
             return
 
         extent_w, extent_h = machine.axis_extents
-        surf_w, surf_h = machine.work_surface[2], machine.work_surface[3]
+        surf_w, surf_h = machine.work_area[2], machine.work_area[3]
 
         extent_changed = (extent_w, extent_h) != self._tracked_axis_extents
         size_changed = (surf_w, surf_h) != (self.width_mm, self.height_mm)
@@ -948,13 +948,13 @@ class WorkSurface(WorldSurface):
             self._sync_camera_elements()
             return
 
-        surf_x, surf_y, surf_w, surf_h = self.machine.work_surface
+        surf_x, surf_y, surf_w, surf_h = self.machine.work_area
         width_mm = float(surf_w)
         height_mm = float(surf_h)
 
         logger.debug(
             f"Resetting view for machine '{self.machine.name}' "
-            f"with work_surface=({surf_x}, {surf_y}, {surf_w}, {surf_h}), "
+            f"with work_area=({surf_x}, {surf_y}, {surf_w}, {surf_h}), "
             f"x_right={self.machine.x_axis_right}, "
             f"y_down={self.machine.y_axis_down}, "
             f"reverse_x={self.machine.reverse_x_axis}, "
@@ -993,7 +993,7 @@ class WorkSurface(WorldSurface):
             self._extent_frame_element.set_visible(False)
             return
 
-        if self.machine.has_custom_work_surface():
+        if self.machine.has_custom_work_area():
             frame_x, frame_y, frame_w, frame_h = (
                 self.machine.get_visual_extent_frame()
             )

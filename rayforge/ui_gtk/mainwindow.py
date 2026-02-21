@@ -259,8 +259,8 @@ class MainWindow(Adw.ApplicationWindow):
         config = get_context().config
         if config.machine:
             width_mm, height_mm = config.machine.dimensions
-            surf = config.machine.work_surface
-            canvas_w, canvas_h = float(surf[2]), float(surf[3])
+            area = config.machine.work_area
+            canvas_w, canvas_h = float(area[2]), float(area[3])
             y_down = config.machine.y_axis_down
             x_right = config.machine.x_axis_right
             reverse_x = config.machine.reverse_x_axis
@@ -387,7 +387,7 @@ class MainWindow(Adw.ApplicationWindow):
 
         if canvas3d_initialized:
             extent_frame = None
-            if config.machine and config.machine.has_custom_work_surface():
+            if config.machine and config.machine.has_custom_work_area():
                 extent_frame = config.machine.get_visual_extent_frame()
             self._create_canvas3d(
                 context,
@@ -1345,8 +1345,8 @@ class MainWindow(Adw.ApplicationWindow):
         new_machine = config.machine
         if new_machine:
             width_mm, height_mm = new_machine.dimensions
-            surf = new_machine.work_surface
-            canvas_w, canvas_h = float(surf[2]), float(surf[3])
+            area = new_machine.work_area
+            canvas_w, canvas_h = float(area[2]), float(area[3])
             y_down = new_machine.y_axis_down
             x_right = new_machine.x_axis_right
             reverse_x = new_machine.reverse_x_axis
@@ -1374,7 +1374,7 @@ class MainWindow(Adw.ApplicationWindow):
             # Replace the 3D canvas with one configured for the new machine.
             self.view_stack.remove(self.canvas3d)
             extent_frame = None
-            if new_machine and new_machine.has_custom_work_surface():
+            if new_machine and new_machine.has_custom_work_area():
                 extent_frame = new_machine.get_visual_extent_frame()
             self._create_canvas3d(
                 get_context(),
