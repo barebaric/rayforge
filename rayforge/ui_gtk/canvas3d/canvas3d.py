@@ -190,6 +190,7 @@ class Canvas3D(Gtk.GLArea):
         y_down: bool = False,
         x_negative: bool = False,
         y_negative: bool = False,
+        extent_frame: Optional[Tuple[float, float, float, float]] = None,
         **kwargs,
     ):
         super().__init__(**kwargs)
@@ -202,6 +203,7 @@ class Canvas3D(Gtk.GLArea):
         self.y_down = y_down
         self.x_negative = x_negative
         self.y_negative = y_negative
+        self._extent_frame = extent_frame
 
         self.camera: Optional[Camera] = None
         self.main_shader: Optional[Shader] = None
@@ -477,6 +479,17 @@ class Canvas3D(Gtk.GLArea):
             self.axis_renderer = AxisRenderer3D(
                 self.width_mm, self.depth_mm, font_family=font_family
             )
+            if self._extent_frame is not None:
+                fx, fy, fw, fh = self._extent_frame
+                ml = -fx
+                mb = -fy
+                mt = fh - self.depth_mm - mb
+                mr = fw - self.width_mm - ml
+                if self.x_right:
+                    fx = -mr
+                if self.y_down:
+                    fy = -mt
+                self.axis_renderer.set_extent_frame(fx, fy, fw, fh, show=True)
             self.axis_renderer.init_gl()
             self.ops_renderer = OpsRenderer()
             self.ops_renderer.init_gl()

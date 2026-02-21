@@ -4,7 +4,7 @@ import shutil
 import webbrowser
 from concurrent.futures import Future
 from pathlib import Path
-from typing import Callable, Coroutine, List, Optional, cast
+from typing import Callable, Coroutine, List, Optional, Tuple, cast
 from gi.repository import Adw, Gdk, Gio, GLib, Gtk
 
 from .. import __version__
@@ -259,6 +259,8 @@ class MainWindow(Adw.ApplicationWindow):
         config = get_context().config
         if config.machine:
             width_mm, height_mm = config.machine.dimensions
+            surf = config.machine.work_surface
+            canvas_w, canvas_h = float(surf[2]), float(surf[3])
             y_down = config.machine.y_axis_down
             x_right = config.machine.x_axis_right
             reverse_x = config.machine.reverse_x_axis
@@ -266,6 +268,7 @@ class MainWindow(Adw.ApplicationWindow):
         else:
             # Default to a square aspect ratio if no machine is configured
             width_mm, height_mm = 100.0, 100.0
+            canvas_w, canvas_h = 100.0, 100.0
             y_down, x_right, reverse_x, reverse_y = (
                 False,
                 False,
@@ -383,14 +386,18 @@ class MainWindow(Adw.ApplicationWindow):
         # self.surface_overlay.add_controller(canvas_click_gesture)
 
         if canvas3d_initialized:
+            extent_frame = None
+            if config.machine and config.machine.has_custom_work_surface():
+                extent_frame = config.machine.get_visual_extent_frame()
             self._create_canvas3d(
                 context,
-                width_mm=width_mm,
-                depth_mm=height_mm,
+                width_mm=canvas_w,
+                depth_mm=canvas_h,
                 y_down=y_down,
                 x_right=x_right,
                 x_negative=reverse_x,
                 y_negative=reverse_y,
+                extent_frame=extent_frame,
             )
 
         # Undo/Redo buttons are now connected to the doc via actions.
@@ -1231,6 +1238,7 @@ class MainWindow(Adw.ApplicationWindow):
         x_right: bool,
         x_negative: bool,
         y_negative: bool,
+        extent_frame: Optional[Tuple[float, float, float, float]] = None,
     ):
         """
         Creates a Canvas3D instance and adds it to the view stack.
@@ -1246,6 +1254,7 @@ class MainWindow(Adw.ApplicationWindow):
             x_right=x_right,
             x_negative=x_negative,
             y_negative=y_negative,
+            extent_frame=extent_frame,
         )
         self.view_stack.add_named(self.canvas3d, "3d")
 
@@ -1336,12 +1345,15 @@ class MainWindow(Adw.ApplicationWindow):
         new_machine = config.machine
         if new_machine:
             width_mm, height_mm = new_machine.dimensions
+            surf = new_machine.work_surface
+            canvas_w, canvas_h = float(surf[2]), float(surf[3])
             y_down = new_machine.y_axis_down
             x_right = new_machine.x_axis_right
             reverse_x = new_machine.reverse_x_axis
             reverse_y = new_machine.reverse_y_axis
         else:
             width_mm, height_mm = 100.0, 100.0
+            canvas_w, canvas_h = 100.0, 100.0
             y_down, x_right, reverse_x, reverse_y = (
                 False,
                 False,
@@ -1361,14 +1373,18 @@ class MainWindow(Adw.ApplicationWindow):
 
             # Replace the 3D canvas with one configured for the new machine.
             self.view_stack.remove(self.canvas3d)
+            extent_frame = None
+            if new_machine and new_machine.has_custom_work_surface():
+                extent_frame = new_machine.get_visual_extent_frame()
             self._create_canvas3d(
                 get_context(),
-                width_mm=width_mm,
-                depth_mm=height_mm,
+                width_mm=canvas_w,
+                depth_mm=canvas_h,
                 y_down=y_down,
                 x_right=x_right,
                 x_negative=reverse_x,
                 y_negative=reverse_y,
+                extent_frame=extent_frame,
             )
 
         # Update the status monitor to observe the new machine

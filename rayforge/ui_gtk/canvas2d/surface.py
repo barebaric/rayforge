@@ -1,6 +1,6 @@
 import logging
 from blinker import Signal
-from typing import TYPE_CHECKING, Optional, cast, Dict, List, Sequence
+from typing import TYPE_CHECKING, Optional, cast, Dict, List, Sequence, Tuple
 from gi.repository import Gdk, Gtk, Graphene
 from ...camera.controller import CameraController
 from ...context import get_context
@@ -25,6 +25,7 @@ from .elements.stock import StockElement
 from .elements.tab_handle import TabHandleElement
 from .elements.workpiece import WorkPieceElement
 from .elements.work_origin import WorkOriginElement
+from .elements.axis_extent_frame import AxisExtentFrameElement
 from . import context_menu
 
 if TYPE_CHECKING:
@@ -54,8 +55,11 @@ class WorkSurface(WorldSurface):
         self.machine = None  # will be assigned by set_machine() below
         self._show_travel_moves = False
         self._workpieces_visible = True
+        self._tracked_axis_extents: Tuple[int, int] = (0, 0)
         if machine:
-            width_mm, height_mm = machine.dimensions
+            self._tracked_axis_extents = machine.axis_extents
+            surf_x, surf_y, surf_w, surf_h = machine.work_surface
+            width_mm, height_mm = float(surf_w), float(surf_h)
             y_axis_down = machine.y_axis_down
             x_axis_right = machine.x_axis_right
             reverse_x_axis = machine.reverse_x_axis
@@ -106,6 +110,11 @@ class WorkSurface(WorldSurface):
         # Add the Work Origin visual element
         self._work_origin_element = WorkOriginElement()
         self.root.add(self._work_origin_element)
+
+        # Add the Axis Extent Frame element (red frame around work surface)
+        self._extent_frame_element = AxisExtentFrameElement()
+        self._extent_frame_element.set_visible(False)
+        self.root.add(self._extent_frame_element)
 
         # Signals for clipboard and duplication operations
         self.cut_requested = Signal()
@@ -777,6 +786,9 @@ class WorkSurface(WorldSurface):
             if isinstance(element, (CameraImageElement, WorkOriginElement)):
                 # Camera images and WCS origin are at the very bottom.
                 return -2
+            if isinstance(element, AxisExtentFrameElement):
+                # Extent frame is above camera but below everything else
+                return -1.5
             # Other elements (like the laser dot) are above the camera but
             # below stock and layers.
             return -1
@@ -791,7 +803,13 @@ class WorkSurface(WorldSurface):
             c
             for c in self.root.children
             if not isinstance(
-                c, (CameraImageElement, DotElement, WorkOriginElement)
+                c,
+                (
+                    CameraImageElement,
+                    DotElement,
+                    WorkOriginElement,
+                    AxisExtentFrameElement,
+                ),
             )
         ]
         for child in children_to_remove:
@@ -866,21 +884,23 @@ class WorkSurface(WorldSurface):
     def _on_machine_changed(self, machine: Optional[Machine]):
         """
         Handles incremental updates from the currently-assigned machine model.
-        If core properties like dimensions or axis direction change, it
-        performs a full view reset. Otherwise, it syncs other properties like
-        cameras.
+        If core properties like axis extents or axis direction change, it
+        performs a full view reset. For margin changes, it only updates the
+        extent frame, preserving pan/zoom and canvas size.
         """
         logger.debug(
             "Machine changed signal received: "
             f"machine={machine.name if machine else 'None'}"
         )
         if not machine:
-            # Machine was likely removed or changed to None, clear cameras
             self._sync_camera_elements()
             return
 
-        # Check for changes that require a full view reset.
-        size_changed = machine.dimensions != (self.width_mm, self.height_mm)
+        extent_w, extent_h = machine.axis_extents
+        surf_w, surf_h = machine.work_surface[2], machine.work_surface[3]
+
+        extent_changed = (extent_w, extent_h) != self._tracked_axis_extents
+        size_changed = (surf_w, surf_h) != (self.width_mm, self.height_mm)
         y_axis_changed = machine.y_axis_down != self._axis_renderer.y_axis_down
         x_axis_changed = (
             machine.x_axis_right != self._axis_renderer.x_axis_right
@@ -892,19 +912,22 @@ class WorkSurface(WorldSurface):
             machine.reverse_y_axis != self._axis_renderer.y_axis_negative
         )
 
-        if (
-            size_changed
-            or x_axis_changed
+        if extent_changed:
+            self.reset_view()
+        elif (
+            x_axis_changed
             or y_axis_changed
             or x_reverse_changed
             or y_reverse_changed
         ):
             self.reset_view()
+        elif size_changed:
+            self.set_size(float(surf_w), float(surf_h))
+            self._update_extent_frame()
+            self.queue_draw()
         else:
-            # No major reset needed, but other properties like the list of
-            # cameras might have changed.
+            self._update_extent_frame()
             self._sync_camera_elements()
-            # The WCS might also have changed, so trigger an update.
             self._on_wcs_updated(machine)
 
     def reset_view(self):
@@ -914,6 +937,7 @@ class WorkSurface(WorldSurface):
         """
         if not self.machine:
             # If no machine, reset to a default view
+            self._tracked_axis_extents = (100, 100)
             self.set_size(100.0, 100.0)
             self._axis_renderer.set_x_axis_right(False)
             self._axis_renderer.set_y_axis_down(False)
@@ -924,16 +948,20 @@ class WorkSurface(WorldSurface):
             self._sync_camera_elements()
             return
 
+        surf_x, surf_y, surf_w, surf_h = self.machine.work_surface
+        width_mm = float(surf_w)
+        height_mm = float(surf_h)
+
         logger.debug(
             f"Resetting view for machine '{self.machine.name}' "
-            f"with dims={self.machine.dimensions}, "
+            f"with work_surface=({surf_x}, {surf_y}, {surf_w}, {surf_h}), "
             f"x_right={self.machine.x_axis_right}, "
             f"y_down={self.machine.y_axis_down}, "
             f"reverse_x={self.machine.reverse_x_axis}, "
             f"reverse_y={self.machine.reverse_y_axis}"
         )
-        new_dimensions = self.machine.dimensions
-        self.set_size(new_dimensions[0], new_dimensions[1])
+        self._tracked_axis_extents = self.machine.axis_extents
+        self.set_size(width_mm, height_mm)
         self._axis_renderer.set_x_axis_right(self.machine.x_axis_right)
         self._axis_renderer.set_y_axis_down(self.machine.y_axis_down)
         self._axis_renderer.set_x_axis_negative(self.machine.reverse_x_axis)
@@ -944,17 +972,36 @@ class WorkSurface(WorldSurface):
             self.machine.y_axis_down,
         )
 
+        self._update_extent_frame()
+
         # Call the base class reset which handles pan/zoom
         super().reset_view()
-        new_ratio = (
-            new_dimensions[0] / new_dimensions[1]
-            if new_dimensions[1] > 0
-            else 1.0
-        )
+        new_ratio = width_mm / height_mm if height_mm > 0 else 1.0
         self.aspect_ratio_changed.send(self, ratio=new_ratio)
         self._sync_camera_elements()
         self._on_wcs_updated(self.machine)
         self._update_pipeline_view_context()
+
+    def _update_extent_frame(self):
+        """
+        Updates the axis extent frame visibility and position.
+
+        The extent frame is shown when the work surface differs from
+        the axis extents. It represents the full machine travel range.
+        """
+        if not self.machine:
+            self._extent_frame_element.set_visible(False)
+            return
+
+        if self.machine.has_custom_work_surface():
+            frame_x, frame_y, frame_w, frame_h = (
+                self.machine.get_visual_extent_frame()
+            )
+            self._extent_frame_element.set_size(float(frame_w), float(frame_h))
+            self._extent_frame_element.set_pos(float(frame_x), float(frame_y))
+            self._extent_frame_element.set_visible(True)
+        else:
+            self._extent_frame_element.set_visible(False)
 
     def _on_aspect_ratio_changed(self, sender, **kwargs) -> None:
         """
