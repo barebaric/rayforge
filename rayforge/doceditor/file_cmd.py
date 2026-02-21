@@ -753,7 +753,8 @@ class FileCmd:
         logger.debug(
             f"_fit_and_center_imported_items: bbox=({bbox_x:.2f}, "
             f"{bbox_y:.2f}, {bbox_w:.2f}, {bbox_h:.2f}), "
-            f"work_area=({area_x:.2f}, {area_y:.2f}, {area_w:.2f}, {area_h:.2f})"
+            f"work_area="
+            f"({area_x:.2f}, {area_y:.2f}, {area_w:.2f}, {area_h:.2f})"
         )
 
         # 1. Scale to fit if necessary, preserving aspect ratio
