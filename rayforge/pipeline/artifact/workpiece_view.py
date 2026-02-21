@@ -66,6 +66,7 @@ class WorkPieceViewArtifactHandle(BaseArtifactHandle):
         shm_name: str,
         handle_class_name: str,
         artifact_type_name: str,
+        generation_id: int,
         array_metadata: Union[Dict[str, Any], None] = None,
         **_kwargs,
     ):
@@ -73,6 +74,7 @@ class WorkPieceViewArtifactHandle(BaseArtifactHandle):
             shm_name=shm_name,
             handle_class_name=handle_class_name,
             artifact_type_name=artifact_type_name,
+            generation_id=generation_id,
             array_metadata=array_metadata,
         )
         self.bbox_mm = bbox_mm
@@ -90,11 +92,13 @@ class WorkPieceViewArtifact(BaseArtifact):
         bitmap_data: np.ndarray,
         bbox_mm: Tuple[float, float, float, float],
         workpiece_size_mm: Tuple[float, float],
+        generation_id: int,
     ):
         super().__init__()
         self.bitmap_data = bitmap_data
         self.bbox_mm = bbox_mm
         self.workpiece_size_mm = workpiece_size_mm
+        self.generation_id = generation_id
 
     def create_handle(
         self,
@@ -106,6 +110,7 @@ class WorkPieceViewArtifact(BaseArtifact):
             shm_name=shm_name,
             handle_class_name=WorkPieceViewArtifactHandle.__name__,
             artifact_type_name=self.__class__.__name__,
+            generation_id=self.generation_id,
             array_metadata=array_metadata,
             bbox_mm=self.bbox_mm,
             workpiece_size_mm=self.workpiece_size_mm,
@@ -137,4 +142,5 @@ class WorkPieceViewArtifact(BaseArtifact):
             bitmap_data=arrays["bitmap_data"].copy(),
             bbox_mm=handle.bbox_mm,
             workpiece_size_mm=handle.workpiece_size_mm,
+            generation_id=handle.generation_id,
         )

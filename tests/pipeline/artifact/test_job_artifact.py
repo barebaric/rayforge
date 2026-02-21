@@ -10,6 +10,7 @@ def test_artifact_type_property():
         ops=Ops(),
         distance=0.0,
         machine_code_bytes=np.array([72, 101, 108, 108, 111]),
+        generation_id=1,
     )
     assert job_artifact.artifact_type == "JobArtifact"
 
@@ -25,6 +26,7 @@ def test_final_job_serialization_round_trip():
         machine_code_bytes=machine_code_bytes,
         op_map_bytes=op_map_bytes,
         time_estimate=123.45,
+        generation_id=1,
     )
 
     reconstructed = JobArtifact.from_dict(artifact.to_dict())

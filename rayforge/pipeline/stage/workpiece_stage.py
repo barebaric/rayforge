@@ -9,7 +9,7 @@ from ...shared.tasker.task import Task
 from ...shared.util.size import sizes_are_close
 from ..artifact import WorkPieceArtifact
 from ..artifact.key import ArtifactKey
-from ..artifact.manager import make_composite_key
+from ..artifact.manager import make_composite_key, StaleGenerationError
 from ..dag.node import NodeState
 from .base import PipelineStage
 
@@ -19,9 +19,9 @@ if TYPE_CHECKING:
     from ...core.workpiece import WorkPiece
     from ...machine.models.machine import Machine
     from ...shared.tasker.manager import TaskManager
-    from ..context import GenerationContext
     from ..artifact import BaseArtifactHandle
     from ..artifact.manager import ArtifactManager
+    from ..context import GenerationContext
 
 logger = logging.getLogger(__name__)
 
@@ -182,23 +182,12 @@ class WorkPiecePipelineStage(PipelineStage):
         handle: Optional["BaseArtifactHandle"],
         generation_id: int,
         step_uid: str,
+        step: "Step",
+        workpiece: "WorkPiece",
     ):
         """
         Processes artifact_created event.
         """
-        # Extract workpiece UID from the key (format is "wp_uid:step_uid"
-        # or just "wp_uid")
-        wp_uid = key.id.split(":")[0] if ":" in key.id else key.id
-
-        # Check if this workpiece has been deleted
-        # If so, raise an exception to trigger safe_adoption rollback
-        if self._artifact_manager.is_workpiece_deleted(wp_uid):
-            logger.debug(
-                f"handle_artifact_created: workpiece {wp_uid} "
-                f"deleted, rejecting handle"
-            )
-            raise ValueError(f"Workpiece {wp_uid} has been deleted")
-
         if handle is not None:
             self._artifact_manager.cache_handle(
                 ledger_key, handle, generation_id
@@ -212,28 +201,6 @@ class WorkPiecePipelineStage(PipelineStage):
 
         self.workpiece_artifact_adopted.send(
             self, step_uid=step_uid, workpiece_uid=key.id
-        )
-
-    def handle_visual_chunk_ready(
-        self,
-        key: ArtifactKey,
-        handle_dict: dict,
-        generation_id: int,
-        step_uid: str,
-    ):
-        """
-        Processes visual_chunk_ready event.
-
-        Passes the handle_dict directly to ViewManager which will adopt
-        and own the lifecycle. This avoids race conditions with adoption
-        and release.
-        """
-        self.visual_chunk_available.send(
-            self,
-            key=key,
-            chunk_handle_dict=handle_dict,
-            generation_id=generation_id,
-            step_uid=step_uid,
         )
 
     def handle_canceled_task(
@@ -428,59 +395,87 @@ class WorkPiecePipelineStage(PipelineStage):
                 context,
             ),
             when_event=lambda task, event_name, data: self._on_task_event(
-                task, event_name, data, step.uid
+                task, event_name, data, step, workpiece
             ),
         )
 
     def _on_task_event(
-        self, task: "Task", event_name: str, data: dict, step_uid: str
+        self,
+        task: "Task",
+        event_name: str,
+        data: dict,
+        step: "Step",
+        workpiece: "WorkPiece",
     ):
         """Handles events from a background task."""
         key = task.key
         ledger_key = key
+        step_uid = step.uid
 
         handle_dict = data.get("handle_dict")
         generation_id = data.get("generation_id")
 
         if generation_id is None:
-            logger.error(
-                f"[{key}] Task event '{event_name}' missing "
-                f"generation id. Ignoring."
-            )
-            return
-
-        if handle_dict is None and event_name != "artifact_created":
-            logger.error(
-                f"[{key}] Task event '{event_name}' missing handle. Ignoring."
-            )
             return
 
         try:
-            if handle_dict is None:
-                if event_name == "artifact_created":
-                    self.handle_artifact_created(
-                        key, ledger_key, None, generation_id, step_uid
+            if event_name == "visual_chunk_ready" and handle_dict:
+                # Use transient_adoption which checks staleness automatically
+                with self._artifact_manager.transient_adoption(
+                    key, handle_dict
+                ) as chunk_handle:
+                    # Emit signal - listeners must retain if they want to keep
+                    self.visual_chunk_available.send(
+                        self,
+                        key=key,
+                        chunk_handle=chunk_handle,
+                        generation_id=generation_id,
+                        step_uid=step_uid,
                     )
                 return
 
-            if event_name == "visual_chunk_ready":
-                # For visual chunks, pass handle_dict directly to ViewManager
-                # which will adopt and own the lifecycle. This avoids a race
-                # condition where we might release before ViewManager retains.
-                self.handle_visual_chunk_ready(
-                    key, handle_dict, generation_id, step_uid
+            if not handle_dict:
+                # For empty artifacts, still check staleness
+                is_stale = not self._artifact_manager.is_generation_current(
+                    ledger_key, generation_id
                 )
-            else:
-                with self._artifact_manager.safe_adoption(
-                    key, handle_dict
-                ) as handle:
-                    if event_name == "artifact_created":
-                        self.handle_artifact_created(
-                            key, ledger_key, handle, generation_id, step_uid
-                        )
+                is_deleted = step.layer is None or workpiece.layer is None
+                if (
+                    event_name == "artifact_created"
+                    and not is_deleted
+                    and not is_stale
+                ):
+                    self.handle_artifact_created(
+                        key,
+                        ledger_key,
+                        None,
+                        generation_id,
+                        step_uid,
+                        step,
+                        workpiece,
+                    )
+                return
+
+            # Artifact Created: safe_adoption checks staleness automatically
+            with self._artifact_manager.safe_adoption(
+                key, handle_dict
+            ) as handle:
+                if event_name == "artifact_created":
+                    self.handle_artifact_created(
+                        key,
+                        ledger_key,
+                        handle,
+                        generation_id,
+                        step_uid,
+                        step,
+                        workpiece,
+                    )
+        except StaleGenerationError as e:
+            logger.debug(f"Discarding stale artifact event for {key}: {e}")
         except Exception as e:
             logger.error(
-                f"Failed to process event '{event_name}': {e}", exc_info=True
+                f"Failed to process event '{event_name}': {e}",
+                exc_info=True,
             )
 
     def _on_task_complete(

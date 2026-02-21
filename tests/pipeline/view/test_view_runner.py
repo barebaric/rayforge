@@ -59,6 +59,7 @@ def vector_artifact_handle(context_initializer):
         is_scalable=True,
         source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
         generation_size=(20, 20),
+        generation_id=0,
     )
     handle = get_context().artifact_store.put(artifact)
     yield handle
@@ -84,6 +85,7 @@ def texture_artifact_handle(context_initializer):
         is_scalable=False,
         source_coordinate_system=CoordinateSystem.PIXEL_SPACE,
         generation_size=(50, 50),
+        generation_id=0,
     )
     handle = get_context().artifact_store.put(artifact)
     yield handle
@@ -295,6 +297,7 @@ def test_on_demand_vertex_encoding(context_initializer, adopting_mock_proxy):
         is_scalable=True,
         source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
         generation_size=(20.0, 20.0),
+        generation_id=0,
     )
     handle = get_context().artifact_store.put(artifact)
     color_set = create_test_color_set({"cut": ("#000", "#F00")})
@@ -347,6 +350,7 @@ def test_on_demand_texture_encoding(context_initializer, adopting_mock_proxy):
         is_scalable=False,
         source_coordinate_system=CoordinateSystem.PIXEL_SPACE,
         generation_size=(10.0, 10.0),
+        generation_id=0,
     )
     handle = get_context().artifact_store.put(artifact)
     color_set = create_test_color_set({"engrave": ("#000", "#FFF")})

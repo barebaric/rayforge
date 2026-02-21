@@ -31,6 +31,7 @@ def test_workpiece_handle_serialization_round_trip():
                 "offset": 40,
             },
         },
+        generation_id=1,
     )
 
     handle_dict = handle.to_dict()
@@ -56,6 +57,7 @@ def test_step_ops_handle_serialization_round_trip():
         array_metadata={
             "ops_types": {"dtype": "int32", "shape": (50,), "offset": 0},
         },
+        generation_id=1,
     )
     handle_dict = handle.to_dict()
     reconstructed_handle = cast(
@@ -88,6 +90,7 @@ def test_step_render_handle_serialization_round_trip():
                 "offset": 1200,
             },
         },
+        generation_id=1,
     )
     handle_dict = handle.to_dict()
     reconstructed_handle = create_handle_from_dict(handle_dict)

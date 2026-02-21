@@ -47,6 +47,7 @@ class OpsProducer(ABC):
         surface,
         pixels_per_mm,
         *,
+        generation_id: int,
         workpiece: "Optional[WorkPiece]" = None,
         settings: Optional[Dict[str, Any]] = None,
         y_offset_mm: float = 0.0,

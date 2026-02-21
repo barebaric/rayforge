@@ -27,7 +27,6 @@ from rayforge.core.source_asset_segment import SourceAssetSegment
 from rayforge.core.vectorization_spec import PassthroughSpec
 from rayforge.core.workpiece import WorkPiece
 from rayforge.image import SVG_RENDERER
-from rayforge.pipeline.artifact.manager import extract_base_key
 from rayforge.pipeline.pipeline import Pipeline
 from rayforge.pipeline.steps import create_contour_step, create_engrave_step
 from rayforge.pipeline.view.view_manager import ViewManager
@@ -45,13 +44,13 @@ logger = logging.getLogger(__name__)
 class StressTestConfig:
     """Configuration for stress test parameters."""
 
-    total_duration_sec: int = 120
-    chaos_phase_sec: int = 30
-    settle_phase_sec: int = 15
-    min_invalidation_interval_ms: int = 20
-    max_invalidation_interval_ms: int = 1000
-    max_settle_wait_sec: int = 60
-    leak_threshold: int = 5
+    total_duration_sec: int = 90
+    chaos_phase_sec: int = 19
+    settle_phase_sec: int = 7
+    min_invalidation_interval_ms: int = 2
+    max_invalidation_interval_ms: int = 777
+    max_settle_wait_sec: int = 30
+    leak_threshold: int = 2
     initial_workpiece_count: int = 2
     max_workpieces: int = 5
 
@@ -331,119 +330,59 @@ class StressTestController:
     def _get_artifact_breakdown(self) -> Dict[str, int]:
         """
         Get a breakdown of SHM blocks by artifact type.
-
-        Returns a dict mapping artifact type names to counts.
+        Calculates exact unique SHM names across all tracking registries
+        to confidently identify untracked (leaked) blocks.
         """
         breakdown: Dict[str, int] = {}
+        tracked_shms = set()
+
+        # Tracked by ledger
         ledger = self.pipeline._artifact_manager._ledger
+        for key, entry in ledger.items():
+            if entry.handle is not None:
+                tracked_shms.add(entry.handle.shm_name)
 
-        for key in ledger.keys():
-            if isinstance(key, tuple):
-                base_key = key[0]
-            else:
-                base_key = key
+        # Tracked by step renders
+        for (
+            handle
+        ) in self.pipeline._artifact_manager._step_render_handles.values():
+            tracked_shms.add(handle.shm_name)
 
-            artifact_type = base_key.group
-            breakdown[artifact_type] = breakdown.get(artifact_type, 0) + 1
+        # Tracked by step stage retained handles
+        for handles in self.pipeline._step_stage._retained_handles.values():
+            for handle in handles:
+                tracked_shms.add(handle.shm_name)
 
-        # Count ledger entries with handles
-        ledger_with_handles = sum(
-            1 for entry in ledger.values() if entry.handle is not None
-        )
-        if ledger_with_handles > 0:
-            breakdown["ledger_with_handles"] = ledger_with_handles
-
-        step_renders = len(
-            self.pipeline._artifact_manager._step_render_handles
-        )
-        if step_renders > 0:
-            breakdown["step_render"] = step_renders
-
-        retained = len(self.pipeline._step_stage._retained_handles)
-        if retained > 0:
-            breakdown["step_retained"] = retained
-
-        # Track ViewManager handles if available
+        # Tracked by ViewManager
         if self._view_manager is not None:
             vm = self._view_manager
-            view_entry_handles = sum(
-                1 for e in vm._view_entries.values() if e.handle
-            )
-            if view_entry_handles > 0:
-                breakdown["vm_view_handles"] = view_entry_handles
+            for entry in vm._view_entries.values():
+                if entry.handle:
+                    tracked_shms.add(entry.handle.shm_name)
+            for handle in vm._source_artifact_handles.values():
+                tracked_shms.add(handle.shm_name)
+            for handle in vm._inflight_chunk_handles:
+                tracked_shms.add(handle.shm_name)
 
-            vm_source_handles = sum(
-                1 for e in vm._view_entries.values() if e.source_handle
-            )
-            if vm_source_handles > 0:
-                breakdown["vm_entry_source"] = vm_source_handles
+        all_shms = set(self.artifact_store._managed_shms.keys())
+        untracked_shms = all_shms - tracked_shms
 
-            vm_tracked_sources = len(vm._source_artifact_handles)
-            if vm_tracked_sources > 0:
-                breakdown["vm_tracked_sources"] = vm_tracked_sources
+        breakdown["total_shm"] = len(all_shms)
+        breakdown["tracked_unique"] = len(tracked_shms)
+        breakdown["untracked"] = len(untracked_shms)
 
-            vm_inflight_chunks = len(vm._inflight_chunk_handles)
-            if vm_inflight_chunks > 0:
-                breakdown["vm_inflight_chunks"] = vm_inflight_chunks
-
-        total_shm = len(self.artifact_store._managed_shms)
-        tracked = sum(breakdown.values())
-
-        # Add total SHM for reference
-        breakdown["total_shm"] = total_shm
-
-        if total_shm > tracked:
-            breakdown["untracked"] = total_shm - tracked
-            # Log details about untracked blocks for debugging
-            untracked_names = list(self.artifact_store._managed_shms.keys())
+        if untracked_shms:
             logger.warning(
-                f"Untracked SHM blocks ({len(untracked_names)}): "
-                f"{untracked_names[:20]}"
+                f"Untracked SHM blocks ({len(untracked_shms)}): "
+                f"{list(untracked_shms)[:20]}"
             )
 
-            # Check refcounts for untracked blocks
+            # Log refcounts for untracked blocks to help debug
             refcounts = self.artifact_store._refcounts
             untracked_refcounts = {
-                name: refcounts.get(name, "missing")
-                for name in untracked_names
+                name: refcounts.get(name, "missing") for name in untracked_shms
             }
             logger.warning(f"Untracked refcounts: {untracked_refcounts}")
-
-            # Check ledger size vs expected
-            ledger = self.pipeline._artifact_manager._ledger
-            logger.warning(f"Ledger size: {len(ledger)}")
-
-            # Check ledger entries with handles by type
-            ledger_by_type = {}
-            for key, entry in ledger.items():
-                base_key = extract_base_key(key)
-                artifact_type = base_key.group
-                if entry.handle is not None:
-                    ledger_by_type[artifact_type] = (
-                        ledger_by_type.get(artifact_type, 0) + 1
-                    )
-            logger.warning(
-                f"Ledger entries with handles by type: {ledger_by_type}"
-            )
-
-            # Check if ledger has entries for deleted workpieces
-            current_wp_uids = {wp.uid for wp in self.doc.all_workpieces}
-            orphan_ledger_entries = 0
-            orphan_with_handles = 0
-            for key, entry in ledger.items():
-                base_key = extract_base_key(key)
-                if base_key.group == "workpiece":
-                    # ID format is "wp_uid" or "wp_uid:step_uid"
-                    wp_uid = base_key.id.split(":")[0]
-                    if wp_uid not in current_wp_uids:
-                        orphan_ledger_entries += 1
-                        if entry.handle is not None:
-                            orphan_with_handles += 1
-            if orphan_ledger_entries > 0:
-                logger.warning(
-                    f"Orphan ledger entries: {orphan_ledger_entries}, "
-                    f"with handles: {orphan_with_handles}"
-                )
 
         return breakdown
 

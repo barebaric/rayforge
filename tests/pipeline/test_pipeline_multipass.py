@@ -110,9 +110,20 @@ class TestPipelineMultipass:
                 if task_info.target is make_job_artifact_in_subprocess:
                     if task_info.when_event:
                         store = get_context().artifact_store
-                        job_artifact = JobArtifact(ops=Ops(), distance=0.0)
+                        job_artifact = JobArtifact(
+                            ops=Ops(), distance=0.0, generation_id=1
+                        )
                         job_handle = store.put(job_artifact)
-                        event_data = {"handle_dict": job_handle.to_dict()}
+                        gen_id = task_info.kwargs.get("generation_id")
+                        job_key = task_info.kwargs.get("job_key")
+                        event_data = {
+                            "handle_dict": job_handle.to_dict(),
+                            "generation_id": gen_id,
+                            "job_key": {
+                                "id": job_key.id,
+                                "group": job_key.group,
+                            },
+                        }
                         task_info.when_event(
                             task_obj, "artifact_created", event_data
                         )
@@ -124,9 +135,11 @@ class TestPipelineMultipass:
                     task_obj.result.return_value = gen_id
                     if task_info.when_event:
                         store = get_context().artifact_store
-                        render_artifact = StepRenderArtifact()
+                        render_artifact = StepRenderArtifact(generation_id=1)
                         render_handle = store.put(render_artifact)
-                        ops_artifact = StepOpsArtifact(ops=Ops())
+                        ops_artifact = StepOpsArtifact(
+                            ops=Ops(), generation_id=1
+                        )
                         ops_handle = store.put(ops_artifact)
 
                         render_event = {
@@ -262,18 +275,20 @@ class TestPipelineMultipass:
             generation_size=real_workpiece.size,
             source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
             source_dimensions=real_workpiece.size,
+            generation_id=1,
         )
         handle = get_context().artifact_store.put(artifact)
         try:
             self._complete_all_tasks(mock_task_mgr, handle)
             mock_task_mgr.run_process.reset_mock()
+            mock_task_mgr.created_tasks.clear()
 
             # Act
             step.per_step_transformers_dicts = []
             pipeline._on_job_assembly_invalidated(sender=doc)
-            await asyncio.sleep(0)  # Allow debounced task to run
+            await asyncio.sleep(0)
 
-            # Assert
+            # Assert - per-step transformer change should trigger step assembly
             tasks = mock_task_mgr.created_tasks
             assembly_tasks = [
                 t

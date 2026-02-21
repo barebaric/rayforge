@@ -66,6 +66,7 @@ def test_compute_workpiece_view_vector_returns_valid_artifact():
         is_scalable=True,
         source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
         generation_size=(20, 20),
+        generation_id=0,
     )
 
     color_set = create_test_color_set({"cut": ("#000", "#F00")})
@@ -76,7 +77,7 @@ def test_compute_workpiece_view_vector_returns_valid_artifact():
         color_set_dict=color_set.to_dict(),
     )
 
-    result = compute_workpiece_view(artifact, context)
+    result = compute_workpiece_view(artifact, context, generation_id=0)
 
     assert result is not None
     assert isinstance(result, WorkPieceViewArtifact)
@@ -99,6 +100,7 @@ def test_compute_workpiece_view_texture_returns_valid_artifact():
         is_scalable=False,
         source_coordinate_system=CoordinateSystem.PIXEL_SPACE,
         generation_size=(50, 50),
+        generation_id=0,
     )
 
     color_set = create_test_color_set({"engrave": ("#000", "#FFF")})
@@ -109,7 +111,7 @@ def test_compute_workpiece_view_texture_returns_valid_artifact():
         color_set_dict=color_set.to_dict(),
     )
 
-    result = compute_workpiece_view(artifact, context)
+    result = compute_workpiece_view(artifact, context, generation_id=0)
 
     assert result is not None
     assert isinstance(result, WorkPieceViewArtifact)
@@ -128,6 +130,7 @@ def test_compute_workpiece_view_with_progress_callback(mock_progress_context):
         is_scalable=True,
         source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
         generation_size=(20.0, 20.0),
+        generation_id=0,
     )
 
     color_set = create_test_color_set({"cut": ("#000", "#F00")})
@@ -138,7 +141,12 @@ def test_compute_workpiece_view_with_progress_callback(mock_progress_context):
         color_set_dict=color_set.to_dict(),
     )
 
-    result = compute_workpiece_view(artifact, context, mock_progress_context)
+    result = compute_workpiece_view(
+        artifact,
+        context,
+        generation_id=0,
+        progress_context=mock_progress_context,
+    )
 
     assert result is not None
     assert isinstance(result, WorkPieceViewArtifact)
@@ -157,6 +165,7 @@ def test_compute_workpiece_view_empty_ops_returns_none():
         is_scalable=True,
         source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
         generation_size=(20.0, 20.0),
+        generation_id=0,
     )
 
     color_set = create_test_color_set({"cut": ("#000", "#F00")})
@@ -167,7 +176,7 @@ def test_compute_workpiece_view_empty_ops_returns_none():
         color_set_dict=color_set.to_dict(),
     )
 
-    result = compute_workpiece_view(artifact, context)
+    result = compute_workpiece_view(artifact, context, generation_id=0)
 
     assert result is None
 
@@ -185,6 +194,7 @@ def test_compute_workpiece_view_travel_moves_shown():
         is_scalable=True,
         source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
         generation_size=(20.0, 20.0),
+        generation_id=0,
     )
 
     color_set = create_test_color_set({"cut": ("#000", "#F00")})
@@ -195,7 +205,7 @@ def test_compute_workpiece_view_travel_moves_shown():
         color_set_dict=color_set.to_dict(),
     )
 
-    result = compute_workpiece_view(artifact, context)
+    result = compute_workpiece_view(artifact, context, generation_id=0)
 
     assert result is not None
     assert isinstance(result, WorkPieceViewArtifact)
@@ -213,6 +223,7 @@ def test_compute_view_dimensions_vector():
         is_scalable=True,
         source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
         generation_size=(20, 20),
+        generation_id=0,
     )
 
     color_set = create_test_color_set({"cut": ("#000", "#F00")})
@@ -247,6 +258,7 @@ def test_compute_view_dimensions_texture():
         is_scalable=False,
         source_coordinate_system=CoordinateSystem.PIXEL_SPACE,
         generation_size=(10, 10),
+        generation_id=0,
     )
 
     color_set = create_test_color_set({"engrave": ("#000", "#FFF")})
@@ -277,6 +289,7 @@ def test_compute_view_dimensions_empty_ops():
         is_scalable=True,
         source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
         generation_size=(20.0, 20.0),
+        generation_id=0,
     )
 
     color_set = create_test_color_set({"cut": ("#000", "#F00")})
@@ -303,6 +316,7 @@ def test_compute_workpiece_view_to_buffer():
         is_scalable=True,
         source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
         generation_size=(20.0, 20.0),
+        generation_id=0,
     )
 
     color_set = create_test_color_set({"cut": ("#000", "#F00")})
@@ -338,6 +352,7 @@ def test_compute_workpiece_view_to_buffer_with_progress(
         is_scalable=True,
         source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
         generation_size=(20.0, 20.0),
+        generation_id=0,
     )
 
     color_set = create_test_color_set({"cut": ("#000", "#F00")})
@@ -367,6 +382,7 @@ def test_compute_workpiece_view_to_buffer_empty_ops():
         is_scalable=True,
         source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
         generation_size=(20.0, 20.0),
+        generation_id=0,
     )
 
     color_set = create_test_color_set({"cut": ("#000", "#F00")})
@@ -395,6 +411,7 @@ def test_render_chunk_to_buffer():
         is_scalable=True,
         source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
         generation_size=(10.0, 10.0),
+        generation_id=0,
     )
 
     color_set = create_test_color_set({"cut": ("#000", "#F00")})
@@ -425,6 +442,7 @@ def test_render_chunk_to_buffer_texture():
         is_scalable=False,
         source_coordinate_system=CoordinateSystem.PIXEL_SPACE,
         generation_size=(10, 10),
+        generation_id=0,
     )
 
     color_set = create_test_color_set({"engrave": ("#000", "#FFF")})
@@ -546,6 +564,7 @@ def test_encode_vertex_and_texture_data_vector():
         is_scalable=True,
         source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
         generation_size=(20.0, 20.0),
+        generation_id=0,
     )
 
     color_set = create_test_color_set({"cut": ("#000", "#F00")})
@@ -577,6 +596,7 @@ def test_encode_vertex_and_texture_data_texture():
         is_scalable=False,
         source_coordinate_system=CoordinateSystem.PIXEL_SPACE,
         generation_size=(10, 10),
+        generation_id=0,
     )
 
     color_set = create_test_color_set({"engrave": ("#000", "#FFF")})

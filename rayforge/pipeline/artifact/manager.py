@@ -30,6 +30,12 @@ logger = logging.getLogger(__name__)
 GenerationID = int
 
 
+class StaleGenerationError(Exception):
+    """Raised when adopting an artifact with an outdated generation."""
+
+    pass
+
+
 def make_composite_key(
     base_key: ArtifactKey,
     generation_id: GenerationID,
@@ -73,8 +79,6 @@ class ArtifactManager:
         self._ref_counts: Dict[ArtifactKey, int] = {}
         self._ledger: Dict[Tuple[ArtifactKey, GenerationID], LedgerEntry] = {}
         self._dependencies: Dict[ArtifactKey, List[ArtifactKey]] = {}
-        # Set of workpiece UIDs that have been deleted
-        self._deleted_workpieces: Set[str] = set()
 
     def get_workpiece_handle(
         self, key: ArtifactKey, generation_id: GenerationID
@@ -264,15 +268,73 @@ class ArtifactManager:
         If the block completes successfully, the handle is kept and remains
         adopted.
 
+        Automatically checks for stale generations by verifying the handle's
+        generation ID matches the current ledger entry, raising
+        StaleGenerationError if the artifact is no longer valid.
+
         Args:
-            key: The key context for logging.
+            key: The key context for logging and staleness checking.
             handle_dict: The serialized handle dictionary.
 
         Yields:
             The adopted BaseArtifactHandle.
+
+        Raises:
+            StaleGenerationError: If the generation is stale.
         """
-        with self._store.safe_adoption(handle_dict) as handle:
+        handle = create_handle_from_dict(handle_dict)
+        self._store.adopt(handle)
+        try:
+            if not self.is_generation_current(key, handle.generation_id):
+                raise StaleGenerationError(
+                    f"Generation {handle.generation_id} is stale for {key}"
+                )
             yield handle
+        except StaleGenerationError:
+            self._store.release(handle)
+            raise
+        except Exception:
+            self._store.release(handle)
+            raise
+
+    @contextmanager
+    def transient_adoption(
+        self,
+        key: ArtifactKey,
+        handle_dict: Dict[str, Any],
+    ) -> Generator[BaseArtifactHandle, None, None]:
+        """
+        Context manager that adopts a handle and always releases it on exit.
+
+        Unlike safe_adoption which only releases on exception, this manager
+        releases the handle in all cases (normal exit and exception). Callers
+        that want to keep the handle must call retain_handle() before the
+        context exits.
+
+        Automatically checks for stale generations by verifying the handle's
+        generation ID matches the current ledger entry, raising
+        StaleGenerationError if the artifact is no longer valid.
+
+        Args:
+            key: The key context for logging and staleness checking.
+            handle_dict: The serialized handle dictionary.
+
+        Yields:
+            The adopted BaseArtifactHandle.
+
+        Raises:
+            StaleGenerationError: If the generation is stale.
+        """
+        handle = create_handle_from_dict(handle_dict)
+        self._store.adopt(handle)
+        try:
+            if not self.is_generation_current(key, handle.generation_id):
+                raise StaleGenerationError(
+                    f"Generation {handle.generation_id} is stale for {key}"
+                )
+            yield handle
+        finally:
+            self._store.release(handle)
 
     def adopt_artifact(
         self,
@@ -380,13 +442,14 @@ class ArtifactManager:
         re-rendering, this method permanently removes entries from the
         ledger and releases all associated handles.
 
+        Removing the ledger entries ensures that is_generation_current()
+        will return False for any in-flight tasks, preventing stale
+        artifacts from being adopted.
+
         Args:
             key: The ArtifactKey for the workpiece to remove.
         """
         wp_uid = key.id
-        # Mark this workpiece as deleted so we don't create new entries
-        # for tasks that were already running
-        self._deleted_workpieces.add(wp_uid)
         # The ledger keys have IDs in format "workpiece_uid:step_uid" or just
         # "workpiece_uid" for step artifacts. We need to match any key whose
         # ID starts with the workpiece UID.
@@ -406,9 +469,30 @@ class ArtifactManager:
                     self.release_handle(entry.handle)
             del self._ledger[ledger_key]
 
-    def is_workpiece_deleted(self, wp_uid: str) -> bool:
-        """Check if a workpiece has been deleted."""
-        return wp_uid in self._deleted_workpieces
+    def remove_for_step(self, key: ArtifactKey):
+        """
+        Remove all ledger entries for a step that has been deleted.
+        """
+        step_uid = key.id
+        keys_to_remove = []
+        for ledger_key in list(self._ledger.keys()):
+            base_key = extract_base_key(ledger_key)
+            if base_key == key:
+                keys_to_remove.append(ledger_key)
+            elif base_key.group == "workpiece" and base_key.id.endswith(
+                f":{step_uid}"
+            ):
+                keys_to_remove.append(ledger_key)
+
+        for ledger_key in keys_to_remove:
+            entry = self._ledger.get(ledger_key)
+            if entry:
+                if entry.handle is not None:
+                    self.release_handle(entry.handle)
+            del self._ledger[ledger_key]
+
+        step_render_handle = self._step_render_handles.pop(step_uid, None)
+        self.release_handle(step_render_handle)
 
     def invalidate_for_step(self, key: ArtifactKey):
         from ..dag.node import NodeState
@@ -425,20 +509,6 @@ class ArtifactManager:
                     self.release_handle(step_entry.handle)
                     step_entry.handle = None
                 step_entry.state = NodeState.DIRTY
-
-        keys_to_invalidate = [
-            ledger_key
-            for ledger_key in self._ledger.keys()
-            if extract_base_key(ledger_key).group == "workpiece"
-            and extract_base_key(ledger_key).id == key.id
-        ]
-        for ledger_key in keys_to_invalidate:
-            entry = self._ledger.get(ledger_key)
-            if entry:
-                if entry.handle is not None:
-                    self.release_handle(entry.handle)
-                    entry.handle = None
-                entry.state = NodeState.DIRTY
 
         step_render_handle = self._step_render_handles.pop(key.id, None)
         self.release_handle(step_render_handle)

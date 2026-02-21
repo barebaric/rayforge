@@ -108,7 +108,9 @@ class TestPipelineState:
                 if task_info.target is make_job_artifact_in_subprocess:
                     if task_info.when_event:
                         store = get_context().artifact_store
-                        job_artifact = JobArtifact(ops=Ops(), distance=0.0)
+                        job_artifact = JobArtifact(
+                            ops=Ops(), distance=0.0, generation_id=0
+                        )
                         job_handle = store.put(job_artifact)
                         event_data = {"handle_dict": job_handle.to_dict()}
                         task_info.when_event(
@@ -122,9 +124,11 @@ class TestPipelineState:
                     task_obj.result.return_value = gen_id
                     if task_info.when_event:
                         store = get_context().artifact_store
-                        render_artifact = StepRenderArtifact()
+                        render_artifact = StepRenderArtifact(generation_id=0)
                         render_handle = store.put(render_artifact)
-                        ops_artifact = StepOpsArtifact(ops=Ops())
+                        ops_artifact = StepOpsArtifact(
+                            ops=Ops(), generation_id=0
+                        )
                         ops_handle = store.put(ops_artifact)
 
                         render_event = {
@@ -191,23 +195,25 @@ class TestPipelineState:
 
         # Simulate completion of a task to populate the cache
         task_info = mock_task_mgr.created_tasks[0]
+        gen_id = pipeline._data_generation_id
         artifact = WorkPieceArtifact(
             ops=Ops(),
             is_scalable=True,
             source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
             source_dimensions=real_workpiece.size,
             generation_size=real_workpiece.size,
+            generation_id=gen_id,
         )
         handle = get_context().artifact_store.put(artifact)
         task_obj_for_stage = task_info.returned_task_obj
         task_obj_for_stage.key = task_info.key
         task_obj_for_stage.get_status.return_value = "completed"
-        task_obj_for_stage.result.return_value = 1
+        task_obj_for_stage.result.return_value = gen_id
 
         try:
             event_data = {
                 "handle_dict": handle.to_dict(),
-                "generation_id": 1,
+                "generation_id": gen_id,
             }
             task_info.when_event(
                 task_obj_for_stage, "artifact_created", event_data
@@ -301,12 +307,14 @@ class TestPipelineState:
         assert pipeline.is_busy is True
 
         # Create a dummy workpiece artifact to allow the pipeline to proceed
+        gen_id = pipeline._data_generation_id
         artifact = WorkPieceArtifact(
             ops=Ops(),
             is_scalable=True,
             source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
             source_dimensions=real_workpiece.size,
             generation_size=real_workpiece.size,
+            generation_id=gen_id,
         )
         wp_handle = get_context().artifact_store.put(artifact)
 
@@ -334,12 +342,14 @@ class TestPipelineState:
         )
         # Complete initial task to clear active_tasks
         # Create a workpiece handle for the helper
+        gen_id = pipeline._data_generation_id
         artifact = WorkPieceArtifact(
             ops=Ops(),
             is_scalable=True,
             generation_size=real_workpiece.size,
             source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
             source_dimensions=real_workpiece.size,
+            generation_id=gen_id,
         )
         wp_handle = get_context().artifact_store.put(artifact)
         self._complete_all_tasks(mock_task_mgr, wp_handle)
@@ -385,6 +395,7 @@ class TestPipelineState:
             generation_size=real_workpiece.size,
             source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
             source_dimensions=real_workpiece.size,
+            generation_id=0,
         )
         wp_handle = get_context().artifact_store.put(artifact)
         self._complete_all_tasks(mock_task_mgr, wp_handle)
@@ -444,12 +455,14 @@ class TestPipelineState:
         )
 
         # Create a dummy workpiece artifact to allow the pipeline to proceed
+        gen_id = pipeline._data_generation_id
         wp_artifact = WorkPieceArtifact(
             ops=Ops(),
             is_scalable=True,
             generation_size=real_workpiece.size,
             source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
             source_dimensions=real_workpiece.size,
+            generation_id=gen_id,
         )
         wp_handle = get_context().artifact_store.put(wp_artifact)
 

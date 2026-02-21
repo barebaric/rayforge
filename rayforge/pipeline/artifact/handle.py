@@ -20,12 +20,15 @@ class BaseArtifactHandle(ABC):
         shm_name: str,
         handle_class_name: str,
         artifact_type_name: str,
+        generation_id: int,
         array_metadata: Optional[Dict[str, Any]] = None,
+        **_kwargs,
     ):
         """Initializes the base handle."""
         self.shm_name = shm_name
         self.handle_class_name = handle_class_name
         self.artifact_type_name = artifact_type_name
+        self.generation_id = generation_id
         self.array_metadata = (
             array_metadata if array_metadata is not None else {}
         )

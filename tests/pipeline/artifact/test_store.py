@@ -37,6 +37,7 @@ def _create_sample_vertex_artifact() -> WorkPieceArtifact:
         source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
         source_dimensions=(100, 100),
         generation_size=(50, 50),
+        generation_id=1,
     )
 
 
@@ -51,6 +52,7 @@ def _create_sample_hybrid_artifact() -> WorkPieceArtifact:
         source_coordinate_system=CoordinateSystem.PIXEL_SPACE,
         source_dimensions=(200, 200),
         generation_size=(50, 50),
+        generation_id=1,
     )
 
 
@@ -69,6 +71,7 @@ def _create_sample_final_job_artifact() -> JobArtifact:
         distance=15.0,
         machine_code_bytes=machine_code_bytes,
         op_map_bytes=op_map_bytes,
+        generation_id=1,
     )
 
 
@@ -250,6 +253,7 @@ def _worker_create_and_forget(queue: mp.Queue):
         source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
         source_dimensions=(100, 100),
         generation_size=(50, 50),
+        generation_id=1,
     )
     handle = store.put(artifact)
 
