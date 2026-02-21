@@ -32,7 +32,7 @@ from .artifact import (
 )
 from .artifact.key import ArtifactKey
 from .context import GenerationContext
-from .dag import DagScheduler
+from .dag.scheduler import DagScheduler
 from .stage import (
     JobPipelineStage,
     StepPipelineStage,
