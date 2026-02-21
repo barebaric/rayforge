@@ -248,19 +248,100 @@ async def context_initializer(tmp_path, task_mgr, monkeypatch):
         config_file.unlink()
 
 
+@pytest.fixture(scope="function")
+def lite_context(tmp_path, task_mgr, monkeypatch):
+    """
+    A lightweight context fixture for tests that only need the
+    MachineManager without cameras, materials, recipes, or plugins.
+    Much faster than the full context_initializer.
+    """
+    from rayforge import config
+    from rayforge.context import get_context
+    from rayforge import context as context_module
+    from rayforge.shared import tasker
+
+    temp_config_dir = tmp_path / "config"
+    temp_dialect_dir = temp_config_dir / "dialects"
+    temp_machine_dir = temp_config_dir / "machines"
+    monkeypatch.setattr(config, "CONFIG_DIR", temp_config_dir)
+    monkeypatch.setattr(config, "DIALECT_DIR", temp_dialect_dir)
+    monkeypatch.setattr(config, "MACHINE_DIR", temp_machine_dir)
+
+    monkeypatch.setattr(tasker.task_mgr, "_instance", task_mgr)
+
+    context = get_context()
+    context.initialize_lite_context(temp_machine_dir)
+    yield context
+
+    if task_mgr.has_tasks():
+        pytest.fail("Task manager still has tasks at end of test.")
+    context_module._context_instance = None
+
+
 @pytest_asyncio.fixture
-async def machine(context_initializer) -> AsyncGenerator["Machine", None]:
+async def machine(lite_context) -> AsyncGenerator["Machine", None]:
     """
     Provides a fresh, test-isolated Machine instance with automatic async
     teardown.
     """
     from rayforge.machine.models.machine import Machine
 
-    m = Machine(context_initializer)
-    context_initializer.machine_mgr.add_machine(m)
+    m = Machine(lite_context)
+    lite_context.machine_mgr.add_machine(m)
     yield m
-    # Proper async teardown is handled here by the fixture runner
     await m.shutdown()
+
+
+@pytest.fixture
+def sync_machine(lite_context):
+    """
+    Synchronous Machine fixture for pure math tests.
+    No async setup/teardown - much faster for simple tests.
+    """
+    from rayforge.machine.models.machine import Machine
+
+    m = Machine(lite_context)
+    lite_context.machine_mgr.add_machine(m)
+    yield m
+
+
+class MockDialectManager:
+    """Minimal mock for dialect manager."""
+
+    def __init__(self):
+        from blinker import Signal
+
+        self.dialects_changed = Signal()
+
+
+@pytest.fixture
+def isolated_context():
+    """
+    Ultra-lightweight isolated context for pure math tests.
+    No file system operations at all.
+    """
+    from unittest.mock import MagicMock
+
+    context = MagicMock()
+    context.dialect_mgr = MockDialectManager()
+    context.machine_mgr = MagicMock()
+    context.machine_mgr.get_controller = MagicMock(
+        return_value=MagicMock(driver=MagicMock())
+    )
+    yield context
+
+
+@pytest.fixture
+def isolated_machine(isolated_context):
+    """
+    Ultra-fast Machine fixture using isolated_context.
+    For pure math tests only - no async, no file system.
+    """
+    from rayforge.machine.models.machine import Machine
+
+    m = Machine(isolated_context)
+    isolated_context.machine_mgr.add_machine(m)
+    yield m
 
 
 @pytest.fixture

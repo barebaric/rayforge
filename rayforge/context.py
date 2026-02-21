@@ -128,6 +128,29 @@ class RayforgeContext:
         """Returns the debug dump manager."""
         return self._debug_dump_manager
 
+    def initialize_lite_context(self, machine_dir):
+        """
+        Initializes a minimal context for testing. Sets up MachineManager
+        and Config without cameras, materials, recipes, or plugins.
+        """
+        from pathlib import Path
+        from .core.config import ConfigManager as CoreConfigManager
+        from .machine.models.manager import MachineManager
+
+        self._machine_mgr = MachineManager(machine_dir)
+
+        if not self._machine_mgr.machines:
+            self._machine_mgr.create_default_machine()
+
+        config_file = Path(machine_dir) / ".." / "config.yaml"
+        self._config_mgr = CoreConfigManager(config_file, self._machine_mgr)
+        self._config = self._config_mgr.config
+        if not self._config.machine:
+            machine = list(
+                sorted(self._machine_mgr.machines.values(), key=lambda m: m.id)
+            )[0]
+            self._config.set_machine(machine)
+
     def initialize_full_context(self):
         """
         Initializes the full application context with managers that should
