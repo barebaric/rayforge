@@ -316,8 +316,8 @@ class EngraverSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
         self.line_interval_row = Adw.SpinRow(
             title=_("Line Spacing"),
             subtitle=_(
-                "Distance between scan lines in mm. Leave at 0 to use laser "
-                "spot size"
+                "Distance between scan lines in machine units. "
+                "Leave at 0 to use laser spot size"
             ),
             adjustment=line_interval_adj,
             digits=2,

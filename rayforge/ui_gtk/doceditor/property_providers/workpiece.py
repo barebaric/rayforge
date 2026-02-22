@@ -163,7 +163,7 @@ class TabsPropertyProvider(PropertyProvider):
         )
         self.reset_tab_width_button.set_valign(Gtk.Align.CENTER)
         self.reset_tab_width_button.set_tooltip_text(
-            _("Reset tab width to default (1.0 mm)")
+            _("Reset tab width to default (1.0)")
         )
         self.reset_tab_width_button.connect(
             "clicked", self._on_reset_tab_width_clicked

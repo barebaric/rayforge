@@ -38,7 +38,7 @@ class AdvancedPreferencesPage(Adw.PreferencesPage):
             title=_("Arc Tolerance"),
             subtitle=_(
                 "Maximum deviation from original path when "
-                "fitting arcs (in mm). Lower values "
+                "fitting arcs (in machine units). Lower values "
                 "drastically increase processing time and job size"
             ),
             adjustment=tolerance_adjustment,

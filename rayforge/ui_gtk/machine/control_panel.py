@@ -2,10 +2,12 @@ from typing import Optional
 import logging
 from gi.repository import Gtk, Adw
 from blinker import Signal
+from ...context import get_context
 from ...logging_setup import ui_log_event_received
 from ...machine.models.machine import Machine
 from ...machine.driver.driver import Axis
 from ...machine.driver.dummy import NoDeviceDriver
+from ...shared.units.definitions import get_unit
 from .jog_widget import JogWidget
 from .console import Console
 from ...machine.cmd import MachineCmd
@@ -161,9 +163,13 @@ class MachineControlPanel(Gtk.Box):
         speed_adjustment = Gtk.Adjustment(
             value=1000, lower=1, upper=10000, step_increment=10
         )
+        speed_unit = get_unit(
+            get_context().config.unit_preferences.get("speed", "mm/min")
+        )
+        speed_label = speed_unit.label if speed_unit else "mm/min"
         self.speed_row = Adw.SpinRow(
             title=_("Jog Speed"),
-            subtitle=_("Speed in mm/min"),
+            subtitle=_(f"Speed in {speed_label}"),
             adjustment=speed_adjustment,
         )
         self.speed_row.connect("changed", self._on_speed_changed)
@@ -175,7 +181,7 @@ class MachineControlPanel(Gtk.Box):
         )
         self.distance_row = Adw.SpinRow(
             title=_("Jog Distance"),
-            subtitle=_("Distance in mm"),
+            subtitle=_("Distance in machine units"),
             adjustment=distance_adjustment,
             digits=1,
         )

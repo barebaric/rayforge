@@ -277,8 +277,8 @@ class MaterialTestGridSettingsWidget(
         self.line_interval_row = Adw.SpinRow(
             title=_("Line Interval"),
             subtitle=_(
-                "Distance between scan lines in mm (for Engrave mode). "
-                "Leave at 0 to use laser spot size."
+                "Distance between scan lines in machine units "
+                "(for Engrave mode). Leave at 0 to use laser spot size."
             ),
             adjustment=line_interval_adj,
             digits=2,
