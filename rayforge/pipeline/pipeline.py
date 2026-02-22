@@ -104,6 +104,7 @@ class Pipeline:
         self._pause_count = 0
         self._last_known_busy_state = False
         self._reconciliation_timer: Optional[concurrent.futures.Future] = None
+        self._is_shutting_down = False
 
         # Signals for notifying the UI of generation progress
         self.processing_state_changed = Signal()
@@ -125,6 +126,7 @@ class Pipeline:
         """A new helper method to contain all stage setup logic."""
         logger.debug(f"[{id(self)}] Initializing stages and connections.")
         self._last_known_busy_state = False
+        self._is_shutting_down = False
 
         # Initialize artifact manager
         self._artifact_manager = ArtifactManager(self._artifact_store)
@@ -191,10 +193,16 @@ class Pipeline:
         called before application exit to prevent memory leaks.
         """
         logger.debug(f"[{id(self)}] Pipeline shutdown called")
+        self._is_shutting_down = True
         if self._reconciliation_timer:
             self._reconciliation_timer.cancel()
             self._reconciliation_timer = None
         logger.info("Pipeline shutting down...")
+
+        for task in list(self._task_manager):
+            logger.debug(f"Cancelling task '{task.key}' during shutdown")
+            self._task_manager.cancel_task(task.key)
+
         self._workpiece_stage.shutdown()
         self._step_stage.shutdown()
         self._job_stage.shutdown()
@@ -267,6 +275,9 @@ class Pipeline:
         the main thread to run after the current event chain has completed,
         avoiding race conditions.
         """
+        if self._is_shutting_down:
+            return
+
         current_busy_state = self.is_busy
         logger.debug(
             f"_check_and_update_processing_state: "
@@ -634,6 +645,9 @@ class Pipeline:
         """
         Relays signal and triggers downstream step assembly via DAG.
         """
+        if self._is_shutting_down:
+            return
+
         if handle is not None:
             self.workpiece_artifact_ready.send(
                 self,
@@ -795,7 +809,7 @@ class Pipeline:
         Synchronizes data stages with the document by declaring the full
         set of required artifacts for the new data generation.
         """
-        if self.is_paused or not self.doc:
+        if self.is_paused or not self.doc or self._is_shutting_down:
             return
         logger.debug(
             f"{self.__class__.__name__}.reconcile_data called "
