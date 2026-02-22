@@ -1,0 +1,11 @@
+uid: recipe-001
+name: 3mm Plywood Cut
+description: Clean cut through 3mm birch plywood with minimal scorching
+target_capability_name: CUT
+material_uid: birch-plywood
+min_thickness_mm: 2.8
+max_thickness_mm: 3.2
+settings:
+  power: 100
+  speed: 600
+  passes: 1

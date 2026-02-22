@@ -1,0 +1,65 @@
+machine:
+  active_wcs: G55
+  arc_tolerance: 0.03
+  auto_connect: true
+  axis_extents:
+  - 140.0
+  - 140.0
+  cameras: []
+  clear_alarm_on_connect: false
+  dialect_uid: grbl
+  driver: NoDeviceDriver
+  driver_args: {}
+  gcode:
+    gcode_precision: 3
+  heads:
+  - focus_power_percent: 0.0
+    frame_power_percent: 0.0
+    max_power: 1000
+    name: Laser Head
+    spot_size_mm:
+    - 0.1
+    - 0.1
+    tool_number: 0
+    uid: d9277039-5ccc-456a-b3a6-5054b3c363b0
+  home_on_start: false
+  hookmacros: {}
+  machine_hours:
+    counters:
+      laser-tube-001:
+        name: Laser Tube
+        notify_at: 2000.0
+        uid: laser-tube-001
+        value: 1234.5
+    total_hours: 1234.5
+  macros: {}
+  name: My Laser Cutter
+  origin: bottom_left
+  reverse_x_axis: false
+  reverse_y_axis: false
+  reverse_z_axis: false
+  single_axis_homing_enabled: true
+  soft_limits: null
+  speeds:
+    acceleration: 1000
+    max_cut_speed: 1000
+    max_travel_speed: 3000
+  supports_arcs: true
+  wcs_offsets:
+    G54: &id001
+    - 0.0
+    - 0.0
+    - 0.0
+    G55:
+    - 20.0
+    - 20.0
+    - 0.0
+    G56: *id001
+    G57: *id001
+    G58: *id001
+    G59: *id001
+  work_margins:
+  - 10.0
+  - 10.0
+  - 10.0
+  - 10.0

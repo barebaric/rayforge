@@ -1,0 +1,11 @@
+control_panel_visible: false
+gcode_preview_visible: true
+last_opened_project: test.ryp
+machine: 2f8f7281-9982-4473-a9b0-d72ff48630c2
+startup_behavior: none
+startup_project_path: null
+theme: dark
+unit_preferences:
+  acceleration: "mm/s\xB2"
+  length: mm
+  speed: mm/min

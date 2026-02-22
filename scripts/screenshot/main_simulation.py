@@ -14,10 +14,14 @@ from utils import (
     show_panel,
     hide_panel,
     activate_simulation_mode,
+    save_panel_states,
+    restore_panel_states,
     take_screenshot,
 )
 
 logger = logging.getLogger(__name__)
+
+PANELS = ["toggle_control_panel", "toggle_gcode_preview"]
 
 
 def main():
@@ -39,6 +43,7 @@ def main():
         app.quit_idle()
         return
 
+    saved_states = save_panel_states(win, PANELS)
     hide_panel(win, "toggle_control_panel")
     show_panel(win, "toggle_gcode_preview", True)
 
@@ -46,6 +51,8 @@ def main():
 
     logger.info("Taking screenshot: main-simulation.png")
     take_screenshot("main-simulation.png")
+
+    restore_panel_states(win, saved_states)
 
     time.sleep(0.25)
     app.quit_idle()

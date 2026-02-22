@@ -1,0 +1,7 @@
+uid: leather-veg-tan
+name: Vegetable Tanned Leather
+description: Natural vegetable tanned cowhide leather
+category: Leather
+appearance:
+  color: "#8B4513"
+  pattern: leather

@@ -54,8 +54,11 @@ class MultiPassSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
             lower=0.0, upper=50.0, step_increment=0.1, page_increment=1.0
         )
         z_step_row = Adw.SpinRow(
-            title=_("Z Step-Down per Pass (mm)"),
-            subtitle=_("Distance to lower Z-axis for each subsequent pass"),
+            title=_("Z Step-Down per Pass"),
+            subtitle=_(
+                "Distance to lower Z-axis for each subsequent pass "
+                "in machine units"
+            ),
             adjustment=z_step_adj,
             digits=2,
         )

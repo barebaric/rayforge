@@ -1,0 +1,7 @@
+uid: black-acrylic
+name: Black Acrylic
+description: Opaque black cast acrylic sheet
+category: Plastic
+appearance:
+  color: "#1A1A1A"
+  pattern: solid

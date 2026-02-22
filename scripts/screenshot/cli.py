@@ -8,6 +8,8 @@ import sys
 from pathlib import Path
 
 SCRIPTS_DIR = Path(__file__).parent
+PROJECT_ROOT = SCRIPTS_DIR.parent.parent
+TEST_CONFIG_DIR = PROJECT_ROOT / "tests" / "config"
 
 TARGETS = {
     "main:standard": "main_standard",
@@ -22,7 +24,7 @@ TARGETS = {
     "machine-settings:hardware": "machine_settings_hardware",
     "machine-settings:advanced": "machine_settings_advanced",
     "machine-settings:gcode": "machine_settings_gcode",
-    "machine-settings:hooks-macros": "machine_settings_hooks_macros",
+    "machine-settings:hooks-macros": "machine_settings_hooks-macros",
     "machine-settings:device": "machine_settings_device",
     "machine-settings:laser": "machine_settings_laser",
     "machine-settings:camera": "machine_settings_camera",
@@ -70,6 +72,8 @@ def run_script(script_name: str, target: str) -> int:
         "pixi",
         "run",
         "rayforge",
+        "--config",
+        str(TEST_CONFIG_DIR),
         "--uiscript",
         str(SCRIPTS_DIR / f"{script_name}.py"),
     ]
