@@ -201,7 +201,7 @@ class WorkSurface(WorldSurface):
         canvas_x, canvas_y = m_x, m_y
 
         if self.machine:
-            width, height = self.machine.dimensions
+            width, height = self.machine.axis_extents
 
             # Normalize coordinates to be positive distance from origin
             # based on the 'reverse' setting.

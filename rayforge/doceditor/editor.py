@@ -166,10 +166,10 @@ class DocEditor:
 
     @property
     def machine_dimensions(self) -> Optional[Tuple[float, float]]:
-        """Returns the configured machine's dimensions, or None."""
+        """Returns the configured machine's axis extents, or None."""
         config = self.context.config
         if config and config.machine:
-            return config.machine.dimensions
+            return config.machine.axis_extents
         return None
 
     @property

@@ -92,7 +92,7 @@ class SimulatorCmd:
         # Get work area size
         machine = get_context().machine
         if machine:
-            work_area_size = machine.dimensions
+            work_area_size = machine.axis_extents
         else:
             work_area_size = (100.0, 100.0)
 

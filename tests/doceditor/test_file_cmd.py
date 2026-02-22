@@ -343,7 +343,7 @@ class TestFitAndCenterImportedItems:
 
         with patch("rayforge.doceditor.file_cmd.get_context") as mock_ctx:
             mock_machine = MagicMock()
-            mock_machine.dimensions = (200, 150)
+            mock_machine.axis_extents = (200, 150)
             mock_machine.work_area = (0, 0, 200, 150)
             mock_ctx.return_value.config.machine = mock_machine
 
@@ -361,7 +361,7 @@ class TestFitAndCenterImportedItems:
 
         with patch("rayforge.doceditor.file_cmd.get_context") as mock_ctx:
             mock_machine = MagicMock()
-            mock_machine.dimensions = (200, 150)
+            mock_machine.axis_extents = (200, 150)
             mock_machine.work_area = (0, 0, 200, 150)
             mock_ctx.return_value.config.machine = mock_machine
 

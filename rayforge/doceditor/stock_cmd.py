@@ -60,14 +60,14 @@ class StockCmd:
         """
         doc = self._editor.doc
         machine = self._editor.context.config.machine
-        machine_w, machine_h = (200.0, 200.0)
+        wa_x, wa_y, wa_w, wa_h = (0.0, 0.0, 200.0, 200.0)
         if machine:
-            machine_w, machine_h = machine.dimensions
+            wa_x, wa_y, wa_w, wa_h = machine.work_area
 
-        stock_w = machine_w * 0.8
-        stock_h = machine_h * 0.8
-        stock_x = (machine_w - stock_w) / 2
-        stock_y = (machine_h - stock_h) / 2
+        stock_w = wa_w * 0.8
+        stock_h = wa_h * 0.8
+        stock_x = wa_x + (wa_w - stock_w) / 2
+        stock_y = wa_y + (wa_h - stock_h) / 2
 
         default_geometry = Geometry()
         default_geometry.move_to(0, 0)

@@ -433,8 +433,9 @@ class DragDropCmd:
         try:
             machine = get_context().machine
             if machine:
-                center_x = machine.dimensions[0] / 2
-                center_y = machine.dimensions[1] / 2
+                wa_x, wa_y, wa_w, wa_h = machine.work_area
+                center_x = wa_x + wa_w / 2
+                center_y = wa_y + wa_h / 2
             else:
                 center_x, center_y = 50.0, 50.0  # Fallback
 

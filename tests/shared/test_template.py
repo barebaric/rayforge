@@ -15,7 +15,7 @@ class TestTemplateFormatter:
 
         class MockMachine:
             name = "MyLaser"
-            dimensions = (200, 150)
+            axis_extents = (200, 150)
             macros = {
                 "macro1_uid": MockMacro(
                     name="First Macro", code=["G0 X10 Y10"]
@@ -94,7 +94,8 @@ class TestTemplateFormatter:
         context, machine = context_and_machine
         formatter = TemplateFormatter(machine, context)
         template = (
-            "Width: {machine.dimensions[0]}, Height: {machine.dimensions[1]}"
+            "Width: {machine.axis_extents[0]}, "
+            "Height: {machine.axis_extents[1]}"
         )
         expected = "Width: 200, Height: 150"
         assert formatter.format_string(template) == expected
@@ -104,9 +105,9 @@ class TestTemplateFormatter:
         context, machine = context_and_machine
         formatter = TemplateFormatter(machine, context)
         result = formatter.format_string(
-            "Invalid index: {machine.dimensions[2]}"
+            "Invalid index: {machine.axis_extents[2]}"
         )
-        assert result == "Invalid index: {machine.dimensions[2]}"
+        assert result == "Invalid index: {machine.axis_extents[2]}"
 
     def test_no_placeholders(self, context_and_machine):
         """Test a string with no placeholders."""

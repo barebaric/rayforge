@@ -26,7 +26,7 @@ class TemplateFormatter:
         self._context = context_obj
 
     def _resolve_variable(self, path: str) -> str:
-        """Resolves a dot-notation path like 'machine.dimensions[0]'."""
+        """Resolves a dot-notation path like 'machine.axis_extents[0]'."""
         # This is the original _resolve method, now with a clearer name.
         try:
             current = self._context
