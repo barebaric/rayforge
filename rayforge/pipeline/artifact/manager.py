@@ -11,10 +11,10 @@ from typing import (
     Tuple,
     Union,
 )
+from ...shared.util.debug import safe_caller_stack
 from ..dag.node import NodeState
 from .base import BaseArtifact
 from .handle import BaseArtifactHandle
-from ...shared.util.debug import get_caller_stack
 from .job import JobArtifactHandle
 from .key import ArtifactKey
 from .lifecycle import LedgerEntry
@@ -484,7 +484,7 @@ class ArtifactManager:
                 if entry.handle is not None:
                     logger.debug(
                         f"remove_for_step: releasing {entry.handle.shm_name} "
-                        f"(stack: {get_caller_stack(3)})"
+                        f"(stack: {safe_caller_stack(15)})"
                     )
                     self.release_handle(entry.handle)
             del self._ledger[ledger_key]
@@ -1110,7 +1110,7 @@ class ArtifactManager:
                 keys_to_remove.append(composite_key)
 
         logger.debug(f"prune: Removing {len(keys_to_remove)} entries")
-        stack = get_caller_stack(3)
+        stack = safe_caller_stack(15)
         for composite_key in keys_to_remove:
             entry = self._ledger.get(composite_key)
             if entry is not None and entry.handle is not None:

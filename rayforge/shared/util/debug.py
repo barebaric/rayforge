@@ -18,7 +18,7 @@ def get_caller_stack(depth: int = 4) -> str:
     frames = []
     frame = inspect.currentframe()
     try:
-        for _ in range(depth + 2):
+        for _ in range(2):
             if frame is None:
                 break
             frame = frame.f_back
