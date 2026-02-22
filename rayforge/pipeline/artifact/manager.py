@@ -14,6 +14,7 @@ from typing import (
 from ..dag.node import NodeState
 from .base import BaseArtifact
 from .handle import BaseArtifactHandle
+from ...shared.util.debug import get_caller_stack
 from .job import JobArtifactHandle
 from .key import ArtifactKey
 from .lifecycle import LedgerEntry
@@ -442,6 +443,7 @@ class ArtifactManager:
             key: The ArtifactKey for the workpiece to remove.
         """
         wp_uid = key.id
+        logger.debug(f"remove_for_workpiece: called for wp_uid={wp_uid}")
         # The ledger keys have IDs in format "workpiece_uid:step_uid" or just
         # "workpiece_uid" for step artifacts. We need to match any key whose
         # ID starts with the workpiece UID.
@@ -480,6 +482,10 @@ class ArtifactManager:
             entry = self._ledger.get(ledger_key)
             if entry:
                 if entry.handle is not None:
+                    logger.debug(
+                        f"remove_for_step: releasing {entry.handle.shm_name} "
+                        f"(stack: {get_caller_stack(3)})"
+                    )
                     self.release_handle(entry.handle)
             del self._ledger[ledger_key]
 
@@ -862,9 +868,9 @@ class ArtifactManager:
         """
         Caches an artifact handle.
 
-        This retains the handle, creating a "Manager's Claim" on the
-        shared memory. This ensures the data persists even after the
-        GenerationContext releases its "Builder's Claim".
+        This consumes the reference ("claim") passed in via the `handle`
+        argument. It assumes the caller has already acquired this claim (e.g.
+        via adoption) and is transferring ownership to the manager.
 
         Returns True if the handle was cached, False if the workpiece
         was deleted (entry not found in ledger).
@@ -883,20 +889,19 @@ class ArtifactManager:
         if entry is None:
             logger.debug(
                 f"cache_handle: no entry for {composite_key}, "
-                "workpiece may have been deleted"
+                "workpiece may have been deleted, releasing handle"
             )
             self._store.release(handle)
             return False
 
         logger.debug(f"cache: Caching entry {composite_key}")
-        canonical = self._store._handles.get(handle.shm_name)
-        if canonical and canonical.refcount > 1:
-            self.retain_handle(handle)
+
         if entry.handle is not None:
             self._store.release(entry.handle)
         entry.handle = handle
         entry.generation_id = generation_id
         entry.state = NodeState.VALID
+        logger.debug(f"cache_handle: SUCCESS for {composite_key}")
         return True
 
     def mark_done(
@@ -917,7 +922,9 @@ class ArtifactManager:
         composite_key = make_composite_key(key, generation_id)
         entry = self.get_ledger_entry(composite_key)
         if entry is None:
-            logger.warning(
+            # Downgraded to debug to reduce noise during race conditions
+            # in stress tests where workpieces are deleted rapidly.
+            logger.debug(
                 f"mark_done called for {key} (gen_id={generation_id}) "
                 f"but no ledger entry was found. Skipping."
             )
@@ -1103,8 +1110,13 @@ class ArtifactManager:
                 keys_to_remove.append(composite_key)
 
         logger.debug(f"prune: Removing {len(keys_to_remove)} entries")
+        stack = get_caller_stack(3)
         for composite_key in keys_to_remove:
             entry = self._ledger.get(composite_key)
             if entry is not None and entry.handle is not None:
+                logger.debug(
+                    f"prune: releasing {entry.handle.shm_name} "
+                    f"(stack: {stack})"
+                )
                 self._store.release(entry.handle)
             del self._ledger[composite_key]

@@ -40,7 +40,9 @@ class StepPipelineStage(PipelineStage):
         super().__init__(task_manager, artifact_manager)
         self._machine = machine
         self._time_cache: Dict[StepKey, Optional[float]] = {}
-        self._retained_handles: Dict[str, List["BaseArtifactHandle"]] = {}
+        self._retained_handles_by_task: Dict[
+            int, List["BaseArtifactHandle"]
+        ] = {}
 
         self.generation_finished = Signal()
         self.assembly_starting = Signal()
@@ -141,7 +143,9 @@ class StepPipelineStage(PipelineStage):
         step_uid = step.uid
         ledger_key = ArtifactKey.for_step(step_uid)
 
-        self.release_retained_handles(step_uid)
+        retained = self._retained_handles_by_task.pop(task.id, [])
+        for handle in retained:
+            self._artifact_manager.release_handle(handle)
 
         task_status = task.get_status()
         logger.debug(f"[{ledger_key}] Task status is '{task_status}'.")
@@ -207,8 +211,6 @@ class StepPipelineStage(PipelineStage):
             logger.debug(f"No assembly info for step_uid={step.uid}")
             return
 
-        self.store_retained_handles(step.uid, retained_handles)
-
         if step.layer:
             for wp in step.layer.all_workpieces:
                 handle = self._artifact_manager.get_workpiece_handle(
@@ -235,7 +237,7 @@ class StepPipelineStage(PipelineStage):
 
         assert self._machine is not None
 
-        self._task_manager.run_process(
+        task = self._task_manager.run_process(
             make_step_artifact_in_subprocess,
             self._artifact_manager.get_store(),
             assembly_info,
@@ -254,6 +256,7 @@ class StepPipelineStage(PipelineStage):
                 self.handle_task_event(task, event_name, data, step)
             ),
         )
+        self._retained_handles_by_task[task.id] = retained_handles
 
     def get_estimate(self, step_uid: StepKey) -> Optional[float]:
         """Retrieves a cached time estimate if available."""
@@ -329,20 +332,12 @@ class StepPipelineStage(PipelineStage):
 
         return assembly_info, retained_handles
 
-    def store_retained_handles(
-        self, step_uid: str, handles: List["BaseArtifactHandle"]
-    ) -> None:
-        """Store retained handles for a step."""
-        self._retained_handles[step_uid] = handles
-
-    def release_retained_handles(self, step_uid: str) -> None:
-        """Release retained handles for a step."""
-        retained = self._retained_handles.pop(step_uid, [])
-        for handle in retained:
-            self._artifact_manager.release_handle(handle)
-
     def shutdown(self):
         logger.debug("StepPipelineStage shutting down.")
+        for handles in self._retained_handles_by_task.values():
+            for handle in handles:
+                self._artifact_manager.release_handle(handle)
+        self._retained_handles_by_task.clear()
 
     def invalidate(self, key: StepKey):
         """Invalidates a step artifact, ensuring it will be regenerated."""
@@ -362,8 +357,6 @@ class StepPipelineStage(PipelineStage):
         """
         logger.debug(f"StepPipelineStage: Cleaning up entry {key}.")
         self._time_cache.pop(key, None)
-        # Release any retained handles for this step
-        self.release_retained_handles(key)
 
         if full_invalidation:
             render_handle = self._artifact_manager.pop_step_render_handle(key)
