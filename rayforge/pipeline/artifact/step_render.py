@@ -8,7 +8,22 @@ from .handle import BaseArtifactHandle
 class StepRenderArtifactHandle(BaseArtifactHandle):
     """A handle for a StepRenderArtifact."""
 
-    pass
+    def __init__(
+        self,
+        shm_name: str,
+        handle_class_name: str,
+        artifact_type_name: str,
+        generation_id: int,
+        array_metadata: Optional[Dict[str, Any]] = None,
+        **_kwargs,
+    ):
+        super().__init__(
+            shm_name=shm_name,
+            handle_class_name=handle_class_name,
+            artifact_type_name=artifact_type_name,
+            generation_id=generation_id,
+            array_metadata=array_metadata,
+        )
 
 
 class StepRenderArtifact(BaseArtifact):
@@ -20,9 +35,11 @@ class StepRenderArtifact(BaseArtifact):
 
     def __init__(
         self,
+        generation_id: int,
         vertex_data: Optional[VertexData] = None,
         texture_instances: Optional[List[TextureInstance]] = None,
     ):
+        self.generation_id = generation_id
         self.vertex_data: Optional[VertexData] = vertex_data
         self.texture_instances: List[TextureInstance] = (
             texture_instances if texture_instances is not None else []
@@ -30,7 +47,7 @@ class StepRenderArtifact(BaseArtifact):
 
     def to_dict(self) -> Dict[str, Any]:
         """Converts the artifact to a dictionary for serialization."""
-        result: Dict[str, Any] = {}
+        result: Dict[str, Any] = {"generation_id": self.generation_id}
         if self.vertex_data:
             result["vertex_data"] = self.vertex_data.to_dict()
         result["texture_instances"] = [
@@ -41,7 +58,7 @@ class StepRenderArtifact(BaseArtifact):
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "StepRenderArtifact":
         """Creates an artifact from a dictionary."""
-        common_args = {}
+        common_args = {"generation_id": data["generation_id"]}
         if "vertex_data" in data:
             common_args["vertex_data"] = VertexData.from_dict(
                 data["vertex_data"]
@@ -62,6 +79,7 @@ class StepRenderArtifact(BaseArtifact):
             shm_name=shm_name,
             handle_class_name=StepRenderArtifactHandle.__name__,
             artifact_type_name=self.__class__.__name__,
+            generation_id=self.generation_id,
             array_metadata=array_metadata,
         )
 
@@ -136,6 +154,7 @@ class StepRenderArtifact(BaseArtifact):
             texture_instances.append(instance)
             i += 1
         return cls(
+            generation_id=handle.generation_id,
             vertex_data=vertex_data,
             texture_instances=texture_instances,
         )

@@ -57,6 +57,7 @@ def mock_step_artifact_handle() -> StepRenderArtifactHandle:
         shm_name="test_step_shm",
         handle_class_name="StepRenderArtifactHandle",
         artifact_type_name="StepRenderArtifact",
+        generation_id=0,
     )
 
 

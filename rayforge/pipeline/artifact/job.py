@@ -20,6 +20,7 @@ class JobArtifactHandle(BaseArtifactHandle):
         shm_name: str,
         handle_class_name: str,
         artifact_type_name: str,
+        generation_id: int,
         array_metadata: Optional[Dict[str, Any]] = None,
         **_kwargs,
     ):
@@ -27,6 +28,7 @@ class JobArtifactHandle(BaseArtifactHandle):
             shm_name=shm_name,
             handle_class_name=handle_class_name,
             artifact_type_name=artifact_type_name,
+            generation_id=generation_id,
             array_metadata=array_metadata,
         )
         self.time_estimate = time_estimate
@@ -43,6 +45,7 @@ class JobArtifact(BaseArtifact):
         self,
         ops: Ops,
         distance: float,
+        generation_id: int,
         time_estimate: Optional[float] = None,
         machine_code_bytes: Optional[np.ndarray] = None,
         op_map_bytes: Optional[np.ndarray] = None,
@@ -51,6 +54,7 @@ class JobArtifact(BaseArtifact):
         super().__init__()
         self.ops = ops
         self.distance = distance
+        self.generation_id = generation_id
         self.time_estimate = time_estimate
         self.machine_code_bytes: Optional[np.ndarray] = machine_code_bytes
         self.op_map_bytes: Optional[np.ndarray] = op_map_bytes
@@ -102,6 +106,7 @@ class JobArtifact(BaseArtifact):
             "ops": self.ops.to_dict(),
             "time_estimate": self.time_estimate,
             "distance": self.distance,
+            "generation_id": self.generation_id,
         }
         if self.vertex_data is not None:
             result["vertex_data"] = self.vertex_data.to_dict()
@@ -119,6 +124,7 @@ class JobArtifact(BaseArtifact):
             "ops": ops,
             "time_estimate": data.get("time_estimate"),
             "distance": data.get("distance", 0.0),
+            "generation_id": data["generation_id"],
         }
         if "vertex_data" in data:
             common_args["vertex_data"] = VertexData.from_dict(
@@ -143,6 +149,7 @@ class JobArtifact(BaseArtifact):
             shm_name=shm_name,
             handle_class_name=JobArtifactHandle.__name__,
             artifact_type_name=self.__class__.__name__,
+            generation_id=self.generation_id,
             time_estimate=self.time_estimate,
             distance=self.distance,
             array_metadata=array_metadata,
@@ -201,6 +208,7 @@ class JobArtifact(BaseArtifact):
             ops=ops,
             time_estimate=handle.time_estimate,
             distance=handle.distance,
+            generation_id=handle.generation_id,
             machine_code_bytes=arrays.get(
                 "machine_code_bytes", np.empty(0, dtype=np.uint8)
             ).copy(),

@@ -58,7 +58,7 @@ def test_jobrunner_assembles_step_artifacts_correctly(
     final_ops_for_step.line_to(50, 50)
 
     # 2. Create and store the StepOpsArtifact
-    step_artifact = StepOpsArtifact(ops=final_ops_for_step)
+    step_artifact = StepOpsArtifact(ops=final_ops_for_step, generation_id=0)
     step_handle = get_context().artifact_store.put(step_artifact)
 
     # 3. Create the JobDescription pointing to the StepOpsArtifact handle
@@ -136,7 +136,7 @@ def test_jobrunner_reconstructs_doc_from_dict(
     final_ops_for_step.move_to(50, 90)
     final_ops_for_step.line_to(50, 50)
 
-    step_artifact = StepOpsArtifact(ops=final_ops_for_step)
+    step_artifact = StepOpsArtifact(ops=final_ops_for_step, generation_id=0)
     step_handle = get_context().artifact_store.put(step_artifact)
 
     job_desc = JobDescription(

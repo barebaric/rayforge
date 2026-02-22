@@ -5,7 +5,7 @@ import threading
 import time
 import uuid
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Dict, Optional, cast, Tuple
+from typing import TYPE_CHECKING, Dict, Optional, Set, cast, Tuple
 
 from blinker import Signal
 
@@ -104,6 +104,9 @@ class ViewManager:
         self._last_update_time: Dict[Tuple[str, str], float] = {}
         self._throttle_timers: Dict[Tuple[str, str], threading.Timer] = {}
 
+        # Track in-flight chunk handles for cleanup during shutdown
+        self._inflight_chunk_handles: Set[BaseArtifactHandle] = set()
+
         self.view_artifact_ready = Signal()
         self.view_artifact_created = Signal()
         self.view_artifact_updated = Signal()
@@ -122,6 +125,126 @@ class ViewManager:
             self.on_workpiece_artifact_ready
         )
         self._pipeline.visual_chunk_available.connect(self.on_chunk_available)
+
+        if self._pipeline.doc:
+            self._pipeline.doc.descendant_removed.connect(
+                self._on_doc_item_removed
+            )
+
+    def _disconnect_pipeline_signals(self):
+        """Disconnect from pipeline signals."""
+        self._pipeline.workpiece_artifact_ready.disconnect(
+            self.on_workpiece_artifact_ready
+        )
+        self._pipeline.workpiece_starting.disconnect(
+            self.on_generation_starting
+        )
+        self._pipeline.step_assembly_starting.disconnect(
+            self.on_workpiece_artifact_ready
+        )
+        self._pipeline.visual_chunk_available.disconnect(
+            self.on_chunk_available
+        )
+
+        if self._pipeline.doc:
+            self._pipeline.doc.descendant_removed.disconnect(
+                self._on_doc_item_removed
+            )
+
+    def _on_doc_item_removed(self, sender, *, origin, parent_of_origin):
+        """Handle removal of workpieces and steps from the document."""
+        from ...core.step import Step
+        from ...core.workpiece import WorkPiece
+
+        if isinstance(origin, WorkPiece):
+            self._cleanup_views_for_workpiece(origin.uid)
+        elif isinstance(origin, Step):
+            self._cleanup_views_for_step(origin.uid)
+
+    def _cleanup_views_for_workpiece(self, workpiece_uid: str):
+        """Remove all view entries for a workpiece."""
+        # Collect keys from both _view_entries and _source_artifact_handles
+        all_keys = set(self._view_entries.keys()) | set(
+            self._source_artifact_handles.keys()
+        )
+        keys_to_remove = [
+            composite_id
+            for composite_id in all_keys
+            if composite_id[0] == workpiece_uid
+        ]
+        for composite_id in keys_to_remove:
+            self._remove_view_entry(composite_id)
+
+        # Release any inflight chunk handles for this workpiece.
+        # These are chunks that were being stitched to views when the
+        # workpiece was deleted.
+        handles_to_release = list(self._inflight_chunk_handles)
+        for handle in handles_to_release:
+            self._inflight_chunk_handles.discard(handle)
+            self._store.release(handle)
+        if handles_to_release:
+            logger.debug(
+                f"Released {len(handles_to_release)} inflight chunk handles "
+                f"for deleted workpiece {workpiece_uid}"
+            )
+
+        if keys_to_remove:
+            logger.debug(
+                f"Cleaned up {len(keys_to_remove)} view entries for "
+                f"workpiece {workpiece_uid}"
+            )
+
+    def _cleanup_views_for_step(self, step_uid: str):
+        """Remove all view entries for a step."""
+        # Collect keys from both _view_entries and _source_artifact_handles
+        all_keys = set(self._view_entries.keys()) | set(
+            self._source_artifact_handles.keys()
+        )
+        keys_to_remove = [
+            composite_id
+            for composite_id in all_keys
+            if composite_id[1] == step_uid
+        ]
+        for composite_id in keys_to_remove:
+            self._remove_view_entry(composite_id)
+
+        # Release any inflight chunk handles for this step.
+        handles_to_release = list(self._inflight_chunk_handles)
+        for handle in handles_to_release:
+            self._inflight_chunk_handles.discard(handle)
+            self._store.release(handle)
+        if handles_to_release:
+            logger.debug(
+                f"Released {len(handles_to_release)} inflight chunk handles "
+                f"for deleted step {step_uid}"
+            )
+
+        if keys_to_remove:
+            logger.debug(
+                f"Cleaned up {len(keys_to_remove)} view entries for "
+                f"step {step_uid}"
+            )
+
+    def _remove_view_entry(self, composite_id: tuple):
+        """Remove a view entry and release its resources."""
+        entry = self._view_entries.pop(composite_id, None)
+        if entry:
+            if entry.handle:
+                self._store.release(entry.handle)
+
+        source_handle = self._source_artifact_handles.pop(composite_id, None)
+        if source_handle:
+            self._store.release(source_handle)
+
+        task_key = self._view_task_keys.pop(composite_id, None)
+        if task_key:
+            self._task_manager.cancel_task(task_key)
+
+        timer = self._throttle_timers.pop(composite_id, None)
+        if timer:
+            timer.cancel()
+        self._pending_updates.pop(composite_id, None)
+        self._last_update_time.pop(composite_id, None)
 
     @property
     def current_view_context(self) -> Optional[RenderContext]:
@@ -313,6 +436,28 @@ class ViewManager:
             handle: The artifact handle.
             **kwargs: Additional keyword arguments.
         """
+        if self._is_shutdown:
+            return
+
+        doc = self._pipeline.doc
+        if not doc:
+            return
+
+        workpiece_exists = any(
+            wp.uid == workpiece.uid for wp in doc.all_workpieces
+        )
+        if not workpiece_exists:
+            return
+
+        step_exists = any(
+            s.uid == step.uid
+            for layer in doc.layers
+            if layer.workflow
+            for s in layer.workflow.steps
+        )
+        if not step_exists:
+            return
+
         if not isinstance(handle, WorkPieceArtifactHandle):
             logger.warning(
                 f"Expected WorkPieceArtifactHandle, got {type(handle)}"
@@ -487,6 +632,8 @@ class ViewManager:
         logger.debug("ViewManager shutting down.")
         self._is_shutdown = True
 
+        self._disconnect_pipeline_signals()
+
         # Cancel all managed tasks
         for key in self._view_task_keys.values():
             self._task_manager.cancel_task(key)
@@ -507,6 +654,11 @@ class ViewManager:
         for handle in self._source_artifact_handles.values():
             self._store.release(handle)
         self._source_artifact_handles.clear()
+
+        # Release any in-flight chunk handles that weren't cleaned up
+        for handle in self._inflight_chunk_handles:
+            self._store.release(handle)
+        self._inflight_chunk_handles.clear()
 
     def _on_render_event_received(
         self, task: "Task", event_name: str, data: dict
@@ -540,33 +692,108 @@ class ViewManager:
         data: dict,
         view_id: int,
     ):
-        """Handles the view_artifact_created event."""
+        """
+        Handles the view_artifact_created event from a worker process.
+
+        Adopts the handle from the worker and stores it in the view entry.
+        The safe_adoption context manager ensures the handle is released
+        if any validation fails.
+
+        Args:
+            task: The task that produced this event.
+            key: The artifact key for the task.
+            step_uid: The step UID for this view.
+            workpiece_uid: The workpiece UID for this view.
+            data: Event data containing handle_dict.
+            view_id: The view generation ID.
+        """
+        handle_dict = data.get("handle_dict")
+        if handle_dict is None:
+            logger.warning(
+                f"_handle_view_artifact_created: Missing handle_dict in "
+                f"event data for {key}"
+            )
+            return
+
         try:
-            with self._store.safe_adoption(data["handle_dict"]) as handle:
-                if not isinstance(handle, WorkPieceViewArtifactHandle):
-                    raise TypeError("Expected WorkPieceViewArtifactHandle")
-
-                logger.debug(
-                    f"Adopting new view artifact: {handle.shm_name} "
-                    f"for task {key}"
+            with self._store.safe_adoption(handle_dict) as handle:
+                self._validate_and_store_view_handle(
+                    handle, step_uid, workpiece_uid
                 )
-
-                composite_id = (workpiece_uid, step_uid)
-                entry = self._view_entries.get(composite_id)
-                if entry is None:
-                    entry = ViewEntry()
-                    self._view_entries[composite_id] = entry
-                if entry.handle is not None:
-                    self._store.release(entry.handle)
-                entry.handle = handle
-
-                self._send_view_artifact_created_signals(
-                    step_uid, workpiece_uid, handle
-                )
+        except ValueError as e:
+            logger.debug(
+                f"_handle_view_artifact_created: Validation failed for "
+                f"{key}: {e}"
+            )
         except Exception as e:
             logger.error(
-                f"Failed to process view_artifact_created: {e}", exc_info=True
+                f"Failed to process view_artifact_created for {key}: {e}",
+                exc_info=True,
             )
+
+    def _validate_and_store_view_handle(
+        self,
+        handle: BaseArtifactHandle,
+        step_uid: str,
+        workpiece_uid: str,
+    ) -> None:
+        """
+        Validate and store a view handle in the appropriate entry.
+
+        This method is called within the safe_adoption context, so any
+        exception will cause the handle to be released automatically.
+
+        Args:
+            handle: The handle to validate and store.
+            step_uid: The step UID for this view.
+            workpiece_uid: The workpiece UID for this view.
+
+        Raises:
+            ValueError: If validation fails.
+            TypeError: If handle type is incorrect.
+        """
+        if self._is_shutdown:
+            raise ValueError("ViewManager is shutdown")
+
+        doc = self._pipeline.doc
+        if doc is None:
+            raise ValueError("No document")
+
+        workpiece_exists = any(
+            wp.uid == workpiece_uid for wp in doc.all_workpieces
+        )
+        step_exists = any(
+            step.uid == step_uid
+            for layer in doc.layers
+            if layer.workflow
+            for step in layer.workflow.steps
+        )
+
+        if not workpiece_exists or not step_exists:
+            raise ValueError("Workpiece or Step deleted")
+
+        if not isinstance(handle, WorkPieceViewArtifactHandle):
+            raise TypeError(
+                f"Expected WorkPieceViewArtifactHandle, got {type(handle)}"
+            )
+
+        composite_id = (workpiece_uid, step_uid)
+        entry = self._view_entries.get(composite_id)
+        if entry is None:
+            entry = ViewEntry()
+            self._view_entries[composite_id] = entry
+
+        # Release old handle before storing new one
+        if entry.handle is not None:
+            self._store.release(entry.handle)
+
+        # Store the handle - safe_adoption already gave us ownership
+        # with refcount=1, so no retain() needed here
+        entry.handle = handle
+
+        self._send_view_artifact_created_signals(
+            step_uid, workpiece_uid, handle
+        )
 
     def _send_view_artifact_created_signals(
         self,
@@ -638,53 +865,114 @@ class ViewManager:
     ):
         """
         Receives chunk data from the pipeline.
-        Implements incremental rendering by drawing the chunk onto
-        the live view artifact bitmap.
-        """
-        if ":" in key.id:
-            workpiece_uid, _ = key.id.split(":", 1)
-        else:
-            workpiece_uid = key.id
 
+        Implements incremental rendering by drawing the chunk onto
+        the live view artifact bitmap. The chunk_handle is passed
+        directly from the signal emitter and must be retained if we
+        want to keep it.
+
+        Args:
+            sender: The signal sender.
+            key: The artifact key containing workpiece identifier.
+            chunk_handle: Handle to the chunk artifact to render.
+            generation_id: The generation ID for staleness checking.
+            step_uid: The step UID, required for processing.
+            **kwargs: Additional keyword arguments.
+        """
         if step_uid is None:
             logger.debug(
-                f"Chunk available for {workpiece_uid} but no step_uid "
-                "provided. Skipping live update."
+                f"on_chunk_available: Missing step_uid for key {key.id}, "
+                "skipping"
             )
-            self._store.release(chunk_handle)
             return
 
-        logger.debug(
-            f"ViewManager received chunk for ({workpiece_uid}, {step_uid}), "
-            f"generation_id={generation_id}"
-        )
-
+        workpiece_uid = self._extract_workpiece_uid_from_key(key.id)
         composite_id = (workpiece_uid, step_uid)
-        entry = self._view_entries.get(composite_id)
 
+        entry = self._view_entries.get(composite_id)
         if entry is None:
-            self._store.release(chunk_handle)
+            logger.debug(
+                f"on_chunk_available: No view entry for {composite_id}, "
+                "skipping chunk"
+            )
             return
 
         view_handle, render_context = self._get_render_components(
-            composite_id, entry, chunk_handle
+            composite_id, entry
         )
         if view_handle is None or render_context is None:
+            logger.debug(
+                f"on_chunk_available: Missing render components for "
+                f"{composite_id}, skipping chunk"
+            )
             return
 
-        self._store.retain(chunk_handle)
-        self._store.retain(view_handle)
-
-        self._task_manager.run_thread(
-            render_chunk_to_view,
-            self._store,
-            chunk_handle.to_dict(),
-            view_handle.to_dict(),
-            render_context.to_dict(),
-            when_done=lambda t: self._on_stitch_complete(
-                t, composite_id, chunk_handle, view_handle
-            ),
+        self._process_chunk_async(
+            composite_id, chunk_handle, view_handle, render_context
         )
+
+    def _extract_workpiece_uid_from_key(self, key_id: str) -> str:
+        """
+        Extract the workpiece UID from a key ID string.
+
+        The key ID format may be "workpiece_uid:extra" or just "workpiece_uid".
+        In either case, we extract and return the workpiece_uid portion.
+
+        Args:
+            key_id: The key ID string to parse.
+
+        Returns:
+            The workpiece_uid portion of the key.
+        """
+        if ":" in key_id:
+            return key_id.split(":", 1)[0]
+        return key_id
+
+    def _process_chunk_async(
+        self,
+        composite_id: Tuple[str, str],
+        chunk_handle: BaseArtifactHandle,
+        view_handle: BaseArtifactHandle,
+        render_context: RenderContext,
+    ) -> None:
+        """
+        Process a chunk asynchronously in a background thread.
+
+        Both handles are retained for the duration of the thread operation
+        and released in the completion callback.
+
+        Args:
+            composite_id: The (workpiece_uid, step_uid) identifier.
+            chunk_handle: Handle to the chunk to render.
+            view_handle: Handle to the view to render onto.
+            render_context: The render context for the operation.
+        """
+        try:
+            self._store.retain(view_handle)
+            self._store.retain(chunk_handle)
+            self._inflight_chunk_handles.add(chunk_handle)
+
+            def _cleanup_chunk_handle(task):
+                self._on_stitch_complete(
+                    task, composite_id, chunk_handle, view_handle
+                )
+
+            self._task_manager.run_thread(
+                render_chunk_to_view,
+                self._store,
+                chunk_handle.to_dict(),
+                view_handle.to_dict(),
+                render_context.to_dict(),
+                when_done=_cleanup_chunk_handle,
+            )
+        except Exception as e:
+            logger.error(
+                f"Error starting chunk processing thread for "
+                f"{composite_id}: {e}"
+            )
+            self._inflight_chunk_handles.discard(chunk_handle)
+            self._store.release(chunk_handle)
+            self._store.release(view_handle)
 
     def _on_stitch_complete(
         self,
@@ -694,6 +982,9 @@ class ViewManager:
         view_handle: BaseArtifactHandle,
     ):
         """Callback for when stitching completes."""
+        # Remove from tracking first
+        self._inflight_chunk_handles.discard(chunk_handle)
+
         if self._is_shutdown:
             # If shutdown occurred while task was running, force clean up
             self._store.release(chunk_handle)
@@ -714,26 +1005,16 @@ class ViewManager:
         self,
         composite_id: Tuple[str, str],
         entry: ViewEntry,
-        chunk_handle: BaseArtifactHandle,
     ) -> tuple[WorkPieceViewArtifactHandle | None, RenderContext | None]:
         """Gets the view handle and render context."""
         if entry.handle is None:
-            logger.debug(f"No view handle for {composite_id}. Ignoring chunk.")
-            self._store.release(chunk_handle)
             return None, None
 
         if not isinstance(entry.handle, WorkPieceViewArtifactHandle):
-            logger.warning(
-                f"Expected WorkPieceViewArtifactHandle, "
-                f"got {type(entry.handle)}"
-            )
-            self._store.release(chunk_handle)
             return None, None
 
         render_context = entry.render_context or self._current_view_context
         if render_context is None:
-            logger.debug(f"No render context for {composite_id}.")
-            self._store.release(chunk_handle)
             return None, None
 
         return entry.handle, render_context
@@ -791,6 +1072,7 @@ class ViewManager:
         workpiece: "WorkPiece",
         step_uid: str,
         view_id: int,
+        generation_id: int,
         context: RenderContext,
     ) -> None:
         """
@@ -819,6 +1101,7 @@ class ViewManager:
                 bitmap_data=bitmap,
                 bbox_mm=bbox,
                 workpiece_size_mm=(w_mm, h_mm),
+                generation_id=generation_id,
             )
 
             handle = self._store.put(view_artifact, creator_tag="view_live")
@@ -880,7 +1163,11 @@ class ViewManager:
 
         if need_new_buffer:
             self.allocate_live_buffer(
-                workpiece, step.uid, self._view_generation_id, context
+                workpiece=workpiece,
+                step_uid=step.uid,
+                view_id=self._view_generation_id,
+                generation_id=self._view_generation_id,
+                context=context,
             )
 
     def reconcile(self, doc: "Doc", generation_id: int):

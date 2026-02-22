@@ -4,7 +4,7 @@ from rayforge.pipeline.artifact import StepOpsArtifact
 
 def test_artifact_type_property():
     """Tests that the artifact type is correctly identified."""
-    artifact = StepOpsArtifact(ops=Ops())
+    artifact = StepOpsArtifact(ops=Ops(), generation_id=1)
     assert artifact.artifact_type == "StepOpsArtifact"
 
 
@@ -18,6 +18,7 @@ def test_serialization_round_trip():
     artifact = StepOpsArtifact(
         ops=ops,
         time_estimate=42.5,
+        generation_id=1,
     )
 
     artifact_dict = artifact.to_dict()

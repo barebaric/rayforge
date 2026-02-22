@@ -51,7 +51,7 @@ from multiprocessing import shared_memory
 import numpy as np
 from ...shared.util.debug import safe_caller_stack
 from .base import BaseArtifact
-from .handle import BaseArtifactHandle
+from .handle import BaseArtifactHandle, create_handle_from_dict
 
 if TYPE_CHECKING:
     from ..context import GenerationContext
@@ -67,20 +67,16 @@ class ArtifactStore:
     Manages the storage and retrieval of pipeline artifacts in shared memory
     to avoid costly inter-process communication.
 
-    This class uses a multiprocessing.Manager to coordinate access to
-    shared memory blocks across processes.
+    This class ensures handle uniqueness: one handle object per SHM block.
+    The handle tracks its own refcount and holders for debugging.
     """
 
     def __init__(self):
         """
         Initialize the ArtifactStore.
         """
-        # This dictionary is the single source of truth for all shared memory
-        # blocks for which this ArtifactStore instance has ownership. An open
-        # handle is stored for each block this instance creates or adopts.
         self._managed_shms: Dict[str, shared_memory.SharedMemory] = {}
-        # Track reference counts for shared memory blocks
-        self._refcounts: Dict[str, int] = {}
+        self._handles: Dict[str, BaseArtifactHandle] = {}
 
     def __getstate__(self):
         """
@@ -90,55 +86,98 @@ class ArtifactStore:
         processes via pickling after they've been unlinked. Workers
         should adopt their own handles when receiving artifact dicts.
         """
-        return {"_refcounts": {}, "_managed_shms": {}}
+        return {"_handles": {}, "_managed_shms": {}}
 
     def __setstate__(self, state):
         """
         Initialize a fresh store when unpickling in a worker process.
         """
-        self._refcounts = state.get("_refcounts", {})
+        self._handles = state.get("_handles", {})
         self._managed_shms = state.get("_managed_shms", {})
 
     def shutdown(self):
-        for shm_name in list(self._managed_shms.keys()):
-            self._release_by_name(shm_name)
+        for handle in list(self._handles.values()):
+            self._release_handle(handle)
 
-    def adopt(self, handle: BaseArtifactHandle) -> None:
+    def _get_or_create_handle(
+        self, proto_handle: BaseArtifactHandle
+    ) -> BaseArtifactHandle:
+        """
+        Get the canonical handle for an SHM, or create one if it doesn't exist.
+
+        If a handle already exists for this SHM, increments its refcount
+        and adds a holder entry.
+        """
+        shm_name = proto_handle.shm_name
+        canonical = self._handles.get(shm_name)
+        if canonical is not None:
+            canonical.refcount += 1
+            canonical.holders.append(safe_caller_stack(15) or "debug-disabled")
+            logger.debug(
+                f"Shared memory block {shm_name} refcount incremented to "
+                f"{canonical.refcount}"
+            )
+            return canonical
+
+        proto_handle.refcount = 1
+        proto_handle.holders = [safe_caller_stack(15) or "debug-disabled"]
+        self._handles[shm_name] = proto_handle
+        return proto_handle
+
+    def adopt(self, handle: BaseArtifactHandle) -> BaseArtifactHandle:
         """
         Takes ownership of a shared memory block created by another process.
 
         This method is called by the main process upon receiving an event that
         an artifact has been created in a worker. It opens its own handle to
         the shared memory block, ensuring it persists even if the creating
-        worker process exits. This `ArtifactStore` instance now becomes
-        responsible for the block's eventual release.
+        worker process exits.
+
+        Returns the canonical handle for this SHM block. If a handle for this
+        SHM already exists, returns that existing handle.
 
         Args:
             handle: The handle of the artifact whose shared memory block is
                     to be adopted.
+
+        Returns:
+            The canonical handle for this SHM block.
         """
         shm_name = handle.shm_name
-        if shm_name in self._managed_shms:
-            # Increment refcount for already-managed block
-            self._refcounts[shm_name] = self._refcounts.get(shm_name, 1) + 1
-            logger.debug(
-                f"Shared memory block {shm_name} refcount incremented to "
-                f"{self._refcounts[shm_name]}"
-            )
-            return
+        if shm_name in self._handles:
+            return self._get_or_create_handle(handle)
 
         try:
             shm_obj = shared_memory.SharedMemory(name=shm_name)
             self._managed_shms[shm_name] = shm_obj
-            self._refcounts[shm_name] = 1
-            logger.debug(f"Adopted shared memory block: {shm_name}")
+            return self._get_or_create_handle(handle)
         except FileNotFoundError:
             logger.error(
                 f"Failed to adopt shared memory block {shm_name}: "
                 f"not found. It may have been released prematurely."
             )
+            raise
         except Exception as e:
             logger.error(f"Error adopting shared memory block {shm_name}: {e}")
+            raise
+
+    def adopt_from_dict(
+        self, handle_dict: Dict[str, Any]
+    ) -> BaseArtifactHandle:
+        """
+        Adopts a handle from a dictionary representation.
+
+        This is a convenience method that combines create_handle_from_dict
+        with adopt, returning the canonical handle for the SHM.
+
+        Args:
+            handle_dict: The serialized handle dictionary.
+
+        Returns:
+            The canonical handle for this SHM block.
+        """
+        proto_handle = create_handle_from_dict(handle_dict)
+        return self.adopt(proto_handle)
 
     @contextmanager
     def safe_adoption(
@@ -156,19 +195,19 @@ class ArtifactStore:
             handle_dict: The serialized handle dictionary.
 
         Yields:
-            The adopted BaseArtifactHandle.
+            The canonical BaseArtifactHandle for this SHM.
         """
-        from .handle import create_handle_from_dict
-
-        handle = create_handle_from_dict(handle_dict)
-        self.adopt(handle)
+        handle = self.adopt_from_dict(handle_dict)
         committed = False
         try:
             yield handle
             committed = True
+            logger.debug(
+                f"DIAGNOSTIC: adoption committed for {handle.shm_name}"
+            )
         finally:
             if not committed:
-                logger.warning(
+                logger.debug(
                     f"Safe adoption rolled back (released) "
                     f"for {handle.shm_name}"
                 )
@@ -251,15 +290,15 @@ class ArtifactStore:
         # handle open to manage its lifecycle. This unified approach works
         # on all platforms and is required for the adoption model.
         self._managed_shms[shm_name] = shm
-        self._refcounts[shm_name] = 1
 
         # Delegate handle creation to the artifact instance
         handle = artifact.create_handle(shm_name, array_metadata)
+        canonical = self._get_or_create_handle(handle)
 
         if generation_context is not None:
-            generation_context.add_resource(handle)
+            generation_context.add_resource(canonical)
 
-        return handle
+        return canonical
 
     def get(self, handle: BaseArtifactHandle) -> BaseArtifact:
         """
@@ -283,7 +322,7 @@ class ArtifactStore:
                     f"appears stale, reopening"
                 )
                 del self._managed_shms[handle.shm_name]
-                self._refcounts.pop(handle.shm_name, None)
+                self._handles.pop(handle.shm_name, None)
 
         if shm is None:
             try:
@@ -323,39 +362,36 @@ class ArtifactStore:
 
         return artifact
 
-    def _release_by_name(self, shm_name: str) -> None:
+    def _release_handle(self, handle: BaseArtifactHandle) -> None:
         """
-        Closes and unlinks a managed shared memory block by its name.
+        Closes and unlinks a managed shared memory block via its handle.
         Uses reference counting to ensure the block is not released while
         still in use.
         """
-        caller_stack = safe_caller_stack()
-        refcount = self._refcounts.get(shm_name, 0)
-        if refcount > 1:
-            # Decrement refcount and keep the block
-            self._refcounts[shm_name] = refcount - 1
+        caller_stack = safe_caller_stack(10)
+        shm_name = handle.shm_name
+
+        if handle.refcount > 1:
+            handle.refcount -= 1
+            if handle.holders:
+                handle.holders.pop()
             if caller_stack:
                 logger.debug(
                     f"Decremented refcount for {shm_name} to "
-                    f"{self._refcounts[shm_name]} (caller: {caller_stack})"
+                    f"{handle.refcount} (caller: {caller_stack})"
                 )
             return
-        elif refcount == 1:
-            # Refcount reached zero, release the block
-            del self._refcounts[shm_name]
-        else:
-            # Refcount is 0 or not in refcounts
-            # Check if block is still managed before warning
+
+        canonical = self._handles.pop(shm_name, None)
+        if canonical is None:
             if shm_name not in self._managed_shms:
-                # Block was already released, this is fine
                 logger.debug(
                     f"Shared memory block {shm_name} already released."
                 )
                 return
-            # Block is managed but has no refcount, this is unusual
             msg = (
                 f"Attempted to release block {shm_name}, which is "
-                f"managed but has no refcount"
+                f"managed but has no handle"
             )
             if caller_stack:
                 msg += f" (caller: {caller_stack})"
@@ -403,7 +439,11 @@ class ArtifactStore:
         Args:
             handle: The handle of the artifact to release.
         """
-        self._release_by_name(handle.shm_name)
+        canonical = self._handles.get(handle.shm_name)
+        if canonical:
+            self._release_handle(canonical)
+        else:
+            self._release_handle(handle)
 
     def close_handle(self, handle: BaseArtifactHandle) -> None:
         """
@@ -426,13 +466,13 @@ class ArtifactStore:
             handle: The handle of the artifact to close.
         """
         shm_name = handle.shm_name
-        refcount = self._refcounts.get(shm_name, 0)
-        if refcount > 1:
-            # Decrement refcount and keep block
-            self._refcounts[shm_name] = refcount - 1
+        canonical = self._handles.get(shm_name)
+        if canonical and canonical.refcount > 1:
+            canonical.refcount -= 1
+            if canonical.holders:
+                canonical.holders.pop()
             logger.debug(
-                f"Decremented refcount for {shm_name} to "
-                f"{self._refcounts[shm_name]}"
+                f"Decremented refcount for {shm_name} to {canonical.refcount}"
             )
             return
 
@@ -476,11 +516,12 @@ class ArtifactStore:
             True if the block was successfully retained, False otherwise.
         """
         shm_name = handle.shm_name
-        if shm_name in self._managed_shms:
-            self._refcounts[shm_name] = self._refcounts.get(shm_name, 1) + 1
+        canonical = self._handles.get(shm_name)
+        if canonical:
+            canonical.refcount += 1
+            canonical.holders.append(safe_caller_stack(15) or "debug-disabled")
             logger.debug(
-                f"Retained {shm_name}, refcount now "
-                f"{self._refcounts[shm_name]}"
+                f"Retained {shm_name}, refcount now {canonical.refcount}"
             )
             return True
         return False
@@ -513,7 +554,8 @@ class ArtifactStore:
                     to be forgotten.
         """
         shm_name = handle.shm_name
-        refcount = self._refcounts.get(shm_name, 0)
+        canonical = self._handles.get(shm_name)
+        refcount = canonical.refcount if canonical else 0
         logger.debug(f"forget() called for {shm_name}, refcount={refcount}")
 
         shm_obj = self._managed_shms.get(shm_name)
@@ -524,18 +566,21 @@ class ArtifactStore:
             )
             return
 
-        if refcount > 1:
-            self._refcounts[shm_name] = refcount - 1
+        if canonical and canonical.refcount > 1:
+            canonical.refcount -= 1
+            if canonical.holders:
+                canonical.holders.pop()
             logger.debug(
                 f"Decremented refcount for {shm_name} to "
-                f"{self._refcounts[shm_name]} in forget()"
+                f"{canonical.refcount} in forget()"
             )
             # We do not pop it from _managed_shms here, because in
             # Windows this could lead to the garbage collector closing
             # it, which also destroys the underlying memory block
             return
 
-        self._refcounts.pop(shm_name, None)
+        if canonical:
+            self._handles.pop(shm_name, None)
         self._managed_shms.pop(shm_name)
 
         try:

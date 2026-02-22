@@ -222,9 +222,17 @@ def setup_logging(loglevel_str: str):
     root_logger.addHandler(ui_handler)
 
     # Silence noisy third-party loggers
-    logging.getLogger("pyvips").setLevel(logging.WARNING)
-    logging.getLogger("pyvips.vobject").setLevel(logging.WARNING)
+    pyvips_loggers = [
+        "pyvips",
+        "pyvips.vobject",
+        "pyvips.voperation",
+        "pyvips.error",
+    ]
+    for name in pyvips_loggers:
+        logger = logging.getLogger(name)
+        logger.setLevel(logging.WARNING)
+        logger.propagate = False
+        logger.handlers = []
 
     logging.info(f"Logging configured. Console level: {loglevel_str}")
     logging.info(f"Session log file: {log_file}")
-    logging.debug("Silenced pyvips.vobject logger to WARNING level.")

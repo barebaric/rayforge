@@ -83,6 +83,7 @@ class ContourProducer(OpsProducer):
         surface,
         pixels_per_mm,
         *,
+        generation_id: int,
         workpiece: "Optional[WorkPiece]" = None,
         settings: Optional[Dict[str, Any]] = None,
         y_offset_mm: float = 0.0,
@@ -271,6 +272,7 @@ class ContourProducer(OpsProducer):
             source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
             source_dimensions=workpiece.size,
             generation_size=workpiece.size,
+            generation_id=generation_id,
         )
 
     @property

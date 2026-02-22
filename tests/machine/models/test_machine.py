@@ -59,7 +59,7 @@ def doc() -> Doc:
 
 @pytest.fixture
 def doc_editor(
-    doc: Doc, context_initializer, task_mgr: TaskManager
+    doc: Doc, lite_context, task_mgr: TaskManager
 ) -> Generator[DocEditor, None, None]:
     """
     Provides a DocEditor instance with real dependencies, configured
@@ -69,7 +69,7 @@ def doc_editor(
     assert config_manager is not None, (
         "ConfigManager was not initialized in context"
     )
-    editor = DocEditor(task_mgr, context_initializer, doc)
+    editor = DocEditor(task_mgr, lite_context, doc)
     yield editor
     editor.cleanup()
 
@@ -105,7 +105,7 @@ async def wait_for_tasks_to_finish(task_mgr: TaskManager):
     pytest.fail("Task manager did not become idle in time.")
 
 
-@pytest.mark.usefixtures("context_initializer")
+@pytest.mark.usefixtures("lite_context")
 class TestMachine:
     """Test suite for the Machine model and its command handlers."""
 
@@ -129,7 +129,7 @@ class TestMachine:
         machine: Machine,
         mocker,
         task_mgr: TaskManager,
-        context_initializer,
+        lite_context,
     ):
         """Test that changing the driver triggers a rebuild and cleanup."""
         await wait_for_tasks_to_finish(task_mgr)
@@ -540,7 +540,7 @@ class TestMachine:
         machine: Machine,
         doc_editor: DocEditor,
         mocker,
-        context_initializer,
+        lite_context,
         task_mgr: TaskManager,
     ):
         """
@@ -550,7 +550,7 @@ class TestMachine:
         # --- Arrange ---
         await wait_for_tasks_to_finish(task_mgr)
         # Add a step to the workflow, which is required for job assembly.
-        step = steps.create_contour_step(context_initializer)
+        step = steps.create_contour_step(lite_context)
         workflow = doc.active_layer.workflow
         assert workflow is not None
         workflow.add_step(step)
@@ -587,7 +587,7 @@ class TestMachine:
         machine: Machine,
         doc_editor: DocEditor,
         mocker,
-        context_initializer,
+        lite_context,
         task_mgr: TaskManager,
     ):
         """Verify that framing a job calls the driver's run method."""
@@ -599,7 +599,7 @@ class TestMachine:
         assert machine.can_frame() is True
 
         # Add a step to the workflow, which is required for job assembly.
-        step = steps.create_contour_step(context_initializer)
+        step = steps.create_contour_step(lite_context)
         workflow = doc.active_layer.workflow
         assert workflow is not None
         workflow.add_step(step)
@@ -812,7 +812,7 @@ class TestMachine:
         machine: Machine,
         mocker,
         task_mgr: TaskManager,
-        context_initializer,
+        lite_context,
     ):
         """Test that set_power correctly calls driver with percentage."""
         await wait_for_tasks_to_finish(task_mgr)
@@ -832,7 +832,7 @@ class TestMachine:
         machine: Machine,
         mocker,
         task_mgr: TaskManager,
-        context_initializer,
+        lite_context,
     ):
         """Test that set_power with 0% calls driver with disable command."""
         await wait_for_tasks_to_finish(task_mgr)
@@ -852,7 +852,7 @@ class TestMachine:
         machine: Machine,
         mocker,
         task_mgr: TaskManager,
-        context_initializer,
+        lite_context,
     ):
         """Test that set_power with 100% calls driver with max power."""
         await wait_for_tasks_to_finish(task_mgr)
@@ -872,7 +872,7 @@ class TestMachine:
         machine: Machine,
         mocker,
         task_mgr: TaskManager,
-        context_initializer,
+        lite_context,
     ):
         """Test that set_power with specific head calls driver correctly."""
         await wait_for_tasks_to_finish(task_mgr)
@@ -1013,7 +1013,7 @@ class TestMachine:
 
     @pytest.mark.asyncio
     async def test_new_driver_methods_grbl_network(
-        self, machine: Machine, context_initializer, task_mgr: TaskManager
+        self, machine: Machine, lite_context, task_mgr: TaskManager
     ):
         """Test new driver methods for GrblNetworkDriver."""
         machine.set_dialect_uid("grbl")
@@ -1037,7 +1037,7 @@ class TestMachine:
 
     @pytest.mark.asyncio
     async def test_new_driver_methods_grbl_serial(
-        self, machine: Machine, context_initializer, task_mgr: TaskManager
+        self, machine: Machine, lite_context, task_mgr: TaskManager
     ):
         """Test new driver methods for GrblSerialDriver."""
         machine.set_dialect_uid("grbl")
@@ -1063,7 +1063,7 @@ class TestMachine:
 
     @pytest.mark.asyncio
     async def test_home_method_with_multiple_axes(
-        self, machine, mocker, context_initializer, task_mgr
+        self, machine, mocker, lite_context, task_mgr
     ):
         """
         Test that home method accepts multiple axes using binary operators.
@@ -1153,7 +1153,7 @@ class TestMachine:
 
     @pytest.mark.asyncio
     async def test_reports_granular_progress_grbl_serial(
-        self, machine: Machine, context_initializer, task_mgr
+        self, machine: Machine, lite_context, task_mgr
     ):
         """Test reports_granular_progress returns True for GrblSerialDriver."""
         machine.set_driver(
@@ -1166,7 +1166,7 @@ class TestMachine:
 
     @pytest.mark.asyncio
     async def test_reports_granular_progress_grbl_network(
-        self, machine: Machine, context_initializer, task_mgr
+        self, machine: Machine, lite_context, task_mgr
     ):
         """
         Test reports_granular_progress returns False for GrblNetworkDriver.
@@ -1179,7 +1179,7 @@ class TestMachine:
 
     @pytest.mark.asyncio
     async def test_reports_granular_progress_smoothie(
-        self, machine: Machine, context_initializer, task_mgr
+        self, machine: Machine, lite_context, task_mgr
     ):
         """Test reports_granular_progress returns True for SmoothieDriver."""
         machine.set_driver(SmoothieDriver, {"host": "test", "port": 23})
@@ -1339,31 +1339,28 @@ class TestMachine:
             (JogDirection.DOWN, Origin.TOP_RIGHT, True, 10.0, 10.0),
         ],
     )
-    @pytest.mark.asyncio
-    async def test_calculate_jog(
+    def test_calculate_jog(
         self,
-        machine: Machine,
+        isolated_machine: Machine,
         direction,
         origin,
         reverse,
         distance,
         expected,
-        task_mgr: TaskManager,
     ):
         """
         Tests that jog delta calculation correctly accounts for origin
         position and reverse axis settings.
         """
-        await wait_for_tasks_to_finish(task_mgr)
-        machine.set_origin(origin)
+        isolated_machine.set_origin(origin)
         if direction in (JogDirection.EAST, JogDirection.WEST):
-            machine.set_reverse_x_axis(reverse)
+            isolated_machine.set_reverse_x_axis(reverse)
         elif direction in (JogDirection.NORTH, JogDirection.SOUTH):
-            machine.set_reverse_y_axis(reverse)
+            isolated_machine.set_reverse_y_axis(reverse)
         else:
-            machine.set_reverse_z_axis(reverse)
+            isolated_machine.set_reverse_z_axis(reverse)
 
-        result = machine.calculate_jog(direction, distance)
+        result = isolated_machine.calculate_jog(direction, distance)
         assert result == expected
 
     @pytest.mark.parametrize(
@@ -1567,12 +1564,9 @@ class TestMachine:
             (True, False, False, (100, None, 0), Axis.Y, 9999, False),
         ],
     )
-    @pytest.mark.asyncio
-    async def test_would_jog_exceed_limits(
+    def test_would_jog_exceed_limits(
         self,
-        machine: Machine,
-        mocker,
-        task_mgr: TaskManager,
+        isolated_machine: Machine,
         enabled,
         reverse_x,
         reverse_y,
@@ -1585,14 +1579,16 @@ class TestMachine:
         Tests the soft limit checking logic under various conditions,
         including reversed axes, disabled limits, and unknown positions.
         """
-        await wait_for_tasks_to_finish(task_mgr)
-        machine.set_dimensions(200, 300)
-        machine.set_soft_limits_enabled(enabled)
-        machine.set_reverse_x_axis(reverse_x)
-        machine.set_reverse_y_axis(reverse_y)
-        machine.device_state.machine_pos = current_pos
+        isolated_machine.set_dimensions(200, 300)
+        isolated_machine.set_soft_limits_enabled(enabled)
+        isolated_machine.set_reverse_x_axis(reverse_x)
+        isolated_machine.set_reverse_y_axis(reverse_y)
+        isolated_machine.device_state.machine_pos = current_pos
 
-        assert machine.would_jog_exceed_limits(axis, distance) is expected
+        assert (
+            isolated_machine.would_jog_exceed_limits(axis, distance)
+            is expected
+        )
 
     @pytest.mark.asyncio
     async def test_world_to_machine_transforms(
@@ -1759,11 +1755,9 @@ class TestMachine:
             (True, True, (-200.0, -300.0, 0.0, 0.0)),  # Both reversed
         ],
     )
-    @pytest.mark.asyncio
-    async def test_get_soft_limits(
+    def test_get_soft_limits(
         self,
-        machine: Machine,
-        task_mgr: TaskManager,
+        isolated_machine: Machine,
         reverse_x,
         reverse_y,
         expected_limits,
@@ -1772,15 +1766,10 @@ class TestMachine:
         Tests that get_soft_limits correctly calculates the workspace
         boundaries based on axis reversal settings.
         """
-        await wait_for_tasks_to_finish(task_mgr)
+        isolated_machine.set_dimensions(200, 300)
+        isolated_machine.set_reverse_x_axis(reverse_x)
+        isolated_machine.set_reverse_y_axis(reverse_y)
 
-        # --- Arrange ---
-        machine.set_dimensions(200, 300)
-        machine.set_reverse_x_axis(reverse_x)
-        machine.set_reverse_y_axis(reverse_y)
+        limits = isolated_machine.get_soft_limits()
 
-        # --- Act ---
-        limits = machine.get_soft_limits()
-
-        # --- Assert ---
         assert limits == expected_limits

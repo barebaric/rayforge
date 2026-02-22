@@ -93,6 +93,7 @@ def make_step_artifact_in_subprocess(
     render_artifact, ops_artifact = compute_step_artifacts(
         artifacts=artifacts,
         transformers=transformers,
+        generation_id=generation_id,
         context=context,
     )
 

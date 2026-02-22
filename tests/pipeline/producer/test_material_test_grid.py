@@ -156,6 +156,7 @@ def test_basic_ops_generation(
         laser=laser,
         surface=None,
         pixels_per_mm=None,
+        generation_id=0,
         workpiece=mock_workpiece,
         settings={},
     )
@@ -184,6 +185,7 @@ def test_risk_sorted_execution_order(laser: Laser, mock_workpiece: WorkPiece):
         laser=laser,
         surface=None,
         pixels_per_mm=None,
+        generation_id=0,
         workpiece=mock_workpiece,
         settings={},
     )
@@ -211,6 +213,7 @@ def test_ops_contains_rectangles(laser: Laser, mock_workpiece: WorkPiece):
         laser=laser,
         surface=None,
         pixels_per_mm=None,
+        generation_id=0,
         workpiece=mock_workpiece,
         settings={},
     )
@@ -238,6 +241,7 @@ def test_power_and_speed_ranges(laser: Laser, mock_workpiece: WorkPiece):
         laser=laser,
         surface=None,
         pixels_per_mm=None,
+        generation_id=0,
         workpiece=mock_workpiece,
         settings={},
     )
@@ -276,6 +280,7 @@ def test_single_column_grid(laser: Laser, mock_workpiece: WorkPiece):
         laser=laser,
         surface=None,
         pixels_per_mm=None,
+        generation_id=0,
         workpiece=mock_workpiece,
         settings={},
     )
@@ -308,6 +313,7 @@ def test_single_row_grid(laser: Laser, mock_workpiece: WorkPiece):
         laser=laser,
         surface=None,
         pixels_per_mm=None,
+        generation_id=0,
         workpiece=mock_workpiece,
         settings={},
     )
@@ -336,6 +342,7 @@ def test_workpiece_uid_in_section_commands(
         laser=laser,
         surface=None,
         pixels_per_mm=None,
+        generation_id=0,
         workpiece=mock_workpiece,
         settings={},
     )
@@ -367,6 +374,7 @@ def test_grid_cell_count(laser: Laser):
             laser=laser,
             surface=None,
             pixels_per_mm=None,
+            generation_id=0,
             workpiece=workpiece,
             settings={},
         )

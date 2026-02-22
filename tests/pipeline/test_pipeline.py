@@ -113,7 +113,9 @@ class TestPipeline:
                 if task_info.target is make_job_artifact_in_subprocess:
                     if task_info.when_event:
                         store = get_context().artifact_store
-                        job_artifact = JobArtifact(ops=Ops(), distance=0.0)
+                        job_artifact = JobArtifact(
+                            ops=Ops(), distance=0.0, generation_id=1
+                        )
                         job_handle = store.put(job_artifact)
                         # Extract gen_id from kwargs
                         gen_id = task_info.kwargs.get("generation_id")
@@ -134,9 +136,11 @@ class TestPipeline:
                         # Create real artifacts and handles so the SHM blocks
                         # exist and can be adopted by the main process store.
                         store = get_context().artifact_store
-                        render_artifact = StepRenderArtifact()
+                        render_artifact = StepRenderArtifact(generation_id=0)
                         render_handle = store.put(render_artifact)
-                        ops_artifact = StepOpsArtifact(ops=Ops())
+                        ops_artifact = StepOpsArtifact(
+                            ops=Ops(), generation_id=0
+                        )
                         ops_handle = store.put(ops_artifact)
 
                         # 1. Simulate render artifact event
@@ -406,10 +410,11 @@ class TestPipeline:
             shm_name="initial_workpiece",
             handle_class_name="WorkPieceArtifactHandle",
             artifact_type_name="WorkPieceArtifact",
-            is_scalable=False,  # Non-scalable (raster)
+            is_scalable=False,
             source_coordinate_system_name="MILLIMETER_SPACE",
             source_dimensions=(100, 100),
             generation_size=(50.0, 30.0),
+            generation_id=1,
         )
         ledger_key = ArtifactKey.for_workpiece(real_workpiece.uid)
 
@@ -452,6 +457,7 @@ class TestPipeline:
             source_coordinate_system_name="MILLIMETER_SPACE",
             source_dimensions=(200, 200),
             generation_size=(20.0, 20.0),
+            generation_id=2,
         )
         ledger_key = ArtifactKey.for_workpiece(real_workpiece.uid)
         # We just cache the result to simulate completion.

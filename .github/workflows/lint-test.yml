@@ -10,9 +10,13 @@ on:
       - "**" # Run on PRs targeting any branch
   workflow_call: # Allow this workflow to be called by other workflows
 
+concurrency:
+  group: lint-test-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
 jobs:
-  lint-test:
-    name: Lint and Test Rayforge
+  lint:
+    name: Lint
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -26,7 +30,85 @@ jobs:
         with:
           pixi-version: v0.48.2
           cache: true
-          cache-key: ${{ github.sha }}
+          cache-key: pixi-${{ runner.os }}-${{ hashFiles('pixi.lock') }}
+
+      - name: Setup environment
+        run: pixi install
+
+      - name: Compile Translations
+        run: pixi run compile-translations
+
+      - name: Run flake8 Lint
+        run: pixi run lint
+
+  test-backend:
+    name: Backend Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Install Pixi
+        uses: prefix-dev/setup-pixi@v0.8.1
+        with:
+          pixi-version: v0.48.2
+          cache: true
+          cache-key: pixi-${{ runner.os }}-${{ hashFiles('pixi.lock') }}
+
+      - name: Setup environment
+        run: pixi install
+
+      - name: Compile Translations
+        run: pixi run compile-translations
+
+      - name: Run backend tests
+        run: pixi run test -m "not ui and not stress" --log-cli-level=DEBUG
+
+  test-stress:
+    name: Stress Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Install Pixi
+        uses: prefix-dev/setup-pixi@v0.8.1
+        with:
+          pixi-version: v0.48.2
+          cache: true
+          cache-key: pixi-${{ runner.os }}-${{ hashFiles('pixi.lock') }}
+
+      - name: Setup environment
+        run: pixi install
+
+      - name: Compile Translations
+        run: pixi run compile-translations
+
+      - name: Run stress tests
+        run: pixi run test -m stress --log-cli-level=DEBUG
+
+  test-ui:
+    name: UI Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Install Pixi
+        uses: prefix-dev/setup-pixi@v0.8.1
+        with:
+          pixi-version: v0.48.2
+          cache: true
+          cache-key: pixi-${{ runner.os }}-${{ hashFiles('pixi.lock') }}
 
       - name: Setup environment
         run: pixi install
@@ -36,12 +118,6 @@ jobs:
 
       - name: Compile Translations
         run: pixi run compile-translations
-
-      - name: Run flake8 Lint
-        run: pixi run lint
-
-      - name: Run backend tests
-        run: pixi run test -m "not ui" --log-cli-level=DEBUG
 
       - name: Run UI tests
         run: xvfb-run pixi run uitest --log-cli-level=DEBUG

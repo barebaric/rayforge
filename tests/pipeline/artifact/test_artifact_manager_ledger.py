@@ -21,22 +21,26 @@ def create_mock_handle(handle_class, name: str) -> Mock:
     """Creates a mock handle that behaves like a real handle for tests."""
     handle = Mock(spec=handle_class)
     handle.shm_name = f"shm_{name}"
+    handle.refcount = 1
+    handle.holders = []
     return handle
 
 
 @pytest.fixture
 def manager_with_mock_store():
     mock_store = Mock(spec=ArtifactStore)
+    mock_store._handles = {}
     manager = ArtifactManager(mock_store)
     return manager, mock_store
 
 
 def test_cache_handle_stores_handle(manager_with_mock_store):
-    """Test cache_handle stores a handle."""
+    """Test cache_handle stores a handle (no retain when refcount=0)."""
     manager, mock_store = manager_with_mock_store
     key = ArtifactKey.for_workpiece("00000000-0000-4000-8000-000000000001")
     handle = create_mock_handle(WorkPieceArtifactHandle, "handle")
 
+    manager.declare_generation({key}, generation_id=1)
     manager.cache_handle(key, handle, generation_id=1)
 
     composite_key = make_composite_key(key, 1)
@@ -44,7 +48,7 @@ def test_cache_handle_stores_handle(manager_with_mock_store):
     assert entry is not None
     assert entry.handle is handle
     assert entry.generation_id == 1
-    mock_store.retain.assert_called_once_with(handle)
+    mock_store.retain.assert_not_called()
 
 
 def test_cache_handle_replaces_old_handle(manager_with_mock_store):
@@ -54,6 +58,7 @@ def test_cache_handle_replaces_old_handle(manager_with_mock_store):
     old_handle = create_mock_handle(WorkPieceArtifactHandle, "old_handle")
     new_handle = create_mock_handle(WorkPieceArtifactHandle, "new_handle")
 
+    manager.declare_generation({key}, generation_id=1)
     manager.cache_handle(key, old_handle, generation_id=1)
     manager.cache_handle(key, new_handle, generation_id=1)
 
@@ -61,7 +66,7 @@ def test_cache_handle_replaces_old_handle(manager_with_mock_store):
     entry = manager.get_ledger_entry(composite_key)
     assert entry is not None
     assert entry.handle is new_handle
-    mock_store.retain.assert_called_with(new_handle)
+    mock_store.retain.assert_not_called()
     mock_store.release.assert_called_once_with(old_handle)
 
 
@@ -71,6 +76,7 @@ def test_get_workpiece_handle_returns_cached_handle(manager_with_mock_store):
     key = ArtifactKey.for_workpiece("00000000-0000-4000-8000-000000000001")
     handle = create_mock_handle(WorkPieceArtifactHandle, "handle")
 
+    manager.declare_generation({key}, generation_id=1)
     manager.cache_handle(key, handle, generation_id=1)
 
     result = manager.get_workpiece_handle(key, 1)
@@ -96,6 +102,7 @@ def test_invalidate_for_workpiece_removes_cached_handles(
     key = ArtifactKey.for_workpiece("00000000-0000-4000-8000-000000000001")
     handle = create_mock_handle(WorkPieceArtifactHandle, "handle")
 
+    manager.declare_generation({key}, generation_id=1)
     manager.cache_handle(key, handle, generation_id=1)
     manager.invalidate_for_workpiece(key)
 
@@ -109,6 +116,7 @@ def test_shutdown_releases_all_handles(manager_with_mock_store):
     key = ArtifactKey.for_workpiece("00000000-0000-4000-8000-000000000001")
     handle = create_mock_handle(WorkPieceArtifactHandle, "handle")
 
+    manager.declare_generation({key}, generation_id=1)
     manager.cache_handle(key, handle, generation_id=1)
     manager.shutdown()
 

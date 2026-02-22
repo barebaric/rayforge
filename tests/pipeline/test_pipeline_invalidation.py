@@ -260,6 +260,7 @@ class TestWorkpieceHandleReuse:
         store = MagicMock()
         store.retain = MagicMock()
         store.release = MagicMock()
+        store._handles = {}
         return store
 
     @pytest.fixture
@@ -278,7 +279,11 @@ class TestWorkpieceHandleReuse:
         step_key = ArtifactKey.for_step(step_uid)
 
         mock_handle = MagicMock(spec=StepOpsArtifactHandle)
+        mock_handle.shm_name = "test_shm"
+        mock_handle.refcount = 1
+        mock_handle.holders = []
 
+        artifact_manager.declare_generation({step_key}, generation_id=1)
         artifact_manager.cache_handle(step_key, mock_handle, generation_id=1)
 
         assert artifact_manager.has_artifact(step_key, 1)
@@ -304,7 +309,11 @@ class TestWorkpieceHandleReuse:
         wp_key = ArtifactKey.for_workpiece(wp_uid, step_uid)
 
         mock_handle = MagicMock(spec=WorkPieceArtifactHandle)
+        mock_handle.shm_name = "test_shm"
+        mock_handle.refcount = 1
+        mock_handle.holders = []
 
+        artifact_manager.declare_generation({wp_key}, generation_id=1)
         artifact_manager.cache_handle(wp_key, mock_handle, generation_id=1)
 
         assert artifact_manager.has_artifact(wp_key, 1)

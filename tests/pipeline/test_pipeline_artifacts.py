@@ -99,6 +99,7 @@ class TestPipelineArtifacts:
             source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
             source_dimensions=real_workpiece.size,
             generation_size=real_workpiece.size,
+            generation_id=1,
         )
         handle = get_context().artifact_store.put(artifact)
         task_obj_for_stage = task_info.returned_task_obj
@@ -163,6 +164,7 @@ class TestPipelineArtifacts:
             source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
             source_dimensions=real_workpiece.size,
             generation_size=real_workpiece.size,
+            generation_id=1,
         )
         handle = get_context().artifact_store.put(artifact)
         task_obj_for_stage = task_info.returned_task_obj
@@ -217,6 +219,7 @@ class TestPipelineArtifacts:
             source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
             source_dimensions=original_size,
             generation_size=original_size,
+            generation_id=1,
         )
         handle = get_context().artifact_store.put(artifact)
         task_obj_for_stage = task_info.returned_task_obj
@@ -276,6 +279,7 @@ class TestPipelineArtifacts:
             source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
             source_dimensions=real_workpiece.size,
             generation_size=real_workpiece.size,
+            generation_id=1,
         )
         handle = get_context().artifact_store.put(artifact)
         task_obj_for_stage = task_info.returned_task_obj
@@ -331,6 +335,7 @@ class TestPipelineArtifacts:
             source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
             source_dimensions=original_size,
             generation_size=original_size,
+            generation_id=1,
         )
         handle = get_context().artifact_store.put(artifact)
         task_obj_for_stage = task_info.returned_task_obj

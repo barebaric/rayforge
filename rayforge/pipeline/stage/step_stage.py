@@ -6,6 +6,7 @@ from ...shared.util.size import sizes_are_close
 from ...shared.tasker.task import Task
 from ..artifact import StepOpsArtifactHandle, StepRenderArtifactHandle
 from ..artifact.key import ArtifactKey
+from ..artifact.manager import StaleGenerationError
 from ..dag.node import NodeState
 from .base import PipelineStage
 
@@ -13,10 +14,10 @@ if TYPE_CHECKING:
     from ...core.step import Step
     from ...core.workpiece import WorkPiece
     from ...machine.models.machine import Machine
-    from ..context import GenerationContext
     from ...shared.tasker.manager import TaskManager
     from ..artifact import BaseArtifactHandle
     from ..artifact.manager import ArtifactManager
+    from ..context import GenerationContext
 
 
 logger = logging.getLogger(__name__)
@@ -39,7 +40,9 @@ class StepPipelineStage(PipelineStage):
         super().__init__(task_manager, artifact_manager)
         self._machine = machine
         self._time_cache: Dict[StepKey, Optional[float]] = {}
-        self._retained_handles: Dict[str, List["BaseArtifactHandle"]] = {}
+        self._retained_handles_by_task: Dict[
+            int, List["BaseArtifactHandle"]
+        ] = {}
 
         self.generation_finished = Signal()
         self.assembly_starting = Signal()
@@ -57,7 +60,11 @@ class StepPipelineStage(PipelineStage):
         self.render_artifact_ready.send(self, step=step)
 
     def handle_ops_artifact_ready(
-        self, step_uid: str, handle: BaseArtifactHandle, generation_id: int
+        self,
+        step_uid: str,
+        step: "Step",
+        handle: BaseArtifactHandle,
+        generation_id: int,
     ):
         """Handles the ops artifact ready event."""
         if not isinstance(handle, StepOpsArtifactHandle):
@@ -82,43 +89,43 @@ class StepPipelineStage(PipelineStage):
 
         generation_id = data.get("generation_id")
         if generation_id is None:
-            logger.error(
-                f"[{step_uid}] Task event '{event_name}' missing "
-                f"generation_id. Ignoring."
-            )
             return
 
-        if not self._artifact_manager.is_generation_current(
+        handle_dict = data.get("handle_dict")
+        is_deleted = step.layer is None
+        is_stale = not self._artifact_manager.is_generation_current(
             ledger_key, generation_id
-        ):
-            logger.debug(
-                f"[{step_uid}] Stale event '{event_name}' with "
-                f"generation_id {generation_id}. Ignoring."
-            )
-            return
+        )
 
         try:
-            if event_name == "render_artifact_ready":
-                with self._artifact_manager.safe_adoption(
-                    ledger_key, data["handle_dict"]
-                ) as handle:
-                    self.handle_render_artifact_ready(step_uid, step, handle)
-
-            elif event_name == "ops_artifact_ready":
-                with self._artifact_manager.safe_adoption(
-                    ledger_key, data["handle_dict"]
-                ) as handle:
-                    self.handle_ops_artifact_ready(
-                        step_uid, handle, generation_id
+            if event_name == "time_estimate_ready":
+                if not is_deleted and not is_stale:
+                    self.handle_time_estimate_ready(
+                        step_uid, step, data["time_estimate"]
                     )
+                return
 
-            elif event_name == "time_estimate_ready":
-                self.handle_time_estimate_ready(
-                    step_uid, step, data["time_estimate"]
-                )
+            if not handle_dict:
+                return
+
+            # safe_adoption checks staleness automatically
+            with self._artifact_manager.safe_adoption(
+                ledger_key, handle_dict
+            ) as handle:
+                if event_name == "render_artifact_ready":
+                    self.handle_render_artifact_ready(step_uid, step, handle)
+                elif event_name == "ops_artifact_ready":
+                    self.handle_ops_artifact_ready(
+                        step_uid, step, handle, generation_id
+                    )
+        except StaleGenerationError as e:
+            logger.debug(
+                f"Discarding stale artifact event for {ledger_key}: {e}"
+            )
         except Exception as e:
             logger.error(
-                f"Error handling task event '{event_name}': {e}", exc_info=True
+                f"Error handling task event '{event_name}': {e}",
+                exc_info=True,
             )
 
     def on_task_complete(
@@ -136,39 +143,51 @@ class StepPipelineStage(PipelineStage):
         step_uid = step.uid
         ledger_key = ArtifactKey.for_step(step_uid)
 
-        self.release_retained_handles(step_uid)
+        retained = self._retained_handles_by_task.pop(task.id, [])
+        for handle in retained:
+            self._artifact_manager.release_handle(handle)
 
-        if not self._artifact_manager.is_generation_current(
-            ledger_key, task_generation_id
-        ):
-            logger.debug(f"Ignoring stale step completion for {step_uid}")
+        task_status = task.get_status()
+        logger.debug(f"[{ledger_key}] Task status is '{task_status}'.")
+
+        if task_status == "canceled":
+            self._cleanup_step_render_handle(step_uid)
+            with self._artifact_manager.report_cancellation(
+                ledger_key, task_generation_id
+            ):
+                self.generation_finished.send(
+                    self, step=step, generation_id=task_generation_id
+                )
             return
 
-        if task.get_status() == "completed":
+        if task_status == "completed":
             try:
                 task.result()
-                render_handle = self._artifact_manager.get_step_render_handle(
-                    step_uid
-                )
-                logger.debug(
-                    f"_on_step_task_complete: render_handle={render_handle}"
-                )
-                self._artifact_manager.complete_generation(
-                    ledger_key,
-                    task_generation_id,
-                )
-                self._emit_node_state(ledger_key, NodeState.VALID)
-                logger.debug("_on_step_task_complete: ops_handle set to DONE")
             except Exception as e:
                 logger.error(f"Error on step assembly result: {e}")
-                self._emit_node_state(ledger_key, NodeState.ERROR)
-        else:
-            logger.warning(f"Step assembly for {step_uid} failed.")
-            self._emit_node_state(ledger_key, NodeState.ERROR)
+                task_status = "failed"
 
-        self.generation_finished.send(
-            self, step=step, generation_id=task_generation_id
-        )
+        if task_status == "completed":
+            with self._artifact_manager.report_completion(
+                ledger_key, task_generation_id
+            ):
+                self.generation_finished.send(
+                    self, step=step, generation_id=task_generation_id
+                )
+        else:
+            self._cleanup_step_render_handle(step_uid)
+            with self._artifact_manager.report_failure(
+                ledger_key, task_generation_id
+            ):
+                self.generation_finished.send(
+                    self, step=step, generation_id=task_generation_id
+                )
+
+    def _cleanup_step_render_handle(self, step_uid: str):
+        """Release the step render handle if one exists."""
+        render_handle = self._artifact_manager.pop_step_render_handle(step_uid)
+        if render_handle:
+            self._artifact_manager.release_handle(render_handle)
 
     def launch_task(
         self,
@@ -191,8 +210,6 @@ class StepPipelineStage(PipelineStage):
                 self._artifact_manager.release_handle(handle)
             logger.debug(f"No assembly info for step_uid={step.uid}")
             return
-
-        self.store_retained_handles(step.uid, retained_handles)
 
         if step.layer:
             for wp in step.layer.all_workpieces:
@@ -220,7 +237,7 @@ class StepPipelineStage(PipelineStage):
 
         assert self._machine is not None
 
-        self._task_manager.run_process(
+        task = self._task_manager.run_process(
             make_step_artifact_in_subprocess,
             self._artifact_manager.get_store(),
             assembly_info,
@@ -239,6 +256,7 @@ class StepPipelineStage(PipelineStage):
                 self.handle_task_event(task, event_name, data, step)
             ),
         )
+        self._retained_handles_by_task[task.id] = retained_handles
 
     def get_estimate(self, step_uid: StepKey) -> Optional[float]:
         """Retrieves a cached time estimate if available."""
@@ -314,20 +332,12 @@ class StepPipelineStage(PipelineStage):
 
         return assembly_info, retained_handles
 
-    def store_retained_handles(
-        self, step_uid: str, handles: List["BaseArtifactHandle"]
-    ) -> None:
-        """Store retained handles for a step."""
-        self._retained_handles[step_uid] = handles
-
-    def release_retained_handles(self, step_uid: str) -> None:
-        """Release retained handles for a step."""
-        retained = self._retained_handles.pop(step_uid, [])
-        for handle in retained:
-            self._artifact_manager.release_handle(handle)
-
     def shutdown(self):
         logger.debug("StepPipelineStage shutting down.")
+        for handles in self._retained_handles_by_task.values():
+            for handle in handles:
+                self._artifact_manager.release_handle(handle)
+        self._retained_handles_by_task.clear()
 
     def invalidate(self, key: StepKey):
         """Invalidates a step artifact, ensuring it will be regenerated."""

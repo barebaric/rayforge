@@ -78,6 +78,7 @@ def source_handle():
         source_coordinate_system_name="MILLIMETER_SPACE",
         source_dimensions=(10, 10),
         generation_size=(10, 10),
+        generation_id=0,
     )
 
 
@@ -163,12 +164,24 @@ def test_view_manager_handles_events_and_completion(
     view_manager.view_artifact_ready.connect(ready_handler)
     view_manager.generation_finished.connect(finished_handler)
 
+    mock_workpiece = MagicMock()
+    mock_workpiece.uid = wp_uid
+    mock_step = MagicMock()
+    mock_step.uid = step_uid
+    mock_layer = MagicMock()
+    mock_layer.workflow.steps = [mock_step]
+    mock_doc = MagicMock()
+    mock_doc.all_workpieces = [mock_workpiece]
+    mock_doc.layers = [mock_layer]
+    view_manager._pipeline.doc = mock_doc
+
     view_handle = WorkPieceViewArtifactHandle(
         shm_name="test",
         bbox_mm=(0, 0, 1, 1),
         workpiece_size_mm=(1.0, 1.0),
         handle_class_name="WorkPieceViewArtifactHandle",
         artifact_type_name="WorkPieceViewArtifact",
+        generation_id=0,
     )
 
     @contextmanager
@@ -283,19 +296,24 @@ def test_multiple_view_artifact_updated_events(
     view_manager.view_artifact_created.connect(created_handler)
     view_manager.view_artifact_updated.connect(updated_handler)
 
-    handle_dict = {
-        "shm_name": "test_view",
-        "bbox_mm": (0, 0, 1, 1),
-        "workpiece_size_mm": (1.0, 1.0),
-        "handle_class_name": "WorkPieceViewArtifactHandle",
-        "artifact_type_name": "WorkPieceViewArtifact",
-    }
+    mock_workpiece = MagicMock()
+    mock_workpiece.uid = wp_uid
+    mock_step = MagicMock()
+    mock_step.uid = step_uid
+    mock_layer = MagicMock()
+    mock_layer.workflow.steps = [mock_step]
+    mock_doc = MagicMock()
+    mock_doc.all_workpieces = [mock_workpiece]
+    mock_doc.layers = [mock_layer]
+    view_manager._pipeline.doc = mock_doc
+
     view_handle = WorkPieceViewArtifactHandle(
         shm_name="test_view",
         bbox_mm=(0, 0, 1, 1),
         workpiece_size_mm=(1.0, 1.0),
         handle_class_name="WorkPieceViewArtifactHandle",
         artifact_type_name="WorkPieceViewArtifact",
+        generation_id=0,
     )
 
     @contextmanager
@@ -303,6 +321,14 @@ def test_multiple_view_artifact_updated_events(
         yield view_handle
 
     mock_store.safe_adoption.side_effect = mock_safe_adoption
+
+    handle_dict = {
+        "shm_name": "test_view",
+        "bbox_mm": (0, 0, 1, 1),
+        "workpiece_size_mm": (1.0, 1.0),
+        "handle_class_name": "WorkPieceViewArtifactHandle",
+        "artifact_type_name": "WorkPieceViewArtifact",
+    }
 
     when_event_cb(
         mock_task, "view_artifact_created", {"handle_dict": handle_dict}
@@ -348,19 +374,24 @@ def test_progressive_rendering_sends_multiple_updates(
     view_manager.view_artifact_created.connect(created_handler)
     view_manager.view_artifact_updated.connect(updated_handler)
 
-    handle_dict = {
-        "shm_name": "test_progressive",
-        "bbox_mm": (0, 0, 1, 1),
-        "workpiece_size_mm": (1.0, 1.0),
-        "handle_class_name": "WorkPieceViewArtifactHandle",
-        "artifact_type_name": "WorkPieceViewArtifact",
-    }
+    mock_workpiece = MagicMock()
+    mock_workpiece.uid = wp_uid
+    mock_step = MagicMock()
+    mock_step.uid = step_uid
+    mock_layer = MagicMock()
+    mock_layer.workflow.steps = [mock_step]
+    mock_doc = MagicMock()
+    mock_doc.all_workpieces = [mock_workpiece]
+    mock_doc.layers = [mock_layer]
+    view_manager._pipeline.doc = mock_doc
+
     view_handle = WorkPieceViewArtifactHandle(
         shm_name="test_progressive",
         bbox_mm=(0, 0, 1, 1),
         workpiece_size_mm=(1.0, 1.0),
         handle_class_name="WorkPieceViewArtifactHandle",
         artifact_type_name="WorkPieceViewArtifact",
+        generation_id=0,
     )
 
     @contextmanager
@@ -368,6 +399,14 @@ def test_progressive_rendering_sends_multiple_updates(
         yield view_handle
 
     mock_store.safe_adoption.side_effect = mock_safe_adoption
+
+    handle_dict = {
+        "shm_name": "test_progressive",
+        "bbox_mm": (0, 0, 1, 1),
+        "workpiece_size_mm": (1.0, 1.0),
+        "handle_class_name": "WorkPieceViewArtifactHandle",
+        "artifact_type_name": "WorkPieceViewArtifact",
+    }
 
     when_event_cb(
         mock_task,
@@ -399,6 +438,7 @@ def test_on_chunk_available_receives_chunks(view_manager, mock_store, context):
         workpiece_size_mm=(10.0, 10.0),
         handle_class_name="WorkPieceViewArtifactHandle",
         artifact_type_name="WorkPieceViewArtifact",
+        generation_id=0,
     )
     view_manager._view_entries[composite_id] = ViewEntry(
         handle=view_handle,
@@ -413,6 +453,7 @@ def test_on_chunk_available_receives_chunks(view_manager, mock_store, context):
         source_coordinate_system_name="MILLIMETER_SPACE",
         source_dimensions=(10, 10),
         generation_size=(10, 10),
+        generation_id=0,
     )
 
     generation_id = 0
@@ -466,6 +507,7 @@ def test_live_render_context_established_on_view_creation(
         workpiece_size_mm=(1.0, 1.0),
         handle_class_name="WorkPieceViewArtifactHandle",
         artifact_type_name="WorkPieceViewArtifact",
+        generation_id=0,
     )
 
     @contextmanager
@@ -514,12 +556,25 @@ def test_throttled_notification_limits_update_frequency(
         "handle_class_name": "WorkPieceViewArtifactHandle",
         "artifact_type_name": "WorkPieceViewArtifact",
     }
+
+    mock_workpiece = MagicMock()
+    mock_workpiece.uid = wp_uid
+    mock_step = MagicMock()
+    mock_step.uid = step_uid
+    mock_layer = MagicMock()
+    mock_layer.workflow.steps = [mock_step]
+    mock_doc = MagicMock()
+    mock_doc.all_workpieces = [mock_workpiece]
+    mock_doc.layers = [mock_layer]
+    view_manager._pipeline.doc = mock_doc
+
     view_handle = WorkPieceViewArtifactHandle(
         shm_name="test_throttle",
         bbox_mm=(0, 0, 1, 1),
         workpiece_size_mm=(1.0, 1.0),
         handle_class_name="WorkPieceViewArtifactHandle",
         artifact_type_name="WorkPieceViewArtifact",
+        generation_id=0,
     )
 
     @contextmanager
@@ -527,6 +582,14 @@ def test_throttled_notification_limits_update_frequency(
         yield view_handle
 
     mock_store.safe_adoption.side_effect = mock_safe_adoption
+
+    handle_dict = {
+        "shm_name": "test_throttle",
+        "bbox_mm": (0, 0, 1, 1),
+        "workpiece_size_mm": (1.0, 1.0),
+        "handle_class_name": "WorkPieceViewArtifactHandle",
+        "artifact_type_name": "WorkPieceViewArtifact",
+    }
 
     when_event_cb(
         mock_task, "view_artifact_created", {"handle_dict": handle_dict}
@@ -555,6 +618,7 @@ def test_throttled_notification_limits_update_frequency(
         source_coordinate_system_name="MILLIMETER_SPACE",
         source_dimensions=(10, 10),
         generation_size=(10, 10),
+        generation_id=0,
     )
 
     for i in range(10):
@@ -594,11 +658,23 @@ def test_incremental_bitmap_rendering_draws_chunk_to_view(
     mock_task.key = key
     mock_task.kwargs = {"step_uid": step_uid, "workpiece_uid": wp_uid}
 
+    mock_workpiece = MagicMock()
+    mock_workpiece.uid = wp_uid
+    mock_step = MagicMock()
+    mock_step.uid = step_uid
+    mock_layer = MagicMock()
+    mock_layer.workflow.steps = [mock_step]
+    mock_doc = MagicMock()
+    mock_doc.all_workpieces = [mock_workpiece]
+    mock_doc.layers = [mock_layer]
+    view_manager._pipeline.doc = mock_doc
+
     blank_bitmap = np.zeros((100, 100, 4), dtype=np.uint8)
     view_artifact = WorkPieceViewArtifact(
         bitmap_data=blank_bitmap,
         bbox_mm=(0, 0, 10.0, 10.0),
         workpiece_size_mm=(10.0, 10.0),
+        generation_id=0,
     )
 
     mock_store.get.return_value = view_artifact
@@ -616,6 +692,7 @@ def test_incremental_bitmap_rendering_draws_chunk_to_view(
         workpiece_size_mm=(10.0, 10.0),
         handle_class_name="WorkPieceViewArtifactHandle",
         artifact_type_name="WorkPieceViewArtifact",
+        generation_id=0,
     )
 
     @contextmanager
@@ -650,6 +727,7 @@ def test_incremental_bitmap_rendering_draws_chunk_to_view(
         source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
         source_dimensions=(10.0, 10.0),
         generation_size=(10.0, 10.0),
+        generation_id=0,
     )
 
     def mock_get_artifact(handle):
@@ -669,6 +747,7 @@ def test_incremental_bitmap_rendering_draws_chunk_to_view(
         source_coordinate_system_name="MILLIMETER_SPACE",
         source_dimensions=(10, 10),
         generation_size=(10, 10),
+        generation_id=0,
     )
 
     initial_bitmap = view_artifact.bitmap_data.copy()
@@ -706,23 +785,14 @@ def test_get_render_components(view_manager, mock_store, context):
         workpiece_size_mm=(1.0, 1.0),
         handle_class_name="WorkPieceViewArtifactHandle",
         artifact_type_name="WorkPieceViewArtifact",
+        generation_id=0,
     )
 
     entry = ViewEntry(handle=handle, render_context=context)
     view_manager._view_entries[composite_id] = entry
 
-    chunk_handle = WorkPieceArtifactHandle(
-        shm_name="chunk",
-        handle_class_name="WorkPieceArtifactHandle",
-        artifact_type_name="WorkPieceArtifact",
-        is_scalable=True,
-        source_coordinate_system_name="MILLIMETER_SPACE",
-        source_dimensions=(10, 10),
-        generation_size=(10, 10),
-    )
-
     view_handle, render_context = view_manager._get_render_components(
-        composite_id, entry, chunk_handle
+        composite_id, entry
     )
 
     assert view_handle == handle
@@ -737,23 +807,12 @@ def test_get_render_components_missing(view_manager, mock_store):
     entry = ViewEntry(handle=None, render_context=None)
     view_manager._view_entries[composite_id] = entry
 
-    chunk_handle = WorkPieceArtifactHandle(
-        shm_name="chunk",
-        handle_class_name="WorkPieceArtifactHandle",
-        artifact_type_name="WorkPieceArtifact",
-        is_scalable=True,
-        source_coordinate_system_name="MILLIMETER_SPACE",
-        source_dimensions=(10, 10),
-        generation_size=(10, 10),
-    )
-
     view_handle, render_context = view_manager._get_render_components(
-        composite_id, entry, chunk_handle
+        composite_id, entry
     )
 
     assert view_handle is None
     assert render_context is None
-    mock_store.release.assert_called_once_with(chunk_handle)
 
 
 def test_update_render_context_triggers_renders(view_manager, source_handle):
@@ -787,6 +846,13 @@ def test_on_workpiece_artifact_ready_manages_handles(
     mock_workpiece = MagicMock()
     mock_workpiece.uid = wp_uid
 
+    mock_layer = MagicMock()
+    mock_layer.workflow.steps = [mock_step]
+    mock_doc = MagicMock()
+    mock_doc.all_workpieces = [mock_workpiece]
+    mock_doc.layers = [mock_layer]
+    view_manager._pipeline.doc = mock_doc
+
     view_manager.on_workpiece_artifact_ready(
         sender=None,
         step=mock_step,
@@ -817,11 +883,19 @@ def test_on_workpiece_artifact_ready_releases_old_handle(
         source_coordinate_system_name="MILLIMETER_SPACE",
         source_dimensions=(10, 10),
         generation_size=(10, 10),
+        generation_id=0,
     )
     view_manager._source_artifact_handles[composite_id] = old_handle
 
     mock_workpiece = MagicMock()
     mock_workpiece.uid = wp_uid
+
+    mock_layer = MagicMock()
+    mock_layer.workflow.steps = [mock_step]
+    mock_doc = MagicMock()
+    mock_doc.all_workpieces = [mock_workpiece]
+    mock_doc.layers = [mock_layer]
+    view_manager._pipeline.doc = mock_doc
 
     view_manager.on_workpiece_artifact_ready(
         sender=None,
@@ -851,6 +925,13 @@ def test_on_workpiece_artifact_ready_same_handle_no_signal(
 
     mock_workpiece = MagicMock()
     mock_workpiece.uid = wp_uid
+
+    mock_layer = MagicMock()
+    mock_layer.workflow.steps = [mock_step]
+    mock_doc = MagicMock()
+    mock_doc.all_workpieces = [mock_workpiece]
+    mock_doc.layers = [mock_layer]
+    view_manager._pipeline.doc = mock_doc
 
     view_manager._source_artifact_handles[composite_id] = source_handle
     view_manager._current_view_context = context
@@ -885,6 +966,13 @@ def test_on_workpiece_artifact_ready_different_handle_emits_signal(
     mock_workpiece = MagicMock()
     mock_workpiece.uid = wp_uid
 
+    mock_layer = MagicMock()
+    mock_layer.workflow.steps = [mock_step]
+    mock_doc = MagicMock()
+    mock_doc.all_workpieces = [mock_workpiece]
+    mock_doc.layers = [mock_layer]
+    view_manager._pipeline.doc = mock_doc
+
     old_handle = WorkPieceArtifactHandle(
         shm_name="old_shm",
         handle_class_name="WorkPieceArtifactHandle",
@@ -893,6 +981,7 @@ def test_on_workpiece_artifact_ready_different_handle_emits_signal(
         source_coordinate_system_name="MILLIMETER_SPACE",
         source_dimensions=(10, 10),
         generation_size=(10, 10),
+        generation_id=0,
     )
     view_manager._source_artifact_handles[composite_id] = old_handle
     view_manager._current_view_context = context
@@ -983,12 +1072,12 @@ def test_on_workpiece_artifact_ready_refcount_increased(
         source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
         source_dimensions=(10.0, 10.0),
         generation_size=(10.0, 10.0),
+        generation_id=0,
     )
 
     handle = real_artifact_manager._store.put(artifact)
-    shm_name = handle.shm_name
 
-    initial_refcount = real_artifact_manager._store._refcounts.get(shm_name, 1)
+    initial_refcount = handle.refcount
     assert initial_refcount == 1, (
         f"Initial refcount should be 1 after put(), got {initial_refcount}"
     )
@@ -1000,6 +1089,13 @@ def test_on_workpiece_artifact_ready_refcount_increased(
     mock_workpiece = MagicMock()
     mock_workpiece.uid = wp_uid
 
+    mock_layer = MagicMock()
+    mock_layer.workflow.steps = [mock_step]
+    mock_doc = MagicMock()
+    mock_doc.all_workpieces = [mock_workpiece]
+    mock_doc.layers = [mock_layer]
+    real_view_manager._pipeline.doc = mock_doc
+
     real_view_manager.on_workpiece_artifact_ready(
         sender=None,
         step=mock_step,
@@ -1007,7 +1103,7 @@ def test_on_workpiece_artifact_ready_refcount_increased(
         handle=handle,
     )
 
-    final_refcount = real_artifact_manager._store._refcounts.get(shm_name, 0)
+    final_refcount = handle.refcount
     assert final_refcount >= 2, (
         f"Refcount should be at least 2 after ViewManager retains, "
         f"got {final_refcount}"
@@ -1038,16 +1134,23 @@ def test_on_workpiece_artifact_ready_releases_old_and_refcount_decreased(
         source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
         source_dimensions=(10.0, 10.0),
         generation_size=(10.0, 10.0),
+        generation_id=0,
     )
 
     old_handle = real_artifact_manager._store.put(artifact1)
-    old_shm_name = old_handle.shm_name
 
     mock_step = MagicMock()
     mock_step.uid = str(uuid.uuid4())
 
     mock_workpiece = MagicMock()
     mock_workpiece.uid = wp_uid
+
+    mock_layer = MagicMock()
+    mock_layer.workflow.steps = [mock_step]
+    mock_doc = MagicMock()
+    mock_doc.all_workpieces = [mock_workpiece]
+    mock_doc.layers = [mock_layer]
+    real_view_manager._pipeline.doc = mock_doc
 
     real_view_manager.on_workpiece_artifact_ready(
         sender=None,
@@ -1056,9 +1159,7 @@ def test_on_workpiece_artifact_ready_releases_old_and_refcount_decreased(
         handle=old_handle,
     )
 
-    old_refcount_after_retain = real_artifact_manager._store._refcounts.get(
-        old_shm_name, 0
-    )
+    old_refcount_after_retain = old_handle.refcount
     assert old_refcount_after_retain == 2, (
         f"Old handle refcount should be 2 after retain, "
         f"got {old_refcount_after_retain}"
@@ -1074,10 +1175,10 @@ def test_on_workpiece_artifact_ready_releases_old_and_refcount_decreased(
         source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
         source_dimensions=(10.0, 10.0),
         generation_size=(10.0, 10.0),
+        generation_id=0,
     )
 
     new_handle = real_artifact_manager._store.put(artifact2)
-    new_shm_name = new_handle.shm_name
 
     real_view_manager.on_workpiece_artifact_ready(
         sender=None,
@@ -1086,15 +1187,13 @@ def test_on_workpiece_artifact_ready_releases_old_and_refcount_decreased(
         handle=new_handle,
     )
 
-    old_refcount_after_release = real_artifact_manager._store._refcounts.get(
-        old_shm_name, 0
-    )
+    old_refcount_after_release = old_handle.refcount
     assert old_refcount_after_release == 1, (
         f"Old handle refcount should be 1 after release, "
         f"got {old_refcount_after_release}"
     )
 
-    new_refcount = real_artifact_manager._store._refcounts.get(new_shm_name, 0)
+    new_refcount = new_handle.refcount
     assert new_refcount == 2, (
         f"New handle refcount should be 2 after retain, got {new_refcount}"
     )
@@ -1114,6 +1213,7 @@ def test_view_entry_with_values():
         workpiece_size_mm=(1.0, 1.0),
         handle_class_name="WorkPieceViewArtifactHandle",
         artifact_type_name="WorkPieceViewArtifact",
+        generation_id=0,
     )
     context = RenderContext(
         pixels_per_mm=(10.0, 10.0),
@@ -1195,6 +1295,7 @@ def test_is_view_stale_source_handle_shm_name_changed(
         source_coordinate_system_name="MILLIMETER_SPACE",
         source_dimensions=(10, 10),
         generation_size=(10, 10),
+        generation_id=0,
     )
     new_source_handle = WorkPieceArtifactHandle(
         shm_name="new_shm",
@@ -1204,6 +1305,7 @@ def test_is_view_stale_source_handle_shm_name_changed(
         source_coordinate_system_name="MILLIMETER_SPACE",
         source_dimensions=(10, 10),
         generation_size=(10, 10),
+        generation_id=0,
     )
 
     view_manager._view_entries[composite_id] = ViewEntry(
@@ -1257,6 +1359,7 @@ def test_handles_represent_same_artifact_different_shm_name(
         source_coordinate_system_name="MILLIMETER_SPACE",
         source_dimensions=(10, 10),
         generation_size=(10, 10),
+        generation_id=0,
     )
     assert (
         view_manager._handles_represent_same_artifact(
@@ -1277,6 +1380,7 @@ def test_handles_represent_same_artifact_different_generation_size(
         source_coordinate_system_name="MILLIMETER_SPACE",
         source_dimensions=(10, 10),
         generation_size=(20, 20),
+        generation_id=0,
     )
     assert (
         view_manager._handles_represent_same_artifact(
@@ -1297,6 +1401,7 @@ def test_handles_represent_same_artifact_different_source_dimensions(
         source_coordinate_system_name="MILLIMETER_SPACE",
         source_dimensions=(20, 20),
         generation_size=(10, 10),
+        generation_id=0,
     )
     assert (
         view_manager._handles_represent_same_artifact(
@@ -1323,6 +1428,13 @@ def test_multiple_position_only_moves_no_signal(
 
     mock_workpiece = MagicMock()
     mock_workpiece.uid = wp_uid
+
+    mock_layer = MagicMock()
+    mock_layer.workflow.steps = [mock_step]
+    mock_doc = MagicMock()
+    mock_doc.all_workpieces = [mock_workpiece]
+    mock_doc.layers = [mock_layer]
+    view_manager._pipeline.doc = mock_doc
 
     view_manager._source_artifact_handles[composite_id] = source_handle
     view_manager._current_view_context = context
@@ -1359,6 +1471,13 @@ def test_alternating_artifact_ready_signals(
     mock_workpiece = MagicMock()
     mock_workpiece.uid = wp_uid
 
+    mock_layer = MagicMock()
+    mock_layer.workflow.steps = [mock_step]
+    mock_doc = MagicMock()
+    mock_doc.all_workpieces = [mock_workpiece]
+    mock_doc.layers = [mock_layer]
+    view_manager._pipeline.doc = mock_doc
+
     view_manager._current_view_context = context
 
     signal_handler = MagicMock()
@@ -1377,6 +1496,7 @@ def test_alternating_artifact_ready_signals(
         source_coordinate_system_name="MILLIMETER_SPACE",
         source_dimensions=(10, 10),
         generation_size=(10, 10),
+        generation_id=0,
     )
 
     view_manager.on_workpiece_artifact_ready(
@@ -1432,6 +1552,13 @@ def test_simulated_position_only_transform_changes(
     mock_workpiece = MagicMock()
     mock_workpiece.uid = wp_uid
 
+    mock_layer = MagicMock()
+    mock_layer.workflow.steps = [mock_step]
+    mock_doc = MagicMock()
+    mock_doc.all_workpieces = [mock_workpiece]
+    mock_doc.layers = [mock_layer]
+    view_manager._pipeline.doc = mock_doc
+
     view_manager._current_view_context = context
     view_manager._task_manager.run_process = MagicMock()
 
@@ -1446,6 +1573,7 @@ def test_simulated_position_only_transform_changes(
         source_coordinate_system_name="MILLIMETER_SPACE",
         source_dimensions=(10, 10),
         generation_size=(10, 10),
+        generation_id=0,
     )
 
     view_manager.on_workpiece_artifact_ready(
@@ -1464,6 +1592,7 @@ def test_simulated_position_only_transform_changes(
         source_coordinate_system_name="MILLIMETER_SPACE",
         source_dimensions=(10, 10),
         generation_size=(10, 10),
+        generation_id=0,
     )
 
     signal_counts = []
@@ -1498,6 +1627,13 @@ def test_alternating_signal_debug(view_manager, mock_store, context, caplog):
     mock_workpiece = MagicMock()
     mock_workpiece.uid = wp_uid
 
+    mock_layer = MagicMock()
+    mock_layer.workflow.steps = [mock_step]
+    mock_doc = MagicMock()
+    mock_doc.all_workpieces = [mock_workpiece]
+    mock_doc.layers = [mock_layer]
+    view_manager._pipeline.doc = mock_doc
+
     view_manager._current_view_context = context
     view_manager._task_manager.run_process = MagicMock()
 
@@ -1514,6 +1650,7 @@ def test_alternating_signal_debug(view_manager, mock_store, context, caplog):
             source_coordinate_system_name="MILLIMETER_SPACE",
             source_dimensions=(10, 10),
             generation_size=(10, 10),
+            generation_id=0,
         )
         handles.append(handle)
 
@@ -1556,6 +1693,13 @@ def test_alternating_shm_names_cause_alternating_signals(
     mock_workpiece = MagicMock()
     mock_workpiece.uid = wp_uid
 
+    mock_layer = MagicMock()
+    mock_layer.workflow.steps = [mock_step]
+    mock_doc = MagicMock()
+    mock_doc.all_workpieces = [mock_workpiece]
+    mock_doc.layers = [mock_layer]
+    view_manager._pipeline.doc = mock_doc
+
     view_manager._current_view_context = context
     view_manager._task_manager.run_process = MagicMock()
 
@@ -1570,6 +1714,7 @@ def test_alternating_shm_names_cause_alternating_signals(
         source_coordinate_system_name="MILLIMETER_SPACE",
         source_dimensions=(10, 10),
         generation_size=(10, 10),
+        generation_id=0,
     )
     handle_b = WorkPieceArtifactHandle(
         shm_name="handle_b_shm",
@@ -1579,6 +1724,7 @@ def test_alternating_shm_names_cause_alternating_signals(
         source_coordinate_system_name="MILLIMETER_SPACE",
         source_dimensions=(10, 10),
         generation_size=(10, 10),
+        generation_id=0,
     )
 
     view_manager.on_workpiece_artifact_ready(
@@ -1630,6 +1776,7 @@ def test_shutdown_releases_handles(view_manager, mock_store, source_handle):
         workpiece_size_mm=(1.0, 1.0),
         handle_class_name="WorkPieceViewArtifactHandle",
         artifact_type_name="WorkPieceViewArtifact",
+        generation_id=0,
     )
     view_manager._view_entries[composite_id] = ViewEntry(handle=view_handle)
 
@@ -1649,6 +1796,7 @@ def test_get_view_handle(view_manager):
         workpiece_size_mm=(1.0, 1.0),
         handle_class_name="WorkPieceViewArtifactHandle",
         artifact_type_name="WorkPieceViewArtifact",
+        generation_id=0,
     )
     view_manager._view_entries[(wp_uid, step_uid)] = ViewEntry(
         handle=view_handle
@@ -1677,6 +1825,7 @@ def test_reconcile_removes_obsolete_entries(
         workpiece_size_mm=(1.0, 1.0),
         handle_class_name="WorkPieceViewArtifactHandle",
         artifact_type_name="WorkPieceViewArtifact",
+        generation_id=0,
     )
     view_manager._view_entries[composite_id] = ViewEntry(handle=view_handle)
 

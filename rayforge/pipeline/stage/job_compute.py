@@ -171,6 +171,7 @@ def compute_job_artifact(
     doc: Doc,
     step_artifacts_by_uid: Dict[str, StepOpsArtifact],
     machine: Machine,
+    generation_id: int,
     context: Optional[ProgressContext] = None,
 ) -> JobArtifact:
     """
@@ -185,6 +186,7 @@ def compute_job_artifact(
         step_artifacts_by_uid: Dictionary mapping step UIDs to their
             StepOpsArtifacts.
         machine: The machine model for encoding and parameters.
+        generation_id: The generation ID for staleness checking.
         context: Optional ProgressContext for progress reporting.
 
     Returns:
@@ -207,6 +209,7 @@ def compute_job_artifact(
     return JobArtifact(
         ops=final_ops,
         distance=final_distance,
+        generation_id=generation_id,
         vertex_data=vertex_data,
         machine_code_bytes=machine_code_bytes,
         op_map_bytes=op_map_bytes,

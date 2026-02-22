@@ -224,6 +224,7 @@ def _encode_vertex_data(ops: Ops) -> VertexData:
 def compute_step_artifacts(
     artifacts: List[Tuple[WorkPieceArtifact, Matrix, WorkPiece]],
     transformers: List["OpsTransformer"],
+    generation_id: int,
     context: Optional[ProgressContext] = None,
 ) -> Tuple[StepRenderArtifact, StepOpsArtifact]:
     """
@@ -233,6 +234,7 @@ def compute_step_artifacts(
         artifacts: List of tuples containing (WorkPieceArtifact, world_matrix,
                    workpiece) for each workpiece in the assembly.
         transformers: List of OpsTransformers to apply to the combined ops.
+        generation_id: The generation ID for staleness checking.
         context: Optional ProgressContext for progress reporting.
 
     Returns:
@@ -267,9 +269,14 @@ def compute_step_artifacts(
     set_progress(context, 0.95)
 
     render_artifact = StepRenderArtifact(
-        vertex_data=vertex_data, texture_instances=texture_instances
+        generation_id=generation_id,
+        vertex_data=vertex_data,
+        texture_instances=texture_instances,
     )
-    ops_artifact = StepOpsArtifact(ops=combined_ops)
+    ops_artifact = StepOpsArtifact(
+        ops=combined_ops,
+        generation_id=generation_id,
+    )
 
     set_progress(context, 1.0)
 

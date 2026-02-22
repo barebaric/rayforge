@@ -47,6 +47,7 @@ def setup_two_artifacts():
         source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
         source_dimensions=(100, 100),
         generation_size=(20, 10),
+        generation_id=1,
     )
 
     wp2 = WorkPiece(name="wp2")
@@ -64,6 +65,7 @@ def setup_two_artifacts():
         source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
         source_dimensions=(50, 50),
         generation_size=(30, 15),
+        generation_id=1,
     )
 
     artifacts = [
@@ -81,6 +83,7 @@ def test_compute_step_artifacts_merges_ops(setup_two_artifacts):
     render_artifact, ops_artifact = compute_step_artifacts(
         artifacts=artifacts,
         transformers=[],
+        generation_id=1,
     )
 
     assert isinstance(render_artifact, StepRenderArtifact)
@@ -99,6 +102,7 @@ def test_compute_step_artifacts_applies_transforms(setup_two_artifacts):
     render_artifact, ops_artifact = compute_step_artifacts(
         artifacts=artifacts,
         transformers=[],
+        generation_id=1,
     )
 
     line_commands = [
@@ -123,6 +127,7 @@ def test_compute_step_artifacts_with_progress_callback(
     render_artifact, ops_artifact = compute_step_artifacts(
         artifacts=artifacts,
         transformers=[],
+        generation_id=1,
         context=mock_progress_context,
     )
 
@@ -138,6 +143,7 @@ def test_compute_step_artifacts_with_transformers(setup_two_artifacts):
     render_artifact, ops_artifact = compute_step_artifacts(
         artifacts=artifacts,
         transformers=[transformer],
+        generation_id=1,
     )
 
     assert isinstance(ops_artifact, StepOpsArtifact)
@@ -149,6 +155,7 @@ def test_compute_step_artifacts_empty_list():
     render_artifact, ops_artifact = compute_step_artifacts(
         artifacts=[],
         transformers=[],
+        generation_id=1,
     )
 
     assert isinstance(render_artifact, StepRenderArtifact)
@@ -165,6 +172,7 @@ def test_compute_step_artifacts_with_message_callback(
     render_artifact, ops_artifact = compute_step_artifacts(
         artifacts=artifacts,
         transformers=[Optimize()],
+        generation_id=1,
         context=mock_progress_context,
     )
 
@@ -189,6 +197,7 @@ def test_compute_step_artifacts_raster_artifact():
         is_scalable=False,
         source_coordinate_system=CoordinateSystem.PIXEL_SPACE,
         generation_size=(20, 10),
+        generation_id=1,
     )
 
     artifacts = [(artifact, wp.get_world_transform(), wp)]
@@ -196,6 +205,7 @@ def test_compute_step_artifacts_raster_artifact():
     render_artifact, ops_artifact = compute_step_artifacts(
         artifacts=artifacts,
         transformers=[],
+        generation_id=1,
     )
 
     assert isinstance(render_artifact, StepRenderArtifact)
@@ -213,6 +223,7 @@ def test_compute_step_artifacts_multiple_transformers(
     render_artifact, ops_artifact = compute_step_artifacts(
         artifacts=artifacts,
         transformers=transformers,
+        generation_id=1,
     )
 
     assert isinstance(render_artifact, StepRenderArtifact)
@@ -237,6 +248,7 @@ def test_compute_step_artifacts_without_source_dimensions(
     render_artifact, ops_artifact = compute_step_artifacts(
         artifacts=new_artifacts,
         transformers=[],
+        generation_id=1,
     )
 
     assert isinstance(render_artifact, StepRenderArtifact)
@@ -258,6 +270,7 @@ def test_apply_artifact_scaling_scalable_with_source_dimensions():
         source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
         source_dimensions=(100, 100),
         generation_size=(20, 10),
+        generation_id=1,
     )
 
     ops = Ops()
@@ -285,6 +298,7 @@ def test_apply_artifact_scaling_non_scalable():
         is_scalable=False,
         source_coordinate_system=CoordinateSystem.PIXEL_SPACE,
         generation_size=(20, 10),
+        generation_id=1,
     )
 
     ops = Ops()
@@ -313,6 +327,7 @@ def test_apply_artifact_scaling_without_source_dimensions():
         source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
         source_dimensions=None,
         generation_size=(20, 10),
+        generation_id=1,
     )
 
     ops = Ops()
@@ -359,6 +374,7 @@ def test_calculate_texture_dimensions_with_source_dimensions():
         source_coordinate_system=CoordinateSystem.PIXEL_SPACE,
         source_dimensions=(500, 250),
         generation_size=(10.0, 5.0),
+        generation_id=1,
     )
 
     width_px, height_px, px_per_mm_x, px_per_mm_y = (
@@ -379,6 +395,7 @@ def test_calculate_texture_dimensions_without_source_dimensions():
         source_coordinate_system=CoordinateSystem.PIXEL_SPACE,
         source_dimensions=None,
         generation_size=(10.0, 5.0),
+        generation_id=1,
     )
 
     width_px, height_px, px_per_mm_x, px_per_mm_y = (
@@ -403,6 +420,7 @@ def test_create_texture_data_non_scalable():
         source_coordinate_system=CoordinateSystem.PIXEL_SPACE,
         source_dimensions=(500, 250),
         generation_size=(10.0, 5.0),
+        generation_id=1,
     )
 
     texture_data = _create_texture_data(artifact)
@@ -424,6 +442,7 @@ def test_create_texture_data_scalable():
         source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
         source_dimensions=(100, 100),
         generation_size=(10.0, 5.0),
+        generation_id=1,
     )
 
     texture_data = _create_texture_data(artifact)
@@ -464,6 +483,7 @@ def test_process_artifact_scalable():
         source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
         source_dimensions=(100, 100),
         generation_size=(20, 10),
+        generation_id=1,
     )
 
     world_matrix = wp.get_world_transform()
@@ -491,6 +511,7 @@ def test_process_artifact_non_scalable():
         source_coordinate_system=CoordinateSystem.PIXEL_SPACE,
         source_dimensions=(500, 250),
         generation_size=(10.0, 5.0),
+        generation_id=1,
     )
 
     world_matrix = wp.get_world_transform()
