@@ -49,7 +49,7 @@ from contextlib import contextmanager
 from typing import Dict, Optional, Generator, Any, TYPE_CHECKING
 from multiprocessing import shared_memory
 import numpy as np
-from ...shared.util.debug import safe_caller_stack, get_caller_stack
+from ...shared.util.debug import safe_caller_stack
 from .base import BaseArtifact
 from .handle import BaseArtifactHandle, create_handle_from_dict
 
@@ -112,7 +112,7 @@ class ArtifactStore:
         canonical = self._handles.get(shm_name)
         if canonical is not None:
             canonical.refcount += 1
-            canonical.holders.append(get_caller_stack(6))
+            canonical.holders.append(safe_caller_stack(15) or "debug-disabled")
             logger.debug(
                 f"Shared memory block {shm_name} refcount incremented to "
                 f"{canonical.refcount}"
@@ -120,7 +120,7 @@ class ArtifactStore:
             return canonical
 
         proto_handle.refcount = 1
-        proto_handle.holders = [get_caller_stack(6)]
+        proto_handle.holders = [safe_caller_stack(15) or "debug-disabled"]
         self._handles[shm_name] = proto_handle
         return proto_handle
 
@@ -368,7 +368,7 @@ class ArtifactStore:
         Uses reference counting to ensure the block is not released while
         still in use.
         """
-        caller_stack = safe_caller_stack()
+        caller_stack = safe_caller_stack(10)
         shm_name = handle.shm_name
 
         if handle.refcount > 1:
@@ -519,7 +519,7 @@ class ArtifactStore:
         canonical = self._handles.get(shm_name)
         if canonical:
             canonical.refcount += 1
-            canonical.holders.append(get_caller_stack(6))
+            canonical.holders.append(safe_caller_stack(15) or "debug-disabled")
             logger.debug(
                 f"Retained {shm_name}, refcount now {canonical.refcount}"
             )
