@@ -1,12 +1,12 @@
 from __future__ import annotations
 import logging
-from typing import TYPE_CHECKING, Dict, List, Optional, Callable
+from typing import TYPE_CHECKING, Dict, List, Optional, Callable, Tuple
 from asyncio.exceptions import CancelledError
 from blinker import Signal
 from ...shared.tasker.task import Task
 from ..artifact import JobArtifactHandle
 from ..artifact.key import ArtifactKey
-from ..artifact.manager import make_composite_key
+from ..artifact.manager import StaleGenerationError
 from ..dag.node import NodeState
 from .base import PipelineStage
 
@@ -36,7 +36,9 @@ class JobPipelineStage(PipelineStage):
     ):
         super().__init__(task_manager, artifact_manager)
         self._machine = machine
-        self._retained_handles: List["BaseArtifactHandle"] = []
+        self._retained_handles_by_task: Dict[
+            int, List["BaseArtifactHandle"]
+        ] = {}
         self._job_running: bool = False
         self.job_generation_finished = Signal()
         self.job_generation_failed = Signal()
@@ -76,18 +78,14 @@ class JobPipelineStage(PipelineStage):
             id=job_key_dict["id"], group=job_key_dict["group"]
         )
 
-        composite_key = make_composite_key(received_job_key, generation_id)
-        entry = self._artifact_manager.get_ledger_entry(composite_key)
-        if entry is not None and entry.generation_id != generation_id:
-            logger.debug(
-                f"Stale job event with generation_id {generation_id}, "
-                f"current is {entry.generation_id}. Ignoring."
-            )
+        handle_dict = data.get("handle_dict")
+        if not handle_dict:
             return
 
         try:
+            # safe_adoption checks staleness automatically
             with self._artifact_manager.safe_adoption(
-                received_job_key, data["handle_dict"]
+                received_job_key, handle_dict
             ) as handle:
                 if not isinstance(handle, JobArtifactHandle):
                     raise TypeError("Expected a JobArtifactHandle")
@@ -96,6 +94,10 @@ class JobPipelineStage(PipelineStage):
                 )
                 self._emit_node_state(received_job_key, NodeState.VALID)
                 logger.debug("Adopted job artifact")
+        except StaleGenerationError as e:
+            logger.debug(
+                f"Discarding stale job artifact for {received_job_key}: {e}"
+            )
         except Exception as e:
             logger.error(
                 f"Error handling job artifact event: {e}", exc_info=True
@@ -113,31 +115,30 @@ class JobPipelineStage(PipelineStage):
         if context is not None:
             context.task_did_finish(job_key)
 
-        self.release_retained_handles()
+        retained = self._retained_handles_by_task.pop(task.id, [])
+        for handle in retained:
+            self._artifact_manager.release_handle(handle)
 
         task_status = task.get_status()
-        final_handle = None
         error = None
+        logger.debug(f"[{job_key}] Task status is '{task_status}'.")
 
         if task_status == "completed":
-            final_handle = self._artifact_manager.get_job_handle(
+            with self._artifact_manager.report_completion(
                 job_key, generation_id
-            )
-            if final_handle:
-                logger.info("Job generation successful.")
-                self._emit_node_state(job_key, NodeState.VALID)
-            else:
-                logger.info(
-                    "Job generation finished with no artifact produced."
+            ) as handle:
+                if handle:
+                    logger.info("Job generation successful.")
+                else:
+                    logger.info(
+                        "Job generation finished with no artifact produced."
+                    )
+                if on_done:
+                    on_done(handle, None)
+                self.job_generation_finished.send(
+                    self, handle=handle, task_status=task_status
                 )
-            if on_done:
-                on_done(final_handle, None)
-            self.job_generation_finished.send(
-                self, handle=final_handle, task_status=task_status
-            )
         else:
-            logger.error(f"Job generation failed with status: {task_status}")
-
             try:
                 task.result()
             except CancelledError as e:
@@ -145,22 +146,27 @@ class JobPipelineStage(PipelineStage):
                 logger.info(f"Job generation was cancelled: {e}")
             except Exception as e:
                 error = e
+                logger.error(f"Job generation failed: {e}")
 
-            if generation_id is not None:
-                self._emit_node_state(job_key, NodeState.ERROR)
-
-            self._artifact_manager.invalidate_for_job(job_key)
-            if on_done:
-                on_done(None, error)
-
-            if task_status == "failed":
-                self.job_generation_failed.send(
-                    self, error=error, task_status=task_status
-                )
+            if task_status == "canceled":
+                with self._artifact_manager.report_cancellation(
+                    job_key, generation_id
+                ):
+                    if on_done:
+                        on_done(None, error)
+                    self.job_generation_finished.send(
+                        self, handle=None, task_status=task_status
+                    )
             else:
-                self.job_generation_finished.send(
-                    self, handle=None, task_status=task_status
-                )
+                with self._artifact_manager.report_failure(
+                    job_key, generation_id
+                ):
+                    if on_done:
+                        on_done(None, error)
+                    self.job_generation_failed.send(
+                        self, error=error, task_status=task_status
+                    )
+
         self._job_running = False
 
     def validate_dependencies(
@@ -182,39 +188,34 @@ class JobPipelineStage(PipelineStage):
 
     def collect_step_handles(
         self, step_uids: List[str], generation_id: int
-    ) -> Optional[Dict[str, Dict]]:
+    ) -> Tuple[Optional[Dict[str, Dict]], List["BaseArtifactHandle"]]:
         """
         Collect step artifact handles for job generation.
 
-        Returns a dict mapping step_uid -> handle_dict, or None if any
-        step handle is missing. Also retains handles to prevent premature
-        pruning while the job task is running.
+        Returns a tuple of (handle_dict_map, retained_handles).
         """
         step_handles = {}
+        retained_handles = []
         for step_uid in step_uids:
             step_key = ArtifactKey.for_step(step_uid)
             handle = self._artifact_manager.get_step_ops_handle(
                 step_key, generation_id
             )
             if handle is None:
-                for h in self._retained_handles:
+                for h in retained_handles:
                     self._artifact_manager.release_handle(h)
-                self._retained_handles.clear()
-                return None
+                return None, []
             self._artifact_manager.retain_handle(handle)
-            self._retained_handles.append(handle)
+            retained_handles.append(handle)
             step_handles[step_uid] = handle.to_dict()
-        return step_handles
-
-    def release_retained_handles(self) -> None:
-        """Release all retained handles after job completion."""
-        retained = self._retained_handles
-        self._retained_handles = []
-        for handle in retained:
-            self._artifact_manager.release_handle(handle)
+        return step_handles, retained_handles
 
     def shutdown(self):
         logger.debug("JobPipelineStage shutting down.")
+        for handles in self._retained_handles_by_task.values():
+            for handle in handles:
+                self._artifact_manager.release_handle(handle)
+        self._retained_handles_by_task.clear()
 
     def generate_job(
         self,
@@ -252,7 +253,9 @@ class JobPipelineStage(PipelineStage):
                 )
             return
 
-        step_handles = self.collect_step_handles(step_uids, generation_id)
+        step_handles, retained_handles = self.collect_step_handles(
+            step_uids, generation_id
+        )
         if step_handles is None:
             logger.error("Failed to collect step handles for job generation.")
             if on_done:
@@ -272,7 +275,12 @@ class JobPipelineStage(PipelineStage):
         }
 
         self._launch_task(
-            job_desc_dict, job_key, on_done, generation_id, context
+            job_desc_dict,
+            job_key,
+            on_done,
+            generation_id,
+            context,
+            retained_handles,
         )
 
     def _launch_task(
@@ -282,6 +290,7 @@ class JobPipelineStage(PipelineStage):
         on_done: Optional[Callable],
         generation_id: int,
         context: Optional["GenerationContext"],
+        retained_handles: List["BaseArtifactHandle"],
     ):
         """
         Launch the subprocess task for job generation.
@@ -293,7 +302,7 @@ class JobPipelineStage(PipelineStage):
         if context is not None:
             context.add_task(job_key)
 
-        self._task_manager.run_process(
+        task = self._task_manager.run_process(
             make_job_artifact_in_subprocess,
             self._artifact_manager.get_store(),
             job_description_dict=job_desc_dict,
@@ -310,3 +319,4 @@ class JobPipelineStage(PipelineStage):
                 )
             ),
         )
+        self._retained_handles_by_task[task.id] = retained_handles

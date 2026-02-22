@@ -49,10 +49,10 @@ def test_config_manager(tmp_path, monkeypatch):
 
 
 @pytest.fixture
-def machine(context_initializer):
+def machine(lite_context):
     """Provides a default Machine instance with NoDeviceDriver."""
-    m = Machine(context_initializer)
-    context_initializer.machine_mgr.add_machine(m)
+    m = Machine(lite_context)
+    lite_context.machine_mgr.add_machine(m)
     return m
 
 
@@ -75,7 +75,9 @@ def simple_ops():
 @pytest.fixture
 def job_artifact(simple_ops):
     """Creates a JobArtifact containing simple_ops."""
-    return JobArtifact(ops=simple_ops, distance=simple_ops.distance())
+    return JobArtifact(
+        ops=simple_ops, distance=simple_ops.distance(), generation_id=1
+    )
 
 
 async def wait_for_tasks_to_finish(task_mgr: TaskManager):

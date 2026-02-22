@@ -58,6 +58,7 @@ def test_step_runner_correctly_scales_and_places_ops(
         source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
         source_dimensions=(100, 100),
         generation_size=(20, 10),
+        generation_id=1,
     )
     base_handle = get_context().artifact_store.put(base_artifact)
     assembly_info = [
@@ -138,6 +139,7 @@ def test_step_runner_handles_texture_data(machine, adopting_mock_proxy):
         is_scalable=False,
         source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
         generation_size=(20, 10),
+        generation_id=1,
     )
     base_handle = get_context().artifact_store.put(base_artifact)
     assembly_info = [
@@ -230,6 +232,7 @@ def test_step_runner_instantiates_transformers_from_dict(
         source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
         source_dimensions=(100, 100),
         generation_size=(20, 10),
+        generation_id=1,
     )
     base_handle = get_context().artifact_store.put(base_artifact)
     assembly_info = [
@@ -249,8 +252,8 @@ def test_step_runner_instantiates_transformers_from_dict(
         "rayforge.pipeline.stage.step_compute.compute_step_artifacts"
     ) as mock_compute:
         mock_compute.return_value = (
-            StepRenderArtifact(),
-            StepOpsArtifact(ops=Ops()),
+            StepRenderArtifact(generation_id=1),
+            StepOpsArtifact(ops=Ops(), generation_id=1),
         )
 
         result = make_step_artifact_in_subprocess(

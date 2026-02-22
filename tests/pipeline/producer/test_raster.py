@@ -193,7 +193,7 @@ def test_run_requires_workpiece(
 ):
     """Verify run() raises an error if no workpiece is provided."""
     with pytest.raises(ValueError, match="requires a workpiece context"):
-        producer.run(laser, white_surface, (10, 10))
+        producer.run(laser, white_surface, (10, 10), generation_id=1)
 
 
 def test_run_returns_hybrid_artifact_with_correct_metadata(
@@ -207,7 +207,11 @@ def test_run_returns_hybrid_artifact_with_correct_metadata(
     and metadata.
     """
     artifact = producer.run(
-        laser, white_surface, (1.0, 1.0), workpiece=mock_workpiece
+        laser,
+        white_surface,
+        (1.0, 1.0),
+        workpiece=mock_workpiece,
+        generation_id=1,
     )
 
     assert isinstance(artifact, WorkPieceArtifact)
@@ -229,7 +233,11 @@ def test_run_wraps_ops_in_section_markers(
     transparent_surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, 10, 10)
 
     artifact = producer.run(
-        laser, transparent_surface, (1.0, 1.0), workpiece=mock_workpiece
+        laser,
+        transparent_surface,
+        (1.0, 1.0),
+        workpiece=mock_workpiece,
+        generation_id=1,
     )
 
     cmds = list(artifact.ops)
@@ -250,7 +258,11 @@ def test_run_with_empty_surface_returns_empty_ops(
     """
     empty_surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, 0, 0)
     artifact = producer.run(
-        laser, empty_surface, (1.0, 1.0), workpiece=mock_workpiece
+        laser,
+        empty_surface,
+        (1.0, 1.0),
+        workpiece=mock_workpiece,
+        generation_id=1,
     )
     # Should only contain the start/SetLaser/end markers
     cmds = list(artifact.ops)
@@ -281,7 +293,9 @@ def test_power_modulation_generates_correct_ops(
     mock_workpiece.set_size(0.3, 0.1)  # 0.3mm wide, 0.1mm tall
     producer = Rasterizer(min_power=0.1, max_power=0.9)
 
-    artifact = producer.run(laser, surface, (10, 10), workpiece=mock_workpiece)
+    artifact = producer.run(
+        laser, surface, (10, 10), workpiece=mock_workpiece, generation_id=1
+    )
 
     # Add type check to satisfy Pylance
     assert isinstance(artifact, WorkPieceArtifact)
@@ -328,7 +342,11 @@ def test_multi_pass_generates_correct_ops(
     )
 
     artifact = producer.run(
-        laser, surface, (px_per_mm, px_per_mm), workpiece=mock_workpiece
+        laser,
+        surface,
+        (px_per_mm, px_per_mm),
+        workpiece=mock_workpiece,
+        generation_id=1,
     )
 
     # Add type check to satisfy Pylance
@@ -367,7 +385,7 @@ def test_multi_pass_with_scan_angle(laser: Laser, mock_workpiece: WorkPiece):
         scan_angle=0.0,
     )
     artifact_horizontal = producer_horizontal.run(
-        laser, surface, (10, 10), workpiece=mock_workpiece
+        laser, surface, (10, 10), workpiece=mock_workpiece, generation_id=1
     )
     lines_horizontal = [
         c for c in artifact_horizontal.ops if isinstance(c, LineToCommand)
@@ -379,7 +397,7 @@ def test_multi_pass_with_scan_angle(laser: Laser, mock_workpiece: WorkPiece):
         scan_angle=45.0,
     )
     artifact_angled = producer_angled.run(
-        laser, surface, (10, 10), workpiece=mock_workpiece
+        laser, surface, (10, 10), workpiece=mock_workpiece, generation_id=1
     )
     lines_angled = [
         c for c in artifact_angled.ops if isinstance(c, LineToCommand)
@@ -407,7 +425,7 @@ def test_multi_pass_with_cross_hatch(laser: Laser, mock_workpiece: WorkPiece):
         cross_hatch=False,
     )
     artifact_no_cross = producer_no_cross.run(
-        laser, surface, (10, 10), workpiece=mock_workpiece
+        laser, surface, (10, 10), workpiece=mock_workpiece, generation_id=1
     )
     lines_no_cross = [
         c for c in artifact_no_cross.ops if isinstance(c, LineToCommand)
@@ -419,7 +437,7 @@ def test_multi_pass_with_cross_hatch(laser: Laser, mock_workpiece: WorkPiece):
         cross_hatch=True,
     )
     artifact_cross = producer_cross.run(
-        laser, surface, (10, 10), workpiece=mock_workpiece
+        laser, surface, (10, 10), workpiece=mock_workpiece, generation_id=1
     )
     lines_cross = [
         c for c in artifact_cross.ops if isinstance(c, LineToCommand)
@@ -455,7 +473,12 @@ def test_power_modulation_respects_step_power_setting(
     settings = {"power": step_power}
 
     artifact = producer.run(
-        laser, surface, (10, 10), workpiece=mock_workpiece, settings=settings
+        laser,
+        surface,
+        (10, 10),
+        workpiece=mock_workpiece,
+        settings=settings,
+        generation_id=1,
     )
 
     assert isinstance(artifact, WorkPieceArtifact)
@@ -498,7 +521,9 @@ def test_invert_inverts_grayscale_values(
     mock_workpiece.set_size(1.0, 1.0)
     producer = Rasterizer(min_power=0.1, max_power=0.9, invert=True)
 
-    artifact = producer.run(laser, surface, (10, 10), workpiece=mock_workpiece)
+    artifact = producer.run(
+        laser, surface, (10, 10), workpiece=mock_workpiece, generation_id=1
+    )
 
     assert isinstance(artifact, WorkPieceArtifact)
     scan_cmds = [
@@ -529,7 +554,9 @@ def test_invert_respects_alpha(laser: Laser, mock_workpiece: WorkPiece):
     mock_workpiece.set_size(1.0, 1.0)
     producer = Rasterizer(invert=True)
 
-    artifact = producer.run(laser, surface, (10, 10), workpiece=mock_workpiece)
+    artifact = producer.run(
+        laser, surface, (10, 10), workpiece=mock_workpiece, generation_id=1
+    )
 
     assert isinstance(artifact, WorkPieceArtifact)
     scan_cmds = [
@@ -566,7 +593,9 @@ def test_constant_power_threshold_mode(
         threshold=128,
     )
 
-    artifact = producer.run(laser, surface, (10, 10), workpiece=mock_workpiece)
+    artifact = producer.run(
+        laser, surface, (10, 10), workpiece=mock_workpiece, generation_id=1
+    )
 
     assert isinstance(artifact, WorkPieceArtifact)
     scan_cmds = [
@@ -598,7 +627,7 @@ def test_constant_power_threshold_parameter(
         threshold=100,
     )
     artifact_low = producer_low_threshold.run(
-        laser, surface, (10, 10), workpiece=mock_workpiece
+        laser, surface, (10, 10), workpiece=mock_workpiece, generation_id=1
     )
     scan_cmds_low = [
         c for c in artifact_low.ops if isinstance(c, ScanLinePowerCommand)
@@ -610,7 +639,7 @@ def test_constant_power_threshold_parameter(
         threshold=200,
     )
     artifact_high = producer_high_threshold.run(
-        laser, surface, (10, 10), workpiece=mock_workpiece
+        laser, surface, (10, 10), workpiece=mock_workpiece, generation_id=1
     )
     scan_cmds_high = [
         c for c in artifact_high.ops if isinstance(c, ScanLinePowerCommand)
@@ -641,7 +670,7 @@ def test_constant_power_invert(laser: Laser, mock_workpiece: WorkPiece):
         invert=False,
     )
     artifact_normal = producer_normal.run(
-        laser, surface, (10, 10), workpiece=mock_workpiece
+        laser, surface, (10, 10), workpiece=mock_workpiece, generation_id=1
     )
     scan_cmds_normal = [
         c for c in artifact_normal.ops if isinstance(c, ScanLinePowerCommand)
@@ -655,7 +684,7 @@ def test_constant_power_invert(laser: Laser, mock_workpiece: WorkPiece):
         invert=True,
     )
     artifact_invert = producer_invert.run(
-        laser, surface, (10, 10), workpiece=mock_workpiece
+        laser, surface, (10, 10), workpiece=mock_workpiece, generation_id=1
     )
     scan_cmds_invert = [
         c for c in artifact_invert.ops if isinstance(c, ScanLinePowerCommand)
@@ -685,7 +714,9 @@ def test_constant_power_respects_alpha(
         threshold=128,
     )
 
-    artifact = producer.run(laser, surface, (10, 10), workpiece=mock_workpiece)
+    artifact = producer.run(
+        laser, surface, (10, 10), workpiece=mock_workpiece, generation_id=1
+    )
 
     assert isinstance(artifact, WorkPieceArtifact)
     scan_cmds = [
@@ -732,7 +763,9 @@ def test_dither_mode_with_floyd_steinberg(
         dither_algorithm=DitherAlgorithm.FLOYD_STEINBERG,
     )
 
-    artifact = producer.run(laser, surface, (10, 10), workpiece=mock_workpiece)
+    artifact = producer.run(
+        laser, surface, (10, 10), workpiece=mock_workpiece, generation_id=1
+    )
 
     assert isinstance(artifact, WorkPieceArtifact)
     scan_cmds = [
@@ -764,7 +797,7 @@ def test_cross_hatch_generates_two_passes(
         cross_hatch=False,
     )
     artifact_no_cross_hatch = producer_no_cross_hatch.run(
-        laser, surface, (10, 10), workpiece=mock_workpiece
+        laser, surface, (10, 10), workpiece=mock_workpiece, generation_id=1
     )
     scan_cmds_no_cross = [
         c
@@ -778,7 +811,7 @@ def test_cross_hatch_generates_two_passes(
         cross_hatch=True,
     )
     artifact_cross_hatch = producer_cross_hatch.run(
-        laser, surface, (10, 10), workpiece=mock_workpiece
+        laser, surface, (10, 10), workpiece=mock_workpiece, generation_id=1
     )
     scan_cmds_cross = [
         c
@@ -810,7 +843,9 @@ def test_cross_hatch_perpendicular_angles(
         cross_hatch=True,
     )
 
-    artifact = producer.run(laser, surface, (10, 10), workpiece=mock_workpiece)
+    artifact = producer.run(
+        laser, surface, (10, 10), workpiece=mock_workpiece, generation_id=1
+    )
 
     assert isinstance(artifact, WorkPieceArtifact)
     scan_cmds = [
@@ -856,7 +891,7 @@ def test_cross_hatch_with_power_modulation(
         cross_hatch=False,
     )
     artifact_no_cross = producer_no_cross.run(
-        laser, surface, (10, 10), workpiece=mock_workpiece
+        laser, surface, (10, 10), workpiece=mock_workpiece, generation_id=1
     )
     scan_cmds_no_cross = [
         c for c in artifact_no_cross.ops if isinstance(c, ScanLinePowerCommand)
@@ -867,7 +902,7 @@ def test_cross_hatch_with_power_modulation(
         cross_hatch=True,
     )
     artifact_cross = producer_cross.run(
-        laser, surface, (10, 10), workpiece=mock_workpiece
+        laser, surface, (10, 10), workpiece=mock_workpiece, generation_id=1
     )
     scan_cmds_cross = [
         c for c in artifact_cross.ops if isinstance(c, ScanLinePowerCommand)
@@ -901,7 +936,7 @@ def test_constant_power_bayer_dithering(
         )
 
         artifact = producer.run(
-            laser, surface, (10, 10), workpiece=mock_workpiece
+            laser, surface, (10, 10), workpiece=mock_workpiece, generation_id=1
         )
 
         assert isinstance(artifact, WorkPieceArtifact)
@@ -970,7 +1005,9 @@ def test_auto_levels_uses_precomputed_values(
 
     mock_workpiece.set_size(1.0, 1.0)
 
-    artifact = producer.run(laser, surface, (10, 10), workpiece=mock_workpiece)
+    artifact = producer.run(
+        laser, surface, (10, 10), workpiece=mock_workpiece, generation_id=1
+    )
 
     assert isinstance(artifact, WorkPieceArtifact)
 
@@ -998,7 +1035,9 @@ def test_multi_pass_with_angle_increment(
         num_depth_levels=3,
     )
 
-    artifact = producer.run(laser, surface, (10, 10), workpiece=mock_workpiece)
+    artifact = producer.run(
+        laser, surface, (10, 10), workpiece=mock_workpiece, generation_id=1
+    )
 
     assert isinstance(artifact, WorkPieceArtifact)
     line_cmds = [c for c in artifact.ops if isinstance(c, LineToCommand)]
@@ -1044,7 +1083,9 @@ def test_dithering_respects_alpha(laser: Laser, mock_workpiece: WorkPiece):
         dither_algorithm=DitherAlgorithm.FLOYD_STEINBERG,
     )
 
-    artifact = producer.run(laser, surface, (10, 10), workpiece=mock_workpiece)
+    artifact = producer.run(
+        laser, surface, (10, 10), workpiece=mock_workpiece, generation_id=1
+    )
 
     assert isinstance(artifact, WorkPieceArtifact)
     scan_cmds = [
@@ -1080,14 +1121,22 @@ def test_dithering_adapts_to_spot_size(mock_workpiece: WorkPiece):
     )
 
     artifact_small = producer.run(
-        laser_small_spot, surface, (10, 10), workpiece=mock_workpiece
+        laser_small_spot,
+        surface,
+        (10, 10),
+        workpiece=mock_workpiece,
+        generation_id=1,
     )
     scan_cmds_small = [
         c for c in artifact_small.ops if isinstance(c, ScanLinePowerCommand)
     ]
 
     artifact_large = producer.run(
-        laser_large_spot, surface, (10, 10), workpiece=mock_workpiece
+        laser_large_spot,
+        surface,
+        (10, 10),
+        workpiece=mock_workpiece,
+        generation_id=1,
     )
     scan_cmds_large = [
         c for c in artifact_large.ops if isinstance(c, ScanLinePowerCommand)
@@ -1117,7 +1166,7 @@ def test_constant_power_with_scan_angle(
         scan_angle=0.0,
     )
     artifact_horizontal = producer_horizontal.run(
-        laser, surface, (10, 10), workpiece=mock_workpiece
+        laser, surface, (10, 10), workpiece=mock_workpiece, generation_id=1
     )
     scan_cmds_horizontal = [
         c
@@ -1131,7 +1180,7 @@ def test_constant_power_with_scan_angle(
         scan_angle=45.0,
     )
     artifact_angled = producer_angled.run(
-        laser, surface, (10, 10), workpiece=mock_workpiece
+        laser, surface, (10, 10), workpiece=mock_workpiece, generation_id=1
     )
     scan_cmds_angled = [
         c for c in artifact_angled.ops if isinstance(c, ScanLinePowerCommand)
@@ -1160,7 +1209,9 @@ def test_power_modulation_with_scan_angle(
         scan_angle=30.0,
     )
 
-    artifact = producer.run(laser, surface, (10, 10), workpiece=mock_workpiece)
+    artifact = producer.run(
+        laser, surface, (10, 10), workpiece=mock_workpiece, generation_id=1
+    )
 
     assert isinstance(artifact, WorkPieceArtifact)
     scan_cmds = [

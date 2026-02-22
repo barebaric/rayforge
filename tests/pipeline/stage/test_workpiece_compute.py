@@ -83,6 +83,7 @@ def test_compute_workpiece_artifact_returns_valid_artifact(
         settings=settings,
         pixels_per_mm=pixels_per_mm,
         generation_size=generation_size,
+        generation_id=1,
     )
 
     assert result is not None
@@ -116,6 +117,7 @@ def test_compute_workpiece_artifact_with_progress_callback(
         settings=settings,
         pixels_per_mm=pixels_per_mm,
         generation_size=generation_size,
+        generation_id=1,
         context=mock_progress_context,
     )
 
@@ -159,6 +161,7 @@ def test_compute_workpiece_artifact_with_empty_workpiece():
         settings=settings,
         pixels_per_mm=pixels_per_mm,
         generation_size=generation_size,
+        generation_id=1,
     )
 
     assert result is None
@@ -266,6 +269,7 @@ def test_merge_artifact_ops_first_chunk():
         is_scalable=True,
         source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
         generation_size=(10.0, 10.0),
+        generation_id=1,
     )
     initial_ops = Ops()
     initial_ops.set_power(1.0)
@@ -283,12 +287,14 @@ def test_merge_artifact_ops_subsequent_chunks():
         is_scalable=True,
         source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
         generation_size=(10.0, 10.0),
+        generation_id=1,
     )
     chunk_artifact = WorkPieceArtifact(
         ops=Ops(),
         is_scalable=True,
         source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
         generation_size=(10.0, 10.0),
+        generation_id=1,
     )
     initial_ops = Ops()
 
@@ -317,6 +323,7 @@ def test_execute_vector_with_boundaries(base_workpiece):
             opsproducer,
             laser,
             settings,
+            1,
             base_workpiece.size,
         )
     )
@@ -379,6 +386,7 @@ def test_compute_workpiece_artifact_vector(base_workpiece):
         opsproducer=opsproducer,
         laser=laser,
         settings=settings,
+        generation_id=1,
         generation_size=base_workpiece.size,
     )
 
@@ -405,6 +413,7 @@ def test_compute_workpiece_artifact_vector_with_progress(
         opsproducer=opsproducer,
         laser=laser,
         settings=settings,
+        generation_id=1,
         generation_size=base_workpiece.size,
         context=mock_progress_context,
     )
@@ -434,6 +443,7 @@ def test_compute_workpiece_artifact_vector_with_boundaries(
         opsproducer=opsproducer,
         laser=laser,
         settings=settings,
+        generation_id=1,
         generation_size=base_workpiece.size,
     )
 
@@ -460,6 +470,7 @@ def test_execute_raster_invalid_size(base_workpiece):
             opsproducer,
             laser,
             settings,
+            1,
             base_workpiece.size,
         )
     )
@@ -492,6 +503,7 @@ def test_compute_workpiece_artifact_with_air_assist(
         settings=settings,
         pixels_per_mm=pixels_per_mm,
         generation_size=generation_size,
+        generation_id=1,
     )
 
     assert result is not None
@@ -523,6 +535,7 @@ def test_compute_workpiece_artifact_raster(base_workpiece):
             opsproducer=opsproducer,
             laser=laser,
             settings=settings,
+            generation_id=1,
             generation_size=base_workpiece.size,
         )
 
@@ -557,6 +570,7 @@ def test_compute_workpiece_artifact_raster_with_progress(
             opsproducer=opsproducer,
             laser=laser,
             settings=settings,
+            generation_id=1,
             generation_size=base_workpiece.size,
             context=mock_progress_context,
         )
@@ -594,6 +608,7 @@ def test_compute_workpiece_artifact_raster_empty_workpiece():
         opsproducer=opsproducer,
         laser=laser,
         settings=settings,
+        generation_id=1,
         generation_size=empty_workpiece.size,
     )
 
@@ -625,6 +640,7 @@ def test_compute_workpiece_artifact_with_transformers(
         settings=settings,
         pixels_per_mm=pixels_per_mm,
         generation_size=generation_size,
+        generation_id=1,
     )
 
     assert result is not None
@@ -661,6 +677,7 @@ def test_chunk_artifact_has_generation_size(base_workpiece):
             opsproducer=opsproducer,
             laser=laser,
             settings=settings,
+            generation_id=1,
             generation_size=base_workpiece.size,
             on_chunk=on_chunk_callback,
         )

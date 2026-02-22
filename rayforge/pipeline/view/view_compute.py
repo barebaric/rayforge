@@ -274,6 +274,7 @@ def _render_to_cairo(
 def compute_workpiece_view(
     artifact: WorkPieceArtifact,
     render_context: RenderContext,
+    generation_id: int,
     progress_context: Optional[ProgressContext] = None,
 ) -> Optional[WorkPieceViewArtifact]:
     """
@@ -285,6 +286,7 @@ def compute_workpiece_view(
     Args:
         artifact: The WorkPieceArtifact to render.
         render_context: The RenderContext containing rendering parameters.
+        generation_id: The generation ID for staleness checking.
         progress_context: Optional ProgressContext for progress reporting.
 
     Returns:
@@ -357,6 +359,7 @@ def compute_workpiece_view(
         bitmap_data=bitmap,
         bbox_mm=bbox,
         workpiece_size_mm=artifact.generation_size,
+        generation_id=generation_id,
     )
 
 

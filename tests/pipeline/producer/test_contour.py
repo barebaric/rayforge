@@ -126,7 +126,11 @@ def test_centerline_preserves_geometry(laser, dummy_surface, vector_workpiece):
     tracer = ContourProducer(cut_side=CutSide.CENTERLINE)
 
     artifact = tracer.run(
-        laser, dummy_surface, (10, 10), workpiece=vector_workpiece
+        laser,
+        dummy_surface,
+        (10, 10),
+        workpiece=vector_workpiece,
+        generation_id=1,
     )
 
     geoms = get_geo_from_artifact(artifact)
@@ -168,6 +172,7 @@ def test_outside_cut_expands_outer_shrinks_hole(
         (10, 10),
         workpiece=vector_workpiece,
         settings=settings,
+        generation_id=1,
     )
     geoms = get_geo_from_artifact(artifact)
     assert len(geoms) == 2
@@ -204,6 +209,7 @@ def test_inside_cut_shrinks_outer_expands_hole(
         (10, 10),
         workpiece=vector_workpiece,
         settings=settings,
+        generation_id=1,
     )
     geoms = get_geo_from_artifact(artifact)
     assert len(geoms) == 2
@@ -233,6 +239,7 @@ def test_manual_path_offset(laser, dummy_surface, vector_workpiece):
         (10, 10),
         workpiece=vector_workpiece,
         settings=settings,
+        generation_id=1,
     )
     geoms = get_geo_from_artifact(artifact)
 
@@ -253,7 +260,11 @@ def test_remove_inner_paths(laser, dummy_surface, vector_workpiece):
     )
 
     artifact = tracer.run(
-        laser, dummy_surface, (10, 10), workpiece=vector_workpiece
+        laser,
+        dummy_surface,
+        (10, 10),
+        workpiece=vector_workpiece,
+        generation_id=1,
     )
     geoms = get_geo_from_artifact(artifact)
 
@@ -272,7 +283,11 @@ def test_cut_order_inside_outside(laser, dummy_surface, vector_workpiece):
         cut_side=CutSide.CENTERLINE, cut_order=CutOrder.INSIDE_OUTSIDE
     )
     artifact = tracer.run(
-        laser, dummy_surface, (10, 10), workpiece=vector_workpiece
+        laser,
+        dummy_surface,
+        (10, 10),
+        workpiece=vector_workpiece,
+        generation_id=1,
     )
 
     # Extract components based on command order.
@@ -301,7 +316,11 @@ def test_cut_order_outside_inside(laser, dummy_surface, vector_workpiece):
         cut_side=CutSide.CENTERLINE, cut_order=CutOrder.OUTSIDE_INSIDE
     )
     artifact = tracer.run(
-        laser, dummy_surface, (10, 10), workpiece=vector_workpiece
+        laser,
+        dummy_surface,
+        (10, 10),
+        workpiece=vector_workpiece,
+        generation_id=1,
     )
 
     full_geo = Geometry.from_dict(artifact.ops.to_dict())
@@ -344,7 +363,12 @@ def test_winding_normalization_on_import(laser, dummy_surface):
     settings = {"kerf_mm": 1.0}
 
     artifact = tracer.run(
-        laser, dummy_surface, (10, 10), workpiece=wp, settings=settings
+        laser,
+        dummy_surface,
+        (10, 10),
+        workpiece=wp,
+        settings=settings,
+        generation_id=1,
     )
     geoms = get_geo_from_artifact(artifact)
 

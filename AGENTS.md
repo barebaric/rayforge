@@ -20,6 +20,7 @@
 
 ## Other rules
 
+- Never use "head" to filter CLI commands! This would hide useful error messages.
 - Use proper markdown to put each file into a separate code block.
 - File start markers do not belong INTO code blocks. Putting them OUTSIDE is ok.
 - Do not make changes unrelated to the current task

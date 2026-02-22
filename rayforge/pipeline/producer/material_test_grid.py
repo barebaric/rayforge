@@ -118,6 +118,7 @@ class MaterialTestGridProducer(OpsProducer):
         surface,
         pixels_per_mm,
         *,
+        generation_id: int,
         workpiece: Optional["WorkPiece"] = None,
         settings: Optional[Dict[str, Any]] = None,
         y_offset_mm: float = 0.0,
@@ -138,6 +139,7 @@ class MaterialTestGridProducer(OpsProducer):
                     source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
                     source_dimensions=workpiece.size or (0, 0),
                     generation_size=workpiece.size,
+                    generation_id=generation_id,
                 )
 
         width_mm, height_mm = workpiece.size
@@ -192,6 +194,7 @@ class MaterialTestGridProducer(OpsProducer):
             source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
             source_dimensions=(width_mm, height_mm),
             generation_size=workpiece.size,
+            generation_id=generation_id,
         )
 
     @classmethod

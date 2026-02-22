@@ -10,10 +10,11 @@ from typing import (
     Set,
     Tuple,
     Union,
-    TYPE_CHECKING,
 )
+from ...shared.util.debug import safe_caller_stack
+from ..dag.node import NodeState
 from .base import BaseArtifact
-from .handle import BaseArtifactHandle, create_handle_from_dict
+from .handle import BaseArtifactHandle
 from .job import JobArtifactHandle
 from .key import ArtifactKey
 from .lifecycle import LedgerEntry
@@ -22,12 +23,15 @@ from .step_render import StepRenderArtifactHandle
 from .store import ArtifactStore
 from .workpiece import WorkPieceArtifactHandle
 
-if TYPE_CHECKING:
-    from ..dag.node import NodeState
-
 logger = logging.getLogger(__name__)
 
 GenerationID = int
+
+
+class StaleGenerationError(Exception):
+    """Raised when adopting an artifact with an outdated generation."""
+
+    pass
 
 
 def make_composite_key(
@@ -133,8 +137,6 @@ class ArtifactManager:
         Returns:
             The NodeState of the entry, or DIRTY if not found.
         """
-        from ..dag.node import NodeState
-
         composite_key = make_composite_key(key, generation_id)
         entry = self._ledger.get(composite_key)
         if entry is None:
@@ -219,11 +221,12 @@ class ArtifactManager:
         """
         Stores a handle for a StepRenderArtifact.
 
-        Note: This does NOT release any existing handle for this step.
-        The old handle will be cleaned up when the step is invalidated
-        or the pipeline is shut down. This prevents race conditions where
-        a handle is released while a worker is still using it.
+        Releases any existing handle for this step before storing the new
+        one to prevent memory leaks during rapid re-renders.
         """
+        old_handle = self._step_render_handles.get(step_uid)
+        if old_handle is not None:
+            self.release_handle(old_handle)
         self._step_render_handles[step_uid] = handle
 
     def put_step_ops_handle(
@@ -261,15 +264,71 @@ class ArtifactManager:
         If the block completes successfully, the handle is kept and remains
         adopted.
 
+        Automatically checks for stale generations by verifying the handle's
+        generation ID matches the current ledger entry, raising
+        StaleGenerationError if the artifact is no longer valid.
+
         Args:
-            key: The key context for logging.
+            key: The key context for logging and staleness checking.
             handle_dict: The serialized handle dictionary.
 
         Yields:
-            The adopted BaseArtifactHandle.
+            The canonical BaseArtifactHandle from the store.
+
+        Raises:
+            StaleGenerationError: If the generation is stale.
         """
-        with self._store.safe_adoption(handle_dict) as handle:
+        handle = self._store.adopt_from_dict(handle_dict)
+        try:
+            if not self.is_generation_current(key, handle.generation_id):
+                raise StaleGenerationError(
+                    f"Generation {handle.generation_id} is stale for {key}"
+                )
             yield handle
+        except StaleGenerationError:
+            self._store.release(handle)
+            raise
+        except Exception:
+            self._store.release(handle)
+            raise
+
+    @contextmanager
+    def transient_adoption(
+        self,
+        key: ArtifactKey,
+        handle_dict: Dict[str, Any],
+    ) -> Generator[BaseArtifactHandle, None, None]:
+        """
+        Context manager that adopts a handle and always releases it on exit.
+
+        Unlike safe_adoption which only releases on exception, this manager
+        releases the handle in all cases (normal exit and exception). Callers
+        that want to keep the handle must call retain_handle() before the
+        context exits.
+
+        Automatically checks for stale generations by verifying the handle's
+        generation ID matches the current ledger entry, raising
+        StaleGenerationError if the artifact is no longer valid.
+
+        Args:
+            key: The key context for logging and staleness checking.
+            handle_dict: The serialized handle dictionary.
+
+        Yields:
+            The canonical BaseArtifactHandle from the store.
+
+        Raises:
+            StaleGenerationError: If the generation is stale.
+        """
+        handle = self._store.adopt_from_dict(handle_dict)
+        try:
+            if not self.is_generation_current(key, handle.generation_id):
+                raise StaleGenerationError(
+                    f"Generation {handle.generation_id} is stale for {key}"
+                )
+            yield handle
+        finally:
+            self._store.release(handle)
 
     def adopt_artifact(
         self,
@@ -292,11 +351,9 @@ class ArtifactManager:
             handle_dict: The serialized handle dictionary.
 
         Returns:
-            The adopted, deserialized handle.
+            The canonical handle from the store.
         """
-        handle = create_handle_from_dict(handle_dict)
-        self._store.adopt(handle)
-        return handle
+        return self._store.adopt_from_dict(handle_dict)
 
     def retain_handle(self, handle: BaseArtifactHandle):
         """
@@ -354,13 +411,14 @@ class ArtifactManager:
         return self._step_render_handles.pop(step_uid, None)
 
     def invalidate_for_workpiece(self, key: ArtifactKey):
-        from ..dag.node import NodeState
-
-        keys_to_invalidate = [
-            ledger_key
-            for ledger_key in self._ledger.keys()
-            if extract_base_key(ledger_key) == key
-        ]
+        wp_uid = key.id
+        keys_to_invalidate = []
+        for ledger_key in list(self._ledger.keys()):
+            base_key = extract_base_key(ledger_key)
+            if base_key.group == "workpiece":
+                ledger_id = base_key.id
+                if ledger_id == wp_uid or ledger_id.startswith(f"{wp_uid}:"):
+                    keys_to_invalidate.append(ledger_key)
         for ledger_key in keys_to_invalidate:
             entry = self._ledger.get(ledger_key)
             if entry:
@@ -369,9 +427,72 @@ class ArtifactManager:
                     entry.handle = None
                 entry.state = NodeState.DIRTY
 
-    def invalidate_for_step(self, key: ArtifactKey):
-        from ..dag.node import NodeState
+    def remove_for_workpiece(self, key: ArtifactKey):
+        """
+        Remove all ledger entries for a workpiece that has been deleted.
 
+        Unlike invalidate_for_workpiece which marks entries as DIRTY for
+        re-rendering, this method permanently removes entries from the
+        ledger and releases all associated handles.
+
+        Removing the ledger entries ensures that is_generation_current()
+        will return False for any in-flight tasks, preventing stale
+        artifacts from being adopted.
+
+        Args:
+            key: The ArtifactKey for the workpiece to remove.
+        """
+        wp_uid = key.id
+        logger.debug(f"remove_for_workpiece: called for wp_uid={wp_uid}")
+        # The ledger keys have IDs in format "workpiece_uid:step_uid" or just
+        # "workpiece_uid" for step artifacts. We need to match any key whose
+        # ID starts with the workpiece UID.
+        keys_to_remove = []
+        for ledger_key in list(self._ledger.keys()):
+            base_key = extract_base_key(ledger_key)
+            if base_key.group == "workpiece":
+                # Check if this entry is for the workpiece being removed
+                # ID format is "workpiece_uid" or "workpiece_uid:step_uid"
+                ledger_id = base_key.id
+                if ledger_id == wp_uid or ledger_id.startswith(f"{wp_uid}:"):
+                    keys_to_remove.append(ledger_key)
+        for ledger_key in keys_to_remove:
+            entry = self._ledger.get(ledger_key)
+            if entry:
+                if entry.handle is not None:
+                    self.release_handle(entry.handle)
+            del self._ledger[ledger_key]
+
+    def remove_for_step(self, key: ArtifactKey):
+        """
+        Remove all ledger entries for a step that has been deleted.
+        """
+        step_uid = key.id
+        keys_to_remove = []
+        for ledger_key in list(self._ledger.keys()):
+            base_key = extract_base_key(ledger_key)
+            if base_key == key:
+                keys_to_remove.append(ledger_key)
+            elif base_key.group == "workpiece" and base_key.id.endswith(
+                f":{step_uid}"
+            ):
+                keys_to_remove.append(ledger_key)
+
+        for ledger_key in keys_to_remove:
+            entry = self._ledger.get(ledger_key)
+            if entry:
+                if entry.handle is not None:
+                    logger.debug(
+                        f"remove_for_step: releasing {entry.handle.shm_name} "
+                        f"(stack: {safe_caller_stack(15)})"
+                    )
+                    self.release_handle(entry.handle)
+            del self._ledger[ledger_key]
+
+        step_render_handle = self._step_render_handles.pop(step_uid, None)
+        self.release_handle(step_render_handle)
+
+    def invalidate_for_step(self, key: ArtifactKey):
         step_keys_to_invalidate = [
             ledger_key
             for ledger_key in self._ledger.keys()
@@ -385,26 +506,10 @@ class ArtifactManager:
                     step_entry.handle = None
                 step_entry.state = NodeState.DIRTY
 
-        keys_to_invalidate = [
-            ledger_key
-            for ledger_key in self._ledger.keys()
-            if extract_base_key(ledger_key).group == "workpiece"
-            and extract_base_key(ledger_key).id == key.id
-        ]
-        for ledger_key in keys_to_invalidate:
-            entry = self._ledger.get(ledger_key)
-            if entry:
-                if entry.handle is not None:
-                    self.release_handle(entry.handle)
-                    entry.handle = None
-                entry.state = NodeState.DIRTY
-
         step_render_handle = self._step_render_handles.pop(key.id, None)
         self.release_handle(step_render_handle)
 
     def invalidate_for_job(self, key: ArtifactKey):
-        from ..dag.node import NodeState
-
         keys_to_invalidate = [
             ledger_key
             for ledger_key in self._ledger.keys()
@@ -536,6 +641,166 @@ class ArtifactManager:
         """
         return self._ledger.get(key)
 
+    @contextmanager
+    def report_completion(
+        self,
+        key: ArtifactKey,
+        generation_id: GenerationID,
+    ) -> Generator[Optional[BaseArtifactHandle], None, None]:
+        """
+        Marks generation as complete and yields the handle if available.
+
+        The handle is retained for the duration of the context, allowing
+        signal handlers to access it. Handlers that need to keep the handle
+        must retain it themselves before the context exits.
+
+        If the generation is stale, yields None and does nothing.
+
+        Args:
+            key: The artifact key.
+            generation_id: The generation ID of this generation.
+
+        Yields:
+            The cached handle if available and current, None otherwise.
+        """
+        composite_key = make_composite_key(key, generation_id)
+        entry = self._ledger.get(composite_key)
+
+        if entry is None:
+            logger.debug(f"[{key}] report_completion: entry missing, ignoring")
+            yield None
+            return
+
+        if entry.generation_id != generation_id:
+            logger.debug(
+                f"[{key}] report_completion: stale generation "
+                f"{generation_id}, current is {entry.generation_id}, "
+                "ignoring"
+            )
+            yield None
+            return
+
+        entry.state = NodeState.VALID
+        handle = entry.handle
+        logger.debug(f"[{key}] report_completion: marked VALID")
+
+        if handle is not None:
+            self._store.retain(handle)
+
+        try:
+            yield handle
+        finally:
+            if handle is not None:
+                self._store.release(handle)
+
+    @contextmanager
+    def report_failure(
+        self,
+        key: ArtifactKey,
+        generation_id: GenerationID,
+    ) -> Generator[Optional[BaseArtifactHandle], None, None]:
+        """
+        Reports that artifact generation failed.
+
+        Failed artifacts are marked ERROR and will not be retried until
+        the underlying data changes. Any cached handle is released and
+        yielded for the final signal, then cleaned up.
+
+        If the generation is stale, yields None and does nothing.
+
+        Args:
+            key: The artifact key.
+            generation_id: The generation ID of this generation.
+
+        Yields:
+            The cached handle if available (for final signal), None otherwise.
+        """
+        composite_key = make_composite_key(key, generation_id)
+        entry = self._ledger.get(composite_key)
+
+        if entry is None:
+            logger.debug(f"[{key}] report_failure: entry missing, ignoring")
+            yield None
+            return
+
+        if entry.generation_id != generation_id:
+            logger.debug(f"[{key}] report_failure: stale generation, ignoring")
+            yield None
+            return
+
+        handle = entry.handle
+        entry.handle = None
+        entry.state = NodeState.ERROR
+        logger.debug(f"[{key}] report_failure: marked ERROR")
+
+        if handle is not None:
+            self._store.retain(handle)
+
+        try:
+            yield handle
+        finally:
+            if handle is not None:
+                self._store.release(handle)
+
+    @contextmanager
+    def report_cancellation(
+        self,
+        key: ArtifactKey,
+        generation_id: GenerationID,
+    ) -> Generator[Optional[BaseArtifactHandle], None, None]:
+        """
+        Reports that artifact generation was canceled.
+
+        If a handle exists, it is kept and marked VALID. Otherwise, the
+        entry is marked DIRTY so the scheduler can regenerate it.
+
+        If the generation is stale, yields None and does nothing.
+
+        Args:
+            key: The artifact key.
+            generation_id: The generation ID of this generation.
+
+        Yields:
+            The cached handle if available, None otherwise.
+        """
+        composite_key = make_composite_key(key, generation_id)
+        entry = self._ledger.get(composite_key)
+
+        if entry is None:
+            logger.debug(
+                f"[{key}] report_cancellation: entry missing, ignoring"
+            )
+            yield None
+            return
+
+        if entry.generation_id != generation_id:
+            logger.debug(
+                f"[{key}] report_cancellation: stale generation, ignoring"
+            )
+            yield None
+            return
+
+        handle = entry.handle
+        if handle is not None:
+            entry.state = NodeState.VALID
+            logger.debug(
+                f"[{key}] report_cancellation: handle exists, keeping VALID"
+            )
+        else:
+            entry.state = NodeState.DIRTY
+            logger.debug(
+                f"[{key}] report_cancellation: no handle, marked DIRTY"
+            )
+
+        if handle is not None:
+            self._store.retain(handle)
+
+        try:
+            yield handle
+        finally:
+            if handle is not None:
+                self._store.release(handle)
+
     def get_store(self) -> ArtifactStore:
         """
         Returns the artifact store.
@@ -599,35 +864,45 @@ class ArtifactManager:
         key: ArtifactKey,
         handle: BaseArtifactHandle,
         generation_id: GenerationID,
-    ) -> None:
+    ) -> bool:
         """
         Caches an artifact handle.
 
-        This retains the handle, creating a "Manager's Claim" on the
-        shared memory. This ensures the data persists even after the
-        GenerationContext releases its "Builder's Claim".
+        This consumes the reference ("claim") passed in via the `handle`
+        argument. It assumes the caller has already acquired this claim (e.g.
+        via adoption) and is transferring ownership to the manager.
+
+        Returns True if the handle was cached, False if the workpiece
+        was deleted (entry not found in ledger).
 
         Args:
             key: The ArtifactKey for the entry.
             handle: The handle to cache.
             generation_id: The generation ID for the entry.
         """
-        from ..dag.node import NodeState
-
-        logger.debug(f"cache: key={key}, generation_id={generation_id}")
+        logger.debug(
+            f"cache_handle: key={key}, generation_id={generation_id}, "
+            f"shm_name={handle.shm_name}"
+        )
         composite_key = make_composite_key(key, generation_id)
         entry = self.get_ledger_entry(composite_key)
         if entry is None:
-            entry = LedgerEntry(generation_id=generation_id)
-            self._ledger[composite_key] = entry
+            logger.debug(
+                f"cache_handle: no entry for {composite_key}, "
+                "workpiece may have been deleted, releasing handle"
+            )
+            self._store.release(handle)
+            return False
 
         logger.debug(f"cache: Caching entry {composite_key}")
-        self.retain_handle(handle)
+
         if entry.handle is not None:
             self._store.release(entry.handle)
         entry.handle = handle
         entry.generation_id = generation_id
         entry.state = NodeState.VALID
+        logger.debug(f"cache_handle: SUCCESS for {composite_key}")
+        return True
 
     def mark_done(
         self,
@@ -647,7 +922,9 @@ class ArtifactManager:
         composite_key = make_composite_key(key, generation_id)
         entry = self.get_ledger_entry(composite_key)
         if entry is None:
-            logger.warning(
+            # Downgraded to debug to reduce noise during race conditions
+            # in stress tests where workpieces are deleted rapidly.
+            logger.debug(
                 f"mark_done called for {key} (gen_id={generation_id}) "
                 f"but no ledger entry was found. Skipping."
             )
@@ -678,8 +955,6 @@ class ArtifactManager:
             handle: Optional handle to set on the entry. If not provided,
                 the existing handle is preserved.
         """
-        from ..dag.node import NodeState
-
         composite_key = make_composite_key(key, generation_id)
         entry = self._ledger.get(composite_key)
         if entry is None:
@@ -835,8 +1110,13 @@ class ArtifactManager:
                 keys_to_remove.append(composite_key)
 
         logger.debug(f"prune: Removing {len(keys_to_remove)} entries")
+        stack = safe_caller_stack(15)
         for composite_key in keys_to_remove:
             entry = self._ledger.get(composite_key)
             if entry is not None and entry.handle is not None:
+                logger.debug(
+                    f"prune: releasing {entry.handle.shm_name} "
+                    f"(stack: {stack})"
+                )
                 self._store.release(entry.handle)
             del self._ledger[composite_key]

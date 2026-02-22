@@ -104,14 +104,20 @@ class TestPipelineGeneration:
                 if task_info.target is make_job_artifact_in_subprocess:
                     if task_info.when_event:
                         store = get_context().artifact_store
-                        job_artifact = JobArtifact(ops=Ops(), distance=0.0)
+                        job_artifact = JobArtifact(
+                            ops=Ops(), distance=0.0, generation_id=1
+                        )
                         job_handle = store.put(job_artifact)
 
-                        # Extract gen_id from kwargs
                         gen_id = task_info.kwargs.get("generation_id")
+                        job_key = task_info.kwargs.get("job_key")
                         event_data = {
                             "handle_dict": job_handle.to_dict(),
                             "generation_id": gen_id,
+                            "job_key": {
+                                "id": job_key.id,
+                                "group": job_key.group,
+                            },
                         }
                         task_info.when_event(
                             task_obj, "artifact_created", event_data
@@ -124,9 +130,13 @@ class TestPipelineGeneration:
                     task_obj.result.return_value = gen_id
                     if task_info.when_event:
                         store = get_context().artifact_store
-                        render_artifact = StepRenderArtifact()
+                        render_artifact = StepRenderArtifact(
+                            generation_id=gen_id
+                        )
                         render_handle = store.put(render_artifact)
-                        ops_artifact = StepOpsArtifact(ops=Ops())
+                        ops_artifact = StepOpsArtifact(
+                            ops=Ops(), generation_id=gen_id
+                        )
                         ops_handle = store.put(ops_artifact)
 
                         render_event = {
@@ -204,6 +214,7 @@ class TestPipelineGeneration:
             source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
             source_dimensions=real_workpiece.size,
             generation_size=real_workpiece.size,
+            generation_id=1,
         )
         handle = get_context().artifact_store.put(expected_artifact)
         gen_id = task_info.args[6]
@@ -290,6 +301,7 @@ class TestPipelineGeneration:
             generation_size=real_workpiece.size,
             source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
             source_dimensions=real_workpiece.size,
+            generation_id=1,
         )
         handle = get_context().artifact_store.put(artifact)
         try:
@@ -332,6 +344,7 @@ class TestPipelineGeneration:
             generation_size=real_workpiece.size,
             source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
             source_dimensions=real_workpiece.size,
+            generation_id=1,
         )
         handle = get_context().artifact_store.put(artifact)
         try:
@@ -381,6 +394,7 @@ class TestPipelineGeneration:
             generation_size=real_workpiece.size,
             source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
             source_dimensions=real_workpiece.size,
+            generation_id=1,
         )
         wp_handle = get_context().artifact_store.put(wp_artifact)
         expected_job_handle = None
@@ -391,7 +405,7 @@ class TestPipelineGeneration:
 
             callback_mock = MagicMock()
             store = get_context().artifact_store
-            job_artifact = JobArtifact(ops=Ops(), distance=0)
+            job_artifact = JobArtifact(ops=Ops(), distance=0, generation_id=1)
             expected_job_handle = store.put(job_artifact)
 
             # Act
@@ -455,6 +469,7 @@ class TestPipelineGeneration:
             generation_size=real_workpiece.size,
             source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
             source_dimensions=real_workpiece.size,
+            generation_id=1,
         )
         wp_handle = get_context().artifact_store.put(wp_artifact)
         try:
@@ -519,6 +534,7 @@ class TestPipelineGeneration:
             generation_size=real_workpiece.size,
             source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
             source_dimensions=real_workpiece.size,
+            generation_id=1,
         )
         wp_handle = get_context().artifact_store.put(wp_artifact)
         expected_job_handle = None
@@ -528,7 +544,7 @@ class TestPipelineGeneration:
             mock_task_mgr.created_tasks.clear()
 
             store = get_context().artifact_store
-            job_artifact = JobArtifact(ops=Ops(), distance=0)
+            job_artifact = JobArtifact(ops=Ops(), distance=0, generation_id=1)
             expected_job_handle = store.put(job_artifact)
 
             # Act
@@ -597,6 +613,7 @@ class TestPipelineGeneration:
             generation_size=real_workpiece.size,
             source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
             source_dimensions=real_workpiece.size,
+            generation_id=1,
         )
         wp_handle = get_context().artifact_store.put(wp_artifact)
         try:
@@ -653,6 +670,7 @@ class TestPipelineGeneration:
             generation_size=real_workpiece.size,
             source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
             source_dimensions=real_workpiece.size,
+            generation_id=1,
         )
         wp_handle = get_context().artifact_store.put(wp_artifact)
         try:
@@ -760,6 +778,7 @@ class TestPipelineGeneration:
             generation_size=real_workpiece.size,
             source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
             source_dimensions=real_workpiece.size,
+            generation_id=1,
         )
         handle = get_context().artifact_store.put(artifact)
         try:
@@ -824,6 +843,7 @@ class TestPipelineGeneration:
             generation_size=real_workpiece.size,
             source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
             source_dimensions=real_workpiece.size,
+            generation_id=1,
         )
         wp_handle = get_context().artifact_store.put(wp_artifact)
 

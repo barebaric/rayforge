@@ -50,6 +50,7 @@ def test_handle_serialization():
                 "offset": 0,
             }
         },
+        generation_id=1,
     )
     handle_dict = original_handle.to_dict()
     reconstructed_handle = create_handle_from_dict(handle_dict)
@@ -69,6 +70,7 @@ def test_artifact_store_lifecycle(handles_to_release):
         bitmap_data=bitmap_data,
         bbox_mm=bbox_mm,
         workpiece_size_mm=(50.0, 100.0),
+        generation_id=1,
     )
 
     handle_base = get_context().artifact_store.put(original_artifact)

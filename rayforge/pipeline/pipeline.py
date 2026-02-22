@@ -32,7 +32,7 @@ from .artifact import (
 )
 from .artifact.key import ArtifactKey
 from .context import GenerationContext
-from .dag import DagScheduler
+from .dag.scheduler import DagScheduler
 from .stage import (
     JobPipelineStage,
     StepPipelineStage,
@@ -104,6 +104,7 @@ class Pipeline:
         self._pause_count = 0
         self._last_known_busy_state = False
         self._reconciliation_timer: Optional[concurrent.futures.Future] = None
+        self._is_shutting_down = False
 
         # Signals for notifying the UI of generation progress
         self.processing_state_changed = Signal()
@@ -125,6 +126,7 @@ class Pipeline:
         """A new helper method to contain all stage setup logic."""
         logger.debug(f"[{id(self)}] Initializing stages and connections.")
         self._last_known_busy_state = False
+        self._is_shutting_down = False
 
         # Initialize artifact manager
         self._artifact_manager = ArtifactManager(self._artifact_store)
@@ -191,10 +193,16 @@ class Pipeline:
         called before application exit to prevent memory leaks.
         """
         logger.debug(f"[{id(self)}] Pipeline shutdown called")
+        self._is_shutting_down = True
         if self._reconciliation_timer:
             self._reconciliation_timer.cancel()
             self._reconciliation_timer = None
         logger.info("Pipeline shutting down...")
+
+        for task in list(self._task_manager):
+            logger.debug(f"Cancelling task '{task.key}' during shutdown")
+            self._task_manager.cancel_task(task.key)
+
         self._workpiece_stage.shutdown()
         self._step_stage.shutdown()
         self._job_stage.shutdown()
@@ -267,6 +275,9 @@ class Pipeline:
         the main thread to run after the current event chain has completed,
         avoiding race conditions.
         """
+        if self._is_shutting_down:
+            return
+
         current_busy_state = self.is_busy
         logger.debug(
             f"_check_and_update_processing_state: "
@@ -435,6 +446,11 @@ class Pipeline:
                     break
                 current_item = current_item.parent
 
+            # Remove workpiece artifacts permanently (workpiece is deleted)
+            wp_key = ArtifactKey.for_workpiece(origin.uid)
+            self._artifact_manager.remove_for_workpiece(wp_key)
+            self._scheduler.mark_node_dirty(wp_key)
+
             if layer and layer.workflow:
                 logger.debug(
                     f"Workpiece '{origin.name}' removed from layer "
@@ -443,6 +459,21 @@ class Pipeline:
                 for step in layer.workflow.steps:
                     step_key = ArtifactKey.for_step(step.uid)
                     self._invalidate_node(step_key)
+
+        elif isinstance(origin, Step):
+            logger.debug(
+                f"Step '{origin.name}' removed. Invalidating artifacts."
+            )
+            step_key = ArtifactKey.for_step(origin.uid)
+
+            # Cancel and invalidate all workpiece tasks for this step
+            if self.doc:
+                for wp in self.doc.all_workpieces:
+                    wp_step_key = ArtifactKey.for_workpiece(wp.uid, origin.uid)
+                    self._invalidate_node(wp_step_key)
+
+            self._artifact_manager.remove_for_step(step_key)
+            self._invalidate_node(step_key)
 
         self._schedule_reconciliation()
 
@@ -614,6 +645,9 @@ class Pipeline:
         """
         Relays signal and triggers downstream step assembly via DAG.
         """
+        if self._is_shutting_down:
+            return
+
         if handle is not None:
             self.workpiece_artifact_ready.send(
                 self,
@@ -656,12 +690,15 @@ class Pipeline:
         sender,
         *,
         key,
-        chunk_handle,
+        chunk_handle: BaseArtifactHandle,
         generation_id: int,
         step_uid: str,
     ) -> None:
         """
         Relays visual chunk availability from the scheduler.
+
+        The chunk_handle is passed directly to listeners. Listeners that
+        want to keep the handle must retain it.
         """
         self.visual_chunk_available.send(
             self,
@@ -772,7 +809,7 @@ class Pipeline:
         Synchronizes data stages with the document by declaring the full
         set of required artifacts for the new data generation.
         """
-        if self.is_paused or not self.doc:
+        if self.is_paused or not self.doc or self._is_shutting_down:
             return
         logger.debug(
             f"{self.__class__.__name__}.reconcile_data called "
@@ -1033,11 +1070,17 @@ class Pipeline:
             )
             return
 
+        job_key = ArtifactKey.for_job()
+        self._artifact_manager.declare_generation(
+            {job_key}, self._data_generation_id
+        )
+
         self._machine.hydrate()
 
         self._scheduler.generate_job(
             step_uids=step_uids,
             on_done=when_done,
+            job_key=job_key,
         )
 
     async def generate_job_artifact_async(

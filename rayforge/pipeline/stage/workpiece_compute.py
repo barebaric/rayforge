@@ -18,6 +18,7 @@ def _run_producer_on_surface(
     laser: Laser,
     workpiece: WorkPiece,
     settings: dict,
+    generation_id: int,
     generation_size: Optional[Tuple[float, float]] = None,
     y_offset_mm: float = 0.0,
     context: Optional[ProgressContext] = None,
@@ -34,6 +35,7 @@ def _run_producer_on_surface(
         laser: The Laser model with machine parameters.
         workpiece: The WorkPiece to generate operations for.
         settings: Dictionary of settings from the Step.
+        generation_id: The generation ID for staleness checking.
         generation_size: The full generation size in mm, or None to use
             workpiece size.
         y_offset_mm: The vertical offset in mm for the current chunk.
@@ -48,6 +50,7 @@ def _run_producer_on_surface(
         render_pixels_per_mm,
         workpiece=workpiece,
         settings=settings,
+        generation_id=generation_id,
         y_offset_mm=y_offset_mm,
         context=context,
     )
@@ -126,6 +129,7 @@ def _process_vector_render_and_trace(
     opsproducer: OpsProducer,
     laser: Laser,
     settings: dict,
+    generation_id: int,
     generation_size: Tuple[float, float],
     context: Optional[ProgressContext] = None,
 ) -> Optional[WorkPieceArtifact]:
@@ -137,6 +141,7 @@ def _process_vector_render_and_trace(
         opsproducer: The OpsProducer to use for generation.
         laser: The Laser model with machine parameters.
         settings: Dictionary of settings from the Step.
+        generation_id: The generation ID for staleness checking.
         generation_size: The full generation size in mm.
         context: Optional ProgressContext for progress reporting.
 
@@ -161,6 +166,7 @@ def _process_vector_render_and_trace(
         laser,
         workpiece,
         settings,
+        generation_id=generation_id,
         generation_size=generation_size,
         context=context,
     )
@@ -174,6 +180,7 @@ def _execute_vector(
     opsproducer: OpsProducer,
     laser: Laser,
     settings: dict,
+    generation_id: int,
     generation_size: Tuple[float, float],
     context: Optional[ProgressContext] = None,
 ) -> Iterator[Tuple[WorkPieceArtifact, float]]:
@@ -185,6 +192,7 @@ def _execute_vector(
         opsproducer: The OpsProducer to use for generation.
         laser: The Laser model with machine parameters.
         settings: Dictionary of settings from the Step.
+        generation_id: The generation ID for staleness checking.
         generation_size: The full generation size in mm.
         context: Optional ProgressContext for progress reporting.
 
@@ -205,6 +213,7 @@ def _execute_vector(
             laser=laser,
             workpiece=workpiece,
             settings=settings,
+            generation_id=generation_id,
             generation_size=generation_size,
             context=context,
         )
@@ -217,6 +226,7 @@ def _execute_vector(
         opsproducer,
         laser,
         settings,
+        generation_id,
         generation_size,
         context,
     )
@@ -229,6 +239,7 @@ def _process_raster_full_render(
     opsproducer: OpsProducer,
     laser: Laser,
     settings: dict,
+    generation_id: int,
     generation_size: Tuple[float, float],
     context: Optional[ProgressContext] = None,
 ) -> Optional[WorkPieceArtifact]:
@@ -240,6 +251,7 @@ def _process_raster_full_render(
         opsproducer: The OpsProducer to use for generation.
         laser: The Laser model with machine parameters.
         settings: Dictionary of settings from the Step.
+        generation_id: The generation ID for staleness checking.
         generation_size: The full generation size in mm.
         context: Optional ProgressContext for progress reporting.
 
@@ -262,6 +274,7 @@ def _process_raster_full_render(
         laser,
         workpiece,
         settings,
+        generation_id=generation_id,
         generation_size=generation_size,
         context=context,
     )
@@ -278,6 +291,7 @@ def _process_raster_chunk(
     opsproducer: OpsProducer,
     laser: Laser,
     settings: dict,
+    generation_id: int,
     total_height_px: float,
     generation_size: Tuple[float, float],
     context: Optional[ProgressContext] = None,
@@ -293,6 +307,7 @@ def _process_raster_chunk(
         opsproducer: The OpsProducer to use for generation.
         laser: The Laser model with machine parameters.
         settings: Dictionary of settings from the Step.
+        generation_id: The generation ID for staleness checking.
         total_height_px: Total height in pixels for progress calculation.
         generation_size: The full generation size in mm.
         context: Optional ProgressContext for progress reporting.
@@ -316,6 +331,7 @@ def _process_raster_chunk(
         laser,
         workpiece,
         settings,
+        generation_id=generation_id,
         generation_size=generation_size,
         y_offset_mm=y_offset_from_top_mm,
         context=context,
@@ -338,6 +354,7 @@ def _execute_raster(
     opsproducer: OpsProducer,
     laser: Laser,
     settings: dict,
+    generation_id: int,
     generation_size: Tuple[float, float],
     context: Optional[ProgressContext] = None,
 ) -> Iterator[Tuple[WorkPieceArtifact, float]]:
@@ -349,6 +366,7 @@ def _execute_raster(
         opsproducer: The OpsProducer to use for generation.
         laser: The Laser model with machine parameters.
         settings: Dictionary of settings from the Step.
+        generation_id: The generation ID for staleness checking.
         generation_size: The full generation size in mm.
         context: Optional ProgressContext for progress reporting.
 
@@ -368,6 +386,7 @@ def _execute_raster(
             opsproducer,
             laser,
             settings,
+            generation_id,
             generation_size,
             context,
         )
@@ -394,6 +413,7 @@ def _execute_raster(
             opsproducer,
             laser,
             settings,
+            generation_id,
             total_height_px,
             generation_size,
             context,
@@ -484,6 +504,7 @@ def compute_workpiece_artifact_vector(
     opsproducer: OpsProducer,
     laser: Laser,
     settings: dict,
+    generation_id: int,
     generation_size: Tuple[float, float],
     context: Optional[ProgressContext] = None,
 ) -> Optional[WorkPieceArtifact]:
@@ -495,6 +516,7 @@ def compute_workpiece_artifact_vector(
         opsproducer: The OpsProducer to use for generation.
         laser: The Laser model with machine parameters.
         settings: Dictionary of settings from the Step.
+        generation_id: The generation ID for staleness checking.
         generation_size: The full generation size in mm.
         context: Optional ProgressContext for progress reporting.
 
@@ -519,6 +541,7 @@ def compute_workpiece_artifact_vector(
         opsproducer,
         laser,
         settings,
+        generation_id,
         generation_size,
         context,
     ):
@@ -552,6 +575,7 @@ def compute_workpiece_artifact_raster(
     opsproducer: OpsProducer,
     laser: Laser,
     settings: dict,
+    generation_id: int,
     generation_size: Tuple[float, float],
     on_chunk: Optional[Callable[[WorkPieceArtifact], None]] = None,
     context: Optional[ProgressContext] = None,
@@ -564,6 +588,7 @@ def compute_workpiece_artifact_raster(
         opsproducer: The OpsProducer to use for generation.
         laser: The Laser model with machine parameters.
         settings: Dictionary of settings from the Step.
+        generation_id: The generation ID for staleness checking.
         generation_size: The full generation size in mm.
         on_chunk: Optional callback for progressive chunk reporting.
         context: Optional ProgressContext for progress reporting.
@@ -589,6 +614,7 @@ def compute_workpiece_artifact_raster(
         opsproducer,
         laser,
         settings,
+        generation_id,
         generation_size,
         context,
     ):
@@ -628,6 +654,7 @@ def compute_workpiece_artifact(
     settings: dict,
     pixels_per_mm: Tuple[float, float],
     generation_size: Tuple[float, float],
+    generation_id: int,
     on_chunk: Optional[Callable[[WorkPieceArtifact], None]] = None,
     context: Optional[ProgressContext] = None,
 ) -> Optional[WorkPieceArtifact]:
@@ -646,6 +673,7 @@ def compute_workpiece_artifact(
         settings: Dictionary of settings from the Step.
         pixels_per_mm: Tuple of (x, y) pixels per millimeter.
         generation_size: The size of the generation in mm.
+        generation_id: Unique identifier for this generation.
         on_chunk: Optional callback for progressive chunk reporting.
         context: Optional ProgressContext for progress reporting.
 
@@ -661,6 +689,7 @@ def compute_workpiece_artifact(
             opsproducer,
             laser,
             settings,
+            generation_id,
             generation_size,
             context,
         )
@@ -670,6 +699,7 @@ def compute_workpiece_artifact(
             opsproducer,
             laser,
             settings,
+            generation_id,
             generation_size,
             on_chunk=on_chunk,
             context=context,
@@ -706,6 +736,7 @@ def compute_workpiece_artifact(
         source_coordinate_system=final_artifact.source_coordinate_system,
         source_dimensions=final_artifact.source_dimensions,
         generation_size=generation_size,
+        generation_id=generation_id,
     )
     logger.debug(
         "compute_workpiece_artifact: Created final_artifact_to_store: "

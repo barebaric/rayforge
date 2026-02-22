@@ -312,6 +312,7 @@ def test_on_artifact_state_changed_unknown_state():
 def test_artifact_manager_syncs_dag_state():
     """Test that DAG manages node state via ArtifactManager."""
     mock_store = MagicMock()
+    mock_store._handles = {}
     scheduler = _make_scheduler()
     manager = ArtifactManager(mock_store)
 
@@ -354,7 +355,7 @@ def _make_scheduler_for_job(artifact_manager=None):
 
     real_job_stage = JobPipelineStage(task_manager, artifact_manager, machine)
     real_job_stage.validate_dependencies = MagicMock(return_value=True)
-    real_job_stage.collect_step_handles = MagicMock(return_value={})
+    real_job_stage.collect_step_handles = MagicMock(return_value=({}, []))
 
     workpiece_stage = MagicMock(spec=WorkPiecePipelineStage)
     workpiece_stage.generation_finished = MagicMock()
@@ -400,7 +401,7 @@ def test_generate_job_missing_step_handle():
     """Test that generate_job fails when step handles are missing."""
     scheduler = _make_scheduler_for_job()
     job_stage = cast(MagicMock, scheduler._job_stage)
-    job_stage.collect_step_handles.return_value = None
+    job_stage.collect_step_handles.return_value = (None, [])
 
     callback = MagicMock()
     scheduler.generate_job(step_uids=[STEP_UID_JOB_1], on_done=callback)
@@ -435,10 +436,13 @@ def test_generate_job_with_multiple_steps():
 
     step_handle = _create_step_ops_handle()
     job_stage = cast(MagicMock, scheduler._job_stage)
-    job_stage.collect_step_handles.return_value = {
-        STEP_UID_JOB_1: step_handle.to_dict.return_value,
-        STEP_UID_JOB_2: step_handle.to_dict.return_value,
-    }
+    job_stage.collect_step_handles.return_value = (
+        {
+            STEP_UID_JOB_1: step_handle.to_dict.return_value,
+            STEP_UID_JOB_2: step_handle.to_dict.return_value,
+        },
+        [],
+    )
 
     callback = MagicMock()
     scheduler.generate_job(

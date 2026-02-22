@@ -33,12 +33,15 @@ def create_mock_handle(handle_class, name: str) -> Mock:
     """Creates a mock handle that behaves like a real handle for tests."""
     handle = Mock(spec=handle_class)
     handle.shm_name = f"shm_{name}"
+    handle.refcount = 1
+    handle.holders = []
     return handle
 
 
 @pytest.fixture
 def manager():
     mock_store = Mock(spec=ArtifactStore)
+    mock_store._handles = {}
     return ArtifactManager(mock_store)
 
 
@@ -71,6 +74,7 @@ def test_put_and_get_job(manager):
     """Tests basic storage and retrieval of a job handle."""
     handle = create_mock_handle(JobArtifactHandle, "job")
     job_key = ArtifactKey(id=JOB_UID, group="job")
+    manager.declare_generation({job_key}, 0)
     manager.cache_handle(job_key, handle, 0)
 
     retrieved = manager.get_job_handle(job_key, 0)
@@ -84,7 +88,9 @@ def test_invalidate_workpiece_cascades_correctly(manager):
     render_h = create_mock_handle(StepRenderArtifactHandle, "step1_render")
     ops_h = create_mock_handle(StepOpsArtifactHandle, "step1_ops")
 
-    manager.cache_handle(ArtifactKey.for_workpiece(WP1_UID), wp_h, 0)
+    wp_key = ArtifactKey.for_workpiece(WP1_UID)
+    manager.declare_generation({wp_key}, 0)
+    manager.cache_handle(wp_key, wp_h, 0)
     manager.put_step_render_handle(WP1_UID, render_h)
     manager.put_step_ops_handle(ArtifactKey.for_step(WP1_UID), ops_h, 0)
 
@@ -101,30 +107,28 @@ def test_invalidate_workpiece_cascades_correctly(manager):
     manager._store.release.assert_any_call(wp_h)
 
 
-def test_invalidate_step_cascades_correctly(manager):
-    """Tests that invalidating a step cascades to all dependent."""
+def test_invalidate_step_clears_step_artifacts(manager):
+    """Tests that invalidating a step clears step artifacts only."""
     wp1_h = create_mock_handle(WorkPieceArtifactHandle, "wp1")
     wp2_h = create_mock_handle(WorkPieceArtifactHandle, "wp2")
     render_h = create_mock_handle(StepRenderArtifactHandle, "step1_render")
     ops_h = create_mock_handle(StepOpsArtifactHandle, "step1_ops")
 
-    manager.cache_handle(ArtifactKey.for_workpiece(STEP1_UID), wp1_h, 0)
-    manager.cache_handle(ArtifactKey.for_workpiece(STEP1_UID), wp2_h, 1)
+    wp_key = ArtifactKey.for_workpiece(WP1_UID, STEP1_UID)
+    manager.declare_generation({wp_key}, 0)
+    manager.cache_handle(wp_key, wp1_h, 0)
+    manager.declare_generation({wp_key}, 1)
+    manager.cache_handle(wp_key, wp2_h, 1)
     manager.put_step_render_handle(STEP1_UID, render_h)
     manager.put_step_ops_handle(ArtifactKey.for_step(STEP1_UID), ops_h, 0)
 
     manager.invalidate_for_step(ArtifactKey.for_step(STEP1_UID))
 
-    assert (
-        manager.get_workpiece_handle(ArtifactKey.for_workpiece(STEP1_UID), 0)
-        is None
-    )
+    assert manager.get_workpiece_handle(wp_key, 0) is wp1_h
     assert (
         manager.get_step_ops_handle(ArtifactKey.for_step(STEP1_UID), 0) is None
     )
     assert manager.get_step_render_handle(STEP1_UID) is None
-    manager._store.release.assert_any_call(wp1_h)
-    manager._store.release.assert_any_call(wp2_h)
     manager._store.release.assert_any_call(render_h)
     manager._store.release.assert_any_call(ops_h)
 
@@ -135,6 +139,7 @@ def test_put_job_replaces_old_handle(manager):
     new_job_h = create_mock_handle(JobArtifactHandle, "job_new")
     job_key = ArtifactKey(id=JOB_UID, group="job")
 
+    manager.declare_generation({job_key}, 0)
     manager.cache_handle(job_key, old_job_h, 0)
     manager.cache_handle(job_key, new_job_h, 0)
 
@@ -148,11 +153,14 @@ def test_shutdown_releases_all_artifacts(manager):
     render_h = create_mock_handle(StepRenderArtifactHandle, "step1_render")
     ops_h = create_mock_handle(StepOpsArtifactHandle, "step1_ops")
     job_h = create_mock_handle(JobArtifactHandle, "job")
+    wp_key = ArtifactKey.for_workpiece(WP1_UID)
+    job_key = ArtifactKey(id=JOB_UID, group="job")
 
-    manager.cache_handle(ArtifactKey.for_workpiece(WP1_UID), wp_h, 0)
+    manager.declare_generation({wp_key, job_key}, 0)
+    manager.cache_handle(wp_key, wp_h, 0)
     manager.put_step_render_handle(STEP1_UID, render_h)
     manager.put_step_ops_handle(ArtifactKey.for_step(STEP1_UID), ops_h, 0)
-    manager.cache_handle(ArtifactKey(id=JOB_UID, group="job"), job_h, 0)
+    manager.cache_handle(job_key, job_h, 0)
 
     manager.shutdown()
 
@@ -166,18 +174,22 @@ def test_shutdown_releases_all_artifacts(manager):
 
 def test_get_all_workpiece_keys(manager):
     """Tests getting all workpiece keys."""
+    wp1_key = ArtifactKey.for_workpiece(WP1_UID)
+    wp2_key = ArtifactKey.for_workpiece(WP2_UID)
+    wp3_key = ArtifactKey.for_workpiece(WP3_UID)
+    manager.declare_generation({wp1_key, wp2_key, wp3_key}, 0)
     manager.cache_handle(
-        ArtifactKey.for_workpiece(WP1_UID),
+        wp1_key,
         create_mock_handle(WorkPieceArtifactHandle, "wp1"),
         0,
     )
     manager.cache_handle(
-        ArtifactKey.for_workpiece(WP2_UID),
+        wp2_key,
         create_mock_handle(WorkPieceArtifactHandle, "wp2"),
         0,
     )
     manager.cache_handle(
-        ArtifactKey.for_workpiece(WP3_UID),
+        wp3_key,
         create_mock_handle(WorkPieceArtifactHandle, "wp3"),
         0,
     )
@@ -235,6 +247,7 @@ def test_checkout_job_handle(manager):
     """Tests checking out job handle."""
     job_h = create_mock_handle(JobArtifactHandle, "job")
     job_key = ArtifactKey(id=JOB_UID, group="job")
+    manager.declare_generation({job_key}, 0)
     manager.cache_handle(job_key, job_h, 0)
 
     with manager.checkout(job_key, 0) as handle:
@@ -249,7 +262,9 @@ def test_checkout_job_handle(manager):
 def test_get_workpiece_handle_from_ledger(manager):
     """Tests getting workpiece handle from ledger."""
     wp_h = create_mock_handle(WorkPieceArtifactHandle, "wp1")
-    manager.cache_handle(ArtifactKey.for_workpiece(WP1_UID), wp_h, 0)
+    wp_key = ArtifactKey.for_workpiece(WP1_UID)
+    manager.declare_generation({wp_key}, 0)
+    manager.cache_handle(wp_key, wp_h, 0)
 
     retrieved = manager.get_workpiece_handle(
         ArtifactKey.for_workpiece(WP1_UID), 0
@@ -268,7 +283,9 @@ def test_get_workpiece_handle_returns_none_when_not_found(manager):
 def test_prune_removes_obsolete_data_generation(manager):
     """Tests pruning removes ledger entries from non-active data gens."""
     wp_h = create_mock_handle(WorkPieceArtifactHandle, "wp1")
-    manager.cache_handle(ArtifactKey.for_workpiece(WP1_UID), wp_h, 0)
+    wp_key = ArtifactKey.for_workpiece(WP1_UID)
+    manager.declare_generation({wp_key}, 0)
+    manager.cache_handle(wp_key, wp_h, 0)
 
     manager.prune(active_data_gen_ids={1})
 
@@ -279,7 +296,9 @@ def test_prune_removes_obsolete_data_generation(manager):
 def test_prune_keeps_active_data_generation(manager):
     """Tests pruning keeps artifacts from active data generations."""
     wp_h = create_mock_handle(WorkPieceArtifactHandle, "wp1")
-    manager.cache_handle(ArtifactKey.for_workpiece(WP1_UID), wp_h, 0)
+    wp_key = ArtifactKey.for_workpiece(WP1_UID)
+    manager.declare_generation({wp_key}, 0)
+    manager.cache_handle(wp_key, wp_h, 0)
 
     manager.prune(active_data_gen_ids={0})
 
@@ -294,6 +313,8 @@ def test_prune_preserves_step_for_processing_data_gen(manager):
     step_h1 = create_mock_handle(StepOpsArtifactHandle, "step1")
     step_key0 = ArtifactKey.for_step(STEP1_UID)
     step_key1 = ArtifactKey.for_step(STEP2_UID)
+    manager.declare_generation({step_key0}, 0)
+    manager.declare_generation({step_key1}, 1)
     manager.cache_handle(step_key0, step_h0, 0)
     manager.cache_handle(step_key1, step_h1, 1)
 
@@ -313,6 +334,7 @@ def test_is_generation_current_returns_true_for_matching(manager):
     """Test is_generation_current returns True for matching gen ID."""
     wp_h = create_mock_handle(WorkPieceArtifactHandle, "wp1")
     wp_key = ArtifactKey.for_workpiece(WP1_UID)
+    manager.declare_generation({wp_key}, 1)
     manager.cache_handle(wp_key, wp_h, 1)
 
     result = manager.is_generation_current(wp_key, 1)
@@ -323,6 +345,7 @@ def test_is_generation_current_returns_false_for_mismatch(manager):
     """Test is_generation_current returns False for gen ID mismatch."""
     wp_h = create_mock_handle(WorkPieceArtifactHandle, "wp1")
     wp_key = ArtifactKey.for_workpiece(WP1_UID)
+    manager.declare_generation({wp_key}, 1)
     manager.cache_handle(wp_key, wp_h, 1)
 
     result = manager.is_generation_current(wp_key, 2)
@@ -350,7 +373,7 @@ def test_get_artifact_retrieves_from_store(manager):
 
 def test_put_step_render_handle_replaces_old(manager):
     """
-    Test put_step_render_handle replaces old handle without releasing.
+    Test put_step_render_handle replaces old handle and releases it.
     """
     old_h = create_mock_handle(StepRenderArtifactHandle, "old")
     new_h = create_mock_handle(StepRenderArtifactHandle, "new")
@@ -359,7 +382,7 @@ def test_put_step_render_handle_replaces_old(manager):
     manager.put_step_render_handle(STEP1_UID, new_h)
 
     assert manager._step_render_handles[STEP1_UID] is new_h
-    manager._store.release.assert_not_called()
+    manager._store.release.assert_called_once_with(old_h)
 
 
 def test_put_step_render_handle_without_old(manager):
@@ -397,18 +420,23 @@ def test_retain_handle_calls_store_retain(manager):
 
 def test_get_all_workpiece_keys_for_generation(manager):
     """Test getting workpiece keys for specific generation."""
+    wp1_key = ArtifactKey.for_workpiece(WP1_UID)
+    wp2_key = ArtifactKey.for_workpiece(WP2_UID)
+    wp3_key = ArtifactKey.for_workpiece(WP3_UID)
+    manager.declare_generation({wp1_key, wp3_key}, 0)
+    manager.declare_generation({wp2_key}, 1)
     manager.cache_handle(
-        ArtifactKey.for_workpiece(WP1_UID),
+        wp1_key,
         create_mock_handle(WorkPieceArtifactHandle, "wp1"),
         0,
     )
     manager.cache_handle(
-        ArtifactKey.for_workpiece(WP2_UID),
+        wp2_key,
         create_mock_handle(WorkPieceArtifactHandle, "wp2"),
         1,
     )
     manager.cache_handle(
-        ArtifactKey.for_workpiece(WP3_UID),
+        wp3_key,
         create_mock_handle(WorkPieceArtifactHandle, "wp3"),
         0,
     )
@@ -425,6 +453,7 @@ def test_invalidate_for_job_releases_and_sets_dirty(manager):
     """Test invalidate_for_job releases handle and sets state DIRTY."""
     job_h = create_mock_handle(JobArtifactHandle, "job")
     job_key = ArtifactKey(id=JOB_UID, group="job")
+    manager.declare_generation({job_key}, 0)
     manager.cache_handle(job_key, job_h, 0)
 
     manager.invalidate_for_job(job_key)
@@ -496,6 +525,7 @@ def test_complete_generation_marks_existing_entry_done(manager):
     """Test complete_generation marks existing entry as done."""
     wp_h = create_mock_handle(WorkPieceArtifactHandle, "wp1")
     key = ArtifactKey.for_workpiece(WP1_UID)
+    manager.declare_generation({key}, 0)
     manager.cache_handle(key, wp_h, 0)
 
     manager.complete_generation(key, 0)
@@ -524,6 +554,7 @@ def test_complete_generation_replaces_handle(manager):
     old_h = create_mock_handle(WorkPieceArtifactHandle, "old")
     new_h = create_mock_handle(WorkPieceArtifactHandle, "new")
     key = ArtifactKey.for_workpiece(WP1_UID)
+    manager.declare_generation({key}, 0)
     manager.cache_handle(key, old_h, 0)
 
     manager.complete_generation(key, 0, new_h)
@@ -568,6 +599,7 @@ def test_declare_generation_skips_existing_entries(manager):
     """Test declare_generation skips existing entries."""
     wp_key = ArtifactKey.for_workpiece(WP1_UID)
     wp_h = create_mock_handle(WorkPieceArtifactHandle, "wp1")
+    manager.declare_generation({wp_key}, 0)
     manager.cache_handle(wp_key, wp_h, 0)
 
     manager.declare_generation({wp_key}, 0)
@@ -582,6 +614,7 @@ def test_declare_generation_copies_workpiece_handle_from_previous(manager):
     """Test declare_generation copies workpiece handles from previous gen."""
     wp_key = ArtifactKey.for_workpiece(WP1_UID)
     wp_h = create_mock_handle(WorkPieceArtifactHandle, "wp1")
+    manager.declare_generation({wp_key}, 0)
     manager.cache_handle(wp_key, wp_h, 0)
 
     manager.declare_generation({wp_key}, 1)
@@ -601,6 +634,7 @@ def test_declare_generation_copies_step_handle_from_previous(manager):
     """Test declare_generation copies step handles from previous gen."""
     step_key = ArtifactKey.for_step(STEP1_UID)
     step_h = create_mock_handle(StepOpsArtifactHandle, "step1_ops")
+    manager.declare_generation({step_key}, 0)
     manager.cache_handle(step_key, step_h, 0)
 
     manager.declare_generation({step_key}, 1)
@@ -627,6 +661,7 @@ def test_get_state_returns_entry_state(manager):
     """Test get_state returns the state from the entry."""
     wp_h = create_mock_handle(WorkPieceArtifactHandle, "wp1")
     key = ArtifactKey.for_workpiece(WP1_UID)
+    manager.declare_generation({key}, 0)
     manager.cache_handle(key, wp_h, 0)
     manager.set_state(key, 0, NodeState.VALID)
 
@@ -638,6 +673,7 @@ def test_set_state_updates_entry(manager):
     """Test set_state updates the state of an entry."""
     wp_h = create_mock_handle(WorkPieceArtifactHandle, "wp1")
     key = ArtifactKey.for_workpiece(WP1_UID)
+    manager.declare_generation({key}, 0)
     manager.cache_handle(key, wp_h, 0)
 
     manager.set_state(key, 0, NodeState.PROCESSING)
@@ -662,6 +698,7 @@ def test_has_artifact_returns_true_for_existing_handle(manager):
     """Test has_artifact returns True when handle exists."""
     wp_h = create_mock_handle(WorkPieceArtifactHandle, "wp1")
     key = ArtifactKey.for_workpiece(WP1_UID)
+    manager.declare_generation({key}, 0)
     manager.cache_handle(key, wp_h, 0)
 
     result = manager.has_artifact(key, 0)
@@ -687,46 +724,192 @@ def test_has_artifact_returns_false_for_none_handle(manager):
 @pytest.fixture
 def retain_manager():
     mock_store = Mock(spec=ArtifactStore)
+    mock_store._handles = {}
     return ArtifactManager(mock_store)
 
 
 def test_cache_handle_retains_handle(retain_manager):
-    """Test that cache_handle calls retain on handle."""
+    """Test that cache_handle stores handle (no retain when refcount=0)."""
     handle = create_mock_handle(JobArtifactHandle, "job")
     job_key = ArtifactKey(id=JOB_UID, group="job")
 
+    retain_manager.declare_generation({job_key}, 0)
     retain_manager.cache_handle(job_key, handle, 0)
 
-    retain_manager._store.retain.assert_called_once_with(handle)
+    assert retain_manager.get_job_handle(job_key, 0) is handle
+    retain_manager._store.retain.assert_not_called()
 
 
 def test_cache_handle_retains_new_handle_releases_old(retain_manager):
-    """Test that replacing a handle retains new and releases old."""
+    """
+    Test that replacing a handle releases old (no retain when refcount=0).
+    """
     old_handle = create_mock_handle(JobArtifactHandle, "job_old")
     new_handle = create_mock_handle(JobArtifactHandle, "job_new")
     job_key = ArtifactKey(id=JOB_UID, group="job")
 
+    retain_manager.declare_generation({job_key}, 0)
     retain_manager.cache_handle(job_key, old_handle, 0)
-    retain_manager._store.retain.reset_mock()
 
     retain_manager.cache_handle(job_key, new_handle, 0)
 
-    retain_manager._store.retain.assert_called_once_with(new_handle)
+    retain_manager._store.retain.assert_not_called()
     retain_manager._store.release.assert_called_once_with(old_handle)
 
 
 def test_cache_handle_retains_multiple_commits(retain_manager):
-    """Test that each cache_handle call retains handle."""
+    """
+    Test that each cache_handle call stores handle (no retain when refcount=0).
+    """
     handle1 = create_mock_handle(WorkPieceArtifactHandle, "wp1")
     handle2 = create_mock_handle(WorkPieceArtifactHandle, "wp2")
 
     wp1_key = ArtifactKey.for_workpiece(WP1_UID)
     wp2_key = ArtifactKey.for_workpiece(WP2_UID)
 
+    retain_manager.declare_generation({wp1_key, wp2_key}, 0)
     retain_manager.cache_handle(wp1_key, handle1, 0)
     retain_manager.cache_handle(wp2_key, handle2, 0)
 
-    retain_calls = retain_manager._store.retain.call_args_list
-    assert len(retain_calls) == 2
-    assert handle1 in [call[0][0] for call in retain_calls]
-    assert handle2 in [call[0][0] for call in retain_calls]
+    assert retain_manager.get_workpiece_handle(wp1_key, 0) is handle1
+    assert retain_manager.get_workpiece_handle(wp2_key, 0) is handle2
+    retain_manager._store.retain.assert_not_called()
+
+
+# Tests for report_completion context manager
+
+
+def test_report_completion_marks_valid(manager):
+    """Test report_completion marks entry as VALID."""
+    key = ArtifactKey.for_workpiece(WP1_UID)
+    manager.declare_generation({key}, 0)
+
+    with manager.report_completion(key, 0) as handle:
+        assert handle is None
+
+    assert manager.get_state(key, 0) == NodeState.VALID
+
+
+def test_report_completion_yields_handle(manager):
+    """Test report_completion yields cached handle."""
+    key = ArtifactKey.for_workpiece(WP1_UID)
+    handle = create_mock_handle(WorkPieceArtifactHandle, "wp1")
+    manager.declare_generation({key}, 0)
+    manager.cache_handle(key, handle, 0)
+
+    with manager.report_completion(key, 0) as yielded:
+        assert yielded is handle
+
+    assert manager.get_state(key, 0) == NodeState.VALID
+    manager._store.retain.assert_called_with(handle)
+    manager._store.release.assert_called_with(handle)
+
+
+def test_report_completion_missing_entry_yields_none(manager):
+    """Test report_completion yields None for missing entry."""
+    key = ArtifactKey.for_workpiece(WP1_UID)
+
+    with manager.report_completion(key, 0) as handle:
+        assert handle is None
+
+    assert manager.get_state(key, 0) == NodeState.DIRTY
+
+
+def test_report_completion_nonexistent_generation_yields_none(manager):
+    """Test report_completion yields None for non-existent generation."""
+    key = ArtifactKey.for_workpiece(WP1_UID)
+
+    with manager.report_completion(key, 99) as handle:
+        assert handle is None
+
+
+# Tests for report_failure context manager
+
+
+def test_report_failure_marks_error(manager):
+    """Test report_failure marks entry as ERROR."""
+    key = ArtifactKey.for_workpiece(WP1_UID)
+    manager.declare_generation({key}, 0)
+
+    with manager.report_failure(key, 0) as handle:
+        assert handle is None
+
+    assert manager.get_state(key, 0) == NodeState.ERROR
+
+
+def test_report_failure_yields_and_clears_handle(manager):
+    """Test report_failure yields handle and clears it from entry."""
+    key = ArtifactKey.for_workpiece(WP1_UID)
+    handle = create_mock_handle(WorkPieceArtifactHandle, "wp1")
+    manager.declare_generation({key}, 0)
+    manager.cache_handle(key, handle, 0)
+
+    with manager.report_failure(key, 0) as yielded:
+        assert yielded is handle
+        assert manager.get_workpiece_handle(key, 0) is None
+
+    assert manager.get_state(key, 0) == NodeState.ERROR
+    manager._store.retain.assert_called_with(handle)
+    manager._store.release.assert_called_with(handle)
+
+
+def test_report_failure_missing_entry_yields_none(manager):
+    """Test report_failure yields None for missing entry."""
+    key = ArtifactKey.for_workpiece(WP1_UID)
+
+    with manager.report_failure(key, 0) as handle:
+        assert handle is None
+
+
+def test_report_failure_nonexistent_generation_yields_none(manager):
+    """Test report_failure yields None for non-existent generation."""
+    key = ArtifactKey.for_workpiece(WP1_UID)
+
+    with manager.report_failure(key, 99) as handle:
+        assert handle is None
+
+
+# Tests for report_cancellation context manager
+
+
+def test_report_cancellation_with_handle_keeps_valid(manager):
+    """Test report_cancellation keeps existing handle and marks VALID."""
+    key = ArtifactKey.for_workpiece(WP1_UID)
+    existing_handle = create_mock_handle(
+        WorkPieceArtifactHandle, "wp_existing"
+    )
+    manager.declare_generation({key}, 0)
+    manager.cache_handle(key, existing_handle, 0)
+
+    with manager.report_cancellation(key, 0) as handle:
+        assert handle is existing_handle
+
+    assert manager.get_state(key, 0) == NodeState.VALID
+    assert manager.get_workpiece_handle(key, 0) is existing_handle
+
+
+def test_report_cancellation_without_handle_marks_dirty(manager):
+    """Test report_cancellation marks DIRTY when no handle exists."""
+    key = ArtifactKey.for_workpiece(WP1_UID)
+    manager.declare_generation({key}, 0)
+
+    with manager.report_cancellation(key, 0) as handle:
+        assert handle is None
+
+    assert manager.get_state(key, 0) == NodeState.DIRTY
+
+
+def test_report_cancellation_missing_entry_yields_none(manager):
+    """Test report_cancellation yields None for missing entry."""
+    key = ArtifactKey.for_workpiece(WP1_UID)
+
+    with manager.report_cancellation(key, 0) as handle:
+        assert handle is None
+
+
+def test_report_cancellation_nonexistent_generation_yields_none(manager):
+    """Test report_cancellation yields None for non-existent generation."""
+    key = ArtifactKey.for_workpiece(WP1_UID)
+
+    with manager.report_cancellation(key, 99) as handle:
+        assert handle is None

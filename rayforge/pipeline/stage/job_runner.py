@@ -68,6 +68,7 @@ def make_job_artifact_in_subprocess(
         doc,
         step_artifacts_by_uid,
         machine,
+        generation_id,
         context,
     )
 

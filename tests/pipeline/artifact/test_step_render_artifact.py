@@ -11,7 +11,7 @@ from rayforge.core.matrix import Matrix
 
 def test_artifact_type_property():
     """Tests that the artifact type is correctly identified."""
-    artifact = StepRenderArtifact()
+    artifact = StepRenderArtifact(generation_id=1)
     assert artifact.artifact_type == "StepRenderArtifact"
 
 
@@ -21,7 +21,7 @@ def test_vertex_serialization_round_trip():
         powered_vertices=np.array([[1, 2, 3]], dtype=np.float32),
         travel_vertices=np.array([[4, 5, 6]], dtype=np.float32),
     )
-    artifact = StepRenderArtifact(vertex_data=vertex_data)
+    artifact = StepRenderArtifact(vertex_data=vertex_data, generation_id=1)
 
     artifact_dict = artifact.to_dict()
     assert "ops" not in artifact_dict
@@ -61,6 +61,7 @@ def test_hybrid_serialization_round_trip():
     artifact = StepRenderArtifact(
         vertex_data=vertex_data,
         texture_instances=[texture_instance],
+        generation_id=1,
     )
 
     artifact_dict = artifact.to_dict()

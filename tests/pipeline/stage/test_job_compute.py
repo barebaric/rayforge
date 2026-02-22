@@ -47,14 +47,15 @@ def test_job_compute_assembles_step_artifacts_correctly(
     final_ops_for_step.move_to(50, 90)
     final_ops_for_step.line_to(50, 50)
 
-    step_artifact = StepOpsArtifact(ops=final_ops_for_step)
+    step_artifact = StepOpsArtifact(ops=final_ops_for_step, generation_id=1)
     step_artifacts_by_uid = {step.uid: step_artifact}
 
     result = compute_job_artifact(
         doc,
         step_artifacts_by_uid,
         machine,
-        mock_progress_context,
+        generation_id=0,
+        context=mock_progress_context,
     )
 
     assert isinstance(result, JobArtifact)
@@ -94,13 +95,14 @@ def test_job_compute_handles_empty_ops(context_initializer, machine):
     layer.workflow.add_step(step)
 
     empty_ops = Ops()
-    step_artifact = StepOpsArtifact(ops=empty_ops)
+    step_artifact = StepOpsArtifact(ops=empty_ops, generation_id=1)
     step_artifacts_by_uid = {step.uid: step_artifact}
 
     result = compute_job_artifact(
         doc,
         step_artifacts_by_uid,
         machine,
+        generation_id=0,
     )
 
     assert isinstance(result, JobArtifact)
@@ -124,14 +126,15 @@ def test_job_compute_without_progress_callback(
     final_ops_for_step.move_to(50, 90)
     final_ops_for_step.line_to(50, 50)
 
-    step_artifact = StepOpsArtifact(ops=final_ops_for_step)
+    step_artifact = StepOpsArtifact(ops=final_ops_for_step, generation_id=1)
     step_artifacts_by_uid = {step.uid: step_artifact}
 
     result = compute_job_artifact(
         doc,
         step_artifacts_by_uid,
         machine,
-        mock_progress_context,
+        generation_id=0,
+        context=mock_progress_context,
     )
 
     assert isinstance(result, JobArtifact)
@@ -163,14 +166,15 @@ def test_job_compute_multiple_steps(context_initializer, machine):
     ops2.line_to(40, 40)
 
     step_artifacts_by_uid = {
-        step1.uid: StepOpsArtifact(ops=ops1),
-        step2.uid: StepOpsArtifact(ops=ops2),
+        step1.uid: StepOpsArtifact(ops=ops1, generation_id=1),
+        step2.uid: StepOpsArtifact(ops=ops2, generation_id=1),
     }
 
     result = compute_job_artifact(
         doc,
         step_artifacts_by_uid,
         machine,
+        generation_id=0,
     )
 
     assert isinstance(result, JobArtifact)
@@ -195,6 +199,7 @@ def test_job_compute_empty_step_artifacts(context_initializer, machine):
         doc,
         step_artifacts_by_uid,
         machine,
+        generation_id=0,
     )
 
     assert isinstance(result, JobArtifact)
@@ -230,14 +235,15 @@ def test_job_compute_multiple_layers(context_initializer, machine):
     ops2.line_to(40, 40)
 
     step_artifacts_by_uid = {
-        step1.uid: StepOpsArtifact(ops=ops1),
-        step2.uid: StepOpsArtifact(ops=ops2),
+        step1.uid: StepOpsArtifact(ops=ops1, generation_id=1),
+        step2.uid: StepOpsArtifact(ops=ops2, generation_id=1),
     }
 
     result = compute_job_artifact(
         doc,
         step_artifacts_by_uid,
         machine,
+        generation_id=0,
     )
 
     assert isinstance(result, JobArtifact)
@@ -264,12 +270,15 @@ def test_job_compute_layer_without_workflow(context_initializer, machine):
     ops.set_power(1.0)
     ops.line_to(20, 20)
 
-    step_artifacts_by_uid = {step.uid: StepOpsArtifact(ops=ops)}
+    step_artifacts_by_uid = {
+        step.uid: StepOpsArtifact(ops=ops, generation_id=1)
+    }
 
     result = compute_job_artifact(
         doc,
         step_artifacts_by_uid,
         machine,
+        generation_id=0,
     )
 
     assert isinstance(result, JobArtifact)
@@ -297,12 +306,15 @@ def test_job_compute_missing_step_artifact(context_initializer, machine):
     ops.move_to(10, 10)
     ops.line_to(20, 20)
 
-    step_artifacts_by_uid = {step1.uid: StepOpsArtifact(ops=ops)}
+    step_artifacts_by_uid = {
+        step1.uid: StepOpsArtifact(ops=ops, generation_id=1)
+    }
 
     result = compute_job_artifact(
         doc,
         step_artifacts_by_uid,
         machine,
+        generation_id=0,
     )
 
     assert isinstance(result, JobArtifact)
@@ -326,13 +338,14 @@ def test_job_compute_vertex_data_generation(context_initializer, machine):
     ops.move_to(10, 10)
     ops.line_to(20, 20)
 
-    step_artifact = StepOpsArtifact(ops=ops)
+    step_artifact = StepOpsArtifact(ops=ops, generation_id=1)
     step_artifacts_by_uid = {step.uid: step_artifact}
 
     result = compute_job_artifact(
         doc,
         step_artifacts_by_uid,
         machine,
+        generation_id=0,
     )
 
     assert isinstance(result, JobArtifact)
@@ -355,13 +368,14 @@ def test_job_compute_time_and_distance(context_initializer, machine):
     ops.move_to(10, 10)
     ops.line_to(20, 20)
 
-    step_artifact = StepOpsArtifact(ops=ops)
+    step_artifact = StepOpsArtifact(ops=ops, generation_id=1)
     step_artifacts_by_uid = {step.uid: step_artifact}
 
     result = compute_job_artifact(
         doc,
         step_artifacts_by_uid,
         machine,
+        generation_id=0,
     )
 
     assert isinstance(result, JobArtifact)
@@ -387,7 +401,9 @@ def test_assemble_final_ops_single_step(
     ops.move_to(10, 10)
     ops.line_to(20, 20)
 
-    step_artifacts_by_uid = {step.uid: StepOpsArtifact(ops=ops)}
+    step_artifacts_by_uid = {
+        step.uid: StepOpsArtifact(ops=ops, generation_id=1)
+    }
 
     result = _assemble_final_ops(
         doc, step_artifacts_by_uid, mock_progress_context
@@ -423,8 +439,8 @@ def test_assemble_final_ops_multiple_steps(context_initializer):
     ops2.line_to(40, 40)
 
     step_artifacts_by_uid = {
-        step1.uid: StepOpsArtifact(ops=ops1),
-        step2.uid: StepOpsArtifact(ops=ops2),
+        step1.uid: StepOpsArtifact(ops=ops1, generation_id=1),
+        step2.uid: StepOpsArtifact(ops=ops2, generation_id=1),
     }
 
     result = _assemble_final_ops(doc, step_artifacts_by_uid)
@@ -463,8 +479,8 @@ def test_assemble_final_ops_multiple_layers(context_initializer):
     ops2.line_to(40, 40)
 
     step_artifacts_by_uid = {
-        step1.uid: StepOpsArtifact(ops=ops1),
-        step2.uid: StepOpsArtifact(ops=ops2),
+        step1.uid: StepOpsArtifact(ops=ops1, generation_id=1),
+        step2.uid: StepOpsArtifact(ops=ops2, generation_id=1),
     }
 
     result = _assemble_final_ops(doc, step_artifacts_by_uid)
@@ -512,7 +528,9 @@ def test_assemble_final_ops_missing_step(context_initializer):
     ops.move_to(10, 10)
     ops.line_to(20, 20)
 
-    step_artifacts_by_uid = {step1.uid: StepOpsArtifact(ops=ops)}
+    step_artifacts_by_uid = {
+        step1.uid: StepOpsArtifact(ops=ops, generation_id=1)
+    }
 
     result = _assemble_final_ops(doc, step_artifacts_by_uid)
 
@@ -536,7 +554,9 @@ def test_assemble_final_ops_without_progress(context_initializer):
     ops.move_to(10, 10)
     ops.line_to(20, 20)
 
-    step_artifacts_by_uid = {step.uid: StepOpsArtifact(ops=ops)}
+    step_artifacts_by_uid = {
+        step.uid: StepOpsArtifact(ops=ops, generation_id=1)
+    }
 
     result = _assemble_final_ops(doc, step_artifacts_by_uid, None)
 
