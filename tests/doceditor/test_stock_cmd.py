@@ -11,7 +11,8 @@ from rayforge.doceditor.stock_cmd import StockCmd
 def stock_cmd(doc_editor, context_initializer):
     """Provides a StockCmd instance."""
     mock_machine = MagicMock()
-    mock_machine.dimensions = (200.0, 200.0)
+    mock_machine.axis_extents = (200.0, 200.0)
+    mock_machine.work_area = (0.0, 0.0, 200.0, 200.0)
     context_initializer.config.machine = mock_machine
     return StockCmd(doc_editor)
 

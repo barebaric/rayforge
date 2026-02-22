@@ -356,7 +356,7 @@ def test_machine_and_config(context_initializer):
     test_laser = Laser()
     test_laser.max_power = 1000
     test_machine = Machine(context_initializer)
-    test_machine.dimensions = (200, 150)
+    test_machine.set_axis_extents(200, 150)
     test_machine.max_cut_speed = 5000
     test_machine.max_travel_speed = 10000
     test_machine.heads.clear()
@@ -423,7 +423,7 @@ def mock_machine():
     from rayforge.machine.models.machine import Machine
 
     mock_machine = MagicMock(spec=Machine)
-    mock_machine.dimensions = (200, 150)
+    mock_machine.axis_extents = (200, 150)
     mock_machine.max_cut_speed = 5000
     mock_machine.max_travel_speed = 10000
     return mock_machine

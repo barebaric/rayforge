@@ -1229,7 +1229,7 @@ class WorkPiece(DocItem):
         machine = context.machine
         model_x, model_y = self.pos
         width, height = self.size
-        mach_w, mach_h = machine.dimensions
+        mach_w, mach_h = machine.axis_extents
 
         # Calculate Machine X
         machine_x = (
@@ -1259,7 +1259,7 @@ class WorkPiece(DocItem):
         machine = context.machine
         machine_x, machine_y = pos
         width, height = self.size
-        mach_w, mach_h = machine.dimensions
+        mach_w, mach_h = machine.axis_extents
 
         # Handle X Axis
         if machine.x_axis_right:

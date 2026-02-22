@@ -854,13 +854,14 @@ class Machine:
         # which is owned by the pipeline and may be reused.
         ops_for_encoder = ops.copy()
 
-        # Apply offsets
+        # Apply offsets from work_margins
+        ml, mt, _, _ = self._work_margins
         for command in ops_for_encoder.commands:
             if isinstance(command, MovingCommand):
                 base_end = command.end or (0, 0, 0)
                 command.end = (
-                    base_end[0] + self.offsets[0],
-                    base_end[1] + self.offsets[1],
+                    base_end[0] + ml,
+                    base_end[1] + mt,
                     base_end[2],
                 )
 
@@ -874,7 +875,7 @@ class Machine:
         )
 
         if needs_transform:
-            width, height = self.dimensions
+            width, height = self._axis_extents
 
             # Create the origin transformation matrix. This is complex because
             # it depends on both the origin corner and whether the machine
@@ -1251,7 +1252,7 @@ class Machine:
         Returns:
             (x, y) position in machine coordinates.
         """
-        machine_width, machine_height = self.dimensions
+        machine_width, machine_height = self._axis_extents
         wx, wy = pos_world
         w, h = size_world
 
@@ -1295,7 +1296,7 @@ class Machine:
         Returns:
             (x, y) position in world coordinates.
         """
-        machine_width, machine_height = self.dimensions
+        machine_width, machine_height = self._axis_extents
         mx, my = pos_machine
         w, h = size_world
 

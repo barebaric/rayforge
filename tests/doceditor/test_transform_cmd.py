@@ -54,7 +54,7 @@ def test_set_position_with_y_axis_down(transform_cmd, sample_items):
         mock_machine = MagicMock()
         mock_machine.x_axis_right = False
         mock_machine.y_axis_down = True
-        mock_machine.dimensions = (100, 100)
+        mock_machine.axis_extents = (100, 100)
 
         # Configure the mock to simulate Y-axis inversion logic:
         # machine Y=0 -> world Y = height - item_height
@@ -176,7 +176,7 @@ def test_set_position_with_x_axis_right(transform_cmd, sample_items):
         mock_machine = MagicMock()
         mock_machine.x_axis_right = True
         mock_machine.y_axis_down = False
-        mock_machine.dimensions = (100, 100)
+        mock_machine.axis_extents = (100, 100)
 
         # Mock machine_to_world call to return expected world coordinates
         # For x=10 (Machine) -> World X = 100 - 10 - 20 (width) = 70

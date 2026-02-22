@@ -258,7 +258,7 @@ class MainWindow(Adw.ApplicationWindow):
         # Determine initial machine dimensions for all canvases.
         config = get_context().config
         if config.machine:
-            width_mm, height_mm = config.machine.dimensions
+            width_mm, height_mm = config.machine.axis_extents
             area = config.machine.work_area
             canvas_w, canvas_h = float(area[2]), float(area[3])
             y_down = config.machine.y_axis_down
@@ -1344,7 +1344,7 @@ class MainWindow(Adw.ApplicationWindow):
         # Define new machine dimensions
         new_machine = config.machine
         if new_machine:
-            width_mm, height_mm = new_machine.dimensions
+            width_mm, height_mm = new_machine.axis_extents
             area = new_machine.work_area
             canvas_w, canvas_h = float(area[2]), float(area[3])
             y_down = new_machine.y_axis_down

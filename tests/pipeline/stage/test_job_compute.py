@@ -21,7 +21,7 @@ from rayforge.pipeline.stage.job_compute import (
 @pytest.fixture
 def machine(context_initializer):
     m = Machine(context_initializer)
-    m.dimensions = (200, 150)
+    m.set_axis_extents(200, 150)
     m.add_head(Laser())
     context_initializer.config.set_machine(m)
     return m
