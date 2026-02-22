@@ -141,7 +141,7 @@ def test_find_node():
     scheduler = _make_scheduler()
 
     key = ArtifactKey.for_workpiece(WP_UID_1)
-    node = ArtifactNode(key=key)
+    node = ArtifactNode(key, generation_id=1)
 
     scheduler.graph.add_node(node)
 

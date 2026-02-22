@@ -837,7 +837,9 @@ class Pipeline:
 
         # Build the DAG and set scheduler context before stage reconciliation
         self._scheduler.set_doc(self.doc)
-        self._scheduler.graph.build_from_doc(self.doc, self._artifact_manager)
+        self._scheduler.graph.build_from_doc(
+            self.doc, data_gen_id, self._artifact_manager
+        )
         self._scheduler.set_generation_id(data_gen_id)
         self._scheduler.sync_graph_with_artifact_manager()
 

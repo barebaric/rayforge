@@ -60,6 +60,7 @@ class PipelineGraph:
     def build_from_doc(
         self,
         doc: Doc,
+        generation_id: int,
         artifact_manager: Optional["ArtifactManager"] = None,
     ) -> None:
         """
@@ -76,7 +77,8 @@ class PipelineGraph:
 
         Args:
             doc: The document to build the graph from.
-            artifact_manager: Optional ArtifactManager to pass to nodes.
+            generation_id: Generation ID for the nodes.
+            artifact_manager: ArtifactManager to pass to nodes.
         """
         logger.debug("Building pipeline graph from Doc")
 
@@ -99,7 +101,9 @@ class PipelineGraph:
                 for step in layer.workflow.steps:
                     step_key = ArtifactKey.for_step(step.uid)
                     step_node = ArtifactNode(
-                        key=step_key, _artifact_manager=artifact_manager
+                        step_key,
+                        generation_id,
+                        _artifact_manager=artifact_manager,
                     )
                     self.add_node(step_node)
                     step_nodes[step.uid] = step_node
@@ -110,7 +114,8 @@ class PipelineGraph:
                             wp.uid, step.uid
                         )
                         wp_step_node = ArtifactNode(
-                            key=wp_step_key,
+                            wp_step_key,
+                            generation_id,
                             _artifact_manager=artifact_manager,
                         )
                         self.add_node(wp_step_node)
@@ -142,7 +147,9 @@ class PipelineGraph:
 
         job_key = ArtifactKey.for_job()
         job_node = ArtifactNode(
-            key=job_key, _artifact_manager=artifact_manager
+            job_key,
+            generation_id,
+            _artifact_manager=artifact_manager,
         )
         self.add_node(job_node)
 
