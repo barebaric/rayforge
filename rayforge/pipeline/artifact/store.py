@@ -62,6 +62,18 @@ logger = logging.getLogger(__name__)
 MAX_TAG_LENGTH = 11
 
 
+class SharedMemoryNotFoundError(Exception):
+    """
+    Raised when shared memory block cannot be found during adoption.
+
+    On Windows, shared memory is destroyed when all handles are closed.
+    This can happen if a worker process terminates or closes its handle
+    before the main process has adopted the block.
+    """
+
+    pass
+
+
 class ArtifactStore:
     """
     Manages the storage and retrieval of pipeline artifacts in shared memory
@@ -152,11 +164,12 @@ class ArtifactStore:
             self._managed_shms[shm_name] = shm_obj
             return self._get_or_create_handle(handle)
         except FileNotFoundError:
-            logger.error(
-                f"Failed to adopt shared memory block {shm_name}: "
-                f"not found. It may have been released prematurely."
+            logger.warning(
+                f"Shared memory block {shm_name} not found. "
+                f"This may occur on Windows when the worker process "
+                f"terminates before adoption completes."
             )
-            raise
+            raise SharedMemoryNotFoundError(shm_name)
         except Exception as e:
             logger.error(f"Error adopting shared memory block {shm_name}: {e}")
             raise

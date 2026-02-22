@@ -10,6 +10,7 @@ from ...shared.util.size import sizes_are_close
 from ..artifact import WorkPieceArtifact
 from ..artifact.key import ArtifactKey
 from ..artifact.manager import StaleGenerationError
+from ..artifact.store import SharedMemoryNotFoundError
 from ..dag.node import NodeState
 from .base import PipelineStage
 
@@ -173,6 +174,11 @@ class WorkPiecePipelineStage(PipelineStage):
                         )
         except StaleGenerationError as e:
             logger.debug(f"Discarding stale artifact event for {key}: {e}")
+        except SharedMemoryNotFoundError as e:
+            logger.debug(
+                f"Shared memory not found for {key}, event may be from "
+                f"terminated worker: {e}"
+            )
         except Exception as e:
             logger.error(
                 f"Failed to process event '{event_name}': {e}",
