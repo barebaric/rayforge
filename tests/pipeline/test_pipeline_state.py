@@ -501,6 +501,7 @@ class TestStateConsistency:
         mock_handle.shm_name = "shm_wp1"
         mock_handle.refcount = 1
         mock_handle.holders = []
+        manager.declare_generation({key}, 1)
         manager.cache_handle(key, mock_handle, 1)
 
         node = ArtifactNode(
@@ -533,6 +534,7 @@ class TestStateConsistency:
         mock_handle.shm_name = "shm_wp1"
         mock_handle.refcount = 1
         mock_handle.holders = []
+        manager.declare_generation({key}, 1)
         manager.cache_handle(key, mock_handle, 1)
 
         node = ArtifactNode(
@@ -553,6 +555,7 @@ class TestStateConsistency:
         mock_handle.shm_name = "shm_wp1"
         mock_handle.refcount = 1
         mock_handle.holders = []
+        manager.declare_generation({key}, 1)
         manager.cache_handle(key, mock_handle, 1)
 
         node1 = ArtifactNode(
