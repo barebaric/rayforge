@@ -1,0 +1,45 @@
+{
+  "version.label": {
+    "message": "Weiter",
+    "description": "The label for version current"
+  },
+  "sidebar.tutorialSidebar.category.Getting Started": {
+    "message": "Erste Schritte"
+  },
+  "sidebar.tutorialSidebar.category.Application Settings": {
+    "message": "Anwendungseinstellungen"
+  },
+  "sidebar.tutorialSidebar.category.Machine Setup": {
+    "message": "Maschinenkonfiguration"
+  },
+  "sidebar.tutorialSidebar.category.User Interface": {
+    "message": "Benutzeroberfläche"
+  },
+  "sidebar.tutorialSidebar.category.Features": {
+    "message": "Funktionen"
+  },
+  "sidebar.tutorialSidebar.category.Operations": {
+    "message": "Operationen"
+  },
+  "sidebar.tutorialSidebar.category.Files": {
+    "message": "Dateien"
+  },
+  "sidebar.tutorialSidebar.category.General Info": {
+    "message": "Allgemeine Informationen"
+  },
+  "sidebar.tutorialSidebar.category.Troubleshooting": {
+    "message": "Fehlerbehebung"
+  },
+  "sidebar.tutorialSidebar.category.Reference": {
+    "message": "Referenz"
+  },
+  "sidebar.developerSidebar.category.Getting Started": {
+    "message": "Erste Schritte"
+  },
+  "sidebar.developerSidebar.category.Architecture": {
+    "message": "Architektur"
+  },
+  "sidebar.developerSidebar.category.Plugins": {
+    "message": "Plugins"
+  }
+}

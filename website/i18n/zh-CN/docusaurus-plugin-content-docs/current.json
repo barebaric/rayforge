@@ -1,0 +1,45 @@
+{
+  "version.label": {
+    "message": "下一版",
+    "description": "The label for version current"
+  },
+  "sidebar.tutorialSidebar.category.Getting Started": {
+    "message": "入门指南"
+  },
+  "sidebar.tutorialSidebar.category.Application Settings": {
+    "message": "应用设置"
+  },
+  "sidebar.tutorialSidebar.category.Machine Setup": {
+    "message": "机器设置"
+  },
+  "sidebar.tutorialSidebar.category.User Interface": {
+    "message": "用户界面"
+  },
+  "sidebar.tutorialSidebar.category.Features": {
+    "message": "功能"
+  },
+  "sidebar.tutorialSidebar.category.Operations": {
+    "message": "操作"
+  },
+  "sidebar.tutorialSidebar.category.Files": {
+    "message": "文件"
+  },
+  "sidebar.tutorialSidebar.category.General Info": {
+    "message": "常规信息"
+  },
+  "sidebar.tutorialSidebar.category.Troubleshooting": {
+    "message": "故障排除"
+  },
+  "sidebar.tutorialSidebar.category.Reference": {
+    "message": "参考"
+  },
+  "sidebar.developerSidebar.category.Getting Started": {
+    "message": "入门指南"
+  },
+  "sidebar.developerSidebar.category.Architecture": {
+    "message": "架构"
+  },
+  "sidebar.developerSidebar.category.Plugins": {
+    "message": "插件"
+  }
+}

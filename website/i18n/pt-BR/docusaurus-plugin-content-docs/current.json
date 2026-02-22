@@ -1,0 +1,45 @@
+{
+  "version.label": {
+    "message": "Próximo",
+    "description": "The label for version current"
+  },
+  "sidebar.tutorialSidebar.category.Getting Started": {
+    "message": "Primeiros Passos"
+  },
+  "sidebar.tutorialSidebar.category.Application Settings": {
+    "message": "Configurações do Aplicativo"
+  },
+  "sidebar.tutorialSidebar.category.Machine Setup": {
+    "message": "Configuração da Máquina"
+  },
+  "sidebar.tutorialSidebar.category.User Interface": {
+    "message": "Interface do Usuário"
+  },
+  "sidebar.tutorialSidebar.category.Features": {
+    "message": "Recursos"
+  },
+  "sidebar.tutorialSidebar.category.Operations": {
+    "message": "Operações"
+  },
+  "sidebar.tutorialSidebar.category.Files": {
+    "message": "Arquivos"
+  },
+  "sidebar.tutorialSidebar.category.General Info": {
+    "message": "Informações Gerais"
+  },
+  "sidebar.tutorialSidebar.category.Troubleshooting": {
+    "message": "Solução de Problemas"
+  },
+  "sidebar.tutorialSidebar.category.Reference": {
+    "message": "Referência"
+  },
+  "sidebar.developerSidebar.category.Getting Started": {
+    "message": "Primeiros Passos"
+  },
+  "sidebar.developerSidebar.category.Architecture": {
+    "message": "Arquitetura"
+  },
+  "sidebar.developerSidebar.category.Plugins": {
+    "message": "Plugins"
+  }
+}

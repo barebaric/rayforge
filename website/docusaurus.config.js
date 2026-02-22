@@ -32,7 +32,7 @@ module.exports = {
 
   i18n: {
     defaultLocale: 'en',
-    locales: ['en'],
+    locales: ['en', 'pt-BR', 'es', 'fr', 'de', 'zh-CN'],
   },
 
   presets: [
@@ -124,6 +124,10 @@ module.exports = {
           to: '/blog',
           label: 'Blog',
           position: 'left',
+        },
+        {
+          type: 'localeDropdown',
+          position: 'right',
         },
         {
           href: 'https://github.com/barebaric/rayforge',

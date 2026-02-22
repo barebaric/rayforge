@@ -3,6 +3,9 @@ import DefaultNavbarItem from '@theme-original/NavbarItem/DefaultNavbarItem';
 import styles from './styles.module.css';
 
 export default function NavbarItemWrapper(props) {
+  if (props.type === 'localeDropdown' || props.type === 'search') {
+    return <DefaultNavbarItem {...props} />;
+  }
   if (props.label === 'GitHub') {
     return (
       <>
