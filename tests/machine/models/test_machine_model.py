@@ -187,8 +187,33 @@ class TestMachineSoftLimits:
     def test_soft_limits_setter(self, context_initializer):
         """Test setting soft_limits."""
         machine = Machine(context_initializer)
+        machine.set_axis_extents(500, 500)
         machine.set_soft_limits(10, 20, 300, 400)
         assert machine.soft_limits == (10, 20, 300, 400)
+
+    def test_soft_limits_clamped_to_axis_extents(self, context_initializer):
+        """Test that soft limits are clamped to axis extents."""
+        machine = Machine(context_initializer)
+        machine.set_axis_extents(200, 300)
+        machine.set_soft_limits(10, 20, 500, 600)
+        assert machine.soft_limits == (10, 20, 200, 300)
+
+    def test_soft_limits_clamped_on_axis_extents_change(
+        self, context_initializer
+    ):
+        """Test that soft limits are clamped when axis extents shrink."""
+        machine = Machine(context_initializer)
+        machine.set_axis_extents(500, 500)
+        machine.set_soft_limits(10, 20, 400, 450)
+        machine.set_axis_extents(200, 300)
+        assert machine.soft_limits == (10, 20, 200, 300)
+
+    def test_soft_limits_negative_clamped(self, context_initializer):
+        """Test that negative soft limits are clamped to 0."""
+        machine = Machine(context_initializer)
+        machine.set_axis_extents(200, 300)
+        machine.set_soft_limits(-50, -30, 150, 200)
+        assert machine.soft_limits == (0, 0, 150, 200)
 
     def test_get_soft_limits_uses_axis_extents_when_none(
         self, context_initializer

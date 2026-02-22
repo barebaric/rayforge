@@ -110,9 +110,14 @@ class Machine:
         self.max_travel_speed: int = 3000  # in mm/min
         self.max_cut_speed: int = 1000  # in mm/min
         self.acceleration: int = 1000  # in mm/s²
-        self._axis_extents: Tuple[int, int] = 200, 200
-        self._work_margins: Tuple[int, int, int, int] = (0, 0, 0, 0)
-        self._soft_limits: Optional[Tuple[int, int, int, int]] = None
+        self._axis_extents: Tuple[float, float] = 200.0, 200.0
+        self._work_margins: Tuple[float, float, float, float] = (
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+        )
+        self._soft_limits: Optional[Tuple[float, float, float, float]] = None
         self.origin: Origin = Origin.BOTTOM_LEFT
         self.reverse_x_axis: bool = False
         self.reverse_y_axis: bool = False
@@ -339,11 +344,28 @@ class Machine:
         self.changed.send(self)
 
     @property
-    def axis_extents(self) -> Tuple[int, int]:
+    def axis_extents(self) -> Tuple[float, float]:
         """The full range of machine axis movement (width, height)."""
         return self._axis_extents
 
-    def set_axis_extents(self, width: int, height: int):
+    def _clamp_soft_limits(self):
+        """Clamp soft limits to axis extents. Returns True if clamped."""
+        if self._soft_limits is None:
+            return False
+        w, h = self._axis_extents
+        x_min, y_min, x_max, y_max = self._soft_limits
+        clamped = (
+            max(0.0, min(x_min, w)),
+            max(0.0, min(y_min, h)),
+            max(0.0, min(x_max, w)),
+            max(0.0, min(y_max, h)),
+        )
+        if clamped != self._soft_limits:
+            self._soft_limits = clamped
+            return True
+        return False
+
+    def set_axis_extents(self, width: float, height: float):
         if self._axis_extents == (width, height):
             return
         self._axis_extents = (width, height)
@@ -353,29 +375,32 @@ class Machine:
         mt = min(mt, height - 1)
         mb = min(mb, height - mt - 1)
         self._work_margins = (ml, mt, mr, mb)
+        self._clamp_soft_limits()
         self.changed.send(self)
 
     @property
-    def dimensions(self) -> Tuple[int, int]:
+    def dimensions(self) -> Tuple[float, float]:
         """Alias for axis_extents for backward compatibility."""
         return self._axis_extents
 
     @dimensions.setter
-    def dimensions(self, value: Tuple[int, int]):
+    def dimensions(self, value: Tuple[float, float]):
         self._axis_extents = value
 
-    def set_dimensions(self, width: int, height: int):
+    def set_dimensions(self, width: float, height: float):
         self.set_axis_extents(width, height)
 
     @property
-    def work_margins(self) -> Tuple[int, int, int, int]:
+    def work_margins(self) -> Tuple[float, float, float, float]:
         """
         The margins around the work area (left, top, right, bottom).
         These are positive distances from the axis extents edges.
         """
         return self._work_margins
 
-    def set_work_margins(self, left: int, top: int, right: int, bottom: int):
+    def set_work_margins(
+        self, left: float, top: float, right: float, bottom: float
+    ):
         new_margins = (left, top, right, bottom)
         if self._work_margins == new_margins:
             return
@@ -384,7 +409,7 @@ class Machine:
         self.changed.send(self)
 
     @property
-    def work_area(self) -> Tuple[int, int, int, int]:
+    def work_area(self) -> Tuple[float, float, float, float]:
         """
         The usable work area within the axis extents (x, y, w, h).
         Computed from axis_extents and work_margins.
@@ -392,37 +417,45 @@ class Machine:
         ml, mt, mr, mb = self._work_margins
         w = self._axis_extents[0] - ml - mr
         h = self._axis_extents[1] - mt - mb
-        return (ml, mt, max(1, w), max(1, h))
+        return (ml, mt, max(1.0, w), max(1.0, h))
 
     @property
-    def offsets(self) -> Tuple[int, int]:
+    def offsets(self) -> Tuple[float, float]:
         """Computed from work_margins for backward compatibility."""
         return (self._work_margins[0], self._work_margins[1])
 
     @offsets.setter
-    def offsets(self, value: Tuple[int, int]):
+    def offsets(self, value: Tuple[float, float]):
         x, y = value
         w, h = self._axis_extents
         self._work_margins = (x, y, w - x, h - y)
 
-    def set_offsets(self, x_offset: int, y_offset: int):
+    def set_offsets(self, x_offset: float, y_offset: float):
         w, h = self._axis_extents
         self._work_margins = (x_offset, y_offset, w - x_offset, h - y_offset)
         self.changed.send(self)
 
     @property
-    def soft_limits(self) -> Optional[Tuple[int, int, int, int]]:
+    def soft_limits(self) -> Optional[Tuple[float, float, float, float]]:
         """
         Configurable safety bounds for jogging (x_min, y_min, x_max, y_max).
         None means use work_area bounds.
         """
         return self._soft_limits
 
-    def set_soft_limits(self, x_min: int, y_min: int, x_max: int, y_max: int):
-        new_limits = (x_min, y_min, x_max, y_max)
-        if self._soft_limits == new_limits:
+    def set_soft_limits(
+        self, x_min: float, y_min: float, x_max: float, y_max: float
+    ):
+        w, h = self._axis_extents
+        clamped = (
+            max(0.0, min(x_min, w)),
+            max(0.0, min(y_min, h)),
+            max(0.0, min(x_max, w)),
+            max(0.0, min(y_max, h)),
+        )
+        if self._soft_limits == clamped:
             return
-        self._soft_limits = new_limits
+        self._soft_limits = clamped
         self.changed.send(self)
 
     def set_origin(self, origin: Origin):
