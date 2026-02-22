@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-02-20 04:50+0100\n"
+"POT-Creation-Date: 2026-02-22 15:30+0100\n"
 "PO-Revision-Date: 2025-07-13 11:49+0200\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: Chinese (Simplified)\n"
@@ -93,8 +93,8 @@ msgstr "图层 1"
 
 #: rayforge/core/step.py
 #, python-brace-format
-msgid "{power_percent}% power, {speed} mm/min"
-msgstr "{power_percent}% 功率, {speed} mm/min"
+msgid "{power_percent}% power, {speed_str}"
+msgstr "{power_percent}% 功率，{speed_str}"
 
 #: rayforge/core/varset/baudratevar.py
 msgid "Baud rate cannot be empty."
@@ -1854,16 +1854,12 @@ msgid "Jog Speed"
 msgstr "点动速度"
 
 #: rayforge/ui_gtk/machine/control_panel.py
-msgid "Speed in mm/min"
-msgstr "速度（毫米/分钟）"
-
-#: rayforge/ui_gtk/machine/control_panel.py
 msgid "Jog Distance"
 msgstr "点动距离"
 
 #: rayforge/ui_gtk/machine/control_panel.py
-msgid "Distance in mm"
-msgstr "距离（毫米）"
+msgid "Distance in machine units"
+msgstr "以机器单位表示的距离"
 
 #: rayforge/ui_gtk/machine/control_panel.py
 msgid "Edit Work Offsets"
@@ -2176,10 +2172,10 @@ msgstr "圆弧容差"
 
 #: rayforge/ui_gtk/machine/advanced_preferences_page.py
 msgid ""
-"Maximum deviation from original path when fitting arcs (in mm). Lower values "
-"drastically increase processing time and job size"
+"Maximum deviation from original path when fitting arcs (in machine units). "
+"Lower values drastically increase processing time and job size"
 msgstr ""
-"拟合圆弧时与原始路径的最大偏差（毫米）。较低的值会大幅增加处理时间和作业大小"
+"拟合圆弧时与原始路径的最大偏差（以机器单位）。较低的值会大幅增加处理时间和作业大小"
 
 #: rayforge/ui_gtk/machine/advanced_preferences_page.py
 msgid "Homing and Startup"
@@ -2375,38 +2371,28 @@ msgid "Hardware"
 msgstr "硬件"
 
 #: rayforge/ui_gtk/machine/hardware_page.py
-msgid "Dimensions"
-msgstr "尺寸"
-
-#: rayforge/ui_gtk/machine/hardware_page.py
-msgid "Configure the physical work area size."
-msgstr "配置物理工作区域大小。"
-
-#: rayforge/ui_gtk/machine/hardware_page.py
-#: rayforge/ui_gtk/doceditor/property_providers/transform.py
-msgid "Width"
-msgstr "宽度"
-
-#: rayforge/ui_gtk/machine/hardware_page.py
-msgid "Width of the machine work area in mm"
-msgstr "机器工作区域的宽度（毫米）"
-
-#: rayforge/ui_gtk/machine/hardware_page.py
-#: rayforge/ui_gtk/doceditor/property_providers/transform.py
-msgid "Height"
-msgstr "高度"
-
-#: rayforge/ui_gtk/machine/hardware_page.py
-msgid "Height of the machine work area in mm"
-msgstr "机器工作区域的高度（毫米）"
-
-#: rayforge/ui_gtk/machine/hardware_page.py
 msgid "Axes"
 msgstr "轴"
 
 #: rayforge/ui_gtk/machine/hardware_page.py
-msgid "Configure coordinate system and axis orientation."
-msgstr "配置坐标系和轴方向。"
+msgid "Configure the axis extents and coordinate system."
+msgstr "配置轴范围和坐标系。"
+
+#: rayforge/ui_gtk/machine/hardware_page.py
+msgid "X Extent"
+msgstr "X轴范围"
+
+#: rayforge/ui_gtk/machine/hardware_page.py
+msgid "Full X-axis travel range"
+msgstr "X轴完整行程范围"
+
+#: rayforge/ui_gtk/machine/hardware_page.py
+msgid "Y Extent"
+msgstr "Y轴范围"
+
+#: rayforge/ui_gtk/machine/hardware_page.py
+msgid "Full Y-axis travel range"
+msgstr "Y轴完整行程范围"
 
 #: rayforge/ui_gtk/machine/hardware_page.py
 msgid "Bottom Left"
@@ -2453,20 +2439,94 @@ msgid "Enable if a positive Z command (e.g., G0 Z10) moves the head down"
 msgstr "如果正Z命令（例如 G0 Z10）使激光头向下移动，请启用此项"
 
 #: rayforge/ui_gtk/machine/hardware_page.py
-msgid "X Offset"
-msgstr "X轴偏移"
+msgid "Work Area"
+msgstr "工作区域"
 
 #: rayforge/ui_gtk/machine/hardware_page.py
-msgid "Offset to add to each gcode command on X axis"
-msgstr "添加到X轴每个G代码命令的偏移量"
+msgid "Margins define the unusable space around the axis extents."
+msgstr "边距定义轴范围周围不可使用的空间。"
 
 #: rayforge/ui_gtk/machine/hardware_page.py
-msgid "Y Offset"
-msgstr "Y轴偏移"
+msgid "Left Margin"
+msgstr "左边距"
 
 #: rayforge/ui_gtk/machine/hardware_page.py
-msgid "Offset to add to each gcode command on Y axis"
-msgstr "添加到Y轴每个G代码命令的偏移量"
+msgid "Unusable space from left edge"
+msgstr "左边缘不可用空间"
+
+#: rayforge/ui_gtk/machine/hardware_page.py
+msgid "Top Margin"
+msgstr "上边距"
+
+#: rayforge/ui_gtk/machine/hardware_page.py
+msgid "Unusable space from top edge"
+msgstr "上边缘不可用空间"
+
+#: rayforge/ui_gtk/machine/hardware_page.py
+msgid "Right Margin"
+msgstr "右边距"
+
+#: rayforge/ui_gtk/machine/hardware_page.py
+msgid "Unusable space from right edge"
+msgstr "右边缘不可用空间"
+
+#: rayforge/ui_gtk/machine/hardware_page.py
+msgid "Bottom Margin"
+msgstr "下边距"
+
+#: rayforge/ui_gtk/machine/hardware_page.py
+msgid "Unusable space from bottom edge"
+msgstr "下边缘不可用空间"
+
+#: rayforge/ui_gtk/machine/hardware_page.py
+msgid "Soft Limits"
+msgstr "软限位"
+
+#: rayforge/ui_gtk/machine/hardware_page.py
+msgid ""
+"Configurable safety bounds for jogging. Leave disabled to use work surface "
+"bounds."
+msgstr "手动移动的可配置安全边界。保持禁用以使用工作面边界。"
+
+#: rayforge/ui_gtk/machine/hardware_page.py
+msgid "Enable Custom Soft Limits"
+msgstr "启用自定义软限位"
+
+#: rayforge/ui_gtk/machine/hardware_page.py
+msgid "Override work surface bounds with custom limits"
+msgstr "使用自定义限位覆盖工作面边界"
+
+#: rayforge/ui_gtk/machine/hardware_page.py
+msgid "X Min"
+msgstr "X最小值"
+
+#: rayforge/ui_gtk/machine/hardware_page.py
+msgid "Minimum X coordinate"
+msgstr "X坐标最小值"
+
+#: rayforge/ui_gtk/machine/hardware_page.py
+msgid "Y Min"
+msgstr "Y最小值"
+
+#: rayforge/ui_gtk/machine/hardware_page.py
+msgid "Minimum Y coordinate"
+msgstr "Y坐标最小值"
+
+#: rayforge/ui_gtk/machine/hardware_page.py
+msgid "X Max"
+msgstr "X最大值"
+
+#: rayforge/ui_gtk/machine/hardware_page.py
+msgid "Maximum X coordinate"
+msgstr "X坐标最大值"
+
+#: rayforge/ui_gtk/machine/hardware_page.py
+msgid "Y Max"
+msgstr "Y最大值"
+
+#: rayforge/ui_gtk/machine/hardware_page.py
+msgid "Maximum Y coordinate"
+msgstr "Y坐标最大值"
 
 #: rayforge/ui_gtk/machine/laser_preferences_page.py
 #, python-brace-format
@@ -3606,9 +3666,10 @@ msgstr "线间隔"
 
 #: rayforge/ui_gtk/doceditor/step_settings/material_test_grid.py
 msgid ""
-"Distance between scan lines in mm (for Engrave mode). Leave at 0 to use "
-"laser spot size."
-msgstr "扫描线之间的距离（毫米，用于雕刻模式）。留空为0则使用激光光斑大小。"
+"Distance between scan lines in machine units (for Engrave mode). Leave at 0 "
+"to use laser spot size."
+msgstr ""
+"扫描线之间的距离（以机器单位，用于雕刻模式）。留0使用激光光斑大小。"
 
 #: rayforge/ui_gtk/doceditor/step_settings/material_test_grid.py
 msgid "Include Labels"
@@ -3739,8 +3800,10 @@ msgid "Line Spacing"
 msgstr "线间距"
 
 #: rayforge/ui_gtk/doceditor/step_settings/engraver.py
-msgid "Distance between scan lines in mm. Leave at 0 to use laser spot size"
-msgstr "扫描线之间的距离（毫米）。留空为0则使用激光光斑大小"
+msgid ""
+"Distance between scan lines in machine units. Leave at 0 to use laser spot "
+"size"
+msgstr "扫描线之间的距离（以机器单位）。留0使用激光光斑大小"
 
 #: rayforge/ui_gtk/doceditor/step_settings/engraver.py
 msgid "Engrave white areas instead of black areas"
@@ -4314,20 +4377,9 @@ msgid "Mixed Values"
 msgstr "混合值"
 
 #: rayforge/ui_gtk/doceditor/property_providers/transform.py
-msgid "Zero is on the right"
-msgstr "零点在右侧"
-
-#: rayforge/ui_gtk/doceditor/property_providers/transform.py
-msgid "Zero is on the left"
-msgstr "零点在左侧"
-
-#: rayforge/ui_gtk/doceditor/property_providers/transform.py
-msgid "Zero is at the top"
-msgstr "零点在顶部"
-
-#: rayforge/ui_gtk/doceditor/property_providers/transform.py
-msgid "Zero is at the bottom"
-msgstr "零点在底部"
+#, python-brace-format
+msgid "Relative to {wcs} origin"
+msgstr "相对于{wcs}原点"
 
 #: rayforge/ui_gtk/doceditor/property_providers/transform.py
 msgid "X Position"
@@ -4352,6 +4404,14 @@ msgstr "重置Y位置为0"
 #: rayforge/ui_gtk/doceditor/property_providers/transform.py
 msgid "Fixed Ratio"
 msgstr "固定比例"
+
+#: rayforge/ui_gtk/doceditor/property_providers/transform.py
+msgid "Width"
+msgstr "宽度"
+
+#: rayforge/ui_gtk/doceditor/property_providers/transform.py
+msgid "Height"
+msgstr "高度"
 
 #: rayforge/ui_gtk/doceditor/property_providers/transform.py
 msgid "Reset to natural width"
@@ -4438,8 +4498,8 @@ msgid "Length along the path"
 msgstr "沿路径的长度"
 
 #: rayforge/ui_gtk/doceditor/property_providers/workpiece.py
-msgid "Reset tab width to default (1.0 mm)"
-msgstr "重置标签宽度为默认值 (1.0 mm)"
+msgid "Reset tab width to default (1.0)"
+msgstr "将标签宽度重置为默认值(1.0)"
 
 #: rayforge/ui_gtk/doceditor/property_providers/workpiece.py
 #, python-brace-format
@@ -5075,8 +5135,7 @@ msgstr "导入文档并编辑器稳定后退出。用于测试。"
 msgid ""
 "Path to a Python script to execute after the main window is fully loaded. "
 "Useful for automation and testing."
-msgstr ""
-"主窗口完全加载后执行的 Python 脚本路径。适用于自动化和测试。"
+msgstr "主窗口完全加载后执行的 Python 脚本路径。适用于自动化和测试。"
 
 #: rayforge/pipeline/steps.py
 msgid "Contour"
@@ -5286,12 +5345,12 @@ msgid "The name of the current machine profile."
 msgstr "当前机器配置文件的名称。"
 
 #: rayforge/pipeline/encoder/context.py
-msgid "The width (X-axis) of the machine work area in mm."
-msgstr "机器工作区域的宽度（X轴，毫米）。"
+msgid "The width (X-axis) of the machine work area."
+msgstr "机器工作区域的宽度（X轴）。"
 
 #: rayforge/pipeline/encoder/context.py
-msgid "The height (Y-axis) of the machine work area in mm."
-msgstr "机器工作区域的高度（Y轴，毫米）。"
+msgid "The height (Y-axis) of the machine work area."
+msgstr "机器工作区域的高度（Y轴）。"
 
 #: rayforge/pipeline/encoder/context.py
 msgid "The name of the current document file (if saved)."
