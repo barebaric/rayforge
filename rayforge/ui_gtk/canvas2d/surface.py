@@ -55,7 +55,7 @@ class WorkSurface(WorldSurface):
         self.machine = None  # will be assigned by set_machine() below
         self._show_travel_moves = False
         self._workpieces_visible = True
-        self._tracked_axis_extents: Tuple[int, int] = (0, 0)
+        self._tracked_axis_extents: Tuple[float, float] = (0.0, 0.0)
         if machine:
             self._tracked_axis_extents = machine.axis_extents
             surf_x, surf_y, surf_w, surf_h = machine.work_area

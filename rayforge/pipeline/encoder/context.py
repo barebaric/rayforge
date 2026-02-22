@@ -49,11 +49,11 @@ class GcodeContext:
             ("machine.name", _("The name of the current machine profile.")),
             (
                 "machine.dimensions[0]",
-                _("The width (X-axis) of the machine work area in mm."),
+                _("The width (X-axis) of the machine work area."),
             ),
             (
                 "machine.dimensions[1]",
-                _("The height (Y-axis) of the machine work area in mm."),
+                _("The height (Y-axis) of the machine work area."),
             ),
             (
                 "doc.name",
