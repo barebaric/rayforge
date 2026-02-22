@@ -362,15 +362,34 @@ class TaskManager:
     def _on_pool_task_event(
         self, sender, key, task_id, event_name, data, adoption_signals
     ):
-        # Schedule the event dispatch on the main thread
-        self._main_thread_scheduler(
-            self._dispatch_pooled_task_event,
-            key,
-            task_id,
-            event_name,
-            data,
-            adoption_signals,
+        signal_key = f"{task_id}:{event_name}"
+        logger.debug(
+            f"[DIAG] _on_pool_task_event: setting ACK for {signal_key}"
         )
+
+        with self._lock:
+            task = self._tasks.get(key)
+            if not (task and task.id == task_id):
+                task = self._zombie_tasks.get(task_id)
+
+        if task:
+            adoption_signals[signal_key] = True
+            logger.debug(
+                f"[DIAG] _on_pool_task_event: ACK set for {signal_key}"
+            )
+            self._main_thread_scheduler(
+                self._dispatch_pooled_task_event_no_ack,
+                key,
+                task_id,
+                event_name,
+                data,
+            )
+        else:
+            logger.warning(
+                f"Received event '{event_name}' for unknown task "
+                f"key '{key}' (id: {task_id}). NACKing."
+            )
+            adoption_signals[signal_key] = False
 
     # === Main Thread Update Methods for Pooled Tasks ===
 
@@ -428,6 +447,26 @@ class TaskManager:
             )
             # Signal NACK so the worker knows to release/destroy the resource
             adoption_signals[signal_key] = False
+
+    def _dispatch_pooled_task_event_no_ack(
+        self,
+        key: Any,
+        task_id: int,
+        event_name: str,
+        data: dict,
+    ):
+        """Dispatches a task event from the main thread (ack already sent)."""
+        with self._lock:
+            task = self._tasks.get(key)
+            if not (task and task.id == task_id):
+                task = self._zombie_tasks.get(task_id)
+
+        if task:
+            logger.debug(
+                f"TaskManager: Dispatching event '{event_name}' for task "
+                f"'{task.key}' (task_id={task_id})."
+            )
+            task.event_received.send(task, event_name=event_name, data=data)
 
     def _finalize_pooled_task(
         self,
