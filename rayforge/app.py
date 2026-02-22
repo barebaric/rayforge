@@ -10,6 +10,14 @@ import gettext
 import asyncio
 from pathlib import Path
 from typing import cast
+
+# Parse --config early before any rayforge imports, as they may
+# import config.py which computes CONFIG_DIR at module load time
+for i, arg in enumerate(sys.argv):
+    if arg == "--config" and i + 1 < len(sys.argv):
+        os.environ["RAYFORGE_CONFIG_DIR"] = sys.argv[i + 1]
+        break
+
 from rayforge.logging_setup import setup_logging
 
 # ===================================================================
@@ -348,6 +356,15 @@ def main():
         help=_(
             "Path to a Python script to execute after the main window "
             "is fully loaded. Useful for automation and testing."
+        ),
+    )
+
+    parser.add_argument(
+        "--config",
+        metavar="DIR",
+        help=_(
+            "Path to a custom configuration directory. "
+            "Useful for testing with isolated configs."
         ),
     )
 

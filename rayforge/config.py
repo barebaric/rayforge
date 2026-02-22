@@ -7,8 +7,15 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-# Configuration files
-CONFIG_DIR = Path(user_config_dir("rayforge"))
+def _get_config_dir() -> Path:
+    """Get the config directory, respecting RAYFORGE_CONFIG_DIR env var."""
+    env_config = os.environ.get("RAYFORGE_CONFIG_DIR")
+    if env_config:
+        return Path(env_config)
+    return Path(user_config_dir("rayforge"))
+
+
+CONFIG_DIR = _get_config_dir()
 logger.info(f"Config dir is {CONFIG_DIR}")
 
 MACHINE_DIR = CONFIG_DIR / "machines"
