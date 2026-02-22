@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-02-20 04:50+0100\n"
+"POT-Creation-Date: 2026-02-22 15:30+0100\n"
 "PO-Revision-Date: 2025-07-24 22:08+0200\n"
 "Last-Translator: Samuel Abels <knipknap@gmail.com>\n"
 "Language-Team: none\n"
@@ -95,8 +95,8 @@ msgstr "Ebene 1"
 
 #: rayforge/core/step.py
 #, python-brace-format
-msgid "{power_percent}% power, {speed} mm/min"
-msgstr "{power_percent}% Leistung, {speed} mm/min"
+msgid "{power_percent}% power, {speed_str}"
+msgstr "{power_percent}% Leistung, {speed_str}"
 
 #: rayforge/core/varset/baudratevar.py
 msgid "Baud rate cannot be empty."
@@ -1968,16 +1968,12 @@ msgid "Jog Speed"
 msgstr "Manuelle Geschwindigkeit"
 
 #: rayforge/ui_gtk/machine/control_panel.py
-msgid "Speed in mm/min"
-msgstr "Geschwindigkeit in mm/min"
-
-#: rayforge/ui_gtk/machine/control_panel.py
 msgid "Jog Distance"
 msgstr "Manueller Abstand"
 
 #: rayforge/ui_gtk/machine/control_panel.py
-msgid "Distance in mm"
-msgstr "Abstand in mm"
+msgid "Distance in machine units"
+msgstr "Abstand in Maschineneinheiten"
 
 #: rayforge/ui_gtk/machine/control_panel.py
 msgid "Edit Work Offsets"
@@ -2314,11 +2310,12 @@ msgstr "Bogentoleranz"
 
 #: rayforge/ui_gtk/machine/advanced_preferences_page.py
 msgid ""
-"Maximum deviation from original path when fitting arcs (in mm). Lower values "
-"drastically increase processing time and job size"
+"Maximum deviation from original path when fitting arcs (in machine units). "
+"Lower values drastically increase processing time and job size"
 msgstr ""
-"Maximale Abweichung vom Originalpfad beim Anpassen von Bögen (in mm). "
-"Niedrigere Werte erhöhen die Verarbeitungszeit und Auftragsgröße drastisch"
+"Maximale Abweichung vom ursprünglichen Pfad beim Anpassen von Bögen (in "
+"Maschineneinheiten). Niedrigere Werte erhöhen Verarbeitungszeit und "
+"Job-Größe drastisch"
 
 #: rayforge/ui_gtk/machine/advanced_preferences_page.py
 msgid "Homing and Startup"
@@ -2523,38 +2520,28 @@ msgid "Hardware"
 msgstr "Hardware"
 
 #: rayforge/ui_gtk/machine/hardware_page.py
-msgid "Dimensions"
-msgstr "Abmessungen"
-
-#: rayforge/ui_gtk/machine/hardware_page.py
-msgid "Configure the physical work area size."
-msgstr "Konfiguriere die physische Größe des Arbeitsbereichs."
-
-#: rayforge/ui_gtk/machine/hardware_page.py
-#: rayforge/ui_gtk/doceditor/property_providers/transform.py
-msgid "Width"
-msgstr "Breite"
-
-#: rayforge/ui_gtk/machine/hardware_page.py
-msgid "Width of the machine work area in mm"
-msgstr "Breite des Maschinenarbeitsbereichs in mm"
-
-#: rayforge/ui_gtk/machine/hardware_page.py
-#: rayforge/ui_gtk/doceditor/property_providers/transform.py
-msgid "Height"
-msgstr "Höhe"
-
-#: rayforge/ui_gtk/machine/hardware_page.py
-msgid "Height of the machine work area in mm"
-msgstr "Höhe des Maschinenarbeitsbereichs in mm"
-
-#: rayforge/ui_gtk/machine/hardware_page.py
 msgid "Axes"
 msgstr "Achsen"
 
 #: rayforge/ui_gtk/machine/hardware_page.py
-msgid "Configure coordinate system and axis orientation."
-msgstr "Konfiguriere das Koordinatensystem und die Achsenorientierung."
+msgid "Configure the axis extents and coordinate system."
+msgstr "Konfigurieren Sie die Achsenbereiche und das Koordinatensystem."
+
+#: rayforge/ui_gtk/machine/hardware_page.py
+msgid "X Extent"
+msgstr "X-Bereich"
+
+#: rayforge/ui_gtk/machine/hardware_page.py
+msgid "Full X-axis travel range"
+msgstr "Vollständiger X-Achsen-Verfahrweg"
+
+#: rayforge/ui_gtk/machine/hardware_page.py
+msgid "Y Extent"
+msgstr "Y-Bereich"
+
+#: rayforge/ui_gtk/machine/hardware_page.py
+msgid "Full Y-axis travel range"
+msgstr "Vollständiger Y-Achsen-Verfahrweg"
 
 #: rayforge/ui_gtk/machine/hardware_page.py
 msgid "Bottom Left"
@@ -2604,20 +2591,96 @@ msgstr ""
 "bewegt"
 
 #: rayforge/ui_gtk/machine/hardware_page.py
-msgid "X Offset"
-msgstr "X-Versatz"
+msgid "Work Area"
+msgstr "Arbeitsbereich"
 
 #: rayforge/ui_gtk/machine/hardware_page.py
-msgid "Offset to add to each gcode command on X axis"
-msgstr "Versatz, der jedem G-Code-Befehl auf der X-Achse hinzugefügt wird"
+msgid "Margins define the unusable space around the axis extents."
+msgstr "Ränder definieren den ungenutzten Bereich um die Achsenbereiche."
 
 #: rayforge/ui_gtk/machine/hardware_page.py
-msgid "Y Offset"
-msgstr "Y-Versatz"
+msgid "Left Margin"
+msgstr "Linker Rand"
 
 #: rayforge/ui_gtk/machine/hardware_page.py
-msgid "Offset to add to each gcode command on Y axis"
-msgstr "Versatz, der jedem G-Code-Befehl auf der Y-Achse hinzugefügt wird"
+msgid "Unusable space from left edge"
+msgstr "Unnutzbarer Bereich am linken Rand"
+
+#: rayforge/ui_gtk/machine/hardware_page.py
+msgid "Top Margin"
+msgstr "Oberer Rand"
+
+#: rayforge/ui_gtk/machine/hardware_page.py
+msgid "Unusable space from top edge"
+msgstr "Unnutzbarer Bereich am oberen Rand"
+
+#: rayforge/ui_gtk/machine/hardware_page.py
+msgid "Right Margin"
+msgstr "Rechter Rand"
+
+#: rayforge/ui_gtk/machine/hardware_page.py
+msgid "Unusable space from right edge"
+msgstr "Unnutzbarer Bereich am rechten Rand"
+
+#: rayforge/ui_gtk/machine/hardware_page.py
+msgid "Bottom Margin"
+msgstr "Unterer Rand"
+
+#: rayforge/ui_gtk/machine/hardware_page.py
+msgid "Unusable space from bottom edge"
+msgstr "Unnutzbarer Bereich am unteren Rand"
+
+#: rayforge/ui_gtk/machine/hardware_page.py
+msgid "Soft Limits"
+msgstr "Software-Grenzen"
+
+#: rayforge/ui_gtk/machine/hardware_page.py
+msgid ""
+"Configurable safety bounds for jogging. Leave disabled to use work surface "
+"bounds."
+msgstr ""
+"Konfigurierbare Sicherheitsgrenzen für manuelles Bewegen. Deaktiviert "
+"lassen, um Arbeitsflächengrenzen zu verwenden."
+
+#: rayforge/ui_gtk/machine/hardware_page.py
+msgid "Enable Custom Soft Limits"
+msgstr "Benutzerdefinierte Software-Grenzen aktivieren"
+
+#: rayforge/ui_gtk/machine/hardware_page.py
+msgid "Override work surface bounds with custom limits"
+msgstr "Arbeitsflächengrenzen mit benutzerdefinierten Grenzen überschreiben"
+
+#: rayforge/ui_gtk/machine/hardware_page.py
+msgid "X Min"
+msgstr "X Min"
+
+#: rayforge/ui_gtk/machine/hardware_page.py
+msgid "Minimum X coordinate"
+msgstr "Minimale X-Koordinate"
+
+#: rayforge/ui_gtk/machine/hardware_page.py
+msgid "Y Min"
+msgstr "Y Min"
+
+#: rayforge/ui_gtk/machine/hardware_page.py
+msgid "Minimum Y coordinate"
+msgstr "Minimale Y-Koordinate"
+
+#: rayforge/ui_gtk/machine/hardware_page.py
+msgid "X Max"
+msgstr "X Max"
+
+#: rayforge/ui_gtk/machine/hardware_page.py
+msgid "Maximum X coordinate"
+msgstr "Maximale X-Koordinate"
+
+#: rayforge/ui_gtk/machine/hardware_page.py
+msgid "Y Max"
+msgstr "Y Max"
+
+#: rayforge/ui_gtk/machine/hardware_page.py
+msgid "Maximum Y coordinate"
+msgstr "Maximale Y-Koordinate"
 
 #: rayforge/ui_gtk/machine/laser_preferences_page.py
 #, python-brace-format
@@ -3774,11 +3837,11 @@ msgstr "Linienabstand"
 
 #: rayforge/ui_gtk/doceditor/step_settings/material_test_grid.py
 msgid ""
-"Distance between scan lines in mm (for Engrave mode). Leave at 0 to use "
-"laser spot size."
+"Distance between scan lines in machine units (for Engrave mode). Leave at 0 "
+"to use laser spot size."
 msgstr ""
-"Abstand zwischen Scanlinien in mm (für Gravurmodus). Bei 0 wird die "
-"Laserpunktgröße verwendet."
+"Abstand zwischen Scanlinien in Maschineneinheiten (für Gravurmodus). Auf 0 "
+"setzen, um die Laserpunktgröße zu verwenden."
 
 #: rayforge/ui_gtk/doceditor/step_settings/material_test_grid.py
 msgid "Include Labels"
@@ -3911,9 +3974,12 @@ msgid "Line Spacing"
 msgstr "Linienabstand"
 
 #: rayforge/ui_gtk/doceditor/step_settings/engraver.py
-msgid "Distance between scan lines in mm. Leave at 0 to use laser spot size"
+msgid ""
+"Distance between scan lines in machine units. Leave at 0 to use laser spot "
+"size"
 msgstr ""
-"Abstand zwischen Scanlinien in mm. Bei 0 wird die Laserpunktgröße verwendet"
+"Abstand zwischen Scanlinien in Maschineneinheiten. Auf 0 setzen, um "
+"die Laserpunktgröße verwenden"
 
 #: rayforge/ui_gtk/doceditor/step_settings/engraver.py
 msgid "Engrave white areas instead of black areas"
@@ -4502,20 +4568,9 @@ msgid "Mixed Values"
 msgstr "Gemischte Werte"
 
 #: rayforge/ui_gtk/doceditor/property_providers/transform.py
-msgid "Zero is on the right"
-msgstr "Nullpunkt ist rechts"
-
-#: rayforge/ui_gtk/doceditor/property_providers/transform.py
-msgid "Zero is on the left"
-msgstr "Nullpunkt ist auf der linken Seite"
-
-#: rayforge/ui_gtk/doceditor/property_providers/transform.py
-msgid "Zero is at the top"
-msgstr "Nullpunkt ist oben"
-
-#: rayforge/ui_gtk/doceditor/property_providers/transform.py
-msgid "Zero is at the bottom"
-msgstr "Nullpunkt ist unten"
+#, python-brace-format
+msgid "Relative to {wcs} origin"
+msgstr "Relativ zum {wcs} Ursprung"
 
 #: rayforge/ui_gtk/doceditor/property_providers/transform.py
 msgid "X Position"
@@ -4540,6 +4595,14 @@ msgstr "Y-Position auf 0 zurücksetzen"
 #: rayforge/ui_gtk/doceditor/property_providers/transform.py
 msgid "Fixed Ratio"
 msgstr "Festes Verhältnis"
+
+#: rayforge/ui_gtk/doceditor/property_providers/transform.py
+msgid "Width"
+msgstr "Breite"
+
+#: rayforge/ui_gtk/doceditor/property_providers/transform.py
+msgid "Height"
+msgstr "Höhe"
 
 #: rayforge/ui_gtk/doceditor/property_providers/transform.py
 msgid "Reset to natural width"
@@ -4626,8 +4689,8 @@ msgid "Length along the path"
 msgstr "Länge entlang des Pfades"
 
 #: rayforge/ui_gtk/doceditor/property_providers/workpiece.py
-msgid "Reset tab width to default (1.0 mm)"
-msgstr "Breite der Haltestege auf Standard (1,0 mm) zurücksetzen"
+msgid "Reset tab width to default (1.0)"
+msgstr "Haltesteg-Breite auf Standard (1.0) zurücksetzen"
 
 #: rayforge/ui_gtk/doceditor/property_providers/workpiece.py
 #, python-brace-format
@@ -5497,12 +5560,12 @@ msgid "The name of the current machine profile."
 msgstr "Der Name des aktuellen Maschinenprofils."
 
 #: rayforge/pipeline/encoder/context.py
-msgid "The width (X-axis) of the machine work area in mm."
-msgstr "Die Breite (X-Achse) des Arbeitsbereichs der Maschine in mm."
+msgid "The width (X-axis) of the machine work area."
+msgstr "Die Breite (X-Achse) des Maschinenarbeitsbereichs."
 
 #: rayforge/pipeline/encoder/context.py
-msgid "The height (Y-axis) of the machine work area in mm."
-msgstr "Die Höhe (Y-Achse) des Arbeitsbereichs der Maschine in mm."
+msgid "The height (Y-axis) of the machine work area."
+msgstr "Die Höhe (Y-Achse) des Maschinenarbeitsbereichs."
 
 #: rayforge/pipeline/encoder/context.py
 msgid "The name of the current document file (if saved)."

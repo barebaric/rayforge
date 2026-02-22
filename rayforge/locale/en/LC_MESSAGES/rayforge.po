@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-02-20 04:50+0100\n"
+"POT-Creation-Date: 2026-02-22 15:30+0100\n"
 "PO-Revision-Date: 2025-07-13 11:49+0200\n"
 "Last-Translator: Samuel <knipknap@gmail.com>\n"
 "Language-Team: English\n"
@@ -95,7 +95,7 @@ msgstr ""
 
 #: rayforge/core/step.py
 #, python-brace-format
-msgid "{power_percent}% power, {speed} mm/min"
+msgid "{power_percent}% power, {speed_str}"
 msgstr ""
 
 #: rayforge/core/varset/baudratevar.py
@@ -1845,15 +1845,11 @@ msgid "Jog Speed"
 msgstr ""
 
 #: rayforge/ui_gtk/machine/control_panel.py
-msgid "Speed in mm/min"
-msgstr ""
-
-#: rayforge/ui_gtk/machine/control_panel.py
 msgid "Jog Distance"
 msgstr ""
 
 #: rayforge/ui_gtk/machine/control_panel.py
-msgid "Distance in mm"
+msgid "Distance in machine units"
 msgstr ""
 
 #: rayforge/ui_gtk/machine/control_panel.py
@@ -2166,8 +2162,8 @@ msgstr ""
 
 #: rayforge/ui_gtk/machine/advanced_preferences_page.py
 msgid ""
-"Maximum deviation from original path when fitting arcs (in mm). Lower values "
-"drastically increase processing time and job size"
+"Maximum deviation from original path when fitting arcs (in machine units). "
+"Lower values drastically increase processing time and job size"
 msgstr ""
 
 #: rayforge/ui_gtk/machine/advanced_preferences_page.py
@@ -2364,37 +2360,27 @@ msgid "Hardware"
 msgstr ""
 
 #: rayforge/ui_gtk/machine/hardware_page.py
-msgid "Dimensions"
-msgstr ""
-
-#: rayforge/ui_gtk/machine/hardware_page.py
-msgid "Configure the physical work area size."
-msgstr ""
-
-#: rayforge/ui_gtk/machine/hardware_page.py
-#: rayforge/ui_gtk/doceditor/property_providers/transform.py
-msgid "Width"
-msgstr ""
-
-#: rayforge/ui_gtk/machine/hardware_page.py
-msgid "Width of the machine work area in mm"
-msgstr ""
-
-#: rayforge/ui_gtk/machine/hardware_page.py
-#: rayforge/ui_gtk/doceditor/property_providers/transform.py
-msgid "Height"
-msgstr ""
-
-#: rayforge/ui_gtk/machine/hardware_page.py
-msgid "Height of the machine work area in mm"
-msgstr ""
-
-#: rayforge/ui_gtk/machine/hardware_page.py
 msgid "Axes"
 msgstr ""
 
 #: rayforge/ui_gtk/machine/hardware_page.py
-msgid "Configure coordinate system and axis orientation."
+msgid "Configure the axis extents and coordinate system."
+msgstr ""
+
+#: rayforge/ui_gtk/machine/hardware_page.py
+msgid "X Extent"
+msgstr ""
+
+#: rayforge/ui_gtk/machine/hardware_page.py
+msgid "Full X-axis travel range"
+msgstr ""
+
+#: rayforge/ui_gtk/machine/hardware_page.py
+msgid "Y Extent"
+msgstr ""
+
+#: rayforge/ui_gtk/machine/hardware_page.py
+msgid "Full Y-axis travel range"
 msgstr ""
 
 #: rayforge/ui_gtk/machine/hardware_page.py
@@ -2442,19 +2428,93 @@ msgid "Enable if a positive Z command (e.g., G0 Z10) moves the head down"
 msgstr ""
 
 #: rayforge/ui_gtk/machine/hardware_page.py
-msgid "X Offset"
+msgid "Work Area"
 msgstr ""
 
 #: rayforge/ui_gtk/machine/hardware_page.py
-msgid "Offset to add to each gcode command on X axis"
+msgid "Margins define the unusable space around the axis extents."
 msgstr ""
 
 #: rayforge/ui_gtk/machine/hardware_page.py
-msgid "Y Offset"
+msgid "Left Margin"
 msgstr ""
 
 #: rayforge/ui_gtk/machine/hardware_page.py
-msgid "Offset to add to each gcode command on Y axis"
+msgid "Unusable space from left edge"
+msgstr ""
+
+#: rayforge/ui_gtk/machine/hardware_page.py
+msgid "Top Margin"
+msgstr ""
+
+#: rayforge/ui_gtk/machine/hardware_page.py
+msgid "Unusable space from top edge"
+msgstr ""
+
+#: rayforge/ui_gtk/machine/hardware_page.py
+msgid "Right Margin"
+msgstr ""
+
+#: rayforge/ui_gtk/machine/hardware_page.py
+msgid "Unusable space from right edge"
+msgstr ""
+
+#: rayforge/ui_gtk/machine/hardware_page.py
+msgid "Bottom Margin"
+msgstr ""
+
+#: rayforge/ui_gtk/machine/hardware_page.py
+msgid "Unusable space from bottom edge"
+msgstr ""
+
+#: rayforge/ui_gtk/machine/hardware_page.py
+msgid "Soft Limits"
+msgstr ""
+
+#: rayforge/ui_gtk/machine/hardware_page.py
+msgid ""
+"Configurable safety bounds for jogging. Leave disabled to use work surface "
+"bounds."
+msgstr ""
+
+#: rayforge/ui_gtk/machine/hardware_page.py
+msgid "Enable Custom Soft Limits"
+msgstr ""
+
+#: rayforge/ui_gtk/machine/hardware_page.py
+msgid "Override work surface bounds with custom limits"
+msgstr ""
+
+#: rayforge/ui_gtk/machine/hardware_page.py
+msgid "X Min"
+msgstr ""
+
+#: rayforge/ui_gtk/machine/hardware_page.py
+msgid "Minimum X coordinate"
+msgstr ""
+
+#: rayforge/ui_gtk/machine/hardware_page.py
+msgid "Y Min"
+msgstr ""
+
+#: rayforge/ui_gtk/machine/hardware_page.py
+msgid "Minimum Y coordinate"
+msgstr ""
+
+#: rayforge/ui_gtk/machine/hardware_page.py
+msgid "X Max"
+msgstr ""
+
+#: rayforge/ui_gtk/machine/hardware_page.py
+msgid "Maximum X coordinate"
+msgstr ""
+
+#: rayforge/ui_gtk/machine/hardware_page.py
+msgid "Y Max"
+msgstr ""
+
+#: rayforge/ui_gtk/machine/hardware_page.py
+msgid "Maximum Y coordinate"
 msgstr ""
 
 #: rayforge/ui_gtk/machine/laser_preferences_page.py
@@ -3593,8 +3653,8 @@ msgstr ""
 
 #: rayforge/ui_gtk/doceditor/step_settings/material_test_grid.py
 msgid ""
-"Distance between scan lines in mm (for Engrave mode). Leave at 0 to use "
-"laser spot size."
+"Distance between scan lines in machine units (for Engrave mode). Leave at 0 "
+"to use laser spot size."
 msgstr ""
 
 #: rayforge/ui_gtk/doceditor/step_settings/material_test_grid.py
@@ -3726,7 +3786,9 @@ msgid "Line Spacing"
 msgstr ""
 
 #: rayforge/ui_gtk/doceditor/step_settings/engraver.py
-msgid "Distance between scan lines in mm. Leave at 0 to use laser spot size"
+msgid ""
+"Distance between scan lines in machine units. Leave at 0 to use laser spot "
+"size"
 msgstr ""
 
 #: rayforge/ui_gtk/doceditor/step_settings/engraver.py
@@ -4301,19 +4363,8 @@ msgid "Mixed Values"
 msgstr ""
 
 #: rayforge/ui_gtk/doceditor/property_providers/transform.py
-msgid "Zero is on the right"
-msgstr ""
-
-#: rayforge/ui_gtk/doceditor/property_providers/transform.py
-msgid "Zero is on the left"
-msgstr ""
-
-#: rayforge/ui_gtk/doceditor/property_providers/transform.py
-msgid "Zero is at the top"
-msgstr ""
-
-#: rayforge/ui_gtk/doceditor/property_providers/transform.py
-msgid "Zero is at the bottom"
+#, python-brace-format
+msgid "Relative to {wcs} origin"
 msgstr ""
 
 #: rayforge/ui_gtk/doceditor/property_providers/transform.py
@@ -4338,6 +4389,14 @@ msgstr ""
 
 #: rayforge/ui_gtk/doceditor/property_providers/transform.py
 msgid "Fixed Ratio"
+msgstr ""
+
+#: rayforge/ui_gtk/doceditor/property_providers/transform.py
+msgid "Width"
+msgstr ""
+
+#: rayforge/ui_gtk/doceditor/property_providers/transform.py
+msgid "Height"
 msgstr ""
 
 #: rayforge/ui_gtk/doceditor/property_providers/transform.py
@@ -4425,7 +4484,7 @@ msgid "Length along the path"
 msgstr ""
 
 #: rayforge/ui_gtk/doceditor/property_providers/workpiece.py
-msgid "Reset tab width to default (1.0 mm)"
+msgid "Reset tab width to default (1.0)"
 msgstr ""
 
 #: rayforge/ui_gtk/doceditor/property_providers/workpiece.py
@@ -5268,11 +5327,11 @@ msgid "The name of the current machine profile."
 msgstr ""
 
 #: rayforge/pipeline/encoder/context.py
-msgid "The width (X-axis) of the machine work area in mm."
+msgid "The width (X-axis) of the machine work area."
 msgstr ""
 
 #: rayforge/pipeline/encoder/context.py
-msgid "The height (Y-axis) of the machine work area in mm."
+msgid "The height (Y-axis) of the machine work area."
 msgstr ""
 
 #: rayforge/pipeline/encoder/context.py
