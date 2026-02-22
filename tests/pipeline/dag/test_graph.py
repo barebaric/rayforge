@@ -29,7 +29,7 @@ class TestPipelineGraph:
         """Test adding a node to the graph."""
         graph = PipelineGraph()
         key = ArtifactKey.for_workpiece(WP_UID_1)
-        node = ArtifactNode(key=key)
+        node = ArtifactNode(key, generation_id=1)
 
         graph.add_node(node)
 
@@ -53,10 +53,10 @@ class TestPipelineGraph:
         step_key = ArtifactKey.for_step(STEP_UID_1)
         job_key = ArtifactKey.for_job()
 
-        graph.add_node(ArtifactNode(key=wp_key1))
-        graph.add_node(ArtifactNode(key=wp_key2))
-        graph.add_node(ArtifactNode(key=step_key))
-        graph.add_node(ArtifactNode(key=job_key))
+        graph.add_node(ArtifactNode(wp_key1, generation_id=1))
+        graph.add_node(ArtifactNode(wp_key2, generation_id=1))
+        graph.add_node(ArtifactNode(step_key, generation_id=1))
+        graph.add_node(ArtifactNode(job_key, generation_id=1))
 
         wp_nodes = graph.get_nodes_by_group("workpiece")
         step_nodes = graph.get_nodes_by_group("step")
@@ -71,7 +71,7 @@ class TestPipelineGraph:
         doc = Doc()
         graph = PipelineGraph()
 
-        graph.build_from_doc(doc)
+        graph.build_from_doc(doc, generation_id=1)
 
         assert len(graph.get_all_nodes()) == 1
         job_nodes = graph.get_nodes_by_group("job")
@@ -91,7 +91,7 @@ class TestPipelineGraph:
         doc.set_children([layer])
 
         graph = PipelineGraph()
-        graph.build_from_doc(doc)
+        graph.build_from_doc(doc, generation_id=1)
 
         wp_nodes = graph.get_nodes_by_group("workpiece")
         assert len(wp_nodes) == 0
@@ -116,7 +116,7 @@ class TestPipelineGraph:
         doc.set_children([layer])
 
         graph = PipelineGraph()
-        graph.build_from_doc(doc)
+        graph.build_from_doc(doc, generation_id=1)
 
         wp_nodes = graph.get_nodes_by_group("workpiece")
         assert len(wp_nodes) == 2
@@ -134,7 +134,7 @@ class TestPipelineGraph:
         layer.workflow.add_step(step)
 
         graph = PipelineGraph()
-        graph.build_from_doc(doc)
+        graph.build_from_doc(doc, generation_id=1)
 
         wp_nodes = graph.get_nodes_by_group("workpiece")
         step_nodes = graph.get_nodes_by_group("step")
@@ -150,7 +150,7 @@ class TestPipelineGraph:
         doc = Doc()
         graph = PipelineGraph()
 
-        graph.build_from_doc(doc)
+        graph.build_from_doc(doc, generation_id=1)
 
         job_nodes = graph.get_nodes_by_group("job")
         assert len(job_nodes) == 1
@@ -170,7 +170,7 @@ class TestPipelineGraph:
         layer.workflow.add_step(step2)
 
         graph = PipelineGraph()
-        graph.build_from_doc(doc)
+        graph.build_from_doc(doc, generation_id=1)
 
         job_nodes = graph.get_nodes_by_group("job")
         job_node = job_nodes[0]
@@ -183,11 +183,11 @@ class TestPipelineGraph:
         graph = PipelineGraph()
 
         key = ArtifactKey.for_workpiece("550e8400-e29b-41d4-a716-446655449999")
-        graph.add_node(ArtifactNode(key=key))
+        graph.add_node(ArtifactNode(key, generation_id=1))
 
         assert len(graph.get_all_nodes()) == 1
 
-        graph.build_from_doc(doc)
+        graph.build_from_doc(doc, generation_id=1)
 
         assert len(graph.get_all_nodes()) == 1
         assert graph.get_node(key) is None

@@ -63,23 +63,12 @@ class TestArtifactNode:
     def test_node_raises_without_manager(self):
         """Test that accessing state without manager raises."""
         key = ArtifactKey.for_workpiece(WP_UID_1)
-        node = ArtifactNode(key=key, generation_id=1)
+        node = ArtifactNode(key, generation_id=1)
         try:
             _ = node.state
             assert False, "Expected RuntimeError"
         except RuntimeError as e:
             assert "no ArtifactManager" in str(e)
-
-    def test_node_raises_without_generation_id(self):
-        """Test that accessing state without generation_id raises."""
-        key = ArtifactKey.for_workpiece(WP_UID_1)
-        manager = Mock()
-        node = ArtifactNode(key=key, _artifact_manager=manager)
-        try:
-            _ = node.state
-            assert False, "Expected RuntimeError"
-        except RuntimeError as e:
-            assert "no generation_id" in str(e)
 
     def test_add_dependency(self):
         """Test adding a dependency relationship."""
