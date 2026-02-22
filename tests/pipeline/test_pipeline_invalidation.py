@@ -283,6 +283,7 @@ class TestWorkpieceHandleReuse:
         mock_handle.refcount = 1
         mock_handle.holders = []
 
+        artifact_manager.declare_generation({step_key}, generation_id=1)
         artifact_manager.cache_handle(step_key, mock_handle, generation_id=1)
 
         assert artifact_manager.has_artifact(step_key, 1)
@@ -312,6 +313,7 @@ class TestWorkpieceHandleReuse:
         mock_handle.refcount = 1
         mock_handle.holders = []
 
+        artifact_manager.declare_generation({wp_key}, generation_id=1)
         artifact_manager.cache_handle(wp_key, mock_handle, generation_id=1)
 
         assert artifact_manager.has_artifact(wp_key, 1)

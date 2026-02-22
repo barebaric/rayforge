@@ -40,6 +40,7 @@ def test_cache_handle_stores_handle(manager_with_mock_store):
     key = ArtifactKey.for_workpiece("00000000-0000-4000-8000-000000000001")
     handle = create_mock_handle(WorkPieceArtifactHandle, "handle")
 
+    manager.declare_generation({key}, generation_id=1)
     manager.cache_handle(key, handle, generation_id=1)
 
     composite_key = make_composite_key(key, 1)
@@ -57,6 +58,7 @@ def test_cache_handle_replaces_old_handle(manager_with_mock_store):
     old_handle = create_mock_handle(WorkPieceArtifactHandle, "old_handle")
     new_handle = create_mock_handle(WorkPieceArtifactHandle, "new_handle")
 
+    manager.declare_generation({key}, generation_id=1)
     manager.cache_handle(key, old_handle, generation_id=1)
     manager.cache_handle(key, new_handle, generation_id=1)
 
@@ -74,6 +76,7 @@ def test_get_workpiece_handle_returns_cached_handle(manager_with_mock_store):
     key = ArtifactKey.for_workpiece("00000000-0000-4000-8000-000000000001")
     handle = create_mock_handle(WorkPieceArtifactHandle, "handle")
 
+    manager.declare_generation({key}, generation_id=1)
     manager.cache_handle(key, handle, generation_id=1)
 
     result = manager.get_workpiece_handle(key, 1)
@@ -99,6 +102,7 @@ def test_invalidate_for_workpiece_removes_cached_handles(
     key = ArtifactKey.for_workpiece("00000000-0000-4000-8000-000000000001")
     handle = create_mock_handle(WorkPieceArtifactHandle, "handle")
 
+    manager.declare_generation({key}, generation_id=1)
     manager.cache_handle(key, handle, generation_id=1)
     manager.invalidate_for_workpiece(key)
 
@@ -112,6 +116,7 @@ def test_shutdown_releases_all_handles(manager_with_mock_store):
     key = ArtifactKey.for_workpiece("00000000-0000-4000-8000-000000000001")
     handle = create_mock_handle(WorkPieceArtifactHandle, "handle")
 
+    manager.declare_generation({key}, generation_id=1)
     manager.cache_handle(key, handle, generation_id=1)
     manager.shutdown()
 

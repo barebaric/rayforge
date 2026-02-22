@@ -858,13 +858,16 @@ class ArtifactManager:
         key: ArtifactKey,
         handle: BaseArtifactHandle,
         generation_id: GenerationID,
-    ) -> None:
+    ) -> bool:
         """
         Caches an artifact handle.
 
         This retains the handle, creating a "Manager's Claim" on the
         shared memory. This ensures the data persists even after the
         GenerationContext releases its "Builder's Claim".
+
+        Returns True if the handle was cached, False if the workpiece
+        was deleted (entry not found in ledger).
 
         Args:
             key: The ArtifactKey for the entry.
@@ -879,10 +882,11 @@ class ArtifactManager:
         entry = self.get_ledger_entry(composite_key)
         if entry is None:
             logger.debug(
-                f"cache_handle: creating new entry for {composite_key}"
+                f"cache_handle: no entry for {composite_key}, "
+                "workpiece may have been deleted"
             )
-            entry = LedgerEntry(generation_id=generation_id)
-            self._ledger[composite_key] = entry
+            self._store.release(handle)
+            return False
 
         logger.debug(f"cache: Caching entry {composite_key}")
         canonical = self._store._handles.get(handle.shm_name)
@@ -893,6 +897,7 @@ class ArtifactManager:
         entry.handle = handle
         entry.generation_id = generation_id
         entry.state = NodeState.VALID
+        return True
 
     def mark_done(
         self,

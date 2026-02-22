@@ -164,13 +164,13 @@ class WorkPiecePipelineStage(PipelineStage):
                 with self._artifact_manager.safe_adoption(
                     key, handle_dict
                 ) as handle:
-                    self._artifact_manager.cache_handle(
+                    if self._artifact_manager.cache_handle(
                         key, handle, generation_id
-                    )
-                    self._emit_node_state(key, NodeState.VALID)
-                    self.workpiece_artifact_adopted.send(
-                        self, step_uid=step_uid, workpiece_uid=key.id
-                    )
+                    ):
+                        self._emit_node_state(key, NodeState.VALID)
+                        self.workpiece_artifact_adopted.send(
+                            self, step_uid=step_uid, workpiece_uid=key.id
+                        )
         except StaleGenerationError as e:
             logger.debug(f"Discarding stale artifact event for {key}: {e}")
         except Exception as e:
