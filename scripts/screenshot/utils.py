@@ -172,8 +172,8 @@ def wait_for_settled(win: "MainWindow", timeout: float = 30.0) -> bool:
 
 
 def load_project(win: "MainWindow", project_name: str) -> None:
-    """Load a project file from the tests directory."""
-    project_path = TESTS_DIR / project_name
+    """Load a project file from the tests/assets directory."""
+    project_path = TESTS_DIR / "assets" / project_name
     if not project_path.exists():
         raise FileNotFoundError(f"Project not found: {project_path}")
 
