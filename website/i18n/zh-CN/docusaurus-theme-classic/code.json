@@ -1,0 +1,282 @@
+{
+  "theme.ErrorPageContent.title": {
+    "message": "此页面不存在。",
+    "description": "The title of the fallback page when the page crashed"
+  },
+  "theme.ErrorPageContent.tryAgain": {
+    "message": "重试",
+    "description": "The label of the button to try again rendering when the React error boundary captures an error"
+  },
+  "theme.NotFound.title": {
+    "message": "页面未找到",
+    "description": "The title of the 404 page"
+  },
+  "theme.NotFound.p1": {
+    "message": "我们无法找到您要查找的内容。",
+    "description": "The first paragraph of the 404 page"
+  },
+  "theme.NotFound.p2": {
+    "message": "请联系引导您来到此处的网站所有者，并告知他们链接已损坏。",
+    "description": "The 2nd paragraph of the 404 page"
+  },
+  "theme.admonition.note": {
+    "message": "注释",
+    "description": "The default label used for the Note admonition (:::note)"
+  },
+  "theme.admonition.tip": {
+    "message": "提示",
+    "description": "The default label used for the Tip admonition (:::tip)"
+  },
+  "theme.admonition.danger": {
+    "message": "危险",
+    "description": "The default label used for the Danger admonition (:::danger)"
+  },
+  "theme.admonition.info": {
+    "message": "信息",
+    "description": "The default label used for the Info admonition (:::info)"
+  },
+  "theme.admonition.caution": {
+    "message": "警告",
+    "description": "The default label used for the Caution admonition (:::caution)"
+  },
+  "theme.BackToTopButton.buttonAriaLabel": {
+    "message": "回到顶部",
+    "description": "The ARIA label for the back to top button"
+  },
+  "theme.blog.archive.title": {
+    "message": "归档",
+    "description": "The page & hero title of the blog archive page"
+  },
+  "theme.blog.archive.description": {
+    "message": "归档",
+    "description": "The page & hero description of the blog archive page"
+  },
+  "theme.blog.paginator.navAriaLabel": {
+    "message": "博客文章列表导航",
+    "description": "The ARIA label for the blog pagination"
+  },
+  "theme.blog.paginator.newerEntries": {
+    "message": "较新的条目",
+    "description": "The label used to navigate to the newer blog posts page (previous page)"
+  },
+  "theme.blog.paginator.olderEntries": {
+    "message": "较旧的条目",
+    "description": "The label used to navigate to the older blog posts page (next page)"
+  },
+  "theme.blog.post.paginator.navAriaLabel": {
+    "message": "博客文章导航",
+    "description": "The ARIA label for the blog posts pagination"
+  },
+  "theme.blog.post.paginator.newerPost": {
+    "message": "较新的文章",
+    "description": "The blog post button label to navigate to the newer/previous post"
+  },
+  "theme.blog.post.paginator.olderPost": {
+    "message": "较旧的文章",
+    "description": "The blog post button label to navigate to the older/next post"
+  },
+  "theme.blog.post.plurals": {
+    "message": "{count} 篇文章",
+    "description": "Pluralized label for \"{count} posts\". Use as much plural forms (separated by `|`) as your language support (see https://www.unicode.org/cldr/cldr-aux/charts/34/supplemental/language_plural_rules.html)"
+  },
+  "theme.blog.tagTitle": {
+    "message": "{nDocsTagged} 标记为 \"{tagName}\"",
+    "description": "The title of the page for a blog tag"
+  },
+  "theme.tags.tagsPageLink": {
+    "message": "查看所有标签",
+    "description": "The label of the link targeting the tag list page"
+  },
+  "theme.colorToggle.ariaLabel": {
+    "message": "切换明暗模式（当前为{mode}）",
+    "description": "The ARIA label for the navbar color mode toggle"
+  },
+  "theme.colorToggle.ariaLabel.mode.dark": {
+    "message": "深色模式",
+    "description": "The name for the dark color mode"
+  },
+  "theme.colorToggle.ariaLabel.mode.light": {
+    "message": "浅色模式",
+    "description": "The name for the light color mode"
+  },
+  "theme.docs.breadcrumbs.navAriaLabel": {
+    "message": "面包屑",
+    "description": "The ARIA label for the breadcrumbs"
+  },
+  "theme.docs.DocCard.categoryDescription.plurals": {
+    "message": "{count} 个项目",
+    "description": "The default description for a category card in the generated index about how many items this category includes"
+  },
+  "theme.docs.paginator.navAriaLabel": {
+    "message": "文档导航",
+    "description": "The ARIA label for the docs pagination"
+  },
+  "theme.docs.paginator.previous": {
+    "message": "上一页",
+    "description": "The label used to navigate to the previous doc"
+  },
+  "theme.docs.paginator.next": {
+    "message": "下一页",
+    "description": "The label used to navigate to the next doc"
+  },
+  "theme.docs.sidebar.expandButtonTitle": {
+    "message": "展开侧边栏",
+    "description": "The ARIA label and title attribute for expand button of doc sidebar"
+  },
+  "theme.docs.sidebar.expandButtonAriaLabel": {
+    "message": "展开侧边栏",
+    "description": "The ARIA label and title attribute for expand button of doc sidebar"
+  },
+  "theme.docs.sidebar.collapseButtonTitle": {
+    "message": "收起侧边栏",
+    "description": "The title attribute for collapse button of doc sidebar"
+  },
+  "theme.docs.sidebar.collapseButtonAriaLabel": {
+    "message": "收起侧边栏",
+    "description": "The ARIA label for collapse button of doc sidebar"
+  },
+  "theme.docs.tagDocListPageTitle.nDocsTagged": {
+    "message": "{count} 个文档标记",
+    "description": "Pluralized label for \"{count} docs tagged\". Use as much plural forms (separated by `|`) as your language support (see https://www.unicode.org/cldr/cldr-aux/charts/34/supplemental/language_plural_rules.html)"
+  },
+  "theme.docs.tagDocListPageTitle": {
+    "message": "{nDocsTagged} 标记为 \"{tagName}\"",
+    "description": "The title of the page for a docs tag"
+  },
+  "theme.docs.versions.unreleasedVersionLabel": {
+    "message": "这是 {siteTitle} {versionLabel} 版本的未发布文档。",
+    "description": "The label used to tell the user that he's browsing an unreleased doc version"
+  },
+  "theme.docs.versions.unmaintainedVersionLabel": {
+    "message": "这是 {siteTitle} {versionLabel} 版本的文档，已不再积极维护。",
+    "description": "The label used to tell the user that he's browsing an unmaintained doc version"
+  },
+  "theme.docs.versions.latestVersionSuggestionLabel": {
+    "message": "如需最新文档，请查看 {latestVersionLink}（{versionLabel}）。",
+    "description": "The label used to tell the user to check the latest version"
+  },
+  "theme.docs.versions.latestVersionLinkLabel": {
+    "message": "最新版本",
+    "description": "The label used for the latest version suggestion link label"
+  },
+  "theme.common.editThisPage": {
+    "message": "编辑此页",
+    "description": "The link label to edit the current page"
+  },
+  "theme.common.headingLinkTitle": {
+    "message": "标题直接链接",
+    "description": "Title for link to heading"
+  },
+  "theme.lastUpdated.atDate": {
+    "message": "于 {date}",
+    "description": "The words used to describe on which date a page has been last updated"
+  },
+  "theme.lastUpdated.byUser": {
+    "message": "由 {user}",
+    "description": "The words used to describe by who the page has been last updated"
+  },
+  "theme.lastUpdated.lastUpdatedAtBy": {
+    "message": "最后更新{byUser}{atDate}",
+    "description": "The sentence used to display when a page has been last updated, and by who"
+  },
+  "theme.navbar.mobileVersionsDropdown.label": {
+    "message": "版本",
+    "description": "The label for the navbar versions dropdown on mobile view"
+  },
+  "theme.navbar.mobileLanguageDropdown.label": {
+    "message": "语言",
+    "description": "The label for the mobile language switcher dropdown"
+  },
+  "theme.TOCCollapsible.toggleButtonLabel": {
+    "message": "本页内容",
+    "description": "The label used by the button on the collapsible TOC component"
+  },
+  "theme.tags.tagsListLabel": {
+    "message": "标签：",
+    "description": "The label alongside a tag list"
+  },
+  "theme.search.noResults": {
+    "message": "未找到结果",
+    "description": "The label for the search results when no results are found"
+  },
+  "theme.search.seeAll": {
+    "message": "查看所有结果",
+    "description": "The label for the search results link to see all results"
+  },
+  "theme.SearchBar.label": {
+    "message": "搜索",
+    "description": "The ARIA label and placeholder for search button"
+  },
+  "theme.SearchModal.searchBox.resetButtonTitle": {
+    "message": "清除搜索",
+    "description": "The label and ARIA label for search box reset button"
+  },
+  "theme.SearchModal.searchBox.cancelButtonText": {
+    "message": "取消",
+    "description": "The label and ARIA label for search box cancel button"
+  },
+  "theme.SearchModal.startScreen.recentSearchesTitle": {
+    "message": "最近搜索",
+    "description": "The title for recent searches"
+  },
+  "theme.SearchModal.startScreen.noRecentSearchesText": {
+    "message": "没有最近搜索",
+    "description": "The text when no recent searches"
+  },
+  "theme.SearchModal.startScreen.saveRecentSearchButtonTitle": {
+    "message": "保存此搜索",
+    "description": "The label for save recent search button"
+  },
+  "theme.SearchModal.startScreen.removeRecentSearchButtonTitle": {
+    "message": "从历史记录中删除此搜索",
+    "description": "The label for remove recent search button"
+  },
+  "theme.SearchModal.errorScreen.titleText": {
+    "message": "无法获取结果",
+    "description": "The title for error screen"
+  },
+  "theme.SearchModal.errorScreen.helpText": {
+    "message": "您可以尝试刷新页面。",
+    "description": "The help text for error screen"
+  },
+  "theme.SearchModal.footer.selectText": {
+    "message": "选择",
+    "description": "The label for select text"
+  },
+  "theme.SearchModal.footer.selectKeyAriaLabel": {
+    "message": "回车键",
+    "description": "The label for select key"
+  },
+  "theme.SearchModal.footer.navigateText": {
+    "message": "导航",
+    "description": "The label for navigate text"
+  },
+  "theme.SearchModal.footer.navigateUpKeyAriaLabel": {
+    "message": "上箭头",
+    "description": "The label for navigate up key"
+  },
+  "theme.SearchModal.footer.navigateDownKeyAriaLabel": {
+    "message": "下箭头",
+    "description": "The label for navigate down key"
+  },
+  "theme.SearchModal.footer.closeText": {
+    "message": "关闭",
+    "description": "The label for close text"
+  },
+  "theme.SearchModal.footer.closeKeyAriaLabel": {
+    "message": "Esc键",
+    "description": "The label for close key"
+  },
+  "theme.SearchModal.footer.searchByText": {
+    "message": "搜索提供",
+    "description": "The label for search by text"
+  },
+  "theme.unlistedContent.title": {
+    "message": "未列出页面",
+    "description": "The unlisted content banner title"
+  },
+  "theme.unlistedContent.message": {
+    "message": "此页面未列出。搜索引擎不会索引它，只有拥有直接链接的用户才能访问。",
+    "description": "The unlisted content banner message"
+  }
+}

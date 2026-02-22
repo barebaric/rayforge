@@ -1,0 +1,282 @@
+{
+  "theme.ErrorPageContent.title": {
+    "message": "Esta página não existe.",
+    "description": "The title of the fallback page when the page crashed"
+  },
+  "theme.ErrorPageContent.tryAgain": {
+    "message": "Tentar novamente",
+    "description": "The label of the button to try again rendering when the React error boundary captures an error"
+  },
+  "theme.NotFound.title": {
+    "message": "Página não encontrada",
+    "description": "The title of the 404 page"
+  },
+  "theme.NotFound.p1": {
+    "message": "Não conseguimos encontrar o que você estava procurando.",
+    "description": "The first paragraph of the 404 page"
+  },
+  "theme.NotFound.p2": {
+    "message": "Por favor, entre em contato com o proprietário do site que lhe trouxe aqui e informe que o link está quebrado.",
+    "description": "The 2nd paragraph of the 404 page"
+  },
+  "theme.admonition.note": {
+    "message": "Nota",
+    "description": "The default label used for the Note admonition (:::note)"
+  },
+  "theme.admonition.tip": {
+    "message": "Dica",
+    "description": "The default label used for the Tip admonition (:::tip)"
+  },
+  "theme.admonition.danger": {
+    "message": "Perigo",
+    "description": "The default label used for the Danger admonition (:::danger)"
+  },
+  "theme.admonition.info": {
+    "message": "Informação",
+    "description": "The default label used for the Info admonition (:::info)"
+  },
+  "theme.admonition.caution": {
+    "message": "Cuidado",
+    "description": "The default label used for the Caution admonition (:::caution)"
+  },
+  "theme.BackToTopButton.buttonAriaLabel": {
+    "message": "Voltar ao topo",
+    "description": "The ARIA label for the back to top button"
+  },
+  "theme.blog.archive.title": {
+    "message": "Arquivo",
+    "description": "The page & hero title of the blog archive page"
+  },
+  "theme.blog.archive.description": {
+    "message": "Arquivo",
+    "description": "The page & hero description of the blog archive page"
+  },
+  "theme.blog.paginator.navAriaLabel": {
+    "message": "Navegação da lista de posts do blog",
+    "description": "The ARIA label for the blog pagination"
+  },
+  "theme.blog.paginator.newerEntries": {
+    "message": "Entradas mais recentes",
+    "description": "The label used to navigate to the newer blog posts page (previous page)"
+  },
+  "theme.blog.paginator.olderEntries": {
+    "message": "Entradas mais antigas",
+    "description": "The label used to navigate to the older blog posts page (next page)"
+  },
+  "theme.blog.post.paginator.navAriaLabel": {
+    "message": "Navegação de posts do blog",
+    "description": "The ARIA label for the blog posts pagination"
+  },
+  "theme.blog.post.paginator.newerPost": {
+    "message": "Post mais recente",
+    "description": "The blog post button label to navigate to the newer/previous post"
+  },
+  "theme.blog.post.paginator.olderPost": {
+    "message": "Post mais antigo",
+    "description": "The blog post button label to navigate to the older/next post"
+  },
+  "theme.blog.post.plurals": {
+    "message": "um post|{count} posts",
+    "description": "Pluralized label for \"{count} posts\". Use as much plural forms (separated by `|`) as your language support (see https://www.unicode.org/cldr/cldr-aux/charts/34/supplemental/language_plural_rules.html)"
+  },
+  "theme.blog.tagTitle": {
+    "message": "{nPosts} marcados com \"{tagName}\"",
+    "description": "The title of the page for a blog tag"
+  },
+  "theme.tags.tagsPageLink": {
+    "message": "Ver todas as tags",
+    "description": "The label of the link targeting the tag list page"
+  },
+  "theme.colorToggle.ariaLabel": {
+    "message": "Alternar entre modo claro e escuro (atualmente {mode})",
+    "description": "The ARIA label for the navbar color mode toggle"
+  },
+  "theme.colorToggle.ariaLabel.mode.dark": {
+    "message": "modo escuro",
+    "description": "The name for the dark color mode"
+  },
+  "theme.colorToggle.ariaLabel.mode.light": {
+    "message": "modo claro",
+    "description": "The name for the light color mode"
+  },
+  "theme.docs.breadcrumbs.navAriaLabel": {
+    "message": "Breadcrumbs",
+    "description": "The ARIA label for the breadcrumbs"
+  },
+  "theme.docs.DocCard.categoryDescription.plurals": {
+    "message": "{count} itens",
+    "description": "The default description for a category card in the generated index about how many items this category includes"
+  },
+  "theme.docs.paginator.navAriaLabel": {
+    "message": "Navegação de documentos",
+    "description": "The ARIA label for the docs pagination"
+  },
+  "theme.docs.paginator.previous": {
+    "message": "Anterior",
+    "description": "The label used to navigate to the previous doc"
+  },
+  "theme.docs.paginator.next": {
+    "message": "Próximo",
+    "description": "The label used to navigate to the next doc"
+  },
+  "theme.docs.sidebar.expandButtonTitle": {
+    "message": "Expandir sidebar",
+    "description": "The ARIA label and title attribute for expand button of doc sidebar"
+  },
+  "theme.docs.sidebar.expandButtonAriaLabel": {
+    "message": "Expandir sidebar",
+    "description": "The ARIA label and title attribute for expand button of doc sidebar"
+  },
+  "theme.docs.sidebar.collapseButtonTitle": {
+    "message": "Recolher sidebar",
+    "description": "The title attribute for collapse button of doc sidebar"
+  },
+  "theme.docs.sidebar.collapseButtonAriaLabel": {
+    "message": "Recolher sidebar",
+    "description": "The ARIA label for collapse button of doc sidebar"
+  },
+  "theme.docs.tagDocListPageTitle.nDocsTagged": {
+    "message": "um documento marcado|{count} documentos marcados",
+    "description": "Pluralized label for \"{count} docs tagged\". Use as much plural forms (separated by `|`) as your language support (see https://www.unicode.org/cldr/cldr-aux/charts/34/supplemental/language_plural_rules.html)"
+  },
+  "theme.docs.tagDocListPageTitle": {
+    "message": "{nDocsTagged} com \"{tagName}\"",
+    "description": "The title of the page for a docs tag"
+  },
+  "theme.docs.versions.unreleasedVersionLabel": {
+    "message": "Esta é documentação não publicada para {siteTitle} versão {versionLabel}.",
+    "description": "The label used to tell the user that he's browsing an unreleased doc version"
+  },
+  "theme.docs.versions.unmaintainedVersionLabel": {
+    "message": "Esta é documentação para {siteTitle} {versionLabel}, que não é mais mantida ativamente.",
+    "description": "The label used to tell the user that he's browsing an unmaintained doc version"
+  },
+  "theme.docs.versions.latestVersionSuggestionLabel": {
+    "message": "Para documentação atualizada, veja a {latestVersionLink} ({versionLabel}).",
+    "description": "The label used to tell the user to check the latest version"
+  },
+  "theme.docs.versions.latestVersionLinkLabel": {
+    "message": "última versão",
+    "description": "The label used for the latest version suggestion link label"
+  },
+  "theme.common.editThisPage": {
+    "message": "Editar esta página",
+    "description": "The link label to edit the current page"
+  },
+  "theme.common.headingLinkTitle": {
+    "message": "Link direto para o título",
+    "description": "Title for link to heading"
+  },
+  "theme.lastUpdated.atDate": {
+    "message": " em {date}",
+    "description": "The words used to describe on which date a page has been last updated"
+  },
+  "theme.lastUpdated.byUser": {
+    "message": " por {user}",
+    "description": "The words used to describe by who the page has been last updated"
+  },
+  "theme.lastUpdated.lastUpdatedAtBy": {
+    "message": "Última atualização{byUser}{atDate}",
+    "description": "The sentence used to display when a page has been last updated, and by who"
+  },
+  "theme.navbar.mobileVersionsDropdown.label": {
+    "message": "Versões",
+    "description": "The label for the navbar versions dropdown on mobile view"
+  },
+  "theme.navbar.mobileLanguageDropdown.label": {
+    "message": "Idiomas",
+    "description": "The label for the mobile language switcher dropdown"
+  },
+  "theme.TOCCollapsible.toggleButtonLabel": {
+    "message": "Nesta página",
+    "description": "The label used by the button on the collapsible TOC component"
+  },
+  "theme.tags.tagsListLabel": {
+    "message": "Tags:",
+    "description": "The label alongside a tag list"
+  },
+  "theme.search.noResults": {
+    "message": "Nenhum resultado encontrado",
+    "description": "The label for the search results when no results are found"
+  },
+  "theme.search.seeAll": {
+    "message": "Ver todos os resultados",
+    "description": "The label for the search results link to see all results"
+  },
+  "theme.SearchBar.label": {
+    "message": "Pesquisar",
+    "description": "The ARIA label and placeholder for search button"
+  },
+  "theme.SearchModal.searchBox.resetButtonTitle": {
+    "message": "Limpar pesquisa",
+    "description": "The label and ARIA label for search box reset button"
+  },
+  "theme.SearchModal.searchBox.cancelButtonText": {
+    "message": "Cancelar",
+    "description": "The label and ARIA label for search box cancel button"
+  },
+  "theme.SearchModal.startScreen.recentSearchesTitle": {
+    "message": "Pesquisas recentes",
+    "description": "The title for recent searches"
+  },
+  "theme.SearchModal.startScreen.noRecentSearchesText": {
+    "message": "Nenhuma pesquisa recente",
+    "description": "The text when no recent searches"
+  },
+  "theme.SearchModal.startScreen.saveRecentSearchButtonTitle": {
+    "message": "Salvar esta pesquisa",
+    "description": "The label for save recent search button"
+  },
+  "theme.SearchModal.startScreen.removeRecentSearchButtonTitle": {
+    "message": "Remover esta pesquisa do histórico",
+    "description": "The label for remove recent search button"
+  },
+  "theme.SearchModal.errorScreen.titleText": {
+    "message": "Não foi possível obter resultados",
+    "description": "The title for error screen"
+  },
+  "theme.SearchModal.errorScreen.helpText": {
+    "message": "Você pode tentar atualizar a página.",
+    "description": "The help text for error screen"
+  },
+  "theme.SearchModal.footer.selectText": {
+    "message": "para selecionar",
+    "description": "The label for select text"
+  },
+  "theme.SearchModal.footer.selectKeyAriaLabel": {
+    "message": "Enter",
+    "description": "The label for select key"
+  },
+  "theme.SearchModal.footer.navigateText": {
+    "message": "para navegar",
+    "description": "The label for navigate text"
+  },
+  "theme.SearchModal.footer.navigateUpKeyAriaLabel": {
+    "message": "Seta para cima",
+    "description": "The label for navigate up key"
+  },
+  "theme.SearchModal.footer.navigateDownKeyAriaLabel": {
+    "message": "Seta para baixo",
+    "description": "The label for navigate down key"
+  },
+  "theme.SearchModal.footer.closeText": {
+    "message": "para fechar",
+    "description": "The label for close text"
+  },
+  "theme.SearchModal.footer.closeKeyAriaLabel": {
+    "message": "Esc",
+    "description": "The label for close key"
+  },
+  "theme.SearchModal.footer.searchByText": {
+    "message": "Pesquisa por",
+    "description": "The label for search by text"
+  },
+  "theme.unlistedContent.title": {
+    "message": "Página não listada",
+    "description": "The unlisted content banner title"
+  },
+  "theme.unlistedContent.message": {
+    "message": "Esta página não está listada. Motores de busca não a indexarão e apenas usuários com o link direto podem acessá-la.",
+    "description": "The unlisted content banner message"
+  }
+}
