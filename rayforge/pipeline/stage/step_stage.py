@@ -7,6 +7,7 @@ from ...shared.tasker.task import Task
 from ..artifact import StepOpsArtifactHandle, StepRenderArtifactHandle
 from ..artifact.key import ArtifactKey
 from ..artifact.manager import StaleGenerationError
+from ..artifact.store import SharedMemoryNotFoundError
 from ..dag.node import NodeState
 from .base import PipelineStage
 
@@ -121,6 +122,11 @@ class StepPipelineStage(PipelineStage):
         except StaleGenerationError as e:
             logger.debug(
                 f"Discarding stale artifact event for {ledger_key}: {e}"
+            )
+        except SharedMemoryNotFoundError as e:
+            logger.debug(
+                f"Shared memory not found for {ledger_key}, event may be from "
+                f"terminated worker: {e}"
             )
         except Exception as e:
             logger.error(
