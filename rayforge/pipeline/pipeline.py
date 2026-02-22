@@ -451,10 +451,8 @@ class Pipeline:
 
         elif isinstance(origin, Step):
             logger.debug(
-                f"Step '{origin.name}' removed. Releasing resources and "
-                f"invalidating artifacts."
+                f"Step '{origin.name}' removed. Invalidating artifacts."
             )
-            self._step_stage.release_retained_handles(origin.uid)
             step_key = ArtifactKey.for_step(origin.uid)
 
             # Cancel and invalidate all workpiece tasks for this step
