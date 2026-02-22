@@ -192,6 +192,9 @@ def line_pixels(
     """
     Get pixel coordinates along a line using Bresenham's algorithm.
 
+    Pre-allocates numpy arrays, and uses numpy vectorization for
+    horizontal/vertical lines for performance.
+
     Args:
         start: (x, y) start coordinates in pixels
         end: (x, y) end coordinates in pixels
@@ -199,23 +202,73 @@ def line_pixels(
         height: Image height in pixels
 
     Returns:
-        Array of (x, y) pixel coordinates along the line
+        Array of (x, y) pixel coordinates along the line, shape (N, 2)
     """
     x0, y0 = int(round(start[0])), int(round(start[1]))
     x1, y1 = int(round(end[0])), int(round(end[1]))
 
     dx = abs(x1 - x0)
     dy = abs(y1 - y0)
+
+    # Early exit for single-point lines
+    max_pixels = max(dx, dy) + 1
+    if max_pixels <= 1:
+        if 0 <= x0 < width and 0 <= y0 < height:
+            return np.array([[x0, y0]], dtype=np.int32)
+        return np.array([], dtype=np.int32).reshape(0, 2)
+
+    # Fast path for horizontal lines (dy=0): use numpy vectorization
+    # This is the most common case for raster scanning at angle=0
+    if dy == 0:
+        y = y0
+        if not (0 <= y < height):
+            return np.array([], dtype=np.int32).reshape(0, 2)
+        x_start = min(x0, x1)
+        x_end = max(x0, x1) + 1
+        # Clip to image bounds
+        x_start = max(0, x_start)
+        x_end = min(width, x_end)
+        if x_start >= x_end:
+            return np.array([], dtype=np.int32).reshape(0, 2)
+        xs = np.arange(x_start, x_end, dtype=np.int32)
+        result = np.empty((len(xs), 2), dtype=np.int32)
+        result[:, 0] = xs
+        result[:, 1] = y
+        return result
+
+    # Fast path for vertical lines (dx=0): use numpy vectorization
+    if dx == 0:
+        x = x0
+        if not (0 <= x < width):
+            return np.array([], dtype=np.int32).reshape(0, 2)
+        y_start = min(y0, y1)
+        y_end = max(y0, y1) + 1
+        # Clip to image bounds
+        y_start = max(0, y_start)
+        y_end = min(height, y_end)
+        if y_start >= y_end:
+            return np.array([], dtype=np.int32).reshape(0, 2)
+        ys = np.arange(y_start, y_end, dtype=np.int32)
+        result = np.empty((len(ys), 2), dtype=np.int32)
+        result[:, 0] = x
+        result[:, 1] = ys
+        return result
+
+    # General case: diagonal lines use Bresenham's algorithm
+    # Pre-allocate array to avoid list.append() overhead
     sx = 1 if x0 < x1 else -1
     sy = 1 if y0 < y1 else -1
     err = dx - dy
 
-    pixels = []
+    pixels = np.empty((max_pixels, 2), dtype=np.int32)
+    count = 0
     x, y = x0, y0
 
     while True:
         if 0 <= x < width and 0 <= y < height:
-            pixels.append((x, y))
+            pixels[count, 0] = x
+            pixels[count, 1] = y
+            count += 1
         if x == x1 and y == y1:
             break
         e2 = 2 * err
@@ -226,7 +279,7 @@ def line_pixels(
             err += dx
             y += sy
 
-    return np.array(pixels, dtype=np.int32)
+    return pixels[:count]
 
 
 def generate_scan_lines(
