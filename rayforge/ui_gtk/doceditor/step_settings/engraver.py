@@ -2,7 +2,7 @@ from typing import Dict, Any, TYPE_CHECKING, cast, Optional
 from gi.repository import Gtk, Adw, GObject
 import numpy as np
 from ....image.dither import DitherAlgorithm
-from ....image.util import compute_auto_levels
+from ....image.util import compute_auto_levels, get_visible_grayscale_values
 from ....pipeline.producer.base import OpsProducer
 from ....pipeline.producer.raster import (
     Rasterizer,
@@ -349,63 +349,39 @@ class EngraverSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
             self.histogram_preview.update_histogram(None)
             return
 
-        workpiece = workpieces[0]
-        size = workpiece.size
-        if not size or size[0] <= 0 or size[1] <= 0:
-            self.histogram_preview.update_histogram(None)
-            return
-
         pixels_per_mm = self.step.pixels_per_mm
-        width_px = int(size[0] * pixels_per_mm[0])
-        height_px = int(size[1] * pixels_per_mm[1])
+        all_gray_values = []
 
-        if width_px <= 0 or height_px <= 0:
+        for workpiece in workpieces:
+            size = workpiece.size
+            if not size or size[0] <= 0 or size[1] <= 0:
+                continue
+
+            width_px = int(size[0] * pixels_per_mm[0])
+            height_px = int(size[1] * pixels_per_mm[1])
+
+            if width_px <= 0 or height_px <= 0:
+                continue
+
+            surface = workpiece.render_to_pixels(width_px, height_px)
+            if not surface:
+                continue
+
+            gray_values = get_visible_grayscale_values(surface, invert)
+            if gray_values.size > 0:
+                all_gray_values.append(gray_values)
+
+        if not all_gray_values:
             self.histogram_preview.update_histogram(None)
             return
 
-        surface = workpiece.render_to_pixels(width_px, height_px)
-        if not surface:
-            self.histogram_preview.update_histogram(None)
-            return
+        combined_gray = np.concatenate(all_gray_values)
 
-        width_px = surface.get_width()
-        height_px = surface.get_height()
-        stride = surface.get_stride()
-        buf = surface.get_data()
-        data_with_padding = np.ndarray(
-            shape=(height_px, stride // 4, 4), dtype=np.uint8, buffer=buf
-        )
-        data = data_with_padding[:, :width_px, :]
-
-        alpha = data[:, :, 3].astype(np.float32) / 255.0
-        r = data[:, :, 2].astype(np.float32)
-        g = data[:, :, 1].astype(np.float32)
-        b = data[:, :, 0].astype(np.float32)
-
-        alpha_safe = np.maximum(alpha, 1e-6)
-        r_unpremult = np.clip(r / alpha_safe, 0, 255)
-        g_unpremult = np.clip(g / alpha_safe, 0, 255)
-        b_unpremult = np.clip(b / alpha_safe, 0, 255)
-
-        r_blended = 255.0 - (255.0 - r_unpremult) * alpha
-        g_blended = 255.0 - (255.0 - g_unpremult) * alpha
-        b_blended = 255.0 - (255.0 - b_unpremult) * alpha
-
-        gray_image = (
-            0.2989 * r_blended + 0.5870 * g_blended + 0.114 * b_blended
-        ).astype(np.uint8)
-
-        if invert:
-            alpha_mask = alpha > 0
-            gray_image[alpha_mask] = 255 - gray_image[alpha_mask]
-
-        histogram, _ = np.histogram(
-            gray_image[alpha > 0], bins=64, range=(0, 255)
-        )
+        histogram, _ = np.histogram(combined_gray, bins=64, range=(0, 255))
 
         self.histogram_preview.update_histogram(histogram)
 
-        auto_black, auto_white = compute_auto_levels(gray_image[alpha > 0])
+        auto_black, auto_white = compute_auto_levels(combined_gray)
         self.histogram_preview.set_auto_points(auto_black, auto_white)
 
     def _commit_power_range_change(self):

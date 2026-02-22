@@ -136,6 +136,30 @@ def surface_to_grayscale(
     return gray_image, alpha
 
 
+def get_visible_grayscale_values(
+    surface: cairo.ImageSurface,
+    invert: bool = False,
+) -> numpy.ndarray:
+    """
+    Extract grayscale values for visible pixels from a Cairo ARGB32 surface.
+
+    Args:
+        surface: Cairo ImageSurface in FORMAT_ARGB32 format.
+        invert: If True, invert grayscale values for visible pixels.
+
+    Returns:
+        1D uint8 numpy array containing grayscale values (0-255) for pixels
+        with alpha > 0. Returns empty array if no visible pixels.
+    """
+    gray_image, alpha = surface_to_grayscale(surface)
+
+    if invert:
+        alpha_mask = alpha > 0
+        gray_image[alpha_mask] = 255 - gray_image[alpha_mask]
+
+    return gray_image[alpha > 0]
+
+
 def surface_to_binary(
     surface: cairo.ImageSurface,
     threshold: int = 128,
