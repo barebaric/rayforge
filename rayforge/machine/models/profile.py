@@ -56,7 +56,9 @@ class MachineProfile:
     dialect_uid: Optional[str] = None
     gcode_precision: Optional[int] = None
     supports_arcs: Optional[bool] = None
-    dimensions: Optional[Tuple[int, int]] = None
+    axis_extents: Optional[Tuple[float, float]] = None
+    work_margins: Optional[Tuple[float, float, float, float]] = None
+    soft_limits: Optional[Tuple[float, float, float, float]] = None
     origin: Optional[Origin] = None
     max_travel_speed: Optional[int] = None
     max_cut_speed: Optional[int] = None
@@ -135,8 +137,12 @@ class MachineProfile:
             m.gcode_precision = self.gcode_precision
         if self.supports_arcs is not None:
             m.supports_arcs = self.supports_arcs
-        if self.dimensions is not None:
-            m.dimensions = self.dimensions
+        if self.axis_extents is not None:
+            m.set_axis_extents(*self.axis_extents)
+        if self.work_margins is not None:
+            m.set_work_margins(*self.work_margins)
+        if self.soft_limits is not None:
+            m.set_soft_limits(*self.soft_limits)
         if self.origin is not None:
             m.origin = self.origin
         if self.max_travel_speed is not None:
@@ -179,7 +185,7 @@ PROFILES: List[MachineProfile] = [
         driver_class_name="SmoothieDriver",
         dialect_uid="smoothieware",
         gcode_precision=4,
-        dimensions=(300, 200),
+        axis_extents=(300.0, 200.0),
         origin=Origin.BOTTOM_LEFT,
         max_travel_speed=3000,
         max_cut_speed=3000,
@@ -224,7 +230,7 @@ PROFILES: List[MachineProfile] = [
         driver_class_name="GrblSerialDriver",
         dialect_uid="grbl",
         gcode_precision=3,
-        dimensions=(120, 120),
+        axis_extents=(120.0, 120.0),
         origin=Origin.BOTTOM_LEFT,
         max_travel_speed=3000,
         max_cut_speed=1000,
@@ -243,7 +249,7 @@ PROFILES: List[MachineProfile] = [
         driver_class_name="GrblSerialDriver",
         dialect_uid="grbl",
         gcode_precision=3,
-        dimensions=(400, 400),
+        axis_extents=(400.0, 400.0),
         origin=Origin.BOTTOM_LEFT,
         max_travel_speed=3000,
         max_cut_speed=1000,
@@ -261,7 +267,7 @@ PROFILES: List[MachineProfile] = [
         driver_class_name="GrblNetworkDriver",
         dialect_uid="grbl",
         gcode_precision=3,
-        dimensions=(430, 390),
+        axis_extents=(430.0, 390.0),
         origin=Origin.BOTTOM_LEFT,
         max_travel_speed=3000,
         max_cut_speed=1000,
