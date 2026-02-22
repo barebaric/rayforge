@@ -747,3 +747,9 @@ class TaskManagerProxy:
         """
         # Forward the call to the real instance.
         return getattr(self._get_instance(), name)
+
+    def __iter__(self):
+        """
+        Delegate iteration to the real TaskManager instance.
+        """
+        return iter(self._get_instance())
