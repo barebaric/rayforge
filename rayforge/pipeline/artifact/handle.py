@@ -1,10 +1,9 @@
 from __future__ import annotations
 
-from typing import Dict, Any, Type, Optional
+from typing import Dict, Any, Type, Optional, List
 from abc import ABC
 
 
-# A central registry for handle classes, populated automatically.
 _handle_registry: Dict[str, Type["BaseArtifactHandle"]] = {}
 
 
@@ -32,6 +31,8 @@ class BaseArtifactHandle(ABC):
         self.array_metadata = (
             array_metadata if array_metadata is not None else {}
         )
+        self.refcount: int = 1
+        self.holders: List[str] = []
 
     def __init_subclass__(cls, **kwargs):
         """

@@ -21,13 +21,15 @@ def create_mock_handle(handle_class, name: str) -> Mock:
     """Creates a mock handle that behaves like a real handle for tests."""
     handle = Mock(spec=handle_class)
     handle.shm_name = f"shm_{name}"
+    handle.refcount = 1
+    handle.holders = []
     return handle
 
 
 @pytest.fixture
 def manager_with_mock_store():
     mock_store = Mock(spec=ArtifactStore)
-    mock_store._refcounts = {}
+    mock_store._handles = {}
     manager = ArtifactManager(mock_store)
     return manager, mock_store
 
