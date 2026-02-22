@@ -1076,9 +1076,8 @@ def test_on_workpiece_artifact_ready_refcount_increased(
     )
 
     handle = real_artifact_manager._store.put(artifact)
-    shm_name = handle.shm_name
 
-    initial_refcount = real_artifact_manager._store._refcounts.get(shm_name, 1)
+    initial_refcount = handle.refcount
     assert initial_refcount == 1, (
         f"Initial refcount should be 1 after put(), got {initial_refcount}"
     )
@@ -1104,7 +1103,7 @@ def test_on_workpiece_artifact_ready_refcount_increased(
         handle=handle,
     )
 
-    final_refcount = real_artifact_manager._store._refcounts.get(shm_name, 0)
+    final_refcount = handle.refcount
     assert final_refcount >= 2, (
         f"Refcount should be at least 2 after ViewManager retains, "
         f"got {final_refcount}"
@@ -1139,7 +1138,6 @@ def test_on_workpiece_artifact_ready_releases_old_and_refcount_decreased(
     )
 
     old_handle = real_artifact_manager._store.put(artifact1)
-    old_shm_name = old_handle.shm_name
 
     mock_step = MagicMock()
     mock_step.uid = str(uuid.uuid4())
@@ -1161,9 +1159,7 @@ def test_on_workpiece_artifact_ready_releases_old_and_refcount_decreased(
         handle=old_handle,
     )
 
-    old_refcount_after_retain = real_artifact_manager._store._refcounts.get(
-        old_shm_name, 0
-    )
+    old_refcount_after_retain = old_handle.refcount
     assert old_refcount_after_retain == 2, (
         f"Old handle refcount should be 2 after retain, "
         f"got {old_refcount_after_retain}"
@@ -1183,7 +1179,6 @@ def test_on_workpiece_artifact_ready_releases_old_and_refcount_decreased(
     )
 
     new_handle = real_artifact_manager._store.put(artifact2)
-    new_shm_name = new_handle.shm_name
 
     real_view_manager.on_workpiece_artifact_ready(
         sender=None,
@@ -1192,15 +1187,13 @@ def test_on_workpiece_artifact_ready_releases_old_and_refcount_decreased(
         handle=new_handle,
     )
 
-    old_refcount_after_release = real_artifact_manager._store._refcounts.get(
-        old_shm_name, 0
-    )
+    old_refcount_after_release = old_handle.refcount
     assert old_refcount_after_release == 1, (
         f"Old handle refcount should be 1 after release, "
         f"got {old_refcount_after_release}"
     )
 
-    new_refcount = real_artifact_manager._store._refcounts.get(new_shm_name, 0)
+    new_refcount = new_handle.refcount
     assert new_refcount == 2, (
         f"New handle refcount should be 2 after retain, got {new_refcount}"
     )

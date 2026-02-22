@@ -128,8 +128,10 @@ class StressTestController:
 
         return MetricsSnapshot(
             timestamp=time.time(),
-            shm_block_count=len(self.artifact_store._managed_shms),
-            total_refcount=sum(self.artifact_store._refcounts.values()),
+            shm_block_count=len(self.artifact_store._handles),
+            total_refcount=sum(
+                h.refcount for h in self.artifact_store._handles.values()
+            ),
             dag_node_count=len(graph.get_all_nodes()),
             is_busy=self.pipeline.is_busy,
             active_task_count=len(self.task_mgr),
@@ -359,12 +361,14 @@ class StressTestController:
             for entry in vm._view_entries.values():
                 if entry.handle:
                     tracked_shms.add(entry.handle.shm_name)
+                if entry.source_handle:
+                    tracked_shms.add(entry.source_handle.shm_name)
             for handle in vm._source_artifact_handles.values():
                 tracked_shms.add(handle.shm_name)
             for handle in vm._inflight_chunk_handles:
                 tracked_shms.add(handle.shm_name)
 
-        all_shms = set(self.artifact_store._managed_shms.keys())
+        all_shms = set(self.artifact_store._handles.keys())
         untracked_shms = all_shms - tracked_shms
 
         breakdown["total_shm"] = len(all_shms)
@@ -377,12 +381,45 @@ class StressTestController:
                 f"{list(untracked_shms)[:20]}"
             )
 
-            # Log refcounts for untracked blocks to help debug
-            refcounts = self.artifact_store._refcounts
-            untracked_refcounts = {
-                name: refcounts.get(name, "missing") for name in untracked_shms
-            }
-            logger.warning(f"Untracked refcounts: {untracked_refcounts}")
+            # Log holders for untracked blocks
+            for name in list(untracked_shms)[:5]:
+                handle = self.artifact_store._handles.get(name)
+                if handle:
+                    holders = handle.holders[-3:] if handle.holders else []
+                    logger.warning(
+                        f"Handle {name}: refcount={handle.refcount}, "
+                        f"holders={holders}"
+                    )
+                else:
+                    logger.warning(f"Handle {name}: not in _handles dict")
+
+            # Log ledger contents for debugging
+            ledger_shm_names = set()
+            for k, e in ledger.items():
+                if e.handle is not None:
+                    ledger_shm_names.add(e.handle.shm_name)
+            logger.warning(f"Ledger SHM names: {sorted(ledger_shm_names)}")
+
+            # Log all ViewManager tracking for debugging
+            if self._view_manager is not None:
+                vm = self._view_manager
+                vm_view_handles = set()
+                vm_source_handles = set()
+                vm_chunk_handles = set()
+                for entry in vm._view_entries.values():
+                    if entry.handle:
+                        vm_view_handles.add(entry.handle.shm_name)
+                    if entry.source_handle:
+                        vm_source_handles.add(entry.source_handle.shm_name)
+                for h in vm._source_artifact_handles.values():
+                    vm_source_handles.add(h.shm_name)
+                for h in vm._inflight_chunk_handles:
+                    vm_chunk_handles.add(h.shm_name)
+                logger.warning(f"VM view handles: {sorted(vm_view_handles)}")
+                logger.warning(
+                    f"VM source handles: {sorted(vm_source_handles)}"
+                )
+                logger.warning(f"VM chunk handles: {sorted(vm_chunk_handles)}")
 
         return breakdown
 

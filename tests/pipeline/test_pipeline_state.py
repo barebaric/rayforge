@@ -491,7 +491,7 @@ class TestStateConsistency:
     def manager(self):
         """Set up a fresh manager and mock store."""
         mock_store = MagicMock(spec=ArtifactStore)
-        mock_store._refcounts = {}
+        mock_store._handles = {}
         return ArtifactManager(mock_store)
 
     def test_node_state_queries_manager(self, manager):
@@ -499,6 +499,8 @@ class TestStateConsistency:
         key = ArtifactKey.for_workpiece("wp1")
         mock_handle = MagicMock()
         mock_handle.shm_name = "shm_wp1"
+        mock_handle.refcount = 1
+        mock_handle.holders = []
         manager.cache_handle(key, mock_handle, 1)
 
         node = ArtifactNode(
@@ -529,6 +531,8 @@ class TestStateConsistency:
         key = ArtifactKey.for_workpiece("wp1")
         mock_handle = MagicMock()
         mock_handle.shm_name = "shm_wp1"
+        mock_handle.refcount = 1
+        mock_handle.holders = []
         manager.cache_handle(key, mock_handle, 1)
 
         node = ArtifactNode(
@@ -547,6 +551,8 @@ class TestStateConsistency:
         key = ArtifactKey.for_workpiece("wp1")
         mock_handle = MagicMock()
         mock_handle.shm_name = "shm_wp1"
+        mock_handle.refcount = 1
+        mock_handle.holders = []
         manager.cache_handle(key, mock_handle, 1)
 
         node1 = ArtifactNode(
@@ -585,6 +591,8 @@ class TestStateConsistency:
 
         mock_handle = MagicMock()
         mock_handle.shm_name = "shm_wp1"
+        mock_handle.refcount = 1
+        mock_handle.holders = []
         manager.cache_handle(key, mock_handle, 1)
         assert node.state == NodeState.VALID
 

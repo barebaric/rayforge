@@ -13,7 +13,7 @@ from typing import (
 )
 from ..dag.node import NodeState
 from .base import BaseArtifact
-from .handle import BaseArtifactHandle, create_handle_from_dict
+from .handle import BaseArtifactHandle
 from .job import JobArtifactHandle
 from .key import ArtifactKey
 from .lifecycle import LedgerEntry
@@ -272,13 +272,12 @@ class ArtifactManager:
             handle_dict: The serialized handle dictionary.
 
         Yields:
-            The adopted BaseArtifactHandle.
+            The canonical BaseArtifactHandle from the store.
 
         Raises:
             StaleGenerationError: If the generation is stale.
         """
-        handle = create_handle_from_dict(handle_dict)
-        self._store.adopt(handle)
+        handle = self._store.adopt_from_dict(handle_dict)
         try:
             if not self.is_generation_current(key, handle.generation_id):
                 raise StaleGenerationError(
@@ -315,13 +314,12 @@ class ArtifactManager:
             handle_dict: The serialized handle dictionary.
 
         Yields:
-            The adopted BaseArtifactHandle.
+            The canonical BaseArtifactHandle from the store.
 
         Raises:
             StaleGenerationError: If the generation is stale.
         """
-        handle = create_handle_from_dict(handle_dict)
-        self._store.adopt(handle)
+        handle = self._store.adopt_from_dict(handle_dict)
         try:
             if not self.is_generation_current(key, handle.generation_id):
                 raise StaleGenerationError(
@@ -352,11 +350,9 @@ class ArtifactManager:
             handle_dict: The serialized handle dictionary.
 
         Returns:
-            The adopted, deserialized handle.
+            The canonical handle from the store.
         """
-        handle = create_handle_from_dict(handle_dict)
-        self._store.adopt(handle)
-        return handle
+        return self._store.adopt_from_dict(handle_dict)
 
     def retain_handle(self, handle: BaseArtifactHandle):
         """
@@ -414,11 +410,14 @@ class ArtifactManager:
         return self._step_render_handles.pop(step_uid, None)
 
     def invalidate_for_workpiece(self, key: ArtifactKey):
-        keys_to_invalidate = [
-            ledger_key
-            for ledger_key in self._ledger.keys()
-            if extract_base_key(ledger_key) == key
-        ]
+        wp_uid = key.id
+        keys_to_invalidate = []
+        for ledger_key in list(self._ledger.keys()):
+            base_key = extract_base_key(ledger_key)
+            if base_key.group == "workpiece":
+                ledger_id = base_key.id
+                if ledger_id == wp_uid or ledger_id.startswith(f"{wp_uid}:"):
+                    keys_to_invalidate.append(ledger_key)
         for ledger_key in keys_to_invalidate:
             entry = self._ledger.get(ledger_key)
             if entry:
@@ -886,11 +885,8 @@ class ArtifactManager:
             self._ledger[composite_key] = entry
 
         logger.debug(f"cache: Caching entry {composite_key}")
-        # Only retain if the handle has refcount > 1 (already has other
-        # owners). If refcount is 1, it was just adopted via safe_adoption
-        # and this ledger entry will be the sole owner - no need to retain.
-        refcount = self._store._refcounts.get(handle.shm_name, 0)
-        if refcount > 1:
+        canonical = self._store._handles.get(handle.shm_name)
+        if canonical and canonical.refcount > 1:
             self.retain_handle(handle)
         if entry.handle is not None:
             self._store.release(entry.handle)
