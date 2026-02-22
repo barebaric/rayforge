@@ -13,10 +13,14 @@ from utils import (
     wait_for_settled,
     show_panel,
     hide_panel,
+    save_panel_states,
+    restore_panel_states,
     take_screenshot,
 )
 
 logger = logging.getLogger(__name__)
+
+PANELS = ["show_3d_view", "toggle_control_panel", "toggle_gcode_preview"]
 
 
 def main():
@@ -33,15 +37,23 @@ def main():
 
     logger.info("Setting up 3D mode")
 
+    saved_states = save_panel_states(win, PANELS)
     show_panel(win, "show_3d_view", True)
     hide_panel(win, "toggle_control_panel")
     show_panel(win, "toggle_gcode_preview", True)
 
     logger.info("Waiting for 3D view to render...")
-    time.sleep(0.25)
+    if not wait_for_settled(win, timeout=20):
+        logger.error("3D view did not settle in time")
+        app.quit_idle()
+        return
+
+    time.sleep(0.5)
 
     logger.info("Taking screenshot: main-3d.png")
     take_screenshot("main-3d.png")
+
+    restore_panel_states(win, saved_states)
 
     time.sleep(0.25)
     app.quit_idle()

@@ -12,6 +12,8 @@ from utils import (
     load_project,
     wait_for_settled,
     show_panel,
+    save_panel_states,
+    restore_panel_states,
     take_cropped_screenshot,
     _run_on_main_thread,
 )
@@ -21,6 +23,7 @@ logger = logging.getLogger(__name__)
 PANEL_HEIGHT = 280
 MARGIN = 10
 STATUS_BAR_HEIGHT = 60
+PANELS = ["toggle_control_panel", "toggle_gcode_preview"]
 
 
 def main():
@@ -38,6 +41,7 @@ def main():
 
     logger.info("Document settled, showing control panel")
 
+    saved_states = save_panel_states(win, PANELS)
     show_panel(win, "toggle_control_panel", True)
     show_panel(win, "toggle_gcode_preview", False)
 
@@ -54,6 +58,8 @@ def main():
         "control-panel.png",
         from_top=crop_from_top,
     )
+
+    restore_panel_states(win, saved_states)
 
     time.sleep(0.25)
     app.quit_idle()

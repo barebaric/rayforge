@@ -50,13 +50,14 @@ def _run_on_main_thread(func: Callable[[], T], timeout: float = 10.0) -> T:
     exception: List[Optional[Exception]] = [None]
     done = Event()
 
-    def wrapper() -> None:
+    def wrapper() -> bool:
         try:
             result.append(func())
         except Exception as e:
             exception[0] = e
         finally:
             done.set()
+        return GLib.SOURCE_REMOVE
 
     GLib.idle_add(wrapper)
     if done.wait(timeout=timeout):
@@ -205,6 +206,31 @@ def show_panel(
 def hide_panel(win: "MainWindow", panel_name: str) -> None:
     """Hide a UI panel."""
     show_panel(win, panel_name, visible=False)
+
+
+def get_panel_state(win: "MainWindow", panel_name: str) -> bool:
+    """Get the current visibility state of a panel."""
+    def get_state() -> bool:
+        action = win.action_manager.get_action(panel_name)
+        state = action.get_state()
+        if state is None:
+            return False
+        return state.get_boolean()
+
+    return _run_on_main_thread(get_state)
+
+
+def save_panel_states(
+    win: "MainWindow", panel_names: list[str]
+) -> dict[str, bool]:
+    """Save the current state of multiple panels."""
+    return {name: get_panel_state(win, name) for name in panel_names}
+
+
+def restore_panel_states(win: "MainWindow", states: dict[str, bool]) -> None:
+    """Restore panel states from a saved dictionary."""
+    for name, visible in states.items():
+        show_panel(win, name, visible)
 
 
 def activate_simulation_mode(win: "MainWindow") -> bool:
@@ -435,8 +461,8 @@ def open_material_test(win: "MainWindow") -> "StepSettingsDialog":
             editor=win.doc_editor,
             step=step,
             transient_for=win,
-            initial_page="step-settings",
         )
+        dialog.set_initial_page("step-settings")
         dialog.set_default_size(600, 900)
         dialog.present()
         return dialog

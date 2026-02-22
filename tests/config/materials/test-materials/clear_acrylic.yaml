@@ -1,0 +1,7 @@
+uid: clear-acrylic
+name: Clear Acrylic
+description: Transparent cast acrylic sheet
+category: Plastic
+appearance:
+  color: "#F0F8FF"
+  pattern: transparent

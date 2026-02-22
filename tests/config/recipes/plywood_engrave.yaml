@@ -1,0 +1,9 @@
+uid: recipe-005
+name: Plywood Light Engrave
+description: Light surface engraving for plywood - great for logos
+target_capability_name: ENGRAVE
+material_uid: birch-plywood
+settings:
+  power: 30
+  speed: 1000
+  passes: 1

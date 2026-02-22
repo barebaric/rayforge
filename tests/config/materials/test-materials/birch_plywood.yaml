@@ -1,0 +1,7 @@
+uid: birch-plywood
+name: Birch Plywood
+description: High-quality Baltic birch plywood, ideal for laser cutting
+category: Wood
+appearance:
+  color: "#E8D4A8"
+  pattern: wood_grain

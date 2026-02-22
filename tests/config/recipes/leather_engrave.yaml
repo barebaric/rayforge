@@ -1,0 +1,9 @@
+uid: recipe-004
+name: Leather Engrave
+description: Deep engraving for vegetable tanned leather
+target_capability_name: ENGRAVE
+material_uid: leather-veg-tan
+settings:
+  power: 60
+  speed: 800
+  passes: 1

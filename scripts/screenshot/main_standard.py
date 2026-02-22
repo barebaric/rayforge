@@ -12,10 +12,14 @@ from utils import (
     load_project,
     wait_for_settled,
     show_panel,
+    save_panel_states,
+    restore_panel_states,
     take_screenshot,
 )
 
 logger = logging.getLogger(__name__)
+
+PANELS = ["toggle_control_panel", "toggle_gcode_preview"]
 
 
 def main():
@@ -31,6 +35,7 @@ def main():
 
     logger.info("Document settled, setting up standard mode")
 
+    saved_states = save_panel_states(win, PANELS)
     show_panel(win, "toggle_control_panel", True)
     show_panel(win, "toggle_gcode_preview", True)
 
@@ -38,6 +43,8 @@ def main():
 
     logger.info("Taking screenshot: main-standard.png")
     take_screenshot("main-standard.png")
+
+    restore_panel_states(win, saved_states)
 
     time.sleep(0.25)
     app.quit_idle()

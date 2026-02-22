@@ -1,0 +1,12 @@
+name: Laser Essentials
+description: A curated collection of preset profiles and artwork for laser 
+  engraving enthusiasts.
+version: 1.0.0
+display_name: Laser Essentials
+author:
+  name: Rayforge Community
+  email: community@rayforge.example
+depends: []
+provides:
+  code: null
+  assets: []

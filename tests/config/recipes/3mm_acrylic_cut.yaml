@@ -1,0 +1,11 @@
+uid: recipe-003
+name: Clear Acrylic 3mm Cut
+description: Flame-polished edge cut for 3mm clear acrylic
+target_capability_name: CUT
+material_uid: clear-acrylic
+min_thickness_mm: 2.5
+max_thickness_mm: 3.5
+settings:
+  power: 100
+  speed: 500
+  passes: 1

@@ -1,0 +1,11 @@
+uid: recipe-002
+name: 6mm Plywood Cut
+description: Two-pass cut for 6mm birch plywood
+target_capability_name: CUT
+material_uid: birch-plywood
+min_thickness_mm: 5.5
+max_thickness_mm: 6.5
+settings:
+  power: 100
+  speed: 300
+  passes: 2

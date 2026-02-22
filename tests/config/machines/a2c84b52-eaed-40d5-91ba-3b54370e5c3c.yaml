@@ -1,0 +1,78 @@
+machine:
+  active_wcs: G56
+  arc_tolerance: 0.03
+  auto_connect: true
+  axis_extents:
+  - 200
+  - 200
+  cameras: []
+  clear_alarm_on_connect: false
+  dialect_uid: grbl_dynamic
+  driver: NoDeviceDriver
+  driver_args: {}
+  gcode:
+    gcode_precision: 3
+  heads:
+  - focus_power_percent: 1.0
+    frame_power_percent: 1.0
+    max_power: 1000
+    name: Laser Head
+    spot_size_mm:
+    - 0.1
+    - 0.1
+    tool_number: 0
+    uid: 46606ac3-7eb1-4979-a379-d44fc2b03911
+  home_on_start: true
+  hookmacros: {}
+  machine_hours:
+    counters: {}
+    total_hours: 0.0
+  macros:
+    5344776a-cdf7-4637-ac3d-af19f00932de:
+      code:
+      - asdasda
+      enabled: true
+      name: New Macro
+      uid: 5344776a-cdf7-4637-ac3d-af19f00932de
+  name: Sculpfun iCube
+  origin: bottom_left
+  reverse_x_axis: false
+  reverse_y_axis: false
+  reverse_z_axis: false
+  single_axis_homing_enabled: true
+  soft_limits: null
+  speeds:
+    acceleration: 1000
+    max_cut_speed: 1000
+    max_travel_speed: 3000
+  supports_arcs: true
+  wcs_offsets:
+    G54:
+    - 10.0
+    - 10.0
+    - 0.0
+    G55:
+    - 10.0
+    - 10.0
+    - 0.0
+    G56:
+    - 0.0
+    - 0.0
+    - 0.0
+    G57:
+    - 0.0
+    - 0.0
+    - 0.0
+    G58:
+    - 0.0
+    - 0.0
+    - 0.0
+    G59:
+    - 0.0
+    - 0.0
+    - 0.0
+  work_margins:
+  - 0
+  - 0
+  - 0
+  - 0
