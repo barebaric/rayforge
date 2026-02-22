@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-02-22 15:30+0100\n"
+"POT-Creation-Date: 2026-02-22 22:09+0100\n"
 "PO-Revision-Date: 2025-10-15 07:10+0200\n"
 "Last-Translator: Samuel <knipknap@gmail.com>\n"
 "Language-Team: French\n"
@@ -4120,12 +4120,13 @@ msgid "How often to repeat the entire step"
 msgstr "Fréquence de répétition de l’ensemble de l’étape"
 
 #: rayforge/ui_gtk/doceditor/step_settings/multipass.py
-msgid "Z Step-Down per Pass (mm)"
-msgstr "Descente en Z par passe (mm)"
+msgid "Z Step-Down per Pass"
+msgstr "Descente Z par passe"
 
 #: rayforge/ui_gtk/doceditor/step_settings/multipass.py
-msgid "Distance to lower Z-axis for each subsequent pass"
-msgstr "Distance de descente de l’axe Z pour chaque passe suivante"
+msgid "Distance to lower Z-axis for each subsequent pass in machine units"
+msgstr ""
+"Distance pour abaisser l'axe Z à chaque passe suivante en unités machine"
 
 #: rayforge/ui_gtk/doceditor/step_settings/multipass.py
 msgid "Change number of passes"
@@ -5358,6 +5359,14 @@ msgid ""
 msgstr ""
 "Chemin vers un script Python à exécuter après le chargement complet de la "
 "fenêtre principale. Utile pour l'automatisation et les tests."
+
+#: rayforge/app.py
+msgid ""
+"Path to a custom configuration directory. Useful for testing with isolated "
+"configs."
+msgstr ""
+"Chemin vers un répertoire de configuration personnalisé. Utile pour les "
+"tests avec des configurations isolées."
 
 #: rayforge/pipeline/steps.py
 msgid "Contour"
