@@ -3,7 +3,7 @@ import logging
 from abc import ABC
 from typing import List, Optional, TYPE_CHECKING, Dict, Any, cast, Set
 from blinker import Signal
-
+from ..shared.units.formatter import format_value
 from .item import DocItem
 from .matrix import Matrix
 from .capability import Capability, CAPABILITIES_BY_NAME
@@ -265,9 +265,9 @@ class Step(DocItem, ABC):
 
     def get_summary(self) -> str:
         power_percent = int(self.power * 100)
-        speed = int(self.cut_speed)
-        return _("{power_percent}% power, {speed} mm/min").format(
-            power_percent=power_percent, speed=speed
+        speed_str = format_value(self.cut_speed, "speed")
+        return _("{power_percent}% power, {speed_str}").format(
+            power_percent=power_percent, speed_str=speed_str
         )
 
     def dump(self, indent: int = 0):
