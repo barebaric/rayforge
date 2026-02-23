@@ -1,0 +1,11 @@
+{
+  "homepage.community.title": {
+    "message": "Créé avec Rayforge"
+  },
+  "homepage.community.subtitle": {
+    "message": "Découvrez ce que les créateurs du monde entier réalisent"
+  },
+  "homepage.community.cta": {
+    "message": "Partagez vos créations"
+  }
+}

@@ -5,7 +5,7 @@ import Layout from '@theme/Layout';
 import Link from '@docusaurus/Link';
 import styles from './index.module.css';
 import Icon from '@mdi/react';
-import { mdiRocketLaunch, mdiViewDashboard, mdiFeatureSearch } from '@mdi/js';
+import { mdiRocketLaunch, mdiViewDashboard, mdiFeatureSearch, mdiShareVariant } from '@mdi/js';
 
 function HeroSection() {
   return (
@@ -146,6 +146,36 @@ function FeatureSection({
   );
 }
 
+function CommunitySection() {
+  return (
+    <section className={styles.communitySection}>
+      <div className={styles.communityInner}>
+        <div className={styles.communityDecorations}>
+          <div className={styles.communityDot1}></div>
+          <div className={styles.communityDot2}></div>
+          <div className={styles.communityDot3}></div>
+          <div className={styles.communityDot4}></div>
+        </div>
+        <div className={styles.communityContent}>
+          <h2 className={styles.communityTitle}>Made with Rayforge</h2>
+          <p className={styles.communitySubtitle}>
+            See what creators around the world are making
+          </p>
+          <a
+            href="https://discord.gg/sTHNdTtpQJ"
+            className={styles.communityCta}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <Icon path={mdiShareVariant} size={0.9} />
+            <span>Share your creations</span>
+          </a>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 export default function Home() {
   return (
     <Layout description="Modern G-code sender and control software for GRBL-based laser cutters">
@@ -215,6 +245,8 @@ export default function Home() {
             image="/assets/screenshot-recipe.png"
           />
         </div>
+
+        <CommunitySection />
 
       </main>
     </Layout>
