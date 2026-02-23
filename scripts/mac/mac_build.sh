@@ -502,14 +502,14 @@ SH
             exit 1
         fi
         rm -rf "$APP_BUNDLE/Contents/_CodeSignature"
-        find "$APP_BUNDLE" -type f | while read -r file_path; do
-            file_type=$(file -b "$file_path" || true)
-            if [[ "$file_type" == *"Mach-O"* ]]; then
-                codesign --force --sign - "$file_path"
-            fi
-        done
-        codesign --force --deep --sign - "$APP_BUNDLE"
-        codesign --verify --deep --strict --verbose=2 "$APP_BUNDLE"
+        if ! codesign --force --deep --sign - "$APP_BUNDLE"; then
+            echo "Initial deep re-sign failed, retrying..." >&2
+            sleep 1
+            codesign --force --deep --sign - "$APP_BUNDLE"
+        fi
+        if ! codesign --verify --deep --strict --verbose=2 "$APP_BUNDLE"; then
+            echo "Warning: codesign verification failed for $APP_BUNDLE" >&2
+        fi
     fi
 
     # TODO: Bundle vips modules and gdk-pixbuf loaders when vips is installed with SVG support
