@@ -15,9 +15,7 @@ function HeroSection() {
         {/* Left Side: Original Content */}
         <div className={styles.heroContent}>
           <h1 className={styles.heroTitle}>
-            The World's Most <br />
-            <span className={styles.titleGradient}>Powerful Open Source </span>
-            Laser Software
+            The World's <span className={styles.titleGradient}>Most Powerful Open Source</span> Laser Software
           </h1>
           <p className={styles.heroSubtitle}>
             Seamless tools for imaginative minds. Rayforge is the open-source power tool for your laser cutter,

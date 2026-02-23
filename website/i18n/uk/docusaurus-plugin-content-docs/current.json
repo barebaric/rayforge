@@ -1,0 +1,45 @@
+{
+  "version.label": {
+    "message": "Далі",
+    "description": "The label for version current"
+  },
+  "sidebar.tutorialSidebar.category.Getting Started": {
+    "message": "Початок роботи"
+  },
+  "sidebar.tutorialSidebar.category.Application Settings": {
+    "message": "Налаштування програми"
+  },
+  "sidebar.tutorialSidebar.category.Machine Setup": {
+    "message": "Налаштування машини"
+  },
+  "sidebar.tutorialSidebar.category.User Interface": {
+    "message": "Інтерфейс користувача"
+  },
+  "sidebar.tutorialSidebar.category.Features": {
+    "message": "Функції"
+  },
+  "sidebar.tutorialSidebar.category.Operations": {
+    "message": "Операції"
+  },
+  "sidebar.tutorialSidebar.category.Files": {
+    "message": "Файли"
+  },
+  "sidebar.tutorialSidebar.category.General Info": {
+    "message": "Загальна інформація"
+  },
+  "sidebar.tutorialSidebar.category.Troubleshooting": {
+    "message": "Виправлення проблем"
+  },
+  "sidebar.tutorialSidebar.category.Reference": {
+    "message": "Довідник"
+  },
+  "sidebar.developerSidebar.category.Getting Started": {
+    "message": "Початок роботи"
+  },
+  "sidebar.developerSidebar.category.Architecture": {
+    "message": "Архітектура"
+  },
+  "sidebar.developerSidebar.category.Plugins": {
+    "message": "Плагіни"
+  }
+}

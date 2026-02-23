@@ -1,6 +1,7 @@
 import React from 'react';
 import Layout from '@theme/Layout';
 import Link from '@docusaurus/Link';
+import useBaseUrl from '@docusaurus/useBaseUrl';
 import styles from '@site/src/pages/index.module.css';
 import Icon from '@mdi/react';
 import { mdiRocketLaunch, mdiViewDashboard, mdiFeatureSearch } from '@mdi/js';
@@ -12,9 +13,7 @@ function HeroSection() {
         
         <div className={styles.heroContent}>
           <h1 className={styles.heroTitle}>
-            Die weltweit <br />
-            <span className={styles.titleGradient}>leistungsstärkste Open-Source</span>
-            Laser-Software
+            <span className={styles.titleGradient}>Die weltweit leistungsstärkste Open-Source</span> Laser-Software
           </h1>
           <p className={styles.heroSubtitle}>
             Nahtlose Werkzeuge für kreative Köpfe. Rayforge ist das Open-Source-Power-Tool für Ihren Lasercutter,
@@ -43,7 +42,7 @@ function HeroSection() {
           
           <div className={styles.screenshotLayer}>
             <img
-              src="/screenshots/main-standard.png"
+              src={useBaseUrl('/screenshots/main-standard.png')}
               alt="Rayforge Anwendung Screenshot"
               className={styles.heroImage}
             />
@@ -120,7 +119,7 @@ function FeatureSection({
         
         <div className={styles.featureVisual}>
           <div className={`${styles.blobShape} ${blobClass}`}></div>
-          <img src={image} alt={title} />
+          <img src={useBaseUrl(image)} alt={title} />
         </div>
 
         <div className={styles.featureContent}>

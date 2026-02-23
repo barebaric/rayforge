@@ -1,6 +1,7 @@
 import React from 'react';
 import Layout from '@theme/Layout';
 import Link from '@docusaurus/Link';
+import useBaseUrl from '@docusaurus/useBaseUrl';
 import styles from '@site/src/pages/index.module.css';
 import Icon from '@mdi/react';
 import { mdiRocketLaunch, mdiViewDashboard, mdiFeatureSearch } from '@mdi/js';
@@ -13,9 +14,7 @@ function HeroSection() {
         {/* Left Side: Original Content */}
         <div className={styles.heroContent}>
           <h1 className={styles.heroTitle}>
-            El Software Láser de <br />
-            <span className={styles.titleGradient}>Código Abierto Más </span>
-            Potente del Mundo
+            El <span className={styles.titleGradient}>Software Láser de Código Abierto Más Potente</span> del Mundo
           </h1>
           <p className={styles.heroSubtitle}>
             Herramientas fluidas para mentes imaginativas. Rayforge es la herramienta de código abierto para tu cortador láser,
@@ -46,7 +45,7 @@ function HeroSection() {
           {/* Main Back Layer: Screenshot */}
           <div className={styles.screenshotLayer}>
             <img
-              src="/screenshots/main-standard.png"
+              src={useBaseUrl('/screenshots/main-standard.png')}
               alt="Captura de pantalla de Rayforge"
               className={styles.heroImage}
             />
@@ -127,7 +126,7 @@ function FeatureSection({
         
         <div className={styles.featureVisual}>
           <div className={`${styles.blobShape} ${blobClass}`}></div>
-          <img src={image} alt={title} />
+          <img src={useBaseUrl(image)} alt={title} />
         </div>
 
         <div className={styles.featureContent}>
