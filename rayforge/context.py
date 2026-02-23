@@ -40,6 +40,7 @@ class RayforgeContext:
         from .debug import DebugDumpManager
         from .machine.models.dialect_manager import DialectManager
         from .config import DIALECT_DIR, PACKAGES_DIR
+        from .shared.util.localized import get_system_language
 
         self.artifact_store = ArtifactStore()
         # The DialectManager is safe and necessary for all processes.
@@ -61,6 +62,9 @@ class RayforgeContext:
         self._material_mgr: Optional["LibraryManager"] = None
         self._recipe_mgr: Optional["RecipeManager"] = None
         self._debug_dump_manager = DebugDumpManager()
+
+        # Language setting for localized content
+        self._language: str = get_system_language()
 
         # Flag to indicate the app should exit after document settles
         self.exit_after_settle = False
@@ -127,6 +131,30 @@ class RayforgeContext:
     def debug_dump_manager(self) -> "DebugDumpManager":
         """Returns the debug dump manager."""
         return self._debug_dump_manager
+
+    @property
+    def language(self) -> str:
+        """
+        Get the current language code for localized content.
+
+        Returns:
+            Language code (e.g., 'en', 'de', 'zh_CN')
+        """
+        return self._language
+
+    @language.setter
+    def language(self, value: str):
+        """
+        Set the current language for localized content.
+
+        Args:
+            value: Language code (will be normalized)
+        """
+        from .shared.util.localized import normalize_language_code
+
+        normalized = normalize_language_code(value)
+        if normalized:
+            self._language = normalized
 
     def initialize_lite_context(self, machine_dir):
         """

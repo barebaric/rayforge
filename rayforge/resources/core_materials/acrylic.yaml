@@ -1,7 +1,28 @@
 uid: acrylic
-name: Acrylic (PMMA)
-description: Transparent thermoplastic, often known by brand names like Plexiglas or Lucite
-category: Plastic
+name:
+  default: Acrylic (PMMA)
+  de: Acryl (PMMA)
+  es: Acrílico (PMMA)
+  fr: Acrylique (PMMA)
+  pt: Acrílico (PMMA)
+  uk: Акрил (ПММА)
+  zh_CN: 亚克力 (PMMA)
+description:
+  default: Transparent thermoplastic, often known by brand names like Plexiglas or Lucite
+  de: Transparenter Kunststoff, oft bekannt unter Markennamen wie Plexiglas oder Lucite
+  es: Termoplástico transparente, a menudo conocido por nombres comerciales como Plexiglás o Lucite
+  fr: Thermoplastique transparent, souvent connu sous les noms commerciaux comme Plexiglas ou Lucite
+  pt: Termoplástico transparente, frequentemente conhecido por nomes comerciais como Plexiglas ou Lucite
+  uk: Прозорий термопластик, часто відомий під торговими марками, такими як Plexiglas або Lucite
+  zh_CN: 透明热塑性塑料，通常以 Plexiglas 或 Lucite 等品牌名称闻名
+category:
+  default: Plastic
+  de: Kunststoff
+  es: Plástico
+  fr: Plastique
+  pt: Plástico
+  uk: Пластик
+  zh_CN: 塑料
 appearance:
-  color: "#E0FFFF"  # Light cyan (transparent appearance)
+  color: "#E0FFFF"
   pattern: transparent

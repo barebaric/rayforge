@@ -1,7 +1,28 @@
 uid: aluminum
-name: Aluminum
-description: Lightweight metal commonly used in laser cutting applications
-category: Metal
+name:
+  default: Aluminum
+  de: Aluminium
+  es: Aluminio
+  fr: Aluminium
+  pt: Alumínio
+  uk: Алюміній
+  zh_CN: 铝
+description:
+  default: Lightweight metal commonly used in laser cutting applications
+  de: Leichtmetall, das häufig in Laserschneidanwendungen verwendet wird
+  es: Metal ligero comúnmente utilizado en aplicaciones de corte láser
+  fr: Métal léger couramment utilisé dans les applications de découpe laser
+  pt: Metal leve comumente usado em aplicações de corte a laser
+  uk: Легкий метал, що часто використовується в лазерній різці
+  zh_CN: 轻金属，常用于激光切割应用
+category:
+  default: Metal
+  de: Metall
+  es: Metal
+  fr: Métal
+  pt: Metal
+  uk: Метал
+  zh_CN: 金属
 appearance:
-  color: "#C0C0C0"  # Silver
+  color: "#C0C0C0"
   pattern: metallic
