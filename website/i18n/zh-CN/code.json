@@ -607,5 +607,14 @@
   "theme.tags.tagsPageTitle": {
     "message": "标签",
     "description": "The title of the tag list page"
+  },
+  "homepage.community.title": {
+    "message": "用 Rayforge 创作"
+  },
+  "homepage.community.subtitle": {
+    "message": "看看世界各地的创作者们都在制作什么"
+  },
+  "homepage.community.cta": {
+    "message": "分享您的作品"
   }
 }

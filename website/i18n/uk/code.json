@@ -304,5 +304,14 @@
   },
   "install.needHelpDescription": {
     "message": "Для додаткової допомоги повідомте про проблему на GitHub або приєднайтеся до нашого Discord."
+  },
+  "homepage.community.title": {
+    "message": "Створено з Rayforge"
+  },
+  "homepage.community.subtitle": {
+    "message": "Дивіться, що створюють майстри по всьому світу"
+  },
+  "homepage.community.cta": {
+    "message": "Поділіться своїми творіннями"
   }
 }

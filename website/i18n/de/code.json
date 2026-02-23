@@ -607,5 +607,14 @@
   "theme.tags.tagsPageTitle": {
     "message": "Tags",
     "description": "The title of the tag list page"
+  },
+  "homepage.community.title": {
+    "message": "Mit Rayforge erstellt"
+  },
+  "homepage.community.subtitle": {
+    "message": "Entdecken Sie, was Kreative auf der ganzen Welt erschaffen"
+  },
+  "homepage.community.cta": {
+    "message": "Teilen Sie Ihre Kreationen"
   }
 }
