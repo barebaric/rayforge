@@ -495,16 +495,21 @@ SH
     # Re-sign after install_name_tool and dylib rewrites to keep
     # macOS code-signing validation valid on Apple Silicon.
     if [ "$(uname -m)" = "arm64" ]; then
+        APP_BUNDLE="$(pwd)/dist/Rayforge.app"
         echo "Re-signing app bundle..."
-        rm -rf "$APP_ROOT/_CodeSignature"
-        find "dist/Rayforge.app" -type f | while read -r file_path; do
+        if [ ! -d "$APP_BUNDLE" ]; then
+            echo "App bundle not found at $APP_BUNDLE" >&2
+            exit 1
+        fi
+        rm -rf "$APP_BUNDLE/Contents/_CodeSignature"
+        find "$APP_BUNDLE" -type f | while read -r file_path; do
             file_type=$(file -b "$file_path" || true)
             if [[ "$file_type" == *"Mach-O"* ]]; then
                 codesign --force --sign - "$file_path"
             fi
         done
-        codesign --force --deep --sign - "dist/Rayforge.app"
-        codesign --verify --deep --strict --verbose=2 "dist/Rayforge.app"
+        codesign --force --deep --sign - "$APP_BUNDLE"
+        codesign --verify --deep --strict --verbose=2 "$APP_BUNDLE"
     fi
 
     # TODO: Bundle vips modules and gdk-pixbuf loaders when vips is installed with SVG support
