@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import Translate, { translate } from '@docusaurus/Translate';
 import CodeBlock from '@theme/CodeBlock';
 import Admonition from '@theme/Admonition';
 import './InstallGuide.css';
@@ -65,17 +66,17 @@ const osOptions = [
 ];
 
 const linuxMethods = [
-  { id: 'snap', label: 'Snap (Recommended)' },
+  { id: 'snap', label: translate({ id: 'install.snap.recommended', message: 'Snap (Recommended)' }) },
   { id: 'ppa', label: 'Ubuntu 24.04 (PPA)' },
   { id: 'flatpak', label: 'Flathub' },
-  { id: 'pixi', label: 'Pixi (Developers)' },
-  { id: 'source', label: 'From Source' },
+  { id: 'pixi', label: translate({ id: 'install.pixi.developers', message: 'Pixi (Developers)' }) },
+  { id: 'source', label: translate({ id: 'install.fromSource', message: 'From Source' }) },
 ];
 
 function OsSelector({ selectedOs, onSelectOs }) {
   return (
     <div className="install-os-selector">
-      <p><strong>Select your operating system:</strong></p>
+      <p><strong><Translate id="install.selectOs">Select your operating system:</Translate></strong></p>
       <div className="install-os-buttons">
         {osOptions.map((os) => (
           <button
@@ -98,7 +99,7 @@ function LinuxInstall({ method, onMethodChange }) {
   return (
     <>
       <div className="install-method-selector">
-        <p><strong>Choose installation method:</strong></p>
+        <p><strong><Translate id="install.chooseMethod">Choose installation method:</Translate></strong></p>
         <div className="install-method-tabs">
           {linuxMethods.map((m) => (
             <button
@@ -128,14 +129,16 @@ function LinuxPpaInstall() {
     <div className="install-section">
       <h4>Ubuntu 24.04 LTS</h4>
       <p>
-        For Ubuntu 24.04 LTS, you can use our official PPA. This method
-        provides automatic updates through your system's package manager.
+        <Translate id="install.ppa.description">
+          For Ubuntu 24.04 LTS, you can use our official PPA. This method
+          provides automatic updates through your system's package manager.
+        </Translate>
       </p>
 
       <div className="install-step">
         <div className="install-step-number">1</div>
         <div className="install-step-content">
-          <h5>Add the Rayforge PPA</h5>
+          <h5><Translate id="install.addPpa">Add the Rayforge PPA</Translate></h5>
           <CodeBlock language="bash">
             {`sudo add-apt-repository ppa:knipknap/rayforge
 sudo apt update`}
@@ -146,7 +149,7 @@ sudo apt update`}
       <div className="install-step">
         <div className="install-step-number">2</div>
         <div className="install-step-content">
-          <h5>Install Rayforge</h5>
+          <h5><Translate id="install.installRayforge">Install Rayforge</Translate></h5>
           <CodeBlock language="bash">sudo apt install rayforge</CodeBlock>
         </div>
       </div>
@@ -154,9 +157,11 @@ sudo apt update`}
       <div className="install-step">
         <div className="install-step-number">3</div>
         <div className="install-step-content">
-          <h5>Launch Rayforge</h5>
+          <h5><Translate id="install.launchRayforge">Launch Rayforge</Translate></h5>
           <p>
-            Launch Rayforge from your application menu or by running:
+            <Translate id="install.launchFromMenu">
+              Launch Rayforge from your application menu or by running:
+            </Translate>
           </p>
           <CodeBlock language="bash">rayforge</CodeBlock>
         </div>
@@ -168,16 +173,18 @@ sudo apt update`}
 function LinuxFlatpakInstall() {
   return (
     <div className="install-section">
-      <h4>Flathub Package</h4>
+      <h4><Translate id="install.flathub.title">Flathub Package</Translate></h4>
       <p>
-        The Flathub package is the easiest way to get started with Rayforge
-        on Linux.
+        <Translate id="install.flathub.description">
+          The Flathub package is the easiest way to get started with Rayforge
+          on Linux.
+        </Translate>
       </p>
 
       <div className="install-step">
         <div className="install-step-number">1</div>
         <div className="install-step-content">
-          <h5>Install from Flathub</h5>
+          <h5><Translate id="install.installFromFlathub">Install from Flathub</Translate></h5>
           <p>
             <a
               href="https://flathub.org/apps/org.rayforge.rayforge"
@@ -185,13 +192,13 @@ function LinuxFlatpakInstall() {
               rel="noopener noreferrer"
             >
               <img
-                alt="Get it from Flathub"
+                alt={translate({ id: 'install.getFromFlathub', message: 'Get it from Flathub' })}
                 src="/images/flathub-badge.svg"
                 height="55"
               />
             </a>
           </p>
-          <p>Or install via command line:</p>
+          <p><Translate id="install.orCommandLine">Or install via command line:</Translate></p>
           <CodeBlock language="bash">
             flatpak install flathub org.rayforge.rayforge
           </CodeBlock>
@@ -201,7 +208,7 @@ function LinuxFlatpakInstall() {
       <div className="install-step">
         <div className="install-step-number">2</div>
         <div className="install-step-content">
-          <h5>Launch Rayforge</h5>
+          <h5><Translate id="install.launchRayforge">Launch Rayforge</Translate></h5>
           <CodeBlock language="bash">
             flatpak run org.rayforge.rayforge
           </CodeBlock>
@@ -214,16 +221,18 @@ function LinuxFlatpakInstall() {
 function LinuxSnapInstall() {
   return (
     <div className="install-section">
-      <h4>Snap Package</h4>
+      <h4><Translate id="install.snap.title">Snap Package</Translate></h4>
       <p>
-        The Snap package works on most Linux distributions and includes all
-        dependencies in a sandboxed environment.
+        <Translate id="install.snap.description">
+          The Snap package works on most Linux distributions and includes all
+          dependencies in a sandboxed environment.
+        </Translate>
       </p>
 
       <div className="install-step">
         <div className="install-step-number">1</div>
         <div className="install-step-content">
-          <h5>Install Rayforge</h5>
+          <h5><Translate id="install.installRayforge">Install Rayforge</Translate></h5>
           <CodeBlock language="bash">sudo snap install rayforge</CodeBlock>
         </div>
       </div>
@@ -231,14 +240,16 @@ function LinuxSnapInstall() {
       <div className="install-step">
         <div className="install-step-number">2</div>
         <div className="install-step-content">
-          <h5>Grant Permissions (Important!)</h5>
-          <Admonition type="warning" title="Permissions Required">
-            The Snap version runs in a sandbox and requires manual
-            permission grants for hardware access.
+          <h5><Translate id="install.grantPermissions">Grant Permissions (Important!)</Translate></h5>
+          <Admonition type="warning" title={translate({ id: 'install.permissionsRequired', message: 'Permissions Required' })}>
+            <Translate id="install.snap.permissionNote">
+              The Snap version runs in a sandbox and requires manual
+              permission grants for hardware access.
+            </Translate>
           </Admonition>
 
           <p>
-            <strong>For USB Serial Port Access:</strong>
+            <strong><Translate id="install.usbSerialAccess">For USB Serial Port Access:</Translate></strong>
           </p>
           <CodeBlock language="bash">
             {`# Enable experimental hotplug support (one-time setup)
@@ -249,7 +260,7 @@ sudo snap connect rayforge:serial-port`}
           </CodeBlock>
 
           <p>
-            <strong>For Camera Access:</strong>
+            <strong><Translate id="install.cameraAccess">For Camera Access:</Translate></strong>
           </p>
           <CodeBlock language="bash">
             sudo snap connect rayforge:camera
@@ -260,13 +271,14 @@ sudo snap connect rayforge:serial-port`}
       <div className="install-step">
         <div className="install-step-number">3</div>
         <div className="install-step-content">
-          <h5>Verify Permissions</h5>
+          <h5><Translate id="install.verifyPermissions">Verify Permissions</Translate></h5>
           <CodeBlock language="bash">
             snap connections rayforge
           </CodeBlock>
           <p>
-            Look for <code>serial-port</code> in the list. If it shows
-            "connected", you're ready to go.
+            <Translate id="install.serialPortConnected" values={{ code: 'serial-port' }}>
+              {'Look for {code} in the list. If it shows "connected", you\'re ready to go.'}
+            </Translate>
           </p>
         </div>
       </div>
@@ -277,7 +289,7 @@ sudo snap connect rayforge:serial-port`}
 function LinuxPixiInstall() {
   return (
     <div className="install-section">
-      <h4>Pixi (Developer Installation)</h4>
+      <h4><Translate id="install.pixi.title">Pixi (Developer Installation)</Translate></h4>
       <p>
         <a
           href="https://pixi.sh"
@@ -286,27 +298,29 @@ function LinuxPixiInstall() {
         >
           Pixi
         </a>{' '}
-        is a fast package manager for Python projects. This method is
-        recommended for developers who want to contribute to Rayforge or
-        run the latest development version.
+        <Translate id="install.pixi.description">
+          is a fast package manager for Python projects. This method is
+          recommended for developers who want to contribute to Rayforge or
+          run the latest development version.
+        </Translate>
       </p>
 
-      <Admonition type="info" title="Linux Only">
-        Pixi installation is currently only available on Linux.
+      <Admonition type="info" title={translate({ id: 'install.linuxOnly', message: 'Linux Only' })}>
+        <Translate id="install.pixi.linuxOnly">Pixi installation is currently only available on Linux.</Translate>
       </Admonition>
 
       <div className="install-step">
         <div className="install-step-number">1</div>
         <div className="install-step-content">
-          <h5>Install Pixi</h5>
+          <h5><Translate id="install.installPixi">Install Pixi</Translate></h5>
           <p>
-            Install Pixi using the official installer:
+            <Translate id="install.pixi.installInstruction">Install Pixi using the official installer:</Translate>
           </p>
           <CodeBlock language="bash">
             curl -fsSL https://pixi.sh/install.sh | bash
           </CodeBlock>
           <p>
-            After installation, restart your shell or run:
+            <Translate id="install.restartShell">After installation, restart your shell or run:</Translate>
           </p>
           <CodeBlock language="bash">source ~/.bashrc</CodeBlock>
         </div>
@@ -315,7 +329,7 @@ function LinuxPixiInstall() {
       <div className="install-step">
         <div className="install-step-number">2</div>
         <div className="install-step-content">
-          <h5>Clone the Repository</h5>
+          <h5><Translate id="install.cloneRepo">Clone the Repository</Translate></h5>
           <CodeBlock language="bash">
             {`git clone https://github.com/barebaric/rayforge.git
 cd rayforge`}
@@ -326,8 +340,8 @@ cd rayforge`}
       <div className="install-step">
         <div className="install-step-number">3</div>
         <div className="install-step-content">
-          <h5>Install System Dependency</h5>
-          <p>Install the required Gtk/Adwaita package:</p>
+          <h5><Translate id="install.installSystemDependency">Install System Dependency</Translate></h5>
+          <p><Translate id="install.installGtkAdwaita">Install the required Gtk/Adwaita package:</Translate></p>
           <CodeBlock language="bash">sudo apt install gir1.2-adw-1</CodeBlock>
         </div>
       </div>
@@ -335,10 +349,12 @@ cd rayforge`}
       <div className="install-step">
         <div className="install-step-number">4</div>
         <div className="install-step-content">
-          <h5>Install Dependencies</h5>
+          <h5><Translate id="install.installDependencies">Install Dependencies</Translate></h5>
           <p>
-            Pixi will automatically create a virtual environment and
-            install all dependencies:
+            <Translate id="install.pixi.autoVenv">
+              Pixi will automatically create a virtual environment and
+              install all dependencies:
+            </Translate>
           </p>
           <CodeBlock language="bash">pixi install</CodeBlock>
         </div>
@@ -347,14 +363,14 @@ cd rayforge`}
       <div className="install-step">
         <div className="install-step-number">5</div>
         <div className="install-step-content">
-          <h5>Add User to dialout Group</h5>
-          <p>Required for serial port access:</p>
+          <h5><Translate id="install.addDialoutGroup">Add User to dialout Group</Translate></h5>
+          <p><Translate id="install.requiredSerialAccess">Required for serial port access:</Translate></p>
           <CodeBlock language="bash">
             sudo usermod -a -G dialout $USER
           </CodeBlock>
           <p>
-            <strong>Important:</strong> Log out and log back in for this
-            change to take effect.
+            <strong><Translate id="install.important">Important:</Translate></strong>{' '}
+            <Translate id="install.logoutLogin">Log out and log back in for this change to take effect.</Translate>
           </p>
         </div>
       </div>
@@ -362,28 +378,28 @@ cd rayforge`}
       <div className="install-step">
         <div className="install-step-number">6</div>
         <div className="install-step-content">
-          <h5>Run Rayforge</h5>
+          <h5><Translate id="install.runRayforge">Run Rayforge</Translate></h5>
           <CodeBlock language="bash">pixi run rayforge</CodeBlock>
         </div>
       </div>
 
       <div className="install-troubleshoot">
-        <h5>Useful Pixi Commands</h5>
+        <h5><Translate id="install.usefulPixiCommands">Useful Pixi Commands</Translate></h5>
         <details>
-          <summary>Available development commands</summary>
+          <summary><Translate id="install.availableDevCommands">Available development commands</Translate></summary>
           <div className="install-troubleshoot-content">
             <ul>
               <li>
-                <code>pixi run test</code> - Run the test suite
+                <code>pixi run test</code> - <Translate id="install.runTestSuite">Run the test suite</Translate>
               </li>
               <li>
-                <code>pixi run uitest</code> - Run UI tests
+                <code>pixi run uitest</code> - <Translate id="install.runUiTests">Run UI tests</Translate>
               </li>
               <li>
-                <code>pixi run lint</code> - Run linting and static analysis
+                <code>pixi run lint</code> - <Translate id="install.runLinting">Run linting and static analysis</Translate>
               </li>
               <li>
-                <code>pixi run format</code> - Format code with ruff
+                <code>pixi run format</code> - <Translate id="install.formatCode">Format code with ruff</Translate>
               </li>
             </ul>
           </div>
@@ -396,17 +412,19 @@ cd rayforge`}
 function LinuxSourceInstall() {
   return (
     <div className="install-section">
-      <h4>Install from Source</h4>
+      <h4><Translate id="install.source.title">Install from Source</Translate></h4>
       <p>
-        For developers and advanced users who want to run the latest
-        development version or contribute to the project.
+        <Translate id="install.source.description">
+          For developers and advanced users who want to run the latest
+          development version or contribute to the project.
+        </Translate>
       </p>
 
       <div className="install-step">
         <div className="install-step-number">1</div>
         <div className="install-step-content">
-          <h5>Install System Dependencies</h5>
-          <p>On Debian/Ubuntu:</p>
+          <h5><Translate id="install.installSystemDeps">Install System Dependencies</Translate></h5>
+          <p><Translate id="install.onDebianUbuntu">On Debian/Ubuntu:</Translate></p>
           <CodeBlock language="bash">
             {`sudo apt update
 sudo apt install python3-pip python3-gi gir1.2-gtk-3.0 gir1.2-adw-1 \\
@@ -419,11 +437,13 @@ sudo apt install python3-pip python3-gi gir1.2-gtk-3.0 gir1.2-adw-1 \\
       <div className="install-step">
         <div className="install-step-number">2</div>
         <div className="install-step-content">
-          <h5>Install Rayforge from PyPI</h5>
+          <h5><Translate id="install.installFromPypi">Install Rayforge from PyPI</Translate></h5>
           <CodeBlock language="bash">pip3 install rayforge</CodeBlock>
           <Admonition type="note">
-            Package names may differ on other distributions. Refer to your
-            distribution's documentation.
+            <Translate id="install.pypiNote">
+              Package names may differ on other distributions. Refer to your
+              distribution's documentation.
+            </Translate>
           </Admonition>
         </div>
       </div>
@@ -431,14 +451,14 @@ sudo apt install python3-pip python3-gi gir1.2-gtk-3.0 gir1.2-adw-1 \\
       <div className="install-step">
         <div className="install-step-number">3</div>
         <div className="install-step-content">
-          <h5>Add User to dialout Group</h5>
-          <p>Required for serial port access:</p>
+          <h5><Translate id="install.addDialoutGroup">Add User to dialout Group</Translate></h5>
+          <p><Translate id="install.requiredSerialAccess">Required for serial port access:</Translate></p>
           <CodeBlock language="bash">
             sudo usermod -a -G dialout $USER
           </CodeBlock>
           <p>
-            <strong>Important:</strong> Log out and log back in for this
-            change to take effect.
+            <strong><Translate id="install.important">Important:</Translate></strong>{' '}
+            <Translate id="install.logoutLogin">Log out and log back in for this change to take effect.</Translate>
           </p>
         </div>
       </div>
@@ -450,19 +470,19 @@ function WindowsInstall({ version }) {
   const downloadUrl = `https://github.com/barebaric/rayforge/releases/download/${version}/rayforge-v${version}-installer.exe`;
   return (
     <div className="install-section">
-      <h4>Windows Installation</h4>
+      <h4><Translate id="install.windows.title">Windows Installation</Translate></h4>
 
       <div className="install-step">
         <div className="install-step-number">1</div>
         <div className="install-step-content">
-          <h5>Download the Installer</h5>
+          <h5><Translate id="install.downloadInstaller">Download the Installer</Translate></h5>
           <p>
             <a
               href={downloadUrl}
               target="_blank"
               rel="noopener noreferrer"
             >
-              <strong>Download Rayforge v{version}</strong>
+              <strong>{translate({ id: 'install.downloadRayforge', message: 'Download Rayforge' }, { version })}</strong>
             </a>
           </p>
         </div>
@@ -471,14 +491,17 @@ function WindowsInstall({ version }) {
       <div className="install-step">
         <div className="install-step-number">2</div>
         <div className="install-step-content">
-          <h5>Run the Installer</h5>
+          <h5><Translate id="install.runInstaller">Run the Installer</Translate></h5>
           <p>
-            Run the downloaded installer and follow the on-screen
-            instructions.
+            <Translate id="install.runInstallerInstruction">
+              Run the downloaded installer and follow the on-screen instructions.
+            </Translate>
           </p>
           <Admonition type="tip">
-            If you encounter permission errors, try running the installer
-            as Administrator (right-click → Run as Administrator).
+            <Translate id="install.runAsAdmin">
+              If you encounter permission errors, try running the installer
+              as Administrator (right-click - Run as Administrator).
+            </Translate>
           </Admonition>
         </div>
       </div>
@@ -486,9 +509,11 @@ function WindowsInstall({ version }) {
       <div className="install-step">
         <div className="install-step-number">3</div>
         <div className="install-step-content">
-          <h5>Launch Rayforge</h5>
+          <h5><Translate id="install.launchRayforge">Launch Rayforge</Translate></h5>
           <p>
-            Launch Rayforge from the Start Menu or Desktop shortcut.
+            <Translate id="install.windowsLaunch">
+              Launch Rayforge from the Start Menu or Desktop shortcut.
+            </Translate>
           </p>
         </div>
       </div>
@@ -499,20 +524,22 @@ function WindowsInstall({ version }) {
 function MacosInstall() {
   return (
     <div className="install-section">
-      <h4>macOS Installation</h4>
+      <h4><Translate id="install.macOS.title">macOS Installation</Translate></h4>
 
-      <Admonition type="info" title="Community Support">
-        There are currently no official macOS builds. However, Rayforge
-        may run from source using the pip installation method. Community
-        contributions for macOS packaging are welcome!
+      <Admonition type="info" title={translate({ id: 'install.communitySupport', message: 'Community Support' })}>
+        <Translate id="install.macOS.communityNote">
+          There are currently no official macOS builds. However, Rayforge
+          may run from source using the pip installation method. Community
+          contributions for macOS packaging are welcome!
+        </Translate>
       </Admonition>
 
       <div className="install-step">
         <div className="install-step-number">1</div>
         <div className="install-step-content">
-          <h5>Install Dependencies</h5>
+          <h5><Translate id="install.installDeps">Install Dependencies</Translate></h5>
           <p>
-            Using Homebrew, install the required dependencies:
+            <Translate id="install.usingHomebrew">Using Homebrew, install the required dependencies:</Translate>
           </p>
           <CodeBlock language="bash">
             brew install python3 gtk4 adwaita-icon-theme libvips opencv
@@ -523,7 +550,7 @@ function MacosInstall() {
       <div className="install-step">
         <div className="install-step-number">2</div>
         <div className="install-step-content">
-          <h5>Install Rayforge</h5>
+          <h5><Translate id="install.installRayforge">Install Rayforge</Translate></h5>
           <CodeBlock language="bash">pip3 install rayforge</CodeBlock>
         </div>
       </div>
@@ -531,10 +558,11 @@ function MacosInstall() {
       <div className="install-step">
         <div className="install-step-number">3</div>
         <div className="install-step-content">
-          <h5>Install USB Drivers (if needed)</h5>
+          <h5><Translate id="install.installUsbDrivers">Install USB Drivers (if needed)</Translate></h5>
           <p>
-            If your laser controller uses a CH340/CH341 chipset, install
-            the drivers:
+            <Translate id="install.ch340Driver">
+              If your laser controller uses a CH340/CH341 chipset, install the drivers:
+            </Translate>
           </p>
           <CodeBlock language="bash">
             brew install --cask wch-ch34x-usb-serial-driver
@@ -548,15 +576,17 @@ function MacosInstall() {
 function VerifyInstall({ os }) {
   return (
     <div className="install-section">
-      <h4>Verify Installation</h4>
+      <h4><Translate id="install.verify.title">Verify Installation</Translate></h4>
 
       <div className="install-step">
         <div className="install-step-number">✓</div>
         <div className="install-step-content">
-          <h5>Launch Rayforge</h5>
+          <h5><Translate id="install.launchRayforge">Launch Rayforge</Translate></h5>
           <p>
-            Launch Rayforge from your application menu or terminal. You
-            should see the main window with the canvas and toolbar.
+            <Translate id="install.verify.launch">
+              Launch Rayforge from your application menu or terminal. You
+              should see the main window with the canvas and toolbar.
+            </Translate>
           </p>
         </div>
       </div>
@@ -564,10 +594,11 @@ function VerifyInstall({ os }) {
       <div className="install-step">
         <div className="install-step-number">✓</div>
         <div className="install-step-content">
-          <h5>Check Version</h5>
+          <h5><Translate id="install.checkVersion">Check Version</Translate></h5>
           <p>
-            Check <strong>Help → About</strong> to confirm the installed
-            version.
+            <Translate id="install.checkVersionInstruction">
+              Check Help - About to confirm the installed version.
+            </Translate>
           </p>
         </div>
       </div>
@@ -575,21 +606,25 @@ function VerifyInstall({ os }) {
       <div className="install-step">
         <div className="install-step-number">✓</div>
         <div className="install-step-content">
-          <h5>Connect Your Machine</h5>
+          <h5><Translate id="install.connectMachine">Connect Your Machine</Translate></h5>
           <p>
-            Connect your laser controller via USB and verify that the
-            serial port appears in Rayforge's machine settings.
+            <Translate id="install.verifySerialPort">
+              Connect your laser controller via USB and verify that the
+              serial port appears in Rayforge's machine settings.
+            </Translate>
           </p>
           {os === 'linux' && (
             <Admonition type="tip">
-              On Linux, laser controllers typically appear as{' '}
-              <code>/dev/ttyUSB0</code> or <code>/dev/ttyACM0</code>.
+              <Translate id="install.linuxSerialTip">
+                On Linux, laser controllers typically appear as /dev/ttyUSB0 or /dev/ttyACM0.
+              </Translate>
             </Admonition>
           )}
           {os === 'windows' && (
             <Admonition type="tip">
-              On Windows, check Device Manager under "Ports (COM & LPT)"
-              to find your COM port number.
+              <Translate id="install.windowsComTip">
+                On Windows, check Device Manager under Ports (COM and LPT) to find your COM port number.
+              </Translate>
             </Admonition>
           )}
         </div>
@@ -601,40 +636,45 @@ function VerifyInstall({ os }) {
 function Troubleshooting({ os, linuxMethod }) {
   return (
     <div className="install-section">
-      <h4>Troubleshooting</h4>
+      <h4><Translate id="install.troubleshooting.title">Troubleshooting</Translate></h4>
       {os === 'linux' && linuxMethod === 'snap' && (
         <div className="install-troubleshoot">
           <details>
-            <summary>Permission issues?</summary>
+            <summary><Translate id="install.permissionIssues">Permission issues?</Translate></summary>
             <div className="install-troubleshoot-content">
               <p>
-                If your device isn't detected, see the{' '}
+                <Translate id="install.seeSnapGuide">
+                  If your device is not detected, see the Snap Permissions Guide.
+                </Translate>
+                {' '}
                 <a href="../troubleshooting/snap-permissions">
-                  Snap Permissions Guide
-                </a>.
+                  <Translate id="install.snapPermissionsGuide">Snap Permissions Guide</Translate>
+                </a>
               </p>
             </div>
           </details>
           <details>
-            <summary>Serial port still not working?</summary>
+            <summary><Translate id="install.serialNotWorking">Serial port still not working?</Translate></summary>
             <div className="install-troubleshoot-content">
               <ol>
                 <li>
-                  <strong>Replug the USB device:</strong> Unplug your laser
-                  controller, wait 5 seconds, plug it back in.
+                  <strong><Translate id="install.replugUsb">Replug the USB device:</Translate></strong>{' '}
+                  <Translate id="install.replugInstruction">
+                    Unplug your laser controller, wait 5 seconds, plug it back in.
+                  </Translate>
                 </li>
                 <li>
-                  <strong>Restart Rayforge:</strong> Close completely and
-                  relaunch.
+                  <strong><Translate id="install.restartRayforge">Restart Rayforge:</Translate></strong>{' '}
+                  <Translate id="install.closeRelaunch">Close completely and relaunch.</Translate>
                 </li>
                 <li>
-                  <strong>Check the device exists:</strong>
+                  <strong><Translate id="install.checkDeviceExists">Check the device exists:</Translate></strong>
                   <CodeBlock language="bash">
                     ls -l /dev/ttyUSB* /dev/ttyACM*
                   </CodeBlock>
                 </li>
                 <li>
-                  <strong>Reinstall if needed:</strong>
+                  <strong><Translate id="install.reinstallIfNeeded">Reinstall if needed:</Translate></strong>
                   <CodeBlock language="bash">
                     {`sudo snap remove rayforge
 sudo snap install rayforge
@@ -649,16 +689,17 @@ sudo snap connect rayforge:serial-port`}
       {os === 'linux' && linuxMethod !== 'snap' && (
         <div className="install-troubleshoot">
           <details>
-            <summary>Permission denied errors?</summary>
+            <summary><Translate id="install.permissionDenied">Permission denied errors?</Translate></summary>
             <div className="install-troubleshoot-content">
               <p>
-                If you get "permission denied" errors when accessing the
-                serial port, add your user to the <code>dialout</code> group:
+                <Translate id="install.permissionDeniedInstruction" values={{ code: 'dialout' }}>
+                  {'If you get permission denied errors when accessing the serial port, add your user to the {code} group:'}
+                </Translate>
               </p>
               <CodeBlock language="bash">
                 sudo usermod -a -G dialout $USER
               </CodeBlock>
-              <p>Then log out and back in for changes to take effect.</p>
+              <p><Translate id="install.logoutBack">Then log out and back in for changes to take effect.</Translate></p>
             </div>
           </details>
         </div>
@@ -666,12 +707,14 @@ sudo snap connect rayforge:serial-port`}
       {os === 'windows' && (
         <div className="install-troubleshoot">
           <details>
-            <summary>Installer crashing or not installing?</summary>
+            <summary><Translate id="install.installerCrashing">Installer crashing or not installing?</Translate></summary>
             <div className="install-troubleshoot-content">
               <p>
-                If the installer crashes or fails to install, you may be
-                missing the Microsoft Visual C++ Redistributable. Download
-                and install it from Microsoft:
+                <Translate id="install.missingVcRedist">
+                  If the installer crashes or fails to install, you may be
+                  missing the Microsoft Visual C++ Redistributable. Download
+                  and install it from Microsoft:
+                </Translate>
               </p>
               <p>
                 <a
@@ -679,33 +722,36 @@ sudo snap connect rayforge:serial-port`}
                   target="_blank"
                   rel="noopener noreferrer"
                 >
-                  <strong>Download C++ Redistributable v14</strong>
+                  <strong><Translate id="install.downloadVc14">Download C++ Redistributable v14</Translate></strong>
                 </a>
               </p>
               <p>
-                After installing the redistributable, run the Rayforge
-                installer again.
+                <Translate id="install.afterVcInstall">
+                  After installing the redistributable, run the Rayforge installer again.
+                </Translate>
               </p>
             </div>
           </details>
           <details>
-            <summary>Driver issues?</summary>
+            <summary><Translate id="install.driverIssues">Driver issues?</Translate></summary>
             <div className="install-troubleshoot-content">
               <p>
-                If your laser controller isn't detected, check Device
-                Manager under <strong>Ports (COM & LPT)</strong> to confirm
-                the COM port number. You may need to install CH340 or CP2102
-                drivers for your USB-to-serial adapter.
+                <Translate id="install.checkDeviceManager">
+                  If your laser controller is not detected, check Device
+                  Manager under Ports (COM and LPT) to confirm the COM port number.
+                  You may need to install CH340 or CP2102 drivers for your USB-to-serial adapter.
+                </Translate>
               </p>
             </div>
           </details>
           <details>
-            <summary>Antivirus blocking connection?</summary>
+            <summary><Translate id="install.antivirusBlocking">Antivirus blocking connection?</Translate></summary>
             <div className="install-troubleshoot-content">
               <p>
-                Some antivirus software may block Rayforge from accessing USB
-                devices. Try adding an exception if you experience connection
-                issues.
+                <Translate id="install.antivirusNote">
+                  Some antivirus software may block Rayforge from accessing USB
+                  devices. Try adding an exception if you experience connection issues.
+                </Translate>
               </p>
             </div>
           </details>
@@ -714,22 +760,25 @@ sudo snap connect rayforge:serial-port`}
       {os === 'macos' && (
         <div className="install-troubleshoot">
           <details>
-            <summary>USB device not detected?</summary>
+            <summary><Translate id="install.usbNotDetected">USB device not detected?</Translate></summary>
             <div className="install-troubleshoot-content">
               <p>
-                If your device isn't detected, you may need to approve the
-                USB device in <strong>System Settings → Privacy &
-                Security</strong>.
+                <Translate id="install.approveUsb">
+                  If your device is not detected, you may need to approve the
+                  USB device in System Settings - Privacy and Security.
+                </Translate>
               </p>
             </div>
           </details>
           <details>
-            <summary>Driver issues?</summary>
+            <summary><Translate id="install.driverIssues">Driver issues?</Translate></summary>
             <div className="install-troubleshoot-content">
               <p>
-                Some USB-to-serial adapters require additional drivers. Check
-                if your adapter uses CH340 or CP2102 chips and install the
-                appropriate driver.
+                <Translate id="install.driverIssuesMac">
+                  Some USB-to-serial adapters require additional drivers. Check
+                  if your adapter uses CH340 or CP2102 chips and install the
+                  appropriate driver.
+                </Translate>
               </p>
             </div>
           </details>
@@ -742,11 +791,15 @@ sudo snap connect rayforge:serial-port`}
 function NeedHelp() {
   return (
     <div className="install-section">
-      <h4>Need Help?</h4>
+      <h4><Translate id="install.needHelp">Need Help?</Translate></h4>
       <p>
-        For additional help, report an issue on{' '}
-        <a href="https://github.com/barebaric/rayforge/issues">GitHub</a> or
-        join our <a href="https://discord.gg/sTHNdTtpQJ">Discord</a>.
+        <Translate id="install.needHelpDescription">
+          For additional help, report an issue on GitHub or join our Discord.
+        </Translate>
+        {' '}
+        <a href="https://github.com/barebaric/rayforge/issues">GitHub</a>
+        {' | '}
+        <a href="https://discord.gg/sTHNdTtpQJ">Discord</a>
       </p>
     </div>
   );

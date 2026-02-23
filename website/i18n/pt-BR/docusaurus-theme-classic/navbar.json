@@ -1,0 +1,34 @@
+{
+  "title": {
+    "message": "Rayforge",
+    "description": "The title in the navbar"
+  },
+  "logo.alt": {
+    "message": "Logo do Rayforge",
+    "description": "The alt text of navbar logo"
+  },
+  "item.label.Documentation": {
+    "message": "Documentação",
+    "description": "Navbar item with label Documentation"
+  },
+  "item.label.Developer": {
+    "message": "Desenvolvedor",
+    "description": "Navbar item with label Developer"
+  },
+  "item.label.Contributing": {
+    "message": "Contribuir",
+    "description": "Navbar item with label Contributing"
+  },
+  "item.label.Blog": {
+    "message": "Blog",
+    "description": "Navbar item with label Blog"
+  },
+  "item.label.GitHub": {
+    "message": "GitHub",
+    "description": "Navbar item with label GitHub"
+  },
+  "item.label.Discord": {
+    "message": "Discord",
+    "description": "Navbar item with label Discord"
+  }
+}

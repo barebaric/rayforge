@@ -1,0 +1,14 @@
+{
+  "title": {
+    "message": "Блог Rayforge",
+    "description": "The title for the blog used in SEO"
+  },
+  "description": {
+    "message": "Новини, оновлення, підручники та поради про Rayforge",
+    "description": "The description for the blog used in SEO"
+  },
+  "sidebar.title": {
+    "message": "Останні публікації",
+    "description": "The label for the left sidebar"
+  }
+}

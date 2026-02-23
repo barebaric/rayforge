@@ -1,0 +1,14 @@
+{
+  "title": {
+    "message": "Rayforge 博客",
+    "description": "The title for the blog used in SEO"
+  },
+  "description": {
+    "message": "Rayforge 的新闻、更新、教程和技巧",
+    "description": "The description for the blog used in SEO"
+  },
+  "sidebar.title": {
+    "message": "近期文章",
+    "description": "The label for the left sidebar"
+  }
+}
