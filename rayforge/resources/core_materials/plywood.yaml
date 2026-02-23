@@ -1,7 +1,28 @@
 uid: plywood
-name: Plywood
-description: Engineered wood product made from layers of wood veneer
-category: Wood
+name:
+  default: Plywood
+  de: Sperrholz
+  es: Contrachapado
+  fr: Contreplaqué
+  pt: Compensado
+  uk: Фанера
+  zh_CN: 胶合板
+description:
+  default: Engineered wood product made from layers of wood veneer
+  de: Holzwerkstoffprodukt aus Schichten von Furnierholz
+  es: Producto de madera procesada hecho de capas de chapa de madera
+  fr: Produit en bois reconstitué fabriqué à partir de couches de placage de bois
+  pt: Produto de madeira processada feito de camadas de lâmina de madeira
+  uk: Продукт з інженерної деревини, виготовлений із шарів шпону
+  zh_CN: 由木单板层制成的工程木制品
+category:
+  default: Wood
+  de: Holz
+  es: Madera
+  fr: Bois
+  pt: Madeira
+  uk: Деревина
+  zh_CN: 木材
 appearance:
-  color: "#DEB887"  # Burlywood
+  color: "#DEB887"
   pattern: wood_grain

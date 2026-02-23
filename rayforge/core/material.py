@@ -4,8 +4,12 @@ import logging
 import yaml
 import re
 from pathlib import Path
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, Union, cast
 from dataclasses import dataclass, field
+from ..shared.util.localized import LocalizedField
+
+# Accept both plain strings and LocalizedField as input
+LocalizedInput = Union[str, LocalizedField]
 
 logger = logging.getLogger(__name__)
 
@@ -44,20 +48,38 @@ class Material:
 
     Materials define the visual and physical properties of stock items
     that can be cut or engraved.
+
+    Note: LocalizedField handles all localization transparently.
+    This class doesn't need to know about context or language.
     """
 
     uid: str
-    name: str = ""
-    description: str = ""
-    category: str = ""
+    name: LocalizedInput = field(default_factory=lambda: LocalizedField(""))
+    description: LocalizedInput = field(
+        default_factory=lambda: LocalizedField("")
+    )
+    category: LocalizedInput = field(
+        default_factory=lambda: LocalizedField("")
+    )
     appearance: MaterialAppearance = field(default_factory=MaterialAppearance)
     file_path: Optional[Path] = None
     extra: Dict[str, Any] = field(default_factory=dict)
 
     def __post_init__(self):
         """Post-initialization validation and setup."""
-        if not self.name:
-            self.name = self.uid
+        # Convert plain strings to LocalizedField
+        if not isinstance(self.name, LocalizedField):
+            self.name = LocalizedField(
+                str(self.name) if self.name else self.uid
+            )
+        elif not self.name:
+            self.name = LocalizedField(self.uid)
+
+        if not isinstance(self.description, LocalizedField):
+            self.description = LocalizedField(str(self.description))
+
+        if not isinstance(self.category, LocalizedField):
+            self.category = LocalizedField(str(self.category))
 
     @classmethod
     def from_file(cls, file_path: Path) -> "Material":
@@ -94,7 +116,7 @@ class Material:
         # Extract required UID from filename or data
         uid = data.get("uid", file_path.stem)
 
-        # Create material instance
+        # Extract known keys
         known_keys = {
             "uid",
             "name",
@@ -104,11 +126,17 @@ class Material:
         }
         extra = {k: v for k, v in data.items() if k not in known_keys}
 
+        # Parse fields - LocalizedField handles both simple and localized
+        # format
+        name = LocalizedField.from_yaml(data.get("name", uid))
+        description = LocalizedField.from_yaml(data.get("description", ""))
+        category = LocalizedField.from_yaml(data.get("category", ""))
+
         material = cls(
             uid=uid,
-            name=data.get("name", uid),
-            description=data.get("description", ""),
-            category=data.get("category", ""),
+            name=name,
+            description=description,
+            category=category,
             appearance=MaterialAppearance.from_dict(
                 data.get("appearance", {})
             ),
@@ -127,9 +155,9 @@ class Material:
         """
         result = {
             "uid": self.uid,
-            "name": self.name,
-            "description": self.description,
-            "category": self.category,
+            "name": cast(LocalizedField, self.name).to_yaml(),
+            "description": cast(LocalizedField, self.description).to_yaml(),
+            "category": cast(LocalizedField, self.category).to_yaml(),
             "appearance": self.appearance.to_dict(),
         }
         result.update(self.extra)
@@ -196,6 +224,23 @@ class Material:
             Pattern name or 'solid' if not specified
         """
         return self.appearance.pattern
+
+    def matches_search(self, query: str) -> bool:
+        """
+        Check if the material matches a search query in any language.
+
+        Args:
+            query: Search string (case-insensitive)
+
+        Returns:
+            True if query matches name, description, or category in any
+            language
+        """
+        return (
+            cast(LocalizedField, self.name).matches(query)
+            or cast(LocalizedField, self.description).matches(query)
+            or cast(LocalizedField, self.category).matches(query)
+        )
 
     def __str__(self) -> str:
         """String representation of the material."""

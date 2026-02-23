@@ -1,7 +1,28 @@
 uid: mdf
-name: MDF (Medium-Density Fiberboard)
-description: Medium-density fiberboard, a common engineered wood product
-category: Wood
+name:
+  default: MDF (Medium-Density Fiberboard)
+  de: MDF (Mitteldichte Faserplatte)
+  es: MDF (Tablero de fibra de densidad media)
+  fr: MDF (Panneau de fibres de moyenne densité)
+  pt: MDF (Painel de fibra de média densidade)
+  uk: МДФ (плита середньої щільності)
+  zh_CN: MDF (中密度纤维板)
+description:
+  default: Medium-density fiberboard, a common engineered wood product
+  de: Mitteldichte Faserplatte, ein häufiges Holzwerkstoffprodukt
+  es: Tablero de fibra de densidad media, un producto común de madera procesada
+  fr: Panneau de fibres de moyenne densité, un produit courant en bois reconstitué
+  pt: Painel de fibra de média densidade, um produto comum de madeira processada
+  uk: Плита середньої щільності, поширений продукт з інженерної деревини
+  zh_CN: 中密度纤维板，一种常见的工程木制品
+category:
+  default: Wood
+  de: Holz
+  es: Madera
+  fr: Bois
+  pt: Madeira
+  uk: Деревина
+  zh_CN: 木材
 appearance:
-  color: "#D2691E"  # Chocolate brown
+  color: "#D2691E"
   pattern: solid
