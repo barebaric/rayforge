@@ -218,3 +218,44 @@ class TestArtifactNode:
         step_node.add_dependency(wp_node)
 
         assert step_node.is_ready() is True
+
+    def test_is_ready_with_cancelled_state(self):
+        """Test is_ready returns False when node is CANCELLED."""
+        key = ArtifactKey.for_workpiece(WP_UID_1)
+        manager = create_manager_with_state(key, 1, NodeState.CANCELLED)
+        node = ArtifactNode(
+            key=key, generation_id=1, _artifact_manager=manager
+        )
+
+        assert node.is_ready() is False
+
+    def test_is_ready_with_cancelled_dependencies(self):
+        """Test is_ready returns False when dependencies are CANCELLED."""
+        wp_key = ArtifactKey.for_workpiece(WP_UID_1)
+        step_key = ArtifactKey.for_step(STEP_UID_1)
+
+        wp_manager = create_manager_with_state(wp_key, 1, NodeState.CANCELLED)
+        step_manager = create_manager_with_state(step_key, 1, NodeState.DIRTY)
+
+        wp_node = ArtifactNode(
+            key=wp_key, generation_id=1, _artifact_manager=wp_manager
+        )
+        step_node = ArtifactNode(
+            key=step_key, generation_id=1, _artifact_manager=step_manager
+        )
+
+        step_node.add_dependency(wp_node)
+
+        assert step_node.is_ready() is False
+
+    def test_cancelled_state_accessible(self):
+        """Test that CANCELLED state can be set and read."""
+        key = ArtifactKey.for_workpiece(WP_UID_1)
+        manager = create_manager_with_state(key, 1, NodeState.DIRTY)
+        node = ArtifactNode(
+            key=key, generation_id=1, _artifact_manager=manager
+        )
+
+        node.state = NodeState.CANCELLED
+
+        manager.set_state.assert_called_once_with(key, 1, NodeState.CANCELLED)

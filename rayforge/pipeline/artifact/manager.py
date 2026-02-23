@@ -786,6 +786,12 @@ class ArtifactManager:
             logger.debug(
                 f"[{key}] report_cancellation: handle exists, keeping VALID"
             )
+        elif entry.state == NodeState.PROCESSING:
+            entry.state = NodeState.CANCELLED
+            logger.debug(
+                f"[{key}] report_cancellation: was PROCESSING, "
+                "marked CANCELLED"
+            )
         else:
             entry.state = NodeState.DIRTY
             logger.debug(
