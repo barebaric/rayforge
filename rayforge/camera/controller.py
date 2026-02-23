@@ -206,6 +206,7 @@ class CameraController:
     def __init__(self, config: Camera):
         self.config = config
         self._image_data: Optional[np.ndarray] = None
+        self._accumulator: Optional[np.ndarray] = None # For Temporal Smoothing
         self._active_subscribers: int = 0
         self._capture_thread: Optional[threading.Thread] = None
         self._running: bool = False
@@ -221,6 +222,7 @@ class CameraController:
     def _on_config_changed(self, sender):
         """Reacts to changes in the data model."""
         self._settings_dirty = True
+        self._accumulator = None  # Reset smoothing if settings change
         if self.config.enabled and self._active_subscribers > 0:
             self._start_capture_stream()
         elif not self.config.enabled:
@@ -399,28 +401,11 @@ class CameraController:
             return None
 
         # Capture raw image
-        raw_image = self._image_data
-
-        # Undistort if calibration parameters are set
-        if (
-            self.config._camera_matrix is not None
-            and self.config._dist_coeffs is not None
-        ):
-            try:
-                undistorted_image = cv2.undistort(
-                    raw_image,
-                    self.config._camera_matrix,
-                    self.config._dist_coeffs,
-                )
-            except cv2.error as e:
-                logger.warning(f"Failed to undistort image: {e}")
-                undistorted_image = raw_image
-        else:
-            undistorted_image = raw_image
+        processed_image = self._image_data
 
         # Compute homography (world to image)
         try:
-            H = self._compute_homography(raw_image.shape[0])
+            H = self._compute_homography(processed_image.shape[0])
         except ValueError as e:
             logger.error(f"Cannot compute homography: {e}")
             return None
@@ -452,20 +437,9 @@ class CameraController:
         # Overall transformation: output pixels -> world -> image
         M = H @ T
 
-        # Apply perspective warp
-        # Log transformed corner points
-        world_corners = np.array(
-            [[x_min, y_min], [x_max, y_min], [x_max, y_max], [x_min, y_max]],
-            dtype=np.float32,
-        )
-        world_corners_h = np.hstack((world_corners, np.ones((4, 1)))).T
-        transformed_corners = M @ world_corners_h
-        transformed_corners = transformed_corners[:2] / transformed_corners[2]
-        transformed_corners = transformed_corners.T
-
         try:
             aligned_image = cv2.warpPerspective(
-                undistorted_image, np.linalg.inv(M), output_size
+                processed_image, np.linalg.inv(M), output_size
             )
             return aligned_image
         except cv2.error as e:
@@ -488,6 +462,89 @@ class CameraController:
         except Exception as e:
             # We log as a warning because the stream may still work
             logger.warning(f"Could not apply one or more camera settings: {e}")
+    
+    def _get_effective_calibration(self, h, w):
+        """Returns the camera matrix and distortion coefficients, prioritizing manual tweaks."""
+        k1 = getattr(self.config, 'distortion_k1', 0.0)
+        k2 = getattr(self.config, 'distortion_k2', 0.0)
+        p1 = getattr(self.config, 'distortion_p1', 0.0)
+        p2 = getattr(self.config, 'distortion_p2', 0.0)
+
+        if k1 != 0.0 or k2 != 0.0 or p1 != 0.0 or p2 != 0.0:
+            cam_mat = self.config._camera_matrix
+            if cam_mat is None:
+                # Use a heuristic focal length based on typical wide-angle camera geometry
+                f = max(h, w)
+                cam_mat = np.array([
+                    [f, 0, w / 2],
+                    [0, f, h / 2],
+                    [0, 0, 1]
+                ], dtype=np.float32)
+
+            dist_coeffs = np.array([k1, k2, p1, p2, 0.0], dtype=np.float32)
+            return cam_mat, dist_coeffs
+
+        return self.config._camera_matrix, self.config._dist_coeffs
+
+    def _process_frame(self, frame: np.ndarray) -> np.ndarray:
+        """Applies denoise, fisheye correction, and boundary stretching."""
+        
+        # 0. Temporal Denoising (Accumulate Weighted)
+        denoise_strength = getattr(self.config, 'denoise', 0.0)
+        
+        if denoise_strength > 0.0:
+            if self._accumulator is None or self._accumulator.shape != frame.shape:
+                self._accumulator = frame.astype(np.float32)
+            else:
+                # Formula: acc = (1-alpha)*acc + alpha*frame
+                # We want denoise_strength to be the persistence of old frames.
+                # So if denoise is 0.9, we keep 90% of old, add 10% of new.
+                alpha = 1.0 - denoise_strength
+                cv2.accumulateWeighted(frame, self._accumulator, alpha)
+            
+            # Use the denoised result for subsequent processing
+            frame_to_process = self._accumulator.astype(np.uint8)
+        else:
+            self._accumulator = None
+            frame_to_process = frame
+
+        h, w = frame_to_process.shape[:2]
+
+        # 1. Undistort (Fisheye Correction)
+        cam_mat, dist = self._get_effective_calibration(h, w)
+        if cam_mat is not None and dist is not None:
+            try:
+                frame_to_process = cv2.undistort(frame_to_process, cam_mat, dist)
+            except Exception as e:
+                logger.error(f"Failed to undistort frame: {e}")
+
+        # 2. Stretch/Crop boundaries
+        top = getattr(self.config, 'offset_top', 0.0)
+        bottom = getattr(self.config, 'offset_bottom', 0.0)
+        left = getattr(self.config, 'offset_left', 0.0)
+        right = getattr(self.config, 'offset_right', 0.0)
+
+        if top != 0 or bottom != 0 or left != 0 or right != 0:
+            pts1 = np.float32([
+                [left, top],
+                [w - right, top],
+                [left, h - bottom],
+                [w - right, h - bottom]
+            ])
+            pts2 = np.float32([
+                [0, 0],
+                [w, 0],
+                [0, h],
+                [w, h]
+            ])
+
+            try:
+                M = cv2.getPerspectiveTransform(pts1, pts2)
+                frame_to_process = cv2.warpPerspective(frame_to_process, M, (w, h), flags=cv2.INTER_LINEAR)
+            except Exception as e:
+                logger.error(f"Failed to apply camera offsets: {e}")
+
+        return frame_to_process
 
     def _read_frame(self, cap) -> bool:
         """Read frame from cap. Returns True on success."""
@@ -497,7 +554,10 @@ class CameraController:
                 logger.warning("Failed to capture frame from camera.")
                 self._image_data = None
                 return False
-            self._image_data = frame
+
+            # Apply all visual corrections
+            self._image_data = self._process_frame(frame)
+            
             # Emit the signal in a GLib-safe way
             idle_add(self.image_captured.send, self)
             return True
@@ -519,6 +579,7 @@ class CameraController:
         """Capture frames from an opened device. Returns when should stop."""
         self._settings_dirty = True
         self._consecutive_failures = 0
+        self._accumulator = None
 
         while self._running and cap is not None:
             if self._settings_dirty:
