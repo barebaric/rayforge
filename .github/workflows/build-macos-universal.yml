@@ -178,6 +178,7 @@ jobs:
           fi
 
           cp -R "$ARM_APP" "$UNI_APP"
+          rsync -a --ignore-existing "$INTEL_APP/" "$UNI_APP/"
 
           find "$ARM_APP" -type f | while read -r arm_file; do
             rel="${arm_file#"$ARM_APP"/}"
