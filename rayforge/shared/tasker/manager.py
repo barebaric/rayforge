@@ -324,7 +324,14 @@ class TaskManager:
                 f"Invoking when_done callback for cancelled "
                 f"pooled task '{key}' (id: {task_to_callback.id})."
             )
-            callback_to_invoke(task_to_callback)
+            try:
+                callback_to_invoke(task_to_callback)
+            except Exception as e:
+                logger.debug(
+                    f"when_done callback for cancelled task '{key}' "
+                    f"raised {type(e).__name__}: {e}. This may occur "
+                    f"during shutdown when resources are being torn down."
+                )
 
     def get_task(self, key: Any) -> Optional[Task]:
         """Retrieves a task by its key."""

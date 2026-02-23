@@ -608,9 +608,15 @@ class ViewManager:
                 f"[{key}] when_done_callback called, "
                 f"task_status={task.get_status()}"
             )
-            self._on_render_complete(
-                task, key, view_id, workpiece_uid, step_uid
-            )
+            if task.get_status() == "canceled":
+                logger.debug(
+                    f"[{key}] Task was cancelled, skipping "
+                    "_on_render_complete signal."
+                )
+            else:
+                self._on_render_complete(
+                    task, key, view_id, workpiece_uid, step_uid
+                )
             self._store.release(task_source_handle)
 
         self._task_manager.run_process(
