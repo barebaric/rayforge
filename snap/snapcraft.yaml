@@ -89,13 +89,6 @@ parts:
       ln -s ../x86_64-linux-gnu/libsz.so.2 $SNAPCRAFT_PART_INSTALL/usr/lib/rayforge-libs/libsz.so.2
       ln -s ../x86_64-linux-gnu/libaec.so.0 $SNAPCRAFT_PART_INSTALL/usr/lib/rayforge-libs/libaec.so.0
 
-      # Create a GSettings override to force the app to use the Adwaita icon theme
-      # even if the host system (KDE/XFCE) requests something else (like Breeze).
-      mkdir -p $SNAPCRAFT_PART_INSTALL/usr/share/glib-2.0/schemas
-      cat > $SNAPCRAFT_PART_INSTALL/usr/share/glib-2.0/schemas/90-rayforge.gschema.override <<EOF
-      [org.gnome.desktop.interface]
-      icon-theme='Adwaita'
-      EOF
       gtk-update-icon-cache -q -t -f $SNAPCRAFT_PART_INSTALL/usr/share/icons/Adwaita
       $SNAPCRAFT_PART_INSTALL/usr/lib/x86_64-linux-gnu/gdk-pixbuf-2.0/gdk-pixbuf-query-loaders --update-cache
 
