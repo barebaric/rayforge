@@ -16,6 +16,7 @@ from utils import (
     save_panel_states,
     restore_panel_states,
     take_screenshot,
+    clear_window_subtitle,
 )
 
 logger = logging.getLogger(__name__)
@@ -50,6 +51,7 @@ def main():
 
     time.sleep(0.5)
 
+    clear_window_subtitle(win)
     logger.info("Taking screenshot: main-3d.png")
     take_screenshot("main-3d.png")
 
