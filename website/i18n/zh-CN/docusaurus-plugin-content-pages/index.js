@@ -1,6 +1,7 @@
 import React from 'react';
 import Layout from '@theme/Layout';
 import Link from '@docusaurus/Link';
+import useBaseUrl from '@docusaurus/useBaseUrl';
 import styles from '@site/src/pages/index.module.css';
 import Icon from '@mdi/react';
 import { mdiRocketLaunch, mdiViewDashboard, mdiFeatureSearch } from '@mdi/js';
@@ -13,9 +14,7 @@ function HeroSection() {
         {/* Left Side: Original Content */}
         <div className={styles.heroContent}>
           <h1 className={styles.heroTitle}>
-            全球最<br />
-            <span className={styles.titleGradient}>强大的开源</span>
-            激光软件
+            全球<span className={styles.titleGradient}>最强大的开源</span>激光软件
           </h1>
           <p className={styles.heroSubtitle}>
             为富有想象力的头脑提供无缝工具。Rayforge 是您的激光切割机的开源强力工具，将 2D CAD、CAM 和机器控制集成在一个充满活力的软件包中。
@@ -45,7 +44,7 @@ function HeroSection() {
           {/* Main Back Layer: Screenshot */}
           <div className={styles.screenshotLayer}>
             <img
-              src="/screenshots/main-standard.png"
+              src={useBaseUrl('/screenshots/main-standard.png')}
               alt="Rayforge 应用程序截图"
               className={styles.heroImage}
             />
@@ -126,7 +125,7 @@ function FeatureSection({
         
         <div className={styles.featureVisual}>
           <div className={`${styles.blobShape} ${blobClass}`}></div>
-          <img src={image} alt={title} />
+          <img src={useBaseUrl(image)} alt={title} />
         </div>
 
         <div className={styles.featureContent}>
