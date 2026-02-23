@@ -913,3 +913,36 @@ def test_report_cancellation_nonexistent_generation_yields_none(manager):
 
     with manager.report_cancellation(key, 99) as handle:
         assert handle is None
+
+
+def test_report_cancellation_processing_marks_cancelled(manager):
+    """Test report_cancellation marks CANCELLED when entry is PROCESSING."""
+    key = ArtifactKey.for_workpiece(WP1_UID)
+    manager.declare_generation({key}, 0)
+    manager.set_state(key, 0, NodeState.PROCESSING)
+
+    with manager.report_cancellation(key, 0) as handle:
+        assert handle is None
+
+    assert manager.get_state(key, 0) == NodeState.CANCELLED
+
+
+def test_report_cancellation_processing_with_handle_keeps_valid(manager):
+    """
+    Test report_cancellation keeps VALID when PROCESSING but handle exists.
+
+    A handle takes precedence over the PROCESSING state - if we have a
+    valid artifact, we keep it VALID even if the task was cancelled.
+    """
+    key = ArtifactKey.for_workpiece(WP1_UID)
+    existing_handle = create_mock_handle(
+        WorkPieceArtifactHandle, "wp_existing"
+    )
+    manager.declare_generation({key}, 0)
+    manager.cache_handle(key, existing_handle, 0)
+    manager.set_state(key, 0, NodeState.PROCESSING)
+
+    with manager.report_cancellation(key, 0) as handle:
+        assert handle is existing_handle
+
+    assert manager.get_state(key, 0) == NodeState.VALID

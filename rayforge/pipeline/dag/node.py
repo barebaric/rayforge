@@ -25,6 +25,7 @@ class NodeState(Enum):
     PROCESSING = "processing"
     VALID = "valid"
     ERROR = "error"
+    CANCELLED = "cancelled"
 
 
 class ArtifactNode:
