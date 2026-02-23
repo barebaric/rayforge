@@ -2,17 +2,16 @@ from typing import Optional
 import logging
 from gi.repository import Gtk, Adw
 from blinker import Signal
-from ...context import get_context
 from ...logging_setup import ui_log_event_received
 from ...machine.models.machine import Machine
 from ...machine.driver.driver import Axis
 from ...machine.driver.dummy import NoDeviceDriver
-from ...shared.units.definitions import get_unit
-from .jog_widget import JogWidget
-from .console import Console
 from ...machine.cmd import MachineCmd
 from ...shared.tasker import task_mgr
 from ..icons import get_icon
+from ..shared.unit_spin_row import UnitSpinRowHelper
+from .console import Console
+from .jog_widget import JogWidget
 
 
 logger = logging.getLogger(__name__)
@@ -161,18 +160,18 @@ class MachineControlPanel(Gtk.Box):
 
         # Jog Speed row
         speed_adjustment = Gtk.Adjustment(
-            value=1000, lower=1, upper=10000, step_increment=10
+            value=1000, lower=1, upper=60000, step_increment=10
         )
-        speed_unit = get_unit(
-            get_context().config.unit_preferences.get("speed", "mm/min")
-        )
-        speed_label = speed_unit.label if speed_unit else "mm/min"
         self.speed_row = Adw.SpinRow(
             title=_("Jog Speed"),
-            subtitle=_(f"Speed in {speed_label}"),
+            subtitle=_("Speed"),
             adjustment=speed_adjustment,
         )
-        self.speed_row.connect("changed", self._on_speed_changed)
+        self.speed_helper = UnitSpinRowHelper(
+            self.speed_row, quantity="speed", max_value_in_base=60000
+        )
+        self.speed_helper.set_value_in_base_units(1000)
+        self.speed_helper.changed.connect(self._on_speed_changed)
         wcs_group.add(self.speed_row)
 
         # Jog Distance row
@@ -191,9 +190,10 @@ class MachineControlPanel(Gtk.Box):
         # Initial update
         self._update_wcs_ui()
 
-    def _on_speed_changed(self, spin_row):
+    def _on_speed_changed(self, helper):
         """Handle jog speed change."""
-        self.jog_widget.jog_speed = int(spin_row.get_value())
+        speed_mm_min = int(helper.get_value_in_base_units())
+        self.jog_widget.jog_speed = speed_mm_min
 
     def _on_distance_changed(self, spin_row):
         """Handle jog distance change."""

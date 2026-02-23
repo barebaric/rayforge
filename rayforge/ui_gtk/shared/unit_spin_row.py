@@ -4,8 +4,8 @@ from gi.repository import Adw, Gtk
 from blinker import Signal
 from ...context import get_context
 from ...shared.units.definitions import Unit, get_unit, get_units_for_quantity
-from .adwfix import get_spinrow_float
 from ...shared.units.formatter import format_value
+from .adwfix import get_spinrow_float
 
 logger = logging.getLogger(__name__)
 
@@ -28,7 +28,7 @@ class UnitSpinRowHelper:
     ):
         self.spin_row = spin_row
         self.quantity = quantity
-        self._unit: Unit | None = None
+        self._unit: Optional[Unit] = None
         self._is_updating = False
         self._original_subtitle_format = self.spin_row.get_subtitle() or ""
         self._max_value_in_base = max_value_in_base
