@@ -122,7 +122,7 @@ if [ "$(uname -s)" = "Darwin" ]; then
             next
         }
         /^scipy==/ {
-            print "scipy==1.13.1"
+            print "scipy==1.11.4"
             done_scipy = 1
             next
         }
@@ -132,7 +132,7 @@ if [ "$(uname -s)" = "Darwin" ]; then
                 print "numpy==1.26.4"
             }
             if (done_scipy == 0) {
-                print "scipy==1.13.1"
+                print "scipy==1.11.4"
             }
         }
     ' "$TMP_REQUIREMENTS" > "$TMP_REQUIREMENTS.patched"
@@ -146,6 +146,10 @@ if [ "$(uname -s)" = "Darwin" ] && [ "$(uname -m)" = "x86_64" ]; then
 fi
 
 "$VENV_PY" -m pip install -r "$TMP_REQUIREMENTS"
+if [ "$(uname -s)" = "Darwin" ]; then
+    "$VENV_PY" -m pip install --upgrade --force-reinstall \
+        "numpy==1.26.4" "scipy==1.11.4"
+fi
 rm -f "$TMP_REQUIREMENTS"
 "$VENV_PY" -m pip install PyOpenGL_accelerate==3.1.10 || \
     echo "PyOpenGL_accelerate install failed; continuing."
