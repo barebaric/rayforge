@@ -280,6 +280,9 @@ class TaskManager:
         Cancels a running task by its key. This is the authoritative method
         for initiating a cancellation.
         """
+        callback_to_invoke = None
+        task_to_callback = None
+
         with self._lock:
             task = self._tasks.get(key)
             if not task or task.is_final():
@@ -308,16 +311,20 @@ class TaskManager:
                 # pooled tasks. This ensures contexts are updated without
                 # waiting for the worker to finish, which is critical on
                 # Windows where IPC is slower and can cause a backlog.
-                when_done = task.when_done_callback
-                if when_done:
-                    logger.debug(
-                        f"Invoking when_done callback for cancelled "
-                        f"pooled task '{key}' (id: {task.id})."
-                    )
-                    # Clear the callback to prevent double-calling when
-                    # the final message arrives from the worker.
+                # We must call the callback OUTSIDE the lock to avoid
+                # deadlocks if the callback tries to acquire the lock.
+                callback_to_invoke = task.when_done_callback
+                if callback_to_invoke:
                     task.when_done_callback = None
-                    when_done(task)
+                    task_to_callback = task
+
+        # Call the callback outside the lock to avoid deadlocks.
+        if callback_to_invoke and task_to_callback:
+            logger.debug(
+                f"Invoking when_done callback for cancelled "
+                f"pooled task '{key}' (id: {task_to_callback.id})."
+            )
+            callback_to_invoke(task_to_callback)
 
     def get_task(self, key: Any) -> Optional[Task]:
         """Retrieves a task by its key."""
