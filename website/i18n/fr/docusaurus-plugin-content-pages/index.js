@@ -19,7 +19,7 @@ function HeroSection() {
             au Monde
           </h1>
           <p className={styles.heroSubtitle}>
-            Des outils fluides pour les esprits imaginatifs. Rayforge est l'outil open source puissant pour votre découpeuse laser,
+            Des outils fluides pour les esprits imaginatifs. Rayforge est le studio créatif complet pour votre découpeuse laser,
             combinant CAO 2D, FAO et contrôle de machine dans un package vibrant.
           </p>
           <div className={styles.heroCtaButtons}>
@@ -149,7 +149,7 @@ function FeatureSection({
 
 export default function Home() {
   return (
-    <Layout description="Logiciel moderne d'envoi de G-code et de contrôle pour découpeuses laser basées sur GRBL">
+    <Layout description="Concevez et créez avec votre découpeuse laser - le studio créatif complet pour les créateurs, artistes et artisans">
       <main className={styles.pageWrapper}>
         
         <HeroSection />
@@ -168,12 +168,12 @@ export default function Home() {
 
           <FeatureSection
             blobClass={styles.blobOrange}
-            title="Ébaucheur 2D Paramétrique"
-            description="Créez des conceptions 2D précises basées sur des contraintes directement dans Rayforge. L'ébaucheur paramétrique fournit un ensemble complet d'outils pour créer des formes géométriques et appliquer des contraintes paramétriques."
+            title="Concevez Vos Propres Formes"
+            description="Créez des designs personnalisés directement dans Rayforge. Les outils de dessin intégrés vous permettent d'esquisser, de façonner et d'affiner vos idées sans avoir besoin d'un logiciel de conception séparé."
             features={[
-              'Créer des lignes, cercles, arcs et remplissages',
-              'Appliquer des contraintes géométriques : coïncident, vertical, horizontal...',
-              'Expressions paramétriques pour les dimensions calculées',
+              'Dessinez des lignes, cercles, courbes et formes remplies',
+              'Alignez tout parfaitement',
+              'Définissez des dimensions qui se mettent à jour automatiquement',
             ]}
             image="/assets/screenshot-sketcher.png"
             reverse
@@ -181,24 +181,24 @@ export default function Home() {
 
           <FeatureSection
             blobClass={styles.blobPurple}
-            title="Optimisation Avancée des Parcours"
-            description="Gagnez du temps et du matériau avec des algorithmes intelligents de recherche de chemin et une fonctionnalité de mise en page automatique. Rayforge optimise automatiquement l'ordre de découpe pour minimiser le temps de déplacement."
+            title="Parcours de Découpe Intelligents"
+            description="Travaillez plus vite et gaspillez moins de matériau. Rayforge détermine la manière la plus efficace de découper votre design, pour que votre laser passe moins de temps à se déplacer et plus de temps à créer."
             features={[
-              "Ne perdez pas de temps lors de la découpe et de la gravure",
-              'Économisez du matériau avec la mise en page et le nesting automatiques',
-              'Support natif des arcs avec les commandes G2/G3',
+              "Découpe plus rapide avec des mouvements optimisés",
+              'Économisez du matériau avec la mise en page automatique',
+              'Courbes fluides et précises',
             ]}
             image="/assets/screenshot-optimizer.png"
           />
 
           <FeatureSection
             blobClass={styles.blobCyan}
-            title="Simulateur Intégré Puissant"
-            description="Validez votre G-code et simulez le processus de découpe avant de commencer. Notre simulateur intégré vous aide à détecter les problèmes potentiels tôt, vous faisant gagner du temps et des matériaux."
+            title="Prévisualisez Avant de Découper"
+            description="Regardez votre design prendre vie virtuellement avant de vous engager sur le vrai matériau. Détectez les problèmes potentiels tôt et évitez de perdre du temps et des matériaux."
             features={[
-              'Aperçu du G-code',
-              'Simulation visuelle des parcours de découpe',
-              'Aperçu 2D en direct de toutes les opérations pendant l\'édition',
+              'Voyez exactement comment votre laser va se déplacer',
+              'Repérez les erreurs avant de découper',
+              'Aperçu en direct qui se met à jour pendant la conception',
             ]}
             image="/screenshots/main-simulation.png"
             reverse
@@ -207,11 +207,10 @@ export default function Home() {
           <FeatureSection
             blobClass={styles.blobOrange}
             title="Gestion des Matériaux et du Workflow"
-            description="Rationalisez votre workflow de découpe laser avec des outils complets de gestion des matériaux, des stocks et des recettes conçus pour améliorer la cohérence et l'efficacité."
+            description="Sauvegardez vos réglages favoris et obtenez des résultats cohérents pour tous vos projets. Que vous découpiez du bois, de l'acrylique ou du cuir, Rayforge se souvient de ce qui fonctionne le mieux."
             features={[
-              'Organiser les matériaux par type et propriétés',
-              'Définir les dimensions physiques du stock',
-              'Créer des recettes réutilisables pour des résultats cohérents',
+              'Enregistrez les réglages pour différents matériaux',
+              'Créez des recettes réutilisables',
             ]}
             image="/assets/screenshot-recipe.png"
           />

@@ -16,7 +16,7 @@ function HeroSection() {
             <span className={styles.titleGradient}>Die weltweit leistungsstärkste Open-Source</span> Laser-Software
           </h1>
           <p className={styles.heroSubtitle}>
-            Nahtlose Werkzeuge für kreative Köpfe. Rayforge ist das Open-Source-Power-Tool für Ihren Lasercutter,
+            Nahtlose Werkzeuge für kreative Köpfe. Rayforge ist das komplette Kreativstudio für Ihren Lasercutter,
             das 2D-CAD, CAM und Maschinensteuerung in einem dynamischen Paket vereint.
           </p>
           <div className={styles.heroCtaButtons}>
@@ -140,7 +140,7 @@ function FeatureSection({
 
 export default function Home() {
   return (
-    <Layout description="Moderne G-Code-Sender- und Steuerungssoftware für GRBL-basierte Lasercutter">
+    <Layout description="Gestalten und erschaffen Sie mit Ihrem Lasercutter - das komplette Kreativstudio für Maker, Künstler und Handwerker">
       <main className={styles.pageWrapper}>
         
         <HeroSection />
@@ -159,12 +159,12 @@ export default function Home() {
 
           <FeatureSection
             blobClass={styles.blobOrange}
-            title="Parametrischer 2D-Sketcher"
-            description="Erstellen Sie präzise, beschränkungsbasierte 2D-Designs direkt in Rayforge. Der parametrische Sketcher bietet eine vollständige Werkzeugpalette zum Erstellen geometrischer Formen und zum Anwenden parametrischer Beschränkungen."
+            title="Gestalten Sie Ihre Eigenen Formen"
+            description="Erstellen Sie benutzerdefinierte Designs direkt in Rayforge. Die integrierten Zeichenwerkzeuge ermöglichen es Ihnen, Ihre Ideen zu skizzieren, zu formen und zu verfeinern, ohne separate Designsoftware zu benötigen."
             features={[
-              'Linien, Kreise, Bögen und Füllungen erstellen',
-              'Geometrische Beschränkungen anwenden: koinzident, vertikal, horizontal...',
-              'Parametrische Ausdrücke für berechnete Abmessungen',
+              'Zeichnen Sie Linien, Kreise, Kurven und gefüllte Formen',
+              'Richten Sie alles perfekt aus',
+              'Definieren Sie Abmessungen, die sich automatisch aktualisieren',
             ]}
             image="/assets/screenshot-sketcher.png"
             reverse
@@ -172,24 +172,24 @@ export default function Home() {
 
           <FeatureSection
             blobClass={styles.blobPurple}
-            title="Erweiterte Pfad-Optimierung"
-            description="Sparen Sie Zeit und Material mit intelligenten Pfadsuch-Algorithmen und automatischer Layout-Funktionalität. Rayforge optimiert automatisch die Schneidereihenfolge, um die Bewegungszeit zu minimieren."
+            title="Intelligente Schneidepfade"
+            description="Arbeiten Sie schneller und verschwenden Sie weniger Material. Rayforge ermittelt die effizienteste Methode, Ihr Design zu schneiden, damit Ihr Laser weniger Zeit mit Bewegen und mehr Zeit mit Erschaffen verbringt."
             features={[
-              'Keine Zeitverschwendung beim Schneiden und Gravieren',
-              'Material sparen durch automatisches Layout und Nesting',
-              'Native Bogen-Unterstützung mit G2/G3-Befehlen',
+              "Schnelleres Schneiden durch optimierte Bewegungen",
+              'Material sparen durch automatisches Layout',
+              'Glatte, präzise Kurven',
             ]}
             image="/assets/screenshot-optimizer.png"
           />
 
           <FeatureSection
             blobClass={styles.blobCyan}
-            title="Leistungsstarker integrierter Simulator"
-            description="Validieren Sie Ihren G-Code und simulieren Sie den Schneideprozess, bevor Sie beginnen. Unser integrierter Simulator hilft Ihnen, potenzielle Probleme frühzeitig zu erkennen und spart Zeit und Material."
+            title="Vorschau Vor Dem Schneiden"
+            description="Sehen Sie Ihr Design virtuell zum Leben erwachen, bevor Sie sich auf das echte Material festlegen. Erkennen Sie potenzielle Probleme früh und sparen Sie Zeit und Material."
             features={[
-              'G-Code-Vorschau',
-              'Visuelle Simulation der Schneidepfade',
-              'Live-2D-Vorschau aller Operationen während der Bearbeitung',
+              'Sehen Sie genau, wie sich Ihr Laser bewegen wird',
+              'Fehler erkennen bevor Sie schneiden',
+              'Live-Vorschau, die sich während des Designs aktualisiert',
             ]}
             image="/screenshots/main-simulation.png"
             reverse
@@ -198,11 +198,10 @@ export default function Home() {
           <FeatureSection
             blobClass={styles.blobOrange}
             title="Material- und Workflow-Verwaltung"
-            description="Optimieren Sie Ihren Lasercutting-Workflow mit umfassenden Werkzeugen zur Verwaltung von Materialien, Rohlingen und Rezepten, die für verbesserte Konsistenz und Effizienz entwickelt wurden."
+            description="Speichern Sie Ihre Lieblingseinstellungen und erhalten Sie konsistente Ergebnisse in all Ihren Projekten. Ob Sie Holz, Acryl oder Leder schneiden - Rayforge merkt sich, was am besten funktioniert."
             features={[
-              'Materialien nach Typ und Eigenschaften organisieren',
-              'Physische Rohlingsabmessungen definieren',
-              'Wiederverwendbare Rezepte für konsistente Ergebnisse erstellen',
+              'Einstellungen für verschiedene Materialien speichern',
+              'Wiederverwendbare Rezepte erstellen',
             ]}
             image="/assets/screenshot-recipe.png"
           />

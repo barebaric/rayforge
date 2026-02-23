@@ -17,7 +17,7 @@ function HeroSection() {
             全球<span className={styles.titleGradient}>最强大的开源</span>激光软件
           </h1>
           <p className={styles.heroSubtitle}>
-            为富有想象力的头脑提供无缝工具。Rayforge 是您的激光切割机的开源强力工具，将 2D CAD、CAM 和机器控制集成在一个充满活力的软件包中。
+            为富有想象力的头脑提供无缝工具。Rayforge 是您的激光切割机的完整创意工作室，将 2D CAD、CAM 和机器控制集成在一个充满活力的软件包中。
           </p>
           <div className={styles.heroCtaButtons}>
             <Link
@@ -146,7 +146,7 @@ function FeatureSection({
 
 export default function Home() {
   return (
-    <Layout description="基于 GRBL 的激光切割机现代 G-code 发送器和控制软件">
+    <Layout description="使用激光切割机设计和创作 - 为创客、艺术家和手工艺人打造的完整创意工作室">
       <main className={styles.pageWrapper}>
         
         <HeroSection />
@@ -165,12 +165,12 @@ export default function Home() {
 
           <FeatureSection
             blobClass={styles.blobOrange}
-            title="参数化 2D 绘图器"
-            description="直接在 Rayforge 中创建精确的、基于约束的 2D 设计。参数化绘图器提供了一套完整的工具，用于创建几何形状并应用参数化约束。"
+            title="设计您自己的形状"
+            description="直接在 Rayforge 中创建自定义设计。内置绘图工具让您无需单独的设计软件即可绘制、塑造和完善您的创意。"
             features={[
-              '创建直线、圆形、圆弧和填充',
-              '应用几何约束：重合、垂直、水平...',
-              '用于计算尺寸的参数化表达式',
+              '绘制线条、圆形、曲线和填充形状',
+              '完美对齐所有元素',
+              '设置自动更新的尺寸',
             ]}
             image="/assets/screenshot-sketcher.png"
             reverse
@@ -178,24 +178,24 @@ export default function Home() {
 
           <FeatureSection
             blobClass={styles.blobPurple}
-            title="高级路径优化"
-            description="通过智能寻路算法和自动布局功能节省时间和材料。Rayforge 自动优化切割顺序，以最大限度地减少空走时间。"
+            title="智能切割路径"
+            description="更快地工作，更少地浪费材料。Rayforge 会找出切割您设计最高效的方式，让您的激光器花更少的时间移动，更多的时间创作。"
             features={[
-              "切割和雕刻时不浪费时间",
-              '通过自动布局和排版节省材料',
-              '原生支持 G2/G3 圆弧指令',
+              "通过优化的移动实现更快切割",
+              '通过自动布局节省材料',
+              '流畅、精确的曲线',
             ]}
             image="/assets/screenshot-optimizer.png"
           />
 
           <FeatureSection
             blobClass={styles.blobCyan}
-            title="强大的内置模拟器"
-            description="在开始之前验证您的 G-code 并模拟切割过程。我们的内置模拟器可帮助您及早发现潜在问题，节省您的时间和材料。"
+            title="切割前预览"
+            description="在实际切割之前，先虚拟地看到您的设计呈现效果。提前发现潜在问题，节省时间和材料。"
             features={[
-              'G-code 预览',
-              '切割路径可视化模拟',
-              '编辑时实时 2D 预览所有操作',
+              '准确查看激光的移动方式',
+              '在切割前发现错误',
+              '设计时实时预览更新',
             ]}
             image="/screenshots/main-simulation.png"
             reverse
@@ -204,11 +204,10 @@ export default function Home() {
           <FeatureSection
             blobClass={styles.blobOrange}
             title="材料和工作流管理"
-            description="通过全面的材料、库存和配方管理工具简化您的激光切割工作流程，旨在提高一致性和效率。"
+            description="保存您最喜爱的设置，在所有项目中获得一致的结果。无论您切割木材、亚克力还是皮革，Rayforge 都会记住最佳设置。"
             features={[
-              '按类型和属性组织材料',
-              '定义物理库存尺寸',
-              '创建可重复使用的配方以获得一致的结果',
+              '保存不同材料的设置',
+              '创建可重复使用的配方',
             ]}
             image="/assets/screenshot-recipe.png"
           />
