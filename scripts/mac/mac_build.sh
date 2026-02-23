@@ -139,8 +139,8 @@ if [ "$(uname -s)" = "Darwin" ]; then
     mv "$TMP_REQUIREMENTS.patched" "$TMP_REQUIREMENTS"
 fi
 
-if [ "$(uname -s)" = "Darwin" ] && [ "$(uname -m)" = "x86_64" ]; then
-    echo "Installing pinned OpenCV wheel for macOS x86_64..."
+if [ "$(uname -s)" = "Darwin" ]; then
+    echo "Installing pinned OpenCV wheel for macOS..."
     "$VENV_PY" -m pip install --only-binary=:all: \
         "opencv-python==4.10.0.84"
 fi
@@ -402,7 +402,8 @@ SH
                 changed=1
             fi
         done < <(otool -L "$BIN_DIR/Rayforge" "$FW_DIR"/*.dylib 2>/dev/null | \
-            awk '{print $1}' | grep -E '^/usr/local/|^/opt/homebrew/' | \
+            awk '{print $1}' | \
+            grep -E '^/usr/local/|^/opt/homebrew/|^@rpath/' | \
             sort -u || true)
 
         return $changed
