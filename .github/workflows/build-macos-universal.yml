@@ -216,6 +216,14 @@ jobs:
               -c "Add :LSArchitecturePriority:1 string x86_64" "$PLIST"
           fi
 
+      - name: Re-sign universal app
+        shell: bash
+        run: |
+          APP_PATH="build-universal/Rayforge.app"
+          chmod -R u+w "$APP_PATH"
+          codesign --force --deep --sign - "$APP_PATH"
+          codesign --verify --deep --strict --verbose=2 "$APP_PATH"
+
       - name: Package universal app
         shell: bash
         run: |
