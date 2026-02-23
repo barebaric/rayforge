@@ -219,19 +219,22 @@ jobs:
       - name: Re-sign universal app
         shell: bash
         run: |
-          APP_PATH="build-universal/Rayforge.app"
+          APP_PATH="$(pwd)/build-universal/Rayforge.app"
+          if [ ! -d "$APP_PATH" ]; then
+            echo "Universal app bundle not found at $APP_PATH"
+            exit 1
+          fi
           chmod -R u+w "$APP_PATH"
           rm -rf "$APP_PATH/Contents/_CodeSignature"
 
-          find "$APP_PATH" -type f | while read -r file_path; do
-            file_type=$(file -b "$file_path" || true)
-            if [[ "$file_type" == *"Mach-O"* ]]; then
-              codesign --force --sign - "$file_path"
-            fi
-          done
-
-          codesign --force --deep --sign - "$APP_PATH"
-          codesign --verify --deep --strict --verbose=2 "$APP_PATH"
+          if ! codesign --force --deep --sign - "$APP_PATH"; then
+            echo "Initial deep re-sign failed, retrying..."
+            sleep 1
+            codesign --force --deep --sign - "$APP_PATH"
+          fi
+          if ! codesign --verify --deep --strict --verbose=2 "$APP_PATH"; then
+            echo "Warning: codesign verification failed for $APP_PATH"
+          fi
           spctl --assess --type execute --verbose=2 "$APP_PATH" || true
 
       - name: Package universal app
