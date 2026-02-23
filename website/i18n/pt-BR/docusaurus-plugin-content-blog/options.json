@@ -1,0 +1,14 @@
+{
+  "title": {
+    "message": "Blog do Rayforge",
+    "description": "The title for the blog used in SEO"
+  },
+  "description": {
+    "message": "Notícias, atualizações, tutoriais e dicas sobre o Rayforge",
+    "description": "The description for the blog used in SEO"
+  },
+  "sidebar.title": {
+    "message": "Posts recentes",
+    "description": "The label for the left sidebar"
+  }
+}

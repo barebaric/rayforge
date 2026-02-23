@@ -4,42 +4,55 @@
     "description": "The label for version current"
   },
   "sidebar.tutorialSidebar.category.Getting Started": {
-    "message": "Erste Schritte"
+    "message": "Erste Schritte",
+    "description": "The label for category 'Getting Started' in sidebar 'tutorialSidebar'"
   },
   "sidebar.tutorialSidebar.category.Application Settings": {
-    "message": "Anwendungseinstellungen"
+    "message": "Anwendungseinstellungen",
+    "description": "The label for category 'Application Settings' in sidebar 'tutorialSidebar'"
   },
   "sidebar.tutorialSidebar.category.Machine Setup": {
-    "message": "Maschinenkonfiguration"
+    "message": "Maschinenkonfiguration",
+    "description": "The label for category 'Machine Setup' in sidebar 'tutorialSidebar'"
   },
   "sidebar.tutorialSidebar.category.User Interface": {
-    "message": "Benutzeroberfläche"
+    "message": "Benutzeroberfläche",
+    "description": "The label for category 'User Interface' in sidebar 'tutorialSidebar'"
   },
   "sidebar.tutorialSidebar.category.Features": {
-    "message": "Funktionen"
+    "message": "Funktionen",
+    "description": "The label for category 'Features' in sidebar 'tutorialSidebar'"
   },
   "sidebar.tutorialSidebar.category.Operations": {
-    "message": "Operationen"
+    "message": "Operationen",
+    "description": "The label for category 'Operations' in sidebar 'tutorialSidebar'"
   },
   "sidebar.tutorialSidebar.category.Files": {
-    "message": "Dateien"
+    "message": "Dateien",
+    "description": "The label for category 'Files' in sidebar 'tutorialSidebar'"
   },
   "sidebar.tutorialSidebar.category.General Info": {
-    "message": "Allgemeine Informationen"
+    "message": "Allgemeine Informationen",
+    "description": "The label for category 'General Info' in sidebar 'tutorialSidebar'"
   },
   "sidebar.tutorialSidebar.category.Troubleshooting": {
-    "message": "Fehlerbehebung"
+    "message": "Fehlerbehebung",
+    "description": "The label for category 'Troubleshooting' in sidebar 'tutorialSidebar'"
   },
   "sidebar.tutorialSidebar.category.Reference": {
-    "message": "Referenz"
+    "message": "Referenz",
+    "description": "The label for category 'Reference' in sidebar 'tutorialSidebar'"
   },
   "sidebar.developerSidebar.category.Getting Started": {
-    "message": "Erste Schritte"
+    "message": "Erste Schritte",
+    "description": "The label for category 'Getting Started' in sidebar 'developerSidebar'"
   },
   "sidebar.developerSidebar.category.Architecture": {
-    "message": "Architektur"
+    "message": "Architektur",
+    "description": "The label for category 'Architecture' in sidebar 'developerSidebar'"
   },
   "sidebar.developerSidebar.category.Plugins": {
-    "message": "Plugins"
+    "message": "Plugins",
+    "description": "The label for category 'Plugins' in sidebar 'developerSidebar'"
   }
 }

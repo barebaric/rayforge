@@ -1,0 +1,611 @@
+{
+  "install.snap.recommended": {
+    "message": "Snap (Recomendado)"
+  },
+  "install.pixi.developers": {
+    "message": "Pixi (Desenvolvedores)"
+  },
+  "install.fromSource": {
+    "message": "A partir do Código Fonte"
+  },
+  "install.selectOs": {
+    "message": "Selecione seu sistema operacional:"
+  },
+  "install.chooseMethod": {
+    "message": "Escolha o método de instalação:"
+  },
+  "install.ppa.description": {
+    "message": "Para Ubuntu 24.04 LTS, você pode usar nosso PPA oficial. Este método fornece atualizações automáticas através do gerenciador de pacotes do sistema."
+  },
+  "install.addPpa": {
+    "message": "Adicionar o PPA do Rayforge"
+  },
+  "install.installRayforge": {
+    "message": "Instalar Rayforge"
+  },
+  "install.launchRayforge": {
+    "message": "Iniciar Rayforge"
+  },
+  "install.launchFromMenu": {
+    "message": "Inicie o Rayforge no menu de aplicativos ou executando:"
+  },
+  "install.flathub.title": {
+    "message": "Pacote Flathub"
+  },
+  "install.flathub.description": {
+    "message": "O pacote Flathub é a maneira mais fácil de começar a usar o Rayforge no Linux."
+  },
+  "install.installFromFlathub": {
+    "message": "Instalar do Flathub"
+  },
+  "install.getFromFlathub": {
+    "message": "Baixar do Flathub"
+  },
+  "install.orCommandLine": {
+    "message": "Ou instale via linha de comando:"
+  },
+  "install.snap.title": {
+    "message": "Pacote Snap"
+  },
+  "install.snap.description": {
+    "message": "O pacote Snap funciona na maioria das distribuições Linux e inclui todas as dependências em um ambiente isolado."
+  },
+  "install.grantPermissions": {
+    "message": "Conceder Permissões (Importante!)"
+  },
+  "install.permissionsRequired": {
+    "message": "Permissões Necessárias"
+  },
+  "install.snap.permissionNote": {
+    "message": "A versão Snap executa em um ambiente isolado e requer concessão manual de permissões para acesso ao hardware."
+  },
+  "install.usbSerialAccess": {
+    "message": "Para Acesso à Porta Serial USB:"
+  },
+  "install.cameraAccess": {
+    "message": "Para Acesso à Câmera:"
+  },
+  "install.verifyPermissions": {
+    "message": "Verificar Permissões"
+  },
+  "install.serialPortConnected": {
+    "message": "Procure por {code} na lista. Se mostrar \"connected\", você está pronto."
+  },
+  "install.pixi.title": {
+    "message": "Pixi (Instalação para Desenvolvedores)"
+  },
+  "install.pixi.description": {
+    "message": "é um gerenciador de pacotes rápido para projetos Python. Este método é recomendado para desenvolvedores que desejam contribuir com o Rayforge ou executar a versão de desenvolvimento mais recente."
+  },
+  "install.linuxOnly": {
+    "message": "Apenas Linux"
+  },
+  "install.pixi.linuxOnly": {
+    "message": "A instalação via Pixi está disponível atualmente apenas no Linux."
+  },
+  "install.installPixi": {
+    "message": "Instalar Pixi"
+  },
+  "install.pixi.installInstruction": {
+    "message": "Instale o Pixi usando o instalador oficial:"
+  },
+  "install.restartShell": {
+    "message": "Após a instalação, reinicie seu shell ou execute:"
+  },
+  "install.cloneRepo": {
+    "message": "Clonar o Repositório"
+  },
+  "install.installSystemDependency": {
+    "message": "Instalar Dependência do Sistema"
+  },
+  "install.installGtkAdwaita": {
+    "message": "Instale o pacote Gtk/Adwaita necessário:"
+  },
+  "install.installDependencies": {
+    "message": "Instalar Dependências"
+  },
+  "install.pixi.autoVenv": {
+    "message": "O Pixi criará automaticamente um ambiente virtual e instalará todas as dependências:"
+  },
+  "install.addDialoutGroup": {
+    "message": "Adicionar Usuário ao Grupo dialout"
+  },
+  "install.requiredSerialAccess": {
+    "message": "Necessário para acesso à porta serial:"
+  },
+  "install.important": {
+    "message": "Importante:"
+  },
+  "install.logoutLogin": {
+    "message": "Saia e entre novamente para que esta alteração tenha efeito."
+  },
+  "install.runRayforge": {
+    "message": "Executar Rayforge"
+  },
+  "install.usefulPixiCommands": {
+    "message": "Comandos Úteis do Pixi"
+  },
+  "install.availableDevCommands": {
+    "message": "Comandos de desenvolvimento disponíveis"
+  },
+  "install.runTestSuite": {
+    "message": "Executar a suíte de testes"
+  },
+  "install.runUiTests": {
+    "message": "Executar testes de interface"
+  },
+  "install.runLinting": {
+    "message": "Executar análise estática e linting"
+  },
+  "install.formatCode": {
+    "message": "Formatar código com ruff"
+  },
+  "install.source.title": {
+    "message": "Instalar a partir do Código Fonte"
+  },
+  "install.source.description": {
+    "message": "Para desenvolvedores e usuários avançados que desejam executar a versão de desenvolvimento mais recente ou contribuir com o projeto."
+  },
+  "install.installSystemDeps": {
+    "message": "Instalar Dependências do Sistema"
+  },
+  "install.onDebianUbuntu": {
+    "message": "No Debian/Ubuntu:"
+  },
+  "install.installFromPypi": {
+    "message": "Instalar Rayforge do PyPI"
+  },
+  "install.pypiNote": {
+    "message": "Os nomes dos pacotes podem ser diferentes em outras distribuições. Consulte a documentação da sua distribuição."
+  },
+  "install.windows.title": {
+    "message": "Instalação no Windows"
+  },
+  "install.downloadInstaller": {
+    "message": "Baixar o Instalador"
+  },
+  "install.downloadRayforge": {
+    "message": "Baixar Rayforge"
+  },
+  "install.runInstaller": {
+    "message": "Executar o Instalador"
+  },
+  "install.runInstallerInstruction": {
+    "message": "Execute o instalador baixado e siga as instruções na tela."
+  },
+  "install.runAsAdmin": {
+    "message": "Se você encontrar erros de permissão, tente executar o instalador como Administrador (clique direito - Executar como Administrador)."
+  },
+  "install.windowsLaunch": {
+    "message": "Inicie o Rayforge no Menu Iniciar ou pelo atalho na Área de Trabalho."
+  },
+  "install.macOS.title": {
+    "message": "Instalação no macOS"
+  },
+  "install.communitySupport": {
+    "message": "Suporte da Comunidade"
+  },
+  "install.macOS.communityNote": {
+    "message": "Atualmente não há versões oficiais para macOS. No entanto, o Rayforge pode ser executado a partir do código fonte usando o método de instalação pip. Contribuições da comunidade para empacotamento do macOS são bem-vindas!"
+  },
+  "install.installDeps": {
+    "message": "Instalar Dependências"
+  },
+  "install.usingHomebrew": {
+    "message": "Usando Homebrew, instale as dependências necessárias:"
+  },
+  "install.installUsbDrivers": {
+    "message": "Instalar Drivers USB (se necessário)"
+  },
+  "install.ch340Driver": {
+    "message": "Se o seu controlador de laser usa um chipset CH340/CH341, instale os drivers:"
+  },
+  "install.verify.title": {
+    "message": "Verificar Instalação"
+  },
+  "install.verify.launch": {
+    "message": "Inicie o Rayforge no menu de aplicativos ou terminal. Você verá a janela principal com a área de trabalho e a barra de ferramentas."
+  },
+  "install.checkVersion": {
+    "message": "Verificar Versão"
+  },
+  "install.checkVersionInstruction": {
+    "message": "Verifique Ajuda - Sobre para confirmar a versão instalada."
+  },
+  "install.connectMachine": {
+    "message": "Conectar Sua Máquina"
+  },
+  "install.verifySerialPort": {
+    "message": "Conecte seu controlador de laser via USB e verifique se a porta serial aparece nas configurações de máquina do Rayforge."
+  },
+  "install.linuxSerialTip": {
+    "message": "No Linux, os controladores de laser geralmente aparecem como /dev/ttyUSB0 ou /dev/ttyACM0."
+  },
+  "install.windowsComTip": {
+    "message": "No Windows, verifique no Gerenciador de Dispositivos em Portas (COM e LPT) para encontrar o número da sua porta COM."
+  },
+  "install.troubleshooting.title": {
+    "message": "Solução de Problemas"
+  },
+  "install.permissionIssues": {
+    "message": "Problemas de permissão?"
+  },
+  "install.seeSnapGuide": {
+    "message": "Se o seu dispositivo não for detectado, consulte o Guia de Permissões Snap."
+  },
+  "install.snapPermissionsGuide": {
+    "message": "Guia de Permissões Snap"
+  },
+  "install.serialNotWorking": {
+    "message": "Porta serial ainda não funciona?"
+  },
+  "install.replugUsb": {
+    "message": "Reconecte o dispositivo USB:"
+  },
+  "install.replugInstruction": {
+    "message": "Desconecte seu controlador de laser, espere 5 segundos, conecte novamente."
+  },
+  "install.restartRayforge": {
+    "message": "Reiniciar Rayforge:"
+  },
+  "install.closeRelaunch": {
+    "message": "Feche completamente e reinicie."
+  },
+  "install.checkDeviceExists": {
+    "message": "Verifique se o dispositivo existe:"
+  },
+  "install.reinstallIfNeeded": {
+    "message": "Reinstale se necessário:"
+  },
+  "install.permissionDenied": {
+    "message": "Erros de permissão negada?"
+  },
+  "install.permissionDeniedInstruction": {
+    "message": "Se você receber erros de permissão negada ao acessar a porta serial, adicione seu usuário ao grupo {code}:"
+  },
+  "install.logoutBack": {
+    "message": "Em seguida, saia e entre novamente para que as alterações tenham efeito."
+  },
+  "install.installerCrashing": {
+    "message": "Instalador travando ou não instalando?"
+  },
+  "install.missingVcRedist": {
+    "message": "Se o instalador travar ou falhar na instalação, você pode estar sem o Microsoft Visual C++ Redistributable. Baixe e instale da Microsoft:"
+  },
+  "install.downloadVc14": {
+    "message": "Baixar C++ Redistributable v14"
+  },
+  "install.afterVcInstall": {
+    "message": "Após instalar o redistributable, execute o instalador do Rayforge novamente."
+  },
+  "install.driverIssues": {
+    "message": "Problemas de driver?"
+  },
+  "install.checkDeviceManager": {
+    "message": "Se o seu controlador de laser não for detectado, verifique o Gerenciador de Dispositivos em Portas (COM e LPT) para confirmar o número da porta COM. Você pode precisar instalar drivers CH340 ou CP2102 para o seu adaptador USB-para-serial."
+  },
+  "install.antivirusBlocking": {
+    "message": "Antivírus bloqueando a conexão?"
+  },
+  "install.antivirusNote": {
+    "message": "Alguns softwares antivírus podem bloquear o Rayforge de acessar dispositivos USB. Tente adicionar uma exceção se você tiver problemas de conexão."
+  },
+  "install.usbNotDetected": {
+    "message": "Dispositivo USB não detectado?"
+  },
+  "install.approveUsb": {
+    "message": "Se o seu dispositivo não for detectado, você pode precisar aprovar o dispositivo USB em Configurações do Sistema - Privacidade e Segurança."
+  },
+  "install.driverIssuesMac": {
+    "message": "Alguns adaptadores USB-para-serial requerem drivers adicionais. Verifique se o seu adaptador usa chips CH340 ou CP2102 e instale o driver apropriado."
+  },
+  "install.needHelp": {
+    "message": "Precisa de Ajuda?"
+  },
+  "install.needHelpDescription": {
+    "message": "Para ajuda adicional, relate um problema no GitHub ou entre em nosso Discord."
+  },
+  "theme.ErrorPageContent.title": {
+    "message": "A página travou.",
+    "description": "The title of the fallback page when the page crashed"
+  },
+  "theme.BackToTopButton.buttonAriaLabel": {
+    "message": "Voltar ao topo",
+    "description": "The ARIA label for the back to top button"
+  },
+  "theme.blog.archive.title": {
+    "message": "Arquivo",
+    "description": "The page & hero title of the blog archive page"
+  },
+  "theme.blog.archive.description": {
+    "message": "Arquivo",
+    "description": "The page & hero description of the blog archive page"
+  },
+  "theme.blog.paginator.navAriaLabel": {
+    "message": "Navegação da página de listagem do blog",
+    "description": "The ARIA label for the blog pagination"
+  },
+  "theme.blog.paginator.newerEntries": {
+    "message": "Entradas mais recentes",
+    "description": "The label used to navigate to the newer blog posts page (previous page)"
+  },
+  "theme.blog.paginator.olderEntries": {
+    "message": "Entradas mais antigas",
+    "description": "The label used to navigate to the older blog posts page (next page)"
+  },
+  "theme.blog.post.paginator.navAriaLabel": {
+    "message": "Navegação de páginas de post do blog",
+    "description": "The ARIA label for the blog posts pagination"
+  },
+  "theme.blog.post.paginator.newerPost": {
+    "message": "Post mais recente",
+    "description": "The blog post button label to navigate to the newer/previous post"
+  },
+  "theme.blog.post.paginator.olderPost": {
+    "message": "Post mais antigo",
+    "description": "The blog post button label to navigate to the older/next post"
+  },
+  "theme.tags.tagsPageLink": {
+    "message": "Ver todas as tags",
+    "description": "The label of the link targeting the tag list page"
+  },
+  "theme.colorToggle.ariaLabel.mode.system": {
+    "message": "Modo do sistema",
+    "description": "The name for the system color mode"
+  },
+  "theme.colorToggle.ariaLabel.mode.light": {
+    "message": "Modo claro",
+    "description": "The name for the light color mode"
+  },
+  "theme.colorToggle.ariaLabel.mode.dark": {
+    "message": "Modo escuro",
+    "description": "The name for the dark color mode"
+  },
+  "theme.colorToggle.ariaLabel": {
+    "message": "Alternar entre modo escuro e claro (atualmente {mode})",
+    "description": "The ARIA label for the color mode toggle"
+  },
+  "theme.docs.breadcrumbs.navAriaLabel": {
+    "message": "Breadcrumbs",
+    "description": "The ARIA label for the breadcrumbs"
+  },
+  "theme.docs.DocCard.categoryDescription.plurals": {
+    "message": "1 item|{count} itens",
+    "description": "The default description for a category card in the generated index about how many items this category includes"
+  },
+  "theme.docs.paginator.navAriaLabel": {
+    "message": "Páginas de documentação",
+    "description": "The ARIA label for the docs pagination"
+  },
+  "theme.docs.paginator.previous": {
+    "message": "Anterior",
+    "description": "The label used to navigate to the previous doc"
+  },
+  "theme.docs.paginator.next": {
+    "message": "Próximo",
+    "description": "The label used to navigate to the next doc"
+  },
+  "theme.docs.tagDocListPageTitle.nDocsTagged": {
+    "message": "Um documento marcado|{count} documentos marcados",
+    "description": "Pluralized label for \"{count} docs tagged\". Use as much plural forms (separated by \"|\") as your language support (see https://www.unicode.org/cldr/cldr-aux/charts/34/supplemental/language_plural_rules.html)"
+  },
+  "theme.docs.tagDocListPageTitle": {
+    "message": "{nDocsTagged} com \"{tagName}\"",
+    "description": "The title of the page for a docs tag"
+  },
+  "theme.docs.versionBadge.label": {
+    "message": "Versão: {versionLabel}"
+  },
+  "theme.docs.versions.unreleasedVersionLabel": {
+    "message": "Esta é a documentação não lançada para {siteTitle} {versionLabel}.",
+    "description": "The label used to tell the user that he's browsing an unreleased doc version"
+  },
+  "theme.docs.versions.unmaintainedVersionLabel": {
+    "message": "Esta é a documentação para {siteTitle} {versionLabel}, que não é mais mantida.",
+    "description": "The label used to tell the user that he's browsing an unmaintained doc version"
+  },
+  "theme.docs.versions.latestVersionSuggestionLabel": {
+    "message": "Para a documentação atualizada, veja {latestVersionLink} ({versionLabel}).",
+    "description": "The label used to tell the user to check the latest version"
+  },
+  "theme.docs.versions.latestVersionLinkLabel": {
+    "message": "última versão",
+    "description": "The label used for the latest version suggestion link label"
+  },
+  "theme.common.editThisPage": {
+    "message": "Editar esta página",
+    "description": "The link label to edit the current page"
+  },
+  "theme.common.headingLinkTitle": {
+    "message": "Link direto para {heading}",
+    "description": "Title for link to heading"
+  },
+  "theme.lastUpdated.atDate": {
+    "message": " em {date}",
+    "description": "The words used to describe on which date a page has been last updated"
+  },
+  "theme.lastUpdated.byUser": {
+    "message": " por {user}",
+    "description": "The words used to describe by who the page has been last updated"
+  },
+  "theme.lastUpdated.lastUpdatedAtBy": {
+    "message": "Última atualização{atDate}{byUser}",
+    "description": "The sentence used to display when a page has been last updated, and by who"
+  },
+  "theme.navbar.mobileVersionsDropdown.label": {
+    "message": "Versões",
+    "description": "The label for the navbar versions dropdown on mobile view"
+  },
+  "theme.NotFound.title": {
+    "message": "Página não encontrada",
+    "description": "The title of the 404 page"
+  },
+  "theme.tags.tagsListLabel": {
+    "message": "Tags:",
+    "description": "The label alongside a tag list"
+  },
+  "theme.AnnouncementBar.closeButtonAriaLabel": {
+    "message": "Fechar",
+    "description": "The ARIA label for close button of announcement bar"
+  },
+  "theme.blog.sidebar.navAriaLabel": {
+    "message": "Navegação de posts recentes do blog",
+    "description": "The ARIA label for recent posts in the blog sidebar"
+  },
+  "theme.DocSidebarItem.expandCategoryAriaLabel": {
+    "message": "Expandir categoria '{label}' da barra lateral",
+    "description": "The ARIA label to expand the sidebar category"
+  },
+  "theme.DocSidebarItem.collapseCategoryAriaLabel": {
+    "message": "Recolher categoria '{label}' da barra lateral",
+    "description": "The ARIA label to collapse the sidebar category"
+  },
+  "theme.IconExternalLink.ariaLabel": {
+    "message": "(abre em nova aba)",
+    "description": "The ARIA label for the external link icon"
+  },
+  "theme.NavBar.navAriaLabel": {
+    "message": "Navegação principal",
+    "description": "The ARIA label for the main navigation"
+  },
+  "theme.navbar.mobileLanguageDropdown.label": {
+    "message": "Idiomas",
+    "description": "The label for the mobile language switcher dropdown"
+  },
+  "theme.NotFound.p1": {
+    "message": "Não conseguimos encontrar o que você estava procurando.",
+    "description": "The first paragraph of the 404 page"
+  },
+  "theme.NotFound.p2": {
+    "message": "Por favor, entre em contato com o proprietário do site que lhe trouxe aqui e informe que o link está quebrado.",
+    "description": "The 2nd paragraph of the 404 page"
+  },
+  "theme.TOCCollapsible.toggleButtonLabel": {
+    "message": "Nesta página",
+    "description": "The label used by the button on the collapsible TOC component"
+  },
+  "theme.blog.post.readMore": {
+    "message": "Ler mais",
+    "description": "The label used in blog post item excerpts to link to full blog posts"
+  },
+  "theme.blog.post.readMoreLabel": {
+    "message": "Ler mais sobre {title}",
+    "description": "The ARIA label for the link to full blog posts from excerpts"
+  },
+  "theme.blog.post.readingTime.plurals": {
+    "message": "Um minuto de leitura|{readingTime} minutos de leitura",
+    "description": "Pluralized label for \"{readingTime} min read\". Use as much plural forms (separated by \"|\") as your language support (see https://www.unicode.org/cldr/cldr-aux/charts/34/supplemental/language_plural_rules.html)"
+  },
+  "theme.CodeBlock.copy": {
+    "message": "Copiar",
+    "description": "The copy button label on code blocks"
+  },
+  "theme.CodeBlock.copied": {
+    "message": "Copiado",
+    "description": "The copied button label on code blocks"
+  },
+  "theme.CodeBlock.copyButtonAriaLabel": {
+    "message": "Copiar para a área de transferência",
+    "description": "The ARIA label for copy code blocks button"
+  },
+  "theme.CodeBlock.wordWrapToggle": {
+    "message": "Alternar quebra de linha",
+    "description": "The title attribute for toggle word wrapping button of code block lines"
+  },
+  "theme.docs.breadcrumbs.home": {
+    "message": "Início",
+    "description": "The ARIA label for the home page in the breadcrumbs"
+  },
+  "theme.docs.sidebar.collapseButtonTitle": {
+    "message": "Recolher barra lateral",
+    "description": "The title attribute for collapse button of doc sidebar"
+  },
+  "theme.docs.sidebar.collapseButtonAriaLabel": {
+    "message": "Recolher barra lateral",
+    "description": "The title attribute for collapse button of doc sidebar"
+  },
+  "theme.docs.sidebar.navAriaLabel": {
+    "message": "Barra lateral de documentação",
+    "description": "The ARIA label for the sidebar navigation"
+  },
+  "theme.docs.sidebar.closeSidebarButtonAriaLabel": {
+    "message": "Fechar barra de navegação",
+    "description": "The ARIA label for close button of mobile sidebar"
+  },
+  "theme.navbar.mobileSidebarSecondaryMenu.backButtonLabel": {
+    "message": "← Voltar ao menu principal",
+    "description": "The label of the back button to return to main menu, inside the mobile navbar sidebar secondary menu (notably used to display the docs sidebar)"
+  },
+  "theme.docs.sidebar.toggleSidebarButtonAriaLabel": {
+    "message": "Alternar barra de navegação",
+    "description": "The ARIA label for hamburger menu button of mobile navigation"
+  },
+  "theme.navbar.mobileDropdown.collapseButton.expandAriaLabel": {
+    "message": "Expandir menu suspenso",
+    "description": "The ARIA label of the button to expand the mobile dropdown navbar item"
+  },
+  "theme.navbar.mobileDropdown.collapseButton.collapseAriaLabel": {
+    "message": "Recolher menu suspenso",
+    "description": "The ARIA label of the button to collapse the mobile dropdown navbar item"
+  },
+  "theme.docs.sidebar.expandButtonTitle": {
+    "message": "Expandir barra lateral",
+    "description": "The ARIA label and title attribute for expand button of doc sidebar"
+  },
+  "theme.docs.sidebar.expandButtonAriaLabel": {
+    "message": "Expandir barra lateral",
+    "description": "The ARIA label and title attribute for expand button of doc sidebar"
+  },
+  "theme.blog.post.plurals": {
+    "message": "Um post|{count} posts",
+    "description": "Pluralized label for \"{count} posts\". Use as much plural forms (separated by \"|\") as your language support (see https://www.unicode.org/cldr/cldr-aux/charts/34/supplemental/language_plural_rules.html)"
+  },
+  "theme.blog.tagTitle": {
+    "message": "{nPosts} marcados com \"{tagName}\"",
+    "description": "The title of the page for a blog tag"
+  },
+  "theme.blog.author.pageTitle": {
+    "message": "{authorName} - {nPosts}",
+    "description": "The title of the page for a blog author"
+  },
+  "theme.blog.authorsList.pageTitle": {
+    "message": "Autores",
+    "description": "The title of the authors page"
+  },
+  "theme.blog.authorsList.viewAll": {
+    "message": "Ver todos os autores",
+    "description": "The label of the link targeting the blog authors page"
+  },
+  "theme.blog.author.noPosts": {
+    "message": "Este autor ainda não escreveu posts.",
+    "description": "The text for authors with 0 blog post"
+  },
+  "theme.contentVisibility.unlistedBanner.title": {
+    "message": "Página não listada",
+    "description": "The unlisted content banner title"
+  },
+  "theme.contentVisibility.unlistedBanner.message": {
+    "message": "Esta página não está listada. Motores de busca não a indexarão e apenas usuários com o link direto poderão acessá-la.",
+    "description": "The unlisted content banner message"
+  },
+  "theme.contentVisibility.draftBanner.title": {
+    "message": "Página de rascunho",
+    "description": "The draft content banner title"
+  },
+  "theme.contentVisibility.draftBanner.message": {
+    "message": "Esta página é um rascunho. Ela só é visível em desenvolvimento e será excluída do build de produção.",
+    "description": "The draft content banner message"
+  },
+  "theme.ErrorPageContent.tryAgain": {
+    "message": "Tentar novamente",
+    "description": "The label of the button to try again rendering when the React error boundary captures an error"
+  },
+  "theme.common.skipToMainContent": {
+    "message": "Pular para o conteúdo principal",
+    "description": "The skip to content label used for accessibility, allowing to rapidly navigate to main content with keyboard tab/enter navigation"
+  },
+  "theme.tags.tagsPageTitle": {
+    "message": "Tags",
+    "description": "The title of the tag list page"
+  }
+}

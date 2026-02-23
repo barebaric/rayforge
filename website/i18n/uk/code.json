@@ -1,0 +1,308 @@
+{
+  "install.snap.recommended": {
+    "message": "Snap (Рекомендовано)"
+  },
+  "install.pixi.developers": {
+    "message": "Pixi (Розробники)"
+  },
+  "install.fromSource": {
+    "message": "З вихідного коду"
+  },
+  "install.selectOs": {
+    "message": "Виберіть вашу операційну систему:"
+  },
+  "install.chooseMethod": {
+    "message": "Виберіть метод встановлення:"
+  },
+  "install.ppa.description": {
+    "message": "Для Ubuntu 24.04 LTS ви можете використовувати наш офіційний PPA. Цей метод забезпечує автоматичні оновлення через менеджер пакетів вашої системи."
+  },
+  "install.addPpa": {
+    "message": "Додати PPA Rayforge"
+  },
+  "install.installRayforge": {
+    "message": "Встановити Rayforge"
+  },
+  "install.launchRayforge": {
+    "message": "Запустити Rayforge"
+  },
+  "install.launchFromMenu": {
+    "message": "Запустіть Rayforge з меню програм або виконавши:"
+  },
+  "install.flathub.title": {
+    "message": "Пакет Flathub"
+  },
+  "install.flathub.description": {
+    "message": "Пакет Flathub - це найпростіший спосіб почати роботу з Rayforge на Linux."
+  },
+  "install.installFromFlathub": {
+    "message": "Встановити з Flathub"
+  },
+  "install.getFromFlathub": {
+    "message": "Отримати з Flathub"
+  },
+  "install.orCommandLine": {
+    "message": "Або встановіть через командний рядок:"
+  },
+  "install.snap.title": {
+    "message": "Пакет Snap"
+  },
+  "install.snap.description": {
+    "message": "Пакет Snap працює на більшості дистрибутивів Linux і включає всі залежності в ізольованому середовищі."
+  },
+  "install.grantPermissions": {
+    "message": "Надати дозволи (Важливо!)"
+  },
+  "install.permissionsRequired": {
+    "message": "Потрібні дозволи"
+  },
+  "install.snap.permissionNote": {
+    "message": "Версія Snap працює в пісочниці і потребує ручного надання дозволів для доступу до обладнання."
+  },
+  "install.usbSerialAccess": {
+    "message": "Для доступу до USB послідовного порту:"
+  },
+  "install.cameraAccess": {
+    "message": "Для доступу до камери:"
+  },
+  "install.verifyPermissions": {
+    "message": "Перевірити дозволи"
+  },
+  "install.serialPortConnected": {
+    "message": "Шукайте {code} у списку. Якщо показує \"підключено\", ви готові до роботи."
+  },
+  "install.pixi.title": {
+    "message": "Pixi (Встановлення для розробників)"
+  },
+  "install.pixi.description": {
+    "message": "є швидким менеджером пакетів для проектів Python. Цей метод рекомендується для розробників, які хочуть зробити внесок у Rayforge або запустити останню версію розробки."
+  },
+  "install.linuxOnly": {
+    "message": "Тільки Linux"
+  },
+  "install.pixi.linuxOnly": {
+    "message": "Встановлення Pixi наразі доступне тільки на Linux."
+  },
+  "install.installPixi": {
+    "message": "Встановити Pixi"
+  },
+  "install.pixi.installInstruction": {
+    "message": "Встановіть Pixi за допомогою офіційного інсталятора:"
+  },
+  "install.restartShell": {
+    "message": "Після встановлення перезапустіть оболонку або виконайте:"
+  },
+  "install.cloneRepo": {
+    "message": "Клонувати репозиторій"
+  },
+  "install.installSystemDependency": {
+    "message": "Встановити системну залежність"
+  },
+  "install.installGtkAdwaita": {
+    "message": "Встановіть необхідний пакет Gtk/Adwaita:"
+  },
+  "install.installDependencies": {
+    "message": "Встановити залежності"
+  },
+  "install.pixi.autoVenv": {
+    "message": "Pixi автоматично створить віртуальне середовище і встановить усі залежності:"
+  },
+  "install.addDialoutGroup": {
+    "message": "Додати користувача до групи dialout"
+  },
+  "install.requiredSerialAccess": {
+    "message": "Потрібно для доступу до послідовного порту:"
+  },
+  "install.important": {
+    "message": "Важливо:"
+  },
+  "install.logoutLogin": {
+    "message": "Вийдіть з системи і увійдіть знову, щоб ця зміна набула чинності."
+  },
+  "install.runRayforge": {
+    "message": "Запустити Rayforge"
+  },
+  "install.usefulPixiCommands": {
+    "message": "Корисні команди Pixi"
+  },
+  "install.availableDevCommands": {
+    "message": "Доступні команди розробки"
+  },
+  "install.runTestSuite": {
+    "message": "Запустити набір тестів"
+  },
+  "install.runUiTests": {
+    "message": "Запустити UI тести"
+  },
+  "install.runLinting": {
+    "message": "Запустити лінтинг і статичний аналіз"
+  },
+  "install.formatCode": {
+    "message": "Форматувати код за допомогою ruff"
+  },
+  "install.source.title": {
+    "message": "Встановити з вихідного коду"
+  },
+  "install.source.description": {
+    "message": "Для розробників і досвідчених користувачів, які хочуть запустити останню версію розробки або зробити внесок у проект."
+  },
+  "install.installSystemDeps": {
+    "message": "Встановити системні залежності"
+  },
+  "install.onDebianUbuntu": {
+    "message": "На Debian/Ubuntu:"
+  },
+  "install.installFromPypi": {
+    "message": "Встановити Rayforge з PyPI"
+  },
+  "install.pypiNote": {
+    "message": "Назви пакетів можуть відрізнятися на інших дистрибутивах. Зверніться до документації вашого дистрибутива."
+  },
+  "install.windows.title": {
+    "message": "Встановлення на Windows"
+  },
+  "install.downloadInstaller": {
+    "message": "Завантажити інсталятор"
+  },
+  "install.downloadRayforge": {
+    "message": "Завантажити Rayforge"
+  },
+  "install.runInstaller": {
+    "message": "Запустити інсталятор"
+  },
+  "install.runInstallerInstruction": {
+    "message": "Запустіть завантажений інсталятор і дотримуйтесь інструкцій на екрані."
+  },
+  "install.runAsAdmin": {
+    "message": "Якщо виникають помилки з дозволами, спробуйте запустити інсталятор від імені адміністратора (правий клік - Запустити від імені адміністратора)."
+  },
+  "install.windowsLaunch": {
+    "message": "Запустіть Rayforge з меню Пуск або за допомогою ярлика на робочому столі."
+  },
+  "install.macOS.title": {
+    "message": "Встановлення на macOS"
+  },
+  "install.communitySupport": {
+    "message": "Підтримка спільноти"
+  },
+  "install.macOS.communityNote": {
+    "message": "Наразі немає офіційних збірок macOS. Однак Rayforge може працювати з вихідного коду за допомогою методу встановлення pip. Привітствуються внески спільноти для пакування macOS!"
+  },
+  "install.installDeps": {
+    "message": "Встановити залежності"
+  },
+  "install.usingHomebrew": {
+    "message": "Використовуючи Homebrew, встановіть необхідні залежності:"
+  },
+  "install.installUsbDrivers": {
+    "message": "Встановити USB драйвери (за потреби)"
+  },
+  "install.ch340Driver": {
+    "message": "Якщо ваш лазерний контролер використовує чіпсет CH340/CH341, встановіть драйвери:"
+  },
+  "install.verify.title": {
+    "message": "Перевірити встановлення"
+  },
+  "install.verify.launch": {
+    "message": "Запустіть Rayforge з меню програм або терміналу. Ви повинні побачити головне вікно з полотном і панеллю інструментів."
+  },
+  "install.checkVersion": {
+    "message": "Перевірити версію"
+  },
+  "install.checkVersionInstruction": {
+    "message": "Перевірте Допомога - Про програму, щоб підтвердити встановлену версію."
+  },
+  "install.connectMachine": {
+    "message": "Підключити вашу машину"
+  },
+  "install.verifySerialPort": {
+    "message": "Підключіть ваш лазерний контролер через USB і перевірте, що послідовний порт з'являється в налаштуваннях машини Rayforge."
+  },
+  "install.linuxSerialTip": {
+    "message": "На Linux лазерні контролери зазвичай з'являються як /dev/ttyUSB0 або /dev/ttyACM0."
+  },
+  "install.windowsComTip": {
+    "message": "На Windows перевірте Диспетчер пристроїв у Порти (COM та LPT), щоб знайти номер вашого COM-порту."
+  },
+  "install.troubleshooting.title": {
+    "message": "Виправлення проблем"
+  },
+  "install.permissionIssues": {
+    "message": "Проблеми з дозволами?"
+  },
+  "install.seeSnapGuide": {
+    "message": "Якщо ваш пристрій не виявлено, дивіться Керівництво з дозволів Snap."
+  },
+  "install.snapPermissionsGuide": {
+    "message": "Керівництво з дозволів Snap"
+  },
+  "install.serialNotWorking": {
+    "message": "Послідовний порт все ще не працює?"
+  },
+  "install.replugUsb": {
+    "message": "Перепідключити USB пристрій:"
+  },
+  "install.replugInstruction": {
+    "message": "Відключіть ваш лазерний контролер, зачекайте 5 секунд, підключіть знову."
+  },
+  "install.restartRayforge": {
+    "message": "Перезапустити Rayforge:"
+  },
+  "install.closeRelaunch": {
+    "message": "Повністю закрийте і запустіть знову."
+  },
+  "install.checkDeviceExists": {
+    "message": "Перевірте, що пристрій існує:"
+  },
+  "install.reinstallIfNeeded": {
+    "message": "Перевстановіть за потреби:"
+  },
+  "install.permissionDenied": {
+    "message": "Помилки доступу заборонено?"
+  },
+  "install.permissionDeniedInstruction": {
+    "message": "Якщо ви отримуєте помилки \"permission denied\" при доступі до послідовного порту, додайте свого користувача до групи {code}:"
+  },
+  "install.logoutBack": {
+    "message": "Потім вийдіть з системи і увійдіть знову, щоб зміни набули чинності."
+  },
+  "install.installerCrashing": {
+    "message": "Інсталятор аварійно завершує роботу або не встановлює?"
+  },
+  "install.missingVcRedist": {
+    "message": "Якщо інсталятор аварійно завершує роботу або не може встановити, у вас може не вистачати Microsoft Visual C++ Redistributable. Завантажте та встановіть його від Microsoft:"
+  },
+  "install.downloadVc14": {
+    "message": "Завантажити C++ Redistributable v14"
+  },
+  "install.afterVcInstall": {
+    "message": "Після встановлення redistributable запустіть інсталятор Rayforge знову."
+  },
+  "install.driverIssues": {
+    "message": "Проблеми з драйверами?"
+  },
+  "install.checkDeviceManager": {
+    "message": "Якщо ваш лазерний контролер не виявлено, перевірте Диспетчер пристроїв у Порти (COM та LPT), щоб підтвердити номер COM-порту. Можливо, вам потрібно встановити драйвери CH340 або CP2102 для вашого USB-послідовного адаптера."
+  },
+  "install.antivirusBlocking": {
+    "message": "Антивірус блокує з'єднання?"
+  },
+  "install.antivirusNote": {
+    "message": "Деякі антивіруси можуть блокувати доступ Rayforge до USB пристроїв. Спробуйте додати виняток, якщо виникають проблеми з підключенням."
+  },
+  "install.usbNotDetected": {
+    "message": "USB пристрій не виявлено?"
+  },
+  "install.approveUsb": {
+    "message": "Якщо ваш пристрій не виявлено, можливо, вам потрібно схвалити USB пристрій у Системні налаштування - Конфіденційність і безпека."
+  },
+  "install.driverIssuesMac": {
+    "message": "Деякі USB-послідовні адаптери потребують додаткових драйверів. Перевірте, чи використовує ваш адаптер чіпи CH340 або CP2102, і встановіть відповідний драйвер."
+  },
+  "install.needHelp": {
+    "message": "Потрібна допомога?"
+  },
+  "install.needHelpDescription": {
+    "message": "Для додаткової допомоги повідомте про проблему на GitHub або приєднайтеся до нашого Discord."
+  }
+}

@@ -1,0 +1,611 @@
+{
+  "install.snap.recommended": {
+    "message": "Snap（推荐）"
+  },
+  "install.pixi.developers": {
+    "message": "Pixi（开发者）"
+  },
+  "install.fromSource": {
+    "message": "从源码安装"
+  },
+  "install.selectOs": {
+    "message": "选择您的操作系统："
+  },
+  "install.chooseMethod": {
+    "message": "选择安装方式："
+  },
+  "install.ppa.description": {
+    "message": "对于 Ubuntu 24.04 LTS，您可以使用我们的官方 PPA。此方法通过系统包管理器提供自动更新。"
+  },
+  "install.addPpa": {
+    "message": "添加 Rayforge PPA"
+  },
+  "install.installRayforge": {
+    "message": "安装 Rayforge"
+  },
+  "install.launchRayforge": {
+    "message": "启动 Rayforge"
+  },
+  "install.launchFromMenu": {
+    "message": "从应用程序菜单启动 Rayforge，或运行："
+  },
+  "install.flathub.title": {
+    "message": "Flathub 包"
+  },
+  "install.flathub.description": {
+    "message": "Flathub 包是在 Linux 上开始使用 Rayforge 最简单的方式。"
+  },
+  "install.installFromFlathub": {
+    "message": "从 Flathub 安装"
+  },
+  "install.getFromFlathub": {
+    "message": "从 Flathub 获取"
+  },
+  "install.orCommandLine": {
+    "message": "或通过命令行安装："
+  },
+  "install.snap.title": {
+    "message": "Snap 包"
+  },
+  "install.snap.description": {
+    "message": "Snap 包适用于大多数 Linux 发行版，并在沙盒环境中包含所有依赖项。"
+  },
+  "install.grantPermissions": {
+    "message": "授予权限（重要！）"
+  },
+  "install.permissionsRequired": {
+    "message": "需要权限"
+  },
+  "install.snap.permissionNote": {
+    "message": "Snap 版本在沙盒中运行，需要手动授予硬件访问权限。"
+  },
+  "install.usbSerialAccess": {
+    "message": "USB 串口访问："
+  },
+  "install.cameraAccess": {
+    "message": "摄像头访问："
+  },
+  "install.verifyPermissions": {
+    "message": "验证权限"
+  },
+  "install.serialPortConnected": {
+    "message": "在列表中查找 {code}。如果显示 \"connected\"，您就可以开始了。"
+  },
+  "install.pixi.title": {
+    "message": "Pixi（开发者安装）"
+  },
+  "install.pixi.description": {
+    "message": "是一个快速的 Python 项目包管理器。此方法推荐给想要为 Rayforge 做贡献或运行最新开发版本的开发者。"
+  },
+  "install.linuxOnly": {
+    "message": "仅限 Linux"
+  },
+  "install.pixi.linuxOnly": {
+    "message": "Pixi 安装目前仅在 Linux 上可用。"
+  },
+  "install.installPixi": {
+    "message": "安装 Pixi"
+  },
+  "install.pixi.installInstruction": {
+    "message": "使用官方安装程序安装 Pixi："
+  },
+  "install.restartShell": {
+    "message": "安装后，重启您的 shell 或运行："
+  },
+  "install.cloneRepo": {
+    "message": "克隆仓库"
+  },
+  "install.installSystemDependency": {
+    "message": "安装系统依赖"
+  },
+  "install.installGtkAdwaita": {
+    "message": "安装所需的 Gtk/Adwaita 包："
+  },
+  "install.installDependencies": {
+    "message": "安装依赖项"
+  },
+  "install.pixi.autoVenv": {
+    "message": "Pixi 将自动创建虚拟环境并安装所有依赖项："
+  },
+  "install.addDialoutGroup": {
+    "message": "将用户添加到 dialout 组"
+  },
+  "install.requiredSerialAccess": {
+    "message": "串口访问所需："
+  },
+  "install.important": {
+    "message": "重要："
+  },
+  "install.logoutLogin": {
+    "message": "注销并重新登录以使此更改生效。"
+  },
+  "install.runRayforge": {
+    "message": "运行 Rayforge"
+  },
+  "install.usefulPixiCommands": {
+    "message": "有用的 Pixi 命令"
+  },
+  "install.availableDevCommands": {
+    "message": "可用的开发命令"
+  },
+  "install.runTestSuite": {
+    "message": "运行测试套件"
+  },
+  "install.runUiTests": {
+    "message": "运行 UI 测试"
+  },
+  "install.runLinting": {
+    "message": "运行代码检查和静态分析"
+  },
+  "install.formatCode": {
+    "message": "使用 ruff 格式化代码"
+  },
+  "install.source.title": {
+    "message": "从源码安装"
+  },
+  "install.source.description": {
+    "message": "适用于想要运行最新开发版本或为项目做贡献的开发者和高级用户。"
+  },
+  "install.installSystemDeps": {
+    "message": "安装系统依赖"
+  },
+  "install.onDebianUbuntu": {
+    "message": "在 Debian/Ubuntu 上："
+  },
+  "install.installFromPypi": {
+    "message": "从 PyPI 安装 Rayforge"
+  },
+  "install.pypiNote": {
+    "message": "其他发行版上的包名称可能不同。请参阅您发行版的文档。"
+  },
+  "install.windows.title": {
+    "message": "Windows 安装"
+  },
+  "install.downloadInstaller": {
+    "message": "下载安装程序"
+  },
+  "install.downloadRayforge": {
+    "message": "下载 Rayforge"
+  },
+  "install.runInstaller": {
+    "message": "运行安装程序"
+  },
+  "install.runInstallerInstruction": {
+    "message": "运行下载的安装程序并按照屏幕上的说明操作。"
+  },
+  "install.runAsAdmin": {
+    "message": "如果遇到权限错误，请尝试以管理员身份运行安装程序（右键单击 - 以管理员身份运行）。"
+  },
+  "install.windowsLaunch": {
+    "message": "从开始菜单或桌面快捷方式启动 Rayforge。"
+  },
+  "install.macOS.title": {
+    "message": "macOS 安装"
+  },
+  "install.communitySupport": {
+    "message": "社区支持"
+  },
+  "install.macOS.communityNote": {
+    "message": "目前没有官方的 macOS 版本。但是，可以使用 pip 安装方法从源代码运行 Rayforge。欢迎社区为 macOS 打包做出贡献！"
+  },
+  "install.installDeps": {
+    "message": "安装依赖项"
+  },
+  "install.usingHomebrew": {
+    "message": "使用 Homebrew 安装所需的依赖项："
+  },
+  "install.installUsbDrivers": {
+    "message": "安装 USB 驱动程序（如果需要）"
+  },
+  "install.ch340Driver": {
+    "message": "如果您的激光控制器使用 CH340/CH341 芯片组，请安装驱动程序："
+  },
+  "install.verify.title": {
+    "message": "验证安装"
+  },
+  "install.verify.launch": {
+    "message": "从应用程序菜单或终端启动 Rayforge。您应该能看到带有画布和工具栏的主窗口。"
+  },
+  "install.checkVersion": {
+    "message": "检查版本"
+  },
+  "install.checkVersionInstruction": {
+    "message": "检查帮助 - 关于以确认安装的版本。"
+  },
+  "install.connectMachine": {
+    "message": "连接您的机器"
+  },
+  "install.verifySerialPort": {
+    "message": "通过 USB 连接您的激光控制器，并验证串口是否出现在 Rayforge 的机器设置中。"
+  },
+  "install.linuxSerialTip": {
+    "message": "在 Linux 上，激光控制器通常显示为 /dev/ttyUSB0 或 /dev/ttyACM0。"
+  },
+  "install.windowsComTip": {
+    "message": "在 Windows 上，在设备管理器的端口 (COM 和 LPT) 下查看以找到您的 COM 端口号。"
+  },
+  "install.troubleshooting.title": {
+    "message": "故障排除"
+  },
+  "install.permissionIssues": {
+    "message": "权限问题？"
+  },
+  "install.seeSnapGuide": {
+    "message": "如果未检测到您的设备，请参阅 Snap 权限指南。"
+  },
+  "install.snapPermissionsGuide": {
+    "message": "Snap 权限指南"
+  },
+  "install.serialNotWorking": {
+    "message": "串口仍然无法工作？"
+  },
+  "install.replugUsb": {
+    "message": "重新插拔 USB 设备："
+  },
+  "install.replugInstruction": {
+    "message": "拔掉您的激光控制器，等待 5 秒钟，然后重新插入。"
+  },
+  "install.restartRayforge": {
+    "message": "重启 Rayforge："
+  },
+  "install.closeRelaunch": {
+    "message": "完全关闭并重新启动。"
+  },
+  "install.checkDeviceExists": {
+    "message": "检查设备是否存在："
+  },
+  "install.reinstallIfNeeded": {
+    "message": "如果需要，重新安装："
+  },
+  "install.permissionDenied": {
+    "message": "权限被拒绝错误？"
+  },
+  "install.permissionDeniedInstruction": {
+    "message": "如果在访问串口时遇到权限被拒绝错误，请将您的用户添加到 {code} 组："
+  },
+  "install.logoutBack": {
+    "message": "然后注销并重新登录以使更改生效。"
+  },
+  "install.installerCrashing": {
+    "message": "安装程序崩溃或无法安装？"
+  },
+  "install.missingVcRedist": {
+    "message": "如果安装程序崩溃或安装失败，您可能缺少 Microsoft Visual C++ Redistributable。从 Microsoft 下载并安装："
+  },
+  "install.downloadVc14": {
+    "message": "下载 C++ Redistributable v14"
+  },
+  "install.afterVcInstall": {
+    "message": "安装 redistributable 后，再次运行 Rayforge 安装程序。"
+  },
+  "install.driverIssues": {
+    "message": "驱动程序问题？"
+  },
+  "install.checkDeviceManager": {
+    "message": "如果未检测到您的激光控制器，请在设备管理器的端口 (COM 和 LPT) 下检查以确认 COM 端口号。您可能需要为 USB 转串口适配器安装 CH340 或 CP2102 驱动程序。"
+  },
+  "install.antivirusBlocking": {
+    "message": "杀毒软件阻止连接？"
+  },
+  "install.antivirusNote": {
+    "message": "某些杀毒软件可能会阻止 Rayforge 访问 USB 设备。如果遇到连接问题，请尝试添加例外。"
+  },
+  "install.usbNotDetected": {
+    "message": "未检测到 USB 设备？"
+  },
+  "install.approveUsb": {
+    "message": "如果未检测到您的设备，您可能需要在系统设置 - 隐私与安全中批准 USB 设备。"
+  },
+  "install.driverIssuesMac": {
+    "message": "某些 USB 转串口适配器需要额外的驱动程序。检查您的适配器是否使用 CH340 或 CP2102 芯片并安装相应的驱动程序。"
+  },
+  "install.needHelp": {
+    "message": "需要帮助？"
+  },
+  "install.needHelpDescription": {
+    "message": "如需更多帮助，请在 GitHub 上报告问题或加入我们的 Discord。"
+  },
+  "theme.ErrorPageContent.title": {
+    "message": "页面崩溃了。",
+    "description": "The title of the fallback page when the page crashed"
+  },
+  "theme.BackToTopButton.buttonAriaLabel": {
+    "message": "回到顶部",
+    "description": "The ARIA label for the back to top button"
+  },
+  "theme.blog.archive.title": {
+    "message": "归档",
+    "description": "The page & hero title of the blog archive page"
+  },
+  "theme.blog.archive.description": {
+    "message": "归档",
+    "description": "The page & hero description of the blog archive page"
+  },
+  "theme.blog.paginator.navAriaLabel": {
+    "message": "博客列表页面导航",
+    "description": "The ARIA label for the blog pagination"
+  },
+  "theme.blog.paginator.newerEntries": {
+    "message": "较新的条目",
+    "description": "The label used to navigate to the newer blog posts page (previous page)"
+  },
+  "theme.blog.paginator.olderEntries": {
+    "message": "较旧的条目",
+    "description": "The label used to navigate to the older blog posts page (next page)"
+  },
+  "theme.blog.post.paginator.navAriaLabel": {
+    "message": "博客文章页面导航",
+    "description": "The ARIA label for the blog posts pagination"
+  },
+  "theme.blog.post.paginator.newerPost": {
+    "message": "较新的文章",
+    "description": "The blog post button label to navigate to the newer/previous post"
+  },
+  "theme.blog.post.paginator.olderPost": {
+    "message": "较旧的文章",
+    "description": "The blog post button label to navigate to the older/next post"
+  },
+  "theme.tags.tagsPageLink": {
+    "message": "查看所有标签",
+    "description": "The label of the link targeting the tag list page"
+  },
+  "theme.colorToggle.ariaLabel.mode.system": {
+    "message": "系统模式",
+    "description": "The name for the system color mode"
+  },
+  "theme.colorToggle.ariaLabel.mode.light": {
+    "message": "浅色模式",
+    "description": "The name for the light color mode"
+  },
+  "theme.colorToggle.ariaLabel.mode.dark": {
+    "message": "深色模式",
+    "description": "The name for the dark color mode"
+  },
+  "theme.colorToggle.ariaLabel": {
+    "message": "切换深色和浅色模式（当前为{mode}）",
+    "description": "The ARIA label for the color mode toggle"
+  },
+  "theme.docs.breadcrumbs.navAriaLabel": {
+    "message": "面包屑导航",
+    "description": "The ARIA label for the breadcrumbs"
+  },
+  "theme.docs.DocCard.categoryDescription.plurals": {
+    "message": "1 个项目|{count} 个项目",
+    "description": "The default description for a category card in the generated index about how many items this category includes"
+  },
+  "theme.docs.paginator.navAriaLabel": {
+    "message": "文档页面导航",
+    "description": "The ARIA label for the docs pagination"
+  },
+  "theme.docs.paginator.previous": {
+    "message": "上一页",
+    "description": "The label used to navigate to the previous doc"
+  },
+  "theme.docs.paginator.next": {
+    "message": "下一页",
+    "description": "The label used to navigate to the next doc"
+  },
+  "theme.docs.tagDocListPageTitle.nDocsTagged": {
+    "message": "一篇文档被标记|{count} 篇文档被标记",
+    "description": "Pluralized label for \"{count} docs tagged\". Use as much plural forms (separated by \"|\") as your language support (see https://www.unicode.org/cldr/cldr-aux/charts/34/supplemental/language_plural_rules.html)"
+  },
+  "theme.docs.tagDocListPageTitle": {
+    "message": "{nDocsTagged}，标签为\"{tagName}\"",
+    "description": "The title of the page for a docs tag"
+  },
+  "theme.docs.versionBadge.label": {
+    "message": "版本：{versionLabel}"
+  },
+  "theme.docs.versions.unreleasedVersionLabel": {
+    "message": "这是 {siteTitle} {versionLabel} 的未发布文档。",
+    "description": "The label used to tell the user that he's browsing an unreleased doc version"
+  },
+  "theme.docs.versions.unmaintainedVersionLabel": {
+    "message": "这是 {siteTitle} {versionLabel} 的文档，已不再维护。",
+    "description": "The label used to tell the user that he's browsing an unmaintained doc version"
+  },
+  "theme.docs.versions.latestVersionSuggestionLabel": {
+    "message": "如需最新文档，请查看 {latestVersionLink}（{versionLabel}）。",
+    "description": "The label used to tell the user to check the latest version"
+  },
+  "theme.docs.versions.latestVersionLinkLabel": {
+    "message": "最新版本",
+    "description": "The label used for the latest version suggestion link label"
+  },
+  "theme.common.editThisPage": {
+    "message": "编辑此页",
+    "description": "The link label to edit the current page"
+  },
+  "theme.common.headingLinkTitle": {
+    "message": "{heading} 的直接链接",
+    "description": "Title for link to heading"
+  },
+  "theme.lastUpdated.atDate": {
+    "message": " 于 {date}",
+    "description": "The words used to describe on which date a page has been last updated"
+  },
+  "theme.lastUpdated.byUser": {
+    "message": " 由 {user}",
+    "description": "The words used to describe by who the page has been last updated"
+  },
+  "theme.lastUpdated.lastUpdatedAtBy": {
+    "message": "最后更新{atDate}{byUser}",
+    "description": "The sentence used to display when a page has been last updated, and by who"
+  },
+  "theme.navbar.mobileVersionsDropdown.label": {
+    "message": "版本",
+    "description": "The label for the navbar versions dropdown on mobile view"
+  },
+  "theme.NotFound.title": {
+    "message": "页面未找到",
+    "description": "The title of the 404 page"
+  },
+  "theme.tags.tagsListLabel": {
+    "message": "标签：",
+    "description": "The label alongside a tag list"
+  },
+  "theme.AnnouncementBar.closeButtonAriaLabel": {
+    "message": "关闭",
+    "description": "The ARIA label for close button of announcement bar"
+  },
+  "theme.blog.sidebar.navAriaLabel": {
+    "message": "博客最近文章导航",
+    "description": "The ARIA label for recent posts in the blog sidebar"
+  },
+  "theme.DocSidebarItem.expandCategoryAriaLabel": {
+    "message": "展开侧边栏分类 '{label}'",
+    "description": "The ARIA label to expand the sidebar category"
+  },
+  "theme.DocSidebarItem.collapseCategoryAriaLabel": {
+    "message": "折叠侧边栏分类 '{label}'",
+    "description": "The ARIA label to collapse the sidebar category"
+  },
+  "theme.IconExternalLink.ariaLabel": {
+    "message": "（在新标签页中打开）",
+    "description": "The ARIA label for the external link icon"
+  },
+  "theme.NavBar.navAriaLabel": {
+    "message": "主导航",
+    "description": "The ARIA label for the main navigation"
+  },
+  "theme.navbar.mobileLanguageDropdown.label": {
+    "message": "语言",
+    "description": "The label for the mobile language switcher dropdown"
+  },
+  "theme.NotFound.p1": {
+    "message": "我们找不到您要找的内容。",
+    "description": "The first paragraph of the 404 page"
+  },
+  "theme.NotFound.p2": {
+    "message": "请联系链接到此处网站的所有者，告知链接已失效。",
+    "description": "The 2nd paragraph of the 404 page"
+  },
+  "theme.TOCCollapsible.toggleButtonLabel": {
+    "message": "本页目录",
+    "description": "The label used by the button on the collapsible TOC component"
+  },
+  "theme.blog.post.readMore": {
+    "message": "阅读更多",
+    "description": "The label used in blog post item excerpts to link to full blog posts"
+  },
+  "theme.blog.post.readMoreLabel": {
+    "message": "阅读更多关于 {title}",
+    "description": "The ARIA label for the link to full blog posts from excerpts"
+  },
+  "theme.blog.post.readingTime.plurals": {
+    "message": "阅读时长约 1 分钟|阅读时长约 {readingTime} 分钟",
+    "description": "Pluralized label for \"{readingTime} min read\". Use as much plural forms (separated by \"|\") as your language support (see https://www.unicode.org/cldr/cldr-aux/charts/34/supplemental/language_plural_rules.html)"
+  },
+  "theme.CodeBlock.copy": {
+    "message": "复制",
+    "description": "The copy button label on code blocks"
+  },
+  "theme.CodeBlock.copied": {
+    "message": "已复制",
+    "description": "The copied button label on code blocks"
+  },
+  "theme.CodeBlock.copyButtonAriaLabel": {
+    "message": "复制到剪贴板",
+    "description": "The ARIA label for copy code blocks button"
+  },
+  "theme.CodeBlock.wordWrapToggle": {
+    "message": "切换自动换行",
+    "description": "The title attribute for toggle word wrapping button of code block lines"
+  },
+  "theme.docs.breadcrumbs.home": {
+    "message": "首页",
+    "description": "The ARIA label for the home page in the breadcrumbs"
+  },
+  "theme.docs.sidebar.collapseButtonTitle": {
+    "message": "折叠侧边栏",
+    "description": "The title attribute for collapse button of doc sidebar"
+  },
+  "theme.docs.sidebar.collapseButtonAriaLabel": {
+    "message": "折叠侧边栏",
+    "description": "The title attribute for collapse button of doc sidebar"
+  },
+  "theme.docs.sidebar.navAriaLabel": {
+    "message": "文档侧边栏导航",
+    "description": "The ARIA label for the sidebar navigation"
+  },
+  "theme.docs.sidebar.closeSidebarButtonAriaLabel": {
+    "message": "关闭导航栏",
+    "description": "The ARIA label for close button of mobile sidebar"
+  },
+  "theme.navbar.mobileSidebarSecondaryMenu.backButtonLabel": {
+    "message": "← 返回主菜单",
+    "description": "The label of the back button to return to main menu, inside the mobile navbar sidebar secondary menu (notably used to display the docs sidebar)"
+  },
+  "theme.docs.sidebar.toggleSidebarButtonAriaLabel": {
+    "message": "切换导航栏",
+    "description": "The ARIA label for hamburger menu button of mobile navigation"
+  },
+  "theme.navbar.mobileDropdown.collapseButton.expandAriaLabel": {
+    "message": "展开下拉菜单",
+    "description": "The ARIA label of the button to expand the mobile dropdown navbar item"
+  },
+  "theme.navbar.mobileDropdown.collapseButton.collapseAriaLabel": {
+    "message": "折叠下拉菜单",
+    "description": "The ARIA label of the button to collapse the mobile dropdown navbar item"
+  },
+  "theme.docs.sidebar.expandButtonTitle": {
+    "message": "展开侧边栏",
+    "description": "The ARIA label and title attribute for expand button of doc sidebar"
+  },
+  "theme.docs.sidebar.expandButtonAriaLabel": {
+    "message": "展开侧边栏",
+    "description": "The ARIA label and title attribute for expand button of doc sidebar"
+  },
+  "theme.blog.post.plurals": {
+    "message": "一篇文章|{count} 篇文章",
+    "description": "Pluralized label for \"{count} posts\". Use as much plural forms (separated by \"|\") as your language support (see https://www.unicode.org/cldr/cldr-aux/charts/34/supplemental/language_plural_rules.html)"
+  },
+  "theme.blog.tagTitle": {
+    "message": "{nPosts}，标签为\"{tagName}\"",
+    "description": "The title of the page for a blog tag"
+  },
+  "theme.blog.author.pageTitle": {
+    "message": "{authorName} - {nPosts}",
+    "description": "The title of the page for a blog author"
+  },
+  "theme.blog.authorsList.pageTitle": {
+    "message": "作者",
+    "description": "The title of the authors page"
+  },
+  "theme.blog.authorsList.viewAll": {
+    "message": "查看所有作者",
+    "description": "The label of the link targeting the blog authors page"
+  },
+  "theme.blog.author.noPosts": {
+    "message": "该作者尚未撰写文章。",
+    "description": "The text for authors with 0 blog post"
+  },
+  "theme.contentVisibility.unlistedBanner.title": {
+    "message": "未列出页面",
+    "description": "The unlisted content banner title"
+  },
+  "theme.contentVisibility.unlistedBanner.message": {
+    "message": "此页面未列出。搜索引擎不会索引它，只有拥有直接链接的用户才能访问。",
+    "description": "The unlisted content banner message"
+  },
+  "theme.contentVisibility.draftBanner.title": {
+    "message": "草稿页面",
+    "description": "The draft content banner title"
+  },
+  "theme.contentVisibility.draftBanner.message": {
+    "message": "此页面是草稿。它仅在开发环境中可见，不会包含在生产构建中。",
+    "description": "The draft content banner message"
+  },
+  "theme.ErrorPageContent.tryAgain": {
+    "message": "重试",
+    "description": "The label of the button to try again rendering when the React error boundary captures an error"
+  },
+  "theme.common.skipToMainContent": {
+    "message": "跳转到主要内容",
+    "description": "The skip to content label used for accessibility, allowing to rapidly navigate to main content with keyboard tab/enter navigation"
+  },
+  "theme.tags.tagsPageTitle": {
+    "message": "标签",
+    "description": "The title of the tag list page"
+  }
+}

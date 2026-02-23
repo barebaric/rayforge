@@ -1,0 +1,308 @@
+{
+  "install.snap.recommended": {
+    "message": "Snap (Recomendado)"
+  },
+  "install.pixi.developers": {
+    "message": "Pixi (Desarrolladores)"
+  },
+  "install.fromSource": {
+    "message": "Desde el código fuente"
+  },
+  "install.selectOs": {
+    "message": "Seleccione su sistema operativo:"
+  },
+  "install.chooseMethod": {
+    "message": "Elija el método de instalación:"
+  },
+  "install.ppa.description": {
+    "message": "Para Ubuntu 24.04 LTS, puede usar nuestro PPA oficial. Este método proporciona actualizaciones automáticas a través del gestor de paquetes de su sistema."
+  },
+  "install.addPpa": {
+    "message": "Añadir el PPA de Rayforge"
+  },
+  "install.installRayforge": {
+    "message": "Instalar Rayforge"
+  },
+  "install.launchRayforge": {
+    "message": "Iniciar Rayforge"
+  },
+  "install.launchFromMenu": {
+    "message": "Inicie Rayforge desde el menú de aplicaciones o ejecutando:"
+  },
+  "install.flathub.title": {
+    "message": "Paquete Flathub"
+  },
+  "install.flathub.description": {
+    "message": "El paquete Flathub es la forma más fácil de comenzar con Rayforge en Linux."
+  },
+  "install.installFromFlathub": {
+    "message": "Instalar desde Flathub"
+  },
+  "install.getFromFlathub": {
+    "message": "Obtener de Flathub"
+  },
+  "install.orCommandLine": {
+    "message": "O instalar mediante línea de comandos:"
+  },
+  "install.snap.title": {
+    "message": "Paquete Snap"
+  },
+  "install.snap.description": {
+    "message": "El paquete Snap funciona en la mayoría de distribuciones Linux e incluye todas las dependencias en un entorno aislado."
+  },
+  "install.grantPermissions": {
+    "message": "Conceder permisos (¡Importante!)"
+  },
+  "install.permissionsRequired": {
+    "message": "Permisos requeridos"
+  },
+  "install.snap.permissionNote": {
+    "message": "La versión Snap se ejecuta en un sandbox y requiere concesión manual de permisos para acceso al hardware."
+  },
+  "install.usbSerialAccess": {
+    "message": "Para acceso al puerto serie USB:"
+  },
+  "install.cameraAccess": {
+    "message": "Para acceso a la cámara:"
+  },
+  "install.verifyPermissions": {
+    "message": "Verificar permisos"
+  },
+  "install.serialPortConnected": {
+    "message": "Busque {code} en la lista. Si muestra \"conectado\", está listo."
+  },
+  "install.pixi.title": {
+    "message": "Pixi (Instalación para desarrolladores)"
+  },
+  "install.pixi.description": {
+    "message": "es un gestor de paquetes rápido para proyectos Python. Este método se recomienda para desarrolladores que quieran contribuir a Rayforge o ejecutar la última versión de desarrollo."
+  },
+  "install.linuxOnly": {
+    "message": "Solo Linux"
+  },
+  "install.pixi.linuxOnly": {
+    "message": "La instalación de Pixi actualmente solo está disponible en Linux."
+  },
+  "install.installPixi": {
+    "message": "Instalar Pixi"
+  },
+  "install.pixi.installInstruction": {
+    "message": "Instale Pixi usando el instalador oficial:"
+  },
+  "install.restartShell": {
+    "message": "Después de la instalación, reinicie su shell o ejecute:"
+  },
+  "install.cloneRepo": {
+    "message": "Clonar el repositorio"
+  },
+  "install.installSystemDependency": {
+    "message": "Instalar dependencia del sistema"
+  },
+  "install.installGtkAdwaita": {
+    "message": "Instale el paquete Gtk/Adwaita requerido:"
+  },
+  "install.installDependencies": {
+    "message": "Instalar dependencias"
+  },
+  "install.pixi.autoVenv": {
+    "message": "Pixi creará automáticamente un entorno virtual e instalará todas las dependencias:"
+  },
+  "install.addDialoutGroup": {
+    "message": "Añadir usuario al grupo dialout"
+  },
+  "install.requiredSerialAccess": {
+    "message": "Requerido para acceso al puerto serie:"
+  },
+  "install.important": {
+    "message": "Importante:"
+  },
+  "install.logoutLogin": {
+    "message": "Cierre sesión y vuelva a iniciarla para que este cambio surta efecto."
+  },
+  "install.runRayforge": {
+    "message": "Ejecutar Rayforge"
+  },
+  "install.usefulPixiCommands": {
+    "message": "Comandos útiles de Pixi"
+  },
+  "install.availableDevCommands": {
+    "message": "Comandos de desarrollo disponibles"
+  },
+  "install.runTestSuite": {
+    "message": "Ejecutar el conjunto de pruebas"
+  },
+  "install.runUiTests": {
+    "message": "Ejecutar pruebas de UI"
+  },
+  "install.runLinting": {
+    "message": "Ejecutar linting y análisis estático"
+  },
+  "install.formatCode": {
+    "message": "Formatear código con ruff"
+  },
+  "install.source.title": {
+    "message": "Instalar desde el código fuente"
+  },
+  "install.source.description": {
+    "message": "Para desarrolladores y usuarios avanzados que quieran ejecutar la última versión de desarrollo o contribuir al proyecto."
+  },
+  "install.installSystemDeps": {
+    "message": "Instalar dependencias del sistema"
+  },
+  "install.onDebianUbuntu": {
+    "message": "En Debian/Ubuntu:"
+  },
+  "install.installFromPypi": {
+    "message": "Instalar Rayforge desde PyPI"
+  },
+  "install.pypiNote": {
+    "message": "Los nombres de los paquetes pueden diferir en otras distribuciones. Consulte la documentación de su distribución."
+  },
+  "install.windows.title": {
+    "message": "Instalación en Windows"
+  },
+  "install.downloadInstaller": {
+    "message": "Descargar el instalador"
+  },
+  "install.downloadRayforge": {
+    "message": "Descargar Rayforge"
+  },
+  "install.runInstaller": {
+    "message": "Ejecutar el instalador"
+  },
+  "install.runInstallerInstruction": {
+    "message": "Ejecute el instalador descargado y siga las instrucciones en pantalla."
+  },
+  "install.runAsAdmin": {
+    "message": "Si encuentra errores de permisos, intente ejecutar el instalador como Administrador (clic derecho - Ejecutar como administrador)."
+  },
+  "install.windowsLaunch": {
+    "message": "Inicie Rayforge desde el Menú Inicio o el acceso directo del Escritorio."
+  },
+  "install.macOS.title": {
+    "message": "Instalación en macOS"
+  },
+  "install.communitySupport": {
+    "message": "Soporte de la comunidad"
+  },
+  "install.macOS.communityNote": {
+    "message": "Actualmente no hay compilaciones oficiales de macOS. Sin embargo, Rayforge puede ejecutarse desde el código fuente usando el método de instalación pip. ¡Las contribuciones de la comunidad para el empaquetado de macOS son bienvenidas!"
+  },
+  "install.installDeps": {
+    "message": "Instalar dependencias"
+  },
+  "install.usingHomebrew": {
+    "message": "Usando Homebrew, instale las dependencias requeridas:"
+  },
+  "install.installUsbDrivers": {
+    "message": "Instalar controladores USB (si es necesario)"
+  },
+  "install.ch340Driver": {
+    "message": "Si su controlador láser usa un chipset CH340/CH341, instale los controladores:"
+  },
+  "install.verify.title": {
+    "message": "Verificar instalación"
+  },
+  "install.verify.launch": {
+    "message": "Inicie Rayforge desde el menú de aplicaciones o terminal. Debería ver la ventana principal con el lienzo y la barra de herramientas."
+  },
+  "install.checkVersion": {
+    "message": "Verificar versión"
+  },
+  "install.checkVersionInstruction": {
+    "message": "Compruebe Ayuda - Acerca de para confirmar la versión instalada."
+  },
+  "install.connectMachine": {
+    "message": "Conectar su máquina"
+  },
+  "install.verifySerialPort": {
+    "message": "Conecte su controlador láser vía USB y verifique que el puerto serie aparezca en la configuración de máquina de Rayforge."
+  },
+  "install.linuxSerialTip": {
+    "message": "En Linux, los controladores láser suelen aparecer como /dev/ttyUSB0 o /dev/ttyACM0."
+  },
+  "install.windowsComTip": {
+    "message": "En Windows, revise el Administrador de dispositivos en Puertos (COM y LPT) para encontrar su número de puerto COM."
+  },
+  "install.troubleshooting.title": {
+    "message": "Solución de problemas"
+  },
+  "install.permissionIssues": {
+    "message": "¿Problemas de permisos?"
+  },
+  "install.seeSnapGuide": {
+    "message": "Si su dispositivo no es detectado, consulte la Guía de permisos Snap."
+  },
+  "install.snapPermissionsGuide": {
+    "message": "Guía de permisos Snap"
+  },
+  "install.serialNotWorking": {
+    "message": "¿El puerto serie sigue sin funcionar?"
+  },
+  "install.replugUsb": {
+    "message": "Volver a conectar el dispositivo USB:"
+  },
+  "install.replugInstruction": {
+    "message": "Desconecte su controlador láser, espere 5 segundos y vuelva a conectarlo."
+  },
+  "install.restartRayforge": {
+    "message": "Reiniciar Rayforge:"
+  },
+  "install.closeRelaunch": {
+    "message": "Cierre completamente y vuelva a iniciar."
+  },
+  "install.checkDeviceExists": {
+    "message": "Compruebe que el dispositivo existe:"
+  },
+  "install.reinstallIfNeeded": {
+    "message": "Reinstalar si es necesario:"
+  },
+  "install.permissionDenied": {
+    "message": "¿Errores de permiso denegado?"
+  },
+  "install.permissionDeniedInstruction": {
+    "message": "Si obtiene errores de \"permiso denegado\" al acceder al puerto serie, añada su usuario al grupo {code}:"
+  },
+  "install.logoutBack": {
+    "message": "Luego cierre sesión y vuelva a iniciarla para que los cambios surtan efecto."
+  },
+  "install.installerCrashing": {
+    "message": "¿El instalador falla o no instala?"
+  },
+  "install.missingVcRedist": {
+    "message": "Si el instalador falla o no puede instalar, es posible que le falte Microsoft Visual C++ Redistributable. Descárguelo e instálelo desde Microsoft:"
+  },
+  "install.downloadVc14": {
+    "message": "Descargar C++ Redistributable v14"
+  },
+  "install.afterVcInstall": {
+    "message": "Después de instalar la redistribuible, ejecute el instalador de Rayforge nuevamente."
+  },
+  "install.driverIssues": {
+    "message": "¿Problemas de controladores?"
+  },
+  "install.checkDeviceManager": {
+    "message": "Si su controlador láser no es detectado, revise el Administrador de dispositivos en Puertos (COM y LPT) para confirmar el número de puerto COM. Puede que necesite instalar controladores CH340 o CP2102 para su adaptador USB a serie."
+  },
+  "install.antivirusBlocking": {
+    "message": "¿Antivirus bloqueando la conexión?"
+  },
+  "install.antivirusNote": {
+    "message": "Algunos programas antivirus pueden bloquear el acceso de Rayforge a dispositivos USB. Intente añadir una excepción si experimenta problemas de conexión."
+  },
+  "install.usbNotDetected": {
+    "message": "¿Dispositivo USB no detectado?"
+  },
+  "install.approveUsb": {
+    "message": "Si su dispositivo no es detectado, es posible que necesite aprobar el dispositivo USB en Configuración del sistema - Privacidad y Seguridad."
+  },
+  "install.driverIssuesMac": {
+    "message": "Algunos adaptadores USB a serie requieren controladores adicionales. Compruebe si su adaptador usa chips CH340 o CP2102 e instale el controlador apropiado."
+  },
+  "install.needHelp": {
+    "message": "¿Necesita ayuda?"
+  },
+  "install.needHelpDescription": {
+    "message": "Para ayuda adicional, informe de un problema en GitHub o únase a nuestro Discord."
+  }
+}
