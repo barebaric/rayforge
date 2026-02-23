@@ -1246,8 +1246,7 @@ class MainWindow(Adw.ApplicationWindow):
         """
         self.canvas3d = Canvas3D(
             context,
-            self.doc_editor.doc,
-            self.doc_editor.pipeline,
+            self.doc_editor,
             width_mm=width_mm,
             depth_mm=depth_mm,
             y_down=y_down,

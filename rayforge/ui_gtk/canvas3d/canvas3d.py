@@ -30,6 +30,7 @@ from .texture_renderer import TextureArtifactRenderer
 
 if TYPE_CHECKING:
     from ...core.doc import Doc
+    from ...doceditor.editor import DocEditor
     from ...machine.models.machine import Machine
 
 logging.basicConfig(level=logging.INFO)
@@ -65,9 +66,14 @@ def prepare_scene_vertices_async(
 
     for i, item in enumerate(scene_description.render_items):
         if not item.artifact_handle:
+            logger.debug(f"Item {i}: no artifact_handle")
             continue
 
-        artifact = artifact_store.get(item.artifact_handle)
+        try:
+            artifact = artifact_store.get(item.artifact_handle)
+        except Exception as e:
+            logger.error(f"Item {i}: failed to get artifact: {e}")
+            continue
 
         if not isinstance(artifact, StepRenderArtifact):
             logger.error("Artifact is not a renderable step artifact.")
@@ -182,8 +188,7 @@ class Canvas3D(Gtk.GLArea):
     def __init__(
         self,
         context: RayforgeContext,
-        doc: "Doc",
-        pipeline: "Pipeline",
+        doc_editor: "DocEditor",
         width_mm: float,
         depth_mm: float,
         x_right: bool = False,
@@ -195,8 +200,7 @@ class Canvas3D(Gtk.GLArea):
     ):
         super().__init__(**kwargs)
         self.context = context
-        self.doc = doc
-        self.pipeline = pipeline
+        self._doc_editor = doc_editor
         self.width_mm = width_mm
         self.depth_mm = depth_mm
         self.x_right = x_right
@@ -274,6 +278,16 @@ class Canvas3D(Gtk.GLArea):
             machine.changed.connect(self._on_wcs_updated)
             # Initialize with current state
             self._wcs_offset_mm = machine.get_active_wcs_offset()
+
+    @property
+    def doc(self) -> "Doc":
+        """Returns the current document from the editor."""
+        return self._doc_editor.doc
+
+    @property
+    def pipeline(self) -> "Pipeline":
+        """Returns the current pipeline from the editor."""
+        return self._doc_editor.pipeline
 
     def _on_wcs_updated(self, machine: "Machine", **kwargs):
         """Handler for when the machine's WCS state changes."""
@@ -411,6 +425,8 @@ class Canvas3D(Gtk.GLArea):
 
         self.sphere_renderer = SphereRenderer(1.0, 16, 32)
         self.reset_view_front()
+        self._update_theme_and_colors()
+        self.update_scene_from_doc()
 
     def on_unrealize(self, area) -> None:
         """Called before the GLArea is unrealized."""
