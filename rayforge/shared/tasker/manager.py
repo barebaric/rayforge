@@ -304,6 +304,21 @@ class TaskManager:
                 self._zombie_tasks[task.id] = task
                 self._emit_tasks_updated_unsafe()
 
+                # Immediately invoke the when_done callback for cancelled
+                # pooled tasks. This ensures contexts are updated without
+                # waiting for the worker to finish, which is critical on
+                # Windows where IPC is slower and can cause a backlog.
+                when_done = task.when_done_callback
+                if when_done:
+                    logger.debug(
+                        f"Invoking when_done callback for cancelled "
+                        f"pooled task '{key}' (id: {task.id})."
+                    )
+                    # Clear the callback to prevent double-calling when
+                    # the final message arrives from the worker.
+                    task.when_done_callback = None
+                    when_done(task)
+
     def get_task(self, key: Any) -> Optional[Task]:
         """Retrieves a task by its key."""
         with self._lock:
