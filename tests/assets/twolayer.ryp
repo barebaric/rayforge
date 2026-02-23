@@ -1,0 +1,810 @@
+{
+  "uid": "90a506a5-f1f9-404a-8009-3aa2eab36443",
+  "type": "doc",
+  "active_layer_index": 1,
+  "children": [
+    {
+      "uid": "0e9a865d-0c6e-474f-88bc-39612ad3c275",
+      "type": "layer",
+      "name": "Layer 1",
+      "matrix": [
+        [
+          1.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "visible": true,
+      "stock_item_uid": null,
+      "children": [
+        {
+          "uid": "476714b8-b824-4aad-bfbb-05b13f54f26c",
+          "type": "workflow",
+          "name": "Layer 1 Workflow",
+          "matrix": [
+            [
+              1.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              1.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              1.0
+            ]
+          ],
+          "children": [
+            {
+              "uid": "9de9b7fc-5f94-4672-bb6b-235fb6b6eb5b",
+              "type": "step",
+              "name": "Engrave (Raster)",
+              "matrix": [
+                [
+                  1.0,
+                  0.0,
+                  0.0
+                ],
+                [
+                  0.0,
+                  1.0,
+                  0.0
+                ],
+                [
+                  0.0,
+                  0.0,
+                  1.0
+                ]
+              ],
+              "typelabel": "Engrave (Raster)",
+              "visible": true,
+              "selected_laser_uid": "1e6b1642-3f16-4e95-b8c4-2c3bc8a82600",
+              "generated_workpiece_uid": null,
+              "applied_recipe_uid": null,
+              "capabilities": [
+                "ENGRAVE"
+              ],
+              "modifiers_dicts": [
+                {
+                  "name": "ToGrayscale"
+                }
+              ],
+              "opsproducer_dict": {
+                "type": "Rasterizer",
+                "params": {
+                  "cross_hatch": false,
+                  "threshold": 128,
+                  "invert": false
+                }
+              },
+              "per_workpiece_transformers_dicts": [
+                {
+                  "name": "OverscanTransformer",
+                  "enabled": true,
+                  "distance_mm": 0.5,
+                  "auto": true
+                },
+                {
+                  "name": "Optimize",
+                  "enabled": true
+                }
+              ],
+              "per_step_transformers_dicts": [
+                {
+                  "name": "MultiPassTransformer",
+                  "enabled": true,
+                  "passes": 1,
+                  "z_step_down": 0.0
+                }
+              ],
+              "pixels_per_mm": [
+                50,
+                50
+              ],
+              "power": 1.0,
+              "max_power": 1000,
+              "cut_speed": 500,
+              "max_cut_speed": 1000,
+              "travel_speed": 5000,
+              "max_travel_speed": 3000,
+              "air_assist": false,
+              "kerf_mm": 0.0,
+              "children": []
+            }
+          ]
+        },
+        {
+          "uid": "be82b93f-7129-4ac0-a8ce-09ecc426d0b7",
+          "type": "workpiece",
+          "name": "New Sketch",
+          "matrix": [
+            [
+              83.86095077863749,
+              0.0,
+              58.069524610681256
+            ],
+            [
+              0.0,
+              19.0,
+              90.5
+            ],
+            [
+              0.0,
+              0.0,
+              1.0
+            ]
+          ],
+          "width_mm": 83.86095077863749,
+          "height_mm": 19.0,
+          "tabs": [],
+          "tabs_enabled": true,
+          "source_segment": null,
+          "edited_boundaries": null,
+          "sketch_uid": "41bbc82a-3551-4753-a44c-ea0f48c6323e",
+          "sketch_params": {},
+          "source_asset_uid": null
+        }
+      ]
+    },
+    {
+      "uid": "d66f2ffc-5a0a-44b3-aa90-0b0463d0aedb",
+      "type": "layer",
+      "name": "Layer 2",
+      "matrix": [
+        [
+          1.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "visible": true,
+      "stock_item_uid": null,
+      "children": [
+        {
+          "uid": "bd2db4e5-6a0c-4efb-ae4e-f23bc1ea88df",
+          "type": "workflow",
+          "name": "Layer 2 Workflow",
+          "matrix": [
+            [
+              1.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              1.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              1.0
+            ]
+          ],
+          "children": [
+            {
+              "uid": "101c61a1-ca23-4c72-a885-c8cbc72282af",
+              "type": "step",
+              "name": "Contour",
+              "matrix": [
+                [
+                  1.0,
+                  0.0,
+                  0.0
+                ],
+                [
+                  0.0,
+                  1.0,
+                  0.0
+                ],
+                [
+                  0.0,
+                  0.0,
+                  1.0
+                ]
+              ],
+              "typelabel": "Contour",
+              "visible": true,
+              "selected_laser_uid": "1e6b1642-3f16-4e95-b8c4-2c3bc8a82600",
+              "generated_workpiece_uid": null,
+              "applied_recipe_uid": null,
+              "capabilities": [
+                "CUT",
+                "SCORE"
+              ],
+              "modifiers_dicts": [
+                {
+                  "name": "MakeTransparent"
+                },
+                {
+                  "name": "ToGrayscale"
+                }
+              ],
+              "opsproducer_dict": {
+                "type": "ContourProducer",
+                "params": {
+                  "remove_inner_paths": false,
+                  "path_offset_mm": 0.0,
+                  "cut_side": "CENTERLINE",
+                  "cut_order": "INSIDE_OUTSIDE",
+                  "override_threshold": false,
+                  "threshold": 0.5
+                }
+              },
+              "per_workpiece_transformers_dicts": [
+                {
+                  "name": "Smooth",
+                  "enabled": false,
+                  "amount": 20,
+                  "corner_angle_threshold": 45.0
+                },
+                {
+                  "name": "TabOpsTransformer",
+                  "enabled": true
+                },
+                {
+                  "name": "Optimize",
+                  "enabled": true
+                }
+              ],
+              "per_step_transformers_dicts": [
+                {
+                  "name": "MultiPassTransformer",
+                  "enabled": true,
+                  "passes": 1,
+                  "z_step_down": 0.0
+                }
+              ],
+              "pixels_per_mm": [
+                50,
+                50
+              ],
+              "power": 1.0,
+              "max_power": 1000,
+              "cut_speed": 500,
+              "max_cut_speed": 1000,
+              "travel_speed": 5000,
+              "max_travel_speed": 3000,
+              "air_assist": false,
+              "kerf_mm": 0.1,
+              "children": []
+            }
+          ]
+        },
+        {
+          "uid": "d1eb839b-f3bd-430a-b709-a8f9efb358b1",
+          "type": "workpiece",
+          "name": "New Sketch",
+          "matrix": [
+            [
+              129.98928091803396,
+              0.0,
+              35.00535954098302
+            ],
+            [
+              0.0,
+              40.00000056074457,
+              79.99999971962771
+            ],
+            [
+              0.0,
+              0.0,
+              1.0
+            ]
+          ],
+          "width_mm": 129.98928082600418,
+          "height_mm": 39.999999915563336,
+          "tabs": [],
+          "tabs_enabled": true,
+          "source_segment": null,
+          "edited_boundaries": null,
+          "sketch_uid": "2ae7373b-9dbf-4980-9e73-a067fc39941e",
+          "sketch_params": {},
+          "source_asset_uid": null
+        }
+      ]
+    }
+  ],
+  "assets": [
+    {
+      "uid": "c316dfd0-d628-4e5b-bd21-3589411d4621",
+      "type": "source",
+      "name": "rayforge.svg",
+      "source_file": "/home/sam/Documents/projects/code/rayforge/tests/image/svg/rayforge.svg",
+      "original_data": "PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiIHN0YW5kYWxvbmU9Im5vIj8+CjwhLS0gQ3JlYXRlZCB3aXRoIElua3NjYXBlIChodHRwOi8vd3d3Lmlua3NjYXBlLm9yZy8pIC0tPgoKPHN2ZwogICB3aWR0aD0iMjEwbW0iCiAgIGhlaWdodD0iMjk3bW0iCiAgIHZpZXdCb3g9IjAgMCAyMTAgMjk3IgogICB2ZXJzaW9uPSIxLjEiCiAgIGlkPSJzdmcxIgogICB4bWw6c3BhY2U9InByZXNlcnZlIgogICBpbmtzY2FwZTp2ZXJzaW9uPSIxLjQuMyAoMGQxNWY3NTA0MiwgMjAyNS0xMi0yNSkiCiAgIHNvZGlwb2RpOmRvY25hbWU9InJheWZvcmdlLnN2ZyIKICAgeG1sbnM6aW5rc2NhcGU9Imh0dHA6Ly93d3cuaW5rc2NhcGUub3JnL25hbWVzcGFjZXMvaW5rc2NhcGUiCiAgIHhtbG5zOnNvZGlwb2RpPSJodHRwOi8vc29kaXBvZGkuc291cmNlZm9yZ2UubmV0L0RURC9zb2RpcG9kaS0wLmR0ZCIKICAgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIgogICB4bWxuczpzdmc9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48c29kaXBvZGk6bmFtZWR2aWV3CiAgICAgaWQ9Im5hbWVkdmlldzEiCiAgICAgcGFnZWNvbG9yPSIjZmZmZmZmIgogICAgIGJvcmRlcmNvbG9yPSIjMDAwMDAwIgogICAgIGJvcmRlcm9wYWNpdHk9IjAuMjUiCiAgICAgaW5rc2NhcGU6c2hvd3BhZ2VzaGFkb3c9IjIiCiAgICAgaW5rc2NhcGU6cGFnZW9wYWNpdHk9IjAuMCIKICAgICBpbmtzY2FwZTpwYWdlY2hlY2tlcmJvYXJkPSIwIgogICAgIGlua3NjYXBlOmRlc2tjb2xvcj0iI2QxZDFkMSIKICAgICBpbmtzY2FwZTpkb2N1bWVudC11bml0cz0ibW0iCiAgICAgaW5rc2NhcGU6em9vbT0iMC44OTYxOTgwOSIKICAgICBpbmtzY2FwZTpjeD0iMzk3LjIzMzYxIgogICAgIGlua3NjYXBlOmN5PSI1NjEuMjU5ODQiCiAgICAgaW5rc2NhcGU6d2luZG93LXdpZHRoPSIzODQwIgogICAgIGlua3NjYXBlOndpbmRvdy1oZWlnaHQ9IjIwMjAiCiAgICAgaW5rc2NhcGU6d2luZG93LXg9IjAiCiAgICAgaW5rc2NhcGU6d2luZG93LXk9IjMyIgogICAgIGlua3NjYXBlOndpbmRvdy1tYXhpbWl6ZWQ9IjEiCiAgICAgaW5rc2NhcGU6Y3VycmVudC1sYXllcj0ibGF5ZXIxIiAvPjxkZWZzCiAgICAgaWQ9ImRlZnMxIiAvPjxnCiAgICAgaW5rc2NhcGU6bGFiZWw9IkxheWVyIDEiCiAgICAgaW5rc2NhcGU6Z3JvdXBtb2RlPSJsYXllciIKICAgICBpZD0ibGF5ZXIxIj48cGF0aAogICAgICAgc3R5bGU9ImZpbGw6IzY4OTVkZTtmaWxsLW9wYWNpdHk6MSIKICAgICAgIGQ9Im0gMTE3LjY4NTYzLDE4OS4xMTE1OSBjIC0xLjcxNjA3LC0wLjU0NzUyIC0yLjg3MjQ5LC0xLjY4MzE5IC0yLjg3MjQ5LC0yLjgyMDk1IDAsLTIuMDA1MTUgMS4yNTE0MiwtMi41Mzk0MSAzLjU1ODExLC0xLjUxOTA1IDMuNTI0MDIsMS41NTg4NCA2LjUzODg3LDAuNDIwMjEgNi45NDcxNSwtMi42MjM3NiAwLjE0MDQ2LC0xLjA0NzI2IC0wLjE3NTU4LC0xLjQ5Njg0IC0wLjU4NTcyLC0wLjgzMzIxIC0xLjkwMzk1LDMuMDgwNjUgLTguNjE0MTksMS4xOTQyOCAtMTAuNDE4MjUsLTIuOTI4NzYgLTMuMDk2NzksLTcuMDc3NTEgNC45NDQ0NiwtMTUuMjQzMiAxMC4yMDc1NiwtMTAuMzY1NTMgMC40OTAwNywwLjQ1NDE5IDAuNzUyNzcsMC41NTg3NyAwLjgyOTAyLDAuMzMwMDQgMC40ODMwOCwtMS40NDkyNiAyLjk4ODgzLC0xLjg0NzMgNC4xNzMyMSwtMC42NjI5MiBsIDAuNjY0MTIsMC42NjQxMiAtMC4wODA4LDcuNzM2NCBjIC0wLjEwMDYyLDkuNjMwNDggLTAuNDQzMzMsMTAuNjk0OSAtNC4wNDk1OCwxMi41NzczNiAtMS42NTUyNiwwLjg2NDA0IC02LjI4ODc3LDEuMTExMDIgLTguMzcyMywwLjQ0NjI2IHogbSA1LjQyNTk2LC0xMC44MTE0IGMgMy41MTE1MywtMS40NjcyMSAyLjU4NTE5LC03LjA0MzUyIC0xLjE3MDA4LC03LjA0MzUyIC0zLjc1NjQ0LDAgLTQuNjk0OCw1LjUwOTYxIC0xLjE5NzY4LDcuMDMyMjUgMS4wNDI4NSwwLjQ1NDA2IDEuMzA1MDMsMC40NTUzMSAyLjM2Nzc2LDAuMDExMyB6IG0gLTM1LjE5OTU4Niw0Ljg2MDAyIGMgLTYuNDE5NjY2LC0xLjMyMTgzIC04Ljg0OTA4MywtOS4yNTc3NSAtNC4yNjcwMzUsLTEzLjkzODY4IDMuNDY5NzA4LC0zLjU0NDU5IDEwLjM2NTUyNSwtMy4wNzA2OCAxMi45NDQzNTcsMC44ODk1OSA0LjI1NzE4NCw2LjUzNzY4IC0xLjEwODk5NywxNC42MDc0MiAtOC42NzczMjIsMTMuMDQ5MDkgeiBtIDMuNTA2NjkxLC00LjcyOTU0IGMgMS4xNTY4OTQsLTAuNzA1NDcgMS43ODg5MDUsLTIuMTcyNSAxLjYzMzM1MywtMy43OTEzNiAtMC4zMjgyNDIsLTMuNDE2MDkgLTMuOTUyMzE0LC00Ljc1MzE2IC01LjkxMzYsLTIuMTgxNzkgLTIuNDk3ODI2LDMuMjc0ODIgMC45MDg5MTgsOC4wMjg5OCA0LjI4MDI0Nyw1Ljk3MzE1IHogbSAtMTkuMzU0MTAzLDQuMTIyNjYgLTAuNzc1NDA1LC0wLjY2NjQ0IC0wLjA4MTg3LC01LjE4MjgxIC0wLjA4MTg3LC01LjE4MjgyIGggLTAuNzU2Mzg4IGMgLTEuMTI3ODk1LDAgLTEuNTY5MzU1LC0wLjI0NDM0IC0yLjAyMTYwNywtMS4xMTg5IC0wLjc4MjQ4NCwtMS41MTMxNSAwLjEyMzA4LC0zLjExNDQ0IDEuNzYxMjkyLC0zLjExNDQ0IGggMC45ODY1MDMgbCAwLjE4MjM1LC0xLjcwMjc2IGMgMC40OTYwOTgsLTQuNjMyNDkgNi4wNTY0MDIsLTcuNjg0MTYgOC45ODYxMDUsLTQuOTMxODQgMS41NTQ1MTEsMS40NjAzOCAwLjY0NjczOSwzLjQ1OTYgLTEuNTcwODgxLDMuNDU5NiAtMS43NzM5NTMsMCAtMi41MDg4NDUsMC42MzQ2MyAtMi41MDg4NDUsMi4xNjY1NiB2IDEuMDA4NDQgaCAxLjU4NzUgYyAxLjk2OTcyNiwwIDIuNjQ1ODMzLDAuNTM1OTggMi42NDU4MzMsMi4wOTc0NyAwLDEuNDU2MzkgLTAuODk1MTQ5LDIuMTM1ODcgLTIuODEzODA2LDIuMTM1ODcgaCAtMS40MTk1MjcgdiA1LjAxMjMzIGMgMCw0LjgxNzU0IC0wLjAyMzE1LDUuMDM5MjQgLTAuNTk1NzI2LDUuNzA0OSAtMC44OTU0NzIsMS4wNDEwNSAtMi41MTA3OTEsMS4xODUzOCAtMy41MjM2NiwwLjMxNDg0IHogbSAzMC4zMTgzNDgsMC4yODI4IGMgLTEuMjI3NjUsLTAuNjQ1NTggLTEuMzIwMDYsLTEuMjA5ODIgLTEuMzI0MjMsLTguMDg1NzUgbCAtMC4wMDQsLTYuNDI4MTggMC42NDk0MywtMC42NDk0MyBjIDEuMjMzMiwtMS4yMzMyIDQuMTEzMDcsLTAuNDkyMTggNC4xMTMwNywxLjA1ODM0IDAsMC41Njk2MiAwLjA5MTQsMC41MjkxMSAxLjExNCwtMC40OTM0NCAyLjI1NDI1LC0yLjI1NDI1IDUuNzY1MTcsLTEuNTc3NzMgNS43NjUxNywxLjExMDg5IDAsMS43MTk4IC0xLjMwNjI5LDIuNzg1NTIgLTMuMDgwNSwyLjUxMzE4IC0yLjYzMjI4LC0wLjQwNDA1IC0zLjUzNDA5LDEuMTIyMyAtMy41MzQwOSw1Ljk4MTYyIDAsNC43MDMwNyAtMS4xOTE1MSw2LjMxMTM1IC0zLjY5ODk1LDQuOTkyNzcgeiBtIDM1Ljg5ODIxLC0wLjA1NTMgYyAtNS4zMjk1NiwtMS45MDEwMSAtNy4wNTM4OCwtOS4wNjQ0MiAtMy4yMTA4MiwtMTMuMzM4ODIgNC4yNDI3MSwtNC43MTg5MiAxMi42MTMzOCwtMi44NDcyOSAxMy40OTI3NiwzLjAxNjkgMC40NTAzNywzLjAwMzI0IC0wLjQzODc1LDMuNDMyODcgLTkuMzQyNzIsNC41MTQ0OCAtMS4wMjY2LDAuMTI0NyAtMS4xMDAzOCwwLjE4Mjc5IC0wLjg0MzAxLDAuNjYzNjkgMC44NjQ2NCwxLjYxNTU5IDMuOTAzOCwyLjAwMjkzIDYuMjY0NzksMC43OTg0NSAyLjA0NzA1LC0xLjA0NDMzIDMuNTA4NDksLTAuNDQxOTMgMy41MDg0OSwxLjQ0NjE5IDAsMi40OTc0MSAtNi4wMjk5LDQuMjY4NjYgLTkuODY5NDksMi44OTkxMSB6IG0gNC4xNzc0MiwtOS4zODA3IGMgMS40ODQ3OCwtMC4xNzkwOCAxLjc5Mjc5LC0wLjY2ODIzIDEuMDkzMTQsLTEuNzM2MDMgLTEuMzYzOTksLTIuMDgxNzIgLTUuNzEzNjIsLTAuNzIxNDQgLTUuNzE4ODMsMS43ODg0NyAtMC4wMDEsMC41MDUxMyAwLjAwMywwLjUwNTA4IDQuNjI1NjksLTAuMDUyNCB6IG0gLTYuNzY2MjEsLTkuNTQwMTIgYyAtMy4xNDI5OCwtMC45NTI0OSAtMy4zODQxMSwtMy4xODU5MSAtMC45MDc3MywtOC40MDc4OSBsIDEuNTM0OTUsLTMuMjM2OCAtMS44NjQ2NCwtNC4wMzkyNCBjIC03LjgzNzczLC0xNi45NzgzMyAtOC4wNDM4MSwtMTcuODkxNDYgLTQuMzgyOTYsLTE5LjQyMTA2IDMuNjM4OTQsLTEuNTIwNDQgNC40MTU1OCwtMC40MjI4NyA5Ljc2MDg1LDEzLjc5NDMxIDAuNTYsMS40ODk0NyAwLjYxMjI4LDEuNTQ2NjYgMC44NDY3MywwLjkyNjA0IDEuMzAyNjksLTMuNDQ4NDcgMi42MjQ0NSwtNy4wNTUxMSAzLjYzMTcyLC05LjkwOTggMS44MTMxNSwtNS4xMzg2MiAzLjU1MTg2LC02LjMyMDU1IDYuNjM3NjgsLTQuNTEyMTQgMi42NjAwMiwxLjU1ODg4IDIuNTYzMDksMy4wMTkwOCAtMC43MDAzMiwxMC41NDk2NiAtMS4zMzI4NCwzLjA3NTY0IC0zLjcyMDI0LDguNjI4MTcgLTUuMzA1MzMsMTIuMzM4OTUgLTQuNjM5NzMsMTAuODYxODkgLTQuODM4NTcsMTEuMjA3OTcgLTYuODIwMTcsMTEuODcwMjUgLTEuMDExNTUsMC4zMzgwNyAtMS40NDQ2MiwwLjM0NjU3IC0yLjQzMDc4LDAuMDQ3NyB6IG0gLTQ2LjY4NjAyOSwtOS41NDIwNCBjIC0xLjE2MTc1LC0wLjM1NDUzIC0yLjAwNzc4NSwtMS4zMzcxMiAtNS40MTQwMiwtNi4yODc5IGwgLTMuMDQyNzA4LC00LjQyMjQgLTIuMzE1MTA0LC0wLjA3NjQgLTIuMzE1MTA0LC0wLjA3NjQgdiA0LjA0OTMzIGMgMCwzLjQxNjQ0IC0wLjA3NTU2LDQuMTkwMjIgLTAuNDgzNDY0LDQuOTUwNzkgLTEuMzM3MjAzLDIuNDkzMzYgLTUuNzE0Mjk2LDIuNTI2MTMgLTcuMjUxNDI4LDAuMDU0MyBsIC0wLjU5OTQ4MywtMC45NjQwMiAtMC4wNzc1MSwtMTMuNDI5OSBjIC0wLjEwNTQ3MiwtMTguMjc0MjEgLTAuOTMzNDk2LC0xNi44NjcyMSA5LjkyMjcwMSwtMTYuODYwOTggOC45Nzg1MzksMC4wMDUgMTEuNzA3NDg4LDAuNjc2MjkgMTQuMjY2MzI2LDMuNTA4NjIgNC4zNzUxMjUsNC44NDI3NCAzLjI2NjExMSwxMy45NTYxMyAtMi4wMDU3MywxNi40ODIyIC0wLjU4NTkzNiwwLjI4MDc2IC0xLjA2NjcwNSwwLjU3NDA1IC0xLjA2ODM3NCwwLjY1MTc1IC0wLjAwNDEsMC4xODk2NCAzLjIyNjI1Niw0LjA4ODkgNC40ODYwMDcsNS40MTQ5NyAzLjMzMzEzMSwzLjUwODYgMC40Njg2MzMsOC40MDA5OCAtNC4xMDIxMDYsNy4wMDYxNCB6IG0gLTUuNjQ1MTE5LC0xNy45OTEyNCBjIDMuNDkzODM2LC0wLjk3MDQ4IDMuNzAxOTM0LC02LjEyMjczIDAuMzA1NzQzLC03LjU2OTgzIC0wLjU3NTQ2LC0wLjI0NTIgLTEuOTY4OTE5LC0wLjM2Mjc3IC00LjI5OTQ3OSwtMC4zNjI3NyBoIC0zLjQ0ODA4MSB2IDQuMTAxMDQgNC4xMDEwNCBsIDMuMjQxMTQ1LC0wLjAwMSBjIDEuNzgyNjMsLTguMWUtNCAzLjY3MjkzMywtMC4xMjE0MSA0LjIwMDY3MiwtMC4yNjggeiBtIDIzLjIwNjU1OCwxNy43NTM0NSBjIC0xMC4wMDAxNjcsLTMuMTk4MTUgLTExLjMwOTY2NSwtMTkuMDcwNzUgLTIuMDE3NzQsLTI0LjQ1NzMgMy45NDU0NSwtMi4yODcxOSA5LjY2NDA3LC0xLjgxMTIzIDExLjY0Mzg1LDAuOTY5MTEgbCAwLjU0ODA0LDAuNzY5NjYgMC4zMjQ4LC0wLjc1NjE2IGMgMS4yMDI2NSwtMi43OTk5MyA1Ljc2MjU1LC0zLjAyMTI5IDcuMTQ1NTUsLTAuMzQ2ODggMC42ODE3OSwxLjMxODQ0IDAuNTY3ODUsMjEuMjU2OTYgLTAuMTI4LDIyLjM5ODE5IC0xLjQ5MjgsMi40NDgyNyAtNS42MTYwMywyLjIwOTIzIC02Ljc2Mzc0LC0wLjM5MjExIGwgLTAuNDYwMDUsLTEuMDQyNzIgLTEuMjIyMTEsMS4yNjAyMiBjIC0xLjk4NzIyLDIuMDQ5MTkgLTUuNjQ0ODgsMi42OTM1NyAtOS4wNzA2LDEuNTk3OTkgeiBtIDcuNTgzOTEsLTcuMjM1NzIgYyAzLjQzMDM5LC0xLjkxNTQ5IDMuNDA0MzUsLTguNjY0MDQgLTAuMDQxMiwtMTAuNjgzMjggLTMuNzQ3LC0yLjE5NTg4IC03Ljc2Mzk4LDAuNTYxNjkgLTcuNzYzOTgsNS4zMjk4MiAwLDQuNjgwNTcgNC4wNDM1LDcuNDUzOTUgNy44MDUyLDUuMzUzNDYgeiBtIC01Mi4xODg3MTcsLTkuMzM2MTUgYyAtNy4xMzY0NTEsLTguMzIzNzQgLTMuMjU3MzMyLC0yMS44ODc1NiA3LjEwNTY2NywtMjQuODQ1ODUgNC40NzQzMzUsLTEuMjc3MjcgNS40OTQzNjYsMy4yNTI1MiAxLjEyNjE4OSw1LjAwMTIyIC03LjM1Mzc2OSwyLjk0MzkxIC0xMC41MjA4OTcsMTEuMjUwODQgLTcuMzMwMDI1LDE5LjIyNTYxIDAuNzI2ODM4LDEuODE2NTUgMC4zNDc4OTQsMi4wNzY2NiAtMC45MDE4MzEsMC42MTkwMiB6IgogICAgICAgaWQ9InBhdGgxIiAvPjwvZz48L3N2Zz4K",
+      "base_render_data": "PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHhtbG5zOmlua3NjYXBlPSJodHRwOi8vd3d3Lmlua3NjYXBlLm9yZy9uYW1lc3BhY2VzL2lua3NjYXBlIiB4bWxuczpzb2RpcG9kaT0iaHR0cDovL3NvZGlwb2RpLnNvdXJjZWZvcmdlLm5ldC9EVEQvc29kaXBvZGktMC5kdGQiIHdpZHRoPSIzNjQuMzM0MnB4IiBoZWlnaHQ9IjI5OC4zNjQ3cHgiIHZpZXdCb3g9IjU3LjM3ODUgMTExLjQ5NCA5Ni4zOTY3IDc4Ljk0MjMiIHZlcnNpb249IjEuMSIgaWQ9InN2ZzEiIHhtbDpzcGFjZT0icHJlc2VydmUiIGlua3NjYXBlOnZlcnNpb249IjEuNC4zICgwZDE1Zjc1MDQyLCAyMDI1LTEyLTI1KSIgc29kaXBvZGk6ZG9jbmFtZT0icmF5Zm9yZ2Uuc3ZnIj48c29kaXBvZGk6bmFtZWR2aWV3IGlkPSJuYW1lZHZpZXcxIiBwYWdlY29sb3I9IiNmZmZmZmYiIGJvcmRlcmNvbG9yPSIjMDAwMDAwIiBib3JkZXJvcGFjaXR5PSIwLjI1IiBpbmtzY2FwZTpzaG93cGFnZXNoYWRvdz0iMiIgaW5rc2NhcGU6cGFnZW9wYWNpdHk9IjAuMCIgaW5rc2NhcGU6cGFnZWNoZWNrZXJib2FyZD0iMCIgaW5rc2NhcGU6ZGVza2NvbG9yPSIjZDFkMWQxIiBpbmtzY2FwZTpkb2N1bWVudC11bml0cz0ibW0iIGlua3NjYXBlOnpvb209IjAuODk2MTk4MDkiIGlua3NjYXBlOmN4PSIzOTcuMjMzNjEiIGlua3NjYXBlOmN5PSI1NjEuMjU5ODQiIGlua3NjYXBlOndpbmRvdy13aWR0aD0iMzg0MCIgaW5rc2NhcGU6d2luZG93LWhlaWdodD0iMjAyMCIgaW5rc2NhcGU6d2luZG93LXg9IjAiIGlua3NjYXBlOndpbmRvdy15PSIzMiIgaW5rc2NhcGU6d2luZG93LW1heGltaXplZD0iMSIgaW5rc2NhcGU6Y3VycmVudC1sYXllcj0ibGF5ZXIxIiAvPjxkZWZzIGlkPSJkZWZzMSIgLz48ZyBpbmtzY2FwZTpsYWJlbD0iTGF5ZXIgMSIgaW5rc2NhcGU6Z3JvdXBtb2RlPSJsYXllciIgaWQ9ImxheWVyMSI+PHBhdGggc3R5bGU9ImZpbGw6IzY4OTVkZTtmaWxsLW9wYWNpdHk6MSIgZD0ibSAxMTcuNjg1NjMsMTg5LjExMTU5IGMgLTEuNzE2MDcsLTAuNTQ3NTIgLTIuODcyNDksLTEuNjgzMTkgLTIuODcyNDksLTIuODIwOTUgMCwtMi4wMDUxNSAxLjI1MTQyLC0yLjUzOTQxIDMuNTU4MTEsLTEuNTE5MDUgMy41MjQwMiwxLjU1ODg0IDYuNTM4ODcsMC40MjAyMSA2Ljk0NzE1LC0yLjYyMzc2IDAuMTQwNDYsLTEuMDQ3MjYgLTAuMTc1NTgsLTEuNDk2ODQgLTAuNTg1NzIsLTAuODMzMjEgLTEuOTAzOTUsMy4wODA2NSAtOC42MTQxOSwxLjE5NDI4IC0xMC40MTgyNSwtMi45Mjg3NiAtMy4wOTY3OSwtNy4wNzc1MSA0Ljk0NDQ2LC0xNS4yNDMyIDEwLjIwNzU2LC0xMC4zNjU1MyAwLjQ5MDA3LDAuNDU0MTkgMC43NTI3NywwLjU1ODc3IDAuODI5MDIsMC4zMzAwNCAwLjQ4MzA4LC0xLjQ0OTI2IDIuOTg4ODMsLTEuODQ3MyA0LjE3MzIxLC0wLjY2MjkyIGwgMC42NjQxMiwwLjY2NDEyIC0wLjA4MDgsNy43MzY0IGMgLTAuMTAwNjIsOS42MzA0OCAtMC40NDMzMywxMC42OTQ5IC00LjA0OTU4LDEyLjU3NzM2IC0xLjY1NTI2LDAuODY0MDQgLTYuMjg4NzcsMS4xMTEwMiAtOC4zNzIzLDAuNDQ2MjYgeiBtIDUuNDI1OTYsLTEwLjgxMTQgYyAzLjUxMTUzLC0xLjQ2NzIxIDIuNTg1MTksLTcuMDQzNTIgLTEuMTcwMDgsLTcuMDQzNTIgLTMuNzU2NDQsMCAtNC42OTQ4LDUuNTA5NjEgLTEuMTk3NjgsNy4wMzIyNSAxLjA0Mjg1LDAuNDU0MDYgMS4zMDUwMywwLjQ1NTMxIDIuMzY3NzYsMC4wMTEzIHogbSAtMzUuMTk5NTg2LDQuODYwMDIgYyAtNi40MTk2NjYsLTEuMzIxODMgLTguODQ5MDgzLC05LjI1Nzc1IC00LjI2NzAzNSwtMTMuOTM4NjggMy40Njk3MDgsLTMuNTQ0NTkgMTAuMzY1NTI1LC0zLjA3MDY4IDEyLjk0NDM1NywwLjg4OTU5IDQuMjU3MTg0LDYuNTM3NjggLTEuMTA4OTk3LDE0LjYwNzQyIC04LjY3NzMyMiwxMy4wNDkwOSB6IG0gMy41MDY2OTEsLTQuNzI5NTQgYyAxLjE1Njg5NCwtMC43MDU0NyAxLjc4ODkwNSwtMi4xNzI1IDEuNjMzMzUzLC0zLjc5MTM2IC0wLjMyODI0MiwtMy40MTYwOSAtMy45NTIzMTQsLTQuNzUzMTYgLTUuOTEzNiwtMi4xODE3OSAtMi40OTc4MjYsMy4yNzQ4MiAwLjkwODkxOCw4LjAyODk4IDQuMjgwMjQ3LDUuOTczMTUgeiBtIC0xOS4zNTQxMDMsNC4xMjI2NiAtMC43NzU0MDUsLTAuNjY2NDQgLTAuMDgxODcsLTUuMTgyODEgLTAuMDgxODcsLTUuMTgyODIgaCAtMC43NTYzODggYyAtMS4xMjc4OTUsMCAtMS41NjkzNTUsLTAuMjQ0MzQgLTIuMDIxNjA3LC0xLjExODkgLTAuNzgyNDg0LC0xLjUxMzE1IDAuMTIzMDgsLTMuMTE0NDQgMS43NjEyOTIsLTMuMTE0NDQgaCAwLjk4NjUwMyBsIDAuMTgyMzUsLTEuNzAyNzYgYyAwLjQ5NjA5OCwtNC42MzI0OSA2LjA1NjQwMiwtNy42ODQxNiA4Ljk4NjEwNSwtNC45MzE4NCAxLjU1NDUxMSwxLjQ2MDM4IDAuNjQ2NzM5LDMuNDU5NiAtMS41NzA4ODEsMy40NTk2IC0xLjc3Mzk1MywwIC0yLjUwODg0NSwwLjYzNDYzIC0yLjUwODg0NSwyLjE2NjU2IHYgMS4wMDg0NCBoIDEuNTg3NSBjIDEuOTY5NzI2LDAgMi42NDU4MzMsMC41MzU5OCAyLjY0NTgzMywyLjA5NzQ3IDAsMS40NTYzOSAtMC44OTUxNDksMi4xMzU4NyAtMi44MTM4MDYsMi4xMzU4NyBoIC0xLjQxOTUyNyB2IDUuMDEyMzMgYyAwLDQuODE3NTQgLTAuMDIzMTUsNS4wMzkyNCAtMC41OTU3MjYsNS43MDQ5IC0wLjg5NTQ3MiwxLjA0MTA1IC0yLjUxMDc5MSwxLjE4NTM4IC0zLjUyMzY2LDAuMzE0ODQgeiBtIDMwLjMxODM0OCwwLjI4MjggYyAtMS4yMjc2NSwtMC42NDU1OCAtMS4zMjAwNiwtMS4yMDk4MiAtMS4zMjQyMywtOC4wODU3NSBsIC0wLjAwNCwtNi40MjgxOCAwLjY0OTQzLC0wLjY0OTQzIGMgMS4yMzMyLC0xLjIzMzIgNC4xMTMwNywtMC40OTIxOCA0LjExMzA3LDEuMDU4MzQgMCwwLjU2OTYyIDAuMDkxNCwwLjUyOTExIDEuMTE0LC0wLjQ5MzQ0IDIuMjU0MjUsLTIuMjU0MjUgNS43NjUxNywtMS41Nzc3MyA1Ljc2NTE3LDEuMTEwODkgMCwxLjcxOTggLTEuMzA2MjksMi43ODU1MiAtMy4wODA1LDIuNTEzMTggLTIuNjMyMjgsLTAuNDA0MDUgLTMuNTM0MDksMS4xMjIzIC0zLjUzNDA5LDUuOTgxNjIgMCw0LjcwMzA3IC0xLjE5MTUxLDYuMzExMzUgLTMuNjk4OTUsNC45OTI3NyB6IG0gMzUuODk4MjEsLTAuMDU1MyBjIC01LjMyOTU2LC0xLjkwMTAxIC03LjA1Mzg4LC05LjA2NDQyIC0zLjIxMDgyLC0xMy4zMzg4MiA0LjI0MjcxLC00LjcxODkyIDEyLjYxMzM4LC0yLjg0NzI5IDEzLjQ5Mjc2LDMuMDE2OSAwLjQ1MDM3LDMuMDAzMjQgLTAuNDM4NzUsMy40MzI4NyAtOS4zNDI3Miw0LjUxNDQ4IC0xLjAyNjYsMC4xMjQ3IC0xLjEwMDM4LDAuMTgyNzkgLTAuODQzMDEsMC42NjM2OSAwLjg2NDY0LDEuNjE1NTkgMy45MDM4LDIuMDAyOTMgNi4yNjQ3OSwwLjc5ODQ1IDIuMDQ3MDUsLTEuMDQ0MzMgMy41MDg0OSwtMC40NDE5MyAzLjUwODQ5LDEuNDQ2MTkgMCwyLjQ5NzQxIC02LjAyOTksNC4yNjg2NiAtOS44Njk0OSwyLjg5OTExIHogbSA0LjE3NzQyLC05LjM4MDcgYyAxLjQ4NDc4LC0wLjE3OTA4IDEuNzkyNzksLTAuNjY4MjMgMS4wOTMxNCwtMS43MzYwMyAtMS4zNjM5OSwtMi4wODE3MiAtNS43MTM2MiwtMC43MjE0NCAtNS43MTg4MywxLjc4ODQ3IC0wLjAwMSwwLjUwNTEzIDAuMDAzLDAuNTA1MDggNC42MjU2OSwtMC4wNTI0IHogbSAtNi43NjYyMSwtOS41NDAxMiBjIC0zLjE0Mjk4LC0wLjk1MjQ5IC0zLjM4NDExLC0zLjE4NTkxIC0wLjkwNzczLC04LjQwNzg5IGwgMS41MzQ5NSwtMy4yMzY4IC0xLjg2NDY0LC00LjAzOTI0IGMgLTcuODM3NzMsLTE2Ljk3ODMzIC04LjA0MzgxLC0xNy44OTE0NiAtNC4zODI5NiwtMTkuNDIxMDYgMy42Mzg5NCwtMS41MjA0NCA0LjQxNTU4LC0wLjQyMjg3IDkuNzYwODUsMTMuNzk0MzEgMC41NiwxLjQ4OTQ3IDAuNjEyMjgsMS41NDY2NiAwLjg0NjczLDAuOTI2MDQgMS4zMDI2OSwtMy40NDg0NyAyLjYyNDQ1LC03LjA1NTExIDMuNjMxNzIsLTkuOTA5OCAxLjgxMzE1LC01LjEzODYyIDMuNTUxODYsLTYuMzIwNTUgNi42Mzc2OCwtNC41MTIxNCAyLjY2MDAyLDEuNTU4ODggMi41NjMwOSwzLjAxOTA4IC0wLjcwMDMyLDEwLjU0OTY2IC0xLjMzMjg0LDMuMDc1NjQgLTMuNzIwMjQsOC42MjgxNyAtNS4zMDUzMywxMi4zMzg5NSAtNC42Mzk3MywxMC44NjE4OSAtNC44Mzg1NywxMS4yMDc5NyAtNi44MjAxNywxMS44NzAyNSAtMS4wMTE1NSwwLjMzODA3IC0xLjQ0NDYyLDAuMzQ2NTcgLTIuNDMwNzgsMC4wNDc3IHogbSAtNDYuNjg2MDI5LC05LjU0MjA0IGMgLTEuMTYxNzUsLTAuMzU0NTMgLTIuMDA3Nzg1LC0xLjMzNzEyIC01LjQxNDAyLC02LjI4NzkgbCAtMy4wNDI3MDgsLTQuNDIyNCAtMi4zMTUxMDQsLTAuMDc2NCAtMi4zMTUxMDQsLTAuMDc2NCB2IDQuMDQ5MzMgYyAwLDMuNDE2NDQgLTAuMDc1NTYsNC4xOTAyMiAtMC40ODM0NjQsNC45NTA3OSAtMS4zMzcyMDMsMi40OTMzNiAtNS43MTQyOTYsMi41MjYxMyAtNy4yNTE0MjgsMC4wNTQzIGwgLTAuNTk5NDgzLC0wLjk2NDAyIC0wLjA3NzUxLC0xMy40Mjk5IGMgLTAuMTA1NDcyLC0xOC4yNzQyMSAtMC45MzM0OTYsLTE2Ljg2NzIxIDkuOTIyNzAxLC0xNi44NjA5OCA4Ljk3ODUzOSwwLjAwNSAxMS43MDc0ODgsMC42NzYyOSAxNC4yNjYzMjYsMy41MDg2MiA0LjM3NTEyNSw0Ljg0Mjc0IDMuMjY2MTExLDEzLjk1NjEzIC0yLjAwNTczLDE2LjQ4MjIgLTAuNTg1OTM2LDAuMjgwNzYgLTEuMDY2NzA1LDAuNTc0MDUgLTEuMDY4Mzc0LDAuNjUxNzUgLTAuMDA0MSwwLjE4OTY0IDMuMjI2MjU2LDQuMDg4OSA0LjQ4NjAwNyw1LjQxNDk3IDMuMzMzMTMxLDMuNTA4NiAwLjQ2ODYzMyw4LjQwMDk4IC00LjEwMjEwNiw3LjAwNjE0IHogbSAtNS42NDUxMTksLTE3Ljk5MTI0IGMgMy40OTM4MzYsLTAuOTcwNDggMy43MDE5MzQsLTYuMTIyNzMgMC4zMDU3NDMsLTcuNTY5ODMgLTAuNTc1NDYsLTAuMjQ1MiAtMS45Njg5MTksLTAuMzYyNzcgLTQuMjk5NDc5LC0wLjM2Mjc3IGggLTMuNDQ4MDgxIHYgNC4xMDEwNCA0LjEwMTA0IGwgMy4yNDExNDUsLTAuMDAxIGMgMS43ODI2MywtOC4xZS00IDMuNjcyOTMzLC0wLjEyMTQxIDQuMjAwNjcyLC0wLjI2OCB6IG0gMjMuMjA2NTU4LDE3Ljc1MzQ1IGMgLTEwLjAwMDE2NywtMy4xOTgxNSAtMTEuMzA5NjY1LC0xOS4wNzA3NSAtMi4wMTc3NCwtMjQuNDU3MyAzLjk0NTQ1LC0yLjI4NzE5IDkuNjY0MDcsLTEuODExMjMgMTEuNjQzODUsMC45NjkxMSBsIDAuNTQ4MDQsMC43Njk2NiAwLjMyNDgsLTAuNzU2MTYgYyAxLjIwMjY1LC0yLjc5OTkzIDUuNzYyNTUsLTMuMDIxMjkgNy4xNDU1NSwtMC4zNDY4OCAwLjY4MTc5LDEuMzE4NDQgMC41Njc4NSwyMS4yNTY5NiAtMC4xMjgsMjIuMzk4MTkgLTEuNDkyOCwyLjQ0ODI3IC01LjYxNjAzLDIuMjA5MjMgLTYuNzYzNzQsLTAuMzkyMTEgbCAtMC40NjAwNSwtMS4wNDI3MiAtMS4yMjIxMSwxLjI2MDIyIGMgLTEuOTg3MjIsMi4wNDkxOSAtNS42NDQ4OCwyLjY5MzU3IC05LjA3MDYsMS41OTc5OSB6IG0gNy41ODM5MSwtNy4yMzU3MiBjIDMuNDMwMzksLTEuOTE1NDkgMy40MDQzNSwtOC42NjQwNCAtMC4wNDEyLC0xMC42ODMyOCAtMy43NDcsLTIuMTk1ODggLTcuNzYzOTgsMC41NjE2OSAtNy43NjM5OCw1LjMyOTgyIDAsNC42ODA1NyA0LjA0MzUsNy40NTM5NSA3LjgwNTIsNS4zNTM0NiB6IG0gLTUyLjE4ODcxNywtOS4zMzYxNSBjIC03LjEzNjQ1MSwtOC4zMjM3NCAtMy4yNTczMzIsLTIxLjg4NzU2IDcuMTA1NjY3LC0yNC44NDU4NSA0LjQ3NDMzNSwtMS4yNzcyNyA1LjQ5NDM2NiwzLjI1MjUyIDEuMTI2MTg5LDUuMDAxMjIgLTcuMzUzNzY5LDIuOTQzOTEgLTEwLjUyMDg5NywxMS4yNTA4NCAtNy4zMzAwMjUsMTkuMjI1NjEgMC43MjY4MzgsMS44MTY1NSAwLjM0Nzg5NCwyLjA3NjY2IC0wLjkwMTgzMSwwLjYxOTAyIHoiIGlkPSJwYXRoMSIgLz48L2c+PC9zdmc+",
+      "renderer_name": "SvgRenderer",
+      "metadata": {
+        "viewbox": [
+          57.3785,
+          111.494,
+          96.3967,
+          78.9423
+        ],
+        "untrimmed_width_mm": 210.0,
+        "untrimmed_height_mm": 297.0,
+        "trimmed_width_mm": 96.39675708333334,
+        "trimmed_height_mm": 78.942326875
+      },
+      "width_px": 364,
+      "height_px": 298,
+      "width_mm": 96.39675708333334,
+      "height_mm": 78.94234674734328
+    },
+    {
+      "uid": "41bbc82a-3551-4753-a44c-ea0f48c6323e",
+      "type": "sketch",
+      "name": "New Sketch",
+      "input_parameters": {
+        "vars": []
+      },
+      "params": {
+        "expressions": {}
+      },
+      "registry": {
+        "points": [
+          {
+            "id": 0,
+            "x": 0.0,
+            "y": 0.0,
+            "fixed": true
+          },
+          {
+            "id": 1,
+            "x": -41.930475389318744,
+            "y": -11.5,
+            "fixed": false
+          },
+          {
+            "id": 2,
+            "x": 41.930475389318744,
+            "y": -11.5,
+            "fixed": false
+          },
+          {
+            "id": 3,
+            "x": -41.930475389318744,
+            "y": 11.5,
+            "fixed": false
+          },
+          {
+            "id": 4,
+            "x": 41.93047538931874,
+            "y": 11.5,
+            "fixed": false
+          }
+        ],
+        "entities": [
+          {
+            "id": 5,
+            "type": "line",
+            "construction": true,
+            "p1_idx": 1,
+            "p2_idx": 2
+          },
+          {
+            "id": 6,
+            "type": "line",
+            "construction": true,
+            "p1_idx": 2,
+            "p2_idx": 4
+          },
+          {
+            "id": 7,
+            "type": "line",
+            "construction": true,
+            "p1_idx": 4,
+            "p2_idx": 3
+          },
+          {
+            "id": 8,
+            "type": "line",
+            "construction": true,
+            "p1_idx": 3,
+            "p2_idx": 1
+          },
+          {
+            "id": 9,
+            "type": "text_box",
+            "construction": false,
+            "origin_id": 1,
+            "width_id": 2,
+            "height_id": 3,
+            "content": "Rayforge",
+            "font_config": {
+              "font_family": "Arial",
+              "font_size": 20.0,
+              "bold": true,
+              "italic": false
+            },
+            "construction_line_ids": [
+              5,
+              6,
+              7,
+              8
+            ]
+          }
+        ],
+        "id_counter": 52
+      },
+      "constraints": [
+        {
+          "type": "ParallelogramConstraint",
+          "p_origin": 1,
+          "p_width": 2,
+          "p_height": 3,
+          "p4": 4,
+          "user_visible": false
+        },
+        {
+          "type": "HorizontalConstraint",
+          "p1": 1,
+          "p2": 2,
+          "user_visible": true
+        },
+        {
+          "type": "PerpendicularConstraint",
+          "e1_id": 5,
+          "e2_id": 8,
+          "user_visible": true
+        },
+        {
+          "type": "DistanceConstraint",
+          "p1": 1,
+          "p2": 2,
+          "value": 83.86095077863749,
+          "user_visible": false
+        },
+        {
+          "type": "SymmetryConstraint",
+          "p1": 2,
+          "p2": 3,
+          "center": 0,
+          "axis": null,
+          "user_visible": true
+        },
+        {
+          "type": "AspectRatioConstraint",
+          "p1": 1,
+          "p2": 2,
+          "p3": 1,
+          "p4": 3,
+          "ratio": 3.646128294723369,
+          "user_visible": true
+        }
+      ],
+      "fills": [],
+      "origin_id": 0
+    },
+    {
+      "uid": "2ae7373b-9dbf-4980-9e73-a067fc39941e",
+      "type": "sketch",
+      "name": "New Sketch",
+      "input_parameters": {
+        "vars": []
+      },
+      "params": {
+        "expressions": {}
+      },
+      "registry": {
+        "points": [
+          {
+            "id": 0,
+            "x": 0.0,
+            "y": 0.0,
+            "fixed": true
+          },
+          {
+            "id": 23,
+            "x": -59.99065179145666,
+            "y": 20.000000117326326,
+            "fixed": false
+          },
+          {
+            "id": 24,
+            "x": 59.99156145989821,
+            "y": 20.00000011731549,
+            "fixed": false
+          },
+          {
+            "id": 25,
+            "x": 64.99464033771241,
+            "y": 14.999308105079288,
+            "fixed": false
+          },
+          {
+            "id": 26,
+            "x": 64.99464033917356,
+            "y": -14.998879741620781,
+            "fixed": false
+          },
+          {
+            "id": 27,
+            "x": 60.00065370376551,
+            "y": -19.9999988502751,
+            "fixed": false
+          },
+          {
+            "id": 28,
+            "x": -59.99934629403133,
+            "y": -19.99999885028416,
+            "fixed": false
+          },
+          {
+            "id": 29,
+            "x": -64.99464026798628,
+            "y": -14.998664727553484,
+            "fixed": false
+          },
+          {
+            "id": 30,
+            "x": -64.99464026654475,
+            "y": 15.000732609601268,
+            "fixed": false
+          },
+          {
+            "id": 31,
+            "x": -59.99464032161796,
+            "y": 15.000000914067629,
+            "fixed": false
+          },
+          {
+            "id": 32,
+            "x": 59.994640361633635,
+            "y": 15.000001065272938,
+            "fixed": false
+          },
+          {
+            "id": 33,
+            "x": 59.99464046817657,
+            "y": -15.000000659317646,
+            "fixed": false
+          },
+          {
+            "id": 34,
+            "x": -59.994640361564116,
+            "y": -15.000001065243826,
+            "fixed": false
+          }
+        ],
+        "entities": [
+          {
+            "id": 35,
+            "type": "line",
+            "construction": false,
+            "p1_idx": 23,
+            "p2_idx": 24
+          },
+          {
+            "id": 36,
+            "type": "line",
+            "construction": false,
+            "p1_idx": 25,
+            "p2_idx": 26
+          },
+          {
+            "id": 37,
+            "type": "line",
+            "construction": false,
+            "p1_idx": 27,
+            "p2_idx": 28
+          },
+          {
+            "id": 38,
+            "type": "line",
+            "construction": false,
+            "p1_idx": 29,
+            "p2_idx": 30
+          },
+          {
+            "id": 39,
+            "type": "arc",
+            "construction": false,
+            "start_idx": 30,
+            "end_idx": 23,
+            "center_idx": 31,
+            "clockwise": true
+          },
+          {
+            "id": 40,
+            "type": "arc",
+            "construction": false,
+            "start_idx": 24,
+            "end_idx": 25,
+            "center_idx": 32,
+            "clockwise": true
+          },
+          {
+            "id": 41,
+            "type": "arc",
+            "construction": false,
+            "start_idx": 26,
+            "end_idx": 27,
+            "center_idx": 33,
+            "clockwise": true
+          },
+          {
+            "id": 42,
+            "type": "arc",
+            "construction": false,
+            "start_idx": 28,
+            "end_idx": 29,
+            "center_idx": 34,
+            "clockwise": true
+          }
+        ],
+        "id_counter": 43
+      },
+      "constraints": [
+        {
+          "type": "HorizontalConstraint",
+          "p1": 23,
+          "p2": 24,
+          "user_visible": true
+        },
+        {
+          "type": "VerticalConstraint",
+          "p1": 25,
+          "p2": 26,
+          "user_visible": true
+        },
+        {
+          "type": "HorizontalConstraint",
+          "p1": 27,
+          "p2": 28,
+          "user_visible": true
+        },
+        {
+          "type": "VerticalConstraint",
+          "p1": 29,
+          "p2": 30,
+          "user_visible": true
+        },
+        {
+          "type": "TangentConstraint",
+          "line_id": 35,
+          "shape_id": 39,
+          "user_visible": true
+        },
+        {
+          "type": "TangentConstraint",
+          "line_id": 38,
+          "shape_id": 39,
+          "user_visible": true
+        },
+        {
+          "type": "TangentConstraint",
+          "line_id": 35,
+          "shape_id": 40,
+          "user_visible": true
+        },
+        {
+          "type": "TangentConstraint",
+          "line_id": 36,
+          "shape_id": 40,
+          "user_visible": true
+        },
+        {
+          "type": "TangentConstraint",
+          "line_id": 36,
+          "shape_id": 41,
+          "user_visible": true
+        },
+        {
+          "type": "TangentConstraint",
+          "line_id": 37,
+          "shape_id": 41,
+          "user_visible": true
+        },
+        {
+          "type": "TangentConstraint",
+          "line_id": 37,
+          "shape_id": 42,
+          "user_visible": true
+        },
+        {
+          "type": "TangentConstraint",
+          "line_id": 38,
+          "shape_id": 42,
+          "user_visible": true
+        },
+        {
+          "type": "EqualLengthConstraint",
+          "entity_ids": [
+            39,
+            40,
+            41,
+            42
+          ],
+          "user_visible": true
+        },
+        {
+          "type": "EqualDistanceConstraint",
+          "p1": 31,
+          "p2": 30,
+          "p3": 31,
+          "p4": 23,
+          "user_visible": true
+        },
+        {
+          "type": "EqualDistanceConstraint",
+          "p1": 32,
+          "p2": 24,
+          "p3": 32,
+          "p4": 25,
+          "user_visible": true
+        },
+        {
+          "type": "EqualDistanceConstraint",
+          "p1": 33,
+          "p2": 26,
+          "p3": 33,
+          "p4": 27,
+          "user_visible": true
+        },
+        {
+          "type": "EqualDistanceConstraint",
+          "p1": 34,
+          "p2": 28,
+          "p3": 34,
+          "p4": 29,
+          "user_visible": true
+        },
+        {
+          "type": "SymmetryConstraint",
+          "p1": 32,
+          "p2": 34,
+          "center": 0,
+          "axis": null,
+          "user_visible": true
+        },
+        {
+          "type": "RadiusConstraint",
+          "entity_id": 39,
+          "value": 5.0,
+          "user_visible": true
+        },
+        {
+          "type": "DistanceConstraint",
+          "p1": 27,
+          "p2": 24,
+          "value": 40.0,
+          "user_visible": true
+        },
+        {
+          "type": "DistanceConstraint",
+          "p1": 27,
+          "p2": 28,
+          "value": 120.0,
+          "user_visible": true
+        }
+      ],
+      "fills": [],
+      "origin_id": 0
+    }
+  ]
+}
