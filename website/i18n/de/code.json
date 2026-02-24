@@ -8,6 +8,12 @@
   "install.fromSource": {
     "message": "Aus dem Quellcode"
   },
+  "install.installer.recommended": {
+    "message": "Installer (Empfohlen)"
+  },
+  "install.msys2.developers": {
+    "message": "MSYS2 (Entwickler)"
+  },
   "install.selectOs": {
     "message": "Wählen Sie Ihr Betriebssystem:"
   },
@@ -160,6 +166,48 @@
   },
   "install.windows.title": {
     "message": "Windows-Installation"
+  },
+  "install.windows.dev.title": {
+    "message": "Windows-Entwickler-Setup (MSYS2)"
+  },
+  "install.windows.dev.description": {
+    "message": "Für Entwickler, die zu Rayforge beitragen oder die neueste Entwicklungsversion unter Windows ausführen möchten. Diese Methode verwendet MSYS2, um eine Unix-ähnliche Entwicklungsumgebung bereitzustellen."
+  },
+  "install.installMsys2": {
+    "message": "MSYS2 installieren"
+  },
+  "install.msys2.download": {
+    "message": "Laden Sie MSYS2 von der offiziellen Website herunter und installieren Sie es:"
+  },
+  "install.msys2.defaultPath": {
+    "message": "Verwenden Sie den Standard-Installationspfad (C:\\msys64) für beste Kompatibilität."
+  },
+  "install.runSetup": {
+    "message": "Das Setup-Skript ausführen"
+  },
+  "install.msys2.shell": {
+    "message": "Öffnen Sie die MSYS2 MINGW64-Shell und führen Sie das Setup-Skript aus:"
+  },
+  "install.msys2.setupNote": {
+    "message": "Dieses Skript installiert alle erforderlichen Systemabhängigkeiten und Python-Pakete. Die Installation kann mehrere Minuten dauern."
+  },
+  "install.installDevTools": {
+    "message": "Entwicklungswerkzeuge installieren (Optional)"
+  },
+  "install.msys2.devTools": {
+    "message": "Für Linting, Formatierung und Pre-Commit-Hooks:"
+  },
+  "install.usefulWinCommands": {
+    "message": "Nützliche Windows-Entwicklungsbefehle"
+  },
+  "install.gitCommands": {
+    "message": "Git-Befehle"
+  },
+  "install.msys2.gitNote": {
+    "message": "Bei der Verwendung von Pre-Commit-Hooks müssen Sie Git-Befehle innerhalb der MSYS2 MINGW64-Shell ausführen, nicht aus PowerShell oder der Eingabeaufforderung."
+  },
+  "install.buildInstaller": {
+    "message": "Den Windows-Installer erstellen"
   },
   "install.downloadInstaller": {
     "message": "Installer herunterladen"

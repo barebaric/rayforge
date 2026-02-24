@@ -8,6 +8,12 @@
   "install.fromSource": {
     "message": "Desde el código fuente"
   },
+  "install.installer.recommended": {
+    "message": "Instalador (Recomendado)"
+  },
+  "install.msys2.developers": {
+    "message": "MSYS2 (Desarrolladores)"
+  },
   "install.selectOs": {
     "message": "Seleccione su sistema operativo:"
   },
@@ -160,6 +166,48 @@
   },
   "install.windows.title": {
     "message": "Instalación en Windows"
+  },
+  "install.windows.dev.title": {
+    "message": "Configuración de desarrollo en Windows (MSYS2)"
+  },
+  "install.windows.dev.description": {
+    "message": "Para desarrolladores que quieran contribuir a Rayforge o ejecutar la última versión de desarrollo en Windows. Este método usa MSYS2 para proporcionar un entorno de desarrollo similar a Unix."
+  },
+  "install.installMsys2": {
+    "message": "Instalar MSYS2"
+  },
+  "install.msys2.download": {
+    "message": "Descargue e instale MSYS2 desde el sitio web oficial:"
+  },
+  "install.msys2.defaultPath": {
+    "message": "Use la ruta de instalación predeterminada (C:\\msys64) para mejor compatibilidad."
+  },
+  "install.runSetup": {
+    "message": "Ejecutar el script de configuración"
+  },
+  "install.msys2.shell": {
+    "message": "Abra el shell MSYS2 MINGW64 y ejecute el script de configuración:"
+  },
+  "install.msys2.setupNote": {
+    "message": "Este script instala todas las dependencias del sistema y paquetes Python necesarios. Puede tardar varios minutos en completarse."
+  },
+  "install.installDevTools": {
+    "message": "Instalar herramientas de desarrollo (Opcional)"
+  },
+  "install.msys2.devTools": {
+    "message": "Para linting, formateo y hooks pre-commit:"
+  },
+  "install.usefulWinCommands": {
+    "message": "Comandos útiles de desarrollo en Windows"
+  },
+  "install.gitCommands": {
+    "message": "Comandos de Git"
+  },
+  "install.msys2.gitNote": {
+    "message": "Al usar hooks pre-commit, debe ejecutar comandos git dentro del shell MSYS2 MINGW64, no desde PowerShell o Símbolo del sistema."
+  },
+  "install.buildInstaller": {
+    "message": "Compilar el instalador de Windows"
   },
   "install.downloadInstaller": {
     "message": "Descargar el instalador"
