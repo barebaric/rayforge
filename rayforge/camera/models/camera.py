@@ -363,7 +363,7 @@ class Camera:
             "brightness": self.brightness,
             "transparency": self.transparency,
             "denoise": self.denoise,
-            
+
             "distortion_k1": self.distortion_k1,
             "distortion_k2": self.distortion_k2,
             "distortion_p1": self.distortion_p1,

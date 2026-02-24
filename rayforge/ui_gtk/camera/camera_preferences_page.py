@@ -175,13 +175,15 @@ class CameraEnhancementGroup(Adw.PreferencesGroup):
         self._updating = False
 
         # Scale 0-100 mapped to denoise factor 0.0 - 0.95
-        self.denoise_scale = Gtk.Scale.new_with_range(Gtk.Orientation.HORIZONTAL, 0, 100, 1)
+        self.denoise_scale = Gtk.Scale.new_with_range(
+            Gtk.Orientation.HORIZONTAL, 0, 100, 1)
         self.denoise_scale.set_hexpand(True)
         self.denoise_scale.set_value_pos(Gtk.PositionType.LEFT)
         self.denoise_scale.connect("value-changed", self._on_value_changed)
-        
+
         row = Adw.ActionRow(title=_("Noise Reduction"))
-        row.set_subtitle(_("Temporal averaging. Higher values remove more noise but cause trailing."))
+        row.set_subtitle(
+            _("Temporal averaging. Higher values remove more noise but cause trailing."))
         row.add_suffix(self.denoise_scale)
         self.add(row)
 
@@ -191,7 +193,7 @@ class CameraEnhancementGroup(Adw.PreferencesGroup):
 
         if not controller:
             return
-        
+
         self._updating = True
         # Read the current config. Defaults to 0.0
         denoise_val = getattr(controller.config, 'denoise', 0.0)
@@ -202,13 +204,13 @@ class CameraEnhancementGroup(Adw.PreferencesGroup):
     def _on_value_changed(self, scale):
         if self._updating or not self._controller:
             return
-        
+
         # Convert 0-100 slider to 0.0-0.95 range
         val = scale.get_value() / 100.0
         # Hard clamp to 0.95 to avoid accidental infinite freeze
         if val > 0.95:
             val = 0.95
-            
+
         self._controller.config.denoise = val
 
 
@@ -218,7 +220,8 @@ class CameraDistortionGroup(Adw.PreferencesGroup):
     def __init__(self, **kwargs):
         super().__init__(
             title=_("Lens Distortion Correction (Fisheye)"),
-            description=_("Straighten bowed lines using Radial (k1, k2) and Tangential (p1, p2) parameters. Note: Values are usually very small (e.g., 0.005)."),
+            description=_(
+                "Straighten bowed lines using Radial (k1, k2) and Tangential (p1, p2) parameters. Note: Values are usually very small (e.g., 0.005)."),
             **kwargs
         )
         self._controller: Optional[CameraController] = None
@@ -256,10 +259,26 @@ class CameraDistortionGroup(Adw.PreferencesGroup):
             return
 
         self._updating = True
-        self.k1_spin.set_value(getattr(controller.config, 'distortion_k1', 0.0))
-        self.k2_spin.set_value(getattr(controller.config, 'distortion_k2', 0.0))
-        self.p1_spin.set_value(getattr(controller.config, 'distortion_p1', 0.0))
-        self.p2_spin.set_value(getattr(controller.config, 'distortion_p2', 0.0))
+        self.k1_spin.set_value(
+            getattr(
+                controller.config,
+                'distortion_k1',
+                0.0))
+        self.k2_spin.set_value(
+            getattr(
+                controller.config,
+                'distortion_k2',
+                0.0))
+        self.p1_spin.set_value(
+            getattr(
+                controller.config,
+                'distortion_p1',
+                0.0))
+        self.p2_spin.set_value(
+            getattr(
+                controller.config,
+                'distortion_p2',
+                0.0))
         self._updating = False
 
     def _on_value_changed(self, spin: Gtk.SpinButton):
@@ -278,7 +297,8 @@ class CameraPositioningGroup(Adw.PreferencesGroup):
     def __init__(self, **kwargs):
         super().__init__(
             title=_("Image Stretching & Positioning"),
-            description=_("Adjust the top, bottom, left, and right bounds. Use positive or negative values to stretch or offset the image representation."),
+            description=_(
+                "Adjust the top, bottom, left, and right bounds. Use positive or negative values to stretch or offset the image representation."),
             **kwargs
         )
         self._controller: Optional[CameraController] = None
@@ -317,9 +337,21 @@ class CameraPositioningGroup(Adw.PreferencesGroup):
 
         self._updating = True
         self.top_spin.set_value(getattr(controller.config, 'offset_top', 0.0))
-        self.bottom_spin.set_value(getattr(controller.config, 'offset_bottom', 0.0))
-        self.left_spin.set_value(getattr(controller.config, 'offset_left', 0.0))
-        self.right_spin.set_value(getattr(controller.config, 'offset_right', 0.0))
+        self.bottom_spin.set_value(
+            getattr(
+                controller.config,
+                'offset_bottom',
+                0.0))
+        self.left_spin.set_value(
+            getattr(
+                controller.config,
+                'offset_left',
+                0.0))
+        self.right_spin.set_value(
+            getattr(
+                controller.config,
+                'offset_right',
+                0.0))
         self._updating = False
 
     def _on_value_changed(self, spin: Gtk.SpinButton):
@@ -362,7 +394,7 @@ class CameraPreferencesPage(Adw.PreferencesPage):
         # Configuration panel for the selected Camera
         self.camera_properties_widget = CameraProperties(None)
         self.add(self.camera_properties_widget)
-        
+
         # New Image Enhancement Group (Denoise)
         self.camera_enhancement_widget = CameraEnhancementGroup()
         self.add(self.camera_enhancement_widget)

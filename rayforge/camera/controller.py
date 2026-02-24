@@ -206,7 +206,8 @@ class CameraController:
     def __init__(self, config: Camera):
         self.config = config
         self._image_data: Optional[np.ndarray] = None
-        self._accumulator: Optional[np.ndarray] = None # For Temporal Smoothing
+        # For Temporal Smoothing
+        self._accumulator: Optional[np.ndarray] = None
         self._active_subscribers: int = 0
         self._capture_thread: Optional[threading.Thread] = None
         self._running: bool = False
@@ -461,10 +462,11 @@ class CameraController:
             logger.debug("Applied camera hardware settings.")
         except Exception as e:
             # We log as a warning because the stream may still work
-            logger.warning(f"Could not apply one or more camera settings: {e}")
-    
+            logger.warning(
+                f"Could not apply one or more camera settings: {e}")
+
     def _get_effective_calibration(self, h, w):
-        """Returns the camera matrix and distortion coefficients, prioritizing manual tweaks."""
+        """Returns the camera matrix and distortion coefficients."""
         k1 = getattr(self.config, 'distortion_k1', 0.0)
         k2 = getattr(self.config, 'distortion_k2', 0.0)
         p1 = getattr(self.config, 'distortion_p1', 0.0)
@@ -473,7 +475,7 @@ class CameraController:
         if k1 != 0.0 or k2 != 0.0 or p1 != 0.0 or p2 != 0.0:
             cam_mat = self.config._camera_matrix
             if cam_mat is None:
-                # Use a heuristic focal length based on typical wide-angle camera geometry
+                # Use a heuristic focal length based on wide-angle geometry
                 f = max(h, w)
                 cam_mat = np.array([
                     [f, 0, w / 2],
@@ -488,20 +490,18 @@ class CameraController:
 
     def _process_frame(self, frame: np.ndarray) -> np.ndarray:
         """Applies denoise, fisheye correction, and boundary stretching."""
-        
+
         # 0. Temporal Denoising (Accumulate Weighted)
         denoise_strength = getattr(self.config, 'denoise', 0.0)
-        
+
         if denoise_strength > 0.0:
-            if self._accumulator is None or self._accumulator.shape != frame.shape:
+            if (self._accumulator is None or
+                    self._accumulator.shape != frame.shape):
                 self._accumulator = frame.astype(np.float32)
             else:
-                # Formula: acc = (1-alpha)*acc + alpha*frame
-                # We want denoise_strength to be the persistence of old frames.
-                # So if denoise is 0.9, we keep 90% of old, add 10% of new.
                 alpha = 1.0 - denoise_strength
                 cv2.accumulateWeighted(frame, self._accumulator, alpha)
-            
+
             # Use the denoised result for subsequent processing
             frame_to_process = self._accumulator.astype(np.uint8)
         else:
@@ -514,7 +514,8 @@ class CameraController:
         cam_mat, dist = self._get_effective_calibration(h, w)
         if cam_mat is not None and dist is not None:
             try:
-                frame_to_process = cv2.undistort(frame_to_process, cam_mat, dist)
+                frame_to_process = cv2.undistort(
+                    frame_to_process, cam_mat, dist)
             except Exception as e:
                 logger.error(f"Failed to undistort frame: {e}")
 
@@ -540,7 +541,8 @@ class CameraController:
 
             try:
                 M = cv2.getPerspectiveTransform(pts1, pts2)
-                frame_to_process = cv2.warpPerspective(frame_to_process, M, (w, h), flags=cv2.INTER_LINEAR)
+                frame_to_process = cv2.warpPerspective(
+                    frame_to_process, M, (w, h), flags=cv2.INTER_LINEAR)
             except Exception as e:
                 logger.error(f"Failed to apply camera offsets: {e}")
 
@@ -557,7 +559,7 @@ class CameraController:
 
             # Apply all visual corrections
             self._image_data = self._process_frame(frame)
-            
+
             # Emit the signal in a GLib-safe way
             idle_add(self.image_captured.send, self)
             return True

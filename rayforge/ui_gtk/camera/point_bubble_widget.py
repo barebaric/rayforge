@@ -47,7 +47,9 @@ class PointBubbleWidget(Gtk.Box):
 
         # --- Header Row (Title & Delete) ---
         header_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
-        self.title_label = Gtk.Label(label=_("Point {n}").format(n=point_index + 1))
+        self.title_label = Gtk.Label(
+            label=_("Point {n}").format(
+                n=point_index + 1))
         self.title_label.add_css_class("point-bubble-heading")
         self.title_label.set_hexpand(True)
         self.title_label.set_halign(Gtk.Align.START)
@@ -62,12 +64,15 @@ class PointBubbleWidget(Gtk.Box):
         self.append(header_box)
 
         # --- Coordinates Row ---
-        coords_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
-        
+        coords_box = Gtk.Box(
+            orientation=Gtk.Orientation.HORIZONTAL,
+            spacing=12)
+
         # World X
         x_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=4)
         x_box.append(Gtk.Label(label="X:"))
-        adjustment_x = Gtk.Adjustment.new(0.0, -10000.0, 10000.0, 0.1, 1.0, 0.0)
+        adjustment_x = Gtk.Adjustment.new(
+            0.0, -10000.0, 10000.0, 0.1, 1.0, 0.0)
         self.world_x_spin = Gtk.SpinButton.new(adjustment_x, 0.1, 2)
         self.world_x_spin.set_valign(Gtk.Align.CENTER)
         self.world_x_spin.set_width_chars(6)
@@ -77,7 +82,8 @@ class PointBubbleWidget(Gtk.Box):
         # World Y
         y_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=4)
         y_box.append(Gtk.Label(label="Y:"))
-        adjustment_y = Gtk.Adjustment.new(0.0, -10000.0, 10000.0, 0.1, 1.0, 0.0)
+        adjustment_y = Gtk.Adjustment.new(
+            0.0, -10000.0, 10000.0, 0.1, 1.0, 0.0)
         self.world_y_spin = Gtk.SpinButton.new(adjustment_y, 0.1, 2)
         self.world_y_spin.set_valign(Gtk.Align.CENTER)
         self.world_y_spin.set_width_chars(6)
@@ -93,7 +99,7 @@ class PointBubbleWidget(Gtk.Box):
         # --- Image Nudge Row ---
         nudge_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=2)
         nudge_box.set_halign(Gtk.Align.CENTER)
-        
+
         nudge_label = Gtk.Label(label=_("Nudge Pixel:"))
         nudge_label.add_css_class("dim-label")
         nudge_label.set_margin_end(8)
@@ -109,16 +115,36 @@ class PointBubbleWidget(Gtk.Box):
             btn.add_css_class("circular")
 
         # Arrow buttons emit a 0.5 sub-pixel nudge to the image coordinate
-        btn_left.connect("clicked", lambda _: self.nudge_requested.send(self, dx=-0.5, dy=0))
-        btn_right.connect("clicked", lambda _: self.nudge_requested.send(self, dx=0.5, dy=0))
-        btn_up.connect("clicked", lambda _: self.nudge_requested.send(self, dx=0, dy=-0.5))
-        btn_down.connect("clicked", lambda _: self.nudge_requested.send(self, dx=0, dy=0.5))
+        btn_left.connect(
+            "clicked",
+            lambda _: self.nudge_requested.send(
+                self,
+                dx=-0.5,
+                dy=0))
+        btn_right.connect(
+            "clicked",
+            lambda _: self.nudge_requested.send(
+                self,
+                dx=0.5,
+                dy=0))
+        btn_up.connect(
+            "clicked",
+            lambda _: self.nudge_requested.send(
+                self,
+                dx=0,
+                dy=-0.5))
+        btn_down.connect(
+            "clicked",
+            lambda _: self.nudge_requested.send(
+                self,
+                dx=0,
+                dy=0.5))
 
         nudge_box.append(btn_left)
         nudge_box.append(btn_up)
         nudge_box.append(btn_down)
         nudge_box.append(btn_right)
-        
+
         self.append(nudge_box)
 
         # --- Event Controllers ---
@@ -131,11 +157,13 @@ class PointBubbleWidget(Gtk.Box):
         self.world_y_spin.add_controller(key_controller_y)
 
         focus_controller_x = Gtk.EventControllerFocus()
-        focus_controller_x.connect("enter", self.on_spin_focus, self.world_x_spin)
+        focus_controller_x.connect(
+            "enter", self.on_spin_focus, self.world_x_spin)
         self.world_x_spin.add_controller(focus_controller_x)
 
         focus_controller_y = Gtk.EventControllerFocus()
-        focus_controller_y.connect("enter", self.on_spin_focus, self.world_y_spin)
+        focus_controller_y.connect(
+            "enter", self.on_spin_focus, self.world_y_spin)
         self.world_y_spin.add_controller(focus_controller_y)
 
     def set_point_index(self, index: int):

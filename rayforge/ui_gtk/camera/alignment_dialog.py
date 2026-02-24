@@ -32,19 +32,20 @@ class CameraAlignmentDialog(PatchedDialogWindow):
         self.camera = controller.config
         self.image_points: List[Optional[Pos]] = []
         self.world_points: List[Pos] = []
-        
+
         self.active_point_index = -1
         self.dragging_point_index = -1
-        
+
         # Drag State
         self.drag_start_display_x = 0.0
         self.drag_start_display_y = 0.0
         self.drag_offset_x = 0.0
         self.drag_offset_y = 0.0
-        
+
         self._display_ready = False
-        
-        # Interaction Lock: Blocks automatic idle positioning while dragging manually
+
+        # Interaction Lock: Blocks automatic idle positioning while dragging
+        # manually
         self._interaction_in_progress = False
 
         # Zoom & Pan State
@@ -69,11 +70,12 @@ class CameraAlignmentDialog(PatchedDialogWindow):
 
         # --- Header Bar with Zoom Controls ---
         header_bar = Adw.HeaderBar()
+        header_title = _("{camera_name} – Image Alignment").format(
+            camera_name=self.camera.name
+        )
         header_bar.set_title_widget(
             Adw.WindowTitle(
-                title=_("{camera_name} – Image Alignment").format(
-                    camera_name=self.camera.name
-                ),
+                title=header_title,
                 subtitle="",
             )
         )
@@ -82,13 +84,19 @@ class CameraAlignmentDialog(PatchedDialogWindow):
         zoom_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=0)
         zoom_box.add_css_class("linked")
 
-        btn_zoom_out = Gtk.Button(icon_name="zoom-out-symbolic", tooltip_text=_("Zoom Out (Ctrl + Scroll Down)"))
+        btn_zoom_out = Gtk.Button(
+            icon_name="zoom-out-symbolic",
+            tooltip_text=_("Zoom Out (Ctrl + Scroll Down)"))
         btn_zoom_out.connect("clicked", self.on_zoom_out_click)
 
-        btn_zoom_fit = Gtk.Button(icon_name="zoom-fit-best-symbolic", tooltip_text=_("Fit to Window"))
+        btn_zoom_fit = Gtk.Button(
+            icon_name="zoom-fit-best-symbolic",
+            tooltip_text=_("Fit to Window"))
         btn_zoom_fit.connect("clicked", self.on_zoom_fit_click)
 
-        btn_zoom_in = Gtk.Button(icon_name="zoom-in-symbolic", tooltip_text=_("Zoom In (Ctrl + Scroll Up)"))
+        btn_zoom_in = Gtk.Button(
+            icon_name="zoom-in-symbolic",
+            tooltip_text=_("Zoom In (Ctrl + Scroll Up)"))
         btn_zoom_in.connect("clicked", self.on_zoom_in_click)
 
         zoom_box.append(btn_zoom_out)
@@ -114,7 +122,9 @@ class CameraAlignmentDialog(PatchedDialogWindow):
         self.scrolled_window.set_hexpand(True)
         self.scrolled_window.set_vexpand(True)
         # Use AUTOMATIC so scrollbars appear only when zoomed in
-        self.scrolled_window.set_policy(Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.AUTOMATIC)
+        self.scrolled_window.set_policy(
+            Gtk.PolicyType.AUTOMATIC,
+            Gtk.PolicyType.AUTOMATIC)
         self.main_overlay.set_child(self.scrolled_window)
 
         self.scrolled_overlay = Gtk.Overlay()
@@ -128,7 +138,8 @@ class CameraAlignmentDialog(PatchedDialogWindow):
         self.scrolled_overlay.set_child(self.camera_display)
 
         self.bubble = PointBubbleWidget(0)
-        # Prevent bubble from forcing parent size or interacting with expand logic
+        # Prevent bubble from forcing parent size or interacting with expand
+        # logic
         self.bubble.set_hexpand(False)
         self.bubble.set_vexpand(False)
         self.scrolled_overlay.add_overlay(self.bubble)
@@ -156,14 +167,12 @@ class CameraAlignmentDialog(PatchedDialogWindow):
         icon.set_valign(Gtk.Align.CENTER)
         self.info_box.append(icon)
 
-        info_label = Gtk.Label(
-            label=_(
-                "Click the image to add reference points. Drag to move them roughly.\n"
-                "Ctrl+Scroll to Zoom. Middle-click and drag to Pan.\n"
-                "Use the Arrow Keys to nudge the active point precisely (Shift+Arrow for larger jumps)."
-            ),
-            xalign=0,
+        info_text = _(
+            "Click the image to add reference points. Drag to move them.\n"
+            "Ctrl+Scroll to Zoom. Middle-click and drag to Pan.\n"
+            "Use the Arrow Keys to nudge the active point precisely."
         )
+        info_label = Gtk.Label(label=info_text, xalign=0)
         info_label.set_wrap(True)
         info_label.set_hexpand(True)
         self.info_box.append(info_label)
@@ -191,7 +200,7 @@ class CameraAlignmentDialog(PatchedDialogWindow):
             btn.add_css_class("flat")
             btn.connect("clicked", cb)
             btn_box.append(btn)
-            
+
         self.apply_button = Gtk.Button(label=_("Apply"))
         self.apply_button.add_css_class("suggested-action")
         self.apply_button.connect("clicked", self.on_apply_clicked)
@@ -220,7 +229,8 @@ class CameraAlignmentDialog(PatchedDialogWindow):
         self.scrolled_overlay.add_controller(pan_drag)
 
         # Scroll: Zoom (Global Main Overlay)
-        scroll = Gtk.EventControllerScroll.new(Gtk.EventControllerScrollFlags.VERTICAL)
+        scroll = Gtk.EventControllerScroll.new(
+            Gtk.EventControllerScrollFlags.VERTICAL)
         scroll.set_propagation_phase(Gtk.PropagationPhase.CAPTURE)
         scroll.connect("scroll", self.on_scroll)
         self.main_overlay.add_controller(scroll)
@@ -232,7 +242,8 @@ class CameraAlignmentDialog(PatchedDialogWindow):
         # --- Signal Connections ---
         self.camera_display.connect("realize", self._on_display_ready)
         self.scrolled_window.connect("notify::width", self._on_viewport_resize)
-        self.scrolled_window.connect("notify::height", self._on_viewport_resize)
+        self.scrolled_window.connect(
+            "notify::height", self._on_viewport_resize)
 
         if self.camera.image_to_world:
             img_pts, wld_pts = self.camera.image_to_world
@@ -247,16 +258,17 @@ class CameraAlignmentDialog(PatchedDialogWindow):
         viewport_w = self.scrolled_window.get_width()
         viewport_h = self.scrolled_window.get_height()
         image_w, image_h = self.controller.resolution
-        
+
         if image_w <= 0 or image_h <= 0 or viewport_w <= 0 or viewport_h <= 0:
             return 1.0
-            
+
         return min(viewport_w / image_w, viewport_h / image_h)
 
-    def _calculate_bubble_margins(self, img_x: float, img_y: float) -> Tuple[bool, int, int]:
+    def _calculate_bubble_margins(
+            self, img_x: float, img_y: float) -> Tuple[bool, int, int]:
         display_width = self.camera_display.get_width()
         display_height = self.camera_display.get_height()
-        
+
         if display_width <= 0 or display_height <= 0:
             return False, 0, 0
 
@@ -266,13 +278,13 @@ class CameraAlignmentDialog(PatchedDialogWindow):
 
         overlay_w = self.scrolled_overlay.get_width()
         overlay_h = self.scrolled_overlay.get_height()
-        
+
         offset_x = max(0, (overlay_w - display_width) / 2)
         offset_y = max(0, (overlay_h - display_height) / 2)
 
         alloc = self.bubble.get_allocation()
         bubble_width, bubble_height = alloc.width, alloc.height
-        
+
         x = offset_x + display_x - (bubble_width / 2)
         x = max(12, min(x, overlay_w - bubble_width - 12))
 
@@ -287,17 +299,17 @@ class CameraAlignmentDialog(PatchedDialogWindow):
     def _apply_zoom(self, new_zoom, center_x_ratio=0.5, center_y_ratio=0.5):
         old_zoom = self._zoom_level
         self._zoom_level = new_zoom
-        
+
         image_w, image_h = self.controller.resolution
         hadj = self.scrolled_window.get_hadjustment()
         vadj = self.scrolled_window.get_vadjustment()
-        
+
         viewport_w = self.scrolled_window.get_width()
         viewport_h = self.scrolled_window.get_height()
-        
+
         visual_x = hadj.get_value() + (viewport_w * center_x_ratio)
         visual_y = vadj.get_value() + (viewport_h * center_y_ratio)
-        
+
         absolute_x = visual_x / old_zoom if old_zoom > 0 else 0
         absolute_y = visual_y / old_zoom if old_zoom > 0 else 0
 
@@ -311,20 +323,20 @@ class CameraAlignmentDialog(PatchedDialogWindow):
             req_w = int(image_w * self._zoom_level)
             req_h = int(image_h * self._zoom_level)
             self.camera_display.set_size_request(req_w, req_h)
-        
+
         self.camera_display.queue_resize()
-        
+
         def update_scroll():
             if not self._is_fitting:
                 new_visual_x = absolute_x * self._zoom_level
                 new_visual_y = absolute_y * self._zoom_level
-                
+
                 new_scroll_x = new_visual_x - (viewport_w * center_x_ratio)
                 new_scroll_y = new_visual_y - (viewport_h * center_y_ratio)
-                
+
                 hadj.set_value(max(0, new_scroll_x))
                 vadj.set_value(max(0, new_scroll_y))
-            
+
             self._position_bubble()
             return GLib.SOURCE_REMOVE
 
@@ -334,11 +346,11 @@ class CameraAlignmentDialog(PatchedDialogWindow):
         state = controller.get_current_event_state()
         if state & Gdk.ModifierType.CONTROL_MASK:
             zoom_factor = 1.25 if dy < 0 else (1.0 / 1.25)
-            
+
             event = controller.get_current_event()
             mx, my = 0, 0
             has_pointer = False
-            
+
             if event:
                 try:
                     pos = event.get_position()
@@ -350,8 +362,9 @@ class CameraAlignmentDialog(PatchedDialogWindow):
 
             viewport_w = self.scrolled_window.get_width()
             viewport_h = self.scrolled_window.get_height()
-            
-            if viewport_w <= 0 or viewport_h <= 0: return Gdk.EVENT_PROPAGATE
+
+            if viewport_w <= 0 or viewport_h <= 0:
+                return Gdk.EVENT_PROPAGATE
 
             ratio_x = 0.5
             ratio_y = 0.5
@@ -363,22 +376,28 @@ class CameraAlignmentDialog(PatchedDialogWindow):
             if self._is_fitting:
                 self._zoom_level = self._calculate_fit_zoom()
                 self._is_fitting = False
-            
+
             new_zoom = self._zoom_level * zoom_factor
             new_zoom = max(0.1, min(10.0, new_zoom))
-            
+
             self._apply_zoom(new_zoom, ratio_x, ratio_y)
             return Gdk.EVENT_STOP
-            
+
         return Gdk.EVENT_PROPAGATE
 
     def on_zoom_in_click(self, _):
-        if self._is_fitting: self._zoom_level = self._calculate_fit_zoom(); self._is_fitting = False
-        self._apply_zoom(min(10.0, self._zoom_level * 1.25), 0.5, 0.5)
+        if self._is_fitting:
+            self._zoom_level = self._calculate_fit_zoom()
+            self._is_fitting = False
+        new_val = min(10.0, self._zoom_level * 1.25)
+        self._apply_zoom(new_val, 0.5, 0.5)
 
     def on_zoom_out_click(self, _):
-        if self._is_fitting: self._zoom_level = self._calculate_fit_zoom(); self._is_fitting = False
-        self._apply_zoom(max(0.1, self._zoom_level / 1.25), 0.5, 0.5)
+        if self._is_fitting:
+            self._zoom_level = self._calculate_fit_zoom()
+            self._is_fitting = False
+        new_val = max(0.1, self._zoom_level / 1.25)
+        self._apply_zoom(new_val, 0.5, 0.5)
 
     def on_zoom_fit_click(self, _):
         self._is_fitting = True
@@ -396,7 +415,7 @@ class CameraAlignmentDialog(PatchedDialogWindow):
     def _position_bubble(self) -> bool:
         """
         Positions the bubble widget.
-        Returns GLib.SOURCE_REMOVE (False) strictly to ensure idle loops terminate.
+        Returns GLib.SOURCE_REMOVE strictly to ensure idle loops terminate.
         """
         if self._interaction_in_progress:
             return GLib.SOURCE_REMOVE
@@ -407,12 +426,12 @@ class CameraAlignmentDialog(PatchedDialogWindow):
         coords = self.image_points[self.active_point_index]
         if coords is None:
             return GLib.SOURCE_REMOVE
-            
+
         visible, x, y = self._calculate_bubble_margins(coords[0], coords[1])
         if not visible:
             return GLib.SOURCE_REMOVE
 
-        # Optimization: Only update margins if they have changed to prevent layout thrashing
+        # Optimization: Only update margins if changed to prevent thrashing
         if self.bubble.get_margin_start() != x:
             self.bubble.set_margin_start(x)
         if self.bubble.get_margin_top() != y:
@@ -425,33 +444,31 @@ class CameraAlignmentDialog(PatchedDialogWindow):
 
     def on_drag_begin(self, gesture, x, y):
         self._interaction_in_progress = True
-        
+
         # 1. Calculate where the mouse is in image space
         mouse_image_x, mouse_image_y = self._display_to_image_coords(x, y)
-        
+
         # 2. Find the point near this mouse location
         point_index = self._find_point_near(mouse_image_x, mouse_image_y)
-        
+
         if point_index >= 0:
             self.dragging_point_index = point_index
-            
-            # 3. Store the start display coordinates (for calculating current pos from dx/dy)
+
+            # 3. Store start coords
             self.drag_start_display_x = x
             self.drag_start_display_y = y
-            
-            # 4. Calculate the offset between the exact point position and the mouse click
-            #    This ensures the point doesn't "snap" to the center of the mouse cursor, 
-            #    but maintains its relative distance.
+
+            # 4. Calculate offset
             pt_x, pt_y = self.image_points[point_index]
             self.drag_offset_x = pt_x - mouse_image_x
             self.drag_offset_y = pt_y - mouse_image_y
-            
-            # 5. update UI state
+
+            # 5. Update UI state
             self.set_active_point(point_index)
             # Re-lock because set_active_point unlocks
             self._interaction_in_progress = True
             self.bubble.set_visible(True)
-            
+
             gesture.set_state(Gtk.EventSequenceState.CLAIMED)
         else:
             self.dragging_point_index = -1
@@ -471,22 +488,22 @@ class CameraAlignmentDialog(PatchedDialogWindow):
             current_display_x, current_display_y
         )
 
-        # 3. Apply the original offset so the point moves with the mouse
+        # 3. Apply the original offset
         new_image_x = mouse_image_x + self.drag_offset_x
         new_image_y = mouse_image_y + self.drag_offset_y
 
         self.image_points[idx] = (new_image_x, new_image_y)
-        
+
         if idx == self.active_point_index:
             self.bubble.set_image_coords(new_image_x, new_image_y)
-            visible, mx, my = self._calculate_bubble_margins(new_image_x, new_image_y)
+            visible, mx, my = self._calculate_bubble_margins(
+                new_image_x, new_image_y)
             if visible:
-                # Optimized update to reduce layout thrashing
                 if self.bubble.get_margin_start() != mx:
                     self.bubble.set_margin_start(mx)
                 if self.bubble.get_margin_top() != my:
                     self.bubble.set_margin_top(my)
-            
+
         self.camera_display.set_marked_points(
             self.image_points, self.active_point_index
         )
@@ -525,14 +542,14 @@ class CameraAlignmentDialog(PatchedDialogWindow):
             return
         image_x, image_y = self._display_to_image_coords(x, y)
         point_index = self._find_point_near(image_x, image_y)
-        
+
         if point_index >= 0:
             self.set_active_point(point_index)
         else:
             self.image_points.append((image_x, image_y))
             self.world_points.append((0.0, 0.0))
             self.set_active_point(len(self.image_points) - 1)
-            
+
         self.camera_display.set_marked_points(
             self.image_points, self.active_point_index
         )
@@ -544,20 +561,19 @@ class CameraAlignmentDialog(PatchedDialogWindow):
             self.bubble.set_visible(False)
             self.camera_display.set_marked_points(self.image_points, -1)
             return
-            
+
         self.active_point_index = index
         self.bubble.set_point_index(index)
-        
+
         if self.image_points[index]:
             self.bubble.set_image_coords(*self.image_points[index])
-            
+
         self.bubble.set_world_coords(*self.world_points[index])
-        
-        # Only release the lock if we are NOT currently dragging
+
         if self.dragging_point_index == -1:
             self._interaction_in_progress = False
             self._position_bubble()
-        
+
         (widget or self.bubble.world_x_spin).grab_focus()
         self.camera_display.set_marked_points(self.image_points, index)
 
@@ -588,13 +604,15 @@ class CameraAlignmentDialog(PatchedDialogWindow):
         self.set_active_point(self.active_point_index, widget)
 
     def on_nudge_requested(self, bubble, dx, dy):
-        if self.active_point_index < 0: return
+        if self.active_point_index < 0:
+            return
         p = self.image_points[self.active_point_index]
-        nx, ny = p[0]+dx, p[1]+dy
+        nx, ny = p[0] + dx, p[1] + dy
         self.image_points[self.active_point_index] = (nx, ny)
         self.bubble.set_image_coords(nx, ny)
         self._position_bubble()
-        self.camera_display.set_marked_points(self.image_points, self.active_point_index)
+        self.camera_display.set_marked_points(
+            self.image_points, self.active_point_index)
         self.camera_display.queue_draw()
 
     def on_key_pressed(self, controller, keyval, keycode, state):
@@ -603,14 +621,18 @@ class CameraAlignmentDialog(PatchedDialogWindow):
             return Gdk.EVENT_STOP
 
         focus_widget = self.get_focus()
-        is_typing = isinstance(focus_widget, Gtk.Text) or isinstance(focus_widget, Gtk.SpinButton)
+        is_typing = isinstance(
+            focus_widget,
+            Gtk.Text) or isinstance(
+            focus_widget,
+            Gtk.SpinButton)
 
         if not is_typing and self.active_point_index >= 0:
             dx, dy = 0.0, 0.0
             step = 5.0 if (state & Gdk.ModifierType.SHIFT_MASK) else 0.5
 
             if keyval == Gdk.KEY_Up:
-                dy = step  
+                dy = step
             elif keyval == Gdk.KEY_Down:
                 dy = -step
             elif keyval == Gdk.KEY_Left:
@@ -657,19 +679,16 @@ class CameraAlignmentDialog(PatchedDialogWindow):
             self.set_active_point(min(index, len(self.image_points) - 1))
         else:
             self.set_active_point(-1)
-            
+
         self.camera_display.set_marked_points(
             self.image_points, self.active_point_index
         )
         self.update_apply_button_sensitivity()
 
     def update_apply_button_sensitivity(self, *_):
-        if self.active_point_index >= 0 and self.active_point_index < len(
-            self.world_points
-        ):
-            self.world_points[self.active_point_index] = (
-                self.bubble.get_world_coords()
-            )
+        idx = self.active_point_index
+        if idx >= 0 and idx < len(self.world_points):
+            self.world_points[idx] = self.bubble.get_world_coords()
 
         valid_points = [
             (img, self.world_points[i])
