@@ -79,6 +79,15 @@ jobs:
         run: |
           printf "5\n" | bash scripts/mac/mac_build.sh --version "${VERSION}"
 
+      - name: Smoke test Intel app
+        run: |
+          APP_BIN="dist/Rayforge.app/Contents/MacOS/Rayforge"
+          if [ ! -x "$APP_BIN" ]; then
+            echo "Rayforge executable not found at $APP_BIN"
+            exit 1
+          fi
+          "$APP_BIN" --version
+
       - name: Package Intel app
         run: |
           APP_PATH="dist/Rayforge.app"
@@ -122,6 +131,15 @@ jobs:
       - name: Build macOS artifacts
         run: |
           printf "5\n" | bash scripts/mac/mac_build.sh --version "${VERSION}"
+
+      - name: Smoke test ARM app
+        run: |
+          APP_BIN="dist/Rayforge.app/Contents/MacOS/Rayforge"
+          if [ ! -x "$APP_BIN" ]; then
+            echo "Rayforge executable not found at $APP_BIN"
+            exit 1
+          fi
+          "$APP_BIN" --version
 
       - name: Package ARM app
         run: |
@@ -237,12 +255,18 @@ jobs:
             echo "Warning: codesign verification failed for $APP_PATH"
           fi
           spctl --assess --type execute --verbose=2 "$APP_PATH" || true
+          "$APP_PATH/Contents/MacOS/Rayforge" --version
 
       - name: Package universal app
         shell: bash
         run: |
           APP_ZIP="rayforge-${VERSION}-macos-universal-app.zip"
           ditto -c -k --keepParent "build-universal/Rayforge.app" "$APP_ZIP"
+
+          TMP_DIR=$(mktemp -d)
+          ditto -x -k "$APP_ZIP" "$TMP_DIR"
+          "$TMP_DIR/Rayforge.app/Contents/MacOS/Rayforge" --version
+          rm -rf "$TMP_DIR"
 
       - name: Build universal DMG with retry
         shell: bash
