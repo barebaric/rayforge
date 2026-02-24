@@ -79,9 +79,9 @@ const windowsMethods = [
 ];
 
 const macosMethods = [
-  { id: 'universal', label: 'Universal (Recommended)' },
-  { id: 'arm', label: 'Apple Silicon (M1/M2/M3)' },
-  { id: 'intel', label: 'Intel Mac' },
+  { id: 'universal', label: translate({ id: 'install.macOS.universal', message: 'Universal (Recommended)' }) },
+  { id: 'arm', label: translate({ id: 'install.macOS.arm', message: 'Apple Silicon (M1/M2/M3)' }) },
+  { id: 'intel', label: translate({ id: 'install.macOS.intel', message: 'Intel Mac' }) },
 ];
 
 function OsSelector({ selectedOs, onSelectOs }) {
@@ -689,17 +689,14 @@ cd rayforge`}
   );
 }
 
-function MacosInstall({ method, onMethodChange }) {
+function MacosInstall({ version, method, onMethodChange }) {
+  const downloadUrl = `https://github.com/barebaric/rayforge/releases/download/${version}/rayforge-v${version}-macos`;
   return (
     <div className="install-section">
       <h4><Translate id="install.macOS.title">macOS Installation</Translate></h4>
 
-      <Admonition type="info" title={translate({ id: 'install.macOS.officialBuilds', message: 'Official macOS Builds' })}>
-        Rayforge provides official universal macOS builds (Apple Silicon and Intel) on GitHub Releases.
-      </Admonition>
-
       <div className="install-method-selector">
-        <p><strong>Choose build type:</strong></p>
+        <p><strong><Translate id="install.macOS.chooseBuild">Choose build type:</Translate></strong></p>
         <div className="install-method-tabs">
           {macosMethods.map((m) => (
             <button
@@ -718,46 +715,60 @@ function MacosInstall({ method, onMethodChange }) {
       <div className="install-step">
         <div className="install-step-number">1</div>
         <div className="install-step-content">
-          <h5>Download the Build</h5>
-          <p>
-            Download the latest macOS release artifact:
-          </p>
-          <p>
-            <a
-              href="https://github.com/barebaric/rayforge/releases/latest"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Open latest release
-            </a>
-            {' '}and download:
-          </p>
+          <h5><Translate id="install.downloadInstaller">Download the Installer</Translate></h5>
           {method === 'universal' && (
-            <CodeBlock language="text">
-              rayforge-*-macos-universal.dmg
-            </CodeBlock>
+            <>
+              <p>
+                <a
+                  href={`${downloadUrl}-universal.dmg`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <strong>{translate({ id: 'install.downloadRayforge', message: 'Download Rayforge' }, { version })}</strong>
+                </a>
+              </p>
+              <p>
+                <Translate id="install.macOS.universalInstructions">
+                  Open the DMG and drag Rayforge.app to your Applications folder.
+                </Translate>
+              </p>
+            </>
           )}
           {method === 'arm' && (
-            <CodeBlock language="text">
-              rayforge-*-macos-arm-app.zip
-            </CodeBlock>
+            <>
+              <p>
+                <a
+                  href={`${downloadUrl}-arm-app.zip`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <strong>{translate({ id: 'install.downloadRayforge', message: 'Download Rayforge' }, { version })}</strong>
+                </a>
+              </p>
+              <p>
+                <Translate id="install.macOS.zipInstructions">
+                  Extract the ZIP and move Rayforge.app to Applications.
+                </Translate>
+              </p>
+            </>
           )}
           {method === 'intel' && (
-            <CodeBlock language="text">
-              rayforge-*-macos-intel-app.zip
-            </CodeBlock>
-          )}
-          {(method === 'arm' || method === 'intel') && (
-            <p>
-              Extract the ZIP and move <strong>Rayforge.app</strong> to
-              <strong> Applications</strong>.
-            </p>
-          )}
-          {method === 'universal' && (
-            <p>
-              Open the DMG and drag <strong>Rayforge.app</strong> to your
-              <strong> Applications</strong> folder.
-            </p>
+            <>
+              <p>
+                <a
+                  href={`${downloadUrl}-intel-app.zip`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <strong>{translate({ id: 'install.downloadRayforge', message: 'Download Rayforge' }, { version })}</strong>
+                </a>
+              </p>
+              <p>
+                <Translate id="install.macOS.zipInstructions">
+                  Extract the ZIP and move Rayforge.app to Applications.
+                </Translate>
+              </p>
+            </>
           )}
         </div>
       </div>
@@ -765,10 +776,11 @@ function MacosInstall({ method, onMethodChange }) {
       <div className="install-step">
         <div className="install-step-number">2</div>
         <div className="install-step-content">
-          <h5>Open Rayforge</h5>
+          <h5><Translate id="install.macOS.openRayforge">Open Rayforge</Translate></h5>
           <p>
-            Start <strong>Rayforge.app</strong> from your
-            <strong> Applications</strong> folder.
+            <Translate id="install.macOS.openRayforgeInstructions">
+              Start Rayforge.app from your Applications folder.
+            </Translate>
           </p>
         </div>
       </div>
@@ -776,10 +788,11 @@ function MacosInstall({ method, onMethodChange }) {
       <div className="install-step">
         <div className="install-step-number">3</div>
         <div className="install-step-content">
-          <h5>Launch Once from Terminal (if Gatekeeper blocks it)</h5>
+          <h5><Translate id="install.macOS.gatekeeper">Launch Once from Terminal (if Gatekeeper blocks it)</Translate></h5>
           <p>
-            If macOS blocks the first launch, remove quarantine attributes
-            and start Rayforge:
+            <Translate id="install.macOS.gatekeeperInstructions">
+              If macOS blocks the first launch, remove quarantine attributes and start Rayforge:
+            </Translate>
           </p>
           <CodeBlock language="bash">
             {`xattr -dr com.apple.quarantine /Applications/Rayforge.app
@@ -789,11 +802,12 @@ function MacosInstall({ method, onMethodChange }) {
       </div>
 
       <details className="install-details">
-        <summary>Build from source (advanced)</summary>
+        <summary><Translate id="install.macOS.buildFromSource">Build from source (advanced)</Translate></summary>
         <div className="install-details-content">
           <p>
-            If you prefer a local source build, use the macOS setup/build
-            scripts from the repository:
+            <Translate id="install.macOS.buildFromSourceInstructions">
+              If you prefer a local source build, use the macOS setup/build scripts from the repository:
+            </Translate>
           </p>
           <CodeBlock language="bash">
             {`git clone https://github.com/barebaric/rayforge.git
@@ -1089,6 +1103,7 @@ export default function InstallGuide() {
         )}
         {selectedOs === 'macos' && (
           <MacosInstall
+            version={VERSION}
             method={macosMethod}
             onMethodChange={setMacosMethod}
           />
