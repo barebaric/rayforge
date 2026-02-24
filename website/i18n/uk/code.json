@@ -8,6 +8,12 @@
   "install.fromSource": {
     "message": "З вихідного коду"
   },
+  "install.installer.recommended": {
+    "message": "Інсталятор (Рекомендовано)"
+  },
+  "install.msys2.developers": {
+    "message": "MSYS2 (Розробники)"
+  },
   "install.selectOs": {
     "message": "Виберіть вашу операційну систему:"
   },
@@ -160,6 +166,48 @@
   },
   "install.windows.title": {
     "message": "Встановлення на Windows"
+  },
+  "install.windows.dev.title": {
+    "message": "Налаштування розробки на Windows (MSYS2)"
+  },
+  "install.windows.dev.description": {
+    "message": "Для розробників, які хочуть зробити внесок у Rayforge або запустити останню версію розробки на Windows. Цей метод використовує MSYS2 для надання Unix-подібного середовища розробки."
+  },
+  "install.installMsys2": {
+    "message": "Встановити MSYS2"
+  },
+  "install.msys2.download": {
+    "message": "Завантажте та встановіть MSYS2 з офіційного веб-сайту:"
+  },
+  "install.msys2.defaultPath": {
+    "message": "Використовуйте шлях встановлення за замовчуванням (C:\\msys64) для кращої сумісності."
+  },
+  "install.runSetup": {
+    "message": "Запустити скрипт налаштування"
+  },
+  "install.msys2.shell": {
+    "message": "Відкрийте оболонку MSYS2 MINGW64 і запустіть скрипт налаштування:"
+  },
+  "install.msys2.setupNote": {
+    "message": "Цей скрипт встановлює всі необхідні системні залежності та пакети Python. Встановлення може зайняти кілька хвилин."
+  },
+  "install.installDevTools": {
+    "message": "Встановити інструменти розробки (Опціонально)"
+  },
+  "install.msys2.devTools": {
+    "message": "Для лінтингу, форматування та pre-commit хуків:"
+  },
+  "install.usefulWinCommands": {
+    "message": "Корисні команди розробки на Windows"
+  },
+  "install.gitCommands": {
+    "message": "Команди Git"
+  },
+  "install.msys2.gitNote": {
+    "message": "При використанні pre-commit хуків ви повинні запускати команди git всередині оболонки MSYS2 MINGW64, а не з PowerShell або командного рядка."
+  },
+  "install.buildInstaller": {
+    "message": "Зібрати інсталятор Windows"
   },
   "install.downloadInstaller": {
     "message": "Завантажити інсталятор"

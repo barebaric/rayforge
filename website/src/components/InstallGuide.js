@@ -73,6 +73,11 @@ const linuxMethods = [
   { id: 'source', label: translate({ id: 'install.fromSource', message: 'From Source' }) },
 ];
 
+const windowsMethods = [
+  { id: 'installer', label: translate({ id: 'install.installer.recommended', message: 'Installer (Recommended)' }) },
+  { id: 'developer', label: translate({ id: 'install.msys2.developers', message: 'MSYS2 (Developers)' }) },
+];
+
 function OsSelector({ selectedOs, onSelectOs }) {
   return (
     <div className="install-os-selector">
@@ -466,7 +471,33 @@ sudo apt install python3-pip python3-gi gir1.2-gtk-3.0 gir1.2-adw-1 \\
   );
 }
 
-function WindowsInstall({ version }) {
+function WindowsInstall({ version, method, onMethodChange }) {
+  return (
+    <>
+      <div className="install-method-selector">
+        <p><strong><Translate id="install.chooseMethod">Choose installation method:</Translate></strong></p>
+        <div className="install-method-tabs">
+          {windowsMethods.map((m) => (
+            <button
+              key={m.id}
+              className={`install-method-btn ${
+                method === m.id ? 'install-method-btn--active' : ''
+              }`}
+              onClick={() => onMethodChange(m.id)}
+            >
+              {m.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {method === 'installer' && <WindowsInstallerInstall version={version} />}
+      {method === 'developer' && <WindowsDeveloperInstall />}
+    </>
+  );
+}
+
+function WindowsInstallerInstall({ version }) {
   const downloadUrl = `https://github.com/barebaric/rayforge/releases/download/${version}/rayforge-v${version}-installer.exe`;
   return (
     <div className="install-section">
@@ -517,6 +548,137 @@ function WindowsInstall({ version }) {
           </p>
         </div>
       </div>
+    </div>
+  );
+}
+
+function WindowsDeveloperInstall() {
+  return (
+    <div className="install-section">
+      <h4><Translate id="install.windows.dev.title">Windows Developer Setup (MSYS2)</Translate></h4>
+      <p>
+        <Translate id="install.windows.dev.description">
+          For developers who want to contribute to Rayforge or run the latest
+          development version on Windows. This method uses MSYS2 to provide a
+          Unix-like development environment.
+        </Translate>
+      </p>
+
+      <div className="install-step">
+        <div className="install-step-number">1</div>
+        <div className="install-step-content">
+          <h5><Translate id="install.installMsys2">Install MSYS2</Translate></h5>
+          <p>
+            <Translate id="install.msys2.download">
+              Download and install MSYS2 from the official website:
+            </Translate>
+          </p>
+          <p>
+            <a
+              href="https://www.msys2.org/"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <strong>msys2.org</strong>
+            </a>
+          </p>
+          <Admonition type="tip">
+            <Translate id="install.msys2.defaultPath">
+              Use the default installation path (C:\msys64) for best compatibility.
+            </Translate>
+          </Admonition>
+        </div>
+      </div>
+
+      <div className="install-step">
+        <div className="install-step-number">2</div>
+        <div className="install-step-content">
+          <h5><Translate id="install.cloneRepo">Clone the Repository</Translate></h5>
+          <CodeBlock language="bash">
+            {`git clone https://github.com/barebaric/rayforge.git
+cd rayforge`}
+          </CodeBlock>
+        </div>
+      </div>
+
+      <div className="install-step">
+        <div className="install-step-number">3</div>
+        <div className="install-step-content">
+          <h5><Translate id="install.runSetup">Run the Setup Script</Translate></h5>
+          <p>
+            <Translate id="install.msys2.shell">
+              Open the MSYS2 MINGW64 shell and run the setup script:
+            </Translate>
+          </p>
+          <CodeBlock language="bash">
+            bash scripts/win/win_setup.sh
+          </CodeBlock>
+          <p>
+            <Translate id="install.msys2.setupNote">
+              This script installs all required system dependencies and Python packages.
+              It may take several minutes to complete.
+            </Translate>
+          </p>
+        </div>
+      </div>
+
+      <div className="install-step">
+        <div className="install-step-number">4</div>
+        <div className="install-step-content">
+          <h5><Translate id="install.installDevTools">Install Development Tools (Optional)</Translate></h5>
+          <p>
+            <Translate id="install.msys2.devTools">
+              For linting, formatting, and pre-commit hooks:
+            </Translate>
+          </p>
+          <CodeBlock language="bash">
+            bash scripts/win/win_setup_dev.sh
+          </CodeBlock>
+        </div>
+      </div>
+
+      <div className="install-step">
+        <div className="install-step-number">5</div>
+        <div className="install-step-content">
+          <h5><Translate id="install.runRayforge">Run Rayforge</Translate></h5>
+          <CodeBlock language="bash">
+            bash scripts/win/win_run.sh
+          </CodeBlock>
+        </div>
+      </div>
+
+      <div className="install-troubleshoot">
+        <h5><Translate id="install.usefulWinCommands">Useful Windows Development Commands</Translate></h5>
+        <details>
+          <summary><Translate id="install.availableDevCommands">Available development commands</Translate></summary>
+          <div className="install-troubleshoot-content">
+            <ul>
+              <li>
+                <code>bash scripts/win/win_run.sh</code> - <Translate id="install.runRayforge">Run Rayforge</Translate>
+              </li>
+              <li>
+                <code>bash scripts/win/win_test.sh</code> - <Translate id="install.runTestSuite">Run the test suite</Translate>
+              </li>
+              <li>
+                <code>bash scripts/win/win_lint.sh</code> - <Translate id="install.runLinting">Run linting and static analysis</Translate>
+              </li>
+              <li>
+                <code>bash scripts/win/win_format.sh</code> - <Translate id="install.formatCode">Format code with ruff</Translate>
+              </li>
+              <li>
+                <code>bash scripts/win/win_build.sh</code> - <Translate id="install.buildInstaller">Build the Windows installer</Translate>
+              </li>
+            </ul>
+          </div>
+        </details>
+      </div>
+
+      <Admonition type="note" title={translate({ id: 'install.gitCommands', message: 'Git Commands' })}>
+        <Translate id="install.msys2.gitNote">
+          When using pre-commit hooks, you must run git commands from within the
+          MSYS2 MINGW64 shell, not from PowerShell or Command Prompt.
+        </Translate>
+      </Admonition>
     </div>
   );
 }
@@ -633,7 +795,7 @@ function VerifyInstall({ os }) {
   );
 }
 
-function Troubleshooting({ os, linuxMethod }) {
+function Troubleshooting({ os, linuxMethod, windowsMethod }) {
   return (
     <div className="install-section">
       <h4><Translate id="install.troubleshooting.title">Troubleshooting</Translate></h4>
@@ -809,6 +971,7 @@ export default function InstallGuide() {
   const hashState = getInitialStateFromHash();
   const [selectedOs, setSelectedOs] = useState(() => hashState.os || detectOs());
   const [linuxMethod, setLinuxMethod] = useState(() => hashState.method || 'snap');
+  const [windowsMethod, setWindowsMethod] = useState(() => hashState.method || 'installer');
 
   useEffect(() => {
     const detected = detectOs();
@@ -817,6 +980,7 @@ export default function InstallGuide() {
       setSelectedOs(hashState.os);
       if (hashState.method) {
         setLinuxMethod(hashState.method);
+        setWindowsMethod(hashState.method);
       }
     } else {
       setSelectedOs(detected);
@@ -834,11 +998,17 @@ export default function InstallGuide() {
             onMethodChange={setLinuxMethod}
           />
         )}
-        {selectedOs === 'windows' && <WindowsInstall version={VERSION} />}
+        {selectedOs === 'windows' && (
+          <WindowsInstall
+            version={VERSION}
+            method={windowsMethod}
+            onMethodChange={setWindowsMethod}
+          />
+        )}
         {selectedOs === 'macos' && <MacosInstall />}
 
         <VerifyInstall os={selectedOs} />
-        <Troubleshooting os={selectedOs} linuxMethod={linuxMethod} />
+        <Troubleshooting os={selectedOs} linuxMethod={linuxMethod} windowsMethod={windowsMethod} />
         <NeedHelp />
       </div>
     </div>

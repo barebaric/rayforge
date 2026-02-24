@@ -8,6 +8,12 @@
   "install.fromSource": {
     "message": "从源码安装"
   },
+  "install.installer.recommended": {
+    "message": "安装程序（推荐）"
+  },
+  "install.msys2.developers": {
+    "message": "MSYS2（开发者）"
+  },
   "install.selectOs": {
     "message": "选择您的操作系统："
   },
@@ -160,6 +166,48 @@
   },
   "install.windows.title": {
     "message": "Windows 安装"
+  },
+  "install.windows.dev.title": {
+    "message": "Windows 开发环境设置 (MSYS2)"
+  },
+  "install.windows.dev.description": {
+    "message": "适用于想要为 Rayforge 做出贡献或在 Windows 上运行最新开发版本的开发者。此方法使用 MSYS2 提供类似 Unix 的开发环境。"
+  },
+  "install.installMsys2": {
+    "message": "安装 MSYS2"
+  },
+  "install.msys2.download": {
+    "message": "从官方网站下载并安装 MSYS2："
+  },
+  "install.msys2.defaultPath": {
+    "message": "使用默认安装路径 (C:\\msys64) 以获得最佳兼容性。"
+  },
+  "install.runSetup": {
+    "message": "运行设置脚本"
+  },
+  "install.msys2.shell": {
+    "message": "打开 MSYS2 MINGW64 终端并运行设置脚本："
+  },
+  "install.msys2.setupNote": {
+    "message": "此脚本安装所有必需的系统依赖和 Python 包。可能需要几分钟才能完成。"
+  },
+  "install.installDevTools": {
+    "message": "安装开发工具（可选）"
+  },
+  "install.msys2.devTools": {
+    "message": "用于代码检查、格式化和 pre-commit 钩子："
+  },
+  "install.usefulWinCommands": {
+    "message": "有用的 Windows 开发命令"
+  },
+  "install.gitCommands": {
+    "message": "Git 命令"
+  },
+  "install.msys2.gitNote": {
+    "message": "使用 pre-commit 钩子时，必须在 MSYS2 MINGW64 终端中运行 git 命令，而不是在 PowerShell 或命令提示符中。"
+  },
+  "install.buildInstaller": {
+    "message": "构建 Windows 安装程序"
   },
   "install.downloadInstaller": {
     "message": "下载安装程序"
