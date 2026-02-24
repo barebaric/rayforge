@@ -230,23 +230,41 @@
   "install.macOS.title": {
     "message": "Встановлення на macOS"
   },
-  "install.communitySupport": {
-    "message": "Підтримка спільноти"
+  "install.macOS.chooseBuild": {
+    "message": "Виберіть тип збірки:"
   },
-  "install.macOS.communityNote": {
-    "message": "Наразі немає офіційних збірок macOS. Однак Rayforge може працювати з вихідного коду за допомогою методу встановлення pip. Привітствуються внески спільноти для пакування macOS!"
+  "install.macOS.universalInstructions": {
+    "message": "Відкрийте DMG і перетягніть Rayforge.app до вашої папки Програми."
   },
-  "install.installDeps": {
-    "message": "Встановити залежності"
+  "install.macOS.zipInstructions": {
+    "message": "Розпакуйте ZIP і перемістіть Rayforge.app до Програми."
   },
-  "install.usingHomebrew": {
-    "message": "Використовуючи Homebrew, встановіть необхідні залежності:"
+  "install.macOS.openRayforge": {
+    "message": "Відкрити Rayforge"
   },
-  "install.installUsbDrivers": {
-    "message": "Встановити USB драйвери (за потреби)"
+  "install.macOS.openRayforgeInstructions": {
+    "message": "Запустіть Rayforge.app з вашої папки Програми."
   },
-  "install.ch340Driver": {
-    "message": "Якщо ваш лазерний контролер використовує чіпсет CH340/CH341, встановіть драйвери:"
+  "install.macOS.gatekeeper": {
+    "message": "Запустіть один раз з терміналу (якщо Gatekeeper блокує)"
+  },
+  "install.macOS.gatekeeperInstructions": {
+    "message": "Якщо macOS блокує перший запуск, видаліть атрибути карантину та запустіть Rayforge:"
+  },
+  "install.macOS.buildFromSource": {
+    "message": "Зібрати з вихідного коду (просунутий)"
+  },
+  "install.macOS.buildFromSourceInstructions": {
+    "message": "Якщо ви віддаєте перевагу локальному збиранню з вихідного коду, використовуйте скрипти налаштування/збирання macOS з репозиторію:"
+  },
+  "install.macOS.universal": {
+    "message": "Універсальна (Рекомендовано)"
+  },
+  "install.macOS.arm": {
+    "message": "Apple Silicon (M1/M2/M3)"
+  },
+  "install.macOS.intel": {
+    "message": "Intel Mac"
   },
   "install.verify.title": {
     "message": "Перевірити встановлення"

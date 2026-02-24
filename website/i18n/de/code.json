@@ -230,23 +230,41 @@
   "install.macOS.title": {
     "message": "macOS-Installation"
   },
-  "install.communitySupport": {
-    "message": "Community-Unterstützung"
+  "install.macOS.chooseBuild": {
+    "message": "Build-Typ wählen:"
   },
-  "install.macOS.communityNote": {
-    "message": "Es gibt derzeit keine offiziellen macOS-Builds. Rayforge kann jedoch mit der pip-Installationsmethode aus dem Quellcode ausgeführt werden. Community-Beiträge für macOS-Pakete sind willkommen!"
+  "install.macOS.universalInstructions": {
+    "message": "Öffnen Sie das DMG und ziehen Sie Rayforge.app in Ihren Programme-Ordner."
   },
-  "install.installDeps": {
-    "message": "Abhängigkeiten installieren"
+  "install.macOS.zipInstructions": {
+    "message": "Extrahieren Sie das ZIP und verschieben Sie Rayforge.app nach Programme."
   },
-  "install.usingHomebrew": {
-    "message": "Verwenden Sie Homebrew, um die erforderlichen Abhängigkeiten zu installieren:"
+  "install.macOS.openRayforge": {
+    "message": "Rayforge öffnen"
   },
-  "install.installUsbDrivers": {
-    "message": "USB-Treiber installieren (falls erforderlich)"
+  "install.macOS.openRayforgeInstructions": {
+    "message": "Starten Sie Rayforge.app aus Ihrem Programme-Ordner."
   },
-  "install.ch340Driver": {
-    "message": "Wenn Ihr Laser-Controller einen CH340/CH341-Chipsatz verwendet, installieren Sie die Treiber:"
+  "install.macOS.gatekeeper": {
+    "message": "Einmalig vom Terminal starten (falls Gatekeeper es blockiert)"
+  },
+  "install.macOS.gatekeeperInstructions": {
+    "message": "Falls macOS den ersten Start blockiert, entfernen Sie die Quarantäne-Attribute und starten Sie Rayforge:"
+  },
+  "install.macOS.buildFromSource": {
+    "message": "Aus Quellcode erstellen (fortgeschritten)"
+  },
+  "install.macOS.buildFromSourceInstructions": {
+    "message": "Wenn Sie einen lokalen Quellcode-Build bevorzugen, verwenden Sie die macOS Setup/Build-Skripte aus dem Repository:"
+  },
+  "install.macOS.universal": {
+    "message": "Universal (Empfohlen)"
+  },
+  "install.macOS.arm": {
+    "message": "Apple Silicon (M1/M2/M3)"
+  },
+  "install.macOS.intel": {
+    "message": "Intel Mac"
   },
   "install.verify.title": {
     "message": "Installation überprüfen"

@@ -230,23 +230,41 @@
   "install.macOS.title": {
     "message": "macOS 安装"
   },
-  "install.communitySupport": {
-    "message": "社区支持"
+  "install.macOS.chooseBuild": {
+    "message": "选择构建类型："
   },
-  "install.macOS.communityNote": {
-    "message": "目前没有官方的 macOS 版本。但是，可以使用 pip 安装方法从源代码运行 Rayforge。欢迎社区为 macOS 打包做出贡献！"
+  "install.macOS.universalInstructions": {
+    "message": "打开 DMG 并将 Rayforge.app 拖到您的应用程序文件夹。"
   },
-  "install.installDeps": {
-    "message": "安装依赖项"
+  "install.macOS.zipInstructions": {
+    "message": "解压 ZIP 并将 Rayforge.app 移动到应用程序。"
   },
-  "install.usingHomebrew": {
-    "message": "使用 Homebrew 安装所需的依赖项："
+  "install.macOS.openRayforge": {
+    "message": "打开 Rayforge"
   },
-  "install.installUsbDrivers": {
-    "message": "安装 USB 驱动程序（如果需要）"
+  "install.macOS.openRayforgeInstructions": {
+    "message": "从您的应用程序文件夹启动 Rayforge.app。"
   },
-  "install.ch340Driver": {
-    "message": "如果您的激光控制器使用 CH340/CH341 芯片组，请安装驱动程序："
+  "install.macOS.gatekeeper": {
+    "message": "从终端启动一次（如果 Gatekeeper 阻止）"
+  },
+  "install.macOS.gatekeeperInstructions": {
+    "message": "如果 macOS 阻止首次启动，请移除隔离属性并启动 Rayforge："
+  },
+  "install.macOS.buildFromSource": {
+    "message": "从源代码构建（高级）"
+  },
+  "install.macOS.buildFromSourceInstructions": {
+    "message": "如果您更喜欢从源代码进行本地构建，请使用仓库中的 macOS 设置/构建脚本："
+  },
+  "install.macOS.universal": {
+    "message": "通用版（推荐）"
+  },
+  "install.macOS.arm": {
+    "message": "Apple Silicon (M1/M2/M3)"
+  },
+  "install.macOS.intel": {
+    "message": "Intel Mac"
   },
   "install.verify.title": {
     "message": "验证安装"
