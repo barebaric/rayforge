@@ -1,6 +1,11 @@
 name: Publish .deb to PPA
 
 on:
+  push:
+    branches:
+      - "main"
+    tags:
+      - "*"
   pull_request:
     branches:
       - "*"

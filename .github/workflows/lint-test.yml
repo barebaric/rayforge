@@ -1,5 +1,10 @@
 name: Lint and Test
 on:
+  push:
+    branches:
+      - "**" # Run on all branches
+    tags:
+      - "*" # Include tags to trigger builds
   pull_request:
     branches:
       - "**" # Run on PRs targeting any branch
