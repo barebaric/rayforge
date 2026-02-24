@@ -227,9 +227,6 @@
   "install.windowsLaunch": {
     "message": "Starte Rayforge über das Startmenü oder die Desktop-Verknüpfung."
   },
-  "install.macOS.title": {
-    "message": "macOS-Installation"
-  },
   "install.macOS.chooseBuild": {
     "message": "Build-Typ wählen:"
   },
@@ -251,11 +248,20 @@
   "install.macOS.gatekeeperInstructions": {
     "message": "Falls macOS den ersten Start blockiert, entferne die Quarantäne-Attribute und starte Rayforge:"
   },
-  "install.macOS.buildFromSource": {
-    "message": "Aus Quellcode erstellen (fortgeschritten)"
+  "install.macOS.source": {
+    "message": "Quellcode (Entwickler)"
   },
-  "install.macOS.buildFromSourceInstructions": {
-    "message": "Wenn du einen lokalen Quellcode-Build bevorzugst, verwende die macOS Setup/Build-Skripte aus dem Repository:"
+  "install.macOS.cloneRepo": {
+    "message": "Repository klonen"
+  },
+  "install.macOS.runSetup": {
+    "message": "Setup-Skript ausführen"
+  },
+  "install.macOS.runSetupInstructions": {
+    "message": "Dies installiert Abhängigkeiten und konfiguriert die Umgebung:"
+  },
+  "install.macOS.buildAndRun": {
+    "message": "Erstellen und Ausführen"
   },
   "install.macOS.universal": {
     "message": "Universal (Empfohlen)"

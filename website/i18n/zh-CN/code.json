@@ -227,9 +227,6 @@
   "install.windowsLaunch": {
     "message": "从开始菜单或桌面快捷方式启动 Rayforge。"
   },
-  "install.macOS.title": {
-    "message": "macOS 安装"
-  },
   "install.macOS.chooseBuild": {
     "message": "选择构建类型："
   },
@@ -251,11 +248,20 @@
   "install.macOS.gatekeeperInstructions": {
     "message": "如果 macOS 阻止首次启动，请移除隔离属性并启动 Rayforge："
   },
-  "install.macOS.buildFromSource": {
-    "message": "从源代码构建（高级）"
+  "install.macOS.source": {
+    "message": "源代码（开发者）"
   },
-  "install.macOS.buildFromSourceInstructions": {
-    "message": "如果您更喜欢从源代码进行本地构建，请使用仓库中的 macOS 设置/构建脚本："
+  "install.macOS.cloneRepo": {
+    "message": "克隆仓库"
+  },
+  "install.macOS.runSetup": {
+    "message": "运行设置脚本"
+  },
+  "install.macOS.runSetupInstructions": {
+    "message": "这将安装依赖项并配置环境："
+  },
+  "install.macOS.buildAndRun": {
+    "message": "构建并运行"
   },
   "install.macOS.universal": {
     "message": "通用版（推荐）"
