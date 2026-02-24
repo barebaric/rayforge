@@ -82,6 +82,7 @@ const macosMethods = [
   { id: 'universal', label: translate({ id: 'install.macOS.universal', message: 'Universal (Recommended)' }) },
   { id: 'arm', label: translate({ id: 'install.macOS.arm', message: 'Apple Silicon (M1/M2/M3)' }) },
   { id: 'intel', label: translate({ id: 'install.macOS.intel', message: 'Intel Mac' }) },
+  { id: 'source', label: translate({ id: 'install.macOS.source', message: 'Source (Developer)' }) },
 ];
 
 function OsSelector({ selectedOs, onSelectOs }) {
@@ -693,8 +694,6 @@ function MacosInstall({ version, method, onMethodChange }) {
   const downloadUrl = `https://github.com/barebaric/rayforge/releases/download/${version}/rayforge-v${version}-macos`;
   return (
     <div className="install-section">
-      <h4><Translate id="install.macOS.title">macOS Installation</Translate></h4>
-
       <div className="install-method-selector">
         <p><strong><Translate id="install.macOS.chooseBuild">Choose build type:</Translate></strong></p>
         <div className="install-method-tabs">
@@ -712,113 +711,140 @@ function MacosInstall({ version, method, onMethodChange }) {
         </div>
       </div>
 
-      <div className="install-step">
-        <div className="install-step-number">1</div>
-        <div className="install-step-content">
-          <h5><Translate id="install.downloadInstaller">Download the Installer</Translate></h5>
-          {method === 'universal' && (
-            <>
-              <p>
-                <a
-                  href={`${downloadUrl}-universal.dmg`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  <strong>{translate({ id: 'install.downloadRayforge', message: 'Download Rayforge' }, { version })}</strong>
-                </a>
-              </p>
-              <p>
-                <Translate id="install.macOS.universalInstructions">
-                  Open the DMG and drag Rayforge.app to your Applications folder.
-                </Translate>
-              </p>
-            </>
-          )}
-          {method === 'arm' && (
-            <>
-              <p>
-                <a
-                  href={`${downloadUrl}-arm-app.zip`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  <strong>{translate({ id: 'install.downloadRayforge', message: 'Download Rayforge' }, { version })}</strong>
-                </a>
-              </p>
-              <p>
-                <Translate id="install.macOS.zipInstructions">
-                  Extract the ZIP and move Rayforge.app to Applications.
-                </Translate>
-              </p>
-            </>
-          )}
-          {method === 'intel' && (
-            <>
-              <p>
-                <a
-                  href={`${downloadUrl}-intel-app.zip`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  <strong>{translate({ id: 'install.downloadRayforge', message: 'Download Rayforge' }, { version })}</strong>
-                </a>
-              </p>
-              <p>
-                <Translate id="install.macOS.zipInstructions">
-                  Extract the ZIP and move Rayforge.app to Applications.
-                </Translate>
-              </p>
-            </>
-          )}
-        </div>
-      </div>
+      {method !== 'source' && (
+        <>
+          <div className="install-step">
+            <div className="install-step-number">1</div>
+            <div className="install-step-content">
+              <h5><Translate id="install.downloadInstaller">Download the Installer</Translate></h5>
+              {method === 'universal' && (
+                <>
+                  <p>
+                    <a
+                      href={`${downloadUrl}-universal.dmg`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      <strong>{translate({ id: 'install.downloadRayforge', message: 'Download Rayforge' }, { version })}</strong>
+                    </a>
+                  </p>
+                  <p>
+                    <Translate id="install.macOS.universalInstructions">
+                      Open the DMG and drag Rayforge.app to your Applications folder.
+                    </Translate>
+                  </p>
+                </>
+              )}
+              {method === 'arm' && (
+                <>
+                  <p>
+                    <a
+                      href={`${downloadUrl}-arm-app.zip`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      <strong>{translate({ id: 'install.downloadRayforge', message: 'Download Rayforge' }, { version })}</strong>
+                    </a>
+                  </p>
+                  <p>
+                    <Translate id="install.macOS.zipInstructions">
+                      Extract the ZIP and move Rayforge.app to Applications.
+                    </Translate>
+                  </p>
+                </>
+              )}
+              {method === 'intel' && (
+                <>
+                  <p>
+                    <a
+                      href={`${downloadUrl}-intel-app.zip`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      <strong>{translate({ id: 'install.downloadRayforge', message: 'Download Rayforge' }, { version })}</strong>
+                    </a>
+                  </p>
+                  <p>
+                    <Translate id="install.macOS.zipInstructions">
+                      Extract the ZIP and move Rayforge.app to Applications.
+                    </Translate>
+                  </p>
+                </>
+              )}
+            </div>
+          </div>
 
-      <div className="install-step">
-        <div className="install-step-number">2</div>
-        <div className="install-step-content">
-          <h5><Translate id="install.macOS.openRayforge">Open Rayforge</Translate></h5>
-          <p>
-            <Translate id="install.macOS.openRayforgeInstructions">
-              Start Rayforge.app from your Applications folder.
-            </Translate>
-          </p>
-        </div>
-      </div>
+          <div className="install-step">
+            <div className="install-step-number">2</div>
+            <div className="install-step-content">
+              <h5><Translate id="install.macOS.openRayforge">Open Rayforge</Translate></h5>
+              <p>
+                <Translate id="install.macOS.openRayforgeInstructions">
+                  Start Rayforge.app from your Applications folder.
+                </Translate>
+              </p>
+            </div>
+          </div>
 
-      <div className="install-step">
-        <div className="install-step-number">3</div>
-        <div className="install-step-content">
-          <h5><Translate id="install.macOS.gatekeeper">Launch Once from Terminal (if Gatekeeper blocks it)</Translate></h5>
-          <p>
-            <Translate id="install.macOS.gatekeeperInstructions">
-              If macOS blocks the first launch, remove quarantine attributes and start Rayforge:
-            </Translate>
-          </p>
-          <CodeBlock language="bash">
-            {`xattr -dr com.apple.quarantine /Applications/Rayforge.app
+          <div className="install-step">
+            <div className="install-step-number">3</div>
+            <div className="install-step-content">
+              <h5><Translate id="install.macOS.gatekeeper">Launch Once from Terminal (if Gatekeeper blocks it)</Translate></h5>
+              <p>
+                <Translate id="install.macOS.gatekeeperInstructions">
+                  If macOS blocks the first launch, remove quarantine attributes and start Rayforge:
+                </Translate>
+              </p>
+              <CodeBlock language="bash">
+                {`xattr -dr com.apple.quarantine /Applications/Rayforge.app
 /Applications/Rayforge.app/Contents/MacOS/Rayforge --version`}
-          </CodeBlock>
-        </div>
-      </div>
+              </CodeBlock>
+            </div>
+          </div>
+        </>
+      )}
 
-      <details className="install-details">
-        <summary><Translate id="install.macOS.buildFromSource">Build from source (advanced)</Translate></summary>
-        <div className="install-details-content">
-          <p>
-            <Translate id="install.macOS.buildFromSourceInstructions">
-              If you prefer a local source build, use the macOS setup/build scripts from the repository:
-            </Translate>
-          </p>
-          <CodeBlock language="bash">
-            {`git clone https://github.com/barebaric/rayforge.git
-cd rayforge
-bash scripts/mac/mac_setup.sh --install
-source .mac_env
-printf "5\\n" | bash scripts/mac/mac_build.sh
+      {method === 'source' && (
+        <>
+          <div className="install-step">
+            <div className="install-step-number">1</div>
+            <div className="install-step-content">
+              <h5><Translate id="install.macOS.cloneRepo">Clone the Repository</Translate></h5>
+              <CodeBlock language="bash">
+                {`git clone https://github.com/barebaric/rayforge.git
+cd rayforge`}
+              </CodeBlock>
+            </div>
+          </div>
+
+          <div className="install-step">
+            <div className="install-step-number">2</div>
+            <div className="install-step-content">
+              <h5><Translate id="install.macOS.runSetup">Run Setup Script</Translate></h5>
+              <p>
+                <Translate id="install.macOS.runSetupInstructions">
+                  This installs dependencies and configures the environment:
+                </Translate>
+              </p>
+              <CodeBlock language="bash">
+                {`bash scripts/mac/mac_setup.sh --install
+source .mac_env`}
+              </CodeBlock>
+            </div>
+          </div>
+
+          <div className="install-step">
+            <div className="install-step-number">3</div>
+            <div className="install-step-content">
+              <h5><Translate id="install.macOS.buildAndRun">Build and Run</Translate></h5>
+              <CodeBlock language="bash">
+                {`printf "5\\n" | bash scripts/mac/mac_build.sh
 dist/Rayforge.app/Contents/MacOS/Rayforge --version`}
-          </CodeBlock>
-        </div>
-      </details>
+              </CodeBlock>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }

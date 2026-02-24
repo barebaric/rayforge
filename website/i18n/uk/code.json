@@ -227,9 +227,6 @@
   "install.windowsLaunch": {
     "message": "Запустіть Rayforge з меню Пуск або за допомогою ярлика на робочому столі."
   },
-  "install.macOS.title": {
-    "message": "Встановлення на macOS"
-  },
   "install.macOS.chooseBuild": {
     "message": "Виберіть тип збірки:"
   },
@@ -251,11 +248,20 @@
   "install.macOS.gatekeeperInstructions": {
     "message": "Якщо macOS блокує перший запуск, видаліть атрибути карантину та запустіть Rayforge:"
   },
-  "install.macOS.buildFromSource": {
-    "message": "Зібрати з вихідного коду (просунутий)"
+  "install.macOS.source": {
+    "message": "Вихідний код (Розробник)"
   },
-  "install.macOS.buildFromSourceInstructions": {
-    "message": "Якщо ви віддаєте перевагу локальному збиранню з вихідного коду, використовуйте скрипти налаштування/збирання macOS з репозиторію:"
+  "install.macOS.cloneRepo": {
+    "message": "Клонувати репозиторій"
+  },
+  "install.macOS.runSetup": {
+    "message": "Запустити скрипт налаштування"
+  },
+  "install.macOS.runSetupInstructions": {
+    "message": "Це встановлює залежності та налаштовує середовище:"
+  },
+  "install.macOS.buildAndRun": {
+    "message": "Зібрати та запустити"
   },
   "install.macOS.universal": {
     "message": "Універсальна (Рекомендовано)"
