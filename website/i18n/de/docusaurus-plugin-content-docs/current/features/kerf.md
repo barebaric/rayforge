@@ -45,7 +45,7 @@ Nach dem Schneiden:   Teil misst 50.0mm (perfekt!)
    - Einen Kreis zeichnen (beliebige Größe, für Innen-Schnitt-Test)
 
 2. **Den Test schneiden:**
-   - Ihre normalen Schneideeinstellungen verwenden
+   - Deine normalen Schneideeinstellungen verwenden
    - Vollsändig durchschneiden
    - Material abkühlen lassen
 
@@ -70,13 +70,13 @@ Nach dem Schneiden:   Teil misst 50.0mm (perfekt!)
 
 ## Manuelle Schnittbreiten-Kompensation
 
-Wenn automatische Schnittbreiten-Kompensation nicht verfügbar ist, kompensieren Sie in Ihrer Design-Software:
+Wenn automatische Schnittbreiten-Kompensation nicht verfügbar ist, kompensiere in deiner Design-Software:
 
 **Inkscape:**
 
 1. **Den Pfad auswählen**
 2. **Pfad → Dynamischer Offset** (Strg+J)
-3. **Zum Offset ziehen** um die Hälfte Ihrer Schnittbreiten-Messung
+3. **Zum Offset ziehen** um die Hälfte deiner Schnittbreiten-Messung
    - Nach außen für Teile (um Pfad größer zu machen)
    - Nach innen für Löcher (um Pfad kleiner zu machen)
 4. **Pfad → Objekt zu Pfad** zum Fertigstellen

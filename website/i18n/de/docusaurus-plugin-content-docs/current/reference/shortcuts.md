@@ -231,7 +231,7 @@ Tastaturkürzel sind derzeit fest codiert. Eine Konfiguration benutzerdefinierte
 - Keine GUI für Kürzel-Anpassung
 - Einigen Aktionen sind möglicherweise keine Kürzel zugewiesen
 
-**Funktionswunsch:** Wenn Sie benutzerdefinierte Kürzel benötigen, öffnen Sie bitte ein Issue auf GitHub.
+**Funktionswunsch:** Wenn du benutzerdefinierte Kürzel benötigen, öffnen Sie bitte ein Issue auf GitHub.
 
 ---
 
@@ -240,7 +240,7 @@ Tastaturkürzel sind derzeit fest codiert. Eine Konfiguration benutzerdefinierte
 ### Effizienz-Tipps
 
 1. **Lernen Sie zuerst die Bearbeitungskürzel** – `Strg+Z/Y/C/V/D` werden ständig verwendet
-2. **Verwenden Sie Ein-Tasten-Umschaltungen** – `H`, `T`, `P` für schnelle Ansichtswechsel
+2. **Verwende Ein-Tasten-Umschaltungen** – `H`, `T`, `P` für schnelle Ansichtswechsel
 3. **3D-Ansicht-Kürzel** – `1`, `2`, `7` für sofortigen Ansichtswechsel
 4. **Ausrichtungskürzel** – `Umschalt+Pfeil` schneller als Anklicken von Ausrichtungs-Buttons
 5. **Simulationsmodus** – `Strg+Umschalt+S` zur schnellen Überprüfung der Ausführung
@@ -307,10 +307,10 @@ Einige weniger bekannte Kürzel:
 
 **Häufige Probleme:**
 
-1. **Fokus auf falschem Element** – Stellen Sie sicher, dass Canvas oder Hauptfenster den Fokus hat, nicht ein Textfeld
+1. **Fokus auf falschem Element** – Stelle sicher, dass Canvas oder Hauptfenster den Fokus hat, nicht ein Textfeld
 2. **Kollision mit anderer Anwendung** – Eine andere App fängt das Kürzel möglicherweise ab
 3. **Desktop-Umgebungs-Kürzel** – Systemkürzel könnten Vorrang haben (z.B. Alt+F4)
-4. **Numpad vs. Zahlenreihe** – Verwenden Sie die Zahlenreihe für 3D-Ansicht-Kürzel, nicht das Numpad
+4. **Numpad vs. Zahlenreihe** – Verwende die Zahlenreihe für 3D-Ansicht-Kürzel, nicht das Numpad
 
 **Lösungen:**
 
@@ -322,15 +322,15 @@ Einige weniger bekannte Kürzel:
 
 **Wenn Strg nicht funktioniert:**
 
-- Stellen Sie sicher, dass Feststelltaste aus ist (kann auf einigen Systemen stören)
+- Stelle sicher, dass Feststelltaste aus ist (kann auf einigen Systemen stören)
 - Strg auf beiden Tastaturseiten versuchen
 - Tastaturlayout-Einstellungen prüfen
 
 **Wenn Alt nicht funktioniert:**
 
 - Einige Fenstermanager fangen Alt für Fensterziehen ab
-- Versuchen Sie, Fenstermanager-Alt-Kürzel zu deaktivieren
-- Verwenden Sie Menüpunkte als Alternative
+- Versuche, Fenstermanager-Alt-Kürzel zu deaktivieren
+- Verwende Menüpunkte als Alternative
 
 ---
 

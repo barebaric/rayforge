@@ -1,12 +1,12 @@
 # G-Code-Einstellungen
 
-Die G-Code-Seite in den Maschineneinstellungen konfiguriert, wie Rayforge G-Code für Ihre Maschine generiert.
+Die G-Code-Seite in den Maschineneinstellungen konfiguriert, wie Rayforge G-Code für deine Maschine generiert.
 
 ![G-Code-Einstellungen](/screenshots/machine-gcode.png)
 
 ## G-Code-Dialekt
 
-Wählen Sie den G-Code-Dialekt, der mit Ihrer Controller-Firmware übereinstimmt. Verschiedene Controller verwenden leicht unterschiedliche Befehle und Formate.
+Wähle den G-Code-Dialekt, der mit deiner Controller-Firmware übereinstimmt. Verschiedene Controller verwenden leicht unterschiedliche Befehle und Formate.
 
 ### Verfügbare Dialekte
 
@@ -21,7 +21,7 @@ Der Dialekt beeinflusst, wie Laserleistung, Bewegungen und andere Befehle im Aus
 
 ## Benutzerdefinierter G-Code
 
-Sie können den G-Code anpassen, den Rayforge an bestimmten Punkten im Job generiert.
+Du kannst den G-Code anpassen, den Rayforge an bestimmten Punkten im Job generiert.
 
 ### Programmstart
 

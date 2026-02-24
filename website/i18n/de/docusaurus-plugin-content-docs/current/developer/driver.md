@@ -1,10 +1,10 @@
 # Treiber-Entwicklungsleitfaden
 
-Dieser Leitfaden bietet einen Überblick auf hoher Ebene, wie man einen Treiber in Rayforge erstellt, um Unterstützung für Ihren Laserschneider oder Gravurgerät hinzuzufügen. Durch Erstellen eines Treibers integrieren Sie das einzigartige Kommunikationsprotokoll und die Befehlssprache Ihrer Maschine in das Rayforge-Ökosystem.
+Dieser Leitfaden bietet einen Überblick auf hoher Ebene, wie man einen Treiber in Rayforge erstellt, um Unterstützung für deinen Laserschneider oder dein Gravurgerät hinzuzufügen. Durch Erstellen eines Treibers integrierst du das einzigartige Kommunikationsprotokoll und die Befehlssprache deiner Maschine in das Rayforge-Ökosystem.
 
 ## Treiber-Übersicht
 
-Ein Treiber ist die Brücke zwischen Rayforge's Kernlogik und Ihrer physischen Hardware.
+Ein Treiber ist die Brücke zwischen Rayforge's Kernlogik und deiner physischen Hardware.
 Er ist für drei Hauptaufgaben verantwortlich:
 
 1.  **Verbindungsverwaltung:** Behandlung des Low-Level-Kommunikationsprotokolls
@@ -23,7 +23,7 @@ graph TD;
         Pipeline-->|Führt aus| OpsProducer;
     end
 
-    subgraph YourDriver[Ihre Treiber-Implementierung]
+    subgraph YourDriver[Deine Treiber-Implementierung]
         Ops -->|Kodiert via| OpsEncoder;
         OpsEncoder-->|Produziert| MachineCode
         MachineCode-->|Ruft run| Driver;
@@ -63,7 +63,7 @@ von Maschinenbewegungen, unabhängig von spezifischer Hardware.
 | `enable_air_assist`  | `()`                          | Luftunterstützung einschalten         |
 | `disable_air_assist` | `()`                          | Luftunterstützung ausschalten         |
 
-Ihr Treiber empfängt vorkodierten Maschinencode (z.B. einen G-Code-String) und eine
+Dein Treiber empfängt vorkodierten Maschinencode (z.B. einen G-Code-String) und eine
 Operations-Map, die verfolgt, welche Maschinencode-Befehle welchen
 Operationen entsprechen. Die Pipeline kümmert sich um die Kodierung von `Ops` zu Maschinencode, bevor sie die `run()`-Methode des Treibers aufruft.
 
@@ -103,7 +103,7 @@ class YourDriver(Driver):
 
 ### Erforderliche Methoden
 
-Ihre Treiberklasse **MUSS** die folgenden Methoden implementieren. Beachten Sie, dass die meisten **asynchron** sind und mit `async def` definiert werden müssen.
+Deine Treiberklasse **MUSS** die folgenden Methoden implementieren. Beachte, dass die meisten **asynchron** sind und mit `async def` definiert werden müssen.
 
 #### Konfiguration und Lebenszyklus
 
@@ -113,8 +113,8 @@ Ihre Treiberklasse **MUSS** die folgenden Methoden implementieren. Beachten Sie,
 - `precheck(**kwargs)`: **(Klassenmethode)** Ein nicht-blockierender, statischer Check der
   Konfiguration, der vor Treiber-Instanziierung ausgeführt werden kann. Sollte bei Fehlschlag
   `DriverPrecheckError` werfen.
-- `setup(**kwargs)`: Wird einmal mit den Werten aus dem Einrichtungsformular aufgerufen. Verwenden Sie dies
-  um Ihre Transports und internen Zustände zu initialisieren.
+- `setup(**kwargs)`: Wird einmal mit den Werten aus dem Einrichtungsformular aufgerufen. Verwende dies
+  um deine Transports und internen Zustände zu initialisieren.
 - `async def connect()`: Stellt eine persistente Verbindung zum
   Gerät her und hält sie aufrecht. Diese Methode sollte Auto-Wiederverbindungs-Logik enthalten.
 - `async def cleanup()`: Wird beim Trennen aufgerufen. Sollte alle
@@ -151,12 +151,12 @@ Ihre Treiberklasse **MUSS** die folgenden Methoden implementieren. Beachten Sie,
 
 ### Signale emittieren
 
-Um mit der UI zu kommunizieren, muss Ihr Treiber Signale emittieren. Um ordnungsgemäße
-Protokollierung und Thread-Sicherheit zu gewährleisten, **dürfen Sie Signale nicht direkt emittieren.** Stattdessen
-rufen Sie die geschützten Hilfsmethoden aus der Basis-`Driver`-Klasse auf.
+Um mit der UI zu kommunizieren, muss dein Treiber Signale emittieren. Um ordnungsgemäße
+Protokollierung und Thread-Sicherheit zu gewährleisten, **darfst du Signale nicht direkt emittieren.** Stattdessen
+rufst du die geschützten Hilfsmethoden aus der Basis-`Driver`-Klasse auf.
 
 - `self._log(message)`: Sendet eine Protokollnachricht an die Konsole.
-- `self._on_state_changed()`: Rufen Sie dies auf, wann immer Sie `self.state` aktualisieren, um
+- `self._on_state_changed()`: Rufe dies auf, wann immer du `self.state` aktualisierst, um
   die UI über eine Status- oder Positionsänderung zu benachrichtigen.
 - `self._on_connection_status_changed(status, message)`: Informiert die UI über
   den Verbindungsstatus (`CONNECTING`, `CONNECTED`, `ERROR`, etc.).
@@ -165,7 +165,7 @@ rufen Sie die geschützten Hilfsmethoden aus der Basis-`Driver`-Klasse auf.
 - `self._on_settings_read(settings)`: Sendet die gelesenen Geräteeinstellungen
   zurück an die UI.
 
-## Haben Sie Fragen?
+## Hast du Fragen?
 
 Der beste Weg zu lernen ist, sich die bestehenden Treiber in
 `rayforge/machine/driver/` anzusehen, wie:
@@ -175,4 +175,4 @@ Der beste Weg zu lernen ist, sich die bestehenden Treiber in
 - `smoothie.py` - Smoothieboard-basierte Maschinen
 - `dummy.py` - Ein Test-Treiber für die Entwicklung
 
-Wenn Sie steckenbleiben, zögern Sie bitte nicht, ein Issue auf GitHub zu eröffnen! Wir helfen gerne.
+Wenn du steckenbleibst, zögere bitte nicht, ein Issue auf GitHub zu eröffnen! Wir helfen gerne.

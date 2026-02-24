@@ -1,6 +1,6 @@
 # Canvas-Werkzeuge
 
-Die Canvas bietet einen umfassenden Satz von Werkzeugen zum Bearbeiten von Designs, Messen und Vorbereiten Ihrer Laseraufträge.
+Die Canvas bietet einen umfassenden Satz von Werkzeugen zum Bearbeiten von Designs, Messen und Vorbereiten deiner Laseraufträge.
 
 ## Auswahlwerkzeug
 
@@ -36,7 +36,7 @@ Auf der Canvas navigieren ohne versehentlich Objekte zu bewegen.
 
 ## Zoom-Werkzeug
 
-Auf bestimmte Bereiche Ihres Designs vergrößern.
+Auf bestimmte Bereiche deines Designs vergrößern.
 
 **Verwendung:**
 

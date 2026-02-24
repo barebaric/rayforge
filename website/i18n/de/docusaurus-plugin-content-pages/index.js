@@ -16,7 +16,7 @@ function HeroSection() {
             <span className={styles.titleGradient}>Die weltweit leistungsstärkste Open-Source</span> Laser-Software
           </h1>
           <p className={styles.heroSubtitle}>
-            Nahtlose Werkzeuge für kreative Köpfe. Rayforge ist das komplette Kreativstudio für Ihren Lasercutter,
+            Nahtlose Werkzeuge für kreative Köpfe. Rayforge ist das komplette Kreativstudio für deinen Lasercutter,
             das 2D-CAD, CAM und Maschinensteuerung in einem dynamischen Paket vereint.
           </p>
           <div className={styles.heroCtaButtons}>
@@ -140,7 +140,7 @@ function FeatureSection({
 
 export default function Home() {
   return (
-    <Layout description="Gestalten und erschaffen Sie mit Ihrem Lasercutter - das komplette Kreativstudio für Maker, Künstler und Handwerker">
+    <Layout description="Gestalte und erschaffe mit deinem Lasercutter - das komplette Kreativstudio für Maker, Künstler und Handwerker">
       <main className={styles.pageWrapper}>
         
         <HeroSection />
@@ -150,7 +150,7 @@ export default function Home() {
         <div className={styles.featuresWrapper}>
           <FeatureSection
             blobClass={styles.blobCyan}
-            title="Ihre Kreationen in 3D"
+            title="Deine Kreationen in 3D"
             description="Nahtloser Übergang von 2D-Designs zu 3D-Werkzeugpfaden. Rayforge generiert G-Code für 2-Achsen- und 3-Achsen-Lasercutter und -gravierer und überbrückt die Lücke zwischen flachen Designs und physischen Objekten."
             compatibilityHeading="Kompatibel mit: Grbl, Smoothieware"
             features={['3D-Visualisierung', 'Werkzeugpfad-Generierung', 'Achsensteuerung']}
@@ -159,12 +159,12 @@ export default function Home() {
 
           <FeatureSection
             blobClass={styles.blobOrange}
-            title="Gestalten Sie Ihre Eigenen Formen"
-            description="Erstellen Sie benutzerdefinierte Designs direkt in Rayforge. Die integrierten Zeichenwerkzeuge ermöglichen es Ihnen, Ihre Ideen zu skizzieren, zu formen und zu verfeinern, ohne separate Designsoftware zu benötigen."
+            title="Gestalte deine eigenen Formen"
+            description="Erstelle benutzerdefinierte Designs direkt in Rayforge. Die integrierten Zeichenwerkzeuge ermöglichen es dir, deine Ideen zu skizzieren, zu formen und zu verfeinern, ohne separate Designsoftware zu benötigen."
             features={[
-              'Zeichnen Sie Linien, Kreise, Kurven und gefüllte Formen',
-              'Richten Sie alles perfekt aus',
-              'Definieren Sie Abmessungen, die sich automatisch aktualisieren',
+              'Zeichne Linien, Kreise, Kurven und gefüllte Formen',
+              'Richte alles perfekt aus',
+              'Definiere Abmessungen, die sich automatisch aktualisieren',
             ]}
             image="/assets/screenshot-sketcher.png"
             reverse
@@ -173,7 +173,7 @@ export default function Home() {
           <FeatureSection
             blobClass={styles.blobPurple}
             title="Intelligente Schneidepfade"
-            description="Arbeiten Sie schneller und verschwenden Sie weniger Material. Rayforge ermittelt die effizienteste Methode, Ihr Design zu schneiden, damit Ihr Laser weniger Zeit mit Bewegen und mehr Zeit mit Erschaffen verbringt."
+            description="Arbeite schneller und verschwende weniger Material. Rayforge ermittelt die effizienteste Methode, dein Design zu schneiden, damit dein Laser weniger Zeit mit Bewegen und mehr Zeit mit Erschaffen verbringt."
             features={[
               "Schnelleres Schneiden durch optimierte Bewegungen",
               'Material sparen durch automatisches Layout',
@@ -185,10 +185,10 @@ export default function Home() {
           <FeatureSection
             blobClass={styles.blobCyan}
             title="Vorschau Vor Dem Schneiden"
-            description="Sehen Sie Ihr Design virtuell zum Leben erwachen, bevor Sie sich auf das echte Material festlegen. Erkennen Sie potenzielle Probleme früh und sparen Sie Zeit und Material."
+            description="Sieh dein Design virtuell zum Leben erwachen, bevor du dich auf das echte Material festlegst. Erkenne potenzielle Probleme früh und spare Zeit und Material."
             features={[
-              'Sehen Sie genau, wie sich Ihr Laser bewegen wird',
-              'Fehler erkennen bevor Sie schneiden',
+              'Sieh genau, wie sich dein Laser bewegen wird',
+              'Fehler erkennen bevor du schneidest',
               'Live-Vorschau, die sich während des Designs aktualisiert',
             ]}
             image="/screenshots/main-simulation.png"
@@ -198,7 +198,7 @@ export default function Home() {
           <FeatureSection
             blobClass={styles.blobOrange}
             title="Material- und Workflow-Verwaltung"
-            description="Speichern Sie Ihre Lieblingseinstellungen und erhalten Sie konsistente Ergebnisse in all Ihren Projekten. Ob Sie Holz, Acryl oder Leder schneiden - Rayforge merkt sich, was am besten funktioniert."
+            description="Speichere deine Lieblingseinstellungen und erhalte konsistente Ergebnisse in all deinen Projekten. Ob du Holz, Acryl oder Leder schneidest - Rayforge merkt sich, was am besten funktioniert."
             features={[
               'Einstellungen für verschiedene Materialien speichern',
               'Wiederverwendbare Rezepte erstellen',

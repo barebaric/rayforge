@@ -1,6 +1,6 @@
 # Gravur
 
-Gravur-Operationen füllen Bereiche mit Raster-Scan-Linien und unterstützen mehrere Modi für verschiedene Gravureffekte. Von glatten Graustufen-Fotos bis hin zu 3D-Relief-Effekten - wählen Sie den Modus, der am besten zu Ihrem Design und Material passt.
+Gravur-Operationen füllen Bereiche mit Raster-Scan-Linien und unterstützen mehrere Modi für verschiedene Gravureffekte. Von glatten Graustufen-Fotos bis hin zu 3D-Relief-Effekten - wähle den Modus, der am besten zu deinem Design und Material passt.
 
 ## Übersicht
 
@@ -90,7 +90,7 @@ Der Mehrfach-Tiefen-Modus erzeugt 3D-Relief-Effekte durch Variation der Laserlei
 
 ## Wann Gravur verwenden
 
-Verwenden Sie Gravur-Operationen für:
+Verwende Gravur-Operationen für:
 
 - Gravieren von Text und Logos
 - Erstellen von Bildern und Fotos auf Holz/Leder
@@ -99,9 +99,9 @@ Verwenden Sie Gravur-Operationen für:
 - Erstellen von 3D-Relief-Effekten
 - Halbton-Stil-Kunstwerke
 
-**Verwenden Sie Gravur nicht für:**
+**Verwende Gravur nicht für:**
 
-- Durchschneiden von Material (verwenden Sie stattdessen [Kontur](contour))
+- Durchschneiden von Material (verwende stattdessen [Kontur](contour))
 - Präzise Umrisse (Raster erzeugt gefüllte Bereiche)
 - Feine Linienarbeit (Vektoren sind sauberer)
 
@@ -123,7 +123,7 @@ Gravur funktioniert mit:
 
 ### Schritt 3: Modus wählen
 
-Wählen Sie den Gravurmodus, der am besten zu Ihren Bedürfnissen passt:
+Wähle den Gravurmodus, der am besten zu deinen Bedürfnissen passt:
 
 - **Variable Leistung** - Sanfte Graustufen-Gravur
 - **Konstante Leistung** - Saubere Schwarz/Weiß-Gravur
@@ -169,7 +169,7 @@ Wählen Sie den Gravurmodus, der am besten zu Ihren Bedürfnissen passt:
 :::tip Auflösungs-Anpassung
 :::
 
-Für Bilder sollte der Linienabstand der Bildauflösung entsprechen oder diese überschreiten. Wenn Ihr Bild 10 Pixel/mm (254 DPI) hat, verwenden Sie 0.1mm Linienabstand oder kleiner.
+Für Bilder sollte der Linienabstand der Bildauflösung entsprechen oder diese überschreiten. Wenn dein Bild 10 Pixel/mm (254 DPI) hat, verwende 0.1mm Linienabstand oder kleiner.
 
 ### Scan-Richtung
 
@@ -243,7 +243,7 @@ Invertieren für Lithophanen verwenden (helle Bereiche sollten dünn sein) oder 
 
 **Helligkeitsbereich:**
 
-Steuert, wie Bildhelligkeitswerte auf Laserleistung abgebildet werden. Das Histogramm zeigt die Verteilung der Helligkeitswerte in Ihrem Bild.
+Steuert, wie Bildhelligkeitswerte auf Laserleistung abgebildet werden. Das Histogramm zeigt die Verteilung der Helligkeitswerte in deinem Bild.
 
 - **Auto-Levels** (Standard): Passt die Schwarz- und Weißpunkte automatisch basierend auf dem Bildinhalt an. Werte unterhalb des Schwarzpunkts werden als Schwarz behandelt, Werte oberhalb des Weißpunkts als Weiß. Dies streckt den Kontrast des Bildes, um den vollen Leistungsbereich zu nutzen.
 - **Manueller Modus**: Auto-Levels deaktivieren, um Schwarz- und Weißpunkte manuell durch Ziehen der Markierungen auf dem Histogramm einzustellen.
@@ -274,7 +274,7 @@ Dies ist besonders nützlich für:
 
 **Dithering-Algorithmus:**
 
-Wählen Sie den Algorithmus, der am besten zu Ihrem Bild und Material passt:
+Wähle den Algorithmus, der am besten zu deinem Bild und Material passt:
 
 | Algorithmus        | Qualität | Geschwindigkeit | Am besten für                         |
 | ------------------ | -------- | --------------- | ------------------------------------ |

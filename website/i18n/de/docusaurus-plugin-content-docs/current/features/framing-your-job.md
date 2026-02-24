@@ -1,10 +1,10 @@
-# Ihren Job einrahmen
+# Deinen Job einrahmen
 
-Erfahren Sie, wie Sie die Rahmen-Funktion verwenden, um Ihre Job-Grenzen vorauszuschauen und die korrekte Ausrichtung vor dem Schneiden sicherzustellen.
+Erfahre, wie du die Rahmen-Funktion verwendest, um deine Job-Grenzen vorauszuschauen und die korrekte Ausrichtung vor dem Schneiden sicherzustellen.
 
 ## Übersicht
 
-Das Einrahmen ermöglicht es Ihnen, die genauen Grenzen Ihres Laserjobs vorauszuschauen, indem ein Umriss mit dem Laser bei niedriger Leistung oder mit ausgeschaltetem Laser nachgezeichnet wird. Dies hilft, die Positionierung zu verifizieren und kostspielige Fehler zu verhindern.
+Das Einrahmen ermöglicht es dir, die genauen Grenzen deines Laserjobs vorauszuschauen, indem ein Umriss mit dem Laser bei niedriger Leistung oder mit ausgeschaltetem Laser nachgezeichnet wird. Dies hilft, die Positionierung zu verifizieren und kostspielige Fehler zu verhindern.
 
 ## Wann Einrahmen verwenden
 
@@ -19,7 +19,7 @@ Das Einrahmen ermöglicht es Ihnen, die genauen Grenzen Ihres Laserjobs vorauszu
 
 Den Job-Grenzrahmen nachzeichnen, ohne den Laser einzuschalten:
 
-1. **Ihr Design laden** in Rayforge
+1. **Dein Design laden** in Rayforge
 2. **Material positionieren** auf dem Laserbett
 3. **Auf die Rahmen-Taste klicken** in der Symbolleiste
 4. **Den Laserkopf beobachten**, wie er das Begrenzungsrechteck nachzeichnet
@@ -34,8 +34,8 @@ Einige Maschinen unterstützen Niederleistungs-Einrahmen mit sichtbarem Strahl:
 3. **Rahmen-Operation ausführen**
 4. **Den Umriss beobachten**, der auf der Materialoberfläche nachgezeichnet wird
 
-:::warning Überprüfen Sie Ihre Maschine
-Nicht alle Laser unterstützen sicher das Niederleistungs-Einrahmen. Konsultieren Sie Ihre Maschinen-Dokumentation, bevor Sie diese Funktion verwenden.
+:::warning Überprüfe deine Maschine
+Nicht alle Laser unterstützen sicher das Niederleistungs-Einrahmen. Konsultiere deine Maschinen-Dokumentation, bevor du diese Funktion verwendest.
 :::
 
 
@@ -50,7 +50,7 @@ Rahmen-Verhalten in Einstellungen → Maschine konfigurieren:
 
 ## Rahmen-Ergebnisse verwenden
 
-Nach dem Einrahmen können Sie:
+Nach dem Einrahmen kannst du:
 
 - **Material-Position anpassen** falls nötig
 - **Neu einrahmen** um neue Position zu verifizieren
@@ -59,13 +59,13 @@ Nach dem Einrahmen können Sie:
 ## Tipps für effektives Einrahmen
 
 - **Ecken markieren**: Kleine Klebebandstücke an Ecken als Referenz platzieren
-- **Spielraum überprüfen**: Sicherstellen, dass ausreichend Platz um Ihr Design ist
+- **Spielraum überprüfen**: Sicherstellen, dass ausreichend Platz um dein Design ist
 - **Ausrichtung verifizieren**: Bestätigen, dass Material richtig orientiert ist
-- **Schnittbreite berücksichtigen**: Denken Sie daran, dass Schnitte etwas breiter sein werden als Umrisse
+- **Schnittbreite berücksichtigen**: Denke daran, dass Schnitte etwas breiter sein werden als Umrisse
 
 ## Mit Kamera einrahmen
 
-Wenn Ihre Maschine Kamera-Unterstützung hat, können Sie:
+Wenn deine Maschine Kamera-Unterstützung hat, kannst du:
 
 1. **Kamerabild erfassen** der Material-Platzierung
 2. **Design überlagern** auf Kameraansicht
@@ -82,12 +82,12 @@ Siehe [Kamera-Integration](../machine/camera) für Details.
 
 **Rahmen zu schnell zum Sehen**: Rahmen-Geschwindigkeit in Einstellungen reduzieren
 
-**Kopf erreicht Ecken nicht**: Verifizieren Sie, dass Design innerhalb des Maschinen-Arbeitsbereichs ist
+**Kopf erreicht Ecken nicht**: Verifiziere, dass Design innerhalb des Maschinen-Arbeitsbereichs ist
 
 ## Sicherheitshinweise
 
 - **Maschine niemals unbeaufsichtigt lassen** während des Einrahmens
-- **Verifizieren Sie, dass Laser aus ist** bei Verwendung von Nullleistungs-Einrahmen
+- **Verifiziere, dass Laser aus ist** bei Verwendung von Nullleistungs-Einrahmen
 - **Hände frei halten** vom Laserkopf-Pfad
 - **Auf Hindernisse achten**, die die Bewegung beeinträchtigen könnten
 

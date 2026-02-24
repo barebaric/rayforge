@@ -1,10 +1,10 @@
 # Parametrischer 2D-Sketcher
 
-Der Parametrische 2D-Sketcher ist eine leistungsstarke Funktion in Rayforge, mit der Sie präzise, einschränkungsbasierte 2D-Designs direkt in der Anwendung erstellen und bearbeiten können. Diese Funktion ermöglicht es Ihnen, benutzerdefinierte Teile von Grund auf zu entwerfen, ohne externe CAD-Software zu benötigen.
+Der Parametrische 2D-Sketcher ist eine leistungsstarke Funktion in Rayforge, mit der du präzise, einschränkungsbasierte 2D-Designs direkt in der Anwendung erstellen und bearbeiten kannst. Diese Funktion ermöglicht es dir, benutzerdefinierte Teile von Grund auf zu entwerfen, ohne externe CAD-Software zu benötigen.
 
 ## Übersicht
 
-Der Sketcher bietet einen vollständigen Satz von Werkzeugen zum Erstellen geometrischer Formen und zum Anwenden parametrischer Einschränkungen, um präzise Beziehungen zwischen Elementen zu definieren. Dieser Ansatz stellt sicher, dass Ihre Designs ihre beabsichtigte Geometrie beibehalten, auch wenn Abmessungen geändert werden.
+Der Sketcher bietet einen vollständigen Satz von Werkzeugen zum Erstellen geometrischer Formen und zum Anwenden parametrischer Einschränkungen, um präzise Beziehungen zwischen Elementen zu definieren. Dieser Ansatz stellt sicher, dass deine Designs ihre beabsichtigte Geometrie beibehalten, auch wenn Abmessungen geändert werden.
 
 ## Skizzen erstellen und bearbeiten
 
@@ -12,9 +12,9 @@ Der Sketcher bietet einen vollständigen Satz von Werkzeugen zum Erstellen geome
 
 1. Auf die "Neue Skizze"-Taste in der Symbolleiste klicken oder das Hauptmenü verwenden
 2. Ein neuer leerer Sketch-Arbeitsbereich öffnet sich mit der Sketch-Editor-Oberfläche
-3. Mit dem Erstellen von Geometrie beginnen, indem Sie die Zeichenwerkzeuge aus dem Kreismenü oder Tastatur-Kurzbefehlen verwenden
+3. Mit dem Erstellen von Geometrie beginnen, indem du die Zeichenwerkzeuge aus dem Kreismenü oder Tastatur-Kurzbefehlen verwendest
 4. Einschränkungen anwenden, um Beziehungen zwischen Elementen zu definieren
-5. Auf "Skizze fertigstellen" klicken, um Ihre Arbeit zu speichern und zum Hauptarbeitsbereich zurückzukehren
+5. Auf "Skizze fertigstellen" klicken, um deine Arbeit zu speichern und zum Hauptarbeitsbereich zurückzukehren
 
 ### Bestehende Skizzen bearbeiten
 
@@ -32,14 +32,14 @@ Der Sketcher unterstützt das Erstellen der folgenden grundlegenden geometrische
 - **Bögen**: Bögen durch Angeben eines Mittelpunkts, Startpunkts und Endpunkts zeichnen
 - **Rechtecke**: Rechtecke durch Angeben von zwei gegenüberliegenden Ecken zeichnen
 - **Abgerundete Rechtecke**: Rechtecke mit abgerundeten Ecken zeichnen
-- **Textfelder**: Textelemente zu Ihrer Skizze hinzufügen
+- **Textfelder**: Textelemente zu deiner Skizze hinzufügen
 - **Füllungen**: Geschlossene Bereiche füllen, um feste Bereiche zu erstellen
 
-Diese Elemente bilden die Grundlage Ihrer 2D-Designs und können kombiniert werden, um komplexe Formen zu erstellen. Füllungen sind besonders nützlich, um feste Bereiche zu erstellen, die als ein Stück graviert oder geschnitten werden.
+Diese Elemente bilden die Grundlage deiner 2D-Designs und können kombiniert werden, um komplexe Formen zu erstellen. Füllungen sind besonders nützlich, um feste Bereiche zu erstellen, die als ein Stück graviert oder geschnitten werden.
 
 ## Parametrisches Einschränkungssystem
 
-Das Einschränkungssystem ist der Kern des parametrischen Sketchers und ermöglicht es Ihnen, präzise geometrische Beziehungen zu definieren:
+Das Einschränkungssystem ist der Kern des parametrischen Sketchers und ermöglicht es dir, präzise geometrische Beziehungen zu definieren:
 
 ### Geometrische Einschränkungen
 
@@ -65,9 +65,9 @@ Das Einschränkungssystem ist der Kern des parametrischen Sketchers und ermögli
 
 ## Kreismenü-Oberfläche
 
-Der Sketcher verfügt über ein kontextsensitives Kreismenü, das schnellen Zugriff auf alle Zeichen- und Einschränkungswerkzeuge bietet. Dieses Radialmenü erscheint, wenn Sie im Sketch-Arbeitsbereich rechtsklicken, und passt sich basierend auf Ihrem aktuellen Kontext und Ihrer Auswahl an.
+Der Sketcher verfügt über ein kontextsensitives Kreismenü, das schnellen Zugriff auf alle Zeichen- und Einschränkungswerkzeuge bietet. Dieses Radialmenü erscheint, wenn du im Sketch-Arbeitsbereich rechtsklickst, und passt sich basierend auf deinem aktuellen Kontext und deiner Auswahl an.
 
-Die Kreismenü-Elemente zeigen dynamisch verfügbare Optionen basierend darauf, was Sie ausgewählt haben. Wenn Sie beispielsweise auf leeren Raum klicken, sehen Sie Zeichenwerkzeuge. Wenn Sie auf ausgewählte Geometrie klicken, sehen Sie anwendbare Einschränkungen.
+Die Kreismenü-Elemente zeigen dynamisch verfügbare Optionen basierend darauf, was du ausgewählt hast. Wenn du beispielsweise auf leeren Raum klickst, siehst du Zeichenwerkzeuge. Wenn du auf ausgewählte Geometrie klickst, siehst du anwendbare Einschränkungen.
 
 ![Sketcher-Kreismenü](/screenshots/sketcher-pie-menu.png)
 
@@ -113,7 +113,7 @@ Der Sketcher bietet Tastatur-Kurzbefehle für effizienten Workflow:
 
 ## Konstruktionsmodus
 
-Der Konstruktionsmodus ermöglicht es Ihnen, Entitäten als "Konstruktionsgeometrie" zu markieren - Hilfselemente, die verwendet werden, um Ihr Design zu leiten, aber nicht Teil der endgültigen Ausgabe sind. Konstruktions-Entitäten werden anders angezeigt (typischerweise als gestrichelte Linien) und werden nicht eingeschlossen, wenn die Skizze zum Laserschneiden oder Gravieren verwendet wird.
+Der Konstruktionsmodus ermöglicht es dir, Entitäten als "Konstruktionsgeometrie" zu markieren - Hilfselemente, die verwendet werden, um dein Design zu leiten, aber nicht Teil der endgültigen Ausgabe sind. Konstruktions-Entitäten werden anders angezeigt (typischerweise als gestrichelte Linien) und werden nicht eingeschlossen, wenn die Skizze zum Laserschneiden oder Gravieren verwendet wird.
 
 Um den Konstruktionsmodus umzuschalten:
 - Eine oder mehrere Entitäten auswählen
@@ -126,7 +126,7 @@ Konstruktions-Entitäten sind nützlich für:
 
 ## Fase und Verrundung
 
-Der Sketcher bietet Werkzeuge zum Modifizieren von Ecken Ihrer Geometrie:
+Der Sketcher bietet Werkzeuge zum Modifizieren von Ecken deiner Geometrie:
 
 - **Fase**: Ersetzt eine scharfe Ecke durch eine abgeschrägte Kante. Einen Verbindungspunkt auswählen (wo sich zwei Linien treffen) und die Fasen-Aktion anwenden.
 - **Verrundung**: Ersetzt eine scharfe Ecke durch eine abgerundete Kante. Einen Verbindungspunkt auswählen (wo sich zwei Linien treffen) und die Verrundungs-Aktion anwenden.
@@ -140,7 +140,7 @@ Fase oder Verrundung verwenden:
 
 ### Objekte exportieren
 
-Sie können jedes ausgewählte Werkstück in verschiedene Vektorformate exportieren:
+Du kannst jedes ausgewählte Werkstück in verschiedene Vektorformate exportieren:
 
 1. Ein Werkstück auf der Arbeitsfläche auswählen
 2. **Objekt → Objekt exportieren...** wählen (oder rechtsklicken und aus Kontextmenü auswählen)
@@ -151,11 +151,11 @@ Sie können jedes ausgewählte Werkstück in verschiedene Vektorformate exportie
 
 ### Skizzen speichern
 
-Sie können Ihre 2D-Skizzen in Dateien speichern, um sie in anderen Projekten wiederzuverwenden. Alle parametrischen Einschränkungen werden beim Speichern beibehalten, was sicherstellt, dass Ihre Designs ihre geometrischen Beziehungen beibehalten.
+Du kannst deine 2D-Skizzen in Dateien speichern, um sie in anderen Projekten wiederzuverwenden. Alle parametrischen Einschränkungen werden beim Speichern beibehalten, was sicherstellt, dass deine Designs ihre geometrischen Beziehungen beibehalten.
 
 ### Skizzen importieren
 
-Gespeicherte Skizzen können in jeden Arbeitsbereich importiert werden, was es Ihnen ermöglicht, eine Bibliothek häufig verwendeter Designelemente zu erstellen. Der Importprozess behält alle Einschränkungen und dimensionalen Beziehungen bei.
+Gespeicherte Skizzen können in jeden Arbeitsbereich importiert werden, was es dir ermöglicht, eine Bibliothek häufig verwendeter Designelemente zu erstellen. Der Importprozess behält alle Einschränkungen und dimensionalen Beziehungen bei.
 
 ## Workflow-Tipps
 
@@ -164,7 +164,7 @@ Gespeicherte Skizzen können in jeden Arbeitsbereich importiert werden, was es I
 3. **Einschränkungsstatus überprüfen**: Das System zeigt an, wann Skizzen vollständig eingeschränkt sind
 4. **Auf Konflikte achten**: Einschränkungen, die miteinander in Konflikt stehen, werden rot hervorgehoben
 5. **Symmetrie nutzen**: Symmetrie-Einschränkungen können komplexe Designs erheblich beschleunigen
-6. **Iterieren und verfeinern**: Zögern Sie nicht, Einschränkungen zu ändern, um das gewünschte Ergebnis zu erzielen
+6. **Iterieren und verfeinern**: Zögere nicht, Einschränkungen zu ändern, um das gewünschte Ergebnis zu erzielen
 
 ## Bearbeitungsfunktionen
 

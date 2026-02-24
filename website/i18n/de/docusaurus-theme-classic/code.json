@@ -12,11 +12,11 @@
     "description": "The title of the 404 page"
   },
   "theme.NotFound.p1": {
-    "message": "Wir konnten nicht finden, was Sie gesucht haben.",
+    "message": "Wir konnten nicht finden, was du gesucht hast.",
     "description": "The first paragraph of the 404 page"
   },
   "theme.NotFound.p2": {
-    "message": "Bitte kontaktieren Sie den Eigentümer der Website, die Sie hierher geleitet hat, und informieren Sie ihn, dass der Link defekt ist.",
+    "message": "Bitte kontaktiere den Eigentümer der Website, die dich hierher geleitet hat, und informiere ihn, dass der Link defekt ist.",
     "description": "The 2nd paragraph of the 404 page"
   },
   "theme.admonition.note": {
@@ -236,7 +236,7 @@
     "description": "The title for error screen"
   },
   "theme.SearchModal.errorScreen.helpText": {
-    "message": "Sie können versuchen, die Seite zu aktualisieren.",
+    "message": "Du kannst versuchen, die Seite zu aktualisieren.",
     "description": "The help text for error screen"
   },
   "theme.SearchModal.footer.selectText": {

@@ -221,15 +221,15 @@ die Pipeline-Methoden implementieren und ihre Fähigkeiten über das
 
 Um Unterstützung für ein neues Dateiformat hinzuzufügen:
 
-1. **Erstellen Sie eine neue Importer-Klasse**, die von `Importer` erbt
-2. **Deklarieren Sie unterstützte Features** über das `features`-Klassenattribut
-3. **Implementieren Sie die erforderlichen Methoden**:
+1. **Erstelle eine neue Importer-Klasse**, die von `Importer` erbt
+2. **Deklariere unterstützte Features** über das `features`-Klassenattribut
+3. **Implementiere die erforderlichen Methoden**:
    - `scan()`: Metadaten schnell extrahieren (für UI-Vorschauen)
    - `parse()`: Geometrische Fakten extrahieren
    - `vectorize()`: Zu Vektorgeometrie konvertieren
    - `create_source_asset()`: Das Quell-Asset erstellen
-4. **Registrieren Sie den Importer** in `rayforge/image/__init__.py`
-5. **Fügen Sie MIME-Typ und Erweiterungs-Mappings hinzu**
+4. **Registriere den Importer** in `rayforge/image/__init__.py`
+5. **Füge MIME-Typ und Erweiterungs-Mappings hinzu**
 
 **Beispiel:**
 

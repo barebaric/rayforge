@@ -10,7 +10,7 @@ Rayforge unterstützt mehrere Exportoptionen für verschiedene Zwecke:
 
 ## Objekte exportieren
 
-Sie können jedes Werkstück in Vektorformate exportieren zur Verwendung in Design-Software, CAD-Anwendungen oder zur Archivierung.
+Du kannst jedes Werkstück in Vektorformate exportieren zur Verwendung in Design-Software, CAD-Anwendungen oder zur Archivierung.
 
 ### Wie man exportiert
 
@@ -53,7 +53,7 @@ Sie können jedes Werkstück in Vektorformate exportieren zur Verwendung in Desi
 
 ## Dokumente exportieren
 
-Sie können alle Werkstücke in einem Dokument in eine einzelne Vektordatei exportieren. Dies ist nützlich zum Teilen kompletter Projekte oder Erstellen von Backups in Standardformaten.
+Du kannst alle Werkstücke in einem Dokument in eine einzelne Vektordatei exportieren. Dies ist nützlich zum Teilen kompletter Projekte oder Erstellen von Backups in Standardformaten.
 
 ### Wie man exportiert
 
@@ -78,7 +78,7 @@ Sie können alle Werkstücke in einem Dokument in eine einzelne Vektordatei expo
 ### Anwendungsfälle
 
 - **Projekt-Teilung**: Gesamtes Projekt für Zusammenarbeit exportieren
-- **Backup**: Visuelles Archiv Ihrer Arbeit erstellen
+- **Backup**: Visuelles Archiv deiner Arbeit erstellen
 - **Weiterbearbeitung**: Das gesamte Design in Inkscape oder CAD-Software übernehmen
 
 ---

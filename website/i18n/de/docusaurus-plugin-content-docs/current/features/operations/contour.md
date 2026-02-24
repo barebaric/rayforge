@@ -14,7 +14,7 @@ Kontur-Operationen:
 
 ## Wann Kontur verwenden
 
-Verwenden Sie Kontur-Schneiden für:
+Verwende Kontur-Schneiden für:
 
 - Teile aus Rohmaterial schneiden
 - Umrisse und Rahmen erstellen
@@ -22,9 +22,9 @@ Verwenden Sie Kontur-Schneiden für:
 - Perforieren oder Ritzen (mit reduzierter Leistung)
 - Schablonen und Vorlagen erstellen
 
-**Verwenden Sie Kontur nicht für:**
+**Verwende Kontur nicht für:**
 
-- Bereiche füllen (verwenden Sie stattdessen [Gravur](engrave))
+- Bereiche füllen (verwende stattdessen [Gravur](engrave))
 - Bitmap-Bilder (zuerst in Vektoren konvertieren)
 
 ## Eine Kontur-Operation erstellen
@@ -73,14 +73,14 @@ Für Materialien dicker als ein einzelner Durchgang schneiden kann:
 **Durchgang-Tiefe (Z-Schritt):**
 
 - Wie viel pro Durchgang die Z-Achse abzusenken ist (falls unterstützt)
-- Erfordert Z-Achsen-Steuerung auf Ihrer Maschine
+- Erfordert Z-Achsen-Steuerung auf deiner Maschine
 - Erzeugt echtes 2.5D-Schneiden
 - Auf 0 setzen für gleich tiefe Mehrfach-Durchgänge
 
 :::warning Z-Achse erforderlich
 :::
 
-Durchgang-Tiefe funktioniert nur, wenn Ihre Maschine über Z-Achsen-Steuerung verfügt. Für Maschinen ohne Z-Achse verwenden Sie mehrere Durchgänge auf gleicher Tiefe.
+Durchgang-Tiefe funktioniert nur, wenn deine Maschine über Z-Achsen-Steuerung verfügt. Für Maschinen ohne Z-Achse verwende mehrere Durchgänge auf gleicher Tiefe.
 
 ### Pfad-Offset
 
@@ -95,7 +95,7 @@ Steuert, wo der Laser relativ zum Vektorpfad schneidet:
 **Offset-Distanz:**
 
 - Wie weit innen/außen zu offseten (mm)
-- Typischerweise auf die Hälfte Ihrer Schnittbreite eingestellt
+- Typischerweise auf die Hälfte deiner Schnittbreite eingestellt
 - Schnittbreite = Breite des vom Laser entfernten Materials
 - Beispiel: 0.15mm Offset für 0.3mm Schnittbreite
 

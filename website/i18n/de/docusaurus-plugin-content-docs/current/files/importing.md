@@ -1,6 +1,6 @@
 # Dateien importieren
 
-Rayforge unterstützt das Importieren verschiedener Dateiformate, sowohl Vektor- als auch Rasterformate. Diese Seite erklärt, wie Sie Dateien importieren und für beste Ergebnisse optimieren.
+Rayforge unterstützt das Importieren verschiedener Dateiformate, sowohl Vektor- als auch Rasterformate. Diese Seite erklärt, wie du Dateien importierst und für beste Ergebnisse optimierst.
 
 ## Unterstützte Dateiformate
 
@@ -32,7 +32,7 @@ Alle Rasterbilder werden **nachverfolgt**, um Vektorpfade zu erstellen, die für
 
 ### Der Import-Dialog
 
-Rayforge verfügt über einen einheitlichen Import-Dialog, der Live-Vorschau und Konfigurationsoptionen für alle unterstützten Dateitypen bietet. Der Dialog ermöglicht Ihnen:
+Rayforge verfügt über einen einheitlichen Import-Dialog, der Live-Vorschau und Konfigurationsoptionen für alle unterstützten Dateitypen bietet. Der Dialog ermöglicht dir:
 
 - **Import voranschauen**, bevor er zum Dokument hinzugefügt wird
 - **Nachverfolgungseinstellungen konfigurieren** für Rasterbilder
@@ -51,7 +51,7 @@ Rayforge verfügt über einen einheitlichen Import-Dialog, der Live-Vorschau und
 
 ### Methode 2: Ziehen und Ablegen
 
-1. **Datei ziehen** aus Ihrem Dateimanager
+1. **Datei ziehen** aus deinem Dateimanager
 2. **Auf Rayforge-Canvas ablegen**
 3. **Importeinstellungen konfigurieren** im Import-Dialog
 4. **Vorschau** des Ergebnisses vor dem Import
@@ -69,7 +69,7 @@ rayforge datei1.svg datei2.dxf
 
 ### Automatische Größenanpassung beim Import
 
-Beim Importieren von Dateien, die größer als der Arbeitsbereich Ihrer Maschine sind, wird Rayforge automatisch:
+Beim Importieren von Dateien, die größer als der Arbeitsbereich deiner Maschine sind, wird Rayforge automatisch:
 
 1. **Herunterskalieren** des importierten Inhalts, um in die Maschinengrenzen zu passen
 2. **Seitenverhältnis beibehalten** während der Skalierung
@@ -82,7 +82,7 @@ Die Größenänderungs-Benachrichtigung erscheint als Toast-Meldung:
 - Enthält eine **"Zurücksetzen"-Schaltfläche** um die automatische Größenanpassung rückgängig zu machen
 - Der Toast bleibt sichtbar bis er geschlossen wird oder die Zurücksetzen-Aktion ausgeführt wird
 
-Dies stellt sicher, dass Ihre Designs immer in die Fähigkeiten Ihrer Maschine passen, während Sie die Flexibilität haben, die Originalgröße bei Bedarf wiederherzustellen.
+Dies stellt sicher, dass deine Designs immer in die Fähigkeiten deiner Maschine passen, während du die Flexibilität hast, die Originalgröße bei Bedarf wiederherzustellen.
 
 ---
 
@@ -123,7 +123,7 @@ Diese Option ist im Import-Dialog standardmäßig aktiviert.
 
 #### 2. Bitmap nachverfolgen
 
-Deaktivieren Sie "Originalvektoren verwenden" um diese Methode zu nutzen.
+Deaktiviere "Originalvektoren verwenden" um diese Methode zu nutzen.
 
 **Wie es funktioniert:**
 
@@ -151,7 +151,7 @@ Deaktivieren Sie "Originalvektoren verwenden" um diese Methode zu nutzen.
 
 ### Live-Vorschau
 
-Der Import-Dialog zeigt eine Live-Vorschau, wie Ihr SVG importiert wird:
+Der Import-Dialog zeigt eine Live-Vorschau, wie dein SVG importiert wird:
 
 - Vektorpfade werden als blaues Overlay angezeigt
 - Für Nachverfolgungsmodus wird das Originalbild mit den nachverfolgten Pfaden angezeigt
@@ -159,7 +159,7 @@ Der Import-Dialog zeigt eine Live-Vorschau, wie Ihr SVG importiert wird:
 
 ### SVG-Best Practices
 
-**Bereiten Sie Ihr SVG für beste Ergebnisse vor:**
+**Bereite dein SVG für beste Ergebnisse vor:**
 
 1. **Text in Pfade konvertieren:**
 
@@ -212,7 +212,7 @@ Rayforge unterstützt Standard-DXF-Formate:
 - **R13, R14** - Gute Unterstützung
 - **R2000+** - Funktioniert normalerweise, aber R12 ist sicherer
 
-**Tipp:** Exportieren Sie als R12/LT2 DXF für maximale Kompatibilität.
+**Tipp:** Exportiere als R12/LT2 DXF für maximale Kompatibilität.
 
 ### DXF-Import-Tipps
 
@@ -231,7 +231,7 @@ Rayforge unterstützt Standard-DXF-Formate:
 
 3. **Ebenen abflachen:**
 
-   - Erwägen Sie, nur relevante Ebenen zu exportieren
+   - Erwäge, nur relevante Ebenen zu exportieren
    - Konstruktions-Ebenen ausblenden oder löschen
 
 4. **Angemessene Präzision verwenden:**
@@ -257,9 +257,9 @@ Beim Importieren von PDF-Dateien über den Import-Dialog **rendert Rayforge das 
 **Prozess:**
 
 1. PDF gerendert und im Import-Dialog-Vorschau angezeigt
-2. Sie können Nachverfolgungseinstellungen in Echtzeit anpassen
-3. Gerendertes Bild mit Vektorisierung mit Ihren Einstellungen nachverfolgt
-4. Resultierende Pfade zum Dokument hinzugefügt, wenn Sie auf Import klicken
+2. Du kannst Nachverfolgungseinstellungen in Echtzeit anpassen
+3. Gerendertes Bild mit Vektorisierung mit deinen Einstellungen nachverfolgt
+4. Resultierende Pfade zum Dokument hinzugefügt, wenn du auf Import klicken
 
 **Einschränkungen:**
 
@@ -334,7 +334,7 @@ Der Import-Dialog bietet diese einstellbaren Parameter:
 | **Schwellenwert**  | Schwarz/Weiß-Grenze| Niedriger = mehr Details, höher = einfacher         |
 | **Invertieren**    | Farben umkehren    | Helle Objekte auf dunklem Hintergrund nachverfolgen |
 
-**Standardeinstellungen** funktionieren gut für die meisten Bilder. Der Dialog zeigt eine Live-Vorschau, die sich beim Anpassen dieser Einstellungen aktualisiert, sodass Sie die Nachverfolgung vor dem Importieren feinabstimmen können.
+**Standardeinstellungen** funktionieren gut für die meisten Bilder. Der Dialog zeigt eine Live-Vorschau, die sich beim Anpassen dieser Einstellungen aktualisiert, sodass du die Nachverfolgung vor dem Importieren feinabstimmen kannst.
 
 ### Bilder für Nachverfolgung vorbereiten
 

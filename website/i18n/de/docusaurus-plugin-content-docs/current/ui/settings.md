@@ -2,7 +2,7 @@
 
 ![Allgemeine Einstellungen](/screenshots/application-general.png)
 
-Passen Sie Rayforge an Ihren Workflow und Ihre Vorlieben an.
+Passe Rayforge an deinen Workflow und deine Vorlieben an.
 
 ## Zugriff auf Einstellungen
 
@@ -15,11 +15,11 @@ Die Seite Allgemein enthält anwendungsweite Einstellungen.
 
 ### Erscheinungsbild
 
-- **Design**: Wählen Sie zwischen System, Hell oder Dunkel
+- **Design**: Wähle zwischen System, Hell oder Dunkel
 
 ### Einheiten
 
-Konfigurieren Sie Anzeigeeinheiten für verschiedene Werte in der gesamten Anwendung:
+Konfiguriere Anzeigeeinheiten für verschiedene Werte in der gesamten Anwendung:
 
 - **Länge**: Millimeter, Zoll und andere Längeneinheiten
 - **Geschwindigkeit**: mm/min, mm/sek, Zoll/min und andere Geschwindigkeitseinheiten
@@ -27,7 +27,7 @@ Konfigurieren Sie Anzeigeeinheiten für verschiedene Werte in der gesamten Anwen
 
 ### Start
 
-Konfigurieren Sie, was passiert, wenn Sie die Anwendung starten. Auf der Kommandozeile angegebene Dateien setzen diese Einstellungen immer außer Kraft.
+Konfiguriere, was passiert, wenn du die Anwendung startest. Auf der Kommandozeile angegebene Dateien setzen diese Einstellungen immer außer Kraft.
 
 - **Startverhalten**:
   - Nichts öffnen
@@ -38,7 +38,7 @@ Konfigurieren Sie, was passiert, wenn Sie die Anwendung starten. Auf der Kommand
 
 ## Maschinen
 
-Die Seite Maschinen ermöglicht Ihnen, Ihre Maschinenkonfigurationen zu verwalten.
+Die Seite Maschinen ermöglicht dir, deine Maschinenkonfigurationen zu verwalten.
 
 - **Maschine hinzufügen**: Eine neue Maschinenkonfiguration erstellen
 - **Maschine entfernen**: Eine ausgewählte Maschine löschen
@@ -48,21 +48,21 @@ Für detaillierte Maschinenkonfiguration siehe den Abschnitt [Maschineneinrichtu
 
 ## Materialien
 
-Die Seite Materialien verwaltet Ihre Materialbibliothek.
+Die Seite Materialien verwaltet deine Materialbibliothek.
 
 - **Material hinzufügen**: Eine neue Materialvoreinstellung erstellen
 - **Bibliothek importieren**: Materialien aus einer Datei importieren
-- **Bibliothek exportieren**: Ihre Materialien für Backup oder Weitergabe exportieren
+- **Bibliothek exportieren**: Deine Materialien für Backup oder Weitergabe exportieren
 
 Siehe [Materialien](../application-settings/materials) für weitere Details.
 
 ## Rezepte
 
-Die Seite Rezepte verwaltet Ihre Operationsrezepte.
+Die Seite Rezepte verwaltet deine Operationsrezepte.
 
 - **Rezept hinzufügen**: Ein neues Rezept erstellen
 - **Rezepte importieren**: Rezepte aus einer Datei importieren
-- **Rezepte exportieren**: Ihre Rezepte für Backup oder Weitergabe exportieren
+- **Rezepte exportieren**: Deine Rezepte für Backup oder Weitergabe exportieren
 
 Siehe [Rezepte](../application-settings/recipes) für weitere Details.
 
@@ -77,5 +77,5 @@ Die Seite Pakete zeigt installierte Erweiterungspakete.
 
 ## Verwandte Themen
 
-- [Maschineneinrichtung](../machine/general) - Ihren Laserschneider konfigurieren
+- [Maschineneinrichtung](../machine/general) - Deinen Laserschneider konfigurieren
 - [Tastaturkürzel](../reference/shortcuts) - Tastaturkürzel

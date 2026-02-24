@@ -1,12 +1,12 @@
-# Ihren Job simulieren
+# Deinen Job simulieren
 
 ![Simulationsmodus-Screenshot](/screenshots/main-simulation.png)
 
-Erfahren Sie, wie Sie den Simulationsmodus von Rayforge verwenden, um Ihren Laserjob vorauszuschauen, potenzielle Probleme zu identifizieren und die Fertigstellungszeit zu schätzen, bevor Sie auf echter Hardware ausführen.
+Erfahre, wie du den Simulationsmodus von Rayforge verwendest, um deinen Laserjob vorauszuschauen, potenzielle Probleme zu identifizieren und die Fertigstellungszeit zu schätzen, bevor du auf echter Hardware ausführst.
 
 ## Übersicht
 
-Der Simulationsmodus ermöglicht es Ihnen, Ihre Laserjob-Ausführung zu visualisieren, ohne die Maschine tatsächlich auszuführen. Dies hilft, Fehler zu erkennen, Einstellungen zu optimieren und Ihren Workflow zu planen.
+Der Simulationsmodus ermöglicht es dir, deine Laserjob-Ausführung zu visualisieren, ohne die Maschine tatsächlich auszuführen. Dies hilft, Fehler zu erkennen, Einstellungen zu optimieren und deinen Workflow zu planen.
 
 ## Vorteile der Simulation
 
@@ -18,10 +18,10 @@ Der Simulationsmodus ermöglicht es Ihnen, Ihre Laserjob-Ausführung zu visualis
 
 ## Eine Simulation starten
 
-1. **Laden oder erstellen Sie Ihr Design** in Rayforge
+1. **Laden oder erstelle dein Design** in Rayforge
 2. **Operationen konfigurieren** mit gewünschten Einstellungen
 3. **Auf die Simulieren-Taste klicken** in der Symbolleiste (oder Tastenkombination verwenden)
-4. **Die Simulation ansehen**, die Ihren Job abspielt
+4. **Die Simulation ansehen**, die deinen Job abspielt
 
 ## Simulations-Steuerungen
 
@@ -90,8 +90,8 @@ Wenn die Simulation ineffiziente Pfad-Reihenfolge zeigt:
 
 Die Simulation liefert genaue Zeitschätzungen:
 
-- **Lange Job-Zeiten**: Erwägen Sie, Pfade zu optimieren oder Geschwindigkeit zu erhöhen
-- **Sehr kurze Zeiten**: Überprüfen Sie, ob Einstellungen für das Material korrekt sind
+- **Lange Job-Zeiten**: Erwäge, Pfade zu optimieren oder Geschwindigkeit zu erhöhen
+- **Sehr kurze Zeiten**: Überprüfe, ob Einstellungen für das Material korrekt sind
 - **Unerwartete Dauer**: Auf versteckte Operationen oder Duplikate prüfen
 
 ### Mehrschicht-Jobs verifizieren
@@ -118,8 +118,8 @@ Die Simulation ist hochgenau, aber:
 
 - **Nach Änderung von Einstellungen**: Leistung, Geschwindigkeit oder Operationsparameter
 - **Nach Design-Bearbeitung**: Jegliche Design-Änderungen
-- **Vor teuren Materialien**: Doppelt prüfen, bevor Sie sich verpflichten
-- **Bei Fehlerbehebung**: Überprüfen Sie Fixes für identifizierte Probleme
+- **Vor teuren Materialien**: Doppelt prüfen, bevor du dich verpflichtest
+- **Bei Fehlerbehebung**: Überprüfe Fixes für identifizierte Probleme
 
 ## Tipps für effektive Simulation
 
@@ -131,13 +131,13 @@ Die Simulation ist hochgenau, aber:
 
 ## Fehlerbehebung bei der Simulation
 
-**Simulation startet nicht**: Überprüfen Sie, dass Operationen richtig konfiguriert sind
+**Simulation startet nicht**: Überprüfe, dass Operationen richtig konfiguriert sind
 
 **Simulation läuft zu schnell**: Wiedergabegeschwindigkeit auf langsamere Einstellung anpassen
 
 **Kann Details nicht sehen**: In spezifische Interessensbereiche hineinzoomen
 
-**Zeitschätzung scheint falsch**: Verifizieren Sie, dass Maschinenprofil korrekte Max-Geschwindigkeiten hat
+**Zeitschätzung scheint falsch**: Verifiziere, dass Maschinenprofil korrekte Max-Geschwindigkeiten hat
 
 ## Verwandte Themen
 

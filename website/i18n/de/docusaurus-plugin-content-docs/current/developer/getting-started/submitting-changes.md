@@ -4,7 +4,7 @@ Dieser Leitfaden behandelt den Prozess für das Einreichen von Code-Verbesserung
 
 ## Einen Feature-Branch erstellen
 
-Erstellen Sie einen beschreibenden Branch für Ihre Änderungen:
+Erstelle einen beschreibenden Branch für deine Änderungen:
 
 ```bash
 git checkout -b feature/ihr-feature-name
@@ -14,14 +14,14 @@ git checkout -b fix/issue-nummer-beschreibung
 
 ## Änderungen vornehmen
 
-- Folgen Sie dem bestehenden Code-Stil und Konventionen
-- Schreiben Sie saubere, fokussierte Commits mit klaren Nachrichten
-- Fügen Sie Tests für neue Funktionalität hinzu
-- Aktualisieren Sie Dokumentation nach Bedarf
+- Folge dem bestehenden Code-Stil und Konventionen
+- Schreibe saubere, fokussierte Commits mit klaren Nachrichten
+- Füge Tests für neue Funktionalität hinzu
+- Aktualisiere Dokumentation nach Bedarf
 
 ## Änderungen testen
 
-Führen Sie die vollständige Test-Suite aus, um sicherzustellen, dass nichts kaputt ist:
+Führe die vollständige Test-Suite aus, um sicherzustellen, dass nichts kaputt ist:
 
 ```bash
 # Alle Tests und Linting ausführen
@@ -31,34 +31,34 @@ pixi run lint
 
 ## Mit Upstream synchronisieren
 
-Bevor Sie einen Pull-Request erstellen, synchronisieren Sie mit dem Upstream-Repository:
+Bevor du einen Pull-Request erstellst, synchronisiere mit dem Upstream-Repository:
 
 ```bash
 # Die neuesten Änderungen abrufen
 git fetch upstream
 
-# Ihren Branch auf dem neuesten Main rebasen
+# Deinen Branch auf dem neuesten Main rebasen
 git rebase upstream/main
 ```
 
 ## Einen Pull-Request einreichen
 
-1. Pushen Sie Ihren Branch zu Ihrem Fork:
+1. Pushe deinen Branch zu deinem Fork:
    ```bash
    git push origin feature/ihr-feature-name
    ```
 
-2. Erstellen Sie einen Pull-Request auf GitHub mit:
+2. Erstelle einen Pull-Request auf GitHub mit:
    - Einer klaren Überschrift, die die Änderung beschreibt
-   - Einer detaillierten Beschreibung, was Sie geändert haben und warum
+   - Einer detaillierten Beschreibung, was du geändert hast und warum
    - Referenz auf verwandte Issues
    - Screenshots, wenn die Änderung die UI betrifft
 
 ## Code-Review-Prozess
 
 - Alle Pull-Requests erfordern Review vor dem Mergen
-- Gehen Sie zeitnah auf Feedback ein und machen Sie angeforderte Änderungen
-- Halten Sie die Diskussion fokussiert und konstruktiv
+- Gehe zeitnah auf Feedback ein und mache angeforderte Änderungen
+- Halte die Diskussion fokussiert und konstruktiv
 
 ## Merge-Anforderungen
 
@@ -74,22 +74,22 @@ Pull-Requests werden gemergt, wenn sie:
 
 ### Commit-Nachrichten
 
-Verwenden Sie klare, beschreibende Commit-Nachrichten:
+Verwende klare, beschreibende Commit-Nachrichten:
 
-- Beginnen Sie mit einem Großbuchstaben
-- Halten Sie die erste Zeile unter 50 Zeichen
-- Verwenden Sie den Imperativ ("Feature hinzufügen" nicht "Feature hinzugefügt")
-- Fügen Sie bei Bedarf mehr Details im Body hinzu
+- Beginne mit einem Großbuchstaben
+- Halte die erste Zeile unter 50 Zeichen
+- Verwende den Imperativ ("Feature hinzufügen" nicht "Feature hinzugefügt")
+- Füge bei Bedarf mehr Details im Body hinzu
 
 ### Kleine, fokussierte Änderungen
 
-Halten Sie Pull-Requests auf ein einzelnes Feature oder einen Fix fokussiert. Große Änderungen sollten in kleinere, logische Teile zerlegt werden.
+Halte Pull-Requests auf ein einzelnes Feature oder einen Fix fokussiert. Große Änderungen sollten in kleinere, logische Teile zerlegt werden.
 
 :::tip Erst besprechen
-Für größere Änderungen öffnen Sie zuerst ein [Issue](https://github.com/barebaric/rayforge/issues), um Ihren Ansatz zu besprechen, bevor Sie erhebliche Zeit investieren.
+Für größere Änderungen öffne zuerst ein [Issue](https://github.com/barebaric/rayforge/issues), um deinen Ansatz zu besprechen, bevor du erhebliche Zeit investierst.
 :::
 
 
 :::note Hilfe benötigt?
-Wenn Sie unsicher über einen Teil des Beitragsprozesses sind, zögern Sie nicht, in einem Issue oder einer Diskussion um Hilfe zu fragen.
+Wenn du unsicher über einen Teil des Beitragsprozesses bist, zögere nicht, in einem Issue oder einer Diskussion um Hilfe zu fragen.
 :::

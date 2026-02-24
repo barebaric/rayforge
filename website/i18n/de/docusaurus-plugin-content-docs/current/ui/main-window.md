@@ -1,6 +1,6 @@
 # Hauptfenster
 
-Das Rayforge-Hauptfenster ist Ihr primärer Arbeitsbereich zum Erstellen und Verwalten von Laseraufträgen.
+Das Rayforge-Hauptfenster ist dein primärer Arbeitsbereich zum Erstellen und Verwalten von Laseraufträgen.
 
 ## Fensterlayout
 
@@ -28,13 +28,13 @@ Schneller Zugriff auf häufig verwendete Werkzeuge:
 - **Ausrichtungswerkzeuge**: Objekte ausrichten und verteilen
 - **WCS-Dropdown**: Das aktive Werkstückkoordinatensystem auswählen (G53-G59)
 
-Das WCS-Dropdown ermöglicht Ihnen, schnell zwischen Koordinatensystemen zu wechseln.
+Das WCS-Dropdown ermöglicht dir, schnell zwischen Koordinatensystemen zu wechseln.
 Siehe [Werkstückkoordinatensysteme](../general-info/work-coordinate-systems) für
 weitere Informationen.
 
 ### 3. Canvas
 
-Der Hauptarbeitsbereich, in dem Sie:
+Der Hauptarbeitsbereich, in dem du:
 
 - Designs importieren und anordnen
 - Werkzeugwege voranschauen
@@ -51,7 +51,7 @@ Der Hauptarbeitsbereich, in dem Sie:
 
 Operationen und Ebenenzuweisungen verwalten:
 
-- Alle Operationen in Ihrem Projekt anzeigen
+- Alle Operationen in deinem Projekt anzeigen
 - Operationen zu Design-Elementen zuweisen
 - Reihenfolge der Operationsausführung ändern
 - Einzelne Operationen aktivieren/deaktivieren
@@ -88,14 +88,14 @@ Panels nach Bedarf anzeigen/verbergen:
 
 ### Vollbildmodus
 
-Auf Ihre Arbeit fokussieren mit Vollbild:
+Auf deine Arbeit fokussieren mit Vollbild:
 
 - Aktivieren: <kbd>F11</kbd> oder Ansicht → Vollbild
 - Beenden: <kbd>F11</kbd> oder <kbd>Esc</kbd>
 
 ## Anpassung
 
-Passen Sie die Oberfläche an in **Bearbeiten → Einstellungen**:
+Passe die Oberfläche an in **Bearbeiten → Einstellungen**:
 
 - **Design**: Hell, dunkel oder System
 - **Einheiten**: Millimeter oder Zoll

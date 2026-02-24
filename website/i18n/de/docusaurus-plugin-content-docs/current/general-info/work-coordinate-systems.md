@@ -1,17 +1,17 @@
 # Arbeitskoordinatensysteme (WCS)
 
-Arbeitskoordinatensysteme (WCS) ermöglichen es Ihnen, mehrere Referenzpunkte auf dem Arbeitsbereich Ihrer Maschine zu definieren. Dies erleichtert es, denselben Job an verschiedenen Positionen auszuführen, ohne Werkstücke neu zu entwerfen oder neu zu positionieren.
+Arbeitskoordinatensysteme (WCS) ermöglichen es dir, mehrere Referenzpunkte auf dem Arbeitsbereich deiner Maschine zu definieren. Dies erleichtert es, denselben Job an verschiedenen Positionen auszuführen, ohne Werkstücke neu zu entwerfen oder neu zu positionieren.
 
 ## WCS verstehen
 
-Denken Sie an WCS als anpassbare "Nullpunkte" für Ihre Arbeit. Während Ihre Maschine eine feste Home-Position hat (bestimmt durch Endschalter), ermöglicht es WCS Ihnen zu definieren, wo Ihre Arbeit beginnen soll.
+Denke an WCS als anpassbare "Nullpunkte" für deine Arbeit. Während deine Maschine eine feste Home-Position hat (bestimmt durch Endschalter), ermöglicht es WCS dir zu definieren, wo deine Arbeit beginnen soll.
 
 ### Warum WCS verwenden?
 
-- **Mehrere Vorrichtungen**: Mehrere Arbeitsbereiche auf Ihrem Bett einrichten und zwischen ihnen wechseln
+- **Mehrere Vorrichtungen**: Mehrere Arbeitsbereiche auf deinem Bett einrichten und zwischen ihnen wechseln
 - **Wiederholbare Positionierung**: Denselben Job an verschiedenen Orten ausführen
-- **Schnelle Ausrichtung**: Einen Referenzpunkt basierend auf Ihrem Material oder Werkstück setzen
-- **Produktions-Workflows**: Mehrere Jobs über Ihren Arbeitsbereich organisieren
+- **Schnelle Ausrichtung**: Einen Referenzpunkt basierend auf deinem Material oder Werkstück setzen
+- **Produktions-Workflows**: Mehrere Jobs über deinen Arbeitsbereich organisieren
 
 ## WCS-Typen
 
@@ -29,17 +29,17 @@ Rayforge unterstützt die folgenden Koordinatensysteme:
 
 ### Maschinenkoordinaten (G53)
 
-G53 repräsentiert die absolute Position Ihrer Maschine, mit Null an der Home-Position der Maschine. Dies ist von Ihrer Hardware festgelegt und kann nicht geändert werden.
+G53 repräsentiert die absolute Position deiner Maschine, mit Null an der Home-Position der Maschine. Dies ist von deiner Hardware festgelegt und kann nicht geändert werden.
 
 **Wann verwenden:**
 
 - Referenzieren und Kalibrieren
 - Absolute Positionierung relativ zu Maschinen-Grenzen
-- Wenn Sie auf die physische Maschinenposition verweisen müssen
+- Wenn du auf die physische Maschinenposition verweisen musst
 
 ### Arbeitskoordinaten (G54-G59)
 
-Dies sind Offset-Koordinatensysteme, die Sie definieren können. Jedes hat seinen eigenen Nullpunkt, den Sie überall auf Ihrem Arbeitsbereich setzen können.
+Dies sind Offset-Koordinatensysteme, die du definieren kannst. Jedes hat seinen eigenen Nullpunkt, den du überall auf deinem Arbeitsbereich setzen kannst.
 
 **Wann verwenden:**
 
@@ -51,12 +51,12 @@ Dies sind Offset-Koordinatensysteme, die Sie definieren können. Jedes hat seine
 
 ### 2D-Arbeitsfläche
 
-Die 2D-Arbeitsfläche zeigt Ihren WCS-Ursprung mit einer grünen Markierung:
+Die 2D-Arbeitsfläche zeigt deinen WCS-Ursprung mit einer grünen Markierung:
 
 - **Grüne Linien**: Zeigen die aktuelle WCS-Ursprungs- (0, 0)-Position
 - **Raster-Ausrichtung**: Rasterlinien sind am WCS-Ursprung ausgerichtet, nicht am Maschinenursprung
 
-Die Ursprungsmarkierung bewegt sich, wenn Sie das aktive WCS oder seinen Offset ändern, und zeigt Ihnen genau, wo Ihre Arbeit beginnen wird.
+Die Ursprungsmarkierung bewegt sich, wenn du das aktive WCS oder seinen Offset änderst, und zeigt dir genau, wo deine Arbeit beginnen wird.
 
 ### 3D-Vorschau
 
@@ -66,7 +66,7 @@ In der 3D-Vorschau wird WCS anders angezeigt:
 - **Isolierte Ansicht**: Der WCS wird "isoliert" angezeigt - es sieht aus, als ob das Raster am WCS zentriert ist, nicht an der Maschine
 - **Beschriftungen**: Koordinatenbeschriftungen sind relativ zum WCS-Ursprung
 
-Dies erleichtert es zu visualisieren, wo Ihr Job relativ zum ausgewählten Arbeitskoordinatensystem laufen wird.
+Dies erleichtert es zu visualisieren, wo dein Job relativ zum ausgewählten Arbeitskoordinatensystem laufen wird.
 
 ## WCS auswählen und ändern
 
@@ -84,19 +84,19 @@ Dies erleichtert es zu visualisieren, wo Ihr Job relativ zum ausgewählten Arbei
 
 ## WCS-Offsets setzen
 
-Sie können definieren, wo sich jeder WCS-Ursprung auf Ihrer Maschine befindet.
+Du kannst definieren, wo sich jeder WCS-Ursprung auf deiner Maschine befindet.
 
 ### Null an aktueller Position setzen
 
-1. Mit Ihrer Maschine verbinden
-2. Das WCS auswählen, das Sie konfigurieren möchten (z.B. G54)
+1. Mit deiner Maschine verbinden
+2. Das WCS auswählen, das du konfigurieren möchtest (z.B. G54)
 3. Den Laserkopf an die Position verfahren, die (0, 0) sein soll
 4. Im Steuerungsfeld auf die Null-Tasten klicken:
    - **X nullen**: Setzt aktuelle X-Position als 0 für das aktive WCS
    - **Y nullen**: Setzt aktuelle Y-Position als 0 für das aktive WCS
    - **Z nullen**: Setzt aktuelle Z-Position als 0 für das aktive WCS
 
-Die Offsets werden im Controller Ihrer Maschine gespeichert und bleiben über Sitzungen hinweg erhalten.
+Die Offsets werden im Controller deiner Maschine gespeichert und bleiben über Sitzungen hinweg erhalten.
 
 ### Aktuelle Offsets anzeigen
 
@@ -105,12 +105,12 @@ Das Steuerungsfeld zeigt die aktuellen Offsets für das aktive WCS:
 - **Aktuelle Offsets**: Zeigt den (X, Y, Z)-Offset vom Maschinenursprung
 - **Aktuelle Position**: Zeigt die Position des Laserkopfs im aktiven WCS
 
-## WCS in Ihren Jobs
+## WCS in deinen Jobs
 
-Wenn Sie einen Job ausführen, verwendet Rayforge das aktive WCS, um Ihre Arbeit zu positionieren:
+Wenn du einen Job ausführst, verwendet Rayforge das aktive WCS, um deine Arbeit zu positionieren:
 
-1. Ihren Job in der Arbeitsfläche entwerfen
-2. Das WCS auswählen, das Sie verwenden möchten
+1. Deinen Job in der Arbeitsfläche entwerfen
+2. Das WCS auswählen, das du verwenden möchtest
 3. Den Job ausführen - er wird gemäß dem WCS-Offset positioniert
 
 Derselbe Job kann an verschiedenen Positionen ausgeführt werden, einfach durch Ändern des aktiven WCS.
@@ -119,30 +119,30 @@ Derselbe Job kann an verschiedenen Positionen ausgeführt werden, einfach durch 
 
 ### Workflow 1: Mehrere Vorrichtungs-Positionen
 
-Sie haben ein großes Bett und möchten drei Arbeitsbereiche einrichten:
+Du hast ein großes Bett und möchtest drei Arbeitsbereiche einrichten:
 
 1. **Maschine referenzieren**, um eine Referenz zu etablieren
 2. **Zum ersten Arbeitsbereich verfahren** und G54-Offset setzen (X nullen, Y nullen)
 3. **Zum zweiten Arbeitsbereich verfahren** und G55-Offset setzen
 4. **Zum dritten Arbeitsbereich verfahren** und G56-Offset setzen
-5. Jetzt können Sie zwischen G54, G55 und G56 wechseln, um Jobs in jedem Bereich auszuführen
+5. Jetzt kannst du zwischen G54, G55 und G56 wechseln, um Jobs in jedem Bereich auszuführen
 
 ### Workflow 2: An Material ausrichten
 
-Sie haben ein Stück Material irgendwo auf Ihrem Bett platziert:
+Du hast ein Stück Material irgendwo auf deinem Bett platziert:
 
-1. **Den Laserkopf verfahren** an die Ecke Ihres Materials
-2. **G54 auswählen** (oder Ihr bevorzugtes WCS)
+1. **Den Laserkopf verfahren** an die Ecke deines Materials
+2. **G54 auswählen** (oder dein bevorzugtes WCS)
 3. **X nullen und Y nullen klicken**, um die Materialecke als (0, 0) zu setzen
-4. **Ihren Job entwerfen** mit (0, 0) als Ursprung
+4. **Deinen Job entwerfen** mit (0, 0) als Ursprung
 5. **Den Job ausführen** - er wird von der Materialecke starten
 
 ### Workflow 3: Produktions-Raster
 
-Sie müssen dasselbe Teil 10-mal an verschiedenen Orten schneiden:
+Du musst dasselbe Teil 10-mal an verschiedenen Orten schneiden:
 
 1. **Ein Teil entwerfen** in Rayforge
-2. **G54-G59-Offsets einrichten** für Ihre gewünschten Positionen
+2. **G54-G59-Offsets einrichten** für deine gewünschten Positionen
 3. **Den Job ausführen** mit aktivem G54
 4. **Zu G55 wechseln** und erneut ausführen
 5. **Wiederholen** für jede WCS-Position
@@ -152,12 +152,12 @@ Sie müssen dasselbe Teil 10-mal an verschiedenen Orten schneiden:
 ### WCS-Einschränkungen
 
 - **G53 kann nicht geändert werden**: Maschinenkoordinaten sind von der Hardware festgelegt
-- **Offsets bleiben erhalten**: WCS-Offsets werden im Controller Ihrer Maschine gespeichert
-- **Verbindung erforderlich**: Sie müssen mit einer Maschine verbunden sein, um WCS-Offsets zu setzen
+- **Offsets bleiben erhalten**: WCS-Offsets werden im Controller deiner Maschine gespeichert
+- **Verbindung erforderlich**: Du musst mit einer Maschine verbunden sein, um WCS-Offsets zu setzen
 
 ### WCS und Job-Ursprung
 
-WCS funktioniert unabhängig von Ihren Job-Ursprungs-Einstellungen. Der Job-Ursprung bestimmt, wo auf der Arbeitsfläche Ihr Job beginnt, während WCS bestimmt, wo diese Arbeitsflächen-Position auf Ihrer Maschine abgebildet wird.
+WCS funktioniert unabhängig von deinen Job-Ursprungs-Einstellungen. Der Job-Ursprung bestimmt, wo auf der Arbeitsfläche dein Job beginnt, während WCS bestimmt, wo diese Arbeitsflächen-Position auf deiner Maschine abgebildet wird.
 
 ### Maschinen-Kompatibilität
 
@@ -173,5 +173,5 @@ Nicht alle Maschinen unterstützen alle WCS-Funktionen:
 
 - [Koordinatensysteme](coordinate-systems) - Koordinatensysteme verstehen
 - [Steuerungsfeld](../ui/control-panel) - Manuelle Steuerung und WCS-Verwaltung
-- [Maschinen-Setup](../machine/general) - Ihre Maschine konfigurieren
-- [3D-Vorschau](../ui/3d-preview) - Ihre Jobs visualisieren
+- [Maschinen-Setup](../machine/general) - Deine Maschine konfigurieren
+- [3D-Vorschau](../ui/3d-preview) - Deine Jobs visualisieren

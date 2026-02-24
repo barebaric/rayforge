@@ -2,7 +2,7 @@
 
 ![Rezept-Einstellungen](/screenshots/application-recipes.png)
 
-Rayforge bietet ein leistungsstarkes Rezept-System, mit dem Sie konsistente Einstellungen über Ihre Laserschneideprojekte hinweg erstellen, verwalten und anwenden können. Diese Anleitung behandelt die komplette User Journey von der Erstellung von Rezepten in den allgemeinen Einstellungen bis zum Anwenden auf Operationen und Verwalten von Einstellungen auf Schritt-Ebene.
+Rayforge bietet ein leistungsstarkes Rezept-System, mit dem du konsistente Einstellungen über deine Laserschneideprojekte hinweg erstellen, verwalten und anwenden kannst. Diese Anleitung behandelt die komplette User Journey von der Erstellung von Rezepten in den allgemeinen Einstellungen bis zum Anwenden auf Operationen und Verwalten von Einstellungen auf Schritt-Ebene.
 
 ## Übersicht
 
@@ -16,7 +16,7 @@ Das Rezept-System besteht aus drei Hauptkomponenten:
 
 ### Rezepte erstellen
 
-Rezepte sind benannte Presets, die alle Einstellungen für spezifische Operationen enthalten. Sie können Rezepte über die Haupteinstellungs-Schnittstelle erstellen:
+Rezepte sind benannte Presets, die alle Einstellungen für spezifische Operationen enthalten. Du kannst Rezepte über die Haupteinstellungs-Schnittstelle erstellen:
 
 #### 1. Rezept-Manager aufrufen
 
@@ -24,7 +24,7 @@ Menü: Bearbeiten → Einstellungen → Rezepte
 
 #### 2. Neues Rezept erstellen
 
-Klicken Sie auf "Neues Rezept hinzufügen", um den Rezept-Editor-Dialog zu öffnen.
+Klicke auf "Neues Rezept hinzufügen", um den Rezept-Editor-Dialog zu öffnen.
 
 **Register "Allgemein"** - Rezeptname und Beschreibung festlegen:
 

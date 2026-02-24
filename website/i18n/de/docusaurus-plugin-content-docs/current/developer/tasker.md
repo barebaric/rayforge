@@ -4,9 +4,9 @@
 
 ## Kernkonzepte
 
-1. **`task_mgr`**: Der globale Singleton-Proxy, den Sie zum Starten und Abbrechen aller Tasks verwenden
-2. **`Task`**: Ein Objekt, das einen einzelnen Hintergrundjob repräsentiert. Sie verwenden es zum Verfolgen des Status
-3. **`ExecutionContext` (`context`)**: Ein Objekt, das als erstes Argument an Ihre Hintergrundfunktion übergeben wird. Ihr Code verwendet es zum Melden von Fortschritt, Senden von Nachrichten und Prüfen auf Abbruch
+1. **`task_mgr`**: Der globale Singleton-Proxy, den du zum Starten und Abbrechen aller Tasks verwendest
+2. **`Task`**: Ein Objekt, das einen einzelnen Hintergrundjob repräsentiert. Du verwendest es zum Verfolgen des Status
+3. **`ExecutionContext` (`context`)**: Ein Objekt, das als erstes Argument an deine Hintergrundfunktion übergeben wird. Dein Code verwendet es zum Melden von Fortschritt, Senden von Nachrichten und Prüfen auf Abbruch
 4. **`TaskManagerProxy`**: Ein Thread-sicherer Proxy, der Aufrufe an den eigentlichen TaskManager weiterleitet, der im Haupt-Thread läuft
 
 ## Schnellstart
@@ -15,13 +15,13 @@ Alle Hintergrund-Tasks werden vom globalen `task_mgr` verwaltet.
 
 ### Ausführen einer E/A-gebundenen Task (z.B. Netzwerk, Dateizugriff)
 
-Verwenden Sie `add_coroutine` für `async`-Funktionen. Diese sind leichtgewichtig und ideal für Tasks, die auf E/A warten.
+Verwende `add_coroutine` für `async`-Funktionen. Diese sind leichtgewichtig und ideal für Tasks, die auf E/A warten.
 
 ```python
 import asyncio
 from rayforge.shared.tasker import task_mgr
 
-# Ihre Hintergrundfunktion MUSS `context` als erstes Argument akzeptieren.
+# Deine Hintergrundfunktion MUSS `context` als erstes Argument akzeptieren.
 async def my_io_task(context, url):
     context.set_message("Wird heruntergeladen...")
     # ... asynchronen Download durchführen ...
@@ -29,13 +29,13 @@ async def my_io_task(context, url):
     context.set_progress(1.0)
     context.set_message("Download abgeschlossen!")
 
-# Die Task aus Ihrem UI-Code starten (z.B. ein Button-Klick)
+# Die Task aus deinem UI-Code starten (z.B. ein Button-Klick)
 task_mgr.add_coroutine(my_io_task, "http://example.com", key="downloader")
 ```
 
 ### Ausführen einer CPU-gebundenen Task (z.B. schwere Berechnung)
 
-Verwenden Sie `run_process` für reguläre Funktionen. Diese laufen in einem separaten Prozess, um den GIL zu vermeiden und die UI reaktionsfähig zu halten.
+Verwende `run_process` für reguläre Funktionen. Diese laufen in einem separaten Prozess, um den GIL zu vermeiden und die UI reaktionsfähig zu halten.
 
 ```python
 import time
@@ -57,7 +57,7 @@ task_mgr.run_process(my_cpu_task, 50, key="calculator")
 
 ### Ausführen einer Thread-gebundenen Task
 
-Verwenden Sie `run_thread` für Tasks, die in einem Thread laufen sollen, aber keine volle Prozess-Isolation benötigen. Dies ist nützlich für Tasks, die Speicher teilen, aber dennoch die UI nicht blockieren sollten.
+Verwende `run_thread` für Tasks, die in einem Thread laufen sollen, aber keine volle Prozess-Isolation benötigen. Dies ist nützlich für Tasks, die Speicher teilen, aber dennoch die UI nicht blockieren sollten.
 
 ```python
 import time
@@ -78,7 +78,7 @@ task_mgr.run_thread(my_thread_task, 2, key="thread_worker")
 
 ### UI aktualisieren
 
-Verbinden Sie sich mit dem `tasks_updated`-Signal, um auf Änderungen zu reagieren. Der Handler wird sicher im Haupt-GTK-Thread aufgerufen.
+Verbinde dich mit dem `tasks_updated`-Signal, um auf Änderungen zu reagieren. Der Handler wird sicher im Haupt-GTK-Thread aufgerufen.
 
 ```python
 def setup_ui(progress_bar, status_label):
@@ -92,27 +92,27 @@ def setup_ui(progress_bar, status_label):
 
     task_mgr.tasks_updated.connect(on_tasks_updated)
 
-# Später in Ihrer UI...
+# Später in deiner UI...
 # setup_ui(my_progress_bar, my_label)
 ```
 
 ### Abbruch
 
-Geben Sie Ihren Tasks einen `key`, um sie später abzubrechen. Ihre Hintergrundfunktion sollte regelmäßig `context.is_cancelled()` prüfen.
+Gib deinen Tasks einen `key`, um sie später abzubrechen. Deine Hintergrundfunktion sollte regelmäßig `context.is_cancelled()` prüfen.
 
 ```python
-# In Ihrer Hintergrundfunktion:
+# In deiner Hintergrundfunktion:
 if context.is_cancelled():
     print("Task wurde abgebrochen, stoppe Arbeit.")
     return
 
-# In Ihrem UI-Code:
+# In deinem UI-Code:
 task_mgr.cancel_task("calculator")
 ```
 
 ### Abschluss behandeln
 
-Verwenden Sie den `when_done`-Callback, um das Ergebnis zu erhalten oder zu sehen, ob ein Fehler aufgetreten ist.
+Verwende den `when_done`-Callback, um das Ergebnis zu erhalten oder zu sehen, ob ein Fehler aufgetreten ist.
 
 ```python
 def on_task_finished(task):
@@ -134,12 +134,12 @@ task_mgr.run_process(my_cpu_task, 10, when_done=on_task_finished)
 - `cancel_task(key)`: Eine laufende Task anhand ihres Schlüssels abbrechen
 - `tasks_updated` (Signal für UI-Updates): Wird ausgegeben, wenn sich der Task-Status ändert
 
-### `context` (Innerhalb Ihrer Hintergrundfunktion)
+### `context` (Innerhalb deiner Hintergrundfunktion)
 
 - `set_progress(value)`: Aktuellen Fortschritt melden (z.B. `i + 1`)
 - `set_total(total)`: Den Maximalwert für `set_progress` setzen
 - `set_message("...")`: Den Statustext aktualisieren
-- `is_cancelled()`: Prüfen, ob Sie anhalten sollen
+- `is_cancelled()`: Prüfen, ob du anhalten sollst
 - `sub_context(...)`: Einen Sub-Task für mehrstufige Operationen erstellen
 - `send_event("name", data)`: (Nur Prozess) Benutzerdefinierte Daten zurück an die UI senden
 - `flush()`: Alle ausstehenden Updates sofort an die UI senden
@@ -153,4 +153,4 @@ Der Tasker wird in Rayforge durchgehend verwendet für:
 - **Gerätekommunikation**: Verwalten lange laufender Operationen mit Laserschneidern
 - **Bildverarbeitung**: Durchführen CPU-intensiver Bildverfolgung und -verarbeitung
 
-Wenn Sie mit dem Tasker in Rayforge arbeiten, stellen Sie sicher, dass Ihre Hintergrundfunktionen Abbrüche ordnungsgemäß behandeln und aussagekräftige Fortschrittsupdates bereitstellen, um eine reaktionsfähige Benutzererfahrung zu erhalten.
+Wenn du mit dem Tasker in Rayforge arbeitest, stelle sicher, dass deine Hintergrundfunktionen Abbrüche ordnungsgemäß behandeln und aussagekräftige Fortschrittsupdates bereitstellen, um eine reaktionsfähige Benutzererfahrung zu erhalten.

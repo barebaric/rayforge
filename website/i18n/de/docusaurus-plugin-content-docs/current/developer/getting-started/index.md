@@ -1,12 +1,12 @@
 # Den Code erhalten
 
-Dieser Leitfaden behandelt, wie Sie den Rayforge-Quellcode für die Entwicklung erhalten.
+Dieser Leitfaden behandelt, wie du den Rayforge-Quellcode für die Entwicklung erhältst.
 
 ## Das Repository forken
 
-Forken Sie das [Rayforge-Repository](https://github.com/barebaric/rayforge) auf GitHub, um Ihre eigene Kopie zu erstellen, in der Sie Änderungen vornehmen können.
+Forke das [Rayforge-Repository](https://github.com/barebaric/rayforge) auf GitHub, um deine eigene Kopie zu erstellen, in der du Änderungen vornehmen kannst.
 
-## Ihren Fork klonen
+## Deinen Fork klonen
 
 ```bash
 git clone https://github.com/IHR_BENUTZERNAME/rayforge.git
@@ -15,7 +15,7 @@ cd rayforge
 
 ## Upstream-Repository hinzufügen
 
-Fügen Sie das Original-Repository als Upstream-Remote hinzu, um Änderungen zu verfolgen:
+Füge das Original-Repository als Upstream-Remote hinzu, um Änderungen zu verfolgen:
 
 ```bash
 git remote add upstream https://github.com/barebaric/rayforge.git
@@ -23,14 +23,14 @@ git remote add upstream https://github.com/barebaric/rayforge.git
 
 ## Repository verifizieren
 
-Prüfen Sie, dass die Remotes korrekt konfiguriert sind:
+Prüfe, dass die Remotes korrekt konfiguriert sind:
 
 ```bash
 git remote -v
 ```
 
-Sie sollten sowohl Ihren Fork (origin) als auch das Upstream-Repository sehen.
+Du solltest sowohl deinen Fork (origin) als auch das Upstream-Repository sehen.
 
 ## Nächste Schritte
 
-Nachdem Sie den Code haben, fahren Sie mit [Einrichtung](setup) fort, um Ihre Entwicklungsumgebung zu konfigurieren.
+Nachdem du den Code hast, fahre mit [Einrichtung](setup) fort, um deine Entwicklungsumgebung zu konfigurieren.

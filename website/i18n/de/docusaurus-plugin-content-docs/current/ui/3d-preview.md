@@ -1,6 +1,6 @@
 # 3D-Vorschau
 
-Das 3D-Vorschau-Fenster ermöglicht Ihnen, Ihre G-Code-Werkzeugwege zu visualisieren, bevor Sie sie an Ihre Maschine senden. Diese leistungsstarke Funktion hilft Ihnen, Fehler zu erkennen und Ihre Auftragskonfiguration zu verifizieren.
+Das 3D-Vorschau-Fenster ermöglicht dir, deine G-Code-Werkzeugwege zu visualisieren, bevor du sie an deine Maschine sendest. Diese leistungsstarke Funktion hilft dir, Fehler zu erkennen und deine Auftragskonfiguration zu verifizieren.
 
 ![3D-Vorschau](/screenshots/main-3d.png)
 
@@ -46,17 +46,17 @@ Die 3D-Vorschau visualisiert das aktive Werkstückkoordinatensystem (WCS) anders
 - **Offset angewendet**: Das gesamte Raster ist verschoben, um mit dem ausgewählten WCS-Offset ausgerichtet zu sein
 - **Beschriftungen relativ zum WCS**: Koordinatenbeschriftungen zeigen Positionen relativ zum WCS-Ursprung, nicht zum Maschinenursprung
 
-Diese "in Isolation"-Anzeige erleichtert es zu verstehen, wo Ihr Auftrag relativ zum ausgewählten Werkstückkoordinatensystem laufen wird, ohne durch die absolute Position der Maschine verwirrt zu werden.
+Diese "in Isolation"-Anzeige erleichtert es zu verstehen, wo dein Auftrag relativ zum ausgewählten Werkstückkoordinatensystem laufen wird, ohne durch die absolute Position der Maschine verwirrt zu werden.
 
 ### WCS ändern
 
-Die 3D-Vorschau aktualisiert sich automatisch, wenn Sie das aktive WCS ändern:
+Die 3D-Vorschau aktualisiert sich automatisch, wenn du das aktive WCS änderst:
 - Ein anderes WCS aus der Symbolleisten-Dropdown auswählen
 - Das Raster und die Achsen verschieben sich, um den neuen WCS-Ursprung widerzuspiegeln
 - Beschriftungen aktualisieren sich, um Koordinaten relativ zum neuen WCS zu zeigen
 
 :::tip WCS in der 3D-Vorschau
-Die 3D-Vorschau zeigt Ihre Werkzeugwege relativ zum ausgewählten WCS. Wenn Sie das WCS ändern, sehen Sie die Werkzeugwege scheinbar wandern, weil sich der Referenzpunkt (das Raster) geändert hat, nicht weil sich die Werkzeugwege selbst bewegt haben.
+Die 3D-Vorschau zeigt deine Werkzeugwege relativ zum ausgewählten WCS. Wenn du das WCS änderst, siehst du die Werkzeugwege scheinbar wandern, weil sich der Referenzpunkt (das Raster) geändert hat, nicht weil sich die Werkzeugwege selbst bewegt haben.
 :::
 
 
@@ -64,7 +64,7 @@ Die 3D-Vorschau zeigt Ihre Werkzeugwege relativ zum ausgewählten WCS. Wenn Sie 
 
 ### Werkzeugweg-Visualisierung
 
-Passen Sie an, was Sie sehen:
+Passe an, was du siehst:
 
 - **Eilgänge anzeigen**: Positionierbewegungen anzeigen (gepunktete Linien)
 - **Arbeitsbewegungen anzeigen**: Schneid-/Gravurbewegungen anzeigen (durchgezogene Linien)

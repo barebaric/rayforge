@@ -1,6 +1,6 @@
 # Lasereinstellungen
 
-Die Laser-Seite in den Maschineneinstellungen konfiguriert Ihre Laserkopf/Köpfe und deren Eigenschaften.
+Die Laser-Seite in den Maschineneinstellungen konfiguriert deine Laserköpfe und deren Eigenschaften.
 
 ![Lasereinstellungen](/screenshots/machine-laser.png)
 
@@ -10,7 +10,7 @@ Rayforge unterstützt Maschinen mit mehreren Laserköpfen. Jeder Laserkopf hat s
 
 ### Einen Laserkopf hinzufügen
 
-Klicken Sie auf die Schaltfläche **Laser hinzufügen**, um eine neue Laserkopf-Konfiguration zu erstellen.
+Klicke auf die Schaltfläche **Laser hinzufügen**, um eine neue Laserkopf-Konfiguration zu erstellen.
 
 ### Laserkopf-Eigenschaften
 
@@ -34,13 +34,13 @@ Der Werkzeugindex für diesen Laserkopf. Im G-Code mit dem T-Befehl verwendet.
 
 #### Maximale Leistung
 
-Der maximale Leistungswert für Ihren Laser.
+Der maximale Leistungswert für deinen Laser.
 
 - **GRBL typisch**: 1000 (S0-S1000 Bereich)
 - **Einige Controller**: 255 (S0-S255 Bereich)
 - **Prozentmodus**: 100 (S0-S100 Bereich)
 
-Dieser Wert sollte mit der $30-Einstellung Ihrer Firmware übereinstimmen.
+Dieser Wert sollte mit der $30-Einstellung deiner Firmware übereinstimmen.
 
 #### Rahmen-Leistung
 
@@ -48,21 +48,21 @@ Der Leistungswert, der für Rahmen-Operationen verwendet wird (Umreißen ohne Sc
 
 - Auf 0 setzen, um Rahmen zu deaktivieren
 - Typische Werte: 5-20 (gerade sichtbar, markiert das Material nicht)
-- Passen Sie basierend auf Ihrem Laser und Material an
+- Passe ihn basierend auf deinem Laser und Material an
 
 #### Punktgröße
 
-Die physische Größe Ihres fokussierten Laserstrahls in Millimetern.
+Die physische Größe deines fokussierten Laserstrahls in Millimetern.
 
-- Geben Sie sowohl X- als auch Y-Abmessungen ein
+- Gib sowohl X- als auch Y-Abmessungen ein
 - Die meisten Laser haben einen runden Punkt (z.B. 0.1 x 0.1)
 - Beeinflusst Gravurqualitäts-Berechnungen
 
 :::tip Punktgröße messen
-Um Ihre Punktgröße zu messen:
-1. Feuern Sie einen kurzen Impuls bei niedriger Leistung auf ein Testmaterial
-2. Messen Sie die resultierende Markierung mit einer Schieblehre
-3. Verwenden Sie den Durchschnitt mehrerer Messungen
+Um deine Punktgröße zu messen:
+1. Feuere einen kurzen Impuls bei niedriger Leistung auf ein Testmaterial
+2. Miss die resultierende Markierung mit einer Schieblehre
+3. Verwende den Durchschnitt mehrerer Messungen
 :::
 
 ## Siehe auch
