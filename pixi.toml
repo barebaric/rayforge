@@ -158,6 +158,5 @@ site-deploy = "bash scripts/deploy_website.sh"
 # Tasks for video processing
 [feature.video-tools.tasks]
 process-audio = "python3 scripts/media/process_audio.py"
-remove-silence = "python3 scripts/media/remove_video_silence.py"
 generate-blender-setup = "bash scripts/media/run_blender_setup.sh"
 generate-thumbnail = "python3 scripts/media/generate_thumbnail.py"

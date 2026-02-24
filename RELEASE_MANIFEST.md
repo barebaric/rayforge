@@ -47,37 +47,7 @@ Clips will be stored in `media/[release]/raw/*.mp4`. The user may also use other
 Generate and execute audio processing commands using the existing script:
 
 ```bash
-pixi run process-audio media/[release]/raw/*.mp4
+pixi run process-audio -o media/[release]/processed/ media/[release]/raw/*.mp4
 ```
 
 Output: `media/[release]/processed/` with processed video files
-
-Remove silent pauses from the processed videos:
-
-```bash
-pixi run remove-silence media/[release]/processed/*.mp4
-```
-
-Output: `media/[release]/processed/` with .nosilence files
-
-### Phase 5: Blender Project Generation
-
-Generate the Blender project:
-
-```bash
-pixi run generate-blender-setup \
-    media/[release]/processed/ \
-    -o media/[release]/draft_edit.blend \
-    -c CHANGELOG.md \
-    -r 1920x1080 \
-    -f 30 \
-    --auto-find
-```
-
-The script:
-
-- Uses the blender video from the previous release as a template.
-- Adds the thumbnail as the first frame.
-- Adds video and audio clips to the timeline
-
-Output: `media/[release]/draft_edit.blend`
