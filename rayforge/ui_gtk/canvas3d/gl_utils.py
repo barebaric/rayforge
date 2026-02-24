@@ -47,6 +47,17 @@ class Shader:
                 shaders.compileShader(vertex_source, GL.GL_VERTEX_SHADER),
                 shaders.compileShader(fragment_source, GL.GL_FRAGMENT_SHADER),
             )
+        except shaders.ShaderValidationError as e:
+            logger.warning(
+                "Shader validation failed during program creation; "
+                "retrying without validation: %s",
+                e,
+            )
+            self.program = shaders.compileProgram(
+                shaders.compileShader(vertex_source, GL.GL_VERTEX_SHADER),
+                shaders.compileShader(fragment_source, GL.GL_FRAGMENT_SHADER),
+                validate=False,
+            )
         except Exception as e:
             logger.error(f"Shader Compilation Failed: {e}", exc_info=True)
             raise
