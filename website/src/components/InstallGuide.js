@@ -78,6 +78,12 @@ const windowsMethods = [
   { id: 'developer', label: translate({ id: 'install.msys2.developers', message: 'MSYS2 (Developers)' }) },
 ];
 
+const macosMethods = [
+  { id: 'universal', label: 'Universal (Recommended)' },
+  { id: 'arm', label: 'Apple Silicon (M1/M2/M3)' },
+  { id: 'intel', label: 'Intel Mac' },
+];
+
 function OsSelector({ selectedOs, onSelectOs }) {
   return (
     <div className="install-os-selector">
@@ -683,54 +689,122 @@ cd rayforge`}
   );
 }
 
-function MacosInstall() {
+function MacosInstall({ method, onMethodChange }) {
   return (
     <div className="install-section">
       <h4><Translate id="install.macOS.title">macOS Installation</Translate></h4>
 
-      <Admonition type="info" title={translate({ id: 'install.communitySupport', message: 'Community Support' })}>
-        <Translate id="install.macOS.communityNote">
-          There are currently no official macOS builds. However, Rayforge
-          may run from source using the pip installation method. Community
-          contributions for macOS packaging are welcome!
-        </Translate>
+      <Admonition type="info" title={translate({ id: 'install.macOS.officialBuilds', message: 'Official macOS Builds' })}>
+        Rayforge provides official universal macOS builds (Apple Silicon and Intel) on GitHub Releases.
       </Admonition>
+
+      <div className="install-method-selector">
+        <p><strong>Choose build type:</strong></p>
+        <div className="install-method-tabs">
+          {macosMethods.map((m) => (
+            <button
+              key={m.id}
+              className={`install-method-btn ${
+                method === m.id ? 'install-method-btn--active' : ''
+              }`}
+              onClick={() => onMethodChange(m.id)}
+            >
+              {m.label}
+            </button>
+          ))}
+        </div>
+      </div>
 
       <div className="install-step">
         <div className="install-step-number">1</div>
         <div className="install-step-content">
-          <h5><Translate id="install.installDeps">Install Dependencies</Translate></h5>
+          <h5>Download the Build</h5>
           <p>
-            <Translate id="install.usingHomebrew">Using Homebrew, install the required dependencies:</Translate>
+            Download the latest macOS release artifact:
           </p>
-          <CodeBlock language="bash">
-            brew install python3 gtk4 adwaita-icon-theme libvips opencv
-          </CodeBlock>
+          <p>
+            <a
+              href="https://github.com/barebaric/rayforge/releases/latest"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Open latest release
+            </a>
+            {' '}and download:
+          </p>
+          {method === 'universal' && (
+            <CodeBlock language="text">
+              rayforge-*-macos-universal.dmg
+            </CodeBlock>
+          )}
+          {method === 'arm' && (
+            <CodeBlock language="text">
+              rayforge-*-macos-arm-app.zip
+            </CodeBlock>
+          )}
+          {method === 'intel' && (
+            <CodeBlock language="text">
+              rayforge-*-macos-intel-app.zip
+            </CodeBlock>
+          )}
+          {(method === 'arm' || method === 'intel') && (
+            <p>
+              Extract the ZIP and move <strong>Rayforge.app</strong> to
+              <strong> Applications</strong>.
+            </p>
+          )}
+          {method === 'universal' && (
+            <p>
+              Open the DMG and drag <strong>Rayforge.app</strong> to your
+              <strong> Applications</strong> folder.
+            </p>
+          )}
         </div>
       </div>
 
       <div className="install-step">
         <div className="install-step-number">2</div>
         <div className="install-step-content">
-          <h5><Translate id="install.installRayforge">Install Rayforge</Translate></h5>
-          <CodeBlock language="bash">pip3 install rayforge</CodeBlock>
+          <h5>Open Rayforge</h5>
+          <p>
+            Start <strong>Rayforge.app</strong> from your
+            <strong> Applications</strong> folder.
+          </p>
         </div>
       </div>
 
       <div className="install-step">
         <div className="install-step-number">3</div>
         <div className="install-step-content">
-          <h5><Translate id="install.installUsbDrivers">Install USB Drivers (if needed)</Translate></h5>
+          <h5>Launch Once from Terminal (if Gatekeeper blocks it)</h5>
           <p>
-            <Translate id="install.ch340Driver">
-              If your laser controller uses a CH340/CH341 chipset, install the drivers:
-            </Translate>
+            If macOS blocks the first launch, remove quarantine attributes
+            and start Rayforge:
           </p>
           <CodeBlock language="bash">
-            brew install --cask wch-ch34x-usb-serial-driver
+            {`xattr -dr com.apple.quarantine /Applications/Rayforge.app
+/Applications/Rayforge.app/Contents/MacOS/Rayforge --version`}
           </CodeBlock>
         </div>
       </div>
+
+      <details className="install-details">
+        <summary>Build from source (advanced)</summary>
+        <div className="install-details-content">
+          <p>
+            If you prefer a local source build, use the macOS setup/build
+            scripts from the repository:
+          </p>
+          <CodeBlock language="bash">
+            {`git clone https://github.com/barebaric/rayforge.git
+cd rayforge
+bash scripts/mac/mac_setup.sh --install
+source .mac_env
+printf "5\\n" | bash scripts/mac/mac_build.sh
+dist/Rayforge.app/Contents/MacOS/Rayforge --version`}
+          </CodeBlock>
+        </div>
+      </details>
     </div>
   );
 }
@@ -972,6 +1046,7 @@ export default function InstallGuide() {
   const [selectedOs, setSelectedOs] = useState(() => hashState.os || detectOs());
   const [linuxMethod, setLinuxMethod] = useState(() => hashState.method || 'snap');
   const [windowsMethod, setWindowsMethod] = useState(() => hashState.method || 'installer');
+  const [macosMethod, setMacosMethod] = useState(() => hashState.method || 'universal');
 
   useEffect(() => {
     const detected = detectOs();
@@ -979,8 +1054,15 @@ export default function InstallGuide() {
     if (hashState.os) {
       setSelectedOs(hashState.os);
       if (hashState.method) {
-        setLinuxMethod(hashState.method);
-        setWindowsMethod(hashState.method);
+        if (hashState.os === 'linux') {
+          setLinuxMethod(hashState.method);
+        }
+        if (hashState.os === 'windows') {
+          setWindowsMethod(hashState.method);
+        }
+        if (hashState.os === 'macos') {
+          setMacosMethod(hashState.method);
+        }
       }
     } else {
       setSelectedOs(detected);
@@ -1005,7 +1087,12 @@ export default function InstallGuide() {
             onMethodChange={setWindowsMethod}
           />
         )}
-        {selectedOs === 'macos' && <MacosInstall />}
+        {selectedOs === 'macos' && (
+          <MacosInstall
+            method={macosMethod}
+            onMethodChange={setMacosMethod}
+          />
+        )}
 
         <VerifyInstall os={selectedOs} />
         <Troubleshooting os={selectedOs} linuxMethod={linuxMethod} windowsMethod={windowsMethod} />
