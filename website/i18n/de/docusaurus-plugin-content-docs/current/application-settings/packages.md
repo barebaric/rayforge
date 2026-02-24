@@ -2,7 +2,7 @@
 
 ![Paket-Einstellungen](/screenshots/application-packages.png)
 
-Die Pakete-Seite zeigt installierte Erweiterungspakete und ermöglicht es Ihnen, diese zu verwalten.
+Die Pakete-Seite zeigt installierte Erweiterungspakete und ermöglicht es dir, diese zu verwalten.
 
 ## Übersicht
 
@@ -27,24 +27,24 @@ Die Paketliste zeigt alle installierten Pakete mit:
 
 ### Pakete installieren
 
-1. Klicken Sie auf die Schaltfläche **Installieren**
-2. Wählen Sie eine Paketdatei (`.zip` oder Paket-Repository)
-3. Bestätigen Sie die Installation
-4. Warten Sie, bis die Installation abgeschlossen ist
+1. Klicke auf die Schaltfläche **Installieren**
+2. Wähle eine Paketdatei (`.zip` oder Paket-Repository)
+3. Bestätige die Installation
+4. Warte, bis die Installation abgeschlossen ist
 
 ### Pakete aktualisieren
 
 Wenn Updates verfügbar sind:
 
 1. Ein Update-Indikator erscheint neben dem Paket
-2. Klicken Sie auf die Schaltfläche **Aktualisieren**, um das Update zu installieren
-3. Starten Sie Rayforge neu, wenn aufgefordert
+2. Klicke auf die Schaltfläche **Aktualisieren**, um das Update zu installieren
+3. Starte Rayforge neu, wenn aufgefordert
 
 ### Pakete entfernen
 
-1. Wählen Sie das zu entfernende Paket aus
-2. Klicken Sie auf die Schaltfläche **Entfernen**
-3. Bestätigen Sie das Entfernen
+1. Wähle das zu entfernende Paket aus
+2. Klicke auf die Schaltfläche **Entfernen**
+3. Bestätige das Entfernen
 
 :::warning
 Das Entfernen eines Pakets kann Dokumente betreffen, die dessen Funktionen verwenden.

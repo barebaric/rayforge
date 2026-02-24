@@ -1,6 +1,6 @@
 # Mehrschicht-Workflow
 
-Das Mehrschicht-System von Rayforge ermöglicht es Ihnen, komplexe Jobs in separate Verarbeitungsstufen zu organisieren, jede mit eigenen Operationen und Einstellungen. Dies ist essentiell für das Kombinieren verschiedener Prozesse wie Gravieren und Schneiden oder für die Arbeit mit mehreren Materialien.
+Das Mehrschicht-System von Rayforge ermöglicht es dir, komplexe Jobs in separate Verarbeitungsstufen zu organisieren, jede mit eigenen Operationen und Einstellungen. Dies ist essentiell für das Kombinieren verschiedener Prozesse wie Gravieren und Schneiden oder für die Arbeit mit mehreren Materialien.
 
 ## Was sind Ebenen?
 
@@ -10,10 +10,10 @@ Eine **Ebene** in Rayforge ist:
 - **Ein Workflow**, der definiert, wie diese Werkstücke verarbeitet werden
 - **Ein Schritt**, der während Jobs sequenziell verarbeitet wird
 
-**Schlüsselkonzept:** Ebenen werden in Reihenfolge verarbeitet, eine nach der anderen, was es Ihnen ermöglicht, die Sequenz der Operationen zu steuern.
+**Schlüsselkonzept:** Ebenen werden in Reihenfolge verarbeitet, eine nach der anderen, was es dir ermöglicht, die Sequenz der Operationen zu steuern.
 
 :::note Ebenen und Werkstücke
-Eine Ebene enthält ein oder mehrere Werkstücke. Beim Importieren von SVG-Dateien mit Ebenen wird jede Ebene aus Ihrem Design zu einer separaten Ebene in Rayforge. Dies lässt Sie Ihr Design genau so organisiert halten, wie Sie es erstellt haben.
+Eine Ebene enthält ein oder mehrere Werkstücke. Beim Importieren von SVG-Dateien mit Ebenen wird jede Ebene aus deinem Design zu einer separaten Ebene in Rayforge. Dies lässt dich dein Design genau so organisiert halten, wie du es erstellt hast.
 :::
 
 
@@ -79,9 +79,9 @@ SVG-Dateien mit bestehender Ebenenstruktur importieren:
 
 **Anforderungen:**
 
-- Ihre SVG-Datei muss Ebenen verwenden (erstellt in Inkscape oder ähnlicher Software)
+- Deine SVG-Datei muss Ebenen verwenden (erstellt in Inkscape oder ähnlicher Software)
 - "Originalvektoren verwenden" beim Importieren aktivieren
-- Ebenennamen werden aus Ihrer Design-Software beibehalten
+- Ebenennamen werden aus deiner Design-Software beibehalten
 
 ---
 
@@ -108,7 +108,7 @@ Jede Ebene hat:
 | **Werkstücke**  | Die Formen/Bilder, die in dieser Ebene enthalten sind     |
 
 :::note Ebenen als Container
-Ebenen sind Container für Ihre Werkstücke. Beim Importieren von SVG-Dateien mit Ebenen wird jede Ebene aus Ihrem Design zu einer separaten Ebene in Rayforge.
+Ebenen sind Container für deine Werkstücke. Beim Importieren von SVG-Dateien mit Ebenen wird jede Ebene aus deinem Design zu einer separaten Ebene in Rayforge.
 :::
 
 
@@ -137,7 +137,7 @@ Ebenen-Panel:
 3. **Löschen bestätigen** (alle Werkstücke in der Ebene werden entfernt)
 
 :::warning Löschen ist dauerhaft
-Das Löschen einer Ebene entfernt alle ihre Werkstücke und Workflow-Einstellungen. Verwenden Sie Rückgängig, wenn Sie versehentlich löschen.
+Das Löschen einer Ebene entfernt alle ihre Werkstücke und Workflow-Einstellungen. Verwende Rückgängig, wenn du versehentlich löschst.
 :::
 
 
@@ -156,12 +156,12 @@ Das Löschen einer Ebene entfernt alle ihre Werkstücke und Workflow-Einstellung
 Beim Importieren von SVG-Dateien mit aktiviertem "Originalvektoren verwenden":
 
 1. **"Originalvektoren verwenden" aktivieren** im Import-Dialog
-2. **Rayforge erkennt Ebenen** aus Ihrer SVG-Datei
+2. **Rayforge erkennt Ebenen** aus deiner SVG-Datei
 3. **Welche Ebenen auswählen** zum Importieren mit den Ebenen-Schaltern
 4. **Jede ausgewählte Ebene** wird zu einer separaten Ebene mit eigenem Werkstück
 
 :::note Ebenen-Erkennung
-Rayforge erkennt automatisch Ebenen aus Ihrer SVG-Datei. Jede Ebene, die Sie in Ihrer Design-Software erstellt haben, wird als separate Ebene in Rayforge erscheinen.
+Rayforge erkennt automatisch Ebenen aus deiner SVG-Datei. Jede Ebene, die du in deiner Design-Software erstellt hast, wird als separate Ebene in Rayforge erscheinen.
 :::
 
 
@@ -189,18 +189,18 @@ Beim Importieren von SVG-Dateien bietet der Import-Dialog Optionen, die die Eben
 
 **Import-Modus:**
 
-- **Originalvektoren verwenden:** Behält Ihre Vektorpfade und Ebenenstruktur. Wenn aktiviert, erscheint ein "Ebenen"-Abschnitt, der alle Ebenen aus Ihrer Datei zeigt.
+- **Originalvektoren verwenden:** Behält deine Vektorpfade und Ebenenstruktur. Wenn aktiviert, erscheint ein "Ebenen"-Abschnitt, der alle Ebenen aus deiner Datei zeigt.
 - **Trace-Modus:** Konvertiert das SVG in eine Bitmap und zeichnet die Umrisse nach. Ebenenauswahl ist in diesem Modus deaktiviert.
 
 **Ebenen-Abschnitt (Nur Vektor-Import):**
 
-- Zeigt alle Ebenen aus Ihrer SVG-Datei
+- Zeigt alle Ebenen aus deiner SVG-Datei
 - Jede Ebene hat einen Umschalter zum Aktivieren/Deaktivieren des Imports
-- Ebenennamen aus Ihrer Design-Software werden beibehalten
+- Ebenennamen aus deiner Design-Software werden beibehalten
 - Nur ausgewählte Ebenen werden als separate Ebenen importiert
 
 :::tip SVG-Dateien für Ebenen-Import vorbereiten
-Um SVG-Ebenen-Import zu verwenden, erstellen Sie Ihr Design mit Ebenen in Software wie Inkscape. Verwenden Sie das Ebenen-Panel, um Ihr Design zu organisieren, und Rayforge wird diese Struktur beibehalten.
+Um SVG-Ebenen-Import zu verwenden, erstelle dein Design mit Ebenen in Software wie Inkscape. Verwende das Ebenen-Panel, um dein Design zu organisieren, und Rayforge wird diese Struktur beibehalten.
 :::
 
 
@@ -212,7 +212,7 @@ Jede Ebene hat einen **Workflow**, der definiert, wie ihre Werkstücke verarbeit
 
 ### Ebenen-Workflows einrichten
 
-Für jede Ebene wählen Sie einen Operationstyp und konfigurieren seine Einstellungen:
+Für jede Ebene wählst du einen Operationstyp und konfigurierst seine Einstellungen:
 
 **Operationstypen:**
 
@@ -278,7 +278,7 @@ Steuern, welche Ebenen auf der Arbeitsfläche und in Vorschauen angezeigt werden
 :::note Ebenen deaktivieren
 :::
 
-Um eine Ebene temporär von Jobs auszuschließen, ohne sie zu löschen, schalten Sie die Operation der Ebene aus oder deaktivieren Sie sie in den Ebeneneinstellungen.
+Um eine Ebene temporär von Jobs auszuschließen, ohne sie zu löschen, schalte die Operation der Ebene aus oder deaktiviere sie in den Ebeneneinstellungen.
 
 ---
 
@@ -310,7 +310,7 @@ Während der Job-Ausführung verarbeitet Rayforge jede Ebene in Reihenfolge von 
 
 ### Mehrere Durchgänge
 
-Für dicke Materialien erstellen Sie mehrere Schneide-Ebenen:
+Für dicke Materialien erstellst du mehrere Schneide-Ebenen:
 
 ```
 1. Gravur-Ebene
@@ -319,7 +319,7 @@ Für dicke Materialien erstellen Sie mehrere Schneide-Ebenen:
 4. Schnitt-Ebene (Durchgang 3) - 100% Leistung
 ```
 
-**Tipp:** Verwenden Sie dieselbe Geometrie für alle Schneide-Durchgänge (duplizieren Sie die Ebene).
+**Tipp:** Verwende dieselbe Geometrie für alle Schneide-Durchgänge (dupliziere die Ebene).
 
 ---
 
@@ -327,7 +327,7 @@ Für dicke Materialien erstellen Sie mehrere Schneide-Ebenen:
 
 ### Ebenen-Gruppierung nach Material
 
-Verwenden Sie Ebenen, um nach Material zu organisieren, wenn Sie gemischte Jobs ausführen:
+Verwende Ebenen, um nach Material zu organisieren, wenn du gemischte Jobs ausführst:
 
 ```
 Material 1 (3mm Acryl):
@@ -349,13 +349,13 @@ Material 2 (3mm Sperrholz):
 
 ### Pausieren zwischen Ebenen
 
-Sie können Rayforge so konfigurieren, dass zwischen Ebenen pausiert wird. Dies ist nützlich, wenn Sie:
+Du kannst Rayforge so konfigurieren, dass zwischen Ebenen pausiert wird. Dies ist nützlich, wenn du:
 
-- Materialien mitten im Job wechseln müssen
-- Den Fortschritt vor dem Fortfahren inspizieren möchten
-- Den Fokus für verschiedene Operationen anpassen müssen
+- Materialien mitten im Job wechseln musst
+- Den Fortschritt vor dem Fortfahren inspizieren möchtest
+- Den Fokus für verschiedene Operationen anpassen musst
 
-Um Ebenen-Pausen einzurichten, verwenden Sie die Hooks-Funktion in Ihren Maschineneinstellungen.
+Um Ebenen-Pausen einzurichten, verwende die Hooks-Funktion in deinen Maschineneinstellungen.
 
 ### Ebenen-spezifische Einstellungen
 
@@ -398,10 +398,10 @@ Der Workflow jeder Ebene kann einzigartige Einstellungen haben:
 
 **Für beste Ergebnisse beim Importieren von SVG-Ebenen:**
 
-1. **Das Ebenen-Panel verwenden** in Ihrer Design-Software, um Ihr Design zu organisieren
+1. **Das Ebenen-Panel verwenden** in deiner Design-Software, um dein Design zu organisieren
 2. **Aussagekräftige Namen zuweisen** zu jeder Ebene (z.B. "Gravieren", "Schneiden")
-3. **Ebenen flach halten** - vermeiden Sie, Ebenen in andere Ebenen zu stecken
-4. **Ihre Datei speichern** und in Rayforge importieren
+3. **Ebenen flach halten** - vermeide, Ebenen in andere Ebenen zu stecken
+4. **Deine Datei speichern** und in Rayforge importieren
 5. **Ebenen-Erkennung verifizieren** durch Überprüfen des Import-Dialogs
 
 Rayforge funktioniert am besten mit SVG-Dateien, die in Inkscape oder ähnlicher Vektor-Design-Software erstellt wurden, die Ebenen unterstützt.
@@ -439,7 +439,7 @@ Rayforge funktioniert am besten mit SVG-Dateien, die in Inkscape oder ähnlicher
 
 **Problem:** Operationen werden in unerwarteter Reihenfolge ausgeführt.
 
-**Lösung:** Ebenen im Ebenen-Panel neu ordnen. Denken Sie daran: oben = zuerst.
+**Lösung:** Ebenen im Ebenen-Panel neu ordnen. Denke daran: oben = zuerst.
 
 ### Ebenen überlappen in der Vorschau
 
@@ -451,7 +451,7 @@ Rayforge funktioniert am besten mit SVG-Dateien, die in Inkscape oder ähnlicher
 
 - Ebenen-Sichtbarkeit verwenden, um andere Ebenen temporär zu verstecken
 - 3D-Vorschau überprüfen, um Tiefe/Reihenfolge zu sehen
-- Verifizieren Sie, dass dies beabsichtigt ist (z.B. gravieren dann schneiden derselben Form)
+- Verifiziere, dass dies beabsichtigt ist (z.B. gravieren dann schneiden derselben Form)
 
 ### Werkstück in falscher Ebene
 
@@ -465,11 +465,11 @@ Rayforge funktioniert am besten mit SVG-Dateien, die in Inkscape oder ähnlicher
 
 **Lösungen:**
 
-1. **SVG-Struktur überprüfen** - Öffnen Sie Ihre Datei in Inkscape oder ähnlicher Software, um zu verifizieren, dass sie Ebenen hat
+1. **SVG-Struktur überprüfen** - Öffne deine Datei in Inkscape oder ähnlicher Software, um zu verifizieren, dass sie Ebenen hat
 2. **"Originalvektoren verwenden" aktivieren** - Ebenenauswahl ist nur in diesem Import-Modus verfügbar
-3. **Verifizieren Sie, dass Ihr Design Ebenen hat** - Stellen Sie sicher, dass Sie Ebenen in Ihrer Design-Software erstellt haben, nicht nur Gruppen
+3. **Verifiziere, dass dein Design Ebenen hat** - Stelle sicher, dass du Ebenen in deiner Design-Software erstellt hast, nicht nur Gruppen
 4. **Auf verschachtelte Ebenen prüfen** - Ebenen innerhalb anderer Ebenen werden möglicherweise nicht richtig erkannt
-5. **Ihre Datei neu speichern** - Manchmal hilft das erneute Speichern mit einer aktuellen Version Ihrer Design-Software
+5. **Deine Datei neu speichern** - Manchmal hilft das erneute Speichern mit einer aktuellen Version deiner Design-Software
 
 ### SVG-Ebenen-Import zeigt falschen Inhalt
 
@@ -477,10 +477,10 @@ Rayforge funktioniert am besten mit SVG-Dateien, die in Inkscape oder ähnlicher
 
 **Lösungen:**
 
-1. **Ebenenauswahl überprüfen** - Verifizieren Sie, dass die richtigen Ebenen im Import-Dialog aktiviert sind
-2. **Ihr Design verifizieren** - Öffnen Sie die Originaldatei in Ihrer Design-Software, um zu bestätigen, dass jede Ebene den richtigen Inhalt enthält
+1. **Ebenenauswahl überprüfen** - Verifiziere, dass die richtigen Ebenen im Import-Dialog aktiviert sind
+2. **Dein Design verifizieren** - Öffne die Originaldatei in deiner Design-Software, um zu bestätigen, dass jede Ebene den richtigen Inhalt enthält
 3. **Auf gemeinsame Elemente prüfen** - Elemente, die in mehreren Ebenen erscheinen, können Verwirrung stiften
-4. **Trace-Modus versuchen** - Verwenden Sie Trace-Modus als Fallback, wenn Vektor-Import Probleme hat
+4. **Trace-Modus versuchen** - Verwende Trace-Modus als Fallback, wenn Vektor-Import Probleme hat
 
 ---
 

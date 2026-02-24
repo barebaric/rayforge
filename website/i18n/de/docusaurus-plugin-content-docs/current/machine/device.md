@@ -1,16 +1,16 @@
 # Geräteeinstellungen
 
-Die Geräteseite in den Maschineneinstellungen ermöglicht es Ihnen, Einstellungen direkt auf Ihrem verbundenen Gerät (Controller) zu lesen und anzuwenden. Diese sind auch als "Dollar-Einstellungen" oder `$$`-Einstellungen in GRBL bekannt.
+Die Geräteseite in den Maschineneinstellungen ermöglicht es dir, Einstellungen direkt auf deinem verbundenen Gerät (Controller) zu lesen und anzuwenden. Diese sind auch als "Dollar-Einstellungen" oder `$$`-Einstellungen in GRBL bekannt.
 
 ![Geräteeinstellungen](/screenshots/machine-device.png)
 
 :::warning Vorsicht beim Ändern von Einstellungen
-Falsche Firmware-Einstellungen können dazu führen, dass Ihre Maschine sich unvorhersehbar verhält, die Position verliert oder sogar Hardware beschädigt. Notieren Sie sich immer die ursprünglichen Werte, bevor Sie Änderungen vornehmen, und ändern Sie eine Einstellung nach der anderen.
+Falsche Firmware-Einstellungen können dazu führen, dass deine Maschine sich unvorhersehbar verhält, die Position verliert oder sogar Hardware beschädigt. Notiere dir immer die ursprünglichen Werte, bevor du Änderungen vornimmst, und ändere eine Einstellung nach der anderen.
 :::
 
 ## Übersicht
 
-Die Geräteseite bietet direkten Zugriff auf die Firmware-Einstellungen Ihres Controllers. Hier können Sie:
+Die Geräteseite bietet direkten Zugriff auf die Firmware-Einstellungen deines Controllers. Hier kannst du:
 
 - Aktuelle Einstellungen vom Gerät lesen
 - Einzelne Einstellungen ändern
@@ -24,11 +24,11 @@ Firmware-Einstellungen steuern:
 - **Elektrische Konfiguration**: Pin-Inversionen, Pullups
 - **Berichterstattung**: Statusnachrichten-Format und -Häufigkeit
 
-Diese Einstellungen werden auf Ihrem Controller gespeichert (nicht in Rayforge) und bleiben über Stromzyklen hinweg erhalten.
+Diese Einstellungen werden auf deinem Controller gespeichert (nicht in Rayforge) und bleiben über Stromzyklen hinweg erhalten.
 
 ## Einstellungen lesen
 
-Klicken Sie auf die Schaltfläche **Vom Gerät lesen**, um die aktuellen Einstellungen von Ihrem verbundenen Controller abzurufen. Dies erfordert:
+Klicke auf die Schaltfläche **Vom Gerät lesen**, um die aktuellen Einstellungen von deinem verbundenen Controller abzurufen. Dies erfordert:
 
 - Dass die Maschine verbunden ist
 - Dass der Treiber das Lesen von Geräteeinstellungen unterstützt
@@ -43,7 +43,7 @@ Nach dem Ändern von Einstellungen werden Änderungen auf das Gerät angewendet.
 
 ## Konsolenzugriff
 
-Sie können Einstellungen auch über die G-Code-Konsole anzeigen/ändern:
+Du kannst Einstellungen auch über die G-Code-Konsole anzeigen/ändern:
 
 **Alle Einstellungen anzeigen:**
 ```
@@ -66,7 +66,7 @@ $RST=$
 ```
 
 :::danger Standardeinstellungen wiederherstellen löscht alle Einstellungen
-Der Befehl `$RST=$` setzt alle GRBL-Einstellungen auf Werkseinstellungen zurück. Sie verlieren alle Kalibrierungen und Einstellungen. Sichern Sie Ihre Einstellungen zuerst!
+Der Befehl `$RST=$` setzt alle GRBL-Einstellungen auf Werkseinstellungen zurück. Du verlierst alle Kalibrierungen und Einstellungen. Sichere deine Einstellungen zuerst!
 :::
 
 ---
@@ -107,7 +107,7 @@ $32 sollte **immer** auf 1 für Laserschneider gesetzt werden. Deaktivierter Las
 - $30=255, $31=0 (S0-S255 Bereich, einige Controller)
 
 :::tip Rayforge-Konfiguration anpassen
-Die "Max. Leistung"-Einstellung in Ihren [Lasereinstellungen](laser) sollte Ihrem $30-Wert entsprechen. Wenn $30=1000, stellen Sie die maximale Leistung in Rayforge auf 1000 ein.
+Die "Max. Leistung"-Einstellung in deinen [Lasereinstellungen](laser) sollte deinem $30-Wert entsprechen. Wenn $30=1000, stelle die maximale Leistung in Rayforge auf 1000 ein.
 :::
 
 ### $130 & $131 - Maximaler Verfahrweg
@@ -115,12 +115,12 @@ Die "Max. Leistung"-Einstellung in Ihren [Lasereinstellungen](laser) sollte Ihre
 **$130 - X Maximaler Verfahrweg (mm)**
 **$131 - Y Maximaler Verfahrweg (mm)**
 
-**Zweck:** Definiert den Arbeitsbereich Ihrer Maschine
+**Zweck:** Definiert den Arbeitsbereich deiner Maschine
 
 **Warum es wichtig ist:**
 - Software-Limits ($20) verwenden diese Werte, um Abstürze zu verhindern
 - Definiert die Grenzen des Koordinatensystems
-- Muss mit Ihrer physischen Maschinengröße übereinstimmen
+- Muss mit deiner physischen Maschinengröße übereinstimmen
 
 ---
 
@@ -267,7 +267,7 @@ $132=0.0       ; Z max. Verfahrweg
 3. Mit Befehl `$$` verifizieren
 
 :::tip Regelmäßige Sicherungen
-Sichern Sie Ihre Einstellungen nach jeder Kalibrierung oder Abstimmung. Speichern Sie Sicherungen an einem sicheren Ort.
+Sichere deine Einstellungen nach jeder Kalibrierung oder Abstimmung. Speichere Sicherungen an einem sicheren Ort.
 :::
 
 ---

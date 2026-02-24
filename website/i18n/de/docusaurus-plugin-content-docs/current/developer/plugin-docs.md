@@ -6,8 +6,8 @@ Rayforge verwendet ein Paketsystem basierend auf [pluggy](https://pluggy.readthe
 
 Der schnellste Weg zum Starten ist die Verwendung des offiziellen Templates.
 
-1. **Forken oder Klonen** Sie das [rayforge-package-template](https://github.com/barebaric/rayforge-package-template).
-2. **Benennen Sie** das Verzeichnis um und aktualisieren Sie die Metadaten.
+1. **Forke oder Klone** das [rayforge-package-template](https://github.com/barebaric/rayforge-package-template).
+2. **Benenne** das Verzeichnis um und aktualisiere die Metadaten.
 
 ## 2. Paketstruktur
 
@@ -59,7 +59,7 @@ url: https://github.com/username/mein-benutzerdefiniertes-paket
 
 ## 4. Den Paketcode schreiben
 
-Rayforge verwendet `pluggy`-Hooks. Um sich in Rayforge einzuklinken, definieren Sie Funktionen, die mit `@pluggy.HookimplMarker("rayforge")` dekoriert sind.
+Rayforge verwendet `pluggy`-Hooks. Um sich in Rayforge einzuklinken, definiere Funktionen, die mit `@pluggy.HookimplMarker("rayforge")` dekoriert sind.
 
 ### Grundlegendes Boilerplate (`package.py`)
 
@@ -103,14 +103,14 @@ Definiert in `rayforge/core/hooks.py`:
 
 **`rayforge_init`** (`context`)
 : **Haupteinstiegspunkt.** Wird nach dem Laden von Konfiguration, Kamera und Hardware aufgerufen.
-  Verwenden Sie dies für Logik, UI-Injektionen oder Listener.
+  Verwende dies für Logik, UI-Injektionen oder Listener.
 
 **`register_machines`** (`machine_manager`)
-: Wird früh im Boot-Prozess aufgerufen. Verwenden Sie dies, um neue Hardwareklassen/Treiber zu registrieren.
+: Wird früh im Boot-Prozess aufgerufen. Verwende dies, um neue Hardwareklassen/Treiber zu registrieren.
 
 ## 5. Auf Rayforge-Daten zugreifen
 
-Der `rayforge_init`-Hook stellt den **`RayforgeContext`** bereit. Über dieses Objekt können Sie auf Folgendes zugreifen:
+Der `rayforge_init`-Hook stellt den **`RayforgeContext`** bereit. Über dieses Objekt kannst du auf Folgendes zugreifen:
 
 - **`context.machine`**: Die aktuell aktive Maschineninstanz.
 - **`context.config`**: Globale Konfigurationseinstellungen.
@@ -120,18 +120,18 @@ Der `rayforge_init`-Hook stellt den **`RayforgeContext`** bereit. Über dieses O
 
 ## 6. Entwicklung & Testen
 
-Um Ihr Paket lokal zu testen ohne es zu veröffentlichen:
+Um dein Paket lokal zu testen ohne es zu veröffentlichen:
 
-1.  **Lokalisieren Sie Ihr Konfigurationsverzeichnis:**
+1.  **Lokalisieren dein Konfigurationsverzeichnis:**
     Rayforge verwendet `platformdirs`.
 
     - **Windows:** `C:\Users\<User>\AppData\Local\rayforge\rayforge\packages`
     - **macOS:** `~/Library/Application Support/rayforge/packages`
     - **Linux:** `~/.config/rayforge/packages`
-      _(Prüfen Sie die Logs beim Start auf `Config dir is ...`)_
+       _(Prüfe die Logs beim Start auf `Config dir is ...`)_
 
-2.  **Verlinken Sie Ihr Paket symbolisch:**
-    Anstatt Dateien hin- und her zu kopieren, erstellen Sie einen symbolischen Link von Ihrem Entwicklungsordner zum Rayforge-Paketeordner.
+2.  **Verlinke dein Paket symbolisch:**
+    Anstatt Dateien hin- und her zu kopieren, erstelle einen symbolischen Link von deinem Entwicklungsordner zum Rayforge-Paketeordner.
 
     _Linux/macOS:_
 
@@ -140,18 +140,18 @@ Um Ihr Paket lokal zu testen ohne es zu veröffentlichen:
     ```
 
 3.  **Rayforge neu starten:**
-    Die Anwendung scannt das Verzeichnis beim Start. Prüfen Sie die Konsolen-Logs auf:
+    Die Anwendung scannt das Verzeichnis beim Start. Prüfe die Konsolen-Logs auf:
     > `Loaded package: mein_benutzerdefiniertes_paket`
 
 ## 7. Veröffentlichung
 
-Um Ihr Paket mit der Community zu teilen:
+Um dein Paket mit der Community zu teilen:
 
-1.  **Auf Git hosten:** Pushen Sie Ihren Code in ein öffentliches Git-Repository (GitHub, GitLab, etc.).
+1.  **Auf Git hosten:** Pushe deinen Code in ein öffentliches Git-Repository (GitHub, GitLab, etc.).
 2.  **Bei der Registry einreichen:**
-    - Gehen Sie zu [rayforge-registry](https://github.com/barebaric/rayforge-registry).
-    - Forken Sie das Repository.
-    - Fügen Sie die Git-URL und Metadaten Ihres Pakets zur Registry-Liste hinzu.
-    - Reichen Sie einen Pull Request ein.
+    - Gehe zu [rayforge-registry](https://github.com/barebaric/rayforge-registry).
+    - Forke das Repository.
+    - Füge die Git-URL und Metadaten deines Pakets zur Registry-Liste hinzu.
+    - Reiche einen Pull Request ein.
 
-Sobald akzeptiert, können Benutzer Ihr Paket direkt über die Rayforge-UI oder mit der Git-URL installieren.
+Sobald akzeptiert, können Benutzer dein Paket direkt über die Rayforge-UI oder mit der Git-URL installieren.

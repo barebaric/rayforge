@@ -1,6 +1,6 @@
 # Rahmen-Umriss
 
-Rahmen-Umriss erzeugt einen einfachen rechteckigen Schneidepfad um Ihr gesamtes Design. Es ist der schnellste Weg, einen sauberen Rahmen hinzuzufügen oder Ihre Arbeit vom Materialblatt zu schneiden.
+Rahmen-Umriss erzeugt einen einfachen rechteckigen Schneidepfad um dein gesamtes Design. Es ist der schnellste Weg, einen sauberen Rahmen hinzuzufügen oder deine Arbeit vom Materialblatt zu schneiden.
 
 ## Übersicht
 
@@ -15,25 +15,25 @@ Rahmen-Umriss-Operationen:
 
 ## Wann Rahmen-Umriss verwenden
 
-Verwenden Sie Rahmen-Umriss für:
+Verwende Rahmen-Umriss für:
 
-- Hinzufügen eines dekorativen Rahmens um Ihr Design
-- Schneiden Ihrer Arbeit frei vom Materialblatt
+- Hinzufügen eines dekorativen Rahmens um dein Design
+- Schneiden deiner Arbeit frei vom Materialblatt
 - Erstellen einer einfachen rechteckigen Grenze
 - Schnelles Einrahmen ohne komplexe Pfadberechnungen
 
-**Verwenden Sie Rahmen-Umriss nicht für:**
+**Verwende Rahmen-Umriss nicht für:**
 
-- Unregelmäßige Formen um mehrere Objekte (verwenden Sie stattdessen [Schrumpfumhüllung](shrink-wrap))
-- Schneiden individueller Teile (verwenden Sie stattdessen [Kontur](contour))
-- Folgen der genauen Form Ihres Designs
+- Unregelmäßige Formen um mehrere Objekte (verwende stattdessen [Schrumpfumhüllung](shrink-wrap))
+- Schneiden individueller Teile (verwende stattdessen [Kontur](contour))
+- Folgen der genauen Form deines Designs
 
 ## Eine Rahmen-Umriss-Operation erstellen
 
-### Schritt 1: Ihr Design anordnen
+### Schritt 1: dein Design anordnen
 
 1. Alle Objekte auf der Arbeitsfläche platzieren
-2. Positionieren Sie sie relativ zum Rahmen
+2. Positioniere sie relativ zum Rahmen
 3. Der Rahmen wird um den Begrenzungsrahmen aller Inhalte berechnet
 
 ### Schritt 2: Rahmen-Umriss-Operation hinzufügen
@@ -43,9 +43,9 @@ Verwenden Sie Rahmen-Umriss für:
 
 ### Schritt 3: Einstellungen konfigurieren
 
-Konfigurieren Sie die Rahmen-Parameter:
+Konfiguriere die Rahmen-Parameter:
 
-- **Leistung & Geschwindigkeit:** An die Schneideanforderungen Ihres Materials anpassen
+- **Leistung & Geschwindigkeit:** An die Schneideanforderungen deines Materials anpassen
 - **Offset:** Distanz von Inhalt-Kante zu Rahmen
 - **Pfad-Offset:** Innen-, Außen- oder Mittellinien-Schneiden
 
@@ -56,7 +56,7 @@ Konfigurieren Sie die Rahmen-Parameter:
 **Leistung (%):**
 
 - Laserintensität zum Schneiden des Rahmens
-- An die Schneideanforderungen Ihres Materials anpassen
+- An die Schneideanforderungen deines Materials anpassen
 
 **Geschwindigkeit (mm/min):**
 
@@ -74,7 +74,7 @@ Konfigurieren Sie die Rahmen-Parameter:
 **Offset (mm):**
 
 - Distanz vom Begrenzungsrahmen des Designs zum Rahmen
-- Erzeugt einen Rand/Bord um Ihre Arbeit
+- Erzeugt einen Rand/Bord um deine Arbeit
 
 **Typische Werte:**
 
@@ -98,7 +98,7 @@ Rahmen-Umriss unterstützt Schnittbreiten-Kompensation:
 
 - Passt automatisch für Laserstrahl-Breite an
 - Stellt genaue Endabmessungen sicher
-- Verwendet den Schnittbreiten-Wert aus Ihren Laserkopf-Einstellungen
+- Verwendet den Schnittbreiten-Wert aus deinen Laserkopf-Einstellungen
 
 ## Nachbearbeitungsoptionen
 
@@ -128,7 +128,7 @@ Laschen hinzufügen, um das eingerahmte Teil befestigt zu halten:
 
 **Prozess:**
 
-1. Ihren Inhalt gestalten (Text, Logos, usw.)
+1. Deinen Inhalt gestalten (Text, Logos, usw.)
 2. Rahmen-Umriss mit 3-5mm Offset hinzufügen
 3. Bei dekorativen Ritz-Einstellungen schneiden (niedrige Leistung)
 
@@ -136,7 +136,7 @@ Laschen hinzufügen, um das eingerahmte Teil befestigt zu halten:
 
 ### Frei aus Blatt schneiden
 
-**Szenario:** Ihre fertige Arbeit vom Materialblatt entfernen
+**Szenario:** Deine fertige Arbeit vom Materialblatt entfernen
 
 **Prozess:**
 
@@ -229,13 +229,13 @@ Typischer Workflow für ein fertiges Teil:
 
 **Rahmen-Umriss wählen, wenn:**
 
-- Sie einen rechteckigen Rahmen wünschen
+- Du einen rechteckigen Rahmen wünschst
 - Einfachheit bevorzugt wird
 - Frei aus Blatt schneiden
 
 **Schrumpfumhüllung wählen, wenn:**
 
-- Sie Materialabfall minimieren möchten
+- Du Materialabfall minimieren möchtest
 - Design unregelmäßige Form hat
 - Effizienz wichtig ist
 
@@ -272,7 +272,7 @@ Typischer Workflow für ein fertiges Teil:
 Rahmen-Umriss verwendet den kombinierten Begrenzungsrahmen von:
 
 - Alle Werkstücke auf der Arbeitsfläche
-- Ihre endgültigen transformierten Positionen
+- ihre endgültigen transformierten Positionen
 - Einschließlich aller angewendeten Rotationen/Skalierungen
 
 ### Pfad-Generierung

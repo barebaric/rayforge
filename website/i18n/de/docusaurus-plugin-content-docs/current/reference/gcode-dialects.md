@@ -27,12 +27,12 @@ Rayforge unterstützt derzeit diese G-Code-Dialekte:
 
 Um einen benutzerdefinierten G-Code-Dialekt basierend auf einem integrierten Dialekt zu erstellen:
 
-1. Öffnen Sie **Maschineneinstellungen** → **G-Code-Dialekt**
-2. Klicken Sie auf das **Kopier-Symbol** bei einem integrierten Dialekt, um einen neuen benutzerdefinierten Dialekt zu erstellen
-3. Bearbeiten Sie die Dialekteinstellungen nach Bedarf
-4. Speichern Sie Ihren benutzerdefinierten Dialekt
+1. Öffne **Maschineneinstellungen** → **G-Code-Dialekt**
+2. Klicke auf das **Kopier-Symbol** bei einem integrierten Dialekt, um einen neuen benutzerdefinierten Dialekt zu erstellen
+3. Bearbeite die Dialekteinstellungen nach Bedarf
+4. Speichere deinen benutzerdefinierten Dialekt
 
-Benutzerdefinierte Dialekte werden in Ihrem Konfigurationsverzeichnis gespeichert und können geteilt werden.
+Benutzerdefinierte Dialekte werden in deinem Konfigurationsverzeichnis gespeichert und können geteilt werden.
 
 ---
 

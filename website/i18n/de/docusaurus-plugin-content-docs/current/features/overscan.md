@@ -82,7 +82,7 @@ Die Overscan-Distanz sollte der Maschine ermöglichen, **vollständig auf Zielge
 
 1. **Eine Testgravur erstellen:**
    - Gefülltes Rechteck (50mm x 20mm)
-   - Ihre typischen Gravureinstellungen verwenden
+   - Deine typischen Gravureinstellungen verwenden
    - Overscan bei 3mm aktivieren
 
 2. **Den Test gravieren:**

@@ -4,7 +4,7 @@ Das Verständnis von G-Code hilft Ihnen, Probleme zu beheben und die Rayforge-Au
 
 ## Allgemeiner Prozess
 
-Rayforge konvertiert Ihre Designs durch einen mehrstufigen Prozess in G-Code:
+Rayforge konvertiert deine Designs durch einen mehrstufigen Prozess in G-Code:
 
 ```mermaid
 flowchart TD
@@ -16,7 +16,7 @@ flowchart TD
 
 **Was Rayforge macht:**
 
-1. **Analysiert Ihr Design** - Extrahiert Geometrie aus Werkstücken
+1. **Analysiert dein Design** - Extrahiert Geometrie aus Werkstücken
 2. **Wendet Operationen an** - Bestimmt Schneide-/Gravurpfade
 3. **Optimiert Werkzeugwege** - Ordnet Pfade neu, minimiert Verfahren
 4. **Generiert Befehle** - Konvertiert Pfade in G-Code

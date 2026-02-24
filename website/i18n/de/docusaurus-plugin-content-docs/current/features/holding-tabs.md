@@ -31,9 +31,9 @@ Rayforge implementiert Laschen durch Erstellen von **kleinen Lücken im Schneide
 
 ### Schnelles Hinzufügen
 
-1. **Wählen Sie das Werkstück** aus, dem Sie Laschen hinzufügen möchten (muss eine Schnitt-/Kontur-Operation sein)
-2. **Klicken Sie auf das Laschen-Werkzeug** in der Symbolleiste oder drücken Sie die Laschen-Tastenkombination
-3. **Klicken Sie auf den Pfad** wo Sie Laschen möchten:
+1. **Wähle das Werkstück** aus, dem Sie Laschen hinzufügen möchten (muss eine Schnitt-/Kontur-Operation sein)
+2. **Klicke auf das Laschen-Werkzeug** in der Symbolleiste oder drücken Sie die Laschen-Tastenkombination
+3. **Klicke auf den Pfad** wo Sie Laschen möchten:
    - Laschen erscheinen als kleine Griffe auf der Pfad-Umrandung
    - Mehrere Male klicken, um mehr Laschen hinzuzufügen
    - Typischerweise 3-4 Laschen für kleine Teile, mehr für größere Stücke

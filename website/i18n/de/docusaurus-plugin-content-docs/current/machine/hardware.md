@@ -1,43 +1,43 @@
 # Hardware-Einstellungen
 
-Die Hardware-Seite in den Maschineneinstellungen konfiguriert die physischen Abmessungen, das Koordinatensystem und die Bewegungsgrenzen Ihrer Maschine.
+Die Hardware-Seite in den Maschineneinstellungen konfiguriert die physischen Abmessungen, das Koordinatensystem und die Bewegungsgrenzen deiner Maschine.
 
 ![Hardware-Einstellungen](/screenshots/machine-hardware.png)
 
 ## Achsen
 
-Konfigurieren Sie die Achsenbereiche und das Koordinatensystem für Ihre Maschine.
+Konfiguriere die Achsenbereiche und das Koordinatensystem für deine Maschine.
 
 ### X/Y-Bereich
 
 Der vollständige Verfahrweg jeder Achse in Maschineneinheiten.
 
-- Messen Sie den tatsächlichen Schneidebereich, nicht das Maschinengehäuse
-- Berücksichtigen Sie alle Hindernisse oder Grenzen
+- Miss den tatsächlichen Schneidebereich, nicht das Maschinengehäuse
+- Berücksichtige alle Hindernisse oder Grenzen
 - Beispiel: 400 für einen typischen K40-Laser
 
 ### Koordinatenursprung
 
-Wählen Sie, wo sich der Koordinatenursprung (0,0) Ihrer Maschine befindet. Dies bestimmt, wie Koordinaten interpretiert werden.
+Wähle, wo sich der Koordinatenursprung (0,0) deiner Maschine befindet. Dies bestimmt, wie Koordinaten interpretiert werden.
 
 - **Unten links**: Am häufigsten bei GRBL-Geräten. X nimmt nach rechts zu, Y nimmt nach oben zu.
 - **Oben links**: Häufig bei einigen CNC-artigen Maschinen. X nimmt nach rechts zu, Y nimmt nach unten zu.
 - **Oben rechts**: X nimmt nach links zu, Y nimmt nach unten zu.
 - **Unten rechts**: X nimmt nach links zu, Y nimmt nach oben zu.
 
-#### Ihren Ursprung finden
+#### Deinen Ursprung finden
 
-1. Referenzieren Sie Ihre Maschine mit der Home-Taste
-2. Beobachten Sie, wohin sich der Laserkopf bewegt
-3. Diese Position ist Ihr (0,0)-Ursprung
+1. Referenziere deine Maschine mit der Home-Taste
+2. Beobachte, wohin sich der Laserkopf bewegt
+3. Diese Position ist dein (0,0)-Ursprung
 
 :::info
-Die Einstellung des Koordinatenursprungs beeinflusst, wie G-Code generiert wird. Stellen Sie sicher, dass sie mit der Homing-Konfiguration Ihrer Firmware übereinstimmt.
+Die Einstellung des Koordinatenursprungs beeinflusst, wie G-Code generiert wird. Stelle sicher, dass sie mit der Homing-Konfiguration deiner Firmware übereinstimmt.
 :::
 
 ### Achsenrichtung
 
-Kehren Sie die Richtung einer beliebigen Achse um, falls erforderlich:
+Kehre die Richtung einer beliebigen Achse um, falls erforderlich:
 
 - **X-Achsenrichtung umkehren**: Macht X-Koordinatenwerte negativ
 - **Y-Achsenrichtung umkehren**: Macht Y-Koordinatenwerte negativ
@@ -45,7 +45,7 @@ Kehren Sie die Richtung einer beliebigen Achse um, falls erforderlich:
 
 ## Arbeitsbereich
 
-Ränder definieren den unbenutzbaren Raum um die Kanten Ihrer Achsenbereiche. Dies ist nützlich, wenn Ihre Maschine Bereiche hat, die der Laser nicht erreichen kann (z.B. aufgrund des Laserkopf-Aufbaus, Kabelketten oder anderer Hindernisse).
+Ränder definieren den unbenutzbaren Raum um die Kanten deiner Achsenbereiche. Dies ist nützlich, wenn deine Maschine Bereiche hat, die der Laser nicht erreichen kann (z.B. aufgrund des Laserkopf-Aufbaus, Kabelketten oder anderer Hindernisse).
 
 - **Linker/Oberer/Rechter/Unterer Rand**: Der unbenutzbare Raum von jeder Kante in Maschineneinheiten
 
@@ -62,7 +62,7 @@ Konfigurierbare Sicherheitsgrenzen für das Verfahren des Maschinenkopfes. Wenn 
 Software-Limits werden automatisch eingeschränkt, um innerhalb der Achsenbereiche zu bleiben (0 bis Bereichswert).
 
 :::tip
-Verwenden Sie Software-Limits, um Bereiche Ihrer Arbeitsfläche zu schützen, die während des Joggings niemals erreicht werden sollten, wie Bereiche mit Vorrichtungen oder empfindlicher Ausrüstung.
+Verwende Software-Limits, um Bereiche deiner Arbeitsfläche zu schützen, die während des Joggings niemals erreicht werden sollten, wie Bereiche mit Vorrichtungen oder empfindlicher Ausrüstung.
 :::
 
 ## Siehe auch

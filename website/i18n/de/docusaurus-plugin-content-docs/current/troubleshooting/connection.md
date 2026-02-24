@@ -1,6 +1,6 @@
 # Verbindungsprobleme
 
-Diese Seite hilft Ihnen, Probleme beim Verbinden von Rayforge mit Ihrer Lasermaschine über serielle Verbindung zu diagnostizieren und zu lösen.
+Diese Seite hilft dir, Probleme beim Verbinden von Rayforge mit deiner Lasermaschine über serielle Verbindung zu diagnostizieren und zu lösen.
 
 ## Schnelldiagnose
 
@@ -20,19 +20,19 @@ Häufige Verbindungsprobleme sind:
 
 ### Keine seriellen Ports erkannt
 
-**Problem:** Das serielle Port-Dropdown ist leer oder zeigt Ihr Gerät nicht an.
+**Problem:** Das serielle Port-Dropdown ist leer oder zeigt dein Gerät nicht an.
 
 **Diagnose:**
 
-1. Prüfen, ob Ihr Gerät eingeschaltet und über USB verbunden ist
-2. Versuchen Sie, das USB-Kabel abzuziehen und wieder anzustecken
-3. Testen Sie das USB-Kabel mit einem anderen Gerät (Kabel können ausfallen)
-4. Versuchen Sie einen anderen USB-Port an Ihrem Computer
+1. Prüfen, ob dein Gerät eingeschaltet und über USB verbunden ist
+2. Versuche, das USB-Kabel abzuziehen und wieder anzustecken
+3. Teste das USB-Kabel mit einem anderen Gerät (Kabel können ausfallen)
+4. Versuche einen anderen USB-Port an deinem Computer
 
 **Lösungen:**
 
 **Linux:**
-Wenn Sie die Snap-Version verwenden, müssen Sie serielle Port-Berechtigungen gewähren:
+Wenn du die Snap-Version verwendest, musst du serielle Port-Berechtigungen gewähren:
 
 ```bash
 sudo snap connect rayforge:serial-port
@@ -40,7 +40,7 @@ sudo snap connect rayforge:serial-port
 
 Siehe [Snap-Berechtigungen](snap-permissions) für detaillierte Linux-Einrichtung.
 
-Für Nicht-Snap-Installationen fügen Sie Ihren Benutzer zur `dialout`-Gruppe hinzu:
+Für Nicht-Snap-Installationen füge deinen Benutzer zur `dialout`-Gruppe hinzu:
 
 ```bash
 sudo usermod -a -G dialout $USER
@@ -50,9 +50,9 @@ Dann abmelden und wieder anmelden, damit die Änderung wirksam wird.
 
 **Windows:**
 1. Geräte-Manager öffnen (Win+X, dann Geräte-Manager auswählen)
-2. Suchen Sie unter "Anschlüsse (COM & LPT)" nach Ihrem Gerät
-3. Wenn Sie ein gelbes Warnsymbol sehen, aktualisieren oder installieren Sie den Treiber neu
-4. Notieren Sie die COM-Port-Nummer (z.B. COM3)
+2. Suche unter "Anschlüsse (COM & LPT)" nach deinem Gerät
+3. Wenn du ein gelbes Warnsymbol siehst, aktualisiere oder installiere den Treiber neu
+4. Notiere die COM-Port-Nummer (z.B. COM3)
 5. Wenn das Gerät überhaupt nicht aufgeführt ist, kann das USB-Kabel oder der Treiber defekt sein
 
 **macOS:**
@@ -62,25 +62,25 @@ Dann abmelden und wieder anmelden, damit die Änderung wirksam wird.
 
 ### "Zugriff verweigert"-Fehler
 
-**Problem:** Sie erhalten "Permission denied" oder ähnliche Fehler beim Versuch zu verbinden.
+**Problem:** Du erhältst "Permission denied" oder ähnliche Fehler beim Versuch zu verbinden.
 
 **Unter Linux (Nicht-Snap):**
 
-Ihr Benutzer muss in der `dialout`-Gruppe sein (oder `uucp` bei einigen Distributionen):
+Dein Benutzer muss in der `dialout`-Gruppe sein (oder `uucp` bei einigen Distributionen):
 
 ```bash
-# Sich selbst zur dialout-Gruppe hinzufügen
+# Dich selbst zur dialout-Gruppe hinzufügen
 sudo usermod -a -G dialout $USER
 
-# Verifizieren, dass Sie in der Gruppe sind (nach Abmelden/Anmelden)
+# Verifizieren, dass du in der Gruppe bist (nach Abmelden/Anmelden)
 groups | grep dialout
 ```
 
-**Wichtig:** Sie müssen sich abmelden und wieder anmelden (oder neu starten), damit Gruppenänderungen wirksam werden.
+**Wichtig:** Du musst dich abmelden und wieder anmelden (oder neu starten), damit Gruppenänderungen wirksam werden.
 
 **Unter Linux (Snap):**
 
-Gewähren Sie dem Snap seriellen Port-Zugriff:
+Gewähre dem Snap seriellen Port-Zugriff:
 
 ```bash
 sudo snap connect rayforge:serial-port
@@ -90,7 +90,7 @@ Siehe den Leitfaden [Snap-Berechtigungen](snap-permissions) für weitere Details
 
 **Unter Windows:**
 
-Schließen Sie alle anderen Anwendungen, die den seriellen Port verwenden könnten, einschließlich:
+Schließe alle anderen Anwendungen, die den seriellen Port verwenden könnten, einschließlich:
 - Frühere Rayforge-Instanzen
 - Serielle Monitor-Tools
 - Andere Laser-Software
@@ -102,22 +102,22 @@ Schließen Sie alle anderen Anwendungen, die den seriellen Port verwenden könnt
 
 **Diagnose:**
 
-Sie haben möglicherweise den falschen Port ausgewählt, besonders wenn mehrere USB-Geräte verbunden sind.
+Du hast möglicherweise den falschen Port ausgewählt, besonders wenn mehrere USB-Geräte verbunden sind.
 
 **Lösung:**
 
 1. Alle anderen USB-Seriell-Geräte trennen
 2. Notieren, welche Ports in Rayforge verfügbar sind
-3. Ihren Laser-Controller einstecken
-4. Die Portliste aktualisieren - der neue Port ist Ihr Laser
+3. Deinen Laser-Controller einstecken
+4. Die Portliste aktualisieren - der neue Port ist dein Laser
 5. Unter Linux erscheinen Laser-Controller typischerweise als:
    - `/dev/ttyUSB0` (häufig für CH340-Chipsätze)
    - `/dev/ttyACM0` (häufig für native USB-Controller)
 6. Unter Windows die COM-Port-Nummer aus dem Geräte-Manager notieren
-7. Vermeiden Sie Ports namens `/dev/ttyS*` unter Linux - dies sind Hardware-Seriell-Ports, nicht USB
+7. Vermeide Ports namens `/dev/ttyS*` unter Linux - dies sind Hardware-Seriell-Ports, nicht USB
 
 :::warning Hardware-Seriell-Ports
-Rayforge warnt Sie, wenn Sie `/dev/ttyS*`-Ports unter Linux auswählen, da diese typischerweise keine USB-basierten GRBL-Geräte sind. USB-Seriell-Ports verwenden `/dev/ttyUSB*` oder `/dev/ttyACM*`.
+Rayforge warnt dich, wenn du `/dev/ttyS*`-Ports unter Linux auswählst, da diese typischerweise keine USB-basierten GRBL-Geräte sind. USB-Seriell-Ports verwenden `/dev/ttyUSB*` oder `/dev/ttyACM*`.
 :::
 
 
@@ -133,7 +133,7 @@ GRBL-Controller verwenden typischerweise eine dieser Baudraten:
 - **9600** (ältere GRBL-Versionen)
 - **250000** (weniger häufig, einige benutzerdefinierte Firmware)
 
-Versuchen Sie verschiedene Baudraten in Rayforge's Geräteeinstellungen. Die häufigste ist **115200**.
+Versuche verschiedene Baudraten in Rayforge's Geräteeinstellungen. Die häufigste ist **115200**.
 
 ### Verbindung bricht ständig ab
 
@@ -142,9 +142,9 @@ Versuchen Sie verschiedene Baudraten in Rayforge's Geräteeinstellungen. Die hä
 **Mögliche Ursachen:**
 
 1. **Wackeliges USB-Kabel** - Mit bekannt funktionierendem Kabel ersetzen (vorzugsweise kurz, <2m)
-2. **USB-Stromprobleme** - Versuchen Sie einen anderen USB-Port, vorzugsweise am Computer selbst statt an einem Hub
+2. **USB-Stromprobleme** - Versuche einen anderen USB-Port, vorzugsweise am Computer selbst statt an einem Hub
 3. **EMI/Interferenzen** - USB-Kabel von Motorleitungen und Hochspannungsnetzteilen fernhalten
-4. **Firmware-Probleme** - Aktualisieren Sie Ihre GRBL-Firmware wenn möglich
+4. **Firmware-Probleme** - Aktualisiere deine GRBL-Firmware wenn möglich
 5. **USB-Port-Konflikte** - Unter Windows verschiedene USB-Ports versuchen
 
 **Fehlerbehebungsschritte:**
@@ -154,7 +154,7 @@ Versuchen Sie verschiedene Baudraten in Rayforge's Geräteeinstellungen. Die hä
 sudo dmesg -w
 ```
 
-Suchen Sie nach Nachrichten wie:
+Suche nach Nachrichten wie:
 - "USB disconnect" - deutet auf physische/Kabelprobleme hin
 - "device descriptor read error" - oft ein Strom- oder Kabelproblem
 
@@ -170,13 +170,13 @@ Suchen Sie nach Nachrichten wie:
 
 **Lösung:**
 
-Versuchen Sie, einen manuellen Befehl in der Konsole zu senden:
+Versuche, einen manuellen Befehl in der Konsole zu senden:
 
 - `?` - Statusbericht anfordern
 - `$X` - Alarm löschen
 - `$H` - Maschine referenzieren
 
-Wenn es keine Antwort gibt, überprüfen Sie Baudrate und Port-Auswahl.
+Wenn es keine Antwort gibt, überprüfe Baudrate und Port-Auswahl.
 
 ---
 
@@ -194,7 +194,7 @@ Rayforge zeigt verschiedene Verbindungsstatus:
 
 ---
 
-## Ihre Verbindung testen
+## Deine Verbindung testen
 
 ### Schritt-für-Schritt Verbindungstest
 
@@ -210,11 +210,11 @@ Rayforge zeigt verschiedene Verbindungsstatus:
    - Den Verbindungsstatus-Indikator beobachten
 
 3. **Kommunikation verifizieren:**
-   - Wenn verbunden, versuchen Sie eine Statusabfrage zu senden
+   - Wenn verbunden, versuche eine Statusabfrage zu senden
    - Die Maschine sollte ihre Position und ihren Status melden
 
 4. **Grundlegende Befehle testen:**
-   - Referenzfahrt versuchen (`$H`) wenn Ihre Maschine Endschalter hat
+   - Referenzfahrt versuchen (`$H`) wenn deine Maschine Endschalter hat
    - Oder Alarme löschen (`$X`) falls erforderlich
 
 ### Debug-Protokolle verwenden
@@ -226,7 +226,7 @@ Rayforge enthält detaillierte Protokollierung für Verbindungsprobleme. Um Debu
 rayforge --loglevel DEBUG
 ```
 
-Prüfen Sie die Protokolle auf:
+Prüfe die Protokolle auf:
 - Verbindungsversuche und Fehlschläge
 - Serielle Daten gesendet (TX) und empfangen (RX)
 - Fehlermeldungen mit Stack-Traces
@@ -243,10 +243,10 @@ Prüfen Sie die Protokolle auf:
 ls -l /dev/ttyUSB* /dev/ttyACM*
 
 # Berechtigungen prüfen
-ls -l /dev/ttyUSB0  # Mit Ihrem Port ersetzen
+ls -l /dev/ttyUSB0  # Mit deinem Port ersetzen
 
 # Sollte zeigen: crw-rw---- 1 root dialout
-# Sie müssen in der 'dialout'-Gruppe sein
+# Du musst in der 'dialout'-Gruppe sein
 
 # Port manuell testen
 sudo minicom -D /dev/ttyUSB0 -b 115200
@@ -263,7 +263,7 @@ sudo minicom -D /dev/ttyUSB0 -b 115200
 
 ### Firmware-Kompatibilität
 
-Rayforge ist für GRBL-kompatible Firmware konzipiert. Stellen Sie sicher, dass Ihr Controller läuft:
+Rayforge ist für GRBL-kompatible Firmware konzipiert. Stelle sicher, dass dein Controller läuft:
 
 - **GRBL 1.1** (am häufigsten, empfohlen)
 - **GRBL 0.9** (älter, kann eingeschränkte Funktionen haben)
@@ -285,7 +285,7 @@ Häufige Chipsätze und ihre Treiber:
 
 ## Immer noch Probleme?
 
-Wenn Sie alles oben versucht haben und immer noch keine Verbindung herstellen können:
+Wenn du alles oben versucht hast und immer noch keine Verbindung herstellen kannst:
 
 1. **Die GitHub-Issues prüfen** - Jemand hat möglicherweise das gleiche Problem gemeldet
 2. **Einen detaillierten Issue-Bericht erstellen** mit:
@@ -294,7 +294,7 @@ Wenn Sie alles oben versucht haben und immer noch keine Verbindung herstellen k�
    - Controller-Board-Modell und Firmware-Version
    - USB-Chipsatz (Geräte-Manager unter Windows oder `lsusb` unter Linux prüfen)
    - Vollständige Fehlermeldungen und Debug-Protokolle
-3. **Mit einer anderen Anwendung testen** - Versuchen Sie, sich mit einem seriellen Terminal (minicom, PuTTY, Arduino Serial Monitor) zu verbinden, um zu verifizieren, dass die Hardware funktioniert
+3. **Mit einer anderen Anwendung testen** - Versuche, dich mit einem seriellen Terminal (minicom, PuTTY, Arduino Serial Monitor) zu verbinden, um zu verifizieren, dass die Hardware funktioniert
 
 ---
 
