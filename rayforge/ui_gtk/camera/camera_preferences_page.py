@@ -182,8 +182,11 @@ class CameraEnhancementGroup(Adw.PreferencesGroup):
         self.denoise_scale.connect("value-changed", self._on_value_changed)
 
         row = Adw.ActionRow(title=_("Noise Reduction"))
-        row.set_subtitle(
-            _("Temporal averaging. Higher values remove more noise but cause trailing."))
+        subtitle_text = _(
+            "Temporal averaging. Higher values remove more noise "
+            "but cause trailing."
+        )
+        row.set_subtitle(subtitle_text)
         row.add_suffix(self.denoise_scale)
         self.add(row)
 
@@ -218,10 +221,13 @@ class CameraDistortionGroup(Adw.PreferencesGroup):
     """A widget for correcting fisheye/wide-angle lens distortion."""
 
     def __init__(self, **kwargs):
+        desc_text = _(
+            "Straighten bowed lines using Radial (k1, k2) and Tangential "
+            "(p1, p2) parameters. Note: Values are usually very small."
+        )
         super().__init__(
             title=_("Lens Distortion Correction (Fisheye)"),
-            description=_(
-                "Straighten bowed lines using Radial (k1, k2) and Tangential (p1, p2) parameters. Note: Values are usually very small (e.g., 0.005)."),
+            description=desc_text,
             **kwargs
         )
         self._controller: Optional[CameraController] = None
@@ -260,25 +266,17 @@ class CameraDistortionGroup(Adw.PreferencesGroup):
 
         self._updating = True
         self.k1_spin.set_value(
-            getattr(
-                controller.config,
-                'distortion_k1',
-                0.0))
+            getattr(controller.config, 'distortion_k1', 0.0)
+        )
         self.k2_spin.set_value(
-            getattr(
-                controller.config,
-                'distortion_k2',
-                0.0))
+            getattr(controller.config, 'distortion_k2', 0.0)
+        )
         self.p1_spin.set_value(
-            getattr(
-                controller.config,
-                'distortion_p1',
-                0.0))
+            getattr(controller.config, 'distortion_p1', 0.0)
+        )
         self.p2_spin.set_value(
-            getattr(
-                controller.config,
-                'distortion_p2',
-                0.0))
+            getattr(controller.config, 'distortion_p2', 0.0)
+        )
         self._updating = False
 
     def _on_value_changed(self, spin: Gtk.SpinButton):
@@ -292,13 +290,16 @@ class CameraDistortionGroup(Adw.PreferencesGroup):
 
 
 class CameraPositioningGroup(Adw.PreferencesGroup):
-    """A widget for fine-tuning the bounding box and stretching of the camera image."""
+    """A widget for fine-tuning the bounds and stretching."""
 
     def __init__(self, **kwargs):
+        desc_text = _(
+            "Adjust the top, bottom, left, and right bounds. Use positive or "
+            "negative values to stretch or offset the image representation."
+        )
         super().__init__(
             title=_("Image Stretching & Positioning"),
-            description=_(
-                "Adjust the top, bottom, left, and right bounds. Use positive or negative values to stretch or offset the image representation."),
+            description=desc_text,
             **kwargs
         )
         self._controller: Optional[CameraController] = None
@@ -338,20 +339,14 @@ class CameraPositioningGroup(Adw.PreferencesGroup):
         self._updating = True
         self.top_spin.set_value(getattr(controller.config, 'offset_top', 0.0))
         self.bottom_spin.set_value(
-            getattr(
-                controller.config,
-                'offset_bottom',
-                0.0))
+            getattr(controller.config, 'offset_bottom', 0.0)
+        )
         self.left_spin.set_value(
-            getattr(
-                controller.config,
-                'offset_left',
-                0.0))
+            getattr(controller.config, 'offset_left', 0.0)
+        )
         self.right_spin.set_value(
-            getattr(
-                controller.config,
-                'offset_right',
-                0.0))
+            getattr(controller.config, 'offset_right', 0.0)
+        )
         self._updating = False
 
     def _on_value_changed(self, spin: Gtk.SpinButton):
