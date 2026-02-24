@@ -325,6 +325,8 @@ class GrblSerialDriver(Driver):
                         TransportStatus.ERROR,
                         _("No response from device"),
                     )
+                    self._update_connection_status(TransportStatus.SLEEPING)
+                    await asyncio.sleep(5)
                     continue
 
                 logger.info("Connection established successfully.")
