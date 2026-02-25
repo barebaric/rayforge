@@ -23,24 +23,27 @@ class Camera:
         self._brightness: float = 0.0  # Default brightness (0 = no change)
         self._transparency: float = 0.2
 
+        # Noise Reduction (0.0 to 1.0)
+        # 0.0 = No denoise, 1.0 = Max smoothing (high latency/ghosting)
+        self._denoise: float = 0.0
+
+        # Fisheye / wide-angle distortion parameters
+        self._distortion_k1: float = 0.0
+        self._distortion_k2: float = 0.0
+        self._distortion_p1: float = 0.0
+        self._distortion_p2: float = 0.0
+
+        # Positioning and stretching offsets
+        self._offset_top: float = 0.0
+        self._offset_bottom: float = 0.0
+        self._offset_left: float = 0.0
+        self._offset_right: float = 0.0
+
         # Properties for camera calibration
-        # How to determine calibration values:
-        # 1. Print a calibration pattern, e.g. a 8x6 grid with 25mm grid size
-        # 2. Capture 10 or so calibration images of the grid (camera static,
-        #    grid in different positions/rotations)
-        # 3. Detect checkerboard corners: cv2.findChessboardCorners()
-        # 4. Perform camera calibration: cv2.calibrateCamera()
         self._camera_matrix: Optional[np.ndarray] = None
         self._dist_coeffs: Optional[np.ndarray] = None
 
-        # Properties for camera calibration and alignment
-        # Example usage to map pixel positions (image points) to
-        # real world positions (in mm):
-        #   image_points:
-        #     List[Pos] = [(100, 100), (500, 100), (500, 400), (100, 400)]
-        #   world_points:
-        #     List[Pos] = [(-1, 120), (130, 120.5), (133, 0.1), (0, -0.1)]
-        #   camera.image_to_world = image_points, world_points
+        # Properties for camera alignment points
         self._image_to_world: Optional[Tuple[PointList, PointList]] = None
 
         # Signals
@@ -181,6 +184,110 @@ class Camera:
         self.settings_changed.send(self)
 
     @property
+    def denoise(self) -> float:
+        """Temporal noise reduction factor (0.0 - 1.0)."""
+        return self._denoise
+
+    @denoise.setter
+    def denoise(self, value: float):
+        if not isinstance(value, (int, float)):
+            raise ValueError("Denoise must be a number.")
+        # Clamp between 0.0 (off) and 0.95 (extreme smoothing)
+        value = max(0.0, min(value, 0.95))
+        if self._denoise == value:
+            return
+        logger.debug(f"Camera denoise changed from {self._denoise} to {value}")
+        self._denoise = value
+        self.changed.send(self)
+        self.settings_changed.send(self)
+
+    # --- Fisheye/Distortion Properties ---
+
+    @property
+    def distortion_k1(self) -> float:
+        return self._distortion_k1
+
+    @distortion_k1.setter
+    def distortion_k1(self, value: float):
+        self._distortion_k1 = float(value)
+        self.changed.send(self)
+        self.settings_changed.send(self)
+
+    @property
+    def distortion_k2(self) -> float:
+        return self._distortion_k2
+
+    @distortion_k2.setter
+    def distortion_k2(self, value: float):
+        self._distortion_k2 = float(value)
+        self.changed.send(self)
+        self.settings_changed.send(self)
+
+    @property
+    def distortion_p1(self) -> float:
+        return self._distortion_p1
+
+    @distortion_p1.setter
+    def distortion_p1(self, value: float):
+        self._distortion_p1 = float(value)
+        self.changed.send(self)
+        self.settings_changed.send(self)
+
+    @property
+    def distortion_p2(self) -> float:
+        return self._distortion_p2
+
+    @distortion_p2.setter
+    def distortion_p2(self, value: float):
+        self._distortion_p2 = float(value)
+        self.changed.send(self)
+        self.settings_changed.send(self)
+
+    # --- Positioning & Stretching Properties ---
+
+    @property
+    def offset_top(self) -> float:
+        return self._offset_top
+
+    @offset_top.setter
+    def offset_top(self, value: float):
+        self._offset_top = float(value)
+        self.changed.send(self)
+        self.settings_changed.send(self)
+
+    @property
+    def offset_bottom(self) -> float:
+        return self._offset_bottom
+
+    @offset_bottom.setter
+    def offset_bottom(self, value: float):
+        self._offset_bottom = float(value)
+        self.changed.send(self)
+        self.settings_changed.send(self)
+
+    @property
+    def offset_left(self) -> float:
+        return self._offset_left
+
+    @offset_left.setter
+    def offset_left(self, value: float):
+        self._offset_left = float(value)
+        self.changed.send(self)
+        self.settings_changed.send(self)
+
+    @property
+    def offset_right(self) -> float:
+        return self._offset_right
+
+    @offset_right.setter
+    def offset_right(self, value: float):
+        self._offset_right = float(value)
+        self.changed.send(self)
+        self.settings_changed.send(self)
+
+    # ---------------------------------------------
+
+    @property
     def image_to_world(self) -> Optional[Tuple[PointList, PointList]]:
         return self._image_to_world
 
@@ -255,6 +362,17 @@ class Camera:
             "contrast": self.contrast,
             "brightness": self.brightness,
             "transparency": self.transparency,
+            "denoise": self.denoise,
+
+            "distortion_k1": self.distortion_k1,
+            "distortion_k2": self.distortion_k2,
+            "distortion_p1": self.distortion_p1,
+            "distortion_p2": self.distortion_p2,
+
+            "offset_top": self.offset_top,
+            "offset_bottom": self.offset_bottom,
+            "offset_left": self.offset_left,
+            "offset_right": self.offset_right,
         }
         if self.image_to_world is not None:
             image_points, world_points = self.image_to_world
@@ -280,7 +398,10 @@ class Camera:
             "contrast",
             "brightness",
             "transparency",
+            "denoise",
             "image_to_world",
+            "distortion_k1", "distortion_k2", "distortion_p1", "distortion_p2",
+            "offset_top", "offset_bottom", "offset_left", "offset_right"
         }
         extra = {k: v for k, v in data.items() if k not in known_keys}
 
@@ -290,6 +411,17 @@ class Camera:
         camera.contrast = data.get("contrast", camera.contrast)
         camera.brightness = data.get("brightness", camera.brightness)
         camera.transparency = data.get("transparency", camera.transparency)
+        camera.denoise = data.get("denoise", 0.0)
+
+        camera.distortion_k1 = data.get("distortion_k1", 0.0)
+        camera.distortion_k2 = data.get("distortion_k2", 0.0)
+        camera.distortion_p1 = data.get("distortion_p1", 0.0)
+        camera.distortion_p2 = data.get("distortion_p2", 0.0)
+
+        camera.offset_top = data.get("offset_top", 0.0)
+        camera.offset_bottom = data.get("offset_bottom", 0.0)
+        camera.offset_left = data.get("offset_left", 0.0)
+        camera.offset_right = data.get("offset_right", 0.0)
 
         image_to_world_data = data.get("image_to_world")
         if image_to_world_data is not None:
