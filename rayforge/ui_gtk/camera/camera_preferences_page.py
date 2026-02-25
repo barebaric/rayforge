@@ -1,10 +1,11 @@
-from gi.repository import Gtk, Adw
+from gi.repository import Gtk
 from blinker import Signal
 from typing import List, cast
 from ...camera.models.camera import Camera
 from ...camera.controller import CameraController
 from ..icons import get_icon
 from ..shared.preferences_group import PreferencesGroupWithButton
+from ..shared.preferences_page import TrackedPreferencesPage
 from .properties_widget import CameraProperties
 from .selection_dialog import CameraSelectionDialog
 
@@ -162,7 +163,10 @@ class CameraListEditor(PreferencesGroupWithButton):
         self.remove_requested.send(self, camera=camera)
 
 
-class CameraPreferencesPage(Adw.PreferencesPage):
+class CameraPreferencesPage(TrackedPreferencesPage):
+    key = "camera"
+    path_prefix = "/machine-settings/"
+
     def __init__(self, **kwargs):
         super().__init__(
             title=_("Camera"), icon_name="camera-photo-symbolic", **kwargs

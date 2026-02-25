@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING, List, Tuple
 from ..shared.util.glib import idle_add
 from ..core.item import DocItem
 from ..core.undo import ChangePropertyCommand
+from ..usage import get_usage_tracker
 from .layout import (
     BboxAlignLeftStrategy,
     BboxAlignCenterStrategy,
@@ -231,6 +232,8 @@ class LayoutCmd:
 
         if not items_to_layout:
             return
+
+        get_usage_tracker().track_page_view("/doc/layout/auto", "Auto Layout")
 
         strategy = PixelPerfectLayoutStrategy(
             items=items_to_layout,

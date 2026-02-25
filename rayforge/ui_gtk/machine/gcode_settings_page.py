@@ -1,13 +1,17 @@
 import logging
-from gi.repository import Gtk, Adw
+from gi.repository import Adw, Gtk
 from ..shared.adwfix import get_spinrow_int
+from ..shared.preferences_page import TrackedPreferencesPage
 from .dialect_list import DialectListEditor
 
 
 logger = logging.getLogger(__name__)
 
 
-class GcodeSettingsPage(Adw.PreferencesPage):
+class GcodeSettingsPage(TrackedPreferencesPage):
+    key = "gcode"
+    path_prefix = "/machine-settings/"
+
     def __init__(self, machine, **kwargs):
         super().__init__(
             title=_("G-code"),

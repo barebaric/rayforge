@@ -8,16 +8,20 @@ from ...shared.units.definitions import (
 )
 from ...core.config import StartupBehavior
 from ...ui_gtk.doceditor import file_dialogs
+from ...usage import get_usage_tracker
+from ..shared.preferences_page import TrackedPreferencesPage
 
 
 logger = logging.getLogger(__name__)
 
 
-class GeneralPreferencesPage(Adw.PreferencesPage):
+class GeneralPreferencesPage(TrackedPreferencesPage):
     """
     Preferences page for general application settings.
     This is distinct from the machine-specific general settings.
     """
+
+    key = "general"
 
     # Map for converting between UI index and config string
     THEME_MAP = ["system", "light", "dark"]
@@ -224,6 +228,39 @@ class GeneralPreferencesPage(Adw.PreferencesPage):
         )
         self._update_startup_project_visibility()
 
+        # Privacy Preferences
+        privacy_group = Adw.PreferencesGroup()
+        privacy_group.set_title(_("Privacy"))
+        privacy_group.set_description(
+            _(
+                "Help us improve Rayforge by allowing anonymous usage "
+                "reporting. No personal data is collected."
+            )
+        )
+        self.add(privacy_group)
+
+        self.usage_consent_row = Adw.SwitchRow(
+            title=_("Report Anonymous Usage"),
+            subtitle=_("Help improve Rayforge"),
+        )
+        self.usage_consent_row.set_active(config.has_consented_tracking)
+        self.usage_consent_row.connect(
+            "notify::active", self.on_usage_consent_changed
+        )
+        privacy_group.add(self.usage_consent_row)
+
+        learn_more_label = Gtk.Label(
+            label=_(
+                '<a href="https://rayforge.org/docs/general-info/'
+                'usage-tracking">Learn more</a> about usage tracking '
+                "and privacy."
+            ),
+            use_markup=True,
+            halign=Gtk.Align.START,
+            margin_top=6,
+        )
+        privacy_group.add(learn_more_label)
+
     def _update_startup_project_visibility(self, *args):
         """Show/hide the project path row based on startup behavior."""
         selected_index = self.startup_behavior_row.get_selected()
@@ -303,3 +340,9 @@ class GeneralPreferencesPage(Adw.PreferencesPage):
             get_context().config.set_startup_project_path(file_path)
         except GLib.Error as e:
             logger.error(f"Error selecting file: {e.message}")
+
+    def on_usage_consent_changed(self, switch_row, _):
+        """Called when the user toggles usage reporting."""
+        consent = switch_row.get_active()
+        get_context().config.set_usage_consent(consent)
+        get_usage_tracker().set_enabled(consent)

@@ -1,11 +1,15 @@
 import logging
-from gi.repository import Gtk, Adw
+from gi.repository import Adw, Gtk
 
+from ..shared.preferences_page import TrackedPreferencesPage
 
 logger = logging.getLogger(__name__)
 
 
-class AdvancedPreferencesPage(Adw.PreferencesPage):
+class AdvancedPreferencesPage(TrackedPreferencesPage):
+    key = "advanced"
+    path_prefix = "/machine-settings/"
+
     def __init__(self, machine, **kwargs):
         super().__init__(
             title=_("Advanced"),

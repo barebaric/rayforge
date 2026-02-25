@@ -7,6 +7,7 @@ from gi.repository import Adw, Gio, GLib, Gtk
 
 from .. import __version__, const
 from ..context import get_context
+from ..usage import get_usage_tracker
 from .doceditor import file_dialogs
 
 if TYPE_CHECKING:
@@ -132,6 +133,9 @@ class ProjectCmd:
             if success:
                 self._win.on_doc_changed(self._editor.doc)
                 self.add_to_recent_manager(file_path)
+                get_usage_tracker().track_page_view(
+                    "/doc/project-save", "Project Save"
+                )
         else:
             self.on_save_project_as(action, param)
 
@@ -157,6 +161,9 @@ class ProjectCmd:
             if success:
                 self._win.on_doc_changed(self._editor.doc)
                 self.add_to_recent_manager(file_path)
+                get_usage_tracker().track_page_view(
+                    "/doc/project-save", "Project Save"
+                )
         except GLib.Error as e:
             logger.error(f"Error saving file: {e.message}")
             return
@@ -172,6 +179,9 @@ class ProjectCmd:
             self.add_to_recent_manager(file_path)
             context = get_context()
             context.config.set_last_opened_project(file_path)
+            get_usage_tracker().track_page_view(
+                "/doc/project-open", "Project Open"
+            )
 
     def on_open_recent(self, action, param):
         """Action handler for opening a file from the recent menu."""

@@ -14,6 +14,7 @@ from ..core.geo.constants import (
 from ..core.tab import Tab
 from ..core.undo import Command
 from ..core.workpiece import WorkPiece
+from ..usage import get_usage_tracker
 
 if TYPE_CHECKING:
     from ..doceditor.editor import DocEditor
@@ -251,6 +252,9 @@ class TabCmd:
             name=_("Add Tabs"),
         )
         self._editor.history_manager.execute(cmd)
+        get_usage_tracker().track_page_view(
+            "/doc/add-tabs/equidistant", "Add Equidistant Tabs"
+        )
 
     def add_cardinal_tabs(self, workpiece: WorkPiece, width: float):
         """
@@ -277,6 +281,9 @@ class TabCmd:
             name=_("Add Cardinal Tabs"),
         )
         self._editor.history_manager.execute(cmd)
+        get_usage_tracker().track_page_view(
+            "/doc/add-tabs/cardinal", "Add Cardinal Tabs"
+        )
 
     def add_single_tab(
         self,

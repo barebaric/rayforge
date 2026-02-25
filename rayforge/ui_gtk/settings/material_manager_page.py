@@ -2,18 +2,20 @@
 
 import logging
 from typing import Optional
-from gi.repository import Adw
 from ...core.material_library import MaterialLibrary
 from ..doceditor.material_library_list import LibraryListWidget
 from ..doceditor.material_list import MaterialListWidget
+from ..shared.preferences_page import TrackedPreferencesPage
 
 logger = logging.getLogger(__name__)
 
 
-class MaterialManagerPage(Adw.PreferencesPage):
+class MaterialManagerPage(TrackedPreferencesPage):
     """
     Widget for managing materials and libraries.
     """
+
+    key = "materials"
 
     library_list_editor: LibraryListWidget
     material_list_editor: MaterialListWidget

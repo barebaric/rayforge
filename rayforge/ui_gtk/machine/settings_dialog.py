@@ -28,7 +28,7 @@ class MachineSettingsDialog(PatchedDialogWindow):
         initial_page: Optional[str] = None,
         **kwargs,
     ):
-        super().__init__(**kwargs)
+        super().__init__(skip_usage_tracking=True, **kwargs)
         if transient_for:
             self.set_transient_for(transient_for)
         self.machine = machine

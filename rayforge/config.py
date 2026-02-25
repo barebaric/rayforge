@@ -47,6 +47,9 @@ PACKAGE_REGISTRY_URL = (
     "main/registry.yaml"
 )
 
+UMAMI_URL = "https://analytics.barebaric.com/api/send"
+UMAMI_WEBSITE_ID = "3b301b16-48d2-4007-977a-ccfb738eab52"
+
 
 def getflag(name, default=False):
     default = "true" if default else "false"

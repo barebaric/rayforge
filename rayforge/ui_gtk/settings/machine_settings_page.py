@@ -6,11 +6,14 @@ from ...machine.models.profile import MachineProfile
 from ..icons import get_icon
 from ..machine.profile_selector import MachineProfileSelectorDialog
 from ..machine.settings_dialog import MachineSettingsDialog
+from ..shared.preferences_page import TrackedPreferencesPage
 from ..shared.round_button import RoundButton
 
 
-class MachineSettingsPage(Adw.PreferencesPage):
+class MachineSettingsPage(TrackedPreferencesPage):
     """A settings page for adding, removing, and managing machines."""
+
+    key = "machines"
 
     def __init__(self, **kwargs):
         """Initializes the Machine Settings page."""

@@ -1,9 +1,10 @@
 from typing import cast
-from gi.repository import Gtk, Adw
+from gi.repository import Adw, Gtk
 from ...machine.models.laser import Laser
 from ...machine.models.machine import Machine
 from ..shared.adwfix import get_spinrow_int, get_spinrow_float
 from ..shared.preferences_group import PreferencesGroupWithButton
+from ..shared.preferences_page import TrackedPreferencesPage
 from ..icons import get_icon
 
 
@@ -190,7 +191,10 @@ class LaserListEditor(PreferencesGroupWithButton):
             self.list_box.select_row(row)
 
 
-class LaserPreferencesPage(Adw.PreferencesPage):
+class LaserPreferencesPage(TrackedPreferencesPage):
+    key = "laser"
+    path_prefix = "/machine-settings/"
+
     def __init__(self, machine, **kwargs):
         super().__init__(
             title=_("Laser Heads"),

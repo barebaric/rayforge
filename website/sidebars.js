@@ -89,6 +89,7 @@ module.exports = {
         'general-info/coordinate-systems',
         'general-info/work-coordinate-systems',
         'general-info/gcode-basics',
+        'general-info/usage-tracking',
       ],
     },
     {

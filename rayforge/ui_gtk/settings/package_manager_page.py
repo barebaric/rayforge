@@ -1,14 +1,17 @@
 import logging
 from gi.repository import Adw, Gtk
 from ..package_manager.package_list import PackageListWidget
+from ..shared.preferences_page import TrackedPreferencesPage
 
 logger = logging.getLogger(__name__)
 
 
-class PackageManagerPage(Adw.PreferencesPage):
+class PackageManagerPage(TrackedPreferencesPage):
     """
     Widget for managing installed packages.
     """
+
+    key = "packages"
 
     def __init__(self):
         super().__init__(

@@ -4,9 +4,13 @@ from ..shared.unit_spin_row import UnitSpinRowHelper
 from ..varset.varsetwidget import VarSetWidget
 from ...machine.driver import drivers, get_driver_cls
 from ...machine.models.machine import Machine
+from ..shared.preferences_page import TrackedPreferencesPage
 
 
-class GeneralPreferencesPage(Adw.PreferencesPage):
+class GeneralPreferencesPage(TrackedPreferencesPage):
+    key = "general"
+    path_prefix = "/machine-settings/"
+
     def __init__(self, machine: Machine, **kwargs):
         super().__init__(
             title=_("General"),

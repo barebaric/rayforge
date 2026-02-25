@@ -24,7 +24,7 @@ class SettingsWindow(PatchedDialogWindow):
     }
 
     def __init__(self, initial_page: str = "general", **kwargs):
-        super().__init__(**kwargs)
+        super().__init__(skip_usage_tracking=True, **kwargs)
 
         self._initial_page = initial_page
         self.set_title(_("Settings"))
