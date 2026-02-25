@@ -1579,7 +1579,7 @@ class TestMachine:
         Tests the soft limit checking logic under various conditions,
         including reversed axes, disabled limits, and unknown positions.
         """
-        isolated_machine.set_dimensions(200, 300)
+        isolated_machine.set_axis_extents(200, 300)
         isolated_machine.set_soft_limits_enabled(enabled)
         isolated_machine.set_reverse_x_axis(reverse_x)
         isolated_machine.set_reverse_y_axis(reverse_y)
@@ -1600,7 +1600,7 @@ class TestMachine:
         """
         await wait_for_tasks_to_finish(task_mgr)
 
-        machine.set_dimensions(100, 100)
+        machine.set_axis_extents(100, 100)
         item_size = (10, 10)
 
         # Test Case 1: Bottom-Left (Identity)
@@ -1643,7 +1643,7 @@ class TestMachine:
         """
         await wait_for_tasks_to_finish(task_mgr)
 
-        machine.set_dimensions(100, 100)
+        machine.set_axis_extents(100, 100)
         item_size = (10, 10)
 
         # Test Case 1: Top-Right (X-Left, Y-Down)
@@ -1766,7 +1766,7 @@ class TestMachine:
         Tests that get_soft_limits correctly calculates the workspace
         boundaries based on axis reversal settings.
         """
-        isolated_machine.set_dimensions(200, 300)
+        isolated_machine.set_axis_extents(200, 300)
         isolated_machine.set_reverse_x_axis(reverse_x)
         isolated_machine.set_reverse_y_axis(reverse_y)
 

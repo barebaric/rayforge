@@ -90,7 +90,7 @@ def test_laser_dot_absolute_positioning(
     """
     # 1. Configure the Machine
     machine = Machine(ui_context_initializer)
-    machine.set_dimensions(WIDTH, HEIGHT)
+    machine.set_axis_extents(WIDTH, HEIGHT)
     machine.set_origin(origin)
     machine.set_reverse_x_axis(rev_x)
     machine.set_reverse_y_axis(rev_y)

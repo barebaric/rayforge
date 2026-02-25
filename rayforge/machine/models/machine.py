@@ -378,16 +378,7 @@ class Machine:
         self._clamp_soft_limits()
         self.changed.send(self)
 
-    @property
-    def dimensions(self) -> Tuple[float, float]:
-        """Alias for axis_extents for backward compatibility."""
-        return self._axis_extents
-
-    @dimensions.setter
-    def dimensions(self, value: Tuple[float, float]):
-        self._axis_extents = value
-
-    def set_dimensions(self, width: float, height: float):
+    def set_dimensionssss(self, width: float, height: float):
         self.set_axis_extents(width, height)
 
     @property

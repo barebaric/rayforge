@@ -38,13 +38,6 @@ class TestMachineModel:
         assert machine1.id != machine2.id
         assert isinstance(machine1.id, str)
 
-    def test_machine_dimensions(self, lite_context):
-        """Test setting and getting machine dimensions."""
-        machine = Machine(lite_context)
-        lite_context.machine_mgr.add_machine(machine)
-        machine.set_dimensions(200, 150)
-        assert machine.dimensions == (200, 150)
-
     def test_machine_origin(self, lite_context):
         """Test setting and getting machine origin."""
         machine = Machine(lite_context)
@@ -98,18 +91,6 @@ class TestMachineAxisExtents:
         machine = Machine(context_initializer)
         machine.set_axis_extents(300, 400)
         assert machine.axis_extents == (300, 400)
-
-    def test_dimensions_alias(self, context_initializer):
-        """Test that dimensions is an alias for axis_extents."""
-        machine = Machine(context_initializer)
-        machine.set_axis_extents(250, 350)
-        assert machine.dimensions == (250, 350)
-
-    def test_set_dimensions_updates_axis_extents(self, context_initializer):
-        """Test that set_dimensions updates axis_extents."""
-        machine = Machine(context_initializer)
-        machine.set_dimensions(500, 600)
-        assert machine.axis_extents == (500, 600)
 
 
 @pytest.mark.usefixtures("context_initializer")
