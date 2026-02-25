@@ -98,7 +98,7 @@ module.exports = {
   scripts: [
     {
       src: 'https://analytics.barebaric.com/script.js',
-      'data-website-id': '699f6cfa-5ee6-4ca6-9c46-40fe10265772',
+      'data-website-id': '4493e023-327b-427c-980f-54a49129c732',
       defer: true,
     },
   ],
