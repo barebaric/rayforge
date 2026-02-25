@@ -95,6 +95,14 @@ module.exports = {
     },
   },
 
+  scripts: [
+    {
+      src: 'https://analytics.barebaric.com/script.js',
+      'data-website-id': '699f6cfa-5ee6-4ca6-9c46-40fe10265772',
+      defer: true,
+    },
+  ],
+
   themeConfig: {
     navbar: {
       title: 'Rayforge',
@@ -145,12 +153,5 @@ module.exports = {
       style: 'dark',
       copyright: `Copyright © ${new Date().getFullYear()} Rayforge Contributors`,
     },
-    scripts: [
-      {
-        src: 'https://analytics.barebaric.com/script.js',
-        'data-website-id': '699f6cfa-5ee6-4ca6-9c46-40fe10265772',
-        defer: true,
-      },
-    ],
   },
 };
