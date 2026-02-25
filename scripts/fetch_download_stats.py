@@ -155,8 +155,8 @@ def get_flathub_downloads(app_id):
         }
 
 
-def get_pypi_downloads(package_name):
-    url = f"https://pypistats.org/api/packages/{package_name}/recent"
+def get_pypi_downloads(pkg_name):
+    url = f"https://pypistats.org/api/packages/{pkg_name}/recent"
     try:
         data = fetch_json(url)
         return {
@@ -184,8 +184,10 @@ def get_flathub_monthly(app_id):
         return {}
 
 
-def get_pypi_monthly(package_name):
-    url = f"https://pypistats.org/api/packages/{package_name}/overall?mirrors=false"
+def get_pypi_monthly(pkg_name):
+    url = (
+        f"https://pypistats.org/api/packages/{pkg_name}/overall?mirrors=false"
+    )
     try:
         data = fetch_json(url)
         daily = data.get("data", [])
@@ -363,7 +365,8 @@ def main():
     if args.output == "metrics":
         if not METRICS_URL or not METRICS_API_USER or not METRICS_API_PASSWORD:
             print(
-                "Error: METRICS_URL, METRICS_API_USER, and METRICS_API_PASSWORD must be set"
+                "Error: METRICS_URL, METRICS_API_USER, and "
+                "METRICS_API_PASSWORD must be set"
             )
             return 1
 
