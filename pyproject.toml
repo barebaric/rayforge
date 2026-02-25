@@ -6,7 +6,7 @@ authors = [
 ]
 description = "A desktop application for laser cutting and engraving"
 readme = "README.md"
-license = "MIT"
+license = {text = "MIT"}
 requires-python = ">=3.10"
 classifiers = [
     "Programming Language :: Python :: 3",
