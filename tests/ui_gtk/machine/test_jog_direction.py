@@ -97,7 +97,7 @@ def test_jog_button_direction(
 
     # 1. Configure the Machine
     machine = Machine(ui_context_initializer)
-    machine.set_dimensions(200, 200)
+    machine.set_axis_extents(200, 200)
     machine.set_origin(origin)
     machine.set_reverse_x_axis(expected_axis == Axis.X and reversed)
     machine.set_reverse_y_axis(expected_axis == Axis.Y and reversed)
@@ -225,7 +225,7 @@ def test_jog_button_limit_warning(
 
     # 1. Configure the Machine
     machine = Machine(ui_context_initializer)
-    machine.set_dimensions(100, 100)  # Limits are (0,0) to (100,100)
+    machine.set_axis_extents(100, 100)  # Limits are (0,0) to (100,100)
     machine.set_origin(origin)
     machine.set_reverse_x_axis(reverse_x)
     machine.set_reverse_y_axis(reverse_y)
