@@ -207,6 +207,8 @@ def send_to_victoriametrics(metrics):
     for metric in metrics:
         name = metric["name"]
         value = metric["value"]
+        if value == 0:
+            continue
         tags = metric.get("tags", {})
 
         tags_str = ",".join(f'{k}="{v}"' for k, v in tags.items())
@@ -227,15 +229,15 @@ def send_to_victoriametrics(metrics):
     req.add_header("Authorization", f"Basic {credentials}")
 
     try:
-        with urlopen(req, timeout=30) as resp:
-            return resp.status == 204
+        with urlopen(req, timeout=30):
+            return len(lines)
     except HTTPError as e:
         print(f"Failed to send to VictoriaMetrics: {e}")
         print(f"Response: {e.read().decode()}")
-        return False
+        return 0
     except URLError as e:
         print(f"Failed to send to VictoriaMetrics: {e}")
-        return False
+        return 0
 
 
 def main():
@@ -422,10 +424,9 @@ def main():
                 }
             )
 
-        if send_to_victoriametrics(metrics):
-            print(
-                f"Successfully sent {len(metrics)} metrics to VictoriaMetrics"
-            )
+        sent = send_to_victoriametrics(metrics)
+        if sent:
+            print(f"Successfully sent {sent} metrics to VictoriaMetrics")
             return 0
         else:
             print("Failed to send metrics to VictoriaMetrics")
