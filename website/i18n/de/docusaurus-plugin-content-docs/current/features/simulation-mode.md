@@ -2,11 +2,11 @@
 
 ![Simulationsmodus](/screenshots/main-simulation.png)
 
-Der Simulationsmodus bietet Echtzeit-Visualisierung Ihrer Laserjob-Ausführung, bevor Sie ihn auf der tatsächlichen Maschine ausführen. Er zeigt Ausführungsreihenfolge, Geschwindigkeitsvariationen und Leistungsstufen durch ein interaktives Overlay in der 2D-Ansicht.
+Der Simulationsmodus bietet Echtzeit-Visualisierung deiner Laserjob-Ausführung, bevor du ihn auf der tatsächlichen Maschine ausführst. Er zeigt Ausführungsreihenfolge, Geschwindigkeitsvariationen und Leistungsstufen durch ein interaktives Overlay in der 2D-Ansicht.
 
 ## Übersicht
 
-Der Simulationsmodus hilft Ihnen:
+Der Simulationsmodus hilft dir:
 
 - **Ausführungsreihenfolge visualisieren** - Die genaue Sequenz sehen, in der Operationen laufen werden
 - **Geschwindigkeitsvariationen identifizieren** - Heatmap zeigt langsame (blau) bis schnelle (rot) Bewegungen
@@ -20,17 +20,17 @@ Der Simulationsmodus hilft Ihnen:
 Es gibt drei Möglichkeiten, in den Simulationsmodus zu gelangen:
 
 ### Methode 1: Tastatur-Kurzbefehl
-Drücken Sie <kbd>f7</kbd>, um den Simulationsmodus ein/aus zu schalten.
+Drücke <kbd>f7</kbd>, um den Simulationsmodus ein/aus zu schalten.
 
 ### Methode 2: Menü
-- Navigieren Sie zu **Ansicht → Ausführung simulieren**
-- Klicken Sie zum Ein-/Ausschalten
+- Navigiere zu **Ansicht → Ausführung simulieren**
+- Klicke zum Ein-/Ausschalten
 
 ### Methode 3: Symbolleiste (falls verfügbar)
 - Auf die Simulationsmodus-Taste in der Symbolleiste klicken
 
 :::note Nur 2D-Ansicht
-Der Simulationsmodus funktioniert in der 2D-Ansicht. Wenn Sie sich in der 3D-Ansicht befinden (<kbd>f6</kbd>), wechseln Sie zuerst zur 2D-Ansicht (<kbd>f5</kbd>).
+Der Simulationsmodus funktioniert in der 2D-Ansicht. Wenn du dich in der 3D-Ansicht befindest (<kbd>f6</kbd>), wechsle zuerst zur 2D-Ansicht (<kbd>f5</kbd>).
 :::
 
 ## Die Visualisierung verstehen
@@ -41,15 +41,15 @@ Operationen werden basierend auf ihrer Geschwindigkeit gefärbt:
 
 | Farbe  | Geschwindigkeit | Bedeutung |
 |--------|-----------------|-----------|
-| 🔵 **Blau** | Langsamste | Minimale Geschwindigkeit in Ihrem Job |
+| 🔵 **Blau** | Langsamste | Minimale Geschwindigkeit in deinem Job |
 | 🔵 **Cyan** | Langsam | Unterhalb der durchschnittlichen Geschwindigkeit |
 | 🟢 **Grün** | Mittel | Durchschnittliche Geschwindigkeit |
 | 🟡 **Gelb** | Schnell | Oberhalb der durchschnittlichen Geschwindigkeit |
-| 🔴 **Rot** | Schnellste | Maximale Geschwindigkeit in Ihrem Job |
+| 🔴 **Rot** | Schnellste | Maximale Geschwindigkeit in deinem Job |
 
-Die Heatmap wird auf den tatsächlichen **Geschwindigkeitsbereich Ihres Jobs normalisiert**:
-- Wenn Ihr Job mit 100-1000 mm/min läuft, ist blau=100, rot=1000
-- Wenn Ihr Job mit 5000-10000 mm/min läuft, ist blau=5000, rot=10000
+Die Heatmap wird auf den tatsächlichen **Geschwindigkeitsbereich deines Jobs normalisiert**:
+- Wenn dein Job mit 100-1000 mm/min läuft, ist blau=100, rot=1000
+- Wenn dein Job mit 5000-10000 mm/min läuft, ist blau=5000, rot=10000
 
 ### Leistungs-Transparenz
 
@@ -93,13 +93,13 @@ Wenn der Simulationsmodus aktiv ist, erscheinen Wiedergabe-Steuerungen unten auf
 
 ### Geschwindigkeitsbereich-Anzeige
 
-Zeigt die minimale und maximale Geschwindigkeit in Ihrem Job:
+Zeigt die minimale und maximale Geschwindigkeit in deinem Job:
 
 ```
 Geschwindigkeitsbereich: 100 - 5000 mm/min
 ```
 
-Dies hilft Ihnen, die Heatmap-Farben zu verstehen.
+Dies hilft dir, die Heatmap-Farben zu verstehen.
 
 ## Den Simulationsmodus verwenden
 
@@ -134,7 +134,7 @@ Die Wiedergabedauer wird auf 5 Sekunden für den vollständigen Job skaliert:
 - Wenn die Wiedergabe schnell springt, hat der Job viele kleine Segmente
 
 :::tip Tatsächliche Zeit
-Für die tatsächliche Job-Zeit während der Ausführung (nicht Simulation), überprüfen Sie den rechten Abschnitt der Statusleiste nach der G-Code-Generierung.
+Für die tatsächliche Job-Zeit während der Ausführung (nicht Simulation), überprüfe den rechten Abschnitt der Statusleiste nach der G-Code-Generierung.
 :::
 
 ### Material-Tests debuggen
@@ -149,17 +149,17 @@ Dies hilft zu bestätigen, dass der Test korrekt laufen wird, bevor Material ver
 
 ## Während des Simulierens bearbeiten
 
-Im Gegensatz zu vielen CAM-Tools ermöglicht es Rayforge Ihnen, **Werkstücke während der Simulation zu bearbeiten**:
+Im Gegensatz zu vielen CAM-Tools ermöglicht es Rayforge dir, **Werkstücke während der Simulation zu bearbeiten**:
 
 - Objekte bewegen, skalieren, drehen ✅
 - Operationseinstellungen ändern ✅
 - Werkstücke hinzufügen/entfernen ✅
 - Zoomen und schwenken ✅
 
-**Auto-Update:** Die Simulation aktualisiert sich automatisch, wenn Sie Einstellungen ändern.
+**Auto-Update:** Die Simulation aktualisiert sich automatisch, wenn du Einstellungen änderst.
 
 :::note Kein Kontextwechsel
-Sie können im Simulationsmodus bleiben, während Sie bearbeiten - kein Hin- und Her-Schalten nötig.
+Du kannst im Simulationsmodus bleiben, während du bearbeitest - kein Hin- und Her-Schalten nötig.
 :::
 
 ## Tipps & Best Practices
@@ -213,4 +213,4 @@ Sie können im Simulationsmodus bleiben, während Sie bearbeiten - kein Hin- und
 
 - **[3D-Vorschau](../ui/3d-preview)** - 3D-Werkzeugweg-Visualisierung
 - **[Materialtest-Raster](operations/material-test-grid)** - Simulation verwenden, um Tests zu validieren
-- **[ Ihren Job simulieren](simulating-your-job)** - Detaillierte Simulationsanleitung
+- **[Deinen Job simulieren](simulating-your-job)** - Detaillierte Simulationsanleitung

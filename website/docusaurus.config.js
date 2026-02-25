@@ -95,6 +95,14 @@ module.exports = {
     },
   },
 
+  scripts: [
+    {
+      src: 'https://analytics.barebaric.com/script.js',
+      'data-website-id': '4493e023-327b-427c-980f-54a49129c732',
+      defer: true,
+    },
+  ],
+
   themeConfig: {
     navbar: {
       title: 'Rayforge',

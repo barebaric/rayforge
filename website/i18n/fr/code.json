@@ -1,270 +1,270 @@
 {
   "install.snap.recommended": {
-    "message": "Snap（推荐）"
+    "message": "Snap (Recommandé)"
   },
   "install.pixi.developers": {
-    "message": "Pixi（开发者）"
+    "message": "Pixi (Développeurs)"
   },
   "install.fromSource": {
-    "message": "从源码安装"
+    "message": "À partir des sources"
   },
   "install.installer.recommended": {
-    "message": "安装程序（推荐）"
+    "message": "Installateur (Recommandé)"
   },
   "install.msys2.developers": {
-    "message": "MSYS2（开发者）"
+    "message": "MSYS2 (Développeurs)"
   },
   "install.selectOs": {
-    "message": "选择您的操作系统："
+    "message": "Sélectionnez votre système d'exploitation :"
   },
   "install.chooseMethod": {
-    "message": "选择安装方式："
+    "message": "Choisissez la méthode d'installation :"
   },
   "install.ppa.description": {
-    "message": "对于 Ubuntu 24.04 LTS，您可以使用我们的官方 PPA。此方法通过系统包管理器提供自动更新。"
+    "message": "Pour Ubuntu 24.04 LTS, vous pouvez utiliser notre PPA officiel. Cette méthode fournit des mises à jour automatiques via le gestionnaire de paquets de votre système."
   },
   "install.addPpa": {
-    "message": "添加 Rayforge PPA"
+    "message": "Ajouter le PPA Rayforge"
   },
   "install.installRayforge": {
-    "message": "安装 Rayforge"
+    "message": "Installer Rayforge"
   },
   "install.launchRayforge": {
-    "message": "启动 Rayforge"
+    "message": "Lancer Rayforge"
   },
   "install.launchFromMenu": {
-    "message": "从应用程序菜单启动 Rayforge，或运行："
+    "message": "Lancez Rayforge depuis votre menu d'applications ou en exécutant :"
   },
   "install.flathub.title": {
-    "message": "Flathub 包"
+    "message": "Paquet Flathub"
   },
   "install.flathub.description": {
-    "message": "Flathub 包是在 Linux 上开始使用 Rayforge 最简单的方式。"
+    "message": "Le paquet Flathub est le moyen le plus simple de commencer avec Rayforge sur Linux."
   },
   "install.installFromFlathub": {
-    "message": "从 Flathub 安装"
+    "message": "Installer depuis Flathub"
   },
   "install.getFromFlathub": {
-    "message": "从 Flathub 获取"
+    "message": "Obtenir depuis Flathub"
   },
   "install.orCommandLine": {
-    "message": "或通过命令行安装："
+    "message": "Ou installer via la ligne de commande :"
   },
   "install.snap.title": {
-    "message": "Snap 包"
+    "message": "Paquet Snap"
   },
   "install.snap.description": {
-    "message": "Snap 包适用于大多数 Linux 发行版，并在沙盒环境中包含所有依赖项。"
+    "message": "Le paquet Snap fonctionne sur la plupart des distributions Linux et inclut toutes les dépendances dans un environnement sandbox."
   },
   "install.grantPermissions": {
-    "message": "授予权限（重要！）"
+    "message": "Accorder les permissions (Important !)"
   },
   "install.permissionsRequired": {
-    "message": "需要权限"
+    "message": "Permissions requises"
   },
   "install.snap.permissionNote": {
-    "message": "Snap 版本在沙盒中运行，需要手动授予硬件访问权限。"
+    "message": "La version Snap s'exécute dans un sandbox et nécessite l'attribution manuelle des permissions pour l'accès au matériel."
   },
   "install.usbSerialAccess": {
-    "message": "USB 串口访问："
+    "message": "Pour l'accès au port série USB :"
   },
   "install.cameraAccess": {
-    "message": "摄像头访问："
+    "message": "Pour l'accès à la caméra :"
   },
   "install.verifyPermissions": {
-    "message": "验证权限"
+    "message": "Vérifier les permissions"
   },
   "install.serialPortConnected": {
-    "message": "在列表中查找 {code}。如果显示 \"connected\"，您就可以开始了。"
+    "message": "Recherchez {code} dans la liste. Si \"connected\" s'affiche, vous êtes prêt."
   },
   "install.pixi.title": {
-    "message": "Pixi（开发者安装）"
+    "message": "Pixi (Installation développeur)"
   },
   "install.pixi.description": {
-    "message": "是一个快速的 Python 项目包管理器。此方法推荐给想要为 Rayforge 做贡献或运行最新开发版本的开发者。"
+    "message": "est un gestionnaire de paquets rapide pour les projets Python. Cette méthode est recommandée pour les développeurs qui souhaitent contribuer à Rayforge ou exécuter la dernière version de développement."
   },
   "install.linuxOnly": {
-    "message": "仅限 Linux"
+    "message": "Linux uniquement"
   },
   "install.pixi.linuxOnly": {
-    "message": "Pixi 安装目前仅在 Linux 上可用。"
+    "message": "L'installation Pixi est actuellement disponible uniquement sur Linux."
   },
   "install.installPixi": {
-    "message": "安装 Pixi"
+    "message": "Installer Pixi"
   },
   "install.pixi.installInstruction": {
-    "message": "使用官方安装程序安装 Pixi："
+    "message": "Installez Pixi en utilisant l'installateur officiel :"
   },
   "install.restartShell": {
-    "message": "安装后，重启您的 shell 或运行："
+    "message": "Après l'installation, redémarrez votre shell ou exécutez :"
   },
   "install.cloneRepo": {
-    "message": "克隆仓库"
+    "message": "Cloner le dépôt"
   },
   "install.installSystemDependency": {
-    "message": "安装系统依赖"
+    "message": "Installer la dépendance système"
   },
   "install.installGtkAdwaita": {
-    "message": "安装所需的 Gtk/Adwaita 包："
+    "message": "Installez le paquet Gtk/Adwaita requis :"
   },
   "install.installDependencies": {
-    "message": "安装依赖项"
+    "message": "Installer les dépendances"
   },
   "install.pixi.autoVenv": {
-    "message": "Pixi 将自动创建虚拟环境并安装所有依赖项："
+    "message": "Pixi créera automatiquement un environnement virtuel et installera toutes les dépendances :"
   },
   "install.addDialoutGroup": {
-    "message": "将用户添加到 dialout 组"
+    "message": "Ajouter l'utilisateur au groupe dialout"
   },
   "install.requiredSerialAccess": {
-    "message": "串口访问所需："
+    "message": "Requis pour l'accès au port série :"
   },
   "install.important": {
-    "message": "重要："
+    "message": "Important :"
   },
   "install.logoutLogin": {
-    "message": "注销并重新登录以使此更改生效。"
+    "message": "Déconnectez-vous et reconnectez-vous pour que ce changement prenne effet."
   },
   "install.runRayforge": {
-    "message": "运行 Rayforge"
+    "message": "Exécuter Rayforge"
   },
   "install.usefulPixiCommands": {
-    "message": "有用的 Pixi 命令"
+    "message": "Commandes Pixi utiles"
   },
   "install.availableDevCommands": {
-    "message": "可用的开发命令"
+    "message": "Commandes de développement disponibles"
   },
   "install.runTestSuite": {
-    "message": "运行测试套件"
+    "message": "Exécuter la suite de tests"
   },
   "install.runUiTests": {
-    "message": "运行 UI 测试"
+    "message": "Exécuter les tests UI"
   },
   "install.runLinting": {
-    "message": "运行代码检查和静态分析"
+    "message": "Exécuter le linting et l'analyse statique"
   },
   "install.formatCode": {
-    "message": "使用 ruff 格式化代码"
+    "message": "Formater le code avec ruff"
   },
   "install.source.title": {
-    "message": "从源码安装"
+    "message": "Installer depuis les sources"
   },
   "install.source.description": {
-    "message": "适用于想要运行最新开发版本或为项目做贡献的开发者和高级用户。"
+    "message": "Pour les développeurs et utilisateurs avancés qui souhaitent exécuter la dernière version de développement ou contribuer au projet."
   },
   "install.installSystemDeps": {
-    "message": "安装系统依赖"
+    "message": "Installer les dépendances système"
   },
   "install.onDebianUbuntu": {
-    "message": "在 Debian/Ubuntu 上："
+    "message": "Sur Debian/Ubuntu :"
   },
   "install.installFromPypi": {
-    "message": "从 PyPI 安装 Rayforge"
+    "message": "Installer Rayforge depuis PyPI"
   },
   "install.pypiNote": {
-    "message": "其他发行版上的包名称可能不同。请参阅您发行版的文档。"
+    "message": "Les noms des paquets peuvent différer sur d'autres distributions. Consultez la documentation de votre distribution."
   },
   "install.windows.title": {
-    "message": "Windows 安装"
+    "message": "Installation Windows"
   },
   "install.windows.dev.title": {
-    "message": "Windows 开发环境设置 (MSYS2)"
+    "message": "Configuration de développement Windows (MSYS2)"
   },
   "install.windows.dev.description": {
-    "message": "适用于想要为 Rayforge 做出贡献或在 Windows 上运行最新开发版本的开发者。此方法使用 MSYS2 提供类似 Unix 的开发环境。"
+    "message": "Pour les développeurs qui souhaitent contribuer à Rayforge ou exécuter la dernière version de développement sur Windows. Cette méthode utilise MSYS2 pour fournir un environnement de développement de type Unix."
   },
   "install.installMsys2": {
-    "message": "安装 MSYS2"
+    "message": "Installer MSYS2"
   },
   "install.msys2.download": {
-    "message": "从官方网站下载并安装 MSYS2："
+    "message": "Téléchargez et installez MSYS2 depuis le site officiel :"
   },
   "install.msys2.defaultPath": {
-    "message": "使用默认安装路径 (C:\\msys64) 以获得最佳兼容性。"
+    "message": "Utilisez le chemin d'installation par défaut (C:\\msys64) pour une meilleure compatibilité."
   },
   "install.runSetup": {
-    "message": "运行设置脚本"
+    "message": "Exécuter le script de configuration"
   },
   "install.msys2.shell": {
-    "message": "打开 MSYS2 MINGW64 终端并运行设置脚本："
+    "message": "Ouvrez le shell MSYS2 MINGW64 et exécutez le script de configuration :"
   },
   "install.msys2.setupNote": {
-    "message": "此脚本安装所有必需的系统依赖和 Python 包。可能需要几分钟才能完成。"
+    "message": "Ce script installe toutes les dépendances système et les paquets Python nécessaires. L'installation peut prendre plusieurs minutes."
   },
   "install.installDevTools": {
-    "message": "安装开发工具（可选）"
+    "message": "Installer les outils de développement (Optionnel)"
   },
   "install.msys2.devTools": {
-    "message": "用于代码检查、格式化和 pre-commit 钩子："
+    "message": "Pour le linting, le formatage et les hooks pre-commit :"
   },
   "install.usefulWinCommands": {
-    "message": "有用的 Windows 开发命令"
+    "message": "Commandes de développement Windows utiles"
   },
   "install.gitCommands": {
-    "message": "Git 命令"
+    "message": "Commandes Git"
   },
   "install.msys2.gitNote": {
-    "message": "使用 pre-commit 钩子时，必须在 MSYS2 MINGW64 终端中运行 git 命令，而不是在 PowerShell 或命令提示符中。"
+    "message": "Lors de l'utilisation de hooks pre-commit, vous devez exécuter les commandes git dans le shell MSYS2 MINGW64, et non depuis PowerShell ou l'invite de commande."
   },
   "install.buildInstaller": {
-    "message": "构建 Windows 安装程序"
+    "message": "Construire l'installateur Windows"
   },
   "install.downloadInstaller": {
-    "message": "下载安装程序"
+    "message": "Télécharger l'installateur"
   },
   "install.downloadRayforge": {
-    "message": "下载 Rayforge"
+    "message": "Télécharger Rayforge"
   },
   "install.runInstaller": {
-    "message": "运行安装程序"
+    "message": "Exécuter l'installateur"
   },
   "install.runInstallerInstruction": {
-    "message": "运行下载的安装程序并按照屏幕上的说明操作。"
+    "message": "Exécutez l'installateur téléchargé et suivez les instructions à l'écran."
   },
   "install.runAsAdmin": {
-    "message": "如果遇到权限错误，请尝试以管理员身份运行安装程序（右键单击 - 以管理员身份运行）。"
+    "message": "Si vous rencontrez des erreurs de permission, essayez d'exécuter l'installateur en tant qu'administrateur (clic droit - Exécuter en tant qu'administrateur)."
   },
   "install.windowsLaunch": {
-    "message": "从开始菜单或桌面快捷方式启动 Rayforge。"
+    "message": "Lancez Rayforge depuis le Menu Démarrer ou le raccourci Bureau."
   },
   "install.macOS.chooseBuild": {
-    "message": "选择构建类型："
+    "message": "Choisir le type de build :"
   },
   "install.macOS.universalInstructions": {
-    "message": "打开 DMG 并将 Rayforge.app 拖到您的应用程序文件夹。"
+    "message": "Ouvrez le DMG et glissez Rayforge.app dans votre dossier Applications."
   },
   "install.macOS.zipInstructions": {
-    "message": "解压 ZIP 并将 Rayforge.app 移动到应用程序。"
+    "message": "Extrayez le ZIP et déplacez Rayforge.app vers Applications."
   },
   "install.macOS.openRayforge": {
-    "message": "打开 Rayforge"
+    "message": "Ouvrir Rayforge"
   },
   "install.macOS.openRayforgeInstructions": {
-    "message": "从您的应用程序文件夹启动 Rayforge.app。"
+    "message": "Démarrez Rayforge.app depuis votre dossier Applications."
   },
   "install.macOS.gatekeeper": {
-    "message": "从终端启动一次（如果 Gatekeeper 阻止）"
+    "message": "Lancer une fois depuis le Terminal (si Gatekeeper le bloque)"
   },
   "install.macOS.gatekeeperInstructions": {
-    "message": "如果 macOS 阻止首次启动，请移除隔离属性并启动 Rayforge："
+    "message": "Si macOS bloque le premier lancement, supprimez les attributs de quarantaine et démarrez Rayforge :"
   },
   "install.macOS.source": {
-    "message": "源代码（开发者）"
+    "message": "Source (Développeur)"
   },
   "install.macOS.cloneRepo": {
-    "message": "克隆仓库"
+    "message": "Cloner le dépôt"
   },
   "install.macOS.runSetup": {
-    "message": "运行设置脚本"
+    "message": "Exécuter le script de configuration"
   },
   "install.macOS.runSetupInstructions": {
-    "message": "这将安装依赖项并配置环境："
+    "message": "Ceci installe les dépendances et configure l'environnement :"
   },
   "install.macOS.buildAndRun": {
-    "message": "构建并运行"
+    "message": "Compiler et exécuter"
   },
   "install.macOS.universal": {
-    "message": "通用版（推荐）"
+    "message": "Universel (Recommandé)"
   },
   "install.macOS.arm": {
     "message": "Apple Silicon (M1/M2/M3)"
@@ -273,367 +273,367 @@
     "message": "Intel Mac"
   },
   "install.verify.title": {
-    "message": "验证安装"
+    "message": "Vérifier l'installation"
   },
   "install.verify.launch": {
-    "message": "从应用程序菜单或终端启动 Rayforge。您应该能看到带有画布和工具栏的主窗口。"
+    "message": "Lancez Rayforge depuis votre menu d'applications ou terminal. Vous devriez voir la fenêtre principale avec le canevas et la barre d'outils."
   },
   "install.checkVersion": {
-    "message": "检查版本"
+    "message": "Vérifier la version"
   },
   "install.checkVersionInstruction": {
-    "message": "检查帮助 - 关于以确认安装的版本。"
+    "message": "Vérifiez Aide - À propos pour confirmer la version installée."
   },
   "install.connectMachine": {
-    "message": "连接您的机器"
+    "message": "Connecter votre machine"
   },
   "install.verifySerialPort": {
-    "message": "通过 USB 连接您的激光控制器，并验证串口是否出现在 Rayforge 的机器设置中。"
+    "message": "Connectez votre contrôleur laser via USB et vérifiez que le port série apparaît dans les paramètres de machine de Rayforge."
   },
   "install.linuxSerialTip": {
-    "message": "在 Linux 上，激光控制器通常显示为 /dev/ttyUSB0 或 /dev/ttyACM0。"
+    "message": "Sur Linux, les contrôleurs laser apparaissent généralement comme /dev/ttyUSB0 ou /dev/ttyACM0."
   },
   "install.windowsComTip": {
-    "message": "在 Windows 上，在设备管理器的端口 (COM 和 LPT) 下查看以找到您的 COM 端口号。"
+    "message": "Sur Windows, consultez le Gestionnaire de périphériques sous Ports (COM et LPT) pour trouver votre numéro de port COM."
   },
   "install.troubleshooting.title": {
-    "message": "故障排除"
+    "message": "Dépannage"
   },
   "install.permissionIssues": {
-    "message": "权限问题？"
+    "message": "Problèmes de permissions ?"
   },
   "install.seeSnapGuide": {
-    "message": "如果未检测到您的设备，请参阅 Snap 权限指南。"
+    "message": "Si votre appareil n'est pas détecté, consultez le guide des permissions Snap."
   },
   "install.snapPermissionsGuide": {
-    "message": "Snap 权限指南"
+    "message": "Guide des permissions Snap"
   },
   "install.serialNotWorking": {
-    "message": "串口仍然无法工作？"
+    "message": "Le port série ne fonctionne toujours pas ?"
   },
   "install.replugUsb": {
-    "message": "重新插拔 USB 设备："
+    "message": "Rebrancher l'appareil USB :"
   },
   "install.replugInstruction": {
-    "message": "拔掉您的激光控制器，等待 5 秒钟，然后重新插入。"
+    "message": "Déconnectez votre contrôleur laser, attendez 5 secondes, puis rebranchez-le."
   },
   "install.restartRayforge": {
-    "message": "重启 Rayforge："
+    "message": "Redémarrer Rayforge :"
   },
   "install.closeRelaunch": {
-    "message": "完全关闭并重新启动。"
+    "message": "Fermez complètement et relancez."
   },
   "install.checkDeviceExists": {
-    "message": "检查设备是否存在："
+    "message": "Vérifiez que l'appareil existe :"
   },
   "install.reinstallIfNeeded": {
-    "message": "如果需要，重新安装："
+    "message": "Réinstaller si nécessaire :"
   },
   "install.permissionDenied": {
-    "message": "权限被拒绝错误？"
+    "message": "Erreurs de permission refusée ?"
   },
   "install.permissionDeniedInstruction": {
-    "message": "如果在访问串口时遇到权限被拒绝错误，请将您的用户添加到 {code} 组："
+    "message": "Si vous obtenez des erreurs \"permission denied\" lors de l'accès au port série, ajoutez votre utilisateur au groupe {code} :"
   },
   "install.logoutBack": {
-    "message": "然后注销并重新登录以使更改生效。"
+    "message": "Ensuite, déconnectez-vous et reconnectez-vous pour que les changements prennent effet."
   },
   "install.installerCrashing": {
-    "message": "安装程序崩溃或无法安装？"
+    "message": "L'installateur plante ou ne s'installe pas ?"
   },
   "install.missingVcRedist": {
-    "message": "如果安装程序崩溃或安装失败，您可能缺少 Microsoft Visual C++ Redistributable。从 Microsoft 下载并安装："
+    "message": "Si l'installateur plante ou échoue, vous manque peut-être le redistribuable Microsoft Visual C++. Téléchargez-le et installez-le depuis Microsoft :"
   },
   "install.downloadVc14": {
-    "message": "下载 C++ Redistributable v14"
+    "message": "Télécharger le redistribuable C++ v14"
   },
   "install.afterVcInstall": {
-    "message": "安装 redistributable 后，再次运行 Rayforge 安装程序。"
+    "message": "Après avoir installé le redistribuable, exécutez à nouveau l'installateur Rayforge."
   },
   "install.driverIssues": {
-    "message": "驱动程序问题？"
+    "message": "Problèmes de pilotes ?"
   },
   "install.checkDeviceManager": {
-    "message": "如果未检测到您的激光控制器，请在设备管理器的端口 (COM 和 LPT) 下检查以确认 COM 端口号。您可能需要为 USB 转串口适配器安装 CH340 或 CP2102 驱动程序。"
+    "message": "Si votre contrôleur laser n'est pas détecté, consultez le Gestionnaire de périphériques sous Ports (COM et LPT) pour confirmer le numéro de port COM. Vous devrez peut-être installer des pilotes CH340 ou CP2102 pour votre adaptateur USB-série."
   },
   "install.antivirusBlocking": {
-    "message": "杀毒软件阻止连接？"
+    "message": "L'antivirus bloque la connexion ?"
   },
   "install.antivirusNote": {
-    "message": "某些杀毒软件可能会阻止 Rayforge 访问 USB 设备。如果遇到连接问题，请尝试添加例外。"
+    "message": "Certains logiciels antivirus peuvent empêcher Rayforge d'accéder aux appareils USB. Essayez d'ajouter une exception si vous rencontrez des problèmes de connexion."
   },
   "install.usbNotDetected": {
-    "message": "未检测到 USB 设备？"
+    "message": "Appareil USB non détecté ?"
   },
   "install.approveUsb": {
-    "message": "如果未检测到您的设备，您可能需要在系统设置 - 隐私与安全中批准 USB 设备。"
+    "message": "Si votre appareil n'est pas détecté, vous devrez peut-être approuver l'appareil USB dans Paramètres système - Confidentialité et sécurité."
   },
   "install.driverIssuesMac": {
-    "message": "某些 USB 转串口适配器需要额外的驱动程序。检查您的适配器是否使用 CH340 或 CP2102 芯片并安装相应的驱动程序。"
+    "message": "Certains adaptateurs USB-série nécessitent des pilotes supplémentaires. Vérifiez si votre adaptateur utilise des puces CH340 ou CP2102 et installez le pilote approprié."
   },
   "install.needHelp": {
-    "message": "需要帮助？"
+    "message": "Besoin d'aide ?"
   },
   "install.needHelpDescription": {
-    "message": "如需更多帮助，请在 GitHub 上报告问题或加入我们的 Discord。"
+    "message": "Pour plus d'aide, signalez un problème sur GitHub ou rejoignez notre Discord."
   },
   "theme.ErrorPageContent.title": {
-    "message": "页面崩溃了。",
+    "message": "La page a planté.",
     "description": "The title of the fallback page when the page crashed"
   },
   "theme.BackToTopButton.buttonAriaLabel": {
-    "message": "回到顶部",
+    "message": "Retour en haut",
     "description": "The ARIA label for the back to top button"
   },
   "theme.blog.archive.title": {
-    "message": "归档",
+    "message": "Archives",
     "description": "The page & hero title of the blog archive page"
   },
   "theme.blog.archive.description": {
-    "message": "归档",
+    "message": "Archives",
     "description": "The page & hero description of the blog archive page"
   },
   "theme.blog.paginator.navAriaLabel": {
-    "message": "博客列表页面导航",
+    "message": "Navigation de la liste des articles du blog",
     "description": "The ARIA label for the blog pagination"
   },
   "theme.blog.paginator.newerEntries": {
-    "message": "较新的条目",
+    "message": "Entrées plus récentes",
     "description": "The label used to navigate to the newer blog posts page (previous page)"
   },
   "theme.blog.paginator.olderEntries": {
-    "message": "较旧的条目",
+    "message": "Entrées plus anciennes",
     "description": "The label used to navigate to the older blog posts page (next page)"
   },
   "theme.blog.post.paginator.navAriaLabel": {
-    "message": "博客文章页面导航",
+    "message": "Navigation des articles du blog",
     "description": "The ARIA label for the blog posts pagination"
   },
   "theme.blog.post.paginator.newerPost": {
-    "message": "较新的文章",
+    "message": "Article plus récent",
     "description": "The blog post button label to navigate to the newer/previous post"
   },
   "theme.blog.post.paginator.olderPost": {
-    "message": "较旧的文章",
+    "message": "Article plus ancien",
     "description": "The blog post button label to navigate to the older/next post"
   },
   "theme.tags.tagsPageLink": {
-    "message": "查看所有标签",
+    "message": "Voir tous les tags",
     "description": "The label of the link targeting the tag list page"
   },
   "theme.colorToggle.ariaLabel.mode.system": {
-    "message": "系统模式",
+    "message": "Mode système",
     "description": "The name for the system color mode"
   },
   "theme.colorToggle.ariaLabel.mode.light": {
-    "message": "浅色模式",
+    "message": "Mode clair",
     "description": "The name for the light color mode"
   },
   "theme.colorToggle.ariaLabel.mode.dark": {
-    "message": "深色模式",
+    "message": "Mode sombre",
     "description": "The name for the dark color mode"
   },
   "theme.colorToggle.ariaLabel": {
-    "message": "切换深色和浅色模式（当前为{mode}）",
+    "message": "Basculer entre le mode sombre et clair (actuellement {mode})",
     "description": "The ARIA label for the color mode toggle"
   },
   "theme.docs.breadcrumbs.navAriaLabel": {
-    "message": "面包屑导航",
+    "message": "Fil d'Ariane",
     "description": "The ARIA label for the breadcrumbs"
   },
   "theme.docs.DocCard.categoryDescription.plurals": {
-    "message": "1 个项目|{count} 个项目",
+    "message": "1 élément|{count} éléments",
     "description": "The default description for a category card in the generated index about how many items this category includes"
   },
   "theme.docs.paginator.navAriaLabel": {
-    "message": "文档页面导航",
+    "message": "Pages de documentation",
     "description": "The ARIA label for the docs pagination"
   },
   "theme.docs.paginator.previous": {
-    "message": "上一页",
+    "message": "Précédent",
     "description": "The label used to navigate to the previous doc"
   },
   "theme.docs.paginator.next": {
-    "message": "下一页",
+    "message": "Suivant",
     "description": "The label used to navigate to the next doc"
   },
   "theme.docs.tagDocListPageTitle.nDocsTagged": {
-    "message": "一篇文档被标记|{count} 篇文档被标记",
+    "message": "Un document tagué|{count} documents tagués",
     "description": "Pluralized label for \"{count} docs tagged\". Use as much plural forms (separated by \"|\") as your language support (see https://www.unicode.org/cldr/cldr-aux/charts/34/supplemental/language_plural_rules.html)"
   },
   "theme.docs.tagDocListPageTitle": {
-    "message": "{nDocsTagged}，标签为\"{tagName}\"",
+    "message": "{nDocsTagged} avec \"{tagName}\"",
     "description": "The title of the page for a docs tag"
   },
   "theme.docs.versionBadge.label": {
-    "message": "版本：{versionLabel}"
+    "message": "Version : {versionLabel}"
   },
   "theme.docs.versions.unreleasedVersionLabel": {
-    "message": "这是 {siteTitle} {versionLabel} 的未发布文档。",
+    "message": "Ceci est la documentation non publiée pour {siteTitle} {versionLabel}.",
     "description": "The label used to tell the user that he's browsing an unreleased doc version"
   },
   "theme.docs.versions.unmaintainedVersionLabel": {
-    "message": "这是 {siteTitle} {versionLabel} 的文档，已不再维护。",
+    "message": "Ceci est la documentation pour {siteTitle} {versionLabel} qui n'est plus activement maintenue.",
     "description": "The label used to tell the user that he's browsing an unmaintained doc version"
   },
   "theme.docs.versions.latestVersionSuggestionLabel": {
-    "message": "如需最新文档，请查看 {latestVersionLink}（{versionLabel}）。",
+    "message": "Pour la documentation à jour, consultez {latestVersionLink} ({versionLabel}).",
     "description": "The label used to tell the user to check the latest version"
   },
   "theme.docs.versions.latestVersionLinkLabel": {
-    "message": "最新版本",
+    "message": "dernière version",
     "description": "The label used for the latest version suggestion link label"
   },
   "theme.common.editThisPage": {
-    "message": "编辑此页",
+    "message": "Modifier cette page",
     "description": "The link label to edit the current page"
   },
   "theme.common.headingLinkTitle": {
-    "message": "{heading} 的直接链接",
+    "message": "Lien direct vers {heading}",
     "description": "Title for link to heading"
   },
   "theme.lastUpdated.atDate": {
-    "message": " 于 {date}",
+    "message": " le {date}",
     "description": "The words used to describe on which date a page has been last updated"
   },
   "theme.lastUpdated.byUser": {
-    "message": " 由 {user}",
+    "message": " par {user}",
     "description": "The words used to describe by who the page has been last updated"
   },
   "theme.lastUpdated.lastUpdatedAtBy": {
-    "message": "最后更新{atDate}{byUser}",
+    "message": "Dernière mise à jour{atDate}{byUser}",
     "description": "The sentence used to display when a page has been last updated, and by who"
   },
   "theme.navbar.mobileVersionsDropdown.label": {
-    "message": "版本",
+    "message": "Versions",
     "description": "The label for the navbar versions dropdown on mobile view"
   },
   "theme.NotFound.title": {
-    "message": "页面未找到",
+    "message": "Page non trouvée",
     "description": "The title of the 404 page"
   },
   "theme.tags.tagsListLabel": {
-    "message": "标签：",
+    "message": "Tags :",
     "description": "The label alongside a tag list"
   },
   "theme.AnnouncementBar.closeButtonAriaLabel": {
-    "message": "关闭",
+    "message": "Fermer",
     "description": "The ARIA label for close button of announcement bar"
   },
   "theme.blog.sidebar.navAriaLabel": {
-    "message": "博客最近文章导航",
+    "message": "Navigation des articles récents du blog",
     "description": "The ARIA label for recent posts in the blog sidebar"
   },
   "theme.DocSidebarItem.expandCategoryAriaLabel": {
-    "message": "展开侧边栏分类 '{label}'",
+    "message": "Développer la catégorie '{label}' de la barre latérale",
     "description": "The ARIA label to expand the sidebar category"
   },
   "theme.DocSidebarItem.collapseCategoryAriaLabel": {
-    "message": "折叠侧边栏分类 '{label}'",
+    "message": "Réduire la catégorie '{label}' de la barre latérale",
     "description": "The ARIA label to collapse the sidebar category"
   },
   "theme.IconExternalLink.ariaLabel": {
-    "message": "（在新标签页中打开）",
+    "message": "(ouvre dans un nouvel onglet)",
     "description": "The ARIA label for the external link icon"
   },
   "theme.NavBar.navAriaLabel": {
-    "message": "主导航",
+    "message": "Navigation principale",
     "description": "The ARIA label for the main navigation"
   },
   "theme.navbar.mobileLanguageDropdown.label": {
-    "message": "语言",
+    "message": "Langues",
     "description": "The label for the mobile language switcher dropdown"
   },
   "theme.NotFound.p1": {
-    "message": "我们找不到您要找的内容。",
+    "message": "Nous n'avons pas trouvé ce que vous cherchiez.",
     "description": "The first paragraph of the 404 page"
   },
   "theme.NotFound.p2": {
-    "message": "请联系链接到此处网站的所有者，告知链接已失效。",
+    "message": "Veuillez contacter le propriétaire du site qui vous a dirigé ici et l'informer que le lien est rompu.",
     "description": "The 2nd paragraph of the 404 page"
   },
   "theme.TOCCollapsible.toggleButtonLabel": {
-    "message": "本页目录",
+    "message": "Sur cette page",
     "description": "The label used by the button on the collapsible TOC component"
   },
   "theme.blog.post.readMore": {
-    "message": "阅读更多",
+    "message": "Lire la suite",
     "description": "The label used in blog post item excerpts to link to full blog posts"
   },
   "theme.blog.post.readMoreLabel": {
-    "message": "阅读更多关于 {title}",
+    "message": "Lire la suite sur {title}",
     "description": "The ARIA label for the link to full blog posts from excerpts"
   },
   "theme.blog.post.readingTime.plurals": {
-    "message": "阅读时长约 1 分钟|阅读时长约 {readingTime} 分钟",
+    "message": "Une minute de lecture|{readingTime} minutes de lecture",
     "description": "Pluralized label for \"{readingTime} min read\". Use as much plural forms (separated by \"|\") as your language support (see https://www.unicode.org/cldr/cldr-aux/charts/34/supplemental/language_plural_rules.html)"
   },
   "theme.CodeBlock.copy": {
-    "message": "复制",
+    "message": "Copier",
     "description": "The copy button label on code blocks"
   },
   "theme.CodeBlock.copied": {
-    "message": "已复制",
+    "message": "Copié",
     "description": "The copied button label on code blocks"
   },
   "theme.CodeBlock.copyButtonAriaLabel": {
-    "message": "复制到剪贴板",
+    "message": "Copier dans le presse-papiers",
     "description": "The ARIA label for copy code blocks button"
   },
   "theme.CodeBlock.wordWrapToggle": {
-    "message": "切换自动换行",
+    "message": "Basculer le retour à la ligne",
     "description": "The title attribute for toggle word wrapping button of code block lines"
   },
   "theme.docs.breadcrumbs.home": {
-    "message": "首页",
+    "message": "Accueil",
     "description": "The ARIA label for the home page in the breadcrumbs"
   },
   "theme.docs.sidebar.collapseButtonTitle": {
-    "message": "折叠侧边栏",
+    "message": "Réduire la barre latérale",
     "description": "The title attribute for collapse button of doc sidebar"
   },
   "theme.docs.sidebar.collapseButtonAriaLabel": {
-    "message": "折叠侧边栏",
+    "message": "Réduire la barre latérale",
     "description": "The title attribute for collapse button of doc sidebar"
   },
   "theme.docs.sidebar.navAriaLabel": {
-    "message": "文档侧边栏导航",
+    "message": "Barre latérale de documentation",
     "description": "The ARIA label for the sidebar navigation"
   },
   "theme.docs.sidebar.closeSidebarButtonAriaLabel": {
-    "message": "关闭导航栏",
+    "message": "Fermer la barre de navigation",
     "description": "The ARIA label for close button of mobile sidebar"
   },
   "theme.navbar.mobileSidebarSecondaryMenu.backButtonLabel": {
-    "message": "← 返回主菜单",
+    "message": "← Retour au menu principal",
     "description": "The label of the back button to return to main menu, inside the mobile navbar sidebar secondary menu (notably used to display the docs sidebar)"
   },
   "theme.docs.sidebar.toggleSidebarButtonAriaLabel": {
-    "message": "切换导航栏",
+    "message": "Basculer la barre de navigation",
     "description": "The ARIA label for hamburger menu button of mobile navigation"
   },
   "theme.navbar.mobileDropdown.collapseButton.expandAriaLabel": {
-    "message": "展开下拉菜单",
+    "message": "Développer le menu déroulant",
     "description": "The ARIA label of the button to expand the mobile dropdown navbar item"
   },
   "theme.navbar.mobileDropdown.collapseButton.collapseAriaLabel": {
-    "message": "折叠下拉菜单",
+    "message": "Réduire le menu déroulant",
     "description": "The ARIA label of the button to collapse the mobile dropdown navbar item"
   },
   "theme.docs.sidebar.expandButtonTitle": {
-    "message": "展开侧边栏",
+    "message": "Développer la barre latérale",
     "description": "The ARIA label and title attribute for expand button of doc sidebar"
   },
   "theme.docs.sidebar.expandButtonAriaLabel": {
-    "message": "展开侧边栏",
+    "message": "Développer la barre latérale",
     "description": "The ARIA label and title attribute for expand button of doc sidebar"
   },
   "theme.blog.post.plurals": {
-    "message": "一篇文章|{count} 篇文章",
+    "message": "Un article|{count} articles",
     "description": "Pluralized label for \"{count} posts\". Use as much plural forms (separated by \"|\") as your language support (see https://www.unicode.org/cldr/cldr-aux/charts/34/supplemental/language_plural_rules.html)"
   },
   "theme.blog.tagTitle": {
-    "message": "{nPosts}，标签为\"{tagName}\"",
+    "message": "{nPosts} tagués avec \"{tagName}\"",
     "description": "The title of the page for a blog tag"
   },
   "theme.blog.author.pageTitle": {
@@ -641,52 +641,52 @@
     "description": "The title of the page for a blog author"
   },
   "theme.blog.authorsList.pageTitle": {
-    "message": "作者",
+    "message": "Auteurs",
     "description": "The title of the authors page"
   },
   "theme.blog.authorsList.viewAll": {
-    "message": "查看所有作者",
+    "message": "Voir tous les auteurs",
     "description": "The label of the link targeting the blog authors page"
   },
   "theme.blog.author.noPosts": {
-    "message": "该作者尚未撰写文章。",
+    "message": "Cet auteur n'a encore écrit aucun article.",
     "description": "The text for authors with 0 blog post"
   },
   "theme.contentVisibility.unlistedBanner.title": {
-    "message": "未列出页面",
+    "message": "Page non listée",
     "description": "The unlisted content banner title"
   },
   "theme.contentVisibility.unlistedBanner.message": {
-    "message": "此页面未列出。搜索引擎不会索引它，只有拥有直接链接的用户才能访问。",
+    "message": "Cette page n'est pas listée. Les moteurs de recherche ne l'indexeront pas et seuls les utilisateurs avec un lien direct peuvent y accéder.",
     "description": "The unlisted content banner message"
   },
   "theme.contentVisibility.draftBanner.title": {
-    "message": "草稿页面",
+    "message": "Page brouillon",
     "description": "The draft content banner title"
   },
   "theme.contentVisibility.draftBanner.message": {
-    "message": "此页面是草稿。它仅在开发环境中可见，不会包含在生产构建中。",
+    "message": "Cette page est un brouillon. Elle n'est visible qu'en développement et sera exclue du build de production.",
     "description": "The draft content banner message"
   },
   "theme.ErrorPageContent.tryAgain": {
-    "message": "重试",
+    "message": "Réessayer",
     "description": "The label of the button to try again rendering when the React error boundary captures an error"
   },
   "theme.common.skipToMainContent": {
-    "message": "跳转到主要内容",
+    "message": "Aller au contenu principal",
     "description": "The skip to content label used for accessibility, allowing to rapidly navigate to main content with keyboard tab/enter navigation"
   },
   "theme.tags.tagsPageTitle": {
-    "message": "标签",
+    "message": "Tags",
     "description": "The title of the tag list page"
   },
   "homepage.community.title": {
-    "message": "用 Rayforge 创作"
+    "message": "Créé avec Rayforge"
   },
   "homepage.community.subtitle": {
-    "message": "看看世界各地的创作者们都在制作什么"
+    "message": "Découvrez ce que les créateurs du monde entier réalisent"
   },
   "homepage.community.cta": {
-    "message": "分享您的作品"
+    "message": "Partagez vos créations"
   }
 }

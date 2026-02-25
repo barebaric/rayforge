@@ -1,6 +1,6 @@
 # Bedienfeld
 
-Das Bedienfeld am unteren Rand des Rayforge-Fensters bietet manuelle Kontrolle über die Position Ihres Laserschneiders, Echtzeit-Maschinenstatus und eine Protokollansicht zur Überwachung von Operationen.
+Das Bedienfeld am unteren Rand des Rayforge-Fensters bietet manuelle Kontrolle über die Position deines Laserschneiders, Echtzeit-Maschinenstatus und eine Protokollansicht zur Überwachung von Operationen.
 
 ## Übersicht
 
@@ -27,11 +27,11 @@ Die Jog-Steuerung ist nur verfügbar, wenn mit einer Maschine verbunden ist, die
 
 ## Jog-Steuerung
 
-Die Jog-Steuerung bietet manuelle Kontrolle über die Position Ihres Laserschneiders, sodass Sie den Laserkopf präzise für Einrichtung, Ausrichtung und Testzwecke bewegen können.
+Die Jog-Steuerung bietet manuelle Kontrolle über die Position deines Laserschneiders, sodass du den Laserkopf präzise für Einrichtung, Ausrichtung und Testzwecke bewegen kannst.
 
 ### Referenzfahrt-Steuerung
 
-Referenzieren Sie die Achsen Ihrer Maschine, um eine Referenzposition zu etablieren:
+Referenziere die Achsen deiner Maschine, um eine Referenzposition zu etablieren:
 
 | Schaltfläche | Funktion        | Beschreibung                             |
 | ------------ | --------------- | ---------------------------------------- |
@@ -83,7 +83,7 @@ Die Jog-Schaltflächen bieten visuelles Feedback:
 
 ### Jog-Einstellungen
 
-Konfigurieren Sie das Verhalten von Jog-Operationen:
+Konfiguriere das Verhalten von Jog-Operationen:
 
 **Jog-Geschwindigkeit:**
 - **Bereich**: 1-10.000 mm/min
@@ -111,7 +111,7 @@ Konfigurieren Sie das Verhalten von Jog-Operationen:
 
 ## Maschinenstatus-Anzeige
 
-Das Bedienfeld zeigt Echtzeitinformationen über Ihre Maschine:
+Das Bedienfeld zeigt Echtzeitinformationen über deine Maschine:
 
 ### Aktuelle Position
 
@@ -141,7 +141,7 @@ Das Bedienfeld bietet schnellen Zugriff auf die Werkstückkoordinatensystem-Verw
 
 ### Aktives System auswählen
 
-Wählen Sie, welches Koordinatensystem gerade aktiv ist:
+Wähle, welches Koordinatensystem gerade aktiv ist:
 
 | Option          | Typ   | Beschreibung                                     |
 | --------------- | ----- | ------------------------------------------------ |
@@ -163,7 +163,7 @@ Zeigt die Offset-Werte für das aktive WCS:
 
 ### WCS-Null setzen
 
-Definieren Sie, wo der Ursprung des aktiven WCS sein soll:
+Definiere, wo der Ursprung des aktiven WCS sein soll:
 
 | Schaltfläche | Funktion | Beschreibung                                          |
 | ------------ | -------- | ---------------------------------------------------- |
@@ -177,11 +177,11 @@ Null-Schaltflächen sind deaktiviert wenn G53 (Maschinenkoordinaten) ausgewählt
 
 
 :::tip WCS-Einrichtungs-Workflow
-1. Mit Ihrer Maschine verbinden und alle Achsen referenzieren
-2. Das WCS auswählen, das Sie konfigurieren möchten (z.B. G54)
+1. Mit deiner Maschine verbinden und alle Achsen referenzieren
+2. Das WCS auswählen, das du konfigurieren möchtest (z.B. G54)
 3. Den Laserkopf zur gewünschten Ursprungsposition jogen
 4. Auf X nullen und Y nullen klicken um diese Position als (0, 0) zu setzen
-5. Der Offset wird im Controller Ihrer Maschine gespeichert
+5. Der Offset wird im Controller deiner Maschine gespeichert
 :::
 
 
@@ -191,7 +191,7 @@ Die Konsole bietet eine interaktive Terminal-ähnliche Schnittstelle zum Senden 
 
 ### Befehlseingabe
 
-Das Befehlseingabefeld ermöglicht Ihnen, rohen G-Code direkt an die Maschine zu senden:
+Das Befehlseingabefeld ermöglicht dir, rohen G-Code direkt an die Maschine zu senden:
 
 - **Mehrzeilen-Unterstützung**: Mehrere Befehle einfügen oder eingeben
 - **Eingabetaste**: Sendet alle Befehle
@@ -200,9 +200,9 @@ Das Befehlseingabefeld ermöglicht Ihnen, rohen G-Code direkt an die Maschine zu
 
 ### Protokollanzeige
 
-Das Protokoll zeigt die Kommunikation zwischen Rayforge und Ihrer Maschine mit Syntaxhervorhebung zur einfachen Lesbarkeit:
+Das Protokoll zeigt die Kommunikation zwischen Rayforge und deiner Maschine mit Syntaxhervorhebung zur einfachen Lesbarkeit:
 
-- **Benutzerbefehle** (blau): Befehle, die Sie eingegeben oder während Aufträgen gesendet haben
+- **Benutzerbefehle** (blau): Befehle, die du eingegeben oder während Aufträgen gesendet hast
 - **Zeitstempel** (grau): Uhrzeit jeder Nachricht
 - **Fehler** (rot): Fehlermeldungen von der Maschine
 - **Warnungen** (orange): Warnmeldungen
@@ -210,7 +210,7 @@ Das Protokoll zeigt die Kommunikation zwischen Rayforge und Ihrer Maschine mit S
 
 ### Ausführlicher Modus
 
-Klicken Sie auf das Terminal-Symbol in der oberen rechten Ecke der Konsole um die ausführliche Ausgabe umzuschalten:
+Klicke auf das Terminal-Symbol in der oberen rechten Ecke der Konsole um die ausführliche Ausgabe umzuschalten:
 
 - **Aus** (Standard): Versteckt häufige Statusabfragen und "ok"-Antworten
 - **Ein**: Zeigt gesamte Maschinenkommunikation
@@ -219,7 +219,7 @@ Klicken Sie auf das Terminal-Symbol in der oberen rechten Ecke der Konsole um di
 
 Die Konsole scrollt automatisch um neue Nachrichten anzuzeigen:
 
-- Nach oben scrollen deaktiviert Auto-Scroll damit Sie den Verlauf durchsehen können
+- Nach oben scrollen deaktiviert Auto-Scroll, damit du den Verlauf durchsehen kannst
 - Nach unten scrollen aktiviert Auto-Scroll wieder
 - Neue Nachrichten erscheinen sofort wenn Auto-Scroll aktiv ist
 
@@ -235,7 +235,7 @@ Die Konsole ist unschätzbar wertvoll für die Diagnose von Problemen:
 
 ## Maschinenkompatibilität
 
-Das Bedienfeld passt sich an die Fähigkeiten Ihrer Maschine an:
+Das Bedienfeld passt sich an die Fähigkeiten deiner Maschine an:
 
 ### Achsen-Unterstützung
 
@@ -255,7 +255,7 @@ Das Bedienfeld passt sich an die Fähigkeiten Ihrer Maschine an:
 
 ### Software-Endschalter
 
-Wenn Software-Endschalter in Ihrem Maschinenprofil aktiviert sind:
+Wenn Software-Endschalter in deinem Maschinenprofil aktiviert sind:
 
 - Schaltflächen zeigen orangefarbene Warnung wenn Grenzen erreicht werden
 - Bewegung wird automatisch begrenzt um das Überschreiten von Grenzen zu verhindern
@@ -272,7 +272,7 @@ Wenn Software-Endschalter in Ihrem Maschinenprofil aktiviert sind:
 **Verwandte Seiten:**
 
 - [Werkstückkoordinatensysteme (WCS)](../general-info/work-coordinate-systems) - WCS verwalten
-- [Maschineneinrichtung](../machine/general) - Ihre Maschine konfigurieren
+- [Maschineneinrichtung](../machine/general) - Deine Maschine konfigurieren
 - [Tastaturkürzel](../reference/shortcuts) - Vollständige Kürzelreferenz
 - [Hauptfenster](main-window) - Hauptoberflächenübersicht
 - [Allgemeine Einstellungen](../machine/general) - Gerätekonfiguration

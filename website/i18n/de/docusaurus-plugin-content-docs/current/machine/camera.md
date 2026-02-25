@@ -1,6 +1,6 @@
 # Kamera-Integration
 
-Rayforge unterstützt die USB-Kamera-Integration für präzise Materialausrichtung und Positionierung. Die Kamera-Overlay-Funktion ermöglicht es Ihnen, genau zu sehen, wo Ihr Laser auf dem Material schneiden oder gravieren wird, was Rätselraten eliminiert und Materialabfall reduziert.
+Rayforge unterstützt die USB-Kamera-Integration für präzise Materialausrichtung und Positionierung. Die Kamera-Overlay-Funktion ermöglicht es dir, genau zu sehen, wo dein Laser auf dem Material schneiden oder gravieren wird, was Rätselraten eliminiert und Materialabfall reduziert.
 
 ![Kameraeinstellungen](/screenshots/machine-camera.png)
 
@@ -8,7 +8,7 @@ Rayforge unterstützt die USB-Kamera-Integration für präzise Materialausrichtu
 
 Die Kamera-Integration bietet:
 
-- **Live-Video-Overlay** auf der Arbeitsfläche, das Ihr Material in Echtzeit zeigt
+- **Live-Video-Overlay** auf der Arbeitsfläche, das dein Material in Echtzeit zeigt
 - **Bildausrichtung** zur Kalibrierung der Kameraposition relativ zum Laser
 - **Visuelle Positionierung** um Jobs präzise auf unregelmäßigen oder vormarkierten Materialien zu platzieren
 - **Materialvorschau** vor dem Ausführen von Jobs
@@ -43,23 +43,23 @@ Die Kamera-Integration bietet:
 
 ### Eine Kamera hinzufügen
 
-1. **Verbinden Sie Ihre Kamera** über USB mit Ihrem Computer
+1. **Verbinde deine Kamera** über USB mit deinem Computer
 
 2. **Kameraeinstellungen öffnen:**
-   - Navigieren Sie zu **Einstellungen Einstellungen Kamera**
-   - Oder verwenden Sie die Kamera-Symbolleistenschaltfläche
+   - Navigiere zu **Einstellungen → Einstellungen → Kamera**
+   - Oder verwende die Kamera-Symbolleistenschaltfläche
 
 3. **Eine neue Kamera hinzufügen:**
-   - Klicken Sie auf die "+"
+   - Klicke auf die "+"
 -Taste, um eine Kamera hinzuzufügen
-   - Geben Sie einen beschreibenden Namen ein (z.B. "Obere Kamera", "Arbeitsbereich-Kamera")
-   - Wählen Sie das Gerät aus dem Dropdown-Menü
+   - Gib einen beschreibenden Namen ein (z.B. "Obere Kamera", "Arbeitsbereich-Kamera")
+   - Wähle das Gerät aus dem Dropdown-Menü
      - Unter Linux: `/dev/video0`, `/dev/video1`, usw.
      - Unter Windows: Kamera 0, Kamera 1, usw.
 
 4. **Kamera aktivieren:**
-   - Schalten Sie den Kamera-Aktivierungsschalter um
-   - Der Live-Feed sollte auf Ihrer Arbeitsfläche erscheinen
+   - Schalte den Kamera-Aktivierungsschalter um
+   - Der Live-Feed sollte auf deiner Arbeitsfläche erscheinen
 
 5. **Kameraeinstellungen anpassen:**
    - **Helligkeit:** Anpassen, wenn das Material zu dunkel/hell ist
@@ -86,45 +86,45 @@ Die Ausrichtung erstellt eine Transformationsmatrix, die Kamerapixel Maschinenko
 ### Ausrichtungsprozedur
 
 1. **Ausrichtungsdialog öffnen:**
-   - Klicken Sie auf die Kamera-Ausrichtungstaste in der Symbolleiste
-   - Oder gehen Sie zu **Kamera Kamera ausrichten**
+   - Klicke auf die Kamera-Ausrichtungstaste in der Symbolleiste
+   - Oder gehe zu **Kamera → Kamera ausrichten**
 
 2. **Ausrichtungsmarkierungen platzieren:**
-   - Sie benötigen mindestens 3 Referenzpunkte (4 empfohlen für bessere Genauigkeit)
+   - Du benötigst mindestens 3 Referenzpunkte (4 empfohlen für bessere Genauigkeit)
    - Ausrichtungspunkte sollten über den Arbeitsbereich verteilt sein
-   - Verwenden Sie bekannte Positionen wie:
+   - Verwende bekannte Positionen wie:
      - Maschinen-Home-Position
      - Lineal-Markierungen
      - Vorgeschnittene Ausrichtungslöcher
      - Kalibrierungsraster
 
 3. **Bildpunkte markieren:**
-   - Klicken Sie auf das Kamerabild, um einen Punkt an einer bekannten Position zu platzieren
+   - Klicke auf das Kamerabild, um einen Punkt an einer bekannten Position zu platzieren
    - Das Blasen-Widget erscheint und zeigt Punktkoordinaten an
-   - Wiederholen Sie für jeden Referenzpunkt
+   - Wiederhole für jeden Referenzpunkt
 
 4. **Weltkoordinaten eingeben:**
-   - Geben Sie für jeden Bildpunkt die realen X/Y-Koordinaten in mm ein
+   - Gib für jeden Bildpunkt die realen X/Y-Koordinaten in mm ein
    - Dies sind die tatsächlichen Maschinenkoordinaten, an denen sich jeder Punkt befindet
-   - Messen Sie genau mit einem Lineal oder verwenden Sie bekannte Maschinenpositionen
+   - Miss genau mit einem Lineal oder verwende bekannte Maschinenpositionen
 
 5. **Ausrichtung anwenden:**
-   - Klicken Sie auf "Anwenden", um die Transformation zu berechnen
+   - Klicke auf "Anwenden", um die Transformation zu berechnen
    - Das Kamera-Overlay ist nun richtig ausgerichtet
 
 6. **Ausrichtung überprüfen:**
-   - Bewegen Sie den Laserkopf an eine bekannte Position
-   - Überprüfen Sie, ob der Laserpunkt mit der erwarteten Position in der Kameraansicht übereinstimmt
+   - Bewege den Laserkopf an eine bekannte Position
+   - Überprüfe, ob der Laserpunkt mit der erwarteten Position in der Kameraansicht übereinstimmt
    - Bei Bedarf durch Neuausrichtung feinabstimmen
 
 ### Ausrichtungs-Tipps
 
 :::tip Best Practices
-- Verwenden Sie Punkte an den Ecken Ihres Arbeitsbereichs für maximale Abdeckung
-- Vermeiden Sie es, Punkte in einem Bereich zu clusteren
-- Messen Sie Weltkoordinaten sorgfältig - die Genauigkeit hier bestimmt die gesamte Ausrichtungsqualität
-- Richten Sie neu aus, wenn Sie die Kamera bewegen oder den Fokusabstand ändern
-- Speichern Sie Ihre Ausrichtung - sie bleibt über Sitzungen hinweg erhalten
+- Verwende Punkte an den Ecken deines Arbeitsbereichs für maximale Abdeckung
+- Vermeide es, Punkte in einem Bereich zu clusteren
+- Miss Weltkoordinaten sorgfältig - die Genauigkeit hier bestimmt die gesamte Ausrichtungsqualität
+- Richte neu aus, wenn du die Kamera bewegt oder den Fokusabstand geändert hast
+- Speichere deine Ausrichtung - sie bleibt über Sitzungen hinweg erhalten
   :::
 
 **Beispiel-Ausrichtungsworkflow:**
@@ -144,26 +144,26 @@ Sobald ausgerichtet, hilft das Kamera-Overlay beim präzisen Positionieren von J
 
 ### Overlay Aktivieren/Deaktivieren
 
-- **Kamera umschalten:** Klicken Sie auf das Kamera-Symbol in der Symbolleiste
-- **Transparenz anpassen:** Verwenden Sie den Schieberegler in den Kameraeinstellungen (20-50% funktioniert gut)
+- **Kamera umschalten:** Klicke auf das Kamera-Symbol in der Symbolleiste
+- **Transparenz anpassen:** Verwende den Schieberegler in den Kameraeinstellungen (20-50% funktioniert gut)
 - **Bild aktualisieren:** Kamera aktualisiert kontinuierlich während aktiviert
 
 ### Jobs mit der Kamera positionieren
 
 **Workflow für präzises Platzieren:**
 
-1. **Kamera-Overlay aktivieren** um Ihr Material zu sehen
+1. **Kamera-Overlay aktivieren** um dein Material zu sehen
 
-2. **Ihr Design importieren** (SVG, DXF, usw.)
+2. **Dein Design importieren** (SVG, DXF, usw.)
 
 3. **Design auf der Arbeitsfläche positionieren:**
-   - Ziehen Sie das Design, um es mit in der Kamera sichtbaren Merkmalen auszurichten
-   - Verwenden Sie Zoom, um feine Details zu sehen
+   - Ziehe das Design, um es mit in der Kamera sichtbaren Merkmalen auszurichten
+   - Verwende Zoom, um feine Details zu sehen
    - Nach Bedarf drehen/skalieren
 
 4. **Ausrichtung überprüfen:**
-   - Verwenden Sie den [Simulationsmodus](../features/simulation-mode), um zu visualisieren
-   - Überprüfen Sie, dass Schnitte/Gravuren dort sein werden, wo Sie sie erwarten
+   - Verwende den [Simulationsmodus](../features/simulation-mode), um zu visualisieren
+   - Überprüfe, dass Schnitte/Gravuren dort sein werden, wo du sie erwartest
 
 5. **Job rahmen** um die Positionierung vor dem Ausführen zu verifizieren
 
@@ -171,9 +171,9 @@ Sobald ausgerichtet, hilft das Kamera-Overlay beim präzisen Positionieren von J
 
 ### Beispiel: Gravieren auf einer vorgedruckten Karte
 
-1. Platzieren Sie die gedruckte Karte auf dem Laserbett
+1. Platziere die gedruckte Karte auf dem Laserbett
 2. Kamera-Overlay aktivieren
-3. Ihr Gravurdesign importieren
+3. Dein Gravurdesign importieren
 4. Design ziehen und positionieren, um mit gedruckten Merkmalen auszurichten
 5. Position mit Pfeiltasten feinabstimmen
 6. Rahmen um zu verifizieren
@@ -205,7 +205,7 @@ Sobald ausgerichtet, hilft das Kamera-Overlay beim präzisen Positionieren von J
 | Eigenschaft                    | Beschreibung                          |
 | ------------------------------ | ------------------------------------ |
 | **Bildpunkte**                 | Pixelkoordinaten im Kamerabild       |
-| **Welpunkte**                  | Reale Maschinenkoordinaten (mm)      |
+| **Weltpunkte**                 | Reale Maschinenkoordinaten (mm)      |
 | **Transformationsmatrix**      | Berechnete Zuordnung (intern)        |
 
 ---
@@ -214,11 +214,11 @@ Sobald ausgerichtet, hilft das Kamera-Overlay beim präzisen Positionieren von J
 
 ### Kamera-Kalibrierung (Linsenverzerrungskorrektur)
 
-Für präzise Arbeit können Sie die Kamera kalibrieren, um Tonnen-/Kissenverzerrung zu korrigieren:
+Für präzise Arbeit kannst du die Kamera kalibrieren, um Tonnen-/Kissenverzerrung zu korrigieren:
 
-1. **Drucken Sie ein Schachbrettmuster** (z.B. 8×6 Raster mit 25mm Quadraten)
-2. **Erfassen Sie 10+ Bilder** des Musters aus verschiedenen Winkeln/Positionen
-3. **Verwenden Sie OpenCV-Kalibrierungstools** um Kameramatrix und Verzerrungskoeffizienten zu berechnen
+1. **Drucke ein Schachbrettmuster** (z.B. 8×6 Raster mit 25mm Quadraten)
+2. **Erfasse 10+ Bilder** des Musters aus verschiedenen Winkeln/Positionen
+3. **Verwende OpenCV-Kalibrierungstools** um Kameramatrix und Verzerrungskoeffizienten zu berechnen
 4. **Kalibrierung anwenden** in Rayforge (erweiterte Einstellungen)
 
 :::note Wann kalibrieren
@@ -254,7 +254,7 @@ Rayforge unterstützt mehrere Kameras für verschiedene Ansichten oder Maschinen
 **Lösungen:**
 
 **Linux:**
-Überprüfen Sie, ob die Kamera vom System erkannt wird:
+Überprüfe, ob die Kamera vom System erkannt wird:
 
 ```bash
 # Videogeräte auflisten
@@ -276,9 +276,9 @@ sudo snap connect rayforge:camera
 
 **Windows:**
 
-- Überprüfen Sie den Geräte-Manager für Kamera unter "Kameras" oder "Bildgebende Geräte"
-- Stellen Sie sicher, dass keine andere Anwendung die Kamera verwendet (Zoom, Skype, usw. schließen)
-- Versuchen Sie einen anderen USB-Port
+- Überprüfe den Geräte-Manager für Kamera unter "Kameras" oder "Bildgebende Geräte"
+- Stelle sicher, dass keine andere Anwendung die Kamera verwendet (Zoom, Skype, usw. schließen)
+- Versuche einen anderen USB-Port
 - Kamera-Treiber aktualisieren
 
 ### Kamera zeigt schwarzen Bildschirm

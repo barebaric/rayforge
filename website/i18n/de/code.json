@@ -8,14 +8,20 @@
   "install.fromSource": {
     "message": "Aus dem Quellcode"
   },
+  "install.installer.recommended": {
+    "message": "Installer (Empfohlen)"
+  },
+  "install.msys2.developers": {
+    "message": "MSYS2 (Entwickler)"
+  },
   "install.selectOs": {
-    "message": "Wählen Sie Ihr Betriebssystem:"
+    "message": "Wähle dein Betriebssystem:"
   },
   "install.chooseMethod": {
-    "message": "Wählen Sie die Installationsmethode:"
+    "message": "Wähle die Installationsmethode:"
   },
   "install.ppa.description": {
-    "message": "Für Ubuntu 24.04 LTS können Sie unser offizielles PPA verwenden. Diese Methode bietet automatische Updates über den Paketmanager Ihres Systems."
+    "message": "Für Ubuntu 24.04 LTS kannst du unser offizielles PPA verwenden. Diese Methode bietet automatische Updates über den Paketmanager deines Systems."
   },
   "install.addPpa": {
     "message": "Rayforge PPA hinzufügen"
@@ -27,7 +33,7 @@
     "message": "Rayforge starten"
   },
   "install.launchFromMenu": {
-    "message": "Starten Sie Rayforge aus Ihrem Anwendungsmenü oder indem Sie Folgendes ausführen:"
+    "message": "Starte Rayforge aus deinem Anwendungsmenü oder indem du Folgendes ausführst:"
   },
   "install.flathub.title": {
     "message": "Flathub-Paket"
@@ -69,7 +75,7 @@
     "message": "Berechtigungen überprüfen"
   },
   "install.serialPortConnected": {
-    "message": "Suchen Sie nach {code} in der Liste. Wenn \"connected\" angezeigt wird, sind Sie bereit."
+    "message": "Suche nach {code} in der Liste. Wenn \"connected\" angezeigt wird, bist du bereit."
   },
   "install.pixi.title": {
     "message": "Pixi (Entwickler-Installation)"
@@ -87,10 +93,10 @@
     "message": "Pixi installieren"
   },
   "install.pixi.installInstruction": {
-    "message": "Installieren Sie Pixi mit dem offiziellen Installer:"
+    "message": "Installiere Pixi mit dem offiziellen Installer:"
   },
   "install.restartShell": {
-    "message": "Starten Sie nach der Installation Ihre Shell neu oder führen Sie Folgendes aus:"
+    "message": "Starte nach der Installation deine Shell neu oder führe Folgendes aus:"
   },
   "install.cloneRepo": {
     "message": "Repository klonen"
@@ -99,7 +105,7 @@
     "message": "Systemabhängigkeit installieren"
   },
   "install.installGtkAdwaita": {
-    "message": "Installieren Sie das erforderliche Gtk/Adwaita-Paket:"
+    "message": "Installiere das erforderliche Gtk/Adwaita-Paket:"
   },
   "install.installDependencies": {
     "message": "Abhängigkeiten installieren"
@@ -117,7 +123,7 @@
     "message": "Wichtig:"
   },
   "install.logoutLogin": {
-    "message": "Melden Sie sich ab und wieder an, damit diese Änderung wirksam wird."
+    "message": "Melde dich ab und wieder an, damit diese Änderung wirksam wird."
   },
   "install.runRayforge": {
     "message": "Rayforge ausführen"
@@ -156,10 +162,52 @@
     "message": "Rayforge von PyPI installieren"
   },
   "install.pypiNote": {
-    "message": "Paketnamen können auf anderen Distributionen abweichen. Konsultieren Sie die Dokumentation Ihrer Distribution."
+    "message": "Paketnamen können auf anderen Distributionen abweichen. Konsultiere die Dokumentation deiner Distribution."
   },
   "install.windows.title": {
     "message": "Windows-Installation"
+  },
+  "install.windows.dev.title": {
+    "message": "Windows-Entwickler-Setup (MSYS2)"
+  },
+  "install.windows.dev.description": {
+    "message": "Für Entwickler, die zu Rayforge beitragen oder die neueste Entwicklungsversion unter Windows ausführen möchten. Diese Methode verwendet MSYS2, um eine Unix-ähnliche Entwicklungsumgebung bereitzustellen."
+  },
+  "install.installMsys2": {
+    "message": "MSYS2 installieren"
+  },
+  "install.msys2.download": {
+    "message": "Lade MSYS2 von der offiziellen Website herunter und installiere es:"
+  },
+  "install.msys2.defaultPath": {
+    "message": "Verwende den Standard-Installationspfad (C:\\msys64) für beste Kompatibilität."
+  },
+  "install.runSetup": {
+    "message": "Das Setup-Skript ausführen"
+  },
+  "install.msys2.shell": {
+    "message": "Öffne die MSYS2 MINGW64-Shell und führe das Setup-Skript aus:"
+  },
+  "install.msys2.setupNote": {
+    "message": "Dieses Skript installiert alle erforderlichen Systemabhängigkeiten und Python-Pakete. Die Installation kann mehrere Minuten dauern."
+  },
+  "install.installDevTools": {
+    "message": "Entwicklungswerkzeuge installieren (Optional)"
+  },
+  "install.msys2.devTools": {
+    "message": "Für Linting, Formatierung und Pre-Commit-Hooks:"
+  },
+  "install.usefulWinCommands": {
+    "message": "Nützliche Windows-Entwicklungsbefehle"
+  },
+  "install.gitCommands": {
+    "message": "Git-Befehle"
+  },
+  "install.msys2.gitNote": {
+    "message": "Bei der Verwendung von Pre-Commit-Hooks musst du Git-Befehle innerhalb der MSYS2 MINGW64-Shell ausführen, nicht aus PowerShell oder der Eingabeaufforderung."
+  },
+  "install.buildInstaller": {
+    "message": "Den Windows-Installer erstellen"
   },
   "install.downloadInstaller": {
     "message": "Installer herunterladen"
@@ -171,58 +219,82 @@
     "message": "Installer ausführen"
   },
   "install.runInstallerInstruction": {
-    "message": "Führen Sie den heruntergeladenen Installer aus und folgen Sie den Anweisungen auf dem Bildschirm."
+    "message": "Führe den heruntergeladenen Installer aus und folge den Anweisungen auf dem Bildschirm."
   },
   "install.runAsAdmin": {
-    "message": "Wenn Sie Berechtigungsfehler erhalten, versuchen Sie, den Installer als Administrator auszuführen (Rechtsklick - Als Administrator ausführen)."
+    "message": "Wenn du Berechtigungsfehler erhältst, versuche, den Installer als Administrator auszuführen (Rechtsklick - Als Administrator ausführen)."
   },
   "install.windowsLaunch": {
-    "message": "Starten Sie Rayforge über das Startmenü oder die Desktop-Verknüpfung."
+    "message": "Starte Rayforge über das Startmenü oder die Desktop-Verknüpfung."
   },
-  "install.macOS.title": {
-    "message": "macOS-Installation"
+  "install.macOS.chooseBuild": {
+    "message": "Build-Typ wählen:"
   },
-  "install.communitySupport": {
-    "message": "Community-Unterstützung"
+  "install.macOS.universalInstructions": {
+    "message": "Öffne das DMG und ziehe Rayforge.app in deinen Programme-Ordner."
   },
-  "install.macOS.communityNote": {
-    "message": "Es gibt derzeit keine offiziellen macOS-Builds. Rayforge kann jedoch mit der pip-Installationsmethode aus dem Quellcode ausgeführt werden. Community-Beiträge für macOS-Pakete sind willkommen!"
+  "install.macOS.zipInstructions": {
+    "message": "Extrahiere das ZIP und verschiebe Rayforge.app nach Programme."
   },
-  "install.installDeps": {
-    "message": "Abhängigkeiten installieren"
+  "install.macOS.openRayforge": {
+    "message": "Rayforge öffnen"
   },
-  "install.usingHomebrew": {
-    "message": "Verwenden Sie Homebrew, um die erforderlichen Abhängigkeiten zu installieren:"
+  "install.macOS.openRayforgeInstructions": {
+    "message": "Starte Rayforge.app aus deinem Programme-Ordner."
   },
-  "install.installUsbDrivers": {
-    "message": "USB-Treiber installieren (falls erforderlich)"
+  "install.macOS.gatekeeper": {
+    "message": "Einmalig vom Terminal starten (falls Gatekeeper es blockiert)"
   },
-  "install.ch340Driver": {
-    "message": "Wenn Ihr Laser-Controller einen CH340/CH341-Chipsatz verwendet, installieren Sie die Treiber:"
+  "install.macOS.gatekeeperInstructions": {
+    "message": "Falls macOS den ersten Start blockiert, entferne die Quarantäne-Attribute und starte Rayforge:"
+  },
+  "install.macOS.source": {
+    "message": "Quellcode (Entwickler)"
+  },
+  "install.macOS.cloneRepo": {
+    "message": "Repository klonen"
+  },
+  "install.macOS.runSetup": {
+    "message": "Setup-Skript ausführen"
+  },
+  "install.macOS.runSetupInstructions": {
+    "message": "Dies installiert Abhängigkeiten und konfiguriert die Umgebung:"
+  },
+  "install.macOS.buildAndRun": {
+    "message": "Erstellen und Ausführen"
+  },
+  "install.macOS.universal": {
+    "message": "Universal (Empfohlen)"
+  },
+  "install.macOS.arm": {
+    "message": "Apple Silicon (M1/M2/M3)"
+  },
+  "install.macOS.intel": {
+    "message": "Intel Mac"
   },
   "install.verify.title": {
     "message": "Installation überprüfen"
   },
   "install.verify.launch": {
-    "message": "Starten Sie Rayforge aus Ihrem Anwendungsmenü oder Terminal. Sie sollten das Hauptfenster mit der Arbeitsfläche und der Symbolleiste sehen."
+    "message": "Starte Rayforge aus deinem Anwendungsmenü oder Terminal. Du solltest das Hauptfenster mit der Arbeitsfläche und der Symbolleiste sehen."
   },
   "install.checkVersion": {
     "message": "Version überprüfen"
   },
   "install.checkVersionInstruction": {
-    "message": "Prüfen Sie Hilfe - Über, um die installierte Version zu bestätigen."
+    "message": "Prüfe Hilfe - Über, um die installierte Version zu bestätigen."
   },
   "install.connectMachine": {
-    "message": "Ihre Maschine verbinden"
+    "message": "Deine Maschine verbinden"
   },
   "install.verifySerialPort": {
-    "message": "Verbinden Sie Ihren Laser-Controller über USB und überprüfen Sie, ob der Seriell-Port in den Maschineneinstellungen von Rayforge angezeigt wird."
+    "message": "Verbinde deinen Laser-Controller über USB und überprüfe, ob der Seriell-Port in den Maschineneinstellungen von Rayforge angezeigt wird."
   },
   "install.linuxSerialTip": {
     "message": "Unter Linux erscheinen Laser-Controller typischerweise als /dev/ttyUSB0 oder /dev/ttyACM0."
   },
   "install.windowsComTip": {
-    "message": "Unter Windows überprüfen Sie im Geräte-Manager unter Anschlüsse (COM & LPT), um Ihre COM-Port-Nummer zu finden."
+    "message": "Unter Windows überprüfe im Geräte-Manager unter Anschlüsse (COM & LPT), um deine COM-Port-Nummer zu finden."
   },
   "install.troubleshooting.title": {
     "message": "Fehlerbehebung"
@@ -243,16 +315,16 @@
     "message": "USB-Gerät neu anschließen:"
   },
   "install.replugInstruction": {
-    "message": "Trennen Sie Ihren Laser-Controller, warten Sie 5 Sekunden und schließen Sie ihn wieder an."
+    "message": "Trenne deinen Laser-Controller, warte 5 Sekunden und schließe ihn wieder an."
   },
   "install.restartRayforge": {
     "message": "Rayforge neu starten:"
   },
   "install.closeRelaunch": {
-    "message": "Schließen Sie vollständig und starten Sie neu."
+    "message": "Schließe vollständig und starte neu."
   },
   "install.checkDeviceExists": {
-    "message": "Überprüfen Sie, ob das Gerät existiert:"
+    "message": "Überprüfe, ob das Gerät existiert:"
   },
   "install.reinstallIfNeeded": {
     "message": "Falls erforderlich neu installieren:"
@@ -261,49 +333,49 @@
     "message": "Berechtigung verweigert Fehler?"
   },
   "install.permissionDeniedInstruction": {
-    "message": "Wenn Sie \"permission denied\"-Fehler beim Zugriff auf den Seriell-Port erhalten, fügen Sie Ihren Benutzer zur {code}-Gruppe hinzu:"
+    "message": "Wenn du \"permission denied\"-Fehler beim Zugriff auf den Seriell-Port erhältst, füge deinen Benutzer zur {code}-Gruppe hinzu:"
   },
   "install.logoutBack": {
-    "message": "Melden Sie sich dann ab und wieder an, damit die Änderungen wirksam werden."
+    "message": "Melde dich dann ab und wieder an, damit die Änderungen wirksam werden."
   },
   "install.installerCrashing": {
     "message": "Installer stürzt ab oder installiert nicht?"
   },
   "install.missingVcRedist": {
-    "message": "Wenn der Installer abstürzt oder die Installation fehlschlägt, fehlt Ihnen möglicherweise die Microsoft Visual C++ Redistributable. Laden Sie sie von Microsoft herunter und installieren Sie sie:"
+    "message": "Wenn der Installer abstürzt oder die Installation fehlschlägt, fehlt dir möglicherweise die Microsoft Visual C++ Redistributable. Lade sie von Microsoft herunter und installiere sie:"
   },
   "install.downloadVc14": {
     "message": "C++ Redistributable v14 herunterladen"
   },
   "install.afterVcInstall": {
-    "message": "Nach der Installation der Redistributable führen Sie den Rayforge-Installer erneut aus."
+    "message": "Nach der Installation der Redistributable führe den Rayforge-Installer erneut aus."
   },
   "install.driverIssues": {
     "message": "Treiberprobleme?"
   },
   "install.checkDeviceManager": {
-    "message": "Wenn Ihr Laser-Controller nicht erkannt wird, überprüfen Sie den Geräte-Manager unter Anschlüsse (COM & LPT), um die COM-Port-Nummer zu bestätigen. Möglicherweise müssen Sie CH340- oder CP2102-Treiber für Ihren USB-zu-Seriell-Adapter installieren."
+    "message": "Wenn dein Laser-Controller nicht erkannt wird, überprüfe den Geräte-Manager unter Anschlüsse (COM & LPT), um die COM-Port-Nummer zu bestätigen. Möglicherweise musst du CH340- oder CP2102-Treiber für deinen USB-zu-Seriell-Adapter installieren."
   },
   "install.antivirusBlocking": {
     "message": "Antivirus blockiert die Verbindung?"
   },
   "install.antivirusNote": {
-    "message": "Einige Antivirenprogramme können Rayforge den Zugriff auf USB-Geräte blockieren. Versuchen Sie, eine Ausnahme hinzuzufügen, wenn Sie Verbindungsprobleme haben."
+    "message": "Einige Antivirenprogramme können Rayforge den Zugriff auf USB-Geräte blockieren. Versuche, eine Ausnahme hinzuzufügen, wenn du Verbindungsprobleme hast."
   },
   "install.usbNotDetected": {
     "message": "USB-Gerät nicht erkannt?"
   },
   "install.approveUsb": {
-    "message": "Wenn Ihr Gerät nicht erkannt wird, müssen Sie das USB-Gerät möglicherweise in Systemeinstellungen - Datenschutz & Sicherheit genehmigen."
+    "message": "Wenn dein Gerät nicht erkannt wird, musst du das USB-Gerät möglicherweise in Systemeinstellungen - Datenschutz & Sicherheit genehmigen."
   },
   "install.driverIssuesMac": {
-    "message": "Einige USB-zu-Seriell-Adapter benötigen zusätzliche Treiber. Prüfen Sie, ob Ihr Adapter CH340- oder CP2102-Chips verwendet, und installieren Sie den entsprechenden Treiber."
+    "message": "Einige USB-zu-Seriell-Adapter benötigen zusätzliche Treiber. Prüfe, ob dein Adapter CH340- oder CP2102-Chips verwendet, und installiere den entsprechenden Treiber."
   },
   "install.needHelp": {
     "message": "Hilfe benötigt?"
   },
   "install.needHelpDescription": {
-    "message": "Für weitere Hilfe melden Sie ein Problem auf GitHub oder treten Sie unserem Discord bei."
+    "message": "Für weitere Hilfe melde ein Problem auf GitHub oder trete unserem Discord bei."
   },
   "theme.ErrorPageContent.title": {
     "message": "Die Seite ist abgestürzt.",
@@ -473,11 +545,11 @@
     "description": "The label for the mobile language switcher dropdown"
   },
   "theme.NotFound.p1": {
-    "message": "Wir konnten nicht finden, wonach Sie gesucht haben.",
+    "message": "Wir konnten nicht finden, wonach du gesucht hast.",
     "description": "The first paragraph of the 404 page"
   },
   "theme.NotFound.p2": {
-    "message": "Bitte kontaktieren Sie den Besitzer der Seite, die Sie mit der ursprünglichen URL verlinkt hat, und teilen Sie ihm mit, dass der Link nicht mehr funktioniert.",
+    "message": "Bitte kontaktiere den Besitzer der Seite, die dich mit der ursprünglichen URL verlinkt hat, und teile ihm mit, dass der Link nicht mehr funktioniert.",
     "description": "The 2nd paragraph of the 404 page"
   },
   "theme.TOCCollapsible.toggleButtonLabel": {
@@ -607,5 +679,14 @@
   "theme.tags.tagsPageTitle": {
     "message": "Tags",
     "description": "The title of the tag list page"
+  },
+  "homepage.community.title": {
+    "message": "Mit Rayforge erstellt"
+  },
+  "homepage.community.subtitle": {
+    "message": "Entdecke, was Kreative auf der ganzen Welt erschaffen"
+  },
+  "homepage.community.cta": {
+    "message": "Teile deine Kreationen"
   }
 }

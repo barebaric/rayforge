@@ -54,7 +54,7 @@ GRBL 1.1 ist die häufigste Firmware für Hobby-CNC- und Lasermaschinen. Veröff
 
 **Version abfragen:**
 
-Verbinden Sie sich mit Ihrem Controller und senden Sie:
+Verbinde sich mit deinem Controller und sende:
 
 ```
 $I
@@ -83,7 +83,7 @@ GRBL 0.9 ist eine ältere Version mit einigen Kompatibilitätsproblemen:
 - Weniger Einstellungen
 - Andere Jogging-Syntax
 
-**Wenn Sie GRBL 0.9 haben:**
+**Wenn du GRBL 0.9 haben:**
 
 1. **Upgrade auf GRBL 1.1** wenn möglich (empfohlen)
 2. **M3 statt M4 verwenden** (weniger vorhersagbare Leistung)
@@ -118,8 +118,8 @@ grblHAL ist ein moderner Fork von GRBL mit erweiterten Funktionen:
 
 **Verwendung von grblHAL:**
 
-1. Wählen Sie "GRBL Serial"-Treiber in Rayforge
-2. Verbinden Sie über USB-Seriell (genau wie GRBL)
+1. Wähle "GRBL Serial"-Treiber in Rayforge
+2. Verbinde über USB-Seriell (genau wie GRBL)
 3. Alle Funktionen funktionieren wie für GRBL dokumentiert
 
 **Zukunft:** Rayforge könnte Unterstützung für grblHAL-spezifische Funktionen hinzufügen (Netzwerk usw.)
@@ -147,7 +147,7 @@ Smoothieware verwendet eine andere G-Code-Syntax:
 
 1. **Smoothieware-Dialekt auswählen** in Maschineneinstellungen > G-Code > Dialekt
 2. **Mit geringer Leistung testen** zuerst
-3. **Leistungsbereich überprüfen** entspricht Ihrer Konfiguration
+3. **Leistungsbereich überprüfen** entspricht deiner Konfiguration
 4. **Kein Echtzeit-Status** – eingeschränktes Feedback
 
 **Einschränkungen:**
@@ -157,7 +157,7 @@ Smoothieware verwendet eine andere G-Code-Syntax:
 - Einstellungen ($$-Befehle) nicht unterstützt
 - Ungetestet auf echter Hardware
 
-**Empfehlung:** Verwenden Sie wenn möglich GRBL-kompatible Firmware.
+**Empfehlung:** Verwende wenn möglich GRBL-kompatible Firmware.
 
 ---
 
@@ -198,7 +198,7 @@ Marlin 2.0+ kann Laser steuern, wenn richtig konfiguriert.
 3. **Leistungsbereich testen** entspricht (0-1000 oder 0-255)
 4. **Eingeschränkte Tests** – mit Vorsicht verwenden
 
-**Bessere Alternative:** Verwenden Sie GRBL-Firmware auf Lasermaschinen.
+**Bessere Alternative:** Verwende GRBL-Firmware auf Lasermaschinen.
 
 ---
 
@@ -215,7 +215,7 @@ Marlin 2.0+ kann Laser steuern, wenn richtig konfiguriert.
 
 **Wie man upgradet:**
 
-1. **Identifizieren Sie Ihr Controller-Board:**
+1. **Identifiziere dein Controller-Board:**
    - Arduino Nano/Uno (ATmega328P)
    - Arduino Mega (ATmega2560)
    - Custom-Board
@@ -245,7 +245,7 @@ Marlin 2.0+ kann Laser steuern, wenn richtig konfiguriert.
 4. **GRBL konfigurieren:**
    - Über Seriell verbinden
    - `$$` senden um Einstellungen anzuzeigen
-   - Für Ihre Maschine konfigurieren
+   - Für deine Maschine konfigurieren
 
 ### Backup vor Upgrade
 
@@ -312,7 +312,7 @@ $32=1       ; Laser-Modus aktiviert (1 = ein)
 **Maschineneinstellungen:**
 
 ```
-$100=80     ; X Schritte/mm (für Ihre Maschine kalibrieren)
+$100=80     ; X Schritte/mm (für deine Maschine kalibrieren)
 $101=80     ; Y Schritte/mm
 $110=3000   ; X max. Rate (mm/min)
 $111=3000   ; Y max. Rate
@@ -326,7 +326,7 @@ $131=200    ; Y max. Verfahrweg (mm)
 
 ```
 $20=1       ; Software-Endschalter aktiviert
-$21=1       ; Hardware-Endschalter aktiviert (wenn Sie Endschalter haben)
+$21=1       ; Hardware-Endschalter aktiviert (wenn du Endschalter haben)
 $22=1       ; Referenzfahrt aktiviert
 ```
 

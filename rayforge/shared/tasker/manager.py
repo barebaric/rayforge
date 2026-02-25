@@ -402,14 +402,21 @@ class TaskManager:
                 task = self._zombie_tasks.get(task_id)
 
         if task:
-            self._main_thread_scheduler(
-                self._dispatch_pooled_task_event,
-                key,
-                task_id,
-                event_name,
-                data,
-                adoption_signals,
-            )
+            if task.is_cancelled():
+                logger.debug(
+                    f"NACKing event '{event_name}' for cancelled "
+                    f"task '{key}' (id: {task_id})."
+                )
+                adoption_signals[signal_key] = False
+            else:
+                self._main_thread_scheduler(
+                    self._dispatch_pooled_task_event,
+                    key,
+                    task_id,
+                    event_name,
+                    data,
+                    adoption_signals,
+                )
         else:
             logger.warning(
                 f"Received event '{event_name}' for unknown task "

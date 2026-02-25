@@ -1,6 +1,6 @@
 # Koordinatensysteme
 
-Das Verständnis, wie Rayforge Koordinatensysteme handhabt, ist essentiell, um Ihre Arbeit korrekt zu positionieren.
+Das Verständnis, wie Rayforge Koordinatensysteme handhabt, ist essentiell, um deine Arbeit korrekt zu positionieren.
 
 ## Arbeitskoordinatensystem (WCS) vs. Maschinenkoordinaten
 
@@ -8,9 +8,9 @@ Rayforge verwendet zwei Hauptkoordinatensysteme:
 
 ### Arbeitskoordinatensystem (WCS)
 
-Das WCS ist das Koordinatensystem Ihres Jobs. Wenn Sie ein Design bei (50, 100) auf der Arbeitsfläche positionieren, sind dies WCS-Koordinaten.
+Das WCS ist das Koordinatensystem deines Jobs. Wenn du ein Design bei (50, 100) auf der Arbeitsfläche positionierst, sind dies WCS-Koordinaten.
 
-- **Ursprung**: Von Ihnen definiert (Standard ist G54)
+- **Ursprung**: Von dir definiert (Standard ist G54)
 - **Zweck**: Design und Job-Positionierung
 - **Mehrere Systeme**: G54-G59 verfügbar für verschiedene Setups
 
@@ -22,20 +22,20 @@ Maschinenkoordinaten sind absolute Positionen relativ zur Home-Position der Masc
 - **Zweck**: Physische Positionierung auf dem Bett
 - **Fest**: Kann nicht durch Software geändert werden
 
-**Beziehung**: WCS-Offsets definieren, wie Ihre Job-Koordinaten auf Maschinenkoordinaten abgebildet werden. Wenn der G54-Offset (100, 50, 0) ist, dann schneidet Ihr Design bei WCS (0, 0) an Maschinenposition (100, 50).
+**Beziehung**: WCS-Offsets definieren, wie deine Job-Koordinaten auf Maschinenkoordinaten abgebildet werden. Wenn der G54-Offset (100, 50, 0) ist, dann schneidet dein Design bei WCS (0, 0) an Maschinenposition (100, 50).
 
 ## Koordinaten in Rayforge konfigurieren
 
 ### Den WCS-Ursprung setzen
 
-Um Ihren Job auf der Maschine zu positionieren:
+Um deinen Job auf der Maschine zu positionieren:
 
 1. **Maschine referenzieren** zuerst (`$H`-Befehl oder Home-Taste)
-2. **Den Laserkopf verfahren** zu Ihrem gewünschten Job-Ursprung
+2. **Den Laserkopf verfahren** zu deinem gewünschten Job-Ursprung
 3. **WCS-Null setzen** über das Steuerungsfeld:
    - "X nullen" klicken, um aktuelles X als Ursprung zu setzen
    - "Y nullen" klicken, um aktuelles Y als Ursprung zu setzen
-4. Ihr Job wird nun von dieser Position starten
+4. Dein Job wird nun von dieser Position starten
 
 ### Ein WCS auswählen
 
@@ -50,11 +50,11 @@ Das aktive WCS im Steuerungsfeld auswählen. Jedes System speichert seinen eigen
 
 ### Y-Achsen-Richtung
 
-Einige Maschinen haben Y steigend nach unten statt nach oben. Konfigurieren Sie dies in:
+Einige Maschinen haben Y steigend nach unten statt nach oben. Konfiguriere dies in:
 
 **Einstellungen → Maschine → Hardware → Achsen**
 
-Wenn Ihre Jobs vertikal gespiegelt herauskommen, schalten Sie die Y-Achsen-Richtungseinstellung um.
+Wenn deine Jobs vertikal gespiegelt herauskommen, schalte die Y-Achsen-Richtungseinstellung um.
 
 ## Häufige Probleme
 

@@ -17,7 +17,7 @@ function HeroSection() {
             El <span className={styles.titleGradient}>Software Láser de Código Abierto Más Potente</span> del Mundo
           </h1>
           <p className={styles.heroSubtitle}>
-            Herramientas fluidas para mentes imaginativas. Rayforge es la herramienta de código abierto para tu cortador láser,
+            Herramientas fluidas para mentes imaginativas. Rayforge es el estudio creativo completo para tu cortador láser,
             combinando CAD 2D, CAM y control de máquina en un paquete vibrante.
           </p>
           <div className={styles.heroCtaButtons}>
@@ -147,7 +147,7 @@ function FeatureSection({
 
 export default function Home() {
   return (
-    <Layout description="Software moderno de envío de G-code y control para cortadores láser basados en GRBL">
+    <Layout description="Diseña y crea con tu cortador láser - el estudio creativo completo para makers, artistas y artesanos">
       <main className={styles.pageWrapper}>
         
         <HeroSection />
@@ -166,12 +166,12 @@ export default function Home() {
 
           <FeatureSection
             blobClass={styles.blobOrange}
-            title="Dibujador 2D Paramétrico"
-            description="Crea diseños 2D precisos basados en restricciones directamente en Rayforge. El dibujador paramétrico proporciona un conjunto completo de herramientas para crear formas geométricas y aplicar restricciones paramétricas."
+            title="Diseña Tus Propias Formas"
+            description="Crea diseños personalizados directamente en Rayforge. Las herramientas de dibujo integradas te permiten bocetar, moldear y refinar tus ideas sin necesidad de software de diseño separado."
             features={[
-              'Crear líneas, círculos, arcos y rellenos',
-              'Aplicar restricciones geométricas: coincidente, vertical, horizontal...',
-              'Expresiones paramétricas para dimensiones calculadas',
+              'Dibuja líneas, círculos, curvas y formas rellenas',
+              'Alinea todo perfectamente',
+              'Define dimensiones que se actualizan automáticamente',
             ]}
             image="/assets/screenshot-sketcher.png"
             reverse
@@ -179,24 +179,24 @@ export default function Home() {
 
           <FeatureSection
             blobClass={styles.blobPurple}
-            title="Optimización Avanzada de Trayectorias"
-            description="Ahorra tiempo y material con algoritmos inteligentes de búsqueda de rutas y funcionalidad de diseño automático. Rayforge optimiza automáticamente el orden de corte para minimizar el tiempo de desplazamiento."
+            title="Trayectorias de Corte Inteligentes"
+            description="Trabaja más rápido y desperdicia menos material. Rayforge descubre la forma más eficiente de cortar tu diseño, para que tu láser pase menos tiempo moviéndose y más tiempo creando."
             features={[
-              "No pierdas tiempo al cortar y grabar",
-              'Ahorra material con diseño y anidamiento automáticos',
-              'Soporte nativo de arcos con comandos G2/G3',
+              "Corte más rápido con movimientos optimizados",
+              'Ahorra material con diseño automático',
+              'Curvas suaves y precisas',
             ]}
             image="/assets/screenshot-optimizer.png"
           />
 
           <FeatureSection
             blobClass={styles.blobCyan}
-            title="Simulador Integrado Potente"
-            description="Valida tu G-code y simula el proceso de corte antes de comenzar. Nuestro simulador integrado te ayuda a detectar problemas potenciales temprano, ahorrándote tiempo y materiales."
+            title="Previsualiza Antes de Cortar"
+            description="Mira tu diseño cobrar vida virtualmente antes de comprometerte con el material real. Detecta problemas potenciales temprano y ahorra tiempo y materiales."
             features={[
-              'Vista previa de G-code',
-              'Simulación visual de trayectorias de corte',
-              'Vista previa 2D en vivo de todas las operaciones mientras editas',
+              'Ve exactamente cómo se moverá tu láser',
+              'Detecta errores antes de cortar',
+              'Vista previa en vivo que se actualiza mientras diseñas',
             ]}
             image="/screenshots/main-simulation.png"
             reverse
@@ -205,11 +205,10 @@ export default function Home() {
           <FeatureSection
             blobClass={styles.blobOrange}
             title="Gestión de Materiales y Flujos de Trabajo"
-            description="Optimiza tu flujo de trabajo de corte láser con herramientas integrales de gestión de materiales, stock y recetas diseñadas para mejorar la consistencia y eficiencia."
+            description="Guarda tus configuraciones favoritas y obtén resultados consistentes en todos tus proyectos. Ya sea que cortes madera, acrílico o cuero, Rayforge recuerda lo que funciona mejor."
             features={[
-              'Organizar materiales por tipo y propiedades',
-              'Definir dimensiones físicas del stock',
-              'Crear recetas reutilizables para resultados consistentes',
+              'Guarda configuraciones para diferentes materiales',
+              'Crea recetas reutilizables',
             ]}
             image="/assets/screenshot-recipe.png"
           />

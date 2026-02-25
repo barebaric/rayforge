@@ -7,7 +7,7 @@ export default function Contributing() {
   return (
     <Layout
       title="Mitwirken"
-      description="Erfahren Sie, wie Sie bei Rayforge mitwirken können"
+      description="Erfahre, wie du bei Rayforge mitwirken kannst"
     >
       <div className="container container--fluid margin-vert--lg">
         <div className="row">
@@ -43,27 +43,27 @@ export default function Contributing() {
             </ul>
 
             <p>
-              Wir freuen uns über Beiträge aller Art! Egal ob Sie Fehler beheben,
-              Funktionen hinzufügen, die Dokumentation verbessern oder bei der
-              Verpackung helfen – Ihre Beiträge machen Rayforge für alle besser.
+              Wir freuen uns über Beiträge aller Art! Egal ob du Fehler behebst,
+              Funktionen hinzufügst, die Dokumentation verbesserst oder bei der
+              Verpackung hilfst – deine Beiträge machen Rayforge für alle besser.
             </p>
 
             <h2>Möglichkeiten mitzuwirken</h2>
 
             <h3>Fehler melden</h3>
 
-            <p>Einen Fehler gefunden? Helfen Sie uns, ihn zu beheben:</p>
+            <p>Einen Fehler gefunden? Hilf uns, ihn zu beheben:</p>
 
             <ol>
               <li>
-                Prüfen Sie{' '}
+                Prüfe{' '}
                 <a href="https://github.com/barebaric/rayforge/issues">
                   bestehende Issues
                 </a>{' '}
                 um Duplikate zu vermeiden
               </li>
               <li>
-                Erstellen Sie ein{' '}
+                Erstelle ein{' '}
                 <a href="https://github.com/barebaric/rayforge/issues/new">
                   neues Issue
                 </a>{' '}
@@ -80,17 +80,17 @@ export default function Contributing() {
 
             <h3>Funktionen vorschlagen</h3>
 
-            <p>Haben Sie eine Idee für eine neue Funktion?</p>
+            <p>Hast du eine Idee für eine neue Funktion?</p>
 
             <ol>
               <li>
-                Prüfen Sie{' '}
+                Prüfe{' '}
                 <a href="https://github.com/barebaric/rayforge/issues?q=is%3Aissue+label%3Aenhancement">
                   bestehende Funktionswünsche
                 </a>
               </li>
               <li>
-                Eröffnen Sie einen Funktionswunsch mit:
+                Eröffne einen Funktionswunsch mit:
                 <ul>
                   <li>Beschreibung der Funktion</li>
                   <li>Anwendungsfall und Vorteile</li>
@@ -103,7 +103,7 @@ export default function Contributing() {
 
             <p>
               Ausführliche Informationen zum Einreichen von Code-Beiträgen
-              finden Sie im{' '}
+              findest du im{' '}
               <Link to="/docs/developer/getting-started">
                 Entwickler-Dokumentation - Erste Schritte
               </Link>{' '}
@@ -122,7 +122,7 @@ export default function Contributing() {
             </ul>
 
             <p>
-              Sie können auf jeder Dokumentationsseite auf die Schaltfläche
+              Du kannst auf jeder Dokumentationsseite auf die Schaltfläche
               „Diese Seite bearbeiten" klicken und dann PRs auf die gleiche
               Weise wie Code-Beiträge einreichen.
             </p>
@@ -131,7 +131,7 @@ export default function Contributing() {
 
             <p>
               Diese Dokumentation ist für Endanwender von Rayforge konzipiert.
-              Wenn Sie nach Entwickler-Dokumentation suchen, finden Sie diese im{' '}
+              Wenn du nach Entwickler-Dokumentation suchst, findest du diese im{' '}
               <Link to="/docs/developer/getting-started">
                 Entwickler-Dokumentation
               </Link>{' '}

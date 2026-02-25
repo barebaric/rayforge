@@ -1,6 +1,6 @@
 # Makros & Hooks
 
-Rayforge bietet zwei leistungsstarke Automatisierungsfunktionen zur Anpassung Ihres Workflows: **Makros** und **Hooks**. Beide ermöglichen das Einfügen von benutzerdefiniertem G-Code in Ihre Jobs, dienen jedoch unterschiedlichen Zwecken.
+Rayforge bietet zwei leistungsstarke Automatisierungsfunktionen zur Anpassung deines Workflows: **Makros** und **Hooks**. Beide ermöglichen das Einfügen von benutzerdefiniertem G-Code in deine Jobs, dienen jedoch unterschiedlichen Zwecken.
 
 ![Hooks & Makros Einstellungen](/screenshots/machine-hooks-macros.png)
 
@@ -17,7 +17,7 @@ Rayforge bietet zwei leistungsstarke Automatisierungsfunktionen zur Anpassung Ih
 
 ## Makros
 
-Makros sind **benannte, wiederverwendbare G-Code-Skripte**, die Sie jederzeit manuell ausführen können.
+Makros sind **benannte, wiederverwendbare G-Code-Skripte**, die du jederzeit manuell ausführen kannst.
 
 ### Wofür sind Makros?
 
@@ -34,22 +34,22 @@ Häufige Makro-Anwendungsfälle:
 ### Ein Makro erstellen
 
 1. **Maschineneinstellungen öffnen:**
-   - Navigieren Sie zu **Einstellungen Maschine Makros**
+   - Navigiere zu **Einstellungen → Maschine → Makros**
 
 2. **Ein neues Makro hinzufügen:**
-   - Klicken Sie auf die **"+"**-Taste
-   - Geben Sie einen beschreibenden Namen ein (z.B. "Maschine referenzieren", "Luftunterstützung aktivieren")
+   - Klicke auf die **"+"**-Taste
+   - Gib einen beschreibenden Namen ein (z.B. "Maschine referenzieren", "Luftunterstützung aktivieren")
 
-3. **Schreiben Sie Ihren G-Code:**
+3. **Schreibe deinen G-Code:**
    - Jede Zeile ist ein separater G-Code-Befehl
    - Kommentare beginnen mit `;` oder `(`
    - Variablen können verwendet werden (siehe Variablensubstitution unten)
 
-4. **Speichern Sie das Makro**
+4. **Speichere das Makro**
 
-5. **Führen Sie das Makro aus:**
-   - Klicken Sie in der Makroliste auf das Makro
-   - Oder weisen Sie eine Tastenkombination zu (falls unterstützt)
+5. **Führe das Makro aus:**
+   - Klicke in der Makroliste auf das Makro
+   - Oder weise eine Tastenkombination zu (falls unterstützt)
 
 ### Beispiel-Makros
 
@@ -63,7 +63,7 @@ $H
 ; Wartet auf Abschluss des Referenzierens
 ```
 
-**Verwendung:** Die Maschine schnell referenzieren bevor Sie mit der Arbeit beginnen.
+**Verwendung:** Die Maschine schnell referenzieren, bevor du mit der Arbeit beginnst.
 
 ---
 
@@ -77,7 +77,7 @@ G10 L20 P1 X0 Y0
 ; Setzt G54 Arbeitskoordinatensystem-Ursprung auf aktuelle Position
 ```
 
-**Verwendung:** Markieren Sie die aktuelle Laserposition als Job-Ursprung.
+**Verwendung:** Markiere die aktuelle Laserposition als Job-Ursprung.
 
 ---
 
@@ -101,7 +101,7 @@ M5
 ; ... (Wiederholung für verbleibende Punkte)
 ```
 
-**Verwendung:** Testen Sie schnell den Fokus an verschiedenen Positionen auf dem Bett.
+**Verwendung:** Teste schnell den Fokus an verschiedenen Positionen auf dem Bett.
 
 ---
 
@@ -127,17 +127,17 @@ Rayforge unterstützt diese Hook-Auslöser:
 ### Einen Hook erstellen
 
 1. **Maschineneinstellungen öffnen:**
-   - Navigieren Sie zu **Einstellungen Maschine Hooks**
+   - Navigiere zu **Einstellungen → Maschine → Hooks**
 
 2. **Einen Auslöser wählen:**
-   - Wählen Sie das Ereignis, bei dem dieser Hook ausgeführt werden soll
+   - Wähle das Ereignis, bei dem dieser Hook ausgeführt werden soll
 
-3. **Schreiben Sie Ihren G-Code:**
+3. **Schreibe deinen G-Code:**
    - Hook-Code wird am Auslöserpunkt eingeschoben
-   - Verwenden Sie Variablen für dynamische Werte (siehe unten)
+   - Verwende Variablen für dynamische Werte (siehe unten)
 
 4. **Aktivieren/Deaktivieren:**
-   - Schalten Sie Hooks ein/aus, ohne sie zu löschen
+   - Schalte Hooks ein/aus, ohne sie zu löschen
 
 ### Beispiel-Hooks
 
@@ -341,7 +341,7 @@ M9  ; Luftunterstützung AUS (verhindert Staubspreizung beim Gravieren)
 ```
 
 :::note Ebenen-spezifische Hooks
-Rayforge unterstützt derzeit keine pro-Ebenen-Hook-Anpassung. Um dies zu erreichen, verwenden Sie bedingten G-Code oder separate Maschinenprofile.
+Rayforge unterstützt derzeit keine pro-Ebenen-Hook-Anpassung. Um dies zu erreichen, verwende bedingten G-Code oder separate Maschinenprofile.
 :::
 
 ---
@@ -349,7 +349,7 @@ Rayforge unterstützt derzeit keine pro-Ebenen-Hook-Anpassung. Um dies zu erreic
 ## Sicherheitsüberlegungen
 
 :::danger Vor Produktion testen
-Testen Sie Makros und Hooks immer im **Simulationsmodus** oder mit **deaktiviertem Laser**, bevor Sie echte Jobs ausführen. Falsch konfigurierter G-Code kann:
+Teste Makros und Hooks immer im **Simulationsmodus** oder mit **deaktiviertem Laser**, bevor du echte Jobs ausführst. Falsch konfigurierter G-Code kann:
 
 - Die Maschine gegen Grenzen krachen lassen
 - Den Laser unerwartet feuern

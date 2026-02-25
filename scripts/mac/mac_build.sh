@@ -113,13 +113,43 @@ TMP_REQUIREMENTS=$(mktemp)
 grep -Evi '^(PyOpenGL_accelerate|opencv[_-]python)' \
     requirements.txt > "$TMP_REQUIREMENTS"
 
-if [ "$(uname -s)" = "Darwin" ] && [ "$(uname -m)" = "x86_64" ]; then
-    echo "Installing pinned OpenCV wheel for macOS x86_64..."
+if [ "$(uname -s)" = "Darwin" ]; then
+    awk '
+        BEGIN { done_numpy = 0; done_scipy = 0 }
+        /^numpy==/ {
+            print "numpy==1.26.4"
+            done_numpy = 1
+            next
+        }
+        /^scipy==/ {
+            print "scipy==1.11.4"
+            done_scipy = 1
+            next
+        }
+        { print }
+        END {
+            if (done_numpy == 0) {
+                print "numpy==1.26.4"
+            }
+            if (done_scipy == 0) {
+                print "scipy==1.11.4"
+            }
+        }
+    ' "$TMP_REQUIREMENTS" > "$TMP_REQUIREMENTS.patched"
+    mv "$TMP_REQUIREMENTS.patched" "$TMP_REQUIREMENTS"
+fi
+
+if [ "$(uname -s)" = "Darwin" ]; then
+    echo "Installing pinned OpenCV wheel for macOS..."
     "$VENV_PY" -m pip install --only-binary=:all: \
         "opencv-python==4.10.0.84"
 fi
 
 "$VENV_PY" -m pip install -r "$TMP_REQUIREMENTS"
+if [ "$(uname -s)" = "Darwin" ]; then
+    "$VENV_PY" -m pip install --upgrade --force-reinstall \
+        "numpy==1.26.4" "scipy==1.11.4"
+fi
 rm -f "$TMP_REQUIREMENTS"
 "$VENV_PY" -m pip install PyOpenGL_accelerate==3.1.10 || \
     echo "PyOpenGL_accelerate install failed; continuing."
@@ -372,7 +402,8 @@ SH
                 changed=1
             fi
         done < <(otool -L "$BIN_DIR/Rayforge" "$FW_DIR"/*.dylib 2>/dev/null | \
-            awk '{print $1}' | grep -E '^/usr/local/|^/opt/homebrew/' | \
+            awk '{print $1}' | \
+            grep -E '^/usr/local/|^/opt/homebrew/|^@rpath/' | \
             sort -u || true)
 
         return $changed
@@ -385,66 +416,68 @@ SH
 
     # Fix all library references to use @rpath instead of absolute paths
     echo "Fixing library references..."
-    chmod -R u+w "$FW_DIR" "$BIN_DIR" 2>/dev/null || true
-    find "$FW_DIR" -name "*.dylib" -print0 | while IFS= read -r -d '' dylib; do
-        otool -L "$dylib" | grep -E '/usr/local/|/opt/homebrew/' | \
-            awk '{print $1}' | while read dep; do
-            libname=$(basename "$dep")
-            if [ -f "$FW_DIR/$libname" ]; then
-                install_name_tool -change "$dep" "@rpath/$libname" "$dylib" 2>/dev/null || true
-            fi
-        done || true
-    done
-    for bin in "$BIN_DIR/Rayforge" "$BIN_DIR/Rayforge.bin"; do
-        [ -f "$bin" ] || continue
-        if ! file "$bin" | grep -q "Mach-O"; then
-            continue
-        fi
-        otool -L "$bin" | grep -E '/usr/local/|/opt/homebrew/' | \
-            awk '{print $1}' | while read dep; do
-            libname=$(basename "$dep")
-            if [ -f "$FW_DIR/$libname" ]; then
-                install_name_tool -change "$dep" "@rpath/$libname" "$bin" 2>/dev/null || true
-            fi
-        done || true
-    done
-
-    # Force libpng references to @rpath to avoid runtime lookups in Homebrew.
-    for target in "$FW_DIR"/*.dylib "$BIN_DIR/Rayforge.bin"; do
-        [ -f "$target" ] || continue
-        otool -L "$target" | awk '{print $1}' | \
-            grep -E '/opt/homebrew/opt/libpng/|/usr/local/opt/libpng/' | \
-            while read dep; do
-                install_name_tool -change "$dep" "@rpath/libpng16.16.dylib" \
-                    "$target" 2>/dev/null || true
-            done
-    done
-    if [ -f "$FW_DIR/libfreetype.6.dylib" ]; then
-        otool -L "$FW_DIR/libfreetype.6.dylib" | awk '{print $1}' | \
-            grep -E '/opt/homebrew/opt/libpng/|/usr/local/opt/libpng/' | \
-            while read dep; do
-                install_name_tool -change "$dep" "@rpath/libpng16.16.dylib" \
-                    "$FW_DIR/libfreetype.6.dylib" 2>/dev/null || true
+    {
+        chmod -R u+w "$FW_DIR" "$BIN_DIR" 2>/dev/null || true
+        find "$FW_DIR" -name "*.dylib" -print0 | while IFS= read -r -d '' dylib; do
+            otool -L "$dylib" | grep -E '/usr/local/|/opt/homebrew/' | \
+                awk '{print $1}' | while read dep; do
+                libname=$(basename "$dep")
+                if [ -f "$FW_DIR/$libname" ]; then
+                    install_name_tool -change "$dep" "@rpath/$libname" "$dylib" 2>/dev/null || true
+                fi
             done || true
-    fi
-    if [ -f "$FW_DIR/libfontconfig.1.dylib" ]; then
+        done
+        for bin in "$BIN_DIR/Rayforge" "$BIN_DIR/Rayforge.bin"; do
+            [ -f "$bin" ] || continue
+            if ! file "$bin" | grep -q "Mach-O"; then
+                continue
+            fi
+            otool -L "$bin" | grep -E '/usr/local/|/opt/homebrew/' | \
+                awk '{print $1}' | while read dep; do
+                libname=$(basename "$dep")
+                if [ -f "$FW_DIR/$libname" ]; then
+                    install_name_tool -change "$dep" "@rpath/$libname" "$bin" 2>/dev/null || true
+                fi
+            done || true
+        done
+
+        # Force libpng references to @rpath to avoid runtime lookups in Homebrew.
+        for target in "$FW_DIR"/*.dylib "$BIN_DIR/Rayforge.bin"; do
+            [ -f "$target" ] || continue
+            otool -L "$target" | awk '{print $1}' | \
+                grep -E '/opt/homebrew/opt/libpng/|/usr/local/opt/libpng/' | \
+                while read dep; do
+                    install_name_tool -change "$dep" "@rpath/libpng16.16.dylib" \
+                        "$target" 2>/dev/null || true
+                done || true
+        done
         if [ -f "$FW_DIR/libfreetype.6.dylib" ]; then
-            otool -L "$FW_DIR/libfontconfig.1.dylib" | awk '{print $1}' | \
-                grep -E '/opt/homebrew/opt/freetype/|/usr/local/opt/freetype/' | \
+            otool -L "$FW_DIR/libfreetype.6.dylib" | awk '{print $1}' | \
+                grep -E '/opt/homebrew/opt/libpng/|/usr/local/opt/libpng/' | \
                 while read dep; do
-                    install_name_tool -change "$dep" "@rpath/libfreetype.6.dylib" \
-                        "$FW_DIR/libfontconfig.1.dylib" 2>/dev/null || true
+                    install_name_tool -change "$dep" "@rpath/libpng16.16.dylib" \
+                        "$FW_DIR/libfreetype.6.dylib" 2>/dev/null || true
                 done || true
         fi
-        if [ -f "$FW_DIR/libintl.8.dylib" ]; then
-            otool -L "$FW_DIR/libfontconfig.1.dylib" | awk '{print $1}' | \
-                grep -E '/opt/homebrew/opt/gettext/|/usr/local/opt/gettext/' | \
-                while read dep; do
-                    install_name_tool -change "$dep" "@rpath/libintl.8.dylib" \
-                        "$FW_DIR/libfontconfig.1.dylib" 2>/dev/null || true
-                done || true
+        if [ -f "$FW_DIR/libfontconfig.1.dylib" ]; then
+            if [ -f "$FW_DIR/libfreetype.6.dylib" ]; then
+                otool -L "$FW_DIR/libfontconfig.1.dylib" | awk '{print $1}' | \
+                    grep -E '/opt/homebrew/opt/freetype/|/usr/local/opt/freetype/' | \
+                    while read dep; do
+                        install_name_tool -change "$dep" "@rpath/libfreetype.6.dylib" \
+                            "$FW_DIR/libfontconfig.1.dylib" 2>/dev/null || true
+                    done || true
+            fi
+            if [ -f "$FW_DIR/libintl.8.dylib" ]; then
+                otool -L "$FW_DIR/libfontconfig.1.dylib" | awk '{print $1}' | \
+                    grep -E '/opt/homebrew/opt/gettext/|/usr/local/opt/gettext/' | \
+                    while read dep; do
+                        install_name_tool -change "$dep" "@rpath/libintl.8.dylib" \
+                            "$FW_DIR/libfontconfig.1.dylib" 2>/dev/null || true
+                    done || true
+            fi
         fi
-    fi
+    } || true
 
     # Refresh cv2 dylib symlinks to the parent copies.
     if [ -d "$FW_DIR/cv2/__dot__dylibs" ]; then
@@ -458,6 +491,26 @@ SH
     fi
 
     # Note: GTK4 typelibs are automatically bundled by PyInstaller to Resources/gi_typelibs
+
+    # Re-sign after install_name_tool and dylib rewrites to keep
+    # macOS code-signing validation valid on Apple Silicon.
+    if [ "$(uname -m)" = "arm64" ]; then
+        APP_BUNDLE="$(pwd)/dist/Rayforge.app"
+        echo "Re-signing app bundle..."
+        if [ ! -d "$APP_BUNDLE" ]; then
+            echo "App bundle not found at $APP_BUNDLE" >&2
+            exit 1
+        fi
+        rm -rf "$APP_BUNDLE/Contents/_CodeSignature"
+        if ! codesign --force --deep --sign - "$APP_BUNDLE"; then
+            echo "Initial deep re-sign failed, retrying..." >&2
+            sleep 1
+            codesign --force --deep --sign - "$APP_BUNDLE"
+        fi
+        if ! codesign --verify --deep --strict --verbose=2 "$APP_BUNDLE"; then
+            echo "Warning: codesign verification failed for $APP_BUNDLE" >&2
+        fi
+    fi
 
     # TODO: Bundle vips modules and gdk-pixbuf loaders when vips is installed with SVG support
     # if [ -d "/usr/local/lib/vips-modules-8.17" ]; then

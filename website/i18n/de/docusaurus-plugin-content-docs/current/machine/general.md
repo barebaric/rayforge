@@ -6,7 +6,7 @@ Die Allgemeine Seite in den Maschineneinstellungen enthält grundlegende Maschin
 
 ## Maschinenname
 
-Geben Sie Ihrer Maschine einen beschreibenden Namen. Dies hilft, die Maschine im Maschinenwähler-Dropdown zu identifizieren, wenn Sie mehrere Maschinen konfiguriert haben.
+Gib deiner Maschine einen beschreibenden Namen. Dies hilft, die Maschine im Maschinenwähler-Dropdown zu identifizieren, wenn du mehrere Maschinen konfiguriert hast.
 
 Beispiele:
 - "Werkstatt K40"
@@ -23,7 +23,7 @@ Die maximale Geschwindigkeit für schnelle (nicht schneidende) Bewegungen. Dies 
 
 - **Typischer Bereich**: 2000-5000 mm/min
 - **Zweck**: Bewegungsplanung und Zeitschätzung
-- **Hinweis**: Tatsächliche Geschwindigkeit wird auch durch Ihre Firmware-Einstellungen begrenzt
+- **Hinweis**: Tatsächliche Geschwindigkeit wird auch durch deine Firmware-Einstellungen begrenzt
 
 ### Max. Schnittgeschwindigkeit
 
@@ -42,7 +42,7 @@ Die Rate, mit der die Maschine beschleunigt und verzögert.
 - **Hinweis**: Muss mit den Firmware-Beschleunigungseinstellungen übereinstimmen oder niedriger sein
 
 :::tip
-Beginnen Sie mit konservativen Geschwindigkeitswerten und erhöhen Sie diese schrittweise. Beobachten Sie Ihre Maschine auf Riemenrutschen, Motorblockaden oder Verlust der Positionierungsgenauigkeit.
+Beginne mit konservativen Geschwindigkeitswerten und erhöhe diese schrittweise. Beobachte deine Maschine auf Riemenrutschen, Motorblockaden oder Verlust der Positionierungsgenauigkeit.
 :::
 
 ## Siehe auch

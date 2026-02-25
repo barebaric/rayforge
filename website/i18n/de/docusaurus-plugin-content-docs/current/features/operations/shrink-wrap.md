@@ -14,7 +14,7 @@ Schrumpfumhüllungs-Operationen:
 
 ## Wann Schrumpfumhüllung verwenden
 
-Verwenden Sie Schrumpfumhüllung für:
+Verwende Schrumpfumhüllung für:
 
 - Schneiden mehrerer kleiner Teile aus einem Blatt
 - Minimieren von Materialabfall
@@ -22,9 +22,9 @@ Verwenden Sie Schrumpfumhüllung für:
 - Trennen von Gruppen von Teilen
 - Reduzieren der Gesamtschneidezeit
 
-**Verwenden Sie Schrumpfumhüllung nicht für:**
+**Verwende Schrumpfumhüllung nicht für:**
 
-- Einzelne Objekte (verwenden Sie stattdessen [Kontur](contour))
+- Einzelne Objekte (verwende stattdessen [Kontur](contour))
 - Teile, die individuelle Grenzen benötigen
 - Präzise rechteckige Schnitte
 
@@ -37,19 +37,19 @@ Schrumpfumhüllung erzeugt eine Grenze mit einem algorithmus für rechnerische G
 3. **Umhüllen** eng um die Objektgruppe
 4. **Offset** nach außen um die angegebene Distanz
 
-Das Ergebnis ist ein effizienter Schneidepfad, der der Gesamtform Ihrer Teile folgt, während Spielraum beibehalten wird.
+Das Ergebnis ist ein effizienter Schneidepfad, der der Gesamtform deiner Teile folgt, während Spielraum beibehalten wird.
 
 ## Eine Schrumpfumhüllungs-Operation erstellen
 
 ### Schritt 1: Objekte anordnen
 
-1. Platzieren Sie alle zu umhüllenden Teile auf der Arbeitsfläche
-2. Positionieren Sie sie mit gewünschtem Abstand
+1. Platziere alle zu umhüllenden Teile auf der Arbeitsfläche
+2. Positioniere sie mit gewünschtem Abstand
 3. Mehrere separate Gruppen können zusammen schrumpfumhüllt werden
 
 ### Schritt 2: Objekte auswählen
 
-1. Wählen Sie alle in die Schrumpfumhüllung einzubeziehenden Objekte aus
+1. Wähle alle in die Schrumpfumhüllung einzubeziehenden Objekte aus
 2. Können verschiedene Formen, Größen und Typen sein
 3. Alle ausgewählten Objekte werden zusammen umhüllt
 
@@ -76,13 +76,13 @@ Wie andere Schneideoperationen:
 **Geschwindigkeit (mm/min):**
 
 - Wie schnell sich der Laser bewegt
-- An die Schnittgeschwindigkeit Ihres Materials anpassen
+- An die Schnittgeschwindigkeit deines Materials anpassen
 
 **Durchgänge:**
 
 - Anzahl der Male, die Grenze zu schneiden
 - Normalerweise 1-2 Durchgänge
-- Gleich wie Kontur-Schneiden für Ihr Material
+- Gleich wie Kontur-Schneiden für dein Material
 
 ### Offset-Distanz
 
@@ -180,163 +180,10 @@ Häufiger Workflow:
 
 **Ausführungsreihenfolge:**
 
-- Zuerst: Details in Teilen schneiden (während befestigt)
+- Zuerst: Details in Teile schneiden (während befestigt)
 - Zuletzt: Schrumpfumhüllung schneidet Gruppe frei
 
 Siehe [Mehrschicht-Workflow](../multi-layer) für Details.
-
-### Schrumpfumhüllung + Raster
-
-**Beispiel:** Gravierte und geschnittene Teile
-
-1. **Raster** Logos auf Teilen gravieren
-2. **Kontur** Teilumrisse schneiden
-3. **Schrumpfumhüllung** um gesamte Gruppe
-
-**Vorteile:**
-
-- Alle Gravur geschieht während Material befestigt ist
-- Finale Schrumpfumhüllung schneidet gesamte Charge frei
-
-## Tipps & Best Practices
-
-![Schrumpfumhüllungs-Nachbearbeitungseinstellungen](/screenshots/step-settings-shrink-wrap-post.png)
-
-### Teil-Abstand
-
-**Optimaler Abstand:**
-
-- 5-10mm zwischen Teilen
-- Genug, damit Schrumpfumhüllung separate Objekte unterscheidet
-- Nicht so viel, dass Sie Material verschwenden
-
-**Zu nah:**
-
-- Teile können zusammen umhüllt werden
-- Schrumpfumhüllung kann Lücken überbrücken
-- Schwierig nach dem Schneiden zu trennen
-
-**Zu weit:**
-
-- Verschwendet Material
-- Längere Schneidezeit
-- Ineffiziente Nutzung des Blattes
-
-### Material-Überlegungen
-
-**Am besten für:**
-
-- Produktionsläufe (viele identische Teile)
-- Kleine Teile aus großen Blättern
-- Teure Materialien (Abfall minimieren)
-- Chargen-Schneide-Jobs
-
-**Nicht ideal für:**
-
-- Einzelne große Teile
-- Teile, die gesamtes Blatt füllen
-- Wenn Sie volles Blatt schneiden müssen
-
-### Sicherheit
-
-**Immer:**
-
-- Überprüfen, dass Grenze keine Teile überschneidet
-- Verifizieren, dass Offset ausreichend ist
-- Vorschau im [Simulationsmodus](../simulation-mode)
-- Erst auf Abfall testen
-
-**Achten auf:**
-
-- Schrumpfumhüllung schneidet in Teile (Offset erhöhen)
-- Teile bewegen sich, bevor Schrumpfumhüllung abgeschlossen ist
-- Material-Warping zieht Teile aus der Position
-
-## Erweiterte Techniken
-
-### Mehrere Schrumpfumhüllungen
-
-Separate Grenzen für verschiedene Gruppen erstellen:
-
-**Prozess:**
-
-1. Teile in logische Gruppen anordnen
-2. Schrumpfumhüllung Gruppe 1 (obere Teile)
-3. Schrumpfumhüllung Gruppe 2 (untere Teile)
-4. Gruppen separat schneiden
-
-**Vorteile:**
-
-- Fertige Gruppen während Job entfernen
-- Bessere Organisation
-- Einfachere Teil-Entnahme
-
-### Verschachtelte Schrumpfumhüllungen
-
-Schrumpfumhüllung innerhalb einer größeren Grenze:
-
-**Beispiel:**
-
-1. Innere Schrumpfumhüllung: Kleine detaillierte Teile
-2. Äußere Schrumpfumhüllung: Inklusive größerer Teile
-3. Kontur: Volles Blatt-Grenze
-
-**Verwendung für:** Komplexe Multi-Teil-Layouts
-
-### Spielraum-Testen
-
-Vor Produktionslauf:
-
-1. Schrumpfumhüllung erstellen
-2. Vorschau mit [Simulationsmodus](../simulation-mode)
-3. Verifizieren, dass Spielraum ausreichend ist
-4. Überprüfen, dass keine Teile geschnitten werden
-5. Test auf Abfallmaterial ausführen
-
-## Fehlerbehebung
-
-### Schrumpfumhüllung schneidet in Teile
-
-- **Erhöhen:** Offset-Distanz
-- **Überprüfen:** Teile sind nicht zu nah beieinander
-- **Verifizieren:** Schrumpfumhüllungspfad in Vorschau
-- **Berücksichtigen:** Schnittbreite (Laserstrahl-Breite)
-
-### Grenze folgt Formen nicht
-
-- **Erhöhen:** Glättungseinstellung
-- **Überprüfen:** Teile sind richtig ausgewählt
-- **Versuchen:** Kleinerer Offset (könnte zu weit außen umhüllen)
-
-### Teile werden zusammen umhüllt
-
-- **Erhöhen:** Abstand zwischen Teilen
-- **Hinzufügen:** Manuelle Konturen um einzelne Teile
-- **Aufteilen:** In mehrere Schrumpfumhüllungs-Operationen
-
-### Schneiden dauert zu lange
-
-- **Verringern:** Glättung (einfacherer Pfad)
-- **Erhöhen:** Offset (geradere Grenzen)
-- **In Betracht ziehen:** Mehrere kleinere Schrumpfumhüllungen
-
-### Teile bewegen sich während des Schneidens
-
-- **Hinzufügen:** Kleine Laschen, um Teile zu halten (siehe [Halte-Laschen](../holding-tabs))
-- **Verwenden:** Schneide-Reihenfolge: von innen nach außen
-- **Sicherstellen:** Material ist flach und befestigt
-- **Überprüfen:** Blatt ist nicht gewölbt
-
-## Technische Details
-
-### Algorithmus
-
-Schrumpfumhüllung verwendet rechnerische Geometrie:
-
-1. **Konvexe Hülle** - Äußere Grenze finden
-2. **Alpha-Form** - In Richtung Objekte schrumpfen
-3. **Offset** - Um Offset-Distanz erweitern
-4. **Vereinfachen** - Basierend auf Glättungseinstellung
 
 ### Pfad-Optimierung
 

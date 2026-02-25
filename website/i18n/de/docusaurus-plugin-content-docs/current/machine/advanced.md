@@ -6,21 +6,21 @@ Die Erweiterte Seite in den Maschineneinstellungen enthält zusätzliche Konfigu
 
 ## Verbindungsverhalten
 
-Einstellungen, die steuern, wie Rayforge während der Verbindung mit Ihrer Maschine interagiert.
+Einstellungen, die steuern, wie Rayforge während der Verbindung mit deiner Maschine interagiert.
 
 ### Beim Verbinden referenzieren
 
 Wenn aktiviert, sendet Rayforge automatisch einen Referenzierungsbefehl ($H) beim Verbinden mit der Maschine.
 
-- **Aktivieren, wenn**: Ihre Maschine zuverlässige Endschalter hat
-- **Deaktivieren, wenn**: Ihre Maschine keine Endschalter hat oder Referenzierung unzuverlässig ist
+- **Aktivieren, wenn**: deine Maschine zuverlässige Endschalter hat
+- **Deaktivieren, wenn**: deine Maschine keine Endschalter hat oder Referenzierung unzuverlässig ist
 
 ### Alarme beim Verbinden löschen
 
 Wenn aktiviert, löscht Rayforge automatisch jeden Alarmzustand beim Verbinden.
 
-- **Aktivieren, wenn**: Ihre Maschine häufig im Alarmzustand startet
-- **Deaktivieren, wenn**: Sie Alarme manuell untersuchen möchten, bevor Sie sie löschen
+- **Aktivieren, wenn**: deine Maschine häufig im Alarmzustand startet
+- **Deaktivieren, wenn**: du Alarme manuell untersuchen möchtest, bevor du sie löschst
 
 ## Achsen umkehren
 
@@ -36,9 +36,9 @@ Kehrt die Y-Achsenrichtung um. Wenn aktiviert, bewegt sich positives Y nach unte
 
 :::info
 Achsen umkehren ist nützlich, wenn:
-- Das Koordinatensystem Ihrer Maschine nicht dem erwarteten Verhalten entspricht
-- Sie Ihre Motoren falsch verdrahtet haben
-- Sie das Verhalten einer anderen Maschine nachbilden möchten
+- Das Koordinatensystem deiner Maschine nicht dem erwarteten Verhalten entspricht
+- Du deine Motoren falsch verdrahtet hast
+- Du das Verhalten einer anderen Maschine nachbilden möchtest
 :::
 
 ## Siehe auch

@@ -31,11 +31,11 @@ Rayforge enthält Presets für gängige Szenarien:
 | **CO2-Gravur**       | 3000-20000 mm/min          | 10-50%           | CO2-Laser-Gravur             |
 | **CO2-Schnitt**      | 1000-20000 mm/min          | 30-100%          | CO2-Laser-Schneiden          |
 
-Presets sind Startpunkte - Sie können alle Parameter nach Auswahl anpassen.
+Presets sind Startpunkte - du kannst alle Parameter nach Auswahl anpassen.
 
 ### Schritt 3: Parameter konfigurieren
 
-Passen Sie die Testraster-Parameter im Einstellungsdialog an:
+Passe die Testraster-Parameter im Einstellungsdialog an:
 
 ![Materialtest-Raster-Einstellungen](/screenshots/material-test-grid.png)
 
@@ -74,7 +74,7 @@ Passen Sie die Testraster-Parameter im Einstellungsdialog an:
 
 ### Schritt 4: Das Raster generieren
 
-Klicken Sie auf **Generieren**, um das Testmuster zu erstellen. Das Raster erscheint auf Ihrer Arbeitsfläche als spezielles Werkstück.
+Klicke auf **Generieren**, um das Testmuster zu erstellen. Das Raster erscheint auf deiner Arbeitsfläche als spezielles Werkstück.
 
 ## Das Raster-Layout verstehen
 
@@ -133,14 +133,14 @@ Reihenfolge:  1  2  3
 
 ### Schritt 1: Den Test ausführen
 
-1. Ihr Material in den Laser laden
+1. Dein Material in den Laser laden
 2. Den Laser richtig fokussieren
 3. Den Materialtest-Raster-Job ausführen
 4. Den Test überwachen - stoppen, wenn eine Zelle Probleme verursacht
 
 ### Schritt 2: Ergebnisse bewerten
 
-Nach Abschluss des Tests untersuchen Sie jede Zelle:
+Nach Abschluss des Tests untersuche jede Zelle:
 
 - **Zu hell:** Leistung erhöhen oder Geschwindigkeit verringern
 - **Zu dunkel/verrußt:** Leistung verringern oder Geschwindigkeit erhöhen
@@ -148,7 +148,7 @@ Nach Abschluss des Tests untersuchen Sie jede Zelle:
 
 ### Schritt 3: Einstellungen aufzeichnen
 
-Dokumentieren Sie Ihre erfolgreichen Einstellungen zur späteren Referenz:
+Dokumentiere deine erfolgreichen Einstellungen zur späteren Referenz:
 
 - Materialtyp und -dicke
 - Operationstyp (gravieren oder schneiden)
@@ -157,14 +157,14 @@ Dokumentieren Sie Ihre erfolgreichen Einstellungen zur späteren Referenz:
 - Alle speziellen Hinweise
 
 :::tip Materialdatenbank
-Erwägen Sie, ein Referenzdokument mit Ihren Materialtest-Ergebnissen zu erstellen, um in zukünftigen Projekten schnell nachzuschlagen.
+Erwäge, ein Referenzdokument mit deinen Materialtest-Ergebnissen zu erstellen, um in zukünftigen Projekten schnell nachzuschlagen.
 :::
 
 ## Erweiterte Verwendung
 
 ### Mit anderen Operationen kombinieren
 
-Materialtest-Raster sind reguläre Werkstücke - Sie können sie mit anderen Operationen kombinieren:
+Materialtest-Raster sind reguläre Werkstücke - du kannst sie mit anderen Operationen kombinieren:
 
 **Beispiel-Workflow:**
 
@@ -188,7 +188,7 @@ Für Feinabstimmung erstellen Sie Testbereiche mit engen Grenzen:
 
 ### Verschiedene Materialien, gleiches Raster
 
-Führen Sie dieselbe Rasterkonfiguration auf verschiedenen Materialien aus, um Ihre Materialbibliothek schneller aufzubauen.
+Führe dieselbe Rasterkonfiguration auf verschiedenen Materialien aus, um deine Materialbibliothek schneller aufzubauen.
 
 ## Tipps & Best Practices
 

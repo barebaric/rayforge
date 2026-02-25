@@ -1,10 +1,10 @@
 # Snap-Berechtigungen (Linux)
 
-Diese Seite erklärt, wie Sie Berechtigungen für Rayforge konfigurieren, wenn es als Snap-Paket unter Linux installiert wurde.
+Diese Seite erklärt, wie du Berechtigungen für Rayforge konfigurierst, wenn es als Snap-Paket unter Linux installiert wurde.
 
 ## Was sind Snap-Berechtigungen?
 
-Snaps sind containerisierte Anwendungen, die in einer Sandbox zur Sicherheit ausgeführt werden. Standardmäßig haben sie begrenzten Zugriff auf Systemressourcen. Um bestimmte Funktionen zu nutzen (wie serielle Ports für Laser-Controller), müssen Sie explizit Berechtigungen erteilen.
+Snaps sind containerisierte Anwendungen, die in einer Sandbox zur Sicherheit ausgeführt werden. Standardmäßig haben sie begrenzten Zugriff auf Systemressourcen. Um bestimmte Funktionen zu nutzen (wie serielle Ports für Laser-Controller), musst du explizit Berechtigungen erteilen.
 
 ## Erforderliche Berechtigungen
 
@@ -30,7 +30,7 @@ Rayforge benötigt diese Snap-Schnittstellen für volle Funktionalität:
 snap connections rayforge
 ```
 
-Suchen Sie nach der `serial-port`-Schnittstelle. Wenn sie "disconnected" oder "-" anzeigt, müssen Sie sie verbinden.
+Suche nach der `serial-port`-Schnittstelle. Wenn sie "disconnected" oder "-" anzeigt, musst du sie verbinden.
 
 ### Serielle Port-Schnittstelle verbinden
 
@@ -39,7 +39,7 @@ Suchen Sie nach der `serial-port`-Schnittstelle. Wenn sie "disconnected" oder "-
 sudo snap connect rayforge:serial-port
 ```
 
-**Sie müssen dies nur einmal tun.** Die Berechtigung bleibt über App-Updates und Neustarts hinweg bestehen.
+**Du musst dies nur einmal tun.** Die Berechtigung bleibt über App-Updates und Neustarts hinweg bestehen.
 
 ### Verbindung verifizieren
 
@@ -53,20 +53,20 @@ Erwartete Ausgabe:
 serial-port     rayforge:serial-port     :serial-port     -
 ```
 
-Wenn Sie einen Plug/Slot-Indikator sehen, ist die Verbindung aktiv.
+Wenn du einen Plug/Slot-Indikator siehst, ist die Verbindung aktiv.
 
 ---
 
 ## Wechseldatenträger-Zugriff gewähren
 
-Wenn Sie Dateien von USB-Laufwerken oder externem Speicher importieren/exportieren möchten:
+Wenn du Dateien von USB-Laufwerken oder externem Speicher importieren/exportieren möchtest:
 
 ```bash
 # Zugriff auf Wechseldatenträger gewähren
 sudo snap connect rayforge:removable-media
 ```
 
-Jetzt können Sie auf Dateien in `/media` und `/mnt` zugreifen.
+Jetzt kannst du auf Dateien in `/media` und `/mnt` zugreifen.
 
 ---
 
@@ -77,7 +77,7 @@ Jetzt können Sie auf Dateien in `/media` und `/mnt` zugreifen.
 **Nach dem Verbinden der Schnittstelle:**
 
 1. **USB-Gerät neu anschließen:**
-   - Ihren Laser-Controller abziehen
+   - Deinen Laser-Controller abziehen
    - 5 Sekunden warten
    - Wieder einstecken
 
@@ -115,7 +115,7 @@ Dies ist selten, kann aber passieren wenn:
    ```
 
 2. **Konfliktierende udev-Regeln:**
-   - Prüfen Sie `/etc/udev/rules.d/` auf benutzerdefinierte serielle Port-Regeln
+   - Prüfe `/etc/udev/rules.d/` auf benutzerdefinierte serielle Port-Regeln
    - Diese könnten mit Snap's Gerätezugriff kollidieren
 
 3. **AppArmor-Ablehnungen:**
@@ -124,15 +124,15 @@ Dies ist selten, kann aber passieren wenn:
    sudo journalctl -xe | grep DENIED | grep rayforge
    ```
 
-   Wenn Sie Ablehnungen für serielle Ports sehen, kann es einen AppArmor-Profil-Konflikt geben.
+   Wenn du Ablehnungen für serielle Ports siehst, kann es einen AppArmor-Profil-Konflikt geben.
 
 ### Kein Zugriff auf Dateien außerhalb des Home-Verzeichnisses
 
-**Standardmäßig** können Snaps nicht auf Dateien außerhalb Ihres Home-Verzeichnisses zugreifen, es sei denn, Sie gewähren `removable-media`.
+**Standardmäßig** können Snaps nicht auf Dateien außerhalb deines Home-Verzeichnisses zugreifen, es sei denn, du gewährst `removable-media`.
 
 **Behelfslösungen:**
 
-1. **Dateien in Ihr Home-Verzeichnis verschieben:**
+1. **Dateien in dein Home-Verzeichnis verschieben:**
    ```bash
    # SVG-Dateien nach ~/Dokumente kopieren
    cp /irgendein/anderer/ort/*.svg ~/Dokumente/
@@ -154,7 +154,7 @@ Dies ist selten, kann aber passieren wenn:
 ### Alle verfügbaren Schnittstellen auflisten
 
 ```bash
-# Alle Snap-Schnittstellen auf Ihrem System sehen
+# Alle Snap-Schnittstellen auf deinem System sehen
 snap interface
 ```
 
@@ -175,7 +175,7 @@ sudo snap connect rayforge:serial-port
 
 ## Alternative: Aus dem Quellcode installieren
 
-Wenn Snap-Berechtigungen zu restriktiv für Ihren Workflow sind:
+Wenn Snap-Berechtigungen zu restriktiv für deinen Workflow sind:
 
 **Option 1: Aus dem Quellcode bauen**
 
@@ -204,30 +204,30 @@ pixi run rayforge
 
 **Option 2: Flatpak verwenden (falls verfügbar)**
 
-Flatpak hat ähnliches Sandboxing, aber manchmal mit anderen Berechtigungsmodellen. Prüfen Sie, ob Rayforge ein Flatpak-Paket anbietet.
+Flatpak hat ähnliches Sandboxing, aber manchmal mit anderen Berechtigungsmodellen. Prüfe, ob Rayforge ein Flatpak-Paket anbietet.
 
 ---
 
 ## Snap-Berechtigungs-Best-Practices
 
-### Nur verbinden, was Sie benötigen
+### Nur verbinden, was du benötigst
 
-Verbinden Sie keine Schnittstellen, die Sie nicht verwenden:
+Verbinde keine Schnittstellen, die du nicht verwendest:
 
-- ✓ Verbinden Sie `serial-port` wenn Sie einen Laser-Controller verwenden
-- ✓ Verbinden Sie `removable-media` wenn Sie von USB-Laufwerken importieren
-- ✗ Verbinden Sie nicht alles "für alle Fälle" - widerspricht dem Sicherheitszweck
+- ✓ Verbinde `serial-port` wenn du einen Laser-Controller verwendest
+- ✓ Verbinde `removable-media` wenn du von USB-Laufwerken importierst
+- ✗ Verbinde nicht alles "für alle Fälle" - widerspricht dem Sicherheitszweck
 
 ### Snap-Quelle verifizieren
 
-Installieren Sie immer aus dem offiziellen Snap Store:
+Installiere immer aus dem offiziellen Snap Store:
 
 ```bash
 # Herausgeber prüfen
 snap info rayforge
 ```
 
-Suchen Sie nach:
+Suche nach:
 - Verifiziertem Herausgeber
 - Offizieller Repository-Quelle
 - Regelmäßigen Updates
@@ -239,7 +239,7 @@ Suchen Sie nach:
 ### Was können Snaps standardmäßig zugreifen?
 
 **Erlaubt:**
-- Dateien in Ihrem Home-Verzeichnis
+- Dateien in deinem Home-Verzeichnis
 - Netzwerkverbindungen
 - Anzeige/Audio
 
@@ -298,14 +298,14 @@ sudo journalctl -xe | grep DENIED | grep rayforge
 
 # Nach USB-Geräte-Ereignissen suchen
 sudo journalctl -f -u snapd
-# Dann Ihren Laser-Controller einstecken
+# Dann deinen Laser-Controller einstecken
 ```
 
 ---
 
 ## Hilfe erhalten
 
-Wenn Sie immer noch Snap-bezogene Probleme haben:
+Wenn du immer noch Snap-bezogene Probleme hast:
 
 1. **Zuerst Berechtigungen prüfen:**
    ```bash
@@ -314,7 +314,7 @@ Wenn Sie immer noch Snap-bezogene Probleme haben:
 
 2. **Einen seriellen Port-Test versuchen:**
    ```bash
-   # Falls Sie screen oder minicom installiert haben
+   # Falls du screen oder minicom installiert hast
    sudo snap connect rayforge:serial-port
    # Dann in Rayforge testen
    ```
@@ -323,7 +323,7 @@ Wenn Sie immer noch Snap-bezogene Probleme haben:
    - Ausgabe von `snap connections rayforge`
    - Ausgabe von `snap version`
    - Ausgabe von `snap info rayforge`
-   - Ihrer Ubuntu/Linux-Distributionsversion
+   - Deiner Ubuntu/Linux-Distributionsversion
    - Genauen Fehlermeldungen
 
 4. **Alternativen in Betracht ziehen:**

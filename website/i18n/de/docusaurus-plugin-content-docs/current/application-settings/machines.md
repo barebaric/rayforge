@@ -2,7 +2,7 @@
 
 ![Maschinen-Einstellungen](/screenshots/application-machines.png)
 
-Die Maschinen-Seite in den Anwendungseinstellungen ermöglicht es Ihnen, Maschinenprofile zu verwalten. Jedes Profil enthält die gesamte Konfiguration für eine spezifische Lasermaschine.
+Die Maschinen-Seite in den Anwendungseinstellungen ermöglicht es dir, Maschinenprofile zu verwalten. Jedes Profil enthält die gesamte Konfiguration für eine spezifische Lasermaschine.
 
 ## Maschinenprofile
 
@@ -19,31 +19,31 @@ Maschinenprofile speichern die vollständige Konfiguration für einen Laserschne
 
 ### Eine neue Maschine hinzufügen
 
-1. Klicken Sie auf die Schaltfläche **Neue Maschine hinzufügen**
-2. Geben Sie einen beschreibenden Namen für Ihre Maschine ein
-3. Konfigurieren Sie die Maschineneinstellungen (siehe [Maschinen-Setup](../machine/general) für Details)
-4. Klicken Sie auf **Speichern**, um das Profil zu erstellen
+1. Klicke auf die Schaltfläche **Neue Maschine hinzufügen**
+2. Gib einen beschreibenden Namen für deine Maschine ein
+3. Konfiguriere die Maschineneinstellungen (siehe [Maschinen-Setup](../machine/general) für Details)
+4. Klicke auf **Speichern**, um das Profil zu erstellen
 
 ### Zwischen Maschinen wechseln
 
-Verwenden Sie das Maschinenwähler-Dropdown im Hauptfenster, um zwischen konfigurierten Maschinen zu wechseln. Alle Einstellungen, einschließlich der ausgewählten Maschine, werden zwischen Sitzungen gespeichert.
+Verwende das Maschinenwähler-Dropdown im Hauptfenster, um zwischen konfigurierten Maschinen zu wechseln. Alle Einstellungen, einschließlich der ausgewählten Maschine, werden zwischen Sitzungen gespeichert.
 
 ### Eine Maschine duplizieren
 
 Um ein ähnliches Maschinenprofil zu erstellen:
 
-1. Wählen Sie die zu duplizierende Maschine aus
-2. Klicken Sie auf die Schaltfläche **Duplizieren**
+1. Wähle die zu duplizierende Maschine aus
+2. Klicke auf die Schaltfläche **Duplizieren**
 3. Benennen Sie die neue Maschine um und passen Sie die Einstellungen nach Bedarf an
 
 ### Eine Maschine löschen
 
-1. Wählen Sie die zu löschende Maschine aus
-2. Klicken Sie auf die Schaltfläche **Löschen**
+1. Wähle die zu löschende Maschine aus
+2. Klicke auf die Schaltfläche **Löschen**
 3. Bestätigen Sie das Löschen
 
 :::warning
-Das Löschen eines Maschinenprofils kann nicht rückgängig gemacht werden. Stellen Sie sicher, dass Sie sich wichtige Einstellungen notiert haben, bevor Sie löschen.
+Das Löschen eines Maschinenprofils kann nicht rückgängig gemacht werden. Stelle sicher, dass du sich wichtige Einstellungen notiert haben, bevor Sie löschen.
 :::
 
 ## Verwandte Themen

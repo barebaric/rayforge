@@ -131,7 +131,7 @@ Beim Exportieren eines Werkstücks nach DXF exportiert Rayforge:
 
 **Was ist RFS?**
 
-RFS ist Rayforge's natives parametrisches Skizzenformat. Es bewahrt alle geometrischen Elemente und parametrischen Bedingungen, sodass Sie vollständig bearbeitbare Skizzen speichern und teilen können.
+RFS ist Rayforge's natives parametrisches Skizzenformat. Es bewahrt alle geometrischen Elemente und parametrischen Bedingungen, sodass du vollständig bearbeitbare Skizzen speichern und teilen kannst.
 
 **Funktionen:**
 

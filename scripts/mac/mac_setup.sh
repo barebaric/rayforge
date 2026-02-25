@@ -6,17 +6,66 @@ RUN_APP=0
 ENV_WRITTEN=0
 SKIP_DEPS=()
 GREEN="\033[0;32m"
+RED="\033[0;31m"
 NC="\033[0m"
+
+MAX_RETRIES=3
+RETRY_DELAY=5
 
 print_info() {
     local title=$1
     printf "${GREEN}%s${NC}\n" "$title"
 }
 
+print_error() {
+    local msg=$1
+    printf "${RED}%s${NC}\n" "$msg" >&2
+}
+
+install_package() {
+    local pkg=$1
+    local attempt=1
+
+    while (( attempt <= MAX_RETRIES )); do
+        print_info "Installing $pkg (attempt $attempt/$MAX_RETRIES)..."
+        if HOMEBREW_NO_INSTALL_CLEANUP=1 brew install "$pkg"; then
+            return 0
+        fi
+
+        if (( attempt < MAX_RETRIES )); then
+            print_error "Failed to install $pkg, retrying in ${RETRY_DELAY}s..."
+            sleep "$RETRY_DELAY"
+        fi
+        (( attempt++ ))
+    done
+
+    return 1
+}
+
+install_with_retries() {
+    local packages=("$@")
+    local failed=()
+
+    for pkg in "${packages[@]}"; do
+        if ! install_package "$pkg"; then
+            failed+=("$pkg")
+        fi
+    done
+
+    if (( ${#failed[@]} > 0 )); then
+        print_error "The following packages failed to install:"
+        printf '  - %s\n' "${failed[@]}" >&2
+        return 1
+    fi
+}
+
 should_skip_dep() {
     local dep="$1"
     local skip
-    for skip in "${SKIP_DEPS[@]}"; do
+    for skip in "${SKIP_DEPS[@]:-}"; do
+        if [[ -z "$skip" ]]; then
+            continue
+        fi
         if [[ "$skip" == "$dep" ]]; then
             return 0
         fi
@@ -115,7 +164,7 @@ if (( RUN_APP == 0 )); then
 
     if (( ${#MISSING[@]} > 0 )); then
         if (( INSTALL == 1 )); then
-            brew install "${MISSING[@]}"
+            install_with_retries "${MISSING[@]}"
         else
             echo "Missing Homebrew packages: ${MISSING[*]}" >&2
             echo "Run again and choose 'Install missing dependencies'." >&2

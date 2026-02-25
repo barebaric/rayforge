@@ -5,7 +5,7 @@ import Layout from '@theme/Layout';
 import Link from '@docusaurus/Link';
 import styles from './index.module.css';
 import Icon from '@mdi/react';
-import { mdiRocketLaunch, mdiViewDashboard, mdiFeatureSearch } from '@mdi/js';
+import { mdiRocketLaunch, mdiViewDashboard, mdiFeatureSearch, mdiShareVariant } from '@mdi/js';
 
 function HeroSection() {
   return (
@@ -18,7 +18,7 @@ function HeroSection() {
             The World's <span className={styles.titleGradient}>Most Powerful Open Source</span> Laser Software
           </h1>
           <p className={styles.heroSubtitle}>
-            Seamless tools for imaginative minds. Rayforge is the open-source power tool for your laser cutter,
+            Seamless tools for imaginative minds. Rayforge is the complete creative studio for your laser cutter,
             combining 2D CAD, CAM, and machine control in one vibrant package.
           </p>
           <div className={styles.heroCtaButtons}>
@@ -146,9 +146,39 @@ function FeatureSection({
   );
 }
 
+function CommunitySection() {
+  return (
+    <section className={styles.communitySection}>
+      <div className={styles.communityInner}>
+        <div className={styles.communityDecorations}>
+          <div className={styles.communityDot1}></div>
+          <div className={styles.communityDot2}></div>
+          <div className={styles.communityDot3}></div>
+          <div className={styles.communityDot4}></div>
+        </div>
+        <div className={styles.communityContent}>
+          <h2 className={styles.communityTitle}>Made with Rayforge</h2>
+          <p className={styles.communitySubtitle}>
+            See what creators around the world are making
+          </p>
+          <a
+            href="https://discord.gg/sTHNdTtpQJ"
+            className={styles.communityCta}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <Icon path={mdiShareVariant} size={0.9} />
+            <span>Share your creations</span>
+          </a>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 export default function Home() {
   return (
-    <Layout description="Modern G-code sender and control software for GRBL-based laser cutters">
+    <Layout description="Design and create with your laser cutter - the complete creative studio for makers, artists, and crafters">
       <main className={styles.pageWrapper}>
         
         <HeroSection />
@@ -167,12 +197,12 @@ export default function Home() {
 
           <FeatureSection
             blobClass={styles.blobOrange}
-            title="Parametric 2D Sketcher"
-            description="Create precise, constraint-based 2D designs directly within Rayforge. The parametric sketcher provides a complete set of tools for creating geometric shapes and applying parametric constraints."
+            title="Design Your Own Shapes"
+            description="Create custom designs right inside Rayforge. The built-in drawing tools let you sketch, shape, and refine your ideas without needing separate design software."
             features={[
-              'Create lines, circles, arcs, and fills',
-              'Apply geometric constraints: coincident, vertical, horizontal...',
-              'Parametric expressions for calculated dimensions',
+              'Draw lines, circles, curves, and filled shapes',
+              'Snap everything into perfect alignment',
+              'Set dimensions that update automatically',
             ]}
             image="/assets/screenshot-sketcher.png"
             reverse
@@ -180,24 +210,24 @@ export default function Home() {
 
           <FeatureSection
             blobClass={styles.blobPurple}
-            title="Advanced Path Optimization"
-            description="Save time and material with intelligent pathfinding algorithms and auto-layout functionality. Rayforge automatically optimizes the cutting order to minimize travel time."
+            title="Smart Cutting Paths"
+            description="Work faster and waste less material. Rayforge figures out the most efficient way to cut your design, so your laser spends less time moving and more time creating."
             features={[
-              "Don't waste time when cutting and engraving",
-              'Save material with automatic layout and nesting',
-              'Native arc support with G2/G3 commands',
+              "Faster cutting with optimized movement",
+              'Save material with automatic layout',
+              'Smooth, precise curves',
             ]}
             image="/assets/screenshot-optimizer.png"
           />
 
           <FeatureSection
             blobClass={styles.blobCyan}
-            title="Powerful Built-in Simulator"
-            description="Validate your G-code and simulate the cutting process before you start. Our built-in simulator helps you catch potential issues early, saving you time and materials."
+            title="Preview Before You Cut"
+            description="Watch your design come to life virtually before committing to the real thing. Spot potential issues early and save yourself from wasted time and materials."
             features={[
-              'G-code preview',
-              'Visual simulation of cutting paths',
-              'Live 2D preview of all operations while you edit',
+              'See exactly how your laser will move',
+              'Catch mistakes before you cut',
+              'Live preview updates as you design',
             ]}
             image="/screenshots/main-simulation.png"
             reverse
@@ -206,15 +236,16 @@ export default function Home() {
           <FeatureSection
             blobClass={styles.blobOrange}
             title="Material and Workflow Management"
-            description="Streamline your laser cutting workflow with comprehensive material, stock, and recipe management tools designed to improve consistency and efficiency."
+            description="Save your favorite settings and get consistent results across all your projects. Whether you're cutting wood, acrylic, or leather, Rayforge remembers what works best."
             features={[
-              'Organize materials by type and properties',
-              'Define physical stock dimensions',
-              'Create reusable recipes for consistent results',
+              'Save settings for different materials',
+              'Create recipes you can reuse',
             ]}
             image="/assets/screenshot-recipe.png"
           />
         </div>
+
+        <CommunitySection />
 
       </main>
     </Layout>

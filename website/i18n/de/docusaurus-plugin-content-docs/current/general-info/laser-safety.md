@@ -3,27 +3,27 @@
 Laserschneid- und Gravurgeräte stellen ernsthafte Sicherheitsrisiken dar, darunter Feuer, giftige Dämpfe und dauerhafte Augenschäden.
 
 :::danger Kritische Sicherheitswarnung
-**Befolgen Sie immer die Sicherheitsrichtlinien und Betriebsanweisungen Ihres Laserherstellers.** Diese Seite enthält allgemeine Sicherheitsprinzipien, ersetzt aber keine ordnungsgemäße Schulung und die spezifische Sicherheitsdokumentation Ihrer Maschine.
+**Befolge immer die Sicherheitsrichtlinien und Betriebsanweisungen deines Laserherstellers.** Diese Seite enthält allgemeine Sicherheitsprinzipien, ersetzt aber keine ordnungsgemäße Schulung und die spezifische Sicherheitsdokumentation deiner Maschine.
 :::
 
 
-## Ihre wichtigste Sicherheitsressource
+## Deine wichtigste Sicherheitsressource
 
-**Lesen Sie das Handbuch Ihres Laserherstellers vollständig**, bevor Sie Laserausrüstung betreiben. Es enthält:
+**Lese das Handbuch deines Laserherstellers vollständig**, bevor du Laserausrüstung betreibst. Es enthält:
 
-- Spezifische Sicherheitsanforderungen für Ihre Maschine
+- Spezifische Sicherheitsanforderungen für deine Maschine
 - Erforderliche persönliche Schutzausrüstung (PSA)
 - Notfallverfahren
 - Wartungs- und Inspektionspläne
 - Garantie- und Haftungsinformationen
 
-Rayforge ist Steuerungssoftware – sie kann die physischen Sicherheitsanforderungen Ihrer Laserhardware nicht außer Kraft setzen.
+Rayforge ist Steuerungssoftware – sie kann die physischen Sicherheitsanforderungen deiner Laserhardware nicht außer Kraft setzen.
 
 ## Wesentliche Sicherheitsprinzipien
 
 ### Laser niemals unbeaufsichtigt lassen
 
-**Wichtigste Regel:** Lassen Sie einen laufenden Laser niemals unbeaufsichtigt, auch nicht für wenige Sekunden.
+**Wichtigste Regel:** Lass einen laufenden Laser niemals unbeaufsichtigt, auch nicht für wenige Sekunden.
 
 **Warum:** Laser können Materialien sofort entzünden. Eine kleine Flamme kann sich in Sekunden zu einem ernsthaften Feuer entwickeln.
 
@@ -56,11 +56,11 @@ Rayforge ist Steuerungssoftware – sie kann die physischen Sicherheitsanforderu
 **Anforderungen:**
 
 - Abzugssystem mit Außenabluft (keine Umluft)
-- Ausreichender Luftstrom für Ihre Maschinengröße
+- Ausreichender Luftstrom für deine Maschinengröße
 - Betrieb während aller Laservorgänge
 - Regelmäßiger Filterwechsel (bei Verwendung von Filterung)
 
-**Betreiben Sie niemals ohne ordnungsgemäße Belüftung** – Sie riskieren ernsthafte Gesundheitsschäden und beschädigen die Optik Ihres Lasers.
+**Betreibe niemals ohne ordnungsgemäße Belüftung** – du riskierst ernsthafte Gesundheitsschäden und beschädigst die Optik deines Lasers.
 
 ### Verbotene Materialien
 
@@ -74,7 +74,7 @@ Rayforge ist Steuerungssoftware – sie kann die physischen Sicherheitsanforderu
 | **Fiberglas**                       | Glaspartikel schädigen Lunge und Optik   |
 | **Jedes chlorhaltige Material**     | Giftig und ätzend                        |
 
-**Im Zweifel:** Prüfen Sie das Sicherheitsdatenblatt (SDB) oder testen Sie eine winzige Probe mit ausgezeichneter Belüftung.
+**Im Zweifel:** Prüfe das Sicherheitsdatenblatt (SDB) oder teste eine winzige Probe mit ausgezeichneter Belüftung.
 
 ### Augenschutz
 
@@ -87,7 +87,7 @@ Die meisten geschlossenen Lasersysteme erfordern keine Schutzbrille während des
 - Maschine mit Sichtfenster ohne lasersichere Filterung
 - Wenn vom Hersteller vorgeschrieben
 
-**Prüfen Sie immer die Anforderungen Ihres Herstellers** – diese variieren je nach Maschinendesign und Lasertyp.
+**Prüfe immer die Anforderungen deines Herstellers** – diese variieren je nach Maschinendesign und Lasertyp.
 
 ## Rayforge-Sicherheitsfunktionen
 
@@ -161,7 +161,7 @@ Vor jedem Auftrag:
 - Erforderliche Sicherheitsschulungen absolvieren
 - Herstellerhandbuch vollständig lesen
 - Notfallverfahren verstehen
-- Gefahrenklasse und Anforderungen Ihres spezifischen Lasers kennen
+- Gefahrenklasse und Anforderungen deines spezifischen Lasers kennen
 
 **Fortlaufend:**
 
@@ -185,7 +185,7 @@ Vor jedem Auftrag:
 
 ## Zusätzliche Ressourcen
 
-**Ihre Verantwortlichkeiten:**
+**Deine Verantwortlichkeiten:**
 
 - Alle Sicherheitsanforderungen des Herstellers befolgen
 - Lokale Brandschutzvorschriften und -verordnungen einhalten
@@ -214,4 +214,4 @@ Vor jedem Auftrag:
 
 ---
 
-**Denken Sie daran:** Sicherer Laserbetrieb erfordert ständige Wachsamkeit, ordnungsgemäße Ausrüstung und strikte Einhaltung der Sicherheitsverfahren. Im Zweifel konsultieren Sie die Dokumentation Ihres Herstellers und gehen Sie auf Nummer sicher.
+**Denke daran:** Sicherer Laserbetrieb erfordert ständige Wachsamkeit, ordnungsgemäße Ausrüstung und strikte Einhaltung der Sicherheitsverfahren. Im Zweifel konsultiere die Dokumentation deines Herstellers und gehe auf Nummer sicher.

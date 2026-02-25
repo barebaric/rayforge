@@ -14,7 +14,7 @@ from pathlib import Path
 from threading import Event
 from typing import Callable, List, Optional, Tuple, TypeVar, TYPE_CHECKING
 
-from gi.repository import GLib
+from gi.repository import Adw, GLib
 
 if TYPE_CHECKING:
     from rayforge.core.step import Step
@@ -210,6 +210,7 @@ def hide_panel(win: "MainWindow", panel_name: str) -> None:
 
 def get_panel_state(win: "MainWindow", panel_name: str) -> bool:
     """Get the current visibility state of a panel."""
+
     def get_state() -> bool:
         action = win.action_manager.get_action(panel_name)
         state = action.get_state()
@@ -470,3 +471,17 @@ def open_material_test(win: "MainWindow") -> "StepSettingsDialog":
     dialog = _run_on_main_thread(_open)
     logger.info("Opened material test grid dialog")
     return dialog
+
+
+def clear_window_subtitle(win: "MainWindow") -> None:
+    """
+    Clear the version subtitle from the main window for deterministic
+    screenshots.
+    """
+
+    def _clear() -> None:
+        title_widget = win.header_bar.get_title_widget()
+        if isinstance(title_widget, Adw.WindowTitle):
+            title_widget.set_subtitle("")
+
+    _run_on_main_thread(_clear)

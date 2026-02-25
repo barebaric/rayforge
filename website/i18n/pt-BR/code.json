@@ -8,6 +8,12 @@
   "install.fromSource": {
     "message": "A partir do Código Fonte"
   },
+  "install.installer.recommended": {
+    "message": "Instalador (Recomendado)"
+  },
+  "install.msys2.developers": {
+    "message": "MSYS2 (Desenvolvedores)"
+  },
   "install.selectOs": {
     "message": "Selecione seu sistema operacional:"
   },
@@ -161,6 +167,48 @@
   "install.windows.title": {
     "message": "Instalação no Windows"
   },
+  "install.windows.dev.title": {
+    "message": "Configuração de Desenvolvimento no Windows (MSYS2)"
+  },
+  "install.windows.dev.description": {
+    "message": "Para desenvolvedores que desejam contribuir com o Rayforge ou executar a versão de desenvolvimento mais recente no Windows. Este método usa MSYS2 para fornecer um ambiente de desenvolvimento semelhante ao Unix."
+  },
+  "install.installMsys2": {
+    "message": "Instalar MSYS2"
+  },
+  "install.msys2.download": {
+    "message": "Baixe e instale o MSYS2 do site oficial:"
+  },
+  "install.msys2.defaultPath": {
+    "message": "Use o caminho de instalação padrão (C:\\msys64) para melhor compatibilidade."
+  },
+  "install.runSetup": {
+    "message": "Executar o script de configuração"
+  },
+  "install.msys2.shell": {
+    "message": "Abra o shell MSYS2 MINGW64 e execute o script de configuração:"
+  },
+  "install.msys2.setupNote": {
+    "message": "Este script instala todas as dependências do sistema e pacotes Python necessários. Pode levar vários minutos para ser concluído."
+  },
+  "install.installDevTools": {
+    "message": "Instalar ferramentas de desenvolvimento (Opcional)"
+  },
+  "install.msys2.devTools": {
+    "message": "Para linting, formatação e hooks pre-commit:"
+  },
+  "install.usefulWinCommands": {
+    "message": "Comandos úteis de desenvolvimento no Windows"
+  },
+  "install.gitCommands": {
+    "message": "Comandos Git"
+  },
+  "install.msys2.gitNote": {
+    "message": "Ao usar hooks pre-commit, você deve executar comandos git dentro do shell MSYS2 MINGW64, não no PowerShell ou Prompt de Comando."
+  },
+  "install.buildInstaller": {
+    "message": "Compilar o instalador do Windows"
+  },
   "install.downloadInstaller": {
     "message": "Baixar o Instalador"
   },
@@ -179,26 +227,50 @@
   "install.windowsLaunch": {
     "message": "Inicie o Rayforge no Menu Iniciar ou pelo atalho na Área de Trabalho."
   },
-  "install.macOS.title": {
-    "message": "Instalação no macOS"
+  "install.macOS.chooseBuild": {
+    "message": "Escolha o tipo de build:"
   },
-  "install.communitySupport": {
-    "message": "Suporte da Comunidade"
+  "install.macOS.universalInstructions": {
+    "message": "Abra o DMG e arraste Rayforge.app para sua pasta de Aplicativos."
   },
-  "install.macOS.communityNote": {
-    "message": "Atualmente não há versões oficiais para macOS. No entanto, o Rayforge pode ser executado a partir do código fonte usando o método de instalação pip. Contribuições da comunidade para empacotamento do macOS são bem-vindas!"
+  "install.macOS.zipInstructions": {
+    "message": "Extraia o ZIP e mova Rayforge.app para Aplicativos."
   },
-  "install.installDeps": {
-    "message": "Instalar Dependências"
+  "install.macOS.openRayforge": {
+    "message": "Abrir Rayforge"
   },
-  "install.usingHomebrew": {
-    "message": "Usando Homebrew, instale as dependências necessárias:"
+  "install.macOS.openRayforgeInstructions": {
+    "message": "Inicie Rayforge.app da sua pasta de Aplicativos."
   },
-  "install.installUsbDrivers": {
-    "message": "Instalar Drivers USB (se necessário)"
+  "install.macOS.gatekeeper": {
+    "message": "Iniciar uma vez pelo Terminal (se o Gatekeeper bloquear)"
   },
-  "install.ch340Driver": {
-    "message": "Se o seu controlador de laser usa um chipset CH340/CH341, instale os drivers:"
+  "install.macOS.gatekeeperInstructions": {
+    "message": "Se o macOS bloquear a primeira inicialização, remova os atributos de quarentena e inicie o Rayforge:"
+  },
+  "install.macOS.source": {
+    "message": "Código fonte (Desenvolvedor)"
+  },
+  "install.macOS.cloneRepo": {
+    "message": "Clonar o repositório"
+  },
+  "install.macOS.runSetup": {
+    "message": "Executar script de configuração"
+  },
+  "install.macOS.runSetupInstructions": {
+    "message": "Isso instala as dependências e configura o ambiente:"
+  },
+  "install.macOS.buildAndRun": {
+    "message": "Compilar e executar"
+  },
+  "install.macOS.universal": {
+    "message": "Universal (Recomendado)"
+  },
+  "install.macOS.arm": {
+    "message": "Apple Silicon (M1/M2/M3)"
+  },
+  "install.macOS.intel": {
+    "message": "Intel Mac"
   },
   "install.verify.title": {
     "message": "Verificar Instalação"
@@ -607,5 +679,14 @@
   "theme.tags.tagsPageTitle": {
     "message": "Tags",
     "description": "The title of the tag list page"
+  },
+  "homepage.community.title": {
+    "message": "Feito com Rayforge"
+  },
+  "homepage.community.subtitle": {
+    "message": "Veja o que criadores ao redor do mundo estão fazendo"
+  },
+  "homepage.community.cta": {
+    "message": "Compartilhe suas criações"
   }
 }

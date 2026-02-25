@@ -101,7 +101,7 @@ def make_step_artifact_in_subprocess(
 
     # 1. Store Render Artifact
     render_handle = artifact_store.put(
-        render_artifact, creator_tag=f"{creator_tag}_render"
+        render_artifact, creator_tag=f"{creator_tag}_r"
     )
 
     # Inter-process handoff: Send handle to main process and wait for adoption.
@@ -124,7 +124,7 @@ def make_step_artifact_in_subprocess(
 
     # 2. Store Ops Artifact
     ops_handle = artifact_store.put(
-        ops_artifact, creator_tag=f"{creator_tag}_ops"
+        ops_artifact, creator_tag=f"{creator_tag}_o"
     )
 
     # Inter-process handoff: Send handle to main process and wait for adoption.

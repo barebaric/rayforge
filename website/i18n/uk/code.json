@@ -8,6 +8,12 @@
   "install.fromSource": {
     "message": "З вихідного коду"
   },
+  "install.installer.recommended": {
+    "message": "Інсталятор (Рекомендовано)"
+  },
+  "install.msys2.developers": {
+    "message": "MSYS2 (Розробники)"
+  },
   "install.selectOs": {
     "message": "Виберіть вашу операційну систему:"
   },
@@ -161,6 +167,48 @@
   "install.windows.title": {
     "message": "Встановлення на Windows"
   },
+  "install.windows.dev.title": {
+    "message": "Налаштування розробки на Windows (MSYS2)"
+  },
+  "install.windows.dev.description": {
+    "message": "Для розробників, які хочуть зробити внесок у Rayforge або запустити останню версію розробки на Windows. Цей метод використовує MSYS2 для надання Unix-подібного середовища розробки."
+  },
+  "install.installMsys2": {
+    "message": "Встановити MSYS2"
+  },
+  "install.msys2.download": {
+    "message": "Завантажте та встановіть MSYS2 з офіційного веб-сайту:"
+  },
+  "install.msys2.defaultPath": {
+    "message": "Використовуйте шлях встановлення за замовчуванням (C:\\msys64) для кращої сумісності."
+  },
+  "install.runSetup": {
+    "message": "Запустити скрипт налаштування"
+  },
+  "install.msys2.shell": {
+    "message": "Відкрийте оболонку MSYS2 MINGW64 і запустіть скрипт налаштування:"
+  },
+  "install.msys2.setupNote": {
+    "message": "Цей скрипт встановлює всі необхідні системні залежності та пакети Python. Встановлення може зайняти кілька хвилин."
+  },
+  "install.installDevTools": {
+    "message": "Встановити інструменти розробки (Опціонально)"
+  },
+  "install.msys2.devTools": {
+    "message": "Для лінтингу, форматування та pre-commit хуків:"
+  },
+  "install.usefulWinCommands": {
+    "message": "Корисні команди розробки на Windows"
+  },
+  "install.gitCommands": {
+    "message": "Команди Git"
+  },
+  "install.msys2.gitNote": {
+    "message": "При використанні pre-commit хуків ви повинні запускати команди git всередині оболонки MSYS2 MINGW64, а не з PowerShell або командного рядка."
+  },
+  "install.buildInstaller": {
+    "message": "Зібрати інсталятор Windows"
+  },
   "install.downloadInstaller": {
     "message": "Завантажити інсталятор"
   },
@@ -179,26 +227,50 @@
   "install.windowsLaunch": {
     "message": "Запустіть Rayforge з меню Пуск або за допомогою ярлика на робочому столі."
   },
-  "install.macOS.title": {
-    "message": "Встановлення на macOS"
+  "install.macOS.chooseBuild": {
+    "message": "Виберіть тип збірки:"
   },
-  "install.communitySupport": {
-    "message": "Підтримка спільноти"
+  "install.macOS.universalInstructions": {
+    "message": "Відкрийте DMG і перетягніть Rayforge.app до вашої папки Програми."
   },
-  "install.macOS.communityNote": {
-    "message": "Наразі немає офіційних збірок macOS. Однак Rayforge може працювати з вихідного коду за допомогою методу встановлення pip. Привітствуються внески спільноти для пакування macOS!"
+  "install.macOS.zipInstructions": {
+    "message": "Розпакуйте ZIP і перемістіть Rayforge.app до Програми."
   },
-  "install.installDeps": {
-    "message": "Встановити залежності"
+  "install.macOS.openRayforge": {
+    "message": "Відкрити Rayforge"
   },
-  "install.usingHomebrew": {
-    "message": "Використовуючи Homebrew, встановіть необхідні залежності:"
+  "install.macOS.openRayforgeInstructions": {
+    "message": "Запустіть Rayforge.app з вашої папки Програми."
   },
-  "install.installUsbDrivers": {
-    "message": "Встановити USB драйвери (за потреби)"
+  "install.macOS.gatekeeper": {
+    "message": "Запустіть один раз з терміналу (якщо Gatekeeper блокує)"
   },
-  "install.ch340Driver": {
-    "message": "Якщо ваш лазерний контролер використовує чіпсет CH340/CH341, встановіть драйвери:"
+  "install.macOS.gatekeeperInstructions": {
+    "message": "Якщо macOS блокує перший запуск, видаліть атрибути карантину та запустіть Rayforge:"
+  },
+  "install.macOS.source": {
+    "message": "Вихідний код (Розробник)"
+  },
+  "install.macOS.cloneRepo": {
+    "message": "Клонувати репозиторій"
+  },
+  "install.macOS.runSetup": {
+    "message": "Запустити скрипт налаштування"
+  },
+  "install.macOS.runSetupInstructions": {
+    "message": "Це встановлює залежності та налаштовує середовище:"
+  },
+  "install.macOS.buildAndRun": {
+    "message": "Зібрати та запустити"
+  },
+  "install.macOS.universal": {
+    "message": "Універсальна (Рекомендовано)"
+  },
+  "install.macOS.arm": {
+    "message": "Apple Silicon (M1/M2/M3)"
+  },
+  "install.macOS.intel": {
+    "message": "Intel Mac"
   },
   "install.verify.title": {
     "message": "Перевірити встановлення"
@@ -304,5 +376,14 @@
   },
   "install.needHelpDescription": {
     "message": "Для додаткової допомоги повідомте про проблему на GitHub або приєднайтеся до нашого Discord."
+  },
+  "homepage.community.title": {
+    "message": "Створено з Rayforge"
+  },
+  "homepage.community.subtitle": {
+    "message": "Дивіться, що створюють майстри по всьому світу"
+  },
+  "homepage.community.cta": {
+    "message": "Поділіться своїми творіннями"
   }
 }

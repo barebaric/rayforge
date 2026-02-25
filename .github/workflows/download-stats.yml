@@ -1,0 +1,24 @@
+name: Update Download Stats
+
+on:
+  schedule:
+    - cron: "0 6 * * *" # Daily at 6 AM UTC
+  workflow_dispatch:
+
+jobs:
+  update-stats:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install snapcraft
+        run: sudo snap install snapcraft --classic
+
+      - name: Fetch and push stats to VictoriaMetrics
+        env:
+          SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.STORE_LOGIN }}
+          METRICS_URL: ${{ secrets.METRICS_URL }}
+          METRICS_API_USER: ${{ secrets.METRICS_API_USER }}
+          METRICS_API_PASSWORD: ${{ secrets.METRICS_API_PASSWORD }}
+        run: python3 scripts/fetch_download_stats.py --output metrics

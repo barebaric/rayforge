@@ -378,8 +378,8 @@ msgid ""
 "The value is missing or not in the correct numeric format. Check your G-code "
 "syntax."
 msgstr ""
-"Der Wert fehlt oder ist nicht im richtigen numerischen Format. Überprüfen "
-"Sie Ihre G-Code-Syntax."
+"Der Wert fehlt oder ist nicht im richtigen numerischen Format. Überprüfe "
+"deine G-Code-Syntax."
 
 #: rayforge/machine/driver/grbl_util.py
 msgid "Unknown Command"
@@ -391,7 +391,7 @@ msgid ""
 "syntax."
 msgstr ""
 "Dieser Grbl-Einstellungsbefehl wird nicht erkannt oder unterstützt. "
-"Überprüfen Sie die Befehlssyntax."
+"Überprüfe die Befehlssyntax."
 
 #: rayforge/machine/driver/grbl_util.py
 msgid "Negative Value"
@@ -411,7 +411,7 @@ msgstr "Referenzfahrt deaktiviert"
 msgid ""
 "Homing is not enabled in settings. Enable homing ($22=1) to use this feature."
 msgstr ""
-"Referenzfahrt ist in den Einstellungen nicht aktiviert. Aktivieren Sie die "
+"Referenzfahrt ist in den Einstellungen nicht aktiviert. Aktiviere die "
 "Referenzfahrt ($22=1), um diese Funktion zu nutzen."
 
 #: rayforge/machine/driver/grbl_util.py
@@ -424,7 +424,7 @@ msgid ""
 "$0."
 msgstr ""
 "Die minimale Schrittimpulsdauer muss größer als 3 Mikrosekunden sein. "
-"Überprüfen Sie die Einstellung $0."
+"Überprüfe die Einstellung $0."
 
 #: rayforge/machine/driver/grbl_util.py
 msgid "Memory Error"
@@ -436,7 +436,7 @@ msgid ""
 "settings if needed."
 msgstr ""
 "Einstellungen wurden aufgrund eines Speicherlesefehlers auf Standardwerte "
-"zurückgesetzt. Konfigurieren Sie Ihre Einstellungen bei Bedarf neu."
+"zurückgesetzt. Konfiguriere deine Einstellungen bei Bedarf neu."
 
 #: rayforge/machine/driver/grbl_util.py
 msgid "Machine Busy"
@@ -448,7 +448,7 @@ msgid ""
 "job to finish."
 msgstr ""
 "Dieser Befehl kann nur verwendet werden, wenn die Maschine im Leerlauf ist. "
-"Warten Sie, bis der aktuelle Auftrag abgeschlossen ist."
+"Warte, bis der aktuelle Auftrag abgeschlossen ist."
 
 #: rayforge/machine/driver/grbl_util.py
 msgid "Commands Locked"
@@ -459,7 +459,7 @@ msgid ""
 "Cannot send commands while in alarm or jog mode. Clear the alarm state first."
 msgstr ""
 "Befehle können nicht gesendet werden, während sich die Maschine im Alarm- "
-"oder Jog-Modus befindet. Löschen Sie zuerst den Alarmzustand."
+"oder Jog-Modus befindet. Lösche zuerst den Alarmzustand."
 
 #: rayforge/machine/driver/grbl_util.py
 msgid "Homing Required"
@@ -471,7 +471,7 @@ msgid ""
 "first ($22=1)."
 msgstr ""
 "Soft-Limits können nicht aktiviert werden, ohne dass die Referenzfahrt "
-"ebenfalls aktiviert ist. Aktivieren Sie zuerst die Referenzfahrt ($22=1)."
+"ebenfalls aktiviert ist. Aktiviere zuerst die Referenzfahrt ($22=1)."
 
 #: rayforge/machine/driver/grbl_util.py
 msgid "Line Too Long"
@@ -482,8 +482,8 @@ msgid ""
 "The command line has too many characters and was ignored. Check your file "
 "formatting."
 msgstr ""
-"Die Befehlszeile enthält zu viele Zeichen und wurde ignoriert. Überprüfen "
-"Sie die Dateiformatierung."
+"Die Befehlszeile enthält zu viele Zeichen und wurde ignoriert. Überprüfe "
+"die Dateiformatierung."
 
 #: rayforge/machine/driver/grbl_util.py
 msgid "Setting Too High"
@@ -494,7 +494,7 @@ msgid ""
 "This setting exceeds the maximum step rate supported. Use a lower value."
 msgstr ""
 "Diese Einstellung überschreitet die maximal unterstützte Schrittrate. "
-"Verwenden Sie einen niedrigeren Wert."
+"Verwende einen niedrigeren Wert."
 
 #: rayforge/machine/driver/grbl_util.py
 msgid "Door Open"
@@ -504,13 +504,13 @@ msgstr "Tür geöffnet"
 msgid ""
 "The safety door was detected as open. Close the door and resume operation."
 msgstr ""
-"Die Sicherheitstür wurde als geöffnet erkannt. Schließen Sie die Tür und "
-"setzen Sie den Betrieb fort."
+"Die Sicherheitstür wurde als geöffnet erkannt. Schließe die Tür und "
+"setze den Betrieb fort."
 
 #: rayforge/machine/driver/grbl_util.py
 msgid "Build info or startup line exceeds storage limit. Shorten the line."
 msgstr ""
-"Build-Info oder Startzeile überschreitet das Speicherlimit. Kürzen Sie die "
+"Build-Info oder Startzeile überschreitet das Speicherlimit. Kürze die "
 "Zeile."
 
 #: rayforge/machine/driver/grbl_util.py
@@ -522,7 +522,7 @@ msgid ""
 "Jog target is beyond the machine's travel limits. Move to a position within "
 "range."
 msgstr ""
-"Jog-Ziel liegt außerhalb der Verfahrgrenzen der Maschine. Bewegen Sie sich "
+"Jog-Ziel liegt außerhalb der Verfahrgrenzen der Maschine. Bewege dich "
 "zu einer Position innerhalb des Bereichs."
 
 #: rayforge/machine/driver/grbl_util.py
@@ -534,7 +534,7 @@ msgid ""
 "Jog command is missing '=' or contains prohibited G-code. Check the jog "
 "syntax."
 msgstr ""
-"Jog-Befehl fehlt '=' oder enthält verbotenen G-Code. Überprüfen Sie die Jog-"
+"Jog-Befehl fehlt '=' oder enthält verbotenen G-Code. Überprüfe die Jog-"
 "Syntax."
 
 #: rayforge/machine/driver/grbl_util.py
@@ -545,7 +545,7 @@ msgstr "Lasermodus-Fehler"
 msgid ""
 "Laser mode requires PWM output to work. Check your hardware configuration."
 msgstr ""
-"Lasermodus erfordert PWM-Ausgabe für den Betrieb. Überprüfen Sie Ihre "
+"Lasermodus erfordert PWM-Ausgabe für den Betrieb. Überprüfe deine "
 "Hardwarekonfiguration."
 
 #: rayforge/machine/driver/grbl_util.py
@@ -557,8 +557,8 @@ msgid ""
 "This G-code command is not supported by the machine. Check your post-"
 "processor settings."
 msgstr ""
-"Dieser G-Code-Befehl wird von der Maschine nicht unterstützt. Überprüfen Sie "
-"Ihre Postprozessor-Einstellungen."
+"Dieser G-Code-Befehl wird von der Maschine nicht unterstützt. Überprüfe "
+"deine Postprozessor-Einstellungen."
 
 #: rayforge/machine/driver/grbl_util.py
 msgid "Conflicting Commands"
@@ -569,7 +569,7 @@ msgid ""
 "Multiple commands from the same group found on one line. Remove the "
 "duplicate command."
 msgstr ""
-"Mehrere Befehle aus derselben Gruppe in einer Zeile gefunden. Entfernen Sie "
+"Mehrere Befehle aus derselben Gruppe in einer Zeile gefunden. Entferne "
 "den doppelten Befehl."
 
 #: rayforge/machine/driver/grbl_util.py
@@ -581,8 +581,8 @@ msgid ""
 "Set a feed rate before using motion commands. Add an F command to specify "
 "speed."
 msgstr ""
-"Legen Sie eine Vorschubrate fest, bevor Sie Bewegungsbefehle verwenden. "
-"Fügen Sie einen F-Befehl hinzu, um die Geschwindigkeit anzugeben."
+"Lege eine Vorschubrate fest, bevor du Bewegungsbefehle verwendest. "
+"Füge einen F-Befehl hinzu, um die Geschwindigkeit anzugeben."
 
 #: rayforge/machine/driver/grbl_util.py
 msgid "Integer Required"
@@ -591,7 +591,7 @@ msgstr "Ganzzahl erforderlich"
 #: rayforge/machine/driver/grbl_util.py
 msgid "This command requires a whole number value. Remove any decimal points."
 msgstr ""
-"Dieser Befehl erfordert einen ganzzahligen Wert. Entfernen Sie alle "
+"Dieser Befehl erfordert einen ganzzahligen Wert. Entferne alle "
 "Dezimalstellen."
 
 #: rayforge/machine/driver/grbl_util.py
@@ -601,7 +601,7 @@ msgstr "Achsenkonflikt"
 #: rayforge/machine/driver/grbl_util.py
 msgid "Multiple commands trying to use the same axis. Simplify the command."
 msgstr ""
-"Mehrere Befehle versuchen, dieselbe Achse zu verwenden. Vereinfachen Sie den "
+"Mehrere Befehle versuchen, dieselbe Achse zu verwenden. Vereinfache den "
 "Befehl."
 
 #: rayforge/machine/driver/grbl_util.py
@@ -611,7 +611,7 @@ msgstr "Doppeltes Wort"
 #: rayforge/machine/driver/grbl_util.py
 msgid "The same G-code word appears more than once. Remove the duplicate."
 msgstr ""
-"Dasselbe G-Code-Wort erscheint mehr als einmal. Entfernen Sie das Duplikat."
+"Dasselbe G-Code-Wort erscheint mehr als einmal. Entferne das Duplikat."
 
 #: rayforge/machine/driver/grbl_util.py
 msgid "Missing Axis"
@@ -621,7 +621,7 @@ msgstr "Achse fehlt"
 msgid ""
 "This command requires XYZ axis coordinates. Add the missing axis values."
 msgstr ""
-"Dieser Befehl erfordert XYZ-Achsenkoordinaten. Fügen Sie die fehlenden "
+"Dieser Befehl erfordert XYZ-Achsenkoordinaten. Füge die fehlenden "
 "Achsenwerte hinzu."
 
 #: rayforge/machine/driver/grbl_util.py
@@ -631,7 +631,7 @@ msgstr "Zeilennummer außerhalb des Bereichs"
 #: rayforge/machine/driver/grbl_util.py
 msgid "Line number must be between 1 and 9,999,999. Use a valid line number."
 msgstr ""
-"Die Zeilennummer muss zwischen 1 und 9.999.999 liegen. Verwenden Sie eine "
+"Die Zeilennummer muss zwischen 1 und 9.999.999 liegen. Verwende eine "
 "gültige Zeilennummer."
 
 #: rayforge/machine/driver/grbl_util.py
@@ -641,7 +641,7 @@ msgstr "Wert fehlt"
 #: rayforge/machine/driver/grbl_util.py
 msgid "This command requires a P or L value. Add the missing parameter."
 msgstr ""
-"Dieser Befehl erfordert einen P- oder L-Wert. Fügen Sie den fehlenden "
+"Dieser Befehl erfordert einen P- oder L-Wert. Füge den fehlenden "
 "Parameter hinzu."
 
 #: rayforge/machine/driver/grbl_util.py
@@ -652,7 +652,7 @@ msgstr "Nicht unterstütztes Koordinatensystem"
 msgid ""
 "Only G54-G59 coordinate systems are supported. Use one of these instead."
 msgstr ""
-"Nur G54-G59-Koordinatensysteme werden unterstützt. Verwenden Sie stattdessen "
+"Nur G54-G59-Koordinatensysteme werden unterstützt. Verwende stattdessen "
 "eines davon."
 
 #: rayforge/machine/driver/grbl_util.py
@@ -663,7 +663,7 @@ msgstr "Falscher Bewegungsmodus"
 msgid ""
 "G53 command requires G0 or G1 motion mode. Set the correct motion mode first."
 msgstr ""
-"G53-Befehl erfordert G0- oder G1-Bewegungsmodus. Stellen Sie zuerst den "
+"G53-Befehl erfordert G0- oder G1-Bewegungsmodus. Stelle zuerst den "
 "korrekten Bewegungsmodus ein."
 
 #: rayforge/machine/driver/grbl_util.py
@@ -674,7 +674,7 @@ msgstr "Unbenutzte Achsenwörter"
 msgid ""
 "Axis words present but G80 cancel is active. Remove the unused axis words."
 msgstr ""
-"Achsenwörter vorhanden, aber G80-Abbruch ist aktiv. Entfernen Sie die "
+"Achsenwörter vorhanden, aber G80-Abbruch ist aktiv. Entferne die "
 "unbenutzten Achsenwörter."
 
 #: rayforge/machine/driver/grbl_util.py
@@ -686,7 +686,7 @@ msgid ""
 "G2/G3 arc command needs XYZ coordinates. Add the axis values for the "
 "selected plane."
 msgstr ""
-"G2/G3-Bogenbefehl benötigt XYZ-Koordinaten. Fügen Sie die Achsenwerte für "
+"G2/G3-Bogenbefehl benötigt XYZ-Koordinaten. Füge die Achsenwerte für "
 "die ausgewählte Ebene hinzu."
 
 #: rayforge/machine/driver/grbl_util.py
@@ -699,7 +699,7 @@ msgid ""
 "coordinates."
 msgstr ""
 "Dieser Bogen kann nicht erstellt oder die aktuelle Position nicht angetastet "
-"werden. Überprüfen Sie die Zielkoordinaten."
+"werden. Überprüfe die Zielkoordinaten."
 
 #: rayforge/machine/driver/grbl_util.py
 msgid "Arc Geometry Error"
@@ -710,8 +710,8 @@ msgid ""
 "Arc calculation failed. Try breaking the arc into smaller pieces or use IJK "
 "offset instead."
 msgstr ""
-"Bogenberechnung fehlgeschlagen. Versuchen Sie, den Bogen in kleinere Stücke "
-"zu zerlegen, oder verwenden Sie stattdessen IJK-Offset."
+"Bogenberechnung fehlgeschlagen. Versuche, den Bogen in kleinere Stücke "
+"zu zerlegen, oder verwende stattdessen IJK-Offset."
 
 #: rayforge/machine/driver/grbl_util.py
 msgid "Missing Arc Offset"
@@ -722,7 +722,7 @@ msgid ""
 "G2/G3 arc command needs IJK offset values. Add the missing offset for the "
 "selected plane."
 msgstr ""
-"G2/G3-Bogenbefehl benötigt IJK-Offsetwerte. Fügen Sie den fehlenden Offset "
+"G2/G3-Bogenbefehl benötigt IJK-Offsetwerte. Füge den fehlenden Offset "
 "für die ausgewählte Ebene hinzu."
 
 #: rayforge/machine/driver/grbl_util.py
@@ -735,7 +735,7 @@ msgid ""
 "unused words."
 msgstr ""
 "Einige G-Code-Wörter in dieser Zeile werden von keinem Befehl verwendet. "
-"Entfernen Sie die unbenutzten Wörter."
+"Entferne die unbenutzten Wörter."
 
 #: rayforge/machine/driver/grbl_util.py
 msgid "Wrong Axis for Offset"
@@ -747,7 +747,7 @@ msgid ""
 "your settings."
 msgstr ""
 "Werkzeuglängenoffset funktioniert nur auf der konfigurierten Achse "
-"(normalerweise Z-Achse). Überprüfen Sie Ihre Einstellungen."
+"(normalerweise Z-Achse). Überprüfe deine Einstellungen."
 
 #: rayforge/machine/driver/grbl_util.py
 msgid "Tool Number Too High"
@@ -757,7 +757,7 @@ msgstr "Werkzeugnummer zu hoch"
 msgid ""
 "Tool number exceeds the maximum supported value. Use a valid tool number."
 msgstr ""
-"Werkzeugnummer überschreitet den maximal unterstützten Wert. Verwenden Sie "
+"Werkzeugnummer überschreitet den maximal unterstützten Wert. Verwende "
 "eine gültige Werkzeugnummer."
 
 #: rayforge/machine/driver/grbl_util.py
@@ -1574,7 +1574,7 @@ msgid ""
 "Configure what happens when you start the application. Files specified on "
 "the command line will always override these settings."
 msgstr ""
-"Konfigurieren Sie, was beim Start der Anwendung passiert. Dateien, die in "
+"Konfiguriere, was beim Start der Anwendung passiert. Dateien, die in "
 "der Befehlszeile angegeben sind, überschreiben diese Einstellungen immer."
 
 #: rayforge/ui_gtk/settings/general_preferences_page.py
@@ -1982,7 +1982,7 @@ msgstr "Arbeitsversätze bearbeiten"
 #: rayforge/ui_gtk/machine/control_panel.py
 msgid "Enter the offset from Machine Zero to Work Zero for the active WCS."
 msgstr ""
-"Geben Sie den Versatz von Maschinennullpunkt zu Arbeitsnullpunkt für das "
+"Gib den Versatz von Maschinennullpunkt zu Arbeitsnullpunkt für das "
 "aktive WCS ein."
 
 #: rayforge/ui_gtk/machine/control_panel.py
@@ -2525,7 +2525,7 @@ msgstr "Achsen"
 
 #: rayforge/ui_gtk/machine/hardware_page.py
 msgid "Configure the axis extents and coordinate system."
-msgstr "Konfigurieren Sie die Achsenbereiche und das Koordinatensystem."
+msgstr "Konfiguriere die Achsenbereiche und das Koordinatensystem."
 
 #: rayforge/ui_gtk/machine/hardware_page.py
 msgid "X Extent"
@@ -3534,7 +3534,7 @@ msgstr "Nicht gespeicherte Änderungen"
 #: rayforge/ui_gtk/project_cmd.py
 msgid "The current project has unsaved changes. Do you want to save them?"
 msgstr ""
-"Das aktuelle Projekt hat nicht gespeicherte Änderungen. Möchten Sie sie "
+"Das aktuelle Projekt hat nicht gespeicherte Änderungen. Möchtest du sie "
 "speichern?"
 
 #: rayforge/ui_gtk/project_cmd.py

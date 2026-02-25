@@ -110,6 +110,7 @@ update-translations = "bash scripts/update_translations.sh"
 compile-translations = "bash scripts/update_translations.sh --compile-only"
 print-untranslated = "bash scripts/print_untranslated.sh"
 list-supporters = "python3 scripts/media/fetch_patreon_supporters.py"
+fetch-stats = "python3 scripts/fetch_download_stats.py"
 
 [tasks.clean]
 cmd = "find . -type d \\( -name __pycache__ -o -name \"*.egg-info\" \\) -print0 | xargs -0 rm -rf"
@@ -158,6 +159,5 @@ site-deploy = "bash scripts/deploy_website.sh"
 # Tasks for video processing
 [feature.video-tools.tasks]
 process-audio = "python3 scripts/media/process_audio.py"
-remove-silence = "python3 scripts/media/remove_video_silence.py"
 generate-blender-setup = "bash scripts/media/run_blender_setup.sh"
 generate-thumbnail = "python3 scripts/media/generate_thumbnail.py"
