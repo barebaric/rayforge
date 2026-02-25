@@ -32,7 +32,7 @@ def mock_draw_func(ctx: cairo.Context, width: int, height: int, params: Dict):
     ctx.fill()
 
 
-def mock_error_func(params: Dict):
+def mock_error_func(*args, **kwargs):
     """A mock function designed to raise an exception for testing."""
     raise ValueError("This function is designed to fail.")
 
