@@ -1,6 +1,7 @@
 import yaml
 import logging
 from blinker import Signal
+from datetime import datetime
 from enum import Enum
 from pathlib import Path
 from typing import Dict, Any, Optional
@@ -39,6 +40,9 @@ class Config:
         # UI visibility states
         self.gcode_preview_visible: bool = False
         self.control_panel_visible: bool = False
+        # Usage tracking consent date: None = not asked, "" = declined,
+        # ISO date string = consent given on that date
+        self.usage_consent_date: Optional[str] = None
         self.changed = Signal()
 
     def set_machine(self, machine: Optional[Machine]):
@@ -101,6 +105,34 @@ class Config:
         self.control_panel_visible = visible
         self.changed.send(self)
 
+    def set_usage_consent(self, consent: bool):
+        """Sets the usage tracking consent preference."""
+        new_value = ""
+        if consent:
+            new_value = datetime.now().isoformat()
+        if self.usage_consent_date == new_value:
+            return
+        self.usage_consent_date = new_value
+        self.changed.send(self)
+
+    @property
+    def has_consented_tracking(self) -> bool:
+        """Returns True if user has consented to usage tracking after
+        the current policy date."""
+        if not self.usage_consent_date or self.usage_consent_date == "":
+            return False
+        try:
+            consent_date = datetime.fromisoformat(self.usage_consent_date)
+            policy_date = datetime(2026, 2, 24)
+            return consent_date >= policy_date
+        except (ValueError, TypeError):
+            return False
+
+    @property
+    def has_declined_tracking(self) -> bool:
+        """Returns True if user has explicitly declined usage tracking."""
+        return self.usage_consent_date == ""
+
     def to_dict(self) -> Dict[str, Any]:
         return {
             "machine": self.machine.id if self.machine else None,
@@ -119,6 +151,7 @@ class Config:
             ),
             "gcode_preview_visible": self.gcode_preview_visible,
             "control_panel_visible": self.control_panel_visible,
+            "usage_consent_date": self.usage_consent_date,
         }
 
     @classmethod
@@ -163,6 +196,9 @@ class Config:
         # Load UI visibility states
         config.gcode_preview_visible = data.get("gcode_preview_visible", False)
         config.control_panel_visible = data.get("control_panel_visible", False)
+
+        # Load usage tracking consent date
+        config.usage_consent_date = data.get("usage_consent_date", None)
 
         # Get the machine by ID. add fallbacks in case the machines
         # no longer exist.

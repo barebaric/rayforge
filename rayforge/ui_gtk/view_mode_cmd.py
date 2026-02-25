@@ -2,6 +2,7 @@ import logging
 from typing import TYPE_CHECKING, Optional
 from gi.repository import GLib, Adw
 from ..context import get_context
+from ..usage import get_usage_tracker
 
 if TYPE_CHECKING:
     from gi.repository import Gio
@@ -67,6 +68,7 @@ class ViewModeCmd:
 
             action.set_state(GLib.Variant.new_boolean(True))
             win.view_stack.set_visible_child_name("3d")
+            get_usage_tracker().track_page_view("/view/3d", "3D View")
 
         else:
             action.set_state(GLib.Variant.new_boolean(False))

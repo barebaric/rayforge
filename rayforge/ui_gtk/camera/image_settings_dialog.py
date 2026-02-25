@@ -1,13 +1,14 @@
 import logging
 from gi.repository import Gtk, Adw
 from ...camera.controller import CameraController
+from ..shared.patched_dialog_window import PatchedMessageDialog
 from .display_widget import CameraDisplay
 
 
 logger = logging.getLogger(__name__)
 
 
-class CameraImageSettingsDialog(Adw.MessageDialog):
+class CameraImageSettingsDialog(PatchedMessageDialog):
     def __init__(self, parent, controller: CameraController, **kwargs):
         super().__init__(
             transient_for=parent,

@@ -3,9 +3,13 @@ from gi.repository import Adw, Gtk
 from ..shared.adwfix import get_spinrow_float
 from ...machine.driver.driver import Axis
 from ...machine.models.machine import Machine, Origin
+from ..shared.preferences_page import TrackedPreferencesPage
 
 
-class HardwarePage(Adw.PreferencesPage):
+class HardwarePage(TrackedPreferencesPage):
+    key = "hardware"
+    path_prefix = "/machine-settings/"
+
     def __init__(self, machine: Machine, **kwargs):
         super().__init__(
             title=_("Hardware"),

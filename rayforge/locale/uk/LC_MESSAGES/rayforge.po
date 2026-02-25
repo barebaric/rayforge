@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-02-23 01:51+0100\n"
+"POT-Creation-Date: 2026-02-25 20:09+0100\n"
 "PO-Revision-Date: 2026-02-23 01:17+0100\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: Ukrainian\n"
@@ -1534,6 +1534,7 @@ msgstr "Довжина"
 
 #: rayforge/ui_gtk/settings/general_preferences_page.py
 #: rayforge/ui_gtk/canvas2d/simulation_controls.py
+#: rayforge/ui_gtk/machine/control_panel.py
 msgid "Speed"
 msgstr "Швидкість"
 
@@ -1565,6 +1566,35 @@ msgstr "Шлях до проекту"
 #: rayforge/ui_gtk/settings/general_preferences_page.py
 msgid "Browse..."
 msgstr "Огляд..."
+
+#: rayforge/ui_gtk/settings/general_preferences_page.py
+msgid "Privacy"
+msgstr "Приватність"
+
+#: rayforge/ui_gtk/settings/general_preferences_page.py
+msgid ""
+"Help us improve Rayforge by allowing anonymous usage reporting. No personal "
+"data is collected."
+msgstr ""
+"Допоможіть нам покращити Rayforge, дозволивши анонімні звіти про "
+"використання. Персональні дані не збираються."
+
+#: rayforge/ui_gtk/settings/general_preferences_page.py
+msgid "Report Anonymous Usage"
+msgstr "Повідомити про анонімне використання"
+
+#: rayforge/ui_gtk/settings/general_preferences_page.py
+msgid "Help improve Rayforge"
+msgstr "Допомогти покращити Rayforge"
+
+#: rayforge/ui_gtk/settings/general_preferences_page.py
+#: rayforge/ui_gtk/shared/usage_consent_dialog.py
+msgid ""
+"<a href=\"https://rayforge.org/docs/general-info/usage-tracking\">Learn "
+"more</a> about usage tracking and privacy."
+msgstr ""
+"<a href=\"https://rayforge.org/docs/general-info/usage-tracking\">Дізнатися "
+"більше</a> про відстеження використання та приватність."
 
 #: rayforge/ui_gtk/sketch_mode_cmd.py rayforge/ui_gtk/main_menu.py
 msgid "New Sketch"
@@ -2912,6 +2942,32 @@ msgstr "Непідтримуваний тип: {t}"
 #: rayforge/ui_gtk/varset/varsetwidget.py
 msgid "Apply Change"
 msgstr "Застосувати зміни"
+
+#: rayforge/ui_gtk/shared/usage_consent_dialog.py
+msgid "Help Improve Rayforge"
+msgstr "Допомогти покращити Rayforge"
+
+#: rayforge/ui_gtk/shared/usage_consent_dialog.py
+msgid ""
+"Would you like to help improve Rayforge by allowing anonymous usage "
+"reporting? This helps us understand how the app is used and prioritize "
+"improvements.\n"
+"\n"
+"No personal data is collected."
+msgstr ""
+"Бажаєте допомогти покращити Rayforge, дозволивши анонімні звіти про "
+"використання? Це допоможе нам зрозуміти, як використовується програма, та "
+"визначити пріоритети покращень.\n"
+"\n"
+"Персональні дані не збираються."
+
+#: rayforge/ui_gtk/shared/usage_consent_dialog.py
+msgid "No Thanks"
+msgstr "Ні, дякую"
+
+#: rayforge/ui_gtk/shared/usage_consent_dialog.py
+msgid "Allow Reporting"
+msgstr "Дозволити звіти"
 
 #: rayforge/ui_gtk/shared/undo_button.py
 msgid "Show History"

@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-02-22 22:09+0100\n"
+"POT-Creation-Date: 2026-02-25 20:09+0100\n"
 "PO-Revision-Date: 2025-07-24 22:08+0200\n"
 "Last-Translator: Samuel Abels <knipknap@gmail.com>\n"
 "Language-Team: none\n"
@@ -482,8 +482,8 @@ msgid ""
 "The command line has too many characters and was ignored. Check your file "
 "formatting."
 msgstr ""
-"Die Befehlszeile enthält zu viele Zeichen und wurde ignoriert. Überprüfe "
-"die Dateiformatierung."
+"Die Befehlszeile enthält zu viele Zeichen und wurde ignoriert. Überprüfe die "
+"Dateiformatierung."
 
 #: rayforge/machine/driver/grbl_util.py
 msgid "Setting Too High"
@@ -504,14 +504,13 @@ msgstr "Tür geöffnet"
 msgid ""
 "The safety door was detected as open. Close the door and resume operation."
 msgstr ""
-"Die Sicherheitstür wurde als geöffnet erkannt. Schließe die Tür und "
-"setze den Betrieb fort."
+"Die Sicherheitstür wurde als geöffnet erkannt. Schließe die Tür und setze "
+"den Betrieb fort."
 
 #: rayforge/machine/driver/grbl_util.py
 msgid "Build info or startup line exceeds storage limit. Shorten the line."
 msgstr ""
-"Build-Info oder Startzeile überschreitet das Speicherlimit. Kürze die "
-"Zeile."
+"Build-Info oder Startzeile überschreitet das Speicherlimit. Kürze die Zeile."
 
 #: rayforge/machine/driver/grbl_util.py
 msgid "Target Out of Range"
@@ -522,8 +521,8 @@ msgid ""
 "Jog target is beyond the machine's travel limits. Move to a position within "
 "range."
 msgstr ""
-"Jog-Ziel liegt außerhalb der Verfahrgrenzen der Maschine. Bewege dich "
-"zu einer Position innerhalb des Bereichs."
+"Jog-Ziel liegt außerhalb der Verfahrgrenzen der Maschine. Bewege dich zu "
+"einer Position innerhalb des Bereichs."
 
 #: rayforge/machine/driver/grbl_util.py
 msgid "Invalid Jog Command"
@@ -569,8 +568,8 @@ msgid ""
 "Multiple commands from the same group found on one line. Remove the "
 "duplicate command."
 msgstr ""
-"Mehrere Befehle aus derselben Gruppe in einer Zeile gefunden. Entferne "
-"den doppelten Befehl."
+"Mehrere Befehle aus derselben Gruppe in einer Zeile gefunden. Entferne den "
+"doppelten Befehl."
 
 #: rayforge/machine/driver/grbl_util.py
 msgid "Feed Rate Missing"
@@ -581,8 +580,8 @@ msgid ""
 "Set a feed rate before using motion commands. Add an F command to specify "
 "speed."
 msgstr ""
-"Lege eine Vorschubrate fest, bevor du Bewegungsbefehle verwendest. "
-"Füge einen F-Befehl hinzu, um die Geschwindigkeit anzugeben."
+"Lege eine Vorschubrate fest, bevor du Bewegungsbefehle verwendest. Füge "
+"einen F-Befehl hinzu, um die Geschwindigkeit anzugeben."
 
 #: rayforge/machine/driver/grbl_util.py
 msgid "Integer Required"
@@ -610,8 +609,7 @@ msgstr "Doppeltes Wort"
 
 #: rayforge/machine/driver/grbl_util.py
 msgid "The same G-code word appears more than once. Remove the duplicate."
-msgstr ""
-"Dasselbe G-Code-Wort erscheint mehr als einmal. Entferne das Duplikat."
+msgstr "Dasselbe G-Code-Wort erscheint mehr als einmal. Entferne das Duplikat."
 
 #: rayforge/machine/driver/grbl_util.py
 msgid "Missing Axis"
@@ -631,8 +629,8 @@ msgstr "Zeilennummer außerhalb des Bereichs"
 #: rayforge/machine/driver/grbl_util.py
 msgid "Line number must be between 1 and 9,999,999. Use a valid line number."
 msgstr ""
-"Die Zeilennummer muss zwischen 1 und 9.999.999 liegen. Verwende eine "
-"gültige Zeilennummer."
+"Die Zeilennummer muss zwischen 1 und 9.999.999 liegen. Verwende eine gültige "
+"Zeilennummer."
 
 #: rayforge/machine/driver/grbl_util.py
 msgid "Missing Value"
@@ -641,8 +639,8 @@ msgstr "Wert fehlt"
 #: rayforge/machine/driver/grbl_util.py
 msgid "This command requires a P or L value. Add the missing parameter."
 msgstr ""
-"Dieser Befehl erfordert einen P- oder L-Wert. Füge den fehlenden "
-"Parameter hinzu."
+"Dieser Befehl erfordert einen P- oder L-Wert. Füge den fehlenden Parameter "
+"hinzu."
 
 #: rayforge/machine/driver/grbl_util.py
 msgid "Unsupported Coordinate"
@@ -663,8 +661,8 @@ msgstr "Falscher Bewegungsmodus"
 msgid ""
 "G53 command requires G0 or G1 motion mode. Set the correct motion mode first."
 msgstr ""
-"G53-Befehl erfordert G0- oder G1-Bewegungsmodus. Stelle zuerst den "
-"korrekten Bewegungsmodus ein."
+"G53-Befehl erfordert G0- oder G1-Bewegungsmodus. Stelle zuerst den korrekten "
+"Bewegungsmodus ein."
 
 #: rayforge/machine/driver/grbl_util.py
 msgid "Unused Axis Words"
@@ -674,8 +672,8 @@ msgstr "Unbenutzte Achsenwörter"
 msgid ""
 "Axis words present but G80 cancel is active. Remove the unused axis words."
 msgstr ""
-"Achsenwörter vorhanden, aber G80-Abbruch ist aktiv. Entferne die "
-"unbenutzten Achsenwörter."
+"Achsenwörter vorhanden, aber G80-Abbruch ist aktiv. Entferne die unbenutzten "
+"Achsenwörter."
 
 #: rayforge/machine/driver/grbl_util.py
 msgid "Missing Arc Data"
@@ -686,8 +684,8 @@ msgid ""
 "G2/G3 arc command needs XYZ coordinates. Add the axis values for the "
 "selected plane."
 msgstr ""
-"G2/G3-Bogenbefehl benötigt XYZ-Koordinaten. Füge die Achsenwerte für "
-"die ausgewählte Ebene hinzu."
+"G2/G3-Bogenbefehl benötigt XYZ-Koordinaten. Füge die Achsenwerte für die "
+"ausgewählte Ebene hinzu."
 
 #: rayforge/machine/driver/grbl_util.py
 msgid "Invalid Target"
@@ -710,8 +708,8 @@ msgid ""
 "Arc calculation failed. Try breaking the arc into smaller pieces or use IJK "
 "offset instead."
 msgstr ""
-"Bogenberechnung fehlgeschlagen. Versuche, den Bogen in kleinere Stücke "
-"zu zerlegen, oder verwende stattdessen IJK-Offset."
+"Bogenberechnung fehlgeschlagen. Versuche, den Bogen in kleinere Stücke zu "
+"zerlegen, oder verwende stattdessen IJK-Offset."
 
 #: rayforge/machine/driver/grbl_util.py
 msgid "Missing Arc Offset"
@@ -722,8 +720,8 @@ msgid ""
 "G2/G3 arc command needs IJK offset values. Add the missing offset for the "
 "selected plane."
 msgstr ""
-"G2/G3-Bogenbefehl benötigt IJK-Offsetwerte. Füge den fehlenden Offset "
-"für die ausgewählte Ebene hinzu."
+"G2/G3-Bogenbefehl benötigt IJK-Offsetwerte. Füge den fehlenden Offset für "
+"die ausgewählte Ebene hinzu."
 
 #: rayforge/machine/driver/grbl_util.py
 msgid "Unused Words"
@@ -757,8 +755,8 @@ msgstr "Werkzeugnummer zu hoch"
 msgid ""
 "Tool number exceeds the maximum supported value. Use a valid tool number."
 msgstr ""
-"Werkzeugnummer überschreitet den maximal unterstützten Wert. Verwende "
-"eine gültige Werkzeugnummer."
+"Werkzeugnummer überschreitet den maximal unterstützten Wert. Verwende eine "
+"gültige Werkzeugnummer."
 
 #: rayforge/machine/driver/grbl_util.py
 msgid "Unknown Error"
@@ -1557,6 +1555,7 @@ msgstr "Länge"
 
 #: rayforge/ui_gtk/settings/general_preferences_page.py
 #: rayforge/ui_gtk/canvas2d/simulation_controls.py
+#: rayforge/ui_gtk/machine/control_panel.py
 msgid "Speed"
 msgstr "Geschwindigkeit"
 
@@ -1574,8 +1573,8 @@ msgid ""
 "Configure what happens when you start the application. Files specified on "
 "the command line will always override these settings."
 msgstr ""
-"Konfiguriere, was beim Start der Anwendung passiert. Dateien, die in "
-"der Befehlszeile angegeben sind, überschreiben diese Einstellungen immer."
+"Konfiguriere, was beim Start der Anwendung passiert. Dateien, die in der "
+"Befehlszeile angegeben sind, überschreiben diese Einstellungen immer."
 
 #: rayforge/ui_gtk/settings/general_preferences_page.py
 msgid "Startup behavior"
@@ -1588,6 +1587,35 @@ msgstr "Projektpfad"
 #: rayforge/ui_gtk/settings/general_preferences_page.py
 msgid "Browse..."
 msgstr "Durchsuchen..."
+
+#: rayforge/ui_gtk/settings/general_preferences_page.py
+msgid "Privacy"
+msgstr "Datenschutz"
+
+#: rayforge/ui_gtk/settings/general_preferences_page.py
+msgid ""
+"Help us improve Rayforge by allowing anonymous usage reporting. No personal "
+"data is collected."
+msgstr ""
+"Hilf uns, Rayforge zu verbessern, indem du anonyme Nutzungsberichte "
+"erlaubst. Es werden keine persönlichen Daten gesammelt."
+
+#: rayforge/ui_gtk/settings/general_preferences_page.py
+msgid "Report Anonymous Usage"
+msgstr "Anonyme Nutzungsberichte"
+
+#: rayforge/ui_gtk/settings/general_preferences_page.py
+msgid "Help improve Rayforge"
+msgstr "Hilf Rayforge verbessern"
+
+#: rayforge/ui_gtk/settings/general_preferences_page.py
+#: rayforge/ui_gtk/shared/usage_consent_dialog.py
+msgid ""
+"<a href=\"https://rayforge.org/docs/general-info/usage-tracking\">Learn "
+"more</a> about usage tracking and privacy."
+msgstr ""
+"<a href=\"https://rayforge.org/docs/general-info/usage-tracking\">Mehr "
+"erfahren</a> über Nutzungsstatistiken und Datenschutz."
 
 #: rayforge/ui_gtk/sketch_mode_cmd.py rayforge/ui_gtk/main_menu.py
 msgid "New Sketch"
@@ -1982,8 +2010,8 @@ msgstr "Arbeitsversätze bearbeiten"
 #: rayforge/ui_gtk/machine/control_panel.py
 msgid "Enter the offset from Machine Zero to Work Zero for the active WCS."
 msgstr ""
-"Gib den Versatz von Maschinennullpunkt zu Arbeitsnullpunkt für das "
-"aktive WCS ein."
+"Gib den Versatz von Maschinennullpunkt zu Arbeitsnullpunkt für das aktive "
+"WCS ein."
 
 #: rayforge/ui_gtk/machine/control_panel.py
 msgid "Offline - Position Unknown"
@@ -2946,6 +2974,32 @@ msgstr "Nicht unterstützter Typ: {t}"
 #: rayforge/ui_gtk/varset/varsetwidget.py
 msgid "Apply Change"
 msgstr "Änderung anwenden"
+
+#: rayforge/ui_gtk/shared/usage_consent_dialog.py
+msgid "Help Improve Rayforge"
+msgstr "Hilf Rayforge zu verbessern"
+
+#: rayforge/ui_gtk/shared/usage_consent_dialog.py
+msgid ""
+"Would you like to help improve Rayforge by allowing anonymous usage "
+"reporting? This helps us understand how the app is used and prioritize "
+"improvements.\n"
+"\n"
+"No personal data is collected."
+msgstr ""
+"Möchtest du helfen, Rayforge zu verbessern, indem du anonyme "
+"Nutzungsberichte erlaubst? Dies hilft uns zu verstehen, wie die App genutzt "
+"wird und Verbesserungen zu priorisieren.\n"
+"\n"
+"Es werden keine persönlichen Daten gesammelt."
+
+#: rayforge/ui_gtk/shared/usage_consent_dialog.py
+msgid "No Thanks"
+msgstr "Nein, danke"
+
+#: rayforge/ui_gtk/shared/usage_consent_dialog.py
+msgid "Allow Reporting"
+msgstr "Berichterstattung erlauben"
 
 #: rayforge/ui_gtk/shared/undo_button.py
 msgid "Show History"

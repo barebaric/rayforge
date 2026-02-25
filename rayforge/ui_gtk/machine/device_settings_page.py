@@ -1,6 +1,6 @@
 import logging
 from typing import List, cast
-from gi.repository import Gtk, Adw, GLib, Gdk
+from gi.repository import Adw, Gtk, GLib, Gdk
 from blinker import Signal
 from ...context import get_context
 from ..icons import get_icon
@@ -8,15 +8,19 @@ from ...machine.driver.driver import (
     ResourceBusyError,
     DeviceStatus,
 )
+from ..shared.preferences_page import TrackedPreferencesPage
 from ..varset.varsetwidget import VarSetWidget, VarSet
 
 logger = logging.getLogger(__name__)
 
 
-class DeviceSettingsPage(Adw.PreferencesPage):
+class DeviceSettingsPage(TrackedPreferencesPage):
     """
     A preferences page for reading and writing device settings.
     """
+
+    key = "device"
+    path_prefix = "/machine-settings/"
 
     def __init__(self, machine, **kwargs):
         super().__init__(

@@ -7,6 +7,7 @@ from gi.repository import GLib
 from ..core.sketcher import Sketch
 from ..core.undo import ListItemCommand
 from ..core.workpiece import WorkPiece
+from ..usage import get_usage_tracker
 from .doceditor import file_dialogs
 from .sketcher.cmd import UpdateSketchCommand
 
@@ -46,6 +47,7 @@ class SketchModeCmd:
             self._is_editing_new_sketch = is_new_sketch
             self._win.sketch_studio.set_sketch(sketch)
             self._win.main_stack.set_visible_child_name("sketch")
+            get_usage_tracker().track_page_view("/sketcher", "Sketch Editor")
 
             self._win.menubar.set_menu_model(
                 self._win.sketch_studio.menu_model
@@ -80,6 +82,7 @@ class SketchModeCmd:
             self._is_editing_new_sketch = False
             self._win.sketch_studio.set_sketch(sketch)
             self._win.main_stack.set_visible_child_name("sketch")
+            get_usage_tracker().track_page_view("/sketcher", "Sketch Editor")
 
             self._win.menubar.set_menu_model(
                 self._win.sketch_studio.menu_model

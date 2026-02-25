@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-02-22 22:09+0100\n"
+"POT-Creation-Date: 2026-02-25 20:09+0100\n"
 "PO-Revision-Date: 2025-07-13 11:49+0200\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: Chinese (Simplified)\n"
@@ -1449,6 +1449,7 @@ msgstr "长度"
 
 #: rayforge/ui_gtk/settings/general_preferences_page.py
 #: rayforge/ui_gtk/canvas2d/simulation_controls.py
+#: rayforge/ui_gtk/machine/control_panel.py
 msgid "Speed"
 msgstr "速度"
 
@@ -1478,6 +1479,33 @@ msgstr "项目路径"
 #: rayforge/ui_gtk/settings/general_preferences_page.py
 msgid "Browse..."
 msgstr "浏览..."
+
+#: rayforge/ui_gtk/settings/general_preferences_page.py
+msgid "Privacy"
+msgstr "隐私"
+
+#: rayforge/ui_gtk/settings/general_preferences_page.py
+msgid ""
+"Help us improve Rayforge by allowing anonymous usage reporting. No personal "
+"data is collected."
+msgstr "允许匿名使用报告来帮助我们改进 Rayforge。不会收集任何个人数据。"
+
+#: rayforge/ui_gtk/settings/general_preferences_page.py
+msgid "Report Anonymous Usage"
+msgstr "报告匿名使用情况"
+
+#: rayforge/ui_gtk/settings/general_preferences_page.py
+msgid "Help improve Rayforge"
+msgstr "帮助改进 Rayforge"
+
+#: rayforge/ui_gtk/settings/general_preferences_page.py
+#: rayforge/ui_gtk/shared/usage_consent_dialog.py
+msgid ""
+"<a href=\"https://rayforge.org/docs/general-info/usage-tracking\">Learn "
+"more</a> about usage tracking and privacy."
+msgstr ""
+"<a href=\"https://rayforge.org/docs/general-info/usage-tracking\">了解更多</"
+"a>关于使用跟踪和隐私的信息。"
 
 #: rayforge/ui_gtk/sketch_mode_cmd.py rayforge/ui_gtk/main_menu.py
 msgid "New Sketch"
@@ -2788,6 +2816,31 @@ msgstr "不支持的类型：{t}"
 #: rayforge/ui_gtk/varset/varsetwidget.py
 msgid "Apply Change"
 msgstr "应用更改"
+
+#: rayforge/ui_gtk/shared/usage_consent_dialog.py
+msgid "Help Improve Rayforge"
+msgstr "帮助改进 Rayforge"
+
+#: rayforge/ui_gtk/shared/usage_consent_dialog.py
+msgid ""
+"Would you like to help improve Rayforge by allowing anonymous usage "
+"reporting? This helps us understand how the app is used and prioritize "
+"improvements.\n"
+"\n"
+"No personal data is collected."
+msgstr ""
+"您是否愿意通过允许匿名使用报告来帮助改进 Rayforge？这有助于我们了解应用程序的"
+"使用方式并确定改进的优先级。\n"
+"\n"
+"不会收集任何个人数据。"
+
+#: rayforge/ui_gtk/shared/usage_consent_dialog.py
+msgid "No Thanks"
+msgstr "不用了，谢谢"
+
+#: rayforge/ui_gtk/shared/usage_consent_dialog.py
+msgid "Allow Reporting"
+msgstr "允许报告"
 
 #: rayforge/ui_gtk/shared/undo_button.py
 msgid "Show History"

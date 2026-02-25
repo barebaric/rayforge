@@ -6,6 +6,7 @@ from gi.repository import GLib
 
 from ...context import get_context
 from ...pipeline.artifact import JobArtifact
+from ...usage import get_usage_tracker
 from .elements.simulation_overlay import SimulationOverlay
 from .simulation_controls import PreviewControls
 
@@ -107,6 +108,7 @@ class SimulatorCmd:
             self._on_simulation_step_changed
         )
         self.preview_controls.close_requested.connect(self._on_close_requested)
+        get_usage_tracker().track_page_view("/simulation", "Simulation Mode")
 
         # Call the public method on MainWindow to trigger the async data load.
         win.refresh_previews()

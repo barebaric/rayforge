@@ -12,6 +12,7 @@ from ..icons import get_icon
 from ..shared.adwfix import get_spinrow_float
 from ..shared.keyboard import is_primary_modifier
 from ..shared.patched_dialog_window import PatchedDialogWindow
+from ..shared.preferences_page import TrackedPreferencesPage
 from ..shared.unit_spin_row import UnitSpinRowHelper
 from .recipe_control_widget import RecipeControlWidget
 from .step_settings import WIDGET_REGISTRY
@@ -20,7 +21,7 @@ if TYPE_CHECKING:
     from ...doceditor.editor import DocEditor
 
 
-class GeneralStepSettingsView(Adw.PreferencesPage):
+class GeneralStepSettingsView(TrackedPreferencesPage):
     """A view for the general and producer settings of a Step."""
 
     changed = Signal()
@@ -30,6 +31,13 @@ class GeneralStepSettingsView(Adw.PreferencesPage):
         self.editor = editor
         self.doc = editor.doc
         self.step = step
+        producer_type = (
+            step.opsproducer_dict.get("type", "unknown")
+            if step.opsproducer_dict
+            else "unknown"
+        )
+        self.key = producer_type.lower().replace("producer", "")
+        self.path_prefix = "/step-settings/"
         self.history_manager: HistoryManager = self.doc.history_manager
 
         # Used to delay updates from continuous-change widgets like sliders
@@ -376,11 +384,21 @@ class GeneralStepSettingsView(Adw.PreferencesPage):
         self.changed.send(self)
 
 
-class PostProcessingSettingsView(Adw.PreferencesPage):
+class PostProcessingSettingsView(TrackedPreferencesPage):
     """A view for the post-processing transformers of a Step."""
 
     def __init__(self, editor: "DocEditor", step: Step):
         super().__init__()
+        self.editor = editor
+        self.step = step
+        producer_type = (
+            step.opsproducer_dict.get("type", "unknown")
+            if step.opsproducer_dict
+            else "unknown"
+        )
+        producer_key = producer_type.lower().replace("producer", "")
+        self.key = f"{producer_key}/post-processing"
+        self.path_prefix = "/step-settings/"
 
         content_added = False
 
@@ -443,7 +461,7 @@ class StepSettingsDialog(PatchedDialogWindow):
         step: Step,
         **kwargs,
     ):
-        super().__init__(**kwargs)
+        super().__init__(skip_usage_tracking=True, **kwargs)
         self.editor = editor
         self.step = step
         self.set_title(_("{name} Settings").format(name=step.name))

@@ -4,7 +4,7 @@ import shutil
 import webbrowser
 from concurrent.futures import Future
 from pathlib import Path
-from typing import Callable, Coroutine, List, Optional, Tuple, cast
+from typing import Callable, Coroutine, List, Optional, Tuple
 from gi.repository import Adw, Gdk, Gio, GLib, Gtk
 
 from .. import __version__
@@ -29,6 +29,7 @@ from ..pipeline.steps import STEP_FACTORIES, create_contour_step
 from ..shared.gcodeedit.viewer import GcodeViewer
 from ..shared.tasker import task_mgr
 from ..shared.util.time_format import format_hours_to_hm
+from ..usage import get_usage_tracker
 from .about import AboutDialog
 from .actions import ActionManager
 from .canvas import CanvasElement
@@ -53,6 +54,8 @@ from .settings.settings_dialog import SettingsWindow
 from .project_cmd import ProjectCmd
 from .sketch_mode_cmd import SketchModeCmd
 from .sketcher.studio import SketchStudio
+from .shared.gtk import get_monitor_geometry
+from .shared.usage_consent_dialog import UsageConsentDialog
 from .task_bar import TaskBar
 from .toolbar import MainToolbar
 from .view_mode_cmd import ViewModeCmd
@@ -96,43 +99,6 @@ css = """
     font-weight: bold;
 }
 """
-
-
-def _get_monitor_geometry() -> Optional[Gdk.Rectangle]:
-    """
-    Returns a rectangle for the current monitor dimensions. If not found,
-    may return None.
-    """
-    display = Gdk.Display.get_default()
-    if not display:
-        return None
-
-    monitors = display.get_monitors()
-    if not monitors:
-        return None
-    monitor = cast(Gdk.Monitor, monitors[0])
-
-    # Try to get the monitor under the cursor (heuristic for active
-    # monitor). Note: Wayland has no concept of "primary monitor"
-    # anymore, so Gdk.get_primary_monitor() is obsolete.
-    # Fallback to the first monitor if no monitor is found under the cursor
-    seat = display.get_default_seat()
-    if not seat:
-        return monitor.get_geometry()
-
-    pointer = seat.get_pointer()
-    if not pointer:
-        return monitor.get_geometry()
-
-    surface, x, y = pointer.get_surface_at_position()
-    if not surface:
-        return monitor.get_geometry()
-
-    monitor_under_mouse = display.get_monitor_at_surface(surface)
-    if not monitor_under_mouse:
-        return monitor.get_geometry()
-
-    return monitor_under_mouse.get_geometry()
 
 
 class MainWindow(Adw.ApplicationWindow):
@@ -180,7 +146,7 @@ class MainWindow(Adw.ApplicationWindow):
         key_controller.connect("key-pressed", self._on_key_pressed)
         self.add_controller(key_controller)
 
-        geometry = _get_monitor_geometry()
+        geometry = get_monitor_geometry()
         if geometry:
             self.set_default_size(
                 int(geometry.width * 0.8), int(geometry.height * 0.8)
@@ -549,6 +515,17 @@ class MainWindow(Adw.ApplicationWindow):
         """
         # Disconnect self to ensure it only runs once
         self.disconnect_by_func(self._trigger_startup_tasks)
+
+        # Initialize usage tracking based on saved consent
+        config = get_context().config
+        if config.has_consented_tracking:
+            get_usage_tracker().set_enabled(True)
+            get_usage_tracker().track_page_view("/view/2d", "2D View")
+        elif config.has_declined_tracking:
+            pass  # Explicitly do nothing, respecting the user's choice
+        else:
+            dialog = UsageConsentDialog(self)
+            dialog.present()
 
         # Trigger the non-blocking check for package updates
         self.update_cmd.check_for_updates_on_startup()
@@ -1694,6 +1671,9 @@ class MainWindow(Adw.ApplicationWindow):
             full_height = self.vertical_paned.get_height()
             self.vertical_paned.set_position(
                 full_height - self._last_control_panel_height
+            )
+            get_usage_tracker().track_page_view(
+                "/console/open", "Console Opened"
             )
         else:
             self.control_panel.set_visible(False)

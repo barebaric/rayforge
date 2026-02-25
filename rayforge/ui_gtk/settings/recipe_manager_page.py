@@ -1,14 +1,16 @@
 import logging
-from gi.repository import Adw
 from ..doceditor.recipe_list import RecipeListWidget
+from ..shared.preferences_page import TrackedPreferencesPage
 
 logger = logging.getLogger(__name__)
 
 
-class RecipeManagerPage(Adw.PreferencesPage):
+class RecipeManagerPage(TrackedPreferencesPage):
     """
     Widget for managing recipes.
     """
+
+    key = "recipes"
 
     def __init__(self):
         super().__init__(

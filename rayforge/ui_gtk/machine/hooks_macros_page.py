@@ -1,10 +1,13 @@
-from gi.repository import Adw
 from ...machine.models.machine import Machine
+from ..shared.preferences_page import TrackedPreferencesPage
 from .hook_list import HookList
 from .macro_list import MacroListEditor
 
 
-class HooksMacrosPage(Adw.PreferencesPage):
+class HooksMacrosPage(TrackedPreferencesPage):
+    key = "hooks-macros"
+    path_prefix = "/machine-settings/"
+
     def __init__(self, machine: Machine, **kwargs):
         super().__init__(
             title=_("Hooks & Macros"),
