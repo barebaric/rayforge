@@ -411,22 +411,6 @@ class Machine:
         return (ml, mt, max(1.0, w), max(1.0, h))
 
     @property
-    def offsets(self) -> Tuple[float, float]:
-        """Computed from work_margins for backward compatibility."""
-        return (self._work_margins[0], self._work_margins[1])
-
-    @offsets.setter
-    def offsets(self, value: Tuple[float, float]):
-        x, y = value
-        w, h = self._axis_extents
-        self._work_margins = (x, y, w - x, h - y)
-
-    def set_offsets(self, x_offset: float, y_offset: float):
-        w, h = self._axis_extents
-        self._work_margins = (x_offset, y_offset, w - x_offset, h - y_offset)
-        self.changed.send(self)
-
-    @property
     def soft_limits(self) -> Optional[Tuple[float, float, float, float]]:
         """
         Configurable safety bounds for jogging (x_min, y_min, x_max, y_max).

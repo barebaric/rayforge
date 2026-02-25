@@ -115,19 +115,6 @@ class TestMachineWorkMargins:
         machine.set_axis_extents(300, 400)
         assert machine.work_area == (0, 0, 300, 400)
 
-    def test_offsets_computed_from_margins(self, context_initializer):
-        """Test that offsets is computed from left/top margins."""
-        machine = Machine(context_initializer)
-        machine.set_work_margins(100, 200, 50, 75)
-        assert machine.offsets == (100, 200)
-
-    def test_set_offsets_updates_margins(self, context_initializer):
-        """Test that set_offsets updates margins."""
-        machine = Machine(context_initializer)
-        machine.set_axis_extents(500, 600)
-        machine.set_offsets(100, 200)
-        assert machine.work_margins == (100, 200, 400, 400)
-
     def test_set_axis_extents_clamps_margins(self, context_initializer):
         """Test that set_axis_extents clamps margins if they don't fit."""
         machine = Machine(context_initializer)
