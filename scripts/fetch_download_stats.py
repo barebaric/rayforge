@@ -7,6 +7,7 @@ Sources:
 - Snap Store
 - Flathub
 - PyPI
+- Launchpad PPA
 
 Output options:
 - json: Print stats as JSON
@@ -168,6 +169,95 @@ def get_pypi_downloads(pkg_name):
         return {"last_day": 0, "last_week": 0, "last_month": 0}
 
 
+def get_ppa_downloads(owner, ppa_name):
+    """Fetch download statistics from a Launchpad PPA.
+
+    Args:
+        owner: The Launchpad user/team name (e.g., 'knipknap')
+        ppa_name: The PPA name (e.g., 'rayforge')
+
+    Returns:
+        dict with total downloads and by_version breakdown
+    """
+    base_url = (
+        f"https://api.launchpad.net/1.0/~{owner}/+archive/ubuntu/{ppa_name}"
+    )
+    result = {"total": 0, "by_version": {}, "error": None}
+
+    try:
+        binaries_url = f"{base_url}?ws.op=getPublishedBinaries"
+        data = fetch_json(binaries_url)
+        entries = data.get("entries", [])
+
+        for entry in entries:
+            if entry.get("status") != "Published":
+                continue
+
+            binary_link = entry.get("self_link")
+            version = entry.get("binary_package_version", "unknown")
+
+            if not binary_link:
+                continue
+
+            try:
+                daily_url = f"{binary_link}?ws.op=getDailyDownloadTotals"
+                daily_data = fetch_json(daily_url)
+
+                version_total = sum(daily_data.values())
+                if version not in result["by_version"]:
+                    result["by_version"][version] = 0
+                result["by_version"][version] += version_total
+                result["total"] += version_total
+            except (HTTPError, URLError):
+                continue
+
+    except (HTTPError, URLError) as e:
+        result["error"] = str(e)
+
+    return result
+
+
+def get_ppa_monthly(owner, ppa_name):
+    """Fetch monthly download statistics from a Launchpad PPA.
+
+    Args:
+        owner: The Launchpad user/team name (e.g., 'knipknap')
+        ppa_name: The PPA name (e.g., 'rayforge')
+
+    Returns:
+        dict with monthly download counts
+    """
+    base_url = (
+        f"https://api.launchpad.net/1.0/~{owner}/+archive/ubuntu/{ppa_name}"
+    )
+    monthly = defaultdict(int)
+
+    try:
+        binaries_url = f"{base_url}?ws.op=getPublishedBinaries"
+        data = fetch_json(binaries_url)
+        entries = data.get("entries", [])
+
+        for entry in entries:
+            binary_link = entry.get("self_link")
+            if not binary_link:
+                continue
+
+            try:
+                daily_url = f"{binary_link}?ws.op=getDailyDownloadTotals"
+                daily_data = fetch_json(daily_url)
+
+                for date_str, count in daily_data.items():
+                    month = date_str[:7]
+                    monthly[month] += count
+            except (HTTPError, URLError):
+                continue
+
+    except (HTTPError, URLError):
+        pass
+
+    return dict(sorted(monthly.items()))
+
+
 def get_flathub_monthly(app_id):
     url = f"https://flathub.org/api/v2/stats/{app_id}"
     try:
@@ -247,6 +337,8 @@ def main():
     parser.add_argument("--snap-name", default="rayforge")
     parser.add_argument("--flathub-id", default="org.rayforge.rayforge")
     parser.add_argument("--pypi-package", default="rayforge")
+    parser.add_argument("--ppa-owner", default="knipknap")
+    parser.add_argument("--ppa-name", default="rayforge")
     parser.add_argument(
         "--output",
         choices=["json", "monthly", "file", "metrics"],
@@ -266,51 +358,59 @@ def main():
         snap_data = get_snap_downloads_cli(args.snap_name, "2024-01-01")
         snap_monthly = snap_data.get("by_month", {})
         snap_error = snap_data.get("error")
+        ppa_monthly = get_ppa_monthly(args.ppa_owner, args.ppa_name)
 
         all_months = sorted(
             set(flathub_monthly.keys())
             | set(pypi_monthly.keys())
             | set(snap_monthly.keys())
+            | set(ppa_monthly.keys())
         )
 
         print("\nMonthly Downloads by Source:")
-        print("-" * 60)
+        print("-" * 72)
         print(
             f"{'Month':<10} {'Flathub':>10} {'PyPI':>10} "
-            f"{'Snap':>10} {'Total':>10}"
+            f"{'Snap':>10} {'PPA':>10} {'Total':>10}"
         )
-        print("-" * 60)
+        print("-" * 72)
 
         for month in all_months:
             fh = flathub_monthly.get(month, 0)
             pypi = pypi_monthly.get(month, 0)
             snap = snap_monthly.get(month, 0)
-            total = fh + pypi + snap
+            ppa = ppa_monthly.get(month, 0)
+            total = fh + pypi + snap + ppa
             print(
-                f"{month:<10} {fh:>10,} {pypi:>10,} {snap:>10,} {total:>10,}"
+                f"{month:<10} {fh:>10,} {pypi:>10,} {snap:>10,} "
+                f"{ppa:>10,} {total:>10,}"
             )
 
-        print("-" * 60)
+        print("-" * 72)
         fh_total = sum(flathub_monthly.values())
         pypi_total = sum(pypi_monthly.values())
         snap_total = sum(snap_monthly.values())
+        ppa_total = sum(ppa_monthly.values())
         print(
             f"{'TOTAL':<10} "
             f"{fh_total:>10,} "
             f"{pypi_total:>10,} "
             f"{snap_total:>10,} "
-            f"{fh_total + pypi_total + snap_total:>10,}"
+            f"{ppa_total:>10,} "
+            f"{fh_total + pypi_total + snap_total + ppa_total:>10,}"
         )
         if snap_error:
             print(f"\nNote: Snap stats unavailable - {snap_error}")
         return 0
 
+    ppa_stats = get_ppa_downloads(args.ppa_owner, args.ppa_name)
     stats = {
         "timestamp": datetime.now(UTC).isoformat(),
         "github": get_github_releases(args.github_owner, args.github_repo),
         "snap": get_snap_downloads(args.snap_name),
         "flathub": get_flathub_downloads(args.flathub_id),
         "pypi": get_pypi_downloads(args.pypi_package),
+        "ppa": ppa_stats,
     }
 
     stats["total_downloads"] = (
@@ -318,6 +418,7 @@ def main():
         + stats["snap"]["total"]
         + stats["flathub"]["total"]
         + stats["pypi"]["last_month"]
+        + ppa_stats["total"]
     )
 
     if args.output == "file":
@@ -325,11 +426,13 @@ def main():
         pypi_monthly = get_pypi_monthly(args.pypi_package)
         snap_data = get_snap_downloads_cli(args.snap_name, "2024-01-01")
         snap_monthly = snap_data.get("by_month", {})
+        ppa_monthly = get_ppa_monthly(args.ppa_owner, args.ppa_name)
 
         all_months = sorted(
             set(flathub_monthly.keys())
             | set(pypi_monthly.keys())
             | set(snap_monthly.keys())
+            | set(ppa_monthly.keys())
         )
 
         monthly = []
@@ -337,13 +440,15 @@ def main():
             fh = flathub_monthly.get(month, 0)
             pypi = pypi_monthly.get(month, 0)
             snap = snap_monthly.get(month, 0)
+            ppa = ppa_monthly.get(month, 0)
             monthly.append(
                 {
                     "month": month,
                     "flathub": fh,
                     "pypi": pypi,
                     "snap": snap,
-                    "total": fh + pypi + snap,
+                    "ppa": ppa,
+                    "total": fh + pypi + snap + ppa,
                 }
             )
 
@@ -354,8 +459,10 @@ def main():
                 "flathub": stats["flathub"]["total"],
                 "pypi": stats["pypi"]["last_month"],
                 "snap": snap_data.get("total", 0),
+                "ppa": ppa_stats["total"],
             },
             "github_by_version": stats["github"]["by_version"],
+            "ppa_by_version": ppa_stats.get("by_version", {}),
             "monthly": monthly,
         }
 
@@ -421,6 +528,23 @@ def main():
                     "name": "downloads_by_version",
                     "value": count,
                     "tags": {"source": "github", "version": version},
+                }
+            )
+
+        metrics.append(
+            {
+                "name": "downloads_total",
+                "value": ppa_stats["total"],
+                "tags": {"source": "ppa"},
+            }
+        )
+
+        for version, count in ppa_stats.get("by_version", {}).items():
+            metrics.append(
+                {
+                    "name": "downloads_by_version",
+                    "value": count,
+                    "tags": {"source": "ppa", "version": version},
                 }
             )
 
