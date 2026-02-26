@@ -1,6 +1,7 @@
 from __future__ import annotations
+from collections import defaultdict
 from enum import Enum, auto
-from typing import TYPE_CHECKING, Set, Callable, Optional
+from typing import TYPE_CHECKING, Dict, Set, Callable, Optional
 
 if TYPE_CHECKING:
     from rayforge.pipeline.artifact.key import ArtifactKey
@@ -46,7 +47,7 @@ class GenerationContext:
                 provided, resources will not be released on shutdown.
         """
         self._generation_id = generation_id
-        self._task_keys: Set["ArtifactKey"] = set()
+        self._task_counts: Dict["ArtifactKey", int] = defaultdict(int)
         self._resources: Set["BaseArtifactHandle"] = set()
         self._release_callback = release_callback
         self._state = ContextState.ACTIVE
@@ -60,7 +61,7 @@ class GenerationContext:
     @property
     def active_tasks(self) -> Set["ArtifactKey"]:
         """Return a copy of the set of active task keys."""
-        return self._task_keys.copy()
+        return set(self._task_counts.keys())
 
     @property
     def resources(self) -> Set["BaseArtifactHandle"]:
@@ -81,22 +82,32 @@ class GenerationContext:
         """
         Register a task as active for this generation.
 
+        Uses a counter per key to handle task replacement: when a new
+        task with the same key starts before the old one finishes, we
+        increment the counter. The key is only removed when all tasks
+        with that key have finished.
+
         Args:
             key: The ArtifactKey identifying the task.
         """
-        self._task_keys.add(key)
+        self._task_counts[key] += 1
 
     def task_did_finish(self, key: "ArtifactKey") -> None:
         """
         Mark a task as completed for this generation.
 
-        If the context is superseded and has no more active tasks,
-        automatically triggers shutdown to release resources.
+        Decrements the counter for the key. If the counter reaches zero,
+        the key is removed. If the context is superseded and has no more
+        active tasks, automatically triggers shutdown to release resources.
 
         Args:
             key: The ArtifactKey identifying the completed task.
         """
-        self._task_keys.discard(key)
+        if key not in self._task_counts:
+            return
+        self._task_counts[key] -= 1
+        if self._task_counts[key] == 0:
+            del self._task_counts[key]
 
         if not self.has_active_tasks() and self._is_superseded():
             self.shutdown()
@@ -108,7 +119,7 @@ class GenerationContext:
         Returns:
             True if there are active tasks, False otherwise.
         """
-        return len(self._task_keys) > 0
+        return len(self._task_counts) > 0
 
     def _is_superseded(self) -> bool:
         """
