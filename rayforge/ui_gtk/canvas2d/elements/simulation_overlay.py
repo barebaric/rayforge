@@ -312,13 +312,7 @@ class SimulationOverlay(CanvasElement):
         """
         Keeps stroke width at roughly one device pixel regardless of zoom.
         """
-        if hasattr(ctx, "set_hairline"):
-            ctx.set_hairline(True)
-            return
-
-        px_x, px_y = ctx.device_to_user_distance(1.0, 1.0)
-        width = max(abs(px_x), abs(px_y), 1e-3)
-        ctx.set_line_width(width)
+        ctx.set_hairline(True)
 
     def draw_overlay(self, ctx: cairo.Context):
         """
