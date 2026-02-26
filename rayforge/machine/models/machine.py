@@ -123,6 +123,7 @@ class Machine:
         self.reverse_y_axis: bool = False
         self.reverse_z_axis: bool = False
         self.soft_limits_enabled: bool = True
+        self.wcs_origin_is_workarea_origin: bool = False
         self._settings_lock = asyncio.Lock()
 
         # Work Coordinate System (WCS) State
@@ -458,6 +459,13 @@ class Machine:
         self.reverse_z_axis = is_reversed
         self.changed.send(self)
 
+    def set_wcs_origin_is_workarea_origin(self, value: bool):
+        """Sets if the workarea origin should be treated as coordinate zero."""
+        if self.wcs_origin_is_workarea_origin == value:
+            return
+        self.wcs_origin_is_workarea_origin = value
+        self.changed.send(self)
+
     @property
     def y_axis_down(self) -> bool:
         """
@@ -748,6 +756,67 @@ class Machine:
         """
         return self.wcs_offsets.get(self.active_wcs, (0.0, 0.0, 0.0))
 
+    def get_workarea_origin_offset(self) -> Tuple[float, float]:
+        """
+        Returns the position of the workarea origin in WORLD space.
+
+        The workarea origin is at the corner specified by the machine's origin
+        setting. This is used to convert from MACHINE coordinates to
+        workarea-relative coordinates.
+
+        Margins are: (left, top, right, bottom)
+
+        Returns:
+            Tuple of (x, y) in WORLD space.
+        """
+        ml, mt, mr, mb = self._work_margins
+        width, height = self._axis_extents
+
+        if self.origin == Origin.BOTTOM_LEFT:
+            return (ml, mb)
+        elif self.origin == Origin.TOP_LEFT:
+            return (ml, height - mt)
+        elif self.origin == Origin.BOTTOM_RIGHT:
+            return (width - mr, mb)
+        else:  # TOP_RIGHT
+            return (width - mr, height - mt)
+
+    def get_reference_offset(self) -> Tuple[float, float, float]:
+        """
+        Returns the offset for converting from MACHINE to REFERENCE coords.
+
+        REFERENCE coordinates are what the user sees in the UI. When
+        wcs_origin_is_workarea_origin is False, this returns the active WCS
+        offset. When True, this returns the workarea origin offset.
+
+        Returns:
+            Tuple of (x, y, z) offset in MACHINE space.
+        """
+        if self.wcs_origin_is_workarea_origin:
+            x, y = self.get_workarea_origin_offset()
+            return (x, y, 0.0)
+        else:
+            return self.get_active_wcs_offset()
+
+    def get_visual_wcs_offset(self) -> Tuple[float, float]:
+        """
+        Returns the WCS offset transformed to visual coordinates.
+
+        Applies axis reversal to the WCS offset. The caller (UI layer)
+        handles origin corner transformation based on canvas dimensions.
+
+        Returns:
+            Tuple of (x, y) with axis reversal applied.
+        """
+        wcs_x, wcs_y, _ = self.get_active_wcs_offset()
+
+        if self.reverse_x_axis:
+            wcs_x = -wcs_x
+        if self.reverse_y_axis:
+            wcs_y = -wcs_y
+
+        return (wcs_x, wcs_y)
+
     def get_visual_extent_frame(self) -> Tuple[float, float, float, float]:
         """
         Returns the extent frame rectangle (x, y, width, height) in visual
@@ -816,8 +885,10 @@ class Machine:
     def _prepare_ops_for_encoding(self, ops: "Ops") -> "Ops":
         """
         Prepares an Ops object for encoding by applying machine-specific
-        coordinate transformations. This includes offsets, origin transforms,
-        and WCS offset adjustments.
+        coordinate transformations.
+
+        The pipeline produces ops in machine coordinates. This method
+        converts them to command coordinates for the G-code output.
 
         Args:
             ops: The Ops object to prepare.
@@ -825,24 +896,12 @@ class Machine:
         Returns:
             A transformed Ops object ready for encoding.
         """
-        # We operate on a copy to avoid modifying the original Ops object,
-        # which is owned by the pipeline and may be reused.
         ops_for_encoder = ops.copy()
 
-        # Apply offsets from work_margins
-        ml, mt, _, _ = self._work_margins
-        for command in ops_for_encoder.commands:
-            if isinstance(command, MovingCommand):
-                base_end = command.end or (0, 0, 0)
-                command.end = (
-                    base_end[0] + ml,
-                    base_end[1] + mt,
-                    base_end[2],
-                )
-
+        # First, apply origin transform to convert from world coords
+        # (bottom-left origin, Y-up) to machine coords.
         # If Origin is BOTTOM_LEFT and axes are not reversed, the internal
-        # coordinate system matches the machine's. Any other configuration
-        # requires transformation.
+        # coordinate system matches the machine's.
         needs_transform = (
             self.origin != Origin.BOTTOM_LEFT
             or self.reverse_x_axis
@@ -852,73 +911,82 @@ class Machine:
         if needs_transform:
             width, height = self._axis_extents
 
-            # Create the origin transformation matrix. This is complex because
-            # it depends on both the origin corner and whether the machine
-            # uses a positive or negative coordinate system for each axis.
-            # The 'reverse_x_axis' and 'reverse_y_axis' flags indicate a
-            # negative coordinate system.
             transform = np.identity(4)
 
             # --- Y-Axis Transformation ---
             if self.y_axis_down:  # Origin is TOP_LEFT or TOP_RIGHT
                 if self.reverse_y_axis:
-                    # Negative workspace: Machine Y is 0 at top,
-                    # decreases down.
-                    # World Y=height maps to Machine Y=0.
-                    # Formula: y_m = y_w - height
                     transform[1, 3] = -float(height)
                 else:
-                    # Positive workspace: Machine Y is 0 at top,
-                    # increases down.
-                    # World Y=height maps to Y=0; World Y=0 maps to
-                    # Y=height.
-                    # Formula: y_m = height - y_w
                     transform[1, 1] = -1.0
                     transform[1, 3] = float(height)
             elif self.reverse_y_axis:
-                # Origin is at bottom, but Y is negative (uncommon)
-                # World Y=0 maps to Y=0, but Y increases negatively.
-                # Formula: y_m = -y_w
                 transform[1, 1] = -1.0
 
             # --- X-Axis Transformation ---
             if self.x_axis_right:  # Origin is TOP_RIGHT or BOTTOM_RIGHT
                 if self.reverse_x_axis:
-                    # Negative workspace: Machine X is 0 at right,
-                    # decreases left.
-                    # World X=width maps to Machine X=0.
-                    # Formula: x_m = x_w - width
                     transform[0, 3] = -float(width)
                 else:
-                    # Positive workspace: Machine X is 0 at right,
-                    # increases left.
-                    # World X=width maps to X=0; World X=0 maps to
-                    # X=width.
-                    # Formula: x_m = width - x_w
                     transform[0, 0] = -1.0
                     transform[0, 3] = float(width)
             elif self.reverse_x_axis:
-                # Origin is at left, but X is negative (uncommon)
-                # World X=0 maps to X=0, but X increases negatively.
-                # Formula: x_m = -x_w
                 transform[0, 0] = -1.0
 
             ops_for_encoder.transform(transform)
 
-        # Apply WCS Offset Logic
-        # The document is drawn on a canvas representing the full machine bed.
-        # ops_for_encoder is now in "Machine Coordinates".
-        # We must subtract the WCS offset to get "Command Coordinates", so that
-        # when the machine adds the offset back during execution, it lands on
-        # the correct physical spot.
-        # Cmd = Machine - Offset
-        wcs_offset = self.get_active_wcs_offset()
-        if wcs_offset != (0.0, 0.0, 0.0):
-            wcs_transform = np.identity(4)
-            wcs_transform[0, 3] = -wcs_offset[0]
-            wcs_transform[1, 3] = -wcs_offset[1]
-            wcs_transform[2, 3] = -wcs_offset[2]
-            ops_for_encoder.transform(wcs_transform)
+        # Now ops are in machine coords. Convert to command coords.
+        if self.wcs_origin_is_workarea_origin:
+            # Workarea origin is treated as coordinate zero.
+            # Convert from machine coords to workarea-relative coords.
+            ml, mt, mr, mb = self._work_margins
+            width, height = self._axis_extents
+
+            # Calculate workarea origin position in machine coords
+            # For reversed axes, the transform flips the sign
+            if self.x_axis_right:
+                if self.reverse_x_axis:
+                    x_offset = -mr
+                else:
+                    x_offset = mr
+            else:
+                if self.reverse_x_axis:
+                    x_offset = -ml
+                else:
+                    x_offset = ml
+
+            if self.y_axis_down:
+                if self.reverse_y_axis:
+                    y_offset = -mt
+                else:
+                    y_offset = mt
+            else:
+                if self.reverse_y_axis:
+                    y_offset = -mb
+                else:
+                    y_offset = mb
+
+            for command in ops_for_encoder.commands:
+                if isinstance(command, MovingCommand):
+                    base_end = command.end or (0, 0, 0)
+                    result_x = base_end[0] - x_offset
+                    result_y = base_end[1] - y_offset
+                    result_z = base_end[2]
+                    # For right/top origins, positive axis points toward
+                    # smaller machine coords, so negate the result
+                    command.end = (result_x, result_y, result_z)
+        else:
+            # Standard WCS mode: subtract WCS offset to convert from
+            # machine coordinates to command coordinates.
+            wcs_x, wcs_y, wcs_z = self.get_active_wcs_offset()
+            for command in ops_for_encoder.commands:
+                if isinstance(command, MovingCommand):
+                    base_end = command.end or (0, 0, 0)
+                    command.end = (
+                        base_end[0] - wcs_x,
+                        base_end[1] - wcs_y,
+                        base_end[2] - wcs_z,
+                    )
 
         return ops_for_encoder
 
@@ -1009,6 +1077,9 @@ class Machine:
                 "reverse_x_axis": self.reverse_x_axis,
                 "reverse_y_axis": self.reverse_y_axis,
                 "reverse_z_axis": self.reverse_z_axis,
+                "wcs_origin_is_workarea_origin": (
+                    self.wcs_origin_is_workarea_origin
+                ),
                 "heads": [head.to_dict() for head in self.heads],
                 "cameras": [camera.to_dict() for camera in self.cameras],
                 "hookmacros": {
@@ -1172,6 +1243,10 @@ class Machine:
             "soft_limits_enabled", ma.soft_limits_enabled
         )
 
+        ma.wcs_origin_is_workarea_origin = ma_data.get(
+            "wcs_origin_is_workarea_origin", False
+        )
+
         # Deserialize remaining hookmacros from the (potentially cleaned) data
         for trigger_name, macro_data in hook_data.items():
             try:
@@ -1210,14 +1285,98 @@ class Machine:
 
         return ma
 
+    def world_point_to_machine(
+        self,
+        x: float,
+        y: float,
+    ) -> Tuple[float, float]:
+        """
+        Converts a point from WORLD space to MACHINE space.
+
+        WORLD space: Bottom-Left (0,0), Y-up
+        MACHINE space: Based on origin and axis reversal settings
+
+        This is a pure coordinate transform - no size/box adjustment.
+
+        Args:
+            x: X coordinate in world space.
+            y: Y coordinate in world space.
+
+        Returns:
+            (x, y) in machine space.
+        """
+        width, height = self._axis_extents
+
+        # Origin corner transformation
+        if self.x_axis_right:
+            mx = width - x
+        else:
+            mx = x
+
+        if self.y_axis_down:
+            my = height - y
+        else:
+            my = y
+
+        # Axis reversal
+        if self.reverse_x_axis:
+            mx = -mx
+        if self.reverse_y_axis:
+            my = -my
+
+        return (mx, my)
+
+    def machine_point_to_world(
+        self,
+        x: float,
+        y: float,
+    ) -> Tuple[float, float]:
+        """
+        Converts a point from MACHINE space to WORLD space.
+
+        Inverse of world_point_to_machine().
+
+        Args:
+            x: X coordinate in machine space.
+            y: Y coordinate in machine space.
+
+        Returns:
+            (x, y) in world space.
+        """
+        width, height = self._axis_extents
+
+        # Reverse axis reversal
+        mx, my = x, y
+        if self.reverse_x_axis:
+            mx = -mx
+        if self.reverse_y_axis:
+            my = -my
+
+        # Reverse origin corner transformation
+        if self.x_axis_right:
+            wx = width - mx
+        else:
+            wx = mx
+
+        if self.y_axis_down:
+            wy = height - my
+        else:
+            wy = my
+
+        return (wx, wy)
+
     def world_to_machine(
         self,
         pos_world: Tuple[float, float],
         size_world: Tuple[float, float],
     ) -> Tuple[float, float]:
         """
-        Converts coordinates from internal World Space (Bottom-Left 0,0, Y-Up)
-        to Machine Space (User-facing, based on Origin setting).
+        Converts item position from WORLD space to MACHINE space.
+
+        This handles the item's bounding box - for origins at right/bottom,
+        the position refers to the top-left corner, which needs adjustment.
+
+        For point coordinates, use world_point_to_machine() instead.
 
         Args:
             pos_world: (x, y) position in world coordinates (top-left corner
@@ -1227,33 +1386,30 @@ class Machine:
         Returns:
             (x, y) position in machine coordinates.
         """
-        machine_width, machine_height = self._axis_extents
         wx, wy = pos_world
         w, h = size_world
+        width, height = self._axis_extents
 
-        # X Calculation
+        # X Calculation - origin corner + size adjustment
+        # Size adjustment must happen BEFORE axis reversal
         if self.x_axis_right:
-            # Origin is Right. World X=0 is Far Right in Machine Space?
-            # No, Internal World 0,0 is always Bottom-Left.
-            # If Machine Origin is Top-Right (X-Left, Y-Down):
-            # Machine X=0 is Right edge. Machine X increases to the Left.
-            # pos_machine_x = machine_width - pos_world_x - item_width
-            mx = machine_width - wx - w
+            mx = width - wx - w
         else:
-            # Origin is Left. Machine X increases to the Right (standard).
             mx = wx
 
-        # Y Calculation
+        # Y Calculation - origin corner + size adjustment
         if self.y_axis_down:
-            # Origin is Top. Machine Y=0 is Top edge. Machine Y increases Down.
-            # Internal World Y=0 is Bottom.
-            # pos_machine_y = machine_height - pos_world_y - item_height
-            my = machine_height - wy - h
+            my = height - wy - h
         else:
-            # Origin is Bottom. Machine Y increases Up (standard).
             my = wy
 
-        return mx, my
+        # Axis reversal - flip coordinates if axes are reversed
+        if self.reverse_x_axis:
+            mx = -mx
+        if self.reverse_y_axis:
+            my = -my
+
+        return (mx, my)
 
     def machine_to_world(
         self,
@@ -1261,8 +1417,12 @@ class Machine:
         size_world: Tuple[float, float],
     ) -> Tuple[float, float]:
         """
-        Converts coordinates from Machine Space (User-facing) back to
-        internal World Space (Bottom-Left 0,0, Y-Up).
+        Converts item position from MACHINE space to WORLD space.
+
+        This handles the item's bounding box - for origins at right/bottom,
+        the position refers to the top-left corner, which needs adjustment.
+
+        For point coordinates, use machine_point_to_world() instead.
 
         Args:
             pos_machine: (x, y) position in machine coordinates.
@@ -1271,24 +1431,25 @@ class Machine:
         Returns:
             (x, y) position in world coordinates.
         """
-        machine_width, machine_height = self._axis_extents
         mx, my = pos_machine
         w, h = size_world
+        width, height = self._axis_extents
 
-        # The logic is symmetric to world_to_machine.
+        # Reverse axis reversal first
+        if self.reverse_x_axis:
+            mx = -mx
+        if self.reverse_y_axis:
+            my = -my
 
-        # X Calculation
+        # Reverse origin corner transformation + size adjustment
         if self.x_axis_right:
-            # wx = machine_width - mx - w
-            wx = machine_width - mx - w
+            wx = width - mx - w
         else:
             wx = mx
 
-        # Y Calculation
         if self.y_axis_down:
-            # wy = machine_height - my - h
-            wy = machine_height - my - h
+            wy = height - my - h
         else:
             wy = my
 
-        return wx, wy
+        return (wx, wy)

@@ -35,7 +35,7 @@ class HardwarePage(TrackedPreferencesPage):
             digits=2,
         )
         x_extent_adjustment.set_value(self.machine.axis_extents[0])
-        self.x_extent_row.connect("changed", self.on_x_extent_changed)
+        self.x_extent_row.connect("notify::value", self.on_x_extent_changed)
         axes_group.add(self.x_extent_row)
 
         y_extent_adjustment = Gtk.Adjustment(
@@ -48,7 +48,7 @@ class HardwarePage(TrackedPreferencesPage):
             digits=2,
         )
         y_extent_adjustment.set_value(self.machine.axis_extents[1])
-        self.y_extent_row.connect("changed", self.on_y_extent_changed)
+        self.y_extent_row.connect("notify::value", self.on_y_extent_changed)
         axes_group.add(self.y_extent_row)
 
         origin_store = Gtk.StringList()
@@ -129,7 +129,7 @@ class HardwarePage(TrackedPreferencesPage):
             digits=2,
         )
         margin_left_adjustment.set_value(ml)
-        self.margin_left_row.connect("changed", self.on_margins_changed)
+        self.margin_left_row.connect("notify::value", self.on_margins_changed)
         work_area_group.add(self.margin_left_row)
 
         margin_top_adjustment = Gtk.Adjustment(
@@ -142,7 +142,7 @@ class HardwarePage(TrackedPreferencesPage):
             digits=2,
         )
         margin_top_adjustment.set_value(mt)
-        self.margin_top_row.connect("changed", self.on_margins_changed)
+        self.margin_top_row.connect("notify::value", self.on_margins_changed)
         work_area_group.add(self.margin_top_row)
 
         margin_right_adjustment = Gtk.Adjustment(
@@ -155,7 +155,7 @@ class HardwarePage(TrackedPreferencesPage):
             digits=2,
         )
         margin_right_adjustment.set_value(mr)
-        self.margin_right_row.connect("changed", self.on_margins_changed)
+        self.margin_right_row.connect("notify::value", self.on_margins_changed)
         work_area_group.add(self.margin_right_row)
 
         margin_bottom_adjustment = Gtk.Adjustment(
@@ -168,8 +168,24 @@ class HardwarePage(TrackedPreferencesPage):
             digits=2,
         )
         margin_bottom_adjustment.set_value(mb)
-        self.margin_bottom_row.connect("changed", self.on_margins_changed)
+        self.margin_bottom_row.connect(
+            "notify::value", self.on_margins_changed
+        )
         work_area_group.add(self.margin_bottom_row)
+
+        self.wcs_origin_row = Adw.SwitchRow()
+        self.wcs_origin_row.set_title(_("Workarea Origin Is Coordinate Zero"))
+        self.wcs_origin_row.set_subtitle(
+            _(
+                "Treat workarea origin as coordinate zero. "
+                "Hides WCS controls and uses workarea margins as offsets."
+            )
+        )
+        self.wcs_origin_row.set_active(machine.wcs_origin_is_workarea_origin)
+        self.wcs_origin_row.connect(
+            "notify::active", self.on_wcs_origin_is_workarea_origin_changed
+        )
+        work_area_group.add(self.wcs_origin_row)
 
         soft_limits_group = Adw.PreferencesGroup(title=_("Soft Limits"))
         soft_limits_group.set_description(
@@ -207,7 +223,9 @@ class HardwarePage(TrackedPreferencesPage):
         )
         limits = self.machine.soft_limits or (0, 0, *self.machine.axis_extents)
         soft_x_min_adjustment.set_value(limits[0])
-        self.soft_x_min_row.connect("changed", self.on_soft_limits_changed)
+        self.soft_x_min_row.connect(
+            "notify::value", self.on_soft_limits_changed
+        )
         self.soft_x_min_row.set_sensitive(has_custom_limits)
         soft_limits_group.add(self.soft_x_min_row)
 
@@ -225,7 +243,9 @@ class HardwarePage(TrackedPreferencesPage):
             digits=2,
         )
         soft_y_min_adjustment.set_value(limits[1])
-        self.soft_y_min_row.connect("changed", self.on_soft_limits_changed)
+        self.soft_y_min_row.connect(
+            "notify::value", self.on_soft_limits_changed
+        )
         self.soft_y_min_row.set_sensitive(has_custom_limits)
         soft_limits_group.add(self.soft_y_min_row)
 
@@ -243,7 +263,9 @@ class HardwarePage(TrackedPreferencesPage):
             digits=2,
         )
         soft_x_max_adjustment.set_value(limits[2])
-        self.soft_x_max_row.connect("changed", self.on_soft_limits_changed)
+        self.soft_x_max_row.connect(
+            "notify::value", self.on_soft_limits_changed
+        )
         self.soft_x_max_row.set_sensitive(has_custom_limits)
         soft_limits_group.add(self.soft_x_max_row)
 
@@ -261,7 +283,9 @@ class HardwarePage(TrackedPreferencesPage):
             digits=2,
         )
         soft_y_max_adjustment.set_value(limits[3])
-        self.soft_y_max_row.connect("changed", self.on_soft_limits_changed)
+        self.soft_y_max_row.connect(
+            "notify::value", self.on_soft_limits_changed
+        )
         self.soft_y_max_row.set_sensitive(has_custom_limits)
         soft_limits_group.add(self.soft_y_max_row)
 
@@ -317,17 +341,17 @@ class HardwarePage(TrackedPreferencesPage):
     def on_reverse_z_changed(self, row, _):
         self.machine.set_reverse_z_axis(row.get_active())
 
-    def on_x_extent_changed(self, spinrow):
+    def on_x_extent_changed(self, spinrow, _param):
         x = get_spinrow_float(spinrow)
         y = self.machine.axis_extents[1]
         self.machine.set_axis_extents(x, y)
 
-    def on_y_extent_changed(self, spinrow):
+    def on_y_extent_changed(self, spinrow, _param):
         x = self.machine.axis_extents[0]
         y = get_spinrow_float(spinrow)
         self.machine.set_axis_extents(x, y)
 
-    def on_margins_changed(self, _spinrow):
+    def on_margins_changed(self, _spinrow, _param):
         ml = get_spinrow_float(self.margin_left_row)
         mt = get_spinrow_float(self.margin_top_row)
         mr = get_spinrow_float(self.margin_right_row)
@@ -340,6 +364,9 @@ class HardwarePage(TrackedPreferencesPage):
         mb = max(0, min(mb, extent_h - mt - 1))
 
         self.machine.set_work_margins(ml, mt, mr, mb)
+
+    def on_wcs_origin_is_workarea_origin_changed(self, row, _):
+        self.machine.set_wcs_origin_is_workarea_origin(row.get_active())
 
     def on_soft_limits_enabled_changed(self, row, _):
         enabled = row.get_active()
@@ -358,7 +385,7 @@ class HardwarePage(TrackedPreferencesPage):
             self.machine._soft_limits = None
             self.machine.changed.send(self.machine)
 
-    def on_soft_limits_changed(self, _spinrow):
+    def on_soft_limits_changed(self, _spinrow, _param):
         if not self.soft_limits_enabled_row.get_active():
             return
         x_min = get_spinrow_float(self.soft_x_min_row)

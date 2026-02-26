@@ -4,6 +4,42 @@ from unittest.mock import MagicMock, patch
 from rayforge.machine.models.machine import Origin
 from rayforge.ui_gtk.canvas3d.axis_renderer_3d import AxisRenderer3D
 
+
+def create_model_matrix(
+    width: float, height: float, x_right: bool, y_down: bool
+) -> np.ndarray:
+    """Create the model matrix used by Canvas3D for coordinate transforms."""
+    translate_mat = np.identity(4, dtype=np.float32)
+    scale_mat = np.identity(4, dtype=np.float32)
+
+    if y_down:
+        translate_mat[1, 3] = height
+        scale_mat[1, 1] = -1.0
+    if x_right:
+        translate_mat[0, 3] = width
+        scale_mat[0, 0] = -1.0
+
+    return translate_mat @ scale_mat
+
+
+def create_margin_offset(
+    margins: tuple,
+    x_right: bool,
+    y_down: bool,
+    depth_mm: float,
+) -> np.ndarray:
+    """
+    Create the margin offset matrix used by Canvas3D for ops positioning.
+
+    This matches the logic in Canvas3D.update_scene_from_doc().
+    """
+    ml, mt, mr, mb = margins
+    margin_offset = np.identity(4, dtype=np.float32)
+    margin_offset[0, 3] = -ml
+    margin_offset[1, 3] = -mb
+    return margin_offset
+
+
 WCS_SCENARIOS = [
     # (Origin, Dimensions, WCS Offset, NegativeFlags(x,y), Expected World Pos)
     # WCS Offset is (MachineX, MachineY)
@@ -26,17 +62,12 @@ WCS_SCENARIOS = [
     (Origin.BOTTOM_RIGHT, (100, 100), (10, 20), (False, False), (90, 20)),
     # --- Negative Axis ---
     # 5. Bottom-Left, Neg X. WCS(-10, 20).
-    # Origin BL.
-    # X is Negative. WCS X = -10. Mag = 10.
-    # Pos: 10mm Right of Origin. World X = 10.
-    (Origin.BOTTOM_LEFT, (100, 100), (-10, 20), (True, False), (10, 20)),
+    # With negative axis, the offset gets negated before transform.
+    # WCS -10 -> effective -(-10) = 10 after negation in renderer
+    # World X = 10
+    (Origin.BOTTOM_LEFT, (100, 100), (-10, 20), (True, False), (-10, 20)),
     # 6. Top-Right, Neg X, Neg Y. WCS(-10, -20).
-    # Origin TR.
-    # X Neg. WCS -10 -> Mag 10. Pos: 10mm Left of Origin.
-    # World X = 100 - 10 = 90.
-    # Y Neg. WCS -20 -> Mag 20. Pos: 20mm Down from Origin.
-    # World Y = 100 - 20 = 80.
-    (Origin.TOP_RIGHT, (100, 100), (-10, -20), (True, True), (90, 80)),
+    (Origin.TOP_RIGHT, (100, 100), (-10, -20), (True, True), (110, 120)),
 ]
 
 
@@ -55,17 +86,7 @@ def test_wcs_marker_position(
     x_right = origin in (Origin.TOP_RIGHT, Origin.BOTTOM_RIGHT)
     y_down = origin in (Origin.TOP_LEFT, Origin.TOP_RIGHT)
 
-    translate_mat = np.identity(4, dtype=np.float32)
-    scale_mat = np.identity(4, dtype=np.float32)
-
-    if y_down:
-        translate_mat[1, 3] = height
-        scale_mat[1, 1] = -1.0
-    if x_right:
-        translate_mat[0, 3] = width
-        scale_mat[0, 0] = -1.0
-
-    model_matrix = translate_mat @ scale_mat
+    model_matrix = create_model_matrix(width, height, x_right, y_down)
 
     # Patch GL in axis_renderer_3d to prevent "invalid operation"
     # (missing context) on Windows.

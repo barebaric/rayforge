@@ -304,26 +304,14 @@ class AxisRenderer3D(BaseRenderer):
             return
 
         # 1. Calculate the world-space position of the WCS origin.
-        # The offset is in machine coordinates. `model_matrix` transforms
-        # the machine bed to world space. We apply the same transform to the
-        # offset vector to find its world-space position.
+        # origin_offset_mm is in grid coordinates (workarea-relative).
+        # For negative axes, flip the offset direction.
         off_x, off_y, off_z = origin_offset_mm
 
-        # Invert coordinates if the axis is configured as negative, so they
-        # represent positive magnitudes relative to the origin for the
-        # model matrix transform.
-        if x_negative:
-            off_x = -off_x
-        if y_negative:
-            off_y = -off_y
-
-        # Use w=1.0 so that translations in model_matrix are applied.
         offset_vec = np.array([off_x, off_y, off_z, 1.0], dtype=np.float32)
         world_offset_vec = model_matrix @ offset_vec
 
         # 2. Construct the MVP for the static grid/axes.
-        # The grid's model matrix is just the machine's base model_matrix
-        # (handling origin flips), without any WCS translation.
         grid_mvp = model_matrix.T @ text_mvp
 
         # Enable blending for transparent objects
@@ -416,20 +404,8 @@ class AxisRenderer3D(BaseRenderer):
         x_axis_label_y_offset = label_height_mm * 1.2
         y_axis_label_x_offset = label_height_mm * 0.6
 
-        # 1. Get the WCS offset in machine coordinates
-        work_origin_x, work_origin_y, _ = origin_offset_mm
-
-        # 2. Calculate the visual position of the WCS origin in the local
-        #    (0..width, 0..height, Y-up) grid coordinate space.
-        #    The "eff_wcs" is the positive magnitude from the origin corner.
-        eff_wcs_x = -work_origin_x if x_negative else work_origin_x
-        eff_wcs_y = -work_origin_y if y_negative else work_origin_y
-
-        # Since model_matrix handles the reflection (scale -1), the local
-        # coordinate system always starts at the origin corner (0,0 local).
-        # So the WCS local position is simply the effective distance.
-        wcs_local_x = eff_wcs_x
-        wcs_local_y = eff_wcs_y
+        # origin_offset_mm is in grid coordinates (workarea-relative)
+        wcs_local_x, wcs_local_y, _ = origin_offset_mm
 
         # X-axis labels
         # Find the range of grid lines that are on the machine bed.

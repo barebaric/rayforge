@@ -221,12 +221,13 @@ class MainWindow(Adw.ApplicationWindow):
                 display, provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
             )
 
-        # Determine initial machine dimensions for all canvases.
+        # Determine initial machine dimensions for canvases.
+        # 2D canvas uses axis extents, 3D canvas uses workarea.
         config = get_context().config
         if config.machine:
             width_mm, height_mm = config.machine.axis_extents
             area = config.machine.work_area
-            canvas_w, canvas_h = float(area[2]), float(area[3])
+            canvas3d_w, canvas3d_h = float(area[2]), float(area[3])
             y_down = config.machine.y_axis_down
             x_right = config.machine.x_axis_right
             reverse_x = config.machine.reverse_x_axis
@@ -234,7 +235,7 @@ class MainWindow(Adw.ApplicationWindow):
         else:
             # Default to a square aspect ratio if no machine is configured
             width_mm, height_mm = 100.0, 100.0
-            canvas_w, canvas_h = 100.0, 100.0
+            canvas3d_w, canvas3d_h = 100.0, 100.0
             y_down, x_right, reverse_x, reverse_y = (
                 False,
                 False,
@@ -357,8 +358,8 @@ class MainWindow(Adw.ApplicationWindow):
                 extent_frame = config.machine.get_visual_extent_frame()
             self._create_canvas3d(
                 context,
-                width_mm=canvas_w,
-                depth_mm=canvas_h,
+                width_mm=canvas3d_w,
+                depth_mm=canvas3d_h,
                 y_down=y_down,
                 x_right=x_right,
                 x_negative=reverse_x,
@@ -851,9 +852,14 @@ class MainWindow(Adw.ApplicationWindow):
     def _update_wcs_dropdown(self, machine: Optional[Machine], **kwargs):
         """
         Synchronizes the toolbar WCS dropdown with the machine's active state.
+        Hides WCS controls when wcs_origin_is_workarea_origin is True.
         """
         if not machine:
             return
+
+        # Hide WCS controls if workarea origin is treated as coordinate zero
+        show_wcs = not machine.wcs_origin_is_workarea_origin
+        self.toolbar.set_wcs_controls_visible(show_wcs)
 
         # We assume the toolbar knows the list of available WCS.
         # Just update the selected item.
@@ -1322,14 +1328,14 @@ class MainWindow(Adw.ApplicationWindow):
         if new_machine:
             width_mm, height_mm = new_machine.axis_extents
             area = new_machine.work_area
-            canvas_w, canvas_h = float(area[2]), float(area[3])
+            canvas3d_w, canvas3d_h = float(area[2]), float(area[3])
             y_down = new_machine.y_axis_down
             x_right = new_machine.x_axis_right
             reverse_x = new_machine.reverse_x_axis
             reverse_y = new_machine.reverse_y_axis
         else:
             width_mm, height_mm = 100.0, 100.0
-            canvas_w, canvas_h = 100.0, 100.0
+            canvas3d_w, canvas3d_h = 100.0, 100.0
             y_down, x_right, reverse_x, reverse_y = (
                 False,
                 False,
@@ -1354,8 +1360,8 @@ class MainWindow(Adw.ApplicationWindow):
                 extent_frame = new_machine.get_visual_extent_frame()
             self._create_canvas3d(
                 get_context(),
-                width_mm=canvas_w,
-                depth_mm=canvas_h,
+                width_mm=canvas3d_w,
+                depth_mm=canvas3d_h,
                 y_down=y_down,
                 x_right=x_right,
                 x_negative=reverse_x,
