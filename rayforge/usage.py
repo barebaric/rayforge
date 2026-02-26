@@ -1,11 +1,13 @@
 import json
 import locale
 import logging
+import platform
 import threading
 from typing import Optional
 import urllib.request
 import urllib.error
 
+from . import __version__
 from .config import UMAMI_URL, UMAMI_WEBSITE_ID
 
 logger = logging.getLogger(__name__)
@@ -17,6 +19,25 @@ def _get_language() -> str:
         return lang or "en-US"
     except Exception:
         return "en-US"
+
+
+def _get_os_info() -> str:
+    system = platform.system()
+    if system == "Linux":
+        try:
+            release = platform.freedesktop_os_release()
+            distro = release.get("ID", "linux")
+            version = release.get("VERSION_ID", "")
+            if version:
+                return f"linux/{distro}/{version}"
+            return f"linux/{distro}"
+        except Exception:
+            return "linux"
+    elif system == "Windows":
+        return f"windows/{platform.release()}"
+    elif system == "Darwin":
+        return f"macos/{platform.mac_ver()[0]}"
+    return system.lower()
 
 
 class UsageTracker:
@@ -38,6 +59,8 @@ class UsageTracker:
         self._enabled = False
         self._screen = self._get_screen_size()
         self._language = _get_language()
+        self._os = _get_os_info()
+        self._version = __version__ or "unknown"
         self._cache_token: Optional[str] = None
 
     def _get_screen_size(self) -> str:
@@ -73,6 +96,10 @@ class UsageTracker:
                 "hostname": "",
                 "url": full_url,
                 "referrer": "",
+                "data": {
+                    "app_version": self._version,
+                    "os": self._os,
+                },
             },
         )
 
