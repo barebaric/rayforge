@@ -434,7 +434,7 @@ class FileCmd:
                     f"item(s) at ({target_x:.2f}, {target_y:.2f}) mm"
                 )
         else:
-            self._fit_and_center_imported_items(items)
+            self._fit_and_position_at_reference_origin(items)
 
     def _commit_items_to_document(
         self,
@@ -719,16 +719,17 @@ class FileCmd:
 
         return min_x, min_y, max_x - min_x, max_y - min_y
 
-    def _fit_and_center_imported_items(self, items: List[DocItem]):
+    def _fit_and_position_at_reference_origin(self, items: List[DocItem]):
         """
         Scales imported items to fit within machine boundaries if they are too
-        large, preserving aspect ratio. Then, it centers the items in the
-        workspace.
+        large, preserving aspect ratio. Then, positions them at the reference
+        origin (workarea origin or WCS origin depending on machine settings).
         """
         config = get_context().config
         if not config or not config.machine:
             logger.warning(
-                "Cannot fit/center imported items: machine dimensions unknown."
+                "Cannot fit/position imported items: "
+                "machine dimensions unknown."
             )
             return
 
@@ -736,7 +737,7 @@ class FileCmd:
         # top-level containers (Layers).
         content_items = self._get_positionable_content(items)
         if not content_items:
-            logger.warning("No positionable content found to fit/center.")
+            logger.warning("No positionable content found to fit/position.")
             return
 
         machine = config.machine
@@ -744,14 +745,14 @@ class FileCmd:
         bbox = self._calculate_items_bbox(content_items)
         if not bbox:
             logger.warning(
-                "Cannot fit/center imported items: no bounding box."
+                "Cannot fit/position imported items: no bounding box."
             )
             return
 
         bbox_x, bbox_y, bbox_w, bbox_h = bbox
         area_x, area_y, area_w, area_h = machine.work_area
         logger.debug(
-            f"_fit_and_center_imported_items: bbox=({bbox_x:.2f}, "
+            f"_fit_and_position_at_reference_origin: bbox=({bbox_x:.2f}, "
             f"{bbox_y:.2f}, {bbox_w:.2f}, {bbox_h:.2f}), "
             f"work_area="
             f"({area_x:.2f}, {area_y:.2f}, {area_w:.2f}, {area_h:.2f})"
@@ -779,16 +780,35 @@ class FileCmd:
             for item in content_items:
                 item.matrix = transform_matrix @ item.matrix
 
-            # After scaling, recalculate the bounding box for centering
+            # After scaling, recalculate the bounding box for positioning
             bbox = self._calculate_items_bbox(content_items)
             if not bbox:
                 return  # Should not happen, but for safety
             bbox_x, bbox_y, bbox_w, bbox_h = bbox
 
-        # 2. Center the (possibly scaled) items
-        # Calculate translation to move bbox center to the work area center
-        delta_x = (area_w / 2) - (bbox_x + bbox_w / 2)
-        delta_y = (area_h / 2) - (bbox_y + bbox_h / 2)
+        # 2. Position at reference origin
+        # The reference origin is where the user expects (0,0) to be.
+        # get_reference_offset returns WORLD coords of the reference origin
+        # when wcs_origin_is_workarea_origin is True (the common case).
+        # We need to account for the item size based on the machine's origin
+        # corner to ensure the item stays within the work area.
+        ref_x, ref_y, __ = machine.get_reference_offset()
+
+        # Adjust target position based on origin corner.
+        # For right-origin machines, the item's left edge should be
+        # positioned so the item fits within the work area.
+        # For top-origin machines (y_axis_down), adjust Y similarly.
+        target_x = ref_x
+        target_y = ref_y
+
+        if machine.x_axis_right:
+            target_x = ref_x - bbox_w
+        if machine.y_axis_down:
+            target_y = ref_y - bbox_h
+
+        # Calculate translation to move bbox top-left to the target position
+        delta_x = target_x - bbox_x
+        delta_y = target_y - bbox_y
 
         # Apply the same translation to all top-level imported items
         if abs(delta_x) > 1e-9 or abs(delta_y) > 1e-9:
