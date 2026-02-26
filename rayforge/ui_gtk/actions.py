@@ -381,7 +381,7 @@ class ActionManager:
             # View
             "win.show_workpieces": "h",
             "win.show_tabs": "t",
-            "win.toggle_camera_view": "<Alt>c",
+            "win.toggle_camera_view": "<Ctrl><Alt>c",
             "win.toggle_control_panel": f"{PRIMARY_ACCEL}l",
             "win.toggle_gcode_preview": f"{PRIMARY_ACCEL}<Shift>g",
             "win.toggle_travel_view": f"{PRIMARY_ACCEL}<Shift>t",
@@ -392,13 +392,13 @@ class ActionManager:
             "win.view_iso": "7",
             "win.view_toggle_perspective": "p",
             # Object
-            "win.add_stock": "<Alt>s",
+            "win.add_stock": "<Ctrl><Alt>s",
             "win.new_sketch": f"{PRIMARY_ACCEL}n",
-            "win.add-tabs-equidistant": "<Alt>t",
+            "win.add-tabs-equidistant": "<Ctrl><Alt>t",
             # Arrange
             "win.group": f"{PRIMARY_ACCEL}g",
             "win.ungroup": f"{PRIMARY_ACCEL}u",
-            "win.split": "<Alt>w",
+            "win.split": "<Ctrl><Alt>w",
             "win.layer-move-up": f"{PRIMARY_ACCEL}Page_Up",
             "win.layer-move-down": f"{PRIMARY_ACCEL}Page_Down",
             "win.align-left": f"{PRIMARY_ACCEL}<Shift>Left",
@@ -409,7 +409,7 @@ class ActionManager:
             "win.align-v-center": f"{PRIMARY_ACCEL}<Shift>End",
             "win.spread-h": f"{PRIMARY_ACCEL}<Shift>h",
             "win.spread-v": f"{PRIMARY_ACCEL}<Shift>v",
-            "win.layout-pixel-perfect": "<Alt>a",
+            "win.layout-pixel-perfect": "<Ctrl><Alt>a",
             "win.flip-horizontal": "<Shift>h",
             "win.flip-vertical": "<Shift>v",
             # Machine & Help
