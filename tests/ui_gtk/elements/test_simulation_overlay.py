@@ -1,6 +1,7 @@
 """Tests for the preview overlay canvas element."""
 
 import pytest
+from unittest.mock import MagicMock
 from rayforge.core.ops import (
     Ops,
 )
@@ -107,3 +108,23 @@ def test_preview_overlay_empty_ops():
 
     assert overlay.get_step_count() == 0
     assert overlay.current_step == 0
+
+
+@pytest.mark.ui
+def test_preview_overlay_uses_hairline_strokes():
+    """Test overlay uses device-pixel hairline strokes when available."""
+    overlay = SimulationOverlay((100.0, 100.0))
+
+    ops = Ops()
+    ops.set_power(0.5)
+    ops.set_cut_speed(1000)
+    ops.move_to(0.0, 0.0, 0.0)
+    ops.line_to(10.0, 0.0, 0.0)
+    overlay.set_ops(ops)
+    overlay.set_step(1)
+
+    ctx = MagicMock()
+
+    overlay.draw(ctx)
+
+    assert ctx.set_hairline.called
