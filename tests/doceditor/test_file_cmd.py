@@ -299,43 +299,43 @@ class TestPositionNewlyImportedItems:
         assert pytest.approx(47.5) == wp2.pos[0]
         assert pytest.approx(47.5) == wp2.pos[1]
 
-    def test_position_none_uses_fit_and_center(
+    def test_position_none_uses_fit_and_position(
         self, file_cmd, sample_workpiece
     ):
-        """Test that None position triggers fit and center."""
+        """Test that None position triggers fit and position at origin."""
         with patch.object(
-            file_cmd, "_fit_and_center_imported_items"
-        ) as mock_fit_center:
+            file_cmd, "_fit_and_position_at_reference_origin"
+        ) as mock_fit_position:
             file_cmd._position_newly_imported_items([sample_workpiece], None)
 
-            mock_fit_center.assert_called_once_with([sample_workpiece])
+            mock_fit_position.assert_called_once_with([sample_workpiece])
 
 
-class TestFitAndCenterImportedItems:
-    """Tests for _fit_and_center_imported_items method."""
+class TestFitAndPositionAtReferenceOrigin:
+    """Tests for _fit_and_position_at_reference_origin method."""
 
-    def test_fit_and_center_no_config(self, file_cmd, sample_workpiece):
+    def test_fit_and_position_no_config(self, file_cmd, sample_workpiece):
         """Test that method returns early when no config is available."""
         with patch("rayforge.doceditor.file_cmd.get_context") as mock_ctx:
             mock_ctx.return_value.config = None
 
-            file_cmd._fit_and_center_imported_items([sample_workpiece])
+            file_cmd._fit_and_position_at_reference_origin([sample_workpiece])
 
-    def test_fit_and_center_no_machine(self, file_cmd, sample_workpiece):
+    def test_fit_and_position_no_machine(self, file_cmd, sample_workpiece):
         """Test that method returns early when no machine is configured."""
         with patch("rayforge.doceditor.file_cmd.get_context") as mock_ctx:
             mock_ctx.return_value.config.machine = None
 
-            file_cmd._fit_and_center_imported_items([sample_workpiece])
+            file_cmd._fit_and_position_at_reference_origin([sample_workpiece])
 
-    def test_fit_and_center_no_bbox(self, file_cmd, sample_workpiece):
+    def test_fit_and_position_no_bbox(self, file_cmd, sample_workpiece):
         """Test that method returns early when bbox cannot be calculated."""
         with patch.object(
             file_cmd, "_calculate_items_bbox", return_value=None
         ):
-            file_cmd._fit_and_center_imported_items([sample_workpiece])
+            file_cmd._fit_and_position_at_reference_origin([sample_workpiece])
 
-    def test_fit_and_center_scale_down(self, file_cmd):
+    def test_fit_and_position_scale_down(self, file_cmd):
         """Test scaling down items that are too large."""
         wp = WorkPiece(name="Large Item")
         wp.set_size(300.0, 200.0)
@@ -345,16 +345,19 @@ class TestFitAndCenterImportedItems:
             mock_machine = MagicMock()
             mock_machine.axis_extents = (200, 150)
             mock_machine.work_area = (0, 0, 200, 150)
+            mock_machine.get_reference_offset.return_value = (0, 0, 0)
+            mock_machine.x_axis_right = False
+            mock_machine.y_axis_down = False
             mock_ctx.return_value.config.machine = mock_machine
 
-            file_cmd._fit_and_center_imported_items([wp])
+            file_cmd._fit_and_position_at_reference_origin([wp])
 
             bbox = wp.bbox
             assert bbox[2] <= 200
             assert bbox[3] <= 150
 
-    def test_fit_and_center_center_items(self, file_cmd):
-        """Test centering items in the workspace."""
+    def test_fit_and_position_at_origin(self, file_cmd):
+        """Test positioning items at reference origin."""
         wp = WorkPiece(name="Item")
         wp.set_size(50.0, 50.0)
         wp.pos = (0.0, 0.0)
@@ -363,15 +366,17 @@ class TestFitAndCenterImportedItems:
             mock_machine = MagicMock()
             mock_machine.axis_extents = (200, 150)
             mock_machine.work_area = (0, 0, 200, 150)
+            mock_machine.get_reference_offset.return_value = (10, 20, 0)
+            mock_machine.x_axis_right = False
+            mock_machine.y_axis_down = False
             mock_ctx.return_value.config.machine = mock_machine
 
-            file_cmd._fit_and_center_imported_items([wp])
+            file_cmd._fit_and_position_at_reference_origin([wp])
 
             bbox = wp.bbox
-            center_x = bbox[0] + bbox[2] / 2
-            center_y = bbox[1] + bbox[3] / 2
-            assert abs(center_x - 100) < 1e-6
-            assert abs(center_y - 75) < 1e-6
+            # Item should be positioned at reference origin (10, 20)
+            assert abs(bbox[0] - 10) < 1e-6
+            assert abs(bbox[1] - 20) < 1e-6
 
 
 class TestCommitItemsToDocument:
