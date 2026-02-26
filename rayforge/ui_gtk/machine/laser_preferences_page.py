@@ -43,6 +43,7 @@ class LaserRow(Gtk.Box):
             label=self._get_subtitle_text(),
             halign=Gtk.Align.START,
             xalign=0,
+            wrap=True,
         )
         self.subtitle_label.add_css_class("dim-label")
         labels_box.append(self.subtitle_label)

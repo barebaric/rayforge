@@ -1,3 +1,4 @@
+from typing import cast
 from gi.repository import Adw, Gtk
 
 from ..shared.adwfix import get_spinrow_float
@@ -63,6 +64,17 @@ class HardwarePage(TrackedPreferencesPage):
             ),
             model=origin_store,
         )
+
+        # In languages with long text, the combo row doesn't allocate enough
+        # width for the dropdown, so we have to manually set the list box
+        # width. This is a bit hacky but it works.
+        combo_child_box = origin_combo_row.get_last_child()
+        if combo_child_box:
+            suffix_box = combo_child_box.get_last_child()
+            if suffix_box:
+                list_box = cast(Gtk.ListBox, suffix_box.get_first_child())
+                if list_box:
+                    list_box.set_size_request(100, -1)
         origin_combo_row.set_selected(
             {
                 Origin.BOTTOM_LEFT: 0,
