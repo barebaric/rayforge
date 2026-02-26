@@ -21,6 +21,10 @@ class AxisRenderer:
         grid_size_mm: float = 10.0,
         width_mm: float = 100.0,
         height_mm: float = 100.0,
+        margin_left_mm: float = 0.0,
+        margin_top_mm: float = 0.0,
+        margin_right_mm: float = 0.0,
+        margin_bottom_mm: float = 0.0,
         y_axis_down: bool = False,
         x_axis_right: bool = False,
         x_axis_negative: bool = False,
@@ -34,6 +38,10 @@ class AxisRenderer:
         self.grid_size_mm: float = grid_size_mm
         self.width_mm: float = width_mm
         self.height_mm: float = height_mm
+        self.margin_left_mm: float = margin_left_mm
+        self.margin_top_mm: float = margin_top_mm
+        self.margin_right_mm: float = margin_right_mm
+        self.margin_bottom_mm: float = margin_bottom_mm
         self.y_axis_down: bool = y_axis_down
         self.x_axis_right: bool = x_axis_right
         self.x_axis_negative: bool = x_axis_negative
@@ -43,7 +51,6 @@ class AxisRenderer:
         self.show_grid: bool = show_grid
         self.show_axis: bool = show_axis
         self.label_font_size: float = label_font_size
-        # Minimum pixel spacing for grid lines to avoid clutter
         self.min_grid_spacing_px = 50.0
 
     def get_content_layout(
@@ -313,28 +320,31 @@ class AxisRenderer:
         else:
             wcs_world_y = work_origin_y
 
+        # Workarea bounds (where axis lines are drawn)
+        workarea_left = self.margin_left_mm
+        workarea_right = self.width_mm - self.margin_right_mm
+        workarea_top = self.margin_bottom_mm
+        workarea_bottom = self.height_mm - self.margin_top_mm
+
         # Determine axis positions based on Y and X orientation
+        # Axes are drawn at workarea edges
         if self.y_axis_down:
-            # Y-down view: Origin at top. X axis is at the bottom.
-            x_axis_y = self.height_mm
-            y_axis_start_mm = (0, self.height_mm)
-            y_axis_end_mm = (0, 0)
+            x_axis_y = workarea_bottom
+            y_axis_start_mm = (workarea_right, workarea_bottom)
+            y_axis_end_mm = (workarea_right, workarea_top)
         else:
-            # Y-up view: Origin at bottom. X axis is at the bottom.
-            x_axis_y = 0.0
-            y_axis_start_mm = (0, 0)
-            y_axis_end_mm = (0, self.height_mm)
+            x_axis_y = workarea_top
+            y_axis_start_mm = (workarea_left, workarea_top)
+            y_axis_end_mm = (workarea_left, workarea_bottom)
 
         if self.x_axis_right:
-            # X-right view: Y axis is on the right side.
-            y_axis_start_mm = (self.width_mm, y_axis_start_mm[1])
-            y_axis_end_mm = (self.width_mm, y_axis_end_mm[1])
-            x_axis_start_mm = (self.width_mm, x_axis_y)
-            x_axis_end_mm = (0, x_axis_y)
+            y_axis_start_mm = (workarea_right, y_axis_start_mm[1])
+            y_axis_end_mm = (workarea_right, y_axis_end_mm[1])
+            x_axis_start_mm = (workarea_right, x_axis_y)
+            x_axis_end_mm = (workarea_left, x_axis_y)
         else:
-            # X-left view: Y axis is on the left side.
-            x_axis_start_mm = (0, x_axis_y)
-            x_axis_end_mm = (self.width_mm, x_axis_y)
+            x_axis_start_mm = (workarea_left, x_axis_y)
+            x_axis_end_mm = (workarea_right, x_axis_y)
 
         # Draw physical bed borders
         x_start_px = view_transform.transform_point(x_axis_start_mm)
@@ -351,13 +361,14 @@ class AxisRenderer:
 
         # --- Draw Labels ---
         corner_x_label_value = None
-        world_x_for_y_labels = self.width_mm if self.x_axis_right else 0
+        world_x_for_y_labels = (
+            workarea_right if self.x_axis_right else workarea_left
+        )
 
         # Draw X Labels
-        # Calculate label iterations relative to WCS Origin, constrained to
-        # Bed Width
-        min_delta_x = -wcs_world_x
-        max_delta_x = self.width_mm - wcs_world_x
+        # Constrained to workarea width
+        min_delta_x = workarea_left - wcs_world_x
+        max_delta_x = workarea_right - wcs_world_x
         k_start_x = math.ceil(min_delta_x / grid_size_mm)
         k_end_x = math.floor(max_delta_x / grid_size_mm)
 
@@ -391,8 +402,8 @@ class AxisRenderer:
             ctx.show_text(label)
 
         # Draw Y Labels
-        min_delta_y = -wcs_world_y
-        max_delta_y = self.height_mm - wcs_world_y
+        min_delta_y = workarea_top - wcs_world_y
+        max_delta_y = workarea_bottom - wcs_world_y
 
         k_start_y = math.ceil(min_delta_y / grid_size_mm)
         k_end_y = math.floor(max_delta_y / grid_size_mm)
@@ -468,6 +479,14 @@ class AxisRenderer:
 
     def set_height_mm(self, height_mm: float):
         self.height_mm = height_mm
+
+    def set_margins_mm(
+        self, left: float, top: float, right: float, bottom: float
+    ):
+        self.margin_left_mm = left
+        self.margin_top_mm = top
+        self.margin_right_mm = right
+        self.margin_bottom_mm = bottom
 
     def set_x_axis_right(self, x_axis_right: bool):
         self.x_axis_right = x_axis_right

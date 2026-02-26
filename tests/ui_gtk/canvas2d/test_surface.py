@@ -23,6 +23,8 @@ def surface(mock_work_origin):
     # Inject dependencies that would usually be created in __init__
     s._work_origin_element = mock_work_origin
     s.queue_draw = MagicMock()
+    s.width_mm = 100.0
+    s.height_mm = 100.0
 
     return s
 
@@ -108,6 +110,8 @@ def test_wcs_visual_marker_location(surface, scenario):
     machine.origin = scenario["origin"]
     machine.reverse_x_axis = scenario["reverse_x"]
     machine.reverse_y_axis = scenario["reverse_y"]
+    machine.wcs_origin_is_workarea_origin = False
+    machine.work_margins = (0.0, 0.0, 0.0, 0.0)
 
     # Configure derivative properties based on logic in Machine model
     machine.y_axis_down = scenario["origin"] in (
@@ -120,6 +124,10 @@ def test_wcs_visual_marker_location(surface, scenario):
     )
 
     machine.get_active_wcs_offset.return_value = scenario["wcs"]
+    machine.get_visual_wcs_offset.return_value = (
+        -scenario["wcs"][0] if scenario["reverse_x"] else scenario["wcs"][0],
+        -scenario["wcs"][1] if scenario["reverse_y"] else scenario["wcs"][1],
+    )
 
     # Attach machine to surface
     surface.machine = machine

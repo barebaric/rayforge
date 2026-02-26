@@ -276,8 +276,7 @@ class Canvas3D(Gtk.GLArea):
         if machine:
             machine.wcs_updated.connect(self._on_wcs_updated)
             machine.changed.connect(self._on_wcs_updated)
-            # Initialize with current state
-            self._wcs_offset_mm = machine.get_active_wcs_offset()
+            self._on_wcs_updated(machine)
 
     @property
     def doc(self) -> "Doc":
@@ -291,7 +290,30 @@ class Canvas3D(Gtk.GLArea):
 
     def _on_wcs_updated(self, machine: "Machine", **kwargs):
         """Handler for when the machine's WCS state changes."""
-        self._wcs_offset_mm = machine.get_active_wcs_offset()
+        if machine.wcs_origin_is_workarea_origin:
+            self._wcs_offset_mm = (0.0, 0.0, 0.0)
+        else:
+            wcs_x, wcs_y, wcs_z = machine.get_active_wcs_offset()
+            ml, mt, mr, mb = machine.work_margins
+
+            if machine.x_axis_right:
+                machine_x = -mr
+            else:
+                machine_x = -ml
+            if machine.y_axis_down:
+                machine_y = -mt
+            else:
+                machine_y = -mb
+
+            if machine.reverse_x_axis:
+                local_x = machine_x - wcs_x
+            else:
+                local_x = machine_x + wcs_x
+            if machine.reverse_y_axis:
+                local_y = machine_y - wcs_y
+            else:
+                local_y = machine_y + wcs_y
+            self._wcs_offset_mm = (local_x, local_y, wcs_z)
         self.queue_render()
 
     def _on_pipeline_state_changed(self, sender, *, is_processing: bool):
@@ -937,6 +959,14 @@ class Canvas3D(Gtk.GLArea):
         # 1. Quickly generate the lightweight scene description
         scene_description = generate_scene_description(self.doc, self.pipeline)
 
+        # Calculate margin offset for positioning ops/textures in workarea
+        margin_offset = np.identity(4, dtype=np.float32)
+        machine = self.context.config.machine
+        if machine:
+            ml, mt, mr, mb = machine.work_margins
+            margin_offset[0, 3] = -ml
+            margin_offset[1, 3] = -mb
+
         # 2. Handle texture instances immediately on the main thread (fast)
         self.texture_renderer.clear()
         for item in scene_description.render_items:
@@ -947,14 +977,19 @@ class Canvas3D(Gtk.GLArea):
             # Textures are part of the StepArtifact "render bundle"
             if isinstance(artifact, StepRenderArtifact):
                 for tex_instance in artifact.texture_instances:
+                    # Apply margin offset to texture transform
+                    adjusted_transform = (
+                        margin_offset @ tex_instance.world_transform
+                    )
                     self.texture_renderer.add_instance(
                         tex_instance.texture_data,
-                        tex_instance.world_transform,
+                        adjusted_transform,
                     )
 
         # 3. Schedule the expensive vector preparation for a background thread
-        # Content always uses Identity transform (Y-up internal matches view).
-        content_model_matrix = np.identity(4, dtype=np.float32)
+        # Ops vertices are in machine coordinates, but the 3D canvas shows
+        # the workarea. Apply margin offset to position them correctly.
+        content_model_matrix = margin_offset
         self._schedule_scene_preparation(
             scene_description, content_model_matrix
         )

@@ -40,18 +40,26 @@ class TransformPropertyProvider(PropertyProvider):
         item = self.items[0]
         machine = get_context().machine
 
-        # Calculate X/Y position in WCS coordinates
-        # (machine coordinates minus the active WCS offset)
+        # Calculate X/Y position in REFERENCE coordinates
         if machine:
             pos_machine = machine.world_to_machine(item.pos, item.size)
             pos_machine_x, pos_machine_y = pos_machine
 
-            # Convert machine coordinates to WCS coordinates
-            wcs_offset = machine.get_active_wcs_offset()
-            pos_wcs_x = pos_machine_x - wcs_offset[0]
-            pos_wcs_y = pos_machine_y - wcs_offset[1]
+            # Get reference offset
+            # - WCS mode: offset is in MACHINE space, use directly
+            # - Workarea mode: offset is in WORLD space, transform to MACHINE
+            if machine.wcs_origin_is_workarea_origin:
+                offset_world = machine.get_reference_offset()
+                offset_machine = machine.world_point_to_machine(
+                    offset_world[0], offset_world[1]
+                )
+            else:
+                offset_machine = machine.get_reference_offset()[:2]
 
-            # Update subtitles to indicate WCS coordinate system
+            pos_ref_x = pos_machine_x - offset_machine[0]
+            pos_ref_y = pos_machine_y - offset_machine[1]
+
+            # Update subtitles to indicate coordinate system
             wcs_name = machine.active_wcs
             self.x_row.set_subtitle(
                 _("Relative to {wcs} origin").format(wcs=wcs_name)
@@ -61,7 +69,7 @@ class TransformPropertyProvider(PropertyProvider):
             )
         else:
             # Fallback if no machine
-            pos_wcs_x, pos_wcs_y = item.pos
+            pos_ref_x, pos_ref_y = item.pos
             self.x_row.set_subtitle("")
             self.y_row.set_subtitle("")
 
@@ -84,8 +92,8 @@ class TransformPropertyProvider(PropertyProvider):
             # Round values before comparing and setting
             width_rounded = round(size_world[0], width_digits)
             height_rounded = round(size_world[1], height_digits)
-            x_rounded = round(pos_wcs_x, x_digits)
-            y_rounded = round(pos_wcs_y, y_digits)
+            x_rounded = round(pos_ref_x, x_digits)
+            y_rounded = round(pos_ref_y, y_digits)
             angle_rounded = round(-angle_local, angle_digits)
             shear_rounded = round(shear_local, shear_digits)
 
@@ -341,14 +349,23 @@ class TransformPropertyProvider(PropertyProvider):
                 logger.debug("X change ignored, no value from UI.")
                 return
 
-            # Convert WCS coordinates to machine coordinates
+            # Convert reference coordinates to machine coordinates
             machine = get_context().machine
-            wcs_offset = (
-                machine.get_active_wcs_offset() if machine else (0.0, 0.0, 0.0)
-            )
-            new_x_machine = new_x_wcs + wcs_offset[0]
+            if machine:
+                if machine.wcs_origin_is_workarea_origin:
+                    # Workarea mode: offset is in WORLD space, transform it
+                    offset_world = machine.get_reference_offset()
+                    offset_machine = machine.world_point_to_machine(
+                        offset_world[0], offset_world[1]
+                    )
+                else:
+                    # WCS mode: offset is already in MACHINE space
+                    offset_machine = machine.get_reference_offset()[:2]
+            else:
+                offset_machine = (0.0, 0.0)
+            new_x_machine = new_x_wcs + offset_machine[0]
             current_y_wcs = self.y_row.get_value()
-            current_y_machine = current_y_wcs + wcs_offset[1]
+            current_y_machine = current_y_wcs + offset_machine[1]
 
             logger.debug(f"Handling X change to {new_x_machine} (machine)")
             self.editor.transform.set_position(
@@ -369,14 +386,23 @@ class TransformPropertyProvider(PropertyProvider):
                 logger.debug("Y change ignored, no value from UI.")
                 return
 
-            # Convert WCS coordinates to machine coordinates
+            # Convert reference coordinates to machine coordinates
             machine = get_context().machine
-            wcs_offset = (
-                machine.get_active_wcs_offset() if machine else (0.0, 0.0, 0.0)
-            )
-            new_y_machine = new_y_wcs + wcs_offset[1]
+            if machine:
+                if machine.wcs_origin_is_workarea_origin:
+                    # Workarea mode: offset is in WORLD space, transform it
+                    offset_world = machine.get_reference_offset()
+                    offset_machine = machine.world_point_to_machine(
+                        offset_world[0], offset_world[1]
+                    )
+                else:
+                    # WCS mode: offset is already in MACHINE space
+                    offset_machine = machine.get_reference_offset()[:2]
+            else:
+                offset_machine = (0.0, 0.0)
+            new_y_machine = new_y_wcs + offset_machine[1]
             current_x_wcs = self.x_row.get_value()
-            current_x_machine = current_x_wcs + wcs_offset[0]
+            current_x_machine = current_x_wcs + offset_machine[0]
 
             logger.debug(f"Handling Y change to {new_y_machine} (machine)")
             self.editor.transform.set_position(
@@ -514,17 +540,25 @@ class TransformPropertyProvider(PropertyProvider):
         if not self.items:
             return
 
-        # Reset to WCS origin (X=0 in WCS coordinates)
-        # This means machine X = WCS offset X
+        # Reset to coordinate origin (X=0 in reference coordinates)
         machine = get_context().machine
-        wcs_offset = (
-            machine.get_active_wcs_offset() if machine else (0.0, 0.0, 0.0)
-        )
-        target_x_machine = wcs_offset[0]
+        if machine:
+            if machine.wcs_origin_is_workarea_origin:
+                # Workarea mode: offset is in WORLD space, transform it
+                offset_world = machine.get_reference_offset()
+                offset_machine = machine.world_point_to_machine(
+                    offset_world[0], offset_world[1]
+                )
+            else:
+                # WCS mode: offset is already in MACHINE space
+                offset_machine = machine.get_reference_offset()[:2]
+        else:
+            offset_machine = (0.0, 0.0)
+        target_x_machine = offset_machine[0]
 
-        # Get current Y in WCS coordinates and convert to machine
+        # Get current Y in reference coordinates and convert to machine
         current_y_wcs = self.y_row.get_value()
-        current_y_machine = current_y_wcs + wcs_offset[1]
+        current_y_machine = current_y_wcs + offset_machine[1]
 
         self.editor.transform.set_position(
             self.items, target_x_machine, current_y_machine
@@ -534,17 +568,25 @@ class TransformPropertyProvider(PropertyProvider):
         if not self.items:
             return
 
-        # Reset to WCS origin (Y=0 in WCS coordinates)
-        # This means machine Y = WCS offset Y
+        # Reset to coordinate origin (Y=0 in reference coordinates)
         machine = get_context().machine
-        wcs_offset = (
-            machine.get_active_wcs_offset() if machine else (0.0, 0.0, 0.0)
-        )
-        target_y_machine = wcs_offset[1]
+        if machine:
+            if machine.wcs_origin_is_workarea_origin:
+                # Workarea mode: offset is in WORLD space, transform it
+                offset_world = machine.get_reference_offset()
+                offset_machine = machine.world_point_to_machine(
+                    offset_world[0], offset_world[1]
+                )
+            else:
+                # WCS mode: offset is already in MACHINE space
+                offset_machine = machine.get_reference_offset()[:2]
+        else:
+            offset_machine = (0.0, 0.0)
+        target_y_machine = offset_machine[1]
 
-        # Get current X in WCS coordinates and convert to machine
+        # Get current X in reference coordinates and convert to machine
         current_x_wcs = self.x_row.get_value()
-        current_x_machine = current_x_wcs + wcs_offset[0]
+        current_x_machine = current_x_wcs + offset_machine[0]
 
         self.editor.transform.set_position(
             self.items, current_x_machine, target_y_machine

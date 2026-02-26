@@ -2,6 +2,40 @@ import cairo
 from ...canvas import CanvasElement
 
 
+class WorkareaBackgroundElement(CanvasElement):
+    """
+    A non-interactive CanvasElement that draws a gray background
+    for the workarea within the machine bed.
+    """
+
+    def __init__(self, **kwargs):
+        super().__init__(
+            x=0,
+            y=0,
+            width=200.0,
+            height=200.0,
+            selectable=False,
+            draggable=False,
+            clip=False,
+            **kwargs,
+        )
+        self._color = (0.8, 0.8, 0.8, 0.1)
+
+    def set_color(self, r: float, g: float, b: float, a: float = 1.0):
+        """Sets the background color."""
+        self._color = (r, g, b, a)
+        if self.canvas:
+            self.canvas.queue_draw()
+
+    def draw(self, ctx: cairo.Context):
+        """Renders the workarea background as a filled rectangle."""
+        ctx.save()
+        ctx.set_source_rgba(*self._color)
+        ctx.rectangle(0, 0, self.width, self.height)
+        ctx.fill()
+        ctx.restore()
+
+
 class AxisExtentFrameElement(CanvasElement):
     """
     A non-interactive CanvasElement that draws a red frame outline

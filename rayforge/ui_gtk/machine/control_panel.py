@@ -78,11 +78,11 @@ class MachineControlPanel(Gtk.Box):
 
     def _setup_wcs_controls(self, parent):
         """Set up the Work Coordinate System controls."""
-        wcs_group = Adw.PreferencesGroup()
-        wcs_group.set_margin_top(12)
-        wcs_group.set_margin_bottom(12)
-        wcs_group.set_valign(Gtk.Align.CENTER)
-        parent.append(wcs_group)
+        self.wcs_group = Adw.PreferencesGroup()
+        self.wcs_group.set_margin_top(12)
+        self.wcs_group.set_margin_bottom(12)
+        self.wcs_group.set_valign(Gtk.Align.CENTER)
+        parent.append(self.wcs_group)
 
         # Create string list from machine supported WCS
         if self.machine:
@@ -95,7 +95,7 @@ class MachineControlPanel(Gtk.Box):
         self.wcs_row.connect(
             "notify::selected", self._on_wcs_selection_changed
         )
-        wcs_group.add(self.wcs_row)
+        self.wcs_group.add(self.wcs_row)
 
         self.offsets_row = Adw.ActionRow(title=_("Current Offsets"))
 
@@ -106,18 +106,18 @@ class MachineControlPanel(Gtk.Box):
         self.edit_offsets_btn.connect("clicked", self._on_edit_offsets_clicked)
         self.offsets_row.add_suffix(self.edit_offsets_btn)
 
-        wcs_group.add(self.offsets_row)
+        self.wcs_group.add(self.offsets_row)
 
         self.position_row = Adw.ActionRow(title=_("Current Position"))
-        wcs_group.add(self.position_row)
+        self.wcs_group.add(self.position_row)
 
         # Zeroing Buttons in one ActionRow
-        zero_row = Adw.ActionRow(title=_("Zero Axes"))
-        wcs_group.add(zero_row)
+        self.zero_row = Adw.ActionRow(title=_("Zero Axes"))
+        self.wcs_group.add(self.zero_row)
 
         zero_button_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
         zero_button_box.set_spacing(6)
-        zero_row.add_suffix(zero_button_box)
+        self.zero_row.add_suffix(zero_button_box)
 
         self.zero_x_btn = Gtk.Button(label=_("X"))
         self.zero_x_btn.add_css_class("flat")
@@ -172,7 +172,7 @@ class MachineControlPanel(Gtk.Box):
         )
         self.speed_helper.set_value_in_base_units(1000)
         self.speed_helper.changed.connect(self._on_speed_changed)
-        wcs_group.add(self.speed_row)
+        self.wcs_group.add(self.speed_row)
 
         # Jog Distance row
         distance_adjustment = Gtk.Adjustment(
@@ -185,7 +185,7 @@ class MachineControlPanel(Gtk.Box):
             digits=1,
         )
         self.distance_row.connect("changed", self._on_distance_changed)
-        wcs_group.add(self.distance_row)
+        self.wcs_group.add(self.distance_row)
 
         # Initial update
         self._update_wcs_ui()
@@ -322,6 +322,12 @@ class MachineControlPanel(Gtk.Box):
         """Update the WCS group widgets based on machine state."""
         if not self.machine:
             return
+
+        # Hide WCS-specific controls when workarea origin is coordinate zero
+        hide_wcs_controls = self.machine.wcs_origin_is_workarea_origin
+        self.wcs_row.set_visible(not hide_wcs_controls)
+        self.offsets_row.set_visible(not hide_wcs_controls)
+        self.zero_row.set_visible(not hide_wcs_controls)
 
         # Update active selection in dropdown
         current_wcs = self.machine.active_wcs

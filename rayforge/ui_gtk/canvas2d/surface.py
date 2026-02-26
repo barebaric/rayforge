@@ -25,7 +25,10 @@ from .elements.stock import StockElement
 from .elements.tab_handle import TabHandleElement
 from .elements.workpiece import WorkPieceElement
 from .elements.work_origin import WorkOriginElement
-from .elements.axis_extent_frame import AxisExtentFrameElement
+from .elements.axis_extent_frame import (
+    AxisExtentFrameElement,
+    WorkareaBackgroundElement,
+)
 from . import context_menu
 
 if TYPE_CHECKING:
@@ -58,8 +61,11 @@ class WorkSurface(WorldSurface):
         self._tracked_axis_extents: Tuple[float, float] = (0.0, 0.0)
         if machine:
             self._tracked_axis_extents = machine.axis_extents
-            surf_x, surf_y, surf_w, surf_h = machine.work_area
-            width_mm, height_mm = float(surf_w), float(surf_h)
+            # Canvas shows full machine bed, not just workarea
+            width_mm, height_mm = (
+                float(machine.axis_extents[0]),
+                float(machine.axis_extents[1]),
+            )
             y_axis_down = machine.y_axis_down
             x_axis_right = machine.x_axis_right
             reverse_x_axis = machine.reverse_x_axis
@@ -111,7 +117,17 @@ class WorkSurface(WorldSurface):
         self._work_origin_element = WorkOriginElement()
         self.root.add(self._work_origin_element)
 
-        # Add the Axis Extent Frame element (red frame around work surface)
+        # Add the Workarea Background element (gray background for workarea)
+        self._workarea_bg_element = WorkareaBackgroundElement()
+        self._workarea_bg_element.set_visible(False)
+        self.root.add(self._workarea_bg_element)
+        # Move to back so it's behind everything
+        self.root.children.insert(0, self.root.children.pop())
+
+        # Clear root background since we draw workarea background separately
+        self.root.background = (0, 0, 0, 0)
+
+        # Add the Axis Extent Frame element (red frame around machine bed)
         self._extent_frame_element = AxisExtentFrameElement()
         self._extent_frame_element.set_visible(False)
         self.root.add(self._extent_frame_element)
@@ -543,18 +559,40 @@ class WorkSurface(WorldSurface):
 
     def _on_wcs_updated(self, machine: Machine):
         """Handles updates to the machine's WCS state."""
-        offset = machine.get_active_wcs_offset()
-        offset_x, offset_y, _ = offset
+        if machine.wcs_origin_is_workarea_origin:
+            # Workarea origin is coordinate zero
+            # Show marker at the origin corner (where axis labels show 0,0)
+            ml, mt, mr, mb = machine.work_margins
+            canvas_w, canvas_h = self.width_mm, self.height_mm
 
-        # Map Machine Coordinates (from WCS) to World Canvas Coordinates for
-        # placement
-        canvas_x, canvas_y = self._machine_coords_to_canvas(offset_x, offset_y)
+            # Origin corner position matches axis renderer logic
+            if machine.x_axis_right:
+                origin_x = canvas_w - mr
+            else:
+                origin_x = ml
+
+            if machine.y_axis_down:
+                origin_y = canvas_h - mt
+            else:
+                origin_y = mb
+
+            canvas_x, canvas_y = origin_x, origin_y
+        else:
+            wcs_x, wcs_y = machine.get_visual_wcs_offset()
+            canvas_w, canvas_h = self.width_mm, self.height_mm
+
+            # Apply origin corner transform
+            if machine.x_axis_right:
+                canvas_x = canvas_w - wcs_x
+            else:
+                canvas_x = wcs_x
+            if machine.y_axis_down:
+                canvas_y = canvas_h - wcs_y
+            else:
+                canvas_y = wcs_y
 
         self._work_origin_element.set_pos(canvas_x, canvas_y)
-
-        # Hide the origin element if the offset is zero.
-        is_at_origin = offset_x == 0.0 and offset_y == 0.0
-        self._work_origin_element.set_visible(not is_at_origin)
+        self._work_origin_element.set_visible(True)
         self.queue_draw()
 
     def _on_machine_state_changed(self, machine: Machine, state):
@@ -565,24 +603,52 @@ class WorkSurface(WorldSurface):
             self.set_laser_dot_position(m_x, m_y)
 
     def do_snapshot(self, snapshot: Gtk.Snapshot) -> None:
-        # Override the base WorldSurface snapshot to pass in the WCS offset.
         self._update_theme_colors()
 
         width, height = self.get_width(), self.get_height()
         ctx = snapshot.append_cairo(Graphene.Rect().init(0, 0, width, height))
 
-        # Get the current WCS offset from the machine model
-        offset = (
-            self.machine.get_active_wcs_offset() if self.machine else (0, 0, 0)
-        )
+        # Get offset for axis labels (where 0,0 should appear)
+        if self.machine:
+            if self.machine.wcs_origin_is_workarea_origin:
+                # Workarea origin is coordinate zero
+                # Labels should show 0,0 at workarea origin corner
+                ml, mt, mr, mb = self.machine.work_margins
+                # Axis renderer expects: wcs_world = width - origin_x
+                # We want wcs_world = workarea_right = width - mr
+                # So origin_x = mr for right, ml for left
+                # Similarly for Y
+                # For negative axes, renderer flips sign, so pre-negate
+                if self.machine.x_axis_right:
+                    origin_x = mr
+                else:
+                    origin_x = ml
+                if self.machine.y_axis_down:
+                    origin_y = mt
+                else:
+                    origin_y = mb
 
-        # Draw grid and axes first, relative to the WCS offset.
+                if self.machine.reverse_x_axis:
+                    origin_x = -origin_x
+                if self.machine.reverse_y_axis:
+                    origin_y = -origin_y
+
+                origin_offset_mm = (origin_x, origin_y, 0.0)
+            else:
+                # WCS mode: labels relative to WCS origin
+                wcs_x, wcs_y, wcs_z = self.machine.get_active_wcs_offset()
+                origin_offset_mm = (wcs_x, wcs_y, wcs_z)
+        else:
+            origin_offset_mm = (0.0, 0.0, 0.0)
+
         self._axis_renderer.draw_grid_and_labels(
-            ctx, self.view_transform, width, height, origin_offset_mm=offset
+            ctx,
+            self.view_transform,
+            width,
+            height,
+            origin_offset_mm=origin_offset_mm,
         )
 
-        # We call Canvas.do_snapshot directly to bypass WorldSurface,
-        # which would draw the grid and labels again without the WCS offset.
         Canvas.do_snapshot(self, snapshot)
 
     def _rebuild_view_transform(self) -> bool:
@@ -884,9 +950,6 @@ class WorkSurface(WorldSurface):
     def _on_machine_changed(self, machine: Optional[Machine]):
         """
         Handles incremental updates from the currently-assigned machine model.
-        If core properties like axis extents or axis direction change, it
-        performs a full view reset. For margin changes, it only updates the
-        extent frame, preserving pan/zoom and canvas size.
         """
         logger.debug(
             "Machine changed signal received: "
@@ -897,10 +960,7 @@ class WorkSurface(WorldSurface):
             return
 
         extent_w, extent_h = machine.axis_extents
-        surf_w, surf_h = machine.work_area[2], machine.work_area[3]
-
         extent_changed = (extent_w, extent_h) != self._tracked_axis_extents
-        size_changed = (surf_w, surf_h) != (self.width_mm, self.height_mm)
         y_axis_changed = machine.y_axis_down != self._axis_renderer.y_axis_down
         x_axis_changed = (
             machine.x_axis_right != self._axis_renderer.x_axis_right
@@ -912,19 +972,21 @@ class WorkSurface(WorldSurface):
             machine.reverse_y_axis != self._axis_renderer.y_axis_negative
         )
 
-        if extent_changed:
-            self.reset_view()
-        elif (
-            x_axis_changed
+        logger.debug(
+            f"_on_machine_changed: extent_changed={extent_changed}, "
+            f"extents=({extent_w}, {extent_h}), "
+            f"tracked={self._tracked_axis_extents}, "
+            f"margins={machine.work_margins}"
+        )
+
+        if (
+            extent_changed
+            or x_axis_changed
             or y_axis_changed
             or x_reverse_changed
             or y_reverse_changed
         ):
             self.reset_view()
-        elif size_changed:
-            self.set_size(float(surf_w), float(surf_h))
-            self._update_extent_frame()
-            self.queue_draw()
         else:
             self._update_extent_frame()
             self._sync_camera_elements()
@@ -932,13 +994,14 @@ class WorkSurface(WorldSurface):
 
     def reset_view(self):
         """
-        Resets the view to fit the given machine's properties, including a
-        full reset of pan, zoom, and size.
+        Resets the view to fit the given machine's properties.
         """
         if not self.machine:
-            # If no machine, reset to a default view
             self._tracked_axis_extents = (100, 100)
             self.set_size(100.0, 100.0)
+            self._axis_renderer.set_width_mm(100.0)
+            self._axis_renderer.set_height_mm(100.0)
+            self._axis_renderer.set_margins_mm(0.0, 0.0, 0.0, 0.0)
             self._axis_renderer.set_x_axis_right(False)
             self._axis_renderer.set_y_axis_down(False)
             self._axis_renderer.set_x_axis_negative(False)
@@ -948,20 +1011,25 @@ class WorkSurface(WorldSurface):
             self._sync_camera_elements()
             return
 
-        surf_x, surf_y, surf_w, surf_h = self.machine.work_area
-        width_mm = float(surf_w)
-        height_mm = float(surf_h)
+        # Canvas shows full machine bed
+        width_mm, height_mm = self.machine.axis_extents
 
         logger.debug(
             f"Resetting view for machine '{self.machine.name}' "
-            f"with work_area=({surf_x}, {surf_y}, {surf_w}, {surf_h}), "
+            f"with axis_extents=({width_mm}, {height_mm}), "
             f"x_right={self.machine.x_axis_right}, "
             f"y_down={self.machine.y_axis_down}, "
             f"reverse_x={self.machine.reverse_x_axis}, "
             f"reverse_y={self.machine.reverse_y_axis}"
         )
         self._tracked_axis_extents = self.machine.axis_extents
-        self.set_size(width_mm, height_mm)
+        self.set_size(float(width_mm), float(height_mm))
+        ml, mt, mr, mb = self.machine.work_margins
+        self._axis_renderer.set_width_mm(float(width_mm))
+        self._axis_renderer.set_height_mm(float(height_mm))
+        self._axis_renderer.set_margins_mm(
+            float(ml), float(mt), float(mr), float(mb)
+        )
         self._axis_renderer.set_x_axis_right(self.machine.x_axis_right)
         self._axis_renderer.set_y_axis_down(self.machine.y_axis_down)
         self._axis_renderer.set_x_axis_negative(self.machine.reverse_x_axis)
@@ -974,7 +1042,6 @@ class WorkSurface(WorldSurface):
 
         self._update_extent_frame()
 
-        # Call the base class reset which handles pan/zoom
         super().reset_view()
         new_ratio = width_mm / height_mm if height_mm > 0 else 1.0
         self.aspect_ratio_changed.send(self, ratio=new_ratio)
@@ -984,24 +1051,45 @@ class WorkSurface(WorldSurface):
 
     def _update_extent_frame(self):
         """
-        Updates the axis extent frame visibility and position.
-
-        The extent frame is shown when the work surface differs from
-        the axis extents. It represents the full machine travel range.
+        Updates the machine extent frame and workarea background.
         """
         if not self.machine:
             self._extent_frame_element.set_visible(False)
+            self._workarea_bg_element.set_visible(False)
             return
 
-        if self.machine.has_custom_work_area():
-            frame_x, frame_y, frame_w, frame_h = (
-                self.machine.get_visual_extent_frame()
-            )
-            self._extent_frame_element.set_size(float(frame_w), float(frame_h))
-            self._extent_frame_element.set_pos(float(frame_x), float(frame_y))
-            self._extent_frame_element.set_visible(True)
-        else:
-            self._extent_frame_element.set_visible(False)
+        extent_w, extent_h = self.machine.axis_extents
+        ml, mt, mr, mb = self.machine.work_margins
+
+        logger.debug(
+            f"_update_extent_frame: extents=({extent_w}, {extent_h}), "
+            f"margins=({ml}, {mt}, {mr}, {mb}), "
+            f"canvas_size=({self.width_mm}, {self.height_mm})"
+        )
+
+        if (extent_w, extent_h) != (self.width_mm, self.height_mm):
+            self.set_size(float(extent_w), float(extent_h))
+        self._axis_renderer.set_margins_mm(
+            float(ml), float(mt), float(mr), float(mb)
+        )
+
+        self._extent_frame_element.set_size(float(extent_w), float(extent_h))
+        self._extent_frame_element.set_pos(0.0, 0.0)
+        self._extent_frame_element.set_visible(True)
+
+        workarea_w = extent_w - ml - mr
+        workarea_h = extent_h - mt - mb
+        logger.debug(
+            f"_update_extent_frame: setting workarea_bg pos=({ml}, {mb}), "
+            f"size=({workarea_w}, {workarea_h})"
+        )
+        self._workarea_bg_element.set_size(
+            float(workarea_w), float(workarea_h)
+        )
+        self._workarea_bg_element.set_pos(float(ml), float(mb))
+        self._workarea_bg_element.set_visible(True)
+
+        self.queue_draw()
 
     def _on_aspect_ratio_changed(self, sender, **kwargs) -> None:
         """

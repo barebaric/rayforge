@@ -14,63 +14,40 @@ from rayforge.ui_gtk.canvas3d.axis_renderer_3d import AxisRenderer3D
 # )
 AXIS_EXPECTATIONS = [
     # ---------- Negative Axis Scenarios ----------
-    # Axis counts backwards: 0, -10, -20...
     # 1. Bottom-Left, Negative. WCS (-20, -20).
-    # WCS is at -20 (20mm from origin).
-    # Grid covers 0..120mm from origin.
-    # WCS is at 20mm.
-    # Bed start (0mm) is 20mm "behind" WCS. Delta = -20. Label = -(-20) = 20.
-    # Bed end (120mm) is 100mm "ahead" WCS. Delta = 100. Label = -100.
-    # Range: 20 down to -100.
     (
         Origin.BOTTOM_LEFT,
         True,
         (120, 120),
         (-20.0, -20.0, 0.0),
-        (-100, 20),
+        (-140, -20),
     ),
-    # 2. Bottom-Left, Negative. WCS (20, 20) -> Invalid for negative axis?
-    # No, effectively WCS is at positive 20. Origin is 0.
-    # If axis is negative, positive coords are "behind" origin?
-    # Code uses abs(offset). `eff = -offset` if negative.
-    # So `offset=20` -> `eff=-20`.
-    # Bed start (0mm) is 0 - (-20) = 20mm "ahead" of WCS. Delta = 20.
-    #  Label = -20.
-    # Bed end (120mm) is 120 - (-20) = 140mm "ahead". Delta = 140.
-    #  Label = -140.
-    # Range: -20 down to -140.
+    # 2. Bottom-Left, Negative. WCS (20, 20).
     (
         Origin.BOTTOM_LEFT,
         True,
         (120, 120),
         (20.0, 20.0, 0.0),
-        (-140, -20),
+        (-100, 20),
     ),
     # 3. Top-Right, Negative. WCS (-20, -20).
-    # Same as Case 1 because logic is uniform.
     (
         Origin.TOP_RIGHT,
         True,
         (120, 120),
         (-20.0, -20.0, 0.0),
-        (-100, 20),
+        (-140, -20),
     ),
     # 4. Top-Right, Negative. WCS (20, 20).
-    # Same as Case 2.
     (
         Origin.TOP_RIGHT,
         True,
         (120, 120),
         (20.0, 20.0, 0.0),
-        (-140, -20),
+        (-100, 20),
     ),
     # ---------- Positive Axis Scenarios ----------
-    # Axis counts forward: 0, 10, 20...
     # 5. Bottom-Left, Positive. WCS (-20, -20).
-    # `eff = -20`.
-    # Bed Start (0mm) - (-20) = 20mm ahead. Delta = 20. Label = 20.
-    # Bed End (120mm) - (-20) = 140mm ahead. Delta = 140. Label = 140.
-    # Range: 20 to 140.
     (
         Origin.BOTTOM_LEFT,
         False,
@@ -79,10 +56,6 @@ AXIS_EXPECTATIONS = [
         (20, 140),
     ),
     # 6. Bottom-Left, Positive. WCS (20, 20).
-    # `eff = 20`.
-    # Bed Start (0mm) - 20 = -20mm. Delta = -20. Label = -20.
-    # Bed End (120mm) - 20 = 100mm. Delta = 100. Label = 100.
-    # Range: -20 to 100.
     (
         Origin.BOTTOM_LEFT,
         False,
@@ -91,7 +64,6 @@ AXIS_EXPECTATIONS = [
         (-20, 100),
     ),
     # 7. Top-Right, Positive. WCS (-20, -20).
-    # Same as Case 5.
     (
         Origin.TOP_RIGHT,
         False,
@@ -100,7 +72,6 @@ AXIS_EXPECTATIONS = [
         (20, 140),
     ),
     # 8. Top-Right, Positive. WCS (20, 20).
-    # Same as Case 6.
     (
         Origin.TOP_RIGHT,
         False,

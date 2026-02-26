@@ -270,8 +270,10 @@ class MainToolbar(Gtk.Box):
         self.append(self.focus_button)
 
         # WCS controls
-        sep = Gtk.Separator(orientation=Gtk.Orientation.VERTICAL)
-        self.append(sep)
+        self.wcs_separator = Gtk.Separator(
+            orientation=Gtk.Orientation.VERTICAL
+        )
+        self.append(self.wcs_separator)
 
         self.wcs_dropdown = Gtk.DropDown()
         self.wcs_dropdown.set_tooltip_text(_("Work Coordinate System"))
@@ -372,3 +374,8 @@ class MainToolbar(Gtk.Box):
         """
         self.warning_label.set_label(f"{error_title} ({error_code})")
         self.machine_warning_box.set_tooltip_text(error_description)
+
+    def set_wcs_controls_visible(self, visible: bool):
+        """Show or hide the WCS dropdown and its separator."""
+        self.wcs_separator.set_visible(visible)
+        self.wcs_dropdown.set_visible(visible)

@@ -282,43 +282,38 @@ class TestMachine:
     ):
         """
         Verify that encode_ops correctly subtracts the active WCS offset
-        from the coordinates.
+        from the command coordinates.
         """
         await wait_for_tasks_to_finish(task_mgr)
 
-        # Setup mocks
         mock_encoder = mocker.Mock()
         mock_encoder.encode.return_value = ("G0", object())
 
-        # Patch the driver class's create_encoder static method
         mocker.patch.object(
             NoDeviceDriver, "create_encoder", return_value=mock_encoder
         )
 
         original_ops = Ops()
-        copied_ops = Ops()
-        mocker.patch.object(original_ops, "copy", return_value=copied_ops)
-        transform_mock = mocker.patch.object(copied_ops, "transform")
+        original_ops.move_to(200.0, 150.0, 0.0)
+        original_ops.line_to(300.0, 250.0, 0.0)
 
         doc = Doc()
         machine.set_origin(Origin.BOTTOM_LEFT)
 
-        # Set WCS offset
         machine.wcs_offsets["G54"] = (100.0, 100.0, 0.0)
         machine.set_active_wcs("G54")
 
-        # Act
         machine.encode_ops(original_ops, doc)
 
-        # Assert
-        # Should have called transform to apply WCS offset
-        transform_mock.assert_called_once()
-        args, _ = transform_mock.call_args
-        matrix_arg = args[0]
+        call_args = mock_encoder.encode.call_args
+        encoded_ops = call_args[0][0]
 
-        # Verify matrix translates by -offset
-        assert matrix_arg[0, 3] == -100.0
-        assert matrix_arg[1, 3] == -100.0
+        commands = list(encoded_ops.commands)
+        move_cmd = commands[0]
+        line_cmd = commands[1]
+
+        assert move_cmd.end == (100.0, 50.0, 0.0)
+        assert line_cmd.end == (200.0, 150.0, 0.0)
 
     @pytest.mark.asyncio
     async def test_encode_ops_ignores_wcs_if_missing(
@@ -1773,3 +1768,204 @@ class TestMachine:
         limits = isolated_machine.get_soft_limits()
 
         assert limits == expected_limits
+
+    @pytest.mark.parametrize(
+        "reverse_x, reverse_y, wcs_offset, expected_offset",
+        [
+            # No reverse axes
+            (False, False, (0.0, 0.0, 0.0), (0.0, 0.0)),
+            (False, False, (10.0, 20.0, 0.0), (10.0, 20.0)),
+            # Reverse X only
+            (True, False, (0.0, 0.0, 0.0), (0.0, 0.0)),
+            (True, False, (10.0, 20.0, 0.0), (-10.0, 20.0)),
+            # Reverse Y only
+            (False, True, (0.0, 0.0, 0.0), (0.0, 0.0)),
+            (False, True, (10.0, 20.0, 0.0), (10.0, -20.0)),
+            # Both reversed
+            (True, True, (0.0, 0.0, 0.0), (0.0, 0.0)),
+            (True, True, (10.0, 20.0, 0.0), (-10.0, -20.0)),
+        ],
+    )
+    def test_get_visual_wcs_offset(
+        self,
+        isolated_machine: Machine,
+        reverse_x,
+        reverse_y,
+        wcs_offset,
+        expected_offset,
+    ):
+        """
+        Tests that get_visual_wcs_offset returns the WCS offset with
+        axis reversal applied.
+        """
+        isolated_machine.set_axis_extents(100, 100)
+        isolated_machine.set_reverse_x_axis(reverse_x)
+        isolated_machine.set_reverse_y_axis(reverse_y)
+        isolated_machine.set_active_wcs("G54")
+        isolated_machine.wcs_offsets["G54"] = wcs_offset
+
+        offset = isolated_machine.get_visual_wcs_offset()
+        assert offset == pytest.approx(expected_offset)
+
+
+class TestPrepareOpsForEncoding:
+    """
+    Tests for Machine._prepare_ops_for_encoding coordinate transformations.
+
+    These tests verify that ops coordinates are correctly transformed from
+    world coordinates (pipeline output) to command coordinates (G-code)
+    for all origin positions, axis directions, and WCS modes.
+    """
+
+    WCS_MODE_SCENARIOS = [
+        # (origin, reverse_x, reverse_y, wcs_offset, world_point, expected_cmd)
+        # Bottom-Left, positive axes
+        (
+            Origin.BOTTOM_LEFT,
+            False,
+            False,
+            (0, 0, 0),
+            (50, 60, 0),
+            (50, 60, 0),
+        ),
+        (
+            Origin.BOTTOM_LEFT,
+            False,
+            False,
+            (20, 30, 0),
+            (50, 60, 0),
+            (30, 30, 0),
+        ),
+        # Top-Left, positive axes (Y flipped)
+        (Origin.TOP_LEFT, False, False, (0, 0, 0), (50, 60, 0), (50, 40, 0)),
+        (Origin.TOP_LEFT, False, False, (20, 30, 0), (50, 60, 0), (30, 10, 0)),
+        # Top-Right, positive axes (X and Y flipped)
+        (Origin.TOP_RIGHT, False, False, (0, 0, 0), (50, 60, 0), (50, 40, 0)),
+        (
+            Origin.TOP_RIGHT,
+            False,
+            False,
+            (20, 30, 0),
+            (50, 60, 0),
+            (30, 10, 0),
+        ),
+        # Bottom-Right, positive axes (X flipped)
+        (
+            Origin.BOTTOM_RIGHT,
+            False,
+            False,
+            (0, 0, 0),
+            (50, 60, 0),
+            (50, 60, 0),
+        ),
+        (
+            Origin.BOTTOM_RIGHT,
+            False,
+            False,
+            (20, 30, 0),
+            (50, 60, 0),
+            (30, 30, 0),
+        ),
+    ]
+
+    @pytest.mark.parametrize(
+        "origin,reverse_x,reverse_y,wcs_offset,world_point,expected_cmd",
+        WCS_MODE_SCENARIOS,
+    )
+    def test_wcs_mode_coordinate_transform(
+        self,
+        isolated_machine: Machine,
+        origin,
+        reverse_x,
+        reverse_y,
+        wcs_offset,
+        world_point,
+        expected_cmd,
+    ):
+        """
+        Tests that _prepare_ops_for_encoding correctly transforms coordinates
+        in WCS mode for all origin and axis direction combinations.
+        """
+        machine = isolated_machine
+        machine.set_axis_extents(100.0, 100.0)
+        machine.set_work_margins(10.0, 20.0, 30.0, 40.0)
+        machine.set_origin(origin)
+        machine.set_reverse_x_axis(reverse_x)
+        machine.set_reverse_y_axis(reverse_y)
+        machine.wcs_origin_is_workarea_origin = False
+        machine.set_active_wcs("G54")
+        machine.wcs_offsets["G54"] = wcs_offset
+
+        ops = Ops()
+        ops.move_to(world_point[0], world_point[1], world_point[2])
+
+        result = machine._prepare_ops_for_encoding(ops)
+        cmd = list(result.commands)[0]
+
+        assert cmd.end == pytest.approx(expected_cmd, abs=0.001)
+
+    WORKAREA_WCS_MODE_SCENARIOS = [
+        # (origin, reverse_x, reverse_y, world_point, expected_cmd)
+        # World point is in machine coords. Expected is relative to workarea.
+        # Margins: left=10, top=20, right=30, bottom=40
+        # Workarea: 60x40 (100-10-30 x 100-20-40)
+        # Bottom-Left: workarea origin at (10, 40)
+        (Origin.BOTTOM_LEFT, False, False, (20, 50, 0), (10, 10, 0)),
+    ]
+
+    @pytest.mark.parametrize(
+        "origin,reverse_x,reverse_y,world_point,expected_cmd",
+        WORKAREA_WCS_MODE_SCENARIOS,
+    )
+    def test_workarea_wcs_mode_coordinate_transform(
+        self,
+        isolated_machine: Machine,
+        origin,
+        reverse_x,
+        reverse_y,
+        world_point,
+        expected_cmd,
+    ):
+        """
+        Tests that _prepare_ops_for_encoding correctly transforms
+        coordinates when wcs_origin_is_workarea_origin is True.
+        """
+        machine = isolated_machine
+        machine.set_axis_extents(100.0, 100.0)
+        machine.set_work_margins(10.0, 20.0, 30.0, 40.0)
+        machine.set_origin(origin)
+        machine.set_reverse_x_axis(reverse_x)
+        machine.set_reverse_y_axis(reverse_y)
+        machine.wcs_origin_is_workarea_origin = True
+
+        ops = Ops()
+        ops.move_to(world_point[0], world_point[1], world_point[2])
+
+        result = machine._prepare_ops_for_encoding(ops)
+        cmd = list(result.commands)[0]
+
+        assert cmd.end == pytest.approx(expected_cmd, abs=0.001)
+
+    def test_multiple_commands_transformed(self, isolated_machine: Machine):
+        """
+        Tests that multiple commands in an ops object are all transformed.
+        """
+        machine = isolated_machine
+        machine.set_axis_extents(100.0, 100.0)
+        machine.set_work_margins(10.0, 20.0, 30.0, 40.0)
+        machine.set_origin(Origin.BOTTOM_LEFT)
+        machine.wcs_origin_is_workarea_origin = False
+        machine.set_active_wcs("G54")
+        machine.wcs_offsets["G54"] = (10, 10, 0)
+
+        ops = Ops()
+        ops.move_to(20, 20, 0)
+        ops.line_to(30, 30, 0)
+        ops.line_to(40, 40, 0)
+
+        result = machine._prepare_ops_for_encoding(ops)
+        commands = list(result.commands)
+
+        assert commands[0].end == pytest.approx((10, 10, 0))
+        assert commands[1].end == pytest.approx((20, 20, 0))
+        assert commands[2].end == pytest.approx((30, 30, 0))
