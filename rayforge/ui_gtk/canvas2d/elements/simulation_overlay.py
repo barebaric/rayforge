@@ -204,7 +204,7 @@ class SimulationOverlay(CanvasElement):
 
         # Draw each operation with heatmap color and power transparency
         for cmd, state, start_pos in steps:
-            ctx.set_line_width(0.2)
+            self._set_constant_stroke_width(ctx)
             ctx.set_dash([])
 
             if cmd.is_travel_command():
@@ -278,6 +278,7 @@ class SimulationOverlay(CanvasElement):
             seg_end_pt = p_start + t_end * line_vec
 
             ctx.set_source_rgba(r, g, b, alpha)
+            self._set_constant_stroke_width(ctx)
             ctx.move_to(seg_start_pt[0], seg_start_pt[1])
             ctx.line_to(seg_end_pt[0], seg_end_pt[1])
             ctx.stroke()
@@ -288,7 +289,7 @@ class SimulationOverlay(CanvasElement):
 
         # Draw a crosshair with circle
         ctx.set_source_rgba(1.0, 0.0, 0.0, 0.8)  # Red with transparency
-        ctx.set_line_width(0.2)
+        self._set_constant_stroke_width(ctx)
 
         # Circle (3mm radius)
         ctx.arc(x, y, 3.0, 0, 2 * 3.14159)
@@ -306,6 +307,12 @@ class SimulationOverlay(CanvasElement):
         # Center dot
         ctx.arc(x, y, 0.5, 0, 2 * 3.14159)
         ctx.fill()
+
+    def _set_constant_stroke_width(self, ctx: cairo.Context) -> None:
+        """
+        Keeps stroke width at roughly one device pixel regardless of zoom.
+        """
+        ctx.set_hairline(True)
 
     def draw_overlay(self, ctx: cairo.Context):
         """
