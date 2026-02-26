@@ -272,7 +272,7 @@ Quando limites de software estão habilitados no seu perfil de máquina:
 
 **Páginas Relacionadas:**
 
-- [Sistemas de Coordenadas de Trabalho (WCS)](../general-info/work-coordinate-systems) - Gerenciando WCS
+- [Sistemas de Coordenadas de Trabalho (WCS)](../general-info/coordinate-systems) - Gerenciando WCS
 - [Configuração da Máquina](../machine/general) - Configure sua máquina
 - [Atalhos de Teclado](../reference/shortcuts) - Referência completa de atalhos
 - [Janela Principal](main-window) - Visão geral da interface principal

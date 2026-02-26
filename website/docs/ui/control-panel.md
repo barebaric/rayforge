@@ -283,7 +283,7 @@ When soft limits are enabled in your machine profile:
 
 **Related Pages:**
 
-- [Work Coordinate Systems (WCS)](../general-info/work-coordinate-systems) - Managing WCS
+- [Work Coordinate Systems (WCS)](../general-info/coordinate-systems) - Managing WCS
 - [Machine Setup](../machine/general) - Configure your machine
 - [Keyboard Shortcuts](../reference/shortcuts) - Complete shortcut reference
 - [Main Window](main-window) - Main interface overview

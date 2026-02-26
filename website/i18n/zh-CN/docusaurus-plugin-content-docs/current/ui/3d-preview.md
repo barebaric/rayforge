@@ -174,6 +174,6 @@
 
 **相关页面：**
 
-- [工作坐标系](../general-info/work-coordinate-systems) - WCS
+- [工作坐标系](../general-info/coordinate-systems) - WCS
 - [主窗口](main-window) - 主界面概述
 - [设置](settings) - 应用程序首选项

@@ -184,6 +184,6 @@ Para trabalhos grandes ou complexos:
 
 **Páginas Relacionadas:**
 
-- [Sistemas de Coordenadas de Trabalho](../general-info/work-coordinate-systems) - WCS
+- [Sistemas de Coordenadas de Trabalho](../general-info/coordinate-systems) - WCS
 - [Janela Principal](main-window) - Visão geral da interface principal
 - [Configurações](settings) - Preferências da aplicação

@@ -283,7 +283,7 @@ Lorsque les limites logicielles sont activées dans votre profil machine :
 
 **Pages connexes :**
 
-- [Systèmes de coordonnées de travail (WCS)](../general-info/work-coordinate-systems) - Gérer le WCS
+- [Systèmes de coordonnées de travail (WCS)](../general-info/coordinate-systems) - Gérer le WCS
 - [Configuration machine](../machine/general) - Configurez votre machine
 - [Raccourcis clavier](../reference/shortcuts) - Référence complète des raccourcis
 - [Fenêtre principale](main-window) - Aperçu de l'interface principale

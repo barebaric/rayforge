@@ -184,6 +184,6 @@
 
 **Пов'язані сторінки:**
 
-- [Робочі системи координат](../general-info/work-coordinate-systems) - WCS
+- [Робочі системи координат](../general-info/coordinate-systems) - WCS
 - [Головне вікно](main-window) - Огляд головного інтерфейсу
 - [Налаштування](settings) - Налаштування програми
