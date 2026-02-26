@@ -30,7 +30,7 @@ Accès rapide aux outils fréquemment utilisés :
 - **Liste déroulante WCS** : Sélectionner le système de coordonnées de travail actif (G53-G59)
 
 La liste déroulante WCS vous permet de basculer rapidement entre les systèmes de coordonnées.
-Voir [Systèmes de coordonnées de travail](../general-info/work-coordinate-systems) pour
+Voir [Systèmes de coordonnées de travail](../general-info/coordinate-systems) pour
 plus d'informations.
 
 ### 3. Canevas
@@ -108,7 +108,7 @@ Personnalisez l'interface dans **Édition → Préférences** :
 
 **Pages connexes :**
 
-- [Systèmes de coordonnées de travail](../general-info/work-coordinate-systems) - WCS
+- [Systèmes de coordonnées de travail](../general-info/coordinate-systems) - WCS
 - [Outils du canevas](canvas-tools) - Outils pour manipuler les conceptions
 - [Panneau de contrôle](control-panel) - Contrôle manuel de la machine, état et journaux
 - [Prévisualisation 3D](3d-preview) - Visualiser les trajets d'outil en 3D

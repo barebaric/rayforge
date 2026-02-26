@@ -28,7 +28,7 @@ Rayforge 主窗口是您创建和管理激光作业的主要工作区。
 - **对齐工具**：对齐和分布对象
 - **WCS 下拉菜单**：选择活动工作坐标系（G53-G59）
 
-WCS 下拉菜单允许您在坐标系之间快速切换。有关更多信息，请参阅[工作坐标系](../general-info/work-coordinate-systems)。
+WCS 下拉菜单允许您在坐标系之间快速切换。有关更多信息，请参阅[工作坐标系](../general-info/coordinate-systems)。
 
 ### 3. 画布
 
@@ -105,7 +105,7 @@ WCS 下拉菜单允许您在坐标系之间快速切换。有关更多信息，�
 
 **相关页面：**
 
-- [工作坐标系](../general-info/work-coordinate-systems) - WCS
+- [工作坐标系](../general-info/coordinate-systems) - WCS
 - [画布工具](canvas-tools) - 操作设计的工具
 - [控制面板](control-panel) - 手动机器控制、状态和日志
 - [3D 预览](3d-preview) - 在 3D 中可视化刀具路径

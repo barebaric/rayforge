@@ -29,7 +29,7 @@ Schneller Zugriff auf häufig verwendete Werkzeuge:
 - **WCS-Dropdown**: Das aktive Werkstückkoordinatensystem auswählen (G53-G59)
 
 Das WCS-Dropdown ermöglicht dir, schnell zwischen Koordinatensystemen zu wechseln.
-Siehe [Werkstückkoordinatensysteme](../general-info/work-coordinate-systems) für
+Siehe [Werkstückkoordinatensysteme](../general-info/coordinate-systems) für
 weitere Informationen.
 
 ### 3. Canvas
@@ -107,7 +107,7 @@ Passe die Oberfläche an in **Bearbeiten → Einstellungen**:
 
 **Verwandte Seiten:**
 
-- [Werkstückkoordinatensysteme](../general-info/work-coordinate-systems) - WCS
+- [Werkstückkoordinatensysteme](../general-info/coordinate-systems) - WCS
 - [Canvas-Werkzeuge](canvas-tools) - Werkzeuge zum Bearbeiten von Designs
 - [Bedienfeld](control-panel) - Manuelle Maschinensteuerung, Status und Protokolle
 - [3D-Vorschau](3d-preview) - Werkzeugwege in 3D visualisieren

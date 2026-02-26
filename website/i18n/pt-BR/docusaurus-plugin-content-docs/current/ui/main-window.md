@@ -29,7 +29,7 @@ Acesso rápido a ferramentas frequentemente usadas:
 - **Menu suspenso WCS**: Selecionar o Sistema de Coordenadas de Trabalho ativo (G53-G59)
 
 O menu suspenso WCS permite alternar rapidamente entre sistemas de coordenadas.
-Veja [Sistemas de Coordenadas de Trabalho](../general-info/work-coordinate-systems) para
+Veja [Sistemas de Coordenadas de Trabalho](../general-info/coordinate-systems) para
 mais informação.
 
 ### 3. Tela
@@ -107,7 +107,7 @@ Personalize a interface em **Editar → Preferências**:
 
 **Páginas Relacionadas:**
 
-- [Sistemas de Coordenadas de Trabalho](../general-info/work-coordinate-systems) - WCS
+- [Sistemas de Coordenadas de Trabalho](../general-info/coordinate-systems) - WCS
 - [Ferramentas da Tela](canvas-tools) - Ferramentas para manipular designs
 - [Painel de Controle](control-panel) - Controle manual da máquina, status e logs
 - [Visualização 3D](3d-preview) - Visualizar caminhos de ferramenta em 3D

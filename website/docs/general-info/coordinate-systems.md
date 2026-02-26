@@ -1,78 +1,226 @@
-# Coordinate Systems
+# Work Coordinate Systems (WCS)
 
-Understanding how Rayforge handles coordinate systems is essential for positioning your work correctly.
+Work Coordinate Systems (WCS) allow you to define multiple reference points on
+your machine's work area. This makes it easy to run the same job at different
+positions without redesigning or repositioning your workpieces.
 
-## Work Coordinate System (WCS) vs Machine Coordinates
+## Coordinate Spaces
 
-Rayforge uses two main coordinate systems:
+Rayforge uses three coordinate spaces that work together:
 
-### Work Coordinate System (WCS)
+| Space        | Description                                                                                |
+| ------------ | ------------------------------------------------------------------------------------------ |
+| **MACHINE**  | Absolute coordinates relative to the machine's home position. Origin is fixed by hardware. |
+| **WORKAREA** | The usable area within your machine, accounting for margins around the bed.                |
+| **WCS**      | Your job's coordinate system. User-configurable origin for design and job positioning.     |
 
-The WCS is your job's coordinate system. When you position a design at (50, 100) on the canvas, those are WCS coordinates.
+:::note Developer Note
+Internally, Rayforge uses a normalized coordinate system called WORLD space.
+WORLD space describes the same physical space as MACHINE space, but with a
+fixed convention: Y-up with bottom-left origin. This simplifies internal
+calculations and rendering. Users do not need to interact with WORLD space
+directly.
+:::
 
-- **Origin**: Defined by you (default is G54)
-- **Purpose**: Design and job positioning
-- **Multiple systems**: G54-G59 available for different setups
+### MACHINE Space
 
-### Machine Coordinates
+MACHINE space is the absolute coordinate system relative to your machine's
+home position. The origin (0,0) is determined by your machine's homing
+configuration.
 
-Machine coordinates are absolute positions relative to the machine's home position.
-
-- **Origin**: Machine home (0,0,0) - fixed by hardware
-- **Purpose**: Physical positioning on the bed
+- **Origin**: Machine home position (0,0,0) - fixed by hardware
+- **Purpose**: Reference for all other coordinate systems
 - **Fixed**: Cannot be changed by software
 
-**Relationship**: WCS offsets define how your job coordinates map to machine coordinates. If G54 offset is (100, 50, 0), then your design at WCS (0, 0) cuts at machine position (100, 50).
+The coordinate direction depends on your machine configuration:
 
-## Configuring Coordinates in Rayforge
+- **Origin corner**: Can be top-left, bottom-left, top-right, or bottom-right
+- **Axis direction**: X and Y axes can be reversed based on hardware setup
 
-### Setting the WCS Origin
+### WORKAREA Space
 
-To position your job on the machine:
+WORKAREA space defines the usable area within your machine, accounting for
+any margins around the edges of your bed.
 
-1. **Home the machine** first (`$H` command or Home button)
-2. **Jog the laser head** to your desired job origin
-3. **Set WCS zero** using the Control Panel:
-   - Click "Zero X" to set current X as origin
-   - Click "Zero Y" to set current Y as origin
-4. Your job will now start from this position
+- **Origin**: Same corner as MACHINE space origin
+- **Purpose**: Defines the actual area where jobs can run
+- **Margins**: May have margins applied (left, top, right, bottom)
 
-### Selecting a WCS
+For example, if your machine is 400×300mm but has a 10mm margin on all sides,
+the WORKAREA would be 380×280mm starting at position (10, 10) in MACHINE space.
 
-Rayforge supports G54-G59 work coordinate systems:
+## Understanding WCS
 
-| System | Use Case |
-|--------|----------|
-| G54 | Default, primary work area |
-| G55-G59 | Additional fixture positions |
+Think of WCS as customizable "zero points" for your work. While your
+machine has a fixed home position (determined by limit switches), WCS lets
+you define where you want your work to start from.
 
-Select the active WCS in the Control Panel. Each system stores its own offset from machine origin.
+### Why Use WCS?
 
-### Y-Axis Direction
+- **Multiple fixtures**: Set up several work areas on your bed and switch
+  between them
+- **Repeatable positioning**: Run the same job in different locations
+- **Quick alignment**: Set a reference point based on your material or
+  workpiece
+- **Production workflows**: Organize multiple jobs across your work area
 
-Some machines have Y increasing downward instead of upward. Configure this in:
+## WCS Types
 
-**Settings → Machine → Hardware → Axes**
+Rayforge supports the following coordinate systems:
 
-If your jobs come out mirrored vertically, toggle the Y-axis direction setting.
+| System  | Type    | Description                                             |
+| ------- | ------- | ------------------------------------------------------- |
+| **G53** | Machine | Absolute machine coordinates (fixed, cannot be changed) |
+| **G54** | Work 1  | First work coordinate system (default)                  |
+| **G55** | Work 2  | Second work coordinate system                           |
+| **G56** | Work 3  | Third work coordinate system                            |
+| **G57** | Work 4  | Fourth work coordinate system                           |
+| **G58** | Work 5  | Fifth work coordinate system                            |
+| **G59** | Work 6  | Sixth work coordinate system                            |
 
-## Common Issues
+### Machine Coordinates (G53)
 
-### Job in Wrong Position
+G53 represents the absolute position of your machine, with zero at the
+machine's home position. This is fixed by your hardware and cannot be
+changed.
 
-- **Check WCS offset**: Send `G10 L20 P1` to view G54 offset
-- **Verify homing**: Machine must be homed for consistent positioning
-- **Check Y-axis direction**: May be inverted
+**When to use:**
 
-### Coordinates Drift Between Jobs
+- Homing and calibration
+- Absolute positioning relative to machine limits
+- When you need to reference the physical machine position
 
-- **Always home before jobs**: Establishes consistent reference
-- **Check for G92 offsets**: Clear with `G92.1` command
+### Work Coordinates (G54-G59)
+
+These are offset coordinate systems that you can define. Each has its own
+zero point that you can set anywhere on your work area.
+
+**When to use:**
+
+- Setting up multiple work fixtures
+- Aligning to material positions
+- Running the same job in different locations
+
+## Visualizing WCS in the Interface
+
+### 2D Canvas
+
+The 2D canvas shows your WCS origin with a green marker:
+
+- **Green lines**: Indicate the current WCS origin (0, 0) position
+- **Grid alignment**: Grid lines are aligned to the WCS origin, not machine
+  origin
+
+The origin marker moves when you change the active WCS or its offset,
+showing you exactly where your work will start.
+
+### 3D Preview
+
+In the 3D preview, WCS is displayed differently:
+
+- **Grid and axes**: The entire grid appears as if the WCS origin is the
+  world origin
+- **Isolated view**: The WCS is shown "in isolation" - it looks like the
+  grid is centered on the WCS, not the machine
+- **Labels**: Coordinate labels are relative to the WCS origin
+
+This makes it easy to visualize where your job will run relative to the
+selected work coordinate system.
+
+## Selecting and Changing WCS
+
+### Via the Toolbar
+
+1. Locate the WCS dropdown in the main toolbar (labeled "G53" by default)
+2. Click to see the available coordinate systems
+3. Select the WCS you want to use
+
+### Via the Control Panel
+
+1. Open the Control Panel (View → Control Panel or Ctrl+L)
+2. Find the WCS dropdown in the machine status section
+3. Select the desired WCS from the dropdown
+
+## Setting WCS Offsets
+
+You can define where each WCS origin is located on your machine.
+
+### Setting Zero at Current Position
+
+1. Connect to your machine
+2. Select the WCS you want to configure (e.g., G54)
+3. Jog the laser head to the position you want to be (0, 0)
+4. In the Control Panel, click the zero buttons:
+   - **Zero X**: Sets current X position as 0 for the active WCS
+   - **Zero Y**: Sets current Y position as 0 for the active WCS
+   - **Zero Z**: Sets current Z position as 0 for the active WCS
+
+The offsets are stored in your machine's controller and persist between
+sessions.
+
+### Viewing Current Offsets
+
+The Control Panel shows the current offsets for the active WCS:
+
+- **Current Offsets**: Displays the (X, Y, Z) offset from machine origin
+- **Current Position**: Shows the laser head's position in the active WCS
+
+## WCS in Your Jobs
+
+When you run a job, Rayforge uses the active WCS to position your work:
+
+1. Design your job in the canvas
+2. Select the WCS you want to use
+3. Run the job - it will be positioned according to the WCS offset
+
+The same job can be run at different positions simply by changing the
+active WCS.
+
+## Practical Workflows
+
+### Workflow 1: Multiple Fixture Positions
+
+You have a large bed and want to set up three work areas:
+
+1. **Home your machine** to establish a reference
+2. **Jog to first work area** and set G54 offset (Zero X, Zero Y)
+3. **Jog to second work area** and set G55 offset
+4. **Jog to third work area** and set G56 offset
+5. Now you can switch between G54, G55, and G56 to run jobs in each area
+
+### Workflow 2: Aligning to Material
+
+You have a piece of material placed somewhere on your bed:
+
+1. **Jog the laser head** to the corner of your material
+2. **Select G54** (or your preferred WCS)
+3. **Click Zero X and Zero Y** to set the material corner as (0, 0)
+4. **Design your job** with (0, 0) as the origin
+5. **Run the job** - it will start from the material corner
+
+### Workflow 3: Production Grid
+
+You need to cut the same part 10 times in different locations:
+
+1. **Design one part** in Rayforge
+2. **Set up G54-G59** offsets for your desired positions
+3. **Run the job** with G54 active
+4. **Switch to G55** and run again
+5. **Repeat** for each WCS position
+
+## Important Notes
+
+### WCS Limitations
+
+- **G53 cannot be changed**: Machine coordinates are fixed by hardware
+- **Offsets persist**: WCS offsets are stored in your machine's controller
+- **Connection required**: You must be connected to a machine to set WCS
+  offsets
 
 ---
 
-## Related Pages
+**Related Pages:**
 
-- [Work Coordinate Systems (WCS)](work-coordinate-systems) - Managing WCS in Rayforge
-- [Control Panel](../ui/control-panel) - Jog controls and WCS buttons
-- [Exporting G-code](../files/exporting) - Job positioning options
+- [Control Panel](../ui/control-panel) - Manual control and WCS management
+- [Machine Setup](../machine/general) - Configure your machine
+- [3D Preview](../ui/3d-preview) - Visualizing your jobs

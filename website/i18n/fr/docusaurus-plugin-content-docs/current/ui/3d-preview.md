@@ -184,6 +184,6 @@ Pour les travaux volumineux ou complexes :
 
 **Pages connexes :**
 
-- [Systèmes de coordonnées de travail](../general-info/work-coordinate-systems) - WCS
+- [Systèmes de coordonnées de travail](../general-info/coordinate-systems) - WCS
 - [Fenêtre principale](main-window) - Aperçu de l'interface principale
 - [Paramètres](settings) - Préférences de l'application

@@ -174,6 +174,6 @@ Für große oder komplexe Aufträge:
 
 **Verwandte Seiten:**
 
-- [Werkstückkoordinatensysteme](../general-info/work-coordinate-systems) - WCS
+- [Werkstückkoordinatensysteme](../general-info/coordinate-systems) - WCS
 - [Hauptfenster](main-window) - Hauptoberflächenübersicht
 - [Einstellungen](settings) - Anwendungseinstellungen

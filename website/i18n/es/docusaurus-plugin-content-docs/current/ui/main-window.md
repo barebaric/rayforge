@@ -30,7 +30,7 @@ Acceso rápido a herramientas usadas frecuentemente:
 - **Menú desplegable WCS**: Seleccionar el Sistema de Coordenadas de Trabajo activo (G53-G59)
 
 El menú desplegable WCS te permite cambiar rápidamente entre sistemas de coordenadas.
-Ver [Sistemas de Coordenadas de Trabajo](../general-info/work-coordinate-systems) para
+Ver [Sistemas de Coordenadas de Trabajo](../general-info/coordinate-systems) para
 más información.
 
 ### 3. Lienzo
@@ -108,7 +108,7 @@ Personaliza la interfaz en **Editar → Preferencias**:
 
 **Páginas Relacionadas:**
 
-- [Sistemas de Coordenadas de Trabajo](../general-info/work-coordinate-systems) - WCS
+- [Sistemas de Coordenadas de Trabajo](../general-info/coordinate-systems) - WCS
 - [Herramientas del Lienzo](canvas-tools) - Herramientas para manipular diseños
 - [Panel de Control](control-panel) - Control manual de máquina, estado y registros
 - [Vista Previa 3D](3d-preview) - Visualizar trayectorias en 3D
