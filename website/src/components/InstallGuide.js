@@ -691,7 +691,7 @@ cd rayforge`}
 }
 
 function MacosInstall({ version, method, onMethodChange }) {
-  const downloadUrl = `https://github.com/barebaric/rayforge/releases/download/${version}/rayforge-v${version}-macos`;
+  const downloadUrl = `https://github.com/barebaric/rayforge/releases/download/${version}/rayforge-${version}-macos`;
   return (
     <div className="install-section">
       <div className="install-method-selector">
