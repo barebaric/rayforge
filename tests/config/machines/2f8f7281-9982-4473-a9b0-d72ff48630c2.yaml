@@ -51,13 +51,14 @@ machine:
     - 0.0
     - 0.0
     G55:
-    - 20.0
-    - 20.0
+    - 30.0
+    - 30.0
     - 0.0
     G56: *id001
     G57: *id001
     G58: *id001
     G59: *id001
+  wcs_origin_is_workarea_origin: false
   work_margins:
   - 10.0
   - 10.0
