@@ -1,26 +1,26 @@
 # flake8: noqa:F401
-import inspect
 from .base import OpsProducer, CutSide
 from .contour import ContourProducer
+from .frame import FrameProducer
+from .material_test_grid import MaterialTestGridProducer, MaterialTestGridType
 from .raster import (
     DepthEngraver,
     DepthMode,
     DitherRasterizer,
     Rasterizer,
 )
-from .frame import FrameProducer
-from .material_test_grid import MaterialTestGridProducer, MaterialTestGridType
+from .registry import producer_registry, ProducerRegistry
 from .shrinkwrap import ShrinkWrapProducer
 
-producer_by_name = dict(
-    [
-        (name, obj)
-        for name, obj in locals().items()
-        if inspect.isclass(obj)
-        and issubclass(obj, OpsProducer)
-        and not inspect.isabstract(obj)
-    ]
-)
+producer_registry.register(ContourProducer)
+producer_registry.register(Rasterizer)
+producer_registry.register(Rasterizer, name="DepthEngraver")
+producer_registry.register(Rasterizer, name="DitherRasterizer")
+producer_registry.register(FrameProducer)
+producer_registry.register(MaterialTestGridProducer)
+producer_registry.register(ShrinkWrapProducer)
+
+producer_by_name = producer_registry.all_producers()
 
 __all__ = [
     "OpsProducer",
@@ -35,4 +35,6 @@ __all__ = [
     "ShrinkWrapProducer",
     "Rasterizer",
     "producer_by_name",
+    "producer_registry",
+    "ProducerRegistry",
 ]
