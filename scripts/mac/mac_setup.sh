@@ -11,6 +11,17 @@ NC="\033[0m"
 
 MAX_RETRIES=3
 RETRY_DELAY=5
+INSTALL_TIMEOUT=600
+
+get_timeout_cmd() {
+    if command -v gtimeout >/dev/null 2>&1; then
+        echo "gtimeout"
+    elif command -v timeout >/dev/null 2>&1; then
+        echo "timeout"
+    else
+        echo ""
+    fi
+}
 
 print_info() {
     local title=$1
@@ -25,18 +36,27 @@ print_error() {
 install_package() {
     local pkg=$1
     local attempt=1
+    local timeout_cmd
+    timeout_cmd=$(get_timeout_cmd)
 
     while (( attempt <= MAX_RETRIES )); do
         print_info "Installing $pkg (attempt $attempt/$MAX_RETRIES)..."
-        if HOMEBREW_NO_INSTALL_CLEANUP=1 brew install "$pkg"; then
-            return 0
+        if [ -n "$timeout_cmd" ]; then
+            if "$timeout_cmd" "$INSTALL_TIMEOUT" \
+                HOMEBREW_NO_INSTALL_CLEANUP=1 brew install "$pkg"; then
+                return 0
+            fi
+        else
+            if HOMEBREW_NO_INSTALL_CLEANUP=1 brew install "$pkg"; then
+                return 0
+            fi
         fi
 
         if (( attempt < MAX_RETRIES )); then
             print_error "Failed to install $pkg, retrying in ${RETRY_DELAY}s..."
             sleep "$RETRY_DELAY"
         fi
-        (( attempt++ ))
+        (( attempt++ )) || true
     done
 
     return 1
