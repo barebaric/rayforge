@@ -4,7 +4,7 @@ on:
   push:
     # Trigger on new version tags
     tags:
-      - "v*.*.*"
+      - "*.*.*"
     # Trigger on pushes to the main branch to update existing docs
     branches:
       - main
