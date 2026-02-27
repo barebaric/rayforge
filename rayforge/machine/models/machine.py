@@ -8,10 +8,10 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type
 import numpy as np
 from blinker import Signal
 
-from rayforge.core.ops.commands import MovingCommand
-
 from ...camera.models.camera import Camera
 from ...context import RayforgeContext, get_context
+from ...core.ops.commands import MovingCommand
+from ...pipeline.coordspace import MachineSpace
 from ...pipeline.encoder.gcode import MachineCodeOpMap
 from ...shared.tasker import task_mgr
 from ..driver.driver import (
@@ -482,6 +482,16 @@ class Machine:
         """
         return self.origin in (Origin.TOP_RIGHT, Origin.BOTTOM_RIGHT)
 
+    def get_coordinate_space(self) -> "MachineSpace":
+        """
+        Get the machine's coordinate space configuration.
+
+        Returns:
+            A MachineSpace instance representing this machine's
+            coordinate system configuration.
+        """
+        return MachineSpace.from_machine(self)
+
     def calculate_jog(self, direction: JogDirection, distance: float) -> float:
         """
         Calculate the signed coordinate delta for a jog operation based on a
@@ -897,11 +907,10 @@ class Machine:
             A transformed Ops object ready for encoding.
         """
         ops_for_encoder = ops.copy()
+        space = self.get_coordinate_space()
 
         # First, apply origin transform to convert from world coords
         # (bottom-left origin, Y-up) to machine coords.
-        # If Origin is BOTTOM_LEFT and axes are not reversed, the internal
-        # coordinate system matches the machine's.
         needs_transform = (
             self.origin != Origin.BOTTOM_LEFT
             or self.reverse_x_axis
@@ -909,31 +918,18 @@ class Machine:
         )
 
         if needs_transform:
-            width, height = self._axis_extents
-
-            transform = np.identity(4)
-
-            # --- Y-Axis Transformation ---
-            if self.y_axis_down:  # Origin is TOP_LEFT or TOP_RIGHT
-                if self.reverse_y_axis:
-                    transform[1, 3] = -float(height)
-                else:
-                    transform[1, 1] = -1.0
-                    transform[1, 3] = float(height)
-            elif self.reverse_y_axis:
-                transform[1, 1] = -1.0
-
-            # --- X-Axis Transformation ---
-            if self.x_axis_right:  # Origin is TOP_RIGHT or BOTTOM_RIGHT
-                if self.reverse_x_axis:
-                    transform[0, 3] = -float(width)
-                else:
-                    transform[0, 0] = -1.0
-                    transform[0, 3] = float(width)
-            elif self.reverse_x_axis:
-                transform[0, 0] = -1.0
-
+            transform = space.get_transform_to_world(space.extents)
             ops_for_encoder.transform(transform)
+
+        # Apply reverse_x/reverse_y sign flip to match world_point_to_machine
+        # The transform handles origin position but not controller sign flip
+        if self.reverse_x_axis or self.reverse_y_axis:
+            sign_flip = np.identity(4, dtype=np.float64)
+            if self.reverse_x_axis:
+                sign_flip[0, 0] = -1.0
+            if self.reverse_y_axis:
+                sign_flip[1, 1] = -1.0
+            ops_for_encoder.transform(sign_flip)
 
         # Now ops are in machine coords. Convert to command coords.
         if self.wcs_origin_is_workarea_origin:

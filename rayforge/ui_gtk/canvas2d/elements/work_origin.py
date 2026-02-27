@@ -1,5 +1,11 @@
+from __future__ import annotations
 import cairo
+from typing import TYPE_CHECKING
+from ....pipeline.coordspace import OriginCorner
 from ...canvas import CanvasElement
+
+if TYPE_CHECKING:
+    from ....pipeline.coordspace import CoordinateSpace
 
 
 class WorkOriginElement(CanvasElement):
@@ -25,14 +31,20 @@ class WorkOriginElement(CanvasElement):
         self.x_axis_right = False
         self.y_axis_down = False
 
-    def set_orientation(
-        self,
-        x_axis_right: bool,
-        y_axis_down: bool,
-    ):
+    def set_coordinate_space(self, space: CoordinateSpace):
         """
-        Configures the direction of the arrows based on the machine config.
+        Configures the direction of the arrows based on the coordinate space.
         """
+
+        x_axis_right = space.origin in (
+            OriginCorner.TOP_RIGHT,
+            OriginCorner.BOTTOM_RIGHT,
+        )
+        y_axis_down = space.origin in (
+            OriginCorner.TOP_LEFT,
+            OriginCorner.TOP_RIGHT,
+        )
+
         if (
             self.x_axis_right == x_axis_right
             and self.y_axis_down == y_axis_down

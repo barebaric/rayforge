@@ -59,6 +59,7 @@ class WorkSurface(WorldSurface):
         self._show_travel_moves = False
         self._workpieces_visible = True
         self._tracked_axis_extents: Tuple[float, float] = (0.0, 0.0)
+        coordinate_space = None
         if machine:
             self._tracked_axis_extents = machine.axis_extents
             # Canvas shows full machine bed, not just workarea
@@ -66,18 +67,9 @@ class WorkSurface(WorldSurface):
                 float(machine.axis_extents[0]),
                 float(machine.axis_extents[1]),
             )
-            y_axis_down = machine.y_axis_down
-            x_axis_right = machine.x_axis_right
-            reverse_x_axis = machine.reverse_x_axis
-            reverse_y_axis = machine.reverse_y_axis
+            coordinate_space = machine.get_coordinate_space()
         else:
             width_mm, height_mm = 100.0, 100.0
-            y_axis_down, x_axis_right, reverse_x_axis, reverse_y_axis = (
-                False,
-                False,
-                False,
-                False,
-            )
 
         self._cam_visible = cam_visible
         self._transform_start_states: Dict[CanvasElement, dict] = {}
@@ -91,10 +83,7 @@ class WorkSurface(WorldSurface):
         super().__init__(
             width_mm=width_mm,
             height_mm=height_mm,
-            y_axis_down=y_axis_down,
-            x_axis_right=x_axis_right,
-            reverse_x_axis=reverse_x_axis,
-            reverse_y_axis=reverse_y_axis,
+            coordinate_space=coordinate_space,
             **kwargs,
         )
 
@@ -212,33 +201,20 @@ class WorkSurface(WorldSurface):
         self, m_x: float, m_y: float
     ) -> tuple[float, float]:
         """
-        Helper to convert machine coordinates to canvas world coordinates.
+        Convert machine-reported coordinates to canvas world coordinates.
+
+        Machine-reported coordinates come from the controller and may be
+        negated based on reverse_x/reverse_y settings. We undo this sign
+        flip before transforming to world coordinates.
         """
-        canvas_x, canvas_y = m_x, m_y
-
         if self.machine:
-            width, height = self.machine.axis_extents
-
-            # Normalize coordinates to be positive distance from origin
-            # based on the 'reverse' setting.
-            # If reverse is True, we assume the machine reports negative
-            # coords for the workspace, so we flip the sign to get
-            # positive distance.
-            eff_x = -m_x if self.machine.reverse_x_axis else m_x
-            eff_y = -m_y if self.machine.reverse_y_axis else m_y
-
-            # Apply origin offset
-            if self.machine.x_axis_right:
-                canvas_x = width - eff_x
-            else:
-                canvas_x = eff_x
-
-            if self.machine.y_axis_down:
-                canvas_y = height - eff_y
-            else:
-                canvas_y = eff_y
-
-        return canvas_x, canvas_y
+            space = self.machine.get_coordinate_space()
+            if space.reverse_x:
+                m_x = -m_x
+            if space.reverse_y:
+                m_y = -m_y
+            return space.transform_point_to_world(m_x, m_y, space.extents)
+        return m_x, m_y
 
     def get_global_tab_visibility(self) -> bool:
         """
@@ -559,37 +535,13 @@ class WorkSurface(WorldSurface):
 
     def _on_wcs_updated(self, machine: Machine):
         """Handles updates to the machine's WCS state."""
+        space = machine.get_coordinate_space()
+
         if machine.wcs_origin_is_workarea_origin:
-            # Workarea origin is coordinate zero
-            # Show marker at the origin corner (where axis labels show 0,0)
-            ml, mt, mr, mb = machine.work_margins
-            canvas_w, canvas_h = self.width_mm, self.height_mm
-
-            # Origin corner position matches axis renderer logic
-            if machine.x_axis_right:
-                origin_x = canvas_w - mr
-            else:
-                origin_x = ml
-
-            if machine.y_axis_down:
-                origin_y = canvas_h - mt
-            else:
-                origin_y = mb
-
-            canvas_x, canvas_y = origin_x, origin_y
+            canvas_x, canvas_y = space.get_workarea_origin_in_machine()
         else:
-            wcs_x, wcs_y = machine.get_visual_wcs_offset()
-            canvas_w, canvas_h = self.width_mm, self.height_mm
-
-            # Apply origin corner transform
-            if machine.x_axis_right:
-                canvas_x = canvas_w - wcs_x
-            else:
-                canvas_x = wcs_x
-            if machine.y_axis_down:
-                canvas_y = canvas_h - wcs_y
-            else:
-                canvas_y = wcs_y
+            wcs_x, wcs_y, _ = machine.get_active_wcs_offset()
+            canvas_x, canvas_y = self._machine_coords_to_canvas(wcs_x, wcs_y)
 
         self._work_origin_element.set_pos(canvas_x, canvas_y)
         self._work_origin_element.set_visible(True)
@@ -610,34 +562,13 @@ class WorkSurface(WorldSurface):
 
         # Get offset for axis labels (where 0,0 should appear)
         if self.machine:
-            if self.machine.wcs_origin_is_workarea_origin:
-                # Workarea origin is coordinate zero
-                # Labels should show 0,0 at workarea origin corner
-                ml, mt, mr, mb = self.machine.work_margins
-                # Axis renderer expects: wcs_world = width - origin_x
-                # We want wcs_world = workarea_right = width - mr
-                # So origin_x = mr for right, ml for left
-                # Similarly for Y
-                # For negative axes, renderer flips sign, so pre-negate
-                if self.machine.x_axis_right:
-                    origin_x = mr
-                else:
-                    origin_x = ml
-                if self.machine.y_axis_down:
-                    origin_y = mt
-                else:
-                    origin_y = mb
-
-                if self.machine.reverse_x_axis:
-                    origin_x = -origin_x
-                if self.machine.reverse_y_axis:
-                    origin_y = -origin_y
-
-                origin_offset_mm = (origin_x, origin_y, 0.0)
-            else:
-                # WCS mode: labels relative to WCS origin
-                wcs_x, wcs_y, wcs_z = self.machine.get_active_wcs_offset()
-                origin_offset_mm = (wcs_x, wcs_y, wcs_z)
+            space = self.machine.get_coordinate_space()
+            wcs_offset = self.machine.get_active_wcs_offset()
+            wcs_is_workarea = self.machine.wcs_origin_is_workarea_origin
+            origin_offset_mm = space.get_axis_label_origin(
+                wcs_offset=wcs_offset,
+                wcs_is_workarea_origin=wcs_is_workarea,
+            )
         else:
             origin_offset_mm = (0.0, 0.0, 0.0)
 
@@ -1035,10 +966,8 @@ class WorkSurface(WorldSurface):
         self._axis_renderer.set_x_axis_negative(self.machine.reverse_x_axis)
         self._axis_renderer.set_y_axis_negative(self.machine.reverse_y_axis)
 
-        self._work_origin_element.set_orientation(
-            self.machine.x_axis_right,
-            self.machine.y_axis_down,
-        )
+        space = self.machine.get_coordinate_space()
+        self._work_origin_element.set_coordinate_space(space)
 
         self._update_extent_frame()
 

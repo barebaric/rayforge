@@ -1,6 +1,7 @@
 import pytest
 from unittest.mock import MagicMock
 from rayforge.machine.models.machine import Machine, Origin
+from rayforge.pipeline.coordspace import MachineSpace
 
 
 @pytest.fixture
@@ -128,6 +129,10 @@ def test_wcs_visual_marker_location(surface, scenario):
         -scenario["wcs"][0] if scenario["reverse_x"] else scenario["wcs"][0],
         -scenario["wcs"][1] if scenario["reverse_y"] else scenario["wcs"][1],
     )
+
+    # Create a real MachineSpace from the mock machine
+    space = MachineSpace.from_machine(machine)
+    machine.get_coordinate_space.return_value = space
 
     # Attach machine to surface
     surface.machine = machine
