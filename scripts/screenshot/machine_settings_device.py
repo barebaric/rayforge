@@ -5,7 +5,7 @@ import time
 import logging
 from rayforge.uiscript import app, win
 from rayforge.machine.driver.grbl_util import get_grbl_setting_varsets
-from utils import open_machine_settings, take_screenshot
+from utils import open_machine_settings, take_screenshot, run_on_main_thread
 
 logger = logging.getLogger(__name__)
 PAGE = "device"
@@ -13,8 +13,6 @@ PAGE = "device"
 
 def inject_fake_device_settings(dialog):
     """Inject fake device settings into the device settings page."""
-    from utils import _run_on_main_thread
-
     device_page = dialog.content_stack.get_child_by_name("device")
 
     def _inject():
@@ -29,7 +27,7 @@ def inject_fake_device_settings(dialog):
         device_page._rebuild_settings_widgets(var_sets)
         device_page._update_ui_state()
 
-    _run_on_main_thread(_inject)
+    run_on_main_thread(_inject)
 
 
 def main():
