@@ -65,7 +65,6 @@ module.exports = {
         'features/multi-layer',
         'features/stock-handling',
         'features/simulation-mode',
-        'features/simulating-your-job',
         'features/framing-your-job',
         'features/holding-tabs',
         'features/overscan',

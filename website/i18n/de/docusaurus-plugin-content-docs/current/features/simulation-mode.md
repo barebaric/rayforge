@@ -2,215 +2,52 @@
 
 ![Simulationsmodus](/screenshots/main-simulation.png)
 
-Der Simulationsmodus bietet Echtzeit-Visualisierung deiner Laserjob-Ausführung, bevor du ihn auf der tatsächlichen Maschine ausführst. Er zeigt Ausführungsreihenfolge, Geschwindigkeitsvariationen und Leistungsstufen durch ein interaktives Overlay in der 2D-Ansicht.
-
-## Übersicht
-
-Der Simulationsmodus hilft dir:
-
-- **Ausführungsreihenfolge visualisieren** - Die genaue Sequenz sehen, in der Operationen laufen werden
-- **Geschwindigkeitsvariationen identifizieren** - Heatmap zeigt langsame (blau) bis schnelle (rot) Bewegungen
-- **Leistungsstufen überprüfen** - Transparenz zeigt Leistung an (fahl=niedrig, fett=hoch)
-- **Materialtests validieren** - Testraster-Ausführungsreihenfolge bestätigen
-- **Fehler frühzeitig erkennen** - Probleme erkennen, bevor Material verschwendet wird
-- **Timing verstehen** - Sehen, wie lange verschiedene Operationen dauern
+Der Simulationsmodus zeigt, wie dein Laserjob ausgeführt wird, bevor du ihn auf der Maschine startest. Du kannst den G-Code schrittweise durchgehen und genau sehen, was passieren wird.
 
 ## Simulationsmodus aktivieren
 
-Es gibt drei Möglichkeiten, in den Simulationsmodus zu gelangen:
+- **Tastatur**: Drücke <kbd>F11</kbd>
+- **Menü**: Gehe zu **Ansicht → Ausführung simulieren**
+- **Symbolleiste**: Klicke auf den Simulations-Button
 
-### Methode 1: Tastatur-Kurzbefehl
-Drücke <kbd>f7</kbd>, um den Simulationsmodus ein/aus zu schalten.
-
-### Methode 2: Menü
-- Navigiere zu **Ansicht → Ausführung simulieren**
-- Klicke zum Ein-/Ausschalten
-
-### Methode 3: Symbolleiste (falls verfügbar)
-- Auf die Simulationsmodus-Taste in der Symbolleiste klicken
-
-:::note Nur 2D-Ansicht
-Der Simulationsmodus funktioniert in der 2D-Ansicht. Wenn du dich in der 3D-Ansicht befindest (<kbd>f6</kbd>), wechsle zuerst zur 2D-Ansicht (<kbd>f5</kbd>).
-:::
-
-## Die Visualisierung verstehen
+## Visualisierung
 
 ### Geschwindigkeits-Heatmap
 
-Operationen werden basierend auf ihrer Geschwindigkeit gefärbt:
+Operationen werden nach Geschwindigkeit eingefärbt:
 
-| Farbe  | Geschwindigkeit | Bedeutung |
-|--------|-----------------|-----------|
-| 🔵 **Blau** | Langsamste | Minimale Geschwindigkeit in deinem Job |
-| 🔵 **Cyan** | Langsam | Unterhalb der durchschnittlichen Geschwindigkeit |
-| 🟢 **Grün** | Mittel | Durchschnittliche Geschwindigkeit |
-| 🟡 **Gelb** | Schnell | Oberhalb der durchschnittlichen Geschwindigkeit |
-| 🔴 **Rot** | Schnellste | Maximale Geschwindigkeit in deinem Job |
+| Geschwindigkeit | Farbe |
+| --------------- | ----- |
+| Am langsamsten  | Blau  |
+| Langsam         | Cyan  |
+| Mittel          | Grün  |
+| Schnell         | Gelb  |
+| Am schnellsten  | Rot   |
 
-Die Heatmap wird auf den tatsächlichen **Geschwindigkeitsbereich deines Jobs normalisiert**:
-- Wenn dein Job mit 100-1000 mm/min läuft, ist blau=100, rot=1000
-- Wenn dein Job mit 5000-10000 mm/min läuft, ist blau=5000, rot=10000
+Die Farben sind relativ zum Geschwindigkeitsbereich deines Jobs - Blau ist das Minimum, Rot das Maximum.
 
-### Leistungs-Transparenz
+### Leistungstransparenz
 
-Liniendeckkraft zeigt Laserleistung an:
+Die Liniendeckkraft zeigt die Laserleistung:
 
-- **Fahle Linien** (10% Deckkraft) = Niedrige Leistung (0%)
-- **Durchscheinend** (50% Deckkraft) = Mittlere Leistung (50%)
-- **Feste Linien** (100% Deckkraft) = Volle Leistung (100%)
+- **Faint lines** = Niedrige Leistung (Fahrwege, leichtes Gravieren)
+- **Fest gezeichnete Linien** = Hohe Leistung (Schneiden)
 
-Dies hilft zu identifizieren:
-- Verfahrbewegungen (0% Leistung) - Sehr fahl
-- Gravur-Operationen - Mittlere Deckkraft
-- Schneide-Operationen - Feste, fette Linien
+## Wiedergabesteuerung
 
-### Laserkopf-Indikator
+Verwende die Steuerelemente unten auf der Leinwand:
 
-Die Laserposition wird mit einem Fadenkreuz angezeigt:
+- **Wiedergabe/Pause** (<kbd>Leertaste</kbd>): Automatische Wiedergabe starten oder stoppen
+- **Fortschrittsregler**: Ziehen, um durch den Job zu scrollen
+- **Pfeiltasten**: Anweisungen einzeln durchgehen
 
-- 🔴 Rotes Fadenkreuz (6mm Linien)
-- Kreis-Umriss (3mm Radius)
-- Mittelpunkt (0.5mm)
+Die Simulation und die G-Code-Ansicht bleiben synchronisiert - das Durchgehen der Simulation hebt den entsprechenden G-Code hervor, und das Klicken auf G-Code-Zeilen springt zu diesem Punkt in der Simulation.
 
-Der Indikator bewegt sich während der Wiedergabe und zeigt genau, wo sich der Laser in der Ausführungssequenz befindet.
+## Bearbeiten während der Simulation
 
-## Wiedergabe-Steuerungen
-
-Wenn der Simulationsmodus aktiv ist, erscheinen Wiedergabe-Steuerungen unten auf der Arbeitsfläche:
-
-### Wiedergabe/Pause-Taste
-
-- **▶️ Wiedergabe**: Startet automatische Wiedergabe
-- **⏸️ Pause**: Stoppt an aktueller Position
-- **Auto-Wiedergabe**: Wiedergabe startet automatisch, wenn Sie den Simulationsmodus aktivieren
-
-### Fortschritts-Schieberegler
-
-- **Ziehen**, um durch die Ausführung zu scrollen
-- **Klicken**, um zu einem bestimmten Punkt zu springen
-- Zeigt aktuellen Schritt / Gesamtschritte
-- Unterstützt fraktionale Positionen für sanftes Scrollen
-
-### Geschwindigkeitsbereich-Anzeige
-
-Zeigt die minimale und maximale Geschwindigkeit in deinem Job:
-
-```
-Geschwindigkeitsbereich: 100 - 5000 mm/min
-```
-
-Dies hilft dir, die Heatmap-Farben zu verstehen.
-
-## Den Simulationsmodus verwenden
-
-### Ausführungsreihenfolge validieren
-
-Die Simulation zeigt die genaue Reihenfolge, in der Operationen ausgeführt werden:
-
-1. Simulationsmodus aktivieren (<kbd>f7</kbd>)
-2. Die Wiedergabe ansehen
-3. Verifizieren, dass Operationen in der erwarteten Sequenz laufen
-4. Überprüfen, dass Schnitte nach dem Gravieren erfolgen (falls zutreffend)
-
-**Beispiel:** Materialtest-Raster
-- Risikooptimierte Reihenfolge beobachten (schnellste Geschwindigkeiten zuerst)
-- Bestätigen, dass niedrigleistungs-Zellen vor hochleistungs-Zellen ausgeführt werden
-- Validieren, dass Tests in sicherer Sequenz läuft
-
-### Geschwindigkeitsvariationen überprüfen
-
-Die Heatmap verwenden, um Geschwindigkeitsänderungen zu identifizieren:
-
-- **Konsistente Farbe** = Gleichmäßige Geschwindigkeit (gut zum Gravieren)
-- **Farbänderungen** = Geschwindigkeitsvariationen (erwartet an Ecken)
-- **Blaue Bereiche** = Langsame Bewegungen (prüfen, ob beabsichtigt)
-
-### Job-Zeit schätzen
-
-Die Wiedergabedauer wird auf 5 Sekunden für den vollständigen Job skaliert:
-
-- Die Wiedergabegeschwindigkeit ansehen
-- Tatsächliche Zeit schätzen: Wenn die Wiedergabe sich flüssig anfühlt, wird der Job schnell sein
-- Wenn die Wiedergabe schnell springt, hat der Job viele kleine Segmente
-
-:::tip Tatsächliche Zeit
-Für die tatsächliche Job-Zeit während der Ausführung (nicht Simulation), überprüfe den rechten Abschnitt der Statusleiste nach der G-Code-Generierung.
-:::
-
-### Material-Tests debuggen
-
-Für Materialtest-Raster zeigt die Simulation:
-
-1. **Ausführungsreihenfolge** - Verifizieren, dass Zellen schnellsten→langsamsten laufen
-2. **Geschwindigkeits-Heatmap** - Jede Spalte sollte eine andere Farbe haben
-3. **Leistungs-Transparenz** - Jede Zeile sollte unterschiedliche Deckkraft haben
-
-Dies hilft zu bestätigen, dass der Test korrekt laufen wird, bevor Material verwendet wird.
-
-## Während des Simulierens bearbeiten
-
-Im Gegensatz zu vielen CAM-Tools ermöglicht es Rayforge dir, **Werkstücke während der Simulation zu bearbeiten**:
-
-- Objekte bewegen, skalieren, drehen ✅
-- Operationseinstellungen ändern ✅
-- Werkstücke hinzufügen/entfernen ✅
-- Zoomen und schwenken ✅
-
-**Auto-Update:** Die Simulation aktualisiert sich automatisch, wenn du Einstellungen änderst.
-
-:::note Kein Kontextwechsel
-Du kannst im Simulationsmodus bleiben, während du bearbeitest - kein Hin- und Her-Schalten nötig.
-:::
-
-## Tipps & Best Practices
-
-### Wann Simulation verwenden
-
-✅ **Immer simulieren vor:**
-- Ausführen teurer Materialien
-- Lange Jobs (>30 Minuten)
-- Materialtest-Raster
-- Jobs mit komplexer Ausführungsreihenfolge
-
-✅ **Simulation verwenden, um:**
-- Operations-Reihenfolge zu verifizieren
-- Auf unerwartete Verfahrbewegungen zu prüfen
-- Geschwindigkeits-/Leistungseinstellungen zu validieren
-- Neue Benutzer zu schulen
-
-### Die Visualisierung lesen
-
-✅ **Suchen nach:**
-- Konsistenten Farben innerhalb von Operationen (gut)
-- Sanften Übergängen zwischen Segmenten (gut)
-- Unerwarteten blauen Bereichen (untersuchen - warum so langsam?)
-- Fahlen Linien in Schneidebereichen (falsch - Leistungseinstellungen überprüfen)
-
-⚠️ **Rote Flaggen:**
-- Schneiden vor Gravieren (Werkstück kann sich bewegen)
-- Sehr lange blaue (langsame) Abschnitte (ineffizient)
-- Leistungsänderungen mitten in der Operation (Einstellungen überprüfen)
-
-### Leistungstipps
-
-- Die Simulation aktualisiert sich automatisch bei Änderungen
-- Bei sehr komplexen Jobs (1000+ Operationen) kann die Simulation langsamer werden
-- Simulation deaktivieren (<kbd>f7</kbd>), wenn nicht benötigt, für bessere Leistung
-
-## Tastatur-Kurzbefehle
-
-| Kurzbefehl | Aktion |
-|------------|--------|
-| <kbd>f7</kbd> | Simulationsmodus ein/aus schalten |
-| <kbd>f5</kbd> | Zur 2D-Ansicht wechseln (erforderlich für Simulation) |
-| <kbd>Leertaste</kbd> | Wiedergabe/Pause |
-| <kbd>links</kbd> | Schritt zurück |
-| <kbd>rechts</kbd> | Schritt vorwärts |
-| <kbd>home</kbd> | Zum Anfang springen |
-| <kbd>ende</kbd> | Zum Ende springen |
+Du kannst Werkstücke während der Simulation bearbeiten. Verschiebe, skaliere oder drehe Objekte, und die Simulation wird automatisch aktualisiert.
 
 ## Verwandte Themen
 
-- **[3D-Vorschau](../ui/3d-preview)** - 3D-Werkzeugweg-Visualisierung
-- **[Materialtest-Raster](operations/material-test-grid)** - Simulation verwenden, um Tests zu validieren
-- **[Deinen Job simulieren](simulating-your-job)** - Detaillierte Simulationsanleitung
+- **[3D-Vorschau](../ui/3d-preview)** - 3D-Werkpfad-Visualisierung
+- **[Materialtest-Raster](operations/material-test-grid)** - Verwende die Simulation zum Validieren von Tests
