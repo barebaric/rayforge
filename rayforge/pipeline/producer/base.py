@@ -144,15 +144,14 @@ class OpsProducer(ABC):
         name from the central registry and dispatches to the class's own
         `from_dict` method.
         """
-        from . import producer_by_name
+        from .registry import producer_registry
 
         producer_type = data.get("type")
         if not producer_type:
             raise ValueError("Input dictionary must contain a 'type' key.")
 
-        ProducerClass = producer_by_name.get(producer_type)
+        ProducerClass = producer_registry.get(producer_type)
         if not ProducerClass:
             raise ValueError(f"Unknown producer type: '{producer_type}'")
 
-        # Dispatch to the specific class's from_dict method
         return ProducerClass.from_dict(data)

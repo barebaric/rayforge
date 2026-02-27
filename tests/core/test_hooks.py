@@ -122,3 +122,71 @@ class TestHookLifecycle:
 
         assert len(received_manager) == 1
         assert received_manager[0] == mock_manager
+
+
+class TestRegistryHooks:
+    """Test cases for registry-related hooks."""
+
+    def test_register_steps_hook(self):
+        """Test that register_steps hook receives the step registry."""
+        received_registry = []
+
+        class StepRegistryPlugin:
+            @hookimpl
+            def register_steps(self, step_registry):
+                received_registry.append(step_registry)
+
+        context = RayforgeContext()
+        plugin = StepRegistryPlugin()
+        context.plugin_mgr.register(plugin)
+
+        from rayforge.core.step_registry import step_registry
+
+        context.plugin_mgr.hook.register_steps(step_registry=step_registry)
+
+        assert len(received_registry) == 1
+        assert received_registry[0] is step_registry
+
+    def test_register_producers_hook(self):
+        """Test that register_producers hook receives the producer registry."""
+        received_registry = []
+
+        class ProducerRegistryPlugin:
+            @hookimpl
+            def register_producers(self, producer_registry):
+                received_registry.append(producer_registry)
+
+        context = RayforgeContext()
+        plugin = ProducerRegistryPlugin()
+        context.plugin_mgr.register(plugin)
+
+        from rayforge.pipeline.producer.registry import producer_registry
+
+        context.plugin_mgr.hook.register_producers(
+            producer_registry=producer_registry
+        )
+
+        assert len(received_registry) == 1
+        assert received_registry[0] is producer_registry
+
+    def test_register_step_widgets_hook(self):
+        """Test register_step_widgets hook receives widget registry."""
+        received_registry = []
+
+        class WidgetRegistryPlugin:
+            @hookimpl
+            def register_step_widgets(self, widget_registry):
+                received_registry.append(widget_registry)
+
+        context = RayforgeContext()
+        plugin = WidgetRegistryPlugin()
+        context.plugin_mgr.register(plugin)
+
+        mock_registry = {"test": "widget"}
+
+        context.plugin_mgr.hook.register_step_widgets(
+            widget_registry=mock_registry
+        )
+
+        assert len(received_registry) == 1
+        assert received_registry[0] == mock_registry

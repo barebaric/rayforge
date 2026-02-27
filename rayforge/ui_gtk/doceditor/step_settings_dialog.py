@@ -15,7 +15,7 @@ from ..shared.patched_dialog_window import PatchedDialogWindow
 from ..shared.preferences_page import TrackedPreferencesPage
 from ..shared.unit_spin_row import UnitSpinRowHelper
 from .recipe_control_widget import RecipeControlWidget
-from .step_settings import WIDGET_REGISTRY
+from .step_settings import step_widget_registry
 
 if TYPE_CHECKING:
     from ...doceditor.editor import DocEditor
@@ -64,7 +64,7 @@ class GeneralStepSettingsView(TrackedPreferencesPage):
             if producer_name:
                 # Instantiate producer to check its properties later
                 producer = OpsProducer.from_dict(producer_dict)
-                WidgetClass = WIDGET_REGISTRY.get(producer_name)
+                WidgetClass = step_widget_registry.get(producer_name)
                 if WidgetClass:
                     widget = WidgetClass(
                         self.editor,
@@ -407,7 +407,7 @@ class PostProcessingSettingsView(TrackedPreferencesPage):
             for t_dict in step.per_workpiece_transformers_dicts:
                 transformer_name = t_dict.get("name")
                 if transformer_name:
-                    WidgetClass = WIDGET_REGISTRY.get(transformer_name)
+                    WidgetClass = step_widget_registry.get(transformer_name)
                     if WidgetClass:
                         transformer = OpsTransformer.from_dict(t_dict)
                         widget = WidgetClass(
@@ -425,7 +425,7 @@ class PostProcessingSettingsView(TrackedPreferencesPage):
             for t_dict in step.per_step_transformers_dicts:
                 transformer_name = t_dict.get("name")
                 if transformer_name:
-                    WidgetClass = WIDGET_REGISTRY.get(transformer_name)
+                    WidgetClass = step_widget_registry.get(transformer_name)
                     if WidgetClass:
                         transformer = OpsTransformer.from_dict(t_dict)
                         widget = WidgetClass(

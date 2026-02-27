@@ -4,15 +4,16 @@ from abc import ABC
 from typing import List, Optional, TYPE_CHECKING, Dict, Any, cast, Set
 from blinker import Signal
 from ..shared.units.formatter import format_value
+from .capability import Capability, CAPABILITIES_BY_NAME
 from .item import DocItem
 from .matrix import Matrix
-from .capability import Capability, CAPABILITIES_BY_NAME
+from .step_registry import step_registry
 
 if TYPE_CHECKING:
+    from ..machine.models.laser import Laser
+    from ..machine.models.machine import Machine
     from .layer import Layer
     from .workflow import Workflow
-    from ..machine.models.machine import Machine
-    from ..machine.models.laser import Laser
 
 
 logger = logging.getLogger(__name__)
@@ -68,6 +69,7 @@ class Step(DocItem, ABC):
         result = {
             "uid": self.uid,
             "type": "step",
+            "step_type": self.__class__.__name__,
             "name": self.name,
             "matrix": self.matrix.to_list(),
             "typelabel": self.typelabel,
@@ -101,6 +103,7 @@ class Step(DocItem, ABC):
         known_keys = {
             "uid",
             "type",
+            "step_type",
             "name",
             "matrix",
             "typelabel",
@@ -126,7 +129,12 @@ class Step(DocItem, ABC):
         }
         extra = {k: v for k, v in data.items() if k not in known_keys}
 
-        step = cls(typelabel=data["typelabel"], name=data.get("name"))
+        step_type_name = data.get("step_type", "Step")
+        step_class = step_registry.get(step_type_name)
+        if step_class is None:
+            step_class = cls
+
+        step = step_class(typelabel=data["typelabel"], name=data.get("name"))
         step.uid = data["uid"]
         step.matrix = Matrix.from_list(data["matrix"])
         step.visible = data["visible"]
