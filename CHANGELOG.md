@@ -5,6 +5,10 @@ All notable changes to Rayforge will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.1.1
+
+- Fix screenshot link in appstream file causing Flatpak build to fail.
+
 ## 1.1
 
 ### Added
