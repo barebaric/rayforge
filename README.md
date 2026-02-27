@@ -59,7 +59,7 @@ We also have a [Discord](https://discord.gg/sTHNdTtpQJ).
 
 ## Installation
 
-For installation instructions [refer to our homepage](https://rayforge.org/docs/0.22/getting-started/installation.html).
+For installation instructions [refer to our homepage](https://rayforge.org/docs/getting-started/installation).
 
 ## Development
 
