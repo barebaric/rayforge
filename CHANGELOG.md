@@ -5,6 +5,68 @@ All notable changes to Rayforge will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.1
+
+### Added
+
+- Major: MacOS support was added thanks to Github user pgilfernandez!
+- Major: Complete data pipeline backend rewrite with improved performance
+  and memory management
+- Major: Unified raster operations - the old "raster", "depth", and
+  "dither" operations are now replaced by a single, unified raster operation
+- Major: G-code console replacing the log view with a fully featured terminal
+- SVG and DXF export support - export your documents or selected objects
+- Angle constraints now available in the sketcher
+- New "Raster (Dither)" operation type with configurable algorithms
+- Built-in G-code dialect supporting dynamic power mode
+- Auto thresholding for Variable Power and Multipass raster modes
+- Histogram in raster engraver to help setting thresholds
+- Symbolic visualization of raster direction in rasterizer
+- Configurable line distance in all raster operations
+- Axis extents, work surface, and soft limits can now be configured per machine
+- RAYFORGE_MAX_WORKERS environment variable to limit the number of processes
+- macOS packaging scripts and resources for better platform support
+- `--uiscript` CLI argument for executing scripts after the UI is up
+- Optional (opt-in) anonymous usage statistic collection
+- Material files can now contain translations
+
+### Changed
+
+- Machine selector moved to the window header for easier access
+- G-code viewer and control panel toggles are now independent
+- Machine settings dialog reorganized for better clarity
+- Pressing "reset position" on a workpiece places it at WCS origin,
+  not machine origin
+- Workpiece properties now show the position in WCS coordinates
+- Contour and shrinkwrap operations use proper tolerance instead of
+  laser dot size
+- Increased maximum laser spot size to 10 mm
+- File dialog now selects BMP by default instead of all supported files
+- Imported images are now placed at reference origin by default
+- Added Ukrainian translations
+- Re-assigned Alt key bindings to avoid clashing with main menu actions
+
+### Fixed
+
+- Multiple memory leaks in the data pipeline
+- Race conditions between worker pool task completion and pipeline shutdown
+- Camera device scanning crash on Windows
+- Multipass post-processor exception
+- Rasterizer angle causing distortion
+- Various macOS issues: shm_open length errors, SVG rendering fallback,
+  keyboard shortcuts
+- Workpiece stage not emitting correct node state
+- Zoom resolution stuck until resizing at least once
+- Blurry view overlay on startup
+- Race condition leads to stale vectors for cancelled tasks
+- Memory for view artifacts released late
+- Unresponsive serial ports now handled gracefully with log message
+- Simulation preview strokes now stay constant across zoom levels
+- Speed entered in Jog dialog is now correctly converted to base units
+- Switching to 3D view sometimes showed no operations
+- Some icons not appearing when running the snap on non-GNOME environments
+- GRBL connection handshake timeout handled with backoff retry
+
 ## [1.0.1] - 2026-02-01
 
 ### Fixed
