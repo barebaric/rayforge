@@ -1,0 +1,5 @@
+version: 2
+updates:
+  - directory: /website
+    package-ecosystem: "npm"
+    open-pull-requests-limit: 0
