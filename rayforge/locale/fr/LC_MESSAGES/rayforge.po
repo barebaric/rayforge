@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-02-25 20:09+0100\n"
+"POT-Creation-Date: 2026-02-27 16:06+0100\n"
 "PO-Revision-Date: 2025-10-15 07:10+0200\n"
 "Last-Translator: Samuel <knipknap@gmail.com>\n"
 "Language-Team: French\n"
@@ -2659,6 +2659,19 @@ msgstr "Marge inférieure"
 #: rayforge/ui_gtk/machine/hardware_page.py
 msgid "Unusable space from bottom edge"
 msgstr "Espace inutilisable depuis le bord inférieur"
+
+#: rayforge/ui_gtk/machine/hardware_page.py
+msgid "Workarea Origin Is Coordinate Zero"
+msgstr "L'origine de la zone de travail est le zéro des coordonnées"
+
+#: rayforge/ui_gtk/machine/hardware_page.py
+msgid ""
+"Treat workarea origin as coordinate zero. Hides WCS controls and uses "
+"workarea margins as offsets."
+msgstr ""
+"Traite l'origine de la zone de travail comme le zéro des coordonnées. Masque "
+"les contrôles WCS et utilise les marges de la zone de travail comme "
+"décalages."
 
 #: rayforge/ui_gtk/machine/hardware_page.py
 msgid "Soft Limits"

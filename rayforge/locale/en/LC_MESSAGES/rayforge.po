@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-02-25 20:09+0100\n"
+"POT-Creation-Date: 2026-02-27 16:06+0100\n"
 "PO-Revision-Date: 2025-07-13 11:49+0200\n"
 "Last-Translator: Samuel <knipknap@gmail.com>\n"
 "Language-Team: English\n"
@@ -2491,6 +2491,16 @@ msgstr ""
 
 #: rayforge/ui_gtk/machine/hardware_page.py
 msgid "Unusable space from bottom edge"
+msgstr ""
+
+#: rayforge/ui_gtk/machine/hardware_page.py
+msgid "Workarea Origin Is Coordinate Zero"
+msgstr ""
+
+#: rayforge/ui_gtk/machine/hardware_page.py
+msgid ""
+"Treat workarea origin as coordinate zero. Hides WCS controls and uses "
+"workarea margins as offsets."
 msgstr ""
 
 #: rayforge/ui_gtk/machine/hardware_page.py
