@@ -59,10 +59,12 @@ def test_set_position_with_y_axis_down(transform_cmd, sample_items):
         # Configure the mock to simulate Y-axis inversion logic:
         # machine Y=0 -> world Y = height - item_height
         # Here: machine Y=0, height=100, item_height=20 -> world Y=80
-        mock_machine.machine_to_world.side_effect = lambda pos, size: (
+        mock_space = MagicMock()
+        mock_space.machine_item_to_world.side_effect = lambda pos, size: (
             pos[0],
             100 - pos[1] - size[1],
         )
+        mock_machine.get_coordinate_space.return_value = mock_space
 
         mock_get_context.return_value.machine = mock_machine
         hm = transform_cmd._editor.history_manager
@@ -178,13 +180,16 @@ def test_set_position_with_x_axis_right(transform_cmd, sample_items):
         mock_machine.y_axis_down = False
         mock_machine.axis_extents = (100, 100)
 
-        # Mock machine_to_world call to return expected world coordinates
+        # Mock get_coordinate_space().machine_item_to_world() to return
+        # expected world coordinates.
         # For x=10 (Machine) -> World X = 100 - 10 - 20 (width) = 70
         # For y=10 (Machine) -> World Y = 10
-        mock_machine.machine_to_world.side_effect = lambda pos, size: (
+        mock_space = MagicMock()
+        mock_space.machine_item_to_world.side_effect = lambda pos, size: (
             100 - pos[0] - size[0],
             pos[1],
         )
+        mock_machine.get_coordinate_space.return_value = mock_space
 
         mock_get_context.return_value.machine = mock_machine
 

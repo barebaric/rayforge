@@ -226,7 +226,8 @@ class TestMachineSpace:
         )
 
         x, y = space.to_command_coords(
-            100.0, 50.0,
+            100.0,
+            50.0,
             wcs_offset=(0.0, 0.0, 0.0),
             wcs_is_workarea_origin=True,
         )
@@ -308,6 +309,106 @@ class TestCoordinateSpaceTransforms:
         expected[1, 1] = -1.0
         expected[1, 3] = 100.0
         np.testing.assert_array_almost_equal(matrix, expected)
+
+
+class TestMachineSpaceItemTransforms:
+    """Tests for item position transforms with bounding box adjustment."""
+
+    def test_world_item_to_machine_bottom_left(self):
+        """Bottom-Left origin: identity transform for items."""
+        space = MachineSpace(
+            origin=OriginCorner.BOTTOM_LEFT,
+            x_positive_direction=AxisDirection.POSITIVE_RIGHT,
+            y_positive_direction=AxisDirection.POSITIVE_UP,
+            extents=(100.0, 100.0),
+        )
+        item_size = (10, 10)
+
+        res = space.world_item_to_machine((10, 10), item_size)
+        assert res == (10, 10)
+
+    def test_world_item_to_machine_top_left(self):
+        """Top-Left origin: Y is flipped for items."""
+        space = MachineSpace(
+            origin=OriginCorner.TOP_LEFT,
+            x_positive_direction=AxisDirection.POSITIVE_RIGHT,
+            y_positive_direction=AxisDirection.POSITIVE_DOWN,
+            extents=(100.0, 100.0),
+        )
+        item_size = (10, 10)
+
+        res = space.world_item_to_machine((10, 10), item_size)
+        assert res == (10, 80)
+
+    def test_world_item_to_machine_top_right(self):
+        """Top-Right origin: both X and Y are flipped for items."""
+        space = MachineSpace(
+            origin=OriginCorner.TOP_RIGHT,
+            x_positive_direction=AxisDirection.POSITIVE_LEFT,
+            y_positive_direction=AxisDirection.POSITIVE_DOWN,
+            extents=(100.0, 100.0),
+        )
+        item_size = (10, 10)
+
+        res = space.world_item_to_machine((10, 10), item_size)
+        assert res == (80, 80)
+
+    def test_world_item_to_machine_bottom_right(self):
+        """Bottom-Right origin: X is flipped for items."""
+        space = MachineSpace(
+            origin=OriginCorner.BOTTOM_RIGHT,
+            x_positive_direction=AxisDirection.POSITIVE_LEFT,
+            y_positive_direction=AxisDirection.POSITIVE_UP,
+            extents=(100.0, 100.0),
+        )
+        item_size = (10, 10)
+
+        res = space.world_item_to_machine((10, 10), item_size)
+        assert res == (80, 10)
+
+    def test_machine_item_to_world_top_right(self):
+        """Top-Right origin: inverse transform for items."""
+        space = MachineSpace(
+            origin=OriginCorner.TOP_RIGHT,
+            x_positive_direction=AxisDirection.POSITIVE_LEFT,
+            y_positive_direction=AxisDirection.POSITIVE_DOWN,
+            extents=(100.0, 100.0),
+        )
+        item_size = (10, 10)
+
+        res = space.machine_item_to_world((80, 80), item_size)
+        assert res == (10, 10)
+
+        res = space.machine_item_to_world((0, 0), item_size)
+        assert res == (90, 90)
+
+    def test_world_item_to_machine_with_reverse_x(self):
+        """Bottom-Left origin with reverse_x: X is negated."""
+        space = MachineSpace(
+            origin=OriginCorner.BOTTOM_LEFT,
+            x_positive_direction=AxisDirection.POSITIVE_RIGHT,
+            y_positive_direction=AxisDirection.POSITIVE_UP,
+            extents=(100.0, 100.0),
+            reverse_x=True,
+        )
+        item_size = (10, 10)
+
+        res = space.world_item_to_machine((10, 10), item_size)
+        assert res == (-10, 10)
+
+    def test_world_item_to_machine_with_reverse_y(self):
+        """Bottom-Left origin with reverse_y: Y is negated."""
+        space = MachineSpace(
+            origin=OriginCorner.BOTTOM_LEFT,
+            x_positive_direction=AxisDirection.POSITIVE_RIGHT,
+            y_positive_direction=AxisDirection.POSITIVE_UP,
+            extents=(100.0, 100.0),
+            reverse_y=True,
+        )
+        item_size = (10, 10)
+
+        res = space.world_item_to_machine((10, 10), item_size)
+        assert res == (10, -10)
 
     def test_bottom_right_origin_x_left(self):
         """BR origin with X-left should flip and translate X."""

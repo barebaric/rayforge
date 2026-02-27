@@ -80,7 +80,8 @@ class TestWorldToMachine:
         machine.set_reverse_x_axis(reverse_x)
         machine.set_reverse_y_axis(reverse_y)
 
-        result = machine.world_point_to_machine(10.0, 20.0)
+        space = machine.get_coordinate_space()
+        result = space.world_point_to_machine(10.0, 20.0)
         assert result[0] == pytest.approx(expected_mx)
         assert result[1] == pytest.approx(expected_my)
 
@@ -111,7 +112,8 @@ class TestWorldToMachine:
         encoder_result = (cmd.end[0], cmd.end[1])
 
         # Get world_point_to_machine output
-        w2m_result = machine.world_point_to_machine(10.0, 20.0)
+        space = machine.get_coordinate_space()
+        w2m_result = space.world_point_to_machine(10.0, 20.0)
 
         # They should match
         assert w2m_result[0] == pytest.approx(encoder_result[0])
@@ -266,9 +268,10 @@ class TestPositionDisplayInWorkareaMode:
         # Workarea origin in WORLD space: (10, 40)
         # Workpiece at WORLD (20, 50)
         pos_world = (20.0, 50.0)
-        pos_machine = machine.world_to_machine(pos_world, (0, 0))
+        space = machine.get_coordinate_space()
+        pos_machine = space.world_item_to_machine(pos_world, (0, 0))
         offset_world = machine.get_reference_offset()
-        offset_machine = machine.world_point_to_machine(
+        offset_machine = space.world_point_to_machine(
             offset_world[0], offset_world[1]
         )
         pos_ref = (
@@ -290,9 +293,10 @@ class TestPositionDisplayInWorkareaMode:
         # Workarea origin in WORLD space: (10, 80)
         # Workpiece at WORLD (20, 70) - 10 units from workarea origin
         pos_world = (20.0, 70.0)
-        pos_machine = machine.world_to_machine(pos_world, (0, 0))
+        space = machine.get_coordinate_space()
+        pos_machine = space.world_item_to_machine(pos_world, (0, 0))
         offset_world = machine.get_reference_offset()
-        offset_machine = machine.world_point_to_machine(
+        offset_machine = space.world_point_to_machine(
             offset_world[0], offset_world[1]
         )
         pos_ref = (
@@ -317,9 +321,10 @@ class TestPositionDisplayInWorkareaMode:
         # Workarea origin in WORLD space: (70, 40)
         # Workpiece at WORLD (80, 50) - 10 units from workarea origin
         pos_world = (80.0, 50.0)
-        pos_machine = machine.world_to_machine(pos_world, (0, 0))
+        space = machine.get_coordinate_space()
+        pos_machine = space.world_item_to_machine(pos_world, (0, 0))
         offset_world = machine.get_reference_offset()
-        offset_machine = machine.world_point_to_machine(
+        offset_machine = space.world_point_to_machine(
             offset_world[0], offset_world[1]
         )
         pos_ref = (
@@ -344,9 +349,10 @@ class TestPositionDisplayInWorkareaMode:
         # Workarea origin in WORLD space: (70, 80)
         # Workpiece at WORLD (80, 70) - 10 units from workarea origin
         pos_world = (80.0, 70.0)
-        pos_machine = machine.world_to_machine(pos_world, (0, 0))
+        space = machine.get_coordinate_space()
+        pos_machine = space.world_item_to_machine(pos_world, (0, 0))
         offset_world = machine.get_reference_offset()
-        offset_machine = machine.world_point_to_machine(
+        offset_machine = space.world_point_to_machine(
             offset_world[0], offset_world[1]
         )
         pos_ref = (
@@ -371,9 +377,10 @@ class TestPositionDisplayInWorkareaMode:
 
         # Workpiece at WORLD (20, 50)
         pos_world = (20.0, 50.0)
-        pos_machine = machine.world_to_machine(pos_world, (0, 0))
+        space = machine.get_coordinate_space()
+        pos_machine = space.world_item_to_machine(pos_world, (0, 0))
         offset_world = machine.get_reference_offset()
-        offset_machine = machine.world_point_to_machine(
+        offset_machine = space.world_point_to_machine(
             offset_world[0], offset_world[1]
         )
         pos_ref = (
@@ -398,9 +405,10 @@ class TestPositionDisplayInWorkareaMode:
 
         # Workpiece at WORLD (20, 50)
         pos_world = (20.0, 50.0)
-        pos_machine = machine.world_to_machine(pos_world, (0, 0))
+        space = machine.get_coordinate_space()
+        pos_machine = space.world_item_to_machine(pos_world, (0, 0))
         offset_world = machine.get_reference_offset()
-        offset_machine = machine.world_point_to_machine(
+        offset_machine = space.world_point_to_machine(
             offset_world[0], offset_world[1]
         )
         pos_ref = (
@@ -426,9 +434,10 @@ class TestPositionDisplayInWorkareaMode:
 
         # Workpiece at WORLD (20, 50)
         pos_world = (20.0, 50.0)
-        pos_machine = machine.world_to_machine(pos_world, (0, 0))
+        space = machine.get_coordinate_space()
+        pos_machine = space.world_item_to_machine(pos_world, (0, 0))
         offset_world = machine.get_reference_offset()
-        offset_machine = machine.world_point_to_machine(
+        offset_machine = space.world_point_to_machine(
             offset_world[0], offset_world[1]
         )
         pos_ref = (
@@ -465,9 +474,10 @@ class TestFullCoordinatePipeline:
         pos_world = (15.0, 45.0)
         size = (10.0, 10.0)
 
-        pos_machine = machine.world_to_machine(pos_world, size)
+        space = machine.get_coordinate_space()
+        pos_machine = space.world_item_to_machine(pos_world, size)
         offset_world = machine.get_reference_offset()
-        offset_machine = machine.world_point_to_machine(
+        offset_machine = space.world_point_to_machine(
             offset_world[0], offset_world[1]
         )
         pos_ref = (
@@ -495,9 +505,10 @@ class TestFullCoordinatePipeline:
         pos_world = (15.0, 45.0)
         size = (10.0, 10.0)
 
-        pos_machine = machine.world_to_machine(pos_world, size)
+        space = machine.get_coordinate_space()
+        pos_machine = space.world_item_to_machine(pos_world, size)
         offset_world = machine.get_reference_offset()
-        offset_machine = machine.world_point_to_machine(
+        offset_machine = space.world_point_to_machine(
             offset_world[0], offset_world[1]
         )
         pos_ref = (
@@ -527,9 +538,10 @@ class TestFullCoordinatePipeline:
         pos_world = (15.0, 45.0)
         size = (10.0, 10.0)
 
-        pos_machine = machine.world_to_machine(pos_world, size)
+        space = machine.get_coordinate_space()
+        pos_machine = space.world_item_to_machine(pos_world, size)
         offset_world = machine.get_reference_offset()
-        offset_machine = machine.world_point_to_machine(
+        offset_machine = space.world_point_to_machine(
             offset_world[0], offset_world[1]
         )
         pos_ref = (
@@ -559,9 +571,10 @@ class TestFullCoordinatePipeline:
         pos_world = (15.0, 45.0)
         size = (10.0, 10.0)
 
-        pos_machine = machine.world_to_machine(pos_world, size)
+        space = machine.get_coordinate_space()
+        pos_machine = space.world_item_to_machine(pos_world, size)
         offset_world = machine.get_reference_offset()
-        offset_machine = machine.world_point_to_machine(
+        offset_machine = space.world_point_to_machine(
             offset_world[0], offset_world[1]
         )
         pos_ref = (
@@ -604,7 +617,8 @@ class TestUIAndGcodeAlignment:
         assert ref_offset[0] == pytest.approx(10.0)
 
         # Transform through world_point_to_machine to get MACHINE space offset
-        offset_machine = machine.world_point_to_machine(
+        space = machine.get_coordinate_space()
+        offset_machine = space.world_point_to_machine(
             ref_offset[0], ref_offset[1]
         )
 
@@ -626,9 +640,10 @@ class TestUIAndGcodeAlignment:
         size = (10.0, 10.0)
 
         # What the UI now calculates:
-        pos_machine = machine.world_to_machine(pos_world, size)
+        space = machine.get_coordinate_space()
+        pos_machine = space.world_item_to_machine(pos_world, size)
         offset_world = machine.get_reference_offset()
-        offset_machine = machine.world_point_to_machine(
+        offset_machine = space.world_point_to_machine(
             offset_world[0], offset_world[1]
         )
         ui_pos_ref = (

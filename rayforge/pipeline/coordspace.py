@@ -354,6 +354,215 @@ class MachineSpace(CoordinateSpace):
         else:
             return machine_x - wcs_offset[0], machine_y - wcs_offset[1]
 
+    def get_transform_from_world(self) -> np.ndarray:
+        """
+        Returns the inverse transformation matrix (world → machine).
+
+        This is the inverse of get_transform_to_world(), used to convert
+        coordinates from world space to machine space.
+
+        Note: This matrix handles origin corner transformation only.
+        The reverse_x/reverse_y sign flips are applied separately in
+        world_point_to_machine().
+
+        Returns:
+            A 4x4 numpy array representing the inverse transformation matrix.
+        """
+        return np.linalg.inv(self.get_transform_to_world(self.extents))
+
+    def world_point_to_machine(
+        self, x: float, y: float
+    ) -> Tuple[float, float]:
+        """
+        Transform a point from world space to machine space.
+
+        WORLD space: Bottom-Left (0,0), Y-up, X-right
+        MACHINE space: Based on origin corner and axis reversal settings.
+
+        This applies:
+        1. Origin corner transformation (via inverse matrix)
+        2. Axis reversal sign flip (reverse_x/reverse_y)
+
+        Args:
+            x: X coordinate in world space.
+            y: Y coordinate in world space.
+
+        Returns:
+            Tuple of (x, y) in machine space.
+        """
+        width, height = self.extents
+
+        origin_is_right = self.origin in (
+            OriginCorner.TOP_RIGHT,
+            OriginCorner.BOTTOM_RIGHT,
+        )
+        origin_is_top = self.origin in (
+            OriginCorner.TOP_LEFT,
+            OriginCorner.TOP_RIGHT,
+        )
+
+        if origin_is_right:
+            mx = width - x
+        else:
+            mx = x
+
+        if origin_is_top:
+            my = height - y
+        else:
+            my = y
+
+        if self.reverse_x:
+            mx = -mx
+        if self.reverse_y:
+            my = -my
+
+        return mx, my
+
+    def machine_point_to_world(
+        self, x: float, y: float
+    ) -> Tuple[float, float]:
+        """
+        Transform a point from machine space to world space.
+
+        Inverse of world_point_to_machine().
+
+        This applies:
+        1. Axis reversal sign flip (reverse_x/reverse_y)
+        2. Origin corner transformation (via matrix)
+
+        Args:
+            x: X coordinate in machine space.
+            y: Y coordinate in machine space.
+
+        Returns:
+            Tuple of (x, y) in world space.
+        """
+        mx, my = x, y
+
+        if self.reverse_x:
+            mx = -mx
+        if self.reverse_y:
+            my = -my
+
+        width, height = self.extents
+
+        origin_is_right = self.origin in (
+            OriginCorner.TOP_RIGHT,
+            OriginCorner.BOTTOM_RIGHT,
+        )
+        origin_is_top = self.origin in (
+            OriginCorner.TOP_LEFT,
+            OriginCorner.TOP_RIGHT,
+        )
+
+        if origin_is_right:
+            wx = width - mx
+        else:
+            wx = mx
+
+        if origin_is_top:
+            wy = height - my
+        else:
+            wy = my
+
+        return wx, wy
+
+    def world_item_to_machine(
+        self,
+        pos: Tuple[float, float],
+        size: Tuple[float, float],
+    ) -> Tuple[float, float]:
+        """
+        Convert item position from world space to machine space.
+
+        This handles the item's bounding box - for origins at right/bottom,
+        the position refers to the top-left corner, which needs adjustment.
+
+        Args:
+            pos: (x, y) position in world coordinates (top-left corner).
+            size: (width, height) of the item.
+
+        Returns:
+            (x, y) position in machine coordinates.
+        """
+        wx, wy = pos
+        w, h = size
+        width, height = self.extents
+
+        origin_is_right = self.origin in (
+            OriginCorner.TOP_RIGHT,
+            OriginCorner.BOTTOM_RIGHT,
+        )
+        origin_is_top = self.origin in (
+            OriginCorner.TOP_LEFT,
+            OriginCorner.TOP_RIGHT,
+        )
+
+        if origin_is_right:
+            mx = width - wx - w
+        else:
+            mx = wx
+
+        if origin_is_top:
+            my = height - wy - h
+        else:
+            my = wy
+
+        if self.reverse_x:
+            mx = -mx
+        if self.reverse_y:
+            my = -my
+
+        return mx, my
+
+    def machine_item_to_world(
+        self,
+        pos: Tuple[float, float],
+        size: Tuple[float, float],
+    ) -> Tuple[float, float]:
+        """
+        Convert item position from machine space to world space.
+
+        This handles the item's bounding box - for origins at right/bottom,
+        the position refers to the top-left corner, which needs adjustment.
+
+        Args:
+            pos: (x, y) position in machine coordinates.
+            size: (width, height) of the item.
+
+        Returns:
+            (x, y) position in world coordinates.
+        """
+        mx, my = pos
+        w, h = size
+        width, height = self.extents
+
+        if self.reverse_x:
+            mx = -mx
+        if self.reverse_y:
+            my = -my
+
+        origin_is_right = self.origin in (
+            OriginCorner.TOP_RIGHT,
+            OriginCorner.BOTTOM_RIGHT,
+        )
+        origin_is_top = self.origin in (
+            OriginCorner.TOP_LEFT,
+            OriginCorner.TOP_RIGHT,
+        )
+
+        if origin_is_right:
+            wx = width - mx - w
+        else:
+            wx = mx
+
+        if origin_is_top:
+            wy = height - my - h
+        else:
+            wy = my
+
+        return wx, wy
+
 
 @dataclass(frozen=True)
 class WorkareaSpace(CoordinateSpace):

@@ -190,7 +190,8 @@ class TransformCmd:
                 size_world = item.size
 
                 if machine:
-                    x_world, y_world = machine.machine_to_world(
+                    space = machine.get_coordinate_space()
+                    x_world, y_world = space.machine_item_to_world(
                         (x, y), size_world
                     )
                 else:
