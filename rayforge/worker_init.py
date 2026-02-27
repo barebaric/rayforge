@@ -41,6 +41,15 @@ def initialize_worker():
                 "GIO_EXTRA_MODULES", str(bundled_gio_modules)
             )
 
+    # Import builtin packages to register their producers.
+    # This must happen before any from_dict() deserialization.
+    try:
+        from rayforge.builtin_packages import ensure_loaded
+
+        ensure_loaded()
+    except ImportError:
+        pass
+
     logging.getLogger(__name__).debug(
         "Worker process initialized successfully."
     )
