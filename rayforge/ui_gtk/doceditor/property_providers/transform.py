@@ -42,7 +42,8 @@ class TransformPropertyProvider(PropertyProvider):
 
         # Calculate X/Y position in REFERENCE coordinates
         if machine:
-            pos_machine = machine.world_to_machine(item.pos, item.size)
+            space = machine.get_coordinate_space()
+            pos_machine = space.world_item_to_machine(item.pos, item.size)
             pos_machine_x, pos_machine_y = pos_machine
 
             # Get reference offset
@@ -50,7 +51,7 @@ class TransformPropertyProvider(PropertyProvider):
             # - Workarea mode: offset is in WORLD space, transform to MACHINE
             if machine.wcs_origin_is_workarea_origin:
                 offset_world = machine.get_reference_offset()
-                offset_machine = machine.world_point_to_machine(
+                offset_machine = space.world_point_to_machine(
                     offset_world[0], offset_world[1]
                 )
             else:
@@ -352,10 +353,11 @@ class TransformPropertyProvider(PropertyProvider):
             # Convert reference coordinates to machine coordinates
             machine = get_context().machine
             if machine:
+                space = machine.get_coordinate_space()
                 if machine.wcs_origin_is_workarea_origin:
                     # Workarea mode: offset is in WORLD space, transform it
                     offset_world = machine.get_reference_offset()
-                    offset_machine = machine.world_point_to_machine(
+                    offset_machine = space.world_point_to_machine(
                         offset_world[0], offset_world[1]
                     )
                 else:
@@ -389,10 +391,11 @@ class TransformPropertyProvider(PropertyProvider):
             # Convert reference coordinates to machine coordinates
             machine = get_context().machine
             if machine:
+                space = machine.get_coordinate_space()
                 if machine.wcs_origin_is_workarea_origin:
                     # Workarea mode: offset is in WORLD space, transform it
                     offset_world = machine.get_reference_offset()
-                    offset_machine = machine.world_point_to_machine(
+                    offset_machine = space.world_point_to_machine(
                         offset_world[0], offset_world[1]
                     )
                 else:
@@ -543,10 +546,11 @@ class TransformPropertyProvider(PropertyProvider):
         # Reset to coordinate origin (X=0 in reference coordinates)
         machine = get_context().machine
         if machine:
+            space = machine.get_coordinate_space()
             if machine.wcs_origin_is_workarea_origin:
                 # Workarea mode: offset is in WORLD space, transform it
                 offset_world = machine.get_reference_offset()
-                offset_machine = machine.world_point_to_machine(
+                offset_machine = space.world_point_to_machine(
                     offset_world[0], offset_world[1]
                 )
             else:
@@ -571,10 +575,11 @@ class TransformPropertyProvider(PropertyProvider):
         # Reset to coordinate origin (Y=0 in reference coordinates)
         machine = get_context().machine
         if machine:
+            space = machine.get_coordinate_space()
             if machine.wcs_origin_is_workarea_origin:
                 # Workarea mode: offset is in WORLD space, transform it
                 offset_world = machine.get_reference_offset()
-                offset_machine = machine.world_point_to_machine(
+                offset_machine = space.world_point_to_machine(
                     offset_world[0], offset_world[1]
                 )
             else:
