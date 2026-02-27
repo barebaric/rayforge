@@ -404,10 +404,11 @@ def main():
         return 0
 
     ppa_stats = get_ppa_downloads(args.ppa_owner, args.ppa_name)
+    snap_stats = get_snap_downloads_cli(args.snap_name, "2024-01-01")
     stats = {
         "timestamp": datetime.now(UTC).isoformat(),
         "github": get_github_releases(args.github_owner, args.github_repo),
-        "snap": get_snap_downloads(args.snap_name),
+        "snap": snap_stats,
         "flathub": get_flathub_downloads(args.flathub_id),
         "pypi": get_pypi_downloads(args.pypi_package),
         "ppa": ppa_stats,
@@ -545,6 +546,23 @@ def main():
                     "name": "downloads_by_version",
                     "value": count,
                     "tags": {"source": "ppa", "version": version},
+                }
+            )
+
+        metrics.append(
+            {
+                "name": "downloads_total",
+                "value": snap_stats.get("total", 0),
+                "tags": {"source": "snap"},
+            }
+        )
+
+        for month, count in snap_stats.get("by_month", {}).items():
+            metrics.append(
+                {
+                    "name": "downloads_by_month",
+                    "value": count,
+                    "tags": {"source": "snap", "month": month},
                 }
             )
 
