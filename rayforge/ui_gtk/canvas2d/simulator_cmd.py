@@ -50,6 +50,7 @@ class SimulatorCmd:
     def reload_simulation(self, new_artifact: Optional[JobArtifact]):
         """
         Reloads the simulation with a new, final job artifact.
+        Preserves the current playback position if user has moved it.
         """
         if not self.simulation_overlay or not self.preview_controls:
             return
@@ -57,6 +58,9 @@ class SimulatorCmd:
         logger.debug("Reloading simulation with new artifact.")
 
         was_playing = self.preview_controls.playing
+        # Preserve current position if user has moved the slider
+        current_pos = self.preview_controls.slider.get_value()
+        preserve_position = current_pos > 0
 
         if new_artifact:
             assert isinstance(new_artifact, JobArtifact)
@@ -72,6 +76,10 @@ class SimulatorCmd:
             self.preview_controls.set_playback_source(None, None)
 
         self.preview_controls.reset()
+        if preserve_position:
+            # Restore position after reset (clamped to new max)
+            max_pos = max(0, self.preview_controls.num_gcode_lines - 1)
+            self.preview_controls.slider.set_value(min(current_pos, max_pos))
         if was_playing:
             self.preview_controls._start_playback()
 

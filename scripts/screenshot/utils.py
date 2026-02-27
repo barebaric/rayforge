@@ -343,54 +343,6 @@ def restore_panel_states(win: "MainWindow", states: dict[str, bool]) -> None:
         show_panel(win, name, visible)
 
 
-def activate_simulation_mode(win: "MainWindow") -> bool:
-    """
-    Activate simulation mode.
-
-    Returns:
-        True if activation was successful.
-    """
-
-    def _activate() -> None:
-        action = win.action_manager.get_action("simulate_mode")
-        action.set_state(GLib.Variant.new_boolean(False))
-        action.activate(GLib.Variant.new_boolean(True))
-
-    run_on_main_thread(_activate)
-    logger.info("Simulation mode activated")
-
-    time.sleep(2)
-
-    is_sim = run_on_main_thread(lambda: win.surface.is_simulation_mode())
-    if is_sim:
-        return _wait_for_simulation_components(win)
-
-    if win.simulator_cmd:
-        run_on_main_thread(lambda: win.simulator_cmd._enter_mode())
-        return _wait_for_simulation_components(win)
-
-    return False
-
-
-def _wait_for_simulation_components(
-    win: "MainWindow", timeout: int = 10
-) -> bool:
-    """Wait for simulation components to be initialized."""
-    for i in range(timeout):
-        overlay = run_on_main_thread(
-            lambda: win.simulator_cmd.simulation_overlay
-        )
-        if overlay:
-            logger.info("Simulation components initialized")
-            time.sleep(1)
-            return True
-        logger.info(f"Waiting for simulation components... ({i + 1}s)")
-        time.sleep(1)
-
-    logger.warning("Simulation components not initialized")
-    return False
-
-
 def open_machine_settings(
     win: "MainWindow", page: str = "general"
 ) -> "MachineSettingsDialog":
