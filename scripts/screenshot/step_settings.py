@@ -10,7 +10,8 @@ from utils import (
     open_step_settings,
     find_step_by_type,
     take_screenshot,
-    _run_on_main_thread,
+    run_on_main_thread,
+    set_window_size,
 )
 
 logger = logging.getLogger(__name__)
@@ -70,7 +71,7 @@ def set_engrave_mode(dialog, mode_name: str):
 
 
 def main():
-    win.set_default_size(2400, 1650)
+    set_window_size(win, 2400, 1650)
 
     load_project(win, "allsteps.ryp")
     time.sleep(0.25)
@@ -100,9 +101,7 @@ def main():
     if mode and step_type == "engrave":
         mode_name = ENGRAVE_MODES.get(mode)
         if mode_name:
-            _run_on_main_thread(
-                lambda m=mode_name: set_engrave_mode(dialog, m)
-            )
+            run_on_main_thread(lambda m=mode_name: set_engrave_mode(dialog, m))
             time.sleep(0.5)
 
     output_name = f"{TARGET.replace(':', '-')}.png"

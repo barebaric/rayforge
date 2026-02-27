@@ -12,7 +12,8 @@ from rayforge.uiscript import app, win
 from utils import (
     wait_for_settled,
     take_screenshot,
-    _run_on_main_thread,
+    run_on_main_thread,
+    set_window_size,
 )
 
 logger = logging.getLogger(__name__)
@@ -27,8 +28,7 @@ TEST_IMAGE = (
 
 
 def main():
-    win.set_default_size(1400, 1000)
-    logger.info("Window size set to 1400x1000")
+    set_window_size(win, 1400, 1000)
 
     logger.info("Waiting for document to settle...")
     if not wait_for_settled(win, timeout=10):
@@ -53,7 +53,7 @@ def main():
         dialog.present()
         return dialog
 
-    dialog = _run_on_main_thread(open_import_dialog)
+    dialog = run_on_main_thread(open_import_dialog)
 
     time.sleep(1.0)
 
@@ -65,7 +65,7 @@ def main():
     def close_dialog():
         dialog.close()
 
-    _run_on_main_thread(close_dialog)
+    run_on_main_thread(close_dialog)
     app.quit_idle()
 
 

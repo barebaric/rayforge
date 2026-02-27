@@ -18,6 +18,7 @@ from utils import (
     restore_panel_states,
     take_screenshot,
     clear_window_subtitle,
+    set_window_size,
 )
 
 logger = logging.getLogger(__name__)
@@ -26,8 +27,7 @@ PANELS = ["toggle_control_panel", "toggle_gcode_preview"]
 
 
 def main():
-    win.set_default_size(2400, 1650)
-    logger.info("Window size set to 2400x1650")
+    set_window_size(win, 2400, 1650)
 
     load_project(win, "contour.ryp")
     logger.info("Waiting for document to settle...")

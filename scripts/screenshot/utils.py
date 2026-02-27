@@ -13,8 +13,10 @@ import time
 from pathlib import Path
 from threading import Event
 from typing import Callable, List, Optional, Tuple, TypeVar, TYPE_CHECKING
-
 from gi.repository import Adw, GLib
+import numpy as np
+from PIL import Image
+from PIL.PngImagePlugin import PngInfo
 
 if TYPE_CHECKING:
     from rayforge.core.step import Step
@@ -42,7 +44,62 @@ SCREENSHOT_TOOLS = [
 T = TypeVar("T")
 
 
-def _run_on_main_thread(func: Callable[[], T], timeout: float = 10.0) -> T:
+def _save_png_deterministic(img: Image.Image, output_path: Path) -> bool:
+    """
+    Save a PNG image deterministically, only updating if content changed.
+
+    Strips metadata and uses consistent compression to ensure identical
+    screenshots produce identical files.
+    """
+    img = img.copy()
+    img.info.clear()
+
+    if output_path.exists():
+        try:
+            existing = Image.open(output_path)
+            if existing.size == img.size and existing.mode == img.mode:
+                if _images_visually_equal(existing, img):
+                    logger.info(f"Screenshot unchanged: {output_path}")
+                    return True
+        except Exception as e:
+            logger.debug(f"Comparison failed: {e}")
+
+    pnginfo = PngInfo()
+    img.save(output_path, format="PNG", compress_level=9, pnginfo=pnginfo)
+    logger.info(f"Screenshot saved to {output_path}")
+    return True
+
+
+def _images_visually_equal(
+    img1: Image.Image,
+    img2: Image.Image,
+    threshold: int = 5,
+    max_different: float = 0.001,
+) -> bool:
+    """
+    Compare two images using a perceptual heuristic.
+
+    Args:
+        img1: First image to compare.
+        img2: Second image to compare.
+        threshold: Minimum per-channel difference to count as changed (0-255).
+        max_different: Maximum fraction of pixels that can differ (0.0-1.0).
+
+    Returns:
+        True if images are visually equal within tolerance.
+    """
+    arr1 = np.array(img1)
+    arr2 = np.array(img2)
+
+    diff = np.abs(arr1.astype(int) - arr2.astype(int))
+    significant_diff = np.any(diff > threshold, axis=-1)
+    different_pixels = np.sum(significant_diff)
+    total_pixels = arr1.shape[0] * arr1.shape[1]
+
+    return different_pixels / total_pixels <= max_different
+
+
+def run_on_main_thread(func: Callable[[], T], timeout: float = 10.0) -> T:
     """
     Run a function on the main GTK thread and wait for completion.
     """
@@ -82,15 +139,25 @@ def take_screenshot(output_name: str) -> bool:
 
     time.sleep(0.5)
 
+    temp_path = output_path.with_suffix(".temp.png")
+
     for cmd_args, tool_name in SCREENSHOT_TOOLS:
         result = subprocess.run(
-            [*cmd_args, str(output_path)],
+            [*cmd_args, str(temp_path)],
             capture_output=True,
             text=True,
         )
         if result.returncode == 0:
-            logger.info(f"Screenshot saved to {output_path} using {tool_name}")
-            return True
+            try:
+                img = Image.open(temp_path)
+                _save_png_deterministic(img, output_path)
+                temp_path.unlink()
+                return True
+            except Exception as e:
+                logger.error(f"Failed to process screenshot: {e}")
+                if temp_path.exists():
+                    temp_path.unlink()
+                return False
 
     logger.error("Failed to take screenshot with available tools")
     return False
@@ -151,7 +218,7 @@ def take_cropped_screenshot(
         bottom = height - (from_bottom or 0)
 
         cropped = img.crop((left, top, right, bottom))
-        cropped.save(output_path)
+        _save_png_deterministic(cropped, output_path)
         temp_path.unlink()
         logger.info(f"Cropped screenshot saved to {output_path}")
         return True
@@ -181,8 +248,50 @@ def load_project(win: "MainWindow", project_name: str) -> None:
     def _load() -> None:
         win.doc_editor.file.load_project_from_path(project_path)
 
-    _run_on_main_thread(_load)
+    run_on_main_thread(_load)
     logger.info(f"Loaded project: {project_name}")
+
+
+def set_window_size(
+    win: "MainWindow", width: int, height: int, timeout: float = 1.0
+) -> bool:
+    """
+    Force the window to a specific size, handling maximized state.
+
+    Args:
+        win: The main window.
+        width: Desired width in pixels.
+        height: Desired height in pixels.
+        timeout: Time to wait for size to be applied.
+
+    Returns:
+        True if size was successfully applied.
+    """
+
+    def _set_size() -> None:
+        if win.is_maximized():
+            win.unmaximize()
+        win.set_default_size(width, height)
+        win.set_size_request(width, height)
+
+    run_on_main_thread(_set_size)
+
+    actual_width = 0
+    actual_height = 0
+    start = time.time()
+    while time.time() - start < timeout:
+        actual_width = run_on_main_thread(lambda: win.get_width())
+        actual_height = run_on_main_thread(lambda: win.get_height())
+        if actual_width == width and actual_height == height:
+            logger.info(f"Window size set to {width}x{height}")
+            return True
+        time.sleep(0.1)
+
+    logger.warning(
+        f"Window size not applied (expected {width}x{height}, "
+        f"got {actual_width}x{actual_height})"
+    )
+    return False
 
 
 def show_panel(
@@ -200,7 +309,7 @@ def show_panel(
         action = win.action_manager.get_action(panel_name)
         action.change_state(GLib.Variant.new_boolean(visible))
 
-    _run_on_main_thread(_show)
+    run_on_main_thread(_show)
 
 
 def hide_panel(win: "MainWindow", panel_name: str) -> None:
@@ -218,7 +327,7 @@ def get_panel_state(win: "MainWindow", panel_name: str) -> bool:
             return False
         return state.get_boolean()
 
-    return _run_on_main_thread(get_state)
+    return run_on_main_thread(get_state)
 
 
 def save_panel_states(
@@ -247,17 +356,17 @@ def activate_simulation_mode(win: "MainWindow") -> bool:
         action.set_state(GLib.Variant.new_boolean(False))
         action.activate(GLib.Variant.new_boolean(True))
 
-    _run_on_main_thread(_activate)
+    run_on_main_thread(_activate)
     logger.info("Simulation mode activated")
 
     time.sleep(2)
 
-    is_sim = _run_on_main_thread(lambda: win.surface.is_simulation_mode())
+    is_sim = run_on_main_thread(lambda: win.surface.is_simulation_mode())
     if is_sim:
         return _wait_for_simulation_components(win)
 
     if win.simulator_cmd:
-        _run_on_main_thread(lambda: win.simulator_cmd._enter_mode())
+        run_on_main_thread(lambda: win.simulator_cmd._enter_mode())
         return _wait_for_simulation_components(win)
 
     return False
@@ -268,7 +377,7 @@ def _wait_for_simulation_components(
 ) -> bool:
     """Wait for simulation components to be initialized."""
     for i in range(timeout):
-        overlay = _run_on_main_thread(
+        overlay = run_on_main_thread(
             lambda: win.simulator_cmd.simulation_overlay
         )
         if overlay:
@@ -302,7 +411,7 @@ def open_machine_settings(
         dialog.present()
         return dialog
 
-    dialog = _run_on_main_thread(_open)
+    dialog = run_on_main_thread(_open)
     logger.info(f"Opened machine settings on page: {page}")
     return dialog
 
@@ -319,7 +428,7 @@ def open_app_settings(
         dialog.present()
         return dialog
 
-    dialog = _run_on_main_thread(_open)
+    dialog = run_on_main_thread(_open)
     logger.info(f"Opened app settings on page: {page}")
     return dialog
 
@@ -347,7 +456,7 @@ def open_step_settings(
         dialog.set_initial_page(page)
         return dialog
 
-    dialog = _run_on_main_thread(_open)
+    dialog = run_on_main_thread(_open)
     logger.info(f"Opened step settings for: {step.name} on page: {page}")
     return dialog
 
@@ -364,7 +473,7 @@ def get_step_by_index(win: "MainWindow", index: int) -> Optional["Step"]:
                 step_index -= len(layer.workflow.steps)
         return None
 
-    return _run_on_main_thread(_get)
+    return run_on_main_thread(_get)
 
 
 def get_all_steps(win: "MainWindow") -> List["Step"]:
@@ -377,7 +486,7 @@ def get_all_steps(win: "MainWindow") -> List["Step"]:
                 steps.extend(layer.workflow.steps)
         return steps
 
-    return _run_on_main_thread(_get)
+    return run_on_main_thread(_get)
 
 
 def get_step_types(win: "MainWindow") -> List[str]:
@@ -391,7 +500,7 @@ def get_step_types(win: "MainWindow") -> List[str]:
                     types.add(step.typelabel.lower().replace(" ", "-"))
         return sorted(types)
 
-    return _run_on_main_thread(_get)
+    return run_on_main_thread(_get)
 
 
 def find_step_by_type(
@@ -408,7 +517,7 @@ def find_step_by_type(
                         return step, i
         return None, -1
 
-    return _run_on_main_thread(_find)
+    return run_on_main_thread(_find)
 
 
 def open_recipe_editor(
@@ -443,7 +552,7 @@ def open_recipe_editor(
             button_map[page].set_active(True)
         return dialog
 
-    dialog = _run_on_main_thread(_open)
+    dialog = run_on_main_thread(_open)
     logger.info(f"Opened recipe editor on page: {page}")
     return dialog
 
@@ -468,7 +577,7 @@ def open_material_test(win: "MainWindow") -> "StepSettingsDialog":
         dialog.present()
         return dialog
 
-    dialog = _run_on_main_thread(_open)
+    dialog = run_on_main_thread(_open)
     logger.info("Opened material test grid dialog")
     return dialog
 
@@ -484,4 +593,4 @@ def clear_window_subtitle(win: "MainWindow") -> None:
         if isinstance(title_widget, Adw.WindowTitle):
             title_widget.set_subtitle("")
 
-    _run_on_main_thread(_clear)
+    run_on_main_thread(_clear)

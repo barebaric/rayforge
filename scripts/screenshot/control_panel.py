@@ -15,7 +15,8 @@ from utils import (
     save_panel_states,
     restore_panel_states,
     take_cropped_screenshot,
-    _run_on_main_thread,
+    run_on_main_thread,
+    set_window_size,
 )
 
 logger = logging.getLogger(__name__)
@@ -27,10 +28,7 @@ PANELS = ["toggle_control_panel", "toggle_gcode_preview"]
 
 
 def main():
-    _run_on_main_thread(lambda: win.set_default_size(1000, 900))
-    logger.info("Window size set to 1000x900")
-
-    time.sleep(0.3)
+    set_window_size(win, 1000, 900)
 
     load_project(win, "contour.ryp")
     logger.info("Waiting for document to settle...")
@@ -47,7 +45,7 @@ def main():
 
     time.sleep(0.5)
 
-    window_height = _run_on_main_thread(lambda: win.get_height())
+    window_height = run_on_main_thread(lambda: win.get_height())
     crop_from_top = window_height - PANEL_HEIGHT - MARGIN - STATUS_BAR_HEIGHT
 
     logger.info(
