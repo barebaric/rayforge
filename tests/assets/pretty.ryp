@@ -76,8 +76,8 @@
               "generated_workpiece_uid": null,
               "applied_recipe_uid": null,
               "capabilities": [
-                "CUT",
-                "SCORE"
+                "SCORE",
+                "CUT"
               ],
               "opsproducer_dict": {
                 "type": "ContourProducer",
@@ -138,12 +138,12 @@
             [
               85.599998,
               0.0,
-              17.200001
+              27.200001
             ],
             [
               0.0,
               53.97999836939253,
-              33.010000815303734
+              43.010000815303734
             ],
             [
               0.0,

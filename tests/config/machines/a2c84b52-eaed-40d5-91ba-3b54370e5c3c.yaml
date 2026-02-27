@@ -71,6 +71,7 @@ machine:
     - 0.0
     - 0.0
     - 0.0
+  wcs_origin_is_workarea_origin: false
   work_margins:
   - 0
   - 0
