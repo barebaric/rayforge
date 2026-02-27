@@ -17,18 +17,19 @@ from ..shared.gtk_color import GtkColorResolver
 from ..shared.keyboard import is_primary_modifier
 from ..sketcher.editor import SketchEditor
 from ..sketcher.sketchelement import SketchElement
-from .elements.camera_image import CameraImageElement
-from .elements.dot import DotElement
-from .elements.group import GroupElement
-from .elements.layer import LayerElement
-from .elements.stock import StockElement
-from .elements.tab_handle import TabHandleElement
-from .elements.workpiece import WorkPieceElement
-from .elements.work_origin import WorkOriginElement
 from .elements.axis_extent_frame import (
     AxisExtentFrameElement,
     WorkareaBackgroundElement,
 )
+from .elements.camera_image import CameraImageElement
+from .elements.dot import DotElement
+from .elements.group import GroupElement
+from .elements.layer import LayerElement
+from .elements.simulation_overlay import SimulationOverlay
+from .elements.stock import StockElement
+from .elements.tab_handle import TabHandleElement
+from .elements.workpiece import WorkPieceElement
+from .elements.work_origin import WorkOriginElement
 from . import context_menu
 
 if TYPE_CHECKING:
@@ -768,8 +769,11 @@ class WorkSurface(WorldSurface):
         def sort_key(element: CanvasElement):
             """
             Sort key for root's children. Camera at bottom, then stock,
-            then dot, then layers.
+            then dot, then layers, simulation overlay on top.
             """
+            if isinstance(element, SimulationOverlay):
+                # Simulation overlay is always on top of everything
+                return float("inf")
             if isinstance(element, LayerElement):
                 # LayerElements are ordered according to the doc.layers list.
                 # Add a large offset to ensure all layers are above stock
