@@ -1,8 +1,12 @@
 import math
 import logging
-from typing import Tuple
+from typing import Tuple, TYPE_CHECKING
 import cairo
 from ...core.matrix import Matrix
+from ...pipeline.coordspace import OriginCorner
+
+if TYPE_CHECKING:
+    from ...pipeline.coordspace import CoordinateSpace
 
 
 logger = logging.getLogger(__name__)
@@ -508,3 +512,24 @@ class AxisRenderer:
 
     def set_label_font_size(self, label_font_size: float):
         self.label_font_size = label_font_size
+
+    def set_coordinate_space(self, space: "CoordinateSpace"):
+        """
+        Set axis orientation from a CoordinateSpace.
+
+        This is a convenience method that sets all axis flags at once
+        from a coordinate space configuration.
+
+        Args:
+            space: The coordinate space to use for axis orientation.
+        """
+        self.y_axis_down = space.origin in (
+            OriginCorner.TOP_LEFT,
+            OriginCorner.TOP_RIGHT,
+        )
+        self.x_axis_right = space.origin in (
+            OriginCorner.TOP_RIGHT,
+            OriginCorner.BOTTOM_RIGHT,
+        )
+        self.x_axis_negative = space.reverse_x
+        self.y_axis_negative = space.reverse_y
