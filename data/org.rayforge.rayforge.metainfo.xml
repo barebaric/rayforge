@@ -66,6 +66,63 @@
   </screenshots>
 
   <releases>
+    <release version="1.1" date="2026-02-27">
+      <description>
+        <p>Pipeline Rewrite and Unified Raster Operations</p>
+        <p>Version 1.1 brings a complete backend rewrite and unified raster
+        operations:</p>
+        <p>Major Changes:</p>
+        <ul>
+          <li>Complete data pipeline backend rewrite with improved
+          performance and memory management</li>
+          <li>Unified raster operations - old "raster", "depth", and
+          "dither" operations merged into one</li>
+          <li>New G-code console replacing the log view with a fully
+          featured terminal</li>
+          <li>SVG and DXF export support for documents and selected
+          objects</li>
+          <li>Angle constraints now available in the sketcher</li>
+          <li>New "Raster (Dither)" operation with configurable
+          algorithms</li>
+          <li>Built-in G-code dialect supporting dynamic power mode</li>
+          <li>Configurable axis extents, work surface, and soft limits
+          per machine</li>
+        </ul>
+        <p>Improvements:</p>
+        <ul>
+          <li>Auto thresholding for Variable Power and Multipass raster
+          modes</li>
+          <li>Histogram in depth engraver for easier threshold
+          setting</li>
+          <li>Symbolic visualization of raster direction</li>
+          <li>Configurable line distance in all raster operations</li>
+          <li>Machine selector moved to window header</li>
+          <li>Workpiece properties now show WCS coordinates</li>
+          <li>Imported images placed at reference origin by default</li>
+          <li>Ukrainian translation added</li>
+          <li>Material files now support translations</li>
+          <li>New --config CLI argument for custom config path</li>
+          <li>Optional anonymous usage statistics (opt-in)</li>
+          <li>Re-assigned Alt key bindings to avoid clashing with
+          main menu actions</li> 
+          <li>Improved contour offset algorithm for intersecting
+          geometry</li>
+        </ul>
+        <p>Fixed:</p>
+        <ul>
+          <li>Multiple memory leaks in the data pipeline</li>
+          <li>Race conditions in worker pool and pipeline</li>
+          <li>Camera device scanning crash on Windows</li>
+          <li>Various macOS-specific issues</li>
+          <li>Rasterizer angle distortion</li>
+          <li>Unresponsive serial port handling</li>
+          <li>Simulation preview strokes constant across zoom levels</li>
+          <li>Speed in Jog dialog correctly converted to base units</li>
+          <li>Icons not appearing in snap on non-GNOME environments</li>
+          <li>GRBL connection handshake timeout with backoff retry</li>
+        </ul>
+      </description>
+    </release>
     <release version="1.0.1" date="2026-02-01">
       <description>
         <p>Bug fix release</p>
