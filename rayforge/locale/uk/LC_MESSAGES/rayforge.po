@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-02-25 20:09+0100\n"
+"POT-Creation-Date: 2026-02-27 16:06+0100\n"
 "PO-Revision-Date: 2026-02-23 01:17+0100\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: Ukrainian\n"
@@ -2623,6 +2623,18 @@ msgstr "Нижнє поле"
 #: rayforge/ui_gtk/machine/hardware_page.py
 msgid "Unusable space from bottom edge"
 msgstr "Непридатний простір від нижнього краю"
+
+#: rayforge/ui_gtk/machine/hardware_page.py
+msgid "Workarea Origin Is Coordinate Zero"
+msgstr "Початок робочої зони є координатою нуль"
+
+#: rayforge/ui_gtk/machine/hardware_page.py
+msgid ""
+"Treat workarea origin as coordinate zero. Hides WCS controls and uses "
+"workarea margins as offsets."
+msgstr ""
+"Вважає початок робочої зони координатою нуль. Приховує елементи керування "
+"WCS та використовує поля робочої зони як зміщення."
 
 #: rayforge/ui_gtk/machine/hardware_page.py
 msgid "Soft Limits"
