@@ -9,15 +9,17 @@ from gettext import gettext as _
 
 from gi.repository import Adw, GLib, GObject, Gtk
 
-from ....core.undo import DictItemCommand
-from ....pipeline.producer import MaterialTestGridProducer
-from ...shared.adwfix import get_spinrow_float, get_spinrow_int
-from ....shared.util.glib import DebounceMixin
-from .base import StepComponentSettingsWidget
+from rayforge.core.undo import DictItemCommand
+from rayforge.pipeline.producer import MaterialTestGridProducer
+from rayforge.ui_gtk.shared.adwfix import get_spinrow_float, get_spinrow_int
+from rayforge.shared.util.glib import DebounceMixin
+from rayforge.ui_gtk.doceditor.step_settings.base import (
+    StepComponentSettingsWidget,
+)
 
 if TYPE_CHECKING:
-    from ....core.step import Step
-    from ....doceditor.editor import DocEditor
+    from rayforge.core.step import Step
+    from rayforge.doceditor.editor import DocEditor
 
 
 # Preset selector constants
@@ -524,7 +526,7 @@ class MaterialTestGridSettingsWidget(
         """Exits execution preview mode if currently active."""
         if not self.step.doc:
             return
-        from ...mainwindow import MainWindow
+        from rayforge.ui_gtk.mainwindow import MainWindow
 
         root = self.get_root()
         if not isinstance(root, MainWindow):

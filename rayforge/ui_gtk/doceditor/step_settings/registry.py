@@ -6,7 +6,7 @@ class StepWidgetRegistry:
     Registry for step settings widgets.
 
     Allows explicit registration of widget classes for specific
-    producer or transformer type names.
+    producer or transformer types.
     """
 
     def __init__(self):
@@ -15,19 +15,23 @@ class StepWidgetRegistry:
 
     def register(
         self,
-        component_name: str,
+        component_class: Type[Any],
         widget_class: Type[Any],
         addon_name: Optional[str] = None,
+        name: Optional[str] = None,
     ) -> None:
         """
-        Register a widget class for a component type name.
+        Register a widget class for a component type.
 
         Args:
-            component_name: The name of the producer or transformer type.
+            component_class: The producer or transformer class.
             widget_class: The widget class to use for this component.
             addon_name: Optional name of the addon registering this widget.
                         Used for cleanup when addon is unloaded.
+            name: Optional name override. If not provided, uses
+                  component_class.__name__.
         """
+        component_name = name if name else component_class.__name__
         self._widgets[component_name] = widget_class
         if addon_name:
             if addon_name not in self._addon_items:

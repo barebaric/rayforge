@@ -1,18 +1,22 @@
+import pytest
+
 from rayforge.ui_gtk.doceditor.step_settings.registry import (
     StepWidgetRegistry,
     step_widget_registry,
 )
 from rayforge.ui_gtk.doceditor.step_settings import (
-    ContourProducerSettingsWidget,
-    EngraverSettingsWidget,
-    FrameProducerSettingsWidget,
-    MaterialTestGridSettingsWidget,
     MultiPassSettingsWidget,
     OptimizeSettingsWidget,
     OverscanSettingsWidget,
-    ShrinkWrapProducerSettingsWidget,
+    PlaceholderSettingsWidget,
     SmoothSettingsWidget,
 )
+
+
+class MockProducer:
+    """Mock producer for testing."""
+
+    pass
 
 
 class MockWidget:
@@ -24,8 +28,8 @@ class MockWidget:
 class TestStepWidgetRegistry:
     def test_register_and_get(self):
         registry = StepWidgetRegistry()
-        registry.register("TestProducer", MockWidget)
-        assert registry.get("TestProducer") == MockWidget
+        registry.register(MockProducer, MockWidget)
+        assert registry.get("MockProducer") == MockWidget
 
     def test_get_unknown_returns_none(self):
         registry = StepWidgetRegistry()
@@ -33,37 +37,11 @@ class TestStepWidgetRegistry:
 
     def test_all_widgets_returns_copy(self):
         registry = StepWidgetRegistry()
-        registry.register("TestProducer", MockWidget)
+        registry.register(MockProducer, MockWidget)
         all_widgets = registry.all_widgets()
-        assert all_widgets == {"TestProducer": MockWidget}
+        assert all_widgets == {"MockProducer": MockWidget}
         all_widgets["NewOne"] = MockWidget
         assert "NewOne" not in registry.all_widgets()
-
-    def test_global_registry_has_producer_widgets(self):
-        assert (
-            step_widget_registry.get("ContourProducer")
-            == ContourProducerSettingsWidget
-        )
-        assert step_widget_registry.get("Rasterizer") == EngraverSettingsWidget
-        assert (
-            step_widget_registry.get("DepthEngraver") == EngraverSettingsWidget
-        )
-        assert (
-            step_widget_registry.get("DitherRasterizer")
-            == EngraverSettingsWidget
-        )
-        assert (
-            step_widget_registry.get("FrameProducer")
-            == FrameProducerSettingsWidget
-        )
-        assert (
-            step_widget_registry.get("MaterialTestGridProducer")
-            == MaterialTestGridSettingsWidget
-        )
-        assert (
-            step_widget_registry.get("ShrinkWrapProducer")
-            == ShrinkWrapProducerSettingsWidget
-        )
 
     def test_global_registry_has_transformer_widgets(self):
         assert (
@@ -76,3 +54,48 @@ class TestStepWidgetRegistry:
             == OverscanSettingsWidget
         )
         assert step_widget_registry.get("Smooth") == SmoothSettingsWidget
+        assert (
+            step_widget_registry.get("PlaceholderProducer")
+            == PlaceholderSettingsWidget
+        )
+
+
+class TestAddonWidgets:
+    """Tests that require the full context (addon loading)."""
+
+    @pytest.mark.usefixtures("context_initializer")
+    def test_global_registry_has_producer_widgets(self):
+        import importlib
+
+        widgets = importlib.import_module(
+            "rayforge_plugins.laser_essentials.laser_essentials.widgets"
+        )
+
+        assert (
+            step_widget_registry.get("ContourProducer")
+            == widgets.ContourProducerSettingsWidget
+        )
+        assert (
+            step_widget_registry.get("Rasterizer")
+            == widgets.EngraverSettingsWidget
+        )
+        assert (
+            step_widget_registry.get("DepthEngraver")
+            == widgets.EngraverSettingsWidget
+        )
+        assert (
+            step_widget_registry.get("DitherRasterizer")
+            == widgets.EngraverSettingsWidget
+        )
+        assert (
+            step_widget_registry.get("FrameProducer")
+            == widgets.FrameProducerSettingsWidget
+        )
+        assert (
+            step_widget_registry.get("MaterialTestGridProducer")
+            == widgets.MaterialTestGridSettingsWidget
+        )
+        assert (
+            step_widget_registry.get("ShrinkWrapProducer")
+            == widgets.ShrinkWrapProducerSettingsWidget
+        )

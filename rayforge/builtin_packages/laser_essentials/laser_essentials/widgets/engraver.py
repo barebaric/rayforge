@@ -2,22 +2,27 @@ from typing import Dict, Any, TYPE_CHECKING, cast, Optional
 from gettext import gettext as _
 from gi.repository import Gtk, Adw, GObject
 import numpy as np
-from ....image.dither import DitherAlgorithm
-from ....image.util import compute_auto_levels, get_visible_grayscale_values
-from ....pipeline.producer.base import OpsProducer
-from ....pipeline.producer.raster import (
+from rayforge.image.dither import DitherAlgorithm
+from rayforge.image.util import (
+    compute_auto_levels,
+    get_visible_grayscale_values,
+)
+from rayforge.pipeline.producer.base import OpsProducer
+from rayforge.pipeline.producer.raster import (
     Rasterizer,
     DepthMode,
 )
-from ....shared.util.glib import DebounceMixin
-from ...shared.adwfix import get_spinrow_int, get_spinrow_float
-from .base import StepComponentSettingsWidget
-from .direction_preview import DirectionPreview
-from .histogram_preview import HistogramPreview
+from rayforge.shared.util.glib import DebounceMixin
+from rayforge.ui_gtk.shared.adwfix import get_spinrow_int, get_spinrow_float
+from rayforge.ui_gtk.shared.direction_preview import DirectionPreview
+from rayforge.ui_gtk.shared.histogram_preview import HistogramPreview
+from rayforge.ui_gtk.doceditor.step_settings.base import (
+    StepComponentSettingsWidget,
+)
 
 if TYPE_CHECKING:
-    from ....core.step import Step
-    from ....doceditor.editor import DocEditor
+    from rayforge.core.step import Step
+    from rayforge.doceditor.editor import DocEditor
 
 
 class EngraverSettingsWidget(DebounceMixin, StepComponentSettingsWidget):

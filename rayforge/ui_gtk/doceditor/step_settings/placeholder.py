@@ -10,10 +10,11 @@ if TYPE_CHECKING:
 
 class PlaceholderSettingsWidget(StepComponentSettingsWidget):
     """
-    Error display for missing producer widget.
+    Error display for missing producer/transformer widget.
 
-    This widget is shown when a step's producer type is not available
-    (e.g., because the addon that provides it is not installed).
+    This widget is shown when a step's producer or transformer type
+    is not available (e.g., because the addon that provides it is
+    not installed or disabled).
     """
 
     show_general_settings = False
@@ -27,7 +28,10 @@ class PlaceholderSettingsWidget(StepComponentSettingsWidget):
         step: "Step",
         **kwargs,
     ):
-        producer_type = target_dict.get("type", "Unknown")
+        # Producers use "type", transformers use "name"
+        component_type = target_dict.get("type") or target_dict.get(
+            "name", "Unknown"
+        )
 
         super().__init__(
             editor=editor,
@@ -43,7 +47,7 @@ class PlaceholderSettingsWidget(StepComponentSettingsWidget):
             subtitle=_(
                 "The required component '{}' could not be found. "
                 "The document can still be saved."
-            ).format(producer_type),
+            ).format(component_type),
         )
         error_row.add_css_class("error")
         self.add(error_row)
