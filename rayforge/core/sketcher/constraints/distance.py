@@ -10,6 +10,7 @@ from typing import (
     Callable,
     TYPE_CHECKING,
 )
+from gettext import gettext as _
 from ...geo.primitives import find_closest_point_on_line_segment
 from .base import Constraint, ConstraintStatus
 

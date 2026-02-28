@@ -1,4 +1,5 @@
 from typing import Dict, Any, TYPE_CHECKING, cast, Optional
+from gettext import gettext as _
 from gi.repository import Gtk, Adw, GObject
 import numpy as np
 from ....image.dither import DitherAlgorithm

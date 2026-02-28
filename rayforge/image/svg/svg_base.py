@@ -4,6 +4,7 @@ import logging
 from typing import Optional, Tuple, Dict, Any
 from pathlib import Path
 from xml.etree import ElementTree as ET
+from gettext import gettext as _
 
 from svgelements import (
     SVG,

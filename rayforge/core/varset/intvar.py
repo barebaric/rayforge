@@ -1,4 +1,5 @@
 from typing import Optional, Callable, Dict, Any
+from gettext import gettext as _
 from .var import Var, ValidationError
 
 

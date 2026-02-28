@@ -11,7 +11,6 @@ except ValueError:
     pass
 
 import pytest
-import gettext
 import asyncio
 import logging
 import gc
@@ -62,11 +61,6 @@ def pytest_configure(config):
 if TYPE_CHECKING:
     from rayforge.machine.models.machine import Machine
 
-
-# Set up gettext immediately at the module level.
-# This ensures the '_' function is available in builtins before any
-# application modules that use it are imported by pytest.
-gettext.install("rayforge")
 
 logger = logging.getLogger(__name__)
 

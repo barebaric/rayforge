@@ -1,6 +1,7 @@
 from typing import Dict, Any, Tuple
 from blinker import Signal
 import uuid
+from gettext import gettext as _
 
 
 class Laser:

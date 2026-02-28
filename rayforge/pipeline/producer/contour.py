@@ -1,6 +1,7 @@
 import logging
 from enum import Enum, auto
 from typing import Optional, TYPE_CHECKING, Dict, Any
+from gettext import gettext as _
 from ...image.tracing import trace_surface
 from ...core.geo import contours, Geometry
 from ...core.matrix import Matrix

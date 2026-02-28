@@ -1,6 +1,7 @@
 import logging
 from gi.repository import Adw, Gtk, GLib
 from pathlib import Path
+from gettext import gettext as _
 from ...context import get_context
 from ...shared.units.definitions import (
     get_units_for_quantity,

@@ -1,5 +1,6 @@
 import logging
 from typing import List, Optional
+from gettext import gettext as _
 from gi.repository import Gtk
 from ...core.undo import HistoryManager, Command
 from ..icons import get_icon

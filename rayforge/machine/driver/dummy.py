@@ -1,6 +1,7 @@
 import asyncio
 import inspect
 import logging
+from gettext import gettext as _
 from typing import (
     Any,
     TYPE_CHECKING,

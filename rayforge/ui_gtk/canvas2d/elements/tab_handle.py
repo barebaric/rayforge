@@ -4,6 +4,7 @@ import logging
 from typing import TYPE_CHECKING, cast, Optional, Tuple, List
 from gi.repository import Gdk
 from copy import deepcopy
+from gettext import gettext as _
 from ...canvas.element import CanvasElement
 from ....core.tab import Tab
 from ....core.undo import ChangePropertyCommand

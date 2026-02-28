@@ -1,5 +1,6 @@
 from __future__ import annotations
 import math
+from gettext import gettext as _
 from typing import (
     Union,
     Tuple,

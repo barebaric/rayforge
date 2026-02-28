@@ -2,6 +2,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import Optional, TYPE_CHECKING, Dict, Any
 from enum import Enum, auto
+from gettext import gettext as _
 from ...shared.tasker.progress import ProgressContext
 from ..artifact import WorkPieceArtifact
 

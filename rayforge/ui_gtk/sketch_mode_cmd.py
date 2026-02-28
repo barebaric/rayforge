@@ -1,6 +1,7 @@
 import logging
 from pathlib import Path
 from typing import TYPE_CHECKING, Optional, cast
+from gettext import gettext as _
 
 from gi.repository import GLib
 

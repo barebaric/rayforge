@@ -1,6 +1,7 @@
 from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING, List, Dict, Any
+from gettext import gettext as _
 from ..core.undo import ChangePropertyCommand
 from ..core.workpiece import WorkPiece
 

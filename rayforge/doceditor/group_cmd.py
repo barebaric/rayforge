@@ -2,6 +2,7 @@ import logging
 import asyncio
 from typing import TYPE_CHECKING, List, Dict, Optional
 from collections import defaultdict
+from gettext import gettext as _
 from ..core.undo.command import Command
 from ..core.item import DocItem
 from ..core.layer import Layer

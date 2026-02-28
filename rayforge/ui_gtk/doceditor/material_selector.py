@@ -2,6 +2,7 @@
 
 import logging
 from typing import Optional, List
+from gettext import gettext as _
 from gi.repository import Gtk, Adw
 from ...context import get_context
 from ...core.material import Material

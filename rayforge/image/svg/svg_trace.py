@@ -2,6 +2,7 @@ from __future__ import annotations
 import math
 import logging
 from typing import Optional, Dict, Any, Tuple
+from gettext import gettext as _
 
 from ...core.geo import Geometry
 from ...core.matrix import Matrix

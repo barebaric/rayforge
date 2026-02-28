@@ -1,5 +1,6 @@
 import logging
 from abc import ABC, abstractmethod
+from gettext import gettext as _
 from typing import (
     List,
     Optional,

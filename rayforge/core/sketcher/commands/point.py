@@ -1,6 +1,7 @@
 from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING, Tuple, Optional, Dict, Any
+from gettext import gettext as _
 
 from .base import SketchChangeCommand
 from ..entities import Line, Arc, Circle, Point

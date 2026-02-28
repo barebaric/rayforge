@@ -1,4 +1,5 @@
 import logging
+from gettext import gettext as _
 from gi.repository import Adw, Gtk
 
 from ..shared.preferences_page import TrackedPreferencesPage

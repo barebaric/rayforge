@@ -1,5 +1,6 @@
 import logging
 from typing import Optional, Tuple
+from gettext import gettext as _
 from blinker import Signal
 from gi.repository import Gtk
 from ..icons import get_icon

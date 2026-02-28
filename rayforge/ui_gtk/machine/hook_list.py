@@ -1,4 +1,5 @@
 from typing import cast, Dict, Tuple
+from gettext import gettext as _
 from gi.repository import Gtk, Adw
 from ..icons import get_icon
 from ...machine.models.machine import Machine

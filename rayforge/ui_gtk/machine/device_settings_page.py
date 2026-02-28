@@ -1,5 +1,6 @@
 import logging
 from typing import List, cast
+from gettext import gettext as _
 from gi.repository import Adw, Gtk, GLib, Gdk
 from blinker import Signal
 from ...context import get_context

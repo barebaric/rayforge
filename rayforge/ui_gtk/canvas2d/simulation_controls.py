@@ -2,6 +2,7 @@
 
 import json
 from typing import Optional
+from gettext import gettext as _
 import numpy as np
 from gi.repository import Gtk, GLib
 from blinker import Signal

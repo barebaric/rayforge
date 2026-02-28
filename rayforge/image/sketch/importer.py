@@ -3,6 +3,7 @@ import json
 import logging
 from pathlib import Path
 from typing import Iterator, List, Optional, TYPE_CHECKING
+from gettext import gettext as _
 from ...core.item import DocItem
 from ...core.sketcher.sketch import Sketch
 from ...core.source_asset import SourceAsset

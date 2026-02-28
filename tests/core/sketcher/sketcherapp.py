@@ -2,7 +2,6 @@
 # flake8: noqa: E402
 import gi
 import logging
-import gettext
 import json
 from pathlib import Path
 from typing import Optional
@@ -14,13 +13,12 @@ logging.basicConfig(
 logger = logging.getLogger("sketcherapp")
 
 base_path = Path(__file__).parent
-gettext.install("canvas", base_path / "rayforge" / "locale")
 
 gi.require_version("Adw", "1")
 gi.require_version("Gtk", "4.0")
 from gi.repository import Gtk, Adw, Gio, GLib
 
-from rayforge.workbench.sketcher.studio import SketchStudio
+from rayforge.ui_gtk.sketcher.studio import SketchStudio
 from rayforge.core.sketcher import Sketch
 
 
@@ -51,16 +49,16 @@ class SketcherApp(Adw.Application):
         self.window.set_child(self.studio)
 
         # --- Add Open/Save Buttons ---
-        btn_open = Gtk.Button(label=_("Open..."))
-        btn_open.set_tooltip_text(_("Open Sketch from File"))
+        btn_open = Gtk.Button(label="Open...")
+        btn_open.set_tooltip_text("Open Sketch from File")
         btn_open.connect("clicked", self.on_open_clicked)
         # Insert after the Cancel button
         self.studio.session_bar.insert_child_after(
             btn_open, self.studio.btn_cancel
         )
 
-        btn_save = Gtk.Button(label=_("Save..."))
-        btn_save.set_tooltip_text(_("Save Sketch to File"))
+        btn_save = Gtk.Button(label="Save...")
+        btn_save.set_tooltip_text("Save Sketch to File")
         btn_save.connect("clicked", self.on_save_clicked)
         # Insert after the Open button
         self.studio.session_bar.insert_child_after(btn_save, btn_open)
@@ -82,10 +80,10 @@ class SketcherApp(Adw.Application):
     def on_open_clicked(self, widget):
         """Handles opening a sketch from a file using Gtk.FileDialog."""
         dialog = Gtk.FileDialog.new()
-        dialog.set_title(_("Open Sketch"))
+        dialog.set_title("Open Sketch")
 
         filter_rfs = Gtk.FileFilter.new()
-        filter_rfs.set_name(_("RayForge Sketch Files"))
+        filter_rfs.set_name("RayForge Sketch Files")
         filter_rfs.add_pattern("*.rfs")
         filters = Gio.ListStore.new(Gtk.FileFilter)
         filters.append(filter_rfs)
@@ -121,11 +119,11 @@ class SketcherApp(Adw.Application):
             return
 
         dialog = Gtk.FileDialog.new()
-        dialog.set_title(_("Save Sketch"))
+        dialog.set_title("Save Sketch")
         dialog.set_initial_name("sketch.rfs")
 
         filter_rfs = Gtk.FileFilter.new()
-        filter_rfs.set_name(_("RayForge Sketch Files"))
+        filter_rfs.set_name("RayForge Sketch Files")
         filter_rfs.add_pattern("*.rfs")
         filters = Gio.ListStore.new(Gtk.FileFilter)
         filters.append(filter_rfs)

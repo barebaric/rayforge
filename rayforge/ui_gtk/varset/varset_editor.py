@@ -10,6 +10,7 @@ from typing import (
     Tuple,
     cast,
 )
+from gettext import gettext as _
 from gi.repository import Gtk, Adw, Gdk
 from blinker import Signal
 from ...core.undo.property_cmd import ChangePropertyCommand

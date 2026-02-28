@@ -1,7 +1,6 @@
 # flake8: noqa: E402
 import gi
 import logging
-import gettext
 import math
 from pathlib import Path
 
@@ -11,11 +10,10 @@ import cairo
 from typing import Optional, Dict, Tuple, List
 
 base_path = Path(__file__).parent
-gettext.install("canvas", base_path / "rayforge" / "locale")
 logging.basicConfig(level=logging.DEBUG)
 
 
-from rayforge.workbench.canvas import Canvas, CanvasElement, ShrinkWrapGroup
+from rayforge.ui_gtk.canvas import Canvas, CanvasElement, ShrinkWrapGroup
 from rayforge.core.matrix import Matrix
 
 
@@ -284,7 +282,9 @@ class EditableElement(CanvasElement):
                 return i
         return None
 
-    def handle_edit_press(self, world_x: float, world_y: float) -> bool:
+    def handle_edit_press(
+        self, world_x: float, world_y: float, n_press: int = 1
+    ) -> bool:
         hit_idx = self._get_hit_vertex(world_x, world_y)
         if hit_idx is not None:
             self._active_vertex_idx = hit_idx

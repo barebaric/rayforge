@@ -1,6 +1,7 @@
 from __future__ import annotations
 import time
 from typing import TYPE_CHECKING, List, Tuple
+from gettext import gettext as _
 from ...undo.command import Command
 from ...undo.history import COALESCE_THRESHOLD
 from ..entities.text_box import TextBoxEntity

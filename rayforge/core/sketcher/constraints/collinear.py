@@ -1,5 +1,6 @@
 from __future__ import annotations
 from typing import Tuple, Dict, Any, List, TYPE_CHECKING
+from gettext import gettext as _
 from .base import Constraint
 
 if TYPE_CHECKING:

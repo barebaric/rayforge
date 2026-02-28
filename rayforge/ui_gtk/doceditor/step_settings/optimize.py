@@ -1,4 +1,5 @@
 from typing import Dict, Any, TYPE_CHECKING
+from gettext import gettext as _
 from gi.repository import Adw
 from .base import StepComponentSettingsWidget
 from ....core.undo import DictItemCommand

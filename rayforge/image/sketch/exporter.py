@@ -1,6 +1,7 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 import json
+from gettext import gettext as _
 from ..base_exporter import Exporter
 from ... import const
 

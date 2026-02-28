@@ -1,3 +1,4 @@
+from gettext import gettext as _
 from blinker import Signal
 from gi.repository import Adw, Gtk
 from ..shared.gtk import apply_css

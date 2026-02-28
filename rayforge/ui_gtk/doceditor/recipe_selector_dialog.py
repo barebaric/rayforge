@@ -1,5 +1,6 @@
 import logging
 from typing import List, Callable, TYPE_CHECKING, Set
+from gettext import gettext as _
 from gi.repository import Gtk, Adw
 from ...context import get_context
 from ...core.recipe import Recipe

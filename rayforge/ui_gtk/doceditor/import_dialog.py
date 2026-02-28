@@ -1,6 +1,7 @@
 import logging
 from pathlib import Path
 from typing import TYPE_CHECKING, List, Optional, Set
+from gettext import gettext as _
 
 import cairo
 from blinker import Signal

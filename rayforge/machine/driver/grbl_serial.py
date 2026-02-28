@@ -2,6 +2,7 @@ import logging
 import asyncio
 import inspect
 import serial.serialutil
+from gettext import gettext as _
 from typing import (
     Optional,
     Any,

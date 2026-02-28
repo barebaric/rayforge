@@ -2,6 +2,7 @@ import logging
 import sys
 from pathlib import Path
 from typing import TYPE_CHECKING, Callable
+from gettext import gettext as _
 
 from gi.repository import Adw, Gio, GLib, Gtk
 

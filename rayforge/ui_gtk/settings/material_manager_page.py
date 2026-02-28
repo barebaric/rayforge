@@ -2,6 +2,7 @@
 
 import logging
 from typing import Optional
+from gettext import gettext as _
 from ...core.material_library import MaterialLibrary
 from ..doceditor.material_library_list import LibraryListWidget
 from ..doceditor.material_list import MaterialListWidget

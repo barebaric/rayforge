@@ -1,5 +1,6 @@
 import logging
 from typing import TYPE_CHECKING, Optional
+from gettext import gettext as _
 from gi.repository import GLib, Adw
 from ..context import get_context
 from ..usage import get_usage_tracker

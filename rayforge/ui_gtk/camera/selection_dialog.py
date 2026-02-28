@@ -1,5 +1,6 @@
 from gi.repository import Gtk, Adw, GdkPixbuf
 from typing import Optional
+from gettext import gettext as _
 from ..shared.gtk import apply_css
 from ...camera.models.camera import Camera
 from ...camera.controller import CameraController

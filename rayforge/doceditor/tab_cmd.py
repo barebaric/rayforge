@@ -4,6 +4,7 @@ import math
 from typing import TYPE_CHECKING, List, Tuple, Optional
 from copy import deepcopy
 from dataclasses import replace
+from gettext import gettext as _
 
 from ..core.geo import Geometry
 from ..core.geo.constants import (
@@ -85,7 +86,7 @@ class TabCmd:
             p1,
             p2,
             p3,
-            _,
+            __,
         ) in enumerate(geometry.iter_commands()):
             end_point = (x, y, z)
 

@@ -1,4 +1,5 @@
 from typing import Any, Iterable
+from gettext import gettext as _
 from gi.repository import Gtk, Adw
 from ..icons import get_icon
 from .gtk import apply_css

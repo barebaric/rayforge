@@ -3,6 +3,7 @@ from enum import Enum
 from dataclasses import dataclass, field
 from typing import List, Dict, Any
 import uuid
+from gettext import gettext as _
 
 
 class MacroTrigger(Enum):

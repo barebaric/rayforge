@@ -1,4 +1,5 @@
 from typing import cast, Optional
+from gettext import gettext as _
 from gi.repository import Adw, Gtk
 from ...context import get_context
 from ...machine.models.machine import Machine

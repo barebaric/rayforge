@@ -1,5 +1,6 @@
 from typing import Any, List, Tuple, Iterator, Optional, Callable
 import logging
+from gettext import gettext as _
 from ...core.ops import Ops
 from ...core.workpiece import WorkPiece
 from ...machine.models.laser import Laser

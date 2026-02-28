@@ -1,6 +1,7 @@
 import importlib
 import json
 import logging
+from gettext import gettext as _
 from pathlib import Path
 from typing import Optional, Dict
 

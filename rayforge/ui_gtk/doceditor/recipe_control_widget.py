@@ -1,5 +1,6 @@
 import logging
 from typing import Dict, Any, cast, Optional, TYPE_CHECKING
+from gettext import gettext as _
 from gi.repository import Gtk, Adw
 from blinker import Signal
 from ...context import get_context

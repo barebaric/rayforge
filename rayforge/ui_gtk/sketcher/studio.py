@@ -1,4 +1,5 @@
 import logging
+from gettext import gettext as _
 from gi.repository import Gtk, Gio, Adw, GLib
 from blinker import Signal
 from ...core.sketcher import Sketch

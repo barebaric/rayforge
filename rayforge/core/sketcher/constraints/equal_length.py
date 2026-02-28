@@ -11,6 +11,7 @@ from typing import (
     TYPE_CHECKING,
     cast,
 )
+from gettext import gettext as _
 from .base import Constraint, ConstraintStatus
 from ..entities import Line, Arc, Circle
 

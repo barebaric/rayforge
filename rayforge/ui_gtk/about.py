@@ -3,6 +3,7 @@ import platform
 import sys
 import webbrowser
 from importlib.metadata import PackageNotFoundError, version
+from gettext import gettext as _
 
 from gi.repository import Adw, GLib, Gtk
 

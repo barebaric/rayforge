@@ -1,5 +1,6 @@
 import logging
 from typing import List, Optional, TypeVar, Iterable, Dict, TYPE_CHECKING, cast
+from gettext import gettext as _
 from blinker import Signal
 from ..core.undo import HistoryManager
 from .asset import IAsset

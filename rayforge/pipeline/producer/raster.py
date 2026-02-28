@@ -3,6 +3,7 @@ import numpy as np
 import logging
 from enum import Enum, auto
 from typing import Optional, TYPE_CHECKING, Dict, Any, Tuple
+from gettext import gettext as _
 from ...core.ops import Ops, SectionType
 from ...image.util import (
     surface_to_grayscale,

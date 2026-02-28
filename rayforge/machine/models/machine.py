@@ -4,6 +4,7 @@ import multiprocessing
 import uuid
 from enum import Enum
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type
+from gettext import gettext as _
 
 import numpy as np
 from blinker import Signal

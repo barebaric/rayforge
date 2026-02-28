@@ -1,4 +1,5 @@
 from typing import Optional
+from gettext import gettext as _
 from .var import Var, ValidationError
 from ...machine.transport.validators import is_valid_hostname_or_ip
 

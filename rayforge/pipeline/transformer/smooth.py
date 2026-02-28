@@ -1,5 +1,6 @@
 import math
 from typing import Optional, List, Tuple, Dict, Any
+from gettext import gettext as _
 from ...core.workpiece import WorkPiece
 from ...core.ops import Ops, LineToCommand, MoveToCommand
 from ...core.geo.analysis import get_angle_at_vertex

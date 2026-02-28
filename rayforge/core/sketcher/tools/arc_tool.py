@@ -1,5 +1,6 @@
 import math
 from typing import Optional
+from gettext import gettext as _
 from ..commands import AddItemsCommand
 from ..constraints import EqualDistanceConstraint
 from ..entities import Point, Arc

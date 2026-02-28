@@ -1,5 +1,6 @@
 from gi.repository import Gio, Gtk, GLib
 from typing import List
+from gettext import gettext as _
 from ..machine.models.macro import Macro
 
 

@@ -4,6 +4,7 @@ import logging
 import math
 import numpy as np
 from typing import Optional, Tuple, Iterator, TYPE_CHECKING
+from gettext import gettext as _
 from ...shared.tasker.progress import ProgressContext
 from ...shared.util.colors import ColorSet
 from ..artifact import WorkPieceArtifact

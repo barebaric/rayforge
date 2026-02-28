@@ -1,5 +1,6 @@
 import logging
 from typing import Any
+from gettext import gettext as _
 from gi.repository import Gtk, Adw
 from blinker import Signal
 from ...core.varset import (

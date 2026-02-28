@@ -1,6 +1,7 @@
 from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING
+from gettext import gettext as _
 from ..core.asset import IAsset
 from ..core.undo import ListItemCommand, ChangePropertyCommand
 

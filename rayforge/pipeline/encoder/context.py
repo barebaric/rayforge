@@ -1,5 +1,6 @@
 from typing import Optional, List, Tuple, TYPE_CHECKING, Dict, Set
 from dataclasses import dataclass
+from gettext import gettext as _
 
 if TYPE_CHECKING:
     from ...core.doc import Doc

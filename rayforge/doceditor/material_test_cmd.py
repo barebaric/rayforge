@@ -1,6 +1,7 @@
 import json
 import logging
 from typing import TYPE_CHECKING
+from gettext import gettext as _
 
 from ..core.item import DocItem
 from ..core.step import Step

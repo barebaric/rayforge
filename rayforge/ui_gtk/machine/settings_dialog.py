@@ -1,4 +1,5 @@
 from typing import Optional
+from gettext import gettext as _
 
 from gi.repository import Adw, Gdk, Gtk
 

@@ -1,3 +1,4 @@
+from gettext import gettext as _
 from gi.repository import Adw, Gtk
 
 from ..shared.unit_spin_row import UnitSpinRowHelper

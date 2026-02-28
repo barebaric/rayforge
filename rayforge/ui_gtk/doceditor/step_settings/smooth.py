@@ -1,4 +1,5 @@
 from typing import Dict, Any, TYPE_CHECKING
+from gettext import gettext as _
 from gi.repository import Gtk, Adw
 from ....core.undo import DictItemCommand
 from ....pipeline.transformer import Smooth

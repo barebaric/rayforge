@@ -1,5 +1,6 @@
 import logging
 from typing import TYPE_CHECKING
+from gettext import gettext as _
 from gi.repository import Gtk, Gdk, Pango
 from blinker import Signal
 from ...core.doc import Doc

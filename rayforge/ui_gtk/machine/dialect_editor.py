@@ -1,6 +1,7 @@
 import copy
 import re
 from typing import List, Set, cast, Optional
+from gettext import gettext as _
 from gi.repository import Adw, Gtk
 from ...machine.models.dialect import GcodeDialect
 from ...pipeline.encoder.context import GcodeContext

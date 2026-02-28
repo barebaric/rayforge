@@ -1,6 +1,7 @@
 from __future__ import annotations
 import math
 from typing import List
+from gettext import gettext as _
 from ...core.geo import Geometry
 from ...core.geo.constants import (
     CMD_TYPE_MOVE,

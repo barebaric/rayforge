@@ -5,6 +5,7 @@ import webbrowser
 from concurrent.futures import Future
 from pathlib import Path
 from typing import Callable, Coroutine, List, Optional, Tuple
+from gettext import gettext as _
 from gi.repository import Adw, Gdk, Gio, GLib, Gtk
 
 from .. import __version__

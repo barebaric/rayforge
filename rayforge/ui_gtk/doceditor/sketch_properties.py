@@ -1,5 +1,6 @@
 import logging
 from typing import Optional, List, TYPE_CHECKING, Any
+from gettext import gettext as _
 
 from gi.repository import Adw, Gtk
 

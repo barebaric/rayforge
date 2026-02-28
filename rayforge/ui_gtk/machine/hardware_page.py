@@ -1,4 +1,5 @@
 from typing import cast
+from gettext import gettext as _
 from gi.repository import Adw, Gtk
 
 from ..shared.adwfix import get_spinrow_float

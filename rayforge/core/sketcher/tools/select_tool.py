@@ -2,6 +2,7 @@ import logging
 import math
 import cairo
 from typing import Optional, Tuple, Dict, cast, Any, TYPE_CHECKING
+from gettext import gettext as _
 from ...matrix import Matrix
 from ..commands import AddItemsCommand, MovePointCommand
 from ..constraints import (

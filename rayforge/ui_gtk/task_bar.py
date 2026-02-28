@@ -1,6 +1,7 @@
 import logging
 from gi.repository import Gtk, Pango
 from typing import Optional, Dict, Any
+from gettext import gettext as _
 from blinker import Signal
 from .machine.connection_status_widget import ConnectionStatusWidget
 from .machine.status_widget import MachineStatusWidget

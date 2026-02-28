@@ -9,6 +9,7 @@ import logging
 import tempfile
 from pathlib import Path
 from typing import TYPE_CHECKING, Optional, Tuple, List
+from gettext import gettext as _
 from gi.repository import GObject, Gdk, Gtk, Gio, GLib, Adw
 from ...context import get_context
 from ...core.sketcher import Sketch

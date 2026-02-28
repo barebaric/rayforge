@@ -1,4 +1,5 @@
 import logging
+from gettext import gettext as _
 from gi.repository import Adw, Gtk
 from ..shared.adwfix import get_spinrow_int
 from ..shared.preferences_page import TrackedPreferencesPage

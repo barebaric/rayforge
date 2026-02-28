@@ -12,6 +12,7 @@ from typing import (
     Awaitable,
     Dict,
 )
+from gettext import gettext as _
 from ...context import RayforgeContext
 from ...core.varset import VarSet, HostnameVar, PortVar
 from ...pipeline.encoder.base import OpsEncoder, MachineCodeOpMap

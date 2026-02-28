@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from typing import Optional, Set, TYPE_CHECKING
+from gettext import gettext as _
 
 from ...core.capability import CUT, SCORE, Capability
 from ...core.step import Step

@@ -1,5 +1,6 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING, Optional, Tuple, Dict, Any
+from gettext import gettext as _
 from ..entities import Point, Line, Arc
 from ..constraints import (
     HorizontalConstraint,

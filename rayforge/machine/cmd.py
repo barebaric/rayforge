@@ -1,6 +1,7 @@
 from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING, Optional, Callable, Coroutine, Dict
+from gettext import gettext as _
 from blinker import Signal
 from ..context import get_context
 from ..core.ops import Ops

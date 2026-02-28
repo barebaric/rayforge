@@ -1,5 +1,6 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING, Dict, Any, Tuple, Optional, List
+from gettext import gettext as _
 from ....core.geo.geometry import Geometry
 from ....core.geo.font_config import FontConfig
 from ..constraints import (

@@ -1,6 +1,7 @@
 from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING, List, Tuple, Optional
+from gettext import gettext as _
 from ..context import get_context
 from ..core.item import DocItem
 from ..core.matrix import Matrix

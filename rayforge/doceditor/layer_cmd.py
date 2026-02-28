@@ -1,6 +1,7 @@
 from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING, Optional, List
+from gettext import gettext as _
 from ..core.layer import Layer
 from ..core.undo import Command, ChangePropertyCommand
 from ..core.undo.list_cmd import ReorderListCommand

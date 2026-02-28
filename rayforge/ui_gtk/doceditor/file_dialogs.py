@@ -1,5 +1,6 @@
 import logging
 from typing import Callable, TYPE_CHECKING, Any, Optional
+from gettext import gettext as _
 from gi.repository import Gtk, Gio
 from ... import const
 

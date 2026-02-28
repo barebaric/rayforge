@@ -1,6 +1,7 @@
 import logging
 from dataclasses import dataclass, asdict
 from typing import List, Dict, Any, Tuple, Optional, TYPE_CHECKING
+from gettext import gettext as _
 from .machine import Machine, Laser, Origin
 from .macro import Macro, MacroTrigger
 from ..driver import get_driver_cls
