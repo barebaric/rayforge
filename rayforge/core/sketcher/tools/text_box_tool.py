@@ -658,8 +658,17 @@ class TextBoxTool(SketchTool):
         if current_len > 1e-9:
             ux, uy = dx / current_len, dy / current_len
 
-        # Perpendicular vector for height
-        vx, vy = -uy, ux
+        # Preserve the actual height direction instead of calculating
+        # a perpendicular, which would cause rotation if the height
+        # point is not at 90 degrees counter-clockwise
+        p_height = self.element.sketch.registry.get_point(entity.height_id)
+        dx_h = p_height.x - p_origin.x
+        dy_h = p_height.y - p_origin.y
+        current_height_len = math.hypot(dx_h, dy_h)
+        if current_height_len > 1e-9:
+            vx, vy = dx_h / current_height_len, dy_h / current_height_len
+        else:
+            vx, vy = -uy, ux
 
         # 2. Calculate target positions
         target_width_x = p_origin.x + natural_width * ux
