@@ -3,6 +3,8 @@ import pluggy
 hookspec = pluggy.HookspecMarker("rayforge")
 hookimpl = pluggy.HookimplMarker("rayforge")
 
+PLUGIN_API_VERSION = 1
+
 
 class RayforgeSpecs:
     """
@@ -19,6 +21,14 @@ class RayforgeSpecs:
 
         Args:
             context: The global RayforgeContext.
+        """
+
+    @hookspec
+    def on_unload(self):
+        """
+        Called when an addon is being disabled or unloaded.
+        Use this to clean up resources, close connections, unregister
+        handlers, etc.
         """
 
     @hookspec

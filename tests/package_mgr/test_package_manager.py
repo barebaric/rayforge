@@ -4,12 +4,21 @@ from pathlib import Path
 from typing import List, Optional
 from unittest.mock import Mock, MagicMock, patch
 import pytest
-from rayforge.package_mgr.package_manager import PackageManager, UpdateStatus
+from rayforge.package_mgr.package_manager import (
+    PackageManager,
+    UpdateStatus,
+    AddonState,
+)
 from rayforge.package_mgr.package import (
     Package,
     PackageValidationError,
     PackageMetadata,
 )
+from rayforge.core.addon_config import (
+    AddonConfig,
+    AddonState as ConfigAddonState,
+)
+from rayforge.shared.util.versioning import parse_requirement
 
 
 @pytest.fixture
@@ -27,16 +36,17 @@ def create_mock_package(
     version: str = "1.0.0",
     code: Optional[str] = "plugin.py:main",
     depends: Optional[List] = None,
+    requires: Optional[List] = None,
 ) -> MagicMock:
     """Creates a MagicMock that accurately mimics a Package object."""
     if depends is None:
         depends = ["rayforge>=0.27.0,~0.27"]
     mock_pkg = MagicMock(spec=Package)
-    # Configure the mock to have the nested metadata structure
     mock_pkg.metadata = MagicMock(spec=PackageMetadata)
     mock_pkg.metadata.name = name
     mock_pkg.metadata.version = version
     mock_pkg.metadata.depends = depends
+    mock_pkg.metadata.requires = requires or []
     mock_pkg.metadata.provides = MagicMock()
     mock_pkg.metadata.provides.code = code
     mock_pkg.root_path = MagicMock(spec=Path)
@@ -424,3 +434,450 @@ class TestPackageManagerHelpers:
     )
     def test_extract_repo_name(self, manager, url, expected):
         assert manager._extract_repo_name(url) == expected
+
+
+class TestPackageManagerDisabledAddons:
+    """Tests for disabled addon functionality."""
+
+    @pytest.fixture
+    def manager_with_config(self):
+        """Provides a PackageManager with AddonConfig."""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_path = Path(temp_dir)
+            packages_dir = temp_path / "packages"
+            addon_config = AddonConfig(temp_path)
+            addon_config.load()
+            plugin_mgr = Mock()
+            manager = PackageManager(
+                [packages_dir], packages_dir, plugin_mgr, addon_config
+            )
+            yield manager
+
+    @patch("rayforge.package_mgr.package_manager.Package.load_from_directory")
+    def test_load_package_skips_disabled_addon(
+        self, mock_load, manager_with_config
+    ):
+        """Test that a disabled addon is not loaded."""
+        package_dir = manager_with_config.install_dir / "test_pkg"
+        mock_pkg = create_mock_package(
+            name="disabled_plugin", code="plugin.py:main"
+        )
+        mock_load.return_value = mock_pkg
+
+        manager_with_config.addon_config.set_state(
+            "disabled_plugin", ConfigAddonState.DISABLED
+        )
+
+        with patch.object(
+            manager_with_config,
+            "_check_version_compatibility",
+            return_value=UpdateStatus.UP_TO_DATE,
+        ):
+            manager_with_config.load_package(package_dir)
+
+        assert "disabled_plugin" not in manager_with_config.loaded_packages
+        assert "disabled_plugin" in manager_with_config.disabled_packages
+        manager_with_config.plugin_mgr.register.assert_not_called()
+
+    @patch("rayforge.package_mgr.package_manager.Package.load_from_directory")
+    def test_load_package_loads_enabled_addon(
+        self, mock_load, manager_with_config
+    ):
+        """Test that an enabled addon is loaded."""
+        package_dir = manager_with_config.install_dir / "test_pkg"
+        mock_pkg = create_mock_package(
+            name="enabled_plugin", code="plugin.py:main"
+        )
+        mock_load.return_value = mock_pkg
+
+        with (
+            patch("rayforge.package_mgr.package_manager.importlib.util"),
+            patch.object(
+                manager_with_config,
+                "_check_version_compatibility",
+                return_value=UpdateStatus.UP_TO_DATE,
+            ),
+        ):
+            manager_with_config.load_package(package_dir)
+
+        assert "enabled_plugin" in manager_with_config.loaded_packages
+        manager_with_config.plugin_mgr.register.assert_called_once()
+
+    @patch("rayforge.package_mgr.package_manager.Package.load_from_directory")
+    def test_disable_addon(self, mock_load, manager_with_config):
+        """Test disabling a loaded addon."""
+        package_dir = manager_with_config.install_dir / "test_pkg"
+        mock_pkg = create_mock_package(
+            name="to_disable", code="plugin.py:main"
+        )
+        mock_load.return_value = mock_pkg
+
+        with (
+            patch("rayforge.package_mgr.package_manager.importlib.util"),
+            patch.object(
+                manager_with_config,
+                "_check_version_compatibility",
+                return_value=UpdateStatus.UP_TO_DATE,
+            ),
+        ):
+            manager_with_config.load_package(package_dir)
+
+        assert "to_disable" in manager_with_config.loaded_packages
+
+        module_name = "rayforge_plugins.to_disable"
+        sys.modules[module_name] = Mock()
+
+        result = manager_with_config.disable_addon("to_disable")
+
+        assert result is True
+        assert "to_disable" not in manager_with_config.loaded_packages
+        assert "to_disable" in manager_with_config.disabled_packages
+        assert (
+            manager_with_config.addon_config.get_state("to_disable")
+            == ConfigAddonState.DISABLED
+        )
+
+        sys.modules.pop(module_name, None)
+
+    @patch("rayforge.package_mgr.package_manager.Package.load_from_directory")
+    def test_enable_addon(self, mock_load, manager_with_config):
+        """Test enabling a disabled addon."""
+        package_dir = manager_with_config.install_dir / "test_pkg"
+        mock_pkg = create_mock_package(name="to_enable", code="plugin.py:main")
+        mock_load.return_value = mock_pkg
+
+        manager_with_config.addon_config.set_state(
+            "to_enable", ConfigAddonState.DISABLED
+        )
+
+        with patch.object(
+            manager_with_config,
+            "_check_version_compatibility",
+            return_value=UpdateStatus.UP_TO_DATE,
+        ):
+            manager_with_config.load_package(package_dir)
+
+        assert "to_enable" in manager_with_config.disabled_packages
+
+        orig_import = manager_with_config._import_and_register
+
+        def fake_import_and_register(pkg):
+            manager_with_config.loaded_packages[pkg.metadata.name] = pkg
+
+        manager_with_config._import_and_register = fake_import_and_register
+        try:
+            with patch.object(
+                manager_with_config,
+                "_check_version_compatibility",
+                return_value=UpdateStatus.UP_TO_DATE,
+            ):
+                result = manager_with_config.enable_addon("to_enable")
+        finally:
+            manager_with_config._import_and_register = orig_import
+
+        assert result is True
+        assert "to_enable" not in manager_with_config.disabled_packages
+        assert "to_enable" in manager_with_config.loaded_packages
+        assert (
+            manager_with_config.addon_config.get_state("to_enable")
+            == ConfigAddonState.ENABLED
+        )
+
+    def test_is_addon_enabled(self, manager_with_config):
+        """Test checking if addon is enabled."""
+        assert manager_with_config.is_addon_enabled("nonexistent") is False
+
+        manager_with_config.loaded_packages["test_addon"] = Mock()
+        assert manager_with_config.is_addon_enabled("test_addon") is True
+
+    def test_get_addon_state(self, manager_with_config):
+        """Test getting addon state."""
+        assert (
+            manager_with_config.get_addon_state("nonexistent")
+            == "not_installed"
+        )
+
+        manager_with_config.loaded_packages["loaded"] = Mock()
+        assert manager_with_config.get_addon_state("loaded") == "enabled"
+
+        manager_with_config.disabled_packages["disabled"] = Mock()
+        assert manager_with_config.get_addon_state("disabled") == "disabled"
+
+        manager_with_config.incompatible_packages["incomp"] = Mock()
+        assert manager_with_config.get_addon_state("incomp") == "incompatible"
+
+    def test_uninstall_disabled_package(self, manager_with_config):
+        """Test uninstalling a disabled package."""
+        pkg_name = "disabled-pkg"
+        pkg_path = manager_with_config.install_dir / pkg_name
+        pkg_path.mkdir(parents=True)
+
+        mock_pkg = create_mock_package(name=pkg_name)
+        mock_pkg.root_path = pkg_path
+        manager_with_config.disabled_packages[pkg_name] = mock_pkg
+
+        result = manager_with_config.uninstall_package(pkg_name)
+
+        assert result is True
+        assert not pkg_path.exists()
+        assert pkg_name not in manager_with_config.disabled_packages
+
+
+class TestAddonStateEnum:
+    """Tests for AddonState enum."""
+
+    def test_enabled_value(self):
+        assert AddonState.ENABLED.value == "enabled"
+
+    def test_disabled_value(self):
+        assert AddonState.DISABLED.value == "disabled"
+
+    def test_pending_unload_value(self):
+        assert AddonState.PENDING_UNLOAD.value == "pending_unload"
+
+    def test_load_error_value(self):
+        assert AddonState.LOAD_ERROR.value == "load_error"
+
+    def test_not_installed_value(self):
+        assert AddonState.NOT_INSTALLED.value == "not_installed"
+
+    def test_incompatible_value(self):
+        assert AddonState.INCOMPATIBLE.value == "incompatible"
+
+
+class TestPackageManagerDeferredUnload:
+    """Tests for deferred addon unloading when jobs are active."""
+
+    @pytest.fixture
+    def manager_with_job_callback(self):
+        """Provides a PackageManager with job callback."""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_path = Path(temp_dir)
+            packages_dir = temp_path / "packages"
+            addon_config = AddonConfig(temp_path)
+            addon_config.load()
+            plugin_mgr = Mock()
+
+            class JobCallback:
+                def __init__(self):
+                    self.active = False
+
+            job_callback = JobCallback()
+
+            manager = PackageManager(
+                [packages_dir],
+                packages_dir,
+                plugin_mgr,
+                addon_config,
+                is_job_active_callback=lambda: job_callback.active,
+            )
+            manager._job_callback = job_callback  # type: ignore
+            yield manager
+
+    def test_disable_addon_deferred_when_job_active(
+        self, manager_with_job_callback
+    ):
+        """Test that addon disable is deferred when jobs are active."""
+        manager_with_job_callback._job_callback.active = True
+        manager_with_job_callback.loaded_packages["test_addon"] = Mock()
+
+        result = manager_with_job_callback.disable_addon("test_addon")
+
+        assert result is False
+        assert "test_addon" in manager_with_job_callback._pending_unloads
+        assert "test_addon" in manager_with_job_callback.loaded_packages
+        assert (
+            manager_with_job_callback.get_addon_state("test_addon")
+            == "pending_unload"
+        )
+
+    def test_disable_addon_immediate_when_no_job(
+        self, manager_with_job_callback
+    ):
+        """Test that addon disable is immediate when no jobs are active."""
+        manager_with_job_callback._job_callback.active = False
+        mock_pkg = Mock()
+        mock_pkg.root_path = manager_with_job_callback.install_dir
+        manager_with_job_callback.loaded_packages["test_addon"] = mock_pkg
+
+        result = manager_with_job_callback.disable_addon("test_addon")
+
+        assert result is True
+        assert "test_addon" not in manager_with_job_callback._pending_unloads
+        assert "test_addon" not in manager_with_job_callback.loaded_packages
+        assert "test_addon" in manager_with_job_callback.disabled_packages
+
+    def test_complete_pending_unloads(self, manager_with_job_callback):
+        """Test completing pending unloads."""
+        manager_with_job_callback._job_callback.active = True
+        mock_pkg = Mock()
+        mock_pkg.root_path = manager_with_job_callback.install_dir
+        manager_with_job_callback.loaded_packages["test_addon"] = mock_pkg
+
+        manager_with_job_callback.disable_addon("test_addon")
+        assert manager_with_job_callback.has_pending_unloads()
+
+        manager_with_job_callback._job_callback.active = False
+        unloaded = manager_with_job_callback.complete_pending_unloads()
+
+        assert unloaded == ["test_addon"]
+        assert not manager_with_job_callback.has_pending_unloads()
+        assert "test_addon" in manager_with_job_callback.disabled_packages
+
+    def test_has_pending_unloads(self, manager_with_job_callback):
+        """Test checking for pending unloads."""
+        assert not manager_with_job_callback.has_pending_unloads()
+
+        manager_with_job_callback._pending_unloads.add("some_addon")
+        assert manager_with_job_callback.has_pending_unloads()
+
+    def test_get_pending_unloads(self, manager_with_job_callback):
+        """Test getting set of pending unloads."""
+        manager_with_job_callback._pending_unloads.add("addon1")
+        manager_with_job_callback._pending_unloads.add("addon2")
+
+        pending = manager_with_job_callback.get_pending_unloads()
+
+        assert pending == {"addon1", "addon2"}
+        assert pending is not manager_with_job_callback._pending_unloads
+
+    def test_get_addon_error(self, manager_with_job_callback):
+        """Test getting load error for addon."""
+        assert manager_with_job_callback.get_addon_error("unknown") is None
+
+        manager_with_job_callback._load_errors["failed"] = "Some error"
+        assert (
+            manager_with_job_callback.get_addon_error("failed") == "Some error"
+        )
+        assert (
+            manager_with_job_callback.get_addon_state("failed") == "load_error"
+        )
+
+    def test_reload_addon_success(self, manager_with_job_callback):
+        """Test reloading an addon."""
+        mock_pkg = create_mock_package(name="test_addon")
+        mock_pkg.root_path = manager_with_job_callback.install_dir
+        manager_with_job_callback.loaded_packages["test_addon"] = mock_pkg
+
+        def fake_import(pkg):
+            manager_with_job_callback.loaded_packages[pkg.metadata.name] = pkg
+
+        manager_with_job_callback._import_and_register = fake_import
+
+        with patch.object(
+            manager_with_job_callback,
+            "_check_version_compatibility",
+            return_value=UpdateStatus.UP_TO_DATE,
+        ):
+            result = manager_with_job_callback.reload_addon("test_addon")
+
+        assert result is True
+        assert "test_addon" in manager_with_job_callback.loaded_packages
+
+    def test_reload_addon_fails_when_job_active(
+        self, manager_with_job_callback
+    ):
+        """Test that reload fails when jobs are active."""
+        manager_with_job_callback._job_callback.active = True
+        manager_with_job_callback.loaded_packages["test_addon"] = Mock()
+
+        result = manager_with_job_callback.reload_addon("test_addon")
+
+        assert result is False
+
+    def test_reload_addon_not_loaded(self, manager_with_job_callback):
+        """Test that reload fails when addon not loaded."""
+        result = manager_with_job_callback.reload_addon("nonexistent")
+        assert result is False
+
+
+class TestPackageManagerDependencies:
+    """Tests for addon dependency handling."""
+
+    @pytest.fixture
+    def manager_with_deps(self):
+        """Provides a PackageManager for testing dependencies."""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_path = Path(temp_dir)
+            packages_dir = temp_path / "packages"
+            addon_config = AddonConfig(temp_path)
+            addon_config.load()
+            plugin_mgr = Mock()
+            manager = PackageManager(
+                [packages_dir], packages_dir, plugin_mgr, addon_config
+            )
+            yield manager
+
+    def test_parse_requirement_no_version(self):
+        """Test parsing requirement without version constraint."""
+        name, constraint = parse_requirement("laser-essentials")
+        assert name == "laser-essentials"
+        assert constraint is None
+
+    def test_parse_requirement_with_version(self):
+        """Test parsing requirement with version constraint."""
+        name, constraint = parse_requirement("laser-essentials>=1.0.0")
+        assert name == "laser-essentials"
+        assert constraint == ">=1.0.0"
+
+    def test_find_dependents(self, manager_with_deps):
+        """Test finding dependents of an addon."""
+        pkg_a = create_mock_package(name="addon-a", requires=["addon-b"])
+        pkg_b = create_mock_package(name="addon-b")
+
+        manager_with_deps.loaded_packages["addon-a"] = pkg_a
+        manager_with_deps.loaded_packages["addon-b"] = pkg_b
+
+        dependents = manager_with_deps._find_dependents("addon-b")
+        assert dependents == ["addon-a"]
+
+        dependents = manager_with_deps._find_dependents("addon-a")
+        assert dependents == []
+
+    def test_can_disable_no_dependents(self, manager_with_deps):
+        """Test can_disable when no dependents."""
+        pkg = create_mock_package(name="standalone")
+        manager_with_deps.loaded_packages["standalone"] = pkg
+
+        can_disable, reason = manager_with_deps.can_disable("standalone")
+        assert can_disable is True
+        assert reason == ""
+
+    def test_can_disable_with_dependents(self, manager_with_deps):
+        """Test can_disable when there are dependents."""
+        pkg_a = create_mock_package(name="addon-a", requires=["addon-b"])
+        pkg_b = create_mock_package(name="addon-b")
+
+        manager_with_deps.loaded_packages["addon-a"] = pkg_a
+        manager_with_deps.loaded_packages["addon-b"] = pkg_b
+
+        can_disable, reason = manager_with_deps.can_disable("addon-b")
+        assert can_disable is False
+        assert "addon-a" in reason
+
+    def test_get_missing_dependencies(self, manager_with_deps):
+        """Test getting missing dependencies."""
+        pkg = create_mock_package(
+            name="addon-with-deps",
+            requires=["missing-addon>=1.0.0"],
+        )
+        manager_with_deps.disabled_packages["addon-with-deps"] = pkg
+
+        missing = manager_with_deps.get_missing_dependencies("addon-with-deps")
+        assert len(missing) == 1
+        assert missing[0][0] == "missing-addon"
+        assert missing[0][1] == ">=1.0.0"
+
+    def test_get_missing_dependencies_all_present(self, manager_with_deps):
+        """Test get_missing_dependencies when all deps are loaded."""
+        pkg_a = create_mock_package(
+            name="addon-a",
+            requires=["addon-b"],
+        )
+        pkg_b = create_mock_package(name="addon-b")
+
+        manager_with_deps.loaded_packages["addon-a"] = pkg_a
+        manager_with_deps.loaded_packages["addon-b"] = pkg_b
+
+        missing = manager_with_deps.get_missing_dependencies("addon-a")
+        assert missing == []

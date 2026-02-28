@@ -8,6 +8,8 @@ from pathlib import Path
 from dataclasses import dataclass, field, asdict
 from typing import Optional, List, Dict, Any
 
+from rayforge.core.hooks import PLUGIN_API_VERSION
+
 logger = logging.getLogger(__name__)
 
 METADATA_FILENAME = "rayforge-package.yaml"
@@ -57,8 +59,10 @@ class PackageMetadata:
     depends: List[str]
     author: PackageAuthor
     provides: PackageProvides
+    api_version: int = 1
     url: str = ""
     display_name: str = ""
+    requires: List[str] = field(default_factory=list)
 
     def to_dict(self) -> Dict[str, Any]:
         """Converts metadata back to a dictionary for YAML serialization."""
@@ -99,6 +103,10 @@ class PackageMetadata:
         if isinstance(depends, str):
             depends = [depends]
 
+        requires = data.get("requires", [])
+        if isinstance(requires, str):
+            requires = [requires]
+
         return cls(
             name=pkg_id,
             display_name=data.get("name", pkg_id),
@@ -110,6 +118,8 @@ class PackageMetadata:
             author=author,
             provides=provides,
             url=data.get("repository", ""),
+            api_version=data.get("api_version", PLUGIN_API_VERSION),
+            requires=requires,
         )
 
 
@@ -193,6 +203,10 @@ class Package:
             if isinstance(depends, str):
                 depends = [depends]
 
+            requires = data.get("requires", [])
+            if isinstance(requires, str):
+                requires = [requires]
+
             version = cls.get_git_tag_version(package_dir)
 
             metadata = PackageMetadata(
@@ -204,6 +218,8 @@ class Package:
                 author=author,
                 provides=provides,
                 url=data.get("url", ""),
+                api_version=data.get("api_version", PLUGIN_API_VERSION),
+                requires=requires,
             )
 
             return cls(path=package_dir, metadata=metadata)
@@ -236,7 +252,19 @@ class Package:
                 f"Invalid semantic version: {self.metadata.version}"
             )
 
-        # --- 2.1 Depends Validation ---
+        # --- 2.1 API Version Validation ---
+        if not isinstance(self.metadata.api_version, int):
+            raise PackageValidationError(
+                f"api_version must be an integer, got: "
+                f"{type(self.metadata.api_version).__name__}"
+            )
+        if self.metadata.api_version != PLUGIN_API_VERSION:
+            raise PackageValidationError(
+                f"Unsupported api_version: {self.metadata.api_version}. "
+                f"Expected {PLUGIN_API_VERSION}."
+            )
+
+        # --- 2.2 Depends Validation ---
         if not self.metadata.depends:
             raise PackageValidationError("depends is required.")
         for dep in self.metadata.depends:

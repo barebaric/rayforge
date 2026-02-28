@@ -23,6 +23,7 @@ class TestPackageRoundTrip:
 
         (package_dir / "rayforge-package.yaml").write_text(
             "name: this_name_is_ignored\nversion: 0.1\n"
+            "api_version: 1\n"
             "depends:\n"
             "  - rayforge>=0.27.0,~0.27\n"
             "entry_point: package.py\n"
@@ -67,6 +68,7 @@ class TestPackageRoundTrip:
 
         (package_dir / "rayforge-package.yaml").write_text(
             "name: this_name_is_ignored\nversion: 0.1\n"
+            "api_version: 1\n"
             "depends:\n"
             "  - rayforge>=0.27.0,~0.27\n"
             "entry_point: package.py\n"
@@ -111,6 +113,7 @@ class TestPackageRoundTrip:
 
         (package_dir / "rayforge-package.yaml").write_text(
             "name: invalid_test\nversion: 0.1\n"
+            "api_version: 1\n"
             "depends:\n"
             "  - rayforge>=0.27.0,~0.27\n"
             "entry_point: nonexistent.py\n"

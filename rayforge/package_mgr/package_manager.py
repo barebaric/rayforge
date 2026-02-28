@@ -6,18 +6,31 @@ import shutil
 import tempfile
 from enum import Enum, auto
 from pathlib import Path
-from typing import Optional, List, Dict, Any, Tuple
+from typing import Optional, List, Dict, Any, Tuple, Callable, Set
 from urllib.parse import urlparse
 import yaml
 from .. import __version__
 from ..config import PACKAGE_REGISTRY_URL
+from ..core.addon_config import AddonConfig, AddonState as ConfigAddonState
 from ..shared.util.versioning import (
     check_rayforge_compatibility,
     is_newer_version,
+    parse_requirement,
 )
 from .package import Package, PackageMetadata, PackageValidationError
 
 logger = logging.getLogger(__name__)
+
+
+class AddonState(Enum):
+    """Represents the state of an addon."""
+
+    ENABLED = "enabled"
+    DISABLED = "disabled"
+    PENDING_UNLOAD = "pending_unload"
+    LOAD_ERROR = "load_error"
+    NOT_INSTALLED = "not_installed"
+    INCOMPATIBLE = "incompatible"
 
 
 class UpdateStatus(Enum):
@@ -39,18 +52,30 @@ class PackageManager:
         package_dirs: List[Path],
         install_dir: Path,
         plugin_mgr,
+        addon_config: Optional[AddonConfig] = None,
+        is_job_active_callback: Optional[Callable[[], bool]] = None,
     ):
         """
         Args:
             package_dirs (List[Path]): Directories to scan for packages.
             install_dir (Path): Directory for installing new packages.
             plugin_mgr: The core plugin manager instance for registration.
+            addon_config (Optional[AddonConfig]): Addon state persistence
+                manager. If None, packages will always be loaded.
+            is_job_active_callback (Optional[Callable]): A callback that
+                returns True if any job is currently active. Used to defer
+                addon unloading until jobs complete.
         """
         self.package_dirs = package_dirs
         self.install_dir = install_dir
         self.plugin_mgr = plugin_mgr
+        self.addon_config = addon_config
+        self.is_job_active_callback = is_job_active_callback
         self.loaded_packages: Dict[str, Package] = {}
         self.incompatible_packages: Dict[str, Package] = {}
+        self.disabled_packages: Dict[str, Package] = {}
+        self._pending_unloads: Set[str] = set()
+        self._load_errors: Dict[str, str] = {}
 
     def _parse_registry_dict(
         self, registry_data: Dict[str, Any]
@@ -233,6 +258,16 @@ class PackageManager:
                 logger.info(f"Loaded asset package: {pkg.metadata.name}")
                 return
 
+            if self.addon_config:
+                state = self.addon_config.get_state(pkg.metadata.name)
+                if state == ConfigAddonState.DISABLED:
+                    logger.info(
+                        f"Package '{pkg.metadata.name}' is disabled, "
+                        "skipping load"
+                    )
+                    self.disabled_packages[pkg.metadata.name] = pkg
+                    return
+
             if (
                 self._check_version_compatibility(pkg)
                 != UpdateStatus.UP_TO_DATE
@@ -294,7 +329,9 @@ class PackageManager:
             module_path = pkg.root_path / entry_point
 
         if not module_path.exists():
-            logger.error(f"Entry point {module_path} not found for {name}.")
+            error_msg = f"Entry point {module_path} not found for {name}."
+            logger.error(error_msg)
+            self._load_errors[name] = error_msg
             return
 
         try:
@@ -307,9 +344,13 @@ class PackageManager:
                 spec.loader.exec_module(module)
                 self.plugin_mgr.register(module)
                 self.loaded_packages[name] = pkg
+                if name in self._load_errors:
+                    del self._load_errors[name]
                 logger.info(f"Loaded plugin: {name} v{pkg.metadata.version}")
         except Exception as e:
+            error_msg = str(e)
             logger.error(f"Error importing plugin {name}: {e}")
+            self._load_errors[name] = error_msg
 
     def install_package(
         self, git_url: str, package_id: Optional[str] = None
@@ -375,9 +416,11 @@ class PackageManager:
         """
         Deletes the package directory and unloads the module.
         """
-        pkg = self.loaded_packages.get(
-            package_name
-        ) or self.incompatible_packages.get(package_name)
+        pkg = (
+            self.loaded_packages.get(package_name)
+            or self.incompatible_packages.get(package_name)
+            or self.disabled_packages.get(package_name)
+        )
         if not pkg:
             logger.warning(
                 f"Attempted to uninstall unknown or already "
@@ -415,6 +458,12 @@ class PackageManager:
                 del self.loaded_packages[package_name]
             if package_name in self.incompatible_packages:
                 del self.incompatible_packages[package_name]
+            if package_name in self.disabled_packages:
+                del self.disabled_packages[package_name]
+
+            # 5. Remove from addon config
+            if self.addon_config:
+                self.addon_config.remove_state(package_name)
 
             return True
 
@@ -443,3 +492,271 @@ class PackageManager:
                 logger.debug(f"Cleaned up directory: {package_path}")
         except Exception as e:
             logger.error(f"Failed to clean up {package_path}: {e}")
+
+    def enable_addon(self, addon_name: str) -> bool:
+        """
+        Enable an addon. Returns True if successful.
+
+        The addon will be loaded on the next application start or when
+        load_package is called explicitly.
+        """
+        if not self.addon_config:
+            logger.warning("Cannot enable addon: addon_config not configured")
+            return False
+
+        pkg = self.disabled_packages.get(addon_name)
+        if not pkg:
+            logger.warning(f"Cannot enable addon: '{addon_name}' not found")
+            return False
+
+        self.addon_config.set_state(addon_name, ConfigAddonState.ENABLED)
+        del self.disabled_packages[addon_name]
+
+        if self._check_version_compatibility(pkg) != UpdateStatus.UP_TO_DATE:
+            self.incompatible_packages[addon_name] = pkg
+            logger.info(f"Addon '{addon_name}' enabled but is incompatible")
+        else:
+            self._import_and_register(pkg)
+            logger.info(f"Addon '{addon_name}' enabled and loaded")
+
+        return True
+
+    def disable_addon(self, addon_name: str) -> bool:
+        """
+        Disable an addon. Returns True if immediate, False if deferred.
+
+        If jobs are active, the addon is marked for deferred unload and
+        will be unloaded when complete_pending_unloads() is called.
+        """
+        if not self.addon_config:
+            logger.warning("Cannot disable addon: addon_config not configured")
+            return False
+
+        pkg = self.loaded_packages.get(addon_name)
+        if not pkg:
+            logger.warning(f"Cannot disable addon: '{addon_name}' not loaded")
+            return False
+
+        if self.is_job_active_callback and self.is_job_active_callback():
+            logger.info(
+                f"Jobs active, deferring unload of addon '{addon_name}'"
+            )
+            self._pending_unloads.add(addon_name)
+            self.addon_config.set_state(addon_name, ConfigAddonState.DISABLED)
+            return False
+
+        self._do_unload_addon(addon_name, pkg)
+        return True
+
+    def _do_unload_addon(self, addon_name: str, pkg: Package):
+        """Perform the actual unload of an addon."""
+        if self.addon_config:
+            self.addon_config.set_state(addon_name, ConfigAddonState.DISABLED)
+
+        module_name = f"rayforge_plugins.{addon_name}"
+        if module_name in sys.modules:
+            module = sys.modules[module_name]
+            self.plugin_mgr.hook.on_unload()
+            self.plugin_mgr.unregister(module)
+            del sys.modules[module_name]
+
+        del self.loaded_packages[addon_name]
+        self.disabled_packages[addon_name] = pkg
+        self._pending_unloads.discard(addon_name)
+        logger.info(f"Addon '{addon_name}' disabled")
+
+    def complete_pending_unloads(self) -> List[str]:
+        """
+        Complete any pending addon unloads.
+
+        Should be called when jobs finish to unload addons that were
+        disabled while jobs were active.
+
+        Returns:
+            List of addon names that were unloaded.
+        """
+        if not self._pending_unloads:
+            return []
+
+        unloaded = []
+        for addon_name in list(self._pending_unloads):
+            pkg = self.loaded_packages.get(addon_name)
+            if pkg:
+                self._do_unload_addon(addon_name, pkg)
+                unloaded.append(addon_name)
+
+        return unloaded
+
+    def has_pending_unloads(self) -> bool:
+        """Check if there are addons waiting to be unloaded."""
+        return len(self._pending_unloads) > 0
+
+    def get_pending_unloads(self) -> Set[str]:
+        """Get the set of addon names pending unload."""
+        return self._pending_unloads.copy()
+
+    def is_addon_enabled(self, addon_name: str) -> bool:
+        """Check if an addon is currently enabled and loaded."""
+        return addon_name in self.loaded_packages
+
+    def get_addon_state(self, addon_name: str) -> str:
+        """
+        Get the current state of an addon.
+
+        Returns one of: 'enabled', 'disabled', 'pending_unload',
+        'load_error', 'incompatible', 'not_installed'
+        """
+        if addon_name in self._pending_unloads:
+            return AddonState.PENDING_UNLOAD.value
+        if addon_name in self._load_errors:
+            return AddonState.LOAD_ERROR.value
+        if addon_name in self.loaded_packages:
+            return AddonState.ENABLED.value
+        if addon_name in self.disabled_packages:
+            return AddonState.DISABLED.value
+        if addon_name in self.incompatible_packages:
+            return AddonState.INCOMPATIBLE.value
+        return AddonState.NOT_INSTALLED.value
+
+    def get_addon_error(self, addon_name: str) -> Optional[str]:
+        """Get the error message for an addon that failed to load."""
+        return self._load_errors.get(addon_name)
+
+    def reload_addon(self, addon_name: str) -> bool:
+        """
+        Reload an addon (disable then enable).
+
+        Useful for development. Returns True if successful.
+        """
+        if addon_name not in self.loaded_packages:
+            logger.warning(
+                f"Cannot reload addon '{addon_name}': not currently loaded"
+            )
+            return False
+
+        if self.is_job_active_callback and self.is_job_active_callback():
+            logger.warning(
+                f"Cannot reload addon '{addon_name}': jobs are active"
+            )
+            return False
+
+        pkg = self.loaded_packages.get(addon_name)
+        if not pkg:
+            return False
+
+        self._do_unload_addon(addon_name, pkg)
+
+        del self.disabled_packages[addon_name]
+        if self.addon_config:
+            self.addon_config.set_state(addon_name, ConfigAddonState.ENABLED)
+
+        if self._check_version_compatibility(pkg) != UpdateStatus.UP_TO_DATE:
+            self.incompatible_packages[addon_name] = pkg
+            logger.info(f"Addon '{addon_name}' reloaded but is incompatible")
+            return False
+
+        self._import_and_register(pkg)
+        if addon_name in self.loaded_packages:
+            logger.info(f"Addon '{addon_name}' reloaded successfully")
+            return True
+        else:
+            logger.error(f"Failed to reload addon '{addon_name}'")
+            return False
+
+    def _find_dependents(self, addon_name: str) -> List[str]:
+        """
+        Find all enabled addons that depend on the given addon.
+
+        Returns:
+            List of addon names that depend on this addon.
+        """
+        dependents = []
+        for name, pkg in self.loaded_packages.items():
+            for req in pkg.metadata.requires:
+                req_name, _ = parse_requirement(req)
+                if req_name == addon_name:
+                    dependents.append(name)
+                    break
+        return dependents
+
+    def can_disable(self, addon_name: str) -> Tuple[bool, str]:
+        """
+        Check if an addon can be disabled.
+
+        Returns:
+            Tuple of (can_disable, reason). If can_disable is False,
+            reason contains the explanation.
+        """
+        dependents = self._find_dependents(addon_name)
+        if dependents:
+            return False, f"Required by: {', '.join(dependents)}"
+        return True, ""
+
+    def get_missing_dependencies(
+        self, addon_name: str
+    ) -> List[Tuple[str, Optional[str]]]:
+        """
+        Get missing or disabled dependencies for an addon.
+
+        Returns:
+            List of (name, version_spec) tuples for missing dependencies.
+        """
+        pkg = (
+            self.loaded_packages.get(addon_name)
+            or self.disabled_packages.get(addon_name)
+            or self.incompatible_packages.get(addon_name)
+        )
+        if not pkg:
+            return []
+
+        missing = []
+        for req in pkg.metadata.requires:
+            req_name, version_spec = parse_requirement(req)
+            if req_name not in self.loaded_packages:
+                missing.append((req_name, version_spec))
+        return missing
+
+    def enable_addon_with_deps(
+        self, addon_name: str
+    ) -> Tuple[bool, List[str]]:
+        """
+        Enable an addon along with its missing dependencies.
+
+        Returns:
+            Tuple of (success, list_of_enabled_addons).
+        """
+        pkg = self.disabled_packages.get(addon_name)
+        if not pkg:
+            logger.warning(f"Cannot enable addon: '{addon_name}' not found")
+            return False, []
+
+        missing = self.get_missing_dependencies(addon_name)
+        enabled = []
+
+        for req_name, _ in missing:
+            if req_name in self.disabled_packages:
+                if not self.enable_addon(req_name):
+                    logger.error(
+                        f"Failed to enable dependency '{req_name}' "
+                        f"for '{addon_name}'"
+                    )
+                    for name in enabled:
+                        self.disable_addon(name)
+                    return False, []
+                enabled.append(req_name)
+            elif req_name not in self.loaded_packages:
+                logger.error(
+                    f"Missing dependency '{req_name}' for '{addon_name}' "
+                    "is not installed"
+                )
+                for name in enabled:
+                    self.disable_addon(name)
+                return False, []
+
+        if not self.enable_addon(addon_name):
+            for name in enabled:
+                self.disable_addon(name)
+            return False, []
+
+        enabled.append(addon_name)
+        return True, enabled

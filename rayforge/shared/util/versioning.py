@@ -21,6 +21,33 @@ def is_newer_version(remote_str: str, local_str: str) -> bool:
         return remote_str != local_str
 
 
+def parse_requirement(req: str) -> Tuple[str, Optional[str]]:
+    """
+    Parse a requirement string into package name and version constraint.
+
+    Args:
+        req: Requirement string like "rayforge>=0.27.0" or "laser-essentials"
+
+    Returns:
+        Tuple of (package_name, constraint_or_none).
+        Constraint includes operator, e.g. ">=1.0.0".
+
+    Examples:
+        "laser-essentials" -> ("laser-essentials", None)
+        "laser-essentials>=1.0.0" -> ("laser-essentials", ">=1.0.0")
+        "rayforge >= 0.27.0" -> ("rayforge", ">=0.27.0")
+    """
+    req = req.strip()
+    match = re.match(
+        r"^([a-zA-Z0-9_-]+)\s*((?:>=|<=|==|!=|>|<|=|~|\^).*)?$", req
+    )
+    if match:
+        name = match.group(1)
+        constraint = match.group(2).strip() if match.group(2) else None
+        return name, constraint
+    return req, None
+
+
 def parse_version_constraint(constraint: str) -> Optional[Tuple[str, str]]:
     """
     Parse a version constraint string into operator and version.
@@ -116,19 +143,21 @@ def check_rayforge_compatibility(
         parts = dep.split(",")
         first_part = parts[0].strip()
 
-        pkg_name = re.split(r"[~^><=!]+", first_part)[0]
+        pkg_name, constraint = parse_requirement(first_part)
         if pkg_name != "rayforge":
             continue
 
-        first_constraint = first_part[len(pkg_name) :].strip()
-        constraints = [first_constraint] + parts[1:]
+        constraints = [constraint] if constraint else []
+        for extra in parts[1:]:
+            extra = extra.strip()
+            if extra:
+                constraints.append(extra)
 
-        for constraint in constraints:
-            constraint = constraint.strip()
-            if not constraint:
+        for constraint_str in constraints:
+            if not constraint_str:
                 continue
 
-            parsed = parse_version_constraint(constraint)
+            parsed = parse_version_constraint(constraint_str)
             if not parsed:
                 return False
 
