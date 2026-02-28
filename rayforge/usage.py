@@ -15,8 +15,11 @@ logger = logging.getLogger(__name__)
 
 def _get_language() -> str:
     try:
-        lang = locale.getdefaultlocale()[0]
-        return lang or "en-US"
+        locale.setlocale(locale.LC_ALL, "")
+        lang = locale.getlocale()[0]
+        if lang:
+            return lang.replace("_", "-")
+        return "en-US"
     except Exception:
         return "en-US"
 
