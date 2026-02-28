@@ -9,7 +9,7 @@ from ..artifact import (
     WorkPieceArtifact,
     create_handle_from_dict,
 )
-from ..artifact.store import ArtifactStore
+from ..artifact.store import ArtifactStore, SharedMemoryNotFoundError
 from ..artifact.workpiece_view import (
     RenderContext,
     WorkPieceViewArtifact,
@@ -147,7 +147,14 @@ def make_workpiece_view_artifact_in_subprocess(
 
     handle = create_handle_from_dict(workpiece_artifact_handle_dict)
     logger.debug(f"Worker: Retrieved handle {handle.shm_name}")
-    artifact = artifact_store.get(handle)
+    try:
+        artifact = artifact_store.get(handle)
+    except (SharedMemoryNotFoundError, RuntimeError) as e:
+        logger.warning(
+            f"Workpiece artifact SHM no longer available "
+            f"(handle={handle.shm_name}): {e}. Aborting view render."
+        )
+        return None
     if not isinstance(artifact, WorkPieceArtifact):
         logger.error("Runner received incorrect artifact type.")
         return None

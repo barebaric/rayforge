@@ -10,7 +10,7 @@ from ..artifact import (
     create_handle_from_dict,
     WorkPieceArtifact,
 )
-from ..artifact.store import ArtifactStore
+from ..artifact.store import ArtifactStore, SharedMemoryNotFoundError
 from ..transformer import OpsTransformer, transformer_by_name
 
 if TYPE_CHECKING:
@@ -74,7 +74,14 @@ def make_step_artifact_in_subprocess(
         proxy.set_progress(i / num_items * 0.5)
 
         handle = create_handle_from_dict(info["artifact_handle_dict"])
-        artifact = artifact_store.get(handle)
+        try:
+            artifact = artifact_store.get(handle)
+        except (SharedMemoryNotFoundError, RuntimeError) as e:
+            logger.warning(
+                f"Workpiece artifact SHM no longer available "
+                f"(handle={handle.shm_name}): {e}. Skipping workpiece."
+            )
+            continue
         if not isinstance(artifact, WorkPieceArtifact):
             continue
 
