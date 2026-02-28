@@ -17,8 +17,11 @@ jobs:
 
       - name: Fetch and push stats to VictoriaMetrics
         env:
-          SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.STORE_LOGIN }}
+          SNAPCRAFT_STORE_CREDENTIALS: /tmp/snapcraft-creds.txt
           METRICS_URL: ${{ secrets.METRICS_URL }}
           METRICS_API_USER: ${{ secrets.METRICS_API_USER }}
           METRICS_API_PASSWORD: ${{ secrets.METRICS_API_PASSWORD }}
-        run: python3 scripts/fetch_download_stats.py --output metrics
+        run: |
+          echo "${{ secrets.STORE_LOGIN }}" > /tmp/snapcraft-creds.txt
+          python3 scripts/fetch_download_stats.py --output metrics
+          rm -f /tmp/snapcraft-creds.txt
