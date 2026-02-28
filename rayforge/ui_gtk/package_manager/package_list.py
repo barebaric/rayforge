@@ -16,18 +16,31 @@ logger = logging.getLogger(__name__)
 class PackageRow(Gtk.Box):
     """A widget representing a single Package in a ListBox."""
 
-    def __init__(self, pkg: Package, on_delete):
+    def __init__(self, pkg: Package, on_delete, incompatible: bool = False):
         super().__init__(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
         self.pkg = pkg
+        self.incompatible = incompatible
 
         self.set_margin_top(6)
         self.set_margin_bottom(6)
         self.set_margin_start(12)
         self.set_margin_end(6)
 
-        icon = get_icon("addon-symbolic")
-        icon.set_valign(Gtk.Align.CENTER)
-        self.append(icon)
+        if incompatible:
+            icon = get_icon("warning-symbolic")
+            icon.set_valign(Gtk.Align.CENTER)
+            icon.add_css_class("warning")
+            icon.set_tooltip_text(
+                _(
+                    "This package is incompatible with the current "
+                    "version of Rayforge"
+                )
+            )
+            self.append(icon)
+        else:
+            icon = get_icon("addon-symbolic")
+            icon.set_valign(Gtk.Align.CENTER)
+            self.append(icon)
 
         labels_box = Gtk.Box(
             orientation=Gtk.Orientation.VERTICAL, hexpand=True
@@ -39,6 +52,8 @@ class PackageRow(Gtk.Box):
             halign=Gtk.Align.START,
             xalign=0,
         )
+        if incompatible:
+            title.add_css_class("dim-label")
         labels_box.append(title)
 
         subtitle = Gtk.Label(
@@ -52,9 +67,8 @@ class PackageRow(Gtk.Box):
         suffix_box = Gtk.Box(spacing=6, valign=Gtk.Align.CENTER)
         self.append(suffix_box)
 
-        delete_button = Gtk.Button(icon_name="user-trash-symbolic")
+        delete_button = Gtk.Button(child=get_icon("delete-symbolic"))
         delete_button.add_css_class("flat")
-        delete_button.add_css_class("destructive-action")
         delete_button.set_tooltip_text(_("Uninstall Package"))
         delete_button.connect("clicked", lambda w: on_delete(pkg))
         suffix_box.append(delete_button)
@@ -94,14 +108,25 @@ class PackageListWidget(PreferencesGroupWithButton):
     def populate_packages(self):
         """Refreshes the list of packages."""
         context = get_context()
+        loaded = [
+            (pkg, False)
+            for pkg in context.package_mgr.loaded_packages.values()
+        ]
+        incompatible = [
+            (pkg, True)
+            for pkg in context.package_mgr.incompatible_packages.values()
+        ]
         packages = sorted(
-            context.package_mgr.loaded_packages.values(),
-            key=lambda p: (p.metadata.display_name or p.metadata.name).lower(),
+            loaded + incompatible,
+            key=lambda p: (
+                p[0].metadata.display_name or p[0].metadata.name
+            ).lower(),
         )
         self.set_items(packages)
 
-    def create_row_widget(self, item: Package) -> Gtk.Widget:
-        return PackageRow(item, self._on_delete_package)
+    def create_row_widget(self, item: tuple) -> Gtk.Widget:
+        pkg, incompatible = item
+        return PackageRow(pkg, self._on_delete_package, incompatible)
 
     def _on_add_clicked(self, button):
         """Opens the registry dialog."""

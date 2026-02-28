@@ -34,16 +34,23 @@ class PackageManager:
     Manages the lifecycle of Rayforge packages (install, load, list).
     """
 
-    def __init__(self, packages_dir: Path, plugin_mgr):
+    def __init__(
+        self,
+        package_dirs: List[Path],
+        install_dir: Path,
+        plugin_mgr,
+    ):
         """
         Args:
-            packages_dir (Path): The directory where packages are installed.
+            package_dirs (List[Path]): Directories to scan for packages.
+            install_dir (Path): Directory for installing new packages.
             plugin_mgr: The core plugin manager instance for registration.
         """
-        self.packages_dir = packages_dir
+        self.package_dirs = package_dirs
+        self.install_dir = install_dir
         self.plugin_mgr = plugin_mgr
-        # Registry of loaded Package objects, keyed by package name
         self.loaded_packages: Dict[str, Package] = {}
+        self.incompatible_packages: Dict[str, Package] = {}
 
     def _parse_registry_dict(
         self, registry_data: Dict[str, Any]
@@ -202,15 +209,17 @@ class PackageManager:
         return updates_available
 
     def load_installed_packages(self):
-        """Scans the packages directory and loads valid packages."""
-        if not self.packages_dir.exists():
-            self.packages_dir.mkdir(parents=True, exist_ok=True)
-            return
+        """Scans the package directories and loads valid packages."""
+        for pkg_dir in self.package_dirs:
+            if not pkg_dir.exists():
+                if pkg_dir == self.install_dir:
+                    pkg_dir.mkdir(parents=True, exist_ok=True)
+                continue
 
-        logger.info(f"Scanning for packages in {self.packages_dir}...")
-        for child in self.packages_dir.iterdir():
-            if child.is_dir():
-                self.load_package(child.resolve())
+            logger.info(f"Scanning for packages in {pkg_dir}...")
+            for child in pkg_dir.iterdir():
+                if child.is_dir():
+                    self.load_package(child.resolve())
 
     def load_package(self, package_path: Path):
         """
@@ -229,9 +238,10 @@ class PackageManager:
                 != UpdateStatus.UP_TO_DATE
             ):
                 logger.warning(
-                    f"Skipping package '{pkg.metadata.name}' due to "
-                    "version incompatibility"
+                    f"Package '{pkg.metadata.name}' is incompatible with "
+                    "this version of Rayforge"
                 )
+                self.incompatible_packages[pkg.metadata.name] = pkg
                 return
 
             self._import_and_register(pkg)
@@ -341,7 +351,7 @@ class PackageManager:
                 # The canonical ID comes from the registry if available.
                 # Fallback to repo name for manual installs.
                 install_name = package_id or self._extract_repo_name(git_url)
-                final_path = self.packages_dir / install_name
+                final_path = self.install_dir / install_name
 
                 if final_path.exists():
                     logger.info(f"Upgrading existing package at {final_path}")
@@ -365,7 +375,9 @@ class PackageManager:
         """
         Deletes the package directory and unloads the module.
         """
-        pkg = self.loaded_packages.get(package_name)
+        pkg = self.loaded_packages.get(
+            package_name
+        ) or self.incompatible_packages.get(package_name)
         if not pkg:
             logger.warning(
                 f"Attempted to uninstall unknown or already "
@@ -373,7 +385,7 @@ class PackageManager:
             )
             # If the package isn't loaded but the directory might exist,
             # we can still try to clean up the files.
-            package_path = self.packages_dir / package_name
+            package_path = self.install_dir / package_name
             if package_path.exists():
                 self._cleanup_directory(package_path)
                 return True
@@ -401,6 +413,8 @@ class PackageManager:
             # 4. Unregister from package manager state
             if package_name in self.loaded_packages:
                 del self.loaded_packages[package_name]
+            if package_name in self.incompatible_packages:
+                del self.incompatible_packages[package_name]
 
             return True
 
