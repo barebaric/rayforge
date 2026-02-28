@@ -32,21 +32,24 @@ Common connection problems include:
 **Solutions:**
 
 **Linux:**
-If you're using the Snap version, you need to grant serial port permissions:
 
-```bash
-sudo snap connect rayforge:serial-port
-```
-
-See [Snap Permissions](snap-permissions) for detailed Linux setup.
-
-For non-Snap installations, add your user to the `dialout` group:
+First, add your user to the `dialout` group (required for both Snap and
+non-Snap installations on most Debian-based distributions):
 
 ```bash
 sudo usermod -a -G dialout $USER
 ```
 
 Then log out and log back in for the change to take effect.
+
+If you're using the Snap version, you also need to grant serial port
+permissions:
+
+```bash
+sudo snap connect rayforge:serial-port
+```
+
+See [Snap Permissions](snap-permissions) for detailed Linux setup.
 
 **Windows:**
 1. Open Device Manager (Win+X, then select Device Manager)
@@ -64,9 +67,11 @@ Then log out and log back in for the change to take effect.
 
 **Problem:** You get "Permission denied" or similar errors when trying to connect.
 
-**On Linux (non-Snap):**
+**On Linux:**
 
-Your user needs to be in the `dialout` group (or `uucp` on some distributions):
+Your user needs to be in the `dialout` group (or `uucp` on some distributions).
+This is required for **both Snap and non-Snap installations** on Debian-based
+distributions to avoid AppArmor DENIED messages:
 
 ```bash
 # Add yourself to the dialout group
@@ -76,11 +81,10 @@ sudo usermod -a -G dialout $USER
 groups | grep dialout
 ```
 
-**Important:** You must log out and log back in (or reboot) for group changes to take effect.
+**Important:** You must log out and log back in (or reboot) for group changes
+to take effect.
 
-**On Linux (Snap):**
-
-Grant serial port access to the snap:
+**Additionally for Snap installations**, grant serial port access to the snap:
 
 ```bash
 sudo snap connect rayforge:serial-port

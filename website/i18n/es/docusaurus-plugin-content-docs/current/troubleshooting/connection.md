@@ -32,21 +32,24 @@ Los problemas comunes de conexión incluyen:
 **Soluciones:**
 
 **Linux:**
-Si estás usando la versión Snap, necesitas otorgar permisos de puerto serie:
 
-```bash
-sudo snap connect rayforge:serial-port
-```
-
-Ver [Permisos de Snap](snap-permissions) para configuración detallada de Linux.
-
-Para instalaciones no Snap, añade tu usuario al grupo `dialout`:
+Primero, añade tu usuario al grupo `dialout` (requerido para instalaciones
+Snap y no Snap en la mayoría de distribuciones basadas en Debian):
 
 ```bash
 sudo usermod -a -G dialout $USER
 ```
 
 Luego cierra sesión y vuelve a entrar para que el cambio surta efecto.
+
+Si estás usando la versión Snap, también necesitas otorgar permisos de puerto
+serie:
+
+```bash
+sudo snap connect rayforge:serial-port
+```
+
+Ver [Permisos de Snap](snap-permissions) para configuración detallada de Linux.
 
 **Windows:**
 1. Abre el Administrador de Dispositivos (Win+X, luego selecciona Administrador de Dispositivos)
@@ -64,9 +67,11 @@ Luego cierra sesión y vuelve a entrar para que el cambio surta efecto.
 
 **Problema:** Obtienes errores de "Permiso denegado" o similares al intentar conectar.
 
-**En Linux (no Snap):**
+**En Linux:**
 
-Tu usuario necesita estar en el grupo `dialout` (o `uucp` en algunas distribuciones):
+Tu usuario necesita estar en el grupo `dialout` (o `uucp` en algunas
+distribuciones). Esto es requerido para **instalaciones Snap y no Snap** en
+distribuciones basadas en Debian para evitar mensajes AppArmor DENIED:
 
 ```bash
 # Añádete al grupo dialout
@@ -76,11 +81,11 @@ sudo usermod -a -G dialout $USER
 groups | grep dialout
 ```
 
-**Importante:** Debes cerrar sesión y volver a entrar (o reiniciar) para que los cambios de grupo surtan efecto.
+**Importante:** Debes cerrar sesión y volver a entrar (o reiniciar) para que
+los cambios de grupo surtan efecto.
 
-**En Linux (Snap):**
-
-Otorga acceso al puerto serie al snap:
+**Adicionalmente para instalaciones Snap**, otorga acceso al puerto serie al
+snap:
 
 ```bash
 sudo snap connect rayforge:serial-port

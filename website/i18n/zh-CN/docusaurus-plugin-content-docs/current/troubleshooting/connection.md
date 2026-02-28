@@ -32,21 +32,23 @@
 **解决方案：**
 
 **Linux：**
-如果您使用 Snap 版本，您需要授予串口权限：
 
-```bash
-sudo snap connect rayforge:serial-port
-```
-
-详见 [Snap 权限](snap-permissions)。
-
-对于非 Snap 安装，将您的用户添加到 `dialout` 组：
+首先，将您的用户添加到 `dialout` 组（在大多数基于 Debian 的发行版上，
+Snap 和非 Snap 安装都需要此操作）：
 
 ```bash
 sudo usermod -a -G dialout $USER
 ```
 
 然后注销并重新登录以使更改生效。
+
+如果您使用 Snap 版本，还需要授予串口权限：
+
+```bash
+sudo snap connect rayforge:serial-port
+```
+
+详见 [Snap 权限](snap-permissions)。
 
 **Windows：**
 1. 打开设备管理器（Win+X，然后选择设备管理器）
@@ -64,9 +66,11 @@ sudo usermod -a -G dialout $USER
 
 **问题：** 尝试连接时出现"Permission denied"或类似错误。
 
-**在 Linux（非 Snap）上：**
+**在 Linux 上：**
 
-您的用户需要在 `dialout` 组（或某些发行版上的 `uucp`）中：
+您的用户需要在 `dialout` 组（或某些发行版上的 `uucp`）中。
+对于**基于 Debian 的发行版上的 Snap 和非 Snap 安装**，都需要此操作
+以避免 AppArmor DENIED 消息：
 
 ```bash
 # 将自己添加到 dialout 组
@@ -78,9 +82,7 @@ groups | grep dialout
 
 **重要：** 您必须注销并重新登录（或重启）才能使组更改生效。
 
-**在 Linux（Snap）上：**
-
-授予 snap 串口访问权限：
+**对于 Snap 安装**，还需要授予 snap 串口访问权限：
 
 ```bash
 sudo snap connect rayforge:serial-port
