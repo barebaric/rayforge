@@ -128,13 +128,15 @@ Rayforge 在应用程序启动时自动连接到您的机器（如果机器已�
 
 ### 找不到设备
 
-- **Linux（串口）**：将用户添加到 `dialout` 组：
+- **Linux（串口）**：将用户添加到 `dialout` 组。对于**基于 Debian
+  的发行版上的 Snap 和非 Snap 安装**，都需要此操作以避免 AppArmor
+  DENIED 消息：
   ```bash
   sudo usermod -a -G dialout $USER
   ```
   注销并重新登录以使更改生效。
 
-- **Snap 包**：确保您已授予串口权限：
+- **Snap 包**：除了上述 `dialout` 组外，还需确保您已授予串口权限：
   ```bash
   sudo snap connect rayforge:serial-port
   ```

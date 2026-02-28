@@ -23,6 +23,20 @@ Rayforge needs these Snap interfaces connected for full functionality:
 
 **This is the most important permission for Rayforge.**
 
+### Prerequisite: dialout Group Membership
+
+On Debian-based distributions, your user must be a member of the `dialout`
+group, even when using the Snap package. Without this group membership, you
+may receive AppArmor DENIED messages when trying to access serial ports.
+
+```bash
+# Add your user to the dialout group
+sudo usermod -a -G dialout $USER
+```
+
+**Important:** You must log out and log back in (or reboot) for group changes
+to take effect.
+
 ### Check Current Permissions
 
 ```bash

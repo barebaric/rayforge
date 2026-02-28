@@ -32,21 +32,25 @@ Häufige Verbindungsprobleme sind:
 **Lösungen:**
 
 **Linux:**
-Wenn du die Snap-Version verwendest, musst du serielle Port-Berechtigungen gewähren:
 
-```bash
-sudo snap connect rayforge:serial-port
-```
-
-Siehe [Snap-Berechtigungen](snap-permissions) für detaillierte Linux-Einrichtung.
-
-Für Nicht-Snap-Installationen füge deinen Benutzer zur `dialout`-Gruppe hinzu:
+Zuerst füge deinen Benutzer zur `dialout`-Gruppe hinzu (erforderlich für
+Snap- und Nicht-Snap-Installationen auf den meisten Debian-basierten
+Distributionen):
 
 ```bash
 sudo usermod -a -G dialout $USER
 ```
 
 Dann abmelden und wieder anmelden, damit die Änderung wirksam wird.
+
+Wenn du die Snap-Version verwendest, musst du außerdem serielle
+Port-Berechtigungen gewähren:
+
+```bash
+sudo snap connect rayforge:serial-port
+```
+
+Siehe [Snap-Berechtigungen](snap-permissions) für detaillierte Linux-Einrichtung.
 
 **Windows:**
 1. Geräte-Manager öffnen (Win+X, dann Geräte-Manager auswählen)
@@ -64,9 +68,12 @@ Dann abmelden und wieder anmelden, damit die Änderung wirksam wird.
 
 **Problem:** Du erhältst "Permission denied" oder ähnliche Fehler beim Versuch zu verbinden.
 
-**Unter Linux (Nicht-Snap):**
+**Unter Linux:**
 
-Dein Benutzer muss in der `dialout`-Gruppe sein (oder `uucp` bei einigen Distributionen):
+Dein Benutzer muss in der `dialout`-Gruppe sein (oder `uucp` bei einigen
+Distributionen). Dies ist für **Snap- und Nicht-Snap-Installationen** auf
+Debian-basierten Distributionen erforderlich, um AppArmor DENIED-Meldungen
+zu vermeiden:
 
 ```bash
 # Dich selbst zur dialout-Gruppe hinzufügen
@@ -76,11 +83,10 @@ sudo usermod -a -G dialout $USER
 groups | grep dialout
 ```
 
-**Wichtig:** Du musst dich abmelden und wieder anmelden (oder neu starten), damit Gruppenänderungen wirksam werden.
+**Wichtig:** Du musst dich abmelden und wieder anmelden (oder neu starten),
+damit Gruppenänderungen wirksam werden.
 
-**Unter Linux (Snap):**
-
-Gewähre dem Snap seriellen Port-Zugriff:
+**Zusätzlich für Snap-Installationen**, gewähre dem Snap seriellen Port-Zugriff:
 
 ```bash
 sudo snap connect rayforge:serial-port

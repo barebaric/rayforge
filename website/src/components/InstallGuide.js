@@ -252,14 +252,27 @@ function LinuxSnapInstall() {
       <div className="install-step">
         <div className="install-step-number">2</div>
         <div className="install-step-content">
-          <h5><Translate id="install.grantPermissions">Grant Permissions (Important!)</Translate></h5>
+          <h5><Translate id="install.addDialoutGroup">Add User to dialout Group</Translate></h5>
           <Admonition type="warning" title={translate({ id: 'install.permissionsRequired', message: 'Permissions Required' })}>
-            <Translate id="install.snap.permissionNote">
-              The Snap version runs in a sandbox and requires manual
-              permission grants for hardware access.
+            <Translate id="install.snap.dialoutNote">
+              On Debian-based distributions, your user must be in the dialout
+              group even when using Snap, to avoid AppArmor DENIED messages.
             </Translate>
           </Admonition>
+          <CodeBlock language="bash">
+            sudo usermod -a -G dialout $USER
+          </CodeBlock>
+          <p>
+            <strong><Translate id="install.important">Important:</Translate></strong>{' '}
+            <Translate id="install.logoutLogin">Log out and log back in for this change to take effect.</Translate>
+          </p>
+        </div>
+      </div>
 
+      <div className="install-step">
+        <div className="install-step-number">3</div>
+        <div className="install-step-content">
+          <h5><Translate id="install.grantPermissions">Grant Snap Permissions (Important!)</Translate></h5>
           <p>
             <strong><Translate id="install.usbSerialAccess">For USB Serial Port Access:</Translate></strong>
           </p>
@@ -281,7 +294,7 @@ sudo snap connect rayforge:serial-port`}
       </div>
 
       <div className="install-step">
-        <div className="install-step-number">3</div>
+        <div className="install-step-number">4</div>
         <div className="install-step-content">
           <h5><Translate id="install.verifyPermissions">Verify Permissions</Translate></h5>
           <CodeBlock language="bash">
