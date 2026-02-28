@@ -33,6 +33,7 @@ class ShrinkWrapStep(Step):
         cls,
         context: "RayforgeContext",
         name: Optional[str] = None,
+        **kwargs,
     ) -> "ShrinkWrapStep":
         machine = context.machine
         assert machine is not None

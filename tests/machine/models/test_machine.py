@@ -35,7 +35,7 @@ from rayforge.machine.models.laser import Laser
 from rayforge.machine.models.machine import JogDirection, Machine, Origin
 from rayforge.machine.models.macro import MacroTrigger
 from rayforge.machine.transport import TransportStatus
-from rayforge.pipeline import steps
+from rayforge.pipeline.steps import ContourStep
 from rayforge.shared.tasker.manager import TaskManager
 
 
@@ -545,7 +545,7 @@ class TestMachine:
         # --- Arrange ---
         await wait_for_tasks_to_finish(task_mgr)
         # Add a step to the workflow, which is required for job assembly.
-        step = steps.create_contour_step(lite_context)
+        step = ContourStep.create(lite_context)
         workflow = doc.active_layer.workflow
         assert workflow is not None
         workflow.add_step(step)
@@ -594,7 +594,7 @@ class TestMachine:
         assert machine.can_frame() is True
 
         # Add a step to the workflow, which is required for job assembly.
-        step = steps.create_contour_step(lite_context)
+        step = ContourStep.create(lite_context)
         workflow = doc.active_layer.workflow
         assert workflow is not None
         workflow.add_step(step)

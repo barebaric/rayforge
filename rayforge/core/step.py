@@ -11,6 +11,7 @@ from .matrix import Matrix
 from .step_registry import step_registry
 
 if TYPE_CHECKING:
+    from ..context import RayforgeContext
     from ..machine.models.laser import Laser
     from ..machine.models.machine import Machine
     from .layer import Layer
@@ -28,6 +29,8 @@ class Step(DocItem, ABC):
     operation (e.g., outline, engrave) to be performed. It holds its
     configuration as serializable dictionaries.
     """
+
+    HIDDEN: bool = False
 
     def __init__(
         self,
@@ -64,6 +67,23 @@ class Step(DocItem, ABC):
 
         # Forward compatibility: store unknown attributes
         self.extra: Dict[str, Any] = {}
+
+    @classmethod
+    def create(
+        cls,
+        context: "RayforgeContext",
+        name: Optional[str] = None,
+        **kwargs,
+    ) -> "Step":
+        """
+        Factory method to create a fully configured step instance.
+
+        Subclasses must override this to provide default configuration
+        based on the context (e.g., machine settings).
+        """
+        raise NotImplementedError(
+            f"{cls.__name__}.create() must be implemented by subclass"
+        )
 
     def to_dict(self) -> Dict:
         """Serializes the step and its configuration to a dictionary."""

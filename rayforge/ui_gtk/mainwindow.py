@@ -26,7 +26,7 @@ from ..machine.transport import TransportStatus
 from ..package_mgr.update_cmd import UpdateCommand
 from ..pipeline.artifact import JobArtifact, JobArtifactHandle
 from ..pipeline.encoder.gcode import MachineCodeOpMap
-from ..pipeline.steps import STEP_FACTORIES, create_contour_step
+from ..pipeline.steps import step_registry
 from ..shared.gcodeedit.viewer import GcodeViewer
 from ..shared.tasker import task_mgr
 from ..shared.util.time_format import format_hours_to_hm
@@ -419,7 +419,7 @@ class MainWindow(Adw.ApplicationWindow):
         self.workflowview = WorkflowView(
             self.doc_editor,
             initial_workflow,
-            step_factories=STEP_FACTORIES,
+            step_factories=step_registry.get_factories(),
         )
         self.workflowview.set_margin_top(20)
         self.workflowview.set_margin_end(12)
@@ -814,8 +814,11 @@ class MainWindow(Adw.ApplicationWindow):
             and not first_workpiece_layer.workflow.has_steps()
         ):
             workflow = first_workpiece_layer.workflow
-            # The first factory in the list is the default step type
-            default_step = create_contour_step(get_context())
+            factories = step_registry.get_factories()
+            if not factories:
+                logger.warning("No step factories found in registry")
+                return
+            default_step = factories[0](get_context())
 
             # Apply best recipe using the new helper method
             self.doc_editor.step.apply_best_recipe_to_step(default_step)

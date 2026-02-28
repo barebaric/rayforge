@@ -9,7 +9,7 @@ from rayforge.context import get_context
 from rayforge.core.vectorization_spec import TraceSpec
 from rayforge.image.svg import svg_fallback
 from rayforge.machine.models.machine import Origin
-from rayforge.pipeline import steps
+from rayforge.pipeline.steps import ContourStep
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -88,7 +88,7 @@ async def test_import_svg_export_gcode(
     machine.set_origin(Origin.BOTTOM_LEFT)
 
     # --- 1. ARRANGE ---
-    step = steps.create_contour_step(
+    step = ContourStep.create(
         context_initializer, name="Vectorize", optimize=False
     )
     step.set_power(0.5)
