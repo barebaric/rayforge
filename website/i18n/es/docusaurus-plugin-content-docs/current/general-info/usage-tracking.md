@@ -13,14 +13,20 @@ Puede cambiar esta elección en cualquier momento en la configuración general.
 
 ## Qué rastreamos
 
-Cuando está habilitado, solo recopilamos datos anónimos de vistas de página, similares a los análisis de sitios web. Esto es lo que podemos ver:
+Cuando está habilitado, solo recopilamos datos anónimos de vistas de página,
+similares a los análisis de sitios web. Esto es lo que podemos ver:
 
-| Datos                      | Ejemplo                   |
-| -------------------------- | ------------------------- |
-| Resolución de pantalla     | 1920x1080                 |
-| Configuración de idioma    | es-ES                     |
-| Páginas/diálogos vistos    | /machine-settings/general |
-| Tiempo en la página        | 6m 3s                     |
+| Datos                   | Ejemplo                   |
+| ----------------------- | ------------------------- |
+| Resolución de pantalla  | 1920x1080                 |
+| Configuración de idioma | es-ES                     |
+| Páginas/diálogos vistos | /machine-settings/general |
+| Tiempo en la página     | 6m 3s                     |
+| ID de sesión            | a1b2c3d4-e5f6-...         |
+
+El ID de sesión es un identificador aleatorio generado cada vez que inicia
+Rayforge. Nos permite distinguir entre diferentes sesiones de uso mientras
+mantenemos el seguimiento completamente anónimo.
 
 ## Lo que vemos
 

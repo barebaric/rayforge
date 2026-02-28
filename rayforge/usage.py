@@ -3,6 +3,7 @@ import locale
 import logging
 import platform
 import threading
+import uuid
 from typing import Optional
 import urllib.request
 import urllib.error
@@ -65,6 +66,7 @@ class UsageTracker:
         self._os = _get_os_info()
         self._version = __version__ or "unknown"
         self._cache_token: Optional[str] = None
+        self._session_id = str(uuid.uuid4())
 
     def _get_screen_size(self) -> str:
         try:
@@ -99,6 +101,7 @@ class UsageTracker:
                 "hostname": "",
                 "url": full_url,
                 "referrer": "",
+                "sessionId": self._session_id,
                 "data": {
                     "app_version": self._version,
                     "os": self._os,
