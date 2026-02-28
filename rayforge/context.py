@@ -39,8 +39,14 @@ class RayforgeContext:
         from .pipeline.artifact.store import ArtifactStore
         from .debug import DebugDumpManager
         from .machine.models.dialect_manager import DialectManager
-        from .config import DIALECT_DIR, PACKAGES_DIR, BUILTIN_PACKAGES_DIR
+        from .config import (
+            CONFIG_DIR,
+            DIALECT_DIR,
+            PACKAGES_DIR,
+            BUILTIN_PACKAGES_DIR,
+        )
         from .shared.util.localized import get_system_language
+        from .core.addon_config import AddonConfig
 
         self.artifact_store = ArtifactStore()
         # The DialectManager is safe and necessary for all processes.
@@ -50,9 +56,16 @@ class RayforgeContext:
         self.plugin_mgr = pluggy.PluginManager("rayforge")
         self.plugin_mgr.add_hookspecs(RayforgeSpecs)
 
+        # Initialize addon config for state persistence
+        self.addon_config = AddonConfig(CONFIG_DIR)
+        self.addon_config.load()
+
         # Initialize the package manager
         self.package_mgr = PackageManager(
-            [BUILTIN_PACKAGES_DIR, PACKAGES_DIR], PACKAGES_DIR, self.plugin_mgr
+            [BUILTIN_PACKAGES_DIR, PACKAGES_DIR],
+            PACKAGES_DIR,
+            self.plugin_mgr,
+            self.addon_config,
         )
 
         # These managers are initialized to None. The main application thread

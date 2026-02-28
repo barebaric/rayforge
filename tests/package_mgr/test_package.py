@@ -157,6 +157,64 @@ class TestPackage:
                 pkg.validate()
             assert "Invalid semantic version" in str(exc.value)
 
+    def test_validate_wrong_api_version(self):
+        """Test validation fails if api_version doesn't match."""
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp)
+            (path / "main.py").write_text("def my_plugin(): pass")
+            data = {
+                "name": "test_pkg",
+                "depends": ["rayforge>=0.27.0,~0.27"],
+                "author": {"name": "Me", "email": "me@example.com"},
+                "provides": {"code": "main.py:my_plugin"},
+                "api_version": 999,
+            }
+            with open(path / "rayforge-package.yaml", "w") as f:
+                yaml.dump(data, f)
+
+            pkg = Package.load_from_directory(path)
+            with pytest.raises(PackageValidationError) as exc:
+                pkg.validate()
+            assert "Unsupported api_version" in str(exc.value)
+
+    def test_validate_api_version_not_integer(self):
+        """Test validation fails if api_version is not an integer."""
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp)
+            (path / "main.py").write_text("def my_plugin(): pass")
+            data = {
+                "name": "test_pkg",
+                "depends": ["rayforge>=0.27.0,~0.27"],
+                "author": {"name": "Me", "email": "me@example.com"},
+                "provides": {"code": "main.py:my_plugin"},
+                "api_version": "1",
+            }
+            with open(path / "rayforge-package.yaml", "w") as f:
+                yaml.dump(data, f)
+
+            pkg = Package.load_from_directory(path)
+            with pytest.raises(PackageValidationError) as exc:
+                pkg.validate()
+            assert "api_version must be an integer" in str(exc.value)
+
+    def test_validate_default_api_version(self):
+        """Test that missing api_version defaults to current version."""
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp)
+            (path / "main.py").write_text("def my_plugin(): pass")
+            data = {
+                "name": "test_pkg",
+                "depends": ["rayforge>=0.27.0,~0.27"],
+                "author": {"name": "Me", "email": "me@example.com"},
+                "provides": {"code": "main.py:my_plugin"},
+            }
+            with open(path / "rayforge-package.yaml", "w") as f:
+                yaml.dump(data, f)
+
+            pkg = Package.load_from_directory(path)
+            assert pkg.metadata.api_version == 1
+            assert pkg.validate() is True
+
 
 class TestGetGitTagVersion:
     def test_returns_default_when_gitpython_not_installed(self):
