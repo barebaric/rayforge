@@ -65,6 +65,9 @@
   "install.snap.permissionNote": {
     "message": "Версія Snap працює в пісочниці і потребує ручного надання дозволів для доступу до обладнання."
   },
+  "install.snap.dialoutNote": {
+    "message": "На дистрибутивах на основі Debian ваш користувач повинен бути в групі dialout навіть при використанні Snap, щоб уникнути повідомлень AppArmor DENIED."
+  },
   "install.usbSerialAccess": {
     "message": "Для доступу до USB послідовного порту:"
   },

@@ -128,18 +128,22 @@ Editar configurações do dispositivo pode ser perigoso e pode tornar sua máqui
 
 ### Dispositivo Não Encontrado
 
-- **Linux (Serial)**: Adicione seu usuário ao grupo `dialout`:
+- **Linux (Serial)**: Adicione seu usuário ao grupo `dialout`. Isto é
+  necessário para **ambas instalações Snap e não-Snap** em distribuições
+  baseadas em Debian para evitar mensagens AppArmor DENIED:
   ```bash
   sudo usermod -a -G dialout $USER
   ```
   Saia e entre novamente para que as alterações tenham efeito.
 
-- **Pacote Snap**: Certifique-se de ter concedido permissões de porta serial:
+- **Pacote Snap**: Além do grupo `dialout` acima, certifique-se de ter
+  concedido permissões de porta serial:
   ```bash
   sudo snap connect rayforge:serial-port
   ```
 
-- **Windows**: Verifique o Gerenciador de Dispositivos para confirmar se o dispositivo é reconhecido e anote o número da porta COM.
+- **Windows**: Verifique o Gerenciador de Dispositivos para confirmar se o
+  dispositivo é reconhecido e anote o número da porta COM.
 
 ### Conexão Recusada
 

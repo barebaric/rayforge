@@ -128,18 +128,22 @@ Das Bearbeiten von Geräteeinstellungen kann gefährlich sein und kann deine Mas
 
 ### Gerät nicht gefunden
 
-- **Linux (Seriell)**: Füge deinen Benutzer zur `dialout`-Gruppe hinzu:
+- **Linux (Seriell)**: Füge deinen Benutzer zur `dialout`-Gruppe hinzu. Dies
+  ist für **Snap- und Nicht-Snap-Installationen** auf Debian-basierten
+  Distributionen erforderlich, um AppArmor DENIED-Meldungen zu vermeiden:
   ```bash
   sudo usermod -a -G dialout $USER
   ```
   Melde dich ab und wieder an, damit die Änderungen wirksam werden.
 
-- **Snap-Paket**: Stelle sicher, dass du serielle Port-Berechtigungen erteilt hast:
+- **Snap-Paket**: Zusätzlich zur `dialout`-Gruppe oben, stelle sicher, dass
+  du serielle Port-Berechtigungen erteilt hast:
   ```bash
   sudo snap connect rayforge:serial-port
   ```
 
-- **Windows**: Überprüfe den Geräte-Manager, um zu bestätigen, dass das Gerät erkannt wird, und notiere dir die COM-Port-Nummer.
+- **Windows**: Überprüfe den Geräte-Manager, um zu bestätigen, dass das Gerät
+  erkannt wird, und notiere dir die COM-Port-Nummer.
 
 ### Verbindung verweigert
 

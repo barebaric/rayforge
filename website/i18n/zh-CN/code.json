@@ -65,6 +65,9 @@
   "install.snap.permissionNote": {
     "message": "Snap 版本在沙盒中运行，需要手动授予硬件访问权限。"
   },
+  "install.snap.dialoutNote": {
+    "message": "在基于 Debian 的发行版上，即使使用 Snap，您的用户也必须在 dialout 组中，以避免 AppArmor DENIED 消息。"
+  },
   "install.usbSerialAccess": {
     "message": "USB 串口访问："
   },

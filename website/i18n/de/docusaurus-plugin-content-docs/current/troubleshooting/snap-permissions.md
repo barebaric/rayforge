@@ -23,6 +23,21 @@ Rayforge benötigt diese Snap-Schnittstellen für volle Funktionalität:
 
 **Dies ist die wichtigste Berechtigung für Rayforge.**
 
+### Voraussetzung: dialout-Gruppenmitgliedschaft
+
+Auf Debian-basierten Distributionen muss dein Benutzer Mitglied der
+`dialout`-Gruppe sein, auch bei Verwendung des Snap-Pakets. Ohne diese
+Gruppenmitgliedschaft kannst du AppArmor DENIED-Meldungen erhalten, wenn du
+versuchst, auf serielle Ports zuzugreifen.
+
+```bash
+# Füge deinen Benutzer zur dialout-Gruppe hinzu
+sudo usermod -a -G dialout $USER
+```
+
+**Wichtig:** Du musst dich abmelden und wieder anmelden (oder neu starten),
+damit Gruppenänderungen wirksam werden.
+
 ### Aktuelle Berechtigungen prüfen
 
 ```bash
