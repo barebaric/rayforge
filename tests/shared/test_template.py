@@ -1,6 +1,11 @@
 import pytest
+from typing import cast, TYPE_CHECKING
+
 from rayforge.shared.util.template import TemplateFormatter
 from rayforge.machine.models.macro import Macro
+
+if TYPE_CHECKING:
+    from rayforge.pipeline.encoder.context import GcodeContext
 
 
 class TestTemplateFormatter:
@@ -180,3 +185,21 @@ class TestTemplateFormatter:
             "; ERROR: Circular dependency detected. Macro 'Circular1'"
             " was included again."
         ]
+
+    def test_float_formatting_locale_independent(self, context_and_machine):
+        """
+        Test that floats are formatted with period decimal separator
+        regardless of system locale. This is critical for G-code generation.
+        """
+        _, machine = context_and_machine
+
+        class ContextWithFloat:
+            float_value = 3.14159
+
+        formatter = TemplateFormatter(
+            machine, cast("GcodeContext", ContextWithFloat())
+        )
+        result = formatter.format_string("Value: {float_value}")
+        assert "." in result
+        assert "," not in result
+        assert result == "Value: 3.14159"

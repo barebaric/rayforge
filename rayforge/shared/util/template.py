@@ -27,7 +27,6 @@ class TemplateFormatter:
 
     def _resolve_variable(self, path: str) -> str:
         """Resolves a dot-notation path like 'machine.axis_extents[0]'."""
-        # This is the original _resolve method, now with a clearer name.
         try:
             current = self._context
             parts = re.split(r"\.|(\[\d+\])", path)
@@ -39,6 +38,9 @@ class TemplateFormatter:
                     current = current[index]  # type: ignore
                 else:
                     current = getattr(current, part)
+
+            if isinstance(current, float):
+                return repr(current)
             return str(current)
         except (AttributeError, TypeError, IndexError):
             return f"{{{path}}}"
