@@ -17,6 +17,7 @@ from ..shared.preferences_page import TrackedPreferencesPage
 from ..shared.unit_spin_row import UnitSpinRowHelper
 from .recipe_control_widget import RecipeControlWidget
 from .step_settings import step_widget_registry
+from .step_settings.placeholder import PlaceholderSettingsWidget
 
 if TYPE_CHECKING:
     from ...doceditor.editor import DocEditor
@@ -68,6 +69,16 @@ class GeneralStepSettingsView(TrackedPreferencesPage):
                 WidgetClass = step_widget_registry.get(producer_name)
                 if WidgetClass:
                     widget = WidgetClass(
+                        self.editor,
+                        self.step.typelabel,
+                        producer_dict,
+                        self,
+                        self.step,
+                    )
+                    self.add(widget)
+                else:
+                    # Widget not registered - show placeholder
+                    widget = PlaceholderSettingsWidget(
                         self.editor,
                         self.step.typelabel,
                         producer_dict,

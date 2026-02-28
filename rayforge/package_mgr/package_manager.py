@@ -6,9 +6,23 @@ import shutil
 import tempfile
 from enum import Enum, auto
 from pathlib import Path
-from typing import Optional, List, Dict, Any, Tuple, Callable, Set
+from typing import (
+    Optional,
+    List,
+    Dict,
+    Any,
+    Tuple,
+    Callable,
+    Set,
+    Protocol,
+    runtime_checkable,
+    TYPE_CHECKING,
+)
 from urllib.parse import urlparse
+
+import pluggy
 import yaml
+
 from .. import __version__
 from ..config import PACKAGE_REGISTRY_URL
 from ..core.addon_config import AddonConfig, AddonState as ConfigAddonState
@@ -19,7 +33,27 @@ from ..shared.util.versioning import (
 )
 from .package import Package, PackageMetadata, PackageValidationError
 
+if TYPE_CHECKING:
+    pass
+
 logger = logging.getLogger(__name__)
+
+
+@runtime_checkable
+class AddonRegistry(Protocol):
+    """Protocol for registries that support addon item cleanup."""
+
+    def unregister_all_from_addon(self, addon_name: str) -> int:
+        """
+        Unregister all items registered by the named addon.
+
+        Args:
+            addon_name: The canonical name of the addon.
+
+        Returns:
+            The number of items unregistered.
+        """
+        ...
 
 
 class AddonState(Enum):
@@ -51,31 +85,50 @@ class PackageManager:
         self,
         package_dirs: List[Path],
         install_dir: Path,
-        plugin_mgr,
+        plugin_mgr: pluggy.PluginManager,
         addon_config: Optional[AddonConfig] = None,
         is_job_active_callback: Optional[Callable[[], bool]] = None,
+        registries: Optional[Dict[str, "AddonRegistry"]] = None,
     ):
         """
         Args:
             package_dirs (List[Path]): Directories to scan for packages.
             install_dir (Path): Directory for installing new packages.
-            plugin_mgr: The core plugin manager instance for registration.
+            plugin_mgr (pluggy.PluginManager): The core plugin manager
+                instance for registration.
             addon_config (Optional[AddonConfig]): Addon state persistence
                 manager. If None, packages will always be loaded.
             is_job_active_callback (Optional[Callable]): A callback that
                 returns True if any job is currently active. Used to defer
                 addon unloading until jobs complete.
+            registries (Optional[Dict[str, AddonRegistry]]): Dict mapping
+                hook parameter names to registry instances. Expected keys:
+                'step_registry', 'producer_registry', 'widget_registry',
+                'menu_registry'. Each registry must implement the
+                AddonRegistry protocol.
         """
         self.package_dirs = package_dirs
         self.install_dir = install_dir
         self.plugin_mgr = plugin_mgr
         self.addon_config = addon_config
         self.is_job_active_callback = is_job_active_callback
+        self.registries = registries or {}
         self.loaded_packages: Dict[str, Package] = {}
         self.incompatible_packages: Dict[str, Package] = {}
         self.disabled_packages: Dict[str, Package] = {}
         self._pending_unloads: Set[str] = set()
         self._load_errors: Dict[str, str] = {}
+
+    def set_registries(self, registries: Dict[str, "AddonRegistry"]):
+        """
+        Set the registries dict for addon cleanup.
+
+        Args:
+            registries: Dict mapping hook parameter names to registry
+                instances. Expected keys: 'step_registry',
+                'producer_registry', 'widget_registry', 'menu_registry'.
+        """
+        self.registries = registries
 
     def _parse_registry_dict(
         self, registry_data: Dict[str, Any]
@@ -283,6 +336,7 @@ class PackageManager:
                 return
 
             self._import_and_register(pkg, pkg.metadata.provides.backend)
+            self._import_and_register(pkg, pkg.metadata.provides.frontend)
 
         except (PackageValidationError, FileNotFoundError) as e:
             logger.warning(
@@ -314,14 +368,14 @@ class PackageManager:
 
         Args:
             pkg: The package to load.
-            entry_point: Entry point string like 'module.submodule:function',
+            entry_point: Entry point string like 'module.submodule',
                          or None to skip.
         """
         if not entry_point:
             return
 
         name = pkg.metadata.name
-        module_name = f"rayforge_plugins.{name}"
+        module_name = f"rayforge_plugins.{name}.{entry_point}"
 
         module_path = self._resolve_entry_point_path(
             entry_point, pkg.root_path
@@ -333,6 +387,11 @@ class PackageManager:
             return
 
         try:
+            # Ensure parent packages exist for relative imports
+            self._ensure_parent_packages(
+                module_name, pkg.root_path, entry_point
+            )
+
             spec = importlib.util.spec_from_file_location(
                 module_name, module_path
             )
@@ -349,6 +408,59 @@ class PackageManager:
             error_msg = str(e)
             logger.error(f"Error importing plugin {name}: {e}")
             self._load_errors[name] = error_msg
+
+    def _ensure_parent_packages(
+        self, module_name: str, root_path: Path, entry_point: str
+    ):
+        """
+        Ensure parent packages exist in sys.modules for relative imports.
+
+        For entry_point 'laser_essentials.backend', we need:
+        - rayforge_plugins (namespace)
+        - rayforge_plugins.{name} (namespace)
+        - rayforge_plugins.{name}.laser_essentials (actual package)
+        """
+        import types
+
+        parts = module_name.split(".")
+        # Create rayforge_plugins namespace
+        if parts[0] not in sys.modules:
+            ns = types.ModuleType(parts[0])
+            ns.__path__ = []
+            ns.__package__ = parts[0]
+            sys.modules[parts[0]] = ns
+
+        # Create rayforge_plugins.{name} namespace
+        if len(parts) > 1:
+            parent = f"{parts[0]}.{parts[1]}"
+            if parent not in sys.modules:
+                ns = types.ModuleType(parent)
+                ns.__path__ = []
+                ns.__package__ = parent
+                sys.modules[parent] = ns
+
+        # Create the actual package
+        # (e.g., rayforge_plugins.{name}.laser_essentials)
+        entry_parts = entry_point.split(".")
+        if len(entry_parts) > 1:
+            pkg_name = f"{parts[0]}.{parts[1]}.{entry_parts[0]}"
+            if pkg_name not in sys.modules:
+                # Load the actual __init__.py
+                pkg_path = root_path / entry_parts[0] / "__init__.py"
+                if pkg_path.exists():
+                    spec = importlib.util.spec_from_file_location(
+                        pkg_name, pkg_path
+                    )
+                    if spec and spec.loader:
+                        pkg_module = importlib.util.module_from_spec(spec)
+                        sys.modules[pkg_name] = pkg_module
+                        spec.loader.exec_module(pkg_module)
+                else:
+                    # Create namespace if no __init__.py
+                    ns = types.ModuleType(pkg_name)
+                    ns.__path__ = [str(root_path / entry_parts[0])]
+                    ns.__package__ = pkg_name
+                    sys.modules[pkg_name] = ns
 
     def _resolve_entry_point_path(
         self, entry_point: str, root_path: Path
@@ -456,7 +568,6 @@ class PackageManager:
             return False
 
         package_path = pkg.root_path
-        module_name = f"rayforge_plugins.{package_name}"
 
         try:
             # 1. Delete files from disk
@@ -464,15 +575,21 @@ class PackageManager:
                 self._cleanup_directory(package_path)
                 logger.info(f"Uninstalled package at {package_path}")
 
-            # 2. Unregister from the plugin manager
-            if module_name in sys.modules:
-                module = sys.modules[module_name]
-                self.plugin_mgr.unregister(module)
+            # 2. Unregister all modules belonging to this addon
+            prefix = f"rayforge_plugins.{package_name}."
+            modules_to_unload = [
+                name for name in sys.modules if name.startswith(prefix)
+            ]
+            base_module = f"rayforge_plugins.{package_name}"
+            if base_module in sys.modules:
+                modules_to_unload.append(base_module)
 
-            # 3. Unload module from Python's cache
-            if module_name in sys.modules:
-                del sys.modules[module_name]
-                logger.info(f"Unloaded module: {module_name}")
+            for module_name in modules_to_unload:
+                module = sys.modules.get(module_name)
+                if module:
+                    self.plugin_mgr.unregister(module)
+                    del sys.modules[module_name]
+                    logger.info(f"Unloaded module: {module_name}")
 
             # 4. Unregister from package manager state
             if package_name in self.loaded_packages:
@@ -538,6 +655,8 @@ class PackageManager:
             logger.info(f"Addon '{addon_name}' enabled but is incompatible")
         else:
             self._import_and_register(pkg, pkg.metadata.provides.backend)
+            self._import_and_register(pkg, pkg.metadata.provides.frontend)
+            self._call_registration_hooks()
             logger.info(f"Addon '{addon_name}' enabled and loaded")
 
         return True
@@ -574,17 +693,74 @@ class PackageManager:
         if self.addon_config:
             self.addon_config.set_state(addon_name, ConfigAddonState.DISABLED)
 
-        module_name = f"rayforge_plugins.{addon_name}"
-        if module_name in sys.modules:
-            module = sys.modules[module_name]
-            self.plugin_mgr.hook.on_unload()
-            self.plugin_mgr.unregister(module)
-            del sys.modules[module_name]
+        # Find all modules belonging to this addon
+        prefix = f"rayforge_plugins.{addon_name}."
+        modules_to_unload = [
+            name for name in list(sys.modules) if name.startswith(prefix)
+        ]
+
+        # Also check for the base module name (for backward compatibility)
+        base_module = f"rayforge_plugins.{addon_name}"
+        if base_module in sys.modules:
+            modules_to_unload.append(base_module)
+
+        # Call on_unload hook once before unregistering
+        self.plugin_mgr.hook.on_unload()
+
+        for module_name in modules_to_unload:
+            module = sys.modules.get(module_name)
+            if module:
+                # Only unregister if this module was registered with pluggy
+                try:
+                    if module in self.plugin_mgr.get_plugins():
+                        self.plugin_mgr.unregister(module)
+                except (TypeError, AttributeError):
+                    # Mock or incompatible plugin manager, try anyway
+                    try:
+                        self.plugin_mgr.unregister(module)
+                    except AssertionError:
+                        pass  # Module wasn't registered
+                del sys.modules[module_name]
+                logger.debug(f"Unloaded module: {module_name}")
+
+        # Unregister widgets from registries
+        self._unregister_addon_items(addon_name)
 
         del self.loaded_packages[addon_name]
         self.disabled_packages[addon_name] = pkg
         self._pending_unloads.discard(addon_name)
         logger.info(f"Addon '{addon_name}' disabled")
+
+    def _unregister_addon_items(self, addon_name: str):
+        """Unregister all items registered by an addon."""
+        for name, registry in self.registries.items():
+            count = registry.unregister_all_from_addon(addon_name)
+            if count:
+                logger.debug(
+                    f"Unregistered {count} items from {name} for {addon_name}"
+                )
+
+    def _call_registration_hooks(self):
+        """Call registration hooks for newly loaded addons."""
+        step_registry = self.registries.get("step_registry")
+        producer_registry = self.registries.get("producer_registry")
+        widget_registry = self.registries.get("widget_registry")
+        menu_registry = self.registries.get("menu_registry")
+
+        if step_registry:
+            self.plugin_mgr.hook.register_steps(step_registry=step_registry)
+        if producer_registry:
+            self.plugin_mgr.hook.register_producers(
+                producer_registry=producer_registry
+            )
+        if widget_registry:
+            self.plugin_mgr.hook.register_step_widgets(
+                widget_registry=widget_registry
+            )
+        if menu_registry:
+            self.plugin_mgr.hook.register_menu_items(
+                menu_registry=menu_registry
+            )
 
     def complete_pending_unloads(self) -> List[str]:
         """

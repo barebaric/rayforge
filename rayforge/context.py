@@ -267,15 +267,26 @@ class RayforgeContext:
             f"{len(self._recipe_mgr.get_all_recipes())} recipes"
         )
 
-        # Load plugins from disk
-        self.package_mgr.load_installed_packages()
-
-        # Import registries and trigger registration hooks
+        # Import registries
         from .core.step_registry import step_registry
         from .pipeline.producer.registry import producer_registry
         from .ui_gtk.doceditor.step_settings import step_widget_registry
         from .core.menu_registry import menu_registry
 
+        # Provide registries to package manager for addon enable/disable
+        self.package_mgr.set_registries(
+            {
+                "step_registry": step_registry,
+                "producer_registry": producer_registry,
+                "widget_registry": step_widget_registry,
+                "menu_registry": menu_registry,
+            }
+        )
+
+        # Load plugins from disk
+        self.package_mgr.load_installed_packages()
+
+        # Trigger registration hooks
         self.plugin_mgr.hook.register_steps(step_registry=step_registry)
         self.plugin_mgr.hook.register_producers(
             producer_registry=producer_registry

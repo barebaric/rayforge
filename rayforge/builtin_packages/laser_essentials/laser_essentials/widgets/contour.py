@@ -1,15 +1,17 @@
 from typing import Dict, Any, TYPE_CHECKING, cast
 from gettext import gettext as _
 from gi.repository import Gtk, Adw
-from .base import StepComponentSettingsWidget
-from ....pipeline.producer.base import OpsProducer, CutSide
-from ....pipeline.producer.contour import ContourProducer, CutOrder
-from ...shared.adwfix import get_spinrow_float
-from ....shared.util.glib import DebounceMixin
+from rayforge.ui_gtk.doceditor.step_settings.base import (
+    StepComponentSettingsWidget,
+)
+from rayforge.pipeline.producer.base import OpsProducer, CutSide
+from rayforge.pipeline.producer.contour import ContourProducer, CutOrder
+from rayforge.ui_gtk.shared.adwfix import get_spinrow_float
+from rayforge.shared.util.glib import DebounceMixin
 
 if TYPE_CHECKING:
-    from ....core.step import Step
-    from ....doceditor.editor import DocEditor
+    from rayforge.core.step import Step
+    from rayforge.doceditor.editor import DocEditor
 
 
 class ContourProducerSettingsWidget(
@@ -112,7 +114,7 @@ class ContourProducerSettingsWidget(
             digits=2,
             draw_value=True,
         )
-        self.threshold_scale.set_size_request(150, -1)  # Ensure it has width
+        self.threshold_scale.set_size_request(150, -1)
         self.threshold_row.add_suffix(self.threshold_scale)
         self.add(self.threshold_row)
 
@@ -157,7 +159,6 @@ class ContourProducerSettingsWidget(
         self.offset_row.set_sensitive(cut_side != CutSide.CENTERLINE)
 
     def _update_threshold_sensitivity(self, active: bool):
-        # Disable the entire ActionRow which contains the slider
         self.threshold_row.set_sensitive(active)
 
     def _on_param_changed(self, key: str, new_value: Any):

@@ -78,7 +78,7 @@ filterwarnings = [
     # Ignore Swig related deprecation warnings from importlib
     "ignore::DeprecationWarning:importlib._bootstrap",
 ]
-testpaths = ["tests"]
+testpaths = ["tests", "rayforge/builtin_packages/*/tests"]
 norecursedirs = [
     "builddir",
     ".git",

@@ -1,16 +1,18 @@
 from typing import Dict, Any, TYPE_CHECKING, cast
 from gettext import gettext as _
 from gi.repository import Gtk, Adw
-from ....core.undo import DictItemCommand
-from ....pipeline.producer.base import OpsProducer, CutSide
-from ....pipeline.producer.shrinkwrap import ShrinkWrapProducer
-from ...shared.adwfix import get_spinrow_float
-from ....shared.util.glib import DebounceMixin
-from .base import StepComponentSettingsWidget
+from rayforge.core.undo import DictItemCommand
+from rayforge.pipeline.producer.base import OpsProducer, CutSide
+from rayforge.pipeline.producer.shrinkwrap import ShrinkWrapProducer
+from rayforge.ui_gtk.shared.adwfix import get_spinrow_float
+from rayforge.shared.util.glib import DebounceMixin
+from rayforge.ui_gtk.doceditor.step_settings.base import (
+    StepComponentSettingsWidget,
+)
 
 if TYPE_CHECKING:
-    from ....core.step import Step
-    from ....doceditor.editor import DocEditor
+    from rayforge.core.step import Step
+    from rayforge.doceditor.editor import DocEditor
 
 
 class ShrinkWrapProducerSettingsWidget(
