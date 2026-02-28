@@ -43,9 +43,9 @@ class TestPackage:
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp)
             data = {
-                "name": "test_pkg",  # This name should be ignored
+                "name": "test_pkg",
                 "author": {"name": "Me", "email": "me@me.com"},
-                "entry_point": "main.py",
+                "provides": {"backend": "main.py"},
             }
             with open(path / "rayforge-package.yaml", "w") as f:
                 yaml.dump(data, f)
@@ -55,7 +55,7 @@ class TestPackage:
             assert pkg.metadata.name == path.name
             # Version comes from git tags (defaults to 0.0.1 if no tags)
             assert pkg.metadata.version == "0.0.1"
-            assert pkg.metadata.provides.code == "main.py"
+            assert pkg.metadata.provides.backend == "main.py"
 
     def test_load_missing_metadata(self):
         """Test error when metadata file is missing."""
@@ -74,7 +74,7 @@ class TestPackage:
                 "name": "test_pkg",
                 "depends": ["rayforge>=0.27.0,~0.27"],
                 "author": {"name": "Me", "email": "me@example.com"},
-                "provides": {"code": "main.py:my_plugin"},
+                "provides": {"backend": "main"},
             }
             with open(path / "rayforge-package.yaml", "w") as f:
                 yaml.dump(data, f)
@@ -82,17 +82,18 @@ class TestPackage:
             pkg = Package.load_from_directory(path)
             assert pkg.validate() is True
 
-    def test_validate_fails_ast_check(self):
-        """Test validation fails if entry point function is missing."""
+    def test_validate_rejects_invalid_module_path(self):
+        """Test validation rejects invalid module paths."""
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp)
-            (path / "main.py").write_text("def other_function(): pass")
+            (path / "main.py").write_text("def my_plugin(): pass")
 
+            # Test colon syntax is rejected
             data = {
                 "name": "test_pkg",
                 "depends": ["rayforge>=0.27.0,~0.27"],
                 "author": {"name": "Me", "email": "me@example.com"},
-                "provides": {"code": "main.py:missing_func"},
+                "provides": {"backend": "main:my_plugin"},
             }
             with open(path / "rayforge-package.yaml", "w") as f:
                 yaml.dump(data, f)
@@ -100,7 +101,25 @@ class TestPackage:
             pkg = Package.load_from_directory(path)
             with pytest.raises(PackageValidationError) as exc:
                 pkg.validate()
-            assert "Attribute 'missing_func' not found" in str(exc.value)
+            assert "not a valid module path" in str(exc.value)
+
+    def test_validate_missing_module(self):
+        """Test validation fails if module is not found."""
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp)
+            data = {
+                "name": "test_pkg",
+                "depends": ["rayforge>=0.27.0,~0.27"],
+                "author": {"name": "Me", "email": "me@example.com"},
+                "provides": {"backend": "nonexistent"},
+            }
+            with open(path / "rayforge-package.yaml", "w") as f:
+                yaml.dump(data, f)
+
+            pkg = Package.load_from_directory(path)
+            with pytest.raises(PackageValidationError) as exc:
+                pkg.validate()
+            assert "not found" in str(exc.value)
 
     def test_validate_path_traversal(self):
         """Test asset path security check."""
@@ -128,7 +147,7 @@ class TestPackage:
             data = {
                 "name": "test_pkg",
                 "author": {"name": "Me", "email": "me@example.com"},
-                "provides": {"code": "main.py:my_plugin"},
+                "provides": {"backend": "main"},
             }
             with open(path / "rayforge-package.yaml", "w") as f:
                 yaml.dump(data, f)
@@ -147,7 +166,7 @@ class TestPackage:
                 "name": "test_pkg",
                 "depends": ["rayforge,>=not-a-version"],
                 "author": {"name": "Me", "email": "me@example.com"},
-                "provides": {"code": "main.py:my_plugin"},
+                "provides": {"backend": "main"},
             }
             with open(path / "rayforge-package.yaml", "w") as f:
                 yaml.dump(data, f)
@@ -166,7 +185,7 @@ class TestPackage:
                 "name": "test_pkg",
                 "depends": ["rayforge>=0.27.0,~0.27"],
                 "author": {"name": "Me", "email": "me@example.com"},
-                "provides": {"code": "main.py:my_plugin"},
+                "provides": {"backend": "main"},
                 "api_version": 999,
             }
             with open(path / "rayforge-package.yaml", "w") as f:
@@ -186,7 +205,7 @@ class TestPackage:
                 "name": "test_pkg",
                 "depends": ["rayforge>=0.27.0,~0.27"],
                 "author": {"name": "Me", "email": "me@example.com"},
-                "provides": {"code": "main.py:my_plugin"},
+                "provides": {"backend": "main"},
                 "api_version": "1",
             }
             with open(path / "rayforge-package.yaml", "w") as f:
@@ -206,7 +225,7 @@ class TestPackage:
                 "name": "test_pkg",
                 "depends": ["rayforge>=0.27.0,~0.27"],
                 "author": {"name": "Me", "email": "me@example.com"},
-                "provides": {"code": "main.py:my_plugin"},
+                "provides": {"backend": "main"},
             }
             with open(path / "rayforge-package.yaml", "w") as f:
                 yaml.dump(data, f)

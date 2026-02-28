@@ -35,7 +35,7 @@ class PackageRow(Gtk.Box):
         self.set_margin_start(12)
         self.set_margin_end(6)
 
-        is_asset_only = not pkg.metadata.provides.code
+        is_asset_only = not pkg.metadata.provides.backend
 
         if state == AddonState.LOAD_ERROR.value:
             icon = get_icon("error-symbolic")

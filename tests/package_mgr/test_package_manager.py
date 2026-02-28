@@ -34,7 +34,7 @@ def manager():
 def create_mock_package(
     name: str = "test_plugin",
     version: str = "1.0.0",
-    code: Optional[str] = "plugin.py:main",
+    backend: Optional[str] = "plugin",
     depends: Optional[List] = None,
     requires: Optional[List] = None,
 ) -> MagicMock:
@@ -48,7 +48,8 @@ def create_mock_package(
     mock_pkg.metadata.depends = depends
     mock_pkg.metadata.requires = requires or []
     mock_pkg.metadata.provides = MagicMock()
-    mock_pkg.metadata.provides.code = code
+    mock_pkg.metadata.provides.backend = backend
+    mock_pkg.metadata.provides.frontend = None
     mock_pkg.root_path = MagicMock(spec=Path)
     return mock_pkg
 
@@ -121,9 +122,7 @@ class TestPackageManagerLoading:
     def test_load_package_success(self, mock_load, manager):
         package_dir = manager.install_dir / "test_pkg"
 
-        mock_pkg = create_mock_package(
-            name="test_plugin", code="plugin.py:main"
-        )
+        mock_pkg = create_mock_package(name="test_plugin", backend="plugin")
         mock_load.return_value = mock_pkg
 
         with (
@@ -151,7 +150,7 @@ class TestPackageManagerLoading:
     def test_load_package_incompatible_version(self, mock_load, manager):
         mock_pkg = create_mock_package(
             name="test_plugin",
-            code="plugin.py:main",
+            backend="plugin",
             depends=["rayforge>=99.99.99,~99.99"],
         )
         mock_load.return_value = mock_pkg
@@ -460,7 +459,7 @@ class TestPackageManagerDisabledAddons:
         """Test that a disabled addon is not loaded."""
         package_dir = manager_with_config.install_dir / "test_pkg"
         mock_pkg = create_mock_package(
-            name="disabled_plugin", code="plugin.py:main"
+            name="disabled_plugin", backend="plugin"
         )
         mock_load.return_value = mock_pkg
 
@@ -485,9 +484,7 @@ class TestPackageManagerDisabledAddons:
     ):
         """Test that an enabled addon is loaded."""
         package_dir = manager_with_config.install_dir / "test_pkg"
-        mock_pkg = create_mock_package(
-            name="enabled_plugin", code="plugin.py:main"
-        )
+        mock_pkg = create_mock_package(name="enabled_plugin", backend="plugin")
         mock_load.return_value = mock_pkg
 
         with (
@@ -507,9 +504,7 @@ class TestPackageManagerDisabledAddons:
     def test_disable_addon(self, mock_load, manager_with_config):
         """Test disabling a loaded addon."""
         package_dir = manager_with_config.install_dir / "test_pkg"
-        mock_pkg = create_mock_package(
-            name="to_disable", code="plugin.py:main"
-        )
+        mock_pkg = create_mock_package(name="to_disable", backend="plugin")
         mock_load.return_value = mock_pkg
 
         with (
@@ -543,7 +538,7 @@ class TestPackageManagerDisabledAddons:
     def test_enable_addon(self, mock_load, manager_with_config):
         """Test enabling a disabled addon."""
         package_dir = manager_with_config.install_dir / "test_pkg"
-        mock_pkg = create_mock_package(name="to_enable", code="plugin.py:main")
+        mock_pkg = create_mock_package(name="to_enable", backend="plugin")
         mock_load.return_value = mock_pkg
 
         manager_with_config.addon_config.set_state(
@@ -561,7 +556,7 @@ class TestPackageManagerDisabledAddons:
 
         orig_import = manager_with_config._import_and_register
 
-        def fake_import_and_register(pkg):
+        def fake_import_and_register(pkg, entry_point):
             manager_with_config.loaded_packages[pkg.metadata.name] = pkg
 
         manager_with_config._import_and_register = fake_import_and_register
@@ -759,7 +754,7 @@ class TestPackageManagerDeferredUnload:
         mock_pkg.root_path = manager_with_job_callback.install_dir
         manager_with_job_callback.loaded_packages["test_addon"] = mock_pkg
 
-        def fake_import(pkg):
+        def fake_import(pkg, entry_point):
             manager_with_job_callback.loaded_packages[pkg.metadata.name] = pkg
 
         manager_with_job_callback._import_and_register = fake_import
