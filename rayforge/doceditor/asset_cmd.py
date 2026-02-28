@@ -15,7 +15,10 @@ class AssetCmd:
 
     def __init__(self, editor: "DocEditor"):
         self._editor = editor
-        self.doc = editor.doc
+
+    @property
+    def doc(self):
+        return self._editor.doc
 
     def rename_asset(self, asset: IAsset, new_name: str):
         """
@@ -52,6 +55,11 @@ class AssetCmd:
         Deletes an asset and all document items that depend on it in a single
         undoable transaction.
         """
+        logger.debug(
+            "delete_asset called: asset=%s, uid=%s",
+            asset_to_delete,
+            asset_to_delete.uid,
+        )
         history = self.doc.history_manager
         dependent_items = []
 

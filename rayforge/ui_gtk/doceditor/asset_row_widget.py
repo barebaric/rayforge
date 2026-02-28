@@ -238,6 +238,11 @@ class StockAssetRowWidget(Gtk.Box):
         self.update_ui()
 
     def on_delete_clicked(self, button: Gtk.Button):
+        logger.debug(
+            "StockAssetRowWidget.on_delete_clicked: asset=%s, uid=%s",
+            self.asset,
+            self.asset.uid,
+        )
         self.delete_clicked.send(self)
 
     def on_name_apply(self, widget: Gtk.Widget, *args):
