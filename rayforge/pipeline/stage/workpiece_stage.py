@@ -241,6 +241,7 @@ class WorkPiecePipelineStage(PipelineStage):
                 f"Ops generation for '{step.name}' on '{wp_name}' failed."
             )
             logger.warning(f"[{key}] {error_msg}")
+            self._emit_node_state(key, NodeState.ERROR)
             with self._artifact_manager.report_failure(
                 key, generation_id
             ) as handle:
