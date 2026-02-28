@@ -128,18 +128,22 @@ Editing device settings can be dangerous and may render your machine inoperable 
 
 ### Device Not Found
 
-- **Linux (Serial)**: Add your user to the `dialout` group:
+- **Linux (Serial)**: Add your user to the `dialout` group. This is required
+  for **both Snap and non-Snap installations** on Debian-based distributions
+  to avoid AppArmor DENIED messages:
   ```bash
   sudo usermod -a -G dialout $USER
   ```
   Log out and back in for changes to take effect.
 
-- **Snap Package**: Ensure you've granted serial port permissions:
+- **Snap Package**: In addition to the `dialout` group above, ensure you've
+  granted serial port permissions:
   ```bash
   sudo snap connect rayforge:serial-port
   ```
 
-- **Windows**: Check Device Manager to confirm the device is recognized and note the COM port number.
+- **Windows**: Check Device Manager to confirm the device is recognized and
+  note the COM port number.
 
 ### Connection Refused
 

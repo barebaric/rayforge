@@ -65,6 +65,9 @@
   "install.snap.permissionNote": {
     "message": "Die Snap-Version läuft in einer Sandbox und erfordert manuelle Berechtigungserteilung für Hardwarezugriff."
   },
+  "install.snap.dialoutNote": {
+    "message": "Auf Debian-basierten Distributionen muss dein Benutzer in der dialout-Gruppe sein, auch bei Verwendung von Snap, um AppArmor DENIED-Meldungen zu vermeiden."
+  },
   "install.usbSerialAccess": {
     "message": "Für USB-Seriell-Zugriff:"
   },

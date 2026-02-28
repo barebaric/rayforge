@@ -128,18 +128,22 @@ La página **Dispositivo** te permite leer y modificar configuraciones de firmwa
 
 ### Dispositivo No Encontrado
 
-- **Linux (Serial)**: Añade tu usuario al grupo `dialout`:
+- **Linux (Serial)**: Añade tu usuario al grupo `dialout`. Esto es requerido
+  para **instalaciones Snap y no Snap** en distribuciones basadas en Debian
+  para evitar mensajes AppArmor DENIED:
   ```bash
   sudo usermod -a -G dialout $USER
   ```
   Cierra sesión y vuelve a entrar para que los cambios surtan efecto.
 
-- **Paquete Snap**: Asegúrate de haber otorgado permisos de puerto serie:
+- **Paquete Snap**: Además del grupo `dialout` arriba, asegúrate de haber
+  otorgado permisos de puerto serie:
   ```bash
   sudo snap connect rayforge:serial-port
   ```
 
-- **Windows**: Revisa el Administrador de Dispositivos para confirmar que el dispositivo es reconocido y anota el número de puerto COM.
+- **Windows**: Revisa el Administrador de Dispositivos para confirmar que el
+  dispositivo es reconocido y anota el número de puerto COM.
 
 ### Conexión Rechazada
 

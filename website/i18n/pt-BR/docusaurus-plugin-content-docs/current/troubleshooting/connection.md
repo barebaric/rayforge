@@ -32,21 +32,24 @@ Problemas comuns de conexão incluem:
 **Soluções:**
 
 **Linux:**
-Se você está usando a versão Snap, você precisa conceder permissões de porta serial:
 
-```bash
-sudo snap connect rayforge:serial-port
-```
-
-Veja [Permissões Snap](snap-permissions) para configuração detalhada do Linux.
-
-Para instalações não-Snap, adicione seu usuário ao grupo `dialout`:
+Primeiro, adicione seu usuário ao grupo `dialout` (necessário para ambas
+instalações Snap e não-Snap na maioria das distribuições baseadas em Debian):
 
 ```bash
 sudo usermod -a -G dialout $USER
 ```
 
 Então saia e entre novamente para a mudança ter efeito.
+
+Se você está usando a versão Snap, você também precisa conceder permissões de
+porta serial:
+
+```bash
+sudo snap connect rayforge:serial-port
+```
+
+Veja [Permissões Snap](snap-permissions) para configuração detalhada do Linux.
 
 **Windows:**
 1. Abra Gerenciador de Dispositivos (Win+X, depois selecione Gerenciador de Dispositivos)
@@ -64,9 +67,11 @@ Então saia e entre novamente para a mudança ter efeito.
 
 **Problema:** Você recebe erros "Permissão negada" ou similares ao tentar conectar.
 
-**No Linux (não-Snap):**
+**No Linux:**
 
-Seu usuário precisa estar no grupo `dialout` (ou `uucp` em algumas distribuições):
+Seu usuário precisa estar no grupo `dialout` (ou `uucp` em algumas distribuições).
+Isto é necessário para **ambas instalações Snap e não-Snap** em distribuições
+baseadas em Debian para evitar mensagens AppArmor DENIED:
 
 ```bash
 # Adicione você mesmo ao grupo dialout
@@ -76,11 +81,10 @@ sudo usermod -a -G dialout $USER
 groups | grep dialout
 ```
 
-**Importante:** Você deve sair e entrar novamente (ou reiniciar) para mudanças de grupo terem efeito.
+**Importante:** Você deve sair e entrar novamente (ou reiniciar) para mudanças
+de grupo terem efeito.
 
-**No Linux (Snap):**
-
-Conceda acesso à porta serial ao snap:
+**Adicionalmente para instalações Snap**, conceda acesso à porta serial ao snap:
 
 ```bash
 sudo snap connect rayforge:serial-port

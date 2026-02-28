@@ -23,6 +23,19 @@ Rayforge 需要连接这些 Snap 接口才能完全运行：
 
 **这是 Rayforge 最重要的权限。**
 
+### 前提条件：dialout 组成员资格
+
+在基于 Debian 的发行版上，即使使用 Snap 软件包，您的用户也必须是
+`dialout` 组的成员。如果没有此组成员资格，您在尝试访问串口时可能
+会收到 AppArmor DENIED 消息。
+
+```bash
+# 将您的用户添加到 dialout 组
+sudo usermod -a -G dialout $USER
+```
+
+**重要：** 您必须注销并重新登录（或重启）才能使组更改生效。
+
 ### 检查当前权限
 
 ```bash

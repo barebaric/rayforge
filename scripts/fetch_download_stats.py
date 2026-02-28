@@ -92,7 +92,13 @@ def get_snap_downloads_cli(snap_name, start_date=None):
     cred = os.environ.get("SNAPCRAFT_STORE_CREDENTIALS")
     env = os.environ.copy()
     if cred:
-        env["SNAPCRAFT_STORE_CREDENTIALS"] = cred
+        # Check if cred is a file path that exists
+        if os.path.isfile(cred):
+            with open(cred, "r") as f:
+                cred = f.read().strip()
+            env["SNAPCRAFT_STORE_CREDENTIALS"] = cred
+        else:
+            env["SNAPCRAFT_STORE_CREDENTIALS"] = cred
     try:
         cmd = [
             "snapcraft",
@@ -544,6 +550,14 @@ def main():
                     "tags": {"source": "ppa", "version": version},
                 }
             )
+
+        snap_error = snap_stats.get("error")
+        if snap_error:
+            print(f"Warning: Snap stats unavailable - {snap_error}")
+        else:
+            snap_total = snap_stats.get("total", 0)
+            snap_months = len(snap_stats.get("by_month", {}))
+            print(f"Snap stats: {snap_total} total, {snap_months} months")
 
         metrics.append(
             {

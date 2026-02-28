@@ -128,18 +128,22 @@ Modifier les paramètres de l'appareil peut être dangereux et peut rendre votre
 
 ### Appareil Non Trouvé
 
-- **Linux (Série)** : Ajoutez votre utilisateur au groupe `dialout` :
+- **Linux (Série)** : Ajoutez votre utilisateur au groupe `dialout`. Ceci est
+  requis pour **les installations Snap et non-Snap** sur les distributions
+  basées sur Debian pour éviter les messages AppArmor DENIED :
   ```bash
   sudo usermod -a -G dialout $USER
   ```
   Déconnectez-vous et reconnectez-vous pour que les changements prennent effet.
 
-- **Paquet Snap** : Assurez-vous d'avoir accordé les permissions de port série :
+- **Paquet Snap** : En plus du groupe `dialout` ci-dessus, assurez-vous d'avoir
+  accordé les permissions de port série :
   ```bash
   sudo snap connect rayforge:serial-port
   ```
 
-- **Windows** : Vérifiez le Gestionnaire de Périphériques pour confirmer que l'appareil est reconnu et notez le numéro de port COM.
+- **Windows** : Vérifiez le Gestionnaire de Périphériques pour confirmer que
+  l'appareil est reconnu et notez le numéro de port COM.
 
 ### Connexion Refusée
 
