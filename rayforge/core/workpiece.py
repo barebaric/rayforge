@@ -162,13 +162,13 @@ class WorkPiece(DocItem):
                 width = max(max_x - min_x, 1e-9)
                 height = max(max_y - min_y, 1e-9)
             else:
-                width, height = 1.0, 1.0
+                width, height = 0.0, 0.0
         except Exception as e:
             logger.warning(
                 f"Failed to calculate initial geometry for sketch "
                 f"{sketch.uid}: {e}"
             )
-            width, height = 1.0, 1.0
+            width, height = 0.0, 0.0
             from .geo import Geometry
 
             geometry = Geometry()

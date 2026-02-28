@@ -193,7 +193,7 @@ class SketchRenderer(Renderer):
         fills: Optional[List[Geometry]] = kwargs.get("fills")
 
         if not boundaries and not fills:
-            return pyvips.Image.black(width, height)
+            return None
 
         svg_parts = [
             f'<svg width="{width}" height="{height}" '

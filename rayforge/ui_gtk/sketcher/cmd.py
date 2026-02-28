@@ -54,8 +54,8 @@ class UpdateSketchCommand(Command):
         geo = sketch_instance.to_geometry()
 
         if geo.is_empty():
-            new_width = 50.0  # Default for empty sketch
-            new_height = 50.0
+            new_width = 0.0
+            new_height = 0.0
         else:
             min_x, min_y, max_x, max_y = geo.rect()
             new_width = max(max_x - min_x, 1e-9)
