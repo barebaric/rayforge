@@ -40,7 +40,9 @@ class TestPackageRoundTrip:
         )
 
         context = RayforgeContext()
-        context.package_mgr = PackageManager(packages_dir, context.plugin_mgr)
+        context.package_mgr = PackageManager(
+            [packages_dir], packages_dir, context.plugin_mgr
+        )
 
         with patch.object(
             context.package_mgr,
@@ -82,7 +84,9 @@ class TestPackageRoundTrip:
         )
 
         context = RayforgeContext()
-        context.package_mgr = PackageManager(packages_dir, context.plugin_mgr)
+        context.package_mgr = PackageManager(
+            [packages_dir], packages_dir, context.plugin_mgr
+        )
 
         with patch.object(
             context.package_mgr,
@@ -113,7 +117,9 @@ class TestPackageRoundTrip:
         )
 
         context = RayforgeContext()
-        context.package_mgr = PackageManager(packages_dir, context.plugin_mgr)
+        context.package_mgr = PackageManager(
+            [packages_dir], packages_dir, context.plugin_mgr
+        )
 
         with patch.object(
             context.package_mgr,
@@ -141,7 +147,9 @@ class TestPackageRoundTrip:
         )
 
         context = RayforgeContext()
-        context.package_mgr = PackageManager(packages_dir, context.plugin_mgr)
+        context.package_mgr = PackageManager(
+            [packages_dir], packages_dir, context.plugin_mgr
+        )
 
         context.initialize_full_context()
 

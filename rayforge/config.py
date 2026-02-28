@@ -29,6 +29,8 @@ DIALECT_DIR.mkdir(parents=True, exist_ok=True)
 CONFIG_FILE = CONFIG_DIR / "config.yaml"
 PACKAGES_DIR = CONFIG_DIR / "packages"
 
+BUILTIN_PACKAGES_DIR = Path(__file__).parent / "builtin_packages"
+
 # State files (like logs)
 LOG_DIR = Path(user_log_dir("rayforge"))
 logger.info(f"Log dir is {LOG_DIR}")

@@ -39,7 +39,7 @@ class RayforgeContext:
         from .pipeline.artifact.store import ArtifactStore
         from .debug import DebugDumpManager
         from .machine.models.dialect_manager import DialectManager
-        from .config import DIALECT_DIR, PACKAGES_DIR
+        from .config import DIALECT_DIR, PACKAGES_DIR, BUILTIN_PACKAGES_DIR
         from .shared.util.localized import get_system_language
 
         self.artifact_store = ArtifactStore()
@@ -51,7 +51,9 @@ class RayforgeContext:
         self.plugin_mgr.add_hookspecs(RayforgeSpecs)
 
         # Initialize the package manager
-        self.package_mgr = PackageManager(PACKAGES_DIR, self.plugin_mgr)
+        self.package_mgr = PackageManager(
+            [BUILTIN_PACKAGES_DIR, PACKAGES_DIR], PACKAGES_DIR, self.plugin_mgr
+        )
 
         # These managers are initialized to None. The main application thread
         # MUST call initialize_full_context() to create them.
