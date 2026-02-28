@@ -7,7 +7,11 @@ from blinker import Signal
 from ...geo import Geometry, primitives
 from ..commands import TextBoxCommand
 from ..commands.live_text_edit import LiveTextEditCommand
-from ..constraints import AspectRatioConstraint, DragConstraint
+from ..constraints import (
+    AspectRatioConstraint,
+    HorizontalConstraint,
+    VerticalConstraint,
+)
 from ..entities import Line, Point, TextBoxEntity
 from .base import SketchTool, SketcherKey
 
@@ -649,47 +653,76 @@ class TextBoxTool(SketchTool):
 
         p_origin = self.element.sketch.registry.get_point(entity.origin_id)
         p_width = self.element.sketch.registry.get_point(entity.width_id)
+        p_height = self.element.sketch.registry.get_point(entity.height_id)
 
-        # 1. Preserve orientation from current geometry
+        # Determine the sign of the width/height directions
         dx = p_width.x - p_origin.x
         dy = p_width.y - p_origin.y
-        current_len = math.hypot(dx, dy)
-        ux, uy = (1.0, 0.0)
-        if current_len > 1e-9:
-            ux, uy = dx / current_len, dy / current_len
-
-        # Preserve the actual height direction instead of calculating
-        # a perpendicular, which would cause rotation if the height
-        # point is not at 90 degrees counter-clockwise
-        p_height = self.element.sketch.registry.get_point(entity.height_id)
         dx_h = p_height.x - p_origin.x
         dy_h = p_height.y - p_origin.y
-        current_height_len = math.hypot(dx_h, dy_h)
-        if current_height_len > 1e-9:
-            vx, vy = dx_h / current_height_len, dy_h / current_height_len
+
+        sign_w = 1.0 if dx >= 0 else -1.0
+        sign_h = 1.0 if dy_h >= 0 else -1.0
+
+        # Check for horizontal/vertical constraints to determine how to
+        # position the width and height points
+        width_is_horizontal = False
+        height_is_vertical = False
+
+        for constr in self.element.sketch.constraints:
+            if isinstance(constr, HorizontalConstraint):
+                if (
+                    constr.p1 == entity.origin_id
+                    and constr.p2 == entity.width_id
+                ) or (
+                    constr.p2 == entity.origin_id
+                    and constr.p1 == entity.width_id
+                ):
+                    width_is_horizontal = True
+            elif isinstance(constr, VerticalConstraint):
+                if (
+                    constr.p1 == entity.origin_id
+                    and constr.p2 == entity.height_id
+                ) or (
+                    constr.p2 == entity.origin_id
+                    and constr.p1 == entity.height_id
+                ):
+                    height_is_vertical = True
+
+        # Directly set point positions, respecting constraints
+        if width_is_horizontal:
+            p_width.x = p_origin.x + natural_width * sign_w
+            p_width.y = p_origin.y
         else:
-            vx, vy = -uy, ux
+            current_len = math.hypot(dx, dy)
+            if current_len > 1e-9:
+                ux, uy = dx / current_len, dy / current_len
+            else:
+                ux, uy = sign_w, 0.0
+            p_width.x = p_origin.x + natural_width * ux
+            p_width.y = p_origin.y + natural_width * uy
 
-        # 2. Calculate target positions
-        target_width_x = p_origin.x + natural_width * ux
-        target_width_y = p_origin.y + natural_width * uy
-        target_height_x = p_origin.x + natural_height * vx
-        target_height_y = p_origin.y + natural_height * vy
+        if height_is_vertical:
+            p_height.x = p_origin.x
+            p_height.y = p_origin.y + natural_height * sign_h
+        else:
+            current_h_len = math.hypot(dx_h, dy_h)
+            if current_h_len > 1e-9:
+                vx, vy = dx_h / current_h_len, dy_h / current_h_len
+            else:
+                vx, vy = 0.0, sign_h
+            p_height.x = p_origin.x + natural_height * vx
+            p_height.y = p_origin.y + natural_height * vy
 
-        # 3. Create strong drag constraints to pull points into position
-        drag_constraints = [
-            DragConstraint(
-                entity.width_id, target_width_x, target_width_y, weight=10.0
-            ),
-            DragConstraint(
-                entity.height_id,
-                target_height_x,
-                target_height_y,
-                weight=10.0,
-            ),
-        ]
+        # Update p4 to maintain parallelogram shape
+        # p4 = width + height - origin
+        p4_id = entity.get_fourth_corner_id(self.element.sketch.registry)
+        if p4_id is not None:
+            p4 = self.element.sketch.registry.get_point(p4_id)
+            p4.x = p_width.x + p_height.x - p_origin.x
+            p4.y = p_width.y + p_height.y - p_origin.y
 
-        # 4. Update aspect ratio constraint value
+        # Update aspect ratio constraint value
         if natural_height > 1e-9:
             new_ratio = natural_width / natural_height
             for constr in self.element.sketch.constraints:
@@ -702,12 +735,6 @@ class TextBoxTool(SketchTool):
                 ):
                     constr.ratio = new_ratio
                     break
-
-        # 5. Solve with temporary constraints
-        self.element.sketch.solve(
-            extra_constraints=drag_constraints,
-            update_constraint_status=False,
-        )
 
         self.element.mark_dirty()
 
