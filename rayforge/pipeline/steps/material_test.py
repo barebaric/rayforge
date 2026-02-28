@@ -15,6 +15,7 @@ class MaterialTestStep(Step):
     TYPELABEL = _("Material Test Grid")
     DEFAULT_CAPABILITIES: Set[Capability] = set()
     PRODUCER_CLASS = MaterialTestGridProducer
+    HIDDEN = True
 
     def __init__(
         self, name: Optional[str] = None, typelabel: Optional[str] = None
@@ -27,6 +28,7 @@ class MaterialTestStep(Step):
         cls,
         context: "RayforgeContext",
         name: Optional[str] = None,
+        **kwargs,
     ) -> "MaterialTestStep":
         machine = context.machine
         assert machine is not None

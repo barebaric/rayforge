@@ -13,7 +13,7 @@ from rayforge.image import SVG_RENDERER
 from rayforge.pipeline.artifact.key import ArtifactKey
 from rayforge.pipeline.context import GenerationContext
 from rayforge.pipeline.pipeline import Pipeline
-from rayforge.pipeline.steps import create_contour_step
+from rayforge.pipeline.steps import ContourStep
 from rayforge.context import get_context
 
 
@@ -105,7 +105,7 @@ class TestPipelineContextIntegration:
         assert pipeline._active_context.generation_id == initial_id
 
         pipeline.pause()
-        step = create_contour_step(get_context())
+        step = ContourStep.create(get_context())
         doc.active_layer.workflow.add_step(step)
         self._setup_doc_with_workpiece(doc, real_workpiece)
 
@@ -168,7 +168,7 @@ class TestPipelineContextIntegration:
         )
 
         pipeline.pause()
-        step = create_contour_step(get_context())
+        step = ContourStep.create(get_context())
         doc.active_layer.workflow.add_step(step)
         self._setup_doc_with_workpiece(doc, real_workpiece)
 
@@ -198,7 +198,7 @@ class TestPipelineContextIntegration:
         first_gen_id = pipeline._data_generation_id
 
         pipeline.pause()
-        step = create_contour_step(get_context())
+        step = ContourStep.create(get_context())
         doc.active_layer.workflow.add_step(step)
         self._setup_doc_with_workpiece(doc, real_workpiece)
 

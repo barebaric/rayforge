@@ -11,7 +11,7 @@ class MockStep(Step):
         self.mock_value = "default"
 
     @classmethod
-    def create(cls, context=None, name=None):
+    def create(cls, context=None, name=None, **kwargs):
         """Factory method for UI menu."""
         step = cls(name=name)
         step.mock_value = "created"
@@ -43,13 +43,34 @@ class TestStepRegistry:
         assert len(factories) == 1
         assert factories[0] == MockStep.create
 
-    def test_get_factories_excludes_steps_without_create(self):
-        class NoCreateStep(Step):
+    def test_get_factories_includes_all_non_hidden_steps(self):
+        class AnotherStep(Step):
             def __init__(self):
-                super().__init__(typelabel="NoCreate")
+                super().__init__(typelabel="Another")
+
+            @classmethod
+            def create(cls, context=None, name=None, **kwargs):
+                return cls()
 
         registry = StepRegistry()
-        registry.register(NoCreateStep)
+        registry.register(AnotherStep)
+        factories = registry.get_factories()
+        assert len(factories) == 1
+        assert factories[0] == AnotherStep.create
+
+    def test_get_factories_excludes_hidden_steps(self):
+        class HiddenStep(Step):
+            HIDDEN = True
+
+            def __init__(self):
+                super().__init__(typelabel="Hidden")
+
+            @classmethod
+            def create(cls, context=None, name=None, **kwargs):
+                return cls()
+
+        registry = StepRegistry()
+        registry.register(HiddenStep)
         factories = registry.get_factories()
         assert len(factories) == 0
 

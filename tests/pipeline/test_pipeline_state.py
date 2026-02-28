@@ -13,7 +13,7 @@ from rayforge.core.geo import Geometry
 from rayforge.core.ops import Ops
 from rayforge.pipeline.coord import CoordinateSystem
 from rayforge.pipeline.pipeline import Pipeline
-from rayforge.pipeline.steps import create_contour_step
+from rayforge.pipeline.steps import ContourStep
 from rayforge.pipeline.stage.workpiece_runner import (
     make_workpiece_artifact_in_subprocess,
 )
@@ -183,7 +183,7 @@ class TestPipelineState:
         # Arrange
         layer = self._setup_doc_with_workpiece(doc, real_workpiece)
         assert layer.workflow is not None
-        step = create_contour_step(context_initializer)
+        step = ContourStep.create(context_initializer)
         layer.workflow.add_step(step)
 
         pipeline = Pipeline(
@@ -293,7 +293,7 @@ class TestPipelineState:
         # Arrange
         layer = self._setup_doc_with_workpiece(doc, real_workpiece)
         assert layer.workflow is not None
-        step = create_contour_step(context_initializer)
+        step = ContourStep.create(context_initializer)
         layer.workflow.add_step(step)
 
         pipeline = Pipeline(
@@ -331,7 +331,7 @@ class TestPipelineState:
         # Arrange
         layer = self._setup_doc_with_workpiece(doc, real_workpiece)
         assert layer.workflow is not None
-        step = create_contour_step(context_initializer)
+        step = ContourStep.create(context_initializer)
         layer.workflow.add_step(step)
 
         pipeline = Pipeline(
@@ -378,7 +378,7 @@ class TestPipelineState:
         # Arrange
         layer = self._setup_doc_with_workpiece(doc, real_workpiece)
         assert layer.workflow is not None
-        step = create_contour_step(context_initializer)
+        step = ContourStep.create(context_initializer)
         layer.workflow.add_step(step)
 
         pipeline = Pipeline(
@@ -444,7 +444,7 @@ class TestPipelineState:
         # Arrange
         layer = self._setup_doc_with_workpiece(doc, real_workpiece)
         assert layer.workflow is not None
-        step = create_contour_step(context_initializer)
+        step = ContourStep.create(context_initializer)
         layer.workflow.add_step(step)
 
         pipeline = Pipeline(

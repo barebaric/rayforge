@@ -45,13 +45,13 @@ class StepRegistry:
 
         Returns:
             List of callable `create` class methods from registered
-            step classes that have a `create` method.
+            step classes, excluding hidden steps.
         """
         factories: List[Callable] = []
         for cls in self._steps.values():
-            create_method = getattr(cls, "create", None)
-            if callable(create_method):
-                factories.append(create_method)
+            if cls.HIDDEN:
+                continue
+            factories.append(cls.create)
         return factories
 
     def all_steps(self) -> Dict[str, Type["Step"]]:

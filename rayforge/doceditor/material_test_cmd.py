@@ -5,6 +5,7 @@ from gettext import gettext as _
 
 from ..core.item import DocItem
 from ..core.step import Step
+from ..core.step_registry import step_registry
 from ..core.undo import ListItemCommand
 from ..core.vectorization_spec import ProceduralSpec
 from ..core.workpiece import WorkPiece
@@ -14,7 +15,6 @@ from ..pipeline.producer.material_test_grid import (
     draw_material_test_preview,
     get_material_test_proportional_size,
 )
-from ..pipeline.steps import create_material_test_step
 
 if TYPE_CHECKING:
     from .editor import DocEditor
@@ -44,7 +44,9 @@ class MaterialTestCmd:
             name = _("Material Test Grid")
 
             # Instantiate a new Step, then assign its producer dictionary.
-            step = create_material_test_step(self._editor.context)
+            MaterialTestClass = step_registry.get("MaterialTestStep")
+            assert MaterialTestClass is not None
+            step = MaterialTestClass.create(self._editor.context)
             step.name = name
             step.opsproducer_dict = opsproducer_dict
 

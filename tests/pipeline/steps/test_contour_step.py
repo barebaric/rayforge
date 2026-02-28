@@ -5,7 +5,7 @@ import pytest
 from rayforge.core.capability import CUT, SCORE
 from rayforge.core.step import Step
 from rayforge.core.step_registry import step_registry
-from rayforge.pipeline.steps import ContourStep, create_contour_step
+from rayforge.pipeline.steps import ContourStep
 
 
 @pytest.fixture
@@ -58,7 +58,9 @@ class TestContourStep:
         assert isinstance(restored, ContourStep)
         assert restored.name == "Original"
 
-    def test_backward_compat_create_contour_step(self, mock_context):
-        step = create_contour_step(mock_context, name="Backward")
+    def test_registry_create_contour_step(self, mock_context):
+        StepClass = step_registry.get("ContourStep")
+        assert StepClass is not None
+        step = StepClass.create(mock_context, name="FromRegistry")
         assert isinstance(step, ContourStep)
-        assert step.name == "Backward"
+        assert step.name == "FromRegistry"

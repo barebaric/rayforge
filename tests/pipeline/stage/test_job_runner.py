@@ -12,7 +12,7 @@ from rayforge.pipeline.artifact import (
     create_handle_from_dict,
 )
 from rayforge.pipeline.artifact.key import ArtifactKey
-from rayforge.pipeline.steps import create_contour_step
+from rayforge.pipeline.steps import ContourStep
 from rayforge.pipeline.stage.job_runner import (
     make_job_artifact_in_subprocess,
     JobDescription,
@@ -44,7 +44,7 @@ def test_jobrunner_assembles_step_artifacts_correctly(
 
     # This test simulates that step-level transformers have already run.
     # We create a StepOpsArtifact that contains the *result* of those.
-    step = create_contour_step(context_initializer)
+    step = ContourStep.create(context_initializer)
 
     layer.workflow.add_step(step)
 
@@ -129,7 +129,7 @@ def test_jobrunner_reconstructs_doc_from_dict(
     layer = doc.active_layer
     assert layer.workflow is not None
 
-    step = create_contour_step(context_initializer)
+    step = ContourStep.create(context_initializer)
     layer.workflow.add_step(step)
 
     final_ops_for_step = Ops()

@@ -28,7 +28,7 @@ from rayforge.core.vectorization_spec import PassthroughSpec
 from rayforge.core.workpiece import WorkPiece
 from rayforge.image import SVG_RENDERER
 from rayforge.pipeline.pipeline import Pipeline
-from rayforge.pipeline.steps import create_contour_step, create_engrave_step
+from rayforge.pipeline.steps import ContourStep, EngraveStep
 from rayforge.pipeline.view.view_manager import ViewManager
 
 if TYPE_CHECKING:
@@ -219,7 +219,7 @@ class StressTestController:
         elif invalid_type == InvalidationType.ADD_STEP:
             if layer.workflow and len(self._get_available_steps()) < 5:
                 step_type = random.choice(
-                    [create_contour_step, create_engrave_step]
+                    [ContourStep.create, EngraveStep.create]
                 )
                 step = step_type(self.context)
                 layer.workflow.add_step(step)
@@ -528,7 +528,7 @@ class StressTestController:
             self._workpieces.append(wp)
 
         if self.doc.active_layer.workflow:
-            step = create_contour_step(self.context)
+            step = ContourStep.create(self.context)
             self.doc.active_layer.workflow.add_step(step)
 
         await asyncio.sleep(0.5)

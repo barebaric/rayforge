@@ -52,12 +52,6 @@ def make_workpiece_artifact_in_subprocess(
     """
     import logging
 
-    # Ensure builtin packages are loaded before any deserialization.
-    # This is a safety net in case the worker initializer didn't run.
-    from rayforge.builtin_packages import ensure_loaded
-
-    ensure_loaded()
-
     logger = logging.getLogger(
         "rayforge.pipeline.steprunner.run_step_in_subprocess"
     )

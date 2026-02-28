@@ -28,6 +28,7 @@ class FrameStep(Step):
         cls,
         context: "RayforgeContext",
         name: Optional[str] = None,
+        **kwargs,
     ) -> "FrameStep":
         machine = context.machine
         assert machine is not None

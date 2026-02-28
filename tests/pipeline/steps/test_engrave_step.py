@@ -3,7 +3,8 @@ from unittest.mock import MagicMock
 import pytest
 
 from rayforge.core.capability import ENGRAVE
-from rayforge.pipeline.steps import EngraveStep, create_engrave_step
+from rayforge.core.step_registry import step_registry
+from rayforge.pipeline.steps import EngraveStep
 
 
 @pytest.fixture
@@ -40,6 +41,8 @@ class TestEngraveStep:
         data = step.to_dict()
         assert data["step_type"] == "EngraveStep"
 
-    def test_backward_compat_create_engrave_step(self, mock_context):
-        step = create_engrave_step(mock_context, name="Backward")
+    def test_registry_create_engrave_step(self, mock_context):
+        StepClass = step_registry.get("EngraveStep")
+        assert StepClass is not None
+        step = StepClass.create(mock_context, name="FromRegistry")
         assert isinstance(step, EngraveStep)

@@ -28,6 +28,7 @@ class EngraveStep(Step):
         cls,
         context: "RayforgeContext",
         name: Optional[str] = None,
+        **kwargs,
     ) -> "EngraveStep":
         machine = context.machine
         assert machine is not None

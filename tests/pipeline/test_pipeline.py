@@ -13,7 +13,7 @@ from rayforge.core.source_asset_segment import SourceAssetSegment
 from rayforge.core.vectorization_spec import PassthroughSpec
 from rayforge.core.workpiece import WorkPiece
 from rayforge.pipeline.pipeline import Pipeline
-from rayforge.pipeline.steps import create_contour_step
+from rayforge.pipeline.steps import ContourStep
 from rayforge.pipeline.artifact import (
     ArtifactKey,
     JobArtifact,
@@ -202,7 +202,7 @@ class TestPipeline:
         # Arrange
         layer = self._setup_doc_with_workpiece(doc, real_workpiece)
         assert layer.workflow is not None
-        step = create_contour_step(context_initializer)
+        step = ContourStep.create(context_initializer)
         layer.workflow.add_step(step)
 
         pipeline = Pipeline(
@@ -258,7 +258,7 @@ class TestPipeline:
         # Arrange
         layer = self._setup_doc_with_workpiece(doc, real_workpiece)
         assert layer.workflow is not None
-        step = create_contour_step(context_initializer)
+        step = ContourStep.create(context_initializer)
         layer.workflow.add_step(step)
 
         pipeline = Pipeline(
@@ -293,7 +293,7 @@ class TestPipeline:
         # Arrange
         layer = self._setup_doc_with_workpiece(doc, real_workpiece)
         assert layer.workflow is not None
-        step = create_contour_step(context_initializer)
+        step = ContourStep.create(context_initializer)
         layer.workflow.add_step(step)
 
         mock_processing_state_handler = MagicMock()
@@ -390,7 +390,7 @@ class TestPipeline:
         layer = self._setup_doc_with_workpiece(doc, real_workpiece)
         assert layer.workflow is not None
         ctx = get_context()
-        step = create_contour_step(ctx)
+        step = ContourStep.create(ctx)
         layer.workflow.add_step(step)
 
         # Create pipeline
@@ -490,7 +490,7 @@ class TestPipeline:
         # Arrange
         layer = self._setup_doc_with_workpiece(doc, real_workpiece)
         assert layer.workflow is not None
-        step = create_contour_step(context_initializer)
+        step = ContourStep.create(context_initializer)
         layer.workflow.add_step(step)
 
         pipeline = Pipeline(
@@ -516,7 +516,7 @@ class TestPipeline:
         # Arrange
         layer = self._setup_doc_with_workpiece(doc, real_workpiece)
         assert layer.workflow is not None
-        step = create_contour_step(context_initializer)
+        step = ContourStep.create(context_initializer)
         layer.workflow.add_step(step)
 
         pipeline = Pipeline(

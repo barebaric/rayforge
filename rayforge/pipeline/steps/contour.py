@@ -34,6 +34,7 @@ class ContourStep(Step):
         context: "RayforgeContext",
         name: Optional[str] = None,
         optimize: bool = True,
+        **kwargs,
     ) -> "ContourStep":
         machine = context.machine
         assert machine is not None
