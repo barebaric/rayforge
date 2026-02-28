@@ -13,14 +13,21 @@ Vous pouvez modifier ce choix à tout moment dans les paramètres généraux.
 
 ## Ce que nous suivons
 
-Lorsqu'il est activé, nous collectons uniquement des données anonymes de pages vues, similaires aux analyses de sites web. Voici ce que nous pouvons voir :
+Lorsqu'il est activé, nous collectons uniquement des données anonymes de
+pages vues, similaires aux analyses de sites web. Voici ce que nous pouvons
+voir :
 
-| Données                        | Exemple                   |
-| ------------------------------ | ------------------------- |
-| Résolution d'écran             | 1920x1080                 |
-| Paramètre de langue            | fr-FR                     |
-| Pages/dialogues consultés      | /machine-settings/general |
-| Temps passé sur la page        | 6m 3s                     |
+| Données                   | Exemple                   |
+| ------------------------- | ------------------------- |
+| Résolution d'écran        | 1920x1080                 |
+| Paramètre de langue       | fr-FR                     |
+| Pages/dialogues consultés | /machine-settings/general |
+| Temps passé sur la page   | 6m 3s                     |
+| ID de session             | a1b2c3d4-e5f6-...         |
+
+L'ID de session est un identifiant aléatoire généré à chaque démarrage de
+Rayforge. Il nous permet de distinguer les différentes sessions
+d'utilisation tout en gardant le suivi entièrement anonyme.
 
 ## Ce que nous voyons
 

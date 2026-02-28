@@ -13,7 +13,8 @@ You can change this choice at any time in the General settings.
 
 ## What We Track
 
-When enabled, we collect only anonymous page view data - similar to website analytics. Here's what we can see:
+When enabled, we collect only anonymous page view data - similar to website
+analytics. Here's what we can see:
 
 | Data                 | Example                   |
 | -------------------- | ------------------------- |
@@ -21,6 +22,11 @@ When enabled, we collect only anonymous page view data - similar to website anal
 | Language setting     | en-US                     |
 | Pages/dialogs viewed | /machine-settings/general |
 | Time spent on page   | 6m 3s                     |
+| Session ID           | a1b2c3d4-e5f6-...         |
+
+The session ID is a random identifier generated each time you start Rayforge.
+It allows us to distinguish between different usage sessions while keeping
+tracking fully anonymous.
 
 ## What We See
 
