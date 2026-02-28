@@ -268,8 +268,18 @@ class AssetListView(Expander):
         self, sketch_row_widget: SketchAssetRowWidget
     ):
         sketch_to_delete = sketch_row_widget.asset
+        logger.debug(
+            "on_delete_sketch_clicked: asset=%s, uid=%s",
+            sketch_to_delete,
+            sketch_to_delete.uid,
+        )
         self.editor.asset.delete_asset(sketch_to_delete)
 
     def on_delete_stock_clicked(self, stock_row_widget: StockAssetRowWidget):
         asset_to_delete = stock_row_widget.asset
+        logger.debug(
+            "on_delete_stock_clicked: asset=%s, uid=%s",
+            asset_to_delete,
+            asset_to_delete.uid,
+        )
         self.editor.asset.delete_asset(asset_to_delete)
