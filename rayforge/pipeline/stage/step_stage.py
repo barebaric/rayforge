@@ -182,6 +182,7 @@ class StepPipelineStage(PipelineStage):
                 )
         else:
             self._cleanup_step_render_handle(step_uid)
+            self._emit_node_state(ledger_key, NodeState.ERROR)
             with self._artifact_manager.report_failure(
                 ledger_key, task_generation_id
             ):
