@@ -14,6 +14,7 @@ from rayforge.pipeline.producer import (
     MaterialTestGridProducer,
     ShrinkWrapProducer,
 )
+from rayforge.pipeline.producer.placeholder import PlaceholderProducer
 
 
 class TestProducerRegistry:
@@ -59,10 +60,12 @@ class TestProducerRegistry:
         producer = OpsProducer.from_dict(data)
         assert isinstance(producer, ContourProducer)
 
-    def test_from_dict_unknown_type_raises(self):
-        data = {"type": "UnknownProducer", "params": {}}
-        with pytest.raises(ValueError, match="Unknown producer type"):
-            OpsProducer.from_dict(data)
+    def test_from_dict_unknown_type_returns_placeholder(self):
+        data = {"type": "UnknownProducer", "params": {"foo": "bar"}}
+        producer = OpsProducer.from_dict(data)
+        assert isinstance(producer, PlaceholderProducer)
+        assert producer.original_type == "UnknownProducer"
+        assert producer.to_dict() == data
 
     def test_from_dict_missing_type_raises(self):
         data = {"params": {}}
