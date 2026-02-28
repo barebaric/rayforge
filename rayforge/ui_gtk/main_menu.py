@@ -2,6 +2,7 @@ from gi.repository import Gio, Gtk, GLib
 from typing import List
 from gettext import gettext as _
 from ..machine.models.macro import Macro
+from ..core.menu_registry import menu_registry
 
 
 class MainMenu(Gio.Menu):
@@ -12,6 +13,9 @@ class MainMenu(Gio.Menu):
 
     def __init__(self):
         super().__init__()
+
+        # Store references to menus that can have addon items
+        self._addon_sections = {}
 
         # File Menu
         file_menu = Gio.Menu()
@@ -174,6 +178,11 @@ class MainMenu(Gio.Menu):
         tools_group = Gio.Menu()
         tools_group.append(_("Create Material Test Grid"), "win.material_test")
         tools_menu.append_section(None, tools_group)
+
+        # Addon section for Tools menu
+        self._addon_sections["Tools"] = Gio.Menu()
+        tools_menu.append_section(None, self._addon_sections["Tools"])
+
         self.append_submenu(_("_Tools"), tools_menu)
 
         # Machine Menu
@@ -202,6 +211,11 @@ class MainMenu(Gio.Menu):
             _("Machine Settings"), "win.machine-settings"
         )
         machine_menu.append_section(None, machine_settings_group)
+
+        # Addon section for Machine menu
+        self._addon_sections["Machine"] = Gio.Menu()
+        machine_menu.append_section(None, self._addon_sections["Machine"])
+
         self.append_submenu(_("_Machine"), machine_menu)
 
         # Help Menu
@@ -210,6 +224,18 @@ class MainMenu(Gio.Menu):
         help_menu.append(_("Donate"), "win.donate")
         help_menu.append(_("Save Debug Log"), "win.save_debug_log")
         self.append_submenu(_("_Help"), help_menu)
+
+        # Populate addon menu items
+        self._populate_addon_items()
+
+    def _populate_addon_items(self):
+        """Populate addon menu items from the registry."""
+        for menu_name, section in self._addon_sections.items():
+            section.remove_all()
+            items = menu_registry.get_items_for_menu(menu_name)
+            for item in items:
+                menu_item = Gio.MenuItem.new(item.label, item.action)
+                section.append_item(menu_item)
 
     def update_macros_menu(self, macros: List[Macro]):
         """Clears and rebuilds the dynamic macro execution menu items."""

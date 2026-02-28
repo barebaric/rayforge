@@ -270,6 +270,21 @@ class RayforgeContext:
         # Load plugins from disk
         self.package_mgr.load_installed_packages()
 
+        # Import registries and trigger registration hooks
+        from .core.step_registry import step_registry
+        from .pipeline.producer.registry import producer_registry
+        from .ui_gtk.doceditor.step_settings import step_widget_registry
+        from .core.menu_registry import menu_registry
+
+        self.plugin_mgr.hook.register_steps(step_registry=step_registry)
+        self.plugin_mgr.hook.register_producers(
+            producer_registry=producer_registry
+        )
+        self.plugin_mgr.hook.register_step_widgets(
+            widget_registry=step_widget_registry
+        )
+        self.plugin_mgr.hook.register_menu_items(menu_registry=menu_registry)
+
         # Trigger the init hook for all registered plugins
         self.plugin_mgr.hook.rayforge_init(context=self)
 

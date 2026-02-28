@@ -66,3 +66,12 @@ class RayforgeSpecs:
         Args:
             widget_registry: The global StepWidgetRegistry instance.
         """
+
+    @hookspec
+    def register_menu_items(self, menu_registry):
+        """
+        Called to allow plugins to register menu items.
+
+        Args:
+            menu_registry: The global MenuRegistry instance.
+        """
