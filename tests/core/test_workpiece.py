@@ -776,8 +776,8 @@ class TestWorkPiece:
             mock_instance.to_geometry.return_value = Geometry()  # Empty
             wp_empty = WorkPiece.from_sketch(dummy_sketch)
 
-            assert wp_empty.natural_width_mm == 1.0
-            assert wp_empty.natural_height_mm == 1.0
+            assert wp_empty.natural_width_mm == 0.0
+            assert wp_empty.natural_height_mm == 0.0
 
     def test_sketch_params_setter_triggers_update(self, doc_with_workpiece):
         """
